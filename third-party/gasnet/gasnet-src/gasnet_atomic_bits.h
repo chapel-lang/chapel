@@ -4,8 +4,8 @@
  * Terms of use are as specified in license.txt
  */
 
-#if !defined(_IN_GASNET_TOOLS_H) && !defined(_IN_GASNET_H)
-  #error This file is not meant to be included directly- clients should include gasnet.h or gasnet_tools.h
+#if !defined(_IN_GASNET_TOOLS_H) && !defined(_IN_GASNETEX_H)
+  #error This file is not meant to be included directly- clients should include gasnetex.h or gasnet_tools.h
 #endif
 
 #ifndef _GASNET_ATOMIC_BITS_H
@@ -2334,16 +2334,19 @@
       GASNETI_INLINE(_gasneti_atomic32_compare_and_swap)
       int _gasneti_atomic32_compare_and_swap(gasneti_atomic32_t *_p, uint32_t _oldval, uint32_t _newval) {
         GASNETI_ASM_REGISTER_KEYWORD uint32_t _result;
+        // The following use of _tmp addresses Bug 3742 by clearing the upper
+        // 32 bits of the register on LP64, while being a no-op on ILP32:
+        GASNETI_ASM_REGISTER_KEYWORD uintptr_t _tmp = _oldval;
         __asm__ __volatile__ (
           "0:\t"
 	  "lwarx    %0,0,%2 \n\t"         /* load to result */
-	  "xor.     %0,%0,%3 \n\t"        /* xor result w/ oldval */
+	  "xor.     %0,%0,%3 \n\t"        /* xor result w/ tmp */
 	  "bne      1f \n\t"              /* branch on mismatch */
 	  "stwcx.   %4,0,%2 \n\t"         /* store newval */
 	  "bne-     0b \n\t" 
 	  "1:	"
 	  : "=&r"(_result), "=m"(_p->gasneti_ctr)
-	  : "r" (_p), "r"(_oldval), "r"(_newval), "m"(_p->gasneti_ctr)
+	  : "r" (_p), "r"(_tmp), "r"(_newval), "m"(_p->gasneti_ctr)
 	  : GASNETI_ASM_CR0);
   
         return (_result == 0);
@@ -2953,14 +2956,14 @@
 /* Define configuration-dependent choice of locks for generic atomics (if any) */
 
 #if defined(GASNETI_BUILD_GENERIC_ATOMIC32) || defined(GASNETI_BUILD_GENERIC_ATOMIC64)
-  #if defined(_INCLUDED_GASNET_H) && GASNETI_USE_TRUE_MUTEXES
+  #if defined(_INCLUDED_GASNETEX_H) && GASNETI_USE_TRUE_MUTEXES
     /* Case I: Real HSLs in a gasnet client */
     #define GASNETI_GENATOMIC_LOCK_PREP(ptr) \
-		gasnet_hsl_t * const _genatomic_lock = gasneti_hsl_atomic_hash_lookup((uintptr_t)ptr)
-    #define GASNETI_GENATOMIC_LOCK()   gasnet_hsl_lock(_genatomic_lock)
-    #define GASNETI_GENATOMIC_UNLOCK() gasnet_hsl_unlock(_genatomic_lock)
+		gex_HSL_t * const _genatomic_lock = gasneti_hsl_atomic_hash_lookup((uintptr_t)ptr)
+    #define GASNETI_GENATOMIC_LOCK()   gex_HSL_Lock(_genatomic_lock)
+    #define GASNETI_GENATOMIC_UNLOCK() gex_HSL_Unlock(_genatomic_lock)
     #define _gasneti_genatomic_cons(_id) gasneti_hsl_atomic##_id
-  #elif defined(_INCLUDED_GASNET_H)
+  #elif defined(_INCLUDED_GASNETEX_H)
     /* Case II: Empty HSLs in a GASNET_SEQ or GASNET_PARSYNC client w/o conduit-internal threads */
   #elif GASNETI_USE_TRUE_MUTEXES /* thread-safe tools-only client OR forced true mutexes */
     /* Case III: a version for pthreads which is independent of GASNet HSL's */

@@ -12,6 +12,7 @@
 # Conduit-specific headers will overwrite any conflicts in extended-ref
 headers = $(top_srcdir)/extended-ref/*.h                    \
           $(top_srcdir)/extended-ref/vis/gasnet_vis_fwd.h   \
+          $(top_srcdir)/extended-ref/ratomic/gasnet_ratomic_fwd.h   \
           $(top_srcdir)/extended-ref/coll/gasnet_coll_fwd.h   \
           $(srcdir)/*.h                                     \
 	  $(CONDUIT_EXTRAHEADERS)

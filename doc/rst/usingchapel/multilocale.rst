@@ -115,14 +115,10 @@ mpi
 mxm
     Mellanox MXM for InfiniBand
     (mxm is deprecated -- the ibv substrate is recommended)
-ofi
-    OFI for multiple networks supported by libfabric
 pami
     PAMI for IBM Power 775, BlueGene/Q and others
 portals4
     Portals4 (BETA) for the Portals 4.x API
-psm
-    PSM for Intel's OmniPath fabric
 smp
     Simulates multiple locales on a single shared-memory machine
 

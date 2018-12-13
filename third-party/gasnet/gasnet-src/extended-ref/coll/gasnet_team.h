@@ -19,8 +19,8 @@
 void gasnete_coll_team_init(gasnet_team_handle_t team, 
                             uint32_t team_id, 
                             uint32_t total_ranks,
-                            gasnet_node_t myrank,
-                            gasnet_node_t *rel2act_map,
+                            gex_Rank_t myrank,
+                            gex_Rank_t *rel2act_map,
                             gasnet_seginfo_t *scratch_segs,
                             const gasnet_image_t images[] GASNETI_THREAD_FARG);
 
@@ -28,8 +28,8 @@ void gasnete_coll_team_init(gasnet_team_handle_t team,
 void gasnete_coll_team_fini(gasnet_team_handle_t team);
 
 gasnet_team_handle_t gasnete_coll_team_create(uint32_t total_ranks,
-                                              gasnet_node_t myrank,
-                                              gasnet_node_t *rel2act_map, gasnet_seginfo_t* scratch_segs GASNETI_THREAD_FARG);
+                                              gex_Rank_t myrank,
+                                              gex_Rank_t *rel2act_map, gasnet_seginfo_t* scratch_segs GASNETI_THREAD_FARG);
 
 
 void gasnete_coll_team_free(gasnet_team_handle_t team);
@@ -37,8 +37,8 @@ void gasnete_coll_team_free(gasnet_team_handle_t team);
 gasnet_team_handle_t gasnete_coll_team_lookup(uint32_t team_id);
 
 gasnet_team_handle_t gasnete_coll_team_split(gasnet_team_handle_t team,
-                                             gasnet_node_t mycolor,
-                                             gasnet_node_t myrelrank,
+                                             int mycolor,
+                                             int myrelrank,
                                              void *clientdata
                                              GASNETI_THREAD_FARG);
 
@@ -48,12 +48,6 @@ void gasnete_print_team(gasnet_team_handle_t team, FILE *fp);
 #define GASNETE_COLL_TEAMS_OVERRIDE 
 
 gasnet_team_handle_t gasnete_coll_team_lookup(uint32_t team_id);
-
-gasnet_node_t gasnete_coll_team_rank2node(gasnete_coll_team_t team, int rank);
-
-gasnet_node_t gasnete_coll_team_node2rank(gasnete_coll_team_t team, gasnet_node_t node);
-
-uint32_t gasnete_coll_team_id(gasnete_coll_team_t team) ;
 
 #define PRINT_ARRAY(fp, A, size, format)        \
   do {                                          \

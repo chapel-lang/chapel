@@ -31,6 +31,82 @@
   #define MYSEG                    (TEST_MYSEG())
   #define ENDPOINT
   #define GETPARTNER(token)  gasnet_node_t partner; GASNET_Safe(gasnet_AMGetMsgSource(token, &partner))
+  #define EXTRA_S
+  #define EXTRA_ML
+#elif defined(TEST_GASNETEX)
+  #include "gasnet_tools.h"
+  #include "test.h"
+  typedef gex_AM_Arg_t handlerarg_t;
+ #define EXTERNC GASNETT_EXTERNC
+ GASNETT_BEGIN_EXTERNC
+  typedef gex_AM_Fn_t handler_fn_t;
+ GASNETT_END_EXTERNC
+  typedef gex_Token_t token_t;
+  gasnett_atomic_t numreq = gasnett_atomic_init(0);
+  gasnett_atomic_t numrep = gasnett_atomic_init(0);
+  #define INCREQ() gasnett_atomic_increment(&numreq,0)
+  #define INCREP() gasnett_atomic_increment(&numrep,0)
+  #define NUMREQ() gasnett_atomic_read(&numreq,0)
+  #define NUMREP() gasnett_atomic_read(&numrep,0)
+  gasnett_atomic_t amcnt_RequestShort = gasnett_atomic_init(0);
+  gasnett_atomic_t amcnt_ReplyShort = gasnett_atomic_init(0);
+  gasnett_atomic_t amcnt_RequestMedium = gasnett_atomic_init(0);
+  gasnett_atomic_t amcnt_ReplyMedium = gasnett_atomic_init(0);
+  gasnett_atomic_t amcnt_RequestLong = gasnett_atomic_init(0);
+  gasnett_atomic_t amcnt_ReplyLong = gasnett_atomic_init(0);
+  #if GASNETT_HAVE_ATOMIC_ADD_SUB
+    #define atomicinc(pvar) gasnett_atomic_add(pvar,1,0)
+  #else // non-atomicity just increases non-determinism
+    #define atomicinc(pvar) (gasnett_atomic_increment(pvar,0),gasnett_atomic_read(pvar))
+  #endif
+  #define AMSend(MLReq,cat,num,args) do {                   \
+    int id = atomicinc(&amcnt_##cat);                       \
+    gex_Event_t *lc_opt = GEX_EVENT_NOW;                    \
+    gex_Event_t lc = GEX_EVENT_NO_OP;                       \
+    if (MLReq) {                                            \
+      switch ((id >> 1) % 3) {                              \
+        case 0: /*lc_opt = GEX_EVENT_NOW;*/ break;          \
+        case 1:   lc_opt = GEX_EVENT_GROUP; break;          \
+        case 2:   lc_opt = &lc; break;                      \
+      }                                                     \
+    }                                                       \
+    do {                                                    \
+      if (id & 0x1) { /* try an immediate injection */      \
+        gex_Flags_t flags = GEX_FLAG_IMMEDIATE;             \
+        int result = gex_AM_##cat##num args;                \
+        if (!result) break; /* jump to lc sync */           \
+      }                                                     \
+      gex_Flags_t flags = 0; /* blocking injection */       \
+      int result = gex_AM_##cat##num args;                  \
+      assert_always(result == 0);                           \
+    } while (0);                                            \
+    if (MLReq && lc_opt == GEX_EVENT_GROUP) {               \
+      gex_NBI_Wait((id&0x2?GEX_EC_AM:GEX_EC_ALL), 0);       \
+    } else if (MLReq && lc_opt == &lc) {                    \
+      assert_always(lc != GEX_EVENT_NO_OP);                 \
+      gex_Event_Wait(lc);                                   \
+    }                                                       \
+  } while (0)
+  #define RequestShort(num,args)                AMSend(0,RequestShort,num,args)
+  #define RequestMedium(num,args)               AMSend(1,RequestMedium,num,args)
+  #define RequestLong(num,AMargs,GASNETargs)    AMSend(1,RequestLong,num,GASNETargs)
+  #define RequestLongAsync                      RequestLong
+  #define ReplyShort(num,args)                  AMSend(0,ReplyShort,num,args)
+  #define ReplyMedium(num,args)                 AMSend(0,ReplyMedium,num,args)
+  #define ReplyLong(num,AMargs,GASNETargs)      AMSend(0,ReplyLong,num,GASNETargs)
+  #define NUMHANDLERS_PER_TYPE     (gex_AM_MaxArgs()+1)
+  #define MYPROC                   (gex_System_QueryJobRank())
+  #define NUMPROCS                 (gex_System_QueryJobSize())
+  #define MYSEG                    (TEST_MYSEG())
+  #define GETPARTNER(token) gex_Rank_t partner; \
+                            do { gex_Token_Info_t info; \
+                                 gex_TI_t rc = gex_Token_Info(token, &info, GEX_TI_SRCRANK); \
+                                 assert_always(rc & GEX_TI_SRCRANK); \
+                                 partner = info.gex_srcrank; \
+                            } while(0)
+  #define ENDPOINT                 myteam,
+  #define EXTRA_S                  ,flags
+  #define EXTRA_ML                 ,lc_opt,flags
 #else
   #include "apputils.h"
   typedef int handlerarg_t;
@@ -59,6 +135,8 @@
   #define ENDPOINT  ep,
   #define GETPARTNER(token)
   #define FATALERR                  AMX_FatalErr
+  #define EXTRA_S
+  #define EXTRA_ML
 #endif
 #define ALLAM_DONE(iters) ((int)NUMREP() == (int)(NUMHANDLERS_PER_TYPE*4*(iters)))
 
@@ -284,7 +362,7 @@ typedef struct {
     if (CA##num)                                                                   \
       FATALERR("Arg mismatch in short_%sreq_handler on P%i\n", #num, (int)MYPROC); \
     INCREQ();                                                                      \
-    ReplyShort(num,(token, SHORT_##num##REP_HANDLER aa##num));                     \
+    ReplyShort(num,(token, SHORT_##num##REP_HANDLER EXTRA_S aa##num));             \
   }                                                                                \
   EXTERNC void short_##num##rep_handler(token_t token FA##num) {                   \
     if (CA##num)                                                                   \
@@ -305,7 +383,7 @@ typedef struct {
                        #num, (int)MYPROC, (int)nbytes, payload->idx);                  \
     INCREQ();                                                                          \
     payload->idx = -payload->idx;                                                      \
-    ReplyMedium(num,(token, MEDIUM_##num##REP_HANDLER, buf, nbytes aa##num));          \
+    ReplyMedium(num,(token, MEDIUM_##num##REP_HANDLER, buf, nbytes EXTRA_ML aa##num)); \
     memset(buf, 0xBB, sizeof(testam_payload_t));                                       \
   }                                                                                    \
   EXTERNC                                                                              \
@@ -342,7 +420,8 @@ typedef struct {
     ReplyLong(num,(token, (NUMHANDLERS_PER_TYPE+num)*sizeof(testam_payload_t),                \
                    LONG_##num##REP_HANDLER, &mybuf, nbytes aa##num),                          \
                   (token, LONG_##num##REP_HANDLER, &mybuf, nbytes,                            \
-                   ((testam_payload_t*)TEST_SEG(partner))+NUMHANDLERS_PER_TYPE+num aa##num)); \
+                   ((testam_payload_t*)TEST_SEG(partner))+NUMHANDLERS_PER_TYPE+num            \
+                   EXTRA_ML aa##num));                                                        \
     memset(&mybuf, 0xBB, sizeof(testam_payload_t));                                           \
   }                                                                                           \
   EXTERNC                                                                                     \
@@ -411,6 +490,21 @@ HANDLERS(16)
   SETUP_ALLAM_ID(16);      \
 } while (0)
 
+#if defined(TEST_GASNETEX)
+#define ALLAM_HANDLERS_ID(num)                                           \
+  { SHORT_##num##REQ_HANDLER,  (handler_fn_t)short_##num##req_handler,                     \
+                               GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT,  num, NULL, NULL},   \
+  { MEDIUM_##num##REQ_HANDLER, (handler_fn_t)medium_##num##req_handler,                    \
+                               GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, num, NULL, NULL},   \
+  { LONG_##num##REQ_HANDLER,   (handler_fn_t)long_##num##req_handler,                      \
+                               GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG,   num, NULL, NULL},   \
+  { SHORT_##num##REP_HANDLER,  (handler_fn_t)short_##num##rep_handler,                     \
+                               GEX_FLAG_AM_REPLY|GEX_FLAG_AM_SHORT,    num, NULL, NULL},   \
+  { MEDIUM_##num##REP_HANDLER, (handler_fn_t)medium_##num##rep_handler,                    \
+                               GEX_FLAG_AM_REPLY|GEX_FLAG_AM_MEDIUM,   num, NULL, NULL},   \
+  { LONG_##num##REP_HANDLER,   (handler_fn_t)long_##num##rep_handler,                      \
+                               GEX_FLAG_AM_REPLY|GEX_FLAG_AM_LONG,     num, NULL, NULL}
+#else
 #define ALLAM_HANDLERS_ID(num)                                           \
   { SHORT_##num##REQ_HANDLER,  (handler_fn_t)short_##num##req_handler }, \
   { MEDIUM_##num##REQ_HANDLER, (handler_fn_t)medium_##num##req_handler}, \
@@ -418,6 +512,7 @@ HANDLERS(16)
   { SHORT_##num##REP_HANDLER,  (handler_fn_t)short_##num##rep_handler }, \
   { MEDIUM_##num##REP_HANDLER, (handler_fn_t)medium_##num##rep_handler}, \
   { LONG_##num##REP_HANDLER,   (handler_fn_t)long_##num##rep_handler  }  
+#endif
 
 #define ALLAM_HANDLERS() \
   ALLAM_HANDLERS_ID(0),  \
@@ -444,21 +539,21 @@ HANDLERS(16)
   asyncbuf.doublevar = TESTAM_DOUBLEVAR_VAL;                                                       \
   asyncbuf.int64var = TESTAM_INT64VAR_VAL;                                                         \
   asyncbuf.idx = num;                                                                              \
-  RequestShort(num,(ENDPOINT partner,  SHORT_##num##REQ_HANDLER AA##num));                         \
+  RequestShort(num,(ENDPOINT partner,  SHORT_##num##REQ_HANDLER EXTRA_S AA##num));                 \
   memcpy(&medbuf, &asyncbuf, sizeof(testam_payload_t));                                            \
   RequestMedium(num,(ENDPOINT partner, MEDIUM_##num##REQ_HANDLER,                                  \
-                     &medbuf, sizeof(testam_payload_t) AA##num));                                  \
+                     &medbuf, sizeof(testam_payload_t) EXTRA_ML AA##num));                         \
   memset(&medbuf, 0xBB, sizeof(testam_payload_t)); /* ensure we can overwrite srcmem */            \
   memcpy(&longbuf, &asyncbuf, sizeof(testam_payload_t));                                           \
   RequestLong(num,(ENDPOINT partner, sizeof(testam_payload_t)*num,                                 \
                    LONG_##num##REQ_HANDLER, &longbuf, sizeof(testam_payload_t) AA##num),           \
                   (ENDPOINT partner, LONG_##num##REQ_HANDLER, &longbuf, sizeof(testam_payload_t),  \
-                   ((testam_payload_t*)TEST_SEG(partner))+num AA##num));                           \
+                   ((testam_payload_t*)TEST_SEG(partner))+num EXTRA_ML AA##num));                  \
   memset(&longbuf, 0xBB, sizeof(testam_payload_t)); /* ensure we can overwrite srcmem */           \
   RequestLongAsync(num,(ENDPOINT partner, sizeof(testam_payload_t)*num,                            \
                    LONG_##num##REQ_HANDLER, &asyncbuf, sizeof(testam_payload_t) AA##num),          \
                   (ENDPOINT partner, LONG_##num##REQ_HANDLER, &asyncbuf, sizeof(testam_payload_t), \
-                   ((testam_payload_t*)TEST_SEG(partner))+num AA##num));                           \
+                   ((testam_payload_t*)TEST_SEG(partner))+num EXTRA_ML AA##num));                  \
 } while (0)                                                                                        \
 
 #define ALLAM_REQ(partner)  do { \

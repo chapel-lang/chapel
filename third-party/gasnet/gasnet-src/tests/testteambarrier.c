@@ -4,7 +4,7 @@
  * Terms of use are as specified in license.txt
  */
 
-#include <gasnet.h>
+#include <gasnetex.h>
 #include <gasnet_coll.h>
 
 #include <test.h>
@@ -16,24 +16,20 @@ typedef struct {
   
 } thread_data_t;
 
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
+
 int mynode, nodes, iters, threads_per_node=0;
 
 #define MYBARRIER() \
-    GASNET_Safe(gasnet_coll_barrier(GASNET_TEAM_ALL, 0, GASNET_BARRIERFLAG_UNNAMED | GASNET_BARRIERFLAG_IMAGES))
+    GASNET_Safe(gasnet_coll_barrier(GASNET_TEAM_ALL, 0, GASNET_BARRIERFLAG_UNNAMED))
 
 void *thread_main(void *arg) {
   thread_data_t *td = (thread_data_t*) arg;
   int i;
   int64_t start,total;
-#if GASNET_PAR
-  gasnet_image_t *imagearray = test_malloc(nodes * sizeof(gasnet_image_t));
-  for (i=0; i<nodes; ++i) { imagearray[i] = threads_per_node; }
-  gasnet_coll_init(imagearray, td->mythread, NULL, 0, 0);
-  test_free(imagearray);
-#else
-  gasnet_coll_init(NULL, 0, NULL, 0, 0);
-#endif
-
 
   MYBARRIER();
   if (td->mythread == 0) {
@@ -49,8 +45,8 @@ void *thread_main(void *arg) {
   
   start = TIME();
   for (i=0; i < iters; i++) {
-    gasnet_coll_barrier_notify(GASNET_TEAM_ALL, i, GASNET_BARRIERFLAG_IMAGES);            
-    GASNET_Safe(gasnet_coll_barrier_wait(GASNET_TEAM_ALL, i, GASNET_BARRIERFLAG_IMAGES)); 
+    gasnet_coll_barrier_notify(GASNET_TEAM_ALL, i, 0);            
+    GASNET_Safe(gasnet_coll_barrier_wait(GASNET_TEAM_ALL, i, 0));
   }
   total = TIME() - start;
 
@@ -65,8 +61,8 @@ void *thread_main(void *arg) {
 
   start = TIME();
   for (i=0; i < iters; i++) {
-    gasnet_coll_barrier_notify(GASNET_TEAM_ALL, 0, GASNET_BARRIERFLAG_ANONYMOUS | GASNET_BARRIERFLAG_IMAGES);            
-    GASNET_Safe(gasnet_coll_barrier_wait(GASNET_TEAM_ALL, 0, GASNET_BARRIERFLAG_ANONYMOUS | GASNET_BARRIERFLAG_IMAGES)); 
+    gasnet_coll_barrier_notify(GASNET_TEAM_ALL, 0, GASNET_BARRIERFLAG_ANONYMOUS);            
+    GASNET_Safe(gasnet_coll_barrier_wait(GASNET_TEAM_ALL, 0, GASNET_BARRIERFLAG_ANONYMOUS));
   }
   total = TIME() - start;
 
@@ -87,13 +83,13 @@ int main(int argc, char **argv) {
 
   int i = 0;
   thread_data_t *td_arr; 
-  GASNET_Safe(gasnet_init(&argc, &argv));
-  GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testteambarrier", &argc, &argv, 0));
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
 
 
   
-  mynode = gasnet_mynode();
-  nodes = gasnet_nodes();
+  mynode = gex_TM_QueryRank(myteam);
+  nodes = gex_TM_QuerySize(myteam);
 
   if (argc > 1) iters = atoi(argv[1]);
   if (!iters) iters = 10000;
@@ -115,6 +111,11 @@ int main(int argc, char **argv) {
   if (threads_per_node > TEST_MAXTHREADS || threads_per_node < 1) {
     printf("ERROR: Threads must be between 1 and %d\n", TEST_MAXTHREADS);
     exit(EXIT_FAILURE);
+  }
+  // NO MULTI-IMAGE SUPPORT IN CURRENT COLLECTIVES
+  if (threads_per_node > 1) {
+    MSG0("WARNING: thread count reduced to 1 (no multi-image support)");
+    threads_per_node = 1;
   }
   if (argc > 3) TEST_SECTION_PARSE(argv[3]);
   if (argc > 4) test_usage();

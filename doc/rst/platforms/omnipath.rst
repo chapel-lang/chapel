@@ -4,6 +4,10 @@
 Using Chapel with OmniPath
 ==========================
 
+.. warning::
+    PSM is not supported by the current GASNet release. If this is an important
+    configuration for you, please contact the Chapel team.
+
 This document describes how to run Chapel across multiple machines in an
 OmniPath cluster. The :ref:`readme-multilocale` describes general information
 about running Chapel in a multilocale configuration. The OmniPath drivers come

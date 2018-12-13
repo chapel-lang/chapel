@@ -76,6 +76,9 @@ chapel-unpack-tgz:   force
 
 # Save time by building for a single conduit
 CHPL_GASNET_CFG_OPTIONS += --disable-auto-conduit-detect --enable-$(CHAPEL_CONDUIT)
+ifneq ($(strip $(CHPL_COMM_DEBUG)),)
+CHPL_GASNET_CFG_OPTIONS += --enable-debug
+endif
 CHAPEL_MAKE_ARGS += CHPL_GASNET_CFG_OPTIONS="$(CHPL_GASNET_CFG_OPTIONS)"
 
 # Define CHPL_LAUNCHER for some conduits without our desired defaults.
@@ -103,6 +106,9 @@ COMMON_ENV = PATH=$(CHAPEL_PATH_PRE)$$PATH$(CHAPEL_PATH_POST)
 
 CONFIG_ENV = $(COMMON_ENV) $(chapel_launcher_opt) \
              CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=$(CHAPEL_CONDUIT)
+ifneq ($(strip $(CHPL_COMM_DEBUG)),)
+COMMON_ENV += CHPL_COMM_DEBUG=$(CHPL_COMM_DEBUG)
+endif
 
 # Build and (optionally) install Chapel compiler and runtime
 _chapel: force

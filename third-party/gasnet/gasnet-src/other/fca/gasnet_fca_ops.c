@@ -2,12 +2,13 @@
  * Copyright (c) 2012  Mellanox Technologies, LTD. All rights reserved.
  */
 
-#include "gasnet_fca.h"
 #include <stdio.h>
 #include <string.h>
 #include <gasnet_coll_internal.h>
 
 #if GASNETI_USE_FCA /* Otherwise empty */
+
+#include "gasnet_fca.h"
 
 int gasnet_fca_barrier(gasnet_team_handle_t team)
 {
@@ -63,7 +64,7 @@ int gasnet_fca_all_gather_all(void *dst,
         void *src,
         size_t nbytes, gasnet_team_handle_t team, int flags)
 {
-#if GASNET_FCA_ALLGATHER
+#if GASNETI_FCA_ALLGATHER
     fca_comm_data_t *fca_comm_data = &team->fca_comm_data;
     fca_gather_spec_t spec = {0,};
     int ret;

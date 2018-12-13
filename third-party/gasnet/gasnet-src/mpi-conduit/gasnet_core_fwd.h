@@ -4,8 +4,8 @@
  * Terms of use are as specified in license.txt
  */
 
-#ifndef _IN_GASNET_H
-  #error This file is not meant to be included directly- clients should include gasnet.h
+#ifndef _IN_GASNETEX_H
+  #error This file is not meant to be included directly- clients should include gasnetex.h
 #endif
 
 #ifndef _GASNET_CORE_FWD_H
@@ -49,21 +49,35 @@
    */
 /* #define GASNETI_CONDUIT_THREADS 1 */
 
-  /* define to 1 if your conduit may interrupt an application thread 
-     (e.g. with a signal) to run AM handlers (interrupt-based handler dispatch)
-   */
-/* #define GASNETC_USE_INTERRUPTS 1 */
-
-  /* define these to 1 if your conduit cannot use the default implementation
-     of gasnetc_amregister() (in gasnet_internal.c)
+  /* define these to 1 if your conduit needs to augment the implementation
+     of gasneti_reghandler() (in gasnet_internal.c)
    */
 #define GASNETC_AMREGISTER 1
 
-  /* define these to 1 if your conduit supports PSHM, but cannot use the
+  /* define this to 1 if your conduit supports PSHM, but cannot use the
      default interfaces. (see template-conduit/gasnet_core.c and gasnet_pshm.h)
    */
 /* #define GASNETC_GET_HANDLER 1 */
-/* #define GASNETC_TOKEN_CREATE 1 */
+
+  /* uncomment for each {Request,Reply} X {Medium,Long} pair for which your
+     conduit implements the corresponding gasnetc_AM_{Prepare,Commit}*().
+     If unset, a conduit-independent implementation in terms of the internal
+     functions gasnetc_AM{Request,Reply}{Medium,Long}V() will be used, and
+     your conduit must provide the V-suffixed functions for any of these that
+     are not defined.
+   */
+/* #define GASNETC_HAVE_NP_REQ_MEDIUM 1 */
+/* #define GASNETC_HAVE_NP_REP_MEDIUM 1 */
+/* #define GASNETC_HAVE_NP_REQ_LONG 1 */
+/* #define GASNETC_HAVE_NP_REP_LONG 1 */
+
+  /* uncomment if your conduit's gasnetc_AMRequest{Short,Medium,Long}V()
+     include a call to gasneti_AMPoll (or equivalent) for progress.
+     The preferred implementation is to Poll only in the M-suffixed calls
+     and not the V-suffixed calls (and GASNETC_REQUESTV_POLLS undefined).
+     Used if (and only if) any of the GASNETC_HAVE_NP_* values above are unset.
+   */
+#define GASNETC_REQUESTV_POLLS 1
 
 /* mpi-conduit supports top-level poll throttling */
 #define GASNETC_USING_SUSPEND_RESUME 1

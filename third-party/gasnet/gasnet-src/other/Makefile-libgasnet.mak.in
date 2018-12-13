@@ -31,6 +31,7 @@ TOOLLIBINCLUDES =         \
 LIBINCLUDES = $(TOOLLIBINCLUDES) \
         -I$(top_srcdir)/extended-ref/coll \
         -I$(top_srcdir)/extended-ref/vis \
+        -I$(top_srcdir)/extended-ref/ratomic \
         -I$(top_srcdir)/extended-ref  
 
 
@@ -77,15 +78,21 @@ libgasnet_sources =                                         \
         $(libgasnet_tools_sources)                          \
         $(PSHM_SOURCES)                                     \
         $(top_srcdir)/extended-ref/vis/gasnet_refvis.c      \
+        $(top_srcdir)/extended-ref/ratomic/gasnet_refratomic.c\
         $(top_srcdir)/extended-ref/coll/gasnet_refcoll.c    \
         $(top_srcdir)/extended-ref/coll/gasnet_putget.c     \
         $(top_srcdir)/extended-ref/coll/gasnet_eager.c      \
         $(top_srcdir)/extended-ref/coll/gasnet_rvous.c      \
         $(top_srcdir)/extended-ref/coll/gasnet_team.c	    \
         $(top_srcdir)/extended-ref/coll/gasnet_hashtable.c  \
+        $(top_srcdir)/extended-ref/coll/gasnet_reduce.c     \
+        $(top_srcdir)/gasnet_event.c                        \
+        $(top_srcdir)/gasnet_legacy.c                       \
         $(top_srcdir)/gasnet_internal.c                     \
+        $(top_srcdir)/gasnet_am.c                           \
         $(top_srcdir)/gasnet_trace.c                        \
         $(top_srcdir)/gasnet_mmap.c                         \
+        $(top_srcdir)/gasnet_tm.c                           \
 	$(top_srcdir)/gasnet_diagnostic.c
 
 libgasnet_objects = \
@@ -241,7 +248,7 @@ $(top_builddir)/other/Makefile-libgasnet.mak: $(top_srcdir)/other/Makefile-libga
 @GNU_NM_TRUE@	  echo $$lib: ;                                                             \
 @GNU_NM_TRUE@	  @NM@ --defined-only $$lib |                                               \
 @GNU_NM_TRUE@	    @PERL@ -pe 's/ \.refptr\.//' |                                          \
-@GNU_NM_TRUE@	    grep -v -e ' [\._]*gasnet_' -e ' [\._]*gasnet[tiecX]_'                  \
+@GNU_NM_TRUE@	    grep -v -e ' [\._]*gasnet_' -e ' [\._]*gasnet[tiecX]_' -e ' [\._]*gex_' \
 @GNU_NM_TRUE@		    -e ' [\._]*fh_' -e ' [\._]*firehose_'                           \
 @GNU_NM_TRUE@		    -e ' [\._]*fh[ic]_' -e ' [\._]*fhsmp_' -e ' [\._]*fhuni_'       \
 @GNU_NM_TRUE@		    -e ' [\._]*myxml_' -e ' [\._]*smp_coll_'                        \

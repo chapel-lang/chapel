@@ -166,50 +166,11 @@ Recognized environment variables:
 * GASNET_QUIET - set to 1 to silence the startup warning indicating
   the provider in use may deliver suboptimal performance.
 
-* GASNET_OFI_NUM_INITIAL_SEND_BUFFS - The number of transmit buffers to allocate
-  for the request and reply active message pools. These buffers will be split
-  evenly between the two pools. Because the request and reply paths each need at
-  least one buffer to function, this variable must be greater than or equal to
-  2. If a buffer is requested from an empty pool and if the maximum number of
-  buffers has been allocated (see the next section) then the conduit will poll
-  until previous transmit operations complete and return their buffers to the
-  pool.
-  Default: 500
-
-* GASNET_OFI_MAX_SEND_BUFFS - The maximum number of transmit buffers to allow
-  ofi-conduit to allocate for the active messaging system. This sets a limit on
-  the amount of memory that the active messaging transmission subsystem can
-  consume. This variable must be greater than or equal to the value of
-  GASNET_OFI_NUM_INITIAL_SEND_BUFFS.
-  Default: 1000
-
 * GASNET_OFI_RMA_POLL_FREQ - In order to ensure efficient progress, the conduit polls the RMA
   transmit completion queue once for every GASNET_OFI_RMA_POLL_FREQ RMA injections. Default: 32
 
 * GASNET_OFI_NUM_BBUFS, GASNET_OFI_BBUF_SIZE, GASNET_OFI_BBUF_THRESHOLD - See the
   "Non-bulk, Non-blocking Put Functions" section for detail on these environment variables.
-
-* GASNET_OFI_NUM_RECEIVE_BUFFS, GASNET_OFI_RECEIVE_BUFF_SIZE - Specifies the
-  number and size of active message receive buffers. OFI allows multiple
-  messages to be placed into a single receive buffer until it is full, after
-  which it will be reposted once all active message handlers associated with
-  that buffer have completed. Because both the request and reply active
-  message paths require their own resources, the number of receive buffers
-  must be at least 2 (one for each path). The buffers will be split evenly
-  between the request and receive paths. The minimum size for a receive
-  buffer is the number of bytes required to hold an AM of maximum size plus
-  headers. This is partially determined by the max AM medium size (see
-  --with-ofi-max-medium).
-  Defaults: GASNET_OFI_NUM_MULIRECV_BUFFS=8, GASNET_OFI_MULTIRECV_BUFF_SIZE=1M
-
-* GASNET_OFI_LONG_AM_RMA_THRESH - Specifies the size threshold at which the
-  payload in a long active message will be trasferred via RMA. Otherwise, the
-  payload will be copied into a medium active message. The size must be less
-  than or equal to the maximum amount of data that can be transferred via a
-  medium active message, which is equal to gasnet_AMMaxMedium() less the size of
-  the conduit's message header.
-  Default: The maximum amount of data that can be sent via a medium active
-  message(dependent on conduit configuration).
 
 * FI_PROVIDER - set to a provider name to override the default OFI provider selection
 
@@ -275,11 +236,11 @@ Known problems:
           sockets provider will occasionally hang.
         * This bug was also present in libfabric v1.4.0
         * This has been fixed in upstream libfabric. The patch that corrects
-          this behaviour can be found in the link below.
+          this behavior can be found in the link below.
         * LBNL Bugzilla link: http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3597
         * libfabric GitHub issue link: https://github.com/ofiwg/libfabric/issues/3217
         * Patch that fixes the bug: https://github.com/ofiwg/libfabric/pull/3223
-  - gni provider segfault
+    - gni provider segfault
         * When using FI_MULTI_RECV (as the ofi-conduit does), the gni provider may segfault.
         * This bug has been fixed in upstream libfabric.
         * Patch that fixes the bug: https://github.com/ofiwg/libfabric/pull/3208

@@ -2,7 +2,7 @@
 GASNet for Chapel release
 =========================
 
-This copy of GASNet 1.32.0 is being released with Chapel for
+This copy of GASNet-EX 2018.9.0 is being released with Chapel for
 convenience and was obtained from
 
   https://gasnet.lbl.gov/
@@ -17,13 +17,10 @@ Chapel modifications to GASNet
 The modifications that we have made to the official GASNet release are
 as follows:
 
-* Added preliminary support for 64-bit ARM.  This adds the new file
-  third-party/gasnet/gasnet-src/other/contrib/cross-configure-aarch64-linux
-  which is the only ARM change beneath gasnet-src in the tree.
 * Pulled in an upstream fix for mpi-spawner -N support for Open MPI 3.x
-   - https://bitbucket.org/berkeleylab/gasnet/commits/e9088bc72
+   - https://bitbucket.org/berkeleylab/gasnet-ex/commits/bdd352a5c
 * Pulled in an upstream fix for heterogenous jobs under aries
-   - https://bitbucket.org/berkeleylab/gasnet/commits/8b551f443
+   - https://bitbucket.org/berkeleylab/gasnet-ex/commits/5f5199a2
 
 Upgrading GASNet versions
 =========================
@@ -33,9 +30,9 @@ un-tarballed GASNet package contents.  Version updates should be done as
 follows, assuming the CWD is $CHPL_HOME/third-party/gasnet/:
 
 1. un-tarball the new package version into the directory it specifies,
-   for example GASNet-1.32.0
+   for example GASNet-2018.9.0
 2. git rm -r gasnet-src
-3. mv GASNet-1.32.0 gasnet-src
+3. mv GASNet-2018.9.0 gasnet-src
 4. git add --force gasnet-src
    ('--force' is needed so that the 'git add' ignores our .gitignore)
 5. commit

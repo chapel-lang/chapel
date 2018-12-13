@@ -8,10 +8,12 @@
 #include <libgen.h>
 #include <errno.h>
 #include <string.h>
-#include "gasnet_fca.h"
+
 #include <gasnet_coll_internal.h>
 
 #if GASNETI_USE_FCA /* Otherwise empty */
+
+#include <gasnet_fca.h>
 
 /*
  * Instantiate the public struct with all of our public information
@@ -43,12 +45,12 @@ int gasnet_fca_get_fca_lib(int my_rank)
     minor = (fca_ver>>FCA_MINOR_BIT) & 0xf;
     sprintf(x, "%ld%ld", major, minor);
     detected_ver = atol(x);
-    FCA_VERBOSE(30, "FCA ABI version: %ld supported: %d", detected_ver, GASNET_FCA_VERSION);
+    FCA_VERBOSE(30, "FCA ABI version: %ld supported: %d", detected_ver, GASNETI_FCA_VERSION);
 
-    if (detected_ver != GASNET_FCA_VERSION) {
+    if (detected_ver != GASNETI_FCA_VERSION) {
         FCA_ERROR("Unsupported FCA version: %s, please update FCA to v%d, now v%ld",
                 fca_get_version_string(),
-                GASNET_FCA_VERSION, fca_ver);
+                GASNETI_FCA_VERSION, fca_ver);
         return GASNET_FCA_ERROR;
     }
     spec = fca_parse_spec_file(gasnet_fca_component.fca_spec_file);
@@ -410,7 +412,7 @@ static int __get_local_ranks(gasnet_team_handle_t team)
     /* Count the local ranks */
     team->fca_comm_data.num_local_procs = 0;
     for (rank = 0; rank < team->total_ranks; ++rank) {
-        if (__rank_is_local(gasnete_coll_team_rank2node(team,rank),gasnet_mynode())) {
+        if (__rank_is_local(GASNETE_COLL_REL2ACT(team,rank),gasneti_mynode)) {
             if (rank == team->myrank) {
                 team->fca_comm_data.local_proc_idx = team->fca_comm_data.num_local_procs;
             }
@@ -428,7 +430,7 @@ static int __get_local_ranks(gasnet_team_handle_t team)
 
     i = 0;
     for (rank = 0; rank < team->total_ranks; ++rank) {
-        if (__rank_is_local(gasnete_coll_team_rank2node(team,rank),gasnet_mynode())) {
+        if (__rank_is_local(GASNETE_COLL_REL2ACT(team,rank),gasneti_mynode)) {
             team->fca_comm_data.local_ranks[i++] = rank;
         }
     }
@@ -443,7 +445,7 @@ int gasnet_team_fca_enable(gasnet_team_handle_t team)
 {
    
     if (!gasnet_fca_component.is_initialized){
-        gasnet_fca_open(gasnet_mynode());
+        gasnet_fca_open(gasneti_mynode);
         gasnet_fca_component.is_initialized = 1;
     }
     if (!gasnet_fca_component.fca_enable)

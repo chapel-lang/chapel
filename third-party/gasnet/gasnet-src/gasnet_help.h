@@ -4,8 +4,8 @@
  * Terms of use are as specified in license.txt
  */
 
-#ifndef _IN_GASNET_H
-  #error This file is not meant to be included directly- clients should include gasnet.h
+#ifndef _IN_GASNETEX_H
+  #error This file is not meant to be included directly- clients should include gasnetex.h
 #endif
 
 #ifndef _GASNET_HELP_H
@@ -116,22 +116,80 @@ void _gasneti_leak_aligned(void *ptr GASNETI_CURLOCFARG) {
 
 extern const char *gasnet_max_segsize_str; // client-overrideable max segment size
 extern uint64_t gasnet_max_segsize; // DEPRECATED: client-overrideable max segment size
-#if GASNET_SEGMENT_EVERYTHING
-  #define gasneti_in_clientsegment(node,ptr,nbytes) (gasneti_assert((node) < gasneti_nodes), 1)
-  #define gasneti_in_fullsegment(node,ptr,nbytes)   (gasneti_assert((node) < gasneti_nodes), 1)
+
+// We can detect TM0 by its better alignment than other tm's
+#ifdef GASNETI_TM0_ALIGN
+  // Keep existing value
+#elif (GASNETI_CACHE_LINE_BYTES < 8)
+  #define GASNETI_TM0_ALIGN 16
 #else
-  #define gasneti_in_clientsegment(node,ptr,nbytes) \
-    (gasneti_assert((node) < gasneti_nodes),        \
-     ((ptr) >= gasneti_seginfo_client[node].addr && \
-      (void *)(((uintptr_t)(ptr))+(nbytes)) <= gasneti_seginfo_client_ub[node]))
-  #define gasneti_in_fullsegment(node,ptr,nbytes) \
-    (gasneti_assert((node) < gasneti_nodes),      \
-     ((ptr) >= gasneti_seginfo[node].addr &&      \
-      (void *)(((uintptr_t)(ptr))+(nbytes)) <= gasneti_seginfo_ub[node]))
+  #define GASNETI_TM0_ALIGN (2*GASNETI_CACHE_LINE_BYTES)
+#endif
+GASNETI_INLINE(gasneti_is_tm0)
+int gasneti_is_tm0(gasneti_TM_t _i_tm) {
+  return (!((uintptr_t)(_i_tm) & (GASNETI_TM0_ALIGN-1)));
+}
+
+// Given (tm,rank) return the jobrank
+extern gex_Rank_t gasneti_tm_fwd_lookup(gasneti_TM_t tm, gex_Rank_t rank);
+
+// Given (tm,jobrank) return the rank of jobrank in tm, or GEX_RANK_INVALID
+extern gex_Rank_t gasneti_tm_rev_lookup(gasneti_TM_t tm, gex_Rank_t jobrank);
+
+#define gasneti_check_tm_rank(tm,rank) gasneti_assert((tm) && ((rank) < gex_TM_QuerySize(tm)))
+        
+GASNETI_INLINE(gasneti_i_tm_rank_to_jobrank)
+gex_Rank_t gasneti_i_tm_rank_to_jobrank(gasneti_TM_t _i_tm, gex_Rank_t _rank) {
+  gasneti_assert(_i_tm && (_rank < _i_tm->_size));
+  if (gasneti_is_tm0(_i_tm)) return _rank;
+  return gasneti_tm_fwd_lookup(_i_tm, _rank);
+}
+#define gasneti_e_tm_rank_to_jobrank(e_tm,rank) \
+        gasneti_i_tm_rank_to_jobrank(gasneti_import_tm(e_tm),rank)
+
+// NOTE: gasneti_[ei]_tm_jobrank_to_rank() appear later, after defn of gasneti_nodes
+
+// Variants to allow tm=NULL to substitute for TM0
+// TODO-EX: These will necessarily be superceeded when multi-{EP,segment}
+// support is added.  So, avoid creating new callers.
+#define _gasneti_check_tm_rank_allownull(tm,rank) gasneti_assert(!(tm) || ((rank) < gex_TM_QuerySize(tm)))
+GASNETI_INLINE(_gasneti_e_tm_rank_to_jobrank_allownull)
+gex_Rank_t _gasneti_e_tm_rank_to_jobrank_allownull(gex_TM_t _e_tm, gex_Rank_t _rank) {
+  gasneti_TM_t _i_tm = gasneti_import_tm(_e_tm);
+  gasneti_assert(!_i_tm || (_rank < _i_tm->_size));
+  if (gasneti_is_tm0(_i_tm)) return _rank; // gasneti_is_tm0(NULL) true by construction
+  gasneti_assert(_i_tm);
+  return gasneti_tm_fwd_lookup(_i_tm, _rank);
+}
+
+// These in-segment checks accept e_tm=NULL to indicate rank is a jobrank
+// (NULL,gasneti_mynode) is a common case for this.
+// NOTE: This behavior will no longer work when multi-{EP,segment} support is
+// added.  So avoid adding new callers which depend upon it.
+#if GASNET_SEGMENT_EVERYTHING
+  #define gasneti_in_clientsegment(e_tm,rank,ptr,nbytes)  (_gasneti_check_tm_rank_allownull(e_tm,rank), 1)
+  #define gasneti_in_auxsegment(e_tm,rank,ptr,nbytes)     (_gasneti_check_tm_rank_allownull(e_tm,rank), 1)
+  #define gasneti_in_fullsegment(e_tm,rank,ptr,nbytes)    (_gasneti_check_tm_rank_allownull(e_tm,rank), 1)
+#else
+  GASNETI_INLINE(_gasneti_in_seg)
+  int _gasneti_in_seg(gex_TM_t _e_tm, gex_Rank_t _rank,
+                      const void *_ptr, size_t _nbytes, gasnet_seginfo_t *_seg) {
+    gasneti_assert(_nbytes); // precondition to avoid "fence post" error at top of segment
+    gex_Rank_t _jobrank = _gasneti_e_tm_rank_to_jobrank_allownull(_e_tm,_rank);
+    return ((_ptr) >= _seg[_jobrank].addr &&
+            ((((uintptr_t)(_ptr))+(_nbytes)) <=
+             (((uintptr_t)_seg[_jobrank].addr)+_seg[_jobrank].size)));
+  }
+  #define gasneti_in_clientsegment(e_tm,rank,ptr,nbytes) \
+          _gasneti_in_seg(e_tm,rank,ptr,nbytes,gasneti_seginfo)
+  #define gasneti_in_auxsegment(e_tm,rank,ptr,nbytes) \
+          _gasneti_in_seg(e_tm,rank,ptr,nbytes,gasneti_seginfo_aux)
+  #define gasneti_in_fullsegment(e_tm,rank,ptr,nbytes) \
+    (gasneti_in_clientsegment(e_tm,rank,ptr,nbytes) || gasneti_in_auxsegment(e_tm,rank,ptr,nbytes))
 #endif
 
 #ifdef _INCLUDED_GASNET_INTERNAL_H
-  /* default for GASNet implementation is to check against entire seg */
+  /* default for GASNet implementation is to check against union of client and aux segments */
   #define gasneti_in_segment gasneti_in_fullsegment
 #else
   /* default for client is to check against just the client seg */
@@ -140,55 +198,60 @@ extern uint64_t gasnet_max_segsize; // DEPRECATED: client-overrideable max segme
 
 #ifdef GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET
   /* in-segment check for internal put/gets that may exploit outofseg support */
-  #define gasneti_in_segment_allowoutseg(node,ptr,nbytes) \
-          (gasneti_assert((node) < gasneti_nodes), 1)
+  #define gasneti_in_segment_allowoutseg(e_tm,rank,ptr,nbytes) \
+          (_gasneti_check_tm_rank_allownull(e_tm,rank), 1)
 #else
   #define gasneti_in_segment_allowoutseg  gasneti_in_segment
 #endif
 
-#define _gasneti_boundscheck(node,ptr,nbytes,nodetest,segtest) do {            \
-    gasnet_node_t _bc_node = (node);                                           \
-    const void *_bc_ptr = (const void *)(ptr);                                 \
-    size_t _bc_nbytes = (size_t)(nbytes);                                      \
-    if_pf (!nodetest(_bc_node))                                                \
-      gasneti_fatalerror("Node index out of range (%lu >= %lu) at %s",         \
-                         (unsigned long)_bc_node, (unsigned long)gasneti_nodes,\
-                         gasneti_current_loc);                                 \
-    if_pf (_bc_ptr == NULL || !segtest(_bc_node,_bc_ptr,_bc_nbytes))           \
-      gasneti_fatalerror("Remote address out of range "                        \
-         "(node=%lu ptr=" GASNETI_LADDRFMT" nbytes=%" PRIuPTR ") at %s"        \
+#define _gasneti_boundscheck(e_tm,rank,ptr,nbytes,segtest) do {         \
+    gex_TM_t _gex_bc_tm = (e_tm);                                              \
+    gex_Rank_t _gex_bc_rank = (rank);                                          \
+    gex_Rank_t _gex_bc_size = _gex_bc_tm ? gex_TM_QuerySize(_gex_bc_tm)        \
+                                         : gasneti_nodes;                      \
+    const void *_gex_bc_ptr = (const void *)(ptr);                             \
+    size_t _gex_bc_nbytes = (size_t)(nbytes);                                  \
+    gasneti_assert(_gex_bc_nbytes); /* avoids "fence post" error */            \
+    if_pf (_gex_bc_rank >= _gex_bc_size)                                       \
+      gasneti_fatalerror("Rank out of range (%lu >= %lu) at %s",               \
+              (unsigned long)_gex_bc_rank, (unsigned long)(_gex_bc_size),      \
+              gasneti_current_loc);                                            \
+    if_pf (_gex_bc_ptr == NULL ||                                              \
+           !segtest(_gex_bc_tm,_gex_bc_rank,_gex_bc_ptr,_gex_bc_nbytes)) {     \
+      gex_Rank_t _gex_bc_jbrk =                                                \
+               _gasneti_e_tm_rank_to_jobrank_allownull(_gex_bc_tm,_gex_bc_rank); \
+      gasneti_fatalerror("Remote address out of range (" GASNETI_TMRANKFMT     \
+         " ptr=" GASNETI_LADDRFMT" nbytes=%" PRIuPTR ") at %s"                 \
          "\n  clientsegment=(" GASNETI_LADDRFMT"..." GASNETI_LADDRFMT")"       \
-         "\n    fullsegment=(" GASNETI_LADDRFMT"..." GASNETI_LADDRFMT")",      \
-         (unsigned long)_bc_node, GASNETI_LADDRSTR(_bc_ptr), (uintptr_t)_bc_nbytes, \
+         "\n     auxsegment=(" GASNETI_LADDRFMT"..." GASNETI_LADDRFMT")",      \
+         GASNETI_TMRANKSTR(_gex_bc_tm,_gex_bc_rank),                           \
+         GASNETI_LADDRSTR(_gex_bc_ptr),                                        \
+         (uintptr_t)_gex_bc_nbytes,                                            \
          gasneti_current_loc,                                                  \
-         GASNETI_LADDRSTR(gasneti_seginfo_client[_bc_node].addr),              \
-         GASNETI_LADDRSTR(gasneti_seginfo_client_ub[_bc_node]),                \
-         GASNETI_LADDRSTR(gasneti_seginfo[_bc_node].addr),                     \
-         GASNETI_LADDRSTR(gasneti_seginfo_ub[_bc_node])                        \
+         GASNETI_LADDRSTR(gasneti_seginfo[_gex_bc_jbrk].addr),                 \
+         GASNETI_LADDRSTR((uintptr_t)gasneti_seginfo[_gex_bc_jbrk].addr +      \
+                                     gasneti_seginfo[_gex_bc_jbrk].size),      \
+         GASNETI_LADDRSTR(gasneti_seginfo_aux[_gex_bc_jbrk].addr),             \
+         GASNETI_LADDRSTR((uintptr_t)gasneti_seginfo_aux[_gex_bc_jbrk].addr +  \
+                                     gasneti_seginfo_aux[_gex_bc_jbrk].size)   \
          );                                                                    \
+    }                                                                          \
   } while(0)
 
-/* in-segment queries for the sole purpose of generating bounds checking errors 
-   allow overrides for clients that allow bending the rules (shmem)
- */
-#ifndef gasneti_in_segment_bc
-#define gasneti_in_segment_bc gasneti_in_segment
-#endif
-#ifndef gasneti_in_segment_allowoutofseg_bc
-#define gasneti_in_segment_allowoutofseg_bc gasneti_in_segment_allowoutseg
-#endif
-#ifndef gasneti_in_nodes_bc
-#define gasneti_in_nodes_bc(node) (node < gasneti_nodes)
-#endif
 
+// gasneti_boundscheck() and gasneti_boundscheck_allowoutseg()
+// both accept e_tm=NULL to indicate rank is a jobrank
+// (NULL,gasneti_mynode) is a common case for this.
+// NOTE: This behavior will no longer work when multi-{EP,segment} support is
+// added.  So avoid adding new callers which depend upon it.
 #if GASNET_NDEBUG
-  #define gasneti_boundscheck(node,ptr,nbytes) 
-  #define gasneti_boundscheck_allowoutseg(node,ptr,nbytes)
+  #define gasneti_boundscheck(e_tm,rank,ptr,nbytes) ((void)0)
+  #define gasneti_boundscheck_allowoutseg(e_tm,rank,ptr,nbytes) ((void)0)
 #else
-  #define gasneti_boundscheck(node,ptr,nbytes) \
-         _gasneti_boundscheck(node,ptr,nbytes,gasneti_in_nodes_bc,gasneti_in_segment_bc)
-  #define gasneti_boundscheck_allowoutseg(node,ptr,nbytes) \
-         _gasneti_boundscheck(node,ptr,nbytes,gasneti_in_nodes_bc,gasneti_in_segment_allowoutofseg_bc)
+  #define gasneti_boundscheck(e_tm,rank,ptr,nbytes) \
+         _gasneti_boundscheck(e_tm,rank,ptr,nbytes,gasneti_in_segment)
+  #define gasneti_boundscheck_allowoutseg(e_tm,rank,ptr,nbytes) \
+         _gasneti_boundscheck(e_tm,rank,ptr,nbytes,gasneti_in_segment_allowoutseg)
 #endif
 
 /* make a GASNet core API call - if it fails, print error message and abort */
@@ -212,6 +275,23 @@ extern uint64_t gasnet_max_segsize; // DEPRECATED: client-overrideable max segme
 #else
   #define GASNETI_CHECKINIT()    ((void)0)
   #define GASNETI_CHECKATTACH()  ((void)0)
+#endif
+
+/* ------------------------------------------------------------------------------------ */
+/* tools for dealing with gex_Event_t* pre-defined values */
+// TODO-EX: move to gasnet_event_internal.h
+#ifndef _GEX_EVENT_T
+GASNETI_INLINE(gasneti_leaf_is_pointer) GASNETI_PURE
+int gasneti_leaf_is_pointer(const gex_Event_t *opt_val) {
+  gasneti_assert(opt_val != NULL);
+  return ((uintptr_t)(opt_val) >= (uintptr_t)4);
+}
+GASNETI_PUREP(gasneti_leaf_is_pointer)
+
+GASNETI_INLINE(gasneti_leaf_finish)
+void gasneti_leaf_finish(gex_Event_t *opt_val) {
+  if (gasneti_leaf_is_pointer(opt_val)) *opt_val = GEX_EVENT_INVALID;
+}
 #endif
 
 /* ------------------------------------------------------------------------------------ */
@@ -387,44 +467,52 @@ extern uint64_t gasnet_max_segsize; // DEPRECATED: client-overrideable max segme
 #endif
 
 #if GASNETI_THREADINFO_OPT
-  /* Here we use a clever trick - GASNET_GET_THREADINFO() uses the sizeof(gasneti_threadinfo_available)
+  /* Here we use a clever trick - GASNET_GET_THREADINFO() uses the sizeof(_gasneti_threadinfo_available)
       to determine whether gasneti_threadinfo_cache was bound a value posted by GASNET_POST_THREADINFO()
       of if it bound to the globally declared dummy variables. 
      Even a very stupid C optimizer should constant-fold away the unused calls to gasneti_get_threadinfo() 
       and discard the unused variables
      We need 2 separate variables to ensure correct name-binding semantics for GASNET_POST_THREADINFO(GASNET_GET_THREADINFO())
    */
-  static gasnet_threadinfo_t gasnete_threadinfo_cache = 0;
-  static uint8_t gasnete_threadinfo_available = 
-    sizeof(gasnete_threadinfo_cache) + sizeof(gasnete_threadinfo_available);
+  #define _GASNETI_THREAD_POSTED (sizeof(_gasneti_threadinfo_available) > 1)
+  static gasnet_threadinfo_t _gasneti_threadinfo_cache = 0;
+  static uint8_t             _gasneti_threadinfo_available = 
+    sizeof(_gasneti_threadinfo_cache) + sizeof(_gasneti_threadinfo_available);
     /* silly little trick to prevent unused variable warning on gcc -Wall */
 
-  #define GASNET_POST_THREADINFO(info)                     \
-    gasnet_threadinfo_t gasnete_threadinfo_cache = (info); \
-    uint32_t gasnete_threadinfo_available = 0
-    /* if you get an unused variable warning on gasnete_threadinfo_available, 
+  #define GASNET_POST_THREADINFO(info)                      \
+    gasnet_threadinfo_t _gasneti_threadinfo_cache = (info); \
+    uint32_t _gasneti_threadinfo_available = 0
+    /* if you get an unused variable warning on _gasneti_threadinfo_available, 
        it means you POST'ed in a function which made no GASNet calls that needed it
        So, PLEASE don't add __unused__ annotations here. */
 
   #if GASNETI_LAZY_BEGINFUNCTION
-    // bug 3498: Ensure a sequence point after the assignment to gasnete_threadinfo_cache
+    // bug 3498: Ensure a sequence point after the assignment to _gasneti_threadinfo_cache
     GASNETI_INLINE(gasneti_lazy_get_threadinfo) GASNETI_WARN_UNUSED_RESULT
     gasnet_threadinfo_t gasneti_lazy_get_threadinfo(gasnet_threadinfo_t * const _p_ti, 
                                                     gasnet_threadinfo_t _ti_val) {
       return (*_p_ti = _ti_val);
     }
-    #define GASNET_GET_THREADINFO()                              \
-      ( (sizeof(gasnete_threadinfo_available) == 1) ?            \
-        (gasnet_threadinfo_t)_gasneti_mythread_slow() :          \
-        (GASNETT_PREDICT_TRUE(gasnete_threadinfo_cache) ? gasnete_threadinfo_cache :   \
-        gasneti_lazy_get_threadinfo(&gasnete_threadinfo_cache,(gasnet_threadinfo_t)_gasneti_mythread_slow()))  \
-      )
+    // memoized implementation of GET POSTED, where BEGIN_FUNCTION delays lookup to first use
+    #define _GASNETI_GET_THREADINFO_POSTED()                           \
+      ( GASNETT_PREDICT_TRUE(_gasneti_threadinfo_cache) ? _gasneti_threadinfo_cache :   \
+        gasneti_lazy_get_threadinfo(&_gasneti_threadinfo_cache,(gasnet_threadinfo_t)_gasneti_mythread_slow()) \
+      ) 
   #else
-    #define GASNET_GET_THREADINFO()                     \
-      ( (sizeof(gasnete_threadinfo_available) == 1) ?   \
-        (gasnet_threadinfo_t)_gasneti_mythread_slow() : \
-        (gasnet_threadinfo_t)(uintptr_t)gasnete_threadinfo_cache )
+    // straightforward implementation of GET POSTED
+    #define _GASNETI_GET_THREADINFO_POSTED() ( _gasneti_threadinfo_cache )
   #endif
+
+  // GASNET_GET_THREADINFO: the main cached-lookup workhorse
+  // note both the branches textually below are always statically resolved
+  #define GASNET_GET_THREADINFO()                                      \
+    ( _GASNETI_THREAD_POSTED ? /* have POST or BEGIN_FUNCTION ? */     \
+      _GASNETI_GET_THREADINFO_POSTED() /* use it */ :                  \
+      ( _GASNETI_THREAD_FARG_AVAILABLE ? /* in FARG context? use. */   \
+         (gasnet_threadinfo_t)(uintptr_t)_GASNETI_THREAD_FARG_NAME :   \
+         (gasnet_threadinfo_t)_gasneti_mythread_slow() /* lookup */ )  \
+    )     
 
   /* the gasnet_threadinfo_t pointer points to a thread data-structure owned by
      the extended API, whose first element is a pointer reserved
@@ -441,7 +529,7 @@ extern uint64_t gasnet_max_segsize; // DEPRECATED: client-overrideable max segme
 #else
   #if GASNET_DEBUG
     #define GASNET_POST_THREADINFO(info)   \
-      static uint8_t gasnete_dummy = sizeof(gasnete_dummy) /* diagnose duplicate POST in a scope */
+      static uint8_t _gasneti_threadinfo_dummy = sizeof(_gasneti_threadinfo_dummy) /* diagnose duplicate POST in a scope */
   #else
     #define GASNET_POST_THREADINFO(info) ((void)0)
   #endif
@@ -453,54 +541,205 @@ extern uint64_t gasnet_max_segsize; // DEPRECATED: client-overrideable max segme
 /* thread-id optimization support */
 
 #if GASNETI_THREADINFO_OPT
-  // -----------------------------------------------------------------------------------------
-  // Propagating info into GASNETI_THREAD_FARG function context
-  // GASNETI_THREAD_FARG(_ALONE): use to declare the threadinfo hidden arg as part of a function declaration
   #if GASNETI_RESTRICT_MAY_QUALIFY_TYPEDEFS
-    #define GASNETI_THREAD_FARG_ALONE   gasnet_threadinfo_t const GASNETI_RESTRICT _threadinfo
+    #define _GASNETI_THREAD_FARG_RTYPE  gasnet_threadinfo_t 
   #else
-    #define GASNETI_THREAD_FARG_ALONE   void * const GASNETI_RESTRICT _threadinfo
+    #define _GASNETI_THREAD_FARG_RTYPE  void *
   #endif
+  #define _GASNETI_THREAD_FARG_TYPE    _GASNETI_THREAD_FARG_RTYPE const GASNETI_RESTRICT
+  #define _GASNETI_THREAD_FARG_NAME    _gasneti_threadinfo_farg
+  static uint8_t _GASNETI_THREAD_FARG_NAME = sizeof(_GASNETI_THREAD_FARG_NAME);
+  #define _GASNETI_THREAD_FARG_AVAILABLE  (sizeof(_GASNETI_THREAD_FARG_NAME) > 1)
+  // -----------------------------------------------------------------------------------------
+  // *** Propagating info into GASNETI_THREAD_FARG function context ***
+  
+  // GASNETI_THREAD_FARG(_ALONE): use to declare the threadinfo hidden arg as part of a function declaration
   #define GASNETI_THREAD_FARG         , GASNETI_THREAD_FARG_ALONE
-  // GASNETI_THREAD_GET(_ALONE): use to retrieve the threadinfo (possibly from GASNET_POST_THREADINFO in the enclosing context)
+  #define GASNETI_THREAD_FARG_ALONE   _GASNETI_THREAD_FARG_TYPE _GASNETI_THREAD_FARG_NAME
+
+  // GASNETI_THREAD_GET(_ALONE): retrieve the threadinfo (when GASNETI_THREADINFO_OPT) from one of:
+  //     a prior GASNET_POST_THREADINFO, an FARG to the enclosing function, or dynamic lookup
   // and pass as the hidden argument to a function declared using GASNETI_THREAD_FARG(_ALONE)
-  #define GASNETI_THREAD_GET_ALONE    GASNET_GET_THREADINFO()
   #define GASNETI_THREAD_GET          , GASNETI_THREAD_GET_ALONE
+  #define GASNETI_THREAD_GET_ALONE    GASNET_GET_THREADINFO()
+
   // -----------------------------------------------------------------------------------------
-  // Inside GASNETI_THREAD_FARG context
-  //   The macros in this section should ONLY be used by code inside "GASNETI_THREAD_FARG context",
-  //   such as inside functions declared using GASNETI_THREAD_FARG*.
-  // GASNETI_THREAD_PASS(_ALONE): propagate the hidden arg to a callee also declared with GASNETI_THREAD_FARG*
-  #define GASNETI_THREAD_PASS_ALONE   (_threadinfo)
+  // *** Inside FARG/POST'd context ***
+  //
+  //   The macros in this section should ONLY be used by code inside an FARG/POST'd context, ie:
+  //    1. inside functions declared using GASNETI_THREAD_FARG*.
+  //    2. within the lexical scope of a GASNET_BEGIN_FUNCTION() or GASNET_POST_THREADINFO()
+  //   Otherwise, they generate a compiler diagnostic in GASNETI_THREADINFO_OPT mode.
+  //   the error looks something like: "error: size of array is negative"
+  //   This is helpful in contexts where we wish to statically ensure lack of dynamic lookup.
+ 
+  // GASNETI_THREAD_PASS(_ALONE): propagate the threadinfo to a callee declared with GASNETI_THREAD_FARG*
+  //   this only differs from GASNETI_THREAD_GET* in that it statically requires FARG/POST'd context (and no lookup)
   #define GASNETI_THREAD_PASS         , GASNETI_THREAD_PASS_ALONE
-  // GASNETI_MYTHREAD: retrieve the value of the FARG as a (gasneti_threaddata_t *)
-  #define GASNETI_MYTHREAD            ((struct _gasneti_threaddata_t *)_threadinfo)
+  #define GASNETI_THREAD_PASS_ALONE ( gasneti_static_assert(_GASNETI_THREAD_FARG_AVAILABLE||_GASNETI_THREAD_POSTED), \
+                                     ( _GASNETI_THREAD_POSTED ?                                      \
+                                      (_GASNETI_THREAD_FARG_RTYPE)_GASNETI_GET_THREADINFO_POSTED() : \
+                                      (_GASNETI_THREAD_FARG_RTYPE)(uintptr_t)_GASNETI_THREAD_FARG_NAME ) )
+
+  // GASNETI_MYTHREAD: retrieve the value of the threadinfo as a (gasneti_threaddata_t *),
+  //                   suitable for access to threaddata fields from internal code
+  #define GASNETI_MYTHREAD  (  gasneti_static_assert(_GASNETI_THREAD_FARG_AVAILABLE||_GASNETI_THREAD_POSTED), \
+                             (_GASNETI_THREAD_POSTED ?                                           \
+                              (struct _gasneti_threaddata_t *)_GASNETI_GET_THREADINFO_POSTED() : \
+                              (struct _gasneti_threaddata_t *)(uintptr_t)_GASNETI_THREAD_FARG_NAME ) )
+
   // -----------------------------------------------------------------------------------------
-  // Declaring GASNETI_THREAD_FARG context
-  //   The macros in this section declare "GASNETI_THREAD_FARG context" inline for the rest of this basic block
-  // GASNETI_THREAD_LOOKUP: declare a hidden FARG inline and populate from a prior GASNET_POST_THREADINFO or lookup
-  #define GASNETI_THREAD_LOOKUP       GASNETI_THREAD_FARG_ALONE = GASNETI_THREAD_GET_ALONE;
-  // GASNETI_THREAD_POST(x): declare a hidden FARG inline and populate with the given value
-  #define GASNETI_THREAD_POST(x)      GASNETI_THREAD_FARG_ALONE = (x);
+  // *** Declaring GASNETI_THREAD_FARG context : NO LONGER SUPPORTED ***
+  
+  // Former macros:
+  //   GASNETI_THREAD_LOOKUP has been superceded by GASNET_BEGIN_FUNCTION
+  //   GASNETI_THREAD_POST() has been superceded by GASNET_POST_THREADINFO()
+  // GASNETI_THREAD_GET* now automatically pulls from these sources or FARG before lookup.
+
   // -----------------------------------------------------------------------------------------
-  // Misc
-  // GASNETI_THREAD_SWALLOW: Utility to discard an FARG passed to a 0-arg function-like macro
-  //   TODO-EX: move and rename this essentially unrelated utility macro
-  #define GASNETI_THREAD_SWALLOW(x)
-  // GASNETI_GASNETI_TISTARTOFBITS: Utility to discard an FARG when calling GASNETE_STARTOFBITS
-  #define GASNETI_TISTARTOFBITS(ptr,nbytes,ti) GASNETE_STARTOFBITS(ptr,nbytes)
+  // *** Other ***
+  
+  // GASNETI_MYTHREAD_GET_OR_LOOKUP: force retrieve my (gasneti_threaddata_t *) from one of:
+  //     a prior GASNET_POST_THREADINFO, an FARG to the enclosing function, or dynamic lookup
+  //  This is essentially GASNETI_MYTHREAD without requiring FARG/POST'd context (allows lookup)
+  //  Only valid known use is macros that expand threaddata field access directly into client code
+  #define GASNETI_MYTHREAD_GET_OR_LOOKUP ((struct _gasneti_threaddata_t *)GASNET_GET_THREADINFO())
+
 #else
-  #define GASNETI_THREAD_FARG_ALONE   void
   #define GASNETI_THREAD_FARG         
-  #define GASNETI_THREAD_GET_ALONE   
+  #define GASNETI_THREAD_FARG_ALONE   void
   #define GASNETI_THREAD_GET         
-  #define GASNETI_THREAD_PASS_ALONE   
+  #define GASNETI_THREAD_GET_ALONE   
   #define GASNETI_THREAD_PASS         
-  #define GASNETI_THREAD_LOOKUP
-  #define GASNETI_THREAD_SWALLOW(x)
-  #define GASNETI_TISTARTOFBITS       GASNETE_STARTOFBITS
+  #define GASNETI_THREAD_PASS_ALONE   
   #define GASNETI_MYTHREAD            (_gasneti_mythread_slow())
+  #define GASNETI_MYTHREAD_GET_OR_LOOKUP GASNETI_MYTHREAD
 #endif
+
+// Misc thread-id related goop
+// GASNETI_THREAD_SWALLOW: Utility to discard an FARG passed to a 0-arg function-like macro
+//   TODO-EX: move and rename this essentially unrelated utility macro
+#define GASNETI_THREAD_SWALLOW(x)
+
+/* ------------------------------------------------------------------------------------ */
+/* GASNETI_MAX_THREADS: cannot exceed the size representable in gasnete_threadidx_t, 
+   but some conduits or configures may set it to less */
+#if GASNET_SEQ /* only one client thread by definition */
+  #undef GASNETI_MAX_THREADS
+  #ifdef GASNETE_CONDUIT_THREADS_USING_TD
+    #define GASNETI_MAX_THREADS (1 + GASNETE_CONDUIT_THREADS_USING_TD)
+  #else
+    #define GASNETI_MAX_THREADS 1
+  #endif
+  #define GASNETI_MAX_THREADS_REASON "GASNET_SEQ mode only supports single-threaded operation."
+#elif defined(GASNETI_MAX_THREADS) /* conduit-imposed limit */
+  #if defined(GASNETI_MAX_THREADS_CONFIGURE) && GASNETI_MAX_THREADS_CONFIGURE < GASNETI_MAX_THREADS
+    #undef  GASNETI_MAX_THREADS /* limit lowered by configure */
+    #define GASNETI_MAX_THREADS GASNETI_MAX_THREADS_CONFIGURE
+  #else
+    #define GASNETI_MAX_THREADS_REASON "This limit is imposed by " GASNET_EXTENDED_NAME_STR " conduit."
+  #endif
+#else /* default */
+  #if GASNETI_MAX_THREADS_CONFIGURE
+    #define GASNETI_MAX_THREADS GASNETI_MAX_THREADS_CONFIGURE
+  #else /* default */
+    #define GASNETI_MAX_THREADS 256
+  #endif
+#endif
+#ifndef GASNETI_MAX_THREADS_REASON
+  #define GASNETI_MAX_THREADS_REASON "To raise this limit, configure GASNet using --with-max-pthreads-per-node=N."
+#endif
+
+#ifdef _GASNETE_THREADIDX_T
+   /* conduit override */
+  #ifndef SIZEOF_GASNETE_THREADIDX_T
+    #error "Must define both _GASNETE_THREADIDX_T and SIZEOF_GASNETE_THREADIDX_T, or neither"
+  #endif
+  #ifndef GASNETE_INVALID_THREADIDX
+    #error "Must define both _GASNETE_THREADIDX_T and GASNETE_INVALID_THREADIDX, or neither"
+  #endif
+#elif GASNETI_MAX_THREADS < 65536
+  typedef uint16_t gasnete_threadidx_t;
+  #define SIZEOF_GASNETE_THREADIDX_T 2
+  #define GASNETE_INVALID_THREADIDX ((gasnete_threadidx_t)-1)
+#elif GASNETI_MAX_THREADS < 4294967296
+  typedef uint32_t gasnete_threadidx_t;
+  #define SIZEOF_GASNETE_THREADIDX_T 4
+  #define GASNETE_INVALID_THREADIDX ((gasnete_threadidx_t)-1)
+#else
+  typedef uint64_t gasnete_threadidx_t;
+  #define SIZEOF_GASNETE_THREADIDX_T 8
+  #define GASNETE_INVALID_THREADIDX ((gasnete_threadidx_t)-1)
+#endif
+/* returns the runtime size of the thread table (always <= GASNETI_MAX_THREADS) */
+extern uint64_t gasneti_max_threads(void);
+extern void gasneti_fatal_threadoverflow(const char *_subsystem);
+
+#ifndef _GASNETI_MYTHREAD_SLOW
+  struct _gasneti_threaddata_t;
+  #if GASNETI_MAX_THREADS <= 256
+    extern struct _gasneti_threaddata_t *gasnete_threadtable[GASNETI_MAX_THREADS];
+  #else
+    extern struct _gasneti_threaddata_t **gasnete_threadtable;
+  #endif
+  #if GASNETI_MAX_THREADS > 1
+    #if GASNETI_COMPILER_IS_CC
+      #if GASNET_STATS
+        // this call breaks a dependency cycle with trace.h 
+        GASNETI_INLINE(gasneti_record_dynamic_threadlookup)
+        void gasneti_record_dynamic_threadlookup(void);
+        #define GASNETI_RECORD_DYNAMIC_THREADLOOKUP gasneti_record_dynamic_threadlookup
+      #endif
+      GASNETI_THREADKEY_DECLARE(gasnete_threaddata);
+      extern void * gasnete_new_threaddata(void);
+      GASNETI_INLINE(_gasneti_mythread_slow) GASNETI_CONST
+      struct _gasneti_threaddata_t *_gasneti_mythread_slow(void) {
+        void *_threaddata = gasneti_threadkey_get(gasnete_threaddata);
+        #ifdef GASNETI_RECORD_DYNAMIC_THREADLOOKUP
+          GASNETI_RECORD_DYNAMIC_THREADLOOKUP(); 
+        #endif
+        if_pf (!_threaddata) { /* first time we've seen this thread - need to set it up */
+          // NOTE: DON'T use _gasnete_mythread_slow_slow to initially populate TLS, because it's annotated const
+          // so the optimizer won't understand it modifies the TLS "global" directly accessed above
+          _threaddata = gasnete_new_threaddata();
+        }
+        gasneti_memcheck(_threaddata);
+        return _threaddata;
+      }
+      GASNETI_CONSTP(_gasneti_mythread_slow)
+    #else // !GASNETI_COMPILER_IS_CC
+      // threadkey-get currently incurs a fncall on !CC anyhow, so nothing to save here
+      extern struct _gasneti_threaddata_t *_gasnete_mythread_slow_slow(void) GASNETI_CONST;
+      GASNETI_CONSTP(_gasnete_mythread_slow_slow)
+      #define _gasneti_mythread_slow() _gasnete_mythread_slow_slow()
+    #endif
+  #else
+    #define _gasneti_mythread_slow() (gasnete_threadtable[0])
+  #endif
+#endif
+
+/* register a cleanup function to run when the calling thread exits 
+   not guaranteed to run during process exits (gasnet_exit), but should
+   run for dynamic thread exits when the process is continuing.
+   Cleanups will run in reverse order of registration
+ */
+extern void gasnete_register_threadcleanup(void (*_cleanupfn)(void *), void *_context);
+
+typedef struct _gasnete_thread_cleanup {
+    struct _gasnete_thread_cleanup *_next;
+    void (*_cleanupfn)(void *);
+    void *_context;
+} gasnete_thread_cleanup_t; /* thread exit cleanup function LIFO */
+
+
+/* high-water mark on highest thread index allocated thus far */
+extern int gasnete_maxthreadidx;
+#define gasnete_assert_valid_threadid(threadidx) do {   \
+    int _thid = (threadidx);                            \
+    gasneti_assert(_thid <= gasnete_maxthreadidx);      \
+    gasneti_assert(gasnete_threadtable[_thid] != NULL); \
+    gasneti_memcheck(gasnete_threadtable[_thid]);       \
+} while (0)
 
 /* ------------------------------------------------------------------------------------ */
 /* GASNet progressfn support
@@ -620,15 +859,19 @@ typedef void (*gasneti_progressfn_t)(void);
 #endif
 
 /* ------------------------------------------------------------------------------------ */
-#ifndef GASNETI_GASNETI_AMPOLL
+#ifdef GASNETI_GASNETI_AMPOLL
+  GASNETI_GASNETI_AMPOLL
+#else
   /*
    gasnet_AMPoll() - public poll function called by the client, throttled and traced 
                      should not be called from within GASNet (so we only trace directly user-initiated calls)
    gasneti_AMPoll() - called internally by GASNet, provides throttling (if enabled), progress functions, but no tracing
    gasnetc_AMPoll() - conduit AM dispatcher, should only be called from gasneti_AMPoll()
    */
-  #ifndef GASNETI_GASNETC_AMPOLL
-    extern int gasnetc_AMPoll(void);
+  #ifdef GASNETI_GASNETC_AMPOLL
+    GASNETI_GASNETC_AMPOLL
+  #else
+    extern int gasnetc_AMPoll(GASNETI_THREAD_FARG_ALONE);
   #endif
 
   #if GASNETI_THROTTLE_FEATURE_ENABLED /* enabled by configure */ \
@@ -669,12 +912,12 @@ typedef void (*gasneti_progressfn_t)(void);
   #endif
 
   #if !GASNETI_THROTTLE_POLLERS 
-    GASNETI_INLINE(gasneti_AMPoll)
-    int gasneti_AMPoll(void) {
+    GASNETI_INLINE(_gasneti_AMPoll)
+    int _gasneti_AMPoll(GASNETI_THREAD_FARG_ALONE) {
        int retval;
        gasneti_AMPoll_spinpollers_check();
        gasneti_memcheck_one();
-       retval = gasnetc_AMPoll();
+       retval = gasnetc_AMPoll(GASNETI_THREAD_PASS_ALONE);
        GASNETI_PROGRESSFNS_RUN();
        return retval;
     }
@@ -711,8 +954,8 @@ typedef void (*gasneti_progressfn_t)(void);
     } while (0)
 
     /* and finally, the throttled poll implementation */
-    GASNETI_INLINE(gasneti_AMPoll)
-    int gasneti_AMPoll(void) {
+    GASNETI_INLINE(_gasneti_AMPoll)
+    int _gasneti_AMPoll(GASNETI_THREAD_FARG_ALONE) {
        int retval = GASNET_OK;
        gasneti_AMPoll_spinpollers_check();
        gasneti_memcheck_one();
@@ -720,15 +963,32 @@ typedef void (*gasneti_progressfn_t)(void);
        if_pt (!gasneti_mutex_trylock(&gasneti_throttle_spinpoller)) {
           /* if another thread is sending then skip the poll: */
           if_pt (!gasneti_atomic_read(&gasneti_throttle_haveusefulwork,0))
-             retval = gasnetc_AMPoll();
+             retval = gasnetc_AMPoll(GASNETI_THREAD_PASS_ALONE);
           gasneti_mutex_unlock(&gasneti_throttle_spinpoller);
           GASNETI_PROGRESSFNS_RUN();
        }
        return retval;
     }
   #endif
+  #define gasneti_AMPoll() _gasneti_AMPoll(GASNETI_THREAD_GET_ALONE)
 #endif
-  
+
+// Should poll when GEX_FLAG_IMMEDIATE bit set? (undefined or 1)
+#if defined(GASNETC_IMMEDIATE_AMPOLLS) && (GASNETC_IMMEDIATE_AMPOLLS != 1)
+  #error GASNETC_IMMEDIATE_AMPOLLS must be 1 or undefined
+#endif
+
+// Convenience test
+#if GASNETC_IMMEDIATE_AMPOLLS
+  #define GASNETC_IMMEDIATE_WOULD_POLL(flag) 1
+#else
+  #define GASNETC_IMMEDIATE_WOULD_POLL(flag) (!((flag)&GEX_FLAG_IMMEDIATE))
+#endif
+
+// Convenience conditional poll
+#define GASNETC_IMMEDIATE_MAYBE_POLL(flag) \
+    do { if (GASNETC_IMMEDIATE_WOULD_POLL(flag)) gasneti_AMPoll(); } while (0)
+
 /* Blocking functions
  * Note the _rmb at the end loop of each is required to ensure that subsequent
  * reads will not observe values that were prefeteched or are otherwise out
@@ -786,11 +1046,12 @@ extern int gasneti_wait_mode; /* current waitmode hint */
 #ifndef _GASNET_AMPOLL
 #define _GASNET_AMPOLL
   /* GASNet client calls gasnet_AMPoll(), which throttles and traces */
-  GASNETI_INLINE(gasnet_AMPoll)
-  int gasnet_AMPoll(void) {
+  GASNETI_INLINE(_gasnet_AMPoll)
+  int _gasnet_AMPoll(GASNETI_THREAD_FARG_ALONE) {
     GASNETI_TRACE_EVENT(I, AMPOLL);
-    return gasneti_AMPoll();
+    return _gasneti_AMPoll(GASNETI_THREAD_PASS_ALONE);
   }
+  #define gasnet_AMPoll() _gasnet_AMPoll(GASNETI_THREAD_GET_ALONE)
 #endif
 
 #ifndef _GASNET_GETENV
@@ -812,28 +1073,39 @@ extern int gasneti_wait_mode; /* current waitmode hint */
 #endif
 
 #ifndef _GASNET_MYNODE
-  extern gasnet_node_t gasneti_mynode;
-  #define gasnet_mynode() (GASNETI_CHECKINIT(), (gasnet_node_t)gasneti_mynode)
+  extern gex_Rank_t gasneti_mynode;
+  #define gex_System_QueryJobRank() (GASNETI_CHECKINIT(), (gex_Rank_t)gasneti_mynode)
 #else
   #error "Unsupported define of _GASNET_MYNODE"
 #endif
 
+// TODO-EX: rename (or remove?) the override
 #ifndef _GASNET_NODES
-  extern gasnet_node_t gasneti_nodes;
-  #define gasnet_nodes() (GASNETI_CHECKINIT(), (gasnet_node_t)gasneti_nodes)
+  extern gex_Rank_t gasneti_nodes;
+  #define gex_System_QueryJobSize() (GASNETI_CHECKINIT(), (gex_Rank_t)gasneti_nodes)
 #else
   #error "Unsupported define of _GASNET_NODES"  
 #endif
 
+// This is not the naturual place for these, but they must follow defn of gex_System_QueryJobSize()
+GASNETI_INLINE(gasneti_i_tm_jobrank_to_rank)
+gex_Rank_t gasneti_i_tm_jobrank_to_rank(gasneti_TM_t _i_tm, gex_Rank_t _jobrank) {
+  gasneti_assert(_i_tm && (_jobrank < gex_System_QueryJobSize()));
+  if (gasneti_is_tm0(_i_tm)) return _jobrank;
+  return gasneti_tm_rev_lookup(_i_tm, _jobrank);
+}
+#define gasneti_e_tm_jobrank_to_rank(e_tm,jobrank) \
+        gasneti_i_tm_jobrank_to_rank(gasneti_import_tm(e_tm),jobrank)
+
 #ifndef _GASNET_GETMAXSEGMENTSIZE
 #define _GASNET_GETMAXSEGMENTSIZE
 #define _GASNET_GETMAXSEGMENTSIZE_DEFAULT
+    extern uintptr_t gasneti_MaxLocalSegmentSize;
+    extern uintptr_t gasneti_MaxGlobalSegmentSize;
   #if GASNET_SEGMENT_EVERYTHING
     #define gasnet_getMaxLocalSegmentSize()   ((uintptr_t)-1)
     #define gasnet_getMaxGlobalSegmentSize()  ((uintptr_t)-1)
   #else
-    extern uintptr_t gasneti_MaxLocalSegmentSize;
-    extern uintptr_t gasneti_MaxGlobalSegmentSize;
     #define gasnet_getMaxLocalSegmentSize() \
             (GASNETI_CHECKINIT(), (uintptr_t)gasneti_MaxLocalSegmentSize)
     #define gasnet_getMaxGlobalSegmentSize() \
@@ -860,9 +1132,25 @@ extern gasnet_nodeinfo_t *gasneti_nodeinfo;
 #define _GASNETI_SEGINFO
 #define _GASNETI_SEGINFO_DEFAULT
   extern gasnet_seginfo_t *gasneti_seginfo;
-  extern gasnet_seginfo_t *gasneti_seginfo_client;
-  extern void **gasneti_seginfo_ub;
-  extern void **gasneti_seginfo_client_ub;
+  extern gasnet_seginfo_t *gasneti_seginfo_aux;
+#endif
+
+// TODO-EX: override?
+#if 1
+  extern int gasneti_Segment_QueryBound( gex_TM_t tm,
+                                         gex_Rank_t rank,
+                                         void **owneraddr_p,
+                                         void **localaddr_p,
+                                         uintptr_t *size_p);
+  #define gex_Segment_QueryBound(tm,rank,o_p,l_p,s_p) \
+          gasneti_Segment_QueryBound(tm,rank,o_p,l_p,s_p)
+#endif
+
+#ifdef GASNETI_RECORD_DYNAMIC_THREADLOOKUP
+  GASNETI_INLINE(gasneti_record_dynamic_threadlookup)
+  void gasneti_record_dynamic_threadlookup(void) {
+    GASNETI_STAT_EVENT(C, DYNAMIC_THREADLOOKUP);
+  }
 #endif
 
 /* ------------------------------------------------------------------------------------ */
@@ -907,10 +1195,10 @@ extern gasnet_nodeinfo_t *gasneti_nodeinfo;
 
 extern gasneti_pshm_rank_t gasneti_pshm_nodes;  /* # nodes in my supernode */
 extern gasneti_pshm_rank_t gasneti_pshm_mynode; /* my 0-based rank in supernode */
-extern gasnet_node_t gasneti_pshm_firstnode;    /* lowest node # in supernode */
+extern gex_Rank_t gasneti_pshm_firstnode;    /* lowest node # in supernode */
 
 /* vector of first node within each supernode */
-extern gasnet_node_t *gasneti_pshm_firsts;
+extern gex_Rank_t *gasneti_pshm_firsts;
 
 /* Non-NULL only when supernode members are non-contiguous */
 extern gasneti_pshm_rank_t *gasneti_pshm_rankmap;
@@ -918,43 +1206,74 @@ extern gasneti_pshm_rank_t *gasneti_pshm_rankmap;
 /* Returns "local rank" if given node is in the callers supernode.
  * Otherwise returns an "impossible" value >= gasneti_pshm_nodes.
  */
-GASNETI_INLINE(gasneti_pshm_local_rank) GASNETI_PURE
-unsigned int gasneti_pshm_local_rank(gasnet_node_t node) {
+GASNETI_INLINE(gasneti_pshm_jobrank_to_local_rank) GASNETI_PURE
+unsigned int gasneti_pshm_jobrank_to_local_rank(gex_Rank_t _jobrank) {
 #if GASNET_CONDUIT_SMP
-  return node;
+  return _jobrank;
 #else
   if_pt (gasneti_pshm_rankmap == NULL) {
-    /* NOTE: gasnet_node_t is an unsigned type, so in the case of
-     * (node < gasneti_pshm_firstnode), the subtraction will wrap to
+    /* NOTE: gex_Rank_t is an unsigned type, so in the case of
+     * (_jobrank < gasneti_pshm_firstnode), the subtraction will wrap to
      * a "large" value.
      */
-    return (node - gasneti_pshm_firstnode);
+    return (_jobrank - gasneti_pshm_firstnode);
   } else {
-    return gasneti_pshm_rankmap[node];
+    return gasneti_pshm_rankmap[_jobrank];
   }
 #endif
 }
-GASNETI_PUREP(gasneti_pshm_local_rank)
+GASNETI_PUREP(gasneti_pshm_jobrank_to_local_rank)
 
 /* Returns 1 if given node is in the caller's supernode, or 0 if it's not.
  * NOTE: result is false before vnet initialization.
  */
-GASNETI_INLINE(gasneti_pshm_in_supernode) GASNETI_PURE
-int gasneti_pshm_in_supernode(gasnet_node_t node) {
+GASNETI_INLINE(gasneti_pshm_jobrank_in_supernode) GASNETI_PURE
+int gasneti_pshm_jobrank_in_supernode(gex_Rank_t _jobrank) {
 #if GASNET_CONDUIT_SMP
   return 1;
 #else
-  return (gasneti_pshm_local_rank(node) < gasneti_pshm_nodes);
+  return (gasneti_pshm_jobrank_to_local_rank(_jobrank) < gasneti_pshm_nodes);
 #endif
 }
-GASNETI_PUREP(gasneti_pshm_in_supernode)
+GASNETI_PUREP(gasneti_pshm_jobrank_in_supernode)
 
 /* Returns local version of remote in-supernode address.
  */
+// TODO-EX: This is probably the wrong interface for at least 2 reasons:
+// + Relies on dense array of nodeinfo even though only supernode-local are non-zero
+// + Was designed for single segment and even auxseg is currently a hack
+GASNETI_INLINE(gasneti_pshm_jobrank_addr2local) GASNETI_PURE
+void *gasneti_pshm_jobrank_addr2local(gex_Rank_t _jobrank, const void *_addr) {
+#if 1 // TODO-EX: this is a hack!
+  // Properties of unsigned subtraction make the following oblivous to order of client vs aux segment
+  if_pf (((uintptr_t)_addr - (uintptr_t)gasneti_seginfo[_jobrank].addr) >= gasneti_seginfo[_jobrank].size)
+    return (void*)((uintptr_t)_addr + (uintptr_t)gasneti_nodeinfo[_jobrank].auxoffset);
+#endif
+  return  (void*)((uintptr_t)_addr
+                   + (uintptr_t)gasneti_nodeinfo[_jobrank].offset);
+} 
+GASNETI_PUREP(gasneti_pshm_jobrank_addr2local)
+
+// Same as the three functions above, but taking (tm,rank) in place of jobrank
+
+GASNETI_INLINE(gasneti_pshm_local_rank) GASNETI_PURE
+unsigned int gasneti_pshm_local_rank(gex_TM_t _e_tm, gex_Rank_t _rank) {
+  gex_Rank_t _jobrank = gasneti_e_tm_rank_to_jobrank(_e_tm,_rank);
+  return gasneti_pshm_jobrank_to_local_rank(_jobrank);
+}
+GASNETI_PUREP(gasneti_pshm_local_rank)
+
+GASNETI_INLINE(gasneti_pshm_in_supernode) GASNETI_PURE
+int gasneti_pshm_in_supernode(gex_TM_t _e_tm, gex_Rank_t _rank) {
+  gex_Rank_t _jobrank = gasneti_e_tm_rank_to_jobrank(_e_tm,_rank);
+  return gasneti_pshm_jobrank_in_supernode(_jobrank);
+}
+GASNETI_PUREP(gasneti_pshm_in_supernode)
+
 GASNETI_INLINE(gasneti_pshm_addr2local) GASNETI_PURE
-void *gasneti_pshm_addr2local(gasnet_node_t node, void *addr) {
-  return  (void*)((uintptr_t)addr
-                   + (uintptr_t)gasneti_nodeinfo[node].offset);
+void *gasneti_pshm_addr2local(gex_TM_t _e_tm, gex_Rank_t _rank, const void *_addr) {
+  gex_Rank_t _jobrank = gasneti_e_tm_rank_to_jobrank(_e_tm,_rank);
+  return gasneti_pshm_jobrank_addr2local(_jobrank, _addr);
 } 
 GASNETI_PUREP(gasneti_pshm_addr2local)
 #endif /* GASNET_PSHM */
@@ -1008,6 +1327,233 @@ GASNETI_PUREP(gasneti_pshm_addr2local)
     if_pt (_fms_n && _fms_d != _fms_s)                     \
         GASNETI_MEMCPY(_fms_d, _fms_s, _fms_n);            \
   } while (0)
+
+/* ------------------------------------------------------------------------------------ */
+/*
+  Variable-Argument Active Message Request/Reply Functions
+  ========================================================
+*/
+
+/* The following relies on __VA_ARGS__ support that was introduced in C99 and C++11.
+ * We do not require client code to use either for compiling GASNet headers,
+ * and this convenience interface is disabled when the necessary support is
+ * lacking. Auto-detection can be overridden via -DGASNETI_FORCE_VA_ARG=0/1
+ * Consequently, GASNet public headers should NOT assume this API exists.
+ */
+#ifdef GASNETI_FORCE_VA_ARG /* manual override */
+  #define GASNETI_USING_VA_ARG GASNETI_FORCE_VA_ARG
+#else
+  #define GASNETI_USING_VA_ARG GASNETI_COMPILER_IS_CC || \
+          ( GASNETI_COMPILER_IS_CXX && GASNETI_CXX_HAS_VA_ARGS ) || \
+          __STDC_VERSION__ >= 199901L || \
+          __cplusplus >= 201103L
+#endif
+#if GASNETI_USING_VA_ARG
+/*
+   These macros implement six AM Request/Reply without any explicit
+   argument count.  It uses C99 variable argument pre-processor macros to
+   count the number of arguments after 'flags' and construct a coresponding
+   gex_AM_{Request,Reply}{Short,Medium,Long}{0..MaxArgs}() call.  This
+   does *not* depend on the varargs-based implementation which is contained
+   in gasnet_ammacros.h.
+
+   Since there is no portable way to omit a comma appearing before the
+   expansion of an empty __VA_ARGS__, we include the 'flags' argument
+   within the "...".  So, the argument-counting macros may appear "off by
+   one" relative to the canonical example(s).
+ */
+
+#define GASNETI_AMNUMARGS(...) GASNETI_AMNUMARGS_(__VA_ARGS__,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0,0)
+#define GASNETI_AMNUMARGS_(_0,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
+#define GASNETI_AMVA(_stem,...) _CONCAT(gex_AM_##_stem,GASNETI_AMNUMARGS(__VA_ARGS__))
+
+#define                gex_AM_RequestShort(tm,rank,hidx,...) \
+        GASNETI_AMVA(RequestShort,__VA_ARGS__)(tm,rank,hidx,__VA_ARGS__)
+
+#define                gex_AM_RequestMedium(tm,rank,hidx,src_addr,nbytes,lc_opt,...) \
+        GASNETI_AMVA(RequestMedium,__VA_ARGS__)(tm,rank,hidx,src_addr,nbytes,lc_opt,__VA_ARGS__)
+
+#define                gex_AM_RequestLong(tm,rank,hidx,src_addr,nbytes,dst_addr,lc_opt,...) \
+        GASNETI_AMVA(RequestLong,__VA_ARGS__)(tm,rank,hidx,src_addr,nbytes,dst_addr,lc_opt,__VA_ARGS__)
+
+#define                gex_AM_ReplyShort(token,hidx,...) \
+        GASNETI_AMVA(ReplyShort,__VA_ARGS__)(token,hidx,__VA_ARGS__)
+
+#define                gex_AM_ReplyMedium(token,hidx,src_addr,nbytes,lc_opt,...) \
+        GASNETI_AMVA(ReplyMedium,__VA_ARGS__)(token,hidx,src_addr,nbytes,lc_opt,__VA_ARGS__)
+
+#define                gex_AM_ReplyLong(token,hidx,src_addr,nbytes,dst_addr,lc_opt,...) \
+        GASNETI_AMVA(ReplyLong,__VA_ARGS__)(token,hidx,src_addr,nbytes,dst_addr,lc_opt,__VA_ARGS__)
+
+/* Similarly provide argument-counting convenience wrappers for gex_AM_Commit{Request,Reply}{Medium,Long}, 
+ * with the same pre-requisites as above (compiler must support C99 __VA_ARGS__).
+ *
+ * Similarly to above, the implementation includes the last non-variadic argument (nbytes or dest_addr)
+ * within the __VA_ARGS__, for the same reasons.
+ */
+#define gex_AM_CommitRequestMedium(sd,hidx,...) \
+        GASNETI_AMVA(CommitRequestMedium,__VA_ARGS__)(sd,hidx,__VA_ARGS__)
+#define gex_AM_CommitReplyMedium(sd,hidx,...) \
+        GASNETI_AMVA(CommitReplyMedium,__VA_ARGS__)(sd,hidx,__VA_ARGS__)
+#define gex_AM_CommitRequestLong(sd,hidx,nbytes,...) \
+        GASNETI_AMVA(CommitRequestLong,__VA_ARGS__)(sd,hidx,nbytes,__VA_ARGS__)
+#define gex_AM_CommitReplyLong(sd,hidx,nbytes,...) \
+        GASNETI_AMVA(CommitReplyLong,__VA_ARGS__)(sd,hidx,nbytes,__VA_ARGS__)
+
+#endif
+/* ------------------------------------------------------------------------------------ */
+// Internal helpers for data types (like ctypes)
+
+// Masks (disjoint pairs):
+
+#define _GEX_DT_4BYTE  (GEX_DT_I32 | GEX_DT_U32 | GEX_DT_FLT)
+#define _GEX_DT_8BYTE  (GEX_DT_I64 | GEX_DT_U64 | GEX_DT_DBL)
+
+#define _GEX_DT_INT (GEX_DT_I32 | GEX_DT_U32 | GEX_DT_I64 | GEX_DT_U64)
+#define _GEX_DT_FP  (GEX_DT_FLT | GEX_DT_DBL)
+
+#define _GEX_DT_SIGNED    (GEX_DT_I32 | GEX_DT_I64)
+#define _GEX_DT_UNSIGNED  (GEX_DT_U32 | GEX_DT_U64)
+
+// Union of all:
+
+#define _GEX_DT_VALID  (_GEX_DT_INT | _GEX_DT_FP | GEX_DT_USER)
+
+// Predicates:
+
+// Is the argument a *single* valid data type?
+GASNETI_INLINE(gasneti_dt_valid) GASNETI_PURE
+int gasneti_dt_valid(gex_DT_t dt) {
+  return (((dt) & _GEX_DT_VALID) && GASNETI_POWEROFTWO(dt));
+}
+GASNETI_INLINE(gasneti_dt_valid_atomic) GASNETI_PURE
+int gasneti_dt_valid_atomic(gex_DT_t dt) {
+  return gasneti_dt_valid(dt) && (dt != GEX_DT_USER);
+}
+#define gasneti_dt_valid_reduce gasneti_dt_valid
+
+// Is the argument a (possibly empty) mask consisting of only valid data types?
+#define gasneti_dt_valid_mask(dts) (!((dts) & ~_GEX_DT_VALID))
+
+#define gasneti_dt_int(dt)    ((dt) & _GEX_DT_INT)
+#define gasneti_dt_fp(dt)     ((dt) & _GEX_DT_FP)
+
+#define gasneti_dt_signed(dt)   ((dt) & _GEX_DT_SIGNED)
+#define gasneti_dt_unsigned(dt) ((dt) & _GEX_DT_UNSIGNED)
+
+#define gasneti_dt_4byte(dt) ((dt) & _GEX_DT_4BYTE)
+#define gasneti_dt_8byte(dt) ((dt) & _GEX_DT_8BYTE)
+
+// Query:
+
+// What is the size of the type?
+// TODO: might be made cheaper by encoding size into the GEX_DT_* constants
+GASNETI_INLINE(gasneti_dt_size) GASNETI_PURE
+size_t gasneti_dt_size(gex_DT_t dt) {
+  gasneti_assert(!gasneti_dt_4byte(dt) ^ !gasneti_dt_8byte(dt));
+  return (size_t) (gasneti_dt_4byte(dt) ? 4 : 8);
+}
+
+/* ------------------------------------------------------------------------------------ */
+// Internal helpers for gex_OP_t (like ctypes)
+
+// Masks (disjoint):
+#define _GEX_OP_ARITH_BINARY \
+        (GEX_OP_ADD|GEX_OP_MULT|GEX_OP_MIN|GEX_OP_MAX)
+#define _GEX_OP_NC_ARITH_BINARY \
+         GEX_OP_SUB
+#define _GEX_OP_ARITH_UNARY \
+        (GEX_OP_INC|GEX_OP_DEC)
+#define _GEX_OP_BITWISE \
+        (GEX_OP_AND|GEX_OP_OR|GEX_OP_XOR)
+#define _GEX_OP_FETCH_ARITH_BINARY \
+        (GEX_OP_FADD|GEX_OP_FMULT|GEX_OP_FMIN|GEX_OP_FMAX)
+#define _GEX_OP_FETCH_NC_ARITH_BINARY \
+         GEX_OP_FSUB
+#define _GEX_OP_FETCH_ARITH_UNARY \
+        (GEX_OP_FINC|GEX_OP_FDEC)
+#define _GEX_OP_FETCH_BITWISE \
+        (GEX_OP_FAND|GEX_OP_FOR|GEX_OP_FXOR)
+#define _GEX_OP_ACCESSOR \
+        (GEX_OP_SET|GEX_OP_CAS)
+#define _GEX_OP_FETCH_ACCESSOR \
+        (GEX_OP_GET|GEX_OP_SWAP|GEX_OP_FCAS)
+#define _GEX_OP_USER_REDUCE \
+        (GEX_OP_USER|GEX_OP_USER_NC)
+
+// Masks for various properties:
+
+#define _GEX_OP_REDUCE \
+        (_GEX_OP_ARITH_BINARY|_GEX_OP_BITWISE|_GEX_OP_USER_REDUCE)
+#define _GEX_OP_ATOMIC \
+        (_GEX_OP_ARITH_BINARY | _GEX_OP_FETCH_ARITH_BINARY | \
+         _GEX_OP_NC_ARITH_BINARY | _GEX_OP_FETCH_NC_ARITH_BINARY | \
+         _GEX_OP_ARITH_UNARY  | _GEX_OP_FETCH_ARITH_UNARY  | \
+         _GEX_OP_BITWISE      | _GEX_OP_FETCH_BITWISE      | \
+         _GEX_OP_ACCESSOR     | _GEX_OP_FETCH_ACCESSOR)
+#define _GEX_OP_VALID \
+         (_GEX_OP_REDUCE | _GEX_OP_ATOMIC)
+
+#define _GEX_OP_INT \
+        _GEX_OP_VALID
+#define _GEX_OP_FP  \
+        (_GEX_OP_ARITH_BINARY | _GEX_OP_FETCH_ARITH_BINARY | \
+         _GEX_OP_NC_ARITH_BINARY | _GEX_OP_FETCH_NC_ARITH_BINARY | \
+         _GEX_OP_ARITH_UNARY  | _GEX_OP_FETCH_ARITH_UNARY  | \
+         _GEX_OP_ACCESSOR     | _GEX_OP_FETCH_ACCESSOR | \
+         _GEX_OP_USER_REDUCE)
+
+#define _GEX_OP_FETCH \
+        (_GEX_OP_FETCH_ARITH_BINARY | \
+         _GEX_OP_FETCH_NC_ARITH_BINARY | \
+         _GEX_OP_FETCH_ARITH_UNARY  | \
+         _GEX_OP_FETCH_BITWISE      | \
+         _GEX_OP_FETCH_ACCESSOR)
+
+#define _GEX_OP_0ARG \
+        (GEX_OP_GET | \
+         _GEX_OP_ARITH_UNARY | _GEX_OP_FETCH_ARITH_UNARY)
+#define _GEX_OP_1ARG \
+        (GEX_OP_SET | GEX_OP_SWAP |\
+         _GEX_OP_ARITH_BINARY | _GEX_OP_FETCH_ARITH_BINARY | \
+         _GEX_OP_NC_ARITH_BINARY | _GEX_OP_FETCH_NC_ARITH_BINARY | \
+         _GEX_OP_BITWISE      | _GEX_OP_FETCH_BITWISE)
+#define _GEX_OP_2ARG \
+        (GEX_OP_FCAS | GEX_OP_CAS)
+
+
+// Predicates for use with single-bit arguments:
+#define gasneti_op_reduce(op) ((op) & _GEX_OP_REDUCE)
+#define gasneti_op_atomic(op) ((op) & _GEX_OP_ATOMIC)
+#define gasneti_op_int(op)    ((op) & _GEX_OP_INT)
+#define gasneti_op_fp(op)     ((op) & _GEX_OP_FP)
+#define gasneti_op_fetch(op)  ((op) & _GEX_OP_FETCH)
+#define gasneti_op_0arg(op)   ((op) & _GEX_OP_0ARG)
+#define gasneti_op_1arg(op)   ((op) & _GEX_OP_1ARG)
+#define gasneti_op_2arg(op)   ((op) & _GEX_OP_2ARG)
+
+// Is the argument a *single* valid operation?
+GASNETI_INLINE(gasneti_op_valid) GASNETI_PURE
+int gasneti_op_valid(gex_OP_t op) {
+  return (((op) & _GEX_OP_VALID) && GASNETI_POWEROFTWO(op));
+}
+GASNETI_INLINE(gasneti_op_valid_atomic) GASNETI_PURE
+int gasneti_op_valid_atomic(gex_OP_t op) {
+  return gasneti_op_valid(op) && gasneti_op_atomic(op);
+}
+GASNETI_INLINE(gasneti_op_valid_reduce) GASNETI_PURE
+int gasneti_op_valid_reduce(gex_OP_t op) {
+  return gasneti_op_valid(op) && gasneti_op_reduce(op);
+}
+
+// Predicates on masks:
+// All bits (if any) must satisfy the predicate.
+// As defined, however, these are trivially true on empty sets.
+#define gasneti_op_valid_mask(ops)  (!((ops) & ~_GEX_OP_VALID))
+#define gasneti_op_reduce_mask(ops) (!((ops) & ~_GEX_OP_REDUCE))
+#define gasneti_op_atomic_mask(ops) (!((ops) & ~_GEX_OP_ATOMIC))
+#define gasneti_op_int_mask(ops)    (!((ops) & ~_GEX_OP_INT))
+#define gasneti_op_fp_mask(ops)     (!((ops) & ~_GEX_OP_FP))
 
 /* ------------------------------------------------------------------------------------ */
 

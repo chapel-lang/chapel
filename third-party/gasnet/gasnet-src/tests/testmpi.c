@@ -141,33 +141,33 @@ int *mpi_bufsz;
 
 /* called by a single thread after gasnet_attach and args parsing */
 void attach_test_mpi(void) {
-    int rank;
+    int mpirank;
     int gasnet_node;
     int mpinodes;
     int tot_threads;
     int i;
     MPI_SAFE(MPI_Barrier(MPI_COMM_WORLD));
 
-    /* setup gasnetnode <=> mpi rank mappings */
-    gasnetnode_to_mpirank = test_malloc(sizeof(int)*gasnet_nodes());
-    mpirank_to_gasnetnode = test_malloc(sizeof(int)*gasnet_nodes());
+    /* setup gasnetnode <=> mpi mpirank mappings */
+    gasnetnode_to_mpirank = test_malloc(sizeof(int)*numranks);
+    mpirank_to_gasnetnode = test_malloc(sizeof(int)*numranks);
 
-    MPI_SAFE(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+    MPI_SAFE(MPI_Comm_rank(MPI_COMM_WORLD, &mpirank));
     MPI_SAFE(MPI_Comm_size(MPI_COMM_WORLD, &mpinodes));
-    printf("GASNet node %i == MPI node %i\n", (int)gasnet_mynode(), rank);
-    if (gasnet_mynode() != rank) 
+    printf("GASNet node %i == MPI node %i\n", (int)myrank, mpirank);
+    if (myrank != mpirank) 
       printf("WARNING: Node numbering between GASNet and MPI do not coincide\n");
-    assert_always(mpinodes == gasnet_nodes() && rank >= 0 && rank < mpinodes);
-    gasnet_node = gasnet_mynode();
+    assert_always(mpinodes == numranks && mpirank >= 0 && mpirank < mpinodes);
+    gasnet_node = myrank;
     MPI_SAFE(MPI_Allgather(&gasnet_node,sizeof(int),MPI_BYTE,
                            mpirank_to_gasnetnode,sizeof(int),MPI_BYTE,
                            MPI_COMM_WORLD));
-    assert_always(mpirank_to_gasnetnode[rank] == gasnet_mynode());
+    assert_always(mpirank_to_gasnetnode[mpirank] == myrank);
     for (i = 0; i < mpinodes; i++) gasnetnode_to_mpirank[i] = -1;
     for (i = 0; i < mpinodes; i++) gasnetnode_to_mpirank[mpirank_to_gasnetnode[i]] = i;
     for (i = 0; i < mpinodes; i++) assert_always(gasnetnode_to_mpirank[i] != -1);
 
-    tot_threads = threads_num * gasnet_nodes();
+    tot_threads = threads_num * numranks;
     mpi_recvhandle = test_malloc(sizeof(MPI_Request)*tot_threads);
     mpi_sendhandle = test_malloc(sizeof(MPI_Request)*tot_threads);
     mpi_buf = test_malloc(sizeof(char *)*tot_threads);
@@ -212,21 +212,20 @@ void mpi_barrier(threaddata_t *tdata) {
   #define MPI_LOCK()
   #define MPI_UNLOCK()
 #else
-  static gasnet_hsl_t  mpi_hsl = GASNET_HSL_INITIALIZER;
-  #define MPI_LOCK()   gasnet_hsl_lock(&mpi_hsl)
-  #define MPI_UNLOCK() gasnet_hsl_unlock(&mpi_hsl)
+  static gex_HSL_t  mpi_hsl = GEX_HSL_INITIALIZER;
+  #define MPI_LOCK()   gex_HSL_Lock(&mpi_hsl)
+  #define MPI_UNLOCK() gex_HSL_Unlock(&mpi_hsl)
 #endif
 
 
-void mpi_handler(gasnet_token_t token, harg_t tid, harg_t sz) {
-  gasnet_node_t   node;
+void mpi_handler(gex_Token_t token, harg_t tid, harg_t sz) {
   int mpipeer;
   int tag;
   char *buf;
-  gasnet_AMGetMsgSource(token, &node);
+  gex_Rank_t node = test_msgsource(token);
 
   PRINT_AM(("node=%2d> AMShort MPI Request for tid=%i, nbytes=%i\n",
-            (int)gasnet_mynode(), (int)tid, (int)sz));
+            (int)myrank, (int)tid, (int)sz));
   assert(tt_thread_map[tid] == node);
   assert(sz > 0);
   mpipeer = gasnetnode_to_mpirank[node];
@@ -241,7 +240,7 @@ void mpi_handler(gasnet_token_t token, harg_t tid, harg_t sz) {
     mpi_buf[tid] = buf;
     mpi_bufsz[tid] = sz;
 
-    ACTION_PRINTF("node=%2d> setting MPI_Irecv, %i bytes\n", (int)gasnet_mynode(), (int)sz);
+    ACTION_PRINTF("node=%2d> setting MPI_Irecv, %i bytes\n", (int)myrank, (int)sz);
     MPI_SAFE(MPI_Irecv(mpi_buf[tid], sz, MPI_BYTE, mpipeer, tag, MPI_COMM_WORLD, &(mpi_recvhandle[tid])));
     assert(mpi_recvhandle[tid] != MPI_REQUEST_NULL);
           
@@ -249,12 +248,11 @@ void mpi_handler(gasnet_token_t token, harg_t tid, harg_t sz) {
 
 }
 
-void mpi_probehandler(gasnet_token_t token, harg_t tid) {
-  gasnet_node_t   node;
+void mpi_probehandler(gex_Token_t token, harg_t tid) {
   int mpipeer;
   int tag;
   int reply = 0;
-  gasnet_AMGetMsgSource(token, &node);
+  gex_Rank_t node = test_msgsource(token);
   assert(tt_thread_map[tid] == node);
   mpipeer = gasnetnode_to_mpirank[node];
   tag = tid;
@@ -269,7 +267,7 @@ void mpi_probehandler(gasnet_token_t token, harg_t tid) {
         assert(mpi_recvhandle[tid] == MPI_REQUEST_NULL);
         assert(mpi_sendhandle[tid] == MPI_REQUEST_NULL);
         assert(mpi_buf[tid] != NULL && sz >= 0);
-        ACTION_PRINTF("node=%2d> sending MPI reply message, %i bytes\n", (int)gasnet_mynode(), sz);
+        ACTION_PRINTF("node=%2d> sending MPI reply message, %i bytes\n", (int)myrank, sz);
         MPI_SAFE(MPI_Isend(mpi_buf[tid], sz, MPI_BYTE, mpipeer, 10000+tag, MPI_COMM_WORLD, &(mpi_sendhandle[tid])));
         assert(mpi_sendhandle[tid] != MPI_REQUEST_NULL);
       } 
@@ -292,16 +290,16 @@ void mpi_probehandler(gasnet_token_t token, harg_t tid) {
     test_free(mpi_buf[tid]);
     mpi_buf[tid] = NULL;
     PRINT_AM(("node=%2d> Sending AMShort MPI Reply for tid=%i\n",
-            (int)gasnet_mynode(), (int)tid));
-    GASNET_Safe(gasnet_AMReplyShort1(token, hidx_mpi_replyhandler, tid));
+            (int)myrank, (int)tid));
+    gex_AM_ReplyShort1(token, hidx_mpi_replyhandler, 0, tid);
   }
 }
 
-void mpi_replyhandler(gasnet_token_t token, harg_t tid) {
-  int ltid = tid - gasnet_mynode()*threads_num;
+void mpi_replyhandler(gex_Token_t token, harg_t tid) {
+  int ltid = tid - myrank*threads_num;
   PRINT_AM(("node=%2d> Got AMShort MPI Reply for tid=%d\n",
-                        (int)gasnet_mynode(), (int)tid));
-  assert(tt_thread_map[tid] == gasnet_mynode());
+                        (int)myrank, (int)tid));
+  assert(tt_thread_map[tid] == myrank);
   tt_thread_data[ltid].flag = 0;
 }
 
@@ -368,11 +366,11 @@ void test_mpi(threaddata_t *tdata) {
     tdata->flag = -1;
     gasnett_local_wmb();
     ACTION_PRINTF("tid=%3d> MPI AMShortRequest to tid=%3d\n", tdata->tid, peer);
-    GASNET_Safe(gasnet_AMRequestShort2(node, hidx_mpi_handler, tdata->tid, sz));
+    gex_AM_RequestShort2(myteam, node, hidx_mpi_handler, 0, tdata->tid, sz);
 
     while (tdata->flag != 0) {
       ACTION_PRINTF("tid=%3d> MPI probe AMShortRequest to tid=%3d\n", tdata->tid, peer);
-      GASNET_Safe(gasnet_AMRequestShort1(node, hidx_mpi_probehandler, tdata->tid));
+      gex_AM_RequestShort1(myteam, node, hidx_mpi_probehandler, 0, tdata->tid);
 
       gasnett_sched_yield();
       test_sleep(tdata);

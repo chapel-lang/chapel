@@ -25,7 +25,6 @@ CONDUIT_FILELIST =           \
       gasnet_core_internal.h \
       gasnet_extended.c      \
       gasnet_extended_fwd.h  \
-      gasnet_extended_help_extra.h  \
       gasnet_gemini.h        \
       gasnet_gemini.c
 
@@ -104,7 +103,7 @@ clean-local: do-clean-local
 install-data-local: do-install-data-local
 uninstall-local: do-uninstall-local
 else
-$(top_srcdir)/gasnet.h: do-error
+$(top_srcdir)/gasnetex.h: do-error
 endif
 
 

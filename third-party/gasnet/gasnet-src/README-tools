@@ -91,7 +91,7 @@ General Usage
 
 * All clients of GASNet tools should #include <gasnet_tools.h> before any other header.
   The only exception is source files that use both a GASNet conduit and GASNet
-  tools, which must include gasnet.h before gasnet_tools.h.
+  tools, which must include gasnetex.h before gasnet_tools.h.
 
 * All of the supported public interfaces in GASNet tools are named using the
   'gasnett_' or 'GASNETT_' prefix. Clients of GASNet tools should *ONLY* invoke
@@ -1226,7 +1226,7 @@ COMPILER.
   #pragma syntax as the compiler(s) it probed.
 
   The client may define any of the following preprocessor symbols, prior to inclusion of
-  gasnet.h or gasnet_tools.h, to inform GASNet's headers that the current compiler does
+  gasnetex.h or gasnet_tools.h, to inform GASNet's headers that the current compiler does
   (#define to 1) or does NOT (#define to 0) support the corresponding syntax.
   When using a configure-recognized compiler, these default to their configure-detected
   values.
@@ -1302,7 +1302,7 @@ COMPILER.
   appropriate no-ops, unless compiled with GASNETT_USE_TRUE_MUTEXES=1 which will force
   unconditional use of true locking (even without GASNETT_THREAD_SAFE=1).
   NOTE: For proper operation this must be defined BOTH when the GASNet(-tools) library
-  is built, and when compiling client code that includes gasnet.h or gasnet_tools.h.
+  is built, and when compiling client code that includes gasnetex.h or gasnet_tools.h.
 
 --------------------------------------------------------------------------
   The canonical version of this document is located here:

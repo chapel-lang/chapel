@@ -2,18 +2,14 @@
  * Copyright (c) 2012 Mellanox Technologies LTD. All rights reserved.
  */
 
-#ifndef GASNET_FCA_H
-#define GASNET_FCA_H
+#ifndef _GASNET_FCA_H
+#define _GASNET_FCA_H
 
-#ifndef _INCLUDED_GASNET_H
-#include <gasnet_internal.h>
+#if !GASNET_SEQ || !(GASNET_CONDUIT_MXM || GASNET_CONDUIT_IBV)
+#error "gasnet_fca.h included in unsupported configuration or conduit"
 #endif
-#include <gasnet_coll.h>
-
-#if defined(GASNET_SEQ) && (GASNET_CONDUIT_MXM || GASNET_CONDUIT_IBV)
 
 #include "gasnet_fca_api.h"
-#define GASNETI_USE_FCA 1
 #define GASNET_FCA_ERROR -1
 #define GASNET_FCA_SUCCESS 0
 
@@ -53,18 +49,6 @@ typedef struct gasnet_fca_component_ {
    fca_t *fca_context;                                 /* FCA context handle */
 } gasnet_fca_component_t;
 
-typedef struct fca_comm_data_ {
-    fca_comm_t *fca_comm;
-    fca_comm_desc_t     fca_comm_desc;
-    fca_comm_caps_t     fca_comm_caps;
-    int my_rank;
-    int local_proc_idx;
-    int num_local_procs;
-    int *local_ranks;
-    int proc_count;
-} fca_comm_data_t;
-
-
 typedef enum gasnet_fca_coll_t{
     _FCA_BARRIER    = 0,
     _FCA_BCAST      = 1,
@@ -75,11 +59,6 @@ typedef enum gasnet_fca_coll_t{
 
 extern int gasnet_team_fca_is_active(gasnet_team_handle_t team, gasnet_fca_coll_t coll);
 
-
-
-extern gasnet_fca_component_t gasnet_fca_component;
-extern int gasnet_fca_open(int my_rank);
-extern int gasnet_fca_close(void);
 extern int gasnet_team_fca_enable(gasnet_team_handle_t team);
 extern int gasnet_fca_verbose_level;
 
@@ -102,10 +81,9 @@ extern int gasnete_fca_barrier(gasnet_team_handle_t team, int *id_p, int *flags_
 #define FCA_VERBOSE(level,format, ... ) do{ \
     if (level <= gasnet_fca_verbose_level) \
     fprintf(stderr,"%s:%d - %s(): rank %d: " format "\n", __FILE__, __LINE__, __FUNCTION__, \
-                gasnet_mynode(), ## __VA_ARGS__); \
+                gasneti_mynode, ## __VA_ARGS__); \
 }while(0);
 
 /* API functions */
 
-#endif /* seq + a supported conduit */
 #endif

@@ -8,7 +8,6 @@
 #define _GASNET_CORE_INTERNAL_H
 
 #include <gasnet_internal.h>
-#include <gasnet_handler.h>
 #include <firehose.h>
 
 #include <infiniband/verbs.h>
@@ -46,13 +45,6 @@
       { gasneti_fatalerror("Unexpected error %s (rc=%d errno=%d) %s",strerror(errno),(rc), errno,(msg)); }
 #define GASNETC_IBV_CHECK_PTR(ptr,msg) GASNETC_IBV_CHECK((ptr)==NULL,(msg))
 
-/* Identify nodes we do NOT use IB to communicate with */
-#if GASNET_PSHM
-  #define gasnetc_non_ib(_node) gasneti_pshm_in_supernode(_node)
-#else
-  #define gasnetc_non_ib(_node) ((_node) == gasneti_mynode)
-#endif
-
 #define GASNETC_CEP_SQ_SEMA(_cep) ((_cep)->sq_sema_p)
 
 #if GASNETC_IBV_SRQ 
@@ -85,9 +77,8 @@ extern gasneti_atomic_t gasnetc_exit_running;
 /* Core handlers.
  * These are registered early and are available even before _attach()
  */
-#define GASNETC_HANDLER_BASE  1 /* reserve 1-63 for the core API */
 #define _hidx_gasnetc_ack                     0 /* Special case */
-#define _hidx_gasnetc_auxseg_reqh             (GASNETC_HANDLER_BASE+0)
+#define _hidx_gasnetc_exchg_reqh              (GASNETC_HANDLER_BASE+0)
 #define _hidx_gasnetc_amrdma_grant_reqh       (GASNETC_HANDLER_BASE+1)
 #define _hidx_gasnetc_exit_reduce_reqh        (GASNETC_HANDLER_BASE+2)
 #define _hidx_gasnetc_exit_role_reqh          (GASNETC_HANDLER_BASE+3)
@@ -100,24 +91,33 @@ extern gasneti_atomic_t gasnetc_exit_running;
 #define _hidx_gasnetc_sys_close_reqh          (GASNETC_HANDLER_BASE+10)
 /* add new core API handlers here and to the bottom of gasnet_core.c */
 
-#ifndef GASNETE_HANDLER_BASE
-  #define GASNETE_HANDLER_BASE  64 /* reserve 64-127 for the extended API */
-#elif GASNETE_HANDLER_BASE != 64
-  #error "GASNETE_HANDLER_BASE mismatch between core and extended"
-#endif
-
 /* ------------------------------------------------------------------------------------ */
-/* handler table (recommended impl) */
-#define GASNETC_MAX_NUMHANDLERS   256
-extern gasneti_handler_fn_t gasnetc_handler[GASNETC_MAX_NUMHANDLERS];
+/* Configure gasnet_event_internal.h and gasnet_event.c */
+// TODO-EX: prefix needs to move from "extended" to "core"
 
-/* ------------------------------------------------------------------------------------ */
-/* AM category (recommended impl if supporting PSHM) */
-typedef enum {
-  gasnetc_Short=0,
-  gasnetc_Medium=1,
-  gasnetc_Long=2
-} gasnetc_category_t;
+#define gasnete_op_atomic_(_id) gasnetc_atomic_##_id
+
+#define GASNETE_HAVE_LC
+
+#define GASNETE_CONDUIT_EOP_FIELDS \
+  gasnetc_atomic_val_t initiated_cnt; \
+  gasnetc_atomic_t     completed_cnt; \
+  gasnetc_atomic_val_t initiated_alc; \
+  gasnetc_atomic_t     completed_alc;
+
+#define GASNETE_EOP_ALLOC_EXTRA(_eop) do { \
+    gasnetc_atomic_set(&(_eop)->completed_cnt, 0 , 0); \
+    gasnetc_atomic_set(&(_eop)->completed_alc, 0 , 0); \
+  } while (0)
+
+#define GASNETE_EOP_PREP_FREE_EXTRA(_eop) do { \
+    gasneti_assert(gasnetc_atomic_read(&(_eop)->completed_cnt, 0) \
+                   == ((_eop)->initiated_cnt & GASNETI_ATOMIC_MAX)); \
+    gasneti_assert(gasnetc_atomic_read(&(_eop)->completed_alc, 0) \
+                   == ((_eop)->initiated_alc & GASNETI_ATOMIC_MAX)); \
+  } while (0)
+
+#define _GASNETE_EOP_NEW_EXTRA GASNETE_EOP_PREP_FREE_EXTRA
 
 /* ------------------------------------------------------------------------------------ */
 /* Internal threads */
@@ -163,7 +163,7 @@ typedef struct {
 #if GASNETI_STATS_OR_TRACE
   gasneti_tick_t	stamp;
 #endif
-  gasnet_handlerarg_t	args[GASNETC_MAX_ARGS];	
+  gex_AM_Arg_t	args[GASNETC_MAX_ARGS];
 } gasnetc_shortmsg_t;
 #define GASNETC_MSG_SHORT_ARGSEND(nargs) GASNETC_ARGSEND_AUX(gasnetc_shortmsg_t,nargs)
 
@@ -172,7 +172,7 @@ typedef struct {
   gasneti_tick_t	stamp;
 #endif
   uint32_t		nBytes;	/* 16 bits would be sufficient if we ever need the space */
-  gasnet_handlerarg_t	args[GASNETC_MAX_ARGS];	
+  gex_AM_Arg_t	args[GASNETC_MAX_ARGS];
 } gasnetc_medmsg_t;
 #define GASNETC_MSG_MED_ARGSEND(nargs) /* Note 8-byte alignment for payload */ \
 		GASNETI_ALIGNUP(GASNETC_ARGSEND_AUX(gasnetc_medmsg_t,nargs), 8)
@@ -185,7 +185,7 @@ typedef struct {
 #endif
   uintptr_t		destLoc;
   int32_t		nBytes;
-  gasnet_handlerarg_t	args[GASNETC_MAX_ARGS];	
+  gex_AM_Arg_t	args[GASNETC_MAX_ARGS];
 } gasnetc_longmsg_t;
 #define GASNETC_MSG_LONG_ARGSEND(nargs)  GASNETC_ARGSEND_AUX(gasnetc_longmsg_t,nargs)
 #define GASNETC_MSG_LONG_DATA(msg,nargs) (void *)(&msg->longmsg.args[(unsigned int)nargs])
@@ -358,11 +358,11 @@ typedef struct {
 /* Wait until given counter is marked as done.
  * Note that no AMPoll is done in the best case.
  */
-extern void gasnetc_counter_wait_aux(gasnetc_counter_t *counter, int handler_context);
+extern void gasnetc_counter_wait_aux(gasnetc_counter_t *counter, int handler_context GASNETI_THREAD_FARG);
 GASNETI_INLINE(gasnetc_counter_wait)
-void gasnetc_counter_wait(gasnetc_counter_t *counter, int handler_context) { 
+void gasnetc_counter_wait(gasnetc_counter_t *counter, int handler_context GASNETI_THREAD_FARG) {
   if_pf (!gasnetc_counter_done(counter)) {
-    gasnetc_counter_wait_aux(counter, handler_context);
+    gasnetc_counter_wait_aux(counter, handler_context GASNETI_THREAD_PASS);
   }
   gasneti_sync_reads();
 } 
@@ -461,6 +461,7 @@ typedef struct {
   struct ibv_context *	handle;
   gasnetc_memreg_t	rcv_reg;
   gasnetc_memreg_t	snd_reg;
+  gasnetc_memreg_t      aux_reg;
 #if GASNETC_PIN_SEGMENT
   uint32_t        *seg_lkeys;
   uint32_t	*rkeys;	/* RKey(s) registered at attach time */
@@ -468,6 +469,7 @@ typedef struct {
     gasnetc_memreg_t    *seg_regs;
   #endif
 #endif
+  uint32_t              *aux_rkeys;
 #if GASNETC_IBV_SRQ
   struct ibv_srq	*rqst_srq;
   struct ibv_srq	*repl_srq;
@@ -495,7 +497,10 @@ typedef struct {
 #if GASNETC_USE_RCV_THREAD
   /* Rcv thread */
   gasnetc_progress_thread_t rcv_thread;
-  struct gasnetc_rbuf_s *rcv_thread_priv;
+  struct gasnetc_rbuf_s     *rcv_thread_priv;
+ #if GASNETI_THREADINFO_OPT
+  gasnet_threadinfo_t       rcv_threadinfo;
+ #endif
 #endif
 
   /* AM-over-RMDA */
@@ -604,6 +609,14 @@ typedef struct {
   uint16_t             *remote_lids;
 } gasnetc_port_info_t;
 
+// Conduit-specific EP type
+typedef struct gasnetc_EP_t_ {
+  GASNETI_EP_COMMON // conduit-indep part as prefix
+
+  // Per-EP resources will move here from gasnetc_hca_t
+} *gasnetc_EP_t;
+extern gasnetc_EP_t gasnetc_ep0;
+
 /* Routines in gasnet_core_connect.c */
 #if GASNETC_IBV_XRC
 extern int gasnetc_xrc_init(void **shared_mem_p);
@@ -611,54 +624,82 @@ extern int gasnetc_xrc_init(void **shared_mem_p);
 extern int gasnetc_connect_init(void);
 extern int gasnetc_connect_fini(void);
 #if GASNETC_DYNAMIC_CONNECT
-extern gasnetc_cep_t *gasnetc_connect_to(gasnet_node_t node);
-extern void gasnetc_conn_implied_ack(gasnet_node_t node);
+extern gasnetc_cep_t *gasnetc_connect_to(gex_Rank_t node);
+extern void gasnetc_conn_implied_ack(gex_Rank_t node);
 extern void gasnetc_conn_rcv_wc(struct ibv_wc *comp);
 extern void gasnetc_conn_snd_wc(struct ibv_wc *comp);
 #endif
 
+/* Callback functions in gasnet_core_sndrcv.c */
+typedef void (*gasnetc_cb_t)(gasnetc_atomic_val_t *);
+ /* eop: */
+extern void gasnetc_cb_eop_alc(gasnetc_atomic_val_t *);
+extern void gasnetc_cb_eop_put(gasnetc_atomic_val_t *);
+extern void gasnetc_cb_eop_get(gasnetc_atomic_val_t *);
+ /* iop within nbi-accessregion: */
+extern void gasnetc_cb_nar_alc(gasnetc_atomic_val_t *);
+extern void gasnetc_cb_nar_put(gasnetc_atomic_val_t *);
+extern void gasnetc_cb_nar_get(gasnetc_atomic_val_t *);
+ /* iop not in nbi-accessregion: */
+extern void gasnetc_cb_iop_alc(gasnetc_atomic_val_t *);
+extern void gasnetc_cb_iop_put(gasnetc_atomic_val_t *);
+extern void gasnetc_cb_iop_get(gasnetc_atomic_val_t *);
+ /* gasnetc_counter_t: */
+extern void gasnetc_cb_counter(gasnetc_atomic_val_t *);
+extern void gasnetc_cb_counter_rel(gasnetc_atomic_val_t *);
+
 /* Routines in gasnet_core_sndrcv.c */
+extern gex_Rank_t gasnetc_msgsource(gex_Token_t token);
 extern int gasnetc_create_cq(struct ibv_context *, int,
                              struct ibv_cq * *, int *,
                              gasnetc_progress_thread_t *);
 extern int gasnetc_sndrcv_limits(void);
-extern int gasnetc_sndrcv_init(void);
-extern void gasnetc_sys_flush_reph(gasnet_token_t, gasnet_handlerarg_t);
-extern void gasnetc_sys_close_reqh(gasnet_token_t);
+extern int gasnetc_sndrcv_init(gasnetc_EP_t);
+extern void gasnetc_sys_flush_reph(gex_Token_t, gex_AM_Arg_t);
+extern void gasnetc_sys_close_reqh(gex_Token_t);
 extern void gasnetc_sndrcv_quiesce(void);
 extern int gasnetc_sndrcv_shutdown(void);
-extern void gasnetc_sndrcv_init_peer(gasnet_node_t node, gasnetc_cep_t *cep);
+extern void gasnetc_sndrcv_init_peer(gex_Rank_t node, gasnetc_cep_t *cep);
 extern void gasnetc_sndrcv_init_inline(void);
-extern void gasnetc_sndrcv_attach_peer(gasnet_node_t node, gasnetc_cep_t *cep);
+extern void gasnetc_sndrcv_attach_peer(gex_Rank_t node, gasnetc_cep_t *cep);
 extern void gasnetc_sndrcv_start_thread(void);
 extern void gasnetc_sndrcv_stop_thread(int block);
 extern gasnetc_amrdma_send_t *gasnetc_amrdma_send_alloc(uint32_t rkey, void *addr);
 extern gasnetc_amrdma_recv_t *gasnetc_amrdma_recv_alloc(gasnetc_hca_t *hca);
 extern void gasnetc_sndrcv_poll(int handler_context);
-extern int gasnetc_RequestGeneric(gasnetc_category_t category,
-				  int dest, gasnet_handler_t handler,
-				  void *src_addr, int nbytes, void *dst_addr,
-				  int numargs, gasnetc_counter_t *mem_oust,
-				  gasnetc_atomic_t *completed, va_list argptr);
-extern int gasnetc_ReplyGeneric(gasnetc_category_t category,
-				gasnet_token_t token, gasnet_handler_t handler,
-				void *src_addr, int nbytes, void *dst_addr,
-				int numargs, gasnetc_counter_t *mem_oust,
-				gasnetc_atomic_t *completed, va_list argptr);
 #if GASNETC_PIN_SEGMENT
-  extern int gasnetc_rdma_put(gasnetc_epid_t epid, void *src_ptr, void *dst_ptr, size_t nbytes, gasnetc_counter_t *mem_oust, gasnetc_atomic_val_t *initiated, gasnetc_atomic_t *completed GASNETI_THREAD_FARG);
+  extern int gasnetc_rdma_put(
+                  gasnetc_epid_t epid,
+                  void *src_ptr, void *dst_ptr, size_t nbytes, gex_Flags_t flags,
+                  gasnetc_atomic_val_t *local_cnt, gasnetc_cb_t local_cb,
+                  gasnetc_atomic_val_t *remote_cnt, gasnetc_cb_t remote_cb
+                  GASNETI_THREAD_FARG);
 #else
-  extern int gasnetc_rdma_put_fh(gasnetc_epid_t epid, void *src_ptr, void *dst_ptr, size_t nbytes, gasnetc_counter_t *mem_oust, gasnetc_atomic_val_t *initiated, gasnetc_atomic_t *completed, gasnetc_counter_t *am_oust GASNETI_THREAD_FARG);
+  extern int gasnetc_rdma_put_fh(
+                  gasnetc_epid_t epid,
+                  void *src_ptr, void *dst_ptr, size_t nbytes, gex_Flags_t flags,
+                  gasnetc_atomic_val_t *local_cnt, gasnetc_cb_t local_cb,
+                  gasnetc_atomic_val_t *remote_cnt, gasnetc_cb_t remote_cb,
+                  gasnetc_counter_t *am_oust
+                  GASNETI_THREAD_FARG);
   GASNETI_INLINE(gasnetc_rdma_put)
-  int gasnetc_rdma_put(gasnetc_epid_t epid, void *src_ptr, void *dst_ptr, size_t nbytes, gasnetc_counter_t *mem_oust, gasnetc_atomic_val_t *initiated, gasnetc_atomic_t *completed GASNETI_THREAD_FARG)
-  { return gasnetc_rdma_put_fh(epid,src_ptr,dst_ptr,nbytes,mem_oust,initiated,completed,NULL GASNETI_THREAD_PASS); }
+  int gasnetc_rdma_put(
+                  gasnetc_epid_t epid,
+                  void *src_ptr, void *dst_ptr, size_t nbytes, gex_Flags_t flags,
+                  gasnetc_atomic_val_t *local_cnt, gasnetc_cb_t local_cb,
+                  gasnetc_atomic_val_t *remote_cnt, gasnetc_cb_t remote_cb
+                  GASNETI_THREAD_FARG)
+  {
+    return gasnetc_rdma_put_fh(epid,src_ptr,dst_ptr,nbytes,flags,
+                               local_cnt,local_cb,remote_cnt,remote_cb,
+                               NULL GASNETI_THREAD_PASS);
+  }
 #endif
-extern int gasnetc_rdma_get(gasnetc_epid_t epid, void *src_ptr, void *dst_ptr, size_t nbytes, gasnetc_atomic_val_t *initiated, gasnetc_atomic_t *completed GASNETI_THREAD_FARG);
-
-#if 0 /* Putv and Getv are unused */
-extern int gasnetc_rdma_putv(gasnetc_epid_t epid, size_t srccount, gasnet_memvec_t const srclist[], void *dst_ptr, gasnetc_counter_t *mem_oust, gasnetc_atomic_val_t *initiated, gasnetc_atomic_t *completed GASNETI_THREAD_FARG);
-extern int gasnetc_rdma_getv(gasnetc_epid_t epid, void *src_ptr, size_t dstcount, gasnet_memvec_t const dstlist[], gasnetc_atomic_val_t *initiated, gasnetc_atomic_t *completed GASNETI_THREAD_FARG);
-#endif
+extern int gasnetc_rdma_get(
+                  gasnetc_epid_t epid,
+                  void *src_ptr, void *dst_ptr, size_t nbytes, gex_Flags_t flags,
+                  gasnetc_atomic_val_t *remote_cnt, gasnetc_cb_t remote_cb
+                  GASNETI_THREAD_FARG);
 
 /* Routines in gasnet_core_thread.c */
 #if GASNETI_CONDUIT_THREADS
@@ -754,10 +795,24 @@ extern firehose_info_t		gasnetc_firehose_info;
 extern gasnetc_port_info_t      *gasnetc_port_tbl;
 extern int                      gasnetc_num_ports;
 extern gasnetc_cep_t            **gasnetc_node2cep;
-extern gasnet_node_t            gasnetc_remote_nodes;
+extern gex_Rank_t            gasnetc_remote_nodes;
 #if GASNETC_DYNAMIC_CONNECT
   extern gasnetc_sema_t         gasnetc_zero_sema;
 #endif
+
+
+/* ------------------------------------------------------------------------------------ */
+/* To return failures internally - suited for both integer and pointer returns
+ * We distinguish only 2 cases - temporary lack of resources or permanent failure
+ */
+
+#define GASNETC_OK       0
+#define GASNETC_FAIL_IMM 1
+#define GASNETC_FAIL_ERR 2
+
+// To test a pointer value that could be valid, NULL or one of these two "FAIL" codes
+#define GASNETC_FAILED_PTR(p) ((uintptr_t)(p)&0x3)
+
 
 /* ------------------------------------------------------------------------------------ */
 /* System AM Request/Reply Functions
@@ -767,22 +822,22 @@ extern gasnet_node_t            gasnetc_remote_nodes;
  */
 
 extern int gasnetc_RequestSysShort(gasnetc_epid_t dest,
-                                   gasnetc_atomic_t *completed, /* counter for local completion */
-                                   gasnet_handler_t handler,
+                                   gasnetc_counter_t *counter, /* counter for local completion */
+                                   gex_AM_Index_t handler,
                                    int numargs, ...);
 extern int gasnetc_RequestSysMedium(gasnetc_epid_t dest,
-                                    gasnetc_atomic_t *completed, /* counter for local completion */
-                                    gasnet_handler_t handler,
+                                    gasnetc_counter_t *counter, /* counter for local completion */
+                                    gex_AM_Index_t handler,
                                     void *source_addr, size_t nbytes,
                                     int numargs, ...);
 
-extern int gasnetc_ReplySysShort(gasnet_token_t token,
-                                 gasnetc_atomic_t *completed, /* counter for local completion */
-                                 gasnet_handler_t handler,
+extern int gasnetc_ReplySysShort(gex_Token_t token,
+                                 gasnetc_counter_t *counter, /* counter for local completion */
+                                 gex_AM_Index_t handler,
                                  int numargs, ...);
-extern int gasnetc_ReplySysMedium(gasnet_token_t token,
-                                  gasnetc_atomic_t *completed, /* counter for local completion */
-                                  gasnet_handler_t handler,
+extern int gasnetc_ReplySysMedium(gex_Token_t token,
+                                  gasnetc_counter_t *counter, /* counter for local completion */
+                                  gex_AM_Index_t handler,
                                   void *source_addr, size_t nbytes,
                                   int numargs, ...);
 

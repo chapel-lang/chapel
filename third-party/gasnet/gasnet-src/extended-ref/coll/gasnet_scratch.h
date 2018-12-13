@@ -25,7 +25,7 @@ typedef enum {GASNETE_COLL_DISSEM_OP=0, GASNETE_COLL_TREE_OP} gasnete_coll_op_ty
 struct gasnete_coll_scratch_req_t_ {
   
   gasnete_coll_tree_type_t tree_type;
-  gasnet_node_t root;
+  gex_Rank_t root;
   gasnete_coll_team_t team;
   /*notice that we don't need to keep track of the dissemination radix since we don't do anything withit */
   
@@ -35,19 +35,19 @@ struct gasnete_coll_scratch_req_t_ {
 		
   /*this is the sum incoming space of all the peers sending to me*/
   /*for now, for non treeops this is the amount of data that everyone is requesting*/
-  uint64_t incoming_size; 
+  uintptr_t incoming_size;
   
   /*information for all the data for which i am the target*/
   /*for non tree ops these values not used*/
   int num_in_peers;
-  gasnet_node_t *in_peers;
+  gex_Rank_t *in_peers;
   
   
   /*information for all the data for which i am an initiator*/
   /*for non tree ops this information is not used*/
   int num_out_peers; 
-  gasnet_node_t *out_peers;
-  uint64_t *out_sizes;
+  gex_Rank_t *out_peers;
+  uintptr_t *out_sizes;
   
   
 };

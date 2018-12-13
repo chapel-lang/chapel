@@ -35,7 +35,7 @@ Makefile: @TOP_SRCDIR@/tests/Makefile.in $(fragment)
 @USE_MPI_COMPAT_TRUE@ MPI_TESTS_PAR =
 
 # C++ tests
-CXX_TESTS = testcxx testtoolscxx
+CXX_TESTS = testcxx testlegacycxx testtoolscxx
 
 # non-GASNet plain MPI tests
 MPI1_TESTS = 			\
@@ -63,6 +63,7 @@ MPI_TESTS = $(MPI1_TESTS) $(MPI2_TESTS)
 #   please also add it to upcr-harness/gasnet-tests/harness.conf
 testprograms_seq =      \
         testgasnet      \
+        testlegacy      \
         testtools       \
         testinternal    \
         testenv         \
@@ -81,7 +82,6 @@ testprograms_seq =      \
         testbarrier     \
         testbarrierconf \
         testbarrierlate \
-        testmemset      \
         testlogGP       \
         testalign       \
         testrand        \
@@ -89,11 +89,17 @@ testprograms_seq =      \
         testvis         \
         testcoll        \
         testcollperf    \
-        testteambarrier       \
+        testteambarrier \
+        testteambcast   \
+        testreduce      \
         testteam        \
         testnbr         \
         testvisperf     \
         testqueue       \
+        testratomic     \
+        testfaddperf    \
+        testimm         \
+        testsplit       \
         $(CONDUIT_TESTS) \
         $(MPI_TESTS_SEQ)
 
@@ -192,9 +198,9 @@ run-tests: force
 	tests_to_run="" export tests_to_run ;                                           \
 	tests_to_ignore="" export tests_to_ignore ;                                     \
 	for file in $(testprograms) ; do if test -x "$$file" ; then                     \
-	  if test "`echo \"$(testprograms_err)\"| grep $$file ; exit 0`"; then          \
+	  if test "`echo \" $(testprograms_err) \"| grep \" $$file \"; exit 0`"; then   \
 	    tests_to_ignore="$$tests_to_ignore $$file" ;                                \
-	  else                                                                          \
+	  elif test -z "`echo \" $$tests_to_run \"| grep \" $$file \"; exit 0`"; then   \
 	    tests_to_run="$$tests_to_run $$file" ;                                      \
 	  fi ;                                                                          \
 	fi ; done ;                                                                     \
@@ -389,11 +395,11 @@ $(MPI_TESTS): mpi-check force
 	$(GASNET_MPI_LD) $(GASNET_LDFLAGS) @MPI_CFLAGS@ -o $@ $@.o @MPI_LIBS@ @LIBM@ $(MANUAL_LIBS)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 
-# testcxx tests support for compiling a C++-based GASNet client 
+# test{,legacy}cxx test support for compiling a C++-based GASNet client
 # this is unlikely to work on conduits requiring a special linker (eg mpi-conduit)
-testcxx: force
+testcxx testlegacycxx: force
 	@if test -z "$(GASNET_CXX)"; then \
-		echo "ERROR: testcxx target requested, but no c++ compiler is configured"; \
+		echo "ERROR: $@ target requested, but no c++ compiler is configured"; \
 		exit 1; \
 	 fi
 	$(GASNET_CXX) -I$(srcdir) $(GASNET_CXXCPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CXXFLAGS) $(GASNET_CXXFLAGS) -c -o $@.o $(srcdir)/$@.cc
