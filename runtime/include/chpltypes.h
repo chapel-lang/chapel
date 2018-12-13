@@ -22,6 +22,7 @@
 
 #include "sys_basic.h"
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,9 +106,11 @@ typedef struct _chpl_fieldType {
 // Seemingly, 64 bits is enough to represent both the node_id and sublocale_id
 // portions  of a locale ID, and an even split is a good first guess.
 typedef int32_t c_nodeid_t;
-#define FORMAT_c_nodeid_t PRId32
+#define PRI_c_nodeid_t PRId32
+#define SCN_c_nodeid_t SCNi32
 typedef int32_t c_sublocid_t;
-#define FORMAT_c_sublocid_t PRId32
+#define PRI_c_sublocid_t PRId32
+#define SCN_c_sublocid_t SCNi32
 typedef int64_t c_localeid_t;
 
 // These are special values that mean "no", "any", and "all sublocales",

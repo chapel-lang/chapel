@@ -172,7 +172,7 @@ void chpl_setMemFlags(void) {
       memLogFile = fopen(memLog, "w");
     } else {
       char* filename = (char*)sys_malloc((strlen(memLog)+10)*sizeof(char));
-      sprintf(filename, "%s.%" FORMAT_c_nodeid_t, memLog, chpl_nodeID);
+      sprintf(filename, "%s.%" PRI_c_nodeid_t, memLog, chpl_nodeID);
       memLogFile = fopen(filename, "w");
       sys_free(filename);
     }
@@ -656,7 +656,7 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
       memTrack_unlock();
     }
     if (chpl_verbose_mem) {
-      fprintf(memLogFile, "%" FORMAT_c_nodeid_t ": %s:%" PRId32
+      fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
                           ": allocate %zuB of %s at %p\n",
               chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
               lineno, number * size, chpl_mem_descString(description),
@@ -673,7 +673,7 @@ void chpl_track_free(void* memAlloc, int32_t lineno, int32_t filename) {
     memEntry = removeMemTableEntry(memAlloc);
     if (memEntry) {
       if (chpl_verbose_mem) {
-        fprintf(memLogFile, "%" FORMAT_c_nodeid_t ": %s:%" PRId32
+        fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
                             ": free %zuB of %s at %p\n",
                 chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
                 lineno, memEntry->number * memEntry->size,
@@ -683,7 +683,7 @@ void chpl_track_free(void* memAlloc, int32_t lineno, int32_t filename) {
     }
     memTrack_unlock();
   } else if (chpl_verbose_mem && !memEntry) {
-    fprintf(memLogFile, "%" FORMAT_c_nodeid_t ": %s:%" PRId32 ": free at %p\n",
+    fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32 ": free at %p\n",
             chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
             lineno, memAlloc);
   }
@@ -718,7 +718,7 @@ void chpl_track_realloc_post(void* moreMemAlloc,
       memTrack_unlock();
     }
     if (chpl_verbose_mem) {
-      fprintf(memLogFile, "%" FORMAT_c_nodeid_t ": %s:%" PRId32
+      fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
                           ": reallocate %zuB of %s at %p -> %p\n",
               chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
               lineno, size, chpl_mem_descString(description), memAlloc,
