@@ -156,6 +156,22 @@ module ChapelTuple {
   proc isHomogeneousTupleValue(x) param
     return __primitive("is star tuple type", x);
 
+  pragma "no doc"
+  proc _check_tuple_var_decl(x: _tuple, param p) param {
+    if p == x.size {
+      return true;
+    } else {
+      compilerError("tuple size must match the number of grouped variables");
+      return false;
+    }
+  }
+  pragma "no doc"
+  proc _check_tuple_var_decl(x, param p) param {
+    compilerError("illegal tuple variable declaration with non-tuple initializer");
+    return false;
+  }
+
+
   /*
     Returns `true` if its argument is a tuple type.
     The argument must be a type.
