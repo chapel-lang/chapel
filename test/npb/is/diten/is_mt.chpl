@@ -237,16 +237,13 @@ proc fullVerify() {
     keyBuff1(i, 0) = + reduce keyBuff1(i, 0..nThreads-1);
   buffer = keyArray;
 
-  serial {
-    [i in D] {
-      atomic {
-	keyBuff1(buffer(i), 0) -= 1;
-	keyArray(keyBuff1(buffer(i), 0)) = buffer(i);
-      }
-    }
+  for i in D {
+    keyBuff1(buffer(i), 0) -= 1;
+    keyArray(keyBuff1(buffer(i), 0)) = buffer(i);
+  }
 
-    [i in 0..D.numIndices-2 with (ref failures)] // no race - in 'serial'
-      if (keyArray(i) > keyArray(i+1)) then failures += 1;
+  for i in 0..D.numIndices-2 {
+    if (keyArray(i) > keyArray(i+1)) then failures += 1;
   }
 
   if (failures != 0) then

@@ -27,7 +27,9 @@ then
 
 echo Updating LLVM
 cd llvm
+git stash save
 git pull
+git stash pop
 # --rebase
 echo Updating CLANG
 cd tools/clang
