@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# The later lines will differ depending on the programming environment used.
+# Only save the first line because the rest aren't as important
+line=$(head -n 1 $2)
+echo $line > $2

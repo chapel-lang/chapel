@@ -82,9 +82,9 @@ static fi_addr_t* ofi_rxAddrs;          // remote receive addrs
 
 static int txCQSize;                    // txCQ size
 
-static int numTxCtxs;
-
 struct perTxCtxInfo_t {
+  atomic_bool allocated;
+  chpl_bool bound;
   chpl_bool txCtxHasCQ;
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
@@ -96,9 +96,9 @@ struct perTxCtxInfo_t {
   int numTxsOut;
 };
 
-static int ptiTabLen;
-static struct perTxCtxInfo_t* ptiTab;
-static pthread_mutex_t pti_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int tciTabLen;
+static struct perTxCtxInfo_t* tciTab;
+static chpl_bool tciTabFixedAssignments;
 
 #define MAX_MEM_REGIONS 10
 static int numMemRegions = 0;
@@ -129,8 +129,8 @@ static struct fi_msg ofi_msg_reqs;
 // Forward decls
 //
 
-static inline struct perTxCtxInfo_t* getTxCtxInfo(chpl_bool);
-static inline void releaseTxCtxInfo(struct perTxCtxInfo_t*);
+static inline struct perTxCtxInfo_t* tciAlloc(chpl_bool);
+static inline void tciFree(struct perTxCtxInfo_t*);
 static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                                 void*, size_t);
 static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
@@ -208,8 +208,8 @@ pthread_t pthread_that_inited;
 
 static void init_ofi(void);
 static void init_ofiFabricDomain(void);
-static int compute_comm_concurrency(void);
 static void init_ofiEp(void);
+static void init_ofiEpNumCtxs(void);
 static void init_ofiExchangeAvInfo(void);
 static void init_ofiForMem(void);
 static void init_ofiForRma(void);
@@ -359,30 +359,7 @@ void init_ofiFabricDomain(void) {
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
 
   //
-  // Compute number of transmit contexts and create our scalable
-  // transmit endpoint.  Each worker thread needs its own transmit
-  // context, plus each AM handler needs one to send 'finished'
-  // indicators on.  We only need one receive context for now, for
-  // requests sent to our single AM handler.
-  //
-  CHK_TRUE(numAmHandlers == 1); // force rework here if #AM handlers changes
-
-  const int commConcurrency = compute_comm_concurrency();
-  numTxCtxs = commConcurrency + numAmHandlers;
-
-  {
-    const struct fi_domain_attr* dom_attr = ofi_info->domain_attr;
-    if (numTxCtxs > dom_attr->max_ep_tx_ctx)
-      numTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
-    CHK_TRUE(numTxCtxs > 0);
-    ofi_info->ep_attr->tx_ctx_cnt = numTxCtxs + numAmHandlers;
-
-    CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
-    ofi_info->ep_attr->rx_ctx_cnt = numAmHandlers;
-  }
-
-  //
-  // Create address vectors for each thread.
+  // Create the address vector covering the nodes.
   //
   struct fi_av_attr ofi_avAttr = { 0 };
   ofi_avAttr.type = FI_AV_TABLE;
@@ -395,42 +372,18 @@ void init_ofiFabricDomain(void) {
 
 
 static
-int compute_comm_concurrency(void) {
-  int val;
-
-  // problematic: CHPL_RT_COMM_CONCURRENCY==0 ignored, but no warning
-  if ((val = chpl_env_rt_get_int("COMM_CONCURRENCY", 0)) > 0) {
-    return val;
-  } else if (val < 0) {
-    chpl_warning("CHPL_RT_COMM_CONCURRENCY < 0, ignored", 0, 0);
-  }
-
-  if ((val = chpl_task_getFixedNumThreads()) > 0)
-    return val;
-
-  // problematic: similar
-  if ((val = chpl_env_rt_get_int("NUM_HARDWARE_THREADS", 0)) > 0) {
-    return val;
-  } else if (val < 0) {
-    chpl_warning("CHPL_RT_NUM_HARDWARE_THREADS < 0, ignored", 0, 0);
-  }
-
-  if ((val = chpl_topo_getNumCPUsLogical(true)) > 0) {
-    return val;
-  }
-
-  chpl_warning("Could not determine comm concurrency, using 1", 0, 0);
-  return 1;
-}
-
-
-static
 void init_ofiEp(void) {
-  ptiTabLen = numTxCtxs;
-  CHPL_CALLOC(ptiTab, ptiTabLen);
+  //
+  // Compute numbers of transmit and receive contexts, and then create
+  // the transmit context table.
+  //
+  init_ofiEpNumCtxs();
+
+  tciTabLen = ofi_info->ep_attr->tx_ctx_cnt;
+  CHPL_CALLOC(tciTab, tciTabLen);
 
   //
-  // Transmit.
+  // Create transmit contexts.
   //
   // For the CQ lengths, allow for whichever maxOutstanding (AMs or
   // RMAs) value is larger, plus quite a few for AM responses because
@@ -453,33 +406,39 @@ void init_ofiEp(void) {
   txCntrAttr.wait_obj = FI_WAIT_NONE;
 
   //
-  // Worker TX contexts use CQs; AM handler just needs a counter.
+  // Worker TX contexts need completion queues.  Those for AM handlers
+  // can just use counters.
   //
-  for (int i = 0; i < ptiTabLen; i++) {
-    OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &ptiTab[i].txCtx, NULL));
-    if (i < ptiTabLen - numAmHandlers) {
-      // Regular worker thread tx context.
-      OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &ptiTab[i].txCQ, NULL));
-      OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCQ->fid, FI_TRANSMIT));
-      ptiTab[i].txCtxHasCQ = true;
-    } else {
-      // AM handler tx context.
-      OFI_CHK(fi_cntr_open(ofi_domain, &txCntrAttr, &ptiTab[i].txCntr, NULL));
-      OFI_CHK(fi_ep_bind(ptiTab[i].txCtx, &ptiTab[i].txCntr->fid, FI_WRITE));
-      ptiTab[i].txCtxHasCQ = false;
-    }
-    OFI_CHK(fi_enable(ptiTab[i].txCtx));
+  const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
+  for (int i = 0; i < numWorkerTxCtxs; i++) {
+    atomic_init_bool(&tciTab[i].allocated, false);
+    tciTab[i].bound = false;
+    OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &tciTab[i].txCtx, NULL));
+    OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &tciTab[i].txCQ, NULL));
+    OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCQ->fid, FI_TRANSMIT));
+    tciTab[i].txCtxHasCQ = true;
+    OFI_CHK(fi_enable(tciTab[i].txCtx));
+  }
+
+  for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
+    atomic_init_bool(&tciTab[i].allocated, false);
+    tciTab[i].bound = false;
+    OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &tciTab[i].txCtx, NULL));
+    OFI_CHK(fi_cntr_open(ofi_domain, &txCntrAttr, &tciTab[i].txCntr, NULL));
+    OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCntr->fid, FI_WRITE));
+    tciTab[i].txCtxHasCQ = false;
+    OFI_CHK(fi_enable(tciTab[i].txCtx));
   }
 
   //
-  // Receive.
+  // Create receive contexts.
   //
   // For the CQ length, allow for an appreciable proportion of the job
   // to send requests to us at once.
   //
   struct fi_cq_attr rxCqAttr = { 0 };
   rxCqAttr.format = FI_CQ_FORMAT_DATA;
-  rxCqAttr.size = chpl_numNodes * numTxCtxs;
+  rxCqAttr.size = chpl_numNodes * numWorkerTxCtxs;
   rxCqAttr.wait_obj = FI_WAIT_NONE;
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
@@ -487,6 +446,85 @@ void init_ofiEp(void) {
   OFI_CHK(fi_cq_open(ofi_domain, &rxCqAttr, &ofi_rxCQ, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
+}
+
+
+static
+void init_ofiEpNumCtxs(void) {
+  CHK_TRUE(numAmHandlers == 1); // force reviewing this if #AM handlers changes
+
+  //
+  // Note for future maintainers: if interoperability between Chapel
+  // and other languages someday results in non-tasking layer threads
+  // calling Chapel code which then tries to communicate across nodes,
+  // then some of this may have to be adjusted, especially e.g. the
+  // tciTabFixedAssignments part.
+  //
+
+  //
+  // Start with the maximum number of transmit contexts.  We'll reduce
+  // the number incrementally as we discover we don't need that many.
+  // Initially, just make sure there are enough for each AM handler to
+  // have its own, plus at least one more.
+  //
+  const struct fi_domain_attr* dom_attr = ofi_info->domain_attr;
+  int numWorkerTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
+  CHK_TRUE(numWorkerTxCtxs > 0);
+
+  //
+  // If the user manually limited the communication concurrency, take
+  // that into account.
+  //
+  const int commConcurrency = chpl_env_rt_get_int("COMM_CONCURRENCY", 0);
+  if (commConcurrency > 0) {
+    if (numWorkerTxCtxs > commConcurrency) {
+      numWorkerTxCtxs = commConcurrency;
+    }
+  } else if (commConcurrency < 0) {
+    chpl_warning("CHPL_RT_COMM_CONCURRENCY < 0, ignored", 0, 0);
+  }
+
+  const int fixedNumThreads = chpl_task_getFixedNumThreads();
+  if (fixedNumThreads > 0) {
+    //
+    // The tasking layer uses a fixed number of threads.  If we can
+    // have at least that many worker tx contexts then each tasking
+    // layer thread can have a private one for the duration of the
+    // run.
+    //
+    CHK_TRUE(fixedNumThreads == chpl_task_getMaxPar()); // sanity
+    if (numWorkerTxCtxs > fixedNumThreads)
+      numWorkerTxCtxs = fixedNumThreads;
+    tciTabFixedAssignments = (numWorkerTxCtxs == fixedNumThreads);
+  } else {
+    //
+    // The tasking layer doesn't have a fixed number of threads, but
+    // it still must have a maximum useful level of parallelism.  We
+    // shouldn't need more worker tx contexts than whatever that is.
+    //
+    const int taskMaxPar = chpl_task_getMaxPar();
+    if (numWorkerTxCtxs > taskMaxPar)
+      numWorkerTxCtxs = taskMaxPar;
+
+    tciTabFixedAssignments = false;
+  }
+
+  //
+  // Now we know how many transmit contexts we'll have.
+  //
+  ofi_info->ep_attr->tx_ctx_cnt = numWorkerTxCtxs + numAmHandlers;
+
+  //
+  // Receive contexts are much easier -- we just need one
+  // for each AM handler.
+  //
+  CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
+  ofi_info->ep_attr->rx_ctx_cnt = numAmHandlers;
+
+  DBG_PRINTF(DBG_CONFIG, "per node, %zd tx ctxs%s, %zd rx ctxs",
+             ofi_info->ep_attr->tx_ctx_cnt,
+             tciTabFixedAssignments ? " (fixed to workers)" : "",
+             ofi_info->ep_attr->rx_ctx_cnt);
 }
 
 
@@ -718,8 +756,6 @@ void fini_ofi(void) {
   CHPL_FREE(memTabMap);
 
   CHPL_FREE(memTabMap);
-  CHPL_FREE(memTab);
-  CHPL_FREE(ofiMrTab);
 
   CHPL_FREE(amLZs);
 
@@ -728,12 +764,11 @@ void fini_ofi(void) {
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
 
-  for (int i = 0; i < ptiTabLen; i++) {
-    OFI_CHK(fi_close(&ptiTab[i].txCtx->fid));
-    if (i < ptiTabLen - numAmHandlers)
-      OFI_CHK(fi_close(&ptiTab[i].txCQ->fid));
-    else
-      OFI_CHK(fi_close(&ptiTab[i].txCntr->fid));
+  for (int i = 0; i < tciTabLen; i++) {
+    OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
+    OFI_CHK(fi_close(tciTab[i].txCtxHasCQ
+                     ? &tciTab[i].txCQ->fid
+                     : &tciTab[i].txCntr->fid));
   }
 
   OFI_CHK(fi_close(&ofi_txEp->fid));
@@ -1250,26 +1285,35 @@ void amRequestCommon(c_nodeid_t node,
   }
 
   struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+  CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
 
+  chpl_comm_on_bundle_t* myArg = arg;
   void* mrDesc = NULL;
-#if 1 // TODO: needed for gni provider?
-  CHK_TRUE(mrGetLocalDesc(&mrDesc, arg, argSize) == 0);
-#endif
+  if (mrGetLocalDesc(&mrDesc, myArg, argSize) != 0) {
+    myArg = allocBounceBuf(argSize);
+    DBG_PRINTF(DBG_AMO, "AMO arg BB: %p", myArg);
+    CHK_TRUE(mrGetLocalDesc(NULL, myArg, argSize) == 0);
+    memcpy(myArg, arg, argSize);
+  }
 
-  OFI_CHK(fi_send(tcip->txCtx, arg, argSize, mrDesc, ofi_rxAddrs[node], NULL));
+  OFI_CHK(fi_send(tcip->txCtx, myArg, argSize, mrDesc, ofi_rxAddrs[node],
+                  NULL));
   DBG_PRINTF(DBG_AM | DBG_AMSEND,
              "tx AM req to %d, op %d, size %zd, pDone %p",
-             node, (int) arg->comm.op.op, argSize, pDone);
+             node, (int) myArg->comm.op.op, argSize, pDone);
   tcip->numAmReqsTxed++;
   tcip->numTxsOut++;
+
+  if (myArg != arg) {
+    freeBounceBuf(myArg);
+  }
 
   //
   // Wait for network completion.
   //
   waitForTxCQ(tcip, 1);
 
-  releaseTxCtxInfo(tcip);
+  tciFree(tcip);
 
   if (pDone != NULL) {
     //
@@ -1351,7 +1395,7 @@ void fini_amHandling(void) {
 static
 void amHandler(void* argNil) {
   struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = getTxCtxInfo(false /*isWorker*/)) != NULL);
+  CHK_TRUE((tcip = tciAlloc(true /*bindToAmHandler*/)) != NULL);
 
   DBG_PRINTF(DBG_THREADS, "AM handler running");
 
@@ -1596,7 +1640,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
       //
       {
         struct perTxCtxInfo_t* tcip;
-        CHK_TRUE((tcip = getTxCtxInfo(false /*isWorker*/)) != NULL);
+        CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
         do {
           const int count = fi_cntr_read(tcip->txCntr);
           if (count > 0) {
@@ -1604,7 +1648,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
             tcip->numTxsOut -= count;
           }
         } while (tcip->numTxsOut > 0);
-        releaseTxCtxInfo(tcip);
+        tciFree(tcip);
       }
     }
   }
@@ -1791,44 +1835,101 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 // Internal communication support
 //
 
+static struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool);
+
 static inline
-struct perTxCtxInfo_t* getTxCtxInfo(chpl_bool isWorker) {
+struct perTxCtxInfo_t* tciAlloc(chpl_bool bindToAmHandler) {
   static __thread struct perTxCtxInfo_t* tcip;
-
-  if (tcip == NULL) {
-    PTHREAD_CHK(pthread_mutex_lock(&pti_mutex));
-
-    if (isWorker) {
-      static int tciiw;
-      if (tciiw >= ptiTabLen - numAmHandlers) {
-        INTERNAL_ERROR_V("out of ptiTab[] entries for workers");
-      }
-      tcip = &ptiTab[tciiw++];
-    } else {
-      static int tciia = -1; // needs execution-time init
-      if (tciia < 0)
-        tciia = numTxCtxs - 1;
-      if (tciia < ptiTabLen - numAmHandlers) {
-        INTERNAL_ERROR_V("out of ptiTab[] entries for AM handlers");
-      }
-      tcip = &ptiTab[tciia--];
+  if (tcip != NULL) {
+    //
+    // If the last tx context we used is bound to our thread or can be
+    // re-allocated, use that.
+    //
+    if (tcip->bound) {
+      DBG_PRINTF(DBG_THREADS, "I re-have bound tciTab[%td]",
+                 tcip - tciTab);
+      return tcip;
     }
 
-    PTHREAD_CHK(pthread_mutex_unlock(&pti_mutex));
-
-    DBG_PRINTF(DBG_THREADS, "I have ptiTab[%td]", tcip - ptiTab);
+    if (!atomic_exchange_bool(&tcip->allocated, true)) {
+      DBG_PRINTF(DBG_THREADS, "I re-have tciTab[%td]", tcip - tciTab);
+      return tcip;
+    }
   }
 
+  //
+  // Find a tx context that isn't busy and use that one.
+  //
+  tcip = findFreeTciTabEntry(bindToAmHandler);
+  DBG_PRINTF(DBG_THREADS, "I have%s tciTab[%td]",
+             bindToAmHandler ? " bound" : "", tcip - tciTab);
+  return tcip;
+}
+
+
+static
+struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
+  //
+  // Find a tx context that isn't busy.  Note that tx contexts for
+  // AM handlers and other threads come out of different blocks of
+  // the table.
+  //
+  const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
+  struct perTxCtxInfo_t* tcip;
+
+  if (bindToAmHandler) {
+    //
+    // AM handlers use tciTab[numWorkerTxCtxs .. tciTabLen - 1].  For
+    // now we only support a single AM handler, so this is simple.  If
+    // we ever have more, the CHK_TRUE force us to revisit this code.
+    //
+    tcip = &tciTab[numWorkerTxCtxs];
+    CHK_FALSE(atomic_exchange_bool(&tcip->allocated, true));
+    tcip->bound = true;
+    DBG_PRINTF(DBG_THREADS, "I have bound tciTab[%td]", tcip - tciTab);
+    return tcip;
+  }
+
+  //
+  // Workers use tciTab[0 .. numWorkerTxCtxs - 1].  Search forever for
+  // an entry we can use.  Give up (and kill the program) only if we
+  // discover they're all bound, because we won't be able to get one
+  // in that case.
+  //
+  static __thread int last_iw = 0;
+  tcip = NULL;
+
+  do {
+    int iw = last_iw;
+    chpl_bool allBound = true;
+
+    do {
+      if (++iw >= numWorkerTxCtxs)
+        iw = 0;
+      allBound = allBound && tciTab[iw].bound;
+      if (!atomic_exchange_bool(&tciTab[iw].allocated, true)) {
+        tcip = &tciTab[iw];
+      }
+    } while (tcip == NULL && iw != last_iw);
+
+    if (tcip == NULL) {
+      CHK_FALSE(allBound);
+      local_yield();
+    }
+  } while (tcip == NULL);
+
+  DBG_PRINTF(DBG_THREADS, "I have tciTab[%td]", tcip - tciTab);
   return tcip;
 }
 
 
 static inline
-void releaseTxCtxInfo(struct perTxCtxInfo_t* tcip) {
+void tciFree(struct perTxCtxInfo_t* tcip) {
   //
-  // There is nothing to do here unless and until we support threads
-  // overloaded on ptiTab[] entries.
+  // Bound contexts stay bound.  We only release non-bound ones.
   //
+  if (!tcip->bound)
+    atomic_store_bool(&tcip->allocated, false);
 }
 
 
@@ -1854,7 +1955,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     // The remote address is RMA-accessible; PUT directly to it.
     //
     struct perTxCtxInfo_t* tcip;
-    CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+    CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
 
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64,
@@ -1871,7 +1972,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
       tcip->numTxsOut -= count;
     }
 
-    releaseTxCtxInfo(tcip);
+    tciFree(tcip);
   } else {
     //
     // The remote address is not RMA-accessible.  We have arranged
@@ -1912,7 +2013,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
     // The remote address is RMA-accessible; GET directly from it.
     //
     struct perTxCtxInfo_t* tcip;
-    CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+    CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64,
                myAddr, (int) node, raddr, size, mrKey);
@@ -1923,7 +2024,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
     CHK_TRUE(tcip->txCtxHasCQ);
     waitForTxCQ(tcip, 1);
 
-    releaseTxCtxInfo(tcip);
+    tciFree(tcip);
   } else {
     //
     // The remote address is not RMA-accessible.  We have arranged
@@ -2009,7 +2110,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   CHK_TRUE(tcip->txCtxHasCQ);  // (so far) only expect AMOs from workers
   waitForTxCQ(tcip, 1);
 
-  releaseTxCtxInfo(tcip);
+  tciFree(tcip);
 
   if (myRes != result) {
     memcpy(result, myRes, resSize);
@@ -2085,10 +2186,10 @@ void local_yield(void) {
   // free up whatever resource we need.
   //
   // DANGER: Don't call this function on a worker thread while holding
-  //         a ptiTab[] entry, that is, between tcip=getTxCtxInfo() and
-  //         releaseTxCtxInfo(tcip).  If you do and your task switches
-  //         threads due to the chpl_task_yield(), we can end up with
-  //         two threads using the same ptiTab[] entry simultaneously.
+  //         a tciTab[] entry, that is, between tcip=tciAlloc() and
+  //         tciFree().  If you do and your task switches threads due
+  //         to the chpl_task_yield(), we can end up with two threads
+  //         using the same tciTab[] entry simultaneously.
   //
   chpl_task_yield();
 }
@@ -2248,7 +2349,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real32, FI_FLOAT, float)
 DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
 
 
-#define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type)                       \
+#define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type, negate)               \
   void chpl_comm_atomic_sub_##fnType                                    \
          (void* operand, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn) {                                         \
@@ -2256,7 +2357,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
                "chpl_comm_atomic_sub_%s(<%s>, %d, %p, %d, %s)",         \
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                ln, chpl_lookupFilename(fn));                            \
-    Type myOpnd = - *(Type*) operand;                                   \
+    Type myOpnd = negate(*(Type*) operand);                             \
     doAMO(node, object, &myOpnd, NULL, NULL,                            \
           FI_SUM, ofiType, sizeof(Type));                               \
   }                                                                     \
@@ -2280,17 +2381,21 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
                "%d, %s)",                                               \
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                result, ln, chpl_lookupFilename(fn));                    \
-    Type myOpnd = - *(Type*) operand;                                   \
+    Type myOpnd = negate(*(Type*) operand);                             \
     doAMO(node, object, &myOpnd, NULL, result,                          \
           FI_SUM, ofiType, sizeof(Type));                               \
   }
 
-DEFN_IFACE_AMO_SUB(int32, FI_INT32, int32_t)
-DEFN_IFACE_AMO_SUB(int64, FI_INT64, int64_t)
-DEFN_IFACE_AMO_SUB(uint32, FI_UINT32, uint32_t)
-DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t)
-DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float)
-DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double)
+#define NEGATE_I32(x) ((x) == INT32_MIN ? (x) : -(x))
+#define NEGATE_I64(x) ((x) == INT64_MIN ? (x) : -(x))
+#define NEGATE_U_OR_R(x) (-(x))
+
+DEFN_IFACE_AMO_SUB(int32, FI_INT32, int32_t, NEGATE_I32)
+DEFN_IFACE_AMO_SUB(int64, FI_INT64, int64_t, NEGATE_I64)
+DEFN_IFACE_AMO_SUB(uint32, FI_UINT32, uint32_t, NEGATE_U_OR_R)
+DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t, NEGATE_U_OR_R)
+DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float, NEGATE_U_OR_R)
+DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double, NEGATE_U_OR_R)
 
 
 void chpl_comm_atomic_buff_flush(void) {
@@ -2314,7 +2419,7 @@ void doAMO(c_nodeid_t node, void* object,
   uint64_t mrKey;
   if (mrGetKey(&mrKey, node, object, size) == 0) {
     struct perTxCtxInfo_t* tcip = NULL;
-    CHK_TRUE((tcip = getTxCtxInfo(true /*isWorker*/)) != NULL);
+    CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
 
     size_t count;
     if (fi_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count) == 0
@@ -2325,11 +2430,11 @@ void doAMO(c_nodeid_t node, void* object,
       //
       ofi_amo(tcip, node, object, mrKey, operand1, operand2, result,
               ofiOp, ofiType, size);
-      releaseTxCtxInfo(tcip);
+      tciFree(tcip);
       return;
     }
 
-    releaseTxCtxInfo(tcip);
+    tciFree(tcip);
   }
 
   amRequestAMO(node, object, operand1, operand2, result,

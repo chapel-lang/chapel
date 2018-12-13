@@ -545,11 +545,11 @@ OPTIONS
     Print the names and source locations of unused functions within the
     user program.
 
-**-s, --set <config param>[=<value>]**
+**-s, --set <config>[=<value>]**
 
-    Overrides the default value of a configuration parameter in the code.
-    For boolean configuration variables, the value can be omitted, causing
-    the default value to be toggled.
+    Overrides the default value of a configuration param, type, var,
+    or const in the code.  If the value is omitted, it will default
+    to the value `true`.
 
 **--[no-]task-tracking**
 

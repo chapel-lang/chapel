@@ -40,6 +40,7 @@ const char*          yyfilename                    = NULL;
 int                  yystartlineno                 = 0;
 
 ModTag               currentModuleType             = MOD_INTERNAL;
+const char*          currentModuleName             = NULL;
 
 int                  chplLineno                    = 0;
 bool                 chplParseString               = false;
@@ -512,6 +513,11 @@ static ModuleSymbol* parseFile(const char* path,
 
     currentFileNamedOnCommandLine = namedOnCommandLine;
 
+    // If this file only contains explicit module declarations, this
+    // 'currentModuleName' is not accurate, but also should not be
+    // used (because when the 'module' declarations are found, they
+    // will override it).
+    currentModuleName             = filenameToModulename(path);
     currentModuleType             = modTag;
 
     yyblock                       = NULL;

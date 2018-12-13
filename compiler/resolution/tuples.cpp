@@ -988,7 +988,8 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
                                                 IntentTag      intent,
                                                 AggregateType* at,
                                                 const char*    copyWith,
-                                                BlockStmt*     testBlock) {
+                                                BlockStmt*     testBlock,
+                                                bool borrowConvert) {
   INT_ASSERT(at->symbol->hasFlag(FLAG_TUPLE));
 
   // Construct tuple that would be used for a particular argument intent.
@@ -1021,7 +1022,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
         INT_ASSERT(useAt);
 
         useType = do_computeTupleWithIntent(valueOnly, intent, useAt,
-                                            copyWith, testBlock);
+                                            copyWith, testBlock, borrowConvert);
 
         if (valueOnly == false) {
           if (intent == INTENT_BLANK || intent == INTENT_CONST) {
@@ -1034,6 +1035,13 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
         }
 
       } else if (shouldChangeTupleType(useType) == true) {
+        // Argument instantiated from any that is a tuple of owned
+        // -> tuple of borrow
+        if (isManagedPtrType(useType) && borrowConvert) {
+          if (intent == INTENT_CONST || intent == INTENT_BLANK)
+            useType = getManagedPtrBorrowType(useType);
+        }
+
         if (valueOnly == false) {
           // If the tuple is passed with blank intent
           // *and* the concrete intent for the element type
@@ -1074,19 +1082,31 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
   return retval;
 }
 
+
+AggregateType* computeTupleWithIntentForArg(IntentTag intent, AggregateType* t, ArgSymbol* arg)
+{
+  INT_ASSERT(arg);
+  bool borrowConvert = false;
+  if (arg->hasFlag(FLAG_INSTANTIATED_FROM_ANY) &&
+      !arg->getFunction()->hasFlag(FLAG_NO_BORROW_CONVERT))
+    borrowConvert = true;
+
+  return do_computeTupleWithIntent(false, intent, t, NULL, NULL, borrowConvert);
+}
+
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
 {
-  return do_computeTupleWithIntent(false, intent, t, NULL, NULL);
+  return do_computeTupleWithIntent(false, intent, t, NULL, NULL, false);
 }
 
 AggregateType* computeNonRefTuple(AggregateType* t)
 {
-  return do_computeTupleWithIntent(true, INTENT_BLANK, t, NULL, NULL);
+  return do_computeTupleWithIntent(true, INTENT_BLANK, t, NULL, NULL, false);
 }
 
 AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly, const char* copyName, BlockStmt* testBlock)
 {
-  return do_computeTupleWithIntent(valueOnly, INTENT_BLANK, t, copyName, testBlock);
+  return do_computeTupleWithIntent(valueOnly, INTENT_BLANK, t, copyName, testBlock, false);
 }
 
 

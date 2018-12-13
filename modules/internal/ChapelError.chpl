@@ -115,10 +115,10 @@ module ChapelError {
       // a remote locale, you should consider wrapping the call in
       // an on clause to avoid excessive remote forks due to the
       // testAndSet()
-      while (_errorsLock.testAndSet()) do chpl_task_yield();
+      while (_errorsLock.testAndSet(memory_order_acquire)) do chpl_task_yield();
     }
     inline proc _unlockErrors() {
-      _errorsLock.clear();
+      _errorsLock.clear(memory_order_release);
     }
     proc append(err: unmanaged Error) {
       on this {

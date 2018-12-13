@@ -1,0 +1,5 @@
+renameViaParamExpr.chpl:3: error: at present, external variables can only be renamed using string literals
+renameViaParamExpr.chpl:9: syntax error: near 'record'
+renameViaParamExpr.chpl:11: error: at present, external variables can only be renamed using string literals
+renameViaParamExpr.chpl:12: syntax error: near '}'
+renameViaParamExpr.chpl:16: syntax error: near 'type'

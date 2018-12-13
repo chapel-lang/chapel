@@ -694,8 +694,8 @@ mpool_idx_base_t mpool_idx_finc(mpool_idx_t* pvar) {
 typedef uint32_t cq_cnt_t;
 typedef atomic_uint_least32_t cq_cnt_atomic_t;
 
-#define CQ_CNT_STORE(cd, val) \
-        atomic_store_uint_least32_t(&(cd)->cq_cnt_curr, val)
+#define CQ_CNT_INIT(cd, val) \
+        atomic_init_uint_least32_t(&(cd)->cq_cnt_curr, val)
 #define CQ_CNT_LOAD(cd)       \
         atomic_load_uint_least32_t(&(cd)->cq_cnt_curr)
 #define CQ_CNT_INC(cd)        \
@@ -919,19 +919,26 @@ mpool_idx_base_t rf_done_next_pool_i(void)
 // fork_reqs_map array is indexed by locale; each element [i] holds
 // locale i's fork_reqs base address.
 //
-// There is an obvious tension on FORK_T_MAX_ARG_SIZE here.  The more
-// data we can store in the fixed-sized elements of fork_reqs, the
-// fewer fork requests there will be for which the remote end has to
-// do a remote GET of an argument larger than that.  But there can be
-// many fork_reqs elements.  For a hypothetical application running on
-// 1k locales with 16 communication domains per locale and 2 fork
-// request buffers per comm domain, the current FORK_T_MAX_ARG_SIZE
-// means that each locale has about 2 MiB of space dedicated to fork
-// requests.  That's not much, but one can see that things could get
-// out of hand quickly if FORK_T_MAX_ARG_SIZE were very large.  As of
-// this writing (11/21/11) we don't have a good handle on the
-// distribution of remote fork argument sizes.  Some better
-// information about that would be nice to have.
+// There is an obvious tension on MAX_SMALL_CALL_PAYLOAD here.  The
+// more data we can store in the fixed-sized elements of fork_reqs,
+// the fewer fork requests there will be for which the remote end has
+// to do a remote GET of an argument larger than that.  But there can
+// be many fork_reqs elements.  For an application running on 1,024
+// locales with 64 communication domains per locale and 2 fork request
+// buffers per comm domain, the current MAX_SMALL_CALL_PAYLOAD means
+// that each locale has about 128 MiB of space dedicated to fork
+// requests.  That's not massive, but one can see that things could
+// get out of hand quickly if MAX_SMALL_CALL_PAYLOAD were very
+// large.  A large job (say 8K nodes with 128 comm domains) would
+// require 2 GiB per node, which is pretty large, but not horrible.
+// The largest XC possible is 32K nodes and would require 8 GiB per
+// node.  That's pretty excessive, so if we start running at really
+// high scales, we may need to revisit this decision.  Most people
+// are running much smaller scales so we believe the trade-off is
+// worthwhile.  As of this writing (11/30/18) the typical size for
+// remote forks for our multi-locale performance benchmark kernels
+// is between 512 and 1024 bytes.  Bundles for setup and non-kernel
+// spawns are usually between 128 and 512 bytes.
 //
 typedef enum {
   fork_op_nil,
@@ -962,17 +969,14 @@ typedef struct {
   c_sublocid_t  subloc;  // target sublocale
   unsigned char fast:          1;
   unsigned char blocking:      1;
-  unsigned char payload_size;
+  unsigned short payload_size;
   chpl_fn_int_t fid;
 
   // TODO: is there a way to "compress" this?
   chpl_task_ChapelData_t state;
 } fork_small_call_info_t;
 
-// Note: fork_small_call_info_t.payload_size must be able to store
-// a number at least this large. That means it should be at most
-// 255 as long as payload_size is an unsigned char.
-#define MAX_SMALL_CALL_PAYLOAD 64
+#define MAX_SMALL_CALL_PAYLOAD 1024
 #define FORK_T_MAX_SIZE \
   (sizeof(fork_small_call_info_t) + MAX_SMALL_CALL_PAYLOAD)
 
@@ -1051,6 +1055,12 @@ typedef union fork_t {
   fork_shutdown_info_t s;
   fork_space_t bytes; // get fork_t to be >= FORK_T_MAX_SIZE bytes
 } fork_t;
+
+typedef struct {
+  fork_t fork;
+  nb_desc_t nb_desc;
+  chpl_bool free;
+} nb_fork_t;
 
 typedef struct {
   chpl_task_bundle_t task;
@@ -2216,7 +2226,7 @@ void gni_setup_per_comm_dom(int cdi)
   //       comm domain may be different than that for initiators.)
   //
   cd->cq_cnt_max  = CD_ACTIVE_TRANS_MAX;
-  CQ_CNT_STORE(cd, 0);
+  CQ_CNT_INIT(cd, 0);
   GNI_CHECK(GNI_CqCreate(cd->nih, cd->cq_cnt_max, 0, GNI_CQ_NOBLOCK, NULL,
                          NULL, &cd->cqh));
 
@@ -5001,6 +5011,7 @@ void consume_all_outstanding_cq_events(int cdi)
         //
         atomic_store_bool((atomic_bool*) (intptr_t) post_desc->post_id, true);
       }
+      CQ_CNT_DEC(cd);
     }
 
     assert(gni_rc == GNI_RC_NOT_DONE);
@@ -6120,13 +6131,6 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
       consume_all_outstanding_cq_events(nbdp->cdi);
     }
 
-    //
-    // cq_cnt_curr tells whether we have capacity to initiate another
-    // transaction on this CD.  We could decrement it earlier, when we
-    // handle the CQ event, but then we'd have a race until we freed
-    // the NB descriptor here.  So, we delay the decrement until now.
-    //
-    CQ_CNT_DEC(&comm_doms[nbdp->cdi]);
     nb_desc_free(nbdi);
   }
 }
@@ -6166,14 +6170,6 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
     if (atomic_load_explicit_bool(&nbdp->done, memory_order_acquire)) {
       h[i] = NULL;
       rv = 1;
-
-      //
-      // cq_cnt_curr tells whether we have capacity to initiate another
-      // transaction on this CD.  We could decrement it earlier, when we
-      // handle the CQ event, but then we'd have a race until we freed
-      // the NB descriptor here.  So, we delay the decrement until now.
-      //
-      CQ_CNT_DEC(&comm_doms[nbdp->cdi]);
       nb_desc_free(nbdi);
     }
   }
@@ -6764,15 +6760,16 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
 // Atomic subtract:
 //   _f: interface function name suffix (type)
 //   _t: AMO type
+//   _negate: negation function
 //
-#define DEFINE_CHPL_COMM_ATOMIC_SUB(_f, _t)                             \
+#define DEFINE_CHPL_COMM_ATOMIC_SUB(_f, _t, _negate)                    \
         /*==============================*/                              \
         void chpl_comm_atomic_sub_##_f(void* opnd,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        int ln, int32_t fn)              \
         {                                                               \
-          _t nopnd = - *(_t*) opnd;                                     \
+          _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
                    "IFACE chpl_comm_atomic_sub_"#_f                     \
@@ -6788,7 +6785,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                                             void* obj,                  \
                                             int ln, int32_t fn)         \
         {                                                               \
-          _t nopnd = - *(_t*) opnd;                                     \
+          _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
                    "IFACE chpl_comm_atomic_sub_buff_"#_f                \
@@ -6805,7 +6802,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                                              void* res,                 \
                                              int ln, int32_t fn)        \
         {                                                               \
-          _t nopnd = - *(_t*) opnd;                                     \
+          _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
                    "IFACE chpl_comm_atomic_fetch_sub_"#_f               \
@@ -6816,12 +6813,16 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                                           ln, fn);                      \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_SUB(int32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_SUB(int64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_SUB(uint32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_SUB(uint64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_SUB(real32, float)
-DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double)
+#define NEGATE_I32(x) ((x) == INT_LEAST32_MIN ? (x) : -(x))
+#define NEGATE_I64(x) ((x) == INT_LEAST64_MIN ? (x) : -(x))
+#define NEGATE_U_OR_R(x) (-(x))
+
+DEFINE_CHPL_COMM_ATOMIC_SUB(int32, int_least32_t, NEGATE_I32)
+DEFINE_CHPL_COMM_ATOMIC_SUB(int64, int_least64_t, NEGATE_I64)
+DEFINE_CHPL_COMM_ATOMIC_SUB(uint32, int_least32_t, NEGATE_U_OR_R)
+DEFINE_CHPL_COMM_ATOMIC_SUB(uint64, int_least64_t, NEGATE_U_OR_R)
+DEFINE_CHPL_COMM_ATOMIC_SUB(real32, float, NEGATE_U_OR_R)
+DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double, NEGATE_U_OR_R)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_SUB
 
@@ -6933,7 +6934,6 @@ void do_remote_amo_nb(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
       local_yield();
       consume_all_outstanding_cq_events(cdi_v[vi]);
     }
-    CQ_CNT_DEC(&comm_doms[cdi_v[vi]]);
   }
 }
 
@@ -7649,50 +7649,92 @@ void do_fork_post(c_nodeid_t locale,
                   uint64_t f_size, fork_base_info_t* const p_rf_req,
                   int* cdi_p, int* rbi_p)
 {
-  rf_done_t             rf_done;
-  gni_post_descriptor_t post_desc;
-  int                   rbi;
+  rf_done_t              stack_rf_done;
+  gni_post_descriptor_t  stack_post_desc;
+  gni_post_descriptor_t* post_desc_p;
+  int                    rbi;
+
+  static __thread nb_fork_t nb_fork[CD_ACTIVE_TRANS_MAX]; // nb fork descriptors
+  static __thread int nb_fork_num = -1;       // number of outstanding nb forks
+  static __thread int nb_fork_first_free = 0; // index of the first free desc
 
   if (blocking) {
-    mem_region_t* rf_done_mr;
-
     //
     // Our completion flag has to be in registered memory so the
     // remote locale can PUT directly back here to it.
     //
-
-    p_rf_req->rf_done = &rf_done;
-    rf_done_mr = mreg_for_local_addr(p_rf_req->rf_done);
-    if (rf_done_mr == NULL) {
+    if (mreg_for_local_addr(&stack_rf_done) != NULL) {
+      p_rf_req->rf_done = &stack_rf_done;
+    } else {
       p_rf_req->rf_done = rf_done_alloc();
     }
-
     *p_rf_req->rf_done = 0;
     atomic_thread_fence(memory_order_release);
-  }
-  else
+
+    post_desc_p = &stack_post_desc;
+  } else {
     p_rf_req->rf_done = NULL;
+
+    // Initialize free flag on first call
+    if (nb_fork_num == -1) {
+      int i;
+      for (i=0; i<CD_ACTIVE_TRANS_MAX; i++) {
+        nb_fork[i].free = true;
+      }
+      nb_fork_num = 0;
+    }
+  }
+
+  //
+  // Acquire a communication domain and a remote request buffer
+  //
+  acquire_comm_dom_and_req_buf(locale, &rbi);
+  if (cdi_p != NULL)
+    *cdi_p = cd_idx;
+  if (rbi_p != NULL)
+    *rbi_p = rbi;
+
+  //
+  // Acquire a non-blocking descriptor. Note this must be done after we acquire
+  // the comm_dom and req_buf since we do not allow yields between when we
+  // acquire the non-blocking descriptor and when we do the post_fma below.
+  //
+  if (!blocking) {
+    // find the index of the first free nb descriptor
+    while (!nb_fork[nb_fork_first_free].free) {
+      nb_fork_first_free = (nb_fork_first_free + 1) % CD_ACTIVE_TRANS_MAX;
+    }
+
+    //
+    // Copy the arg bundle into the nb_desc and later send that space. In case
+    // retransmission is needed we need the src buffer to exist until we
+    // consume the completion event
+    //
+    nb_fork[nb_fork_first_free].free = false;
+    memcpy(&nb_fork[nb_fork_first_free].fork, p_rf_req, f_size);
+    post_desc_p = &nb_fork[nb_fork_first_free].nb_desc.post_desc;
+    atomic_store_bool(&nb_fork[nb_fork_first_free].nb_desc.done, false);
+    post_desc_p->post_id = (uint64_t) (intptr_t) &nb_fork[nb_fork_first_free].nb_desc.done;
+  }
 
   //
   // Fill in the POST descriptor.
   //
-  acquire_comm_dom_and_req_buf(locale, &rbi);
+  post_desc_p->type            = GNI_POST_FMA_PUT;
+  post_desc_p->cq_mode         = GNI_CQMODE_GLOBAL_EVENT
+                                 | GNI_CQMODE_REMOTE_EVENT;
+  post_desc_p->dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
+  post_desc_p->rdma_mode       = 0;
+  post_desc_p->src_cq_hndl     = 0;
+  if (blocking)
+    post_desc_p->local_addr    = (uint64_t) (intptr_t) p_rf_req;
+  else
+    post_desc_p->local_addr    = (uint64_t) (intptr_t) &nb_fork[nb_fork_first_free].fork;
+  post_desc_p->remote_addr     = (uint64_t) (intptr_t)
+                                 SEND_SIDE_FORK_REQ_BUF_ADDR(locale, cd_idx, rbi);
+  post_desc_p->remote_mem_hndl = rf_mdh_map[locale];
+  post_desc_p->length          = f_size;
 
-  post_desc.type            = GNI_POST_FMA_PUT;
-  post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT
-                              | GNI_CQMODE_REMOTE_EVENT;
-  post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
-  post_desc.rdma_mode       = 0;
-  post_desc.src_cq_hndl     = 0;
-  post_desc.local_addr      = (uint64_t) (intptr_t) p_rf_req;
-  post_desc.remote_addr     = (uint64_t) (intptr_t)
-                              SEND_SIDE_FORK_REQ_BUF_ADDR(locale, cd_idx, rbi);
-  post_desc.remote_mem_hndl = rf_mdh_map[locale];
-  post_desc.length          = f_size;
-
-  //
-  // Initiate the transaction and wait for it to complete.
-  //
   GNI_CHECK(GNI_EpSetEventData(cd->remote_eps[locale], 0,
                                GNI_ENCODE_REM_INST_ID(chpl_nodeID, cd_idx,
                                                       rbi)));
@@ -7700,27 +7742,61 @@ void do_fork_post(c_nodeid_t locale,
             locale, cd_idx, rbi, p_rf_req->seq,
             fork_op_name(p_rf_req->op));
 
-  if (cdi_p != NULL)
-    *cdi_p = cd_idx;
-  if (rbi_p != NULL)
-    *rbi_p = rbi;
-
-  // note: Do __NOT__ yield while waiting for the ack on a NB fork. We want to
-  // ensure any subsequent NB tasks are spawned before we yield the processor.
-  // For a case like `coforall loc in Locales do on loc do body()` this ensures
-  // we've forked all remote tasks before we give up this task to potentially
-  // work on the body for this locale.
-  post_fma_and_wait(locale, &post_desc, blocking);
-
   if (blocking) {
+    //
+    // Initiate the transaction and wait for it to complete
+    //
+    post_fma_and_wait(locale, post_desc_p, blocking);
+
     PERFSTATS_INC(wait_rfork_cnt);
     while (! *(volatile rf_done_t*) p_rf_req->rf_done) {
       PERFSTATS_INC(lyield_in_wait_rfork_cnt);
       local_yield();
     }
 
-    if (p_rf_req->rf_done != &rf_done)
+    if (p_rf_req->rf_done != &stack_rf_done)
       rf_done_free(p_rf_req->rf_done);
+  } else {
+    //
+    // Initiate the transaction and if we're out of space retire at least one
+    //
+
+    nb_fork[nb_fork_first_free].nb_desc.cdi = post_fma(locale, post_desc_p);
+    nb_fork_first_free++;
+    nb_fork_num++;
+
+    // If we're at our max, retire at least one transaction. Note that we can't
+    // compress transactions so maintain both the number of outstanding
+    // transactions and the index of the first free one.
+    if (nb_fork_num >= CD_ACTIVE_TRANS_MAX-1) {
+      int i;
+      chpl_bool retired_any = false;
+      do {
+        for (i=0; i<CD_ACTIVE_TRANS_MAX; i++) {
+          nb_desc_t* nb_desc;
+          chpl_bool done;
+
+          if (nb_fork[i].free) {
+            if (i < nb_fork_first_free) nb_fork_first_free = i;
+            continue;
+          }
+
+          nb_desc = &nb_fork[i].nb_desc;
+
+          done = atomic_load_explicit_bool(&nb_desc->done, memory_order_acquire);
+          if (!done) {
+            consume_all_outstanding_cq_events(nb_desc->cdi);
+            done = atomic_load_explicit_bool(&nb_desc->done, memory_order_acquire);
+          }
+          if (done) {
+            retired_any = true;
+            nb_fork[i].free = true;
+            nb_fork_num--;
+            if (i < nb_fork_first_free) nb_fork_first_free = i;
+          }
+        }
+      } while(!retired_any);
+    }
   }
 }
 
@@ -8016,8 +8092,6 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
     consume_all_outstanding_cq_events(cdi);
     iters++;
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
-
-  CQ_CNT_DEC(&comm_doms[cdi]);
 }
 
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
@@ -8091,8 +8165,6 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
     local_yield();
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
-
-  CQ_CNT_DEC(&comm_doms[cdi]);
 }
 
 #endif
@@ -8142,8 +8214,6 @@ void post_rdma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
     }
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
-
-  CQ_CNT_DEC(&comm_doms[cdi]);
 }
 
 

@@ -351,6 +351,8 @@ all:
   09/25/18:
     - text: Optimize blocking puts/gets and fetching network AMOs (#11176)
       config: 16 node XC
+  12/04/18:
+    - Set up gcc 8.2 as default gcc for nightly testing (#11762)
 
 
 AllCompTime:

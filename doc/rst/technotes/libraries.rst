@@ -296,6 +296,17 @@ Compiling Your Chapel Library
 To create a Python-compatible module in addition to the normally generated
 library and header, add ``--library-python`` to the compilation.
 
+.. note::
+
+   When compiling on a Cray, or a machine with multiple C compilers, you should
+   ensure your ``CHPL_TARGET_COMPILER`` is the same as the compiler used to
+   install Cython (usually the default C compiler for the machine, or
+   ``cray-prgenv-gnu`` on Cray systems).  Using a different
+   ``CHPL_TARGET_COMPILER`` may lead to ABI incompatibility issues or the use of
+   unexpected flags when compiling your Python module.  See
+   :ref:`readme-chplenv.CHPL_COMPILER` for more information on the values of
+   ``CHPL_TARGET_COMPILER``
+
 Python Module Name
 ------------------
 

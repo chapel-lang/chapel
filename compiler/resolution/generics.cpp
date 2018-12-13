@@ -31,6 +31,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "visibleFunctions.h"
+#include "wellknown.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -748,7 +749,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
   for_formals(formal, fn) {
     ArgSymbol* newFormal = toArgSymbol(map.get(formal));
 
-    if (formal->type == dtAny)
+    if (formal->type == dtAny || formal->type == dtTuple)
       newFormal->addFlag(FLAG_INSTANTIATED_FROM_ANY);
 
     if (Symbol* value = subs.get(formal)) {

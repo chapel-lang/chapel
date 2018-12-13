@@ -114,11 +114,11 @@ module ChapelDistribution {
       // a remote locale, you should consider wrapping the call in
       // an on clause to avoid excessive remote forks due to the
       // testAndSet()
-      while (_domsLock.testAndSet()) do chpl_task_yield();
+      while (_domsLock.testAndSet(memory_order_acquire)) do chpl_task_yield();
     }
 
     inline proc _unlock_doms() {
-      _domsLock.clear();
+      _domsLock.clear(memory_order_release);
     }
 
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
@@ -291,11 +291,11 @@ module ChapelDistribution {
       // a remote locale, you should consider wrapping the call in
       // an on clause to avoid excessive remote forks due to the
       // testAndSet()
-      while (_arrsLock.testAndSet()) do chpl_task_yield();
+      while (_arrsLock.testAndSet(memory_order_acquire)) do chpl_task_yield();
     }
 
     inline proc _unlock_arrs() {
-      _arrsLock.clear();
+      _arrsLock.clear(memory_order_release);
     }
 
     // used for associative domains/arrays

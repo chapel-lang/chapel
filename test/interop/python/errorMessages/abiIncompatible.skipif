@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+
+import os
+
+compiler = os.environ['CHPL_TARGET_COMPILER']
+if (compiler.startswith("cray-prgenv") and compiler != "cray-prgenv-gnu"):
+  print(False)
+else:
+  print(True)

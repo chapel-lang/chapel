@@ -116,7 +116,7 @@ module ChapelReduce {
     proc lock() {
       var lockAttempts = 0,
           maxLockAttempts = (2**10-1);
-      while l.testAndSet() {
+      while l.testAndSet(memory_order_acquire) {
         lockAttempts += 1;
         if (lockAttempts & maxLockAttempts) == 0 {
           maxLockAttempts >>= 1;
@@ -125,7 +125,7 @@ module ChapelReduce {
       }
     }
     proc unlock() {
-      l.clear();
+      l.clear(memory_order_release);
     }
   }
 
