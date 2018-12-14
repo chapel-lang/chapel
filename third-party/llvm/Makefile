@@ -33,7 +33,6 @@ endif
 
 LLVM_SRC_FILE := llvm/CMakeLists.txt
 LLVM_CMAKE_FILE := $(LLVM_BUILD_DIR)/CMakeCache.txt
-LLVM_REBUILD_FILE := $(LLVM_BUILD_DIR)/TOUCH_TO_REBUILD
 LLVM_CONFIGURED_HEADER_FILE := $(LLVM_BUILD_DIR)/include/llvm/Config/llvm-config.h
 LLVM_HEADER_FILE := $(LLVM_INSTALL_DIR)/include/llvm/PassSupport.h
 LLVM_SUPPORT_FILE := $(LLVM_INSTALL_DIR)/lib/libLLVMSupport.a
@@ -100,10 +99,6 @@ $(LLVM_SRC_FILE):
 # -DPOLLY_ENABLE_GPGPU_CODEGEN=ON
 # to the flags supplied below.
 
-$(LLVM_REBUILD_FILE): $(LLVM_SRC_FILE)
-	mkdir -p $(LLVM_BUILD_DIR)
-	touch $(LLVM_REBUILD_FILE)
-
 $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	mkdir -p $(LLVM_BUILD_DIR)
 	@if ./cmake-ok.sh $(CMAKE); then \
@@ -129,20 +124,18 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	  echo Error: LLVM requires cmake 3.4.3 or later to build; \
 	  exit 1; \
 	fi
-	if [ -f $(LLVM_CONFIGURED_HEADER_FILE) ]; then touch $(LLVM_CONFIGURED_HEADER_FILE); fi
 
 
-$(LLVM_HEADER_FILE): $(LLVM_REBUILD_FILE)
+$(LLVM_HEADER_FILE):
 	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
 	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-llvm-headers ; \
 	else \
 	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-headers ; \
 	fi
-	if [ -f $(LLVM_HEADER_FILE) ]; then touch $(LLVM_HEADER_FILE); fi
 
 # note: the conditional below allows parallel make to continue
 # if cmake us also using Make.
-$(LLVM_SUPPORT_FILE): $(LLVM_REBUILD_FILE)
+$(LLVM_SUPPORT_FILE):
 	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
 	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-cmake-exports ; \
 	  cd $(LLVM_BUILD_DIR) && $(MAKE) LLVMSupport ; \
@@ -152,9 +145,8 @@ $(LLVM_SUPPORT_FILE): $(LLVM_REBUILD_FILE)
 	  cd $(LLVM_BUILD_DIR) && cmake --build . --target LLVMSupport ; \
 	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-LLVMSupport ; \
 	fi
-	if [ -f $(LLVM_SUPPORT_FILE) ]; then touch $(LLVM_SUPPORT_FILE); fi
 
-$(LLVM_CONFIG_FILE): $(LLVM_REBUILD_FILE)
+$(LLVM_CONFIG_FILE):
 	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
 	  cd $(LLVM_BUILD_DIR) && $(MAKE) llvm-config ; \
 	else \
@@ -162,12 +154,11 @@ $(LLVM_CONFIG_FILE): $(LLVM_REBUILD_FILE)
 	fi
 	mkdir -p $(LLVM_INSTALL_DIR)/bin
 	cp $(LLVM_BUILD_DIR)/bin/llvm-config $(LLVM_INSTALL_DIR)/bin/llvm-config
-	if [ -f $(LLVM_CONFIG_FILE) ]; then touch $(LLVM_CONFIG_FILE); fi
 
 # note: install target for config doesn't seem to exist
 #cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-config
 
-$(LLVM_CLANG_FILE): $(LLVM_REBUILD_FILE)
+$(LLVM_CLANG_FILE):
 	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
 	  cd $(LLVM_BUILD_DIR) && $(MAKE) ; \
 	  cd $(LLVM_BUILD_DIR) && $(MAKE) install ; \
@@ -175,13 +166,12 @@ $(LLVM_CLANG_FILE): $(LLVM_REBUILD_FILE)
 	  cd $(LLVM_BUILD_DIR) && cmake --build . --target clang ; \
 	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-clang ; \
 	fi
-	if [ -f $(LLVM_CLANG_FILE) ]; then touch $(LLVM_CLANG_FILE); fi
 
 # Create a file containing extra arguments for clang
 # This file is necessary on darwin where important headers are
 # not in /usr/include. This causes a problem when building another clang
 # because the new clang can't find the appropriate headers.
-$(LLVM_CLANG_CONFIG_FILE): $(LLVM_REBUILD_FILE)
+$(LLVM_CLANG_CONFIG_FILE):
 	mkdir -p $(LLVM_INSTALL_DIR)
 	if [ "clang" = "$(CHPL_MAKE_HOST_COMPILER)" ]; then \
 	  ../../util/config/gather-clang-sysroot-arguments clang > $(LLVM_CLANG_CONFIG_FILE) ; \
