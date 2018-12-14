@@ -205,6 +205,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
     case PRIM_IS_UNION_TYPE:
     case PRIM_IS_ATOMIC_TYPE:
     case PRIM_IS_REF_ITER_TYPE:
+    case PRIM_IS_EXTERN_TYPE:
     case PRIM_IS_POD:
     case PRIM_COERCE:
     case PRIM_CALL_RESOLVES:

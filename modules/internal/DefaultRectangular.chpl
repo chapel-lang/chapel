@@ -741,31 +741,29 @@ module DefaultRectangular {
 
     proc dsiBuildArray(type eltType) {
       if (forExternalArr) {
-        var externData = chpl_make_external_array(c_sizeof(eltType),
-                                                  this.dsiNumIndices: uint);
-        var data = externData.elts: _ddata(eltType);
-        var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
-                                                      rank=rank,
-                                                      idxType=idxType,
-                                                      stridable=stridable,
-                                                      dom=_to_unmanaged(this),
-                                                      data=data,
-                                                      externData=externData,
-                                                      externArr=forExternalArr,
-                                                      _owned=true);
+        if (isExternArrEltType(eltType)) {
+          var externData = chpl_make_external_array(c_sizeof(eltType),
+                                                    this.dsiNumIndices: uint);
+          var data = externData.elts: _ddata(eltType);
+          var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
+                                                        rank=rank,
+                                                        idxType=idxType,
+                                                        stridable=stridable,
+                                                        dom=_to_unmanaged(this),
+                                                        data=data,
+                                                        externData=externData,
+                                                        externArr=forExternalArr,
+                                                        _owned=true);
 
-        // Only give the pointer initial contents if we created it ourselves.
-        // Note: update to use Reflection.canResolve once #11802 has been fixed
-        if (__primitive("call resolves", "_cast", c_ptr(eltType),
-                        externData.elts)) {
+          // Only give the pointer initial contents if we created it ourselves.
           init_elts(externData.elts:c_ptr(eltType), this.dsiNumIndices,
                     eltType);
+          return arr;
         } else {
           use HaltWrappers;
           safeCastCheckHalt("Cannot build an external array that stores " +
                             eltType: string);
         }
-        return arr;
       } else {
         return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
                                                    idxType=idxType,
@@ -816,19 +814,20 @@ module DefaultRectangular {
     }
   }
 
-  /* TODO: finish this function!
-  private proc isGoodEltTypeForExternArr(type t): param {
+  // Returns a bool indicating if the type would be appropriate to use in an
+  // extern array.
+  // NOTE: once we can export types, those should also be supported here.
+  private proc isExternArrEltType(type t) param {
     if (isPrimitive(t) && t != string) {
       return true;
     } else if (t == c_string) {
       return true;
-    } else if () {
+    } else if (__primitive("is extern type", t)) {
       return true;
     } else {
       return false;
     }
   }
-  */
 
   // helper routines for converting tuples of integers into tuple indices
   

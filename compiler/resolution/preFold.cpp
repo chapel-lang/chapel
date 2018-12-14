@@ -495,7 +495,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     call->replace(retval);
+  } else if (call->isPrimitive(PRIM_IS_EXTERN_TYPE)) {
+    if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_EXTERN)) {
+      retval = new SymExpr(gTrue);
+    } else {
+      retval = new SymExpr(gFalse);
+    }
 
+    call->replace(retval);
   } else if (call->isPrimitive(PRIM_IS_CLASS_TYPE)) {
     Type* t = call->get(1)->typeInfo();
 
