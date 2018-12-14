@@ -104,7 +104,7 @@ $(LLVM_REBUILD_FILE): $(LLVM_SRC_FILE)
 	mkdir -p $(LLVM_BUILD_DIR)
 	touch $(LLVM_REBUILD_FILE)
 
-$(LLVM_CONFIGURED_HEADER_FILE):
+$(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_REBUILD_FILE)
 	mkdir -p $(LLVM_BUILD_DIR)
 	@if ./cmake-ok.sh $(CMAKE); then \
 	  cd $(LLVM_BUILD_DIR) && cmake \
