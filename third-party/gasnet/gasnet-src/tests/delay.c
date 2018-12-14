@@ -6,7 +6,7 @@
 
 
 #include <float.h>
-#include <gasnet.h>
+#include <gasnetex.h>
 #include <gasnet_tools.h>
 
 static volatile float x, y;

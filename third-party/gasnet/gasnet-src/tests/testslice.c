@@ -3,7 +3,7 @@
  * Copyright 2007, Parry Husbands and Dan Bonachea <bonachea@cs.berkeley.edu>
  * Terms of use are as specified in license.txt
  */
-#include <gasnet.h>
+#include <gasnetex.h>
 #include <gasnet_coll.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +17,11 @@ int segsize = 0;
   #define TEST_SEGSZ_EXPR ((uintptr_t)segsize)
 #endif
 #include "test.h"
+
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
 
 #define OUTPUT_SUCCESS 0
 uint64_t failures = 0;
@@ -59,11 +64,11 @@ int main(int argc, char **argv)
     char *local_base, *target_base;
 
     /* call startup */
-    GASNET_Safe(gasnet_init(&argc, &argv));
+    GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testslice", &argc, &argv, 0));
 
     /* get SPMD info */
-    myproc = gasnet_mynode();
-    numprocs = gasnet_nodes();
+    myproc = gex_TM_QueryRank(myteam);
+    numprocs = gex_TM_QuerySize(myteam);
 
     if (argc > 1) segsize = atoi(argv[1]);
     if (!segsize) segsize = 1024*1000;
@@ -73,7 +78,7 @@ int main(int argc, char **argv)
     if (!inner_iterations) inner_iterations = 10;
     if (argc > 4) seedoffset = atoi(argv[4]);
 
-    GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ, TEST_MINHEAPOFFSET));
+    GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ));
 
     test_init("testslice",0, "(segsize) (iterations) (# of sizes per iteration) (seed)");
 
@@ -126,16 +131,16 @@ int main(int argc, char **argv)
 
           /* Perform operations */
           /* Out of segment put from shadow_region 1 to remote */
-          gasnet_put(peerproc,target_base+remote_starting_point,shadow_region_1 + starting_point,len); 
+          gex_RMA_PutBlocking(myteam, peerproc,target_base+remote_starting_point,shadow_region_1 + starting_point,len, 0); 
   
           /* In segment get from remote to local segment */
-          gasnet_get(local_base+local_starting_point_1,peerproc,target_base+remote_starting_point,len); 
+          gex_RMA_GetBlocking(myteam, local_base+local_starting_point_1,peerproc,target_base+remote_starting_point,len, 0); 
   
           /* Verify */
           assert_eq(shadow_region_1 + starting_point, local_base + local_starting_point_1, len,starting_point,i,j,"Out of segment put + in segment get");
   
           /* Out of segment get from remote to shadow_region_2 (starting from 0) */
-          gasnet_get(shadow_region_2+local_starting_point_2,peerproc,target_base+remote_starting_point,len); 
+          gex_RMA_GetBlocking(myteam, shadow_region_2+local_starting_point_2,peerproc,target_base+remote_starting_point,len, 0); 
   
           /* Verify */
           assert_eq(shadow_region_2+local_starting_point_2, shadow_region_1 + starting_point, len,starting_point,i,j,"Out of segment get");

@@ -7,10 +7,10 @@
 #define _GASNET_TOOLS_H
 #define _IN_GASNET_TOOLS_H
 #define _INCLUDED_GASNET_TOOLS_H
-#if !defined(_INCLUDED_GASNET_H) && \
+#if !defined(_INCLUDED_GASNETEX_H) && \
     (defined(GASNET_SEQ) || defined(GASNET_PARSYNC) || defined(GASNET_PAR))
   #error Objects that use both GASNet and GASNet tools must   \
-         include gasnet.h before gasnet_tools.h 
+         include gasnetex.h before gasnet_tools.h 
 #endif
 
 #ifdef __cplusplus
@@ -28,7 +28,7 @@
   #define GASNETT_LITE_MODE 1
   #undef GASNETT_THREAD_SAFE
   #define GASNETT_THREAD_MODEL LITE
-  #ifdef _INCLUDED_GASNET_H
+  #ifdef _INCLUDED_GASNETEX_H
     #error GASNETT_LITE_MODE not supported for libgasnet clients
   #endif
 #elif defined(GASNETT_THREAD_SAFE) ||                             \
@@ -435,7 +435,7 @@ extern gasnett_backtrace_type_t gasnett_backtrace_user;
 /* ------------------------------------------------------------------------------------ */
 /* GASNet tracing/stats support (automatically stubbed out when libgasnet absent) */
 
-#if defined(_INCLUDED_GASNET_H) && defined(GASNET_SRCLINES)
+#if defined(_INCLUDED_GASNETEX_H) && defined(GASNET_SRCLINES)
   #define GASNETT_TRACE_SETSOURCELINE      GASNETI_TRACE_SETSOURCELINE
   #define GASNETT_TRACE_GETSOURCELINE      GASNETI_TRACE_GETSOURCELINE
   #define GASNETT_TRACE_FREEZESOURCELINE   GASNETI_TRACE_FREEZESOURCELINE
@@ -474,7 +474,7 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
             (*(_gasnett_trace_printf_force?_gasnett_trace_printf_force:&_gasnett_trace_printf_noop))
   #endif
 
-  #ifdef _INCLUDED_GASNET_H
+  #ifdef _INCLUDED_GASNETEX_H
     #define GASNETT_TRACE_ENABLED       GASNETI_TRACE_ENABLED(H)
     #define GASNETT_TRACE_GETMASK()     GASNETI_TRACE_GETMASK()
     #define GASNETT_TRACE_SETMASK(mask) GASNETI_TRACE_SETMASK(mask)
@@ -498,7 +498,7 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
   #define GASNETT_TRACE_SET_TRACELOCAL(newval)  ((void)0)
 #endif
 
-#if defined(_INCLUDED_GASNET_H) && defined(GASNET_STATS)
+#if defined(_INCLUDED_GASNETEX_H) && defined(GASNET_STATS)
   /* GASNETT_STATS_INIT can be called at any time to register a callback function, which 
      will be invoked at stats dumping time (provided H stats are enabled)
      and passed a printf-like function that can be used to write output into the stats
@@ -515,7 +515,7 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
 
 /* ------------------------------------------------------------------------------------ */
 /* misc internal libgasnet-specific features we wish to expose when available */
-#if defined(_INCLUDED_GASNET_H) 
+#if defined(_INCLUDED_GASNETEX_H) 
   /* these tools ONLY available when linking a libgasnet.a */
   #ifdef HAVE_MMAP
     extern void *gasneti_mmap(uintptr_t _segsize);
@@ -523,9 +523,11 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
   #else
     #define gasnett_mmap(sz) gasnett_fatalerror("gasnett_mmap not available")
   #endif
-  extern int gasneti_run_diagnostics(int _iters, int _threadcnt, 
-                                     const char *_testsections, gasnet_seginfo_t const *_seginfo);
-  extern void gasneti_diagnostic_gethandlers(gasnet_handlerentry_t **_htable, int *_htable_cnt);
+  extern int gasneti_run_diagnostics(int _iters, int _threadcnt,
+                                     const char *_testsections,
+                                     gex_TM_t _myteam, void* _myseg,
+                                     gex_Rank_t _peer, void* _peerseg);
+  extern void gasneti_diagnostic_gethandlers(gex_AM_Entry_t **_htable, int *_htable_cnt);
   #define gasnett_run_diagnostics gasneti_run_diagnostics
   #define gasnett_diagnostic_gethandlers gasneti_diagnostic_gethandlers
 
@@ -564,8 +566,13 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
   #define gasnett_format_putsgets_bufsz   gasneti_format_putsgets_bufsz   
   #define gasnett_format_putsgets         gasneti_format_putsgets         
 
+  /* Enum/mask string formatting */
+  #define gasnett_format_dt               gasneti_format_dt
+  #define gasnett_format_op               gasneti_format_op
+  #define gasnett_format_ti               gasneti_format_ti
+
   #if defined(GASNETI_ATOMIC_LOCK_TBL_DECLS)
-    GASNETI_ATOMIC_LOCK_TBL_DECLS(gasneti_hsl_atomic_, gasnet_hsl_)
+    GASNETI_ATOMIC_LOCK_TBL_DECLS(gasneti_hsl_atomic_, gex_HSL_)
   #endif
 #else
   #define gasnett_mmap(sz)        gasnett_fatalerror("gasnett_mmap not available")

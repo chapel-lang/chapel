@@ -4,8 +4,7 @@
  * Terms of use are as specified in license.txt
  */
 
-#include <gasnet.h>
-#include <gasnet_coll.h>
+#include <gasnetex.h>
 
 #include <test.h>
 
@@ -16,6 +15,11 @@
 #ifndef TEST_UNNAMED_BARRIER
   #define TEST_UNNAMED_BARRIER 1
 #endif
+
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
 
 int mynode, nodes, iters = 0;
 
@@ -48,10 +52,12 @@ int my_barrier_wait(int value, int flags) {
 
 #define hidx_done_shorthandler   200
 volatile int done = 0;
-void done_shorthandler(gasnet_token_t token) {
+void done_shorthandler(gex_Token_t token) {
 	  done = 1;
 }
-gasnet_handlerentry_t htable[] = { { hidx_done_shorthandler,  done_shorthandler  } };
+gex_AM_Entry_t htable[] = {
+    { hidx_done_shorthandler, done_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0, NULL, NULL }
+};
 
 static void * doTest(void *);
 
@@ -60,9 +66,9 @@ int main(int argc, char **argv) {
   int pollers = 0;
   int arg = 1;
 
-  GASNET_Safe(gasnet_init(&argc, &argv));
-  GASNET_Safe(gasnet_attach(htable, 1, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
-  TEST_COLL_INIT();
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testbarrier", &argc, &argv, 0));
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
+  GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, 1));
 
 #if GASNET_PAR
   test_init("testbarrier", 1, "[-t] [-p polling_threads] (iters)\n"
@@ -74,8 +80,8 @@ int main(int argc, char **argv) {
             "  The -b option replaces barrier_notify calls with blocking barrier calls\n"
             "  The -t option replaces barrier_wait calls with looping on barrier_try");
 #endif
-  mynode = gasnet_mynode();
-  nodes = gasnet_nodes();
+  mynode = gex_TM_QueryRank(myteam);
+  nodes = gex_TM_QuerySize(myteam);
 
   while (argc-arg >= 2) {
    if (!strcmp(argv[arg], "-p")) {
@@ -83,7 +89,7 @@ int main(int argc, char **argv) {
     pollers = test_thread_limit(atoi(argv[arg+1])+1)-1;
     arg += 2;
 #else
-    if (gasnet_mynode() == 0) {
+    if (mynode == 0) {
       fprintf(stderr, "testbarrier %s\n", GASNET_CONFIG_STRING);
       fprintf(stderr, "ERROR: The -p option is only available in the PAR configuration.\n");
       fflush(NULL);
@@ -253,6 +259,48 @@ static void * doTest(void *arg) {
   BARRIER();
 #endif
 
-  GASNET_Safe(gasnet_AMRequestShort0(mynode, hidx_done_shorthandler));
+  // gex_Coll_BarrierBlocking: (undcoumented)
+  for (i=0; i < warmups; i++) {
+    gex_Coll_BarrierBlocking(myteam,0);
+  }
+
+  BARRIER();
+  start = TIME();
+  for (i=0; i < iters; i++) {
+    gex_Coll_BarrierBlocking(myteam,0);
+  }
+  total = TIME() - start;
+
+  BARRIER();
+
+  if (mynode == 0) {
+      printf("Total time: %8.3f sec  Avg GEX Blocking Barrier latency: %8.3f us\n",
+        ((float)total)/1000000, ((float)total)/iters);
+      fflush(stdout);
+  }
+  BARRIER();
+
+  // gex_Coll_BarrierNB:
+  for (i=0; i < warmups; i++) {
+    gex_Event_Wait(gex_Coll_BarrierNB(myteam,0));
+  }
+
+  BARRIER();
+  start = TIME();
+  for (i=0; i < iters; i++) {
+    gex_Event_Wait(gex_Coll_BarrierNB(myteam,0));
+  }
+  total = TIME() - start;
+
+  BARRIER();
+
+  if (mynode == 0) {
+      printf("Total time: %8.3f sec  Avg GEX NB Barrier latency: %8.3f us\n",
+        ((float)total)/1000000, ((float)total)/iters);
+      fflush(stdout);
+  }
+  BARRIER();
+
+  gex_AM_RequestShort0(myteam, mynode, hidx_done_shorthandler, 0);
   return NULL;
 }

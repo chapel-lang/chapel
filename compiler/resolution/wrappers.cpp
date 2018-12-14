@@ -1245,12 +1245,7 @@ static void addArgCoercion(FnSymbol*  fn,
              !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
                formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) ) {
 
-    // MPF: I'm adding this assert in order to reduce my level
-    // of concern about this code.
     AggregateType* at = toAggregateType(ats->getValType());
-    if (isUserDefinedRecord(at))
-      if (propagateNotPOD(at))
-        INT_FATAL("would add problematic deref");
 
     //
     // dereference a reference actual
@@ -1262,9 +1257,13 @@ static void addArgCoercion(FnSymbol*  fn,
     //
     checkAgain = true;
 
-    // MPF - this call here is suspect because dereferencing should
-    // call a record's copy-constructor (e.g. autoCopy).
-    castCall   = new CallExpr(PRIM_DEREF, prevActual);
+    if (isUserDefinedRecord(at) && propagateNotPOD(at) &&
+        !fn->hasFlag(FLAG_AUTO_COPY_FN) &&
+        !fn->hasFlag(FLAG_INIT_COPY_FN)) {
+      castCall = new CallExpr("chpl__initCopy", prevActual);
+    } else {
+      castCall   = new CallExpr(PRIM_DEREF, prevActual);
+    }
 
     if (SymExpr* prevSE = toSymExpr(prevActual)) {
       if (prevSE->symbol()->hasFlag(FLAG_REF_TO_CONST)) {

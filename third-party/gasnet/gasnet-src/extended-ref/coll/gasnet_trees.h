@@ -8,7 +8,6 @@
 #define _GASNET_TREES_H 1
 
 #if 0
-#include <coll/gasnet_coll.h>
 #include <coll/gasnet_coll_internal.h>
 #include <coll/gasnet_refcoll.h>
 #endif
@@ -47,9 +46,11 @@ struct gasnete_coll_tree_type_t_ {
 int gasnete_coll_compare_tree_types(gasnete_coll_tree_type_t a, gasnete_coll_tree_type_t b);
 
 #define GASNETE_COLL_MAX_TREE_TYPE_STRLEN 100
-gasnete_coll_tree_type_t gasnete_coll_make_tree_type_str(char *tree_name_str);
+gasnete_coll_tree_type_t gasnete_coll_make_tree_type_str(const char *tree_name_str);
 gasnete_coll_tree_type_t gasnete_coll_make_tree_type(int tree_type, int *params, int num_params);
 char* gasnete_coll_tree_type_to_str(char *buffer, gasnete_coll_tree_type_t tree_type);
+
+extern gasnete_coll_tree_type_t gasnetc_tm_reduce_tree_type;
 
 /*ACCESSOR MACROS (all take a gasnete_coll_local_tree_geom_t)*/
 #define GASNETE_COLL_TREE_GEOM_ROOT(GEOM) ((GEOM)->root)
@@ -64,47 +65,37 @@ char* gasnete_coll_tree_type_to_str(char *buffer, gasnete_coll_tree_type_t tree_
 struct gasnete_coll_local_tree_geom_t_ {
   int allocated;
   /** tree geometry**/
-  gasnet_node_t root;
+  gex_Rank_t root;
   gasnete_coll_tree_type_t tree_type;
-  gasnet_node_t total_size; /*total number of nodes of this geometry*/
-  gasnet_node_t parent; /*parent of this node*/
-  gasnet_node_t child_count; /*number of children*/
-  gasnet_node_t *child_list; /*list of children*/
-  gasnet_node_t *subtree_sizes; /* the size of the subtrees under each of our children */
-  gasnet_node_t *child_offset;
-  gasnet_node_t *grand_children; /*contians the number of children under each of our children*/
-  gasnet_node_t mysubtree_size;
-  uint8_t children_reversed;
-  gasnet_node_t parent_subtree_size; /* size of the subtree under our parent*/
+  gex_Rank_t total_size; /*total number of nodes of this geometry*/
+  gex_Rank_t parent; /*parent of this node*/
+  gex_Rank_t child_count; /*number of children*/
+  gex_Rank_t *child_list; /*list of children*/
+  gex_Rank_t *subtree_sizes; /* the size of the subtrees under each of our children */
+  gex_Rank_t *child_offset;
+  gex_Rank_t mysubtree_size;
+  uint8_t children_reversed; // non-zero -> visit children in reverse order for in-order DFS
+  gex_Rank_t parent_subtree_size; /* size of the subtree under our parent*/
+  gex_Rank_t max_radix; // largest out-degree of any node
   
   /** sibling information**/
-  gasnet_node_t num_siblings;
+  gex_Rank_t num_siblings;
 
-  gasnet_node_t sibling_id; /*my sibling number*/
+  gex_Rank_t sibling_id; /*my sibling number*/
   
   /* if the subtree of the parent of this node were to be listed linearly in DFS order, this number indicates
     the position in the parent's list where this node's subtree starts */
-  gasnet_node_t sibling_offset;
-  
-  /* DFS Order of the tree, only assigned at the root node */
-  gasnet_node_t *dfs_order;
+  gex_Rank_t sibling_offset;
   
   /*in order to reorder the array this indidcates where the data needs to be reordered*/
   int *rotation_points;
   int num_rotations;
 
-  /* A boolean variable that is set if the dfs_order of the tree is sequential*/
-  /* I.E. No Reordering will be needed for scatter and gathers */
-  uint8_t seq_dfs_order;
-  
-  /*set to true if the contiguous numbering wraps around in a subtree of the root rather than as a direct child*/
-  uint8_t child_contains_wrap;
-  
   /*number of children that aren't leaves of the tree*/
-  gasnet_node_t num_non_leaf_children;
+  gex_Rank_t num_non_leaf_children;
   /*number of children that are leaves of the tree*/
-  gasnet_node_t num_leaf_children;
-  gasnet_node_t *dissem_order;
+  gex_Rank_t num_leaf_children;
+  gex_Rank_t *dissem_order;
   int dissem_count;
 
 #if 0  
@@ -154,7 +145,7 @@ struct gasnete_coll_tree_geom_t_ {
 
 
 
-gasnete_coll_local_tree_geom_t *gasnete_coll_local_tree_geom_fetch(gasnete_coll_tree_type_t type, gasnet_node_t root, gasnete_coll_team_t team);
+gasnete_coll_local_tree_geom_t *gasnete_coll_local_tree_geom_fetch(gasnete_coll_tree_type_t type, gex_Rank_t root, gasnete_coll_team_t team);
 void gasnete_coll_local_tree_geom_release(gasnete_coll_local_tree_geom_t *geom);
 gasnete_coll_tree_type_t gasnete_coll_get_tree_type(void);
 void gasnete_coll_free_tree_type(gasnete_coll_tree_type_t in);
@@ -179,9 +170,9 @@ char* gasnete_coll_tree_type_to_str(char *outbuf, gasnete_coll_tree_type_t in);
 struct gasnete_coll_dissem_info_t_ {
   gasnete_coll_dissem_info_t *prev;
   gasnete_coll_dissem_info_t *next;
-  gasnet_node_t *exchange_out_order;
-  gasnet_node_t *exchange_in_order;
-  gasnet_node_t *ptr_vec;
+  gex_Rank_t *exchange_out_order;
+  gex_Rank_t *exchange_in_order;
+  gex_Rank_t *ptr_vec;
   int dissemination_phases; /*log_radix(THREADS)*/
   int dissemination_radix;
   int max_dissem_blocks;

@@ -1,0 +1,2 @@
+feature request: avoid evaluating the argument of .type
+#11882

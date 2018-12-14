@@ -433,14 +433,14 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
             if (lhs->isRef() && call->isPrimitive(PRIM_MOVE)) {
               fromSym = toSymExpr(rhsCall->get(1))->symbol();
               toSym = lhs;
-            } else if (FnSymbol* rhsFn = rhsCall->resolvedOrVirtualFunction()) {
-              if (rhsFn->hasFlag(FLAG_ALIAS_SCOPE_FROM_THIS)) {
-                // Find this argument
-                for_formals_actuals(formal, actual, rhsCall) {
-                  if (formal == fn->_this) {
-                    fromSym = toSymExpr(actual)->symbol();
-                    toSym = lhs;
-                  }
+            }
+          } else if (FnSymbol* rhsFn = rhsCall->resolvedOrVirtualFunction()) {
+            if (rhsFn->hasFlag(FLAG_ALIAS_SCOPE_FROM_THIS)) {
+              // Find this argument
+              for_formals_actuals(formal, actual, rhsCall) {
+                if (formal == fn->_this) {
+                  fromSym = toSymExpr(actual)->symbol();
+                  toSym = lhs;
                 }
               }
             }

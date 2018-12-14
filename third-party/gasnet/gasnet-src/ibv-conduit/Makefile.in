@@ -545,8 +545,8 @@ CONDUIT_FILELIST = \
       gasnet_core_internal.h     \
       gasnet_extended.c          \
       gasnet_extended_fwd.h      \
-      gasnet_extended_internal.h \
       gasnet_firehose.c          \
+      gasnet_ibv.h               \
       firehose_fwd.h             \
       license.txt                
 
@@ -574,7 +574,7 @@ CONDUIT_EXTRALIBCFLAGS = @IBV_CFLAGS@ $(fh_extralibcflags) $(ssh_defines) $(mpi_
 CONDUIT_EXTRAHEADERS = $(fh_extraheaders) $(fca_extraheaders) $(blcr_extraheaders)
 
 # headers selected by default rules that should NOT be installed
-CONDUIT_PRIVATEHEADERS = $(fh_privheaders) $(fca_privheaders) $(blcr_privheaders)
+CONDUIT_PRIVATEHEADERS = $(fh_privheaders) $(fca_privheaders) $(blcr_privheaders) gasnet_ibv.h
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
@@ -978,7 +978,7 @@ libgasnet-ibv-parsync.a: $(libgasnet_dependencies)
 @USE_IBV_CONDUIT_TRUE@clean-local: do-clean-local
 @USE_IBV_CONDUIT_TRUE@install-data-local: do-install-data-local
 @USE_IBV_CONDUIT_TRUE@uninstall-local: do-uninstall-local
-@USE_IBV_CONDUIT_FALSE@$(top_srcdir)/gasnet.h: do-error
+@USE_IBV_CONDUIT_FALSE@$(top_srcdir)/gasnetex.h: do-error
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

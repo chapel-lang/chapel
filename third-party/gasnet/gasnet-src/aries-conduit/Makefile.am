@@ -25,12 +25,16 @@ SUBDIRS = contrib
 # and any subdirectories not containing Makefile.am's
 CONDUIT_FILELIST =            \
       gasnet_empty_internal.h \
+      gasnet_ratomic_fwd.h    \
+      gasnet_ratomic_extra.h  \
+      gasnet_ratomic.c        \
       README                  \
       license.txt
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line
 CONDUIT_SOURCELIST =          \
+      $(srcdir)/gasnet_ratomic.c \
       $(gemini_srcdir)/gasnet_core.c \
       $(gemini_srcdir)/gasnet_gemini.c \
       $(gemini_srcdir)/gasnet_extended.c \
@@ -110,7 +114,7 @@ clean-local: do-clean-local
 install-data-local: do-install-data-local
 uninstall-local: do-uninstall-local
 else
-$(top_srcdir)/gasnet.h: do-error
+$(top_srcdir)/gasnetex.h: do-error
 endif
 
 

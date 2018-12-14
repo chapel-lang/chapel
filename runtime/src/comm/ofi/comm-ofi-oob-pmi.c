@@ -49,25 +49,32 @@ void chpl_comm_ofi_oob_init(void) {
   if (PMI2_Initialized() != PMI_TRUE) {
     PMI_CHK(PMI2_Init(&spawned, &size, &rank, &appnum));
     assert(spawned == 0);
-    chpl_nodeID = (int32_t) rank;
+    chpl_nodeID = (c_nodeid_t) rank;
     chpl_numNodes = (int32_t) size;
   }
+
+  DBG_PRINTF(DBG_OOB, "OOB init: node %" PRI_c_nodeid_t " of %" PRId32,
+             chpl_nodeID, chpl_numNodes);
 }
 
 
 void chpl_comm_ofi_oob_fini(void) {
   if (PMI2_Initialized() == PMI_TRUE) {
+    DBG_PRINTF(DBG_OOB, "OOB finalize");
     PMI_CHK(PMI2_Finalize());
   }
 }
 
 
 void chpl_comm_ofi_oob_barrier(void) {
+  DBG_PRINTF(DBG_OOB, "OOB barrier");
   PMI_CHK(PMI_Barrier());
 }
 
 
-void chpl_comm_ofi_oob_allgather(void* mine, void* all, int size) {
+void chpl_comm_ofi_oob_allgather(void* mine, void* all, size_t size) {
+  DBG_PRINTF(DBG_OOB, "OOB allGather: %zd", size);
+
   //
   // PMI doesn't provide an ordered allGather, so we build one here
   // by concatenating the node index and the payload and using that

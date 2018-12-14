@@ -1,5 +1,256 @@
-GASNet ChangeLog 
-----------------
+GASNet-EX ChangeLog
+-------------------
+
+  This archive represents a lightly-tested snapshot of a work-in-progress.
+
+  Many additional new features are coming soon, and are not yet reflected in this
+  archive. All new interfaces are subject to change without notice.
+
+  Feedback or questions on any matters related to the EX project are
+  welcomed at: gasnet-devel@lbl.gov
+
+  GASNet-EX currently implements the following conduits:
+  - InfiniBand Verbs (ibv-conduit)
+  - Cray uGNI (gemini- and aries-conduits)
+  - IBM PAMI (pami-conduit)
+  - Shared-memory (smp-conduit)
+  - Portable UDP (udp-conduit)
+  - Portable MPI (mpi-conduit)
+  Users wishing to use other conduits are recommended to download the GASNet v1.x
+  distribution from http://gasnet.lbl.gov.
+
+----------------------------------------------------------------------
+09-26-2018: GASNet-EX 2018.9.0 Release
+
+* GASNet-EX copyright notice and license agreement updated (see license.txt)
+
+* GASNet-EX Spec v0.6:
+  - Add gex_Coll_ReduceToAllNB()
+  - Add GEX_FLAG_RANK_IS_JOBRANK flag to accelerate gex_AD_Op*() on sub-teams
+
+* Cray uGNI (gemini- and aries-conduits)
+  - A new Active Message protocol with more scalable memory utilization is now
+    available, and automatically enabled for large-scale jobs. See details in
+    the conduit README section for GASNET_GNI_AM_RVOUS_CUTOVER
+  - Improved reporting for AM buffer utilization, especially on spawn failure
+  - Adjust the default GASNET_GNI_{PUT,GET}_FMA_RDMA_CUTOVER thresholds that
+    control the GNI-level protocol selection on aries for GASNet RMA
+
+* Configure and Build
+  - Improve configure-time handling of non-EX conduits
+
+* Platform support/portability
+  - Improvements to internal logic for handling thread data on platforms
+    lacking native register-level support for thread data
+
+* Collective Operations
+  - Add initial reference implementation of ReduceToAll
+  - ReduceToOne now supports user-defined types up to at least 32KB in size,
+    and has no limit on vector length for reductions on built-in types.
+
+* Notable bugs fixed in this release:
+  - bug3783: broken DEBUG check in gex_AD_Create for sub-teams
+  - bug3788: aries-conduit offloaded atomics defect with sub-teams
+
+----------------------------------------------------------------------
+06-28-2018: GASNet-EX 2018.6.0 Beta release
+
+* GASNet-EX Spec v0.5:
+  - Specified Teams and Collectives APIs [EXPERIMENTAL]
+  - Add user-defined data types and operators for Reductions
+  - Add GEX_OP_TO_(NON)FETCHING()
+  - Specified VIS Peer Completion API [EXPERIMENTAL]
+  - Added a flag to enable VIS Local Completion 
+  - Add gex_System_QueryHostInfo() and gex_System_QueryMyPosition()
+  - Rename gex_NbrhdInfo_t to gex_RankInfo_t
+  - New GEX_FLAG_USES_GASNET1 flag enables gex_Client_Init() for legacy GASNet-1 calls
+  - Minor clarifications throughout
+  - Consult docs/GASNet-EX.spec for the detailed status of the evolving specification
+     
+* Major new features implemented in this release:
+  - Teams:
+    + Full multi-team support across the entire specification, including
+      construction of subset teams and rank reordering via gex_TM_Split()
+    + Can translate in either direction between team-relative and job ranks
+    + All APIs taking (tm,rank) pairs interpret 'rank' relative to 'tm'
+  - Collectives:
+    + Non-blocking Barrier, Broadcast, and ReduceToOne
+   Additional collective operations will be added in future releases
+  - Non-contiguous RMA: Vector, Indexed, Strided (VIS)
+    + VIS Puts now support notifying (potentially remote) peers of completion.
+      For details, see docs/GASNet-EX.spec for gex_VIS_SetPeerCompletionHandler
+    + VIS Puts now offer local completion support.
+      For details, see docs/GASNet-EX.spec for GEX_FLAG_ENABLE_LEAF_LC
+  - gasnet_fwd.h now provides a dependency-free useful subset of the API
+    declarations, suitable for inclusion into application-level code.
+
+* Feature implementation status in this release:
+  - VIS Peer Completion is well-implemented for shared memory. The distributed-memory 
+    implementation is functionally complete and will be tuned in an upcoming release.
+  - Collective operations use "reliable performance" algorithms based on Binomial Trees. 
+    They have not yet been tuned for shared memory or offload.
+  - ReduceToOne supports all operations on built-in types, including user-defined 
+    commutative operations, but currently limits the local size of the operands.
+  - Teams currently use a dense representation, a scalable implementation is forthcoming.
+
+* Notable bugs fixed in this release:
+  - Bug3749: assertion failure in PSHM's NP-AM
+  - See fixes listed in the pending GASNet-1 1.30.2 ChangeLog below
+
+
+----------------------------------------------------------------------
+03-28-2018: GASNet-EX 2018.3.0 Release
+
+* GASNet-EX Spec v0.4:
+  - Renamed gex_System_QueryNeighborhoodInfo() and associated
+    types and constants to gex_System_QueryNbrhdInfo() and similar.
+  - Adjusted payload limit queries to accommodate Negotiated-Payload AM.
+  - Remote Atomics: added flags for asserting locality properties
+  - Remote Atomics: added flags for requesting memory fencing behavior
+  - Strided: now supports transpose/reflection operations
+  - Added gex_ep (destination endpoint) to gex_Token_Info_t
+  - AM Request/Reply/Commit functions may now optionally omit the arg count
+    suffix on the function name when using compilers with __VA_ARG__ support
+    (added in C99/C++11, may also be available in older compilers).
+  - Minor clarifications throughout.
+
+* Major new features implemented in this release:
+  - Remote Atomics and Negotiated-Payload Active Messages have been
+    further specialized to improve performance on aries-conduit.
+  - Remote Atomics performance improvements for shared-memory bypass.
+  - Strided has been completely re-implemented and now supports N-d
+    transpose/reflection operations. Notable performance improvements throughout.
+  - VIS performance improvements, most notably for shared-memory bypass and
+    aries-conduit (where some in-memory copies have been removed)
+  - The 64k per-thread limit on in-flight explicit handle ops has been removed.
+    The number of in-flight ops is now limited only by available heap memory.
+
+* Notable bugs fixed in this release:
+  - Bug3704: allow gasnet.h and gasnetex.h to be included in either order
+  - Improved assertion checks and error messages in various places.
+
+* Feature implementation status in this release:
+  - Negotiated-Payload Active Messages are well-implemented for shared memory
+    (PSHM and smp-conduit), gemini- and aries-conduits.  All other conduit are
+    currently using a portable reference implementation which may result in
+    performance less than will eventually be delivered.
+  - Remote Atomics are well-implemented for shared memory (PSHM on most systems,
+    and smp-conduit) and aries-conduit.  Other conduits with APIs for offloaded
+    atomics do not yet utilize them.
+
+----------------------------------------------------------------------
+12-20-2017: GASNet-EX 2017.12.0 Beta release
+
+* GASNet-EX Spec v0.3:
+  - Specified Remote Atomics API, and corresponding types [EXPERIMENTAL]
+  - Specified Vector, Indexed, Strided API [EXPERIMENTAL]
+  - Specified gasnet_QueryGexObjects()
+  - Specified gex_System_QueryNeighborhoodInfo() [EXPERIMENTAL]
+  - Significant alteration to Segment Disposition flags [UNIMPLEMENTED]
+  - Minor clarifications throughout
+  - Consult docs/GASNet-EX.spec for the detailed status of the evolving specification
+
+* Major new features implemented in this release:
+  - Remote Atomic operations: untuned, network-independent implementation 
+    + See docs/GASNet-EX.spec for details
+  - Vector, Indexed, Strided extensions: untuned, network-independent implementation 
+    + See docs/GASNet-EX.spec for details 
+  - Cray Aries implementation specializations for the following features:
+    + New AM Interfaces, Immediate Operations, Local Completion and Remote Atomics.
+
+* Notable bugs fixed in this release:
+  - See fixes listed in the pending GASNet-1 1.30.2 ChangeLog below
+
+----------------------------------------------------------------------
+09-28-2017: GASNet-EX 2017.9.0 Release
+
+* GASNet-EX Spec v0.2:
+  - Specified gex_System_QueryJob{Rank,Size}() [EXPERIMENTAL]
+  - Specified gex_Segment_QueryBound() [EXPERIMENTAL]
+  - Significant changes to Negotiated-Payload AM semantics
+  - Consult docs/GASNet-EX.spec for the detailed status of the evolving specification
+
+* Major new features implemented in this release:
+  - gex_Event_t is no longer thread-specific: one can safely pass a gex_Event_t
+    generated in one thread to a Test or Wait call in another thread.
+  - New gex_Segment_QueryBound() [EXPERIMENTAL]
+  - New gex_System_QueryJob{Rank,Size}() [EXPERIMENTAL]
+  - New IS_REQ and IS_LONG queries in gex_Token_Info()
+  - Interface changes for negotiated-payload AM calls
+
+* Notable bugs fixed in this release:
+  - ibv: assertion failures at shutdown
+  - pshm: assertion failure in gasneti_AMPSHM_service_incoming_msg()
+  - pshm: SEGV at initialization when using System V shared memory
+  - pshm: work-around an assertion failure due to a PGI compiler bug
+  - aries/gemini: SEGV at startup with multi-domain enabled
+
+* Other Known Limitations:
+  - This release supports Microsoft Windows Subsystem for Linux, but is
+    affected by an OS bug which was fixed starting in build 16278. 
+    Details: http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3588
+
+----------------------------------------------------------------------
+06-30-2017: GASNet-EX 2017.6.0 Beta release
+
+* Major new features implemented this release: (mostly reference implementation)
+  - Explicit Local Completion capability for Active Message and RMA Put APIs
+  - Immediate Operations capability for Active Message and RMA APIs
+  - New Active Message interfaces - including:
+    + Incremental AM handler registration
+    + Expanded AM handler registration properties
+    + Finer-grained AM payload limit queries
+    + Negotiated-payload AM injection interfaces
+    + New AM token query interface
+  - Job initialization interface rewritten to use EX objects
+
+* GASNet-EX Spec v0.1:
+  - Consult docs/GASNet-EX.spec for the detailed status of the evolving specification
+  - gasnetex.h is the new public header
+  - Major new EX object types have been defined, including:
+    + Client - an instance of the client interface to the GASNet library
+    + Segment - a client-declared memory segment for use in communication
+    + Endpoint - local representative of an isolated communication context
+    + Team Member - a collective communication context, used for endpoint naming
+    All these objects are restricted to a single instance per process in this version.
+  - Interfaces added for Local Completion, Immediates and new AM interfaces (see above)
+  - GASNet-1 handles generalized to EX events
+  - Most gasnet_ identifiers have new versions in the gex_ namespace
+  - Most interfaces now accept flags for extensible fine-tuning of behavior
+
+* Legacy backward-compatibility layer:
+  - gasnet.h now contains an implementation of GASNet-1 spec v1.8 in terms
+    of the new EX interfaces.
+  - Both layers interoperate freely so that legacy client code can be incrementally
+    migrated to use of the new EX interfaces and features.
+
+----------------------------------------------------------------------
+The remainder of this file contains the unmodified ChangeLog from the GASNet-1
+code base, from which the EX code was branched (and is periodically
+synchronized).
+Note some entries below do not apply to the EX branch.
+----------------------------------------------------------------------
+GASNet-1 ChangeLog 
+------------------
+----------------------------------------------------------------------
+09-26-2018: pending work @06f79b2
+
+* InfiniBand Verbs (ibv-conduit)
+  - Multi-rail support is disabled by default, due to bug 3447
+
+* General and Misc.
+  - Performance tests now default to in-segment memory (see --help)
+  - Average values in STATS now output as floating-point, instead of rounding
+  - Fix bug 3742: Atomic CAS failures on PPCle+{pgi,clang}
+  - Silence harmless library compile warnings from gcc 8.*
+
+* Platform support/portability
+  - Improvements to internal logic for handling thread data on platforms
+    lacking native register-level support for thread data.
+  - Internal AM handler dispatch code is now strictly C spec compliant
+  - Fix bug 3806, providing support for -N option to gasnetrun_* scripts
+    when mpirun from Open MPI 3.x is used for job launch.
+
 ----------------------------------------------------------------------
 07-20-2018: Release 1.32.0
 

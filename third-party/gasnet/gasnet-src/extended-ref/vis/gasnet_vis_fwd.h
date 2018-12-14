@@ -4,8 +4,8 @@
  * Terms of use are as specified in license.txt
  */
 
-#ifndef _IN_GASNET_H
-  #error This file is not meant to be included directly- clients should include gasnet.h
+#ifndef _IN_GASNETEX_H
+  #error This file is not meant to be included directly- clients should include gasnetex.h
 #endif
 
 #ifndef _GASNET_VIS_FWD_H
@@ -21,20 +21,26 @@ extern void gasneti_vis_progressfn(void);
    but they should at least include all the following fields */
 #ifndef GASNETI_MEMVECLIST_STATS_T
   typedef struct {
-    size_t minsz;
-    size_t maxsz;
-    uintptr_t totalsz;
-    void *minaddr;
-    void *maxaddr;
+    size_t _minsz;
+    size_t _maxsz;
+    uintptr_t _totalsz;
+    void *_minaddr;
+    void *_maxaddr;
   } gasneti_memveclist_stats_t;
 #endif
 
 #ifndef GASNETI_ADDRLIST_STATS_T
   typedef struct {
-    void *minaddr;
-    void *maxaddr;
+    void *_minaddr;
+    void *_maxaddr;
   } gasneti_addrlist_stats_t;
 #endif
+
+typedef struct {
+  const void *   _srcaddr;
+  size_t         _nbytes;
+  uint8_t        _handler;
+} gasnete_vis_pcinfo_t;
 
 /* stats needed by the VIS reference implementation */
 #ifndef GASNETI_VIS_STATS
@@ -46,6 +52,10 @@ extern void gasneti_vis_progressfn(void);
         CNT(C, GETV_AMPIPELINE, cnt)         \
         CNT(C, PUTV_REF_INDIV, cnt)          \
         CNT(C, GETV_REF_INDIV, cnt)          \
+        CNT(C, PUTV_DEGENERATE, cnt)         \
+        CNT(C, GETV_DEGENERATE, cnt)         \
+        CNT(C, PUTV_NBRHD, cnt)              \
+        CNT(C, GETV_NBRHD, cnt)              \
                                              \
         CNT(C, PUTI_GATHER, cnt)             \
         CNT(C, GETI_SCATTER, cnt)            \
@@ -55,6 +65,10 @@ extern void gasneti_vis_progressfn(void);
         CNT(C, GETI_REF_INDIV, cnt)          \
         CNT(C, PUTI_REF_VECTOR, cnt)         \
         CNT(C, GETI_REF_VECTOR, cnt)         \
+        CNT(C, PUTI_DEGENERATE, cnt)         \
+        CNT(C, GETI_DEGENERATE, cnt)         \
+        CNT(C, PUTI_NBRHD, cnt)              \
+        CNT(C, GETI_NBRHD, cnt)              \
                                              \
         CNT(C, PUTS_GATHER, cnt)             \
         CNT(C, GETS_SCATTER, cnt)            \
@@ -66,6 +80,10 @@ extern void gasneti_vis_progressfn(void);
         CNT(C, GETS_REF_VECTOR, cnt)         \
         CNT(C, PUTS_REF_INDEXED, cnt)        \
         CNT(C, GETS_REF_INDEXED, cnt)        \
+        CNT(C, PUTS_DEGENERATE, cnt)         \
+        CNT(C, GETS_DEGENERATE, cnt)         \
+        CNT(C, PUTS_NBRHD, cnt)              \
+        CNT(C, GETS_NBRHD, cnt)              \
 
 #endif
 

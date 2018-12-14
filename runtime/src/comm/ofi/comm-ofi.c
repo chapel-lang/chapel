@@ -307,11 +307,12 @@ void init_ofiFabricDomain(void) {
   ret = fi_getinfo(FI_VERSION(1,5), NULL, NULL, 0, hints, &ofi_info);
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
-      if (DBG_TEST_MASK(DBG_FABFAIL)) {
-        DBG_PRINTF(DBG_FABFAIL, "==================== hints:");
-        DBG_PRINTF(DBG_FABFAIL, "%s", fi_tostr(hints, FI_TYPE_INFO));
-        DBG_PRINTF(DBG_FABFAIL, "==================== fi_getinfo() fabrics:");
-        DBG_PRINTF(DBG_FABFAIL,
+      if (DBG_TEST_MASK(DBG_CFGFAB | DBG_CFGFABSALL)) {
+        DBG_PRINTF(DBG_CFGFAB, "==================== hints:");
+        DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(hints, FI_TYPE_INFO));
+        DBG_PRINTF(DBG_CFGFABSALL,
+                   "==================== fi_getinfo() fabrics:");
+        DBG_PRINTF(DBG_CFGFABSALL,
                    "None matched hints; available with prov_name \"%s\" are:",
                    (provider == NULL) ? "<any>" : provider);
         struct fi_info* info = NULL;
@@ -320,8 +321,8 @@ void init_ofiFabricDomain(void) {
           const char* pn = info->fabric_attr->prov_name;
           if (provider == NULL
               || strncmp(pn, provider, strlen(provider)) == 0) {
-            DBG_PRINTF(DBG_FABFAIL, "%s", fi_tostr(info, FI_TYPE_INFO));
-            DBG_PRINTF(DBG_FABFAIL, "----------");
+            DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(info, FI_TYPE_INFO));
+            DBG_PRINTF(DBG_CFGFABSALL, "----------");
           }
         }
       }
@@ -330,20 +331,20 @@ void init_ofiFabricDomain(void) {
                        (provider == NULL) ? "<any>" : provider);
     }
 
-    if (DBG_TEST_MASK(DBG_FAB)) {
-      if (DBG_TEST_MASK(DBG_FABSALL)) {
-        DBG_PRINTF(DBG_FABSALL, "====================\n"
+    if (DBG_TEST_MASK(DBG_CFGFAB | DBG_CFGFABSALL)) {
+      if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
+        DBG_PRINTF(DBG_CFGFABSALL, "====================\n"
                    "fi_getinfo() matched fabric(s):");
         struct fi_info* info;
         for (info = ofi_info; info != NULL; info = info->next) {
-          DBG_PRINTF(DBG_FABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-          DBG_PRINTF(DBG_FABSALL, "----------");
+          DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
+          DBG_PRINTF(DBG_CFGFABSALL, "----------");
         }
       } else {
-        DBG_PRINTF(DBG_FAB, "====================\n"
+        DBG_PRINTF(DBG_CFGFAB, "====================\n"
                    "fi_getinfo() matched fabric:");
-        DBG_PRINTF(DBG_FAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-        DBG_PRINTF(DBG_FAB, "----------");
+        DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
+        DBG_PRINTF(DBG_CFGFAB, "----------");
       }
     }
   }
@@ -521,7 +522,7 @@ void init_ofiEpNumCtxs(void) {
   CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
   ofi_info->ep_attr->rx_ctx_cnt = numAmHandlers;
 
-  DBG_PRINTF(DBG_CONFIG, "per node, %zd tx ctxs%s, %zd rx ctxs",
+  DBG_PRINTF(DBG_CFG, "per node, %zd tx ctxs%s, %zd rx ctxs",
              ofi_info->ep_attr->tx_ctx_cnt,
              tciTabFixedAssignments ? " (fixed to workers)" : "",
              ofi_info->ep_attr->rx_ctx_cnt);
@@ -545,6 +546,15 @@ void init_ofiExchangeAvInfo(void) {
   CHPL_CALLOC_SZ(my_addr, my_addr_len, 1);
   OFI_CHK(fi_getname(&ofi_rxEp->fid, my_addr, &my_addr_len));
   CHPL_CALLOC_SZ(addrs, chpl_numNodes, my_addr_len);
+  if (DBG_TEST_MASK(DBG_CFGAV)) {
+    char nameBuf[128];
+    size_t nameLen;
+    nameLen = sizeof(nameBuf);
+    (void) fi_av_straddr(ofi_av, my_addr, nameBuf, &nameLen);
+    DBG_PRINTF(DBG_CFGAV, "my_addr: %.*s%s",
+               (int) nameLen, nameBuf,
+               (nameLen <= sizeof(nameBuf)) ? "" : "[...]");
+  }
   chpl_comm_ofi_oob_allgather(my_addr, addrs, my_addr_len);
 
   //
@@ -557,6 +567,26 @@ void init_ofiExchangeAvInfo(void) {
 
   CHPL_FREE(my_addr);
   CHPL_FREE(addrs);
+
+  if (chpl_nodeID == 0 && DBG_TEST_MASK(DBG_CFGAV)) {
+    DBG_PRINTF(DBG_CFGAV, "====================");
+    DBG_PRINTF(DBG_CFGAV, "Address vector");
+    char addrBuf[my_addr_len + 1];
+    size_t addrLen;
+    char nameBuf[128];
+    size_t nameLen;
+    for (int i = 0; i < chpl_numNodes; i++) {
+      addrLen = sizeof(addrBuf);
+      OFI_CHK(fi_av_lookup(ofi_av, i, addrBuf, &addrLen));
+      CHK_TRUE(addrLen <= sizeof(addrBuf));
+      nameLen = sizeof(nameBuf);
+      (void) fi_av_straddr(ofi_av, addrBuf, nameBuf, &nameLen);
+      DBG_PRINTF(DBG_CFGAV, "addrVec[%d]: %.*s%s",
+                 i, (int) nameLen, nameBuf,
+                 (nameLen <= sizeof(nameBuf)) ? "" : "[...]");
+    }
+    DBG_PRINTF(DBG_CFGAV, "====================");
+  }
 }
 
 
@@ -1861,6 +1891,8 @@ struct perTxCtxInfo_t* tciAlloc(chpl_bool bindToAmHandler) {
   // Find a tx context that isn't busy and use that one.
   //
   tcip = findFreeTciTabEntry(bindToAmHandler);
+  if (bindToAmHandler || tciTabFixedAssignments)
+    tcip->bound = true;
   DBG_PRINTF(DBG_THREADS, "I have%s tciTab[%td]",
              bindToAmHandler ? " bound" : "", tcip - tciTab);
   return tcip;
@@ -1886,7 +1918,6 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
     tcip = &tciTab[numWorkerTxCtxs];
     CHK_FALSE(atomic_exchange_bool(&tcip->allocated, true));
     tcip->bound = true;
-    DBG_PRINTF(DBG_THREADS, "I have bound tciTab[%td]", tcip - tciTab);
     return tcip;
   }
 
@@ -1918,7 +1949,6 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
     }
   } while (tcip == NULL);
 
-  DBG_PRINTF(DBG_THREADS, "I have tciTab[%td]", tcip - tciTab);
   return tcip;
 }
 
@@ -3037,8 +3067,11 @@ char* chpl_comm_ofi_dbg_prefix(void) {
     buf[len = 0] = '\0';
     if (chpl_nodeID >= 0)
       len += snprintf(&buf[len], sizeof(buf) - len, "%d", chpl_nodeID);
-    len += snprintf(&buf[len], sizeof(buf) - len, ":%ld",
-                    (long int) chpl_task_getId());
+    if (chpl_task_getId() == chpl_nullTaskID)
+      len += snprintf(&buf[len], sizeof(buf) - len, ":_");
+    else
+      len += snprintf(&buf[len], sizeof(buf) - len, ":%ld",
+                      (long int) chpl_task_getId());
     if (DBG_TEST_MASK(DBG_TSTAMP))
       len += snprintf(&buf[len], sizeof(buf) - len, "%s%.9f",
                       ((len == 0) ? "" : ": "), chpl_comm_ofi_time_get());

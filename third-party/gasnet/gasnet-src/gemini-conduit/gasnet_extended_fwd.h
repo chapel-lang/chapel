@@ -4,14 +4,14 @@
  * Terms of use are as specified in license.txt
  */
 
-#ifndef _IN_GASNET_H
-  #error This file is not meant to be included directly- clients should include gasnet.h
+#ifndef _IN_GASNETEX_H
+  #error This file is not meant to be included directly- clients should include gasnetex.h
 #endif
 
 #ifndef _GASNET_EXTENDED_FWD_H
 #define _GASNET_EXTENDED_FWD_H
 
-#define GASNET_EXTENDED_VERSION      0.5
+#define GASNET_EXTENDED_VERSION      2.0
 #define GASNET_EXTENDED_VERSION_STR  _STRINGIFY(GASNET_EXTENDED_VERSION)
 #if defined GASNET_CONDUIT_GEMINI
   #define GASNET_EXTENDED_NAME       GEMINI
@@ -27,11 +27,6 @@
 #define GASNETE_COLL_CONDUIT_BARRIERS \
         GASNETE_COLL_BARRIER_GNIDISSEM
 
-#define _GASNET_HANDLE_T
-/*  an opaque type representing a non-blocking operation in-progress initiated using the extended API */
-struct _gasnete_op_t;
-typedef struct _gasnete_op_t *gasnet_handle_t;
-#define GASNET_INVALID_HANDLE ((gasnet_handle_t)0)
 #define GASNETI_EOP_IS_HANDLE 1
 
   /* if conduit-internal threads may call the Extended API and/or they may run
@@ -47,6 +42,7 @@ typedef struct _gasnete_op_t *gasnet_handle_t;
 #define GASNETE_CONDUIT_STATS(CNT,VAL,TIME)  \
         GASNETI_VIS_STATS(CNT,VAL,TIME)      \
         GASNETI_COLL_STATS(CNT,VAL,TIME)     \
+        GASNETI_RATOMIC_STATS(CNT,VAL,TIME)  \
         CNT(C, DYNAMIC_THREADLOOKUP, cnt)    
 
 #define GASNETE_AUXSEG_DECLS \
@@ -59,60 +55,16 @@ typedef struct _gasnete_op_t *gasnet_handle_t;
  * Alternatively, one can #define GASNETE_HAVE_EXTENDED_HELP_EXTRA_H and defined
  * these in a conduit-specific gasnet_extended_help_extra.h.
  *
- * GASNETI_DIRECT_GET_NB
- *   unset: gasnete_get_nb() maps to gasnete_get_nb_bulk()
- *   set: conduit provides it own gasnete_get_nb()
- *
- * GASNETI_DIRECT_GET_NBI
- *   unset: gasnete_get_nbi() maps to gasnete_get_nbi_bulk()
- *   set: conduit provides it own gasnete_get_nbi()
- *
- * GASNETI_DIRECT_WAIT_SYNCNB 
- *   unset: gasnete_wait_syncnb(h) via gasneti_pollwhile(gasnete_try_syncnb(h))
- *   set: conduit provides it own gasnete_wait_syncnb()
- *
- * GASNETI_DIRECT_WAIT_SYNCNB_SOME
- *   unset: gasnete_wait_syncnb_some(...) via gasneti_pollwhile(gasnete_try_syncnb_some(...))
- *   set: conduit provides it own gasnete_wait_syncnb_some()
- *
- * GASNETI_DIRECT_WAIT_SYNCNB_ALL
- *   unset: gasnete_wait_syncnb_all(...) via gasneti_pollwhile(gasnete_try_syncnb_all(...))
- *   set: conduit provides it own gasnete_wait_syncnb_all()
- *
- * GASNETI_DIRECT_TRY_SYNCNBI_ALL
- *   unset: gasnete_try_syncnbi_all() via calls to gasnete_try_syncnbi_{gets,puts}()
- *   set: conduit provides it own gasnete_try_syncnbi_all()
- *
- * GASNETI_DIRECT_WAIT_SYNCNBI_GETS
- *   unset: gasneti_wait_syncnbi_gets() via gasneti_pollwhile(gasnete_try_syncnbi_gets())
- *   set: conduit provides it own gasneti_wait_syncnbi_gets()
- *
- * GASNETI_DIRECT_WAIT_SYNCNBI_PUTS
- *   unset: gasneti_wait_syncnbi_puts() via gasneti_pollwhile(gasnete_try_syncnbi_puts())
- *   set: conduit provides it own gasneti_wait_syncnbi_puts()
- *
- * GASNETI_DIRECT_WAIT_SYNCNBI_ALL
- *   unset: gasnete_wait_syncnbi_all() via gasneti_pollwhile(gasnete_try_syncnbi_{gets,puts}())
- *   set: conduit provides it own gasneti_wait_syncnbi_all()
- *
- * GASNETI_DIRECT_GET
- *   unset: gasnete_get() maps to gasnete_get_bulk()
+ * GASNETI_DIRECT_BLOCKING_GET
+ *   unset: gasnete_get() via gasnete_wait(gasnete_get_nb())
  *   set: conduit provides it own gasnete_get()
  *
- * GASNETI_DIRECT_PUT
- *   unset: gasnete_put() maps to gasnete_put_bulk()
+ * GASNETI_DIRECT_BLOCKING_PUT
+ *   unset: gasnete_put() via gasnete_wait(gasnete_put_nb())
  *   set: conduit provides it own gasnete_put()
- *
- * GASNETI_DIRECT_PUT_BULK
- *   unset: gasnete_put_bulk() via gasnete_wait_syncnb(gasnete_put_nb_bulk())
- *   set: conduit provides it own gasnete_put_bulk()
- *
- * GASNETI_DIRECT_MEMSET
- *   unset: gasnete_memset() via gasnete_wait_syncnb(gasnete_memset_nb())
- *   set: conduit provides it own gasnete_memset()
  */
 #define GASNETI_DIRECT_PUT_VAL 1
-/*   unset: gasnete_put_val() via gasnete_putTI()
+/*   unset: gasnete_put_val() via gasnete_put()
  *   set: conduit provides it own gasnete_put_val()
  */
 #define GASNETI_DIRECT_PUT_NB_VAL 1
@@ -128,19 +80,9 @@ typedef struct _gasnete_op_t *gasnet_handle_t;
  *   set: conduit provides own gasnete_get_val() as an inline
  */
 
-/* Configure use of AM-based implementation of get/put/memset */
+
+/* Configure use of AM-based implementation of get/put */
 /* NOTE: Barriers, Collectives, VIS may use GASNETE_USING_REF_* in algorithm selection */
-#define GASNETE_USING_REF_EXTENDED_MEMSET   1
-
-/* Conduit implements memset directly via amref: */
-#define gasnete_amref_memset_nb     gasnete_memset_nb
-#define gasnete_amref_memset_nbi    gasnete_memset_nbi
-
-/* Not using default gasnet_valget_handle_t or associated operations */
-#define GASNETE_VALGET_CUSTOM
-#define _GASNET_VALGET_HANDLE_T
-struct _gasnete_valget_op_t;
-typedef struct _gasnete_valget_op_t *gasnet_valget_handle_t;
 
 #if defined(GASNET_PAR) && GASNETC_GNI_MULTI_DOMAIN
 #  define GASNETE_TD_DOMAIN_IDX int domain_idx;
@@ -149,30 +91,14 @@ typedef struct _gasnete_valget_op_t *gasnet_valget_handle_t;
 #endif
 
 #define GASNETE_CONDUIT_THREADDATA_FIELDS \
-        struct _gasnete_valget_op_t *valget_free; \
         GASNETE_TD_DOMAIN_IDX
 
-/* Use counter-based eop: */
-#define GASNETE_EOP_COUNTED 1
-
 // Configure default VIS tuning knobs
-// 12/15/17: Measurements on NERSC Cori show the ideal MAXCHUNK for I+S to be:
-//   Haswell: ~512 for puts and ~1024 for gets
-//   KNL:     ~512 for puts and gets
-#define GASNETE_VIS_MAXCHUNK_DEFAULT 512
-
-/* ------------------------------------------------------------------------------------ */
-/* Extensions: */
-
-/* Proof-of-concept GNI uint64_t fetch-and-op.
- * Not supported, and subject to change or removal
- */
-#ifndef GASNETC_GNI_FETCHOP
-#define GASNETC_GNI_FETCHOP 1 /* enabled by default */
-#endif
-#if GASNETC_GNI_FETCHOP
-#define GASNETE_HAVE_EXTENDED_HELP_EXTRA_H 1
-#endif
+// 3/21/18: Measurements on NERSC Cori using the EX implementation for aries-conduit
+// w/ default GASNETE_VIS_NPAM=1 and 4032 MaxMedium show the ideal MAXCHUNK for I+S on both
+// KNL and Haswell to be the following values:
+#define GASNETE_VIS_PUT_MAXCHUNK_DEFAULT 1330  // 3 strided chunks at 3d
+#define GASNETE_VIS_GET_MAXCHUNK_DEFAULT 2028  // 2 strided chunks at 3d
 
 #endif
 

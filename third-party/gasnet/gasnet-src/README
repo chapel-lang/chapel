@@ -1,3 +1,49 @@
+=======================================================================
+=======================================================================
+
+              *** GASNet-EX Software Preview ***
+
+GASNet-EX is the next generation of the GASNet-1 communication system. 
+The GASNet interfaces are being redesigned to accommodate the emerging
+needs of Exascale supercomputing, providing communication services to a
+variety of PGAS programming models on current and future HPC architectures.
+This upgrade is being done over the next several years as part of the DOE
+Exascale Computing Program (ECP).
+
+This archive represents a lightly-tested snapshot of a work-in-progress.
+Many planned features remain to be specified and/or implemented.
+All interfaces and implementations are subject to change without notice.
+
+Users interested in learning what's new in GASNet-EX are recommended to peruse 
+the ChangeLog file in this directory for a summary of recent developments.
+The docs/GASNet-EX.spec file provides more detailed information about
+the evolving EX specification.
+
+GASNet-EX notably includes a backwards-compatibility layer to assist in
+migration of current GASNet-1 client software. Existing GASNet clients can
+get started by relying on this layer (provided in gasnet.h), and incrementally 
+add calls to the new gex_* interfaces (defined in gasnetex.h, which is 
+automatically included by gasnet.h) to access new EX features and capabilities.
+
+Feedback or questions on any matters related to the GASNet-EX project are
+welcomed at: gasnet-devel@lbl.gov
+
+EX-Specific Implementation Notes:
+
+* gasnet_fwd.h provides a dependency-free useful subset of the API
+  declarations, suitable for inclusion into application-level code.
+
+* The following public headers may be included in any order:
+  - gasnetex.h       : GASNet-EX API + Tools
+  - gasnet.h         : GASNet-1 API (also includes gasnetex.h)
+  - gasnet_fwd.h     : Forward declaration subset for app inclusion
+  - gasnet_ratomic.h : Remote Atomics API
+  - gasnet_vis.h     : Non-contiguous RMA (VIS) API
+  - gasnet_coll.h    : Collectives API
+
+=======================================================================
+=======================================================================
+
 README file for GASNet
 http://gasnet.lbl.gov
 
@@ -265,7 +311,7 @@ code.
 Basic Usage Information
 =======================
 See the README for each GASNet conduit implementation for specific usage
-information, but generally client programs should #include <gasnet.h>
+information, but generally client programs should #include <gasnetex.h>
 (and nothing else), and use the conduit-provided compilation settings.
 
 The best way to get the correct compiler flags for your GASNet client is to 
@@ -713,11 +759,18 @@ application-specific support.
  scatter gets - i.e. cases that are locally non-contiguous but remotely
  contiguous. The default is conduit-dependent.
 
-* GASNET_COLL_SCRATCH_SIZE - specifies the size of the GASNet auxiliary scratch space 
- per node. Most of the optimized collectives rely on this auxiliary space to enable 
- optimized communication schedules. If the size is set too low, then the collectives 
- will send a lot more control messages which could adversely affect performance. 
- Defaults to 2MB per node.
+* GASNET_COLL_SCRATCH_SIZE - Specifies the size of the scratch space allocated
+ on each rank for internal use in collective communications.  This is the
+ preferred size allocated for the initial team, and is the value returned from
+ a query using GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED.
+ If the size is set too low, then the performance of collectives may suffer.
+ Defaults to 2MB per rank.
+
+* GASNET_COLL_MIN_SCRATCH_SIZE - Specifies the minimum size of the scratch
+ space allocated on each rank for internal use in collective communications.
+ This is the minimum size permitted for the initial team (or job startup will
+ fail), and is the value returned from a query using GEX_FLAG_TM_SCRATCH_SIZE_MIN.
+ Defaults to 1KB per rank.
 
 * GASNET_COLL_ENABLE_SEARCH - enable autotuning of collectives
 * GASNET_COLL_TUNING_FILE - file to read and/or write collective autotuning data
@@ -728,6 +781,29 @@ application-specific support.
 
 * GASNET_TMPDIR: if set to a valid directory name this is used instead of TMPDIR
  or "/tmp" as a location for creating temporary files.
+
+* GASNET_SD_INIT, GASNET_SD_INITVAL and GASNET_SD_INITLEN
+ These variables are *only* recognized in a build configured with --enable-debug.
+
+ When using the negotiated-payload AM APIs, GASNet can optionally initialize the
+ start of buffers it allocates at Prepare time with a defined pattern, and verify
+ at Commit time that the client has over-written this "canary".  To reduce
+ overhead, only a fixed-length pattern is used.  However, to avoid false alarms,
+ this length must be sufficiently long to make the probability of matching the
+ client data very low.
+
+ GASNET_SD_INIT - Defaults to 1 in debug builds (and is effectively 0 otherwise)
+   Setting to 0 disables the initialization and checking
+ GASNET_SD_INITVAL - Defaults to "NAN"
+   Specifies the initialization pattern.
+   See GASNET_MALLOC_INITVAL for more info.
+ GASNET_SD_INITLEN - Defaults to 128
+   Specifies the length of the "canary" used for this checking.
+   If 'nbytes' passed to the Commit call is less than this length, then no
+   checking will be performed.
+   If set too small then the likelihood of random payloads corresponding to the
+   initialization pattern may lead to false positives.
+   The minimum is 1 byte and smaller values will be silently replaced by 1.
 
 * OPTIONAL: GASNET_EXITTIMEOUT, GASNET_EXITTIMEOUT_MAX, GASNET_EXITTIMEOUT_MIN, and
  GASNET_EXITTIMEOUT_FACTOR - control exit-coordination timeout.  Some conduits use a
@@ -804,9 +880,9 @@ Optional environment variable settings:
    A string containing one or more of the following letters:
      G - gets
      P - puts
+     R - remote atomics
      S - non-blocking synchronization
      W - collective operations (excluding barriers)
-     X - collective synchronization (excluding barriers)
      B - barriers
      L - locks
      A - AM requests/replies (and handler execution, if conduit-supported)

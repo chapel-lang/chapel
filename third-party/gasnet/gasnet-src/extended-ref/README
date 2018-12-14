@@ -28,9 +28,6 @@ Optional compile-time settings:
  
 * GASNETI_LAZY_BEGINFUNCTION - postpone thread discovery to first use
 
-* GASNETE_SCATTER_EOPS_ACROSS_CACHELINES(1/0) - scatter newly allocated eops
- across cache lines to reduce false sharing 
-
 Known problems:
 ---------------
 
@@ -49,11 +46,11 @@ The extended-ref directory provides a reference implementation of the extended
 API, written solely in terms of the GASNet core API. This provides an easy
 porting path for new networks - once the core API is implemented, the
 extended-ref files provide working implementations of everything else in
-GASNet. Conduits for networks with good hardware support can subseqently
+GASNet. Conduits for networks with good hardware support can subsequently
 customize and optimize selected functions from the extended API using hardware
 support.
 
-gasnet_handle_t is a pointer to a gasnet_op_t, which can be either an "eop"
+gex_Event_t is a pointer to a gasnet_op_t, which can be either an "eop"
 type (handle for explicit non-blocking op) or an "iop" type (handle for an
 implicit non-blocking op or access region). eops are allocated from a
 thread-specific pool to reduce allocation and locking costs, and basically just

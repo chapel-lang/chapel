@@ -522,6 +522,9 @@ SUBDIRS = contrib
 # and any subdirectories not containing Makefile.am's
 CONDUIT_FILELIST = \
       gasnet_empty_internal.h \
+      gasnet_ratomic_fwd.h    \
+      gasnet_ratomic_extra.h  \
+      gasnet_ratomic.c        \
       README                  \
       license.txt
 
@@ -529,6 +532,7 @@ CONDUIT_FILELIST = \
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line
 CONDUIT_SOURCELIST = \
+      $(srcdir)/gasnet_ratomic.c \
       $(gemini_srcdir)/gasnet_core.c \
       $(gemini_srcdir)/gasnet_gemini.c \
       $(gemini_srcdir)/gasnet_extended.c \
@@ -945,7 +949,7 @@ libgasnet-aries-parsync.a: $(libgasnet_dependencies)
 @USE_ARIES_CONDUIT_TRUE@clean-local: do-clean-local
 @USE_ARIES_CONDUIT_TRUE@install-data-local: do-install-data-local
 @USE_ARIES_CONDUIT_TRUE@uninstall-local: do-uninstall-local
-@USE_ARIES_CONDUIT_FALSE@$(top_srcdir)/gasnet.h: do-error
+@USE_ARIES_CONDUIT_FALSE@$(top_srcdir)/gasnetex.h: do-error
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

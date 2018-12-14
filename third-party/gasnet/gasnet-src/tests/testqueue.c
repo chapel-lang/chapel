@@ -8,14 +8,19 @@
  * Terms of use are as specified in license.txt
  */
 
-#include "gasnet.h"
+#include <gasnetex.h>
 int maxsz = 0;
 #ifndef TEST_SEGSZ
   #define TEST_SEGSZ_EXPR ((uintptr_t)(maxsz + alignup(maxsz,PAGESZ)))
 #endif
 #include "test.h"
 
-int insegment = 0;
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
+
+int insegment = 1;
 
 int myproc;
 int numprocs;
@@ -30,9 +35,8 @@ int maxdepth = 0;
 
 char *tgtmem;
 void *msgbuf;
-gasnet_handle_t *handles;
-gasnet_valget_handle_t *vghandles;
-volatile gasnet_register_value_t regval = 5551212;
+gex_Event_t *events;
+volatile gex_RMA_Value_t regval = 5551212;
 
 #define hidx_ping_shorthandler   201
 #define hidx_ping_medhandler     202
@@ -40,20 +44,20 @@ volatile gasnet_register_value_t regval = 5551212;
 
 gasnett_atomic_t amcount = gasnett_atomic_init(0);
 
-void ping_shorthandler(gasnet_token_t token) {
+void ping_shorthandler(gex_Token_t token) {
   gasnett_atomic_increment(&amcount,0);
 }
-void ping_medhandler(gasnet_token_t token, void *buf, size_t nbytes) {
+void ping_medhandler(gex_Token_t token, void *buf, size_t nbytes) {
   gasnett_atomic_increment(&amcount,0);
 }
-void ping_longhandler(gasnet_token_t token, void *buf, size_t nbytes) {
+void ping_longhandler(gex_Token_t token, void *buf, size_t nbytes) {
   gasnett_atomic_increment(&amcount,0);
 }
 
-gasnet_handlerentry_t htable[] = { 
-  { hidx_ping_shorthandler,  ping_shorthandler  },
-  { hidx_ping_medhandler,    ping_medhandler    },
-  { hidx_ping_longhandler,   ping_longhandler   }
+gex_AM_Entry_t htable[] = { 
+  { hidx_ping_shorthandler, ping_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
+  { hidx_ping_medhandler,   ping_medhandler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 },
+  { hidx_ping_longhandler,  ping_longhandler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 0 }
 };
 
 int iters = 0;
@@ -69,7 +73,7 @@ int numsync = 0;
 int do_bulk = 0, do_nonbulk = 0, do_value = 0;
 int do_implicit = 0, do_explicit = 0, do_blocking = 0;
 
-void do_bulkputgets(void);
+void do_bulkputs(void);
 void do_nonbulkputgets(void);
 void do_valueputgets(void);
 void do_blockingputgets(void);
@@ -77,7 +81,7 @@ void do_amtests(void);
 
 int main(int argc, char **argv) {
     /* call startup */
-    GASNET_Safe(gasnet_init(&argc, &argv));
+    GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testqueue", &argc, &argv, 0));
 
     /* parse arguments */
     arg = 1;
@@ -145,8 +149,8 @@ int main(int argc, char **argv) {
     #ifdef GASNET_SEGMENT_EVERYTHING
       if (maxsz > TEST_SEGSZ) { MSG("maxsz must be <= %"PRIuPTR" on GASNET_SEGMENT_EVERYTHING",(uintptr_t)TEST_SEGSZ); gasnet_exit(1); }
     #endif
-    GASNET_Safe(gasnet_attach(htable, sizeof(htable)/sizeof(gasnet_handlerentry_t), 
-                              TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
+    GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
+    GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, sizeof(htable)/sizeof(gex_AM_Entry_t)));
     test_init("testqueue",1,"[-in|-out|-a|-f] (iters) (maxdepth) (maxsz)\n"
                "  The 'in' or 'out' option selects whether the initiator-side\n"
                "  memory is in the GASNet segment or not (default is not).\n"
@@ -200,8 +204,8 @@ int main(int argc, char **argv) {
     }
 
     /* get SPMD info */
-    myproc = gasnet_mynode();
-    numprocs = gasnet_nodes();
+    myproc = gex_TM_QueryRank(myteam);
+    numprocs = gex_TM_QuerySize(myteam);
 
     if (!firstlastmode) {
       /* Only allow 1 or even number for numprocs */
@@ -251,17 +255,16 @@ int main(int argc, char **argv) {
     MSG0("x-axis: queue depth, y-axis: message size, injection time in microseconds\n");
     BARRIER();
 
-    handles = (gasnet_handle_t *) test_malloc(sizeof(gasnet_handle_t) * maxdepth);
-    vghandles = (gasnet_valget_handle_t *) test_malloc(sizeof(gasnet_valget_handle_t) * maxdepth);
+    events = (gex_Event_t *) test_malloc(sizeof(gex_Event_t) * maxdepth);
 
-    do_bulkputgets();
+    do_bulkputs();
     do_nonbulkputgets();
     do_valueputgets();
     do_blockingputgets();
     do_amtests();
 
     BARRIER();
-    test_free(handles);
+    test_free(events);
     if (!insegment) {
 	test_free(alloc);
     }
@@ -363,121 +366,90 @@ int main(int argc, char **argv) {
       }                                                                     \
     } while (0)
 
-void do_bulkputgets(void) {
+void do_bulkputs(void) {
     if (do_puts && do_bulk && do_explicit) {
-      QUEUE_TEST("gasnet_put_nb_bulk", 
-                 handles[i] = gasnet_put_nb_bulk(peerproc, tgtmem, msgbuf, payload), 
-                 gasnet_wait_syncnb_all(handles, depth), (void)0, 0);
-    }
-
-    if (do_gets && do_bulk && do_explicit) {
-      QUEUE_TEST("gasnet_get_nb_bulk", 
-                 handles[i] = gasnet_get_nb_bulk(msgbuf, peerproc, tgtmem, payload), 
-                 gasnet_wait_syncnb_all(handles, depth), (void)0, 0);
+      QUEUE_TEST("gex_RMA_PutNB/bulk", 
+                 events[i] = gex_RMA_PutNB(myteam, peerproc, tgtmem, msgbuf, payload, GEX_EVENT_DEFER, 0), 
+                 gex_Event_WaitAll(events, depth, 0), (void)0, 0);
     }
 
     if (do_puts && do_bulk && do_implicit) {
-      QUEUE_TEST("gasnet_put_nbi_bulk", 
-                 gasnet_put_nbi_bulk(peerproc, tgtmem, msgbuf, payload), 
-                 gasnet_wait_syncnbi_all(), (void)0, 0);
-    }
-
-    if (do_gets && do_bulk && do_implicit) {
-      QUEUE_TEST("gasnet_get_nbi_bulk", 
-                 gasnet_get_nbi_bulk(msgbuf, peerproc, tgtmem, payload), 
-                 gasnet_wait_syncnbi_all(), (void)0, 0);
+      QUEUE_TEST("gex_RMA_PutNBI/bulk", 
+                 gex_RMA_PutNBI(myteam, peerproc, tgtmem, msgbuf, payload, GEX_EVENT_DEFER, 0), 
+                 gex_NBI_Wait(GEX_EC_ALL,0), (void)0, 0);
     }
 }
 void do_nonbulkputgets(void) {
     if (do_puts && do_nonbulk && do_explicit) {
-      QUEUE_TEST("gasnet_put_nb", 
-                 handles[i] = gasnet_put_nb(peerproc, tgtmem, msgbuf, payload), 
-                 gasnet_wait_syncnb_all(handles, depth), (void)0, 0);
+      QUEUE_TEST("gex_RMA_PutNB", 
+                 events[i] = gex_RMA_PutNB(myteam, peerproc, tgtmem, msgbuf, payload, GEX_EVENT_NOW, 0), 
+                 gex_Event_WaitAll(events, depth, 0), (void)0, 0);
     }
 
-    if (do_gets && do_nonbulk && do_explicit) {
-      QUEUE_TEST("gasnet_get_nb", 
-                 handles[i] = gasnet_get_nb(msgbuf, peerproc, tgtmem, payload), 
-                 gasnet_wait_syncnb_all(handles, depth), (void)0, 0);
+    if (do_gets && do_explicit) {
+      QUEUE_TEST("gex_RMA_GetNB", 
+                 events[i] = gex_RMA_GetNB(myteam, msgbuf, peerproc, tgtmem, payload, 0), 
+                 gex_Event_WaitAll(events, depth, 0), (void)0, 0);
     }
 
     if (do_puts && do_nonbulk && do_implicit) {
-      QUEUE_TEST("gasnet_put_nbi", 
-                 gasnet_put_nbi(peerproc, tgtmem, msgbuf, payload), 
-                 gasnet_wait_syncnbi_all(), (void)0, 0);
+      QUEUE_TEST("gex_RMA_PutNBI", 
+                 gex_RMA_PutNBI(myteam, peerproc, tgtmem, msgbuf, payload, GEX_EVENT_NOW, 0), 
+                 gex_NBI_Wait(GEX_EC_ALL,0), (void)0, 0);
     }
 
-    if (do_gets && do_nonbulk && do_implicit) {
-      QUEUE_TEST("gasnet_get_nbi", 
-                 gasnet_get_nbi(msgbuf, peerproc, tgtmem, payload), 
-                 gasnet_wait_syncnbi_all(), (void)0, 0);
+    if (do_gets && do_implicit) {
+      QUEUE_TEST("gex_RMA_GetNBI", 
+                 gex_RMA_GetNBI(myteam, msgbuf, peerproc, tgtmem, payload, 0), 
+                 gex_NBI_Wait(GEX_EC_ALL,0), (void)0, 0);
     }
 }
 void do_valueputgets(void) {
     if (do_puts && do_value && do_explicit) {
-      QUEUE_TEST("gasnet_put_nb_val",
-                 handles[i] = gasnet_put_nb_val(peerproc, tgtmem, regval, payload), 
-                 gasnet_wait_syncnb_all(handles, depth),
-                 (void)0, SIZEOF_GASNET_REGISTER_VALUE_T);
-    }
-
-    if (do_gets && do_value && do_explicit) {
-      QUEUE_TEST("gasnet_get_nb_val",
-                 vghandles[i] = gasnet_get_nb_val(peerproc, tgtmem, payload), 
-                 { for (i=0;i<depth;++i) regval ^= gasnet_wait_syncnb_valget(vghandles[i]); },
-                 (void)0, SIZEOF_GASNET_REGISTER_VALUE_T);
+      QUEUE_TEST("gex_RMA_PutNBVal",
+                 events[i] = gex_RMA_PutNBVal(myteam, peerproc, tgtmem, regval, payload, 0),
+                 gex_Event_WaitAll(events, depth, 0),
+                 (void)0, SIZEOF_GEX_RMA_VALUE_T);
     }
 
     if (do_puts && do_value && do_implicit) {
-      QUEUE_TEST("gasnet_put_nbi_val",
-                 gasnet_put_nbi_val(peerproc, tgtmem, regval, payload),
-                 gasnet_wait_syncnbi_all(),
-                 (void)0, SIZEOF_GASNET_REGISTER_VALUE_T);
+      QUEUE_TEST("gex_RMA_PutNBIVal",
+                 gex_RMA_PutNBIVal(myteam, peerproc, tgtmem, regval, payload, 0),
+                 gex_NBI_Wait(GEX_EC_ALL,0),
+                 (void)0, SIZEOF_GEX_RMA_VALUE_T);
     }
 
 }
 void do_blockingputgets(void) {
-    if (do_puts && do_nonbulk && do_blocking) {
-      QUEUE_TEST("gasnet_put (BLOCKING - represents round-trip latency)", 
-                 gasnet_put(peerproc, tgtmem, msgbuf, payload), 
+    if (do_puts && do_blocking) {
+      QUEUE_TEST("gex_RMA_PutBlocking (BLOCKING - represents round-trip latency)", 
+                 gex_RMA_PutBlocking(myteam, peerproc, tgtmem, msgbuf, payload, 0),
                  (void)0, (void)0, 0);
     }
 
-    if (do_gets && do_nonbulk && do_blocking) {
-      QUEUE_TEST("gasnet_get (BLOCKING - represents round-trip latency)", 
-                 gasnet_get(msgbuf, peerproc, tgtmem, payload), 
-                 (void)0, (void)0, 0);
-    }
-
-    if (do_puts && do_bulk && do_blocking) {
-      QUEUE_TEST("gasnet_put_bulk (BLOCKING - represents round-trip latency)", 
-                 gasnet_put_bulk(peerproc, tgtmem, msgbuf, payload), 
-                 (void)0, (void)0, 0);
-    }
-
-    if (do_gets && do_bulk && do_blocking) {
-      QUEUE_TEST("gasnet_get_bulk (BLOCKING - represents round-trip latency)", 
-                 gasnet_get_bulk(msgbuf, peerproc, tgtmem, payload), 
+    if (do_gets && do_blocking) {
+      QUEUE_TEST("gex_RMA_GetBlocking (BLOCKING - represents round-trip latency)",
+                 gex_RMA_GetBlocking(myteam, msgbuf, peerproc, tgtmem, payload, 0),
                  (void)0, (void)0, 0);
     }
 
     if (do_puts && do_value && do_blocking) {
-      QUEUE_TEST("gasnet_put_val (BLOCKING - represents round-trip latency)", 
-                 gasnet_put_val(peerproc, tgtmem, regval, payload), 
-                 (void)0, (void)0, SIZEOF_GASNET_REGISTER_VALUE_T);
+      QUEUE_TEST("gex_RMA_PutBlockingVal (BLOCKING - represents round-trip latency)",
+                 gex_RMA_PutBlockingVal(myteam, peerproc, tgtmem, regval, payload, 0),
+                 (void)0, (void)0, SIZEOF_GEX_RMA_VALUE_T);
     }
 
     if (do_gets && do_value && do_blocking) {
-      QUEUE_TEST("gasnet_get_val (BLOCKING - represents round-trip latency)", 
-                 regval ^= gasnet_get_val(peerproc, tgtmem, payload), 
-                 (void)0, (void)0, SIZEOF_GASNET_REGISTER_VALUE_T);
+      QUEUE_TEST("gex_RMA_GetBlockingVal (BLOCKING - represents round-trip latency)", 
+                 regval ^= gex_RMA_GetBlockingVal(myteam, peerproc, tgtmem, payload, 0), 
+                 (void)0, (void)0, SIZEOF_GEX_RMA_VALUE_T);
     }
 }
 void do_amtests(void) {
     if (do_amshort) {
       gasnett_atomic_set(&amcount, 0, 0);
-      QUEUE_TEST("gasnet_AMRequestShort0", 
-                 gasnet_AMRequestShort0(peerproc, hidx_ping_shorthandler), (void)0,
+      QUEUE_TEST("gex_AM_RequestShort0", 
+                 gex_AM_RequestShort0(myteam, peerproc, hidx_ping_shorthandler, 0), (void)0,
                 { assert(iamrecver);
                   GASNET_BLOCKUNTIL(gasnett_atomic_read(&amcount,0) == depth); 
                   gasnett_atomic_set(&amcount, 0, 0); }, 
@@ -486,22 +458,24 @@ void do_amtests(void) {
 
     if (do_ammedium) {
       gasnett_atomic_set(&amcount, 0, 0);
-      QUEUE_TEST("gasnet_AMRequestMedium0", 
-                 gasnet_AMRequestMedium0(peerproc, hidx_ping_medhandler, msgbuf, payload), (void)0,
+      QUEUE_TEST("gex_AM_RequestMedium0", 
+                 gex_AM_RequestMedium0(myteam, peerproc, hidx_ping_medhandler,
+                                           msgbuf, payload, GEX_EVENT_NOW, 0), (void)0,
                 { assert(iamrecver);
                   GASNET_BLOCKUNTIL(gasnett_atomic_read(&amcount,0) == depth); 
                   gasnett_atomic_set(&amcount, 0, 0); }, 
-                 gasnet_AMMaxMedium());
+                 gex_AM_MaxRequestMedium(myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0));
     }
 
     if (do_amlong) {
       gasnett_atomic_set(&amcount, 0, 0);
-      QUEUE_TEST("gasnet_AMRequestLong0", 
-                 gasnet_AMRequestLong0(peerproc, hidx_ping_longhandler, msgbuf, payload, tgtmem), (void)0,
+      QUEUE_TEST("gex_AM_RequestLong0", 
+                 gex_AM_RequestLong0(myteam, peerproc, hidx_ping_longhandler,
+                                         msgbuf, payload, tgtmem, GEX_EVENT_NOW, 0), (void)0,
                 { assert(iamrecver);
                   GASNET_BLOCKUNTIL(gasnett_atomic_read(&amcount,0) == depth); 
                   gasnett_atomic_set(&amcount, 0, 0); }, 
-                 gasnet_AMMaxLongRequest());
+                 gex_AM_MaxRequestLong(myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0));
     }
 }
 

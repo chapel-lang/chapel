@@ -20,17 +20,14 @@ CONDUIT_FILELIST =           \
       gasnet_core_fwd.h      \
       gasnet_core_help.h     \
       gasnet_core_internal.h \
-      gasnet_coll_fwd.h      \
       gasnet_extended.c      \
       gasnet_extended_fwd.h  \
-      gasnet_extended_help_extra.h  \
-      gasnet_extended_coll.c
+      gasnet_extended_help_extra.h
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line
 CONDUIT_SOURCELIST =          \
       $(srcdir)/gasnet_core.c \
-      $(srcdir)/gasnet_extended_coll.c \
       $(srcdir)/gasnet_extended.c
 
 # additional -I or -D directives needed by this specific conduit
@@ -103,7 +100,7 @@ clean-local: do-clean-local
 install-data-local: do-install-data-local
 uninstall-local: do-uninstall-local
 else
-$(top_srcdir)/gasnet.h: do-error
+$(top_srcdir)/gasnetex.h: do-error
 endif
 
 

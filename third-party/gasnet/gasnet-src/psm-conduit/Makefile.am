@@ -51,13 +51,13 @@ SUBDIRS = contrib
 # include all headers, documentation, etc.
 # and any subdirectories not containing Makefile.am's
 CONDUIT_FILELIST =           \
+      license.txt            \
       gasnet_core.c          \
       gasnet_core.h          \
       gasnet_core_fwd.h      \
       gasnet_core_help.h     \
       gasnet_core_internal.h \
       gasnet_core_list.h     \
-      gasnet_extended_internal_extra.h \
       gasnet_extended.c      \
       gasnet_extended_fwd.h  \
       gasnet_extended_longmsg.c \
@@ -139,5 +139,5 @@ clean-local: do-clean-local
 install-data-local: do-install-data-local
 uninstall-local: do-uninstall-local
 else
-$(top_srcdir)/gasnet.h: do-error
+$(top_srcdir)/gasnetex.h: do-error
 endif

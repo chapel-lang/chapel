@@ -32,15 +32,21 @@
 
 #ifdef HAVE_LLVM
 #include "clang/AST/GlobalDecl.h"
+
+// rely on CodeGenOptions.h being included from CompilerInstance.h
+// if we need to change that, LLVM 6 named it
+//   clang/Frontend/CodeGenOptions.h
+// but LLVM 8 named it
+//   clang/Basic/CodeGenOptions.h
+
 #include "clang/Basic/Version.h"
 #include "clang/CodeGen/BackendUtil.h"
 #include "clang/CodeGen/CodeGenABITypes.h"
 #include "clang/CodeGen/ModuleBuilder.h"
-#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
-#include "clang/Frontend/CodeGenOptions.h"
+#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Lex/MacroInfo.h"

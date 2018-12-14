@@ -32,18 +32,27 @@ CONDUITMODE_DIST_SUBDIRS =    	\
 	pami-conduit			\
 	ofi-conduit
 CONDUITMODE_headers = 		\
+	gasnetex.h           	\
 	gasnet.h           	\
 	gasnet_ammacros.h  	\
-	gasnet_handler.h   	\
 	gasnet_trace.h     	\
+	gasnet_fwd.h    	\
 	extended-ref/coll/gasnet_coll.h \
+	extended-ref/ratomic/gasnet_ratomic.h \
 	extended-ref/vis/gasnet_vis.h      
 CONDUITMODE_EXTRA_DIST =    	\
 	docs              	\
 	extended-ref      	\
+	gasnet_legacy.c         \
+	gasnet_event.c 	        \
+	gasnet_event_internal.h \
+	gasnet_handler_internal.h \
 	gasnet_internal.h 	\
 	gasnet_internal.c 	\
+	gasnet_am.h 	        \
+	gasnet_am.c 	        \
 	gasnet_mmap.c  	  	\
+	gasnet_tm.c 	  	\
 	gasnet_diagnostic.c 	\
 	gasnet_pshm.h		\
 	gasnet_pshm.c		\
@@ -90,15 +99,12 @@ EXTRA_DIST =              		\
 
 include_HEADERS = $(headers)
 
-# deliberately omitted git-only docs: README-devel README-git README-release
+# deliberately omitted git-only docs: README-devel README-git README-release gasnet.*
 INSTALL_DOCS =			\
 	README			\
 	README-tools		\
 	license.txt		\
-	docs/autotuner.txt	\
-	docs/gasnet.txt		\
-	docs/gasnet.html	\
-	docs/gasnet.pdf
+	docs/GASNet-EX.spec
 
 force:
 

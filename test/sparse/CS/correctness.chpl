@@ -213,7 +213,7 @@ proc main() {
   cscuCopy = 0;
 
   // leader/follower these()
-  for (r,c) in zip(csrsDom, cscsDom, csruDom, cscuDom) {
+  for (r,c, _, _) in zip(csrsDom, cscsDom, csruDom, cscuDom) {
     csrsCopy[r] = 1;
     cscsCopy[c] = 1;
     csruCopy[r] = 1;
@@ -228,7 +228,7 @@ proc main() {
   csruCopy = 0;
   cscuCopy = 0;
 
-  for (r,c) in zip(csrsDom, cscsDom, csruDom, cscuDom) {
+  for (r,c, _, _) in zip(csrsDom, cscsDom, csruDom, cscuDom) {
     csrsCopy[r] = 1;
     cscsCopy[c] = 1;
     csruCopy[r] = 1;
