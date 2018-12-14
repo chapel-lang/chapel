@@ -5819,6 +5819,13 @@ class _channel_regexp_info {
   proc deinit() {
     clear();
   }
+  override proc writeThis(f) {
+    f <~> "{hasRegexp = " + hasRegexp: string;
+    f <~> ", matchedRegexp = " + matchedRegexp: string;
+    f <~> ", releaseRegexp = " + releaseRegexp: string;
+    f <~> ", ... capturei = " + capturei: string;
+    f <~> ", ncaptures = " + ncaptures: string + "}";
+  }
 }
 
 pragma "no doc"
