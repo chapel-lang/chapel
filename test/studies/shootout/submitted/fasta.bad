@@ -1,1 +1,0 @@
-fasta.chpl:27: error: type mismatch in assignment from nucleotide to int(8)
