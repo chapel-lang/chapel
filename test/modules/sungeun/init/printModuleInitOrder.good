@@ -22,6 +22,7 @@ Initializing Modules:
         DSIUtil
         ChapelArray
          Sort
+        ExternalArray
        ChapelNumLocales
        Sys
         SysBasic
@@ -37,7 +38,6 @@ Initializing Modules:
        Regexp
     LocaleTree
     DefaultAssociative
-    ExternalArray
     ChapelTaskTable
     MemTracking
     ChapelUtil
