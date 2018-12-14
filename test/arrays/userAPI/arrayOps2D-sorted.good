@@ -1,2 +1,2 @@
-./arrayAPItest.chpl:7: In function 'testArrayAPI2D':
-./arrayAPItest.chpl:149: error: sort() requires 1-D array
+./arrayAPItest.chpl:121: In function 'testArrayAPI2D':
+./arrayAPItest.chpl:263: error: sort() requires 1-D array
