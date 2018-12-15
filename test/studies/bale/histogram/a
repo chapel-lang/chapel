@@ -1,0 +1,138 @@
+diff --git a/runtime/src/comm/ugni/comm-ugni.c b/runtime/src/comm/ugni/comm-ugni.c
+index 7c75246018..145b09e835 100644
+--- a/runtime/src/comm/ugni/comm-ugni.c
++++ b/runtime/src/comm/ugni/comm-ugni.c
+@@ -6872,26 +6872,26 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
+ // Max number of threads that can do buffered atomics
+ #define MAX_BUFF_AMO_THREADS 1024
+ 
+-// pointers to thread local buffered AMO indexes and locks
+-static int* amo_vi_p[MAX_BUFF_AMO_THREADS];
+-static atomic_bool* amo_lock_p[MAX_BUFF_AMO_THREADS];
+-
+-// pointers to thread local buffered AMO argument buffers
+-static uint64_t* amo_opnd1_vp[MAX_BUFF_AMO_THREADS];
+-static c_nodeid_t* amo_locale_vp[MAX_BUFF_AMO_THREADS];
+-static void** amo_object_vp[MAX_BUFF_AMO_THREADS];
+-static size_t* amo_size_vp[MAX_BUFF_AMO_THREADS];
+-static gni_fma_cmd_type_t* amo_cmd_vp[MAX_BUFF_AMO_THREADS];
+-static mem_region_t** amo_remote_mr_vp[MAX_BUFF_AMO_THREADS];
++struct amo_thread_info {
++  int*                    vi_p;
++  atomic_bool*            lock_p;
++  uint64_t*               opnd1_p;
++  c_nodeid_t*             locale_p;
++  void**                  object_p;
++  size_t*                 size_p;
++  gni_fma_cmd_type_t*     cmd_p;
++  mem_region_t**          remote_mr_p;
++  struct amo_thread_info* next;
++}; 
++
++static struct amo_thread_info* amo_info = NULL;
+ 
+ // buffered AMO initialization lock and thread counter
+ static atomic_bool amo_init_lock;
+-static atomic_uint_least32_t amo_thread_counter;
+ 
+ static
+ void buff_amo_init(void) {
+   atomic_init_bool(&amo_init_lock, false);
+-  atomic_init_uint_least32_t(&amo_thread_counter, 0);
+ }
+ 
+ 
+@@ -7027,19 +7027,17 @@ void do_remote_amo_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
+ // for each thread that has done buffered atomics, grab the lock for that
+ // thread and if there are built up operations flush them and reset the index
+ void chpl_comm_atomic_buff_flush() {
+-  uint32_t sz, i;
+-  sz = atomic_load_uint_least32_t(&amo_thread_counter);
+-  for(i=0; i<sz; i++) {
+-    if (*amo_vi_p[i] != 0) {
+-      while (atomic_exchange_bool(amo_lock_p[i], true)) { local_yield(); }
+-      if (*amo_vi_p[i] != 0) {
+-        do_remote_amo_V(*amo_vi_p[i], amo_opnd1_vp[i], amo_locale_vp[i],
+-                        amo_object_vp[i], amo_size_vp[i], amo_cmd_vp[i],
+-                        amo_remote_mr_vp[i]);
+-        *amo_vi_p[i] = 0;
+-      }
+-      atomic_store_bool(amo_lock_p[i], false);
++  struct amo_thread_info* cur_amo_info = amo_info;
++  while (atomic_exchange_bool(&amo_init_lock, true)) { local_yield(); }
++  while (cur_amo_info != NULL) {
++    while (atomic_exchange_bool(cur_amo_info->lock, true)) { local_yield(); }
++    if (*cur_amo_info->vi_p > 0) {
++      do_remote_amo_V(*cur_amo_info->vi_p, cur_amo_info->opnd1_p,
++          cur_amo_info->locale_p, cur_amo_info->object_p, cur_amo_info->size_p,
++          cur_amo_info->cmd_p, cur_amo_info->remote_mr_p);
+     }
++    atomic_store_bool(cur_amo_info->lock, false);
++    cur_amo_info = cur_amo_info->next;
+   }
+ }
+ 
+@@ -7067,47 +7065,33 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
+   // thread local init status (0=first-call, -1=out-of-entries, 1=have-entry)
+   static __thread int init_status = 0;
+ 
++  static __thread struct amo_thread_info*;
++
++
+   if (init_status == 1) {
+     // no-op
+   } else if (init_status == -1) {
+     do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+     return;
+   } else {
+-    uint32_t idx;
++    amo_thread_info = (amo_thread_info*) chpl_mem_alloc(sizeof(amo_thread_info), CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
++    atomic_init_bool(&lock, false);
++    amo_thread_info->vi_p;        = &vi;
++    amo_thread_info->lock_p;      = &lock;
++    amo_thread_info->opnd1_p;     = &opnd1_v[0];
++    amo_thread_info->locale_p;    = &locale_v[0];
++    amo_thread_info->object_p;    = &object_v[0];
++    amo_thread_info->size_p;      = &size_v[0];
++    amo_thread_info->cmd_p;       = &cmd_v[0];
++    amo_thread_info->remote_mr_p; = &remote_mr_v[0];
+ 
+     // grab initialization lock
+     while (atomic_exchange_bool(&amo_init_lock, true)) { local_yield(); }
+ 
+-    // initialize the lock for this thread and figure out our index into the
+-    // buffer of AMO operation pointers. If we've exceeded the buffer length,
+-    // warn and do blocking operations instead
+-    atomic_init_bool(&lock, false);
+-    idx = atomic_load_uint_least32_t(&amo_thread_counter);
+-    if (idx >= MAX_BUFF_AMO_THREADS) {
+-      chpl_warning("Exceeded MAX_BUFF_AMO_THREADS, buffered atomic performance degraded", 0, 0);
+-      init_status = -1;
+-      atomic_store_bool(&amo_init_lock, false);
+-      do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+-      return;
+-    }
+-
+-    // store pointers to our thread local index, lock, and buffers so
+-    // operations can be flushed from outside of this routine
+-    amo_vi_p[idx]         = &vi;
+-    amo_lock_p[idx]       = &lock;
+-    amo_opnd1_vp[idx]     = &opnd1_v[0];
+-    amo_locale_vp[idx]    = &locale_v[0];
+-    amo_object_vp[idx]    = &object_v[0];
+-    amo_size_vp[idx]      = &size_v[0];
+-    amo_cmd_vp[idx]       = &cmd_v[0];
+-    amo_remote_mr_vp[idx] = &remote_mr_v[0];
+-
++    amo_thread_info->next         = amo_info;
++    amo_info = amo_thread_info;
++    
+     init_status = 1;
+-    // actually update the thread counter (needs to be done after the buffer
+-    // pointers are setup, otherwise we have a race with flushing)
+-    (void) atomic_fetch_add_uint_least32_t(&amo_thread_counter, 1);
+-
+-    // release initialization lock
+     atomic_store_bool(&amo_init_lock, false);
+   }
+ 
