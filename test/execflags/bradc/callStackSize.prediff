@@ -15,8 +15,7 @@ fifo)
 qthreads)
   # qthreads uses 1 system page from the stack for runtime data
   # structures and an additional 2 pages for guard pages if they are
-  # enabled. if guard pages are enabled, qthreads also rounds the
-  # call stack size to the next system page
+  # enabled. qthreads also rounds the call stack size to the next system page
   # Note: There are a multitude of ways that guard pages can be enabled or
   #       disabled. They can be disabled at qthreads build time, by compopts,
   #       and by both qthread and chapel level env vars. Instead of checking
@@ -29,7 +28,7 @@ qthreads)
   if [ -n "$guardPages" ] ; then
     ocss=$(( (($icss - 3*$pagesize) + $pagesize - 1) & ~($pagesize - 1) ))
   else
-    ocss=$(( $icss - $pagesize ))
+    ocss=$(( (($icss - 1*$pagesize) + $pagesize - 1) & ~($pagesize - 1) ))
   fi;;
 *)
   ocss=$icss;;
