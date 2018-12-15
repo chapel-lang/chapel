@@ -25,18 +25,15 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of cstdlib atomics
-#GITHUB_USER=
-#GITHUB_BRANCH=
-SHORT_NAME=cstdlib-atomics
-START_DATE=11/08/18
+# Test performance of new reduce expressions
+GITHUB_USER=vasslitvinov
+GITHUB_BRANCH=serial-ForallStmt
+SHORT_NAME=reduce-exprs
+START_DATE=12/14/18
 
-export CHPL_ATOMICS=cstdlib
-
-
-#git branch -D $GITHUB_USER-$GITHUB_BRANCH
-#git checkout -b $GITHUB_USER-$GITHUB_BRANCH
-#git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
+git branch -D $GITHUB_USER-$GITHUB_BRANCH
+git checkout -b $GITHUB_USER-$GITHUB_BRANCH
+git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
