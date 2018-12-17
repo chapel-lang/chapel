@@ -3,7 +3,7 @@ class C { var x: int; }
 var globOwn = new owned C(1);
 var globly = globOwn.borrow();
 
-proc swapit(ref lhs: borrowed C, ref rhs: borrowed C) lifetime lhs=rhs && rhs=lhs
+proc swapit(ref lhs: borrowed C, ref rhs: borrowed C) lifetime lhs=rhs, rhs=lhs
 {
   var tmp = lhs;
   lhs = rhs;
