@@ -1,2 +1,0 @@
-bug: a use of PRIM_ARRAY_ALLOC and copy propagation
-#11312
