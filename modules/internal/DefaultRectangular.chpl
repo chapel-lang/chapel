@@ -753,7 +753,7 @@ module DefaultRectangular {
                                                         data=data,
                                                         externData=externData,
                                                         externArr=forExternalArr,
-                                                        _owned=true);
+                                                        _borrowed=true);
 
           // Only give the pointer initial contents if we created it ourselves.
           init_elts(externData.elts:c_ptr(eltType), this.dsiNumIndices,
@@ -1116,8 +1116,6 @@ module DefaultRectangular {
     var data : _ddata(eltType) = nil;
 
     var externData: chpl_external_array;
-    var externArr: bool = false;
-    var _owned: bool = false;
 
     pragma "alias scope from this"
     pragma "local field"
@@ -1125,6 +1123,10 @@ module DefaultRectangular {
 
     // note: used by pychapel
     var noinit_data: bool = false;
+
+    // note: used for external array support
+    var externArr: bool = false;
+    var _borrowed: bool = false;
 
     // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
     // pop_back, insert, remove) to allow growing or shrinking the data
@@ -1160,7 +1162,7 @@ module DefaultRectangular {
 
     override proc dsiDestroyArr() {
       if (externArr) {
-        if (_owned) {
+        if (_borrowed) {
           chpl_free_external_array(externData);
         }
       } else {

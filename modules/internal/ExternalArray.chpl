@@ -61,7 +61,7 @@ module ExternalArray {
                                                   data=value.elts: _ddata(eltType),
                                                   externData=value,
                                                   externArr=true,
-                                                  _owned=false);
+                                                  _borrowed=false);
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
   }
