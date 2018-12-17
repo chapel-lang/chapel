@@ -670,7 +670,7 @@ module String {
     // range that can be used to iterate over a section of the string
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
-    proc _getView(r:range(?)) {
+    proc _getView(r:range(?)) where r.idxType != codePointIndex {
       //TODO: halt()s should use string.writef at some point.
       if boundsChecking {
         if r.hasLowBound() {
@@ -685,6 +685,50 @@ module String {
         }
       }
       const ret = r[1:r.idxType..#(this.len:r.idxType)];
+      return ret;
+    }
+
+    // Checks to see if r is inside the bounds of this and returns a finite
+    // range that can be used to iterate over a section of the string.
+    // Converts from codePointIndex range to byte index range in the process.
+    pragma "no doc"
+    proc _getView(r:range(?)) where r.idxType == codePointIndex {
+      if boundsChecking {
+        if r.hasLowBound() {
+          if r.low:int <= 0 then
+            halt("range out of bounds of string");
+        }
+      }
+      // Loop to find whether the low and high codepoint indices
+      // appear within the string.  Note the byte indices of those
+      // locations, if they exist.
+      const cp_low = if r.hasLowBound() && r.low:int > 0 then r.low:int else 1;
+      const cp_high = if r.hasHighBound() then r.high:int else this.len + 1;
+      var cp_count = 1;
+      var byte_low = this.len + 1;  // empty range if bounds outside string
+      var byte_high = this.len;
+      if cp_high > 0 {
+        for (c, i, nbytes) in this._ucharsIndexLen() {
+          if cp_count == cp_low {
+            byte_low = i;
+            if !r.hasHighBound() then
+              break;
+          }
+          if cp_count == cp_high {
+            byte_high = i + nbytes-1;
+            break;
+          }
+          cp_count += 1;
+        }
+      }
+      if boundsChecking {
+        if r.hasHighBound() {
+          if (r.high:int < 0) || (r.high:int > cp_count) then
+            halt("range out of bounds of string");
+        }
+      }
+      const r1 = byte_low..byte_high;
+      const ret = r1[1..#(this.len)];
       return ret;
     }
 
