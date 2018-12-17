@@ -530,7 +530,7 @@ static constraint_t mergeConstraints(constraint_t a, constraint_t b, bool& inval
 static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 {
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed("&&")) {
+    if (call->isNamed(",")) {
       constraint_t v1, v2, res;
       bool invalid = false;
       res = CONSTRAINT_UNKNOWN;
@@ -599,7 +599,7 @@ static constraint_t orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b
 static Symbol* returnLifetimeFromClause(Expr* expr) {
 
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed("&&")) {
+    if (call->isNamed(",")) {
       Symbol* v1 = NULL;
       Symbol* v2 = NULL;
       v1 = returnLifetimeFromClause(call->get(1));
@@ -632,7 +632,7 @@ static Symbol* returnLifetimeFromClause(FnSymbol* fn) {
 static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 {
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed("&&")) {
+    if (call->isNamed(",")) {
       printOrderConstraintFromClause(call->get(1), a, b);
       printOrderConstraintFromClause(call->get(2), a, b);
     } else {
@@ -1690,7 +1690,7 @@ void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall) {
 
 void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall, Expr* constraintExpr) {
   if (CallExpr* constraint = toCallExpr(constraintExpr)) {
-    if (constraint->isNamed("&&")) {
+    if (constraint->isNamed(",")) {
       inferLifetimesForConstraint(forCall, constraint->get(1));
       inferLifetimesForConstraint(forCall, constraint->get(2));
     } else if (constraint->isNamed("=")) {
