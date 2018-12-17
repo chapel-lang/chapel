@@ -12,8 +12,8 @@ from utils import memoize
 def get(flag='host'):
     platform = chpl_platform.get(flag)
     machine = chpl_machine.get(flag)
-    (flag, arch) = chpl_arch.get(flag, map_to_compiler=True,
-                                 get_lcd=chpl_home_utils.using_chapel_module())
+    (_, arch) = chpl_arch.get(flag, map_to_compiler=True,
+                              get_lcd=chpl_home_utils.using_chapel_module())
 
     # platform
     result = platform

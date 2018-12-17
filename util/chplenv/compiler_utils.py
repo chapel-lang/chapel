@@ -11,8 +11,6 @@ from utils import error, memoize, run_command
 def get_compiler_name(compiler):
     if compiler_is_prgenv(compiler):
         return 'cc'
-    elif compiler == 'aarch64-gnu':
-        return 'aarch64-unknown-linux-gnu-gcc'
     elif 'gnu' in compiler:
         return 'gcc'
     elif compiler in ['clang', 'allinea']:
