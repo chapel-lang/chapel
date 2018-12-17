@@ -735,8 +735,6 @@ initPrimitive() {
   prim_def(PRIM_CHPL_COMM_PUT_STRD, "chpl_comm_put_strd", returnInfoVoid, true, true);
 
   prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true);
-  prim_def(PRIM_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
-  prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
 
   // PRIM_ARRAY_GET{_VALUE} arguments
   //  base pointer

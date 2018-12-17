@@ -344,8 +344,6 @@ classifyPrimitive(CallExpr *call) {
     // call so we don't consider them fast-eligible.
     // However, they are communication free.
     //
-  case PRIM_ARRAY_ALLOC:
-  case PRIM_ARRAY_FREE:
   case PRIM_STRING_COPY:
     return LOCAL_NOT_FAST;
 

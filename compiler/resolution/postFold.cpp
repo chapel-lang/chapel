@@ -487,8 +487,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_ARRAY_ALLOC)                == true ||
-             strncmp(call->primitive->name, "_fscan", 6)        == 0    ||
+  } else if (strncmp(call->primitive->name, "_fscan", 6)        == 0    ||
              strcmp (call->primitive->name, "_readToEndOfLine") == 0    ||
              strcmp (call->primitive->name, "_now_timer")       == 0)   {
     for_actuals(actual, call) {

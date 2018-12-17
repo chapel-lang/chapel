@@ -97,8 +97,6 @@ static GenRet codegenCallExpr(const char* fnName);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
-static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6, GenRet a7);
-static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8);
 static void codegenCall(const char* fnName, std::vector<GenRet> & args, bool defaultToValues = true);
 static void codegenCall(const char* fnName, GenRet a1);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2);
@@ -2566,35 +2564,6 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3)
   args.push_back(a3);
   return codegenCallExpr(fnName, args);
 }
-static
-GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
-                       GenRet a4, GenRet a5, GenRet a6, GenRet a7)
-{
-  std::vector<GenRet> args;
-  args.push_back(a1);
-  args.push_back(a2);
-  args.push_back(a3);
-  args.push_back(a4);
-  args.push_back(a5);
-  args.push_back(a6);
-  args.push_back(a7);
-  return codegenCallExpr(fnName, args);
-}
-static
-GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
-                       GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8)
-{
-  std::vector<GenRet> args;
-  args.push_back(a1);
-  args.push_back(a2);
-  args.push_back(a3);
-  args.push_back(a4);
-  args.push_back(a5);
-  args.push_back(a6);
-  args.push_back(a7);
-  args.push_back(a8);
-  return codegenCallExpr(fnName, args);
-}
 
 /* static
 void codegenCall(const char* fnName)
@@ -3652,90 +3621,6 @@ DEFINE_PRIM(PRIM_ARRAY_SHIFT_BASE_POINTER) {
     }
 }
 
-// Workaround for troubles with allocateData() in ChapelArray.chpl.
-static Expr* destExprForPrimArrayAlloc(CallExpr* call) {
-  Expr* dst = call->get(1);
-  if (! dst->isRefOrWideRef()) return dst; // nothing to do
-  INT_ASSERT(! dst->isWideRef()); // how to handle a wide ref?
-
-  CallExpr* deref = new CallExpr(PRIM_DEREF);
-  dst->replace(deref);
-  deref->insertAtTail(dst);
-  return deref;
-}
-DEFINE_PRIM(PRIM_ARRAY_ALLOC) {
-    // get(1): return symbol
-    // get(2): number of elements
-    // get(3): desired sublocale
-    // get(4): (temporary) make 2nd call?
-    // get(5): (temporary) 2nd call: repeat previously returned ptr
-    GenRet dst = destExprForPrimArrayAlloc(call);
-    GenRet alloced;
-
-    INT_ASSERT(dst.isLVPtr);
-
-    if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      Symbol* addr    = call->get(1)->typeInfo()->getField("addr");
-      Type*   eltType = getDataClassType(addr->type->symbol)->typeInfo();
-      GenRet  locale  = codegenRlocale(dst);
-      GenRet  rcall   = codegenCallExpr("chpl_mem_wide_array_alloc",
-                                        codegenRnode(dst),
-                                        codegenValue(call->get(2)),
-                                        codegenSizeof(eltType),
-                                        call->get(3),
-                                        call->get(4),
-                                        call->get(5),
-                                        call->get(6),
-                                        call->get(7));
-
-      rcall.chplType = call->get(1)->typeInfo();
-      alloced       = codegenAddrOf(codegenWideAddr(locale,
-                                                    rcall,
-                                                    rcall.chplType));
-
-    } else {
-      Type* eltType = getDataClassType(call->get(1)->typeInfo()->symbol)->typeInfo();
-
-      alloced = codegenCallExpr("chpl_mem_array_alloc",
-                                codegenValue(call->get(2)),
-                                codegenSizeof(eltType),
-                                call->get(3),
-                                call->get(4),
-                                call->get(5),
-                                call->get(6),
-                                call->get(7));
-    }
-
-    codegenAssign(dst, alloced);
-}
-DEFINE_PRIM(PRIM_ARRAY_FREE) {
-    // get(1): memory address
-    // get(2): number of elements
-    if (fNoMemoryFrees == false) {
-      GenRet data = call->get(1);
-      GenRet numElts;
-      if (call->get(2)->isRefOrWideRef()) {
-        numElts = codegenDeref(call->get(2));
-      } else {
-        numElts = codegenValue(call->get(2));
-      }
-
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        GenRet node = codegenRnode(data);
-        GenRet ptr  = codegenRaddr(data);
-        Symbol* addr    = call->get(1)->typeInfo()->getField("addr");
-        Type*   eltType = getDataClassType(addr->type->symbol)->typeInfo();
-        codegenCall("chpl_mem_wide_array_free", node, ptr,
-                    numElts, codegenSizeof(eltType),
-                    call->get(3), call->get(4));
-      } else {
-        Type* eltType = getDataClassType(call->get(1)->typeInfo()->symbol)->typeInfo();
-        codegenCall("chpl_mem_array_free", data,
-                    numElts, codegenSizeof(eltType),
-                    call->get(3), call->get(4));
-      }
-    }
-}
 DEFINE_PRIM(PRIM_NOOP) {
 }
 DEFINE_PRIM(PRIM_MOVE) {

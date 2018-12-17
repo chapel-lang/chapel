@@ -298,10 +298,9 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
               }
             }
 
-            if (( (call->isPrimitive(PRIM_MOVE)        ||
-                   call->isPrimitive(PRIM_ASSIGN)      ||
-                   call->isPrimitive(PRIM_SET_MEMBER)  ||
-                   call->isPrimitive(PRIM_ARRAY_ALLOC) )
+            if (( (call->isPrimitive(PRIM_MOVE)       ||
+                   call->isPrimitive(PRIM_ASSIGN)     ||
+                   call->isPrimitive(PRIM_SET_MEMBER) )
                   && call->get(1) == se)                                   ||
                 (call->isPrimitive(PRIM_GET_MEMBER))                       ||
                 (call->isPrimitive(PRIM_GET_MEMBER_VALUE))                 ||
