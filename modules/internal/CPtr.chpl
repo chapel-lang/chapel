@@ -378,25 +378,6 @@ module CPtr {
   }
 
   /*
-    Return the raw size in bytes of a type, as with the C ``sizeof`` built-in.
-
-    This method is intended for C interoperability. It is specifically
-    for getting the C sizeof() a Chapel type; in particularly for a
-    class it returns the size of the reference, not the instance.  It
-    is used in situations where Chapel code needs to communicate the
-    size of something to the runtime, notably for memory allocation
-    and remote communication.
-   */
-  inline proc c_sizeof_raw(type t): size_t {
-    extern proc sizeof(type t): size_t;
-    return sizeof(t);
-  }
-
-  inline proc c_sizeof_raw(x: ?t): size_t {
-    return c_sizeof_raw(t);
-  }
-
-  /*
     Return the offset of a field in a record.
 
     .. warning::

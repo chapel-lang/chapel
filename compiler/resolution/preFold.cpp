@@ -1079,6 +1079,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = new CallExpr(PRIM_SIZEOF, sizeType->symbol);
     call->replace(retval);
 
+  } else if (call->isPrimitive(PRIM_SIZEOF_DDATA) == true) {
+    // Fix up arg to sizeof_ddata(), as we may not have known the type earlier
+    SymExpr* sizeSym  = toSymExpr(call->get(1));
+    Type*    sizeType = sizeSym->symbol()->typeInfo();
+
+    retval = new CallExpr(PRIM_SIZEOF_DDATA, sizeType->symbol);
+    call->replace(retval);
+
   }
 
   return retval;

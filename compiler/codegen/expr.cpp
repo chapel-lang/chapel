@@ -4738,6 +4738,19 @@ DEFINE_PRIM(PRIM_SIZEOF) {
 
     ret = size;
 }
+
+DEFINE_PRIM(PRIM_SIZEOF_DDATA) {
+    Type*  type = call->get(1)->typeInfo();
+    GenRet size;
+    if (type->symbol->hasFlag(FLAG_WIDE_CLASS) == true) {
+      size = codegenSizeof(getDataClassType(type->getField("addr")->
+                                            type->symbol)->typeInfo());
+    } else {
+      size = codegenSizeof(getDataClassType(type->symbol)->typeInfo());
+    }
+    ret = size;
+}
+
 DEFINE_PRIM(PRIM_CAST) {
     if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
         call->isWideRef()) {
