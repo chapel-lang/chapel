@@ -36,6 +36,10 @@ module ExternalArray {
   extern proc chpl_make_external_array_ptr(elts: c_void_ptr,
                                            size: uint): chpl_external_array;
 
+  extern proc
+  chpl_make_external_array_ptr_free(elts: c_void_ptr,
+                                    size: uint): chpl_external_array;
+
   extern proc chpl_free_external_array(x: chpl_external_array);
 
   // Creates an instance of our new array type
@@ -50,8 +54,7 @@ module ExternalArray {
     var dom = defaultDist.dsiNewRectangularDom(rank=1,
                                                idxType=int,
                                                stridable=false,
-                                               inds=(0..#value.size,),
-                                               externalArray=true);
+                                               inds=(0..#value.size,));
     dom._free_when_no_arrs = true;
     var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
                                                   rank=1,
@@ -61,12 +64,17 @@ module ExternalArray {
                                                   data=value.elts: _ddata(eltType),
                                                   externData=value,
                                                   externArr=true,
-                                                  _borrowed=false);
+                                                  _owned=false);
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
   }
 
-  proc convertToExternalArray(arr: []): chpl_external_array {
+  proc convertToExternalArray(in arr: []): chpl_external_array {
+    if (!isExternArrEltType(arr.eltType)) {
+      use HaltWrappers;
+      safeCastCheckHalt("Cannot build an external array that stores " +
+                        arr.eltType: string);
+    }
     if (!isIntegralType(arr.domain.idxType)) {
       compilerError("cannot return an array with indices that are not " +
                     "integrals");
@@ -80,11 +88,25 @@ module ExternalArray {
     if (arr.domain.low != 0) {
       halt("cannot return an array when the lower bounds is not 0");
     }
-    var externalArr = chpl_make_external_array(c_sizeof(arr.eltType),
-                                               arr.size: uint);
-    chpl__uncheckedArrayTransfer(makeArrayFromExternArray(externalArr,
-                                                          arr.eltType),
-                                 arr);
+    var externalArr = chpl_make_external_array_ptr_free(c_ptrTo(arr[0]),
+                                                        arr.size: uint);
+    arr.externArr = true;
+    arr._owned = false;
     return externalArr;
+  }
+
+  // Returns a bool indicating if the type would be appropriate to use in an
+  // extern array.
+  // NOTE: once we can export types, those should also be supported here.
+  private proc isExternArrEltType(type t) param {
+    if (isPrimitive(t) && t != string) {
+      return true;
+    } else if (t == c_string) {
+      return true;
+    } else if (__primitive("is extern type", t)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 }

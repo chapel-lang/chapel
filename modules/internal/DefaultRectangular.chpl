@@ -81,43 +81,10 @@ module DefaultRectangular {
   class DefaultDist: BaseDist {
     override proc dsiNewRectangularDom(param rank: int, type idxType,
                                        param stridable: bool, inds) {
-      return dsiNewRectangularDom(rank, idxType, stridable, inds, false);
-    }
-
-    proc dsiNewRectangularDom(param rank: int, type idxType,
-                              param stridable: bool, inds,
-                              param externalArray: bool) {
-      if (externalArray) {
-        if (rank != 1) {
-          halt("external arrays are only allowed a rank of 1 right now");
-        }
-        if (stridable) {
-          halt("external arrays are not allowed to be stridable right now");
-        }
-        if (!isIntegralType(idxType)) {
-          halt("external arrays only allow integral indices");
-        }
-        if (inds.size != 1) {
-          halt("there should only be one set of indices, not multiple dimensions");
-        }
-        var r = inds(1);
-        // Allow empty arrays (which have the domain 1..0)
-        if (r.low != 0 && !(r.low == 1 && r.high == 0)) {
-          halt("non-empty external arrays always have a lower bound of 0");
-        }
-        const dom = new unmanaged DefaultRectangularDom(rank, idxType,
-                                                        stridable,
-                                                        _to_unmanaged(this));
-        dom.dsiSetIndices(inds);
-        dom.forExternalArr = true;
-        return dom;
-      } else {
-        const dom = new unmanaged DefaultRectangularDom(rank, idxType,
-                                                        stridable,
-                                                        _to_unmanaged(this));
-        dom.dsiSetIndices(inds);
-        return dom;
-      }
+      const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable,
+                                                      _to_unmanaged(this));
+      dom.dsiSetIndices(inds);
+      return dom;
     }
 
     override proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
@@ -172,7 +139,6 @@ module DefaultRectangular {
   class DefaultRectangularDom: BaseRectangularDom {
     var dist: unmanaged DefaultDist;
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
-    var forExternalArr: bool = false;
 
     proc linksDistribution() param return false;
     override proc dsiLinksDistribution()     return false;
@@ -182,8 +148,6 @@ module DefaultRectangular {
     proc init(param rank, type idxType, param stridable, dist) {
       super.init(rank, idxType, stridable);
       this.dist = dist;
-      // Will get set later
-      forExternalArr = false;
     }
 
     proc intIdxType type {
@@ -202,36 +166,11 @@ module DefaultRectangular {
     proc dsiGetIndices() return ranges;
 
     proc dsiSetIndices(x) {
-      if (forExternalArr) {
-        halt("Can't change the indices of an external array");
-      }
       ranges = x;
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-      if (forExternalArr) {
-        if (rhs.rank != 1) {
-          halt("External arrays are only allowed a rank of 1");
-
-        } else if (stridable) {
-          halt("external arrays are not allowed to be stridable right now");
-
-        } else if (!isIntegralType(idxType)) {
-          halt("external arrays only allow integral indices");
-
-        } else if (rhs.low != 0 && !(rhs.low == 1 && rhs.high == 0)) {
-          // Lydia NOTE 12/6/18: The above conditional will not work with a
-          // rank greater than 1, it is not sufficient to just remove the
-          // rank != 1 check
-          halt("Non-empty domains for external arrays must have a lower bound" +
-               "of 0");
-        }
-        forExternalArr = false;
-        chpl_assignDomainWithGetSetIndices(this, rhs);
-        forExternalArr = true;
-      } else {
-        chpl_assignDomainWithGetSetIndices(this, rhs);
-      }
+      chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
     iter these_help(param d: int) /*where storageOrder == ArrayStorageOrder.RMO*/ {
@@ -740,36 +679,10 @@ module DefaultRectangular {
     }
 
     proc dsiBuildArray(type eltType) {
-      if (forExternalArr) {
-        if (isExternArrEltType(eltType)) {
-          var externData = chpl_make_external_array(c_sizeof(eltType),
-                                                    this.dsiNumIndices: uint);
-          var data = externData.elts: _ddata(eltType);
-          var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
-                                                        rank=rank,
-                                                        idxType=idxType,
-                                                        stridable=stridable,
-                                                        dom=_to_unmanaged(this),
-                                                        data=data,
-                                                        externData=externData,
-                                                        externArr=forExternalArr,
-                                                        _borrowed=true);
-
-          // Only give the pointer initial contents if we created it ourselves.
-          init_elts(externData.elts:c_ptr(eltType), this.dsiNumIndices,
-                    eltType);
-          return arr;
-        } else {
-          use HaltWrappers;
-          safeCastCheckHalt("Cannot build an external array that stores " +
-                            eltType: string);
-        }
-      } else {
-        return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
-                                                   idxType=idxType,
-                                                   stridable=stridable,
-                                                   dom=_to_unmanaged(this));
-      }
+      return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
+                                                 idxType=idxType,
+                                                 stridable=stridable,
+                                                 dom=_to_unmanaged(this));
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
@@ -1114,7 +1027,6 @@ module DefaultRectangular {
     pragma "alias scope from this"
     pragma "local field"
     var data : _ddata(eltType) = nil;
-
     var externData: chpl_external_array;
 
     pragma "alias scope from this"
@@ -1126,7 +1038,7 @@ module DefaultRectangular {
 
     // note: used for external array support
     var externArr: bool = false;
-    var _borrowed: bool = false;
+    var _owned: bool = false;
 
     // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
     // pop_back, insert, remove) to allow growing or shrinking the data
@@ -1162,7 +1074,7 @@ module DefaultRectangular {
 
     override proc dsiDestroyArr() {
       if (externArr) {
-        if (_borrowed) {
+        if (_owned) {
           chpl_free_external_array(externData);
         }
       } else {
@@ -1176,11 +1088,9 @@ module DefaultRectangular {
               numElts = dataAllocRange.length;
             if numElts == 0 then
               numElts = dom.dsiNumIndices;
-
             dsiDestroyDataHelper(data, numElts);
           }
         }
-
         const size = blk(1) * dom.dsiDim(1).length;
         _ddata_free(data, size);
       }

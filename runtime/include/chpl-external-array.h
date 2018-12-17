@@ -35,6 +35,8 @@ chpl_external_array chpl_make_external_array(uint64_t elt_size,
                                              uint64_t num_elts);
 chpl_external_array chpl_make_external_array_ptr(void* elts,
                                                  uint64_t size);
+chpl_external_array chpl_make_external_array_ptr_free(void* elts,
+                                                      uint64_t size);
 void chpl_free_external_array(chpl_external_array x);
 
 #endif
