@@ -557,6 +557,7 @@ def verify_arch(arch, flag):
     if check_arch and arch and arch not in  ['none', 'unknown', 'native']:
         # Print a friendly warning if it's unlikely the user could run
         # their program. This could be printed in cross-compilation settings.
+        warn = False
         try:
             vendor_string, feature_string = get_cpuinfo(platform_val)
             detected_arch = feature_sets.find(vendor_string, feature_string)
