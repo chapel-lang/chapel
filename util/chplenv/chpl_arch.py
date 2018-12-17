@@ -528,19 +528,6 @@ def default_arch(flag):
 
     return arch
 
-# Returns the machine type for the passed arch.
-#  * if arch is native/none/unknown, return result of get_native_machine
-#  * otherwise returns the machine type corresponding to the selected arch
-@memoize
-def machine_for_arch(arch):
-    if arch == "native" or arch == "none" or arch == "unknown":
-        return get_native_machine()
-    # Otherwise, compute the machine based on the architecture selected
-    if is_known_arm(arch):
-        return "aarch64"
-    else:
-        return "x86_64"
-
 
 # Given an arch, raise an error if it's not a reasonable setting
 @memoize
@@ -570,10 +557,6 @@ def verify_arch(arch, flag):
     if check_arch and arch and arch not in  ['none', 'unknown', 'native']:
         # Print a friendly warning if it's unlikely the user could run
         # their program. This could be printed in cross-compilation settings.
-        machine = machine_for_arch(arch)
-        cur_machine = get_native_machine()
-        warn = (machine != cur_machine)
-
         try:
             vendor_string, feature_string = get_cpuinfo(platform_val)
             detected_arch = feature_sets.find(vendor_string, feature_string)
@@ -638,13 +621,23 @@ def get(flag, map_to_compiler=False, get_lcd=False):
     return arch_tuple(flag or 'none', arch or 'unknown')
 
 
-# Returns the default machine.
-#  * if arch is native/none/unknown, return result of get_native_machine
-#  * otherwise returns the machine type corresponding to the selected arch
+# Returns the default machine.  The flag argument is 'host' or 'target'.
+#
+# Note that we cannot deduce the machine type corresponding to a given
+# architecture.  For example, knowing that we are on a sandybridge does
+# not tell us whether we are running in 32-bit mode (sometimes designated
+# as i686) or 64-bit mode (x86_64).  For some architectures, the same is
+# true of big-endian vs. little-endian mode as well.  Consequently, we have
+# insufficient information about the target.  Therefore, the machine type must
+# be the same for host and target, though the subarchitecture can be different.
+# We can cross compile from sandybridge to broadwell but not from
+# x86_64 to aarch64.
+#
+# Because of all this, the flag argument is unused and we return the same
+# answer for host or target.
 @memoize
 def get_default_machine(flag):
-    (_, arch) = get(flag)
-    return machine_for_arch(arch)
+    return get_native_machine()
 
 
 def _main():
