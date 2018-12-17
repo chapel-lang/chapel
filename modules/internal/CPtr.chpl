@@ -167,6 +167,10 @@ module CPtr {
   inline proc _cast(type t:_ddata, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
+  pragma "no doc"
+  inline proc _cast(type t:c_void_ptr, x:_ddata) {
+    return __primitive("cast", t, x);
+  }
 
   pragma "no doc"
   inline proc _cast(type t:c_intptr, x:c_void_ptr)

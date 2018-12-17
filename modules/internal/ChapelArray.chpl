@@ -4277,17 +4277,34 @@ module ChapelArray {
     var i  = 0;
     var size = r.size : size_t;
     type elemType = iteratorToArrayElementType(ir.type);
+    var data_voidp: c_void_ptr;
     var data:_ddata(elemType) = nil;
 
     var callAgain: bool;
     var subloc = c_sublocid_none;
 
+    inline proc sizeof_ddata(type t): size_t {
+      return __primitive("sizeof_ddata", _ddata(t)):size_t;
+    }
+
     inline proc allocateData(param initialAlloc, allocSize) {
       // data allocation should match DefaultRectangular
-      if initialAlloc then
-        __primitive("array_alloc", data, allocSize, subloc, c_ptrTo(callAgain), c_nil);
-      else
-        __primitive("array_alloc", data, allocSize, subloc, c_nil, data);
+      pragma "insert line file info"
+        extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
+                                         subloc: chpl_sublocID_t,
+                                         ref callAgain: bool,
+                                         repeat_p: c_void_ptr): c_void_ptr;
+      if initialAlloc {
+        data_voidp = chpl_mem_array_alloc(allocSize:size_t,
+                                          sizeof_ddata(elemType),
+                                          subloc, callAgain, c_nil);
+        data = _cast(_ddata(elemType), data_voidp);
+      } else {
+        const data_voidp_ign = chpl_mem_array_alloc(allocSize:size_t,
+                                                    sizeof_ddata(elemType),
+                                                    subloc, callAgain,
+                                                    data_voidp);
+      }
     }
 
     if size > 0 then allocateData(true, size);
