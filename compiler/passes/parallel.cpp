@@ -474,7 +474,8 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
                              dtInt[INT_SIZE_DEFAULT]);
   fcall->insertBefore(new DefExpr(tmpsz));
   fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpsz,
-                                   new CallExpr(PRIM_SIZEOF, ctype->symbol)));
+                                   new CallExpr(PRIM_SIZEOF_BUNDLE,
+                                                ctype->symbol)));
 
   // Find the _EndCount argument so we can pass that explicitly as the
   // first argument to a task launch function.

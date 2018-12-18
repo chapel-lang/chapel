@@ -126,7 +126,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_FINISH_RMEM_FENCE:
 
   case PRIM_CAST_TO_VOID_STAR:
-  case PRIM_SIZEOF:
+  case PRIM_SIZEOF_BUNDLE:
+  case PRIM_SIZEOF_DDATA_ELEMENT:
 
   case PRIM_GET_USER_LINE:
   case PRIM_GET_USER_FILE:
@@ -344,8 +345,6 @@ classifyPrimitive(CallExpr *call) {
     // call so we don't consider them fast-eligible.
     // However, they are communication free.
     //
-  case PRIM_ARRAY_ALLOC:
-  case PRIM_ARRAY_FREE:
   case PRIM_STRING_COPY:
     return LOCAL_NOT_FAST;
 

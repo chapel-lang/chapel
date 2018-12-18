@@ -729,7 +729,8 @@ CallExpr* callChplHereAlloc(Type* type, VarSymbol* md) {
 
   // Since the type is not necessarily known, resolution will fix up
   // this sizeof() call to take the resolved type of s as an argument
-  CallExpr*  sizeExpr  = new CallExpr(PRIM_SIZEOF, new SymExpr(type->symbol));
+  CallExpr*  sizeExpr  = new CallExpr(PRIM_SIZEOF_BUNDLE,
+                                      new SymExpr(type->symbol));
   VarSymbol* mdExpr    = (md != NULL) ? md : newMemDesc(type);
   CallExpr*  allocExpr = new CallExpr("chpl_here_alloc", sizeExpr, mdExpr);
 
@@ -753,7 +754,7 @@ void insertChplHereAlloc(Expr*      call,
   Symbol*        sizeTmp   = newTemp("chpl_here_alloc_size", SIZE_TYPE);
   CallExpr*      sizeExpr  = new CallExpr(PRIM_MOVE,
                                           sizeTmp,
-                                          new CallExpr(PRIM_SIZEOF,
+                                          new CallExpr(PRIM_SIZEOF_BUNDLE,
                                                        (ct != NULL) ?
                                                        ct->symbol   :
                                                        t->symbol));

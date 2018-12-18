@@ -1078,12 +1078,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       call->insertAtTail(tmp);
     }
 
-  } else if (call->isPrimitive(PRIM_SIZEOF) == true) {
-    // Fix up arg to sizeof(), as we may not have known the type earlier
+  } else if (call->isPrimitive(PRIM_SIZEOF_BUNDLE) == true) {
+    // Fix up arg to sizeof_bundle(), as we may not have known the
+    // type earlier
     SymExpr* sizeSym  = toSymExpr(call->get(1));
     Type*    sizeType = sizeSym->symbol()->typeInfo();
 
-    retval = new CallExpr(PRIM_SIZEOF, sizeType->symbol);
+    retval = new CallExpr(PRIM_SIZEOF_BUNDLE, sizeType->symbol);
+    call->replace(retval);
+
+  } else if (call->isPrimitive(PRIM_SIZEOF_DDATA_ELEMENT) == true) {
+    // Fix up arg to sizeof_ddata_element(), as we may not have known
+    // the type earlier
+    SymExpr* sizeSym  = toSymExpr(call->get(1));
+    Type*    sizeType = sizeSym->symbol()->typeInfo();
+
+    retval = new CallExpr(PRIM_SIZEOF_DDATA_ELEMENT, sizeType->symbol);
     call->replace(retval);
 
   }

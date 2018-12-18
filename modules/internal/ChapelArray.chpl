@@ -4279,15 +4279,27 @@ module ChapelArray {
     type elemType = iteratorToArrayElementType(ir.type);
     var data:_ddata(elemType) = nil;
 
-    var callAgain: bool;
+    var callPostAlloc: bool;
     var subloc = c_sublocid_none;
 
     inline proc allocateData(param initialAlloc, allocSize) {
       // data allocation should match DefaultRectangular
-      if initialAlloc then
-        __primitive("array_alloc", data, allocSize, subloc, c_ptrTo(callAgain), c_nil);
-      else
-        __primitive("array_alloc", data, allocSize, subloc, c_nil, data);
+      if initialAlloc {
+        pragma "insert line file info"
+          extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
+                                           subloc: chpl_sublocID_t,
+                                           ref callPostAlloc: bool): c_void_ptr;
+        data = chpl_mem_array_alloc(allocSize:size_t,
+                                    _ddata_sizeof_element(data),
+                                    subloc, callPostAlloc):data.type;
+
+      } else {
+        pragma "insert line file info"
+          extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
+                                               eltSize: size_t);
+        chpl_mem_array_postAlloc(data:c_void_ptr, allocSize:size_t,
+                                 _ddata_sizeof_element(data));
+      }
     }
 
     if size > 0 then allocateData(true, size);
@@ -4348,7 +4360,7 @@ module ChapelArray {
     if data != nil {
 
       // let the comm layer adjust array allocation
-      if callAgain then allocateData(false, size);
+      if callPostAlloc then allocateData(false, size);
 
       // Now construct a DefaultRectangular array using the data
       var A = D.buildArrayWith(data[0].type, data, size:int);
@@ -4370,7 +4382,7 @@ module ChapelArray {
 
       // Create space for 1 element as a placeholder.
       allocateData(true, 1);
-      if callAgain then allocateData(false, 1);
+      if callPostAlloc then allocateData(false, 1);
 
       var A = D.buildArrayWith(elemType, data, size:int);
 

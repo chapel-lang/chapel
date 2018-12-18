@@ -241,7 +241,8 @@ void checkPrimitives()
      case PRIM_SET_DYNAMIC_END_COUNT:
      case PRIM_GET_SERIAL:              // get serial state
      case PRIM_SET_SERIAL:              // set serial state to true or false
-     case PRIM_SIZEOF:
+     case PRIM_SIZEOF_BUNDLE:
+     case PRIM_SIZEOF_DDATA_ELEMENT:
      case PRIM_INIT_FIELDS:             // initialize fields of a temporary record
      case PRIM_PTR_EQUAL:
      case PRIM_PTR_NOTEQUAL:
@@ -258,8 +259,6 @@ void checkPrimitives()
      case PRIM_CHPL_COMM_REMOTE_PREFETCH:
      case PRIM_CHPL_COMM_GET_STRD:      // Direct calls to the Chapel comm layer for strided comm
      case PRIM_CHPL_COMM_PUT_STRD:      //  may eventually add others (e.g.: non-blocking)
-     case PRIM_ARRAY_ALLOC:
-     case PRIM_ARRAY_FREE:
      case PRIM_ARRAY_GET:
      case PRIM_ARRAY_GET_VALUE:
      case PRIM_ARRAY_SHIFT_BASE_POINTER:
