@@ -727,21 +727,6 @@ module DefaultRectangular {
     }
   }
 
-  // Returns a bool indicating if the type would be appropriate to use in an
-  // extern array.
-  // NOTE: once we can export types, those should also be supported here.
-  private proc isExternArrEltType(type t) param {
-    if (isPrimitive(t) && t != string) {
-      return true;
-    } else if (t == c_string) {
-      return true;
-    } else if (__primitive("is extern type", t)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   // helper routines for converting tuples of integers into tuple indices
   
   inline proc chpl__intToIdx(type idxType, i: integral, j ...) {
