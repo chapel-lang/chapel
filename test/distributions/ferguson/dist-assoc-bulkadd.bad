@@ -1,7 +1,6 @@
 dist-assoc-bulkadd.chpl:7: error: unresolved call 'unmanaged UserMapAssocDom(true,real(64),DefaultMapper).rank'
 $CHPL_HOME/modules/internal/ChapelArray.chpl:1153: note: candidates are: _domain.rankparam 
 $CHPL_HOME/modules/internal/ChapelArray.chpl:2221: note:                 _array.rankparam 
-$CHPL_HOME/modules/internal/ExternalArray.chpl:207: note:                 ExternArr.rankparam 
 $CHPL_HOME/modules/internal/ArrayViewSlice.chpl:90: note:                 ArrayViewSliceArr.rankparam 
 $CHPL_HOME/modules/internal/ArrayViewRankChange.chpl:500: note:                 ArrayViewRankChangeArr.rankparam 
 $CHPL_HOME/modules/internal/ArrayViewReindex.chpl:399: note:                 ArrayViewReindexArr.rankparam 

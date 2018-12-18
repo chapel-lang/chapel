@@ -47,8 +47,24 @@ chpl_external_array chpl_make_external_array_ptr(void* elts,
   return ret;
 }
 
+chpl_external_array chpl_make_external_array_ptr_free(void* elts,
+                                                      uint64_t size) {
+  chpl_external_array ret;
+  ret.elts = elts;
+  ret.size = size;
+  ret.freer = chpl_wrap_chapel_free_call;
+  return ret;
+}
+
 void chpl_free_external_array(chpl_external_array x) {
   if (x.freer != NULL) {
     x.freer(x.elts);
+  }
+}
+
+void chpl_call_free_func(void* func, void* elts) {
+  chpl_free_func freeFunc = (chpl_free_func)func;
+  if (freeFunc != NULL) {
+    freeFunc(elts);
   }
 }

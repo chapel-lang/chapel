@@ -1,2 +1,2 @@
-./arrayAPItest.chpl:7: In function 'testArrayAPI2D':
-./arrayAPItest.chpl:144: error: only sparse arrays have an IRV
+./arrayAPItest.chpl:121: In function 'testArrayAPI2D':
+./arrayAPItest.chpl:258: error: only sparse arrays have an IRV
