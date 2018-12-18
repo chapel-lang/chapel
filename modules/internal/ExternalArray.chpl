@@ -93,6 +93,8 @@ module ExternalArray {
     }
     var externalArr = chpl_make_external_array_ptr_free(c_ptrTo(arr[0]),
                                                         arr.size: uint);
+    // Change the source array so that it does not clean up its memory, so we
+    // can safely return a chpl_external_array wrapper using it.
     arr.externArr = true;
     arr._borrowed = true;
     return externalArr;

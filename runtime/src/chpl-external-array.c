@@ -64,5 +64,7 @@ void chpl_free_external_array(chpl_external_array x) {
 
 void chpl_call_free_func(void* func, void* elts) {
   chpl_free_func freeFunc = (chpl_free_func)func;
-  freeFunc(elts);
+  if (freeFunc != NULL) {
+    freeFunc(elts);
+  }
 }
