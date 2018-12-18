@@ -840,18 +840,18 @@ module ChapelBase {
     pragma "insert line file info"
       extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
                                        subloc: chpl_sublocID_t,
-                                       ref callAgain: bool,
-                                       repeat_p: c_void_ptr): c_void_ptr;
+                                       ref callPostAlloc: bool): c_void_ptr;
     var ret: _ddata(eltType);
-    var callAgain: bool;
+    var callPostAlloc: bool;
     const ret_voidp = chpl_mem_array_alloc(size:size_t, sizeof_ddata(eltType),
-                                           subloc, callAgain, c_nil);
+                                           subloc, callPostAlloc);
     ret = _cast(_ddata(eltType), ret_voidp);
     init_elts(ret, size, eltType);
-    if callAgain {
-      const ret_voidp_ign = chpl_mem_array_alloc(size:size_t,
-                                                 sizeof_ddata(eltType),
-                                                 subloc, callAgain, ret_voidp);
+    if callPostAlloc {
+      pragma "insert line file info"
+        extern proc chpl_mem_array_postAlloc(data: c_void_ptr,
+                                             nmemb: size_t, eltSize: size_t);
+      chpl_mem_array_postAlloc(ret_voidp, size:size_t, sizeof_ddata(eltType));
     }
     return ret;
   }

@@ -4280,7 +4280,7 @@ module ChapelArray {
     var data_voidp: c_void_ptr;
     var data:_ddata(elemType) = nil;
 
-    var callAgain: bool;
+    var callPostAlloc: bool;
     var subloc = c_sublocid_none;
 
     inline proc sizeof_ddata(type t): size_t {
@@ -4289,21 +4289,21 @@ module ChapelArray {
 
     inline proc allocateData(param initialAlloc, allocSize) {
       // data allocation should match DefaultRectangular
-      pragma "insert line file info"
-        extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
-                                         subloc: chpl_sublocID_t,
-                                         ref callAgain: bool,
-                                         repeat_p: c_void_ptr): c_void_ptr;
       if initialAlloc {
+        pragma "insert line file info"
+          extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
+                                           subloc: chpl_sublocID_t,
+                                           ref callPostAlloc: bool): c_void_ptr;
         data_voidp = chpl_mem_array_alloc(allocSize:size_t,
                                           sizeof_ddata(elemType),
-                                          subloc, callAgain, c_nil);
+                                          subloc, callPostAlloc);
         data = _cast(_ddata(elemType), data_voidp);
       } else {
-        const data_voidp_ign = chpl_mem_array_alloc(allocSize:size_t,
-                                                    sizeof_ddata(elemType),
-                                                    subloc, callAgain,
-                                                    data_voidp);
+        pragma "insert line file info"
+          extern proc chpl_mem_array_postAlloc(data: c_void_ptr,
+                                               nmemb: size_t, eltSize: size_t);
+        chpl_mem_array_postAlloc(data_voidp,
+                                 allocSize:size_t, sizeof_ddata(elemType));
       }
     }
 
@@ -4365,7 +4365,7 @@ module ChapelArray {
     if data != nil {
 
       // let the comm layer adjust array allocation
-      if callAgain then allocateData(false, size);
+      if callPostAlloc then allocateData(false, size);
 
       // Now construct a DefaultRectangular array using the data
       var A = D.buildArrayWith(data[0].type, data, size:int);
@@ -4387,7 +4387,7 @@ module ChapelArray {
 
       // Create space for 1 element as a placeholder.
       allocateData(true, 1);
-      if callAgain then allocateData(false, 1);
+      if callPostAlloc then allocateData(false, 1);
 
       var A = D.buildArrayWith(elemType, data, size:int);
 
