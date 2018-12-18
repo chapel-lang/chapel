@@ -411,6 +411,16 @@ def is_known_arm(arch):
     else:
         return False
 
+# Take a machine name in the same format as uname -m and answer
+# whether or not it is in the x86 family.
+@memoize
+def is_x86_variant(machine):
+    if machine.startswith('i') and machine.endswith('86'):  # e.g. i686
+        return True
+    if machine in ['amd64', 'x64', 'x86', 'x86-64', 'x86_64']:
+        return True
+    return False
+
 def get_cpuinfo(platform_val='linux'):
     vendor_string = ''
     feature_string = ''
@@ -609,10 +619,8 @@ def get(flag, map_to_compiler=False, get_lcd=False):
         version = get_compiler_version(compiler_val)
         arch = argument_map.find(arch, compiler_val, version)
     if arch and arch != 'none' and arch != 'unknown':
-        native_arch = get_native_machine()
         # x86 uses -march= where the others use -mcpu=
-        is_x86_32 = native_arch.startswith('i') and native_arch.endswith('86')
-        if (native_arch in ['amd64', 'x86_64']) or is_x86_32:
+        if is_x86_variant(get_native_machine()):
             flag = 'arch'
         else:
             flag = 'cpu'
