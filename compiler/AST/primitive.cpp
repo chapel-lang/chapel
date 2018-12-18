@@ -676,10 +676,10 @@ initPrimitive() {
   // set serial state to true or false
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
 
-  // These are used for task-aware allocation.
+  // These are used for task bundles and for allocating class instances.
   prim_def(PRIM_SIZEOF_BUNDLE, "sizeof_bundle", returnInfoSizeType);
 
-  // sizeof(array.eltType), since CPtr.chpl:c_sizeof() is "not well defined"
+  // sizeof(_ddata.eltType)
   prim_def(PRIM_SIZEOF_DDATA_ELEMENT, "sizeof_ddata_element", returnInfoSizeType);
 
   // initialize fields of a temporary record
