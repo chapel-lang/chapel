@@ -1012,7 +1012,6 @@ module DefaultRectangular {
     pragma "alias scope from this"
     pragma "local field"
     var data : _ddata(eltType) = nil;
-    var externData: chpl_external_array;
 
     pragma "alias scope from this"
     pragma "local field"
@@ -1023,7 +1022,8 @@ module DefaultRectangular {
 
     // note: used for external array support
     var externArr: bool = false;
-    var _owned: bool = false;
+    var _borrowed: bool = true;
+    var externFreeFunc: c_void_ptr;
 
     // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
     // pop_back, insert, remove) to allow growing or shrinking the data
@@ -1059,8 +1059,8 @@ module DefaultRectangular {
 
     override proc dsiDestroyArr() {
       if (externArr) {
-        if (_owned) {
-          chpl_free_external_array(externData);
+        if (!_borrowed) {
+          chpl_call_free_func(externFreeFunc, c_ptrTo(data));
         }
       } else {
         if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {

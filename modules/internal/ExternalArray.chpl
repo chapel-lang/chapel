@@ -28,6 +28,8 @@ module ExternalArray {
   extern record chpl_external_array {
     var elts: c_void_ptr;
     var size: uint;
+
+    var freer: c_void_ptr;
   }
 
   extern proc
@@ -41,6 +43,7 @@ module ExternalArray {
                                     size: uint): chpl_external_array;
 
   extern proc chpl_free_external_array(x: chpl_external_array);
+  extern proc chpl_call_free_func(func: c_void_ptr, elts: c_void_ptr);
 
   // Creates an instance of our new array type
   pragma "no copy return"
@@ -62,9 +65,9 @@ module ExternalArray {
                                                   stridable=dom.stridable,
                                                   dom=dom,
                                                   data=value.elts: _ddata(eltType),
-                                                  externData=value,
+                                                  externFreeFunc=value.freer,
                                                   externArr=true,
-                                                  _owned=false);
+                                                  _borrowed=true);
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
   }
@@ -91,7 +94,7 @@ module ExternalArray {
     var externalArr = chpl_make_external_array_ptr_free(c_ptrTo(arr[0]),
                                                         arr.size: uint);
     arr.externArr = true;
-    arr._owned = false;
+    arr._borrowed = true;
     return externalArr;
   }
 
