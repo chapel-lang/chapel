@@ -100,18 +100,6 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize, c_sublocid_t subloc,
 
 
 static inline
-void* chpl_mem_wide_array_alloc(int32_t dstNode, size_t nmemb, size_t eltSize,
-                                c_sublocid_t subloc,
-                                chpl_bool* callAgain, void* repeat_p,
-                                int32_t lineno, int32_t filename) {
-  if (dstNode != chpl_nodeID)
-    chpl_error("array vector data is not local", lineno, filename);
-  return chpl_mem_array_alloc(nmemb, eltSize, subloc, callAgain, repeat_p,
-                              lineno, filename);
-}
-
-
-static inline
 void chpl_mem_array_free(void* p,
                          size_t nmemb, size_t eltSize,
                          int32_t lineno, int32_t filename) {
@@ -130,16 +118,6 @@ void chpl_mem_array_free(void* p,
   }
 
   chpl_free(p);
-}
-
-
-static inline
-void chpl_mem_wide_array_free(int32_t dstNode, void* p,
-                              size_t nmemb, size_t eltSize,
-                              int32_t lineno, int32_t filename) {
-  if (dstNode != chpl_nodeID)
-    chpl_error("array vector data is not local", lineno, filename);
-  chpl_mem_array_free(p, nmemb, eltSize, lineno, filename);
 }
 
 #endif // LAUNCHER
