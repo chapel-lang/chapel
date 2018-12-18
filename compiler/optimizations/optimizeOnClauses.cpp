@@ -127,7 +127,7 @@ classifyPrimitive(CallExpr *call) {
 
   case PRIM_CAST_TO_VOID_STAR:
   case PRIM_SIZEOF:
-  case PRIM_SIZEOF_DDATA:
+  case PRIM_SIZEOF_RAW:
 
   case PRIM_GET_USER_LINE:
   case PRIM_GET_USER_FILE:

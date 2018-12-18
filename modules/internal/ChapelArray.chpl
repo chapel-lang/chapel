@@ -4283,8 +4283,8 @@ module ChapelArray {
     var callPostAlloc: bool;
     var subloc = c_sublocid_none;
 
-    inline proc sizeof_ddata(type t): size_t {
-      return __primitive("sizeof_ddata", _ddata(t)):size_t;
+    inline proc sizeof_raw(type t): size_t {
+      return __primitive("sizeof_raw", _ddata(t)):size_t;
     }
 
     inline proc allocateData(param initialAlloc, allocSize) {
@@ -4295,7 +4295,7 @@ module ChapelArray {
                                            subloc: chpl_sublocID_t,
                                            ref callPostAlloc: bool): c_void_ptr;
         data_voidp = chpl_mem_array_alloc(allocSize:size_t,
-                                          sizeof_ddata(elemType),
+                                          sizeof_raw(elemType),
                                           subloc, callPostAlloc);
         data = _cast(_ddata(elemType), data_voidp);
       } else {
@@ -4303,7 +4303,7 @@ module ChapelArray {
           extern proc chpl_mem_array_postAlloc(data: c_void_ptr,
                                                nmemb: size_t, eltSize: size_t);
         chpl_mem_array_postAlloc(data_voidp,
-                                 allocSize:size_t, sizeof_ddata(elemType));
+                                 allocSize:size_t, sizeof_raw(elemType));
       }
     }
 

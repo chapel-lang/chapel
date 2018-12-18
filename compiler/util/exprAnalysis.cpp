@@ -190,7 +190,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
 
     case PRIM_DIV:
     case PRIM_SIZEOF:
-    case PRIM_SIZEOF_DDATA:
+    case PRIM_SIZEOF_RAW:
     case PRIM_USED_MODULES_LIST:
     case PRIM_STRING_COPY:
     case PRIM_CAST_TO_VOID_STAR:
@@ -226,7 +226,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
       return !isRefStore;
     }
     case PRIM_SIZEOF:
-    case PRIM_SIZEOF_DDATA:
+    case PRIM_SIZEOF_RAW:
     case PRIM_STRING_COPY:
     case PRIM_GET_SERIAL:
     case PRIM_NOOP:

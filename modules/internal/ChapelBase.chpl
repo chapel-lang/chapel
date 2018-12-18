@@ -831,8 +831,8 @@ module ChapelBase {
     return ret;
   }
 
-  inline proc sizeof_ddata(type t): size_t {
-    return __primitive("sizeof_ddata", _ddata(t)):size_t;
+  inline proc sizeof_raw(type t): size_t {
+    return __primitive("sizeof_raw", _ddata(t)):size_t;
   }
 
   inline proc _ddata_allocate(type eltType, size: integral,
@@ -843,7 +843,7 @@ module ChapelBase {
                                        ref callPostAlloc: bool): c_void_ptr;
     var ret: _ddata(eltType);
     var callPostAlloc: bool;
-    const ret_voidp = chpl_mem_array_alloc(size:size_t, sizeof_ddata(eltType),
+    const ret_voidp = chpl_mem_array_alloc(size:size_t, sizeof_raw(eltType),
                                            subloc, callPostAlloc);
     ret = _cast(_ddata(eltType), ret_voidp);
     init_elts(ret, size, eltType);
@@ -851,7 +851,7 @@ module ChapelBase {
       pragma "insert line file info"
         extern proc chpl_mem_array_postAlloc(data: c_void_ptr,
                                              nmemb: size_t, eltSize: size_t);
-      chpl_mem_array_postAlloc(ret_voidp, size:size_t, sizeof_ddata(eltType));
+      chpl_mem_array_postAlloc(ret_voidp, size:size_t, sizeof_raw(eltType));
     }
     return ret;
   }
@@ -861,7 +861,7 @@ module ChapelBase {
       extern proc chpl_mem_array_free(data: c_void_ptr,
                                       nmemb: size_t, eltSize: size_t);
     chpl_mem_array_free(_cast(c_void_ptr, data),
-                        size:size_t, sizeof_ddata(data.eltType));
+                        size:size_t, sizeof_raw(data.eltType));
   }
 
   inline proc ==(a: _ddata, b: _ddata) where a.eltType == b.eltType {

@@ -680,7 +680,7 @@ initPrimitive() {
   prim_def(PRIM_SIZEOF, "sizeof", returnInfoSizeType);
 
   // sizeof(array.eltType), since CPtr.chpl:c_sizeof() is "not well defined"
-  prim_def(PRIM_SIZEOF_DDATA, "sizeof_ddata", returnInfoSizeType);
+  prim_def(PRIM_SIZEOF_RAW, "sizeof_raw", returnInfoSizeType);
 
   // initialize fields of a temporary record
   prim_def(PRIM_INIT_FIELDS, "chpl_init_record", returnInfoVoid, true);

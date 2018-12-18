@@ -4624,7 +4624,7 @@ DEFINE_PRIM(PRIM_SIZEOF) {
     ret = size;
 }
 
-DEFINE_PRIM(PRIM_SIZEOF_DDATA) {
+DEFINE_PRIM(PRIM_SIZEOF_RAW) {
     Type*  type = call->get(1)->typeInfo();
     GenRet size;
     if (type->symbol->hasFlag(FLAG_WIDE_CLASS) == true) {
