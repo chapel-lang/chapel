@@ -4277,15 +4277,10 @@ module ChapelArray {
     var i  = 0;
     var size = r.size : size_t;
     type elemType = iteratorToArrayElementType(ir.type);
-    var data_voidp: c_void_ptr;
     var data:_ddata(elemType) = nil;
 
     var callPostAlloc: bool;
     var subloc = c_sublocid_none;
-
-    inline proc sizeof_raw(type t): size_t {
-      return __primitive("sizeof_raw", _ddata(t)):size_t;
-    }
 
     inline proc allocateData(param initialAlloc, allocSize) {
       // data allocation should match DefaultRectangular
@@ -4294,16 +4289,16 @@ module ChapelArray {
           extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
                                            subloc: chpl_sublocID_t,
                                            ref callPostAlloc: bool): c_void_ptr;
-        data_voidp = chpl_mem_array_alloc(allocSize:size_t,
-                                          sizeof_raw(elemType),
-                                          subloc, callPostAlloc);
-        data = _cast(_ddata(elemType), data_voidp);
+        data = chpl_mem_array_alloc(allocSize:size_t,
+                                    _ddata_sizeof_element(data),
+                                    subloc, callPostAlloc):data.type;
+
       } else {
         pragma "insert line file info"
-          extern proc chpl_mem_array_postAlloc(data: c_void_ptr,
-                                               nmemb: size_t, eltSize: size_t);
-        chpl_mem_array_postAlloc(data_voidp,
-                                 allocSize:size_t, sizeof_raw(elemType));
+          extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
+                                               eltSize: size_t);
+        chpl_mem_array_postAlloc(data:c_void_ptr, allocSize:size_t,
+                                 _ddata_sizeof_element(data));
       }
     }
 

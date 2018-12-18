@@ -4604,7 +4604,7 @@ DEFINE_PRIM(PRIM_CHPL_COMM_GET_STRD) {
   codegenPutGetStrd(call, ret);
 }
 
-DEFINE_PRIM(PRIM_SIZEOF) {
+DEFINE_PRIM(PRIM_SIZEOF_BUNDLE) {
     Type*  type = call->get(1)->typeInfo();
     GenRet size;
 
@@ -4624,7 +4624,7 @@ DEFINE_PRIM(PRIM_SIZEOF) {
     ret = size;
 }
 
-DEFINE_PRIM(PRIM_SIZEOF_RAW) {
+DEFINE_PRIM(PRIM_SIZEOF_DDATA_ELEMENT) {
     Type*  type = call->get(1)->typeInfo();
     GenRet size;
     if (type->symbol->hasFlag(FLAG_WIDE_CLASS) == true) {

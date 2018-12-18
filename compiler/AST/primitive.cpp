@@ -677,10 +677,10 @@ initPrimitive() {
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
 
   // These are used for task-aware allocation.
-  prim_def(PRIM_SIZEOF, "sizeof", returnInfoSizeType);
+  prim_def(PRIM_SIZEOF_BUNDLE, "sizeof_bundle", returnInfoSizeType);
 
   // sizeof(array.eltType), since CPtr.chpl:c_sizeof() is "not well defined"
-  prim_def(PRIM_SIZEOF_RAW, "sizeof_raw", returnInfoSizeType);
+  prim_def(PRIM_SIZEOF_DDATA_ELEMENT, "sizeof_ddata_element", returnInfoSizeType);
 
   // initialize fields of a temporary record
   prim_def(PRIM_INIT_FIELDS, "chpl_init_record", returnInfoVoid, true);
