@@ -80,7 +80,7 @@ static void        normalizeBase(BaseAST* base);
 static void        processSyntacticDistributions(CallExpr* call);
 static void        processManagedNew(CallExpr* call);
 static Expr* getCallTempInsertPoint(Expr* expr);
-static void        addTypeBlocksForParentTypeOf(CallExpr* call, Expr* stmt);
+static void        addTypeBlocksForParentTypeOf(CallExpr* call);
 static void        normalizeReturns(FnSymbol* fn);
 static void        normalizeYields(FnSymbol* fn);
 
@@ -511,8 +511,7 @@ static void normalizeBase(BaseAST* base) {
     processSyntacticDistributions(call);
     processManagedNew(call);
     if (call->isPrimitive(PRIM_TYPEOF))
-      if (Expr* stmt = getCallTempInsertPoint(call))
-        addTypeBlocksForParentTypeOf(call, stmt);
+      addTypeBlocksForParentTypeOf(call);
   }
 
 
@@ -1055,7 +1054,27 @@ static void processManagedNew(CallExpr* newCall) {
   }
 }
 
-static void addTypeBlocksForParentTypeOf(CallExpr* call, Expr* stmt) {
+static void addTypeBlocksForParentTypeOf(CallExpr* call) {
+  Expr* stmt = getCallTempInsertPoint(call);
+  if (stmt == NULL)
+    return;
+
+  if (isForallStmt(stmt)) {
+    // If it's a DefExpr, find the init block
+    /*
+    for (Expr* cur = call->parentExpr; cur != NULL; cur = cur->parentExpr) {
+      if (DefExpr* def = toDefExpr(cur)) {
+        if (ShadowVarSymbol* sv = toShadowVarSymbol(def->sym)) {
+          SET_LINENO(call);
+          CallExpr* noop = new CallExpr(PRIM_NOOP);
+          sv->initBlock()->insertAtTail(noop);
+          stmt = noop;
+        }
+      }
+    }*/
+    return; // TODO
+  }
+
   // Look for a parent PRIM_TYPEOF
   CallExpr* typeOf = NULL;
   for (CallExpr* cur = call; cur != NULL; cur = toCallExpr(cur->parentExpr)) {
@@ -1072,10 +1091,16 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call, Expr* stmt) {
   bool inTypeBlock = false;
   //BlockStmt* parentBlock = NULL;
   IfExpr* parentIfExpr = NULL;
+  ForallStmt* parentForallStmt = NULL;
+
   for (Expr* cur = typeOf->parentExpr; cur != NULL; cur = cur->parentExpr) {
     if (IfExpr* ifExpr = toIfExpr(cur))
       if (parentIfExpr == NULL)
         parentIfExpr = ifExpr;
+
+    if (ForallStmt* forallStmt = toForallStmt(cur))
+      if (parentForallStmt == NULL)
+        parentForallStmt = forallStmt;
 
     if (BlockStmt* block = toBlockStmt(cur)) {
       //if (parentBlock == NULL)
@@ -1093,6 +1118,11 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call, Expr* stmt) {
   // If the expression is in an if-expression, give up for now.
 //  if (parentIfExpr != NULL)
 //    return;
+
+  // If the expression is in a ForallStmt, give up for now
+  if (parentForallStmt != NULL) {
+    return; // TODO
+  }
 
   // Add a type block and put the contents of typeOf into it.
   INT_ASSERT(typeOf && typeOf->isPrimitive(PRIM_TYPEOF));
