@@ -2420,7 +2420,7 @@ buildFunctionDecl(FnSymbol*   fn,
   }
 
   if (optRetType)
-    fn->retExprType = new BlockStmt(optRetType, BLOCK_SCOPELESS);
+    fn->retExprType = new BlockStmt(optRetType, BLOCK_TYPE);
   else if (fn->hasFlag(FLAG_EXTERN))
     fn->retType     = dtVoid;
 

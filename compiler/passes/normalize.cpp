@@ -79,6 +79,8 @@ static void        find_printModuleInit_stuff();
 static void        normalizeBase(BaseAST* base);
 static void        processSyntacticDistributions(CallExpr* call);
 static void        processManagedNew(CallExpr* call);
+static Expr* getCallTempInsertPoint(Expr* expr);
+static void        addTypeBlocksForParentTypeOf(CallExpr* call, Expr* stmt);
 static void        normalizeReturns(FnSymbol* fn);
 static void        normalizeYields(FnSymbol* fn);
 
@@ -508,6 +510,9 @@ static void normalizeBase(BaseAST* base) {
   for_vector(CallExpr, call, calls1) {
     processSyntacticDistributions(call);
     processManagedNew(call);
+    if (call->isPrimitive(PRIM_TYPEOF))
+      if (Expr* stmt = getCallTempInsertPoint(call))
+        addTypeBlocksForParentTypeOf(call, stmt);
   }
 
 
@@ -803,9 +808,9 @@ static void moveGlobalDeclarationsToModuleScope() {
           // initializer block with it.
           if (vs->hasFlag(FLAG_EXTERN) == true) {
             if (BlockStmt* block = toBlockStmt(def->next)) {
-              // Mark this as a type block, so it is removed later.
-              // Casts are because C++ is lame.
-              (unsigned&)(block->blockTag) |= (unsigned) BLOCK_TYPE_ONLY;
+              // This block should have been marked as BLOCK_EXTERN_TYPE
+              // in other parts of normalization.
+              INT_ASSERT( (block->blockTag & BLOCK_TYPE_ONLY) != 0);
 
               // Set the flag, so we move it out to module scope.
               move = true;
@@ -1048,6 +1053,63 @@ static void processManagedNew(CallExpr* newCall) {
       }
     }
   }
+}
+
+static void addTypeBlocksForParentTypeOf(CallExpr* call, Expr* stmt) {
+  // Look for a parent PRIM_TYPEOF
+  CallExpr* typeOf = NULL;
+  for (CallExpr* cur = call; cur != NULL; cur = toCallExpr(cur->parentExpr)) {
+    if (cur->isPrimitive(PRIM_TYPEOF))
+      typeOf = cur;
+  }
+  // No PRIM_TYPEOF in parent exprs? Then nothing to do.
+  if (typeOf == NULL)
+    return;
+
+  SET_LINENO(call);
+
+  // Look for a type block -- did we already add one?
+  bool inTypeBlock = false;
+  //BlockStmt* parentBlock = NULL;
+  IfExpr* parentIfExpr = NULL;
+  for (Expr* cur = typeOf->parentExpr; cur != NULL; cur = cur->parentExpr) {
+    if (IfExpr* ifExpr = toIfExpr(cur))
+      if (parentIfExpr == NULL)
+        parentIfExpr = ifExpr;
+
+    if (BlockStmt* block = toBlockStmt(cur)) {
+      //if (parentBlock == NULL)
+      //  parentBlock = block;
+
+      if ((block->blockTag & BLOCK_TYPE_ONLY)) {
+        inTypeBlock = true;
+      }
+    }
+  }
+  // Found type block? then nothing to do.
+  if (inTypeBlock)
+    return;
+
+  // If the expression is in an if-expression, give up for now.
+//  if (parentIfExpr != NULL)
+//    return;
+
+  // Add a type block and put the contents of typeOf into it.
+  INT_ASSERT(typeOf && typeOf->isPrimitive(PRIM_TYPEOF));
+
+  VarSymbol* tmp = newTemp("call_type_tmp");
+  tmp->addFlag(FLAG_TYPE_VARIABLE);
+  tmp->addFlag(FLAG_MAYBE_TYPE);
+  tmp->addFlag(FLAG_EXPR_TEMP);
+
+  SymExpr* tmpSe = new SymExpr(tmp);
+  typeOf->replace(tmpSe);
+  if (stmt == typeOf)
+    stmt = tmpSe;
+  BlockStmt* typeBlock = new BlockStmt(BLOCK_TYPE);
+  typeBlock->insertAtTail(new DefExpr(tmp));
+  typeBlock->insertAtTail(new CallExpr(PRIM_MOVE, tmp, typeOf));
+  stmt->insertBefore(typeBlock);
 }
 
 /************************************* | **************************************
@@ -1737,7 +1799,7 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     }
   }
 
-  if (call->isPrimitive(PRIM_TYPEOF) == true) {
+  if (call->isPrimitive(PRIM_TYPEOF)) {
     tmp->addFlag(FLAG_TYPE_VARIABLE);
   }
 
