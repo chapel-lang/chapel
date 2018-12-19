@@ -1864,30 +1864,6 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             bool error = false;
             bool ref = false;
 
-            /*
-               if (a1lp.referent.unknown)
-                  a1lp.referent = scopeLifetimeForSymbol(actual1sym);
-                if (a2lp.referent.unknown)
-                  a2lp.referent = scopeLifetimeForSymbol(actual2sym);
-
-
-               if (isSubjectToRefLifetimeAnalysis(formal1) &&
-                isSubjectToRefLifetimeAnalysis(formal2)) {
-              if (order == -1 && // formal1 < formal2
-                  isLifetimeShorter(a2lp.referent, a1lp.referent)) {
-                error = true;
-                ref = true;
-                relevantLifetime = a2lp.borrowed;
-                relevantSymbol = actual2sym;
-              } else if (order == 1 && // formal1 > formal2
-                         isLifetimeShorter(a1lp.referent, a2lp.referent)) {
-                error = true;
-                ref = true;
-                relevantLifetime = a1lp.borrowed;
-                relevantSymbol = actual1sym;
-              }
-            }*/
-
             // For the purposes of this check, use scope lifetime
             // if above lifetime is unknown.
             if (a1lp.borrowed.unknown)
@@ -1900,8 +1876,6 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             //   arrays/ferguson/pushback-no-leak.chpl
             if (isOrRefersBorrowedClass(formal1->getValType()) &&
                 isOrRefersBorrowedClass(formal2->getValType())) {
-            //if (isSubjectToBorrowLifetimeAnalysis(formal1) &&
-            //    isSubjectToBorrowLifetimeAnalysis(formal2)) {
               if ((order == CONSTRAINT_LESS || order == CONSTRAINT_LESS_EQ) &&
                   isLifetimeShorter(a2lp.borrowed, a1lp.borrowed)) {
                 error = true;
@@ -2037,17 +2011,6 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
                 "would outlive the value it refers to",
                 lhs, rhsLt.referent, lifetimes);
       erroredSymbols.insert(lhs);
-    /*
-     causes problems for test/functions/ferguson/ref-pair/ifexpr/ifexpr2-1.chpl
-     note that it's not actually possible to retarget a reference formal.
-
-     } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.referent, lhsIntrinsic.referent)) {
-      emitError(call,
-                "Setting reference formal",
-                "illegal without specifying formal lifetime constraint",
-                lhs, rhsLt.referent, lifetimes);
-      erroredSymbols.insert(lhs);
-    */
     } else if (lhsInferred.referent.unknown ||
                lhsInferred.referent.infinite) {
       // OK, not an error
@@ -2058,13 +2021,6 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
                 lhs, rhsLt.referent, lifetimes);
       erroredSymbols.insert(lhs);
     }
-    /*} else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.referent, lhsInferred.referent)) {
-      emitError(call,
-                "Setting reference formal",
-                "illegal without specifying formal lifetime constraint",
-                lhs, rhsLt.referent, lifetimes);
-      erroredSymbols.insert(lhs);
-    }*/
   }
 
   if (isOrContainsBorrowedClass(lhs->type)) {
@@ -2329,9 +2285,6 @@ static bool aggregateContainsBorrowedClassFields(AggregateType* at) {
         !field->hasFlag(FLAG_OWNED))
       return true;
   }
-
-//  if (at->symbol->hasFlag(FLAG_ARRAY_OF_BORROWS))
-//    return true;
 
   return false;
 }
