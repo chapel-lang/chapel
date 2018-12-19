@@ -1,1 +1,2 @@
-const-ref-iterator-1.chpl:6: error: cannot yield a non-const variable globalVar from a 'const ref' iterator
+const-ref-iterator-1.chpl:10: error: cannot yield a const 'globalVar' from a (non-const) ref iterator
+const-ref-iterator-1.chpl:11: error: cannot yield a const reference from a (non-const) ref iterator
