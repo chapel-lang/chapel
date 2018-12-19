@@ -1,2 +1,2 @@
-$CHPL_HOME/modules/standard/IO.chpl:2655: error: Function '_isSimpleIoType' has been instantiated too many times
+FILE:LINE: error: Symbol 'SYM' has been instantiated too many times
 note:   If this is intentional, try increasing the instantiation limit from 256

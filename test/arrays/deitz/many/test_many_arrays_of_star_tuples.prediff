@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+prefix="[^']* '[[:alpha:]_][[:alnum:]_]*'"
+suffix=" has been instantiated too many times"
+sed "s/^${prefix}\(${suffix}\)\$/FILE:LINE: error: Symbol 'SYM'\1/" \
+    < $2 > $2.tmp
+mv $2.tmp $2
