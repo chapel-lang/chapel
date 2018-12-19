@@ -1075,6 +1075,11 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call) {
     return; // TODO
   }
 
+  // Is the argument to PRIM_TYPEOF already just a symbol?
+  // Then there's no possibility for side effects and nothing to do.
+  if (isSymExpr(call->get(1)))
+    return;
+
   // Look for a parent PRIM_TYPEOF
   CallExpr* typeOf = NULL;
   for (CallExpr* cur = call; cur != NULL; cur = toCallExpr(cur->parentExpr)) {
