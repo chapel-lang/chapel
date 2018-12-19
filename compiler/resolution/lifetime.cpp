@@ -645,18 +645,18 @@ static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
       rhs = getSymbolFromLifetimeClause(call->get(2), lhsRet);
 
       if ((a == lhs && b == rhs) ||
-	  (b == lhs && a == rhs)) {
-	const char* lhsName = lhsRet?"return":lhs->name;
-	const char* rhsName = rhsRet?"return":rhs->name;
-	const char* calledName = NULL;
+          (b == lhs && a == rhs)) {
+        const char* lhsName = lhsRet?"return":lhs->name;
+        const char* rhsName = rhsRet?"return":rhs->name;
+        const char* calledName = NULL;
 
-	if (SymExpr* base = toSymExpr(call->baseExpr))
-	  calledName = base->symbol()->name;
-	else if (UnresolvedSymExpr* base = toUnresolvedSymExpr(call->baseExpr))
-	  calledName = base->unresolved;
+        if (SymExpr* base = toSymExpr(call->baseExpr))
+          calledName = base->symbol()->name;
+        else if (UnresolvedSymExpr* base = toUnresolvedSymExpr(call->baseExpr))
+          calledName = base->unresolved;
 
-	FnSymbol* fn = call->getFunction();
-	USR_PRINT(call, "function %s includes lifetime constraint %s %s %s",
+        FnSymbol* fn = call->getFunction();
+        USR_PRINT(call, "function %s includes lifetime constraint %s %s %s",
                   fn->name, lhsName, calledName, rhsName);
       }
     }
@@ -1897,7 +1897,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
                         ref?"Reference actual argument":"Actual argument",
                         "does not meet called function lifetime constraint",
                         relevantSymbol, relevantLifetime, lifetimes);
-	      printOrderConstraintFromClause(fn, formal1, formal2);
+              printOrderConstraintFromClause(fn, formal1, formal2);
             }
           }
         }
