@@ -2400,14 +2400,13 @@ buildFunctionSymbol(FnSymbol*   fn,
   return fn;
 }
 
-// Called like:
-// buildFunctionDecl($4, $6, $7, $8, $9, $10, @$.comment);
 BlockStmt*
 buildFunctionDecl(FnSymbol*   fn,
                   RetTag      optRetTag,
                   Expr*       optRetType,
                   bool        optThrowsError,
                   Expr*       optWhere,
+                  Expr*       optLifetimeConstraints,
                   BlockStmt*  optFnBody,
                   const char* docs)
 {
@@ -2438,6 +2437,11 @@ buildFunctionDecl(FnSymbol*   fn,
       USR_FATAL_CONT(fn, "Exported functions cannot have where clauses.");
 
     fn->where = new BlockStmt(optWhere);
+  }
+
+  if (optLifetimeConstraints)
+  {
+    fn->lifetimeConstraints = new BlockStmt(optLifetimeConstraints);
   }
 
   if (optFnBody)

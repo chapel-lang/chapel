@@ -50,6 +50,7 @@ symbolFlag( FLAG_ALWAYS_RVF, ypr, "always RVF", "attach to a type to force RVF f
 symbolFlag( FLAG_DONT_ALLOW_REF , ypr, "do not allow ref" , ncm )
 symbolFlag( FLAG_ARG_THIS, npr, "arg this", "the hidden object argument")
 symbolFlag( FLAG_ARRAY , ypr, "array" , ncm )
+symbolFlag( FLAG_ARRAY_OF_BORROWS , npr, "array of borrows", "array of borrows" )
 symbolFlag( FLAG_ASSIGNOP, npr, "assignop", "this fn is assignment or an <op>= operator" )
 symbolFlag( FLAG_ATOMIC_MODULE , ypr, "atomic module" , "module containing implementations of atomic types" )
 symbolFlag( FLAG_ATOMIC_TYPE , ypr, "atomic type" , "type that implements an atomic" )

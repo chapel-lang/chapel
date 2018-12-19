@@ -158,6 +158,7 @@ BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              Expr*       optRetType,
                              bool        optThrowsError,
                              Expr*       optWhere,
+                             Expr*       optLifetimeConstraints,
                              BlockStmt*  optFnBody,
                              const char* docs);
 void applyPrivateToBlock(BlockStmt* block);

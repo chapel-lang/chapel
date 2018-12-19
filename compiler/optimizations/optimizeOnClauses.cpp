@@ -262,6 +262,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_TYPE_INIT:
 
   case PRIM_LOGICAL_FOLDER:
+  case PRIM_LIFETIME_OF:
   case PRIM_TYPEOF:
   case PRIM_STATIC_TYPEOF:
   case PRIM_SCALAR_PROMOTION_TYPE:

@@ -1,0 +1,4 @@
+specified-formal-order-array.chpl:8: In function 'bad3':
+specified-formal-order-array.chpl:17: error: Actual argument Ab does not meet called function lifetime constraint
+specified-formal-order-array.chpl:14: note: consider scope of Ab
+specified-formal-order-array.chpl:3: note: function setA includes lifetime constraint lhs < rhs

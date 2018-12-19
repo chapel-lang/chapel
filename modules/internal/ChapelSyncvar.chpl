@@ -425,9 +425,7 @@ module ChapelSyncvar {
       return ret;
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeEF(val : valType) {
+    proc writeEF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_waitEmptyAndLock(syncAux);
@@ -439,9 +437,7 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeFF(val : valType) {
+    proc writeFF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
@@ -453,9 +449,7 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeXF(val : valType) {
+    proc writeXF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
@@ -560,9 +554,7 @@ module ChapelSyncvar {
       return ret;
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeEF(val : valType) {
+    proc writeEF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         qthread_writeEF(alignedValue, val : aligned_t);
@@ -570,9 +562,7 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeFF(val : valType) {
+    proc writeFF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         qthread_writeFF(alignedValue, val : aligned_t);
@@ -580,9 +570,7 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeXF(val : valType) {
+    proc writeXF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         qthread_writeF(alignedValue, val : aligned_t);
@@ -836,9 +824,7 @@ module ChapelSyncvar {
       return ret;
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeEF(val : valType) {
+    proc writeEF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         chpl_single_lock(singleAux);

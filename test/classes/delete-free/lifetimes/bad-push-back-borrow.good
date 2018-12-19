@@ -1,2 +1,3 @@
 bad-push-back-borrow.chpl:20: In function 'addone':
-bad-push-back-borrow.chpl:25: error: Scoped variable would outlive the value it is set to
+bad-push-back-borrow.chpl:25: error: Actual argument does not meet called function lifetime constraint
+$CHPL_HOME/modules/internal/ChapelArray.chpl:2883: note: function push_back includes lifetime constraint this < val

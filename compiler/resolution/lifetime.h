@@ -21,6 +21,7 @@
 #define _LIFETIME_H_
 
 class FnSymbol;
+class Type;
 
 void checkLifetimes(void);
 
@@ -28,5 +29,6 @@ void checkLifetimesInFunction(FnSymbol* fn);
 
 void findNilDereferences(FnSymbol* fn);
 void adjustSignatureForNilChecking(FnSymbol* fn);
+bool isOrContainsBorrowedClass(Type* type);
 
 #endif

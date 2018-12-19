@@ -380,6 +380,21 @@ static void handleModuleDeinitFn(ModuleSymbol* mod) {
   }
 }
 
+static bool isInLifetimeClause(CallExpr* call) {
+  // Go up until we reach a BlockStmt
+  Expr* parent = call->parentExpr;
+  BlockStmt* parentBlock = NULL;
+  while (parent != NULL) {
+    if (BlockStmt* block = toBlockStmt(parent))
+      parentBlock = block;
+
+    parent = parent->parentExpr;
+  }
+
+  FnSymbol* fn = call->getFunction();
+  return (fn && parentBlock && fn->lifetimeConstraints == parentBlock);
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Historically, parser/build converted                                        *
@@ -404,7 +419,9 @@ static void transformLogicalShortCircuit() {
       if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr)) {
         if (strcmp(expr->unresolved, "&&") == 0 ||
             strcmp(expr->unresolved, "||") == 0) {
-          stmts.insert(call->getStmtExpr());
+          // Don't normalize lifetime constraint clauses
+          if (isInLifetimeClause(call) == false)
+            stmts.insert(call->getStmtExpr());
         }
       }
     }
@@ -1083,7 +1100,8 @@ static void normalizeReturns(FnSymbol* fn) {
   collectMyCallExprs(fn, calls, fn);
 
   for_vector(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_RETURN) == true) {
+    if (call->isPrimitive(PRIM_RETURN) == true &&
+        isInLifetimeClause(call) == false) {
       rets.push_back(call);
 
       theRet = call;
@@ -1775,6 +1793,10 @@ static bool shouldInsertCallTemps(CallExpr* call) {
       call->isPrimitive(PRIM_TUPLE_EXPAND)               ||
       (parentCall && parentCall->isPrimitive(PRIM_MOVE)) ||
       (parentCall && parentCall->isPrimitive(PRIM_NEW)) )
+    return false;
+
+  // Don't normalize lifetime constraint clauses
+  if (isInLifetimeClause(call))
     return false;
 
   return true;

@@ -632,7 +632,6 @@ module ChapelLocale {
   extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
 
   pragma "no doc"
-  pragma "unsafe"
   pragma "fn returns infinite lifetime"
   // should this use pragma "local args"?
   // Why is the compiler making the objectType argument wide?

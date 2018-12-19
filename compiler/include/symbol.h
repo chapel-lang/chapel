@@ -681,6 +681,7 @@ extern const char* astrSgt;
 extern const char* astrSgte;
 extern const char* astrSlt;
 extern const char* astrSlte;
+extern const char* astrSswap;
 extern const char* astr_cast;
 extern const char* astr_defaultOf;
 extern const char* astrInit;

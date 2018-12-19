@@ -44,6 +44,7 @@ public:
   Type*                      retType;
 
   BlockStmt*                 where;
+  BlockStmt*                 lifetimeConstraints;
   BlockStmt*                 retExprType;
   BlockStmt*                 body;
   IntentTag                  thisTag;

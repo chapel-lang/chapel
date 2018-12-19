@@ -95,6 +95,18 @@
     };
   };
 
+  struct WhereAndLifetime {
+    Expr* where;
+    Expr* lifetime;
+  };
+  static inline
+  WhereAndLifetime makeWhereAndLifetime(Expr* w, Expr* lt) {
+    WhereAndLifetime ret;
+    ret.where = w;
+    ret.lifetime = lt;
+    return ret;
+  }
+
   // The lexer only uses pch.
   // The remaining types are for parser productions
   union  YYSTYPE {
@@ -120,6 +132,7 @@
     ShadowVarPrefix           pShadowVarPref;
     std::vector<OnlyRename*>* ponlylist;
     std::set<Flag>*           pflagset;
+    WhereAndLifetime          lifetimeAndWhere;
   };
 
   #endif
@@ -300,7 +313,7 @@
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFALSE TFOR TFORALL TFORWARDING
 %token TIF TIMAG TIN TINDEX TINLINE TINOUT TINT TITER
-%token TLABEL TLAMBDA TLET TLOCAL TLOCALE
+%token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT
 %token TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
@@ -443,8 +456,11 @@
 %type <pcallexpr> zippered_iterator
 %type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
-%type <pexpr> bool_literal literal_expr opt_where_part
+%type <pexpr> bool_literal literal_expr
 %type <pexpr> stmt_level_expr type_level_expr scalar_type
+%type <pexpr> lifetime_components_expr
+%type <pexpr> lifetime_expr lifetime_ident
+%type <lifetimeAndWhere> opt_lifetime_where
 %type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
 %type <pexpr> opt_init_type var_arg_expr
@@ -1054,7 +1070,7 @@ lambda_decl_expr:
       captureTokens = 0;
       $3->userString = astr(captureString);
     }
-  opt_ret_tag opt_type opt_where_part function_body_stmt
+  opt_ret_tag opt_type opt_lifetime_where function_body_stmt
     {
       $3->retTag = $5;
       if ($5 == RET_REF || $5 == RET_CONST_REF)
@@ -1065,8 +1081,10 @@ lambda_decl_expr:
         USR_FATAL("'type' return types are not allowed in lambdas");
       if ($6)
         $3->retExprType = new BlockStmt($6, BLOCK_SCOPELESS);
-      if ($7)
-        $3->where = new BlockStmt($7);
+      if ($7.where)
+        $3->where = new BlockStmt($7.where);
+      if ($7.lifetime)
+        $3->lifetimeConstraints = new BlockStmt($7.lifetime);
       $3->insertAtTail($8);
       $$ = new DefExpr(buildLambda($3));
     }
@@ -1123,7 +1141,7 @@ fn_decl_stmt:
 
       $4->userString = astr(captureString);
     }
-  opt_ret_tag opt_ret_type opt_throws_error opt_where_part opt_function_body_stmt
+  opt_ret_tag opt_ret_type opt_throws_error opt_lifetime_where opt_function_body_stmt
     {
       FnSymbol* fn = $4;
       FnSymbol* linkageFn = $1;
@@ -1143,7 +1161,7 @@ fn_decl_stmt:
         fn->addFlag(FLAG_ITERATOR_FN);
       }
 
-      $$ = buildFunctionDecl($4, $6, $7, $8, $9, $10, @1.comment);
+      $$ = buildFunctionDecl($4, $6, $7, $8, $9.where, $9.lifetime, $10, @1.comment);
       context->latestComment = NULL;
     }
 ;
@@ -1321,10 +1339,34 @@ var_arg_expr:
 | TDOTDOTDOT opt_query_expr  { $2->sym->addFlag(FLAG_PARAM); $$ = $2; }
 ;
 
-opt_where_part:
-               { $$ = NULL; }
-| TWHERE expr  { $$ = $2; }
+opt_lifetime_where:
+  { $$ = makeWhereAndLifetime(NULL, NULL); }
+| TWHERE expr
+  { $$ = makeWhereAndLifetime($2, NULL); }
+| TLIFETIME lifetime_components_expr
+  { $$ = makeWhereAndLifetime(NULL, $2); }
+| TWHERE expr TLIFETIME lifetime_components_expr
+  { $$ = makeWhereAndLifetime($2, $4); }
+| TLIFETIME lifetime_components_expr TWHERE expr
+  { $$ = makeWhereAndLifetime($4, $2); }
 ;
+
+lifetime_components_expr:
+  lifetime_expr                    { $$ = $1; }
+| lifetime_components_expr TCOMMA lifetime_expr { $$ = new CallExpr(",", $1, $3); }
+
+lifetime_expr:
+  lifetime_ident TASSIGN lifetime_ident { $$ = new CallExpr("=", $1, $3); }
+| lifetime_ident TLESS lifetime_ident { $$ = new CallExpr("<", $1, $3); }
+| lifetime_ident TLESSEQUAL lifetime_ident { $$ = new CallExpr("<=", $1, $3); }
+| lifetime_ident TEQUAL lifetime_ident { $$ = new CallExpr("==", $1, $3); }
+| lifetime_ident TGREATER lifetime_ident { $$ = new CallExpr(">", $1, $3); }
+| lifetime_ident TGREATEREQUAL lifetime_ident { $$ = new CallExpr(">=", $1, $3); }
+| TRETURN lifetime_ident { $$ = new CallExpr(PRIM_RETURN, $2); }
+
+lifetime_ident:
+  TIDENT  { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr($1)); }
+| TTHIS   { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr("this")); }
 
 type_alias_decl_stmt:
   TTYPE type_alias_decl_stmt_inner TSEMI

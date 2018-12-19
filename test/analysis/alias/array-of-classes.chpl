@@ -6,7 +6,7 @@ class MyClass {
   var x: int;
 }
 
-proc setupArrays(A, B, instance) {
+proc setupArrays(A, B, instance) lifetime A < instance, B < instance, B < A {
   A[1] = instance;
   A[2] = A[1];
   B[1] = A[1];

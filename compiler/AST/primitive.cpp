@@ -698,10 +698,15 @@ initPrimitive() {
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false);
 
+  // PRIM_LIFETIME_OF represents a query of a lifetime to inform the lifetime
+  // checker.
+  prim_def(PRIM_LIFETIME_OF, "lifetime_of", returnInfoInt64);
+
   // PRIM_TYPEOF of an array returns a runtime type (containing its domain)
   // For values without a runtime type component, it works the same as
   // PRIM_STATIC_TYPEOF
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
+
 
   // Return the compile-time component of a type (ignoring runtime types)
   // For an array, returns the compile-time type only.
