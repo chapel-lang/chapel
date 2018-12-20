@@ -1,36 +1,24 @@
 From locale 0
-  locale 0 owns:Querying for LOCALE0
-{1..6, 1..6}
-  locale 1 owns:Querying for LOCALE1
-{1..6, 7..11}
-  locale 2 owns:Querying for LOCALE2
-{7..11, 1..6}
-  locale 3 owns:Querying for LOCALE3
-{7..11, 7..11}
+  locale 0 owns:{1..6, 1..6}
+  locale 1 owns:{1..6, 7..11}
+  locale 2 owns:{7..11, 1..6}
+  locale 3 owns:{7..11, 7..11}
+(<no communication>)
 From locale 1
-  locale 0 owns:Querying for LOCALE0
-{1..6, 1..6}
-  locale 1 owns:Querying for LOCALE1
-{1..6, 7..11}
-  locale 2 owns:Querying for LOCALE2
-{7..11, 1..6}
-  locale 3 owns:Querying for LOCALE3
-{7..11, 7..11}
+  locale 0 owns:{1..6, 1..6}
+  locale 1 owns:{1..6, 7..11}
+  locale 2 owns:{7..11, 1..6}
+  locale 3 owns:{7..11, 7..11}
+(<no communication>)
 From locale 2
-  locale 0 owns:Querying for LOCALE0
-{1..6, 1..6}
-  locale 1 owns:Querying for LOCALE1
-{1..6, 7..11}
-  locale 2 owns:Querying for LOCALE2
-{7..11, 1..6}
-  locale 3 owns:Querying for LOCALE3
-{7..11, 7..11}
+  locale 0 owns:{1..6, 1..6}
+  locale 1 owns:{1..6, 7..11}
+  locale 2 owns:{7..11, 1..6}
+  locale 3 owns:{7..11, 7..11}
+(<no communication>)
 From locale 3
-  locale 0 owns:Querying for LOCALE0
-{1..6, 1..6}
-  locale 1 owns:Querying for LOCALE1
-{1..6, 7..11}
-  locale 2 owns:Querying for LOCALE2
-{7..11, 1..6}
-  locale 3 owns:Querying for LOCALE3
-{7..11, 7..11}
+  locale 0 owns:{1..6, 1..6}
+  locale 1 owns:{1..6, 7..11}
+  locale 2 owns:{7..11, 1..6}
+  locale 3 owns:{7..11, 7..11}
+(<no communication>)

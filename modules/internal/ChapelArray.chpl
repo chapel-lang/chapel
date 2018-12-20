@@ -1926,7 +1926,6 @@ module ChapelArray {
     }
 
     proc localSubdomain(loc: locale) {
-      writeln("Querying for ", loc);
       if !_value.dsiHasSingleLocalSubdomain(loc) then
         compilerError("Domain's local domain is not a single domain");
       return _value.dsiLocalSubdomain(loc);
