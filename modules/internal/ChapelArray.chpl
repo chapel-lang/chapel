@@ -1911,7 +1911,11 @@ module ChapelArray {
     /* Return true if the local subdomain can be represented as a single
        domain. Otherwise return false. */
     proc hasSingleLocalSubdomain() param {
-      return _value.dsiHasSingleLocalSubdomain();
+      return _value.dsiHasSingleLocalSubdomain(here);
+    }
+
+    proc hasSingleLocalSubdomain(loc: locale) param {
+      return _value.dsiHasSingleLocalSubdomain(loc);
     }
 
     /* Return the subdomain that is local to the current locale */
@@ -1921,6 +1925,13 @@ module ChapelArray {
       return _value.dsiLocalSubdomain();
     }
 
+    proc localSubdomain(loc: locale) {
+      writeln("Querying for ", loc);
+      if !_value.dsiHasSingleLocalSubdomain(loc) then
+        compilerError("Domain's local domain is not a single domain");
+      return _value.dsiLocalSubdomain(loc);
+    }
+
     /* Yield the subdomains that are local to the current locale */
     iter localSubdomains() {
       if _value.dsiHasSingleLocalSubdomain() then
@@ -1928,7 +1939,14 @@ module ChapelArray {
       else
         for d in _value.dsiLocalSubdomains() do yield d;
     }
-  }  // record _domain
+
+    iter localSubdomains(loc: locale) {
+      if _value.dsiHasSingleLocalSubdomain() then
+        yield _value.dsiLocalSubdomain(loc);
+      else
+        for d in _value.dsiLocalSubdomains(loc) do yield d;
+    }
+}  // record _domain
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
      type was stridable and the new type is not stridable then assume the
