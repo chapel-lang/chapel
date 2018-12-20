@@ -1059,22 +1059,6 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call) {
   if (stmt == NULL)
     return;
 
-  if (isForallStmt(stmt)) {
-    // If it's a DefExpr, find the init block
-    /*
-    for (Expr* cur = call->parentExpr; cur != NULL; cur = cur->parentExpr) {
-      if (DefExpr* def = toDefExpr(cur)) {
-        if (ShadowVarSymbol* sv = toShadowVarSymbol(def->sym)) {
-          SET_LINENO(call);
-          CallExpr* noop = new CallExpr(PRIM_NOOP);
-          sv->initBlock()->insertAtTail(noop);
-          stmt = noop;
-        }
-      }
-    }*/
-    return; // TODO
-  }
-
   // Is the argument to PRIM_TYPEOF already just a symbol?
   // Then there's no possibility for side effects and nothing to do.
   if (isSymExpr(call->get(1)))
@@ -1094,39 +1078,40 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call) {
 
   // Look for a type block -- did we already add one?
   bool inTypeBlock = false;
-  //BlockStmt* parentBlock = NULL;
+  CallExpr* noop = NULL;
   IfExpr* parentIfExpr = NULL;
-  ForallStmt* parentForallStmt = NULL;
+  //ForallStmt* parentForallStmt = NULL;
+  ShadowVarSymbol* parentShadowVarSymbol = NULL;
 
   for (Expr* cur = typeOf->parentExpr; cur != NULL; cur = cur->parentExpr) {
     if (IfExpr* ifExpr = toIfExpr(cur))
       if (parentIfExpr == NULL)
         parentIfExpr = ifExpr;
 
-    if (ForallStmt* forallStmt = toForallStmt(cur))
-      if (parentForallStmt == NULL)
-        parentForallStmt = forallStmt;
+    //if (ForallStmt* forallStmt = toForallStmt(cur))
+    //  if (parentForallStmt == NULL)
+    //    parentForallStmt = forallStmt;
 
-    if (BlockStmt* block = toBlockStmt(cur)) {
-      //if (parentBlock == NULL)
-      //  parentBlock = block;
+    if (DefExpr* def = toDefExpr(cur))
+      if (ShadowVarSymbol* sv = toShadowVarSymbol(def->sym))
+        if (parentShadowVarSymbol == NULL)
+          parentShadowVarSymbol = sv;
 
-      if ((block->blockTag & BLOCK_TYPE_ONLY)) {
+    if (BlockStmt* block = toBlockStmt(cur))
+      if ((block->blockTag & BLOCK_TYPE_ONLY))
         inTypeBlock = true;
-      }
-    }
   }
+
   // Found type block? then nothing to do.
   if (inTypeBlock)
     return;
 
-  // If the expression is in an if-expression, give up for now.
-//  if (parentIfExpr != NULL)
-//    return;
-
-  // If the expression is in a ForallStmt, give up for now
-  if (parentForallStmt != NULL) {
-    return; // TODO
+  // If it's in a shadow var symbol's def expr,
+  // use the shadow var stmt init block as the stmt.
+  if (parentShadowVarSymbol != NULL) {
+    noop = new CallExpr(PRIM_NOOP);
+    parentShadowVarSymbol->initBlock()->insertAtTail(noop);
+    stmt = noop;
   }
 
   // Add a type block and put the contents of typeOf into it.
@@ -1145,6 +1130,9 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call) {
   typeBlock->insertAtTail(new DefExpr(tmp));
   typeBlock->insertAtTail(new CallExpr(PRIM_MOVE, tmp, typeOf));
   stmt->insertBefore(typeBlock);
+
+  if (noop)
+    noop->remove();
 }
 
 /************************************* | **************************************
@@ -2503,9 +2491,6 @@ static void  restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark) {
   BlockStmt* normBlock = toBlockStmt(svarMark);
   BlockStmt* initBlock = toShadowVarSymbol(def->sym)->initBlock();
   AList&     initList  = initBlock->body;
-  // If there is stuff in initBlock(), we need to be careful about
-  // where we place 'def'.
-  INT_ASSERT(initList.empty());
 
   normBlock->insertAfter(def->remove());
 
