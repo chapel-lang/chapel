@@ -591,6 +591,36 @@ static constraint_t orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b
   if (fn->lifetimeConstraints) {
     Expr* last = fn->lifetimeConstraints->body.last();
     return orderConstraintFromClause(last, a, b);
+  } else if (isTaskFun(fn)) {
+    // Compute constraints on the actual arguments, if any
+
+    // For calls to this task function
+    for_SymbolSymExprs(se, fn) {
+      CallExpr* call = toCallExpr(se->parentExpr);
+      if (se == call->baseExpr) {
+        Expr* actualA = NULL;
+        Expr* actualB = NULL;
+        for_formals_actuals(formal, actual, call) {
+          if (formal == a)
+            actualA = actual;
+          if (formal == b)
+            actualB = actual;
+        }
+        INT_ASSERT(actualA && actualB);
+        ArgSymbol* formalA = NULL;
+        ArgSymbol* formalB = NULL;
+        if (SymExpr* actualASe = toSymExpr(actualA))
+          if (ArgSymbol* arg = toArgSymbol(actualASe->symbol()))
+            formalA = arg;
+        if (SymExpr* actualBSe = toSymExpr(actualB))
+          if (ArgSymbol* arg = toArgSymbol(actualBSe->symbol()))
+            formalB = arg;
+
+        FnSymbol* inFn = call->getFunction();
+        if (formalA && formalB)
+          return orderConstraintFromClause(inFn, formalA, formalB);
+      }
+    }
   }
 
   return CONSTRAINT_UNKNOWN;
@@ -1267,6 +1297,11 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
       lifetimes->callsToIgnore.insert(call);
     }
   }
+
+  if (FnSymbol* calledFn = call->resolvedFunction())
+    if (isTaskFun(calledFn))
+      calledFn->body->accept(this);
+
   return false;
 }
 
@@ -1476,6 +1511,10 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
     lifetimes->intrinsicLifetime[initSym].borrowed = lt;
   }
 
+  if (FnSymbol* calledFn = call->resolvedFunction())
+    if (isTaskFun(calledFn))
+      calledFn->body->accept(this);
+
   return false;
 }
 
@@ -1564,6 +1603,10 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
   // Consider the lifetime constraints and adjust the
   // inferred lifetimes of the results.
   inferLifetimesForConstraint(call);
+
+  if (FnSymbol* calledFn = call->resolvedFunction())
+    if (isTaskFun(calledFn))
+      calledFn->body->accept(this);
 
   return false;
 }
@@ -1904,6 +1947,10 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
       }
     }
   }
+
+  if (FnSymbol* calledFn = call->resolvedFunction())
+    if (isTaskFun(calledFn))
+      calledFn->body->accept(this);
 
   return false;
 }
