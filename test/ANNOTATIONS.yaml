@@ -1221,6 +1221,8 @@ search:
 spectralnorm:
   01/21/15:
     - qthreads updated to yield every ~100 uncontested sync var locks
+  12/18/18:
+    - brad version changed to serial implementation (#11904)
 
 spectral-norm-specify-step:
   01/21/15:
