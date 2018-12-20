@@ -344,12 +344,6 @@ void checkLifetimesInFunction(FnSymbol* fn) {
 
   bool debugging = debuggingLifetimesForFn(fn);
 
-  if (debugging) {
-    printf("Visiting function %s id %i\n", fn->name, fn->id);
-    nprint_view(fn);
-    gdbShouldBreakHere();
-  }
-
   LifetimeState state;
 
   // We'll be analyzing this function and its task functions
@@ -359,6 +353,18 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   GatherTempsVisitor gather;
   gather.lifetimes = &state;
   fn->accept(&gather);
+
+  if (debugging) {
+    for (LocalFunctionsSet::iterator it = state.inFns.begin();
+         it != state.inFns.end();
+         ++it) {
+      FnSymbol* inFn = *it;
+      printf("Visiting function %s id %i\n", inFn->name, inFn->id);
+      nprint_view(inFn);
+    }
+    gdbShouldBreakHere();
+  }
+
 
   // Figure out the scope for local variables / arguments
   IntrinsicLifetimesVisitor intrinsics;
@@ -1468,6 +1474,11 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
   if (call->id == debugLifetimesForId)
     gdbShouldBreakHere();
 
+  // Traverse into task functions
+  if (FnSymbol* calledFn = call->resolvedFunction())
+    if (isTaskFun(calledFn))
+      calledFn->body->accept(this);
+
   // Ignore calls that de-temping allows us to ignore
   if (lifetimes->callsToIgnore.count(call))
     return false;
@@ -1540,10 +1551,6 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
     lifetimes->intrinsicLifetime[initSym].borrowed = lt;
   }
 
-  if (FnSymbol* calledFn = call->resolvedFunction())
-    if (isTaskFun(calledFn))
-      calledFn->body->accept(this);
-
   return false;
 }
 
@@ -1552,6 +1559,11 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
   if (call->id == debugLifetimesForId)
     gdbShouldBreakHere();
+
+  // Traverse into task functions
+  if (FnSymbol* calledFn = call->resolvedFunction())
+    if (isTaskFun(calledFn))
+      calledFn->body->accept(this);
 
   // Ignore calls that de-temping allows us to ignore
   if (lifetimes->callsToIgnore.count(call))
@@ -1632,10 +1644,6 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
   // Consider the lifetime constraints and adjust the
   // inferred lifetimes of the results.
   inferLifetimesForConstraint(call);
-
-  if (FnSymbol* calledFn = call->resolvedFunction())
-    if (isTaskFun(calledFn))
-      calledFn->body->accept(this);
 
   return false;
 }
@@ -1868,6 +1876,11 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
   if (call->id == debugLifetimesForId)
     gdbShouldBreakHere();
 
+  // Traverse into task functions
+  if (FnSymbol* calledFn = call->resolvedFunction())
+    if (isTaskFun(calledFn))
+      calledFn->body->accept(this);
+
   // Ignore calls that de-temping allows us to ignore
   if (lifetimes->callsToIgnore.count(call))
     return false;
@@ -1974,10 +1987,6 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
       }
     }
   }
-
-  if (FnSymbol* calledFn = call->resolvedFunction())
-    if (isTaskFun(calledFn))
-      calledFn->body->accept(this);
 
   return false;
 }
@@ -2522,10 +2531,29 @@ static BlockStmt* getDefBlock(Symbol* sym) {
   return NULL;
 }
 
+static Expr* getParentExprIncludingTaskFnCalls(Expr* cur) {
+  Expr* parent = cur->parentExpr;
+  if (parent == NULL) {
+    if (FnSymbol* inFn = cur->getFunction()) {
+      if (isTaskFun(inFn)) {
+        for_SymbolSymExprs(se, inFn) {
+          CallExpr* call = toCallExpr(se->parentExpr);
+          if (se == call->baseExpr) {
+            // Consider the call point the "parent"
+            return call;
+          }
+        }
+      }
+    }
+  }
+
+  return parent;
+}
+
 // This could definitely be implemented in a faster way.
 static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b) {
   Expr* findParent = b;
-  for (Expr* cur = a; cur; cur = cur->parentExpr) {
+  for (Expr* cur = a; cur; cur = getParentExprIncludingTaskFnCalls(cur)) {
     if (cur == findParent)
       return true;
   }
