@@ -163,11 +163,17 @@ namespace {
   typedef std::map<Symbol*,DetempGroup*> SymbolToDetempGroupMap;
   typedef std::set<DetempGroup*> DetempGroupSet;
   typedef std::set<CallExpr*> CallExprSet;
+  typedef std::set<FnSymbol*> LocalFunctionsSet;
 
   struct LifetimeState {
     // this mapping allows the pass to ignore certain compiler temps
     SymbolToDetempGroupMap detemp;
     CallExprSet callsToIgnore;
+
+    // We try to run the analysis as though task functions didn't
+    // exist. This set is the set of functions we should consider
+    // to be the currently analyzed function and can include task functions.
+    LocalFunctionsSet inFns;
 
     // intrinsic lifetime is normally the scope of a variable.
     // It might be otherwise for array slices.
@@ -195,12 +201,14 @@ namespace {
     // lifetime for use in inference
     LifetimePair lifetimeForActual(Symbol* sym,
                                    bool usedAsRef,
-                                   bool usedAsBorrow,
-                                   FnSymbol* inFn);
+                                   bool usedAsBorrow);
 
     LifetimePair inferredLifetimeForCall(CallExpr* call);
     LifetimePair inferredLifetimeForPrimitive(CallExpr* call);
     LifetimePair inferredLifetimeForExpr(Expr* call, bool usedAsRef, bool usedAsBorrow);
+
+    bool isLocalVariable(Symbol* sym);
+    bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
   };
 
   class GatherTempsVisitor : public AstVisitorTraverse {
@@ -213,7 +221,6 @@ namespace {
 
     public:
       LifetimeState* lifetimes;
-      FnSymbol* visitingFn;
       virtual bool enterDefExpr(DefExpr* def);
       virtual bool enterCallExpr(CallExpr* call);
   };
@@ -250,7 +257,6 @@ namespace {
 
 } /* end anon namespace */
 
-static bool isLocalVariable(FnSymbol* fn, Symbol* sym);
 static bool typeHasInfiniteBorrowLifetime(Type* type);
 static bool isSubjectToRefLifetimeAnalysis(Symbol* sym);
 static bool isSubjectToBorrowLifetimeAnalysis(Type* type);
@@ -261,7 +267,6 @@ static bool aggregateContainsBorrowedClassFields(AggregateType* at);
 static bool containsOwnedClass(Type* type);
 //static bool isOrContainsBorrowedClass(Type* type);
 static bool isOrRefersBorrowedClass(Type* type);
-static bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
 static bool isAnalyzedMoveOrAssignment(CallExpr* call);
 static bool symbolHasInfiniteLifetime(Symbol* sym);
 static BlockStmt* getDefBlock(Symbol* sym);
@@ -347,6 +352,9 @@ void checkLifetimesInFunction(FnSymbol* fn) {
 
   LifetimeState state;
 
+  // We'll be analyzing this function and its task functions
+  state.inFns.insert(fn);
+
   // Gather temps that are just aliases for something else
   GatherTempsVisitor gather;
   gather.lifetimes = &state;
@@ -355,7 +363,6 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   // Figure out the scope for local variables / arguments
   IntrinsicLifetimesVisitor intrinsics;
   intrinsics.lifetimes = &state;
-  intrinsics.visitingFn = fn;
   fn->accept(&intrinsics);
 
   // Infer lifetimes
@@ -594,33 +601,7 @@ static constraint_t orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b
   } else if (isTaskFun(fn)) {
     // Compute constraints on the actual arguments, if any
 
-    // For calls to this task function
-    for_SymbolSymExprs(se, fn) {
-      CallExpr* call = toCallExpr(se->parentExpr);
-      if (se == call->baseExpr) {
-        Expr* actualA = NULL;
-        Expr* actualB = NULL;
-        for_formals_actuals(formal, actual, call) {
-          if (formal == a)
-            actualA = actual;
-          if (formal == b)
-            actualB = actual;
-        }
-        INT_ASSERT(actualA && actualB);
-        ArgSymbol* formalA = NULL;
-        ArgSymbol* formalB = NULL;
-        if (SymExpr* actualASe = toSymExpr(actualA))
-          if (ArgSymbol* arg = toArgSymbol(actualASe->symbol()))
-            formalA = arg;
-        if (SymExpr* actualBSe = toSymExpr(actualB))
-          if (ArgSymbol* arg = toArgSymbol(actualBSe->symbol()))
-            formalB = arg;
-
-        FnSymbol* inFn = call->getFunction();
-        if (formalA && formalB)
-          return orderConstraintFromClause(inFn, formalA, formalB);
-      }
-    }
+    INT_FATAL("Task function formals should be handled by detemp map");
   }
 
   return CONSTRAINT_UNKNOWN;
@@ -700,6 +681,13 @@ static void printOrderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b) {
   printOrderConstraintFromClause(last, a, b);
 }
 
+static bool definedInTaskFunction(Symbol* sym) {
+  if (DefExpr* def = sym->defPoint)
+    if (FnSymbol* fn = def->getFunction())
+      return isTaskFun(fn);
+
+  return false;
+}
 
 static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_UNSAFE))
@@ -709,6 +697,12 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
 
   // TODO
   if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+    return false;
+
+  // We check task functions when visiting the code
+  // calling them, so don't visit them when considering
+  // the task function on its own.
+  if (isTaskFun(fn))
     return false;
 
   ModuleSymbol* inMod = fn->getModule();
@@ -789,8 +783,13 @@ void printLifetimeState(LifetimeState* state)
 static void handleDebugOutputOnError(Expr* e, LifetimeState* state) {
   if (debugOutputOnError) {
     printf("Stopping due to debugOutputOnError\n");
-    printf("Function is:\n");
-    nprint_view(e->getFunction());
+    printf("Analyzed functions:\n");
+    for (LocalFunctionsSet::iterator it = state->inFns.begin();
+       it != state->inFns.end();
+       ++it) {
+      FnSymbol* inFn = *it;
+      nprint_view(inFn);
+    }
     printf("Expr is:\n");
     nprint_view(e);
     printf("Lifetime state is:\n");
@@ -959,14 +958,17 @@ LifetimePair LifetimeState::combinedLifetimeForSymbol(Symbol* sym) {
 // a variable containing a borrow can have an inferred lifetime greater
 // than its intrinsic lifetime.
 
-LifetimePair LifetimeState::lifetimeForActual(Symbol* sym, bool usedAsRef, bool usedAsBorrow, FnSymbol* inFn) {
+LifetimePair LifetimeState::lifetimeForActual(Symbol* sym, bool usedAsRef, bool usedAsBorrow) {
+
+  // TODO: Should this use the canonical symbol?
+  // What if sym is an argument to a task function?
 
   // Careful here, as sym might not be a canonical symbol,
   // or it might be, so it being a ref or not is an uncertain matter.
   bool combineForRef = usedAsRef;
   bool combineForBorrow = usedAsBorrow && containsOwnedClass(sym->type);
-  bool combineForOuter = !isLocalVariable(inFn, sym);
-  bool combineForArg = isArgSymbol(sym);
+  bool combineForOuter = !isLocalVariable(sym);
+  bool combineForArg = isArgSymbol(sym) && !definedInTaskFunction(sym);
   if (combineForRef || combineForBorrow || combineForOuter || combineForArg)
     return combinedLifetimeForSymbol(sym);
 
@@ -997,7 +999,6 @@ static bool formalArgumentDoesNotImpactReturnLifetime(ArgSymbol* formal)
 
 LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
 
-  FnSymbol* inFn = call->getFunction();
   FnSymbol* calledFn = call->resolvedOrVirtualFunction();
   if (calledFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME))
     return infiniteLifetimePair();
@@ -1056,10 +1057,10 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
 
     if (returnsRef && formal->isRef() &&
         (isSubjectToRefLifetimeAnalysis(actualSym) ||
-         isLocalVariable(call->getFunction(), actualSym))) {
+         isLocalVariable(actualSym))) {
 
       // Use the referent part of the actual's lifetime
-      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow, inFn);
+      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
       argLifetime.referent = temp.referent;
     }
 
@@ -1078,7 +1079,7 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
       if (infer) {
         // Use the borrowed part of the actual's lifetime
         LifetimePair temp = lifetimeForActual(actualSym, returnsRef,
-                                              returnsBorrow, inFn);
+                                              returnsBorrow);
         argLifetime.borrowed = temp.borrowed;
       }
     }
@@ -1091,7 +1092,6 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
 
 LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
 
-  FnSymbol* inFn = call->getFunction();
   bool returnsRef = call->isRef();
   bool returnsBorrow = isSubjectToBorrowLifetimeAnalysis(call->typeInfo());
 
@@ -1108,11 +1108,11 @@ LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
     Symbol* actualSym = actualSe->symbol();
     LifetimePair argLifetime = unknownLifetimePair();
 
-    LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow, inFn);
+    LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
 
     if (returnsRef &&
         (isSubjectToRefLifetimeAnalysis(actualSym) ||
-         isLocalVariable(call->getFunction(), actualSym))) {
+         isLocalVariable(actualSym))) {
       // Use the referent part of the actual's lifetime
       argLifetime.referent = temp.referent;
     }
@@ -1145,15 +1145,15 @@ LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
 
     if (returnsRef &&
         (isSubjectToRefLifetimeAnalysis(actualSym) ||
-         isLocalVariable(call->getFunction(), actualSym))) {
+         isLocalVariable(actualSym))) {
       // Use the referent part of the actual's lifetime
-      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow, inFn);
+      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
       argLifetime.referent = temp.referent;
     }
     if (returnsBorrow &&
         isSubjectToBorrowLifetimeAnalysis(actualSym)) {
       // Use the borrowed part of the actual's lifetime
-      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow, inFn);
+      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
       argLifetime.borrowed = temp.borrowed;
     }
 
@@ -1181,17 +1181,29 @@ LifetimePair LifetimeState::inferredLifetimeForExpr(Expr* rhsExpr, bool usedAsRe
       lp = inferredLifetimeForPrimitive(rhsCallExpr);
     }
   } else {
-    FnSymbol* inFn = rhsExpr->getFunction();
-
     SymExpr* rhsSe = toSymExpr(rhsExpr);
     INT_ASSERT(rhsSe);
     Symbol* rhs = getCanonicalSymbol(rhsSe->symbol());
 
-    lp = lifetimeForActual(rhs, usedAsRef, usedAsBorrow, inFn);
+    lp = lifetimeForActual(rhs, usedAsRef, usedAsBorrow);
   }
 
   return lp;
 }
+
+
+
+/* Is the sym argument a local variable in the currently analyzed function?
+ */
+bool LifetimeState::isLocalVariable(Symbol* sym) {
+  bool isValueArg = isArgSymbol(sym) &&
+                    !definedInTaskFunction(sym) &&
+                    !sym->isRef();
+  bool isLocal = isVarSymbol(sym) || isValueArg;
+
+  return isLocal && (inFns.count(sym->defPoint->getFunction()) != 0);
+}
+
 
 static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
   group->elements.push_back(sym);
@@ -1202,6 +1214,8 @@ static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
   // Should we prefer sym to oldFavorite?
   if (oldFavorite == NULL)
     preferSym = true;
+  else if (definedInTaskFunction(sym) != definedInTaskFunction(oldFavorite))
+    preferSym = definedInTaskFunction(oldFavorite);
   else if (isGlobal(sym) != isGlobal(oldFavorite))
     preferSym = isGlobal(sym);
   else if (sym->hasFlag(FLAG_TEMP) != oldFavorite->hasFlag(FLAG_TEMP))
@@ -1261,6 +1275,7 @@ static void addPairToDetempMap(Symbol* a, Symbol* b,
   }
 }
 
+
 bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
   if (call->isPrimitive(PRIM_MOVE)) {
     SymExpr* lhsSe = toSymExpr(call->get(1));
@@ -1298,9 +1313,23 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
     }
   }
 
-  if (FnSymbol* calledFn = call->resolvedFunction())
-    if (isTaskFun(calledFn))
+  if (FnSymbol* calledFn = call->resolvedFunction()) {
+    if (isTaskFun(calledFn)) {
+      lifetimes->inFns.insert(calledFn);
+
+      // Add formal arguments -> actual arguments to the detemp map
+      for_formals_actuals(formal, actual, call) {
+        if (SymExpr* actualSe = toSymExpr(actual)) {
+          Symbol* actualSym = actualSe->symbol();
+          addPairToDetempMap(formal, actualSym, lifetimes->detemp);
+        }
+      }
+      lifetimes->callsToIgnore.insert(call);
+
+      // Gather temps in the called function
       calledFn->body->accept(this);
+    }
+  }
 
   return false;
 }
@@ -1387,7 +1416,7 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
         lp = unknownLifetimePair();
 
     // For local value variables, set ref lifetime to reachability.
-    if (!var->isRef() && isLocalVariable(visitingFn, var)) {
+    if (!var->isRef() && lifetimes->isLocalVariable(var)) {
       lp.referent = scopeLifetimeForSymbol(sym);
     }
     // Otherwise, the ref variable doesn't have an intrinsic lifetime
@@ -1449,7 +1478,7 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
   Lifetime lt = unknownLifetime();
 
   if (isRecordInitOrReturn(call, initSym, initCall, lifetimes) &&
-      shouldPropagateLifetimeTo(call, initSym)) {
+      lifetimes->shouldPropagateLifetimeTo(call, initSym)) {
 
     AggregateType* at = toAggregateType(initSym->getValType());
     INT_ASSERT(at && isRecord(at));
@@ -1480,7 +1509,7 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
     if (initSym->hasFlag(FLAG_TEMP) &&
         rhsCall &&
-        shouldPropagateLifetimeTo(rhsCall, initSym)) {
+        lifetimes->shouldPropagateLifetimeTo(rhsCall, initSym)) {
       FnSymbol* calledFn = rhsCall->resolvedOrVirtualFunction();
       // "_new" calls return infinite lifetime. Why?
       //  * the result of 'new' is currently user-managed
@@ -1531,7 +1560,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
   Symbol* initSym = NULL;
   CallExpr* initCall = NULL;
   if (isRecordInitOrReturn(call, initSym, initCall, lifetimes) &&
-      shouldPropagateLifetimeTo(call, initSym)) {
+      lifetimes->shouldPropagateLifetimeTo(call, initSym)) {
 
     AggregateType* at = toAggregateType(initSym->getValType());
     INT_ASSERT(at && isRecord(at));
@@ -1548,7 +1577,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
     SymExpr* lhsSe = toSymExpr(call->get(1));
     Symbol* lhs = lifetimes->getCanonicalSymbol(lhsSe->symbol());
 
-    if (shouldPropagateLifetimeTo(call, lhs)) {
+    if (lifetimes->shouldPropagateLifetimeTo(call, lhs)) {
 
       Expr* rhsExpr = call->get(2);
 
@@ -1626,7 +1655,6 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
   //     is the loop itself.
   //     TODO: Or check if the iterator may own?
 
-  FnSymbol* inFn = forLoop->getFunction();
   bool isForall = false;
   IteratorDetails leaderDetails;
   ForLoop* followerForLoop = NULL;
@@ -1676,8 +1704,7 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     if (iterableSe) {
       Symbol* iterableSym = iterableSe->symbol();
 
-      lp = lifetimes->lifetimeForActual(iterableSym,
-                                        usedAsRef, usedAsBorrow, inFn);
+      lp = lifetimes->lifetimeForActual(iterableSym, usedAsRef, usedAsBorrow);
 
       if (!isSubjectToRefLifetimeAnalysis(iterableSym))
         lp.referent = unknownLifetime();
@@ -2231,16 +2258,7 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
   }
 }
 
-/* Is the sym argument a local variable in fn?
- */
-static bool isLocalVariable(FnSymbol* fn, Symbol* sym) {
-  bool isValueArg = isArgSymbol(sym) && !sym->isRef();
-  bool isLocal = isVarSymbol(sym) || isValueArg;
-
-  return sym->defPoint->getFunction() == fn && isLocal;
-}
-
-// A variables with a type with `infinite borrow lifetime` should have
+// variables with a type with `infinite borrow lifetime` should have
 // infinite intrinsic borrow lifetime.
 static bool typeHasInfiniteBorrowLifetime(Type* type) {
 
@@ -2423,15 +2441,13 @@ static bool isSubjectToBorrowLifetimeAnalysis(Symbol* sym) {
 }
 
 
-static bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym) {
-
-  FnSymbol* inFn = call->getFunction();
+bool LifetimeState::shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym) {
 
   if (!(isSubjectToRefLifetimeAnalysis(sym) ||
         isSubjectToBorrowLifetimeAnalysis(sym)))
     return false;
 
-  if (!isLocalVariable(inFn, sym))
+  if (!isLocalVariable(sym))
     return false;
 
   // Lifetime for index variables is set by infer's for loop visitor
