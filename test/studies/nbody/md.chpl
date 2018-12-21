@@ -52,6 +52,7 @@ proc try1() {
 }
 
 // overlap computation and communication
+pragma "unsafe" // work around until PR #11928 lands
 proc try2() {
 
   var tm: Timer;

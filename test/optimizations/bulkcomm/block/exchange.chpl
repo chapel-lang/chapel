@@ -16,6 +16,7 @@ config const pat : Pattern = Elegant;
 config const report = false;
 config const time = false;
 
+pragma "unsafe" // work around until PR #11928 lands
 proc main() {
   var tmr : Timer;
 
