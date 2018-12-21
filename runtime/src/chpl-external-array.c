@@ -57,9 +57,7 @@ chpl_external_array chpl_make_external_array_ptr_free(void* elts,
 }
 
 void chpl_free_external_array(chpl_external_array x) {
-  if (x.freer != NULL) {
-    x.freer(x.elts);
-  }
+  chpl_call_free_func(x.freer, x.elts);
 }
 
 void chpl_call_free_func(void* func, void* elts) {

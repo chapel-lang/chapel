@@ -28,7 +28,7 @@ typedef struct {
   void* elts;
   uint64_t size;
 
-  chpl_free_func freer;
+  void* freer;
 } chpl_external_array;
 
 chpl_external_array chpl_make_external_array(uint64_t elt_size,
