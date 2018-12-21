@@ -186,8 +186,9 @@ are supported through submodules, such ``LinearAlgebra.Sparse`` for the
 module LinearAlgebra {
 
 use Norm; // TODO -- merge Norm into LinearAlgebra
-use BLAS;
-use LAPACK;
+use BLAS only;
+use LAPACK only;
+use LAPACK only lapack_memory_order, isLAPACKType;
 
 /* Determines if using native Chapel implementations */
 private param usingBLAS = BLAS.header != '';
@@ -604,7 +605,7 @@ private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 pragma "no doc"
 /* matrix-vector multiplication */
 private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
-  where isBLASType(eltType) && usingBLAS
+  where BLAS.isBLASType(eltType) && usingBLAS
 {
   if Adom.rank != 2 || Xdom.rank != 1 then
     compilerError("Rank sizes are not 2 and 1");
@@ -632,7 +633,7 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
 pragma "no doc"
 /* matrix-matrix multiplication */
 private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
-  where isBLASType(eltType) && usingBLAS
+  where BLAS.isBLASType(eltType) && usingBLAS
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Rank sizes are not 2");
@@ -671,7 +672,7 @@ proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 pragma "no doc"
 /* Generic matrix-vector multiplication. */
 proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
-  where !usingBLAS || !isBLASType(eltType)
+  where !usingBLAS || !BLAS.isBLASType(eltType)
 {
   if Adom.rank != 2 || Xdom.rank != 1 then
     compilerError("Rank sizes are not 2 and 1");
@@ -701,7 +702,7 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
 pragma "no doc"
 /* Generic matrix-matrix multiplication */
 proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
-  where !usingBLAS || !isBLASType(eltType)
+  where !usingBLAS || !BLAS.isBLASType(eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Rank sizes are not 2 and 2");
