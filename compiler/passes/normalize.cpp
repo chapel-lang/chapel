@@ -79,7 +79,7 @@ static void        find_printModuleInit_stuff();
 static void        normalizeBase(BaseAST* base);
 static void        processSyntacticDistributions(CallExpr* call);
 static void        processManagedNew(CallExpr* call);
-static Expr* getCallTempInsertPoint(Expr* expr);
+static Expr*       getCallTempInsertPoint(Expr* expr);
 static void        addTypeBlocksForParentTypeOf(CallExpr* call);
 static void        normalizeReturns(FnSymbol* fn);
 static void        normalizeYields(FnSymbol* fn);
