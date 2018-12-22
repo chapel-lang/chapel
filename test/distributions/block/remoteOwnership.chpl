@@ -2,18 +2,15 @@ use BlockDist, CommDiagnostics;
 
 config const n = 11;
 
+
+// test a standard block distribution
 const D = {1..n, 1..n} dmapped Block({1..n, 1..n});
 var A: [D] real;
 
-writeln("Testing domain D: ");
-testit(D);
-writeln();
+testit(D, A);
 
-/*
-writeln("Testing array A: ");
-testit(A);
-*/
 
+// test one with a shuffled locale map
 if (numLocales == 4) {
   var targetLocs: [1..2, 1..2] locale;
   targetLocs[1,1] = Locales[1];
@@ -21,17 +18,23 @@ if (numLocales == 4) {
   targetLocs[2,1] = Locales[0];
   targetLocs[2,2] = Locales[2];
 
+  writeln();
+  writeln("Switching locale configuration to:\n", targetLocs);
+  writeln();
+
   const D = {1..n, 1..n} dmapped Block({1..n, 1..n}, targetLocales = targetLocs);
   var A: [D] real;
 
+  testit(D, A);
+}
+
+proc testit(D, A) {
   writeln("Testing domain D: ");
   testit(D);
   writeln();
 
-  /*
   writeln("Testing array A: ");
   testit(A);
-  */
 }
 
 proc testit(X) {

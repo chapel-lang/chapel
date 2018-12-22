@@ -1911,7 +1911,7 @@ module ChapelArray {
     /* Return true if the local subdomain can be represented as a single
        domain. Otherwise return false. */
     proc hasSingleLocalSubdomain() param {
-      return _value.dsiHasSingleLocalSubdomain(here);
+      return _value.dsiHasSingleLocalSubdomain();
     }
 
     proc hasSingleLocalSubdomain(loc: locale) param {
@@ -1940,7 +1940,7 @@ module ChapelArray {
     }
 
     iter localSubdomains(loc: locale) {
-      if _value.dsiHasSingleLocalSubdomain() then
+      if _value.dsiHasSingleLocalSubdomain(loc) then
         yield _value.dsiLocalSubdomain(loc);
       else
         for d in _value.dsiLocalSubdomains(loc) do yield d;
@@ -2745,11 +2745,21 @@ module ChapelArray {
       return _value.dsiHasSingleLocalSubdomain();
     }
 
+    proc hasSingleLocalSubdomain(loc: locale) param {
+      return _value.dsiHasSingleLocalSubdomain(loc);
+    }
+    
     /* Return the subdomain that is local to the current locale */
     proc localSubdomain() {
       if !_value.dsiHasSingleLocalSubdomain() then
         compilerError("Array's local domain is not a single domain");
       return _value.dsiLocalSubdomain();
+    }
+
+    proc localSubdomain(loc: locale) {
+      if !_value.dsiHasSingleLocalSubdomain(loc) then
+        compilerError("Array's local domain is not a single domain");
+      return _value.dsiLocalSubdomain(loc);
     }
 
     /* Yield the subdomains that are local to the current locale */
@@ -2758,6 +2768,13 @@ module ChapelArray {
         yield _value.dsiLocalSubdomain();
       else
         for d in _value.dsiLocalSubdomains() do yield d;
+    }
+
+    iter localSubdomains(loc: locale) {
+      if _value.dsiHasSingleLocalSubdomain(loc) then
+        yield _value.dsiLocalSubdomain(loc);
+      else
+        for d in _value.dsiLocalSubdomains(loc) do yield d;
     }
 
     proc chpl__isDense1DArray() param {

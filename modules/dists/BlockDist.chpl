@@ -1444,17 +1444,14 @@ proc Block.chpl__locToLocIdx(loc: locale) {
   halt("Didn't find locale ", loc.id, " in targetLocales");
 }
 
-proc BlockArr.dsiLocalSubdomain(loc: locale) {
-  writeln("querying for ", loc);
-  writeln("here is ", here);
-  writeln("loc == here is ", loc == here);
+proc BlockArr.dsiLocalSubdomain(loc: locale=here) {
   if (loc == here) {
     return myLocArr.locDom.myBlock;
   } else {
-    return {1..0, 1..0};
+    return dom.dsiLocalSubdomain(loc);
   }
 }
-proc BlockDom.dsiLocalSubdomain(loc: locale) {
+proc BlockDom.dsiLocalSubdomain(loc: locale = here) {
   if (loc == here) {
     // TODO -- could be replaced by a privatized myLocDom in BlockDom
     // as it is with BlockArr
