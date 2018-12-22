@@ -79,6 +79,8 @@ static void        find_printModuleInit_stuff();
 static void        normalizeBase(BaseAST* base);
 static void        processSyntacticDistributions(CallExpr* call);
 static void        processManagedNew(CallExpr* call);
+static Expr*       getCallTempInsertPoint(Expr* expr);
+static void        addTypeBlocksForParentTypeOf(CallExpr* call);
 static void        normalizeReturns(FnSymbol* fn);
 static void        normalizeYields(FnSymbol* fn);
 
@@ -525,6 +527,8 @@ static void normalizeBase(BaseAST* base) {
   for_vector(CallExpr, call, calls1) {
     processSyntacticDistributions(call);
     processManagedNew(call);
+    if (call->isPrimitive(PRIM_TYPEOF))
+      addTypeBlocksForParentTypeOf(call);
   }
 
 
@@ -820,9 +824,9 @@ static void moveGlobalDeclarationsToModuleScope() {
           // initializer block with it.
           if (vs->hasFlag(FLAG_EXTERN) == true) {
             if (BlockStmt* block = toBlockStmt(def->next)) {
-              // Mark this as a type block, so it is removed later.
-              // Casts are because C++ is lame.
-              (unsigned&)(block->blockTag) |= (unsigned) BLOCK_TYPE_ONLY;
+              // This block should have been marked as BLOCK_EXTERN_TYPE
+              // in other parts of normalization.
+              INT_ASSERT( (block->blockTag & BLOCK_TYPE_ONLY) != 0);
 
               // Set the flag, so we move it out to module scope.
               move = true;
@@ -1065,6 +1069,87 @@ static void processManagedNew(CallExpr* newCall) {
       }
     }
   }
+}
+
+static void addTypeBlocksForParentTypeOf(CallExpr* call) {
+  Expr* stmt = getCallTempInsertPoint(call);
+  if (stmt == NULL)
+    return;
+
+  // Is the argument to PRIM_TYPEOF already just a symbol?
+  // Then there's no possibility for side effects and nothing to do.
+  if (isSymExpr(call->get(1)))
+    return;
+
+  // Look for a parent PRIM_TYPEOF
+  CallExpr* typeOf = NULL;
+  for (CallExpr* cur = call; cur != NULL; cur = toCallExpr(cur->parentExpr)) {
+    if (cur->isPrimitive(PRIM_TYPEOF))
+      typeOf = cur;
+  }
+  // No PRIM_TYPEOF in parent exprs? Then nothing to do.
+  if (typeOf == NULL)
+    return;
+
+  SET_LINENO(call);
+
+  // Look for a type block -- did we already add one?
+  bool inTypeBlock = false;
+  CallExpr* noop = NULL;
+  IfExpr* parentIfExpr = NULL;
+  //ForallStmt* parentForallStmt = NULL;
+  ShadowVarSymbol* parentShadowVarSymbol = NULL;
+
+  for (Expr* cur = typeOf->parentExpr; cur != NULL; cur = cur->parentExpr) {
+    if (IfExpr* ifExpr = toIfExpr(cur))
+      if (parentIfExpr == NULL)
+        parentIfExpr = ifExpr;
+
+    //if (ForallStmt* forallStmt = toForallStmt(cur))
+    //  if (parentForallStmt == NULL)
+    //    parentForallStmt = forallStmt;
+
+    if (DefExpr* def = toDefExpr(cur))
+      if (ShadowVarSymbol* sv = toShadowVarSymbol(def->sym))
+        if (parentShadowVarSymbol == NULL)
+          parentShadowVarSymbol = sv;
+
+    if (BlockStmt* block = toBlockStmt(cur))
+      if ((block->blockTag & BLOCK_TYPE_ONLY))
+        inTypeBlock = true;
+  }
+
+  // Found type block? then nothing to do.
+  if (inTypeBlock)
+    return;
+
+  // If it's in a shadow var symbol's def expr,
+  // use the shadow var stmt init block as the stmt.
+  if (parentShadowVarSymbol != NULL) {
+    noop = new CallExpr(PRIM_NOOP);
+    parentShadowVarSymbol->initBlock()->insertAtTail(noop);
+    stmt = noop;
+  }
+
+  // Add a type block and put the contents of typeOf into it.
+  INT_ASSERT(typeOf && typeOf->isPrimitive(PRIM_TYPEOF));
+
+  VarSymbol* tmp = newTemp("call_type_tmp");
+  tmp->addFlag(FLAG_TYPE_VARIABLE);
+  tmp->addFlag(FLAG_MAYBE_TYPE);
+  tmp->addFlag(FLAG_EXPR_TEMP);
+
+  SymExpr* tmpSe = new SymExpr(tmp);
+  typeOf->replace(tmpSe);
+  if (stmt == typeOf)
+    stmt = tmpSe;
+  BlockStmt* typeBlock = new BlockStmt(BLOCK_TYPE);
+  typeBlock->insertAtTail(new DefExpr(tmp));
+  typeBlock->insertAtTail(new CallExpr(PRIM_MOVE, tmp, typeOf));
+  stmt->insertBefore(typeBlock);
+
+  if (noop)
+    noop->remove();
 }
 
 /************************************* | **************************************
@@ -1755,7 +1840,7 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     }
   }
 
-  if (call->isPrimitive(PRIM_TYPEOF) == true) {
+  if (call->isPrimitive(PRIM_TYPEOF)) {
     tmp->addFlag(FLAG_TYPE_VARIABLE);
   }
 
@@ -2428,9 +2513,6 @@ static void  restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark) {
   BlockStmt* normBlock = toBlockStmt(svarMark);
   BlockStmt* initBlock = toShadowVarSymbol(def->sym)->initBlock();
   AList&     initList  = initBlock->body;
-  // If there is stuff in initBlock(), we need to be careful about
-  // where we place 'def'.
-  INT_ASSERT(initList.empty());
 
   normBlock->insertAfter(def->remove());
 
