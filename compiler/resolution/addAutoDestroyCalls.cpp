@@ -177,10 +177,10 @@ static void walkBlockStmt(FnSymbol*         fn,
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
     } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
       // ignore scopeless blocks for deciding where to destroy
-      //if ((subBlock->blockTag & BLOCK_SCOPELESS))
-      //  walkBlockScopelessBlock(fn, scope, retLabel, isDeadCode,
-      //                          subBlock, ignoredVariables);
-      //else
+      if ((subBlock->blockTag & BLOCK_SCOPELESS))
+        walkBlockScopelessBlock(fn, scope, retLabel, isDeadCode,
+                                subBlock, ignoredVariables);
+      else
         walkBlock(fn, &scope, subBlock, ignoredVariables);
 
     // Recurse in to a ForallStmt
