@@ -2777,7 +2777,7 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
     addByrefVars(onBlock, byref_vars);
     return body;
   } else {
-    BlockStmt* block = buildChapelStmt();
+    BlockStmt* block = new BlockStmt();
     VarSymbol* endCount = newTempConst("_endCount");
     endCount->addFlag(FLAG_END_COUNT);
     block->insertAtTail(new DefExpr(endCount));
