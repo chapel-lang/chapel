@@ -25,3 +25,8 @@ LIBS += -lfabric -ldl
 # code) is being linked in.
 #
 LD = $(CXX)
+
+ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
+GEN_LFLAGS += -L$(MPI_LIB) -Wl,-rpath,$(MPI_LIB)
+LIBS += -lmpi
+endif

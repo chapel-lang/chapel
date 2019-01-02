@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2004-2018 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -15,10 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifneq ($(LIBFABRIC_DIR),)
-RUNTIME_INCLS += -I$(LIBFABRIC_DIR)/include
-endif
+LAUNCHER_SRCS = \
+        launch-mpirun4ofi.c \
 
-ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
-RUNTIME_INCLS += -I$(MPI_INCLUDE)
-endif
+SVN_SRCS = $(LAUNCHER_SRCS)
+SRCS = $(SVN_SRCS)
+
+RUNTIME_CFLAGS += -DMPIRUN_PATH=\"$(MPI_BIN_DIR)\" -DMPIRUN_XTRA_OPTS=\"$(MPIRUN_XTRA_OPTS)\"
+
+LAUNCHER_OBJS = \
+	$(LAUNCHER_SRCS:%.c=$(LAUNCH_OBJDIR)/%.o)
