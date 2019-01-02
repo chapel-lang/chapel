@@ -136,6 +136,7 @@ static void walkBlockStmt(FnSymbol*         fn,
                           AutoDestroyScope& scope,
                           LabelSymbol*      retLabel,
                           bool              isDeadCode,
+                          bool              inScopelessBlock,
                           Expr*             stmt,
                           std::set<VarSymbol*>& ignoredVariables) {
 
@@ -154,6 +155,8 @@ static void walkBlockStmt(FnSymbol*         fn,
   // AutoDestroy locals at the start of the error-handling label
   // (when exiting a try block without error)
   } else if (isErrorLabel(stmt) == true) {
+    INT_ASSERT(!inScopelessBlock); // situation leads to miscompiles/leaks
+
     scope.insertAutoDestroys(fn, stmt, ignoredVariables);
 
   // AutoDestroy primary locals at start of function epilogue (1)
@@ -211,7 +214,7 @@ static void walkBlockScopelessBlock(FnSymbol*         fn,
                                     BlockStmt*        block,
                                     std::set<VarSymbol*>& ignoredVariables) {
   for_alist(stmt, block->body) {
-    walkBlockStmt(fn, scope, retLabel, isDeadCode, stmt, ignoredVariables);
+    walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt, ignoredVariables);
   }
 }
 
@@ -232,7 +235,7 @@ static void walkBlock(FnSymbol*         fn,
     //
     // Handle the current statement
     //
-    walkBlockStmt(fn, scope, retLabel, isDeadCode, stmt, ignoredVariables);
+    walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt, ignoredVariables);
 
     //
     // Handle the end of a block
