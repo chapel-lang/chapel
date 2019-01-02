@@ -2835,6 +2835,7 @@ buildSyncStmt(Expr* stmt) {
   catches->insertAtTail(CatchStmt::build(defError, saveError));
 
   BlockStmt* body = toBlockStmt(stmt);
+  body->blockTag = BLOCK_NORMAL; // or at least, not scopeless
   INT_ASSERT(body);
 
   TryStmt* t = new TryStmt(/* try! */ false, body, catches,
