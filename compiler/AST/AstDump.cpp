@@ -39,6 +39,7 @@
 #include "ParamForLoop.h"
 #include "TryStmt.h"
 #include "CatchStmt.h"
+#include "DeferStmt.h"
 
 AstDump::AstDump() {
   mName      =     0;
@@ -399,6 +400,11 @@ bool AstDump::enterBlockStmt(BlockStmt* node) {
 
   write("{");
   printBlockID(node);
+  if ((node->blockTag & BLOCK_SCOPELESS))
+    write("scopeless");
+  if ((node->blockTag & BLOCK_TYPE_ONLY))
+    write("type");
+
   ++mIndent;
 
   return true;
@@ -686,6 +692,7 @@ bool AstDump::enterDeferStmt(DeferStmt* node) {
   write("Defer");
   newline();
   write("{");
+  printBlockID(node);
   ++mIndent;
   return true;
 }
