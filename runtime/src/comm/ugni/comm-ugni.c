@@ -707,13 +707,13 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 #define CACHE_LINE_ALIGN __attribute__((aligned(64)))
 
 typedef struct {
-  atomic_bool        busy;
+  atomic_bool        busy CACHE_LINE_ALIGN;
   chpl_bool          firmly_bound;
   gni_nic_handle_t   nih;
   gni_ep_handle_t*   remote_eps;
   gni_cq_handle_t    cqh;
   cq_cnt_t           cq_cnt_max;
-  cq_cnt_atomic_t    cq_cnt_curr;
+  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
 #ifdef DEBUG_STATS
   uint64_t           acqs;
   uint64_t           acqs_looks;
