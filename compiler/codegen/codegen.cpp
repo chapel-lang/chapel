@@ -2111,6 +2111,9 @@ debug_data *debug_info=NULL;
 
 
 #ifdef HAVE_LLVM
+
+// handle e.g. chpl_clang_builtin_wrapper_cabs
+
 static bool hasWrapper(const char *name)
 {
   auto it = chplClangBuiltinWrappedFunctions.find(name);
