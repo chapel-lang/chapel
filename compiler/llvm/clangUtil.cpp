@@ -1504,6 +1504,7 @@ void prepareCodegenLLVM()
     FM.setUnsafeAlgebra();
 #else
     FM.setFast();
+    INT_ASSERT(FM.allowContract());
 #endif
   } else if (ffloatOpt == 0) {
     // default
@@ -1669,11 +1670,13 @@ void runClang(const char* just_parse_filename) {
     args.push_back(march);
   }
 
-  if (ffloatOpt > 0)
-    args.push_back(clang_fast_float);
+  // Passing -ffast-math is important to get approximate versions
+  // of cabs but it appears to slow down simple complex multiplication.
+  if (ffloatOpt > 0) // --no-ieee-float
+    args.push_back(clang_fast_float); // --ffast-math
 
-  if (ffloatOpt < 0)
-    args.push_back(clang_ieee_float);
+  if (ffloatOpt < 0) // --ieee-float
+    args.push_back(clang_ieee_float); // -fno-fast-math
 
   // Gather information from readargsfrom into clangArgs.
 

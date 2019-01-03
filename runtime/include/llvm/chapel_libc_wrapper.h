@@ -19,7 +19,7 @@
 
 #include "clang_builtins_wrapper.h"
 #include <complex.h>
-
+/*
 static inline double ADD_WRAPPER_PREFIX(cabs)(_Complex double c) {
 #if __FAST_MATH__
     double x = __builtin_creal(c);
@@ -49,4 +49,4 @@ static inline long double ADD_WRAPPER_PREFIX(cabsl)(_Complex long double c) {
 #else
     return cabsl(c);
 #endif
-}
+}*/
