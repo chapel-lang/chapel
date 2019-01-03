@@ -15,10 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifneq ($(LIBFABRIC_DIR),)
-RUNTIME_INCLS += -I$(LIBFABRIC_DIR)/include
-endif
+LAUNCH_SUBDIR = src/launch/mpirun4ofi
 
-ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
-RUNTIME_INCLS += -I$(MPI_INCLUDE)
-endif
+LAUNCH_OBJDIR = $(LAUNCHER_BUILD)/$(LAUNCH_SUBDIR)
+
+ALL_SRCS += $(CURDIR)/$(LAUNCH_SUBDIR)/*.c
+
+include $(RUNTIME_ROOT)/$(LAUNCH_SUBDIR)/Makefile.share

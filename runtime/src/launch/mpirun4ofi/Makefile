@@ -15,10 +15,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifneq ($(LIBFABRIC_DIR),)
-RUNTIME_INCLS += -I$(LIBFABRIC_DIR)/include
+RUNTIME_ROOT = ../../..
+RUNTIME_SUBDIR = src/launch/mpirun4ofi
+
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
 endif
 
-ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
-RUNTIME_INCLS += -I$(MPI_INCLUDE)
-endif
+#
+# standard header
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.head
+
+LAUNCH_OBJDIR = $(LAUNCHER_OBJDIR)
+include Makefile.share
+
+TARGETS = \
+	$(LAUNCHER_OBJS) \
+
+include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
+
+#
+# standard footer
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
