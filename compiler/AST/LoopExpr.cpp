@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -192,9 +192,7 @@ class LowerLoopExprVisitor : public AstVisitorTraverse
 // table.
 //
 bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
-  if (! node->inTree()) {
-    // nothing to do
-  } else if (node->getStmtExpr() == NULL) {
+  if (node->getStmtExpr() == NULL) {
     // Don't touch LoopExprs in DefExprs, they should be copied later into
     // BlockStmts.
     INT_ASSERT(isDefExpr(node->parentExpr));
@@ -224,6 +222,7 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
 }
 
 void lowerLoopExprs(BaseAST* ast) {
+  INT_ASSERT(ast->inTree()); // otherwise nothing to do
   LowerLoopExprVisitor vis;
   ast->accept(&vis);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1160,6 +1160,7 @@ bool doCanDispatch(Type*     actualType,
     if (retval == false) {
       if (fn                              != NULL        &&
           fn->name                        != astrSequals &&
+          strcmp(fn->name, "these")       != 0           &&
           actualType->scalarPromotionType != NULL        &&
           doCanDispatch(actualType->scalarPromotionType,
                         NULL,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -28,7 +28,7 @@ typedef struct {
   void* elts;
   uint64_t size;
 
-  chpl_free_func freer;
+  void* freer;
 } chpl_external_array;
 
 chpl_external_array chpl_make_external_array(uint64_t elt_size,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -2419,7 +2419,7 @@ buildFunctionDecl(FnSymbol*   fn,
   }
 
   if (optRetType)
-    fn->retExprType = new BlockStmt(optRetType, BLOCK_SCOPELESS);
+    fn->retExprType = new BlockStmt(optRetType, BLOCK_TYPE);
   else if (fn->hasFlag(FLAG_EXTERN))
     fn->retType     = dtVoid;
 
