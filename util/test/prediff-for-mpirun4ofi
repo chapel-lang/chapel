@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+#
+# This script is a system-wide prediff for use with the OpenMPI mpirun
+# launcher.  Depending on how OpenMPI is configured, when mpirun sees
+# a program it launched exit with a non-zero status, it may print either
+# messages like both of the following:
+#     -------------------------------------------------------
+#     Primary job  terminated normally, but 1 process returned
+#     a non-zero exit code.. Per user-direction, the job has been aborted.
+#     -------------------------------------------------------
+# and
+#     --------------------------------------------------------------------------
+#     mpirun detected that one or more processes exited with non-zero status, thus causing
+#     the job to be terminated. The first process to do so was:
+#
+#       Process name: [[38592,1],0]
+#       Exit code:    1
+#     --------------------------------------------------------------------------
+#
+# or a single message like this:
+#     -------------------------------------------------------
+#     While the primary job  terminated normally, 1 process returned
+#     a non-zero exit code.. Further examination may be required.
+#     -------------------------------------------------------
+#
+# This script removes such messages.
+#
+import sys, subprocess
+import re
+
+# These match the message blocks we want to remove.
+msg1aPat = re.compile(r"^(-{20,})\n"
+                      r"Primary job +terminated normally, "
+                      r"but [0-9]+ process[^ ]* returned\n"
+                      r"a non-zero exit code[.]+ "
+                      r"Per user-direction, the job has been aborted\.\n"
+                      r"\1\n",
+                      re.MULTILINE)
+msg1bPat = re.compile(r"^(-{20,})\n"
+                      r"mpirun detected that one or more processes exited "
+                      r"with non-zero status, thus causing\n"
+                      r"the job to be terminated\. "
+                      r"The first process to do so was:\n"
+                      r"\n"
+                      r" *Process name: +\[\[[0-9]+,[0-9]+],[0-9]+]\n"
+                      r" *Exit code: +[0-9]+\n"
+                      r"\1\n",
+                      re.MULTILINE)
+
+msg2Pat = re.compile(r"^(-{20,})\n"
+                     r"While the primary job +terminated normally, "
+                     r"[0-9]+ process[^ ]* returned\n"
+                     r"a non-zero exit code[.]+ "
+                     r"Further examination may be required\.\n"
+                     r"\1\n",
+                     re.MULTILINE)
+
+outfile = open(sys.argv[2], "r")
+outfileTmp = open(sys.argv[2]+".tmp" , "w")
+msg = outfile.read()
+msg = msg1aPat.sub("", msg)
+msg = msg1bPat.sub("", msg)
+msg = msg2Pat.sub("", msg)
+outfileTmp.write(msg)
+outfileTmp.close()
+outfile.close()
+
+subprocess.call("mv "+sys.argv[2]+".tmp"+" "+sys.argv[2], shell=True )
