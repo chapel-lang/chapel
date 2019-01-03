@@ -1807,12 +1807,15 @@ void chpl_comm_get(void* addr, int32_t node, void* raddr,
                    size_t size, int32_t typeIndex, int32_t commID,
                    int ln, int32_t fn) {
   //
-  // addr and raddr are sanity checks; node==chpl_nodeID is supposed
-  // to be handled by our caller.
+  // Sanity checks, self-communication.
   //
   CHK_TRUE(addr != NULL);
   CHK_TRUE(raddr != NULL);
-  CHK_TRUE(node != chpl_nodeID);
+
+  if (node == chpl_nodeID) {
+    memmove(addr, raddr, size);
+    return;
+  }
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
