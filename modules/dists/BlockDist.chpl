@@ -650,7 +650,7 @@ proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
     const hi = boundingBox.dim(i).high;
     const numelems = hi - lo + 1;
     const numlocs = targetLocBox.dim(i).length;
-    const (blo, bhi) = _computeBlock(numelems, numlocs, locid(i),
+    const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
                                      max(idxType), min(idxType), lo);
     inds(i) = blo..bhi;
   }
