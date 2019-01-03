@@ -1560,7 +1560,7 @@ GenRet codegenNotEquals(GenRet a, GenRet b)
      INT_ASSERT(bv.val);
    }
    if( av.val->getType()->isFPOrFPVectorTy() ) {
-     ret.val = info->irBuilder->CreateFCmpONE(av.val, bv.val);
+     ret.val = info->irBuilder->CreateFCmpUNE(av.val, bv.val);
    } else {
      ret.val = info->irBuilder->CreateICmpNE(av.val, bv.val);
    }
