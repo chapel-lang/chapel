@@ -1155,7 +1155,7 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("remote task created on %d", (int) node);
+  chpl_comm_diags_verbose_executeOn("", node);
   chpl_comm_diags_incr(execute_on);
 
   amRequestExecOn(node, subloc, fid, arg, argSize, false, true);
@@ -1181,8 +1181,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("remote non-blocking task created on %d",
-                                 (int) node);
+  chpl_comm_diags_verbose_executeOn("non-blocking", node);
   chpl_comm_diags_incr(execute_on_nb);
 
   amRequestExecOn(node, subloc, fid, arg, argSize, false, false);
@@ -1201,8 +1200,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("remote (no-fork) task created on %d",
-                                 (int) node);
+  chpl_comm_diags_verbose_executeOn("fast", node);
   chpl_comm_diags_incr(execute_on_fast);
 
   amRequestExecOn(node, subloc, fid, arg, argSize, true, true);
@@ -1730,9 +1728,6 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
 
 
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h) {
-  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
-    chpl_comm_diags_verbose_printf("test nb complete (%p)", h);
-  }
   chpl_comm_diags_incr(test_nb);
 
   // fi_cq_readfrom?
@@ -1741,12 +1736,6 @@ int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h) {
 
 
 void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
-  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
-    if (nhandles == 1)
-      chpl_comm_diags_verbose_printf("wait nb complete (%p)", h);
-    else
-      chpl_comm_diags_verbose_printf("wait nb (%zd handles)", nhandles);
-  }
   chpl_comm_diags_incr(wait_nb);
 
   size_t i;
@@ -1758,13 +1747,6 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
 
 
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
-
-  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
-    if (nhandles == 1)
-      chpl_comm_diags_verbose_printf("try nb (%p)", h);
-    else
-      chpl_comm_diags_verbose_printf("try nb (%zd handles)", nhandles);
-  }
   chpl_comm_diags_incr(try_nb);
 
   size_t i;
@@ -1795,8 +1777,7 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote put to %d",
-                                 chpl_lookupFilename(fn), ln, (int) node);
+  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn);
   chpl_comm_diags_incr(put);
 
   (void) ofi_put(addr, node, raddr, size);
@@ -1825,8 +1806,7 @@ void chpl_comm_get(void* addr, int32_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
-                                 chpl_lookupFilename(fn), ln, (int) node);
+  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn);
   chpl_comm_diags_incr(get);
 
   (void) ofi_get(addr, node, raddr, size);
@@ -2765,19 +2745,15 @@ void doCpuAMO(void* obj,
                  DBG_VAL(&myOpnd1, ofiType),
                  DBG_VAL(&myObj, ofiType));
     else {
-      chpl_amo_datum_t myRes2 = { 0 };
-      if (ofiType == FI_INT32 || ofiType == FI_UINT32 || ofiType == FI_FLOAT
-          || ofiOp == FI_CSWAP)
-        myRes2.u32 = myResult->u32;
-      else
-        myRes2.u64 = myResult->u64;
       DBG_PRINTF(DBG_AMO,
                  "doCpuAMO(%p, %d, %d, %s, %s): now %s, %p = was %s",
                  obj, ofiOp, ofiType,
                  DBG_VAL(&myOpnd1, ofiType),
                  DBG_VAL(&myOpnd2, ofiType),
                  DBG_VAL(&myObj, ofiType), result,
-                 DBG_VAL(&myRes2, ofiType));
+                 ((ofiOp == FI_CSWAP)
+                  ? DBG_VAL(&myResult, FI_INT32)
+                  : DBG_VAL(&myResult, ofiType)));
     }
   }
 
@@ -2868,7 +2844,9 @@ void init_bar(void) {
 
 
 void chpl_comm_barrier(const char *msg) {
+#ifdef CHPL_COMM_DEBUG
   chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
+#endif
 
   if (chpl_numNodes == 1) {
     return;
@@ -3038,7 +3016,7 @@ double chpl_comm_ofi_time_get(void) {
 }
 
 
-#ifdef DEBUG
+#ifdef CHPL_COMM_DEBUG
 
 ////////////////////////////////////////
 //

@@ -1128,8 +1128,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_printf("%s:%d: remote put to %d, %zu bytes",
-                                   chpl_lookupFilename(fn), ln, node, size);
+    chpl_comm_diags_verbose_rdma("put", node, size, ln, fn);
     chpl_comm_diags_incr(put);
 
     // Handle remote address not in remote segment.
@@ -1205,8 +1204,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_printf("%s:%d: remote get from %d, %zu bytes",
-                                   chpl_lookupFilename(fn), ln, node, size);
+    chpl_comm_diags_verbose_rdma("get", node, size, ln, fn);
     chpl_comm_diags_incr(get);
 
     // Handle remote address not in remote segment.
@@ -1348,8 +1346,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
   }
   
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
-  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
-                                 chpl_lookupFilename(fn), ln, srcnode);
+  chpl_comm_diags_verbose_rdmaStrd("get", srcnode, ln, fn);
   chpl_comm_diags_incr(get);
 
   // TODO -- handle strided get for non-registered memory
@@ -1392,8 +1389,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
   }
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
-  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d",
-                                 chpl_lookupFilename(fn), ln, dstnode);
+  chpl_comm_diags_verbose_rdmaStrd("put", dstnode, ln, fn);
   chpl_comm_diags_incr(put);
 
   // TODO -- handle strided put for non-registered memory
@@ -1530,7 +1526,7 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_printf("remote task created on %d", node);
+    chpl_comm_diags_verbose_executeOn("", node);
     chpl_comm_diags_incr(execute_on);
 
     execute_on_common(node, subloc, fid, arg, arg_size,
@@ -1553,8 +1549,7 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_printf("remote non-blocking task created on %d",
-                                   node);
+    chpl_comm_diags_verbose_executeOn("non-blocking", node);
     chpl_comm_diags_incr(execute_on_nb);
   
     execute_on_common(node, subloc, fid, arg, arg_size,
@@ -1578,8 +1573,7 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_printf("remote (no-fork) task created on %d",
-                                   node);
+    chpl_comm_diags_verbose_executeOn("fast", node);
     chpl_comm_diags_incr(execute_on_fast);
 
     execute_on_common(node, subloc, fid, arg, arg_size,
