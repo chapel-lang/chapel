@@ -466,8 +466,6 @@ proc Block.init(boundingBox: domain,
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
-  const boundingBoxDims = this.boundingBox.dims();
-  const targetLocDomDims = targetLocDom.dims();
   coforall locid in targetLocDom do
     on this.targetLocales(locid) do
       locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
@@ -498,8 +496,6 @@ proc Block.dsiAssign(other: this.type) {
   dataParTasksPerLocale = other.dataParTasksPerLocale;
   dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
   dataParMinGranularity = other.dataParMinGranularity;
-  const boundingBoxDims = boundingBox.dims();
-  const targetLocDomDims = targetLocDom.dims();
 
   coforall locid in targetLocDom do
     on targetLocales(locid) do
@@ -661,10 +657,10 @@ proc LocBlock.init(param rank: int,
                    type idxType,
                    locid, // the locale index from the target domain
                    boundingBox,
-                   targetLocBox) {
+                   targetLocDom: domain(rank)) {
   this.rank = rank;
   this.idxType = idxType;
-  const inds = chpl__computeBlock(chpl__tuplify(locid), targetLocBox, boundingBox);
+  const inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, boundingBox);
   myChunk = {(...inds)};
 }
 
