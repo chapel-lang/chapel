@@ -703,14 +703,17 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 #define CQ_CNT_DEC(cd)        \
         (void) atomic_fetch_sub_uint_least32_t(&(cd)->cq_cnt_curr, 1)
 
+// not generally true, but should be for XE/XC
+#define CACHE_LINE_ALIGN __attribute__((aligned(64)))
+
 typedef struct {
-  atomic_bool        busy;
+  atomic_bool        busy CACHE_LINE_ALIGN;
   chpl_bool          firmly_bound;
   gni_nic_handle_t   nih;
   gni_ep_handle_t*   remote_eps;
   gni_cq_handle_t    cqh;
   cq_cnt_t           cq_cnt_max;
-  cq_cnt_atomic_t    cq_cnt_curr;
+  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
 #ifdef DEBUG_STATS
   uint64_t           acqs;
   uint64_t           acqs_looks;
@@ -718,10 +721,7 @@ typedef struct {
   uint64_t           acqs_with_rb_looks;
   uint64_t           reacqs;
 #endif
-  uint64_t           cache_spacer[8];    // prevent comm_doms[] inter-element
-                                         //   cache line sharing; ra-atomics
-                                         //     perf suffers without this
-} comm_dom_t;
+} CACHE_LINE_ALIGN comm_dom_t;
 
 
 //
@@ -2041,8 +2041,9 @@ void chpl_comm_post_task_init(void)
   // handles, endpoints, and completion queues.
   //
   comm_doms =
-    (comm_dom_t*) chpl_mem_allocMany(comm_dom_cnt, sizeof(comm_doms[0]),
-                                     CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+    (comm_dom_t*) chpl_mem_memalign(sizeof(comm_dom_t),
+                                    comm_dom_cnt * sizeof(comm_dom_t),
+                                    CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
 
   for (int i = 0; i < comm_dom_cnt; i++)
     gni_setup_per_comm_dom(i);
