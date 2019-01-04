@@ -288,7 +288,8 @@ static const char* convertTypedef(ModuleSymbol*           module,
                                                        typedef_name),
                                      NULL);
 
-    results.add(convertTypesToExtern(buildChapelStmt(type_expr)));
+    BlockStmt* typeBlock = new BlockStmt(type_expr, BLOCK_TYPE);
+    results.add(convertTypesToExtern(typeBlock));
   }
 
   setAlreadyConvertedExtern(module, typedef_name);
