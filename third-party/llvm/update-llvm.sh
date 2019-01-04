@@ -27,9 +27,9 @@ then
 
 echo Updating LLVM
 cd llvm
-git stash save
+#git stash save
 git pull
-git stash pop
+#git stash pop
 # --rebase
 echo Updating CLANG
 cd tools/clang
@@ -71,9 +71,11 @@ fi
 echo Checking out compiler-rt $BRANCH
 git clone $CLONEARGS https://git.llvm.org/git/compiler-rt.git llvm/projects/compiler-rt
 
-echo Applying Chapel patches to LLVM
-patch -p0 < llvm-6.0.0-BasicAliasAnalysis-patch.txt
-patch -p0 < llvm-6.0.0-ValueTracking-patch.txt
+# Apply any Chapel patches to LLVM here.
+# As of LLVM 8.0, there aren't any.
+#echo Applying Chapel patches to LLVM
+#patch -p0 < llvm-6.0.0-BasicAliasAnalysis-patch.txt
+#patch -p0 < llvm-6.0.0-ValueTracking-patch.txt
 
 
 fi
