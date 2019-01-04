@@ -516,8 +516,8 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   // Put the first store in since we want to preserve the order.
   Ranges.addInst(0, StartInst);
 
-  BasicBlock::iterator BI = StartInst->getIterator();
-  for (++BI; BI->isTerminator(); ++BI) {
+  BasicBlock::iterator BI(StartInst);
+  for (++BI; !BI->isTerminator(); ++BI) {
 
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
