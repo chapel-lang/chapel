@@ -78,7 +78,7 @@ namespace {
 static const bool DEBUG = false;
 static const bool extraChecks = true;
 // Set a function name here to get lots of debugging output.
-static const char* debugThisFn = "";//"deinit6";
+static const char* debugThisFn = "";
 
 
 // If there is a gap between memory that we are loading,
@@ -130,13 +130,20 @@ Value* getLoadStorePointer(Instruction* I)
 // the other instructions do not read or write memory.
 // Returns the last instruction in the reordering.
 static
-Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
-                                         Instruction *LastLoadOrStore,
-                                         bool DebugThis)
+Instruction* reorderAddressingMemopsUses(
+   Instruction *FirstLoadOrStore,
+   Instruction *LastLoadOrStore,
+   const SmallSet<Instruction*, 8>& collectedLoadsStores,
+   bool DebugThis)
 {
+  assert(collectedLoadsStores.count(FirstLoadOrStore));
+  assert(collectedLoadsStores.count(LastLoadOrStore));
+
+  // memopsUses stores uses of collectedLoadsStores
   SmallPtrSet<Instruction*, 8> memopsUses;
   Instruction *LastMemopUse = NULL;
 
+  // Additionally gather any instructions using the result of a load
   for (BasicBlock::iterator BI = FirstLoadOrStore->getIterator();
        !BI->isTerminator();
        ++BI)
@@ -145,15 +152,12 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
     Instruction* insn = &insnRef;
     bool isUseOfMemop = false;
 
-    if( isa<StoreInst>(insn) || isa<LoadInst>(insn) ) {
-      memopsUses.insert(insn);
-      continue;
-    }
     // Check -- are any operands to this instruction memopsUses?
     for (User::op_iterator i = insn->op_begin(), e = insn->op_end(); i != e; ++i) {
       Value *v = *i;
-      if(Instruction *uses_insn = dyn_cast<Instruction>(v)) {
-        if( memopsUses.count(uses_insn) ){
+      if (Instruction *used_insn = dyn_cast<Instruction>(v)) {
+        if (collectedLoadsStores.count(used_insn) ||
+            memopsUses.count(used_insn)){
           isUseOfMemop = true;
           break;
         }
@@ -176,16 +180,16 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
     ++BI; // don't invalidate iterator.
-    // Leave loads/stores where they are (they will be removed)
-    if( isa<StoreInst>(insn) || isa<LoadInst>(insn) ) {
+    if( collectedLoadsStores.count(insn) ) {
       if( DebugThis ) {
-        dbgs() << "found load/store: ";
+        dbgs() << "reorder found load/store: ";
         insn->print(dbgs(), true);
         dbgs() << '\n';
       }
+      // Leave loads/stores where they are (they will be removed)
     } else if( memopsUses.count(insn) ) {
       if( DebugThis ) {
-        dbgs() << "found memop use: ";
+        dbgs() << "reorder found memop use: ";
         insn->print(dbgs(), true);
         dbgs() << '\n';
       }
@@ -195,7 +199,7 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
       LastMemopUse = insn;
     } else {
       if( DebugThis ) {
-        dbgs() << "found other: ";
+        dbgs() << "reorder found other: ";
         insn->print(dbgs(), true);
         dbgs() << '\n';
       }
@@ -505,7 +509,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   Instruction *lastAddedInsn = NULL;
   Instruction *LastLoadOrStore = NULL;
 
-  SmallVector<Instruction*, 8> toRemove;
+  SmallSet<Instruction*, 8> collectedLoadsStores;
 
   // Okay, so we now have a single global load/store. Scan to find
   // all subsequent stores of the same value to offset from the same pointer.
@@ -515,6 +519,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
   // Put the first store in since we want to preserve the order.
   Ranges.addInst(0, StartInst);
+  collectedLoadsStores.insert(StartInst);
 
   BasicBlock::iterator BI(StartInst);
   for (++BI; !BI->isTerminator(); ++BI) {
@@ -545,6 +550,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         break;
 
       Ranges.addStore(Offset, NextStore);
+      collectedLoadsStores.insert(NextStore);
       LastLoadOrStore = NextStore;
     } else {
       LoadInst *NextLoad = cast<LoadInst>(BI);
@@ -556,6 +562,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         break;
 
       Ranges.addLoad(Offset, NextLoad);
+      collectedLoadsStores.insert(NextLoad);
       LastLoadOrStore = NextLoad;
     }
   }
@@ -565,9 +572,57 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   if (!Ranges.moreThanOneOp())
     return 0;
 
+  // Print out debugging information before reordering
+  if (DebugThis) {
+    for (MemOpRanges::const_iterator I = Ranges.begin(), E = Ranges.end();
+         I != E; ++I) {
+      const MemOpRange &Range = *I;
+
+      if (Range.TheStores.size() == 1) continue;
+
+      StartPtr = Range.StartPtr;
+
+      if( DebugThis ) {
+        dbgs() << "base is:";
+        StartPtr->print(dbgs(), true);
+        dbgs() << '\n';
+      }
+
+      if( isStore ) {
+        for (SmallVector<Instruction*, 16>::const_iterator
+             SI = Range.TheStores.begin(),
+             SE = Range.TheStores.end(); SI != SE; ++SI) {
+          StoreInst* oldStore = cast<StoreInst>(*SI);
+
+          if( DebugThis ) {
+            dbgs() << "have store in range:";
+            oldStore->print(dbgs(), true);
+            dbgs() << '\n';
+          }
+        }
+      }
+
+      if( isLoad ) {
+        for (SmallVector<Instruction*, 16>::const_iterator
+             SI = Range.TheStores.begin(),
+             SE = Range.TheStores.end(); SI != SE; ++SI) {
+          LoadInst* oldLoad = cast<LoadInst>(*SI);
+          if( DebugThis ) {
+            dbgs() << "have load in range:";
+            oldLoad->print(dbgs(), true);
+            dbgs() << '\n';
+          }
+        }
+      }
+    }
+  }
+
+
   // Divide the instructions between StartInst and LastLoadOrStore into
   // addressing, memops, and uses of memops (uses of loads)
-  reorderAddressingMemopsUses(StartInst, LastLoadOrStore, DebugThis);
+  // Reorder these instructions to support the below transformation.
+  reorderAddressingMemopsUses(StartInst, LastLoadOrStore, collectedLoadsStores,
+                              DebugThis);
 
   Instruction* insertBefore = StartInst;
   IRBuilder<> irBuilder(insertBefore);
@@ -587,7 +642,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     StartPtr = Range.StartPtr;
 
     if( DebugThis ) {
-      dbgs() << "base is:";
+      dbgs() << "working on base:";
       StartPtr->print(dbgs(), true);
       dbgs() << '\n';
     }
@@ -615,12 +670,6 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
            SI = Range.TheStores.begin(),
            SE = Range.TheStores.end(); SI != SE; ++SI) {
         StoreInst* oldStore = cast<StoreInst>(*SI);
-
-        if( DebugThis ) {
-          dbgs() << "have store in range:";
-          oldStore->print(dbgs(), true);
-          dbgs() << '\n';
-        }
 
         int64_t offset = 0;
         bool ok = IsPointerOffset(StartPtr, oldStore->getPointerOperand(),
@@ -717,12 +766,6 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
            SI = Range.TheStores.begin(),
            SE = Range.TheStores.end(); SI != SE; ++SI) {
         LoadInst* oldLoad = cast<LoadInst>(*SI);
-        if( DebugThis ) {
-          dbgs() << "have load in range:";
-          oldLoad->print(dbgs(), true);
-          dbgs() << '\n';
-        }
-
         int64_t offset = 0;
         bool ok = IsPointerOffset(StartPtr, oldLoad->getPointerOperand(),
                                   offset, *DL);
@@ -745,20 +788,12 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         lastAddedInsn = newLoad;
       }
     }
-
-    // Save old loads/stores for removal
-    for (SmallVector<Instruction*, 16>::const_iterator
-         SI = Range.TheStores.begin(),
-         SE = Range.TheStores.end(); SI != SE; ++SI) {
-      Instruction* insn = *SI;
-      toRemove.push_back(insn);
-    }
   }
 
   // Zap all the old loads/stores
-  for (SmallVector<Instruction*, 16>::const_iterator
-       SI = toRemove.begin(),
-       SE = toRemove.end(); SI != SE; ++SI) {
+  for (SmallSet<Instruction*, 8>::const_iterator
+       SI = collectedLoadsStores.begin(),
+       SE = collectedLoadsStores.end(); SI != SE; ++SI) {
     (*SI)->eraseFromParent();
   }
 
@@ -772,24 +807,6 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   bool ChangedFn = false;
   bool DebugThis = DEBUG;
 
-/*  std::string fname = F.getName();
-  std::hash<std::string> hasher;
-  int h = (int) hasher(fname);
-  int mask = AGOMASK;
-  int id = AGOID;
-  if( (h & mask) != id) return false;
-
-  if( fname.size() != 7 ) return false;
-
-  if( F.getName().startswith("on_fn") ) return false;
-
-  if (fname == "string2" || fname == "message") return false;
-
-  if (fname == "deinit9") return false; // OK
-  if (fname == "deinit5") return false; // OK
-  //if (fname == "deinit6") return false;
-  //if( F.getName().startswith("deinit") ) return false;
-*/
   if( debugThisFn[0] && F.getName() == debugThisFn ) {
     DebugThis = true;
   }
