@@ -91,7 +91,35 @@ static Expr* convertPointerToChplType(ModuleSymbol* module, const clang::QualTyp
 }
 
 static Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module, const clang::ConstantArrayType* arrayType, Vec<Expr*> & results, const char* typedefName=NULL) {
-  USR_FATAL("TODO");
+
+  llvm::APInt size = arrayType->getSize();
+  clang::QualType eltType = arrayType->getElementType();
+
+  Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr(), results);
+
+  if (size.getMinSignedBits() > 64)
+    USR_FATAL("C array is too large");
+
+  int64_t isize = size.getSExtValue();
+  Symbol* isym = new_IntSymbol(isize, INT_SIZE_64);
+  // this would make a tuple
+  //return new CallExpr("*", new SymExpr(isym), eltTypeChapel);
+
+  // this would make a fixed size array
+  //return new CallExpr("c_array_ptr", eltTypeChapel, new SymExpr(isym));
+
+  // For now, just represent it as a c_ptr
+  return new CallExpr("c_ptr", eltTypeChapel);
+}
+
+static Expr* convertArrayToChplType(ModuleSymbol* module, const clang::ArrayType* arrayType, Vec<Expr*> & results, const char* typedefName=NULL) {
+
+  clang::QualType eltType = arrayType->getElementType();
+
+  Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr(), results);
+
+  // For now, just represent it as a c_ptr
+  return new CallExpr("c_ptr", eltTypeChapel);
 }
 
 static Expr* convertStructToChplType(ModuleSymbol* module, const clang::RecordType* structType, Vec<Expr*> & results, const char* typedefName=NULL) {
@@ -162,6 +190,7 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
   } else if (type->isPointerType()) {
 
     clang::QualType pointeeType = type->getPointeeType();
+
     return convertPointerToChplType(module, pointeeType, results, typedefName);
 
   //arrays
@@ -172,6 +201,10 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
         llvm::dyn_cast<clang::ConstantArrayType>(type);
 
       return convertFixedSizeArrayToChplType(module, cat, results, typedefName);
+    } else {
+      const clang::ArrayType* at = llvm::dyn_cast<clang::ArrayType>(type);
+
+      return convertArrayToChplType(module, at, results, typedefName);
     }
 
     USR_FATAL("variable sized C array types not yet supported");
