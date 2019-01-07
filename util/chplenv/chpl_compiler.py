@@ -19,8 +19,10 @@ def get(flag='host', llvm_mode='default'):
 
         if llvm_mode == 'llvm':
             compiler_val = 'clang-included'
-        elif llvm_mode == 'default' and "CHPL_LLVM_CODEGEN" in os.environ:
-            compiler_val = 'clang-included'
+        elif llvm_mode == 'default':
+            if ("CHPL_LLVM_CODEGEN" in os.environ and
+                os.environ["CHPL_LLVM_CODEGEN"] != "0"):
+                compiler_val = 'clang-included'
 
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)

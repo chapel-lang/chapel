@@ -122,7 +122,8 @@ def compute_all_values():
     # otherwise.
     # This happens early because it modifies the environment and other
     # defaults might depend on this setting.
-    llvm_codegen = "CHPL_LLVM_CODEGEN" in os.environ
+    llvm_codegen = ("CHPL_LLVM_CODEGEN" in os.environ and
+                    os.environ["CHPL_LLVM_CODEGEN"] != "0")
     if llvm_codegen:
         new_target_compiler = chpl_compiler.get('target')
         if new_target_compiler != 'clang-included':
