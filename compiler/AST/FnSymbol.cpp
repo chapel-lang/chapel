@@ -1092,7 +1092,6 @@ const char* toString(FnSymbol* fn) {
     }
 
   } else {
-    int  start      =     1;
     bool first      =  true;
     bool skipParens = false;
 
@@ -1110,21 +1109,9 @@ const char* toString(FnSymbol* fn) {
         INT_ASSERT(strncmp("_type_construct_", fn->name, 16) == 0);
         retval = astr(fn->name + 16);
 
-      } else if (fn->isPrimaryMethod() == true) {
-        Flag flag = FLAG_FIRST_CLASS_FUNCTION_INVOCATION;
-
-        if (fn->name == astrThis) {
-          INT_ASSERT(fn->hasFlag(flag) == true);
-
-          retval = astr(toString(fn->getFormal(2)->type));
-          start  = 2;
-
-        } else {
-          INT_ASSERT(fn->hasFlag(flag) == false);
-
-          retval = astr(toString(fn->getFormal(2)->type), ".", fn->name);
-          start  = 3;
-        }
+      } else if (fn->isMethod()) {
+        INT_ASSERT(fn->_this);
+        retval = astr(toString(fn->_this->type), ".", fn->name);
 
       } else if (fn->hasFlag(FLAG_MODULE_INIT) == true) {
         INT_ASSERT(strncmp("chpl__init_", fn->name, 11) == 0);
@@ -1152,8 +1139,18 @@ const char* toString(FnSymbol* fn) {
       retval     = astr(retval, "(");
     }
 
-    for (int i = start; i <= fn->numFormals(); i++) {
+    for (int i = 1; i <= fn->numFormals(); i++) {
       ArgSymbol* arg = fn->getFormal(i);
+
+      // skip method token etc
+      if (arg->type == dtMethodToken ||
+          arg->type == dtTypeDefaultToken ||
+          arg->type == dtModuleToken)
+        continue;
+
+      // skip this formal methods in non-developer mode
+      if (developer == false && fn->isMethod() && arg == fn->_this)
+        continue;
 
       if (first == true) {
         first = false;
