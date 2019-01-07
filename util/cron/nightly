@@ -741,12 +741,6 @@ if ($runtests == 0) {
     if ($buildcheck == 1) {
         $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 make check";
         mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
-
-        if ($llvm == 1) {
-          # Also try make check with --llvm
-          $buildcheckcommand2 = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 CHPL_LLVM_CODEGEN=1 make check";
-          mysystem($buildcheckcommand2, "running --llvm `make check`", 1, 1, 1);
-        }
     }
 
     if ($parnodefile eq "") {
