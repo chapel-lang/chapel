@@ -17,8 +17,7 @@
 #
 # This script removes such messages.
 #
-import sys, subprocess
-import re
+import sys, os, re
 
 # These match the message blocks we want to remove.
 msg1Pat = re.compile(r"^(-{20,})\n"
@@ -36,13 +35,13 @@ msg2Pat = re.compile(r"^(-{20,})\n"
                      r"\1\n",
                      re.MULTILINE)
 
-outfile = open(sys.argv[2], "r")
-outfileTmp = open(sys.argv[2]+".tmp" , "w")
-msg = outfile.read()
-msg = msg1Pat.sub("", msg)
-msg = msg2Pat.sub("", msg)
-outfileTmp.write(msg)
-outfileTmp.close()
-outfile.close()
+outfname = sys.argv[2]
+outfnameTmp = outfname + '.' + str(os.getpid()) + '.tmp'
 
-subprocess.call("mv "+sys.argv[2]+".tmp"+" "+sys.argv[2], shell=True )
+with open(outfname, "r") as outfile, open(outfnameTmp, "w") as outfileTmp:
+    msg = outfile.read()
+    msg = msg1Pat.sub("", msg)
+    msg = msg2Pat.sub("", msg)
+    outfileTmp.write(msg)
+
+os.rename(outfnameTmp, outfname)
