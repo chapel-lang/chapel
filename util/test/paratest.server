@@ -774,7 +774,7 @@ sub main {
     }
 
     # Package up the environment
-    my $tmpchplenv = `$ENV{CHPL_HOME}/util/printchplenv --simple --all`;
+    my $tmpchplenv = `$ENV{CHPL_HOME}/util/printchplenv --simple --all --overrides`;
     my $chplenv = "";
     my @lines = split(/\n/, $tmpchplenv);
     for my $line (@lines) {
