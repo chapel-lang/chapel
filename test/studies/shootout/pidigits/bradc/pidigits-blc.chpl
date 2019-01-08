@@ -9,17 +9,14 @@ use BigInteger;
 
 config const n = 50;      // Compute n digits of pi, 50 by default
 
-var i, k, ns = 0,
-    k1 = 1,
+var i, ns = 0,
     num, den = 1: bigint,
     a, t, u: bigint;
 
-while true {
-  k += 1;
+for (k, k1) in zip(1..,3.. by 2) {
   t = num * 2;
   num *= k;
   a += t;
-  k1 += 2;
   a *= k1;
   den *= k1;
 
