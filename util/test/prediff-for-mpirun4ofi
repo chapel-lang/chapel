@@ -17,7 +17,7 @@
 #
 # This script removes such messages.
 #
-import sys, os, re
+import sys, re
 
 # These match the message blocks we want to remove.
 msgs = (
