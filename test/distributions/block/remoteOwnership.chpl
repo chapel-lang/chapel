@@ -43,31 +43,36 @@ proc testit(X) {
       resetCommDiagnosticsHere();
       writeln("From locale ", loc.id);
       for loc in Locales {
-        write("  locale ", loc.id, " owns:");
-        
-        
-        if (X.hasSingleLocalSubdomain(loc)) {
+        write("  locale ", loc.id, " owns: ");
+
+        /* test localSubdomain() interface if it is expected to work */
+        if (X.hasSingleLocalSubdomain()) {
           startCommDiagnosticsHere();
           const subD = X.localSubdomain(loc);
           stopCommDiagnosticsHere();
           writeln(subD);
-        } else {
-          var first = true;
-          startCommDiagnosticsHere();
-          for sd in X.localSubdomains(loc) {
-            stopCommDiagnosticsHere();
-            if first {
-              first = false;
-            } else {
-              writeln(", ");
-            }
-            writeln(sd);
-            startCommDiagnosticsHere();
-          }
-          stopCommDiagnosticsHere();
         }
+
+        write("  locale ", loc.id, " owns: ");
+
+        /* test localSubdomains() iterator in any case */
+        var first = true;
+        startCommDiagnosticsHere();
+        for sd in X.localSubdomains(loc) {
+          stopCommDiagnosticsHere();
+          if first {
+            first = false;
+          } else {
+            writeln(", ");
+          }
+          writeln(sd);
+          startCommDiagnosticsHere();
+        }
+        stopCommDiagnosticsHere();
       }
+
       writeln(getCommDiagnosticsHere());
+      writeln();
     }
 }
 

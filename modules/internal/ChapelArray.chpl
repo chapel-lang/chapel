@@ -1914,37 +1914,45 @@ module ChapelArray {
       return _value.dsiHasSingleLocalSubdomain();
     }
 
-    proc hasSingleLocalSubdomain(loc: locale) param {
-      return _value.dsiHasSingleLocalSubdomain(loc);
-    }
+    /*
+       Return the subdomain that is local to `loc` (defaults to the
+       current locale.
+    */
+    proc localSubdomain(loc: locale = here) {
+      use Reflection;
 
-    /* Return the subdomain that is local to the current locale */
-    proc localSubdomain() {
       if !_value.dsiHasSingleLocalSubdomain() then
         compilerError("Domain's local domain is not a single domain");
-      return _value.dsiLocalSubdomain();
+
+      if canResolveMethod(_value, "dsiLocalSubdomain", loc) {
+        return _value.dsiLocalSubdomain(loc);
+      } else {
+        if (loc != here) then
+          halt("This distribution doesn't support remote sublocale queries yet");
+        return _value.dsiLocalSubdomain();
+      }
     }
 
-    proc localSubdomain(loc: locale) {
-      if !_value.dsiHasSingleLocalSubdomain(loc) then
-        compilerError("Domain's local domain is not a single domain");
-      return _value.dsiLocalSubdomain(loc);
+    /*
+       Yield the subdomains that are local to `loc` (defaults to the
+       current locale.
+    */
+    iter localSubdomains(loc: locale = here) {
+      use Reflection;
+
+      if _value.dsiHasSingleLocalSubdomain() {
+        yield localSubdomain(loc);
+      } else {
+        if canResolveMethod(_value, "dsiLocalSubdomain", loc) {
+          for d in _value.dsiLocalSubdomains(loc) do yield d;
+        } else {
+          if (loc != here) then
+            halt("This distribution doesn't support remote sublocale queries yet");
+          for d in _value.dsiLocalSubdomains() do yield d;
+        }
+      }
     }
 
-    /* Yield the subdomains that are local to the current locale */
-    iter localSubdomains() {
-      if _value.dsiHasSingleLocalSubdomain() then
-        yield _value.dsiLocalSubdomain();
-      else
-        for d in _value.dsiLocalSubdomains() do yield d;
-    }
-
-    iter localSubdomains(loc: locale) {
-      if _value.dsiHasSingleLocalSubdomain(loc) then
-        yield _value.dsiLocalSubdomain(loc);
-      else
-        for d in _value.dsiLocalSubdomains(loc) do yield d;
-    }
 }  // record _domain
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
@@ -2745,36 +2753,43 @@ module ChapelArray {
       return _value.dsiHasSingleLocalSubdomain();
     }
 
-    proc hasSingleLocalSubdomain(loc: locale) param {
-      return _value.dsiHasSingleLocalSubdomain(loc);
-    }
-    
-    /* Return the subdomain that is local to the current locale */
-    proc localSubdomain() {
+    /*
+       Return the subdomain that is local to `loc` (dfeaults to the
+       current locale)
+    */
+    proc localSubdomain(loc: locale = here) {
+      use Reflection;
+
       if !_value.dsiHasSingleLocalSubdomain() then
-        compilerError("Array's local domain is not a single domain");
-      return _value.dsiLocalSubdomain();
+        compilerError("Domain's local domain is not a single domain");
+
+      if canResolveMethod(_value, "dsiLocalSubdomain", loc) {
+        return _value.dsiLocalSubdomain(loc);
+      } else {
+        if (loc != here) then
+          halt("This distribution doesn't support remote sublocale queries yet");
+        return _value.dsiLocalSubdomain();
+      }
     }
 
-    proc localSubdomain(loc: locale) {
-      if !_value.dsiHasSingleLocalSubdomain(loc) then
-        compilerError("Array's local domain is not a single domain");
-      return _value.dsiLocalSubdomain(loc);
-    }
+    /*
+       Yield the subdomains that are local to `loc` (defaults to the
+       current locale.
+    */
+    iter localSubdomains(loc: locale = here) {
+      use Reflection;
 
-    /* Yield the subdomains that are local to the current locale */
-    iter localSubdomains() {
-      if _value.dsiHasSingleLocalSubdomain() then
-        yield _value.dsiLocalSubdomain();
-      else
-        for d in _value.dsiLocalSubdomains() do yield d;
-    }
-
-    iter localSubdomains(loc: locale) {
-      if _value.dsiHasSingleLocalSubdomain(loc) then
-        yield _value.dsiLocalSubdomain(loc);
-      else
-        for d in _value.dsiLocalSubdomains(loc) do yield d;
+      if _value.dsiHasSingleLocalSubdomain() {
+        yield localSubdomain(loc);
+      } else {
+        if canResolveMethod(_value, "dsiLocalSubdomain", loc) {
+          for d in _value.dsiLocalSubdomains(loc) do yield d;
+        } else {
+          if (loc != here) then
+            halt("This distribution doesn't support remote sublocale queries yet");
+          for d in _value.dsiLocalSubdomains() do yield d;
+        }
+      }
     }
 
     proc chpl__isDense1DArray() param {

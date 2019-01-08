@@ -707,8 +707,8 @@ module DefaultRectangular {
 
     proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiLocalSubdomain() {
-      if (this.locale == here) {
+    proc dsiLocalSubdomain(loc: locale) {
+      if (this.locale == loc) {
         return _getDomain(_to_unmanaged(this));
       } else {
         var a: domain(rank, idxType, stridable);
@@ -716,8 +716,8 @@ module DefaultRectangular {
       }
     }
 
-    iter dsiLocalSubdomains() {
-      yield dsiLocalSubdomain();
+    iter dsiLocalSubdomains(loc: locale) {
+      yield dsiLocalSubdomain(loc);
     }
 
     // convenience routine for turning an int (tuple) into an index (tuple)
@@ -1468,8 +1468,8 @@ module DefaultRectangular {
 
     proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiLocalSubdomain() {
-      if this.data.locale == here {
+    proc dsiLocalSubdomain(loc: locale) {
+      if this.data.locale == loc {
         return _getDomain(dom);
       } else {
         var a: domain(rank, idxType, stridable);
@@ -1477,8 +1477,8 @@ module DefaultRectangular {
       }
     }
 
-    iter dsiLocalSubdomains() {
-      yield dsiLocalSubdomain();
+    iter dsiLocalSubdomains(loc: locale) {
+      yield dsiLocalSubdomain(loc);
     }
   }
 

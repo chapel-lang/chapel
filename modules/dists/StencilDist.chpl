@@ -1842,10 +1842,17 @@ proc StencilDom.dsiHasSingleLocalSubdomain() param return true;
 
 // returns the current locale's subdomain
 
-proc StencilArr.dsiLocalSubdomain() {
-  return myLocArr.locDom.myBlock;
+proc StencilArr.dsiLocalSubdomain(loc: locale) {
+  if (loc == here) {
+    return myLocArr.locDom.myBlock;
+  } else {
+    return dom.dsiLocalSubdomain(loc);
+  }
 }
-proc StencilDom.dsiLocalSubdomain() {
+proc StencilDom.dsiLocalSubdomain(loc: locale) {
+  // TODO: Fix before merging
+  if (loc != here) then
+    halt("Stencil can't handle remote subdomain queries yet");
   // TODO -- could be replaced by a privatized myLocDom in StencilDom
   // as it is with StencilArr
   var myLocDom:unmanaged LocStencilDom(rank, idxType, stridable) = nil;
