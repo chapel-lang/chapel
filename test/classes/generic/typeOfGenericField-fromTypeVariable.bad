@@ -1,0 +1,4 @@
+typeOfGenericField-fromTypeVariable.chpl:12: error: unresolved call 'type [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64)._instance'
+$CHPL_HOME/modules/internal/ChapelArray.chpl:924: note: candidates are: _distribution._instance
+$CHPL_HOME/modules/internal/ChapelArray.chpl:1059: note:                 _domain._instance
+$CHPL_HOME/modules/internal/ChapelArray.chpl:2156: note:                 _array._instance
