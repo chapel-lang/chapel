@@ -1,4 +1,5 @@
 push-back-borrow.chpl:18: In function 'error7':
 push-back-borrow.chpl:19: error: Actual argument arg does not meet called function lifetime constraint
 push-back-borrow.chpl:18: note: consider scope of arg
-$CHPL_HOME/modules/internal/ChapelArray.chpl:2883: note: function push_back includes lifetime constraint this < val
+note: called function [domain(1,int(64),false)] MyClass.push_back(val: MyClass)
+note: includes lifetime constraint this < val

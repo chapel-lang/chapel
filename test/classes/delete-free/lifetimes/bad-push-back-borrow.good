@@ -1,3 +1,4 @@
 bad-push-back-borrow.chpl:20: In function 'addone':
 bad-push-back-borrow.chpl:25: error: Actual argument does not meet called function lifetime constraint
-$CHPL_HOME/modules/internal/ChapelArray.chpl:2883: note: function push_back includes lifetime constraint this < val
+note: called function [domain(1,int(64),false)] I.push_back(val: I)
+note: includes lifetime constraint this < val

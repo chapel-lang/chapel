@@ -38,10 +38,7 @@
 //
 // Debugging
 //
-
-#define DEBUG 1
-
-#ifdef DEBUG
+#ifdef CHPL_COMM_DEBUG
 
 uint64_t chpl_comm_ofi_dbg_level;
 FILE* chpl_comm_ofi_dbg_file;
@@ -96,14 +93,14 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 
 #define DBG_VAL(pV, typ) chpl_comm_ofi_dbg_val(pV, typ)
 
-#else // DEBUG
+#else // CHPL_COMM_DEBUG
 
 #define DBG_INIT()
 #define DBG_DO_PRINTF(fmt, ...) do { } while (0)
 #define DBG_TEST_MASK(mask) 0
 #define DBG_PRINTF(mask, fmt, ...) do { } while (0)
 
-#endif // DEBUG
+#endif // CHPL_COMM_DEBUG
 
 
 //

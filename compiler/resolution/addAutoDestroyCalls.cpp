@@ -125,6 +125,99 @@ static void addForallIndexVarToScope(AutoDestroyScope* scope,
   }
 }
 
+static void walkBlockScopelessBlock(FnSymbol*         fn,
+                                    AutoDestroyScope& scope,
+                                    LabelSymbol*      retLabel,
+                                    bool              isDeadCode,
+                                    BlockStmt*        block,
+                                    std::set<VarSymbol*>& ignoredVariables);
+
+static void walkBlockStmt(FnSymbol*         fn,
+                          AutoDestroyScope& scope,
+                          LabelSymbol*      retLabel,
+                          bool              isDeadCode,
+                          bool              inScopelessBlock,
+                          Expr*             stmt,
+                          std::set<VarSymbol*>& ignoredVariables) {
+
+  //
+  // Handle the current statement
+  //
+
+  // TODO -- maybe we need to handle breakLabel and continueLabel here?
+
+  // Once a variable is yielded, it should no longer be auto-destroyed,
+  // since such destruction is the responsibility of
+  // the calling loop.
+  if (isYieldStmt(stmt)) {
+    gatherIgnoredVariablesForYield(stmt, ignoredVariables);
+
+  // AutoDestroy locals at the start of the error-handling label
+  // (when exiting a try block without error)
+  } else if (isErrorLabel(stmt) == true) {
+    INT_ASSERT(!inScopelessBlock); // situation leads to miscompiles/leaks
+
+    scope.insertAutoDestroys(fn, stmt, ignoredVariables);
+
+  // AutoDestroy primary locals at start of function epilogue (1)
+  } else if (isReturnLabel(stmt, retLabel) == true) {
+    scope.insertAutoDestroys(fn, stmt, ignoredVariables);
+
+  // Be conservative about unreachable code before the epilogue
+  } else if (isDeadCode == false) {
+    // Collect variables that should be autoDestroyed
+    if (VarSymbol* var = definesAnAutoDestroyedVariable(stmt)) {
+      scope.variableAdd(var);
+
+    // Collect defer statements to run during cleanup
+    } else if (DeferStmt* defer = toDeferStmt(stmt)) {
+      scope.deferAdd(defer);
+
+    // AutoDestroy primary locals at start of function epilogue (2)
+    } else if (scope.handlingFormalTemps(stmt) == true) {
+      scope.insertAutoDestroys(fn, stmt, ignoredVariables);
+
+    // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
+    } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
+      // ignore scopeless blocks for deciding where to destroy
+      if ((subBlock->blockTag & BLOCK_SCOPELESS))
+        walkBlockScopelessBlock(fn, scope, retLabel, isDeadCode,
+                                subBlock, ignoredVariables);
+      else
+        walkBlock(fn, &scope, subBlock, ignoredVariables);
+
+    // Recurse in to a ForallStmt
+    } else if (ForallStmt* forall = toForallStmt(stmt)) {
+      walkForallBlocks(fn, &scope, forall, ignoredVariables);
+
+    // Recurse in to the BlockStmt(s) of a CondStmt
+    } else if (CondStmt*  cond     = toCondStmt(stmt))  {
+
+      std::set<VarSymbol*> toIgnore(ignoredVariables);
+
+      if (isCheckErrorStmt(cond))
+        gatherIgnoredVariablesForErrorHandling(cond, toIgnore);
+
+      walkBlock(fn, &scope, cond->thenStmt, toIgnore);
+
+      if (cond->elseStmt != NULL)
+        walkBlock(fn, &scope, cond->elseStmt, toIgnore);
+
+    }
+  }
+}
+
+static void walkBlockScopelessBlock(FnSymbol*         fn,
+                                    AutoDestroyScope& scope,
+                                    LabelSymbol*      retLabel,
+                                    bool              isDeadCode,
+                                    BlockStmt*        block,
+                                    std::set<VarSymbol*>& ignoredVariables) {
+  for_alist(stmt, block->body) {
+    walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt, ignoredVariables);
+  }
+}
+
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
@@ -138,71 +231,11 @@ static void walkBlock(FnSymbol*         fn,
   if (pfs != NULL)
     addForallIndexVarToScope(&scope, pfs);
 
-  // Updating the variableToExclude is a good start, but an iterator
-  // can have multiple yields in it. If each yield consumes the value,
-  // shouldn't we be updating ignoredVariables for each yielded value?
-  // (and going back to things moved to it?) Since once it is yielded,
-  // it is no longer available for destruction?
-
   for_alist(stmt, block->body) {
     //
     // Handle the current statement
     //
-
-    // TODO -- maybe we need to handle breakLabel and continueLabel here?
-  
-    // Once a variable is yielded, it should no longer be auto-destroyed,
-    // since such destruction is the responsibility of
-    // the calling loop.
-    if (isYieldStmt(stmt)) {
-      gatherIgnoredVariablesForYield(stmt, ignoredVariables);
-
-    // AutoDestroy locals at the start of the error-handling label
-    // (when exiting a try block without error)
-    } else if (isErrorLabel(stmt) == true) {
-      scope.insertAutoDestroys(fn, stmt, ignoredVariables);
-
-    // AutoDestroy primary locals at start of function epilogue (1)
-    } else if (isReturnLabel(stmt, retLabel) == true) {
-      scope.insertAutoDestroys(fn, stmt, ignoredVariables);
-
-    // Be conservative about unreachable code before the epilogue
-    } else if (isDeadCode == false) {
-      // Collect variables that should be autoDestroyed
-      if (VarSymbol* var = definesAnAutoDestroyedVariable(stmt)) {
-        scope.variableAdd(var);
-
-      // Collect defer statements to run during cleanup
-      } else if (DeferStmt* defer = toDeferStmt(stmt)) {
-        scope.deferAdd(defer);
-
-      // AutoDestroy primary locals at start of function epilogue (2)
-      } else if (scope.handlingFormalTemps(stmt) == true) {
-        scope.insertAutoDestroys(fn, stmt, ignoredVariables);
-
-      // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
-      } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
-        walkBlock(fn, &scope, subBlock, ignoredVariables);
-
-      // Recurse in to a ForallStmt
-      } else if (ForallStmt* forall = toForallStmt(stmt)) {
-        walkForallBlocks(fn, &scope, forall, ignoredVariables);
-
-      // Recurse in to the BlockStmt(s) of a CondStmt
-      } else if (CondStmt*  cond     = toCondStmt(stmt))  {
-
-        std::set<VarSymbol*> toIgnore(ignoredVariables);
-
-        if (isCheckErrorStmt(cond))
-          gatherIgnoredVariablesForErrorHandling(cond, toIgnore);
-
-        walkBlock(fn, &scope, cond->thenStmt, toIgnore);
-
-        if (cond->elseStmt != NULL)
-          walkBlock(fn, &scope, cond->elseStmt, toIgnore);
-
-      }
-    }
+    walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt, ignoredVariables);
 
     //
     // Handle the end of a block

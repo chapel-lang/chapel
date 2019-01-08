@@ -77,10 +77,7 @@
 #include "chpl-comm-no-warning-macros.h"
 
 
-// uncomment this and change debug_flag below to enable UGNI debugging
-//#define DEBUG 1
-
-#ifdef DEBUG
+#ifdef CHPL_COMM_DEBUG
 #include <sys/types.h>
 #include <fcntl.h>
 
@@ -703,14 +700,17 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 #define CQ_CNT_DEC(cd)        \
         (void) atomic_fetch_sub_uint_least32_t(&(cd)->cq_cnt_curr, 1)
 
+// not generally true, but should be for XE/XC
+#define CACHE_LINE_ALIGN __attribute__((aligned(64)))
+
 typedef struct {
-  atomic_bool        busy;
+  atomic_bool        busy CACHE_LINE_ALIGN;
   chpl_bool          firmly_bound;
   gni_nic_handle_t   nih;
   gni_ep_handle_t*   remote_eps;
   gni_cq_handle_t    cqh;
   cq_cnt_t           cq_cnt_max;
-  cq_cnt_atomic_t    cq_cnt_curr;
+  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
 #ifdef DEBUG_STATS
   uint64_t           acqs;
   uint64_t           acqs_looks;
@@ -718,10 +718,7 @@ typedef struct {
   uint64_t           acqs_with_rb_looks;
   uint64_t           reacqs;
 #endif
-  uint64_t           cache_spacer[8];    // prevent comm_doms[] inter-element
-                                         //   cache line sharing; ra-atomics
-                                         //     perf suffers without this
-} comm_dom_t;
+} CACHE_LINE_ALIGN comm_dom_t;
 
 
 //
@@ -958,7 +955,7 @@ typedef struct {
   unsigned char op: FORK_OP_BITS;    // operation
   c_nodeid_t    caller;              // requesting locale
   rf_done_t*    rf_done;             // where to indicate completion
-#ifdef DEBUG
+#ifdef CHPL_COMM_DEBUG
   uint_least64_t seq;
 #endif
 } fork_base_info_t;
@@ -1081,7 +1078,7 @@ typedef struct {
   unsigned char buf[MAX_SMALL_CALL_PAYLOAD];
 } fork_small_call_task_t;
 
-#ifdef DEBUG
+#ifdef CHPL_COMM_DEBUG
 static int _fork_req_bufs_per_cd = 2;
 #define FORK_REQ_BUFS_PER_CD     _fork_req_bufs_per_cd
 #else
@@ -1558,7 +1555,7 @@ static void      local_yield(void);
 //
 // More debug support.
 //
-#ifdef DEBUG
+#ifdef CHPL_COMM_DEBUG
 static void dbg_init(void);
 static void dbg_init(void)
 {
@@ -1609,7 +1606,7 @@ static void dbg_init(void)
 
   debug_stats_flag = chpl_env_rt_get_int("COMM_UGNI_DEBUG_STATS", 0);
 
-#ifdef DEBUG
+#ifdef CHPL_COMM_DEBUG
   FORK_REQ_BUFS_PER_CD =
       chpl_env_rt_get_int("COMM_UGNI_FORK_REQ_BUFS_PER_CD", 1);
 #endif
@@ -2041,8 +2038,9 @@ void chpl_comm_post_task_init(void)
   // handles, endpoints, and completion queues.
   //
   comm_doms =
-    (comm_dom_t*) chpl_mem_allocMany(comm_dom_cnt, sizeof(comm_doms[0]),
-                                     CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+    (comm_dom_t*) chpl_mem_memalign(sizeof(comm_dom_t),
+                                    comm_dom_cnt * sizeof(comm_dom_t),
+                                    CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
 
   for (int i = 0; i < comm_dom_cnt; i++)
     gni_setup_per_comm_dom(i);
@@ -3668,10 +3666,12 @@ void chpl_comm_barrier(const char *msg)
 {
   DBG_P_L(DBGF_IFACE, "IFACE chpl_comm_barrier(\"%s\")", msg);
 
+#ifdef CHPL_COMM_DEBUG
+  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
+#endif
+
   if (chpl_numNodes == 1)
     return;
-
-  chpl_comm_diags_verbose_printf("barrier for '%s'", msg);
 
   //
   // If we can't communicate yet, just do a PMI barrier.
@@ -3788,7 +3788,7 @@ void chpl_comm_pre_task_exit(int all)
   // high water mark whether set up for debug info or not.
   //
   {
-#ifdef DEBUG
+#ifdef CHPL_COMM_DEBUG
     const int test = _DBG_DO(DBGF_MEMREG)
                      || (chpl_nodeID == 0
                          && chpl_env_rt_get_bool("COMM_UGNI_MEMREG_HWM",
@@ -3837,7 +3837,7 @@ void chpl_comm_exit(int all, int status)
   if (exit_without_cleanup)
     return;
 
-#ifdef DEBUG
+#ifdef CHPL_COMM_DEBUG
   debug_exiting = true;
 #endif
 
@@ -5046,8 +5046,7 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote put to %d, %zu bytes",
-                                 chpl_lookupFilename(fn), ln, locale, size);
+  chpl_comm_diags_verbose_rdma("put", locale, size, ln, fn);
   chpl_comm_diags_incr(put);
 
   do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
@@ -5445,12 +5444,12 @@ void chpl_comm_buff_get(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote buff get from %d",
-                                 chpl_lookupFilename(fn), ln, locale);
+  chpl_comm_diags_verbose_rdma("buff get", locale, size, ln, fn);
   chpl_comm_diags_incr(get);
 
   do_remote_buff_get(addr, locale, raddr, size, may_proxy_true);
 }
+
 
 void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
                    size_t size, int32_t typeIndex,
@@ -5477,8 +5476,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote get from %d, %zu bytes",
-                                 chpl_lookupFilename(fn), ln, locale, size);
+  chpl_comm_diags_verbose_rdma("get", locale, size, ln, fn);
   chpl_comm_diags_incr(get);
 
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
@@ -5968,8 +5966,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("%s:%d: remote non-blocking get from %d, %zu bytes",
-                                 chpl_lookupFilename(fn), ln, locale, size);
+  chpl_comm_diags_verbose_rdma("non-blocking get", locale, size, ln, fn);
   chpl_comm_diags_incr(get_nb);
 
   //
@@ -6082,11 +6079,6 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
 
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 {
-  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
-    int i, j;
-    nb_desc_idx_decode(&i, &j, nb_desc_handle_2_idx(h));
-    chpl_comm_diags_verbose_printf("test nb complete (%d, %d)", i, j);
-  }
   chpl_comm_diags_incr(test_nb);
 
   PERFSTATS_INC(test_nb_cnt);
@@ -6097,15 +6089,6 @@ int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 
 void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
-  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
-    if (nhandles == 1) {
-      int i, j;
-      nb_desc_idx_decode(&i, &j, nb_desc_handle_2_idx(h[0]));
-      chpl_comm_diags_verbose_printf("wait nb (%d, %d)", i, j);
-    }
-    else
-      chpl_comm_diags_verbose_printf("wait nb (%zd handles)", nhandles);
-  }
   chpl_comm_diags_incr(wait_nb);
 
   PERFSTATS_INC(wait_nb_cnt);
@@ -6140,15 +6123,6 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
   int rv = 0;
 
-  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
-    if (nhandles == 1) {
-      int i, j;
-      nb_desc_idx_decode(&i, &j, nb_desc_handle_2_idx(h[0]));
-      chpl_comm_diags_verbose_printf("try nb (%d, %d)", i, j);
-    }
-    else
-      chpl_comm_diags_verbose_printf("try nb (%zd handles)", nhandles);
-  }
   chpl_comm_diags_incr(try_nb);
 
   PERFSTATS_INC(try_nb_cnt);
@@ -7309,7 +7283,7 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("remote task created on %d", locale);
+  chpl_comm_diags_verbose_executeOn("", locale);
   chpl_comm_diags_incr(execute_on);
 
   PERFSTATS_INC(fork_call_cnt);
@@ -7335,8 +7309,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("remote non-blocking task created on %d",
-                                 locale);
+  chpl_comm_diags_verbose_executeOn("non-blocking", locale);
   chpl_comm_diags_incr(execute_on_nb);
 
   PERFSTATS_INC(fork_call_nb_cnt);
@@ -7362,8 +7335,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_printf("remote (no-fork) task created on %d",
-                                 locale);
+  chpl_comm_diags_verbose_executeOn("fast", locale);
   chpl_comm_diags_incr(execute_on_fast);
 
   //

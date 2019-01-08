@@ -11,5 +11,5 @@ ln -s ../../include/llvmAggregateGlobalOps.h llvmAggregateGlobalOps.h
 ln -s ../../include/llvmVer.h llvmVer.h
 mkdir -p build
 cd build
-export CMAKE_PREFIX_PATH=$CHPL_HOME/third-party/llvm/install/linux64-gnu/
-cmake .. -DLLVM_ROOT=$CHPL_HOME/third-party/llvm/install/linux64-gnu/ -DLLVM_SRC=$CHPL_HOME/third-party/llvm/llvm -DCMAKE_BUILD_TYPE=Debug
+export CMAKE_PREFIX_PATH=$CHPL_HOME/third-party/llvm/install/linux64-x86_64-gnu/
+cmake .. -DLLVM_ROOT=$CHPL_HOME/third-party/llvm/install/linux64-x86_64-gnu/ -DLLVM_SRC=$CHPL_HOME/third-party/llvm/llvm -DCMAKE_BUILD_TYPE=Debug

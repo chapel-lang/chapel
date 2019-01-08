@@ -62,6 +62,24 @@ entry:
   ret void
 }
 
+define void @teststore4(i64 addrspace(100)* %base) {
+; CHECK: @teststore4(
+; )
+entry:
+  %p2 = getelementptr inbounds i64, i64 addrspace(100)* %base, i32 2
+  %p01 = getelementptr inbounds i64, i64 addrspace(100)* %base, i32 0
+  %p0 = getelementptr inbounds i64, i64 addrspace(100)* %base, i32 0
+; CHECK: store i64 3
+; CHECK: store i64 2
+; CHECK: store i64 1
+; CHECK: memcpy
+; CHECK: ret
+  store i64 3, i64 addrspace(100)* %p2, align 8
+  store i64 2, i64 addrspace(100)* %p01, align 8
+  store i64 1, i64 addrspace(100)* %p0, align 8
+  ret void
+}
+
 
 define i64 @testload1(i64 addrspace(100)* %base) {
 ; CHECK: @testload1(
@@ -162,6 +180,60 @@ entry:
   %sum2 = add i64 %sum1, %v3
   ret i64 %sum2
 }
+
+define i64 @testload6(i64 addrspace(100)* %base, i64 addrspace(100)* %other) {
+; CHECK: @testload6(
+; )
+; CHECK: getelementptr
+; CHECK: load
+; CHECK: getelementptr
+; CHECK: load
+; CHECK: add
+; CHECK: getelementptr
+; CHECK: load
+; CHECK: add
+; CHECK: ret
+entry:
+  %p0 = getelementptr inbounds i64, i64 addrspace(100)* %base, i32 3
+  %v1 = load i64, i64 addrspace(100)* %p0, align 8
+  %o1 = getelementptr inbounds i64, i64 addrspace(100)* %other, i32 1
+  %vo = load i64, i64 addrspace(100)* %o1, align 8
+  %sum1 = add i64 %v1, %vo
+  %p2 = getelementptr inbounds i64, i64 addrspace(100)* %base, i32 2
+  %v3 = load i64, i64 addrspace(100)* %p2, align 8
+  %sum2 = add i64 %sum1, %v3
+  ret i64 %sum2
+}
+
+define i64 @testload7(i64 addrspace(100)* %base, i64 addrspace(100)* %other) {
+; CHECK: @testload7(
+; )
+; CHECK: getelementptr
+; CHECK: getelementptr
+; CHECK: getelementptr
+; CHECK: memcpy
+; CHECK: load
+; CHECK: load
+; CHECK: add
+; CHECK: load
+; CHECK: add
+; CHECK: ret
+entry:
+  %p0 = getelementptr inbounds i64, i64 addrspace(100)* %base, i32 3
+  %v1 = load i64, i64 addrspace(100)* %p0, align 8
+  %sum0 = add i64 %v1, %v1
+  %o1 = getelementptr inbounds i64, i64 addrspace(100)* %other, i32 1
+  %p1 = getelementptr inbounds i64, i64 addrspace(100)* %base, i32 1
+  %v2 = load i64, i64 addrspace(100)* %p1, align 8
+  %vo = load i64, i64 addrspace(100)* %o1, align 8
+  %sum1 = add i64 %sum0, %vo
+  %p2 = getelementptr inbounds i64, i64 addrspace(100)* %base, i32 2
+  %v3 = load i64, i64 addrspace(100)* %p2, align 8
+  %sum2 = add i64 %sum1, %v3
+  ret i64 %sum2
+}
+
+
 
 define void @teststoreatomic(i64 addrspace(100)* %base) {
 ; CHECK: @teststoreatomic(

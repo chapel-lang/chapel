@@ -101,7 +101,7 @@ bool AutoDestroyScope::handlingFormalTemps(const Expr* stmt) const {
 // If the refStmt is a goto then we need to recurse
 // to the block that contains the target of the goto
 void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
-                                          std::set<VarSymbol*> ignored) {
+                                          const std::set<VarSymbol*>& ignored) {
   GotoStmt*               gotoStmt   = toGotoStmt(refStmt);
   bool                    recurse    = (gotoStmt != NULL) ? true : false;
   BlockStmt*              forTarget  = findBlockForTarget(gotoStmt);
@@ -152,7 +152,7 @@ static BlockStmt* shadowVarsDeinitBlock(Expr* refStmt) {
 
 void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
                                         VarSymbol* excludeVar,
-                                        std::set<VarSymbol*> ignored) const {
+                                        const std::set<VarSymbol*>& ignored) const {
   // Handle the primary locals
   if (mLocalsHandled == false) {
     Expr*  insertBeforeStmt = refStmt;

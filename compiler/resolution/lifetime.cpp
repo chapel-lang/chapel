@@ -294,6 +294,7 @@ static void markArgumentsReturnScope(FnSymbol* fn);
 static void checkFunction(FnSymbol* fn);
 
 static bool isCallToFunctionReturningNotOwned(CallExpr* call);
+static bool isUser(BaseAST* ast);
 
 void checkLifetimes(void) {
   // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
@@ -673,8 +674,16 @@ static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
           calledName = base->unresolved;
 
         FnSymbol* fn = call->getFunction();
-        USR_PRINT(call, "function %s includes lifetime constraint %s %s %s",
-                  fn->name, lhsName, calledName, rhsName);
+
+        if (developer || isUser(fn)) {
+          USR_PRINT(call, "called function %s", toString(fn));
+          USR_PRINT(call, "includes lifetime constraint %s %s %s",
+                    lhsName, calledName, rhsName);
+        } else {
+          USR_PRINT("called function %s", toString(fn));
+          USR_PRINT("includes lifetime constraint %s %s %s",
+                    lhsName, calledName, rhsName);
+        }
       }
     }
   }
@@ -694,6 +703,11 @@ static bool definedInTaskFunction(Symbol* sym) {
 
   return false;
 }
+
+static bool isTaskFunctionFormal(Symbol* sym) {
+  return isArgSymbol(sym) && definedInTaskFunction(sym);
+}
+
 
 static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_UNSAFE))
@@ -1214,22 +1228,41 @@ bool LifetimeState::isLocalVariable(Symbol* sym) {
 static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
   group->elements.push_back(sym);
 
-  Symbol* oldFavorite = group->favorite;
+  Symbol* old = group->favorite;
 
   bool preferSym = false;
-  // Should we prefer sym to oldFavorite?
-  if (oldFavorite == NULL)
+  // Should we prefer sym to old?
+  // Or leave old there as the preferred symbol?
+  if (old == NULL) {
     preferSym = true;
-  else if (definedInTaskFunction(sym) != definedInTaskFunction(oldFavorite))
-    preferSym = definedInTaskFunction(oldFavorite);
-  else if (isGlobal(sym) != isGlobal(oldFavorite))
-    preferSym = isGlobal(sym);
-  else if (sym->hasFlag(FLAG_TEMP) != oldFavorite->hasFlag(FLAG_TEMP))
-    preferSym = !sym->hasFlag(FLAG_TEMP);
-  else if (sym->isRef() != oldFavorite->isRef())
-    preferSym = !sym->isRef();
-  else
-    preferSym = (strlen(sym->name) < strlen(oldFavorite->name));
+  } else {
+    BlockStmt* oldBlock = getDefBlock(old);
+    BlockStmt* symBlock = getDefBlock(sym);
+
+    bool oldInSym = isBlockWithinBlock(oldBlock, symBlock);
+    bool symInOld = isBlockWithinBlock(symBlock, oldBlock);
+    bool oldGlobal = isGlobal(old);
+    bool symGlobal = isGlobal(sym);
+    bool oldTemp = old->hasFlag(FLAG_TEMP);
+    bool symTemp = sym->hasFlag(FLAG_TEMP);
+    bool oldRef = old->isRef();
+    bool symRef = sym->isRef();
+
+    // Prefer sym if it's in an outer block
+    // (e.g. actual variable passed to task function formal,
+    //  task function formal vs inner task function formal)
+    if ((isTaskFunctionFormal(old) || isTaskFunctionFormal(sym)) &&
+        (oldInSym || symInOld))
+      preferSym = oldInSym;
+    else if (oldGlobal != symGlobal)
+      preferSym = symGlobal;
+    else if (oldTemp != symTemp)
+      preferSym = !symTemp;
+    else if (oldRef != symRef)
+      preferSym = !symRef;
+    else
+      preferSym = (strlen(sym->name) < strlen(old->name));
+  }
 
   if (preferSym)
     group->favorite = sym;
@@ -1237,6 +1270,7 @@ static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
 
 static void addPairToDetempMap(Symbol* a, Symbol* b,
                                SymbolToDetempGroupMap& map) {
+
   // Is a in the map? Is b in the map?
   bool aInMap = map.count(a) > 0;
   bool bInMap = map.count(b) > 0;
@@ -1314,7 +1348,7 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
     }
 
     if (a && b) {
-      addPairToDetempMap(a, b, lifetimes->detemp);
+      addPairToDetempMap(b, a, lifetimes->detemp);
       lifetimes->callsToIgnore.insert(call);
     }
   }
@@ -1327,7 +1361,7 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
       for_formals_actuals(formal, actual, call) {
         if (SymExpr* actualSe = toSymExpr(actual)) {
           Symbol* actualSym = actualSe->symbol();
-          addPairToDetempMap(formal, actualSym, lifetimes->detemp);
+          addPairToDetempMap(actualSym, formal, lifetimes->detemp);
         }
       }
       lifetimes->callsToIgnore.insert(call);
@@ -2521,6 +2555,13 @@ static bool symbolHasInfiniteLifetime(Symbol* sym) {
 
 static BlockStmt* getDefBlock(Symbol* sym) {
   Expr* defPoint = sym->defPoint;
+
+  if (isTaskFunctionFormal(sym)) {
+    // Use the function's block
+    FnSymbol* fn = sym->getFunction();
+    return fn->body;
+  }
+
   while (defPoint) {
     if (BlockStmt* block = toBlockStmt(defPoint))
       if (block->blockTag == BLOCK_NORMAL)

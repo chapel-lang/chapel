@@ -23,15 +23,24 @@ def get(flag='target'):
             compiler_val = chpl_compiler.get('target')
             platform_val = chpl_platform.get('target')
 
-            # we currently support intrinsics for gcc, intel, cray and clang.
-            # gcc added initial support in 4.1, and added support for 64 bit
-            # atomics on 32 bit platforms with 4.8. clang and intel also
-            # support 64 bit atomics on 32 bit platforms and the cray compiler
-            # will never run on a 32 bit machine. For pgi or 32 bit platforms
-            # with an older gcc, we fall back to locks
+            # We default to C standard atomics (cstdlib) for gcc 5 and newer.
+            # Some prior versions of gcc look like they support standard
+            # atomics, but have buggy or missing parts of the implementation,
+            # so we do not try to use cstdlib with gcc < 5.
+            #
+            # We support intrinsics for gcc, intel, cray and clang. gcc added
+            # initial support in 4.1, and added support for 64-bit atomics on
+            # 32-bit platforms with 4.8. clang and intel also support 64-bit
+            # atomics on 32-bit platforms and the cray compiler will never run
+            # on a 32-bit machine.
+            #
+            # For pgi or 32-bit platforms with an older gcc, we fall back to
+            # locks
             if compiler_val in ['gnu', 'cray-prgenv-gnu', 'mpi-gnu']:
                 version = get_compiler_version('gnu')
-                if version >= CompVersion('4.8'):
+                if version >= CompVersion('5.0'):
+                    atomics_val = 'cstdlib'
+                elif version >= CompVersion('4.8'):
                     atomics_val = 'intrinsics'
                 elif version >= CompVersion('4.1') and not platform_val.endswith('32'):
                     atomics_val = 'intrinsics'
