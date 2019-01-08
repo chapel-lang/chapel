@@ -1148,7 +1148,9 @@ const char* toString(FnSymbol* fn) {
           arg->type == dtModuleToken)
         continue;
 
-      // skip this formal methods in non-developer mode
+      // skip _this formal for methods in non-developer mode
+      // because in non-developer mode it has already been printed
+      // along with the method name (e.g. C.mymethod).
       if (developer == false && fn->isMethod() && arg == fn->_this)
         continue;
 
