@@ -294,6 +294,7 @@ static void markArgumentsReturnScope(FnSymbol* fn);
 static void checkFunction(FnSymbol* fn);
 
 static bool isCallToFunctionReturningNotOwned(CallExpr* call);
+static bool isUser(BaseAST* ast);
 
 void checkLifetimes(void) {
   // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
@@ -673,8 +674,16 @@ static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
           calledName = base->unresolved;
 
         FnSymbol* fn = call->getFunction();
-        USR_PRINT(call, "function %s includes lifetime constraint %s %s %s",
-                  fn->name, lhsName, calledName, rhsName);
+
+        if (developer || isUser(fn)) {
+          USR_PRINT(call, "called function %s", toString(fn));
+          USR_PRINT(call, "includes lifetime constraint %s %s %s",
+                    lhsName, calledName, rhsName);
+        } else {
+          USR_PRINT("called function %s", toString(fn));
+          USR_PRINT("includes lifetime constraint %s %s %s",
+                    lhsName, calledName, rhsName);
+        }
       }
     }
   }
