@@ -20,28 +20,23 @@
 import sys, os, re
 
 # These match the message blocks we want to remove.
-msg1Pat = re.compile(r"^(-{20,})\n"
-                     r"Primary job +terminated normally, "
-                     r"but [0-9]+ process[^ ]* returned\n"
-                     r"a non-zero exit code[.]+ "
-                     r"Per user-direction, the job has been aborted\.\n"
-                     r"\1\n",
-                     re.MULTILINE)
-msg2Pat = re.compile(r"^(-{20,})\n"
-                     r"While the primary job +terminated normally, "
-                     r"[0-9]+ process[^ ]* returned\n"
-                     r"a non-zero exit code[.]+ "
-                     r"Further examination may be required\.\n"
-                     r"\1\n",
-                     re.MULTILINE)
+msgs = (
+"""^-------------------------------------------------------
+Primary job +terminated normally, but [0-9]+ process[^ ]* returned
+a non-zero exit code[.]+ Per user-direction, the job has been aborted[.]
+-------------------------------------------------------
+""",
+"""^-------------------------------------------------------
+While the primary job +terminated normally, [0-9]+ process[^ ]* returned
+a non-zero exit code[.]+ Further examination may be required[.]
+-------------------------------------------------------
+"""
+)
 
 outfname = sys.argv[2]
-outfnameTmp = outfname + '.' + str(os.getpid()) + '.tmp'
-
-with open(outfname, "r") as outfile, open(outfnameTmp, "w") as outfileTmp:
-    msg = outfile.read()
-    msg = msg1Pat.sub("", msg)
-    msg = msg2Pat.sub("", msg)
-    outfileTmp.write(msg)
-
-os.rename(outfnameTmp, outfname)
+with open(outfname, "r") as f:
+    outText = f.read()
+for m in msgs:
+    outText = re.sub(m, "", outText, flags = re.MULTILINE)
+with open(outfname, "w") as f:
+    f.write(outText)
