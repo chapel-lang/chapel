@@ -9,7 +9,7 @@ use BigInteger;
 
 config const n = 50;      // Compute n digits of pi, 50 by default
 
-var i, ns = 0,
+var i, ns, x = 0,
     num, den = 1: bigint,
     a, t, u: bigint;
 
@@ -26,11 +26,13 @@ for (k, k1) in zip(1..,3.. by 2) {
     if den > u {
       ns = 10*ns + t:int;
       i += 1;
-      if i >= n then
-        break;
-      if i % 10 == 0 {
+      x = i % 10;
+      if x == 0 {
         writef("%010i\t:%i\n", ns, i);
         ns = 0;
+      }
+      if i == n {
+        break;
       }
       a -= den*t;
       a *= 10;
@@ -38,5 +40,5 @@ for (k, k1) in zip(1..,3.. by 2) {
     }
   }
 }
-const s = "%0*i".format((i%10), ns);
-writef("%-10s\t:%i\n", s, i);
+if x != 0 then
+  writef("%0*i%s\t:%i\n", x, ns, " "*(10-x), i);
