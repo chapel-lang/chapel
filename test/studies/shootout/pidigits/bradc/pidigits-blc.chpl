@@ -13,10 +13,11 @@ var i, ns, x = 0,
     num, den = 1: bigint,
     a, t, u: bigint;
 
-for (k, k1) in zip(1..,3.. by 2) {
+for k in (1..) {
   t = num * 2;
   num *= k;
   a += t;
+  const k1 = 2*k + 1;
   a *= k1;
   den *= k1;
 
