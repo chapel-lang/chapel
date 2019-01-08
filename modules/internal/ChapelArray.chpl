@@ -1915,8 +1915,11 @@ module ChapelArray {
     }
 
     /*
-       Return the subdomain that is local to `loc` (defaults to the
-       current locale.
+       Return the subdomain that is local to `loc`.
+
+       :arg loc: indicates the locale for which the query should take
+                 place (defaults to `here`)
+       :type loc: locale
     */
     proc localSubdomain(loc: locale = here) {
       if !_value.dsiHasSingleLocalSubdomain() then
@@ -1926,8 +1929,11 @@ module ChapelArray {
     }
 
     /*
-       Yield the subdomains that are local to `loc` (defaults to the
-       current locale.
+       Yield the subdomains that are local to `loc`.
+
+       :arg loc: indicates the locale for which the query should take
+                 place (defaults to `here`)
+       :type loc: locale
     */
     iter localSubdomains(loc: locale = here) {
       if _value.dsiHasSingleLocalSubdomain() {
@@ -2738,8 +2744,11 @@ module ChapelArray {
     }
 
     /*
-       Return the subdomain that is local to `loc` (dfeaults to the
-       current locale)
+       Return the subdomain that is local to `loc`.
+
+       :arg loc: indicates the locale for which the query should take
+                 place (defaults to `here`)
+       :type loc: locale
     */
     proc localSubdomain(loc: locale = here) {
       if !_value.dsiHasSingleLocalSubdomain() then
@@ -2749,8 +2758,11 @@ module ChapelArray {
     }
 
     /*
-       Yield the subdomains that are local to `loc` (defaults to the
-       current locale.
+       Yield the subdomains that are local to `loc`.
+
+       :arg loc: indicates the locale for which the query should take
+                 place (defaults to `here`)
+       :type loc: locale
     */
     iter localSubdomains(loc: locale = here) {
       if _value.dsiHasSingleLocalSubdomain() {
