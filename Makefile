@@ -189,12 +189,7 @@ depend:
 	@echo "make depend has been deprecated for the time being"
 
 check:
-	@+CHPL_HOME=$(CHPL_MAKE_HOME) CHPL_LLVM_CODEGEN=0 bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
-	@+if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	. ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
-	CHPL_HOME=$(CHPL_MAKE_HOME) CHPL_LLVM_CODEGEN=1 bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall ; \
-	fi
-
+	@+CHPL_HOME=$(CHPL_MAKE_HOME) bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
 
 check-chpldoc: chpldoc third-party-test-venv
 	@bash $(CHPL_MAKE_HOME)/util/test/checkChplDoc
