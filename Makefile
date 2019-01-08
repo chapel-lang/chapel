@@ -71,17 +71,15 @@ parser: FORCE
 	cd compiler && $(MAKE) parser
 
 modules: FORCE
-	cd modules && $(MAKE)
+	cd modules && CHPL_LLVM_CODEGEN=0 $(MAKE)
 	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	. ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
-	cd modules && $(MAKE) ; \
+	cd modules && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
 
 runtime: FORCE
-	cd runtime && $(MAKE)
+	cd runtime && CHPL_LLVM_CODEGEN=0 $(MAKE)
 	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	. ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
-	cd runtime && $(MAKE) ; \
+	cd runtime && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
 
 third-party: FORCE
@@ -91,19 +89,17 @@ third-party-try-opt: third-party-try-re2 third-party-try-gmp
 
 third-party-try-re2: FORCE
 	-@if [ -z "$$CHPL_REGEXP" ]; then \
-	cd third-party && $(MAKE) try-re2; \
+	cd third-party && CHPL_LLVM_CODEGEN=0 $(MAKE) try-re2; \
 	if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	. ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
-	$(MAKE) try-re2; \
+	CHPL_LLVM_CODEGEN=1 $(MAKE) try-re2; \
 	fi \
 	fi
 
 third-party-try-gmp: FORCE
 	-@if [ -z "$$CHPL_GMP" ]; then \
-	cd third-party && $(MAKE) try-gmp; \
+	cd third-party && CHPL_LLVM_CODEGEN=0 $(MAKE) try-gmp; \
 	if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	. ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
-	$(MAKE) try-gmp; \
+	CHPL_LLVM_CODEGEN=1 $(MAKE) try-gmp; \
 	fi \
 	fi
 
@@ -189,7 +185,11 @@ depend:
 	@echo "make depend has been deprecated for the time being"
 
 check:
-	@+CHPL_HOME=$(CHPL_MAKE_HOME) bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
+	@+CHPL_HOME=$(CHPL_MAKE_HOME) CHPL_LLVM_CODEGEN=0 bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
+	@+if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	CHPL_HOME=$(CHPL_MAKE_HOME) CHPL_LLVM_CODEGEN=1 bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall ; \
+	fi
+
 
 check-chpldoc: chpldoc third-party-test-venv
 	@bash $(CHPL_MAKE_HOME)/util/test/checkChplDoc
