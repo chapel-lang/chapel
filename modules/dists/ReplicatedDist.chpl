@@ -608,6 +608,9 @@ proc ReplicatedArr.dsiTargetLocales() {
 
 proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 
-proc ReplicatedArr.dsiLocalSubdomain() {
+proc ReplicatedArr.dsiLocalSubdomain(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("the Replicated distribution", "remote subdomain queries");
+
   return chpl_myLocArr().myDom.domLocalRep;
 }

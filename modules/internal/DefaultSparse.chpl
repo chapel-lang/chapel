@@ -489,8 +489,12 @@ module DefaultSparse {
 
     proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiLocalSubdomain() {
-      return _newDomain(dom);
+    proc dsiLocalSubdomain(loc: locale) {
+      if this.data.locale == loc {
+        return _getDomain(dom);
+      } else {
+        unimplementedFeatureHalt("sparse arrays", "remote subdomain queries");
+      }
     }
   }
 

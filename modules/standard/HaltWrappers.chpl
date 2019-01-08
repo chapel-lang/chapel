@@ -144,4 +144,13 @@ module HaltWrappers {
   proc divByZeroCheckHalt(s:string) {
     halt(s);
   }
+
+  /* Halt wrapper for unimplemented features */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc unimplementedFeatureHalt(subject:string, feature: string) {
+    halt(subject, " doesn't support ", feature, " yet\n"+
+         "  (please feel encouraged to file a GitHub issue requesting this:\n"+
+         "   https://github.com/chapel-lang/chapel/issues)");
+  }
 }

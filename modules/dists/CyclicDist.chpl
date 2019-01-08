@@ -1171,12 +1171,17 @@ proc Cyclic.dsiTargetLocales() {
 proc CyclicArr.dsiHasSingleLocalSubdomain() param return true;
 proc CyclicDom.dsiHasSingleLocalSubdomain() param return true;
 
-proc CyclicArr.dsiLocalSubdomain() {
+proc CyclicArr.dsiLocalSubdomain(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("Cyclic", "remote subdomain queries");
+
   return myLocArr.locDom.myBlock;
 }
-proc CyclicDom.dsiLocalSubdomain() {
+proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   // TODO -- could be replaced by a privatized myLocDom in CyclicDom
   // as it is with CyclicArr
+  if loc != here then
+    unimplementedFeatureHalt("Cyclic", "remote subdomain queries");
   var myLocDom:unmanaged LocCyclicDom(rank, idxType) = nil;
   for (loc, locDom) in zip(dist.targetLocs, locDoms) {
     if loc == here then

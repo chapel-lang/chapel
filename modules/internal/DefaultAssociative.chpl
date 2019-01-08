@@ -834,8 +834,8 @@ module DefaultAssociative {
 
     proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiLocalSubdomain() {
-      if this.data.locale == here {
+    proc dsiLocalSubdomain(loc: locale) {
+      if this.data.locale == loc {
         return _getDomain(dom);
       } else {
         var a: domain(dom.idxType, parSafe=dom.parSafe);
