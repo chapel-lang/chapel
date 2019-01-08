@@ -19,34 +19,8 @@
 
 #include "clang_builtins_wrapper.h"
 #include <complex.h>
-/*
-static inline double ADD_WRAPPER_PREFIX(cabs)(_Complex double c) {
-#if __FAST_MATH__
-    double x = __builtin_creal(c);
-    double y = __builtin_cimag(c);
-    return __builtin_sqrt(x*x+y*y);
-#else
-    return cabs(c);
-#endif
-}
 
 
-static inline float ADD_WRAPPER_PREFIX(cabsf)(_Complex float c) {
-#if __FAST_MATH__
-    double x = __builtin_crealf(c);
-    double y = __builtin_cimagf(c);
-    return __builtin_sqrtf(x*x+y*y);
-#else
-    return cabsf(c);
-#endif
-}
-
-static inline long double ADD_WRAPPER_PREFIX(cabsl)(_Complex long double c) {
-#if __FAST_MATH__
-    double x = __builtin_creall(c);
-    double y = __builtin_cimagl(c);
-    return __builtin_sqrtl(x*x+y*y);
-#else
-    return cabsl(c);
-#endif
-}*/
+// Any custom versions of clang functions would go here
+// e.g.
+// static inline double ADD_WRAPPER_PREFIX(cabs)(_Complex double c) ...

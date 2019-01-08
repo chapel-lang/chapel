@@ -24,9 +24,10 @@ clangDelegatedBuiltins = [
 ]
 
 rewrittenBuiltins = [
-    #    "cabs",
-    #"cabsf",
-    #"cabsl",
+    # these are defined manually in chapel_libc_wrapper.h
+    # rather than in the generated clang_builtins_wrapper.h
+    #
+    # Formerly handled cabs etc
 ]
 
 
