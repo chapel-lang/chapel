@@ -162,6 +162,8 @@ def getDeclName(decl):
         name = inner.name
     elif type(inner) == c_ast.Decl:
         name = inner.name
+    elif type(inner) == c_ast.Enum:
+        name = "c_int"
     else:
         raise Exception("Unhandled node type: " + str(type(inner)))
     return name
