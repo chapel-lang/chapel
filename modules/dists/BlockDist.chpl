@@ -1426,19 +1426,19 @@ proc Block.dsiTargetLocales() {
   return targetLocales;
 }
 
-// Block subdomains are continuous
-
-proc BlockArr.dsiHasSingleLocalSubdomain() param return true;
-proc BlockDom.dsiHasSingleLocalSubdomain() param return true;
-
-// returns the current locale's subdomain
-
 proc Block.chpl__locToLocIdx(loc: locale) {
   for locIdx in targetLocDom do
     if (targetLocales[locIdx] == loc) then
       return locIdx;
   halt("Didn't find locale ", loc.id, " in targetLocales");
 }
+
+// Block subdomains are continuous
+
+proc BlockArr.dsiHasSingleLocalSubdomain() param return true;
+proc BlockDom.dsiHasSingleLocalSubdomain() param return true;
+
+// returns the current locale's subdomain
 
 proc BlockArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
@@ -1448,7 +1448,7 @@ proc BlockArr.dsiLocalSubdomain(loc: locale) {
   }
 }
 proc BlockDom.dsiLocalSubdomain(loc: locale) {
-/*
+/*  This is the old way we used to do it...
   if (loc == here) {
     // TODO -- could be replaced by a privatized myLocDom in BlockDom
     // as it is with BlockArr
@@ -1458,12 +1458,11 @@ proc BlockDom.dsiLocalSubdomain(loc: locale) {
         myLocDom = locDom;
     }
     return myLocDom.myBlock;
-  } else {
+  } else ...
 */
     const locid = dist.chpl__locToLocIdx(loc);
     var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
     return whole[(...inds)];
-//  }
 }
 
 iter ConsecutiveChunks(LView, RDomClass, RView, len, in start) {
