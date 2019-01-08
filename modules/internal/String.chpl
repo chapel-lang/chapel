@@ -649,7 +649,7 @@ module String {
       :returns: A Unicode codepoint starting at the
                 specified codepoint index from `1..string.ulength`
      */
-    proc this(cpi: codePointIndex) : int(32) {
+    proc this(cpi: codePointIndex) : string {
       const idx = cpi: int;
       if boundsChecking && idx <= 0 then
         halt("index out of bounds of string: ", idx);
@@ -657,13 +657,13 @@ module String {
       var i = 1;
       for codepoint in this.uchars() {
         if i == idx then
-          return codepoint;
+          return codePointToString(codepoint);
         i += 1;
       }
       // We have reached the end of the string without finding our index.
       if boundsChecking then
         halt("index out of bounds of string: ", idx);
-      return 0: int(32);
+      return "";
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
