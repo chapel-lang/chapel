@@ -136,15 +136,15 @@ def compute_all_values():
     ENV_VALS['CHPL_HOST_PLATFORM'] = chpl_platform.get('host')
     ENV_VALS['CHPL_HOST_COMPILER'] = chpl_compiler.get('host')
     ENV_VALS['CHPL_HOST_MACHINE'] = chpl_machine.get('host')
-    ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host').arch
+    ENV_VALS['CHPL_HOST_ARCH'] = chpl_cpu.get('host').arch
     ENV_VALS['CHPL_TARGET_PLATFORM'] = chpl_platform.get('target')
     ENV_VALS['CHPL_TARGET_COMPILER'] = chpl_compiler.get('target')
     ENV_VALS['CHPL_TARGET_MACHINE'] = chpl_machine.get('target')
-    ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target').arch
+    ENV_VALS['CHPL_TARGET_ARCH'] = chpl_cpu.get('target').arch
 
     # Use module's LCD architecture in case it was built before
     # Internal, but this value is used in place of CHPL_TARGET_ARCH for --path
-    ENV_VALS['CHPL_RUNTIME_ARCH'] = chpl_arch.get('target',
+    ENV_VALS['CHPL_RUNTIME_ARCH'] = chpl_cpu.get('target',
             get_lcd=chpl_home_utils.using_chapel_module()).arch
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
@@ -175,7 +175,7 @@ def compute_internal_values():
 
     # Maps architecture name that Chapel uses to the name that can be included
     # in an argument like -march e.g. for gcc-4.7: 'ivybridge' -> 'core-avx-i'
-    backend_info = chpl_arch.get('target', map_to_compiler=True)
+    backend_info = chpl_cpu.get('target', map_to_compiler=True)
     ENV_VALS['CHPL_TARGET_ARCH_FLAG'] = backend_info.flag
     ENV_VALS['CHPL_TARGET_BACKEND_ARCH'] = backend_info.arch
 

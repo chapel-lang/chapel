@@ -2,7 +2,7 @@
 import os
 import sys
 
-import chpl_3p_re2_configs, chpl_arch, chpl_compiler, chpl_platform, overrides
+import chpl_3p_re2_configs, chpl_cpu, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party
 from utils import memoize
 

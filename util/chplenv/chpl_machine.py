@@ -2,7 +2,7 @@
 import optparse
 import sys
 
-import chpl_arch, overrides
+import chpl_cpu, overrides
 from utils import error, memoize
 
 @memoize
@@ -19,7 +19,7 @@ def get(flag='host'):
         return machine_val
 
     # compute the default
-    return chpl_arch.get_default_machine(flag)
+    return chpl_cpu.get_default_machine(flag)
 
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target]")
