@@ -1,0 +1,1 @@
+mpirun  -np 1 -map-by ppr:1:node --quiet -mca rmaps_base_oversubscribe true -bind-to none:overload-allowed ./testVerboseFlag_real --verbose -nl 1 EXECOPTS

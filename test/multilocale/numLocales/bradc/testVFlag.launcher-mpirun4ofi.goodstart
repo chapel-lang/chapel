@@ -1,0 +1,1 @@
+mpirun  -np 1 -map-by ppr:1:node --quiet -mca rmaps_base_oversubscribe true -bind-to none:overload-allowed ./testVFlag_real -v -nl 1 EXECOPTS
