@@ -1214,7 +1214,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                      chpl_bool fast, chpl_bool blocking) {
   arg->comm.xo = (struct chpl_comm_bundleData_execOn_t)
                    { .op = am_opCall,
-                     .fast = false,
+                     .fast = fast,
                      .fid = fid,
                      .argSize = argSize,
                      .node = chpl_nodeID,
@@ -1373,6 +1373,7 @@ static void amHandler(void*);
 static void processRxAmReq(struct perTxCtxInfo_t*);
 static void amHandleExecOn(chpl_comm_on_bundle_t*);
 static void amExecOnWrapper(void*);
+static inline void realExecOnWrapper(void*, chpl_bool);
 static void amGetWrapper(void*);
 static void amPutWrapper(void*);
 static void amHandleAMO(chpl_comm_on_bundle_t*);
@@ -1490,7 +1491,11 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         tcip->numAmReqsRxed++;
         switch (req->comm.op.op) {
         case am_opCall:
-          amHandleExecOn(req);
+          if (req->comm.xo.fast) {
+            realExecOnWrapper(req, false);
+          } else {
+            amHandleExecOn(req);
+          }
           break;
 
         case am_opGet:
@@ -1566,11 +1571,18 @@ void amHandleExecOn(chpl_comm_on_bundle_t* req) {
 
 static
 void amExecOnWrapper(void* p) {
+  realExecOnWrapper(p, false);
+}
+
+
+static inline
+void realExecOnWrapper(void* p, chpl_bool fast) {
   chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
   struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
 
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "amExecOnWrapper(): chpl_ftable_call(%d, %p)", (int) xo->fid, p);
+             "realExecOnWrapper(): %schpl_ftable_call(%d, %p)",
+             (fast ? "fast " : ""), (int) xo->fid, p);
   chpl_ftable_call(xo->fid, p);
   if (xo->pDone != NULL) {
     amSendDone(xo->node, xo->pDone);
