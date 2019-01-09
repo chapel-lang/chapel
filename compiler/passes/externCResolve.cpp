@@ -100,16 +100,10 @@ static Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module, const clang::
   if (size.getMinSignedBits() > 64)
     USR_FATAL("C array is too large");
 
-  //int64_t isize = size.getSExtValue();
-  //Symbol* isym = new_IntSymbol(isize, INT_SIZE_64);
-  // this would make a tuple
-  //return new CallExpr("*", new SymExpr(isym), eltTypeChapel);
+  int64_t isize = size.getSExtValue();
+  Symbol* isym = new_IntSymbol(isize, INT_SIZE_64);
 
-  // this would make a fixed size array
-  //return new CallExpr("c_array_ptr", eltTypeChapel, new SymExpr(isym));
-
-  // For now, just represent it as a c_ptr
-  return new CallExpr("c_ptr", eltTypeChapel);
+  return new CallExpr("c_array_ptr", eltTypeChapel, new SymExpr(isym));
 }
 
 static Expr* convertArrayToChplType(ModuleSymbol* module, const clang::ArrayType* arrayType, Vec<Expr*> & results, const char* typedefName=NULL) {
