@@ -293,6 +293,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
               // uses a nullptr type as a stub, but we should change it
                 fditype = this->dibuilder.createNullPtrType();
 
+              bool unused;
               //use the dummy type for 'BaseArr'
               mty = this->dibuilder.createMemberType(
                 get_module_scope(defModule),
@@ -301,7 +302,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
                 fieldDefLine,
                 layout.getTypeSizeInBits(fty),
                 8*layout.getABITypeAlignment(fty),
-                slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname)),
+                slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname, unused)),
                 llvm::DINode::FlagZero,
                 fditype);
 
@@ -371,6 +372,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         if(!fty)
           printf("Error: %s has no llvm type\n",fts->name);
       }
+      bool unused;
       llvm::DIType* mty = this->dibuilder.createMemberType(
         get_module_scope(defModule),
         field->name,
@@ -378,7 +380,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         fieldDefLine,
         layout.getTypeSizeInBits(fty),
         8*layout.getABITypeAlignment(fty),
-        slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname)),
+        slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname, unused)),
         llvm::DINode::FlagZero,
         fditype);
 

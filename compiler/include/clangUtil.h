@@ -59,7 +59,7 @@ GenRet codegenCValue(const clang::ValueDecl *vd);
 
 llvm::Function* getFunctionLLVM(const char* name);
 llvm::Type* getTypeLLVM(const char* name);
-int getCRecordMemberGEP(const char* typeName, const char* fieldName);
+int getCRecordMemberGEP(const char* typeName, const char* fieldName, bool& isCArrayField);
 void makeBinaryLLVM();
 void prepareCodegenLLVM();
 void finishCodegenLLVM();
