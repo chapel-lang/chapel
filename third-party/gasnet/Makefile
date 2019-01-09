@@ -65,14 +65,7 @@ XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),aarch64)
-CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
-CHPL_GASNET_CFG_SCRIPT=cross-configure-aarch64-linux
-XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
-XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
-else
 CHPL_GASNET_CFG_SCRIPT=configure
-endif
 endif
 
 # Build amudprun for the host platform and replace the default one that was
