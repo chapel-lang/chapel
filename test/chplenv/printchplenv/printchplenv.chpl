@@ -5,7 +5,7 @@ writeln('CHPL_TARGET_ARCH: ', CHPL_TARGET_ARCH);
 writeln('CHPL_TARGET_CPU: ', CHPL_TARGET_CPU);
 writeln('CHPL_LOCALE_MODEL: ', CHPL_LOCALE_MODEL);
 writeln('CHPL_COMM: ', CHPL_COMM);
-if CHPL_COMM != 'none' && CHPL_COMM != 'ugni' then {
+if CHPL_COMM == 'gasnet' then {
   writeln('  CHPL_COMM_SUBSTRATE: ', CHPL_COMM_SUBSTRATE);
   if CHPL_COMM == 'gasnet' then
     writeln('  CHPL_GASNET_SEGMENT: ', CHPL_GASNET_SEGMENT);
