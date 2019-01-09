@@ -42,7 +42,7 @@ COMM_LAUNCHER_OBJS = \
 
 
 ifeq ($(CHPL_MAKE_COMPILER), clang-included)
-  ifneq (, $(filter cray-prgenv-%,$(CHPL_ORIG_TARGET_COMPILER)))
+  ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_ORIG_TARGET_COMPILER)))
     # if we're clang-included for a cray-prgenv-* build,
     # gather some extra include paths
 
