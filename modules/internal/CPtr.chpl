@@ -92,6 +92,78 @@ module CPtr {
     }
   }
 
+  //   Similar to c_ptr but includes a param width
+  //   (matching a C fixed-size array).
+  pragma "data class"
+  pragma "no object"
+  pragma "no default functions"
+  pragma "no wide class"
+  pragma "c_ptr class"
+  class c_array_ptr {
+    /* The type that this pointer points to */
+    type eltType;
+    /* The fixed number of elements */
+    param size;
+    /* Retrieve the i'th element (zero based) from a pointer to an array.
+      Does the equivalent of ptr[i] in C.
+    */
+    inline proc this(i: integral) ref {
+      if boundsChecking then
+        if i < 0 || i >= size then
+          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i +
+                                       "(indices are 0.." + (size-1) + ")");
+
+      return __primitive("array_get", this, i);
+    }
+    inline proc this(param i: integral) ref {
+      if i < 0 || i >= size then
+        compilerError("c array index out of bounds " + i +
+                      "(indices are 0.." + (size-1) + ")");
+
+      return __primitive("array_get", this, i);
+    }
+
+    /* Print the elements */
+    inline proc writeThis(ch) {
+      if __primitive("ptr_eq", this, nil) {
+        ch <~> new ioLiteral("nil");
+        return;
+      }
+
+      ch <~> new ioLiteral("[");
+      var first = true;
+      for i in 0..#size {
+
+        ch <~> this(i);
+
+        if i != size-1 then
+          ch <~> new ioLiteral(", ");
+      }
+      ch <~> new ioLiteral("]");
+    }
+
+    /*proc init(other: c_array_ptr) {
+      // TODO: size mismatch error
+      // TODO: eltType mismatch error
+      //if other.size != this.size then
+      //  compilerError("Size mismatch in c array initialization");
+
+      this.eltType = other.eltType;
+      this.size = other.size;
+      for i in 0..#size {
+        this[i] = other[i];
+      }
+    }*/
+  }
+  proc =(ref lhs:c_array_ptr, rhs:c_array_ptr) {
+    if lhs.size != rhs.size then
+      compilerError("Size mismatch in c array assignment");
+
+    for i in 0..#lhs.size {
+      lhs[i] = rhs[i];
+    }
+  }
+
   pragma "no doc"
   inline proc c_void_ptr.writeThis(ch) {
     try {
@@ -124,6 +196,10 @@ module CPtr {
 
   pragma "no doc"
   inline proc _cast(type t:c_ptr, x:c_ptr) {
+    return __primitive("cast", t, x);
+  }
+  pragma "no doc"
+  inline proc _cast(type t:c_array_ptr, x:c_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
