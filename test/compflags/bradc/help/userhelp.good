@@ -101,7 +101,7 @@ C Code Compilation Options:
   -L, --lib-search-path <directory>   C library search path
   -O, --[no-]optimize                 [Don't] Optimize generated C code
       --[no-]specialize               [Don't] Specialize generated C code for
-                                      CHPL_TARGET_ARCH
+                                      CHPL_TARGET_CPU
   -o, --output <filename>             Name output executable
       --static                        Generate a statically linked binary
 

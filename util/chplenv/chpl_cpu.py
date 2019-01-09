@@ -590,9 +590,9 @@ def get(flag, map_to_compiler=False, get_lcd=False):
     arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch'])
 
     if not flag or flag == 'host':
-        arch = overrides.get('CHPL_HOST_ARCH', '')
+        arch = overrides.get('CHPL_HOST_CPU', '')
     elif flag == 'target':
-        arch = overrides.get('CHPL_TARGET_ARCH', '')
+        arch = overrides.get('CHPL_TARGET_CPU', '')
     else:
         raise InvalidLocationError(flag)
 

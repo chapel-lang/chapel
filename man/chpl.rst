@@ -429,8 +429,8 @@ OPTIONS
 
     Causes the generated C code to be compiled with flags that specialize
     the executable to the architecture that is defined by
-    CHPL\_TARGET\_ARCH. The effects of this flag will vary based on choice
-    of back-end compiler and the value of CHPL\_TARGET\_ARCH.
+    CHPL\_TARGET\_CPU. The effects of this flag will vary based on choice
+    of back-end compiler and the value of CHPL\_TARGET\_CPU.
 
 **-o, --output <filename>**
 
@@ -652,11 +652,11 @@ OPTIONS
     'none' or 're2' if you've installed the re2 package in the third-party
     *directory*).
 
-**--target-arch <architecture>**
+**--target-cpu <architecture>**
 
     Specify the architecture that the compiled executable will be
     specialized to when **--specialize** is enabled. This flag corresponds
-    with and overrides the $CHPL\_TARGET\_ARCH environment variable
+    with and overrides the $CHPL\_TARGET\_CPU environment variable
     (defaults to a best guess based on $CHPL\_COMM, $CHPL\_TARGET\_COMPILER,
     and $CHPL\_TARGET\_PLATFORM).
 

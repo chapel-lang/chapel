@@ -19,7 +19,7 @@ unset CHPL_START_TEST_ARGS
 nightly_args="${nightly_args} -no-buildcheck"
 
 # host-specific
-export CHPL_TARGET_ARCH=native
+export CHPL_TARGET_CPU=native
 export CHPL_LAUNCHER_PARTITION=chapel
 export GASNET_PHYSMEM_MAX=16G
 export GASNET_PHYSMEM_NOPROBE=1

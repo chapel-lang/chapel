@@ -8,7 +8,7 @@ import os
 print(os.getenv('CHPL_MEM') != 'jemalloc' or
       os.getenv('HUGETLB_DEFAULT_PAGE_SIZE') == None or
       os.getenv('CHPL_RT_MAX_HEAP_SIZE') != None or 
-      os.getenv('CHPL_TARGET_ARCH', '') in ['aarch64',
-                                            'arm-thunderx',
-                                            'arm-thunderx2'])
+      os.getenv('CHPL_TARGET_CPU', '') in ['aarch64',
+                                           'arm-thunderx',
+                                           'arm-thunderx2'])
 

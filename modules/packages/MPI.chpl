@@ -51,7 +51,7 @@ Compiler wrappers
 Using MPI requires pointing the compiler to the location of the
 MPI headers, and including the appropriate MPI libraries. This is
 often done by using compiler wrappers like "mpicc". Setting
-``CHPL_TARGET_COMPILER=mpi-gnu`` and ``CHPL_TARGET_ARCH=none`` will
+``CHPL_TARGET_COMPILER=mpi-gnu`` and ``CHPL_TARGET_CPU=none`` will
 get Chapel to use mpicc and assume that it works like gcc does.
 
 Note that on Cray systems, this is not necessary, since the default

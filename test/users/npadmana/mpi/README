@@ -2,7 +2,7 @@ Setting the environment variables below switch to using
 mpicc and mpicxx instead of gcc/g++
 
 CHPL_TARGET_COMPILER=mpi-gnu
-CHPL_TARGET_ARCH=none 
+CHPL_TARGET_CPU=none 
 
 The latter is to squash a number of warnings when building Chapel.
 
