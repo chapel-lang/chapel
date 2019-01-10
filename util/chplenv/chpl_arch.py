@@ -49,9 +49,9 @@ def _main():
                       const='host')
     (options, args) = parser.parse_args()
 
-    machine = get(options.flag)
+    arch = get(options.flag)
 
-    sys.stdout.write("{0}\n".format(machine))
+    sys.stdout.write("{0}\n".format(arch))
 
 if __name__ == '__main__':
     _main()
