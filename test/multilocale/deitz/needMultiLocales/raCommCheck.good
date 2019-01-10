@@ -5,7 +5,7 @@ Number of updates = 4096
 
 Locale: (gets, puts, forks, fast forks, non-blocking forks)
 1: (execute_on = 212, execute_on_nb = 3)
-2: (execute_on = 849, execute_on_fast = 1)
-3: (execute_on = 872, execute_on_fast = 1)
-4: (execute_on = 837, execute_on_fast = 1)
+2: (execute_on = 849)
+3: (execute_on = 872)
+4: (execute_on = 837)
 Validation: SUCCESS
