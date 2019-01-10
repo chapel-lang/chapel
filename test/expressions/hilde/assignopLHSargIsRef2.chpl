@@ -10,14 +10,17 @@ record R {
 }
 
 proc =(a:R, b:R) {
-  a.x = b.x;
+  writeln("in R's = operator");
 }
 
 proc *=(a:R, b:R) {
-  a.x += b.x;
+  writeln("in R's *= operator");
 }
 
-var r1, r2: R;
+var r1 = new R(42),
+    r2 = new R(23);
 
 r1 = r2;
 r1 *= r2;
+
+writeln(r1, r2);
