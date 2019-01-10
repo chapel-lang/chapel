@@ -34,7 +34,12 @@ def get(flag='host'):
         return arch_val
 
     # compute the default
-    return chpl_cpu.get_default_machine(flag)
+    cpu_val = chpl_cpu.get(flag).arch
+    cpuarch = chpl_cpu.arch_for_cpu(cpu_val, flag)
+    if cpuarch:
+        return cpuarch
+    else:
+        return chpl_cpu.get_default_machine(flag)
 
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target]")
