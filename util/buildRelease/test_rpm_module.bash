@@ -60,7 +60,7 @@ then
 fi
 
 # Build an RPM module
-./cray-internal/chapel_build.bash -s setenv-example-3.bash -t ../../tar/chapel-developer.tar.gz -b developer
+./cray-internal/chapel_build.bash -s setenv-example-3.bash -t ../../tar/chapel-developer.tar.gz -b developer -v
 # Generates a chapel*.rpm
 
 if [ -d "$START_DIR/rpm-install" ]

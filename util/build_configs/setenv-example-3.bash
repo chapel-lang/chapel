@@ -243,7 +243,7 @@ else
         list_loaded_modules
     fi
 
-    gen_version_gcc=6.1.0
+ ## gen_version_gcc=6.1.0           # For portability, this example just accepts the default version.
  ## gen_version_intel=18.0.3.222    # For portability, this example just accepts the default version.
     target_cpu_module=craype-sandybridge
 
@@ -251,14 +251,14 @@ else
 
         local target_prgenv="PrgEnv-gnu"
         local target_compiler="gcc"
-        local target_version=$gen_version_gcc
+     ## local target_version=$gen_version_gcc
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
-        load_module_version $target_compiler $target_version
+     ## load_module_version $target_compiler $target_version
     }
 
     function load_prgenv_intel() {
