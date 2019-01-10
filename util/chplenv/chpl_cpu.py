@@ -388,10 +388,9 @@ class feature_sets(object):
 
     @classmethod
     def findarch(sets, cpu):
-        if sets.isvendor('genuineintel', cpu):
-             return 'x86-64'
-        if sets.isvendor('authenticamd', cpu):
-             return 'x86-64'
+        if (sets.isvendor('genuineintel', cpu) or
+            sets.isvendor('authenticamd', cpu)):
+            return 'x86_64'
         if sets.isvendor('arm', cpu):
              return 'aarch64'
 

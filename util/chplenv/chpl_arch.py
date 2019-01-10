@@ -15,18 +15,19 @@ def get(flag='host'):
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
+    arch_flag = "CHPL_TARGET_ARCH"
+    cpu_flag = "CHPL_TARGET_CPU"
+    if flag == 'host':
+      arch_flag = "CHPL_HOST_ARCH"
+      cpu_flag = "CHPL_HOST_CPU"
+
     cpuarch = chpl_cpu.arch_for_cpu(arch_val, flag)
     if cpuarch:
-        oldname = "CHPL_TARGET_ARCH"
-        newname = "CHPL_TARGET_CPU"
-        if flag == 'host':
-          oldname = "CHPL_HOST_ARCH"
-          newname = "CHPL_HOST_CPU"
 
         sys.stderr.write('Warning: {0}={1} is deprecated. '
-                         'Please use {2}={3}\n'.format(oldname,
+                         'Please use {2}={3}\n'.format(arch_flag,
                                                        arch_val,
-                                                       newname,
+                                                       cpu_flag,
                                                        arch_val))
         arch_val = cpuarch
 
@@ -36,10 +37,18 @@ def get(flag='host'):
     # compute the default
     cpu_val = chpl_cpu.get(flag).arch
     cpuarch = chpl_cpu.arch_for_cpu(cpu_val, flag)
+    machine = chpl_cpu.get_default_machine(flag)
     if cpuarch:
-        return cpuarch
-    else:
-        return chpl_cpu.get_default_machine(flag)
+        if cpuarch != machine:
+            sys.stderr.write('Warning: Cross compilation not yet supported. '
+                             'Inferred {0}={1} based upon {2}={3} '
+                             'but running on {4}.\n'.format(arch_flag,
+                                                            cpuarch,
+                                                            cpu_flag,
+                                                            cpu_val,
+                                                            machine))
+
+    return chpl_cpu.get_default_machine(flag)
 
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target]")
