@@ -370,6 +370,34 @@ class feature_sets(object):
 
 
     @classmethod
+    def isvendor(sets, vendor, cpu):
+        options = []
+        if "intel" in vendor.lower():
+            options = sets.intel
+        elif "amd" in vendor.lower():
+            options = sets.amd
+        elif "arm" == vendor.lower() or "aarch" in vendor.lower():
+            options = sets.arm
+
+        found = ''
+        for name, fset in options:
+            if cpu == name:
+                return True
+
+        return False
+
+    @classmethod
+    def findarch(sets, cpu):
+        if sets.isvendor('genuineintel', cpu):
+             return 'x86-64'
+        if sets.isvendor('authenticamd', cpu):
+             return 'x86-64'
+        if sets.isvendor('arm', cpu):
+             return 'aarch64'
+
+        return None
+
+    @classmethod
     def find(sets, vendor, features):
         def remove_punctuation(s):
             exclude = set(punctuation)
@@ -513,7 +541,7 @@ def adjust_architecture_for_compiler(arch, flag, get_lcd):
     return arch
 
 @memoize
-def default_arch(flag):
+def default_cpu(flag):
     comm_val = chpl_comm.get()
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
@@ -538,10 +566,18 @@ def default_arch(flag):
 
     return arch
 
+# Given a cpu type, return the arch/machine type
+#  e.g. sandybridge -> x86_64
+@memoize
+def arch_for_cpu(cpu, flag):
+    if cpu in ['none', 'unknown', 'native']:
+        return get_default_machine(flag)
+
+    return feature_sets.findarch(cpu)
 
 # Given an arch, raise an error if it's not a reasonable setting
 @memoize
-def verify_arch(arch, flag):
+def verify_cpu(arch, flag):
     comm_val = chpl_comm.get()
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
@@ -600,15 +636,32 @@ def get(flag, map_to_compiler=False, get_lcd=False):
     if arch == 'none' or (flag == 'host' and not arch):
         return arch_tuple('none', 'none')
 
+
+    # Handle backwards compatability - CHPL_TARGET_ARCH might be
+    # set instead of the currently preferred CHPL_TARGET_CPU.
+    if not arch:
+        oldarch = None
+        if not flag or flag == 'host':
+            oldarch = overrides.get('CHPL_HOST_ARCH', '')
+        elif flag == 'target':
+            oldarch = overrides.get('CHPL_TARGET_ARCH', '')
+        else:
+            raise InvalidLocationError(flag)
+
+        machinearch = arch_for_cpu(oldarch, flag)
+        if machinearch:
+            arch = oldarch
+
+
     # Adjust arch for compiler (not all compilers support all arch
     # settings; PrgEnv might override arch, etc)
     arch = adjust_architecture_for_compiler (arch, flag, get_lcd)
 
     # Now, if is not yet set, we should set the default.
     if not arch:
-        arch = default_arch(flag)
+        arch = default_cpu(flag)
 
-    verify_arch(arch, flag)
+    verify_cpu(arch, flag)
 
     compiler_val = chpl_compiler.get(flag)
     isprgenv = compiler_is_prgenv(compiler_val)

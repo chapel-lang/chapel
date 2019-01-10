@@ -9,14 +9,29 @@ from utils import error, memoize
 def get(flag='host'):
 
     if flag == 'host':
-        machine_val = overrides.get('CHPL_HOST_ARCH', '')
+        arch_val = overrides.get('CHPL_HOST_ARCH', '')
     elif flag == 'target':
-        machine_val = overrides.get('CHPL_TARGET_ARCH', '')
+        arch_val = overrides.get('CHPL_TARGET_ARCH', '')
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
-    if machine_val:
-        return machine_val
+    cpuarch = chpl_cpu.arch_for_cpu(arch_val, flag)
+    if cpuarch:
+        oldname = "CHPL_TARGET_ARCH"
+        newname = "CHPL_TARGET_CPU"
+        if flag == 'host':
+          oldname = "CHPL_HOST_ARCH"
+          newname = "CHPL_HOST_CPU"
+
+        sys.stderr.write('Warning: {0}={1} is deprecated. '
+                         'Please use {2}={3}\n'.format(oldname,
+                                                       arch_val,
+                                                       newname,
+                                                       arch_val))
+        arch_val = cpuarch
+
+    if arch_val:
+        return arch_val
 
     # compute the default
     return chpl_cpu.get_default_machine(flag)
