@@ -158,9 +158,9 @@ MyPackage's structure is as follows::
    ├── Mason.toml
    ├── example/
    ├── src/
-   │   └── myPackage.chpl
-   ├── util/
-   │   └── myPackageUtils.chpl
+   │   ├── myPackage.chpl
+   │   └── util/
+   │       └── myPackageUtils.chpl
    ├── target/
    │   ├── debug/
    │   │   └── myPackage
