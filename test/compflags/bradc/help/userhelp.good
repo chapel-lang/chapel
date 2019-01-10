@@ -150,7 +150,7 @@ Compiler Configuration Options:
       --make <make utility>           Make utility for generated code
       --mem <mem-impl>                Specify the memory manager
       --regexp <regexp>               Specify whether to use regexp support
-      --target-arch <architecture>    Target architecture to optimize for
+      --target-cpu <architecture>     Target architecture to optimize for
       --target-compiler <compiler>    Compiler for generated code
       --target-platform <platform>    Platform for cross-compilation
       --tasks <task-impl>             Specify tasking implementation

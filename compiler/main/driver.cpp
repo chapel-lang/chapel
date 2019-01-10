@@ -980,7 +980,7 @@ static ArgumentDescription arg_desc[] = {
  {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setEnv},
  {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_MEM", setEnv},
  {"regexp", ' ', "<regexp>", "Specify whether to use regexp support", "S", NULL, "_CHPL_REGEXP", setEnv},
- {"target-arch", ' ', "<architecture>", "Target architecture to optimize for", "S", NULL, "_CHPL_TARGET_CPU", setEnv},
+ {"target-cpu", ' ', "<architecture>", "Target architecture to optimize for", "S", NULL, "_CHPL_TARGET_CPU", setEnv},
  {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setEnv},
  {"target-platform", ' ', "<platform>", "Platform for cross-compilation", "S", NULL, "_CHPL_TARGET_PLATFORM", setEnv},
  {"tasks", ' ', "<task-impl>", "Specify tasking implementation", "S", NULL, "_CHPL_TASKS", setEnv},
