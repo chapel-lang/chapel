@@ -55,12 +55,17 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
   #
+  # Note that we call compileline with CHPL_COMM=none. Under
+  # CHPL_COMM=gasnet, compileline will fail if gasnet is not built, so
+  # in order to avoid ordering/dependencies just ignore the comm setting
+  # since it does not impact the qthreads build.
+  #
   # Throw COMPILELINE_STDERR_REDIRECT= if compileline failure is reported
   # and you want to see the stderr from that.
   #
   COMPILELINE_STDERR_REDIRECT=2> /dev/null
   INCS_DEFS := \
-    $(shell $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
+    $(shell CHPL_COMM=none $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
                $(COMPILELINE_STDERR_REDIRECT) \
             || echo compilelineFAILURE)
   ifneq (, $(findstring compilelineFAILURE,$(INCS_DEFS)))
