@@ -533,15 +533,20 @@ def FindGoodFile(basename, commExecNums=['']):
         if not os.path.isfile(goodfile):
             if '--no-local' in envCompopts:
                 goodfile=basename+'.no-local'+commExecNum+'.good'
-        # Else try comm and locale model specific .good file.
+        # Else try comm-, networkAtomics-, and localeModel-specific .good
+        # files.  All 3, any 2, or just 1 of these may be used, but if more
+        # then 1 they must be in the above order.
         if not os.path.isfile(goodfile):
-            goodfile=basename+chplcommstr+chpllmstr+commExecNum+'.good'
-        # Else try the comm-specific .good file.
-        if not os.path.isfile(goodfile):
-            goodfile=basename+chplcommstr+commExecNum+'.good'
-        # Else try locale model specific .good file.
-        if not os.path.isfile(goodfile):
-            goodfile=basename+chpllmstr+commExecNum+'.good'
+            for specstr in [ chplcommstr+chplnastr+chpllmstr,
+                             chplcommstr+chplnastr,
+                             chplcommstr+chpllmstr,
+                             chplnastr+chpllmstr,
+                             chplcommstr,
+                             chplnastr,
+                             chpllmstr ]:
+                goodfile=basename+specstr+commExecNum+'.good'
+                if os.path.isfile(goodfile):
+                    break
         # Else try the platform-specific .good file.
         if not os.path.isfile(goodfile):
             goodfile=basename+'.'+platform+commExecNum+'.good'
@@ -733,6 +738,11 @@ if localdir.find('./') == 0:
 chplcomm=os.getenv('CHPL_COMM','none').strip()
 chplcommstr='.comm-'+chplcomm
 # sys.stdout.write('chplcomm=%s\n'%(chplcomm))
+
+# CHPL_NETWORK_ATOMICS
+chplna=os.getenv('CHPL_NETWORK_ATOMICS','none').strip()
+chplnastr='.na-'+chplna
+#sys.stdout.write('chplna=%s\n'%(chplna))
 
 # CHPL_LAUNCHER
 chpllauncher=os.getenv('CHPL_LAUNCHER','none').strip()

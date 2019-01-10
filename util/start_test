@@ -1008,6 +1008,7 @@ def set_up_executables():
     os.environ['LAUNCHCMD'] = os.path.expandvars(args.launch_cmd)
 
     comm = chpl_comm.get()
+    network_atomics = chpl_atomics.get('network')
     launcher = chpl_launcher.get()
     locale_model = chpl_locale_model.get()
 
@@ -1015,6 +1016,9 @@ def set_up_executables():
     os.environ["CHPL_COMM"] = comm
     os.environ["CHPL_GASNET_SEGMENT"] = chpl_comm_segment.get()
     os.environ["CHPL_LAUNCHER"] = launcher
+
+    logger.write('[networkAtomics: "{0}"]'.format(network_atomics))
+    os.environ["CHPL_NETWORK_ATOMICS"] = network_atomics
 
     logger.write('[localeModel: "{0}"]'.format(locale_model))
     os.environ["CHPL_LOCALE_MODEL"] = locale_model
