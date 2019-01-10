@@ -1,0 +1,5 @@
+bug: internal error on (illegal?) initializer
+
+This initializer tries to set a value field in its parent and then a
+type field in itself.  Something about this combination causes an
+internal error, though I'm not quite sure what.
