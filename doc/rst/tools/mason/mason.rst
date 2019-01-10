@@ -37,7 +37,7 @@ Starting a New Package
 
 To initialize a new mason package, run the ``mason new [ package name ] [ options ]`` command, for example::
 
-    mason new MyPackage 
+    mason new MyPackage
 
 This creates a git repository by default, unless ``--no-vcs`` is included.
 
@@ -65,7 +65,7 @@ Mason enforces that the main file be named after the package to enforce namespac
 ``MyPackage.chpl`` will be the first file listed in ``src/``.
 
 
-Building and Running 
+Building and Running
 ~~~~~~~~~~~~~~~~~~~~
 
 When invoked, ``mason build [ options ]`` will do the following:
@@ -215,7 +215,7 @@ an example of adding to ``MyPackage`` and running it. The test is as follows:
 Our package structure will be as follows::
 
   MyPackage/
-   │  
+   │
    ├── Mason.lock
    ├── Mason.toml
    ├── example/
@@ -243,7 +243,7 @@ and run them producing the following output::
 
   --- Results ---
   Test: myPackageTest Passed
-  
+
   --- Summary:  1 tests run ---
   -----> 1 Passed
   -----> 0 Failed
@@ -306,7 +306,7 @@ follows::
 
 
   MyPackage/
-   │ 
+   │
    ├── Mason.lock
    ├── Mason.toml
    ├── example/
@@ -625,7 +625,7 @@ Resuming the example, the result of the install given ``openssl`` as the sole ar
   ==> Executing phase: 'install'
   ==> Successfully installed zlib
   Fetch: 4.84s.  Build: 4.24s.  Total: 9.08s.
-  
+
   ==> Installing openssl
   ==> Fetching http://www.openssl.org/source/openssl-1.0.2k.tar.gz
   ==> Staging archive: /$HOME/.mason/spack/var/spack/stage/openssl-1.0.2k-fwnsee6qcvbbgvmgp3f5hio6dwg6nh2d/openssl-1.0.2k.tar.gz
@@ -669,13 +669,13 @@ which will list all of the current Spack packages installed on system. For examp
   ==> 2 installed packages.
   -- darwin-sierra-x86_64 / clang@9.0.0-apple ---------------------
   openssl@1.0.2k  zlib@1.2.11
-  
+
 
 Now, everything necessary to use ``openssl`` in a Mason package has been done.
 Upon building, Mason will retrieve the necessary files and file locations
 for building ``myPackage`` with ``openssl``.
 
- 
+
 Mason-Registry
 ==============
 
