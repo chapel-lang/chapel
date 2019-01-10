@@ -128,7 +128,7 @@ module Random {
      `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
     :type seed: `int(64)`
 
-    :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
+    :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
     :type algorithm: :type:`RNG`
   */
   proc fillRandom(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
@@ -156,6 +156,102 @@ module Random {
     var randNums = makeRandomStream(seed, eltType=arr.domain.idxType, parSafe=false, algorithm=algorithm);
     randNums.shuffle(arr);
   }
+
+  /* Return the cumulative sum array of ``arr``.
+
+     For example::
+
+     var result = cumSum([1,2,3,5,7,11]);
+     writeln(result); // [1, 3, 6, 11, 18, 29]
+
+   */
+  private proc cumSum(arr: [?dom] ?eltType) throws {
+    var cumulativeArr: [dom] eltType;
+    for i in dom {
+      // TODO: This check should be removed if this ever becomes a public proc
+      if arr[i] < 0 then
+        throw new IllegalArgumentError("choice() array cannot contain negative values");
+      if i != dom.first {
+        cumulativeArr[i] = cumulativeArr[i-1] + arr[i];
+      } else {
+      cumulativeArr[i] = arr[i];
+      }
+    }
+    return cumulativeArr;
+  }
+
+  /*
+   Returns an element from the input ``arr`` weighted by the value of the
+   ``arr`` elements.
+
+   .. code-block:: chapel
+
+      var result = choice([10, 40, 50]);
+
+   In the above example, the elements sum to ``100``, so the chances of returning each element are as follows::
+
+    Chance of returning 10 = 10/100 = 10%
+    Chance of returning 40 = 40/100 = 40%
+    Chance of returning 50 = 50/100 = 50%
+
+   :arg arr: a 1-D integral or real array, with no negative values and at least one non-zero value.
+   :arg seed: the seed to use when choosing an element. Defaults to
+    `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
+   :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
+   :type algorithm: :type:`RNG`
+
+   :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values.
+  */
+  proc choice(arr: [] ?eltType, seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=defaultRNG)
+    throws where isIntegralType(eltType) || isRealType(eltType)
+  {
+    return choice(arr, arr, seed, algorithm);
+  }
+
+  /*
+   :proc:`choice` overload that allows a separate ``prob`` array to define the
+   probabilities of choosing an element from ``arr``.
+
+   :arg arr: a 1-D array with a domain equal to ``prob.domain``.
+   :arg prob: a 1-D integral or real array, with no negative values and at least one non-zero value.
+   :arg seed: the seed to use when choosing an element. Defaults to
+    `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
+   :arg algorithm: A param indicating which algorithm to use. :param:`defaultRNG`.
+   :type algorithm: :type:`RNG`
+
+   :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``arr.domain != prob.domain``.
+   */
+  proc choice(arr: [], prob: [] ?eltType, seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=defaultRNG)
+    throws where isIntegralType(eltType) || isRealType(eltType)
+  {
+    use Search only;
+
+    // If stride, offset, or size don't match, we're in trouble
+    if arr.domain != prob.domain then
+      throw new IllegalArgumentError('choice() arrays must have equal domains');
+
+    if prob.size == 0 then
+      throw new IllegalArgumentError('choice() arrays cannot be empty');
+
+    var randNums = makeRandomStream(seed, eltType=real, parSafe=false, algorithm=algorithm);
+
+    // Construct cumulative sum array
+    var cumulativeArr = cumSum(prob): real;
+
+    // Confirm the array has at least one value > 0
+    if cumulativeArr[prob.domain.last] <= 0 then
+      throw new IllegalArgumentError('choice() array requires a value greater than 0');
+
+    // Normalize cumulative sum array
+    var total = cumulativeArr[prob.domain.last];
+    cumulativeArr /= total;
+
+    var randNum = randNums.getNext();
+
+    var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
+    return arr[idx];
+  }
+
 
   /* Produce a random permutation, storing it in a 1-D array.
      The resulting array will include each value from low..high
@@ -192,7 +288,7 @@ module Random {
     :arg parSafe: The parallel safety setting.  Defaults to `true`.
     :type parSafe: `bool`
 
-    :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
+    :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
     :type algorithm: :type:`RNG`
 
     :returns: an owned RandomStream
