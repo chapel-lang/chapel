@@ -9,16 +9,45 @@ from utils import error, memoize
 def get(flag='host'):
 
     if flag == 'host':
-        machine_val = overrides.get('CHPL_HOST_ARCH', '')
+        arch_val = overrides.get('CHPL_HOST_ARCH', '')
     elif flag == 'target':
-        machine_val = overrides.get('CHPL_TARGET_ARCH', '')
+        arch_val = overrides.get('CHPL_TARGET_ARCH', '')
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
-    if machine_val:
-        return machine_val
+    arch_flag = "CHPL_TARGET_ARCH"
+    cpu_flag = "CHPL_TARGET_CPU"
+    if flag == 'host':
+      arch_flag = "CHPL_HOST_ARCH"
+      cpu_flag = "CHPL_HOST_CPU"
+
+    cpuarch = chpl_cpu.arch_for_cpu(arch_val, flag)
+    if cpuarch:
+
+        sys.stderr.write('Warning: {0}={1} is deprecated. '
+                         'Please use {2}={3}\n'.format(arch_flag,
+                                                       arch_val,
+                                                       cpu_flag,
+                                                       arch_val))
+        arch_val = cpuarch
+
+    if arch_val:
+        return arch_val
 
     # compute the default
+    cpu_val = chpl_cpu.get(flag).cpu
+    cpuarch = chpl_cpu.arch_for_cpu(cpu_val, flag)
+    machine = chpl_cpu.get_default_machine(flag)
+    if cpuarch:
+        if cpuarch != machine:
+            sys.stderr.write('Warning: Cross compilation not yet supported. '
+                             'Inferred {0}={1} based upon {2}={3} '
+                             'but running on {4}.\n'.format(arch_flag,
+                                                            cpuarch,
+                                                            cpu_flag,
+                                                            cpu_val,
+                                                            machine))
+
     return chpl_cpu.get_default_machine(flag)
 
 def _main():
@@ -29,9 +58,9 @@ def _main():
                       const='host')
     (options, args) = parser.parse_args()
 
-    machine = get(options.flag)
+    arch = get(options.flag)
 
-    sys.stdout.write("{0}\n".format(machine))
+    sys.stdout.write("{0}\n".format(arch))
 
 if __name__ == '__main__':
     _main()
