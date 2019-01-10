@@ -1,6 +1,6 @@
-var nan = 0.0 / 0.0;
-var inf = 1.0 / 0.0;
-var neginf = (-1.0) / 0.0;
+var nan = NAN;
+var inf = INFINITY;
+var neginf = -INFINITY;
 
 writeln("isnan(nan) ", isnan(nan));
 
