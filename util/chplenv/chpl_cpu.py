@@ -239,51 +239,51 @@ class argument_map(object):
     clang = gcc8
 
     @classmethod
-    def find(cls, arch, compiler, version):
-        if arch == 'unknown' or arch == '':
+    def find(cls, cpu, compiler, version):
+        if cpu == 'unknown' or cpu == '':
             return 'unknown'
-        elif arch == 'none':
+        elif cpu == 'none':
             return 'none'
 
-        arg_value = cls._get(arch, compiler, version)
+        arg_value = cls._get(cpu, compiler, version)
         if not arg_value:
-            stderr.write('Warning: No valid option found: arch="{0}" '
-                         'compiler="{1}" version="{2}"\n'.format(arch,
+            stderr.write('Warning: No valid option found: cpu="{0}" '
+                         'compiler="{1}" version="{2}"\n'.format(cpu,
                                                                  compiler,
                                                                  version))
         return arg_value or None
 
     @classmethod
-    def _get(cls, arch, compiler, version):
-        if arch == 'unknown':
-            return arch
+    def _get(cls, cpu, compiler, version):
+        if cpu == 'unknown':
+            return cpu
 
         if compiler in ['gnu', 'mpi-gnu', 'cray-prgenv-gnu']:
             if version >= CompVersion('8.0'):
-                return cls.gcc8.get(arch, '')
+                return cls.gcc8.get(cpu, '')
             elif version >= CompVersion('7.0'):
-                return cls.gcc7.get(arch, '')
+                return cls.gcc7.get(cpu, '')
             elif version >= CompVersion('6.0'):
-                return cls.gcc6.get(arch, '')
+                return cls.gcc6.get(cpu, '')
             elif version >= CompVersion('5.0'):
-                return cls.gcc6.get(arch, '')
+                return cls.gcc6.get(cpu, '')
             elif version >= CompVersion('4.9'):
-                return cls.gcc49.get(arch, '')
+                return cls.gcc49.get(cpu, '')
             elif version >= CompVersion('4.8'):
-                return cls.gcc48.get(arch, '')
+                return cls.gcc48.get(cpu, '')
             elif version >= CompVersion('4.7'):
-                return cls.gcc47.get(arch, '')
+                return cls.gcc47.get(cpu, '')
             elif version >= CompVersion('4.3'):
-                return cls.gcc43.get(arch, '')
+                return cls.gcc43.get(cpu, '')
             return 'none'
         elif compiler in ['intel', 'cray-prgenv-intel']:
-            return cls.intel.get(arch, '')
+            return cls.intel.get(cpu, '')
         elif compiler in ['clang', 'clang-included', 'allinea']:
             # Clang doesn't know how to do architecture detection for aarch64.
-            if arch == 'native':
+            if cpu == 'native':
                 if get_native_machine() == 'aarch64':
                     return 'unknown'
-            return cls.clang.get(arch, '')
+            return cls.clang.get(cpu, '')
         else:
             stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler))
             return ''
@@ -433,8 +433,8 @@ def get_native_machine():
     return platform.uname()[4]
 
 @memoize
-def is_known_arm(arch):
-    if arch.startswith("arm-") or ('aarch64' in arch) or ('thunderx' in arch):
+def is_known_arm(cpu):
+    if cpu.startswith("arm-") or ('aarch64' in cpu) or ('thunderx' in cpu):
         return True
     else:
         return False
@@ -488,9 +488,9 @@ class InvalidLocationError(ValueError):
 # in the gen directory so we need a way to get the proper path no matter what
 # cpu architecture is actually loaded. Note that this MUST be kept in sync with
 # what we have in the module build script.
-def get_module_lcd_arch(platform_val, arch):
+def get_module_lcd_cpu(platform_val, cpu):
     if platform_val == "cray-xc":
-        if is_known_arm(arch):
+        if is_known_arm(cpu):
             return "arm-thunderx2"
         else:
             return "sandybridge"
@@ -501,9 +501,9 @@ def get_module_lcd_arch(platform_val, arch):
     else:
         return 'none'
 
-# Adjust the architecture based upon compiler support
+# Adjust the cpu based upon compiler support
 @memoize
-def adjust_architecture_for_compiler(arch, flag, get_lcd):
+def adjust_cpu_for_compiler(cpu, flag, get_lcd):
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
 
@@ -513,24 +513,24 @@ def adjust_architecture_for_compiler(arch, flag, get_lcd):
                                                       llvm_mode="orig"))
 
     if isprgenv:
-        cray_arch = os.environ.get('CRAY_CPU_TARGET', 'none')
-        if arch and (arch != 'none' and arch != 'unknown' and arch != cray_arch):
+        cray_cpu = os.environ.get('CRAY_CPU_TARGET', 'none')
+        if cpu and (cpu != 'none' and cpu != 'unknown' and cpu != cray_cpu):
             stderr.write("Warning: Setting the processor type through "
                          "environment variables is not supported for "
                          "cray-prgenv-*. Please use the appropriate craype-* "
                          "module for your processor type.\n")
-        arch = cray_arch
-        if arch == 'none':
+        cpu = cray_cpu
+        if cpu == 'none':
             stderr.write("Warning: No craype-* processor type module was "
                          "detected, please load the appropriate one if you want "
                          "any specialization to occur.\n")
         if get_lcd:
-            arch = get_module_lcd_arch(platform_val, arch)
-            if arch == 'none':
+            cpu = get_module_lcd_cpu(platform_val, cpu)
+            if cpu == 'none':
                 stderr.write("Warning: Could not detect the lowest common "
                              "denominator processor type for this platform. "
                              "You may be unable to use the Chapel compiler\n")
-        return arch
+        return cpu
     elif 'pgi' in compiler_val:
         return 'none'
     elif 'cray' in compiler_val:
@@ -538,7 +538,7 @@ def adjust_architecture_for_compiler(arch, flag, get_lcd):
     elif 'ibm' in compiler_val:
         return 'none'
 
-    return arch
+    return cpu
 
 @memoize
 def default_cpu(flag):
@@ -546,7 +546,7 @@ def default_cpu(flag):
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
 
-    arch = 'unknown'
+    cpu = 'unknown'
 
     if comm_val == 'none' and ('linux' in platform_val or
                                platform_val == 'darwin' or
@@ -558,13 +558,13 @@ def default_cpu(flag):
       # to not use the work the backend compilers have already done
       if compiler_val in ['clang', 'clang-included']:
           if get_native_machine() == 'aarch64':
-              arch = 'unknown'
+              cpu = 'unknown'
           else:
-              arch = 'native'
+              cpu = 'native'
       else:
-            arch = 'native'
+            cpu = 'native'
 
-    return arch
+    return cpu
 
 # Given a cpu type, return the arch/machine type
 #  e.g. sandybridge -> x86_64
@@ -575,9 +575,9 @@ def arch_for_cpu(cpu, flag):
 
     return feature_sets.findarch(cpu)
 
-# Given an arch, raise an error if it's not a reasonable setting
+# Given a cpu, raise an error if it's not a reasonable setting
 @memoize
-def verify_cpu(arch, flag):
+def verify_cpu(cpu, flag):
     comm_val = chpl_comm.get()
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
@@ -589,25 +589,25 @@ def verify_cpu(arch, flag):
     # linux/dawin/  -- The only platforms that we should try and detect on.
     # cygwin           Crays will be handled through the craype-* modules
     #
-    check_arch = False
+    check_cpu = False
     if not isprgenv:
         if flag == 'target':
             if comm_val == 'none':
                 if ('linux' in platform_val or
                      platform_val == 'darwin' or
                      platform_val.startswith('cygwin')):
-                    check_arch = True
+                    check_cpu = True
         if flag == 'host':
-            check_arch = True
+            check_cpu = True
 
-    if check_arch and arch and arch not in  ['none', 'unknown', 'native']:
+    if check_cpu and cpu and cpu not in  ['none', 'unknown', 'native']:
         # Print a friendly warning if it's unlikely the user could run
         # their program. This could be printed in cross-compilation settings.
         warn = False
         try:
             vendor_string, feature_string = get_cpuinfo(platform_val)
-            detected_arch = feature_sets.find(vendor_string, feature_string)
-            if not feature_sets.subset(arch, detected_arch):
+            detected_cpu = feature_sets.find(vendor_string, feature_string)
+            if not feature_sets.subset(cpu, detected_cpu):
                 warn = True
         except ValueError:
             stderr.write("Warning: Unknown platform, could not find CPU information\n")
@@ -626,20 +626,20 @@ def get(flag, map_to_compiler=False, get_lcd=False):
     arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch'])
 
     if not flag or flag == 'host':
-        arch = overrides.get('CHPL_HOST_CPU', '')
+        cpu = overrides.get('CHPL_HOST_CPU', '')
     elif flag == 'target':
-        arch = overrides.get('CHPL_TARGET_CPU', '')
+        cpu = overrides.get('CHPL_TARGET_CPU', '')
     else:
         raise InvalidLocationError(flag)
 
     # fast path out for when the user has set arch=none
-    if arch == 'none' or (flag == 'host' and not arch):
+    if cpu == 'none' or (flag == 'host' and not cpu):
         return arch_tuple('none', 'none')
 
 
     # Handle backwards compatability - CHPL_TARGET_ARCH might be
     # set instead of the currently preferred CHPL_TARGET_CPU.
-    if not arch:
+    if not cpu:
         oldarch = None
         if not flag or flag == 'host':
             oldarch = overrides.get('CHPL_HOST_ARCH', '')
@@ -648,30 +648,30 @@ def get(flag, map_to_compiler=False, get_lcd=False):
         else:
             raise InvalidLocationError(flag)
 
-        machinearch = arch_for_cpu(oldarch, flag)
-        if machinearch:
-            arch = oldarch
+        # If the oldarch indicates a CPU, use it
+        if arch_for_cpu(oldarch, flag):
+            cpu = oldarch
 
 
     # Adjust arch for compiler (not all compilers support all arch
     # settings; PrgEnv might override arch, etc)
-    arch = adjust_architecture_for_compiler (arch, flag, get_lcd)
+    cpu = adjust_cpu_for_compiler (cpu, flag, get_lcd)
 
     # Now, if is not yet set, we should set the default.
-    if not arch:
-        arch = default_cpu(flag)
+    if not cpu:
+        cpu = default_cpu(flag)
 
-    verify_cpu(arch, flag)
+    verify_cpu(cpu, flag)
 
     compiler_val = chpl_compiler.get(flag)
     isprgenv = compiler_is_prgenv(compiler_val)
     if map_to_compiler and not isprgenv:
-        # Map arch to compiler argument
+        # Map cpu to compiler argument
         # Don't do this for PrgEnv compiles since the compiler driver
         # handles specialization.
         version = get_compiler_version(compiler_val)
-        arch = argument_map.find(arch, compiler_val, version)
-    if arch and arch != 'none' and arch != 'unknown':
+        cpu = argument_map.find(cpu, compiler_val, version)
+    if cpu and cpu != 'none' and cpu != 'unknown':
         # x86 uses -march= where the others use -mcpu=
         if is_x86_variant(get_native_machine()):
             flag = 'arch'
@@ -680,7 +680,7 @@ def get(flag, map_to_compiler=False, get_lcd=False):
     else:
         flag = 'none'
 
-    return arch_tuple(flag or 'none', arch or 'unknown')
+    return arch_tuple(flag or 'none', cpu or 'unknown')
 
 
 # Returns the default machine.  The flag argument is 'host' or 'target'.
@@ -718,12 +718,12 @@ def _main():
                       default=False)
     (options, args) = parser.parse_args()
 
-    (flag, arch) = get(options.flag, options.map_to_compiler,
-                       options.get_lcd)
+    (flag, cpu) = get(options.flag, options.map_to_compiler,
+                      options.get_lcd)
 
     if options.compflag:
         stdout.write("{0}=".format(flag))
-    stdout.write("{0}\n".format(arch))
+    stdout.write("{0}\n".format(cpu))
 
 if __name__ == '__main__':
     _main()
