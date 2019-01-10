@@ -622,7 +622,7 @@ def verify_cpu(cpu, flag):
 @memoize
 def get(flag, map_to_compiler=False, get_lcd=False):
 
-    arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch'])
+    cpu_tuple = collections.namedtuple('cpu_tuple', ['flag', 'cpu'])
 
     if not flag or flag == 'host':
         cpu = overrides.get('CHPL_HOST_CPU', '')
@@ -633,7 +633,7 @@ def get(flag, map_to_compiler=False, get_lcd=False):
 
     # fast path out for when the user has set arch=none
     if cpu == 'none' or (flag == 'host' and not cpu):
-        return arch_tuple('none', 'none')
+        return cpu_tuple('none', 'none')
 
 
     # Handle backwards compatability - CHPL_TARGET_ARCH might be
@@ -679,7 +679,7 @@ def get(flag, map_to_compiler=False, get_lcd=False):
     else:
         flag = 'none'
 
-    return arch_tuple(flag or 'none', cpu or 'unknown')
+    return cpu_tuple(flag or 'none', cpu or 'unknown')
 
 
 # Returns the default machine.  The flag argument is 'host' or 'target'.

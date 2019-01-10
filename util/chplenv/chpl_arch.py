@@ -35,7 +35,7 @@ def get(flag='host'):
         return arch_val
 
     # compute the default
-    cpu_val = chpl_cpu.get(flag).arch
+    cpu_val = chpl_cpu.get(flag).cpu
     cpuarch = chpl_cpu.arch_for_cpu(cpu_val, flag)
     machine = chpl_cpu.get_default_machine(flag)
     if cpuarch:

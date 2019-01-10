@@ -13,7 +13,7 @@ from utils import error, memoize, run_command
 @memoize
 def default_uniq_cfg_path():
     cpu_val = chpl_cpu.get('target', map_to_compiler=True,
-                           get_lcd=using_chapel_module()).arch
+                           get_lcd=using_chapel_module()).cpu
     return '{0}-{1}-{2}-{3}-{4}'.format(chpl_platform.get('target'),
                                         chpl_arch.get('target'),
                                         cpu_val,
