@@ -11,9 +11,9 @@ from utils import memoize
 @memoize
 def get(flag='host'):
     platform = chpl_platform.get(flag)
-    machine = chpl_arch.get(flag)
-    (_, arch) = chpl_cpu.get(flag, map_to_compiler=True,
-                             get_lcd=chpl_home_utils.using_chapel_module())
+    arch = chpl_arch.get(flag)
+    (_, cpu) = chpl_cpu.get(flag, map_to_compiler=True,
+                            get_lcd=chpl_home_utils.using_chapel_module())
 
     # platform
     result = platform
@@ -21,12 +21,12 @@ def get(flag='host'):
     # compiler is never included since it shouldn't be needed
     # for a bin/ path.
 
-    # machine
-    result += '-' + machine
-
     # arch
-    if arch != 'none' and arch != 'unknown':
-        result += '-' + arch
+    result += '-' + arch
+
+    # cpu
+    if cpu != 'none' and cpu != 'unknown':
+        result += '-' + cpu
     return result
 
 def _main():

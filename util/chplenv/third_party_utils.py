@@ -12,11 +12,11 @@ from utils import error, memoize, run_command
 #
 @memoize
 def default_uniq_cfg_path():
-    arch_val = chpl_cpu.get('target', map_to_compiler=True,
-                            get_lcd=using_chapel_module()).arch
+    cpu_val = chpl_cpu.get('target', map_to_compiler=True,
+                           get_lcd=using_chapel_module()).arch
     return '{0}-{1}-{2}-{3}-{4}'.format(chpl_platform.get('target'),
                                         chpl_arch.get('target'),
-                                        arch_val,
+                                        cpu_val,
                                         chpl_compiler.get('target'),
                                         chpl_lib_pic.get())
 
