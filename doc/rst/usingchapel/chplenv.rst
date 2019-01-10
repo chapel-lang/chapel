@@ -134,11 +134,11 @@ CHPL_TARGET_PLATFORM
      If ``CHPL_TARGET_PLATFORM`` is not set, the target platform defaults to the
      same value as ``$CHPL_HOST_PLATFORM``.
 
-.. _readme-chplenv.CHPL_HOST_MACHINE:
+.. _readme-chplenv.CHPL_HOST_ARCH:
 
-CHPL_HOST_MACHINE
+CHPL_HOST_ARCH
 ~~~~~~~~~~~~~~~~~~~
-   Optionally, set the ``CHPL_HOST_MACHINE`` environment variable to indicate
+   Optionally, set the ``CHPL_HOST_ARCH`` environment variable to indicate
    the architecture type of the current machine. Normally, the default
    value is sufficient.
 
@@ -152,17 +152,18 @@ CHPL_HOST_MACHINE
    If unset, the default will be computed. The command ``uname -m``
    should produce the same value as the default.
 
-.. _readme-chplenv.CHPL_TARGET_MACHINE:
+.. _readme-chplenv.CHPL_TARGET_ARCH:
 
-CHPL_TARGET_MACHINE
+CHPL_TARGET_ARCH
 ~~~~~~~~~~~~~~~~~~~
-   Optionally, set the ``CHPL_TARGET_MACHINE`` environment variable to indicate
+   Optionally, set the ``CHPL_TARGET_ARCH`` environment variable to indicate
    the architecture type of the target machine. See the table above for
-   ``CHPL_HOST_MACHINE`` for values this might be set to.
+   ``CHPL_HOST_ARCH`` for values this might be set to.
 
-   If unset, ``CHPL_TARGET_MACHINE`` will be inferred.
-   If ``CHPL_TARGET_CPU`` is ``native``, ``unknown``, or ``none`` then ``CHPL_TARGET_MACHINE`` will be set to ``CHPL_HOST_MACHINE``.
-   Otherwise, ``CHPL_TARGET_MACHINE`` will be set based on the
+   If unset, ``CHPL_TARGET_ARCH`` will be inferred.
+   If ``CHPL_TARGET_CPU`` is ``native``, ``unknown``, or ``none`` then
+   ``CHPL_TARGET_ARCH`` will be set to ``CHPL_HOST_ARCH``.
+   Otherwise, ``CHPL_TARGET_ARCH`` will be set based on the
    architecture type specified in ``CHPL_TARGET_CPU``.
 
 .. _readme-chplenv.CHPL_COMPILER:

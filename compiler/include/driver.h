@@ -88,10 +88,10 @@ extern char CHPL_RUNTIME_INCL[FILENAME_MAX+1];
 extern char CHPL_THIRD_PARTY[FILENAME_MAX+1];
 
 extern const char* CHPL_HOST_PLATFORM;
-extern const char* CHPL_HOST_MACHINE;
+extern const char* CHPL_HOST_ARCH;
 extern const char* CHPL_HOST_COMPILER;
 extern const char* CHPL_TARGET_PLATFORM;
-extern const char* CHPL_TARGET_MACHINE;
+extern const char* CHPL_TARGET_ARCH;
 extern const char* CHPL_TARGET_CPU;
 extern const char* CHPL_RUNTIME_CPU;
 extern const char* CHPL_TARGET_BACKEND_CPU;

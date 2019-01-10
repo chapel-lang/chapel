@@ -9,9 +9,9 @@ from utils import error, memoize
 def get(flag='host'):
 
     if flag == 'host':
-        machine_val = overrides.get('CHPL_HOST_MACHINE', '')
+        machine_val = overrides.get('CHPL_HOST_ARCH', '')
     elif flag == 'target':
-        machine_val = overrides.get('CHPL_TARGET_MACHINE', '')
+        machine_val = overrides.get('CHPL_TARGET_ARCH', '')
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 

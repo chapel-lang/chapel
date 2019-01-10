@@ -12,11 +12,11 @@ from utils import memoize
 chplvars = [
              'CHPL_HOME',
              'CHPL_HOST_PLATFORM',
-             'CHPL_HOST_MACHINE',
+             'CHPL_HOST_ARCH',
              'CHPL_HOST_CPU',
              'CHPL_HOST_COMPILER',
              'CHPL_TARGET_PLATFORM',
-             'CHPL_TARGET_MACHINE',
+             'CHPL_TARGET_ARCH',
              'CHPL_TARGET_CPU',
              'CHPL_TARGET_COMPILER',
              'CHPL_LOCALE_MODEL',

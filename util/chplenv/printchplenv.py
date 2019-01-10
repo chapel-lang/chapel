@@ -63,11 +63,11 @@ DEFAULT = set(['default'])
 CHPL_ENVS = [
     ChapelEnv('CHPL_HOST_PLATFORM', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_COMPILER', COMPILER | LAUNCHER),
-    ChapelEnv('CHPL_HOST_MACHINE', COMPILER | LAUNCHER),
+    ChapelEnv('CHPL_HOST_ARCH', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_CPU', INTERNAL),
     ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_TARGET_MACHINE', RUNTIME | DEFAULT),
+    ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_ORIG_TARGET_COMPILER', INTERNAL),
     ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'arch'),
     ChapelEnv('CHPL_RUNTIME_CPU', INTERNAL),
@@ -135,11 +135,11 @@ def compute_all_values():
     ENV_VALS["CHPL_ORIG_TARGET_COMPILER"] = chpl_compiler.get('target', llvm_mode='orig')
     ENV_VALS['CHPL_HOST_PLATFORM'] = chpl_platform.get('host')
     ENV_VALS['CHPL_HOST_COMPILER'] = chpl_compiler.get('host')
-    ENV_VALS['CHPL_HOST_MACHINE'] = chpl_arch.get('host')
+    ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host')
     ENV_VALS['CHPL_HOST_CPU'] = chpl_cpu.get('host').arch
     ENV_VALS['CHPL_TARGET_PLATFORM'] = chpl_platform.get('target')
     ENV_VALS['CHPL_TARGET_COMPILER'] = chpl_compiler.get('target')
-    ENV_VALS['CHPL_TARGET_MACHINE'] = chpl_arch.get('target')
+    ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
     ENV_VALS['CHPL_TARGET_CPU'] = chpl_cpu.get('target').arch
 
     # Use module's LCD architecture in case it was built before
