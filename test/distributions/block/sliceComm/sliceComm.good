@@ -1,0 +1,12 @@
+0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
+0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
+0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
+1.0 4.0 1.0 5.0 5.0 5.0 5.0 5.0 1.0 1.0 2.0
+0.0 4.0 0.0 5.0 5.0 5.0 5.0 5.0 0.0 0.0 2.0
+0.0 4.0 0.0 5.0 5.0 5.0 5.0 5.0 0.0 0.0 2.0
+0.0 4.0 0.0 5.0 5.0 5.0 5.0 5.0 0.0 0.0 2.0
+3.0 4.0 3.0 5.0 5.0 5.0 5.0 5.0 3.0 3.0 3.0
+0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
+0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
+0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
+(execute_on = 36, execute_on_nb = 180) (get = 694, put = 5, execute_on = 36, execute_on_fast = 12) (get = 694, put = 5, execute_on = 36, execute_on_fast = 12) (get = 694, put = 5, execute_on = 36, execute_on_fast = 12) (get = 700, put = 5, execute_on = 36, execute_on_fast = 12) (get = 694, put = 5, execute_on = 36, execute_on_fast = 12) (get = 694, put = 5, execute_on = 36, execute_on_fast = 12) (get = 694, put = 5, execute_on = 18, execute_on_fast = 12) (get = 706, put = 5, execute_on_fast = 12) (get = 700, put = 5, execute_on_fast = 12) (get = 700, put = 5, execute_on_fast = 12) (get = 698, put = 5, execute_on_fast = 12) (get = 698, put = 5, execute_on_fast = 12) (get = 694, put = 5, execute_on_fast = 12) (get = 694, put = 5, execute_on_fast = 12) (get = 694, put = 5, execute_on_fast = 12)

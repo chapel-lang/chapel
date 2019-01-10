@@ -1,0 +1,128 @@
+
+A is:
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+4.0 4.0 4.0 5.0 5.0 6.0 6.0 6.0 7.0 7.0
+4.0 4.0 4.0 5.0 5.0 6.0 6.0 6.0 7.0 7.0
+8.0 8.0 8.0 9.0 9.0 10.0 10.0 10.0 11.0 11.0
+8.0 8.0 8.0 9.0 9.0 10.0 10.0 10.0 11.0 11.0
+8.0 8.0 8.0 9.0 9.0 10.0 10.0 10.0 11.0 11.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+
+Incrementing A[Dinner] via routine:
+Incrementing in routine by access
+---------------------------------
+(execute_on_nb = 15) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+
+A is:
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.1 1.1 1.1 2.1 2.1 2.1 3.0 3.0
+4.0 4.0 4.1 5.1 5.1 6.1 6.1 6.1 7.0 7.0
+4.0 4.0 4.1 5.1 5.1 6.1 6.1 6.1 7.0 7.0
+8.0 8.0 8.1 9.1 9.1 10.1 10.1 10.1 11.0 11.0
+8.0 8.0 8.1 9.1 9.1 10.1 10.1 10.1 11.0 11.0
+8.0 8.0 8.1 9.1 9.1 10.1 10.1 10.1 11.0 11.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+
+Incrementing A[Dinner] via routine:
+Incrementing in routine by iteration
+------------------------------------
+(execute_on_nb = 15) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+
+A is:
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.2 1.2 1.2 2.2 2.2 2.2 3.0 3.0
+4.0 4.0 4.2 5.2 5.2 6.2 6.2 6.2 7.0 7.0
+4.0 4.0 4.2 5.2 5.2 6.2 6.2 6.2 7.0 7.0
+8.0 8.0 8.2 9.2 9.2 10.2 10.2 10.2 11.0 11.0
+8.0 8.0 8.2 9.2 9.2 10.2 10.2 10.2 11.0 11.0
+8.0 8.0 8.2 9.2 9.2 10.2 10.2 10.2 11.0 11.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+
+Creating B (a normal slice)
+---------------------------
+(execute_on = 4, execute_on_nb = 15) (get = 74, put = 1, execute_on = 4, execute_on_fast = 1) (get = 74, put = 1, execute_on = 4, execute_on_fast = 1) (get = 74, put = 1, execute_on = 4, execute_on_fast = 1) (get = 74, put = 1, execute_on = 4, execute_on_fast = 1) (get = 74, put = 1, execute_on = 4, execute_on_fast = 1) (get = 74, put = 1, execute_on = 4, execute_on_fast = 1) (get = 74, put = 1, execute_on = 2, execute_on_fast = 1) (get = 74, put = 1, execute_on_fast = 1) (get = 74, put = 1, execute_on_fast = 1) (get = 74, put = 1, execute_on_fast = 1) (get = 74, put = 1, execute_on_fast = 1) (get = 74, put = 1, execute_on_fast = 1) (get = 74, put = 1, execute_on_fast = 1) (get = 74, put = 1, execute_on_fast = 1) (get = 74, put = 1, execute_on_fast = 1)
+
+A is:
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.2 1.2 1.2 2.2 2.2 2.2 3.0 3.0
+4.0 4.0 4.2 5.2 5.2 6.2 6.2 6.2 7.0 7.0
+4.0 4.0 4.2 5.2 5.2 6.2 6.2 6.2 7.0 7.0
+8.0 8.0 8.2 9.2 9.2 10.2 10.2 10.2 11.0 11.0
+8.0 8.0 8.2 9.2 9.2 10.2 10.2 10.2 11.0 11.0
+8.0 8.0 8.2 9.2 9.2 10.2 10.2 10.2 11.0 11.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+
+Incrementing B via access
+-------------------------
+(execute_on_nb = 15) (get = 4, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (execute_on_fast = 1) (get = 4, execute_on_fast = 1) (get = 8, execute_on_fast = 1) (get = 12, execute_on_fast = 1) (execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 12, execute_on_fast = 1) (get = 18, execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+
+A is:
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.3 1.3 1.3 2.3 2.3 2.3 3.0 3.0
+4.0 4.0 4.3 5.3 5.3 6.3 6.3 6.3 7.0 7.0
+4.0 4.0 4.3 5.3 5.3 6.3 6.3 6.3 7.0 7.0
+8.0 8.0 8.3 9.3 9.3 10.3 10.3 10.3 11.0 11.0
+8.0 8.0 8.3 9.3 9.3 10.3 10.3 10.3 11.0 11.0
+8.0 8.0 8.3 9.3 9.3 10.3 10.3 10.3 11.0 11.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+
+Incrementing B via iteration
+----------------------------
+(execute_on_nb = 15) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+
+A is:
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.4 1.4 1.4 2.4 2.4 2.4 3.0 3.0
+4.0 4.0 4.4 5.4 5.4 6.4 6.4 6.4 7.0 7.0
+4.0 4.0 4.4 5.4 5.4 6.4 6.4 6.4 7.0 7.0
+8.0 8.0 8.4 9.4 9.4 10.4 10.4 10.4 11.0 11.0
+8.0 8.0 8.4 9.4 9.4 10.4 10.4 10.4 11.0 11.0
+8.0 8.0 8.4 9.4 9.4 10.4 10.4 10.4 11.0 11.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+
+Incrementing B via routine:
+Incrementing in routine by access
+---------------------------------
+(execute_on_nb = 15) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+
+A is:
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.5 1.5 1.5 2.5 2.5 2.5 3.0 3.0
+4.0 4.0 4.5 5.5 5.5 6.5 6.5 6.5 7.0 7.0
+4.0 4.0 4.5 5.5 5.5 6.5 6.5 6.5 7.0 7.0
+8.0 8.0 8.5 9.5 9.5 10.5 10.5 10.5 11.0 11.0
+8.0 8.0 8.5 9.5 9.5 10.5 10.5 10.5 11.0 11.0
+8.0 8.0 8.5 9.5 9.5 10.5 10.5 10.5 11.0 11.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+
+Incrementing B via routine:
+Incrementing in routine by iteration
+------------------------------------
+(execute_on_nb = 15) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+
+A is:
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.0 1.0 1.0 2.0 2.0 2.0 3.0 3.0
+0.0 0.0 0.6 1.6 1.6 2.6 2.6 2.6 3.0 3.0
+4.0 4.0 4.6 5.6 5.6 6.6 6.6 6.6 7.0 7.0
+4.0 4.0 4.6 5.6 5.6 6.6 6.6 6.6 7.0 7.0
+8.0 8.0 8.6 9.6 9.6 10.6 10.6 10.6 11.0 11.0
+8.0 8.0 8.6 9.6 9.6 10.6 10.6 10.6 11.0 11.0
+8.0 8.0 8.6 9.6 9.6 10.6 10.6 10.6 11.0 11.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
+12.0 12.0 12.0 13.0 13.0 14.0 14.0 14.0 15.0 15.0
