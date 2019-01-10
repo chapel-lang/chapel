@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 
-import chpl_cpu, chpl_comm, chpl_platform, overrides
+import chpl_comm, chpl_platform, overrides
 from utils import memoize
 
 
