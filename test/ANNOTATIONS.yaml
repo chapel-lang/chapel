@@ -353,6 +353,17 @@ all:
       config: 16 node XC
   12/04/18:
     - Set up gcc 8.2 as default gcc for nightly testing (#11762)
+  12/07/18:
+    - text: Optimize remote task spawning under ugni (#11799)
+      config: 16 node XC
+  12/13/18:
+    - text: Decrement the CQ counter when we consume the CQ event in ugni (#11875)
+      config: 16 node XC
+  01/04/19:
+    - text: Improve how we align and pad comm domains in ugni (#11973)
+      config: 16 node XC
+  01/07/19:
+    - Default to cstdlib atomics for gcc >= 5 (#11963)
 
 
 AllCompTime:
