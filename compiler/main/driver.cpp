@@ -62,15 +62,15 @@ char CHPL_RUNTIME_INCL[FILENAME_MAX+1] = "";
 char CHPL_THIRD_PARTY[FILENAME_MAX+1] = "";
 
 const char* CHPL_HOST_PLATFORM = NULL;
-const char* CHPL_HOST_MACHINE = NULL;
-const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_HOST_ARCH = NULL;
+const char* CHPL_HOST_COMPILER = NULL;
+const char* CHPL_HOST_CPU = NULL;
 const char* CHPL_TARGET_PLATFORM = NULL;
-const char* CHPL_TARGET_MACHINE = NULL;
 const char* CHPL_TARGET_ARCH = NULL;
-const char* CHPL_RUNTIME_ARCH = NULL;
-const char* CHPL_TARGET_BACKEND_ARCH = NULL;
-const char* CHPL_TARGET_ARCH_FLAG = NULL;
+const char* CHPL_TARGET_CPU = NULL;
+const char* CHPL_RUNTIME_CPU = NULL;
+const char* CHPL_TARGET_BACKEND_CPU = NULL;
+const char* CHPL_TARGET_CPU_FLAG = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_ORIG_TARGET_COMPILER = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
@@ -936,7 +936,7 @@ static ArgumentDescription arg_desc[] = {
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
- {"specialize", ' ', NULL, "[Don't] Specialize generated C code for CHPL_TARGET_ARCH", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
+ {"specialize", ' ', NULL, "[Don't] Specialize generated C code for CHPL_TARGET_CPU", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, NULL},
 
@@ -980,7 +980,7 @@ static ArgumentDescription arg_desc[] = {
  {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setEnv},
  {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_MEM", setEnv},
  {"regexp", ' ', "<regexp>", "Specify whether to use regexp support", "S", NULL, "_CHPL_REGEXP", setEnv},
- {"target-arch", ' ', "<architecture>", "Target architecture to optimize for", "S", NULL, "_CHPL_TARGET_ARCH", setEnv},
+ {"target-cpu", ' ', "<architecture>", "Target architecture to optimize for", "S", NULL, "_CHPL_TARGET_CPU", setEnv},
  {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setEnv},
  {"target-platform", ' ', "<platform>", "Platform for cross-compilation", "S", NULL, "_CHPL_TARGET_PLATFORM", setEnv},
  {"tasks", ' ', "<task-impl>", "Specify tasking implementation", "S", NULL, "_CHPL_TASKS", setEnv},
@@ -1175,10 +1175,10 @@ static void printStuff(const char* argv0) {
 bool useDefaultEnv(std::string key) {
   // Check conditions for which default value should override argument provided
 
-  // For Cray programming environments, we must infer CHPL_TARGET_ARCH
-  // Note: When CHPL_TARGET_ARCH is processed, CHPL_HOST_COMPILER is already
+  // For Cray programming environments, we must infer CHPL_TARGET_CPU
+  // Note: When CHPL_TARGET_CPU is processed, CHPL_HOST_COMPILER is already
   // set in envMap, due to the order of printchplenv output
-  if (key == "CHPL_TARGET_ARCH") {
+  if (key == "CHPL_TARGET_CPU") {
     if (strstr(envMap["CHPL_TARGET_COMPILER"], "cray-prgenv") != NULL) {
       return true;
     }
@@ -1241,15 +1241,15 @@ static void setChapelEnvs() {
   // Update compiler global CHPL_vars with envMap values
 
   CHPL_HOST_PLATFORM   = envMap["CHPL_HOST_PLATFORM"];
-  CHPL_HOST_MACHINE    = envMap["CHPL_HOST_MACHINE"];
-  CHPL_HOST_COMPILER   = envMap["CHPL_HOST_COMPILER"];
   CHPL_HOST_ARCH       = envMap["CHPL_HOST_ARCH"];
+  CHPL_HOST_COMPILER   = envMap["CHPL_HOST_COMPILER"];
+  CHPL_HOST_CPU        = envMap["CHPL_HOST_CPU"];
   CHPL_TARGET_PLATFORM = envMap["CHPL_TARGET_PLATFORM"];
-  CHPL_TARGET_MACHINE  = envMap["CHPL_TARGET_MACHINE"];
   CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
-  CHPL_RUNTIME_ARCH    = envMap["CHPL_RUNTIME_ARCH"];
-  CHPL_TARGET_BACKEND_ARCH = envMap["CHPL_TARGET_BACKEND_ARCH"];
-  CHPL_TARGET_ARCH_FLAG = envMap["CHPL_TARGET_ARCH_FLAG"];
+  CHPL_TARGET_CPU      = envMap["CHPL_TARGET_CPU"];
+  CHPL_RUNTIME_CPU     = envMap["CHPL_RUNTIME_CPU"];
+  CHPL_TARGET_BACKEND_CPU = envMap["CHPL_TARGET_BACKEND_CPU"];
+  CHPL_TARGET_CPU_FLAG = envMap["CHPL_TARGET_CPU_FLAG"];
   CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
   CHPL_ORIG_TARGET_COMPILER = envMap["CHPL_ORIG_TARGET_COMPILER"];
   CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
@@ -1374,10 +1374,10 @@ static void checkLLVMCodeGen() {
 #endif
 }
 
-static void checkTargetArch() {
-  if (specializeCCode && (strcmp(CHPL_TARGET_ARCH, "unknown") == 0)) {
-    USR_WARN("--specialize was set, but CHPL_TARGET_ARCH is 'unknown'. If "
-              "you want any specialization to occur please set CHPL_TARGET_ARCH "
+static void checkTargetCpu() {
+  if (specializeCCode && (strcmp(CHPL_TARGET_CPU, "unknown") == 0)) {
+    USR_WARN("--specialize was set, but CHPL_TARGET_CPU is 'unknown'. If "
+              "you want any specialization to occur please set CHPL_TARGET_CPU "
               "to a proper value.");
   }
 }
@@ -1410,7 +1410,7 @@ static void postprocess_args() {
 
   checkLLVMCodeGen();
 
-  checkTargetArch();
+  checkTargetCpu();
 
   checkIncrementalAndOptimized();
 }

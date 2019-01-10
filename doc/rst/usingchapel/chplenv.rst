@@ -134,11 +134,11 @@ CHPL_TARGET_PLATFORM
      If ``CHPL_TARGET_PLATFORM`` is not set, the target platform defaults to the
      same value as ``$CHPL_HOST_PLATFORM``.
 
-.. _readme-chplenv.CHPL_HOST_MACHINE:
+.. _readme-chplenv.CHPL_HOST_ARCH:
 
-CHPL_HOST_MACHINE
+CHPL_HOST_ARCH
 ~~~~~~~~~~~~~~~~~~~
-   Optionally, set the ``CHPL_HOST_MACHINE`` environment variable to indicate
+   Optionally, set the ``CHPL_HOST_ARCH`` environment variable to indicate
    the architecture type of the current machine. Normally, the default
    value is sufficient.
 
@@ -152,18 +152,19 @@ CHPL_HOST_MACHINE
    If unset, the default will be computed. The command ``uname -m``
    should produce the same value as the default.
 
-.. _readme-chplenv.CHPL_TARGET_MACHINE:
+.. _readme-chplenv.CHPL_TARGET_ARCH:
 
-CHPL_TARGET_MACHINE
+CHPL_TARGET_ARCH
 ~~~~~~~~~~~~~~~~~~~
-   Optionally, set the ``CHPL_TARGET_MACHINE`` environment variable to indicate
+   Optionally, set the ``CHPL_TARGET_ARCH`` environment variable to indicate
    the architecture type of the target machine. See the table above for
-   ``CHPL_HOST_MACHINE`` for values this might be set to.
+   ``CHPL_HOST_ARCH`` for values this might be set to.
 
-   If unset, ``CHPL_TARGET_MACHINE`` will be inferred.
-   If ``CHPL_TARGET_ARCH`` is ``native``, ``unknown``, or ``none`` then ``CHPL_TARGET_MACHINE`` will be set to ``CHPL_HOST_MACHINE``.
-   Otherwise, ``CHPL_TARGET_MACHINE`` will be set based on the
-   architecture type specified in ``CHPL_TARGET_ARCH``.
+   If unset, ``CHPL_TARGET_ARCH`` will be inferred.
+   If ``CHPL_TARGET_CPU`` is ``native``, ``unknown``, or ``none`` then
+   ``CHPL_TARGET_ARCH`` will be set to ``CHPL_HOST_ARCH``.
+   Otherwise, ``CHPL_TARGET_ARCH`` will be set based on the
+   architecture type specified in ``CHPL_TARGET_CPU``.
 
 .. _readme-chplenv.CHPL_COMPILER:
 
@@ -217,11 +218,11 @@ CHPL_*_COMPILER
      once with clang-included. We do this in order to avoid issues in linking
      objects built by different compilers.
 
-.. _readme-chplenv.CHPL_TARGET_ARCH:
+.. _readme-chplenv.CHPL_TARGET_CPU:
 
-CHPL_TARGET_ARCH
+CHPL_TARGET_CPU
 ~~~~~~~~~~~~~~~~
-   Optionally, set the ``CHPL_TARGET_ARCH`` environment variable to indicate
+   Optionally, set the ``CHPL_TARGET_CPU`` environment variable to indicate
    that the target executable should be specialized to the given architecture
    when using ``--specialize`` (and ``--fast``). Valid options are:
 
@@ -257,11 +258,11 @@ CHPL_TARGET_ARCH
         https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/x86-Options.html
         https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/AArch64-Options.html
 
-   If you do not want ``CHPL_TARGET_ARCH`` to have any effect, you can set it
+   If you do not want ``CHPL_TARGET_CPU`` to have any effect, you can set it
    to either ``unknown`` or ``none``. Both will disable specialization, but the
    latter will not warn if ``--specialize`` is used.
 
-   Setting ``CHPL_TARGET_ARCH`` to an incorrect value for your processor may
+   Setting ``CHPL_TARGET_CPU`` to an incorrect value for your processor may
    result in an invalid binary that will not run on the intended machine.
    Special care should be taken to select the lowest common denominator when
    running on machines with heterogeneous processor architectures.
@@ -270,20 +271,20 @@ CHPL_TARGET_ARCH
    environment, in order of application these rules are:
 
         * If :ref:`CHPL_TARGET_COMPILER <readme-chplenv.chpl_compiler>` is ``cray-prgenv-*`` you do not need to
-          set anything in ``CHPL_TARGET_ARCH``. One of the ``craype-*`` modules
+          set anything in ``CHPL_TARGET_CPU``. One of the ``craype-*`` modules
           (e.g.  ``craype-sandybridge``) should be loaded to provide equivalent
           functionality. Once the proper module is loaded, ``CRAY_CPU_TARGET``
           will have the architecture being used in it.
 
         * If ``CHPL_TARGET_COMPILER`` is ``cray``, ``pgi``, or ``ibm``,
-          ``CHPL_TARGET_ARCH`` will be set to ``none`` and no specialization
+          ``CHPL_TARGET_CPU`` will be set to ``none`` and no specialization
           will occur.
 
         * If :ref:`readme-chplenv.CHPL_COMM` is set, no attempt to set a useful value will be
-          made, ``CHPL_TARGET_ARCH`` will be ``unknown``.
+          made, ``CHPL_TARGET_CPU`` will be ``unknown``.
 
         * If :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` is ``darwin``, ``linux*``, or
-          ``cygwin*`` ``CHPL_TARGET_ARCH`` will be ``native``, passing the
+          ``cygwin*`` ``CHPL_TARGET_CPU`` will be ``native``, passing the
           responsibility off to the backend C compiler to detect the specifics
           of the hardware.
 

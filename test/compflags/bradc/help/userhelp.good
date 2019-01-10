@@ -101,7 +101,7 @@ C Code Compilation Options:
   -L, --lib-search-path <directory>   C library search path
   -O, --[no-]optimize                 [Don't] Optimize generated C code
       --[no-]specialize               [Don't] Specialize generated C code for
-                                      CHPL_TARGET_ARCH
+                                      CHPL_TARGET_CPU
   -o, --output <filename>             Name output executable
       --static                        Generate a statically linked binary
 
@@ -150,7 +150,7 @@ Compiler Configuration Options:
       --make <make utility>           Make utility for generated code
       --mem <mem-impl>                Specify the memory manager
       --regexp <regexp>               Specify whether to use regexp support
-      --target-arch <architecture>    Target architecture to optimize for
+      --target-cpu <architecture>     Target architecture to optimize for
       --target-compiler <compiler>    Compiler for generated code
       --target-platform <platform>    Platform for cross-compilation
       --tasks <task-impl>             Specify tasking implementation
