@@ -9,9 +9,16 @@ from utils import memoize
 
 @memoize
 def get_uniq_cfg_path():
-    host_bin_subdir = chpl_bin_subdir.get('host')
-    host_compiler = chpl_compiler.get('host')
-    llvm_target_dir = '{0}-{1}'.format(host_bin_subdir, host_compiler)
+    llvm_val = get()
+    if llvm_val == "llvm":
+      # put platform-arch-compiler for included llvm
+      host_bin_subdir = chpl_bin_subdir.get('host')
+      host_compiler = chpl_compiler.get('host')
+      llvm_target_dir = '{0}-{1}'.format(host_bin_subdir, host_compiler)
+    else:
+      # just put 'system' for system llvm
+      llvm_target_dir = 'system'
+
     return llvm_target_dir
 
 
