@@ -1959,7 +1959,7 @@ void FnSymbol::codegenFortran(int indent) {
   if (info->cfile) {
     FILE* outfile = info->cfile;
     if (fGenIDS)
-      fprintf(outfile, "%*s! %d", indent, "", this->id);
+      fprintf(outfile, "%*s! %d\n", indent, "", this->id);
     const char* subOrProc = retType != dtVoid ? "function" : "subroutine";
     fprintf(outfile, "%*s%s %s(", indent, "", subOrProc, this->cname);
     bool first = true;

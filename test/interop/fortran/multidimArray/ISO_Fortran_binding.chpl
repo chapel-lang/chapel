@@ -130,7 +130,7 @@ module ISO_Fortran_binding {
     var version: c_int;
     var attribute: CFI_attribute_t;
     var rank: CFI_rank_t;
-    //var type: CFI_type_t;
+    extern "type" var ctype: CFI_type_t;
     var dim: c_ptr(CFI_dim_t);
   }
 /*
