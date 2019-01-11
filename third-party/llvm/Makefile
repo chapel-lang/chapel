@@ -171,6 +171,9 @@ $(LLVM_CLANG_FILE):
 # This file is necessary on darwin where important headers are
 # not in /usr/include. This causes a problem when building another clang
 # because the new clang can't find the appropriate headers.
+#
+# Additionally these options are needed when building the
+# runtime with that clang.
 $(LLVM_CLANG_CONFIG_FILE):
 	mkdir -p $(LLVM_INSTALL_DIR)
 	if [ "clang" = "$(CHPL_MAKE_HOST_COMPILER)" ]; then \
