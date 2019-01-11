@@ -3225,6 +3225,9 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
   if (0 == memcmp(ignorePrefix, calledName, strlen(ignorePrefix)))
     return NULL;
 
+  // This is a workaround for resolvePromotionType being called
+  // when some fields have unknown type. A better solution
+  // is preferred.
   if (0 == strcmp(calledName, "chpl__promotionType")) {
     return NULL;
   }
