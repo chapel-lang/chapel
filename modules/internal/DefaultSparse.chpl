@@ -347,7 +347,7 @@ module DefaultSparse {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain(loc: locale) {
-      if this.indices.locale == loc {
+      if this.locale == loc {
         return _getDomain(_to_unmanaged(this));
       } else {
         const copy = new unmanaged DefaultSparseDom(rank, idxType, dist, parentDom);
@@ -501,7 +501,7 @@ module DefaultSparse {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain(loc: locale) {
-      if this.data.locale == loc {
+      if this.locale == loc {
         return _getDomain(dom);
       } else {
         return dom.dsiLocalSubdomain(loc);
