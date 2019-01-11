@@ -58,12 +58,12 @@ endif
 #
 # the location of the BUILD_VERSION file
 #
-BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
+BUILD_VERSION_FILE = $(COMPILER_BUILD)/BUILD_VERSION
 # configured prefix file
-CONFIGURED_PREFIX_FILE = $(COMPILER_ROOT)/main/CONFIGURED_PREFIX
+CONFIGURED_PREFIX_FILE = $(COMPILER_BUILD)/CONFIGURED_PREFIX
 # file storing the names of clang, clang++ for CHPL_LLVM=system
 # also stores the clang-sysroot-arguments
-CLANG_SETTINGS_FILE = $(COMPILER_ROOT)/main/CLANG_SETTINGS
+CLANG_SETTINGS_FILE = $(COMPILER_BUILD)/CLANG_SETTINGS
 
 #
 # include source subdirectories here
