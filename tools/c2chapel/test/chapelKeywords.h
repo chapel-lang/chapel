@@ -12,3 +12,5 @@ typedef struct {
 typedef struct {
   int index;
 } bar;
+
+int foo2(double lambda);
