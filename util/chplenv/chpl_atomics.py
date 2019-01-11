@@ -3,7 +3,7 @@ import optparse
 import sys
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
-from compiler_utils import CompVersion, get_compiler_version
+from compiler_utils import CompVersion, get_compiler_version, has_std_atomics
 from utils import error, memoize
 
 
@@ -27,6 +27,7 @@ def get(flag='target'):
             # Some prior versions of gcc look like they support standard
             # atomics, but have buggy or missing parts of the implementation,
             # so we do not try to use cstdlib with gcc < 5.
+            # We also default to cstdlib for clang if support is detected.
             #
             # We support intrinsics for gcc, intel, cray and clang. gcc added
             # initial support in 4.1, and added support for 64-bit atomics on
@@ -51,7 +52,10 @@ def get(flag='target'):
             elif compiler_val in ['allinea', 'cray-prgenv-allinea']:
                 atomics_val = 'cstdlib'
             elif compiler_val == 'clang':
-                atomics_val = 'intrinsics'
+                if has_std_atomics(compiler_val):
+                    atomics_val = 'cstdlib'
+                else:
+                   atomics_val = 'intrinsics'
             elif compiler_val == 'clang-included':
                 atomics_val = 'intrinsics'
 
