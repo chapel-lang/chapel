@@ -5651,7 +5651,7 @@ static void resolveNew(CallExpr* newExpr) {
 
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
-      if (AggregateType* at = toAggregateType(type)) {
+      if (isAggregateType(type)) {
 
         resolveNewWithInitializer(newExpr, manager);
 
