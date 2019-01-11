@@ -70,7 +70,7 @@ create-virtualenv: $(CHPL_VENV_VIRTUALENV_DIR)
 # By calling `python .../path/to/pip ...`, this issue is circumvented.
 $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
 	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
-	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
+	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
 	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r test-requirements.txt && \
