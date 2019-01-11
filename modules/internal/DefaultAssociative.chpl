@@ -553,6 +553,18 @@ module DefaultAssociative {
           yield slot;
       }
     }
+
+    proc dsiHasSingleLocalSubdomain() param return true;
+
+    proc dsiLocalSubdomain(loc: locale) {
+      if this.numEntries.locale == loc {
+        return _getDomain(_to_unmanaged(this));
+      } else {
+        var a: domain(idxType, parSafe=parSafe);
+        return a;
+      }
+    }
+
   }
   
   class DefaultAssociativeArr: BaseArr {

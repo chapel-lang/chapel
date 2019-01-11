@@ -136,6 +136,17 @@ module DefaultOpaque {
       var ia = new unmanaged DefaultOpaqueArr(eltType=eltType, idxType=idxType, parSafe=parSafe, dom=_to_unmanaged(this));
       return ia;
     }
+
+    proc dsiHasSingleLocalSubdomain() param return true;
+
+    proc dsiLocalSubdomain(loc: locale) {
+      if this.locale == loc {
+        return _getDomain(_to_unmanaged(this));
+      } else {
+        var a: domain(opaque);
+        return a;
+      }
+    }
   }
   
   proc DefaultOpaqueDom.dsiSerialWrite(f) {
@@ -178,7 +189,7 @@ module DefaultOpaque {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain(loc: locale) {
-      if this.data.locale == loc {
+      if this.locale == loc {
         return _getDomain(dom);
       } else {
         var a: domain(opaque);
