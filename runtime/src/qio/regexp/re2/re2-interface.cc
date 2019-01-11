@@ -24,16 +24,22 @@
 
 #include <limits>
 #include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-  #include <stdlib.h>
-  #include <stdio.h>
+// We have run into issues when using our chpl-atomics.h file from C++ code
+// under CHPL_ATOMICS=cstdlib. As a workaround, just use std::atomic and avoid
+// bringing in the Chapel implementation. We know this is safe in this case
+// because re2 itself requires std::atomics, and won't build without them.
+#define QIO_USE_STD_ATOMICS_REF_CNT 1
+
 #ifndef CHPL_RT_UNIT_TEST
-  #include "stdchplrt.h"
+#include "stdchplrt.h"
 #endif
-  #include "qio_regexp.h"
-  #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
-  #include "qio.h" // for channel operations
-  #undef printf
+#include "qio_regexp.h"
+#include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
+#include "qio.h" // for channel operations
+#undef printf
 
 #include "re2/re2.h"
 

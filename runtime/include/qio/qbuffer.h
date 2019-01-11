@@ -30,7 +30,6 @@
 #ifndef __cplusplus
 #include <stdbool.h>
 #endif
-#include "chpl-atomics.h"
 
 #include <inttypes.h>
 #include <stdint.h>
@@ -38,10 +37,24 @@
 #include <sys/uio.h>
 #include "deque.h"
 
-// We should have gasnett_atomic_t from sys_basic
-
 typedef uint_least64_t qb_refcnt_base_t;
+#if defined(__cplusplus) && defined(QIO_USE_STD_ATOMICS_REF_CNT)
+#include <atomic>
+typedef std::atomic<qb_refcnt_base_t> qbytes_refcnt_t;
+#define ATOMIC_INIT(a, val) a.store(val)
+#define ATOMIC_LOAD(a) a.load()
+#define ATOMIC_INCR(a) a.fetch_add(1)
+#define ATOMIC_DECR(a) a.fetch_sub(1)
+#define ATOMIC_DEST(a)
+#else
+#include "chpl-atomics.h"
 typedef atomic_uint_least64_t qbytes_refcnt_t;
+#define ATOMIC_INIT(a, val) atomic_init_uint_least64_t(&a, val)
+#define ATOMIC_LOAD(a) atomic_load_uint_least64_t(&a)
+#define ATOMIC_INCR(a) atomic_fetch_add_uint_least64_t(&a, 1)
+#define ATOMIC_DECR(a) atomic_fetch_sub_uint_least64_t(&a, 1)
+#define ATOMIC_DEST(a) atomic_destroy_uint_least64_t(&a)
+#endif
 
 // The ref count is initialized to 1, in anticipation that the returned pointer
 // will be stored in some data structure.  If not, then the client is
@@ -49,14 +62,14 @@ typedef atomic_uint_least64_t qbytes_refcnt_t;
 // This is a slight optimization, since execution on the "happy path" would
 // create the ref count and then increment it right away.  Depending on the
 // implementation, incrementing an atomic can be expensive.
-#define DO_INIT_REFCNT(ptr) atomic_init_uint_least64_t (&ptr->ref_cnt, 1)
-#define DO_GET_REFCNT(ptr) atomic_load_uint_least64_t (&ptr->ref_cnt)
+#define DO_INIT_REFCNT(ptr) ATOMIC_INIT(ptr->ref_cnt, 1)
+#define DO_GET_REFCNT(ptr) ATOMIC_LOAD(ptr->ref_cnt)
 
 #define DO_RETAIN(ptr) \
 { \
   /* do nothing to NULL */ \
   if( ptr ) { \
-    qb_refcnt_base_t old_cnt = atomic_fetch_add_uint_least64_t (&ptr->ref_cnt, 1); \
+    qb_refcnt_base_t old_cnt = ATOMIC_INCR(ptr->ref_cnt); \
     /* if it was 0, we couldn't have had a ref to it */ \
     /* if it is now 0, we overflowed the ref count (very unlikely). */ \
     if( old_cnt + 1 <= 1 ) *(volatile int *)(0) = 0; /* deliberately segfault. */ \
@@ -67,7 +80,7 @@ typedef atomic_uint_least64_t qbytes_refcnt_t;
 { \
   /* do nothing to NULL */ \
   if( ptr ) { \
-    qb_refcnt_base_t old_cnt = atomic_fetch_sub_uint_least64_t (&ptr->ref_cnt, 1); \
+    qb_refcnt_base_t old_cnt = ATOMIC_DECR(ptr->ref_cnt); \
     if( old_cnt == 1 ) { \
       /* that means, after we decremented it, the count is 0. */ \
       free_function(ptr); \
@@ -78,7 +91,7 @@ typedef atomic_uint_least64_t qbytes_refcnt_t;
   } \
 }
 
-#define DO_DESTROY_REFCNT(ptr) atomic_destroy_uint_least64_t (&ptr->ref_cnt)
+#define DO_DESTROY_REFCNT(ptr) ATOMIC_DEST(ptr->ref_cnt)
 
 #ifdef __cplusplus
 extern "C" {
