@@ -48,6 +48,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
 
   typeConstructor     = NULL;
   hasUserDefinedInit  = false;
+  builtDefaultInit    = false;
   initializerResolved = false;
   iteratorInfo        = NULL;
   doc                 = NULL;
