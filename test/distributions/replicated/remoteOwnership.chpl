@@ -1,10 +1,10 @@
-use BlockDist, CommDiagnostics;
+use ReplicatedDist, CommDiagnostics;
 
 config const n = 11;
 
 
 // test a standard block distribution
-const D = {1..n, 1..n} dmapped Block({1..n, 1..n});
+const D = {1..n, 1..n} dmapped Replicated();
 var A: [D] real;
 
 testit(D, A);
@@ -18,7 +18,7 @@ if (numLocales == 4) {
   targetLocs[2,1] = Locales[0];
   targetLocs[2,2] = Locales[2];
 
-  const D = {1..n, 1..n} dmapped Block({1..n, 1..n}, targetLocales = targetLocs);
+  const D = {1..n, 1..n} dmapped Replicated(targetLocales = targetLocs);
   var A: [D] real;
 
   testit(D, A);
@@ -35,7 +35,7 @@ if (numLocales == 4) {
   targetLocs[1,1] = Locales[3];
   targetLocs[1,2] = Locales[1];
 
-  const D = {1..n, 1..n} dmapped Block({1..n, 1..n}, targetLocales = targetLocs);
+  const D = {1..n, 1..n} dmapped Replicated(targetLocales = targetLocs);
   var A: [D] real;
 
   testit(D, A);
@@ -43,7 +43,6 @@ if (numLocales == 4) {
 
 proc testit(D, A) {
   writeln("Testing domain D: ", D);
-  writeln("Mapped to locales:\n", D.dist.targetLocales());
   testit(D);
   writeln();
 
