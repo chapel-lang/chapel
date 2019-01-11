@@ -26,14 +26,36 @@ if (numLocales == 4) {
   var A: [D] real;
 
   testit(D, A);
+
+  // test a slice of the above (in which not all target locales own something)
+  const D2 = D[2..3, 1..n];
+  var A2: [D2] real;
+  testit(D2, A2);
+}
+
+// test one that targets a subset of locales
+if (numLocales == 4) {
+  var targetLocs: [1..1, 1..2] locale;
+  targetLocs[1,1] = Locales[3];
+  targetLocs[1,2] = Locales[1];
+
+  writeln();
+  writeln("Switching locale configuration to:\n", targetLocs);
+  writeln();
+
+  const D = {1..n, 1..n} dmapped Block({1..n, 1..n}, targetLocales = targetLocs);
+  var A: [D] real;
+
+  testit(D, A);
 }
 
 proc testit(D, A) {
-  writeln("Testing domain D: ");
+  writeln("Testing domain D: ", D);
+  writeln("Mapped to locales:\n", D.dist.targetLocales());
   testit(D);
   writeln();
 
-  writeln("Testing array A: ");
+  writeln("Testing array A (declared over D):");
   testit(A);
 }
 

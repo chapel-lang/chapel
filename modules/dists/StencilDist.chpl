@@ -1833,8 +1833,8 @@ proc Stencil.dsiTargetLocales() {
 proc Stencil.chpl__locToLocIdx(loc: locale) {
   for locIdx in targetLocDom do
     if (targetLocales[locIdx] == loc) then
-      return locIdx;
-  halt("Didn't find locale ", loc.id, " in targetLocales");
+      return (true, locIdx);
+  return (false, targetLocDom.first);
 }
 
 // Stencil subdomains are continuous
@@ -1846,15 +1846,25 @@ proc StencilDom.dsiHasSingleLocalSubdomain() param return true;
 
 proc StencilArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
-    return myLocArr.locDom.myBlock;
+    // quick solution if we have a local array
+    if myLocArr != nil then
+      return myLocArr.locDom.myBlock;
+    // if not, we must not own anything
+    var d: domain(rank, idxType, stridable);
+    return d;
   } else {
     return dom.dsiLocalSubdomain(loc);
   }
 }
 proc StencilDom.dsiLocalSubdomain(loc: locale) {
-  const locid = dist.chpl__locToLocIdx(loc);
-  var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
-  return whole[(...inds)];
+  const (gotit, locid) = dist.chpl__locToLocIdx(loc);
+  if (gotit) {
+    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
+    return whole[(...inds)];
+  } else {
+    var d: domain(rank, idxType, stridable);
+    return d;
+  }
 }
 
 proc StencilDom.numRemoteElems(viewDom, rlo, rid) {

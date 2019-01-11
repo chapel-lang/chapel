@@ -1429,8 +1429,8 @@ proc Block.dsiTargetLocales() {
 proc Block.chpl__locToLocIdx(loc: locale) {
   for locIdx in targetLocDom do
     if (targetLocales[locIdx] == loc) then
-      return locIdx;
-  halt("Didn't find locale ", loc.id, " in targetLocales");
+      return (true, locIdx);
+  return (false, targetLocDom.first);
 }
 
 // Block subdomains are continuous
@@ -1442,27 +1442,25 @@ proc BlockDom.dsiHasSingleLocalSubdomain() param return true;
 
 proc BlockArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
-    return myLocArr.locDom.myBlock;
+    // quick solution if we have a local array
+    if myLocArr != nil then
+      return myLocArr.locDom.myBlock;
+    // if not, we must not own anything
+    var d: domain(rank, idxType, stridable);
+    return d;
   } else {
     return dom.dsiLocalSubdomain(loc);
   }
 }
 proc BlockDom.dsiLocalSubdomain(loc: locale) {
-/*  This is the old way we used to do it...
-  if (loc == here) {
-    // TODO -- could be replaced by a privatized myLocDom in BlockDom
-    // as it is with BlockArr
-    var myLocDom:unmanaged LocBlockDom(rank, idxType, stridable) = nil;
-    for (loc, locDom) in zip(dist.targetLocales, locDoms) {
-      if loc == here then
-        myLocDom = locDom;
-    }
-    return myLocDom.myBlock;
-  } else ...
-*/
-    const locid = dist.chpl__locToLocIdx(loc);
+  const (gotit, locid) = dist.chpl__locToLocIdx(loc);
+  if (gotit) {
     var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
     return whole[(...inds)];
+  } else {
+    var d: domain(rank, idxType, stridable);
+    return d;
+  }
 }
 
 iter ConsecutiveChunks(LView, RDomClass, RView, len, in start) {
