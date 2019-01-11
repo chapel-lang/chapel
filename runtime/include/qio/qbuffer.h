@@ -39,6 +39,7 @@
 
 typedef uint_least64_t qb_refcnt_base_t;
 #if defined(__cplusplus) && defined(QIO_USE_STD_ATOMICS_REF_CNT)
+// work around for issues with older GCC cstdlib atomics
 #include <atomic>
 typedef std::atomic<qb_refcnt_base_t> qbytes_refcnt_t;
 #define ATOMIC_INIT(a, val) a.store(val)
