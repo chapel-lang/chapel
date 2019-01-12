@@ -55,7 +55,7 @@ def get(flag='target'):
                 if has_std_atomics(compiler_val):
                     atomics_val = 'cstdlib'
                 else:
-                   atomics_val = 'intrinsics'
+                    atomics_val = 'intrinsics'
             elif compiler_val == 'clang-included':
                 atomics_val = 'intrinsics'
 
