@@ -26,6 +26,8 @@ use TOML;
 use Path;
 use MasonEnv;
 
+config const useBash=false;
+
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
@@ -122,6 +124,14 @@ proc runWithStatus(command, show=true): int {
   }
 }
 
+proc SPACK_ROOT : string {
+  const envHome = getEnv("SPACK_ROOT");
+  const default = MASON_HOME + "/.mason";
+
+  const spackRoot = if envHome != "" then envHome else default;
+
+  return spackRoot;
+}
 
 /* uses spawnshell and the prefix to setup Spack before
    calling the spack command. This also returns the stdout
@@ -132,11 +142,12 @@ proc getSpackResult(cmd, quiet=false) : string throws {
   try {
 
 
-    var prefix = "export SPACK_ROOT=" + MASON_HOME + "/spack" +
-    " && export PATH=$SPACK_ROOT/bin:$PATH" +
-    " && source $SPACK_ROOT/share/spack/setup-env.sh && ";
+    var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
+    " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
+    " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
     var splitCmd = prefix + cmd;
-    var process = spawnshell(splitCmd, stdout=PIPE);
+    const executable=if useBash then "/bin/bash" else "/bin/sh";
+    var process = spawnshell(splitCmd, stdout=PIPE,executable=executable);
     
     for line in process.stdout.lines() {
       ret += line;
@@ -158,12 +169,13 @@ proc getSpackResult(cmd, quiet=false) : string throws {
    TODO: get to work with Spawn */
 proc runSpackCommand(command) {
 
-  var prefix = "export SPACK_ROOT=" + MASON_HOME + "/spack" +
-    " && export PATH=$SPACK_ROOT/bin:$PATH" +
-    " && source $SPACK_ROOT/share/spack/setup-env.sh && ";
+  var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
+    " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
+    " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
 
   var cmd = (prefix + command);
-  var sub = spawnshell(cmd, stderr=PIPE);
+  const executable=if useBash then "/bin/bash" else "/bin/sh";
+  var sub = spawnshell(cmd, stderr=PIPE, executable=executable);
   sub.wait();
 
   for line in sub.stderr.lines() {
