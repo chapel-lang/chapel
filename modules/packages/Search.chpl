@@ -42,7 +42,7 @@ module Search {
    General purpose searching interface for searching through a 1D array.
    For pre-sorted arrays, denoted by passing ``sorted=true`` as an argument,
    this function wraps :proc:`binarySearch`, otherwise it wraps
-   :proc`linearSearch`.
+   :proc:`linearSearch`.
 
    :arg Data: The array to be searched
    :type Data: [] `eltType`
