@@ -947,6 +947,10 @@ module ChapelDistribution {
     // array implementation can destroy data or other members
     arr.dsiDestroyArr();
 
+    if arr._decEltRefCounts {
+      writeln("warning: clean up of this array type might leak memory");
+    }
+
     if privatized {
       _freePrivatizedClass(arr.pid, arr);
     }
