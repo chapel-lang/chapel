@@ -17,7 +17,8 @@ coforall loc in Locales do on loc {
   }
 }
 stop();
-report(maxOns=2, maxGets=0);
+report(maxGets=0,
+       maxOns = if CHPL_NETWORK_ATOMICS == 'none' then 2 else 1);
 
 writeln("Querying via array reference...");
 start();
@@ -29,7 +30,8 @@ coforall loc in Locales do on loc {
   }
 }
 stop();
-report(maxOns=2, maxGets=14);
+report(maxGets=14,
+       maxOns = if CHPL_NETWORK_ATOMICS == 'none' then 2 else 1);
 
 writeln("Querying via wide pointer...");
 start();
@@ -43,7 +45,8 @@ coforall loc in Locales do on loc {
   }
 }
 stop();
-report(maxOns=2, maxGets=0);
+report(maxGets=0,
+       maxOns = if CHPL_NETWORK_ATOMICS == 'none' then 2 else 1);
 
 inline proc getLocale(dom, idx) {
   var loc = dom.dist.idxToLocale(idx);
@@ -64,7 +67,8 @@ coforall loc in Locales do on loc {
   }
 }
 stop();
-report(maxOns=2, maxGets=0);
+report(maxGets=0,
+       maxOns = if CHPL_NETWORK_ATOMICS == 'none' then 2 else 1);
 
 writeln("Querying remote object...");
 var obj = new object();
@@ -77,5 +81,6 @@ coforall loc in Locales do on loc {
   }
 }
 stop();
-report(maxOns=2, maxGets=0);
+report(maxGets=0,
+       maxOns = if CHPL_NETWORK_ATOMICS == 'none' then 2 else 1);
 
