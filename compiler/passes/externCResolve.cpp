@@ -49,104 +49,176 @@ static const char* convertTypedef(ModuleSymbol*           module,
                                   Vec<Expr*>&             results);
 
 
+static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Vec<Expr*> & results, const char* typedefName=NULL);
+
+static Expr* convertTypedefToChplType(ModuleSymbol* module, const clang::TypedefType *td, Vec<Expr*> & results, const char* typedefName=NULL) {
+
+  // Get the typedef decl for that
+  clang::TypedefNameDecl* tdn = td->getDecl();
+
+  const char* typedef_name = convertTypedef(module, tdn, results);
+
+  return new UnresolvedSymExpr(typedef_name);
+}
+
+static Expr* convertPointerToChplType(ModuleSymbol* module, const clang::QualType pointeeType, Vec<Expr*> & results, const char* typedefName=NULL) {
+
+
+  //Pointers to c_char must be converted to Chapel's C string type
+  // but only if they are const char*.
+  if ( pointeeType.isConstQualified() &&
+       pointeeType.getTypePtr()->isCharType() ) {
+    return new UnresolvedSymExpr("c_string");
+  }
+
+  // Pointers to C functions become c_fn_ptr
+  if ( pointeeType.getTypePtr()->isFunctionType()) {
+    return new UnresolvedSymExpr("c_fn_ptr");
+  }
+
+  Expr* pointee = convertToChplType(module, pointeeType.getTypePtr(), results);
+
+  // void *  generates as c_void_ptr.
+  if(!pointee) {
+    return new UnresolvedSymExpr("c_void_ptr");
+  }
+
+
+  //Pointers (other than char*) are represented as calls to
+  // c_ptr(chapel_type).
+  // PRIM_ACTUALS_LIST is not needed here.
+  return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
+}
+
+static Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module, const clang::ConstantArrayType* arrayType, Vec<Expr*> & results, const char* typedefName=NULL) {
+
+  llvm::APInt size = arrayType->getSize();
+  clang::QualType eltType = arrayType->getElementType();
+
+  Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr(), results);
+
+  if (size.getMinSignedBits() > 64)
+    USR_FATAL("C array is too large");
+
+  int64_t isize = size.getSExtValue();
+  Symbol* isym = new_IntSymbol(isize, INT_SIZE_64);
+  // this would make a tuple
+  //return new CallExpr("*", new SymExpr(isym), eltTypeChapel);
+
+  // this would make a fixed size array
+  //return new CallExpr("c_array_ptr", eltTypeChapel, new SymExpr(isym));
+
+  // For now, just represent it as a c_ptr
+  return new CallExpr("c_ptr", eltTypeChapel);
+}
+
+static Expr* convertArrayToChplType(ModuleSymbol* module, const clang::ArrayType* arrayType, Vec<Expr*> & results, const char* typedefName=NULL) {
+
+  clang::QualType eltType = arrayType->getElementType();
+
+  Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr(), results);
+
+  // For now, just represent it as a c_ptr
+  return new CallExpr("c_ptr", eltTypeChapel);
+}
+
+static Expr* convertStructToChplType(ModuleSymbol* module, const clang::RecordType* structType, Vec<Expr*> & results, const char* typedefName=NULL) {
+
+  clang::RecordDecl *rd = structType->getDecl();
+  const char* tmp_name = astr(rd->getNameAsString().c_str());
+  const char* cname = tmp_name;
+
+  if (!llvmCodegen) {
+    cname = astr("struct ", cname);
+  }
+
+  // For handling typedef struct { } bar
+  //   ie an anonymous struct, use the name in the typedef.
+  if( tmp_name[0] == '\0' && typedefName ) {
+    cname = tmp_name = typedefName;
+  }
+
+  //don't create a new struct if it already exists
+  // So we've found something.... set it as converted.
+  if( ! alreadyConvertedExtern(module, cname) ) {
+    setAlreadyConvertedExtern(module, cname);
+
+    //convert the struct to Chapel
+    BlockStmt* fields = new BlockStmt();
+
+    for (clang::RecordDecl::field_iterator it = rd->field_begin(); it != rd->field_end(); ++it) {
+      clang::FieldDecl* field      = (*it);
+      const char*       field_name = astr(field->getNameAsString().c_str());
+      Expr*             field_type = convertToChplType(module, field->getType().getTypePtr(), results);
+      DefExpr*          varDefn    = new DefExpr(new VarSymbol(field_name), NULL, field_type);
+      BlockStmt*        stmt       = buildChapelStmt(varDefn);
+
+      fields->insertAtTail(buildVarDecls(stmt));
+    }
+
+    DefExpr* strct = buildClassDefExpr(tmp_name,
+                                       NULL,
+                                       AGGREGATE_RECORD,
+                                       NULL,
+                                       fields,
+                                       FLAG_EXTERN,
+                                       NULL);
+
+    //...and patch up the resulting struct so that its cname is
+    //  correct and codegen can find it.
+    if (strct) {
+      strct->sym->cname = cname;
+      results.add(strct);
+    }
+  }
+
+  return new UnresolvedSymExpr(tmp_name);
+
+}
+
 //Given a clang type, returns the corresponding chapel type (usually as
 //  an UnresolvedSymExpr to be resolved by scopeResolve).
-static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Vec<Expr*> & results, const char* typedefName=NULL) {
+static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Vec<Expr*> & results, const char* typedefName) {
 
   //typedefs
   if (const clang::TypedefType *td =
       llvm::dyn_cast_or_null<clang::TypedefType>(type)) {
 
-    // Get the typedef decl for that
-    clang::TypedefNameDecl* tdn = td->getDecl();
-
-    const char* typedef_name = convertTypedef(module, tdn, results);
-
-    return new UnresolvedSymExpr(typedef_name);
+    return convertTypedefToChplType(module, td, results, typedefName);
 
   //pointers
   } else if (type->isPointerType()) {
+
     clang::QualType pointeeType = type->getPointeeType();
 
-    //Pointers to c_char must be converted to Chapel's C string type
-    // but only if they are const char*.
-    if ( pointeeType.isConstQualified() &&
-         pointeeType.getTypePtr()->isCharType() ) {
-      return new UnresolvedSymExpr("c_string");
+    return convertPointerToChplType(module, pointeeType, results, typedefName);
+
+  //arrays
+  } else if (type->isArrayType()) {
+
+    if (type->isConstantArrayType()) {
+      const clang::ConstantArrayType* cat =
+        llvm::dyn_cast<clang::ConstantArrayType>(type);
+
+      return convertFixedSizeArrayToChplType(module, cat, results, typedefName);
+    } else {
+      const clang::ArrayType* at = llvm::dyn_cast<clang::ArrayType>(type);
+
+      return convertArrayToChplType(module, at, results, typedefName);
     }
 
-    // Pointers to C functions become c_fn_ptr
-    if ( pointeeType.getTypePtr()->isFunctionType()) {
-      return new UnresolvedSymExpr("c_fn_ptr");
-    }
-
-    Expr* pointee = convertToChplType(module, pointeeType.getTypePtr(), results);
-
-    // void *  generates as c_void_ptr.
-    if(!pointee) {
-      return new UnresolvedSymExpr("c_void_ptr");
-    }
-
-
-    //Pointers (other than char*) are represented as calls to
-    // c_ptr(chapel_type).
-    // PRIM_ACTUALS_LIST is not needed here.
-    return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
+    USR_FATAL("variable sized C array types not yet supported");
 
   //structs
   } else if (type->isStructureType()) {
-      clang::RecordDecl *rd = type->getAsStructureType()->getDecl();
-      const char* tmp_name = astr(rd->getNameAsString().c_str());
-      const char* cname = tmp_name;
 
-      if (!llvmCodegen) {
-        cname = astr("struct ", cname);
-      }
+    return convertStructToChplType(module, type->getAsStructureType(),
+                                   results, typedefName);
 
-      // For handling typedef struct { } bar
-      //   ie an anonymous struct, use the name in the typedef.
-      if( tmp_name[0] == '\0' && typedefName ) {
-        cname = tmp_name = typedefName;
-      }
-
-      //don't create a new struct if it already exists
-      // So we've found something.... set it as converted.
-      if( ! alreadyConvertedExtern(module, cname) ) {
-        setAlreadyConvertedExtern(module, cname);
-
-        //convert the struct to Chapel
-        BlockStmt* fields = new BlockStmt();
-
-        for (clang::RecordDecl::field_iterator it = rd->field_begin(); it != rd->field_end(); ++it) {
-          clang::FieldDecl* field      = (*it);
-          const char*       field_name = astr(field->getNameAsString().c_str());
-          Expr*             field_type = convertToChplType(module, field->getType().getTypePtr(), results);
-          DefExpr*          varDefn    = new DefExpr(new VarSymbol(field_name), NULL, field_type);
-          BlockStmt*        stmt       = buildChapelStmt(varDefn);
-
-          fields->insertAtTail(buildVarDecls(stmt));
-        }
-
-        DefExpr* strct = buildClassDefExpr(tmp_name,
-                                           NULL,
-                                           AGGREGATE_RECORD,
-                                           NULL,
-                                           fields,
-                                           FLAG_EXTERN,
-                                           NULL);
-
-        //...and patch up the resulting struct so that its cname is
-        //  correct and codegen can find it.
-        if (strct) {
-          strct->sym->cname = cname;
-          results.add(strct);
-        }
-      }
-
-      return new UnresolvedSymExpr(tmp_name);
   } else if (type->isFunctionType()) {
     // This should be handled in the pointer-to-function case above
-    INT_ASSERT("bare c function type");
+    USR_FATAL("C function types (vs pointers to them) not yet supported");
+
   } else {
     // Check for enum types, which are really some sort of integer type
     if (type->isEnumeralType()) {
@@ -195,11 +267,10 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
       return new UnresolvedSymExpr("c_double");
 
     if (type->isVoidType()) return NULL;
-
   }
 
   //give up...
-  INT_FATAL("Unsupported type in extern \"C\" block.");
+  USR_FATAL("Unsupported type in extern \"C\" block.");
   return NULL;
 }
 

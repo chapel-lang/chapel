@@ -132,6 +132,7 @@ class LayeredValueTable
     void getCDecl(llvm::StringRef name, clang::TypeDecl** cTypeOut,
         clang::ValueDecl** cValueOut, const char** cCastedToTypeOut=NULL,
         astlocT *astlocOut=NULL);
+    bool isCArray(llvm::StringRef name);
     VarSymbol* getVarSymbol(llvm::StringRef name);
  
     bool isAlreadyInChapelAST(llvm::StringRef name);

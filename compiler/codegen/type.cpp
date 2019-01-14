@@ -23,6 +23,7 @@
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "build.h"
+#include "clangUtil.h"
 #include "codegen.h"
 #include "docsDriver.h"
 #include "driver.h"
@@ -577,20 +578,18 @@ int AggregateType::codegenFieldStructure(FILE*       outfile,
   return totfields;
 }
 
-#ifdef HAVE_LLVM
-extern int getCRecordMemberGEP(const char* typeName, const char* fieldName);
-#endif
-
-int AggregateType::getMemberGEP(const char *name) {
+int AggregateType::getMemberGEP(const char *name, bool &isCArrayField) {
 #ifdef HAVE_LLVM
   if( symbol->hasFlag(FLAG_EXTERN) ) {
     // We will cache the info in the local GEP map.
     std::map<std::string, int>::const_iterator GEPIdx = GEPMap.find(name);
     if(GEPIdx != GEPMap.end()) {
+      isCArrayField = isCArrayFieldMap[name];
       return GEPIdx->second;
     }
-    int ret = getCRecordMemberGEP(symbol->cname, name);
+    int ret = getCRecordMemberGEP(symbol->cname, name, isCArrayField);
     GEPMap.insert(std::pair<std::string,int>(name, ret));
+    isCArrayFieldMap.insert(std::pair<std::string,int>(name, isCArrayField));
     return ret;
   } else {
     Vec<Type*> next, current;

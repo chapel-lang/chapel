@@ -141,6 +141,10 @@ GenRet SymExpr::codegen() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
   GenRet ret;
+
+  if (id == breakOnCodegenID)
+    gdbShouldBreakHere();
+
   if( outfile ) {
     if (getStmtExpr() && getStmtExpr() == this)
       codegenStmt(this);
@@ -1075,8 +1079,9 @@ GenRet doCodegenFieldPtr(
 
     if( isUnion(ct) && !special ) {
       // Get a pointer to the union data then cast it to the right type
+      bool unused;
       ret.val = info->irBuilder->CreateStructGEP(
-          NULL, baseValue, cBaseType->getMemberGEP("_u"));
+          NULL, baseValue, cBaseType->getMemberGEP("_u", unused));
       llvm::PointerType* ty =
         llvm::PointerType::get(retType.type,
                                baseValue->getType()->getPointerAddressSpace());
@@ -1085,19 +1090,31 @@ GenRet doCodegenFieldPtr(
       INT_ASSERT(ret.val);
     } else {
       // Normally, we just use a GEP.
-      int fieldno = cBaseType->getMemberGEP(c_field_name);
-      ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
-      if ((isClass(ct) || isRecord(ct)) &&
+      bool isCArrayField = false;
+      int fieldno = cBaseType->getMemberGEP(c_field_name, isCArrayField);
+      if (isCArrayField) {
+        // Accessing a field of C array type yields
+        // a pointer to the include array
+        // aka a pointer to the first element.
+        ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
+        ret.val = info->irBuilder->CreateStructGEP(NULL, ret.val, 0);
+        ret.isLVPtr = GEN_VAL;
+      } else {
+        ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
+
+        if ((isClass(ct) || isRecord(ct)) &&
           cBaseType->symbol->llvmTbaaAggTypeDescriptor &&
           ret.chplType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
-        llvm::StructType *structType = llvm::cast<llvm::StructType>
-          (llvm::cast<llvm::PointerType>
-           (baseValue->getType())->getElementType());
-        ret.surroundingStruct = cBaseType;
-        ret.fieldOffset = info->module->getDataLayout().
-          getStructLayout(structType)->getElementOffset(fieldno);
-        ret.fieldTbaaTypeDescriptor =
-          ret.chplType->symbol->llvmTbaaTypeDescriptor;
+
+          llvm::StructType *structType = llvm::cast<llvm::StructType>
+            (llvm::cast<llvm::PointerType>
+             (baseValue->getType())->getElementType());
+          ret.surroundingStruct = cBaseType;
+          ret.fieldOffset = info->module->getDataLayout().
+            getStructLayout(structType)->getElementOffset(fieldno);
+          ret.fieldTbaaTypeDescriptor =
+            ret.chplType->symbol->llvmTbaaTypeDescriptor;
+        }
       }
     }
 

@@ -2231,6 +2231,15 @@ void LayeredValueTable::getCDecl(StringRef name, TypeDecl** cTypeOut,
   }
 }
 
+bool LayeredValueTable::isCArray(StringRef cname) {
+  clang::TypeDecl* cType = NULL;
+  clang::ValueDecl* cValue = NULL;
+
+  this->getCDecl(cname, &cType, &cValue);
+
+  return (cValue && cValue->getType().getTypePtr()->isArrayType());
+}
+
 VarSymbol* LayeredValueTable::getVarSymbol(StringRef name) {
   if(Storage *store = get(name)) {
     if( store->u.chplVar && isVarSymbol(store->u.chplVar) ) {
@@ -2284,7 +2293,8 @@ void LayeredValueTable::swap(LayeredValueTable* other)
   this->layers.swap(other->layers);
 }
 
-int getCRecordMemberGEP(const char* typeName, const char* fieldName)
+int getCRecordMemberGEP(const char* typeName, const char* fieldName,
+                        bool& isCArrayField)
 {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -2322,11 +2332,15 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName)
   }
   INT_ASSERT(field);
 
+  isCArrayField = field->getType()->isArrayType();
+
 #if HAVE_LLVM_VER >= 60
   ret = clang::CodeGen::getLLVMFieldNumber(cCodeGen->CGM(), rec, field);
 #else
   ret = cCodeGen->CGM().getTypes().getCGRecordLayout(rec).getLLVMFieldNo(field);
 #endif
+
+  INT_ASSERT(ret >= 0);
 
   return ret;
 }

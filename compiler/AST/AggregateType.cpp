@@ -1699,21 +1699,31 @@ void AggregateType::buildCopyInitializer() {
     fn->insertFormalAtTail(_this);
     fn->insertFormalAtTail(other);
 
-    // Copy the fields from "other" into our fields
-    for_fields(fieldDefExpr, this) {
-      if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-        if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
-          const char* name       = field->name;
+    if (symbol->hasFlag(FLAG_EXTERN)) {
+      if (other->hasFlag(FLAG_MARKED_GENERIC))
+        INT_FATAL("extern type is generic");
 
-          CallExpr*   thisField  = new CallExpr(".",
-                                                fn->_this,
-                                                new_CStringSymbol(name));
+      // Generate a bit-copy for extern records in order to copy unknown fields.
+      if (symbol->hasFlag(FLAG_EXTERN)) {
+        fn->insertAtHead(new CallExpr(PRIM_ASSIGN, fn->_this, other));
+      }
+    } else {
+      // Copy the fields from "other" into our fields
+      for_fields(fieldDefExpr, this) {
+        if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+          if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
+            const char* name       = field->name;
 
-          CallExpr*   otherField = new CallExpr(".",
-                                                other,
-                                                new_CStringSymbol(name));
+            CallExpr*   thisField  = new CallExpr(".",
+                                                  fn->_this,
+                                                  new_CStringSymbol(name));
 
-          fn->insertAtTail(new CallExpr("=", thisField, otherField));
+            CallExpr*   otherField = new CallExpr(".",
+                                                  other,
+                                                  new_CStringSymbol(name));
+
+            fn->insertAtTail(new CallExpr("=", thisField, otherField));
+          }
         }
       }
     }
@@ -1723,13 +1733,10 @@ void AggregateType::buildCopyInitializer() {
     fn->setMethod(true);
     fn->addFlag(FLAG_METHOD_PRIMARY);
 
-    preNormalizeInitMethod(fn);
-    normalize(fn);
+    if (symbol->hasFlag(FLAG_EXTERN) == false)
+      preNormalizeInitMethod(fn);
 
-    // Generate a bit-copy for extern records in order to copy unknown fields.
-    if (symbol->hasFlag(FLAG_EXTERN)) {
-      fn->insertAtHead(new CallExpr(PRIM_ASSIGN, fn->_this, other));
-    }
+    normalize(fn);
 
     methods.add(fn);
   }

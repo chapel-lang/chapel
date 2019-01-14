@@ -131,7 +131,8 @@ public:
   DefExpr*                    toSuperField(SymExpr*  expr)               const;
   DefExpr*                    toSuperField(CallExpr* expr)               const;
 
-  int                         getMemberGEP(const char* name);
+  int                         getMemberGEP(const char* name,
+                                           bool& isCArrayField);
 
   FnSymbol*                   buildTypeConstructor();
 
@@ -199,6 +200,10 @@ public:
   Vec<AggregateType*>         dispatchChildren;   // dispatch hierarchy
 
 private:
+
+  // Only used for LLVM.
+  std::map<std::string, bool> isCArrayFieldMap;
+
   static ArgSymbol*           createGenericArg(VarSymbol* field);
 
   void                        insertImplicitThis(FnSymbol*         fn,
