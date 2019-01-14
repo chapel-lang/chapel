@@ -92,6 +92,17 @@ module CPtr {
     }
   }
 
+  /*
+  This class represents a C array with fixed size.  A variable of type c_array
+  can coerce to a c_ptr with the same element type.  In that event, the
+  pointer will be equivalent to `c_ptrTo(array[0])`.  A c_array behaves
+  similarly to a homogenous tuple except that its indices start at 0 and it is
+  guaranteed to be stored in contiguous memory.  A c_array variable has value
+  semantics. Declaring one as a function local variable will create the array
+  elements in the function's stack. Assigning or copy initializing will result
+  in copying the elements (vs resulting in two pointers that refer to the same
+  elements).  A `nil` c_array is not representable in Chapel.
+  */
   //   Similar to c_ptr but includes a param width
   //   (matching a C fixed-size array).
   pragma "data class"
@@ -99,13 +110,14 @@ module CPtr {
   pragma "no default functions"
   pragma "no wide class"
   pragma "c_ptr class"
-  class c_array_ptr {
-    /* The type that this pointer points to */
+  class c_array {
+    /* The array element type */
     type eltType;
     /* The fixed number of elements */
     param size;
-    /* Retrieve the i'th element (zero based) from a pointer to an array.
-      Does the equivalent of ptr[i] in C.
+    /* Retrieve the i'th element (zero based) from the array.
+      Does the equivalent of arr[i] in C.
+        Includes bounds checking when such checks are enabled.
     */
     inline proc this(i: integral) ref {
       if boundsChecking then
@@ -115,6 +127,9 @@ module CPtr {
 
       return __primitive("array_get", this, i);
     }
+    /* As with the previous function, returns the i'th element (zero based)
+        from the array. This one emits a compilation error if i is out of bounds.
+    */
     inline proc this(param i: integral) ref {
       if i < 0 || i >= size then
         compilerError("c array index out of bounds " + i +
@@ -142,7 +157,7 @@ module CPtr {
       ch <~> new ioLiteral("]");
     }
 
-    /*proc init(other: c_array_ptr) {
+    /*proc init(other: c_array) {
       // TODO: size mismatch error
       // TODO: eltType mismatch error
       //if other.size != this.size then
@@ -155,7 +170,11 @@ module CPtr {
       }
     }*/
   }
-  proc =(ref lhs:c_array_ptr, rhs:c_array_ptr) {
+
+  /* Copy the elements from one c_array to another.
+     Raises an error at compile time if the array sizes or
+     element types do not match. */
+  proc =(ref lhs:c_array, rhs:c_array) {
     if lhs.size != rhs.size then
       compilerError("Size mismatch in c array assignment");
 
@@ -199,7 +218,7 @@ module CPtr {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:c_array_ptr, x:c_ptr) {
+  inline proc _cast(type t:c_array, x:c_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"

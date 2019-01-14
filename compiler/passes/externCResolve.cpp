@@ -103,7 +103,7 @@ static Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module, const clang::
   int64_t isize = size.getSExtValue();
   Symbol* isym = new_IntSymbol(isize, INT_SIZE_64);
 
-  return new CallExpr("c_array_ptr", eltTypeChapel, new SymExpr(isym));
+  return new CallExpr("c_array", eltTypeChapel, new SymExpr(isym));
 }
 
 static Expr* convertArrayToChplType(ModuleSymbol* module, const clang::ArrayType* arrayType, Vec<Expr*> & results, const char* typedefName=NULL) {
