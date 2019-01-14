@@ -579,6 +579,45 @@ def runSkipIf(skipifName):
 
     return stdout
 
+# Translate some known failures into more easily understood forms
+def translateOutput(output):
+    xlates = (('slurmstepd: Munge decode failed: Expired credential',
+               'Jira 18 -- Expired slurm credential for'),
+              ('output file from job .* does not exist',
+               'Jira 17 -- Missing output file for'),
+              ('aprun: Unexpected close of the apsys control connection',
+               'Jira 193 -- Unexpected close of apsys for'),
+              ('Transient MPP reservation error on create',
+               'Jira 203 -- Transient MPP reservation error for'),
+              ('qsub: cannot connect to server sdb',
+               'Jira 283 -- Sporadic: qstat failed to connect to server sdb'),
+              ('Failed to recv data from background qsub',
+               'Jira 260 -- Failed to recv data from background qsub for'),
+              (r'\d+ Killed /var/spool/PBS/mom_priv/jobs',
+               'Jira 324 -- PBS job killed for'),
+              ('Fatal MPP reservation error on confirm',
+               'Jira 329 -- Fatal MPP reservation error for'),
+              ('Fatal MPP reservation error on create',
+               'Jira 329 -- Fatal MPP reservation error for'),
+              ('Text file busy',
+               'Jira 333 -- Text file busy for'))
+
+    known_error = ''
+    was_timeout = False
+
+    for x in xlates:
+        if re.search(x[0], output, re.IGNORECASE) != None:
+            known_error = x[1]
+            break
+    else:
+        if (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
+              re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
+            known_error = 'Timed out executing program'
+            was_timeout = True
+
+    return known_error, was_timeout
+
+
 # Start of sub_test proper
 #
 
@@ -1927,28 +1966,9 @@ for testname in testsrc:
                         output = p.communicate()[0]
                         status = p.returncode
 
-                        if re.search('slurmstepd: Munge decode failed: Expired credential', output, re.IGNORECASE) != None:
-                            launcher_error = 'Jira 18 -- Expired slurm credential for'
-                        elif re.search('output file from job .* does not exist', output, re.IGNORECASE) != None:
-                            launcher_error = 'Jira 17 -- Missing output file for'
-                        elif re.search('aprun: Unexpected close of the apsys control connection', output, re.IGNORECASE) != None:
-                            launcher_error = 'Jira 193 -- Unexpected close of apsys for'
-                        elif re.search('Transient MPP reservation error on create', output, re.IGNORECASE) != None:
-                            launcher_error = 'Jira 203 -- Transient MPP reservation error for'
-                        elif re.search('Failed to recv data from background qsub', output, re.IGNORECASE) != None:
-                            launcher_error = 'Jira 260 -- Failed to recv data from background qsub for'
-                        elif (re.search(r'\d+ Killed', output) and re.search('/var/spool/PBS/mom_priv/jobs', output)):
-                            launcher_error = 'Jira 324 -- PBS job killed for'
-                        elif re.search('Fatal MPP reservation error on confirm', output, re.IGNORECASE) != None:
-                            launcher_error = 'Jira 329 -- Fatal MPP reservation error for'
-                        elif re.search('Fatal MPP reservation error on create', output, re.IGNORECASE) != None:
-                            launcher_error = 'Jira 329 -- Fatal MPP reservation error for'
-                        elif re.search('Text file busy', output, re.IGNORECASE) != None:
-                            launcher_error = 'Jira 333 -- Text file busy for'
-                        elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
-                              re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
-                            exectimeout = True
-                            launcher_error = 'Timed out executing program'
+                        # Check for well-known failure modes
+                        launcher_error, thistimeout = translateOutput(output)
+                        exectimeout = exectimeout or thistimeout
 
                         if launcher_error:
                             sys.stdout.write('%s[Error: %s %s/%s'%
