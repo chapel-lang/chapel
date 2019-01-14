@@ -942,7 +942,8 @@ module ChapelDistribution {
     delete arr;
   }
 
-  proc _delete_arr(arr: unmanaged BaseArr, param privatized: bool) {
+  proc _delete_arr(arr, param privatized: bool) where
+    (!isProperSubtype(arr.type, unmanaged BaseArr)) {
     // array implementation can destroy data or other members
     arr.dsiDestroyArr();
 
