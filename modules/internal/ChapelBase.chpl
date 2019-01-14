@@ -513,7 +513,7 @@ module ChapelBase {
   inline proc ^(a: uint(?w), b: int(w)) return __primitive("^", a, b:uint(w));
   inline proc ^(a: int(?w), b: uint(w)) return __primitive("^", a:uint(w), b);
 
-  inline proc ~(param a: bool) param return __primitive("u~", a);
+  inline proc ~(param a: bool) { compilerError("~ is not supported on operands of boolean type"); }
   inline proc ~(param a: int(?w)) param return __primitive("u~", a);
   inline proc ~(param a: uint(?w)) param return __primitive("u~", a);
 
