@@ -26,8 +26,13 @@ def get(flag='target'):
             # We default to C standard atomics (cstdlib) for gcc 5 and newer.
             # Some prior versions of gcc look like they support standard
             # atomics, but have buggy or missing parts of the implementation,
-            # so we do not try to use cstdlib with gcc < 5.
-            # We also default to cstdlib for clang if support is detected.
+            # so we do not try to use cstdlib with gcc < 5. If support is
+            # detected for clang (via preprocessor checks) we also default to
+            # cstdlib atomics. For llvm/clang-included we always default to
+            # cstdlib atomics. We know our clang-included will have compiler
+            # support for atomics and llvm requires gcc 4.8 (or a compiler with
+            # equivalent features) to be built so we know we'll have system
+            # header support too.
             #
             # We support intrinsics for gcc, intel, cray and clang. gcc added
             # initial support in 4.1, and added support for 64-bit atomics on
@@ -57,7 +62,7 @@ def get(flag='target'):
                 else:
                     atomics_val = 'intrinsics'
             elif compiler_val == 'clang-included':
-                atomics_val = 'intrinsics'
+                atomics_val = 'cstdlib'
 
             # we can't use intrinsics, fall back to locks
             if not atomics_val:
