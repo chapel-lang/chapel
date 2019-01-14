@@ -1844,19 +1844,12 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   wrapper->addFlag(FLAG_INLINE);
 
-  if (ct->wantsDefaultInitializer()) {
-    wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
-                                       new CallExpr(PRIM_CAST,
-                                                    parent->symbol,
-                                                    new CallExpr(PRIM_NEW,
-                                                                 new NamedExpr(astr_chpl_manager, new SymExpr(dtUnmanaged->symbol)),
-                                                                 new SymExpr(ct->symbol)))));
-  } else {
-    wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
-                                       new CallExpr(PRIM_CAST,
-                                                    parent->symbol,
-                                                    new CallExpr(ct->defaultInitializer))));
-  }
+  wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
+                                     new CallExpr(PRIM_CAST,
+                                                  parent->symbol,
+                                                  new CallExpr(PRIM_NEW,
+                                                               new NamedExpr(astr_chpl_manager, new SymExpr(dtUnmanaged->symbol)),
+                                                               new SymExpr(ct->symbol)))));
 
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
 

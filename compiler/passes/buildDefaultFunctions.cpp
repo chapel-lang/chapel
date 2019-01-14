@@ -54,7 +54,7 @@ static void build_extern_assignment_function(Type* type);
 
 static void build_record_assignment_function(AggregateType* ct);
 static void build_record_cast_function(AggregateType* ct);
-static void build_record_copy_function(AggregateType* ct);
+static void check_not_pod(AggregateType* ct);
 static void build_record_hash_function(AggregateType* ct);
 static void build_record_equality_function(AggregateType* ct);
 static void build_record_inequality_function(AggregateType* ct);
@@ -116,8 +116,9 @@ void buildDefaultFunctions() {
 
           build_record_assignment_function(ct);
           build_record_cast_function(ct);
-          build_record_copy_function(ct);
           build_record_hash_function(ct);
+
+          check_not_pod(ct);
         }
 
         if (isUnion(ct)) {
@@ -1335,52 +1336,13 @@ static void buildClassBorrowMethod(AggregateType* ct) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void build_record_copy_function(AggregateType* at) {
+static void check_not_pod(AggregateType* at) {
   if (function_exists("chpl__initCopy", at) == NULL) {
-    if (isRecordWithInitializers(at) == true) {
 
-      // Compiler-generated copy-initializers should not disable POD
-      FnSymbol* fn = function_exists("init", dtMethodToken, at, at);
-      if (fn != NULL && fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
-        at->symbol->addFlag(FLAG_NOT_POD);
-      }
-
-    } else {
-      FnSymbol*  fn  = new FnSymbol("chpl__initCopy");
-      DefExpr*   def = new DefExpr(fn);
-      ArgSymbol* arg = new ArgSymbol(INTENT_CONST, "x", at);
-
-      arg->addFlag(FLAG_MARKED_GENERIC);
-
-      fn->addFlag(FLAG_INIT_COPY_FN);
-      fn->addFlag(FLAG_COMPILER_GENERATED);
-      fn->addFlag(FLAG_LAST_RESORT);
-
-      fn->insertFormalAtTail(arg);
-
-      if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
-        fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(arg)));
-
-      } else {
-        CallExpr* call = new CallExpr(at->defaultInitializer);
-
-        for_fields(tmp, at) {
-          if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) == false) {
-            Symbol*   sym  = new_CStringSymbol(tmp->name);
-            CallExpr* init = new CallExpr(".", arg, sym);
-
-            call->insertAtTail(new NamedExpr(tmp->name, init));
-          }
-        }
-
-        fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
-      }
-
-      at->symbol->defPoint->insertBefore(def);
-
-      reset_ast_loc(def, at->symbol);
-
-      normalize(fn);
+    // Compiler-generated copy-initializers should not disable POD
+    FnSymbol* fn = function_exists("init", dtMethodToken, at, at);
+    if (fn != NULL && fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+      at->symbol->addFlag(FLAG_NOT_POD);
     }
   }
 }

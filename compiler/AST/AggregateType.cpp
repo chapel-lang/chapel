@@ -47,8 +47,8 @@ AggregateType::AggregateType(AggregateTag initTag) :
   unmanagedClass      = NULL;
 
   typeConstructor     = NULL;
-  defaultInitializer  = NULL;
   hasUserDefinedInit  = false;
+  builtDefaultInit    = false;
   initializerResolved = false;
   iteratorInfo        = NULL;
   doc                 = NULL;
@@ -1393,8 +1393,7 @@ ArgSymbol* AggregateType::insertGenericArg(FnSymbol*  fn,
 }
 
 void AggregateType::buildDefaultInitializer() {
-  if ((defaultInitializer                       == NULL ||
-      strcmp(defaultInitializer->name, "init") !=    0) &&
+  if (builtDefaultInit == false &&
       symbol->hasFlag(FLAG_REF) == false) {
     SET_LINENO(this);
     FnSymbol*  fn    = new FnSymbol("init");
@@ -1429,8 +1428,6 @@ void AggregateType::buildDefaultInitializer() {
 
       DefExpr* def = new DefExpr(fn);
 
-      defaultInitializer = fn;
-
       symbol->defPoint->insertBefore(def);
 
       fn->setMethod(true);
@@ -1456,6 +1453,7 @@ void AggregateType::buildDefaultInitializer() {
       USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
     }
 
+    builtDefaultInit = true;
   }
 }
 
@@ -1605,29 +1603,28 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
       CallExpr* base         = new CallExpr(".", superPortion, initPortion);
       CallExpr* superCall    = new CallExpr(base);
 
-      if (parent->hasUserDefinedInit == false) {
+      if (parent->hasUserDefinedInit == false && parent != dtObject) {
         // We want to call the compiler-generated all-fields initializer
 
         // First, ensure we have a default initializer for the parent
-        if (parent->defaultInitializer == NULL) {
-          // ... but only if it is valid to do so
-          if (parent->wantsDefaultInitializer() == true) {
-            parent->buildDefaultInitializer();
+        if (parent->builtDefaultInit == false && parent->wantsDefaultInitializer()) {
+          parent->buildDefaultInitializer();
+        }
+
+        // Otherwise, we are good to go!
+        FnSymbol* defaultInit = NULL;
+        forv_Vec(FnSymbol, method, parent->methods) {
+          if (method->isDefaultInit()) {
+            defaultInit = method;
+            break;
           }
         }
 
-        if (parent->defaultInitializer == NULL) {
-          // The parent might have inherited from a class that defines
-          // any initializer but not one without arguments.
-          // In this case, we shouldn't define a default initializer
-          // for this class either.
+        if (defaultInit == NULL) {
           retval = false;
-
         } else {
-          // Otherwise, we are good to go!
-
           // Add an argument per argument in the parent initializer
-          for_formals(formal, parent->defaultInitializer) {
+          for_formals(formal, defaultInit) {
             if (formal->type                   == dtMethodToken ||
                 formal->hasFlag(FLAG_ARG_THIS) == true) {
 
@@ -1648,11 +1645,6 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
           }
         }
 
-      } else {
-        INT_ASSERT(parent->hasUserDefinedInit == true);
-
-        // We want to call a user-defined no-argument initializer.
-        // Insert no arguments
       }
 
       fn->body->insertAtHead(superCall);

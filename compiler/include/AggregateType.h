@@ -170,7 +170,7 @@ public:
 
   FnSymbol*                   typeConstructor;
 
-  FnSymbol*                   defaultInitializer;
+  bool                        builtDefaultInit;
 
   AggregateType*              instantiatedFrom;
 

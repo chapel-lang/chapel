@@ -226,10 +226,6 @@ void cleanAst() {
       }
 
       if (AggregateType* ct = toAggregateType(ts->type)) {
-        if (ct->defaultInitializer               != NULL &&
-            isAliveQuick(ct->defaultInitializer) == false) {
-          ct->defaultInitializer = NULL;
-        }
 
         if (ct->hasDestructor()                  == true &&
             isAliveQuick(ct->getDestructor())    == false) {
