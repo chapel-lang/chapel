@@ -2955,6 +2955,10 @@ void makeBinaryLLVM(void) {
     command += libName;
   }
 
+  if (strcmp(CHPL_ATOMICS, "cstdlib") == 0) {
+    command += " -latomic";
+  }
+
   if( printSystemCommands ) {
     printf("%s\n", command.c_str());
     fflush(stdout); fflush(stderr);
