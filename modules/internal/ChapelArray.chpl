@@ -2155,6 +2155,7 @@ module ChapelArray {
     pragma "alias scope from this"
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
+    var _externally_managed: bool = false;
 
     proc chpl__promotionType() type {
       return _value.eltType;
@@ -2172,40 +2173,9 @@ module ChapelArray {
     forwarding _value except doiBulkTransferFromKnown, doiBulkTransferToKnown,
                              doiBulkTransferFromAny,  doiBulkTransferToAny;
 
-    inline proc _do_destroy() {
-      if ! _unowned {
-        on _instance {
-          var (arrToFree, domToRemove) = _instance.remove();
-          var domToFree:unmanaged BaseDom = nil;
-          var distToRemove:unmanaged BaseDist = nil;
-          var distToFree:unmanaged BaseDist = nil;
-          // The dead code to access the fields of _instance are left in the
-          // generated code with --baseline on. This means that these
-          // statements cannot come after the _delete_arr call.
-          param domIsPrivatized  = _isPrivatized(_instance.dom);
-          param distIsPrivatized = _isPrivatized(_instance.dom.dist);
-          // Store the instance's dom class before the instance is destroyed
-          const instanceDom = _instance.dom;
-          if domToRemove != nil {
-            // remove that domain
-            (domToFree, distToRemove) = domToRemove.remove();
-          }
-          if distToRemove != nil {
-            distToFree = distToRemove.remove();
-          }
-          if arrToFree != nil then
-            _delete_arr(_instance, _isPrivatized(_instance));
-          if domToFree != nil then
-            _delete_dom(instanceDom, domIsPrivatized);
-          if distToFree != nil then
-            _delete_dist(distToFree, distIsPrivatized);
-        }
-      }
-    }
-
     pragma "no doc"
     proc deinit() {
-      _do_destroy();
+      _do_destroy(_unowned, _externally_managed, _instance);
     }
 
     /* The type of elements contained in the array */
@@ -3260,6 +3230,38 @@ module ChapelArray {
     }
 
   }  // record _array
+
+  inline proc _do_destroy(_unowned: bool, _externally_managed: bool,
+                          _instance) {
+    if ! _unowned && ! _externally_managed {
+      on _instance {
+        var (arrToFree, domToRemove) = _instance.remove();
+        var domToFree:unmanaged BaseDom = nil;
+        var distToRemove:unmanaged BaseDist = nil;
+        var distToFree:unmanaged BaseDist = nil;
+        // The dead code to access the fields of _instance are left in the
+        // generated code with --baseline on. This means that these
+        // statements cannot come after the _delete_arr call.
+        param domIsPrivatized  = _isPrivatized(domToRemove);
+        // Store the instance's dom class before the instance is destroyed
+        const instanceDom = domToRemove;
+        if domToRemove != nil {
+          // remove that domain
+          (domToFree, distToRemove) = domToRemove.remove();
+        }
+        param distIsPrivatized = _isPrivatized(distToRemove);
+        if distToRemove != nil {
+          distToFree = distToRemove.remove();
+        }
+        if arrToFree != nil then
+          _delete_arr(_instance, _isPrivatized(_instance));
+        if domToFree != nil then
+          _delete_dom(instanceDom, domIsPrivatized);
+        if distToFree != nil then
+          _delete_dist(distToFree, distIsPrivatized);
+      }
+    }
+  }
 
   //
   // A helper function to check array equality (== on arrays promotes

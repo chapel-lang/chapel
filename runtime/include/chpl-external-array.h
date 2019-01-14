@@ -20,6 +20,7 @@
 #ifndef _chpl_external_array_H_
 #define _chpl_external_array_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef void (*chpl_free_func)(void*);
@@ -39,5 +40,11 @@ chpl_external_array chpl_make_external_array_ptr_free(void* elts,
                                                       uint64_t size);
 void chpl_free_external_array(chpl_external_array x);
 void chpl_call_free_func(void* func, void* elts);
+
+typedef struct {
+  int64_t _pid;
+  void* _instance;
+  bool _unowned;
+} chpl_opaque_array;
 
 #endif

@@ -942,6 +942,19 @@ module ChapelDistribution {
     delete arr;
   }
 
+  proc _delete_arr(arr: unmanaged BaseArr, param privatized: bool) {
+    // array implementation can destroy data or other members
+    arr.dsiDestroyArr();
+
+    if privatized {
+      _freePrivatizedClass(arr.pid, arr);
+    }
+
+    // runs the array destructor
+    delete arr;
+  }
+
+
   // These are used in ChapelLocale.chpl. They are here to
   // prevent an order-of-resolution issue.
   pragma "no doc"
