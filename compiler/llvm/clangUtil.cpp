@@ -2955,7 +2955,8 @@ void makeBinaryLLVM(void) {
     command += libName;
   }
 
-  if (strcmp(CHPL_ATOMICS, "cstdlib") == 0) {
+  if (strcmp(CHPL_ATOMICS, "cstdlib") == 0 &&
+      strcmp(CHPL_TARGET_PLATFORM, "darwin") != 0) {
     command += " -latomic";
   }
 
