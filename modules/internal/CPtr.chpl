@@ -124,7 +124,7 @@ module CPtr {
     }
 
     /* Print the elements */
-    inline proc writeThis(ch) {
+    proc writeThis(ch) {
       if __primitive("ptr_eq", this, nil) {
         ch <~> new ioLiteral("nil");
         return;
