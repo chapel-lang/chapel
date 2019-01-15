@@ -100,8 +100,8 @@ static Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module, const clang::
   if (size.getMinSignedBits() > 64)
     USR_FATAL("C array is too large");
 
-  int64_t isize = size.getSExtValue();
-  Symbol* isym = new_IntSymbol(isize, INT_SIZE_64);
+  //int64_t isize = size.getSExtValue();
+  //Symbol* isym = new_IntSymbol(isize, INT_SIZE_64);
   // this would make a tuple
   //return new CallExpr("*", new SymExpr(isym), eltTypeChapel);
 
