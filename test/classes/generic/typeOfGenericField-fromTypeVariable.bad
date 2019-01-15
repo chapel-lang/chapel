@@ -2,3 +2,4 @@ typeOfGenericField-fromTypeVariable.chpl:12: error: unresolved call 'type [Block
 $CHPL_HOME/modules/internal/ChapelArray.chpl:924: note: candidates are: _distribution._instance
 $CHPL_HOME/modules/internal/ChapelArray.chpl:1059: note:                 _domain._instance
 $CHPL_HOME/modules/internal/ChapelArray.chpl:2156: note:                 _array._instance
+$CHPL_HOME/modules/internal/ExternalArray.chpl:30: note:                 chpl_opaque_array._instance
