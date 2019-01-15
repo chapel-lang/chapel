@@ -1,3 +1,7 @@
+// This checks that we have a warning when trying to clean up certain arrays
+// due to not having sufficient information when the clean up function is called
+// on the information stored by the opaque wrapper.  If this changes in the
+// future, remove the skipif for memleaks.
 use BlockDist;
 const D = {1..5} dmapped Block({1..5});
 var arr1: [0..3] int;
