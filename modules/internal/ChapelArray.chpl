@@ -3231,6 +3231,9 @@ module ChapelArray {
 
   }  // record _array
 
+  // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
+  // being a method on _array so that it could be called on unwrapped
+  // _instance fields
   inline proc _do_destroy(_unowned: bool, _externally_managed: bool,
                           _instance) {
     if ! _unowned && ! _externally_managed {

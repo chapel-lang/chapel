@@ -78,6 +78,7 @@ module ExternalArray {
     return _newArray(arr);
   }
 
+  // Creates an _array wrapper to store the information given by chpl_opaque_array
   // arrType is a subclass of BaseArr
   pragma "no copy return"
   proc makeArrayFromOpaque(value: chpl_opaque_array, type arrType) {
@@ -121,6 +122,10 @@ module ExternalArray {
     return externalArr;
   }
 
+  // Shares name with the version returning chpl_external_array so the compiler
+  // can make the same function call and get the appropriate type depending on
+  // the argument.  Unsupported array types are turned into opaque
+  // representations
   proc convertToExternalArray(arr: []): chpl_opaque_array
     where (getExternalArrayType(arr) == chpl_opaque_array) {
 
@@ -147,6 +152,8 @@ module ExternalArray {
     }
   }
 
+  // Determine whether chpl_external_array or chpl_opaque array should be used.
+  // Will be updated as more types are supported via chpl_external_array
   proc getExternalArrayType(arg) type {
     if (!isArrayType(arg.type)) {
       compilerError("must call with an array");
