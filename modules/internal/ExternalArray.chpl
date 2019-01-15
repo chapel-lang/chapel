@@ -98,6 +98,8 @@ module ExternalArray {
                         arr.eltType: string);
     }
     if (!isIntegralType(arr.domain.idxType)) {
+      // Probably not reachable any more, but may become reachable again
+      // once support for interoperability with array types expands.
       compilerError("cannot return an array with indices that are not " +
                     "integrals");
     }
