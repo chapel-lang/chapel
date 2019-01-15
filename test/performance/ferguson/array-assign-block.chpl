@@ -21,4 +21,5 @@ stop();
 writeln(B[1]);
 writeln(B[n]);
 
-report(maxGets=0, maxPuts=0, maxOns=2);
+report(maxGets=0, maxPuts=0,
+       maxOns = if CHPL_NETWORK_ATOMICS == 'none' then 2 else 1);

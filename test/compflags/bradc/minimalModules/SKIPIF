@@ -1,5 +1,5 @@
 COMPOPTS <= --baseline
-CHPL_COMM == gasnet
+CHPL_COMM != none
 COMPOPTS  <= --no-local
 CHPL_LOCALE_MODEL != flat
 #

@@ -4,7 +4,7 @@ int(64) : true
 complex(128) : true
 int(32) : true
 MyClass : true
-AtomicT(int(64)) : false
+RAtomicT(int(64)) : false
 _syncvar(int(64)) : false
 _singlevar(int(64)) : false
 NotPod1 : false
