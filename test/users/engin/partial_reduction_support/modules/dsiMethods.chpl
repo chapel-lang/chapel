@@ -634,7 +634,7 @@ proc LocBlockCyclicDom.dsiPartialDomain(param exceptDim) {
   var retDomain: sparse subdomain(parentDomain);
 
   on this {
-    for i in globDom.dsiLocalSubdomains() {
+    for i in globDom.dsiLocalSubdomains(here) {
       retDomain += i._value.dsiPartialDomain(exceptDim);
     }
   }
@@ -643,7 +643,7 @@ proc LocBlockCyclicDom.dsiPartialDomain(param exceptDim) {
 
 iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx) {
 
-  for i in globDom.dsiLocalSubdomains() {
+  for i in globDom.dsiLocalSubdomains(here) {
     for ii in i._value.dsiPartialThese(onlyDim, otherIdx) {
       yield ii;
     }
@@ -653,7 +653,7 @@ iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx) {
 iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
-  coforall i in globDom.dsiLocalSubdomains() {
+  coforall i in globDom.dsiLocalSubdomains(here) {
     for ii in i._value.dsiPartialThese(onlyDim, otherIdx, tag) {
       yield (i, ii);
     }

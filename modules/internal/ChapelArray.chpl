@@ -1914,21 +1914,36 @@ module ChapelArray {
       return _value.dsiHasSingleLocalSubdomain();
     }
 
-    /* Return the subdomain that is local to the current locale */
-    proc localSubdomain() {
+    /*
+       Return the subdomain that is local to `loc`.
+
+       :arg loc: indicates the locale for which the query should take
+                 place (defaults to `here`)
+       :type loc: locale
+    */
+    proc localSubdomain(loc: locale = here) {
       if !_value.dsiHasSingleLocalSubdomain() then
         compilerError("Domain's local domain is not a single domain");
-      return _value.dsiLocalSubdomain();
+
+      return _value.dsiLocalSubdomain(loc);
     }
 
-    /* Yield the subdomains that are local to the current locale */
-    iter localSubdomains() {
-      if _value.dsiHasSingleLocalSubdomain() then
-        yield _value.dsiLocalSubdomain();
-      else
-        for d in _value.dsiLocalSubdomains() do yield d;
+    /*
+       Yield the subdomains that are local to `loc`.
+
+       :arg loc: indicates the locale for which the query should take
+                 place (defaults to `here`)
+       :type loc: locale
+    */
+    iter localSubdomains(loc: locale = here) {
+      if _value.dsiHasSingleLocalSubdomain() {
+        yield localSubdomain(loc);
+      } else {
+        for d in _value.dsiLocalSubdomains(loc) do yield d;
+      }
     }
-  }  // record _domain
+
+}  // record _domain
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
      type was stridable and the new type is not stridable then assume the
@@ -2728,19 +2743,33 @@ module ChapelArray {
       return _value.dsiHasSingleLocalSubdomain();
     }
 
-    /* Return the subdomain that is local to the current locale */
-    proc localSubdomain() {
+    /*
+       Return the subdomain that is local to `loc`.
+
+       :arg loc: indicates the locale for which the query should take
+                 place (defaults to `here`)
+       :type loc: locale
+    */
+    proc localSubdomain(loc: locale = here) {
       if !_value.dsiHasSingleLocalSubdomain() then
-        compilerError("Array's local domain is not a single domain");
-      return _value.dsiLocalSubdomain();
+        compilerError("Domain's local domain is not a single domain");
+
+      return _value.dsiLocalSubdomain(loc);
     }
 
-    /* Yield the subdomains that are local to the current locale */
-    iter localSubdomains() {
-      if _value.dsiHasSingleLocalSubdomain() then
-        yield _value.dsiLocalSubdomain();
-      else
-        for d in _value.dsiLocalSubdomains() do yield d;
+    /*
+       Yield the subdomains that are local to `loc`.
+
+       :arg loc: indicates the locale for which the query should take
+                 place (defaults to `here`)
+       :type loc: locale
+    */
+    iter localSubdomains(loc: locale = here) {
+      if _value.dsiHasSingleLocalSubdomain() {
+        yield localSubdomain(loc);
+      } else {
+        for d in _value.dsiLocalSubdomains(loc) do yield d;
+      }
     }
 
     proc chpl__isDense1DArray() param {

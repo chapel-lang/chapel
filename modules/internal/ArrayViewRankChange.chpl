@@ -341,8 +341,8 @@ module ArrayViewRankChange {
     proc dsiHasSingleLocalSubdomain() param
       return downDom.dsiHasSingleLocalSubdomain();
 
-    proc dsiLocalSubdomain() {
-      const dims = downDom.dsiLocalSubdomain().dims();
+    proc dsiLocalSubdomain(loc: locale) {
+      const dims = downDom.dsiLocalSubdomain(loc).dims();
       const empty : domain(rank, idxType, chpl__anyStridable(dims));
 
       // If the rank-changed dimension's index is not a member of the range
@@ -669,8 +669,8 @@ module ArrayViewRankChange {
     proc dsiHasSingleLocalSubdomain() param
       return privDom.dsiHasSingleLocalSubdomain();
 
-    proc dsiLocalSubdomain() {
-      return privDom.dsiLocalSubdomain();
+    proc dsiLocalSubdomain(loc: locale) {
+      return privDom.dsiLocalSubdomain(loc);
     }
 
     //

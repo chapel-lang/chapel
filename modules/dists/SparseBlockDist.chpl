@@ -810,11 +810,19 @@ proc dropDims(D: domain, dims...) {
 proc SparseBlockDom.dsiHasSingleLocalSubdomain() param return true;
 proc SparseBlockArr.dsiHasSingleLocalSubdomain() param return true;
 
-proc SparseBlockDom.dsiLocalSubdomain() {
+proc SparseBlockDom.dsiLocalSubdomain(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("the Sparse Block distribution",
+                             "remote subdomain queries");
+
   const (found, targetIdx) = dist.targetLocales.find(here);
   return locDoms[targetIdx].mySparseBlock;
 }
 
-proc SparseBlockArr.dsiLocalSubdomain() {
+proc SparseBlockArr.dsiLocalSubdomain(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("the Sparse Block distribution",
+                             "remote subdomain queries");
+
   return myLocArr.locDom.mySparseBlock;
 }

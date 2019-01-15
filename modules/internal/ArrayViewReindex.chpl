@@ -256,8 +256,8 @@ module ArrayViewReindex {
     proc dsiHasSingleLocalSubdomain() param
       return downdom.dsiHasSingleLocalSubdomain();
 
-    proc dsiLocalSubdomain() {
-      const dims = downdom.dsiLocalSubdomain().dims();
+    proc dsiLocalSubdomain(loc: locale) {
+      const dims = downdom.dsiLocalSubdomain(loc).dims();
       return chpl_reindexConvertDom(dims, downdom, updom);
     }
 
@@ -557,8 +557,8 @@ module ArrayViewReindex {
     proc dsiHasSingleLocalSubdomain() param
       return privDom.dsiHasSingleLocalSubdomain();
 
-    proc dsiLocalSubdomain() {
-      return privDom.dsiLocalSubdomain();
+    proc dsiLocalSubdomain(loc: locale) {
+      return privDom.dsiLocalSubdomain(loc);
     }
 
     //

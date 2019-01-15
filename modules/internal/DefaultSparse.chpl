@@ -343,6 +343,17 @@ module DefaultSparse {
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
       chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
     }
+
+    proc dsiHasSingleLocalSubdomain() param return true;
+
+    proc dsiLocalSubdomain(loc: locale) {
+      if this.locale == loc {
+        return _getDomain(_to_unmanaged(this));
+      } else {
+        const copy = new unmanaged DefaultSparseDom(rank, idxType, dist, parentDom);
+        return _newDomain(copy);
+      }
+    }
   }
 
 
@@ -489,8 +500,12 @@ module DefaultSparse {
 
     proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiLocalSubdomain() {
-      return _newDomain(dom);
+    proc dsiLocalSubdomain(loc: locale) {
+      if this.locale == loc {
+        return _getDomain(dom);
+      } else {
+        return dom.dsiLocalSubdomain(loc);
+      }
     }
   }
 

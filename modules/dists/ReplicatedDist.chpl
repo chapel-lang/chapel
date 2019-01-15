@@ -602,12 +602,33 @@ proc ReplicatedArr.dsiReallocate(d: domain): void {
 */
 
 // Note: returns an associative array
+proc Replicated.dsiTargetLocales() {
+  return targetLocales;
+}
+proc ReplicatedDom.dsiTargetLocales() {
+  return dist.targetLocales;
+}
 proc ReplicatedArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
+proc ReplicatedDom.dsiHasSingleLocalSubdomain() param  return true;
 proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 
-proc ReplicatedArr.dsiLocalSubdomain() {
-  return chpl_myLocArr().myDom.domLocalRep;
+proc ReplicatedDom.dsiLocalSubdomain(loc: locale) {
+  if localDoms.domain.contains(loc.id) then
+    return domRep;
+  else {
+    var d: domain(rank, idxType, stridable);
+    return d;
+  }
+}
+
+proc ReplicatedArr.dsiLocalSubdomain(loc: locale) {
+  if localArrs.domain.contains(loc.id) then
+    return dom.domRep;
+  else {
+    var d: domain(rank, idxType, stridable);
+    return d;
+  }
 }

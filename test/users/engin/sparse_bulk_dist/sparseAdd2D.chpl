@@ -73,10 +73,10 @@ writeln( containsAll );
 
 for onLocale in Locales {
   on onLocale {
-    for localIndex in FullSparseDom.dsiLocalSubdomain() {
+    for localIndex in FullSparseDom.dsiLocalSubdomain(here) {
       localBag[ onLocale.id ] += localIndex;
     }
-    matchingLocalSubdomains &= ( FullSparseDom.dsiLocalSubdomain() == FullSparseArr.dsiLocalSubdomain() );
+    matchingLocalSubdomains &= ( FullSparseDom.dsiLocalSubdomain(here) == FullSparseArr.dsiLocalSubdomain(here) );
   }
 }
 

@@ -1548,10 +1548,16 @@ proc AccumStencilDom.dsiHasSingleLocalSubdomain() param return true;
 
 // returns the current locale's subdomain
 
-proc AccumStencilArr.dsiLocalSubdomain() {
+proc AccumStencilArr.dsiLocalSubdomain(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("AccumStencil", "remote subdomain queries");
+
   return myLocArr.locDom.myBlock;
 }
-proc AccumStencilDom.dsiLocalSubdomain() {
+proc AccumStencilDom.dsiLocalSubdomain(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("AccumStencil", "remote subdomain queries");
+
   // TODO -- could be replaced by a privatized myLocDom in AccumStencilDom
   // as it is with AccumStencilArr
   var myLocDom:unmanaged LocAccumStencilDom(rank, idxType, stridable) = nil;

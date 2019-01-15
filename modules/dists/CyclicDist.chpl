@@ -301,6 +301,12 @@ class Cyclic: BaseDist {
 
 }
 
+proc Cyclic.chpl__locToLocIdx(loc: locale) {
+  for locIdx in targetLocDom do
+    if (targetLocs[locIdx] == loc) then
+      return (true, locIdx);
+  return (false, targetLocDom.first);
+}
 
 proc Cyclic.getChunk(inds, locid) {
   var sliceBy: rank*range(idxType=idxType, stridable=true);
@@ -1171,18 +1177,26 @@ proc Cyclic.dsiTargetLocales() {
 proc CyclicArr.dsiHasSingleLocalSubdomain() param return true;
 proc CyclicDom.dsiHasSingleLocalSubdomain() param return true;
 
-proc CyclicArr.dsiLocalSubdomain() {
-  return myLocArr.locDom.myBlock;
-}
-proc CyclicDom.dsiLocalSubdomain() {
-  // TODO -- could be replaced by a privatized myLocDom in CyclicDom
-  // as it is with CyclicArr
-  var myLocDom:unmanaged LocCyclicDom(rank, idxType) = nil;
-  for (loc, locDom) in zip(dist.targetLocs, locDoms) {
-    if loc == here then
-      myLocDom = locDom;
+proc CyclicArr.dsiLocalSubdomain(loc: locale) {
+  if (loc == here) {
+    // quick solution if we have a local array
+    if myLocArr != nil then
+      return myLocArr.locDom.myBlock;
+    // if not, we must not own anything
+    var d: domain(rank, idxType, stridable=true);
+    return d;
+  } else {
+    return dom.dsiLocalSubdomain(loc);
   }
-  return myLocDom.myBlock;
+}
+proc CyclicDom.dsiLocalSubdomain(loc: locale) {
+  const (gotit, locid) = dist.chpl__locToLocIdx(loc);
+  if (gotit) {
+    return dist.getChunk(whole, locid);
+  } else {
+    var d: domain(rank, idxType, stridable=true);
+    return d;
+  }
 }
 
 proc newCyclicDom(dom: domain) {

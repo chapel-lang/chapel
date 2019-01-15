@@ -981,11 +981,17 @@ iter do_dsiLocalSubdomains(indexDom) {
     yield {(...temp)};
   }
 }
-iter BlockCyclicArr.dsiLocalSubdomains() {
+iter BlockCyclicArr.dsiLocalSubdomains(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("BlockCyclic", "remote subdomain queries");
+
   for i in do_dsiLocalSubdomains(myLocArr.indexDom) do
     yield i;
 }
-iter BlockCyclicDom.dsiLocalSubdomains() {
+iter BlockCyclicDom.dsiLocalSubdomains(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("BlockCyclic", "remote subdomain queries");
+
   // TODO -- could be replaced by a privatized myLocDom in BlockCyclicDom
   // as it is with BlockCyclicArr
   var myLocDom:unmanaged LocBlockCyclicDom(rank, idxType, stridable) = nil;

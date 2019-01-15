@@ -773,9 +773,9 @@ class UserMapAssocArr: BaseArr {
 
   proc dsiHasSingleLocalSubdomain() param return false;
 
-  iter dsiLocalSubdomains() {
-    for (idx,loc) in zip(dom.dist.targetLocDom, dom.dist.targetLocales) {
-      if loc == here {
+  iter dsiLocalSubdomains(loc: locale) {
+    for (idx,l) in zip(dom.dist.targetLocDom, dom.dist.targetLocales) {
+      if l == loc {
         yield dom.locDoms[idx].myInds;
       }
     }

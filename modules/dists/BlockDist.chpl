@@ -466,12 +466,10 @@ proc Block.init(boundingBox: domain,
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
-  const boundingBoxDims = this.boundingBox.dims();
-  const targetLocDomDims = targetLocDom.dims();
   coforall locid in targetLocDom do
     on this.targetLocales(locid) do
-      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBoxDims,
-                                     targetLocDomDims);
+      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
+                                     targetLocDom);
 
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
@@ -498,13 +496,11 @@ proc Block.dsiAssign(other: this.type) {
   dataParTasksPerLocale = other.dataParTasksPerLocale;
   dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
   dataParMinGranularity = other.dataParMinGranularity;
-  const boundingBoxDims = boundingBox.dims();
-  const targetLocDomDims = targetLocDom.dims();
 
   coforall locid in targetLocDom do
     on targetLocales(locid) do
-      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBoxDims,
-                                    targetLocDomDims);
+      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
+                                    targetLocDom);
 }
 
 //
@@ -641,34 +637,31 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
   return if rank == 1 then result(1) else result;
 }
 
+proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
+  param rank = targetLocBox.rank;
+  type idxType = chpl__tuplify(boundingBox)(1).idxType;
+  var inds: rank*range(idxType);
+  for param i in 1..rank {
+    const lo = boundingBox.dim(i).low;
+    const hi = boundingBox.dim(i).high;
+    const numelems = hi - lo + 1;
+    const numlocs = targetLocBox.dim(i).length;
+    const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
+                                     max(idxType), min(idxType), lo);
+    inds(i) = blo..bhi;
+  }
+  return inds;
+}
+
 proc LocBlock.init(param rank: int,
                    type idxType,
                    locid, // the locale index from the target domain
-                   boundingBox: rank*range(idxType),
-                   targetLocBox: rank*range) {
+                   boundingBox,
+                   targetLocDom: domain(rank)) {
   this.rank = rank;
   this.idxType = idxType;
-  if rank == 1 {
-    const lo = boundingBox(1).low;
-    const hi = boundingBox(1).high;
-    const numelems = hi - lo + 1;
-    const numlocs = targetLocBox(1).length;
-    const (blo, bhi) = _computeBlock(numelems, numlocs, locid,
-                                     max(idxType), min(idxType), lo);
-    myChunk = {blo..bhi};
-  } else {
-    var inds: rank*range(idxType);
-    for param i in 1..rank {
-      const lo = boundingBox(i).low;
-      const hi = boundingBox(i).high;
-      const numelems = hi - lo + 1;
-      const numlocs = targetLocBox(i).length;
-      const (blo, bhi) = _computeBlock(numelems, numlocs, locid(i),
-                                       max(idxType), min(idxType), lo);
-      inds(i) = blo..bhi;
-    }
-    myChunk = {(...inds)};
-  }
+  const inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, boundingBox);
+  myChunk = {(...inds)};
 }
 
 
@@ -1433,6 +1426,13 @@ proc Block.dsiTargetLocales() {
   return targetLocales;
 }
 
+proc Block.chpl__locToLocIdx(loc: locale) {
+  for locIdx in targetLocDom do
+    if (targetLocales[locIdx] == loc) then
+      return (true, locIdx);
+  return (false, targetLocDom.first);
+}
+
 // Block subdomains are continuous
 
 proc BlockArr.dsiHasSingleLocalSubdomain() param return true;
@@ -1440,18 +1440,27 @@ proc BlockDom.dsiHasSingleLocalSubdomain() param return true;
 
 // returns the current locale's subdomain
 
-proc BlockArr.dsiLocalSubdomain() {
-  return myLocArr.locDom.myBlock;
-}
-proc BlockDom.dsiLocalSubdomain() {
-  // TODO -- could be replaced by a privatized myLocDom in BlockDom
-  // as it is with BlockArr
-  var myLocDom:unmanaged LocBlockDom(rank, idxType, stridable) = nil;
-  for (loc, locDom) in zip(dist.targetLocales, locDoms) {
-    if loc == here then
-      myLocDom = locDom;
+proc BlockArr.dsiLocalSubdomain(loc: locale) {
+  if (loc == here) {
+    // quick solution if we have a local array
+    if myLocArr != nil then
+      return myLocArr.locDom.myBlock;
+    // if not, we must not own anything
+    var d: domain(rank, idxType, stridable);
+    return d;
+  } else {
+    return dom.dsiLocalSubdomain(loc);
   }
-  return myLocDom.myBlock;
+}
+proc BlockDom.dsiLocalSubdomain(loc: locale) {
+  const (gotit, locid) = dist.chpl__locToLocIdx(loc);
+  if (gotit) {
+    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
+    return whole[(...inds)];
+  } else {
+    var d: domain(rank, idxType, stridable);
+    return d;
+  }
 }
 
 iter ConsecutiveChunks(LView, RDomClass, RView, len, in start) {
