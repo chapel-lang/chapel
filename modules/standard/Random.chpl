@@ -169,8 +169,6 @@ module Random {
     var cumulativeArr: [dom] eltType;
     for i in dom {
       // TODO: This check should be removed if this ever becomes a public proc
-      if arr[i] < 0 then
-        throw new IllegalArgumentError("choice() array cannot contain negative values");
       if i != dom.first {
         cumulativeArr[i] = cumulativeArr[i-1] + arr[i];
       } else {
@@ -225,6 +223,7 @@ module Random {
     throws where isIntegralType(eltType) || isRealType(eltType)
   {
     use Search only;
+    use Sort only;
 
     // If stride, offset, or size don't match, we're in trouble
     if arr.domain != prob.domain then
@@ -236,7 +235,10 @@ module Random {
     var randNums = makeRandomStream(seed, eltType=real, parSafe=false, algorithm=algorithm);
 
     // Construct cumulative sum array
-    var cumulativeArr = cumSum(prob): real;
+    var cumulativeArr = (+ scan prob): real;
+
+    if !Sort.isSorted(cumulativeArr) then
+      throw new IllegalArgumentError("choice() array cannot contain negative values");
 
     // Confirm the array has at least one value > 0
     if cumulativeArr[prob.domain.last] <= 0 then
