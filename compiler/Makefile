@@ -133,7 +133,7 @@ UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
 CLEAN_TARGS += $(CLANG_SETTINGS_FILE)
 
-$(BUILD_VERSION_FILE): FORCE
+$(BUILD_VERSION_FILE): $(COMPILER_BUILD) FORCE
 	@({ test -e $(CHPL_MAKE_HOME)/.git ; } && \
 	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@ $(CHPL_MAKE_HOME)) || \
 	test -r $(BUILD_VERSION_FILE) || (echo '"0"' > $@);
@@ -141,10 +141,10 @@ $(BUILD_VERSION_FILE): FORCE
 $(CHPL_MAKE_HOME)/configured-prefix:
 	echo > $(CHPL_MAKE_HOME)/configured-prefix
 
-$(CONFIGURED_PREFIX_FILE): $(CHPL_MAKE_HOME)/configured-prefix
+$(CONFIGURED_PREFIX_FILE): $(COMPILER_BUILD) $(CHPL_MAKE_HOME)/configured-prefix
 	echo '"'`cat $(CHPL_MAKE_HOME)/configured-prefix`'"' \ > $(CONFIGURED_PREFIX_FILE)
 
-$(CLANG_SETTINGS_FILE):
+$(CLANG_SETTINGS_FILE): $(COMPILER_BUILD)
 	echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' | $(FIXPATH_CMD) > $(CLANG_SETTINGS_FILE)
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
@@ -169,6 +169,9 @@ chpldoc: $(CHPLDOC)
 
 parser: FORCE
 	$(MAKE) -C parser parser
+
+$(COMPILER_BUILD):
+	mkdir -p $@
 
 $(CHPL_BIN_DIR):
 	mkdir -p $@
