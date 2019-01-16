@@ -26,8 +26,6 @@ use TOML;
 use Path;
 use MasonEnv;
 
-config const useBash=false;
-
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
@@ -146,8 +144,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
     var splitCmd = prefix + cmd;
-    const executable=if useBash then "/bin/bash" else "/bin/sh";
-    var process = spawnshell(splitCmd, stdout=PIPE,executable=executable);
+    var process = spawnshell(splitCmd, stdout=PIPE,executable="bash");
     
     for line in process.stdout.lines() {
       ret += line;
@@ -174,8 +171,7 @@ proc runSpackCommand(command) {
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
 
   var cmd = (prefix + command);
-  const executable=if useBash then "/bin/bash" else "/bin/sh";
-  var sub = spawnshell(cmd, stderr=PIPE, executable=executable);
+  var sub = spawnshell(cmd, stderr=PIPE, executable="bash");
   sub.wait();
 
   for line in sub.stderr.lines() {
