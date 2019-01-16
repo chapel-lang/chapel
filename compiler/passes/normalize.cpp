@@ -2833,15 +2833,51 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
         // TODO: handle call expression stuff.
       }
 
+      // formal->newTypeExpr = getExternalArrayType(formal->oldTypeExpr)
+      // var formalname_arr;
+      // Param conditional v
+      // if (formal.type == dtExternalArray) then
+      //    formalname_arr = makeArrayFromExternArray(formal, eltExpr)
+      //    else formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
+
       // Create a representation of the array argument that is accessible
       // outside of Chapel (in the form of a pointer and a corresponding size)
-      formal->typeExpr->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+      //formal->typeExpr->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+      // Old thing, pls keep ^
+
+      // Version 1 while I test
+      formal->typeExpr->replace(new BlockStmt(new SymExpr(dtOpaqueArray->symbol)));
 
       // Transform the outside representation into a Chapel array, and send that
       // in the call to the original function.
-      CallExpr* makeChplArray = new CallExpr("makeArrayFromExternArray",
+      //CallExpr* makeChplArray = new CallExpr("makeArrayFromExternArray",
+      //                                       new SymExpr(formal),
+      //                                       eltExpr->copy());
+      // Old thing, pls keep ^
+
+      // Version 1 while I test.  Will eventually be in a param conditional
+      // Array type creator
+      VarSymbol* oldTypeExpr = new VarSymbol(astr(formal->name,
+                                                  "_oldTypeExpr"));
+      oldTypeExpr->addFlag(FLAG_MAYBE_TYPE);
+      retCall->insertBefore(new DefExpr(oldTypeExpr));
+      retCall->insertBefore(new CallExpr(PRIM_MOVE, oldTypeExpr, call->copy()));
+      // Get the _instance field's type for that array
+      VarSymbol* instanceType = new VarSymbol(astr(formal->name, "_instype"));
+      instanceType->addFlag(FLAG_MAYBE_TYPE); // Right?
+      CallExpr* makeIT = new CallExpr(PRIM_STATIC_FIELD_TYPE,
+                                      oldTypeExpr,
+                                      new_StringSymbol("_instance"));
+      retCall->insertBefore(new DefExpr(instanceType));
+      retCall->insertBefore(new CallExpr(PRIM_MOVE, instanceType, makeIT));
+      // Make a proper array using the argument and the _instance field's type
+      // that we determined
+      CallExpr* makeChplArray = new CallExpr("makeArrayFromOpaque",
                                              new SymExpr(formal),
-                                             eltExpr->copy());
+                                             instanceType);
+
+
+
       VarSymbol* chplArr = new VarSymbol(astr(formal->name, "_arr"));
       retCall->insertBefore(new DefExpr(chplArr));
       retCall->insertBefore(new CallExpr(PRIM_MOVE, chplArr, makeChplArray));
