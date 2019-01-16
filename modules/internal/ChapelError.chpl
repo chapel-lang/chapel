@@ -332,12 +332,15 @@ module ChapelError {
 
     return ret;
   }
+
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
   // TODO -- deprecate this version
   proc chpl_fix_thrown_error(err: borrowed Error): unmanaged Error {
-    return chpl_fix_thrown_error(_to_unmanaged(err));
+    compilerWarning("Throwing borrowed error - please throw owned", 1);
+
+    return chpl_do_fix_thrown_error(_to_unmanaged(err));
   }
 
   pragma "no doc"
@@ -349,7 +352,8 @@ module ChapelError {
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc chpl_fix_thrown_error(err: unmanaged Error): unmanaged Error {
+  proc chpl_do_fix_thrown_error(err: unmanaged Error): unmanaged Error {
+
     var fixErr: unmanaged Error = err;
     if fixErr == nil then
       fixErr = new unmanaged NilThrownError();
@@ -361,11 +365,21 @@ module ChapelError {
 
     return fixErr;
   }
+
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc chpl_fix_thrown_error(ref err: owned Error): unmanaged Error {
-    return chpl_fix_thrown_error(err.release());
+  proc chpl_fix_thrown_error(err: unmanaged Error): unmanaged Error {
+    compilerWarning("Throwing unmanaged error - please throw owned", 1);
+
+    return chpl_do_fix_thrown_error(err);
+  }
+
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_fix_thrown_error(in err: owned Error): unmanaged Error {
+    return chpl_do_fix_thrown_error(err.release());
   }
 
   pragma "no doc"
