@@ -2175,7 +2175,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc deinit() {
-      _do_destroy(_unowned, _externally_managed, _instance);
+      _do_destroy_arr(_unowned, _externally_managed, _instance);
     }
 
     /* The type of elements contained in the array */
@@ -3234,8 +3234,8 @@ module ChapelArray {
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
   // being a method on _array so that it could be called on unwrapped
   // _instance fields
-  inline proc _do_destroy(_unowned: bool, _externally_managed: bool,
-                          _instance) {
+  inline proc _do_destroy_arr(_unowned: bool, _externally_managed: bool,
+                              _instance) {
     if ! _unowned && ! _externally_managed {
       on _instance {
         var (arrToFree, domToRemove) = _instance.remove();

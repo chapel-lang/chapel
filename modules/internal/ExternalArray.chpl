@@ -172,6 +172,6 @@ module ExternalArray {
   // the next best thing.
   proc cleanupOpaqueArray(arr: chpl_opaque_array) {
     var cleanup = arr._instance: unmanaged BaseArr;
-    _do_destroy(false, false, cleanup);
+    _do_destroy_arr(arr._unowned, false, cleanup);
   }
 }
