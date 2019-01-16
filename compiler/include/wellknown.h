@@ -42,6 +42,7 @@ extern AggregateType* dtExternalArray;
 extern AggregateType* dtLocaleID;
 extern AggregateType* dtMainArgument;
 extern AggregateType* dtOnBundleRecord;
+extern AggregateType* dtOpaqueArray;
 extern AggregateType* dtOwned;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtTuple;
