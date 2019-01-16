@@ -1604,13 +1604,15 @@ void runClang(const char* just_parse_filename) {
   }
 
   // read clang-sysroot-arguments
-  /*std::string sysroot_arguments(CHPL_THIRD_PARTY);
+  std::string sysroot_arguments(CHPL_THIRD_PARTY);
   sysroot_arguments += "/llvm/install/";
   sysroot_arguments += CHPL_LLVM_UNIQ_CFG_PATH;
   sysroot_arguments += "/configured-clang-sysroot-arguments";
 
   // read arguments from configured-clang-sysroot-arguments
-  readArgsFromFile(sysroot_arguments, args);*/
+  // these might include a key -isysroot argument on Mac OS X
+  readArgsFromFile(sysroot_arguments, args);
+
   // read arguments that we captured at compile time
   readArgsFromString(get_clang_sysroot_args(), args);
 
