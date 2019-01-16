@@ -48,7 +48,7 @@ proc printBlock_chpl(x: [D] int) {
 
 export proc addEltBlock(x: chpl_opaque_array, idx: int, val: int) {
   type x_type = [D] int;
-  var chpl_x = makeArrayFromOpaque(x,
+  ref chpl_x = makeArrayFromOpaque(x,
                                    __primitive("static field type", x_type,
                                                "_instance"));
   addEltBlock(chpl_x, idx, val);
