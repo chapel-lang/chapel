@@ -826,11 +826,11 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       var ivLen = IV.getBuffSize();
       var keyLen = key.getBuffSize();
       if (ivLen != 8) {
-        throw new IllegalArgumentError("IV", "Blowfish cipher expects a size of 8 bytes.");
+        throw new owned IllegalArgumentError("IV", "Blowfish cipher expects a size of 8 bytes.");
       }
 
       if (keyLen < 10) {
-        throw new IllegalArgumentError("key", "Blowfish cipher expects a size greater than 10 bytes.");
+        throw new owned IllegalArgumentError("key", "Blowfish cipher expects a size greater than 10 bytes.");
       }
       var encryptedPlaintext = bfEncrypt(plaintext, key, IV, this.cipher);
       var encryptedPlaintextBuff = new owned CryptoBuffer(encryptedPlaintext);
@@ -904,7 +904,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     */
     proc getRandomBuffer(buffLen: int): owned CryptoBuffer throws {
       if (buffLen < 1) {
-        throw new IllegalArgumentError("buffLen", "Invalid random buffer length specified.");
+        throw new owned IllegalArgumentError("buffLen", "Invalid random buffer length specified.");
       }
       var randomizedBuff = try createRandomBuffer(buffLen);
       var randomizedCryptoBuff = new owned CryptoBuffer(randomizedBuff);
@@ -1067,7 +1067,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       }
 
       if (!openErrCode) {
-        throw new IllegalArgumentError("key", "The RSAKey is an invalid match.");
+        throw new owned IllegalArgumentError("key", "The RSAKey is an invalid match.");
       }
 
       var plaintextLen = ciphertext.size;

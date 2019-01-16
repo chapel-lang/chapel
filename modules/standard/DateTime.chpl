@@ -204,7 +204,7 @@ module DateTime {
      Throws an IllegalArgumentError month is out of range. */
   proc daysInMonth(year: int, month: int) throws {
     if month < 1 || month > 12 then
-      throw new IllegalArgumentError("month must be between 1 and 12");
+      throw new owned IllegalArgumentError("month must be between 1 and 12");
     if month == 2 && isLeapYear(year) then
       return 29;
     else

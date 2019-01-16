@@ -1040,7 +1040,7 @@ module ChapelBase {
 
     // Throw any error raised by a task this is waiting for
     if ! e.errors.empty() then
-      throw new unmanaged TaskErrors(e.errors);
+      throw new owned TaskErrors(e.errors);
   }
 
   // called for bounded coforalls and cobegins
@@ -1061,7 +1061,7 @@ module ChapelBase {
 
     // Throw any error raised by a task this is waiting for
     if ! e.errors.empty() then
-      throw new unmanaged TaskErrors(e.errors);
+      throw new owned TaskErrors(e.errors);
   }
 
   proc _upDynamicEndCount(param countRunningTasks=true) {
@@ -1084,7 +1084,7 @@ module ChapelBase {
 
     // Throw any error raised by a task this sync statement is waiting for
     if ! e.errors.empty() then
-      throw new unmanaged TaskErrors(e.errors);
+      throw new owned TaskErrors(e.errors);
   }
 
   proc _do_command_line_cast(type t, x:c_string) throws {

@@ -679,7 +679,7 @@ module BLAS {
         n = Bdom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("B", "Non-square array of dimensions %ix%i passed to trmm".format(m, n));
+      throw new owned IllegalArgumentError("B", "Non-square array of dimensions %ix%i passed to trmm".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -738,7 +738,7 @@ module BLAS {
         n = Bdom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("B", "Non-square array of dimensions %ix%i passed to trsm".format(m, n));
+      throw new owned IllegalArgumentError("B", "Non-square array of dimensions %ix%i passed to trsm".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -1027,7 +1027,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to hemv".format(m, n));
+      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to hemv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1061,7 +1061,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to her".format(m, n));
+      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to her".format(m, n));
 
     // TODO -- Assert alpha is real
 
@@ -1097,7 +1097,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to her2".format(m, n));
+      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to her2".format(m, n));
 
 
     // Set strides if necessary
@@ -1375,7 +1375,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to symv".format(m, n));
+      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to symv".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1411,7 +1411,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to syr".format(m, n));
+      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to syr".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1447,7 +1447,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to syr2".format(m, n));
+      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to syr2".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1669,7 +1669,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to trmv".format(m, n));
+      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to trmv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1714,7 +1714,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to trsv".format(m, n));
+      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to trsv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1833,7 +1833,7 @@ module BLAS {
     require header;
 
     if P.size != 5 then
-      throw new IllegalArgumentError("P", "must consist of 5 elements, passed to rotmg");
+      throw new owned IllegalArgumentError("P", "must consist of 5 elements, passed to rotmg");
 
     select eltType {
       when real(32) do{
@@ -1937,7 +1937,7 @@ module BLAS {
     require header;
 
     if P.size != 5 then
-      throw new IllegalArgumentError("P", "must consist of 5 elements, passed to rotm");
+      throw new owned IllegalArgumentError("P", "must consist of 5 elements, passed to rotm");
 
     const N = D.size: c_int;
 

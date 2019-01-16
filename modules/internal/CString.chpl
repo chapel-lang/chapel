@@ -189,7 +189,7 @@ module CString {
     // this should only happen if the runtime is broken
     if isErr {
       try! {
-        throw new unmanaged IllegalArgumentError("Unexpected case in integral_to_c_string");
+        throw new owned IllegalArgumentError("Unexpected case in integral_to_c_string");
       }
     }
 

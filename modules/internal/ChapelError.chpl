@@ -460,8 +460,8 @@ module ChapelError {
   pragma "always propagate line file info"
   proc chpl_enum_cast_error(casted: string, enumName: string) throws {
     if casted.isEmptyString() then
-      throw new unmanaged IllegalArgumentError("bad cast from empty string to " + enumName);
+      throw new owned IllegalArgumentError("bad cast from empty string to " + enumName);
     else
-      throw new unmanaged IllegalArgumentError("bad cast from string '" + casted + "' to " + enumName);
+      throw new owned IllegalArgumentError("bad cast from string '" + casted + "' to " + enumName);
   }
 }

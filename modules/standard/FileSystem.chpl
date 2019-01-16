@@ -1282,7 +1282,7 @@ proc moveDir(src: string, dest: string) throws {
         // source and destination is to fail with a helpful error message.
         // Since this error code shouldn't occur otherwise, it signals to
         // the wrapper function what has happened.
-        throw new IllegalArgumentError("src", "Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
+        throw new owned IllegalArgumentError("src", "Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
       } else {
         // dest is a directory, we'll copy src inside it
         // NOT YET SUPPORTED.  Requires basename and joinPath

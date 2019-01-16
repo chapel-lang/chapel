@@ -659,7 +659,7 @@ module Random {
        */
       proc skipToNth(n: integral) throws {
         if n <= 0 then
-          throw new IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
         PCGRandomStreamPrivate_skipToNth_noLock(n);
@@ -680,7 +680,7 @@ module Random {
        */
       proc getNth(n: integral): eltType throws {
         if (n <= 0) then
-          throw new IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
         PCGRandomStreamPrivate_skipToNth_noLock(n);
@@ -2130,7 +2130,7 @@ module Random {
        */
       proc skipToNth(n: integral) throws {
         if n <= 0 then
-          throw new IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           NPBRandomStreamPrivate_lock$ = true;
         NPBRandomStreamPrivate_skipToNth_noLock(n);
@@ -2151,7 +2151,7 @@ module Random {
        */
       proc getNth(n: integral): eltType throws {
         if (n <= 0) then
-          throw new IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           NPBRandomStreamPrivate_lock$ = true;
         NPBRandomStreamPrivate_skipToNth_noLock(n);
