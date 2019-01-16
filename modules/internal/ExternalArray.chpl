@@ -25,6 +25,12 @@
 module ExternalArray {
   use ChapelStandard;
 
+  extern record chpl_opaque_array {
+    var _pid: int;
+    var _instance: c_void_ptr;
+    var _unowned: bool;
+  }
+
   extern record chpl_external_array {
     var elts: c_void_ptr;
     var size: uint;
@@ -72,13 +78,29 @@ module ExternalArray {
     return _newArray(arr);
   }
 
-  proc convertToExternalArray(in arr: []): chpl_external_array {
+  // Creates an _array wrapper to store the information given by chpl_opaque_array
+  // arrType is a subclass of BaseArr
+  pragma "no copy return"
+  proc makeArrayFromOpaque(value: chpl_opaque_array, type arrType) {
+    var ret = _newArray(value._instance: arrType);
+    // Don't clean up arrays we create in this way or the user will have garbage
+    // memory after the first function call
+    ret._pid = value._pid;
+    ret._unowned = value._unowned;
+    ret._externally_managed = true;
+    return ret;
+  }
+
+  proc convertToExternalArray(in arr: []): chpl_external_array
+    where (getExternalArrayType(arr) == chpl_external_array) {
     if (!isExternArrEltType(arr.eltType)) {
       use HaltWrappers;
       safeCastCheckHalt("Cannot build an external array that stores " +
                         arr.eltType: string);
     }
     if (!isIntegralType(arr.domain.idxType)) {
+      // Probably not reachable any more, but may become reachable again
+      // once support for interoperability with array types expands.
       compilerError("cannot return an array with indices that are not " +
                     "integrals");
     }
@@ -100,6 +122,21 @@ module ExternalArray {
     return externalArr;
   }
 
+  // Shares name with the version returning chpl_external_array so the compiler
+  // can make the same function call and get the appropriate type depending on
+  // the argument.  Unsupported array types are turned into opaque
+  // representations
+  proc convertToExternalArray(arr: []): chpl_opaque_array
+    where (getExternalArrayType(arr) == chpl_opaque_array) {
+
+    arr._externally_managed = true;
+    var ret: chpl_opaque_array;
+    ret._pid = arr._pid;
+    ret._instance = arr._value: c_void_ptr;
+    ret._unowned = arr._unowned;
+    return ret;
+  }
+
   // Returns a bool indicating if the type would be appropriate to use in an
   // extern array.
   // NOTE: once we can export types, those should also be supported here.
@@ -113,5 +150,28 @@ module ExternalArray {
     } else {
       return false;
     }
+  }
+
+  // Determine whether chpl_external_array or chpl_opaque array should be used.
+  // Will be updated as more types are supported via chpl_external_array
+  proc getExternalArrayType(arg) type {
+    if (!isArrayType(arg.type)) {
+      compilerError("must call with an array");
+    } else {
+      if (arg._value.isDefaultRectangular()) {
+        return chpl_external_array;
+      } else {
+        return chpl_opaque_array;
+      }
+    }
+  }
+
+  // Need to export this but that requires some compiler changes due to our
+  // hiding of interal module exported functions.
+  // Can't create an _array wrapper to call the cleanup function for us, so do
+  // the next best thing.
+  proc cleanupOpaqueArray(arr: chpl_opaque_array) {
+    var cleanup = arr._instance: unmanaged BaseArr;
+    _do_destroy_arr(arr._unowned, false, cleanup);
   }
 }

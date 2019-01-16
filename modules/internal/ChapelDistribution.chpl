@@ -942,6 +942,27 @@ module ChapelDistribution {
     delete arr;
   }
 
+  // Copy of the other _delete_arr, for use when the original type
+  // of arr is not known to Chapel code (which happens when cleaning
+  // up chpl_opaque_arrays).
+  proc _delete_arr(arr, param privatized: bool) where
+    (!isProperSubtype(arr.type, unmanaged BaseArr)) {
+    // array implementation can destroy data or other members
+    arr.dsiDestroyArr();
+
+    if arr._decEltRefCounts {
+      writeln("warning: clean up of this array type might leak memory");
+    }
+
+    if privatized {
+      _freePrivatizedClass(arr.pid, arr);
+    }
+
+    // runs the array destructor
+    delete arr;
+  }
+
+
   // These are used in ChapelLocale.chpl. They are here to
   // prevent an order-of-resolution issue.
   pragma "no doc"
