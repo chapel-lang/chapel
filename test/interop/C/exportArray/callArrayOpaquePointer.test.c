@@ -8,10 +8,10 @@ int main(int argc, char* argv[]) {
   chpl_library_init(argc, argv);
   chpl__init_arrayOpaquePointer(0, 0);
 
-  chpl_opaque_array arr = makeSqrArray();
-  printSqr(arr);
-  addEltSqr(arr, 2, 3);
-  printSqr(arr);
+  chpl_opaque_array arr = makeBlockArray();
+  printBlock(arr);
+  addEltBlock(arr, 2, 3);
+  printBlock(arr);
 
   // Call cleanup function when exported
   //chpl_mem_free(arr, 0, 0);
