@@ -144,7 +144,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
     var splitCmd = prefix + cmd;
-    var process = spawnshell(splitCmd, stdout=PIPE,executable="bash");
+    var process = spawnshell(splitCmd, stdout=PIPE, executable="bash");
     
     for line in process.stdout.lines() {
       ret += line;
