@@ -135,7 +135,7 @@ static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                                 void*, size_t);
 static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                                 void*, size_t);
-static void waitForTxCQ(struct perTxCtxInfo_t*, int);
+static void waitForTxCQ(struct perTxCtxInfo_t*, int, uint64_t);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
 static inline void local_yield(void);
@@ -398,7 +398,7 @@ void init_ofiEp(void) {
   txCQSize = 100;  // TODO
 
   struct fi_cq_attr txCqAttr = { 0 };
-  txCqAttr.format = FI_CQ_FORMAT_CONTEXT;
+  txCqAttr.format = FI_CQ_FORMAT_MSG;
   txCqAttr.size = txCQSize;
   txCqAttr.wait_obj = FI_WAIT_NONE;
 
@@ -1146,6 +1146,10 @@ void chpl_comm_make_progress(void) {
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
                           chpl_comm_on_bundle_t *arg, size_t argSize) {
+  DBG_PRINTF(DBG_INTERFACE,
+             "chpl_comm_execute_on(%d, %d, %d, %p, %zd)",
+             (int) node, (int) subloc, (int) fid, arg, argSize);
+
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
@@ -1172,6 +1176,10 @@ static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
                              chpl_comm_on_bundle_t *arg, size_t argSize) {
+  DBG_PRINTF(DBG_INTERFACE,
+             "chpl_comm_execute_on_nb(%d, %d, %d, %p, %zd)",
+             (int) node, (int) subloc, (int) fid, arg, argSize);
+
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
@@ -1191,6 +1199,10 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
                                chpl_comm_on_bundle_t *arg, size_t argSize) {
+  DBG_PRINTF(DBG_INTERFACE,
+             "chpl_comm_execute_on_fast(%d, %d, %d, %p, %zd)",
+             (int) node, (int) subloc, (int) fid, arg, argSize);
+
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
@@ -1213,11 +1225,11 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                      chpl_comm_on_bundle_t* arg, size_t argSize,
                      chpl_bool fast, chpl_bool blocking) {
   arg->comm.xo = (struct chpl_comm_bundleData_execOn_t)
-                   { .op = am_opCall,
+                   { .b = (struct chpl_comm_bundleData_base_t)
+                          { .op = am_opCall, .node = chpl_nodeID },
                      .fast = fast,
                      .fid = fid,
                      .argSize = argSize,
-                     .node = chpl_nodeID,
                      .subloc = subloc,
                      .pDone = NULL };
   amRequestCommon(node, arg, argSize, blocking ? &arg->comm.xo.pDone : NULL);
@@ -1229,9 +1241,9 @@ void amRequestRMA(c_nodeid_t node, amOp_t op,
                   void* addr, void* raddr, size_t size) {
   chpl_comm_on_bundle_t arg;
   arg.comm.rma = (struct chpl_comm_bundleData_RMA_t)
-                   { .op = op,
+                   { .b = (struct chpl_comm_bundleData_base_t)
+                          { .op = op, .node = chpl_nodeID },
                      .addr = raddr,
-                     .node = chpl_nodeID,
                      .raddr = addr,
                      .size = size,
                      .pDone = NULL };
@@ -1264,11 +1276,11 @@ void amRequestAMO(c_nodeid_t node, void* object,
 
   chpl_comm_on_bundle_t arg;
   arg.comm.amo = (struct chpl_comm_bundleData_AMO_t)
-                   { .op = am_opAMO,
+                   { .b = (struct chpl_comm_bundleData_base_t)
+                          { .op = am_opAMO, .node = chpl_nodeID },
                      .ofiOp = ofiOp,
                      .ofiType = ofiType,
                      .size = size,
-                     .node = chpl_nodeID,
                      .obj = object,
                      .operand1 = { 0 },
                      .operand2 = { 0 },
@@ -1312,6 +1324,28 @@ void amRequestCommon(c_nodeid_t node,
     *ppDone = pDone;
   }
 
+#ifdef CHPL_COMM_DEBUG
+  if (DBG_TEST_MASK(DBG_AM | DBG_AMSEND | DBG_AMRECV)) {
+    static atomic_uint_least64_t seq;
+
+    static chpl_bool seqInited = false;
+    if (!seqInited) {
+      static pthread_mutex_t seqLock = PTHREAD_MUTEX_INITIALIZER;
+      PTHREAD_CHK(pthread_mutex_lock(&seqLock));
+      atomic_init_uint_least64_t(&seq, 1);
+      seqInited = true;
+      PTHREAD_CHK(pthread_mutex_unlock(&seqLock));
+    }
+
+    arg->comm.b.seq = atomic_fetch_add_uint_least64_t(&seq, 1);
+
+#ifdef DEBUG_CRC_MSGS
+    arg->comm.b.crc = 0;
+    arg->comm.b.crc = xcrc32((void*) arg, argSize, 0xffffffff);
+#endif
+  }
+#endif
+
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
 
@@ -1319,7 +1353,7 @@ void amRequestCommon(c_nodeid_t node,
   void* mrDesc = NULL;
   if (mrGetLocalDesc(&mrDesc, myArg, argSize) != 0) {
     myArg = allocBounceBuf(argSize);
-    DBG_PRINTF(DBG_AMO, "AMO arg BB: %p", myArg);
+    DBG_PRINTF(DBG_AM, "AM arg BB: %p", myArg);
     CHK_TRUE(mrGetLocalDesc(NULL, myArg, argSize) == 0);
     memcpy(myArg, arg, argSize);
   }
@@ -1327,8 +1361,10 @@ void amRequestCommon(c_nodeid_t node,
   OFI_CHK(fi_send(tcip->txCtx, myArg, argSize, mrDesc, ofi_rxAddrs[node],
                   NULL));
   DBG_PRINTF(DBG_AM | DBG_AMSEND,
-             "tx AM req to %d, op %d, size %zd, pDone %p",
-             node, (int) myArg->comm.op.op, argSize, pDone);
+             "tx AM req to %d, seqId %d:%" PRIu64 ", op %d, size %zd, "
+             "pDone %p",
+             node, chpl_nodeID, myArg->comm.b.seq, (int) myArg->comm.b.op,
+             argSize, pDone);
   tcip->numAmReqsTxed++;
   tcip->numTxsOut++;
 
@@ -1339,7 +1375,7 @@ void amRequestCommon(c_nodeid_t node,
   //
   // Wait for network completion.
   //
-  waitForTxCQ(tcip, 1);
+  waitForTxCQ(tcip, 1, FI_SEND | FI_MSG);
 
   tciFree(tcip);
 
@@ -1486,10 +1522,22 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         //
         chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) cqes[i].buf;
         DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                   "CQ rx AM req %p, op %d, len %zd",
-                   req, req->comm.op.op, cqes[i].len);
+                   "CQ rx AM req %p, seqId %d:%" PRIu64 ", op %d, len %zd",
+                   req, req->comm.b.node, req->comm.b.seq, req->comm.b.op,
+                   cqes[i].len);
         tcip->numAmReqsRxed++;
-        switch (req->comm.op.op) {
+
+#if defined(CHPL_COMM_DEBUG) && defined(DEBUG_CRC_MSGS)
+        if (DBG_TEST_MASK(DBG_AM)) {
+          unsigned int sent_crc = req->comm.b.crc;
+          req->comm.b.crc = 0;
+          unsigned int rcvd_crc = xcrc32((void*) req, req->comm.xo.argSize,
+                                         0xffffffff);
+          CHK_TRUE(rcvd_crc == sent_crc);
+        }
+#endif
+
+        switch (req->comm.b.op) {
         case am_opCall:
           if (req->comm.xo.fast) {
             realExecOnWrapper(req, false);
@@ -1535,7 +1583,7 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
           break;
 
         default:
-          INTERNAL_ERROR_V("unexpected AM op %d", req->comm.op.op);
+          INTERNAL_ERROR_V("unexpected AM op %d", req->comm.b.op);
           break;
         }
       }
@@ -1559,7 +1607,7 @@ void amHandleExecOn(chpl_comm_on_bundle_t* req) {
   struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
              "amHandleExecOn() for node %d: ftable[%d]",
-             (int) xo->node, (int) xo->fid);
+             (int) xo->b.node, (int) xo->fid);
   chpl_comm_on_bundle_t* reqCopy;
   CHPL_CALLOC_SZ(reqCopy, 1, xo->argSize);
   chpl_memcpy(reqCopy, req, xo->argSize);
@@ -1581,11 +1629,12 @@ void realExecOnWrapper(void* p, chpl_bool fast) {
   struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
 
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "realExecOnWrapper(): %schpl_ftable_call(%d, %p)",
+             "execOnWrap: seqId %d:%" PRIu64 ", %schpl_ftable_call(%d, %p)",
+             req->comm.b.node, req->comm.b.seq,
              (fast ? "fast " : ""), (int) xo->fid, p);
   chpl_ftable_call(xo->fid, p);
   if (xo->pDone != NULL) {
-    amSendDone(xo->node, xo->pDone);
+    amSendDone(xo->b.node, xo->pDone);
   }
 }
 
@@ -1597,11 +1646,11 @@ void amGetWrapper(void* p) {
 
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
              "amGetWrapper(): %p <-- %d:%p (%zd bytes)",
-             rma->addr, (int) rma->node, rma->raddr, rma->size);
-  CHK_TRUE(mrGetKey(NULL, rma->node, rma->raddr, rma->size) == 0); // sanity
-  (void) ofi_get(rma->addr, rma->node, rma->raddr, rma->size);
+             rma->addr, (int) rma->b.node, rma->raddr, rma->size);
+  CHK_TRUE(mrGetKey(NULL, rma->b.node, rma->raddr, rma->size) == 0); // sanity
+  (void) ofi_get(rma->addr, rma->b.node, rma->raddr, rma->size);
 
-  amSendDone(rma->node, rma->pDone);
+  amSendDone(rma->b.node, rma->pDone);
 }
 
 
@@ -1612,11 +1661,11 @@ void amPutWrapper(void* p) {
 
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
              "amPutWrapper() %d:%p <-- %p (%zd bytes)",
-             (int) rma->node, rma->raddr, rma->addr, rma->size);
-  CHK_TRUE(mrGetKey(NULL, rma->node, rma->raddr, rma->size) == 0); // sanity
-  (void) ofi_put(rma->addr, rma->node, rma->raddr, rma->size);
+             (int) rma->b.node, rma->raddr, rma->addr, rma->size);
+  CHK_TRUE(mrGetKey(NULL, rma->b.node, rma->raddr, rma->size) == 0); // sanity
+  (void) ofi_put(rma->addr, rma->b.node, rma->raddr, rma->size);
 
-  amSendDone(rma->node, rma->pDone);
+  amSendDone(rma->b.node, rma->pDone);
 }
 
 
@@ -1627,7 +1676,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
     DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
                "amHandleAMO() for node %d: obj %p, opnd1 %s, opnd2 %s, "
                "res %p, ofiOp %d, ofiType %d, sz %d",
-               amo->node, amo->obj,
+               amo->b.node, amo->obj,
                DBG_VAL(&amo->operand1, amo->ofiType),
                DBG_VAL(&amo->operand2, amo->ofiType),
                amo->result, amo->ofiOp, amo->ofiType, amo->size);
@@ -1636,13 +1685,13 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
       DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
                  "amHandleAMO() for node %d: obj %p, "
                  "res %p, ofiOp %d, ofiType %d, sz %d",
-                 amo->node, amo->obj,
+                 amo->b.node, amo->obj,
                  amo->result, amo->ofiOp, amo->ofiType, amo->size);
     } else {
       DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
                  "amHandleAMO() for node %d: obj %p, opnd %s, "
                  "res %p, ofiOp %d, ofiType %d, sz %d",
-                 amo->node, amo->obj,
+                 amo->b.node, amo->obj,
                  DBG_VAL(&amo->operand1, amo->ofiType),
                  amo->result, amo->ofiOp, amo->ofiType, amo->size);
     }
@@ -1650,7 +1699,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
     DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
                "amHandleAMO() for node %d: obj %p, opnd %s, "
                "ofiOp %d, ofiType %d, sz %d",
-               amo->node, amo->obj,
+               amo->b.node, amo->obj,
                DBG_VAL(&amo->operand1, amo->ofiType),
                amo->ofiOp, amo->ofiType, amo->size);
   }
@@ -1663,12 +1712,12 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
   // AMOs can be same-node; short-circuit responses in that case.
   //
   if (amo->result != NULL) {
-    if (amo->node == chpl_nodeID) {
+    if (amo->b.node == chpl_nodeID) {
       memcpy(amo->result, &result, resSize);
       atomic_thread_fence(memory_order_release);
     } else {
-      CHK_TRUE(mrGetKey(NULL, amo->node, amo->result, resSize) == 0);
-      (void) ofi_put(&result, amo->node, amo->result, resSize);
+      CHK_TRUE(mrGetKey(NULL, amo->b.node, amo->result, resSize) == 0);
+      (void) ofi_put(&result, amo->b.node, amo->result, resSize);
 
       //
       // TODO:
@@ -1693,10 +1742,10 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
     }
   }
 
-  if (amo->node == chpl_nodeID) {
+  if (amo->b.node == chpl_nodeID) {
     *amo->pDone = 1;
   } else {
-    amSendDone(amo->node, amo->pDone);
+    amSendDone(amo->b.node, amo->pDone);
   }
 }
 
@@ -1774,12 +1823,15 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                    size_t size, int32_t typeIndex, int32_t commID,
                    int ln, int32_t fn) {
   //
-  // addr and raddr are sanity checks; node==chpl_nodeID is supposed
-  // to be handled by our caller.
+  // Sanity checks, self-communication.
   //
   CHK_TRUE(addr != NULL);
   CHK_TRUE(raddr != NULL);
-  CHK_TRUE(node != chpl_nodeID);
+
+  if (node == chpl_nodeID) {
+    memmove(raddr, addr, size);
+    return;
+  }
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
@@ -1889,7 +1941,7 @@ struct perTxCtxInfo_t* tciAlloc(chpl_bool bindToAmHandler) {
   if (bindToAmHandler || tciTabFixedAssignments)
     tcip->bound = true;
   DBG_PRINTF(DBG_THREADS, "I have%s tciTab[%td]",
-             bindToAmHandler ? " bound" : "", tcip - tciTab);
+             tcip->bound ? " bound" : "", tcip - tciTab);
   return tcip;
 }
 
@@ -1953,8 +2005,10 @@ void tciFree(struct perTxCtxInfo_t* tcip) {
   //
   // Bound contexts stay bound.  We only release non-bound ones.
   //
-  if (!tcip->bound)
+  if (!tcip->bound) {
+    DBG_PRINTF(DBG_THREADS, "I free tciTab[%td]", tcip - tciTab);
     atomic_store_bool(&tcip->allocated, false);
+  }
 }
 
 
@@ -1990,7 +2044,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     tcip->numTxsOut++;
 
     if (tcip->txCtxHasCQ) {
-      waitForTxCQ(tcip, 1);
+      waitForTxCQ(tcip, 1, FI_RMA | FI_WRITE);
     } else {
       const int count = fi_cntr_read(tcip->txCntr);
       DBG_PRINTF(DBG_ACK, "tx ack counter %d after PUT", count);
@@ -2047,7 +2101,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
     tcip->numTxsOut++;
 
     CHK_TRUE(tcip->txCtxHasCQ);
-    waitForTxCQ(tcip, 1);
+    waitForTxCQ(tcip, 1, FI_RMA | FI_READ);
 
     tciFree(tcip);
   } else {
@@ -2133,9 +2187,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
 
   tcip->numTxsOut++;
   CHK_TRUE(tcip->txCtxHasCQ);  // (so far) only expect AMOs from workers
-  waitForTxCQ(tcip, 1);
-
-  tciFree(tcip);
+  waitForTxCQ(tcip, 1, FI_ATOMIC);
 
   if (myRes != result) {
     memcpy(result, myRes, resSize);
@@ -2155,9 +2207,9 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
 
 
 static
-void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut) {
+void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut, uint64_t xpctFlags) {
   if (numOut > 0) {
-    struct fi_cq_entry cqes[numOut];
+    struct fi_cq_msg_entry cqes[numOut];
     int numRetired = 0;
 
     do {
@@ -2180,7 +2232,10 @@ void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut) {
         const int numEvents = ret;
         numRetired += numEvents;
         for (int i = 0; i < numEvents; i++) {
-          DBG_PRINTF(DBG_ACK, "CQ ack tx");
+          DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64 ", xpct %#" PRIx64,
+                     cqes[i].flags, xpctFlags);
+          if (xpctFlags != 0)
+            CHK_TRUE((cqes[i].flags & xpctFlags) == xpctFlags);
         }
       }
     } while (numRetired < numOut);
