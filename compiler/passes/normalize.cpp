@@ -2834,20 +2834,25 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
         // TODO: handle call expression stuff.
       }
 
-      // formal->newTypeExpr = getExternalArrayType(formal->oldTypeExpr)
+      // Create a representation of the array argument that is accessible
+      // outside of Chapel, depending on the type of the array.  If the array
+      // is supported by our C/Python interop, it will be represented as a
+      // chpl_external_array.  Otherwise, it will be a chpl_opaque_array
+      VarSymbol* typeExprTmp = new VarSymbol("typeExpr");
+      typeExprTmp->addFlag(FLAG_MAYBE_TYPE);
+
+      CallExpr* newFormalType = new CallExpr("getExternalArrayType",
+                                             typeExprTmp);
+      formal->typeExpr->replace(new BlockStmt(new DefExpr(typeExprTmp)));
+      formal->typeExpr->insertAtTail(new CallExpr(PRIM_MOVE, typeExprTmp,
+                                                  call->copy()));
+      formal->typeExpr->insertAtTail(newFormalType);
+
       // var formalname_arr;
       // Param conditional v
       // if (formal.type == dtExternalArray) then
       //    formalname_arr = makeArrayFromExternArray(formal, eltExpr)
       //    else formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
-
-      // Create a representation of the array argument that is accessible
-      // outside of Chapel (in the form of a pointer and a corresponding size)
-      //formal->typeExpr->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
-      // Old thing, pls keep ^
-
-      // Version 1 while I test
-      formal->typeExpr->replace(new BlockStmt(new SymExpr(dtOpaqueArray->symbol)));
 
       // Transform the outside representation into a Chapel array, and send that
       // in the call to the original function.
