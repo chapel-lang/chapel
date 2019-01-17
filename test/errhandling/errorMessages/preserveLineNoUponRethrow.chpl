@@ -1,7 +1,7 @@
 
 proc willthrow() throws {
   writeln("in willthrow");
-  throw new Error();
+  throw new owned Error();
 }
 
 proc rethrow() throws {

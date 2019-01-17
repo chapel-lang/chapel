@@ -4,10 +4,10 @@ try {
   writeln("outer try");
   try {
     writeln("inner try");
-    throw new Error();
+    throw new owned Error();
   } catch {
     writeln("inner catch");
-    throw new Error();
+    throw new owned Error();
   }
 } catch {
   writeln("outer catch");

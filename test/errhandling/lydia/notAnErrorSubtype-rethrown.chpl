@@ -4,7 +4,7 @@ class Foo {
 
 proc main() throws {
   try {
-    throw new NilThrownError();
+    throw new owned NilThrownError();
   } catch e1: Foo {
     writeln("Wait, how did I catch a Foo, that's not an error subtype");
     throw e1;

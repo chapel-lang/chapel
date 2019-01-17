@@ -1,7 +1,7 @@
 module X {
   proc giveFlag(i: int) throws {
     if i == 1 then return true;
-    throw new IllegalArgumentError();
+    throw new owned IllegalArgumentError();
     return false;
   }
 

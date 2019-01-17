@@ -1,7 +1,7 @@
 config const useInternal = false;
 
 proc willthrow() throws {
-  throw new Error();
+  throw new owned Error();
   return 777;
 }
 

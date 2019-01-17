@@ -4,7 +4,7 @@ proc test() {
   try {
     writeln("before coforall block");
     coforall i in 1..2 {
-      throw new StringError("test error");
+      throw new owned StringError("test error");
     }
     writeln("after coforall block");
   } catch errors: TaskErrors {

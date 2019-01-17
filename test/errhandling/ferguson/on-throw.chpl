@@ -6,7 +6,7 @@ proc test() throws {
     on Locales[numLocales-1] {
       writeln(i);
       if i == 4 then
-        throw new StringError("test");
+        throw new owned StringError("test");
     }
   }
 }

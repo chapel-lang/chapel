@@ -6,7 +6,7 @@ config const t = 2;
 
 iter myiter(nn: int, nt: int) throws {
 
-  throw new StringError("Test error");
+  throw new owned StringError("Test error");
 
   for i in 0..#nt {
     for j in i*nn..#nn {
@@ -16,7 +16,7 @@ iter myiter(nn: int, nt: int) throws {
 }
 
 iter myiter(nn: int, nt: int, param tag: iterKind) throws where tag == iterKind.standalone {
-  throw new StringError("Test error");
+  throw new owned StringError("Test error");
 
   coforall i in 0..#nt {
     for j in i*nn..#nn {
@@ -27,7 +27,7 @@ iter myiter(nn: int, nt: int, param tag: iterKind) throws where tag == iterKind.
 
 // coforall loop in leader should NOT get vector pragma
 iter myiter(nn: int, nt: int, param tag: iterKind) throws where tag == iterKind.leader {
-  throw new StringError("Test error");
+  throw new owned StringError("Test error");
 
   coforall i in 0..#nt {
     yield i*nn..#nn;

@@ -4,7 +4,7 @@ use ExampleErrors;
 
 module M {
   proc throwingFn() throws {
-    throw new StringError("test error");
+    throw new owned StringError("test error");
   }
 
   proc badFn() {

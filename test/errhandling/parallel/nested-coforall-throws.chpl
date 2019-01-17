@@ -22,7 +22,7 @@ proc test() {
       coforall j in 1..2 {
         coforall k in 1..2 {
           if k <= option then
-            throw new StringError("test error");
+            throw new owned StringError("test error");
         }
       }
     }

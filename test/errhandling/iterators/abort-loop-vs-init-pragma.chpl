@@ -2,7 +2,7 @@
 iter willthrow() throws {
   for idx in 5..8 do
     if idx == 7 then
-      throw new Error();
+      throw new owned Error();
     else
       yield idx;
 }

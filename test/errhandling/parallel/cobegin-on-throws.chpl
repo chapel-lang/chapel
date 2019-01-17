@@ -6,12 +6,12 @@ proc test() {
     cobegin {
       {
         on Locales[numLocales-1] {
-          throw new StringError("test error");
+          throw new owned StringError("test error");
         }
       }
       {
         on Locales[numLocales-1] {
-          throw new StringError("test error");
+          throw new owned StringError("test error");
         }
       }
     }

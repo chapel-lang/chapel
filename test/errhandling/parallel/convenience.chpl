@@ -18,9 +18,9 @@ proc test() {
     writeln("before coforall block");
     coforall i in 1..3 {
       if i < 3 then
-        throw new MyError("test error");
+        throw new owned MyError("test error");
       else
-        throw new StringError("other error");
+        throw new owned StringError("other error");
     }
     writeln("after coforall block");
   } catch errors: TaskErrors {

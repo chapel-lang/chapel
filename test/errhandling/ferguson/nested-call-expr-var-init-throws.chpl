@@ -8,7 +8,7 @@ record R {
 
 proc gimmeanr(): R throws {
   var ret: R;
-  throw new Error();
+  throw new owned Error();
   return ret;
 }
 

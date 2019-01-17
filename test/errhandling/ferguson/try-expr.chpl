@@ -6,7 +6,7 @@ module MyModule {
 
   proc throwit(i:int):int throws {
     if i == test then
-      throw new StringError("Test");
+      throw new owned StringError("Test");
     return i;
   }
 

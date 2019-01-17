@@ -33,26 +33,26 @@ record R {
 proc simpleThrow() throws {
   var r = new R(1);
   writeln("in simpleThrow, r=", r);
-  throw new Error();
+  throw new owned Error();
 }
 proc conditionalThrow(arg:bool) throws {
   var r = new R(2);
   writeln("in conditionalThrow, r=", r);
   if arg then
-    throw new Error();
+    throw new owned Error();
 }
 proc loopThrow(arg:int) throws {
   var r = new R(3);
   writeln("in loopThrow, r=", r);
   for i in 1..10 {
     if i == arg then
-      throw new Error();
+      throw new owned Error();
   }
 }
 
 proc inThrow(in r:R) throws {
   writeln("in inThrow, r=", r);
-  throw new Error();
+  throw new owned Error();
 }
 
 proc loopThrow2(arg:int) throws {
@@ -60,7 +60,7 @@ proc loopThrow2(arg:int) throws {
     var r = new R(100+i);
     writeln("in loopThrow, r=", r);
     if i == arg then
-      throw new Error();
+      throw new owned Error();
   }
 }
 
