@@ -1,3 +1,0 @@
-uncaught IllegalArgumentError: bad cast from string '0b111' to int(64)
-  stringToInt.chpl:2: thrown here
-  stringToInt.chpl:2: uncaught here

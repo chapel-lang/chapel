@@ -64,10 +64,26 @@ static int illegalFirstUnsChar(char c) {
                                                           int* invalid,    \
                                                           char* invalidCh) { \
     char* endPtr;                                                       \
+    int numberBase = 10;                                                \
     _type(base, width) val;                                             \
     while (*str && isspace(*str))                                       \
       str++;                                                            \
-    val = (_type(base, width))strtol(str, &endPtr, 10);                 \
+    if (strlen(str) >= 2 && str[0] == '0') {                            \
+      if (str[1] == 'b' || str[1] == 'B') {                             \
+        numberBase = 2;                                                 \
+        str += 2;                                                       \
+      } else if (str[1] == 'o' || str[1] == 'O') {                      \
+        numberBase = 8;                                                 \
+        str += 2;                                                       \
+      } else if (str[1] == 'x' || str[1] == 'X') {                      \
+        numberBase = 16;                                                \
+        str += 2;                                                       \
+      }                                                                 \
+    }                                                                   \
+    if (uns)                                                            \
+      val = (_type(base, width))strtoull(str, &endPtr, numberBase);     \
+    else                                                                \
+      val = (_type(base, width))strtoll(str, &endPtr, numberBase);      \
     while (*endPtr && isspace(*endPtr))                                 \
       endPtr++;                                                         \
     *invalid = (*str == '\0' || *endPtr != '\0');                       \
@@ -80,56 +96,14 @@ static int illegalFirstUnsChar(char c) {
     return val;                                                         \
   }
 
-/*
- * sscanf() skips leading spaces.  But when we report *str as the
- * invalid character, we want to report the first non-space, so skip
- * them manually anyway.
- */
-#define _define_string_to_bigint_precise(base, width, uns, format)      \
-  _type(base, width)  c_string_to_##base##width##_t_precise(c_string str, \
-                                                            int* invalid,  \
-                                                            char* invalidCh) { \
-    _type(base, width)  val;                                            \
-    int numbytes;                                                       \
-    int numitems;                                                       \
-    while (*str && isspace(*str))                                       \
-      str++;                                                            \
-    numitems = sscanf(str, format"%n", &val, &numbytes);                \
-    if (scanningNCounts() && numitems == 2) {                           \
-      numitems = 1;                                                     \
-    }                                                                   \
-    if (numitems == 1) {                                                \
-      while(str[numbytes] && isspace(str[numbytes]))                    \
-        numbytes++;                                                     \
-      if (numbytes == strlen(str)) {                                    \
-        /* for negatives, sscanf works, but we wouldn't want chapel to */ \
-        if (uns && illegalFirstUnsChar(*str)) {                         \
-          *invalid = 1;                                                 \
-          *invalidCh = *str;                                            \
-        } else {                                                        \
-          *invalid = 0;                                                 \
-          *invalidCh = '\0';                                            \
-        }                                                               \
-      } else {                                                          \
-        *invalid = 1;                                                   \
-        *invalidCh = *(str+numbytes);                                   \
-      }                                                                 \
-    } else {                                                            \
-      *invalid = 1;                                                     \
-      *invalidCh = *str;                                                \
-    }                                                                   \
-    return val;                                                         \
-  }
-
-
 _define_string_to_int_precise(int, 8, 0)
 _define_string_to_int_precise(int, 16, 0)
 _define_string_to_int_precise(int, 32, 0)
-_define_string_to_bigint_precise(int, 64, 0, "%" SCNd64)
+_define_string_to_int_precise(int, 64, 0)
 _define_string_to_int_precise(uint, 8, 1)
 _define_string_to_int_precise(uint, 16, 1)
 _define_string_to_int_precise(uint, 32, 1)
-_define_string_to_bigint_precise(uint, 64, 1, "%" SCNu64)
+_define_string_to_int_precise(uint, 64, 1)
 
 
 chpl_bool c_string_to_chpl_bool(c_string str, chpl_bool* err, int lineno, int32_t filename) {
