@@ -1323,7 +1323,8 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
                      " for Python compilation");
     }
 
-    fn->retExprType->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+    //fn->retExprType->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+    fn->retExprType->replace(new BlockStmt(new SymExpr(dtOpaqueArray->symbol)));
 
     CallExpr* retCall = toCallExpr(fn->body->body.tail);
     INT_ASSERT(retCall && retCall->isPrimitive(PRIM_RETURN));
