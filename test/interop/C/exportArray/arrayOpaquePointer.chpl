@@ -1,12 +1,12 @@
 use BlockDist;
 const D = {1..5} dmapped Block({1..5});
 
-export proc makeBlockArray_chpl(): [D] int {
+export proc makeBlockArray(): [D] int {
   var x: [D] int;
   return x;
 }
 
-export proc printBlock_chpl(x: [D] int) {
+export proc printBlock(x: [D] int) {
   var output = "";
   var first = true;
   for idx in x.dom {

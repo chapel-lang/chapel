@@ -9,9 +9,9 @@ int main(int argc, char* argv[]) {
   chpl__init_arrayOpaquePointer(0, 0);
 
   chpl_opaque_array arr = makeBlockArray();
-  printBlock(arr);
-  addEltBlock(arr, 2, 3);
-  printBlock(arr);
+  printBlock(&arr);
+  addEltBlock(&arr, 2, 3);
+  printBlock(&arr);
 
   // Call cleanup function when exported
   //chpl_mem_free(arr, 0, 0);
