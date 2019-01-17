@@ -84,7 +84,7 @@ proc stripExt(toStrip: string, ext: string) : string {
 proc runCommand(cmd, quiet=false) : string throws {
   var ret : string;
   try {
-    
+
     var splitCmd = cmd.split();
     var process = spawn(splitCmd, stdout=PIPE);
 
@@ -124,7 +124,7 @@ proc runWithStatus(command, show=true): int {
 
 proc SPACK_ROOT : string {
   const envHome = getEnv("SPACK_ROOT");
-  const default = MASON_HOME + "/.mason";
+  const default = MASON_HOME + "/spack";
 
   const spackRoot = if !envHome.isEmptyString() then envHome else default;
 
@@ -145,7 +145,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
     var splitCmd = prefix + cmd;
     var process = spawnshell(splitCmd, stdout=PIPE, executable="bash");
-    
+
     for line in process.stdout.lines() {
       ret += line;
       if quiet == false {
@@ -367,7 +367,7 @@ proc getLastModified(filename: string) : int {
 proc projectModified(projectHome, projectName, binLocation) : bool {
   const binaryPath = joinPath(projectHome, "target", binLocation, projectName);
   const tomlPath = joinPath(projectHome, "Mason.toml");
-   
+
   if isFile(binaryPath) {
     const binModTime = getLastModified(binaryPath);
     for file in listdir(joinPath(projectHome, "src")) {
