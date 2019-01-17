@@ -97,7 +97,7 @@ proc runCommand(cmd, quiet=false) : string throws {
     process.wait();
   }
   catch {
-    throw new MasonError("Internal mason error");
+    throw new owned MasonError("Internal mason error");
   }
   return ret;
 }
@@ -155,7 +155,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     process.wait();
   }
   catch {
-    throw new MasonError("Internal mason error");
+    throw new owned MasonError("Internal mason error");
   }
   return ret;
 }
@@ -285,7 +285,7 @@ proc getChapelVersionInfo() {
       } else if release.search(output, semver) {
         ret(4) = false;
       } else {
-        throw new MasonError("Failed to match output of 'chpl --version':\n" + output);
+        throw new owned MasonError("Failed to match output of 'chpl --version':\n" + output);
       }
 
       const split = semver.split(".");
@@ -333,7 +333,7 @@ proc developerMode: bool {
 proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
   const (dirname, basename) = splitPath(cwd);
   if dirname == '/' {
-    throw new MasonError("Mason could not find your configuration file (Mason.toml)");
+    throw new owned MasonError("Mason could not find your configuration file (Mason.toml)");
   }
   const tomlFile = joinPath(cwd, tomlName);
   if exists(tomlFile) {

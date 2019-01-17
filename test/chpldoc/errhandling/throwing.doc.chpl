@@ -7,11 +7,11 @@ proc emptyNoDocArg(x: int) throws {
 }
 
 proc noDocNoArg() throws {
-  throw new Error();
+  throw new owned Error();
 }
 
 proc noDocArg(b: bool) throws {
-  throw new Error();
+  throw new owned Error();
 }
 
 proc noDocReturn(): int throws {
@@ -30,7 +30,7 @@ proc emptyWithArg(x: int) throws {
 
 /* This function has a body, no argument, and throws */
 proc noArg() throws {
-  throw new Error();
+  throw new owned Error();
 }
 
 /* This function has a body, an argument, and throws */
@@ -53,11 +53,11 @@ module Inner {
   }
 
   proc noDocNoArg() throws {
-    throw new Error();
+    throw new owned Error();
   }
 
   proc noDocArg(b: bool) throws {
-    throw new Error();
+    throw new owned Error();
   }
 
   proc noDocReturn(): int throws {
@@ -76,7 +76,7 @@ module Inner {
 
   /* This function has a body, no argument, and throws */
   proc noArg() throws {
-    throw new Error();
+    throw new owned Error();
   }
 
   /* This function has a body, an argument, and throws */

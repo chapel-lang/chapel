@@ -52,7 +52,7 @@ proc masonTest(args) throws {
         parallel = true;
       }
       else if arg == '--' {
-        throw new MasonError("Testing does not support -- syntax"); 
+        throw new owned MasonError("Testing does not support -- syntax");
       }
       else if arg == '--no-update' {
         update = false;
@@ -145,7 +145,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, cmdLineCompopts: [?
       }
     }
     else {
-      throw new MasonError("No tests were found in /test");
+      throw new owned MasonError("No tests were found in /test");
     }
     toParse.close();
   }
@@ -160,7 +160,7 @@ private proc runTestBinary(projectHome: string, testName: string, show: bool) {
   const command = "".join(projectHome,'/target/test/', testName);
   const testResult = runWithStatus(command, show);
   return testResult;
-}  
+}
 
 
 private proc runTestBinaries(projectHome: string, testNames: [?D] string,
@@ -168,7 +168,7 @@ private proc runTestBinaries(projectHome: string, testNames: [?D] string,
 
   var resultDomain: domain(string);
   var testResults: [resultDomain] string;
-  
+
   for test in testNames {
     const testName = basename(stripExt(test, ".chpl"));
     const result = runTestBinary(projectHome, testName, show);

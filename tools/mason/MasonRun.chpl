@@ -115,17 +115,17 @@ proc runProjectBinary(show: bool, release: bool, execopts: [?d] string) throws {
       else if isFile(joinPath(projectHome, "Mason.toml")) {
         const msg = "Mason could not find your Mason.lock.\n";
         const help = "To build and run your project use: mason run --build";
-        throw new MasonError(msg + help);
+        throw new owned MasonError(msg + help);
       }
       else {
-        throw new MasonError("Mason could not find your Mason.toml file");
+        throw new owned MasonError("Mason could not find your Mason.toml file");
       }
 
       // Close memory
       toParse.close();
     }
     else {
-      throw new MasonError("Mason could not find the compiled program");
+      throw new owned MasonError("Mason could not find the compiled program");
     }
   }
   catch e: MasonError {
@@ -153,7 +153,7 @@ private proc masonBuildRun(args: [?d] string) {
       }
       else if arg == "--" {
         if example then
-          throw new MasonError("Examples do not support `--` syntax");
+          throw new owned MasonError("Examples do not support `--` syntax");
         exec = true;
       }
       else if arg == "--example" {

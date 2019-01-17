@@ -6,7 +6,7 @@ class Foo {
 
   proc init() {
     x = 10;
-    throw new unmanaged Error();
+    throw new owned Error();
   }
 }
 
