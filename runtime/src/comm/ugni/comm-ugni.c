@@ -1773,6 +1773,27 @@ static void dbg_catf(FILE* out_f, const char* in_fname, const char* match)
 #endif
 
 
+
+// Simple wrappers for spinlock lock/unlock with more relaxed orderings and
+// proper yielding for locks. Should only be used when contention is expected
+// to be very low.
+typedef atomic_bool spinlock;
+
+static inline void spinlock_init(spinlock* s) {
+  atomic_init_bool(s, false);
+}
+
+static inline void spinlock_lock(spinlock* s) {
+  while (atomic_exchange_explicit_bool(s, true, memory_order_acquire)) {
+    local_yield();
+  }
+}
+
+static inline void spinlock_unlock(spinlock* s) {
+  atomic_store_explicit_bool(s, false, memory_order_release);
+}
+
+
 //
 // Chapel interface starts here
 //
@@ -5487,7 +5508,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
 #define MAX_BUFF_GET_THREADS 1024
 
 static int* get_vi_p[MAX_BUFF_GET_THREADS];
-static atomic_bool* get_lock_p[MAX_BUFF_GET_THREADS];
+static spinlock* get_lock_p[MAX_BUFF_GET_THREADS];
 
 // pointers to thread local buffered AMO argument buffers
 static void** get_src_addr_vp[MAX_BUFF_GET_THREADS];
@@ -5498,12 +5519,12 @@ static mem_region_t** get_local_mr_vp[MAX_BUFF_GET_THREADS];
 static mem_region_t** get_remote_mr_vp[MAX_BUFF_GET_THREADS];
 
 // buffered AMO initialization lock and thread counter
-static atomic_bool get_init_lock;
+static spinlock get_init_lock;
 static atomic_uint_least32_t get_thread_counter;
 
 static
 void buff_get_init(void) {
-  atomic_init_bool(&get_init_lock, false);
+  spinlock_init(&get_init_lock);
   atomic_init_uint_least32_t(&get_thread_counter, 0);
 }
 
@@ -5512,14 +5533,14 @@ void chpl_comm_get_buff_flush() {
   sz = atomic_load_uint_least32_t(&get_thread_counter);
   for(i=0; i<sz; i++) {
     if (*get_vi_p[i] != 0) {
-      while (atomic_exchange_bool(get_lock_p[i], true)) { local_yield(); }
+      spinlock_lock(get_lock_p[i]);
       if (*get_vi_p[i] != 0) {
         do_remote_get_V(*get_vi_p[i], get_tgt_addr_vp[i], get_locale_vp[i],
                         get_remote_mr_vp[i], get_src_addr_vp[i],
                         get_size_vp[i], get_local_mr_vp[i], may_proxy_true);
         *get_vi_p[i] = 0;
       }
-      atomic_store_bool(get_lock_p[i], false);
+      spinlock_unlock(get_lock_p[i]);
     }
   }
 }
@@ -5554,7 +5575,7 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 
   // thread local index and lock
   static __thread int vi = 0;
-  static __thread atomic_bool lock;
+  static __thread spinlock lock;
 
   // thread local buffers for all arguments
   static __thread void* src_addr_v[MAX_CHAINED_GET_LEN];
@@ -5576,17 +5597,17 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     uint32_t idx;
 
     // grab initialization lock
-    while (atomic_exchange_bool(&get_init_lock, true)) { local_yield(); }
+    spinlock_lock(&get_init_lock);
 
     // initialize the lock for this thread and figure out our index into the
     // buffer of GET operation pointers. If we've exceeded the buffer length,
     // warn and do blocking operations instead
-    atomic_init_bool(&lock, false);
+    spinlock_init(&lock);
     idx = atomic_load_uint_least32_t(&get_thread_counter);
     if (idx >= MAX_BUFF_GET_THREADS) {
       chpl_warning("Exceeded MAX_BUFF_GET_THREADS, buffered gets performance degraded", 0, 0);
       init_status = -1;
-      atomic_store_bool(&get_init_lock, false);
+      spinlock_unlock(&get_init_lock);
       do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
       return;
     }
@@ -5609,11 +5630,11 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     (void) atomic_fetch_add_uint_least32_t(&get_thread_counter, 1);
 
     // release initialization lock
-    atomic_store_bool(&get_init_lock, false);
+    spinlock_unlock(&get_init_lock);
   }
 
   // grab lock for this thread
-  while (atomic_exchange_bool(&lock, true)) { local_yield(); }
+  spinlock_lock(&lock);
 
   src_addr_v[vi] = src_addr;
   tgt_addr_v[vi] = tgt_addr;
@@ -5631,7 +5652,7 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   }
 
   // release lock for this thread
-  atomic_store_bool(&lock, false);
+  spinlock_unlock(&lock);
 
 }
 
@@ -6848,7 +6869,7 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
 
 // pointers to thread local buffered AMO indexes and locks
 static int* amo_vi_p[MAX_BUFF_AMO_THREADS];
-static atomic_bool* amo_lock_p[MAX_BUFF_AMO_THREADS];
+static spinlock* amo_lock_p[MAX_BUFF_AMO_THREADS];
 
 // pointers to thread local buffered AMO argument buffers
 static uint64_t* amo_opnd1_vp[MAX_BUFF_AMO_THREADS];
@@ -6859,12 +6880,12 @@ static gni_fma_cmd_type_t* amo_cmd_vp[MAX_BUFF_AMO_THREADS];
 static mem_region_t** amo_remote_mr_vp[MAX_BUFF_AMO_THREADS];
 
 // buffered AMO initialization lock and thread counter
-static atomic_bool amo_init_lock;
+static spinlock amo_init_lock;
 static atomic_uint_least32_t amo_thread_counter;
 
 static
 void buff_amo_init(void) {
-  atomic_init_bool(&amo_init_lock, false);
+  spinlock_init(&amo_init_lock);
   atomic_init_uint_least32_t(&amo_thread_counter, 0);
 }
 
@@ -7005,14 +7026,14 @@ void chpl_comm_atomic_buff_flush() {
   sz = atomic_load_uint_least32_t(&amo_thread_counter);
   for(i=0; i<sz; i++) {
     if (*amo_vi_p[i] != 0) {
-      while (atomic_exchange_bool(amo_lock_p[i], true)) { local_yield(); }
+      spinlock_lock(amo_lock_p[i]);
       if (*amo_vi_p[i] != 0) {
         do_remote_amo_V(*amo_vi_p[i], amo_opnd1_vp[i], amo_locale_vp[i],
                         amo_object_vp[i], amo_size_vp[i], amo_cmd_vp[i],
                         amo_remote_mr_vp[i]);
         *amo_vi_p[i] = 0;
       }
-      atomic_store_bool(amo_lock_p[i], false);
+      spinlock_unlock(amo_lock_p[i]);
     }
   }
 }
@@ -7028,7 +7049,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
 {
   // thread local index and lock
   static __thread int vi = 0;
-  static __thread atomic_bool lock;
+  static __thread spinlock lock;
 
   // thread local buffers for all arguments
   static __thread uint64_t opnd1_v[MAX_CHAINED_AMO_LEN];
@@ -7050,17 +7071,17 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     uint32_t idx;
 
     // grab initialization lock
-    while (atomic_exchange_bool(&amo_init_lock, true)) { local_yield(); }
+    spinlock_lock(&amo_init_lock);
 
     // initialize the lock for this thread and figure out our index into the
     // buffer of AMO operation pointers. If we've exceeded the buffer length,
     // warn and do blocking operations instead
-    atomic_init_bool(&lock, false);
+    spinlock_init(&lock);
     idx = atomic_load_uint_least32_t(&amo_thread_counter);
     if (idx >= MAX_BUFF_AMO_THREADS) {
       chpl_warning("Exceeded MAX_BUFF_AMO_THREADS, buffered atomic performance degraded", 0, 0);
       init_status = -1;
-      atomic_store_bool(&amo_init_lock, false);
+      spinlock_unlock(&amo_init_lock);
       do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
       return;
     }
@@ -7082,14 +7103,14 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     (void) atomic_fetch_add_uint_least32_t(&amo_thread_counter, 1);
 
     // release initialization lock
-    atomic_store_bool(&amo_init_lock, false);
+    spinlock_unlock(&amo_init_lock);
   }
 
   check_nic_amo(size, object, remote_mr);
   PERFSTATS_INC(amo_cnt);
 
   // grab lock for this thread
-  while (atomic_exchange_bool(&lock, true)) { local_yield(); }
+  spinlock_lock(&lock);
 
   // store arguments in buffers
   opnd1_v[vi]     = size == 4 ? *(uint32_t*) opnd1:
@@ -7108,7 +7129,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
   }
 
   // release lock for this thread
-  atomic_store_bool(&lock, false);
+  spinlock_unlock(&lock);
 }
 
 static
