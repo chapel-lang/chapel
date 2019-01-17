@@ -126,7 +126,7 @@ proc SPACK_ROOT : string {
   const envHome = getEnv("SPACK_ROOT");
   const default = MASON_HOME + "/.mason";
 
-  const spackRoot = if envHome != "" then envHome else default;
+  const spackRoot = if !envHome.isEmptyString() then envHome else default;
 
   return spackRoot;
 }
