@@ -383,6 +383,13 @@ module ChapelError {
   }
 
   pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_fix_thrown_error(err: _nilType) {
+    return chpl_do_fix_thrown_error(nil);
+  }
+
+  pragma "no doc"
   pragma "last resort"
   proc chpl_fix_thrown_error(err: ?t) where !isSubtype(t, Error) &&
     isRecordType(t) {
