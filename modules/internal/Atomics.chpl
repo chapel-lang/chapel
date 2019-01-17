@@ -86,18 +86,18 @@ module Atomics {
   use ChapelEnv;
 
   pragma "no doc"
-  extern proc atomic_thread_fence(order:memory_order);
+  extern proc chpl_atomic_thread_fence(order:memory_order);
   pragma "no doc"
-  extern proc atomic_signal_fence(order:memory_order);
+  extern proc chpl_atomic_signal_fence(order:memory_order);
 
   // these can be called just the way they are:
-  //extern proc atomic_thread_fence(order:memory_order);
-  //extern proc atomic_signal_fence(order:memory_order);
+  //extern proc chpl_atomic_thread_fence(order:memory_order);
+  //extern proc chpl_atomic_signal_fence(order:memory_order);
   // but they only handle the local portion of a fence.
   // To include PUTs or GETs in the fence, use atomic_fence instead:
   pragma "no doc"
   proc atomic_fence(order:memory_order = memory_order_seq_cst) {
-    atomic_thread_fence(order);
+    chpl_atomic_thread_fence(order);
     chpl_rmem_consist_fence(order);
   }
 
@@ -285,7 +285,7 @@ module Atomics {
         while (this.read(order=memory_order_relaxed) != value) {
           chpl_task_yield();
         }
-        atomic_thread_fence(order);
+        chpl_atomic_thread_fence(order);
       }
     }
 
@@ -559,7 +559,7 @@ module Atomics {
         while (this.read(order=memory_order_relaxed) != value) {
           chpl_task_yield();
         }
-        atomic_thread_fence(order);
+        chpl_atomic_thread_fence(order);
       }
     }
 

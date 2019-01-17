@@ -67,6 +67,16 @@ static inline memory_order _defaultOfMemoryOrder(void) {
   return memory_order_seq_cst;
 }
 
+static inline void chpl_atomic_thread_fence(memory_order order)
+{
+  atomic_thread_fence(order);
+}
+static inline void chpl_atomic_signal_fence(memory_order order)
+{
+  atomic_signal_fence(order);
+}
+
+
 //
 // Given an input memory order, find a memory order that can be used for
 // an atomic_load or for the compare_exchange failure case.  This is an
