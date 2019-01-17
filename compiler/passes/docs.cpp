@@ -309,7 +309,7 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr("sphinx-build");
 
-  const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && "
+  const char * envVars = astr("export PATH=\"", venvBinDir, ":$PATH\" && "
                               "export VIRTUAL_ENV=", venvDir, " && "
                               "export CHPLDOC_AUTHOR='", fDocsAuthor, "'");
 
