@@ -167,12 +167,8 @@ void CatchStmt::cleanup()
 
   // Check isCatchall before setting _name or _type
   bool catchall = isCatchall();
-
-  // If the error isn't named, it can't be used within the
-  // catch block, and it must be a catchall, so no transformation
-  // is necessary at this point.
-  if (_name == NULL)
-    return;
+  // Below, we will transform even catchall block so that the error will
+  // be freed appropriately.
 
   Expr* typeExpr = NULL;
   if (_type != NULL) {
@@ -207,17 +203,29 @@ void CatchStmt::cleanup()
 
   newBody->insertAtHead(castedErrorDef);
 
-  BlockStmt* ifBody = new BlockStmt();
-  BlockStmt* elseBody = new BlockStmt();
-  CondStmt* cond = new CondStmt(new SymExpr(castedError), ifBody, elseBody);
-  castedErrorDef->insertAfter(cond);
-
   VarSymbol* error = new VarSymbol(name);
   Expr* ownedCastedError = new CallExpr(PRIM_NEW,
                                         new CallExpr("_owned", castedError));
+
   DefExpr* errorDef = new DefExpr(error, ownedCastedError);
-  ifBody->insertAtTail(errorDef);
-  ifBody->insertAtTail(oldBody);
+
+  if (catchall) {
+    newBody->insertAtTail(errorDef);
+    newBody->insertAtTail(oldBody);
+
+  } else {
+    BlockStmt* ifBody = new BlockStmt();
+    BlockStmt* elseBody = new BlockStmt();
+    CondStmt* cond = new CondStmt(new SymExpr(castedError), ifBody, elseBody);
+    castedErrorDef->insertAfter(cond);
+
+    VarSymbol* error = new VarSymbol(name);
+    Expr* ownedCastedError = new CallExpr(PRIM_NEW,
+                                          new CallExpr("_owned", castedError));
+    DefExpr* errorDef = new DefExpr(error, ownedCastedError);
+    ifBody->insertAtTail(errorDef);
+    ifBody->insertAtTail(oldBody);
+  }
 
   // If we in the future support `throw;` to throw the currently caught
   // error, we'd update such a throw here to throw 'error'.
