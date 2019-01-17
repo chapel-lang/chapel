@@ -135,7 +135,7 @@ static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                                 void*, size_t);
 static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                                 void*, size_t);
-static void waitForTxCQ(struct perTxCtxInfo_t*, int);
+static void waitForTxCQ(struct perTxCtxInfo_t*, int, uint64_t);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
 static inline void local_yield(void);
@@ -398,7 +398,7 @@ void init_ofiEp(void) {
   txCQSize = 100;  // TODO
 
   struct fi_cq_attr txCqAttr = { 0 };
-  txCqAttr.format = FI_CQ_FORMAT_CONTEXT;
+  txCqAttr.format = FI_CQ_FORMAT_MSG;
   txCqAttr.size = txCQSize;
   txCqAttr.wait_obj = FI_WAIT_NONE;
 
@@ -1375,7 +1375,7 @@ void amRequestCommon(c_nodeid_t node,
   //
   // Wait for network completion.
   //
-  waitForTxCQ(tcip, 1);
+  waitForTxCQ(tcip, 1, FI_SEND | FI_MSG);
 
   tciFree(tcip);
 
@@ -2041,7 +2041,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     tcip->numTxsOut++;
 
     if (tcip->txCtxHasCQ) {
-      waitForTxCQ(tcip, 1);
+      waitForTxCQ(tcip, 1, FI_RMA | FI_WRITE);
     } else {
       const int count = fi_cntr_read(tcip->txCntr);
       DBG_PRINTF(DBG_ACK, "tx ack counter %d after PUT", count);
@@ -2098,7 +2098,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
     tcip->numTxsOut++;
 
     CHK_TRUE(tcip->txCtxHasCQ);
-    waitForTxCQ(tcip, 1);
+    waitForTxCQ(tcip, 1, FI_RMA | FI_READ);
 
     tciFree(tcip);
   } else {
@@ -2184,7 +2184,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
 
   tcip->numTxsOut++;
   CHK_TRUE(tcip->txCtxHasCQ);  // (so far) only expect AMOs from workers
-  waitForTxCQ(tcip, 1);
+  waitForTxCQ(tcip, 1, FI_ATOMIC);
 
   tciFree(tcip);
 
@@ -2206,9 +2206,9 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
 
 
 static
-void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut) {
+void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut, uint64_t xpctFlags) {
   if (numOut > 0) {
-    struct fi_cq_entry cqes[numOut];
+    struct fi_cq_msg_entry cqes[numOut];
     int numRetired = 0;
 
     do {
@@ -2231,7 +2231,10 @@ void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut) {
         const int numEvents = ret;
         numRetired += numEvents;
         for (int i = 0; i < numEvents; i++) {
-          DBG_PRINTF(DBG_ACK, "CQ ack tx");
+          DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64 ", xpct %#" PRIx64,
+                     cqes[i].flags, xpctFlags);
+          if (xpctFlags != 0)
+            CHK_TRUE((cqes[i].flags & xpctFlags) == xpctFlags);
         }
       }
     } while (numRetired < numOut);
