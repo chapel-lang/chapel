@@ -2186,8 +2186,6 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   CHK_TRUE(tcip->txCtxHasCQ);  // (so far) only expect AMOs from workers
   waitForTxCQ(tcip, 1, FI_ATOMIC);
 
-  tciFree(tcip);
-
   if (myRes != result) {
     memcpy(result, myRes, resSize);
     freeBounceBuf(myRes);
