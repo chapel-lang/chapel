@@ -1,0 +1,2 @@
+staticMethodInheritance-whenField-unmanaged.chpl:22: error: unresolved call 'type unmanaged Parent.foo()'
+staticMethodInheritance-whenField-unmanaged.chpl:3: note: candidates are: Parent.type foo()
