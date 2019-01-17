@@ -1323,8 +1323,13 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
                      " for Python compilation");
     }
 
-    //fn->retExprType->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
-    fn->retExprType->replace(new BlockStmt(new SymExpr(dtOpaqueArray->symbol)));
+    // Create a representation of the array return type that is accessible
+    // outside of Chapel, depending on the type of the array.  If the array
+    // is supported by our C/Python interop, it will be represented as a
+    // chpl_external_array.  Otherwise, it will be a chpl_opaque_array
+    CallExpr* newRetType = new CallExpr("getExternalArrayType",
+                                        call->copy());
+    fn->retExprType->insertAtTail(newRetType);
 
     CallExpr* retCall = toCallExpr(fn->body->body.tail);
     INT_ASSERT(retCall && retCall->isPrimitive(PRIM_RETURN));
