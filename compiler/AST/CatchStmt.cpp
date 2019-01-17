@@ -21,6 +21,7 @@
 
 #include "AstVisitor.h"
 #include "stringutil.h"
+#include "TryStmt.h"
 #include "wellknown.h"
 
 CatchStmt* CatchStmt::build(DefExpr* def, BlockStmt* body) {
@@ -214,9 +215,11 @@ void CatchStmt::cleanup()
     newBody->insertAtTail(oldBody);
 
   } else {
+    CallExpr*  errorExists    = new CallExpr(PRIM_NOTEQUAL, castedError, gNil);
+
     BlockStmt* ifBody = new BlockStmt();
     BlockStmt* elseBody = new BlockStmt();
-    CondStmt* cond = new CondStmt(new SymExpr(castedError), ifBody, elseBody);
+    CondStmt* cond = new CondStmt(errorExists, ifBody, elseBody);
     castedErrorDef->insertAfter(cond);
 
     VarSymbol* error = new VarSymbol(name);
@@ -225,6 +228,19 @@ void CatchStmt::cleanup()
     DefExpr* errorDef = new DefExpr(error, ownedCastedError);
     ifBody->insertAtTail(errorDef);
     ifBody->insertAtTail(oldBody);
+
+    // Find the parent try statement. If it's a try!, add a call
+    // to halt so that isDefinedAllPaths works correctly.
+
+    TryStmt* inTry = NULL;
+    for (Expr* cur = this->parentExpr; cur != NULL; cur = cur->parentExpr) {
+      if (TryStmt* t = toTryStmt(cur))
+        inTry = t;
+    }
+
+    INT_ASSERT(inTry);
+    if (inTry->tryBang())
+      elseBody->insertAtTail(new CallExpr(PRIM_RT_ERROR));
   }
 
   // If we in the future support `throw;` to throw the currently caught

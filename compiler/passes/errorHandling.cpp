@@ -296,6 +296,11 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
 
       BlockStmt* nextHandler = finalCond->elseStmt;
 
+      // Clear everything in the elseStmt
+      // (sometimes has PRIM_RT_ERROR to satisfy isDefinedAllPaths)
+      for_alist(stmt, nextHandler->body)
+        stmt->remove();
+
       // Remove the catch body and place it in the currHandler block
       currHandler->insertAtTail(catchBody->remove());
 
