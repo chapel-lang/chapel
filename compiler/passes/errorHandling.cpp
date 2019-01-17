@@ -271,57 +271,37 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
     SET_LINENO(c);
 
     CatchStmt* catchStmt = toCatchStmt(c);
+
     BlockStmt* catchBody = catchStmt->body();
-    DefExpr*   catchDef  = catchStmt->expr();
 
-    VarSymbol* toDelete = errorVar;
+    // PRIM_CURRENT_ERROR should be already replaced by info.errorVar
 
-    catchBody->remove();
-
-    // catchall
-    if (catchDef == NULL) {
+    // named or unnamed catchall
+    if (catchStmt->isCatchall()) {
       hasCatchAll = true;
-      currHandler->insertAtTail(catchBody);
+      currHandler->insertAtTail(catchBody->remove());
     } else {
-      VarSymbol* errSym  = toVarSymbol(catchDef->sym);
-      Type*      errType = errSym->type;
+      // Find the else body in the last CondStmt in the catch block body.
+      // This should always exist after CatchStmt::cleanup
+      // for non-catchall errors.
 
-      toDelete = errSym;
-      catchDef->remove();
-      currHandler->insertAtTail(catchDef);
-
-      // named catchall
-      if (errType == dtError) {
-        hasCatchAll = true;
-        currHandler->insertAtTail(new CallExpr(PRIM_MOVE, errSym, errorVar));
-        currHandler->insertAtTail(errorCond(errSym, catchBody));
-
-      // specified catch
-      } else {
-        CallExpr*  castError   = new CallExpr(PRIM_DYNAMIC_CAST,
-                                              new SymExpr(errType->symbol),
-                                              errorVar);
-        BlockStmt* nextHandler = new BlockStmt();
-
-        currHandler->insertAtTail(new CallExpr(PRIM_MOVE, errSym, castError));
-        currHandler->insertAtTail(errorCond(errSym, catchBody, nextHandler));
-
-        currHandler = nextHandler;
+      CondStmt* finalCond = NULL;
+      for_alist_backward(node, catchBody->body) {
+        if (CondStmt* cond = toCondStmt(node)) {
+          finalCond = cond;
+          break;
+        }
       }
+      INT_ASSERT(finalCond != NULL && finalCond->elseStmt != NULL);
+
+      BlockStmt* nextHandler = finalCond->elseStmt;
+
+      // Remove the catch body and place it in the currHandler block
+      currHandler->insertAtTail(catchBody->remove());
+
+      // Set currHandler to the else block
+      currHandler = nextHandler;
     }
-
-    BlockStmt* deferDeleteBody = new BlockStmt();
-    DeferStmt* deferDelete     = new DeferStmt(deferDeleteBody);
-
-    SymExpr*   castedError     = NULL;
-    AList      castError       = castToError(toDelete, castedError);
-    CallExpr*  deleteError     = new CallExpr(gChplDeleteError, castedError);
-    AList      deleteCond      = errorCond(toDelete,
-                                           new BlockStmt(deleteError));
-
-    deferDeleteBody->insertAtHead(castError);
-    deferDeleteBody->insertAtTail(deleteCond);
-    catchBody->insertAtHead(deferDelete);
   }
 
   if (!hasCatchAll) {
@@ -408,44 +388,6 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
     VarSymbol* fixedError = thrownError;
 
-    if (!catchesStack.empty()) {
-      Expr*      parent      = throwBlock;
-      CatchStmt* parentCatch = NULL;
-      while (parentCatch == NULL) {
-        parent      = parent->parentExpr;
-        parentCatch = toCatchStmt(parent);
-      }
-
-      if (DefExpr* catchFilter = parentCatch->expr()) {
-        VarSymbol* handledError = toVarSymbol(catchFilter->sym);
-
-        VarSymbol* throwingHandledVar = newTemp("throwingHandledError", dtBool);
-        throwBlock->insertAtTail(new DefExpr(throwingHandledVar));
-
-        CallExpr* throwingHandled = NULL;
-
-        if (handledError->type != dtError) {
-          // We need to cast these to the same base type before comparing using
-          // pointer comparison if the type is a subtype of error
-          VarSymbol* castVar = newTemp("handledErrorCast", dtError);
-          CallExpr* castExpr = new CallExpr(PRIM_MOVE, castVar,
-                                            new CallExpr(PRIM_CAST,
-                                                         dtError->symbol,
-                                                         handledError));
-          throwingHandled = new CallExpr(PRIM_EQUAL, thrownError, castVar);
-
-          throwBlock->insertAtTail(new DefExpr(castVar));
-          throwBlock->insertAtTail(castExpr);
-        } else {
-          throwingHandled = new CallExpr(PRIM_EQUAL, thrownError, handledError);
-        }
-
-        throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, throwingHandledVar, throwingHandled));
-        throwBlock->insertAtTail(new CondStmt(new SymExpr(throwingHandledVar),
-                                              new CallExpr(PRIM_MOVE, handledError, gNil)));
-      }
-    }
-
     if (insideTry) {
       throwBlock->insertAtTail(setOuterErrorAndGotoHandler(fixedError));
     } else if (outError != NULL) {
@@ -453,6 +395,12 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     } else {
       INT_FATAL(node, "cannot throw in a non-throwing function");
     }
+  } else if (node->isPrimitive(PRIM_CURRENT_ERROR)) {
+    INT_ASSERT(!catchesStack.empty());
+    TryInfo info = catchesStack.top();
+
+    SET_LINENO(node);
+    node->replace(new SymExpr(info.errorVar));
   }
   return true;
 }
@@ -663,19 +611,10 @@ static bool catchesNotExhaustive(TryStmt* tryStmt) {
 
   for_alist(c, tryStmt->_catches) {
     CatchStmt* catchStmt = toCatchStmt(c);
-    DefExpr*   catchDef  = catchStmt->expr();
 
     // catchall
-    if (catchDef == NULL) {
+    if (catchStmt->isCatchall()) {
       hasCatchAll = true;
-    } else {
-      VarSymbol* errSym  = toVarSymbol(catchDef->sym);
-      Type*      errType = errSym->type;
-
-      // named catchall
-      if (errType == dtError) {
-        hasCatchAll = true;
-      }
     }
   }
 
@@ -921,20 +860,9 @@ void ErrorCheckingVisitor::checkCatches(TryStmt* tryStmt) {
       USR_FATAL_CONT(c->prev, "catchall placed before the end of a catch list");
 
     CatchStmt* catchStmt = toCatchStmt(c);
-    DefExpr*   catchDef  = catchStmt->expr();
 
-    // catchall
-    if (catchDef == NULL) {
+    if (catchStmt->isCatchall())
       hasCatchAll = true;
-    } else {
-      VarSymbol* errSym  = toVarSymbol(catchDef->sym);
-      Type*      errType = errSym->type;
-
-      // named catchall
-      if (errType == dtError) {
-        hasCatchAll = true;
-      }
-    }
   }
 }
 

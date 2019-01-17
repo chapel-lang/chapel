@@ -660,6 +660,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST(_a, TryStmt, _catches, call, __VA_ARGS__);            \
     break;                                                              \
   case E_CatchStmt:                                                     \
+    AST_CALL_CHILD(_a, CatchStmt, _type, call, __VA_ARGS__);            \
     AST_CALL_CHILD(_a, CatchStmt, _body, call, __VA_ARGS__);            \
     break;                                                              \
   case E_ForallStmt:                                                          \

@@ -1006,7 +1006,6 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   pragma "down end count fn"
   proc _downEndCount(e: _EndCount, err: unmanaged Error) {
-    // save the task error
     chpl_save_task_error(e, err);
     // inform anybody waiting that we're done
     e.i.sub(1, memory_order_release);

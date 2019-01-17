@@ -326,6 +326,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_THROW:
   case PRIM_TRY_EXPR:
   case PRIM_TRYBANG_EXPR:
+  case PRIM_CURRENT_ERROR:
   case PRIM_CHECK_ERROR:
   case PRIM_TO_UNMANAGED_CLASS:
   case PRIM_TO_BORROWED_CLASS:

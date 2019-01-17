@@ -431,7 +431,7 @@
 %type <pblockstmt> throw_stmt
 %type <pblockstmt> catch_stmt_ls
 %type <pexpr>      catch_stmt
-%type <pexpr>      catch_expr
+%type <pdefexpr>   catch_expr
 
 %type <pflagset> var_decl_type
 

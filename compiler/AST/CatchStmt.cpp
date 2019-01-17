@@ -18,23 +18,35 @@
  */
 
 #include "CatchStmt.h"
+
 #include "AstVisitor.h"
+#include "stringutil.h"
+#include "wellknown.h"
+
+CatchStmt* CatchStmt::build(DefExpr* def, BlockStmt* body) {
+  const char* name = def->sym->name;
+  Expr* type = def->exprType;
+  return new CatchStmt(name, type, body);
+}
+
+CatchStmt* CatchStmt::build(const char* name, Expr* type, BlockStmt* body) {
+  return new CatchStmt(name, type, body);
+}
+
+CatchStmt* CatchStmt::build(const char* name, BlockStmt* body) {
+  return new CatchStmt(name, NULL, body);
+}
 
 CatchStmt* CatchStmt::build(BlockStmt* body) {
-  return new CatchStmt(NULL, body);
+  return new CatchStmt(NULL, NULL, body);
 }
 
-CatchStmt* CatchStmt::build(Expr* expr, BlockStmt* body) {
-  return new CatchStmt(expr, body);
-}
+CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body)
+  : Stmt(E_CatchStmt) {
 
-CatchStmt::CatchStmt(Expr* expr, BlockStmt* body) : Stmt(E_CatchStmt) {
-  _body = new BlockStmt();
-
-  if (expr != NULL)
-    _body->insertAtTail(expr);
-
-  _body->insertAtTail(body);
+  _name = name ? astr(name) : NULL;
+  _type = type;
+  _body = body;
 
   gCatchStmts.add(this);
 }
@@ -43,44 +55,70 @@ CatchStmt::~CatchStmt() {
 
 }
 
-// returns null if this is a catch-all
-DefExpr* CatchStmt::expr() const {
-  return toDefExpr(_body->body.first());
+const char* CatchStmt::name() const {
+  return _name;
+}
+Expr* CatchStmt::type() const {
+  return _type;
 }
 
 BlockStmt* CatchStmt::body() const {
-  return toBlockStmt(_body->body.last());
+  return _body;
+}
+
+bool CatchStmt::isCatchall() const {
+  if (_name == NULL)
+    return true;
+
+  if (_type == NULL)
+    return true;
+
+  if (SymExpr* typeSe = toSymExpr(type()))
+    if (typeSe->symbol()->type == dtError)
+      return true;
+
+  return false;
 }
 
 void CatchStmt::accept(AstVisitor* visitor) {
   if (visitor->enterCatchStmt(this)) {
-    if (DefExpr* e = expr())
-      e->accept(visitor);
-
-    if (BlockStmt* b = body())
-      b->accept(visitor);
-
+    for_alist(node, _body->body) {
+      node->accept(visitor);
+    }
     visitor->exitCatchStmt(this);
   }
 }
 
 CatchStmt* CatchStmt::copyInner(SymbolMap* map) {
-  return new CatchStmt(COPY_INT(expr()), COPY_INT(body()));
+  return new CatchStmt(_name, COPY_INT(_type), COPY_INT(_body));
 }
 
 void CatchStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (_body == old_ast) {
+  if (_type == old_ast) {
+    _type = new_ast;
+  } else if (_body == old_ast) {
     _body = toBlockStmt(new_ast);
   }
 }
 
 Expr* CatchStmt::getFirstExpr() {
+  if (_type) {
+    return _type;
+  }
   if (_body) {
     return _body->getFirstExpr();
   }
   return NULL;
 }
 
+Expr* CatchStmt::getNextExpr(Expr* expr) {
+  Expr* retVal = this;
+
+  if (expr == _type) {
+    retVal = _body->getFirstExpr();
+  }
+  return retVal;
+}
 void CatchStmt::verify() {
   Stmt::verify();
 
@@ -88,14 +126,103 @@ void CatchStmt::verify() {
     INT_FATAL(this, "CatchStmt::verify. Bad astTag");
   }
 
+  if (_type) {
+    if (_type->parentExpr != this ||
+        _type->parentSymbol != this->parentSymbol)
+      INT_FATAL(this, "CatchStmt::verify. _type has bad parent");
+  }
+
   if (!_body) {
     INT_FATAL(this, "CatchStmt::verify. _body is missing");
   }
-
-  if (!body()) {
-    INT_FATAL(this, "CatchStmt::verify. Invalid catch body");
-  }
 }
+
+void CatchStmt::cleanup()
+{
+  /*
+   Introduce the variable representing the catch variable and define it
+   in a way that will:
+     - allow resolving references to it in scopeResolve
+     - allow resolving the type of it in resolve
+
+   In particular, convert
+
+     catch e: SomeType
+     {
+       body(e)
+     }
+
+   into
+
+     catch e: SomeType
+     {
+       var castedError = dynamic cast current error -> SomeType
+
+       if castedError != nil {
+         var e: owned SomeType = new owned(castedError)
+         body(e)
+       }
+     }
+   */
+
+  // Check isCatchall before setting _name or _type
+  bool catchall = isCatchall();
+
+  // If the error isn't named, it can't be used within the
+  // catch block, and it must be a catchall, so no transformation
+  // is necessary at this point.
+  if (_name == NULL)
+    return;
+
+  Expr* typeExpr = NULL;
+  if (_type != NULL) {
+    typeExpr = _type->copy();
+  } else {
+    typeExpr = new SymExpr(dtError->symbol);
+  }
+  INT_ASSERT(typeExpr);
+
+  const char* name = _name;
+  if (name == NULL)
+    name = astr("chpl_anon_error");
+
+  VarSymbol* castedError = newTemp();
+
+  Expr* unmanagedType = new CallExpr(PRIM_TO_UNMANAGED_CLASS, typeExpr);
+  Expr* castedCurrentError = NULL;
+  if (catchall) {
+    castedCurrentError = new CallExpr(PRIM_CURRENT_ERROR);
+  } else {
+    castedCurrentError = new CallExpr(PRIM_DYNAMIC_CAST,
+                                      unmanagedType,
+                                      new CallExpr(PRIM_CURRENT_ERROR));
+  }
+
+  DefExpr* castedErrorDef = new DefExpr(castedError, castedCurrentError);
+
+  BlockStmt* newBody = new BlockStmt();
+  BlockStmt* oldBody = body();
+  INT_ASSERT(oldBody);
+  _body->replace(newBody);
+
+  newBody->insertAtHead(castedErrorDef);
+
+  BlockStmt* ifBody = new BlockStmt();
+  BlockStmt* elseBody = new BlockStmt();
+  CondStmt* cond = new CondStmt(new SymExpr(castedError), ifBody, elseBody);
+  castedErrorDef->insertAfter(cond);
+
+  VarSymbol* error = new VarSymbol(name);
+  Expr* ownedCastedError = new CallExpr(PRIM_NEW,
+                                        new CallExpr("_owned", castedError));
+  DefExpr* errorDef = new DefExpr(error, ownedCastedError);
+  ifBody->insertAtTail(errorDef);
+  ifBody->insertAtTail(oldBody);
+
+  // If we in the future support `throw;` to throw the currently caught
+  // error, we'd update such a throw here to throw 'error'.
+}
+
 
 GenRet CatchStmt::codegen() {
   INT_FATAL("CatchStmt should be removed before codegen");

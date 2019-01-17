@@ -28,6 +28,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "CatchStmt.h"
 #include "expr.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -111,6 +112,8 @@ static void cleanup(ModuleSymbol* module) {
         changeCastInWhere(fn);
         fixupVoidReturnFn(fn);
       }
+    } else if (CatchStmt* catchStmt = toCatchStmt(ast)) {
+      catchStmt->cleanup();
     }
   }
 }

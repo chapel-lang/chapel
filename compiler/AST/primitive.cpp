@@ -407,6 +407,15 @@ returnInfoEndCount(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoError(CallExpr* call) {
+  AggregateType* at = toAggregateType(dtError);
+  INT_ASSERT(isClass(at));
+  UnmanagedClassType* unmanaged = at->getUnmanagedClass();
+  INT_ASSERT(unmanaged);
+  return QualifiedType(unmanaged, QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoVirtualMethodCall(CallExpr* call) {
   SymExpr* se = toSymExpr(call->get(1));
   INT_ASSERT(se);
@@ -907,6 +916,8 @@ initPrimitive() {
 
   // used in error-handling conditional. args: error variable
   prim_def(PRIM_CHECK_ERROR, "check error", returnInfoVoid, false, false);
+  // used before error handling is lowered to represent the current error
+  prim_def(PRIM_CURRENT_ERROR, "current error", returnInfoError, false, false);
 
   prim_def(PRIM_TO_UNMANAGED_CLASS, "to unmanaged class", returnInfoToUnmanaged, false, false);
   prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
