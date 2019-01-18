@@ -96,11 +96,13 @@ static int illegalFirstUnsChar(char c) {
       return -1;                                                        \
     }                                                                   \
     if (negative) {                                                     \
-      newStr = chpl_malloc(strlen(str) + 2);                            \
+      newStr = chpl_mem_alloc(strlen(str) + 2,                          \
+                              CHPL_RT_MD_STR_CAST_TO_INT, 0, 0);        \
       newStr[0] = '-';                                                  \
       strcpy(&newStr[1], str);                                          \
     } else {                                                            \
-      newStr = chpl_malloc(strlen(str) + 1);                            \
+      newStr = chpl_mem_alloc(strlen(str) + 1,                          \
+                              CHPL_RT_MD_STR_CAST_TO_INT, 0, 0);        \
       strcpy(newStr, str);                                              \
     }                                                                   \
     if (uns)                                                            \
@@ -116,7 +118,7 @@ static int illegalFirstUnsChar(char c) {
       *invalid = 1;                                                     \
       *invalidCh = *str;                                                \
     }                                                                   \
-    chpl_free(newStr);                                                  \
+    chpl_mem_free(newStr, 0, 0);                                        \
     return val;                                                         \
   }
 
