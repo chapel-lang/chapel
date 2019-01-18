@@ -2154,6 +2154,9 @@ GenRet FnSymbol::codegenPYXType() {
         exportedArrayElementType[this] != NULL) {
       funcCall += "cdef chpl_external_array ret_arr = ";
       returnStmt += getPythonArrayReturnStmts();
+    } else if (retType == dtOpaqueArray) {
+      funcCall += "ret = ChplOpaqueArray()\n\t";
+      funcCall += "ret.setVal(";
     } else {
       funcCall += "ret = ";
     }
@@ -2204,6 +2207,8 @@ GenRet FnSymbol::codegenPYXType() {
 
   } // pyx files do not take void as an argument list, just close the parens
   header += "):\n";
+  if (retType == dtOpaqueArray)
+    funcCall += ")";
   funcCall += ")\n";
   ret.c = header + argTranslate + funcCall + returnStmt;
 
