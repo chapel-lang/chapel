@@ -1,0 +1,9 @@
+#! /usr/bin/env bash
+
+# Pluck the execOptsNum out of the execution command line.
+case $(echo $1 | sed "s/^.*=\([0-9]\)/\1/") in
+2) unset HUGETLB_NO_RESERVE;;
+3) unset CHPL_JE_MALLOC_CONF;;
+esac
+
+exec ./$(basename ${0})_real $*

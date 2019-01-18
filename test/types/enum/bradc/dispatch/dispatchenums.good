@@ -1,38 +1,142 @@
-In int int8or32orDefault
-In int int8or32orDefault
-
-In int(8) param int8vs32
-In int(32) param int8vs32
-In int(32) int8vs32
-In int(32) int8vs32
-In int(32) param int8vs32
-In int(8) param int8vs32
-
-In param int(8) int8paramVsNot
-In param int(8) int8paramVsNot
-In param int(8) int8paramVsNot
-
-In param int(16) int16paramVsNot
-In param int(16) int16paramVsNot
-In param int(16) int16paramVsNot
-In int(16) int16paramVsNot
-In int(16) int16paramVsNot
-In param int(16) int16paramVsNot
-In param int(16) int16paramVsNot
-
-In param int(8) int8vs16
-In param int(8) int8vs16
-In param int(16) int8vs16
-In int(16) int8vs16
-In int(16) int8vs16
-In param int(16) int8vs16
-In param int(8) int8vs16
-
-In param int int8vs16vsDefault
-In param int int8vs16vsDefault
-In param int int8vs16vsDefault
-In int int8vs16vsDefault
-In int int8vs16vsDefault
-In param int int8vs16vsDefault
-In param int int8vs16vsDefault
-
+dispatchenums.chpl:12: error: unresolved call 'int8or32orDefault(numeral, numeral)'
+dispatchenums.chpl:63: note: candidates are: int8or32orDefault(x: int(8), y: int(8))
+dispatchenums.chpl:67: note:                 int8or32orDefault(x: int(32), y: int(32))
+dispatchenums.chpl:71: note:                 int8or32orDefault(x: int, y: int)
+dispatchenums.chpl:16: error: unresolved call 'int8vs32(numeral)'
+dispatchenums.chpl:77: note: candidates are: int8vs32(x: int(8))
+dispatchenums.chpl:81: note:                 int8vs32(param x: int(8))
+dispatchenums.chpl:85: note:                 int8vs32(x: int(32))
+dispatchenums.chpl:89: note:                 int8vs32(param x: int(32))
+dispatchenums.chpl:17: error: unresolved call 'int8vs32(numeral)'
+dispatchenums.chpl:77: note: candidates are: int8vs32(x: int(8))
+dispatchenums.chpl:81: note:                 int8vs32(param x: int(8))
+dispatchenums.chpl:85: note:                 int8vs32(x: int(32))
+dispatchenums.chpl:89: note:                 int8vs32(param x: int(32))
+dispatchenums.chpl:18: error: unresolved call 'int8vs32(numeral)'
+dispatchenums.chpl:77: note: candidates are: int8vs32(x: int(8))
+dispatchenums.chpl:81: note:                 int8vs32(param x: int(8))
+dispatchenums.chpl:85: note:                 int8vs32(x: int(32))
+dispatchenums.chpl:89: note:                 int8vs32(param x: int(32))
+dispatchenums.chpl:19: error: unresolved call 'int8vs32(numeral)'
+dispatchenums.chpl:77: note: candidates are: int8vs32(x: int(8))
+dispatchenums.chpl:81: note:                 int8vs32(param x: int(8))
+dispatchenums.chpl:85: note:                 int8vs32(x: int(32))
+dispatchenums.chpl:89: note:                 int8vs32(param x: int(32))
+dispatchenums.chpl:20: error: unresolved call 'int8vs32(numeral)'
+dispatchenums.chpl:77: note: candidates are: int8vs32(x: int(8))
+dispatchenums.chpl:81: note:                 int8vs32(param x: int(8))
+dispatchenums.chpl:85: note:                 int8vs32(x: int(32))
+dispatchenums.chpl:89: note:                 int8vs32(param x: int(32))
+dispatchenums.chpl:21: error: unresolved call 'int8vs32(numeral)'
+dispatchenums.chpl:77: note: candidates are: int8vs32(x: int(8))
+dispatchenums.chpl:81: note:                 int8vs32(param x: int(8))
+dispatchenums.chpl:85: note:                 int8vs32(x: int(32))
+dispatchenums.chpl:89: note:                 int8vs32(param x: int(32))
+dispatchenums.chpl:25: error: unresolved call 'int8paramVsNot(numeral)'
+dispatchenums.chpl:96: note: candidates are: int8paramVsNot(x: int(8))
+dispatchenums.chpl:100: note:                 int8paramVsNot(param x: int(8))
+dispatchenums.chpl:26: error: unresolved call 'int8paramVsNot(numeral)'
+dispatchenums.chpl:96: note: candidates are: int8paramVsNot(x: int(8))
+dispatchenums.chpl:100: note:                 int8paramVsNot(param x: int(8))
+dispatchenums.chpl:27: error: unresolved call 'int8paramVsNot(numeral)'
+dispatchenums.chpl:96: note: candidates are: int8paramVsNot(x: int(8))
+dispatchenums.chpl:100: note:                 int8paramVsNot(param x: int(8))
+dispatchenums.chpl:28: error: unresolved call 'int8paramVsNot(numeral)'
+dispatchenums.chpl:96: note: candidates are: int8paramVsNot(x: int(8))
+dispatchenums.chpl:100: note:                 int8paramVsNot(param x: int(8))
+dispatchenums.chpl:29: error: unresolved call 'int8paramVsNot(numeral)'
+dispatchenums.chpl:96: note: candidates are: int8paramVsNot(x: int(8))
+dispatchenums.chpl:100: note:                 int8paramVsNot(param x: int(8))
+dispatchenums.chpl:30: error: unresolved call 'int8paramVsNot(numeral)'
+dispatchenums.chpl:96: note: candidates are: int8paramVsNot(x: int(8))
+dispatchenums.chpl:100: note:                 int8paramVsNot(param x: int(8))
+dispatchenums.chpl:34: error: unresolved call 'int16paramVsNot(numeral)'
+dispatchenums.chpl:107: note: candidates are: int16paramVsNot(x: int(16))
+dispatchenums.chpl:111: note:                 int16paramVsNot(param x: int(16))
+dispatchenums.chpl:35: error: unresolved call 'int16paramVsNot(numeral)'
+dispatchenums.chpl:107: note: candidates are: int16paramVsNot(x: int(16))
+dispatchenums.chpl:111: note:                 int16paramVsNot(param x: int(16))
+dispatchenums.chpl:36: error: unresolved call 'int16paramVsNot(numeral)'
+dispatchenums.chpl:107: note: candidates are: int16paramVsNot(x: int(16))
+dispatchenums.chpl:111: note:                 int16paramVsNot(param x: int(16))
+dispatchenums.chpl:37: error: unresolved call 'int16paramVsNot(numeral)'
+dispatchenums.chpl:107: note: candidates are: int16paramVsNot(x: int(16))
+dispatchenums.chpl:111: note:                 int16paramVsNot(param x: int(16))
+dispatchenums.chpl:38: error: unresolved call 'int16paramVsNot(numeral)'
+dispatchenums.chpl:107: note: candidates are: int16paramVsNot(x: int(16))
+dispatchenums.chpl:111: note:                 int16paramVsNot(param x: int(16))
+dispatchenums.chpl:39: error: unresolved call 'int16paramVsNot(numeral)'
+dispatchenums.chpl:107: note: candidates are: int16paramVsNot(x: int(16))
+dispatchenums.chpl:111: note:                 int16paramVsNot(param x: int(16))
+dispatchenums.chpl:43: error: unresolved call 'int8vs16(numeral)'
+dispatchenums.chpl:118: note: candidates are: int8vs16(x: int(8))
+dispatchenums.chpl:122: note:                 int8vs16(param x: int(8))
+dispatchenums.chpl:126: note:                 int8vs16(x: int(16))
+dispatchenums.chpl:130: note:                 int8vs16(param x: int(16))
+dispatchenums.chpl:44: error: unresolved call 'int8vs16(numeral)'
+dispatchenums.chpl:118: note: candidates are: int8vs16(x: int(8))
+dispatchenums.chpl:122: note:                 int8vs16(param x: int(8))
+dispatchenums.chpl:126: note:                 int8vs16(x: int(16))
+dispatchenums.chpl:130: note:                 int8vs16(param x: int(16))
+dispatchenums.chpl:45: error: unresolved call 'int8vs16(numeral)'
+dispatchenums.chpl:118: note: candidates are: int8vs16(x: int(8))
+dispatchenums.chpl:122: note:                 int8vs16(param x: int(8))
+dispatchenums.chpl:126: note:                 int8vs16(x: int(16))
+dispatchenums.chpl:130: note:                 int8vs16(param x: int(16))
+dispatchenums.chpl:46: error: unresolved call 'int8vs16(numeral)'
+dispatchenums.chpl:118: note: candidates are: int8vs16(x: int(8))
+dispatchenums.chpl:122: note:                 int8vs16(param x: int(8))
+dispatchenums.chpl:126: note:                 int8vs16(x: int(16))
+dispatchenums.chpl:130: note:                 int8vs16(param x: int(16))
+dispatchenums.chpl:47: error: unresolved call 'int8vs16(numeral)'
+dispatchenums.chpl:118: note: candidates are: int8vs16(x: int(8))
+dispatchenums.chpl:122: note:                 int8vs16(param x: int(8))
+dispatchenums.chpl:126: note:                 int8vs16(x: int(16))
+dispatchenums.chpl:130: note:                 int8vs16(param x: int(16))
+dispatchenums.chpl:48: error: unresolved call 'int8vs16(numeral)'
+dispatchenums.chpl:118: note: candidates are: int8vs16(x: int(8))
+dispatchenums.chpl:122: note:                 int8vs16(param x: int(8))
+dispatchenums.chpl:126: note:                 int8vs16(x: int(16))
+dispatchenums.chpl:130: note:                 int8vs16(param x: int(16))
+dispatchenums.chpl:52: error: unresolved call 'int8vs16vsDefault(numeral)'
+dispatchenums.chpl:138: note: candidates are: int8vs16vsDefault(x: int(8))
+dispatchenums.chpl:142: note:                 int8vs16vsDefault(param x: int(8))
+dispatchenums.chpl:146: note:                 int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:150: note:                 int8vs16vsDefault(param x: int(16))
+dispatchenums.chpl:154: note:                 int8vs16vsDefault(x: int)
+dispatchenums.chpl:158: note:                 int8vs16vsDefault(param x: int)
+dispatchenums.chpl:53: error: unresolved call 'int8vs16vsDefault(numeral)'
+dispatchenums.chpl:138: note: candidates are: int8vs16vsDefault(x: int(8))
+dispatchenums.chpl:142: note:                 int8vs16vsDefault(param x: int(8))
+dispatchenums.chpl:146: note:                 int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:150: note:                 int8vs16vsDefault(param x: int(16))
+dispatchenums.chpl:154: note:                 int8vs16vsDefault(x: int)
+dispatchenums.chpl:158: note:                 int8vs16vsDefault(param x: int)
+dispatchenums.chpl:54: error: unresolved call 'int8vs16vsDefault(numeral)'
+dispatchenums.chpl:138: note: candidates are: int8vs16vsDefault(x: int(8))
+dispatchenums.chpl:142: note:                 int8vs16vsDefault(param x: int(8))
+dispatchenums.chpl:146: note:                 int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:150: note:                 int8vs16vsDefault(param x: int(16))
+dispatchenums.chpl:154: note:                 int8vs16vsDefault(x: int)
+dispatchenums.chpl:158: note:                 int8vs16vsDefault(param x: int)
+dispatchenums.chpl:55: error: unresolved call 'int8vs16vsDefault(numeral)'
+dispatchenums.chpl:138: note: candidates are: int8vs16vsDefault(x: int(8))
+dispatchenums.chpl:142: note:                 int8vs16vsDefault(param x: int(8))
+dispatchenums.chpl:146: note:                 int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:150: note:                 int8vs16vsDefault(param x: int(16))
+dispatchenums.chpl:154: note:                 int8vs16vsDefault(x: int)
+dispatchenums.chpl:158: note:                 int8vs16vsDefault(param x: int)
+dispatchenums.chpl:56: error: unresolved call 'int8vs16vsDefault(numeral)'
+dispatchenums.chpl:138: note: candidates are: int8vs16vsDefault(x: int(8))
+dispatchenums.chpl:142: note:                 int8vs16vsDefault(param x: int(8))
+dispatchenums.chpl:146: note:                 int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:150: note:                 int8vs16vsDefault(param x: int(16))
+dispatchenums.chpl:154: note:                 int8vs16vsDefault(x: int)
+dispatchenums.chpl:158: note:                 int8vs16vsDefault(param x: int)
+dispatchenums.chpl:57: error: unresolved call 'int8vs16vsDefault(numeral)'
+dispatchenums.chpl:138: note: candidates are: int8vs16vsDefault(x: int(8))
+dispatchenums.chpl:142: note:                 int8vs16vsDefault(param x: int(8))
+dispatchenums.chpl:146: note:                 int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:150: note:                 int8vs16vsDefault(param x: int(16))
+dispatchenums.chpl:154: note:                 int8vs16vsDefault(x: int)
+dispatchenums.chpl:158: note:                 int8vs16vsDefault(param x: int)

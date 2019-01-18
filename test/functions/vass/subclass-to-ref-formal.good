@@ -1,0 +1,1 @@
+subclass-to-ref-formal.chpl:14: error: value from coercion passed to ref formal 'lhs'

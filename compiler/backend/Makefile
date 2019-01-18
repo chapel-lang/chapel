@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,7 @@ endif
 
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = backend
-COMP_CFLAGS += -I$(COMPILER_ROOT)/ifa
+COMP_CXXFLAGS += -I$(COMPILER_ROOT)/ifa
 
 #
 # standard header

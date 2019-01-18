@@ -35,7 +35,7 @@ proc main {
     return f;
   }
 
-  var solution = new GridSolution(grid);
+  var solution = new unmanaged GridSolution(grid);
   solution.setToFunction(initial_condition, output_times(0));
 
   var dt_max = 0.05;
@@ -44,7 +44,7 @@ proc main {
 
 
   //==== Initialize boundary conditions ====
-  var bc = new ZeroFluxDiffusionBC(grid = grid);
+  var bc = new unmanaged ZeroFluxDiffusionBC(grid = grid);
 /*   var bc = new PeriodicGridBC(grid = grid); */
 
 
@@ -66,5 +66,7 @@ proc main {
   }
   //<=== Generate output <===
   
-
+  delete bc;
+  delete solution;
+  delete grid;
 } // end main

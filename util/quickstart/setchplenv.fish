@@ -29,13 +29,11 @@ echo -n "Setting CHPL_HOME "
 set -x CHPL_HOME $chpl_home
 echo "to $CHPL_HOME"
 
-echo -n "Setting CHPL_HOST_PLATFORM "
-set -x CHPL_HOST_PLATFORM (eval "$CHPL_HOME/util/chplenv/chpl_platform.py")
-echo "to $CHPL_HOST_PLATFORM"
+set -x CHPL_BIN_SUBDIR (eval "$CHPL_HOME/util/chplenv/chpl_bin_subdir.py")
 
 echo -n "Updating PATH "
-set -x PATH $CHPL_HOME/bin/$CHPL_HOST_PLATFORM $CHPL_HOME/util $MYPATH
-echo "to include $CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
+set -x PATH $CHPL_HOME/bin/$CHPL_BIN_SUBDIR $CHPL_HOME/util $MYPATH
+echo "to include $CHPL_HOME/bin/$CHPL_BIN_SUBDIR"
 echo "                     and $CHPL_HOME/util"
 
 echo -n "Updating MANPATH "

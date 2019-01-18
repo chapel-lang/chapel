@@ -5,3 +5,4 @@ void voidArrayFunction( int* a, int elems ){
     a[i] = i;
   }
 }
+

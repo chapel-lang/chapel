@@ -25,12 +25,7 @@ x is stored on locale 0, while y lives on 1
 
 Using a data-driven on-clause, I'm now executing on locale 0
 
-node with data = 0.0 on locale 0
-node with data = 1.0 on locale 1
-node with data = 2.0 on locale 2
-node with data = 3.0 on locale 3
-
-node with data = 0.0 on locale 0
-node with data = 1.0 on locale 1
-node with data = 2.0 on locale 2
-node with data = 3.0 on locale 3
+at start of 'on', myData is on locale 0
+at end of 'on', myData is on locale 1
+after 'on', myData is on locale 1
+Using 'on myData', I'm now executing on locale 1

@@ -8,7 +8,8 @@ record RRR {
   var varfield2: 3*int;
   const cstfield1: (int,real);
   const cstfield2: 3*int;
-  proc RRR() {
+  proc init() {
+    this.complete();
     varfield1(1) = 1111;
     varfield2(2) = 1111;
     varfield2(g) = 1111;

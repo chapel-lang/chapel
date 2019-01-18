@@ -1,8 +1,0 @@
-This directory contains files to make it easy to submit jobs on jaguar
-using pbs/qsub.
-
-To modify the program that is executed, modify run.pbs where $1 is the
-number of locales.
-
-To submit a job, use qsub sub#.pbs for each sub*.pbs script in order
-to take a timing on that many locales.

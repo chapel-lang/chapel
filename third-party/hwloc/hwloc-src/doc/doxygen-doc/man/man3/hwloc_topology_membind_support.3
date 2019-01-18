@@ -1,8 +1,8 @@
-.TH "hwloc_topology_membind_support" 3 "Thu Dec 17 2015" "Version 1.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_topology_membind_support" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwloc_topology_membind_support \- 
+hwloc_topology_membind_support
 .SH SYNOPSIS
 .br
 .PP
@@ -56,10 +56,15 @@ hwloc_topology_membind_support \-
 .ti -1c
 .RI "unsigned char \fBmigrate_membind\fP"
 .br
+.ti -1c
+.RI "unsigned char \fBget_area_memlocation\fP"
+.br
 .in -1c
 .SH "Detailed Description"
 .PP 
 Flags describing actual memory binding support for this topology\&. 
+
+A flag may be set even if the feature isn't supported in all cases (e\&.g\&. binding to random sets of non-contiguous objects)\&. 
 .SH "Field Documentation"
 .PP 
 .SS "unsigned char hwloc_topology_membind_support::alloc_membind"
@@ -70,6 +75,8 @@ Bind policy is supported\&.
 First-touch policy is supported\&. 
 .SS "unsigned char hwloc_topology_membind_support::get_area_membind"
 Getting the binding of a given memory area is supported\&. 
+.SS "unsigned char hwloc_topology_membind_support::get_area_memlocation"
+Getting the last NUMA nodes where a memory area was allocated is supported 
 .SS "unsigned char hwloc_topology_membind_support::get_proc_membind"
 Getting the binding of a whole given process is supported\&. 
 .SS "unsigned char hwloc_topology_membind_support::get_thisproc_membind"

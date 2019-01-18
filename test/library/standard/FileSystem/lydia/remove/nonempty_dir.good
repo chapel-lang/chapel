@@ -1,0 +1,4 @@
+uncaught SystemError: Directory not empty (in remove with path "nonempty")
+  nonempty_dir.chpl:4: thrown here
+  nonempty_dir.chpl:4: uncaught here
+cat: nonempty: Is a directory

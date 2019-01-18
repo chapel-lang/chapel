@@ -1,2 +1,1 @@
-methodAssignment.chpl:14: warning: The left operand of '=' and '<op>=' should have 'ref' intent.
 methodAssignment.chpl:14: error: invalid method name

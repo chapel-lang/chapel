@@ -1,1 +1,1 @@
-proc ~bar (x,y) {writeln("inside ~bar");}
+proc deinit (x,y) {writeln("inside deinit(x,y)");}

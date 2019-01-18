@@ -1,0 +1,177 @@
+.TH qthread_spawn 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qthread_spawn
+\- spawn a qthread (task)
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_spawn
+.RI "(qthread_f             " f ,
+.br
+.ti +15
+.RI "const void           *" arg ,
+.br
+.ti +15
+.RI "size_t                " arg_size ,
+.br
+.ti +15
+.RI "void                 *" ret ,
+.br
+.ti +15
+.RI "size_t                " npreconds ,
+.br
+.ti +15
+.RI "void                 *" preconds ,
+.br
+.ti +15
+.RI "qthread_shepherd_id_t " target_shep ,
+.br
+.ti +15
+.RI "unsigned int          " feature_flags );
+
+.SH DESCRIPTION
+This is the master function for generating and scheduling new tasks. All other
+functions that spawn tasks, particularly those beginning with the string
+"qthread_fork", are fundamentally convenience wrapper functions around this
+function.
+.PP
+The first argument,
+.IR f ,
+is a function that will be run to completion as the created task. The qthread_f
+function must have a prototype like this:
+.RS
+.PP
+aligned_t function(void *arg);
+.RE
+.PP
+The second
+argument,
+.IR arg ,
+is an argument for the function. The treatment of this pointer depends on the value of the third argument,
+.IR arg_size .
+If
+.I arg_size
+is zero, the pointer will be passed to the function
+.I f
+unchanged. However, if
+.I arg_size is non-zero, then
+.I arg_size
+bytes will be copied from
+.I arg
+and stored in task-specific memory. This memory is usually pre-allocated (unless
+.I arg_size
+is very large), so the performance is limited primarily by the speed of
+.BR memcpy ().
+When
+.I f
+is called, a pointer to the copy will be passed as the argument to
+.I f
+instead of the original value of
+.IR arg .
+.PP
+The fourth argument,
+.IR ret ,
+is a pointer indicating where to store the return value of
+.IR f .
+This location may be an aligned_t, a syncvar_t, or a qt_sinc_t, and the type is indicated with flags passed in the
+.I feature_flags
+argument. The location may also be NULL. If the type is an aligned_t, the return value location is emptied by
+.BR qthread_spawn ()
+and is stored by calling
+.BR qthread_writeF ()
+when the task returns. If the type is a syncvar_t, the return value location is emptied by
+.BR qthread_spawn ()
+and is stored by calling
+.BR qthread_syncvar_writeF ()
+when the task returns. If the type is a qt_sinc_t, when the task returns, the function
+.BR qt_sinc_submit ()
+is called on the sinc. If so configured (by passing the flag
+.B QTHREAD_SPAWN_RET_SINC_VOID
+to the
+.I feature_flag
+argument), return value is submitted to the sinc.
+.PP
+The fifth and sixth arguments,
+.IR npreconds " and " preconds ,
+are for creating "preconditioned" tasks, also sometimes referred to as "data-dependent" tasks or "triggered" tasks. The
+.I preconds
+argument is expected to be an array of
+.I npreconds
+pointers either to aligned_t's or syncvar_t's (depending on the flags passed to the
+.I feature_flag
+argument). The task will be scheduled only when all of the preconditions have
+been in the relevant "full" state at least once. The preconditions are queried
+in an undefined order, so preconditions that can return to the empty state
+before the task is spawned create undefined behavior.
+.PP
+The seventh argument,
+.IR target_shep ,
+specifies a destination shepherd for the task. The task will only ever execute
+on the specified shepherd unless that shepherd is disabled. If the task should be able to execute anywhere, use the pre-defined constant NO_SHEPHERD to specify the lack of preference.
+.PP
+The eighth argument,
+.IR feature_flag ,
+is a way of passing additional flags to control task behavior. The available
+flags are as follows:
+.TP 4
+.TP
+QTHREAD_SPAWN_SIMPLE
+This flag specifies that the task spawned will not block. Violations of this promise will cause the program to abort. In exchange for making this promise, the runtime can avoid a great deal of context-swap overhead and can provide the task with much more stack space for "free" (it uses the worker thread's stack).
+.TP
+QTHREAD_SPAWN_NEW_TEAM
+Tasks are, by default, spawned into their parent's team. This flag specifies that the spawned task will be the founding member of a new task team and not a member of the calling task's team. Task teams are collections of tasks. Any task that performs a readFF() operation on the return value location of a task that is the founding member of a task team will not be unblocked until all of the tasks in that team also return.
+.TP
+QTHREAD_SPAWN_NEW_SUBTEAM
+This flag specifies that the spawned task will be the founding member of a new task team that is dependent upon the calling task's team, but not a member of the calling task's team.
+.TP
+QTHREAD_SPAWN_RET_SYNCVAR_T
+This flag specifies that the return value location,
+.IR ret ,
+points to a syncvar_t. This flag conflicts with other QTHREAD_SPAWN_RET_* flags. If no QTHREAD_SPAWN_RET_* flags are specified, the return value location is assumed to point to an aligned_t.
+.TP
+QTHREAD_SPAWN_RET_SINC
+This flag specifies that the return value location,
+.IR ret ,
+points to a qt_sinc_t, and that the return value itself should be submitted to the sinc. This flag conflicts with other QTHREAD_SPAWN_RET_* flags. If no QTHREAD_SPAWN_RET_* flags are specified, the return value location is assumed to point to an aligned_t.
+.TP
+QTHREAD_SPAWN_RET_SINC_VOID
+This flag specifies that the return value location,
+.IR ret ,
+points to a qt_sinc_t, and that the return value itself should be ignored. This flag conflicts with other QTHREAD_SPAWN_RET_* flags. If no QTHREAD_SPAWN_RET_* flags are specified, the return value location is assumed to point to an aligned_t.
+.TP
+QTHREAD_SPAWN_PC_SYNCVAR_T
+This flag specifies that the precondition array,
+.IR preconds ,
+is an array of pointers to syncvar_t's, rather than aligned_t's.
+
+.SH SPAWN CACHE
+Tasks are normally spawned into a thread-local cache of tasks. The contents of
+this cache are not visible to other tasks until the next scheduling event, at
+which point the cache is flushed into the local shepherd's globally visible
+scheduling queue. Scheduling events are times when the scheduling queue must be
+checked, namely, when the current task either blocks or yields. This cache can
+be disabled at configure time, in which case, tasks are pushed into the
+globally visible scheduling queue as they are spawned.
+
+.SH ENVIRONMENT
+The operation of these functions is modified by the following environment
+variables:
+.TP 4
+.B QTHREAD_STACK_SIZE
+This variable specifies, in bytes, the size of the stacks that will be created for each
+thread. Changes to this value during the course of the program run are ignored;
+the value is only evaluated when
+.BR qthread_initialize ()
+is run.
+.SH RETURN VALUE
+On success, the thread is spawned and 0 is returned. On error, a non-zero
+error code is returned.
+.SH ERRORS
+.TP 12
+.B ENOMEM
+Not enough memory was available to spawn a task.
+.SH SEE ALSO
+.BR qthread_fork (3),
+.BR qthread_migrate_to (3)

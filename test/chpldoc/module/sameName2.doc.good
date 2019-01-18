@@ -1,4 +1,18 @@
+.. default-domain:: chpl
+
+.. module:: sameName2
+   :synopsis: This module with the same name actually contains all 
+
 sameName2
-   This module with the same name actually contains all 
-   the code in the file 
-   proc inner()
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use sameName2;
+
+This module with the same name actually contains all 
+the code in the file 
+
+.. function:: proc inner()
+

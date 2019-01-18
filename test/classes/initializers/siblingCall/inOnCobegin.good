@@ -1,0 +1,2 @@
+inOnCobegin.chpl:4: In initializer:
+inOnCobegin.chpl:7: error: use of this.init() call in a parallel statement

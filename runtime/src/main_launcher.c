@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -53,7 +53,16 @@ static void chpl_launch_sanity_checks(const char* argv0) {
   // chpl_compute_real_binary_name() )
   if (stat(chpl_get_real_binary_name(), &statBuf) != 0) {
     char errorMsg[256];
-    sprintf(errorMsg, "unable to locate file: %s", chpl_get_real_binary_name());
+    int wanted_to_write = snprintf(errorMsg, sizeof(errorMsg),
+                                   "unable to locate file: %s",
+                                   chpl_get_real_binary_name());
+    if (wanted_to_write < 0) {
+      const char fallbackMsg[] =
+        "character encoding error in name of executable to be launched";
+      strcpy(errorMsg, fallbackMsg);
+    } else if ((size_t)wanted_to_write >= sizeof(errorMsg)) {
+      strcpy(&errorMsg[sizeof(errorMsg) - 4], "...");
+    }
     chpl_error(errorMsg, 0, 0);
   }
 }
@@ -183,6 +192,40 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     //  That is a bad program, and I'm not going to deal with it here.
   }
   return numRead;
+}
+
+//
+// This is an even simpler run-a-command utility.  The command is just
+// a string to be run, by something like `/bin/sh -c "commandStr"`.  It
+// must not expect any input.  Its output to stdout is placed in outbuf,
+// truncated to fit if necessary.  Its output to stderr is discarded.
+// On success, the return value is the number of bytes in outbuf.  On
+// failure, it is -1; output may have been placed in outbuf in this
+// case, but if so it should be ignored.
+//
+int
+chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen) {
+  const char* commandStr_more = "2>/dev/null";
+  char my_cmd[strlen(commandStr) + 1 + strlen(commandStr_more) + 1];
+  FILE* f;
+  int retVal;
+
+  (void) snprintf(my_cmd, sizeof(my_cmd),
+                  "%s %s", commandStr, commandStr_more);
+
+  retVal = -1;
+  if ((f = popen(my_cmd, "r")) != NULL) {
+    if (fgets(outbuf, outbuflen, f) != NULL) {
+      // success; strip any final trailing newline
+      retVal = strlen(outbuf);
+      if (retVal > 0 && outbuf[retVal - 1] == '\n')
+        outbuf[--retVal] = '\0';
+    }
+
+    (void) pclose(f);
+  }
+
+  return retVal;
 }
 
 //
@@ -328,6 +371,62 @@ char* chpl_get_enviro_keys(char sep)
   }
 
   return ret;
+}
+
+static const int charset_env_nargs = 4;
+
+int chpl_get_charset_env_nargs()
+{
+  return charset_env_nargs;
+}
+
+//
+// Populate the argv array and return the number of arguments added.
+// Return the number of arguments populated.
+//
+int chpl_get_charset_env_args(char *argv[])
+{
+  // If any of the relevant character set environment variables
+  // are set, replicate the state of all of them.  This needs to
+  // be done separately from the -E mechanism because Perl
+  // launchers modify the character set environment, losing our
+  // settings.
+  //
+  // Note that if we are setting these variables, and one or more
+  // of them is empty, we must set it with explicitly empty
+  // contents (e.g. LC_ALL= instead of -u LC_ALL) so that the
+  // Chapel launch mechanism will not overwrite it.
+  char *lang = getenv("LANG");
+  char *lc_all = getenv("LC_ALL");
+  char *lc_collate = getenv("LC_COLLATE");
+  if (!lang && !lc_all && !lc_collate)
+    return 0;
+
+  argv[0] = (char *)"env";
+  if (lang == NULL)
+    lang = (char *)"";
+  char *lang_buf = chpl_mem_allocMany(sizeof("LANG=") + strlen(lang),
+                        sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  strcpy(lang_buf, "LANG=");
+  strcat(lang_buf, lang);
+  argv[1] = lang_buf;
+  if (lc_all == NULL)
+    lc_all = (char *)"";
+  char *lc_all_buf = chpl_mem_allocMany(sizeof("LC_ALL=") + strlen(lc_all),
+                        sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  strcpy(lc_all_buf, "LC_ALL=");
+  strcat(lc_all_buf, lc_all);
+  argv[2] = lc_all_buf;
+  if (lc_collate == NULL)
+    lc_collate = (char *)"";
+  char *lc_collate_buf = chpl_mem_allocMany(
+                        sizeof("LC_COLLATE=") + strlen(lc_collate),
+                        sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  strcpy(lc_collate_buf, "LC_COLLATE=");
+  strcat(lc_collate_buf, lc_collate);
+  argv[3] = lc_collate_buf;
+
+  return charset_env_nargs;
 }
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 

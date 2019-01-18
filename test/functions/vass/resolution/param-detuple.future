@@ -1,5 +1,0 @@
-feature request: detuple of a param tuple to be a sequence of param values
-
-Right now it's a sequence of non-param values.
-This, e.g., does not let me pass param varargs through to other
-param varargs functions.

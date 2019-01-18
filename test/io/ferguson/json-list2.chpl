@@ -1,5 +1,9 @@
 record MyRecord {
   var numbers:list(int); // could it be [1..0] int ?
+
+  proc deinit() {
+    numbers.destroy();
+  }
 }
 
 var myEntry:MyRecord;

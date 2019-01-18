@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,8 +19,14 @@
 
 #include "addAutoDestroyCalls.h"
 
+
+
 #include "astutil.h"
+#include "AutoDestroyScope.h"
+#include "DeferStmt.h"
+#include "errorHandling.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -28,101 +34,21 @@
 
 #include <vector>
 
-/************************************* | **************************************
-*                                                                             *
-* Track the state of lexical scopes during the execution of a function.       *
-*                                                                             *
-*   1) We only track variables that have an autoDestroy flag                  *
-*                                                                             *
-*   2) The compiler introduces "formal temps" to manage formals with out and  *
-*      in-out concrete intents.  If a function has multiple returns then any  *
-*      formal temps must be handled differently from other locals.            *
-*                                                                             *
-************************************** | *************************************/
-
-class Scope
-{
-public:
-                           Scope(const Scope*     parent,
-                                 const BlockStmt* block);
-
-  void                     variableAdd(VarSymbol* var);
-
-  bool                     startingToHandleFormalTemps(const Expr* stmt) const;
-
-  void                     insertAutoDestroys(FnSymbol* fn,
-                                              Expr*     refStmt);
-
-private:
-  void                     variablesDestroy(Expr*      refStmt,
-                                            VarSymbol* excludeVar)       const;
-
-  const Scope*             mParent;
-  const BlockStmt*         mBlock;
-
-  bool                     mLocalsHandled;       // Manage function epilogue
-
-  std::vector<VarSymbol*>  mFormalTemps;         // Temps for out/inout formals
-  std::vector<VarSymbol*>  mLocals;
-};
-
-static void walkBlock(FnSymbol* fn, Scope* parent, BlockStmt* block);
-static bool isAutoDestroyedVariable(Symbol* sym);
-
-/************************************* | **************************************
-*                                                                             *
-* Entry point                                                                 *
-*                                                                             *
-************************************** | *************************************/
-
-static void cullForDefaultConstructor(FnSymbol* fn);
+static void walkBlock(FnSymbol*         fn,
+                      AutoDestroyScope* parent,
+                      BlockStmt*        block,
+                      std::set<VarSymbol*>& ignoredVariables,
+                      ForallStmt*       pfs = NULL);
 
 void addAutoDestroyCalls() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
-      cullForDefaultConstructor(fn);
-    }
-
-    walkBlock(fn, NULL, fn->body);
+    std::set<VarSymbol*> empty;
+    walkBlock(fn, NULL, fn->body, empty);
   }
-}
 
-//
-// Retain current approach for pruning auto-destroy flags in constructors.
-// We do not destroy variables that are written in to the fields of the
-// object being initialized.
-//
-
-static void cullForDefaultConstructor(FnSymbol* fn) {
-  if (isVarSymbol(fn->getReturnSymbol()) == true) {
-    Map<Symbol*, Vec<SymExpr*>*> defMap;
-    Map<Symbol*, Vec<SymExpr*>*> useMap;
-    std::vector<DefExpr*>        defs;
-
-    buildDefUseMaps(fn, defMap, useMap);
-
-    collectDefExprs(fn, defs);
-
-    for_vector(DefExpr, def, defs) {
-      if (VarSymbol* var = toVarSymbol(def->sym)) {
-        if (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true) {
-          // Look for a use in a PRIM_SET_MEMBER where the field is a record
-          // type, and remove the flag. (We don't actually check that var is
-          // of record type, because chpl__autoDestroy() is a NO-OP when
-          // applied to all other types.
-          for_uses(se, useMap, var) {
-            CallExpr* call = toCallExpr(se->parentExpr);
-
-            if (call->isPrimitive(PRIM_SET_MEMBER) == true &&
-                toSymExpr(call->get(3))->var       == var) {
-              var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-            }
-          }
-        }
-      }
-    }
-
-    freeDefUseMaps(defMap, useMap);
+  // Finally, remove all defer statements, since they have been lowered.
+  forv_Vec(DeferStmt, defer, gDeferStmts) {
+    defer->remove();
   }
 }
 
@@ -170,57 +96,162 @@ static VarSymbol*   definesAnAutoDestroyedVariable(const Expr* stmt);
 static LabelSymbol* findReturnLabel(FnSymbol* fn);
 static bool         isReturnLabel(const Expr*        stmt,
                                   const LabelSymbol* returnLabel);
+static bool         isErrorLabel(const Expr*        stmt);
+static bool         isYieldStmt(const Expr* stmt);
+static void         walkForallBlocks(FnSymbol* fn,
+                                     AutoDestroyScope* parentScope,
+                                     ForallStmt* forall,
+                                     std::set<VarSymbol*>& parentIgnored);
 
-static void walkBlock(FnSymbol* fn, Scope* parent, BlockStmt* block) {
-  Scope        scope(parent, block);
+static void gatherIgnoredVariablesForErrorHandling(
+    CondStmt* cond,
+    std::set<VarSymbol*>& ignoredVariables);
+static void gatherIgnoredVariablesForYield(
+    Expr* stmt,
+    std::set<VarSymbol*>& ignoredVariables);
 
-  LabelSymbol* retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
-  bool         isDeadCode = false;
+//
+// A ForallStmt index variable does not have a DefExprs in the loop body.
+// Yet, it needs to be autoDestroyed at the end of the block.
+// For that to happen, we add it to 'scope'.
+//
+static void addForallIndexVarToScope(AutoDestroyScope* scope,
+                                     ForallStmt* forall)
+{
+  VarSymbol* idx = parIdxVar(forall);
+  if (isAutoDestroyedVariable(idx)) {
+    INT_ASSERT(!idx->isRef()); // no destruction for ref iterators
+    scope->variableAdd(idx);
+  }
+}
+
+static void walkBlockScopelessBlock(FnSymbol*         fn,
+                                    AutoDestroyScope& scope,
+                                    LabelSymbol*      retLabel,
+                                    bool              isDeadCode,
+                                    BlockStmt*        block,
+                                    std::set<VarSymbol*>& ignoredVariables);
+
+static void walkBlockStmt(FnSymbol*         fn,
+                          AutoDestroyScope& scope,
+                          LabelSymbol*      retLabel,
+                          bool              isDeadCode,
+                          bool              inScopelessBlock,
+                          Expr*             stmt,
+                          std::set<VarSymbol*>& ignoredVariables) {
+
+  //
+  // Handle the current statement
+  //
+
+  // TODO -- maybe we need to handle breakLabel and continueLabel here?
+
+  // Once a variable is yielded, it should no longer be auto-destroyed,
+  // since such destruction is the responsibility of
+  // the calling loop.
+  if (isYieldStmt(stmt)) {
+    gatherIgnoredVariablesForYield(stmt, ignoredVariables);
+
+  // AutoDestroy locals at the start of the error-handling label
+  // (when exiting a try block without error)
+  } else if (isErrorLabel(stmt) == true) {
+    INT_ASSERT(!inScopelessBlock); // situation leads to miscompiles/leaks
+
+    scope.insertAutoDestroys(fn, stmt, ignoredVariables);
+
+  // AutoDestroy primary locals at start of function epilogue (1)
+  } else if (isReturnLabel(stmt, retLabel) == true) {
+    scope.insertAutoDestroys(fn, stmt, ignoredVariables);
+
+  // Be conservative about unreachable code before the epilogue
+  } else if (isDeadCode == false) {
+    // Collect variables that should be autoDestroyed
+    if (VarSymbol* var = definesAnAutoDestroyedVariable(stmt)) {
+      scope.variableAdd(var);
+
+    // Collect defer statements to run during cleanup
+    } else if (DeferStmt* defer = toDeferStmt(stmt)) {
+      scope.deferAdd(defer);
+
+    // AutoDestroy primary locals at start of function epilogue (2)
+    } else if (scope.handlingFormalTemps(stmt) == true) {
+      scope.insertAutoDestroys(fn, stmt, ignoredVariables);
+
+    // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
+    } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
+      // ignore scopeless blocks for deciding where to destroy
+      if ((subBlock->blockTag & BLOCK_SCOPELESS))
+        walkBlockScopelessBlock(fn, scope, retLabel, isDeadCode,
+                                subBlock, ignoredVariables);
+      else
+        walkBlock(fn, &scope, subBlock, ignoredVariables);
+
+    // Recurse in to a ForallStmt
+    } else if (ForallStmt* forall = toForallStmt(stmt)) {
+      walkForallBlocks(fn, &scope, forall, ignoredVariables);
+
+    // Recurse in to the BlockStmt(s) of a CondStmt
+    } else if (CondStmt*  cond     = toCondStmt(stmt))  {
+
+      std::set<VarSymbol*> toIgnore(ignoredVariables);
+
+      if (isCheckErrorStmt(cond))
+        gatherIgnoredVariablesForErrorHandling(cond, toIgnore);
+
+      walkBlock(fn, &scope, cond->thenStmt, toIgnore);
+
+      if (cond->elseStmt != NULL)
+        walkBlock(fn, &scope, cond->elseStmt, toIgnore);
+
+    }
+  }
+}
+
+static void walkBlockScopelessBlock(FnSymbol*         fn,
+                                    AutoDestroyScope& scope,
+                                    LabelSymbol*      retLabel,
+                                    bool              isDeadCode,
+                                    BlockStmt*        block,
+                                    std::set<VarSymbol*>& ignoredVariables) {
+  for_alist(stmt, block->body) {
+    walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt, ignoredVariables);
+  }
+}
+
+static void walkBlock(FnSymbol*         fn,
+                      AutoDestroyScope* parent,
+                      BlockStmt*        block,
+                      std::set<VarSymbol*>& ignoredVariables,
+                      ForallStmt*       pfs) {
+  AutoDestroyScope scope(parent, block);
+
+  LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
+  bool             isDeadCode = false;
+
+  if (pfs != NULL)
+    addForallIndexVarToScope(&scope, pfs);
 
   for_alist(stmt, block->body) {
     //
     // Handle the current statement
     //
-
-    // AutoDestroy primary locals at start of function epilogue (1)
-    if (isReturnLabel(stmt, retLabel) == true) {
-      scope.insertAutoDestroys(fn, stmt);
-
-    } else if (isGotoStmt(stmt) == true) {
-      isDeadCode = true;
-
-    // Be conservative about unreachable code before the epilogue
-    } else if (isDeadCode == false) {
-      // Collect variables that should be autoDestroyed
-      if (VarSymbol* var = definesAnAutoDestroyedVariable(stmt)) {
-        scope.variableAdd(var);
-
-      // AutoDestroy primary locals at start of function epilogue (2)
-      } else if (scope.startingToHandleFormalTemps(stmt) == true) {
-        scope.insertAutoDestroys(fn, stmt);
-
-      // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
-      } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
-        walkBlock(fn, &scope, subBlock);
-
-      // Recurse in to the BlockStmt(s) of a CondStmt
-      } else if (CondStmt*  cond     = toCondStmt(stmt))  {
-        walkBlock(fn, &scope, cond->thenStmt);
-
-        if (cond->elseStmt != NULL)
-          walkBlock(fn, &scope, cond->elseStmt);
-      }
-    }
+    walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt, ignoredVariables);
 
     //
     // Handle the end of a block
+    // For the purposes of this pass, a block ends either
+    // with a GotoStmt or when we run out of next statements.
     //
-    if (stmt->next == NULL) {
-      GotoStmt* gotoStmt = toGotoStmt(stmt);
+    GotoStmt* gotoStmt = toGotoStmt(stmt);
+    if (gotoStmt != NULL || stmt->next == NULL) {
+
+      // Don't visit any later code in this block
+      // (don't add variable definitions, etc, above).
+      isDeadCode = true;
 
       // The main block for a function or a simple sub-block
       if (parent == NULL || gotoStmt == NULL) {
-        scope.insertAutoDestroys(fn, stmt);
+        scope.insertAutoDestroys(fn, stmt, ignoredVariables);
 
       // Currently unprepared for a nested scope that ends in a goto
       } else {
@@ -228,7 +259,9 @@ static void walkBlock(FnSymbol* fn, Scope* parent, BlockStmt* block) {
           case GOTO_RETURN:
           case GOTO_CONTINUE:
           case GOTO_BREAK:
-            scope.insertAutoDestroys(fn, stmt);
+          case GOTO_ERROR_HANDLING:
+          case GOTO_BREAK_ERROR_HANDLING:
+            scope.insertAutoDestroys(fn, stmt, ignoredVariables);
             break;
 
           case GOTO_NORMAL:
@@ -300,222 +333,222 @@ static bool isReturnLabel(const Expr* stmt, const LabelSymbol* returnLabel) {
   return retval;
 }
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static VarSymbol* variableToExclude(FnSymbol*  fn, Expr* refStmt);
-static bool       isReturnStmt(const Expr* stmt);
-static BlockStmt* findBlockForTarget(GotoStmt* stmt);
-
-Scope::Scope(const Scope* parent, const BlockStmt* block) {
-  mParent        = parent;
-  mBlock         = block;
-
-  mLocalsHandled = false;
-}
-
-void Scope::variableAdd(VarSymbol* var) {
-  if (var->hasFlag(FLAG_FORMAL_TEMP) == false)
-    mLocals.push_back(var);
-  else
-    mFormalTemps.push_back(var);
-}
-
-//
-// Functions have an informal epilogue defined by code that
-//
-//   1) appears after a common "return label" (if present)
-//   2) copies values to out/in-out formals
-//
-// We must      destroy the primaries before (1).
-// We choose to destroy the primaries before (2).
-//
-// This code detects the start of (2)
-//
-bool Scope::startingToHandleFormalTemps(const Expr* stmt) const {
-  bool retval = false;
-
-  if (mLocalsHandled == false) {
-    if (const CallExpr* call = toConstCallExpr(stmt)) {
-      FnSymbol* fn  =  NULL;
-      SymExpr*  lhs =  NULL;
-      SymExpr*  rhs =  NULL;
-
-      if ((fn  = call->isResolved())          != NULL &&
-          fn->hasFlag(FLAG_ASSIGNOP)          == true &&
-          call->numActuals()                  ==    2 &&
-          (lhs = toSymExpr(call->get(1)))     != NULL &&
-          (rhs = toSymExpr(call->get(2)))     != NULL &&
-          isArgSymbol(lhs->var)               == true &&
-          rhs->var->hasFlag(FLAG_FORMAL_TEMP) == true) {
-        retval = true;
-      }
+// Is this the definition of an error handling label?
+static bool isErrorLabel(const Expr* stmt) {
+  if (const DefExpr*  expr = toConstDefExpr(stmt)) {
+    if (LabelSymbol* label = toLabelSymbol(expr->sym)) {
+      if (label->hasFlag(FLAG_ERROR_LABEL))
+        return true;
     }
   }
 
-  return retval;
+  return false;
 }
 
-// If the refStmt is a goto then we need to recurse
-// to the block that contains the target of the goto
-void Scope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt) {
-  GotoStmt*    gotoStmt   = toGotoStmt(refStmt);
-  bool         recurse    = (gotoStmt != NULL) ? true : false;
-  BlockStmt*   forTarget  = findBlockForTarget(gotoStmt);
-  VarSymbol*   excludeVar = variableToExclude(fn, refStmt);
-  const Scope* scope      = this;
+static bool isYieldStmt(const Expr* stmt) {
+  if (const CallExpr* call = toConstCallExpr(stmt))
+    if (call->isPrimitive(PRIM_YIELD))
+      return true;
 
-  while (scope != NULL && scope->mBlock != forTarget) {
-    scope->variablesDestroy(refStmt, excludeVar);
-
-    scope = (recurse == true) ? scope->mParent : NULL;
-  }
-
-  mLocalsHandled = true;
+  return false;
 }
 
-void Scope::variablesDestroy(Expr* refStmt, VarSymbol* excludeVar) const {
-  // Handle the primary locals
-  if (mLocalsHandled == false) {
-    bool   insertAfter = false;
-    size_t count       = mLocals.size();
+// Helper for walkBlock() to walk everything for a ForallStmt.
+static void walkForallBlocks(FnSymbol* fn,
+                             AutoDestroyScope* parentScope,
+                             ForallStmt* forall,
+                             std::set<VarSymbol*>& parentIgnored)
+{
+  std::set<VarSymbol*> toIgnoreLB(parentIgnored);
+  walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB, forall);
 
-    // If this is a simple nested block, insert after the final stmt
-    // Do not get tricked by sequences of unreachable code
-    if (refStmt->next == NULL) {
-      if (mParent != NULL && isGotoStmt(refStmt) == false) {
-        insertAfter = true;
+  for_shadow_vars(svar, temp, forall)
+    if (!svar->initBlock()->body.empty() || !svar->deinitBlock()->body.empty())
+      {
+        // I am unsure about these recursive walkBlock() calls, specifically
+        //  * should 'toIgnoreSV' start out with 'parentIgnored'?
+        //  * is it appropriate to reference 'fn' ?  -vass 1/2018
+        std::set<VarSymbol*> toIgnoreSV(parentIgnored);
+        walkBlock(fn, parentScope, svar->initBlock(), toIgnoreSV);
+        walkBlock(fn, parentScope, svar->deinitBlock(), toIgnoreSV);
       }
-    }
-
-    for (size_t i = 1; i <= count; i++) {
-      VarSymbol* var = mLocals[count - i];
-
-      if (var != excludeVar) {
-        if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-          SET_LINENO(var);
-
-          CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
-
-          if (insertAfter == true)
-            refStmt->insertAfter (autoDestroy);
-          else
-            refStmt->insertBefore(autoDestroy);
-        }
-      }
-    }
-  }
-
-  // Handle the formal temps
-  if (isReturnStmt(refStmt) == true) {
-    size_t count = mFormalTemps.size();
-
-    for (size_t i = 1; i <= count; i++) {
-      VarSymbol* var = mFormalTemps[count - i];
-
-      if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-        SET_LINENO(var);
-
-        refStmt->insertBefore(new CallExpr(autoDestroyFn, var));
-      }
-    }
-  }
 }
 
-// Walk backwards from the current statement to determine if a sequence of
-// moves have copied a variable that is marked for auto destruction in to
-// the dedicated return-temp within the current scope.
-//
-// Note that the value we are concerned about may be copied in to one or
-// more temporary variables between being copied to the return temp.
-static VarSymbol* variableToExclude(FnSymbol*  fn, Expr* refStmt) {
-  VarSymbol* retVar = toVarSymbol(fn->getReturnSymbol());
-  VarSymbol* retval = NULL;
+/*
+ This function identifies variables that have not yet been initialized
+ because the function that would initialize them has thrown an error.
+ The error handling can add 'gotos' to handle such errors in-between
+ a DefExpr and the AST nodes that cause that variable to be initialized.
+ This wouldn't have been possible before error handling.
 
-  if (retVar != NULL) {
-    if (isUserDefinedRecord(retVar)    == true ||
-        fn->hasFlag(FLAG_INIT_COPY_FN) == true) {
-      VarSymbol* needle = retVar;
-      Expr*      expr   = refStmt;
+  For example, consider the following Chapel code and AST:
 
-      // Walk backwards looking for the variable that is being returned
-      while (retval == NULL && expr != NULL && needle != NULL) {
-        if (CallExpr* move = toCallExpr(expr)) {
-          if (move->isPrimitive(PRIM_MOVE) == true) {
-            SymExpr*   lhs    = toSymExpr(move->get(1));
-            VarSymbol* lhsVar = toVarSymbol(lhs->var);
+  try {
+    var x = returnOrThrow(1);
+    writeln(x);
+  }
 
-            if (needle == lhsVar) {
-              SymExpr*   rhs    = toSymExpr(move->get(2));
-              VarSymbol* rhsVar = (rhs != NULL) ? toVarSymbol(rhs->var) : NULL;
 
-              if (isAutoDestroyedVariable(rhsVar) == true)
-                retval = rhsVar;
-              else
-                needle = rhsVar;
-            }
+  'def' error:Error;
+  'def' x;
+  'def' call_tmp;
+  'move' call_tmp 'call' returnOrThrow(1, error)
+  if('check error' error)
+  {
+    gotoErrorHandling handler;
+  }
+  'move' x 'call' chpl__initCopy(call_tmp)
+  'call' writeln(x)
+
+  In that event, 'call_tmp' might be stack trash (or at least
+  a value that was not a result of initialization) if returnOrThrow
+  threw an error. So 'deinit' shouldn't be called on 'call_tmp' or 'x'
+  (since these variables really are the same and the existence of both
+   is an artifact of the current implementation)
+*/
+static void gatherIgnoredVariablesForErrorHandling(
+    CondStmt* cond,
+    std::set<VarSymbol*>& ignoredVariables)
+{
+
+  // Look for the function call immediately preceding
+  // that throws. Is it returning a variable that we will
+  // want to auto-destroy?
+
+  VarSymbol* ignore = NULL;
+  if (CallExpr* move = toCallExpr(cond->prev)) {
+    if (move->isPrimitive(PRIM_MOVE)) {
+      if (CallExpr* call = toCallExpr(move->get(2))) {
+        if (FnSymbol* fn = call->resolvedFunction()) {
+          if (fn->throwsError()) {
+            SymExpr *se = toSymExpr(move->get(1));
+            ignore = toVarSymbol(se->symbol());
+            ignoredVariables.insert(ignore);
           }
         }
-
-        expr = expr->prev;
       }
     }
   }
 
-  return retval;
-}
+  // If ignore is set, it might be a callTmp,
+  // track a subsequent PRIM_MOVE to expand the
+  // set of ignored variables to include the
+  // relevant user variable.
+  if (ignore != NULL) {
+    if (CallExpr* move = toCallExpr(cond->next)) {
+      if (move->isPrimitive(PRIM_MOVE)) {
+        SymExpr *dstSe = toSymExpr(move->get(1));
+        SymExpr *srcSe = NULL;
 
-static bool isReturnStmt(const Expr* stmt) {
-  bool retval = false;
+        if (CallExpr* subCall = toCallExpr(move->get(2))) {
+          if (FnSymbol* calledFn = subCall->resolvedFunction())
+            if (calledFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                calledFn->hasFlag(FLAG_AUTO_COPY_FN))
+              srcSe = toSymExpr(subCall->get(1));
+        } else {
+          srcSe = toSymExpr(move->get(2));
+        }
 
-  if (const CallExpr* expr = toConstCallExpr(stmt))
-    retval = expr->isPrimitive(PRIM_RETURN);
-
-  return retval;
-}
-
-// Find the block stmt that encloses the target of this gotoStmt
-static BlockStmt* findBlockForTarget(GotoStmt* stmt) {
-  BlockStmt* retval = NULL;
-
-  if (stmt != NULL && stmt->isGotoReturn() == false) {
-    SymExpr*   labelSymExpr = toSymExpr(stmt->label);
-    Expr*      ptr          = labelSymExpr->var->defPoint;
-
-    while (ptr != NULL && isBlockStmt(ptr) == false)
-      ptr = ptr->parentExpr;
-
-    retval = toBlockStmt(ptr);
-
-    INT_ASSERT(retval);
+        if (dstSe != NULL && srcSe != NULL &&
+            srcSe->symbol() == ignore)
+          ignoredVariables.insert(toVarSymbol(dstSe->symbol()));
+      }
+    }
   }
+}
 
-  return retval;
+static void gatherIgnoredVariablesForYield(
+    Expr* yieldStmt,
+    std::set<VarSymbol*>& ignoredVariables)
+{
+  CallExpr* yield = toCallExpr(yieldStmt);
+  SymExpr* yieldedSe = toSymExpr(yield->get(1));
+  INT_ASSERT(yieldedSe);
+  VarSymbol* yieldedVar = toVarSymbol(yieldedSe->symbol());
+  INT_ASSERT(yieldedVar);
+  QualifiedType t = yieldedVar->qualType();
+
+  if (isUserDefinedRecord(t.type()) && ! t.isRef()) {
+
+    SymExpr* foundSe = findSourceOfYield(yield);
+    VarSymbol* var = toVarSymbol(foundSe->symbol());
+
+    if (var &&
+        var->hasEitherFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW,
+                           FLAG_EXPR_TEMP))
+      ignoredVariables.insert(var);
+  }
 }
 
 /************************************* | **************************************
 *                                                                             *
-* Common utilities                                                            *
+* A shared utility function for resolution.                                   *
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isAutoDestroyedVariable(Symbol* sym) {
+bool isAutoDestroyedVariable(Symbol* sym) {
   bool retval = false;
 
   if (VarSymbol* var = toVarSymbol(sym)) {
-    if (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true ||
+    if (var->hasFlag(FLAG_NO_AUTO_DESTROY)     == false &&
+        (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true ||
+         var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true)) {
+      if (!var->isParameter() && !var->isType()) {
 
-        (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true  &&
-         var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
-         isRefCountedType(var->type)                             == false)) {
-
-      retval = (var->isType() == false && autoDestroyMap.get(var->type) != 0);
+        retval = (autoDestroyMap.get(var->type) != NULL);
+      }
     }
   }
 
   return retval;
+}
+
+// For a yield of a variable, such as iter f() { var x=...; yield x; },
+// unlike returning, the yield will result in a copy. This function helps
+// to identify the source variable in such cases, even as there might be
+// various compiler temporaries in between. It returns the SymExpr referring
+// to the yielded variable that was used in the last PRIM_MOVE reading it.
+SymExpr* findSourceOfYield(CallExpr* yield) {
+
+  SymExpr* yieldedSe = toSymExpr(yield->get(1));
+  Symbol* yieldedSym = yieldedSe->symbol();
+
+  Expr* expr = yield;
+  Symbol* needle = yieldedSym;
+  SymExpr* foundSe = yieldedSe;
+
+  // Walk backwards to figure out where the yielded symbol came
+  // from and to find the spot at which we should add an
+  // autoCopy call.
+  while (expr != NULL && needle != NULL) {
+    if (CallExpr* move = toCallExpr(expr)) {
+      if (move->isPrimitive(PRIM_MOVE) == true) {
+        SymExpr*   lhs    = toSymExpr(move->get(1));
+        VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
+
+        if (needle == lhsVar) {
+          if (SymExpr* rhs = toSymExpr(move->get(2))) {
+            VarSymbol* rhsVar = toVarSymbol(rhs->symbol());
+
+            if (rhsVar) {
+              needle = rhsVar;
+
+              if (rhsVar->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+                  rhsVar->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) {
+                foundSe = rhs;
+                break;
+              }
+            }
+          } else {
+            needle = NULL;
+          }
+        }
+      }
+    }
+
+    expr = expr->prev;
+  }
+
+  return foundSe;
 }
 

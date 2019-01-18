@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,12 +21,13 @@
 #define _CONFIG_H_
 
 class Expr;
+class VarSymbol;
 
 void  checkConfigs(void);
 void  parseCmdLineConfig(const char *, const char *);
 Expr* getCmdLineConfig(const char *);
-void  useCmdLineConfig(const char *);
-bool  isUsedCmdLineConfig(const char *);
+void  useCmdLineConfig(const char *, VarSymbol*);
+VarSymbol* isUsedCmdLineConfig(const char *);
 
 extern bool mainHasArgs;
 

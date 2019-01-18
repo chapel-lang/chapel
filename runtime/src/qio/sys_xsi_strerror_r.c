@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -29,7 +29,7 @@
 #undef _POSIX_C_SOURCE
 #endif
 
-#define _POSIX_C_SOURCE 20112L
+#define _POSIX_C_SOURCE 200112L
 #define _XOPEN_SOURCE 600
 #undef _GNU_SOURCE
 

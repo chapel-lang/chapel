@@ -1,1 +1,1 @@
-destructor2.chpl:7: error: delete not allowed on records
+destructor2.chpl:7: error: 'delete' is not allowed on records

@@ -7,3 +7,5 @@ if nil != a {
   writeln("OK");
 } else {
 }
+
+_ddata_free(a, size);

@@ -1,0 +1,5 @@
+methodCallIf.chpl:4: In initializer:
+methodCallIf.chpl:5: error: cannot call method "option1" on type "Foo" before this.complete()
+methodCallIf.chpl:5: note: before this.complete() "this" is treated as parent type "object" for method calls
+methodCallIf.chpl:5: error: cannot call method "option2" on type "Foo" before this.complete()
+methodCallIf.chpl:5: note: before this.complete() "this" is treated as parent type "object" for method calls

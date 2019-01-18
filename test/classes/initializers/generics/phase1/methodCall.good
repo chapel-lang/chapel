@@ -1,0 +1,3 @@
+methodCall.chpl:4: In initializer:
+methodCall.chpl:5: error: cannot call a method before super.init() or this.init()
+methodCall.chpl:6: error: cannot call a method before super.init() or this.init()

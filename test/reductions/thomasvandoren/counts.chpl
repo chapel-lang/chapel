@@ -15,7 +15,7 @@ class counts : ReduceScanOp {
     v[value] += 1;
   }
 
-  proc combine(state: counts(eltType)) {
+  proc combine(state: borrowed counts(eltType)) {
     // rely on promotion, instead of iterating over state.v
     v += state.v;
   }

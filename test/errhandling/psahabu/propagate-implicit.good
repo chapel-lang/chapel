@@ -1,0 +1,4 @@
+calling propError
+uncaught Error: 
+  ../ExampleErrors.chpl:2: thrown here
+  propagate-implicit.chpl:9: uncaught here

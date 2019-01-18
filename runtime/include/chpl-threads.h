@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -22,9 +22,7 @@
 
 #include <stdint.h>
 
-#ifdef CHPL_THREADS_MODEL_H
-#include CHPL_THREADS_MODEL_H
-#endif
+#include "chpl-threads-impl.h"
 
 //
 // Threads are the execution vehicles for tasks.  This file declares the

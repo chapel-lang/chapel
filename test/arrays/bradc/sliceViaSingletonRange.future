@@ -1,8 +1,0 @@
-error message: sliced array shape mismatch
-
-Reading Steve's log message, I believe that the intention for this
-future was to generate an error message for line 18 complaining
-that the size/shape of these two arrays doesn't match (they are both
-2D but one is a 1xn while the other is an nx1).  The way to do the
-assignment legally (I believe) would be to use a rank-change slicing
-which would cause them both to be 1D n-element vectors.

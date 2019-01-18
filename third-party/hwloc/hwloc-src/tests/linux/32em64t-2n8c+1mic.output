@@ -119,6 +119,7 @@
         <object type="PCIDev" os_index="32" pci_busid="0000:00:02.0" pci_type="0108 [8086:0953] [8086:3709] 01" pci_link_speed="0.000000">
           <object type="OSDev" name="nvme0n1" osdev_type="0">
             <info name="LinuxDeviceID" value="259:0"/>
+            <info name="Type" value="Disk"/>
           </object>
         </object>
         <object type="PCIDev" os_index="64" pci_busid="0000:00:04.0" pci_type="0880 [8086:3c20] [1028:0518] 07" pci_link_speed="0.000000">

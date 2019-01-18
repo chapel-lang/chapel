@@ -1,0 +1,6 @@
+Block(1,int(64),unmanaged DefaultDist).printBB()
+boundingBox = {1..20}
+
+DefaultAssociativeDom(int(64),true).printTableSize()
+tableSize = 23
+

@@ -1,3 +1,0 @@
-setter-deprecated.chpl:2: In function 'refReturn':
-setter-deprecated.chpl:4: error: 'setter' undeclared (first use this function)
-setter-deprecated.chpl:4: error: setter is deprecated. Use a ref-pair instead.

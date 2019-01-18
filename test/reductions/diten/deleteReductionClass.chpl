@@ -3,10 +3,11 @@ class LastOp: ReduceScanOp {
   type eltType;
   var last: eltType;
 
-  proc LastOp(type eltType) {
+  proc init(type eltType) {
+    this.eltType = eltType;
     count$ += 1;
   }
-  proc ~LastOp() {
+  proc deinit() {
     count$ -= 1;
   }
   proc accumulate(x) {

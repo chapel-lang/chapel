@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -69,7 +69,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define TRUE 1
 #define max(x,y) ((x)>(y) ? x : y)
 
-static Vec<int> justification;
+static std::vector<int> justification;
 static int depth = 0;
 static int parens = 0;
 static int justify = 0;
@@ -136,7 +136,7 @@ static void update_state(char *line) {
       break;
     case '(':
       if (!inquote && !intick) {
-        justification.add(oldstuff);
+        justification.push_back(oldstuff);
         if (oldstuff == -1) {
           INT_FATAL("Unbalanced parentheses:\n\t%s",line);
         }
@@ -151,7 +151,8 @@ static void update_state(char *line) {
       break;
     case ')':
       if (!inquote && !intick) {
-        oldstuff = justification.pop();
+        oldstuff = justification.back();
+        justification.pop_back();
         stuff = 0;
         parens--;
       } else {
@@ -231,7 +232,13 @@ void beautify(fileinfo* origfile) {
 
     if (cp[0] != '\0') {
       if (zline >= 0 && new_line == TRUE) {
-        fprintf(outputfile, ZLINEFORMAT, zline, zname);
+        int zlineP = zline;
+        if (zline == 0) {
+          zlineP = 1;  // #line 0 ... is illegal in C11
+          if (!strcmp(zname, "<internal>")) //always internal when zline==0 ?
+            zline = -1; //do not print #line until we see ZLINEINPUT again
+        }
+        fprintf(outputfile, ZLINEFORMAT, zlineP, zname);
       }
     }
 
@@ -270,7 +277,7 @@ void beautify(fileinfo* origfile) {
   command = astr("mv ", tmpfile->pathname, " ", origfile->pathname);
   mysystem(command, "moving beautified file");
   
-  if (justification.n != 0) {
+  if (justification.size() != 0) {
     INT_FATAL( "Parentheses or curly braces are not balanced "
                "in codegen for %s.", origfile->pathname);
   }

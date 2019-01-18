@@ -1,3 +1,2 @@
--stestenum=false  # boolToUint-works.good
--stestenum=true   
-
+-stestenum=false
+-stestenum=true  # boolToUint-testenum.good

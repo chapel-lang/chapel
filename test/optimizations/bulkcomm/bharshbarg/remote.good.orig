@@ -1,0 +1,164 @@
+
+A and B on same locale
+
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferToKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+isDataContiguous(): off=(1, 1) blk=(10, 1)
+isDataContiguous return False
+Performing complex DefaultRectangular transfer
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+inferredRank = 2
+LBlk = (10, 1)
+RBlk = (10, 1)
+BulkTransferStride with values:
+	Locale        = 0
+	Stride levels = 1
+	dstStride     = 10
+	srcStride     = 10
+	count         = 5 10
+BulkTransferStride: On LHS - GET from 0
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferToKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+isDataContiguous(): off=(1, 1) blk=(10, 1)
+isDataContiguous return False
+Performing complex DefaultRectangular transfer
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+inferredRank = 2
+LBlk = (10, 1)
+RBlk = (10, 1)
+BulkTransferStride with values:
+	Locale        = 0
+	Stride levels = 1
+	dstStride     = 10
+	srcStride     = 10
+	count         = 5 10
+BulkTransferStride: On LHS - GET from 0
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+End of assignment
+
+
+B on different locale
+
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferToKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+isDataContiguous(): off=(1, 1) blk=(10, 1)
+isDataContiguous return False
+Performing complex DefaultRectangular transfer
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+inferredRank = 2
+LBlk = (10, 1)
+RBlk = (10, 1)
+BulkTransferStride with values:
+	Locale        = 1
+	Stride levels = 1
+	dstStride     = 10
+	srcStride     = 10
+	count         = 5 10
+BulkTransferStride: On RHS - PUT to 0
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferToKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+isDataContiguous(): off=(1, 1) blk=(10, 1)
+isDataContiguous return False
+Performing complex DefaultRectangular transfer
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+inferredRank = 2
+LBlk = (10, 1)
+RBlk = (10, 1)
+BulkTransferStride with values:
+	Locale        = 1
+	Stride levels = 1
+	dstStride     = 10
+	srcStride     = 10
+	count         = 5 10
+BulkTransferStride: On LHS - GET from 0
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+End of assignment
+
+
+A and B on different locale
+
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferToKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+isDataContiguous(): off=(1, 1) blk=(10, 1)
+isDataContiguous return False
+Performing complex DefaultRectangular transfer
+BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE0
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+inferredRank = 2
+LBlk = (10, 1)
+RBlk = (10, 1)
+BulkTransferStride with values:
+	Locale        = 0
+	Stride levels = 1
+	dstStride     = 10
+	srcStride     = 10
+	count         = 5 10
+BulkTransferStride: On LHS - GET from 1
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferToKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+isDataContiguous(): off=(1, 1) blk=(10, 1)
+isDataContiguous return False
+Performing complex DefaultRectangular transfer
+BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE1
+Transferring views :{1..10, 1..5} <-- {1..10, 1..5}
+Original domains   :(1..10, 1..10) <-- (1..10, 1..10)
+inferredRank = 2
+LBlk = (10, 1)
+RBlk = (10, 1)
+BulkTransferStride with values:
+	Locale        = 1
+	Stride levels = 1
+	dstStride     = 10
+	srcStride     = 10
+	count         = 5 10
+BulkTransferStride: On LHS - GET from 0
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+End of assignment
+

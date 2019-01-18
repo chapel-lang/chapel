@@ -2,4 +2,9 @@ class C {
   var x : int;
 }
 
-writeln(new C(1));
+var c = new unmanaged C(1);
+
+writeln(c);
+
+delete c;
+

@@ -11,7 +11,7 @@ module CGMakeA {
     var size = 1.0;
     const ratio = rcond ** (1.0 / n);
 
-    var randStr = new NPBRandomStream(314159265);
+    var randStr = new NPBRandomStream(eltType=real, seed=314159265);
     randStr.getNext();   // drop a value on floor to match NPB version
 
     for iouter in 1..n {
@@ -34,8 +34,6 @@ module CGMakeA {
       }
       size *= ratio;
     }
-
-    delete randStr;
 
     for i in 1..n {
       yield ((i, i), rcond - shift);
@@ -66,7 +64,7 @@ module CGMakeA {
     //  writeln("IndArr is: ", IndArr);
 
     // sort indices
-    QuickSort(IndArr);
+    quickSort(IndArr);
 
     //  writeln("After sort, IndArr is: ", IndArr);
     
@@ -91,7 +89,7 @@ module CGMakeA {
       do {
         vecelt = randStr.getNext();
         ind = (randStr.getNext() * nn1):int + 1;
-      } while (ind > n || indices.member(ind));
+      } while (ind > n || indices.contains(ind));
 
       v(nzv) = vecelt;
       iv(nzv) = ind;

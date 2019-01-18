@@ -1,4 +1,5 @@
 use IO;
+use Sort;
 
 extern proc memcpy(x : [], b:c_string, len:int);
 
@@ -20,11 +21,11 @@ tochar[3] = "G";
 class Node {
   var data : uint;
   var count : int;
-  var next : Node;
+  var next : unmanaged Node;
 }
 
 class Table {
-  var table : [0..tableSize-1] Node;
+  var table : [0..tableSize-1] unmanaged Node;
   var size : int;
 
   proc this(d : uint) ref {
@@ -32,7 +33,7 @@ class Table {
     ref head = table[slot];
     var n = head;
     if n == nil {
-      n = new Node(d, 0, nil);
+      n = new unmanaged Node(d, 0, nil);
       size += 1;
       head = n;
       return n.count;
@@ -42,7 +43,7 @@ class Table {
       if n.data == d then return n.count;
       n = n.next;
     }
-    n = new Node(d, 0, head);
+    n = new unmanaged Node(d, 0, head);
     size += 1;
     head = n;
     return n.count;
@@ -58,7 +59,7 @@ class Table {
     }
   }
 
-  proc ~Table() {
+  proc deinit() {
     for n in table do {
       var cur = n;
       while cur != nil {
@@ -90,13 +91,13 @@ proc decode(data : uint, size : int) {
 }
 
 proc calculate(data : [] uint(8), size : int) {
-  var freqs = new Table();
+  var freqs = new unmanaged Table();
 
   var lock : sync bool;
   lock = true;
   const sizeRange = 0..size-1;
   coforall tid in 1..here.maxTaskPar {
-    var curArr = new Table();
+    var curArr = new unmanaged Table();
     for i in tid .. data.size-size by here.maxTaskPar {
       curArr[hash(data, i, sizeRange)] += 1;
     }
@@ -117,7 +118,7 @@ proc write_frequencies(data : [] uint(8), size : int) {
   var arr : [1..freqs.size] (int, uint);
   for (a, (k,v)) in zip(arr, freqs) do
     a = (v,k);
-  QuickSort(arr, reverse=true);
+  quickSort(arr, comparator=reverseComparator);
 
   for (f, s) in arr do
     writef("%s %.3dr\n", decode(s, size), (100.0 * f) / sum);
@@ -131,7 +132,7 @@ proc write_count(data : [] uint(8), str : string) {
   delete freqs;
 }
 
-proc string.toBytes() ref {
+proc string.toBytes() {
    var b : [1..this.length] uint(8);
    memcpy(b, this.c_str(), this.length);
    return b;

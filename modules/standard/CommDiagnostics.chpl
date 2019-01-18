@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,8 +66,8 @@
   option results in the following output::
 
     0: remote task created on 1
-    1: t.chpl:6: remote get from 0
-    1: t.chpl:6: remote put to 0
+    1: t.chpl:6: remote get from 0, 8 bytes
+    1: t.chpl:6: remote put to 0, 8 bytes
 
   The initial number refers to the locale reporting the communication
   event.  The file name and line number point to the place in the
@@ -129,7 +129,7 @@
   Executing this on two locales with the ``-nl 2`` command line
   option results in the following output::
 
-    (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 1, execute_on_fast = 0, execute_on_nb = 0) (get = 1, get_nb = 0, put = 1, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 0, execute_on_fast = 0, execute_on_nb = 0)
+    (execute_on = 1) (get = 1, put = 1)
 
   The first parenthesized group contains the counts for locale 0, and
   the second contains the counts for locale 1.  So, for the
@@ -215,6 +215,22 @@ module CommDiagnostics
       non-blocking remote executions
      */
     var execute_on_nb: uint(64);
+
+    proc writeThis(c) {
+      use Reflection;
+
+      var first = true;
+      c <~> "(";
+      for param i in 1..numFields(chpl_commDiagnostics) {
+        const val = getField(this, i);
+        if val != 0 {
+          if first then first = false; else c <~> ", ";
+          c <~> getFieldName(chpl_commDiagnostics, i) <~> " = " <~> val;
+        }
+      }
+      if first then c <~> "<no communication>";
+      c <~> ")";
+    }
   };
 
   /*
@@ -330,6 +346,7 @@ module CommDiagnostics
     chpl_getCommDiagnosticsHere(cd);
     return cd;
   }
+
 
   /*
     If this is set, on-the-fly reporting of communication operations

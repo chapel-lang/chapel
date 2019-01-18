@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -77,6 +77,7 @@
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
+#include "ForallStmt.h"
 
 #include "alist.h"
 #include "stmt.h"
@@ -134,6 +135,17 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
   return false;
 }
 
+void CollapseBlocks::visitForallIntents(ForallIntents* clause) {
+  // Need to define this so CollapseBlocks is not abstract.
+  // However, it should not be invoked.
+  INT_ASSERT(false);
+}
+
+bool CollapseBlocks::enterForallStmt(ForallStmt* node) {
+  return enterBlockStmt(node->loopBody());
+}
+
+
 // The c for loop primitive is of the form:
 //   __primitive("C for loop", {inits}, {test}, {incrs})
 //
@@ -188,7 +200,7 @@ bool CollapseBlocks::enterCondStmt(CondStmt* node)
 
 /************************************ | *************************************
 *                                                                           *
-* The remaining definitions are simple "default do nothing" defintions      *
+* The remaining definitions are simple "default do nothing" definitions      *
 *                                                                           *
 ************************************* | ************************************/
 
@@ -198,6 +210,16 @@ bool CollapseBlocks::enterAggrType(AggregateType* node)
 }
 
 void CollapseBlocks::exitAggrType(AggregateType* node)
+{
+
+}
+
+bool CollapseBlocks::enterUnmanagedClassType(UnmanagedClassType* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitUnmanagedClassType(UnmanagedClassType* node)
 {
 
 }
@@ -281,6 +303,15 @@ void CollapseBlocks::exitCallExpr(CallExpr* node)
 {
 }
 
+bool CollapseBlocks::enterContextCallExpr(ContextCallExpr* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitContextCallExpr(ContextCallExpr* node)
+{
+}
+
 bool CollapseBlocks::enterDefExpr(DefExpr* node)
 {
   return false;
@@ -301,6 +332,16 @@ void CollapseBlocks::exitNamedExpr(NamedExpr* node)
 
 }
 
+bool CollapseBlocks::enterIfExpr(IfExpr* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitIfExpr(IfExpr* node)
+{
+
+}
+
 void CollapseBlocks::visitSymExpr(SymExpr* node)
 {
 
@@ -311,12 +352,27 @@ void CollapseBlocks::visitUsymExpr(UnresolvedSymExpr* node)
 
 }
 
+bool CollapseBlocks::enterLoopExpr(LoopExpr* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitLoopExpr(LoopExpr* node)
+{
+
+}
+
 void CollapseBlocks::visitUseStmt(UseStmt* node)
 {
 
 }
 
 void CollapseBlocks::exitBlockStmt(BlockStmt* node)
+{
+
+}
+
+void CollapseBlocks::exitForallStmt(ForallStmt* node)
 {
 
 }
@@ -362,6 +418,50 @@ bool CollapseBlocks::enterGotoStmt(GotoStmt* node)
 }
 
 void CollapseBlocks::exitGotoStmt(GotoStmt* node)
+{
+
+}
+
+bool CollapseBlocks::enterForwardingStmt(ForwardingStmt* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitForwardingStmt(ForwardingStmt* node)
+{
+
+}
+
+bool CollapseBlocks::enterDeferStmt(DeferStmt* node)
+{
+  // Defer statements really need to be lowered *before*
+  // running CollapseBlocks. Otherwise, how can we know
+  // what variables or defer blocks are "in scope"?
+  INT_ASSERT("Defer statement discovered in CollapseBlocks");
+  return true;
+}
+
+void CollapseBlocks::exitDeferStmt(DeferStmt* node)
+{
+
+}
+
+bool CollapseBlocks::enterTryStmt(TryStmt* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitTryStmt(TryStmt* node)
+{
+
+}
+
+bool CollapseBlocks::enterCatchStmt(CatchStmt* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitCatchStmt(CatchStmt* node)
 {
 
 }

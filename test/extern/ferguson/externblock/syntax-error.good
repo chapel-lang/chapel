@@ -1,5 +1,4 @@
 In file included from <built-in>:#:
-In file included from <command line>:#:
 syntax-error.chpl:6:3: error: expected identifier or '('
   &&;
   ^

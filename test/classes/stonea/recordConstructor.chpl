@@ -1,5 +1,5 @@
 record Foo {    
-    proc Foo(s : string) {
+    proc init(s : string) {
         msg = "constructed with: " + s;
     }
 

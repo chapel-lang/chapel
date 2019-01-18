@@ -39,27 +39,27 @@ proc BlockArr.TestGetsPuts(B)
 
 // 1.- get some elements from B on locale 1 to A on locale 0      
       __primitive("chpl_comm_get_strd",
-      		  __primitive("array_get",dest,
-      			      locArr[0].myElems._value.getDataIndex(8)),
-      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-      		  rid,
-      		  __primitive("array_get",srcr,
-      			      B._value.locArr[rid].myElems._value.getDataIndex(58)),
-      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
-      		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
-      		  stridelevels);
+                 __primitive("array_get",dest,
+                             locArr[0].myElems._value.getDataIndex(8)),
+                 __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+                 rid,
+                 __primitive("array_get",srcr,
+                             B._value.locArr[rid].myElems._value.getDataIndex(58)),
+                 __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+                 __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                 stridelevels);
 
 // 2.- get some elements from B on locale 0 to A on locale 0
       __primitive("chpl_comm_get_strd",
-      		  __primitive("array_get",dest,
-      			      locArr[0].myElems._value.getDataIndex(24)),
-      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-      		  lid,
-      		  __primitive("array_get",srcl,
-      			      B._value.locArr[lid].myElems._value.getDataIndex(8)),
-      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
-      		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
-      		  stridelevels);
+                 __primitive("array_get",dest,
+                             locArr[0].myElems._value.getDataIndex(24)),
+                 __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+                 lid,
+                 __primitive("array_get",srcl,
+                             B._value.locArr[lid].myElems._value.getDataIndex(8)),
+                 __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+                 __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                 stridelevels);
 
       var src = locArr[0].myElems._value.theData; // can this be myLocArr?
       var destl = B._value.locArr[lid].myElems._value.theData;
@@ -67,27 +67,27 @@ proc BlockArr.TestGetsPuts(B)
 
 // 3.- put some elements from A on locale 0 to B on locale 1
       __primitive("chpl_comm_put_strd",
-      		  __primitive("array_get",destr,
-			      B._value.locArr[rid].myElems._value.getDataIndex(76)),
-      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-      		  rid,
-      		  __primitive("array_get",src,
-      			      locArr[0].myElems._value.getDataIndex(26)),
-      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
-      		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
-      		  stridelevels);
+                 __primitive("array_get",destr,
+                             B._value.locArr[rid].myElems._value.getDataIndex(76)),
+                 __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+                 rid,
+                 __primitive("array_get",src,
+                             locArr[0].myElems._value.getDataIndex(26)),
+                 __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+                 __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                 stridelevels);
 
 // 4.- put some elements from A on locale 0 to B on locale 0
       __primitive("chpl_comm_put_strd",
-      		  __primitive("array_get",destl,
-			      B._value.locArr[lid].myElems._value.getDataIndex(16)),
-      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-      		  lid,
-      		  __primitive("array_get",src,
-      			      locArr[0].myElems._value.getDataIndex(2)),
-      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
-      		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
-      		  stridelevels);
+                 __primitive("array_get",destl,
+                             B._value.locArr[lid].myElems._value.getDataIndex(16)),
+                 __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+                 lid,
+                 __primitive("array_get",src,
+                             locArr[0].myElems._value.getDataIndex(2)),
+                 __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+                 __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                 stridelevels);
 
   }
 }

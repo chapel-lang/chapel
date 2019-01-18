@@ -1,1 +1,1 @@
-badLowBoundedRange.chpl:2: error: Bound of 'low..' must be an integer
+badLowBoundedRange.chpl:3: error: Bound of 'low..' must be an integer

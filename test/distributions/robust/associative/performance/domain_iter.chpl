@@ -1,11 +1,11 @@
-use Memory, Types, Time;
+use Memory, Types, Time, Sort;
 
 config const printTiming = false;
 config const verify = true;
 
 config const offset = 7;
 
-config const memFraction = if verify then 5000 else 1000;
+config const memFraction = if verify then 100000 else 1000;
 type eltType = int;
 
 const totalMem = here.physicalMemory(unit = MemUnits.Bytes);
@@ -26,7 +26,7 @@ for i in D {
   Aref(i) = off;
   AD += off;
 }
-if verify then QuickSort(Aref);
+if verify then quickSort(Aref);
 
 //
 // SERIAL
@@ -43,7 +43,7 @@ if verify then QuickSort(Aref);
   var success = true;
 
   if verify {
-    QuickSort(A);
+    quickSort(A);
     for i in D {
       if A(i) != Aref(i) {
         success = false;
@@ -71,7 +71,7 @@ if verify then QuickSort(Aref);
   var success = true;
 
   if verify {
-    QuickSort(A);
+    quickSort(A);
     for i in D {
       if A(i) != Aref(i) {
         success = false;

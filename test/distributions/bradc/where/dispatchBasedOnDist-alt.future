@@ -1,8 +1,0 @@
-feature request: ability to use where clauses on types of dists
-
-This is a variation of dispatchBasedOnDist that says if the use of
-'dist' is for some reason inherently problematic, perhaps we could
-store a built-in type function to the _domain record that would return
-the appropriate type.  This seems like it should be easy to implement
-though somewhat less desireable than the original future here which
-seems less special.

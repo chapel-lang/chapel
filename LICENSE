@@ -28,7 +28,6 @@ The Chapel implementation is composed of two categories of code:
 
    third-party/
      chpl-venv        python packages supporting chpldoc & tests
-       subprocess32   Back port of python3 subprocess to python2   Python
        argparse       Back port of argparse to < python2.7         Python
        PyYAML         YAML parser and emitter for Python           MIT
        Sphinx         Python documentation generator               BSD
@@ -43,7 +42,6 @@ The Chapel implementation is composed of two categories of code:
                                                                    Python
                                                                    BSD
                                                                    GPL 3
-
      gasnet           portable communication library               BSD-like
      gmp              optional multi-precision math library        L-GPL
      hwloc            portable NUMA compute node utilities         new BSD
@@ -53,29 +51,15 @@ The Chapel implementation is composed of two categories of code:
      qthread          alternative lightweight tasking option       new BSD
      re2              optional regular expression parsing library  new BSD
      utf8-decoder     used for runtime UTF-8 string decoding       MIT
+     libunwind        used for runtime stack tracing               MIT
 
    For a more complete introduction to these packages and their
    licensing terms, refer to highlight/README.md, third-party/README, and the
    README and license files in the subdirectories listed above.
 
-   Note that most of these packages are not used by Chapel unless specifically
-   requested.  There are some exceptions to this rule, as of the 1.10 release:
-
-      - Outside of quickstart mode, we attempt to build and include re2 and gmp,
-        leaving their respective environment variables set if building them
-        completed successfully.  This can be disabled by setting the relevant
-        environment variable to 'none'.  Details about quickstart mode can be
-        found in the top-level README.rst.
-
-      - For all platforms, with the exception of 'cygwin' and 'knc', our default
-        tasking layer is 'qthreads', with hwloc included.  On the other
-        platforms our default is 'fifo'.  Unless the relevant environment
-        variable was set for hwloc, settings CHPL_TASKS to a tasking layer other
-        than 'qthreads' will turn off the use of hwloc.  For a description of
-        other tasking options, please see tasks.rst
-
-   The following table summarizes the conditions under which each package is
-   used (see chplenv.rst for details on CHPL_* settings):
+   Note that not all of these packages are used by Chapel by default. The
+   following table summarizes the conditions under which each package is used
+   (see chplenv.rst for details on CHPL_* settings):
 
    directory/package  when used
    -----------------  ----------------------------------------------------
@@ -84,20 +68,23 @@ The Chapel implementation is composed of two categories of code:
      vim              only used if a user modifies their vim environment
 
    third-party/
-     chpl-venv        only used when running 'chpldoc' or 'start_test'
+     chpl-venv        only used when running 'chpldoc', 'start_test',
+                        or the developer-only 'chplspell'
      gasnet           only used when CHPL_COMM is 'gasnet'
-     gmp              where possible, used by default or when CHPL_GMP is 'gmp'
-     hwloc            used by default on most platforms, or when CHPL_HWLOC is
-                      'hwloc'
+     gmp              only used when CHPL_GMP is 'gmp'
+     hwloc            only used when CHPL_HWLOC is 'hwloc'
      jemalloc         only used when CHPL_MEM is 'jemalloc'
      llvm             only used when CHPL_LLVM is 'llvm'
      massivethreads   only used when CHPL_TASKS is 'massivethreads'
-     qthread          used by default on most platforms, or when CHPL_TASKS is
-                      'qthreads'
-     re2              where possible, used by default or when CHPL_REGEXP is
-                      're2'
+     qthread          only used when CHPL_TASKS is 'qthreads'
+     re2              only used when CHPL_REGEXP is 're2'
      utf8-decoder     bundled into the Chapel runtime to decode UTF-8 strings
+     libunwind        only used when CHPL_UNWIND is 'libunwind'
 
-   For packages that are only used based on a CHPL_* setting, note
-   that this setting may either be explicitly or implicitly set.  To
-   verify your settings, run $CHPL_HOME/util/printchplenv.
+   For packages that are used based on a CHPL_* setting, note that this
+   setting may either be explicitly or implicitly set. Additionally,
+   some packages are only used if a speculative build was successful.
+   See https://chapel-lang.org/docs/usingchapel/chplenv.html to
+   see which packages are used by default and which ones are built
+   speculatively. You can also check your CHPL_* settings by running
+   $CHPL_HOME/util/printchplenv after Chapel has been built

@@ -12,16 +12,19 @@ TARGETS = \
 	classes \
 	distributions \
 	domains \
+	errorHandling \
 	fileIO \
 	genericClasses \
 	iterators \
 	locales \
-	opaque \
+	modules \
+	opaque-domains \
 	parIters \
 	procedures \
 	randomNumbers \
 	ranges \
 	reductions \
+	replicated \
 	slices \
 	sparse \
 	syncsingle \
@@ -29,6 +32,7 @@ TARGETS = \
 	timers \
 	varargs \
 	variables \
+	voidVariables \
 
 #
 # Only make FFTW if FFTW_DIR is set or we can find the fftw library
@@ -36,15 +40,11 @@ TARGETS = \
 ifdef FFTW_DIR
 	TARGETS += FFTWlib
 	FFTW_OPTS = -I$(FFTW_DIR)/include -L$(FFTW_DIR)/lib
-else ifeq ($(wildcard /sbin/ldconfig),/sbin/ldconfig)
-ifneq ($(shell /sbin/ldconfig -p | grep -i fftw),)
-	TARGETS += FFTWlib
-endif
 endif
 
 ifdef CRAY_LIBSCI_PREFIX_DIR
-	TARGETS += LAPACKlib
-	LAPACK_OPTS = -I$(CRAY_LIBSCI_PREFIX_DIR)/include -lgfortran -lsci_gnu -L$(CRAY_LIBSCI_PREFIX_DIR)/lib
+	TARGETS += LAPACKlib LinearAlgebralib
+	LAPACK_OPTS = -lgfortran -lsci_gnu
 endif
 
 REALS = $(TARGETS:%=%_real)
@@ -57,12 +57,12 @@ clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 
 %: %.chpl
-	$(CHPL) -o $@ $<
+	+$(CHPL) -o $@ $<
 
 FFTWlib: FFTWlib.chpl
-	$(CHPL) -o $@ $(FFTW_OPTS) $<
+	+$(CHPL) -o $@ $(FFTW_OPTS) $<
 
 LAPACKlib: LAPACKlib.chpl
-	$(CHPL) -o $@ $(LAPACK_OPTS) $<
+	+$(CHPL) -o $@ $(LAPACK_OPTS) $<
 
 FORCE:

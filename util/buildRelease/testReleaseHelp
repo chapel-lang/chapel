@@ -14,7 +14,7 @@ set mymake = $argv[1]
 
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
-set num_procs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`
+set num_procs = `${0:h}/chpl-make-cpu_count`
 
 #
 # execute actions specified in README
@@ -84,7 +84,7 @@ set patch=`cat compiler/main/version_num.h | grep UPDATE_VERSION | cut -f3 -d' '
 set expected_version_string="$major.$minor.$patch"
 
 # Test chpl --version for expected string version.
-set version_string = `chpl --version | grep 'Version' | cut -d' ' -f 3`
+set version_string = `chpl --version | grep 'version' | cut -d' ' -f 3`
 set versionstatus = $status
 if ($versionstatus != 0) then
     echo "ERROR: execution of chpl --version failed"

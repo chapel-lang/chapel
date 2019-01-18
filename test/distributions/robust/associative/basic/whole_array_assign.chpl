@@ -37,7 +37,7 @@ testWhole(AReal);
 testWhole(AString);
 
 proc testWhole(AAssoc) {
-  type idxType = AAssoc.domain._value.idxType;
+  type idxType = AAssoc.domain.idxType;
   var AA: AAssoc.type;
   if debug then writeln(AA);
   AA = AAssoc;

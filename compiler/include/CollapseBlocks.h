@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,81 +30,109 @@ public:
   //
   // The sub-classes of Type
   //
-  virtual bool   enterAggrType    (AggregateType*     node);
-  virtual void   exitAggrType     (AggregateType*     node);
+  virtual bool   enterAggrType       (AggregateType*     node);
+  virtual void   exitAggrType        (AggregateType*     node);
 
-  virtual bool   enterEnumType    (EnumType*          node);
-  virtual void   exitEnumType     (EnumType*          node);
+  virtual bool   enterUnmanagedClassType(UnmanagedClassType* node);
+  virtual void   exitUnmanagedClassType (UnmanagedClassType* node);
 
-  virtual void   visitPrimType    (PrimitiveType*     node);
+  virtual bool   enterEnumType       (EnumType*          node);
+  virtual void   exitEnumType        (EnumType*          node);
+
+  virtual void   visitPrimType       (PrimitiveType*     node);
 
   //
   // The sub-classes of Symbol
   //
-  virtual bool   enterArgSym      (ArgSymbol*         node);
-  virtual void   exitArgSym       (ArgSymbol*         node);
+  virtual bool   enterArgSym         (ArgSymbol*         node);
+  virtual void   exitArgSym          (ArgSymbol*         node);
 
-  virtual void   visitEnumSym     (EnumSymbol*        node);
+  virtual void   visitEnumSym        (EnumSymbol*        node);
 
-  virtual bool   enterFnSym       (FnSymbol*          node);
-  virtual void   exitFnSym        (FnSymbol*          node);
+  virtual bool   enterFnSym          (FnSymbol*          node);
+  virtual void   exitFnSym           (FnSymbol*          node);
 
-  virtual void   visitLabelSym    (LabelSymbol*       node);
+  virtual void   visitLabelSym       (LabelSymbol*       node);
 
-  virtual bool   enterModSym      (ModuleSymbol*      node);
-  virtual void   exitModSym       (ModuleSymbol*      node);
+  virtual bool   enterModSym         (ModuleSymbol*      node);
+  virtual void   exitModSym          (ModuleSymbol*      node);
 
-  virtual bool   enterTypeSym     (TypeSymbol*        node);
-  virtual void   exitTypeSym      (TypeSymbol*        node);
+  virtual bool   enterTypeSym        (TypeSymbol*        node);
+  virtual void   exitTypeSym         (TypeSymbol*        node);
 
-  virtual void   visitVarSym      (VarSymbol*         node);
+  virtual void   visitVarSym         (VarSymbol*         node);
 
   //
   // The sub-classes of Expr
   //
-  virtual bool   enterCallExpr    (CallExpr*          node);
-  virtual void   exitCallExpr     (CallExpr*          node);
+  virtual bool   enterCallExpr       (CallExpr*          node);
+  virtual void   exitCallExpr        (CallExpr*          node);
 
-  virtual bool   enterDefExpr     (DefExpr*           node);
-  virtual void   exitDefExpr      (DefExpr*           node);
+  virtual bool   enterContextCallExpr(ContextCallExpr*   node);
+  virtual void   exitContextCallExpr (ContextCallExpr*   node);
 
-  virtual bool   enterNamedExpr   (NamedExpr*         node);
-  virtual void   exitNamedExpr    (NamedExpr*         node);
+  virtual bool   enterDefExpr        (DefExpr*           node);
+  virtual void   exitDefExpr         (DefExpr*           node);
 
-  virtual void   visitSymExpr     (SymExpr*           node);
+  virtual bool   enterNamedExpr      (NamedExpr*         node);
+  virtual void   exitNamedExpr       (NamedExpr*         node);
 
-  virtual void   visitUsymExpr    (UnresolvedSymExpr* node);
+  virtual bool   enterIfExpr         (IfExpr*            node);
+  virtual void   exitIfExpr          (IfExpr*            node);
+
+  virtual void   visitSymExpr        (SymExpr*           node);
+
+  virtual void   visitUsymExpr       (UnresolvedSymExpr* node);
+
+  virtual bool   enterLoopExpr     (LoopExpr*        node);
+  virtual void   exitLoopExpr      (LoopExpr*        node);
 
   //
   // The sub-classes of Stmt
   //
-  virtual void   visitUseStmt     (UseStmt*           node);
+  virtual void   visitUseStmt        (UseStmt*           node);
 
-  virtual bool   enterBlockStmt   (BlockStmt*         node);
-  virtual void   exitBlockStmt    (BlockStmt*         node);
+  virtual bool   enterBlockStmt      (BlockStmt*         node);
+  virtual void   exitBlockStmt       (BlockStmt*         node);
 
-  virtual bool   enterWhileDoStmt (WhileDoStmt*       node);
-  virtual void   exitWhileDoStmt  (WhileDoStmt*       node);
+  virtual void   visitForallIntents  (ForallIntents*   clause);
+  virtual bool   enterForallStmt     (ForallStmt*        node);
+  virtual void   exitForallStmt      (ForallStmt*        node);
 
-  virtual bool   enterDoWhileStmt (DoWhileStmt*       node);
-  virtual void   exitDoWhileStmt  (DoWhileStmt*       node);
+  virtual bool   enterWhileDoStmt    (WhileDoStmt*       node);
+  virtual void   exitWhileDoStmt     (WhileDoStmt*       node);
 
-  virtual bool   enterCForLoop    (CForLoop*          node);
-  virtual void   exitCForLoop     (CForLoop*          node);
+  virtual bool   enterDoWhileStmt    (DoWhileStmt*       node);
+  virtual void   exitDoWhileStmt     (DoWhileStmt*       node);
 
-  virtual bool   enterForLoop     (ForLoop*           node);
-  virtual void   exitForLoop      (ForLoop*           node);
+  virtual bool   enterCForLoop       (CForLoop*          node);
+  virtual void   exitCForLoop        (CForLoop*          node);
 
-  virtual bool   enterParamForLoop(ParamForLoop*      node);
-  virtual void   exitParamForLoop (ParamForLoop*      node);
+  virtual bool   enterForLoop        (ForLoop*           node);
+  virtual void   exitForLoop         (ForLoop*           node);
 
-  virtual bool   enterCondStmt    (CondStmt*          node);
-  virtual void   exitCondStmt     (CondStmt*          node);
+  virtual bool   enterParamForLoop   (ParamForLoop*      node);
+  virtual void   exitParamForLoop    (ParamForLoop*      node);
 
-  virtual void   visitEblockStmt  (ExternBlockStmt*   node);
+  virtual bool   enterCondStmt       (CondStmt*          node);
+  virtual void   exitCondStmt        (CondStmt*          node);
 
-  virtual bool   enterGotoStmt    (GotoStmt*          node);
-  virtual void   exitGotoStmt     (GotoStmt*          node);
+  virtual void   visitEblockStmt     (ExternBlockStmt*   node);
+
+  virtual bool   enterGotoStmt       (GotoStmt*          node);
+  virtual void   exitGotoStmt        (GotoStmt*          node);
+
+  virtual bool   enterForwardingStmt (ForwardingStmt*    node);
+  virtual void   exitForwardingStmt  (ForwardingStmt*    node);
+
+  virtual bool   enterDeferStmt      (DeferStmt*         node);
+  virtual void   exitDeferStmt       (DeferStmt*         node);
+
+  virtual bool   enterTryStmt        (TryStmt*           node);
+  virtual void   exitTryStmt         (TryStmt*           node);
+
+  virtual bool   enterCatchStmt      (CatchStmt*         node);
+  virtual void   exitCatchStmt       (CatchStmt*         node);
 };
 
 #endif

@@ -1,0 +1,2 @@
+trivial-virtual-par-iters.chpl:18: error: virtual parallel iterators are not yet supported (see issue #6998)
+trivial-virtual-par-iters.chpl:19: error: virtual parallel iterators are not yet supported (see issue #6998)

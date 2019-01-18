@@ -1,27 +1,64 @@
+.. default-domain:: chpl
+
+.. module:: fullyCommented.doc
+
 fullyCommented.doc
-   proc method1()
-      Comment for method1 
+==================
+**Usage**
 
-   proc body()
-      Comment for method with a body 
+.. code-block:: chapel
 
-   proc hasArg(val: int)
-      Comment for method with an argument 
+   use fullyCommented.doc;
 
-   proc argAndBody(val: int)
-      Comment for method with argument and body 
+**Submodules**
 
-Submodules for this module are located in the fullyCommented.doc/ directory
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   fullyCommented.doc/*
+
+.. function:: proc method1()
+
+   Comment for method1 
+
+.. function:: proc body()
+
+   Comment for a function with a body 
+
+.. function:: proc hasArg(val: int)
+
+   Comment for a function with an argument 
+
+.. function:: proc argAndBody(val: int)
+
+   Comment for a function with argument and body 
+
+.. default-domain:: chpl
+
+.. module:: Other
+
 Other
-   proc inside
-      Comment for method inside module 
+=====
+**Usage**
 
-   proc body()
-      Comment for method with a body inside module 
+.. code-block:: chapel
 
-   proc hasArg(val: int)
-      Comment for method with an argument inside module 
+   use fullyCommented.doc.Other;
 
-   proc argAndBody(val: int)
-      Comment for method with argument and body inside module 
+.. function:: proc inside
+
+   Comment for a function inside module 
+
+.. function:: proc body()
+
+   Comment for a function with a body inside module 
+
+.. function:: proc hasArg(val: int)
+
+   Comment for a function with an argument inside module 
+
+.. function:: proc argAndBody(val: int)
+
+   Comment for a function with argument and body inside module 
 

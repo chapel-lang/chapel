@@ -1,0 +1,1 @@
+rangeBad.chpl:2: error: Default Associative domains with idxType=range(int(64),bounded,false) are not allowed

@@ -1,9 +1,0 @@
-#!/usr/bin/env python
-
-import os, sys
-
-namedFile = os.stat('file')
-namedDir = os.stat('dir')
-with open(sys.argv[2], 'w') as fp:
-    fp.write("%o\n" % (namedFile.st_mode & 0777))
-    fp.write("%o\n" % (namedDir.st_mode & 0777))

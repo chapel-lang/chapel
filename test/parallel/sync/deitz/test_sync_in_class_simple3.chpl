@@ -3,7 +3,7 @@ class C {
 }
 
 begin {
-  var c = new C();
+  var c = new unmanaged C();
 
   c.s = 2;
 

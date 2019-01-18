@@ -4,10 +4,10 @@ class C {
 
 const D = {1..10};
 
-var A: [D] C;
+var A: [D] unmanaged C;
 
 for i in 1..5 {
-  A(i) = new C(i);
+  A(i) = new unmanaged C(i);
 }
 
 write("A is: ");

@@ -1,29 +1,41 @@
 /* The Computer Language Benchmarks Game
-   http://shootout.alioth.debian.org/
+   http://benchmarksgame.alioth.debian.org
 
-   contributed by Tom Hildebrandt, Brad Chamberlain, Lydia Duncan
+   contributed by Tom Hildebrandt, Brad Chamberlain, and Lydia Duncan
    derived from the GNU C version by Bonzini, Bartlett, and Mellor
 */
 
 use GMP;
 
-config const n = 50;                // Compute n digits of Pi, 50 by default
+config const n = 50;         // Compute n digits of pi, 50 by default
 
 proc main() {
+  param digitsPerLine = 10;
+
+  //
+  // Generate n digits, printing them in groups of digitsPerLine
+  //
   for (d,i) in zip(gen_digits(n), 1..) {
     write(d);
-    if i % 10 == 0 then
-      writeln("\t:",i);
+    if i % digitsPerLine == 0 then
+      writeln("\t:", i);
+  }
+
+  //
+  // Pad out any trailing digits for the final line
+  //
+  const leftover = n%digitsPerLine;
+  if (leftover) {
+    for leftover..digitsPerLine-1 do
+      write(" ");
+    writeln("\t:", n);
   }
 }
 
 
 iter gen_digits(numDigits) {
   var numer, accum, denom, tmp1, tmp2: mpz_t;
-  //
-  // TODO: would be nice to support overloads of assignment to
-  // support these as initializations:
-  //
+
   mpz_init_set_ui(numer, 1);               // numer = 1
   mpz_init_set_ui(accum, 0);               // accum = 0
   mpz_init_set_ui(denom, 1);               // denom = 1
@@ -31,9 +43,6 @@ iter gen_digits(numDigits) {
   mpz_init(tmp2);                          // init tmp2
 
   var k: c_ulong;
-  // This needs to be a c_ulong for portability to 32 bit systems.
-  // TODO: make our GMP methods accept uints, ints, etc. of various sizes so
-  // that the user doesn't need to know C types?
   for i in 1..numDigits {
     do {
       do {
@@ -87,12 +96,10 @@ iter gen_digits(numDigits) {
     mpz_mul_ui(numer, numer, 10);          // numer *= 10
   }
 
-  //
-  // Free memory associated with multi-precision valuesx
-  //
-  mpz_clear(tmp2);
-  mpz_clear(tmp1);
-  mpz_clear(denom);
-  mpz_clear(accum);
+  // Clean up when done.
   mpz_clear(numer);
+  mpz_clear(accum);
+  mpz_clear(denom);
+  mpz_clear(tmp1);
+  mpz_clear(tmp2);
 }

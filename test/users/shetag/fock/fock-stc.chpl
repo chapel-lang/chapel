@@ -37,8 +37,8 @@ iter genBlocks() {
     for (jat, kat) in {1..iat, 1..iat} {
       const lattop = if (kat==iat) then jat else kat;
       for lat in 1..lattop {
-        //on Locales(loc) do yield new blockIndices(iat, jat, kat, lat);
-        yield (loc, new blockIndices(iat, jat, kat, lat));
+        //on Locales(loc) do yield new unmanaged blockIndices(iat, jat, kat, lat);
+        yield (loc, new unmanaged blockIndices(iat, jat, kat, lat));
         loc = (loc+1)%numLocales;
       }
     }
@@ -83,13 +83,15 @@ proc buildjk_atom4(blk) {
   }
 
   var tmp = oneAtATime;
-  atomic jmat2(ijD) += jij;
-  atomic jmat2(klD) += jkl;
-  atomic kmat2(ikD) += kik;
-  atomic kmat2(ilD) += kil;
-  atomic kmat2(jkD) += kjk;
-  atomic kmat2(jlD) += kjl;
+  jmat2(ijD) += jij;
+  jmat2(klD) += jkl;
+  kmat2(ikD) += kik;
+  kmat2(ilD) += kil;
+  kmat2(jkD) += kjk;
+  kmat2(jlD) += kjl;
   oneAtATime = tmp;
+
+  delete blk;
 }
 
 proc main() {

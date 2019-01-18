@@ -1,0 +1,4 @@
+feature request: param fields and explicit (non-int) types for omitted initialization
+
+For some reason, explicit non-int types for param fields are causing confusion
+with omitted initialization.  Investigate this further.

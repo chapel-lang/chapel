@@ -1,1 +1,3 @@
-badStringToImag2.chpl:3: error: Missing terminating 'i' character when converting from string to imag(64); got 'j' instead
+uncaught IllegalArgumentError: bad cast from string '1.2j' to imag(64)
+  badStringToImag2.chpl:3: thrown here
+  badStringToImag2.chpl:3: uncaught here

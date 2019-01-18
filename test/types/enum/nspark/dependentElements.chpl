@@ -1,8 +1,8 @@
 enum numbers {
   one = 1,
   two = 2,
-  three = one + two
+  three = one:int + two:int
 };
 
-for n in numbers.one..numbers.three do
-  writeln(n);
+for n in numbers do
+  writeln(n:int);

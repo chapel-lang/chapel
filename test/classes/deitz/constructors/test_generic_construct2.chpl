@@ -4,18 +4,21 @@ class C {
   var x: ct;
   var y: bt;
 
-  proc C(type ct, type bt, y: ct) {
+  proc init(type ct, type bt, y: ct) {
+    this.ct = ct;
+    this.bt = bt;
     x = y;
   }
 
-  proc C(type ct, y: ct) {
+  proc init(type ct, y: ct) {
+    this.ct = ct;
     x = y;
   }
 }
 
-var c = new C(int, y=2);
+var c = new unmanaged C(int, y=2);
 writeln(c);
-var d = new C(int, int, y=2);
+var d = new unmanaged C(int, int, y=2);
 writeln(d);
 delete c;
 delete d;

@@ -1,0 +1,5 @@
+perfkeys:  Time in seconds =
+files: ep-D.dat
+graphkeys: ep runtime - D
+graphtitle: NPB: EP Time (sec) - size D
+ylabel: Time (seconds)

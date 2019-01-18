@@ -12,24 +12,25 @@ use Time;
       colors are the same, no change, otherwise each chameneos changes to the
       color you and your partner both are not.)
 
-    - (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
+    - (description of benchmark: http://benchmarksgame.alioth.debian.org/u32q/performance.php?test=chameneosredux */
 
 config const numMeetings : int = 6000000; // number of meetings to take place
 config const numChameneos1 : int = 3;     // size of population 1
 config const numChameneos2 : int = 10;    // size of population 2
 enum Color {blue=0, red=1, yellow=2};
-enum Digit {zero, one, two, three, four,
+enum Digit {zero=0, one, two, three, four,
             five, six, seven, eight, nine};
 config const verbose = false;
 // if verbose is true, prints out non-det output, otherwise prints det output
 
 class MeetingPlace {
   var spotsLeft$ : sync int;
-  var partner : Chameneos;
+  var partner : unmanaged Chameneos;
 
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
-  proc MeetingPlace() {
+  proc init() {
+    this.complete();
     spotsLeft$.writeXF(numMeetings*2);
   }
 
@@ -47,7 +48,7 @@ proc getComplement(myColor : Color, otherColor : Color) {
   if (myColor == otherColor) {
     return myColor;
   }
-  return (3 - myColor - otherColor) : Color;
+  return (3 - myColor:int - otherColor:int) : Color;
 }
 
 class Chameneos {
@@ -61,8 +62,8 @@ class Chameneos {
      with another Chameneos.  If it does, it will get the complement of the
      color of the Chameneos it met with, and change to the complement of that
      color. */
-  proc start(place : MeetingPlace) {
-    var meetingPlace : MeetingPlace = place;
+  proc start(place : unmanaged MeetingPlace) {
+    var meetingPlace : unmanaged MeetingPlace = place;
     var stop : bool = false;
     while (!stop) {
       stop = this.meet(place);
@@ -72,8 +73,8 @@ class Chameneos {
   /* meet, if called on by the chameneos who arrives 1st,
      returns the color of the chameneos who arrives 2nd,
      otherwise returns the color of the chameneos who arrives 1st */
-  proc meet(place : MeetingPlace) {
-    var partner : Chameneos;
+  proc meet(place : unmanaged MeetingPlace) {
+    var partner : unmanaged Chameneos;
     var spotsLeft = place.spotsLeft$;
 
     if (spotsLeft == 0) {
@@ -82,7 +83,7 @@ class Chameneos {
     }
 
     if (spotsLeft % 2 == 0) {
-      place.partner = this;
+      place.partner = _to_unmanaged(this);
       place.spotsLeft$ = spotsLeft - 1;
       meetingCompleted$;
     } else if (spotsLeft % 2 == 1) {
@@ -124,15 +125,15 @@ proc populate (size : int) {
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
   const D : domain(1) = {1..size};
-  var population : [D] Chameneos;
+  var population : [D] unmanaged Chameneos;
 
   if (size == 10) {
     for i in D {
-      population(i) = new Chameneos(i, colorsDefault10(i));
+      population(i) = new unmanaged Chameneos(i, colorsDefault10(i));
     }
   } else {
     for i in D {
-      population(i) = new Chameneos(i, ((i-1) % 3):Color);
+      population(i) = new unmanaged Chameneos(i, ((i-1) % 3):Color);
     }
   }
   return population;
@@ -143,7 +144,7 @@ proc populate (size : int) {
    another Chameneos, spells out the number of times it met with itself, then
    spells out the total number of times all the Chameneos met another
    Chameneos. */
-proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
+proc run(population : [] unmanaged Chameneos, meetingPlace : unmanaged MeetingPlace) {
   for i in population {
     write(" ", i.color);
   }
@@ -155,7 +156,7 @@ proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
   meetingPlace.reset();
 }
 
-proc runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
+proc runQuiet(population : [] unmanaged Chameneos, meetingPlace : unmanaged MeetingPlace) {
   coforall i in population {
     i.start(meetingPlace);
   }
@@ -166,7 +167,7 @@ proc runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
   printInfoQuiet(totalMeetings, totalMeetingsWithSelf);
 }
 
-proc printInfo(population : [] Chameneos) {
+proc printInfo(population : [] unmanaged Chameneos) {
   for i in population {
     write(i.meetings);
     spellInt(i.meetingsWithSelf);
@@ -181,7 +182,7 @@ proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
   if (totalMeetings == numMeetings*2) {
     writeln("total meetings PASS");
   } else {
-    writeln("total meetings actual = ", totalMeetings, ", total meetings expectud = ", numMeetings*2);
+    writeln("total meetings actual = ", totalMeetings, ", total meetings expected = ", numMeetings*2);
   }
 
   if (totalMeetingsWithSelf == 0) {
@@ -197,7 +198,7 @@ proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 proc spellInt(n : int) {
   var s : string = n:string;
   for i in 1..s.length {
-    write(" ", (s[i]:int + 1):Digit);
+    write(" ", (s[i]:int):Digit);
   }
   writeln();
 }
@@ -210,20 +211,24 @@ proc main() {
 
     printColorChanges();
 
-    const forest : MeetingPlace = new MeetingPlace();
-
-    const population1 = populate(numChameneos1);
-    const population2 = populate(numChameneos2);
+    const forest : unmanaged MeetingPlace = new unmanaged MeetingPlace();
+    const population1           = populate(numChameneos1);
+    const population2           = populate(numChameneos2);
 
     if (verbose) {
       var startTime = getCurrentTime();
+
       run(population1, forest);
+
       var endTime = getCurrentTime();
+
       writeln("time for chameneos1 to meet = ", endTime - startTime);
       printInfo(population1);
 
       startTime = getCurrentTime();
+
       run(population2, forest);
+
       endTime = getCurrentTime();
       writeln("time for chameneos2 to meet = ", endTime - startTime);
       printInfo(population2);
@@ -231,10 +236,17 @@ proc main() {
       runQuiet(population1, forest);
       runQuiet(population2, forest);
     }
+
     var endTimeTotal = getCurrentTime();
+
     if (verbose) {
       writeln("total execution time = ", endTimeTotal - startTimeTotal);
     }
+
+    for c in population2 do delete c;
+    for c in population1 do delete c;
+
+    delete forest;
   }
 }
 

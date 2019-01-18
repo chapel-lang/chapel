@@ -1,0 +1,15 @@
+Init(int) Enter
+          a <  5
+Init(int) Done
+
+Init(int) Enter
+          a < 10
+Init(int) Done
+
+Init(int) Enter
+  Init()
+Init(int) Done
+
+r1: (x = 10, y = 20)
+r2: (x = 10, y = 20)
+r3: (x = 20, y = 30)

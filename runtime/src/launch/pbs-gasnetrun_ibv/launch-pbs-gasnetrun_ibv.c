@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "chplcgfns.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
@@ -42,7 +43,6 @@ char sysFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
 #define procsPerNode 1  
-#define versionBuffLen 80
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
 
@@ -54,31 +54,23 @@ typedef enum {
 } qsubVersion;
 
 static qsubVersion determineQsubVersion(void) {
-  char version[versionBuffLen+1] = "";
-  char* versionPtr = version;
-  FILE* sysFile;
-  int i;
+  const int buflen = 256;
+  char version[buflen];
+  char *argv[3];
+  argv[0] = (char *) "qsub";
+  argv[1] = (char *) "--version";
+  argv[2] = NULL;
 
-  char* command = chpl_glom_strings(3, "qsub --version > ", sysFilename, " 2>&1");
-  system(command);
-  sysFile = fopen(sysFilename, "r");
-  for (i=0; i<versionBuffLen; i++) {
-    char tmp;
-    fscanf(sysFile, "%c", &tmp);
-    if (tmp == '\n') {
-      *versionPtr++ = '\0';
-      break;
-    } else {
-      *versionPtr++ = tmp;
-    }
+  memset(version, 0, buflen);
+  if (chpl_run_utility1K("qsub", argv, version, buflen) <= 0) {
+    chpl_error("Error trying to determine qsub version", 0, 0);
   }
 
-  fclose(sysFile);
   if (strstr(version, "NCCS")) {
     return nccs;
   } else if (strstr(version, "PBSPro")) {
     return pbspro;
-  } else if (strstr(version, "version: ")) {
+  } else if (strstr(version, "version:") || strstr(version, "Version:")) {
     return torque;
   } else {
     return unknown;
@@ -130,6 +122,30 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
   }
 }
 
+static void propagate_charset_environment(FILE *f)
+{
+  // If any of the relevant character set environment variables
+  // are set, replicate the state of all of them.  This needs to
+  // be done separately from both the PBS -V mechanism and the
+  // launcher's -E mechanism because the launcher is written in
+  // Perl, which modifies the character set environment, losing
+  // our settings
+  //
+  // Note that if we are setting these variables, and one or more
+  // of them is empty, we must set it with explicitly empty
+  // contents (e.g. LC_ALL= instead of -u LC_ALL) so that the
+  // Chapel launch mechanism will not overwrite it.
+  char *lang = getenv("LANG");
+  char *lc_all = getenv("LC_ALL");
+  char *lc_collate = getenv("LC_COLLATE");
+  if (lang || lc_all || lc_collate) {
+    fprintf(f, " env");
+    fprintf(f, " LANG=%s", lang ? lang : "");
+    fprintf(f, " LC_ALL=%s", lc_all ? lc_all : "");
+    fprintf(f, " LC_COLLATE=%s", lc_collate ? lc_collate : "");
+  }
+}
+
 static char* chpl_launch_create_command(int argc, char* argv[], 
                                         int32_t numLocales) {
   int i;
@@ -177,8 +193,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "expect -re $prompt\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"%s/gasnetrun_ibv -n %d %s ", 
-          WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
+  fprintf(expectFile, "send \"%s/%s/gasnetrun_ibv -n %d -N %d",
+          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
+  propagate_charset_environment(expectFile);
+  fprintf(expectFile, " %s ", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }

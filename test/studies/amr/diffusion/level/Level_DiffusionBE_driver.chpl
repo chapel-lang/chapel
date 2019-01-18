@@ -30,7 +30,7 @@ proc main {
     return f;
   }
 
-  var solution = new LevelSolution(level = level);
+  var solution = new unmanaged LevelSolution(level = level);
   solution.setToFunction(initial_condition, output_times(0));
 
   //==== Max time step ====
@@ -57,7 +57,7 @@ proc main {
 
   //==== Set boundary conditions ====
   write("Setting boundary conditions...");
-  var bc = new ZeroFluxDiffusionBC(level = level);
+  var bc = new unmanaged ZeroFluxDiffusionBC(level = level);
   write("done.\n");
 
 
@@ -82,10 +82,7 @@ proc main {
   }
   //<=== Generate output <===
   
-  
-
+  delete bc;
+  delete solution;
+  delete level;
 } // end main
-
-
-
-

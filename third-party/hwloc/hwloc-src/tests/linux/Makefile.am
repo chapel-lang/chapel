@@ -1,4 +1,4 @@
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2017 Inria.  All rights reserved.
 # Copyright © 2009-2011 Université Bordeaux
 # Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -55,6 +55,8 @@ sysfs_outputs = \
 		48amd64-4d2n6c-sparse.output \
 		64amd64-4s2n4ca2co.output \
 		64fake-4n2s2ca2c2t.output \
+		64intel64-fakeKNL-A2A-cache.output \
+		64intel64-fakeKNL-SNC4-hybrid.output \
 		96em64t-4n4d3ca2co.output \
 		96em64t-4n4d3ca2co-forcecpuinfo.output \
 		128ia64-17n4s2c.output \
@@ -115,6 +117,8 @@ sysfs_tarballs = \
 		48amd64-4d2n6c-sparse.tar.bz2 \
 		64amd64-4s2n4ca2co.tar.bz2 \
 		64fake-4n2s2ca2c2t.tar.bz2 \
+		64intel64-fakeKNL-A2A-cache.tar.bz2 \
+		64intel64-fakeKNL-SNC4-hybrid.tar.bz2 \
 		96em64t-4n4d3ca2co.tar.bz2 \
 		96em64t-4n4d3ca2co-forcecpuinfo.source \
 		128ia64-17n4s2c.tar.bz2 \
@@ -171,4 +175,4 @@ EXTRA_DIST = $(sysfs_outputs) $(sysfs_tarballs) $(sysfs_excludes) $(sysfs_option
 
 LOG_COMPILER = $(builddir)/test-topology.sh
 
-SUBDIRS = . gather
+SUBDIRS = . allowed gather

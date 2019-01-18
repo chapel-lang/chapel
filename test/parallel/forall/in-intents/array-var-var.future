@@ -1,7 +1,0 @@
-bug: compiler crashes with 'in' forall intent on domains, arrays
-unimplemented feature: 'in' forall intent on domains, arrays
-
-This program should complete without warnings or errors.
-
-This future exhibits at the same time a bug (compiler trips over assertion)
-and an unimplemented feature ('in' forall intent on domains, arrays).

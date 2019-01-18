@@ -12,6 +12,6 @@ for i in 0..#size {
 }
 
 
-_ddata_free(a);
+_ddata_free(a, size);
 
 writeln("OK");

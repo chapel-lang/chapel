@@ -1,11 +1,11 @@
-use CommDiagnostics;
+use CommUtil;
 
 config const n = 100000;
 config param tupleLen = 10;
 
 var A:[1..n] tupleLen*int;
-resetCommDiagnostics();
-startCommDiagnostics();
+
+start();
 
 on Locales[1] {
   for tup in A {
@@ -15,9 +15,9 @@ on Locales[1] {
   }
 }
 
-stopCommDiagnostics();
+stop();
 
 writeln(A[1]);
 writeln(A[n]);
 
-writeln(getCommDiagnostics());
+report(maxGets=5, maxOns=1);

@@ -1,6 +1,6 @@
 proc main {
   var D = {1..10};
-  var A: [i in D] int = i;
+  var A: [D] int = D;
 
   proc foo(X: [] int) {
     D = {1..10};

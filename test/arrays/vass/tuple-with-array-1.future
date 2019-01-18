@@ -1,30 +1,3 @@
 bug: program crashes when a variable of a tuple type is declared and one component of the tuple is an array
 
-Currently I get this output when running the test:
-
-nil
-ChapelBase.chpl:1331: error: attempt to dereference nil
-
-Here is what seems to happen. The array component of a tuple is
-represented at runtime as a pointer to DefaultRectangularArr.  The
-tuple variable (e.g. 'x1' in this example) gets NULL as the
-corresponding default value.
-
-Whenever almost *anything* is about to happen with that tuple
-component, chpl__autoCopy() gets invoked on it. That tries
-to increment its reference count. That means accessing an
-instance variable off a NULL pointer, which crashes.
-
-It seems like this happens during the initialization of that tuple
-variable (e.g. 'x1').
-
-Looking at it again - the generated code for this function:
-
-  type AT = [1..3] int;
-  proc test()
-    var myTuple: (AT, AT);
-    writeln(myTuple(1).domain);
-  }
-
-has very little in terms of initializing myTuple, and goes straight
-into computing the domain.
+Issue #7716

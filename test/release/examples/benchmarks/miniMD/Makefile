@@ -9,22 +9,18 @@ TARGETS = \
 
 REALS = $(TARGETS:%=%_real)
 
-default: all explicitMiniMD
+default: all
 
 all: $(TARGETS)
 
 clean: FORCE
 	rm -f $(TARGETS) $(REALS)
-	cd explicit && $(MAKE) clean
 
 stencil: FORCE
 stencil: CHPL_FLAGS += -suseStencilDist=true
 stencil: $(TARGETS)
 
 miniMD: miniMD.chpl helpers/*.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) -M helpers $<
-
-explicitMiniMD: FORCE
-	cd explicit && $(MAKE)
+	+$(CHPL) -o $@ $(CHPL_FLAGS) -M helpers $<
 
 FORCE:

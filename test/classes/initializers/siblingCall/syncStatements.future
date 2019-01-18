@@ -1,0 +1,4 @@
+feature request: support sync statements in initializers
+
+Due to their implicit try wrapping, we cannot support sync statements in
+initializers today (see #7098 and #6145)

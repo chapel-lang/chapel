@@ -7,15 +7,15 @@
 record R {
   var i: int;
 
-  iter these() ref                                                { yield i; }
+  iter ref these() ref                                            { yield i; }
 
-  iter these(param tag: iterKind) ref
+  iter ref these(param tag: iterKind) ref
     where tag==iterKind.standalone                                { yield i; }
 
-  iter these(param tag: iterKind) ref
+  iter ref these(param tag: iterKind) ref
     where tag==iterKind.leader                                    { yield i; }
 
-  iter these(param tag: iterKind, followThis) ref
+  iter ref these(param tag: iterKind, followThis) ref
     where tag==iterKind.follower                                  { yield i; }
 }
 

@@ -44,18 +44,18 @@ config const n = 62,
 const st1=1, st2=1; //MBC //BC
 
 // non-distributed version
-const MatVectSpace = [1..n, 1..n+1];
+const MatVectSpace = {1..n, 1..n+1};
 
 const
   bdim1 =
 //  new BlockDim(tl1, 1, nbb1), //BD
-    new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"), //BC
-  rdim1 = new ReplicatedDim(tl1),
+    new unmanaged BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"), //BC
+  rdim1 = new unmanaged ReplicatedDim(tl1),
 
   bdim2 =
 //  new BlockDim(tl2, 1, nbb2), //BD
-    new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"), //BC
-  rdim2 = new ReplicatedDim(tl2);
+    new unmanaged BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"), //BC
+  rdim2 = new unmanaged ReplicatedDim(tl2);
 
 const AbD: domain(2, indexType)
    dmapped BlockCyclic(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla) //MBC
@@ -72,9 +72,9 @@ var refsuccess = true;
 
 // the domains for the arrays used for replication
 const
-  replAD = [1..n, 1..blkSize] dmapped
+  replAD = {1..n, 1..blkSize} dmapped
     DimensionalDist2D(tla, bdim1, rdim2, "distBR"), //DIM
-  replBD = [1..blkSize, 1..n+1] dmapped
+  replBD = {1..blkSize, 1..n+1} dmapped
     DimensionalDist2D(tla, rdim1, bdim2, "distRB"); //DIM
 
 var replA: [replAD] elemType,
@@ -204,7 +204,7 @@ proc initABref() {
 
     var Abtemp: [MatVectSpace] real;
     fillRandom(Abtemp, seed);
-    for (r,t) in (Abref,Abtemp) do
+    for (r,t) in zip(Abref,Abtemp) do
       r = (t * 2000 - 1000):elemType;
 
   } else {
@@ -267,8 +267,8 @@ proc schurComplementRef(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domai
 proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
                     C: [] elemType) {
-  for (iA, iC) in (A.domain.dim(1), C.domain.dim(1)) do
-    for (jA, iB) in (A.domain.dim(2), B.domain.dim(1)) do
-      for (jB, jC) in (B.domain.dim(2), C.domain.dim(2)) do
+  for (iA, iC) in zip(A.domain.dim(1), C.domain.dim(1)) do
+    for (jA, iB) in zip(A.domain.dim(2), B.domain.dim(1)) do
+      for (jB, jC) in zip(B.domain.dim(2), C.domain.dim(2)) do
         C[iC,jC] -= A[iA, jA] * B[iB, jB];
 }

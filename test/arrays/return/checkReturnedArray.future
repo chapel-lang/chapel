@@ -1,0 +1,15 @@
+bug: returned array expressions not checked against return type's domain
+
+At present, when a function declares an array return type and we
+return a promoted expression, we return an array of the return type's
+size even if the expression being returned doesn't match it as shown
+in this test.  This seems wrong and likely an off-shoot of our current
+bugs related to zippered iteration in which
+
+* largeArray = smallArray; // results in an OOB error
+* smallArray = largeArray; // results in a silent truncation
+
+A question about tests like this is whether the domain named in the
+formal signature must literally be the same domain as the returned
+expression, or merely have the same indices; and would we want to do
+different things here for anonymous vs. named domains.

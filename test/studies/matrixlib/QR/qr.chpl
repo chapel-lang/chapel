@@ -31,7 +31,7 @@ proc QR(A: [?D]) where (D.rank == 2) {
   var subnormscale = 1.0: A.eltType;
 
   for i in 1..minDim-1 {
-    var X => A(i+1..m,i..i);
+    ref X = A(i+1..m,i..i);
     alpha = A(i,i);
     Xnorm = norm(X);
     if (Xnorm != zero) {
@@ -60,8 +60,8 @@ proc QR(A: [?D]) where (D.rank == 2) {
     if (tau(i) != zero) {
       alpha = A(i,i);
       A(i,i) = one;
-      var v => A[i..m, i..i];
-      var Ai => A[i..m, i+1..n];
+      ref v = A[i..m, i..i];
+      ref Ai = A[i..m, i+1..n];
       var Di = {i+1..n};
       var w: [Di] real;
       for j in Di {

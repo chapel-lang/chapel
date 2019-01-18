@@ -1,3 +1,0 @@
-ref-return-two-types.chpl:18: error: invalid ref return pair: return types differ
-ref-return-two-types.chpl:5: error: function returns R
-ref-return-two-types.chpl:12: error: function returns real(64)

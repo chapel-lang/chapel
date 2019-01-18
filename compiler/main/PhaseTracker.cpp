@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -301,7 +301,10 @@ bool Phase::IsStartOfPass() const
 
 void Phase::ReportPass(unsigned long now) const
 {
-  unsigned long phaseTime = now - mStartTime;
+  // clock-skew can cause now < startTime, just report 0 in that case
+  unsigned long phaseTime = 0;
+  if (now > mStartTime)
+    phaseTime = now - mStartTime;
 
   ReportTime(mName, phaseTime / 1e6);
 

@@ -1,0 +1,10 @@
+
+[brick]
+name = "usesGood"
+version = "0.1.0"
+chplVersion = "1.16"
+author = "foo"
+source = "foo"
+
+[dependencies]
+badThenGood = "0.2.0"

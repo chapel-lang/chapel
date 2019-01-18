@@ -1,8 +1,0 @@
-feature request: ability to use where clauses on types of dists
-
-This test shows syntax that seems like we should support (or something
-close to it) to choose between implementations of a function based on
-the distribution used.  For some reason that I am not completely
-understanding -- perhaps because 'dist' is a method rather than a
-member? -- it does not work today and results in an ambiguous call.
-

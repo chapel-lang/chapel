@@ -1,0 +1,11 @@
+perfkeys: Elapsed time (seconds):
+files: npb-mg-s.dat
+graphkeys: Class S
+graphtitle: NPB MG Size S
+ylabel: Time (seconds)
+
+perfkeys: Elapsed time (seconds):
+files: npb-mg-a.dat
+graphkeys: Class A
+graphtitle: NPB MG Size A
+ylabel: Time (seconds)

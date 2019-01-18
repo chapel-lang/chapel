@@ -6,7 +6,10 @@ class C {
   var a: [d] int;
 }
 
-proc C.C(d, a) where d: domain(?) { }   // btw this does transfer a-the-arg to a-the-field
+proc C.init(d, a) where isSubtype(d, domain(?)) {
+  this.d = d;
+  this.a = a;
+}
 
-var c1 = new C(d1,a1);
+var c1 = new shared C(d1,a1);
 writeln(c1);

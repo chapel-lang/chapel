@@ -20,9 +20,9 @@ class GridCFGhostRegion {
   //| >    fields    | >
   //|/...............|/
 
-  const grid:             Grid;
-  const coarse_neighbors: domain(Grid);
-  const transfer_regions:  [coarse_neighbors] MultiDomain(dimension,stridable=true);
+  const grid:             unmanaged Grid;
+  var coarse_neighbors: domain(unmanaged Grid);
+  var transfer_regions:  [coarse_neighbors] unmanaged MultiDomain(dimension,stridable=true);
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -31,16 +31,17 @@ class GridCFGhostRegion {
 
   
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
   
-  proc GridCFGhostRegion (
-    grid:         Grid,
-    parent_level: Level,
-    coarse_level: Level)
+  proc init (
+    grid:         unmanaged Grid,
+    parent_level: unmanaged Level,
+    coarse_level: unmanaged Level)
   {
         
     this.grid = grid;
+    this.complete();
     
     
     //==== Calculate refinement ratio ====
@@ -55,7 +56,7 @@ class GridCFGhostRegion {
         
         //---- Initialize a MultiDomain to the intersection, less grid's interior ----
         
-        var boundary_multidomain = new MultiDomain(dimension, stridable=true);
+        var boundary_multidomain = new unmanaged MultiDomain(dimension, stridable=true);
         boundary_multidomain.add( fine_intersection );
         boundary_multidomain.subtract( grid.cells );
         
@@ -84,21 +85,21 @@ class GridCFGhostRegion {
 
   }
   // /|''''''''''''''''''''/|
-  //< |    constructor    < |
+  //< |    initializer    < |
   // \|....................\|
 
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
-  proc ~GridCFGhostRegion ()
+  proc deinit ()
   {       
     for multidomain in transfer_regions do delete multidomain;
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
 
@@ -143,9 +144,9 @@ class LevelCFGhostRegion {
   //| >    fields    | >
   //|/...............|/
   
-  const level:               Level;  
-  const coarse_level:        Level;
-  var grid_cf_ghost_regions: [level.grids] GridCFGhostRegion;
+  const level:               unmanaged Level;  
+  const coarse_level:        unmanaged Level;
+  var grid_cf_ghost_regions: [level.grids] unmanaged GridCFGhostRegion;
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -154,46 +155,46 @@ class LevelCFGhostRegion {
   
   
   //|\'''''''''''''''''''''''''''''''''''|\
-  //| >    special method: initialize    | >
+  //| >    special method: postinit      | >
   //|/...................................|/
   //
   //--------------------------------------------------------------------
   // Intended constructor signature is
   //    LevelCFGhostRegion( level, coarse_level ).
-  // The 'initalize' method is required instead of a proper constructor
+  // The 'postinit' method is required instead of a proper initializer
   // because grid_cf_ghost_regions depends on level.grids.
   //--------------------------------------------------------------------
   
-  proc initialize ()
+  proc postinit ()
   { 
         
     for grid in level.grids do
-      grid_cf_ghost_regions(grid) = new GridCFGhostRegion(grid, level, coarse_level);
+      grid_cf_ghost_regions(grid) = new unmanaged GridCFGhostRegion(grid, level, coarse_level);
       
   }
   // /|'''''''''''''''''''''''''''''''''''/|
-  //< |    special method: initialize    < |
+  //< |    special method: postinit      < |
   // \|...................................\|
   
   
   
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
-  proc ~LevelCFGhostRegion ()
+  proc deinit ()
   {
     for region in grid_cf_ghost_regions do delete region;
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
   
   //|\'''''''''''''''''''''''''''''|\
   //| >    special method: this    | >
   //|/.............................|/
-  proc this ( grid: Grid )
+  proc this ( grid: unmanaged Grid )
   {
     return grid_cf_ghost_regions( grid );
   }
@@ -227,12 +228,12 @@ class GridCFGhostSolution {
   //| >    fields    | >
   //|/...............|/
   
-  const grid_cf_ghost_region: GridCFGhostRegion;
+  const grid_cf_ghost_region: unmanaged GridCFGhostRegion;
   
-  var old_data: [grid_cf_ghost_region.coarse_neighbors] MultiArray(dimension,true,real);
+  var old_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,true,real);
   var old_time: real;
 
-  var current_data: [grid_cf_ghost_region.coarse_neighbors] MultiArray(dimension,true,real);
+  var current_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,true,real);
   var current_time: real;
 
 
@@ -248,30 +249,30 @@ class GridCFGhostSolution {
   
   
   //|\'''''''''''''''''''''''''''''''''''|\
-  //| >    special method: initialize    | >
+  //| >    special method: postinit      | >
   //|/...................................|/
   //
   //-----------------------------------------------------------------------------
   // The intended constructor signature is
   //     GridCFGhostSolution( grid_cf_ghost_region: GridCFGhostRegion ).
-  // The 'initialize' method is required instead because the fields
+  // The 'postinit' method is required instead because the fields
   // old_value_multiarrays and current_value_multiarrays are typed by the
   // input.
   //-----------------------------------------------------------------------------
   
-  proc initialize ()
+  proc postinit ()
   {      
     for c_neighbor in grid_cf_ghost_region.coarse_neighbors {
 
-      old_data(c_neighbor) = new MultiArray(dimension,true,real);
+      old_data(c_neighbor) = new unmanaged MultiArray(dimension,true,real);
       old_data(c_neighbor).allocate( grid_cf_ghost_region.transfer_regions(c_neighbor) );
 
-      current_data(c_neighbor) = new MultiArray(dimension,true,real);
+      current_data(c_neighbor) = new unmanaged MultiArray(dimension,true,real);
       current_data(c_neighbor).allocate( grid_cf_ghost_region.transfer_regions(c_neighbor) );
     }
   }
   // /|'''''''''''''''''''''''''''''''''''/|
-  //< |    special method: initialize    < |
+  //< |    special method: postinit      < |
   // \|...................................\|
   
   
@@ -304,10 +305,10 @@ class GridCFGhostSolution {
   
   
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
-  proc ~GridCFGhostSolution () {
+  proc deinit () {
     
     for multiarray in old_data do delete multiarray;
     
@@ -315,7 +316,7 @@ class GridCFGhostSolution {
 
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
 
 
@@ -329,7 +330,7 @@ class GridCFGhostSolution {
   // data from the input coarse LevelSolution.
   //---------------------------------------------------------
 
-  proc fill ( coarse_level_solution: LevelSolution )
+  proc fill ( coarse_level_solution: unmanaged LevelSolution )
   {
 
     //---- Calculate refinement ratio ----
@@ -397,11 +398,11 @@ class LevelCFGhostSolution {
   //| >    fields    | >
   //|/...............|/
   
-  const level_cf_ghost_region: LevelCFGhostRegion;
+  const level_cf_ghost_region: unmanaged LevelCFGhostRegion;
   
-  const level:                 Level;
+  const level:                 unmanaged Level;
   
-  var grid_cf_ghost_solutions: [level.grids] GridCFGhostSolution;
+  var grid_cf_ghost_solutions: [level.grids] unmanaged GridCFGhostSolution;
 
   var old_time:     real;    
   var current_time: real;
@@ -413,51 +414,51 @@ class LevelCFGhostSolution {
   
   
   //|\'''''''''''''''''''''''''''''''''''|\
-  //| >    special method: initialize    | >
+  //| >    special method: postinit      | >
   //|/...................................|/
   //
   //---------------------------------------------------------------------------
   // This mimics the constructor signature
   //     LevelCFGhostSolution ( level_cf_ghost_region: LevelCFGhostRegion, 
   //                            level: Level ).
-  // The 'initialize' method is currently required in place of a proper 
-  // constructor because grid_cf_ghost_solutions is typed by level.grids, 
+  // The 'postinit' method is currently required in place of a proper 
+  // initializer because grid_cf_ghost_solutions is typed by level.grids, 
   // which is provided by the input argument.
   //
-  // Ideally, the constructor signature would be simply
-  //     LevelCFGhostSolution ( level_cf_ghost_region: LevelCFGhostRegion ),
+  // Ideally, the initializer signature would be simply
+  //     init ( level_cf_ghost_region: LevelCFGhostRegion ),
   // but doing so and attempting to set level = level_cf_ghost_region.level
   // creates a nil reference in the meantime, as grid_cf_ghost_solutions
   // attempts to read its domain before this assignment can occur.
   //---------------------------------------------------------------------------
   
-  proc initialize ()
+  proc postinit ()
   {
     
     
     assert(level == level_cf_ghost_region.level,
-           "Error: LevelCFGhostRegion.initialize: Input level must equal level_cf_ghost_region.level");
+           "Error: LevelCFGhostRegion.postinit: Input level must equal level_cf_ghost_region.level");
     
     for grid in level.grids do
-      grid_cf_ghost_solutions(grid) = new GridCFGhostSolution( level_cf_ghost_region(grid) );
+      grid_cf_ghost_solutions(grid) = new unmanaged GridCFGhostSolution( level_cf_ghost_region(grid) );
 
   }
   // /|'''''''''''''''''''''''''''''''''''/|
-  //< |    special method: initialize    < |
+  //< |    special method: postinit      < |
   // \|...................................\|
  
  
  
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
-  proc ~LevelCFGhostSolution () 
+  proc deinit () 
   {  
     for solution in grid_cf_ghost_solutions do delete solution;
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
   
@@ -471,7 +472,7 @@ class LevelCFGhostSolution {
   // GridCFGhostSolution.
   //-----------------------------------------------------------
   
-  proc this ( grid: Grid )
+  proc this ( grid: unmanaged Grid )
   {
     return grid_cf_ghost_solutions( grid );
   }
@@ -491,7 +492,7 @@ class LevelCFGhostSolution {
   // data from the input coarse LevelSolution.
   //---------------------------------------------------------------
   
-  proc fill ( coarse_level_solution: LevelSolution)
+  proc fill ( coarse_level_solution: unmanaged LevelSolution)
   {
     //==== Make aliases for the levels involved ====
     const level        = this.level_cf_ghost_region.level;
@@ -542,7 +543,7 @@ class LevelCFGhostSolution {
 //-----------------------------------------------------------------
 
 proc GridVariable.fillCFGhostRegion (
-  grid_cf_ghost_solution: GridCFGhostSolution,
+  grid_cf_ghost_solution: unmanaged GridCFGhostSolution,
   time:                   real )
 {
   //==== Safety check ====
@@ -594,7 +595,7 @@ proc GridVariable.fillCFGhostRegion (
 //------------------------------------------------------------------
 
 proc LevelVariable.fillCFGhostRegion (
-  level_cf_ghost_solution: LevelCFGhostSolution,
+  level_cf_ghost_solution: unmanaged LevelCFGhostSolution,
   time:                    real )
 {
 

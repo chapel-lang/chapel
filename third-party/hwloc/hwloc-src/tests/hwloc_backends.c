@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2014 Inria.  All rights reserved.
+ * Copyright © 2012-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -15,7 +15,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#if defined(HWLOC_WIN_SYS) && !defined(__CYGWIN__)
+#ifndef HAVE_MKSTEMP
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>

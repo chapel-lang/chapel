@@ -1,13 +1,30 @@
+.. default-domain:: chpl
+
+.. module:: multipleInheritance.doc
+
 multipleInheritance.doc
-   Class: Mother
-      proc eyes()
-         One of Mother's methods 
+=======================
+**Usage**
 
-   Class: Father
-      proc hair()
-         One of Father's methods 
+.. code-block:: chapel
 
-   Class: Child : Mother, Father
-      proc nose()
-         A method all its own 
+   use multipleInheritance.doc;
+
+.. class:: Mother
+
+   .. method:: proc eyes()
+
+      One of Mother's methods 
+
+.. class:: Father
+
+   .. method:: proc hair()
+
+      One of Father's methods 
+
+.. class:: Child : Mother, Father
+
+   .. method:: proc nose()
+
+      A method all its own 
 

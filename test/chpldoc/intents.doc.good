@@ -1,93 +1,152 @@
+.. default-domain:: chpl
+
+.. module:: intents.doc
+
 intents.doc
-   proc one(in val)
-      This function has an argument with the in intent 
+===========
+**Usage**
 
-   proc two(out val)
-      This function has an argument with the out intent 
+.. code-block:: chapel
 
-   proc three(inout val)
-      This function has an argument with the inout intent 
+   use intents.doc;
 
-   proc four(param val)
-      This function has an argument with the param intent 
+**Submodules**
 
-   proc five(type val)
-      This function has an argument with the type intent 
+.. toctree::
+   :maxdepth: 1
+   :glob:
 
-   proc fiveA(const val)
-      This function has an argument with the const intent 
+   intents.doc/*
 
-   proc fiveB(ref val)
-      This function has an argument with the ref intent 
+.. function:: proc one(in val)
 
-   proc six(in val: int)
-      This function has an argument with an intent and a type 
+   This function has an argument with the in intent 
 
-   proc seven() ref
-      This function has a return intent of ref 
+.. function:: proc two(out val)
 
-   proc eight()
-      This function has a return intent of const 
+   This function has an argument with the out intent 
 
-   proc nine() param
-      This function has a return intent of param 
+.. function:: proc three(inout val)
 
-   proc ten() type
-      This function has a return intent of type 
+   This function has an argument with the inout intent 
 
-   proc twelve(val: int) param
-      This function has both an argument and a return intent 
+.. function:: proc four(param val)
 
-   proc thirteen(inout val) param
-      This function has both an argument intent and a return intent 
+   This function has an argument with the param intent 
 
-   proc fourteen()
-      This function has a return intent (other than ref) and a body 
+.. function:: proc five(type val)
 
-Submodules for this module are located in the intents.doc/ directory
+   This function has an argument with the type intent 
+
+.. function:: proc fiveA(const val)
+
+   This function has an argument with the const intent 
+
+.. function:: proc fiveB(ref val)
+
+   This function has an argument with the ref intent 
+
+.. function:: proc six(in val: int)
+
+   This function has an argument with an intent and a type 
+
+.. function:: proc seven() ref
+
+   This function has a return intent of ref 
+
+.. function:: proc eight()
+
+   This function has a return intent of const 
+
+.. function:: proc nine() param
+
+   This function has a return intent of param 
+
+.. function:: proc ten() type
+
+   This function has a return intent of type 
+
+.. function:: proc twelve(val: int) param
+
+   This function has both an argument and a return intent 
+
+.. function:: proc thirteen(inout val) param
+
+   This function has both an argument intent and a return intent 
+
+.. function:: proc fourteen()
+
+   This function has a return intent (other than ref) and a body 
+
+.. default-domain:: chpl
+
+.. module:: Inner
+
 Inner
-   proc one(in val)
-      This function has an argument with the in intent 
+=====
+**Usage**
 
-   proc two(out val)
-      This function has an argument with the out intent 
+.. code-block:: chapel
 
-   proc three(inout val)
-      This function has an argument with the inout intent 
+   use intents.doc.Inner;
 
-   proc four(param val)
-      This function has an argument with the param intent 
+.. function:: proc one(in val)
 
-   proc five(type val)
-      This function has an argument with the type intent 
+   This function has an argument with the in intent 
 
-   proc fiveA(const val)
-      This function has an argument with the const intent 
+.. function:: proc two(out val)
 
-   proc fiveB(ref val)
-      This function has an argument with the ref intent 
+   This function has an argument with the out intent 
 
-   proc six(in val: int)
-      This function has an argument with an intent and a type 
+.. function:: proc three(inout val)
 
-   proc seven() ref
-      This function has a return intent of ref 
+   This function has an argument with the inout intent 
 
-   proc eight()
-      This function has a return intent of const 
+.. function:: proc four(param val)
 
-   proc nine() param
-      This function has a return intent of param 
+   This function has an argument with the param intent 
 
-   proc ten() type
-      This function has a return intent of type 
+.. function:: proc five(type val)
 
-   proc twelve(val: int) param
-      This function has both an argument and a return intent 
+   This function has an argument with the type intent 
 
-   proc thirteen(inout val) param
-      This function has both an argument intent and a return intent 
+.. function:: proc fiveA(const val)
 
-   proc fourteen()
-      This function has a return intent (other than ref) and a body 
+   This function has an argument with the const intent 
+
+.. function:: proc fiveB(ref val)
+
+   This function has an argument with the ref intent 
+
+.. function:: proc six(in val: int)
+
+   This function has an argument with an intent and a type 
+
+.. function:: proc seven() ref
+
+   This function has a return intent of ref 
+
+.. function:: proc eight()
+
+   This function has a return intent of const 
+
+.. function:: proc nine() param
+
+   This function has a return intent of param 
+
+.. function:: proc ten() type
+
+   This function has a return intent of type 
+
+.. function:: proc twelve(val: int) param
+
+   This function has both an argument and a return intent 
+
+.. function:: proc thirteen(inout val) param
+
+   This function has both an argument intent and a return intent 
+
+.. function:: proc fourteen()
+
+   This function has a return intent (other than ref) and a body 
 

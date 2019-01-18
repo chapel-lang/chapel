@@ -1,4 +1,10 @@
 chpldoc.doc
+
+Usage:
+   use chpldoc.doc;
+
+Submodules for this module are located in the chpldoc.doc/ directory
+
    proc commented(val: int): string
       
       Multiline comments found before a function are associated with that function
@@ -9,8 +15,11 @@ chpldoc.doc
       The function can be a stub and still output its comment
 
    proc uncommented()
-Submodules for this module are located in the chpldoc.doc/ directory
 Defined
+
+Usage:
+   use chpldoc.doc.Defined;
+
    
    If the source code defines a module, it can also have a comment associated
    with it

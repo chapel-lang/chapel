@@ -1,8 +1,11 @@
-.TH "hwlocality_object_types" 3 "Thu Dec 17 2015" "Version 1.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_object_types" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_object_types \- Object Types
+hwlocality_object_types
+.SH SYNOPSIS
+.br
+.PP
 .SS "Typedefs"
 
 .in +1c
@@ -20,7 +23,7 @@ hwlocality_object_types \- Object Types
 
 .in +1c
 .ti -1c
-.RI "enum \fBhwloc_obj_type_t\fP { \fBHWLOC_OBJ_SYSTEM\fP, \fBHWLOC_OBJ_MACHINE\fP, \fBHWLOC_OBJ_NUMANODE\fP, \fBHWLOC_OBJ_PACKAGE\fP, \fBHWLOC_OBJ_CACHE\fP, \fBHWLOC_OBJ_CORE\fP, \fBHWLOC_OBJ_PU\fP, \fBHWLOC_OBJ_GROUP\fP, \fBHWLOC_OBJ_MISC\fP, \fBHWLOC_OBJ_BRIDGE\fP, \fBHWLOC_OBJ_PCI_DEVICE\fP, \fBHWLOC_OBJ_OS_DEVICE\fP, \fBHWLOC_OBJ_TYPE_MAX\fP }"
+.RI "enum \fBhwloc_obj_type_t\fP { \fBHWLOC_OBJ_SYSTEM\fP, \fBHWLOC_OBJ_MACHINE\fP, \fBHWLOC_OBJ_NUMANODE\fP, \fBHWLOC_OBJ_PACKAGE\fP, \fBHWLOC_OBJ_CACHE\fP, \fBHWLOC_OBJ_CORE\fP, \fBHWLOC_OBJ_PU\fP, \fBHWLOC_OBJ_GROUP\fP, \fBHWLOC_OBJ_MISC\fP, \fBHWLOC_OBJ_BRIDGE\fP, \fBHWLOC_OBJ_PCI_DEVICE\fP, \fBHWLOC_OBJ_OS_DEVICE\fP }"
 .br
 .ti -1c
 .RI "enum \fBhwloc_obj_cache_type_e\fP { \fBHWLOC_OBJ_CACHE_UNIFIED\fP, \fBHWLOC_OBJ_CACHE_DATA\fP, \fBHWLOC_OBJ_CACHE_INSTRUCTION\fP }"
@@ -116,7 +119,7 @@ Operating system GPU device\&. For instance ':0\&.0' for a GL display, 'card0' f
 Operating system network device\&. For instance the 'eth0' interface on Linux\&. 
 .TP
 \fB\fIHWLOC_OBJ_OSDEV_OPENFABRICS \fP\fP
-Operating system openfabrics device\&. For instance the 'mlx4_0' InfiniBand HCA device on Linux\&. 
+Operating system openfabrics device\&. For instance the 'mlx4_0' InfiniBand HCA, or 'hfi1_0' Omni-Path interface on Linux\&. 
 .TP
 \fB\fIHWLOC_OBJ_OSDEV_DMA \fP\fP
 Operating system dma engine device\&. For instance the 'dma0chan0' DMA channel on Linux\&. 
@@ -145,10 +148,10 @@ Whole system (may be a cluster of machines)\&. The whole system that is accessib
 Machine\&. The typical root object type\&. A set of processors and memory with cache coherency\&. 
 .TP
 \fB\fIHWLOC_OBJ_NUMANODE \fP\fP
-NUMA node\&. A set of processors around memory which the processors can directly access\&. 
+NUMA node\&. An object that contains memory that is directly and byte-accessible to the host processors\&. It is usually close to some cores (the corresponding objects are descendants of the NUMA node object in the hwloc tree)\&. There is always at one such object in the topology even if the machine is not NUMA\&. 
 .TP
 \fB\fIHWLOC_OBJ_PACKAGE \fP\fP
-Physical package, what goes into a socket\&. In the physical meaning, i\&.e\&. that you can add or remove physically\&. 
+Physical package\&. The physical package that usually gets inserted into a socket on the motherboard\&. A processor package usually contains multiple cores\&. 
 .TP
 \fB\fIHWLOC_OBJ_CACHE \fP\fP
 Cache\&. Can be L1i, L1d, L2, L3, \&.\&.\&. 
@@ -173,9 +176,6 @@ PCI device\&. These objects have neither CPU sets nor node sets\&. They are not 
 .TP
 \fB\fIHWLOC_OBJ_OS_DEVICE \fP\fP
 Operating system device\&. These objects have neither CPU sets nor node sets\&. They are not added to the topology unless I/O discovery is enabled with \fBhwloc_topology_set_flags()\fP\&. 
-.TP
-\fB\fIHWLOC_OBJ_TYPE_MAX \fP\fP
-Sentinel value 
 .SH "Function Documentation"
 .PP 
 .SS "int hwloc_compare_types (\fBhwloc_obj_type_t\fP type1, \fBhwloc_obj_type_t\fP type2)"

@@ -1,0 +1,5 @@
+perfkeys: Total Time:
+files: lulesh-dense.dat
+graphkeys: lulesh-dense runtime
+graphtitle: DOE: Lulesh Dense Time (sec) - sedov15oct
+ylabel: Time (seconds)

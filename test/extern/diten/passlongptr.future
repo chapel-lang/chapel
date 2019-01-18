@@ -1,0 +1,4 @@
+bug: reference to type c_long doesn't translate into a C long pointer
+
+An extern function declared with an argument "ref l: c_long" called with a
+variable with type "c_long" gets a C compiler error.

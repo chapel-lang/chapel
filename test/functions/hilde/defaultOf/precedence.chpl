@@ -19,7 +19,7 @@ proc _defaultOf(type t) where t == R
   return result;
 }
 
-proc R.R()
+proc R.init()
 {
   this.i = 8;
   this.r = 2.82842;

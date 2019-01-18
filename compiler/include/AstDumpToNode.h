@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,13 +22,16 @@
 
 #include "AstLogger.h"
 
+#include "alist.h"
 #include <cstdio>
 
 class BaseAST;
 class Expr;
 class ModuleSymbol;
+class QualifiedType;
 class Symbol;
 class Type;
+
 
 class AstDumpToNode : public AstLogger
 {
@@ -77,60 +80,74 @@ public:
   // themselves
   //
 
-  virtual bool     enterAggrType    (AggregateType*     node);
-  virtual void     exitAggrType     (AggregateType*     node);
+  virtual bool     enterAggrType       (AggregateType*     node);
+  virtual void     exitAggrType        (AggregateType*     node);
 
-  virtual bool     enterEnumType    (EnumType*          node);
-  virtual void     exitEnumType     (EnumType*          node);
+  virtual bool     enterEnumType       (EnumType*          node);
 
-  virtual void     visitPrimType    (PrimitiveType*     node);
+  virtual void     visitPrimType       (PrimitiveType*     node);
 
-  virtual bool     enterArgSym      (ArgSymbol*         node);
+  virtual bool     enterArgSym         (ArgSymbol*         node);
 
-  virtual void     visitEnumSym     (EnumSymbol*        node);
+  virtual void     visitEnumSym        (EnumSymbol*        node);
 
-  virtual bool     enterFnSym       (FnSymbol*          node);
+  virtual bool     enterFnSym          (FnSymbol*          node);
 
-  virtual void     visitLabelSym    (LabelSymbol*       node);
+  virtual void     visitLabelSym       (LabelSymbol*       node);
 
-  virtual bool     enterModSym      (ModuleSymbol*      node);
-  virtual void     exitModSym       (ModuleSymbol*      node);
+  virtual bool     enterModSym         (ModuleSymbol*      node);
+  virtual void     exitModSym          (ModuleSymbol*      node);
 
-  virtual bool     enterTypeSym     (TypeSymbol*        node);
+  virtual bool     enterTypeSym        (TypeSymbol*        node);
 
-  virtual void     visitVarSym      (VarSymbol*         node);
+  virtual void     visitVarSym         (VarSymbol*         node);
 
-  virtual bool     enterCallExpr    (CallExpr*          node);
+  virtual bool     enterCallExpr       (CallExpr*          node);
 
-  virtual bool     enterDefExpr     (DefExpr*           node);
+  virtual bool     enterContextCallExpr(ContextCallExpr*   node);
 
-  virtual bool     enterNamedExpr   (NamedExpr*         node);
-  virtual void     exitNamedExpr    (NamedExpr*         node);
+  virtual bool     enterDefExpr        (DefExpr*           node);
 
-  virtual void     visitSymExpr     (SymExpr*           node);
+  virtual bool     enterNamedExpr      (NamedExpr*         node);
+  virtual void     exitNamedExpr       (NamedExpr*         node);
 
-  virtual void     visitUsymExpr    (UnresolvedSymExpr* node);
+  virtual bool     enterIfExpr         (IfExpr*            node);
+  virtual void     exitIfExpr          (IfExpr*            node);
 
-  virtual void     visitUseStmt     (UseStmt*           node);
+  virtual void     visitSymExpr        (SymExpr*           node);
 
-  virtual bool     enterBlockStmt   (BlockStmt*         node);
+  virtual void     visitUsymExpr       (UnresolvedSymExpr* node);
 
-  virtual bool     enterWhileDoStmt (WhileDoStmt*       node);
+  virtual bool     enterLoopExpr  (LoopExpr*        node);
+  virtual void     exitLoopExpr   (LoopExpr*        node);
 
-  virtual bool     enterDoWhileStmt (DoWhileStmt*       node);
+  virtual void     visitUseStmt        (UseStmt*           node);
 
-  virtual bool     enterCForLoop    (CForLoop*          node);
+  virtual bool     enterBlockStmt      (BlockStmt*         node);
 
-  virtual bool     enterForLoop     (ForLoop*           node);
+  virtual bool     enterForallStmt     (ForallStmt*        node);
 
-  virtual bool     enterParamForLoop(ParamForLoop*      node);
+  virtual bool     enterWhileDoStmt    (WhileDoStmt*       node);
 
-  virtual bool     enterCondStmt    (CondStmt*          node);
+  virtual bool     enterDoWhileStmt    (DoWhileStmt*       node);
 
-  virtual void     visitEblockStmt  (ExternBlockStmt*   node);
+  virtual bool     enterCForLoop       (CForLoop*          node);
 
-  virtual bool     enterGotoStmt    (GotoStmt*          node);
-  virtual void     exitGotoStmt     (GotoStmt*          node);
+  virtual bool     enterForLoop        (ForLoop*           node);
+
+  virtual bool     enterParamForLoop   (ParamForLoop*      node);
+
+  virtual bool     enterCondStmt       (CondStmt*          node);
+
+  virtual void     visitEblockStmt     (ExternBlockStmt*   node);
+
+  virtual bool     enterGotoStmt       (GotoStmt*          node);
+
+  virtual bool     enterTryStmt        (TryStmt*           node);
+
+  virtual bool     enterCatchStmt      (CatchStmt*         node);
+
+  virtual bool     enterDeferStmt      (DeferStmt*         node);
 
 private:
                    AstDumpToNode();
@@ -141,32 +158,23 @@ private:
   void             ast_symbol(const char* tag, Symbol* sym, bool def);
   void             ast_symbol(Symbol* sym, bool def);
 
-  void             writeSymbol(Symbol* sym)                             const;
-  void             writeSymbolCompact(Symbol* sym)                      const;
-  int              writeType(Type* type, bool announce = true)          const;
+  void             writeSymbol(Symbol* sym)                              const;
+  void             writeSymbolCompact(Symbol* sym)                       const;
+
+  int              writeQual(QualifiedType type)                         const;
+  int              writeType(Type*         type, bool announce = true)   const;
 
   void             write(const char* text);
   void             write(bool spaceBefore, const char* text, bool spaceAfter);
 
   void             newline();
 
-  void             logEnter(BaseAST* node);
-  void             logEnter(BaseAST* node, const char* fmt, ...);
-  void             logEnter(const char* fmt, ...);
-
-  void             logExit (BaseAST* node);
-  void             logExit (const char* fmt, ...);
-
-  void             logVisit(BaseAST* node);
-  void             logVisit(const char* fmt, ...);
-
-  void             logWrite(const char* fmt, ...);
-
   // enable compact mode
   void             enterNode(BaseAST* node)                             const;
   void             enterNodeSym(Symbol* node, const char* name = 0)     const;
   void             exitNode(BaseAST* node, bool addNewline = false)     const;
   void             writeField(const char* msg, int offset, BaseAST* field);
+  void             writeField(const char* msg, AList& list);
   void             writeLongString(const char* msg, const char* arg)    const;
   void             writeNodeID(BaseAST* node,
                                bool     spaceBefore,

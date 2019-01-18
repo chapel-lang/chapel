@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,7 +29,7 @@ module MemConsistency {
   //  return memory_order_seq_cst;
 
   pragma "no instantiation limit"
-  pragma "compiler generated"
+  pragma "last resort"
   pragma "no doc"
   inline proc _defaultOf(type t) where t == memory_order {
     pragma "no doc"

@@ -1,4 +1,4 @@
-use Random, Time;
+use Random, Time, Search, Sort;
 
 config const n: int = 30000;
 const linearN: int = n/1000; // problem size for slow "linear" opeations
@@ -11,7 +11,7 @@ class Runner {
 
 class PushBack: Runner {
   const n: int;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     for i in 1..n {
       A.push_back(i);
     }
@@ -20,7 +20,7 @@ class PushBack: Runner {
 
 class SumElements: Runner {
   const n: int;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     var sum = 0;
     for a in A {
       sum += a;
@@ -31,7 +31,7 @@ class SumElements: Runner {
 
 class PushFront: Runner {
   const n: int;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     for i in 1..n {
       A.push_front(i);
     }
@@ -39,7 +39,7 @@ class PushFront: Runner {
 }
 
 class PopBack: Runner {
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     while !A.isEmpty() {
       A.pop_back();
     }
@@ -47,7 +47,7 @@ class PopBack: Runner {
 }
 
 class PopFront: Runner {
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     while !A.isEmpty() {
       A.pop_front();
     }
@@ -57,8 +57,8 @@ class PopFront: Runner {
 // time inserting into a random index in the array
 class InsertRandom: Runner {
   const n: int;
-  proc run(A: [] int) {
-    extern proc srand(int);
+  override proc run(A: [] int) {
+    extern proc srand(seed: int);
     extern proc rand(): int;
     srand(randSeed);
     for i in 1..linearN {
@@ -70,14 +70,13 @@ class InsertRandom: Runner {
 // generate random numbers and put them in order in the array
 class InsertSorted: Runner {
   const n: int;
-  const linear: bool = false;
-  proc run(A: [] int) {
-    extern proc srand(int);
+  override proc run(A: [] int) {
+    extern proc srand(seed: int);
     extern proc rand(): int;
     srand(randSeed);
     for i in 1..linearN {
       const val = rand();
-      const (_, loc) = if linear then LinearSearch(A, val) else BinarySearch(A, val);
+      const (_, loc) = binarySearch(A, val);
       A.insert(loc, val);
     }
   }
@@ -86,7 +85,7 @@ class InsertSorted: Runner {
 class Remove: Runner {
   const n: int;
   const front: bool;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     if front {
       for i in 1..linearN {
         A.remove(1);
@@ -104,7 +103,7 @@ class Remove: Runner {
 // try a few similar operation on a list to compare
 class ListAppend: Runner {
   const n: int;
-  proc runList(ref L: list(int)) {
+  override proc runList(ref L: list(int)) {
     for i in 1..n {
       L.append(i);
     }
@@ -113,7 +112,7 @@ class ListAppend: Runner {
 
 class SumReduceList: Runner {
   const n: int;
-  proc runList(ref L: list(int)) {
+  override proc runList(ref L: list(int)) {
     var sum = 0;
     for val in L {
       sum += val;
@@ -123,13 +122,13 @@ class SumReduceList: Runner {
 }
 
 class ListDestroy: Runner {
-  proc runList(ref L: list(int)) {
+  override proc runList(ref L: list(int)) {
     L.destroy();
   }
 }
 
 
-proc timeRun(r: Runner, A) {
+proc timeRun(r: borrowed Runner, A) {
   var t = new Timer();
   t.start();
   r.run(A);
@@ -137,7 +136,7 @@ proc timeRun(r: Runner, A) {
   return t.elapsed();
 }
 
-proc timeRunList(r: Runner, ref L: list(int)) {
+proc timeRunList(r: borrowed Runner, ref L: list(int)) {
   var t = new Timer();
   t.start();
   r.runList(L);
@@ -145,7 +144,7 @@ proc timeRunList(r: Runner, ref L: list(int)) {
   return t.elapsed();
 }
 
-proc isSorted(A, n) {
+proc isSorted(A: [] int, n:int): bool {
   var prev = A[1];
   for i in 1..n {
     if prev > A[i] then return false;
@@ -164,33 +163,33 @@ proc output(name: string, time: real) {
 
 proc main {
   var A: [1..0] int;
-  var r: Runner;
+  var r: owned Runner;
 
-  r = new PushBack(n); output("PushBack", timeRun(r, A)); delete r;
-  r = new SumElements(n); output("SumElements", timeRun(r, A)); delete r;
-  r = new PopBack(); output("PopBack", timeRun(r, A)); delete r;
+  r = new owned PushBack(n); output("PushBack", timeRun(r, A));
+  r = new owned SumElements(n); output("SumElements", timeRun(r, A));
+  r = new owned PopBack(); output("PopBack", timeRun(r, A));
 
-  r = new PushFront(n); output("PushFront", timeRun(r, A)); delete r;
-  r = new PopFront(); output("PopFront", timeRun(r, A)); delete r;
+  r = new owned PushFront(n); output("PushFront", timeRun(r, A));
+  r = new owned PopFront(); output("PopFront", timeRun(r, A));
 
-  r = new InsertRandom(n); output("InsertR", timeRun(r, A)); delete r;
+  r = new owned InsertRandom(n); output("InsertR", timeRun(r, A));
 
-  r = new PopBack(); r.run(A); delete r; // clean up
-  r = new InsertSorted(n); output("InsertSB", timeRun(r, A)); delete r;
+  r = new owned PopBack(); r.run(A); // clean up
+  r = new owned InsertSorted(n); output("InsertSB", timeRun(r, A));
 
   assert(isSorted(A,linearN));
 
-  r = new PopBack(); r.run(A); delete r; // clean up
-  r = new InsertSorted(n, false); output("InsertSL", timeRun(r,A)); delete r;
+  r = new owned PopBack(); r.run(A); // clean up
+  r = new owned InsertSorted(n); output("InsertSL", timeRun(r,A));
   assert(isSorted(A,linearN));
 
-  r = new Remove(n, true); output("RemoveFront", timeRun(r, A)); delete r;
-  r = new PushBack(n); r.run(A); delete r;
-  r = new Remove(n, false); output("RemoveBack", timeRun(r, A)); delete r;
+  r = new owned Remove(n, true); output("RemoveFront", timeRun(r, A));
+  r = new owned PushBack(n); r.run(A);
+  r = new owned Remove(n, false); output("RemoveBack", timeRun(r, A));
 
   var l = new list(int);
-  r = new ListAppend(n); output("ListAppend", timeRunList(r,l)); delete r;
+  r = new owned ListAppend(n); output("ListAppend", timeRunList(r,l));
   assert(l.length == n);
-  r = new SumReduceList(n); output("ListReduce", timeRunList(r, l)); delete r;
-  r = new ListDestroy(); output("ListDest", timeRunList(r,l)); delete r;
+  r = new owned SumReduceList(n); output("ListReduce", timeRunList(r, l));
+  r = new owned ListDestroy(); output("ListDest", timeRunList(r,l));
 }

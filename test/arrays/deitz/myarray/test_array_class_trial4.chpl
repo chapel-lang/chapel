@@ -14,9 +14,10 @@ class array1d {
   }
 }
 
-var a : array1d(int) = new array1d(int);
+var a : borrowed array1d(int) = new borrowed array1d(int);
 
 a.indexedby(1) = 3;
 a.indexedby(2) = 2;
 a.indexedby(3) = 1;
+
 writeln(a.indexedby(1), a.indexedby(2), a.indexedby(3));

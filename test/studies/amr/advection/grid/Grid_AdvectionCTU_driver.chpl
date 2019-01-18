@@ -34,7 +34,7 @@ proc main {
     return f;
   }
 
-  var sol = new GridSolution(grid = grid);
+  var sol = new unmanaged GridSolution(grid = grid);
 
   sol.setToFunction(initial_condition, output_times(0));
   //<=== Initialize solution <===
@@ -51,7 +51,7 @@ proc main {
 
   //==== Initialize boundary conditions ====
 /*   var bc = new ZeroInflowAdvectionGridBC(grid = grid); */
-  var bc = new PeriodicGridBC(grid = grid);
+  var bc = new unmanaged PeriodicGridBC(grid = grid);
 
 
 
@@ -71,8 +71,10 @@ proc main {
     sol.clawOutput(frame_number);
   }
   //<=== Generate output <===
-  
 
+  delete sol;
+  delete bc;
+  delete grid;
 } // end main
 
 

@@ -11,7 +11,7 @@ class C {
 
 }
 
-var c = new C();
+var c = new unmanaged C();
 
 c.foo() = 2;
 writeln(c.foo());

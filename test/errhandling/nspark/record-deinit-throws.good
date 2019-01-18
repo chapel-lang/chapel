@@ -1,0 +1,1 @@
+record-deinit-throws.chpl:12: error: deinit is not permitted to throw

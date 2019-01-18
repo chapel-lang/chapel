@@ -1,0 +1,1 @@
+multilineStringLineNumber.chpl:8: error: type mismatch in assignment from real(64) to int(64)

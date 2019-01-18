@@ -79,9 +79,9 @@ var D: [Dom.translate(-shift)] real;
 
 // aliased arrays
 var DomSlice = {1..m/2, 1..n, 1..o};
-var Refa => Ref[DomSlice];
-var Aa => A[DomSlice];
-var Ba => B[DomSlice];
+ref Refa = Ref[DomSlice];
+ref Aa = A[DomSlice];
+ref Ba = B[DomSlice];
 {
   if initialize then {
     fillRandom(Ba, 31415);
@@ -101,7 +101,7 @@ var Ba => B[DomSlice];
     writeln("whole array assignment (alias) ", (m,n,o), ": ", dt);
 }
 
-var Ca => C[DomSlice.translate(shift)];
+ref Ca = C[DomSlice.translate(shift)];
 {
   if initialize {
     fillRandom(Ca, 92653);
@@ -121,7 +121,7 @@ var Ca => C[DomSlice.translate(shift)];
     writeln("whole array assignment (alias, + offset) ", (m,n,o), ": ", dt);
 }
 
-var Da => D[DomSlice.translate(-shift)];
+ref Da = D[DomSlice.translate(-shift)];
 {
   if initialize {
     fillRandom(Da, 58979);

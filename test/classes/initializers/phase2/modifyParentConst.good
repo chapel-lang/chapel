@@ -1,0 +1,2 @@
+modifyParentConst.chpl:12: In initializer:
+modifyParentConst.chpl:15: error: cannot update a const field, "x", from parent type in child initializer

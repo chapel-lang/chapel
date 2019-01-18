@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2012, 2015 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -9,7 +9,9 @@
 #ifndef UTILS_LSTOPO_H
 #define UTILS_LSTOPO_H
 
+#include <private/autogen/config.h>
 #include <hwloc.h>
+#include <misc.h>
 
 extern int lstopo_ignore_pus;
 extern int lstopo_collapse;
@@ -38,6 +40,33 @@ struct lstopo_output {
   unsigned min_pu_textwidth;
 };
 
+struct style {
+  struct stylecolor { int r, g, b; }
+	bg,	/* main box background color */
+	t,	/* main text color */
+	bg2,	/* other box background color */
+	t2;	/* other text color */
+};
+
+struct lstopo_obj_userdata {
+  /* original common userdata (we replace the first one with this extended structure) */
+  struct hwloc_utils_userdata common;
+
+  /* draw info */
+  unsigned width;
+  unsigned height;
+  unsigned fontsize;
+  unsigned gridsize;
+
+  /* custom style */
+  struct style style;
+#define LSTOPO_STYLE_BG  0x1
+#define LSTOPO_STYLE_T   0x2
+#define LSTOPO_STYLE_BG2 0x4
+#define LSTOPO_STYLE_T2  0x8
+  unsigned style_set; /* OR'ed LSTOPO_STYLE_* */
+};
+
 typedef void output_method (struct lstopo_output *output, const char *filename);
 
 extern output_method output_console, output_synthetic, output_ascii, output_x11, output_fig, output_png, output_pdf, output_ps, output_svg, output_windows, output_xml;
@@ -47,8 +76,8 @@ struct draw_methods {
   void (*declare_color) (void *output, int r, int g, int b);
   void (*box) (void *output, int r, int g, int b, unsigned depth, unsigned x, unsigned width, unsigned y, unsigned height);
   void (*line) (void *output, int r, int g, int b, unsigned depth, unsigned x1, unsigned y1, unsigned x2, unsigned y2);
-  void (*text) (void *output, int r, int g, int b, int size, unsigned depth, unsigned x, unsigned y, const char *text);
-  void (*textsize) (void *output, const char *text, unsigned textlength, unsigned fontsize, unsigned *width);
+  void (*text) (void *output, int r, int g, int b, unsigned depth, unsigned x, unsigned y, const char *text);
+  void (*textsize) (void *output, const char *text, unsigned textlength, unsigned *width);
 };
 
 extern unsigned int gridsize, fontsize;
@@ -62,9 +91,11 @@ enum lstopo_orient_e {
 /* orientation of children within an object of the given type */
 extern enum lstopo_orient_e force_orient[];
 
+extern int show_indexes[];
+extern int show_attrs[];
+
 extern void output_draw_start(struct lstopo_output *output);
 extern void output_draw(struct lstopo_output *output);
-extern void output_draw_clear(struct lstopo_output *output);
 
 int rgb_to_color(int r, int g, int b) __hwloc_attribute_const;
 int declare_color(int r, int g, int b);

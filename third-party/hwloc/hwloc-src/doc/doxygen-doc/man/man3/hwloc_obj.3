@@ -1,8 +1,8 @@
-.TH "hwloc_obj" 3 "Thu Dec 17 2015" "Version 1.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_obj" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwloc_obj \- 
+hwloc_obj
 .SH SYNOPSIS
 .br
 .PP
@@ -151,7 +151,7 @@ Children, \fCchildren\fP[0 \&.\&. arity -1]\&.
 .SS "\fBhwloc_cpuset_t\fP hwloc_obj::complete_cpuset"
 
 .PP
-The complete CPU set of logical processors of this object,\&. This includes not only the same as the cpuset field, but also the CPUs for which topology information is unknown or incomplete, and the CPUs that are ignored when the \fBHWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM\fP flag is not set\&. Thus no corresponding PU object may be found in the topology, because the precise position is undefined\&. It is however known that it would be somewhere under this object\&.
+The complete CPU set of logical processors of this object,\&. This includes not only the same as the cpuset field, but also some CPUs for which topology information is unknown or incomplete, and the CPUs that are ignored when the \fBHWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM\fP flag is not set\&. Thus no corresponding PU object may be found in the topology, because the precise position is undefined\&. It is however known that it would be somewhere under this object\&.
 .PP
 \fBNote:\fP
 .RS 4
@@ -162,7 +162,7 @@ Its value must not be changed, \fBhwloc_bitmap_dup()\fP must be used instead\&.
 .SS "\fBhwloc_nodeset_t\fP hwloc_obj::complete_nodeset"
 
 .PP
-The complete NUMA node set of this object,\&. This includes not only the same as the nodeset field, but also the NUMA nodes for which topology information is unknown or incomplete, and the nodes that are ignored when the \fBHWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM\fP flag is not set\&. Thus no corresponding NODE object may be found in the topology, because the precise position is undefined\&. It is however known that it would be somewhere under this object\&.
+The complete NUMA node set of this object,\&. This includes not only the same as the nodeset field, but also some NUMA nodes for which topology information is unknown or incomplete, and the nodes that are ignored when the \fBHWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM\fP flag is not set\&. Thus no corresponding NUMA node object may be found in the topology, because the precise position is undefined\&. It is however known that it would be somewhere under this object\&.
 .PP
 If there are no NUMA nodes in the machine, all the memory is close to this object, so \fCcomplete_nodeset\fP is full\&.
 .PP
@@ -188,7 +188,9 @@ Its value must not be changed, \fBhwloc_bitmap_dup()\fP must be used instead\&.
 .SS "unsigned hwloc_obj::depth"
 
 .PP
-Vertical index in the hierarchy\&. If the topology is symmetric, this is equal to the parent depth plus one, and also equal to the number of parent/child links from the root object to here\&. 
+Vertical index in the hierarchy\&. For normal objects, this is the depth of the horizontal level that contains this object and its cousins of the same type\&. If the topology is symmetric, this is equal to the parent depth plus one, and also equal to the number of parent/child links from the root object to here\&.
+.PP
+For special objects (I/O and Misc) that are not in the main tree, this is a special negative value that corresponds to their dedicated level, see \fBhwloc_get_type_depth()\fP and \fBhwloc_get_type_depth_e\fP\&. Those special values can be passed to hwloc functions such \fBhwloc_get_nbobjs_by_depth()\fP as usual\&. 
 .SS "struct \fBhwloc_distances_s\fP** hwloc_obj::distances"
 
 .PP
@@ -222,7 +224,7 @@ Memory attributes\&.
 .SS "char* hwloc_obj::name"
 
 .PP
-Object description if any\&. 
+Object-specific name if any\&. Mostly used for identifying OS devices and Misc objects where a name string is more useful than numerical indexes\&. 
 .SS "struct \fBhwloc_obj\fP* hwloc_obj::next_cousin"
 
 .PP
@@ -234,7 +236,7 @@ Next object below the same parent\&.
 .SS "\fBhwloc_nodeset_t\fP hwloc_obj::nodeset"
 
 .PP
-NUMA nodes covered by this object or containing this object\&. This is the set of NUMA nodes for which there are NODE objects in the topology under or above this object, i\&.e\&. which are known to be physically contained in this object or containing it and known how (the children path between this object and the NODE objects)\&.
+NUMA nodes covered by this object or containing this object\&. This is the set of NUMA nodes for which there are NUMA node objects in the topology under or above this object, i\&.e\&. which are known to be physically contained in this object or containing it and known how (the children path between this object and the NUMA node objects)\&.
 .PP
 In the end, these nodes are those that are close to the current object\&.
 .PP

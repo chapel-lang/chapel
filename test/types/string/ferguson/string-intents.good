@@ -1,0 +1,14 @@
+(s = hello)
+(s = goodbye)
+test x:hello
+test x:later
+test2 x:yo
+test2 x:bye
+test2 x:hello
+test2 x:bye
+now hi is hello
+test3 x:sup
+test3 x:cya
+test3 x:hello
+test3 x:cya
+now hi is cya

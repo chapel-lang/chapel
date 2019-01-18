@@ -96,7 +96,7 @@ Evaluating dF3 on [0, 1]:
  -- 0.20:  F_numeric()= 3.04065154  f_analytic()= 3.04290310 err=-0.00225156  > thresh
  -- 0.30:  F_numeric()= 5.59286623  f_analytic()= 5.59016994 err= 0.00269628  > thresh
  -- 0.40:  F_numeric()= 15.81301766  f_analytic()= 15.81138830 err= 0.00162936  > thresh
- -- 0.50:  F_numeric()=-1033981881073271.62500000  f_analytic()= 0.00000000 err=-1033981881073271.62500000  > thresh
+ -- 0.50:  F_numeric()=-1033981881073270.00000000  f_analytic()= 0.00000000 err=-1033981881073270.00000000  > thresh
  -- 0.60:  F_numeric()=-15.81301766  f_analytic()=-15.81138830 err=-0.00162936  > thresh
  -- 0.70:  F_numeric()=-5.59286623  f_analytic()=-5.59016994 err=-0.00269628  > thresh
  -- 0.80:  F_numeric()=-3.04065154  f_analytic()=-3.04290310 err= 0.00225156  > thresh

@@ -21,7 +21,7 @@ class IC {
 }
 
 proc fun_string_chars(s: string) {
-  var ic = new IC(cursor=1, s=s);
+  var ic = new unmanaged IC(cursor=1, s=s);
   ic.next();
   return ic;
 }
@@ -64,7 +64,7 @@ proc IC.next() {
 }
 
 proc special_fun_string_chars(s: string) {
-  var ic = new IC(cursor=1, s=s);
+  var ic = new unmanaged IC(cursor=1, s=s);
   ic.i = 1;
   ic.limit = ic.s.length;
   ic.cursor = ic.i <= ic.limit;
@@ -80,14 +80,26 @@ proc IC.special_next() {
     value = s[i];
 }
 
+
+
+
+
 var ic = fun_string_chars("ABC");
+
 while ic.cursor {
   writeln(ic.value);
   ic.next();
 }
 
+delete ic;
+
+
+
 ic = special_fun_string_chars("ABC");
+
 while ic.cursor {
   writeln(ic.value);
   ic.special_next();
 }
+
+delete ic;

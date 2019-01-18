@@ -1,0 +1,6 @@
+current-gaps.chpl:21: In function 'bad2':
+current-gaps.chpl:24: error: Scoped variable would outlive the value it is set to
+current-gaps.chpl:21: note: consider scope of arg
+current-gaps.chpl:57: In function 'badF3':
+current-gaps.chpl:62: error: Scoped variable r2 cannot be returned
+current-gaps.chpl:61: note: consider result here

@@ -1,0 +1,2 @@
+illegalSizes-1.chpl:1: error: illegal size 13 for bool
+illegalSizes-1.chpl:1: error: unresolved call 'bool(13)'

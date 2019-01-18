@@ -126,22 +126,21 @@ effect as passing that option once.
 BUGS
 ----
 
-See $CHPL\_HOME/STATUS for a list of known bugs and
-$CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
+See $CHPL\_HOME/doc/rst/usingchapel/bugs.rst for instructions on reporting bugs.
 
 SEE ALSO
 --------
 
-$CHPL\_HOME/README.rst for more information on how to get started with
-Chapel.
+$CHPL\_HOME/doc/rst/usingchapel/QUICKSTART.rst for more information on how to
+get started with Chapel.
 
 AUTHORS
 -------
 
-See $CHPL\_HOME/CONTRIBUTORS for a list of contributors to Chapel.
+See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 
 COPYRIGHT
 ---------
 
-Copyright (c) 2004-2016 Cray Inc. (See $CHPL\_HOME/LICENSE for more
+Copyright (c) 2004-2018 Cray Inc. (See $CHPL\_HOME/LICENSE for more
 details.)

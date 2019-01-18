@@ -1,7 +1,7 @@
 .\" -*- nroff -*-
-.\" Copyright © 2015 Inria.  All rights reserved.
+.\" Copyright © 2015-2018 Inria.  All rights reserved.
 .\" See COPYING in top-level directory.
-.TH HWLOC-DUMP-HWDATA "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
+.TH HWLOC-DUMP-HWDATA "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
 .SH NAME
 hwloc-dump-hwdata \- Dump topology and locality information from hardware tables
 .
@@ -21,7 +21,11 @@ hwloc-dump-hwdata \- Dump topology and locality information from hardware tables
 .TP 10
 \fB\-o <dir>\fR
 save output files to directory <dir> instead of the default
-\fI/var/run/hwloc/\fR.
+\fI%RUNSTATEDIR%/hwloc/\fR that was specified at configure time.
+
+You may want to set the HWLOC_DUMPED_HWDATA_DIR environment variable
+as well so that the hwloc library looks for dumped files in that same
+directory.
 .
 .\" **************************
 .\"    Description Section
@@ -32,7 +36,8 @@ hwloc may benefit from some locality and topology information from
 SMBIOS or ACPI tables.
 They are accessible from raw hardware files under directories such
 /sys/firmware/dmi/ or /sys/firmware/acpi/ on Linux.
-These files are usually only accessible to root.
+These files are usually only accessible to root,
+and they only exist when there is \fIdmi-sysfs\fR support in the Linux kernel.
 .
 .PP
 The hwloc-dump-hwdata tool dumps the useful contents of such files into
@@ -41,23 +46,18 @@ once during boot and have the main (non-privileged) hwloc library gather
 information from these human-readable files.
 .
 .PP
-\fBhwloc-dump-hwdata is currently only useful on Intel Knights Landing
-Xeon Phi platforms\fR.
+\fBhwloc-dump-hwdata is currently only useful for Intel Xeon Phi processors\fR
+(Knights Landing and Knights Mill).
 .
 .PP
 The current list of dumped information is:
 .
 .TP 5
-\fBIntel Knights Landing memory-side cache characteristics\fR
+\fBIntel Xeon Phi processor memory, cache and clustering configuration\fR
 gathered from specific SMBIOS entries such as
 \fI/sys/firmware/dmi/entries/14-*\fR and
 \fI/sys/firmware/dmi/entries/160-*\fR,
 and saved in file \fIknl_memoryside_cache\fR.
-.
-.PP
-If the output directory is changed, you may want to set the
-HWLOC_DUMPED_HWDATA_DIR environment variable accordingly so that
-the hwloc library finds the dumped files.
 .
 .\" **************************
 .\"    See also section

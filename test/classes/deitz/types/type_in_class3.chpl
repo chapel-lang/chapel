@@ -3,7 +3,7 @@ class node {
   var element : element_type;
 }
 
-var n : node = new node();
+var n : unmanaged node = new unmanaged node();
 
 n.element = 12;
 
@@ -14,3 +14,5 @@ var k : node.element_type;
 k = 2;
 
 writeln(k);
+
+delete n;

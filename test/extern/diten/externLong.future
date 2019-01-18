@@ -1,0 +1,7 @@
+bug: extern record with c_long field fails to compile with --no-inline
+
+When the reference getter for the c_long field is not inlined it attempts to
+assign a 'long *' to a '_ref_int64_t', and the C compiler issues an error.
+
+When the getter is inlined, it assigns the field directly without going
+through a pointer and it compiles fine.

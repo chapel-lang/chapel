@@ -109,7 +109,7 @@ proc accumulate (da: eltType)
     }
 }
 
-proc combine(km: kmeansReduction(eltType))
+proc combine(km: borrowed kmeansReduction(eltType))
 {
     RO.counts = RO.counts + km.RO.counts;
     RO.error = RO.error + km.RO.error;

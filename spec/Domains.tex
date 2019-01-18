@@ -57,8 +57,8 @@ and their subdomains (including sparse subdomains) are irregular.  Sparse
 subdomains of regular domains are also irregular.
 
 An index set can be either \emph{ordered} or \emph{unordered} depending on
-whether its members have a well-defined order relationship.  All regular and
-enumerated domains are ordered.  All other associative domains are
+whether its members have a well-defined order relationship.  All regular
+domains are ordered.  All associative domains are
 unordered.
 
 The type of a domain describes how a domain is represented and the operations
@@ -68,11 +68,6 @@ distinguishes it from other domains that may have the same type and
 value.  This identity is used to define the domain's relationship
 with subdomains, index types~(\rsec{Index_Types}),
 and arrays~(\rsec{Association_of_Arrays_to_Domains}).
-
-\begin{openissue}
-In the future, it is likely that we will support a means of creating
-domain aliases, much as we support array aliases currently.
-\end{openissue}
 
 The runtime representation of a domain is controlled by its domain map.
 Domain maps are presented in \rsec{Domain_Maps}.
@@ -121,7 +116,7 @@ any of the domain's dimensions will be characterized by a strided
 range.
 \end{itemize}
 If \chpl{rank} is $1$, the index type represented by a rectangular
-domain is \chpl{idxType}.  Otherwise, the index type is the homogenous
+domain is \chpl{idxType}.  Otherwise, the index type is the homogeneous
 tuple type \chpl{rank*idxType}.
 If unspecified, \chpl{idxType} defaults
 to \chpl{int} and \chpl{stridable} defaults to \chpl{false}.
@@ -145,9 +140,15 @@ using standard type signature.
 The following declarations both create an uninitialized rectangular domain with three dimensions, with \chpl{int} indices:
 \begin{chapel}
 var D1 : domain(rank=3, idxType=int, stridable=false);
-var D2 : domain(3*int);
+var D2 : domain(3);
 \end{chapel}
+\begin{chapelpost}
+writeln(D1);
+writeln(D2);
+\end{chapelpost}
 \begin{chapeloutput}
+{1..0, 1..0, 1..0}
+{1..0, 1..0, 1..0}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -231,7 +232,7 @@ $i \in {1, 2, \ldots, n}$ and $j \in {1, 2, \ldots, n}$.
 
 \index{domains!rectangular!default value}
 
-The default value of a range type is the \chpl{rank} default range
+The default value of a domain type is the \chpl{rank} default range
 values for type:
 \begin{quote}
 \chpl{range(idxType, BoundedRangeType.bounded, stridable)}
@@ -280,16 +281,12 @@ type of the indices that it stores.  The syntax is as follows:
 \begin{syntax}
 associative-domain-type:
   `domain' ( associative-index-type )
-  `domain' ( enum-type )
   `domain' ( `opaque' )
 
 associative-index-type:
-  type-specifier
+  type-expression
 \end{syntax}
 
-\index{types!enumerated domains}
-\index{enumerated domains!types}
-\index{domains!enumerated}
 \index{types!opaque domains}
 \index{opaque domains!types}
 \index{domains!opaque}
@@ -298,10 +295,6 @@ kinds of associative domain listed below.
 \begin{enumerate} 
 \item In general, \sntx{associative-index-type} determines \chpl{idxType}
 of the associative domain type.
-\item Enumerated domains are a special case, in which \chpl{idxType}
-is an enumerated type.  Enumerated domains are
-handled specially during initialization and have a defined iteration
-order, as described below.
 \item Opaque domains are a special case, indicated by the type \chpl{opaque}.
 Anonymous values of the type \chpl{opaque} are used as index values
 in this case.
@@ -321,14 +314,12 @@ pointer-based data structures in conventional languages.
 
 An associative domain's value is simply the set of all index values
 that the domain describes.  The iteration order over the indices of
-an associative domain is undefined, except for enumerated domains.
-The iteration order over the indices of an enumerated domain
-is the declaration order of the corresponding enumeration constants.
+an associative domain is undefined.
 
 \index{domains!associative!literals}
 \index{domains!associative!initialization}
 
-Specification of an assocative domain literal value follows a similar syntax as 
+Specification of an associative domain literal value follows a similar syntax as
 rectangular domain literal values.  What differentiates the two are the types 
 of expressions specified in the comma separated list.  Use of values of a 
 type other than ranges will result in the construction of an associative domain.  
@@ -355,14 +346,14 @@ arrays as indices within an associative domain.
 \end{future}
 
 \begin{openissue}
-Assignment of an associative domain literal results in the a warning message
-being printed altering the user that whole-domain assignment has been
-serialized. This results from the resize operation over assocative arrays not 
+Assignment of an associative domain literal results in a warning message
+being printed alerting the user that whole-domain assignment has been
+serialized. This results from the resize operation over associative arrays not
 being parsafe. 
 \end{openissue}
 
 \begin{chapelexample}{associativeDomain.chpl}
-The following example illusrates construction of an associative domain
+The following example illustrates construction of an associative domain
 containing string indices "bar" and "foo".  Note that due to internal hashing 
 of indices the order in which the values of the associative domain are iterated
 is not the same as their specification order.
@@ -383,28 +374,8 @@ produces the output
 
 \index{domains!associative!default values}
 
-If unspecified the default value of an associative domain type is the empty 
-index set, except for enumerated domains.
-The default value of an enumerated domain type is the set of all constants
-of the corresponding enumerated type.
-
-\begin{rationale}
-The decision to have enumerated domains start fully populated was
-based on the observation that enumerations have a finite, typically
-small number of values and that it would be common to declare arrays
-with elements corresponding to each identifier in the enumeration.
-Further, in terms of usability it is simpler to clear a fully-populated
-domain than to fully populate an empty one.
-
-In addition, fully-populated constant enumerated
-domains are an important case for compiler optimizations, particularly
-if the numeric values of the enumeration are consecutive.
-\end{rationale}
-
-\begin{future}
-We may generally support a \chpl{startPopulated} parameter on associative
-domains, to unify this capability with other values.
-\end{future}
+If uninitialized, the default value of an associative domain is the
+empty index set.
 
 Indices can be added to or removed from an associative domain
 as described in \rsec{Adding_and_Removing_Domain_Indices}.
@@ -536,15 +507,14 @@ over its indices, the sparse subdomain inherits that order.
 \index{sparse domains!literals!lack thereof}
 \index{sparse domains!initialization}
 \index{domains!sparse!initialization}
-\index{initializations!sparse domains}
-There is no literal syntax for an sparse subdomain.  However, a variable of a
+\index{initialization!sparse domains}
+There is no literal syntax for a sparse subdomain.  However, a variable of a
 sparse subdomain type can be initialized using a tuple of values
 of the parent domain's index type.
 
 \index{sparse domains!default value}
 \index{domains!sparse!default value}
-The default value for a sparse subdomain value is the empty set.  This is true
-even if the parent domain is an enumerated domain.
+The default value for a sparse subdomain value is the empty set.
 
 \begin{example}
 The following code declares a two-dimensional dense domain \chpl{D},
@@ -686,6 +656,7 @@ domain-expression:
   domain-name
   domain-assignment-expression
   domain-striding-expression
+  domain-alignment-expression
   domain-slice-expression
 
 domain-literal:
@@ -707,6 +678,9 @@ regular domains); or a tuple of indices or a loop that enumerates
 indices (for irregular domains).  If the domain variable being
 assigned was used to declare arrays, these arrays are reallocated as
 discussed in~\rsec{Association_of_Arrays_to_Domains}.
+
+It is an error to assign a stridable domain to an unstridable domain
+without an explicit conversion.
 
 \begin{example}
 The following three assignments show ways of assigning indices to a
@@ -747,6 +721,32 @@ applying the integer value to each range in the value using the
 \chpl{by} operator.  In the case of a tuple stride value, the resulting
 domain's value is computed by applying each tuple component to the
 corresponding range using the \chpl{by} operator.
+
+
+\subsection{Domain Alignment}
+\label{Domain_Alignment}
+\index{domains!alignment}
+\index{align@\chpl{align}!on rectangular domains}
+\index{operators!align (domain)@\chpl{align} (domain)}
+
+The \chpl{align} operator can be applied to a rectangular domain value in
+order to change the alignment of a rectangular domain value.  The right-hand
+operand to the \chpl{align} operator can either be an integral value or
+an integral tuple whose size matches the domain's rank.
+
+\begin{syntax}
+domain-alignment-expression:
+  domain-expression `align' expression
+\end{syntax}
+
+The type of the resulting domain is the same as the original domain
+but with \chpl{stridable} set to true.
+In the case of an integer alignment value, the value of the resulting
+domain is computed by applying the integer value to each range in the
+value using the \chpl{align} operator.  In the case of a tuple
+alignment value, the resulting domain's value is computed by applying
+each tuple component to the corresponding range using the \chpl{align}
+operator.
 
 
 \subsection{Domain Slicing}
@@ -908,22 +908,50 @@ proc $Domain$.clear()
 Resets this domain's index set to the empty set.
 \end{protobody}
 
-\begin{chapelexample}{emptyEnumeratedDomain}
-In the case of an enumerated domain, this function provides a way to produce an
-empty index set.
+\begin{chapelexample}{clearAssociativeDomain}
+This function provides a way to produce an empty associative domain.
 
 When run, the code
 \begin{chapel}
 enum Counter { one, two, three };
-var D : domain ( Counter );
+var D : domain ( Counter ) = {Counter.one, Counter.two};
 writeln("D has ", D.numIndices, " indices.");
 D.clear();
 writeln("D has ", D.numIndices, " indices.");
 \end{chapel}
 prints out
 \begin{chapelprintoutput}{}
-D has 3 indices.
+D has 2 indices.
 D has 0 indices.
+\end{chapelprintoutput}
+\end{chapelexample}
+
+\index{domains!dist@\chpl{dist}}
+\index{predefined functions!dist@\chpl{dist}}
+\begin{protohead}
+proc $Domain$.dist : dmap
+\end{protohead}
+\begin{protobody}
+Returns the domain map that implements this domain
+\end{protobody}
+
+\begin{chapelexample}{getDomainMap}
+In the code
+\begin{chapel}
+use BlockDist;
+proc foo(d : domain) where isSubtype(d.dist.type, Block) {
+  writeln("Block-distributed domain");
+}
+proc foo(d : domain) {
+  writeln("Unknown distribution");
+}
+var D = {1..10} dmapped Block({1..10});
+foo(D);
+\end{chapel}
+\chpl{dist} is used in a where-clause to determine the type of the argument's
+distribution. The output is:
+\begin{chapelprintoutput}{}
+Block-distributed domain
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -948,15 +976,6 @@ domains, this ordering will be based on a row-major ordering of the
 indices; for other domains, the ordering may be
 implementation-defined and unstable as indices are added and
 removed from the domain.
-\end{protobody}
-
-\index{domains!isEnumDom@\chpl{isEnumDom}}
-\index{predefined functions!isEnumDom@\chpl{isEnumDom}}
-\begin{protohead}
-proc isEnumDom(d: domain) param
-\end{protohead}
-\begin{protobody}
-Returns a param \chpl{true} if the given domain is enumerated, false otherwise.
 \end{protobody}
 
 \index{domains!isIrregularDom@\chpl{isIrregularDom}}
@@ -1233,5 +1252,5 @@ if \chpl{d2} contains indices which are not also in \chpl{d1}.
 proc requestCapacity(s: int)
 \end{protohead}
 \begin{protobody}
-Resizes the domain internal storage to hold at least \chpl{s} indicies.
+Resizes the domain internal storage to hold at least \chpl{s} indices.
 \end{protobody}

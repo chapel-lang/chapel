@@ -10,5 +10,6 @@ proc C.g2: int {
   return f2;
 }
 
-var c = new C(1);
+var c = new shared C(1);
+
 writeln(c.g2);

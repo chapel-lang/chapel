@@ -1,0 +1,2 @@
+oldAndNew3.chpl:4: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+oldAndNew3.chpl:4: error: Type 'badClass' defines a constructor here

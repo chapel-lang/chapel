@@ -1,0 +1,7 @@
+error message: default value for sync/single arguments should be disallowed?
+
+#7172
+
+The behavior of this code is an open question - the only thing that is certain
+is that the `unresolved call` output is confusing and suboptimal.  Please
+consult the related GitHub issue for more information.

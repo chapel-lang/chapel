@@ -1,1 +1,1 @@
---no-warnings
+--no-warnings --no-compile-time-nil-checking

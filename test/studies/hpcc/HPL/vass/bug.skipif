@@ -1,3 +1,0 @@
-# The memory corruption bug is observed only under GASnet.
-# Other than that, this test applies to all configurations.
-CHPL_COMM != gasnet

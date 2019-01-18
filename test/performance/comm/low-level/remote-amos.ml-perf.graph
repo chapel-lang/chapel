@@ -1,0 +1,5 @@
+perfkeys: Performance (mOps/sec) =
+files: many-to-one-amos.dat
+graphkeys: AMOs to 1 node
+graphtitle: Remote AMO Performance
+ylabel: Performance (10**6 ops/sec)

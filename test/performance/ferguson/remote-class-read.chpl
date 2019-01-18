@@ -1,4 +1,4 @@
-use CommDiagnostics;
+use CommUtil;
 
 config const n = 100000;
 class C {
@@ -7,13 +7,14 @@ class C {
   var z:int;
 }
 
-var A:[1..n] C;
+var A:[1..n] unmanaged C;
 for i in 1..n {
-  A[i] = new C(i, i+1, i+2);
+  A[i] = new unmanaged C(i, i+1, i+2);
 }
 
-resetCommDiagnostics();
-startCommDiagnostics();
+var toOutput = 0;
+
+start();
 
 on Locales[1] {
   var sum = 0;
@@ -22,12 +23,13 @@ on Locales[1] {
     sum += c.y;
     sum += c.z;
   }
-  writeln(sum);
+  toOutput = sum;
 }
 
-stopCommDiagnostics();
+stop();
 
+writeln(toOutput);
 writeln(A[1]);
 writeln(A[n]);
 
-writeln(getCommDiagnostics());
+report(maxPuts=1, maxOns=1);

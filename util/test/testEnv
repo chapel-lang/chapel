@@ -2,20 +2,19 @@
 
 use Cwd 'abs_path';
 
+# If CHPL_TEST_UTIL_DIR is set, use that as the directory from which
+# to run printchplenv.  If it's not set, use $CHPL_HOME/util.
+my $utildir = defined($ENV{"CHPL_TEST_UTIL_DIR"}) ? $ENV{"CHPL_TEST_UTIL_DIR"} : "$ENV{'CHPL_HOME'}/util";
+
 #
 # Set standard CHPL_* environment variables, if they are not already set.
 #
-my $env = `$ENV{CHPL_HOME}/util/printchplenv --sh`;
+my $env = `$utildir/printchplenv --all --internal --simple --no-tidy`;
 my @lines = split(/\n/, $env);
 for my $line (@lines) {
   $line =~ s/export\s+//;
   my ($key,$value) = split(/=/, $line, 2);
   next if $key eq "CHPL_HOME";
-  # Now remove the single quotes in the value.
-  if( $value =~ /^'.+'$/ ) {
-    $value =~ s/^'//;
-    $value =~ s/'$//;
-  }
   $ENV{$key} = $value;
 }
 
@@ -28,7 +27,8 @@ if (-x "$envfile") {
   $envfile = abs_path($envfile);
   $execskiptest = `$envfile`;
   print "$execskiptest";
-  exit("$?");
+# exit with the return code that the envfile gave us
+  exit($?>>8);
 }
 
 #

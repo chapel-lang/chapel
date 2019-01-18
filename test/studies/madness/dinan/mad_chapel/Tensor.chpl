@@ -1,10 +1,14 @@
 config param eps            = 1e-16;
 config param truncateAtEps  = false;
 
-// Truncate values to 0 if they are below machine precision
+// Truncate values to 0 if they are below machine precision or truncate
+// values to the nearest 10 if they are large enough
 proc truncate(x) {
-    if truncateAtEps && abs(x) <= eps then return 0.0;
-    else return x;
+    if truncateAtEps {
+      if abs(x) <= eps then return 0.0;
+      if abs(x) >= 1.0/eps then return trunc(x/10) * 10;
+    }
+    return x;
 }
 
 // Return matrix A's transpose

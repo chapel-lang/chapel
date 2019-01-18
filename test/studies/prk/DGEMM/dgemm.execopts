@@ -1,0 +1,2 @@
+--correctness --iterations=2 --order=64 --blockSize=8
+--correctness --iterations=2 --order=64

@@ -1,0 +1,6 @@
+perfkeys: atomic uint(32):, atomic uint(64):, atomic int(32):, atomic int(64):, atomic real(64):
+graphkeys: uint(32), uint(64), int(32), int(64), real(64)
+graphkeys: release
+repeat-files: atomictest.dat
+graphtitle: Parallel Atomic fetchAdd Time (sec)
+ylabel: Time (seconds)

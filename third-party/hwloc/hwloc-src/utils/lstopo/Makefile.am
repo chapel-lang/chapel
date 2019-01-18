@@ -1,4 +1,4 @@
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2018 Inria.  All rights reserved.
 # Copyright © 2009-2012, 2014 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 #
@@ -29,8 +29,9 @@ lstopo_no_graphics_SOURCES = \
         lstopo-text.c \
         lstopo-xml.c
 
-lstopo_no_graphics_CFLAGS =
+lstopo_no_graphics_CFLAGS = $(AM_CFLAGS)
 lstopo_no_graphics_LDADD = $(LDADD) -lm $(HWLOC_TERMCAP_LIBS)
+
 lstopo_SOURCES = $(lstopo_no_graphics_SOURCES)
 lstopo_CPPFLAGS = $(AM_CPPFLAGS)
 lstopo_LDADD = $(lstopo_no_graphics_LDADD)
@@ -45,6 +46,9 @@ if HWLOC_HAVE_WINDOWS
 bin_PROGRAMS += lstopo lstopo-win
 lstopo_SOURCES += lstopo-windows.c
 lstopo_CPPFLAGS += -DLSTOPO_HAVE_GRAPHICS
+if HWLOC_HAVE_USER32
+lstopo_LDADD += -luser32
+endif
 lstopo_win_SOURCES = $(lstopo_SOURCES)
 lstopo_win_CPPFLAGS = $(lstopo_CPPFLAGS)
 lstopo_win_CFLAGS = $(lstopo_CFLAGS) -mwindows
@@ -67,11 +71,13 @@ APPLICATIONSdir = @datarootdir@/applications
 dist_APPLICATIONS_DATA = lstopo.desktop
 endif
 
+SEDMAN = $(SED) -e 's/%PACKAGE_NAME%/@PACKAGE_NAME@/g' \
+	  -e 's/%PACKAGE_VERSION%/@PACKAGE_VERSION@/g' \
+	  -e 's/%HWLOC_DATE%/@HWLOC_RELEASE_DATE@/g'
+
 .1in.1:
 	@ echo Creating $@ man page...
-	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
-	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
-	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
+	@ $(SEDMAN) \
 	  > $@ < $<
 
 install-exec-hook:

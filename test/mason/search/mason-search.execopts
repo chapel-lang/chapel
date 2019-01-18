@@ -1,0 +1,7 @@
+--pattern="--help"       # help.good
+                         # no-pattern.good
+--pattern="notFound"     # notFound.good
+--pattern="caps"         # substring.good
+--pattern="CAPS"         # substring.good
+--pattern="multiversion" # latestVersion.good
+--pattern="--debug"      # hidden.good

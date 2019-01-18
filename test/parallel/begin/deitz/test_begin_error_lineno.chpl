@@ -1,4 +1,4 @@
-use Time;
+
 
 var s: sync int;
 var x: int = 0;
@@ -10,4 +10,4 @@ begin with (ref x) {
   }
 }
 
-sleep(1); halt("a thread is out of control");
+halt("a thread is out of control");

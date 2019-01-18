@@ -8,7 +8,7 @@ const PI = 3.14159265358979323846;
 
 /** gaussian with square normalized to 1 */
 class Fn_Test1: AFcn {
-    proc this(x: real): real {
+    override proc this(x: real): real {
         var a = 500.0;
         return (2*a/PI)**0.25 * exp(-a * (x-0.5)**2.0);
     }
@@ -17,7 +17,7 @@ class Fn_Test1: AFcn {
 
 /** derivative of test1 */
 class Fn_dTest1: AFcn {
-    proc this(x: real): real {
+    override proc this(x: real): real {
         var a = 500.0;
         return -2.0*a*(x-0.5) * (2*a/PI) ** 0.25 * exp(-a * (x-0.5)**2.0);
     }
@@ -26,13 +26,13 @@ class Fn_dTest1: AFcn {
 
 /** superposition of multiple gaussians */
 class Fn_Test2: AFcn {
-    var g = new Fn_Test1();
+    var g = new unmanaged Fn_Test1();
 
-    proc ~Fn_Test2() {
+    proc deinit() {
       delete g;
     }
 
-    proc this(x: real): real {
+    override proc this(x: real): real {
         return g(x-0.3) + g(x) + g(x+0.3);
     }
 };
@@ -40,13 +40,13 @@ class Fn_Test2: AFcn {
 
 /** derivative of test2 */
 class Fn_dTest2: AFcn {
-    var g = new Fn_dTest1();
+    var g = new unmanaged Fn_dTest1();
 
-    proc ~Fn_dTest2() {
+    proc deinit() {
       delete g;
     }
 
-    proc this(x: real): real {
+    override proc this(x: real): real {
         return g(x-0.3) + g(x) + g(x+0.3);
     }
 };
@@ -57,7 +57,7 @@ class Fn_dTest2: AFcn {
   the test code below.
  */
 class Fn_Test3: AFcn {
-    proc this(x: real): real {
+    override proc this(x: real): real {
         var a = 100.0*PI;
         if (x == 0.5) then
             return 0.0;
@@ -69,7 +69,7 @@ class Fn_Test3: AFcn {
 
 /** derivative of test3 */
 class Fn_dTest3: AFcn {
-    proc this(x: real): real {
+    override proc this(x: real): real {
         var a = 100.0*PI;
         if (x == 0.5) {
             return 0.0;
@@ -84,7 +84,7 @@ class Fn_dTest3: AFcn {
 
 /** 1 over the whole interval */
 class Fn_Unity: AFcn {
-    proc this(x: real): real {
+    override proc this(x: real): real {
         return 1.0;
     }
 }
@@ -92,7 +92,7 @@ class Fn_Unity: AFcn {
 
 /** 1 over the whole interval */
 class Fn_dUnity: AFcn {
-    proc this(x: real): real {
+    override proc this(x: real): real {
         return 0.0;
     }
 }

@@ -1,19 +1,39 @@
+.. default-domain:: chpl
+
+.. module:: methodOutsideClassDef.doc
+
 methodOutsideClassDef.doc
-   Class: Foo
-      This class will declare a method inside itself, but will have a
-      method declared outside it as well 
+=========================
+**Usage**
 
-      proc internalMeth()
-   proc Foo.externalMeth1()
-   proc Foo.externalMeth2()
-      This method has a comment attached to it 
+.. code-block:: chapel
 
-   Record: Bar
-      Declares one primary and one secondary method... 
+   use methodOutsideClassDef.doc;
 
-      proc internal()
-         A primary method declaration. 
+.. class:: Foo
 
-   proc Bar.external()
-      A secondary method declaration. 
+   This class will declare a method inside itself, but will have a
+   method declared outside it as well 
+
+
+   .. method:: proc internalMeth()
+
+.. method:: proc Foo.externalMeth1()
+
+.. method:: proc Foo.externalMeth2()
+
+   This method has a comment attached to it 
+
+.. record:: Bar
+
+   Declares one primary and one secondary method... 
+
+
+   .. method:: proc internal()
+
+      A primary method declaration. 
+
+.. method:: proc Bar.external()
+
+   A secondary method declaration. 
 

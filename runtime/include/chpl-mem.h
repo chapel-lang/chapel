@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -27,15 +27,15 @@
 #include <string.h>
 #include <assert.h>
 #include "arg.h"
+#include "chpl-mem-desc.h"
 #include "chpl-mem-hook.h"
 #include "chpltypes.h"
-#include "chpl-tasks.h"
 #include "error.h"
 
 
 /* The names and arguments for these functions are part
    of Chapel's user-facing interface because they are
-   documented in a README doc/release
+   documented in a doc/rst/developer README
  */
 // start public interface
 static inline void* chpl_calloc(size_t n, size_t size);
@@ -120,17 +120,34 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
 }
 
 static inline
+void* chpl_mem_memalign(size_t boundary, size_t size,
+                        chpl_mem_descInt_t description,
+                        int32_t lineno, int32_t filename) {
+  void* memAlloc;
+  chpl_memhook_malloc_pre(1, size, description, lineno, filename);
+  memAlloc = chpl_memalign(boundary, size);
+  chpl_memhook_malloc_post(memAlloc, 1, size, description, lineno, filename);
+  return memAlloc;
+}
+
+static inline
 void chpl_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   chpl_memhook_free_pre(memAlloc, lineno, filename);
   chpl_free(memAlloc);
 }
 
-// Provide a handle to instrument Chapel calls to memcpy.
+// Provide handles to instrument Chapel calls to memcpy and memmove
 static inline
 void* chpl_memcpy(void* dest, const void* src, size_t num)
 {
   assert(dest != src || num == 0);
   return memcpy(dest, src, num);
+}
+
+static inline
+void* chpl_memmove(void* dest, const void* src, size_t num)
+{
+  return memmove(dest, src, num);
 }
 
 // Query the allocator to ask for a good size to allocate that is at least
@@ -143,26 +160,14 @@ static inline size_t chpl_mem_good_alloc_size(size_t minSize, int32_t lineno, in
   return chpl_good_alloc_size(minSize);
 }
 
-// free a c_string_copy, no error checking.
-// The argument type is explicitly c_string_copy, since only an "owned" string
+// free a c_string, no error checking.
+// The argument type is explicitly c_string, since only an "owned" string
 // should be freed.
 static inline
-void chpl_rt_free_c_string_copy(c_string_copy *s, int32_t lineno, int32_t filename)  {
+void chpl_rt_free_c_string(c_string *s, int32_t lineno, int32_t filename)  {
   assert(*s!=NULL);
   chpl_mem_free((void *) *s, lineno, filename);
   *s = NULL;
-}
-
-// free a c_string (deprecated)
-// This function is needed only because NewString.chpl uses the c_string type.
-// c_strings are "unowned" so should not be freed, but NewString.chpl was written
-// before this distinction was made.
-static inline
-void chpl_rt_free_c_string(c_string* s, int32_t lineno, int32_t filename)
-{
-  // As far as the C compiler is concerned c_string and c_string_copy are the
-  // same type, so no explicit cast is required.
-  chpl_rt_free_c_string_copy(s, lineno, filename);
 }
 
 void chpl_mem_layerInit(void);
@@ -173,14 +178,17 @@ void chpl_mem_layerFree(void*, int32_t lineno, int32_t filename);
 
 #else // LAUNCHER
 
-#include <stdlib.h>
+#include "chpl-mem-sys.h"
 #include "arg.h"
 
 #define chpl_mem_allocMany(number, size, description, lineno, filename)        \
-  malloc((number)*(size))
+  sys_malloc((number)*(size))
+
+#define chpl_mem_alloc(size, description, lineno, filename)        \
+  sys_malloc(size)
 
 #define chpl_mem_free(ptr, lineno, filename)        \
-  free(ptr)
+  sys_free(ptr)
 
 #endif // LAUNCHER
 

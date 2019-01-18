@@ -1,11 +1,30 @@
+.. default-domain:: chpl
+
+.. module:: fieldInheritance.doc
+
 fieldInheritance.doc
-   Class: Elder
-      This class has two fields 
+====================
+**Usage**
 
-      var rod: string
-      var staff: bool
-   Class: Younger : Elder
-      This class should inherit its Elder's fields 
+.. code-block:: chapel
 
-      var key: int
-      var stone: imag
+   use fieldInheritance.doc;
+
+.. class:: Elder
+
+   This class has two fields 
+
+
+   .. attribute:: var rod: string
+
+   .. attribute:: var staff: bool
+
+.. class:: Younger : Elder
+
+   This class should inherit its Elder's fields 
+
+
+   .. attribute:: var key: int
+
+   .. attribute:: var stone: imag
+

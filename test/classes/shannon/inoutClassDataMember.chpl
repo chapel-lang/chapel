@@ -7,12 +7,10 @@ proc setVolcano(inout al: int, inout name: string) {
   al = 2;
 }
 
-var mtStHelens: volcano = new volcano();
+var mtStHelens: owned volcano = new owned volcano();
 var name: string;
 
 setVolcano(mtStHelens.alertLevel, name);
 
 writeln("Name: ", name);
 writeln("Alert Level: ", mtStHelens.alertLevel);
-
-delete mtStHelens;

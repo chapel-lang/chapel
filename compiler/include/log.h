@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,54 +21,36 @@
 #define _log_H_
 
 #include <cstdio>
-
-/*
-  To add a new log type, add a new LOG_XXX with a unique letter:
-     #define LOG_AST 'a'
-
-  To write to the new log:
-     log(LOG_AST, "starting AST #%d\n", 1);
-
-  To test if a log should be written:
-     if (logging(LOG_AST)) printf("writing AST log");
-
-  To write based on a "log level":
-     log_level(LOG_AST, 3, "starting level 3 AST log\n");
-
-  To test based on a "log level":
-     if (logging_level(LOG_AST, 3)) printf("starting level 3 AST log\n");
-
-  To get the FILE* for a log:
-     FILE *fp = log_fp(LOG_AST);
-
-  log levels start at 1
-  logs appear in the log_dir directory.
-  one level of old logs is stored in log_dir/save.
-
-  To specify logs on the command line:
-    chpl -laai
-  specifies AST log level 2 and IF1 log level 1
- */
+#include <string>
+#include <set>
 
 struct ArgumentDescription;
 
-#ifndef NUL
- #define NUL '\0'
-#endif
+#define LOG_NO_SHORT ' '
+#define LOG_NEVER    '\0'
 
-// Driver uses this to configure the logger
-void  log_flags_arg(const ArgumentDescription* desc, const char* arg);
+// runpasses uses this to configure the logger
+void logMakePassAvailable(const char* name, char shortname);
+
+// Driver uses this to configure the logger.
+// arg might be a pass name or a 1-character short name (e.g. 'R')
+void logSelectPass(const char* arg);
+
 
 void  setupLogfiles();
 void  teardownLogfiles();
 
-void  log_writeLog(const char* passName, int passNum, char logTag);
+void  logWriteLog(const char* passName, int passNum, char logTag);
 
 bool  deletedIdON();
 
 extern char  log_dir   [FILENAME_MAX + 1];
 extern char  log_module[FILENAME_MAX + 1];
 
+extern bool  fLogDir; // was --log-dir passed?
+
+extern bool  fLog;
+extern bool  fLogNode;
 extern bool  fLogIds;
 
 extern int   fdump_html;

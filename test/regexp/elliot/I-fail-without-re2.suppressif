@@ -1,4 +1,3 @@
-# Some configs don't support re2
-
-# build fails with "sfence not supported"
-CHPL_TARGET_ARCH==knc
+# re2 requires C++11 atomic support, which pgi doesn't have
+CHPL_TARGET_COMPILER==cray-prgenv-pgi
+CHPL_TARGET_COMPILER==pgi

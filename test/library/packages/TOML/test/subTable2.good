@@ -1,0 +1,24 @@
+
+[servers]
+
+[servers.alpha]
+ap = 12
+dc = "eqdc10"
+
+[servers.alpha.right]
+please = "be"
+
+[servers.beta]
+dc = "eqdc11"
+ip = "10.0.0.2"
+
+[servers.beta.echo]
+ip = "11.0.0.2"
+
+[servers.zeta]
+ip = ["10.0.0.2", "10.0.0.9"]
+
+[servers.zeta.bravo]
+umask = 777
+
+

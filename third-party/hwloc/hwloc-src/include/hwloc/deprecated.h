@@ -99,4 +99,4 @@ hwloc_distributev(hwloc_topology_t topology, hwloc_obj_t *roots, unsigned n_root
 #endif
 
 
-#endif /* HWLOC_INLINES_H */
+#endif /* HWLOC_DEPRECATED_H */

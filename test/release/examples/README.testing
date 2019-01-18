@@ -27,6 +27,9 @@ following files may also exist:
      foo.skipif         : conditions under which this test should be skipped
      foo.timeout        : kill the test if this much time passes
 
+     foo.ml-*           : files similar to those listed above, but used for
+                          multilocale performance testing
+
 
 ---------------------
 Using the test system
@@ -66,6 +69,4 @@ For a list of other test system options, use:
 For more information
 --------------------
 
-For complete documentation on the testing system, refer to the
-comments at the top of the start_test script.
-
+See file: $CHPL_HOME/doc/rst/developer/bestPractices/TestSystem.rst

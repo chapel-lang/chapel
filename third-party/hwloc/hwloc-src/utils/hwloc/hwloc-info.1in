@@ -1,11 +1,11 @@
 .\" -*- nroff -*-
-.\" Copyright © 2009-2014 Inria.  All rights reserved.
+.\" Copyright © 2009-2018 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
-.TH HWLOC-INFO "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
+.TH HWLOC-INFO "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
 .SH NAME
-hwloc-info \- Show some information about some objects or about a topology
+hwloc-info \- Show some information about some objects or about a topology or about support features
 .
 .\" **************************
 .\"    Synopsis Section
@@ -24,12 +24,25 @@ hwloc-info \- Show some information about some objects or about a topology
 Note that hwloc(7) provides a detailed explanation of the hwloc system
 and of valid <object> formats;
 it should be read before reading this man page.
-.
 .\" **************************
 .\"    Options Section
 .\" **************************
 .SH OPTIONS
 .
+.TP
+\fB\-\-objects\fR
+Report information specific objects.
+This is the default if some objects are given on the command-line.
+.TP
+\fB\-\-topology\fR
+Report a summary of the topology instead of about some specific objects.
+This is the default if no object is given on the command-line.
+.TP
+\fB\-\-support\fR
+Report the features that are supported by hwloc on the topology.
+The features are those available through the \fBhwloc_topology_get_support()\fR function.
+This is useful for verifying which CPU or memory binding options are supported
+by the current hwloc installation.
 .TP
 \fB\-i\fR <file>, \fB\-\-input\fR <file>
 Read topology from XML file <file> (instead of discovering the
@@ -66,6 +79,12 @@ about all its ancestors up to the root of the topology.
 .TP
 \fB\-\-ancestor\fR <type>
 Only display the object ancestors that match the given type.
+.TP
+\fB\-\-children\fR
+Display information about the object children.
+.TP
+\fB\-\-descendants\fR <type>
+Display information about the object descendants that match the given type.
 .TP
 \fB\-n\fR
 When outputting object information, prefix each line with the index
@@ -139,7 +158,10 @@ Report version and exit.
 hwloc-info displays information about the specified object.
 It is intended to be used with tools such as grep for filtering
 certain attribute lines.
-When no object is specified, hwloc-info prints a summary of the topology.
+When no object is specified, or when \fB\-\-topology\fR is passed,
+hwloc-info prints a summary of the topology.
+When \fB\-\-support\fR is passed, hwloc-info lists the supported
+features for the topology.
 .
 .PP
 Objects may be specified as location tuples, as explained in hwloc(7).

@@ -4,8 +4,6 @@ class C {
   var x: probClass;
 }
 
-var myC = new C();
+var myC = new borrowed C();
 
 writeln("myC = ", myC);
-
-delete myC;

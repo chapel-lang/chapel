@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -327,11 +327,13 @@ static const char* error_string_no_error = "No error";
 
 static
 const char* extended_errors[] = {
-  "end of file",
-  "short read or write",
-  "bad format",
-  "illegal multibyte sequence", // most systems already have EILSEQ but not all
-  "overflow", // most systems already have EOVERFLOW but not all
+  /* EEOF */     "end of file",
+  /* ESHORT */   "short read or write",
+  /* EFORMAT */  "bad format",
+  // most systems already have the following but not all
+  /* EILSEQ */    "illegal multibyte sequence",
+  /* EOVERFLOW */ "overflow",
+  /* ENODATA */   "no data",
   NULL
 };
 
@@ -536,7 +538,7 @@ err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out)
   got = lseek(fd, offset, whence);
   if( got != (off_t) -1 ) {
     *offset_out = got;
-    err_out = 0; 
+    err_out = 0;
   } else {
     *offset_out = got;
     err_out = errno;
@@ -545,12 +547,47 @@ err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out)
   return err_out;
 }
 
-err_t sys_stat(const char* path, struct stat* buf)
+
+void stat_to_sys_stat(const char* path, sys_stat_t* out_buf, struct stat* in_buf)
+{
+  stat(path, in_buf);
+  out_buf->st_dev = in_buf->st_dev;
+  out_buf->st_ino = in_buf->st_ino;
+  out_buf->st_mode = in_buf->st_mode;
+  out_buf->st_nlink = in_buf->st_nlink;
+  out_buf->st_uid = in_buf->st_uid;
+  out_buf->st_gid = in_buf->st_gid;
+  out_buf->st_rdev = in_buf->st_rdev;
+  out_buf->st_size = in_buf->st_size;
+  //out_buf->st_blksize = in_buf->st_blksize;
+  //out_buf->st_blocks = in_buf->st_blocks;
+
+#if (_POSIX_C_SOURCE == 200809L)
+  out_buf->st_atim = in_buf->st_atim;
+  out_buf->st_mtim = in_buf->st_mtim;
+  out_buf->st_ctim = in_buf->st_ctim;
+#else
+  time_t atime = in_buf->st_atime;
+  time_t mtime = in_buf->st_mtime;
+  time_t ctime = in_buf->st_ctime;
+  struct timespec atim = {atime, 0};
+  struct timespec mtim = {mtime, 0};
+  struct timespec ctim = {ctime, 0};
+  out_buf->st_atim = atim;
+  out_buf->st_mtim = mtim;
+  out_buf->st_ctim = ctim;
+#endif
+}
+
+
+err_t sys_stat(const char* path, sys_stat_t* out_buf)
 {
   off_t got;
   err_t err_out;
+  struct stat in_buf;
 
-  got = stat(path, buf);
+  got = stat(path, &in_buf);
+  stat_to_sys_stat(path, out_buf, &in_buf);
   if( got != -1 ) {
     err_out = 0;
   } else {
@@ -646,7 +683,7 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
     buf->f_ffree   = safe_inode_cast(tmp.f_ffree);
     buf->f_namelen = safe_inode_cast(MNAMELEN);
 #else // linux or cygwin
-    // We don't have to deal with possible conversion from signed to unsiged
+    // We don't have to deal with possible conversion from signed to unsigned
     // numbers here, since in linux the field will be set to 0 if it is
     // undefined for the FS. Since we know the field is >= 0 we can get rid of
     // all the branching logic that we had for apple
@@ -873,7 +910,7 @@ err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
     *num_read = 0;
     return errno;
   }
-  assert(got <= count); // can't read more than requested!
+  assert((size_t) got <= count); // can't read more than requested!
   *num_read = got;
   return 0;
 #endif
@@ -918,7 +955,7 @@ err_t do_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t *nu
     *num_written = 0;
     return errno;
   }
-  assert(got <= count); // can't write more than requested!
+  assert((size_t) got <= count); // can't write more than requested!
   *num_written = got;
   return 0;
 #endif
@@ -1448,10 +1485,22 @@ err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_o
   char* new_host_buf;
   char* serv_buf=0;
   char* new_serv_buf;
-  int host_buf_sz = NI_MAXHOST;
-  int serv_buf_sz = NI_MAXSERV;
+  int host_buf_sz;
+  int serv_buf_sz;
   int got;
   err_t err_out;
+
+#ifdef NI_MAXHOST
+  host_buf_sz = NI_MAXHOST;
+#else
+  host_buf_sz = 1025;
+#endif
+
+#ifdef NI_MAXSERV
+  serv_buf_sz = NI_MAXSERV;
+#else
+  serv_buf_sz = 32;
+#endif
 
   STARTING_SLOW_SYSCALL;
 

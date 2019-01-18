@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+case $1 in
+  # sort the output for these tests:
+  ( block | refs | records ) true;;
+  # otherwise do not sort
+  (*) exit;;
+esac
+
+sort $2 > $2.prediff.tmp && mv $2.prediff.tmp $2

@@ -1,0 +1,2 @@
+new-on-enum.chpl:5: In function 'main':
+new-on-enum.chpl:6: error: invalid use of 'new' on enum Color

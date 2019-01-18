@@ -10,7 +10,7 @@ iter myThese(A,
              dptpl=dataParTasksPerLocale,
              ir=dataParIgnoreRunningTasks,
              mg=dataParMinGranularity) {
-  for i in A._value.these() do yield i;
+  for i in A.these() do yield i;
 }
 
 iter myThese(param tag: iterKind, A,
@@ -18,7 +18,7 @@ iter myThese(param tag: iterKind, A,
              ir=dataParIgnoreRunningTasks,
              mg=dataParMinGranularity)
   where tag==iterKind.leader {
-  for followThis in A._value.these(iterKind.leader, dptpl, ir, mg) do
+  for followThis in A.these(iterKind.leader, dptpl, ir, mg) do
     yield followThis;
 }
 
@@ -27,7 +27,7 @@ iter myThese(param tag: iterKind, followThis, A,
              ir=dataParIgnoreRunningTasks,
              mg=dataParMinGranularity)
   where tag==iterKind.follower {
-  for i in A._value.these(iterKind.follower, followThis, dptpl, ir, mg) do
+  for i in A.these(iterKind.follower, followThis, dptpl, ir, mg) do
     yield i;
 }
 
@@ -45,13 +45,13 @@ forall a in myThese(A, ir=!dataParIgnoreRunningTasks) do
 forall a in myThese(A, mg=dataParMinGranularity*2) do
   if noisy then writeln(a);
 
-forall a in A._value.these() do
+forall a in A.these() do
   if noisy then writeln(a);
-forall a in A._value.these(tasksPerLocale=dataParTasksPerLocale/2) do
+forall a in A.these(tasksPerLocale=dataParTasksPerLocale/2) do
   if noisy then writeln(a);
-forall a in A._value.these(ignoreRunning=!dataParIgnoreRunningTasks) do
+forall a in A.these(ignoreRunning=!dataParIgnoreRunningTasks) do
   if noisy then writeln(a);
-forall a in A._value.these(minIndicesPerTask=dataParMinGranularity*2) do
+forall a in A.these(minIndicesPerTask=dataParMinGranularity*2) do
   if noisy then writeln(a);
 
 writeln("=== leaving forwardDefaultArr ===");

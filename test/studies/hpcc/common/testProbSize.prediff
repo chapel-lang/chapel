@@ -2,7 +2,7 @@
 
 $hostname = `hostname -s`; chomp($hostname);
 
-$countMemoryDir="../../../modules/standard/memory/countMemory";
+$countMemoryDir="../../../library/standard/Memory/countMemory";
 $countMemoryFile="$countMemoryDir/countMemory.$hostname.good";
 
 system("cd $countMemoryDir && ./countMemory.prediff");

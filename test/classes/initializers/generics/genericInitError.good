@@ -1,0 +1,3 @@
+genericInitError.chpl:4: In initializer:
+genericInitError.chpl:5: error: can't omit initialization of field "t", no type or default value provided
+genericInitError.chpl:6: error: cannot update a type field, "t", in phase 2

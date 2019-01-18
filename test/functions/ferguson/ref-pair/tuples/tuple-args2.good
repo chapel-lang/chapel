@@ -1,0 +1,6 @@
+tuple-args2.chpl:20: In function 'writesComputed':
+tuple-args2.chpl:22: error: illegal lvalue in assignment
+tuple-args2.chpl:15: In function 'writesAll':
+tuple-args2.chpl:17: error: illegal lvalue in assignment
+tuple-args2.chpl:25: In function 'writesComputedNested':
+tuple-args2.chpl:27: error: illegal lvalue in assignment

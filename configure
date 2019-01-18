@@ -1,0 +1,179 @@
+#!/bin/bash
+
+
+if [ ! -d util ]
+then
+  echo Error: missing util/. Must be run from CHPL_HOME.
+  exit -1
+fi
+
+if [ ! -d compiler/main ]
+then
+  echo Error: missing compiler/main/. Must be run from CHPL_HOME.
+  exit -1
+fi
+
+
+# Let ORIG_CHPL_HOME be PWD or CHPL_HOME
+ORIG_CHPL_HOME="${CHPL_HOME:-$PWD}"
+
+export CHPL_HOME="$PWD"
+
+# PREFIX is for split installations, e.g. /usr/bin/chpl, /usr/share/chapel
+PREFIX=/usr/local
+PREFIX_SET=0
+
+# DEST_DIR is for installations basically copying source layout 
+# Different from DESTDIR, which is for staged installs
+# this variable is for installing the Chapel directory in one place
+# (to mirror release / source checkout)
+DEST_DIR=""
+DEST_DIR_SET=0
+
+# Argument parsing
+for arg in "$@"
+do
+  case $arg in
+    #e.g. -s|--short)
+    --prefix=*)
+      PREFIX="${arg#*=}"
+      PREFIX_SET=1
+      shift
+      ;;
+    --chpl-home=*)
+      DEST_DIR="${arg#*=}"
+      DEST_DIR_SET=1
+      shift
+      ;;
+    *)
+      echo
+      echo "Usage: $0 [--prefix=PREFIX] [--chpl-home=DEST_DIR]"
+      echo
+      echo "       --prefix=PREFIX selects a split installation"
+      echo "                e.g. PREFIX could be /usr/ to install"
+      echo "                     to /usr/bin/chpl, /usr/share/chapel/"
+      echo "                     e.g.  /usr/share/chapel/<vers>/modules"
+      echo
+      echo "       --chpl-home=DEST_DIR selects a bundled installation"
+      echo "                e.g. DEST_DIR could be /opt/chapel/ to install"
+      echo "                     to /opt/chapel with subdirectories"
+      echo "                     matching the source code / release"
+      echo "                     e.g.  /opt/chapel/modules"
+      echo
+      exit -1
+    ;;
+  esac
+
+done
+
+# Check that PREFIX and DEST_DIR are not both set.
+if [ "$PREFIX_SET" -ne 0 ]
+then
+  if [ "$DEST_DIR_SET" -ne 0 ]
+  then
+    echo "Error: both --prefix and --chpl-home were provided"
+    exit -1
+  fi
+fi
+
+NORMALIZED=""
+mynormalizepath () {
+  # Normalize PREFIX e.g.
+  P="$1"
+  case "$P" in
+    *~*)
+      # Replace ~ with home directory
+      P="${P/#\~/$HOME}"
+      ;;
+    *)
+      ;;
+  esac
+
+  # Normalize $P more - normalize path
+  P=`(unset CDPATH && cd "$P" && pwd)`
+
+  # Make sure we can cd into $P
+  if [ $? -ne 0 ]
+  then
+    echo "Error: Could not cd into prefix directory '$P'"
+    echo "       ... perhaps it does not exist?"
+    exit -1
+  fi
+
+  NORMALIZED="$P"
+  return 0
+}
+
+# Save configured installation prefix/dir
+rm -f configured-chpl-home
+rm -f configured-prefix
+CONFIGURED=""
+if [ "$DEST_DIR_SET" -ne 0 ]
+then
+  # Normalize DEST_DIR
+  mynormalizepath "$DEST_DIR"
+  DEST_DIR="$NORMALIZED"
+  # Save target installation directory for 'make install' / install.sh
+  echo "$DEST_DIR" > configured-chpl-home
+  CONFIGURED=configured-chpl-home
+else
+  # Normalize PREFIX
+  mynormalizepath "$PREFIX"
+  PREFIX="$NORMALIZED"
+  # Save prefix for building the compiler
+  echo "$PREFIX" > configured-prefix
+  CONFIGURED=configured-prefix
+fi
+
+# Check that the file we added exists in ORIG_CHPL_HOME
+if [ ! -f "$ORIG_CHPL_HOME/$CONFIGURED" ]
+then
+  echo "Error: CHPL_HOME is not the same as PWD. Please reset or unset CHPL_HOME"
+  echo "       CHPL_HOME is $ORIG_CHPL_HOME"
+  echo "             PWD is $PWD"
+  echo
+  echo "       try"
+  echo
+  echo "       unset CHPL_HOME"
+  echo
+  exit -1
+fi
+
+# Save currently selected configuration
+# Since printchplenv uses chplconfig, we generate a temporary file
+# and then move it.
+# Note that the resulting chplconfig is expected to cover the same
+# material as any existing chplconfig.
+./util/printchplenv --all --simple --overrides --anonymize > configured-chplconfig
+mv configured-chplconfig chplconfig
+
+echo
+echo "  Currently selected Chapel configuration:"
+echo
+./util/printchplenv --anonymize
+echo
+echo "  Selected installation options:"
+echo
+if [ "$DEST_DIR_SET" -ne 0 ]
+then
+  echo "install to CHPL_HOME: $DEST_DIR"
+else
+  echo "PREFIX: $PREFIX"
+fi
+echo
+echo "  To change the selected Chapel configuration, set environment variables."
+echo "  See doc/rst/usingchapel/chplenv.rst"
+echo "  To change installation options, see ./configure --help"
+echo
+echo "  If the configuration above is appropriate, build Chapel with:"
+echo
+echo "make"
+echo
+echo "  and possibly install it with"
+echo
+echo "make install"
+echo
+echo "  Once Chapel is in your PATH, you can verify basic functionality with:"
+echo
+echo "make check"
+echo

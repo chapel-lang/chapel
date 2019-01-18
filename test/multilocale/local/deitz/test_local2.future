@@ -1,5 +1,0 @@
-semantic: optimization to copy unmodified scalar makes local block not fail
-
-Since the scalar w is not modified in the inner on statement, its value is
-copied to the on statement instead of a wide reference. This makes it local,
-so the locality checking in the local block doesn't fail.

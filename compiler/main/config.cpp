@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,26 +20,28 @@
 #include "config.h"
 
 #include "chpl.h"
+#include "driver.h"
 #include "expr.h"
 #include "parser.h"
 #include "stmt.h"
 #include "stringutil.h"
 
-static Map<const char*, Expr*> configMap;
-static Vec<const char*>        usedConfigParams;
+static Map<const char*, Expr*> configMap; // map from configs to vals
+static Map<const char*, VarSymbol*> usedConfigParams; // map from configs to uses
 
 bool                           mainHasArgs;
 
 void checkConfigs() {
-  if (fMinimalModules == false && fUseIPE == false) {
+  if (fMinimalModules == false) {
     bool             anyBadConfigParams = false;
     Vec<const char*> configParamSetNames;
 
     configMap.get_keys(configParamSetNames);
 
     forv_Vec(const char, name, configParamSetNames) {
-      if (!usedConfigParams.in(name)) {
-        USR_FATAL_CONT("Trying to set unrecognized config param '%s' via -s flag", name);
+      if (usedConfigParams.get(name) == NULL) {
+        USR_FATAL_CONT("Trying to set unrecognized config '%s' via -s flag",
+                       name);
         anyBadConfigParams = true;
       }
     }
@@ -54,7 +56,7 @@ void checkConfigs() {
 // This function is designed to convert a name/value pair of C strings in to
 // corresponding AST that is then inserted into the "configMap".
 //
-// This is currently acheived by synthesizing a chapel statement as a string,
+// This is currently achieved by synthesizing a chapel statement as a string,
 // invoking the parser, and then extracting the desired portion of the result.
 // This means that this function has some knowledge of the structure of the
 // generated AST
@@ -104,12 +106,12 @@ Expr* getCmdLineConfig(const char* name) {
   return configMap.get(astr(name));
 }
 
-void useCmdLineConfig(const char* name) {
-  usedConfigParams.add(name);
+void useCmdLineConfig(const char* name, VarSymbol* byWhom) {
+  usedConfigParams.put(astr(name), byWhom);
 }
 
-bool isUsedCmdLineConfig(const char* name) {
-  return usedConfigParams.in(name);
+VarSymbol* isUsedCmdLineConfig(const char* name) {
+  return usedConfigParams.get(name);
 }
 
 

@@ -6,7 +6,8 @@
 * written in Chapel in order to explore the use of Chapel iterators and
 * performance.
 *******************************************************************************/
-module CFD_mini { 
+pragma "error mode fatal"
+module CFD_mini {
 
  use Time;
 
@@ -129,15 +130,15 @@ module CFD_mini {
                         old_data[zyx+offp1]);
    }
      
-   var FluxCache_dim2 => FluxCache[dim2];
-   var old_data_b_dim2 => old_data_b[dim2];
+   ref FluxCache_dim2 = FluxCache[dim2];
+   ref old_data_b_dim2 = old_data_b[dim2];
    for zyx in FluxDomain {
      FluxCache_dim2[zyx] = stencil(old_data_b_dim2, zyx);
    }
    for c in compRange {
      if (c != dim2) {
-       var FluxCache_c => FluxCache[c];
-       var old_data_b_c => old_data_b[c];
+       ref FluxCache_c = FluxCache[c];
+       ref old_data_b_c = old_data_b[c];
        for zyx in FluxDomain {
          FluxCache_c[zyx] = stencil(old_data_b_c, zyx) * factor2 * FluxCache_dim2[zyx];
        }
@@ -151,8 +152,8 @@ module CFD_mini {
    off(dir+1) = 1;
    
    for c in compRange{
-     var FluxCache_c => FluxCache[c];
-     var new_data_b_c => new_data_b[c];
+     ref FluxCache_c = FluxCache[c];
+     ref new_data_b_c = new_data_b[c];
      for (zyx) in cellData {
        new_data_b_c[zyx] += FluxCache_c[zyx+off] - FluxCache_c[zyx];
      }

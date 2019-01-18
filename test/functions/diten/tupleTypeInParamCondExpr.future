@@ -1,0 +1,4 @@
+bug: returning a tuple type from within a param cond expr gets a compiler error
+
+A type function that uses a param conditional expression with a tuple type
+gets an error about illegally returning a value where a type was expected.

@@ -15,32 +15,28 @@ class Base {
 class Derived : Base {
   var field : string;
 
-  proc Derived(arg:string) {
+  proc init(arg:string) {
     field = "Derived " + arg;
   }
 
   proc sbName return "static Derived";
-  proc dbName() return "dynamic Derived";
+  override proc dbName() return "dynamic Derived";
 }
 
-var b:Base;
-var d:Derived;
+var b:borrowed Base;
+var d:borrowed Derived;
 
-b = new Base();
+b = new borrowed Base();
 writeln(b.field);		// Expect "Base"
 writeln(b.sbName);		// Expect "static Base"
 writeln(b.dbName());	// Expect "dynamic Base"
-delete b;
 
-d = new Derived("foo");
+d = new borrowed Derived("foo");
 writeln(d.field);		// Expect "Derived foo"
 writeln(d.sbName);		// Expect "static Derived"
 writeln(d.dbName());	// Expect "dynamic Derived"
-delete d;
 
-b = new Derived("bar");
+b = new borrowed Derived("bar");
 writeln(b.field);		// Expect "Base"
 writeln(b.sbName);		// Expect "static Base"
 writeln(b.dbName());	// Expect "dynamic Derived"
-delete b;
-

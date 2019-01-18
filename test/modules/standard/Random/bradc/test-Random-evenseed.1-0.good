@@ -1,1 +1,0 @@
-test-Random-evenseed.chpl:20: error: halt reached - NPBRandomStream seed must be an odd integer

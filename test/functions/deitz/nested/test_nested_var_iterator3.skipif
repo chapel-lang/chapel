@@ -1,3 +1,0 @@
-# This bug does not show up if inlining is turned off.
-COMPOPTS <= --baseline
-COMPOPTS <= --no-inline

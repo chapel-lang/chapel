@@ -1,0 +1,5 @@
+perfkeys: Execution time =
+files: fft-20.dat
+graphkeys: fft runtime
+graphtitle: HPCC: FFT Time (sec) - n=2^20
+ylabel: Time (seconds)

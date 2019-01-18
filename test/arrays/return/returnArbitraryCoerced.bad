@@ -1,0 +1,2 @@
+returnArbitraryCoerced.chpl:1: In function 'inc':
+returnArbitraryCoerced.chpl:2: error: array element type mismatch in return from int(64) to real(64)

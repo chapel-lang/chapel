@@ -1,0 +1,2 @@
+tryDeeper.chpl:7: In initializer:
+tryDeeper.chpl:10: error: Only catch-less try! statements are allowed in initializers for now

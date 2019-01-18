@@ -1,6 +1,0 @@
-# suppress writebinaryarray on intel compiler
-
-CHPL_TARGET_COMPILER == intel
-CHPL_TARGET_COMPILER == cray-prgenv-intel
-
-# see recordiobug for more info

@@ -19,7 +19,6 @@ import string
 test_output = None
 test_output_raw = None
 data_file = None
-errors_file = None
 fatal_errors = None
 
 def main():
@@ -76,9 +75,6 @@ def find_keys(keys, date):
 
 
 def log_timeouts(keys, time_out, date): # if we timed out
-    with open(errors_file, "w") as file:
-        file.write("appending {0}\n".format(data_file))
-
     if time_out:
         print("ERROR")
         with open(data_file, "a") as file:
@@ -95,8 +91,6 @@ def validate_output(verify_keys, output_file):
     with open(output_file, "r") as file:
         test_output_raw = file.read()
         test_output = test_output_raw.split("\n")
-    with open(errors_file, "a") as file:
-        file.write("processed {0}\n".format(output_file))
 
     # check for valid output
     valid_output = True
@@ -104,7 +98,7 @@ def validate_output(verify_keys, output_file):
         # match verify keys
         m = re.match("(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)", key)
         if not m:
-            print("[Error: invalid verify/reject line '{}']".format(key))
+            print("[Error: invalid verify/reject line '{0}']".format(key))
             exit(1)
         # set parts of match to variables
         type = m.group(1)
@@ -175,18 +169,12 @@ def read_key_file(keys_file, output_dir):
                     global data_file
                     data_file = os.path.join(output_dir, comment.split()[1])
 
-    with open(errors_file, "a") as file:
-        file.write("processed {0}\n".format(keys_file))
-
     return (keys, verify_keys)
 
 
 def create_data_file(keys):
     # create and setup .dat file if not done already
     if not os.path.isfile(data_file):
-        with open(errors_file, "a") as file:
-            file.write("created {0}\n".format(data_file))
-
         with open(data_file, "a") as file:
             file.write("# Date")
             for key in keys:
@@ -204,17 +192,19 @@ def verify_data_file(keys_exp, keys_file):
                 columns = len(header)
                 keys_actual = header[1:]
                 continue
-            if header == None: # for all lines after the header
-                # ignore comments and empty lines
-                if parsed[0] == "" or "#" in parsed[0]:
-                    continue
-                if len(parsed) != columns:
-                    print("[Error: {} entry for {} doesn't match header length.]"
-                            .format(data_file, parsed[0]))
-                    exit(2)
+            # ignore comments and empty lines
+            if parsed[0] == "" or "#" in parsed[0]:
+                continue
+            if header == None:
+                print("[Error: data entry prior to header or missing header in {0}]".format(data_file))
+                exit(2)
+            if len(parsed) != columns:
+                print("[Error: {0} entry for {1} doesn't match header length.]"
+                      .format(data_file, parsed[0]))
+                exit(2)
 
         if header == None: # not found
-            print("[Error: {} has no header.]".format(data_file))
+            print("[Error: {0} has no header.]".format(data_file))
             exit(2)
 
     
@@ -226,7 +216,7 @@ def verify_data_file(keys_exp, keys_file):
 
     # the two aren't equal
     if len(diff) > 1 or (len(diff) == 1 and diff[0][0] != "equal"):        
-        print("[Error: key mismatch between {} and {}]"
+        print("[Error: key mismatch between {0} and {1}]"
                 .format(keys_file, data_file))
         print("Changes since creation of .dat file:")
         for d in diff:
@@ -235,16 +225,16 @@ def verify_data_file(keys_exp, keys_file):
                 continue
             elif type == "delete":
                 for i in range(d[1], d[2]):
-                    print("\t'{}' has been removed.".format(keys_actual[i]))
+                    print("\t'{0}' has been removed.".format(keys_actual[i]))
             elif type == "insert":
                 for i in range(d[3], d[4]):
-                    print("\t'{}' has been added.".format(keys_exp[i]))
+                    print("\t'{0}' has been added.".format(keys_exp[i]))
             elif type == "replace":
                 if d[2] - d[1] == 1: # singlular
-                    print("\t'{}' has been replaced with '{}'.".format(
+                    print("\t'{0}' has been replaced with '{1}'.".format(
                             keys_actual[d[1]], ", ".join(keys_exp[d[3]:d[4]])))
                 else: # plural
-                    print("\t'{}' have been replaced with '{}'.".format(
+                    print("\t'{0}' have been replaced with '{1}'.".format(
                         ", ".join(keys_actual[d[1]:d[2]]), 
                         ", ".join(keys_exp[d[3]:d[4]])))
 
@@ -268,24 +258,22 @@ def setup(args):
     else:
         args.exec_time_out == False
     
-    global data_file, errors_file, fatal_errors
+    global data_file, fatal_errors
     data_file = "{0}/{1}.dat".format(args.output_dir, args.test_name)
-    errors_file = "{0}/{1}.errors".format(args.output_dir, args.test_name)
     fatal_errors = 0
-
-    if os.path.isfile(errors_file):
-        os.remove(errors_file)
     
 
 def cleanup():
     print("output was: ")
     # if test output was too long, only print first and last 1000 characters
     if len(test_output_raw) > 2000: 
+        print("(first 1000 followed by last 1000)")
         head = test_output_raw[:1000].strip()
         tail = test_output_raw[-1000:].strip()
         head = ''.join(x if x in string.printable else "~" for x in head)
         tail = ''.join(x if x in string.printable else "~" for x in tail)
         print(head)
+        print(" <truncated> ")
         print(tail)
     else:
         out = test_output_raw.strip()

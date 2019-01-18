@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -97,8 +97,11 @@ void expandExternArrayCalls() {
     if (fcopy) {
       SET_LINENO(fn);
       fn->defPoint->insertAfter(new DefExpr(fcopy));
+      fn->addFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG);
       fcopy->removeFlag(FLAG_EXTERN);
       fcopy->addFlag(FLAG_INLINE);
+      fcopy->addFlag(FLAG_VOID_NO_RETURN_VALUE);
+
       fcopy->cname = astr("chpl__extern_array_wrapper_", fcopy->cname);
       fn->name = astr("chpl__extern_array_", fn->name);
 
@@ -116,9 +119,9 @@ void expandExternArrayCalls() {
           } else {
             // Generic array, replace with (c_ptr(eltType)):c_void_ptr
             externCall->argList.insertAtTail(
-                new CallExpr("_cast",
-                  new UnresolvedSymExpr("c_void_ptr"),
-                  new CallExpr("c_ptrTo", new SymExpr(formal))));
+                createCast(
+                  new CallExpr("c_ptrTo", new SymExpr(formal)),
+                  new UnresolvedSymExpr("c_void_ptr")));
           }
         } else {
           externCall->argList.insertAtTail(new SymExpr(formal));
@@ -126,11 +129,7 @@ void expandExternArrayCalls() {
         current_formal++;
       }
 
-      if (fcopy->retType == dtVoid) {
-        fcopy->body->replace(new BlockStmt(externCall));
-      } else {
-        fcopy->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, externCall)));
-      }
+      fcopy->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, externCall)));
     }
   }
 }

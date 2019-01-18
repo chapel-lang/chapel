@@ -1,0 +1,3 @@
+uncaught SystemError: Bad file descriptor (in file.realPath)
+  fileNotValid.chpl:5: thrown here
+  fileNotValid.chpl:5: uncaught here

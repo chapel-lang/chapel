@@ -70,10 +70,10 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
 
   for (DG1, DG2, DA1, DA2) in Block(A1D,blk,upper) {
 
-    var G1 => A[DG1];
-    var G2 => A[DG2];
-    var A1 => A[DA1];
-    var A2 => A[DA2];
+    ref G1 = A[DG1];
+    ref G2 = A[DG2];
+    ref A1 = A[DA1];
+    ref A2 = A[DA2];
  
     for (ij, jk, ik) in IterSyrk(DG1, upper) {
       A(ij) -= G1(jk)*G1(ik);

@@ -10,9 +10,9 @@ const localesAcross = sqrt(numLocales) : int;
 const blkSize = n / localesAcross : int;
 
 record WrappedArray {
-    proc WrappedArray() { }
+    proc init() { }
 
-    proc WrappedArray(row, col, numRows, numCols) {
+    proc init(row, col, numRows, numCols) {
         dom = {row..row+numRows-1, col..col+numCols-1};
     }
 
@@ -60,9 +60,9 @@ proc simpleDistMultiply(
 
     // do local matrix-multiply
     forall (locRow, locCol) in localesDom do on myLocales[locRow,locCol] {
-        var localA => rowCopies[locRow,locCol].data;
-        var localB => colCopies[locRow,locCol].data;
-        var localC => C[locRow,locCol].data;
+        ref localA = rowCopies[locRow,locCol].data;
+        ref localB = colCopies[locRow,locCol].data;
+        ref localC = C[locRow,locCol].data;
 
         forall i in localC.domain.dim(1) {
             forall j in localC.domain.dim(2) {

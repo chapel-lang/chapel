@@ -1,0 +1,5 @@
+record-this-intent-const-error.chpl:13: error: const actual is passed to 'ref' formal 'this' of setsField()
+record-this-intent-const-error.chpl:3: note: to formal of type R
+record-this-intent-const-error.chpl:7: note: passed as ref here
+record-this-intent-const-error.chpl:4: note: to ref formal here
+record-this-intent-const-error.chpl:7: note: passed as ref here

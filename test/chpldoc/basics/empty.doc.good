@@ -1,5 +1,20 @@
+.. default-domain:: chpl
+
+.. module:: empty.doc
+
 empty.doc
-   proc noComment()
-   proc noBody()
-   proc noBodyButArgs(num: int, bleah: bool)
-   proc noCommentButArgs(num: real, fleas: bool)
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use empty.doc;
+
+.. function:: proc noComment()
+
+.. function:: proc noBody()
+
+.. function:: proc noBodyButArgs(num: int, bleah: bool)
+
+.. function:: proc noCommentButArgs(num: real, fleas: bool)
+

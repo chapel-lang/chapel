@@ -1,6 +1,6 @@
 config const n = 7;
 
-const D = {1..n*n};
+const D = {1..max(int)};
 
 var D1: sparse subdomain(D);
 D1 += max(int);

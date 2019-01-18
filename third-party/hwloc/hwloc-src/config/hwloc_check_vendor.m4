@@ -86,8 +86,13 @@ AC_DEFUN([_HWLOC_CHECK_COMPILER_VENDOR], [
     hwloc_check_compiler_vendor_result="unknown"
 
     # GNU is probably the most common, so check that one as soon as
-    # possible.  Intel pretends to be GNU, so need to check Intel
-    # before checking for GNU.
+    # possible. Intel and Android pretend to be GNU, so need to
+    # check Intel and Android before checking for GNU.
+
+    # Android
+    AS_IF([test "$hwloc_check_compiler_vendor_result" = "unknown"],
+          [HWLOC_IFDEF_IFELSE([__ANDROID__],
+               [hwloc_check_compiler_vendor_result="android"])])
 
     # Intel
     AS_IF([test "$hwloc_check_compiler_vendor_result" = "unknown"],

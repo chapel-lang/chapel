@@ -2,10 +2,10 @@ class bar {
   type t;
   var y : t;
   proc clone()
-    return new bar(t, y);
+    return new unmanaged bar(t, y);
 }
 
-var b : bar(int) = new bar(int, 4);
+var b : unmanaged bar(int) = new unmanaged bar(int, 4);
 
 writeln(b);
 
@@ -17,3 +17,7 @@ c.y = 12;
 
 writeln(b);
 writeln(c);
+
+delete c;
+delete b;
+

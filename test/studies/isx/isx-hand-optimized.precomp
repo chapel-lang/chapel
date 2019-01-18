@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+rm -f *.good
+if [ ! "none" = `$CHPL_HOME/util/chplenv/chpl_comm.py` ]; then cp goods-4/*.good .; else cp goods-1/*.good .; fi
+
+for f in *.good; do
+  ftmp="$f.tmp"
+  sed s/locale/bucket/g "$f" > "$ftmp"
+  mv "$ftmp" "$f"
+  sed s/Locale/Bucket/g "$f" > "$ftmp"
+  mv "$ftmp" "$f"
+done

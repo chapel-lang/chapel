@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -22,15 +22,45 @@
 
 #include "chpltypes.h"
 
-//
-// Returns the value of a CHPL_RT_* environment variable, with default.
-//
-const char* chpl_get_rt_env(const char*, const char*);
+#include <inttypes.h>
 
 //
-// Returns the value of a boolean CHPL_RT_* environment variable, with
-// default.
+// Returns the string value of a CHPL_RT_* environment variable, with
+// a default.
 //
-chpl_bool chpl_get_rt_env_bool(const char*, chpl_bool);
+const char* chpl_env_rt_get(const char*, const char*);
+
+//
+// These convert string values, presumably from environment variables,
+// to typed values (boolean, int, or size), with a default.
+//
+chpl_bool chpl_env_str_to_bool(const char*, const char*, chpl_bool);
+int64_t chpl_env_str_to_int(const char*, const char*, int64_t);
+int chpl_env_str_to_int_pct(const char*, const char*, int, chpl_bool);
+size_t chpl_env_str_to_size(const char*, const char*, size_t);
+
+//
+// These combine getting the environment variable and converting to a
+// typed value.
+//
+static inline
+chpl_bool chpl_env_rt_get_bool(const char* ev, chpl_bool dflt) {
+  return chpl_env_str_to_bool(ev, chpl_env_rt_get(ev, NULL), dflt);
+}
+
+static inline
+int64_t chpl_env_rt_get_int(const char* ev, int64_t dflt) {
+  return chpl_env_str_to_int(ev, chpl_env_rt_get(ev, NULL), dflt);
+}
+
+static inline
+int chpl_env_rt_get_int_pct(const char* ev, int dflt, chpl_bool doWarn) {
+  return chpl_env_str_to_int_pct(ev, chpl_env_rt_get(ev, NULL), dflt, doWarn);
+}
+
+static inline
+size_t chpl_env_rt_get_size(const char* ev, size_t dflt) {
+  return chpl_env_str_to_size(ev, chpl_env_rt_get(ev, NULL), dflt);
+}
 
 #endif

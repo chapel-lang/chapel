@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,7 +39,9 @@
    :proc:`copyFile`
    :proc:`copyTree`
    :proc:`mkdir`
+   :proc:`moveDir`
    :proc:`remove`
+   :proc:`rmTree`
    :proc:`symlink`
    :proc:`chmod`
    :proc:`chown`
@@ -83,7 +85,7 @@
  */
 module FileSystem {
 
-use Error, Path;
+use SysError, Path;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -148,19 +150,10 @@ extern const S_ISGID: int;
 */
 extern const S_ISVTX: int;
 
-pragma "no doc"
-proc locale.chdir(out error: syserr, name: string) {
-  extern proc chpl_fs_chdir(name: c_string):syserr;
-
-  on this {
-    error = chpl_fs_chdir(name.localize().c_str());
-  }
-}
-
 /* Change the current working directory of the locale in question to the
    specified path `name`.
 
-   Will halt with an error message if one is detected.
+   Will throw an error message if one occurs.
 
    .. warning::
 
@@ -170,17 +163,27 @@ proc locale.chdir(out error: syserr, name: string) {
    :arg name: The intended current working directory
    :type name: `string`
 */
-proc locale.chdir(name: string) {
+proc locale.chdir(name: string) throws {
+  extern proc chpl_fs_chdir(name: c_string):syserr;
+
   var err: syserr = ENOERR;
-  chdir(err, name);
-  if err != ENOERR then ioerror(err, "in chdir", name);
+  on this {
+    err = chpl_fs_chdir(name.localize().c_str());
+  }
+  if err then try ioerror(err, "in chdir", name);
 }
 
 pragma "no doc"
-proc chmod(out error: syserr, name: string, mode: int) {
-  extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
-
-  error = chpl_fs_chmod(name.localize().c_str(), mode);
+proc locale.chdir(out error: syserr, name: string) {
+  compilerWarning("This version of locale.chdir() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    chdir(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 // CHPLDOC TODO: really want to make a section for S_IRUSR and friends.
@@ -188,28 +191,39 @@ proc chmod(out error: syserr, name: string, mode: int) {
 /* Set the permissions of the file or directory specified by the argument
    `name` to that indicated by the argument `mode`.
 
-   Will halt with an error message if one is detected
+   Will throw an error message if one occurs.
 
    :arg name: The name of the file or directory whose permissions should be
-              alterred.
+              altered.
    :type name: `string`
-   :arg mode: The permissions desired for the file or direcory in question.
+   :arg mode: The permissions desired for the file or directory in question.
               See description of :const:`S_IRUSR`, for instance, for potential
               values.
    :type mode: `int`
+
+   :throws FileNotFoundError: Thrown when the name specified does not correspond
+                              to a file or directory that exists.
+   :throws PermissionError: Thrown when the current user does not have
+                            permission to change the permissions
 */
-proc chmod(name: string, mode: int) {
-  var err: syserr = ENOERR;
-  chmod(err, name, mode);
-  if err != ENOERR then ioerror(err, "in chmod", name);
+proc chmod(name: string, mode: int) throws {
+  extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
+
+  var err = chpl_fs_chmod(name.localize().c_str(), mode);
+  if err then try ioerror(err, "in chmod", name);
 }
 
-
 pragma "no doc"
-proc chown(out error: syserr, name: string, uid: int, gid: int) {
-  extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
-
-  error = chpl_fs_chown(name.localize().c_str(), uid:c_int, gid:c_int);
+proc chmod(out error: syserr, name: string, mode: int) {
+  compilerWarning("This version of chmod() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    chmod(name, mode);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 /* Change one or both of the owner and group id of the named file or directory
@@ -227,62 +241,35 @@ proc chown(out error: syserr, name: string, uid: int, gid: int) {
              same.
    :type gid: `int`
 */
-proc chown(name: string, uid: int, gid: int) {
-  var err: syserr = ENOERR;
-  chown(err, name, uid, gid);
-  if err != ENOERR then ioerror(err, "in chown", name);
+proc chown(name: string, uid: int, gid: int) throws {
+  extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
+
+  var err = chpl_fs_chown(name.localize().c_str(), uid:c_int, gid:c_int);
+  if err then try ioerror(err, "in chown", name);
+}
+
+pragma "no doc"
+proc chown(out error: syserr, name: string, uid: int, gid: int) {
+  compilerWarning("This version of chown() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    chown(name, uid, gid);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 // FUTURE WORK:
 // When basename and joinPath are supported, enable dest to be a directory.
-pragma "no doc"
-proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) {
-  var destFile = dest;
-  if (isDir(error, destFile)) {
-    // destFile = joinPath(destFile, basename(src));
-    error = EISDIR;
-    // Supporting a destination directory requires getting the basename from
-    // the src (because we're using the same name) and joining it with the
-    // provided destination directory.  Both of those operations are part of
-    // the string portion, so we aren't supporting it just yet.
-    return;
-  } else {
-    if (error == ENOENT) {
-      // Destination didn't exist before.  We'd be overwriting it anyways, so
-      // we don't care.
-      error = ENOERR;
-    }
-    if error != ENOERR then return;
-  }
-  copyFile(error, src, destFile);
-  if error != ENOERR then return;
-  copyMode(error, src, destFile);
-  if error != ENOERR then return;
-
-  if (metadata) {
-    extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): syserr;
-
-    // Copies the access time, and time of last modification.
-    // Does not copy uid, gid, or mode
-    error = chpl_fs_copy_metadata(src.localize().c_str(), dest.localize().c_str());
-
-    // Get uid and gid from src
-    var uid = getUID(error, src);
-    if error != ENOERR then return;
-    var gid = getGID(error, src);
-    if error != ENOERR then return;
-    // Change uid and gid to that of the src
-    chown(error, destFile, uid, gid);
-  }
-}
 
 /* Copies the contents and permissions of the file indicated by `src` into
-   the file or directory `dest`.  If `dest` is a directory, will halt with
-   an error message.  If `metadata` is set to `true`, will also copy the
+   the file or directory `dest`.  If `dest` is a directory, will throw a
+   FileNotFoundError.  If `metadata` is set to `true`, will also copy the
    metadata (uid, gid, time of last access and time of modification) of the
-   file to be copied.
-
-   May halt with other error messages.
+   file to be copied. A partially copied file or directory may be present
+   in `dest` if there is an error in copying.
 
    .. note::
 
@@ -299,54 +286,131 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
                   with the source file.  It is set to `false` by default.
    :type metadata: `bool`
 */
-proc copy(src: string, dest: string, metadata: bool = false) {
-  var err: syserr = ENOERR;
-  copy(err, src, dest, metadata);
-  if err != ENOERR then ioerror(err, "in copy(" + src + ", " + dest + ")");
+proc copy(src: string, dest: string, metadata: bool = false) throws {
+  var destFile = dest;
+  try {
+    if (isDir(destFile)) {
+      // destFile = joinPath(destFile, basename(src));
+      ioerror(EISDIR:syserr, "in copy(" + src + ", " + dest + ")");
+
+      // Supporting a destination directory requires getting the basename from
+      // the src (because we're using the same name) and joining it with the
+      // provided destination directory.  Both of those operations are part of
+      // the string portion, so we aren't supporting it just yet.
+    }
+  } catch e: FileNotFoundError {
+    // Destination didn't exist before, and we're overwriting it anyways.
+  }
+
+  try copyFile(src, destFile);
+  try copyMode(src, destFile);
+
+  if (metadata) {
+    extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): syserr;
+
+    // Copies the access time, and time of last modification.
+    // Does not copy uid, gid, or mode
+    var err = chpl_fs_copy_metadata(src.localize().c_str(), dest.localize().c_str());
+    if err then try ioerror(err, "in copy(" + src + ", " + dest + ")");
+
+    // Get uid and gid from src
+    var uid = try getUID(src);
+    var gid = try getGID(src);
+
+    // Change uid and gid to that of the src
+    try chown(destFile, uid, gid);
+  }
 }
 
 pragma "no doc"
-proc copyFile(out error: syserr, src: string, dest: string) {
+proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) {
+  compilerWarning("This version of copy() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    copy(src, dest, metadata);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+}
+
+/* Copies the contents of the file indicated by `src` into the file indicated
+   by `dest`, replacing `dest`'s contents if it already exists (and is a
+   different file than `src`, i.e. not a symbolic link to `src`).
+
+   If `dest` is not writable, or `src` and `dest` refer to the same file,
+   this function will throw an error.  Does not copy metadata.  May
+   throw other error messages.
+
+   :arg src: The source file whose contents are to be copied.
+   :type src: `string`
+   :arg dest: The intended destination of the contents.
+   :type dest: `string`
+*/
+proc copyFile(src: string, dest: string) throws {
   // This implementation is based off of the python implementation for copyfile,
   // with some slight differences.  That implementation was found at:
   // https://bitbucket.org/mirror/cpython/src/c8ce5bca0fcda4307f7ac5d69103ce128a562705/Lib/shutil.py?at=default
   // I did not look at the other functions in that file, except for copyfileobj
   // (which copyfile called).
-  if (!exists(src)) {
-    error = ENOENT;
+
+  if !(try exists(src)) then
     // Source didn't exist, we can't copy it.
-    return;
-  }
-  if (isDir(error, src) || isDir(error, dest)) {
-    // If the source is a directory, the user has made a mistake, so return an
-    // error.  The same is true if the destination is a directory.
-    error = EISDIR;
-    return;
-  }
+    try ioerror(ENOENT:syserr, "in copyFile(" + src + ", " + dest + ")");
 
-  if (error == ENOENT) {
-    error = ENOERR;
-    // We don't care if dest did not exist before, we'll create or overwrite it
-    // anyways.  We already know src exists.
-  } else if (sameFile(error, src, dest)) {
-    // Check if the files are the same, error if yes
+  try {
+    if (isDir(src) || isDir(dest)) {
+      // If the source is a directory, the user has made a mistake, so return
+      // an error.  The same is true if the destination is a directory.
+      ioerror(EISDIR:syserr, "in copyFile(" + src + ", " + dest + ")");
+    }
 
-    // Don't need to check if they're the same file when we know dest didn't
-    // exist.
-    error = EINVAL;
-    return;
-    // The second argument is invalid if the two arguments are the same.
+    if (sameFile(src, dest)) {
+      // Check if the files are the same, error if yes
+      try ioerror(EINVAL:syserr, "in copyFile(" + src + ", " + dest + ")");
+    }
+  } catch e: FileNotFoundError {
+    // We don't care if dest did not exist before, we'll create or overwrite
+    // it anyways.  We already know src exists.
   }
 
   // Open src for reading, open dest for writing
-  var srcFile = open(src, iomode.r);
-  var destFile = open(dest, iomode.cw);
-  var srcChnl = srcFile.reader(kind=ionative, locking=false);
-  var destChnl = destFile.writer(kind=ionative, locking=false);
+  var srcFile = try open(src, iomode.r);
+  defer {
+    try {
+      srcFile.close();
+    } catch { /* ignore errors */ }
+  }
+
+  var destFile = try open(dest, iomode.cw);
+  defer {
+    try {
+      destFile.close();
+    } catch { /* ignore errors */ }
+  }
+
+  var srcChnl = try srcFile.reader(kind=ionative, locking=false);
+  defer {
+    try {
+      srcChnl.close();
+    } catch { /* ignore errors */ }
+  }
+
+  var destChnl = try destFile.writer(kind=ionative, locking=false);
+  defer {
+    try {
+      destChnl.close();
+    } catch { /* ignore errors */ }
+  }
+
   // read in, write out.
-  var line: [0..1023] uint(8);
+  var buf: string;
   var numRead: int = 0;
-  while (srcChnl.readline(line, numRead=numRead, error=error)) {
+  // If increasing the read size, make sure there's a test in
+  // test/library/standard/FileSystem that copies a file larger than one buffer.
+  while (try srcChnl.readstring(buf, len=4096)) {
+    try destChnl.write(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
     // the bytes read into memory between the two channels). To do that you'd
@@ -359,45 +423,26 @@ proc copyFile(out error: syserr, src: string, dest: string) {
     // srcReader.endPeekBuffer
 
     // Some of these routines don't exist with Chapel wrappers now
-
-    destChnl.write(line[0..#numRead]);
   }
-  if error == EEOF then error = ENOERR;
-  destChnl.flush();
 
-  srcFile.close();
-  destFile.close();
-}
-
-/* Copies the contents of the file indicated by `src` into the file indicated
-   by `dest`, replacing `dest`'s contents if it already exists (and is a
-   different file than `src`, i.e. not a symbolic link to `src`).
-
-   If `dest` is not writable, or `src` and `dest` refer to the same file,
-   this function will halt with an error message.  Does not copy metadata.  May
-   halt with other error messages.
-
-   :arg src: The source file whose contents are to be copied.
-   :type src: `string`
-   :arg dest: The intended destination of the contents.
-   :type dest: `string`
-*/
-proc copyFile(src: string, dest: string) {
-  var err: syserr = ENOERR;
-  copyFile(err, src, dest);
-  if err != ENOERR then ioerror(err, "in copyFile(" + src + ", " + dest + ")");
+  // throws close errors if reading is successful
+  try destChnl.close();
+  try srcChnl.close();
+  try destFile.close();
+  try srcFile.close();
 }
 
 pragma "no doc"
-proc copyMode(out error: syserr, src: string, dest: string) {
-  // Gets the mode from the source file.
-  var srcMode = getMode(error, src);
-  // If any error occurred, we want to be the one reporting it, so as not
-  // to bleed implementation details.  If we found one when viewing the
-  // source's mode, we should return immediately.
-  if error != ENOERR then return;
-  // Sets the mode of the destination to the source's mode.
-  chmod(error, dest, srcMode);
+proc copyFile(out error: syserr, src: string, dest: string) {
+  compilerWarning("This version of copyFile() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    copyFile(src, dest);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 /* Copies the permissions of the file indicated by `src` to the file indicated
@@ -410,67 +455,28 @@ proc copyMode(out error: syserr, src: string, dest: string) {
    :arg dest: The intended destination of the permissions.
    :type dest: `string`
 */
-proc copyMode(src: string, dest: string) {
-  var err: syserr = ENOERR;
-  copyMode(err, src, dest);
-  if err != ENOERR then ioerror(err, "in copyMode " + src, dest);
-}
-
-private proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
-  var oldMode = getMode(src);
-  mkdir(error, dest, mode=oldMode, parents=true);
-  if error != ENOERR then return;
-  // Create dest
-
-  for filename in listdir(path=src, dirs=false, files=true, listlinks=true) {
-    // Take care of files in src
-    var fileDestName = dest + "/" + filename;
-    var fileSrcName = src + "/" + filename;
-    if (isLink(fileSrcName) && copySymbolically) {
-      // Copy symbolically means symlinks should be copied as symlinks
-      symlink(error, realPath(fileSrcName), fileDestName);
-    } else {
-      // Either we didn't find a link, or copy symbolically is false, which
-      // means we want the contents of the linked file, not a link itself.
-      copy(error, fileSrcName, fileDestName, metadata=true);
-    }
-    if (error != ENOERR) then return;
-  }
-
-  for dirname in listdir(path=src, dirs=true, files=false, listlinks=true) {
-    var dirDestName = dest+"/"+dirname;
-    var dirSrcName = src+"/"+dirname;
-    if (isLink(dirSrcName) && copySymbolically) {
-      // Copy symbolically means symlinks should be copied as symlinks
-      symlink(error, realPath(dirSrcName), dirDestName);
-    } else {
-      // Either we didn't find a link, or copy symbolically is false, which
-      // means we want the contents of the linked directory, not a link itself.
-      copyTreeHelper(error, dirSrcName, dirDestName, copySymbolically);
-    }
-    if (error != ENOERR) then return;
+proc copyMode(src: string, dest: string) throws {
+  try {
+    // Gets the mode from the source file.
+    var srcMode = getMode(src);
+    // Sets the mode of the destination to the source's mode.
+    chmod(dest, srcMode);
+  } catch e: SystemError {
+    // Hide implementation details.
+    try ioerror(e.err, "in copyMode " + src, dest);
   }
 }
 
 pragma "no doc"
-proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
-  var expectedErrorCases = exists(error, dest);
-  if (error != ENOERR) then return; // Some error occurred in checking the existence of dest.
-  else if (expectedErrorCases) {
-    // dest exists.  That's not ideal.
-    error = EEXIST;
-    return;
+proc copyMode(out error: syserr, src: string, dest: string) {
+  var err: syserr = ENOERR;
+  try {
+    copyMode(src, dest);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
   }
-  expectedErrorCases = !isDir(error, src);
-  if (error != ENOERR) then return; // Some error occurred in checking src was a directory.
-  else if (expectedErrorCases) {
-    error = ENOTDIR;
-    return;
-  }
-
-  var srcPath = realPath(src);
-
-  copyTreeHelper(error, srcPath, dest, copySymbolically);
 }
 
 /* Will recursively copy the tree which lives under `src` into `dst`,
@@ -493,30 +499,66 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
                           `false` by default
    :type copySymbolically: `bool`
 */
-proc copyTree(src: string, dest: string, copySymbolically: bool=false) {
-  var err: syserr = ENOERR;
-  copyTree(err, src, dest, copySymbolically);
-  if err != ENOERR then ioerror(err, "in copyTree(" + src + ", " + dest + ")");
+proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
+  var expectedErrorCases = try exists(dest);
+  if (expectedErrorCases) then
+    // dest exists.  That's not ideal.
+    try ioerror(EEXIST:syserr, "in copyTree(" + src + ", " + dest + ")");
+
+  expectedErrorCases = !(try isDir(src));
+  if (expectedErrorCases) then
+    try ioerror(ENOTDIR:syserr, "in copyTree(" + src + ", " + dest + ")");
+
+  var srcPath = try realPath(src);
+  try copyTreeHelper(srcPath, dest, copySymbolically);
+}
+
+private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=false) throws {
+  // Create dest
+  var oldMode = try getMode(src);
+  try mkdir(dest, mode=oldMode, parents=true);
+
+  for filename in listdir(path=src, dirs=false, files=true, listlinks=true) {
+    // Take care of files in src
+    var fileDestName = dest + "/" + filename;
+    var fileSrcName = src + "/" + filename;
+    if (try isLink(fileSrcName) && copySymbolically) {
+      // Copy symbolically means symlinks should be copied as symlinks
+      var realp = try realPath(fileSrcName);
+      try symlink(realp, fileDestName);
+    } else {
+      // Either we didn't find a link, or copy symbolically is false, which
+      // means we want the contents of the linked file, not a link itself.
+      try copy(fileSrcName, fileDestName, metadata=true);
+    }
+  }
+
+  for dirname in listdir(path=src, dirs=true, files=false, listlinks=true) {
+    var dirDestName = dest+"/"+dirname;
+    var dirSrcName = src+"/"+dirname;
+    if (try isLink(dirSrcName) && copySymbolically) {
+      // Copy symbolically means symlinks should be copied as symlinks
+      var realp = try realPath(dirSrcName);
+      try symlink(realp, dirDestName);
+    } else {
+      // Either we didn't find a link, or copy symbolically is false, which
+      // means we want the contents of the linked directory, not a link itself.
+      try copyTreeHelper(dirSrcName, dirDestName, copySymbolically);
+    }
+  }
 }
 
 pragma "no doc"
-proc locale.cwd(out error: syserr): string {
-  extern proc chpl_fs_cwd(ref working_dir:c_string_copy):syserr;
-
-  var ret:string;
-  on this {
-    var tmp:c_string_copy;
-    // c_strings and c_string_copy's can't cross on statements.
-    error = chpl_fs_cwd(tmp);
-    if (error != ENOERR) {
-      ret = "";
-    } else {
-      var tmp_len = tmp.length;
-      ret = new string(tmp:c_ptr(uint(8)), tmp_len, tmp_len+1,
-                       owned=true, needToCopy=false);
-    }
+proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
+  compilerWarning("This version of copyTree() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    copyTree(src, dest, copySymbolically);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
   }
-  return ret;
 }
 
 /* Obtains and returns the current working directory for this locale.
@@ -532,20 +574,33 @@ proc locale.cwd(out error: syserr): string {
    :return: The current working directory for the locale in question.
    :rtype: `string`
 */
-proc locale.cwd(): string {
+proc locale.cwd(): string throws {
+  extern proc chpl_fs_cwd(ref working_dir:c_string):syserr;
+
+  var ret:string;
   var err: syserr = ENOERR;
-  var ret = cwd(err);
-  if err != ENOERR then ioerror(err, "in cwd");
+  on this {
+    var tmp:c_string;
+    // c_strings can't cross on statements.
+    err = chpl_fs_cwd(tmp);
+    ret = new string(tmp, isowned=true, needToCopy=false);
+  }
+  if err != ENOERR then try ioerror(err, "in cwd");
   return ret;
 }
 
 pragma "no doc"
-proc exists(out error: syserr, name: string): bool {
-  extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
-
-  var ret:c_int;
-  error = chpl_fs_exists(ret, name.localize().c_str());
-  return ret != 0;
+proc locale.cwd(out error: syserr): string {
+  compilerWarning("This version of locale.cwd() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return cwd();
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+  return "";
 }
 
 /* Determines if the file or directory indicated by `name` exists and returns
@@ -561,11 +616,34 @@ proc exists(out error: syserr, name: string): bool {
             symbolic links.
    :rtype: `bool`
 */
-proc exists(name: string): bool {
-  var err: syserr = ENOERR;
-  var ret = exists(err, name);
-  if err != ENOERR then ioerror(err, "in exists");
-  return ret;
+proc exists(name: string): bool throws {
+  extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
+
+  if (name.isEmptyString()) {
+    // chpl_fs_exists uses stat to determine if a file exists, which throws an
+    // error when "" is passed to it.  Check it here early and return false
+    // like Python does
+    return false;
+  }
+
+  var ret:c_int;
+  var err = chpl_fs_exists(ret, name.localize().c_str());
+  if err then try ioerror(err, "in exists");
+  return ret != 0;
+}
+
+pragma "no doc"
+proc exists(out error: syserr, name: string): bool {
+  compilerWarning("This version of exists() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return exists(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+  return false;
 }
 
 
@@ -573,11 +651,11 @@ proc exists(name: string): bool {
    similar to simple invocations of the command-line `find` utility.
    May be invoked in serial or non-zippered parallel contexts.
 
-   :arg startdir: The root directory from which to start the search 
+   :arg startdir: The root directory from which to start the search
                   (defaults to ``"."``)
    :type startdir: `string`
 
-   :arg recursive: Indicates whether or not to descend recursively into 
+   :arg recursive: Indicates whether or not to descend recursively into
                    subdirectories (defaults to `false`)
    :type recursive: `bool`
 
@@ -587,7 +665,7 @@ proc exists(name: string): bool {
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
-iter findfiles(startdir: string = ".", recursive: bool = false, 
+iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
     for subdir in walkdirs(startdir, hidden=hidden) do
@@ -599,26 +677,19 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
 }
 
 pragma "no doc"
-iter findfiles(startdir: string = ".", recursive: bool = false, 
-               hidden: bool = false, param tag: iterKind): string 
+iter findfiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
   if (recursive) then
-    forall subdir in walkdirs(startdir, hidden=hidden) do
+    // Why "with (ref hidden)"?  A: the compiler currently allows only
+    // [const] ref intents in forall loops over recursive parallel iterators
+    // such as walkdirs().
+    forall subdir in walkdirs(startdir, hidden=hidden) with (ref hidden) do
       for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
     for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
-}
-
-
-pragma "no doc"
-proc getGID(out error: syserr, name: string): int {
-  extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
-
-  var result: c_int;
-  error = chpl_fs_get_gid(result, name.localize().c_str());
-  return result;
 }
 
 /* Obtains and returns the group id associated with the file or directory
@@ -632,20 +703,27 @@ proc getGID(out error: syserr, name: string): int {
    :return: The group id of the file or directory in question
    :rtype: `int`
 */
-proc getGID(name: string): int {
-  var err: syserr = ENOERR;
-  var ret = getGID(err, name);
-  if err != ENOERR then ioerror(err, "in getGID");
-  return ret;
+proc getGID(name: string): int throws {
+  extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
+
+  var result: c_int;
+  var err = chpl_fs_get_gid(result, name.localize().c_str());
+  if err then try ioerror(err, "in getGID");
+  return result;
 }
 
 pragma "no doc"
-proc getMode(out error: syserr, name: string): int {
-  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
-
-  var ret:c_int;
-  error = chpl_fs_viewmode(ret, name.localize().c_str());
-  return ret;
+proc getGID(out error: syserr, name: string): int {
+  compilerWarning("This version of getGID() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return getGID(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+  return 0;
 }
 
 /* Obtains and returns the current permissions of the file or directory
@@ -661,21 +739,27 @@ proc getMode(out error: syserr, name: string): int {
             values.
    :rtype: `int`
 */
-proc getMode(name: string): int {
-  var err:syserr = ENOERR;
-  var result = getMode(err, name);
-  if err != ENOERR then ioerror(err, "in getMode", name);
-  return result;
+proc getMode(name: string): int throws {
+  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
+
+  var ret:c_int;
+  var err = chpl_fs_viewmode(ret, name.localize().c_str());
+  if err then try ioerror(err, "in getMode", name);
+  return ret;
 }
 
-
 pragma "no doc"
-proc getFileSize(out error: syserr, name: string): int {
-  extern proc chpl_fs_get_size(ref result: int, filename: c_string):syserr;
-
-  var result: int;
-  error = chpl_fs_get_size(result, name.localize().c_str());
-  return result;
+proc getMode(out error: syserr, name: string): int {
+  compilerWarning("This version of getMode() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return getMode(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+  return 0;
 }
 
 /* Obtains and returns the size (in bytes) of the file specified by `name`.
@@ -688,21 +772,27 @@ proc getFileSize(out error: syserr, name: string): int {
    :return: The size in bytes of the file in question
    :rtype: `int`
 */
-proc getFileSize(name: string): int {
-  var err: syserr = ENOERR;
-  var ret = getFileSize(err, name);
-  if err != ENOERR then ioerror(err, "in getFileSize", name);
-  return ret;
+proc getFileSize(name: string): int throws {
+  extern proc chpl_fs_get_size(ref result: int, filename: c_string):syserr;
+
+  var result: int;
+  var err = chpl_fs_get_size(result, name.localize().c_str());
+  if err then try ioerror(err, "in getFileSize", name);
+  return result;
 }
 
-
 pragma "no doc"
-proc getUID(out error: syserr, name: string): int {
-  extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
-
-  var result: c_int;
-  error = chpl_fs_get_uid(result, name.localize().c_str());
-  return result;
+proc getFileSize(out error: syserr, name: string): int {
+  compilerWarning("This version of getFileSize() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return getFileSize(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+  return 0;
 }
 
 /* Obtains and returns the user id associated with the file or directory
@@ -716,28 +806,74 @@ proc getUID(out error: syserr, name: string): int {
    :return: The user id of the specified file or directory
    :rtype: `int`
 */
-proc getUID(name: string): int {
-  var err: syserr = ENOERR;
-  var ret = getUID(err, name);
-  if err != ENOERR then ioerror(err, "in getUID");
-  return ret;
+proc getUID(name: string): int throws {
+  extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
+
+  var result: c_int;
+  var err = chpl_fs_get_uid(result, name.localize().c_str());
+  if err then try ioerror(err, "in getUID");
+  return result;
 }
 
+pragma "no doc"
+proc getUID(out error: syserr, name: string): int {
+  compilerWarning("This version of getUID() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return getUID(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+  return false;
+}
 
 //
-// This is a helper module used by the various glob() overloads
-// to access the C-level routines, types, and values
+// This is a helper module used by the various glob() overloads.
+// It provides wrappers over the C-level routines that take care
+// of casting and error checking.
 //
-private module chpl_glob_c_interface {
+private module GlobWrappers {
   extern type glob_t;
 
-  extern const GLOB_NOMATCH: c_int;
+  private extern const GLOB_NOMATCH: c_int;
+  private extern const GLOB_NOSPACE: c_int;
 
-  extern proc chpl_glob(pattern:c_string, flags: c_int, 
-                        ref ret_glob:glob_t):c_int;
-  extern proc chpl_glob_num(x:glob_t): size_t;
-  extern proc chpl_glob_index(x:glob_t, idx:size_t): c_string;
-  extern proc globfree(ref glb:glob_t);
+  // glob wrapper that takes care of casting and error checking
+  inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
+    extern proc chpl_glob(pattern: c_string, flags: c_int,
+                          ref ret_glob: glob_t): c_int;
+
+    const GLOB_NOFLAGS = 0: c_int;
+    const err = chpl_glob(pattern.localize().c_str(), GLOB_NOFLAGS, ret_glob);
+
+    // When no flags are being passed, glob can only fail with GLOB_NOMATCH or
+    // GLOB_NOSPACE. GLOB_NOMATCH is fine and will just result in a 0 length
+    // glob_num. GLOB_NOSPACE occurs if the `malloc()` in glob failed, so just
+    // convert that into an out of memory error.
+    assert (err == 0 || err == GLOB_NOMATCH || err == GLOB_NOSPACE);
+    if err == GLOB_NOSPACE then
+      HaltWrappers.outOfMemoryHalt("glob()");
+  }
+
+  // glob_num wrapper that takes care of casting
+  inline proc glob_num_w(glb: glob_t): int {
+    extern proc chpl_glob_num(glb: glob_t): size_t;
+    return chpl_glob_num(glb).safeCast(int);
+  }
+
+  // glob_index wrapper that takes care of casting
+  inline proc glob_index_w(glb: glob_t, idx: int): string {
+    extern proc chpl_glob_index(glb: glob_t, idx: size_t): c_string;
+    return chpl_glob_index(glb, idx.safeCast(size_t)): string;
+  }
+
+  // globfree wrapper that exists only for symmetry in the routine names
+  inline proc globfree_w(ref glb: glob_t): void {
+    extern proc globfree(ref glb: glob_t): void;
+    globfree(glb);
+  }
 }
 
 
@@ -750,40 +886,32 @@ private module chpl_glob_c_interface {
    :yield: The matching filenames as strings
 */
 iter glob(pattern: string = "*"): string {
-  use chpl_glob_c_interface;
+  use GlobWrappers;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
-  if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", c"unhandled error in glob()");
-  //
-  // Use safeCast here, and then back again, in order to avoid conditional
-  // in iterator in order to get better generated code, and to support
-  // 'num-1' without risk of overflow
-  //
-  const num = chpl_glob_num(glb).safeCast(int);
-  for i in 0..num-1 do
-    yield chpl_glob_index(glb, i.safeCast(size_t)): string;
+  glob_w(pattern, glb);
+  const num = glob_num_w(glb);
 
-  globfree(glb);
+  for i in 0..num-1 do
+    yield glob_index_w(glb, i);
+
+  globfree_w(glb);
 }
 
 
 pragma "no doc"
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
-  use chpl_glob_c_interface;
+  use GlobWrappers;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern:c_string, 0, glb);
-  // TODO: Handle error cases better
-  if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", c"unhandled error in glob()");
-  const num = chpl_glob_num(glb).safeCast(int);
-  forall i in 0..num-1 do
-    yield chpl_glob_index(glb, i.safeCast(size_t)): string;
+  glob_w(pattern, glb);
+  const num = glob_num_w(glb);
 
-  globfree(glb);
+  forall i in 0..num-1 do
+    yield glob_index_w(glb, i);
+
+  globfree_w(glb);
 }
 
 //
@@ -798,17 +926,12 @@ iter glob(pattern: string = "*", param tag: iterKind): string
 pragma "no doc"
 iter glob(pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
-  use chpl_glob_c_interface;
+  use GlobWrappers;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
-  if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", c"unhandled error in glob()");
-  //
-  // cast is used here to ensure we create an int-based leader
-  //
-  const num = chpl_glob_num(glb).safeCast(int);
-  globfree(glb);
+  glob_w(pattern, glb);
+  const num = glob_num_w(glb);
+  globfree_w(glb);
 
   //
   // Forward to the range type's leader
@@ -818,41 +941,23 @@ iter glob(pattern: string = "*", param tag: iterKind)
 }
 
 pragma "no doc"
-iter glob(pattern: string = "*", followThis, param tag: iterKind): string 
+iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
-  use chpl_glob_c_interface;
+  use GlobWrappers;
   var glb : glob_t;
   if (followThis.size != 1) then
     compilerError("glob() iterator can only be zipped with 1D iterators");
   var r = followThis(1);
 
-  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
-  if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", c"unhandled error in glob()");
-  const num = chpl_glob_num(glb);
-  if (r.high >= num.safeCast(int)) then
-    halt("glob() is being zipped with something too big; it only has ", num, " matches");
+  glob_w(pattern, glb);
+  const num = glob_num_w(glb);
+  if (r.high >= num) then
+    HaltWrappers.zipLengthHalt("glob() is being zipped with something too big; it only has " + num + " matches");
+
   for i in r do
-    //
-    // safe cast is used here to turn an int into a size_t
-    //
-    yield chpl_glob_index(glb, i.safeCast(size_t)): string;
+    yield glob_index_w(glb, i);
 
-  globfree(glb);
-}
-
-
-pragma "no doc"
-proc isDir(out error:syserr, name:string):bool {
-  extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
-
-  var ret:c_int;
-  var doesExist = exists(error, name);
-  if (error != ENOERR || !doesExist) {
-    return false;
-  }
-  error = chpl_fs_is_dir(ret, name.localize().c_str());
-  return ret != 0;
+  globfree_w(glb);
 }
 
 /* Determine if the provided path `name` corresponds to a directory and return
@@ -867,24 +972,30 @@ proc isDir(out error:syserr, name:string):bool {
    :return: `true` if the path is a directory, `false` if it is not
    :rtype: `bool`
 */
-proc isDir(name:string):bool {
-  var err:syserr;
-  var ret = isDir(err, name);
-  if err != ENOERR then ioerror(err, "in isDir", name);
-  return ret;
+proc isDir(name:string):bool throws {
+  extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
+
+  var ret:c_int;
+  var doesExist = try exists(name);
+  if !doesExist then return false;
+
+  var err = chpl_fs_is_dir(ret, name.localize().c_str());
+  if err then try ioerror(err, "in isDir", name);
+  return ret != 0;
 }
 
 pragma "no doc"
-proc isFile(out error:syserr, name:string):bool {
-  extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
-
-  var ret:c_int;
-  var doesExist = exists(error, name);
-  if (error != ENOERR || !doesExist) {
-    return false;
+proc isDir(out error:syserr, name:string):bool {
+  compilerWarning("This version of isDir() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return isDir(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
   }
-  error = chpl_fs_is_file(ret, name.localize().c_str());
-  return ret != 0;
+  return false;
 }
 
 /* Determine if the provided path `name` corresponds to a file and return
@@ -899,20 +1010,30 @@ proc isFile(out error:syserr, name:string):bool {
    :return: `true` if the path is a file, `false` if it is not
    :rtype: `bool`
 */
-proc isFile(name:string):bool {
-  var err:syserr;
-  var ret = isFile(err, name);
-  if err != ENOERR then ioerror(err, "in isFile", name);
-  return ret;
+proc isFile(name:string):bool throws {
+  extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
+
+  var ret:c_int;
+  var doesExist = try exists(name);
+  if !doesExist then return false;
+
+  var err = chpl_fs_is_file(ret, name.localize().c_str());
+  if err then try ioerror(err, "in isFile", name);
+  return ret != 0;
 }
 
 pragma "no doc"
-proc isLink(out error:syserr, name: string): bool {
-  extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
-
-  var ret:c_int;
-  error = chpl_fs_is_link(ret, name.localize().c_str());
-  return ret != 0;
+proc isFile(out error:syserr, name:string):bool {
+  compilerWarning("This version of isFile() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return isFile(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+  return false;
 }
 
 /* Determine if the provided path `name` corresponds to a link and return the
@@ -928,29 +1049,34 @@ proc isLink(out error:syserr, name: string): bool {
             if symbolic links are not supported.
    :rtype: `bool`
 */
-proc isLink(name: string): bool {
-  var err:syserr;
-  var ret = isLink(err, name);
-  if err != ENOERR then ioerror(err, "in isLink", name);
-  return ret;
+proc isLink(name: string): bool throws {
+  extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
+
+  if (name.isEmptyString()) {
+    // chpl_fs_is_link uses lstat to determine if a path is a link, which throws
+    // an error when "" is passed to it.  Check it here early and return false
+    // like Python does
+    return false;
+  }
+
+  var ret:c_int;
+  var err = chpl_fs_is_link(ret, name.localize().c_str());
+  if err then try ioerror(err, "in isLink", name);
+  return ret != 0;
 }
 
 pragma "no doc"
-proc isMount(out error:syserr, name: string): bool {
-  extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): syserr;
-
-  var doesExist = exists(error, name);
-  if (error != ENOERR || !doesExist) {
-    return false;
+proc isLink(out error:syserr, name: string): bool {
+  compilerWarning("This version of isLink() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return isLink(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
   }
-  if (isFile(name)) {
-    // Files aren't mount points.  That would be silly.
-    error = ENOERR;
-    return false;
-  }
-  var ret:c_int;
-  error = chpl_fs_is_mount(ret, name.localize().c_str());
-  return ret != 0;
+  return false;
 }
 
 /* Determine if the provided path `name` corresponds to a mount point and
@@ -965,39 +1091,62 @@ proc isMount(out error:syserr, name: string): bool {
    :return: `true` if the path is a mount point, `false` if it is not.
    :rtype: `bool`
 */
-proc isMount(name: string): bool {
-  var err:syserr;
-  var ret = isMount(err, name);
-  if err != ENOERR then ioerror(err, "in isMount", name);
-  return ret;
+proc isMount(name: string): bool throws {
+
+  extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): syserr;
+
+  var doesExist = try exists(name);
+  if !doesExist then return false;
+
+  // Files aren't mount points.  That would be silly.
+  var doesExistFile = try isFile(name);
+  if doesExistFile then return false;
+
+  var ret:c_int;
+  var err = chpl_fs_is_mount(ret, name.localize().c_str());
+  if err then try ioerror(err, "in isMount", name);
+  return ret != 0;
 }
 
+pragma "no doc"
+proc isMount(out error:syserr, name: string): bool {
+  compilerWarning("This version of isMount() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return isMount(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+  return false;
+}
 
 /* Lists the contents of a directory.  May be invoked in serial
    contexts only.
 
-   :arg path: The directory whose contents should be listed 
+   :arg path: The directory whose contents should be listed
               (defaults to ``"."``)
    :type path: `string`
 
-   :arg hidden: Indicates whether hidden files/directory should be listed 
+   :arg hidden: Indicates whether hidden files/directory should be listed
                 (defaults to `false`)
    :type hidden: `bool`
 
-   :arg dirs: Indicates whether directories should be listed 
+   :arg dirs: Indicates whether directories should be listed
               (defaults to `true`)
    :type dirs: `bool`
 
    :arg files: Indicates whether files should be listed (defaults to `true`)
    :type files: `bool`
 
-   :arg listlinks: Indicates whether symbolic links should be listed 
+   :arg listlinks: Indicates whether symbolic links should be listed
                    (defaults to `true`)
    :type listlinks: `bool`
 
    :yield: The names of the specified directory's contents, as strings
 */
-iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true, 
+iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;
   extern type direntptr;
@@ -1013,6 +1162,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 
   var dir: DIRptr;
   var ent: direntptr;
+  var err:syserr = ENOERR;
   dir = opendir(path.localize().c_str());
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
@@ -1022,11 +1172,20 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 
-          if (listlinks || !isLink(fullpath)) {
-            if (dirs && isDir(fullpath)) then
-              yield filename;
-            else if (files && isFile(fullpath)) then
-              yield filename;
+          // TODO: revisit error handling for this method
+          try {
+            if (listlinks || !isLink(fullpath)) {
+              if (dirs && isDir(fullpath)) then
+                yield filename;
+              else if (files && isFile(fullpath)) then
+                yield filename;
+            }
+          } catch e: SystemError {
+            writeln("error in listdir(): ", errorToString(e.err));
+            break;
+          } catch {
+            writeln("unknown error in listdir()");
+            break;
           }
         }
       }
@@ -1037,15 +1196,6 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
     extern proc perror(s: c_string);
     perror("error in listdir(): ");
   }
-}
-
-
-pragma "no doc"
-proc mkdir(out error: syserr, name: string, mode: int = 0o777,
-           parents: bool=false) {
-  extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
-
-  error = chpl_fs_mkdir(name.localize().c_str(), mode, parents);
 }
 
 /* Attempt to create a directory with the given path, `name`.  If `parents`
@@ -1079,54 +1229,24 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
                  to occur.
    :type parents: `bool`
 */
-proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
-  var err: syserr = ENOERR;
-  mkdir(err, name, mode, parents);
-  if err != ENOERR then ioerror(err, "in mkdir", name);
+proc mkdir(name: string, mode: int = 0o777, parents: bool=false) throws {
+  extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
+
+  var err = chpl_fs_mkdir(name.localize().c_str(), mode, parents);
+  if err then try ioerror(err, "in mkdir", name);
 }
 
 pragma "no doc"
-proc moveDir(out error: syserr, src: string, dest: string) {
-  var destExists = exists(error, dest);
-  // Did some error occurred in checking the existance of dest, perhaps a
-  // permissions error?  If so, return.
-  if (error != ENOERR) then return;
-
-  if (destExists) {
-    // dest already existed
-    var aFile = isFile(error, dest);
-    if (error != ENOERR) then return; // Return error messages as encountered
-    var aDir = isDir(error, dest);
-    if (error != ENOERR) then return;
-
-    if (aFile) {
-      // dest is a file, we can't move src within it!
-      error = ENOTDIR;
-      // Note: Python gives EEXISTS in this case, but I think ENOTDIR is
-      // clearer.
-    } else if (aDir) {
-      if (sameFile(src, dest)) {
-        // Python's behavior when calling move over the same directory for
-        // source and destination is to fail with a helpful error message.
-        // Since this error code shouldn't occur otherwise, it signals to
-        // the wrapper function what has happened.
-        error = EEXIST;
-      } else {
-        // dest is a directory, we'll copy src inside it
-        error = EISDIR;
-        // NOT YET SUPPORTED.  Requires basename and joinPath
-      }
-    } else {
-      // What we've been provided is both not a file and not a directory.  Given
-      // the expected behavior of isFile and isDir when it comes to symlinks,
-      // I'm not sure how this case would arise.
-      error = ENOTDIR;
-    }
-  } else {
-    copyTree(error, src, dest, true);
-    if (error != ENOERR) then return; // Error when copying into dest.
-    rmTree(error, src);
-    if (error != ENOERR) then return; // Error when removing src.
+proc mkdir(out error: syserr, name: string, mode: int = 0o777,
+           parents: bool=false) {
+  compilerWarning("This version of isDir() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    mkdir(name, mode, parents);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
   }
 }
 
@@ -1147,20 +1267,52 @@ proc moveDir(out error: syserr, src: string, dest: string) {
    :arg dest: the location to move it to.
    :type dest: `string`
 */
-proc moveDir(src: string, dest: string) {
-  var err: syserr = ENOERR;
-  moveDir(err, src, dest);
-  if err == EEXIST {
-    halt("Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
+proc moveDir(src: string, dest: string) throws {
+  var destExists = try exists(dest);
+  if (destExists) {
+    // dest already existed
+    if (try isFile(dest)) {
+      // dest is a file, we can't move src within it!
+      // Note: Python gives EEXIST in this case, but I think ENOTDIR is
+      // clearer.
+      try ioerror(ENOTDIR:syserr, "in moveDir(" + src + ", " + dest + ")");
+    } else if (try isDir(dest)) {
+      if (try sameFile(src, dest)) {
+        // Python's behavior when calling move over the same directory for
+        // source and destination is to fail with a helpful error message.
+        // Since this error code shouldn't occur otherwise, it signals to
+        // the wrapper function what has happened.
+        throw new IllegalArgumentError("src", "Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
+      } else {
+        // dest is a directory, we'll copy src inside it
+        // NOT YET SUPPORTED.  Requires basename and joinPath
+        try ioerror(EISDIR:syserr, "unsupported operation in moveDir(" + src + ", " + dest + ")");
+      }
+    } else {
+      // What we've been provided is both not a file and not a directory.  Given
+      // the expected behavior of isFile and isDir when it comes to symlinks,
+      // I'm not sure how this case would arise.
+      try ioerror(ENOTDIR:syserr, "unsupported operation in moveDir(" + src + ", " + dest + ")");
+    }
+  } else {
+    try copyTree(src, dest, true);
+    try rmTree(src);
   }
-  if err != ENOERR then ioerror(err, "in moveDir(" + src + ", " + dest + ")");
 }
 
 pragma "no doc"
-proc rename(out error: syserr, oldname, newname: string) {
-  extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
-
-  error = chpl_fs_rename(oldname.localize().c_str(), newname.localize().c_str());
+proc moveDir(out error: syserr, src: string, dest: string) {
+  compilerWarning("This version of moveDir() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    moveDir(src, dest);
+  } catch e: SystemError {
+    error = e.err;
+  } catch e: IllegalArgumentError {
+    error = EEXIST;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 /* Renames the file specified by `oldname` to `newname`.  The file is not
@@ -1173,17 +1325,25 @@ proc rename(out error: syserr, oldname, newname: string) {
    :arg newname: Name which should be used to refer to the file in the future.
    :type newname: `string`
 */
- proc rename(oldname: string, newname: string) {
-  var err:syserr = ENOERR;
-  rename(err, oldname, newname);
-  if err != ENOERR then ioerror(err, "in rename", oldname);
+proc rename(oldname: string, newname: string) throws {
+  extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
+
+  var err = chpl_fs_rename(oldname.localize().c_str(), newname.localize().c_str());
+  if err then try ioerror(err, "in rename", oldname);
 }
 
 pragma "no doc"
-proc remove(out error: syserr, name: string) {
-  extern proc chpl_fs_remove(name: c_string):syserr;
-
-  error = chpl_fs_remove(name.localize().c_str());
+proc rename(out error: syserr, oldname, newname: string) {
+  compilerWarning("This version of rename() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    rename(oldname, newname);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+  return false;
 }
 
 /* Removes the file or directory specified by `name`
@@ -1193,57 +1353,22 @@ proc remove(out error: syserr, name: string) {
    :arg name: The file/directory to remove
    :type name: `string`
 */
-proc remove(name: string) {
-  var err:syserr = ENOERR;
-  remove(err, name);
-  if err != ENOERR then ioerror(err, "in remove", name);
-}
+proc remove(name: string) throws {
+  extern proc chpl_fs_remove(name: c_string):syserr;
 
-private proc rmTreeHelper(out error: syserr, root: string) {
-  // Go through all the files in this current directory and remove them
-  for filename in listdir(path=root, dirs=false, files=true, listlinks=true) {
-    var name = root + "/" + filename;
-    remove(error, name);
-    if (error != ENOERR) then return;
-  }
-  // Then traverse all the directories within this current directory and have
-  // them handle cleaning up their contents and themselves
-  for dirname in listdir(path=root, dirs=true, files=false, listlinks=true) {
-    var fullpath = root + "/" + dirname;
-    var dirIsLink = isLink(error, fullpath);
-    if (error != ENOERR) then return;
-    // Did something go wrong when checking against link status?
-    if (dirIsLink) {
-      remove(error, fullpath);
-    } else {
-      rmTreeHelper(error, fullpath);
-    }
-    if (error != ENOERR) then return;
-  }
-  // Once everything else has been removed, remove ourself.
-  remove(error, root);
+  var err = chpl_fs_remove(name.localize().c_str());
+  if err then try ioerror(err, "in remove", name);
 }
 
 pragma "no doc"
-proc rmTree(out error: syserr, root: string) {
-  var rootMissing = !exists(error, root);
-  if (error != ENOERR) then return; // Some error occurred in checking the existence of root.
-  else if (rootMissing) {
-    // root doesn't exist.  We can't remove something that isn't there
-    error = ENOENT;
-    return;
+proc remove(out error: syserr, name: string) {
+  try {
+    remove(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
   }
-
-  var rootNotDir = !isDir(error, root);
-  if error != ENOERR then return; // Some error occurred in checking if root was a dir
-  else if (rootNotDir) {
-    // We need it to be a directory!
-    error = ENOTDIR;
-    return;
-  }
-
-  var rootPath = realPath(root);
-  rmTreeHelper(error, rootPath);
 }
 
 /* Delete the entire directory tree specified by root.
@@ -1254,19 +1379,51 @@ proc rmTree(out error: syserr, root: string) {
               with its entire contents.
    :type root: `string`
 */
-proc rmTree(root: string) {
-  var err: syserr = ENOERR;
-  rmTree(err, root);
-  if err != ENOERR then ioerror(err, "in rmTree(" + root + ")");
+proc rmTree(root: string) throws {
+  // root doesn't exist.  We can't remove something that isn't there
+  var rootExists = try exists(root);
+  if !rootExists then try ioerror(ENOENT:syserr, "in rmTree(" + root + ")");
+
+  // We need it to be a directory!
+  var rootIsDir = try isDir(root);
+  if !rootIsDir then try ioerror(ENOTDIR:syserr, "in rmTree(" + root + ")");
+
+  var rootPath = try realPath(root);
+  try rmTreeHelper(rootPath);
+}
+
+private proc rmTreeHelper(root: string) throws {
+  // Go through all the files in this current directory and remove them
+  for filename in listdir(path=root, dirs=false, files=true, listlinks=true, hidden=true) {
+    var name = root + "/" + filename;
+    try remove(name);
+  }
+  // Then traverse all the directories within this current directory and have
+  // them handle cleaning up their contents and themselves
+  for dirname in listdir(path=root, dirs=true, files=false, listlinks=true, hidden=true) {
+    var fullpath = root + "/" + dirname;
+    var dirIsLink = try isLink(fullpath);
+    if (dirIsLink) {
+      try remove(fullpath);
+    } else {
+      try rmTreeHelper(fullpath);
+    }
+  }
+  // Once everything else has been removed, remove ourself.
+  try remove(root);
 }
 
 pragma "no doc"
-proc sameFile(out error: syserr, file1: string, file2: string): bool {
-  extern proc chpl_fs_samefile_string(ref ret: c_int, file1: c_string, file2: c_string): syserr;
-
-  var ret:c_int;
-  error = chpl_fs_samefile_string(ret, file1.localize().c_str(), file2.localize().c_str());
-  return ret != 0;
+proc rmTree(out error: syserr, root: string) {
+  compilerWarning("This version of rmTree() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    rmTree(root);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 /* Determines if both pathnames refer to the same file or directory (utilizing
@@ -1285,39 +1442,27 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
             `false` otherwise.
    :rtype: `bool`
 */
-proc sameFile(file1: string, file2: string): bool {
-  var err:syserr = ENOERR;
-  var result = sameFile(err, file1, file2);
-  if err != ENOERR then ioerror(err, "in sameFile(" + file1 + ", " + file2 + ")");
-  return result;
+proc sameFile(file1: string, file2: string): bool throws {
+  extern proc chpl_fs_samefile_string(ref ret: c_int, file1: c_string, file2: c_string): syserr;
+
+  var ret:c_int;
+  var err = chpl_fs_samefile_string(ret, file1.localize().c_str(), file2.localize().c_str());
+  if err then try ioerror(err, "in sameFile(" + file1 + ", " + file2 + ")");
+  return ret != 0;
 }
 
 pragma "no doc"
-proc sameFile(out error: syserr, file1: file, file2: file): bool {
-  extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
-                               file2: qio_file_ptr_t): syserr;
-
-  var ret:c_int;
-  if (is_c_nil(file1._file_internal) || is_c_nil(file2._file_internal)) {
-    // Implementation note on program design tradeoffs:
-    // I could use file.check() here.  That would not rely on the understanding
-    // of file's internals.  However, it would cause this method to either
-    // return error messages or halt, depending on the error encountered.
-    // This check could be moved to the version w/o the err argument, but if
-    // someone called this function w/o going through that, we'd lose the
-    // check.  Also, we already must make use of the record internals to do the
-    // inner comparison (since the record is a chapel construct), so there's no
-    // additional harm.
-
-    // The file is referencing a null file.  We'll get a segfault if we
-    // continue.
-    error = EBADF;
-    return false; // This part isn't as important as the error.
+proc sameFile(out error: syserr, file1: string, file2: string): bool {
+  compilerWarning("This version of sameFile() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return sameFile(file1, file2);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
   }
-
-
-  error = chpl_fs_samefile(ret, file1._file_internal, file2._file_internal);
-  return ret != 0;
+  return false;
 }
 
 /* Determines if both :type:`~IO.file` records refer to the same file
@@ -1337,18 +1482,35 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
             otherwise.
    :rtype: `bool`
 */
-proc sameFile(file1: file, file2: file): bool {
-  var err:syserr = ENOERR;
-  var result = sameFile(err, file1, file2);
-  if err != ENOERR then ioerror(err, "in sameFile " + file1.path, file2.path);
-  return result;
+proc sameFile(file1: file, file2: file): bool throws {
+  extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
+                               file2: qio_file_ptr_t): syserr;
+
+  // If one of the files references a null file, propagate to avoid a segfault.
+  try {
+    file1.check();
+    file2.check();
+  }
+
+  var ret:c_int;
+  var err = chpl_fs_samefile(ret, file1._file_internal, file2._file_internal);
+  if err then try ioerror(err, "in sameFile " + file1.tryGetPath(),
+                          file2.tryGetPath());
+  return ret != 0;
 }
 
 pragma "no doc"
-proc symlink(out error: syserr, oldName: string, newName: string) {
-  extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): syserr;
-
-  error = chpl_fs_symlink(oldName.localize().c_str(), newName.localize().c_str());
+proc sameFile(out error: syserr, file1: file, file2: file): bool {
+  compilerWarning("This version of someFile() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return sameFile(file1, file2);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+  return false;
 }
 
 /* Create a symbolic link pointing to `oldName` with the path `newName`.
@@ -1360,10 +1522,25 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
    :arg newName: The location where the symbolic link should live
    :type newName: `string`
 */
-proc symlink(oldName: string, newName: string) {
+proc symlink(oldName: string, newName: string) throws {
+  extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): syserr;
+
+  var err = chpl_fs_symlink(oldName.localize().c_str(), newName.localize().c_str());
+  if err then try ioerror(err, "in symlink " + oldName, newName);
+}
+
+pragma "no doc"
+proc symlink(out error: syserr, oldName: string, newName: string) {
   var err:syserr = ENOERR;
-  symlink(err, oldName, newName);
-  if err != ENOERR then ioerror(err, "in symlink " + oldName, newName);
+  compilerWarning("This version of symlink() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    symlink(err, oldName, newName);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 /* Sets the file creation mask of the current locale to `mask`, and returns
@@ -1395,9 +1572,9 @@ proc locale.umask(mask: int): int {
 
 
 /* Recursively walk a directory structure, yielding directory names.
-   May be invoked in serial or non-zippered parallel contexts.  
+   May be invoked in serial or non-zippered parallel contexts.
 
-   .. note:: 
+   .. note::
             The current parallel version is not very adaptive/dynamic
             in its application of parallelism to the list of
             subdirectories at any given level of the traversal, and
@@ -1424,7 +1601,7 @@ proc locale.umask(mask: int): int {
    :yield: The directory names encountered, relative to `path`, as strings
 */
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
-              hidden: bool = false, followlinks: bool = false, 
+              hidden: bool = false, followlinks: bool = false,
               sort: bool = false): string {
 
   if (topdown) then
@@ -1433,13 +1610,13 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
   if (depth) {
     var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
     if (sort) {
-      use Sort;
-      QuickSort(subdirs);
+      use Sort /* only sort */;
+      sort(subdirs);
     }
 
     for subdir in subdirs {
       const fullpath = path + "/" + subdir;
-      for subdir in walkdirs(fullpath, topdown, depth-1, hidden, 
+      for subdir in walkdirs(fullpath, topdown, depth-1, hidden,
                              followlinks, sort) do
         yield subdir;
     }
@@ -1454,9 +1631,9 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
 // Here's a parallel version
 //
 pragma "no doc"
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int), 
-              hidden: bool = false, followlinks: bool = false, 
-              sort: bool = false, param tag: iterKind): string 
+iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
+              hidden: bool = false, followlinks: bool = false,
+              sort: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
 
   if (sort) then

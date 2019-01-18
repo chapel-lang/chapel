@@ -1,10 +1,10 @@
 class dummyarg {
-  proc dummyarg() {
+  proc init() {
     compilerError("can't create an object of type 'dummyarg' -- use named argument passing to call this routine");
   }
 }
 
-proc momentum(dummy: dummyarg = nil, mass: real, velocity: real) {
+proc momentum(dummy: borrowed dummyarg = nil, mass: real, velocity: real) {
   return mass*velocity;
 }
 

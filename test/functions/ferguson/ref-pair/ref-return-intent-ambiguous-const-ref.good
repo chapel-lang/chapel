@@ -1,0 +1,4 @@
+ref-return-intent-ambiguous-const-ref.chpl:16: error: ambiguous call 'access()'
+ref-return-intent-ambiguous-const-ref.chpl:4: note: candidates are: access()
+ref-return-intent-ambiguous-const-ref.chpl:8: note:                 access(x = 4)
+ref-return-intent-ambiguous-const-ref.chpl:12: note:                 access(y = 3)

@@ -1,0 +1,8 @@
+error message: issue the error for "illegal cast to non-type" only once
+
+Currently the compiler will issue such an error twice
+for a cast to a non-type such that a cast to the corresponding type
+would not have succeeded.
+
+So maybe in this case it should also say that the cast would be
+illegal if it were to the corresponding type.

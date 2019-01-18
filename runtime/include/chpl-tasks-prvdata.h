@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,9 +23,15 @@
 // This header file provides chpl_comm_taskPrvData_t
 #include "chpl-comm-task-decls.h"
 
-// The type for task private data
+// Type for Chapel-managed task private data
+// to be copied to new tasks.
+// Includes 'serial_state'
 typedef struct {
-  chpl_bool serial_state;      // true: serialize execution
+  unsigned char data[32];
+} chpl_task_ChapelData_t;
+
+// The type for runtime-managed task private data
+typedef struct {
   chpl_comm_taskPrvData_t comm_data;
 } chpl_task_prvData_t;
 

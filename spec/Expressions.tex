@@ -11,9 +11,10 @@ expression:
   variable-expression
   enum-constant-expression
   call-expression
+  type-expression
   iteratable-call-expression
   member-access-expression
-  constructor-call-expression
+  new-expression
   query-expression
   cast-expression
   lvalue-expression
@@ -43,7 +44,7 @@ and additionally as follows:
 \item tuple and tuple expand \rsec{Tuples}
 \item locale access \rsec{Querying_the_Locale_of_a_Variable}
 \item mapped domain \rsec{Domain_Maps}
-\item constructor calls \rsec{Class_New}
+\item initializer calls \rsec{Class_New}
 \item \chpl{nil} \rsec{Class_nil_value}
 \end{itemize}
 
@@ -52,8 +53,8 @@ and additionally as follows:
 \index{literal expressions}
 \index{expressions!literal}
 
-A literal value for any of the predefined
-types~(\rsec{Primitive_Type_Literals}) is a literal expression.
+A literal value for any of the predefined types is a literal expression.
+
 Literal expressions are given by the following syntax:
 \begin{syntax}
 literal-expression:
@@ -66,6 +67,16 @@ literal-expression:
   domain-literal
   array-literal
 \end{syntax}
+
+Literal values for primitive types are described in
+\rsec{Primitive_Type_Literals}.
+Literal range values are described in \rsec{Range_Literals}.
+Literal tuple values are described in \rsec{Tuple_Values}.
+Literal values for domains are described in \rsec{Rectangular_Domain_Values}
+and \rsec{Associative_Domain_Values}.
+Literal values for arrays are described in  \rsec{Rectangular_Array_Literals}
+and \rsec{Associative_Array_Literals}.
+
 
 \section{Variable Expressions}
 \label{Variable_Expressions}
@@ -227,7 +238,7 @@ places in the future.
 A cast is specified with the following syntax:
 \begin{syntax}
 cast-expression:
-  expression : type-specifier
+  expression : type-expression
 \end{syntax}
 The expression is converted to the specified type.  A cast expression invokes
 the corresponding explicit conversion~(\rsec{Explicit_Conversions}).  A
@@ -285,7 +296,7 @@ precedence than those listed later.
 \verb@()@ & & function call or access \\
 \verb@[]@ & & function call or access \\
 \hline
-\verb@new@ & right & constructor call \\
+\verb@new@ & right & initializer call \\
 \hline
 \verb@:@ & left & cast \\
 \hline
@@ -317,7 +328,7 @@ unary \verb@-@ & & negation \\
 \verb@+@ & \multirow{2}{*}{left} & addition \\
 \verb@-@ & & subtraction \\
 \hline
-\verb@..@ & left & range construction \\
+\verb@..@ & left & range initialization \\
 \hline
 \verb@<=@ & \multirow{4}{*}{left} & less-than-or-equal-to comparison \\
 \verb@>=@ & & greater-than-or-equal-to comparison \\
@@ -451,7 +462,7 @@ This choice also has the (arguably positive) effect of making the
 unparenthesized version of this statement result in an aggregate value
 if A and B are both aggregates---the reduction of A results in a
 scalar which promotes when being multiplied by B, resulting in an
-aggregate.  Our intuition is that users who forget the parenthesis
+aggregate.  Our intuition is that users who forget the parentheses
 will learn of their error at compilation time because the resulting
 expression is not a scalar as expected.
 
@@ -501,6 +512,7 @@ forms listed, those listed earlier in the list being given
 preference.  If no compatible implicit conversions exist, then a
 compile-time error occurs.  In these cases, an explicit cast is required.
 
+\pagebreak
 \subsection{Unary Plus Operators}
 \label{Unary_Plus_Operators}
 \index{+ (unary)@\chpl{+} (unary)}
@@ -562,6 +574,7 @@ It is an error to try to negate a value of type \chpl{uint(64)}.  Note
 that negating a value of type \chpl{uint(32)} first converts the type
 to \chpl{int(64)} using an implicit conversion.
 
+\pagebreak
 \subsection{Addition Operators}
 \label{Addition_Operators}
 \index{operators!addition}
@@ -615,6 +628,7 @@ produces a value of complex type.  Addition of values of complex type
 and either real or imaginary types also produces a value of complex
 type.
 
+\pagebreak
 \subsection{Subtraction Operators}
 \label{Subtraction_Operators}
 \index{operators!subtraction}
@@ -669,6 +683,7 @@ and vice versa, produces a value of complex type.  Subtraction of
 values of complex type from either real or imaginary types, and vice
 versa, also produces a value of complex type.
 
+\pagebreak
 \subsection{Multiplication Operators}
 \label{Multiplication_Operators}
 \index{operators!multiplication}
@@ -723,6 +738,7 @@ imaginary type produces a value of imaginary type.  Multiplication of
 values of complex type and either real or imaginary types produces a
 value of complex type.
 
+\pagebreak
 \subsection{Division Operators}
 \label{Division_Operators}
 \index{operators!division}
@@ -782,6 +798,7 @@ does not divide \chpl{a} exactly, then there are two candidate quotients $q1$ an
 such that $b * q1$ and $b * q2$ are the two multiples of \chpl{b} closest to \chpl{a}.
 The integer result $q$ is the candidate quotient which lies closest to zero.
 
+\pagebreak
 \subsection{Modulus Operators}
 \label{Modulus_Operators}
 \index{operators!modulus}
@@ -867,8 +884,6 @@ overloading~(\rsec{Function_Overloading}).
 
 The bitwise complement operators are predefined as follows:
 \begin{chapel}
-proc ~(a: bool): bool
-
 proc ~(a: int(8)): int(8)
 proc ~(a: int(16)): int(16)
 proc ~(a: int(32)): int(32)
@@ -976,6 +991,7 @@ conversions are performed.
 The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 \end{rationale}
 
+\pagebreak
 \section{Shift Operators}
 \label{Shift_Operators}
 \index{operators!shift}
@@ -1108,6 +1124,7 @@ in~\rsec{Logical_And_Operators}.  Overloading the logical or operator
 over other types is accomplished by overloading the \chpl{isTrue}
 function over other types.
 
+\pagebreak
 \section{Relational Operators}
 \label{Relational_Operators}
 \index{operators!relational}
@@ -1379,6 +1396,15 @@ The operator \chpl{by} is predefined on ranges and rectangular domains.
 It is described in~\rsec{By_Operator_For_Ranges} for ranges
 and~\rsec{Domain_Striding} for domains.
 
+\subsection{The Align Operator}
+\label{The_Align_Operator}
+\index{align@\chpl{align}}
+\index{operators!align@\chpl{align}}
+
+The operator \chpl{align} is predefined on ranges and rectangular domains.
+It is described in~\rsec{Align_Operator_For_Ranges} for ranges
+and~\rsec{Domain_Alignment} for domains.
+
 \subsection{The Range Count Operator}
 \label{The_Range_Count_Operator}
 \index{operators!range!count}
@@ -1486,11 +1512,18 @@ for-expression:
   `for' index-var-declaration `in' iteratable-expression `do' expression
   `for' iteratable-expression `do' expression
 \end{syntax}
-The for expression executes a for loop (\rsec{The_For_Loop}),
+A for expression is an iterator that executes a for loop (\rsec{The_For_Loop}),
 evaluates the body expression on each iteration of the loop,
-and returns the resulting values as a collection.
-The size and shape of that collection
-are determined by the iteratable-expression.
+and yields each resulting value.
+
+When a for expression is used to initialize a variable, such as
+\begin{chapel}
+var X = for iterableExpression() do computeValue();
+\end{chapel}
+the variable will be inferred to have an array type.
+The array's domain is defined by the \sntx{iterable-expression}
+following the same rules as for promotion, both in the regular
+case \rsec{Promotion} and in the zipper case \rsec{Zipper_Promotion}.
 
 \subsection{Filtering Predicates in For Expressions}
 \label{Filtering_Predicates_For}
@@ -1498,9 +1531,13 @@ are determined by the iteratable-expression.
 \index{expressions!for@\chpl{for}!filtering predicates}
 
 A conditional expression that is immediately enclosed in a for
-expression and does not require an else clause filters the iterations of the for expression.
+expression and does not require an else clause filters the iterations
+of the for expression.
 The iterations for which the condition does not hold
 are not reflected in the result of the for expression.
+
+When a for expression with a filtering predicate is captured into
+a variable, the resulting array has a 1-based one-dimensional domain.
 
 \begin{chapelexample}{yieldPredicates.chpl}
 The code

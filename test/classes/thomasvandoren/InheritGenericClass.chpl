@@ -5,5 +5,5 @@ class A {
 class B : A {
 }
 
-var a = new A(int);
-var b = new B(int);
+var a = new owned A(int);
+var b = new owned B(int);

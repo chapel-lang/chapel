@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -297,8 +297,23 @@ void initSetValue(const char* varName, const char* value,
     chpl_error(message, lineno, filename);
   }
   configVar = lookupConfigVar(moduleName, varName);
-  if (configVar == NULL || configVar == ambiguousConfigVar) {
-    chpl_internal_error("unknown config var case not handled appropriately");
+  if (configVar == NULL) {
+    const char* configName = ((moduleName == NULL || !strcmp(moduleName, ""))
+                              ? varName
+                              : chpl_glom_strings(3,
+                                                  moduleName, ".", varName));
+    const char* message = chpl_glom_strings(3, "attempt to set config named '",
+                                            configName,
+                                            "', but there is no such config");
+    chpl_error(message, lineno, filename);
+  } else if (configVar == ambiguousConfigVar) {
+    const char* message = chpl_glom_strings(5,
+                                            "Multiple modules define a config "
+                                            "named '", varName,
+                                            "'.  Use '--help' for a list and "
+                                            "disambiguate using '<moduleName>.",
+                                            varName, "'.");
+    chpl_error(message, lineno, filename);
   }
   if (strcmp(varName, "numLocales") == 0) {
     parseNumLocales(value, lineno, filename);
@@ -451,8 +466,16 @@ void parseConfigFile(const char* configFilename,
     char setConfigBuffer[_default_string_length];
     numScans = fscanf(argFile, _default_format_read_string, setConfigBuffer);
     if (numScans == 1) {
-      if (!aParsedString(argFile, setConfigBuffer, 0,
-                         CHPL_FILE_IDX_SAVED_FILENAME)) {
+     if (*setConfigBuffer == '#') {
+        if (!feof(argFile)) {
+          do {
+            char ch = fgetc(argFile);
+            if (ch == '\n')
+              break;
+          } while (!feof(argFile));
+        }
+      } else if (!aParsedString(argFile, setConfigBuffer, 0,
+                                CHPL_FILE_IDX_SAVED_FILENAME)) {
         char* equalsSign;
         const char* moduleName;
         char* varName;

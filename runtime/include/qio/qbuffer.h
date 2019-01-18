@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,41 +20,42 @@
 #ifndef _QBUFFER_H_
 #define _QBUFFER_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // This macro set to obtain the portable format macro PRIu64 for debug output.
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS 1
-// This macro set to obtain SIZE_MAX
-#define __STDC_LIMIT_MACROS 1
+#endif
 
 #include "sys_basic.h"
 #include "qio_error.h"
 #ifndef __cplusplus
 #include <stdbool.h>
 #endif
-#include "chpl-atomics.h"
 
 #include <inttypes.h>
 #include <stdint.h>
 
-// Last resort way to get SIZE_MAX. This should be correct,
-// but we'd rather use the system's definition... which should
-// theoretically be provided by the above (__STDC_LIMIT_MACROS+stdint.h)
-// but that isn't happening for me on GCC 4.7.2 when this file is included
-// by a C++ program.
-#ifndef SIZE_MAX
-#define SIZE_MAX (~((size_t)0))
-#endif
-
 #include <sys/uio.h>
 #include "deque.h"
 
-// We should have gasnett_atomic_t from sys_basic
-
 typedef uint_least64_t qb_refcnt_base_t;
+#if defined(__cplusplus) && defined(QIO_USE_STD_ATOMICS_REF_CNT)
+// work around for issues with older GCC cstdlib atomics
+#include <atomic>
+typedef std::atomic<qb_refcnt_base_t> qbytes_refcnt_t;
+#define ATOMIC_INIT(a, val) a.store(val)
+#define ATOMIC_LOAD(a) a.load()
+#define ATOMIC_INCR(a) a.fetch_add(1)
+#define ATOMIC_DECR(a) a.fetch_sub(1)
+#define ATOMIC_DEST(a)
+#else
+#include "chpl-atomics.h"
 typedef atomic_uint_least64_t qbytes_refcnt_t;
+#define ATOMIC_INIT(a, val) atomic_init_uint_least64_t(&a, val)
+#define ATOMIC_LOAD(a) atomic_load_uint_least64_t(&a)
+#define ATOMIC_INCR(a) atomic_fetch_add_uint_least64_t(&a, 1)
+#define ATOMIC_DECR(a) atomic_fetch_sub_uint_least64_t(&a, 1)
+#define ATOMIC_DEST(a) atomic_destroy_uint_least64_t(&a)
+#endif
 
 // The ref count is initialized to 1, in anticipation that the returned pointer
 // will be stored in some data structure.  If not, then the client is
@@ -62,14 +63,14 @@ typedef atomic_uint_least64_t qbytes_refcnt_t;
 // This is a slight optimization, since execution on the "happy path" would
 // create the ref count and then increment it right away.  Depending on the
 // implementation, incrementing an atomic can be expensive.
-#define DO_INIT_REFCNT(ptr) atomic_init_uint_least64_t (&ptr->ref_cnt, 1)
-#define DO_GET_REFCNT(ptr) atomic_load_uint_least64_t (&ptr->ref_cnt)
+#define DO_INIT_REFCNT(ptr) ATOMIC_INIT(ptr->ref_cnt, 1)
+#define DO_GET_REFCNT(ptr) ATOMIC_LOAD(ptr->ref_cnt)
 
 #define DO_RETAIN(ptr) \
 { \
   /* do nothing to NULL */ \
   if( ptr ) { \
-    qb_refcnt_base_t old_cnt = atomic_fetch_add_uint_least64_t (&ptr->ref_cnt, 1); \
+    qb_refcnt_base_t old_cnt = ATOMIC_INCR(ptr->ref_cnt); \
     /* if it was 0, we couldn't have had a ref to it */ \
     /* if it is now 0, we overflowed the ref count (very unlikely). */ \
     if( old_cnt + 1 <= 1 ) *(volatile int *)(0) = 0; /* deliberately segfault. */ \
@@ -80,7 +81,7 @@ typedef atomic_uint_least64_t qbytes_refcnt_t;
 { \
   /* do nothing to NULL */ \
   if( ptr ) { \
-    qb_refcnt_base_t old_cnt = atomic_fetch_sub_uint_least64_t (&ptr->ref_cnt, 1); \
+    qb_refcnt_base_t old_cnt = ATOMIC_DECR(ptr->ref_cnt); \
     if( old_cnt == 1 ) { \
       /* that means, after we decremented it, the count is 0. */ \
       free_function(ptr); \
@@ -91,7 +92,11 @@ typedef atomic_uint_least64_t qbytes_refcnt_t;
   } \
 }
 
-#define DO_DESTROY_REFCNT(ptr) atomic_destroy_uint_least64_t (&ptr->ref_cnt)
+#define DO_DESTROY_REFCNT(ptr) ATOMIC_DEST(ptr->ref_cnt)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // how large is an iobuf?
 extern size_t qbytes_iobuf_size;
@@ -452,6 +457,10 @@ qioerr qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_i
  * */
 qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, unsigned char byte);
 
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+
 // How many bytes to try to store on stack in some functions that don't
 // really want to call malloc
 #define MAX_ON_STACK 128
@@ -459,34 +468,45 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 #ifdef _chplrt_H_
 
 #include "chpl-mem.h"
-#define qio_malloc(size) chpl_mem_alloc(size, CHPL_RT_MD_IO_BUFFER, 0, 0)
-#define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, 0, 0)
-#define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, 0, 0)
-#define qio_valloc(size) chpl_valloc(size)
-#define qio_free(ptr) chpl_mem_free(ptr, 0, 0)
+#define qio_malloc(size) chpl_mem_alloc(size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
+#define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
+#define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
+#define qio_memalign(boundary, size)  chpl_memalign(boundary, size)
+#define qio_free(ptr) chpl_mem_free(ptr, __LINE__, 0)
 #define qio_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
-
-static inline char* qio_strdup(const char* ptr)
-{
-  char* ret = (char*) qio_malloc(strlen(ptr)+1);
-  if( ret ) strcpy(ret, ptr);
-  return ret;
-}
 
 typedef chpl_bool qio_bool;
 
 #else
 
-#define qio_malloc(size) malloc(size)
-#define qio_calloc(nmemb, size) calloc(nmemb,size)
-#define qio_realloc(ptr, size) realloc(ptr, size)
-#define qio_valloc(size) valloc(size)
-#define qio_free(ptr) free(ptr)
-#define qio_strdup(ptr) strdup(ptr)
+#include "chpl-mem-sys.h"
+
+#define qio_malloc(size) sys_malloc(size)
+#define qio_calloc(nmemb, size) sys_calloc(nmemb,size)
+#define qio_realloc(ptr, size) sys_realloc(ptr, size)
+#define qio_memalign(boundary, size) sys_memalign(boundary, size)
+#define qio_free(ptr) sys_free(ptr)
 #define qio_memcpy(dest, src, num) memcpy(dest, src, num)
 
 typedef bool qio_bool;
 
+#endif
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+static inline char* qio_strdup(const char* ptr)
+{
+  size_t len = strlen(ptr) + 1;
+  char* ret = (char*) qio_malloc(len);
+  if( ret ) qio_memcpy(ret, ptr, len);
+  return ret;
+}
+
+#ifdef __cplusplus
+} // end extern "C"
 #endif
 
 // Declare MAX_ON_STACK bytes. We declare it with the original
@@ -519,6 +539,10 @@ typedef bool qio_bool;
     qio_free(ptr); \
   } \
 }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Returns the difference between two pointers,
    but returns 0 if either pointer is NULL.

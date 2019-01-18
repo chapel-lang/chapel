@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -77,8 +77,15 @@ extern "C" {
  * @{
  */
 
-/** \brief Indicate at build time which hwloc API version is being used. */
-#define HWLOC_API_VERSION 0x00010b00
+/** \brief Indicate at build time which hwloc API version is being used.
+ *
+ * This number is updated to (X>>16)+(Y>>8)+Z when a new release X.Y.Z
+ * actually modifies the API.
+ *
+ * Users may check for available features at build time using this number
+ * (see \ref faq_upgrade).
+ */
+#define HWLOC_API_VERSION 0x00010b06
 
 /** \brief Indicate at runtime which hwloc API version was used at build time.
  *
@@ -181,12 +188,18 @@ typedef enum {
 			  * coherency.
 			  */
   HWLOC_OBJ_NUMANODE,	/**< \brief NUMA node.
-			  * A set of processors around memory which the
-			  * processors can directly access.
+			  * An object that contains memory that is directly
+			  * and byte-accessible to the host processors.
+			  * It is usually close to some cores (the corresponding objects
+			  * are descendants of the NUMA node object in the hwloc tree).
+			  *
+			  * There is always at one such object in the topology
+			  * even if the machine is not NUMA.
 			  */
-  HWLOC_OBJ_PACKAGE,	/**< \brief Physical package, what goes into a socket.
-			  * In the physical meaning, i.e. that you can add
-			  * or remove physically.
+  HWLOC_OBJ_PACKAGE,	/**< \brief Physical package.
+			  * The physical package that usually gets inserted
+			  * into a socket on the motherboard.
+			  * A processor package usually contains multiple cores.
 			  */
   HWLOC_OBJ_CACHE,	/**< \brief Cache.
 			  * Can be L1i, L1d, L2, L3, ...
@@ -277,7 +290,8 @@ typedef enum hwloc_obj_osdev_type_e {
   HWLOC_OBJ_OSDEV_NETWORK,	/**< \brief Operating system network device.
 				  * For instance the "eth0" interface on Linux. */
   HWLOC_OBJ_OSDEV_OPENFABRICS,	/**< \brief Operating system openfabrics device.
-				  * For instance the "mlx4_0" InfiniBand HCA device on Linux. */
+				  * For instance the "mlx4_0" InfiniBand HCA,
+				  * or "hfi1_0" Omni-Path interface on Linux. */
   HWLOC_OBJ_OSDEV_DMA,		/**< \brief Operating system dma engine device.
 				  * For instance the "dma0chan0" DMA channel on Linux. */
   HWLOC_OBJ_OSDEV_COPROC	/**< \brief Operating system co-processor device.
@@ -344,11 +358,15 @@ struct hwloc_obj_memory_s {
 struct hwloc_obj {
   /* physical information */
   hwloc_obj_type_t type;		/**< \brief Type of object */
+
   unsigned os_index;			/**< \brief OS-provided physical index number.
 					 * It is not guaranteed unique across the entire machine,
 					 * except for PUs and NUMA nodes.
 					 */
-  char *name;				/**< \brief Object description if any */
+  char *name;				/**< \brief Object-specific name if any.
+					 * Mostly used for identifying OS devices and Misc objects where
+					 * a name string is more useful than numerical indexes.
+					 */
 
   struct hwloc_obj_memory_s memory;	/**< \brief Memory attributes */
 
@@ -357,9 +375,19 @@ struct hwloc_obj {
 
   /* global position */
   unsigned depth;			/**< \brief Vertical index in the hierarchy.
-					 * If the topology is symmetric, this is equal to the
-					 * parent depth plus one, and also equal to the number
-					 * of parent/child links from the root object to here.
+					 *
+					 * For normal objects, this is the depth of the horizontal level
+					 * that contains this object and its cousins of the same type.
+					 * If the topology is symmetric, this is equal to the parent depth
+					 * plus one, and also equal to the number of parent/child links
+					 * from the root object to here.
+					 *
+					 * For special objects (I/O and Misc) that are not
+					 * in the main tree, this is a special negative value that
+					 * corresponds to their dedicated level,
+					 * see hwloc_get_type_depth() and ::hwloc_get_type_depth_e.
+					 * Those special values can be passed to hwloc functions such
+					 * hwloc_get_nbobjs_by_depth() as usual.
 					 */
   unsigned logical_index;		/**< \brief Horizontal index in the whole list of similar objects,
 					 * hence guaranteed unique across the entire machine.
@@ -405,7 +433,7 @@ struct hwloc_obj {
                                           */
   hwloc_cpuset_t complete_cpuset;       /**< \brief The complete CPU set of logical processors of this object,
                                           *
-                                          * This includes not only the same as the cpuset field, but also the CPUs for
+                                          * This includes not only the same as the cpuset field, but also some CPUs for
                                           * which topology information is unknown or incomplete, and the CPUs that are
                                           * ignored when the ::HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM flag is not set.
                                           * Thus no corresponding PU object may be found in the topology, because the
@@ -435,10 +463,10 @@ struct hwloc_obj {
 
   hwloc_nodeset_t nodeset;              /**< \brief NUMA nodes covered by this object or containing this object
                                           *
-                                          * This is the set of NUMA nodes for which there are NODE objects in the
+                                          * This is the set of NUMA nodes for which there are NUMA node objects in the
                                           * topology under or above this object, i.e. which are known to be physically
                                           * contained in this object or containing it and known how (the children path
-                                          * between this object and the NODE objects).
+                                          * between this object and the NUMA node objects).
                                           *
                                           * In the end, these nodes are those that are close to the current object.
                                           *
@@ -452,10 +480,10 @@ struct hwloc_obj {
                                           */
   hwloc_nodeset_t complete_nodeset;     /**< \brief The complete NUMA node set of this object,
                                           *
-                                          * This includes not only the same as the nodeset field, but also the NUMA
+                                          * This includes not only the same as the nodeset field, but also some NUMA
                                           * nodes for which topology information is unknown or incomplete, and the nodes
                                           * that are ignored when the ::HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM flag is not set.
-                                          * Thus no corresponding NODE object may be found in the topology, because the
+                                          * Thus no corresponding NUMA node object may be found in the topology, because the
                                           * precise position is undefined. It is however known that it would be
                                           * somewhere under this object.
                                           *
@@ -579,7 +607,10 @@ struct hwloc_distances_s {
 				 */
 };
 
-/** \brief Object info */
+/** \brief Object info
+ *
+ * \sa hwlocality_info_attr
+ */
 struct hwloc_obj_info_s {
   char *name;	/**< \brief Info name */
   char *value;	/**< \brief Info value */
@@ -623,6 +654,9 @@ HWLOC_DECLSPEC int hwloc_topology_init (hwloc_topology_t *topologyp);
  *
  * \note This function may be called only once per topology.
  *
+ * \note The binding of the current thread or process may temporarily change
+ * during this call but it will be restored before it returns.
+ *
  * \sa hwlocality_configuration
  */
 HWLOC_DECLSPEC int hwloc_topology_load(hwloc_topology_t topology);
@@ -639,6 +673,9 @@ HWLOC_DECLSPEC void hwloc_topology_destroy (hwloc_topology_t topology);
  * are duplicated into a new one.
  *
  * This is useful for keeping a backup while modifying a topology.
+ *
+ * \note Object userdata is not duplicated since hwloc does not know what it point to.
+ * The objects of both old and new topologies will point to the same userdata.
  */
 HWLOC_DECLSPEC int hwloc_topology_dup(hwloc_topology_t *newtopology, hwloc_topology_t oldtopology);
 
@@ -726,6 +763,10 @@ enum hwloc_topology_flags_e {
    * When this flag is not set, PUs that are disallowed are not added to the topology.
    * Parent objects (package, core, cache, etc.) are added only if some of their children are allowed.
    * NUMA nodes are always added but their available memory is set to 0 when disallowed.
+   *
+   * If the current topology is exported to XML and reimported later, this flag
+   * should be set again in the reimported topology so that disallowed resources
+   * are reimported as well.
    * \hideinitializer
    */
   HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM = (1UL<<0),
@@ -788,7 +829,28 @@ enum hwloc_topology_flags_e {
    * instead of only Data and Unified caches.
    * \hideinitializer
    */
-  HWLOC_TOPOLOGY_FLAG_ICACHES = (1UL<<5)
+  HWLOC_TOPOLOGY_FLAG_ICACHES = (1UL<<5),
+
+  /** \brief Get the set of allowed resources from the local operating system even if the topology was loaded from XML or synthetic description.
+   *
+   * If the topology was loaded from XML or from a synthetic string,
+   * restrict it by applying the current process restrictions such as
+   * Linux Cgroup/Cpuset.
+   *
+   * This is useful when the topology is not loaded directly from
+   * the local machine (e.g. for performance reason) and it comes
+   * with all resources, while the running process is restricted
+   * to only parts of the machine.
+   *
+   * This flag is ignored unless ::HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM is
+   * also set since the loaded topology must match the underlying machine
+   * where restrictions will be gathered from.
+   *
+   * Setting the environment variable HWLOC_THISSYSTEM_ALLOWED_RESOURCES
+   * would result in the same behavior.
+   * \hideinitializer
+   */
+  HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES = (1UL<<6)
 };
 
 /** \brief Set OR'ed flags to non-yet-loaded topology.
@@ -963,6 +1025,7 @@ HWLOC_DECLSPEC int hwloc_topology_set_custom(hwloc_topology_t topology);
 /** \brief Provide a distance matrix.
  *
  * Provide the matrix of distances between a set of objects of the given type.
+ * \p nbobjs must be at least 2.
  * The set may or may not contain all the existing objects of this type.
  * The objects are specified by their OS/physical index in the \p os_index
  * array. The \p distances matrix follows the same order.
@@ -996,7 +1059,11 @@ struct hwloc_topology_discovery_support {
   unsigned char pu;
 };
 
-/** \brief Flags describing actual PU binding support for this topology. */
+/** \brief Flags describing actual PU binding support for this topology.
+ *
+ * A flag may be set even if the feature isn't supported in all cases
+ * (e.g. binding to random sets of non-contiguous objects).
+ */
 struct hwloc_topology_cpubind_support {
   /** Binding the whole current process is supported.  */
   unsigned char set_thisproc_cpubind;
@@ -1022,7 +1089,11 @@ struct hwloc_topology_cpubind_support {
   unsigned char get_thisthread_last_cpu_location;
 };
 
-/** \brief Flags describing actual memory binding support for this topology. */
+/** \brief Flags describing actual memory binding support for this topology.
+ *
+ * A flag may be set even if the feature isn't supported in all cases
+ * (e.g. binding to random sets of non-contiguous objects).
+ */
 struct hwloc_topology_membind_support {
   /** Binding the whole current process is supported.  */
   unsigned char set_thisproc_membind;
@@ -1052,9 +1123,10 @@ struct hwloc_topology_membind_support {
   unsigned char replicate_membind;
   /** Next-touch migration policy is supported. */
   unsigned char nexttouch_membind;
-
   /** Migration flags is supported. */
   unsigned char migrate_membind;
+  /** Getting the last NUMA nodes where a memory area was allocated is supported */
+  unsigned char get_area_memlocation;
 };
 
 /** \brief Set of flags describing actual support for this topology.
@@ -1069,7 +1141,15 @@ struct hwloc_topology_support {
   struct hwloc_topology_membind_support *membind;
 };
 
-/** \brief Retrieve the topology support. */
+/** \brief Retrieve the topology support.
+ *
+ * Each flag indicates whether a feature is supported.
+ * If set to 0, the feature is not supported.
+ * If set to 1, the feature is supported, but the corresponding
+ * call may still fail in some corner cases.
+ *
+ * These features are also listed by hwloc-info \--support
+ */
 HWLOC_DECLSPEC const struct hwloc_topology_support *hwloc_topology_get_support(hwloc_topology_t __hwloc_restrict topology);
 
 /** \brief Set the topology-specific userdata pointer.
@@ -1107,6 +1187,9 @@ HWLOC_DECLSPEC void * hwloc_topology_get_userdata(hwloc_topology_t topology);
 /** \brief Get the depth of the hierarchical tree of objects.
  *
  * This is the depth of ::HWLOC_OBJ_PU objects plus one.
+ *
+ * \note I/O and Misc objects are ignored when computing the depth
+ * of the tree (they are placed on special levels, or none).
  */
 HWLOC_DECLSPEC unsigned hwloc_topology_get_depth(hwloc_topology_t __hwloc_restrict topology) __hwloc_attribute_pure;
 
@@ -1131,6 +1214,8 @@ HWLOC_DECLSPEC unsigned hwloc_topology_get_depth(hwloc_topology_t __hwloc_restri
  * hwloc_get_obj_by_depth() but it should not be considered as an actual
  * depth by the application. In particular, it should not be compared with
  * any other object depth or with the entire topology depth.
+ *
+ * If ::HWLOC_OBJ_MISC is given, the function returns ::HWLOC_TYPE_DEPTH_UNKNOWN.
  */
 HWLOC_DECLSPEC int hwloc_get_type_depth (hwloc_topology_t topology, hwloc_obj_type_t type);
 
@@ -1148,6 +1233,11 @@ enum hwloc_get_type_depth_e {
  * function returns the depth of the first "present" object typically found
  * inside \p type.
  *
+ * This function is only meaningful for normal object types.
+ * If an I/O object type is given, the corresponding virtual
+ * depth is always returned (see hwloc_get_type_depth()).
+ * If ::HWLOC_OBJ_MISC is given, the function returns ::HWLOC_TYPE_DEPTH_UNKNOWN.
+ *
  * If some objects of the given type exist in different levels, for instance
  * L1 and L2 caches, the function returns ::HWLOC_TYPE_DEPTH_MULTIPLE.
  */
@@ -1159,6 +1249,11 @@ hwloc_get_type_or_below_depth (hwloc_topology_t topology, hwloc_obj_type_t type)
  * If no object of this type is present on the underlying architecture, the
  * function returns the depth of the first "present" object typically
  * containing \p type.
+ *
+ * This function is only meaningful for normal object types.
+ * If an I/O object type is given, the corresponding virtual
+ * depth is always returned (see hwloc_get_type_depth()).
+ * If ::HWLOC_OBJ_MISC is given, the function returns ::HWLOC_TYPE_DEPTH_UNKNOWN.
  *
  * If some objects of the given type exist in different levels, for instance
  * L1 and L2 caches, the function returns ::HWLOC_TYPE_DEPTH_MULTIPLE.
@@ -1227,48 +1322,26 @@ hwloc_get_next_obj_by_type (hwloc_topology_t topology, hwloc_obj_type_t type,
 
 
 
-/** \defgroup hwlocality_object_strings Manipulating Object Type, Sets and Attributes as Strings
+/** \defgroup hwlocality_object_strings Converting between Object Types, Sets and Attributes, and Strings
  * @{
  */
 
-/** \brief Return a stringified topology object type */
-HWLOC_DECLSPEC const char * hwloc_obj_type_string (hwloc_obj_type_t type) __hwloc_attribute_const;
-
-/** \brief Return an object type and attributes from a type string.
+/** \brief Return a constant stringified object type.
  *
- * Convert strings such as "Package" or "Cache" into the corresponding types.
- * Matching is case-insensitive, and only the first letters are actually
- * required to match.
+ * This function is the basic way to convert a generic type into a string.
  *
- * Types that have specific attributes, for instance caches and groups,
- * may be returned in \p depthattrp and \p typeattrp. They are ignored
- * when these pointers are \c NULL.
- *
- * For instance "L2i" or "L2iCache" would return
- * type HWLOC_OBJ_CACHE in \p typep, 2 in \p depthattrp,
- * and HWLOC_OBJ_CACHE_TYPE_INSTRUCTION in \p typeattrp
- * (this last pointer should point to a hwloc_obj_cache_type_t).
- * "Group3" would return type HWLOC_OBJ_GROUP type and 3 in \p depthattrp.
- * Attributes that are not specified in the string (for instance "Group"
- * without a depth, or "L2Cache" without a cache type) are set to -1.
- *
- * \p typeattrp is only filled if the size specified in \p typeattrsize
- * is large enough. It is currently only used for caches, and the required
- * size is at least the size of hwloc_obj_cache_type_t.
- *
- * \return 0 if a type was correctly identified, otherwise -1.
- *
- * \note This is an extended version of the now deprecated hwloc_obj_type_of_string()
+ * hwloc_obj_type_snprintf() may return a more precise output for a specific
+ * object, but it requires the caller to provide the output buffer.
  */
-HWLOC_DECLSPEC int hwloc_obj_type_sscanf(const char *string,
-					 hwloc_obj_type_t *typep,
-					 int *depthattrp,
-					 void *typeattrp, size_t typeattrsize);
+HWLOC_DECLSPEC const char * hwloc_obj_type_string (hwloc_obj_type_t type) __hwloc_attribute_const;
 
 /** \brief Stringify the type of a given topology object into a human-readable form.
  *
- * It differs from hwloc_obj_type_string() because it prints type attributes such
- * as cache depth and type.
+ * Contrary to hwloc_obj_type_string(), this function includes object-specific
+ * attributes (such as the Group depth, the Bridge type, or OS device type)
+ * in the output, and it requires the caller to provide the output buffer.
+ *
+ * The output is guaranteed to be the same for all objects of a same topology level.
  *
  * If \p size is 0, \p string may safely be \c NULL.
  *
@@ -1301,6 +1374,49 @@ HWLOC_DECLSPEC int hwloc_obj_attr_snprintf(char * __hwloc_restrict string, size_
  */
 HWLOC_DECLSPEC int hwloc_obj_cpuset_snprintf(char * __hwloc_restrict str, size_t size, size_t nobj, const hwloc_obj_t * __hwloc_restrict objs);
 
+/** \brief Return an object type and attributes from a type string.
+ *
+ * Convert strings such as "Package" or "Cache" into the corresponding types.
+ * Matching is case-insensitive, and only the first letters are actually
+ * required to match.
+ *
+ * This function is guaranteed to match any string returned by hwloc_obj_type_string()
+ * or hwloc_obj_type_snprintf().
+ *
+ * Types that have specific attributes, for instance caches and groups,
+ * may be returned in \p depthattrp and \p typeattrp. They are ignored
+ * when these pointers are \c NULL.
+ *
+ * For instance "L2i" or "L2iCache" would return
+ * type HWLOC_OBJ_CACHE in \p typep, 2 in \p depthattrp,
+ * and HWLOC_OBJ_CACHE_TYPE_INSTRUCTION in \p typeattrp
+ * (this last pointer should point to a hwloc_obj_cache_type_t).
+ * "Group3" would return type HWLOC_OBJ_GROUP type and 3 in \p depthattrp.
+ * Attributes that are not specified in the string (for instance "Group"
+ * without a depth, or "L2Cache" without a cache type) are set to -1.
+ *
+ * \p typeattrp is only filled if the size specified in \p typeattrsize
+ * is large enough. It is currently only used for caches, and the required
+ * size is at least the size of hwloc_obj_cache_type_t.
+ *
+ * \return 0 if a type was correctly identified, otherwise -1.
+ *
+ * \note This is an extended version of the now deprecated hwloc_obj_type_of_string()
+ */
+HWLOC_DECLSPEC int hwloc_obj_type_sscanf(const char *string,
+					 hwloc_obj_type_t *typep,
+					 int *depthattrp,
+					 void *typeattrp, size_t typeattrsize);
+
+/** @} */
+
+
+
+/** \defgroup hwlocality_info_attr Consulting and Adding Key-Value Info Attributes
+ *
+ * @{
+ */
+
 /** \brief Search the given key name in object infos and return the corresponding value.
  *
  * If multiple keys match the given name, only the first one is returned.
@@ -1332,10 +1448,13 @@ HWLOC_DECLSPEC void hwloc_obj_add_info(hwloc_obj_t obj, const char *name, const 
 
 /** \defgroup hwlocality_cpubinding CPU binding
  *
- * It is often useful to call hwloc_bitmap_singlify() first so that a single CPU
- * remains in the set. This way, the process will not even migrate between
- * different CPUs inside the given set.
- * Some operating systems also only support that kind of binding.
+ * Some operating systems only support binding threads or processes to a single PU.
+ * Others allow binding to larger sets such as entire Cores or Packages or
+ * even random sets of invididual PUs. In such operating system, the scheduler
+ * is free to run the task on one of these PU, then migrate it to another PU, etc.
+ * It is often useful to call hwloc_bitmap_singlify() on the target CPU set before
+ * passing it to the binding function to avoid these expensive migrations.
+ * See the documentation of hwloc_bitmap_singlify() for details.
  *
  * Some operating systems do not provide all hwloc-supported
  * mechanisms to bind processes, threads, etc.
@@ -1377,7 +1496,7 @@ HWLOC_DECLSPEC void hwloc_obj_add_info(hwloc_obj_t obj, const char *name, const 
  * \note On some operating systems, CPU binding may have effects on memory binding, see
  * ::HWLOC_CPUBIND_NOMEMBIND
  *
- * \note Running lstopo --top or hwloc-ps can be a very convenient tool to check
+ * \note Running lstopo \--top or hwloc-ps can be a very convenient tool to check
  * how binding actually happened.
  * @{
  */
@@ -1568,7 +1687,7 @@ HWLOC_DECLSPEC int hwloc_get_proc_last_cpu_location(hwloc_topology_t topology, h
  * (e.g., some systems only allow binding memory on a per-thread
  * basis, whereas other systems only allow binding memory for all
  * threads in a process).
- * \p errno will be set to EXDEV when the requested cpuset can not be enforced
+ * \p errno will be set to EXDEV when the requested set can not be enforced
  * (e.g., some systems only allow binding memory to a single NUMA node).
  *
  * If ::HWLOC_MEMBIND_STRICT was not passed, the function may fail as well,
@@ -1592,12 +1711,17 @@ HWLOC_DECLSPEC int hwloc_get_proc_last_cpu_location(hwloc_topology_t topology, h
  * \endcode
  *
  * Each hwloc memory binding function is available in two forms: one
- * that takes a CPU set argument and another that takes a NUMA memory
- * node set argument (see \ref hwlocality_object_sets and \ref
- * hwlocality_bitmap for a discussion of CPU sets and NUMA memory node
- * sets).  The names of the latter form end with _nodeset.  It is also
- * possible to convert between CPU set and node set using
+ * that takes a bitmap argument (a CPU set by default, or a NUMA memory
+ * node set if the flag ::HWLOC_MEMBIND_BYNODESET is specified),
+ * and another one (whose name ends with _nodeset) that always takes
+ * a NUMA memory node set.
+ * See \ref hwlocality_object_sets and \ref hwlocality_bitmap for a
+ * discussion of CPU sets and NUMA memory node sets.
+ * It is also possible to convert between CPU set and node set using
  * hwloc_cpuset_to_nodeset() or hwloc_cpuset_from_nodeset().
+ *
+ * Memory binding by CPU set cannot work for CPU-less NUMA memory nodes.
+ * Binding by nodeset should therefore be preferred whenever possible.
  *
  * \sa Some example codes are available under doc/examples/ in the source tree.
  *
@@ -1622,6 +1746,10 @@ typedef enum {
    * Depending on the operating system, this may correspond to
    * ::HWLOC_MEMBIND_FIRSTTOUCH (Linux),
    * or ::HWLOC_MEMBIND_BIND (AIX, HP-UX, OSF, Solaris, Windows).
+   * This policy is never returned by get membind functions when running
+   * on normal machines.
+   * It is only returned when binding hooks are empty because the topology
+   * was loaded from XML, or HWLOC_THISSYSTEM=0, etc.
    * \hideinitializer */
   HWLOC_MEMBIND_DEFAULT =	0,
 
@@ -1630,7 +1758,7 @@ typedef enum {
    * each page in the allocation is bound only when it is first
    * touched. Pages are individually bound to the local NUMA node of
    * the first thread that touches it. If there is not enough memory
-   * on the node, allocation may be done in the specified cpuset
+   * on the node, allocation may be done in the specified nodes
    * before allocating on other nodes.
    * \hideinitializer */
   HWLOC_MEMBIND_FIRSTTOUCH =	1,
@@ -1725,11 +1853,23 @@ typedef enum {
    * may fail with errno set to ENOSYS when used with NOCPUBIND.
    * \hideinitializer
    */
-  HWLOC_MEMBIND_NOCPUBIND =     (1<<4)
+  HWLOC_MEMBIND_NOCPUBIND =     (1<<4),
+
+  /** \brief Consider the bitmap argument as a nodeset.
+   *
+   * Functions whose name ends with _nodeset() take a nodeset argument.
+   * Other functions take a bitmap argument that is considered a nodeset
+   * if this flag is given, or a cpuset otherwise.
+   *
+   * Memory binding by CPU set cannot work for CPU-less NUMA memory nodes.
+   * Binding by nodeset should therefore be preferred whenever possible.
+   * \hideinitializer
+   */
+  HWLOC_MEMBIND_BYNODESET =     (1<<5)
 } hwloc_membind_flags_t;
 
 /** \brief Set the default memory binding policy of the current
- * process or thread to prefer the NUMA node(s) specified by physical \p nodeset
+ * process or thread to prefer the NUMA node(s) specified by \p nodeset
  *
  * If neither ::HWLOC_MEMBIND_PROCESS nor ::HWLOC_MEMBIND_THREAD is
  * specified, the current process is assumed to be single-threaded.
@@ -1743,8 +1883,7 @@ typedef enum {
 HWLOC_DECLSPEC int hwloc_set_membind_nodeset(hwloc_topology_t topology, hwloc_const_nodeset_t nodeset, hwloc_membind_policy_t policy, int flags);
 
 /** \brief Set the default memory binding policy of the current
- * process or thread to prefer the NUMA node(s) near the specified physical \p
- * cpuset
+ * process or thread to prefer the NUMA node(s) specified by \p set
  *
  * If neither ::HWLOC_MEMBIND_PROCESS nor ::HWLOC_MEMBIND_THREAD is
  * specified, the current process is assumed to be single-threaded.
@@ -1752,10 +1891,13 @@ HWLOC_DECLSPEC int hwloc_set_membind_nodeset(hwloc_topology_t topology, hwloc_co
  * process-based OS functions or thread-based OS functions, depending
  * on which are available.
  *
+ * If ::HWLOC_MEMBIND_BYNODESET is specified, set is considered a nodeset.
+ * Otherwise it's a cpuset.
+ *
  * \return -1 with errno set to ENOSYS if the action is not supported
  * \return -1 with errno set to EXDEV if the binding cannot be enforced
  */
-HWLOC_DECLSPEC int hwloc_set_membind(hwloc_topology_t topology, hwloc_const_cpuset_t cpuset, hwloc_membind_policy_t policy, int flags);
+HWLOC_DECLSPEC int hwloc_set_membind(hwloc_topology_t topology, hwloc_const_bitmap_t set, hwloc_membind_policy_t policy, int flags);
 
 /** \brief Query the default memory binding policy and physical locality of the
  * current process or thread.
@@ -1785,9 +1927,10 @@ HWLOC_DECLSPEC int hwloc_set_membind(hwloc_topology_t topology, hwloc_const_cpus
  *
  * Otherwise, if ::HWLOC_MEMBIND_PROCESS is specified (and
  * ::HWLOC_MEMBIND_STRICT is \em not specified), \p nodeset is set to
- * the logical OR of all threads' default nodeset.  If all threads'
- * default policies are the same, \p policy is set to that policy.  If
- * they are different, \p policy is set to ::HWLOC_MEMBIND_MIXED.
+ * the logical OR of all threads' default nodeset.
+ * If all threads' default policies are the same, \p policy is set to
+ * that policy.  If they are different, \p policy is set to
+ * ::HWLOC_MEMBIND_MIXED.
  *
  * In the ::HWLOC_MEMBIND_THREAD case (or when neither
  * ::HWLOC_MEMBIND_PROCESS or ::HWLOC_MEMBIND_THREAD is specified), there
@@ -1800,10 +1943,9 @@ HWLOC_DECLSPEC int hwloc_set_membind(hwloc_topology_t topology, hwloc_const_cpus
 HWLOC_DECLSPEC int hwloc_get_membind_nodeset(hwloc_topology_t topology, hwloc_nodeset_t nodeset, hwloc_membind_policy_t * policy, int flags);
 
 /** \brief Query the default memory binding policy and physical locality of the
- * current process or thread (the locality is returned in \p cpuset as
- * CPUs near the locality's actual NUMA node(s)).
+ * current process or thread.
  *
- * This function has two output parameters: \p cpuset and \p policy.
+ * This function has two output parameters: \p set and \p policy.
  * The values returned in these parameters depend on both the \p flags
  * passed in and the current memory binding policies and nodesets in
  * the queried target.
@@ -1823,31 +1965,31 @@ HWLOC_DECLSPEC int hwloc_get_membind_nodeset(hwloc_topology_t topology, hwloc_no
  * is also specified.  In this case, hwloc will check the default
  * memory policies and nodesets for all threads in the process.  If
  * they are not identical, -1 is returned and errno is set to EXDEV.
- * If they are identical, the policy is returned in \p policy.  \p
- * cpuset is set to the union of CPUs near the NUMA node(s) in the
- * nodeset.
+ * If they are identical, the values are returned in \p set and \p
+ * policy.
  *
  * Otherwise, if ::HWLOC_MEMBIND_PROCESS is specified (and
- * ::HWLOC_MEMBIND_STRICT is \em not specified), the default nodeset
- * from each thread is logically OR'ed together.  \p cpuset is set to
- * the union of CPUs near the NUMA node(s) in the resulting nodeset.
+ * ::HWLOC_MEMBIND_STRICT is \em not specified), the default set
+ * from each thread is logically OR'ed together.
  * If all threads' default policies are the same, \p policy is set to
  * that policy.  If they are different, \p policy is set to
  * ::HWLOC_MEMBIND_MIXED.
  *
  * In the ::HWLOC_MEMBIND_THREAD case (or when neither
  * ::HWLOC_MEMBIND_PROCESS or ::HWLOC_MEMBIND_THREAD is specified), there
- * is only one nodeset and policy.  The policy is returned in \p
- * policy; \p cpuset is set to the union of CPUs near the NUMA node(s)
- * in the \p nodeset.
+ * is only one set and policy; they are returned in \p set and
+ * \p policy, respectively.
+ *
+ * If ::HWLOC_MEMBIND_BYNODESET is specified, set is considered a nodeset.
+ * Otherwise it's a cpuset.
  *
  * If any other flags are specified, -1 is returned and errno is set
  * to EINVAL.
  */
-HWLOC_DECLSPEC int hwloc_get_membind(hwloc_topology_t topology, hwloc_cpuset_t cpuset, hwloc_membind_policy_t * policy, int flags);
+HWLOC_DECLSPEC int hwloc_get_membind(hwloc_topology_t topology, hwloc_bitmap_t set, hwloc_membind_policy_t * policy, int flags);
 
 /** \brief Set the default memory binding policy of the specified
- * process to prefer the NUMA node(s) specified by physical \p nodeset
+ * process to prefer the NUMA node(s) specified by \p nodeset
  *
  * \return -1 with errno set to ENOSYS if the action is not supported
  * \return -1 with errno set to EXDEV if the binding cannot be enforced
@@ -1858,7 +2000,10 @@ HWLOC_DECLSPEC int hwloc_get_membind(hwloc_topology_t topology, hwloc_cpuset_t c
 HWLOC_DECLSPEC int hwloc_set_proc_membind_nodeset(hwloc_topology_t topology, hwloc_pid_t pid, hwloc_const_nodeset_t nodeset, hwloc_membind_policy_t policy, int flags);
 
 /** \brief Set the default memory binding policy of the specified
- * process to prefer the NUMA node(s) near the specified physical \p cpuset
+ * process to prefer the NUMA node(s) specified by \p set
+ *
+ * If ::HWLOC_MEMBIND_BYNODESET is specified, set is considered a nodeset.
+ * Otherwise it's a cpuset.
  *
  * \return -1 with errno set to ENOSYS if the action is not supported
  * \return -1 with errno set to EXDEV if the binding cannot be enforced
@@ -1866,7 +2011,7 @@ HWLOC_DECLSPEC int hwloc_set_proc_membind_nodeset(hwloc_topology_t topology, hwl
  * \note \p hwloc_pid_t is \p pid_t on Unix platforms,
  * and \p HANDLE on native Windows platforms.
  */
-HWLOC_DECLSPEC int hwloc_set_proc_membind(hwloc_topology_t topology, hwloc_pid_t pid, hwloc_const_cpuset_t cpuset, hwloc_membind_policy_t policy, int flags);
+HWLOC_DECLSPEC int hwloc_set_proc_membind(hwloc_topology_t topology, hwloc_pid_t pid, hwloc_const_bitmap_t set, hwloc_membind_policy_t policy, int flags);
 
 /** \brief Query the default memory binding policy and physical locality of the
  * specified process.
@@ -1907,10 +2052,9 @@ HWLOC_DECLSPEC int hwloc_set_proc_membind(hwloc_topology_t topology, hwloc_pid_t
 HWLOC_DECLSPEC int hwloc_get_proc_membind_nodeset(hwloc_topology_t topology, hwloc_pid_t pid, hwloc_nodeset_t nodeset, hwloc_membind_policy_t * policy, int flags);
 
 /** \brief Query the default memory binding policy and physical locality of the
- * specified process (the locality is returned in \p cpuset as CPUs
- * near the locality's actual NUMA node(s)).
+ * specified process.
  *
- * This function has two output parameters: \p cpuset and \p policy.
+ * This function has two output parameters: \p set and \p policy.
  * The values returned in these parameters depend on both the \p flags
  * passed in and the current memory binding policies and nodesets in
  * the queried target.
@@ -1929,15 +2073,16 @@ HWLOC_DECLSPEC int hwloc_get_proc_membind_nodeset(hwloc_topology_t topology, hwl
  * If ::HWLOC_MEMBIND_STRICT is specified, hwloc will check the default
  * memory policies and nodesets for all threads in the specified
  * process.  If they are not identical, -1 is returned and errno is
- * set to EXDEV.  If they are identical, the policy is returned in \p
- * policy.  \p cpuset is set to the union of CPUs near the NUMA
- * node(s) in the nodeset.
+ * set to EXDEV.  If they are identical, the values are returned in \p
+ * set and \p policy.
  *
- * Otherwise, the default nodeset from each thread is logically OR'ed
- * together.  \p cpuset is set to the union of CPUs near the NUMA
- * node(s) in the resulting nodeset.  If all threads' default policies
+ * Otherwise, \p set is set to the logical OR of all threads'
+ * default set.  If all threads' default policies
  * are the same, \p policy is set to that policy.  If they are
  * different, \p policy is set to ::HWLOC_MEMBIND_MIXED.
+ *
+ * If ::HWLOC_MEMBIND_BYNODESET is specified, set is considered a nodeset.
+ * Otherwise it's a cpuset.
  *
  * If any other flags are specified, -1 is returned and errno is set
  * to EINVAL.
@@ -1945,23 +2090,28 @@ HWLOC_DECLSPEC int hwloc_get_proc_membind_nodeset(hwloc_topology_t topology, hwl
  * \note \p hwloc_pid_t is \p pid_t on Unix platforms,
  * and \p HANDLE on native Windows platforms.
  */
-HWLOC_DECLSPEC int hwloc_get_proc_membind(hwloc_topology_t topology, hwloc_pid_t pid, hwloc_cpuset_t cpuset, hwloc_membind_policy_t * policy, int flags);
+HWLOC_DECLSPEC int hwloc_get_proc_membind(hwloc_topology_t topology, hwloc_pid_t pid, hwloc_bitmap_t set, hwloc_membind_policy_t * policy, int flags);
 
 /** \brief Bind the already-allocated memory identified by (addr, len)
- * to the NUMA node(s) in physical \p nodeset.
+ * to the NUMA node(s) specified by \p nodeset.
  *
+ * \return 0 if \p len is 0.
  * \return -1 with errno set to ENOSYS if the action is not supported
  * \return -1 with errno set to EXDEV if the binding cannot be enforced
  */
 HWLOC_DECLSPEC int hwloc_set_area_membind_nodeset(hwloc_topology_t topology, const void *addr, size_t len, hwloc_const_nodeset_t nodeset, hwloc_membind_policy_t policy, int flags);
 
 /** \brief Bind the already-allocated memory identified by (addr, len)
- * to the NUMA node(s) near physical \p cpuset.
+ * to the NUMA node(s) specified by \p set.
  *
+ * If ::HWLOC_MEMBIND_BYNODESET is specified, set is considered a nodeset.
+ * Otherwise it's a cpuset.
+ *
+ * \return 0 if \p len is 0.
  * \return -1 with errno set to ENOSYS if the action is not supported
  * \return -1 with errno set to EXDEV if the binding cannot be enforced
  */
-HWLOC_DECLSPEC int hwloc_set_area_membind(hwloc_topology_t topology, const void *addr, size_t len, hwloc_const_cpuset_t cpuset, hwloc_membind_policy_t policy, int flags);
+HWLOC_DECLSPEC int hwloc_set_area_membind(hwloc_topology_t topology, const void *addr, size_t len, hwloc_const_bitmap_t set, hwloc_membind_policy_t policy, int flags);
 
 /** \brief Query the physical NUMA node(s) and binding policy of the memory
  * identified by (\p addr, \p len ).
@@ -1982,6 +2132,8 @@ HWLOC_DECLSPEC int hwloc_set_area_membind(hwloc_topology_t topology, const void 
  * If all pages in the target have the same policy, it is returned in
  * \p policy.  Otherwise, \p policy is set to ::HWLOC_MEMBIND_MIXED.
  *
+ * If \p len is 0, -1 is returned and errno is set to EINVAL.
+ *
  * If any other flags are specified, -1 is returned and errno is set
  * to EINVAL.
  */
@@ -1990,7 +2142,7 @@ HWLOC_DECLSPEC int hwloc_get_area_membind_nodeset(hwloc_topology_t topology, con
 /** \brief Query the CPUs near the physical NUMA node(s) and binding policy of
  * the memory identified by (\p addr, \p len ).
  *
- * This function has two output parameters: \p cpuset and \p policy.
+ * This function has two output parameters: \p set and \p policy.
  * The values returned in these parameters depend on both the \p flags
  * passed in and the memory binding policies and nodesets of the pages
  * in the address range.
@@ -1998,20 +2150,44 @@ HWLOC_DECLSPEC int hwloc_get_area_membind_nodeset(hwloc_topology_t topology, con
  * If ::HWLOC_MEMBIND_STRICT is specified, the target pages are first
  * checked to see if they all have the same memory binding policy and
  * nodeset.  If they do not, -1 is returned and errno is set to EXDEV.
- * If they are identical across all pages, the policy is returned in
- * \p policy.  \p cpuset is set to the union of CPUs near the NUMA
- * node(s) in the nodeset.
+ * If they are identical across all pages, the set and policy are
+ * returned in \p set and \p policy, respectively.
  *
  * If ::HWLOC_MEMBIND_STRICT is not specified, the union of all NUMA
- * node(s) containing pages in the address range is calculated.  \p
- * cpuset is then set to the CPUs near the NUMA node(s) in this union.
+ * node(s) containing pages in the address range is calculated.
  * If all pages in the target have the same policy, it is returned in
  * \p policy.  Otherwise, \p policy is set to ::HWLOC_MEMBIND_MIXED.
+ *
+ * If ::HWLOC_MEMBIND_BYNODESET is specified, set is considered a nodeset.
+ * Otherwise it's a cpuset.
+ *
+ * If \p len is 0, -1 is returned and errno is set to EINVAL.
  *
  * If any other flags are specified, -1 is returned and errno is set
  * to EINVAL.
  */
-HWLOC_DECLSPEC int hwloc_get_area_membind(hwloc_topology_t topology, const void *addr, size_t len, hwloc_cpuset_t cpuset, hwloc_membind_policy_t * policy, int flags);
+HWLOC_DECLSPEC int hwloc_get_area_membind(hwloc_topology_t topology, const void *addr, size_t len, hwloc_bitmap_t set, hwloc_membind_policy_t * policy, int flags);
+
+/** \brief Get the NUMA nodes where memory identified by (\p addr, \p len ) is physically allocated.
+ *
+ * Fills \p set according to the NUMA nodes where the memory area pages
+ * are physically allocated. If no page is actually allocated yet,
+ * \p set may be empty.
+ *
+ * If pages spread to multiple nodes, it is not specified whether they spread
+ * equitably, or whether most of them are on a single node, etc.
+ *
+ * The operating system may move memory pages from one processor
+ * to another at any time according to their binding,
+ * so this function may return something that is already
+ * outdated.
+ *
+ * If ::HWLOC_MEMBIND_BYNODESET is specified in \p flags, set is
+ * considered a nodeset. Otherwise it's a cpuset.
+ *
+ * If \p len is 0, \p set is emptied.
+ */
+HWLOC_DECLSPEC int hwloc_get_area_memlocation(hwloc_topology_t topology, const void *addr, size_t len, hwloc_bitmap_t set, int flags);
 
 /** \brief Allocate some memory
  *
@@ -2022,7 +2198,7 @@ HWLOC_DECLSPEC int hwloc_get_area_membind(hwloc_topology_t topology, const void 
  */
 HWLOC_DECLSPEC void *hwloc_alloc(hwloc_topology_t topology, size_t len);
 
-/** \brief Allocate some memory on the given physical nodeset \p nodeset
+/** \brief Allocate some memory on NUMA memory nodes specified by \p nodeset
  *
  * \return NULL with errno set to ENOSYS if the action is not supported
  * and ::HWLOC_MEMBIND_STRICT is given
@@ -2035,7 +2211,7 @@ HWLOC_DECLSPEC void *hwloc_alloc(hwloc_topology_t topology, size_t len);
  */
 HWLOC_DECLSPEC void *hwloc_alloc_membind_nodeset(hwloc_topology_t topology, size_t len, hwloc_const_nodeset_t nodeset, hwloc_membind_policy_t policy, int flags) __hwloc_attribute_malloc;
 
-/** \brief Allocate some memory on memory nodes near the given physical cpuset \p cpuset
+/** \brief Allocate some memory on NUMA memory nodes specified by \p set
  *
  * \return NULL with errno set to ENOSYS if the action is not supported
  * and ::HWLOC_MEMBIND_STRICT is given
@@ -2044,11 +2220,14 @@ HWLOC_DECLSPEC void *hwloc_alloc_membind_nodeset(hwloc_topology_t topology, size
  * \return NULL with errno set to ENOMEM if the memory allocation failed
  * even before trying to bind.
  *
+ * If ::HWLOC_MEMBIND_BYNODESET is specified, set is considered a nodeset.
+ * Otherwise it's a cpuset.
+ *
  * \note The allocated memory should be freed with hwloc_free().
  */
-HWLOC_DECLSPEC void *hwloc_alloc_membind(hwloc_topology_t topology, size_t len, hwloc_const_cpuset_t cpuset, hwloc_membind_policy_t policy, int flags) __hwloc_attribute_malloc;
+HWLOC_DECLSPEC void *hwloc_alloc_membind(hwloc_topology_t topology, size_t len, hwloc_const_bitmap_t set, hwloc_membind_policy_t policy, int flags) __hwloc_attribute_malloc;
 
-/** \brief Allocate some memory on the given nodeset \p nodeset
+/** \brief Allocate some memory on NUMA memory nodes specified by \p nodeset
  *
  * This is similar to hwloc_alloc_membind() except that it is allowed to change
  * the current memory binding policy, thus providing more binding support, at
@@ -2057,12 +2236,17 @@ HWLOC_DECLSPEC void *hwloc_alloc_membind(hwloc_topology_t topology, size_t len, 
 static __hwloc_inline void *
 hwloc_alloc_membind_policy_nodeset(hwloc_topology_t topology, size_t len, hwloc_const_nodeset_t nodeset, hwloc_membind_policy_t policy, int flags) __hwloc_attribute_malloc;
 
-/** \brief Allocate some memory on the memory nodes near given cpuset \p cpuset
+/** \brief Allocate some memory on NUMA memory nodes specified by \p set
  *
- * This is similar to hwloc_alloc_membind_policy_nodeset(), but for a given cpuset.
+ * This is similar to hwloc_alloc_membind_nodeset() except that it is allowed to change
+ * the current memory binding policy, thus providing more binding support, at
+ * the expense of changing the current state.
+ *
+ * If ::HWLOC_MEMBIND_BYNODESET is specified, set is considered a nodeset.
+ * Otherwise it's a cpuset.
  */
 static __hwloc_inline void *
-hwloc_alloc_membind_policy(hwloc_topology_t topology, size_t len, hwloc_const_cpuset_t set, hwloc_membind_policy_t policy, int flags) __hwloc_attribute_malloc;
+hwloc_alloc_membind_policy(hwloc_topology_t topology, size_t len, hwloc_const_bitmap_t set, hwloc_membind_policy_t policy, int flags) __hwloc_attribute_malloc;
 
 /** \brief Free memory that was previously allocated by hwloc_alloc()
  * or hwloc_alloc_membind().

@@ -1,4 +1,9 @@
+if !HWLOC_HAVE_DARWIN
 all-local: needed useless
+else HWLOC_HAVE_DARWIN
+# Do nothing on Darwin because their default compiler doesn't like our gcc/cpp lines
+all-local:
+endif HWLOC_HAVE_DARWIN
 
 TEST_CPPFLAGS =
 if HWLOC_HAVE_LINUX

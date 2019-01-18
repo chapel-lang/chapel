@@ -8,9 +8,16 @@ class D: C {
 
 proc f(b: bool) {
   if b then
-    return new C();
+    return new unmanaged C();
   else
-    return new D();
+    return new unmanaged D();
 }
 
-writeln(f(false), f(true));
+var t1 = f(false);
+var t2 = f(true);
+
+writeln(t1, t2);
+
+delete t2;
+delete t1;
+

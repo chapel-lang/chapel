@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+testname=$1
+outfile=$2
+disasm="${testname}.disasm"
+
+if ! which objdump > /dev/null; then
+  echo "Warning: objdump not found, skipping disassembly check"
+  exit 0
+fi
+
+objdump -d "./$testname" > $disasm
+
+grep -A 20 -e "<_main>" -e "<main>" -e "^_*main:" $disasm | grep "prefetch" > /dev/null
+if [ $? -eq 1 ]; then
+  echo "Prefetch instruction not found" >> $outfile
+fi
+
+rm $disasm

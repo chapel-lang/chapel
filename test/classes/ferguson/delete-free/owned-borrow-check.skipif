@@ -1,0 +1,2 @@
+# test does use-after-free; skip everywhere except valgrind
+CHPL_TEST_VGRND_EXE!=on

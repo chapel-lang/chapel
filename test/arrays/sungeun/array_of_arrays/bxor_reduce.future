@@ -1,5 +1,0 @@
-bug: Bit-wise reduce of arrays of arrays results in internal compiler error
-
-This is derived from a bug reported from Michael Ferguson's 12/2010
-workshop.  Bit-wise reduction of arrays of arrays results in an
-internal error at compile time.

@@ -3,7 +3,7 @@ use myrecord;
 proc myfunction() {
 
   var rec: R;
-  rec.init(x = 20);
+  rec.setup(x = 20);
 
   rec.verify();
 

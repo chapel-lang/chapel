@@ -14,8 +14,8 @@
 
 @SET_MAKE@
 
-# Copyright © 2009-2014 Inria.  All rights reserved.
-# Copyright © 2009-2013 Université Bordeaux
+# Copyright © 2009-2016 Inria.  All rights reserved.
+# Copyright © 2009-2013, 2017 Université Bordeaux
 # Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
 
@@ -100,7 +100,8 @@ target_triplet = @target@
 TESTS = hwloc-hello$(EXEEXT) $(am__EXEEXT_1)
 @HWLOC_HAVE_CXX_TRUE@am__append_1 = hwloc-hello-cpp
 check_PROGRAMS = $(am__EXEEXT_2) cpuset+bitmap+cpubind$(EXEEXT) \
-	nodeset+membind+policy$(EXEEXT) sharedcaches$(EXEEXT)
+	nodeset+membind+policy$(EXEEXT) sharedcaches$(EXEEXT) \
+	get-knl-modes$(EXEEXT) gpu$(EXEEXT)
 subdir = doc/examples
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
@@ -134,6 +135,14 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+get_knl_modes_SOURCES = get-knl-modes.c
+get_knl_modes_OBJECTS = get-knl-modes.$(OBJEXT)
+get_knl_modes_LDADD = $(LDADD)
+get_knl_modes_DEPENDENCIES = $(HWLOC_top_builddir)/src/libhwloc.la
+gpu_SOURCES = gpu.c
+gpu_OBJECTS = gpu.$(OBJEXT)
+gpu_LDADD = $(LDADD)
+gpu_DEPENDENCIES = $(HWLOC_top_builddir)/src/libhwloc.la
 hwloc_hello_SOURCES = hwloc-hello.c
 hwloc_hello_OBJECTS = hwloc-hello.$(OBJEXT)
 hwloc_hello_LDADD = $(LDADD)
@@ -203,12 +212,12 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = cpuset+bitmap+cpubind.c hwloc-hello.c \
+SOURCES = cpuset+bitmap+cpubind.c get-knl-modes.c gpu.c hwloc-hello.c \
 	$(hwloc_hello_cpp_SOURCES) nodeset+membind+policy.c \
 	sharedcaches.c
-DIST_SOURCES = cpuset+bitmap+cpubind.c hwloc-hello.c \
-	$(hwloc_hello_cpp_SOURCES) nodeset+membind+policy.c \
-	sharedcaches.c
+DIST_SOURCES = cpuset+bitmap+cpubind.c get-knl-modes.c gpu.c \
+	hwloc-hello.c $(hwloc_hello_cpp_SOURCES) \
+	nodeset+membind+policy.c sharedcaches.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -505,6 +514,8 @@ HWLOC_LINUX_LIBNUMA_LIBS = @HWLOC_LINUX_LIBNUMA_LIBS@
 HWLOC_MS_LIB = @HWLOC_MS_LIB@
 HWLOC_MS_LIB_ARCH = @HWLOC_MS_LIB_ARCH@
 HWLOC_NVML_LIBS = @HWLOC_NVML_LIBS@
+HWLOC_OPENCL_CFLAGS = @HWLOC_OPENCL_CFLAGS@
+HWLOC_OPENCL_LDFLAGS = @HWLOC_OPENCL_LDFLAGS@
 HWLOC_OPENCL_LIBS = @HWLOC_OPENCL_LIBS@
 HWLOC_PCIACCESS_CFLAGS = @HWLOC_PCIACCESS_CFLAGS@
 HWLOC_PCIACCESS_LIBS = @HWLOC_PCIACCESS_LIBS@
@@ -518,6 +529,7 @@ HWLOC_W3_GENERATOR = @HWLOC_W3_GENERATOR@
 HWLOC_X11_CPPFLAGS = @HWLOC_X11_CPPFLAGS@
 HWLOC_X11_LIBS = @HWLOC_X11_LIBS@
 HWLOC_XML_LOCALIZED = @HWLOC_XML_LOCALIZED@
+HWLOC_runstatedir = @HWLOC_runstatedir@
 HWLOC_top_builddir = @HWLOC_top_builddir@
 HWLOC_top_srcdir = @HWLOC_top_srcdir@
 INSTALL = @INSTALL@
@@ -679,6 +691,14 @@ cpuset+bitmap+cpubind$(EXEEXT): $(cpuset_bitmap_cpubind_OBJECTS) $(cpuset_bitmap
 	@rm -f cpuset+bitmap+cpubind$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(cpuset_bitmap_cpubind_OBJECTS) $(cpuset_bitmap_cpubind_LDADD) $(LIBS)
 
+get-knl-modes$(EXEEXT): $(get_knl_modes_OBJECTS) $(get_knl_modes_DEPENDENCIES) $(EXTRA_get_knl_modes_DEPENDENCIES) 
+	@rm -f get-knl-modes$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(get_knl_modes_OBJECTS) $(get_knl_modes_LDADD) $(LIBS)
+
+gpu$(EXEEXT): $(gpu_OBJECTS) $(gpu_DEPENDENCIES) $(EXTRA_gpu_DEPENDENCIES) 
+	@rm -f gpu$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(gpu_OBJECTS) $(gpu_LDADD) $(LIBS)
+
 hwloc-hello$(EXEEXT): $(hwloc_hello_OBJECTS) $(hwloc_hello_DEPENDENCIES) $(EXTRA_hwloc_hello_DEPENDENCIES) 
 	@rm -f hwloc-hello$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(hwloc_hello_OBJECTS) $(hwloc_hello_LDADD) $(LIBS)
@@ -702,6 +722,8 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpuset+bitmap+cpubind.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get-knl-modes.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpu.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc-hello-cpp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc-hello.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodeset+membind+policy.Po@am__quote@

@@ -7,13 +7,15 @@ var A: [D] int;
 
 class OneToTen {
   var currIndex: sync int = 1;
-  
+
   iter count() {
     var done = false;
-    
+
     while (!done) {
       const myLocIndex = currIndex;  // read currIndex, leave empty;
+
       currIndex = myLocIndex + 1;    // write currIndex, leave full;
+
       if myLocIndex <= numIters then
         yield myLocIndex;
       else
@@ -22,7 +24,8 @@ class OneToTen {
   }
 }
 
-var sharedOneToTen = new OneToTen();
+var sharedOneToTen = new unmanaged OneToTen();
+
 cobegin {
   for x in sharedOneToTen.count() do A(x) = 1;
   for y in sharedOneToTen.count() do A(y) = 2;
@@ -33,3 +36,6 @@ for i in D {
   if printTaskID then write(" by task ", A(i));
   writeln();
 }
+
+delete sharedOneToTen;
+

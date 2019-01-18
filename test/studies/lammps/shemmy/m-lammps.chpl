@@ -155,7 +155,7 @@ proc updatePositions()
     
     forall (loc,i) in copyDist
     {
-	local needsUpdate[loc,i]=true;
+	local do needsUpdate[loc,i]=true;
     }
 
     forall i in atomsDist
@@ -187,7 +187,7 @@ proc updateNeighbors()
 {
     forall ii in atomsDist
     {
-	local positions[ii]=positionsLoc[here.id,ii];
+	local do positions[ii]=positionsLoc[here.id,ii];
     }
 
     forall (loc,i) in copyDist

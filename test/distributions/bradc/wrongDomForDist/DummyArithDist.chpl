@@ -1,14 +1,18 @@
 class MyDist : BaseDist {
-  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
-    return new MyDom(rank=rank, idxType=idxType);
+
+  proc init() { }
+
+  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+    const dom = new unmanaged MyDom(rank=rank, idxType=idxType, stridable=stridable);
+    dom.dsiSetIndices(inds);
+    return dom;
   }
 
-  proc dsiClone() return new MyDist();
+  proc dsiClone() return new unmanaged MyDist();
 }
 
 class MyDom : BaseRectangularDom {
-  param rank: int;
-  type idxType = int(32);
+  const dist: unmanaged MyDist;
 
   proc dsiGetIndices() {
     var r: range;

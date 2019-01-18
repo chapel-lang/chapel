@@ -1,4 +1,4 @@
-use Barrier;
+use Barriers;
 use BlockDist;
 
 config const printResults = false;
@@ -41,9 +41,14 @@ proc remoteTest(b: Barrier, numRemoteTasks) {
 }
 
 
-var b = new Barrier(numTasks);
+var b = new Barrier(numTasks, BarrierType.Atomic);
 localTest(b, numTasks);
 
 b.reset(numRemoteTasks);
 remoteTest(b, numRemoteTasks);
-delete b;
+
+var sb = new Barrier(numTasks, BarrierType.Sync);
+localTest(sb, numTasks);
+
+sb.reset(numRemoteTasks);
+remoteTest(sb, numRemoteTasks);

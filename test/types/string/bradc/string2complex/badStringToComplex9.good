@@ -1,1 +1,3 @@
-badStringToComplex9.chpl:3: error: Unexpected character when converting from string to complex(64): 'i'
+uncaught IllegalArgumentError: bad cast from string '1.2 i' to complex(64)
+  badStringToComplex9.chpl:3: thrown here
+  badStringToComplex9.chpl:3: uncaught here

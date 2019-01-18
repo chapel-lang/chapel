@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -106,6 +106,7 @@ ArgumentDescription docs_arg_desc[] = {
 
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
  DRIVER_ARG_DEVELOPER,
+ DRIVER_ARG_BREAKFLAGS_COMMON,
  DRIVER_ARG_DEBUGGERS,
  DRIVER_ARG_PRINT_CHPL_HOME,
 

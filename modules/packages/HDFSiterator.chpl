@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +25,7 @@
  */
 module HDFSiterator {
 
-use HDFS, UtilReplicatedVar, RecordParser;
+use HDFS, ReplicatedVar, RecordParser;
 
 /* Iterate through an HDFS file (available in the default configured
    HDFS server) and yield records matching a regular expression.

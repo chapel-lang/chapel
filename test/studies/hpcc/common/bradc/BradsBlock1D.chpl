@@ -38,21 +38,27 @@ class Block1DDist {
 
   //
   // an associative array of local distribution class descriptors --
-  // set up in initialize() below
+  // set up in postinit() below
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method
+  // removing the postinit method
   //
   // TODO: Remove second generic parameter -- seems confusing and wrong.  Replace
   // with explicit typing of locid field in LocBlock1DDist class.  Particularly
   // since I'm passing in a value from 0.. rather than an actual index value.
   //
-  var locDist: [targetLocDom] LocBlock1DDist(glbIdxType, index(targetLocs.domain));
+  var locDist: [targetLocDom] unmanaged LocBlock1DDist(glbIdxType, index(targetLocs.domain));
 
-  proc initialize() {
+  proc postinit() {
     for (loc, locid) in zip(targetLocs, 0..) do
       on loc do
-        locDist(loc) = new LocBlock1DDist(glbIdxType, locid, this);
+        locDist(loc) = new unmanaged LocBlock1DDist(glbIdxType, locid, _to_unmanaged(this));
+  }
+
+  proc deinit() {
+    for loc in targetLocs do
+      on loc do
+        delete locDist(loc);
   }
 
   //
@@ -63,7 +69,7 @@ class Block1DDist {
   proc newDomain(inds, type idxType = glbIdxType, type locIdxType = idxType) {
     // Note that I'm fixing the global and local index types to be the
     // same, but making this a generic function would fix this
-    return new Block1DDom(idxType, locIdxType, this, inds);
+    return new unmanaged Block1DDom(idxType, locIdxType, _to_unmanaged(this), inds);
   }
 
   //
@@ -89,6 +95,31 @@ class Block1DDist {
 }
 
 //
+// Compute what chunk of index(1) is owned by the current locale
+//
+proc computeMyChunk(type glbIdxType, locid, dist) {
+
+  //
+  // a helper function for mapping processors to indices
+  //
+  proc procToData(x, lo)
+    return (lo + (x: lo.type) + (x:real != x:int:real));
+
+  const lo = dist.bbox.low;
+  const hi = dist.bbox.high;
+  const numelems = hi - lo + 1;
+  const numlocs = dist.targetLocs.numElements;
+  const blo = if (locid == 0) then min(glbIdxType)
+              else procToData((numelems: real * locid) / numlocs, lo);
+  const bhi = if (locid == numlocs - 1) then max(glbIdxType)
+              else procToData((numelems: real * (locid+1)) / numlocs, lo) - 1;
+  const retval = {blo..bhi};
+  if debugBradsBlock1D then
+    writeln("locale ", locid, " owns ", retval);
+  return retval;
+}
+
+//
 // A per-locale local distribution class
 //
 class LocBlock1DDist {
@@ -107,7 +138,7 @@ class LocBlock1DDist {
   // classes well yet).
   //
   const locid;
-  const dist: Block1DDist(glbIdxType);
+  const dist: unmanaged Block1DDist(glbIdxType);
 
   //
   // This stores the piece of the global bounding box owned by
@@ -115,31 +146,7 @@ class LocBlock1DDist {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
-  const myChunk: domain(1, glbIdxType) = computeMyChunk();
-
-  //
-  // a helper function for mapping processors to indices
-  //
-  proc procToData(x, lo)
-    return (lo + (x: lo.type) + (x:real != x:int:real));
-
-  //
-  // Compute what chunk of index(1) is owned by the current locale
-  //
-  proc computeMyChunk() {
-    const lo = dist.bbox.low;
-    const hi = dist.bbox.high;
-    const numelems = hi - lo + 1;
-    const numlocs = dist.targetLocs.numElements;
-    const blo = if (locid == 0) then min(glbIdxType)
-                else procToData((numelems: real * locid) / numlocs, lo);
-    const bhi = if (locid == numlocs - 1) then max(glbIdxType)
-                else procToData((numelems: real * (locid+1)) / numlocs, lo) - 1;
-    const retval = {blo..bhi};
-    if debugBradsBlock1D then
-      writeln("locale ", locid, " owns ", retval);
-    return retval;
-  }
+  const myChunk: domain(1, glbIdxType) = computeMyChunk(glbIdxType, locid, dist);
 }
 
 
@@ -156,7 +163,7 @@ class Block1DDom {
   //
   // a pointer to the parent distribution
   //
-  const dist: Block1DDist(glbIdxType);
+  const dist: unmanaged Block1DDist(glbIdxType);
 
   //
   // a domain describing the complete domain
@@ -165,19 +172,25 @@ class Block1DDom {
 
   //
   // an associative array of local domain class descriptors -- set up
-  // in initialize() below
+  // in postinit() below
   //
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method
   //
-  var locDom: [dist.targetLocDom] LocBlock1DDom(glbIdxType, lclIdxType);
+  var locDom: [dist.targetLocDom] unmanaged LocBlock1DDom(glbIdxType, lclIdxType);
 
-  proc initialize() {
+  proc postinit() {
     for loc in dist.targetLocs do
       on loc do
-        locDom(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, dist.getChunk(whole));
+        locDom(loc) = new unmanaged LocBlock1DDom(glbIdxType, lclIdxType, _to_unmanaged(this), dist.getChunk(whole));
     if debugBradsBlock1D then
       [loc in dist.targetLocs] writeln(loc, " owns ", locDom(loc));
+  }
+
+  proc deinit() {
+    for loc in dist.targetLocs do
+      on loc do
+        delete locDom(loc);
   }
 
   //
@@ -204,7 +217,7 @@ class Block1DDom {
   // how to allocate a new array over this domain
   //
   proc newArray(type elemType) {
-    return new Block1DArr(glbIdxType, lclIdxType, elemType, this);
+    return new unmanaged Block1DArr(glbIdxType, lclIdxType, elemType, _to_unmanaged(this));
   }
 
   //
@@ -237,7 +250,7 @@ class LocBlock1DDom {
   //
   // a reference to the parent global domain class
   //
-  const wholeDom: Block1DDom(glbIdxType, lclIdxType);
+  const wholeDom: unmanaged Block1DDom(glbIdxType, lclIdxType);
 
   //
   // a local domain describing the indices owned by this locale
@@ -297,20 +310,26 @@ class Block1DArr {
   //
   // the global domain descriptor for this array
   //
-  var dom: Block1DDom(glbIdxType, lclIdxType);
+  var dom: unmanaged Block1DDom(glbIdxType, lclIdxType);
 
   //
   // an associative array of local array classes, indexed by locale
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method
+  // removing the postinit method
   //
-  var locArr: [dom.dist.targetLocDom] LocBlock1DArr(glbIdxType, lclIdxType, elemType);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocBlock1DArr(glbIdxType, lclIdxType, elemType);
 
-  proc initialize() {
+  proc postinit() {
     for loc in dom.dist.targetLocs do
       on loc do
-        locArr(loc) = new LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDom(loc));
+        locArr(loc) = new unmanaged LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDom(loc));
+  }
+
+  proc deinit() {
+    for loc in dom.dist.targetLocs do
+      on loc do
+        delete locArr(loc);
   }
 
   //
@@ -395,7 +414,7 @@ class LocBlock1DArr {
   //
   // a reference to the local domain class for this array and locale
   //
-  const locDom: LocBlock1DDom(glbIdxType, lclIdxType);
+  const locDom: unmanaged LocBlock1DDom(glbIdxType, lclIdxType);
 
   //
   // the block of local array data

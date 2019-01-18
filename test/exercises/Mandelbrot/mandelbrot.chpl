@@ -38,7 +38,7 @@ proc main() {
   // This could have equivalently been written:
   //
   // forall ij in ImgSpace do
-  //   // ij is a 2-tuple reprsenting an index from ImgSpace
+  //   // ij is a 2-tuple representing an index from ImgSpace
   //   Image[ij] = ij(1) + ij(2);
   //   // arrays support tuple indices; tuples support element access
 

@@ -1,0 +1,5 @@
+A.init(10)
+
+M1.A.init(20)
+
+M2.A.init(40)

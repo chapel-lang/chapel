@@ -1,11 +1,16 @@
 /*
- * Copyright © 2012-2014 Inria.  All rights reserved.
+ * Copyright © 2012-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
 #include <stdio.h>
 #include <assert.h>
+#define CL_TARGET_OPENCL_VERSION 220
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
 #include <CL/cl.h>
+#endif
 #include <hwloc.h>
 #include <hwloc/opencl.h>
 
@@ -57,7 +62,7 @@ int main(void)
       osdev2 = hwloc_opencl_get_device_osdev_by_index(topology, i, j);
       assert(osdev == osdev2);
       if (!osdev) {
-	printf("no osdev for platform %d device %d\n", i, j);
+	printf("no osdev for platform %u device %u\n", i, j);
 	continue;
       }
 
@@ -66,11 +71,11 @@ int main(void)
       set = hwloc_bitmap_alloc();
       err = hwloc_opencl_get_device_cpuset(topology, device_ids[j], set);
       if (err < 0) {
-	printf("no cpuset for platform %d device %d\n", i, j);
+	printf("no cpuset for platform %u device %u\n", i, j);
       } else {
 	char *cpuset_string = NULL;
 	hwloc_bitmap_asprintf(&cpuset_string, set);
-	printf("got cpuset %s for platform %d device %d\n", cpuset_string, i, j);
+	printf("got cpuset %s for platform %u device %u\n", cpuset_string, i, j);
 	free(cpuset_string);
 	if (hwloc_bitmap_isequal(hwloc_topology_get_complete_cpuset(topology), hwloc_topology_get_topology_cpuset(topology)))
 	  /* only compare if the topology is complete, otherwise things can be significantly different */

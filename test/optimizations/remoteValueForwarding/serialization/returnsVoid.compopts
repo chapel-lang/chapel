@@ -1,0 +1,2 @@
+-sfoo=false # returnsVoid.serialize.good
+-sfoo=true # returnsVoid.deserialize.good

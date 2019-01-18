@@ -1,10 +1,24 @@
+.. default-domain:: chpl
+
+.. module:: arrays.doc
+
 arrays.doc
-   proc smallArray(): [1..4] bool
-      This method returns an array of bools as an argument 
+==========
+**Usage**
 
-   proc multiDimension(): [1..3, 2..8] string
-      This method returns a multidimensional array of strings 
+.. code-block:: chapel
 
-   proc inception(): [1..4] [3..7] int
-      This method returns an array of arrays of ints 
+   use arrays.doc;
+
+.. function:: proc smallArray(): [1..4] bool
+
+   This method returns an array of bools as an argument 
+
+.. function:: proc multiDimension(): [1..3, 2..8] string
+
+   This method returns a multidimensional array of strings 
+
+.. function:: proc inception(): [1..4] [3..7] int
+
+   This method returns an array of arrays of ints 
 

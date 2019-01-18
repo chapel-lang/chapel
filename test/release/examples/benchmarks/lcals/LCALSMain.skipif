@@ -1,3 +1,6 @@
-# This test takes too long if --fast is not used so only run it for
-# performance testing
-CHPL_TEST_PERF != on
+# This test takes too long for no-local configurations, so skip it for
+# comm != none and --no-local. Same for valgrind and --baseline.
+CHPL_COMM != none
+COMPOPTS <= --no-local
+CHPL_TEST_VGRND_EXE == on
+COMPOPTS <= --baseline

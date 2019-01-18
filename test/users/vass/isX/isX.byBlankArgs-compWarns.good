@@ -327,12 +327,12 @@ isSingle
 isSingleValue
 isSingleType
 
-atomic_int64
+RAtomicT(int(64))
 isAtomic
 isAtomicValue
 isAtomicType
 
-atomic_real64
+RAtomicT(real(64))
 isAtomic
 isAtomicValue
 isAtomicType

@@ -38,7 +38,7 @@ module performance_cholesky_test {
 
   proc main {
 
-    var Rand = new RandomStream ( seed = 314159) ;
+    var Rand = new owned RandomStream ( real, seed = 314159) ;
 
     const mat_dom : domain (2) = { index_base .. #n, index_base .. #n };
 
@@ -61,14 +61,14 @@ module performance_cholesky_test {
 
     // -------------------------------------------------------------
     // create a positive definite matrix A by setting A equal to the
-    // matrix-matrix product B B^T.  This normal equations matrix is 
+    // matrix-matrix product B B^T.  This normal equations matrix is
     // positive-definite as long as B is full rank.
     // -------------------------------------------------------------
 
     A = 0.0;
 
     forall (i,j) in mat_dom do
-      A (i,j) = + reduce (  [k in mat_dom.dim (1) ] 
+      A (i,j) = + reduce (  [k in mat_dom.dim (1) ]
     			    B (i, k) * B (j, k) );
 
     // factorization algorithms overwrite a copy of A, leaving
@@ -87,13 +87,13 @@ module performance_cholesky_test {
     var clock : Timer;
 
     clock.start ();
-    
+
     positive_definite = scalar_column_major_outer_product_cholesky ( L );
-    
+
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -107,7 +107,7 @@ module performance_cholesky_test {
 
     L = A;
 
-    writeln ("\n\n"); 
+    writeln ("\n\n");
     writeln ("scalar row major outer product cholesky factorization: " );
 
     clock.clear ();
@@ -118,7 +118,7 @@ module performance_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -132,10 +132,10 @@ module performance_cholesky_test {
     else
       writeln ("factorization failed for non-positive semi-definite matrix");
 
-     
+
     L = A;
 
-    writeln ("\n\n"); 
+    writeln ("\n\n");
     writeln ("scalar row major outer product cholesky factorization: " );
     writeln ( "  with explicit loops in place of vector operations: " );
 
@@ -147,7 +147,7 @@ module performance_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -161,10 +161,10 @@ module performance_cholesky_test {
     else
       writeln ("factorization failed for non-positive semi-definite matrix");
 
-     
+
     L = A;
 
-    writeln ("\n\n"); 
+    writeln ("\n\n");
     writeln ("scalar row major outer product cholesky factorization");
     writeln ( "  with explicit temporaries: " );
 
@@ -176,7 +176,7 @@ module performance_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -192,7 +192,7 @@ module performance_cholesky_test {
 
     L = A;
 
-    writeln ("\n\n"); 
+    writeln ("\n\n");
     writeln ("scalar row major outer product cholesky factorization");
     writeln ( "  with explicitly bounded iterations: " );
 
@@ -204,7 +204,7 @@ module performance_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -226,13 +226,13 @@ module performance_cholesky_test {
     L = A;
 
     clock.start ();
-    
+
     positive_definite = scalar_inner_product_cholesky ( L );
-    
+
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -250,13 +250,13 @@ module performance_cholesky_test {
     L = A;
 
     clock.start ();
-    
+
     positive_definite = scalar_bordering_cholesky ( L );
-    
+
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -266,8 +266,6 @@ module performance_cholesky_test {
       check_factorization ( A, L );
     else
       writeln ("factorization failed for non-positive semi-definite matrix");
-
-
   }
 
 
@@ -284,9 +282,9 @@ module performance_cholesky_test {
 
     assert ( A.domain.dim (1) == A.domain.dim (2)  &&
 	     L.domain.dim (1) == A.domain.dim (1)  &&
-	     L.domain.dim (2) == A.domain.dim (2) 
+	     L.domain.dim (2) == A.domain.dim (2)
 	     );
-    
+
     const mat_dom  = A.domain,
           mat_rows = A.domain.dim(1),
           n        = A.domain.dim(1).length;
@@ -300,9 +298,9 @@ module performance_cholesky_test {
 
     for i in mat_rows do
       d (i) = sqrt ( A (i,i) );
-    
+
     forall (i,j) in mat_dom with (ref max_ratio) do { // race
-      const resid : real  = abs (A (i,j) - 
+      const resid : real  = abs (A (i,j) -
 		    + reduce ( [k in mat_dom.dim(1) (..min (i,j))]
 			       L (i,k) * L (j,k) ) ) ;
       max_ratio = max ( max_ratio,
@@ -318,10 +316,10 @@ module performance_cholesky_test {
 
 
   proc print_lower_triangle ( L : [] ) {
-   
+
     if print_matrix_details then
       for (i_row, i_col) in zip( L.domain.dim(1), L.domain.dim(2) ) do
 	writeln (i_row, ":  ", L(i_row, ..i_col) );
   }
 }
-    
+

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,6 +35,16 @@ bool AstVisitorTraverse::enterAggrType(AggregateType* node)
 }
 
 void AstVisitorTraverse::exitAggrType(AggregateType* node)
+{
+
+}
+
+bool AstVisitorTraverse::enterUnmanagedClassType(UnmanagedClassType* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitUnmanagedClassType(UnmanagedClassType* node)
 {
 
 }
@@ -119,6 +129,16 @@ void AstVisitorTraverse::exitCallExpr(CallExpr* node)
 
 }
 
+bool AstVisitorTraverse::enterContextCallExpr(ContextCallExpr* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitContextCallExpr(ContextCallExpr* node)
+{
+
+}
+
 bool AstVisitorTraverse::enterDefExpr(DefExpr* node)
 {
   return true;
@@ -138,6 +158,16 @@ void AstVisitorTraverse::exitNamedExpr(NamedExpr* node)
 
 }
 
+bool AstVisitorTraverse::enterIfExpr(IfExpr* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitIfExpr(IfExpr* node)
+{
+
+}
+
 void AstVisitorTraverse::visitSymExpr(SymExpr* node)
 {
 
@@ -153,12 +183,37 @@ void AstVisitorTraverse::visitUseStmt(UseStmt* node)
 
 }
 
+bool AstVisitorTraverse::enterLoopExpr(LoopExpr* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitLoopExpr(LoopExpr* node)
+{
+
+}
+
 bool AstVisitorTraverse::enterBlockStmt(BlockStmt* node)
 {
   return true;
 }
 
 void AstVisitorTraverse::exitBlockStmt(BlockStmt* node)
+{
+
+}
+
+void AstVisitorTraverse::visitForallIntents(ForallIntents* clause)
+{
+
+}
+
+bool AstVisitorTraverse::enterForallStmt(ForallStmt* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitForallStmt(ForallStmt* node)
 {
 
 }
@@ -235,5 +290,43 @@ bool AstVisitorTraverse::enterGotoStmt(GotoStmt* node)
 
 void AstVisitorTraverse::exitGotoStmt(GotoStmt* node)
 {
+
+}
+
+bool AstVisitorTraverse::enterForwardingStmt(ForwardingStmt* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitForwardingStmt(ForwardingStmt* node)
+{
+
+}
+
+bool AstVisitorTraverse::enterDeferStmt(DeferStmt* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitDeferStmt(DeferStmt* node)
+{
+
+}
+
+bool AstVisitorTraverse::enterTryStmt(TryStmt* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitTryStmt(TryStmt* node)
+{
+
+}
+
+bool AstVisitorTraverse::enterCatchStmt(CatchStmt* node) {
+  return true;
+}
+
+void AstVisitorTraverse::exitCatchStmt(CatchStmt* node) {
 
 }

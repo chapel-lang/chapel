@@ -35,7 +35,7 @@ class FTree {
                                     // something that has not yet been set.
 
 
-    proc initialize() {
+    proc postinit() {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
     }
@@ -52,7 +52,7 @@ class FTree {
         
      */
     proc this(lvl: int, idx: int) ref {
-        if !indices.member((lvl, idx)) {
+        if !indices.contains((lvl, idx)) {
             indices += ((lvl, idx));
             nodes[(lvl, idx)] = new Coeff(coeffDom);
         }
@@ -60,7 +60,7 @@ class FTree {
         return nodes[(lvl, idx)].data;
     }
     proc this(lvl: int, idx: int) {
-        if !indices.member((lvl, idx)) {
+        if !indices.contains((lvl, idx)) {
             // This is a getter so it shouldn't be modifying what
             // we return, should be safe to return the zero vector.
             // FIXME: Zeroes should really be a const, but can'ti
@@ -100,14 +100,14 @@ class FTree {
      */ 
     iter lvl_iter(lvl: int) {
         for i in indices do
-            if i(1) == lvl && indices.member(i) then yield nodes[i].data;
+            if i(1) == lvl && indices.contains(i) then yield nodes[i].data;
     }
         
 
     /** Return a copy of this FTree
      */
     proc copy() {
-        var t = new FTree(order);
+        var t = new unmanaged FTree(order);
         t.indices = indices;
         // get around restriction of matching domains for assoc arrays
         forall i in t.nodes.domain do t.nodes(i) = nodes(i);
@@ -118,7 +118,7 @@ class FTree {
     /** Check if there are coefficients in box (lvl, idx)
      */
     proc has_coeffs(lvl: int, idx: int) {
-        return indices.member((lvl, idx));
+        return indices.contains((lvl, idx));
     }
 
 
@@ -126,13 +126,13 @@ class FTree {
         does not exist, it is ignored.
      */
     proc remove(lvl: int, idx: int) {
-        if indices.member((lvl, idx)) then indices.remove((lvl, idx));
+        if indices.contains((lvl, idx)) then indices.remove((lvl, idx));
     }
 }
 
 
 proc main() {
-    var f = new FTree(2);
+    var f = new unmanaged FTree(2);
 
     for (i, j) in {0..2, 0..2} do f[i, j] = (i, j);
 

@@ -1,10 +1,13 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
+
+#ifndef HWLOC_UTILS_MISC_H
+#define HWLOC_UTILS_MISC_H
 
 #include <private/autogen/config.h>
 #include <hwloc.h>
@@ -33,8 +36,8 @@ hwloc_utils_input_format_usage(FILE *where, int addspaces)
   fprintf (where, "                  %*sof another system\n",
 	   addspaces, " ");
 #endif
-  fprintf (where, "  --input \"n:2 2\"\n");
-  fprintf (where, "  -i \"n:2 2\"      %*sSimulate a fake hierarchy, here with 2 NUMA nodes of 2\n",
+  fprintf (where, "  --input \"node:2 2\"\n");
+  fprintf (where, "  -i \"node:2 2\"   %*sSimulate a fake hierarchy, here with 2 NUMA nodes of 2\n",
 	   addspaces, " ");
   fprintf (where, "                  %*sprocessors\n",
 	   addspaces, " ");
@@ -137,30 +140,30 @@ hwloc_utils_lookup_input_option(char *argv[], int argc, int *consumed_opts,
 static __hwloc_inline int
 hwloc_utils_enable_input_format(struct hwloc_topology *topology,
 				const char *input,
-				enum hwloc_utils_input_format input_format,
+				enum hwloc_utils_input_format *input_format,
 				int verbose, const char *callname)
 {
-  if (input_format == HWLOC_UTILS_INPUT_DEFAULT && !strcmp(input, "-.xml")) {
-    input_format = HWLOC_UTILS_INPUT_XML;
+  if (*input_format == HWLOC_UTILS_INPUT_DEFAULT && !strcmp(input, "-.xml")) {
+    *input_format = HWLOC_UTILS_INPUT_XML;
     input = "-";
   }
 
-  if (input_format == HWLOC_UTILS_INPUT_DEFAULT) {
+  if (*input_format == HWLOC_UTILS_INPUT_DEFAULT) {
     struct stat inputst;
     int err;
     err = stat(input, &inputst);
     if (err < 0) {
       if (verbose > 0)
 	printf("assuming `%s' is a synthetic topology description\n", input);
-      input_format = HWLOC_UTILS_INPUT_SYNTHETIC;
+      *input_format = HWLOC_UTILS_INPUT_SYNTHETIC;
     } else if (S_ISDIR(inputst.st_mode)) {
       if (verbose > 0)
 	printf("assuming `%s' is a file-system root\n", input);
-      input_format = HWLOC_UTILS_INPUT_FSROOT;
+      *input_format = HWLOC_UTILS_INPUT_FSROOT;
     } else if (S_ISREG(inputst.st_mode)) {
       if (verbose > 0)
 	printf("assuming `%s' is a XML file\n", input);
-      input_format = HWLOC_UTILS_INPUT_XML;
+      *input_format = HWLOC_UTILS_INPUT_XML;
     } else {
       fprintf (stderr, "Unrecognized input file: %s\n", input);
       usage (callname, stderr);
@@ -168,7 +171,7 @@ hwloc_utils_enable_input_format(struct hwloc_topology *topology,
     }
   }
 
-  switch (input_format) {
+  switch (*input_format) {
   case HWLOC_UTILS_INPUT_XML:
     if (!strcmp(input, "-"))
       input = "/dev/stdin";
@@ -207,33 +210,47 @@ hwloc_utils_enable_input_format(struct hwloc_topology *topology,
 static __hwloc_inline void
 hwloc_utils_print_distance_matrix(FILE *output, hwloc_topology_t topology, hwloc_obj_t root, unsigned nbobjs, unsigned reldepth, float *matrix, int logical)
 {
-  hwloc_obj_t objj, obji;
-  unsigned i, j;
+  hwloc_obj_t *objs, obj;
+  unsigned i, j, depth;
+
+  /* get objets */
+  objs = malloc(nbobjs * sizeof(*objs));
+  depth = root->depth + reldepth;
+  i = 0;
+  obj = NULL;
+  while ((obj = hwloc_get_next_obj_by_depth(topology, depth, obj)) != NULL) {
+    hwloc_obj_t myparent = obj->parent;
+    while (myparent->depth > root->depth)
+      myparent = myparent->parent;
+    if (myparent == root) {
+      assert(i < nbobjs);
+      objs[i++] = obj;
+    }
+  }
 
   /* column header */
   fprintf(output, "  index");
-  for(j=0, objj=NULL; j<nbobjs; j++) {
-    objj = hwloc_get_next_obj_inside_cpuset_by_depth(topology, root->cpuset, root->depth+reldepth, objj);
+  for(j=0; j<nbobjs; j++) {
     fprintf(output, " % 5d",
-	    (int) (logical ? objj->logical_index : objj->os_index));
+	    (int) (logical ? objs[j]->logical_index : objs[j]->os_index));
   }
   fprintf(output, "\n");
 
   /* each line */
-  for(i=0, obji=NULL; i<nbobjs; i++) {
-    obji = hwloc_get_next_obj_inside_cpuset_by_depth(topology, root->cpuset, root->depth+reldepth, obji);
+  for(i=0, obj=NULL; i<nbobjs; i++) {
     /* row header */
     fprintf(output, "  % 5d",
-	    (int) (logical ? obji->logical_index : obji->os_index));
+	    (int) (logical ? objs[i]->logical_index : objs[i]->os_index));
 
     /* row values */
-    for(j=0, objj=NULL; j<nbobjs; j++) {
-      objj = hwloc_get_next_obj_inside_cpuset_by_depth(topology, root->cpuset, root->depth+reldepth, objj);
+    for(j=0; j<nbobjs; j++) {
       for(j=0; j<nbobjs; j++)
 	fprintf(output, " %2.3f", matrix[i*nbobjs+j]);
       fprintf(output, "\n");
     }
   }
+
+  free(objs);
 }
 
 static __hwloc_inline hwloc_pid_t
@@ -267,19 +284,84 @@ hwloc_lstopo_show_summary(FILE *output, hwloc_topology_t topology)
     nbobjs = hwloc_get_nbobjs_by_depth (topology, depth);
     fprintf(output, "%*s", (int) depth, "");
     hwloc_obj_type_snprintf(type, sizeof(type), obj, 1);
-    fprintf (output,"depth %u:\t%u %s (type #%u)\n",
-	     depth, nbobjs, type, obj->type);
+    fprintf (output,"depth %u:\t%u %s (type #%d)\n",
+	     depth, nbobjs, type, (int) obj->type);
   }
   nbobjs = hwloc_get_nbobjs_by_depth (topology, HWLOC_TYPE_DEPTH_BRIDGE);
   if (nbobjs)
-    fprintf (output, "Special depth %d:\t%u %s (type #%u)\n",
+    fprintf (output, "Special depth %d:\t%u %s (type #%d)\n",
 	     HWLOC_TYPE_DEPTH_BRIDGE, nbobjs, "Bridge", HWLOC_OBJ_BRIDGE);
   nbobjs = hwloc_get_nbobjs_by_depth (topology, HWLOC_TYPE_DEPTH_PCI_DEVICE);
   if (nbobjs)
-    fprintf (output, "Special depth %d:\t%u %s (type #%u)\n",
+    fprintf (output, "Special depth %d:\t%u %s (type #%d)\n",
 	     HWLOC_TYPE_DEPTH_PCI_DEVICE, nbobjs, "PCI Device", HWLOC_OBJ_PCI_DEVICE);
   nbobjs = hwloc_get_nbobjs_by_depth (topology, HWLOC_TYPE_DEPTH_OS_DEVICE);
   if (nbobjs)
-    fprintf (output, "Special depth %d:\t%u %s (type #%u)\n",
+    fprintf (output, "Special depth %d:\t%u %s (type #%d)\n",
 	     HWLOC_TYPE_DEPTH_OS_DEVICE, nbobjs, "OS Device", HWLOC_OBJ_OS_DEVICE);
 }
+
+
+/*************************
+ * Importing/exporting userdata buffers without understanding/decoding/modifying them
+ * Caller must putenv("HWLOC_XML_USERDATA_NOT_DECODED=1") before loading the topology.
+ */
+
+struct hwloc_utils_userdata {
+  char *name;
+  size_t length;
+  char *buffer; /* NULL if userdata entry in the list is not meant to be exported to XML (added by somebody else) */
+  struct hwloc_utils_userdata *next;
+};
+
+static __hwloc_inline void
+hwloc_utils_userdata_import_cb(hwloc_topology_t topology __hwloc_attribute_unused, hwloc_obj_t obj, const char *name, const void *buffer, size_t length)
+{
+  struct hwloc_utils_userdata *u, **up = (struct hwloc_utils_userdata **) &obj->userdata;
+  while (*up)
+    up = &((*up)->next);
+  *up = u = malloc(sizeof(struct hwloc_utils_userdata));
+  u->name = strdup(name);
+  u->length = length;
+  u->buffer = strdup(buffer);
+  u->next = NULL;
+}
+
+static __hwloc_inline void
+hwloc_utils_userdata_export_cb(void *reserved, hwloc_topology_t topology, hwloc_obj_t obj)
+{
+  struct hwloc_utils_userdata *u = obj->userdata;
+  while (u) {
+    if (u->buffer) /* not meant to be exported to XML (added by somebody else) */
+      hwloc_export_obj_userdata(reserved, topology, obj, u->name, u->buffer, u->length);
+    u = u->next;
+  }
+}
+
+/* must be called once the caller has removed its own userdata */
+static __hwloc_inline void
+hwloc_utils_userdata_free(hwloc_obj_t obj)
+{
+  struct hwloc_utils_userdata *u = obj->userdata, *next;
+  while (u) {
+    next = u->next;
+    assert(u->buffer);
+    free(u->name);
+    free(u->buffer);
+    free(u);
+    u = next;
+  }
+  obj->userdata = NULL;
+}
+
+/* must be called once the caller has removed its own userdata */
+static __hwloc_inline void
+hwloc_utils_userdata_free_recursive(hwloc_obj_t obj)
+{
+  hwloc_obj_t child;
+  hwloc_utils_userdata_free(obj);
+  for (child = obj->first_child; child; child = child->next_sibling)
+    hwloc_utils_userdata_free_recursive(child);
+}
+
+#endif /* HWLOC_UTILS_MISC_H */

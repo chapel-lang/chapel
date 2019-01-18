@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,9 +25,6 @@
 #include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
-
-// This file needs to be able to use real allocator names
-#include "chpl-mem-no-warning-macros.h"
 
 // This file always declares this function at least.
 void chpl_mem_replace_malloc_if_needed(void);
@@ -231,7 +228,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size)
     *memptr = NULL;
     ret = chpl_posix_memalign_check_valid(alignment);
     if( ret ) return ret;
-    *memptr = memalign(alignment, size);
+    *memptr = __libc_memalign(alignment, size);
     if( ! *memptr ) return ENOMEM;
     if( DEBUG_REPLACE_MALLOC ) 
       printf("in early posix_memalign %p = system posix_memalign(%#x)\n",

@@ -5,20 +5,21 @@
 
 record R {
   var _i : int;
-  proc R(i : int) { _i = i; }
+  proc init(i : int) { _i = i; }
 }
 
-record S : R {
+record S {
+  var _i : int;
   var _r : real;
-  proc S(i : int) { _i = i; _r = 3.1416; }
+  proc init(i : int) { _i = i; _r = 3.1416; }
 }
 
-proc select(param derived = false) type {
+proc chooseARecordType(param derived = false) type {
   if (derived) then return S;
   else return R;
 }
   
-var v = new select(true)(3);
+var v = new chooseARecordType(true)(3);
 
 writeln(v);
 

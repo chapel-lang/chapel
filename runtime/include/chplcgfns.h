@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -39,12 +39,15 @@
 /* defined in chpl_compilation_config.c: */
 extern const char* chpl_compileCommand;
 extern const char* chpl_compileVersion;
+extern const char* chpl_compileDirectory;
+extern const char* chpl_saveCDir;
+
 extern const char* CHPL_HOME;
 extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;
 extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_TARGET_COMPILER;
-extern const char* CHPL_TARGET_ARCH;
+extern const char* CHPL_TARGET_CPU;
 extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
@@ -59,22 +62,31 @@ extern const char* CHPL_NETWORK_ATOMICS;
 extern const char* CHPL_GMP;
 extern const char* CHPL_HWLOC;
 extern const char* CHPL_REGEXP;
-extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
+extern const char* CHPL_UNWIND;
+extern const char* CHPL_RUNTIME_LIB;
+extern const char* CHPL_RUNTIME_INCL;
+extern const char* CHPL_THIRD_PARTY;
 extern const int CHPL_STACK_CHECKS;
 extern const int CHPL_CACHE_REMOTE;
 
 // Sorted lookup table of filenames used with insertLineNumbers for error
 // messages and logging. Defined in chpl_compilation_config.c (needed by launchers)
-extern c_string chpl_filenameTable[];
+extern const c_string chpl_filenameTable[];
 extern const int32_t chpl_filenameTableSize;
 
-/* defined in main.c */
+// Lookup tables used as a symbol table by the stack unwinder for translating
+// C symbols into Chapel symbols. Defined in chpl_compilation_config.c
+extern const c_string chpl_funSymTable[];
+extern const int chpl_filenumSymTable[];
+extern const int32_t chpl_sizeSymTable;
+
 extern char* chpl_executionCommand;
 
 /* generated */
-extern chpl_fn_p chpl_ftable[];
+extern const chpl_fn_p chpl_ftable[];
+extern const chpl_fn_info chpl_finfo[];
 
 extern void chpl__initStringLiterals(void);
 
@@ -88,11 +100,6 @@ extern int64_t chpl_gen_main(chpl_main_argument* const _arg);
 
 /* used for config vars: */
 extern void CreateConfigVarTable(void);
-
-/* used by copy collection: */
-
-//extern size_t cid2size(chpl__class_id cid);
-//extern size_t* cid2offsets(chpl__class_id cid);
 
 /* These are defined in _type_structure.c if
    --gen-communicated-structures is true and are used by a

@@ -51,9 +51,9 @@ proc main() {
 	//list of atoms in LIZ for each atom
 	var lizDoms: [GridDist] sparse subdomain(GridDom);
 	//list of atoms accessed by local atoms, for each locale
-	var caches: [LocalesDist] Cache;
+	var caches: [LocalesDist] unmanaged Cache;
 	forall cache in caches {
-		cache = new Cache();
+		cache = new unmanaged Cache();
 	}
 
 	//compute LIZ and caches
@@ -73,7 +73,7 @@ proc main() {
 
 	//initialize atom values
 	forall (i, atom) in zip(GridDist, atoms) {
-		local for param e in 1..nExtent do atom[e] = GridDist.indexOrder(i);
+		local do for param e in 1..nExtent do atom[e] = GridDist.indexOrder(i);
 	}
 	
 	t.start();
@@ -111,6 +111,9 @@ proc main() {
 
 	writeln("Success!");
 	if perfTest then writeln("Chapel time = ", t.elapsed(), " s");
+
+        forall cache in caches do
+          delete cache;
 }
 
 proc checkExpected(itr: int, atoms: [?AtomDom] AtomMatrix) {

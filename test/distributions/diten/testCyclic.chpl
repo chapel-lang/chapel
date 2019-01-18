@@ -9,7 +9,7 @@ writeln("myLocales = ", myLocales);
 // TODO: That int(64) is really unfortunate.  We really need param
 // domains and ranges and the obvious conversions between them.
 // 
-const ProblemDist = new Cyclic1DDist(targetLocales=myLocales);
+const ProblemDist = new unmanaged Cyclic1DDist(targetLocales=myLocales);
 const ProblemDom = ProblemDist.newDomain({-5..5:int(64)});
 
 var A = ProblemDom.newArray(real);
@@ -46,3 +46,8 @@ writeln(A);
 writeln(B);
 writeln(C);
 
+delete C;
+delete B;
+delete A;
+delete ProblemDom;
+delete ProblemDist;

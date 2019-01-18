@@ -2,10 +2,10 @@ class C {
   var x : int;
 }
 
-var c = new C();
+var c = new borrowed C();
 
 proc foo() {
-  proc bar(c : C) {
+  proc bar(c : borrowed C) {
     writeln("in bar");
   }
   writeln("in foo");

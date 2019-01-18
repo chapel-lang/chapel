@@ -1,0 +1,7 @@
+main start
+driver start
+driver idx1 5
+driver idx1 6
+uncaught Error: 
+  abort-loop-vs-init-pragma.chpl:15: thrown here
+  abort-loop-vs-init-pragma.chpl:30: uncaught here

@@ -1,18 +1,13 @@
 // Verifies updates to 'this' within tasks/on blocks within
 // a constructor or a method.
 
-// Style note: I use chpl_task_sleep to avoid 'sync' statements.
-// I avoid 'sync' statements and do not import the Time module
-// - in order to reduce the size of the AST and the generated code.
-// That is useful for ease of debugging.
-
-extern proc chpl_task_sleep(t:uint): void;
 const loc = Locales[numLocales-1];
 
 record RR {
   var xx, yy: int;
-  // the default constructor
-  proc RR() {
+  // the default initializer
+  proc init() {
+    this.complete();
     var done$: sync bool;
     on loc {
       this.xx = 555;
@@ -39,8 +34,9 @@ record RR {
 
 record QQ {
   var aa, bb: int;
-  // non-default constructor
-  proc QQ(cc: int, dd: int) {
+  // non-default initializer
+  proc init(cc: int, dd: int) {
+    this.complete();
     var done$: sync bool;
     on loc {
       this.aa = cc;

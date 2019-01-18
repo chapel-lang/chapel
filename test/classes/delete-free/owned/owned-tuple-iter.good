@@ -1,0 +1,15 @@
+test1
+{x = 1}:_owned(C)
+{x = 2}:_owned(C)
+{x = 1}:_owned(C)
+{x = 2}:_owned(C)
+test2
+{x = 1}:_owned(C)
+{x = 2}:_owned(C)
+{x = 1}:_owned(C)
+{x = 2}:_owned(C)
+test3
+{x = 1}:_owned(C)
+{x = 2}:_owned(C)
+{x = 1}:_owned(C)
+{x = 2}:_owned(C)

@@ -1,11 +1,13 @@
 class mything {
   var x:int;
   var y:int;
+
   proc readThis(r) {
     r <~> x;
     r <~> new ioLiteral(" ");
     r <~> y;
   }
+
   proc writeThis(w) {
     w <~> x;
     w <~> new ioLiteral(" ");
@@ -15,7 +17,7 @@ class mything {
 }
 
 {
-  var a = new mything(1);
+  var a = new borrowed mything(1);
 
   writeln("Writing ", a);
 
@@ -27,9 +29,9 @@ class mything {
 
   var r = f.reader();
 
-  var b = new mything(2);
-  r.read(b);
+  var b = new borrowed mything(2);
 
+  r.read(b);
   r.close();
 
   writeln("Read ", b);

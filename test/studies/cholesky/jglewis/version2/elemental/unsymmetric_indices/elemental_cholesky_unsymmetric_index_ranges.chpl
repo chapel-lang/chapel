@@ -53,7 +53,7 @@ module elemental_cholesky_unsymmetric_index_ranges {
   // via its native task parallelism constructs.  The lack of a standard way
   // to replicate data and computation across tasks requires this emulation of
   // the SPMD style.  We expect that later versions will fit the native Chapel
-  // execution model more closely.  Barriers are implemented in the Barrier
+  // execution model more closely.  Barriers are implemented in the Barriers
   // standard module for synchronization beyond the specific functionality of
   // coforall and sync statements.
   // =========================================================================
@@ -67,7 +67,7 @@ module elemental_cholesky_unsymmetric_index_ranges {
   // the implementation of such local declarations.
   // =========================================================================
 
-  use CyclicDist, Barrier;
+  use CyclicDist, Barriers;
 
   use elemental_gen_schur_complement, 
       locality_info, 
@@ -84,7 +84,7 @@ module elemental_cholesky_unsymmetric_index_ranges {
     // processor grid from A's distribution
     // --------------------------------------------
 
-    const A_locale_grid = A.domain.dist._value.targetLocs;
+    const A_locale_grid = A.domain.dist.targetLocales();
     const A_grid_domain = A_locale_grid.domain,
           n_processors  = A_grid_domain.numIndices;
 
@@ -259,7 +259,6 @@ module elemental_cholesky_unsymmetric_index_ranges {
 	  }
       }
     }
-    delete bar;
 
     // return success 
 

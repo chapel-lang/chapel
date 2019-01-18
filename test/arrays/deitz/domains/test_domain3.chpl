@@ -71,7 +71,7 @@ class mydomain {
   }
 }
 
-var D : mydomain(rank=2) = new mydomain(rank=2);
+var D : borrowed mydomain(rank=2) = new borrowed mydomain(rank=2);
 D.dimInit(1, 1, 3, 1);
 D.dimInit(2, 1, 4, 1);
 writeln(D);
@@ -81,4 +81,3 @@ writeln(D.dforall(2));
 
 writeln(D.dfor(1));
 writeln(D.dfor(2));
-

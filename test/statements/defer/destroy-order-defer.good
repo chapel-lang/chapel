@@ -1,0 +1,10 @@
+defer post 4
+Destroying 4
+defer post 3
+Destroying 3
+defer pre 3
+defer post 2
+Destroying 2
+defer post 1
+Destroying 1
+defer pre 1

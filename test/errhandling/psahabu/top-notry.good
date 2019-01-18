@@ -1,0 +1,4 @@
+should not continue
+uncaught Error: 
+  ../ExampleErrors.chpl:2: thrown here
+  top-notry.chpl:5: uncaught here

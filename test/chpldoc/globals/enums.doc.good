@@ -1,10 +1,29 @@
-enums.doc
-   enum Color { Red, Yellow, Blue }
-      This is a color enum. 
+.. default-domain:: chpl
 
-   var typed: Color
-      This variable is of type Color 
-   const Red = Color.Red
-      This constant is for the color Red 
-   var foo: Color = Color.Blue
-      This variable has a type and a default value 
+.. module:: enums.doc
+
+enums.doc
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use enums.doc;
+
+.. enum:: enum Color { Red, Yellow, Blue }
+
+   This is a color enum. 
+
+
+.. data:: var typed: Color
+
+   This variable is of type Color 
+
+.. data:: const Red = Color.Red
+
+   This constant is for the color Red 
+
+.. data:: var foo: Color = Color.Blue
+
+   This variable has a type and a default value 
+

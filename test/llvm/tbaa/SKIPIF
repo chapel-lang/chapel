@@ -1,0 +1,3 @@
+CHPL_LLVM==none
+COMPOPTS <= --baseline
+COMPOPTS <= --no-local

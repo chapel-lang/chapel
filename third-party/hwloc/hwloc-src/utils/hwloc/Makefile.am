@@ -1,5 +1,5 @@
-# Copyright © 2009-2015 Inria.  All rights reserved.
-# Copyright © 2009-2012, 2014 Université Bordeaux
+# Copyright © 2009-2018 Inria.  All rights reserved.
+# Copyright © 2009-2012, 2014, 2016 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 #
 # See COPYING in top-level directory.
@@ -33,8 +33,11 @@ bin_PROGRAMS = \
         hwloc-distances \
         hwloc-distrib \
         hwloc-info \
-        hwloc-patch \
-        hwloc-ps
+        hwloc-patch
+
+if !HWLOC_HAVE_WINDOWS
+bin_PROGRAMS += hwloc-ps
+endif
 
 if HWLOC_HAVE_LINUX
 if HWLOC_HAVE_X86
@@ -45,6 +48,7 @@ endif HWLOC_HAVE_LINUX
 hwloc_dump_hwdata_SOURCES = \
 	hwloc-dump-hwdata.c \
 	hwloc-dump-hwdata-knl.c
+hwloc_dump_hwdata_CPPFLAGS = $(AM_CPPFLAGS) -DRUNSTATEDIR=\"$(HWLOC_runstatedir)\"
 
 hwloc_calc_SOURCES = \
         hwloc-calc.h \
@@ -70,6 +74,10 @@ TESTS += test-fake-plugin.sh
 endif HWLOC_HAVE_PLUGINS
 endif !HWLOC_HAVE_MINGW32
 
+SEDMAN = $(SED) -e 's/%PACKAGE_NAME%/@PACKAGE_NAME@/g' \
+	  -e 's/%PACKAGE_VERSION%/@PACKAGE_VERSION@/g' \
+	  -e 's/%HWLOC_DATE%/@HWLOC_RELEASE_DATE@/g'
+
 # Only install man pages if we're building in standalone mode
 man7_pages = hwloc.7
 EXTRA_DIST += $(man7_pages:.7=.7in)
@@ -86,15 +94,7 @@ man1_pages = \
         hwloc-distances.1 \
         hwloc-distrib.1 \
         hwloc-info.1 \
-        hwloc-patch.1 \
-        hwloc-ps.1
-
-if HWLOC_HAVE_LINUX
-if HWLOC_HAVE_X86
-man1_pages += hwloc-dump-hwdata.1in
-endif HWLOC_HAVE_X86
-endif HWLOC_HAVE_LINUX
-
+        hwloc-patch.1
 EXTRA_DIST += $(man1_pages:.1=.1in)
 nodist_man_MANS += $(man1_pages)
 
@@ -107,35 +107,42 @@ if HWLOC_HAVE_LINUX
 nodist_man_MANS += $(hgt_page)
 endif HWLOC_HAVE_LINUX
 
+# Same for hwloc-ps on !Windows
+hps_page = hwloc-ps.1
+EXTRA_DIST += $(hps_page:.1=.1in)
+if !HWLOC_HAVE_WINDOWS
+nodist_man_MANS += $(hps_page)
+endif
+
 # Same for dump-hwdata page on Linux/x86
 hdh_page = hwloc-dump-hwdata.1
 EXTRA_DIST += $(hdh_page:.1=.1in)
 if HWLOC_HAVE_LINUX
+# WARNING: The SEDMAN line below isn't portable ($(subst ...) is GNU-make only).
+# Keep this rule Linux-only, or stop using $(subst ...). See issue #187.
 if HWLOC_HAVE_X86
 nodist_man_MANS += $(hdh_page)
+hwloc-dump-hwdata.1: hwloc-dump-hwdata.1in
+	@ echo Creating $@ man page...
+	@ $(SEDMAN) \
+	  -e 's/%RUNSTATEDIR%/$(subst /,\/,$(HWLOC_runstatedir))/g' \
+	  > $@ < $<
 endif HWLOC_HAVE_X86
 endif HWLOC_HAVE_LINUX
 
-
 .1in.1:
 	@ echo Creating $@ man page...
-	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
-	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
-	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
+	@ $(SEDMAN) \
 	  > $@ < $<
 
 .3in.3:
 	@ echo Creating $@ man page...
-	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
-	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
-	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
+	@ $(SEDMAN) \
 	  > $@ < $<
 
 .7in.7:
 	@ echo Creating $@ man page...
-	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
-	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
-	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
+	@ $(SEDMAN) \
 	  > $@ < $<
 
 install-exec-hook:

@@ -1,2 +1,23 @@
+.. default-domain:: chpl
+
+.. module:: externTest.doc
+
 externTest.doc
-   externTest.Other
+==============
+**Usage**
+
+.. code-block:: chapel
+
+   use externTest.doc;
+
+.. default-domain:: chpl
+
+..module:: Other
+
+Other
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use externTest.doc.Other;

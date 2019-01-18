@@ -23,6 +23,7 @@ statement:
   continue-statement
   param-for-statement
   use-statement
+  defer-statement
   empty-statement
   return-statement
   yield-statement
@@ -101,8 +102,8 @@ expression-statement:
   variable-expression ;
   member-access-expression ;
   call-expression ;
-  constructor-call-expression ;
-  let-expression ; 
+  new-expression ;
+  let-expression ;
 \end{syntax}
 
 \section{Assignment Statements}
@@ -356,12 +357,15 @@ A,other
 \end{chapeloutput}
 \end{chapelexample}
 
+\pagebreak
 \section{The Select Statement}
 \label{The_Select_Statement}
 \index{select@\chpl{select}}
 \index{when@\chpl{when}}
+\index{otherwise@\chpl{otherwise}}
 \index{statements!select@\chpl{select}}
 \index{statements!when@\chpl{when}}
+\index{statements!otherwise@\chpl{otherwise}}
 
 The select statement is a multi-way variant of the conditional
 statement.  The syntax is given by:
@@ -377,6 +381,7 @@ when-statement:
   `when' expression-list `do' statement
   `when' expression-list block-statement
   `otherwise' statement
+  `otherwise' `do' statement
 
 expression-list:
   expression
@@ -396,7 +401,7 @@ will be selected and control transferred to it.  There may be at most
 one \chpl{otherwise} statement and its location within the select
 statement does not matter.
 
-Each statement embedded in the {\em when-statement} has its own scope
+Each statement embedded in the {\em when-statement} or the {\em otherwise-statement} has its own scope
 whether or not an explicit block surrounds it.
 
 \section{The While Do and Do While Loops}
@@ -421,6 +426,7 @@ In both variants, the expression evaluates to a value of type \chpl{bool}
 which determines when the loop terminates and control continues with
 the statement following the loop.
 
+\pagebreak
 The while-do loop is executed as follows:
 \begin{enumerate}
 \item The expression is evaluated.
@@ -473,13 +479,14 @@ Scope of while loop:
 \end{chapelprintoutput}
 \end{chapelexample}
 
+\pagebreak
 Chapel do-while loops differ from those found in most other languages in
 one important regard.  If the body of a do-while statement is a block
 statement and new variables are defined within that block statement,
 then the scope of those variables extends to cover the loop's
 termination expression.
 \begin{chapelexample}{do-while.chpl}
-The following example demonstrates that the scope of the variable t 
+The following example demonstrates that the scope of the variable t
 includes the loop termination expression.
 \begin{chapel}
 var i = 0;
@@ -536,7 +543,7 @@ The \sntx{index-var-declaration} is optional and may be omitted if the
 indices do not need to be referenced in the loop.
 
 If the iteratable-expression begins with the keyword \chpl{zip} followed
-by a parenthesized expression-list, the listed expressions must support 
+by a parenthesized expression-list, the listed expressions must support
 zipper iteration.
 
 \subsection{Zipper Iteration}
@@ -578,18 +585,19 @@ Parameter for loops are unrolled by the compiler so that the index
 variable is a parameter rather than a variable.  The syntax for a
 parameter for loop statement is given by:
 \begin{syntax}
-param-iteratable-expression:
-  range-literal
-  range-literal `by' integer-literal
-
 param-for-statement:
   `for' `param' identifier `in' param-iteratable-expression `do' statement
   `for' `param' identifier `in' param-iteratable-expression block-statement
+
+param-iteratable-expression:
+  range-literal
+  range-literal `by' integer-literal
 \end{syntax}
 Parameter for loops are restricted to iteration over range literals
 with an optional by expression where the bounds and stride must be
 parameters.  The loop is then unrolled for each iteration.
 
+\pagebreak
 \section{The Break, Continue and Label Statements}
 \label{Label_Break_Continue}
 \index{statements!jumps}
@@ -628,7 +636,7 @@ label-statement:
   `label' identifier statement
 \end{syntax}
 
-Break-statements cannot be used to exit parallel loops.  
+A \chpl{break} statement cannot be used to exit a parallel loop \rsec{Forall}.
 
 \begin{rationale}
 Breaks are not permitted in parallel loops because the execution order
@@ -663,10 +671,341 @@ label outer for i in 1..n {
 \index{use@\chpl{use}}
 \index{statements!use@\chpl{use}}
 \index{modules!using}
+\index{types!enumerated!using}
 
-The use statement makes symbols in each listed module's scope
-available from the scope where the use statement occurs.  For more
-information on use statements, see~\rsec{Using_Modules}.
+The use statement provides access to the constants in an enumerated type or
+the public symbols of a module within the scope in which it appears without
+the need to provide a full qualified path.
+
+The syntax of the use statement is given by:
+
+\begin{syntax}
+use-statement:
+  `use' module-or-enum-name-list ;
+
+module-or-enum-name-list:
+  module-or-enum-name limitation-clause[OPT]
+  module-or-enum-name , module-or-enum-name-list
+
+module-or-enum-name:
+  identifier
+  identifier . module-or-enum-name
+
+limitation-clause:
+  `except' exclude-list
+  `only' rename-list[OPT]
+
+exclude-list:
+  identifier-list
+  $ * $
+
+rename-list:
+  rename-base
+  rename-base , rename-list
+
+rename-base:
+  identifier `as' identifier
+  identifier
+\end{syntax}
+
+For example, the program
+\begin{chapelexample}{use1.chpl}
+\begin{chapel}
+module M1 {
+  proc foo() {
+    writeln("In M1's foo.");
+  }
+}
+
+module M2 {
+  proc main() {
+    writeln("In M2's main.");
+    M1.foo();
+  }
+}
+\end{chapel}
+prints out
+\begin{chapelprintoutput}{}
+In M2's main.
+In M1's foo.
+\end{chapelprintoutput}
+\end{chapelexample}
+
+This program is equivalent to:
+\begin{chapelexample}{use2.chpl}
+\begin{chapel}
+module M1 {
+  proc foo() {
+    writeln("In M1's foo.");
+  }
+}
+
+module M2 {
+  proc main() {
+    use M1;
+
+    writeln("In M2's main.");
+    foo();
+  }
+}
+\end{chapel}
+
+which also prints out
+\begin{chapelprintoutput}{}
+In M2's main.
+In M1's foo.
+\end{chapelprintoutput}
+\end{chapelexample}
+
+The names that are imported by a use statement are inserted in to a
+new scope that immediately encloses the scope within which the
+statement appears.  This implies that the position of the use
+statement within a scope has no effect on its behavior.  If a scope
+includes multiple use statements then the imported names are inserted
+in to a common enclosing scope.
+
+An error is signaled if multiple enumeration constants or public module-level
+symbols would be inserted into this enclosing scope with the same name, and
+that name is referenced by other statements in the same scope as the use.
+
+
+Use statements are transitive by default: if a module A uses a module
+B, and module B contains a use of a module or enumerated type C, then
+C's public symbols may also be visible within A.  The exception to
+this occurs when B has public symbols that shadow symbols with the
+same name in C.
+
+This notion of transitivity extends to the case in which a scope
+imports symbols from multiple modules or constants from multiple
+enumeration types.  For example if a module A uses modules B1, B2, B3
+and modules B1, B2, B3 use modules C1, C2, C3 respectively, then all
+of the public symbols in B1, B2, B3 have the potential to shadow the
+public symbols of C1, C2, and C3.  However an error is signaled if
+C1, C2, C3 have public module level definitions of the same symbol.
+
+% We would like to provide a way to specify that a use should not be
+% transitive
+
+An optional \sntx{limitation-clause} may be provided to limit the symbols made
+available by the use statement.  If an \chpl{except} list is provided, then all
+the visible but unlisted symbols in the module or enumerated type will be made
+available without prefix.  If an \chpl{only} list is provided, then just the
+listed visible symbols in the module or enumerated type will be made available
+without prefix.  All visible symbols not provided via these limited use
+statements are still accessible with the module or enumerated type name prefix.
+It is an error to provide a name in a \sntx{limitation-clause} that does not
+exist or is not visible in the respective module or enumerated type.
+
+If an \chpl{only} list is left empty or \chpl{except} is followed by $*$ then no
+symbols are made available to the scope without prefix.  However, any methods or
+fields defined within a module used in this way will still be accessible on
+instances of the type.  For example:
+
+\begin{chapelexample}{limited-access.chpl}
+\begin{chapel}
+module M1 {
+  record A {
+    var x = 1;
+
+    proc foo() {
+      writeln("In A.foo()");
+    }
+  }
+}
+
+module M2 {
+  proc main() {
+    use M1 only;
+
+    var a = new M1.A(3); // Only accessible via the module prefix
+    writeln(a.x); // Accessible because we have a record instance
+    a.foo(); // Ditto
+  }
+}
+\end{chapel}
+
+will print out
+\begin{chapelprintoutput}{}
+3
+In A.foo()
+\end{chapelprintoutput}
+\end{chapelexample}
+
+Within an \chpl{only} list, a visible symbol from that module may optionally be
+given a new name using the \chpl{as} keyword.  This new name will be usable from
+the scope of the use in place of the old name unless the old name is
+additionally specified in the \chpl{only} list.  If a use which renames a symbol
+is present at module scope, uses of that module will also be able to reference
+that symbol using the new name instead of the old name.  Renaming does not
+affect accesses to that symbol via the source module's or enumerated type's
+prefix, nor does it affect uses of that module or enumerated type from other
+contexts.  It is an error to attempt to rename a symbol that does not exist or
+is not visible in the respective module or enumerated type, or to rename a
+symbol to a name that is already present in the same \chpl{only} list.  It is,
+however, perfectly acceptable to rename a symbol to a name present in the
+respective module or enumerated type which was not specified via
+that \chpl{only} list.
+
+If a use statement mentions multiple modules or enumerated types or a mix of
+these symbols, only the last module or enumerated type can have a
+\sntx{limitation-clause}.  Limitation clauses are applied transitively as well
+- in the first example, if module A's use of module B contains an \chpl{except}
+or \chpl{only} list, that list will also limit which of C's symbols are visible
+to A.
+
+For more information on enumerated types, please see~\rsec{Enumerated_Types}.
+For use statement rules which are only applicable to modules, please
+see~\rsec{Using_Modules}.  For more information on modules in general, please
+see~\rsec{Modules}.
+
+
+\section{The Defer Statement}
+\label{The_Defer_Statement}
+\index{defer@\chpl{defer}}
+\index{statements!defer@\chpl{defer}}
+
+A \chpl{defer} statement declares a clean-up action to be run when
+exiting a block.
+\chpl{defer} is useful because the clean-up action will be run no
+matter how the block is exited.
+
+The syntax is:
+
+\begin{syntax}
+defer-statement:
+  `defer' statement
+\end{syntax}
+
+At a given place where control flow exits a block, the in-scope
+\chpl{defer} statements and the local variables will be handled in
+reverse declaration order. Handling a \chpl{defer} statement consists of
+executing the contained clean-up action. Handling a local variable
+consists of running its deinitializer if it is of record type.
+
+When an iterator contains a \chpl{defer} statement at the top level, the
+associated clean-up action will be executed when the loop running the
+iterator exits. \chpl{defer} actions inside a loop body are executed
+when that iteration completes.
+
+The following program demonstrates a simple use of \chpl{defer}
+to create an action to be executed when returning from a function:
+
+\begin{chapelexample}{defer1.chpl}
+\begin{chapel}
+class Integer {
+  var x:int;
+}
+proc deferInFunction() {
+  var c = new unmanaged Integer(1);
+  writeln("created ", c);
+  defer {
+    writeln("defer action: deleting ", c);
+    delete c;
+  }
+  // ... (function body, possibly including return statements)
+  // The defer action is executed no matter how this function returns.
+}
+deferInFunction();
+\end{chapel}
+produces the output
+\begin{chapeloutput}
+created {x = 1}
+defer action: deleting {x = 1}
+\end{chapeloutput}
+\begin{commandline}
+created {x = 1}
+defer action: deleting {x = 1}
+\end{commandline}
+\end{chapelexample}
+
+
+The following example uses a nested block to demonstrate that \chpl{defer}
+is handled when exiting the block in which it is contained:
+
+
+\begin{chapelexample}{defer2.chpl}
+\begin{chapel}
+class Integer {
+  var x:int;
+}
+proc deferInNestedBlock() {
+  var i = 1;
+  writeln("before inner block");
+  {
+    var c = new unmanaged Integer(i);
+    writeln("created ", c);
+    defer {
+      writeln("defer action: deleting ", c);
+      delete c;
+    }
+    writeln("in inner block");
+    // note, defer action is executed no matter how this block is exited
+  }
+  writeln("after inner block");
+}
+deferInNestedBlock();
+\end{chapel}
+produces the output
+\begin{chapeloutput}
+before inner block
+created {x = 1}
+in inner block
+defer action: deleting {x = 1}
+after inner block
+\end{chapeloutput}
+\begin{commandline}
+before inner block
+created {x = 1}
+in inner block
+defer action: deleting {x = 1}
+after inner block
+\end{commandline}
+
+\end{chapelexample}
+
+Lastly, this example shows that when \chpl{defer} is used in a loop, the
+action will be executed for every loop iteration, whether or not loop
+body is exited early.
+
+\begin{chapelexample}{defer3.chpl}
+\begin{chapel}
+class Integer {
+  var x:int;
+}
+proc deferInLoop() {
+  for i in 1..10 {
+    var c = new unmanaged Integer(i);
+    writeln("created ", c);
+    defer {
+      writeln("defer action: deleting ", c);
+      delete c;
+    }
+    writeln(c);
+    if i == 2 then
+      break;
+  }
+}
+deferInLoop();
+\end{chapel}
+produces the output
+\begin{chapeloutput}
+created {x = 1}
+{x = 1}
+defer action: deleting {x = 1}
+created {x = 2}
+{x = 2}
+defer action: deleting {x = 2}
+\end{chapeloutput}
+\begin{commandline}
+created {x = 1}
+{x = 1}
+defer action: deleting {x = 1}
+created {x = 2}
+{x = 2}
+defer action: deleting {x = 2}
+\end{commandline}
+\end{chapelexample}
+
 
 \section{The Empty Statement}
 \label{The_Empty_Statement}

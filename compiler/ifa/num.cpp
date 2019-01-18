@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -51,7 +51,7 @@ sprint_complex_val(char* str, double real, double imm) {
 }
 
 int 
-snprint_imm(char *str, size_t max, char *control_string, Immediate &imm) {
+snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm) {
   int res = -1;
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
@@ -117,7 +117,7 @@ snprint_imm(char *str, size_t max, char *control_string, Immediate &imm) {
 }
 
 int 
-snprint_imm(char *str, size_t max, Immediate &imm) {
+snprint_imm(char *str, size_t max, const Immediate &imm) {
   int res = -1;
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
@@ -189,7 +189,7 @@ snprint_imm(char *str, size_t max, Immediate &imm) {
 }
 
 int 
-fprint_imm(FILE *fp, Immediate &imm, bool showType) {
+fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
   int res = -1;
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
@@ -363,7 +363,13 @@ coerce_immediate(Immediate *from, Immediate *to) {
   if (base == 0 && exp < 0) {                            \
     USR_FATAL("0 cannot be raised to a negative power"); \
   } else if (exp < 0) {                                  \
-    res = 0;                                             \
+    if (base == 1) {                                     \
+      res = 1;                                           \
+    } else if (base == -1) {                             \
+      res = exp % 2 == 0 ? 1 : -1;                       \
+    } else {                                             \
+      res = 0;                                           \
+    }                                                    \
   } else {                                               \
     type i = exp;                                        \
     type z = base;                                       \

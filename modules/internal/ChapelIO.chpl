@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,11 +20,11 @@
 /*
 
 Basic types and utilities in support of I/O operation.
- 
+
 Most of Chapel's I/O support is within the :mod:`IO` module.  This section
 describes automatically included basic types and routines that support the
 :mod:`IO` module.
- 
+
 Writing and Reading
 ~~~~~~~~~~~~~~~~~~~
 
@@ -57,6 +57,8 @@ a pair of variables ``x`` and ``y``.
   /* reading via multiple type arguments */
   (x, y) = read(int, real);
 
+.. _readThis-writeThis-readWriteThis:
+
 The readThis(), writeThis(), and readWriteThis() Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -78,6 +80,13 @@ they do not already exist - which call ``readWriteThis``.
 Note that arguments to ``readThis`` and ``writeThis`` may represent a locked
 channel; as a result, calling methods on the channel in parallel from within a
 ``readThis``, ``writeThis``, or ``readWriteThis`` may cause undefined behavior.
+Additionally, performing I/O on a global channel that is the same channel as the
+one ``readThis``, ``writeThis``, or ``readWriteThis`` is operating on can result
+in a deadlock. In particular, these methods should not refer to
+:var:`~IO.stdin`, :var:`~IO.stdout`, or :var:`~IO.stderr` explicitly or
+implicitly (such as by calling the global :proc:`~IO.writeln` function).
+Instead, these methods should only perform I/O on the channel passed as an
+argument.
 
 Because it is often more convenient to use an operator for I/O, instead of
 writing
@@ -128,7 +137,7 @@ function resolution error if the class NoRead is read.
     var x: int;
     var y: int;
     proc writeThis(f) {
-      f.writeln("hello");
+      f <~> "hello";
     }
     // Note that no readThis function will be generated.
   }
@@ -141,24 +150,15 @@ function resolution error if the class NoRead is read.
 
   delete nr;
 
-.. _default-write-and-read-methods:
+.. _default-readThis-writeThis:
 
-Default write and read Methods
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Default writeThis and readThis Methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Default ``write`` methods are created for all types for which a user-defined
-``write`` method is not provided.  They have the following semantics:
+Default ``writeThis`` methods are created for all types for which a user-defined
+``writeThis`` or ``readWriteThis`` method is not provided.  They have the
+following semantics:
 
-* for an array argument: outputs the elements of the array in row-major order
-  where rows are separated by line-feeds and blank lines are used to separate
-  other dimensions.
-* for a `domain` argument: outputs the dimensions of the domain enclosed by
-  ``[`` and ``]``.
-* for a `range` argument: output the lower bound of the range, output ``..``,
-  then output the upper bound of the range.  If the stride of the range
-  is not ``1``, output the word ``by`` and then the stride of the range.
-* for a tuples, outputs the components of the tuple in order delimited by ``(``
-  and ``)``, and separated by commas.
 * for a class: outputs the values within the fields of the class prefixed by
   the name of the field and the character ``=``.  Each field is separated by a
   comma.  The output is delimited by ``{`` and ``}``.
@@ -166,9 +166,29 @@ Default ``write`` methods are created for all types for which a user-defined
   the name of the field and the character ``=``.  Each field is separated by a
   comma.  The output is delimited by ``(`` and ``)``.
 
-Default ``read`` methods are created for all types for which a user-defined
-``read`` method is not provided.  The default ``read`` methods are defined to
-read in the output of the default ``write`` method.
+Default ``readThis`` methods are created for all types for which a user-defined
+``readThis`` method is not provided.  The default ``readThis`` methods are
+defined to read in the output of the default ``writeThis`` method.
+
+Additionally, the Chapel implementation includes ``writeThis`` methods for
+built-in types as follows:
+
+* for an array: outputs the elements of the array in row-major order
+  where rows are separated by line-feeds and blank lines are used to separate
+  other dimensions.
+* for a domain: outputs the dimensions of the domain enclosed by
+  ``{`` and ``}``.
+* for a range: output the lower bound of the range, output ``..``,
+  then output the upper bound of the range.  If the stride of the range
+  is not ``1``, output the word ``by`` and then the stride of the range.
+  If the range has special alignment, output the word ``align`` and then the
+  alignment.
+* for tuples, outputs the components of the tuple in order delimited by ``(``
+  and ``)``, and separated by commas.
+
+These types also include ``readThis`` methods to read the corresponding format.
+Note that when reading an array, the domain of the array must be set up
+appropriately before the elements can be read.
 
 .. note::
 
@@ -179,60 +199,22 @@ read in the output of the default ``write`` method.
 module ChapelIO {
   use ChapelBase; // for uint().
   use SysBasic;
-  // use IO; happens below once we need it.
-  
+
   // TODO -- this should probably be private
   pragma "no doc"
   proc _isNilObject(val) {
-    proc helper(o: object) return o == nil;
-    proc helper(o)         return false;
+    proc helper(o: borrowed object) return o == nil;
+    proc helper(o)                  return false;
     return helper(val);
-  }
- 
-  pragma "no doc"
-  proc writerDeprecated() param {
-    compilerError("Writer deprecated: make writeThis argument generic");
-  }
-  pragma "no doc"
-  proc readerDeprecated() param {
-    compilerError("Reader deprecated: make readThis argument generic");
-  }
-
-  pragma "no doc"
-  class Writer {
-    param dummy = writerDeprecated();
-  }
-  pragma "no doc"
-  class Reader {
-    param dummy = readerDeprecated();
-  }
-
-  // This routine is called in DefaultRectangular in order
-  // to report an out of bounds access for a halt. A normal
-  // call to halt with a tuple can't be made because of module
-  // order issues.
-  pragma "no doc"
-  proc _stringify_index(tup:?t) where isTuple(t)
-  {
-    var str = "(";
-
-    for param i in 1..tup.size {
-      if i != 1 then str += ", ";
-      str += tup[i]:string;
-    }
-
-   str += ")";
-
-    return str;
-
   }
 
   use IO;
 
     private
     proc isIoField(x, param i) param {
-      if isType(__primitive("field value by num", x, i)) ||
-         isParam(__primitive("field value by num", x, i)) {
+      if isType(__primitive("field by num", x, i)) ||
+         isParam(__primitive("field by num", x, i)) ||
+         __primitive("field by num", x, i).type == void {
         // I/O should ignore type or param fields
         return false;
       } else {
@@ -273,15 +255,15 @@ module ChapelIO {
     proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) {
       param num_fields = __primitive("num fields", t);
       var isBinary = writer.binary();
-  
+
       if (isClassType(t)) {
-        if t != object {
+        if _to_borrowed(t) != borrowed object {
           // only write parent fields for subclasses of object
           // since object has no .super field.
           writeThisFieldsDefaultImpl(writer, x.super, first);
         }
       }
-  
+
       if !isUnionType(t) {
         // print out all fields for classes and records
         for param i in 1..num_fields {
@@ -289,13 +271,13 @@ module ChapelIO {
             if !isBinary {
               var comma = new ioLiteral(", ");
               if !first then writer.readwrite(comma);
-    
+
               var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
               writer.readwrite(eq);
             }
 
-            writer.readwrite(__primitive("field value by num", x, i));
-  
+            writer.readwrite(__primitive("field by num", x, i));
+
             first = false;
           }
         }
@@ -312,7 +294,7 @@ module ChapelIO {
               var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
               writer.readwrite(eq);
             }
-            writer.readwrite(__primitive("field value by num", x, i));
+            writer.readwrite(__primitive("field by num", x, i));
           }
         }
       }
@@ -321,7 +303,7 @@ module ChapelIO {
     // with the appropriate *concrete* type of x; that's what
     // happens now with buildDefaultWriteFunction
     // since it has the concrete type and then calls this method.
-  
+
     // MPF: We would like to entirely write the default writeThis
     // method in Chapel, but that seems to be a bit of a challenge
     // right now and I'm having trouble with scoping/modules.
@@ -347,11 +329,11 @@ module ChapelIO {
         }
         writer.readwrite(start);
       }
-  
+
       var first = true;
-  
+
       writeThisFieldsDefaultImpl(writer, x, first);
-  
+
       if !writer.binary() {
         var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
         var end:ioLiteral;
@@ -369,7 +351,7 @@ module ChapelIO {
         writer.readwrite(end);
       }
     }
- 
+
     private
     proc skipFieldsAtEnd(reader, inout needsComma:bool) {
 
@@ -397,12 +379,16 @@ module ChapelIO {
           }
 
           // Skip an unknown JSON field.
-          var e:syserr;
-          reader.skipField(error=e);
-          if !e {
+          var err:syserr = ENOERR;
+          try {
+            reader.skipField();
             needsComma = true;
+          } catch e: SystemError {
+            err = e.err;
+          } catch {
+            err = EINVAL;
           }
-          reader.setError(e);
+          reader.setError(err);
         }
       }
     }
@@ -413,9 +399,9 @@ module ChapelIO {
       param num_fields = __primitive("num fields", t);
       var isBinary = reader.binary();
       var superclass_error : syserr = ENOERR;
-  
+
       if (isClassType(t)) {
-        if t != object {
+        if _to_borrowed(t) != borrowed object {
           // only write parent fields for subclasses of object
           // since object has no .super field.
           type superType = x.super.type;
@@ -426,13 +412,13 @@ module ChapelIO {
           superclass_error = reader.error();
         }
       }
-  
+
       if !isUnionType(t) {
         // read all fields for classes and records
         if isBinary {
           for param i in 1..num_fields {
             if isIoField(x, i) {
-              reader.readwrite(__primitive("field value by num", x, i));
+              reader.readwrite(__primitive("field by num", x, i));
             }
           }
         } else if num_fields > 0 {
@@ -502,7 +488,7 @@ module ChapelIO {
                     }
                     reader.readwrite(eq);
 
-                    reader.readwrite(__primitive("field value by num", x, i));
+                    reader.readwrite(__primitive("field by num", x, i));
                     if !reader.error() {
                       read_field[i] = true;
                       num_read += 1;
@@ -518,12 +504,17 @@ module ChapelIO {
               if skip_unk != 0 && st == QIO_AGGREGATE_FORMAT_JSON {
 
                 // Skip an unknown JSON field.
-                var e:syserr;
-                reader.skipField(error=e);
-                if !e {
+                var err:syserr = ENOERR;
+                try {
+                  reader.skipField();
                   needsComma = true;
+                } catch e: SystemError {
+                  err = e.err;
+                } catch {
+                  err = EINVAL;
                 }
-                reader.setError(e);
+                reader.setError(err);
+
               } else {
                 reader.setError(EFORMAT:syserr);
                 break;
@@ -547,7 +538,7 @@ module ChapelIO {
           reader.readwrite(id);
           for param i in 1..num_fields {
             if isIoField(x, i) && i == id {
-              reader.readwrite(__primitive("field value by num", x, i));
+              reader.readwrite(__primitive("field by num", x, i));
             }
           }
         } else {
@@ -577,7 +568,7 @@ module ChapelIO {
                 readIt(eq);
 
                 // We read the 'name = ', so now read the value!
-                reader.readwrite(__primitive("field value by num", x, i));
+                reader.readwrite(__primitive("field by num", x, i));
               }
             }
           }
@@ -605,9 +596,9 @@ module ChapelIO {
         }
         reader.readwrite(start);
       }
-  
+
       var needsComma = false;
-  
+
       var obj = x; // make obj point to x so ref works
       if ! reader.error() {
         readThisFieldsDefaultImpl(reader, t, obj, needsComma);
@@ -640,16 +631,12 @@ module ChapelIO {
         } else {
           start = new ioLiteral("(");
         }
-        //writeln("BEFORE READING START");
-        //writeln("ERROR IS ", reader.error():int);
         reader.readwrite(start);
-        //writeln("POST ERROR IS ", reader.error():int);
       }
-  
+
       var needsComma = false;
-  
+
       if ! reader.error() {
-        //writeln("READING FIELDS\n");
         readThisFieldsDefaultImpl(reader, t, x, needsComma);
       }
       if ! reader.error() {
@@ -664,18 +651,17 @@ module ChapelIO {
         } else {
           end = new ioLiteral(")");
         }
-        //writeln("BEFORE READING END ERROR IS ", reader.error():int);
-        //writeln("BEFORE READING END OFFSET IS ", reader.offset());
         reader.readwrite(end);
-        //writeln("AFTER READING END ERROR IS ", reader.error():int);
       }
     }
-  
+
   /*
      Prints an error message to stderr giving the location of the call to
      ``halt`` in the Chapel source, followed by the arguments to the call,
      if any, then exits the program.
    */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
   proc halt() {
     __primitive("chpl_error", c"halt reached");
   }
@@ -685,118 +671,79 @@ module ChapelIO {
      ``halt`` in the Chapel source, followed by the arguments to the call,
      if any, then exits the program.
    */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
   proc halt(s:string) {
     halt(s.localize().c_str());
   }
 
-  pragma "no doc"
-  proc halt(s:c_string) {
-    __primitive("chpl_error", c"halt reached - " + s);
-  }
- 
   /*
      Prints an error message to stderr giving the location of the call to
      ``halt`` in the Chapel source, followed by the arguments to the call,
      if any, then exits the program.
    */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
   proc halt(args ...?numArgs) {
     var tmpstring = "halt reached - " + stringify((...args));
     __primitive("chpl_error", tmpstring.c_str());
   }
-  
+
   /*
     Prints a warning to stderr giving the location of the call to ``warning``
     in the Chapel source, followed by the argument(s) to the call.
   */
+  pragma "always propagate line file info"
   proc warning(s:string) {
-    warning(s.localize().c_str());
+    __primitive("chpl_warning", s.localize().c_str());
+  }
+
+  /*
+    Prints a warning to stderr giving the location of the call to ``warning``
+    in the Chapel source, followed by the argument(s) to the call.
+  */
+  pragma "always propagate line file info"
+  proc warning(args ...?numArgs) {
+    var tmpstring = stringify((...args));
+    warning(tmpstring);
   }
 
   pragma "no doc"
-  proc warning(s:c_string) {
-    __primitive("chpl_warning", s);
-  }
- 
-  /*
-    Prints a warning to stderr giving the location of the call to ``warning``
-    in the Chapel source, followed by the argument(s) to the call.
-  */
-  proc warning(args ...?numArgs) {
-    var tmpstring: c_string_copy;
-    tmpstring.write((...args));
-    warning(tmpstring);
-    chpl_free_c_string_copy(tmpstring);
-  }
-  
-  pragma "no doc"
   proc _ddata.writeThis(f) {
     compilerWarning("printing _ddata class");
-    f.write("<_ddata class cannot be printed>");
+    f <~> "<_ddata class cannot be printed>";
   }
 
   pragma "no doc"
   proc chpl_taskID_t.writeThis(f) {
     var tmp : uint(64) = this : uint(64);
-    f.write(tmp);
+    f <~> (tmp);
   }
 
   pragma "no doc"
   proc chpl_taskID_t.readThis(f) {
     var tmp : uint(64);
-    f.read(tmp);
+    f <~> tmp;
     this = tmp : chpl_taskID_t;
   }
-  
+
+  pragma "no doc"
+  proc void.writeThis(f) {
+  }
+
   //
   // Catch all
   //
   // Convert 'x' to a string just the way it would be written out.
   //
-  // This is marked as compiler generated so it doesn't take precedence over
-  // genereated casts for types like enums
+  // This is marked as last resort so it doesn't take precedence over
+  // generated casts for types like enums
   //
   // This version only applies to non-primitive types
   // (primitive types should support :string directly)
   pragma "no doc"
-  pragma "compiler generated"
+  pragma "last resort"
   proc _cast(type t, x) where t == string && ! isPrimitiveType(x.type) {
     return stringify(x);
   }
-
-  pragma "no doc"
-  proc ref string.write(args ...?n) {
-    compilerError("string.write deprecated: use string.format or stringify");
-  }
-
-  //
-  // When this flag is used during compilation, calls to chpl__testPar
-  // will output a message to indicate that a portion of the code has been
-  // parallelized.
-  //
-  pragma "no doc"
-  config param chpl__testParFlag = false;
-  pragma "no doc"
-  var chpl__testParOn = false;
-  
-  pragma "no doc"
-  proc chpl__testParStart() {
-    chpl__testParOn = true;
-  }
-  
-  pragma "no doc"
-  proc chpl__testParStop() {
-    chpl__testParOn = false;
-  }
-  
-  pragma "no doc"
-  proc chpl__testPar(args...) {
-    if chpl__testParFlag && chpl__testParOn {
-      const file_cs : c_string = __primitive("chpl_lookupFilename",
-                                        __primitive("_get_user_file"));
-      const file = file_cs:string;
-      const line = __primitive("_get_user_line");
-      writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
-    }
-  }
-
 }

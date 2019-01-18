@@ -1,0 +1,1 @@
+fnReturnsGeneric.chpl:11: error: returning a generic type variable is not supported

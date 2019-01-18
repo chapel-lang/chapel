@@ -1,5 +1,0 @@
-boolInt2.chpl:31: error: ambiguous call 'foo(mybool, int(8))'
-boolInt2.chpl:6: note: candidates are: foo(x: int(8), y: int(8))
-boolInt2.chpl:6: note:                 foo(x: int(16), y: int(16))
-boolInt2.chpl:6: note:                 foo(x: int(32), y: int(32))
-boolInt2.chpl:6: note:                 foo(x: int(64), y: int(64))

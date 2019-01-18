@@ -8,5 +8,5 @@ class B: A {
   }
 }
 
-var a = new A();
-var b: B;
+var a = new borrowed A();
+var b: borrowed B;

@@ -1,0 +1,2 @@
+owned-error-nonclass.chpl:7: In function 'run':
+owned-error-nonclass.chpl:8: error: Cannot use new owned with record R

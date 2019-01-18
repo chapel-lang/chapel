@@ -22,8 +22,8 @@ var maxFlips, checkSums : [0..#NTASKS] int;
 
 var taskCount : atomic int;
 
-var Fanns : [ntasks] Fann;
-for f in Fanns do f = new Fann();
+var Fanns : [ntasks] owned Fann;
+for f in Fanns do f = new owned Fann();
 
 coforall i in ntasks {
   var task = taskCount.fetchAdd(1);
@@ -99,7 +99,7 @@ class Fann {
       for j in 1..i-1 do p[j] = p[j+1];
       p[i] = first;
       first = next;
-      
+
       count[i] += 1;
     }
   }

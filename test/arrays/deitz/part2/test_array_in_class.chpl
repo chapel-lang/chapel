@@ -4,7 +4,7 @@ class C {
   var a : [d] int;
 }
 
-var c = new C(n = 8);
+var c = new unmanaged C(n = 8);
 writeln(c);
 
 delete c;

@@ -1,10 +1,10 @@
 record R {
   var n: int;
-  proc R(n: int) {
+  proc init(n: int) {
     this.n = n;
     writeln("Construct R: ", this.n);
   }
-  proc ~R() {
+  proc deinit() {
     writeln("Destroy R: ", this.n);
   }
 }

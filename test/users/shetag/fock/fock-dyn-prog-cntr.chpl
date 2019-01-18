@@ -22,7 +22,7 @@ proc buildjk() {
           for lat in 1..lattop {
             if (L == myG) then
               cobegin with (ref myG) {
-                buildjk_atom4(new blockIndices(iat, jat, kat, lat));
+                buildjk_atom4(new unmanaged blockIndices(iat, jat, kat, lat));
                 myG = readAndIncrementG();
               }
             L += 1;
@@ -91,13 +91,15 @@ proc buildjk_atom4(blk) {
   }
 
   var tmp = oneAtATime;
-  atomic jmat2(ijD) += jij;
-  atomic jmat2(klD) += jkl;
-  atomic kmat2(ikD) += kik;
-  atomic kmat2(ilD) += kil;
-  atomic kmat2(jkD) += kjk;
-  atomic kmat2(jlD) += kjl;
+  jmat2(ijD) += jij;
+  jmat2(klD) += jkl;
+  kmat2(ikD) += kik;
+  kmat2(ilD) += kil;
+  kmat2(jkD) += kjk;
+  kmat2(jlD) += kjl;
   oneAtATime = tmp;
+
+  delete blk;
 }
 
 proc main() {

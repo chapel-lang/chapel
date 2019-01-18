@@ -445,7 +445,7 @@ module SSCA2_kernels_K4opt
 	};
 	delete Active_Level;
 
-      }; // closure of outer embarassingly parallel forall
+      }; // closure of outer embarrassingly parallel forall
   
 
       if PRINT_TIMING_STATISTICS then {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,128 +44,80 @@ Additional utilities
 */
 
 module UtilMisc_forDocs {
-  proc compilerError(param x:c_string ...?n, param errorDepth:int) {
-    __primitive("error", (...x));
-  }
 
   /*
-     These two functions are used primarily within system modules to signal
-     a compile time error.  The first version accepts a param int as the
-     last argument; this value is used to control the depth of an error
-     stack trace
+     Generate a compile-time error.
+     The error text is a concatenation of the arguments.
   */
-  proc compilerError(param x:c_string ...?n) {
-    __primitive("error", (...x));
+  proc compilerError(param msg: string ...?n) {
   }
 
-  proc compilerWarning(param x:c_string ...?n, param errorDepth:int) {
-    __primitive("warning", (...x));
-  }
+  /*
+     Generate a compile-time error.
+     The error text is a concatenation of the string arguments.
 
-  /* Similar to compilerError() but generate a warning rather than an error */
-  proc compilerWarning(param x:c_string ...?n) {
-    __primitive("warning", (...x));
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  proc compilerError(param msg: string ...?n, param errorDepth: int) {
   }
-
 
 
   /*
-     This function is used primarily within system modules to test a compile
-     time property. An error message is generated if the property is false
+     Generate a compile-time warning.
+     The warning text is a concatenation of the arguments.
+  */
+  proc compilerWarning(param msg: string ...?n) {
+  }
 
-     :arg test: the param value to be tested
+  /*
+     Generate a compile-time warning.
+     The warning text is a concatenation of the string arguments.
+
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
+  }
+
+
+  //
+  // TODO: improve the compilerAssert() functions in ChapelBase.chpl:
+  //  * do we want to +1 when passing errorDepth to compilerError() ?
+  //
+
+  /* Generate a compile-time error if the `test` argument is false.
   */
   proc compilerAssert(param test: bool)
-  { if !test then compilerError("assert failed"); }
+  { }
 
+  /* Generate a compile-time error if the `test` argument is false.
 
-  /*
-     This function is used primarily within system modules to test a compile
-     time property. An error message is generated if the property is false.
-     The second parameter, which must be integral, is used to control the
-     depth of the error stack traceback.
-
-     :arg test: the param value to be tested
+     :arg errorDepth: controls the depth of the error stack trace
   */
-  proc compilerAssert(param test: bool, param arg1:integral)
-  { if !test then compilerError("assert failed", arg1:int); }
+  proc compilerAssert(param test: bool, param errorDepth: int)
+  { }
 
-  /*
-     This function of two arguments will be used if the second parameter is not
-     integral.  If the first parameter is false, then the second parameter is
-     included in the error message that is generated
-
-     :arg test: the param value to be tested
+  /* Generate a compile-time error if the `test` argument is false.
+     The warning text is a concatenation of the string arguments.
   */
+  proc compilerAssert(param test: bool, param msg: string ...?n)
+  { }
 
-  proc compilerAssert(param test: bool, param arg1) where !isIntegralType(arg1.type)
-  { if !test then compilerError("assert failed - ", arg1); }
+  /* Generate a compile-time error if the `test` argument is false.
+     The warning text is a concatenation of the string arguments.
 
-
-  proc compilerAssert(param test: bool, param arg1, param arg2)
-  { if !test then compilerError("assert failed - ", arg1, arg2); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4); }
-
-  /*
-     An extended set of functions that provides additional information for the error
-     message. A current limitation in the handling of tuples of parameters prevents
-     the use of a variable number of arguments
-
-     :arg test: the param value to be tested
+     :arg errorDepth: controls the depth of the error stack trace
   */
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5); }
-
-  /*
-     This variation accepts any number of arguments.  The first five additional parameters are
-     included if an error message is generated and then there is an indication that there are
-     additional parameters.
-
-     :arg test: the param value to be tested
-  */
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest...)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]"); }
+  proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
+  { }
 
 
-  /*
-     This variation accepts the value to be tested, precisely 5 values to be included in the
-     error message, and finally an integral value that controls the depth of the error stack.
+  /* Compute the minimum value of 2 or more arguments
+     using the ``<`` operator for comparison. */
+  inline proc min(x, y...) return min();  // dummy
 
-     :arg test: the param value to be tested
-  */
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, param arg6: integral)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, arg6:int); }
-
-  /*
-     This variation accepts any number of arguments but detects that the final argument is integral.
-     In this version the final argument is treated as an errorDepth as for compilerWarning() and
-     compilerError()
-
-     :arg test: the param value to be tested
-  */
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest..., param arglast: integral)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]", arglast:int); }
-
-
-
-
-
-  inline proc min(x, y) return if x < y then x else y;
-
-  /* Compute the minimum value of 2 or more arguments */
-  inline proc min(x, y, z...?k) return min(min(x, y), (...z));
-
-  inline proc max(x, y) return if x > y then x else y;
-
-  /* Compute the maximum value of 2 or more arguments */
-  inline proc max(x, y, z...?k) return max(max(x, y), (...z));
+  /* Compute the maximum value of 2 or more arguments
+     using the ``>`` operator for comparison. */
+  inline proc max(x, y...) return max();  // dummy
 
   /*
     Exit the program
@@ -175,4 +127,48 @@ module UtilMisc_forDocs {
   inline proc exit(status: int) {
     __primitive("chpl_exit_any", status);
   }
+
+  /* Returns `true` if the type `sub` is a subtype of the type `super`.
+     In particular, returns `true` in any of these cases:
+
+       * `sub` is the same type as `super`
+       * `sub` is an instantiation of a generic type `super`
+       * `sub` is a class type inheriting from `super`
+       * `sub` is a type that coerces to `super`
+
+     Note that ``isSubtype(a,b)`` can also be written as
+     ``a <= b`` or ``b >= a``.
+     */
+  proc isSubtype(type sub, type super) param {
+    __primitive("is_subtype", super, sub);
+  }
+
+  /* Similar to :proc:`isSubtype` but returns `false` if
+     `sub` and `super` refer to the same type.
+
+     Note that ``isProperSubtype(a,b)`` can also be written
+     as ``a < b`` or ``b > a``.
+     */
+  proc isProperSubtype(type sub, type super) param {
+    __primitive("is_proper_subtype", super, sub);
+  }
+
+  /* :returns: isProperSubtype(a,b) */
+  proc <(type a, type b) param {
+    return isProperSubtype(a,b);
+  }
+  /* :returns: isSubtype(a,b) */
+  proc <=(type a, type b) param {
+    return isSubtype(a,b);
+  }
+  /* :returns: isProperSubtype(b,a) */
+  proc >(type a, type b) param {
+    return isProperSubtype(b,a);
+  }
+  /* :returns: isSubtype(b,a) */
+  proc >=(type a, type b) param {
+    return isSubtype(b,a);
+  }
+
+
 }

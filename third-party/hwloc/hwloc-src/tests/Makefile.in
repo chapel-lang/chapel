@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2018 Inria.  All rights reserved.
 # Copyright © 2009-2012 Université Bordeaux
 # Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -108,6 +108,7 @@ check_PROGRAMS = hwloc_list_components$(EXEEXT) hwloc_bitmap$(EXEEXT) \
 	hwloc_bitmap_first_last_weight$(EXEEXT) \
 	hwloc_bitmap_singlify$(EXEEXT) hwloc_type_depth$(EXEEXT) \
 	hwloc_bind$(EXEEXT) hwloc_get_last_cpu_location$(EXEEXT) \
+	hwloc_get_area_memlocation$(EXEEXT) \
 	hwloc_object_userdata$(EXEEXT) hwloc_synthetic$(EXEEXT) \
 	hwloc_custom$(EXEEXT) hwloc_backends$(EXEEXT) \
 	hwloc_pci_backend$(EXEEXT) hwloc_is_thissystem$(EXEEXT) \
@@ -221,6 +222,12 @@ hwloc_distances_SOURCES = hwloc_distances.c
 hwloc_distances_OBJECTS = hwloc_distances.$(OBJEXT)
 hwloc_distances_LDADD = $(LDADD)
 hwloc_distances_DEPENDENCIES = $(HWLOC_top_builddir)/src/$(hwloc_lib)
+hwloc_get_area_memlocation_SOURCES = hwloc_get_area_memlocation.c
+hwloc_get_area_memlocation_OBJECTS =  \
+	hwloc_get_area_memlocation.$(OBJEXT)
+hwloc_get_area_memlocation_LDADD = $(LDADD)
+hwloc_get_area_memlocation_DEPENDENCIES =  \
+	$(HWLOC_top_builddir)/src/$(hwloc_lib)
 hwloc_get_cache_covering_cpuset_SOURCES =  \
 	hwloc_get_cache_covering_cpuset.c
 hwloc_get_cache_covering_cpuset_OBJECTS =  \
@@ -360,7 +367,8 @@ nvml_OBJECTS = nvml.$(OBJEXT)
 nvml_DEPENDENCIES = $(LDADD)
 opencl_SOURCES = opencl.c
 opencl_OBJECTS = opencl.$(OBJEXT)
-opencl_DEPENDENCIES = $(LDADD)
+opencl_DEPENDENCIES = $(LDADD) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 openfabrics_verbs_SOURCES = openfabrics-verbs.c
 openfabrics_verbs_OBJECTS = openfabrics-verbs.$(OBJEXT)
 openfabrics_verbs_DEPENDENCIES = $(LDADD)
@@ -406,7 +414,8 @@ SOURCES = cuda.c cudart.c gl.c glibc-sched.c hwloc_backends.c \
 	hwloc_bind.c hwloc_bitmap.c hwloc_bitmap_compare_inclusion.c \
 	hwloc_bitmap_first_last_weight.c hwloc_bitmap_singlify.c \
 	hwloc_bitmap_string.c hwloc_custom.c hwloc_distances.c \
-	hwloc_get_cache_covering_cpuset.c hwloc_get_closest_objs.c \
+	hwloc_get_area_memlocation.c hwloc_get_cache_covering_cpuset.c \
+	hwloc_get_closest_objs.c \
 	hwloc_get_largest_objs_inside_cpuset.c \
 	hwloc_get_last_cpu_location.c \
 	hwloc_get_next_obj_covering_cpuset.c \
@@ -424,7 +433,8 @@ DIST_SOURCES = cuda.c cudart.c gl.c glibc-sched.c hwloc_backends.c \
 	hwloc_bind.c hwloc_bitmap.c hwloc_bitmap_compare_inclusion.c \
 	hwloc_bitmap_first_last_weight.c hwloc_bitmap_singlify.c \
 	hwloc_bitmap_string.c hwloc_custom.c hwloc_distances.c \
-	hwloc_get_cache_covering_cpuset.c hwloc_get_closest_objs.c \
+	hwloc_get_area_memlocation.c hwloc_get_cache_covering_cpuset.c \
+	hwloc_get_closest_objs.c \
 	hwloc_get_largest_objs_inside_cpuset.c \
 	hwloc_get_last_cpu_location.c \
 	hwloc_get_next_obj_covering_cpuset.c \
@@ -775,6 +785,8 @@ HWLOC_LINUX_LIBNUMA_LIBS = @HWLOC_LINUX_LIBNUMA_LIBS@
 HWLOC_MS_LIB = @HWLOC_MS_LIB@
 HWLOC_MS_LIB_ARCH = @HWLOC_MS_LIB_ARCH@
 HWLOC_NVML_LIBS = @HWLOC_NVML_LIBS@
+HWLOC_OPENCL_CFLAGS = @HWLOC_OPENCL_CFLAGS@
+HWLOC_OPENCL_LDFLAGS = @HWLOC_OPENCL_LDFLAGS@
 HWLOC_OPENCL_LIBS = @HWLOC_OPENCL_LIBS@
 HWLOC_PCIACCESS_CFLAGS = @HWLOC_PCIACCESS_CFLAGS@
 HWLOC_PCIACCESS_LIBS = @HWLOC_PCIACCESS_LIBS@
@@ -788,6 +800,7 @@ HWLOC_W3_GENERATOR = @HWLOC_W3_GENERATOR@
 HWLOC_X11_CPPFLAGS = @HWLOC_X11_CPPFLAGS@
 HWLOC_X11_LIBS = @HWLOC_X11_LIBS@
 HWLOC_XML_LOCALIZED = @HWLOC_XML_LOCALIZED@
+HWLOC_runstatedir = @HWLOC_runstatedir@
 HWLOC_top_builddir = @HWLOC_top_builddir@
 HWLOC_top_srcdir = @HWLOC_top_srcdir@
 INSTALL = @INSTALL@
@@ -912,7 +925,7 @@ TESTS = $(check_PROGRAMS)
 linux_libnuma_LDADD = $(LDADD) -lnuma
 openfabrics_verbs_LDADD = $(LDADD) -libverbs
 myriexpress_LDADD = $(LDADD) -lmyriexpress
-opencl_LDADD = $(LDADD) -lOpenCL
+opencl_LDADD = $(LDADD) $(HWLOC_OPENCL_LIBS) $(HWLOC_OPENCL_LDFLAGS)
 cuda_LDADD = $(LDADD) -lcuda
 cudart_LDADD = $(LDADD) -lcuda -lcudart
 nvml_LDADD = $(LDADD) -lnvidia-ml
@@ -1025,6 +1038,10 @@ hwloc_custom$(EXEEXT): $(hwloc_custom_OBJECTS) $(hwloc_custom_DEPENDENCIES) $(EX
 hwloc_distances$(EXEEXT): $(hwloc_distances_OBJECTS) $(hwloc_distances_DEPENDENCIES) $(EXTRA_hwloc_distances_DEPENDENCIES) 
 	@rm -f hwloc_distances$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(hwloc_distances_OBJECTS) $(hwloc_distances_LDADD) $(LIBS)
+
+hwloc_get_area_memlocation$(EXEEXT): $(hwloc_get_area_memlocation_OBJECTS) $(hwloc_get_area_memlocation_DEPENDENCIES) $(EXTRA_hwloc_get_area_memlocation_DEPENDENCIES) 
+	@rm -f hwloc_get_area_memlocation$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(hwloc_get_area_memlocation_OBJECTS) $(hwloc_get_area_memlocation_LDADD) $(LIBS)
 
 hwloc_get_cache_covering_cpuset$(EXEEXT): $(hwloc_get_cache_covering_cpuset_OBJECTS) $(hwloc_get_cache_covering_cpuset_DEPENDENCIES) $(EXTRA_hwloc_get_cache_covering_cpuset_DEPENDENCIES) 
 	@rm -f hwloc_get_cache_covering_cpuset$(EXEEXT)
@@ -1165,6 +1182,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc_bitmap_string.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc_custom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc_distances.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc_get_area_memlocation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc_get_cache_covering_cpuset.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc_get_closest_objs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc_get_largest_objs_inside_cpuset.Po@am__quote@
@@ -1581,6 +1599,13 @@ hwloc_bind.log: hwloc_bind$(EXEEXT)
 hwloc_get_last_cpu_location.log: hwloc_get_last_cpu_location$(EXEEXT)
 	@p='hwloc_get_last_cpu_location$(EXEEXT)'; \
 	b='hwloc_get_last_cpu_location'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+hwloc_get_area_memlocation.log: hwloc_get_area_memlocation$(EXEEXT)
+	@p='hwloc_get_area_memlocation$(EXEEXT)'; \
+	b='hwloc_get_area_memlocation'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

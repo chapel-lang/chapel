@@ -1,6 +1,6 @@
 /*
- * Copyright © 2015-2016, 2015 Intel
- * Copyright © 2015 Inria.  All rights reserved.
+ * Copyright © 2015-2018 Intel
+ * Copyright © 2015-2018 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -18,7 +18,18 @@
 
 #define KERNEL_SMBIOS_SYSFS "/sys/firmware/dmi/entries"
 
-#define KNL_SMBIOS_GROUP_STRING "Group: Knights Landing Information"
+/* official strings, found at least in Intel S7200AP boards (also used by Cray) and some SuperMicro boards */
+#define KNL_INTEL_GROUP_STRING "Group: Knights Landing Information"
+#define KNM_INTEL_GROUP_STRING "Group: Knights Mill Information"
+/* unexpected strings, found at least in Dell C6320p BIOS <=1.4.1 */
+#define KNL_DELL_GROUP_STRING "Knights Landing Association"
+
+static char *allowed_group_strings[] =
+{
+    KNL_INTEL_GROUP_STRING,
+    KNM_INTEL_GROUP_STRING,
+    KNL_DELL_GROUP_STRING
+};
 
 /* Header is common part of all SMBIOS entries */
 struct smbios_header
@@ -118,10 +129,18 @@ enum memory_mode
     HYBRID = 4
 };
 
+enum hybrid_cache
+{
+    H25 = 1,
+    H50 = 2,
+    H100 = 4 /* Incorrect but possible value */
+};
 
 static int get_file_buffer(const char *file, char *buffer, int size)
 {
     FILE *f;
+
+    printf("  File = %s\n", file);
 
     if (!buffer) {
         fprintf(stderr, "Unable to allocate buffer\n");
@@ -134,45 +153,53 @@ static int get_file_buffer(const char *file, char *buffer, int size)
         return 0;
     }
 
-    printf("  File = %s, size = %d\n", file, size);
-
     size = fread(buffer, 1, size, f);
     if (size == 0) {
         fprintf(stderr, "Unable to read file\n");
         fclose(f);
         return 0;
     }
+    printf("    Read %d bytes\n", size);
 
     fclose(f);
     return size;
 }
 
-static int is_knl_entry(struct smbios_header *h, const char *end, const char *query)
+static int check_entry(struct smbios_header *h, const char *end, const char *query)
 {
     char *group_strings = (char*)h + h->length;
     do {
         int len = strlen(group_strings);
-        if (!strncmp(group_strings, query, len))
-            return 1;
         /* SMBIOS string entries end with "\0\0"
          * if length is 0 break and return
          * */
         if (len == 0)
             break;
+
+        printf("  Looking for \"%s\" in group string \"%s\"\n", query, group_strings);
+        if (!strncmp(group_strings, query, len))
+            return 1;
+
         group_strings += len;
     } while(group_strings < end);
 
     return 0;
 }
 
-static int is_knl_group(struct smbios_header *h, const char *end)
+static int is_phi_group(struct smbios_header *h, const char *end)
 {
+    unsigned i;
     if (h->type != 14) {
         fprintf(stderr, "SMBIOS table is not group table\n");
-        return -1;
+        return 0;
     }
 
-    return is_knl_entry(h, end, KNL_SMBIOS_GROUP_STRING);
+    for (i = 0; i < sizeof(allowed_group_strings)/sizeof(char*); i++) {
+        if (check_entry(h, end, allowed_group_strings[i]))
+            return 1;
+    }
+
+    return 0;
 }
 
 #define KNL_MEMBER_ID_GENERAL 0x1
@@ -180,6 +207,7 @@ static int is_knl_group(struct smbios_header *h, const char *end)
 
 #define PATH_SIZE 512
 #define SMBIOS_FILE_BUF_SIZE 4096
+#define KNL_MCDRAM_SIZE (16ULL*1024*1024*1024)
 
 static int process_smbios_group(const char *input_fsroot, char *dir_name, struct parser_data *data)
 {
@@ -190,6 +218,7 @@ static int process_smbios_group(const char *input_fsroot, char *dir_name, struct
     char *end;
     int size;
     int i;
+
     snprintf(path, PATH_SIZE-1, "%s/" KERNEL_SMBIOS_SYSFS "/%s/raw", input_fsroot, dir_name);
     path[PATH_SIZE-1] = 0;
 
@@ -201,10 +230,12 @@ static int process_smbios_group(const char *input_fsroot, char *dir_name, struct
 
     h = (struct smbios_header*)file_buf;
     end = file_buf+size;
-    if (!is_knl_group(h, end)) {
-        fprintf(stderr, "SMBIOS table does not contain KNL entries\n");
+    if (!is_phi_group(h, end)) {
+        printf("  Failed to find Phi group\n");
+        fprintf(stderr, "SMBIOS table does not contain Xeon Phi entries\n");
         return -1;
     }
+    printf("  Found Phi group\n");
 
     p = file_buf + sizeof(struct smbios_header) + sizeof(struct smbios_group);
     if ((char*)p >= end) {
@@ -218,7 +249,7 @@ static int process_smbios_group(const char *input_fsroot, char *dir_name, struct
     for (; p < end; i++, p+=3) {
         struct smbios_group_entry *e = (struct smbios_group_entry*)p;
         data->knl_types[i] = e->type;
-        printf("  Found KNL type = %d\n", e->type);
+        printf("    Found Xeon Phi type = %d\n", e->type);
     }
 
     data->type_count = i;
@@ -247,7 +278,7 @@ static int process_knl_entry(const char *input_fsroot, char *dir_name, struct pa
     if (h->member_id & KNL_MEMBER_ID_GENERAL) {
         struct knl_general_info *info =
             (struct knl_general_info*) (file_buf+SMBIOS_KNL_HEADER_SIZE);
-        printf("  Getting general KNL info\n");
+        printf("  Getting general Xeon Phi info\n");
         data->cluster_mode = info->cluster_mode;
         data->memory_mode = info->memory_mode;
         data->cache_info = info->cache_info;
@@ -264,11 +295,11 @@ static int process_knl_entry(const char *input_fsroot, char *dir_name, struct pa
                 printf("  MCDRAM info size is set to 0, falling back to known size\n");
                 struct_size = sizeof(*mi);
             }
-            printf("  Getting MCDRAM KNL info. Count=%d struct size=%d\n",
+            printf("  Getting Xeon Phi MCDRAM info. Count=%d struct size=%d\n",
                    (int)info->mcdram_info_count, struct_size);
             for ( ; i < info->mcdram_info_count; i++) {
                 if ((char*)mi >= end) {
-                    fprintf(stderr, "SMBIOS KNL entry is too small\n");
+                    fprintf(stderr, "SMBIOS Xeon Phi entry is too small\n");
                     return -1;
                 }
                 printf("  MCDRAM controller %d\n", mi->controller);
@@ -283,6 +314,15 @@ static int process_knl_entry(const char *input_fsroot, char *dir_name, struct pa
             /* convert to bytes  */
             printf("  Total MCDRAM %llu MB\n", (long long unsigned int)data->mcdram_regular*64);
             data->mcdram_regular *= 64*1024*1024;
+            /*
+             * BIOS can expose some MCRAM controllers as fused
+             * When this happens we hardcode MCDRAM size to 16 GB
+             */
+            if (data->mcdram_regular != KNL_MCDRAM_SIZE) {
+                fprintf(stderr, "Not all MCDRAM is exposed in DMI. Please contact BIOS vendor\n");
+                data->mcdram_regular = KNL_MCDRAM_SIZE;
+            }
+
         } else {
             data->mcdram_regular = 0;
             data->mcdram_cache = 0;
@@ -295,6 +335,35 @@ static int process_knl_entry(const char *input_fsroot, char *dir_name, struct pa
 
     return 0;
 }
+static const char* get_memory_mode_str(int memory_mode, int hybrid_cache_size)
+{
+    switch (memory_mode) {
+        case CACHE: return "Cache";
+        case FLAT: return "Flat";
+        case HYBRID:
+            if (hybrid_cache_size == H25) {
+                return "Hybrid25";
+            } else if (hybrid_cache_size == H50) {
+                return "Hybrid50";
+            }
+            return "Unknown";
+        default:
+            return "Unknown";
+    }
+}
+
+static const char* get_cluster_mode_str(int cluster_mode)
+{
+    switch (cluster_mode) {
+        case QUADRANT: return "Quadrant";
+        case HEMISPHERE: return "Hemisphere";
+        case ALL2ALL: return "All2All";
+        case SNC2: return "SNC2";
+        case SNC4: return "SNC4";
+        default:
+            return "Unknown";
+    }
+}
 
 static int print_result(struct parser_data *data, const char *out_file)
 {
@@ -304,24 +373,19 @@ static int print_result(struct parser_data *data, const char *out_file)
 
     switch (data->cluster_mode) {
         case QUADRANT:
-        node_count = 1;
-            printf("  Cluster mode: Quadrant\n");
+            node_count = 1;
             break;
         case HEMISPHERE:
             node_count = 1;
-            printf("  Cluster mode: Hemisphere\n");
             break;
         case ALL2ALL:
             node_count = 1;
-            printf("  Cluster mode: All2All\n");
             break;
         case SNC2:
             node_count = 2;
-            printf("  Cluster mode: SNC-2\n");
             break;
         case SNC4:
             node_count = 4;
-            printf("  Cluster mode: SNC-4\n");
             break;
         default:
             fprintf(stderr, "Incorrect cluster mode %d\n", data->cluster_mode);
@@ -330,25 +394,18 @@ static int print_result(struct parser_data *data, const char *out_file)
 
     switch (data->memory_mode) {
         case CACHE:
-            printf("  Memory Mode: Cache\n");
             data->mcdram_cache = data->mcdram_regular;
             data->mcdram_regular = 0;
             break;
         case FLAT:
-            printf("  Memory Mode: Flat\n");
-            printf("  Flat Mode: No MCDRAM cache available, nothing to dump.\n");
-            return 0;
+            data->mcdram_cache = 0;
+            break;
         case HYBRID:
-            printf("  Memory Mode: Hybrid");
-
-            if (data->cache_info == 0x1) {
-                printf("25\n");
+            if (data->cache_info == H25) {
                 data->mcdram_cache = data->mcdram_regular/4;
-            } else if (data->cache_info == 0x2) {
-                printf("50\n");
+            } else if (data->cache_info == H50) {
                 data->mcdram_cache = data->mcdram_regular/2;
-            } else if (data->cache_info == 0x4) {
-                printf("100\n");
+            } else if (data->cache_info == H100) {
                 data->mcdram_cache = data->mcdram_regular;
             } else {
                 fprintf(stderr, "SMBIOS reserved cache info value %d\n", data->cache_info);
@@ -361,13 +418,17 @@ static int print_result(struct parser_data *data, const char *out_file)
             return -1;
     }
 
+    printf("  Cluster Mode: %s Memory Mode: %s\n",
+            get_cluster_mode_str(data->cluster_mode),
+            get_memory_mode_str(data->memory_mode, data->cache_info));
     printf("  MCDRAM total = %llu bytes, cache = %llu bytes\n",
            (long long unsigned int)data->mcdram_regular,
            (long long unsigned int)data->mcdram_cache);
     data->mcdram_regular /= node_count;
     data->mcdram_cache /= node_count;
     printf("  MCDRAM total = %llu bytes, cache = %llu bytes per node\n",
-           (long long unsigned int)data->mcdram_regular, (long long unsigned int)data->mcdram_cache);
+           (long long unsigned int)data->mcdram_regular,
+           (long long unsigned int)data->mcdram_cache);
 
     /* Now we can start printing stuff */
     /* use open+fdopen so that we can specify the file creation mode */
@@ -383,13 +444,15 @@ static int print_result(struct parser_data *data, const char *out_file)
         return -1;
     }
 
-    fprintf(f, "version: 1\n");
+    fprintf(f, "version: 2\n");
     /* We cache is equal for node */
     fprintf(f, "cache_size: %llu\n",
                 (long long unsigned int)data->mcdram_cache);
     fprintf(f, "associativity: 1\n");// direct-mapped cache
     fprintf(f, "inclusiveness: 1\n");// inclusive cache
     fprintf(f, "line_size: 64\n");
+    fprintf(f, "cluster_mode: %s\n", get_cluster_mode_str(data->cluster_mode));
+    fprintf(f, "memory_mode: %s\n", get_memory_mode_str(data->memory_mode, data->cache_info));
     fflush(f);
     fclose(f);
     close(fd);
@@ -410,16 +473,18 @@ int hwloc_dump_hwdata_knl_smbios(const char *input_fsroot, const char *outfile)
     char path[PATH_SIZE];
     int err;
 
-    printf("Dumping KNL SMBIOS Memory-Side Cache information:\n");
+    printf("Dumping Xeon Phi SMBIOS Memory-Side Cache information:\n");
 
     snprintf(path, PATH_SIZE-1, "%s/" KERNEL_SMBIOS_SYSFS, input_fsroot);
     path[PATH_SIZE-1] = 0;
 
     d = opendir(path);
-    if (!d)
+    if (!d) {
+        fprintf(stderr, "Unable to open dmi-sysfs dir: %s", path);
         return -1;
+    }
 
-    /* process KNL entries
+    /* process Xeon Phi entries
      * start with group (type 14, dash os to omit 140 types) then find SMBIOS types for
      * Knights Landing mcdram indofrmation
      */
@@ -434,15 +499,16 @@ int hwloc_dump_hwdata_knl_smbios(const char *input_fsroot, const char *outfile)
     }
 
     if (!data.type_count) {
-      printf ("  Couldn't find any KNL information.\n");
+      fprintf (stderr, "  Couldn't find any Xeon Phi information.\n");
       closedir(d);
-      return 0;
+      return -1;
     }
 
-    /* We probably have KNL type identifiers here */
+    /* We probably have Xeon Phi type identifiers here */
     for (i = 0; i < data.type_count; i++) {
         char tab[16] = {0};
         int l = snprintf(tab, sizeof(tab)-1, "%d-", data.knl_types[i]);
+        printf("\n");
         printf ("  Seeking dir ̀`%s' %d\n", tab, l);
         rewinddir(d);
         while ((dir = readdir(d))) {

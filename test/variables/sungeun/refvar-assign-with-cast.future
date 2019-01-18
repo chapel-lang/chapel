@@ -1,1 +1,0 @@
-bug: Initializing a ref var with a casted variable results in an internal error during function resolution

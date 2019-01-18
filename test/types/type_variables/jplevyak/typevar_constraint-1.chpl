@@ -1,29 +1,32 @@
-proc foo(type t, a : t) where t:A {
+proc foo(type t, a : t) where isSubtype(t,A) {
   writeln("foo1 ", a.x);
 }
 
-proc foo(type t, c : t) where t:C {
+proc foo(type t, c : t) where isSubtype(t,C) {
   writeln("foo2 ", c.x);
 }
 
-class A { 
+class A {
   var x : int;
 }
 
-class B : A { 
+class B : A {
   var y : int;
 }
 
-class C { 
+class C {
   var x : real;
 }
 
-class D : C { 
+class D : C {
   var y : real;
 }
 
-var b = new B(x = 1, y = 2);
-var d = new D(x = 3.0, y = 4.0);
+var b = new unmanaged B(x = 1, y = 2);
+var d = new unmanaged D(x = 3.0, y = 4.0);
 
 foo(B, b);
 foo(D, d);
+
+delete d;
+delete b;

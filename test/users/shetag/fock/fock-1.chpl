@@ -19,13 +19,13 @@ class blockIndices {
 
 config const numLocs = 50;
 var numLocsDone : sync int = 0;
-var task : sync blockIndices;
+var task : sync unmanaged blockIndices;
  
 proc buildjk() {
   cobegin {
     for loc in 1..numLocs do
       begin {	      	
-          var bI, copyofbI : blockIndices;
+          var bI, copyofbI : unmanaged blockIndices;
           bI = task;
           while (bI.ilo != 0) {
             copyofbI = bI;
@@ -35,7 +35,10 @@ proc buildjk() {
             }
           }
           task = bI;
-          numLocsDone = numLocsDone + 1;
+          const numDone = numLocsDone + 1;
+          numLocsDone = numDone;
+          if numDone == numLocs then
+            delete bI;
       }
     
     for bI in gen() do // sjd: changed forall to for
@@ -67,12 +70,12 @@ iter gen() {
       for kat in 1..iat { // sjd: changed forall to for because of yield
         const lattop = if (kat==iat) then jat else kat;
         for lat in 1..lattop { // sjd: changed forall to for because of yield
-          yield new blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
+          yield new unmanaged blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
         }
       }
     }
   }
-  yield new blockIndices(0,0,0,0,0,0,0,0);
+  yield new unmanaged blockIndices(0,0,0,0,0,0,0,0);
 }
 
 proc buildjk_atom4(bI) {
@@ -123,13 +126,15 @@ proc buildjk_atom4(bI) {
   }
 
   var tmp = oneAtATime;
-  atomic jmat2(ijD) += jij;
-  atomic jmat2(klD) += jkl;
-  atomic kmat2(ikD) += kik;
-  atomic kmat2(ilD) += kil;
-  atomic kmat2(jkD) += kjk;
-  atomic kmat2(jlD) += kjl;
+  jmat2(ijD) += jij;
+  jmat2(klD) += jkl;
+  kmat2(ikD) += kik;
+  kmat2(ilD) += kil;
+  kmat2(jkD) += kjk;
+  kmat2(jlD) += kjl;
   oneAtATime = tmp;
+
+  delete bI;
 }
 
 proc g(i,j,k,l) {

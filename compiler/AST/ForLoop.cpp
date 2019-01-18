@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,8 @@
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "build.h"
-#include "codegen.h"
+#include "DeferStmt.h"
+#include "driver.h"
 
 #include <algorithm>
 
@@ -75,6 +76,8 @@
  */
 static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
 {
+  if (fNoOptimizeRangeIteration)
+    return;
   if (CallExpr* call = toCallExpr(iteratorExpr))
   {
     CallExpr* range = NULL;
@@ -86,12 +89,11 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
     }
-    // or grab the count if we have a counted range and set unit stride
+    // or grab the count if we have a counted range
     else if (call->isNamed("#"))
     {
       range = toCallExpr(call->get(1)->copy());
       count = toExpr(call->get(2)->copy());
-      stride = new SymExpr(new_IntSymbol(1));
     }
     // or assume the call is the range (checked below) and set unit stride
     else
@@ -113,7 +115,7 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
     // with:
     //
     // `chpl_direct_range_iter(low, high, stride)`
-    if (range && range->isNamed("chpl_build_bounded_range"))
+    if (!count && range && range->isNamed("chpl_build_bounded_range"))
     {
       // replace the range construction with a direct range iterator
       Expr* low = range->get(1)->copy();
@@ -132,22 +134,9 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
     else if (count && range && range->isNamed("chpl_build_low_bounded_range"))
     {
       Expr* low = range->get(1)->copy();
-      Expr* high = new CallExpr("-", new CallExpr("+", low->copy(), count), new_IntSymbol(1));
-      iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high, stride));
+      iteratorExpr->replace(new CallExpr("chpl_direct_counted_range_iter", low, count));
     }
   }
-}
-
-static void optimizeAnonymousRangeIteration(Expr* iteratorExpr, bool zippered)
-{
-  if (!zippered)
-    tryToReplaceWithDirectRangeIterator(iteratorExpr);
-  // for zippered iterators, try to replace each iterator of the tuple
-  else
-    if (CallExpr* call = toCallExpr(iteratorExpr))
-      if (call->isNamed("_build_tuple"))
-        for_actuals(actual, call)
-          tryToReplaceWithDirectRangeIterator(actual);
 }
 
 /************************************ | *************************************
@@ -156,17 +145,19 @@ static void optimizeAnonymousRangeIteration(Expr* iteratorExpr, bool zippered)
 *                                                                           *
 ************************************* | ************************************/
 
-BlockStmt* ForLoop::buildForLoop(Expr*      indices,
-                                 Expr*      iteratorExpr,
-                                 BlockStmt* body,
-                                 bool       coforall,
-                                 bool       zippered)
+BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
+                          Expr*      iteratorExpr,
+                          BlockStmt* body,
+                          bool       coforall,
+                          bool       zippered,
+                          bool       isLoweredForall)
 {
   VarSymbol*   index         = newTemp("_indexOfInterest");
   VarSymbol*   iterator      = newTemp("_iterator");
   CallExpr*    iterInit      = 0;
   CallExpr*    iterMove      = 0;
-  ForLoop*     loop          = new ForLoop(index, iterator, body, zippered);
+  ForLoop*     loop          = new ForLoop(index, iterator, body,
+                                           zippered, isLoweredForall);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
@@ -174,15 +165,83 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   iterator->addFlag(FLAG_EXPR_TEMP);
 
   // Unzippered loop, treat all objects (including tuples) the same
-  if (zippered == false)
+  if (zippered == false) {
     iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator",    iteratorExpr));
+    // try to optimize anonymous range iteration
+    tryToReplaceWithDirectRangeIterator(iteratorExpr);
+  }
+  // Zippered loop: Expand args to a tuple with an iterator for each element.
+  else {
+    CallExpr* zipExpr = toCallExpr(iteratorExpr);
+    if (zipExpr && zipExpr->isPrimitive(PRIM_ZIP)) {
+      // The PRIM_ZIP indicates this is a new-style zip() AST.
+      // Expand arguments to a tuple with appropriate iterators for each value.
+      //
+      // Specifically, change:
+      //    zip(a, b, c,  ...)
+      // into the tuple:
+      //    (_getIterator(a), _getIterator(b), _getIterator(c), ...)
+      //
+      // (ultimately, we will probably want to make this style of
+      // rewrite into a utility function for the other get*Zip
+      // functions as we convert parallel loops over to use PRIM_ZIP).
+      //
+      zipExpr->primitive = NULL;   // remove the primitive
 
-  // Expand tuple to a tuple containing appropriate iterators for each value.
-  else
-    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIteratorZip", iteratorExpr));
+      // If there's just one argument...
+      if (zipExpr->argList.length == 1) {
+        Expr* zipArg = zipExpr->argList.only();
+        CallExpr* zipArgCall = toCallExpr(zipArg);
 
-  // try to optimize anonymous range iteration, replaces iterExpr in place
-  optimizeAnonymousRangeIteration(iteratorExpr, zippered);
+        // ...and it is a tuple expansion '(...t)' then remove the
+        // tuple expansion primitive and simply pass the tuple itself
+        // to _getIteratorZip().  This will not require any more
+        // tuples than the user introduced themselves.
+        //
+        if (zipArgCall && zipArgCall->isPrimitive(PRIM_TUPLE_EXPAND)) {
+          zipExpr->baseExpr = new UnresolvedSymExpr("_getIteratorZip");
+          Expr* tupleArg = zipArgCall->argList.only();
+          tupleArg->remove();
+          zipArgCall->replace(tupleArg);
+        } else {
+          // ...otherwise, make the expression into a _getIterator()
+          // call
+          zipExpr->baseExpr = new UnresolvedSymExpr("_getIterator");
+          // try to optimize anonymous range iteration
+          tryToReplaceWithDirectRangeIterator(zipArg);
+        }
+      } else {
+        //
+        // Otherwise, if there's more than one argument, build up the
+        // tuple by applying _getIterator() to each element.
+        //
+        zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
+        Expr* arg = zipExpr->argList.first();
+        while (arg) {
+          Expr* next = arg->next;
+          Expr* argCopy = arg->copy();
+          arg->replace(new CallExpr("_getIterator", argCopy));
+          // try to optimize anonymous range iteration
+          tryToReplaceWithDirectRangeIterator(argCopy);
+          arg = next;
+        }
+      }
+      iterInit = new CallExpr(PRIM_MOVE, iterator, zipExpr);
+      assert(zipExpr == iteratorExpr);
+    } else {
+      //
+      // This is an old-style zippered loop so handle it in the old style
+      //
+      iterInit = new CallExpr(PRIM_MOVE, iterator,
+                              new CallExpr("_getIteratorZip", iteratorExpr));
+
+      // try to optimize anonymous range iteration
+      if (CallExpr* call = toCallExpr(iteratorExpr))
+        if (call->isNamed("_build_tuple"))
+          for_actuals(actual, call)
+            tryToReplaceWithDirectRangeIterator(actual);
+    }
+  }
 
   index->addFlag(FLAG_INDEX_OF_INTEREST);
 
@@ -207,15 +266,34 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   retval->insertAtTail(new DefExpr(iterator));
 
   retval->insertAtTail(iterInit);
+  retval->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", iterator)));
   retval->insertAtTail(new BlockStmt(iterMove, BLOCK_TYPE));
 
   retval->insertAtTail(loop);
 
   retval->insertAtTail(new DefExpr(breakLabel));
-  retval->insertAtTail(new CallExpr("_freeIterator", iterator));
 
   return retval;
 }
+
+BlockStmt* ForLoop::buildForLoop(Expr*      indices,
+                                 Expr*      iteratorExpr,
+                                 BlockStmt* body,
+                                 bool       coforall,
+                                 bool       zippered)
+{
+  return doBuildForLoop(indices, iteratorExpr, body, coforall, zippered, false);
+}
+
+BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
+                                           Expr*      iteratorExpr,
+                                           BlockStmt* body,
+                                           bool       coforall,
+                                           bool       zippered)
+{
+  return doBuildForLoop(indices, iteratorExpr, body, coforall, zippered, true);
+}
+
 
 /************************************ | *************************************
 *                                                                           *
@@ -228,16 +306,19 @@ ForLoop::ForLoop() : LoopStmt(0)
   mIndex    = 0;
   mIterator = 0;
   mZippered = false;
+  mLoweredForall = false;
 }
 
 ForLoop::ForLoop(VarSymbol* index,
                  VarSymbol* iterator,
                  BlockStmt* initBody,
-                 bool       zippered) : LoopStmt(initBody)
+                 bool       zippered,
+                 bool       isLoweredForall) : LoopStmt(initBody)
 {
   mIndex    = new SymExpr(index);
   mIterator = new SymExpr(iterator);
   mZippered = zippered;
+  mLoweredForall = isLoweredForall;
 }
 
 ForLoop::~ForLoop()
@@ -305,7 +386,12 @@ bool ForLoop::isForLoop() const
 // own class that shares a common parent with ForLoop.
 bool ForLoop::isCoforallLoop() const
 {
-  return mIndex->var->hasFlag(FLAG_COFORALL_INDEX_VAR);
+  return mIndex->symbol()->hasFlag(FLAG_COFORALL_INDEX_VAR);
+}
+
+bool ForLoop::isLoweredForallLoop() const
+{
+  return mLoweredForall;
 }
 
 SymExpr* ForLoop::indexGet() const
@@ -359,11 +445,14 @@ void ForLoop::verify()
   if (mIterator == 0)
     INT_FATAL(this, "ForLoop::verify. iterator  is NULL");
 
-  if (modUses   != 0)
-    INT_FATAL(this, "ForLoop::verify. modUses   is not NULL");
+  if (useList   != 0)
+    INT_FATAL(this, "ForLoop::verify. useList   is not NULL");
 
   if (byrefVars != 0)
     INT_FATAL(this, "ForLoop::verify. byrefVars is not NULL");
+
+  if (forallIntents != 0)
+    INT_FATAL(this, "ForLoop::verify. forallIntents is not NULL");
 }
 
 GenRet ForLoop::codegen()
@@ -388,8 +477,8 @@ void ForLoop::accept(AstVisitor* visitor)
     if (iteratorGet() != 0)
       iteratorGet()->accept(visitor);
 
-    if (modUses)
-      modUses->accept(visitor);
+    if (useList)
+      useList->accept(visitor);
 
     if (byrefVars)
       byrefVars->accept(visitor);

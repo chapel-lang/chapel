@@ -9,11 +9,11 @@ class C {
 class D {
   param a: int;
   param b: int;
-  var c: C(a, b);
+  var c: borrowed C(a, b);
 }
 
-var c = new C(5, 4, 1, 2, 3);
-var d = new D(5, 4, c);
+var c = new borrowed C(5, 4, 1, 2, 3);
+var d = new borrowed D(5, 4, c);
 
 writeln("{a = ", c.a, ", b = ", c.b, ", c = ", c.c,
         ", d = ", c.d, ", e = ", c.e, "}");

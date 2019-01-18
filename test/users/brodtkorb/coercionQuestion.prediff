@@ -3,8 +3,8 @@ set testname = $1
 set outfile  = $2
 set tmpfile  = $outfile.prediff.tmp
 
-# delete line numbers
-sed 's/:[0-9]*: note/:: note/g' $outfile > $tmpfile
+# note: lines (other functions)
+grep -v note $outfile > $tmpfile
 
 mv $tmpfile $outfile
 

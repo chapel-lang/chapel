@@ -1,0 +1,6 @@
+# Several configurations aren't working with minimal modules...
+COMPOPTS <= --baseline
+CHPL_COMM != none
+COMPOPTS <= --no-local
+CHPL_LOCALE_MODEL != flat
+EXECOPTS <= memLeaksLog

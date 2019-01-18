@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -189,9 +189,9 @@ hwloc_ffsl_from_ffs32(unsigned long x)
 #ifdef __GNUC_____
 
 #  if (__GNUC__ >= 4) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 4))
-#    define hwloc_flsl(x) (x ? 8*sizeof(long) - __builtin_clzl(x) : 0)
+#    define hwloc_flsl(x) (x ? (8*sizeof(long) - __builtin_clzl(x)) : 0)
 #  else
-#    define hwloc_fls(x) (x ? 8*sizeof(int) - __builtin_clz(x) : 0)
+#    define hwloc_fls(x) (x ? (8*sizeof(int) - __builtin_clz(x)) : 0)
 #    define HWLOC_NEED_FLSL
 #  endif
 
@@ -209,7 +209,7 @@ extern int flsl(long) __hwloc_attribute_const;
 extern int clzl(long) __hwloc_attribute_const;
 #  endif
 
-#  define hwloc_flsl(x) (x ? 8*sizeof(long) - clzl(x) : 0)
+#  define hwloc_flsl(x) (x ? (8*sizeof(long) - clzl(x)) : 0)
 
 #elif defined(HWLOC_HAVE_FLS)
 
@@ -226,7 +226,7 @@ extern int fls(int) __hwloc_attribute_const;
 extern int clz(int) __hwloc_attribute_const;
 #  endif
 
-#  define hwloc_fls(x) (x ? 8*sizeof(int) - clz(x) : 0)
+#  define hwloc_fls(x) (x ? (8*sizeof(int) - clz(x)) : 0)
 #  define HWLOC_NEED_FLSL
 
 #else /* no fls implementation */
@@ -360,7 +360,7 @@ hwloc_weight_long(unsigned long w)
 #endif /* HWLOC_BITS_PER_LONG == 64 */
 }
 
-#if !HAVE_DECL_STRTOULL
+#if !HAVE_DECL_STRTOULL && defined(HAVE_STRTOULL)
 unsigned long long int strtoull(const char *nptr, char **endptr, int base);
 #endif
 
@@ -378,5 +378,59 @@ static __hwloc_inline int hwloc_strncasecmp(const char *s1, const char *s2, size
   return 0;
 #endif
 }
+
+/* Parse a PCI link speed (GT/s) string from Linux sysfs */
+#ifdef HWLOC_LINUX_SYS
+#include <stdlib.h> /* for atof() */
+static __hwloc_inline float
+hwloc_linux_pci_link_speed_from_string(const char *string)
+{
+  /* don't parse Gen1 with atof() since it expects a localized string
+   * while the kernel sysfs files aren't.
+   */
+  if (!strncmp(string, "2.5 ", 4))
+    /* "2.5 GT/s" is Gen1 with 8/10 encoding */
+    return 2.5 * .8;
+
+  /* also hardwire Gen2 since it also has a specific encoding */
+  if (!strncmp(string, "5 ", 2))
+    /* "5 GT/s" is Gen2 with 8/10 encoding */
+    return 5 * .8;
+
+  /* handle Gen3+ in a generic way */
+  return atof(string) * 128./130; /* Gen3+ encoding is 128/130 */
+}
+#endif
+
+#if !HAVE_DECL_MODFF
+#define modff(x,iptr) (float)modf((double)x,(double *)iptr)
+#endif
+
+#ifdef HWLOC_WIN_SYS
+#  ifndef HAVE_SSIZE_T
+typedef SSIZE_T ssize_t;
+#  endif
+#  if !HAVE_DECL_STRTOULL && !defined(HAVE_STRTOULL)
+#    define strtoull _strtoui64
+#  endif
+#  ifndef S_ISREG
+#    define S_ISREG(m) ((m) & S_IFREG)
+#  endif
+#  ifndef S_ISDIR
+#    define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#  endif
+#  if !HAVE_DECL_STRCASECMP
+#    define strcasecmp _stricmp
+#  endif
+#  if !HAVE_DECL_SNPRINTF
+#    define snprintf _snprintf
+#  endif
+#  if HAVE_DECL__STRDUP
+#    define strdup _strdup
+#  endif
+#  if HAVE_DECL__PUTENV
+#    define putenv _putenv
+#  endif
+#endif
 
 #endif /* HWLOC_PRIVATE_MISC_H */

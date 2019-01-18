@@ -44,8 +44,6 @@ proc test(n_prefetch:int): (int,real) {
       clock.clear();
       clock.start();
 
-      var data = A._value.theData;
-
       for j in 1..n {
         var i = f(j);
 

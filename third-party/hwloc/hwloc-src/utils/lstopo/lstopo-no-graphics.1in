@@ -1,9 +1,9 @@
 .\" -*- nroff -*-
-.\" Copyright © 2009-2015 Inria.  All rights reserved.
+.\" Copyright © 2009-2018 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
-.TH LSTOPO "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
+.TH LSTOPO "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
 .SH NAME
 lstopo, lstopo-no-graphics, hwloc-ls \- Show the topology of the system
 .
@@ -123,6 +123,11 @@ Do not show Instruction caches, only Data and Unified caches are displayed.
 \fB\-\-whole\-system\fR
 Do not consider administration limitations.
 .TP
+\fB\-\-flags\fR <flags>
+Enforce topology flags.
+The default is \fB0\fR.
+These flags are passed to \fIhwloc_topology_set_flags()\fR.
+.TP
 \fB\-\-merge\fR
 Do not show levels that do not have a hierarchical impact.
 This calls hwloc_topology_ignore_all_keep_structure().
@@ -173,7 +178,7 @@ discovery itself.
 Note that this can for instance change the set of allowed processors.
 Also show this process current CPU binding by marking the corresponding
 PUs (in Green in the graphical output, see the COLORS section below,
-or by appending \fI(binding)\fR to the verbose text output).
+or by appending \fI(running)\fR to the verbose text output).
 If 0 is given as pid, the current binding for the lstopo process will be shown.
 .TP
 \fB\-\-ps\fR \fB\-\-top\fR
@@ -191,19 +196,40 @@ Set size of margin between elements.
 .TP
 \fB\-\-horiz\fR, \fB\-\-horiz\fR=<type1,...>
 Horizontal graphical layout instead of nearly 4/3 ratio.
-If a comma-separated list of types is given, the layout only
-applies to the corresponding containers.
+If a comma-separated list of object types is given, the layout only
+applies to the corresponding container objects.
+Ignored for bridges since their children are always vertically aligned.
 .TP
 \fB\-\-vert\fR, \fB\-\-vert\fR=<type1,...>
 Vertical graphical layout instead of nearly 4/3 ratio.
-If a comma-separated list of types is given, the layout only
-applies to the corresponding containers.
+If a comma-separated list of object types is given, the layout only
+applies to the corresponding container objects.
 .TP
 \fB\-\-rect\fR, \fB\-\-rect\fR=<type1,...>
-Rectangular graphical layout with nearly 4/3 ratio,
-including when placing NUMA nodes.
-If a comma-separated list of types is given, the layout only
-applies to the corresponding containers.
+Rectangular graphical layout with nearly 4/3 ratio.
+If a comma-separated list of object types is given, the layout only
+applies to the corresponding container objects.
+Ignored for bridges since their children are always vertically aligned.
+.TP
+\fB\-\-no\-index\fR, \fB\-\-no\-index=<type1,...>\fR
+Do not show object indexes in the graphical output.
+If a comma-separated list of object types is given, indexes are disabled for the corresponding objects.
+.TP
+\fB\-\-index\fR, \fB\-\-index=<type1,...>\fR
+Show object indexes in the graphical output (default).
+If a comma-separated list of object types is given, indexes are reenabled for the corresponding objects
+(if they were previously disabled with \fB\-\-no\-index\fR).
+.TP
+\fB\-\-no\-attrs\fR, \fB\-\-no\-attrs=<type1,...>\fR
+Do not show object attributes (such as memory size, cache size, PCI link speed, etc.)
+in the graphical output.
+If a comma-separated list of object types is given, attributes are disabled for the corresponding objects.
+.TP
+\fB\-\-attrs\fR, \fB\-\-attrs=<type1,...>\fR
+Show object attributes (such as memory size, cache size, PCI link speed, etc.)
+in the graphical output (default).
+If a comma-separated list of object types is given, attributes are reenabled for the corresponding objects
+(if they were previously disabled with \fB\-\-no\-attrs\fR).
 .TP
 \fB\-\-no\-legend\fR
 Remove the text legend at the bottom.
@@ -417,10 +443,10 @@ For instance, to display all core objects in blue (with white names):
 .\" **************************
 .SH LAYOUT
 In its graphical output, lstopo uses simple rectangular heuristics
-to try to achieve a 4/3 ratio between width and height. However,
-in the particular case of NUMA nodes, the layout is always a flat
-rectangle, to avoid letting the user believe any particular NUMA
-topology (lstopo is not able to render that yet).
+to try to achieve a 4/3 ratio between width and height.
+Although the hierarchy of resources is properly reflected,
+the exact physical organization (NUMA distances, rings,
+complete graphs, etc.) is currently ignored.
 .
 The layout of a level may be changed with \-\-vert, \-\-horiz,
 and \-\-rect.
@@ -492,7 +518,7 @@ To only show the cpusets of package:
 Simulate a fake hierarchy; this example shows with 2 NUMA nodes of 2
 processor units:
 
-    lstopo --input "n:2 2"
+    lstopo --input "node:2 2"
 
 To count the number of logical processors in the system
 

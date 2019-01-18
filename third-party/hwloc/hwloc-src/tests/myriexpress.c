@@ -1,5 +1,5 @@
 /*
- * Copyright © 2010 inria.  All rights reserved.
+ * Copyright © 2010-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -50,7 +50,7 @@ int main(void)
       return -1;
     }
     hwloc_bitmap_asprintf(&cpuset_string, set);
-    printf("got cpuset %s for endpoint on board #%d\n",
+    printf("got cpuset %s for endpoint on board #%u\n",
 	   cpuset_string, i);
     free(cpuset_string);
     hwloc_bitmap_free(set);
@@ -63,7 +63,7 @@ int main(void)
       return -1;
     }
     hwloc_bitmap_asprintf(&cpuset_string, set);
-    printf("got cpuset %s for board #%d\n",
+    printf("got cpuset %s for board #%u\n",
            cpuset_string, i);
     free(cpuset_string);
     hwloc_bitmap_free(set);

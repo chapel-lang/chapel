@@ -1,0 +1,1 @@
+concrete-indirect.chpl:7: error: record 'B' cannot contain a recursive field 'a' whose type 'A' contains 'B'

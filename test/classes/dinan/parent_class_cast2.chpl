@@ -4,17 +4,17 @@ class P {
 
 class C: P {
     var n: int;
-    proc f() return "D";
+    override proc f() return "D";
 }
 
 class D {
-    var p: P;
+    var p: unmanaged P;
 }
 
-var d = new D();
+var d = new unmanaged D();
 
 // OK: d.p = new C(5):P;
-d.p = new C(5);
+d.p = new unmanaged C(5);
 
 writeln(d.p.f());
 

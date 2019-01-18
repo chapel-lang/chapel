@@ -1,5 +1,3 @@
-use Time;
-config const sleepTime:uint = 1;
 config const printIterations = false;
 proc main() {
   var s: string = "a string";
@@ -11,7 +9,6 @@ proc main() {
       s = "another string";
     }
     on Locales(0) {
-      sleep(sleepTime);
       s = "done";
     }
   }

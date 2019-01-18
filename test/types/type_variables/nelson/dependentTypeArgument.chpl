@@ -3,8 +3,11 @@ class A {
 }
 
 proc bar(type T) {
-  var t = new T();
+  var t = new unmanaged T();
+
   t.hello();
+
+  delete t;
 }
 
 

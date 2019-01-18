@@ -1,3 +1,0 @@
-# This test does not crash under comm=none.
-# Really, this is a --no-local crash (even with comm=none).
-CHPL_COMM == none

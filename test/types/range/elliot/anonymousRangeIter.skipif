@@ -10,3 +10,6 @@ COMPOPTS <= --no-inline
 
 # test greps generated c code, will fail for llvm
 COMPOPTS <= --llvm
+
+# --no-denormalize creates slightly differnet temporary names
+COMPOPTS <= --no-denormalize

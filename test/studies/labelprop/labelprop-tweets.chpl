@@ -17,7 +17,7 @@ Computation consists of these steps:
 /* How can we represent a graph in Chapel?
     * Matrix view - dense or sparse
     * Class instances tree
-    
+
     * Opaque Domain view
     var People = opaque;
     var Child: [People] [1..maxChildren] index(People);
@@ -31,8 +31,8 @@ Computation consists of these steps:
     * Array of Edges view
      -> rectangular array of Vertex by vertex ID
      -> each Vertex contains an array of edges (a bag of values)
-        
-    We don't yet have opaque distributions or associative distributions. 
+
+    We don't yet have opaque distributions or associative distributions.
       -- see test/distributions/bradc/assoc
 
     We don't yet support inner arrays with different sizes.
@@ -47,16 +47,15 @@ config var seed = 0;
 config const maxiter = 20;
 config const output = true;
 config const parallel = true;
+config param distributed = false; // NOTE - could default to CHPL_COMM != none
 
 use FileSystem;
 use Spawn;
 use Time;
 use Graph;
 use Random;
-
-// twitter user ID to twitter user ID mentions
-var Pairs:domain( (int, int) );
-// TODO -- scalability. Pairs should be distributed.
+use HashedDist;
+use BlockDist;
 
 // packing twitter user IDs to numbers
 var total_tweets_processed : atomic int;
@@ -66,9 +65,6 @@ var max_user_id : atomic int;
 proc main(args:[] string) {
   var files = args[1..];
   var todo:list(string);
-
-  var t:Timer;
-  t.start();
 
   for arg in files {
     if isDir(arg) {
@@ -81,26 +77,72 @@ proc main(args:[] string) {
     }
   }
 
-  var allfiles:[1..todo.length] string;
+  // TODO - using 2 functions because of lack of
+  // domain assignment in Hashed
+  // Pairs is for collecting twitter  user ID to user ID mentions
+  if distributed {
+    var Pairs: domain( (int, int) ) dmapped Hashed(idxType=(int, int));
+    run(todo, Pairs);
+  } else {
+    var Pairs: domain( (int, int) );
+    run(todo, Pairs);
+  }
+}
+
+
+
+proc run(ref todo:list(string), ref Pairs) {
+  var t:Timer;
+  t.start();
+
+  const FilesSpace = {1..todo.length};
+  const BlockSpace = if distributed then
+                       FilesSpace dmapped Block(boundingBox=FilesSpace)
+                     else
+                       FilesSpace;
+  var allfiles:[BlockSpace] string;
   allfiles = todo;
 
   todo.destroy();
 
-  forall f in allfiles {
+  var parseAndMakeSetTime:Timer;
+  parseAndMakeSetTime.start();
+
+
+  forall f in allfiles with (ref Pairs) {
     // TODO -- performance/scalability
     // we don't want to lock/unlock the hashtable
     // every time we add an entry. Appends could
     // be aggregated.
-    process_json(f);
+    process_json(f, Pairs);
+  }
+
+  parseAndMakeSetTime.stop();
+
+  if verbose {
+    if distributed {
+      // TODO -- this is not portable code
+      // need HashedDist to support localDomain
+      for i in 0..#numLocales {
+        writeln("on locale ", i, " there are ",
+                Pairs._value.locDoms[i].myInds.size,
+                " values");
+      }
+    }
   }
 
   if verbose then
     writeln("the maximum user id was ", max_user_id.read());
 
-  create_and_analyze_graph();
+  var nlines = total_lines_processed.read();
+
+  if timing {
+    writeln("parsed ", nlines, " lines in ", parseAndMakeSetTime.elapsed(), " s ");
+  }
+
+  create_and_analyze_graph(Pairs);
 
   t.stop();
-  var nlines = total_lines_processed.read();
   var days = t.elapsed(TimeUnits.hours) / 24.0;
   var m = 1000000.0;
   if timing {
@@ -133,10 +175,9 @@ record Empty {
 }
 
 
-proc process_json(logfile:channel, fname:string) {
+proc process_json(logfile:channel, fname:string, ref Pairs) {
   var tweet:Tweet;
   var empty:Empty;
-  var err:syserr;
   var got:bool;
 
   var ntweets = 0;
@@ -145,10 +186,28 @@ proc process_json(logfile:channel, fname:string) {
 
   if progress then
     writeln(fname, " : processing");
- 
+
   while true {
-    got = logfile.readf("%~jt", tweet, error=err);
-    if got && !err {
+    try! {
+      try {
+        got = logfile.readf("%~jt", tweet);
+      } catch e: BadFormatError {
+        if verbose then
+            stdout.writeln("error reading tweets ", fname, " offset ",
+              logfile.offset(), " : ", errorToString(e.err));
+
+        // read over something else
+        got = logfile.readf("%~jt", empty);
+      }
+    } catch e: SystemError {
+      stderr.writeln("severe error reading tweets ", fname, " offset ",
+          logfile.offset(), " : ", errorToString(e.err));
+
+      // advance to the next line.
+      logfile.readln();
+    } // halt on truly unknown error
+
+    if got {
       if verbose then writef("%jt\n", tweet);
       var id = tweet.user.id;
       if max_id < id then max_id = id;
@@ -162,25 +221,10 @@ proc process_json(logfile:channel, fname:string) {
         }
       }
       ntweets += 1;
+    } else { // end of file
+      break;
     }
-    if err == EFORMAT {
-      if verbose then
-          stdout.writeln("error reading tweets ", fname, " offset ",
-            logfile.offset(), " : ", errorToString(err));
 
-      // read over something else
-      got = logfile.readf("%~jt", empty, error=err);
-    }
-    if err == EEOF then break;
-    if err {
-      stderr.writeln("severe error reading tweets ", fname, " offset ",
-          logfile.offset(), " : ", errorToString(err));
-
-      halt("ERROR");
-
-      // advance to the next line.
-      logfile.readln();
-    }
     nlines += 1;
   }
 
@@ -201,39 +245,49 @@ proc process_json(logfile:channel, fname:string) {
   }
 }
 
-proc process_json(fname: string)
+proc process_json(fname: string, ref Pairs)
 {
 
   var last3chars = fname[fname.length-2..fname.length];
   if last3chars == ".gz" {
     var sub = spawn(["gunzip", "-c", fname], stdout=PIPE);
-    process_json(sub.stdout, fname);
+    process_json(sub.stdout, fname, Pairs);
   } else {
     var logfile = openreader(fname);
-    process_json(logfile, fname);
+    process_json(logfile, fname, Pairs);
   }
 }
 
-proc create_and_analyze_graph()
+
+record Triple {
+  var from: int(32);
+  var to: int(32);
+  proc weight return 1:int(32);
+}
+
+
+proc create_and_analyze_graph(Pairs)
 {
   if progress {
-    writeln("funding mutual mentions");
+    writeln("finding mutual mentions");
 
     writeln(Pairs.size, " pairs / ",
             total_tweets_processed.read(), " tweets / ",
             total_lines_processed.read(), " lines");
   }
 
+  var createGraphTime:Timer;
+  createGraphTime.start();
+
   var nmutual = 0;
 
   // Build idToNode
   var userIds:domain(int);
 
-  for (id, other_id) in Pairs {
-    if Pairs.member( (other_id, id) ) {
+  forall (id, other_id) in Pairs with (ref userIds) {
+    if Pairs.contains( (other_id, id) ) {
       //writeln("Reciprocal match! ", (id, other_id) );
-      nmutual += 1;
-      
+
       // add to userIds
       userIds += id;
       // Not necessary to add other_id now since we will
@@ -242,8 +296,7 @@ proc create_and_analyze_graph()
   }
 
   if progress then
-    writeln(nmutual, " mutual / ",
-            Pairs.size, " pairs / ",
+    writeln(Pairs.size, " pairs / ",
             total_tweets_processed.read(), " tweets / ",
             total_lines_processed.read(), " lines");
 
@@ -260,7 +313,7 @@ proc create_and_analyze_graph()
     idToNode[id] = node:int(32);
     nodeToId[node] = id;
   }
-  
+
   if printall {
     writeln("idToNode:");
     for id in userIds {
@@ -274,19 +327,13 @@ proc create_and_analyze_graph()
 
   // construct array of triples (from, to, weight)
   // this is also known as Coordinate List (COO)
-  record Triple {
-    var from: int(32);
-    var to: int(32);
-    proc weight return 1:int(32);
-  }
-
   var max_nid:int(32);
 
   if progress then
     writeln("creating triples");
 
   var triples = [(id, other_id) in Pairs]
-                   if id < other_id && Pairs.member( (other_id, id) ) then 
+                   if id < other_id && Pairs.contains( (other_id, id) ) then
                      new Triple(idToNode[id], idToNode[other_id]);
 
   if printall {
@@ -317,7 +364,13 @@ proc create_and_analyze_graph()
   // Clear out memory used by triples.
   triples.domain.clear();
 
-  if progress then 
+  createGraphTime.stop();
+
+  if timing {
+    writeln("created graph in ", createGraphTime.elapsed(), " s ");
+  }
+
+  if progress then
     writeln("done creating graph");
 
   if printall {
@@ -332,12 +385,15 @@ proc create_and_analyze_graph()
   if progress then
     writeln("label propagation");
 
+  var graphAlgorithmTime:Timer;
+  graphAlgorithmTime.start();
+
   // start with a different label for each node
   // the labels correspond to clusters.
 
   var labels:[1..max_nid] atomic int(32);
   forall (lab,i) in zip(labels,1:int(32)..) {
-    // TODO -- elegance - use "atomic counter" that acts as normal var 
+    // TODO -- elegance - use "atomic counter" that acts as normal var
     // or change the default for the atomic
     labels[i].write(i, memory_order_relaxed);
   }
@@ -425,7 +481,7 @@ proc create_and_analyze_graph()
         if printall then
           writeln("with label ", nlabel);
 
-        if ! foundLabels.member(nlabel) {
+        if ! foundLabels.contains(nlabel) {
           foundLabels += nlabel;
         }
         counts[nlabel] += 1;
@@ -446,13 +502,12 @@ proc create_and_analyze_graph()
           maxlabel = lab;
         }
       }
-      delete tiebreaker;
 
       // TODO:
       // Did the existing label correspond to a maximal label?
       // stop when every node has a label a maximum number of neighbors have
-      // (e.g. there might be 2 labels each attaining the maximum) 
-      if foundLabels.member[mylabel] && counts[mylabel] < maxlabel {
+      // (e.g. there might be 2 labels each attaining the maximum)
+      if foundLabels.contains[mylabel] && counts[mylabel] < maxlabel {
         go.write(true, memory_order_relaxed);
       }
 
@@ -462,7 +517,14 @@ proc create_and_analyze_graph()
     }
     i += 1;
   } }
-  
+
+  graphAlgorithmTime.stop();
+
+  if timing {
+    writeln("graph algorithm ran ", graphAlgorithmTime.elapsed(), " s ");
+  }
+
+
   if output {
     for vid in G.vertices {
       writeln("twitter user ", nodeToId[vid],
@@ -470,6 +532,8 @@ proc create_and_analyze_graph()
               nodeToId[labels[vid].read(memory_order_relaxed)]);
     }
   }
+
+  delete G;
 }
 
 

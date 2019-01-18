@@ -1,0 +1,5 @@
+in conditionalThrow, r=(x = 2)
+destroying R(x=2)
+uncaught Error: 
+  throws-destroys.chpl:42: thrown here
+  throws-destroys.chpl:11: uncaught here

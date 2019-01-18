@@ -313,7 +313,7 @@ proc test_permuteMatrix(rprt = true) : bool {
     // little too meta here?)
 
     param n = 10;
-    var rand = new RandomStream();
+    var rand = new owned RandomStream(real);
 
     // this n by n array is filled so each element is assigned to its
     // row number. This test will permute these elements, keeping a pivot
@@ -331,8 +331,6 @@ proc test_permuteMatrix(rprt = true) : bool {
         piv[randRow1] <=> piv[randRow2];
     }
 
-    delete rand;
-
     // permute original version of A
     permuteMatrix(AOrig, piv);
 
@@ -349,7 +347,7 @@ proc test_permuteMatrix(rprt = true) : bool {
 }
 
 proc test_panelSolve(rprt = true) : bool {
-    var rand = new RandomStream();
+    var rand = new owned RandomStream(real);
 
     var piv : [1..8] int = [i in 1..8] i;
     var A : [1..8, 1..9] real =
@@ -357,8 +355,6 @@ proc test_panelSolve(rprt = true) : bool {
     var AOrig = A;
 
     var AOrig2 = A;
-
-    delete rand;
 
     // grab a panel and solve it
     param offset = 3;
@@ -391,7 +387,7 @@ proc test_panelSolve(rprt = true) : bool {
 }
 
 proc test_updateBlockRow(rprt = true) : bool {
-    var rand = new RandomStream();
+    var rand = new owned RandomStream(real);
 
     // construct a matrix A = [X | Y], where X is an already LU-factorized
     // submatrix and Y is the block row we wish to update and test
@@ -401,7 +397,7 @@ proc test_updateBlockRow(rprt = true) : bool {
     var A : [randomOffset..randomOffset+randomHeight-1,
              randomOffset..randomOffset+randomWidth-1] real;
     rand.fillRandom(A);
-    delete rand;
+
     var OrigA = A;
     
     // capture X and Y
@@ -471,13 +467,11 @@ proc test_LUFactorizeNorms(
 
 proc test_LUFactorize(rprt = true, seed = -1) : bool {
     // construct a matrix of random size with random values 
-    var rand = new RandomStream(seed);
+    var rand = new owned RandomStream(real, seed);
 
     var randomN : int = (rand.getNext() * 10):int + 1;
     var A : [1..randomN, 1..randomN+1] real;
     for idx in A.domain do A[idx] = rand.getNext() * 2.0 - 1.0;
-
-    delete rand;
 
     // save a copy
     var origA = A;

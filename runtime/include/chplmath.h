@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,16 +20,12 @@
 #ifndef _CHPL_MATH_H_
 #define _CHPL_MATH_H_
 
-static inline double chpl_macro_INFINITY(void) {
-  double x;
-  *(unsigned long long int*) &x = 0x7ff0000000000000ULL;   // positive infinity
-  return x;
+static inline float chpl_macro_INFINITY(void) {
+  return INFINITY;
 }
 
-static inline double chpl_macro_NAN(void) {
-  double x;
-  *(unsigned long long int*) &x = 0x7ff8000000000001ULL;   // quiet NaN
-  return x;
+static inline float chpl_macro_NAN(void) {
+  return NAN;
 }
 
 static inline int chpl_macro_double_isinf(double x) { return isinf(x); }
@@ -39,6 +35,24 @@ static inline int chpl_macro_float_isfinite(float x) { return isfinite(x); }
 static inline int chpl_macro_double_isnan(double x) { return isnan(x); }
 static inline int chpl_macro_float_isnan(float x) { return isnan(x); }
 
+// 32-bit Bessel functions aren't available on all platforms. For cases where
+// we know they're available use them since they should be faster, but in other
+// cases default to using the 64-bit versions and casting.
+#ifdef __linux__
+static inline float chpl_float_j0(float x) { return j0f(x); }
+static inline float chpl_float_j1(float x) { return j1f(x); }
+static inline float chpl_float_jn(int n, float x) { return jnf(n, x); }
+static inline float chpl_float_y0(float x) { return y0f(x); }
+static inline float chpl_float_y1(float x) { return y1f(x); }
+static inline float chpl_float_yn(int n, float x) { return ynf(n, x); }
+#else
+static inline float chpl_float_j0(float x) { return (float)j0(x); }
+static inline float chpl_float_j1(float x) { return (float)j1(x); }
+static inline float chpl_float_jn(int n, float x) { return (float)jn(n, x); }
+static inline float chpl_float_y0(float x) { return (float)y0(x); }
+static inline float chpl_float_y1(float x) { return (float)y1(x); }
+static inline float chpl_float_yn(int n, float x) { return (float)yn(n, x); }
+#endif
 
 #ifdef DEFINE_32_BIT_MATH_FNS
 #define fabsf(x) (float)fabs(x)

@@ -5,8 +5,10 @@ class foo {
   }
 }
 
-var f : foo = new foo();
+var f : unmanaged foo = new unmanaged foo();
 
 f.x = 12;
 f.bar(13);
 f.bar(f.x);
+
+delete f;

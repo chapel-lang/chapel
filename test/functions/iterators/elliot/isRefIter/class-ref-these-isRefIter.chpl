@@ -23,7 +23,7 @@ class C {
 //
 // ensure iterators are correctly idenified as ref iters
 //
-var c = new C();
+var c = new borrowed C();
 writeln(isRefIter(c.these()));
 
 writeln(isRefIter(c.these(tag=iterKind.standalone)));

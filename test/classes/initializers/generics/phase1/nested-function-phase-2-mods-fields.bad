@@ -1,0 +1,4 @@
+nested-function-phase-2-mods-fields.chpl:7: In initializer:
+nested-function-phase-2-mods-fields.chpl:17: error: illegal lvalue in assignment
+nested-function-phase-2-mods-fields.chpl:7: In initializer:
+nested-function-phase-2-mods-fields.chpl:17: error: parameter set multiple times

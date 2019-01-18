@@ -1,0 +1,5 @@
+perfkeys: real
+graphkeys: startup time
+files: no-op.dat
+graphtitle: no-op (non-user code startup time)
+ylabel: Time (seconds)

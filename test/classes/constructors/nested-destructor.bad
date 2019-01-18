@@ -1,6 +1,0 @@
-in R()
-in ~R
-in ~C
-in ~R
-in ~C
-nested-destructor.chpl:3: error: attempt to dereference nil

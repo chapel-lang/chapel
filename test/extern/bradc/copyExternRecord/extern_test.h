@@ -1,8 +1,9 @@
 #include <stdio.h>
+#include <inttypes.h>
 
 typedef struct testrec {
-  long long int x;
-  long long int y;
+  int64_t x;
+  int64_t y;
 } testrec;
 
 static inline
@@ -15,6 +16,6 @@ void init_testrec(testrec* t, int x, int y)
 static inline
 void debug_print_testrec(testrec* t)
 {
-  printf("testret = %lli %lli\n",
+  printf("testret = %" PRIu64 " %" PRIu64 "\n",
          t->x, t->y);
 }

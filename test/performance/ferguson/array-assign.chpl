@@ -1,4 +1,4 @@
-use CommDiagnostics;
+use CommUtil;
 
 
 config const n = 100000;
@@ -9,14 +9,13 @@ for i in 1..n {
   A[i] = i;
 }
 
-resetCommDiagnostics();
-startCommDiagnostics();
+start();
 
 B = A;
 
-stopCommDiagnostics();
+stop();
 
-writeln(B[1]);
-writeln(B[n]);
+assert(B[1] == 1);
+assert(B[n] == n);
 
-writeln(getCommDiagnostics());
+report(maxGets=0, maxPuts=0, maxOns=0);

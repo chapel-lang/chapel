@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,8 +22,6 @@
 
 module ChapelBase {
 
-  pragma "default string value" extern var defaultStringValue: string = noinit;
-
   //
   // internal reference type
   //
@@ -35,18 +33,11 @@ module ChapelBase {
   }
 
   pragma "compiler generated"
-  pragma "init copy fn"
-  inline proc chpl__initCopy(a) {
-    // Currently, string representations are shared.
-    // (See note on proc =(a:string, b:string) above.)
-      return a;
+  pragma "last resort"
+  pragma "unalias fn"
+  inline proc chpl__unalias(x) {
+    pragma "no copy" var ret = x;
+    return x;
   }
 
-  pragma "donor fn"
-  pragma "auto copy fn"
-  inline proc chpl__autoCopy(x) return chpl__initCopy(x);
-
-  inline proc chpl__autoDestroy(x: ?t) {
-    __primitive("call destructor", x);
-  }
 }

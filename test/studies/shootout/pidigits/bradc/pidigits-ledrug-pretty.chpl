@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://shootout.alioth.debian.org/
+   http://benchmarksgame.alioth.debian.org
 
    contributed by Tom Hildebrandt, Brad Chamberlain, Lydia Duncan
    derived from the GNU C version by Ledrug
@@ -10,10 +10,19 @@ use GMP, GMPops;
 config const n = 50;                // Compute n digits of Pi, 50 by default
 
 proc main() {
+  param digitsPerLine = 10;
+
   for (d,i) in zip(gen_digits(n), 1..) {
     write(d);
-    if i % 10 == 0 then
+    if i % digitsPerLine == 0 then
       writeln("\t:",i);
+  }
+
+  const leftover = n%digitsPerLine;
+  if (leftover) {
+    for leftover..digitsPerLine-1 do
+      write(" ");
+    writeln("\t:", n);
   }
 }
 
@@ -62,7 +71,7 @@ iter gen_digits(numDigits) {
   }
 
   //
-  // Free memory associated with multi-precision valuesx
+  // Free memory associated with multi-precision values
   //
   mpz_clear(num);
   mpz_clear(den);

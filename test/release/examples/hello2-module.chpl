@@ -1,39 +1,46 @@
-/*  This program is conceptually very similar to hello.chpl, but it
- *  uses a more structured programming style, explicitly defining a
- *  module, a configuration constant, and a main() procedure.
+// "Production-grade" hello world
+
+/* This program is conceptually very similar to :ref:`hello.chpl
+   <primers-hello>`, but it uses a more structured programming style,
+   explicitly defining a module, a configuration constant, and a
+   main() procedure.
  */
 
 //
-// define a module named 'Hello'.  If a source file defines no
-// modules, the filename minus its .chpl extension serves as the
-// module name for the code it contains.  Thus, 'hello' would be
-// the automatic module name for hello.chpl.
+// The following statement declares a module named 'Hello'.  If a
+// source file contains no module declarations, the filename minus its
+// ``.chpl`` extension serves as the module name for the code it
+// contains.  Thus, 'hello' would be the automatic module name for the
+// previous :ref:`hello.chpl <primers-hello>` example.
 //
 module Hello {
 
-  //
-  // Declare the message to be printed out as a configuration
-  // constant named "message".  The type is inferred to be a string
-  // due to the initializing expression.  Like any configuration
-  // constant or variable, the default value can be over-ridden by
-  // using on the executable's command line (e.g., --message="hiya!")
-  //
+//
+// This next statement declares a `configuration constant` named
+// `message`.  The type is inferred to be a string since the
+// initializing expression is a string literal.  Users may override
+// the default values of configuration constants and variables on the
+// executable's command-line.  For example, we could change the
+// default message for a given run using the command line: ``./hello
+// --message="hiya!"``.
+//
   config const message = "Hello, world!";
 
 
-  // Any top-level code in a module is executed when the module is
-  // initialized at the start of a Chapel program's execution.  Thus,
-  // in hello.chpl, the presence of a writeln() at the file scope is
-  // part of the implicit module's initialization and is executed at
-  // program startup (and since there was no explicit main() function
-  // or other top-level code, that's all that the program does).
+// Any top-level code in a module is executed as part of the module's
+// initialization when the program begins executing.  Thus, in the
+// previous one-line :ref:`hello.chpl <primers-hello>`, the presence
+// of a `writeln()` at the file scope formed the implicit `hello`
+// module's initialization and would be executed at program startup.
+// Since there was no explicit `main()` function or any other
+// top-level code, that's all that the program would do.
 
 
-  //
-  // Here we define the module's main() procedure, which is the
-  // program's entry point that will be run after the module (and any
-  // modules that it uses explicitly or implicitly) are initialized.
-  //
+//
+// In this program, we define an entry point for the program by
+// defining a procedure named `main()`.  This will be invoked after
+// this module and all the modules it uses are initialized.
+//
   proc main() {
     writeln(message);
   }

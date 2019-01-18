@@ -7,7 +7,7 @@ record R {
   var y : int;
 }
 
-var c = new C(R);
+var c = new unmanaged C(R);
 
 writeln(c);
 

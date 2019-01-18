@@ -6,3 +6,5 @@ a = _ddata_allocate(c_int, size);
 var b = a;
 
 if b == a then writeln("OK");
+
+_ddata_free(a, size);

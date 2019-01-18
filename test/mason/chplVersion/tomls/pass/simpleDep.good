@@ -1,0 +1,15 @@
+----- lock file -----
+
+[root]
+name = "simpleDep"
+version = "0.1.0"
+chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
+dependencies = ["simpleGoodDep 0.1.0 foo"]
+
+[simpleGoodDep]
+name = "simpleGoodDep"
+version = "0.1.0"
+chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
+source = "foo"
+
+

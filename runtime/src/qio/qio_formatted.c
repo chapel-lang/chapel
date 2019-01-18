@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -485,10 +485,6 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
   int64_t end_offset;
   ssize_t maxlen_chars = SSIZE_MAX - 1;
   int found_term = 0;
-
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
-  }
 
   if( maxlen_bytes <= 0 ) maxlen_bytes = SSIZE_MAX - 1;
 
@@ -984,6 +980,7 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
       break;
     case QIO_BINARY_STRING_STYLE_TOEOF:
       // Just don't worry about the length - write len bytes.
+      break;
     default:
       if( str_style >= 0 ) {
         // MPF - perhaps we should allow writing a string
@@ -1204,10 +1201,6 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
     len = 0;
   }
 
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
-  }
-
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) return err;
@@ -1333,7 +1326,7 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
   ssize_t safe_quoted_bytes = 0;
   ssize_t safe_quoted_chars = 0;
   ssize_t safe_quoted_cols = 0;
-  int elipses_size;
+  int ellipses_size;
   int end_quote_size;
   int start_quote_size;
   int clen = 1;
@@ -1347,11 +1340,11 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
   // write the string itself, possible with some escape-handling.
   if( string_format == QIO_STRING_FORMAT_WORD ||
       string_format == QIO_STRING_FORMAT_TOEND ) {
-    elipses_size = 0;
+    ellipses_size = 0;
     end_quote_size = 0;
     start_quote_size = 0;
   } else {
-    elipses_size = 3; // ie ...
+    ellipses_size = 3; // ie ...
     end_quote_size = 1; // ie a double quote
     start_quote_size = 1;
     // Smallest pattern is ""...
@@ -1378,9 +1371,9 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
       QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
       goto error;
     }
-    if( quoted_bytes + elipses_size + end_quote_size <= max_bytes &&
-        quoted_chars + elipses_size + end_quote_size <= max_chars &&
-        quoted_cols + elipses_size + end_quote_size <= max_cols) {
+    if( quoted_bytes + ellipses_size + end_quote_size <= max_bytes &&
+        quoted_chars + ellipses_size + end_quote_size <= max_chars &&
+        quoted_cols + ellipses_size + end_quote_size <= max_cols) {
       safe_i = i;
       safe_quoted_bytes = quoted_bytes;
       safe_quoted_chars = quoted_chars;
@@ -1400,7 +1393,7 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
 
   if( overfull ) {
     i = safe_i;
-    // and add end quote and elipses.
+    // and add end quote and ellipses.
     quoted_bytes = safe_quoted_bytes;
     quoted_chars = safe_quoted_chars;
     quoted_cols = safe_quoted_cols;
@@ -1412,10 +1405,10 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
   quoted_cols += end_quote_size;
 
   if( overfull ) {
-    // Account for the elipses
-    quoted_bytes += elipses_size;
-    quoted_chars += elipses_size;
-    quoted_cols += elipses_size;
+    // Account for the ellipses
+    quoted_bytes += ellipses_size;
+    quoted_chars += ellipses_size;
+    quoted_cols += ellipses_size;
   }
 
   if( ti ) {
@@ -1756,7 +1749,7 @@ int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
   }
 }
 
-// Read and skip an abitrary JSON field, not counting a following ,
+// Read and skip an arbitrary JSON field, not counting a following ,
 // Returns the last character read, or
 // negative for a negative error code.
 int32_t qio_skip_json_field_unlocked(qio_channel_t* restrict ch)
@@ -1860,7 +1853,7 @@ unlock:
 // Always do case insensitive reading; the characters here should be
 // lower case.
 typedef struct number_reading_state_s {
-  int base; // 0 means 0b 0x supported; othewise particular base 2,10,16
+  int base; // 0 means 0b 0x supported; otherwise particular base 2,10,16
 
   char allow_base; // allow 0b or 0x when base == 2 or == 16 respectively
                    // (these are always allowed when base == 0)
@@ -2134,7 +2127,7 @@ qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, vo
 
   st.base = style->base;
   st.allow_base = style->prefix_base;
-  st.allow_pos_sign = style->showplus == 1;
+  st.allow_pos_sign = 1;
   st.allow_neg_sign = issigned;
   if(style->showpoint || style->precision > 0) {
     st.allow_point = 1;
@@ -2589,6 +2582,28 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   return i;
 }
 
+//This function finds where the last non-zero digit
+//is in the decimal part of an exponential number.
+//
+//This will be used in _ftoa_core for resolve a
+//a problem about trailing zeroes.
+static int _find_prec(char *buf, int len){
+  int dp_index = 0;
+  int last_dig = 0;
+  int index = 0;
+
+  //Find where the decimal point is
+  while( dp_index < len && buf[dp_index++] != '.');
+
+  //Explore the decimal part for find where the
+  //last non-zero digit is.
+  for( index = dp_index; index < len && buf[index] != 'e'; index++ ){
+    if( buf[index] != '0' )
+      last_dig = index - dp_index + 1;
+  }
+  return last_dig;
+}
+
 // Converts num to a string in buf, returns the number
 // of bytes that would be used if space permits (not including null)
 // or -1 on error
@@ -2656,9 +2671,32 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
   } else if( realfmt == 0 ) {
     if( precision < 0 ) {
       if( uppercase ) {
-        got = snprintf(buf, buf_sz, "%G", num);
+        // This if is necessary because if the number has
+        // 6 digits in the integer part, %g will not print
+        // the decimal part because the integer part have
+        // a number of digits equals to the standard precision.
+        if(num >= 100000.0 && num < 1000000.0){
+          got = snprintf(buf, buf_sz, "%.5E", num);
+          //Since we force the %.5e for maintain a precision of
+          //6 digits, the output could include some trailing zeroes.
+          //With _find_prec, we find how much digits we need.
+          //
+          //It can also be done starting from the number itself
+          //but this way avoids to deal with the loss of precision
+          //caused by floating point representation
+          if(buf_sz > 0)
+            got = snprintf(buf, buf_sz, "%.*E",_find_prec(buf, got), num);
+        }
+        else
+          got = snprintf(buf, buf_sz, "%G", num);
       } else {
-        got = snprintf(buf, buf_sz, "%g", num);
+        if(num >= 100000.0 && num < 1000000.0){
+          got = snprintf(buf, buf_sz, "%.5e", num);
+          if(buf_sz > 0)
+            got = snprintf(buf, buf_sz, "%.*e",_find_prec(buf, got), num);
+        }
+        else
+          got = snprintf(buf, buf_sz, "%g", num);
       }
     } else {
       if( uppercase ) {
@@ -2802,7 +2840,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
 
       needspoint = 1;
       if( got < size ) {
-        // If we have suceeded at putting the number in dst,
+        // If we have succeeded at putting the number in dst,
         // go about figuring out if we need to add .0
         // If not - we will assume we need it for the purpose
         // of reserving temporary space.
@@ -2886,7 +2924,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
     if( showbase ) {
       dst[got++] = '0';
       if( base == 16 ) dst[got++] = style->uppercase?'X':'x';
-      else return -2; //unspported floating point base.
+      else return -2; //unsupported floating point base.
     }
 
     // 0 padding goes after the sign
@@ -3013,7 +3051,7 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
     char* tmp = NULL;
     char tmp_onstack[MAX_ON_STACK];
 
-    // Store it in a tempory variable and then
+    // Store it in a temporary variable and then
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, tmp, tmp_onstack);
     if( ! tmp ) {
@@ -3120,7 +3158,7 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
     char* buf = NULL;
     char buf_onstack[MAX_ON_STACK];
 
-    // Store it in a tempory variable and then
+    // Store it in a temporary variable and then
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, buf, buf_onstack);
     if( ! buf ) {
@@ -3599,7 +3637,7 @@ qioerr qio_channel_print_complex(const int threadsafe,
     err = maybe_right_pad(ch, width);
     if( err ) goto rewind;
   } else {
-    QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknow complex format");
+    QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknown complex format");
     goto rewind;
   }
 
@@ -3809,7 +3847,7 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
   return err;
 }
 
-c_string_copy qio_encode_to_string(int32_t chr)
+c_string qio_encode_to_string(int32_t chr)
 {
   int nbytes;
   char* buf;
@@ -4231,7 +4269,7 @@ qioerr qio_conv_parse(c_string fmt,
           }
         }
 
-        // s conversions without follwing encoding type must have a width.
+        // s conversions without following encoding type must have a width.
         if( type == 's' && width == WIDTH_NOT_SET ) {
           QIO_GET_CONSTANT_ERROR(err, EINVAL, "Binary s conversion must have a width");
           goto done;

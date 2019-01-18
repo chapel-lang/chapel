@@ -1,7 +1,20 @@
-domains.doc
-   proc baseCase(dom: domain(1))
-      This proc takes in a one dimensional array 
+.. default-domain:: chpl
 
-   proc twoDimension(dom: domain(2))
-      This proc takes in a two dimensional array 
+.. module:: domains.doc
+
+domains.doc
+===========
+**Usage**
+
+.. code-block:: chapel
+
+   use domains.doc;
+
+.. function:: proc baseCase(dom: domain(1))
+
+   This proc takes in a one dimensional array 
+
+.. function:: proc twoDimension(dom: domain(2))
+
+   This proc takes in a two dimensional array 
 

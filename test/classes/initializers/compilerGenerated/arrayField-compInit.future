@@ -1,0 +1,16 @@
+bug: compiler-generated initializers are insufficiently generic for arrays
+
+This test, in combination with arrayField-userInit.chpl, suggests that
+compiler-generated initializers are too strict with respect to array
+fields as compared to what you would expect the initializer signature
+to look like (as illustrated in arrayField-userInit.chpl -- the
+initializer there is similar to what I would expect the compiler to
+produce, yet doesn't seem to cause problems).
+
+This was historically a problem with constructors as well (issue
+#5289), but I've retired that since we're working on retiring
+constructors.  I'd been hoping that when we introduced compiler
+initializers, the rewrite would cause the problem to go away as well,
+but no such luck it seems.
+
+This is logged in issue #6711.

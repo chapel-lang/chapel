@@ -25,13 +25,13 @@ class WakeupSyncVarHack {
   var wakeup: sync WakeupType;
 }
 
-pragma "locale private" var wakeup: WakeupSyncVarHack;
-pragma "locale private" var endCount: MyEndCount;
+pragma "locale private" var wakeup: unmanaged WakeupSyncVarHack;
+pragma "locale private" var endCount: unmanaged MyEndCount;
 
 proc setupTerminationDetection() {
   for loc in Locales do on loc {
-    endCount = new MyEndCount();
-    wakeup = new WakeupSyncVarHack();
+    endCount = new unmanaged MyEndCount();
+    wakeup = new unmanaged WakeupSyncVarHack();
     if here.id == 0 {
       endCount.count = 1;
       endCount.localColor = TerminationColor.white;
@@ -120,17 +120,17 @@ var a: sync int = 0;
 use Time;
 
 proc foo() {
-  sleep(5);
+  // doWork3();
   turnBlack;
   on Locales(0) {
     incEndCount;
     begin {
-      sleep(3);
+      // doWork4();
       a += 1;
       decEndCount;
     }
   }
-  sleep(4);
+  // doWork5();
   a += 1;
 }
 
@@ -144,14 +144,14 @@ proc main {
   begin {
     turnBlack;
     on Locales(1) {
-      sleep(3);
+      // doWork1();
       a += 1;
     }
     decEndCount;
   }
   incEndCount;
   begin {
-    sleep(4);
+    // doWork2();
     a += 1;
     decEndCount;
   }

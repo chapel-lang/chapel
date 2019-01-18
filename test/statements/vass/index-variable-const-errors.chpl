@@ -76,13 +76,6 @@ proc main() {
 
 
   // _indexOfInterest: (_ref(int),int)
-  for isZip in zip (singleVar(), singleVal()) {
-    isZip = (17001, 17002);   // error
-    isZip(1) = 17003;
-    isZip(2) = 17004;         // error
-  }
-
-  // _indexOfInterest: (_ref(int),int)
   // iVar1: _ref(int)
   // iVal2: int
   for (iVar1, iVal2) in zip (singleVar(), singleVal()) {

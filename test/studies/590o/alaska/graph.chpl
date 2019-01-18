@@ -15,9 +15,9 @@ class position{
 class Node {
   var id: int;
   var name: string;
-  var pos: position = new position(-1,-1);
+  var pos: unmanaged position = new unmanaged position(-1,-1);
   var color : colors = colors.WHITE;
-  var pred : Node = nil;
+  var pred : unmanaged Node = nil;
   var disc,fini : int = -1;
 
   proc writeThis(w){
@@ -33,14 +33,14 @@ class Node {
   }
 }
 
-proc <(x: Node, y: Node) {
+proc <(x: borrowed Node, y: borrowed Node) {
   return x.name < y.name;
 }
 
 class Edge {
   var id: int;
-  var src: Node;
-  var dst: Node;
+  var src: unmanaged Node;
+  var dst: unmanaged Node;
   var reversed: bool = false;
   var kind: edgeKind = edgeKind.GRAPH;
   proc writeThis(w){
@@ -67,7 +67,7 @@ class Edge {
   }
 }
 
-proc <(x: Edge, y: Edge) {
+proc <(x: borrowed Edge, y: borrowed Edge) {
   if (x.src.name == y.src.name) {
     return (x.dst.name < y.dst.name);
   } else {
@@ -86,7 +86,7 @@ class MultiMap {
 
   proc add( key: keyType, d: eltType ) : bool {
     var list_head=nil;
-    if(keySpD.member(key) == false){
+    if(keySpD.contains(key) == false){
       keySpD.add(key);
       list_head = list(eltType);
     } else {
@@ -105,7 +105,7 @@ class MultiMap {
   proc get( key: keyType ) : list(eltType) {
     var list_head = list(eltType);
 
-    if(keySpD.member(key)){
+    if(keySpD.contains(key)){
       list_head = bins[key];
       return list_head;
     }
@@ -143,51 +143,52 @@ class UndirectedEdge : Edge {
 
 class Graph {
 
-  proc Graph(nd:domain(1),ed:domain(1), ns, es){
+  proc init(nd:domain(1),ed:domain(1), ns, es){
     NodeDom = nd;
     EdgeDom = ed;
     nodes = ns;
     edges = es;
+    this.complete();
     writeln("Graph constructor");
     preprocess();
   }
 
   const NodeDom, EdgeDom : domain(1); //= [1..NumNodes];
   //  const EdgeDom : domain(1) = [1..NumEdges];
-  var nodes : [NodeDom] Node;
-  var edges : [EdgeDom] Edge;
+  var nodes : [NodeDom] unmanaged Node;
+  var edges : [EdgeDom] unmanaged Edge;
 
-  var inEdges : [NodeDom] list(Edge) = nil;
-  proc inEdges(n:Node) ref { return inEdges[n.id]; }
+  var inEdges : [NodeDom] list(unmanaged Edge);
+  proc inEdges(n:borrowed Node) ref { return inEdges[n.id]; }
   proc inEdges(i:index(NodeDom)) ref { return inEdges[i]; }
 
-  var outEdges : [NodeDom] list(Edge) = nil;
-  proc outEdges(n:Node) ref { return outEdges[n.id]; }
+  var outEdges : [NodeDom] list(unmanaged Edge);
+  proc outEdges(n:borrowed Node) ref { return outEdges[n.id]; }
   proc outEdges(i:index(NodeDom)) ref { return outEdges[i]; }
 
 
 
-  var adjacent : [NodeDom] list(int) = nil;
-  var undir_adjacent: [NodeDom] list(int) = nil;
+  var adjacent : [NodeDom] list(int);
+  var undir_adjacent: [NodeDom] list(int);
 
   var __slack : [EdgeDom] int = -1;
-  proc slack(e:Edge) ref { return slack[e.id]; }
+  proc slack(e:borrowed Edge) ref { return slack[e.id]; }
   proc slack(i:index(EdgeDom)) ref { return __slack[i]; }
 
   var __length: [EdgeDom] int = 1;
-  proc length(e:Edge) ref { return length[e.id]; }
+  proc length(e:borrowed Edge) ref { return length[e.id]; }
   proc length(i:index(EdgeDom)) ref { return __length[i]; }
 
   var __treeEdges : [EdgeDom] int = 0;
-  proc treeEdges(e:Edge) ref { return treeEdges[e.id]; }
+  proc treeEdges(e:borrowed Edge) ref { return treeEdges[e.id]; }
   proc treeEdges(i:index(EdgeDom)) ref { return __treeEdges[i]; }
 
   var __curRank : [NodeDom] int = -1;
-  proc curRank(n:Node) ref { return curRank[n.id]; }
+  proc curRank(n:borrowed Node) ref { return curRank[n.id]; }
   proc curRank(i:index(NodeDom)) ref { return __curRank[i]; }
 
   var __treeNodes : [NodeDom] int = 0;
-  proc treeNodes(n:Node) ref { return treeNodes[n.id]; }
+  proc treeNodes(n:borrowed Node) ref { return treeNodes[n.id]; }
   proc treeNodes(i:index(NodeDom)) ref { return __treeNodes[i]; }
 
 
@@ -211,7 +212,7 @@ class Graph {
       }
   }
 
-  proc preprocess(n : Node){
+  proc preprocess(n : borrowed Node){
     for e in edges do {
       if( e.src == n ){
 	outEdges[n.id].append(e);
@@ -242,7 +243,7 @@ class Graph {
     }
   }
 
-  proc propagate_rank(u:Node) {
+  proc propagate_rank(u:borrowed Node) {
     var r = curRank(u.id);
     for e in inEdges[u.id] do {
       var v = e.src.id;
@@ -293,7 +294,7 @@ class Graph {
     */
   }
 
-  iter non_tree_inEdges(id:index(NodeDom)) : Edge {
+  iter non_tree_inEdges(id:index(NodeDom)) : unmanaged Edge {
     for edge in inEdges[id] do {
 	if ((slack[edge] == length[edge]) && treeEdges[edge] == 0){
 	  yield edge;
@@ -301,7 +302,7 @@ class Graph {
       }
   }
 
-  iter non_tree_outEdges(id:index(NodeDom)) : Edge {
+  iter non_tree_outEdges(id:index(NodeDom)) : unmanaged Edge {
     for edge in outEdges[id] do {
 	if ((slack[edge] == length[edge]) && treeEdges[edge] == 0){
 	  yield edge;
@@ -309,7 +310,7 @@ class Graph {
       }
   }
 
-  iter tight_inEdges(id:index(NodeDom)): Edge {
+  iter tight_inEdges(id:index(NodeDom)): unmanaged Edge {
     for edge in inEdges[id] do {
 	if(slack[edge] == length[edge]){
 	  yield edge;
@@ -317,7 +318,7 @@ class Graph {
       }
   }
 
-  iter tight_outEdges(id:index(NodeDom)): Edge {
+  iter tight_outEdges(id:index(NodeDom)): unmanaged Edge {
     for edge in outEdges[id] do {
 	if(slack[edge] == length[edge]){
 	  yield edge;
@@ -337,7 +338,7 @@ class Graph {
 
   proc find_tight_tree(nID:index(NodeDom)):int {
     var cnt = 0;
-    var node: Node = nodes(nID);
+    var node: unmanaged Node = nodes(nID);
     treeNodes(nID) = 1;
 
     for edge in non_tree_inEdges(nID) do {
@@ -367,7 +368,7 @@ class Graph {
     return cnt;
   }
 
-  iter incident_non_tree_edge() : Edge {
+  iter incident_non_tree_edge() : unmanaged Edge {
     for e in edges do {
 	if((treeEdges[e.id] == 0) &&
 	   ((treeNodes(e.src.id) == 0 && treeNodes(e.dst.id) != 0) ||
@@ -397,7 +398,7 @@ class Graph {
 	 * From the non-treeEdges, we must find one with minimum slack
 	 */
 	var delta = 256;
-	var minEdge: Edge = nil;
+	var minEdge: unmanaged Edge = nil;
 	for e in incident_non_tree_edge() do {
 	    if(slack(e.id) < delta){
 	      delta = slack(e.id);
@@ -429,13 +430,13 @@ class Graph {
   }
 
 
-  iter nodeEdges(u:Node) : Edge {
+  iter nodeEdges(u:unmanaged Node) : unmanaged Edge {
     yield inEdges[u.id];
     yield outEdges[u.id];
   }
 
 
-  iter adjacentNodes(u:Node): Node {
+  iter adjacentNodes(u:unmanaged Node): unmanaged Node {
     for edge in inEdges[u.id] do {
       if(edge.kind == edgeKind.BACK){
 	yield edge.src;
@@ -448,7 +449,7 @@ class Graph {
       }
   }
 
-  iter edgesOut(u:Node) : Edge {
+  iter edgesOut(u:unmanaged Node) : unmanaged Edge {
     for e in edges do {
       if ((e.src == u && !e.reversed) || (e.dst == u && e.reversed)){
 	yield e;
@@ -456,7 +457,7 @@ class Graph {
     }
   }
 
-  iter whiteNodes() : Node {
+  iter whiteNodes() : unmanaged Node {
     for n in nodes do {
       if( n.color == colors.WHITE) then yield n;
     }
@@ -473,7 +474,7 @@ proc DFS(G){
     }
 }
 
-  proc DFS_VISIT(G:Graph, u:Node){
+  proc DFS_VISIT(G:unmanaged Graph, u:unmanaged Node){
     u.color = colors.GRAY;
     G.time += 1;
     u.disc = G.time;
@@ -514,8 +515,8 @@ proc readGraph(filename) {
 
   var ND: domain(string);
   var ED: domain((string,string));
-  var NameMap: [ND] Node;
-  var EdgeMap: [ED] Edge;
+  var NameMap: [ND] unmanaged Node;
+  var EdgeMap: [ED] unmanaged Edge;
   //
   // Read in the edge statements
   //
@@ -527,25 +528,25 @@ proc readGraph(filename) {
     reader.read(s,arrow,d);
 
     // Create a Node for the source if needed
-    if(!ND.member(s)){
+    if(!ND.contains(s)){
       writeln("New source node ",s);
       ND.add(s);
-      NameMap(s) = new Node(j,s);
+      NameMap(s) = new unmanaged Node(j,s);
       j+=1;
     }
 
     // Create a Node for the dest if needed
-    if(!ND.member(d)){
+    if(!ND.contains(d)){
       writeln("New dest node ",d);
       ND.add(d);
-      NameMap(d) = new Node(j,d);
+      NameMap(d) = new unmanaged Node(j,d);
       j+=1;
     }
 
     // Create an Edge if needed
-    if(!ED.member((s,d))){
+    if(!ED.contains((s,d))){
       ED.add((s,d));
-      EdgeMap((s,d)) = new Edge(i,NameMap(s),NameMap(d));
+      EdgeMap((s,d)) = new unmanaged Edge(i,NameMap(s),NameMap(d));
       writeln("Added edge ",s," ",arrow," ",d);
     } else {
       halt("Duplicate edge ",s," ",arrow," ",d);
@@ -556,8 +557,8 @@ proc readGraph(filename) {
   var N: domain(1) = {1..ND.numIndices};
   var E: domain(1) = {1..ED.numIndices};
 
-  var X: [N] Node = NameMap.sorted();
-  var Y: [E] Edge = EdgeMap.sorted();
+  var X: [N] unmanaged Node = NameMap.sorted();
+  var Y: [E] unmanaged Edge = EdgeMap.sorted();
 
   [ i in N ] X(i).id = i;
   [ i in E ] Y(i).id = i;
@@ -570,7 +571,7 @@ proc readGraph(filename) {
   infile.close();
 
   // Return the Graph
-  return new Graph(N,E,X,Y);
+  return new unmanaged Graph(N,E,X,Y);
 }
 
 
@@ -581,7 +582,7 @@ proc main() {
 
   writeln("Reading graph from ",filename);
 
-  var G:Graph = readGraph(filename);
+  var G:unmanaged Graph = readGraph(filename);
 
   G.preprocess();
 

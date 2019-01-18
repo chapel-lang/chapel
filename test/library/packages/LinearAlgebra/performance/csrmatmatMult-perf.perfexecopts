@@ -1,0 +1,7 @@
+--performance --nnz=1000    --n=1000000 # csrmatmat-1e-9-big
+--performance --nnz=10000   --n=1000000 # csrmatmat-1e-8-big
+--performance --nnz=100000  --n=1000000 # csrmatmat-1e-7-big
+--performance --nnz=100     --n=1000  --trials=1000 # csrmatmat-1e-4-small
+--performance --nnz=1000    --n=1000  --trials=100  # csrmatmat-1e-3-small
+--performance --nnz=10000   --n=1000  --trials=10   # csrmatmat-1e-2-small
+--performance --nnz=100000  --n=1000  --trials=1    # csrmatmat-1e-1-small

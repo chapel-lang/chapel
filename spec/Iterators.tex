@@ -18,11 +18,21 @@ The syntax to declare an iterator is given
 by:
 \begin{syntax}
 iterator-declaration-statement:
-  privacy-specifier[OPT] `iter' iterator-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
+  privacy-specifier[OPT] `iter' iterator-name argument-list[OPT] yield-intent[OPT] yield-type[OPT] where-clause[OPT]
   iterator-body
 
 iterator-name:
   identifier
+
+yield-intent:
+  `const'
+  `const ref'
+  `ref'
+  `param'
+  `type'
+
+yield-type:
+  : type-expression
 
 iterator-body:
   block-statement
@@ -37,7 +47,14 @@ some key differences:
 \item \chpl{yield} statements may appear in the body of an iterator, but not in
 a procedure.
 \item A \chpl{return} statement in the body of an iterator is not allowed to have an expression.
+\item The intent and type specified after the argument list refer to the type
+yielded, not the type returned (see previous bullet).  However, they are
+syntactically the same as a \sntx{return-intent} and a \sntx{return-type}.
 \end{itemize}
+
+\begin{openissue}
+Iterators that yield types or params are not currently supported.
+\end{openissue}
 
 \section{The Yield Statement}
 \label{The_Yield_Statement}
@@ -63,7 +80,6 @@ permitted to have a return expression.
 An iterator also completes after the last
 statement in the iterator is executed.
 An iterator need not contain any yield statements.
-% TODO: the current implementation requires at least one yield
 
 % TODO specify how the return type is established/checked for an iterator,
 % analogously to \label{Return_Types}.
@@ -109,11 +125,12 @@ iter squares(n: int): int {
   for i in 1..n do
     yield i * i;
 }
+var A = squares(5);
 \end{chapel}
 \begin{chapelpost}
-writeln(squares(5));
+writeln(A);
 \end{chapelpost}
-the expression \chpl{squares(5)} evaluates to
+then the variable A will be an array storing:
 \begin{chapelprintoutput}{}
 1 4 9 16 25
 \end{chapelprintoutput}
@@ -145,14 +162,14 @@ A post-order traversal of a tree data structure could be written like this:
 \begin{chapelnoprint}
 class Tree {
   var data: string;
-  var left, right: Tree;
-  proc ~Tree() {
+  var left, right: unmanaged Tree;
+  proc deinit() {
     if left then delete left;
     if right then delete right;
   }
 }
 
-var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"), new Tree("e")));
+var tree = new unmanaged Tree("a", new unmanaged Tree("b"), new unmanaged Tree("c", new unmanaged Tree("d"), new unmanaged Tree("e")));
 \end{chapelnoprint}
 \begin{chapel}
 iter postorder(tree: Tree): string {
@@ -202,7 +219,7 @@ scalar function as described in~\rsec{Promotion}.
 Given a function \chpl{addOne(x:int)} that accepts \chpl{int} values
 and an iterator \chpl{firstN()} that yields \chpl{int} values,
 \chpl{addOne()} can be called with \chpl{firstN()} as its actual argument.
-This pattern creates a new iterator that yields the result of appling
+This pattern creates a new iterator that yields the result of applying
 \chpl{addOne()} to each value yielded by \chpl{firstN()}.
 
 \begin{chapel}

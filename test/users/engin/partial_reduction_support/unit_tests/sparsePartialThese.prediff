@@ -1,0 +1,4 @@
+#! /bin/sh
+output=$2
+cat $output | egrep "(Row|Col)" | cut -d":" -f2 | xargs -n10 ./sortLine.sh > $output.tmp
+mv $output.tmp $output

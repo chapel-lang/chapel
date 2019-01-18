@@ -1,1 +1,2 @@
 CHPL_COMM!=none
+CHPL_TEST_PERF == on

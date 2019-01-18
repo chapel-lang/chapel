@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -27,7 +27,8 @@ RUNTIME_SUBDIR = .
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-
+# To run this, from runtime/
+# make printstuff.helpme
 printstuff:
 	@echo MAKE_LAUNCHER = $(MAKE_LAUNCHER)
 	@echo CHPL_MAKE_PLATFORM = $(CHPL_MAKE_PLATFORM)
@@ -39,8 +40,13 @@ printstuff:
 	@echo $(CHPL_MAKE_HOME)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
 	@echo CHPL_MAKE_MEM = $(CHPL_MAKE_MEM)
 	@echo CHPL_MAKE_HOST_TARGET = $(CHPL_MAKE_HOST_TARGET)
-	@echo CHPL_MAKE_TARGET_ARCH = $(CHPL_MAKE_TARGET_ARCH)
+	@echo CHPL_MAKE_TARGET_CPU = $(CHPL_MAKE_TARGET_CPU)
+	@echo CHPL_MAKE_RUNTIME_CPU = $(CHPL_MAKE_RUNTIME_CPU)
+	@echo CHPL_MAKE_TARGET_CPU_FLAG = $(CHPL_MAKE_TARGET_CPU_FLAG)
+	@echo CHPL_MAKE_TARGET_BACKEND_CPU = $(CHPL_MAKE_TARGET_BACKEND_CPU)
 	@echo CHPL_ORIG_TARGET_COMPILER = $(CHPL_ORIG_TARGET_COMPILER)
+	@echo CXX_STD = $(CXX_STD)
+	@echo RUNTIME_CXXFLAGS += $(RUNTIME_CXXFLAGS)
 
 
 #
@@ -53,6 +59,7 @@ include src/timers/$(CHPL_MAKE_TIMERS)/Makefile.include
 include src/comm/$(CHPL_MAKE_COMM)/Makefile.include
 include src/launch/$(CHPL_MAKE_LAUNCHER)/Makefile.include
 include src/mem/$(CHPL_MAKE_MEM)/Makefile.include
+include src/topo/$(CHPL_MAKE_TOPO)/Makefile.include
 include src/qio/Makefile.include
 
 
@@ -74,6 +81,7 @@ RUNTIME_OBJS = \
 	$(MEM_COMMON_OBJS) \
 	$(QIO_OBJS) \
 	$(REGEXP_OBJS) \
+	$(TOPO_OBJS) \
 	$(AUXFS_HDFS_OBJS) \
 	$(AUXFS_CURL_OBJS)
 
@@ -126,13 +134,29 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.rules
 # target-based rules
 #
 
-$(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+RUNTIME_CHPLCONFIG = $(RUNTIME_DIR)/chplconfig
+RUNTIME_LIST_INCLUDESANDDEFINES = $(RUNTIME_DIR)/list-includes-and-defines
+RUNTIME_LIST_LIBRARIES = $(RUNTIME_DIR)/list-libraries
+RUNTIME_OVERRIDE_LD = $(RUNTIME_DIR)/override-ld
+
+$(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP) $(RUNTIME_LIST_INCLUDESANDDEFINES) $(RUNTIME_LIST_LIBRARIES) $(RUNTIME_OVERRIDE_LD)
 	@rm -f $@
 	$(AR) -rc $@ $(RUNTIME_OBJS)
 	$(RANLIB) $@
 	$(TAGS_COMMAND)
+	../util/printchplenv --runtime --no-tidy --anonymize --simple > $(RUNTIME_CHPLCONFIG)
 
-$(RUNTIME_DIR)/main.o: src/$(RUNTIME_OBJDIR)/main.o
+
+$(RUNTIME_LIST_INCLUDESANDDEFINES): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+	$(MAKE) -f Makefile.config printincludesanddefines > $(RUNTIME_LIST_INCLUDESANDDEFINES)
+
+$(RUNTIME_LIST_LIBRARIES): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+	$(MAKE) -f Makefile.config printlibraries > $(RUNTIME_LIST_LIBRARIES)
+
+$(RUNTIME_OVERRIDE_LD): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+	$(MAKE) -f Makefile.config printoverrideld > $(RUNTIME_OVERRIDE_LD)
+
+$(RUNTIME_DIR)/main.o: $(RUNTIME_OBJDIR)/src/main.o
 	cp $< $@
 
 $(RUNTIME_MALLOC_LIB): $(RUNTIME_MALLOC_OBJS) $(RUNTIME_DIR_TIMESTAMP)
@@ -150,7 +174,7 @@ $(LAUNCHER_LIB): $(LAUNCH_LIB_OBJS) $(LAUNCHER_DIR_TIMESTAMP)
 	$(AR) -rc $@ $(LAUNCH_LIB_OBJS)
 	$(RANLIB) $@
 
-$(LAUNCHER_DIR)/main_launcher.o: src/$(LAUNCHER_OBJDIR)/main_launcher.o
+$(LAUNCHER_DIR)/main_launcher.o: $(LAUNCHER_OBJDIR)/src/main_launcher.o
 	cp $< $@
 
 

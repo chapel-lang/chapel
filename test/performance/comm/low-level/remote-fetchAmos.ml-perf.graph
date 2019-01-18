@@ -1,0 +1,5 @@
+perfkeys: Performance (mOps/sec) =
+files: many-to-one-fetchAmos.dat
+graphkeys: Fetching AMOs to 1 node
+graphtitle: Remote Fetching AMO Performance
+ylabel: Performance (10**6 ops/sec)

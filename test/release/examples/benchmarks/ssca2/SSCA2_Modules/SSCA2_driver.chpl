@@ -58,10 +58,10 @@ module SSCA2_driver
         largest_edges ( G, Heavy_Edge_List );
 
         if RUN_KERNEL3 {
-          var Heavy_Edge_Subgraphs : [Heavy_Edge_List] Generated_Subgraph (vertex);
+          var Heavy_Edge_Subgraphs : [Heavy_Edge_List] unmanaged Generated_Subgraph (vertex);
 
           for (x,y) in Heavy_Edge_List do
-            Heavy_Edge_Subgraphs ( (x, y) ) = new Generated_Subgraph (vertex);
+            Heavy_Edge_Subgraphs ( (x, y) ) = new unmanaged Generated_Subgraph (vertex);
         	    
           // --------
           // Kernel 3:
@@ -111,23 +111,23 @@ module SSCA2_driver
             var linear_index         : index (vertex_indices);
 
             var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
-                             new NPBRandomStream (seed = 3217900597)
+                             new unmanaged NPBRandomStream (real, seed = 3217900597)
                            else
-                             new NPBRandomStream ();
+                             new unmanaged NPBRandomStream (real);
 
             var V_s      = 0;
 
             while V_s < 2**approx_scale {
                 linear_index = floor (1 + Rand_Gen.getNext() * N_VERTICES) 
                                : index (vertex_indices);
-                if !random_indices.member (linear_index) {
+                if !random_indices.contains (linear_index) {
                   V_s += 1;
                   random_indices.add (linear_index);
                 }
               };
 
             for (s, linear_index) in zip( G.vertices, 1.. ) do
-              if random_indices.member (linear_index) then
+              if random_indices.contains (linear_index) then
                 BC_starting_vertices.add (s);
 
             writeln (); writeln ();
@@ -146,6 +146,8 @@ module SSCA2_driver
             approximate_betweenness_centrality ( G, BC_starting_vertices, 
                                                  Between_Cent, 
                                                  Sum_Min_Dist );
+
+            delete Rand_Gen;
           }
 
 	  // --------------------------------------------------

@@ -1,0 +1,5 @@
+perfkeys: Avg time (s): , stencil time = , increment time = , comm time = 
+repeat-files: stencil-stencildist.dat
+graphkeys: total, stencil, increment, communication
+graphtitle: PRK Elegant Stencil Time (sec)
+ylabel: Avg time (s)

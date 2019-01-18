@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-  http://shootout.alioth.debian.org/
+  http://benchmarksgame.alioth.debian.org
 
   contributed by Paolo Bonzini & Sean Bartlett
   modified by Michael Mellor
@@ -36,6 +36,8 @@ proc pidigits
   var k, i, m: uint;
   var d: int;
 
+  param digitsPerLine = 10;
+
   mpz_init(tmp1);
   mpz_init(tmp2);
   mpz_init_set_ui(numer, 1);
@@ -56,10 +58,17 @@ proc pidigits
 
     // Do some format control.
     i += 1;
-    m = i % 10;
+    m = i % digitsPerLine;
     if m == 0 then writeln("\t:", i);
     if i >= n then break;
     eliminate_digit(d:uint);
+  }
+
+  const leftover = n%digitsPerLine;
+  if (leftover) {
+    for leftover..digitsPerLine do
+      write(" ");
+    writeln("\t:", n);
   }
 
   mpz_clear(denom);

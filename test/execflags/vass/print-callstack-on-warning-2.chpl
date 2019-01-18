@@ -1,8 +1,12 @@
 // generate compiler warnings when some calls are created by the compiler
 
-var mi1 = new myiter1();
+var mi1 = new unmanaged myiter1();
+
 for i in mi1 do writeln(i);
+
 test1();
+
+delete mi1;
 
 class myiter1 {
   iter these() {
@@ -18,9 +22,13 @@ proc test1() {
 
 /////////////////////////////////
 
-var mi2 = new myiter2();
+var mi2 = new unmanaged myiter2();
+
 for i in mi2 do writeln(i);
+
 test2();
+
+delete mi2;
 
 class myiter2 {
   iter these() {

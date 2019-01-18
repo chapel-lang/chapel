@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -52,11 +52,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define __STDC_FORMAT_MACROS
 #endif
 
+#include "driver.h"
 #include "files.h"
 #include "misc.h"
 #include "stringutil.h"
 
 #include <cstdio>
+
 #include <inttypes.h>
 
 static const char* get_envvar_setting(const ArgumentDescription& desc);
@@ -497,8 +499,9 @@ static void process_arg(const ArgumentState*       state,
                         char***                    argv,
                         const char*                currentFlag);
 
-static void bad_flag(const char* flag);
-static void extraneous_arg(const char* flag, const char* extras);
+static void print_suggestions(const char* flag, const ArgumentDescription* desc);
+static void bad_flag(const char* flag, const char* arg, const ArgumentDescription* desc);
+static void extraneous_arg(const char* flag, const char* extras, const ArgumentDescription* desc);
 
 static void missing_arg(const char* currentFlag);
 
@@ -570,7 +573,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
         if (found == false)
         {
           // This does not return
-          bad_flag(*argv);
+          bad_flag(*argv, *argv, desc);
         }
       }
       else
@@ -591,7 +594,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
               process_arg(state, &(state->desc[i]), &argv, (*argv)-2);
 
               if (**argv != '\0')
-                extraneous_arg(errFlag, *argv);
+                extraneous_arg(errFlag, *argv, desc);
 
               found = true;
             }
@@ -601,7 +604,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
         if (found == false)
         {
           // This does not return
-          bad_flag(errFlag);
+          bad_flag(errFlag, *argv, desc);
         }
 
       }
@@ -708,18 +711,104 @@ static void process_arg(const ArgumentState*       state,
     desc->pfn(desc, arg);
 }
 
-static void bad_flag(const char* flag)
+static void print_suggestions(const char* flag, const ArgumentDescription* desc)
+{
+  const char* nodashes = flag;
+  // skip past any '-' characters at the start of flag
+  while (*nodashes == '-') nodashes++;
+  char* usearg = strdup(nodashes);
+  // Chop off the string after '='
+  for (int i = 0; usearg[i]; i++) {
+    if (usearg[i] == '=')
+      usearg[i] = '\0';
+  }
+
+  // Find the first developer only flag
+  // (Code in this function assumes developer flags are after other flags)
+  int firstDeveloperOnly = 0;
+  for (int i = 0; desc[i].name != 0; i++) {
+    const char* devFlags = "Developer Flags";
+    if (desc[i].description &&
+        // Does the description start with devFlags?
+        strlen(desc[i].description) > strlen(devFlags) &&
+        0 == memcmp(desc[i].description, devFlags, strlen(devFlags))) {
+      firstDeveloperOnly = i;
+      break;
+    }
+  }
+
+  bool helped = false;
+  // Find some common confusions and print a suggestion
+  for (int i = 0; desc[i].name != 0; i++) {
+    // Skip developer-only options for non-developer compile
+    if (!developer && i >= firstDeveloperOnly)
+      break;
+
+    if (usearg[0] == desc[i].key && usearg[1] == '\0') {
+      // e.g. --s was used instead of -s
+      fprintf(stderr, "       Did you mean -%c ?\n", desc[i].key);
+      helped = true;
+    } if (0 == strcmp(usearg, desc[i].name)) {
+      fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
+      helped = true;
+    } else if (desc[i].env &&
+               (0 == strcmp(usearg, desc[i].env) ||
+                (desc[i].env[0] == '_' &&
+                 0 == strcmp(usearg, desc[i].env+1)))) {
+      fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
+      helped = true;
+    }
+  }
+
+  // Did the user elaborate on a flag that was abbreviated?
+  // e.g. --helpme
+  if (!helped) {
+    for (int i = 0; desc[i].name != 0; i++) {
+      // Skip developer-only options for non-developer compile
+      if (!developer && i >= firstDeveloperOnly)
+        break;
+
+      if (desc[i].name[0] != '\0' &&
+          strlen(usearg) > strlen(desc[i].name) &&
+          0 == memcmp(usearg, desc[i].name, strlen(desc[i].name))) {
+        fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
+        helped = true;
+      }
+    }
+  }
+
+  // Did the user type a portion of a flag?
+  if (!helped) {
+    for (int i = 0; desc[i].name != 0; i++) {
+      // Skip developer-only options for non-developer compile
+      if (!developer && i >= firstDeveloperOnly)
+        break;
+
+      if (desc[i].name[0] != '\0' &&
+          strlen(usearg) < strlen(desc[i].name) &&
+          0 == memcmp(usearg, desc[i].name, strlen(usearg))) {
+        fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
+      }
+    }
+  }
+
+  free(usearg);
+}
+
+static void bad_flag(const char* flag, const char* arg, const ArgumentDescription* desc)
 {
   fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
+  print_suggestions(arg, desc);
   clean_exit(1);
 }
 
-static void extraneous_arg(const char* flag, const char* extras)
+static void extraneous_arg(const char* flag, const char* extras, const ArgumentDescription* desc)
 {
   fprintf(stderr,
           "Extra characters after flag '%s': '%s' (use 'h' for help)\n",
           flag,
           extras);
+  print_suggestions(flag, desc);
   clean_exit(1);
 }
 

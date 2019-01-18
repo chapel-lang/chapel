@@ -2,11 +2,11 @@ use AMRBC_def;
 
 class ZeroInflowBC: AMRBC {
   
-  proc apply(level_idx: int, q: LevelVariable, t: real) {
+  proc apply(level_idx: int, q: unmanaged LevelVariable, t: real) {
     apply_Homogeneous(level_idx, q);
   }
   
-  proc apply_Homogeneous(level_idx: int, q: LevelVariable) 
+  proc apply_Homogeneous(level_idx: int, q: unmanaged LevelVariable) 
   {
     
     //---- Safety check ----

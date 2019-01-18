@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -41,9 +41,5 @@
 #include "chpltimers.h"
 #include "chpltypes.h"
 #include "error.h"
-
-#ifndef __cplusplus
-#include "chplgmp.h"
-#endif
 
 #endif

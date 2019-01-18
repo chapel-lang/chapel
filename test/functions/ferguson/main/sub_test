@@ -5,7 +5,7 @@ import sys
 import os
 
 if len(sys.argv)!=2:
-  print 'usage: sub_test COMPILER'
+  print('usage: sub_test COMPILER')
   sys.exit(0)
 
 # Find the base installation
@@ -17,7 +17,7 @@ exe_name = "test_main_return"
 
 p = subprocess.Popen([compiler, "-o", exe_name, "main_return.chpl"], 
     stdout=subprocess.PIPE)
-myoutput = p.communicate()[0]
+myoutput = p.communicate()[0].decode()
 sys.stdout.write(myoutput)
 if p.returncode != 0:
   sys.stdout.write("[Error (sub_test): the compile did not exit cleanly]\n")
@@ -37,7 +37,7 @@ else:
   p = subprocess.Popen(["./%s" % exe_name, "-nl%s" % numlocales],
       stdout=subprocess.PIPE)
 
-myoutput = p.communicate()[0]
+myoutput = p.communicate()[0].decode()
 sys.stdout.write(myoutput)
 if p.returncode != 0:
   sys.stdout.write("[Error (sub_test): exe did not exit with 0]\n" % ENV_VAR)
@@ -51,7 +51,7 @@ else:
   p = subprocess.Popen(["./%s" % exe_name,"-nl%s" % numlocales,"--ret_val=42"],
                         stdout=subprocess.PIPE)
 
-myoutput = p.communicate()[0]
+myoutput = p.communicate()[0].decode()
 sys.stdout.write(myoutput)
 if p.returncode != 42:
   sys.stdout.write("[Error (sub_test): exe did not exit with 42]\n" % ENV_VAR)

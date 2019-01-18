@@ -1,40 +1,94 @@
+.. default-domain:: chpl
+
+.. module:: externTest.doc
+
 externTest.doc
-   proc method1()
-      Comment for method1 
+==============
+**Usage**
 
-   proc commentless()
-   proc hasArg(val: int)
-      Comment for method with an argument 
+.. code-block:: chapel
 
-   proc hasArgCommentless(val: int)
-   proc longComment()
-      This comment is rather long
-      And spans for
-      Multiple lines 
+   use externTest.doc;
 
-   proc hasReturnType(): int
-      This method has a return type 
+**Submodules**
 
-   proc hasReturnTypeCommentless(): int
-   proc hasReturnTypeAndArg(val: int): int
-      This method has a return type and an argument 
+.. toctree::
+   :maxdepth: 1
+   :glob:
 
-   proc hasReturnTypeAndArgCommentless(val: int): int
-Submodules for this module are located in the externTest.doc/ directory
+   externTest.doc/*
+
+.. function:: proc method1()
+
+   Comment for method1 
+
+.. function:: proc commentless()
+
+.. function:: proc hasArg(val: int)
+
+   Comment for method with an argument 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc longComment()
+
+   This comment is rather long
+   And spans for
+   Multiple lines 
+
+.. function:: proc hasReturnType(): int
+
+   This method has a return type 
+
+.. function:: proc hasReturnTypeCommentless(): int
+
+.. function:: proc hasReturnTypeAndArg(val: int): int
+
+   This method has a return type and an argument 
+
+.. function:: proc hasReturnTypeAndArgCommentless(val: int): int
+
+.. function:: proc withExternCName()
+
+.. function:: proc getName() param
+
+   test param method for withParamExternCName 
+
+.. function:: proc withParamExternCName()
+
+.. default-domain:: chpl
+
+.. module:: Other
+
 Other
-   proc inside
-      Comment for method inside module 
+=====
+**Usage**
 
-   proc commentless
-   proc hasArg(val: int)
-      Comment for method with an argument inside module 
+.. code-block:: chapel
 
-   proc hasArgCommentless(val: int)
-   proc hasReturnType(): int
-      This method has a return type 
+   use externTest.doc.Other;
 
-   proc hasReturnTypeCommentless(): int
-   proc hasReturnTypeAndArg(val: int): int
-      This method has a return type and an argument 
+.. function:: proc inside
 
-   proc hasReturnTypeAndArgCommentless(val: int): int
+   Comment for method inside module 
+
+.. function:: proc commentless
+
+.. function:: proc hasArg(val: int)
+
+   Comment for method with an argument inside module 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc hasReturnType(): int
+
+   This method has a return type 
+
+.. function:: proc hasReturnTypeCommentless(): int
+
+.. function:: proc hasReturnTypeAndArg(val: int): int
+
+   This method has a return type and an argument 
+
+.. function:: proc hasReturnTypeAndArgCommentless(val: int): int
+

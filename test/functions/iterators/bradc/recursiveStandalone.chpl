@@ -15,3 +15,5 @@ iter myiter(r: range, param tag: iterKind): int
 
 forall i in myiter(1..5) do
   write(i, " ");
+
+writeln();

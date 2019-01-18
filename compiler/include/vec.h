@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -64,6 +64,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SET_MAX_PROBE           5
 #define SET_INITIAL_INDEX       2
 
+// Do not define the generic variation of _vec_hasher, requiring us to write
+// a _vec_hasher for potential types.
+//
+// This will help prevent us from hashing on pointer values as we once did.
+template<typename T>
+uintptr_t _vec_hasher(T obj);
+
+template<>
+uintptr_t _vec_hasher(const char* obj);
+template<>
+uintptr_t _vec_hasher(unsigned int obj);
+template<>
+uintptr_t _vec_hasher(int obj);
+
 template <class C, int S = VEC_INTEGRAL_SIZE>  // S must be a power of 2
 class Vec {
  public:
@@ -77,6 +91,7 @@ class Vec {
   ~Vec() { if (v && v != e) free(v); }
 
   void add(C a);
+  void push_back(C a) { add(a);}
   int add_exclusive(C a);
   C& add();
   C head() { return n>0 ? *v : 0; }
@@ -104,9 +119,11 @@ class Vec {
   void remove(int index);
   void insert(int index, C a);
   void reverse();
+  C* begin() { return v; }
   C* end() { return v + n; }
   Vec<C,S>& operator=(Vec<C,S> &v) { this->copy(v); return *this; }
   int length () { return n; }
+  int size() { return n; }
   
  private:
   void move_internal(Vec<C,S> &v);
@@ -121,8 +138,14 @@ class Vec {
 // _p -- loop variable to be declared by the macro
 // _v -- vector to be iterated over
 //
-#define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
-                    ((intptr_t)(qq__##_p) < (_v).length()) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+// note: loop variable is declared as type _c* in order
+// to fit into a loop declaration.
+#define forv_Vec(_c, _p, _v) \
+  if ((_v).size()) \
+    for (_c *qq__##_p = (_c*)0, *_p = (_v).begin()[0]; \
+         ((intptr_t)(qq__##_p) < (int)(_v).size()) && \
+          ((_p = (_v).begin()[(intptr_t)qq__##_p]) || 1); \
+         qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
 
 template <class C, int S = VEC_INTEGRAL_SIZE> class Accum { public:
   Vec<C,S> asset;
@@ -142,13 +165,13 @@ class Intervals : public Vec<int> {
 };
 
 // UnionFind supports fast unify and finding of
-// 'representitive elements'.
+// 'representative elements'.
 // Elements are numbered from 0 to N-1.
 class UnionFind : public Vec<int> {
  public:
   // set number of elements, initialized to singletons, may be called repeatedly to increase size
   void size(int n); 
-  // return representitive element
+  // return representative element
   int find(int n);
   // unify the sets containing the two elements
   void unify(int n, int m);
@@ -384,7 +407,7 @@ template <class C, int S> C *
 Vec<C,S>::set_add_internal(C c) {
   int j, k;
   if (n) {
-    uintptr_t h = (uintptr_t)c;
+    uintptr_t h = _vec_hasher(c);
     h = h % n;
     for (k = h, j = 0;
          k < n && j < SET_MAX_PROBE;
@@ -409,7 +432,7 @@ template <class C, int S> C *
 Vec<C,S>::set_in_internal(C c) {
   int j, k;
   if (n) {
-    uintptr_t h = (uintptr_t)c;
+    uintptr_t h = _vec_hasher(c);
     h = h % n;
     for (k = h, j = 0;
          k < n && j < SET_MAX_PROBE;

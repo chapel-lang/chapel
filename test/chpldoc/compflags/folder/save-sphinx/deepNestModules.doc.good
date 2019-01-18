@@ -4,7 +4,11 @@
 
 Foo
 ===
-.. function:: proc gob()
+**Usage**
+
+.. code-block:: chapel
+
+   use Foo;
 
 **Submodules**
 
@@ -13,11 +17,20 @@ Foo
    :glob:
 
    Foo/*
+
+.. function:: proc gob()
+
 .. default-domain:: chpl
 
 .. module:: Bar
 
 Bar
 ===
+**Usage**
+
+.. code-block:: chapel
+
+   use Foo.Bar;
+
 .. function:: proc baz()
 

@@ -1,0 +1,72 @@
+
+TESTLOG=`pwd`/.test-results
+TEST_LINE=++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+AMUDP_RUNCMD_EXP=\
+      TEST_RUN_P=`echo "$$TEST_RUN" | sed 's/ .*$$//'`  ; \
+      TEST_RUN_A=`echo "$$TEST_RUN" | sed 's/^[^ ]* //'` ; \
+      TEST_DOIT="$$TEST_RUN"
+TEST_RUNCMD= ; $(AMUDP_RUNCMD_EXP) ; 				\
+	 testname=`basename $$TEST_RUN_P` ;                     \
+	 faildesc="amudp/$$testname" ;                          \
+         if test -x "$$TEST_RUN_P" ; then                       \
+            echo "  **** $$testname **** "; 	                \
+            echo $$TEST_DOIT ; 					\
+            ( eval $$TEST_DOIT || echo "ERROR: Test exited with failure code=$$?" 2>&1 ) | tee .test-output ; \
+            failure=`$(PERL) -ne 'print if (/ERROR/ || /fatal signal/);' .test-output` ; \
+            if test "$$failure" != "" ; then                                            \
+               echo " " >> $(TESTLOG) ;                                                 \
+               echo " *-* $$faildesc *-*" >> $(TESTLOG) ;                               \
+               echo " " >> $(TESTLOG) ;                                                 \
+               echo "$$failure" >> $(TESTLOG) ;                                         \
+            fi ;                                                                        \
+            rm -f .test-output ;                                                        \
+            echo $(TEST_LINE) ;								\
+         fi
+
+TEST_NODES=2
+TEST_ITERS=100
+AMUDP_SPAWNFN=L
+TEST_SPAWNFN=$(AMUDP_SPAWNFN)
+TEST_MODE=P
+TEST_DEPTH=32
+TEST_DUPLEX=H
+AMUDP_NETWORKDEPTH=$(TEST_DEPTH)
+
+run-tests: tests
+	@rm -f $(TESTLOG) ; touch $(TESTLOG)
+	@echo $(TEST_LINE)
+	@echo  Running AMUDP tests...
+	@echo  If this fails to spawn a job, you may need to re-run with a
+	@echo   command like: $(MAKE) run-tests AMUDP_SPAWNFN=S
+	@echo $(TEST_LINE)
+	@TEST_RUN="./testping $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS) $(TEST_MODE)" $(TEST_RUNCMD)
+	@TEST_RUN="./testlatency $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS) $(TEST_MODE)" $(TEST_RUNCMD)
+	@TEST_RUN="./testlatencyM $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS) $(TEST_MODE) 64" $(TEST_RUNCMD)
+	@TEST_RUN="./testbulk $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS) 1048576 $(TEST_MODE) $(TEST_DUPLEX)" $(TEST_RUNCMD)
+	@TEST_RUN="./testam $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS) $(TEST_MODE)" $(TEST_RUNCMD)
+	@TEST_RUN="./testbounce $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS) $(TEST_MODE)" $(TEST_RUNCMD)
+	@TEST_RUN="./testreduce $(TEST_NODES) $(TEST_SPAWNFN)" $(TEST_RUNCMD)
+	@TEST_RUN="./testgetput $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS)" $(TEST_RUNCMD)
+	@TEST_RUN="./testreadwrite $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS)" $(TEST_RUNCMD)
+	@echo TESTS COMPLETE
+	@cat $(TESTLOG) ; rm -f $(TESTLOG)
+
+# make a distribution
+amxdist:
+	@set -x ; \
+         VERSION=`grep "#define AMUDP_LIBRARY_VERSION" $(srcdir)/amudp_const.h | head -2 | $(PERL) -e '$$/=undef; my @a=split(/\s+/,<>); print "$$a[2].$$a[5]"'` ; \
+	 distdir=amudp$${VERSION} ; \
+         echo "+++ Building distribution for AMUDP version $${VERSION} +++" && \
+	 rm -Rf $$distdir.tar.gz $$distdir && \
+         mkdir $$distdir && \
+         cp $(srcdir)/Makefile.* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.cpp $(srcdir)/*.c $(srcdir)/*.h $(amxdir)/*.[ch] \
+	    $(altincdir)/portable_inttypes.h $(altincdir)/gasnet_portable_platform.h \
+	    $$distdir && \
+	 cd $$distdir && \
+	 mv gasnet_portable_platform.h amx_portable_platform.h && \
+	 rm -f Makefile.in Makefile.am Makefile.titanium* && \
+         mv Makefile.standalone Makefile && \
+	 cd .. && \
+         tar -cvhf $$distdir.tar $$distdir && gzip -9 $$distdir.tar && \
+         rm -Rf $$distdir && \
+         echo "+++ $$distdir.tar.gz is ready for distribution +++" 

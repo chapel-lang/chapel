@@ -6,14 +6,20 @@ class C {
 
 class D : C {
   proc foo() {
+    writeln("D.foo");
     goo();
   }
 }
 
 class E : D {
-  proc goo() {
+  override proc goo() {
     writeln("E.goo");
   }
 }
 
-(new C()).goo();
+(new borrowed C()).goo();
+(new borrowed D()).goo();
+(new borrowed E()).goo();
+
+(new borrowed D()).foo();
+(new borrowed E()).foo();

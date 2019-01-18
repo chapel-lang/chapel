@@ -2,16 +2,13 @@ perfkeys: Execution time =
 files: cg.S.dat
 graphkeys: runtime - S
 graphtitle: NAS Parallel Benchmarks: CG timings - size S
+ylabel: Time (seconds)
 
 perfkeys: Execution time =
 files: cg.W.dat
 graphkeys: runtime - W
 graphtitle: NAS Parallel Benchmarks: CG timings - size W
-
-perfkeys: Execution time =
-files: cg.A.dat
-graphkeys: runtime - A
-graphtitle: NAS Parallel Benchmarks: CG timings - size A
+ylabel: Time (seconds)
 
 #perfkeys: Execution time =
 #files: cg.B.dat

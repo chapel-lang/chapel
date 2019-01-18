@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011-2012 Inria.  All rights reserved.
+ * Copyright © 2011-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
   for(i=0, j=0; i<argc; i++, j++) {
     hwloc_topology_t input;
     hwloc_obj_t root;
-    char idx[10];
+    char idx[11];
     char *name = NULL;
 
     if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--name")) {

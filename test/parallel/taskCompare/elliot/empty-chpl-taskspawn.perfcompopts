@@ -1,0 +1,6 @@
+-staskingMode=forBeginT       # empty-for+begin
+-staskingMode=coforallT       # empty-coforall
+-staskingMode=forallT         # empty-forall
+-staskingMode=serialForBeginT # empty-serial-for+begin
+-staskingMode=serialCoforallT # empty-serial-coforall
+-staskingMode=serialForallT   # empty-serial-forall

@@ -51,12 +51,12 @@ proc blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
     //            |A22| is updated after the LU factorization
     //                  of A1
   
-    var A1  => A[UnfactoredInds, CurrentBlockInds],
-        A2  => A[UnfactoredInds, TrailingBlockInds],
-        A11 => A[CurrentBlockInds, CurrentBlockInds],
-        A21 => A[TrailingBlockInds, CurrentBlockInds],
-        A12 => A[CurrentBlockInds, TrailingBlockInds],
-        A22 => A[TrailingBlockInds, TrailingBlockInds];
+    ref A1  = A[UnfactoredInds, CurrentBlockInds],
+        A2  = A[UnfactoredInds, TrailingBlockInds],
+        A11 = A[CurrentBlockInds, CurrentBlockInds],
+        A21 = A[TrailingBlockInds, CurrentBlockInds],
+        A12 = A[CurrentBlockInds, TrailingBlockInds],
+        A22 = A[TrailingBlockInds, TrailingBlockInds];
 
     // First compute the LU factorization of A1...
     //
@@ -183,13 +183,13 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
 
   for (PrecedingBlockInds,CurrentBlockInds,TrailingBlockInds) in GenerateCholBlocks(A1D,blk) {
 
-    var U1 => A[PrecedingBlockInds,CurrentBlockInds];
-    var U2 => A[PrecedingBlockInds,TrailingBlockInds];
-    var A11 => A[CurrentBlockInds,CurrentBlockInds];
-    var A21 => A[CurrentBlockInds,TrailingBlockInds];
-    var L1 => A[CurrentBlockInds,PrecedingBlockInds];
-    var L2 => A[TrailingBlockInds,PrecedingBlockInds];
-    var A12 => A[TrailingBlockInds,CurrentBlockInds];
+    ref U1 = A[PrecedingBlockInds,CurrentBlockInds];
+    ref U2 = A[PrecedingBlockInds,TrailingBlockInds];
+    ref A11 = A[CurrentBlockInds,CurrentBlockInds];
+    ref A21 = A[CurrentBlockInds,TrailingBlockInds];
+    ref L1 = A[CurrentBlockInds,PrecedingBlockInds];
+    ref L2 = A[TrailingBlockInds,PrecedingBlockInds];
+    ref A12 = A[TrailingBlockInds,CurrentBlockInds];
 
     for j in CurrentBlockInds {
       for (i,k) in {CurrentBlockInds(j..),PrecedingBlockInds} {

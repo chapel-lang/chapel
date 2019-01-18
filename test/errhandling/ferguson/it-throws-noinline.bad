@@ -1,0 +1,2 @@
+it-throws-noinline.chpl:24: error: Throwing non-inlined iterators are not yet supported
+Note: This source location is a guess.

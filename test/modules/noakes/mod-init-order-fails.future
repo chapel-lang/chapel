@@ -1,0 +1,6 @@
+bug: Failure to correctly resolve a use statement
+
+---
+
+The module M1 fails to 'use' M2.M3.M4 if M1 appears before M2.
+This programs compiles if M2 preceeds M1 (see mod-init-order-works.chpl)

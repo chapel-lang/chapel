@@ -8,22 +8,22 @@ class C {
 class D: C {
   param rank: int;
   var y: int;
-  proc foo() where rank == 1 {
+  override proc foo() where rank == 1 {
     writeln("foo<", rank, ">: (x = ", x, ", y = ", y, ")");
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 c.foo();
 c.foo();
 delete c;
 
-c = new D(rank=1);
+c = new unmanaged D(rank=1);
 c.foo();
 c.foo();
 delete c;
 
-c = new D(rank=2);
+c = new unmanaged D(rank=2);
 c.foo();
 c.foo();
 delete c;

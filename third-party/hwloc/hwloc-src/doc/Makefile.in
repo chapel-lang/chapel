@@ -14,9 +14,9 @@
 
 @SET_MAKE@
 
-# Copyright © 2009-2014 Inria.  All rights reserved.
+# Copyright © 2009-2016 Inria.  All rights reserved.
 # Copyright © 2009-2013 Université Bordeaux
-# Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
+# Copyright © 2009-2016 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
 
 VPATH = @srcdir@
@@ -191,6 +191,7 @@ am__installdirs = "$(DESTDIR)$(man3dir)" "$(DESTDIR)$(man3_bitmapdir)" \
 	"$(DESTDIR)$(man3_linux_libnumadir)" \
 	"$(DESTDIR)$(man3_membindingdir)" \
 	"$(DESTDIR)$(man3_myriexpressdir)" \
+	"$(DESTDIR)$(man3_object_info_attrsdir)" \
 	"$(DESTDIR)$(man3_object_setsdir)" \
 	"$(DESTDIR)$(man3_object_stringsdir)" \
 	"$(DESTDIR)$(man3_object_typesdir)" \
@@ -213,10 +214,11 @@ DATA = $(man3_bitmap_DATA) $(man3_configuration_DATA) \
 	$(man3_helper_topology_sets_DATA) $(man3_levels_DATA) \
 	$(man3_linux_DATA) $(man3_linux_libnuma_DATA) \
 	$(man3_membinding_DATA) $(man3_myriexpress_DATA) \
-	$(man3_object_sets_DATA) $(man3_object_strings_DATA) \
-	$(man3_object_types_DATA) $(man3_objects_DATA) \
-	$(man3_openfabrics_DATA) $(man3_syntheticexport_DATA) \
-	$(man3_tinker_DATA) $(man3_xmlexport_DATA) $(pdf_DATA)
+	$(man3_object_info_attrs_DATA) $(man3_object_sets_DATA) \
+	$(man3_object_strings_DATA) $(man3_object_types_DATA) \
+	$(man3_objects_DATA) $(man3_openfabrics_DATA) \
+	$(man3_syntheticexport_DATA) $(man3_tinker_DATA) \
+	$(man3_xmlexport_DATA) $(pdf_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 am__recursive_targets = \
@@ -338,6 +340,8 @@ HWLOC_LINUX_LIBNUMA_LIBS = @HWLOC_LINUX_LIBNUMA_LIBS@
 HWLOC_MS_LIB = @HWLOC_MS_LIB@
 HWLOC_MS_LIB_ARCH = @HWLOC_MS_LIB_ARCH@
 HWLOC_NVML_LIBS = @HWLOC_NVML_LIBS@
+HWLOC_OPENCL_CFLAGS = @HWLOC_OPENCL_CFLAGS@
+HWLOC_OPENCL_LDFLAGS = @HWLOC_OPENCL_LDFLAGS@
 HWLOC_OPENCL_LIBS = @HWLOC_OPENCL_LIBS@
 HWLOC_PCIACCESS_CFLAGS = @HWLOC_PCIACCESS_CFLAGS@
 HWLOC_PCIACCESS_LIBS = @HWLOC_PCIACCESS_LIBS@
@@ -351,6 +355,7 @@ HWLOC_W3_GENERATOR = @HWLOC_W3_GENERATOR@
 HWLOC_X11_CPPFLAGS = @HWLOC_X11_CPPFLAGS@
 HWLOC_X11_LIBS = @HWLOC_X11_LIBS@
 HWLOC_XML_LOCALIZED = @HWLOC_XML_LOCALIZED@
+HWLOC_runstatedir = @HWLOC_runstatedir@
 HWLOC_top_builddir = @HWLOC_top_builddir@
 HWLOC_top_srcdir = @HWLOC_top_srcdir@
 INSTALL = @INSTALL@
@@ -480,7 +485,10 @@ DOX_TAG = $(DOX_DIR)/$(PACKAGE).tag
 #
 
 # images already available in repository
-PREBUILT_IMAGES = images/dudley.png images/emmett.png images/hagrid.png
+PREBUILT_IMAGES = images/dudley.png images/emmett.png images/hagrid.png \
+        images/ppc64-with-smt.png images/ppc64-without-smt.png images/ppc64-full-with-smt.png \
+        images/devel09-pci.png
+
 # images built from repository before inclusion in make dist
 BUILT_IMAGES = images/diagram.png images/diagram.eps
 EXTRA_DIST = \
@@ -489,14 +497,6 @@ EXTRA_DIST = \
         doxygen.css \
         doxygen.cfg \
         images/diagram.fig \
-        images/devel09-pci.png \
-        images/devel09-pci.pdf \
-        images/ppc64-with-smt.png \
-        images/ppc64-with-smt.pdf \
-        images/ppc64-without-smt.png \
-        images/ppc64-without-smt.pdf \
-        images/ppc64-full-with-smt.png \
-        images/ppc64-full-with-smt.pdf \
         www.open-mpi.org.cfg \
         www.open-mpi.org-css.inc \
         www.open-mpi.org-footer.inc \
@@ -598,7 +598,6 @@ EXTRA_DIST = \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_OBJ_PCI_DEVICE.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_OBJ_PACKAGE.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_OBJ_SYSTEM.3 \
-@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_OBJ_TYPE_MAX.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_type_t.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_OBJ_CACHE_UNIFIED.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_OBJ_CACHE_DATA.3 \
@@ -703,10 +702,14 @@ EXTRA_DIST = \
 @HWLOC_INSTALL_DOXYGEN_TRUE@man3_object_strings_DATA = \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwlocality_object_strings.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_type_string.3 \
-@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_type_sscanf.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_type_snprintf.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_attr_snprintf.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_cpuset_snprintf.3 \
+@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_type_sscanf.3
+
+@HWLOC_INSTALL_DOXYGEN_TRUE@man3_object_info_attrsdir = $(man3dir)
+@HWLOC_INSTALL_DOXYGEN_TRUE@man3_object_info_attrs_DATA = \
+@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwlocality_info_attr.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_get_info_by_name.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_add_info.3
 
@@ -738,6 +741,7 @@ EXTRA_DIST = \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_MIXED.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_NEXTTOUCH.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_NOCPUBIND.3 \
+@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_BYNODESET.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_PROCESS.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_REPLICATE.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_STRICT.3 \
@@ -756,6 +760,7 @@ EXTRA_DIST = \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_set_area_membind_nodeset.3  \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_get_area_membind.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_get_area_membind_nodeset.3  \
+@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_get_area_memlocation.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_alloc.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_alloc_membind.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_alloc_membind_nodeset.3  \
@@ -1608,6 +1613,27 @@ uninstall-man3_myriexpressDATA:
 	@list='$(man3_myriexpress_DATA)'; test -n "$(man3_myriexpressdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(man3_myriexpressdir)'; $(am__uninstall_files_from_dir)
+install-man3_object_info_attrsDATA: $(man3_object_info_attrs_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(man3_object_info_attrs_DATA)'; test -n "$(man3_object_info_attrsdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(man3_object_info_attrsdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(man3_object_info_attrsdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(man3_object_info_attrsdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(man3_object_info_attrsdir)" || exit $$?; \
+	done
+
+uninstall-man3_object_info_attrsDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(man3_object_info_attrs_DATA)'; test -n "$(man3_object_info_attrsdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(man3_object_info_attrsdir)'; $(am__uninstall_files_from_dir)
 install-man3_object_setsDATA: $(man3_object_sets_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(man3_object_sets_DATA)'; test -n "$(man3_object_setsdir)" || list=; \
@@ -1958,7 +1984,7 @@ check: $(BUILT_SOURCES)
 all-am: Makefile $(MANS) $(DATA) all-local
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(man3dir)" "$(DESTDIR)$(man3_bitmapdir)" "$(DESTDIR)$(man3_configurationdir)" "$(DESTDIR)$(man3_cpubindingdir)" "$(DESTDIR)$(man3_creationdir)" "$(DESTDIR)$(man3_cudadir)" "$(DESTDIR)$(man3_customdir)" "$(DESTDIR)$(man3_diffdir)" "$(DESTDIR)$(man3_glibc_scheddir)" "$(DESTDIR)$(man3_helper_advanced_iodir)" "$(DESTDIR)$(man3_helper_ancestorsdir)" "$(DESTDIR)$(man3_helper_distancesdir)" "$(DESTDIR)$(man3_helper_distributedir)" "$(DESTDIR)$(man3_helper_find_cachedir)" "$(DESTDIR)$(man3_helper_find_coveringdir)" "$(DESTDIR)$(man3_helper_find_insidedir)" "$(DESTDIR)$(man3_helper_find_miscdir)" "$(DESTDIR)$(man3_helper_nodeset_convertdir)" "$(DESTDIR)$(man3_helper_topology_setsdir)" "$(DESTDIR)$(man3_levelsdir)" "$(DESTDIR)$(man3_linuxdir)" "$(DESTDIR)$(man3_linux_libnumadir)" "$(DESTDIR)$(man3_membindingdir)" "$(DESTDIR)$(man3_myriexpressdir)" "$(DESTDIR)$(man3_object_setsdir)" "$(DESTDIR)$(man3_object_stringsdir)" "$(DESTDIR)$(man3_object_typesdir)" "$(DESTDIR)$(man3_objectsdir)" "$(DESTDIR)$(man3_openfabricsdir)" "$(DESTDIR)$(man3_syntheticexportdir)" "$(DESTDIR)$(man3_tinkerdir)" "$(DESTDIR)$(man3_xmlexportdir)" "$(DESTDIR)$(pdfdir)"; do \
+	for dir in "$(DESTDIR)$(man3dir)" "$(DESTDIR)$(man3_bitmapdir)" "$(DESTDIR)$(man3_configurationdir)" "$(DESTDIR)$(man3_cpubindingdir)" "$(DESTDIR)$(man3_creationdir)" "$(DESTDIR)$(man3_cudadir)" "$(DESTDIR)$(man3_customdir)" "$(DESTDIR)$(man3_diffdir)" "$(DESTDIR)$(man3_glibc_scheddir)" "$(DESTDIR)$(man3_helper_advanced_iodir)" "$(DESTDIR)$(man3_helper_ancestorsdir)" "$(DESTDIR)$(man3_helper_distancesdir)" "$(DESTDIR)$(man3_helper_distributedir)" "$(DESTDIR)$(man3_helper_find_cachedir)" "$(DESTDIR)$(man3_helper_find_coveringdir)" "$(DESTDIR)$(man3_helper_find_insidedir)" "$(DESTDIR)$(man3_helper_find_miscdir)" "$(DESTDIR)$(man3_helper_nodeset_convertdir)" "$(DESTDIR)$(man3_helper_topology_setsdir)" "$(DESTDIR)$(man3_levelsdir)" "$(DESTDIR)$(man3_linuxdir)" "$(DESTDIR)$(man3_linux_libnumadir)" "$(DESTDIR)$(man3_membindingdir)" "$(DESTDIR)$(man3_myriexpressdir)" "$(DESTDIR)$(man3_object_info_attrsdir)" "$(DESTDIR)$(man3_object_setsdir)" "$(DESTDIR)$(man3_object_stringsdir)" "$(DESTDIR)$(man3_object_typesdir)" "$(DESTDIR)$(man3_objectsdir)" "$(DESTDIR)$(man3_openfabricsdir)" "$(DESTDIR)$(man3_syntheticexportdir)" "$(DESTDIR)$(man3_tinkerdir)" "$(DESTDIR)$(man3_xmlexportdir)" "$(DESTDIR)$(pdfdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -2031,6 +2057,7 @@ install-data-am: install-man install-man3_bitmapDATA \
 	install-man3_helper_topology_setsDATA install-man3_levelsDATA \
 	install-man3_linuxDATA install-man3_linux_libnumaDATA \
 	install-man3_membindingDATA install-man3_myriexpressDATA \
+	install-man3_object_info_attrsDATA \
 	install-man3_object_setsDATA install-man3_object_stringsDATA \
 	install-man3_object_typesDATA install-man3_objectsDATA \
 	install-man3_openfabricsDATA install-man3_syntheticexportDATA \
@@ -2096,7 +2123,9 @@ uninstall-am: uninstall-man uninstall-man3_bitmapDATA \
 	uninstall-man3_helper_topology_setsDATA \
 	uninstall-man3_levelsDATA uninstall-man3_linuxDATA \
 	uninstall-man3_linux_libnumaDATA uninstall-man3_membindingDATA \
-	uninstall-man3_myriexpressDATA uninstall-man3_object_setsDATA \
+	uninstall-man3_myriexpressDATA \
+	uninstall-man3_object_info_attrsDATA \
+	uninstall-man3_object_setsDATA \
 	uninstall-man3_object_stringsDATA \
 	uninstall-man3_object_typesDATA uninstall-man3_objectsDATA \
 	uninstall-man3_openfabricsDATA \
@@ -2132,6 +2161,7 @@ uninstall-man: uninstall-man3
 	install-man3_helper_topology_setsDATA install-man3_levelsDATA \
 	install-man3_linuxDATA install-man3_linux_libnumaDATA \
 	install-man3_membindingDATA install-man3_myriexpressDATA \
+	install-man3_object_info_attrsDATA \
 	install-man3_object_setsDATA install-man3_object_stringsDATA \
 	install-man3_object_typesDATA install-man3_objectsDATA \
 	install-man3_openfabricsDATA install-man3_syntheticexportDATA \
@@ -2158,7 +2188,9 @@ uninstall-man: uninstall-man3
 	uninstall-man3_helper_topology_setsDATA \
 	uninstall-man3_levelsDATA uninstall-man3_linuxDATA \
 	uninstall-man3_linux_libnumaDATA uninstall-man3_membindingDATA \
-	uninstall-man3_myriexpressDATA uninstall-man3_object_setsDATA \
+	uninstall-man3_myriexpressDATA \
+	uninstall-man3_object_info_attrsDATA \
+	uninstall-man3_object_setsDATA \
 	uninstall-man3_object_stringsDATA \
 	uninstall-man3_object_typesDATA uninstall-man3_objectsDATA \
 	uninstall-man3_openfabricsDATA \
@@ -2174,7 +2206,7 @@ uninstall-man: uninstall-man3
 @HWLOC_BUILD_DOXYGEN_TRUE@	    echo "ERROR: Cannot find the 'fig2dev' executable -- cannot make $@"; \
 @HWLOC_BUILD_DOXYGEN_TRUE@	    exit 1; \
 @HWLOC_BUILD_DOXYGEN_TRUE@	fi
-@HWLOC_BUILD_DOXYGEN_TRUE@	$(FIG2DEV) -L png $< $@
+@HWLOC_BUILD_DOXYGEN_TRUE@	$(FIG2DEV) -m 1.5 -L png $< $@
 
 @HWLOC_BUILD_DOXYGEN_TRUE@images/diagram.eps: $(srcdir)/images/diagram.fig
 @HWLOC_BUILD_DOXYGEN_TRUE@	$(MKDIR_P) images
@@ -2267,8 +2299,21 @@ uninstall-man: uninstall-man3
 
 @HWLOC_BUILD_DOXYGEN_TRUE@doc: $(DOX_TAG) $(DOX_LETTERPDF) $(DOX_A4PDF)
 
-# When we don't have doxygen, nothing to do
+# When we don't have doxygen, nothing to do for a normal build
 @HWLOC_BUILD_DOXYGEN_FALSE@doc:
+
+# But if the user tries to "make dist" and doesn't have all the right
+# tools, and prebuilt doc aren't available, fail with a helpful error
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@$(BUILT_IMAGES) $(DOX_A4PDF) $(DOX_LETTERPDF):
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo " "
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "*** ERROR: You do not have all the documentation generation tools"
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "*** that hwloc needs.  Check the output from when you ran 'configure'"
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "*** (in section \"Configuring hwloc documentation\") to see what tools"
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "*** you are missing."
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "***"
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo "*** 'make' will now abort with an error."
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@echo " "
+@HWLOC_BUILD_DOXYGEN_FALSE@@HWLOC_INSTALL_DOXYGEN_FALSE@	@exit 1
 
 # end of manpages(3) if HWLOC_BUILD_DOXYGEN
 
@@ -2289,6 +2334,7 @@ uninstall-man: uninstall-man3
 @HWLOC_BUILD_DOXYGEN_TRUE@$(man3_configuration_DATA): $(DOX_TAG)
 @HWLOC_BUILD_DOXYGEN_TRUE@$(man3_levels_DATA): $(DOX_TAG)
 @HWLOC_BUILD_DOXYGEN_TRUE@$(man3_object_strings_DATA): $(DOX_TAG)
+@HWLOC_BUILD_DOXYGEN_TRUE@$(man3_object_info_attrs_DATA): $(DOX_TAG)
 @HWLOC_BUILD_DOXYGEN_TRUE@$(man3_cpubinding_DATA): $(DOX_TAG)
 @HWLOC_BUILD_DOXYGEN_TRUE@$(man3_membinding_DATA): $(DOX_TAG)
 @HWLOC_BUILD_DOXYGEN_TRUE@$(man3_tinker_DATA): $(DOX_TAG)
@@ -2338,8 +2384,11 @@ uninstall-man: uninstall-man3
 @HWLOC_BUILD_README_TRUE@	sed -n -f $(srcdir)/README.sed $(DOX_HTML_DIR)/index.html > $(DOX_HTML_README)
 @HWLOC_BUILD_README_TRUE@	LC_ALL=C $(HWLOC_W3_GENERATOR) $(DOX_HTML_README) \
 @HWLOC_BUILD_README_TRUE@	 | $(SED) -n -e 's/^   //' -e '/^Introduction$$/,$$p' \
-@HWLOC_BUILD_README_TRUE@	 | $(SED) -e '/^--*-$$/,$$ d' \
+@HWLOC_BUILD_README_TRUE@	 | $(SED) -e '/^Installation$$/,$$ d' \
 @HWLOC_BUILD_README_TRUE@	 > $@
+@HWLOC_BUILD_README_TRUE@	echo >> $@
+@HWLOC_BUILD_README_TRUE@	echo >> $@
+@HWLOC_BUILD_README_TRUE@	echo "See https://www.open-mpi.org/projects/hwloc/doc/ for more hwloc documentation." >> $@
 @HWLOC_BUILD_README_TRUE@	rm -f $(DOX_HTML_README)
 
 # When we don't have what's needed to build the README, nothing to do

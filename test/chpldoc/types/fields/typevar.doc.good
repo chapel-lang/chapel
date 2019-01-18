@@ -1,7 +1,23 @@
-typevar.doc
-   Class: Foo
-      This class has type fields 
+.. default-domain:: chpl
 
-      type t1
-      type t2
-         This field has a comment 
+.. module:: typevar.doc
+
+typevar.doc
+===========
+**Usage**
+
+.. code-block:: chapel
+
+   use typevar.doc;
+
+.. class:: Foo
+
+   This class has type fields 
+
+
+   .. attribute:: type t1
+
+   .. attribute:: type t2
+
+      This field has a comment 
+

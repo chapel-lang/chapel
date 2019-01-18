@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: illegal argument 'src': Cannot move a directory 'foo' into itself 'foo'.
+  overSelf.chpl:6: thrown here
+  overSelf.chpl:6: uncaught here

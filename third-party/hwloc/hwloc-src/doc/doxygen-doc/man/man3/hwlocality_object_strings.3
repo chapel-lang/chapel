@@ -1,16 +1,16 @@
-.TH "hwlocality_object_strings" 3 "Thu Dec 17 2015" "Version 1.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_object_strings" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_object_strings \- Manipulating Object Type, Sets and Attributes as Strings
+hwlocality_object_strings
+.SH SYNOPSIS
+.br
+.PP
 .SS "Functions"
 
 .in +1c
 .ti -1c
 .RI "const char * \fBhwloc_obj_type_string\fP (\fBhwloc_obj_type_t\fP type)"
-.br
-.ti -1c
-.RI "int \fBhwloc_obj_type_sscanf\fP (const char *string, \fBhwloc_obj_type_t\fP *typep, int *depthattrp, void *typeattrp, size_t typeattrsize)"
 .br
 .ti -1c
 .RI "int \fBhwloc_obj_type_snprintf\fP (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, int verbose)"
@@ -22,10 +22,7 @@ hwlocality_object_strings \- Manipulating Object Type, Sets and Attributes as St
 .RI "int \fBhwloc_obj_cpuset_snprintf\fP (char *restrict str, size_t size, size_t nobj, const \fBhwloc_obj_t\fP *restrict objs)"
 .br
 .ti -1c
-.RI "static const char * \fBhwloc_obj_get_info_by_name\fP (\fBhwloc_obj_t\fP obj, const char *name)"
-.br
-.ti -1c
-.RI "void \fBhwloc_obj_add_info\fP (\fBhwloc_obj_t\fP obj, const char *name, const char *value)"
+.RI "int \fBhwloc_obj_type_sscanf\fP (const char *string, \fBhwloc_obj_type_t\fP *typep, int *depthattrp, void *typeattrp, size_t typeattrsize)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -33,21 +30,6 @@ hwlocality_object_strings \- Manipulating Object Type, Sets and Attributes as St
 
 .SH "Function Documentation"
 .PP 
-.SS "void hwloc_obj_add_info (\fBhwloc_obj_t\fP obj, const char * name, const char * value)"
-
-.PP
-Add the given info name and value pair to the given object\&. The info is appended to the existing info array even if another key with the same name already exists\&.
-.PP
-The input strings are copied before being added in the object infos\&.
-.PP
-\fBNote:\fP
-.RS 4
-This function may be used to enforce object colors in the lstopo graphical output by using 'lstopoStyle' as a name and 'Background=#rrggbb' as a value\&. See CUSTOM COLORS in the lstopo(1) manpage for details\&.
-.PP
-If \fCvalue\fP contains some non-printable characters, they will be dropped when exporting to XML, see \fBhwloc_topology_export_xml()\fP\&. 
-.RE
-.PP
-
 .SS "int hwloc_obj_attr_snprintf (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, const char *restrict separator, int verbose)"
 
 .PP
@@ -74,21 +56,12 @@ the number of character that were actually written if not truncating, or that wo
 .RE
 .PP
 
-.SS "static const char* hwloc_obj_get_info_by_name (\fBhwloc_obj_t\fP obj, const char * name)\fC [inline]\fP, \fC [static]\fP"
-
-.PP
-Search the given key name in object infos and return the corresponding value\&. If multiple keys match the given name, only the first one is returned\&.
-.PP
-\fBReturns:\fP
-.RS 4
-\fCNULL\fP if no such key exists\&. 
-.RE
-.PP
-
 .SS "int hwloc_obj_type_snprintf (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, int verbose)"
 
 .PP
-Stringify the type of a given topology object into a human-readable form\&. It differs from \fBhwloc_obj_type_string()\fP because it prints type attributes such as cache depth and type\&.
+Stringify the type of a given topology object into a human-readable form\&. Contrary to \fBhwloc_obj_type_string()\fP, this function includes object-specific attributes (such as the Group depth, the Bridge type, or OS device type) in the output, and it requires the caller to provide the output buffer\&.
+.PP
+The output is guaranteed to be the same for all objects of a same topology level\&.
 .PP
 If \fCsize\fP is 0, \fCstring\fP may safely be \fCNULL\fP\&.
 .PP
@@ -102,6 +75,8 @@ the number of character that were actually written if not truncating, or that wo
 
 .PP
 Return an object type and attributes from a type string\&. Convert strings such as 'Package' or 'Cache' into the corresponding types\&. Matching is case-insensitive, and only the first letters are actually required to match\&.
+.PP
+This function is guaranteed to match any string returned by \fBhwloc_obj_type_string()\fP or \fBhwloc_obj_type_snprintf()\fP\&.
 .PP
 Types that have specific attributes, for instance caches and groups, may be returned in \fCdepthattrp\fP and \fCtypeattrp\fP\&. They are ignored when these pointers are \fCNULL\fP\&.
 .PP
@@ -123,7 +98,9 @@ This is an extended version of the now deprecated hwloc_obj_type_of_string()
 .SS "const char* hwloc_obj_type_string (\fBhwloc_obj_type_t\fP type)"
 
 .PP
-Return a stringified topology object type\&. 
+Return a constant stringified object type\&. This function is the basic way to convert a generic type into a string\&.
+.PP
+\fBhwloc_obj_type_snprintf()\fP may return a more precise output for a specific object, but it requires the caller to provide the output buffer\&. 
 .SH "Author"
 .PP 
 Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

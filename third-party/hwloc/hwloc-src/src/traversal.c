@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -18,7 +18,10 @@
 int
 hwloc_get_type_depth (struct hwloc_topology *topology, hwloc_obj_type_t type)
 {
-  return topology->type_depth[type];
+  if ((int)type < HWLOC_OBJ_SYSTEM || (int)type >= HWLOC_OBJ_TYPE_MAX)
+    return HWLOC_TYPE_DEPTH_UNKNOWN;
+  else
+    return topology->type_depth[type];
 }
 
 hwloc_obj_type_t
@@ -221,13 +224,28 @@ hwloc_obj_type_sscanf(const char *string, hwloc_obj_type_t *typep, int *depthatt
   hwloc_obj_cache_type_t cachetypeattr = (hwloc_obj_cache_type_t) -1; /* unspecified */
   char *end;
 
+  /* never match the ending \0 since we want to match things like core:2 too.
+   * just use hwloc_strncasecmp() everywhere.
+   */
+
   /* types without depthattr */
-  if (!hwloc_strncasecmp(string, "system", 2)) {
+
+  /* osdev first to avoid conflicts coproc/core etc */
+  if (!hwloc_strncasecmp(string, "os", 2)
+	     || !hwloc_strncasecmp(string, "bloc", 4)
+	     || !hwloc_strncasecmp(string, "net", 3)
+	     || !hwloc_strncasecmp(string, "openfab", 7)
+	     || !hwloc_strncasecmp(string, "dma", 3)
+	     || !hwloc_strncasecmp(string, "gpu", 3)
+	     || !hwloc_strncasecmp(string, "copro", 5)
+	     || !hwloc_strncasecmp(string, "co-pro", 6)) {
+    type = HWLOC_OBJ_OS_DEVICE;
+  } else if (!hwloc_strncasecmp(string, "system", 2)) {
     type = HWLOC_OBJ_SYSTEM;
   } else if (!hwloc_strncasecmp(string, "machine", 2)) {
     type = HWLOC_OBJ_MACHINE;
-  } else if (!hwloc_strncasecmp(string, "node", 1)
-	     || !hwloc_strncasecmp(string, "numa", 1)) { /* matches node and numanode */
+  } else if (!hwloc_strncasecmp(string, "node", 2)
+	     || !hwloc_strncasecmp(string, "numa", 2)) { /* matches node and numanode */
     type = HWLOC_OBJ_NUMANODE;
   } else if (!hwloc_strncasecmp(string, "package", 2)
 	     || !hwloc_strncasecmp(string, "socket", 2)) { /* backward compat with v1.10 */
@@ -236,16 +254,14 @@ hwloc_obj_type_sscanf(const char *string, hwloc_obj_type_t *typep, int *depthatt
     type = HWLOC_OBJ_CORE;
   } else if (!hwloc_strncasecmp(string, "pu", 2)) {
     type = HWLOC_OBJ_PU;
-  } else if (!hwloc_strncasecmp(string, "misc", 2)) {
+  } else if (!hwloc_strncasecmp(string, "misc", 4)) {
     type = HWLOC_OBJ_MISC;
-  } else if (!hwloc_strncasecmp(string, "bridge", 2)
+  } else if (!hwloc_strncasecmp(string, "bridge", 4)
 	     || !hwloc_strncasecmp(string, "hostbridge", 6)
 	     || !hwloc_strncasecmp(string, "pcibridge", 5)) {
     type = HWLOC_OBJ_BRIDGE;
-  } else if (!hwloc_strncasecmp(string, "pci", 2)) {
+  } else if (!hwloc_strncasecmp(string, "pci", 3)) {
     type = HWLOC_OBJ_PCI_DEVICE;
-  } else if (!hwloc_strncasecmp(string, "os", 2)) {
-    type = HWLOC_OBJ_OS_DEVICE;
 
   /* types with depthattr */
   } else if (!hwloc_strncasecmp(string, "cache", 2)) {
@@ -316,6 +332,7 @@ hwloc_pci_class_string(unsigned short class_id)
 	case 0x0205: return "WrdFip";
 	case 0x0206: return "PICMG";
 	case 0x0207: return "IB";
+	case 0x0208: return "FI";
       }
       return "Net";
     case 0x03:
@@ -403,7 +420,7 @@ hwloc_pci_class_string(unsigned short class_id)
 	case 0x0c01: return "ACCES";
 	case 0x0c02: return "SSA";
 	case 0x0c03: return "USB";
-	case 0x0c04: return "Fiber";
+	case 0x0c04: return "Fibre";
 	case 0x0c05: return "SMBus";
 	case 0x0c06: return "IB";
 	case 0x0c07: return "IPMI";
@@ -484,14 +501,14 @@ hwloc_obj_type_snprintf(char * __hwloc_restrict string, size_t size, hwloc_obj_t
       return hwloc_snprintf(string, size, "%s", hwloc_obj_type_string(type));
   case HWLOC_OBJ_BRIDGE:
     if (verbose)
-      return snprintf(string, size, "Bridge %s->%s",
-		      obj->attr->bridge.upstream_type == HWLOC_OBJ_BRIDGE_PCI ? "PCI" : "Host",
-		      "PCI");
+      return hwloc_snprintf(string, size, "Bridge %s->%s",
+			    obj->attr->bridge.upstream_type == HWLOC_OBJ_BRIDGE_PCI ? "PCI" : "Host",
+			    "PCI");
     else
-      return snprintf(string, size, obj->attr->bridge.upstream_type == HWLOC_OBJ_BRIDGE_PCI ? "PCIBridge" : "HostBridge");
+      return hwloc_snprintf(string, size, obj->attr->bridge.upstream_type == HWLOC_OBJ_BRIDGE_PCI ? "PCIBridge" : "HostBridge");
   case HWLOC_OBJ_PCI_DEVICE:
-    return snprintf(string, size, "PCI %04x:%04x",
-		    obj->attr->pcidev.vendor_id, obj->attr->pcidev.device_id);
+    return hwloc_snprintf(string, size, "PCI %04x:%04x",
+			  obj->attr->pcidev.vendor_id, obj->attr->pcidev.device_id);
   case HWLOC_OBJ_OS_DEVICE:
     switch (obj->attr->osdev.type) {
     case HWLOC_OBJ_OSDEV_BLOCK: return hwloc_snprintf(string, size, "Block");
@@ -533,10 +550,10 @@ hwloc_obj_attr_snprintf(char * __hwloc_restrict string, size_t size, hwloc_obj_t
       res = hwloc_snprintf(tmp, tmplen, "%slocal=%lu%s%stotal=%lu%s",
 			   prefix,
 			   (unsigned long) hwloc_memory_size_printf_value(obj->memory.local_memory, verbose),
-			   hwloc_memory_size_printf_unit(obj->memory.total_memory, verbose),
+			   hwloc_memory_size_printf_unit(obj->memory.local_memory, verbose),
 			   separator,
 			   (unsigned long) hwloc_memory_size_printf_value(obj->memory.total_memory, verbose),
-			   hwloc_memory_size_printf_unit(obj->memory.local_memory, verbose));
+			   hwloc_memory_size_printf_unit(obj->memory.total_memory, verbose));
     else if (obj->memory.total_memory)
       res = hwloc_snprintf(tmp, tmplen, "%stotal=%lu%s",
 			   prefix,
@@ -601,9 +618,9 @@ hwloc_obj_attr_snprintf(char * __hwloc_restrict string, size_t size, hwloc_obj_t
       snprintf(down, sizeof(down), "buses=%04x:[%02x-%02x]",
 	       obj->attr->bridge.downstream.pci.domain, obj->attr->bridge.downstream.pci.secondary_bus, obj->attr->bridge.downstream.pci.subordinate_bus);
       if (*up)
-	res = snprintf(string, size, "%s%s%s", up, separator, down);
+	res = hwloc_snprintf(string, size, "%s%s%s", up, separator, down);
       else
-	res = snprintf(string, size, "%s", down);
+	res = hwloc_snprintf(string, size, "%s", down);
     }
     break;
   case HWLOC_OBJ_PCI_DEVICE:
@@ -615,9 +632,9 @@ hwloc_obj_attr_snprintf(char * __hwloc_restrict string, size_t size, hwloc_obj_t
       if (!hwloc_obj_get_info_by_name(obj, "lstopoCollapse"))
 	snprintf(busid, sizeof(busid), "%04x:%02x:%02x.%01x",
 		 obj->attr->pcidev.domain, obj->attr->pcidev.bus, obj->attr->pcidev.dev, obj->attr->pcidev.func);
-      res = snprintf(string, size, "busid=%s%sclass=%04x(%s)%s",
-		     busid, separator,
-		     obj->attr->pcidev.class_id, hwloc_pci_class_string(obj->attr->pcidev.class_id), linkspeed);
+      res = hwloc_snprintf(string, size, "busid=%s%sclass=%04x(%s)%s",
+			   busid, separator,
+			   obj->attr->pcidev.class_id, hwloc_pci_class_string(obj->attr->pcidev.class_id), linkspeed);
     }
     break;
   default:

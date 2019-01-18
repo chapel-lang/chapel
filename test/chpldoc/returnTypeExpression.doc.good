@@ -1,0 +1,14 @@
+.. default-domain:: chpl
+
+.. module:: returnTypeExpression.doc
+
+returnTypeExpression.doc
+========================
+**Usage**
+
+.. code-block:: chapel
+
+   use returnTypeExpression.doc;
+
+.. function:: proc foo(a: complex(?w), b: real(w/2)): real(w/2)
+

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2009 inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * See COPYING in top-level directory.
  */
@@ -30,6 +30,10 @@ typedef enum lgrp_mem_size_flag {
 	LGRP_MEM_SZ_INSTALLED
 } lgrp_mem_size_flag_t;
 
+typedef enum lgrp_rsrc {
+        LGRP_RSRC_MEM
+} lgrp_rsrc_t;
+
 typedef enum lgrp_lat_between {
 	LGRP_LAT_CPU_TO_MEM
 } lgrp_lat_between_t;
@@ -47,6 +51,7 @@ lgrp_id_t lgrp_root(lgrp_cookie_t cookie);
 int lgrp_cpus(lgrp_cookie_t cookie, lgrp_id_t lgrp, processorid_t *cpuids, unsigned int count, int content);
 int lgrp_children(lgrp_cookie_t cookie, lgrp_id_t parent, lgrp_id_t *lgrp_array, unsigned int lgrp_array_size);
 lgrp_mem_size_t lgrp_mem_size(lgrp_cookie_t cookie, lgrp_id_t lgrp, lgrp_mem_size_flag_t type, lgrp_content_t content);
+int lgrp_resources(lgrp_cookie_t cookie, lgrp_id_t lgrp, lgrp_id_t *lgrps, unsigned int count, lgrp_rsrc_t type);
 int lgrp_latency_cookie(lgrp_cookie_t cookie, lgrp_id_t from, lgrp_id_t to, lgrp_lat_between_t between);
 int lgrp_affinity_set(idtype_t idtype, id_t id, lgrp_id_t lgrp, lgrp_affinity_t aff);
 lgrp_affinity_t lgrp_affinity_get(idtype_t idtype, id_t id, lgrp_id_t lgrp);

@@ -1,1 +1,0 @@
-spawn-system.chpl:12: error: halt reached - spawn with more than 1 locale for CHPL_COMM=ugni currently requires stdin, stdout, stderr=FORWARD

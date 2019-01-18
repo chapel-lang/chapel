@@ -89,10 +89,15 @@ source $CHPL_INTERNAL_REPO/build/compiler_versions.bash
 # Always load the right version of GCC since we use it sometimes
 # to e.g. build the Chapel compiler with COMP_TYPE=TARGET
 if [ "${COMPILER}" != "gnu" ] ; then
-    module load gcc/${CHPL_GCC_TARGET_VERSION}
+    ### TEMPORARY
+    # Restore the following line when we can.
+    # module load gcc/${CHPL_GCC_TARGET_VERSION}
+    # For now, we need to force it to gcc 6.3.0 so its libraries will
+    # link with earlier versions of the Intel compiler.
+    module load gcc/6.3.0
 fi
 
-# quiet libu warning about cpuid detection failure until it's fixed in CCE 8.4
+# quiet libu warning about cpuid detection failure
 if [ "${COMPILER}" == "cray" ] ; then
   export RFE_811452_DISABLE=true
 fi
@@ -102,12 +107,18 @@ load_target_compiler ${COMPILER}
 
 # Do minor fixups
 case $COMPILER in
-    cray)
+    cray|intel|gnu)
         # swap out network modules to get "host-only" environment
         log_info "Swap network module for host-only environment."
-        module swap craype-network-aries craype-target-local_host
+        module unload $(module list -t 2>&1 | grep craype-network)
+        module load craype-network-none
         ;;
-    intel|gnu|pgi)
+    pgi)
+        # EJR (04/07/16): Since the default pgi was upgraded from 15.10.0 to
+        # 16.3.0 on 04/02/16 the speculative gmp build gets stuck in an
+        # infinite loop during `make check` while trying to test t_scan.c. Just
+        # force disable gmp until there's more time to investigate this.
+        export CHPL_GMP=none
         ;;
     *)
         log_error "Unknown COMPILER value: ${COMPILER}. Exiting."
@@ -115,11 +126,13 @@ case $COMPILER in
         ;;
 esac
 
-#libsci_module=$(module list -t 2>&1 | grep libsci)
-#if [ -n "${libsci_module}" ] ; then
-#    log_info "Unloading cray-libsci module: ${libsci_module}"
-#    module unload $libsci_module
-#fi
+if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
+    libsci_module=$(module list -t 2>&1 | grep libsci)
+    if [ -n "${libsci_module}" ] ; then
+        log_info "Unloading cray-libsci module: ${libsci_module}"
+        module unload $libsci_module
+    fi
+fi
 
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 
@@ -134,14 +147,21 @@ export CHPL_LAUNCHER=none
 export CHPL_COMM=none
 
 # Set some vars that nightly cares about.
-export CHPL_NIGHTLY_LOGDIR=/data/sea/chapel/Nightly
+export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-/data/sea/chapel/Nightly}
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 # Ensure that one of the CPU modules is loaded.
-my_arch=$($CHPL_HOME/util/chplenv/chpl_arch.py 2> /dev/null)
+my_arch=$($CHPL_HOME/util/chplenv/chpl_cpu.py 2> /dev/null)
 if [ "${my_arch}" = "none" ] ; then
-    log_info "Loading craype-shanghai module to stifle chpl_arch.py warnings."
+    log_info "Loading craype-shanghai module to stifle chpl_cpu.py warnings."
     module load craype-shanghai
+fi
+
+# no cpu targeting module supports the esxbld CPUs, so force x86-64
+if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
+    module unload $(module list -t 2>&1| grep craype-| grep -v craype-network |grep -v craype-target)
+    log_info "Setting CRAY_CPU_TARGET to x86-64 to stifle chpl_cpu.py warnings."
+    export CRAY_CPU_TARGET=x86-64
 fi
 
 if [ "${COMP_TYPE}" != "HOST-TARGET-no-PrgEnv" ] ; then
@@ -153,4 +173,4 @@ log_info "Current loaded modules:"
 module list
 
 log_info "Chapel environment:"
-$CHPL_HOME/util/printchplenv
+$CHPL_HOME/util/printchplenv --all --no-tidy

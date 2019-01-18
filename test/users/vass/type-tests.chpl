@@ -13,10 +13,10 @@ var r: real;             test("real", r);
 var cmp: complex;        test("complex", cmp);
 var img: imag;           test("imag", img);
 var str: string;         test("string", str);
-var cls: C;              test("class", cls);
+var cls: borrowed C;     test("class", cls);
 var rec: R;              test("record", rec);
 var uni: U;              test("union", uni);
-var dm1 = new Block(LocaleSpace); test("dist", dm1);
+var dm1 = new unmanaged Block(LocaleSpace); test("dist", dm1);
 var dm2 = new dmap(dm1); test("dmap", dm2);
 var dom: domain(1);      test("domain", dom);
 var arr: [dom] int;      test("array", arr);
@@ -30,9 +30,9 @@ var sng: single int;     test("single", sng);
 compilerError("done"); // no need for a C compile
 
 proc test(param msg, v) {
-  compilerWarning(msg + " is a class:  " + isClassType(v.type):c_string);
-  compilerWarning(msg + " is a record: " + isRecordType(v.type):c_string);
-  compilerWarning(msg + " is a union:  " + isUnionType(v.type):c_string);
+  compilerWarning(msg + " is a class:  " + isClassType(v.type):string);
+  compilerWarning(msg + " is a record: " + isRecordType(v.type):string);
+  compilerWarning(msg + " is a union:  " + isUnionType(v.type):string);
   if isRangeType(v.type)  then compilerWarning(msg + " is a range");
   if isTupleType(v.type)  then compilerWarning(msg + " is a tuple");
   if isDmapType(v.type)   then compilerWarning(msg + " is a dmap");

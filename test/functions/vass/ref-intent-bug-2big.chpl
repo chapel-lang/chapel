@@ -43,8 +43,8 @@ config const ldx=2, ldy=3;
 type elType = real;
 
 // for neighbor-cache pointers
-var auxArr: [1..1] elType;
-type cacheType = auxArr._value.type; // a class type, so it can be nil
+var auxArr: [1..1, 1..1] elType;
+type cacheType = auxArr[1,..]._value.type; // a class type, so it can be nil
 
 class LocalInfo {
   // our coordinates on the grid (perhaps not strictly needed)
@@ -62,24 +62,30 @@ class LocalInfo {
 
 // A class for all the node-local domains.
 class GlobalInfo {
-  var infos: [gridDist] LocalInfo;
+  var infos: [gridDist] unmanaged LocalInfo;
 }
 
 // constructor for GlobalInfo
-proc GlobalInfo.GlobalInfo() {
+proc GlobalInfo.init() {
+  this.complete();
   coforall ((ix,iy), inf) in zip(gridDist, infos) do on inf {
-    inf = new LocalInfo(mygx=ix, mygy=iy);
+    inf = new unmanaged LocalInfo(mygx=ix, mygy=iy);
   }
 }
 
+proc GlobalInfo.deinit() {
+  forall inf in infos do
+    delete inf;
+}
+
 // Here are all our local domains. WI <- Working Indices.
-const WI = new GlobalInfo();
+const WI = new unmanaged GlobalInfo();
 
 ///////////
 
 // Node-local computation data.
 class LocalData {
-  const linfo: LocalInfo;
+  const linfo: unmanaged LocalInfo;
 
   // the locale share of the compute data, plus neighbor cache
   var ldata: [linfo.domAlloc] elType;
@@ -92,14 +98,15 @@ class LocalData {
 // A class for all node-local data.
 class GlobalData {
   const name: string;
-  var datas: [gridDist] LocalData;
+  var datas: [gridDist] unmanaged LocalData;
 }
 
 // constructor for GlobalData
-proc GlobalData.GlobalData(nameArg: string) {
+proc GlobalData.init(nameArg: string) {
   name=nameArg;
+  this.complete();
   coforall (inf, dat, loc) in zip(WI.infos, datas, gridLocales) do on loc {
-    dat = new LocalData(inf);
+    dat = new unmanaged LocalData(inf);
     // sanity checks
     assert(dat.locale == loc);
     assert(dat.linfo.locale == loc);
@@ -116,24 +123,35 @@ proc GlobalData.GlobalData(nameArg: string) {
 
     proc storecache(ref cache, dx, dy, slicex, slicey) {
       const ind = (ix+dx, iy+dy);
-      if !gridDist.member(ind) {
-	msg1("  ", ind, "  no neighbor");
-	return;
+      if !gridDist.contains(ind) {
+        msg1("  ", ind, "  no neighbor");
+        return;
       }
       const nbr = datas[ind]; // our neighbor
       on nbr {
-	msg1("  ", ind, "  slice at [", slicex, ",", slicey, "]");
-	var slice => nbr.ldata[slicex, slicey];
-	cache = slice._value;
-	if !noRefCount then cache._arrCnt.inc(1);  // this is a bit low-level
+        msg1("  ", ind, "  slice at [", slicex, ",", slicey, "]");
+        pragma "no auto destroy"
+          ref slice = nbr.ldata[slicex, slicey];
+        cache = slice._value;
       }
     }  // storecache()
   }  // forall
 }  // GlobalData constructor
 
+proc GlobalData.deinit() {
+  forall dat in datas do
+    delete dat;
+}
+
 // Our two global arrays, to switch between.
-const WA = new GlobalData("WA"),
-      WB = new GlobalData("WB");
+const WA = new unmanaged GlobalData("WA"),
+      WB = new unmanaged GlobalData("WB");
+
+proc deinit() {
+  delete WA;
+  delete WB;
+  delete WI;
+}
 
 // Reuse the name for an indexing operation.
 // This does not access neighbor caches.

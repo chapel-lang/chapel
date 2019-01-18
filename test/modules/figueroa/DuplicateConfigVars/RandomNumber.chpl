@@ -9,7 +9,8 @@ class Random {
     return (seed-1) / (modulus-2) : real;
   }
   proc RandomNumber (n) {
-    return for 1..n do RandomNumber();
+    var rs = for 1..n do RandomNumber();
+    return rs;
   }
 }
 
@@ -17,8 +18,10 @@ config const seed: uint(32) = 13,
              arraySize = 10;
 
 proc main {
-  var r = new Random (seed);
+  var r = new owned Random (seed);
   var rArray: [1..arraySize] real;
+
   rArray = r.RandomNumber(arraySize);
+
   writeln (rArray);
 }

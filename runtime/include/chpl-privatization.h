@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,12 +23,25 @@
 #include <stdint.h>
 #include "chpltypes.h"
 
-extern void** chpl_privateObjects; // privatized array and domain objects
+void chpl_privatization_init(void);
 
-extern void chpl_privatization_init(void);
+void chpl_newPrivatizedClass(void*, int64_t);
 
-extern void chpl_newPrivatizedClass(void*, int64_t);
-extern void* chpl_getPrivatizedClass(int64_t);
+typedef struct chpl_privateObject_s {
+  void* obj;
+} chpl_privateObject_t;
+
+// This is a dynamically-allocated array of chpl_privateObject_t.
+extern chpl_privateObject_t* chpl_privateObjects;
+
+// Compiler generates accesses like chpl_privateObjects[i];
+// see chpl_getPrivatizedCopy.
+// This allows TBAA information for chpl_privateObjects to be used.
+// At the very least, inlining it would be important for performance.
+
+void chpl_clearPrivatizedClass(int64_t);
+
+int64_t chpl_numPrivatizedClasses(void);
 
 #endif // LAUNCHER
 #endif // _chpl_privatization_h_

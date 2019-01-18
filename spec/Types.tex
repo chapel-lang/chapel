@@ -11,13 +11,23 @@ types (sync, single, atomic).
 The syntax of a type is as follows:
 
 \begin{syntax}
-type-specifier:
+type-expression:
   primitive-type
   enum-type
   structured-type
   dataparallel-type
   synchronization-type
+  lvalue-expression
+  if-expression
+  unary-expression
+  binary-expression
 \end{syntax}
+
+Many expressions are syntactically allowed as a type; however not
+all expressions produce a type. For example, a call to a function is
+syntactically allowed as the type of a variable. However it would be an
+error for that call to result in a value (rather than a type) in that
+context.
 
 Programmers can define their own enumerated types, classes, records,
 unions, and type aliases using type declaration statements:
@@ -195,7 +205,7 @@ The standard \chpl{Math} module provides some functions on
 complex types. See
 \\ %formatting
 \mbox{$$ $$ $$ $$ $$} %indent
-\url{http://chapel.cray.com/docs/latest/modules/standard/Math.html}
+\url{https://chapel-lang.org/docs/modules/standard/Math.html}
 
 \begin{example}
 Given a complex number \chpl{c} with the value \chpl{3.14+2.72i}, the
@@ -209,7 +219,7 @@ and \chpl{2.72} respectively.
 \index{types!string@\chpl{string}}
 
 Strings are a primitive type designated by the symbol \chpl{string}
-comprised of ASCII characters.  Their length is unbounded.
+comprised of multibyte characters (normally UTF-8).  Their length is unbounded.
 
 
 \begin{openissue}
@@ -254,18 +264,33 @@ enum-type:
 
 An enumerated type defines a set of named constants that can be
 referred to via a member access on the enumerated type.
-These constants are treated as parameters of integral type.  Each
-enumerated type is a distinct type. If the \sntx{init-part} is
-omitted, the \sntx{enum-constant} has an integral value one higher
-than the previous \sntx{enum-constant} in the enum, with the first
-having the value \chpl{1}.
+Each enumerated type is a distinct type.
+
+\index{enumerated types!abstract}
+\index{enumerated types!concrete}
+\index{enumerated types!semi-concrete}
+If the \sntx{init-part} is omitted for all of the named constants in
+an enumerated type, the enumerated values are \emph{abstract} and do
+not have associated integer values.  Any constant that has an
+\sntx{init-part} will be associated with that integer value.  Such
+constants must be parameter values of integral type.  Any constant
+that does not have an \sntx{init-part}, yet which follows one that
+does, will be associated with an integer value one greater than its
+predecessor.  An enumerated type whose first constant has
+an \sntx{init-part} is called \emph{concrete}, since all constants in
+the enum will have an associated integer value, whether explicit or
+implicit.  An enumerated type that specifies an \sntx{init-part} for
+some constants, but not the first is called \emph{semi-concrete}.
+Numeric conversions are automatically supported for enumerated types
+which are concrete or semi-concrete
+(see~\rsec{Explicit_Enumeration_Conversions}).
 
 \begin{chapelexample}{enum.chpl}
 The code
 \begin{chapel}
 enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
 \end{chapel}
-defines an enumerated type with four constants.  The function
+defines an abstract enumerated type with four constants.  The function
 \begin{chapel}
 proc quote(s: statesman) {
   select s {
@@ -282,7 +307,7 @@ proc quote(s: statesman) {
 }
 \end{chapel}
 \begin{chapelnoprint}
-for s in statesman.Aristotle..statesman.Kissinger do
+for s in statesman do
   quote(s:statesman);
 \end{chapelnoprint}
 \begin{chapeloutput}
@@ -292,9 +317,23 @@ A joke is a very serious thing.
 No one will ever win the battle of the sexes; there's too much fraternizing with the enemy.
 \end{chapeloutput}
 outputs a quote from the given statesman.  Note that enumerated
-constants must be prefixed by the enumerated type and a dot.
+constants must be prefixed by the enumerated type name and a dot unless a
+use statement is employed (see~\rsec{The_Use_Statement}).
 \end{chapelexample}
 
+\index{enumerated types!iterating}
+It is possible to iterate over an enumerated type. The loop body will be
+invoked on each named constant in the enum.
+The following method is also available:
+
+\index{enumerated types!size@\chpl{size}}
+\index{predefined functions!size (enum)@\chpl{size} (enum)}
+\begin{protohead}
+proc $enum$.size: param int
+\end{protohead}
+\begin{protobody}
+The number of constants in the given enumerated type.
+\end{protobody}
 
 \clearpage
 \section{Structured Types}
@@ -321,17 +360,22 @@ discussed in \rsec{Tuples}.
 
 % TODO: the first sentence does not make strict sense.
 % Overall, it does not feel like this paragraph has any value here.
-The class type defines a type that contains variables and constants,
-called fields, and functions, called methods.  Classes are defined
+A class can contain variables, constants, and methods.
+
+Classes are defined
 in~\rsec{Classes}.  The class type can also contain type aliases and
 parameters.  Such a class is generic and is defined
 in~\rsec{Generic_Types}.
 
+A class type \chpl{C} has the variants \chpl{owned C}, \chpl{shared C},
+\chpl{borrowed C} (equivalent to \chpl{C}), and \chpl{unmanaged C}. These
+variants are discussed in~\rsec{Class_Types}.
+
 \subsection{Record Types}
 \label{Types_Record_Types}
 
-The record type is similar to a class type; the primary difference is
-that a record is a value rather than a reference.  Records are defined
+Records can contain variables, constants, and methods. Unlike class
+types, records are values rather than references. Records are defined
 in~\rsec{Records}.
 
 \subsection{Union Types}
@@ -415,12 +459,12 @@ type-alias-declaration-list:
   type-alias-declaration , type-alias-declaration-list
 
 type-alias-declaration:
-  identifier = type-specifier
+  identifier = type-expression
   identifier
 \end{syntax}
 A type alias is a symbol that aliases the type specified in the
-\sntx{type-part}.  A use of a type alias has the same meaning as using
-the type specified by \sntx{type-part} directly.
+\sntx{type-expression}.  A use of a type alias has the same meaning as using
+the type specified by \sntx{type-expression} directly.
 
 Type aliases defined at the module level are public by default.  The
 optional \sntx{privacy-specifier} keywords are provided to specify or
@@ -430,7 +474,7 @@ see ~\rsec{Visibility_Of_Symbols}.
 If the keyword \chpl{config} precedes the keyword \chpl{type}, the
 type alias is called a configuration type alias.  Configuration type
 aliases can be set at compilation time via compilation flags or other
-implementation-defined means.  The \sntx{type-specifier} in the
+implementation-defined means.  The \sntx{type-expression} in the
 program is ignored if the type-alias is alternatively set.
 
 If the keyword \chpl{extern} precedes the \chpl{type} keyword, the type alias is
@@ -438,7 +482,7 @@ external.  The declared type name is used by Chapel for type resolution, but no
 type alias is generated by the backend.  See the chapter on interoperability
 (\rsec{Interoperability}) for more information on external types.
 
-The \sntx{type-part} is optional in the definition of a class or
+The \sntx{type-expression} is optional in the definition of a class or
 record.  Such a type alias is called an unspecified type
 alias. Classes and records that contain type aliases, specified or
 unspecified, are generic~(\rsec{Type_Aliases_in_Generic_Types}).

@@ -1,2 +1,3 @@
 // test error message for an illegal low bounded range
-var badLowBounded = 0.0..;
+config param anon = false;
+if anon then for (0.0..) {} else var badLowBounded = (0.0..);

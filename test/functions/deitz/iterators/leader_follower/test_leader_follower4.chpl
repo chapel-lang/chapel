@@ -21,7 +21,7 @@ class C {
   }
 }
 
-var c = new C(12);
+var c = new borrowed C(12);
 
 writeln(c);
 
@@ -34,5 +34,3 @@ forall e in c do
   e = 2;
 
 writeln(c);
-
-delete c;

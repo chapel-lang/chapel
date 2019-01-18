@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +18,8 @@
  */
 
 module StringCasts {
+  use ChapelStandard;
+
   // TODO: I want to break all of these casts from string to T out into
   // T.parse(string), but we dont support methods on types yet. Ideally they
   // would use a tagged union return val as well.
@@ -25,7 +27,7 @@ module StringCasts {
   //
   // Type -- Foo.type:string
   //
-  proc _cast(type t, type x)  param : string where t == string {
+  proc _cast(type t:string, type x)  param : string {
     return __primitive("typeToString", x);
   }
 
@@ -33,7 +35,7 @@ module StringCasts {
   // Bool
   //
 
-  inline proc _cast(type t, x: bool) where t == string {
+  inline proc _cast(type t:string, x: bool) {
     if (x) {
       return "true";
     } else {
@@ -41,25 +43,37 @@ module StringCasts {
     }
   }
 
-  proc _cast(type t, x: string) where t == bool {
-    if (x == "true") {
+  proc _cast(type t:chpl_anybool, x: string) throws {
+    var str = x.strip();
+    if str.isEmptyString() {
+      throw new unmanaged IllegalArgumentError("bad cast from empty string to bool");
+    } else if (str == "true") {
       return true;
-    } else if (x == "false") {
+    } else if (str == "false") {
       return false;
     } else {
-      halt("Unexpected value when converting from string to bool: '"+x+"'");
+      throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to bool");
     }
+    return false;
   }
 
   //
   // int
   //
-  proc _cast(type t, x: integral) where t == string {
+  proc _cast(type t:string, x: integral) {
     //TODO: switch to using qio's writef somehow
-    extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy;
-    extern proc strlen(const str: c_string_copy) : size_t;
+    extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
+    extern proc strlen(const str: c_string) : size_t;
 
-    var csc = integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));
+    var isErr: bool;
+    var csc = integral_to_c_string(x:int(64), numBytes(x.type), isIntType(x.type), isErr);
+
+    // this should only happen if the runtime is broken
+    if isErr {
+      try! {
+        throw new unmanaged IllegalArgumentError("Unexpected case in integral_to_c_string");
+      }
+    }
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));
@@ -69,53 +83,82 @@ module StringCasts {
     return ret;
   }
 
-  inline proc _cast(type t, x: string) where isIntegralType(t) {
+  inline proc _cast(type t:integral, x: string) throws {
     //TODO: switch to using qio's readf somehow
     pragma "insert line file info"
-    extern proc c_string_to_int8_t  (x:c_string) : int(8);
+    extern proc c_string_to_int8_t  (x:c_string, ref err: bool) : int(8);
     pragma "insert line file info"
-    extern proc c_string_to_int16_t (x:c_string) : int(16);
+    extern proc c_string_to_int16_t (x:c_string, ref err: bool) : int(16);
     pragma "insert line file info"
-    extern proc c_string_to_int32_t (x:c_string) : int(32);
+    extern proc c_string_to_int32_t (x:c_string, ref err: bool) : int(32);
     pragma "insert line file info"
-    extern proc c_string_to_int64_t (x:c_string) : int(64);
+    extern proc c_string_to_int64_t (x:c_string, ref err: bool) : int(64);
     pragma "insert line file info"
-    extern proc c_string_to_uint8_t (x:c_string) : uint(8);
+    extern proc c_string_to_uint8_t (x:c_string, ref err: bool) : uint(8);
     pragma "insert line file info"
-    extern proc c_string_to_uint16_t(x:c_string) : uint(16);
+    extern proc c_string_to_uint16_t(x:c_string, ref err: bool) : uint(16);
     pragma "insert line file info"
-    extern proc c_string_to_uint32_t(x:c_string) : uint(32);
+    extern proc c_string_to_uint32_t(x:c_string, ref err: bool) : uint(32);
     pragma "insert line file info"
-    extern proc c_string_to_uint64_t(x:c_string) : uint(64);
+    extern proc c_string_to_uint64_t(x:c_string, ref err: bool) : uint(64);
 
-    const localX = x.localize();
+    var retVal: t;
+    var isErr: bool;
+    // localize the string and remove leading and trailing whitespace
+    var localX = x.localize();
+    const hasUnderscores = localX.find("_") != 0;
+
+    if hasUnderscores {
+      localX = localX.strip();
+      // make sure the string only has one word
+      var numElements: int;
+      for localX.split() {
+        numElements += 1;
+        if numElements > 1 then break;
+      }
+      if numElements > 1 then
+        throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
+
+      // remove underscores everywhere but the first position
+      if localX.length >= 2 then
+        localX = localX[1] + localX[2..].replace("_", "");
+    }
+
+    if localX.isEmptyString() then
+      throw new unmanaged IllegalArgumentError("bad cast from empty string to " + t:string);
+
     if isIntType(t) {
       select numBits(t) {
-        when 8  do return c_string_to_int8_t(localX.c_str());
-        when 16 do return c_string_to_int16_t(localX.c_str());
-        when 32 do return c_string_to_int32_t(localX.c_str());
-        when 64 do return c_string_to_int64_t(localX.c_str());
-        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
+        when 8  do retVal = c_string_to_int8_t(localX.c_str(), isErr);
+        when 16 do retVal = c_string_to_int16_t(localX.c_str(), isErr);
+        when 32 do retVal = c_string_to_int32_t(localX.c_str(), isErr);
+        when 64 do retVal = c_string_to_int64_t(localX.c_str(), isErr);
+        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast from string to " + t:string);
       }
     } else {
       select numBits(t) {
-        when 8  do return c_string_to_uint8_t(localX.c_str());
-        when 16 do return c_string_to_uint16_t(localX.c_str());
-        when 32 do return c_string_to_uint32_t(localX.c_str());
-        when 64 do return c_string_to_uint64_t(localX.c_str());
-        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
+        when 8  do retVal = c_string_to_uint8_t(localX.c_str(), isErr);
+        when 16 do retVal = c_string_to_uint16_t(localX.c_str(), isErr);
+        when 32 do retVal = c_string_to_uint32_t(localX.c_str(), isErr);
+        when 64 do retVal = c_string_to_uint64_t(localX.c_str(), isErr);
+        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast from string to " + t:string);
       }
     }
+
+    if isErr then
+      throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
+
+    return retVal;
   }
 
   //
   // real & imag
   //
   inline proc _real_cast_helper(x: real(64), param isImag: bool) : string {
-    extern proc real_to_c_string_copy(x:real(64), isImag: bool) : c_string_copy;
-    extern proc strlen(const str: c_string_copy) : size_t;
+    extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
+    extern proc strlen(const str: c_string) : size_t;
 
-    var csc = real_to_c_string_copy(x:real(64), isImag);
+    var csc = real_to_c_string(x:real(64), isImag);
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));
@@ -125,12 +168,12 @@ module StringCasts {
     return ret;
   }
 
-  proc _cast(type t, x:real(?w)) where t == string {
+  proc _cast(type t:string, x:chpl_anyreal) {
     //TODO: switch to using qio's writef somehow
     return _real_cast_helper(x:real(64), false);
   }
 
-  proc _cast(type t, x:imag(?w)) where t == string {
+  proc _cast(type t:string, x:chpl_anyimag) {
     //TODO: switch to using qio's writef somehow
     // The Chapel version of the imag --> real cast smashes it flat rather than
     // just stripping off the "i".  See the cast in ChapelBase.
@@ -138,39 +181,61 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
-  inline proc _cast(type t, x: string) where isRealType(t) {
+  inline proc _cast(type t:chpl_anyreal, x: string) throws {
     pragma "insert line file info"
-    extern proc c_string_to_real32(x: c_string) : real(32);
+    extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
     pragma "insert line file info"
-    extern proc c_string_to_real64(x: c_string) : real(64);
+    extern proc c_string_to_real64(x: c_string, ref err: bool) : real(64);
 
+    var retVal: t;
+    var isErr: bool;
     const localX = x.localize();
+
+    if localX.isEmptyString() then
+      throw new unmanaged IllegalArgumentError("bad cast from empty string to real(" + numBits(t) + ")");
+
     select numBits(t) {
-      when 32 do return c_string_to_real32(localX.c_str());
-      when 64 do return c_string_to_real64(localX.c_str());
+      when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
+      when 64 do retVal = c_string_to_real64(localX.c_str(), isErr);
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
+
+    if isErr then
+      throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t) + ")");
+
+    return retVal;
   }
 
-  inline proc _cast(type t, x: string) where isImagType(t) {
+  inline proc _cast(type t:chpl_anyimag, x: string) throws {
     pragma "insert line file info"
-    extern proc c_string_to_imag32(x: c_string) : imag(32);
+    extern proc c_string_to_imag32(x: c_string, ref err: bool) : imag(32);
     pragma "insert line file info"
-    extern proc c_string_to_imag64(x: c_string) : imag(64);
+    extern proc c_string_to_imag64(x: c_string, ref err: bool) : imag(64);
 
+    var retVal: t;
+    var isErr: bool;
     const localX = x.localize();
+
+    if localX.isEmptyString() then
+      throw new unmanaged IllegalArgumentError("bad cast from empty string to imag(" + numBits(t) + ")");
+
     select numBits(t) {
-      when 32 do return c_string_to_imag32(localX.c_str());
-      when 64 do return c_string_to_imag64(localX.c_str());
+      when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
+      when 64 do retVal = c_string_to_imag64(localX.c_str(), isErr);
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
+
+    if isErr then
+      throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t) + ")");
+
+    return retVal;
   }
 
 
   //
   // complex
   //
-  proc _cast(type t, x: complex(?w)) where t == string {
+  proc _cast(type t:string, x: chpl_anycomplex) {
     if isnan(x.re) || isnan(x.im) then
       return "nan";
     var re = (x.re):string;
@@ -193,20 +258,31 @@ module StringCasts {
   }
 
 
-  inline proc _cast(type t, x: string) where isComplexType(t) {
+  inline proc _cast(type t:chpl_anycomplex, x: string) throws {
     pragma "insert line file info"
-    extern proc c_string_to_complex64(x:c_string) : complex(64);
+    extern proc c_string_to_complex64(x:c_string, ref err: bool) : complex(64);
     pragma "insert line file info"
-    extern proc c_string_to_complex128(x:c_string) : complex(128);
+    extern proc c_string_to_complex128(x:c_string, ref err: bool) : complex(128);
 
+    var retVal: t;
+    var isErr: bool;
     const localX = x.localize();
+
+    if localX.isEmptyString() then
+      throw new unmanaged IllegalArgumentError("bad cast from empty string to complex(" + numBits(t) + ")");
+
     select numBits(t) {
-      when 64 do return c_string_to_complex64(localX.c_str());
-      when 128 do return c_string_to_complex128(localX.c_str());
+      when 64 do retVal = c_string_to_complex64(localX.c_str(), isErr);
+      when 128 do retVal = c_string_to_complex128(localX.c_str(), isErr);
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
+
+    if isErr then
+      throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t) + ")");
+
+    return retVal;
   }
- 
+
   // Catch all cast anything -> string is in ChapelIO
 
 }

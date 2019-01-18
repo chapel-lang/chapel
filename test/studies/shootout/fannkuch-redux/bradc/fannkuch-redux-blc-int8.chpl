@@ -7,11 +7,11 @@
  */
 
 config type eltType = int(8);
-config const N: eltType = 7;
+config const n: eltType = 7;
 
-assert((N >=3 && N < max(eltType)), "N must be in 3..", max(eltType));
+assert((n >=3 && n < max(eltType)), "n must be in 3..", max(eltType));
 
-const D = {0..N};
+const D = {0..n};
 var s, t: [D] eltType;
 
 proc main() {
@@ -19,7 +19,7 @@ proc main() {
     s[i] = i;
   const (checksum, maxFlips) = tk();
   writeln(checksum);
-  writeln("Pfannkuchen(", N, ") = ", maxFlips);
+  writeln("Pfannkuchen(", n, ") = ", maxFlips);
 }
 
 
@@ -29,7 +29,7 @@ proc tk() {
   var c: [D] eltType;
 
   var i = 0: eltType;
-  while i < N {
+  while i < n {
     rotate(i);
     if c[i] >= i {
       c[i] = 0;

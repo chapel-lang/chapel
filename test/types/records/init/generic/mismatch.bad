@@ -1,0 +1,4 @@
+mismatch.chpl:16: error: unresolved call 'A.init(t=type int(64))'
+mismatch.chpl:5: note: candidates are: A.init(x)
+mismatch.chpl:10: note:                 A.init(a: A)
+mismatch.chpl:1: note:                 A.init(other: A)

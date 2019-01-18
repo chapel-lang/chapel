@@ -32,7 +32,7 @@ Some of the tradeoffs between these versions are:
   so strives to do the neighbor communications using slab sub-array
   assignments a priori rather than when the remote data is accessed.
   This version requires explicit calls to updateFluff() to be called,
-  which is part of the reason it hasn't been promoted to a stanard
+  which is part of the reason it hasn't been promoted to a standard
   domain map.  Specifically, future work would be to have a domain map
   announce its support for halos/fluff to the compiler and have the
   compiler automatically insert updateFluff()-style calls, as in ZPL.

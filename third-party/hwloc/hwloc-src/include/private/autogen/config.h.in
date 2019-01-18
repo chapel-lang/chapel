@@ -24,6 +24,9 @@
 /* Define to 1 if the system has the type `CACHE_RELATIONSHIP'. */
 #undef HAVE_CACHE_RELATIONSHIP
 
+/* Define to 1 if you have the `clock_gettime' function. */
+#undef HAVE_CLOCK_GETTIME
+
 /* Define to 1 if you have the `clz' function. */
 #undef HAVE_CLZ
 
@@ -79,6 +82,14 @@
    don't. */
 #undef HAVE_DECL_HW_NCPU
 
+/* Define to 1 if you have the declaration of `lgrp_latency_cookie', and to 0
+   if you don't. */
+#undef HAVE_DECL_LGRP_LATENCY_COOKIE
+
+/* Define to 1 if you have the declaration of `modff', and to 0 if you don't.
+   */
+#undef HAVE_DECL_MODFF
+
 /* Define to 1 if you have the declaration of
    `nvmlDeviceGetMaxPcieLinkGeneration', and to 0 if you don't. */
 #undef HAVE_DECL_NVMLDEVICEGETMAXPCIELINKGENERATION
@@ -91,9 +102,28 @@
    0 if you don't. */
 #undef HAVE_DECL_PTHREAD_SETAFFINITY_NP
 
+/* Embedded mode; just assume we do not have Valgrind support */
+#undef HAVE_DECL_RUNNING_ON_VALGRIND
+
+/* Define to 1 if you have the declaration of `sched_getcpu', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SCHED_GETCPU
+
+/* Define to 1 if you have the declaration of `snprintf', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SNPRINTF
+
+/* Define to 1 if you have the declaration of `strcasecmp', and to 0 if you
+   don't. */
+#undef HAVE_DECL_STRCASECMP
+
 /* Define to 1 if you have the declaration of `strtoull', and to 0 if you
    don't. */
 #undef HAVE_DECL_STRTOULL
+
+/* Define to 1 if you have the declaration of `_putenv', and to 0 if you
+   don't. */
+#undef HAVE_DECL__PUTENV
 
 /* Define to 1 if you have the declaration of `_SC_LARGE_PAGESIZE', and to 0
    if you don't. */
@@ -122,6 +152,10 @@
 /* Define to 1 if you have the declaration of `_SC_PAGE_SIZE', and to 0 if you
    don't. */
 #undef HAVE_DECL__SC_PAGE_SIZE
+
+/* Define to 1 if you have the declaration of `_strdup', and to 0 if you
+   don't. */
+#undef HAVE_DECL__STRDUP
 
 /* Define to 1 if you have the <dirent.h> header file. */
 #undef HAVE_DIRENT_H
@@ -204,6 +238,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
+/* Define to 1 if you have the `mkstemp' function. */
+#undef HAVE_MKSTEMP
+
 /* Define to 1 if we have -lmyriexpress */
 #undef HAVE_MYRIEXPRESS
 
@@ -227,6 +264,9 @@
 
 /* Define to 1 if you have the `openat' function. */
 #undef HAVE_OPENAT
+
+/* Define to 1 if you have the <OpenCL/cl_ext.h> header file. */
+#undef HAVE_OPENCL_CL_EXT_H
 
 /* Define to 1 if you have the <picl.h> header file. */
 #undef HAVE_PICL_H
@@ -271,6 +311,9 @@
 /* Define to 1 if you have the `setlocale' function. */
 #undef HAVE_SETLOCALE
 
+/* Define to 1 if the system has the type `ssize_t'. */
+#undef HAVE_SSIZE_T
+
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
@@ -288,6 +331,9 @@
 
 /* Define to 1 if you have the `strncasecmp' function. */
 #undef HAVE_STRNCASECMP
+
+/* Define to 1 if you have the `strtoull' function. */
+#undef HAVE_STRTOULL
 
 /* Define to '1' if sysctl is present and usable */
 #undef HAVE_SYSCTL
@@ -327,6 +373,9 @@
 /* Define to 1 if you have the <sys/utsname.h> header file. */
 #undef HAVE_SYS_UTSNAME_H
 
+/* Define to 1 if you have the <time.h> header file. */
+#undef HAVE_TIME_H
+
 /* Define to 1 if you have the `uname' function. */
 #undef HAVE_UNAME
 
@@ -335,6 +384,9 @@
 
 /* Define to 1 if you have the `uselocale' function. */
 #undef HAVE_USELOCALE
+
+/* Define to 1 if you have the <valgrind/valgrind.h> header file. */
+#undef HAVE_VALGRIND_VALGRIND_H
 
 /* Define to 1 if the system has the type `wchar_t'. */
 #undef HAVE_WCHAR_T
@@ -489,6 +541,9 @@
 /* Define to 1 if you have a library providing the termcap interface */
 #undef HWLOC_HAVE_LIBTERMCAP
 
+/* Define to 1 if you have libudev. */
+#undef HWLOC_HAVE_LIBUDEV
+
 /* Define to 1 if you have the `libxml2' library. */
 #undef HWLOC_HAVE_LIBXML2
 
@@ -500,6 +555,9 @@
 
 /* Define to 1 if migrate_pages is available. */
 #undef HWLOC_HAVE_MIGRATE_PAGES
+
+/* Define to 1 if move_pages is available. */
+#undef HWLOC_HAVE_MOVE_PAGES
 
 /* Define to 1 if you have the `NVML' library. */
 #undef HWLOC_HAVE_NVML

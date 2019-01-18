@@ -1,19 +1,36 @@
+.. default-domain:: chpl
+
+.. module:: arrays.doc
+
 arrays.doc
-   proc smallArray(val: [1..4] bool)
-      This method takes an array of bools as an argument 
+==========
+**Usage**
 
-   proc multiDimension(val: [1..3, 2..8] string)
-      This method takes a multidimensional array of strings 
+.. code-block:: chapel
 
-   proc inception(val: [1..4] [3..7] int)
-      This method takes an array of arrays of ints 
+   use arrays.doc;
 
-   proc uncertainLength(val: [] complex)
-      This method takes an array of complex numbers of unspecified length 
+.. function:: proc smallArray(val: [1..4] bool)
 
-   proc uncertainType(val: [])
-      This method takes an array of unspecified length and type 
+   This method takes an array of bools as an argument 
 
-   proc uncertainTypeToo(val: [1..6])
-      This method takes an array of unspecified type 
+.. function:: proc multiDimension(val: [1..3, 2..8] string)
+
+   This method takes a multidimensional array of strings 
+
+.. function:: proc inception(val: [1..4] [3..7] int)
+
+   This method takes an array of arrays of ints 
+
+.. function:: proc uncertainLength(val: [] complex)
+
+   This method takes an array of complex numbers of unspecified length 
+
+.. function:: proc uncertainType(val: [])
+
+   This method takes an array of unspecified length and type 
+
+.. function:: proc uncertainTypeToo(val: [1..6])
+
+   This method takes an array of unspecified type 
 

@@ -1,0 +1,5 @@
+perfkeys: concat:, append:, copy:, iterate:
+repeat-files: allocate.dat
+graphkeys: concatenation, appending, copying, char iteration
+ylabel: Time (seconds)
+graphtitle: Allocating string operations

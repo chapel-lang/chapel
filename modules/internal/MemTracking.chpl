@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,8 @@
 //
 module MemTracking
 {
+  use ChapelStandard;
+
   config const
     memTrack: bool = false,
     memStats: bool = false,
@@ -40,7 +42,7 @@ module MemTracking
      because they are tracked allocations with no corresponding free.
 
      The dump is performed only if the --memLeaksByDesc option is present and has
-     a string argument.  
+     a string argument.
        --memLeaksByDesc="" causes all memory records to be printed.  Same as --memLeaks.
        --memLeaksByDesc="<alloc-type-string>" causes only those memory records
          matching the given <alloc-type-string> to be printed.
@@ -88,7 +90,7 @@ module MemTracking
       if memLeaksByDesc.length != 0 {
         var local_memLeaksByDesc = memLeaksByDesc;
         // Intentionally leak the string to persist the underlying buffer
-        local_memLeaksByDesc.owned = false;
+        local_memLeaksByDesc.isowned = false;
         ret_memLeaksByDesc = local_memLeaksByDesc.c_str();
       } else {
         ret_memLeaksByDesc = nil;
@@ -97,7 +99,7 @@ module MemTracking
       if memLog.length != 0 {
         var local_memLog = memLog;
         // Intentionally leak the string to persist the underlying buffer
-        local_memLog.owned = false;
+        local_memLog.isowned = false;
         ret_memLog = local_memLog.c_str();
       } else {
         ret_memLog = nil;
@@ -106,7 +108,7 @@ module MemTracking
       if memLeaksLog.length != 0 {
         var local_memLeaksLog = memLeaksLog;
         // Intentionally leak the string to persist the underlying buffer
-        local_memLeaksLog.owned = false;
+        local_memLeaksLog.isowned = false;
         ret_memLeaksLog = local_memLeaksLog.c_str();
       } else {
         ret_memLeaksLog = nil;

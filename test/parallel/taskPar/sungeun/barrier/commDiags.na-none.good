@@ -1,0 +1,24 @@
+atomic remote test basic
+(execute_on_nb = 4)
+(get = 1, execute_on = 1, execute_on_fast = 1)
+(get = 1, execute_on = 1, execute_on_fast = 1)
+(get = 1, execute_on = 1, execute_on_fast = 1)
+(get = 1, execute_on = 1, execute_on_fast = 1)
+atomic remote test split phase
+(execute_on_nb = 4)
+(get = 2, execute_on = 2, execute_on_fast = 1)
+(get = 2, execute_on = 2, execute_on_fast = 1)
+(get = 2, execute_on = 2, execute_on_fast = 1)
+(get = 2, execute_on = 2, execute_on_fast = 1)
+sync remote test basic
+(execute_on_nb = 4)
+(get = 1, execute_on = 1, execute_on_fast = 1)
+(get = 1, execute_on = 1, execute_on_fast = 1)
+(get = 1, execute_on = 1, execute_on_fast = 1)
+(get = 1, execute_on = 1, execute_on_fast = 1)
+sync remote test split phase
+(execute_on_nb = 4)
+(get = 2, execute_on = 2, execute_on_fast = 1)
+(get = 2, execute_on = 2, execute_on_fast = 1)
+(get = 2, execute_on = 2, execute_on_fast = 1)
+(get = 2, execute_on = 2, execute_on_fast = 1)

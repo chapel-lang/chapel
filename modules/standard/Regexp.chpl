@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,9 +42,9 @@ in the Chapel distribution.
 
 .. note::
 
-  if re2 support is not enabled (which is the default), all features
-  described below will compile successfully, but will result in an internal
-  error at *run time*, saying "No Regexp Support".
+  if re2 support is not enabled (which is the case in quickstart configurations
+  as in :ref:`chapelhome-quickstart`), the functionality described below will
+  result in either a compile-time or a run-time error.
 
 
 Using Regular Expression Support
@@ -198,7 +198,7 @@ RE2 regular expression syntax reference
   [:blank:]    blank (== [\t ])
   [:cntrl:]    control (== [\x00-\x1F\x7F])
   [:digit:]    digits (== [0-9])
-  [:graph:]    graphical (== [!-~] == 
+  [:graph:]    graphical (== [!-~] ==
                  [A-Za-z0-9!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])
   [:lower:]    lower case (== [a-z])
   [:print:]    printable (== [ -~] == [[:graph:]])
@@ -388,40 +388,22 @@ extern record qio_regexp_string_piece_t {
 
 private extern proc qio_regexp_string_piece_isnull(ref sp:qio_regexp_string_piece_t):bool;
 
-private extern proc qio_regexp_match(ref re:qio_regexp_t, text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):bool;
-private extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string_copy, ref replaced_len:int(64)):int(64);
+private extern proc qio_regexp_match(const ref re:qio_regexp_t, text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):bool;
+private extern proc qio_regexp_replace(const ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string, ref replaced_len:int(64)):int(64);
 
 // These two could be folded together if we had a way
 // to check if a default argument was supplied
 // (or any way to use 'nil' in pass-by-ref)
 // This one is documented below.
-pragma "no doc"
-proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp {
 
-  if CHPL_REGEXP == "none" {
-    compilerError("Regular expression support not compiled in");
+class BadRegexpError : Error {
+  var msg:string;
+  proc init(msg: string) {
+    this.msg = msg;
   }
-
-  var opts:qio_regexp_options_t;
-  qio_regexp_init_default_options(opts);
-  opts.utf8 = utf8;
-  opts.posix = posix;
-  opts.literal = literal;
-  opts.nocapture = nocapture;
-  opts.ignorecase = ignorecase;
-  opts.multiline = multiline;
-  opts.dotnl = dotnl;
-  opts.nongreedy = nongreedy;
-
-  var ret:regexp;
-  qio_regexp_create_compile(pattern.localize().c_str(), pattern.length, opts, ret._regexp);
-  if ! qio_regexp_ok(ret._regexp) {
-    var err_str = qio_regexp_error(ret._regexp);
-
-    var err_msg = "Error " + err_str + " when compiling regexp '" + pattern + "'";
-    __primitive("chpl_error", err_msg.c_str());
+  override proc message() {
+    return msg;
   }
-  return ret;
 }
 
 /*
@@ -435,12 +417,10 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
                  get the regular expression ``\s``, you'd have to write
                  ``"\\s"`` because the ``\`` is the escape character within
                  Chapel string literals
-   :arg error: (optional) if provided, return an error code instead of halting
-               if an error is encountered
    :arg utf8: (optional, default true) set to `true` to create a regular
                expression matching UTF-8; `false` for binary or ASCII only.
    :arg posix: (optional) set to true to disable non-POSIX regular expression
-               syntax   
+               syntax
    :arg literal: (optional) set to true to treat the regular expression as a
                  literal (ie, create a regexp matching ``pattern`` as a string
                  rather than as a regular expression).
@@ -466,7 +446,12 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
                    ``(?U)``.
 
  */
-proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp {
+proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp throws {
+
+  if CHPL_REGEXP == "none" {
+    compilerError("Cannot use Regexp with CHPL_REGEXP=none");
+  }
+
   var opts:qio_regexp_options_t;
   qio_regexp_init_default_options(opts);
   opts.utf8 = utf8;
@@ -478,15 +463,28 @@ proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=
   opts.dotnl = dotnl;
   opts.nongreedy = nongreedy;
 
-  var ret:regexp;
-  qio_regexp_create_compile(pattern, pattern.length, opts, ret._regexp);
-
-  if qio_regexp_ok(ret._regexp) {
-    error = ENOERR;
-  } else {
-    error = qio_format_error_bad_regexp();
+  var ret: regexp;
+  qio_regexp_create_compile(pattern.localize().c_str(), pattern.length, opts, ret._regexp);
+  if !qio_regexp_ok(ret._regexp) {
+    var err_str = qio_regexp_error(ret._regexp);
+    var err_msg = err_str:string + " when compiling regexp '" + pattern + "'";
+    throw new BadRegexpError(err_msg);
   }
+  return ret;
+}
 
+pragma "no doc"
+proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture, /*i*/ ignorecase, /*m*/ multiline, /*s*/ dotnl, /*U*/ nongreedy):regexp {
+  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  var ret: regexp;
+  try {
+    ret = compile(pattern, utf8, posix, literal, nocapture, ignorecase,
+                  multiline, dotnl, nongreedy);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
   return ret;
 }
 
@@ -538,7 +536,7 @@ record reMatch {
 pragma "no doc"
 proc _to_reMatch(ref p:qio_regexp_string_piece_t):reMatch {
   if qio_regexp_string_piece_isnull(p) {
-    return new reMatch(false, -1, 0); 
+    return new reMatch(false, -1, 0);
   } else {
     return new reMatch(true, p.offset, p.len);
   }
@@ -578,12 +576,24 @@ record regexp {
   pragma "no doc"
   var _regexp:qio_regexp_t = qio_regexp_null();
 
+  proc init() {
+  }
+
+  proc init(x: regexp) {
+    this.home = x.home;
+    this._regexp = x._regexp;
+    this.complete();
+    on home {
+      qio_regexp_retain(_regexp);
+    }
+  }
+
   /* did this regular expression compile ? */
   proc ok:bool {
     return qio_regexp_ok(_regexp);
   }
-  /* 
-     
+  /*
+
      :returns: a string describing any error encountered when compiling this
                regular expression
    */
@@ -593,7 +603,7 @@ record regexp {
 
   // note - more = overloads are below.
   pragma "no doc"
-  proc ref ~regexp() {
+  proc ref deinit() {
     qio_regexp_release(_regexp);
     _regexp = qio_regexp_null();
   }
@@ -607,7 +617,16 @@ record regexp {
         captures[i] = m;
       } else {
         if m.matched {
-          captures[i] = text[m]:captures[i].type;
+          if captures[i].type == string {
+            captures[i] = text[m];
+          } else {
+            try {
+              captures[i] = text[m]:captures[i].type;
+            } catch {
+              var empty:captures[i].type;
+              captures[i] = empty;
+            }
+          }
         } else {
           var empty:captures[i].type;
           captures[i] = empty;
@@ -660,7 +679,7 @@ record regexp {
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -690,7 +709,7 @@ record regexp {
       }
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -740,7 +759,7 @@ record regexp {
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -770,7 +789,7 @@ record regexp {
       }
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -787,8 +806,8 @@ record regexp {
      :arg maxsplit: if nonzero, the maximum number of splits to do
      :yields: each split portion, one at a time
    */
-  iter split(text: ?t, maxsplit: int = 0) 
-    where t == string || t == stringPart 
+  iter split(text: ?t, maxsplit: int = 0)
+    where t == string || t == stringPart
   {
     var matches:_ddata(qio_regexp_string_piece_t);
     var ncaptures = qio_regexp_get_ncaptures(_regexp);
@@ -849,7 +868,7 @@ record regexp {
       if splits > maxsplits || !got then break;
     }
     on this.home {
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
   }
 
@@ -861,8 +880,8 @@ record regexp {
      :yields: tuples of :record:`reMatch` objects, the 1st is always
               the match for the whole pattern and the rest are the capture groups.
    */
-  iter matches(text: ?t, param captures=0, maxmatches: int = max(int)) 
-    where t == string || t == stringPart 
+  iter matches(text: ?t, param captures=0, maxmatches: int = max(int))
+    where t == string || t == stringPart
   {
     var matches:_ddata(qio_regexp_string_piece_t);
     var nmatches = 1 + captures;
@@ -878,7 +897,7 @@ record regexp {
     textLength = text.length;
     endpos = pos + textLength;
 
-    var nfound = 0; 
+    var nfound = 0;
     var cur = pos;
     while nfound < maxmatches && cur < endpos {
       var got:bool;
@@ -896,7 +915,7 @@ record regexp {
       cur = matches[0].offset + matches[0].len;
     }
     on this.home {
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
   }
 
@@ -911,7 +930,7 @@ record regexp {
    */
   // TODO -- move subn after sub for documentation clarity
   proc subn(repl:string, text: ?t, global = true ):(string, int)
-    where t == string || t == stringPart 
+    where t == string || t == stringPart
   {
     var pos:int;
     var endpos:int;
@@ -920,15 +939,15 @@ record regexp {
     else pos = 0;
     endpos = pos + text.length;
 
-    var replaced:c_string_copy;
-    var nreplaced:int; 
-    var replaced_len:int(64); 
+    var replaced:c_string;
+    var nreplaced:int;
+    var replaced_len:int(64);
     if t == stringPart {
       nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.length, text.from.localize().c_str(), text.from.length, pos, endpos, global, replaced, replaced_len);
     } else {
       nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.length, text.localize().c_str(), text.length, pos, endpos, global, replaced, replaced_len);
     }
-    const ret = replaced:string;
+    const ret = new string(replaced, needToCopy=false);
     return (ret, nreplaced);
   }
 
@@ -943,7 +962,7 @@ record regexp {
      :returns: the new string
    */
   proc sub(repl:string, text: ?t, global = true )
-    where t == string || t == stringPart 
+    where t == string || t == stringPart
   {
     var (str, count) = subn(repl, text, global);
     return str;
@@ -959,7 +978,7 @@ record regexp {
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
-    f.write("new regexp(\"", pattern, "\")");
+    f <~> "new regexp(\"" <~> pattern <~> "\")";
   }
 
   pragma "no doc"
@@ -969,13 +988,20 @@ record regexp {
     // and there's no way to get the flags
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
-    if(f.read(litOne, pattern, litTwo)) {
-      on this.home {
-        var localPattern = pattern.localize();
-        var opts:qio_regexp_options_t;
-        qio_regexp_init_default_options(opts);
-        qio_regexp_create_compile(localPattern.c_str(), localPattern.length, opts, this._regexp);
+
+    try {
+      if (f.read(litOne, pattern, litTwo)) {
+        on this.home {
+          var localPattern = pattern.localize();
+          var opts:qio_regexp_options_t;
+          qio_regexp_init_default_options(opts);
+          qio_regexp_create_compile(localPattern.c_str(), localPattern.length, opts, this._regexp);
+        }
       }
+    } catch e: SystemError {
+      f.setError(e.err);
+    } catch {
+      f.setError(EINVAL:syserr);
     }
   }
 }
@@ -1006,30 +1032,20 @@ proc =(ref ret:regexp, x:regexp)
   }
 }
 
-// TODO -- shouldn't have to write this this way!
-pragma "no doc"
-pragma "init copy fn"
-proc chpl__initCopy(x: regexp) {
-  on x.home {
-    qio_regexp_retain(x._regexp);
-  }
-  return x;
-}
-
 // Cast regexp to string.
 pragma "no doc"
 inline proc _cast(type t, x: regexp) where t == string {
   var pattern: string;
   on x.home {
-    var cs: c_string_copy;
+    var cs: c_string;
     qio_regexp_get_pattern(x._regexp, cs);
-    pattern = cs:string;
+    pattern = new string(cs, needToCopy=false);
   }
   return pattern;
 }
 // Cast string to regexp
 pragma "no doc"
-inline proc _cast(type t, x: string) where t == regexp {
+inline proc _cast(type t, x: string) throws where t == regexp {
   return compile(x);
 }
 
@@ -1096,7 +1112,7 @@ proc string.match(pattern: regexp, ref captures ...?k):reMatch
   return pattern.match(this, (...captures));
 }
 
-/* 
+/*
    Split the the receiving string by occurrences of the passed regular
    expression by calling :proc:`regexp.split`.
 
@@ -1111,7 +1127,7 @@ iter string.split(pattern: regexp, maxsplit: int = 0)
   }
 }
 
-/* 
+/*
    Enumerates matches in the receiving string as well as capture groups
    by calling :proc:`regexp.matches`.
 

@@ -36,14 +36,14 @@ module P {
 }
 
 module Q {
-  /* Sadly, this method's module does not */
+  /* Sadly, this function's module does not */
   proc main() {
     writeln("Oh no! Something printed!");
   }
 }
 
 module R {
-  /* Nor this method's module */
+  /* Nor this function's module */
   proc furthermore() {
 
   }

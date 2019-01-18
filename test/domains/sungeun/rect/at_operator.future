@@ -1,7 +1,3 @@
 feature request: @ operator for arithmetic domains
 
-Currently +/- operators are used for translations.  This is
-inconsistent with the use of +/- to add/remove elements for
-associative domains.  Adding the @ operator would make +/- on
-arithmetic domains illegal.
-
+Issue #7729

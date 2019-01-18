@@ -4,8 +4,8 @@
 
 record R
 {
-  proc R() { writeln("Called R()."); }
-  proc ~R() { writeln("Called ~R()."); }
+  proc init() { writeln("Called R()."); }
+  proc deinit() { writeln("Called ~R()."); }
 }
 
 // Different behavior is expected, depending on whether the variable is

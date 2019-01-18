@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/internal/ChapelArray.chpl:464: In function 'chpl__buildArrayExpr':
+$CHPL_HOME/modules/internal/ChapelArray.chpl:485: error: cannot assign to a record of the type R using the default assignment operator because it has 'const' field(s)

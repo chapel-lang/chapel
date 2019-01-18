@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -29,16 +29,25 @@
 
   To use this module:
 
-  1. Ensure that FFTW (version 3) is installed on your system and that
-     the header and library files (e.g., fftw3.h, libfftw3.*) are
-     either installed in a standard system location or that your C
-     compiler's environment variables are set up to find them
-     (alternatively, the Chapel compiler's ``-I`` and ``-L`` flags can
-     be used to specify these locations).
+  1. Ensure that FFTW (version 3) is installed on your system. The
+     current version of the Chapel module only supports double precision ``real(64)``
+     transforms. We do support using the FFTW compatible wrappers provided
+     by the Intel Math Kernel Library (MKL) (see below for usage).
 
   2. Add ``use FFTW;`` to your Chapel code.
 
-  3. Compile and run your Chapel program as usual.
+  3. Include the appropriate libraries in your compilation command.
+
+     a. For a standard FFTW installation, this may be as simple as including
+        ``-lfftw3`` when compiling. You may also need to use the ``-I`` and
+        ``-L`` flags to specify the locations of the header and library files
+        if these are in non-standard locations.
+
+     b. *Intel MKL* : To use the MKL FFTW wrappers, compile with ``-sisFFTW_MKL`` to include
+        the ``fftw3_mkl.h`` header in addition to the usual ``fftw3.h`` header
+        file. You may also need to add ``-I${MKLROOT}/include/fftw`` to point the
+        compiler to the location of these header files. Refer to the Intel MKL
+        documentation for the appropriate libraries to include.
 
 
   As in standard FFTW usage, the flow is to:
@@ -88,9 +97,17 @@
 
 module FFTW {
 
-  use SysCTypes;
-  require "fftw3.h", "-lfftw3";
+  /*
+    Set this to `true` if you are using the Intel MKL FFTW
+    wrappers
+  */
+  config param isFFTW_MKL=false;
 
+  use SysCTypes;
+  require "fftw3.h"; // This is common
+  if (isFFTW_MKL) {
+    require "fftw3_mkl.h";
+  }
 
   /*
     Controls execution-time array size checks in the FFTW
@@ -112,7 +129,7 @@ module FFTW {
   // TODO: Can we have the plan_dft() routine below take in native
   // Chapel types without changing the external C constants from
   // type c_int?  Probably given that Chapel's int will be >=
-  // C's int for the forseeable future.  See also the TODO above
+  // C's int for the foreseeable future.  See also the TODO above
   // about whether we'd want to represent those constants using
   // more native Chapel types anyway.
 
@@ -124,12 +141,12 @@ module FFTW {
 
     :arg output: The output array, whose size and shape must match the input array's
     :type output: [] `complex(128)`
-    
+
     :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
-    :type sign: c_int
+    :type sign: `c_int`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
@@ -157,10 +174,10 @@ module FFTW {
     :type arr: [] `complex(128)`
 
     :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
-    :type sign: c_int
+    :type sign: `c_int`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
@@ -198,9 +215,9 @@ module FFTW {
 
     :arg output: The output array, whose size and shape must match the input array's, except for the leading dimension which should be n/2 + 1, where n is the size of the input array's leading dimension.  See the `FFTW documentation <http://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html#Multi_002dDimensional-DFTs-of-Real-Data>`_ for more information.
     :type output: [] `complex(128)`
-    
+
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
@@ -239,7 +256,7 @@ module FFTW {
     :type arr: [] `T` where `T` is of type `real(64)` or `complex(128)`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
@@ -276,7 +293,7 @@ module FFTW {
     :type output: [] `real(64)`
     
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
@@ -314,7 +331,7 @@ module FFTW {
     :type arr: [] `T` where `T` is of type `real(64)` or `complex(128)`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
@@ -339,13 +356,13 @@ module FFTW {
   }
 
 
-  // Using plans 
+  // Using plans
 
   /*
     Execute an FFTW plan.
 
     :arg plan: The plan to execute, as computed by a `plan_dft*()` routine.
-    :type plan: fftw_plan
+    :type plan: `fftw_plan`
   */
   proc execute(const plan: fftw_plan) {
    C_FFTW.fftw_execute(plan);
@@ -355,7 +372,7 @@ module FFTW {
     Destroy an FFTW plan.
 
     :arg plan: The plan to destroy
-    :type plan: fftw_plan
+    :type plan: `fftw_plan`
   */
   proc destroy_plan(plan: fftw_plan) {
     C_FFTW.fftw_destroy_plan(plan);
@@ -382,7 +399,7 @@ module FFTW {
 
   // Direction flags
 
-  /* Request a forward transform (i.e., use a negative exponent in the tranform). */
+  /* Request a forward transform (i.e., use a negative exponent in the transform). */
   extern const FFTW_FORWARD : c_int;
   /* Request a backward transform (i.e., use a positive exponent in the transform). */
   extern const FFTW_BACKWARD : c_int;

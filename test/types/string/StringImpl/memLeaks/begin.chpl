@@ -1,3 +1,4 @@
+pragma "error mode fatal"
 module unitTest {
   use main;
 

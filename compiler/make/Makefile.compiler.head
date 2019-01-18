@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -36,7 +36,7 @@ endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 INCL_CFLAGS = -I. -I$(COMPILER_ROOT)/include/$(CHPL_MAKE_HOST_PLATFORM) -I$(COMPILER_ROOT)/include $(LLVM_INCLUDES)
-COMP_CFLAGS += $(INCL_CFLAGS)
+COMP_CXXFLAGS += $(INCL_CFLAGS)
 
 #
 # add gc-related stuff
@@ -59,8 +59,7 @@ endif
 endif
 
 
-COMP_CXXFLAGS := $(COMP_CFLAGS) $(ONLYCXXFLAGS) $(LLVM_CXXFLAGS)
-COMP_CFLAGS := $(COMP_CFLAGS) $(LLVM_CFLAGS)
+COMP_CXXFLAGS := $(COMP_CXXFLAGS) $(ONLYCXXFLAGS) $(LLVM_CXXFLAGS)
 
 
 #
@@ -68,6 +67,7 @@ COMP_CFLAGS := $(COMP_CFLAGS) $(LLVM_CFLAGS)
 #
 CLEAN_TARGS = \
 	./$(OBJ_SUBDIR)/*.o \
+	./$(OBJ_SUBDIR)/*.d \
 	./$(OBJ_SUBDIR)/*.gcda \
 	./$(OBJ_SUBDIR)/*.gcno \
 	./$(OBJ_SUBDIR)/*.gcov \
@@ -76,10 +76,11 @@ CLEAN_TARGS = \
 	*.gmon \
 	$(GEN_HEADERS) \
 	$(GEN_SRCS) \
+	TAGS \
+	tags
 
 CLEANALL_TARGS = \
-	$(CLEAN_TARGS) \
-	./$(GEN_SUBDIR)
+	$(CLEAN_TARGS)
 
 CLOBBER_TARGS = \
 	$(CLEANALL_TARGS) \

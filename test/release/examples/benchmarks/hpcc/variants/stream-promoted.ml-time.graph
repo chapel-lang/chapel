@@ -1,0 +1,5 @@
+perfkeys: min =, avg =
+repeat-files: stream.prom.dat
+graphkeys: min promoted stream runtime, avg promoted stream runtime
+graphtitle: HPCC: Promoted STREAM Time (sec) - n=5,723,827,200
+ylabel: Time (seconds)

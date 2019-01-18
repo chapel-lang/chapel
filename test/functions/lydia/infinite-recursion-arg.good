@@ -1,0 +1,3 @@
+infinite-recursion-arg.chpl:1: error: unable to resolve return type of function 'infinite1'
+infinite-recursion-arg.chpl:5: In function 'infinite2':
+infinite-recursion-arg.chpl:6: error: called recursively at this point

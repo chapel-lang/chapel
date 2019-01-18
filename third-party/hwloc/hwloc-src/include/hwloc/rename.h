@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
- * Copyright © 2010-2015 Inria.  All rights reserved.
+ * Copyright © 2010-2018 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -120,6 +120,7 @@ extern "C" {
 #define HWLOC_TOPOLOGY_FLAG_IO_BRIDGES HWLOC_NAME_CAPS(TOPOLOGY_FLAG_IO_BRIDGES)
 #define HWLOC_TOPOLOGY_FLAG_WHOLE_IO HWLOC_NAME_CAPS(TOPOLOGY_FLAG_WHOLE_IO)
 #define HWLOC_TOPOLOGY_FLAG_ICACHES HWLOC_NAME_CAPS(TOPOLOGY_FLAG_ICACHES)
+#define HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES HWLOC_NAME_CAPS(TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES)
 
 #define hwloc_topology_set_flags HWLOC_NAME(topology_set_flags)
 #define hwloc_topology_set_fsroot HWLOC_NAME(topology_set_fsroot)
@@ -184,10 +185,11 @@ extern "C" {
 #define hwloc_get_obj_by_type HWLOC_NAME(get_obj_by_type )
 
 #define hwloc_obj_type_string HWLOC_NAME(obj_type_string )
-#define hwloc_obj_type_sscanf HWLOC_NAME(obj_type_sscanf)
 #define hwloc_obj_type_snprintf HWLOC_NAME(obj_type_snprintf )
 #define hwloc_obj_attr_snprintf HWLOC_NAME(obj_attr_snprintf )
 #define hwloc_obj_cpuset_snprintf HWLOC_NAME(obj_cpuset_snprintf)
+#define hwloc_obj_type_sscanf HWLOC_NAME(obj_type_sscanf)
+
 #define hwloc_obj_get_info_by_name HWLOC_NAME(obj_get_info_by_name)
 #define hwloc_obj_add_info HWLOC_NAME(obj_add_info)
 
@@ -223,6 +225,7 @@ extern "C" {
 #define HWLOC_MEMBIND_STRICT HWLOC_NAME_CAPS(MEMBIND_STRICT)
 #define HWLOC_MEMBIND_MIGRATE HWLOC_NAME_CAPS(MEMBIND_MIGRATE)
 #define HWLOC_MEMBIND_NOCPUBIND HWLOC_NAME_CAPS(MEMBIND_NOCPUBIND)
+#define HWLOC_MEMBIND_BYNODESET HWLOC_NAME_CAPS(MEMBIND_BYNODESET)
 
 #define hwloc_membind_flags_t HWLOC_NAME(membind_flags_t)
 
@@ -238,6 +241,7 @@ extern "C" {
 #define hwloc_set_area_membind HWLOC_NAME(set_area_membind)
 #define hwloc_get_area_membind_nodeset HWLOC_NAME(get_area_membind_nodeset)
 #define hwloc_get_area_membind HWLOC_NAME(get_area_membind)
+#define hwloc_get_area_memlocation HWLOC_NAME(get_area_memlocation)
 #define hwloc_alloc_membind_nodeset HWLOC_NAME(alloc_membind_nodeset)
 #define hwloc_alloc_membind HWLOC_NAME(alloc_membind)
 #define hwloc_alloc HWLOC_NAME(alloc)
@@ -526,6 +530,8 @@ extern "C" {
 #define hwloc_weight_long HWLOC_NAME(weight_long)
 #define hwloc_strncasecmp HWLOC_NAME(strncasecmp)
 
+#define hwloc_linux_pci_link_speed_from_string HWLOC_NAME(linux_pci_link_speed_from_string)
+
 /* private/cpuid-x86.h */
 
 #define hwloc_have_x86_cpuid HWLOC_NAME(have_x86_cpuid)
@@ -559,6 +565,35 @@ extern "C" {
 
 #define hwloc_components_init HWLOC_NAME(components_init)
 #define hwloc_components_destroy_all HWLOC_NAME(components_destroy_all)
+
+/* private/internal-private.h */
+
+#define hwloc_xml_component HWLOC_NAME(xml_component)
+#define hwloc_synthetic_component HWLOC_NAME(synthetic_component)
+#define hwloc_custom_component HWLOC_NAME(custom_component)
+
+#define hwloc_aix_component HWLOC_NAME(aix_component)
+#define hwloc_bgq_component HWLOC_NAME(bgq_component)
+#define hwloc_darwin_component HWLOC_NAME(darwin_component)
+#define hwloc_freebsd_component HWLOC_NAME(freebsd_component)
+#define hwloc_hpux_component HWLOC_NAME(hpux_component)
+#define hwloc_linux_component HWLOC_NAME(linux_component)
+#define hwloc_netbsd_component HWLOC_NAME(netbsd_component)
+#define hwloc_noos_component HWLOC_NAME(noos_component)
+#define hwloc_osf_component HWLOC_NAME(osf_component)
+#define hwloc_solaris_component HWLOC_NAME(solaris_component)
+#define hwloc_windows_component HWLOC_NAME(windows_component)
+#define hwloc_x86_component HWLOC_NAME(x86_component)
+
+#define hwloc_cuda_component HWLOC_NAME(cuda_component)
+#define hwloc_gl_component HWLOC_NAME(gl_component)
+#define hwloc_linuxpci_component HWLOC_NAME(linuxpci_component)
+#define hwloc_nvml_component HWLOC_NAME(nvml_component)
+#define hwloc_opencl_component HWLOC_NAME(opencl_component)
+#define hwloc_pci_component HWLOC_NAME(pci_component)
+
+#define hwloc_xml_libxml_component HWLOC_NAME(xml_libxml_component)
+#define hwloc_xml_nolibxml_component HWLOC_NAME(xml_nolibxml_component)
 
 /* private/private.h */
 
@@ -642,8 +677,8 @@ extern "C" {
 
 /* private/solaris-chiptype.h */
 
-#define hwloc_solaris_get_chip_type HWLOC_NAME(solaris_get_chip_type)
-#define hwloc_solaris_get_chip_model HWLOC_NAME(solaris_get_chip_model)
+#define hwloc_solaris_chip_info_s HWLOC_NAME(solaris_chip_info_s)
+#define hwloc_solaris_get_chip_info HWLOC_NAME(solaris_get_chip_info)
 
 #endif /* HWLOC_SYM_TRANSFORM */
 

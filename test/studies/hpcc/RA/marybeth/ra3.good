@@ -1,4 +1,4 @@
-ra3.chpl:74: warning: atomic keyword is ignored (not implemented)
+ra3.chpl:74: warning: atomic statement is ignored (not implemented)
 Main table size = 2^15 = 32768 words
 Number of updates = 131072
 Number of random streams = 512

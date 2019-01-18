@@ -7,7 +7,7 @@ var data : [dom] int;
 for name in names do data[name] = name.length;
 
 for name in names do
-  if !dom.member(name) {
+  if !dom.contains(name) {
     writeln("FAILURE: name added via array did not exist in backing domain");
     exit(1);
   }

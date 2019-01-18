@@ -1,3 +1,2 @@
-equals_minus_2.chpl:11: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 {5 6 7}
 {5 6}

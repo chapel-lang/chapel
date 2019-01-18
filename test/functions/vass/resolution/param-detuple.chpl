@@ -11,3 +11,4 @@ proc p2(param args...) {
 
 p2("a");
 p2("a","b");
+compilerAssert(false, "done", 2); // exercise stack-not-deep-enough warning

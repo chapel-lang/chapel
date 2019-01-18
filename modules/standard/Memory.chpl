@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -56,7 +56,12 @@
   ``memStats``: `bool`:
     Enable memory tracking and produce summary memory statistics by
     invoking :proc:`printMemAllocStats` implicitly at normal program
-    termination.
+    termination.  Note that for a multi-locale run, each top-level
+    locale reports its own memory statistics and these reports may
+    appear in any order in the program output (and possibly even
+    interleaved, though we have gone to some effort to avoid that).
+    These statistics can be put in order by sorting the output lines
+    that begin with the string ``memStats:``.
 
   ``memMax``: `uint`:
     If the value is greater than 0 (zero), enable memory tracking
@@ -112,11 +117,11 @@ enum MemUnits {Bytes, KB, MB, GB};
   :rtype: `retType`
  */
 proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
-  extern proc chpl_bytesPerLocale(): uint(64);
+  extern proc chpl_sys_physicalMemoryBytes(): uint(64);
 
   var bytesInLocale: uint(64);
 
-  on this do bytesInLocale = chpl_bytesPerLocale();
+  on this do bytesInLocale = chpl_sys_physicalMemoryBytes();
 
   var retVal: retType;
   select (unit) {

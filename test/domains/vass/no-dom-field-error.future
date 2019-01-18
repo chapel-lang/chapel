@@ -1,3 +1,13 @@
+error message: clearer explanation is desired
+
+2018-08: this test most likely needs to be looked at to see
+whether it illustrates an issue and if so, what the issue is.
+While the current error message is "rectangular domains not supported
+by this distribution", it should probably give a hint why
+and point to documentation.
+
+Prior .future contents were:
+
 error message: should indicate that there need to be a 'dom' field in the 'GlobalArray' class; arguably should be a user error
 
 Right now I get (in the user and developer mode, resp.):

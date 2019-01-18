@@ -21,42 +21,41 @@ Files
 This directory's contents are as follows:
 
 ./
-  LCALSMain.chpl       : The main entry point in the Chapel source code
+  LCALSMain.chpl        : The main entry point in the Chapel source code
 
   RunARawLoops.chpl             :\
   RunBRawLoops.chpl             : \
-  RunCRawLoops.chpl             :  | The kernel implementations
-  RunParallelRawLoops.chpl      : /
+  RunCRawLoops.chpl             :  \ The kernel implementations
+  RunParallelRawLoops.chpl      :  /
+  RunSPMDRawLoops.chpl          : /
   RunVectorizeOnlyRawLoops.chpl :/
 
-  LCALSConfiguration.chpl : Configuration constants to define what to run
-  LCALSLoops.chpl         : Routines to initialize kernel data
+  LCALSConfiguration.chpl   : Configuration constants to define what to run
+  LCALSLoops.chpl           : Routines to initialize kernel data
 
-  LCALSDataTypes.chpl : | Data types and enumerations
-  LCALSEnums.chpl     :/
+  LCALSDataTypes.chpl   :\ Data types and enumerations
+  LCALSEnums.chpl       :/
 
-  LCALSParams.chpl : | Global variables and constants
-  LCALSStatic.chpl :/
+  LCALSParams.chpl      :\ Global variables and constants
+  LCALSStatic.chpl      :/
 
-  LCALSChecksums.chpl : Checks the validity of computed checksums
+  LCALSChecksums.chpl   : Checks the validity of computed checksums
 
-  Timer.chpl      : A simple timer
+  Timer.chpl            : A simple timer
 
-  LongDouble.chpl : | An interface to the "long double" type in C
-  longdouble.h    :/
+  LongDouble.chpl       :\  An interface to the "long double" type in C
+  longdouble.h          :/
 
-  Makefile       : Build LCALS
+  Makefile              : Build LCALS
 
-  *.notest               :\
-  LCALSMain.graph        : \
-  LCALSMain.perfexecopts :  \
-  LCALSMain.perfkeys     :   | Used by the Chapel testing system
-  LCALSMain.perftimeout  :  /
-  LCALSMain.prediff      : /
-  LCALSMain.skipif       :/
+  README                    : This file
+  README-LCALS_license.txt  : The LCALS reference license
 
-  README                   : This file
-  README-LCALS_license.txt : The 
+  Other files with the same base filenames as the Chapel test programs but
+  different filename extensions, are for use by the automated test system.
+  For example, LCALSMain.skipif supports automated testing of LCALSMain.chpl.
+  $CHPL_HOME/examples/README.testing contains more information.
+
 
 -----------------
 Execution Options
@@ -66,11 +65,11 @@ Execution Options
   configuration constants with names starting with "run". To see the full
   list, type './LCALSMain --help'.
 
-* checkSumTolerence : allow computed checksums to be off by this amount from
+* checksumTolerance : allow computed checksums to be off by this amount from
   the expected values.
 
 * noisyChecksumChecks : Print computed checksums and differences from expected
-  values even if they are within 'checkSumTolerence'.
+  values even if they are within 'checksumTolerance'.
 
 
 -----

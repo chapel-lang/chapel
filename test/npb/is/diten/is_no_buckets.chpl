@@ -7,11 +7,11 @@ config const probClass = classVals.S;
 config const seed = 314159265;
 config const printTime = false;
 
-const Class: domain(classVals);
+const Class = {classVals.S..classVals.C};
 
-const probSizes: [Class] int = ( 2**16, 2**20, 2**23, 2**25, 2**27 ),
-      Bmaxs:     [Class] int = ( 2**11, 2**16, 2**19, 2**21, 2**23 ),
-      Imaxs:     [Class] int = ( 10, 10, 10, 10, 10 );
+const probSizes: [Class] int = [ 2**16, 2**20, 2**23, 2**25, 2**27 ],
+      Bmaxs:     [Class] int = [ 2**11, 2**16, 2**19, 2**21, 2**23 ],
+      Imaxs:     [Class] int = [ 10, 10, 10, 10, 10 ];
 
 config const probSize = probSizes(probClass);
 config const Bmax = Bmaxs(probClass);
@@ -43,7 +43,7 @@ var passedVerifications = 0;
 
 proc main() {
   var time = new Timer();
-  var randomStream = new NPBRandomStream(seed);
+  var randomStream = new owned NPBRandomStream(real, seed);
   var tempreals: [1..4] real;
   var max = Bmax / 4;
 
@@ -86,8 +86,6 @@ proc main() {
     writeln(" Verification    = SUCCESSFUL");
   else
     writeln(" Verification    = FAILED ", passedVerifications);
-
-  delete randomStream;
 } 
 
 
@@ -230,16 +228,13 @@ proc fullVerify() {
   var failures = 0;
   buffer = keyArray;
 
-  serial {
-    [i in D] {
-      atomic {
-	ranks(buffer(i)) -= 1;
-	keyArray(ranks(buffer(i))) = buffer(i);
-      }
-    }
+  for i in D {
+    ranks(buffer(i)) -= 1;
+    keyArray(ranks(buffer(i))) = buffer(i);
+  }
 
-    [i in 0..D.numIndices-2 with (ref failures)] // no race - in 'serial'
-      if (keyArray(i) > keyArray(i+1)) then failures += 1;
+  for i in 0..D.numIndices-2 {
+    if (keyArray(i) > keyArray(i+1)) then failures += 1;
   }
 
   if (failures != 0) then

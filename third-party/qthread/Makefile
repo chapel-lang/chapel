@@ -16,22 +16,65 @@ QTHREAD_BUILD_DIR = $(QTHREAD_ABS_DIR)/$(QTHREAD_BUILD_SUBDIR)
 QTHREAD_DIR = $(QTHREAD_ABS_DIR)
 
 #
-# Cray X* builds are cross-compilations, as are Intel Phi KNC builds.
+# Cray X* builds are cross-compilations
 #
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
-CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
-else ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
-CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-unknown-linux-gnu
+CHPL_QTHREAD_CFG_OPTIONS += --host=$(shell uname -m)-cle-linux-gnu
+else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
+CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
 endif
 
-ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
-CFLAGS += -mmic
-endif
+ifneq ($(CHPL_MAKE_HWLOC),none)
+  # Have Qthreads get its hwloc topology from the Chapel runtime,
+  # unless directed not to.
+  ifeq (, $(call isTrue, $(CHPL_QTHREAD_DONT_GET_TOPO_FROM_RT)))
+    CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc_via_chapel
+    CFLAGS_NEEDS_RT_INCLUDES = y
+  else
+    CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc
+  endif
+  ifeq ($(CHPL_MAKE_HWLOC),hwloc)
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(HWLOC_INSTALL_DIR)
+  endif
 endif
 
-ifeq ($(CHPL_MAKE_HWLOC),hwloc)
-CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc --with-hwloc=$(HWLOC_INSTALL_DIR)
+
+# Have qthreads use Chapel's allocator, unless directed not to
+ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
+  CHPL_QTHREAD_CFG_OPTIONS += --with-alloc=chapel
+  CFLAGS_NEEDS_RT_INCLUDES = y
+endif
+
+FAILBUILD=
+ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
+  #
+  # When building the Chapel allocator file we need all the Chapel runtime
+  # defs and include directories, plus the third-party include dirs other
+  # than that for Qthreads itself (since we're building it).  Notably, we
+  # do not want -DNDEBUG; if we have that set when building Qthreads it
+  # seems to cause Chapel programs built with the result to hang during
+  # exit when shutting down Qthreads.
+  #
+  # Throw COMPILELINE_STDERR_REDIRECT= if compileline failure is reported
+  # and you want to see the stderr from that.
+  #
+  COMPILELINE_STDERR_REDIRECT=2> /dev/null
+  INCS_DEFS := \
+    $(shell $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
+               $(COMPILELINE_STDERR_REDIRECT) \
+            || echo compilelineFAILURE)
+  ifneq (, $(findstring compilelineFAILURE,$(INCS_DEFS)))
+    FAILBUILD=y
+  else
+    INCS_DEFS_PROCESSED := \
+      $(shell echo $(INCS_DEFS) \
+              | tr ' ' '\n' \
+              | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
+              | grep -v '/third-party/qthread/install' \
+              | tr '\n' ' ' \
+              | sed 's/ $$//')
+    CFLAGS += $(INCS_DEFS_PROCESSED)
+  endif
 endif
 
 # enable oversubscription for testing
@@ -40,7 +83,9 @@ CHPL_QTHREAD_CFG_OPTIONS += --enable-oversubscription
 endif
 
 # enable guard pages for stack overflow detection, unless directed not to
+HAVE_GUARD_PAGES = 0
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_GUARD_PAGES)))
+HAVE_GUARD_PAGES = 1
 CHPL_QTHREAD_CFG_OPTIONS += --enable-guard-pages
 endif
 
@@ -53,10 +98,10 @@ endif
 CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
 # determine which scheduler to use. Default to nemesis, except for numa where
-# we want sherwood. Override with a user provided option if they requested one
+# we want distrib. Override with a user provided option if they requested one
 SCHEDULER = nemesis
-ifeq ($(CHPL_MAKE_LOCALE_MODEL),numa)
-SCHEDULER = sherwood
+ifneq ($(CHPL_MAKE_LOCALE_MODEL),flat)
+SCHEDULER = distrib
 endif
 ifneq (, $(CHPL_QTHREAD_SCHEDULER))
 SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
@@ -76,6 +121,10 @@ ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
 CHPL_QTHREAD_CFG_OPTIONS += --disable-internal-spinlock
 endif
 
+ifeq ($(CHPL_LIB_PIC),pic)
+CFLAGS += $(SHARED_LIB_CFLAGS)
+endif
+
 CHPL_QTHREAD_CFG_OPTIONS += $(CHPL_QTHREAD_MORE_CFG_OPTIONS)
 
 default: all
@@ -93,6 +142,8 @@ clobber: FORCE
 
 
 qthread-config: FORCE
+	@test -z "$(FAILBUILD)" || ( echo 'compileline failed!' && false )
+
 #
 # These first few lines touch a bunch of autoconf-oriented files in a
 # certain order to prevent autoconf from running again; otherwise, we
@@ -100,20 +151,22 @@ qthread-config: FORCE
 # ahead in version numbers as that which was used when packaging the
 # Qthreads release
 #
-	-cd $(QTHREAD_SUBDIR) && find . -name "*.m4" | xargs touch configure.ac
-	sleep 2
+	cd $(QTHREAD_SUBDIR) && touch -c configure.ac
+	cd $(QTHREAD_SUBDIR) && find . -name "*.m4" | xargs touch
+	sleep 1
+	cd $(QTHREAD_SUBDIR) && touch -c aclocal.m4
+	sleep 1
 	cd $(QTHREAD_SUBDIR) && touch configure
-	sleep 2
 	cd $(QTHREAD_SUBDIR) && find . -name "*.in" | xargs touch
+
 #
 # Then configure
 #
 	mkdir -p $(QTHREAD_BUILD_DIR)
 	cd $(QTHREAD_BUILD_DIR) \
 	&& $(QTHREAD_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' \
-	       CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' \
-	       --prefix=$(QTHREAD_INSTALL_DIR) CHPL_HOME=$(CHPL_MAKE_HOME) \
-	       $(CHPL_QTHREAD_CFG_OPTIONS) 
+	       CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' LDFLAGS='$(RUNTIME_LFLAGS)' \
+	       --prefix=$(QTHREAD_INSTALL_DIR) $(CHPL_QTHREAD_CFG_OPTIONS)
 
 qthread-build: FORCE
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE)
@@ -133,7 +186,7 @@ qthread-build: FORCE
 ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
 SUPPORTS_REMOTE_CACHE = 1
 ONE_WORKER_PER_SHEPHERD = 1
-else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),nottingham sherwood))
+else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),distrib nottingham sherwood))
 SUPPORTS_REMOTE_CACHE = 0
 ONE_WORKER_PER_SHEPHERD = 0
 else
@@ -146,6 +199,9 @@ qthread-chapel-h: FORCE
 	     > $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 	echo "#define CHPL_QTHREAD_SCHEDULER_ONE_WORKER_PER_SHEPHERD" \
 	     $(ONE_WORKER_PER_SHEPHERD) \
+	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_HAVE_GUARD_PAGES" \
+	     $(HAVE_GUARD_PAGES) \
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 
 qthread: qthread-config qthread-build qthread-chapel-h

@@ -20,7 +20,7 @@ class GridInvalidRegion {
   //| >    fields    | >
   //|/...............|/
   
-  const fine_neighbors: domain(Grid);
+  const fine_neighbors: domain(unmanaged Grid);
   const domains:        [fine_neighbors] domain(dimension,stridable=true);
   
   // /|'''''''''''''''/|
@@ -30,14 +30,15 @@ class GridInvalidRegion {
     
   
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
   
-  proc GridInvalidRegion (
-    grid:         Grid,
-    parent_level: Level,
-    fine_level:   Level )
+  proc init (
+    grid:         unmanaged Grid,
+    parent_level: unmanaged Level,
+    fine_level:   unmanaged Level )
   {
+    this.complete();
     //==== Calculate refinement ratio ====
     const ref_ratio = refinementRatio(parent_level, fine_level);
     
@@ -53,7 +54,7 @@ class GridInvalidRegion {
     }
   }
   // /|''''''''''''''''''''/|
-  //< |    constructor    < |
+  //< |    initializer    < |
   // \|....................\|
   
   
@@ -74,13 +75,13 @@ class GridInvalidRegion {
   
   
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
-  proc ~GridInvalidRegion () {}
+  proc deinit () {}
 
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
 }
@@ -103,10 +104,10 @@ class LevelInvalidRegion {
   //| >    fields    | >
   //|/...............|/
   
-  const level:      Level;
-  const fine_level: Level;
+  const level:      unmanaged Level;
+  const fine_level: unmanaged Level;
   
-  var grid_invalid_regions: [level.grids] GridInvalidRegion;
+  var grid_invalid_regions: [level.grids] unmanaged GridInvalidRegion;
 
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -125,10 +126,10 @@ class LevelInvalidRegion {
   // grid_invalid_regions is typed by the input 'level'.
   //----------------------------------------------------------------------
 
-  proc initialize ()
+  proc postinit ()
   {
     for grid in level.grids do
-      grid_invalid_regions(grid) = new GridInvalidRegion(grid, level, fine_level);
+      grid_invalid_regions(grid) = new unmanaged GridInvalidRegion(grid, level, fine_level);
   }
   // /|'''''''''''''''''''''''''''''''''''/|
   //< |    special method: initialize    < |
@@ -137,15 +138,15 @@ class LevelInvalidRegion {
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
-  proc ~LevelInvalidRegion ()
+  proc deinit ()
   {
     for region in grid_invalid_regions do delete region;
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
 
@@ -154,7 +155,7 @@ class LevelInvalidRegion {
   //| >    special method: this    | >
   //|/.............................|/
   
-  proc this (grid: Grid) 
+  proc this (grid: unmanaged Grid) 
   {
     return grid_invalid_regions(grid);
   }
@@ -183,8 +184,8 @@ class LevelInvalidRegion {
 //----------------------------------------------------------------------
 
 proc LevelSolution.correctInvalidRegion (
-  level_invalid_region: LevelInvalidRegion,
-  fine_level_solution:  LevelSolution )
+  level_invalid_region: unmanaged LevelInvalidRegion,
+  fine_level_solution:  unmanaged LevelSolution )
 {
   //==== Safety checks ====
   assert(this.level == level_invalid_region.level);
@@ -213,8 +214,8 @@ proc LevelSolution.correctInvalidRegion (
 //------------------------------------------------------------
 
 proc LevelVariable.fillInvalidRegion (
-  level_invalid_region: LevelInvalidRegion,
-  fine_level_variable:  LevelVariable )
+  level_invalid_region: unmanaged LevelInvalidRegion,
+  fine_level_variable:  unmanaged LevelVariable )
 {
 
   //---- Safety check ----

@@ -1,0 +1,3 @@
+# Disable warnings for this test, otherwise gcc will whine about
+# an attribute on our printf wrapper
+printfWrapper.c --ccflags -w

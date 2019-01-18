@@ -1,3 +1,5 @@
+.. _man-chpl:
+
 chpl
 ====
 
@@ -102,6 +104,26 @@ OPTIONS
 
     Print the module search path used to resolve module for further details.
 
+*Warning and Language Control Options*
+
+**--[no-]permit-unhandled-module-errors**
+
+    Normally, the compiler ensures that all errors are handled for code
+    inside of a module declaration (unless the module overrides that
+    behavior). This flag overrides this default, so that the compiler
+    will compile code in a module that does not handle its errors. If any
+    error comes up during execution, it will cause the program to halt.
+
+**--[no-]warn-unstable**
+
+    Enable [disable] warnings for code that has recently or will recently
+    change in meaning due to language changes.
+
+**--[no-]warnings**
+
+    Enable [disable] the printing of compiler warnings. Defaults to printing
+    warnings.
+
 *Parallelism Control Options*
 
 **--[no-]local**
@@ -119,20 +141,12 @@ OPTIONS
     Turns off all optimizations in the Chapel compiler and generates naive C
     code with many temporaries.
 
-**--cache-remote**
+**--[no-]cache-remote**
 
     Enables the cache for remote data. This cache can improve communication
     performance for some programs by adding aggregation, write behind, and
     read ahead. This cache is not enabled by any other optimization
     *options* such as **--fast**.
-
-**--conditional-dynamic-dispatch-limit**
-
-    When greater than zero, this limit controls when the compiler will
-    generate code to handle dynamic dispatch with conditional statements. If
-    the number of possible method calls is less than or equal to this limit,
-    a (possibly nested) conditional statement will be used for dynamic
-    dispatch instead of the virtual method table. The default is zero.
 
 **--[no-]copy-propagation**
 
@@ -144,8 +158,8 @@ OPTIONS
 
 **--fast**
 
-    Turns off all runtime checks using **--no-checks**, turns on **-O**,
-    **--specialize**, and **--vectorize**.
+    Turns off all runtime checks using **--no-checks**, turns on **-O** and
+    **--specialize**.
 
 **--[no-]fast-followers**
 
@@ -180,10 +194,21 @@ OPTIONS
     optimizes the invocation of an iterator in a loop header by inlining the
     iterator's definition around the loop body.
 
+**--inline-iterators-yield-limit**
+
+    Limit on the number of yield statements permitted in an inlined iterator.
+    The default value is 10.
+
 **--[no-]live-analysis**
 
     Enable [disable] live variable analysis, which is currently only used to
     optimize iterators that are not inlined.
+
+**--[no-]optimize-range-iteration**
+
+    Enable [disable] anonymous range iteration optimizations. This allows the
+    compiler to avoid creating ranges when they are only used for iteration.
+    By default this is enabled.
 
 **--[no-]optimize-loop-iterators**
 
@@ -192,9 +217,9 @@ OPTIONS
 
 **--[no-]vectorize**
 
-    Enable [disable] generating vectorization hints for target compiler. If
-    enabled, hints will always be generated, but the effects will vary based
-    on the target compiler.
+    Enable [disable] generating vectorization hints for the target compiler.
+    If enabled, hints will always be generated, but the effects on performance
+    (and in some cases correctness) will vary based on the target compiler.
 
 **--[no-]optimize-on-clauses**
 
@@ -223,6 +248,10 @@ OPTIONS
     Enable [disable] remote value forwarding of read-only values to remote
     threads if reading them early does not violate program semantics.
 
+**--[no-]remote-serialization**
+
+    Enable [disable] serialization for globals and remote constants.
+
 **--[no-]scalar-replacement**
 
     Enable [disable] scalar replacement of records and classes for some
@@ -250,6 +279,11 @@ OPTIONS
     Enable [disable] ability to skip default initialization through the
     keyword noinit
 
+**--[no-]infer-local-fields**
+
+    Enable [disable] analysis to infer local fields in classes and records
+    (experimental)
+
 *Run-time Semantic Check Options* 
 
 **--no-checks**
@@ -263,6 +297,16 @@ OPTIONS
 
     Enable [disable] run-time bounds checking, e.g. during slicing and array
     indexing.
+
+**--[no-]cast-checks**
+
+    Enable [disable] run-time checks in safeCast calls for casts that
+    wouldn't preserve the logical value being cast.
+
+**--[no-]div-by-zero-checks**
+
+    Enable [disable] run-time checks in integer division and modulus operations
+    to guard against dividing by zero.
 
 **--[no-]formal-domain-checks**
 
@@ -283,11 +327,6 @@ OPTIONS
 **--[no-]stack-checks**
 
     Enable [disable] run-time checking for stack overflow.
-
-**--[no-]cast-checks**
-
-    Enable [disable] run-time checks in safeCast calls for casts that
-    wouldn't preserve the logical value being cast.
 
 *C Code Generation Options* 
 
@@ -352,22 +391,31 @@ OPTIONS
 
 **-I, --hdr-search-path <dir>**
 
-    Add dir to the back-end C compiler's search path for header files.
+    Add the specified dir[ectories] to the back-end C compiler's
+    search path for header files along with any directories in the
+    CHPL\_INCLUDE\_PATH environment variable.  Both the environment
+    variable and this flag accept a colon-separated list of
+    directories.
 
 **--ldflags <flags>**
 
-    Add the specified flags to the C compiler link line when linking the
-    generated code. Multiple **--ldflags** *options* can be provided and in
-    that case the combination of the flags will be forwarded to the C
-    compiler.
+    Add the specified flags to the back-end C compiler link line when
+    linking the generated code. Multiple **--ldflags** *options* can
+    be provided and in that case the combination of the flags will be
+    forwarded to the C compiler.
 
 **-l, --lib-linkage <library>**
 
-    Specify a C library to link in on the C compiler command line.
+    Specify a C library to link to on the back-end C compiler command
+    line.
 
 **-L, --lib-search-path <dir>**
 
-    Specify a C library search path on the C compiler command line.
+    Add the specified dir[ectories] to the back-end C compiler's
+    search path for libraries along with any directories in the
+    CHPL\_LIB\_PATH environment variable.  Both the environment
+    variable and this flag accept a colon-separated list of
+    directories.
 
 **-O, --[no-]optimize**
 
@@ -381,13 +429,14 @@ OPTIONS
 
     Causes the generated C code to be compiled with flags that specialize
     the executable to the architecture that is defined by
-    CHPL\_TARGET\_ARCH. The effects of this flag will vary based on choice
-    of back-end compiler and the value of CHPL\_TARGET\_ARCH.
+    CHPL\_TARGET\_CPU. The effects of this flag will vary based on choice
+    of back-end compiler and the value of CHPL\_TARGET\_CPU.
 
 **-o, --output <filename>**
 
-    Specify the name of the compiler-generated executable (defaults to a.out
-    if unspecified).
+    Specify the name of the compiler-generated executable. Defaults to
+    the filename of the main module (minus its `.chpl` extension), if
+    unspecified.
 
 **--static**
 
@@ -400,7 +449,7 @@ OPTIONS
 **--[no-]llvm**
 
     Use LLVM as the code generation target rather than C. See
-    $CHPL\_HOME/doc/technotes/llvm.rst for details.
+    $CHPL\_HOME/doc/rst/technotes/llvm.rst for details.
 
 **--[no-]llvm-wide-opt**
 
@@ -410,7 +459,13 @@ OPTIONS
     also supply **--fast** to enable wide pointer optimizations. This flag
     allows existing LLVM optimizations to work with wide pointers - for
     example, they might be able to hoist a 'get' out of a loop. See
-    $CHPL\_HOME/doc/technotes/llvm.rst for details.
+    $CHPL\_HOME/doc/rst/technotes/llvm.rst for details.
+
+**--mllvm <option>**
+
+    Pass an option to the LLVM optimization and transformation passes.
+    This option can be specified multiple times.
+
 
 *Compilation Trace Options*
 
@@ -470,6 +525,14 @@ OPTIONS
     instantiated. This flag raises that maximum in the event that a legal
     instantiation is being pruned too aggressively.
 
+**--[no-]print-callgraph**
+
+    Print a textual call graph representing the program being compiled. The
+    output is in top-down and depth first order. Recursive calls are marked
+    and cause the traversal to stop along the path containing the recursion.
+    Only a single call to each function is displayed from within any given
+    parent function.
+
 **--[no-]print-callstack-on-error**
 
     Accompany certain error and warning messages with the Chapel call stack
@@ -477,11 +540,16 @@ OPTIONS
     location. This is useful when the underlying cause of the issue is in
     one of the callers.
 
-**-s, --set <config param>[=<value>]**
+**--[no-]print-unused-functions**
 
-    Overrides the default value of a configuration parameter in the code.
-    For boolean configuration variables, the value can be omitted, causing
-    the default value to be toggled.
+    Print the names and source locations of unused functions within the
+    user program.
+
+**-s, --set <config>[=<value>]**
+
+    Overrides the default value of a configuration param, type, var,
+    or const in the code.  If the value is omitted, it will default
+    to the value `true`.
 
 **--[no-]task-tracking**
 
@@ -491,34 +559,6 @@ OPTIONS
     adds compilation-time overhead when it will not be used, so is off by
     default.
 
-**--[no-]warn-const-loops**
-
-    Enable [disable] warnings for 'while' loops whose condition is a 'const'
-    variable, because such a loop condition is likely unintended. 'While'
-    loops with 'param' conditions do not trigger this warning.
-
-**--[no-]warn-special**
-
-    Enable [disable] all special compiler warnings issued due to syntax and
-    other language changes. Currently, these include
-    --[no-]warn-domain-literal and --[no-]warn-tuple-iteration.
-
-**--[no-]warn-domain-literal**
-
-    Enable [disable] compiler warnings regarding the potential use of the
-    old-style domain literal syntax (e.g. [1..2, 3..4]). All array literals
-    with range elements will result in warnings.
-
-**--[no-]warn-tuple-iteration**
-
-    Enable [disable] compiler warnings regarding the potential use of
-    old-style zippering syntax. All uses of tuple iteration will produce
-    warnings.
-
-**--[no-]warnings**
-
-    Enable [disable] the printing of compiler warnings. Defaults to printing
-    warnings.
 
 *Compiler Configuration Options*
 
@@ -612,11 +652,11 @@ OPTIONS
     'none' or 're2' if you've installed the re2 package in the third-party
     *directory*).
 
-**--target-arch <architecture>**
+**--target-cpu <architecture>**
 
     Specify the architecture that the compiled executable will be
     specialized to when **--specialize** is enabled. This flag corresponds
-    with and overrides the $CHPL\_TARGET\_ARCH environment variable
+    with and overrides the $CHPL\_TARGET\_CPU environment variable
     (defaults to a best guess based on $CHPL\_COMM, $CHPL\_TARGET\_COMPILER,
     and $CHPL\_TARGET\_PLATFORM).
 
@@ -646,12 +686,6 @@ OPTIONS
     Specify a timer implementation to be used by the Time module. This flag
     corresponds with and overrides the $CHPL\_TIMERS environment variable
     (defaults to 'generic').
-
-**--wide-pointers <format>**
-
-    Specify the wide pointer format format. This flag corresponds with and
-    overrides the $CHPL\_WIDE\_POINTERS environment variable (defaults to
-    'struct').
 
 *Compiler Information Options*
 
@@ -716,22 +750,21 @@ effect as passing that option once.
 BUGS
 ----
 
-See $CHPL\_HOME/STATUS for a list of known bugs and
-$CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
+See $CHPL\_HOME/doc/rst/usingchapel/bugs.rst for instructions on reporting bugs.
 
 SEE ALSO
 --------
 
-$CHPL\_HOME/README.rst for more information on how to get started with
-Chapel.
+$CHPL\_HOME/doc/rst/usingchapel/QUICKSTART.rst for more information on how to
+get started with Chapel.
 
 AUTHORS
 -------
 
-See $CHPL\_HOME/CONTRIBUTORS for a list of contributors to Chapel.
+See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 
 COPYRIGHT
 ---------
 
-Copyright (c) 2004-2016 Cray Inc. (See $CHPL\_HOME/LICENSE for more
+Copyright (c) 2004-2018 Cray Inc. (See $CHPL\_HOME/LICENSE for more
 details.)

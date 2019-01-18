@@ -8,16 +8,20 @@ Module Processing Options:
       --print-module-files            Print module file locations
       --[no-]print-search-dirs        [Don't] print module search path
 
+Warning and Language Control Options:
+      --[no-]permit-unhandled-module-errors
+                                      Permit unhandled errors in explicit
+                                      modules; such errors halt at runtime
+      --[no-]warn-unstable            Enable [disable] warnings for uses of
+                                      language features that are in flux
+      --[no-]warnings                 Enable [disable] output of warnings
+
 Parallelism Control Options:
       --[no-]local                    Target one [many] locale[s]
 
 Optimization Control Options:
       --baseline                      Disable all Chapel optimizations
-      --cache-remote                  Enable cache for remote data (must be
-                                      enabled specifically)
-      --conditional-dynamic-dispatch-limit <limit>
-                                      Set limit on # of inline conditionals
-                                      used for dynamic dispatch
+      --[no-]cache-remote             [Don't] enable cache for remote data
       --[no-]copy-propagation         Enable [disable] copy propagation
       --[no-]dead-code-elimination    Enable [disable] dead code elimination
       --fast                          Use fast default settings
@@ -27,10 +31,15 @@ Optimization Control Options:
       --[no-]ignore-local-classes     Disable [enable] local classes
       --[no-]inline                   Enable [disable] function inlining
       --[no-]inline-iterators         Enable [disable] iterator inlining
+      --inline-iterators-yield-limit <limit>
+                                      Limit number of yields permitted in
+                                      inlined iterators
       --[no-]live-analysis            Enable [disable] live variable analysis
       --[no-]loop-invariant-code-motion
                                       Enable [disable] loop invariant code
                                       motion
+      --[no-]optimize-range-iteration Enable [disable] optimization of
+                                      iteration over anonymous ranges
       --[no-]optimize-loop-iterators  Enable [disable] optimization of
                                       iterators composed of a single loop
       --[no-]optimize-on-clauses      Enable [disable] optimization of on
@@ -41,6 +50,8 @@ Optimization Control Options:
       --[no-]privatization            Enable [disable] privatization of
                                       distributed arrays and domains
       --[no-]remote-value-forwarding  Enable [disable] remote value forwarding
+      --[no-]remote-serialization     Enable [disable] serialization for
+                                      remote consts
       --[no-]remove-copy-calls        Enable [disable] remove copy calls
       --[no-]scalar-replacement       Enable [disable] scalar replacement
       --scalar-replace-limit <limit>  Limit on the size of tuples being
@@ -52,18 +63,21 @@ Optimization Control Options:
       --[no-]use-noinit               Enable [disable] ability to skip default
                                       initialization through the keyword
                                       noinit
+      --[no-]infer-local-fields       Enable [disable] analysis to infer local
+                                      fields in classes and records
+                                      (experimental)
       --[no-]vectorize                Enable [disable] generation of
                                       vectorization hints
 
 Run-time Semantic Check Options:
       --no-checks                     Disable all following run-time checks
       --[no-]bounds-checks            Enable [disable] bounds checking
+      --[no-]cast-checks              Enable [disable] safeCast() value checks
+      --[no-]div-by-zero-checks       Enable [disable] divide-by-zero checks
       --[no-]formal-domain-checks     Enable [disable] formal domain checking
       --[no-]local-checks             Enable [disable] local block checking
-      --[no-]nil-checks               Enable [disable] nil checking
+      --[no-]nil-checks               Enable [disable] runtime nil checking
       --[no-]stack-checks             Enable [disable] stack overflow checking
-      --[no-]cast-checks              Enable [disable] checks in safeCast
-                                      calls
 
 C Code Generation Options:
       --[no-]codegen                  [Don't] Do code generation
@@ -87,7 +101,7 @@ C Code Compilation Options:
   -L, --lib-search-path <directory>   C library search path
   -O, --[no-]optimize                 [Don't] Optimize generated C code
       --[no-]specialize               [Don't] Specialize generated C code for
-                                      CHPL_TARGET_ARCH
+                                      CHPL_TARGET_CPU
   -o, --output <filename>             Name output executable
       --static                        Generate a statically linked binary
 
@@ -95,6 +109,8 @@ LLVM Code Generation Options:
       --[no-]llvm                     [Don't] use the LLVM code generator
       --[no-]llvm-wide-opt            Enable [disable] LLVM wide pointer
                                       optimizations
+      --mllvm <flags>                 LLVM flags (can be specified multiple
+                                      times)
 
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands
@@ -110,18 +126,14 @@ Miscellaneous Options:
       --[no-]explain-verbose          Enable [disable] tracing of
                                       disambiguation with 'explain' options
       --instantiate-max <max>         Limit number of instantiations
-      --[no-]print-callstack-on-error print the Chapel call stack leading to
-                                      each error or warning
-  -s, --set <name>[=<value>]          Set config param value
+      --[no-]print-callgraph          [Don't] print a representation of the
+                                      callgraph for the program
+      --[no-]print-callstack-on-error [Don't] print the Chapel call stack
+                                      leading to each error or warning
+      --[no-]print-unused-functions   [Don't] print the name and location of
+                                      unused functions
+  -s, --set <name>[=<value>]          Set config value
       --[no-]task-tracking            Enable [disable] runtime task tracking
-      --[no-]warn-const-loops         Enable [disable] warnings for some
-                                      'while' loops with constant conditions
-      --[no-]warn-special             Enable [disable] special warnings
-      --[no-]warn-domain-literal      Enable [disable] old domain literal
-                                      syntax warnings
-      --[no-]warn-tuple-iteration     Enable [disable] warnings for tuple
-                                      iteration
-      --[no-]warnings                 Enable [disable] output of warnings
 
 Compiler Configuration Options:
       --home <path>                   Path to Chapel's home directory
@@ -138,12 +150,11 @@ Compiler Configuration Options:
       --make <make utility>           Make utility for generated code
       --mem <mem-impl>                Specify the memory manager
       --regexp <regexp>               Specify whether to use regexp support
-      --target-arch <architecture>    Target architecture to optimize for
+      --target-cpu <architecture>     Target architecture to optimize for
       --target-compiler <compiler>    Compiler for generated code
       --target-platform <platform>    Platform for cross-compilation
       --tasks <task-impl>             Specify tasking implementation
       --timers <timer-impl>           Specify timer implementation
-      --wide-pointers <format>        Specify wide pointer format
 
 Compiler Information Options:
       --copyright                     Show copyright

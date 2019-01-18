@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,25 +31,23 @@ extern const char* chplParseStringMsg;
 
 extern ModTag      currentModuleType;
 extern bool        currentFileNamedOnCommandLine;
+extern const char* currentModuleName;
 
 extern int         yystartlineno;
 extern const char* yyfilename;
 extern BlockStmt*  yyblock;
 
-ModuleSymbol*      parseFile(const char* filename,
-                             ModTag      modtype,
-                             bool        namedOnCommandLine = false);
+void               parse();
 
-ModuleSymbol*      parseMod(const char* modname,
-                            ModTag      modtype);
+void               setupModulePaths();
+
+void               addFlagModulePath(const char* newpath);
+
+void               addModuleToParseList(const char* name,
+                                        UseStmt*    newUse);
 
 BlockStmt*         parseString(const char* string,
                                const char* filename,
                                const char* msg);
-
-void               addModuleToParseList(const char* name,
-                                        UseStmt*   newUse);
-
-void               parseDependentModules(ModTag modtype);
 
 #endif

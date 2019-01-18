@@ -1,0 +1,3 @@
+uncaught NotADirectoryError: Not a directory (in copyTree(shesNotThere, pleaseDontBotherTryingToFindHer))
+  no_src.chpl:3: thrown here
+  no_src.chpl:3: uncaught here

@@ -6,4 +6,9 @@ class C {
   var r : R;
 }
 
-writeln(new C());
+var x = new unmanaged C();
+
+writeln(x);
+
+delete x;
+

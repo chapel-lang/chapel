@@ -1,5 +1,0 @@
-unimplemented feature: 'const in' forall intent on domains, arrays
-
-ARR and DOM should be copied into each of forall's tasks.
-At present instead ARR and DOM in the loop body
-refer directly to the outer variables, which are the formals of test().

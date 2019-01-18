@@ -1,7 +1,6 @@
 //
 // This tells Chapel to compile Foo.chpl, but does not import any
-// of its symbols.  If this feature sticks around, we've talked
-// about switching to the keyword 'require' to avoid this confusion.
+// of its symbols.
 //
 require "Foo.chpl";
 
@@ -11,6 +10,5 @@ proc foo() {
 
 
 proc main() {
-
   foo();
 }

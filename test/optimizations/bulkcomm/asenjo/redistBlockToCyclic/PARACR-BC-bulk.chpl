@@ -68,7 +68,7 @@ proc BlockArr.copyBtoC(B)
 		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
 		  dst,
 		  __primitive("array_get",src,
-			      locArr[lid].myElems._value.getDataIndex(schunkini)),  
+			      locArr[lid].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
 		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
 		  stridelevels);
@@ -125,7 +125,7 @@ proc  BlockArr.copyCtoB(B)
 
       __primitive("chpl_comm_get_strd",
 		  __primitive("array_get",src,
-			        locArr[lid].myElems._value.getDataIndex(schunkini)),
+                              locArr[lid].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
 		  dst,
 		  __primitive("array_get",destr,

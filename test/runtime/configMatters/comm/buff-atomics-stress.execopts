@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+import os
+
+net_atomics = os.getenv('CHPL_NETWORK_ATOMICS', 'none')
+
+iters      = 10000
+flushIters = 1000
+if net_atomics == 'ugni':
+  iters      = 1000000
+  flushiters = 10000
+
+print('--concurrentFlushing=false --iters={0}'.format(iters))
+print('--concurrentFlushing=true  --iters={0}'.format(flushIters))

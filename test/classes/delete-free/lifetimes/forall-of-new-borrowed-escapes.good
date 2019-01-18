@@ -1,0 +1,1 @@
+field-init-escapes.chpl:13: error: the new 'borrow's yielded by this loop expression are invalid outside of the loop

@@ -1,8 +1,15 @@
 class foo { var a : int;  }
-var x : foo = new foo();
-var y : foo = new foo();
-var z : foo = x;
+
+var x : unmanaged foo = new unmanaged foo();
+var y : unmanaged foo = new unmanaged foo();
+var z : unmanaged foo = x;
+
 y.a = 1;
-x = y;
+x   = y;
+
 writeln(x.a);
 writeln(z.a);
+
+delete z;
+delete y;
+

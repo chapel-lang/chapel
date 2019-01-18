@@ -1,3 +1,0 @@
---run_shortLoops=true  --run_mediumLoops=false --run_longLoops=false --run_variantRawOmp=false --run_variantRawVectorizeOnly=false # LCALS-short
---run_shortLoops=false --run_mediumLoops=true  --run_longLoops=false --run_variantRawOmp=false --run_variantRawVectorizeOnly=false # LCALS-medium
---run_shortLoops=false --run_mediumLoops=false --run_longLoops=true  --run_variantRawOmp=false --run_variantRawVectorizeOnly=false # LCALS-long

@@ -1,0 +1,12 @@
+Base.init()
+Base.init(x)
+Base.init(x, y)
+
+Derived.init()
+Base.init()
+Base.init(x)
+Base.init(x, y)
+Derived.init(20)
+
+{}
+{}

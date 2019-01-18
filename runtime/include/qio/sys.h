@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,15 +20,12 @@
 #ifndef _SYS_H_
 #define _SYS_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "sys_basic.h"
 #include "qio_error.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -38,6 +35,13 @@ extern "C" {
 #include <netdb.h>
 #include <unistd.h>
 #include <stdio.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// This function just returns errno (needed for LLVM compiles)
+static inline int chpl_macro_int_errno(void) { return errno; }
 
 #ifndef LUSTRE_SUPER_MAGIC
 // Magic value to be found in the statfs man page
@@ -60,6 +64,24 @@ typedef struct sys_statfs_s {
   uint64_t    f_ffree;    /* free file nodes in fs */
   uint64_t    f_namelen;  /* maximum length of filenames */
 } sys_statfs_t;
+
+typedef struct sys_stat_s {
+  dev_t       st_dev;         /* Device ID of device containing file */
+  ino_t       st_ino;         /* File serial number. */
+  mode_t      st_mode;        /* Mode of file (see below). */
+  nlink_t     st_nlink;       /* Number of hard links to the file. */
+  uid_t       st_uid;         /* User ID of file. */
+  gid_t       st_gid;         /* Group ID of file.  */
+  dev_t       st_rdev;        /* Device ID (if file is character or block special). */
+  off_t       st_size;        /* File Size in bytes */
+  struct timespec    st_atim; /* Last data access timestamp.  */
+  struct timespec    st_mtim; /* Last data modification timestamp. */
+  struct timespec    st_ctim; /* Last file status change timestamp. */
+  // blksize_t   st_blksize;     /* A file system-specific preferred I/O block size for this object. */
+  // blkcnt_t    st_blocks;      /* Number of blocks allocated for this object. */
+} sys_stat_t;
+
+void stat_to_sys_stat(const char* path, sys_stat_t* out_buf, struct stat* in_buf);
 
 typedef int fd_t;
 
@@ -87,7 +109,7 @@ typedef struct addrinfo* sys_addrinfo_ptr_t;
 //  struct addrinfo addr_info;
 //} sys_addrinfo_t;
 
-/* Wrap system calls to return error seperately,
+/* Wrap system calls to return error separately,
  * to run them in a pthread, and to use a fixed-length sys_sockaddr
  * to simplify programming.
  *
@@ -143,7 +165,7 @@ err_t sys_open(const char* path, int flags, mode_t mode, fd_t* fd_out);
 err_t sys_close(fd_t fd);
 
 err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out);
-err_t sys_stat(const char* path, struct stat* buf);
+err_t sys_stat(const char* path, sys_stat_t* buf);
 err_t sys_fstat(fd_t fd, struct stat* buf);
 err_t sys_lstat(const char* path, struct stat* buf);
 err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf);

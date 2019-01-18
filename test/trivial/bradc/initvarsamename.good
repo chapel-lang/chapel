@@ -1,1 +1,2 @@
-initvarsamename.chpl:4: error: 'x' used before defined (first used here)
+initvarsamename.chpl:4: error: 'x' used before defined
+initvarsamename.chpl:4: note: defined here

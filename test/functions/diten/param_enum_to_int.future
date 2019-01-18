@@ -1,3 +1,0 @@
-unimplemented feature: compile time enum->int conversion
-
-A param enum->int conversion should be done at compile time.

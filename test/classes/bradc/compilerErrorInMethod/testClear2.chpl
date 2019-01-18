@@ -50,24 +50,29 @@ class Dense : AbsDense {
 }
 
 class Sparse : AbsSparse {
-  proc clear() {
+  override proc clear() {
     writeln("Clearing a sparse domain");
   }
 }
 
 class Assoc : AbsAssoc {
-  proc clear() {
+  override proc clear() {
     writeln("Clearing an associative domain");
   }
 }
 
 
-var d = new Wrap(_value = new Dense());
-var s = new Wrap(_value = new Sparse());
-var a = new Wrap(_value = new Assoc());
+var d = new Wrap(_value = new unmanaged Dense());
+var s = new Wrap(_value = new unmanaged Sparse());
+var a = new Wrap(_value = new unmanaged Assoc());
 
 if doDense {
   d = 1;
 }
+
 s = 1;
 a = 1;
+
+delete a._value;
+delete s._value;
+delete d._value;

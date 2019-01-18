@@ -1,0 +1,18 @@
+setting
+IN REF
+by ref
+IN REF
+ret by ref
+IN REF
+by const ref
+IN CONST REF
+ret by const ref
+IN CONST REF
+getting
+IN VALUE
+by const in
+IN VALUE
+by in
+IN VALUE
+ret by value
+IN VALUE

@@ -1,5 +1,4 @@
-CONFIG VARS:
-============
-  Thursday: night (default:  "Rain and snow.")
-  Possible: snow (default:  "accumulation")
-     ofOne: "inch."
+configVarDefaultValue config vars:
+ Thursday: string default: "Rain and snow."
+ Possible: string default: "accumulation"
+ ofOne: string default: "inch."

@@ -1,0 +1,10 @@
++ reduce:   36
+* reduce:   40320
+max reduce: 8
+min reduce: 1
+& reduce:   00001001
+| reduce:   00001111
+^ reduce:   10101010101010100
+user reduce: 36
+&& reduce:   false
+|| reduce:   true

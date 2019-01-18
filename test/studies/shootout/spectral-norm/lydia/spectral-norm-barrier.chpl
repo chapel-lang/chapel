@@ -1,6 +1,6 @@
 /*
  * The Computer Language Benchmarks Game
- * http://shootout.alioth.debian.org/
+ * http://benchmarksgame.alioth.debian.org
  *
  * Original C contributed by Sebastien Loisel
  * Conversion to Chapel by Albert Sidelnik
@@ -10,7 +10,7 @@
 config const n = 500;
 
 use barrierWF;
-var b: BarrierWF;
+var b: owned BarrierWF;
 
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
 inline proc eval_A(i,j : int) : real
@@ -63,7 +63,7 @@ proc main() {
   const chunk = n / numThreads;
 
   u = 1.0;
-  b = new BarrierWF(numThreads);
+  b = new owned BarrierWF(numThreads);
 
   coforall i in 0..#numThreads {
     const r_begin = i * chunk;

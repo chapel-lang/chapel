@@ -1,0 +1,2 @@
+complete-1.chpl:5: In initializer:
+complete-1.chpl:12: error: cannot update a const field, "y", in phase 2

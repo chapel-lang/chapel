@@ -1,1 +1,3 @@
-<command line setting of 'gingerbread'>: error: halt reached - illegal conversion of string "meatloaf" to ingredients
+uncaught IllegalArgumentError: bad cast from string 'meatloaf' to ingredients
+  <command line setting of 'gingerbread'>:0: thrown here
+  <command line setting of 'gingerbread'>:0: uncaught here

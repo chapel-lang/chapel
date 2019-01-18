@@ -1,7 +1,21 @@
-enums.doc
-   enum Color { Red, Yellow, Blue }
-      This is a color enum. 
+.. default-domain:: chpl
 
-   proc gimmeAColor(): Color
-      This function returns an enum 
+.. module:: enums.doc
+
+enums.doc
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use enums.doc;
+
+.. enum:: enum Color { Red, Yellow, Blue }
+
+   This is a color enum. 
+
+
+.. function:: proc gimmeAColor(): Color
+
+   This function returns an enum 
 

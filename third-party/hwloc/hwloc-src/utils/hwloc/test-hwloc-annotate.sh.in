@@ -2,7 +2,7 @@
 #-*-sh-*-
 
 #
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2016 Inria.  All rights reserved.
 # See COPYING in top-level directory.
 #
 
@@ -47,6 +47,7 @@ $annotate $file $file os:2-3 info myosdev byindex
 $annotate $file $file pci:4:2 info mypcidev byindex
 $annotate $file $file pci=0000:02:00.0 info mypcidev bybusid
 $annotate $file $file 'pci[8086:0046]:all' info mypcidev bymatch
+$annotate --cu $file $file L1iCache:0 none
 
 diff @HWLOC_DIFF_U@ $HWLOC_top_srcdir/utils/hwloc/test-hwloc-annotate.output "$file"
 rm -rf "$tmp"

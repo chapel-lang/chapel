@@ -1,0 +1,7 @@
+INFINITY okay.
+-INFINITY okay.
+NAN okay.
+INFINITY32 okay.
+-INFINITY32 okay.
+NAN32 okay.
+Finite test passes.

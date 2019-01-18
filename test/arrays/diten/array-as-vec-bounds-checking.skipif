@@ -1,0 +1,3 @@
+COMPOPTS <= --fast
+COMPOPTS <= --no-bounds-checks
+COMPOPTS <= --no-checks

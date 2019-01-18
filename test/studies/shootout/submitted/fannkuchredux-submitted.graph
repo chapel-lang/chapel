@@ -1,0 +1,5 @@
+perfkeys: real, real
+graphkeys: release, submitted
+files: fannkuch-redux-release.dat, fannkuch-redux-submitted.dat
+graphtitle: Submitted Fannkuch-Redux Shootout Benchmark (n=12)
+ylabel: Time (seconds)

@@ -3,8 +3,9 @@ writeln("D = ", D);
 
 class CD { const D; }
 
-var cd = new CD(D);
+var cd = new unmanaged CD(D);
 writeln("CD = ", cd);
+delete cd;
 
 ////////////////////////////
 
@@ -13,5 +14,6 @@ writeln("SD = ", SD);
 
 class CS { const SD; }
 
-var cs = new CS(SD);
+var cs = new unmanaged CS(SD);
 writeln("CSD = ", cs);
+delete cs;

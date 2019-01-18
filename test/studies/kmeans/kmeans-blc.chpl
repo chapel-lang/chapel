@@ -121,7 +121,7 @@ class kmeans: ReduceScanOp {
   // the combine function takes two kmeans classes and combines
   // them
   //
-  proc combine(other: kmeans) {
+  proc combine(other: borrowed kmeans) {
     error += other.error;
     clusterSize += other.clusterSize;
     offset += other.offset;
@@ -131,7 +131,13 @@ class kmeans: ReduceScanOp {
   // the generate function updates the centers and returns the error
   //
   proc generate() {
-    return (error, offset / clusterSize);
+    // this is a bug workaround
+    offset = offset / clusterSize;
+    return (error, offset);
+    // the original was
+    //return (error, offset / clusterSize);
+    // but that seems to return an iterator record and then causes
+    // a type mismatch compilation error on the arrays branch.
   }
 }
 

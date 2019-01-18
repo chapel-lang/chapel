@@ -15,7 +15,7 @@ var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType;
 class blockIndices {
   const ilo, ihi, jlo, jhi, klo, khi, llo, lhi : int;
   
-  proc blockIndices(ilo, ihi, jlo, jhi, klo, khi, llo, lhi) {
+  proc init(ilo, ihi, jlo, jhi, klo, khi, llo, lhi) {
     this.ilo = ilo;
     this.ihi = ihi;
     this.jlo = jlo;
@@ -23,12 +23,12 @@ class blockIndices {
     this.klo = klo;
     this.khi = khi;
     this.llo = llo;
-    this.lhi = lhi;	 
+    this.lhi = lhi;
   }
 }
 
 // config const nlocales = 5;
-var task : sync blockIndices;
+var task : sync unmanaged blockIndices;
  
 proc buildjk() {
   cobegin {
@@ -37,7 +37,7 @@ proc buildjk() {
       begin  
     */ 
         {	      	
-          var bI, copyofbI : blockIndices;
+          var bI, copyofbI : unmanaged blockIndices;
           bI = task;
           while (bI.ilo != 0) {
             copyofbI = bI;
@@ -46,11 +46,12 @@ proc buildjk() {
               bI = task;
             }
           }
+          delete bI;
       /*		
           task = bI;
-        //task = new blockIndices(0,0,0,0,0,0,0,0);
+        //task = new unmanaged blockIndices(0,0,0,0,0,0,0,0);
         //task.writeXF(bI);		
-        //task.writeXF(blockIndices(0,0,0,0,0,0,0,0));
+        //task.writeXF(unmanaged blockIndices(0,0,0,0,0,0,0,0));
         */
         }
     
@@ -60,12 +61,12 @@ proc buildjk() {
           forall kat in 1..iat {
             const lattop = if (kat==iat) then jat else kat;  
             forall lat in 1..lattop {
-              task = new blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
+              task = new unmanaged blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
             }
           }
         }
       }
-      task = new blockIndices(0,0,0,0,0,0,0,0);
+      task = new unmanaged blockIndices(0,0,0,0,0,0,0,0);
     }
   }
   
@@ -137,12 +138,14 @@ proc buildjk_atom4(bI) {
     }
   }
   
-  atomic jmat2(ijD) += jij;
-  atomic jmat2(klD) += jkl;
-  atomic kmat2(ikD) += kik;
-  atomic kmat2(ilD) += kil;
-  atomic kmat2(jkD) += kjk;
-  atomic kmat2(jlD) += kjl;
+  jmat2(ijD) += jij;
+  jmat2(klD) += jkl;
+  kmat2(ikD) += kik;
+  kmat2(ilD) += kil;
+  kmat2(jkD) += kjk;
+  kmat2(jlD) += kjl;
+
+  delete bI;
 }
 
 proc g(i,j,k,l) {

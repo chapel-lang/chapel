@@ -1,0 +1,12 @@
+setting
+IN REF
+by ref
+IN REF
+getting
+IN VALUE
+by const ref
+IN CONST REF
+by const in
+IN VALUE
+by in
+IN VALUE

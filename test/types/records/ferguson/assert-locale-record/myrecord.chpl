@@ -25,7 +25,7 @@ proc ref R.increment() {
 }
 
 
-proc R.~R() {
+proc R.deinit() {
   if debug then writeln("In record destructor");
   assert(this.home == this.locale);
 }
@@ -39,10 +39,6 @@ proc ref R.verify() {
   }
 }
 
-// We'd like this to be by ref, but doing so leads to an internal
-// compiler error.  See
-// $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
-pragma "donor fn"
 pragma "auto copy fn"
 proc chpl__autoCopy(arg: R) {
   assert(arg.home == arg.locale);

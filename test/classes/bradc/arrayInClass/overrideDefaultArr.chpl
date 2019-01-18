@@ -5,8 +5,8 @@ class C {
   var x = A;
 }
 
-var c = new C();
+var c = new owned C();
 writeln("c is: ", c);
 
-var c2 = new C(B);
+var c2 = new owned C(B);
 writeln("c2 is: ", c2);

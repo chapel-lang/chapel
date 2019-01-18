@@ -1,0 +1,2 @@
+inForall.chpl:4: In initializer:
+inForall.chpl:7: error: use of super.init() call in a forall loop body

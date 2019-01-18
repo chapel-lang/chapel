@@ -5,19 +5,21 @@ iter myiter() {
 }
 
 class Parent {
-  iter foo(k:int) {    
+  iter foo(k:int) {
     yield 2;
   }
 }
 
 class Child : Parent {
-  iter foo(k:int) {
+  override iter foo(k:int) {
     for l in myiter() {
       yield k+l+100;
     }
   }
 }
-var c:Parent = new Child();
+
+var c:borrowed Parent = new owned Child();
+
 for m in c.foo(10) {
   writeln(m);
 }

@@ -1,0 +1,2 @@
+passBadFnsToCChapel.chpl:18: error: unresolved call 'bar(chpl__fcf_type_void_void)'
+passBadFnsToCChapel.chpl:9: note: candidates are: bar(f: c_fn_ptr)

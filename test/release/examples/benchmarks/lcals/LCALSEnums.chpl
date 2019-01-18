@@ -64,8 +64,9 @@ module LCALSEnums {
     //
     // These variants define LCALS benchmark
     //
-    RAW,
+    RAW = 1,
     RAW_OMP,
+    RAW_SPMD,
     RAW_VECTOR_ONLY,
     FORALL_LAMBDA,
     FORALL_LAMBDA_OMP,
@@ -91,4 +92,9 @@ module LCALSEnums {
     NUM_WEIGHT_GROUPS
   }
 
+  enum OutputStyle {
+    MINIMAL,   // no timing/checksum output
+    REFERENCE, // output matching the reference code
+    PERF_TEST  // output formatted for perf testing
+  }
 }

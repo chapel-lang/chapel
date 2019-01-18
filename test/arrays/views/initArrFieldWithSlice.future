@@ -1,0 +1,11 @@
+bug: array slices should be permitted to initialize array fields
+
+This is a test that used to work when we implemented array views using
+closed-form/dsi* routines rather than the array view domain maps.  The
+problem is that the compiler-generated initializer is overly specific,
+requiring the actual to be a DefaultRectangular array.  Arguably, it
+should permit things that could be passed to a DefaultRectangular
+formal (or, more accurately, a formal that doesn't specify a domain
+map).
+
+This is related to issue #5289.

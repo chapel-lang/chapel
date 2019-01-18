@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/standard/IO.chpl:3058: error: Function '_write_one_internal' has been instantiated too many times
+note:   If this is intentional, try increasing the instantiation limit from 256

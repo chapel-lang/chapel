@@ -1,3 +1,0 @@
-#!/bin/sh
-../../../third-party/llvm/llvm/utils/lit/lit.py  test/ -v
-

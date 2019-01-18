@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,19 +22,24 @@
 #include "AstDump.h"
 #include "AstDumpToHtml.h"
 #include "AstDumpToNode.h"
-
+#include "driver.h"
 #include "files.h"
 #include "misc.h"
 #include "runpasses.h"
 
 #include <cstdarg>
 #include <cstring>
+#include <set>
+#include <string>
 #include <sys/stat.h>
 
 char             log_dir   [FILENAME_MAX + 1]           = "./log";
 char             log_module[FILENAME_MAX + 1]           =      "";
 
-bool             fLogIds                                =   false;
+bool             fLog                                   =    false;
+bool             fLogDir                                =    false;
+bool             fLogNode                               =    false;
+bool             fLogIds                                =    true;
 
 int              fdump_html                             =       0;
 char             fdump_html_chpl_home[FILENAME_MAX + 1] =      "";
@@ -45,37 +50,73 @@ bool             fdump_html_print_block_IDs             =   false;
 FILE*            deletedIdHandle                        =    NULL;
 char             deletedIdFilename[FILENAME_MAX + 1]    =      "";
 
-static Vec<char> valid_log_flags;
-static Vec<char> log_flags;
+// Keeping names of available passes
+static bool availableInitialized = false;
+static std::vector<std::string> logAvailableNames;
+static std::vector<char> logAvailableShortNames;
 
-void log_flags_arg(const ArgumentDescription* desc, const char* arg) {
-  if (valid_log_flags.count() == 0)
-    initLogFlags(valid_log_flags);
+// Which passes should be logged?
+static bool logAll = true;
+static std::set<std::string> logOnlyName;
 
-  // --log or --log= means "log every pass"
-  // Actually, passes whose log letter is NUL are skipped.
-  if (*arg == '\0') {   // empty
-    log_flags.set_union(valid_log_flags);   // Set all.
+void logMakePassAvailable(const char* name, char shortname)
+{
+  logAvailableNames.push_back(name);
+  logAvailableShortNames.push_back(shortname);
+}
 
-  } else {
+void logSelectPass(const char* arg) {
+  // The first time this is run, collect the available pass names.
+  if (availableInitialized == false) {
+    initPassesForLogging(); // calls logMakePassAvailable for each pass
+    availableInitialized = true;
+  }
 
-    // Parse the argument of --log=<arg> or -d<arg> for specific log flags.
-    // Each flag is a single letter; see log.h for the correspondence.
-    while (*arg) {
-      if (valid_log_flags.set_in(*arg))
-        log_flags.set_add(*arg);
-      else {
-        fprintf(stderr, "Unrecognized log flag: '%c'\n", *arg);
-        clean_exit(1);
-      }
+  // Make --log optional by setting it if --log-pass= is set
+  fLog = true;
 
-      arg++;
+  // Since we selected a pass, don't log everything
+  logAll = false;
+
+  // Check first for a match in the available pass names
+  for( size_t i = 0; i < logAvailableNames.size(); i++ ) {
+    if (logAvailableNames[i] == arg) {
+      logOnlyName.insert(logAvailableNames[i]);
+      return;
     }
   }
+
+  // If none found, check for a match in the short names.
+  if (strlen(arg) == 1 &&
+      arg[0] != LOG_NO_SHORT &&
+      arg[0] != LOG_NEVER) {
+    for( size_t i = 0; i < logAvailableShortNames.size(); i++ ) {
+      if (logAvailableShortNames[i] == arg[0]) {
+        logOnlyName.insert(logAvailableNames[i]);
+        return;
+      }
+    }
+  }
+
+  // Otherwise, we don't know what pass this is.
+  fprintf(stderr, "Unrecognized log pass name: \"%s\"\n", arg);
+  clean_exit(1);
 }
 
 void setupLogfiles() {
-  if (log_flags.count() > 0 || fdump_html || *deletedIdFilename) {
+  // Enable logging if --log-module is passed.
+  if (log_module[0] != '\0')
+    fLog = true;
+  // Enable logging if --log-pass is used
+  if (logOnlyName.size() > 0)
+    fLog = true;
+  // Enable logging if --log-dir is used
+  if (fLogDir == true)
+    fLog = true;
+
+  if (fLog || fdump_html || *deletedIdFilename) {
+    // Remove the log directory to make sure there is no stale data
+    deleteDir(log_dir);
     ensureDirExists(log_dir, "ensuring directory for log files exists");
   }
 
@@ -105,16 +146,20 @@ void teardownLogfiles() {
   }
 }
 
-void log_writeLog(const char* passName, int passNum, char logTag) {
+void logWriteLog(const char* passName, int passNum, char logTag) {
   if (fdump_html) {
     AstDumpToHtml::view(passName);
   }
 
-  if (log_flags.set_in(logTag) != 0) {
-    if (fUseIPE == false)
-      AstDump::view(passName, passNum);
-    else
-      AstDumpToNode::view(passName, passNum);
+  if (fLog) {
+    if ((logAll == true && logTag != LOG_NEVER) ||
+        logOnlyName.count(passName) > 0) {
+      bool logNode = (fLogNode);
+      if (logNode)
+        AstDumpToNode::view(passName, passNum);
+      else
+        AstDump::view(passName, passNum);
+    }
   }
 }
 

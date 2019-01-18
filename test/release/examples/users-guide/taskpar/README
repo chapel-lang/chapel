@@ -1,0 +1,4 @@
+Please note that most of the tests in this directory have
+nondeterministic output.  For this reason, our test system sorts the
+output of the tests (via the .prediff scripts) before comparing
+against the .good files).

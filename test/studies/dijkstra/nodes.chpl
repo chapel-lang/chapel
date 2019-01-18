@@ -4,11 +4,11 @@ module Nodes {
 
   /*If isDirected = 1, then it is a directed graph, else it is not */
   proc InitializeNodes(nEdges: int, nNodes: int, Edges, isDirected: int) {
-    
+
     // Count number of neighbors
     var D1 = {0..(nNodes-1)};
 
-    var Nodes: [D1] Node;
+    var Nodes: [D1] unmanaged Node;
     var counts: [D1] int;
 
     // Compute Degree (Outdegree for directed)
@@ -25,7 +25,7 @@ module Nodes {
 
     // Initialize node list
     for i in D1 {
-      Nodes[i] = new Node(id = i, NeighborD = {0..(counts[i] - 1)}, EdgeIndexD = {0..(counts[i] - 1)}, nodeType = 2);
+      Nodes[i] = new unmanaged Node(id = i, NeighborD = {0..(counts[i] - 1)}, EdgeIndexD = {0..(counts[i] - 1)}, nodeType = 2);
       Nodes[i].vb$.writeEF(0.0);
     }
 

@@ -18,20 +18,20 @@ assert(__primitive("field num to name", R, 3) == "x");
 assert(__primitive("field num to name", R, 4) == "y");
 assert(__primitive("field num to name", R, 5) == "z");
 
-assert(isParam(__primitive("field value by num", m, 1)));
-assert(isType(__primitive("field value by num", m, 2)));
-assert(__primitive("field value by num", m, 3) == 3);
-assert(__primitive("field value by num", m, 4) == "hi");
-assert(realEqual(__primitive("field value by num", m, 5), 17.23));
+assert(isParam(__primitive("field by num", m, 1)));
+assert(isType(__primitive("field by num", m, 2)));
+assert(__primitive("field by num", m, 3) == 3);
+assert(__primitive("field by num", m, 4) == "hi");
+assert(realEqual(__primitive("field by num", m, 5), 17.23));
 
 for param i in 1..(__primitive("num fields", R)) {
-  if isType(__primitive("field value by num", m, i)) {
+  if isType(__primitive("field by num", m, i)) {
     writeln("type ", __primitive("field num to name", R, i));
-  } else if isParam(__primitive("field value by num", m, i)) {
+  } else if isParam(__primitive("field by num", m, i)) {
     writeln("param ", __primitive("field num to name", R, i));
   } else {
     writeln(__primitive("field num to name", R, i));
-    writeln(__primitive("field value by num", m, i));
+    writeln(__primitive("field by num", m, i));
   }
 }
 

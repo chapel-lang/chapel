@@ -1,4 +1,4 @@
 -smyType=rPair
--smyType=cPair
--smyIdxType=int(16) -smyType=cPair
+-smyType='unmanaged cPair'
+-smyIdxType=int(16) -smyType='unmanaged cPair'
 -smyType=rPair -smyIdxType=real

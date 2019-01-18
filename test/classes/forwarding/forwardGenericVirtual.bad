@@ -1,0 +1,4 @@
+forwardGenericVirtual.chpl:22: In function 'action':
+forwardGenericVirtual.chpl:24: warning: Rank mismatch between Rect(3) and Rect(1)
+forwardGenericVirtual.chpl:26: error: unresolved call 'Rect(1).inner(Rect(3))'
+forwardGenericVirtual.chpl:18: note: candidates are: Rect.inner(x)

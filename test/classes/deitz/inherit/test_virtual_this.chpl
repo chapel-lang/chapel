@@ -6,14 +6,14 @@ class C {
 }
 
 class D : C {
-  proc this() {
+  override proc this() {
     writeln("D: x");
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 c();
 delete c;
-c = new D();
+c = new unmanaged D();
 c();
 delete c;

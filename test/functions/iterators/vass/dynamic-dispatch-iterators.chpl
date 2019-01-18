@@ -5,15 +5,17 @@ class Superclass {
 }
 
 class Subclass:Superclass {
-  proc parens() { writeln("parens() in Subclass"); }
-  iter itest() { yield "Subclass"; }
+  override proc parens() { writeln("parens() in Subclass"); }
+  override iter itest() { yield "Subclass"; }
 }
 
-var c: Superclass;
-c = if numLocales > 1 then new Superclass() else new Subclass();
+var c: unmanaged Superclass;
+c = if numLocales > 1 then new unmanaged Superclass() else new unmanaged Subclass();
 
 // check whether dynamic dispatch within a paren-less function works
 c.noparns;
 
 // check whether dynamic dispatch for iterators works
 for n in c.itest() do writeln(n);
+
+delete c;

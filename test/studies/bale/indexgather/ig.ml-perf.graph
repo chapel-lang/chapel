@@ -1,0 +1,5 @@
+perfkeys: MB/s per node:, MB/s per node:
+files: bale-ig.dat, bale-ig-buff.dat
+graphkeys: MB/s per node (naive), MB/s per node (buffered)
+graphtitle: Bale: Indexgather Perf (MB/s per node)
+ylabel: Performance (MB/s per node)

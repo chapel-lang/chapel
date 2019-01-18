@@ -2,11 +2,12 @@ class C {
   type ct;
   var x: ct;
 
-  proc C(type ct, y: ct) {
+  proc init(type ctVal, y: ctVal) {
+    ct = ctVal;
     x = y;
   }
 }
 
-var c = new C(int, y=2);
+var c = new unmanaged C(int, y=2);
 writeln(c);
 delete c;

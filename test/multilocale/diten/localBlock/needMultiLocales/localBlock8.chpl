@@ -5,13 +5,13 @@ class D: C {
   var b: int;
 }
 
-var c: C;
-var c2: C;
+var c: unmanaged C;
+var c2: unmanaged C;
 
-c = new D(1, 2);
+c = new unmanaged D(1, 2);
 
 on Locales(1) {
-  c2 = new D(1, 2);
+  c2 = new unmanaged D(1, 2);
 }
 
 writeln("First local block");

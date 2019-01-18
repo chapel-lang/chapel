@@ -3,7 +3,7 @@
  * - retrieving the location where the current thread executes
  * - combining/modifying cpusets using the bitmap API
  *
- * Copyright © 2014 Inria.  All rights reserved.
+ * Copyright © 2014-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -65,7 +65,7 @@ int main(void)
      */
     hwloc_bitmap_andnot(set, cset_available, set);
     hwloc_bitmap_asprintf(&buffer, set);
-    printf("process cannot use %d process units (%s) among %u in the system\n",
+    printf("process cannot use %d process units (%s) among %d in the system\n",
 	   hwloc_bitmap_weight(set), buffer, hwloc_bitmap_weight(cset_available));
     free(buffer);
     /* restore set where it was before the &~ operation above */

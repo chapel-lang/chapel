@@ -16,12 +16,12 @@ class scanCountsInherit : counts {
   // for user code.
   var _curValue: eltType = min(eltType);
 
-  proc accumulate(value: eltType) {
+  override proc accumulate(value: eltType) {
     _curValue = value;
     super.accumulate(value);
   }
 
-  proc generate() {
+  override proc generate() {
     return v[_curValue];
   }
 }

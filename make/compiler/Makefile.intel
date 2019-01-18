@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,13 @@
 CXX = icpc
 CC = icc
 
+ifeq (, $(MPI_CC))
+MPI_CC = mpiicc
+endif
+ifeq (, $(MPI_CXX))
+MPI_CXX = mpiicpc
+endif
+
 RANLIB = ranlib
 
 
@@ -39,6 +46,18 @@ PROFILE_LFLAGS = -pg
 
 
 #
+# If the compiler's default C version is less than C99, force C99 mode.
+#
+# If the default C version is at least C11, force the C++ version to
+# be at least C++11 to match.
+#
+DEF_C_VER := $(shell echo __STDC_VERSION__ | $(CC) -E -x c - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__STDC_VERSION__/0/')
+DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/')
+C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
+CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+
+#
 # Flags for compiler, runtime, and generated code
 #
 # Warnings squashed for non-Chapel code (bison/flex output):
@@ -49,12 +68,12 @@ PROFILE_LFLAGS = -pg
 # Warnings squashed for generated code:
 #  592 : squelch use-before-def problems -- we'll rely on valgrind to catch them
 
-COMP_CFLAGS = $(CFLAGS)
-COMP_CFLAGS_NONCHPL = -wr111,193,1418,1419,2215,2259,170
+COMP_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
+COMP_CXXFLAGS_NONCHPL = -wr111,193,1418,1419,2215,2259,170 -Wno-error
 
-RUNTIME_CFLAGS = -std=gnu99 $(CFLAGS) -wr181,188
-RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
-GEN_CFLAGS = -std=gnu99 -wr592
+RUNTIME_CFLAGS = $(C_STD) $(CPPFLAGS) $(CFLAGS) -wr181,188
+RUNTIME_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
+GEN_CFLAGS = $(C_STD) -wr592
 # NOTE: These are only supported for Linux
 GEN_STATIC_FLAG = -static-intel -static-libgcc -static
 GEN_DYNAMIC_FLAG = -Bdynamic
@@ -63,15 +82,10 @@ LIB_DYNAMIC_FLAG = -shared
 SHARED_LIB_CFLAGS = -fpic
 
 # Set the target architecture for optimization
-ifeq ($(CHPL_MAKE_TARGET_ARCH), knc)
-SPECIALIZE_CFLAGS = -mmic
-GEN_LFLAGS += -mmic
-RUNTIME_CFLAGS += -mmic
-RUNTIME_LFLAGS += -mmic
-else
-ifneq ($(CHPL_MAKE_TARGET_ARCH), none)
-ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
-SPECIALIZE_CFLAGS = -march=$(CHPL_MAKE_TARGET_ARCH)
+ifneq ($(CHPL_MAKE_TARGET_CPU), none)
+ifneq ($(CHPL_MAKE_TARGET_CPU), unknown)
+ifneq ($(CHPL_MAKE_TARGET_CPU_FLAG), none)
+SPECIALIZE_CFLAGS = -m$(CHPL_MAKE_TARGET_CPU_FLAG)=$(CHPL_MAKE_TARGET_BACKEND_CPU)
 endif
 endif
 endif
@@ -97,6 +111,7 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 #
 # Warnings squashed for compiler/runtime C/C++ code
 #
+#  279 : controlling expression is constant
 #  304 : requires inherited classes to specify access control (e.g. public)
 #  593 : variable was set but never used
 #  810 : numeric conversion may lose significant bits (e.g., long double->float)
@@ -112,24 +127,22 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 #  174 : warns about expressions that have no effect
 #  177 : warns about unused variable declarations
 
-# 10121 : something to do with setenv?
-
-WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr304,593,810,869,981,1572,1599
+WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr279,304,593,810,869,981,1572,1599
 WARN_CFLAGS = $(WARN_CXXFLAGS)
-WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr111,174,177
+WARN_GEN_CFLAGS = $(WARN_CFLAGS)
+SQUASH_WARN_GEN_CFLAGS = -wr111,174,177
 
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
 #
-WARN_GEN_CFLAGS += -Wno-pointer-sign
+SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
 
 #
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
-COMP_CFLAGS += $(WARN_CXXFLAGS)
+COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
-RUNTIME_GEN_CFLAGS += -Wno-unused
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 
 #
@@ -140,6 +153,7 @@ RUNTIME_GEN_CFLAGS += -Wno-unused
 #
 CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes
 endif
+
 ifdef CHPL_COMM_DEBUG
-CHPL_GASNET_MORE_CFLAGS += -O0 -wr10120
+CHPL_GASNET_MORE_CFLAGS += -O0 -UNDEBUG -wr10120
 endif

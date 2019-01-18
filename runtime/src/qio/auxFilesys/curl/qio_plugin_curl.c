@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -163,9 +163,9 @@ size_t read_data(void *ptr, size_t size, size_t nmemb, void *userp)
   return ret->total_read;
 }
 
-// Write from curl to a string. Note that userdata is a str_t, since nuch as we have
-// to keep track of how much we read in  buf_writer, we have to keep track of how
-// long our string is so that we cann lengthen it via realloc as we need to.
+// Write from curl to a string. Note that userdata is a str_t, since much as we have
+// to keep track of how much we read in buf_writer, we have to keep track of how
+// long our string is so that we can lengthen it via realloc as we need to.
 static
 size_t chpl_curl_write_string(void *contents, size_t size, size_t nmemb, void *userp)
 {
@@ -440,7 +440,7 @@ qioerr curl_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs
       if (curl_local->length != -1)  // we have the length
         curl_local->current_offset= curl_local->length + offset;
       else
-        QIO_RETURN_CONSTANT_ERROR(ESPIPE, "Unable to SEEK_END for path with unkown length");
+        QIO_RETURN_CONSTANT_ERROR(ESPIPE, "Unable to SEEK_END for path with unknown length");
       break;
     case SEEK_SET:
       curl_local->current_offset = offset;

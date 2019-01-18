@@ -1,0 +1,5 @@
+in simpleThrow, r=(x = 1)
+destroying R(x=1)
+uncaught Error: 
+  throws-destroys.chpl:36: thrown here
+  throws-destroys.chpl:9: uncaught here

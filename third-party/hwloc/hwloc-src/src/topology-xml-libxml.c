@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -13,6 +13,7 @@
 /* private headers allowed because this plugin is built within hwloc */
 #include <private/xml.h>
 #include <private/debug.h>
+#include <private/misc.h>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -67,12 +68,14 @@ hwloc__libxml_import_next_attr(hwloc__xml_import_state_t state, char **namep, ch
 	  }
 	} else {
 	  if (hwloc__xml_verbose())
-	    fprintf(stderr, "ignoring unexpected xml attr node type %u\n", subnode->type);
+	    fprintf(stderr, "%s: ignoring unexpected xml attr node type %u\n",
+		    state->global->msgprefix, subnode->type);
 	}
       }
     } else {
       if (hwloc__xml_verbose())
-	fprintf(stderr, "ignoring unexpected xml attr type %u\n", attr->type);
+	fprintf(stderr, "%s: ignoring unexpected xml attr type %u\n",
+		state->global->msgprefix, attr->type);
     }
   return -1;
 }
@@ -100,10 +103,12 @@ hwloc__libxml_import_find_child(hwloc__xml_import_state_t state,
     } else if (child->type == XML_TEXT_NODE) {
       if (child->content && child->content[0] != '\0' && child->content[0] != '\n')
 	if (hwloc__xml_verbose())
-	  fprintf(stderr, "ignoring object text content %s\n", (const char*) child->content);
+	  fprintf(stderr, "%s: ignoring object text content %s\n",
+		  state->global->msgprefix, (const char*) child->content);
     } else if (child->type != XML_COMMENT_NODE) {
       if (hwloc__xml_verbose())
-	fprintf(stderr, "ignoring unexpected xml node type %u\n", child->type);
+	fprintf(stderr, "%s: ignoring unexpected xml node type %u\n",
+		state->global->msgprefix, child->type);
     }
 
   return 0;
@@ -130,10 +135,12 @@ hwloc__libxml_import_get_content(hwloc__xml_import_state_t state,
   size_t length;
 
   child = lstate->node->children;
-  if (!child)
+  if (!child || child->type != XML_TEXT_NODE) {
+    if (expected_length)
+      return -1;
+    *beginp = (char *) "";
     return 0;
-  if (child->type != XML_TEXT_NODE)
-    return 0;
+  }
 
   length = strlen((char *) child->content);
   if (length != expected_length)
@@ -155,17 +162,19 @@ hwloc_libxml_look_init(struct hwloc_xml_backend_data_s *bdata,
   hwloc__libxml_import_state_data_t lstate = (void*) state->data;
   xmlNode* root_node;
   xmlDtd *dtd;
+  xmlChar *version;
 
-  assert(sizeof(*lstate) <= sizeof(state->data));
+  HWLOC_BUILD_ASSERT(sizeof(*lstate) <= sizeof(state->data));
 
   dtd = xmlGetIntSubset((xmlDoc*) bdata->data);
   if (!dtd) {
     if (hwloc__xml_verbose())
-      fprintf(stderr, "Loading XML topology without DTD\n");
+      fprintf(stderr, "%s: Loading XML topology without DTD\n",
+	      state->global->msgprefix);
   } else if (strcmp((char *) dtd->SystemID, "hwloc.dtd")) {
     if (hwloc__xml_verbose())
-      fprintf(stderr, "Loading XML topology with wrong DTD SystemID (%s instead of %s)\n",
-	      (char *) dtd->SystemID, "hwloc.dtd");
+      fprintf(stderr, "%s: Loading XML topology with wrong DTD SystemID (%s instead of %s)\n",
+	      state->global->msgprefix, (char *) dtd->SystemID, "hwloc.dtd");
   }
 
   root_node = xmlDocGetRootElement((xmlDoc*) bdata->data);
@@ -173,7 +182,17 @@ hwloc_libxml_look_init(struct hwloc_xml_backend_data_s *bdata,
   if (strcmp((const char *) root_node->name, "topology") && strcmp((const char *) root_node->name, "root")) {
     /* root node should be in "topology" class (or "root" if importing from < 1.0) */
     if (hwloc__xml_verbose())
-      fprintf(stderr, "ignoring object of class `%s' not at the top the xml hierarchy\n", (const char *) root_node->name);
+      fprintf(stderr, "%s: ignoring object of class `%s' not at the top the xml hierarchy\n",
+	      state->global->msgprefix, (const char *) root_node->name);
+    goto failed;
+  }
+
+  version = xmlGetProp(root_node, (xmlChar*) "version");
+  if (version) {
+    if (hwloc__xml_verbose())
+      fprintf(stderr, "%s: hwloc v1.x cannot import topology version >= 2.\n",
+	      state->global->msgprefix);
+    xmlFree(version);
     goto failed;
   }
 
@@ -203,7 +222,7 @@ hwloc_libxml_import_diff(struct hwloc__xml_import_state_s *state, const char *xm
   xmlDtd *dtd;
   int ret;
 
-  assert(sizeof(*lstate) <= sizeof(state->data));
+  HWLOC_BUILD_ASSERT(sizeof(*lstate) <= sizeof(state->data));
 
   LIBXML_TEST_VERSION;
   hwloc_libxml2_disable_stderrwarnings();
@@ -374,7 +393,7 @@ hwloc__libxml2_prepare_export(hwloc_topology_t topology)
   xmlDocPtr doc = NULL;       /* document pointer */
   xmlNodePtr root_node = NULL; /* root pointer */
 
-  assert(sizeof(*data) <= sizeof(state.data));
+  HWLOC_BUILD_ASSERT(sizeof(*data) <= sizeof(state.data));
 
   LIBXML_TEST_VERSION;
   hwloc_libxml2_disable_stderrwarnings();
@@ -439,7 +458,7 @@ hwloc__libxml2_prepare_export_diff(hwloc_topology_diff_t diff, const char *refna
   xmlDocPtr doc = NULL;       /* document pointer */
   xmlNodePtr root_node = NULL; /* root pointer */
 
-  assert(sizeof(*data) <= sizeof(state.data));
+  HWLOC_BUILD_ASSERT(sizeof(*data) <= sizeof(state.data));
 
   LIBXML_TEST_VERSION;
   hwloc_libxml2_disable_stderrwarnings();

@@ -1,0 +1,1 @@
+array-delete.chpl:3: error: 'delete' is not allowed on non-class type int(64)

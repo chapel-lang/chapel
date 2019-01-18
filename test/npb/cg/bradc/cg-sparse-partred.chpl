@@ -2,21 +2,22 @@
 //   618.233 with default arguments, linear search for sparse domain this()
 //    62.169 with --cflags=-O3, linear search
 //    25.4556 with --cflags=-O3, binary search
-use CGMakeA;
+use LayoutCS, CGMakeA, Time;
+use CSimpl; // user-space partial reductions
 
 type elemType = real(64);
 
 enum classVals {S, W, A, B, C, D};
 
 
-const Class: domain(classVals);
-const probSizes:   [Class] int = ( 1400, 7000, 14000, 75000, 150000, 150000 ),
-      nonZeroes:   [Class] int = ( 7, 8, 11, 13, 15, 21 ),
-      shifts:      [Class] int = ( 10, 12, 20, 60, 110, 500 ),
-      numIters:    [Class] int = ( 15, 15, 15, 75, 75, 100 ),
-      verifyZetas: [Class] elemType = ( 8.5971775078648, 10.362595087124,
+const Class = {classVals.S..classVals.D};
+const probSizes:   [Class] int = [ 1400, 7000, 14000, 75000, 150000, 150000 ],
+      nonZeroes:   [Class] int = [ 7, 8, 11, 13, 15, 21 ],
+      shifts:      [Class] int = [ 10, 12, 20, 60, 110, 500 ],
+      numIters:    [Class] int = [ 15, 15, 15, 75, 75, 100 ],
+      verifyZetas: [Class] elemType = [ 8.5971775078648, 10.362595087124,
                                         17.130235054029,  22.712745482631,
-                                        28.973605592845,  52.5145321058 );
+                                        28.973605592845,  52.5145321058 ];
 
 config const probClass = classVals.S;
 
@@ -35,7 +36,7 @@ config const numTrials = 1,
 
 proc main() {
   const DenseSpace = {1..n, 1..n};
-  const MatrixSpace: sparse subdomain(DenseSpace) // dist(CSR);
+  const MatrixSpace: sparse subdomain(DenseSpace) dmapped(new dmap(new CS()))
                    = genAIndsSorted(elemType, n, nonzer, shift);
   var A: [MatrixSpace] elemType;
 
@@ -43,7 +44,7 @@ proc main() {
     A(ind) += v;
   }
 
-  const VectorSpace = {1..n};
+  const VectorSpace = {1..1,1..n};  // a dense row
   var X: [VectorSpace] elemType,
       zeta = 0.0;
 
@@ -88,19 +89,20 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
   const cgitmax = 25;
 
   var Z: [VectDom] elemType = 0.0,
+      Q: [VectDom] elemType = 0.0,
       R = X,
       P = R;
   var rho = + reduce R**2;
+
+  var W: [1..n,1..1] elemType;  // helper dense column
  
   for cgit in 1..cgitmax {
-    var Tmp: [MatDom] elemType = [(i,j) in MatDom] (A(i,j) * P(j));
-    const Q = partialReduce(_sum(Tmp.eltType), (.., ..), Tmp);
     // WANT (a partial reduction):
     //    const Q = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * P(j));
-    // INSTEAD OF:
-    //    const Q: [VectDom] elemType;
-    //    [i in MatDom.dim(1)] Q(i) = + reduce [j in MatDom.dimIter(2,i)] (A(i,j) * P(j));
     //
+    inline proc ForallExpr1.this((i,j)) return A(i,j) * P(1,j);
+    plusPRinto(W, MatDom, new ForallExpr1());
+    transpose(Q, W);
 
     const alpha = rho / + reduce (P*Q);
     Z += alpha*P;
@@ -111,13 +113,28 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
     const beta = rho / rho0;
     P = R + beta*P;
   }
+
   // WANT (a partial reduction):
   //      R = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * Z(j));
-  // INSTEAD OF:
-  [i in MatDom.dim(1)] R(i) = + reduce [j in MatDom.dimIter(2,i)] (A(i,j) * Z(j));
   //
+  inline proc ForallExpr2.this((i,j)) return A(i,j) * Z(1,j);
+  plusPRinto(W, MatDom, new ForallExpr2());
+  transpose(R, W);
 
   const rnorm = sqrt(+ reduce ((X-R)**2));
 
   return (Z, rnorm);
+}
+
+// This is a workaround for the current limitations, see #9773.
+// We may want to define the record type in the nested scope -
+// where its 'this' method is currently defined - and not have to
+// provide the 'init' method.
+record ForallExpr1 { proc init(){} }
+record ForallExpr2 { proc init(){} }
+
+proc transpose(DestRow, SrcCol) {
+  // a shared-memory version for now
+  forall i in 1..n do
+    DestRow(1,i) = SrcCol(i,1);
 }

@@ -11,7 +11,7 @@ class bar {
   }
 }
 
-var b = new bar();
+var b = new borrowed bar();
 
 foo();
 b.foo();

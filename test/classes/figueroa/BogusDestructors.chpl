@@ -1,15 +1,10 @@
+// See also: test/classes/deinitializers/deinitAndDestruct
+
 class C {
-  proc ~C () {writeln("inside ~C");}
+  proc deinit () {writeln("inside ~C");}
 }
 
-proc C.~C () {writeln("inside C.~C");}
+proc C.deinit () {writeln("inside C.~C");}
 
-record R {
-  proc ~R () {writeln("inside ~R");}
-}
-
-var c: C;
-var r: R;
-
-delete c;
-delete r;
+var c: unmanaged C;
+delete c; // not intended to be executed

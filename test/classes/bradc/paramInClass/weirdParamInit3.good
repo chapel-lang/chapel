@@ -1,1 +1,2 @@
-weirdParamInit3.chpl:6: error: invalid generic type specification on class field
+c is: {}
+d is: {c = {}}

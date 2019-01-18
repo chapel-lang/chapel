@@ -1,1 +1,0 @@
-overSelf.chpl:6: error: halt reached - Cannot move a directory 'foo' into itself 'foo'.

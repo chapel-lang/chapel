@@ -1,0 +1,1 @@
+not-serializable.chpl:20: error: Type "Foo" is not serializable by ZMQ

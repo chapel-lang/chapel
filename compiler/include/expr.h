@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define _EXPR_H_
 
 #include "baseAST.h"
+#include "driver.h"
 
 #include "primitive.h"
 #include "symbol.h"
@@ -36,16 +37,17 @@ public:
   virtual        ~Expr();
 
   // Interface for BaseAST
-  virtual bool    inTree();
+          bool    inTree();
   virtual bool    isStmt()                                           const;
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual void    verify();
+
+  void verify(AstTag expectedTag); // ensure tag is as expected, then verify()
+  void verifyParent(const Expr* child); // verify proper child->parentExpr
 
   // New interface
   virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
-
-  virtual Expr*   getFirstChild()                                      = 0;
 
   virtual Expr*   getFirstExpr()                                       = 0;
   virtual Expr*   getNextExpr(Expr* expr);
@@ -53,6 +55,11 @@ public:
   virtual bool    isNoInitExpr()                                     const;
 
   virtual void    prettyPrint(std::ostream* o);
+
+
+  bool            isRef();
+  bool            isWideRef();
+  bool            isRefOrWideRef();
 
   /* Returns true if the given expression is contained by this one. */
   bool            contains(const Expr* expr)                         const;
@@ -62,6 +69,9 @@ public:
   void            insertBefore(Expr* new_ast);
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);
+
+  void            insertBefore(AList exprs);
+  void            insertAfter(AList exprs);
 
   void            insertBefore(const char* format, ...);
   void            insertAfter(const char* format, ...);
@@ -99,12 +109,10 @@ public:
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
 
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual void    prettyPrint(std::ostream* o);
 
   virtual GenRet  codegen();
-
-  virtual Expr*   getFirstChild();
 
   virtual Expr*   getFirstExpr();
 
@@ -117,8 +125,16 @@ public:
 
 
 class SymExpr : public Expr {
- public:
+ private:
   Symbol* var;
+
+ public:
+  // List entries to support enumerating SymExprs in a Symbol
+  // These are public because:
+  //  * they are managed in Symbol (but could friend class Symbol)
+  //  * they are used in for_SymbolSymExprs (but could create a real iterator)
+  SymExpr* symbolSymExprsPrev;
+  SymExpr* symbolSymExprsNext;
 
   SymExpr(Symbol* init_var);
 
@@ -128,14 +144,18 @@ class SymExpr : public Expr {
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
 
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual bool    isNoInitExpr() const;
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
 
-  virtual Expr*   getFirstChild();
-
   virtual Expr*   getFirstExpr();
+
+  Symbol* symbol() {
+    return var;
+  }
+
+  void setSymbol(Symbol* s);
 };
 
 
@@ -150,120 +170,77 @@ class UnresolvedSymExpr : public Expr {
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream *o);
 
-  virtual Expr*   getFirstChild();
-
   virtual Expr*   getFirstExpr();
 };
 
 
+#include "CallExpr.h"
 
-// Note -- isCallExpr() retuns true for CallExpr and also
-// ContextCallExpr. Therefore, it is important to use toCallExpr()
-// instead of casting to CallExpr* directly.
-class CallExpr : public Expr {
- public:
-  Expr* baseExpr;         // function expression
-  AList argList;          // function actuals
-  PrimitiveOp* primitive; // primitive expression (baseExpr == NULL)
 
-  bool partialTag;
-  bool methodTag; ///< Set to true if the call is a method call.
-  // It is used in gatherCandidates to filter out method field extraction
-  // (partials).
-  // TODO: Maybe use a new primitive to represent partials, and get rid of this tag.
-  bool square; // true if call made with square brackets
-
-  CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
-  CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
-  CallExpr(PrimitiveTag prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
-  CallExpr(const char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
-  ~CallExpr();
-
-  virtual void    verify();
-
-  DECLARE_COPY(CallExpr);
-
-  virtual void    accept(AstVisitor* visitor);
-
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-
-  virtual GenRet  codegen();
-  virtual void    prettyPrint(std::ostream* o);
-  virtual Type*   typeInfo();
-
-  virtual Expr*   getFirstChild();
-
-  virtual Expr*   getFirstExpr();
-  virtual Expr*   getNextExpr(Expr* expr);
-
-  void            insertAtHead(BaseAST* ast);
-  void            insertAtTail(BaseAST* ast);
-
-  // True if the callExpr has been emptied (aka dead)
-  bool            isEmpty()                                              const;
-
-  FnSymbol*       isResolved()                                           const;
-  FnSymbol*       resolvedFunction()                                     const;
-
-  FnSymbol*       theFnSymbol()                                          const;
-
-  bool            isNamed(const char*);
-
-  int             numActuals()                                           const;
-  Expr*           get(int index)                                         const;
-  FnSymbol*       findFnSymbol();
-
-  bool            isPrimitive()                                          const;
-  bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
-  bool            isPrimitive(const char*  primitiveName)                const;
-};
-
-// For storing several call expressions, where
-// choosing between them depends on context
-// (and that choice might need to be done later in resolution).
-// These should only exist between resolution and cullOverReferences.
-// A ContextCall has a designated call.
-// The designated call will be returned if toCallExpr() is called
-// on the context call.
-// typeInfo on the context call will return the type info for
-// the designated call.
-// isCallExpr() will return true for a ContextCallExpr.
+//
+// A ContextCallExpr
+//
+// There are situations in which function resolution is unable to make a
+// final selection for the function to be used for a particular call
+// because of incomplete information about "ref-ness".
+//
+// When this occurs the CallExpr is replaced with a ContextCallExpr that
+// contains either 2 or 3 CallExprs. These are stored in a consistent
+// order in an AList :-
+//
+//     the best "value"     function
+//     the best "const-ref" function
+//     the best "ref"       function
+//
+// and flags are used to indicate which functions are present.  The final
+// CallExpr is selected in cullReferences
+//
+// A ContextCall has a designated call.  The designated call will be returned
+// if toCallExpr() is called on the context call.
+//
+// typeInfo/qualType on the context call will return the type info
+// for the designated call.
+//
+// isCallExpr() will return true for a ContextCallExpr
+//
 class ContextCallExpr : public Expr {
- public:
-  // The options list always contains two CallExprs.
-  // The first is the value/const ref return intent
-  // and the second is the ref return intent version of a call.
-  // Storing the ref call after the value call allows a
-  // postorder traversal to skip the value call.
-  // The order is important also - the first is always the value.
-  AList options;
-
-  ContextCallExpr();
+public:
+                         ContextCallExpr();
 
   DECLARE_COPY(ContextCallExpr);
 
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void    verify();
-  virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
-  virtual GenRet  codegen();
-  virtual void    prettyPrint(std::ostream *o);
+  virtual void           replaceChild(Expr* oldAst, Expr* newAst);
 
-  virtual Expr*   getFirstChild();
+  virtual void           verify();
+  virtual void           accept(AstVisitor* visitor);
+  virtual QualifiedType  qualType();
+  virtual GenRet         codegen();
+  virtual void           prettyPrint(std::ostream* o);
 
-  virtual Expr*   getFirstExpr();
+  virtual Expr*          getFirstExpr();
 
-  void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
-  CallExpr*       getRefCall();
-  CallExpr*       getRValueCall();
+  void                   setRefValueConstRefOptions(CallExpr* refCall,
+                                                    CallExpr* valueCall,
+                                                    CallExpr* constRefCall);
+
+  void                   getCalls(CallExpr*& refCall,
+                                  CallExpr*& valueCall,
+                                  CallExpr*& constRefCall)               const;
+
+  CallExpr*              getValueCall()                                  const;
+  CallExpr*              getConstRefCall()                               const;
+  CallExpr*              getRefCall()                                    const;
+
+  AList                  options;
+
+private:
+  bool                   hasValue;
+  bool                   hasConstRef;
+  bool                   hasRef;
 };
 
 
@@ -280,11 +257,9 @@ class NamedExpr : public Expr {
 
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
-  virtual Type*   typeInfo();
+  virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
-
-  virtual Expr*   getFirstChild();
 
   virtual Expr*   getFirstExpr();
 };
@@ -292,8 +267,17 @@ class NamedExpr : public Expr {
 
 // Determines whether a node is in the AST (vs. has been removed
 // from the AST). Used e.g. by cleanAst().
-// Exception: 'n' is also live if isRootModule(n).
-
+//
+// We may want to replace isAlive() with {Expr,Symbol,Type}::inTree().
+// Right now they are different:
+//  - Symbol::inTree() performs an additional check for rootModule
+//    whereas isAlive(Symbol) does not.
+//  - isAlive(Symbol) is false vs. Symbol::inTree() is true on rootModule.
+//    'rootModule' is the only module that is always alive/in tree
+//    yet does not have a defPoint.
+//  - Type::inTree() performs an additional check for Type::symbol != NULL,
+//    whereas isAlive(Type) does not.
+//
 static inline bool isAlive(Expr* expr) {
   return expr->parentSymbol;
 }
@@ -303,13 +287,12 @@ static inline bool isAliveQuick(Symbol* symbol) {
 }
 
 static inline bool isAlive(Symbol* symbol) {
-  if (symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL)) return true;
-  if (! symbol->defPoint) return false;
-  return isAliveQuick(symbol);
+  return symbol->defPoint && isAlive(symbol->defPoint);
 }
 
 static inline bool isAlive(Type* type) {
-  return isAliveQuick(type->symbol);
+  if (fMinimalModules && type == dtString) return false;
+  return isAlive(type->symbol->defPoint);
 }
 
 #define isRootModule(ast)  \
@@ -330,13 +313,8 @@ static inline bool isTaskFun(FnSymbol* fn) {
          fn->hasFlag(FLAG_ON);
 }
 
-static inline FnSymbol* resolvedToTaskFun(CallExpr* call) {
-  INT_ASSERT(call);
-  if (FnSymbol* cfn = call->isResolved()) {
-    if (isTaskFun(cfn))
-      return cfn;
-  }
-  return NULL;
+static inline bool isLoopExprFun(FnSymbol* fn) {
+  return 0 == strncmp(fn->name, astr_loopexpr_iter, strlen(astr_loopexpr_iter));
 }
 
 // Does this function require "capture for parallelism"?
@@ -347,16 +325,25 @@ static inline bool needsCapture(FnSymbol* taskFn) {
          taskFn->hasFlag(FLAG_NON_BLOCKING);
 }
 
+inline Symbol* ShadowVarSymbol::outerVarSym() const {
+  if (SymExpr* ovse = this->outerVarSE)
+    return ovse->symbol();
+  else
+    return NULL;
+}
+
+// E.g. NamedExpr::actual, DefExpr::init.
+static inline void verifyNotOnList(Expr* expr) {
+  if (expr && expr->list)
+    INT_FATAL(expr, "Expr is in a list incorrectly");
+}
+
 
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure
 const char* get_string(Expr* e); // fatal on failure
 
-CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md = NULL);
-void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
-                         Type* t, VarSymbol* md = NULL);
-CallExpr* callChplHereFree(BaseAST* p);
 
 // Walk the subtree of expressions rooted at "expr" in postorder, returning the
 // current expression in "e", stopping after "expr" has been returned.
@@ -372,15 +359,19 @@ Expr* getNextExpr(Expr* expr);
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);
 
-GenRet codegenValue(GenRet r);
-GenRet codegenValuePtr(GenRet r);
 #ifdef HAVE_LLVM
 llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
 llvm::Value* createTempVarLLVM(llvm::Type* type);
 #endif
+
+GenRet codegenValue(GenRet r);
+GenRet codegenValuePtr(GenRet r);
+
 GenRet createTempVarWith(GenRet v);
 
 GenRet codegenDeref(GenRet toDeref);
 GenRet codegenLocalDeref(GenRet toDeref);
+GenRet codegenNullPointer();
+GenRet codegenCast(const char* typeName, GenRet value, bool Cparens = true);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,12 +23,14 @@
 #ifndef LAUNCHER
 
 #include <stdint.h>
+#include "chplsys.h"
 #include "chpltypes.h"
 #include "chpl-comm-impl.h"
 #include "chpl-comm-heap-macros.h"
 #include "chpl-tasks.h"
 #include "chpl-comm-task-decls.h"
 #include "chpl-comm-locales.h"
+#include "chpl-mem-desc.h"
 
 //
 // Shared interface (implemented in chpl-comm.c)
@@ -67,6 +69,8 @@ extern ptr_wide_ptr_t chpl_globals_registry[];
 
 extern void* const chpl_private_broadcast_table[];
 
+extern void* const chpl_global_serialize_table[];
+
 extern const int chpl_heterogeneous;
 
 
@@ -77,19 +81,62 @@ extern const int chpl_heterogeneous;
 // chpl_comm_nb_handle_t must be defined in the comm layer header
 // chpl-comm-task-decls.h
 
+// uses comm-layer specific chpl_comm_bundleData_t
+// uses task-layer specific chpl_task_bundleData_t
+
+typedef struct {
+  // Including space for the task_bundle here helps with
+  // running tasks locally, but it doesn't normally need
+  // to be communicated over the network.
+  chpl_task_bundle_t task_bundle;
+  // Including space for some comm information here helps
+  // the comm layer communicate some values to a wrapper
+  // function that is run in a task.
+  chpl_comm_bundleData_t comm;
+} chpl_comm_on_bundle_t;
+
+typedef chpl_comm_on_bundle_t *chpl_comm_on_bundle_p;
+
+static inline
+chpl_task_bundle_t* chpl_comm_on_bundle_task_bundle(chpl_comm_on_bundle_t* a)
+{
+  return &a->task_bundle;
+}
+
+//
+// Call a chpl_ftable[] function in a task.
+//
+// This is a convenience function for use by the module code, in which
+// we have function table indices rather than function pointers.
+//
+static inline
+void chpl_comm_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
+                              chpl_comm_on_bundle_t* arg,// function arg
+                              size_t arg_size,        // length of arg in bytes
+                              c_sublocid_t subloc,    // desired sublocale
+                              int lineno,             // source line
+                              int32_t filename) {     // source filename
+    chpl_task_taskCallFTable(fid,
+                             chpl_comm_on_bundle_task_bundle(arg), arg_size,
+                             subloc,
+                             lineno, filename);
+}
+
+
+
 // Do a GET in a nonblocking fashion, returning a handle which can be used to
 // wait for the GET to complete. The destination buffer must not be modified
 // before the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t typeIndex,
-                                       int ln, int32_t fn);
+                                       int32_t commID, int ln, int32_t fn);
 
 // Do a PUT in a nonblocking fashion, returning a handle which can be used to
 // wait for the PUT to complete. The source buffer must not be modified before
 // the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t typeIndex,
-                                       int ln, int32_t fn);
+                                       int32_t commID, int ln, int32_t fn);
 
 // Returns nonzero iff the handle has already been waited for and has
 // been cleared out in a call to chpl_comm_{wait,try}_some.
@@ -160,7 +207,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
 void chpl_comm_post_task_init(void);
 
 //
-// a final comm layer stub before barrier synching and calling into
+// a final comm layer stub before barrier syncing and calling into
 // the user code.  It is recommended that a debugging message be
 // printed here indicating that each locale has started using
 // chpl_msg() and a verbosity level of 2 (which will cause it to be
@@ -169,10 +216,91 @@ void chpl_comm_post_task_init(void);
 void chpl_comm_rollcall(void);
 
 //
-// Inform callers as to the communication layer's desired starting address
-// and length for the shared heap, if any.
+// This is the comm layer sub-interface for heap management and dynamic
+// memory allocation, when memory has to be registered with the network
+// for best performance.
 //
-void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p);
+// chpl_comm_regMemHeapInfo():
+//   This provides the address and size of the initial registered heap.
+//
+// chpl_comm_regMemHeapPageSize():
+//   This returns the page size for the comm layer registered heap,
+//   either the size of a system page or some hugepage size.
+//
+// chpl_comm_regMemAllocThreshold():
+//   Allocations smaller than this should be done normally, by the
+//   memory layer.  Those at least this size may be done through this
+//   comm layer sub-interface.  SIZE_MAX is returned if the comm layer
+//   cannot or will not do allocations at all.
+//
+// chpl_comm_regMemAlloc()
+//   Allocate memory, returning either a non-NULL pointer or NULL when
+//   no more memory is available.  After allocation the memory can be
+//   localized, filled, and so on as desired by the memory layer.
+//
+// chpl_comm_regMemPostAlloc()
+//   Perform post-allocation operations, typically registration.  This
+//   call is non-destructive to the memory contents, and should be made
+//   after the memory is localized.  Do not pass memory allocated from
+//   anything but chpl_comm_regMemAlloc() to this function.
+//
+// chpl_comm_regMemFree()
+//   Free memory previously allocated by chpl_comm_regMemAlloc().  If
+//   the memory did indeed come from chpl_mem_regMemAlloc(), this frees
+//   it and returns true.  Otherwise it does nothing and returns false.
+//   Given some memory address to be freed it is therefore safe, though
+//   perhaps not performance-optimal, to first try to free it here, and 
+//   only free it elsewhere if this function returns false.
+//
+#ifndef CHPL_COMM_IMPL_REG_MEM_HEAP_INFO
+#define CHPL_COMM_IMPL_REG_MEM_HEAP_INFO(start_p, size_p)   \
+        do { *(start_p) = NULL ; *(size_p) = 0; } while (0)
+#endif
+static inline
+void chpl_comm_regMemHeapInfo(void** start_p, size_t* size_p) {
+  CHPL_COMM_IMPL_REG_MEM_HEAP_INFO(start_p, size_p);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_HEAP_PAGE_SIZE
+  #define CHPL_COMM_IMPL_REG_MEM_HEAP_PAGE_SIZE() chpl_getSysPageSize()
+#endif
+static inline
+size_t chpl_comm_regMemHeapPageSize(void) {
+  return CHPL_COMM_IMPL_REG_MEM_HEAP_PAGE_SIZE();
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD
+  #define CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD() SIZE_MAX
+#endif
+static inline
+size_t chpl_comm_regMemAllocThreshold(void) {
+  return CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD();
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_ALLOC
+#define CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn) NULL
+#endif
+static inline
+void* chpl_comm_regMemAlloc(size_t size,
+                            chpl_mem_descInt_t desc, int ln, int32_t fn) {
+    return CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_POST_ALLOC
+#define CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size) return
+#endif
+static inline
+void chpl_comm_regMemPostAlloc(void* p, size_t size) {
+    CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_FREE
+#define CHPL_COMM_IMPL_REG_MEM_FREE(p, size) false
+#endif
+static inline
+chpl_bool chpl_comm_regMemFree(void* p, size_t size) {
+    return CHPL_COMM_IMPL_REG_MEM_FREE(p, size);
+}
 
 //
 // This routine is used by the Chapel runtime to broadcast the
@@ -228,7 +356,8 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid);
 // function may be called from a Chapel task.  As such, if the barrier
 // cannot be immediately satisfied, while it waits chpl_comm_barrier()
 // must call chpl_task_yield() in order not to monopolize the execution
-// resources and prevent making progress.
+// resources and prevent making progress. This barrier must be available
+// for use in module code, so it cannot be tied up in the runtime 
 //
 void chpl_comm_barrier(const char *msg);
 
@@ -266,7 +395,7 @@ void chpl_comm_exit(int all, int status);
 //
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     size_t size, int32_t typeIndex,
-                    int ln, int32_t fn);
+                    int32_t commID, int ln, int32_t fn);
 
 //
 // get 'size' bytes of remote data at 'raddr' on locale 'locale' to
@@ -277,7 +406,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 //
 void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
                     size_t size, int32_t typeIndex,
-                    int ln, int32_t fn);
+                    int32_t commID, int ln, int32_t fn);
 
 //
 // put the number of elements pointed out by count array, with strides pointed
@@ -291,18 +420,18 @@ void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
 //   Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
 //   Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
 //
-void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, int32_t dstlocale, 
+void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode,
                      void* srcaddr, size_t* srcstrides, size_t* count,
                      int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                     int ln, int32_t fn);
+                     int32_t commID, int ln, int32_t fn);
 
 //
 // same as chpl_comm_puts(), but do get instead
 //
-void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, int32_t srclocale, 
+void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode,
                      void* srcaddr, size_t* srcstrides, size_t* count,
                      int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                     int ln, int32_t fn);
+                     int32_t commID, int ln, int32_t fn);
 
 //
 // Get a local copy of a wide string.
@@ -318,6 +447,7 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
 //
 // Runs a function f on a remote locale, passing it
 // arg where size of arg is stored in arg_size.
+// arg can be reused immediately after this call completes.
 //
 // This call will block the current task until the remote function has
 // completed. Use chpl_comm_execute_on_nb if you do not want to wait.
@@ -325,19 +455,24 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
 //   multiple executeOns to the same locale should be handled concurrently
 //
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid, void *arg, size_t arg_size);
+                          chpl_fn_int_t fid,
+                          chpl_comm_on_bundle_t *arg, size_t arg_size);
 
 //
 // non-blocking execute_on
+// arg can be reused immediately after this call completes.
 //
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                             chpl_fn_int_t fid, void *arg, size_t arg_size);
+                             chpl_fn_int_t fid,
+                             chpl_comm_on_bundle_t *arg, size_t arg_size);
 
 //
 // fast execute_on (i.e., run in handler)
+// arg can be reused immediately after this call completes.
 //
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                         chpl_fn_int_t fid, void *arg, size_t arg_size);
+                         chpl_fn_int_t fid,
+                         chpl_comm_on_bundle_t *arg, size_t arg_size);
 
 
 //
@@ -360,17 +495,23 @@ void chpl_comm_make_progress(void);
 //
 // Comm diagnostics stuff
 //
+
+#define CHPL_COMM_DIAGS_VARS_ALL(MACRO) \
+  MACRO(get) \
+  MACRO(get_nb) \
+  MACRO(put) \
+  MACRO(put_nb) \
+  MACRO(test_nb) \
+  MACRO(wait_nb) \
+  MACRO(try_nb) \
+  MACRO(execute_on) \
+  MACRO(execute_on_fast) \
+  MACRO(execute_on_nb)
+
 typedef struct _chpl_commDiagnostics {
-  uint64_t get;
-  uint64_t get_nb;
-  uint64_t put;
-  uint64_t put_nb;
-  uint64_t test_nb;
-  uint64_t wait_nb;
-  uint64_t try_nb;
-  uint64_t execute_on;
-  uint64_t execute_on_fast;
-  uint64_t execute_on_nb;
+#define _COMM_DIAGS_DECL(cdv) uint64_t cdv;
+  CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_DECL)
+#undef _COMM_DIAGS_DECL
 } chpl_commDiagnostics;
 
 void chpl_startVerboseComm(void);
@@ -389,11 +530,11 @@ void chpl_gen_stopCommDiagnosticsHere(void);
 void chpl_resetCommDiagnosticsHere(void);
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
 
+void* chpl_get_global_serialize_table(int64_t idx);
+
 #else // LAUNCHER
 
 #define chpl_comm_barrier(x)
-#define chpl_comm_exit_all(x) exit(x)
-#define chpl_comm_exit_any(x) exit(x)
 
 #endif // LAUNCHER
 

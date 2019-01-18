@@ -28,18 +28,18 @@ config const debug   = false;
 class Function {
     const k             = 5;    // use first k Legendre polynomials as the basis in each box
     const thresh        = 1e-5; // truncation threshold for small wavelet coefficients
-    const f: AFcn       = nil;  // analytic f(x) to project into the numerical represntation
+    const f: unmanaged AFcn       = nil;  // analytic f(x) to project into the numerical represntation
     const initial_level = 2;    // initial level of refinement
     const max_level     = 30;   // maximum level of refinement mostly as a sanity check
     var   autorefine    = true; // automatically refine during multiplication
     var   compressed    = false;// keep track of what basis we are in
 
     // Sum and Difference coefficients
-    var   sumC = new FTree(order=k);
-    var   diffC = new FTree(order=k);
+    var   sumC = new unmanaged FTree(order=k);
+    var   diffC = new unmanaged FTree(order=k);
 
     // FIXME: Ideally all of these matrices should be const as well but they
-    //        can't be presently since they must be assigned in initialize()
+    //        can't be presently since they must be assigned in postinit()
 
     // Two-Scale relationship matrices
     const hgDom = {0..2*k-1, 0..2*k-1};
@@ -62,12 +62,12 @@ class Function {
     var   r0    : [dcDom] real;
     var   rp    : [dcDom] real;
 
-    proc ~Function() {
+    proc deinit() {
         delete sumC;
         delete diffC;
     }
 
-    proc initialize() {
+    proc postinit() {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
 
         if debug then writeln("  initializing two-scale relation coefficients");
@@ -135,7 +135,7 @@ class Function {
     /** Return a deep copy of this Function
      */
     proc copy() {
-        return new Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
+        return new unmanaged Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine, compressed=compressed,
                 sumC=sumC.copy(), diffC=diffC.copy());
     }
@@ -145,7 +145,7 @@ class Function {
      */
     proc skeletonCopy() {
         // Omit: f, compressed, sumC, diffC
-        return new Function(k=k, thresh=thresh, initial_level=initial_level,
+        return new unmanaged Function(k=k, thresh=thresh, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine);
     }
 
@@ -176,8 +176,8 @@ class Function {
     proc refine(curNode: Node) {
         // project f(x) at next level
         var sc : [0..2*k-1] real;
-        var s0 : [0..k-1] => sc[0..k-1];
-        var s1 : [0..k-1] => sc[k..2*k-1];
+        ref s0 = sc[0..k-1];
+        ref s1 = sc[k..2*k-1];
 
         const child = curNode.get_children();
         s0 = project(child(1));
@@ -561,6 +561,12 @@ class Function {
         return result;
     }
 
+    inline proc truncate(x) {
+      const eps = 1e-8;
+      if abs(x) < eps then return 0.0;
+      if abs(x) > 1.0/eps then return trunc(x/10) * 10;
+      return x;
+    }
 
     /** Mostly for debugging, print summary of coefficients,
         optionally printing the norm of each block
@@ -577,7 +583,7 @@ class Function {
             }
             if ncoeffs != 0 then
 	        writef("   level %{##}   #boxes=%{####}  norm=%0.2er\n",
-		       n, ncoeffs, sqrt(sum));
+		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
         writeln("difference coefficients:");
@@ -589,7 +595,7 @@ class Function {
             }
             if ncoeffs != 0 then
 	        writef("   level %{##}   #boxes=%{####}  norm=%0.2er\n",
-		       n, ncoeffs, sqrt(sum));
+		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
         writeln("-----------------------------------------------------\n");
@@ -603,7 +609,7 @@ class Function {
         for i in 0..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
             writef(" -- %.2dr:  F_numeric()=% .8dr  f_analytic()=% .8dr%s\n",
-		   i/npt:real, Fval, fval, 
+		   i/npt:real, truncate(Fval), truncate(fval),
 		   if abs(Fval-fval) > thresh then " err > thresh" else "");
         }
     }
@@ -615,14 +621,14 @@ class Function {
 /*************************************************************************/
 
 
-proc +(F: Function, G: Function): Function {
+proc +(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.add(G);
 }
 
-proc -(F: Function, G: Function): Function {
+proc -(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.subtract(G);
 }
     
-proc *(F: Function, G: Function): Function {
+proc *(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
     return F.multiply(G);
 }

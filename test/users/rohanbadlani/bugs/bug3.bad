@@ -1,0 +1,1 @@
+bug3.chpl:16: error: unresolved call 'list(int(64)).these(2)'

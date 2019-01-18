@@ -1,0 +1,2 @@
+hasDeferBad.chpl:4: In initializer:
+hasDeferBad.chpl:6: error: cannot perform field initialization in a defer statement

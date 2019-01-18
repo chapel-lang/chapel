@@ -1,0 +1,9 @@
+A.init
+B.init
+B.postinit
+A.postinit
+
+A.init
+B.init
+A.postinit
+B.postinit

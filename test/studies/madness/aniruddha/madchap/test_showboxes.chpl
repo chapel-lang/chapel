@@ -1,5 +1,6 @@
 use MRA;
 use MadAnalytics;
+use Sort;
 
 config const k      = 5;
 config const thresh = 1e-5;
@@ -9,10 +10,10 @@ proc main() {
 
     writeln("Mad Chapel -- Show me the boxes\n");
 
-    var fcn  = new Fn_Test1();
-    var dfcn = new Fn_dTest1();
+    var fcn  = new unmanaged Fn_Test1();
+    var dfcn = new unmanaged Fn_dTest1();
 
-    var F = new Function(k=k, thresh=thresh, f=fcn);
+    var F = new unmanaged Function(k=k, thresh=thresh, f=fcn);
     writeln("F.norm2() = ", F.norm2());
     F.summarize();
     F.evalNPT(npt);
@@ -21,7 +22,7 @@ proc main() {
     for lvl in 0..F.max_level { 
         write("\n **",lvl,": ");
         var arrNodeCoord = F.sumC.node_iter(lvl).get_coords();
-        QuickSort(arrNodeCoord);
+        quickSort(arrNodeCoord);
         for (n, l) in arrNodeCoord do
             write(" [",n,", ",l,"]");
     }

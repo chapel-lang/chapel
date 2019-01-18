@@ -12,7 +12,8 @@ class C {
     var locIndices : domain(2*int);
     var locNodes   : [locIndices] [coeffDom] real;
 
-    proc initialize() {
+    proc init() {
+        this.complete();
         locIndices += (1,2);
         writeln(locNodes[(1,2)].domain);
         locNodes[(1,2)] = (1,2);
@@ -20,5 +21,4 @@ class C {
     }
 }
 
-var c = new C();
-delete c;
+var c = new owned C();

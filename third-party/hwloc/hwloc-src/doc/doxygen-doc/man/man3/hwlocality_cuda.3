@@ -1,8 +1,11 @@
-.TH "hwlocality_cuda" 3 "Thu Dec 17 2015" "Version 1.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_cuda" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_cuda \- Interoperability with the CUDA Driver API
+hwlocality_cuda
+.SH SYNOPSIS
+.br
+.PP
 .SS "Functions"
 
 .in +1c
@@ -42,7 +45,7 @@ This function is currently only implemented in a meaningful way for Linux; other
 .PP
 Get the hwloc OS device object corresponding to CUDA device \fCcudevice\fP\&. Return the hwloc OS device object that describes the given CUDA device \fCcudevice\fP\&. Return NULL if there is none\&.
 .PP
-Topology \fCtopology\fP and device \fCcudevice\fP must match the local machine\&. I/O devices detection and the NVML component must be enabled in the topology\&. If not, the locality of the object may still be found using \fBhwloc_cuda_get_device_cpuset()\fP\&.
+Topology \fCtopology\fP and device \fCcudevice\fP must match the local machine\&. I/O devices detection and the CUDA component must be enabled in the topology\&. If not, the locality of the object may still be found using \fBhwloc_cuda_get_device_cpuset()\fP\&.
 .PP
 \fBNote:\fP
 .RS 4

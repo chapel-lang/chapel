@@ -3,8 +3,8 @@
 
 record R
 {
-  proc R() { writeln("Called R()."); }
-  proc ~R() { writeln("Called ~R()."); }
+  proc init() { writeln("Called R()."); }
+  proc deinit() { writeln("Called ~R()."); }
 }
 
 var r:R;

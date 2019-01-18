@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -278,10 +278,12 @@ void output_synthetic(struct lstopo_output *loutput, const char *filename)
   }
 
   length = hwloc_topology_export_synthetic(topology, sbuffer, sizeof(sbuffer), lstopo_export_synthetic_flags);
-  if (length < 0)
+  if (length < 0) {
+    fprintf(stderr, "Failed to export a synthetic description (%s)\n", strerror(errno));
     return;
+  }
 
-  if (length >= sizeof(sbuffer)) {
+  if (length >= (int) sizeof(sbuffer)) {
     dbuffer = malloc(length+1 /* \0 */);
     if (!dbuffer)
       return;

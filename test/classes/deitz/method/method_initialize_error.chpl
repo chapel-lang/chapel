@@ -3,6 +3,6 @@ class C {
   proc foo() return x;
 }
 
-var c = new C();
+var c = new owned C();
 
 writeln(c);

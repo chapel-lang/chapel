@@ -1,0 +1,8 @@
+fact-linenum.chpl:2: error: halt reached
+Stacktrace
+
+halt() at $CHPL_HOME/modules/internal/ChapelIO.chpl:nnnn
+fact() at fact-linenum.chpl:2
+fact() at fact-linenum.chpl:3
+fact() at fact-linenum.chpl:3
+chpl__init_fact-linenum() at fact-linenum.chpl:1

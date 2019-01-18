@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,7 @@
 #include "chplmemtrack.h"
 #include "chpl-privatization.h"
 #include "chpl-tasks.h"
+#include "chpl-topo.h"
 #include "chpl-linefile-support.h"
 #include "chplsys.h"
 #include "config.h"
@@ -93,6 +94,11 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 void chpl_rt_preUserCodeHook(void) {
   chpl_comm_barrier("pre-user-code hook begin");
 
+  chpl_taskRunningCntReset(0, 0);
+  if (chpl_nodeID == 0) {
+    chpl_taskRunningCntInc(0, 0);
+  }
+
   //
   // Set up any memory tracking requested.
   //
@@ -135,6 +141,7 @@ void chpl_rt_init(int argc, char* argv[]) {
   // UTF-8 functions (e.g. wcrtomb) work as
   // indicated by the locale environment variables.
   setlocale(LC_CTYPE,"");
+  qio_set_glocale();
   // So that use of localtime_r is portable.
   tzset();
 
@@ -145,6 +152,7 @@ void chpl_rt_init(int argc, char* argv[]) {
   parseArgs(false, parse_dash_E, &argc, argv);
 
   chpl_error_init();  // This does local-only initialization
+  chpl_topo_init();
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
   chpl_comm_post_mem_init();
@@ -220,9 +228,6 @@ void chpl_std_module_init(void) {
   chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale
 
   if (chpl_nodeID == 0) {
-    // OK, we can create tasks now.
-    chpl_task_setSerial(false);
-
     //
     // This just sets all of the initialization predicates to false.
     // Must occur before any other call to a chpl__init_<foo> function.
@@ -271,6 +276,12 @@ void chpl_executable_init(void) {
 
 }
 
+void chpl_execute_module_deinit(c_fn_ptr deinitFun) {
+  void (*deinitFn)(void);
+  deinitFn = deinitFun;
+  deinitFn();
+}
+
 //
 // A program using Chapel as a library might look like:
 //
@@ -294,9 +305,14 @@ void chpl_library_init(int argc, char* argv[]) {
   chpl_task_callMain(chpl_std_module_init);     // Initialize std modules
 }
 
+// Defined in modules/internal/ChapelUtil.chpl.  Used to clean up any modules
+// we may have initialized
+extern void chpl_deinitModules(void);
+
 //
 // A wrapper around chpl-init.c:chpl_rt_finalize(...), sole purpose is 
 // to provide a "chpl_library_*" interface for the Chapel "library-user".
 void chpl_library_finalize(void) {
+  chpl_deinitModules();
   chpl_rt_finalize(0);
 }

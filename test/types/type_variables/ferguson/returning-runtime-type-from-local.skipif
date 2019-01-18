@@ -1,0 +1,2 @@
+# Checks for a memory corruption error. Only test under valgrind.
+CHPL_TEST_VGRND_EXE != on

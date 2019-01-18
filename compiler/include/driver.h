@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,14 +33,14 @@ extern int  instantiation_limit;
 
 // optimization control flags
 extern bool fFastFlag;
-extern int  fConditionalDynamicDispatchLimit;
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;
 extern bool fNoDeadCodeElimination;
 extern bool fNoGlobalConstOpt;
 extern bool fNoFastFollowers;
 extern bool fNoInlineIterators;
-extern bool fNoloopInvariantCodeMotion;
+extern bool fNoLoopInvariantCodeMotion;
+extern bool fNoInterproceduralAliasAnalysis;
 extern bool fNoInline;
 extern bool fNoLiveAnalysis;
 extern bool fNoFormalDomainChecks;
@@ -48,22 +48,30 @@ extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoStackChecks;
 extern bool fNoCastChecks;
+extern bool fNoDivZeroChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
 extern bool fNoRemoteValueForwarding;
+extern bool fNoInferConstRefs;
+extern bool fNoRemoteSerialization;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;
+extern bool fNoOptimizeRangeIteration;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoVectorize;
+extern bool fForceVectorize;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
+extern bool fNoInferLocalFields;
 extern bool fRemoveUnreachableBlocks;
+extern bool fReplaceArrayAccessesWithRefTemps;
 extern int  optimize_on_clause_limit;
 extern int  scalar_replace_limit;
+extern int  inline_iter_yield_limit;
 extern int  tuple_copy_limit;
 
 
@@ -75,12 +83,21 @@ bool useDefaultEnv(std::string key);
 extern std::map<std::string, const char*> envMap;
 
 extern char CHPL_HOME[FILENAME_MAX+1];
+extern char CHPL_RUNTIME_LIB[FILENAME_MAX+1];
+extern char CHPL_RUNTIME_INCL[FILENAME_MAX+1];
+extern char CHPL_THIRD_PARTY[FILENAME_MAX+1];
 
 extern const char* CHPL_HOST_PLATFORM;
+extern const char* CHPL_HOST_ARCH;
 extern const char* CHPL_HOST_COMPILER;
 extern const char* CHPL_TARGET_PLATFORM;
-extern const char* CHPL_TARGET_COMPILER;
 extern const char* CHPL_TARGET_ARCH;
+extern const char* CHPL_TARGET_CPU;
+extern const char* CHPL_RUNTIME_CPU;
+extern const char* CHPL_TARGET_BACKEND_CPU;
+extern const char* CHPL_TARGET_CPU_FLAG;
+extern const char* CHPL_TARGET_COMPILER;
+extern const char* CHPL_ORIG_TARGET_COMPILER;
 extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
@@ -95,35 +112,41 @@ extern const char* CHPL_NETWORK_ATOMICS;
 extern const char* CHPL_GMP;
 extern const char* CHPL_HWLOC;
 extern const char* CHPL_REGEXP;
-extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
+extern const char* CHPL_UNWIND;
+extern const char* CHPL_RUNTIME_SUBDIR;
+extern const char* CHPL_LAUNCHER_SUBDIR;
+extern const char* CHPL_LLVM_UNIQ_CFG_PATH;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
 
-// Set true if CHPL_WIDE_POINTERS==struct.
-// In that case, the code generator emits structures
-// for wide pointers. Otherwise, wide pointers are
-// packed into a wide pointer type.
-extern bool widePointersStruct;
-
 extern char fExplainCall[256];
 extern int  explainCallID;
 extern int  breakOnResolveID;
+extern bool fDenormalize;
 extern char fExplainInstantiation[256];
 /// If true, then print additional (disambiguation) information about
 /// resolution.
 extern bool fExplainVerbose;
+extern bool fParseOnly;
+extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
 extern bool fPrintIDonError;
 extern bool fPrintModuleResolution;
 extern bool fPrintEmittedCodeSize;
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
+extern bool fPrintUnusedFns;
+extern bool fPrintUnusedInternalFns;
+extern bool fRegionVectorizer;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
+extern bool fLifetimeChecking;
+extern bool fCompileTimeNilChecking;
+extern bool fOverrideChecking;
 extern bool fHeterogeneous;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
@@ -146,6 +169,9 @@ extern int  fLinkStyle;
 extern int  debugParserLevel;
 extern int  debugShortLoc;
 extern bool fLibraryCompile;
+extern bool fLibraryFortran;
+extern bool fLibraryMakefile;
+extern bool fLibraryPython;
 extern bool fUseNoinit;
 extern bool no_codegen;
 extern bool developer;
@@ -154,22 +180,29 @@ extern int  num_constants_per_variable;
 extern bool printCppLineno;
 
 extern char defaultDist[256];
-extern char mainModuleName[256];
 extern bool printSearchDirs;
 extern bool printModuleFiles;
 extern bool ignore_warnings;
 extern bool ignore_errors;
+extern bool ignore_user_errors;
 extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
+extern bool fWarnUnstable;
+extern bool fDefaultUnmanaged;
+extern bool fLegacyNew;
 
+extern bool fReportAliases;
 extern bool fReportOptimizedLoopIterators;
-extern bool fReportOrderIndependentLoops;
+extern bool fReportInlinedIterators;
+extern bool fReportVectorizedLoops;
 extern bool fReportOptimizedOn;
 extern bool fReportPromotion;
 extern bool fReportScalarReplace;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
+
+extern bool fPermitUnhandledModuleErrors;
 
 extern bool debugCCode;
 extern bool optimizeCCode;
@@ -180,7 +213,9 @@ extern int  numGlobalsOnHeap;
 extern bool preserveInlinedLineNumbers;
 
 extern int breakOnID;
-extern int breakOnDeleteID;
+extern int breakOnRemoveID;
+
+extern char stopAfterPass[128];
 
 // code generation strings
 extern const char* compileCommand;
@@ -190,8 +225,10 @@ extern char compileVersion[64];
 // the compiler but breaks the language!
 extern bool fMinimalModules;
 
-// Set to true if we want to use the experimental
-// Interactive Programming Environmment (IPE) mode.
-extern bool fUseIPE;
+// Set to true if we want to enable incremental compilation.
+extern bool fIncrementalCompilation;
+
+// LLVM flags (-mllvm)
+extern std::string llvmFlags;
 
 #endif

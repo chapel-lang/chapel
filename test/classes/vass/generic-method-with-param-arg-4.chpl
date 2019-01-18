@@ -6,11 +6,12 @@ class C {
 }
 
 class D: C {
-  proc a(param rank): rank * range(int(64), stridable=true) {
+  override proc a(param rank): rank * range(int(64), stridable=true) {
     var dummy: rank * range(int(64), stridable=true);
     return dummy;
   }
 }
 
-var c: C = new D();
+var c: owned C = new owned D();
+
 writeln(c.a(3));

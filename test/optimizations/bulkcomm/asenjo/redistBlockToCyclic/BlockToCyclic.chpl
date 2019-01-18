@@ -25,7 +25,7 @@ proc BlockArr.copyBtoC(B)
 
     var numLocales: int(32)=privdom.dist.targetLocDom.dim(1).length:int(32);
     var n:int(32)=privdom.dist.boundingBox.dim(1).length:int(32);
-    var src = privarr.locArr[lid].myElems._value.data; 
+    var src = privarr.locArr[lid].myElems._value.data;
 
     dststrides[1]=1;
     srcstrides[1]=numLocales;

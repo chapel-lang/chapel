@@ -1,0 +1,2 @@
+sugarFcfTypes.chpl:13: error: unresolved call 'bar(chpl__fcf_type_void_void)'
+sugarFcfTypes.chpl:7: note: candidates are: bar(f: c_fn_ptr)

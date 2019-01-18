@@ -1,0 +1,1 @@
+generic-throws.chpl:11: error: halt reached - StringError: 42 is a numeric type

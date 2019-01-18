@@ -12,14 +12,14 @@ class C {
 }
 
 class D {
-  var c = new C();
+  var c = new unmanaged C();
   proc bar() {
     c.foo() = 2;
     writeln(c.foo());
   }
 }
 
-var d = new D();
+var d = new unmanaged D();
 d.bar();
 delete d.c;
 delete d;

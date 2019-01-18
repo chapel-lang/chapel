@@ -15,7 +15,7 @@ module SSCA2_kernels
 //  +==========================================================================+
 
 { 
-  use SSCA2_compilation_config_params, Time;
+  use SSCA2_compilation_config_params, Time, Barriers;
 
   var stopwatch : Timer;
 
@@ -165,12 +165,12 @@ module SSCA2_kernels
 
 
   use BlockDist;
-  config param useAtomicReal = CHPL_NETWORK_ATOMICS=="ugni";
-  config param useOnClause = CHPL_NETWORK_ATOMICS!="ugni";
+  config param useAtomicReal = CHPL_NETWORK_ATOMICS!="none";
+  config param useOnClause = CHPL_NETWORK_ATOMICS=="none";
   // For task-private temporary variables
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);
-  // Would be nice to use PriavteDist, but aliasing is not supported (yet)
+  // Would be nice to use PrivateDist, but aliasing is not supported (yet)
   const PrivateSpace = LocaleSpace dmapped Block(boundingBox=LocaleSpace);
 
   // ==================================================================
@@ -245,24 +245,24 @@ module SSCA2_kernels
 
       // There will be numTPVs copies of the temps, thus throttling the
       // number of starting vertices being considered simultaneously.
-      var TPV: [TPVLocaleSpace] taskPrivateData(domain(index(vertex_domain)),
+      var TPV: [TPVLocaleSpace] unmanaged taskPrivateData(domain(index(vertex_domain)),
                                                 vertex_domain.type);
 
       // Initialize
       coforall (t, i) in zip(TPVLocaleSpace, TPVSpace) do on TPVLocaleSpace.dist.idxToLocale(t) {
-          TPV[i] = new taskPrivateData(domain(index(vertex_domain)), vertex_domain);
+          TPV[i] = new unmanaged taskPrivateData(domain(index(vertex_domain)), vertex_domain);
           var tpv = TPV[i];
           forall v in vertex_domain do
             tpv.BCaux[v].children_list.nd = {1..G.n_Neighbors[v]};
           for loc in Locales do on loc {
-            tpv.Active_Level[here.id] = new Level_Set (Sparse_Vertex_List);
+            tpv.Active_Level[here.id] = new unmanaged Level_Set (Sparse_Vertex_List);
             tpv.Active_Level[here.id].previous = nil;
-            tpv.Active_Level[here.id].next = new Level_Set (Sparse_Vertex_List);;
+            tpv.Active_Level[here.id].next = new unmanaged Level_Set (Sparse_Vertex_List);;
             tpv.Active_Level[here.id].next.previous = tpv.Active_Level[here.id];
             tpv.Active_Level[here.id].next.next = nil;
           }
       }
-      var TPVM: TPVManager(TPV.type) = new TPVManager(TPV);
+      var TPVM: unmanaged TPVManager(TPV.type) = new unmanaged TPVManager(TPV);
 
       // ------------------------------------------------------ 
       // Each iteration of the outer loop of Brandes's algorithm
@@ -281,7 +281,7 @@ module SSCA2_kernels
         // Initialize task private variables
         const tid = TPVM.gettid();
         const tpv = TPVM.getTPV(tid);
-        var BCaux => tpv.BCaux;
+        ref BCaux = tpv.BCaux;
         pragma "dont disable remote value forwarding"
           inline proc f1(BCaux, v) {
 	  if useAtomicReal then
@@ -320,7 +320,7 @@ module SSCA2_kernels
         // will only contain nodes that are physically allocated on that
         // particular locale.
         //
-        var Active_Level => tpv.Active_Level;
+        ref Active_Level = tpv.Active_Level;
         pragma "dont disable remote value forwarding"
           inline proc f2(BCaux, s) {
 	  if useAtomicReal then
@@ -329,7 +329,7 @@ module SSCA2_kernels
             BCaux[s].path_count$.writeXF(1.0);
         }
 
-        var barrier = new Barrier();
+        var barrier = new Barrier(numLocales);
 
         coforall loc in Locales with (ref remaining, ref barrier) do on loc {
           Active_Level[here.id].Members.clear();
@@ -408,7 +408,7 @@ module SSCA2_kernels
             //  for now, just do a normal barrier
 
             if Active_Level[here.id].next.next == nil {
-              Active_Level[here.id].next.next = new Level_Set (Sparse_Vertex_List);
+              Active_Level[here.id].next.next = new unmanaged Level_Set (Sparse_Vertex_List);
               Active_Level[here.id].next.next.previous = Active_Level[here.id].next;
               Active_Level[here.id].next.next.next = nil;
             } else {
@@ -486,7 +486,7 @@ module SSCA2_kernels
 
         TPVM.releaseTPV(tid);
 
-      }; // closure of outer embarassingly parallel forall
+      }; // closure of outer embarrassingly parallel forall
 
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();
@@ -519,6 +519,12 @@ module SSCA2_kernels
           var al = tpv.Active_Level;
           coforall loc in Locales do on loc {
             var level = al[here.id];
+            var prev = level.previous;
+            while prev != nil {
+              var p2 = prev.previous;
+              delete prev;
+              prev = p2;
+            }
             while level != nil {
                 var l2 = level.next;
                 delete level;
@@ -549,8 +555,8 @@ module SSCA2_kernels
   class Level_Set {
     type Sparse_Vertex_List;
     var Members  : Sparse_Vertex_List;
-    var previous : Level_Set (Sparse_Vertex_List);
-    var next : Level_Set (Sparse_Vertex_List);
+    var previous : unmanaged Level_Set (Sparse_Vertex_List);
+    var next : unmanaged Level_Set (Sparse_Vertex_List);
   }
 
   //
@@ -586,7 +592,7 @@ module SSCA2_kernels
     const vertex_domain;
     var used  : atomic bool;
     var BCaux : [vertex_domain] taskPrivateArrayData(index(vertex_domain));
-    var Active_Level : [PrivateSpace] Level_Set (Sparse_Vertex_List);
+    var Active_Level : [PrivateSpace] unmanaged Level_Set (Sparse_Vertex_List);
   }
 
   // This is a simple class that hands out task private variables from the
@@ -607,79 +613,4 @@ module SSCA2_kernels
       this.TPV[tid].used.clear();
     }
   }
-
-  //
-  // reusable barrier implementation
-  //
-  record Barrier {
-    param reusable = true;
-    var n: int;
-    var count: atomic int;
-    var tasksFinished: [PrivateSpace] atomic bool;
-
-    proc Barrier() {
-      reset(numLocales);
-    }
-  
-    inline proc reset(_n: int) {
-      on this {
-        n = _n;
-        count.write(n);
-        for loc in tasksFinished {
-          loc.write(false);
-        }
-      }
-    }
-  
-    inline proc barrier() {
-      const myc = count.fetchSub(1);
-      if myc <= 1 {
-        if tasksFinished[here.id].read() {
-          halt("too many callers to barrier()");
-        } 
-        for loc in tasksFinished {
-          loc.write(true);
-        }
-        if reusable {
-          count.waitFor(n-1);
-          count.add(1);
-          for loc in tasksFinished {
-            loc.clear();
-          }
-        }
-      } else {
-        tasksFinished[here.id].waitFor(true);
-        if reusable {
-          count.add(1);
-          tasksFinished[here.id].waitFor(false);
-        }
-      }
-    }
-  
-    inline proc notify() {
-      const myc = count.fetchSub(1);
-      if myc <= 1 {
-        if tasksFinished[here.id].read() {
-          halt("too many callers to notify()");
-        }
-        for loc in tasksFinished {
-          loc.write(true);
-        }
-      }
-   }
-  
-    inline proc wait() {
-      tasksFinished[here.id].waitFor(true);
-      if reusable {
-        var sum = count.fetchAdd(1);
-        if sum == n-1 then tasksFinished.clear();
-        else tasksFinished[here.id].waitFor(false);
-      }
-    }
-  
-    inline proc try() {
-      return tasksFinished[here.id].read();
-    }
-  }
 }
-

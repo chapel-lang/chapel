@@ -1,1 +1,3 @@
-freadNotABoolean.chpl:5: error: bad format: missing expected literal in channel.read(ref a:bool) with path "freadNotABoolean.txt" offset 0
+uncaught BadFormatError: bad format: missing expected literal (in channel.read(ref a:bool) with path "freadNotABoolean.txt" offset 0)
+  freadNotABoolean.chpl:5: thrown here
+  freadNotABoolean.chpl:5: uncaught here

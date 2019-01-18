@@ -1,4 +1,0 @@
-bug: fielderator problem in ref return proc
-
-This seems to be the same problem as other tests
-with records passed by default intent not being widened.

@@ -1,0 +1,3 @@
+Bug: Compile-time assertion failure when iterating over a standalone with multiple yields
+
+It seems to matter that the loop specifies the iterKind tag.

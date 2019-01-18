@@ -1,27 +1,24 @@
 #!/usr/bin/env python
 import optparse
 import os
-import os.path
 import platform
 import re
 import sys
 
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
+import overrides, utils
+from utils import error, memoize
 
-import utils
-from utils import memoize
 
 @memoize
 def get(flag='host'):
     if flag == 'host':
-        platform_val = os.environ.get('CHPL_HOST_PLATFORM')
+        platform_val = overrides.get('CHPL_HOST_PLATFORM')
     elif flag == 'target':
-        platform_val = os.environ.get('CHPL_TARGET_PLATFORM')
+        platform_val = overrides.get('CHPL_TARGET_PLATFORM')
         if not platform_val:
             platform_val = get('host')
     else:
-        raise ValueError("Invalid flag: '{0}'".format(flag))
+        raise error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if not platform_val:
         # Check for cray platform. It is a cray platform if there is an CLEinfo
@@ -48,12 +45,18 @@ def get(flag='host'):
         platform_val = uname[0].lower().replace('_', '')
         machine = uname[4]
         if platform_val == 'linux':
-            if machine == 'x86_64':
+            if 'ppc' in machine:
+                endianness = 'le' if 'le' in machine else ''
+                bits = '64' if '64' in machine else '32'
+                platform_val = 'linux_ppc_{0}{1}'.format(endianness, bits)
+            elif machine == 'x86_64':
                 build_64_as_32 = os.environ.get('CHPL_BUILD_X86_64_AS_32')
                 if build_64_as_32 == "1":
                     platform_val = "linux64_32"
                 else:
                     platform_val = "linux64"
+            elif machine == 'aarch64':
+                platform_val = "linux64"
             else:
                 platform_val = "linux32"
         elif platform_val.startswith("cygwin"):
@@ -68,6 +71,11 @@ def get(flag='host'):
                 platform_val = 'netbsd32'
 
     return platform_val
+
+
+@memoize
+def is_cross_compiling():
+    return get('host') != get('target')
 
 
 def _main():

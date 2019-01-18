@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -88,7 +88,7 @@ proc norm(x: [?D], p: normType) where x.rank == 2 {
 }
 
 // this module doesn't implement norms for > 2D arrays, so generate
-// a compile-timem error if the user tries to call one
+// a compile-time error if the user tries to call one
 pragma "no doc"
 proc norm(x: [], p: normType) where x.rank > 2 {
   compilerError("Norms not implemented for array ranks > 2D");

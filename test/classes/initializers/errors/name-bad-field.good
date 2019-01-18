@@ -1,0 +1,2 @@
+name-bad-field.chpl:6: In initializer:
+name-bad-field.chpl:7: error: field "b" used before it is initialized

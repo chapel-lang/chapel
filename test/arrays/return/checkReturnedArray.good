@@ -1,0 +1,1 @@
+checkReturnedArray.chpl:2: error: size mismatch between return expression and declared return type

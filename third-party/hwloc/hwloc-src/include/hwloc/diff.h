@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015 Inria.  All rights reserved.
+ * Copyright © 2013-2018 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -43,6 +43,7 @@ extern "C" {
  * More complex differences such as adding or removing objects cannot
  * be represented in the difference structures and therefore return
  * errors.
+ * Differences between object sets cannot be represented either.
  *
  * It means that there is no need to apply the difference when
  * looking at the tree organization (how many levels, how many
@@ -296,4 +297,4 @@ HWLOC_DECLSPEC int hwloc_topology_diff_export_xmlbuffer(hwloc_topology_t topolog
 #endif
 
 
-#endif /* HWLOC_HELPER_H */
+#endif /* HWLOC_DIFF_H */

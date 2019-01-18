@@ -1,0 +1,15 @@
+
+[root]
+name = "Tester"
+version = "0.1.0"
+chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
+author = "Sam Partee"
+dependencies = ["_MasonTest1 0.2.0 https://github.com/Spartee/_MasonTest1"]
+
+[_MasonTest1]
+name = "_MasonTest1"
+version = "0.2.0"
+chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
+source = "https://github.com/Spartee/_MasonTest1"
+
+

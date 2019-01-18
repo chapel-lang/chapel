@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -30,86 +30,52 @@
 #include "error.h"
 
 #define baseSBATCHFilename ".chpl-slurm-sbatch-"
-#define baseSysFilename ".chpl-sys-"
 
 #define CHPL_WALLTIME_FLAG "--walltime"
 #define CHPL_GENERATE_SBATCH_SCRIPT "--generate-sbatch-script"
 #define CHPL_NODELIST_FLAG "--nodelist"
+#define CHPL_PARTITION_FLAG "--partition"
+#define CHPL_EXCLUDE_FLAG "--exclude"
 
 static char* debug = NULL;
 static char* walltime = NULL;
 static int generate_sbatch_script = 0;
 static char* nodelist = NULL;
+static char* partition = NULL;
+static char* exclude = NULL;
 
 char slurmFilename[FILENAME_MAX];
-char sysFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
 #define procsPerNode 1
 
-#define versionBuffLen 80
 typedef enum {
   slurmpro,
-  nccs,
-  torque,
   uma,
   slurm,
   unknown
 } sbatchVersion;
 
-// Find the default tmp directory. Try getting the tmp dir from the
-// ISO/IEC 9945 env var options first, then P_tmpdir, then "/tmp"
+// /tmp is always available on cray compute nodes (it's a memory mounted dir.)
+// If we ever need this to run on non-cray machines, we should update this to
+// look for the ISO/IEC 9945 env var options first, then P_tmpdir, then "/tmp"
 static const char* getTmpDir(void) {
-// TODO Elliot (02/15/15): I'm temporarily disabling this logic and just using
-// '/tmp' to see if it resolves the single local xc perf testing failures. We
-// set TMPDIR in one of our common scripts. We then make that dir on the login
-// node, but not on the compute nodes, so the program can't actually put it's
-// output anywhere. If this resolves the issues, I'll update the launcher to
-// do something smarter like create the temp dir before running and remove it
-// afterwards.
-//
-//  int i;
-//  const char* possibleDirsInEnv[] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
-//  for (i = 0; i < (sizeof(possibleDirsInEnv) / sizeof(char*)); i++) {
-//    const char* curDir = getenv(possibleDirsInEnv[i]);
-//    if (curDir != NULL) {
-//      return curDir;
-//    }
-//  }
-//#ifdef P_tmpdir
-//  return P_tmpdir;
-//#endif
   return "/tmp";
 }
 
 // Check what version of slurm is on the system 
-// Since this is c we actually write the version to a file 
-// and then get the version out 
 static sbatchVersion determineSlurmVersion(void) {
-  char version[versionBuffLen+1] = "";
-  char* versionPtr = version;
-  FILE* sysFile;
-  int i;
-  char * command; 
-  sprintf(sysFilename, "%s", baseSysFilename);
-  
-  command = chpl_glom_strings(3, "sbatch --version > ", sysFilename, " 2>&1");
-  system(command);
-  sysFile = fopen(sysFilename, "r");
-  for (i=0; i<versionBuffLen; i++) {
-    char tmp;
-    fscanf(sysFile, "%c", &tmp);
-    if (tmp == '\n') {
-      *versionPtr++ = '\0';
-      break;
-    } else {
-      *versionPtr++ = tmp;
-    }
-  }
+  const int buflen = 256;
+  char version[buflen];
+  char *argv[3];
+  argv[0] = (char *) "sbatch";
+  argv[1] = (char *) "--version";
+  argv[2] = NULL;
 
-  fclose(sysFile);
-  sprintf(command, "rm %s", sysFilename);
-  system(command);
+  memset(version, 0, buflen);
+  if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
+    chpl_error("Error trying to determine slurm version", 0, 0);
+  }
 
   if (strstr(version, "SBATCHPro")) {
     return slurmpro;
@@ -129,7 +95,8 @@ static int getCoresPerLocale(void) {
   int numCores = -1;
   const int buflen = 1024;
   char buf[buflen];
-  char* argv[7];
+  char partition_arg[128];
+  char* argv[8];
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
 
   if (numCoresString) {
@@ -146,7 +113,12 @@ static int getCoresPerLocale(void) {
   argv[4] = (char *)  "--noheader";   // don't show header (hide "CPU" header)
   argv[5] = (char *)  "--responding"; // only care about online nodes
   argv[6] = NULL;
-
+  // Set the partition if it was specified
+  if (partition) {
+    sprintf(partition_arg, "--partition=%s", partition);
+    argv[6] = partition_arg;
+    argv[7] = NULL;
+  }
 
   memset(buf, 0, buflen);
   if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0)
@@ -158,7 +130,7 @@ static int getCoresPerLocale(void) {
 
   return numCores;
 }
-#define MAX_COM_LEN 4096
+#define MAX_COM_LEN (FILENAME_MAX + 128)
 // create the command that will actually launch the program and 
 // create any files needed for the launch like the batch script 
 static char* chpl_launch_create_command(int argc, char* argv[], 
@@ -171,6 +143,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* account = getenv("CHPL_LAUNCHER_ACCOUNT");
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
+  char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
+  const char* nodeAccessStr = NULL;
+
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
 
@@ -190,7 +165,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // corresponding env var. e.g. you have to use '--output=%j.out to
   // have the output file be <jobid>.out, but when we copy the tmp file
   // to the real output file, the %j and other formatters aren't
-  // available so we have to use the equivelent slurm env var
+  // available so we have to use the equivalent slurm env var
   // (SLURM_JOB_ID.) The env vars can't be used when specifying --output
   // because they haven't been initialized yet
   char* bufferStdout    = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
@@ -208,6 +183,31 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // command line nodelist takes precedence over env var
   if (!nodelist) {
     nodelist = getenv("CHPL_LAUNCHER_NODELIST");
+  }
+
+  // command line partition takes precedence over env var
+  if (!partition) {
+    partition = getenv("CHPL_LAUNCHER_PARTITION");
+  }
+
+  // command line exclude takes precedence over env var
+  if (!exclude) {
+    exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
+  }
+
+  // request exclusive node access by default, but allow user to override
+  if (nodeAccessEnv == NULL || strcmp(nodeAccessEnv, "exclusive") == 0) {
+    nodeAccessStr = "exclusive";
+  } else if (strcmp(nodeAccessEnv, "shared") == 0 ||
+             strcmp(nodeAccessEnv, "share") == 0 ||
+             strcmp(nodeAccessEnv, "oversubscribed") == 0  ||
+             strcmp(nodeAccessEnv, "oversubscribe") == 0) {
+    nodeAccessStr = "share";
+  } else if (strcmp(nodeAccessEnv, "unset") == 0) {
+    nodeAccessStr = NULL;
+  } else {
+    chpl_warning("unsupported 'CHPL_LAUNCHER_NODE_ACCESS' option", 0, 0);
+    nodeAccessStr = "exclusive";
   }
 
   if (basenamePtr == NULL) {
@@ -253,8 +253,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", procsPerNode);
     fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", getCoresPerLocale());
     
-    //request exclusive access to nodes 
-    fprintf(slurmFile, "#SBATCH --exclusive\n");
+    // request specified node access
+    if (nodeAccessStr != NULL)
+      fprintf(slurmFile, "#SBATCH --%s\n", nodeAccessStr);
 
     // Set the walltime if it was specified 
     if (walltime) { 
@@ -264,6 +265,16 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // Set the nodelist if it was specified
     if (nodelist) {
       fprintf(slurmFile, "#SBATCH --nodelist=%s\n", nodelist);
+    }
+
+    // Set the partition if it was specified
+    if (partition) {
+      fprintf(slurmFile, "#SBATCH --partition=%s\n", partition);
+    }
+
+    // Set the exclude list if it was specified
+    if (exclude) {
+      fprintf(slurmFile, "#SBATCH --exclude=%s\n", exclude);
     }
 
     // If needed a constraint can be specified with the env var CHPL_LAUNCHER_CONSTRAINT
@@ -354,8 +365,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     len += sprintf(iCom+len, "--ntasks-per-node=%d ", procsPerNode);
     len += sprintf(iCom+len, "--cpus-per-task=%d ", getCoresPerLocale());
     
-    // request exclusive access
-    len += sprintf(iCom+len, "--exclusive ");
+    // request specified node access
+    if (nodeAccessStr != NULL)
+      len += sprintf(iCom+len, "--%s ", nodeAccessStr);
 
     // kill the job if any program instance halts with non-zero exit status
     len += sprintf(iCom+len, "--kill-on-bad-exit ");
@@ -370,9 +382,19 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += sprintf(iCom+len, "--nodelist=%s ", nodelist);
     }
 
+    // Set the partition if it was specified
+    if (partition) {
+      len += sprintf(iCom+len, "--partition=%s ", partition);
+    }
+
+    // Set the exclude list if it was specified
+    if (exclude) {
+      len += sprintf(iCom+len, "--exclude=%s ", exclude);
+    }
+
     // set any constraints 
     if (constraint) {
-      len += sprintf(iCom+len, " --constraint=%s ", constraint);
+      len += sprintf(iCom+len, "--constraint=%s ", constraint);
     }
     
     // set the account name if one was provided  
@@ -414,13 +436,12 @@ static void genSBatchScript(int argc, char *argv[], int numLocales) {
 static void chpl_launch_cleanup(void) {
   // leave file around if we're debugging 
   if (!debug) {
-    char* fileToRemove = NULL;
     // remove sbatch file unless it was explicitly generated by the user
     if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL && !generate_sbatch_script) {
       if (unlink(slurmFilename)) {
-        char msg[1024];
-        snprintf(msg, 1024, "Error removing temporary file '%s': %s",
-                 fileToRemove, strerror(errno));
+        char msg[FILENAME_MAX + 128];
+        snprintf(msg, sizeof(msg), "Error removing temporary file '%s': %s",
+                 slurmFilename, strerror(errno));
         chpl_warning(msg, 0, 0);
       }
     }
@@ -478,6 +499,24 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 1;
   }
 
+  // handle --partition <partition> or --partition=<partition>
+  if (!strcmp(argv[argNum], CHPL_PARTITION_FLAG)) {
+    partition = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_PARTITION_FLAG"=", strlen(CHPL_PARTITION_FLAG))) {
+    partition = &(argv[argNum][strlen(CHPL_PARTITION_FLAG)+1]);
+    return 1;
+  }
+
+  // handle --exclude <nodes> or --exclude=<nodes>
+  if (!strcmp(argv[argNum], CHPL_EXCLUDE_FLAG)) {
+    exclude = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_EXCLUDE_FLAG"=", strlen(CHPL_EXCLUDE_FLAG))) {
+    exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG)+1]);
+    return 1;
+  }
+
   // handle --generate-sbatch-script
   if (!strcmp(argv[argNum], CHPL_GENERATE_SBATCH_SCRIPT)) {
     generate_sbatch_script = 1;
@@ -501,6 +540,8 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
   fprintf(stdout, "  %s <nodelist> : specify a nodelist to use\n", CHPL_NODELIST_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_NODELIST)\n");
-
-
+  fprintf(stdout, "  %s <partition> : specify a partition to use\n", CHPL_PARTITION_FLAG);
+  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_PARTITION)\n");
+  fprintf(stdout, "  %s <nodes> : specify node(s) to exclude\n", CHPL_EXCLUDE_FLAG);
+  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_EXCLUDE)\n");
 }

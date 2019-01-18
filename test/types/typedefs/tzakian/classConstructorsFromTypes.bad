@@ -1,2 +1,0 @@
-classConstructorsFromTypes.chpl:5: In function 'bar':
-classConstructorsFromTypes.chpl:6: error: unresolved access of 'foo' by '()'

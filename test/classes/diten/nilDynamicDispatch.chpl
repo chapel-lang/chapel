@@ -5,12 +5,12 @@ class C {
 }
 
 class D:C {
-  proc foo() {
+  override proc foo() {
     writeln("D.foo()");
   }
 }
 
-var c: C;
-var d: D;
+var c: borrowed C;
+var d: borrowed D;
 
 c.foo();

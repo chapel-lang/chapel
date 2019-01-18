@@ -1,4 +1,5 @@
 \documentclass[10pt,oneside,titlepage]{spec}
+\usepackage[T1]{fontenc}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{color}
@@ -130,13 +131,13 @@
 \textheight 8.5in
 
 \makeindex
-\title{Chapel Language Specification\\Version 0.98}
+\title{Chapel Language Specification\\Version 0.986}
 
 \author{Cray Inc\\
 901 Fifth Avenue, Suite 1000\\
 Seattle, WA 98164}
 
-\date{October 1, 2015}
+\date{September 20, 2018}
 
 \setcounter{tocdepth}{3}
 
@@ -154,7 +155,7 @@ Seattle, WA 98164}
 \null\vfill
 \noindent
 \begin{center}
-\copyright 2016 Cray Inc.
+\copyright 2019 Cray Inc.
 \end{center}
 
 \cleardoublepage
@@ -202,7 +203,9 @@ Seattle, WA 98164}
 \cleardoublepage
 \input{Modules}
 \cleardoublepage
-\input{Functions}
+\input{Procedures}
+\cleardoublepage
+\input{Methods}
 \cleardoublepage
 \input{Tuples}
 \cleardoublepage

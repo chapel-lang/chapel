@@ -79,12 +79,12 @@ module test_dataflow_cholesky {
 
   use cholesky_execution_config_consts;
 
-  use cholesky_scalar_algorithms, 
+  use cholesky_scalar_algorithms,
       dataflow_block_cholesky;
 
   proc main {
 
-    var Rand = new RandomStream ( seed = 314159) ;
+    var Rand = new owned RandomStream ( real, seed = 314159) ;
 
     const mat_dom : domain (2) = { index_base .. #n, index_base .. #n };
 
@@ -108,14 +108,14 @@ module test_dataflow_cholesky {
 
     // -------------------------------------------------------------
     // create a positive definite matrix A by setting A equal to the
-    // matrix-matrix product B B^T.  This normal equations matrix is 
+    // matrix-matrix product B B^T.  This normal equations matrix is
     // positive-definite as long as B is full rank.
     // -------------------------------------------------------------
 
     A = 0.0;
 
     forall (i,j) in mat_dom do
-      A (i,j) = + reduce (  [k in mat_dom.dim (1) ] 
+      A (i,j) = + reduce (  [k in mat_dom.dim (1) ]
     			    B (i, k) * B (j, k) );
 
     // factorization algorithms overwrite a copy of A, leaving
@@ -134,10 +134,10 @@ module test_dataflow_cholesky {
     else
       writeln ("factorization failed for non-positive semi-definite matrix");
 
- 
+
     L = A;
 
-    writeln (); 
+    writeln ();
     writeln ("block 2D data flow cholesky factorization, block size: ",
 	      block_size );
 
@@ -149,10 +149,9 @@ module test_dataflow_cholesky {
       check_factorization ( A, L );
     else
       writeln ("factorization failed for non-positive semi-definite matrix");
-
   }
 
- 
+
   proc check_factorization ( A : [], L : [] )
 
     // -----------------------------------------------------------------------
@@ -166,9 +165,9 @@ module test_dataflow_cholesky {
 
     assert ( A.domain.dim (1) == A.domain.dim (2)  &&
 	     L.domain.dim (1) == A.domain.dim (1)  &&
-	     L.domain.dim (2) == A.domain.dim (2) 
+	     L.domain.dim (2) == A.domain.dim (2)
 	     );
-    
+
     const mat_dom  = A.domain,
 	  mat_rows = A.domain.dim(1),
 	  n        = A.domain.dim(1).length;
@@ -182,10 +181,10 @@ module test_dataflow_cholesky {
 
     for i in mat_rows do
       d (i) = sqrt ( A (i,i) );
-    
+
     forall (i,j) in mat_dom with (ref max_ratio) do { // race
       const resid: real   =
-               abs (A (i,j) - 
+               abs (A (i,j) -
 		    + reduce ( [k in mat_dom.dim(1) (..min (i,j))]
 			       L (i,k) * L (j,k) ) ) ;
       max_ratio = max ( max_ratio,
@@ -201,7 +200,7 @@ module test_dataflow_cholesky {
 
 
   proc print_L ( L : [] ) {
-   
+
     const rows = L.domain.dim (1);
 
     //for i in rows do
@@ -209,4 +208,4 @@ module test_dataflow_cholesky {
   }
 
 }
-    
+

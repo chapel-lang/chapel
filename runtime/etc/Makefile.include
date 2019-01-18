@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -26,13 +26,21 @@ MAKE_COMP_GEN_CFLAGS =
 ifeq ($(COMP_GEN_WARN), 1)
   MAKE_COMP_GEN_CFLAGS += $(WARN_GEN_CFLAGS)
 endif
+MAKE_COMP_GEN_CFLAGS += $(SQUASH_WARN_GEN_CFLAGS)
 ifeq ($(COMP_GEN_DEBUG), 1)
   MAKE_COMP_GEN_CFLAGS += $(DEBUG_CFLAGS)
   DEBUG = 1
+else
+  # no need for a NO_DEBUG_CFLAGS yet
+  # MAKE_COMP_GEN_CFLAGS += $(NO_DEBUG_CFLAGS)
+  DEBUG = 0
 endif
 ifeq ($(COMP_GEN_OPT), 1)
   MAKE_COMP_GEN_CFLAGS += $(OPT_CFLAGS)
   OPTIMIZE = 1
+else
+  MAKE_COMP_GEN_CFLAGS += $(NO_OPT_CFLAGS)
+  OPTIMIZE = 0
 endif
 ifeq ($(COMP_GEN_SPECIALIZE), 1)
   MAKE_COMP_GEN_CFLAGS += $(SPECIALIZE_CFLAGS)
@@ -48,15 +56,14 @@ endif
 
 COMP_GEN_CFLAGS = $(MAKE_COMP_GEN_CFLAGS) $(COMP_GEN_USER_CFLAGS)
 
-
-LD = $(CC)
-
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
 -include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.tasks-$(CHPL_MAKE_TASKS)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
+-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.unwind-$(CHPL_MAKE_UNWIND)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.gmp-$(CHPL_MAKE_GMP)
 -include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.hwloc-$(CHPL_MAKE_HWLOC)
+# Makefile.jemalloc-$(CHPL_MAKE_JEMALLOC) is included in Makefile.mem-jemalloc
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.regexp-$(CHPL_MAKE_REGEXP)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.auxFilesys
 
@@ -64,7 +71,7 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.auxFilesys
 # sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
 include $(CHPL_MAKE_HOME)/runtime/make/Makefile.runtime.include
 
-# RUNTIME_CFLAGS e.g. -DCHPL_TASKS_MODEL_H=... -DCHPL_THREADS_MODEL_H=...
+# RUNTIME_CFLAGS e.g. -DCHPL_DEBUG
 #
 # TODO (bradc): Note that the following results in all of our
 # compiler-specific warning flags getting listed as part of GEN_FLAGS
@@ -76,6 +83,8 @@ include $(CHPL_MAKE_HOME)/runtime/make/Makefile.runtime.include
 # try and wedge in in the name of shorter compiler lines.
 #
 HEADER_CFLAGS = $(RUNTIME_CFLAGS)
+HEADER_CFLAGS += -I$(CHPL_MAKE_HOME)/modules/standard
+HEADER_CFLAGS += -I$(CHPL_MAKE_HOME)/modules/packages
 
 GEN_CFLAGS += $(HEADER_CFLAGS)
 
@@ -83,7 +92,14 @@ GEN_LFLAGS += $(RUNTIME_LFLAGS)
 
 CHPL_RT_INC_DIR = $(RUNTIME_INCLS)
 
-CHPL_RT_LIB_DIR = $(CHPL_MAKE_HOME)/$(LIB_RT_DIR)
+ifndef CHPL_MAKE_RUNTIME_LIB
+CHPL_MAKE_RUNTIME_LIB = $(CHPL_MAKE_HOME)/lib
+endif
+
+CHPL_RT_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_RUNTIME_SUBDIR)
+
+x:
+	@echo $(CHPL_MAKE_RUNTIME_LIB)
 
 printincludesanddefines:
 	@echo $(CHPL_MAKE_BASE_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS)
@@ -91,17 +107,34 @@ printincludesanddefines:
 printcompileline:
 	@echo $(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
 
+printcxxcompileline:
+	@echo $(CXX) $(CHPL_MAKE_BASE_CXXFLAGS) $(GEN_CXXFLAGS) $(COMP_GEN_CXXFLAGS) $(CHPL_RT_INC_DIR)
+
+printccompiler:
+	@echo $(CC)
+
 printcflags:
 	@echo $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS)
 
+printcxxflags:
+	@echo $(CHPL_MAKE_BASE_CXXFLAGS) $(GEN_CXXFLAGS) $(COMP_GEN_CXXFLAGS)
+
+printlinkershared:
+	@echo $(LD) $(LIB_DYNAMIC_FLAG)
+
 printlibraries:
 	@echo $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
-	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
+	      -lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
+
+printlinker:
+	@echo $(LD)
 
 printlinkline:
 	@echo $(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
-	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
+	      -lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
 
+printoverrideld:
+	@echo $(LD)
 
 printmaino:
 	@echo $(CHPL_RT_LIB_DIR)/main.o
@@ -109,11 +142,16 @@ printmaino:
 printllvminstall:
 	@echo $(LLVM_INSTALL_DIR)
 
+printclangcc:
+	@echo $(CLANG_CC)
+
+printclangcxx:
+	@echo $(CLANG_CXX)
 
 checkRtLibDir:
 ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)
 ifdef CHPL_DEVELOPER
-	$(warning Expected runtime configuration: $(shell basename $(CHPL_RT_LIB_DIR)))
+	$(warning Expected runtime library in $(CHPL_RT_LIB_DIR))
 endif
 ifeq ($(CHPL_MODULE_HOME),$(CHPL_HOME))
 	$(error The requested configuration is not included in the module. \

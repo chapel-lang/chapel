@@ -1,3 +1,1 @@
-localBlock3.chpl:6: In function 'main':
-localBlock3.chpl:14: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
 localBlock3.chpl:26: error: cannot access remote data in local block

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -36,7 +36,7 @@
 
 // chpl_bitops_popcount_*
 // ----------------------
-// C implementations from Bithacks: 'Couting bits set, in parallel'
+// C implementations from Bithacks: 'Counting bits set, in parallel'
 // With -O3 and no support for the popcount instruction, the C versions produce
 // the same assembly as the builtin under clang
 // Returns: number of bits set in the provided integer

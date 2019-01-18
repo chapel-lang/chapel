@@ -1,2 +1,2 @@
 no-use-record.chpl:6: In function 'main':
-no-use-record.chpl:7: error: unresolved call '_defaultOf(type R)'
+no-use-record.chpl:7: error: unresolved call 'R.init()'

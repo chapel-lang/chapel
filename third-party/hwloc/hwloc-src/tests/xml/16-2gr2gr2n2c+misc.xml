@@ -5,6 +5,9 @@
     <info name="Backend" value="Synthetic"/>
     <info name="SyntheticDescription" value="group:2 group:2 node:2 core:2 1"/>
     <info name="hwlocVersion" value="1.10.1"/>
+    <userdata name="MyName" length="16">0000000000000001</userdata>
+    <userdata name="MyName0" length="0"/>
+    <userdata name="EncodedShort0" length="0" encoding="base64"/>
     <object type="Group" os_index="0" cpuset="0x000000ff" complete_cpuset="0x000000ff" online_cpuset="0x000000ff" allowed_cpuset="0x000000ff" nodeset="0x0000000f" complete_nodeset="0x0000000f" allowed_nodeset="0x0000000f" depth="2">
       <info name="Type" value="MyBigGroup"/>
       <object type="Group" os_index="0" cpuset="0x0000000f" complete_cpuset="0x0000000f" online_cpuset="0x0000000f" allowed_cpuset="0x0000000f" nodeset="0x00000003" complete_nodeset="0x00000003" allowed_nodeset="0x00000003" depth="1">
@@ -20,6 +23,8 @@
         </object>
         <object type="NUMANode" os_index="1" cpuset="0x0000000c" complete_cpuset="0x0000000c" online_cpuset="0x0000000c" allowed_cpuset="0x0000000c" nodeset="0x00000002" complete_nodeset="0x00000002" allowed_nodeset="0x00000002" local_memory="1073741824">
           <page_type size="4096" count="262144"/>
+          <userdata name="EncodedShort3" length="3" encoding="base64">f+B/</userdata>
+          <userdata name="EncodedLong0" length="128" encoding="base64">eK5kf+B/AAB4rmR/4H8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAtmR/4H8AAP////8AAAAA////fwAAAAA=</userdata>
           <object type="Core" os_index="2" cpuset="0x00000004" complete_cpuset="0x00000004" online_cpuset="0x00000004" allowed_cpuset="0x00000004" nodeset="0x00000002" complete_nodeset="0x00000002" allowed_nodeset="0x00000002">
             <object type="PU" os_index="2" cpuset="0x00000004" complete_cpuset="0x00000004" online_cpuset="0x00000004" allowed_cpuset="0x00000004" nodeset="0x00000002" complete_nodeset="0x00000002" allowed_nodeset="0x00000002"/>
           </object>

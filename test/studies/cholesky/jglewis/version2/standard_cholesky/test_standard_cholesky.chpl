@@ -79,10 +79,10 @@ module standard_cholesky_test {
 
   use cholesky_execution_config_consts;
 
-  use scalar_outer_product_cholesky, 
-      scalar_inner_product_cholesky, 
-      scalar_bordering_cholesky, 
-      block_1D_outer_product_cholesky, 
+  use scalar_outer_product_cholesky,
+      scalar_inner_product_cholesky,
+      scalar_bordering_cholesky,
+      block_1D_outer_product_cholesky,
       block_2D_outer_product_cholesky,
       block_1D_inner_product_cholesky,
       block_2D_inner_product_cholesky,
@@ -91,7 +91,7 @@ module standard_cholesky_test {
 
   proc main {
 
-    var Rand = new RandomStream ( seed = 314159) ;
+    var Rand = new owned RandomStream ( real, seed = 314159) ;
 
     const mat_dom : domain (2) = { index_base .. #n, index_base .. #n };
 
@@ -115,14 +115,14 @@ module standard_cholesky_test {
 
     // -------------------------------------------------------------
     // create a positive definite matrix A by setting A equal to the
-    // matrix-matrix product B B^T.  This normal equations matrix is 
+    // matrix-matrix product B B^T.  This normal equations matrix is
     // positive-definite as long as B is full rank.
     // -------------------------------------------------------------
 
     A = 0.0;
 
     forall (i,j) in mat_dom do
-      A (i,j) = + reduce (  [k in mat_dom.dim (1) ] 
+      A (i,j) = + reduce (  [k in mat_dom.dim (1) ]
     			    B (i, k) * B (j, k) );
 
     // factorization algorithms overwrite a copy of A, leaving
@@ -139,7 +139,7 @@ module standard_cholesky_test {
     writeln ("scalar outer product cholesky factorization ");
 
     var clock : Timer;
-          
+
     clock.clear ();
     clock.start ();
 
@@ -148,7 +148,7 @@ module standard_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -161,7 +161,7 @@ module standard_cholesky_test {
 
     L = A;
 
-    writeln ("\n\n"); 
+    writeln ("\n\n");
     writeln ("block 1D outer product cholesky factorization, block size: ",
 	      block_size );
 
@@ -173,7 +173,7 @@ module standard_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -186,7 +186,7 @@ module standard_cholesky_test {
 
     L = A;
 
-    writeln ("\n\n"); 
+    writeln ("\n\n");
     writeln ("block 2D outer product cholesky factorization, block size: ",
 	      block_size );
 
@@ -198,7 +198,7 @@ module standard_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -223,7 +223,7 @@ module standard_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -235,10 +235,10 @@ module standard_cholesky_test {
       writeln ("factorization failed for non-positive semi-definite matrix");
 
 
-     
+
     L = A;
 
-    writeln ("\n\n"); 
+    writeln ("\n\n");
     writeln ("block 1D inner product cholesky factorization, block size: ",
 	      block_size );
 
@@ -250,7 +250,7 @@ module standard_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -264,7 +264,7 @@ module standard_cholesky_test {
 
     L = A;
 
-    writeln ("\n\n"); 
+    writeln ("\n\n");
     writeln ("block 2D inner product cholesky factorization, block size: ",
 	      block_size );
 
@@ -276,7 +276,7 @@ module standard_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -301,7 +301,7 @@ module standard_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -314,7 +314,7 @@ module standard_cholesky_test {
 
     L = A;
 
-    writeln ("\n\n"); 
+    writeln ("\n\n");
     writeln ("block 1D bordering cholesky factorization, block size: ",
 	      block_size );
 
@@ -326,7 +326,7 @@ module standard_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -340,7 +340,7 @@ module standard_cholesky_test {
 
     L = A;
 
-    writeln ("\n\n"); 
+    writeln ("\n\n");
     writeln ("block 2D bordering cholesky factorization, block size: ",
 	      block_size );
 
@@ -352,7 +352,7 @@ module standard_cholesky_test {
     clock.stop ();
     if !reproducible_output then {
       writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-      writeln ( " collective speed in megaflops: ", 
+      writeln ( " collective speed in megaflops: ",
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
@@ -364,33 +364,33 @@ module standard_cholesky_test {
       writeln ("factorization failed for non-positive semi-definite matrix");
 
     proc run_one_cholesky_algorithm ( header : string, cholesky_fun ) {
-      
+
       // --------------------------------------------
       // Timer version assumes one process per locale
       // --------------------------------------------
       //
       // draft of a procedure to encapsulate the test process.  Unused at this
       // time because Chapel presently doesn't handle generic functions as
-      // arguments. The cholesky codes all are written generically because they 
+      // arguments. The cholesky codes all are written generically because they
       // can be.
-          
+
       var clock : Timer;
-          
+
       writeln ("\n\n");
       writeln (header);
-          
+
       clock.clear ();
       clock.start ();
-          
+
       positive_definite = cholesky_fun ( L );
-          
+
       clock.stop ();
       if !reproducible_output then {
 	writeln ( "Cholesky Factorization time:    ", clock.elapsed () );
-	writeln ( " collective speed in megaflops: ", 
+	writeln ( " collective speed in megaflops: ",
 		  ( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
       }
-          
+
       print_lower_triangle ( L );
 
       if positive_definite then
@@ -398,7 +398,6 @@ module standard_cholesky_test {
       else
     	writeln ("factorization failed for non-positive semi-definite matrix");
     }
-
   }
 
   proc check_factorization ( A : [], L : [] )
@@ -414,9 +413,9 @@ module standard_cholesky_test {
 
     assert ( A.domain.dim (1) == A.domain.dim (2)  &&
 	     L.domain.dim (1) == A.domain.dim (1)  &&
-	     L.domain.dim (2) == A.domain.dim (2) 
+	     L.domain.dim (2) == A.domain.dim (2)
 	     );
-    
+
     const mat_dom  = A.domain,
           mat_rows = A.domain.dim(1),
           n        = A.domain.dim(1).length;
@@ -430,10 +429,10 @@ module standard_cholesky_test {
 
     for i in mat_rows do
       d (i) = sqrt ( A (i,i) );
-    
+
     forall (i,j) in mat_dom with (ref max_ratio) do { // race
       const resid: real =
-               abs (A (i,j) - 
+               abs (A (i,j) -
 		    + reduce ( [k in mat_dom.dim(1) (..min (i,j))]
 			       L (i,k) * L (j,k) ) ) ;
       max_ratio = max ( max_ratio,
@@ -449,10 +448,10 @@ module standard_cholesky_test {
 
 
   proc print_lower_triangle ( L : [] ) {
-   
+
     if print_matrix_details then
       for (i_row, i_col) in zip( L.domain.dim(1), L.domain.dim(2) ) do
 	writeln (i_row, ":  ", L(i_row, ..i_col) );
   }
 }
-    
+

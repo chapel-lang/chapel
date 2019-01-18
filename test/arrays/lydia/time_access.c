@@ -34,7 +34,7 @@ static void assign(int **A, int n) {
 static int touch(int **A, int n) {
   int i;
   int j;
-  int k;
+  int k=0;
 
   for (i=0; i<n; i++) {
     for (j=0; j<n; j++) {

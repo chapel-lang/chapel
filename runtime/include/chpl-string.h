@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -26,7 +26,7 @@ typedef const char* chpl_string;
 
 #ifdef _stdchpl_H_
 /*** only needed for generated code ***/
-chpl_string defaultStringValue="";
+extern chpl_string defaultStringValue;
 #endif
 
 struct chpl_chpl____wide_chpl_string_s;
@@ -34,4 +34,14 @@ struct chpl_chpl____wide_chpl_string_s;
 chpl_string chpl_wide_string_copy(struct chpl_chpl____wide_chpl_string_s* x, int32_t lineno, int32_t filename);
 void chpl_string_widen(struct chpl_chpl____wide_chpl_string_s* x, chpl_string from, int32_t lineno, int32_t filename);
 void chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, int32_t filename);
+
+#define CHPL_SHORT_STRING_SIZE 8
+
+typedef struct chpl__inPlaceBuffer_t {
+  uint8_t data[CHPL_SHORT_STRING_SIZE];
+} chpl__inPlaceBuffer;
+
+uint8_t* chpl__getInPlaceBufferData(chpl__inPlaceBuffer* buf);
+uint8_t* chpl__getInPlaceBufferDataForWrite(chpl__inPlaceBuffer* buf);
+
 #endif

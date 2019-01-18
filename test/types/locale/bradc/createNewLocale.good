@@ -1,1 +1,1 @@
-myNewLoc = createNewLocale.chpl:2: error: halt reached - Pure virtual function called.
+myNewLoc = createNewLocale.chpl:2: error: halt reached - pure virtual method called

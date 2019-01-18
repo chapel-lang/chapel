@@ -1,5 +1,5 @@
 record R {
-  proc ~R () {writeln("Inside ~R");}
+  proc deinit () {writeln("Inside ~R");}
 }
 
 proc foo {

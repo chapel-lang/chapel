@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,12 +18,14 @@
  */
 
 /*
-This module provides wrappers for <cmath> (math.h) numerical constants and
-routines.  Its symbols are provided by default; an explicit 'use' statement
-is not necessary.
+This module provides mathematical constants and functions.
 
-The C Math library is part of the C Language Standard (ISO/IEC 9899), as
-described in Section 7.12.  Please consult that standard for an
+.. note:: All Chapel programs automatically ``use`` this module by default.
+          An explicit ``use`` statement is not necessary.
+
+It includes wrappers for many of the constants in functions in
+the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
+as described in Section 7.12.  Please consult that standard for an
 authoritative description of the expected properties of those constants and
 routines.
 
@@ -80,16 +82,25 @@ module Math {
   //////////////////////////////////////////////////////////////////////////
   // Helper constants and functions (not included in chpldocs).
   //
-  private extern proc chpl_macro_INFINITY():real(64);
-  private extern proc chpl_macro_NAN():real(64);
+  pragma "fn synchronization free"
+  private extern proc chpl_macro_INFINITY():real(32);
+  pragma "fn synchronization free"
+  private extern proc chpl_macro_NAN():real(32);
 
+  pragma "fn synchronization free"
   private extern proc chpl_macro_double_isinf(x: real(64)): c_int;
+  pragma "fn synchronization free"
   private extern proc chpl_macro_float_isinf(x: real(32)): c_int;
+  pragma "fn synchronization free"
   private extern proc chpl_macro_double_isfinite(x: real(64)): c_int;
+  pragma "fn synchronization free"
   private extern proc chpl_macro_float_isfinite(x: real(32)): c_int;
+  pragma "fn synchronization free"
   private extern proc chpl_macro_double_isnan(x: real(64)): c_int;
+  pragma "fn synchronization free"
   private extern proc chpl_macro_float_isnan(x: real(32)): c_int;
 
+  pragma "fn synchronization free"
   private extern proc fabs(x: real(64)): real(64);
 
   private proc _logBasePow2Help(in val, baseLog2) {
@@ -101,7 +112,7 @@ module Math {
     return result;
   }
 
-  // 
+  //
   //////////////////////////////////////////////////////////////////////////
 
 
@@ -134,6 +145,7 @@ module Math {
 
   /* Returns the magnitude of the real argument `x`. */
   inline proc abs(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc fabsf(x: real(32)): real(32);
     return fabsf(x);
   }
@@ -143,21 +155,45 @@ module Math {
 
   /* Returns the real magnitude of the imaginary argument `im`. */
   inline proc abs(im: imag(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc fabsf(x: real(32)): real(32);
     return fabsf(_i2r(im));
   }
 
-  /* Returns the real magnitude of the complex argument `x`.
+  /* Returns the real magnitude of the complex argument `z`.
 
      :rtype: The type of the real component of the argument (== `w`/2).
   */
-  inline proc abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
+  inline proc abs(z : complex(?w)): real(w/2) {
+    pragma "fn synchronization free"
+    extern proc cabsf(z: complex(64)): real(32);
+    pragma "fn synchronization free"
+    extern proc cabs(z: complex(128)): real(64);
+    if w == 64 then
+      return cabsf(z);
+    else
+      return cabs(z);
+  }
+
+
+  /* Returns the real phase angle of complex argument `z`. */
+  inline proc carg(z: complex(?w)): real(w/2) {
+    pragma "fn synchronization free"
+    extern proc cargf(z: complex(64)): real(32);
+    pragma "fn synchronization free"
+    extern proc carg(z: complex(128)): real(64);
+    if w == 64 then
+      return cargf(z);
+    else
+      return carg(z);
+  }
 
 
   /* Returns the arc cosine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
   */
+  pragma "fn synchronization free"
   extern proc acos(x: real(64)): real(64);
 
   /* Returns the arc cosine of the argument `x`.
@@ -165,8 +201,23 @@ module Math {
      It is an error if `x` is less than -1 or greater than 1.
   */
   inline proc acos(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc acosf(x: real(32)): real(32);
     return acosf(x);
+  }
+
+  /* Returns the arc cosine of the argument `z`. */
+  inline proc acos(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc cacosf(z: complex(64)): complex(64);
+    return cacosf(z);
+  }
+
+  /* Returns the arc cosine of the argument `z`. */
+  inline proc acos(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc cacos(z: complex(128)): complex(128);
+    return cacos(z);
   }
 
 
@@ -174,6 +225,7 @@ module Math {
 
      It is an error if `x` is less than 1.
   */
+  pragma "fn synchronization free"
   extern proc acosh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic cosine of the argument `x`.
@@ -181,8 +233,23 @@ module Math {
      It is an error if `x` is less than 1.
   */
   inline proc acosh(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc acoshf(x: real(32)): real(32);
     return acoshf(x);
+  }
+
+  /* Returns the inverse hyperbolic cosine of the argument `z`. */
+  inline proc acosh(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc cacoshf(z: complex(64)): complex(64);
+    return cacoshf(z);
+  }
+
+  /* Returns the inverse hyperbolic cosine of the argument `z`. */
+  inline proc acosh(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc cacosh(z: complex(128)): complex(128);
+    return cacosh(z);
   }
 
 
@@ -190,6 +257,7 @@ module Math {
 
      It is an error if `x` is less than -1 or greater than 1.
   */
+  pragma "fn synchronization free"
   extern proc asin(x: real(64)): real(64);
 
   /* Returns the arc sine of the argument `x`.
@@ -197,28 +265,76 @@ module Math {
      It is an error if `x` is less than -1 or greater than 1.
   */
   inline proc asin(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc asinf(x: real(32)): real(32);
     return asinf(x);
   }
 
+  /* Returns the arc sine of the argument `z`. */
+  inline proc asin(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc casinf(z: complex(64)): complex(64);
+    return casinf(z);
+  }
+
+  /* Returns the arc sine of the argument `z`. */
+  inline proc asin(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc casin(z: complex(128)): complex(128);
+    return casin(z);
+  }
+
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc asinh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   inline proc asinh(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc asinhf(x: real(32)): real(32);
     return asinhf(x);
   }
 
+  /* Returns the inverse hyperbolic sine of the argument `z`. */
+  inline proc asinh(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc casinhf(z: complex(64)): complex(64);
+    return casinhf(z);
+  }
+
+  /* Returns the inverse hyperbolic sine of the argument `z`. */
+  inline proc asinh(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc casinh(z: complex(128)): complex(128);
+    return casinh(z);
+  }
+
+
 
   /* Returns the arc tangent of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc atan(x: real(64)): real(64);
 
   /* Returns the arc tangent of the argument `x`. */
   inline proc atan(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc atanf(x: real(32)): real(32);
     return atanf(x);
+  }
+
+  /* Returns the arc tangent of the argument `z`. */
+  inline proc atan(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc catanf(z: complex(64)): complex(64);
+    return catanf(z);
+  }
+
+  /* Returns the arc tangent of the argument `z`. */
+  inline proc atan(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc catan(z: complex(128)): complex(128);
+    return catan(z);
   }
 
 
@@ -227,6 +343,7 @@ module Math {
      This is equivalent to
      the arc tangent of `y` / `x` except that the signs of `y`
      and `x` are used to determine the quadrant of the result. */
+  pragma "fn synchronization free"
   extern proc atan2(y: real(64), x: real(64)): real(64);
 
   /* Returns the arc tangent of the two arguments.
@@ -235,6 +352,7 @@ module Math {
      the arc tangent of `y` / `x` except that the signs of `y`
      and `x` are used to determine the quadrant of the result. */
   inline proc atan2(y : real(32), x: real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc atan2f(y: real(32), x: real(32)): real(32);
     return atan2f(y, x);
   }
@@ -243,69 +361,166 @@ module Math {
   /* Returns the inverse hyperbolic tangent of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1. */
+  pragma "fn synchronization free"
   extern proc atanh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic tangent of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1. */
   inline proc atanh(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc atanhf(x: real(32)): real(32);
     return atanhf(x);
   }
 
+  /* Returns the inverse hyperbolic tangent of the argument `z`. */
+  inline proc atanh(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc catanhf(z: complex(64)): complex(64);
+    return catanhf(z);
+  }
+
+  /* Returns the inverse hyperbolic tangent of the argument `z`. */
+  inline proc atanh(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc catanh(z: complex(128)): complex(128);
+    return catanh(z);
+  }
+
 
   /* Returns the cube root of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc cbrt(x: real(64)): real(64);
 
   /* Returns the cube root of the argument `x`. */
   inline proc cbrt(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc cbrtf(x: real(32)): real(32);
     return cbrtf(x);
   }
 
 
   /* Returns the value of the argument `x` rounded up to the nearest integer. */
+  pragma "fn synchronization free"
   extern proc ceil(x: real(64)): real(64);
 
   /* Returns the value of the argument `x` rounded up to the nearest integer. */
   inline proc ceil(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc ceilf(x: real(32)): real(32);
     return ceilf(x);
   }
 
 
-  /* Returns the complex conjugate of the argument `a`.
-   
-     :rtype: The type of `a`.
+  /* Returns the complex conjugate of the complex argument `z`.
+
+     :rtype: A complex number of the same type as `z`.
   */
-  inline proc conjg(a: complex(?w)) : complex(w) return (a.re, -a.im):complex(w);
+  inline proc conjg(z: complex(?w)) {
+    pragma "fn synchronization free"
+    extern proc conjf(z: complex(64)): complex(64);
+    pragma "fn synchronization free"
+    extern proc conj(z: complex(128)): complex(128);
+    if w == 64 then
+      return conjf(z);
+    else
+      return conj(z);
+  }
+
+  /* Returns the complex conjugate of the imaginary argument `z`.
+
+     :rtype: An imaginary number of the same type as `z`.
+  */
+  inline proc conjg(z: imag(?w)) {
+    return -z;
+  }
+
+  /* Returns the argument `z`.
+
+     :rtype: A number that is not complex or imaginary of the same type as `z`.
+  */
+  inline proc conjg(z: int(?w)) {
+    return z;
+  }
+
+  inline proc conjg(z: uint(?w)) {
+    return z;
+  }
+
+  inline proc conjg(z: real(?w)) {
+    return z;
+  }
+
+  /* Returns the projection of `z` on a Riemann sphere. */
+  inline proc cproj(z: complex(?w)): real(w/2) {
+    pragma "fn synchronization free"
+    extern proc cprojf(z: complex(64)): real(32);
+    pragma "fn synchronization free"
+    extern proc cproj(z: complex(128)): real(64);
+    if w == 64 then
+      return cprojf(z);
+    else
+      return cproj(z);
+  }
 
 
   /* Returns the cosine of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc cos(x: real(64)): real(64);
 
   /* Returns the cosine of the argument `x`. */
   inline proc cos(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc cosf(x: real(32)): real(32);
     return cosf(x);
   }
 
+  /* Returns the cosine of the argument `z`. */
+  inline proc cos(z : complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc ccosf(z: complex(64)): complex(64);
+    return ccosf(z);
+  }
+
+  /* Returns the cosine of the argument `z`. */
+  inline proc cos(z : complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc ccos(z: complex(128)): complex(128);
+    return ccos(z);
+  }
+
 
   /* Returns the hyperbolic cosine of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc cosh(x: real(64)): real(64);
 
   /* Returns the hyperbolic cosine of the argument `x`. */
   inline proc cosh(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc coshf(x: real(32)): real(32);
     return coshf(x);
   }
 
+  /* Returns the hyperbolic cosine of the argument `z`. */
+  inline proc cosh(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc ccoshf(z: complex(64)): complex(64);
+    return ccoshf(z);
+  }
+
+  /* Returns the hyperbolic cosine of the argument `z`. */
+  inline proc cosh(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc ccosh(z: complex(128)): complex(128);
+    return ccosh(z);
+  }
+
 
   /* Returns :proc:`ceil`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded up to the nearest integer. 
+     i.e., the fraction `m`/`n` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time.
+     fewer conditionals will be evaluated at run time.
   */
   proc divceil(param m: integral, param n: integral) param return
     if isNonnegative(m) then
@@ -316,10 +531,10 @@ module Math {
       else                     (m + n + 1) / n;
 
   /* Returns :proc:`ceil`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded up to the nearest integer. 
+     i.e., the fraction `m`/`n` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time.
+     fewer conditionals will be evaluated at run time.
   */
   proc divceil(m: integral, n: integral) return
     if isNonnegative(m) then
@@ -345,7 +560,7 @@ module Math {
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time.
+     fewer conditionals will be evaluated at run time.
   */
   proc divfloor(param m: integral, param n: integral) param return
     if isNonnegative(m) then
@@ -359,7 +574,7 @@ module Math {
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time.
+     fewer conditionals will be evaluated at run time.
   */
   proc divfloor(m: integral, n: integral) return
     if isNonnegative(m) then
@@ -382,10 +597,12 @@ module Math {
 
 
   /* Returns the error function of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc erf(x: real(64)): real(64);
 
   /* Returns the error function of the argument `x`. */
   inline proc erf(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc erff(x: real(32)): real(32);
     return erff(x);
   }
@@ -394,54 +611,78 @@ module Math {
   /* Returns the complementary error function of the argument.
      This is equivalent to 1.0 - :proc:`erf`\(`x`).
   */
+  pragma "fn synchronization free"
   extern proc erfc(x: real(64)): real(64);
 
   /* Returns the complementary error function of the argument.
      This is equivalent to 1.0 - :proc:`erf`\(`x`).
   */
   inline proc erfc(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc erfcf(x: real(32)): real(32);
     return erfcf(x);
   }
 
 
-  /* Returns the value of the Napierien `e` raised to the power of the argument `x`. */
+  /* Returns the value of the Napierian `e` raised to the power of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc exp(x: real(64)): real(64);
 
-  /* Returns the value of the Napierien `e` raised to the power of the argument. */
+  /* Returns the value of the Napierian `e` raised to the power of the argument. */
   inline proc exp(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc expf(x: real(32)): real(32);
     return expf(x);
   }
 
+  /* Returns the value of the Napierian `e` raised to the power of the argument. */
+  inline proc exp(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc cexpf(z: complex(64)): complex(64);
+    return cexpf(z);
+  }
+
+  /* Returns the value of the Napierian `e` raised to the power of the argument. */
+  inline proc exp(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc cexp(z: complex(128)): complex(128);
+    return cexp(z);
+  }
+
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc exp2(x: real(64)): real(64);
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
   inline proc exp2(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc exp2f(x: real(32)): real(32);
     return exp2f(x);
   }
 
 
-  /* Returns one less than the value of the Napierien `e` raised to the power
+  /* Returns one less than the value of the Napierian `e` raised to the power
      of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc expm1(x: real(64)): real(64);
 
-  /* Returns one less than the value of the Napierien `e` raised to the power
+  /* Returns one less than the value of the Napierian `e` raised to the power
      of the argument `x`. */
   inline proc expm1(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc expm1f(x: real(32)): real(32);
     return expm1f(x);
   }
 
 
   /* Returns the value of the argument `x` rounded down to the nearest integer. */
+  pragma "fn synchronization free"
   extern proc floor(x: real(64)): real(64);
 
   /* Returns the value of the argument `x` rounded down to the nearest integer. */
   inline proc floor(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc floorf(x: real(32)): real(32);
     return floorf(x);
   }
@@ -480,8 +721,10 @@ module Math {
   /* Multiply by an integer power of 2.
      Returns x * 2**n.
      */
+  pragma "fn synchronization free"
   extern proc ldexp(x:real(64), n:int(32)):real(64);
   inline proc ldexp(x:real(32), n:int(32)):real(32) {
+    pragma "fn synchronization free"
     extern proc ldexpf(x:real(32), n:int(32)):real(32);
     return ldexpf(x, n);
   }
@@ -489,12 +732,14 @@ module Math {
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.
   */
+  pragma "fn synchronization free"
   extern proc lgamma(x: real(64)): real(64);
 
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.
   */
   inline proc lgamma(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc lgammaf(x: real(32)): real(32);
     return lgammaf(x);
   }
@@ -504,6 +749,7 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
+  pragma "fn synchronization free"
   extern proc log(x: real(64)): real(64);
 
   /* Returns the natural logarithm of the argument `x`.
@@ -511,8 +757,23 @@ module Math {
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc logf(x: real(32)): real(32);
     return logf(x);
+  }
+
+  /* Returns the natural logarithm of the argument `z`. */
+  inline proc log(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc clogf(z: complex(64)): complex(64);
+    return clogf(z);
+  }
+
+  /* Returns the natural logarithm of the argument `z`. */
+  inline proc log(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc clog(z: complex(128)): complex(128);
+    return clog(z);
   }
 
 
@@ -520,13 +781,15 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
+  pragma "fn synchronization free"
   extern proc log10(x: real(64)): real(64);
 
   /* Returns the base 10 logarithm of the argument `x`.
-     
+
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log10(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc log10f(x: real(32)): real(32);
     return log10f(x);
   }
@@ -536,6 +799,7 @@ module Math {
 
      It is an error if `x` is less than or equal to -1.
   */
+  pragma "fn synchronization free"
   extern proc log1p(x: real(64)): real(64);
 
   /* Returns the natural logarithm of `x` + 1.
@@ -543,6 +807,7 @@ module Math {
      It is an error if `x` is less than or equal to -1.
   */
   inline proc log1p(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc log1pf(x: real(32)): real(32);
     return log1pf(x);
   }
@@ -578,6 +843,7 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
+  pragma "fn synchronization free"
   extern proc log2(x: real(64)): real(64);
 
   /* Returns the base 2 logarithm of the argument `x`.
@@ -585,6 +851,7 @@ module Math {
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log2(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc log2f(x: real(32)): real(32);
     return log2f(x);
   }
@@ -601,7 +868,7 @@ module Math {
   }
 
   /* Returns the base 2 logarithm of the argument `x`.
-     
+
      :rtype: `int(64)`
 
      It is an error if `x` is less than or equal to zero.
@@ -612,7 +879,10 @@ module Math {
 
 
   /* Computes the mod operator on the two arguments, defined as
-     ``mod(x,y) = x - y * floor(x / y)``.
+     ``mod(m,n) = m - n * floor(m / n)``.
+
+     The result is always >= 0 if `n` > 0.
+     It is an error if `n` == 0.
   */
   proc mod(param m: integral, param n: integral) param {
     param temp = m % n;
@@ -629,10 +899,13 @@ module Math {
   }
 
   /* Computes the mod operator on the two arguments, defined as
-     ``mod(x,y) = x - y * floor(x / y)``.
+     ``mod(m,n) = m - n * floor(m / n)``.
 
      If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time. 
+     fewer conditionals will be evaluated at run time.
+
+     The result is always >= 0 if `n` > 0.
+     It is an error if `n` == 0.
   */
   proc mod(m: integral, n: integral) {
     const temp = m % n;
@@ -649,7 +922,7 @@ module Math {
   }
 
   /* Computes the mod operator on the two numbers, defined as
-     ``mod(x,y) = x - y * floor(x / y)``. 
+     ``mod(x,y) = x - y * floor(x / y)``.
 
      The return value has the same type as `x`.
   */
@@ -668,6 +941,7 @@ module Math {
      current rounding direction.  :proc:`nearbyint` will not raise the "inexact"
      floating-point exception.
   */
+  pragma "fn synchronization free"
   extern proc nearbyint(x: real(64)): real(64);
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -675,6 +949,7 @@ module Math {
      floating-point exception.
   */
   inline proc nearbyint(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc nearbyintf(x: real(32)): real(32);
     return nearbyintf(x);
   }
@@ -684,6 +959,7 @@ module Math {
      current rounding direction.  :proc:`rint` may raise the "inexact" floating-point
      exception.
   */
+  pragma "fn synchronization free"
   extern proc rint(x: real(64)): real(64);
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -691,16 +967,19 @@ module Math {
      exception.
   */
   inline proc rint(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc rintf(x: real(32)): real(32);
     return rintf(x);
   }
 
 
   /* Returns the rounded integral value of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc round(x: real(64)): real(64);
 
   /* Returns the rounded integral value of the argument `x`. */
   inline proc round(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc roundf(x: real(32)): real(32);
     return roundf(x);
   }
@@ -732,29 +1011,62 @@ module Math {
 
 
   /* Returns the sine of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc sin(x: real(64)): real(64);
 
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc sinf(x: real(32)): real(32);
     return sinf(x);
   }
 
+  /* Returns the sine of the argument `z`. */
+  inline proc sin(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc csinf(z: complex(64)): complex(64);
+    return csinf(z);
+  }
+
+  /* Returns the sine of the argument `z`. */
+  inline proc sin(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc csin(z: complex(128)): complex(128);
+    return csin(z);
+  }
+
 
   /* Returns the hyperbolic sine of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc sinh(x: real(64)): real(64);
 
   /* Returns the hyperbolic sine of the argument `x`. */
   inline proc sinh(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc sinhf(x: real(32)): real(32);
     return sinhf(x);
   }
 
+  /* Returns the hyperbolic sine of the argument `z`. */
+  inline proc sinh(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc csinhf(z: complex(64)): complex(64);
+    return csinhf(z);
+  }
 
-  /* Returns the square root of the argument `x`.  
+  /* Returns the hyperbolic sine of the argument `z`. */
+  inline proc sinh(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc csinh(z: complex(128)): complex(128);
+    return csinh(z);
+  }
+
+
+  /* Returns the square root of the argument `x`.
 
      It is an error if the `x` is less than zero.
   */
+  pragma "fn synchronization free"
   extern proc sqrt(x: real(64)): real(64);
 
   /* Returns the square root of the argument `x`.
@@ -762,36 +1074,86 @@ module Math {
      It is an error if  `x` is less than zero.
   */
   inline proc sqrt(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc sqrtf(x: real(32)): real(32);
     return sqrtf(x);
   }
 
+  /* Returns the square root of the argument `z`. */
+  inline proc sqrt(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc csqrtf(z: complex(64)): complex(64);
+    return csqrtf(z);
+  }
+
+  /* Returns the square root of the argument `z`. */
+  inline proc sqrt(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc csqrt(z: complex(128)): complex(128);
+    return csqrt(z);
+  }
+
 
   /* Returns the tangent of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc tan(x: real(64)): real(64);
 
   /* Returns the tangent of the argument `x`. */
   inline proc tan(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc tanf(x: real(32)): real(32);
     return tanf(x);
   }
 
+  /* Returns the tangent of the argument `z`. */
+  inline proc tan(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc ctanf(z: complex(64)): complex(64);
+    return ctanf(z);
+  }
+
+  /* Returns the tangent of the argument `z`. */
+  inline proc tan(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc ctan(z: complex(128)): complex(128);
+    return ctan(z);
+  }
+
 
   /* Returns the hyperbolic tangent of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc tanh(x: real(64)): real(64);
 
   /* Returns the hyperbolic tangent of the argument `x`. */
   inline proc tanh(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc tanhf(x: real(32)): real(32);
     return tanhf(x);
   }
 
+  /* Returns the hyperbolic tangent of the argument `z`. */
+  inline proc tanh(z: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    extern proc ctanhf(z: complex(64)): complex(64);
+    return ctanhf(z);
+  }
+
+  /* Returns the hyperbolic tangent of the argument `z`. */
+  inline proc tanh(z: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    extern proc ctanh(z: complex(128)): complex(128);
+    return ctanh(z);
+  }
+
+
 
   /* Returns the absolute value of the gamma function of the argument `x`. */
+  pragma "fn synchronization free"
   extern proc tgamma(x: real(64)): real(64);
 
   /* Returns the absolute value of the gamma function of the argument `x`. */
   inline proc tgamma(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc tgammaf(x: real(32)): real(32);
     return tgammaf(x);
   }
@@ -799,13 +1161,139 @@ module Math {
 
   /* Returns the nearest integral value to the argument `x` that is not larger
      than `x` in absolute value. */
+  pragma "fn synchronization free"
   extern proc trunc(x: real(64)): real(64);
 
   /* Returns the nearest integral value to the argument `x` that is not larger
      than `x` in absolute value. */
   inline proc trunc(x : real(32)): real(32) {
+    pragma "fn synchronization free"
     extern proc truncf(x: real(32)): real(32);
     return truncf(x);
+  }
+  
+  /* Returns the greatest common divisor of the integer argument `a` and
+     `b`. */
+  proc gcd(in a: int,in b: int): int {
+     a = abs(a);
+     b = abs(b);
+     var r: int;
+     while(b != 0) {
+       r = a % b;
+       a = b;
+       b = r;
+     }
+    return a;
+  }
+
+
+
+  /* Returns the Bessel function of the first kind of order `0` of `x`. */
+  inline proc j0(x: real(32)): real(32) {
+    pragma "fn synchronization free"
+    extern proc chpl_float_j0(x: real(32)): real(32);
+    return chpl_float_j0(x);
+  }
+
+  /* Returns the Bessel function of the first kind of order `0` of `x`. */
+  inline proc j0(x: real(64)): real(64) {
+    pragma "fn synchronization free"
+    extern proc j0(x: real(64)): real(64);
+    return j0(x);
+  }
+
+  /* Returns the Bessel function of the first kind of order `1` of `x`. */
+  inline proc j1(x: real(32)): real(32) {
+    pragma "fn synchronization free"
+    extern proc chpl_float_j1(x: real(32)): real(32);
+    return chpl_float_j1(x);
+  }
+
+  /* Returns the Bessel function of the first kind of order `1` of `x`. */
+  inline proc j1(x: real(64)): real(64) {
+    pragma "fn synchronization free"
+    extern proc j1(x: real(64)): real(64);
+    return j1(x);
+  }
+
+  /* Returns the Bessel function of the first kind of order `n` of `x`. */
+  inline proc jn(n: int, x: real(32)): real(32) {
+    pragma "fn synchronization free"
+    extern proc chpl_float_jn(n: c_int, x: real(32)): real(32);
+    return chpl_float_jn(n.safeCast(c_int), x);
+  }
+
+  /* Returns the Bessel function of the first kind of order `n` of `x`. */
+  inline proc jn(n: int, x: real(64)): real(64) {
+    pragma "fn synchronization free"
+    extern proc jn(n: c_int, x: real(64)): real(64);
+    return jn(n.safeCast(c_int), x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `0` of `x`, where
+     `x` must be greater than 0 */
+  inline proc y0(x: real(32)): real(32) {
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
+
+    pragma "fn synchronization free"
+    extern proc chpl_float_y0(x: real(32)): real(32);
+    return chpl_float_y0(x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `0` of `x`,
+     where `x` must be greater than 0 */
+  inline proc y0(x: real(64)): real(64) {
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
+
+    pragma "fn synchronization free"
+    extern proc y0(x: real(64)): real(64);
+    return y0(x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `1` of `x`,
+     where `x` must be greater than 0 */
+  inline proc y1(x: real(32)): real(32) {
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
+
+    pragma "fn synchronization free"
+    extern proc chpl_float_y1(x: real(32)): real(32);
+    return chpl_float_y1(x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `1` of `x`,
+     where `x` must be greater than 0 */
+  inline proc y1(x: real(64)): real(64) {
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
+
+    pragma "fn synchronization free"
+    extern proc y1(x: real(64)): real(64);
+    return y1(x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `n` of `x`,
+     where `x` must be greater than 0 */
+  inline proc yn(n: int, x: real(32)): real(32) {
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
+
+    pragma "fn synchronization free"
+    extern proc chpl_float_yn(n: c_int, x: real(32)): real(32);
+    return chpl_float_yn(n.safeCast(c_int), x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `n` of `x`,
+     where `x` must be greater than 0 */
+  inline proc yn(n: int, x: real(64)): real(64) {
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
+
+    pragma "fn synchronization free"
+    extern proc yn(n: c_int, x: real(64)): real(64);
+    return yn(n.safeCast(c_int), x);
   }
 
 } // end of module Math

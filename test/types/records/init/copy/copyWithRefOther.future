@@ -1,0 +1,32 @@
+feature request: copy initializers taking 'ref' arguments
+#8234
+
+At present, if a copy initializer takes a 'ref' argument, the
+internal/compiler-generated code (chpl__initCopy/autoCopy) that wraps
+it breaks compilation because they do not use `ref` intents, so don't
+have a legal l-value to pass along to the user's copy initializer.  I
+ran into this case while working on converting the OwnedObject module
+over to use initializers.  At present, its type has special
+init/autoCopy routines that explicitly take and propagate 'ref's.
+
+While we could continue to lean on those special routines to keep this
+code working in the initializer world (and could rationalize it by
+arguing that they are likely to become part of the "language" rather
+than merely another library that a user could write), it also feels
+like one of those "if we want to do it, someday a user will want to,
+too" cases, so perhaps we should just support it.  Michael suggests
+that he thinks it isn't difficult if we decide this is something to
+support (so may have pointers for anyone implementing this issue)
+
+Even if we choose not to support it, we would need to come up with a
+better error message than the current one, which doesn't make it very
+clear to an end-user why their code isn't working.
+
+Note that while this future doesn't refer to a compiler-generated
+init/autoCopy routine, those routines are (currently) created by the
+compiler for the Owned type due (I believe) to the presence of one of
+the pragmas on those types:
+
+    pragma "no copy"
+    pragma "copy mutates"
+

@@ -18,14 +18,11 @@ examples:
      benchmarks/  : contains standard benchmarks written in Chapel
      patterns/    : examples demonstrating common tasks
      primers/     : introduce Chapel concepts narratively for new users
-     programs/    : demonstrate Chapel using small programs/idioms
-     users-guide/ : example codes from the Chapel Users Guide
      spec/        : example codes from the Chapel Specification (see below)
+     users-guide/ : example codes from the Chapel Users Guide
 
-The README.features file in this directory gives an overview of all
-the tests (except the spec tests) and what language features each one
-emphasizes.  See each subdirectory's README file for additional
-descriptions of its examples.
+Each subdirectory (except users-guide and spec) includes its own README file
+with additional information on those examples.
 
 
 ------------------------
@@ -65,12 +62,14 @@ subdirectories by simply using:
 Other files
 -----------
 
-./
-  Makefile        : Makefile for compiling the examples
-  README.features : describes the main features exercised by each test
+This directory:
   README.testing  : provides an introduction to using the Chapel testing system
   start_test      : the main script for the Chapel testing system
   Logs/           : directory created by the test system to store logs
+
+This directory and subdirectories:
+  *.chpl          : the Chapel example programs
+  Makefile        : Makefile for compiling the examples
   COMPOPTS        : used by the Chapel testing system -- see README.testing
   NUMLOCALES      : "
   PREDIFF         : "

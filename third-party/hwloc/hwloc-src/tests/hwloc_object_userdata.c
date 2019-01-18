@@ -1,5 +1,5 @@
 /*
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -16,7 +16,8 @@
 /* check that object userdata is properly initialized */
 
 #define RANDOMSTRINGLENGTH 128
-#define RANDOMSTRINGTESTS 9
+#define RANDOMSTRINGSHORTTESTS 5
+#define RANDOMSTRINGLONGTESTS 9
 static char *randomstring;
 
 static void check(hwloc_topology_t topology)
@@ -34,7 +35,7 @@ static void check(hwloc_topology_t topology)
 
 static void export_cb(void *reserved, hwloc_topology_t topo, hwloc_obj_t obj)
 {
-  char tmp[17];
+  char tmp[32];
   int err;
   unsigned i;
 
@@ -42,8 +43,19 @@ static void export_cb(void *reserved, hwloc_topology_t topo, hwloc_obj_t obj)
   err = hwloc_export_obj_userdata(reserved, topo, obj, "MyName", tmp, 16);
   assert(err >= 0);
 
-  for(i=0; i<RANDOMSTRINGTESTS; i++) {
-    sprintf(tmp, "Encoded%d", i);
+  err = hwloc_export_obj_userdata(reserved, topo, obj, NULL, "", 0);
+  assert(err >= 0);
+
+  err = hwloc_export_obj_userdata_base64(reserved, topo, obj, NULL, "", 0);
+  assert(err >= 0);
+
+  for(i=0; i<RANDOMSTRINGSHORTTESTS; i++) {
+    sprintf(tmp, "EncodedShort%u", i);
+    err = hwloc_export_obj_userdata_base64(reserved, topo, obj, tmp, randomstring+i, i);
+    assert(err >= 0);
+  }
+  for(i=0; i<RANDOMSTRINGLONGTESTS; i++) {
+    sprintf(tmp, "EncodedLong%u", i);
     err = hwloc_export_obj_userdata_base64(reserved, topo, obj, tmp, randomstring+(i+1)/2, RANDOMSTRINGLENGTH-i);
     assert(err >= 0);
   }
@@ -55,7 +67,10 @@ static void import_cb(hwloc_topology_t topo __hwloc_attribute_unused, hwloc_obj_
   char tmp[17];
   uint64_t val;
 
-  if (!strcmp("MyName", name)) {
+  if (!name) {
+    assert(!*(char*)buffer);
+
+  } else if (!strcmp("MyName", name)) {
     assert(length == 16);
     memcpy(tmp, buffer, 16);
     tmp[16] = '\0';
@@ -79,9 +94,16 @@ static void import_cb(hwloc_topology_t topo __hwloc_attribute_unused, hwloc_obj_
       assert(0);
     }
 
-  } else if (!strncmp("Encoded", name, 7)) {
-    unsigned i = atoi(name+7);
-    assert(i <= RANDOMSTRINGTESTS-1);
+  } else if (!strncmp("EncodedShort", name, 12)) {
+    unsigned i = atoi(name+12);
+    assert(i <= RANDOMSTRINGSHORTTESTS-1);
+    assert(i == (unsigned) length);
+    err = memcmp(buffer, randomstring+i, length);
+    assert(!err);
+
+  } else if (!strncmp("EncodedLong", name, 11)) {
+    unsigned i = atoi(name+11);
+    assert(i <= RANDOMSTRINGLONGTESTS-1);
     assert(RANDOMSTRINGLENGTH-i == (unsigned) length);
     err = memcmp(buffer, randomstring+(i+1)/2, length);
     assert(!err);

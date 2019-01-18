@@ -84,9 +84,9 @@ doNorm(R2D32, 3);
 
 
 writeln("Vector norm aliased arrays");
-var aR1D => R1D;
-var aR2D => R2D;
-var aR2D32 => R2D32;
+ref aR1D = R1D;
+ref aR2D = R2D;
+ref aR2D32 = R2D32;
 writeln("\tR1D:");
 doNorm(aR1D, 1);
 writeln("\tR2D:");
@@ -111,8 +111,8 @@ foo(TD2D32, R2D32.reindex(TD2D32), 3);
 
 
 writeln("Vector norm rank changed arrays (baseline)");
-var rcT1D => R2D(Dom2D.dim(1), n2-o5);
-var rcT2D => R3D(Dom3D.dim(1), Dom3D.dim(2), n3/2);
+ref rcT1D = R2D(Dom2D.dim(1), n2-o5);
+ref rcT2D = R3D(Dom3D.dim(1), Dom3D.dim(2), n3/2);
 const rcDom1D: domain(1) dmapped Dist1D = Dom2D.dim(1);
 const rcDom2D: domain(2) dmapped Dist2D = {Dom3D.dim(1), Dom3D.dim(2)};
 var rcR1D: [rcDom1D] real;

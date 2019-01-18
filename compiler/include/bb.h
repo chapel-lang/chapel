@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,6 +63,18 @@ public:
   static void        buildLocalsVectorMap(FnSymbol*          fn,
                                           Vec<Symbol*>&      locals,
                                           Map<Symbol*, int>& localMap);
+
+  // Stores the basic block ids in order in according to reverse postorder.
+  // Reverse postorder is useful for forward flow analysis
+  // to visit a node before any successors
+  static void        computeForwardOrder(FnSymbol* fn,
+                                         std::vector<int> & order);
+
+  // Stores the basic block ids in order according to reverse preorder.
+  // Reverse preorder is useful for backward flow analysis
+  // to visit a node after any successors
+  static void        computeBackwardOrder(FnSymbol* fn,
+                                          std::vector<int> & order);
 
   static void        backwardFlowAnalysis(FnSymbol*     fn,
                                           BitVecVector& GEN,

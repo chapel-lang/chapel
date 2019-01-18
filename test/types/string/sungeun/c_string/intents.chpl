@@ -30,8 +30,10 @@ if errorCase == 1 {
   gr("hi");
 }
 
-var s: c_string = "hi";
-s += s;
+var hi_c: c_string = "hi";
+var ss = hi_c:string + hi_c:string;
+var s = ss.c_str();
+
 f(s:string);
 fi(s:string);
 if errorCase == 2 then

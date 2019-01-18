@@ -15,7 +15,7 @@ module M1 {
   }
   proc retCs() {
     use M1Inner;
-    return new C();
+    return new unmanaged C();
   }
 }
 

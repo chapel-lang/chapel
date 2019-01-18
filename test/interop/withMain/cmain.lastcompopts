@@ -1,0 +1,1 @@
+-Llib-dir/ -llib `$CHPL_HOME/util/config/compileline --libraries`

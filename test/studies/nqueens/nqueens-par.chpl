@@ -35,7 +35,7 @@ class Board {
 // NB could not do this by writing our own constructor.
 //
 proc createBoard(boardSize:int) {
-  return new Board(boardSize = boardSize);
+  return new unmanaged Board(boardSize = boardSize);
 }
 
 //
@@ -87,7 +87,7 @@ proc Board.removeLast(row: int, col: int): void {
 // Public interface.
 // Return a (newly-created) clone of this board.
 //
-proc Board.clone(taskNumArg: int): Board {
+proc Board.clone(taskNumArg: int): unmanaged Board {
 
   // Linguistic remark: this code looks funny, but it does the following.
   // It invokes Board's default constructor (since we have not defined any
@@ -100,10 +100,10 @@ proc Board.clone(taskNumArg: int): Board {
   // rather than to this.taskNum. So we give the argument a (slightly)
   // different name to make our intentions (slightly) clear.
   //
-  return new Board(boardSize  = boardSize,
-                   queenvec   = queenvec,
-                   lastfilled = lastfilled,
-                   taskNum    = taskNumArg);
+  return new unmanaged Board(boardSize  = boardSize,
+                             queenvec   = queenvec,
+                             lastfilled = lastfilled,
+                             taskNum    = taskNumArg);
 }
 
 //
@@ -192,7 +192,7 @@ config const parRow: int = 3;
 // If the column succeeds, we proceed to the next row
 // (or show the result if we have filled all rows).
 //
-proc tryQueenInNextRow(board: Board): void {
+proc tryQueenInNextRow(board: unmanaged Board): void {
   // the row we will be placing in
   var nextRow = board.lastfilled + 1;
 
@@ -251,7 +251,11 @@ proc countSolutions(boardSize: int, showEachSoln: bool) {
     writeln("Solving N Queens for N=", boardSize,
             " in parallel from level ", parRow, "...");
   sync {
-    tryQueenInNextRow(createBoard(boardSize));   // elide dealloc of this board
+    var board = createBoard(boardSize);
+
+    tryQueenInNextRow(board);   // elide dealloc of this board
+
+    delete board;
   }
   writeln("Found ", solutionCount.readFE(), " solutions for N=", boardSize);
 }

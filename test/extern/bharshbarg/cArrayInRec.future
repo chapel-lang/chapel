@@ -1,0 +1,7 @@
+bug: compiler generates code that attempts to assign NULL to a fixed-size C array
+
+The backend C compiler error looks like this:
+
+cArrayInRec.c:44:31: error: array type 'char [10]' is not assignable
+(&_init_class_tmp__chpl)->foo = nil;
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^

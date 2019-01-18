@@ -1,2 +1,3 @@
-resolveGeneric.chpl:23: In function 'bar':
-resolveGeneric.chpl:24: error: illegal call of type
+myD2.x = 
+myD2.x = hi
+xx.x = hi

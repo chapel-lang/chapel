@@ -1,6 +1,0 @@
-bug: Associative domain clear() does not reset array values to their
-initial values.
-
-Note that it does clear on removal, but arguably it should be done
-more lazily (i.e., at addition) which would fix the bug.
-

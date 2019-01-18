@@ -1,0 +1,2 @@
+modifyParentParam.chpl:11: In initializer:
+modifyParentParam.chpl:15: error: cannot update a param field, "x", from parent type in child initializer

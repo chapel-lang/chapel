@@ -3,6 +3,10 @@ use List;
 module M1 {
   class C {
     var s: list(int);
+
+    proc deinit() {
+      s.destroy();
+    }
   }
 }
 
@@ -13,7 +17,7 @@ class D: C {
 }
 
 proc main() {
-  var d = new D();
+  var d = new unmanaged D();
 
   d.s.append(4);
   d.s.append(5);
@@ -21,4 +25,6 @@ proc main() {
   d.i = 7;
 
   writeln(d);
+
+  delete d;
 }

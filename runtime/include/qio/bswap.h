@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -51,7 +51,7 @@
 // They are implemented in terms of e.g. __bswap_16, which may be
 // a function or a macro.
 //
-// Unfortunately, when using GLIBC with a complier other than GCC,
+// Unfortunately, when using GLIBC with a compiler other than GCC,
 // such as PGI, Cray or Intel compilers, __bswap_64 will not be
 // defined (even though htobe64 is).
 // There is a check in glibc for #if defined __GNUC__ && __GNUC__ >= 2
@@ -65,7 +65,7 @@
 #  define REDO_BSWAP_64
 # endif
 // With the PGI compiler, there is a version of byteswap.h with that
-// check removed, so we always use the compatability 64-bit
+// check removed, so we always use the compatibility 64-bit
 // methods with PGI.
 # ifdef __PGI
 #  define REDO_BSWAP_64

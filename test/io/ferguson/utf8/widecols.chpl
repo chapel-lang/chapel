@@ -29,7 +29,7 @@ for s in strings {
   writeln(new ioLiteral("|"));
 }
 
-st.string_format = QIO_STRING_FORMAT_CHPL;
+st.string_format = iostringformat.chpl:uint(8);
 st.min_width_columns = 79;
 st.leftjustify = 1;
 
@@ -49,7 +49,7 @@ for s in strings {
   writeln(new ioLiteral("|"));
 }
 
-st.string_format = QIO_STRING_FORMAT_JSON;
+st.string_format = iostringformat.json:uint(8);
 st.min_width_columns = 79;
 st.leftjustify = 1;
 

@@ -1,30 +1,35 @@
-/*  This test uses Chapel's task parallel features to create a
- *  parallel hello world program that utilizes multiple cores on a
- *  single locale (node)
+// Task-parallel hello world
+
+/* This program uses Chapel's `task parallel` features to express an
+   explicitly concurrent hello world program that utilizes multiple
+   cores on a single `locale` (compute node).
  */
 
 
 //
-// Specify the number of tasks to create via a config const.  By
-// default, we use the tasking layer's estimate of maximum parallelism
-// on the current locale ('here').  This default can be overridden on
-// the executable command line (e.g., using --numTasks=3).
+// First, we specify the number of tasks to create via a `config
+// const`.  By default, set it to the runtime's estimation of maximum
+// parallelism that the current locale ('`here`') is capable of
+// executing (``.maxTaskPar``).
 //
 config const numTasks = here.maxTaskPar;
 
 
 //
-// Create the requested tasks using a 'coforall' loop which will
-// create a unique task per iteration.  Here, we're iterating over
-// 0..#numTasks which represents the range starting at 0 and
-// containing 'numTasks' members (equivalent to 0..numTasks-1).
-// Thus, the loop index variable 'tid' will take on unique values
-// in the range 0..numTasks-1.
+// Next, we create the specified number tasks using a `coforall-loop`.
+// This is a parallel loop form that will create a distinct task per
+// iteration.
 //
-// Each iteration prints out a message that is unique according to the
-// value of tid.  Due to the task parallelism, the messages may come
-// out in any order.  However, the writeln() procedure will prevent
-// against finer-grained interleaving of the messages themselves.
+// This coforall-loop is iterating over the `range` ``0..#numTasks``
+// which represents the first `numTasks` integers starting at 0
+// (equivalent to ``0..numTasks-1``).  The result will be `numTasks`
+// iterations, each of which will be executed as a distinct parallel
+// task.
+//
+// Each iteration prints out a message that is unique based on its
+// value of `tid`.  Due to the task parallelism, the messages may be
+// printed in any order.  However, the `writeln()` procedure will
+// prevent finer-grained interleaving of the messages themselves.
 //
 coforall tid in 0..#numTasks do
   writeln("Hello, world! (from task " + tid + " of " + numTasks + ")");
@@ -32,5 +37,5 @@ coforall tid in 0..#numTasks do
 
 //
 // For further examples of using task parallelism, refer to
-// examples/primers/taskParallel.chpl
+// :ref:`examples/primers/taskParallel.chpl <primers-taskParallel>`.
 //

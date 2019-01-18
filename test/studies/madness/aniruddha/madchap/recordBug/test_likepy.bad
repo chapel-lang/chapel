@@ -1,7 +1,0 @@
-./FTree.chpl:32: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-./FTree.chpl:131: In function 'initialize':
-./FTree.chpl:135: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-
-
-
-internal error: compiler generated error

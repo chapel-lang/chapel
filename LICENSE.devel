@@ -1,0 +1,17 @@
+======================================
+Chapel Development License Information
+======================================
+
+As a developer, we assume you're familiar with LICENSE and LICENSE.chapel. This
+file is designed to make you aware of other third-party licenses related to
+code that doesn't appear in the release.
+
+   directory/package  use                                          license
+   -----------------  -------------------------------------------  -------
+   third-party/
+       scspell        Spell-checking utility                       GPL 2
+       scspell SCOWL word lists
+                      Spell-checking dictionaries                  MIT-like
+                                                                   BSD
+                                                                   other (UKACD)
+                                                                   public domain

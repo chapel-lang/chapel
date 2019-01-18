@@ -1,0 +1,9 @@
+bug: .type on generic argument
+
+It seems as though applying .type to an argument with a specified, but
+generic, formal type should refer to the type of the actual with which
+the function was instantiated, not be a copy of the generic formal
+type.  This test suggests that we're taking the latter interpretation
+at present.  The test genericArgDotType2.chpl, in which the first
+argument's type is completely specified, demonstrates how I think it
+should work.

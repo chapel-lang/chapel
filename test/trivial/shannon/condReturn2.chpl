@@ -3,7 +3,7 @@ class C {
 
   proc foo(dim: rank*int) {
     writeln("In other foo()");
-    var x = new C();
+    var x = new unmanaged C();
     return x;
   }
 
@@ -16,7 +16,7 @@ class C {
   }
 }
 
-var myC = new C(rank=2);
+var myC = new unmanaged C(rank=2);
 
 
 myC.foo(1);

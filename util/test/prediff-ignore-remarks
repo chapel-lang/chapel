@@ -1,0 +1,3 @@
+#!/bin/sh
+cat $2 | sed -e '/^remark:/d' | sed -e '/loop not vectorized:/d' > $2.prediff.tmp
+mv $2.prediff.tmp $2

@@ -1,0 +1,35 @@
+.TH qthread_get_tasklocal 3 "JUNE 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_get_tasklocal
+\- get pointer to the task-local data segment
+.SH SYNOPSIS
+.B #include <qthread/qthread.h>
+
+.I void *
+.br
+.B qthread_get_tasklocal
+.RI "(unsigned int " size );
+.PP
+.SH DESCRIPTION
+Use this function to retrieve a pointer to the task-specific data segment. When successful, the return value is a pointer to a memory segment at least as large as
+.I size
+bytes; otherwise,
+.B NULL
+is returned.
+If
+.I size
+is larger than the current amount of allocated space, then the allocation will be increased to the requested size.
+The current size of the task-local data segment can be found using
+.BR qthread_size_tasklocal ().
+If the function is called from outside a qthread context, NULL is returned.
+.SH ENVIRONMENT
+The operation of
+.BR qthread_get_tasklocal ()
+is modified by the following environment variable:
+.TP 4
+.B QTHREAD_TASKLOCAL_SIZE
+This variable sets the task-local data segment size at initialization. Changes to this value during the course of the program run are ignored; the value is only considered when
+.BR qthread_init ()
+is run.
+.SH SEE ALSO
+.BR qthread_size_tasklocal (3)

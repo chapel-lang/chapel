@@ -1,7 +1,9 @@
 record R0 {
   var home: locale;
+
+  proc init() { }
 }
-proc R0.R0(r1:R1) {
+proc R0.init(r1:R1) {
   on r1.home {
     this.home = r1.home;
   }

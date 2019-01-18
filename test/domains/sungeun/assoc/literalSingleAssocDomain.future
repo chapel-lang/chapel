@@ -1,7 +1,0 @@
-bug: Associative domain literal syntax with a single associative domain index initializer drops the extra {} and becomes the same as the (inner) associative domain
-
-    var D = {{"yes", "no"}};
-
-becomes
-
-    var D = {"yes", "no"};

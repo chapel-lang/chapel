@@ -1,0 +1,3 @@
+uncaught SystemError: Invalid argument (spawn with more than 1 locale for CHPL_COMM=ugni with hugepages currently requires stdin, stdout, stderr=FORWARD)
+  spawn-system.chpl:11: thrown here
+  spawn-system.chpl:11: uncaught here

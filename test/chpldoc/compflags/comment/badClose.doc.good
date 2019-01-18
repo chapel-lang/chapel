@@ -1,2 +1,15 @@
-Warning: chpldoc comment not closed, ignoring comment: "This comment is not closed properly"
-cat: docs/badClose.txt: No such file or directory
+Warning:1: chpldoc comment not closed, ignoring comment: This comment is not closed properly
+.. default-domain:: chpl
+
+.. module:: badClose.doc
+
+badClose.doc
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use badClose.doc;
+
+.. function:: proc bad()
+

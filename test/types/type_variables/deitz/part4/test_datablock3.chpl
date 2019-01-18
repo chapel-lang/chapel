@@ -7,3 +7,5 @@ d(2) = 3;
 writeln(d(0));
 writeln(d(1));
 writeln(d(2));
+
+_ddata_free(d, 3);

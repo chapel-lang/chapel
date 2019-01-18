@@ -15,7 +15,7 @@ class mysumreduce {
     return x;
   }
 
-  proc mysumreduce(type in_t) {
+  proc init(type in_t) {
     intype = in_t;
     statetype = in_t;
     outtype = in_t;
@@ -32,7 +32,7 @@ forall i in D {
   A(i) = i;
 }
 
-var myreduce = new mysumreduce(in_t = int);
+var myreduce = new unmanaged mysumreduce(in_t = int);
 var state: myreduce.statetype = myreduce.ident();
 for i in D {
   state = myreduce.combine(state, A(i));

@@ -1,6 +1,3 @@
 feature request: what should happen when passing a wrong subdomain?
 
-Specifically, if the formal's type is subdomain(d) and the actual
-is a subdomain(e) where e != d - should this be a compile-time error?
-A run-time error? (In the latter case, should the check be disableable
-with -fast?)
+Issue #7732

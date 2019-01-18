@@ -18,10 +18,10 @@ B.x(1) = 2;
 B.x(2) = 2;
 
 ref C = chooseRecord(A, B, false);
-C[1] = 8;
+C.x(1) = 8;
 
 ref D = chooseRecord(A, B, true);
-D[1] = 9;
+D.x(1) = 9;
 
 
 writeln(A);

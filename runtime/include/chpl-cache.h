@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -65,10 +65,10 @@ void chpl_cache_release(int ln, int32_t fn)
 // calling on a put or a get.
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
-                         int ln, int32_t fn);
+                         int32_t commID, int ln, int32_t fn);
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
-                         int ln, int32_t fn);
+                         int32_t commID, int ln, int32_t fn);
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
                               size_t size, int32_t typeIndex,
                               int ln, int32_t fn);
@@ -76,15 +76,16 @@ void  chpl_cache_comm_get_strd(
                    void *addr, void *dststr, c_nodeid_t node, void *raddr,
                    void *srcstr, void *count, int32_t strlevels,
                    size_t elemSize, int32_t typeIndex,
-                   int ln, int32_t fn);
+                   int32_t commID, int ln, int32_t fn);
 void  chpl_cache_comm_put_strd(
                       void *addr, void *dststr, c_nodeid_t node, void *raddr,
                       void *srcstr, void *count, int32_t strlevels,
                       size_t elemSize, int32_t typeIndex,
-                      int ln, int32_t fn);
+                      int32_t commID, int ln, int32_t fn);
 
 // For debugging.
 void chpl_cache_print(void);
+void chpl_cache_assert_released(void);
 
 #endif
 // ifdef HAS_CHPL_CACHE_FNS

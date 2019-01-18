@@ -161,9 +161,11 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
 
 // read/compute the X, Y, Z symmetry planes
 
-enum dim { X = 3, Y = 2, Z = 1 };
+param X = 3,
+      Y = 2,
+      Z = 1;
 
-inline proc initSyms(Sym, dir) {
+inline proc initSyms(ref Sym, dir) {
   if (initFromFile) {
     readNodeset(Sym);
   } else {
@@ -180,34 +182,34 @@ inline proc initSyms(Sym, dir) {
   return (Sym.numIndices, Sym);
 }
 
-inline proc initXSyms(XSym) {
-  initSyms(XSym, dim.X);
+inline proc initXSyms(ref XSym) {
+  initSyms(XSym, X);
 }
 
-inline proc initYSyms(YSym) {
-  initSyms(YSym, dim.Y);
+inline proc initYSyms(ref YSym) {
+  initSyms(YSym, Y);
 }
 
-inline proc initZSyms(ZSym) {
-  initSyms(ZSym, dim.Z);
+inline proc initZSyms(ref ZSym) {
+  initSyms(ZSym, Z);
 }
 
 
 // read/compute the free surface
 
-inline proc initFreeSurface(freeSurface) {
+inline proc initFreeSurface(ref freeSurface) {
   if (initFromFile) {
     readNodeset(freeSurface);
     reader.assertEOF("Input file format error (extra data at EOF)");
   } else {
     for ij in DimNodeFace do
-      freeSurface += nodeIdx2DTo1D(ij, dim.X, nodesPerEdge-1);
+      freeSurface += nodeIdx2DTo1D(ij, X, nodesPerEdge-1);
                   
     for ij in DimNodeFace do
-      freeSurface += nodeIdx2DTo1D(ij, dim.Y, nodesPerEdge-1);
+      freeSurface += nodeIdx2DTo1D(ij, Y, nodesPerEdge-1);
 
     for ij in DimNodeFace do
-      freeSurface += nodeIdx2DTo1D(ij, dim.Z, nodesPerEdge-1);
+      freeSurface += nodeIdx2DTo1D(ij, Z, nodesPerEdge-1);
   }
 
   if debugInit {
@@ -217,7 +219,7 @@ inline proc initFreeSurface(freeSurface) {
     var sortedSurface: [0..#size] int;
 
     for (a,b) in zip(sortedSurface, freeSurface) do a = b;
-    QuickSort(sortedSurface);
+    quickSort(sortedSurface);
 
     writeln(size);
     for b in sortedSurface do
@@ -232,7 +234,7 @@ inline proc initFreeSurface(freeSurface) {
 /* This is a helper routine to read a size and array from a file and
    return it */
 
-proc readNodeset(nodeset) {
+proc readNodeset(ref nodeset) {
   const arrSize = reader.read(int);
 
   for a in 0..#arrSize do
@@ -267,7 +269,7 @@ inline proc elemIdx1DTo3D(ind) {
 }
 
 /* Turn a 2D node index into a 3D index by inserting the value
-   'newval' in diemnsion 'newdim' */
+   'newval' in dimension 'newdim' */
 
 inline proc nodeIdx2DTo1D(ij, newdim, newval) {
   var ijk: 3*int;

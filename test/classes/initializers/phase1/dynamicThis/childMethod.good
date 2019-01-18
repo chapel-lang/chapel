@@ -1,0 +1,3 @@
+childMethod.chpl:17: In initializer:
+childMethod.chpl:20: error: cannot call method "childMethod" on type "Child" before this.complete()
+childMethod.chpl:20: note: before this.complete() "this" is treated as parent type "Parent" for method calls

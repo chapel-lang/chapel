@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define _AST_VISITOR_H_
 
 class AggregateType;
+class UnmanagedClassType;
 class EnumType;
 class PrimitiveType;
 
@@ -33,13 +34,18 @@ class TypeSymbol;
 class VarSymbol;
 
 class CallExpr;
+class ContextCallExpr;
 class DefExpr;
 class NamedExpr;
+class IfExpr;
 class SymExpr;
 class UnresolvedSymExpr;
+class LoopExpr;
 
 class UseStmt;
 class BlockStmt;
+class ForallIntents;
+class ForallStmt;
 class WhileDoStmt;
 class DoWhileStmt;
 class CForLoop;
@@ -48,6 +54,10 @@ class ParamForLoop;
 class ExternBlockStmt;
 class CondStmt;
 class GotoStmt;
+class ForwardingStmt;
+class DeferStmt;
+class TryStmt;
+class CatchStmt;
 
 class AstVisitor
 {
@@ -67,81 +77,109 @@ public:
   //
   // The sub-classes of Type
   //
-  virtual bool   enterAggrType    (AggregateType*     node) = 0;
-  virtual void   exitAggrType     (AggregateType*     node) = 0;
+  virtual bool   enterAggrType       (AggregateType*     node) = 0;
+  virtual void   exitAggrType        (AggregateType*     node) = 0;
 
-  virtual bool   enterEnumType    (EnumType*          node) = 0;
-  virtual void   exitEnumType     (EnumType*          node) = 0;
+  virtual bool   enterUnmanagedClassType(UnmanagedClassType*     node) = 0;
+  virtual void   exitUnmanagedClassType (UnmanagedClassType*     node) = 0;
 
-  virtual void   visitPrimType    (PrimitiveType*     node) = 0;
+  virtual bool   enterEnumType       (EnumType*          node) = 0;
+  virtual void   exitEnumType        (EnumType*          node) = 0;
+
+  virtual void   visitPrimType       (PrimitiveType*     node) = 0;
 
   //
   // The sub-classes of Symbol
   //
-  virtual bool   enterArgSym      (ArgSymbol*         node) = 0;
-  virtual void   exitArgSym       (ArgSymbol*         node) = 0;
+  virtual bool   enterArgSym         (ArgSymbol*         node) = 0;
+  virtual void   exitArgSym          (ArgSymbol*         node) = 0;
 
-  virtual void   visitEnumSym     (EnumSymbol*        node) = 0;
+  virtual void   visitEnumSym        (EnumSymbol*        node) = 0;
 
-  virtual bool   enterFnSym       (FnSymbol*          node) = 0;
-  virtual void   exitFnSym        (FnSymbol*          node) = 0;
+  virtual bool   enterFnSym          (FnSymbol*          node) = 0;
+  virtual void   exitFnSym           (FnSymbol*          node) = 0;
 
-  virtual void   visitLabelSym    (LabelSymbol*       node) = 0;
+  virtual void   visitLabelSym       (LabelSymbol*       node) = 0;
 
-  virtual bool   enterModSym      (ModuleSymbol*      node) = 0;
-  virtual void   exitModSym       (ModuleSymbol*      node) = 0;
+  virtual bool   enterModSym         (ModuleSymbol*      node) = 0;
+  virtual void   exitModSym          (ModuleSymbol*      node) = 0;
 
-  virtual bool   enterTypeSym     (TypeSymbol*        node) = 0;
-  virtual void   exitTypeSym      (TypeSymbol*        node) = 0;
+  virtual bool   enterTypeSym        (TypeSymbol*        node) = 0;
+  virtual void   exitTypeSym         (TypeSymbol*        node) = 0;
 
-  virtual void   visitVarSym      (VarSymbol*         node) = 0;
+  virtual void   visitVarSym         (VarSymbol*         node) = 0;
 
   //
   // The sub-classes of Expr
   //
-  virtual bool   enterCallExpr    (CallExpr*          node) = 0;
-  virtual void   exitCallExpr     (CallExpr*          node) = 0;
+  virtual bool   enterCallExpr       (CallExpr*          node) = 0;
+  virtual void   exitCallExpr        (CallExpr*          node) = 0;
 
-  virtual bool   enterDefExpr     (DefExpr*           node) = 0;
-  virtual void   exitDefExpr      (DefExpr*           node) = 0;
+  virtual bool   enterContextCallExpr(ContextCallExpr*   node) = 0;
+  virtual void   exitContextCallExpr (ContextCallExpr*   node) = 0;
 
-  virtual bool   enterNamedExpr   (NamedExpr*         node) = 0;
-  virtual void   exitNamedExpr    (NamedExpr*         node) = 0;
+  virtual bool   enterDefExpr        (DefExpr*           node) = 0;
+  virtual void   exitDefExpr         (DefExpr*           node) = 0;
 
-  virtual void   visitSymExpr     (SymExpr*           node) = 0;
+  virtual bool   enterNamedExpr      (NamedExpr*         node) = 0;
+  virtual void   exitNamedExpr       (NamedExpr*         node) = 0;
 
-  virtual void   visitUsymExpr    (UnresolvedSymExpr* node) = 0;
+  virtual bool   enterIfExpr         (IfExpr*            node) = 0;
+  virtual void   exitIfExpr          (IfExpr*            node) = 0;
+
+  virtual void   visitSymExpr        (SymExpr*           node) = 0;
+
+  virtual void   visitUsymExpr       (UnresolvedSymExpr* node) = 0;
+
+  virtual bool   enterLoopExpr     (LoopExpr*        node) = 0;
+  virtual void   exitLoopExpr      (LoopExpr*        node) = 0;
 
   //
   // The sub-classes of Stmt
   //
-  virtual void   visitUseStmt     (UseStmt*           node) = 0;
+  virtual void   visitUseStmt        (UseStmt*           node) = 0;
 
-  virtual bool   enterBlockStmt   (BlockStmt*         node) = 0;
-  virtual void   exitBlockStmt    (BlockStmt*         node) = 0;
+  virtual bool   enterBlockStmt      (BlockStmt*         node) = 0;
+  virtual void   exitBlockStmt       (BlockStmt*         node) = 0;
 
-  virtual bool   enterWhileDoStmt (WhileDoStmt*       node) = 0;
-  virtual void   exitWhileDoStmt  (WhileDoStmt*       node) = 0;
+  virtual void   visitForallIntents  (ForallIntents*   clause) = 0;
+  virtual bool   enterForallStmt     (ForallStmt*        node) = 0;
+  virtual void   exitForallStmt      (ForallStmt*        node) = 0;
 
-  virtual bool   enterDoWhileStmt (DoWhileStmt*       node) = 0;
-  virtual void   exitDoWhileStmt  (DoWhileStmt*       node) = 0;
+  virtual bool   enterWhileDoStmt    (WhileDoStmt*       node) = 0;
+  virtual void   exitWhileDoStmt     (WhileDoStmt*       node) = 0;
 
-  virtual bool   enterCForLoop    (CForLoop*          node) = 0;
-  virtual void   exitCForLoop     (CForLoop*          node) = 0;
+  virtual bool   enterDoWhileStmt    (DoWhileStmt*       node) = 0;
+  virtual void   exitDoWhileStmt     (DoWhileStmt*       node) = 0;
 
-  virtual bool   enterForLoop     (ForLoop*           node) = 0;
-  virtual void   exitForLoop      (ForLoop*           node) = 0;
+  virtual bool   enterCForLoop       (CForLoop*          node) = 0;
+  virtual void   exitCForLoop        (CForLoop*          node) = 0;
 
-  virtual bool   enterParamForLoop(ParamForLoop*      node) = 0;
-  virtual void   exitParamForLoop (ParamForLoop*      node) = 0;
+  virtual bool   enterForLoop        (ForLoop*           node) = 0;
+  virtual void   exitForLoop         (ForLoop*           node) = 0;
 
-  virtual bool   enterCondStmt    (CondStmt*          node) = 0;
-  virtual void   exitCondStmt     (CondStmt*          node) = 0;
+  virtual bool   enterParamForLoop   (ParamForLoop*      node) = 0;
+  virtual void   exitParamForLoop    (ParamForLoop*      node) = 0;
 
-  virtual void   visitEblockStmt  (ExternBlockStmt*   node) = 0;
+  virtual bool   enterCondStmt       (CondStmt*          node) = 0;
+  virtual void   exitCondStmt        (CondStmt*          node) = 0;
 
-  virtual bool   enterGotoStmt    (GotoStmt*          node) = 0;
-  virtual void   exitGotoStmt     (GotoStmt*          node) = 0;
+  virtual bool   enterForwardingStmt (ForwardingStmt*    node) = 0;
+  virtual void   exitForwardingStmt  (ForwardingStmt*    node) = 0;
+
+  virtual void   visitEblockStmt     (ExternBlockStmt*   node) = 0;
+
+  virtual bool   enterGotoStmt       (GotoStmt*          node) = 0;
+  virtual void   exitGotoStmt        (GotoStmt*          node) = 0;
+
+  virtual bool   enterDeferStmt      (DeferStmt*         node) = 0;
+  virtual void   exitDeferStmt       (DeferStmt*         node) = 0;
+
+  virtual bool   enterTryStmt        (TryStmt*           node) = 0;
+  virtual void   exitTryStmt         (TryStmt*           node) = 0;
+
+  virtual bool   enterCatchStmt      (CatchStmt*         node) = 0;
+  virtual void   exitCatchStmt       (CatchStmt*         node) = 0;
 };
 
 #endif

@@ -1,0 +1,2 @@
+tupleInt32.chpl:2: error: illegal lvalue in assignment
+tupleInt32.chpl:2: error: type mismatch in assignment from int(64) to int(32)

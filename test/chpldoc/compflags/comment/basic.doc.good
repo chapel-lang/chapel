@@ -1,4 +1,16 @@
+.. default-domain:: chpl
+
+.. module:: basic.doc
+
 basic.doc
-   proc commented()
-      This is one way to make your own comment 
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use basic.doc;
+
+.. function:: proc commented()
+
+   This is one way to make your own comment 
 

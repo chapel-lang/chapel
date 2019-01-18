@@ -75,6 +75,17 @@ proc main() {
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemAllocs();
+
+  writeln("Calling if_fn with local:");
+  m1 = memoryUsed();
+  serial {
+    const D = {1..n};
+    var A : [D] int;
+    if_fn(A, D);
+  }
+  m2 = memoryUsed();
+  writeln("\t", m2-m1, " bytes leaked");
+  if printMemStats then printMemAllocs();
 }
 
 proc do_local_domain() {
@@ -117,13 +128,13 @@ proc do_local_array() {
   var A_domain: [A.domain] int; // add ref count and decrement in destructor
 
   if printProgress then writeln("Creating A_alias");
-  var A_alias => A;  // no need to ref count
+  ref A_alias = A;  // no need to ref count
 
   if printProgress then writeln("Creating A_slice");
   var A_slice = A[2..n-1];             // create new descriptor, ref count
 
   if printProgress then writeln("Creating A_reindex");
-  var A_reindex = A.reindex({4..n+3}); // create new descriptor, ref count
+  var A_reindex = A.reindex(4..n+3); // create new descriptor, ref count
 }
 
 proc do_array(A:[]) {
@@ -134,14 +145,13 @@ proc do_array(A:[]) {
   var A_domain: [A.domain] int; // add ref count and decrement in destructor
 
   if printProgress then writeln("Creating A_alias");
-  var A_alias => A;  // no need to ref count
+  ref A_alias = A;  // no need to ref count
 
   if printProgress then writeln("Creating A_slice");
   var A_slice = A[2..n-1];             // create new descriptor, ref count
 
-  if printProgress then writeln("Creating A_reindex");
-  var A_reindex = A.reindex({4..n+3}); // create new descriptor, ref count
-
+//  if printProgress then writeln("Creating A_reindex");
+//  var A_reindex = A.reindex(4..n+3); // create new descriptor, ref count
 }
 
 
@@ -150,4 +160,9 @@ proc do_tuple(t: _tuple) {
   var A = t(1);
   if printProgress then writeln("Creating D");
   var D = t(2);
+}
+
+proc if_fn(A:[], D) {
+  ref X = if isDomain(D) then A[D] else A;
+  X[D.first] = 1;
 }

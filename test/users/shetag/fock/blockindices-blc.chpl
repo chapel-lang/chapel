@@ -4,7 +4,7 @@ use fock;
 class blockIndices {
   const is, js, ks, ls: range(int);
 
-  proc blockIndices(iat, jat, kat, lat) {
+  proc init(iat, jat, kat, lat) {
     is = bas_info(iat);
     js = bas_info(jat);
     ks = bas_info(kat);

@@ -236,10 +236,10 @@ module SSCA2_RMAT_graph_generator
 	       "edge end vertices out of high end of range");
 
       assert ( Edge_Weight > 0, 
-	       "edge weightd out of low end of range");
+	       "edge weight out of low end of range");
 
       assert ( Edge_Weight <= MAX_EDGE_WEIGHT,  
-	       "edge weightd out of high end of range");
+	       "edge weight out of high end of range");
 
       writeln (); writeln ("Vertex Set in G:", G.vertices);
 
@@ -255,7 +255,7 @@ module SSCA2_RMAT_graph_generator
 	var v = Edges (e).end  ;
 
 	if ( v != u ) then {
-	  if G.Neighbors (u).member(v) then {
+	  if G.Neighbors (u).contains(v) then {
 	    collisions += 1;
 	  }
 	  else {

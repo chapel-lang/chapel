@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,20 +21,36 @@
    Support for pseudorandom number generation
 
    This module defines an abstraction for a stream of pseudorandom numbers,
-   :class:`~Random.RandomStreamInterface`, supporting methods to get the next
-   random number in the stream (:proc:`~Random.RandomStreamInterface.getNext`),
+   :class:`~RandomStreamInterface`. Use :proc:`makeRandomStream` to
+   create such an stream. Each stream supports methods to get the next
+   random number in the stream (:proc:`~RandomStreamInterface.getNext`),
    to fast-forward to a specific value in the stream
-   (:proc:`~Random.RandomStreamInterface.skipToNth` and
-   :proc:`~Random.RandomStreamInterface.getNth`), to iterate over random values
-   :proc:`~Random.RandomStreamInterface.iterate` (possibly in parallel), or to
+   (:proc:`~RandomStreamInterface.skipToNth` and
+   :proc:`~RandomStreamInterface.getNth`), to iterate over random values
+   possibly in parallel (:proc:`~RandomStreamInterface.iterate`), or to
    fill an array with random numbers in parallel
-   (:proc:`~Random.RandomStream.fillRandom`).  The module also provides a
-   standalone convenience function, :proc:`fillRandom` that can be used to fill
-   an array with random numbers in parallel without manually creating a
-   :class:`RandomStream` object.
+   (:proc:`~RandomStreamInterface.fillRandom`).
+
+   The module also provides several standalone convenience functions that can be
+   used without manually creating a :class:`RandomStreamInterface` object.
+
+     * :proc:`fillRandom` fills an array with random numbers in parallel
+     * :proc:`shuffle` randomly re-arranges the elements of an array
+     * :proc:`permutation` creates a random permutation and stores it in an
+       array.
+
+   In these and other methods, generated integer values are uniformly
+   distributed from `min(T)` to `max(T)`, where `T` is the integral type and the
+   boundaries are included. Generated floating point values are uniformly
+   distributed in [0.0, 1.0] with the caveat that it currently depends on the
+   RNG whether the boundary values 0.0 and 1.0 can be produced.
 
    Use :proc:`makeRandomStream` or the constructor for a specific RNG
-   implementation to get a RandomStream.
+   implementation to get a RandomStream. See the documentation for
+   each RNG implementation for more information:
+
+     * :mod:`PCGRandom`
+     * :mod:`NPBRandom`
 
    .. note::
 
@@ -50,33 +66,8 @@
 
    .. note::
 
-       This RandomStream API is expected to change.
-
-
-   Here is a list of currently open issues (TODOs) for this module:
-
-   1. We plan to support general serial and parallel iterator methods
-   on :class:`RandomStream`; however, providing the full suite of
-   iterators is not possible with our current parallel iterator
-   framework.  Specifically, if :class:`RandomStream` is a follower in
-   a zippered iteration context, there is no way for it to update the
-   total number of random numbers generated in a safe/sane/coordinated
-   way.  We are exploring a revised leader-follower iterator framework
-   that would support this idiom (and other cursor-based ones).  With
-   Chapel's recent support for standalone parallel iterators, one
-   could define a standalone parallel iterator for
-   :class:`RandomStream`, but this effort has not yet been taken on.
-
-   2. If no seed is provided by the user, one is chosen based on the
-   current time in microseconds, allowing for some degree of
-   pseudorandomness in seed selection.  The intent of
-   :record:`SeedGenerator` is to provide a menu of other options
-   for initializing the random stream seed, but only one option is
-   implemented at present.
-
-   3. The :class:`RandomStreamInterface` is included here only
-   for documentation and does not help with compilation in any way.
-   In the future, we hope to turn it into an interface.
+       The RandomStream API (:class:`RandomStreamInterface`) is expected to
+       change.
 
 */
 module Random {
@@ -87,18 +78,19 @@ module Random {
 
 
   /* Select between different supported RNG algorithms.
-     See also :mod:`PCGRandom` and :mod:`NPBRandom`.
+     See :mod:`PCGRandom` and :mod:`NPBRandom` for details on
+     these algorithms.
    */
   enum RNG {
     PCG = 1,
     NPB = 2
   }
 
-  /* The default RNG */
+  /* The default RNG. The current default is PCG - see :mod:`PCGRandom`. */
   param defaultRNG = RNG.PCG;
 
-  // CHPLDOC FEEDBACK: If easy, I'd suggest either deprecating the 
-  // :arg <type> <name>: form or else switching the order to 
+  // CHPLDOC FEEDBACK: If easy, I'd suggest either deprecating the
+  // :arg <type> <name>: form or else switching the order to
   // :arg <name> <type>: as it's an easy trap to simply type the same
   // argument as in the function's signature.
 
@@ -117,27 +109,33 @@ module Random {
     return isNumericType(t) || isBoolType(t);
 
   /*
-    Fill an array of `real(64)`, `imag(64)`, or `complex(128)` elements
-    with pseudorandom values in parallel using a new
-    :class:`RandomStream` created specifically for this call.  The
-    first `arr.size` values from the stream will be assigned to the
-    array's elements in row-major order for `real` and `imag` elements.
-    For `complex` elements, consecutive pairs of random numbers are
-    assigned to the real and imaginary components, respectively.  The
+
+    Fill an array of numeric elements with pseudorandom values in parallel using
+    a new stream implementing :class:`RandomStreamInterface` created
+    specifically for this call.  The first `arr.size` values from the stream
+    will be assigned to the array's elements in row-major order. The
     parallelization strategy is determined by the array.
 
-    :arg arr: The array to be filled, where T is `real(64)`, `imag(64)`, or `complex(128)`.
-    :type arr: [] T
+    .. note::
 
-    :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.oddCurrentTime`.
-    :type seed: int(64)
+      :mod:`NPBRandom` only supports `real(64)`, `imag(64)`, and `complex(128)`
+      numeric types. :mod:`PCGRandom` supports all primitive numeric types.
+
+    :arg arr: The array to be filled, where T is a primitive numeric type
+    :type arr: `[] T`
+
+    :arg seed: The seed to use for the PRNG.  Defaults to
+     `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
+    :type seed: `int(64)`
+
+    :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
+    :type algorithm: :type:`RNG`
   */
   proc fillRandom(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
       algorithm=defaultRNG)
     where isSupportedNumericType(arr.eltType) {
     var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
     randNums.fillRandom(arr);
-    delete randNums;
   }
 
   pragma "no doc"
@@ -149,25 +147,66 @@ module Random {
   /* Shuffle the elements of an array into a random order.
 
      :arg arr: a 1-D non-strided array
-     :arg seed: the seed to use when shuffling
+     :arg seed: the seed to use when shuffling. Defaults to
+      `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
+     :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
+     :type algorithm: :type:`RNG`
    */
   proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
-    var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
+    var randNums = makeRandomStream(seed, eltType=arr.domain.idxType, parSafe=false, algorithm=algorithm);
     randNums.shuffle(arr);
-    delete randNums;
   }
 
   /* Produce a random permutation, storing it in a 1-D array.
      The resulting array will include each value from low..high
-     exactly once.
+     exactly once, where low and high refer to the array's domain.
 
      :arg arr: a 1-D non-strided array
-     :arg seed: the seed to use when creating the permutation
+     :arg seed: the seed to use when creating the permutation. Defaults to
+      `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
+     :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
+     :type algorithm: :type:`RNG`
    */
   proc permutation(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
     var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
     randNums.permutation(arr);
-    delete randNums;
+  }
+
+  /*
+    Constructs a new stream of random numbers using the specified seed
+    and parallel safety.  Ensures that the seed value meets the PRNG's
+    constraints.
+
+    .. note::
+
+      The :mod:`NPBRandom` RNG will halt if provided an even seed.
+      :mod:`PCGRandom` has no restrictions on the provided seed value.
+
+    :arg eltType: The element type to be generated.
+    :type eltType: `type`
+
+    :arg seed: The seed to use for the PRNG.  Defaults to `oddCurrentTime` from
+     :type:`RandomSupport.SeedGenerator`.
+    :type seed: `int(64)`
+
+    :arg parSafe: The parallel safety setting.  Defaults to `true`.
+    :type parSafe: `bool`
+
+    :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
+    :type algorithm: :type:`RNG`
+
+    :returns: an owned RandomStream
+  */
+  proc makeRandomStream(type eltType,
+                        seed: int(64) = SeedGenerator.oddCurrentTime,
+                        param parSafe: bool = true,
+                        param algorithm = defaultRNG) {
+    if algorithm == RNG.PCG then
+      return new owned RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
+    else if algorithm == RNG.NPB then
+      return new owned NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
+    else
+      compilerError("Unknown random number generator");
   }
 
   /*
@@ -177,13 +216,35 @@ module Random {
     :mod:`PCGRandom` and :mod:`NPBRandom` for RNGs that can be
     instantiated. To create a random stream, use :proc:`makeRandomStream`.
 
-    Note different implementations of this interface can vary in whether or not
-    they can generate 0.0 and/or 1.0.  (e.g. They can be generated by
-    :mod:`PCGRandom` but not by :mod:`NPBRandom`).
-
     .. note::
 
       This RandomStreamInterface is expected to change.
+
+    .. note::
+
+      At present, different implementations of this interface can vary in
+      whether or not they can generate 0.0 and/or 1.0.  (e.g. They can be
+      generated by :mod:`PCGRandom` but not by :mod:`NPBRandom`).
+
+    .. note::
+
+      We plan to support general serial and parallel iterator methods on
+      :class:`RandomStreamInterface`; however, providing the full suite of
+      iterators is not possible with our current parallel iterator framework.
+      Specifically, if :class:`RandomStreamInterface` is a follower in a
+      zippered iteration context, there is no way for it to update the total
+      number of random numbers generated in a safe/sane/coordinated way.  We are
+      exploring a revised leader-follower iterator framework that would support
+      this idiom (and other cursor-based ones).  With Chapel's recent support
+      for standalone parallel iterators, one could define a standalone parallel
+      iterator for :class:`RandomStreamInterface`, but this effort has not yet
+      been taken on.
+
+    .. note::
+
+     The :class:`RandomStreamInterface` is included here only for documentation
+     and does not help with compilation in any way.  In the future, we hope to
+     turn it into an interface.
 
   */
   class RandomStreamInterface {
@@ -204,7 +265,7 @@ module Random {
     param parSafe: bool = true;
 
     /*
-      The seed value for the PRNG.  It may have constraints upon
+      The seed value for the PRNG.  There may be constraints upon
       legal values depending on the specific RNG.
     */
     const seed: int(64);
@@ -222,28 +283,28 @@ module Random {
 
     /*
       Advances/rewinds the stream to the `n`-th value in the sequence.
-      The first value is with n=1.
+      The first value is with n=1.  n must be > 0, otherwise an
+      IllegalArgumentError is thrown.
 
       :arg n: The position in the stream to skip to.  Must be > 0.
-      :type n: integral
+      :type n: `integral`
      */
-
-    proc skipToNth(n: integral) {
+    proc skipToNth(n: integral) throws {
       compilerError("RandomStreamInterface.skipToNth called");
     }
 
     /*
       Advance/rewind the stream to the `n`-th value and return it
-      (advancing the stream by one).  This is equivalent to
+      (advancing the stream by one).  n must be > 0, otherwise an
+      IllegalArgumentError is thrown.  This is equivalent to
       :proc:`skipToNth()` followed by :proc:`getNext()`.
 
       :arg n: The position in the stream to skip to.  Must be > 0.
-      :type n: integral
+      :type n: `integral`
 
       :returns: The `n`-th value in the random stream as type :type:`eltType`.
-    */
-
-    proc getNth(n: integral): eltType {
+     */
+    proc getNth(n: integral): eltType throws {
       compilerError("RandomStreamInterface.getNth called");
     }
 
@@ -251,12 +312,12 @@ module Random {
       Fill the argument array with pseudorandom values.  This method is
       identical to the standalone :proc:`fillRandom` procedure,
       except that it consumes random values from the
-      :class:`RandomStream` object on which it's invoked rather
+      :class:`RandomStreamInterface` object on which it's invoked rather
       than creating a new stream for the purpose of the call.
 
       :arg arr: The array to be filled
       :type arr: [] :type:`eltType`
-    */
+     */
     proc fillRandom(arr: [] eltType) {
       compilerError("RandomStreamInterface.fillRandom called");
     }
@@ -267,18 +328,19 @@ module Random {
     }
 
     /*
-       Returns an iterable expression for generating
-       D.numIndices random numbers. The RNG state will
-       be immediately advanced by D.numIndices before
-       this function yields any values.
 
-       The iterable expression can be usefully used
-       in a parallel context, whether standalone or
-       zippered.
+       Returns an iterable expression for generating `D.numIndices` random
+       numbers. The RNG state will be immediately advanced by `D.numIndices`
+       before the iterable expression yields any values.
+
+       The returned iterable expression is useful in parallel contexts,
+       including standalone and zippered iteration. The domain will determine
+       the parallelization strategy.
 
        :arg D: a domain
        :arg resultType: the type of number to yield
-       :return: an iterable expression yielding random resultType values
+       :return: an iterable expression yielding random `resultType` values
+
      */
     proc iterate(D: domain, type resultType=eltType) {
       compilerError("RandomStreamInterface.iterate called");
@@ -296,41 +358,24 @@ module Random {
     }
   }
 
-  /*
-    Constructs a new stream of random numbers using the specified seed
-    and parallel safety.  Ensures that the seed value meets the PRNG's
-    constraints.
-
-    :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.oddCurrentTime`.
-    :type seed: int(64)
-
-    :arg parSafe: The parallel safety setting.  Defaults to `true`.
-    :type parSafe: bool
-
-    :arg eltType: The element type to be generated.  Defaults to `real(64)`.
-    :type eltType: type
-
-    :arg algorithm: which algorithm to use. A param enum RNG element.  Defaults to PCG.
-    :type algorithm: RNG
-  */
-  proc makeRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
-                        param parSafe: bool = true,
-                        type eltType = real(64),
-                        param algorithm = defaultRNG) {
-    if algorithm == RNG.PCG then
-      return new RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
-    else if algorithm == RNG.NPB then
-      return new NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
-    else
-      compilerError("Unknown random number generator");
-  }
-
   // An apparent bug prevents this from working.
   //type RandomStream = PCGRandomStream;
 
 
   /*
      Seed generation for pseudorandom number generation
+
+
+     .. note::
+
+       For many of the functions in :mod:`Random`, if no seed is provided by the
+       user, one is chosen based on the current time in microseconds, allowing
+       for some degree of variability in seed selection.  The intent of
+       :record:`SeedGenerator` is to provide a menu of other options for
+       initializing the random stream seed, but few options are implemented
+       at present. In particular, it would be useful to allow multiple tasks to
+       create different seeds at the same time, or to allow different
+       functions running at the same time to produce different seeds.
 
   */
   module RandomSupport {
@@ -372,16 +417,19 @@ module Random {
 
 
   /*
-     Permuted Linear Congurential Random Number Generator
+     Permuted Linear Congruential Random Number Generator
 
      This module provides PCG random number generation routines.
      See http://www.pcg-random.org/
-     and the paper, "PCG: A Family of Simple Fast Space-Efficient Statistically
-     Good Algorithms for Random Number Generation" by M.E. O'Neill.
+     and the paper, `PCG: A Family of Simple Fast Space-Efficient Statistically
+     Good Algorithms for Random Number Generation` by M.E. O'Neill.
 
      It also includes some Chapel-specific features, such as generating real,
      imag, and complex numbers; and generating numbers in a range in parallel.
      These features are not available in the reference implementations of PCG.
+
+     The related module :mod:`PCGRandomLib` provides a lower-level interface to
+     many PCG functions.
 
      .. note::
 
@@ -403,11 +451,11 @@ module Random {
     /*
 
       Models a stream of pseudorandom numbers generated by the PCG random number
-      generator.  See http://www.pcg-random.org/ and the paper, "PCG: A Family
+      generator.  See http://www.pcg-random.org/ and the paper, `PCG: A Family
       of Simple Fast Space-Efficient Statistically Good Algorithms for Random
-      Number Generation" by M.E. O'Neill.
+      Number Generation` by M.E. O'Neill.
 
-      This class builds upon the :record:`pcg_setseq_64_xsh_rr_32_rng` PCG RNG
+      This class builds upon the :record:`~PCGRandomLib.pcg_setseq_64_xsh_rr_32_rng` PCG RNG
       which has 64 bits of state and 32 bits of output.
 
       While the PCG RNG used here is believed to have good statistical
@@ -420,11 +468,11 @@ module Random {
       match the C PCG reference implementation and have specifically verified
       equal output given the same seed. However, this implementation differs
       from the C PCG reference implementation in how it produces random integers
-      within particular bounds (with :proc:`RandomStream.getNext` using min and
-      max arguments). In addition, this implementation directly supports the
-      generation of random `real` values, unlike the C PCG implementation.
+      within particular bounds (with :proc:`RandomStream.getNext` using `min`
+      and `max` arguments). In addition, this implementation directly supports
+      the generation of random `real` values, unlike the C PCG implementation.
 
-      Smaller numbers, such as uint(8) or uint(16), are generated from
+      Smaller numbers, such as `uint(8)` or `uint(16)`, are generated from
       the high-order bits of the 32-bit output.
 
       To generate larger numbers, several 32-bit-output RNGs are ganged
@@ -434,7 +482,7 @@ module Random {
       For example, to generate 128-bit complex numbers, this RNG will use
       4 ganged 32-bit PCG RNGs with different sequence constants. One impact of
       this approach is that this implementation will only generate 2**64
-      different complex numbers (for example).
+      different complex numbers with a given seed (for example).
 
       This class also supports generating integers within particular bounds.
       When that is required, this class uses a strategy different from the PCG
@@ -445,7 +493,7 @@ module Random {
       is computed will be computed with a different ganged-together RNG.
       This strategy is meant to avoid statistical bias. While we have tested
       this strategy to our satisfaction, it has not been subject to rigorous
-      analysis and may have undesireable statistical properties.
+      analysis and may have undesirable statistical properties.
 
       When generating a real, imaginary, or complex number, this implementation
       uses the strategy of generating a 64-bit unsigned integer and then
@@ -458,10 +506,10 @@ module Random {
       be generated because PCG can produce the value 0 as a random integer.
 
 
-      We have tested this implementation with TestU01
-      (available at http://simul.iro.umontreal.ca/testu01/tu01.html ).
-      In our experiments with TestU01 1.2.3 and the Crush suite
-      (which consists of 144 statistical tests):
+      We have tested this implementation with TestU01 (available at
+      http://simul.iro.umontreal.ca/testu01/tu01.html ).  We measured our
+      implementation with TestU01 1.2.3 and the Crush suite, which consists of
+      144 statistical tests. The results were:
 
        * no failures for generating uniform reals
        * 1 failure for generating 32-bit values (which is also true for the
@@ -477,18 +525,23 @@ module Random {
       .. note::
 
          This class is currently called RandomStream, but at some point
-         we expect to rename it PCGRandomStream. RandomStream will
-         be the same as PCGRandomStream until we decide upon a better
-         default.
+         we expect to rename it PCGRandomStream. At that point, RandomStream
+         will represent the default RNG and will initially refer to
+         PCGRandomStream.
 
     */
     class RandomStream {
       /*
         Specifies the type of value generated by the PCGRandomStream.
         All numeric types are supported: `int`, `uint`, `real`, `imag`,
-        `complex`, and `bool` `types` of all sizes.
+        `complex`, and `bool` types of all sizes.
       */
       type eltType;
+
+      /*
+        The seed value for the PRNG.
+      */
+      const seed: int(64);
 
       /*
         Indicates whether or not the PCGRandomStream needs to be
@@ -501,29 +554,28 @@ module Random {
       param parSafe: bool = true;
 
       /*
-        The seed value for the PRNG.
-      */
-      const seed: int(64);
-
-
-      /*
-        Constructs a new stream of random numbers using the specified seed
+        Creates a new stream of random numbers using the specified seed
         and parallel safety.
 
+        :arg eltType: The element type to be generated.
+        :type eltType: `type`
+
         :arg seed: The seed to use for the PRNG.  Defaults to
-         :proc:`SeedGenerator.currentTime`. Can be any int(64) value.
-        :type seed: int(64)
+          `currentTime` from :type:`RandomSupport.SeedGenerator`.
+          Can be any int(64) value.
+        :type seed: `int(64)`
 
         :arg parSafe: The parallel safety setting.  Defaults to `true`.
-        :type parSafe: bool
+        :type parSafe: `bool`
 
-        :arg eltType: The element type to be generated.  Defaults to `real(64)`.
-        :type eltType: type
       */
-      proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
-                        param parSafe: bool = true,
-                        type eltType = real(64) ) {
+      proc init(type eltType,
+                seed: int(64) = SeedGenerator.currentTime,
+                param parSafe: bool = true) {
+        this.eltType = eltType;
         this.seed = seed;
+        this.parSafe = parSafe;
+        this.complete();
         for param i in 1..numGenerators(eltType) {
           param inc = pcg_getvalid_inc(i);
           PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
@@ -554,7 +606,7 @@ module Random {
         Returns the next value in the random stream.
 
         Generated reals are in [0,1] - both 0.0 and 1.0 are possible values.
-        Imaginary numbers are analagously in [0i, 1i]. Complex numbers will
+        Imaginary numbers are analogously in [0i, 1i]. Complex numbers will
         consist of a generated real and imaginary part, so 0.0+0.0i and 1.0+1.0i
         are possible.
 
@@ -562,7 +614,7 @@ module Random {
 
         :arg resultType: the type of the result. Defaults to :type:`eltType`.
           `resultType` must be the same or a smaller size number.
-        :returns: The next value in the random stream as type :type:`resultType`.
+        :returns: The next value in the random stream as type `resultType`.
        */
       proc getNext(type resultType=eltType): resultType {
         if parSafe then
@@ -574,7 +626,7 @@ module Random {
       }
       /*
         Return the next random value but within a particular range.
-        Returns a number in [min, max] (inclusive).
+        Returns a number in [`min`, `max`] (inclusive).
 
         .. note::
 
@@ -584,8 +636,8 @@ module Random {
 
            For real numbers, this class generates a random value in [max, min]
            by computing a random value in [0,1] and scaling and shifting that
-           value. Note that not all floating point values can be constructed in
-           this way.
+           value. Note that not all possible floating point values in
+           the interval [`min`, `max`] can be constructed in this way.
 
        */
       proc getNext(min: eltType, max:eltType): eltType {
@@ -597,19 +649,17 @@ module Random {
         return result;
       }
 
-
       /*
         Advances/rewinds the stream to the `n`-th value in the sequence.
-        The first corresponds to n=1. It is an error to call this
-        routine with n <= 0.
+        The first value is with n=1.  n must be > 0, otherwise an
+        IllegalArgumentError is thrown.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
-        :type n: integral
+        :type n: `integral`
        */
-
-      proc skipToNth(n: integral) {
+      proc skipToNth(n: integral) throws {
         if n <= 0 then
-          halt("PCGRandomStream.skipToNth(n) called with non-positive 'n' value", n);
+          throw new IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
         PCGRandomStreamPrivate_skipToNth_noLock(n);
@@ -619,18 +669,18 @@ module Random {
 
       /*
         Advance/rewind the stream to the `n`-th value and return it
-        (advancing the stream by one).  This is equivalent to
+        (advancing the stream by one).  n must be > 0, otherwise an
+        IllegalArgumentError is thrown.  This is equivalent to
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
-        :type n: integral
+        :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
-      */
-
-      proc getNth(n: integral): eltType {
-        if (n <= 0) then 
-          halt("PCGRandomStream.getNth(n) called with non-positive 'n' value", n);
+       */
+      proc getNth(n: integral): eltType throws {
+        if (n <= 0) then
+          throw new IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
         PCGRandomStreamPrivate_skipToNth_noLock(n);
@@ -642,9 +692,9 @@ module Random {
 
       /*
         Fill the argument array with pseudorandom values.  This method is
-        identical to the standalone :proc:`fillRandom` procedure,
+        identical to the standalone :proc:`~Random.fillRandom` procedure,
         except that it consumes random values from the
-        :class:`PCGRandomStream` object on which it's invoked rather
+        :class:`RandomStream` object on which it's invoked rather
         than creating a new stream for the purpose of the call.
 
         :arg arr: The array to be filled
@@ -655,36 +705,53 @@ module Random {
           x = r;
       }
 
-      /* Randomly shuffle a 1-D non-strided array.
-         */
-      proc shuffle(arr: [] eltType) {
-        var low = arr.domain.dim(1).low;
-        var high = arr.domain.dim(1).high;
+      /* Randomly shuffle a 1-D array. */
+      proc shuffle(arr: [?D] ?eltType ) {
 
-        if arr.domain.rank != 1 then
+        if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
-        //if arr.domain.type.strideable then
-        //  compilerError("Shuffle requires non-strideable 1-D array");
+
+        const low = D.low,
+              high = D.high,
+              stride = D.stride;
 
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
 
-        for j in low+1..high by -1 {
-          var k = randlc_bounded(arr.domain.idxType,
+        // Fisher-Yates shuffle
+        for i in 0..#D.size by -1 {
+          var k = randlc_bounded(D.idxType,
                                  PCGRandomStreamPrivate_rngs,
                                  seed, PCGRandomStreamPrivate_count,
-                                 low, j);
+                                 0, i);
+
+          var j = i;
+
+          // Strided case
+          if stride > 1 {
+            k *= stride;
+            j *= stride;
+          } else if stride < 0 {
+            k *= -stride;
+            j *= -stride;
+          }
+
+          // Alignment offsets
+          k += low;
+          j += low;
+
           arr[k] <=> arr[j];
         }
 
-        PCGRandomStreamPrivate_count += high-low;
+        PCGRandomStreamPrivate_count += high - low;
 
         if parSafe then
           PCGRandomStreamPrivate_lock$;
       }
+
       /* Produce a random permutation, storing it in a 1-D array.
          The resulting array will include each value from low..high
-         exactly once.
+         exactly once, where low and high refer to the array's domain.
          */
       proc permutation(arr: [] eltType) {
         var low = arr.domain.dim(1).low;
@@ -692,8 +759,8 @@ module Random {
 
         if arr.domain.rank != 1 then
           compilerError("Permutation requires 1-D array");
-        //if arr.domain.dim(1).strideable then
-        //  compilerError("Permutation requires non-strideable 1-D array");
+        //if arr.domain.dim(1).stridable then
+        //  compilerError("Permutation requires non-stridable 1-D array");
 
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
@@ -716,24 +783,26 @@ module Random {
 
       pragma "no doc"
       proc fillRandom(arr: []) {
-        compilerError("PCGRandomStream(eltType=", eltType:string, 
+        compilerError("PCGRandomStream(eltType=", eltType:string,
                       ") can only be used to fill arrays of ", eltType:string);
       }
 
       /*
-         Returns an iterable expression for generating
-         D.numIndices random numbers. The RNG state will
-         be immediately advanced by D.numIndices before
-         this function yields any values.
 
-         The iterable expression can be usefully used
-         in a parallel context, whether standalone or
-         zippered.
+         Returns an iterable expression for generating `D.numIndices` random
+         numbers. The RNG state will be immediately advanced by `D.numIndices`
+         before the iterable expression yields any values.
+
+         The returned iterable expression is useful in parallel contexts,
+         including standalone and zippered iteration. The domain will determine
+         the parallelization strategy.
 
          :arg D: a domain
          :arg resultType: the type of number to yield
-         :return: an iterable expression yielding random resultType values
+         :return: an iterable expression yielding random `resultType` values
+
        */
+      pragma "fn returns iterator"
       proc iterate(D: domain, type resultType=eltType) {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
@@ -745,8 +814,21 @@ module Random {
         return PCGRandomPrivate_iterate(resultType, D, seed, start);
       }
 
+      // Forward the leader iterator as well.
       pragma "no doc"
-      proc writeThis(f) {
+      pragma "fn returns iterator"
+      proc iterate(D: domain, type resultType=eltType, param tag)
+        where tag == iterKind.leader
+      {
+        // Note that proc iterate() for the serial case (i.e. the one above)
+        // is going to be invoked as well, so we should not be taking
+        // any actions here other than the forwarding.
+        const start = PCGRandomStreamPrivate_count;
+        return PCGRandomPrivate_iterate(resultType, D, seed, start, tag);
+      }
+
+      pragma "no doc"
+      override proc writeThis(f) {
         f <~> "PCGRandomStream(eltType=";
         f <~> eltType:string;
         f <~> ", parSafe=";
@@ -766,7 +848,7 @@ module Random {
 
       pragma "no doc"
       var PCGRandomStreamPrivate_lock$: sync bool;
-      // up to 4 RNGs 
+      // up to 4 RNGs
       pragma "no doc"
       var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
       pragma "no doc"
@@ -787,7 +869,7 @@ module Random {
     private inline
     proc randToReal64(x: uint(64)):real(64)
     {
-      return ldexp(x, -64);
+      return ldexp(x:real(64), -64);
     }
     // returns a random number in [min, max]
     // by scaling a multiple of 2**-64 by (max-min)
@@ -803,7 +885,7 @@ module Random {
     private inline
     proc randToReal32(x: uint(32))
     {
-      return ldexp(x, -32);
+      return ldexp(x:real(32), -32);
     }
 
     // returns a random number in [min, max)
@@ -875,7 +957,7 @@ module Random {
       if bound > max(uint(32)):uint {
         var toprand = 0:uint;
         var botrand = 0:uint;
-        
+
         // compute the bounded number in two calls to a 32-bit RNG
         toprand = boundedrand32_1(states, seed, count, (bound >> 32):uint(32));
         botrand = boundedrand32_2(states, seed, count, (bound & max(uint(32))):uint(32));
@@ -888,6 +970,7 @@ module Random {
       }
     }
 
+    private
     proc checkSufficientBitsAndAdvanceOthers(type resultType, ref states) {
       // Note - this error could be eliminated if we used
       // the same strategy as bounded_rand_vary_inc and
@@ -1033,7 +1116,7 @@ module Random {
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                                start: int(64), param tag: iterKind)
           where tag == iterKind.leader {
-      for block in D._value.these(tag=iterKind.leader) do
+      for block in D.these(tag=iterKind.leader) do
         yield block;
     }
 
@@ -1072,6 +1155,11 @@ module Random {
    Low-level PCG RNG implementation.
 
    This module includes a number of low-level PCG random functions.
+   See http://www.pcg-random.org/
+   and the paper, `PCG: A Family of Simple Fast Space-Efficient Statistically
+   Good Algorithms for Random Number Generation` by M.E. O'Neill.
+
+   This module provides the following low-level PCG RNGs:
 
      * :record:`pcg_setseq_64_xsh_rr_32_rng` (the default PCG RNG)
      * :record:`pcg_setseq_64_rxs_m_xs_64_rng`
@@ -1086,9 +1174,31 @@ module Random {
    number of output bits. The other parts describe the permutation function in
    the LCG.
 
+   Conceptually, a PCG RNG consists of three things:
+
+     * the algorithm variant (e.g. pcg_setseq_64_xsh_rr_32_rng)
+     * the current state
+     * the RNG sequence constant
+
+   Note that the sequence constant must be odd for this generator to
+   function correctly. The function :proc:`pcg_getvalid_inc` is available
+   to construct an odd number based upon an arbitrary input.
+
+   When using these low-level interfaces, the sequence constant is not
+   actually stored inside the RNG. Instead, users of this interface
+   must pass the same sequence constant used in `srandom` to each of
+   the other calls for that RNG object.
+
+   Besides storing the RNG state in the record, each of these PCG RNGs
+   include at least the following methods:
+
+     * `srandom` to initialize the state from a seed
+     * `random` to produce the next random value
+     * `advance` to skip ahead some number of steps in RNG generation
+
    */
   module PCGRandomLib {
-    
+
     // Translated from PCG-C-basic-0.9
     // Keeping the same function names in order to simplify maintenance
     // These functions correspond to pcg32_random_r in that version.
@@ -1193,28 +1303,14 @@ module Random {
        32-bits output).
 
        This record implements the same RNG as pcg32_random_r does in
-       PCG-C-0.9.4.
+       PCG-C-0.94.
 
        This RNG has 64-bits of internal state and outputs 32-bits at a time.
-
-       Conceptually, a PCG RNG consists of three things:
-
-         * the algorithm variant (e.g. pcg_setseq_64_xsh_rr_32_rng)
-         * the current state
-         * the RNG sequence constant
 
        This RNG will iterate through all possible 64-bit values of state.
        The sequence constant chooses between 2**63 random sequences that the
        RNG is iterating through.
 
-       Note that the sequence constant must be odd for this generator to
-       function correctly. The function :proc`pcg_getvalid_inc` is available
-       to construct an odd number based upon an arbitrary input.
-
-       When using this low-level interface, the sequence constant is not
-       actually stored inside the RNG. Instead, users of this interface
-       must pass the same sequence constant used in `srandom` to each of
-       the other calls for that RNG object.
      */
     record pcg_setseq_64_xsh_rr_32_rng {
       /* The RNG state */
@@ -1286,7 +1382,7 @@ module Random {
         var tmpinc:uint(64);
         var r:uint(32);
 
-        // Keepy trying until we get a random number that is within the bounds.
+        // Keep trying until we get a random number that is within the bounds.
         while true {
           r = random(inc);
           if r >= threshold then
@@ -1309,6 +1405,12 @@ module Random {
          numbers and uses those when more random numbers are needed.
          In this way, this strategy is similar to the strategy
          for generating 64-bit numbers by pairing 32-bit PCG RNGs.
+
+         .. note::
+
+           The `nextint` and `inc_increment` values need to define a sequence of
+           increments that is different from other increments used. Otherwise,
+           these streams will not be independent.
 
          .. note::
 
@@ -1411,17 +1513,14 @@ module Random {
        64-bits output).
 
        This record implements the same RNG as pcg64i_random_r does
-       in PCG-C-09.4.
+       in PCG-C-0.94.
 
        This RNG has 64-bits of internal state and outputs 64-bits at a time.
 
        This generator produces each 64-bit value exactly once.
 
-       This generator should not be considered secure since it reveals
+       This generator should be considered insecure since it reveals
        its entire internal state with each output.
-
-       See :record:`pcg_setseq_64_xsh_rr_32_rng` for more information about how
-       to use this low-level interface.
 
      */
     record pcg_setseq_64_rxs_m_xs_64_rng {
@@ -1477,17 +1576,14 @@ module Random {
        32-bits output).
 
        This record implements the same RNG as pcg32i_random_r does
-       in PCG-C-09.4.
+       in PCG-C-0.94.
 
        This RNG has 32-bits of internal state and outputs 32-bits at a time.
 
        This generator produces each 32-bit value exactly once.
 
-       This generator should not be considered secure since it reveals
+       This generator should be considered insecure since it reveals
        its entire internal state with each output.
-
-       See :record:`pcg_setseq_64_xsh_rr_32_rng` for more information about how
-       to use this low-level interface.
 
      */
     record pcg_setseq_32_rxs_m_xs_32_rng {
@@ -1543,17 +1639,14 @@ module Random {
        16-bits output).
 
        This record implements the same RNG as pcg16i_random_r does
-       in PCG-C-09.4.
+       in PCG-C-0.94.
 
        This RNG has 16-bits of internal state and outputs 16-bits at a time.
 
        This generator produces each 16-bit value exactly once.
 
-       This generator should not be considered secure since it reveals
+       This generator should be considered insecure since it reveals
        its entire internal state with each output.
-
-       See :record:`pcg_setseq_64_xsh_rr_32_rng` for more information about how
-       to use this low-level interface.
 
      */
     record pcg_setseq_16_rxs_m_xs_16_rng {
@@ -1609,17 +1702,14 @@ module Random {
        8-bits output).
 
        This record implements the same RNG as pcg8i_random_r does
-       in PCG-C-09.4.
+       in PCG-C-0.94.
 
        This RNG has 8-bits of internal state and outputs 8-bits at a time.
 
        This generator produces each 8-bit value exactly once.
 
-       This generator should not be considered secure since it reveals
+       This generator should be considered insecure since it reveals
        its entire internal state with each output.
-
-       See :record:`pcg_setseq_64_xsh_rr_32_rng` for more information about how
-       to use this low-level interface.
 
      */
     record pcg_setseq_8_rxs_m_xs_8_rng {
@@ -1705,7 +1795,7 @@ module Random {
         var shiftamt = nbits - 4;
         var state = state_in:uint;
         var word:uint = ((state >> ((state >> shiftamt) + 2)) ^ state) * 217;
-        word = normalize(nbits, word); 
+        word = normalize(nbits, word);
         return (word >> shiftamt) ^ word;
       }
     }
@@ -1725,12 +1815,9 @@ module Random {
        these generators. This generator always truncates its internal state to N
        bits.
 
-       This generator should not be considered secure since it reveals its
+       This generator should be considered insecure since it reveals its
        entire internal state with each output.  It produces each N-bit value
        exactly once.
-
-       See :record:`pcg_setseq_64_xsh_rr_32_rng` for more information about how
-       to use this low-level interface.
 
      */
     record pcg_setseq_N_rxs_m_xs_N_rng {
@@ -1876,7 +1963,7 @@ module Random {
 
      The pseudorandom number generator (PRNG) implemented by
      this module uses the algorithm from the NAS Parallel Benchmarks
-     (NPB, available at: http://www.nas.nasa.gov/publications/npb.html),
+     (NPB, available at: https://www.nas.nasa.gov/publications/npb.html
      which can be used to generate random values of type `real(64)`,
      `imag(64)`, and `complex(128)`.
 
@@ -1894,6 +1981,8 @@ module Random {
        This generator should produce the same results on any computer
        with at least 48 mantissa bits for `real(64)` data.
 
+     To generate `complex` elements, consecutive pairs of random numbers are
+     assigned to the real and imaginary components, respectively.
 
      The values generated by this NPB RNG do not include 0.0 and 1.0.
 
@@ -1904,13 +1993,10 @@ module Random {
      generator, this RNG has known statistical problems that TestU01
      was able to detect.
 
-     Here is a list of currently open issues (TODOs) for this module:
+     .. note::
 
-     1. This module is currently restricted to generating `real(64)`,
-     `imag(64)`, and `complex(128)` complex values using a single PRNG
-     algorithm.  As noted above, we would like to extend this support to
-     include other algorithms and primitive types over time.
-
+       This module is currently restricted to generating `real(64)`,
+       `imag(64)`, and `complex(128)` complex values.
 
   */
   module NPBRandom {
@@ -1930,6 +2016,12 @@ module Random {
       type eltType = real(64);
 
       /*
+        The seed value for the PRNG.  It must be an odd integer in the
+        interval [1, 2**46).
+      */
+      const seed: int(64);
+
+      /*
         Indicates whether or not the NPBRandomStream needs to be
         parallel-safe by default.  If multiple tasks interact with it in
         an uncoordinated fashion, this must be set to `true`.  If it will
@@ -1939,36 +2031,32 @@ module Random {
       */
       param parSafe: bool = true;
 
-      /*
-        The seed value for the PRNG.  It must be an odd integer in the
-        range (1, 2**46).
-      */
-      const seed: int(64);
-
 
       /*
-        Constructs a new stream of random numbers using the specified seed
+        Creates a new stream of random numbers using the specified seed
         and parallel safety.
 
         .. note::
 
           The NPB generator requires an odd seed value. Constructing
           an NPBRandomStream with an even seed value will cause a call to
-          halt().
+          halt(). Only the lower 46 bits of the seed will be used.
+
+        :arg eltType: The element type to be generated.
+        :type eltType: `type`
 
         :arg seed: The seed to use for the PRNG.  Defaults to
-          :proc:`SeedGenerator.oddCurrentTime`.
-        :type seed: int(64)
+          `oddCurrentTime` from :type:`~RandomSupport.SeedGenerator`.
+        :type seed: `int(64)`
 
         :arg parSafe: The parallel safety setting.  Defaults to `true`.
-        :type parSafe: bool
+        :type parSafe: `bool`
 
-        :arg eltType: The element type to be generated.  Defaults to `real(64)`.
-        :type eltType: type
       */
-      proc NPBRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
-                        param parSafe: bool = true,
-                        type eltType = real(64)) {
+      proc init(type eltType = real(64),
+                seed: int(64) = SeedGenerator.oddCurrentTime,
+                param parSafe: bool = true) {
+        this.eltType = eltType;
 
         // The mod operation is written in these steps in order
         // to work around an apparent PGI compiler bug.
@@ -1979,13 +2067,15 @@ module Random {
         var useed = seed:uint(64);
         var mod:uint(64);
         if useed % 2 == 0 then
-          halt("NPBRandomStream seed must be an odd integer");
+          HaltWrappers.initHalt("NPBRandomStream seed must be an odd integer");
         // Adjust seed to be between 0 and 2**46.
         mod = useed & two_46_mask;
         this.seed = mod:int(64);
+        this.parSafe = parSafe;
+        this.complete();
 
         if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
-          halt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
+          HaltWrappers.initHalt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
 
         NPBRandomStreamPrivate_cursor = seed;
         NPBRandomStreamPrivate_count = 1;
@@ -2032,14 +2122,15 @@ module Random {
 
       /*
         Advances/rewinds the stream to the `n`-th value in the sequence.
+        The first value is with n=1.  n must be > 0, otherwise an
+        IllegalArgumentError is thrown.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
-        :type n: integral
+        :type n: `integral`
        */
-
-      proc skipToNth(n: integral) {
+      proc skipToNth(n: integral) throws {
         if n <= 0 then
-          halt("NPBRandomStream.skipToNth(n) called with non-positive 'n' value", n);
+          throw new IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           NPBRandomStreamPrivate_lock$ = true;
         NPBRandomStreamPrivate_skipToNth_noLock(n);
@@ -2049,18 +2140,18 @@ module Random {
 
       /*
         Advance/rewind the stream to the `n`-th value and return it
-        (advancing the stream by one).  This is equivalent to
+        (advancing the stream by one).  n must be > 0, otherwise an
+        IllegalArgumentError is thrown.  This is equivalent to
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
-        :type n: integral
+        :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
-      */
-
-      proc getNth(n: integral): eltType {
-        if (n <= 0) then 
-          halt("NPBRandomStream.getNth(n) called with non-positive 'n' value", n);
+       */
+      proc getNth(n: integral): eltType throws {
+        if (n <= 0) then
+          throw new IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n);
         if parSafe then
           NPBRandomStreamPrivate_lock$ = true;
         NPBRandomStreamPrivate_skipToNth_noLock(n);
@@ -2072,7 +2163,7 @@ module Random {
 
       /*
         Fill the argument array with pseudorandom values.  This method is
-        identical to the standalone :proc:`fillRandom` procedure,
+        identical to the standalone :proc:`~Random.fillRandom` procedure,
         except that it consumes random values from the
         :class:`NPBRandomStream` object on which it's invoked rather
         than creating a new stream for the purpose of the call.
@@ -2087,24 +2178,26 @@ module Random {
 
       pragma "no doc"
       proc fillRandom(arr: []) {
-        compilerError("NPBRandomStream(eltType=", eltType:string, 
+        compilerError("NPBRandomStream(eltType=", eltType:string,
                       ") can only be used to fill arrays of ", eltType:string);
       }
 
       /*
-         Returns an iterable expression for generating
-         D.numIndices random numbers. The RNG state will
-         be immediately advanced by D.numIndices before
-         this function yields any values.
 
-         The iterable expression can be usefully used
-         in a parallel context, whether standalone or
-         zippered.
+         Returns an iterable expression for generating `D.numIndices` random
+         numbers. The RNG state will be immediately advanced by `D.numIndices`
+         before the iterable expression yields any values.
+
+         The returned iterable expression is useful in parallel contexts,
+         including standalone and zippered iteration. The domain will determine
+         the parallelization strategy.
 
          :arg D: a domain
          :arg resultType: the type of number to yield
-         :return: an iterable expression yielding random resultType values
+         :return: an iterable expression yielding random `resultType` values
+
        */
+      pragma "fn returns iterator"
       proc iterate(D: domain, type resultType=real) {
         if parSafe then
           NPBRandomStreamPrivate_lock$ = true;
@@ -2116,8 +2209,21 @@ module Random {
         return NPBRandomPrivate_iterate(resultType, D, seed, start);
       }
 
+      // Forward the leader iterator as well.
       pragma "no doc"
-      proc writeThis(f) {
+      pragma "fn returns iterator"
+      proc iterate(D: domain, type resultType=real, param tag)
+        where tag == iterKind.leader
+      {
+        // Note that proc iterate() for the serial case (i.e. the one above)
+        // is going to be invoked as well, so we should not be taking
+        // any actions here other than the forwarding.
+        const start = NPBRandomStreamPrivate_count;
+        return NPBRandomPrivate_iterate(resultType, D, seed, start, tag);
+      }
+
+      pragma "no doc"
+      override proc writeThis(f) {
         f <~> "NPBRandomStream(eltType=";
         f <~> eltType:string;
         f <~> ", parSafe=";
@@ -2250,7 +2356,7 @@ module Random {
                          start: int(64), param tag: iterKind)
           where tag == iterKind.leader {
       // forward to the domain D's iterator
-      for block in D._value.these(tag=iterKind.leader) do
+      for block in D.these(tag=iterKind.leader) do
         yield block;
     }
 

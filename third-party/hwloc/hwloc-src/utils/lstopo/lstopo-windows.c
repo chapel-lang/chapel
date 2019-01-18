@@ -1,11 +1,12 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2012 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
+#include <private/autogen/config.h>
 #include <hwloc.h>
 
 #include <stdlib.h>
@@ -55,7 +56,7 @@ struct draw_methods windows_draw_methods;
 
 static struct lstopo_windows_output the_output;
 static int state, control;
-static int x, y, x_delta, y_delta;
+static int the_x, the_y, x_delta, y_delta;
 static int finish;
 static int the_width, the_height;
 static int win_width, win_height;
@@ -118,8 +119,8 @@ WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
     }
     case WM_LBUTTONDOWN:
       state = 1;
-      x = GET_X_LPARAM(lparam);
-      y = GET_Y_LPARAM(lparam);
+      the_x = GET_X_LPARAM(lparam);
+      the_y = GET_Y_LPARAM(lparam);
       break;
     case WM_LBUTTONUP:
       state = 0;
@@ -130,10 +131,10 @@ WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
       if (state) {
         int new_x = GET_X_LPARAM(lparam);
         int new_y = GET_Y_LPARAM(lparam);
-        x_delta -= new_x - x;
-        y_delta -= new_y - y;
-        x = new_x;
-        y = new_y;
+        x_delta -= new_x - the_x;
+        y_delta -= new_y - the_y;
+        the_x = new_x;
+        the_y = new_y;
         redraw = 1;
       }
       break;
@@ -318,6 +319,7 @@ windows_declare_color(void *output, int r, int g, int b)
   struct lstopo_windows_output *woutput = output;
   HBRUSH brush;
   COLORREF color;
+  struct color *tmp;
 
   if (!woutput->drawing)
     return;
@@ -329,7 +331,12 @@ windows_declare_color(void *output, int r, int g, int b)
     exit(EXIT_FAILURE);
   }
 
-  colors = realloc(colors, sizeof(*colors) * (numcolors + 1));
+  tmp = realloc(colors, sizeof(*colors) * (numcolors + 1));
+  if (!tmp) {
+    fprintf(stderr, "Failed to realloc the colors array\n");
+    return;
+  }
+  colors = tmp;
   colors[numcolors].r = r;
   colors[numcolors].g = g;
   colors[numcolors].b = b;
@@ -384,7 +391,7 @@ windows_line(void *output, int r, int g, int b, unsigned depth __hwloc_attribute
 }
 
 static void
-windows_text(void *output, int r, int g, int b, int size __hwloc_attribute_unused, unsigned depth __hwloc_attribute_unused, unsigned x, unsigned y, const char *text)
+windows_text(void *output, int r, int g, int b, unsigned depth __hwloc_attribute_unused, unsigned x, unsigned y, const char *text)
 {
   struct lstopo_windows_output *woutput = output;
   PAINTSTRUCT *ps = &woutput->ps;
@@ -397,7 +404,7 @@ windows_text(void *output, int r, int g, int b, int size __hwloc_attribute_unuse
 }
 
 static void
-windows_textsize(void *output, const char *text, unsigned textlength, unsigned fontsize __hwloc_attribute_unused, unsigned *width)
+windows_textsize(void *output, const char *text, unsigned textlength, unsigned *width)
 {
   struct lstopo_windows_output *woutput = output;
   PAINTSTRUCT *ps = &woutput->ps;

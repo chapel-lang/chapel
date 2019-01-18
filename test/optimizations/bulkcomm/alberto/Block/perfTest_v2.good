@@ -1,4 +1,0 @@
-perfTest_v2.chpl:26: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-perfTest_v2.chpl:58: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-perfTest_v2.chpl:134: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-perfTest_v2.chpl:163: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)

@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,19 +21,26 @@
 
 #include "passes.h"
 
-#include "stmt.h"
-#include "expr.h"
 #include "astutil.h"
-#include "stlUtil.h"
+#include "DeferStmt.h"
 #include "docsDriver.h"
+#include "expr.h"
+#include "stmt.h"
+#include "stlUtil.h"
+#include "stringutil.h"
 
 
 static void checkNamedArguments(CallExpr* call);
+static void checkManagedClassKinds(CallExpr* call);
+static void checkExplicitDeinitCalls(CallExpr* call);
 static void checkPrivateDecls(DefExpr* def);
 static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
+static void nestedName(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
+static void checkRecordInheritance(AggregateType* at);
+static void setupForCheckExplicitDeinitCalls();
 
 void
 checkParsed() {
@@ -50,12 +57,16 @@ checkParsed() {
     return;
   }
 
+  setupForCheckExplicitDeinitCalls();
+
   forv_Vec(CallExpr, call, gCallExprs) {
+    checkManagedClassKinds(call);
     checkNamedArguments(call);
+    checkExplicitDeinitCalls(call);
   }
 
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (toVarSymbol(def->sym))
+    if (toVarSymbol(def->sym)) {
       // The test for FLAG_TEMP allows compiler-generated (temporary) variables
       // to be declared without an explicit type or initializer expression.
       if ((!def->init || def->init->isNoInitExpr())
@@ -66,6 +77,25 @@ checkParsed() {
               USR_FATAL_CONT(def->sym,
                              "Variable '%s' is not initialized or has no type",
                              def->sym->name);
+    }
+
+    //
+    // This test checks to see if query domains (e.g., '[?D]') are
+    // used in places other than formal argument type specifiers.
+    //
+    if (!isFnSymbol(def->parentSymbol)) {
+      if (CallExpr* type = toCallExpr(def->exprType)) {
+        if (type->isNamed("chpl__buildArrayRuntimeType")) {
+          if (CallExpr* domainExpr = toCallExpr(type->get(1))) {
+            DefExpr* queryDomain = toDefExpr(domainExpr->get(1));
+            if (queryDomain) {
+              USR_FATAL_CONT(queryDomain,
+                             "Domain query expressions may currently only be used in formal argument types");
+            }
+          }
+        }
+      }
+    }
 
     checkPrivateDecls(def);
   }
@@ -79,10 +109,18 @@ checkParsed() {
   }
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    nestedName(mod);
+
     checkModule(mod);
   }
 
+  forv_Vec(AggregateType, at, gAggregateTypes) {
+    checkRecordInheritance(at);
+  }
+
   checkExportedNames();
+
+  checkDefersAfterParsing();
 }
 
 
@@ -105,27 +143,91 @@ checkNamedArguments(CallExpr* call) {
   }
 }
 
+static const char* getClassKindSpecifier(CallExpr* call) {
+  if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+      call->isNamed("_to_unmanaged"))
+    return "unmanaged";
+  if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+      call->isNamed("_to_borrowed"))
+    return "borrowed";
+  if (call->isNamed("_owned"))
+    return "owned";
+  if (call->isNamed("_shared"))
+    return "shared";
+
+  return NULL;
+}
+
+static void checkManagedClassKinds(CallExpr* call) {
+  const char* outer = getClassKindSpecifier(call);
+
+  if (outer != NULL) {
+    CallExpr* innerCall = toCallExpr(call->get(1));
+    if (innerCall) {
+      const char* inner = getClassKindSpecifier(innerCall);
+      if (inner != NULL) {
+        USR_FATAL_CONT(call,
+                       "Type expression uses multiple class kinds: %s %s",
+                       outer, inner);
+      }
+    }
+  }
+}
+
+static VarSymbol*  deinitStrLiteral;
+
+static void setupForCheckExplicitDeinitCalls() {
+  SET_LINENO(rootModule); // for --minimal-modules
+  deinitStrLiteral = new_CStringSymbol("deinit");
+}
+
+//
+// Report error for the following cases:
+//
+// * non-method call e.g. deinit(args...)
+//     ==> CallExpr(UnresolvedSymExpr("deinit"), args...)
+//
+// * method call e.g. cc.deinit(args...)
+//     ==> CallExpr(UnresolvedSymExpr("."), CString("deinit"), args...)
+//
+static void checkExplicitDeinitCalls(CallExpr* call) {
+  if (UnresolvedSymExpr* target = toUnresolvedSymExpr(call->baseExpr)) {
+    if (target->unresolved == astrDeinit)
+      USR_FATAL_CONT(call, "direct calls to deinit() are not allowed");
+    else if (target->unresolved == astrSdot)
+      if (SymExpr* arg2 = toSymExpr(call->get(2)))
+        if (arg2->symbol() == deinitStrLiteral)
+          // OK to invoke explicitly from chpl__delete()
+          // which is our internal implementation of 'delete' statements.
+          if (strcmp(call->parentSymbol->name, "chpl__delete"))
+            USR_FATAL_CONT(call, "direct calls to deinit() are not allowed");
+  }
+}
 
 static void checkPrivateDecls(DefExpr* def) {
-  if (def->sym->hasFlag(FLAG_PRIVATE)) {
+  if (def->sym->hasFlag(FLAG_PRIVATE) == true) {
     // The symbol has been declared private.
-    if (def->parentSymbol) {
-      if (toFnSymbol(def->parentSymbol)) {
-        // The parent symbol of this definition is a FnSymbol.  Private
-        // symbols at the function scope are meaningless because there is no
-        // way for anything outside the function to access its locals, so warn
-        // the user.
+    if (def->inTree()) {
+      if (isFnSymbol(def->parentSymbol) == true) {
+        // The parent symbol of this definition is a FnSymbol.
+        // Private symbols at the function scope are meaningless
+        // because there is no way for anything outside the function
+        // to access ts locals, so warn the user.
         USR_WARN(def,
-                 "Private declarations within function bodies are meaningless");
-        // Don't want to waste time treating this symbol as if it could be
-        // accessed from an outer scope, so remove the flag.
+                 "Private declarations within function bodies "
+                 "are meaningless");
+
         def->sym->removeFlag(FLAG_PRIVATE);
-      } else if (ModuleSymbol *mod = toModuleSymbol(def->parentSymbol)) {
+
+      } else if (ModuleSymbol* mod = toModuleSymbol(def->parentSymbol)) {
+        FnSymbol* fn = toFnSymbol(def->sym);
+
         // The parent symbol is a module symbol.  Could still be invalid.
-        if (def->sym->hasFlag(FLAG_METHOD)) {
-          USR_FATAL_CONT(def, "Can't apply private to the fields or methods of a class or record yet");
-          // Private secondary methods require further discussion before they
-          // are implemented.
+        if (fn != NULL && fn->isMethod() == true) {
+          USR_FATAL_CONT(def,
+                         "Can't apply private to the fields or methods of "
+                         "a class or record yet");
+
         } else if (mod->block != def->parentExpr) {
           if (BlockStmt* block = toBlockStmt(def->parentExpr)) {
             // Scopeless blocks are used to define multiple symbols, for
@@ -135,23 +237,30 @@ static void checkPrivateDecls(DefExpr* def) {
               // block.  Private symbols at this scope are meaningless, so warn
               // the user.
               USR_WARN(def,
-                       "Private declarations within nested blocks are meaningless");
+                       "Private declarations within nested blocks "
+                       "are meaningless");
+
               def->sym->removeFlag(FLAG_PRIVATE);
             }
+
           } else {
             // There are many situations which could lead to this else branch.
             // Most of them will not reach here due to being banned at parse
             // time.  However, those that aren't excluded by syntax errors will
             // be caught here.
-            USR_WARN(def, "Private declarations are meaningless outside of module level declarations");
+            USR_WARN(def,
+                     "Private declarations are meaningless outside "
+                     "of module level declarations");
+
             def->sym->removeFlag(FLAG_PRIVATE);
           }
         }
-      } else if (TypeSymbol *t = toTypeSymbol(def->parentSymbol)) {
-        if (toAggregateType(t->type)) {
-          USR_FATAL_CONT(def, "Can't apply private to the fields or methods of a class or record yet");
-          // Private fields and methods require further discussion before they
-          // are implemented.
+
+      } else if (TypeSymbol* t = toTypeSymbol(def->parentSymbol)) {
+        if (isAggregateType(t->type) == true) {
+          USR_FATAL_CONT(def,
+                         "Can't apply private to the fields or methods "
+                         "of a class or record yet");
         }
       }
     }
@@ -161,12 +270,6 @@ static void checkPrivateDecls(DefExpr* def) {
 
 static void
 checkParsedVar(VarSymbol* var) {
-  if (var->isParameter() && !var->immediate)
-    if (!var->defPoint->init &&
-        (toFnSymbol(var->defPoint->parentSymbol) ||
-         toModuleSymbol(var->defPoint->parentSymbol)))
-      USR_FATAL_CONT(var, "Top-level params must be initialized.");
-
   if (var->defPoint->init && var->defPoint->init->isNoInitExpr()) {
     if (var->hasFlag(FLAG_CONST))
       USR_FATAL_CONT(var, "const variables specified with noinit must be explicitly initialized.");
@@ -196,20 +299,21 @@ checkParsedVar(VarSymbol* var) {
 
 static void
 checkFunction(FnSymbol* fn) {
-  // Ensure that the lhs of "=" and "<op>=" is passed by ref.
-  if (fn->hasFlag(FLAG_ASSIGNOP))
-    if (fn->getFormal(1)->intent != INTENT_REF)
-      USR_WARN(fn, "The left operand of '=' and '<op>=' should have 'ref' intent.");
-
-  if (!strcmp(fn->name, "this") && fn->hasFlag(FLAG_NO_PARENS))
+  if ((fn->name == astrThis) && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'this' must have parentheses");
 
   if (!strcmp(fn->name, "these") && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'these' must have parentheses");
 
-  if (fn->thisTag != INTENT_BLANK && !fn->hasFlag(FLAG_METHOD)) {
+  if (fn->thisTag != INTENT_BLANK && fn->isMethod() == false) {
     USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
   }
+
+#if 0 // Do not issue the warning yet.
+  if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
+    USR_WARN(fn, "\"~classname\" naming of deinitializers is deprecated");
+  }
+#endif
 
   std::vector<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
@@ -222,14 +326,18 @@ checkFunction(FnSymbol* fn) {
       if (notInAFunction)
         USR_FATAL_CONT(call, "return statement is not in a function or iterator");
       else {
-        SymExpr* sym = toSymExpr(call->get(1));
-        if (sym && sym->var == gVoid)
+        if (call->numActuals() == 0) {
           numVoidReturns++;
-        else {
-          if (isIterator)
-            USR_FATAL_CONT(call, "returning a value in an iterator");
-          else
-            numNonVoidReturns++;
+        } else {
+          SymExpr* sym = toSymExpr(call->get(1));
+          if (sym && sym->symbol() == gVoid)
+            numVoidReturns++;
+          else {
+            if (isIterator)
+              USR_FATAL_CONT(call, "returning a value in an iterator");
+            else
+              numNonVoidReturns++;
+          }
         }
       }
     }
@@ -245,12 +353,26 @@ checkFunction(FnSymbol* fn) {
 
   if (numVoidReturns != 0 && numNonVoidReturns != 0)
     USR_FATAL_CONT(fn, "Not all returns in this function return a value");
-  if (isIterator && numYields == 0)
-    USR_FATAL_CONT(fn, "iterator does not yield a value");
   if (!isIterator &&
       fn->returnsRefOrConstRef() &&
       numNonVoidReturns == 0) {
     USR_FATAL_CONT(fn, "function declared 'ref' but does not return anything");
+  }
+}
+
+static void nestedName(ModuleSymbol* mod) {
+  if (mod->defPoint == NULL) {
+    return;
+  }
+
+  ModuleSymbol* parent = mod->defPoint->getModule();
+  if (mod->name == parent->name &&
+      parent->hasFlag(FLAG_IMPLICIT_MODULE)) {
+    USR_WARN(mod->defPoint,
+             "module '%s' has the same name as the implicit file module",
+             mod->name);
+    USR_PRINT(mod->defPoint,
+              "did you mean to include all statements in the module declaration?");
   }
 }
 
@@ -268,15 +390,27 @@ checkFunction(FnSymbol* fn) {
 
 static void
 checkModule(ModuleSymbol* mod) {
-  for_alist(stmt, mod->block->body) {
-    if (CallExpr* call = toCallExpr(stmt)) {
+  std::vector<CallExpr*> calls;
+  collectCallExprs(mod->block, calls);
+  for_vector(CallExpr, call, calls) {
+    if (call->parentSymbol == mod) {
       if (call->isPrimitive(PRIM_RETURN)) {
         USR_FATAL_CONT(call, "return statement is not in a function or iterator");
-
       } else if (call->isPrimitive(PRIM_YIELD)) {
         USR_FATAL_CONT(call, "yield statement is outside an iterator");
       }
     }
+  }
+}
+
+// outputs an error message if we encountered a record that tried to inherit
+static void checkRecordInheritance(AggregateType* at) {
+  if (!at->isRecord())
+    return;
+
+  if (at->inherits.length != 0) {
+    USR_FATAL_CONT(at, "inheritance is not currently supported for records");
+    USR_PRINT(at, "thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851");
   }
 }
 
@@ -296,5 +430,3 @@ checkExportedNames()
     names.put(name, true);
   }
 }
-
-

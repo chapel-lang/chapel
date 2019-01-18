@@ -23,7 +23,7 @@ use Grid_def;
 
 class GridVariable {
 
-  const grid: Grid;
+  const grid: unmanaged Grid;
   var  value: [grid.extended_cells] real;
 
 
@@ -35,10 +35,10 @@ class GridVariable {
   // Provides an alias directly into the 'value' array.
   //----------------------------------------------------
 
-  proc this(D: domain) ref
+  pragma "no copy return"
+  proc this(D: domain)
   {
-    var alias => value(D);
-    return alias;
+    return value(D);
   }
   // /|'''''''''''''/|
   //< |    this    < |
@@ -47,13 +47,13 @@ class GridVariable {
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
-  proc ~GridVariable () {}
+  proc deinit () {}
   
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
 
 }

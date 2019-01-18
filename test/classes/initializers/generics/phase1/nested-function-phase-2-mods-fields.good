@@ -1,0 +1,2 @@
+nested-function-phase-2-mods-fields.chpl:7: In initializer:
+nested-function-phase-2-mods-fields.chpl:9: error: multiple initializations of field "field"

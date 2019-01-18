@@ -1,0 +1,23 @@
+oneDigit:
+A    1
+B    None
+C    3
+D    None
+E    5
+dtype: int(64)
+
+twoDigit:
+A    10
+B    None
+C    30
+D    None
+E    50
+dtype: int(64)
+
+oneDigit < 3
+A    1
+dtype: int(64)
+
+twoDigit > 30
+E    50
+dtype: int(64)

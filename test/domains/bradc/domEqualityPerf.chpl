@@ -4,7 +4,7 @@ config var numTrials = 10,
            printTimings = false;
 
 
-const D = {1..10};
+const D = {1..50};
 var DS: sparse subdomain(D);
 var DA: domain(real);
 

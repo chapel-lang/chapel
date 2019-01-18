@@ -1,21 +1,102 @@
+.. default-domain:: chpl
+
+.. module:: M
+   :synopsis: This module has a comment 
+
 M
-   This module has a comment 
-   proc commentless()
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use M;
+
+This module has a comment 
+
+.. function:: proc commentless()
+
+.. default-domain:: chpl
+
+.. module:: N
+   :synopsis: So does this module 
+
 N
-   So does this module 
-   proc hasArgCommentless(val: int)
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use N;
+
+So does this module 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. default-domain:: chpl
+
+.. module:: O
+   :synopsis: And this one 
+
 O
-   And this one 
-   proc hasBodyCommentless()
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use O;
+
+And this one 
+
+.. function:: proc hasBodyCommentless()
+
+.. default-domain:: chpl
+
+.. module:: P
+   :synopsis: What?  Even this one! 
+
 P
-   What?  Even this one! 
-   proc hasBodyAndArgCommentless(val: int)
-   proc useless()
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use P;
+
+What?  Even this one! 
+
+.. function:: proc hasBodyAndArgCommentless(val: int)
+
+.. function:: proc useless()
+
+.. default-domain:: chpl
+
+.. module:: Q
+
 Q
-   proc main()
-      Sadly, this method's module does not 
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use Q;
+
+.. function:: proc main()
+
+   Sadly, this function's module does not 
+
+.. default-domain:: chpl
+
+.. module:: R
 
 R
-   proc furthermore()
-      Nor this method's module 
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use R;
+
+.. function:: proc furthermore()
+
+   Nor this function's module 
 

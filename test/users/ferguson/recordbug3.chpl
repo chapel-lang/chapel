@@ -13,18 +13,18 @@ class MyClass {
 }
 
 record myrecord {
-  var c:MyClass = new MyClass(5);
-  proc ~myrecord() { delete c; c = nil; }
+  var c:unmanaged MyClass = new unmanaged MyClass(5);
+  proc deinit() { delete c; c = nil; }
 }
 proc =(ref ret:myrecord, x:myrecord)
 {
   delete ret.c;
-  ret.c = new MyClass(x.c.x);
+  ret.c = new unmanaged MyClass(x.c.x);
 }
 pragma "init copy fn"
 proc chpl__initCopy(x:myrecord)
 {
-  return new myrecord(new MyClass(x.c.x));
+  return new myrecord(new unmanaged MyClass(x.c.x));
 }
 
 var x:myrecord;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -30,8 +30,16 @@ pragma "no doc"
 class listNode {
   type eltType;
   var data: eltType;
-  var next: listNode(eltType);
+  var next: unmanaged listNode(eltType);
 }
+
+
+  pragma "no doc"
+  proc =(ref l1: list(?t), const ref l2: list(?t2)) {
+    l1.destroy();
+    for i in l2 do
+      l1.append(i);
+  }
 
 
 /*
@@ -48,13 +56,30 @@ record list {
    */
   type eltType;
   pragma "no doc"
-  var first: listNode(eltType);
+  pragma "owned"
+  var first: unmanaged listNode(eltType);
   pragma "no doc"
-  var last: listNode(eltType);
+  pragma "owned"
+  var last: unmanaged listNode(eltType);
   /*
     The number of nodes in the list.
    */
   var length: int;
+
+  pragma "no doc"
+  proc init(type eltType, first : unmanaged listNode(eltType) = nil, last : unmanaged listNode(eltType) = nil) {
+    this.eltType = eltType;
+    this.first = first;
+    this.last = last;
+  }
+
+  pragma "no doc"
+  proc init(l : list(?t)) {
+    this.eltType = t;
+    this.complete();
+    for i in l do
+      this.append(i);
+  }
 
   /*
      Synonym for length.
@@ -81,10 +106,10 @@ record list {
    */
   proc ref append(e : eltType) {
     if last {
-      last.next = new listNode(eltType, e);
+      last.next = new unmanaged listNode(eltType, e);
       last = last.next;
     } else {
-      first = new listNode(eltType, e);
+      first = new unmanaged listNode(eltType, e);
       last = first;
     }
     length += 1;
@@ -110,7 +135,7 @@ record list {
     Prepend `e` to the list.
    */
   proc prepend(e : eltType) {
-    first = new listNode(eltType, e, first);
+    first = new unmanaged listNode(eltType, e, first);
     if last == nil then
       last = first;
     length += 1;
@@ -134,6 +159,7 @@ record list {
 
   /*
     Remove the first encountered instance of `x` from the list.
+    Does nothing if `x` is not present in the list.
    */
   proc ref remove(x: eltType) {
     var tmp = first,
@@ -158,21 +184,23 @@ record list {
      Remove the first element from the list and return it.
      It is an error to call this function on an empty list.
    */
- proc pop_front():eltType {
-   if length < 1 then halt("pop_front on empty list");
-   var oldfirst = first;
-   var newfirst = first.next;
-   var ret = oldfirst.data;
-   first = newfirst;
-   if last == oldfirst then last = newfirst;
-   length -= 1;
-   return ret;
- }
+   proc pop_front():eltType {
+     if boundsChecking && length < 1 {
+       HaltWrappers.boundsCheckHalt("pop_front on empty list");
+     }
+     var oldfirst = first;
+     var newfirst = first.next;
+     var ret = oldfirst.data;
+     first = newfirst;
+     if last == oldfirst then last = newfirst;
+     length -= 1;
+     delete oldfirst;
+     return ret;
+   }
 
   /*
     Delete every node in the list.
    */
-  // TODO: call from a destructor?
   proc destroy() {
     var current = first;
     while (current != nil) {
@@ -183,6 +211,14 @@ record list {
     first = nil;
     last = nil;
     length = 0;
+  }
+
+  /*
+    Destructor
+   */
+  pragma "no doc"
+  proc deinit(){
+    destroy();
   }
 
   pragma "no doc"
@@ -300,13 +336,13 @@ record list {
 }
 
 /*
-  Construct a new :record:`list` containing all of the supplied arguments.
+  Initialize a new :record:`list` containing all of the supplied arguments.
 
   :arg x: Every argument must be of type `T`.
-  :type x: T
+  :type x: `T`
   :rtype: list(T)
  */
-// TODO: could just be a constructor?
+// TODO: could just be an initializer?
 proc makeList(x ...?k) {
   var s: list(x(1).type);
   for param i in 1..k do

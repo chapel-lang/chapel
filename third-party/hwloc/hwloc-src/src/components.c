@@ -1,6 +1,6 @@
 /*
- * Copyright © 2009-2015 Inria.  All rights reserved.
- * Copyright © 2012 Université Bordeau 1
+ * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2012 Université Bordeaux
  * See COPYING in top-level directory.
  */
 
@@ -8,6 +8,7 @@
 #include <hwloc.h>
 #include <private/private.h>
 #include <private/xml.h>
+#include <private/misc.h>
 
 #define HWLOC_COMPONENT_STOP_NAME "stop"
 #define HWLOC_COMPONENT_EXCLUDE_CHAR '-'
@@ -24,6 +25,7 @@ static unsigned hwloc_components_users = 0; /* first one initializes, last ones 
 static int hwloc_components_verbose = 0;
 #ifdef HWLOC_HAVE_PLUGINS
 static int hwloc_plugins_verbose = 0;
+static const char * hwloc_plugins_blacklist = NULL;
 #endif
 
 /* hwloc_components_mutex serializes:
@@ -89,6 +91,12 @@ hwloc__dlforeach_cb(const char *filename, void *_data __hwloc_attribute_unused)
   else
     basename++;
 
+  if (hwloc_plugins_blacklist && strstr(hwloc_plugins_blacklist, basename)) {
+    if (hwloc_plugins_verbose)
+      fprintf(stderr, "Plugin `%s' is blacklisted in the environment\n", basename);
+    goto out;
+  }
+
   /* dlopen and get the component structure */
   handle = lt_dlopenext(filename);
   if (!handle) {
@@ -107,7 +115,7 @@ hwloc__dlforeach_cb(const char *filename, void *_data __hwloc_attribute_unused)
   }
   if (component->abi != HWLOC_COMPONENT_ABI) {
     if (hwloc_plugins_verbose)
-      fprintf(stderr, "Plugin symbol ABI %u instead of %u\n",
+      fprintf(stderr, "Plugin symbol ABI %u instead of %d\n",
 	      component->abi, HWLOC_COMPONENT_ABI);
     goto out_with_handle;
   }
@@ -196,6 +204,8 @@ hwloc_plugins_init(void)
 
   verboseenv = getenv("HWLOC_PLUGINS_VERBOSE");
   hwloc_plugins_verbose = verboseenv ? atoi(verboseenv) : 0;
+
+  hwloc_plugins_blacklist = getenv("HWLOC_PLUGINS_BLACKLIST");
 
   err = lt_dlinit();
   if (err)
@@ -458,14 +468,15 @@ hwloc_disc_component_try_enable(struct hwloc_topology *topology,
 				struct hwloc_disc_component *comp,
 				const char *comparg,
 				unsigned *excludes,
-				int envvar_forced,
-				int verbose_errors)
+				int envvar_forced)
 {
   struct hwloc_backend *backend;
   int err;
 
   if ((*excludes) & comp->type) {
-    if (hwloc_components_verbose || verbose_errors)
+    if (hwloc_components_verbose)
+      /* do not warn if envvar_forced since system-wide HWLOC_COMPONENTS must be silently ignored after set_xml() etc.
+       */
       fprintf(stderr, "Excluding %s discovery component `%s', conflicts with excludes 0x%x\n",
 	      hwloc_disc_component_type_string(comp->type), comp->name, *excludes);
     return -1;
@@ -473,7 +484,7 @@ hwloc_disc_component_try_enable(struct hwloc_topology *topology,
 
   backend = comp->instantiate(comp, comparg, NULL, NULL);
   if (!backend) {
-    if (hwloc_components_verbose || verbose_errors)
+    if (hwloc_components_verbose || envvar_forced)
       fprintf(stderr, "Failed to instantiate discovery component `%s'\n", comp->name);
     return -1;
   }
@@ -553,7 +564,7 @@ hwloc_disc_components_enable_others(struct hwloc_topology *topology)
 
 	comp = hwloc_disc_component_find(-1, curenv);
 	if (comp) {
-	  hwloc_disc_component_try_enable(topology, comp, arg ? arg+1 : NULL, &excludes, 1 /* envvar forced */, 1 /* envvar forced need warnings */);
+	  hwloc_disc_component_try_enable(topology, comp, arg ? arg+1 : NULL, &excludes, 1 /* envvar forced */);
 	} else {
 	  fprintf(stderr, "Cannot find discovery component `%s'\n", curenv);
 	}
@@ -595,7 +606,7 @@ nextname:
 	    curenv++;
 	}
       }
-      hwloc_disc_component_try_enable(topology, comp, NULL, &excludes, 0 /* defaults, not envvar forced */, 0 /* defaults don't need warnings on conflicts */);
+      hwloc_disc_component_try_enable(topology, comp, NULL, &excludes, 0 /* defaults, not envvar forced */);
 nextcomp:
       comp = comp->next;
     }

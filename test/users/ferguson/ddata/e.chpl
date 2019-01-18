@@ -13,3 +13,5 @@ if a {
     writeln("OK");
   }
 }
+
+_ddata_free(a, size);

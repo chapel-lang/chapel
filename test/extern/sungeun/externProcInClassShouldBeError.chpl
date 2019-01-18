@@ -126,3 +126,5 @@ const D = {5..9};
 // c.bar();
 
 }
+
+forall l in localePrivate do delete l;

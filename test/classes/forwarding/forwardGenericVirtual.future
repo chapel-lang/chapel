@@ -1,0 +1,13 @@
+bug: forwarding generic virtual method causes resolution errors
+#7786
+
+The 'action' method on 'Rect' should only be called with rank-compatible Rects,
+yet we try to call Rect(1).action(Rect(3)). Why?
+
+I ran into this bug while working on array forwarding. The 'doiBulkTransfer'
+method in BaseArr was causing bizarre resolution errors in the following test:
+
+test/optimizations/sungeun/bulk_transfer/assign.chpl
+
+Somehow the compiler was attempting to call doiBulkTransfer between a 1D
+DefaultRectangular array of locales and a 3D DR array of reals.

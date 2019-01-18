@@ -6,32 +6,37 @@ export CHPL_COMM=gasnet
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT) --enable-allow-gcc4
-
-# pshm can only be used with CHPL_GASNET_SEGMENT={fast,large} and the
-# udp conduit, but there it lowers nightly testing time by 20% and the
-# reduced overhead helps expose races.  Enable it for that case and
-# disable it in all others.
-SUB_SEG = $(CHPL_MAKE_COMM_SUBSTRATE)-$(CHPL_MAKE_COMM_SEGMENT)
-ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large))
-
-# Enable pshm but not on Mac OS X because it doesn't build there
-ifeq ($(CHPL_MAKE_PLATFORM), darwin)
-CHPL_GASNET_CFG_OPTIONS += --disable-pshm
-else
-CHPL_GASNET_CFG_OPTIONS += --enable-pshm
+ifneq ($(CHPL_MAKE_COMM_SEGMENT),none)
+CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT)
 endif
 
+ifneq (, $(filter $(CHPL_MAKE_COMM_SUBSTRATE),psm ofi))
+ifeq (, $(call isTrue, $(CHPL_GASNET_ALLOW_BAD_SUBSTRATE)))
+$(error The $(CHPL_MAKE_COMM_SUBSTRATE) substrate is not currently supported \
+by GASNet-EX. Please contact the Chapel team if this configuration is \
+important to you)
+endif
+endif
+
+ifneq ($(CHPL_MAKE_COMM_SUBSTRATE),none)
+CHPL_GASNET_CFG_OPTIONS += --enable-$(CHPL_MAKE_COMM_SUBSTRATE)
+endif
+
+# PSHM (inter-Process SHared Memory) provide a mechanism for gasnet instances
+# on the same node to communicate through shared memory instead of the real
+# conduit. In "production" we only run a single gasnet client per node so this
+# doesn't help, but for smp it's required, and we've noticed faster testing
+# times since we do local spawning, which will result in multiple gasnet
+# clients on the same node. Note that pshm only works with segment fast/large.
+SUB_SEG = $(CHPL_MAKE_COMM_SUBSTRATE)-$(CHPL_MAKE_COMM_SEGMENT)
+ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large smp-fast smp-large))
+CHPL_GASNET_CFG_OPTIONS += --enable-pshm
 else
 CHPL_GASNET_CFG_OPTIONS += --disable-pshm
 endif
 
 ifneq ($(CHPL_MAKE_COMM_SEGMENT),everything)
 CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
-endif
-
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr5)
-CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
 endif
 
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr6)
@@ -41,9 +46,10 @@ endif
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk))
 CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
+CHPL_GASNET_CFG_OPTIONS += --enable-gemini-multi-domain
 else
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),aries)
-CHPL_GASNET_CFG_OPTIONS += --enable-aries
+CHPL_GASNET_CFG_OPTIONS += --enable-aries-multi-domain
 else
 # We need to do this because the auto-detect stuff for gemini is not
 # yet working as well as the portals auto-detect
@@ -51,40 +57,36 @@ CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-aries
 endif
 endif
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xc)
-CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxc-linux
+CHPL_GASNET_CFG_SCRIPT=cross-configure-cray-aries-alps
 else
-CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxe-linux
+CHPL_GASNET_CFG_SCRIPT=cross-configure-cray-gemini-alps
 endif
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xt)
-CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxt-linux
-XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
-XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
-ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),portals)
-else
-CHPL_GASNET_CFG_OPTIONS += --disable-portals
-endif
-else
 CHPL_GASNET_CFG_SCRIPT=configure
 endif
+
+# Build amudprun for the host platform and replace the default one that was
+# built for the target platform. Note that this uses an "unofficial" target
+# that the gasnet team has provided for us.
+ifeq ($(CHPL_MAKE_LAUNCHER),amudprun)
+XTRA_POST_BUILD_COMMAND=cd $(GASNET_BUILD_DIR)/other/amudp && $(MAKE) amudprun-host && mv amudprun-host amudprun
 endif
 
-CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)'
 
-# Copied this usage from other/contrib/cross-configure-intel-mic
-ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
-CHPL_GASNET_CFG_OPTIONS = --enable-cross-compile --host=x86_64-unknown-linux-gnu --build=mic-unknown-linux-gnu --disable-aligned-segments --enable-pshm
-CHPL_GASNET_ENV_VARS:= CC='icc -mmic' CXX='icpc -mmic' HOST_CC='icc' CROSS_PAGESIZE='4096' CROSS_HAVE_SHM_OPEN=1 CROSS_HAVE_MMAP=1
-# I personally don't have a way to test this
-# MPI_CC = mpiicc -mmic
-else
-# CHPL_GASNET_CFG_OPTIONS = --disable-aligned-segments --enable-pshm
+ifeq (, $(MPI_CC))
+MPI_CC=mpicc
 endif
+
+ifeq ($(CHPL_LIB_PIC),pic)
+GASNET_CFLAGS += $(SHARED_LIB_CFLAGS)
+# MPI_CFLAGS overides autodetection, which we don't want so add to MPI_CC
+MPI_CC += $(SHARED_LIB_CFLAGS)
 endif
+
+CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)' MPI_CC='$(MPI_CC)' CFLAGS='$(GASNET_CFLAGS)' CXXFLAGS='$(GASNET_CFLAGS)'
 
 CHPL_GASNET_CFG_OPTIONS += $(CHPL_GASNET_MORE_CFG_OPTIONS)
 
@@ -112,6 +114,7 @@ gasnet-config: FORCE
 
 gasnet-build: FORCE
 	cd $(GASNET_BUILD_DIR) && $(MAKE) all
+	$(XTRA_POST_BUILD_COMMAND)
 
 gasnet-install: FORCE
 	cd $(GASNET_BUILD_DIR) && $(MAKE) install
@@ -127,7 +130,6 @@ post-install: FORCE
 	$(foreach mkfile, $(MKFILES), sed -i -e "s;$(GASNET_INSTALL_DIR);"'$$(GASNET_INSTALL_DIR);g' $(mkfile) &&) true
 
 gasnet: gasnet-config gasnet-build gasnet-install
-	$(CHPL_MAKE_HOME)/util/chplenv/check_huge_pages.py
 
 FORCE:
 

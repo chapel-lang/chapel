@@ -1,6 +1,6 @@
 class mysumreduce {
   type t;
-  
+
   proc ident() {
     return 0:t;
   }
@@ -25,34 +25,46 @@ forall i in D {
 }
 
 {
-  var myreduce = new mysumreduce(t = int);
+  var myreduce   = new unmanaged mysumreduce(t = int);
   var state: int = myreduce.ident();
+
   for i in D {
     state = myreduce.combine(state, A(i));
   }
+
   var result = state;
 
   writeln("result is: ", result);
+
+  delete myreduce;
 }
 
 {
-  var myreduce = new mysumreduce(t = real);
+  var myreduce    = new unmanaged mysumreduce(t = real);
   var state: real = myreduce.ident();
+
   for i in D {
     state = myreduce.combine(state, B(i));
   }
+
   var result = state;
 
   writeln("result is: ", result);
+
+  delete myreduce;
 }
 
 {
-  var myreduce = new mysumreduce(t = string);
+  var myreduce      = new unmanaged mysumreduce(t = string);
   var state: string = myreduce.ident();
+
   for i in D {
     state = myreduce.combine(state, C(i));
   }
+
   var result = state;
 
   writeln("result is: ", result);
+
+  delete myreduce;
 }

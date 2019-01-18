@@ -7,16 +7,16 @@ class C {
 }
 
 class D : C {
-  iter these() {
+  override iter these() {
     yield 3;
     yield 2;
     yield 1;
   }
 }
 
-var c1: C = new C();
-var c2: C = new D();
-var d : D = new D();
+var c1: borrowed C = new borrowed C();
+var c2: borrowed C = new borrowed D();
+var d : borrowed D = new borrowed D();
 
 for i in c1 {
   writeln(i);
@@ -32,7 +32,3 @@ for i in d {
   writeln(i);
 }
 writeln();
-
-delete c1;
-delete c2;
-delete d;

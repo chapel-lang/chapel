@@ -1,3 +1,2 @@
 enumerate.chpl:12: error: illegal use of module 'enumerate'
 enumerate.chpl:17: error: illegal use of module 'enumerate'
-enumerate.chpl:17: error: illegal use of module 'enumerate'

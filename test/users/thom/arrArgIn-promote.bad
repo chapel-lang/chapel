@@ -1,0 +1,2 @@
+arrArgIn-promote.chpl:8: error: unresolved call 'writeArr(promoted expression)'
+arrArgIn-promote.chpl:1: note: candidates are: writeArr(in X: [] real)

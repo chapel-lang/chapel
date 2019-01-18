@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,10 @@
 
 // Need memory tracking prototypes for inlined memory routines
 #include "chplmemtrack.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // CHPL_MEMHOOKS_ACTIVE=1 will enable the memory hooks;
 // CHPL_MEMHOOKS_ACTIVE will be set to 1 if CHPL_DEBUG is defined;
@@ -122,6 +126,10 @@ void chpl_memhook_realloc_post(void* moreMemAlloc, void* memAlloc,
     chpl_track_realloc_post(moreMemAlloc, memAlloc, size, description,
                        lineno, filename);
 }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif // LAUNCHER
 

@@ -1,0 +1,7 @@
+reserved-bool.chpl:1: error: attempt to redefine reserved type 'bool'
+reserved-bool.chpl:3: error: attempt to redefine reserved type 'bool'
+reserved-bool.chpl:6: error: attempt to redefine reserved type 'bool'
+reserved-bool.chpl:7: error: attempt to redefine reserved type 'bool'
+reserved-bool.chpl:10: error: attempt to redefine reserved type 'bool'
+reserved-bool.chpl:12: error: attempt to redefine reserved type 'bool'
+reserved-bool.chpl:17: error: attempt to redefine reserved type 'bool'

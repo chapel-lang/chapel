@@ -1,0 +1,2 @@
+whereClauseCantFold.chpl:5: error: unresolved call 'foo(1.2)'
+whereClauseCantFold.chpl:1: note: candidates are: foo(param x: uint(8))

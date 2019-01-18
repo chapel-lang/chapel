@@ -17,11 +17,13 @@ chdir $TEMPDIR or die "Could not cd to $TEMPDIR";
 
 my $errors = 0;
 
-process("../layouts/LayoutCSR.rst");
+process("../layouts/LayoutCS.rst");
 process("BlockDist.rst");
 process("CyclicDist.rst");
 process("BlockCycDist.rst");
+process("HashedDist.rst");
 process("ReplicatedDist.rst");
+process("StencilDist.rst");
 process("PrivateDist.rst");
 process("DimensionalDist2D.rst");
 process("dims/ReplicatedDim.rst");
@@ -57,6 +59,23 @@ sub process {
          my $next = <RST>;
          $next =~ /^=+$/ or die "Expected an underline after module name, got $next";
          print MOD $next;
+
+         my $usageFirstLine = <RST>;
+         $usageFirstLine =~ /^\*\*Usage\*\*/ or die "Expected usage information, got $usageFirstLine";
+         print MOD $usageFirstLine;
+         # the next five lines are anticipated to be a continuation of the
+         # usage output.  We don't really need to validate that, that's what our
+         # testing system is for.
+         my $usageNextLine = <RST>;
+         print MOD $usageNextLine;
+         $usageNextLine = <RST>;
+         print MOD $usageNextLine;
+         $usageNextLine = <RST>;
+         print MOD $usageNextLine;
+         $usageNextLine = <RST>;
+         print MOD $usageNextLine;
+         $usageNextLine = <RST>;
+         print MOD $usageNextLine;
          last;
       }
    }

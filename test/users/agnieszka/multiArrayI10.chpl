@@ -4,7 +4,7 @@ Program is a solution to atomic broadcast problem for multiple locales.
 As a data storage(to write/read the product) array is used
 (containing numLocales*4-1 elements, one for each Customer).
 
-Array's elements are also used for synchonization (as sync variables).
+Array's elements are also used for synchronization (as sync variables).
 
 Product is put into all array elements (for all locales being Customers).
 As every element is a sync variable (at the beginning logically empty),

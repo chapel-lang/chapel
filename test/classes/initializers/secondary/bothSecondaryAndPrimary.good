@@ -1,0 +1,4 @@
+In secondary initializer of class Foo
+{x = 10, y = true}
+In primary initializer of class Foo
+{x = 3, y = false}

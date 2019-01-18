@@ -1,4 +1,4 @@
-use BlockDist, Barrier;
+use BlockDist, Barriers;
 
 config const n = 10;
 
@@ -24,14 +24,8 @@ const LocDom = {1..n  , 1..n  },
 //
 // query out the domain and array of the locales we're targeting
 //
-// TODO: Even though this is a bit lame (as noted in the comment above)
-// it could be even less lame if we relied on the targetLocales() query
-// that we support on distributed arrays, but for some reason not on
-// distributed domains.  BenH and I are trying to remember whether there
-// was a good reason we couldn't support the queries on domains as well.
-//
-const LocaleGridDom = Dom._value.dist.targetLocDom,
-      LocaleGrid = Dom._value.dist.targetLocales;
+const LocaleGrid = Dom.targetLocales(),
+      LocaleGridDom = LocaleGrid.domain;
 
 if printLocaleData {
   writeln("Our locale grid is as follows:\n", LocaleGrid, "\n");
@@ -54,7 +48,7 @@ if printLocaleData {
   //
   for (lr,lc) in LocaleGridDom {
     on LocaleGrid[lr,lc] {
-      writeln("locale #", here.id, " owns ", Dom._value.locDoms[lr,lc].myBlock);
+      writeln("locale #", here.id, " owns ", Dom.localSubdomain());
     }
   }
 }
@@ -81,7 +75,7 @@ class DomArr {
 // an array of everyone's chunks of the global problem space that they own
 // in a sense it's the distributed A array in a local view
 //
-var LocalDomArrs: [LocaleGridDom] DomArr;
+var LocalDomArrs: [LocaleGridDom] unmanaged DomArr;
 
 var numIters: atomic int;
 
@@ -95,14 +89,14 @@ coforall (lr,lc) in LocaleGridDom {
     //
     // TODO: See the TODO above about localSubDomain()
     //
-    const MyLocDom = Dom._value.locDoms[lr,lc].myBlock;
+    const MyLocDom = Dom.localSubdomain();
     const WithFluff = MyLocDom.expand(1);
 
     //
     // Store my domain, with fluff, into the global directory so that
     // other locales can refer to it.
     //
-    var MyDomArr = new DomArr(Dom=WithFluff);
+    var MyDomArr = new unmanaged DomArr(Dom=WithFluff);
     LocalDomArrs[lr,lc] = MyDomArr;
 
     //
@@ -110,7 +104,7 @@ coforall (lr,lc) in LocaleGridDom {
     // we'll declare B to be private/local to this scope because
     // nobody else needs to refer to it.
     //
-    var A => MyDomArr.Arr;
+    ref A = MyDomArr.Arr;
     var B: [WithFluff] real;
 
     //
@@ -159,16 +153,16 @@ coforall (lr,lc) in LocaleGridDom {
     // see if we own one or more of the points; if so, initialize A
     // at that point
     //
-    if WithFluff.member(p1) then
+    if WithFluff.contains(p1) then
       A[p1] =  1.0;
 
-    if WithFluff.member(p2) then
+    if WithFluff.contains(p2) then
       A[p2] =  1.0;
 
-    if WithFluff.member(p3) then
+    if WithFluff.contains(p3) then
       A[p3] =  -1.0;
 
-    if WithFluff.member(p4) then
+    if WithFluff.contains(p4) then
       A[p4] =  -1.0;
 
     //
@@ -346,3 +340,5 @@ if printArrays {
 // use as checksum
 //
 writeln("# iterations: ", numIters.read());
+
+for loc in LocalDomArrs do delete loc;

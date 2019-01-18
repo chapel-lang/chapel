@@ -2,7 +2,7 @@ use myrecord;
 
 proc make(i:int) {
   var ret: R;
-  ret.init(x = i);
+  ret.setup(x = i);
   ret.verify();
   return ret;
 }
@@ -10,7 +10,7 @@ proc make(i:int) {
 iter myiter() : R {
   for i in 1..4 {
     var ret: R;
-    ret.init(x = i);
+    ret.setup(x = i);
     ret.verify();
     yield ret;
   }

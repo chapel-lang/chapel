@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,6 +35,14 @@ bool AstLogger::enterAggrType(AggregateType* node) {
 
 void AstLogger::exitAggrType(AggregateType* node) {
 }
+
+bool AstLogger::enterUnmanagedClassType(UnmanagedClassType* node) {
+  return true;
+}
+
+void AstLogger::exitUnmanagedClassType(UnmanagedClassType* node) {
+}
+
 
 bool AstLogger::enterEnumType(EnumType* node) {
   return true;
@@ -90,6 +98,13 @@ bool AstLogger::enterCallExpr(CallExpr* node) {
 void AstLogger::exitCallExpr(CallExpr* node) {
 }
 
+bool AstLogger::enterContextCallExpr(ContextCallExpr* node) {
+  return true;
+}
+
+void AstLogger::exitContextCallExpr(ContextCallExpr* node) {
+}
+
 bool AstLogger::enterDefExpr(DefExpr* node) {
   return true;
 }
@@ -102,6 +117,13 @@ bool AstLogger::enterNamedExpr(NamedExpr* node) {
 }
 
 void AstLogger::exitNamedExpr(NamedExpr* node) {
+}
+
+bool AstLogger::enterIfExpr(IfExpr* node) {
+  return true;
+}
+
+void AstLogger::exitIfExpr(IfExpr* node) {
 }
 
 void AstLogger::visitSymExpr(SymExpr* node) {
@@ -118,6 +140,16 @@ bool AstLogger::enterBlockStmt(BlockStmt* node) {
 }
 
 void AstLogger::exitBlockStmt(BlockStmt* node) {
+}
+
+void AstLogger::visitForallIntents(ForallIntents* clause) {
+}
+
+bool AstLogger::enterForallStmt(ForallStmt* node) {
+  return true;
+}
+
+void AstLogger::exitForallStmt(ForallStmt* node) {
 }
 
 bool AstLogger::enterWhileDoStmt(WhileDoStmt* node) {
@@ -171,6 +203,35 @@ bool AstLogger::enterGotoStmt(GotoStmt* node) {
 
 void AstLogger::exitGotoStmt(GotoStmt* node) {
 }
+
+bool AstLogger::enterForwardingStmt(ForwardingStmt* node) {
+  return true;
+}
+
+void AstLogger::exitForwardingStmt(ForwardingStmt* node) {
+}
+
+bool AstLogger::enterDeferStmt(DeferStmt* node) {
+  return true;
+}
+
+void AstLogger::exitDeferStmt(DeferStmt* node) {
+}
+
+bool AstLogger::enterTryStmt(TryStmt* node) {
+  return true;
+}
+
+void AstLogger::exitTryStmt(TryStmt* node) {
+}
+
+bool AstLogger::enterCatchStmt(CatchStmt* node) {
+  return true;
+}
+
+void AstLogger::exitCatchStmt(CatchStmt* node) {
+}
+
 
 bool AstLogger::outputVector(FILE* mFP, std::vector<const char *> vec) {
   bool first = true;

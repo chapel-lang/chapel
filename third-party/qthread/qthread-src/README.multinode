@@ -1,0 +1,54 @@
+Multinode Qthreads
+==================
+
+A rather terse introduction to multinode Qthreads.
+
+Configuring and Building
+------------------------
+
+    ./configure --enable-multinode \
+                --with-portals4[=DIR]
+                [...]
+    make
+
+Running a Test
+-------------
+    
+    make -C test/multinode hello_world
+
+Launching with SLURM and `mpi`:
+
+    env VERBOSE=1 salloc --node=4-4 --ntasks=1 mpirun hello_world
+    Hello from locale 003!
+    Hello from locale 001!
+    Hello from locale 004!
+    Hello from locale 002!
+
+Launching with SLURM and `pmi`:
+
+    env VERBOSE=1 srun -n 4 hello_world
+    Hello from locale 003!
+    Hello from locale 001!
+    Hello from locale 004!
+    Hello from locale 002!
+
+Launching with YOD (provided with Portals4):
+
+    env VERBOSE=1 yod.hydra -c 4 hello_world
+    Hello from locale 003!
+    Hello from locale 001!
+    Hello from locale 004!
+    Hello from locale 002!
+
+Further Reading
+---------------
+
+Related code:
+
+-   `include/qthread/multinode.h`, `include/qt_multinode_innards.h`, `src/net`
+-   `include/qthread/spr.h`, `src/spr.c`
+
+Related tests:
+
+-   `test/multinode`
+

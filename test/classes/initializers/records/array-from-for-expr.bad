@@ -1,0 +1,7 @@
+array-from-for-expr.chpl:15: error: non-lvalue actual is passed to a 'ref' formal of init()
+$CHPL_HOME/modules/internal/ChapelArray.chpl:4216: In function 'chpl__initCopy':
+$CHPL_HOME/modules/internal/ChapelArray.chpl:4248: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()
+array-from-for-expr.chpl:35: In function 'main':
+array-from-for-expr.chpl:36: error: unresolved call 'RRR.init()'
+array-from-for-expr.chpl:19: note: candidates are: RRR.init(idx: int)
+array-from-for-expr.chpl:15: note:                 RRR.init(other: RRR)

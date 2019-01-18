@@ -1,0 +1,24 @@
+
+This directory contains a copy of LLNL's implementation of CoMD in Chapel as of
+commit a2162b1f from the GitHub repository:
+
+https://github.com/LLNL/CoMD-Chapel
+
+The following changes were made for compatibility with Chapel's testing
+infrastructure and more recent Chapel compilers:
+
+----- Significant source changes -----
+- Chapel 1.15 deprecated the '=>'  operator in favor of 'ref'
+- In 1.15 'noRefCount' config param was removed
+- In 1.15 array internals changed such that calling doiBulkTransferStride
+  manually (as was done in the original LLNL source) became too cumbersome.
+  The statement was replaced with a normal array assignment.
+
+----- Minor source changes for infrastructure -----
+- Added means to print a simpler format for timings
+- Renamed 'types' to 'MDTypes' to avoid conflict in Chapel standard module
+  path(s).
+
+----- Moved/new files -----
+- Moved many .chpl files into new 'util/' directory to easily NOTEST them
+- Added various files for start_test (.compopts, .good, etc.)

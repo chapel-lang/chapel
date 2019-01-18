@@ -1,0 +1,2 @@
+iteratorWithOnNoReturnType.chpl:5: In iterator 'g':
+iteratorWithOnNoReturnType.chpl:8: error: invalid use of 'yield' within 'on' in serial iterator

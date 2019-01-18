@@ -1,0 +1,2 @@
+inDefer.chpl:4: In initializer:
+inDefer.chpl:7: error: super.init() not allowed in defer statements

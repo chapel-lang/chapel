@@ -1,5 +1,6 @@
 /*
  * Copyright © 2011 Université Bordeaux
+ * Copyright © 2016 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -23,5 +24,11 @@ struct {
 #define __power_5() 1
 #define __power_6() 1
 #define __power_7() 1
+
+/* hide Linux' host disabling _SC_LARGE_PAGESIZE */
+#undef HAVE_DECL__SC_LARGE_PAGESIZE
+#define HAVE_DECL__SC_LARGE_PAGESIZE 1
+#undef _SC_LARGE_PAGESIZE
+#define _SC_LARGE_PAGESIZE 33
 
 #endif /* HWLOC_PORT_AIX_SYS_SYSTEMCFG_H */

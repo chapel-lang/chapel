@@ -2,12 +2,12 @@ use myrecord;
 
 proc myfunction(choice:bool) {
   var a: R;
-  a.init(x = 20);
+  a.setup(x = 20);
   a.verify();
   assert(a.x == 20);
 
   var b: R;
-  b.init(x = 40);
+  b.setup(x = 40);
   b.verify();
   assert(b.x == 40);
 

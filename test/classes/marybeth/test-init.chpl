@@ -9,6 +9,6 @@ class TestRandom {
   }
 }
 
-var randlist = new TestRandom();
+var randlist = new owned TestRandom();
 
 randlist.showseed();

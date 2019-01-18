@@ -42,14 +42,13 @@ record WeightedParticle3D {
 
 proc generateRandom(pp : []WeightedParticle3D) {
   var x,y,z : real;
-  var rng = new RandomStream();
+  var rng = new RandomStream(eltType=real);
   for ip in pp {
     x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z=rng.getNext()*1000.0;
     ip.x = (x,y,z);
     ip.w = 1.0;
     ip.r2 = x**2 + y**2 + z**2;
   }
-  delete rng;
 }
 
 
@@ -142,23 +141,17 @@ class KDNode {
   var dom : domain(1);
   var xcen : NDIM*real;
   var rcell : real;
-  var left, right : KDNode;
+  var left, right : owned KDNode;
 
   proc isLeaf() : bool {
     return (left==nil) && (right==nil);
   }
-
-  proc ~KDNode() {
-    if left then delete left;
-    if right then delete right;
-  }
-
 }
 
 
-proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) : KDNode{
+proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) : owned KDNode {
   gtime1.start();
-  var me = new KDNode();
+  var me = new owned KDNode();
   var dom = pp.domain;
   me.lo = dom.low;
   me.hi = dom.high;
@@ -326,13 +319,5 @@ proc doPairs() {
     hh.set((0,0),0.0);
     writeHist(stdout,hh,"%20.5er ");
   }
-
-
-  //
-  // clean up
-  //
-  delete hh;
-  delete root1;
-  delete root2;
 }
 

@@ -1,4 +1,4 @@
-inline proc _defaultOf(type t) where (isComplexType(t)) {
+inline proc _defaultOf(type t:complex) {
   writeln("I default initialized!");
   var ret:t = noinit;
   param floatwidth = numBits(t)/2;

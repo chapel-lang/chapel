@@ -1,1 +1,1 @@
-writeln(format("##.##", 1.0));
+writeln("##.##".format(1.0));

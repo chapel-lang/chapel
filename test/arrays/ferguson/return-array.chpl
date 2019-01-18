@@ -24,20 +24,19 @@ proc returnArrayArg(X) {
   for (x,i) in zip(X, 1..size) {
     x = i;
   }
-  return X;
 }
 
 proc returnArrayArgTyped(X:[1..size] real) {
   for (x,i) in zip(X, 1..size) {
     x = i;
   }
-  return X;
 }
 
 var t1 = new Timer();
 var t2 = new Timer();
 var t3 = new Timer();
 var t4 = new Timer();
+var sum0 = 0.0;
 var sum1 = 0.0;
 var sum2 = 0.0;
 var sum3 = 0.0;
@@ -47,6 +46,15 @@ writeln("checking array return performance");
 writeln("array size: ", size);
 writeln("iterations: ", iters);
 writeln();
+
+// Warm-up loop
+// I noticed that the 1st thing measured is slower
+// than the others...
+for it in 1..iters {
+  var A = returnArray();
+  for a in A do sum0 += a;
+}
+
 
 t1.start();
 

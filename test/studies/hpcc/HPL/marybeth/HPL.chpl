@@ -85,7 +85,7 @@ proc testSolution(A: [?ADom], x: [?xDom], in eps: real,
      out resid: 3*real, out norms: 5*real) {
  
   var n = ADom.dim(1).length;
-  var b => A(..,n+1);
+  ref b = A(..,n+1);
   var bHat: [xDom] real;
 
   for (i1, i2) in zip(ADom.dim(1), xDom) {

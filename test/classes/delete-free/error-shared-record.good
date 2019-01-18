@@ -1,0 +1,1 @@
+error-shared-record.chpl:4: error: shared only works with classes

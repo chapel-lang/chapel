@@ -1,13 +1,16 @@
-const MINYEAR = 1,
-  MAXYEAR = 9999;
+const MINYEAR =    1,
+      MAXYEAR = 9999;
 
 proc main() {
   var d1 = Date.fromIsoString("2014-09-04"),
-    d2 = Date.fromIsoString("whatevs"),
-    c = Calendar.fromDate(d1);
+      d2 = Date.fromIsoString("whatevs"),
+      c  = Calendar.fromDate(d1);
+
   writeln(d1);
   writeln(d2);
   writeln(c);
+
+  delete c;
 }
 
 record Date {
@@ -35,6 +38,6 @@ class Calendar {
   var year, month: int;
 }
 
-proc type Calendar.fromDate(d: Date): Calendar {
-  return new Calendar(d.year, d.month);
+proc type Calendar.fromDate(d: Date): unmanaged Calendar {
+  return new unmanaged Calendar(d.year, d.month);
 }

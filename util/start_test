@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
 #
 # CHAPEL TESTING
 
@@ -14,20 +15,27 @@ import os
 import platform
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
 
-# need to be able to find the util directory even when start_test doesn't live
-# in $CHPL_HOME/util (such as for the release tarball)
+# need to be able to find the util and chplenv dir even when start_test
+# doesn't live in $CHPL_HOME/util (such as for the release tarball)
 util_dir = os.path.join(os.path.dirname(__file__), '..', 'util')
+chplenv_dir = os.path.join(util_dir, 'chplenv')
 sys.path.insert(0, os.path.abspath(util_dir))
+sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 from chplenv import *
 
 from test import activate_chpl_test_venv
+from test import re2_supports_valgrind
 import argparse
-import subprocess32 as subprocess
+try:
+    import argcomplete
+except ImportError:
+    argcomplete = None
 
 # PROGRAM ENTRY POINT
 def main():
@@ -35,9 +43,13 @@ def main():
 
     # set up the parser and parse command-line arguments
     parser = parser_setup()
+    if argcomplete:
+        argcomplete.autocomplete(parser)
     global args
     preprocess_options()
     args = parser.parse_args()
+
+    check_environment_with_args()
 
     invocation_dir = os.getcwd()
     
@@ -170,7 +182,7 @@ def test_file(test):
         error = 0
         if not args.clean_only:
             if args.performance or not args.gen_graphs:
-                error = run(test)
+                error = run_sub_test(test)
 
             # check for errors - 173 is an internal sub_test error that would
             # have already reported.
@@ -205,6 +217,8 @@ def test_directory(test, test_type):
         # stop recursing if flag is set
         if not args.recurse:
             del dirs[:]
+        else:
+            dirs.sort()
 
         # ignore skipifs for --clean-only run
         if not args.clean_only:
@@ -212,31 +226,30 @@ def test_directory(test, test_type):
                 # SKIP IF IMPLEMENTATIONS
                 test_env = os.path.join(util_dir, "test", "testEnv")
 
-                # Skip the directory if there is a SKIPIF file that
-                # evaluates true
-                skip_test = False
-                if os.path.isfile("SKIPIF"):
-                    try:
-                        skip_test = subprocess.check_output(
-                                [test_env, "SKIPIF"]).strip()
-                        # check output and skip if true
-                        if skip_test == "1" or skip_test == "True":
-                            logger.write("[Skipping directory based on SKIPIF "
-                                    "environment settings]")
-                            continue
-                    except:
-                        logger.write("[Warning: SKIPIF error.]")
+                # The below cases are ordered to check for
+                # recursive skipping first, and then to check
+                # for skipping only within a directory.
+                # That way, if both are specified, we do
+                # not visit child directories.
 
-                # Skip this directory if there is a <dir>.skipif file
-                # returning true
+                # Skip this directory and child directories
+                # if there is a <dir>.notest file
+                notest_file_name = os.path.join(root, "..",
+                        "{0}.notest".format(os.path.basename(root)))
+                notest_file_name = os.path.normpath(notest_file_name)
+                if os.path.isfile(notest_file_name):
+                    del dirs[:]
+                    continue
+
+                # Skip this directory and child directories
+                # if there is a <dir>.skipif file returning true
                 prune_if = False
-                skip_file_name = os.path.join(root, "..", 
+                skip_file_name = os.path.join(root, "..",
                         "{0}.skipif".format(os.path.basename(root)))
                 skip_file_name = os.path.normpath(skip_file_name)
                 if os.path.isfile(skip_file_name):
                     try:
-                        prune_if = subprocess.check_output(
-                                [test_env, skip_file_name]).strip()
+                        prune_if = run_command([test_env, skip_file_name]).strip()
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
                             logger.write("[Skipping directory and children bas"
@@ -246,6 +259,20 @@ def test_directory(test, test_type):
                             continue
                     except:
                         logger.write("[Warning: .skipif error.]")
+
+                # Skip the directory if there is a SKIPIF file that
+                # evaluates true
+                skip_test = False
+                if os.path.isfile("SKIPIF"):
+                    try:
+                        skip_test = run_command([test_env, "SKIPIF"]).strip()
+                        # check output and skip if true
+                        if skip_test == "1" or skip_test == "True":
+                            logger.write("[Skipping directory based on SKIPIF "
+                                    "environment settings]")
+                            continue
+                    except:
+                        logger.write("[Warning: SKIPIF error.]")
 
                 # skip this directory if there is a NOTEST file
                 if os.path.isfile(os.path.join(dir, "NOTEST")):
@@ -276,11 +303,11 @@ def test_directory(test, test_type):
 
                     if not args.clean_only:
                         # run all tests in dir
-                        error = run()
+                        error = run_sub_test()
                         # check for errors - 173 is an internal sub_test 
                         # error that would have already reported.
                         if not error == 0 and not error == 173:
-                            logger.write("[Error running sub_test in {0} {1}]"
+                            logger.write("[Error {1} running sub_test in {0}]"
                                     .format(root, error))
                                 
             # let user know no tests were found
@@ -396,15 +423,15 @@ def clean(test=False):
         if test: # single test
             logger.write("[Starting {0} {1} {2}]"
                     .format(sub_clean, test, date_str))
-            out = subprocess.check_output([sub_clean, test])
+            out = run_command([sub_clean, test])
         else:
-            out = subprocess.check_output([sub_clean])
+            out = run_command([sub_clean])
         logger.write(out)
     except:
         logger.write("[Error: sub_clean error]")
 
 
-def run(test=False):
+def run_sub_test(test=False):
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
     os.environ["CHPL_TEST_UTIL_DIR"] = util_dir
 
@@ -422,14 +449,9 @@ def run(test=False):
     if args.progress and test:
         sys.stderr.write("Testing {0} ... \n".format(test))
 
-    # sub_test and create_graphs use a Popen() call in order to give real-time
-    # output to the command line, instead of logging all output in one huge
-    # block.
     logger.write("[Starting {0} {1}]".format(sub_test, date_str))
-    p = subprocess.Popen([sub_test, compiler], stdout=subprocess.PIPE)
-    printout(p.stdout)
-    p.wait()
-    return p.returncode
+    status = run_and_log([sub_test, compiler])
+    return status
 
 
 def generate_graphs(test=False):
@@ -447,7 +469,7 @@ def generate_graphs(test=False):
         if len(graph_files) == 0 or os.environ.get("CHPL_TEST_PERF_DIR"):
             return
 
-    logger.write("[Executing genGraphs for graph_files in {0} in {1}"
+    logger.write("[Executing genGraphs for graph_files in {0} in {1}]"
             .format(basedir, perf_html_dir))
 
     cmd = [create_graphs]
@@ -456,16 +478,13 @@ def generate_graphs(test=False):
     cmd += start_date_t.split(" ")
     cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default]
     cmd += graph_files
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    printout(p.stdout)
-    p.wait()
-    status = p.returncode
+    status = run_and_log(cmd)
 
     if status == 0:
-        logger.write("[Success generating graphs for graph_files in {0} in {1}"
+        logger.write("[Success generating graphs for graph_files in {0} in {1}]"
                 .format(basedir, perf_html_dir))
     else:
-        logger.write("[Error generating graphs for graph_files in {0} in {1}"
+        logger.write("[Error generating graphs for graph_files in {0} in {1}]"
                 .format(basedir, perf_html_dir))
 
 
@@ -478,7 +497,7 @@ def compiler_performance():
     # combine smaller .dat files
     try:
         logger.write("[Combining dat files now]")
-        out = subprocess.check_output([combine_comp_perf, "--tempDatDir", 
+        out = run_command([combine_comp_perf, "--tempDatDir",
             temp_dat_dir,"--elapsedTestTime", str(elapsed), "--outDir",
             comp_perf_dir])
         logger.write(out)
@@ -488,7 +507,7 @@ def compiler_performance():
 
     # create the graphs
     title = "Chapel Compiler Performance Graphs"
-    logger.write("[Creating compiler perforamce graphs now]")
+    logger.write("[Creating compiler performance graphs now]")
 
     cmd = [create_graphs]
     cmd += args.gen_graph_opts.split(" ")
@@ -497,14 +516,12 @@ def compiler_performance():
     cmd += start_date_t.split(" ")
     cmd += ["-g", comp_graph_list, "-t", test_dir]
     cmd += "-m all:v,examples:v -x".split(" ")
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    printout(p.stdout)
-    p.wait()
-    if p.returncode == 0:
-        logger.write("[Success generating compiler perfrommance graphs from "
+    status = run_and_log(cmd)
+    if status == 0:
+        logger.write("[Success generating compiler performance graphs from "
                 "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
     else:
-        logger.write("[Error generating compiler perfrommance graphs from "
+        logger.write("[Error generating compiler performance graphs from "
             "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
 
     # delete temp files
@@ -512,9 +529,13 @@ def compiler_performance():
 
 
 def generate_graph_files_graphs():
-    exec_graph_list = os.path.join(test_dir, "GRAPHFILES")
+    graphfiles_prefix = ''
+    if args.perflabel != "perf":
+        graphfiles_prefix = args.perflabel.upper()
 
-    logger.write("[Executing genGraphs for {0} in {1}"
+    exec_graph_list = os.path.join(test_dir, "{0}GRAPHFILES".format(graphfiles_prefix))
+
+    logger.write("[Executing genGraphs for {0} in {1}]"
             .format(exec_graph_list, perf_html_dir))
 
     cmd = [create_graphs]
@@ -524,16 +545,13 @@ def generate_graph_files_graphs():
     cmd += start_date_t.split(" ")
     cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default, "-g",
         exec_graph_list] 
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    printout(p.stdout)
-    p.wait()
-    status = p.returncode
+    status = run_and_log(cmd)
 
     if status == 0:
-        logger.write("[Success generating graphs from {0} in {1}"
+        logger.write("[Success generating graphs from {0} in {1}]"
                 .format(exec_graph_list, perf_html_dir))
     else:
-        logger.write("[Error generating graphs from {0} in {1}"
+        logger.write("[Error generating graphs from {0} in {1}]"
                 .format(exec_graph_list, perf_html_dir))
 
 
@@ -542,6 +560,9 @@ def generate_graph_files_graphs():
 def check_environment():
     if "CHPL_DEVELOPER" in os.environ: # unset CHPL_DEVELOPER
         del os.environ["CHPL_DEVELOPER"]
+
+    if "CHPL_UNWIND" in os.environ:    # squash CHPL_UNWIND output
+        os.environ["CHPL_RT_UNWIND"] = "0"
 
     # Check for $CHPL_HOME
     global home
@@ -567,15 +588,24 @@ def check_environment():
             print("Error: Cannot find {0}.".format(util_dir))
             sys.exit(1)
 
+def check_environment_with_args():
     # find test dir and check for access
-    global test_dir
-    test_dir = os.path.join(home, "test")
-    if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
-        or not os.access(test_dir, os.X_OK)):
-        test_dir = os.path.join(home, "examples")
+    global test_dir, auto_gen_spec_tests
+
+    auto_gen_spec_tests = os.access(os.path.join(home, "spec"), os.F_OK)
+
+    if args.test_root_dir:
+        test_dir = str(args.test_root_dir)
+    else:
+        test_dir = os.path.join(home, "test")
         if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
             or not os.access(test_dir, os.X_OK)):
-            test_dir = os.getcwd()
+            test_dir = os.path.join(home, "examples")
+            auto_gen_spec_tests = False
+            if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
+                or not os.access(test_dir, os.X_OK)):
+                test_dir = os.getcwd()
+
     if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
         or not os.access(test_dir, os.X_OK)):
         print("Cannot write to test directory {0}".format(test_dir))
@@ -591,17 +621,27 @@ def check_environment():
         sys.exit(-1)
 
     # save host and target platforms, and configure environment appropriately
-    global host_platform, tgt_platform
+    global host_platform, host_bin_subdir, tgt_platform
     host_platform = chpl_platform.get("host")
+    host_bin_subdir = chpl_bin_subdir.get("host")
     tgt_platform = chpl_platform.get("target")
     if not tgt_platform == "sunos":
-        os.environ["LC_ALL"] = "C"
-        os.environ["LANG"] = "en_US"
+        os.environ["LC_COLLATE"] = "C"
+        os.environ["LANG"] = "en_US.UTF-8"
+        if "LC_ALL" in os.environ:
+            del os.environ["LC_ALL"]
 
     global log_file
     log_file = os.path.join(logs_dir, "{0}.{1}.log"
             .format(getpass.getuser(), tgt_platform))
 
+
+# Strip quotes that might have been added by preprocess_options()
+def strip_preprocessing(arg):
+    if arg.startswith("'") and arg.endswith("'"):
+        return arg[1:-1]
+    else:
+        return arg
 
 def set_up_environment():
     # pre-
@@ -611,16 +651,16 @@ def set_up_environment():
     if args.prediff:
         os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
 
-    # compopts
+    # compopts (note that we have to strip out our preprocessing)
     if args.compopts:
-        args.compopts = [x[1:-1] for x in args.compopts]
+        args.compopts = [strip_preprocessing(x) for x in args.compopts]
         args.compopts = "--cc-warnings " + " ".join(args.compopts)
     else:
         args.compopts = "--cc-warnings"
 
-    # execopts
+    # execopts (note that we have to strip out our preprocessing)
     if args.execopts:
-        args.execopts = [x[1:-1] for x in args.execopts]
+        args.execopts = [strip_preprocessing(x) for x in args.execopts]
         args.execopts = " ".join(args.execopts)
     else:
         args.execopts = ""
@@ -649,9 +689,21 @@ def set_up_environment():
     if args.performance or args.performance_description:
         args.performance = True
         args.gen_graphs = True
-        args.compopts += " --fast"
-        if not tgt_platform == "darwin":
-            args.compopts += " --static"
+        args.compopts = "--fast " + args.compopts
+        # Force static linking except where that won't work:
+        # - MacOS (darwin) targets
+        # - Cray systems when memkind will be linked in
+        # - any locale model other than 'flat' (because we'll need
+        #   libnuma which is only available as a .so)
+        # - massivethreads (because it depends on various .sos)
+        darwin = tgt_platform == 'darwin'
+        prgenv = compiler_utils.compiler_is_prgenv(chpl_compiler.get('target'))
+        cray_memkind = prgenv and 'CRAY_MEMKIND' in os.environ
+        not_flat = chpl_locale_model.get() != 'flat'
+        massivethreads = chpl_tasks.get() == 'massivethreads'
+
+        if not(darwin or cray_memkind or not_flat or massivethreads):
+            args.compopts = "--static " + args.compopts
 
     if args.performance_configs:
         args.gen_graph_opts += " --configs " + args.performance_configs
@@ -674,7 +726,7 @@ def set_up_environment():
         os.environ["CHPL_LAUNCHER_TIMEOUT"] = str(args.launcher_timeout)
 
     # num trials
-    os.environ["CHPL_TEST_NUM_TRIALS"] = str(args.num_trials)
+    os.environ["CHPL_TEST_NUM_TRIALS"] = args.num_trials
 
     # test root dir
     if args.test_root_dir:
@@ -734,15 +786,15 @@ def set_up_general():
         logger.write("[valgrind: ON]")
         try: 
             # get first line of output
-            binary = subprocess.check_output(
-                    ["which", "valgrind"]).split("\n")[0]
+            binary = run_command(["which", "valgrind"]).split("\n")[0]
         except:
             logger.write("[Error: Could not find valgrind.]")
             finish()
+
+
         # get first line of output
         try:
-            version = subprocess.check_output(
-                    ["valgrind", "--version"]).split("\n")[0]
+            version = run_command(["valgrind", "--version"]).split("\n")[0]
         except:
             pass
         logger.write("[valgrind binary: {0}]".format(binary))
@@ -758,11 +810,30 @@ def set_up_general():
             logger.write("[valgrind: OFF]")
             os.environ["CHPL_TEST_VGRND_EXE"] = "off"
 
+    if args.valgrind or args.valgrind_exe:
+        # Set a maximum number of threads per locale for valgrind testing.
+        # Without this, several task-heavy tests will fail.
+        if not "CHPL_RT_NUM_THREADS_PER_LOCALE" in os.environ:
+            os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE"] = "100";
+
+        # Additionally, fail with an error if valgrind testing is running without
+        # tasks=fifo, mem=cstdlib, or with re2 built w/o valgrind support
+        if chpl_tasks.get() != "fifo":
+            logger.write("[Error: valgrind requires tasks=fifo - try quickstart]")
+            finish()
+        if chpl_mem.get('target') != "cstdlib":
+            logger.write("[Error: valgrind requires mem=cstdlib - try quickstart]")
+            finish()
+        if chpl_regexp.get() == 're2' and not re2_supports_valgrind.get():
+            logger.write("[Error: valgrind requires regexp=none or re2 built with CHPL_RE2_VALGRIND_SUPPORT]")
+            finish()
+
+
     # compiler
     global compiler
     if not args.compiler:
         compiler = os.path.expandvars("$CHPL_HOME/bin/{0}/chpl"
-                .format(host_platform))
+                .format(host_bin_subdir))
     else:
         compiler = args.compiler
 
@@ -893,7 +964,7 @@ def set_up_performance_testing_B():
         sha_out_name = os.path.join(chpl_test_tmp_dir, "sha.exec.out.tmp")
         with open(sha_out_name, "w") as sha_out:
             try:
-                output = subprocess.check_output(["git", "rev-parse", "HEAD"])
+                output = run_command(["git", "rev-parse", "HEAD"])
                 sha_out.write("sha " + output)
             except:
                 pass
@@ -906,7 +977,7 @@ def set_up_performance_testing_B():
                 .format(sha_dat_file_path))
         try:
             cmd = os.path.join(util_dir, "test", "computePerfStats")
-            out = subprocess.check_output([cmd, sha_dat_file_name, dat_dir, 
+            out = run_command([cmd, sha_dat_file_name, dat_dir,
                 sha_pef_keys_name, sha_out_name])
             logger.write(out)
         except:
@@ -934,9 +1005,10 @@ def set_up_executables():
     os.environ['EXECOPTS'] = args.execopts
 
     logger.write('[launchcmd: "{0}"]'.format(args.launch_cmd))
-    os.environ['LAUNCHCMD'] = args.launch_cmd
+    os.environ['LAUNCHCMD'] = os.path.expandvars(args.launch_cmd)
 
     comm = chpl_comm.get()
+    network_atomics = chpl_atomics.get('network')
     launcher = chpl_launcher.get()
     locale_model = chpl_locale_model.get()
 
@@ -944,6 +1016,9 @@ def set_up_executables():
     os.environ["CHPL_COMM"] = comm
     os.environ["CHPL_GASNET_SEGMENT"] = chpl_comm_segment.get()
     os.environ["CHPL_LAUNCHER"] = launcher
+
+    logger.write('[networkAtomics: "{0}"]'.format(network_atomics))
+    os.environ["CHPL_NETWORK_ATOMICS"] = network_atomics
 
     logger.write('[localeModel: "{0}"]'.format(locale_model))
     os.environ["CHPL_LOCALE_MODEL"] = locale_model
@@ -966,14 +1041,27 @@ def set_up_executables():
 
     # comm
     if comm != "none" and args.num_locales == "0":
-        args.num_locales = 1
+        args.num_locales = "1"
 
     if args.num_locales == "0":
         logger.write('[numlocales: "(default)"]')
     else:
         logger.write('[numlocales: "{0}"]'.format(args.num_locales))
 
-    os.environ["NUMLOCALES"] = str(args.num_locales)
+    os.environ["NUMLOCALES"] = args.num_locales
+
+    if args.max_locales == "0":
+        logger.write('[max_locales: "(default)"]')
+    else:
+        logger.write('[max_locales: "{0}"]'.format(args.max_locales))
+        os.environ["CHPL_TEST_MAX_LOCALES"] = args.max_locales
+
+    # only run multilocale tests
+    if args.multilocale_only:
+        if comm != "none":
+            os.environ["CHPL_TEST_MULTILOCALE_ONLY"] = "true"
+        else:
+            logger.write("[Warning: Ignoring --multilocale-only for CHPL_COMM=none]")
 
     # pre-exec
     if args.preexec:
@@ -999,6 +1087,8 @@ def set_up_executables():
 
 
 def auto_generate_tests():
+    if not auto_gen_spec_tests:
+        return
     path = os.getcwd()
     with cd(home):
         if path == home or path == test_dir and not args.clean_only:
@@ -1010,7 +1100,7 @@ def auto_generate_tests():
                         "spectests.exec.out.tmp")
                 with open(tmp_file_path, "w") as tmp_file:
                     try:
-                        out = subprocess.check_output(["make", "spectests"])
+                        out = run_command(["make", "spectests"])
                         tmp_file.write(out)
                     except:
                         logger.write("[Error: Failed to generate Spec tests.  "
@@ -1029,7 +1119,7 @@ def auto_generate_tests():
                         try:
                             cmd = os.path.join(util_dir, "test", 
                                     "computePerfStats")
-                            out = subprocess.check_output([cmd, "spectests", 
+                            out = run_command([cmd, "spectests",
                                 dat_dir, os.path.join(home, "test",
                                 "spectests.perfkeys"), tmp_file_path])
                             temp_perf_file.write(out)
@@ -1057,7 +1147,7 @@ def print_chapel_environment():
     logger.write()
     logger.write("### Chapel Environment ###")
     try:
-        out = subprocess.check_output(os.path.join(util_dir, "printchplenv"))
+        out = run_command([os.path.join(util_dir, "printchplenv"), "--all", "--no-tidy"])
         logger.write(out)
     except:
         pass
@@ -1086,7 +1176,7 @@ def check_for_duplicates():
     # check for .graph files, and GRAPHFILES
     if args.gen_graphs or args.comp_performance:
         logger.write("[Checking for duplicate .graph files and that all .graph"
-                " files appear in {0}/.*GRAPHFILES]".format(test_dir))
+                " files appear in {0}/*GRAPHFILES]".format(test_dir))
 
         # find GRAPHFILES
         graph_files = [f for f in os.listdir(test_dir) if
@@ -1138,6 +1228,14 @@ def check_for_duplicates():
 
 # END STUFF
 
+# Execute 'cmd' and return its exit code.
+# Print its output to the console in real-time and log it too.
+def run_and_log(cmd):
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    printout(p.stdout)
+    p.wait()
+    return p.returncode
+
 def cleanup():
     if os.path.isdir(chpl_test_tmp_dir):
         print("[Removing {0} directory]".format(chpl_test_tmp_dir))
@@ -1160,7 +1258,7 @@ def jUnit():
             "convert_start_test_log_to_junit_xml.py")]
 
     try:
-        out = subprocess.check_output(cmd + junit_args)
+        out = run_command(cmd + junit_args)
         return output
     except:
         return ""
@@ -1168,23 +1266,42 @@ def jUnit():
 
 # PARSER
 
+
+def help_all(help_msg):
+    if any("help-all" in s for s in sys.argv):
+        return help_msg
+    else:
+        return argparse.SUPPRESS
+
+
 def parser_setup():
     parser = argparse.ArgumentParser(description="Test Chapel code.")
     # main args
-    parser.add_argument("tests", nargs="*", help="test files or directories")
+    p = parser.add_argument("tests", nargs="*", help="test files or directories")
+    if argcomplete:
+        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c"])
+
     # executing options
     parser.add_argument("-execopts", "--execopts", action="append", 
             dest="execopts", help="set options for executing tests")
+    # lame hack to prevent abbreviations from not getting preprocessed in
+    # preprocess_options() (makes things like --execop ambiguous)
+    parser.add_argument("-execopts ", "--execopts ", action="append",
+            dest="execopts", help=argparse.SUPPRESS)
     # compiler
     parser.add_argument("-compiler", "--compiler", action="store",
-            dest="compiler", help="set alternate compiler")
+            dest="compiler", help=help_all("set alternate compiler"))
     # program launch utility
     parser.add_argument("-launchcmd", "--launchcmd", action="store",
-            dest="launch_cmd", default="",
+            dest="launch_cmd", default=os.getenv("CHPL_TEST_LAUNCHCMD", ""),
             help="set a program to launch generated executables")
     # compiler options
     parser.add_argument("-compopts", "--compopts", action="append",
             dest="compopts", help="set options for the compiler")
+    # lame hack to prevent abbreviations from not getting preprocessed in
+    # preprocess_options() (makes things like --compop ambiguous)
+    parser.add_argument("-compopts ", "--compopts ", action="append",
+            dest="compopts", help=argparse.SUPPRESS)
     # log_file
     parser.add_argument("-logfile", "--logfile", action="store",
             dest="log_file", help="set alternate log file")
@@ -1227,22 +1344,25 @@ def parser_setup():
     # performance
     parser.add_argument("-performance", "--performance", action="store_true",
             dest="performance", help="run performance tests")
-    parser.add_argument("-perflabel", "--perflabel", action="store",
-            default="perf", dest="perflabel",
-            help="set alternate performance test label")
+    p = parser.add_argument("-perflabel", "--perflabel", action="store",
+               default="perf", dest="perflabel",
+               help="set alternate performance test label")
+    if argcomplete:
+        p.completer = argcomplete.completers.ChoicesCompleter(('ml-', ))
+
     parser.add_argument("-performance-description",
             "--performance-description", action="store", default="",
-            dest="performance_description")
+            dest="performance_description", help=help_all(""))
     parser.add_argument("-performance-configs", "--performance-configs",
             "-performance-configurations", "--performance-configurations",
             action="store", dest="performance_configs",
-            help="set performance configurations")
+            help=help_all("set performance configurations"))
     parser.add_argument("-compperformance", "--compperformance",
             action="store_true", dest="comp_performance",
-            help="test compiler performance")
+            help=help_all("test compiler performance"))
     parser.add_argument("-compperformance-description",
             "--compperformance-description", action="store", default="",
-            dest="comp_performance_description")
+            dest="comp_performance_description", help=help_all(""))
     parser.add_argument("-numtrials", "--numtrials", "-num-trials",
         "--num-trials", action="store", dest="num_trials",
         default=os.getenv("CHPL_TEST_NUM_TRIALS", "1"),
@@ -1250,22 +1370,22 @@ def parser_setup():
     # graphing
     parser.add_argument("-gen-graphs", "--gen-graphs", "-generate-graphs",
             "--generate-graphs", action="store_true", dest="gen_graphs",
-            help="only generate graphs, don't run tests")
+            help=help_all("only generate graphs, don't run tests"))
     parser.add_argument("-nodisplaygraphrange", "--nodisplaygraphrange",
             "-no-display-graph-range", "--no-display-graph-range",
             action="store_false", dest="graphs_disp_range",
-            help="don't display trial range envelopes on the graphs")
+            help=help_all("don't display trial range envelopes ongraphs"))
     parser.add_argument("-graphsgendefault", "--graphsgendefault",
             "-graphs-gen-default", "--graphs-gen-default", action="store",
             choices=["avg", "min", "max", "med"], default="avg",
             dest="graphs_gen_default",
-            help="set default method to reduce multiple trials")
+            help=help_all("set default method to reduce multiple trials"))
     parser.add_argument("-startdate", "--startdate", action="store",
             dest="start_date", metavar="<MM/DD/YY>", 
             help="set graph start date")
     parser.add_argument("-gengraphopts", "--gengraphopts", "-genGraphOpts",
             "--genGraphOpts", action="store", dest="gen_graph_opts",
-            default="", help="set additional graph generation options")
+            default="", help=help_all("set additional graph gen options"))
     # only compile
     parser.add_argument("-comp-only", "--comp-only", action="store_true",
             dest="comp_only", help="only compile the tests, don't run")
@@ -1273,42 +1393,56 @@ def parser_setup():
     parser.add_argument("-numlocales", "--numlocales", action="store",
             dest="num_locales", default="0",
             help="set the number of locales to run on")
+    # run tests that specify numlocales > 1
+    parser.add_argument("-max-locales", "--max-locales",
+            action="store", dest="max_locales", default="0",
+            help="Maximum number of locales to use")
+    # run tests that specify numlocales > 1
+    parser.add_argument("-multilocale-only", "--multilocale-only",
+            action="store_true", dest="multilocale_only",
+            help="Only run multilocale test (ignored for comm none)")
     # stdin redirect
     parser.add_argument("-nostdinredirect", "--nostdinredirect",
-            action="store", dest="no_stdin_redirect",
-            help="run the tests without redirecting stdin from /dev/null")
-    parser.add_argument("-stdinredirect", "--stdinredirect", action="store",
-            dest="stdin_redirect",
-            help="force stdin redirection from /dev/null")
+            action="store_true", dest="no_stdin_redirect",
+            help=help_all("don't redirect stdin from /dev/null"))
+    parser.add_argument("-stdinredirect", "--stdinredirect",
+            action="store_true", dest="stdin_redirect",
+            help=help_all("force stdin redirection from /dev/null"))
     # launcher timeout
     parser.add_argument("-launchertimeout", "--launchertimeout", 
             action="store", dest="launcher_timeout",
-            help="rely on the launcher to enforce the timeout, not timedexec")
+            help=help_all("rely on the launcher to enforce the timeout"))
     # no chpl home warning
     parser.add_argument("-no-chpl-home-warn", "--no-chpl-home-warn",
             action="store_false", dest="chpl_home_warn",
-            help="don't warn about not starting in CHPL_HOME")
+            help=help_all("don't warn about not starting in CHPL_HOME"))
     # progress
     parser.add_argument("-progress", "--progress", action="store_true",
-            dest="progress", help="Log pass/fail for each test to stderr")
+            dest="progress", help=help_all("Log pass/fail for each test"))
     # test root
     parser.add_argument("-test-root", "--test-root", action="store",
-        dest="test_root_dir", help="set absolute path to test directory")
+        dest="test_root_dir", help=help_all("set abs path to test directory"))
     # jUnit
     parser.add_argument("-junit-xml", "--junit-xml", action="store_true",
-            dest="junit_xml", help="create jUnit XML report")
+            dest="junit_xml", help=help_all("create jUnit XML report"))
     parser.add_argument("-junit-xml-file", "--junit-xml-file", action="store",
             dest="junit_xml_file", metavar="<file>",
-            help="set the path to store the jUnit XML report")
+            help=help_all("set the path to store the jUnit XML report"))
     parser.add_argument("-junit-remove-prefix", "--junit-remove-prefix",
             action="store", dest="junit_remove_prefix", metavar="<prefix>",
-            help="set the <prefix> to remove from tests in the jUnit report")
+            help=help_all("<prefix> to remove from tests in jUnit report"))
     # extra help
     parser.add_argument("-help", action="help", help=argparse.SUPPRESS)
+    parser.add_argument("--help-all", action="help",
+            help="show all options, including ones meant for other scripts")
 
     return parser
 
 
+# argparse interprets anything that starts with a `--` as an option, so
+# something like `--compopts --fast` would get interpreted as two options. Here
+# we preprocess to turn that into `--compopts '--fast'` (note that we'll have
+# to remove the quotes later)
 def preprocess_options():
     index = 0
     for arg in sys.argv:
@@ -1317,12 +1451,12 @@ def preprocess_options():
             escape_next_argument(sys.argv, index)
         index += 1
 
-
 def escape_next_argument(args, index):
-    next = args[index + 1].strip()
-    if next and next[0] == "-": # single argument, not escaped
-        args[index + 1] = "'{0}'".format(next)
-    print(args)
+    if index + 1 < len(args):
+        next = args[index + 1].strip()
+        if next and next[0] == "-": # single argument, not escaped
+            args[index + 1] = "'{0}'".format(next)
+        print(args)
 
 
 # UTILITY ROUTINES AND CLASSES
@@ -1381,12 +1515,37 @@ class FileHandlerWithException(logging.FileHandler):
         logging.FileHandler.handleError(self, record)
         raise OSError("fatal error, logging.FileHandler")
 
+class CommandError(Exception):
+    def __init__(self, retcode, cmd, output=None):
+        self.retcode = retcode
+        self.cmd = cmd
+        self.output = output
+    def __str__(self):
+        return "Command '{0}' returned non-zero exit status {1}".format(self.cmd, self.retcode)
+
+def run_command(cmd):
+    """
+    check_output like wrapper, but we're still committed to 2.6 so can't rely
+    on check_output
+    """
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    output, _ = process.communicate()
+    retcode = process.poll()
+    if retcode:
+        raise CommandError(retcode, cmd, output)
+
+    if sys.version_info[0] >= 3 and not isinstance(output, str):
+        output = str(output, 'utf-8')
+
+    return output
 
 def printout(so):
     while True:
         line = so.readline()
         if not line:
             break
+        if sys.version_info[0] >= 3 and not isinstance(line, str):
+            line = str(line, 'utf-8')
         logger.write(line) # strip default newline
         logger.flush()
 

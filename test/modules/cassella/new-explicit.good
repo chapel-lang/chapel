@@ -1,0 +1,35 @@
+Concrete Record
+(a = 2)
+(a = 2)
+(a = 2)
+(a = 2)
+(a = 2)
+(a = 2)
+(a = 2)
+
+Concrete Class
+{a = 2}
+{a = 2}
+{a = 2}
+{a = 2}
+{a = 2}
+{a = 2}
+{a = 2}
+
+Generic Record
+(a = 2)
+(a = 2)
+(a = 2)
+(a = 2)
+(a = 2)
+(a = 2)
+(a = 2)
+
+Generic Class
+{a = 2}
+{a = 2}
+{a = 2}
+{a = 2}
+{a = 2}
+{a = 2}
+{a = 2}

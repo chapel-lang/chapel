@@ -1,4 +1,4 @@
-;;; chpl-mode.el --- a CC Mode for Chapel derived from derived-mode-ex.el
+;;; chpl-mode.el --- Major mode for editing Chapel code
 
 ;; Author:     2007 Steven T Balensiefer
 ;; Maintainer: Chapel group <chapel_info@cray.com>
@@ -35,6 +35,16 @@
 ;;; Code:
 
 (require 'cc-mode)
+
+;; Work around "Symbol's function definition is void: set-difference"
+;; in emacs 24, at least through 24.5.  Per
+;; http://lists.gnu.org/archive/html/bug-gnu-emacs/2014-10/msg01175.html
+(eval-when-compile
+  (if (and (= emacs-major-version 24) (<= emacs-minor-version 5))
+      (require 'cl)))
+
+;; Need to exclude xemacs from some behavior
+(defvar running-xemacs (string-match "XEmacs\\|Lucid" emacs-version))
 
 ;; These are only required at compile time to get the sources for the
 ;; language constants.  (The cc-fonts require and the font-lock
@@ -76,7 +86,7 @@ not the type face."
          "except" "export" "extern"
          "inline" "iter"
          "module"
-         "only"
+         "only" "override"
          "param" "private" "proc" "public"
          "require"
          "type"
@@ -153,7 +163,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-simple-stmt-kwds
   "Statement keywords followed by an expression or nothing."
-  chpl '("break" "continue" "return" "yield"))
+  chpl '("break" "continue" "label" "return" "yield"))
 
 (c-lang-defconst c-label-kwds
   "Keywords introducing colon terminated labels in blocks."
@@ -170,7 +180,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-other-kwds
   "Keywords not accounted for by any other `*-kwds' language constant."
-  chpl '("align" "atomic" "begin" "by" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "noinit" "on" "out" "reduce" "ref" "scan" "serial" "single" "sparse" "sync" "where" "while" "with" "zip"))
+  chpl '("align" "atomic" "begin" "borrowed" "by" "catch" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "noinit" "on" "out" "owned" "prototype" "reduce" "ref" "scan" "serial" "shared" "single" "sparse" "sync" "throw" "throws" "try" "unmanaged" "where" "while" "with" "zip"))
 
 ;;; Chpl.
 
@@ -337,6 +347,11 @@ need for `chpl-font-lock-extra-types'.")
     (setq chpl-mode-syntax-table
 	  (funcall (c-lang-const c-make-mode-syntax-table chpl))))
 
+;; Nested block comments -- add "n" to the syntax table entry for "*"
+;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Flags.html#Syntax-Flags
+(if (not running-xemacs)
+    (modify-syntax-entry ?* ". 23n" chpl-mode-syntax-table))
+
 (defvar chpl-mode-abbrev-table nil
   "Abbreviation table used in chpl-mode buffers.")
 (c-define-abbrev-table 'chpl-mode-abbrev-table
@@ -391,4 +406,4 @@ Key bindings:
 
 (provide 'chpl-mode)
 
-;;; derived-mode-ex.el ends here
+;;; chpl-mode.el ends here

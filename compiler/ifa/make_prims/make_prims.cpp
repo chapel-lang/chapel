@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -51,7 +51,7 @@ buf_read(char *pathname, char **buf, int *len) {
   *len = sb.st_size;
   *buf = (char*)MALLOC(*len + 2);
   (*buf)[*len] = 0;             /* terminator */
-  (*buf)[*len + 1] = 0;         /* sentinal */
+  (*buf)[*len + 1] = 0;         /* sentinel */
   read(fd, *buf, *len);
   close(fd);
   return *len;

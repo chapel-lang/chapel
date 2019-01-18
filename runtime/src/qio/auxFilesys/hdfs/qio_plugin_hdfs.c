@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-// Documentation can be found in $CHPL_HOME/doc/release/technotes/IO.hdfs
+// Documentation can be found in $CHPL_HOME/doc/rst/technotes/auxIO.rst
 #define QIOPLUGIN_HDFS_C
 
 #ifndef _DARWIN_C_SOURCE
@@ -493,10 +493,15 @@ const qio_file_functions_ptr_t hdfs_function_struct_ptr = &hdfs_function_struct;
 static
 char* get_locale_name(char *loc)
 {
+  char* ret = NULL;
   const char *keys = "."; // We lop off the .us.cray...
-  int i = strcspn (loc, keys);
-
-  return strndup(loc, i);
+  int len = strcspn (loc, keys);
+  ret = (char*) qio_malloc(len+1);
+  if (ret) {
+    qio_memcpy(ret, loc, len);
+    ret[len] = '\0';
+  }
+  return ret;
 }
 
 qioerr hdfs_locales_for_range(void* file, off_t start_byte, off_t end_byte, const char*** loc_names_out, int* num_locs_out, void* fs) 

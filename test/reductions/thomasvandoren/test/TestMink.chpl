@@ -14,6 +14,7 @@ writeln("mink real result: ", realResult);
 // Verify calling reduction on array of less than k elements returns those
 // elements, in sorted order, with the other values filled in with max(real).
 var smallA: [1..5] real;
+
 randStream.fillRandom(smallA);
 writeln("mink int small result: ", mink reduce smallA);
 

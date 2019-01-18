@@ -7,7 +7,7 @@
 generateGood() {
     # Generate Good file from printchplenv variables
 
-    printchplenv=$(../../../../util/printchplenv --simple)
+    printchplenv=$(../../../../util/printchplenv --simple --no-tidy --anonymize | grep -v CHPL_ORIG_TARGET_COMPILER | grep -v SUBDIR)
 
     good=""
     for var in ${printchplenv}; do
@@ -24,7 +24,7 @@ generateGood() {
 generateCompopts() {
     # Generate Compopts file from printchplenv variables
 
-    printchplenv=$(../../../../util/printchplenv --simple)
+    printchplenv=$(../../../../util/printchplenv --simple --anonymize --no-tidy)
 
     compopts="--home=${CHPL_HOME}"
     for var in ${printchplenv}; do
@@ -44,7 +44,7 @@ generateCompopts() {
             "CHPL_TARGET_COMPILER")
                 compopts="$compopts --$flag=$value"
                 ;;
-            "CHPL_TARGET_ARCH")
+            "CHPL_TARGET_CPU")
                 compopts="$compopts --$flag=$value"
                 ;;
             "CHPL_LOCALE_MODEL")
@@ -71,9 +71,6 @@ generateCompopts() {
             "CHPL_MEM")
                 compopts="$compopts --$flag=$value"
                 ;;
-            "CHPL_MAKE")
-                compopts="$compopts --$flag=$value"
-                ;;
             "CHPL_ATOMICS")
                 compopts="$compopts --$flag=$value"
                 ;;
@@ -87,9 +84,6 @@ generateCompopts() {
                 compopts="$compopts --$flag=$value"
                 ;;
             "CHPL_REGEXP")
-                compopts="$compopts --$flag=$value"
-                ;;
-            "CHPL_WIDE_POINTERS")
                 compopts="$compopts --$flag=$value"
                 ;;
             "CHPL_AUX_FILESYS")

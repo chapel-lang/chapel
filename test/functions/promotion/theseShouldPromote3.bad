@@ -1,0 +1,2 @@
+theseShouldPromote3.chpl:46: error: unresolved call 'foo(C)'
+theseShouldPromote3.chpl:41: note: candidates are: foo(x: int)

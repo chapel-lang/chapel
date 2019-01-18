@@ -16,6 +16,6 @@ clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 
 isx: isx.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 FORCE:

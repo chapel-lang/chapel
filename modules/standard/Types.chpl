@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,9 @@
 /*
 Functions related to predefined types.
 
-This is an automatic module, so these functions are available
-to all Chapel programs.
+.. note:: All Chapel programs automatically ``use`` this module by default.
+          An explicit ``use`` statement is not necessary.
+
 */
 module Types {
 
@@ -86,22 +87,26 @@ pragma "no instantiation limit"
 proc isFloatType(type t) param return
   isRealType(t) || isImagType(t);
 
-// We document the following functions as one group, for user convenience.
+/* Returns `true` if the type `t` is the `void` type. */
 pragma "no instantiation limit"
 proc isVoidType(type t) param return t == void;
 
+/* Returns `true` if the type `t` is a `bool` type, of any width. */
 pragma "no instantiation limit"
 proc isBoolType(type t) param return
   (t == bool) || (t == bool(8)) || (t == bool(16)) || (t == bool(32)) || (t == bool(64));
 
+/* Returns `true` if the type `t` is an `int` type, of any width. */
 pragma "no instantiation limit"
 proc isIntType(type t) param return
   (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
 
+/* Returns `true` if the type `t` is a `uint` type, of any width. */
 pragma "no instantiation limit"
 proc isUintType(type t) param return
   (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
+/* Returns `true` if the type `t` is an `enum` type. */
 pragma "no instantiation limit"
 proc isEnumType(type t) param {
   proc isEnumHelp(type t: enumerated) param return true;
@@ -109,24 +114,22 @@ proc isEnumType(type t) param {
   return isEnumHelp(t);
 }
 
+/* Returns `true` if the type `t` is a `complex` type, of any width. */
 pragma "no instantiation limit"
 proc isComplexType(type t) param return
   (t == complex(64)) || (t == complex(128));
 
+/* Returns `true` if the type `t` is a `real` type, of any width. */
 pragma "no instantiation limit"
 proc isRealType(type t) param return
   (t == real(32)) || (t == real(64));
 
+/* Returns `true` if the type `t` is an `imag` type, of any width. */
 pragma "no instantiation limit"
 proc isImagType(type t) param return
   (t == imag(32)) || (t == imag(64));
 
-// Here is a single doc comment for the above.
-/*
-Each of the above functions returns `true` if its argument is
-a corresponding type.
-The argument must be a type.
-*/
+/* Returns `true` if the type `t` is the `string` type. */
 pragma "no instantiation limit"
 proc isStringType(type t) param return t == string;
 
@@ -163,22 +166,16 @@ proc isPODType(type t) param {
 
 // Returns the unsigned equivalent of the input type.
 pragma "no doc"
-proc chpl__unsignedType(type t) type 
+proc chpl__unsignedType(type t) type
 {
-  if ! isIntegralType(t) then
-    compilerError("range idxType is non-integral: ", t:string);
-
   return uint(numBits(t));
 }
 
 
 // Returns the signed equivalent of the input type.
 pragma "no doc"
-proc chpl__signedType(type t) type 
+proc chpl__signedType(type t) type
 {
-  if ! isIntegralType(t) then
-    compilerError("range idxType is non-integral: ", t:string);
-
   return int(numBits(t));
 }
 
@@ -229,7 +226,38 @@ proc isEnumValue(e)      param  return isEnumType(e.type);
 // isTupleValue
 // isHomogeneousTupleValue
 pragma "no doc"
-proc isClassValue(e)     param  return isClassType(e.type);
+proc isClassValue(e)              param return isClassType(e.type);
+
+pragma "no doc"
+proc isOwnedClassType(type t:_owned)         param return true;
+pragma "no doc"
+proc isOwnedClassType(type t)                param return false;
+pragma "no doc"
+proc isSharedClassType(type t:_shared)       param return true;
+pragma "no doc"
+proc isSharedClassType(type t)               param return false;
+pragma "no doc"
+proc isUnmanagedClassType(type t:_unmanaged) param return true;
+pragma "no doc"
+proc isUnmanagedClassType(type t)            param return false;
+pragma "no doc"
+proc isBorrowedClassType(type t:_borrowed)   param return true;
+pragma "no doc"
+proc isBorrowedClassType(type t)             param return false;
+
+pragma "no doc"
+pragma "no borrow convert"
+proc isOwnedClassValue(e)     param return isOwnedClassType(e.type);
+pragma "no doc"
+pragma "no borrow convert"
+proc isSharedClassValue(e)    param return isSharedClassType(e.type);
+pragma "no doc"
+pragma "no borrow convert"
+proc isUnmanagedClassValue(e) param return isUnmanagedClassType(e.type);
+pragma "no doc"
+pragma "no borrow convert"
+proc isBorrowedClassValue(e)  param return isBorrowedClassType(e.type);
+
 pragma "no doc"
 proc isRecordValue(e)    param  return isRecordType(e.type);
 pragma "no doc"
@@ -250,7 +278,7 @@ proc isPODValue(e)       param  return isPODType(e.type);
 
 
 //
-// ixXxx() - the argument can be either a type or a value
+// isXxx() - the argument can be either a type or a value
 //
 
 // Set 1 - types.
@@ -286,6 +314,14 @@ proc isHomogeneousTuple(type t)  param  return isHomogeneousTupleType(t);
 pragma "no doc"
 proc isClass(type t)     param  return isClassType(t);
 pragma "no doc"
+proc isOwnedClass(type t) param  return isOwnedClassType(t);
+pragma "no doc"
+proc isSharedClass(type t) param  return isSharedClassType(t);
+pragma "no doc"
+proc isUnmanagedClass(type t) param  return isUnmanagedClassType(t);
+pragma "no doc"
+proc isBorrowedClass(type t) param  return isBorrowedClassType(t);
+pragma "no doc"
 proc isRecord(type t)    param  return isRecordType(t);
 pragma "no doc"
 proc isUnion(type t)     param  return isUnionType(t);
@@ -307,20 +343,6 @@ pragma "no doc"
 proc isRefIter(type t)   param  return isRefIterType(t);
 pragma "no doc"
 proc isPOD(type t)       param  return isPODType(t);
-pragma "no doc"
-proc isTupleOfPrimitiveTypes(e) param
-{
-  if !isTuple(e) then return false;
-
-  // compute && reduce isPrimitiveValue over the tuple
-  proc help(x) param
-    return isPrimitiveValue(x);
-
-  proc help(x, args ...) param
-    return isPrimitiveValue(x) && help((...args));
-
-  return help((...e));
-}
 
 // Set 2 - values.
 /*
@@ -343,36 +365,67 @@ Returns `true` if the argument is one the following types, of any width:
 `real`, `imag`, or a value of such a type.
 */
 proc isFloat(e)     param  return isFloatValue(e);
-// We document the following functions as one group, for user convenience.
+
+/* Returns `true` if the argument is a `bool` type or value, of any width. */
 proc isBool(e)      param  return isBoolValue(e);
+/* Returns `true` if the argument is an `int` type or value, of any width. */
 proc isInt(e)       param  return isIntValue(e);
+/* Returns `true` if the argument is a `uint` type or value, of any width. */
 proc isUint(e)      param  return isUintValue(e);
+/* Returns `true` if the argument is a `real` type or value, of any width. */
 proc isReal(e)      param  return isRealValue(e);
+/* Returns `true` if the argument is an `imag` type or value, of any width. */
 proc isImag(e)      param  return isImagValue(e);
+/* Returns `true` if the argument is a `complex` type or value, of any width. */
 proc isComplex(e)   param  return isComplexValue(e);
+/* Returns `true` if the argument is a string or the `string` type. */
 proc isString(e)    param  return isStringValue(e);
+/* Returns `true` if the argument is an `enum` type or value, of any width. */
 proc isEnum(e)      param  return isEnumValue(e);
+/* Returns `true` if the argument is a tuple type or value. */
 proc isTuple(e)     param  return isTupleValue(e);
+/* Returns `true` if the argument is a homogeneous tuple.
+   The argument must be a tuple or any type. */
 proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
+/* Returns `true` if the argument is a class type or value
+   that is not an ``extern`` class, or when the argument is ``nil``. */
 proc isClass(e)     param  return isClassValue(e);
+/* Returns `true` if the argument is an ``owned`` class type. */
+pragma "no borrow convert"
+proc isOwnedClass(e)     param  return isOwnedClassValue(e);
+/* Returns `true` if the argument is a ``shared`` class type. */
+pragma "no borrow convert"
+proc isSharedClass(e)     param  return isSharedClassValue(e);
+/* Returns `true` if the argument is a ``unmanaged`` class type. */
+pragma "no borrow convert"
+proc isUnmanagedClass(e)     param  return isUnmanagedClassValue(e);
+/* Returns `true` if the argument is a ``borrowed`` class type. */
+pragma "no borrow convert"
+proc isBorrowedClass(e)     param  return isBorrowedClassValue(e);
+/* Returns `true` if the argument is a record type or value. */
 proc isRecord(e)    param  return isRecordValue(e);
+/* Returns `true` if the argument is a union type or value. */
 proc isUnion(e)     param  return isUnionValue(e);
+/* Returns `true` if the argument is a range type or value. */
 proc isRange(e)     param  return isRangeValue(e);
+/* Returns `true` if the argument is a domain map or a domain map type. */
 proc isDmap(e)      param  return isDmapValue(e);
+/* Returns `true` if the argument is a domain or a domain type. */
 proc isDomain(e)    param  return isDomainValue(e);
+/* Returns `true` if the argument is an array or an array type. */
 proc isArray(e)     param  return isArrayValue(e);
 pragma "no doc"
 proc isSync(e: sync)     param  return true; // workaround: not isSyncValue
+/* Returns `true` if the argument is a `sync` type or a `sync` variable. */
 proc isSync(e)           param  return false;
 pragma "no doc"
 proc isSingle(e: single) param  return true; // workaround: not isSingleValue
+/* Returns `true` if the argument is a `single` type or a `single` variable. */
 proc isSingle(e)         param  return false;
+/*Returns `true` if the argument is an `atomic` type or an `atomic` variable.*/
 proc isAtomic(e)    param  return isAtomicValue(e);
-// Here is a single doc comment for the above.
-/*
-Each of the above functions returns `true` if its argument is
-a corresponding type or a value of such a type.
-*/
+
+pragma "no doc"
 proc isRefIter(e)   param  return isRefIterValue(e);
 
 pragma "no doc" // Not sure how we want to document isPOD* right now
@@ -390,23 +443,12 @@ proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 
 
 // Is 'sub' a subtype (or equal to) 'super'?
-/* Returns `true` if the type `sub` is a subtype of the type `super`. */
-proc isSubtype(type sub, type super) param where   sub: super  return true;
-pragma "no doc"
-proc isSubtype(type sub, type super) param where !(sub: super) return false;
+/* isSubtype Returns `true` if the type `sub` is a subtype of the type `super`. */
+// isSubtype is directly handled by compiler
 
 // Is 'sub' a proper subtype of 'super'?
-/* Returns `true` if the type `sub` is a subtype of the type `super`
-   and is not `super`. */
-proc isProperSubtype(type sub, type super) param
-  where isSubtype(sub, super) && sub != super
-  return true;
-pragma "no doc"
-proc isProperSubtype(type sub, type super) param
-  return false;
-
-
-
+// isProperSubtype returns true if so
+// isProperSubtype is directly handled by compiler.
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 pragma "no doc"
@@ -453,8 +495,7 @@ private proc chpl__commonType(type s, type t) type
 // joint documentation, for user convenience
 /*
 Returns the number of bits used to store the values of type `t`.
-This is available for all numeric types, fixed-width `bool` types,
-and ``enum`` types.
+This is available for all numeric types and fixed-width `bool` types.
 It is not available for default-width `bool`.
 */
 proc numBits(type t) param where t == bool {
@@ -506,8 +547,7 @@ param bitsPerByte = 8;
 
 /*
 Returns the number of bytes used to store the values of type `t`.
-This is available for all numeric types, fixed-width `bool` types,
-and ``enum`` types.
+This is available for all numeric types and fixed-width `bool` types.
 It is not available for default-width `bool`.
 */
 proc numBytes(type t) param return numBits(t)/8;
@@ -549,7 +589,7 @@ proc min(type t) where isComplexType(t) {
 Returns the maximum value the type `t` can store.
 `t` can be one of the following types, of any width:
 `bool`, `int`, `uint`, `real`, `imag`, `complex`.
-When `t` is a `bool` type, it returns `false`.
+When `t` is a `bool` type, it returns `true`.
 When `t` is a `real`, `imag`, or `complex` type,
 it is a non-``param`` function.
 */
@@ -588,31 +628,28 @@ iter chpl_enumerate(type t: enumerated) {
   for i in 1..enumTuple.size do
     yield enumTuple(i);
 }
-
-// TODO add chpl_ to these functions' names - they are not intended for user.
-private proc enum_minbits(type t: enumerated) param {
-  return __primitive( "enum min bits", t);
+pragma "no doc"
+iter type enumerated.these(){
+  for i in chpl_enumerate(this) do
+    yield i;
 }
-private proc enum_issigned(type t: enumerated) param {
-  return __primitive( "enum is signed", t);
+
+private proc chpl_enum_minbits(type t: enumerated) param {
+  if t.size <= max(uint(8)) then
+    return 8;
+  if t.size <= max(uint(16)) then
+    return 16;
+  if t.size <= max(uint(32)) then
+    return 32;
+  return 64;
 }
 // TODO - maybe this function can be useful for the user, for C interop?
 // If so, give it a different name.
 pragma "no doc"
-proc enum_mintype(type t: enumerated) type {
-  param minbits = enum_minbits(t);
-  param signed = enum_issigned(t);
-  if signed {
-    return int(minbits);
-  } else {
-    return uint(minbits);
-  }
+proc chpl_enum_mintype(type t: enumerated) type {
+  return uint(chpl_enum_minbits(t));
 }
 
-pragma "no doc" // documented with the other numBits() above
-proc numBits(type t: enumerated) param {
-  return numBits(enum_mintype(t));
-}
 
 /*
 Returns `this`, cast to the type `T`.
@@ -628,14 +665,15 @@ inline proc integral.safeCast(type T) : T where isUintType(T) {
     if isIntType(this.type) {
       // int(?) -> uint(?)
       if this < 0 then // runtime check
-        halt("casting "+this.type:string+" less than 0 to "+T:string);
+        HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            " less than 0 to "+T:string);
     }
 
     if max(this.type):uint > max(T):uint {
       // [u]int(?) -> uint(?)
       if (this:uint > max(T):uint) then // runtime check
-        halt("casting "+this.type:string+" with a value greater than the maximum of "+
-             T:string+" to "+T:string);
+        HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            " with a value greater than the maximum of "+ T:string+" to "+T:string);
     }
   }
   return this:T;
@@ -649,22 +687,22 @@ inline proc integral.safeCast(type T) : T where isIntType(T) {
       if isUintType(this.type) {
         // uint(?) -> int(?)
         if this:uint > max(T):uint then // runtime check
-          halt("casting "+this.type:string+" with a value greater than the maximum of "+
-               T:string+" to "+T:string);
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+              " with a value greater than the maximum of "+ T:string+" to "+T:string);
       } else {
         // int(?) -> int(?)
         // max(T) <= max(int), so cast to int is safe
         if this:int > max(T):int then // runtime check
-          halt("casting "+this.type:string+" with a value greater than the maximum of "+
-               T:string+" to "+T:string);
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+              " with a value greater than the maximum of "+ T:string+" to "+T:string);
       }
     }
     if isIntType(this.type) {
       if min(this.type):int < min(T):int {
         // int(?) -> int(?)
         if this:int < min(T):int then // runtime check
-          halt("casting "+this.type:string+" with a value less than the minimum of "+
-               T:string+" to "+T:string);
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+              " with a value less than the minimum of "+ T:string+" to "+T:string);
       }
     }
   }
@@ -693,18 +731,25 @@ inline proc _band_id(type t) {
   // but old code had it casting MAX_UINT to the same type...
   // I just moved it from the code generator since we don't need
   // a primitive to generate constants.
-  if t == bool then return true;
-  if t == int(8) then return -1:t;
-  if t == int(16) then return -1:t;
-  if t == int(32) then return -1:t;
-  if t == int(64) then return -1:t;
-  if t == real(32) then return max(uint(32)):t;
-  if t == real(64) then return max(uint(64)):t;
-  if t == imag(32) then return max(uint(32)):t;
-  if t == imag(64) then return max(uint(64)):t;
-  if t == complex(64) then return (max(uint(32)):real(32), max(uint(32)):real(32)):t;
-  if t == complex(128) then return (max(uint(64)):real(64), max(uint(64)):real(64)):t;
-  return max(t);
+  if      isBoolType(t) then return true:t;
+  else if isIntType(t)  then return -1:t;
+  else if isUintType(t) then return max(t);
+  else if t == real(32) then return max(uint(32)):t;
+  else if t == real(64) then return max(uint(64)):t;
+  else if t == imag(32) then return max(uint(32)):t;
+  else if t == imag(64) then return max(uint(64)):t;
+  else if t == complex(64) then return (max(uint(32)):real(32), max(uint(32)):real(32)):t;
+  else if t == complex(128) then return (max(uint(64)):real(64), max(uint(64)):real(64)):t;
+  else if isArrayType(t) {
+    var result: t;
+    type elT = result.eltType;
+    forall elm in result do
+      // Todo performance consideration: if elT is an array, we want to have
+      // just one array per locale or numa domain.
+      elm = _band_id(elT);
+    return result;
+  } else
+    compilerError("Identity value for & over ", t:string, "is not available");
 }
 pragma "no doc"
 inline proc _bor_id(type t) return 0:t;

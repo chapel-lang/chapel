@@ -1,10 +1,10 @@
 class CMODist : BaseDist {
-  proc dsiNewRectangularDom(param rank: int, type dimensional_index_type, param stridable: bool, param alias: bool=false) {
-    return new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable, alias=alias, dist=this);
+  proc dsiNewRectangularDom(param rank: int, type dimensional_index_type, param stridable: bool, inds) {
+    const dom = new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable, dist=this);
+    dom.dsiSetIndices(inds);
+    return dom;
   }
-  proc dsiCreateRankChangeDist(param newRank, args) {
-    return this;
-  }
+
   proc dsiClone() return this;
 }
 
@@ -13,7 +13,6 @@ class CMODom: BaseRectangularDom {
   type idxType;
   param stridable: bool;
   var dist: CMODist;
-  param alias: bool = false;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
   proc dsiGetIndices() return ranges;
@@ -26,7 +25,15 @@ class CMODom: BaseRectangularDom {
     ranges = x;
   }
 
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    chpl_assignDomainWithGetSetIndices(this, rhs);
+  }
+
   proc dsiMyDist() return dist;
+
+  proc dsiDims() {
+    return ranges;
+  }
 
   iter these_help(param dim: int) {
     if dim == rank - 1 {
@@ -50,18 +57,22 @@ class CMODom: BaseRectangularDom {
     }
   }
 
+  iter these(param tag, followThis) ref where tag == iterKind.follower {
+    yield followThis;
+  }
+
   proc dsiAccess(dim : int)
     return ranges(dim);
 
   proc dsiMember(ind: idxType) where rank == 1 {
-    if !ranges(1).member(ind) then
+    if !ranges(1).contains(ind) then
       return false;
     return true;
   }
 
   proc dsiMember(ind: rank*idxType) {
     for param i in 1..rank do
-      if !ranges(i).member(ind(i)) then
+      if !ranges(i).contains(ind(i)) then
         return false;
     return true;
   }
@@ -183,7 +194,6 @@ class CMOArr:BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  param reindexed: bool = false;
 
   var dom: CMODom(rank=rank,idxType=idxType, stridable=stridable);
   var off: rank*idxType;
@@ -205,7 +215,7 @@ class CMOArr:BaseArr {
     }
   }
 
-  proc initialize() {
+  proc postinit() {
     if noinit_data == true then return;
     for param dim in 1..rank {
       off(dim) = dom.dsiDim(dim).low;
@@ -226,6 +236,15 @@ class CMOArr:BaseArr {
     }
   }
 
+  iter these(param tag) where tag == iterKind.leader {
+    for i in dom do
+      yield i;
+  }
+
+  iter these(param tag, followThis) ref where tag == iterKind.follower {
+    yield dsiAccess(followThis);
+  }
+
   proc dsiAccess(ind : rank*idxType) ref {
     if boundsChecking then
       if !dom.dsiMember(ind) then
@@ -235,16 +254,14 @@ class CMOArr:BaseArr {
       for param i in 1..rank do
         sum = sum + (ind(i) - off(i)) * blk(i) / str(i):idxType;
     } else {
-      if reindexed {
-        for param i in 1..rank do
-          sum += ind(i) * blk(i);
-      } else {
-        for param i in 1..rank do
-          sum += ind(i) * blk(i);
-      }
+      for param i in 1..rank do
+        sum += ind(i) * blk(i);
       sum -= factoredOffs;
     }
     return data(sum); 
+  }
+  proc dsiAccess(ind : idxType) ref where rank == 1 {
+    return dsiAccess( (ind, ));
   }
 
   proc dsiReindex(d: CMODom) {
@@ -253,7 +270,7 @@ class CMOArr:BaseArr {
     for param i in 1..rank do
       if d.dim(i).length != dom.dim(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = new CMOArr(eltType=eltType, rank=d.rank, idxType=d.idxType, stridable=d.stridable, reindexed=true, dom=d, noinit_data=true);
+    var alias = new CMOArr(eltType=eltType, rank=d.rank, idxType=d.idxType, stridable=d.stridable, dom=d, noinit_data=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit_data=true);
     alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
@@ -271,13 +288,13 @@ class CMOArr:BaseArr {
   proc dsiCheckSlice(d) {
     for param i in 1..rank {
       if d(i).boundedType == BoundedRangeType.bounded then
-        if !dom.dim(i).member(d(i)) then
+        if !dom.dim(i).contains(d(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", d(i));
     }
   }
 
   proc dsiSlice(d: CMODom) {
-    var alias = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, reindexed=reindexed, dom=d, noinit_data=true);
+    var alias = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, noinit_data=true);
     alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
     alias.size = size;
@@ -299,14 +316,14 @@ class CMOArr:BaseArr {
     for param i in 1..args.size do
       if isRange(args(i)) then
         if args(i).boundedType == BoundedRangeType.bounded then
-          if !dom.dsiDim(i).member(args(i)) then
+          if !dom.dsiDim(i).contains(args(i)) then
             halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
   proc dsiRankChange(d, param newRank: int, param newStridable: bool, irs) {
     proc isRange(r: range(?e,?b,?s)) param return 1;
     proc isRange(r) param return 0;
-    var alias = new CMOArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=newStridable, reindexed=true, dom=d, noinit_data=true);
+    var alias = new CMOArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=newStridable, dom=d, noinit_data=true);
     alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
     alias.size = size;
@@ -326,11 +343,12 @@ class CMOArr:BaseArr {
     alias.computeFactoredOffs();
     return alias;
   }
+ 
 
 
   proc dsiReallocate(d: _domain) {
     if (d._value.type == dom.type) {
-      var copy = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d._value.stridable, reindexed=reindexed, dom=d._value);
+      var copy = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d._value.stridable, dom=d._value);
       for i in _intersect(d._value, dom) do
         copy(i) = this(i);
       off = copy.off;
@@ -403,9 +421,9 @@ proc CMOArr.dsiSerialWrite(f) {
 }
 
 proc _intersect(a: CMODom, b: CMODom) {
-  var c = new CMODom(a.rank, a.idxType, stridable=a.stridable, dist=b.dist);
+  var c = new CMODom(rank=a.rank, idxType=a.idxType, stridable=a.stridable, dist=b.dist);
   for param i in 1..a.rank do
-    c.ranges(i) = a.dim(i)(b.dim(i));
+    c.ranges(i) = a.ranges(i)(b.ranges(i));
   return c;
 }
 

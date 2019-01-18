@@ -2,4 +2,6 @@ class c {
   var v: void;
 }
 
-writeln((new c()).v);
+var foo = new unmanaged c();
+writeln(foo.v);
+delete foo;

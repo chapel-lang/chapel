@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,19 +25,28 @@
 class LoopStmt : public BlockStmt
 {
 public:
-  virtual bool           isLoopStmt()                                 const;
-
-  LabelSymbol*           breakLabelGet()                              const;
-  void                   breakLabelSet(LabelSymbol* sym);
-
-  LabelSymbol*           continueLabelGet()                           const;
-  void                   continueLabelSet(LabelSymbol* sym);
-
-  bool                   isOrderIndependent()                         const;
-  void                   orderIndependentSet(bool b);
-
   static LoopStmt*       findEnclosingLoop(Expr* expr);
 
+  static LoopStmt*       findEnclosingLoop(Expr* expr, const char* name);
+
+  static Stmt*           findEnclosingLoopOrForall(Expr* expr);
+
+public:
+  virtual bool           isLoopStmt()                                    const;
+
+  LabelSymbol*           breakLabelGet()                                 const;
+  void                   breakLabelSet(LabelSymbol* sym);
+
+  LabelSymbol*           continueLabelGet()                              const;
+  void                   continueLabelSet(LabelSymbol* sym);
+
+  bool                   isOrderIndependent()                            const;
+  void                   orderIndependentSet(bool b);
+
+  bool                   hasVectorizationHazard()                        const;
+  void                   setHasVectorizationHazard(bool v);
+
+  bool                   isVectorizable()                               const;
 protected:
                          LoopStmt(BlockStmt* initBody);
   virtual               ~LoopStmt();
@@ -45,11 +54,15 @@ protected:
   LabelSymbol*           mBreakLabel;
   LabelSymbol*           mContinueLabel;
   bool                   mOrderIndependent;
-  void                   codegenOrderIndependence();
+  bool                   mVectorizationHazard;
+  void                   codegenVectorHint();
+  void                   fixVectorizable();
 
 
 private:
                          LoopStmt();
+
+  bool                   isNamed(const char* name)                       const;
 };
 
 #endif

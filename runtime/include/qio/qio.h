@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,10 +19,6 @@
 
 #ifndef _QIO_H_
 #define _QIO_H_
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "sys_basic.h"
 #include "bswap.h"
@@ -44,6 +40,10 @@ extern "C" {
 
 #define DEBUG_QIO 0
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // synonym for iovec
 typedef struct iovec qiovec_t;
 
@@ -52,7 +52,6 @@ typedef enum {
   QIO_FDFLAG_READABLE = 2,
   QIO_FDFLAG_WRITEABLE = 4,
   QIO_FDFLAG_SEEKABLE = 8,
-  //QIO_FDFLAG_CLOSED = 16, // means channel/file was closed.
 } qio_fdflag_t;
 
 typedef uint32_t qio_hint_t;
@@ -73,11 +72,6 @@ typedef uint32_t qio_hint_t;
 #ifndef FTYPE_CURL
 #define FTYPE_CURL 3
 #endif
-
-// So that we can free c_strings from Chapel
-// This is temporary for now, one Sung's 'string_free' function goes in, this
-// and the use of it in IO.chpl can go away.
-#define qio_free_string(str) qio_free((char*)str)
 
 // The qio lock must be re-entrant in order to handle
 // e.g. qio_printf, which has will lock the lock, then
@@ -196,7 +190,13 @@ typedef struct qio_file_functions_s {
 typedef qio_file_functions_t* qio_file_functions_ptr_t;
 // -- end --
 
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+
 #ifdef _chplrt_H_
+#include "chpl-tasks.h"
+
 // also export iohint_t and fdflag_t
 typedef qio_hint_t iohints;
 typedef qio_fdflag_t fdflag_t;
@@ -205,11 +205,15 @@ typedef qio_fdflag_t fdflag_t;
 // make a re-entrant lock.
 typedef struct {
   chpl_sync_aux_t sv;
-  int64_t owner; // task ID of owner.
+  chpl_taskID_t owner; // task ID of owner.
   uint64_t count; // how many times owner has locked.
 } qio_lock_t;
 
 #define NULL_OWNER chpl_nullTaskID
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 qioerr qio_lock(qio_lock_t* x);
 void qio_unlock(qio_lock_t* x);
@@ -225,6 +229,10 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
   chpl_sync_destroyAux(&x->sv);
 }
 
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+
 #else
 
 #ifndef CHPL_RT_UNIT_TEST
@@ -232,6 +240,10 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
 #endif
 
 #include <pthread.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef pthread_mutex_t qio_lock_t;
 // these should return 0 on success; otherwise, an error number.
@@ -264,12 +276,21 @@ static inline qioerr qio_lock_init(qio_lock_t* x) {
 
 // returns void for the same reason as qio_unlock.
 static inline void qio_lock_destroy(qio_lock_t* x) { int rc = pthread_mutex_destroy(x); if( rc ) { assert(rc == 0); abort(); } }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+
 #endif
 
 
 extern ssize_t qio_too_small_for_default_mmap;
 extern ssize_t qio_too_large_for_default_mmap;
 extern ssize_t qio_mmap_chunk_iobufs;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Wrap system calls readv, writev, preadv, pwritev
  * to take a buffer.
@@ -473,6 +494,7 @@ typedef struct qio_file_s {
   void* file_info; // Holds the file information (as a user defined struct)
 
   qio_fdflag_t fdflags;
+  bool closed;
   qio_hint_t hints;
 
   int64_t initial_length;
@@ -1025,6 +1047,12 @@ void qio_channel_unlock(qio_channel_t* ch)
   qio_unlock(&ch->lock);
 }
 
+static inline
+qio_file_t* qio_channel_get_file(qio_channel_t* ch)
+{
+  return ch->file;
+}
+
 // You should lock/ get ptr/ unlock
 static inline
 qio_style_t* qio_channel_style_ptr(qio_channel_t* ch)
@@ -1240,6 +1268,9 @@ qioerr qio_channel_end_peek_cached(const int threadsafe, qio_channel_t* ch, void
 
   return err;
 }
+
+qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte);
+
 qioerr qio_channel_begin_peek_buffer(const int threadsafe, qio_channel_t* ch, int64_t require, int writing, qbuffer_t** buf_out, qbuffer_iter_t* start_out, qbuffer_iter_t* end_out);
 
 qioerr qio_channel_end_peek_buffer(const int threadsafe, qio_channel_t* ch, int64_t advance);

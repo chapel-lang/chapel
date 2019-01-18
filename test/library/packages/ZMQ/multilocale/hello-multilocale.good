@@ -1,0 +1,3 @@
+"Hello, I'm locale 3", sees locale 2
+Master socket lives on locale 0
+Worker socket lives on locale 5

@@ -43,6 +43,7 @@ $today = `date +%w-%a`; chomp($today);
 #
 # directory locations
 #
+$here = dirname(__FILE__);
 $tmpdir = "/tmp/chapel-getoldperf.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/chapel";
 $logdir = "~bradc/chapel/test/Logs/Nightly";
@@ -50,7 +51,8 @@ $statdir = "$logdir/Stats";
 $tokctdir = "~bradc/chapel/util/tokencount";
 $tokctr = "$tokctdir/tokencount.cron";
 $compdir = "$tmpdir/chapel/compiler";
-$bindir = "$tmpdir/chapel/bin/$ENV{'CHPL_HOST_PLATFORM'}";
+$binsubdir = `$here/../chplenv/chpl_bin_subdir.py --host`;
+$bindir = "$tmpdir/chapel/bin/$binsubdir";
 $currhome = "$ENV{'CHPL_HOME'}";
 $perfdir = "$ENV{'CHPL_TEST_PERF_DIR'}";
 if ($perfdir eq "") {
@@ -63,7 +65,7 @@ $somethingfailed = 0;
 
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
-$num_procs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`;
+$num_procs = `$here/../buildRelease/chpl-make-cpu_count`;
 chomp($num_procs);
 
 #
@@ -136,14 +138,18 @@ sub mysystem {
         $status = $status / 256;
 	print "Error $_[1]: $status\n";
 
-	if ($mailmsg != 0) {
-	    open(MAIL, $mailcommand);
-	    print MAIL "=== Summary ===================================================\n";
-	    print MAIL "ERROR $_[1]: $status\n";
-	    print MAIL "(workspace left at $tmpdir)\n";
-	    print MAIL "===============================================================\n";
-	    close(MAIL);
-	}
+    if ($mailmsg != 0) {
+        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+            open(MAIL, $mailcommand);
+            print MAIL "=== Summary ===================================================\n";
+            print MAIL "ERROR $_[1]: $status\n";
+            print MAIL "(workspace left at $tmpdir)\n";
+            print MAIL "===============================================================\n";
+            close(MAIL);
+        } else {
+            print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+        }
+    }
 
 #	    exit 1;
 	}

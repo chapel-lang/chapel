@@ -24,13 +24,13 @@ proc clusterFlags (
 
   //---- Create stack of unprocessed domains ----
   
-  var unprocessed_domain_stack = new Stack( domain(rank,stridable=true) );
+  var unprocessed_domain_stack = new unmanaged Stack( domain(rank,stridable=true) );
   unprocessed_domain_stack.push(full_domain);
   
   
   //---- List of finished domains ----
   
-  var finished_domain_list = new List( domain(rank, stridable=true) );
+  var finished_domain_list = new unmanaged List( domain(rank, stridable=true) );
   
   
   while !unprocessed_domain_stack.isEmpty()
@@ -39,7 +39,7 @@ proc clusterFlags (
     //---- Make the top domain a candidate ----
     
     var D = unprocessed_domain_stack.pop();
-    var candidate = new CandidateDomain(rank,D,flags(D),min_width);
+    var candidate = new unmanaged CandidateDomain(rank,D,flags(D),min_width);
     
     
     //===> If candidate is inefficient, then split ===>
@@ -96,38 +96,52 @@ proc clusterFlags (
 //| >    CandidateDomain class    | >
 //|/______________________________|/
 
+// helper class
+class ArrayWrapper
+{
+  var Domain: domain(1,stridable=true);
+  var array: [Domain] int;
+}
+
 class CandidateDomain {
   
   param rank:       int;
   const D:          domain(rank,stridable=true);
   const flags:      [D] bool;
   const min_width:  rank*int;
-  var   signatures: rank*ArrayWrapper;
-  
-  
-  class ArrayWrapper
-  {
-    var Domain: domain(1,stridable=true);
-    var array: [Domain] int;
-  }
-  
-  
-  
+  var   signatures: rank*unmanaged ArrayWrapper;
+
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
 
-  //------------------------------------------------------------------
-  // Currently forced to use initialize rather than a constructor, as
-  // this class is generic.
-  //------------------------------------------------------------------
-  
-  proc initialize ()
-  {
-    
+  //
+  // TODO: At present, the compiler-generated constructor for classes
+  // with array fields like this requires the actual that's passed to
+  // it to be a default rectangular array.  This is stricter than if
+  // the user wrote the equivalent initializer in which the actual to
+  // have the same formal type because we treat formal array arguments
+  // as being flexible if they don't name an explicit domain map.
+  // This causes issues once array operations like slices are not
+  // stored in closed form.  See issue #5289 for details.
+  //
+  // Once this issue is resolved and the compiler is generating
+  // similarly generic initializers, the changes that introduced this
+  // comment can/should be reverted (the introduction of the
+  // CandidateDomain() constructor below).
+  //
+  proc init(param rank: int,
+                       initD,
+                       initFlags,
+                       initMin_width) {
+    this.rank = rank;
+    D = initD;
+    flags = initFlags;
+    min_width = initMin_width;
+    this.complete();
     //---- Calculate signatures ----
     for d in 1..rank do
-      signatures(d) = new ArrayWrapper( {D.dim(d)} );
+      signatures(d) = new unmanaged ArrayWrapper( {D.dim(d)} );
       
     for idx in D 
     {
@@ -147,15 +161,15 @@ class CandidateDomain {
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
 
-  proc ~CandidateDomain ()
+  proc deinit ()
   { 
     for i in 1..rank do delete signatures(i);
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
 
 
@@ -224,7 +238,8 @@ proc CandidateDomain.trim()
       //---- Approximately center the enlarged range ----
       
       var n_overflow_low = (min_width(d) - R.length) / 2;
-      R = ((trim_low - n_overflow_low*stride .. by stride) #min_width(d)).alignHigh();
+      var tmp = ((trim_low - n_overflow_low*stride .. by stride) #min_width(d));
+      R = tmp.alignHigh();
 
 
       //---- Enforce bounds of D ----
@@ -414,7 +429,7 @@ proc CandidateDomain.inflectionCut ()
     
     if D.dim(d).length >= 4 {
 
-      var sig => signatures(d).array;
+      ref sig = signatures(d).array;
       var stride = D.stride(d);
 
       //===> Search for cuts ===>

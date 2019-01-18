@@ -1,0 +1,2 @@
+initWithTryCatch.chpl:7: In initializer:
+initWithTryCatch.chpl:8: error: Only catch-less try! statements are allowed in initializers for now

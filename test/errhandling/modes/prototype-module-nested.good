@@ -1,0 +1,3 @@
+prototype-module-nested.chpl:15: In function 'propError':
+prototype-module-nested.chpl:16: error: call to throwing function throwAnError without throws, try, or try! (relaxed mode)
+../ExampleErrors.chpl:1: note: throwing function throwAnError defined here

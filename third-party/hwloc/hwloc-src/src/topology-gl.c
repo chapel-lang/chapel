@@ -1,6 +1,6 @@
 /*
  * Copyright © 2012-2013 Blue Brain Project, BBP/EPFL. All rights reserved.
- * Copyright © 2012-2014 Inria.  All rights reserved.
+ * Copyright © 2012-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -124,8 +124,9 @@ hwloc_gl_query_devices(struct hwloc_gl_backend_data_s *data)
       info->pcifunc = nv_ctrl_pci_func;
       info->productname = productname;
 
-      hwloc_debug("GL device %s (product %s) on PCI 0000:%02x:%02x.%u\n", info->name, productname,
-		  nv_ctrl_pci_domain, nv_ctrl_pci_bus, nv_ctrl_pci_device, nv_ctrl_pci_func);
+      hwloc_debug("GL device %s (product %s) on PCI %04x:%02x:%02x.%01x\n",
+		  info->name, productname,
+		  (unsigned) nv_ctrl_pci_domain, (unsigned) nv_ctrl_pci_bus, (unsigned) nv_ctrl_pci_device, (unsigned) nv_ctrl_pci_func);
 
       /* validate this device */
       data->nr_display++;

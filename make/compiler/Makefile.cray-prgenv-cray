@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -18,8 +18,27 @@
 # Suppress warning about variables used before defined
 CRAYPE_GEN_CFLAGS = -hnomessage=7212
 
+# Suppress warnings about unsigned ints being compared to 0
+CRAYPE_GEN_CFLAGS += -hnomessage=186
+
+# Suppress warnings about needing the optimizer to handle
+# certain cases of __asm__
+CRAYPE_GEN_CFLAGS += -hnomessage=3140
+
+# Suppress warnings about floating-point value cannot be represented exactly.
+CRAYPE_GEN_CFLAGS += -hnomessage=1046
+
+# Suppress warnings about incompatible casts that are acceptable in other
+# settings.  Temporary fix for a ZMQ issue
+# https://github.com/chapel-lang/chapel/issues/9961
+CRAYPE_GEN_CFLAGS += -hnomessage=167
+
+# Could set CRAYPE_COMP_CXXFLAGS, CRAYPE_GEN_CFLAGS
+
 FAST_FLOAT_GEN_CFLAGS = -hfp2
 IEEE_FLOAT_GEN_CFLAGS = -hfp0
+
+CXX11_STD := -h std=c++11
 
 # If this is not a --fast compilation or OPTIMIZE=1 is not set, disable
 # optimizations for cce. This is done by default for other compilers and it
@@ -30,20 +49,15 @@ IEEE_FLOAT_GEN_CFLAGS = -hfp0
 # to add time. For Chapel codes, -O0 tends to give the fastest compile times,
 # which is why it is used here. -hdevelop is something to look at in the future
 # if execution time becomes too slow with -O0.
-ifneq ($(OPTIMIZE),1)
-CFLAGS += -O0
+NO_OPT_CFLAGS += -O0
+
+ifdef CHPL_COMM_DEBUG
+CHPL_GASNET_MORE_CFLAGS += -O0 -UNDEBUG
 endif
-
-#
-# The current Cray compiler does not compile GASNet cleanly, so we have
-# to compile GASNet code using the gnu version instead
-#
-MODULECMD = /opt/modules/$(MODULE_VERSION)/bin/modulecmd sh
-
-# this appears to not be needed recently
-# it was added in 2009, see a89bf917ae3102c7ce3544ac3be10b7b4e9fa76c
-#ENSURE_GASNET_COMPATIBLE_COMPILER = eval `$(MODULECMD) swap PrgEnv-cray PrgEnv-gnu` &&
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-prgenv
 
-
+# Certain versions of CCE have had difficulty with high levels of
+# interprocedural analysis.  We conservatively back off slightly in
+# case someone happens to be using one of those versions.
+OPT_CFLAGS += -hipa2

@@ -1,0 +1,4 @@
+bug: omitted initialization is not analyzed properly
+
+This test demonstrates that omitted initialization of a field can call a method
+without initializerRules catching it.

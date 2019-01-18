@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,9 +23,11 @@
 //
 #include "chplrt.h"
 #include "chpl-comm.h"
+#include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chpl-mem-consistency.h"
 
+#include <pthread.h>
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
@@ -77,39 +79,34 @@ void chpl_gen_stopCommDiagnosticsHere(void) {
 }
 
 
-size_t chpl_comm_getenvMaxHeapSize(void)
+static pthread_once_t maxHeapSize_once = PTHREAD_ONCE_INIT;
+static size_t maxHeapSize;
+
+static
+void set_maxHeapSize(void)
 {
-  char*  p;
-  static int    env_checked = 0;
-  static size_t size = 0;
+  const char* ev = "MAX_HEAP_SIZE";
 
-  if (env_checked)
-    return size;
-
-  if ((p = getenv("CHPL_RT_MAX_HEAP_SIZE")) != NULL) {
-    //
-    // The user specified a maximum size, so start with that.
-    //
-    int  num_scanned;
-    char units;
-
-    if ((num_scanned = sscanf(p, "%zi%c", &size, &units)) != 1) {
-      if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
-        switch (units) {
-        case 'k' : case 'K': size <<= 10; break;
-        case 'm' : case 'M': size <<= 20; break;
-        case 'g' : case 'G': size <<= 30; break;
-        }
-      }
-      else {
-        chpl_warning("Cannot parse CHPL_RT_MAX_HEAP_SIZE environment "
-                     "variable; assuming 1g", 0, 0);
-        size = ((size_t) 1) << 30;
-      }
-    }
+  int pct;
+  if ((pct = chpl_env_rt_get_int_pct(ev, -1, false /*doWarn*/)) > 0) {
+    const size_t sysMem = chpl_sys_physicalMemoryBytes();
+    maxHeapSize = (pct * sysMem + 50) / 100; // rounded percentage
+    return;
   }
 
-  env_checked = 1;
+  maxHeapSize = chpl_env_rt_get_size(ev, 0);
+}
 
-  return size;
+size_t chpl_comm_getenvMaxHeapSize(void)
+{
+  if (pthread_once(&maxHeapSize_once, set_maxHeapSize) != 0) {
+    chpl_internal_error("pthread_once(&maxHeapSize_once) failed");
+  }
+
+  return maxHeapSize;
+}
+
+
+void* chpl_get_global_serialize_table(int64_t idx) {
+  return chpl_global_serialize_table[idx];
 }

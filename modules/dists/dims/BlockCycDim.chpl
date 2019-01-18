@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,7 @@
 //
 
 use DimensionalDist2D;
-
+use RangeChunk only ;
 
 config const BlockCyclicDim_allowParLeader = true;
 config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for testing
@@ -33,26 +33,26 @@ type bcdPosInt = int;
 
 // chpldoc TODO
 // * Get the BlockCyclic distribution references to be presented
-//   as links. Currently they are not perhaps because chpldoc does not find
-//   that module while creating this documentation.
-//   Cf. it finds ReplicatedDist while processing ReplicatedDim.
-//   That is perhaps because the name of the class and the name of the file
-//   match in the ReplicatedDist case.
+//   as links. At some point in the past they were not perhaps because
+//   chpldoc did not find that module while creating this documentation.
+//   Cf. it found ReplicatedDist while processing ReplicatedDim.
+//   That may have been because the name of the class and the name of the file
+//   used to match in the ReplicatedDist case.
 //
 /*
 This Block-Cyclic dimension specifier is for use with the
 :class:`DimensionalDist2D` distribution.
 
 It specifies the mapping of indices in its dimension
-that would be produced by a 1D :class:`BlockCyclic` distribution.
+that would be produced by a 1D :class:`~BlockCycDist.BlockCyclic` distribution.
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The ``BlockCyclicDim`` class constructor is defined as follows:
+The ``BlockCyclicDim`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc BlockCyclicDim(
+    proc init(
       numLocales:   int,
       lowIdx:       int,
       blockSize:    int,
@@ -66,7 +66,7 @@ The arguments are as follows:
       to be distributed over
   ``lowIdx``, ``blockSize``
       are the counterparts to ``startIdx`` and ``blocksize``
-      in the :class:`BlockCyclic` distribution
+      in the :class:`~BlockCycDist.BlockCyclic` distribution
   ``name``
       may be used for debugging; it is ignored by the implementation
   ``cycleSizePos``
@@ -85,7 +85,7 @@ class BlockCyclicDim {
   // tell the compiler these are positive
   proc blockSizePos   return blockSize: bcdPosInt;
   proc numLocalesPos  return numLocales: bcdPosInt;
-  const cycleSizePos: bcdPosInt = blockSizePos * numLocalesPos;
+  const cycleSizePos: bcdPosInt = (blockSize:bcdPosInt) * (numLocales:bcdPosInt);
 }
 
 class BlockCyclic1dom {
@@ -100,7 +100,7 @@ class BlockCyclic1dom {
   proc rangeT type  return range(idxType, BoundedRangeType.bounded, stridable);
 
   // our range, normalized; its absolute stride
-  var wholeR: rangeT;
+  var wholeR: range(idxType, BoundedRangeType.bounded, stridable);
   var wholeRstrideAbs: idxType;
 
   // a copy of BlockCyclicDim constants
@@ -130,7 +130,7 @@ proc BlockCyclicDim.dsiGetPrivatizeData1d() {
 }
 
 proc BlockCyclicDim.dsiPrivatize1d(privatizeData) {
-  return new BlockCyclicDim(lowIdx = privatizeData(1),
+  return new unmanaged BlockCyclicDim(lowIdx = privatizeData(1),
                    blockSize = privatizeData(2),
                    numLocales = privatizeData(3),
                    name = privatizeData(4));
@@ -146,7 +146,7 @@ proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
 
 proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
-  return new BlockCyclic1dom(idxType   = this.idxType,
+  return new unmanaged BlockCyclic1dom(idxType   = this.idxType,
                   stoIndexT = this.stoIndexT,
                   stridable = this.stridable,
                   name            = privatizeData(5),
@@ -183,7 +183,7 @@ proc BlockCyclic1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false
 
 
 // Check all restrictions/assumptions that must be satisfied by the user
-// when constructing a 1-d BlockCyclic distribution.
+// when initializing a 1-d BlockCyclic distribution.
 inline proc BlockCyclicDim.checkInvariants() {
   assert(blockSize > 0, "BlockCyclic1d-blockSize");
   assert(numLocales > 0, "BlockCyclic1d-numLocales");
@@ -259,7 +259,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 
   _checkFitsWithin(adjLowIdx, idxType);
 
-  const result = new BlockCyclic1dom(idxType = idxType,
+  const result = new unmanaged BlockCyclic1dom(idxType = idxType,
                   stoIndexT = stoIndexT,
                   stridable = stridable,
                   adjLowIdx = adjLowIdx: idxType,
@@ -274,32 +274,11 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 proc BlockCyclic1dom.dsiIsReplicated1d() param return false;
 
 proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  const result = new BlockCyclic1locdom(idxType = this.idxType,
+  const result = new unmanaged BlockCyclic1locdom(idxType = this.idxType,
                              stoIndexT = stoIndexT,
                              locId = locId);
   return result;
 }
-
-proc BlockCyclic1dom.dsiBuildRectangularDom1d(DD,
-                                   param stridable:bool,
-                                   rangeArg: range(idxType,
-                                                   BoundedRangeType.bounded,
-                                                   stridable))
-{
-  // There does not seem to be any optimizations from merging the two calls.
-  const result = DD.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
-  result.dsiSetIndices1d(rangeArg);
-  return result;
-}
-
-proc BlockCyclic1locdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
-  assert(locId == this.locId);
-  // There does not seem to be any optimizations from merging the two calls.
-  const newLocDD = newGlobDD.dsiNewLocalDom1d(this.stoIndexT, locId);
-  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
-  return (newLocDD, newStoRng);
-}
-
 
 /////////////////////////////////
 
@@ -387,7 +366,7 @@ on each locale, then starts over:
  // the pair (locNo(j), storageOff(j)) is unique for each integer j
  storageOff(i) = cycNo(i) * blockSize + locOff(i)
 
-Advdanced: compress the storage based on the above advanced property,
+Advanced: compress the storage based on the above advanced property,
 which implies that:
  the pair (locNo(i), storageOff(i) div |wSt|) is unique
  for each 'i' - member of 'whole'.
@@ -398,7 +377,7 @@ where storagePerCycle is determined to ensure uniqueness of storageIdx(i)
 
  storagePerCycle
    = 1 + max(locOff(i) div |wSt|) for any i s.t.
-                                  whole.member(i)==true and locNo(i) is fixed
+                                  whole.contains(i)==true and locNo(i) is fixed
    approximated as: 1 + ( (max locOff(i) for any i) div |wSt| )
    = 1 + ((blockSize-1) div |wSt|)
 
@@ -418,7 +397,7 @@ to stay the same throughout the life of a domain descriptor.
 (This is so that our storage indices remain consistent - which is
 useful to implement Chapel's preservation of array contents upon
 domain assignments.)
-This implies that the same cycAdj should accomodate wLo for any
+This implies that the same cycAdj should accommodate wLo for any
 domain bounds that can be assigned to our domain descriptor.
 That may not be convenient in practice.
 */
@@ -685,9 +664,11 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
       halt("range with non-unit stride is cast to non-stridable range");
     r1._low       = r2._low: r1.idxType;
     r1._high      = r2._high: r1.idxType;
-    r1._stride    = r2._stride: r1.strType;
-    r1._alignment = r2._alignment: r1.idxType;
-    r1._aligned = r2._aligned;
+    if r1.stridable {
+      r1._stride  = r2.stride: r1.strType;
+      r1._alignment = r2._alignment: r1.idxType;
+      r1._aligned = r2._aligned;
+    }
   }
 
   // todo: make a cheaper densify() for this case, where
@@ -775,25 +756,9 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
 
   // Here is the densified range for all indices on this locale.
   const hereDenseInds = 0:resultIdxType..#wholeR.length by nLocs align AL;
-  const hereNumInds   = hereDenseInds.length;
-  const hereFirstInd  = hereDenseInds.first;
 
-  // This is our piece of hereNumInds
-  const (begNo,endNo) = _computeChunkStartEnd(hereNumInds, numTasks, taskid+1);
-
-  // Pick the corresponding part of hereDenseInds
-  const begIx = ( hereFirstInd + (begNo - 1) * nLocs ):resultIdxType;
-  const endIx = ( hereFirstInd + (endNo - 1) * nLocs ):resultIdxType;
-  assert(hereDenseInds.member(begIx));
-  assert(hereDenseInds.member(endIx));
-
-//writeln("MyDensifiedRangeForTaskID(", globDD.name, ") on ", locId,
-//        "  taskid ", taskid, " of ", numTasks, "  ", begIx, "...", endIx,
-//        "   fl=", firstLoc, " al=", AL,
-//        "  fullR ", hereDenseInds, " myR ", begIx .. endIx by nLocs,
-//        "");
-
-  return begIx .. endIx by nLocs;
+  // This is our chunk of hereDenseInds
+  return chunk(hereDenseInds, numTasks, taskid);
 }
 
 proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type

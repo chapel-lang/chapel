@@ -1,0 +1,13 @@
+class C {
+  var x:int;
+}
+
+proc getC type {
+  return C;
+}
+
+var x = new borrowed C(10);
+writeln(x);
+
+var y = new borrowed getC(10);
+writeln(y);

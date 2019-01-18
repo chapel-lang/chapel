@@ -1,0 +1,2 @@
+default_value_bad.chpl:13: error: unresolved call 'Foo.init("blah")'
+default_value_bad.chpl:7: note: candidates are: Foo.init(xVal = 3)

@@ -53,10 +53,10 @@ class Cyclic1DDist {
 
   //
   // an array of local distribution class descriptors -- set up in
-  // initialize() below
+  // initializer below
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method; would want to be able to use
+  // removing the initializer; would want to be able to use
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
@@ -72,15 +72,18 @@ class Cyclic1DDist {
   // but this doesn't work yet because an array forall initializer
   // apparently can't refer to a local member domain.
   //
-  const locDist: [targetLocDom] LocCyclic1DDist(glbIdxType);
+  const locDist: [targetLocDom] unmanaged LocCyclic1DDist(glbIdxType);
   //
   // WORKAROUND: Initialize in the constructor instead
   //
 
-  proc Cyclic1DDist(type glbIdxType = int(64),
-                  targetLocales: [?targetLocalesDomain] locale) {
+  proc init(type glbIdxType = int(64),
+            targetLocales: [?targetLocalesDomain] locale) {
     targetLocDom = targetLocalesDomain;
     targetLocs = targetLocales;
+
+    this.complete();
+
     //
     // WANT TO DO:
     /*
@@ -99,7 +102,13 @@ class Cyclic1DDist {
   proc helpConstruct() {
     for locid in targetLocDom do
       on targetLocs(locid) do
-        locDist(locid) = new LocCyclic1DDist(glbIdxType, locid, this);
+        locDist(locid) = new unmanaged LocCyclic1DDist(glbIdxType, locid, _to_unmanaged(this));
+  }
+
+  proc deinit() {
+    for locid in targetLocDom do
+      on targetLocs(locid) do
+        delete locDist(locid);
   }
   //
   // END WORKAROUND
@@ -125,7 +134,7 @@ class Cyclic1DDist {
   proc newDomain(inds, type idxType = glbIdxType) {
     // Note that I'm fixing the global and local index types to be the
     // same, but making this a generic function would fix this
-    return new Cyclic1DDom(idxType, this, inds);
+    return new unmanaged Cyclic1DDom(idxType, _to_unmanaged(this), inds);
   }
 
   //
@@ -183,17 +192,20 @@ class LocCyclic1DDist {
   // Compute what chunk of index(1) is owned by the current locale
   // Arguments:
   //
-  proc LocCyclic1DDist(type glbIdxType, 
-                     _locid: int, // the locale index from the target domain
-                     dist: Cyclic1DDist(glbIdxType) // reference to glob dist
+  proc init(type glbIdxType, 
+            _locid: int, // the locale index from the target domain
+            dist: unmanaged Cyclic1DDist(glbIdxType) // reference to glob dist
                      ) {
-    locid = _locid;
-    loc = dist.targetLocs(locid);
-    const locid0 = dist.targetLocDom.indexOrder(locid); // 0-based locale ID
+    this.glbIdxType = glbIdxType;
+
+    const locid0 = dist.targetLocDom.indexOrder(_locid); // 0-based locale ID
     const lo = min(glbIdxType) + locid0;
     const hi = max(glbIdxType);
     const numlocs = dist.targetLocDom.numIndices;
     myChunk = {lo..hi by numlocs};
+    locid = _locid;
+    loc = dist.targetLocs(locid);
+    this.complete();
     if debugCyclic1D then
       writeln("locale ", locid, " owns ", myChunk);
   }
@@ -216,7 +228,7 @@ class Cyclic1DDom {
   //
   // a pointer to the parent distribution
   //
-  const dist: Cyclic1DDist(glbIdxType);
+  const dist: unmanaged Cyclic1DDist(glbIdxType);
 
   //
   // a domain describing the complete domain
@@ -225,25 +237,36 @@ class Cyclic1DDom {
 
   //
   // an array of local domain class descriptors -- set up in
-  // initialize() below
+  // initializer below
   //
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method; would want to be able to use
+  // removing the initializer; would want to be able to use
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locDoms: [dist.targetLocDom] LocCyclic1DDom(glbIdxType);
+  var locDoms: [dist.targetLocDom] unmanaged LocCyclic1DDom(glbIdxType);
 
-  proc initialize() {
+  proc init(type idxType, myDist, myDom) {
+    glbIdxType = idxType;
+    dist = myDist;
+    whole = myDom;
+
+    this.complete();
     for locid in dist.targetLocDom do
       on dist.targetLocs(locid) do {
-        locDoms(locid) = new LocCyclic1DDom(glbIdxType, this, 
+        locDoms(locid) = new unmanaged LocCyclic1DDom(glbIdxType, _to_unmanaged(this), 
                                            dist.getChunk(whole, locid));
       }
     if debugCyclic1D then
       [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
+  }
+
+  proc deinit() {
+    for locid in dist.targetLocDom do
+      on dist.targetLocs(locid) do
+        delete locDoms(locid);
   }
 
   //
@@ -340,7 +363,7 @@ class Cyclic1DDom {
   // how to allocate a new array over this domain
   //
   proc newArray(type elemType) {
-    return new Cyclic1DArr(glbIdxType, elemType, this);
+    return new unmanaged Cyclic1DArr(glbIdxType, elemType, _to_unmanaged(this));
   }
 
   //
@@ -372,7 +395,7 @@ class LocCyclic1DDom {
   //
   // a reference to the parent global domain class
   //
-  const wholeDom: Cyclic1DDom(glbIdxType);
+  const wholeDom: unmanaged Cyclic1DDom(glbIdxType);
 
   //
   // a local domain describing the indices owned by this locale
@@ -448,7 +471,7 @@ class Cyclic1DArr {
   //
   // the global domain descriptor for this array
   //
-  var dom: Cyclic1DDom(glbIdxType);
+  var dom: unmanaged Cyclic1DDom(glbIdxType);
 
   //
   // an array of local array classes
@@ -459,12 +482,22 @@ class Cyclic1DArr {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locArr: [dom.dist.targetLocDom] LocCyclic1DArr(glbIdxType, elemType);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocCyclic1DArr(glbIdxType, elemType);
 
-  proc initialize() {
+  proc init(type idxType, type eltType, myDom) {
+    glbIdxType = idxType;
+    elemType = eltType;
+    dom = myDom;
+    this.complete();
     for locid in dom.dist.targetLocDom do
       on dom.dist.targetLocs(locid) do
-        locArr(locid) = new LocCyclic1DArr(glbIdxType, elemType, dom.locDoms(locid));
+        locArr(locid) = new unmanaged LocCyclic1DArr(glbIdxType, elemType, dom.locDoms(locid));
+  }
+
+  proc deinit() {
+    for locid in dom.dist.targetLocDom do
+      on dom.dist.targetLocs(locid) do
+        delete locArr(locid);
   }
 
   //
@@ -558,7 +591,7 @@ class LocCyclic1DArr {
   //
   // a reference to the local domain class for this array and locale
   //
-  const locDom: LocCyclic1DDom(glbIdxType);
+  const locDom: unmanaged LocCyclic1DDom(glbIdxType);
 
   //
   // the block of local array data

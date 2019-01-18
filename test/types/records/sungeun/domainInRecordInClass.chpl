@@ -7,8 +7,10 @@ class myC {
 }
 
 proc main {
-  var c = new myC();
+  var c = new unmanaged myC();
   writeln(c);
   c.r.d = {1..1};
   writeln(c);
+
+  delete c;
 }

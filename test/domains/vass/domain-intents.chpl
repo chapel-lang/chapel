@@ -3,7 +3,7 @@ var d2 = {11..111};
 writeln("2a ", d2);
 x2(d2);
 writeln("2d ", d2);
-proc x2( a2) {
+proc x2(ref a2) { // note, now same as x6
   writeln("2b ", a2);
   a2 = {1111..11111};
   writeln("2c ", a2);

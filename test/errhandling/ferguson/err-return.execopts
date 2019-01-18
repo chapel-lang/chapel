@@ -1,0 +1,4 @@
+--case=0 # err-return.0.good
+--case=1 # err-return.1.good
+--case=2 # err-return.2.good
+--case=3 # err-return.3.good

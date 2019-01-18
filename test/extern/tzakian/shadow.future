@@ -1,9 +1,0 @@
-bug: Shadowed functions from extern #include causes error in generated header
-
-Right now this generates a compile time error by gcc. 
-We would like Chapel to check to see if there is any shadowing and 
-error out before it goes through all the work of compiling it to C.
-The errors are: 
-error: conflicting types for 'foo'
-error: previous declaration of 'foo' was here
-

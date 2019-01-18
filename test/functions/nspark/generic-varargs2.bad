@@ -1,0 +1,2 @@
+generic-varargs2.chpl:15: error: unresolved call 'Foo.init(4, 8, 15, 16, 23, 42)'
+generic-varargs2.chpl:5: note: candidates are: Foo.init(args ..., type eltType = args.type )

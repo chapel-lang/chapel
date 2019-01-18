@@ -16,6 +16,5 @@ proc main() {
   for i in 2..#4 do write(i); writeln();
   for (i, j) in zip(1..10 by 3, 1..10 by -3) do write(i,j); writeln();
   var r = 1..10 by 2; for (i, j) in zip(1..10 by 2, r) do write(i, j); writeln();
-  coforall i in 5..5 do write(i); writeln();
   writeln();
 }

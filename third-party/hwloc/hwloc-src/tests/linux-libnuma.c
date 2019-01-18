@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -157,7 +157,7 @@ int main(void)
   node = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_NUMANODE, NULL);
   while (node && (!node->memory.local_memory || hwloc_bitmap_iszero(node->cpuset)))
     /* skip nodes with no cpus or no memory to avoid strange libnuma behaviors */
-    node = node->next_sibling;
+    node = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_NUMANODE, node);
   if (node) {
     /* convert first node between cpuset and libnuma */
     bitmask = hwloc_cpuset_to_linux_libnuma_bitmask(topology, node->cpuset);

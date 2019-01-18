@@ -1,0 +1,2 @@
+enum-functions-bad.chpl:1: In function 'main':
+enum-functions-bad.chpl:4: error: unresolved enumerated type symbol or call 'type digit.ten'

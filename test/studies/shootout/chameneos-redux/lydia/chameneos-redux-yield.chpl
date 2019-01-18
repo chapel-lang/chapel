@@ -12,14 +12,14 @@ extern proc chpl_task_yield();
       colors are the same, no change, otherwise each chameneos changes to the
       color you and your partner both are not.)
 
-    - (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
+    - (description of benchmark: http://benchmarksgame.alioth.debian.org/u32q/performance.php?test=chameneosredux */
 
 config const numMeetings = 6000000;  // number of meetings to take place
 config const numChameneos1 = 3;  // size of population 1
 config const numChameneos2 = 10; // size of population 2
 param numColors = 3;
 enum Color {blue=0, red=1, yellow=2};
-enum Digit {zero, one, two, three, four,
+enum Digit {zero=0, one, two, three, four,
             five, six, seven, eight, nine};
 config param CHAMENEOS_IDX_MASK = 0xFF;
 config param MEET_COUNT_SHIFT = 8;
@@ -29,7 +29,8 @@ class MeetingPlace {
 
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
-  proc MeetingPlace() {
+  proc init() {
+    this.complete();
     state.write(numMeetings << MEET_COUNT_SHIFT);
   }
 
@@ -83,7 +84,7 @@ class Chameneos {
      with another Chameneos.  If it does, it will get the other's color and
      use this color and its own to compute the color both will have after the
      meeting has ended, setting both of their colors to this value. */
-  proc start(population : [] Chameneos, meetingPlace: MeetingPlace) {
+  proc start(population : [] owned Chameneos, meetingPlace: MeetingPlace) {
     var stateTemp, peer_idx, xchg: int;
 
     stateTemp = meetingPlace.state.read(memory_order_acquire);
@@ -119,7 +120,7 @@ class Chameneos {
 
   /* Given the id of its peer, finds and updates the data of its peer and
      itself */
-  proc runMeeting (population : [] Chameneos, peer_idx) {
+  proc runMeeting (population : [] owned Chameneos, peer_idx) {
     var peer : Chameneos;
     var is_same : int;
     var newColor : Color;
@@ -159,15 +160,15 @@ proc populate (size : int) {
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
   const D : domain(1, int) = {1..size};
-  var population : [D] Chameneos;
+  var population : [D] owned Chameneos;
 
   if (size == 10) {
     for i in D {
-      population(i) = new Chameneos(i, colorsDefault10(i));
+      population(i) = new owned Chameneos(i, colorsDefault10(i));
     }
   } else {
     for i in D {
-      population(i) = new Chameneos(i, ((i-1) % numColors):Color);
+      population(i) = new owned Chameneos(i, ((i-1) % numColors):Color);
     }
   }
   return population;
@@ -178,7 +179,7 @@ proc populate (size : int) {
    met another Chameneos, spells out the number of times it met with itself,
    then spells out the total number of times all the Chameneos met
    another Chameneos. */
-proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
+proc run(population : [] owned Chameneos, meetingPlace : MeetingPlace) {
   for i in population {
     write(" ", i.color);
   }
@@ -191,7 +192,7 @@ proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
   meetingPlace.reset();
 }
 
-proc printInfo(population : [] Chameneos) {
+proc printInfo(population : [] owned Chameneos) {
   for i in population {
     write(i.meetings);
     spellInt(i.meetingsWithSelf);
@@ -205,7 +206,7 @@ proc printInfo(population : [] Chameneos) {
 proc spellInt(n : int) {
   var s : string = n:string;
   for i in 1..s.length {
-    write(" ", (s[i]:int + 1):Digit);
+    write(" ", (s[i]:int):Digit);
   }
   writeln();
 }
@@ -226,14 +227,5 @@ proc main() {
 
     run(population2, forest);
     printInfo(population2);
-
-    // clean up after ourselves
-    destroyChameneos(population1);
-    destroyChameneos(population2);
-    delete forest;
   }
-}
-
-proc destroyChameneos(ca: [] Chameneos) {
-  for c in ca do delete c;
 }

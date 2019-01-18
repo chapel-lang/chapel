@@ -1,9 +1,0 @@
-bug: Bulk transfer optimization does not work for Block distributed rank changed arrays with --disableAliasedBulkTransfer=false
-
-Bulk transfer for Block distribution does not work for rank changed
-arrays for which the last (right-most) dimension is a collapsed
-dimension.
-
-The --disableAliasedBulkTransfer config was added as a work around to
-this bug.  When it is fixed, it should be removed as should the
-.execopts file.

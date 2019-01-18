@@ -1,0 +1,5 @@
+perfkeys: Time:
+files: miniMD.20.dat
+graphkeys: miniMD runtime
+graphtitle: DOE: miniMD Time (sec) - size 20
+ylabel: Time (seconds)

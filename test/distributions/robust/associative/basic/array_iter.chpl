@@ -20,10 +20,10 @@ for i in D {
     DomStringType += s;
   }
 }
-QuickSort(ArithIntRef);
-QuickSort(ArithUintRef);
-QuickSort(ArithRealRef);
-if doString then QuickSort(ArithStringRef);
+quickSort(ArithIntRef);
+quickSort(ArithUintRef);
+quickSort(ArithRealRef);
+if doString then quickSort(ArithStringRef);
 if debug then writeln(DomIntType);
 if debug then writeln(ArithIntRef);
 if debug then writeln(DomUintType);
@@ -62,7 +62,7 @@ if doString {
 }
 
 proc testSerial(AAssoc, D, Arr, ArrRef) {
-  type idxType = AAssoc._value.dom.idxType;
+  type idxType = AAssoc.idxType;
   for aa in AAssoc {
     if idxType != string {
       var ai = aa;
@@ -75,7 +75,7 @@ proc testSerial(AAssoc, D, Arr, ArrRef) {
   }
   if debug then writeln(Arr);
   var success = true;
-  QuickSort(Arr);
+  quickSort(Arr);
   for i in D {
     if Arr(i) != ArrRef(i) {
       success = false;
@@ -88,7 +88,7 @@ proc testSerial(AAssoc, D, Arr, ArrRef) {
 
 // could probably use serial true on testSerial
 proc testParallel(AAssoc, D, Arr, ArrRef) {
-  type idxType = AAssoc._value.dom.idxType;
+  type idxType = AAssoc.idxType;
   forall aa in AAssoc {
     if idxType != string {
       var ai = aa;
@@ -101,7 +101,7 @@ proc testParallel(AAssoc, D, Arr, ArrRef) {
   }
   if debug then writeln(Arr);
   var success = true;
-  QuickSort(Arr);
+  quickSort(Arr);
   for i in D {
     if Arr(i) != ArrRef(i) {
       success = false;

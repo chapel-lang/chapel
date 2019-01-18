@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,12 +17,11 @@
  * limitations under the License.
  */
 
-// checkNormalized.cpp
-
 #include "passes.h"
 
-#include "expr.h"
 #include "astutil.h"
+#include "expr.h"
+#include "initializerRules.h"
 #include "stlUtil.h"
 
 
@@ -30,81 +29,68 @@ static void checkFunctionSignatures();
 static void checkPrimNew();
 
 
-void
-checkNormalized(void) {
+void checkNormalized() {
   checkFunctionSignatures();
   checkPrimNew();
 }
 
 
-static void checkFunctionSignatures()
-{
+static void checkFunctionSignatures() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isIterator()) {
-      if (fn->retTag == RET_TYPE)
+      if (fn->retTag == RET_TYPE) {
         USR_FATAL_CONT(fn, "iterators may not yield or return types");
-      if (fn->retTag == RET_PARAM)
-        USR_FATAL_CONT(fn, "iterators may not yield or return parameters");
-    } else if (fn->hasFlag(FLAG_CONSTRUCTOR) &&
-               !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-      if (fn->retExprType)
-        USR_FATAL_CONT(fn, "constructors may not declare a return type");
-      for_formals(formal, fn) {
-        std::vector<SymExpr*> symExprs;
-        collectSymExprs(formal, symExprs);
-        for_vector(SymExpr, se, symExprs) {
-          if (se->var == fn->_this) {
-            USR_FATAL_CONT(se, "invalid access of class member in constructor header");
-            break;
-          }
-        }
       }
-    } else if (fn->hasFlag(FLAG_DESTRUCTOR)) {
-      if (fn->retExprType)
+
+      if (fn->retTag == RET_PARAM) {
+        USR_FATAL_CONT(fn, "iterators may not yield or return parameters");
+      }
+
+    } else if (fn->hasFlag(FLAG_DESTRUCTOR) == true) {
+      if (fn->retExprType != NULL) {
         USR_FATAL_CONT(fn, "destructors may not declare a return type");
+      }
     }
   }
 }
 
+static void checkPrimNew() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->inTree() &&  call->isPrimitive(PRIM_NEW)) {
 
-static void checkPrimNew()
-{
-  forv_Vec(CallExpr, call, gCallExprs)
-  {
-    // Ignore calls that are not in the tree.
-    if (!call->parentSymbol)
-      continue;
+      if (call->numActuals() >= 1) {
+        Expr*    arg1     = call->get(1);
+        SymExpr* se       = toSymExpr(arg1);
+        Expr*    typeExpr = NULL;
 
-    // We are only interested in 'new' primitives.
-    if (!call->isPrimitive(PRIM_NEW))
-      continue;
+        // Extract the type expression
+        if (se != NULL && se->symbol() == gModuleToken) {
+          typeExpr = call->get(3);
+        } else {
+          typeExpr = call->get(1);
+        }
 
-    // The operand of a new should be a contructor call.
-    if (CallExpr* ctorCall = toCallExpr(call->get(1)))
-    {
-      if (isUnresolvedSymExpr(ctorCall->baseExpr))
-        // We can't know anything more about this symbol until resolution.
-        // So let it pass
-        continue;
+        if        (isUnresolvedSymExpr(typeExpr) == true) {
 
-      if (isTypeExpr(ctorCall))
-        // If we know the expression represents a type, that's also good.
-        continue;
+        } else if (isTypeExpr(typeExpr)          == true) {
 
-      if (ctorCall->baseExpr && isTypeExpr(ctorCall->baseExpr))
-        // This is of the form <type-expr>(<args>)
-        // That is, it looks like a constructor.
-        continue;
+        } else if (isCallExpr(typeExpr)          == true) {
 
-      // Fail by default
-      // (We may need additional filters above, to pass expected cases.)
-      USR_FATAL_CONT(call, "'new' must be followed by a type expression");
-    }
-    else
-    {
-      // 'new' must always have an operand.
-      USR_FATAL_CONT(call, "invalid use of 'new'");
+        } else if (SymExpr* se = toSymExpr(typeExpr)) {
+          if (se->symbol()->hasFlag(FLAG_MAYBE_TYPE) == false) {
+            USR_FATAL_CONT(call,
+                           "'new' must be followed by a type expression");
+          }
+
+        } else {
+          USR_FATAL_CONT(call, "'new' must be followed by a type expression");
+        }
+
+      } else {
+        USR_FATAL_CONT(call, "invalid use of 'new'");
+      }
     }
   }
+
   USR_STOP();
 }

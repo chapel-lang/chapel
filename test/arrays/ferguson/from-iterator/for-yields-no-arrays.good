@@ -1,0 +1,5 @@
+for-yields-no-arrays.chpl:23: warning: [domain(1,int(64),false)] [domain(1,int(64),false)] int(64)
+
+AA domain {1..0}
+AA (element) eltType domain {1..0}
+{1..0}

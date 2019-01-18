@@ -1,0 +1,2 @@
+--doThrow=false # defer-delete-throw-example.nothrow.good
+--doThrow=true  # defer-delete-throw-example.throw.good

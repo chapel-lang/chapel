@@ -1,0 +1,2 @@
+whereClauseNoFn3.chpl:1: In function 'foo':
+whereClauseNoFn3.chpl:1: error: unresolved call 'bar()'

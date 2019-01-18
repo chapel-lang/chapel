@@ -11,14 +11,14 @@ proc length(a) {
   return a.x * a.y;
 }
 
-var p : point = new point();
+var p : shared point = new shared point();
 
 p.x = 3.0;
 p.y = 4.5;
 
 writeln("p { ", p.x, ", ", p.y, " }");
 
-var cp : cpoint = new cpoint();
+var cp : shared cpoint = new shared cpoint();
 
 cp.color = 5;
 cp.x = 2.2;

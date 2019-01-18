@@ -48,6 +48,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
     }
 
 
+    delete Active_Level;
     Active_Level = Next_Level;
     Next_Level = new Level_Set (Vertex_List);
 
@@ -56,6 +57,8 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
   }
 
+  delete Active_Level;
+  delete Next_Level;
 }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -51,6 +51,10 @@ module ChapelTaskTable {
   // sort the tasks and indent to show the parent/child relationships, which
   // might be very nice.
   //
+  // This 'plain old data' pragma appears to be necessary for the following
+  // test to work: parallel/begin/stonea/reports.chpl
+  //
+  pragma "plain old data"
   record chpldev_Task {
     var state     : taskState;
     var lineno    : uint(32);
@@ -64,7 +68,7 @@ module ChapelTaskTable {
   }
   
   pragma "locale private"
-  var chpldev_taskTable : chpldev_taskTable_t;
+  var chpldev_taskTable : unmanaged chpldev_taskTable_t;
   
   //----------------------------------------------------------------------{
   //- Code to initialize the task table on each locale.
@@ -74,7 +78,7 @@ module ChapelTaskTable {
     // initialized late (after DefaultRectangular and most other
     // internal modules are already initialized)
     coforall loc in Locales with (ref chpldev_taskTable) do on loc {
-      chpldev_taskTable = new chpldev_taskTable_t();
+      chpldev_taskTable = new unmanaged chpldev_taskTable_t();
     }
   }
 
@@ -104,7 +108,7 @@ module ChapelTaskTable {
   {
     if (chpldev_taskTable == nil) then return;
   
-    if (!chpldev_taskTable.dom.member(taskID)) then
+    if (!chpldev_taskTable.dom.contains(taskID)) then
       // This must be serial, because if add() results in parallelism
       // (due to _resize), it may lead to deadlock (due to reentry
       // into the runtime tasking layer for task table operations).
@@ -118,7 +122,7 @@ module ChapelTaskTable {
   export proc chpldev_taskTable_remove(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.member(taskID)) then return;
+        !chpldev_taskTable.dom.contains(taskID)) then return;
   
     // This must be serial, because if remove() results in parallelism
     // (due to _resize), it may lead to deadlock (due to reentry into
@@ -130,7 +134,7 @@ module ChapelTaskTable {
   export proc chpldev_taskTable_set_active(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.member(taskID)) then return;
+        !chpldev_taskTable.dom.contains(taskID)) then return;
   
     chpldev_taskTable.map[taskID].state = taskState.active;
   }
@@ -138,7 +142,7 @@ module ChapelTaskTable {
   export proc chpldev_taskTable_set_suspended(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.member(taskID)) then return;
+        !chpldev_taskTable.dom.contains(taskID)) then return;
   
     chpldev_taskTable.map[taskID].state = taskState.suspended;
   }
@@ -146,7 +150,7 @@ module ChapelTaskTable {
   export proc chpldev_taskTable_get_tl_info(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.member(taskID)) then return 0:uint(64);
+        !chpldev_taskTable.dom.contains(taskID)) then return 0:uint(64);
   
     return chpldev_taskTable.map[taskID].tl_info;
   }
@@ -158,9 +162,11 @@ module ChapelTaskTable {
     if (chpldev_taskTable == nil) then return;
   
     for taskID in chpldev_taskTable.dom {
-      stderr.writeln("- ", chpl_lookupFilename(chpldev_taskTable.map[taskID].filename):string,
-                     ":",  chpldev_taskTable.map[taskID].lineno,
-                     " is ", chpldev_taskTable.map[taskID].state);
+      try! stderr.writeln(
+             "- ",
+             chpl_lookupFilename(chpldev_taskTable.map[taskID].filename):string,
+             ":",  chpldev_taskTable.map[taskID].lineno,
+             " is ", chpldev_taskTable.map[taskID].state);
     }
   }
   

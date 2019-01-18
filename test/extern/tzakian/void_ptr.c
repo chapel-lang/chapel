@@ -1,6 +1,6 @@
 #include "void_ptr.h"
 
 void* dumb(void){
-  void* g;
+  void* g = 0;
   return g;
 }

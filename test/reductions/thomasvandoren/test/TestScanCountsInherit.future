@@ -1,5 +1,0 @@
-feature request: user-defined reduction inheriting from a generic class
-
-While inheriting from a generic class often works, this case
-is running into some problem with the reduction part and
-failing to compile in the C compiler.

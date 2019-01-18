@@ -8,7 +8,7 @@ writeln("Number of points      = ", n);
 writeln("Random number seed    = ", seed);
 writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
 
-var rs = new NPBRandomStream(seed, parSafe=false);
+var rs = new owned NPBRandomStream(real, seed, parSafe=false);
 
 //
 // Distribute the domain representing the random points in a 
@@ -23,6 +23,3 @@ var count = + reduce [(x,y) in zip(rs.iterate(D), rs.iterate(D))]
                        (x**2 + y**2) <= 1.0;
 
 writef("Approximation of pi   = %{#.#######}\n", count * 4.0 / n);
-
-delete rs;
-

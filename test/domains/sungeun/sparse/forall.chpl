@@ -1,12 +1,23 @@
-config const n = 5000000;
+config const side   = 5000000;
+config const trials = 100;
+config const n      = 10000;
 
-const D = {1..n*n};
+const D = {1..side*side};
+var S : sparse subdomain(D);
 
-var D1: sparse subdomain(D);
-forall i in 0..n do
-  D1 += max(int)-i;
+// Run serial once to verify that there aren't out-of-bounds or other issues.
+test(true, 1);
+writeln("Serial Success");
+test(false, trials);
+writeln("Parallel Success");
 
-forall i in 0..n by -1 do
-  D1 -= max(int)-i;
-
-writeln(D1);
+proc test(param doSerial : bool, trials : int) {
+  for 1..trials {
+    S.clear();
+    serial doSerial {
+      forall i in 1..n with (ref S) do
+        S += i;
+    }
+    assert(S.size == n);
+  }
+}

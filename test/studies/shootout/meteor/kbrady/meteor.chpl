@@ -52,12 +52,11 @@ module meteor {
     NW=8,
     N=9,
     NE=10,
-    ENE=11,
-    PIVOT=12
+    ENE=11
   }
 
   use direction;  // make direction's symbols directly available to this scope
-  
+
   var pieceDef: [0..9][0..3] direction = [
     [  E,  E,   E, SE],
     [ SE,  E,  NE,  E],
@@ -87,12 +86,12 @@ module meteor {
 
   /* Returns the direction rotated 60 degrees clockwise */
   proc rotate(dir: direction) : direction {
-    return ((dir + 2) % PIVOT): direction;
+    return ((dir:int + 2) % direction.size): direction;
   }
 
   /* Returns the direction flipped on the horizontal axis */
   proc flip(dir: direction) : direction {
-    return ((PIVOT - dir) % PIVOT): direction;
+    return ((direction.size - dir:int) % direction.size): direction;
   }
 
   /* Returns the new cell index from the specified cell in the
@@ -155,7 +154,7 @@ module meteor {
     }
   }
 
-  /* Returns wether the specified cell and direction will land outside
+  /* Returns whether the specified cell and direction will land outside
    * of the board.  Used to determine if a piece is at a legal board
    * location or not.
    */
@@ -585,7 +584,7 @@ module meteor {
 
   proc main(args: [] string) {
     if args.domain.size > 1 then
-        maxSolutions = args[1]:int;
+        maxSolutions = try! args[1]:int;
     calcPieces();
     calcRows();
     solve(0, 0);

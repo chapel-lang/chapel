@@ -1,5 +1,6 @@
 proc f(x: [] int, y: [] int) where x.rank == 1 && y.rank == 1 {
-  return x+y;
+  var ret = x+y;
+  return ret;
 }
 
 var xx: [1..10] int = 1;

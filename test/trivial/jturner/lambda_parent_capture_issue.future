@@ -1,0 +1,3 @@
+semantic: overridden method refers to outer variables
+
+MPF 2016-10-28: I don't think that Chapel should support such programs.

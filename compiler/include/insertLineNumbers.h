@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,5 +29,7 @@ extern std::vector<std::string> gFilenameLookup;
 
 // Caches the location of filenames in gFilenameLookup
 extern std::map<std::string, int> gFilenameLookupCache;
+
+int getFilenameLookupPosition(std::string name);
 
 #endif //_INSERT_LINE_NUMBERS_H

@@ -88,11 +88,11 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
          (int) unbounded_channels,
          (int) reopen );
   }
-  free(fhints);
-  free(chhints);
+  qio_free(fhints);
+  qio_free(chhints);
 
-  chunk = malloc(chunksz);
-  got_chunk = malloc(chunksz);
+  chunk = qio_malloc(chunksz);
+  got_chunk = qio_malloc(chunksz);
 
   assert(chunk);
   assert(got_chunk);
@@ -279,8 +279,8 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
     unlink(filename);
   }
 
-  free(chunk);
-  free(got_chunk);
+  qio_free(chunk);
+  qio_free(got_chunk);
 }
 
 void check_channels(void)

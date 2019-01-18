@@ -1,0 +1,4 @@
+#!/bin/bash
+
+exe=./samplefile
+rm -f $exe ${exe}_real

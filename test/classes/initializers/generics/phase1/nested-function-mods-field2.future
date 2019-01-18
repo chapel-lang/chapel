@@ -1,0 +1,9 @@
+semantic: Should nested functions that modify fields be callable in Phase 1?
+
+I think the answer should be no, but I'm not sure how to distinguish nested
+functions that are valid to call in Phase 1 versus those that can only be called
+in Phase 2, especially if the nested function is "defined in Phase 2" (even
+though the definition point of a nested function is only meaningful in terms of
+whether the symbol is visible in that scope)
+
+Today params fail but the error message is not ideal.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,10 +22,8 @@
 
 class PhaseTracker;
 
-#include "vec.h"
-
 void runPasses(PhaseTracker& tracker, bool isChpldoc);
-void initLogFlags(Vec<char>&);
+void initPassesForLogging();
 
 extern int currentPassNo;
 

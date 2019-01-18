@@ -9,7 +9,7 @@ class CC : C {
 
 // The optimization passes should be able to determine that
 // p can alias q (because C inherits from CC or they are both objects)
-proc foo(n:int, ref p:CC, ref q:C)
+proc foo(n:int, ref p:borrowed CC, ref q:borrowed C)
 {
   if n <= 0 then return;
 
@@ -23,8 +23,8 @@ proc foo(n:int, ref p:CC, ref q:C)
 }
 
 proc doit() {
-  var p = new CC(0.0, 0);
-  var q = new C(1.0);
+  var p = new borrowed CC(0.0, 0);
+  var q = new borrowed C(1.0);
   foo(100, p, q);
   writeln("p=", p, " q=", q);
   p.x = 1.0; p.y = 0;

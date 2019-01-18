@@ -8,7 +8,7 @@ proc return_ref(ref r) ref
 proc myfunction() {
 
   var r:R;
-  r.init(x=1);
+  r.setup(x=1);
   r.verify();
 
   var r2:R;

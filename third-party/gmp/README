@@ -2,11 +2,10 @@
 GMP for Chapel release
 ======================
 
-This copy of GMP is being release with Chapel for convenience and uses
-a snapshot of GMP obtained from the GMP team at: http://gmplib.org
+This copy of GMP 6.1.2 is being released with Chapel for convenience and was
+obtained from:
 
-For more information on the current support for GMP within Chapel,
-please refer to the GMP module documentation available at:
- http://chapel.cray.com/docs/latest/modules/standard/GMP.html
-For more information about GMP itself, please refer to the website above
-or to the README in the gmp-*/ subdirectory of this directory.
+  http://gmplib.org
+
+Any Chapel issues that seem to be related to GMP should be directed
+to the Chapel team at https://chapel-lang.org/bugs.html.

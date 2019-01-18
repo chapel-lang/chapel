@@ -21,4 +21,4 @@ proc foo(x: real(?w), y: real(w)) {
   return x|y;
 }
 
-foo(1.1, 1:mybool.mytrue);
+foo(1.1, mybool.mytrue);

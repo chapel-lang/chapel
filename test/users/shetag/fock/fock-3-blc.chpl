@@ -13,7 +13,7 @@ var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType;
 
 config const numConsumers = max(1, (+ reduce Locales.maxTaskPar) - 1),
              poolSize = numConsumers;
-const t = new taskpool(poolSize);
+const t = new unmanaged taskpool(poolSize);
 
 proc buildjk() {
   cobegin {
@@ -61,7 +61,7 @@ iter genBlocks() {
       const lattop = if (kat==iat) then jat 
                                    else kat;
       for lat in 1..lattop do // sjd: changed forall to for because of yield
-        yield new blockIndices(iat, jat, kat, lat);
+        yield new unmanaged blockIndices(iat, jat, kat, lat);
     }
   for loc in 1..numConsumers do // sjd: changed forall to for because of yield
     yield nil;
@@ -106,17 +106,23 @@ proc buildjk_atom4(blk) {
   }
 
   var tmp = oneAtATime;
-  atomic jmat2(ijD) += jij;
-  atomic jmat2(klD) += jkl;
-  atomic kmat2(ikD) += kik;
-  atomic kmat2(ilD) += kil;
-  atomic kmat2(jkD) += kjk;
-  atomic kmat2(jlD) += kjl;
+  jmat2(ijD) += jij;
+  jmat2(klD) += jkl;
+  kmat2(ikD) += kik;
+  kmat2(ilD) += kil;
+  kmat2(jkD) += kjk;
+  kmat2(jlD) += kjl;
   oneAtATime = tmp;
+
+  delete blk;
 }
 
 proc main() {
   buildjk();
+}
+
+proc deinit() {
+  delete t;
 }
 
 }

@@ -4,15 +4,11 @@ record RECTYPE {
   var VARFIELD: int;
   const CONSTFIELD: int;
 
-  proc RECTYPE() {
+  proc init() {
     writeln("RECTYPE constructor");
     VARFIELD   = 200;
     CONSTFIELD = 300;
-    initRT();
-  }
-
-  proc initialize() {
-    writeln("RECTYPE.initialize()");
+    this.complete();
     initRT();
   }
 

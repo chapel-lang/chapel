@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Fuzz the calculated "average temperature" values in the test output file.
+
+# The ZMQ weather example/test program uses a pub/sub communication model.
+# A ZMQ pub/sub connection is inherently unreliable (like UDP, unlike TCP).
+# If one or more messages get dropped, the values of "average temperature"
+# will come out different than usual, and Chapel's automated test harness
+# will raise an error.
+
+# This prediff fuzzes the calculated data just enough so the test will pass,
+# even if a few ZMQ messages get dropped as described above.
+
+outfile=$2
+sort $outfile | sed -e 's, [0-9.+-]* F$, xx.x F,' > $outfile.tmp
+mv $outfile.tmp $outfile
+
+# Note: the corresponding weather.good file has been fuzzed to agree with
+# the test output, after this prediff.
+# FYI, here is the original test output from a normal weather.chpl test run
+# with no dropped messages (February, 2017)
+#
+# Average temperature for zipcode '10001' was 41 F
+# Average temperature for zipcode '60290' was 100.8 F
+# Average temperature for zipcode '90001' was 11.6 F
+# Average temperature for zipcode '20001' was 16.2 F

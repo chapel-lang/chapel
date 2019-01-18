@@ -1,0 +1,4 @@
+shadow-overload.chpl:11: In function 'shadow':
+shadow-overload.chpl:14: error: unresolved call 'R.shadow(10)'
+shadow-overload.chpl:5: note: candidates are: shadow(x)
+shadow-overload.chpl:11: note:                 R.shadow()

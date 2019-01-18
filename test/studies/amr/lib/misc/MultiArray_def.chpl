@@ -4,7 +4,7 @@ use MultiDomain_def;
 
 proc main {
   
-  var mD = new MultiDomain(2,false);
+  var mD = new unmanaged MultiDomain(2,false);
   mD.add( {1..12, 1..12} );
   mD.subtract( {3..5, 4..7} );
   mD.subtract( {4..9, 6..8} );
@@ -14,7 +14,7 @@ proc main {
 
 
   
-  var mA = new MultiArray(2,false,int);
+  var mA = new unmanaged MultiArray(2,false,int);
   mA.allocate( mD );
   
   var i = 0;
@@ -52,7 +52,8 @@ class MultiArray
   param stridable: bool;
   type  eltType;
   
-  var array_wrappers: List( ArrayWrapper );
+  var array_wrappers: unmanaged List( unmanaged ArrayWrapper(rank, stridable, eltType) ) =
+                  new unmanaged List( unmanaged ArrayWrapper(rank, stridable, eltType) );
 
 
 
@@ -64,15 +65,15 @@ class MultiArray
   
   class ArrayWrapper
   {
-    var Domain: domain(outer.rank, stridable=outer.stridable);
-    var array: [Domain] outer.eltType;
+    param rank: int;
+    param stridable: bool;
+    type  eltType;
+    var Domain: domain(rank, stridable=stridable);
+    var array: [Domain] eltType;
   }
 
 
-  proc initialize () { array_wrappers = new List(ArrayWrapper); }
-
-
-  proc ~MultiArray ()
+  proc deinit ()
   {
     for wrapper in array_wrappers do delete wrapper;
     delete array_wrappers;
@@ -104,9 +105,9 @@ class MultiArray
   //     array_wrappers.add( new ArrayWrapper(D) ); 
   // }
   
-  proc allocate ( mD: MultiDomain(rank,stridable) )
+  proc allocate ( mD: unmanaged MultiDomain(rank,stridable) )
   {
-    for D in mD do array_wrappers.add( new ArrayWrapper(D) ); 
+    for D in mD do array_wrappers.add( new unmanaged ArrayWrapper(rank, stridable, eltType, D) );
   }
   // /|'''''''''''''''''''''''''/|
   //< |    method: allocate    < |

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2009-2010 inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009 Université Bordeaux
  * See COPYING in top-level directory.
  */
@@ -77,5 +77,11 @@ typedef enum memalloc_policy {
 #define MADV_INSIST 2
 
 int nloc(numa_attr_t *numa_attr, radset_t radset);
+
+/* hide Linux' host disabling _SC_LARGE_PAGESIZE */
+#undef HAVE_DECL__SC_LARGE_PAGESIZE
+#define HAVE_DECL__SC_LARGE_PAGESIZE 1
+#undef _SC_LARGE_PAGESIZE
+#define _SC_LARGE_PAGESIZE 33
 
 #endif /* HWLOC_PORT_OSF_RADSET_H */

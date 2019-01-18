@@ -1,0 +1,3 @@
+rm gsl_demo
+chpl -o gsl_demo gsl_demo.chpl -I$GSL_DIR/include -L$GSL_DIR/lib
+./gsl_demo | diff - gsl_demo.good

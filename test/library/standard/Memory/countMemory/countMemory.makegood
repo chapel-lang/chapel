@@ -1,0 +1,65 @@
+#!/usr/bin/env perl
+
+$memoryInBytes  = int(@ARGV[0]);
+$memoryInKBytes = int($memoryInBytes  / 1024);
+$memoryInMBytes = int($memoryInKBytes / 1024);
+$memoryInGBytes = int($memoryInMBytes / 1024);
+
+print "memory is: $memoryInBytes\n";
+print " in bytes: $memoryInBytes\n";
+print "    in kb: $memoryInKBytes\n";
+print "    in mb: $memoryInMBytes\n";
+print "    in gb: $memoryInGBytes\n";
+
+print "memory is: $memoryInBytes\n";
+print " in bytes: $memoryInBytes\n";
+print "    in kb: $memoryInKBytes\n";
+print "    in mb: $memoryInMBytes\n";
+print "    in gb: $memoryInGBytes\n";
+
+print "memory is: $memoryInBytes\n";
+print " in bytes: $memoryInBytes\n";
+print "    in kb: $memoryInKBytes\n";
+print "    in mb: $memoryInMBytes\n";
+print "    in gb: $memoryInGBytes\n";
+
+$realMemInBytesVal  = $memoryInBytes;
+$realMemInKBytesVal = $realMemInBytesVal  / 1024;
+$realMemInMBytesVal = $realMemInKBytesVal / 1024;
+$realMemInGBytesVal = $realMemInMBytesVal / 1024;
+
+$realMemInBytes  = print_chapel_real($realMemInBytesVal);
+$realMemInKBytes = print_chapel_real($realMemInKBytesVal);
+$realMemInMBytes = print_chapel_real($realMemInMBytesVal);
+$realMemInGBytes = print_chapel_real($realMemInGBytesVal);
+			   
+printf "memory is: %s\n", $realMemInBytes;
+printf " in bytes: %s\n", $realMemInBytes;
+printf "    in kb: %s\n", $realMemInKBytes;
+printf "    in mb: %s\n", $realMemInMBytes;
+printf "    in gb: %s\n", $realMemInGBytes;
+
+#
+# This is for change the formatting of a float number
+# to the Chapel's formatting of reals
+#
+sub print_chapel_real{
+	$retVal = 0;
+	if( ($_[0] >= 100000.0) and ($_[0] < 1000000.0) ){
+		$retVal = sprintf("%.5e", $_[0]);
+		$retVal =~ s/0+e/e/; #for removing the zeroes
+	}
+	else {
+		$retVal = sprintf("%g", $_[0]);
+	}
+
+	#
+	# if a string is all digits, add a trailing .0 to match
+	# Chapel's default formatting of reals
+	#
+	if ($retVal =~ m/^\d+$/) {
+	    $retVal .= ".0";
+	}
+
+	return $retVal;
+}

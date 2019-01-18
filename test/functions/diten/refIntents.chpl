@@ -9,7 +9,7 @@ proc main {
       var a: int;
       var b: int;
     }
-    var c = new C(1,2);
+    var c = new unmanaged C(1,2);
     writeln(c);
     swap(c.a, c.b);
     writeln(c);

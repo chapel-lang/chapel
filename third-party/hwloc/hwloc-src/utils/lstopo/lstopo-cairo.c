@@ -1,7 +1,7 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
- * Copyright © 2009-2010, 2014 Université Bordeaux
+ * Copyright © 2009-2018 Inria.  All rights reserved.
+ * Copyright © 2009-2010, 2014, 2017 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
@@ -10,25 +10,24 @@
 
 #include <cairo.h>
 
-#if CAIRO_HAS_PDF_SURFACE
+#ifdef CAIRO_HAS_PDF_SURFACE
 #include <cairo-pdf.h>
 #endif /* CAIRO_HAS_PDF_SURFACE */
 
-#if CAIRO_HAS_PS_SURFACE
+#ifdef CAIRO_HAS_PS_SURFACE
 #include <cairo-ps.h>
 #endif /* CAIRO_HAS_PS_SURFACE */
 
-#if CAIRO_HAS_SVG_SURFACE
+#ifdef CAIRO_HAS_SVG_SURFACE
 #include <cairo-svg.h>
 #endif /* CAIRO_HAS_SVG_SURFACE */
 
 #ifndef HWLOC_HAVE_X11_KEYSYM
 /* In case X11 headers aren't availble, forcefully disable Cairo/Xlib.  */
 # undef CAIRO_HAS_XLIB_SURFACE
-# define CAIRO_HAS_XLIB_SURFACE 0
 #endif
 
-#if CAIRO_HAS_XLIB_SURFACE
+#ifdef CAIRO_HAS_XLIB_SURFACE
 #include <cairo-xlib.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -46,7 +45,7 @@
 
 #include "lstopo.h"
 
-#if (CAIRO_HAS_XLIB_SURFACE + CAIRO_HAS_PNG_FUNCTIONS + CAIRO_HAS_PDF_SURFACE + CAIRO_HAS_PS_SURFACE + CAIRO_HAS_SVG_SURFACE)
+#if (defined CAIRO_HAS_XLIB_SURFACE) + (defined CAIRO_HAS_PNG_FUNCTIONS) + (defined CAIRO_HAS_PDF_SURFACE) + (defined CAIRO_HAS_PS_SURFACE) + (defined CAIRO_HAS_SVG_SURFACE)
 struct lstopo_cairo_output {
   struct lstopo_output loutput; /* must be at the beginning */
   cairo_surface_t *surface;
@@ -111,7 +110,7 @@ topo_cairo_line(void *_output, int r, int g, int b, unsigned depth __hwloc_attri
 }
 
 static void
-topo_cairo_text(void *_output, int r, int g, int b, int fontsize, unsigned depth __hwloc_attribute_unused, unsigned x, unsigned y, const char *text)
+topo_cairo_text(void *_output, int r, int g, int b, unsigned depth __hwloc_attribute_unused, unsigned x, unsigned y, const char *text)
 {
   struct lstopo_cairo_output *coutput = _output;
   cairo_t *c = coutput->context;
@@ -125,7 +124,7 @@ topo_cairo_text(void *_output, int r, int g, int b, int fontsize, unsigned depth
 }
 
 static void
-topo_cairo_textsize(void *_output, const char *text, unsigned textlength __hwloc_attribute_unused, unsigned fontsize __hwloc_attribute_unused, unsigned *width)
+topo_cairo_textsize(void *_output, const char *text, unsigned textlength __hwloc_attribute_unused, unsigned *width)
 {
   struct lstopo_cairo_output *coutput = _output;
   cairo_t *c = coutput->context;
@@ -135,7 +134,7 @@ topo_cairo_textsize(void *_output, const char *text, unsigned textlength __hwloc
 }
 
 
-#if (CAIRO_HAS_PNG_FUNCTIONS + CAIRO_HAS_PDF_SURFACE + CAIRO_HAS_PS_SURFACE + CAIRO_HAS_SVG_SURFACE)
+#if (defined CAIRO_HAS_PNG_FUNCTIONS) + (defined CAIRO_HAS_PDF_SURFACE) + (defined CAIRO_HAS_PS_SURFACE) + (defined CAIRO_HAS_SVG_SURFACE)
 static cairo_status_t
 topo_cairo_write(void *closure, const unsigned char *data, unsigned int length)
 {
@@ -162,7 +161,7 @@ static void null_declare_color (void *output __hwloc_attribute_unused, int r __h
 #endif /* (CAIRO_HAS_XLIB_SURFACE + CAIRO_HAS_PNG_FUNCTIONS + CAIRO_HAS_PDF_SURFACE + CAIRO_HAS_PS_SURFACE + CAIRO_HAS_SVG_SURFACE) */
 
 
-#if CAIRO_HAS_XLIB_SURFACE
+#ifdef CAIRO_HAS_XLIB_SURFACE
 /* X11 back-end */
 static struct draw_methods x11_draw_methods;
 
@@ -212,6 +211,7 @@ x11_init(void *_disp)
   int scr;
   Screen *screen;
   int screen_width, screen_height;
+  unsigned int dpi_x, dpi_y, dpi;
 
   /* create the toplevel window */
   if (!(dpy = XOpenDisplay(NULL))) {
@@ -222,6 +222,15 @@ x11_init(void *_disp)
   disp->dpy = dpy;
   disp->scr = scr = DefaultScreen(dpy);
   screen = ScreenOfDisplay(dpy, scr);
+
+  /* 25.4mm per inch */
+  dpi_x = ((double) DisplayWidth(dpy, scr) * 25.4) / DisplayWidthMM(dpy, scr);
+  dpi_y = ((double) DisplayHeight(dpy, scr) * 25.4) / DisplayHeightMM(dpy, scr);
+  dpi = (dpi_x + dpi_y) / 2;
+
+  /* Original values for fontsize/gridsize were tuned for 96dpi */
+  fontsize = (fontsize * dpi) / 96;
+  gridsize = (gridsize * dpi) / 96;
 
   /* compute the maximal needed size using the root window */
   root = RootWindow(dpy, scr);
@@ -239,12 +248,14 @@ x11_init(void *_disp)
   disp->top = top = XCreateSimpleWindow(dpy, root, 0, 0, screen_width, screen_height, 0, WhitePixel(dpy, scr), WhitePixel(dpy, scr));
   XStoreName(dpy, top, "lstopo");
   XSetIconName(dpy, top, "lstopo");
-  XSelectInput(dpy,top, StructureNotifyMask);
+  XSelectInput(dpy,top, StructureNotifyMask | KeyPressMask);
 
   if (screen_width >= screen->width)
     screen_width = screen->width;
   if (screen_height >= screen->height)
     screen_height = screen->height;
+  disp->last_screen_width = 0;
+  disp->last_screen_height = 0;
   disp->screen_width = screen_width;
   disp->screen_height = screen_height;
   disp->width = coutput->max_x;
@@ -306,7 +317,7 @@ move_x11(struct lstopo_x11_output *disp)
     disp->coutput.max_x = 0;
     disp->coutput.max_y = 0;
     topo_cairo_paint(&disp->coutput);
-    if (disp->coutput.max_x > disp->width || disp->coutput.max_y > disp->height) {
+    if (disp->coutput.max_x > (unsigned) disp->width || disp->coutput.max_y > (unsigned) disp->height) {
       /* need to extend the window and redraw */
       x11_destroy(disp);
       x11_create(disp, disp->coutput.max_x, disp->coutput.max_y);
@@ -336,7 +347,7 @@ move_x11(struct lstopo_x11_output *disp)
 }
 
 void
-output_x11(struct lstopo_output *loutput, const char *filename)
+output_x11(struct lstopo_output *loutput, const char *filename __hwloc_attribute_unused)
 {
   struct lstopo_x11_output _disp, *disp = &_disp;
   struct lstopo_cairo_output *coutput;
@@ -385,12 +396,15 @@ output_x11(struct lstopo_output *loutput, const char *filename)
 	float wscale, hscale;
 	disp->screen_width = e.xconfigure.width;
 	disp->screen_height = e.xconfigure.height;
-	wscale = disp->screen_width / (float)disp->width;
-	hscale = disp->screen_height / (float)disp->height;
-	disp->scale *= wscale > hscale ? hscale : wscale;
-	if (disp->scale < 1.0f)
-	  disp->scale = 1.0f;
-	move_x11(disp);
+	if (disp->screen_width != disp->last_screen_width
+	    || disp->screen_height != disp->last_screen_height) {
+	  wscale = disp->screen_width / (float)disp->width;
+	  hscale = disp->screen_height / (float)disp->height;
+	  disp->scale *= wscale > hscale ? hscale : wscale;
+	  if (disp->scale < 1.0f)
+	    disp->scale = 1.0f;
+	  move_x11(disp);
+	}
 	if (disp->x != lastx || disp->y != lasty)
 	  XMoveWindow(disp->dpy, disp->win, -disp->x, -disp->y);
 	break;
@@ -497,7 +511,7 @@ output_x11(struct lstopo_output *loutput, const char *filename)
 #endif /* CAIRO_HAS_XLIB_SURFACE */
 
 
-#if CAIRO_HAS_PNG_FUNCTIONS
+#ifdef CAIRO_HAS_PNG_FUNCTIONS
 /* PNG back-end */
 static struct draw_methods png_draw_methods;
 
@@ -560,7 +574,7 @@ output_png(struct lstopo_output *loutput, const char *filename)
 #endif /* CAIRO_HAS_PNG_FUNCTIONS */
 
 
-#if CAIRO_HAS_PDF_SURFACE
+#ifdef CAIRO_HAS_PDF_SURFACE
 /* PDF back-end */
 static struct draw_methods pdf_draw_methods;
 
@@ -623,7 +637,7 @@ output_pdf(struct lstopo_output *loutput, const char *filename)
 #endif /* CAIRO_HAS_PDF_SURFACE */
 
 
-#if CAIRO_HAS_PS_SURFACE
+#ifdef CAIRO_HAS_PS_SURFACE
 /* PS back-end */
 static struct draw_methods ps_draw_methods;
 
@@ -686,7 +700,7 @@ output_ps(struct lstopo_output *loutput, const char *filename)
 #endif /* CAIRO_HAS_PS_SURFACE */
 
 
-#if CAIRO_HAS_SVG_SURFACE
+#ifdef CAIRO_HAS_SVG_SURFACE
 /* SVG back-end */
 static struct draw_methods svg_draw_methods;
 

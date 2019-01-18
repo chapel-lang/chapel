@@ -1,0 +1,11 @@
+This directory contains performance tests of comm counts.
+These also have a correctness component and are meant to fail
+correctness testing if the comm counts rise above a certain maximum.
+
+For performance testing, these generate quite a few graphs in
+different configurations. The gengraphs.bash script generates
+most of the required performance testing files.
+
+To run performance testing in this directory, do:
+
+  start_test -performance -perflabel cc-  .

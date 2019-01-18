@@ -1,0 +1,4 @@
+color1.chpl --no-warnings
+color2.chpl --no-warnings
+color3.chpl --no-warnings
+

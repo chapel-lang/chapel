@@ -1,1 +1,0 @@
-bug: reference count becomes negative with ref A = returnArray()

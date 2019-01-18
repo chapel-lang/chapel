@@ -346,11 +346,3 @@ proc printResults(successful, execTime) {
     writeln("Performance (Gflop/s) = ", 5 * (m * n / execTime) * 1e-9);
   }
 }
-
-proc tmp_localSlice(A, rng) {
-  var low: A.rank*A._value.idxType;
-  for param i in 1..A.rank {
-    low(i) = rng.low;
-  }
-  return A._value.locArr(A._value.dom.dist.idxToLocaleInd(low)).myElems(rng);
-}

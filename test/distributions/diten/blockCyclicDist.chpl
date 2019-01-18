@@ -42,7 +42,7 @@ class BlockCyclicDist {
   }
 
   proc buildDomain(d: domain(nDims)) {
-    return new BlockCyclicDom(nDims, idxType, d, this);
+    return new unmanaged BlockCyclicDom(nDims, idxType, d, _to_unmanaged(this));
   }
 
 }
@@ -51,9 +51,9 @@ class BlockCyclicDom {
   param nDims: int = 2;
   type idxType;
   const whole: domain(nDims, idxType);
-  const dist: BlockCyclicDist(idxType);
-  const locDoms: [dist.localeDomain] LocBlockCyclicDom(nDims, idxType);
-  proc initialize() {
+  const dist: unmanaged BlockCyclicDist(idxType);
+  var locDoms: [dist.localeDomain] unmanaged LocBlockCyclicDom(nDims, idxType);
+  proc postinit() {
     var blksInDim: nDims*idxType;
     for i in 1..nDims {
       blksInDim(i) = ceil(whole.dim(i).length:real(64) /
@@ -78,14 +78,20 @@ class BlockCyclicDom {
         for i in 1..nDims {
           locRanges(i) = 1..locSize(i);
         }
-        locDoms(pos) = new LocBlockCyclicDom(nDims, idxType, this, locRanges);
+        locDoms(pos) = new unmanaged LocBlockCyclicDom(nDims, idxType, _to_unmanaged(this), locRanges);
       }
       //writeln(pos, locSize);
     }
   }
 
+  proc deinit() {
+    for loc in dist.localeDomain do
+      on dist.locales(loc) do
+        delete locDoms(loc);
+  }
+
   proc buildArray(type eltType) {
-    return new BlockCyclicArr(nDims, idxType, eltType, this);
+    return new unmanaged BlockCyclicArr(nDims, idxType, eltType, _to_unmanaged(this));
   }
 
 }
@@ -94,10 +100,10 @@ class BlockCyclicDom {
 class LocBlockCyclicDom {
   param nDims: int;
   type idxType;
-  const whole: BlockCyclicDom(nDims, idxType);
+  const whole: unmanaged BlockCyclicDom(nDims, idxType);
   const locRanges: nDims*range(idxType, BoundedRangeType.bounded);
   const locDom: domain(nDims);
-  proc initialize() {
+  proc postinit() {
     locDom.setIndices(locRanges);
   }
 }
@@ -107,15 +113,21 @@ class BlockCyclicArr {
   param nDims: int;
   type idxType;
   type eltType;
-  const dom: BlockCyclicDom(nDims, idxType);
-  const locArrs: [dom.dist.localeDomain] LocBlockCyclicArr(nDims, idxType, eltType);
-  proc initialize() {
+  const dom: unmanaged BlockCyclicDom(nDims, idxType);
+  var locArrs: [dom.dist.localeDomain] unmanaged LocBlockCyclicArr(nDims, idxType, eltType);
+  proc postinit() {
     for ind in dom.dist.localeDomain {
       on dom.dist.locales(ind) {
-        locArrs(ind) = new LocBlockCyclicArr(nDims, idxType, eltType, this, dom.locDoms(ind));
+        locArrs(ind) = new unmanaged LocBlockCyclicArr(nDims, idxType, eltType, _to_unmanaged(this), dom.locDoms(ind));
       }
     }
   }
+  proc deinit() {
+    for ind in dom.dist.localeDomain do
+      on dom.dist.locales(ind) do
+        delete locArrs(ind);
+  }
+
   proc this(ind:idxType...nDims) ref {
     return locArrs(dom.dist.idxToLocaleInd((...ind))).arr(dom.dist.getLocalPosition((...ind)));
   }
@@ -125,8 +137,8 @@ class LocBlockCyclicArr {
   param nDims: int;
   type idxType;
   type eltType;
-  const whole: BlockCyclicArr(nDims, idxType, eltType);
-  const locDom: LocBlockCyclicDom(nDims, idxType);
+  const whole: unmanaged BlockCyclicArr(nDims, idxType, eltType);
+  const locDom: unmanaged LocBlockCyclicDom(nDims, idxType);
   const arr: [locDom.locDom] eltType;
 }
 
@@ -140,7 +152,7 @@ proc main {
 
   [(i,j) in locDom] locs(i,j) = Locales((i*n + j) % numLocales);
 
-  var dist = new BlockCyclicDist(idxType=int, nDims=2,
+  var dist = new unmanaged BlockCyclicDist(idxType=int, nDims=2,
                                    blockSize=(2,2), startLoc=(0,0),
                                    localeDomain=locDom, locales=locs);
   var dom = dist.buildDomain(undistributedDom);
@@ -152,4 +164,7 @@ proc main {
     writeln((i,j), " ", arr(i,j));
     //writeln((i,j), " ", arr(i,j), " ", arr(i,j).locale);
   }
+  delete arr;
+  delete dom;
+  delete dist;
 }

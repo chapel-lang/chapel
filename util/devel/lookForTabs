@@ -5,27 +5,18 @@
 # directory
 #
 
-pushd $CHPL_HOME >& /dev/null
+cd $CHPL_HOME >& /dev/null
 
-find compiler \
-    -type d -name .svn -prune -o \
-    -name bison-chapel.cpp -prune -o \
-    -name bison-chapel.h   -prune -o \
-    -name flex-chapel.cpp  -prune -o \
-    -name flex-chapel.h    -prune -o \
-    \( -name \*.lex -o -name \*.y -o -name \*.ypp -o -name \*.h -o -name \*.c -o -name \*.cpp \) \
-    -exec grep -n --with-filename $'\t' {} \;
+git grep -n $'\t' -- ':!*bison-chapel.cpp' ':!*bison-chapel.h' \
+                     ':!*flex-chapel.cpp'  ':!*flex-chapel.h'  \
+                     'compiler/*.lex'      'compiler/*.y'      \
+                     'compiler/*.ypp'      'compiler/*.h'      \
+                     'compiler/*.c'        'compiler/*.cpp'
 
-find runtime \
-    -type d -name .svn -prune -o \
-    \( -name \*.h -o -name \*.c -o -name \*.cpp \) \
-    -exec grep -n --with-filename $'\t' {} \;
+git grep -n $'\t' -- 'runtime/*.h' 'runtime/*.c' 'runtime/*.cpp'
 
-find modules \
-    -type d -name .svn -prune -o \
-    -name \*.chpl \
-    -exec grep -n --with-filename $'\t' {} \;
+git grep -n $'\t' -- 'modules/*.chpl'
 
-popd >& /dev/null
-
-exit
+git grep -n $'\t' -- 'tools/*.c'   'tools/*.h'    'tools/*.H'   \
+                     'tools/*.cxx' 'tools/*.chpl' 'tools/*.rst' \
+                     'tools/*.sh'  'tools/*.py'

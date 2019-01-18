@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,11 +25,10 @@
 #include <stdint.h>
 
 size_t chpl_getSysPageSize(void);
-size_t chpl_getHeapPageSize(void);
-uint64_t chpl_bytesPerLocale(void);
-size_t chpl_bytesAvailOnThisLocale(void);
-int chpl_getNumPhysicalCpus(chpl_bool accessible_only);
-int chpl_getNumLogicalCpus(chpl_bool accessible_only);
+size_t chpl_getHeapPageSize(void); // note: only works after mem layer inited
+uint64_t chpl_sys_physicalMemoryBytes(void);
+int chpl_sys_getNumCPUsPhysical(chpl_bool accessible_only);
+int chpl_sys_getNumCPUsLogical(chpl_bool accessible_only);
 
 void chpl_moveToLastCPU(void);
 

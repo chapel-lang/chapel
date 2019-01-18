@@ -6,14 +6,14 @@ class foo {
   }
 }
 
-var f = new foo(int);
+var f1 = new unmanaged foo(int);
+var f2 = new unmanaged foo(string);
 
-var f2 = new foo(string);
-
-f.x = 2;
-
+f1.x = 2;
 f2.x = "hello world";
 
-f.print();
-
+f1.print();
 f2.print();
+
+delete f2;
+delete f1;

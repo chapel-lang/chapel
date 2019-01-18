@@ -1,0 +1,2 @@
+loopTopLevel.chpl:4: In initializer:
+loopTopLevel.chpl:14: error: use of this.init() call in loop body

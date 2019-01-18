@@ -8,7 +8,7 @@ proc main() {
     writeln(x.locale);
   }
 
-  local on LM.getChild(0) {
+  local do on LM.getChild(0) {
     writeln(x.locale);
   }
 }

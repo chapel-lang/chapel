@@ -1,1 +1,0 @@
-continueInForall.chpl:3: error: continue is not allowed in forall statement [build.cpp:75]

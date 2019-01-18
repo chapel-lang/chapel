@@ -1,0 +1,15 @@
+paramFormalInForall.chpl:8: In function 'fun1':
+paramFormalInForall.chpl:10: warning: 5
+paramFormalInForall.chpl:11: warning: 5
+paramFormalInForall.chpl:3: In function 'fun2':
+paramFormalInForall.chpl:4: warning: 5
+fun2 5
+fun2 5
+fun2 5
+fun2 5
+fun2 5
+fun2 5
+fun2 5
+fun2 5
+fun2 5
+fun2 5

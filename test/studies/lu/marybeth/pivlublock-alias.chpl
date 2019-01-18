@@ -34,10 +34,10 @@ writeln(A);
 for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds) 
   in IterateByBlocks(A1D,blk) {
   
-  var A1 => A[UnfactoredInds,CurrentBlockInds];
-  var A2 => A[UnfactoredInds,TrailingBlockInds];
-  var A12 => A[CurrentBlockInds,TrailingBlockInds];
-  var A22 => A[TrailingBlockInds,TrailingBlockInds];
+  ref A1 = A[UnfactoredInds,CurrentBlockInds];
+  ref A2 = A[UnfactoredInds,TrailingBlockInds];
+  ref A12 = A[CurrentBlockInds,TrailingBlockInds];
+  ref A22 = A[TrailingBlockInds,TrailingBlockInds];
 
 // LU factorization of A1 
   for k in CurrentBlockInds {

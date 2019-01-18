@@ -1,4 +1,4 @@
-use CommDiagnostics;
+use CommUtil;
 
 
 config const n = 100000;
@@ -10,8 +10,7 @@ for i in 1..n {
   A[i] = i;
 }
 
-resetCommDiagnostics();
-startCommDiagnostics();
+start();
 
 on Locales[1] {
   var B: [1..n] int;
@@ -20,9 +19,9 @@ on Locales[1] {
   saveBn = B[n];
 }
 
-stopCommDiagnostics();
+stop();
 
 writeln(saveB1);
 writeln(saveBn);
 
-writeln(getCommDiagnostics());
+report(maxPuts=2, maxOns=1);

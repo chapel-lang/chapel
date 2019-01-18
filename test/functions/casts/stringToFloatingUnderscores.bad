@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from string '1_2.3_4e5' to real(64)
+  stringToFloatingUnderscores.chpl:2: thrown here
+  stringToFloatingUnderscores.chpl:2: uncaught here

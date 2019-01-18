@@ -1,8 +1,11 @@
-.TH "hwlocality_creation" 3 "Thu Dec 17 2015" "Version 1.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_creation" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_creation \- Topology Creation and Destruction
+hwlocality_creation
+.SH SYNOPSIS
+.br
+.PP
 .SS "Typedefs"
 
 .in +1c
@@ -74,7 +77,14 @@ Terminate and free a topology context\&.
 .PP
 Duplicate a topology\&. The entire topology structure as well as its objects are duplicated into a new one\&.
 .PP
-This is useful for keeping a backup while modifying a topology\&. 
+This is useful for keeping a backup while modifying a topology\&.
+.PP
+\fBNote:\fP
+.RS 4
+Object userdata is not duplicated since hwloc does not know what it point to\&. The objects of both old and new topologies will point to the same userdata\&. 
+.RE
+.PP
+
 .SS "int hwloc_topology_init (\fBhwloc_topology_t\fP * topologyp)"
 
 .PP
@@ -111,6 +121,8 @@ Build the actual topology\&. Build the actual topology once initialized with \fB
 On failure, the topology is reinitialized\&. It should be either destroyed with \fBhwloc_topology_destroy()\fP or configured and loaded again\&.
 .PP
 This function may be called only once per topology\&.
+.PP
+The binding of the current thread or process may temporarily change during this call but it will be restored before it returns\&.
 .RE
 .PP
 \fBSee also:\fP

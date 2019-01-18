@@ -7,7 +7,7 @@ use LevelBC_def;
 //|/_________________________________________________|/
 
 proc LevelSolution.advance_DiffusionBE(
-  bc:             LevelBC,
+  bc:             unmanaged LevelBC,
   diffusivity:    real,
   time_requested: real,
   dt_max:         real)
@@ -51,14 +51,14 @@ proc LevelSolution.advance_DiffusionBE(
 //|/______________________________________________|/
 
 proc LevelSolution.step_DiffusionBE(
-  bc:           LevelBC,
+  bc:           unmanaged LevelBC,
   diffusivity:  real,
   dt:           real,
   tolerance:    real)
 {
 
   //==== Set rhs ====
-  var rhs = new LevelVariable(level = level);
+  var rhs = new unmanaged LevelVariable(level = level);
   bc.apply(current_data, current_time+dt);
   rhs.storeFluxDivergence(current_data, diffusivity);
   for grid in level.grids do rhs(grid,grid.cells) *= -dt;
@@ -78,7 +78,7 @@ proc LevelSolution.step_DiffusionBE(
   old_time = current_time;
   current_time += dt;
   
-
+  delete rhs;
 }
 // /|""""""""""""""""""""""""""""""""""""""""""""""/|
 //< |    LevelSolution.step_DiffusionBE method    < |

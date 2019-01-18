@@ -1,0 +1,5 @@
+perfkeys: Performance (GB/sec) =
+files: ptrans-n2000-nb100.dat
+graphkeys: ptrans GB/s
+graphtitle: HPCC: PTRANS Perf (GB/sec) - n=2,000, nb=100
+ylabel: Performance (GB/sec)

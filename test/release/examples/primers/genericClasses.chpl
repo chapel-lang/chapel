@@ -1,9 +1,8 @@
+// Generic Classes and Records
+
 /*
- * Generic Classes Primer
- *
- * This primer covers generic class types.
- *
- */
+   This primer covers generic classes and records.
+*/
 
 //
 // A class is generic if it contains a type alias, contains a field
@@ -21,7 +20,7 @@ class ParamField {
   var tup: p*int;
 }
 
-class UntypedField {
+record UntypedField {
   var a;
 }
 
@@ -33,26 +32,26 @@ class UntypedField {
 // instantiated using the types of the arguments representing the
 // generic fields in the default constructor.
 //
-var taf  = new TypeAliasField(real, 1.0, 2.0);
-var taf2 = new TypeAliasField(int, 3, 4);
+var taf  = new owned TypeAliasField(real, 1.0, 2.0);
+var taf2 = new owned TypeAliasField(int, 3, 4);
 writeln("taf = ", taf, ", taf2 = ", taf2);
 
-var pf  = new ParamField(3);
-var pf2 = new ParamField(2);
+var pf  = new owned ParamField(3);
+var pf2 = new owned ParamField(2);
 writeln("pf = ", pf, ", pf2 = ", pf2);
 
 var uf  = new UntypedField(3.14 + 2.72i);
-var uf2 = new UntypedField(new ParamField(2));
+var uf2 = new UntypedField(new owned ParamField(2));
 writeln("uf = ", uf, ", uf2 = ", uf2);
 
 //
 // To specify a generic class type (without creating an instance),
-// don't use the new keyword and just specify the generic arguments.
+// don't use the ``new`` keyword and just specify the generic arguments.
 // For fields that have no types, specify a type for that field,
 // instead of a value.
 //
-var taf3: TypeAliasField(real);
-var pf3: ParamField(3);
+var taf3: borrowed TypeAliasField(real);
+var pf3: borrowed ParamField(3);
 var uf3: UntypedField(complex);
 
 taf3 = taf;

@@ -1,0 +1,4 @@
+-scomparator=empty
+-scomparator=wrong
+-scomparator=keyargs
+-scomparator=compareargs

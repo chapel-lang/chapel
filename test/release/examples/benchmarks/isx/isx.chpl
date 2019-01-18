@@ -15,9 +15,9 @@
 
 //
 // We want to use block-distributed arrays (BlockDist), barrier
-// synchronization (Barrier), and timers (Time).
+// synchronization (Barriers), and timers (Time).
 //
-use BlockDist, Barrier, Time;
+use BlockDist, Barriers, Time;
 
 //
 // The type of key to use when sorting.
@@ -138,7 +138,7 @@ if printConfig then
 
 
 
-const LocTaskSpace = {0..#numTasks};
+const LocTaskSpace  = {0..#numTasks};
 const DistTaskSpace = LocTaskSpace dmapped Block(LocTaskSpace);
 
 var allBucketKeys: [DistTaskSpace] [0..#recvBuffSize] keyType;
@@ -172,8 +172,6 @@ proc main() {
 
   if printTimings then
     printTimingData("locales");
-
-  delete barrier;
 }
 
 
@@ -316,8 +314,8 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
   ref myBucket = allBucketKeys[taskID];
   for i in 0..#myBucketSize {
     const key = myBucket[i];
-    if !myKeys.member(key) then
-      halt("got key value outside my range: "+key + " not in " + myKeys);
+    if !myKeys.contains(key) then
+      halt("got key value outside my range: "+key + " not in " + myKeys:string);
   }
 
   //
@@ -349,32 +347,19 @@ proc makeInput(taskID, myKeys) {
   if (debug) then
     writeln(taskID, ": Initializing random stream with seed = ", taskID);
 
-  var MyRandStream = new RandomStream(seed = taskID,
-                                      parSafe=false,
-                                      eltType = keyType);
-
+  var pcg : pcg_setseq_64_xsh_rr_32_rng;
+  const tid = taskID:uint(64);
+  const inc = pcg_getvalid_inc(tid);
+  pcg.srandom(tid, inc);
   //
   // Fill local array
   //
 
-  //
-  // The following code ensures that the value we get from the stream
-  // is in [0, maKeyVal) before storing it to key.  This is tricky when
-  // maxKeyVal isn't a power of two and so we take some care to keep the
-  // value distributed evenly.
-  //
-  const maxModdableKeyVal = max(keyType) - max(keyType)%maxKeyVal;
-  for key in myKeys do
-    do {
-      key = MyRandStream.getNext();
-      if key <= maxModdableKeyVal
-        then key %= maxKeyVal;
-    } while (key >= maxKeyVal || key < 0);
+  for key in myKeys do key = pcg.bounded_random(inc, maxKeyVal:uint(32)):keyType;
     
   if (debug) then
     writeln(taskID, ": myKeys: ", myKeys);
 
-  delete MyRandStream;
 }
 
 
@@ -444,24 +429,23 @@ proc printTimeTable(timeTable, units, timerName) {
 }
 
 //
-// print timing statistics (avg/min/max across tasks of min across
-// trials)
+// print timing statistics (avg/min/max across tasks and trials)
 //
 proc printTimingStats(timeTable, timerName) {
-  var minMinTime, maxMinTime, totMinTime: real;
+  var minTime = max(real),
+      maxTime = min(real),
+      totTime: real;
 
   //
-  // iterate over the buckets, computing the min/max/total of the
-  // min times across trials.
+  // iterate over the buckets, computing the min/max/total
   //
-  forall timings in timeTable with (min reduce minMinTime,
-                                    max reduce maxMinTime,
-                                    + reduce totMinTime) {
-    const minTime = min reduce timings;
-    totMinTime += minTime;
-    minMinTime = min(minMinTime, minTime);
-    maxMinTime = max(maxMinTime, minTime);
+  forall timings in timeTable with (min reduce minTime,
+                                    max reduce maxTime,
+                                    + reduce totTime) {
+    totTime += + reduce timings;
+    minTime = min(minTime, min reduce timings);
+    maxTime = max(maxTime, max reduce timings);
   }
-  var avgTime = totMinTime / numTasks;
-  writeln(timerName, " = ", avgTime, " (", minMinTime, "..", maxMinTime, ")");
+  var avgTime = totTime / (numTasks * numTrials) ;
+  writeln(timerName, " = ", avgTime, " (", minTime, "..", maxTime, ")");
 }

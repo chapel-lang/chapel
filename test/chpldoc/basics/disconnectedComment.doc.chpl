@@ -6,7 +6,7 @@ module unattached {
 
   }
 
-  /* This comment should be attached to the method */
+  /* This comment should be attached to the function */
 
   proc commentLess() {
 
@@ -20,7 +20,7 @@ module unattached {
   }
 
   /* This comment also should be attached, even though
-     it is further away from the method */
+     it is further away from the function */
 
 
 
@@ -50,7 +50,7 @@ module unattached {
     writeln(val);
   }
 
-  /* This comment should not be attached, even after all methods are defined */
+  /* This comment should not be attached, even after all functions are defined */
 
 }
 

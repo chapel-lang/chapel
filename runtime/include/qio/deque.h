@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -31,10 +31,6 @@
 #ifndef _DEQUE_H_
 #define _DEQUE_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "sys_basic.h"
 #include "qio_error.h"
 
@@ -49,9 +45,14 @@ extern "C" {
 #define deque_free(ptr) chpl_mem_free(ptr, 0, 0)
 #define deque_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
 #else
-#define deque_calloc(nmemb, size) calloc(nmemb,size)
-#define deque_free(ptr) free(ptr)
+#include "chpl-mem-sys.h"
+#define deque_calloc(nmemb, size) sys_calloc(nmemb,size)
+#define deque_free(ptr) sys_free(ptr)
 #define deque_memcpy(dest, src, num) memcpy(dest, src, num)
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 typedef struct deque_node_s {

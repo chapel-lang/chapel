@@ -6,7 +6,7 @@ class C {
   var i: int;
 }
 
-var c = new C();
+var c = new borrowed C();
 
 forall i in D {
   writeln(c.i);

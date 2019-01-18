@@ -1,0 +1,3 @@
+_owned(Foo(1))
+_owned(Foo(3))
+_owned(Foo(3))

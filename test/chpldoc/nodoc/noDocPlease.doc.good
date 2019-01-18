@@ -1,6 +1,21 @@
+.. default-domain:: chpl
+
+.. module:: Foo
+
 Foo
-   config var blah4: int
-   proc d()
-   Class: bar
-      var showMe: bool
-cat: docs/toBeIgnored.txt: No such file or directory
+===
+**Usage**
+
+.. code-block:: chapel
+
+   use Foo;
+
+.. data:: config var blah4: int
+
+.. function:: proc d()
+
+.. class:: bar
+
+   .. attribute:: var showMe: bool
+
+cat: docs/source/modules/toBeIgnored.rst: No such file or directory

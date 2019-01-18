@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# PrgEnv settings for Cray X series (XC, XE, XK, XT)
+# PrgEnv settings for Cray X series (XC, XE, XK)
 
 # This file is not used for Cray CS machines
 
@@ -33,21 +33,12 @@ RANLIB = ranlib
 # flags
 #
 
-# gcc 5.1 introduced a new libstdc++ ABI to conform with the C11 standard, but
-# it is incompatible with the old ABI. If Chapel third-party/runtime C++ code
-# (e.g. re2) is built with the new ABI, the generated code must also use the
-# new ABI or we'll get link errors. However, it's possible for a user to use an
-# older version of gcc than the one used to build the runtime/third-party, so
-# we force the use of the old ABI so our libs can be linked with code that's
-# using either ABI.
-CXXFLAGS += -D_GLIBCXX_USE_CXX11_ABI=0
-
 DEBUG_CFLAGS = -g
 OPT_CFLAGS = -O3
 
-COMP_CFLAGS = $(CFLAGS) $(CRAYPE_COMP_CFLAGS)
-RUNTIME_CFLAGS += $(CFLAGS)
-RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
+COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS) $(CRAYPE_COMP_CXXFLAGS)
+RUNTIME_CFLAGS += $(CPPFLAGS) $(CFLAGS)
+RUNTIME_CXXFLAGS += $(CPPFLAGS) $(CXXFLAGS)
 GEN_CFLAGS += $(CFLAGS) $(CRAYPE_GEN_CFLAGS)
 GEN_LFLAGS += $(LFLAGS)
 GEN_STATIC_FLAG = -static
@@ -55,8 +46,24 @@ GEN_DYNAMIC_FLAG = -dynamic
 LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
 
+#
+# Normally we let the PrgEnv compilers choose the linking mode, but in
+# some circumstances we push dynamic linking as the default.
+#
+ifneq ($(CHPL_MAKE_LOCALE_MODEL), flat)
+# With locale models other than 'flat' we will need libnuma.  That is
+# so far available only in .so form, so override them in this case.
+RUNTIME_LFLAGS += -dynamic
+else ifeq ($(CHPL_MAKE_COMM), ofi)
+# libfabric calls dlopen() and getaddrinfo().  With static linking, the
+# references to these cause link-time warnings that the corresponding
+# dynamic libraries will be required at execution time, so default to
+# dynamic linking to avoid these warnings.
+RUNTIME_LFLAGS += -dynamic
+endif
+
 # Don't throw e.g. -march with a PrgEnv compiler since the PrgEnv environment
-# will take care of that Since we want to be able to get other flags from e.g.
+# will take care of that. Since we want to be able to get other flags from e.g.
 # Makefile.intel, here we replace SPECIALIZE_CFLAGS with nothing.
 SPECIALIZE_CFLAGS =
 
@@ -68,22 +75,4 @@ SPECIALIZE_CFLAGS =
 
 export PE_PKGCONFIG_PRODUCTS := PE_CHAPEL:$(PE_PKGCONFIG_PRODUCTS)
 export PE_CHAPEL_MODULE_NAME := chapel
-
-# ugni and gasnet-{aries, gemini} require pmi and ugni
-ifeq ($(CHPL_MAKE_COMM), ugni)
-export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
-endif
-ifeq ($(CHPL_MAKE_COMM), gasnet)
-ifneq (,$(filter $(CHPL_MAKE_COMM_SUBSTRATE),gemini aries))
-export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
-endif
-endif
-
-# on login/compute nodes, lustre requires the devel api to make
-# lustre/lustreapi.h available (it's implicitly available on esl nodes)
-ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))
-HAVE_LUSTRE_API_DEVEL_STATUS=$(shell pkg-config --libs cray-lustre-api-devel &>/dev/null; echo $$?)
-ifeq ($(HAVE_LUSTRE_API_DEVEL_STATUS), 0)
-export PE_CHAPEL_PKGCONFIG_LIBS := cray-lustre-api-devel:$(PE_CHAPEL_PKGCONFIG_LIBS)
-endif
-endif
+export PE_CHAPEL_PKGCONFIG_LIBS := $(shell $(CHPL_MAKE_HOME)/util/config/gather-pe-chapel-pkgconfig-libs.bash "$(CHPL_MAKE_COMM)" "$(CHPL_MAKE_COMM_SUBSTRATE)" "$(CHPL_MAKE_AUXFS)")

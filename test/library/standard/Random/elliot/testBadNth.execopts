@@ -1,0 +1,4 @@
+--useNPB=true   --getNth=true  # testBadNth.npb.get.good
+--useNPB=true   --getNth=false # testBadNth.npb.skip.good
+--useNPB=false  --getNth=true  # testBadNth.pcg.get.good
+--useNPB=false  --getNth=false # testBadNth.pcg.skip.good

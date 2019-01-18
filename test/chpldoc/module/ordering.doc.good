@@ -1,6 +1,20 @@
-ordering.doc
-   proc second()
-      This is a proc... 
+.. default-domain:: chpl
 
-   config var first: string
-      This config var should be awesome. 
+.. module:: ordering.doc
+
+ordering.doc
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use ordering.doc;
+
+.. function:: proc second()
+
+   This is a proc... 
+
+.. data:: config var first: string
+
+   This config var should be awesome. 
+

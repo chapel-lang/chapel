@@ -21,8 +21,12 @@ variable-declaration-statement:
 config-or-extern: one of
   `config' $ $ $ $ `extern'
 
-variable-kind: one of
-  `param' $ $ $ $ `const' $ $ $ $ `var'
+variable-kind:
+  `param'
+  `const'
+  `var'
+  `ref'
+  `const ref'
 
 variable-declaration-list:
   variable-declaration
@@ -31,10 +35,9 @@ variable-declaration-list:
 variable-declaration:
   identifier-list type-part[OPT] initialization-part
   identifier-list type-part no-initialization-part[OPT]
-  array-alias-declaration
 
 type-part:
-  : type-specifier
+  : type-expression
 
 initialization-part:
   = expression
@@ -68,18 +71,25 @@ Section~\rsec{Configuration_Variables}.  The optional keyword \chpl{extern}
 indicates that the variable is externally defined.  Its name and type are used
 within the Chapel program for resolution, but no space is allocated for it and
 no initialization code emitted.
+See \rsec{Shared_Data} for further details.
 
 The \sntx{variable-kind} specifies whether the variables are
-parameters (\chpl{param}), constants (\chpl{const}), or regular
+parameters (\chpl{param}), constants (\chpl{const}),
+ref variables (\chpl{ref}), or regular
 variables (\chpl{var}).  Parameters are compile-time constants whereas
 constants are runtime constants.  Both levels of constants are
 discussed in~\rsec{Constants}.
+Ref variables are discussed in \rsec{Ref_Variables}.
 
 The \sntx{type-part} of a variable declaration specifies the type of
 the variable.  It is optional if the \sntx{initialization-part} is
 specified.  If the \sntx{type-part} is omitted, the type of the
 variable is inferred using local type inference described
-in~\rsec{Local_Type_Inference}.
+in~\rsec{Local_Type_Inference}. If the \sntx{type-part} refers
+to a generic type, then an \sntx{initialization-part} is required
+and will be used to determine the type of the variable. In this event,
+the compiler will fail with an error if the \sntx{initialization-part} is
+not coercible to an instantiation of the generic type.
 
 The \sntx{initialization-part} of a variable declaration specifies an
 initial expression to assign to the variable.  If
@@ -99,9 +109,6 @@ and/or \sntx{type-part} is defined in~\rsec{Multiple_Variable_Declarations}.
 
 Multiple variables can be grouped together using a tuple notation as
 described in~\rsec{Variable_Declarations_in_a_Tuple}.
-
-The \sntx{array-alias-declaration} is defined
-in~\rsec{Array_Aliases}.
 
 \subsection{Default Initialization}
 \label{Default_Values_For_Types}
@@ -136,20 +143,6 @@ atomic & base default value \\
 \end{tabular}
 \end{center}
 
-\begin{openissue}
-In the case that the first enumerator in an enumeration type is offset
-from zero, as in
-\begin{example}
-enum foo \{ red = 0xff0000, green = 0xff00, blue = 0xff \} ;
-\end{example}
-the compiler has to look up the first named type to see what to use as
-the default.  
-
-An alternative would be to specify that the default
-value is the enumerator whose underlying value is zero.  But that approach also
-has issues, since the default value does not conform to any named enumerator.
-\end{openissue}
-
 \subsection{Deferred Initialization}
 \label{Noinit_Capability}
 \index{noinit}
@@ -182,14 +175,10 @@ var v = e;
 \end{chapel}
 is equivalent to
 \begin{chapel}
-var v: e.type;
-v = e;
+var v: e.type = e;
 \end{chapel}
-for an arbitrary expression \chpl{e}.  For expressions of sync or
-single type, this translation does not hold because the evaluation
-of \chpl{e} results in a default read of this expression.  The type of
-the variable is thus equal to the base type of the sync or single
-expression.
+for an arbitrary expression \chpl{e}.  If \chpl{e} is of sync or
+single type, the type of \chpl{v} is the base type of \chpl{e}.
 
 \subsection{Multiple Variable Declarations}
 \label{Multiple_Variable_Declarations}
@@ -308,10 +297,10 @@ A local variable only exists during the execution of code that lies
 within that block statement.  This time is called the lifetime of the
 variable.  When execution has finished within that block statement,
 the local variable and the storage it represents is removed.
-Variables of class type are the sole exception.  Constructors of class
+Variables of class type are the sole exception.  Initializers of class
 types create storage that is not associated with any scope.  Such
 storage can be reclaimed as described
-in~\rsec{Dynamic_Memory_Management}.
+in~\rsec{Class_Delete}.
 
 \section{Constants}
 \label{Constants}
@@ -369,10 +358,10 @@ Parameter expressions are restricted to the following constructs:
 \index{constants}
 \index{const@\chpl{const}}
 
-Runtime constants, or simply ``constants'',
-do not have the restrictions that are associated with
-parameters.  Constants can be of any type.  They require an initialization
-expression and contain the value of that expression throughout their lifetime.
+Runtime constants, or simply ``constants'', do not have the
+restrictions that are associated with parameters.  Constants can be of
+any type.  Whether initialized explicitly or via its type's default
+value, a constant stores the same value throughout its lifetime.
 
 A variable of a class type that is a constant is a constant reference.
 That is, the variable always
@@ -414,11 +403,74 @@ writeln(rank);
 \begin{chapeloutput}
 2
 \end{chapeloutput}
-sets a integer parameter \chpl{rank} to \chpl{2}.  At
-compile-time, \chpl{rank} can be set via a configuration file or compile-line
-override to \chpl{3} or \chpl{2*n}\footnote{It is assumed here that \chpl{n} is
-also a param variable.} or indeed to any other expression
-that can be evaluated at compile-time.  The value supplied at compile time
-overrides the value \chpl{2} appearing in the code.  In this example, the \chpl{rank}
+sets an integer parameter \chpl{rank} to \chpl{2}.
+At compile-time, this default value of \chpl{rank} can be overridden
+with another parameter expression, such as \chpl{3} or \chpl{2*n},
+provided \chpl{n} itself is a parameter. The \chpl{rank}
 configuration variable can be used to write rank-independent code.
+\end{chapelexample}
+
+\section{Ref Variables}
+\label{Ref_Variables}
+\index{variables!ref}
+\index{ref@\chpl{ref}}
+
+A \emph{ref} variable is a variable declared using the \chpl{ref} keyword.
+A ref variable serves as an alias to another variable, field or array element.
+The declaration of a ref variable must contain \sntx{initialization-part},
+which specifies what is to be aliased and can be a variable
+or any lvalue expression.
+
+Access or update to a ref variable is equivalent to access or update
+to the variable being aliased. For example, an update to a ref variable
+is visible via the original variable, and visa versa.
+
+If the expression being aliased is a runtime constant variable,
+a formal argument with a \chpl{const ref} concrete intent
+(\rsec{Concrete Intents}), or a call to a function with a \chpl{const ref}
+return intent (\rsec{Const_Ref_Return_Intent}), the corresponding
+ref variable must be declared as \chpl{const ref}.
+Parameter constants and expressions cannot be aliased.
+
+\begin{openissue}
+The behavior of a \chpl{const ref} alias to a non-\chpl{const} variable
+is an open issue. The options include disallowing such an alias,
+disallowing changes to the variable while it can be accessed via
+a \chpl{const ref} alias, making changes visible through the alias,
+and making the behavior undefined.
+\end{openissue}
+
+\begin{chapelexample}{refVariables.chpl}
+For example, the following code:
+
+\begin{chapel}
+var myInt = 51;
+ref refInt = myInt;                   // alias of a local or global variable
+myInt = 62;
+writeln("refInt = ", refInt);
+refInt = 73;
+writeln("myInt = ", myInt);
+
+var myArr: [1..3] int = 51;
+proc arrayElement(i) ref  return myArr[i];
+ref refToExpr = arrayElement(3);      // alias to lvalue returned by a function
+myArr[3] = 62;
+writeln("refToExpr = ", refToExpr);
+refToExpr = 73;
+writeln("myArr[3] = ", myArr[3]);
+
+const constArr: [1..3] int = 51..53;
+const ref myConstRef = constArr[2];   // would be an error without 'const'
+writeln("myConstRef = ", myConstRef);
+\end{chapel}
+
+prints out:
+
+\begin{chapelprintoutput}{}
+refInt = 62
+myInt = 73
+refToExpr = 62
+myArr[3] = 73
+myConstRef = 52
+\end{chapelprintoutput}
 \end{chapelexample}

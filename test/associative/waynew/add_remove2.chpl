@@ -23,8 +23,9 @@ icheck(6);
 icheck(4);
 intd.add((4,4));
 icheck(4);
-intd.remove((53, 0));
+const retval = intd.remove((53, 0));
+writeln("# ind removed: ", retval);
 
 proc icheck( i:int) {
-  writeln( "member(", (i,i), ") = ", intd.member( (i,i)));
+  writeln( "contains(", (i,i), ") = ", intd.contains( (i,i)));
 }

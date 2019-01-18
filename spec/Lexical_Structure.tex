@@ -125,6 +125,7 @@ The following identifiers are reserved as keywords:
 \begin{chapel}
 _
 align
+as
 atomic
 begin
 break
@@ -142,6 +143,7 @@ do
 domain
 else
 enum
+except
 export
 extern
 for
@@ -161,6 +163,7 @@ new
 nil
 noinit
 on
+only
 otherwise
 out
 param
@@ -171,6 +174,7 @@ public
 record
 reduce
 ref
+require
 return
 scan
 select
@@ -188,6 +192,7 @@ var
 when
 where
 while
+with
 yield
 zip
 \end{chapel} \\
@@ -243,25 +248,49 @@ integer-literal:
 
 digits:
   digit
-  digit digits
+  digit separator-digits
+
+separator-digits:
+  digit
+  `_'
+  digit separator-digits
+  `_' separator-digits
 
 hexadecimal-digits:
   hexadecimal-digit
-  hexadecimal-digit hexadecimal-digits
+  hexadecimal-digit separator-hexadecimal-digits
+
+separator-hexadecimal-digits:
+  hexadecimal-digit
+  `_'
+  hexadecimal-digit separator-hexadecimal-digits
+  `_' separator-hexadecimal-digits
 
 hexadecimal-digit: one of
   `0' `1' `2' `3' `4' `5' `6' `7' `8' `9' `A' `B' `C' `D' `E' `F' `a' `b' `c' `d' `e' `f'
 
 octal-digits:
   octal-digit
-  octal-digit octal-digits
+  octal-digit separator-octal-digits
+
+separator-octal-digits:
+  octal-digit
+  `_'
+  octal-digit separator-octal-digits
+  `_' separator-octal-digits
 
 octal-digit: one of
   `0' `1' `2' `3' `4' `5' `6' `7'
 
 binary-digits:
   binary-digit
-  binary-digit binary-digits
+  binary-digit separator-binary-digits
+
+separator-binary-digits:
+  binary-digit
+  `_'
+  binary-digit separator-binary-digits
+  `_' separator-binary-digits
 
 binary-digit: one of
   `0' `1'
@@ -277,13 +306,21 @@ conversions can then be used to change the type of the literal to
 another integer size.
 \end{rationale}
 
+\begin{rationale}
+Underscores can be used to group the digits of numbers for legibility. For example:
+\begin{chapel}
+var i = 1_234_567_890;
+var x = 0xFF_FF_12_34;
+\end{chapel}
+\end{rationale}
+
 Real literals are designated by the following syntax:
 \begin{syntax}
 real-literal:
   digits[OPT] . digits exponent-part[OPT]
   digits .[OPT] exponent-part
-  `0x' hexadecimal-digits[OPT] . digits p-exponent-part[OPT]
-  `0X' hexadecimal-digits[OPT] . digits p-exponent-part[OPT]
+  `0x' hexadecimal-digits[OPT] . hexadecimal-digits p-exponent-part[OPT]
+  `0X' hexadecimal-digits[OPT] . hexadecimal-digits p-exponent-part[OPT]
   `0x' hexadecimal-digits .[OPT] p-exponent-part
   `0X' hexadecimal-digits .[OPT] p-exponent-part
 
@@ -337,9 +374,10 @@ The following expressions are identical: \chpl{1.0 + 2.0i}
 and \chpl{(1.0, 2.0):complex}.
 \end{example}
 
-String literals are designated by the following syntax:
+\pagebreak
+Interpreted string literals are designated by the following syntax:
 \begin{syntax}
-string-literal:
+interpreted-string-literal:
   " double-quote-delimited-characters[OPT] "
   ' single-quote-delimited-characters[OPT] '
 
@@ -357,10 +395,42 @@ string-character:
   hexadecimal-escape-character
 
 simple-escape-character: one of
-  `$\backslash\mbox{\bf '}\hspace{5pt}$' `$\backslash$"$\hspace{5pt}$' `$\backslash$?$\hspace{5pt}$' `$\backslash$\$\hspace{5pt}$' `$\backslash$a$\hspace{5pt}$' `$\backslash$b$\hspace{5pt}$' `$\backslash$f$\hspace{5pt}$' `$\backslash$n$\hspace{5pt}$' `$\backslash$r$\hspace{5pt}$' `$\backslash$t$\hspace{5pt}$' `$\backslash$v$\hspace{5pt}$'
+  `$\backslash\mbox{\bf '}\hspace{5pt}$' `$\backslash$"$\hspace{5pt}$' `$\backslash$?$\hspace{5pt}$' `$\backslash$$\backslash$$\hspace{5pt}$' `$\backslash$a$\hspace{5pt}$' `$\backslash$b$\hspace{5pt}$' `$\backslash$f$\hspace{5pt}$' `$\backslash$n$\hspace{5pt}$' `$\backslash$r$\hspace{5pt}$' `$\backslash$t$\hspace{5pt}$' `$\backslash$v$\hspace{5pt}$'
 
 hexadecimal-escape-character:
   `$\backslash$x' hexadecimal-digits
+\end{syntax}
+
+Uninterpreted string literals are designated by the following syntax:
+\begin{syntax}
+uninterpreted-string-literal:
+  """ uninterpreted-double-quote-delimited-characters """
+  ''' uninterpreted-single-quote-delimited-characters '''
+
+uninterpreted-double-quote-delimited-characters:
+  uninterpreted-double-quote-string-character uninterpreted-double-quote-delimited-characters[OPT]
+
+uninterpreted-single-quote-delimited-characters:
+  uninterpreted-single-quote-string-character uninterpreted-single-quote-delimited-characters[OPT]
+
+uninterpreted-double-quote-string-character:
+  `any character except three double quotes in a row'
+
+uninterpreted-single-quote-string-character:
+  `any character except three single quotes in a row'
+\end{syntax}
+
+Uninterpreted string literals do not interpret their contents, so for
+example \chpl{"""$\backslash$n"""} is not a newline, but rather two
+characters `$\backslash$' and `n'.  Uninterpreted string literals may
+span multiple lines and the literal newline characters will be
+included in the string.
+
+A string literal can be either interpreted or uninterpreted.
+\begin{syntax}
+string-literal:
+  interpreted-string-literal
+  uninterpreted-string-literal
 \end{syntax}
 
 \subsection{Operators and Punctuation}
@@ -379,6 +449,7 @@ the language:
 \verb@=@ & assignment \\
 \verb@+= -= *= /= **= %= &= |= ^= &&= ||= <<= >>=@ & compound assignment \\
 \verb@<=>@ & swap \\
+\verb@<~>@ & I/O \\
 \verb@..@ & range specifier \\
 \verb@by@ & range/domain stride specifier \\
 \verb@#@ & range count operator \\

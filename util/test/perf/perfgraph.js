@@ -70,52 +70,44 @@ var branchInfo = [
                   { "release" : "1.12",
                     "releaseDate": "2015-10-01",
                     "branchDate" : "2015-09-24",
+                    "revision" : -1},
+                  { "release" : "1.13",
+                    "releaseDate": "2016-04-07",
+                    "branchDate" : "2016-03-29",
+                    "revision" : -1},
+                  { "release" : "1.14",
+                    "releaseDate": "2016-10-06",
+                    "branchDate" : "2016-09-27",
+                    "revision" : -1},
+                  { "release" : "1.15",
+                    "releaseDate": "2017-04-06",
+                    "branchDate" : "2017-03-27",
+                    "revision" : -1},
+                  { "release" : "1.16",
+                    "releaseDate": "2017-10-05",
+                    "branchDate" : "2017-09-27",
+                    "revision" : -1},
+                  { "release" : "1.17",
+                    "releaseDate": "2018-04-05",
+                    "branchDate" : "2018-03-28",
+                    "revision" : -1},
+                  { "release" : "1.18",
+                    "releaseDate": "2018-09-20",
+                    "branchDate" : "2018-09-12",
                     "revision" : -1}
                   ];
 
-var rebootDates = [
-    "2014-06-21",
-    "2014-07-19",
-    "2014-08-16",
-    "2014-09-20",
-    "2014-10-18",
-    "2014-11-15",
-    "2014-12-20",
-    "2015-01-17",
-    "2015-02-21",
-    "2015-03-21",
-];
 
-// NOTE: I wonder if it makes sense to calculate these rebootDates using
-//       something like Datejs. (thomasvandoren, 2015-04-08)
-//
-//  https://cdnjs.com/libraries/datejs
-//
-/* E.g.
-// Find the third Saturday of every month starting with rebootStartMonth and
-// ending with today.
-var rebootDates = [],
-
-    // Starting with June 2014 (months are 0 based in JS).
-    rebootStartMonth = new Date(2014, 5, 1),
-
-    // Set curThirdDate to the third Saturday of the starting month.
-    curThirdDate = rebootStartMonth.moveToNthOccurrence(6, 3);
-
-while (curThirdDate.isBefore(Date.today())) {
-    rebootDates.push(curThirdDate.toString("yyyy-MM-dd"));
-    curThirdDate.addMonths(1).moveToNthOccurrence(6, 3);
-}
-*/
+var indexMap = {};
 
 // array of currently displayed graphs
 var gs = [];
+
 // used to prevent multiple redraws of graphs when syncing x-axis zooms
 var globalBlockRedraw = false;
 
 // The main elements that all the graphs and graph legends will be put in
-var parent = document.getElementById('graphdisplay');
-var legend = document.getElementById('legenddisplay');
+var graphPane = document.getElementById('graphdisplay');
 
 // setup the default configuration even if it's not multi-conf
 var multiConfs = configurations.length != 0;
@@ -126,82 +118,155 @@ var defaultConfiguration = configurations[0];
 // multi-configs. Default to using it for 16 node xc in a hacky way
 var diffColorForEachConfig = pageTitle.indexOf("16 node XC") >= 0;
 
+var lastFilterVal = "";
+
+var filterBox = $("[name='filterBox']")[0];
+
+
+// redirect ctrl+f to the filter box
+$(document).keydown(function(e) {
+  // 'metaKey' for OS X
+  if (e.which == 70 && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    $(filterBox).focus();
+  }
+});
+
+function clearFilter() {
+  filterBox.value = "";
+  doFilter();
+  setDygraphPanePos();
+}
+
+// If 'val' is true, disable typing into the filterBox and set the background
+// color to grey. If false, allow typing and set background to white.
+function disableFilterBox(val) {
+  $(filterBox).prop('disabled', val);
+  var color = "#FFFFFF";
+  if (val) {
+    color = "#e6e6e6";
+  }
+  filterBox.style.backgroundColor = color;
+}
+
+// Search the lower-case titles of graphs for any substring that matches the
+// current value of the filter box. Hide the HTML and checkbox of any graph
+// whose title does not match.
+function doFilter() {
+  lastFilterVal = filterBox.value;
+  searchVal = lastFilterVal.toLowerCase();
+  for (var i = 0; i < allGraphs.length; i++) {
+    var checkbox = document.getElementById('graph' + i);
+
+    // Not all graphs have corresponding checkboxes
+    var checkLabel = undefined;
+    if (checkbox) {
+      checkLabel = checkbox.parentElement;
+    }
+
+    var idx = indexMap[allGraphs[i].title];
+    if (allGraphs[i].title.toLowerCase().indexOf(searchVal) != -1) {
+      // Found
+      if (checkLabel) {
+        $(checkLabel).show();
+      }
+      if (idx >= 0 && idx < gs.length) {
+        showGraph(gs[idx]);
+      }
+    } else {
+      // Not found
+      if (checkLabel) {
+        $(checkLabel).hide();
+      }
+      if (idx >= 0 && idx < gs.length) {
+        hideGraph(gs[idx]);
+      }
+    }
+  }
+}
+
+function filterFn() {
+  if (filterBox.value != lastFilterVal) {
+    doFilter();
+    setDygraphPanePos();
+  }
+}
+
+$(document).ready(function() {
+  $("[name='filterBox']").on("change keyup paste", filterFn);
+});
+
 // This is used to get the next div for the graph and legend. This is important
 // for graph expansion because we need to be able to add the expanded graphs
 // after the graph that is being expanded and there may be other graphs
 // after it so we don't just want to put the expanded graphs at the end.
-function getNextDivs(afterDiv, afterLDiv) {
+function getNextDivs(afterDiv) {
 
   // if divs were specified, create new divs that follow those, else just put
-  // these divs at the end
+  // these divs at the end (indicated by 'beforeDiv == null')
   var beforeDiv = null;
-  var beforeLDiv = null;
-  if (afterDiv && afterLDiv &&
-      afterDiv.nextSibling && afterLDiv.nextSibling) {
-    beforeDiv = afterDiv.nextSibling.nextSibling;
-    beforeLDiv = afterLDiv.nextSibling.nextSibling;
+  if (afterDiv && afterDiv.nextSibling) {
+    beforeDiv = afterDiv.nextSibling;
   }
+
+  var container = document.createElement('div');
+  container.className = 'graphContainer';
+  graphPane.insertBefore(container, beforeDiv);
 
   // create the graph/legend divs and spacers
   var div = document.createElement('div');
   div.className = 'perfGraph';
-  parent.insertBefore(div, beforeDiv);
-
-  var gspacer = document.createElement('div');
-  gspacer.className = 'gspacer';
-  parent.insertBefore(gspacer, beforeDiv);
+  container.appendChild(div);
 
   var ldiv = document.createElement('div');
   ldiv.className = 'perfLegend';
-  legend.insertBefore(ldiv, beforeLDiv);
+  container.appendChild(ldiv);
 
-  var lspacer = document.createElement('div');
-  lspacer.className = 'lspacer';
-  legend.insertBefore(lspacer, beforeLDiv);
+  var gspacer = document.createElement('div');
+  gspacer.className = 'gspacer';
+  container.appendChild(gspacer);
 
-  // create a log button and put it in the gspacer
-  var logToggle = document.createElement('input');
-  logToggle.type = 'button';
-  logToggle.className = 'toggle';
-  logToggle.value = 'log';
-  logToggle.style.visibility = 'hidden';
-  gspacer.appendChild(logToggle);
+  function addButtonHelper(buttonText) {
+    var button = document.createElement('input');
+    button.type = 'button';
+    button.className = 'toggle';
+    button.value = buttonText;
+    button.style.visibility = 'hidden';
+    gspacer.appendChild(button);
+    return button;
+  }
 
-  // create an annotation button and put it next to the log button in gspacer
-  var annToggle = document.createElement('input');
-  annToggle.type = 'button';
-  annToggle.className = 'toggle';
-  annToggle.value = 'annotations';
-  annToggle.style.visibility = 'hidden';
-  gspacer.appendChild(annToggle);
+  var logToggle        = addButtonHelper('log');
+  var annToggle        = addButtonHelper('annotations');
+  var screenshotToggle = addButtonHelper('screenshot');
+  var resetY           = addButtonHelper('reset y zoom');
 
-  // create a screenshot button and put it next to the annotation button
-  var screenshotToggle = document.createElement('input');
-  screenshotToggle.type = 'button';
-  screenshotToggle.className = 'toggle';
-  screenshotToggle.value = 'screenshot';
-  screenshotToggle.style.visibility = 'hidden';
-  gspacer.appendChild(screenshotToggle);
+  // We prefer this button to be last.
+  var closeGraphToggle = addButtonHelper('close');
 
   return {
     div: div,
-      ldiv: ldiv,
-      logToggle: logToggle,
-      annToggle: annToggle,
-      screenshotToggle: screenshotToggle
+    ldiv: ldiv,
+    logToggle: logToggle,
+    annToggle: annToggle,
+    screenshotToggle: screenshotToggle,
+    closeGraphToggle: closeGraphToggle,
+    resetY: resetY,
+    gspacer: gspacer,
+    container: container,
   }
 }
 
 
+
+// Format of the date when hovering over a series
+function xAxisFormatter(val, opts, series_name, graph) {
+  return dateFormatter(new Date(val), '/');
+}
+
 // Gen a new dygraph, if an existing graph is being expanded then expandInfo
 // will contain the expansion information, else it is null
 function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
-
-  var div = graphDivs.div;
-  var ldiv = graphDivs.ldiv;
-  var logToggle = graphDivs.logToggle;
-  var annToggle = graphDivs.annToggle;
-  var screenshotToggle = graphDivs.screenshotToggle;
 
   var startdate = getDateFromURL(OptionsEnum.STARTDATE, graphInfo.startdate);
   var enddate = getDateFromURL(OptionsEnum.ENDDATE, graphInfo.enddate);
@@ -214,7 +279,8 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
     ylabel: graphInfo.ylabel,
     axes: {
       x: {
-        drawGrid: false
+        drawGrid: false,
+        valueFormatter: xAxisFormatter,
       },
       y: {
         drawGrid: true,
@@ -239,7 +305,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
     // So it's easier to zoom in on the right side
     rightGap: 15,
     labels: graphLabels,
-    labelsDiv: ldiv,
+    labelsDiv: graphDivs.ldiv,
     labelsSeparateLines: true,
     dateWindow: [startdate, enddate],
     // sync graphs anytime we pan, zoom, or at initial draw
@@ -269,7 +335,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
   }
 
   // actually create the dygraph
-  var g = new Dygraph(div, graphData, graphOptions);
+  var g = new Dygraph(graphDivs.div, graphData, graphOptions);
   g.isReady = false;
   setupSeriesLocking(g);
 
@@ -282,10 +348,13 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
   g.ready(function() {
     g.divs = graphDivs;
     g.graphInfo = graphInfo;
+    g.removed = false;
 
-    setupLogToggle(g, graphInfo, logToggle);
-    setupAnnToggle(g, graphInfo, annToggle);
-    setupScreenshotToggle(g, graphInfo, screenshotToggle);
+    setupLogToggle(g, graphInfo, graphDivs.logToggle);
+    setupAnnToggle(g, graphInfo, graphDivs.annToggle);
+    setupScreenshotToggle(g, graphInfo, graphDivs.screenshotToggle);
+    setupCloseGraphToggle(g, graphInfo, graphDivs.closeGraphToggle);
+    setupResetYZoom(g, graphInfo, graphDivs.resetY);
 
     g.isReady = true;
 
@@ -294,6 +363,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
   });
 
   gs.push(g);
+  indexMap[g.graphInfo.title] = gs.length-1;
 }
 
 // Function to expand an existing graph. This leaves the original graph
@@ -309,6 +379,8 @@ function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
 
   // get a transposed version of the data, so we can easily grab series from it
   var transposedData = transpose(graphData);
+
+  disableFilterBox(true);
 
   // expand graphs in reverse order. Allows us to  keep expanding after the
   // original graph's div instead of updating the div to place this graph after
@@ -344,10 +416,12 @@ function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
     }
     newData = transpose(newData);
 
-    var newDivs = getNextDivs(graphDivs.div, graphDivs.ldiv);
+    var newDivs = getNextDivs(graphDivs.container);
     expandInfo = { colors: newColors }
     genDygraph(newInfo, newDivs, newData, newLabels, expandInfo);
   }
+
+  disableFilterBox(false);
 }
 
 
@@ -363,18 +437,105 @@ function setupLogToggle(g, graphInfo, logToggle) {
   }
 }
 
+// Compute x-axis position of the left side of the annotation text box.
+// Attempts to find a value such that the box will fit within the span of the
+// graph.
+//
+// Prefers to align the left of the annotation text box with the left of the
+// annotation number box. If the box would extend past the right side of the
+// graph, we shift the box to the left.
+function computeInfoLeft(info, box, parentDiv) {
+  var ret  = 0;
+
+  var infoWidth = $(info).width();
+
+  var boxPos    = $(box).position();
+  var boxOff    = $(box).offset();
+  var boxWidth  = $(box).outerWidth();
+
+  var parentPos = $(parentDiv).position();
+  var parentRight = parentPos.left + $(parentDiv).outerWidth();
+
+  if (boxOff.left + infoWidth > parentRight) {
+    // annotation text will overflow, so align to the right, but don't go past the
+    // parent's left side (e.g. the y-axis label).
+    var room = boxOff.left - parentPos.left + boxWidth;
+    room = Math.min(infoWidth, room);
+    ret = boxPos.left - room + boxWidth;
+  } else {
+    // Otherwise align info's left with the box's left
+    ret = boxPos.left;
+  }
+
+  return ret;
+}
+
+// Find snippets that look like PRs (e..g (#1234)) and replace them
+// with links to the corresponding GitHub PR.
+function computeGitHubLinks(text) {
+  var re = /\(#([0-9]+)\)/gi;
+  text = text.replace(re, function(m, num) {
+    var url = "https://github.com/chapel-lang/chapel/pull/" + num;
+    return "<a target='_blank' href='" + url + "'>" + m + "</a>";
+  });
+  text = text.replace("\n", "\n<hr/>");
+
+  return text;
+}
+
+// Generate divs containing annotation text and links to PRs. They replace the
+// tooltip and will only be visible when hovering over the annotation number
+// box.
+function buildAnnotationHovers(container) {
+  $(container).find('.blackAnnotation').each(function(i, box) {
+    var text = box.title;
+    box.title = ""; // disable tooltip
+
+    var info = document.createElement('div');
+    $(info).addClass("annotationInfo");
+
+    info.innerHTML = computeGitHubLinks(text);
+
+    var parentDiv = $(box).parent();
+    $(parentDiv).append(info);
+
+    var boxHeight = $(box).outerHeight();
+    var style = {
+      top: ($(box).position().top + boxHeight - 1) + "px",
+      left: computeInfoLeft(info, box, parentDiv) + "px",
+    };
+    $(info).css(style).hide();
+
+    // Pass both `box` and `info` so that `info` will remain open if the mouse
+    // transitions from `box` to `info`.
+    var els = [box, info];
+    $(els).hover(function() {
+      $(info).show();
+    }, function() {
+      $(info).hide();
+    });
+
+  });
+}
 
 // Setup the annotation button
 function setupAnnToggle(g, graphInfo, annToggle) {
   annToggle.style.visibility = 'visible';
 
   annToggle.onclick = function() {
+    // Get the current Y zoom. We only have one y axis, so we pass '0'
+    var curYZoom = g.yAxisRange(0);
+
+    // Suppress draws to avoid excess annotation-hover-building
     if (g.annotations().length === 0) {
       updateAnnotationsSeries(g);
-      g.setAnnotations(g.graphInfo.annotations);
+      g.setAnnotations(g.graphInfo.annotations, true);
     } else {
-      g.setAnnotations([]);
+      g.setAnnotations([], true);
+      $(g.divs.container).find(".annotationInfo").remove();
     }
+
+    g.updateOptions({ valueRange: curYZoom });
   }
 }
 
@@ -385,6 +546,49 @@ function setupScreenshotToggle(g, graphInfo, screenshotToggle) {
 
   screenshotToggle.onclick = function() {
     captureScreenshot(g, graphInfo);
+  }
+}
+
+// g: A DyGraph object
+function hideGraph(g) {
+  $(g.divs.container).hide();
+}
+
+function showGraph(g) {
+  if (g.removed) {
+    return;
+  }
+  $(g.divs.container).show();
+}
+
+// Setup the close graph button
+function setupCloseGraphToggle(g, graphInfo, closeGraphToggle) {
+  closeGraphToggle.style.visibility = 'visible';
+
+  closeGraphToggle.onclick = function() {
+    var checkBox = getCheckboxForGraph(g);
+    if (typeof checkBox !== "undefined") {
+      checkBox.checked = false;
+    }
+    hideGraph(g);
+    setURLFromGraphs(normalizeForURL(findSelectedSuite()));
+    // set the dropdown box selection
+    document.getElementsByName('jumpmenu')[0].value = findSelectedSuite();
+
+    // TODO: re-draw time doesn't seem to improve much even though we don't
+    // apply fns to remove graphs. Do we need to do something else?
+    // Should we set the drawCallback to an empty function?
+    g.removed = true;
+  }
+}
+
+// Setting `valueRange` to null will reset the y-axis zoom to the default. Note
+// that the default is different depending on the x-axis slice.
+function setupResetYZoom(g, graphInfo, resetY) {
+  resetY.style.visibility = 'visible';
+
+  resetY.onclick = function() {
+    g.updateOptions({ valueRange: null });
   }
 }
 
@@ -403,19 +607,32 @@ function setupScreenshotToggle(g, graphInfo, screenshotToggle) {
 // and legend and just render that one.
 function captureScreenshot(g, graphInfo) {
 
-  var gWidth = g.divs.div.clientWidth + g.divs.ldiv.clientWidth;
+  // 100 padding
+  var gWidth = g.divs.div.clientWidth + g.divs.ldiv.clientWidth + 100;
   var gHeight = g.divs.div.clientHeight;
 
   var captureCanvas = document.createElement('canvas');
   captureCanvas.width = gWidth;
   captureCanvas.height = gHeight;
   var ctx = captureCanvas.getContext('2d');
+  var label = graphInfo.ylabel;
+
+  var restoreOpts = {
+    showRoller: true,
+    ylabel: label,
+    valueRange: g.yAxisRange(0),
+  };
+
+  var tempOpts = {
+    showRoller: false,
+    ylabel: '',
+    valueRange: g.yAxisRange(0),
+  };
 
   // html2canvas doesn't render transformed ccs3 text (like our ylabel.) We
   // make the label inivisible and we also hide the roll button box since
   // theres no point in capturing it in a screenshot
-  g.updateOptions({showRoller: false, ylabel:''});
-  var label = graphInfo.ylabel;
+  g.updateOptions(tempOpts);
 
   // generate the graph
   html2canvas(g.divs.div, {
@@ -440,10 +657,15 @@ function captureScreenshot(g, graphInfo) {
           ctx.fillText(label, 0, fontSize);
 
           // open the screenshot in a new window
-          window.open(captureCanvas.toDataURL());
+          //
+          // BHARSH 2017-10-09: recent browser versions no longer allow 'window.open'
+          // with a data URL due to security concerns.
+          //
+          var screenWin = window.open();
+          screenWin.document.write("<img src='" + captureCanvas.toDataURL() + "'/>");
 
           // restore the roll box and ylabel
-          g.updateOptions({showRoller: true, ylabel:label});
+          g.updateOptions(restoreOpts);
         }
       });
     }
@@ -531,6 +753,45 @@ function genPerSeriesStrokePattern(graphSeries, configs) {
   return seriesOptions;
 }
 
+//
+// Dygraphs 1.x used to export this function, but 2.0 does not.
+// TODO: consider using another JS library to do this for us.
+//
+function hsvToRGB(hue, saturation, value) {
+  var red;
+  var green;
+  var blue;
+  if (saturation === 0) {
+    red = value;
+    green = value;
+    blue = value;
+  } else {
+    var i = Math.floor(hue * 6);
+    var f = hue * 6 - i;
+    var p = value * (1 - saturation);
+    var q = value * (1 - saturation * f);
+    var t = value * (1 - saturation * (1 - f));
+    switch (i) {
+      case 1:
+        red = q;green = value;blue = p;break;
+      case 2:
+        red = p;green = value;blue = t;break;
+      case 3:
+        red = p;green = q;blue = value;break;
+      case 4:
+        red = t;green = p;blue = value;break;
+      case 5:
+        red = value;green = p;blue = q;break;
+      case 6: // fall through
+      case 0:
+        red = value;green = t;blue = p;break;
+    }
+  }
+  red = Math.floor(255 * red + 0.5);
+  green = Math.floor(255 * green + 0.5);
+  blue = Math.floor(255 * blue + 0.5);
+  return 'rgb(' + red + ',' + green + ',' + blue + ')';
+}
 
 // generate a list of colors to use for multi-conf graphs. Takes graphsSeries
 // which is the list of series for the graph and should not contain the 'Date'.
@@ -551,7 +812,7 @@ function genSeriesColors(graphSeries) {
     var hue = (1.0 * idx / (1 + numSeries));
 
     // convert to an rgb value
-    var colorStr = Dygraph.hsvToRGB(hue, sat, val);
+    var colorStr = hsvToRGB(hue, sat, val);
     return colorStr;
   }
 
@@ -627,7 +888,15 @@ function customValueFormatter(val, opts, series_name, dygraph) {
 
   // update digits, but do NOT redraw. Then use the default value formatter
   dygraph.updateOptions({digitsAfterDecimal: digits}, true);
-  return Dygraph.numberValueFormatter(val, opts);
+  var maxWidth = dygraph.getOption('maxNumberWidth');
+
+  if (val != 0.0 && (Math.abs(val) >= Math.pow(10, maxWidth) || Math.abs(val) < Math.pow(10, -digits))) {
+    return val.toExponential(digits);
+  } else {
+    // "3" should display as "3" and not "3.00"
+    var shift = Math.pow(10, digits);
+    return Math.round(val * shift) / shift;
+  }
 }
 
 // custom formatter for the y axis labels, calls the legend value formatter
@@ -671,6 +940,7 @@ function customDrawCallback(graph, initial) {
         g.updateOptions({ dateWindow: range });
       }
     });
+    buildAnnotationHovers(graph.divs.container);
   }
 }
 
@@ -728,7 +998,7 @@ function perfGraphInit() {
   var dateElem= document.getElementById('dateElem');
   if(parseDate(runDate) < parseDate(todayDate)) {
     dateElem.innerHTML = 'Graphs Last Updated on ' + runDate;
-    dateElem.style.color = "RED";
+    dateElem.style.color = "red";
   }
 
   // generate the multi configuration menu and toggle options
@@ -771,6 +1041,10 @@ function perfGraphInit() {
             g.setAnnotations(g.graphInfo.annotations, true);
           }
           setConfigurationVisibility(g);
+
+          // The previous call doesn't trigger the usual callback for some
+          // reason, so rebuild annotation hovers for this graph.
+          buildAnnotationHovers(g.divs.container);
         });
       };
     }
@@ -811,9 +1085,11 @@ function perfGraphInit() {
   // generate the graph list
   var graphlist = document.getElementById('graphlist');
   for (var i = 0; i < allGraphs.length; i++) {
+    indexMap[allGraphs[i].title] = -1;
     var elem = document.createElement('div');
     elem.className = 'graph';
     elem.innerHTML = '<input id="graph' + i + '" type="checkbox">' + allGraphs[i].title;
+    elem.title = allGraphs[i].title;
     graphlist.appendChild(elem);
   }
 
@@ -823,6 +1099,23 @@ function perfGraphInit() {
   displaySelectedGraphs();
 }
 
+// We don't know the width of the graph selection pane until the list of
+// graph names are added. Once that is done figure out the position of pane
+// that holds the dygraphs. This is needed since the graph selection pane
+// is 'fixed' meaning it's outside the normal flow and other elements act
+// like it doesn't exist so we have to manually move the graph display to
+// avoid overlap. After the page is setup, the graph selection pane size
+// only changes if the browser zoom changes.
+function setDygraphPanePos() {
+  var gl = parseInt($("#graphlist").outerWidth());
+  var bm = parseInt($("#buttonMenu").outerWidth());
+  var selectPaneWidth = Math.max(gl, bm);
+  $('#graphSelectionPane').css({ 'width': selectPaneWidth});
+
+  var margin = parseInt($('#graphSelectionPane').outerWidth());
+  $('#graphdisplay').css({ 'margin-left': margin });
+  $('#titleDiv').css({ 'margin-left': margin });
+}
 
 // We use 'fixed' css positioning to keep the graph selection pane always
 // visible (scrolls when the page scrolls.) However we don't want it to scroll
@@ -845,18 +1138,6 @@ function setupGraphSelectionPane() {
     setGraphListHeight();
     setGraphSelectionPanePos();
   });
-
-  // We don't know the width of the graph selection pane until the list of
-  // graph names are added. Once that is done figure out the position of pane
-  // that holds the dygraphs. This is needed since the graph selection pane
-  // is 'fixed' meaning it's outside the normal flow and other elements act
-  // like it doesn't exist so we have to manually move the graph display to
-  // avoid overlap. After the page is setup, the graph selection pane size
-  // only changes if the browser zoom changes.
-  function setDygraphPanePos() {
-    var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
-    $('#graphdisplay').css({ 'margin-left': selectPaneWidth });
-  }
 
   // set the selection pane's horizontal positional based on the scroll so the
   // selection pane isn't always visible when scrolling horizontally. Some
@@ -999,7 +1280,6 @@ function setGraphsFromURL() {
   }
 }
 
-
 // Update the query string based on the current set of displayed graphs
 function setURLFromGraphs(suite) {
   suite = normalizeForURL(suite);
@@ -1059,11 +1339,26 @@ function unselectAllGraphs() {
   checkAll(false);
 }
 
+function invertSelection() {
+  for (var i = 0; i < allGraphs.length; i++) {
+    var elem = document.getElementById('graph' + i);
+    // Only tick the checkboxes that are visible in case others are filtered.
+    if ($(elem.parentElement).is(":visible")) {
+      elem.checked = !elem.checked;
+    }
+  }
+}
+
 
 function checkAll(val) {
   for (var i = 0; i < allGraphs.length; i++) {
     var elem = document.getElementById('graph' + i);
-    elem.checked = val;
+    // Only tick the checkboxes that are visible. This allows users to
+    // filter for a string, hit 'select all', and only have that subset
+    // selected.
+    if ($(elem.parentElement).is(":visible")) {
+      elem.checked = val;
+    }
   }
 }
 
@@ -1090,6 +1385,7 @@ function getSuites() {
 
 
 function selectSuite(suite) {
+  filterBox.value = "";
   for (var i = 0; i < allGraphs.length; i++) {
     var elem = document.getElementById('graph' + i);
     if (allGraphs[i].suites.indexOf(suite) >= 0) {
@@ -1103,28 +1399,42 @@ function selectSuite(suite) {
 
 function displaySelectedGraphs() {
   // Clean up divs
-  while (parent.childNodes.length > 0) {
-    parent.removeChild(parent.childNodes[0]);
-    legend.removeChild(legend.childNodes[0]);
+  while (graphPane.childNodes.length > 0) {
+    graphPane.removeChild(graphPane.childNodes[0]);
   }
 
   // clean up all the dygraphs
   while (gs.length > 0) {
-    gs.pop().destroy();
+    var temp = gs.pop();
+    indexMap = {};
+    temp.destroy();
   }
+
+  var jsons = [];
+
+
+  // Disable filtering until the jsons are done
+  disableFilterBox(true);
 
   // generate the dygraph(s) for the currently selected graphs
   for (var i = 0; i < allGraphs.length; i++) {
     var checkbox = document.getElementById('graph' + i);
     if (checkbox.checked) {
-      getDataAndGenGraph(allGraphs[i]);
+      jsons.push(getDataAndGenGraph(allGraphs[i]));
     }
   }
+
+  $.when.apply($, jsons).done(function() {
+      console.log("done generating graphs");
+      doFilter();
+      disableFilterBox(false);
+  });
 
   // update the url for the displayed graphs
   setURLFromGraphs(normalizeForURL(findSelectedSuite()));
   // set the dropdown box selection
   document.getElementsByName('jumpmenu')[0].value = findSelectedSuite();
+  setDygraphPanePos();
 }
 
 
@@ -1161,6 +1471,8 @@ function getDataAndGenGraph(graphInfo) {
       var err = textStatus + ', ' + error;
       console.log( 'Request for ' + dataFile + ' Failed: ' + err );
     });
+
+  return json;
 }
 
 
@@ -1293,7 +1605,9 @@ function applyFnToAllGraphs(fnToApply, blockRedraw) {
   globalBlockRedraw = blockRedraw;
   var gsLength = gs.length;
   for (var i = 0; i < gsLength; i++) {
-    fnToApply(gs[i]);
+    if (!gs[i].removed) {
+      fnToApply(gs[i]);
+    }
   }
   globalBlockRedraw = oldGlobalBlockRedraw;
 }
@@ -1361,21 +1675,50 @@ function roundDate(date, roundUp) {
 
 // helper function to parse a date (either use dygraph date parser, or do
 // nothing for numericX)
+//
+// numericX may be set from graphdata.js
 function parseDate(date) {
   if (numericX) {
     return date;
   } else {
-    return Dygraph.dateParser(date);
+    return moment(date, "YYYY*MM*DD").toDate().getTime();
   }
 }
 
+// Compute the date from two weeks ago and set the x-axis slice to:
+//   (today - 2 weeks) .. today
+function lastTwoWeeks() {
+  var end = getTodaysDate('-');
+
+  // Two weeks ago
+  var sd = new Date();
+  sd.setDate(sd.getDate() - 14);
+  var start = dateFormatter(sd, '-');
+
+  var range = [parseDate(start), parseDate(end)];
+
+  setURLFromDate(OptionsEnum.STARTDATE, Dygraph.dateString_(range[0]));
+  setURLFromDate(OptionsEnum.ENDDATE, Dygraph.dateString_(range[1]));
+
+  applyFnToAllGraphs(function(g) {
+    if (g.isReady && differentDateRanges(range, g.xAxisRange())) {
+      g.updateOptions({ dateWindow: range });
+    }
+  });
+}
+
+function dateFormatter(d, delimiter) {
+  var month = ("0" + (d.getMonth() + 1)).slice(-2); // only keep last two characters
+  var day   = ("0" + d.getDate()).slice(-2);
+  return  d.getFullYear() + delimiter + month + delimiter + day;
+}
 
 // returns todays date formatted as 'YYYY<delimiter>MM<delimiter>DD'. Defaults
 // to 'YYYY-MM-DD' if a delimiter isn't specified.
 function getTodaysDate(delimiter) {
   delimiter = defaultFor(delimiter, '-');
   var d = new Date();
-  return  d.getFullYear() + delimiter + (d.getMonth()+1) + delimiter + d.getDate();
+  return dateFormatter(d, delimiter);
 }
 
 
@@ -1411,6 +1754,15 @@ function normalizeForURL(str) {
   return str.toLowerCase().replace(nonAlphaNumRegex, '');
 }
 
+
+// gets the checkbox associated with a particular graph
+function getCheckboxForGraph(g) {
+  for (var i = 0; i < allGraphs.length; i++) {
+    if (allGraphs[i].title == g.graphInfo.title) {
+      return document.getElementById('graph' + i);
+    }
+  }
+}
 
 
 ////////////////////////////
@@ -1451,7 +1803,7 @@ function addExperimentalButtons(toggleConf) {
   if (configurations.length >= 3) {
     var strokePatternToggle = document.createElement('input');
     strokePatternToggle.type = 'button';
-    strokePatternToggle.value = 'Reset Stoke Patterns';
+    strokePatternToggle.value = 'Reset Stroke Patterns';
     toggleConf.appendChild(strokePatternToggle);
     strokePatternToggle.onclick = function() {
       resetStrokePattern();

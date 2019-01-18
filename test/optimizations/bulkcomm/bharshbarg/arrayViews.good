@@ -1,0 +1,5 @@
+Testing reindex...OK
+Testing slices of reindexes...OK
+Testing reindex of reindex...OK
+Testing rank-change of reindex...OK
+Testing reindex of rank-change...OK

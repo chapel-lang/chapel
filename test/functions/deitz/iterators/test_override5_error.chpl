@@ -6,19 +6,19 @@ class C {
 }
 
 class D: C {
-  iter foo(n: int) {
+  override iter foo(n: int) {
     for i in 1..n by -1 do
       yield (i,i);
   }
 }
 
-var c = new C();
+var c = new borrowed C();
 
 for i in c.foo(4) do
   writeln(i);
 writeln();
 
-c = new D();
+c = new borrowed D();
 
 for i in c.foo(4) do
   writeln(i);

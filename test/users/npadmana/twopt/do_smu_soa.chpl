@@ -50,12 +50,13 @@ class Particle3D {
   var _tmp : [Dpart] real;
   var _n1, _ndx : [Dpart] int;
 
-  proc Particle3D(npart1 : int, random : bool = false) {
+  proc init(npart1 : int, random : bool = false) {
+    this.complete();
     npart = npart1;
     Darr = {ParticleAttrib, 0.. #npart};
     Dpart = {0.. #npart};
     if random {
-      var rng = new RandomStream();
+      var rng = new RandomStream(eltType=real);
       var x, y, z : real;
       for ii in Dpart {
         x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z = rng.getNext()*1000.0;
@@ -63,7 +64,7 @@ class Particle3D {
         arr[3,ii] = 1.0;
         arr[4,ii] = x**2 + y**2 + z**2;
       }
-      delete rng;
+
     }
   }
 
@@ -96,13 +97,13 @@ class Particle3D {
     }
 
     // Set the random number generator
-    var rng = new RandomStream(41);
+    var rng = new RandomStream(eltType=real, seed=41);
     var jj : int;
     for ii in 0..(npart-2) {
       jj = (rng.getNext()*(npart-ii)):int + ii;
       _ndx[jj] <=> _ndx[ii];
     }
-    delete rng;
+
 
     reorder(Dpart);
   }
@@ -119,9 +120,9 @@ proc countLines(fn : string) : int {
   return ipart;
 }
 
-proc readFile(fn : string) : Particle3D  {
+proc readFile(fn : string) : owned Particle3D  {
   var npart = countLines(fn);
-  var pp = new Particle3D(npart);
+  var pp = new owned Particle3D(npart);
 
   var ff = openreader(fn);
   var ipart = 0;
@@ -170,22 +171,16 @@ class KDNode {
   var dom : domain(1);
   var xcen : [DimSpace]real;
   var rcell : real;
-  var left, right : KDNode;
+  var left, right : owned KDNode;
 
   proc isLeaf() : bool {
     return (left==nil) && (right==nil);
   }
-
-  proc ~KDNode() {
-    if left then delete left;
-    if right then delete right;
-  }
-
 }
 
 
-proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : KDNode  {
-  var me : KDNode = new KDNode();
+proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : owned KDNode  {
+  var me : owned KDNode = new owned KDNode();
   me.lo = lo;
   me.hi = hi;
   me.dom = {lo..hi};
@@ -228,7 +223,7 @@ proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : KDNode  {
   return me;
 }
 
-proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 : KDNode) {
+proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 :  KDNode) {
   // Compute the distance between node1 and node2
   var rr = sqrt (+ reduce(node1.xcen - node2.xcen)**2);
   var rmin = rr - (node1.rcell+node2.rcell);
@@ -300,10 +295,10 @@ proc doPairs() {
 
   // Read in the file
   tt.clear(); tt.start();
-  var pp1, pp2 : Particle3D;
+  var pp1, pp2 : owned Particle3D;
   if isPerf {
-    pp1 = new Particle3D(nParticles, true);
-    pp2 = new Particle3D(nParticles, true);
+    pp1 = new owned Particle3D(nParticles, true);
+    pp2 = new owned Particle3D(nParticles, true);
   } else {
     pp1 = readFile(fn1);
     pp2 = readFile(fn2);
@@ -353,14 +348,5 @@ proc doPairs() {
     hh.set((0,0),0.0);
     writeHist(stdout,hh,"%20.5er ");
   }
-
-  //
-  // clean up
-  //
-  delete pp1;
-  delete pp2;
-  delete root1;
-  delete root2;
-  delete hh;
 }
 

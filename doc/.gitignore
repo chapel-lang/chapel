@@ -1,0 +1,10 @@
+html
+doctrees
+
+/rst/builtins
+/rst/modules
+/rst/primers
+/rst/examples
+
+man.rst
+/rst/tools/chplvis/examples

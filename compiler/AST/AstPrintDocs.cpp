@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,15 +28,16 @@
 #include "docsDriver.h"
 #include "symbol.h"
 #include "stringutil.h"
+#include "stmt.h"
 #include "type.h"
 
 
-AstPrintDocs::AstPrintDocs(std::string moduleName, std::string path) :
+AstPrintDocs::AstPrintDocs(std::string moduleName, std::string path, std::string parentName) :
   file(NULL),
   tabs(0),
   moduleName(moduleName),
   pathWithoutPostfix(""),
-  tableOfContentsNeeded(false)
+  parentName(parentName)
 {
   pathWithoutPostfix = path + "/" + moduleName;
 
@@ -122,16 +123,23 @@ bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
                    " due to: ", strerror(errno)));
     }
 
+    std::string parent = "";
+    if (this->parentName != "") {
+      parent = this->parentName + ".";
+    }
+    parent = parent + this->moduleName;
+
     AstPrintDocs *docsVisitor = new AstPrintDocs(node->name,
-                                                 this->pathWithoutPostfix);
+                                                 this->pathWithoutPostfix,
+                                                 parent);
     node->accept(docsVisitor);
     delete docsVisitor;
 
-    this->tableOfContentsNeeded = true;
     return false;
   }
 
-  node->printDocs(this->file, this->tabs);
+  // Then print our documentation
+  node->printDocs(this->file, this->tabs, this->parentName);
 
   if (fDocsTextOnly) {
     this->tabs++;
@@ -151,15 +159,25 @@ void AstPrintDocs::exitModSym(ModuleSymbol* node) {
   if (fDocsTextOnly) {
     this->tabs--;
   }
-
-  // If we had submodules, be sure to link to them
-  if (tableOfContentsNeeded)
-    node->printTableOfContents(this->file);
 }
 
 
 void AstPrintDocs::visitVarSym(VarSymbol* node) {
   node->printDocs(this->file, this->tabs);
+}
+
+
+bool AstPrintDocs::enterBlockStmt(BlockStmt* node) {
+  // Top level block statements have no parentExpr, only a parentSymbol.
+  // Nested block statements have a parentExpr.  We don't want to go into
+  // nested block statements, because their contents aren't accessible
+  // outside of that scope.
+  return node->parentExpr == NULL;
+}
+
+
+bool AstPrintDocs::enterForallStmt(ForallStmt* node) {
+  return false;
 }
 
 

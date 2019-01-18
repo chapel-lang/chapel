@@ -40,7 +40,7 @@ var initialTemp = 1.44;
 var density = .8442;
 var dt = .005;
 var dtforce = .0025;
-var force_cut = 2.5; 
+var force_cut = 2.5;
 var cutneigh = 2.8;
 var neigh_every = 20;
 var thermoEvery = 100;
@@ -67,9 +67,9 @@ inline proc dot(a,b : v3int) {
 
 record atom {
   // velocity, force
-  var v, f : v3; 
+  var v, f : v3;
 
-  // define storage for neighbor list, which stores the bin and index 
+  // define storage for neighbor list, which stores the bin and index
   // of a neighboring atom
   var nspace : domain(1) = {1..100};
   var neighs : [nspace] (v3int,int);
@@ -85,9 +85,9 @@ var boxlo, boxhi : v3;
 var numAtoms : int;
 
 // default mass
-var mass : real = 1.0; 
+var mass : real = 1.0;
 
-// number of bins that define our piece of the continguous space
+// number of bins that define our piece of the contiguous space
 var numBins : v3int;
 
 // constants from c++ version, used in neighboring
@@ -102,10 +102,10 @@ var forceTime : real;
 
 // Time for communication
 //
-// Since chapel abstracts much of this away, sometimes we do communication 
-// without knowing (or caring). This value may not be completely accurate, 
+// Since chapel abstracts much of this away, sometimes we do communication
+// without knowing (or caring). This value may not be completely accurate,
 // but should reflect the bulk of communication that occurs.
-var commTime : real; 
+var commTime : real;
 
 // will halt if true
 if pHelp then printHelp();
@@ -137,7 +137,7 @@ if generating {
   numAtoms = (4 * problemSize(1) * problemSize(2) * problemSize(3)) : int;
 
   // compute the number of bins we need in each direction
-  for i in 1..3 do 
+  for i in 1..3 do
     numBins(i) = (5.0/6.0 * problemSize(i)) : int;
 } else {
   dataFile = open(data_file, iomode.r);
@@ -159,10 +159,10 @@ if generating {
 
   const masses = dataReader.readln(string);
   assert(masses == "Masses");
-  var mass_type: int; 
+  var mass_type: int;
   dataReader.readln(mass_type, mass);
-  
-  // density overriden if data file provided
+
+  // density overridden if data file provided
   density = numAtoms / (volume);
   const nbs : real = (density * 16) ** (1.0/3.0 : real);
   for i in 1..3 do
@@ -184,7 +184,7 @@ const bininv = (1.0,1.0,1.0) / binsize;
 
 // number of bins we need for neighboring
 var numNeed : v3int;
-for i in 1..3 { 
+for i in 1..3 {
   numNeed(i) = (cutneigh * bininv(i)) : int;
   if numNeed(i) * binsize(i) < factor * cutneigh then numNeed(i) += 1;
 }
@@ -200,8 +200,8 @@ const binSpace = {1..numBins(1), 1..numBins(2), 1..numBins(3)};
 const ghostSpace = binSpace.expand(numNeed);
 
 // Will define the bounds of our arrays and distribute across locales
-const DistSpace = if useBlockDist then ghostSpace dmapped Block(ghostSpace) 
-                  else if useStencilDist then 
+const DistSpace = if useBlockDist then ghostSpace dmapped Block(ghostSpace)
+                  else if useStencilDist then
                    binSpace dmapped Stencil(binSpace, fluff=numNeed, periodic=true)
                   else ghostSpace;
 
@@ -209,27 +209,29 @@ const Space = if useBlockDist then binSpace dmapped Block(binSpace)
               else if useStencilDist then binSpace dmapped Stencil(binSpace)
               else binSpace;
 
-// bin storage. we can likely assume that each bin will store 
-// about the same number of atoms, and that the size won't 
+// bin storage. we can likely assume that each bin will store
+// about the same number of atoms, and that the size won't
 // change much after initialization
 var perBinSpace : domain(1) = {1..8};
 
 // points to nearest neighbors
 //
-// Note: diverges from the C++ version, and may be corrected 
+// Note: diverges from the C++ version, and may be corrected
 // in a later revision of this code
 const NeighDom = {-1..1, -1..1, -1..1};
 
 // atom positions
 var Pos: [DistSpace] [perBinSpace] v3;
-var RealPos => Pos[binSpace];
+ref RealPos = if useStencilDist then Pos.noFluffView()
+              else Pos[binSpace];
 
 // atom velocity, force, and neighbor lists
 var Bins: [Space] [perBinSpace] atom;
 
 // bin counts
 var Count: [DistSpace] int(32);
-var RealCount => Count[binSpace];
+ref RealCount = if useStencilDist then Count.noFluffView()
+                else Count[binSpace];
 
 // offsets used to wrap ghosts
 var PosOffset: [NeighDom] v3;
@@ -239,12 +241,12 @@ var Dest, Src: [NeighDom] domain(3);
 
 setupComms();
 
-var fobj : Force;
+var fobj : owned Force;
 
 if force == "lj" {
-  fobj = new ForceLJ(force_cut);
+  fobj = new owned ForceLJ(force_cut);
 } else {
-  fobj = new ForceEAM(force_cut);
+  fobj = new owned ForceEAM(force_cut);
   mass = fobj.mass;
 }
 
@@ -266,7 +268,7 @@ if generating {
 
   dataReader.readln(string); // skip 'Velocities' line
 
-  // read velocities and add 
+  // read velocities and add
   for x in tempPos {
     var v : v3;
     var a : int;
@@ -280,13 +282,13 @@ if generating {
   dataFile.close();
 }
 
-// setup/store slices and neighbors so we don't have to recompute them every 
+// setup/store slices and neighbors so we don't have to recompute them every
 // time. Our neighbor bins won't change, and we'll always need the same slices.
 proc setupComms() {
   forall (P, D, S, N) in zip(PosOffset, Dest, Src, NeighDom) {
     P = N * box;
 
-    if !useStencilDist {
+    if !useStencilDist && N != (0,0,0) {
       D = binSpace.exterior(N * numNeed); // section of ghosts
       S = D.translate(-N * numBins); // map to binSpace
 
@@ -295,16 +297,13 @@ proc setupComms() {
   }
 }
 
-proc cleanup() {
-  delete fobj;
-}
-
 // Reads an input file
 proc inputFile() {
   var err : syserr;
-  var fchan = open(err, input_file, iomode.r);
-
-  if err then {
+  var fchan: file;
+  try {
+    fchan = open(input_file, iomode.r);
+  } catch {
     input_file = "none";
     return;
   }
@@ -325,7 +324,7 @@ proc inputFile() {
 
   // 'size of problem'
   problemSize = r.readln(int,int,int);
-  
+
   // # iterations
   numSteps = r.readln(int);
 
@@ -335,7 +334,7 @@ proc inputFile() {
   // starting temperature
   initialTemp = r.readln(real);
 
-  // start density (overriden if data file), used in EAM
+  // start density (overridden if data file), used in EAM
   density = r.readln(real);
 
   // recompute neighbors every N iterations
@@ -365,10 +364,10 @@ proc printHelp() {
   writeln("\t--num_bins <int>:        set linear dimension of bin grid");
   writeln("\t--units <string>:        set units (lj or metal), see LAMMPS documentation");
   writeln("\t--force <string>:        set interaction model (lj or eam)");
-  writeln("\t--data_file <string>:    read configuration from LAMMPS data file"); 
+  writeln("\t--data_file <string>:    read configuration from LAMMPS data file");
   writeln("\n  Miscellaneous:");
   writeln("\t--pHelp:                  display this help message");
-  writeln("\t--------------------------------------------------"); 
+  writeln("\t--------------------------------------------------");
   exit(0);
 }
 
@@ -379,7 +378,7 @@ proc printSim() {
   writeln("# miniMD-Reference 0.1 (Chapel) output ...");
   writeln("# Systemparameters: ");
   writeln("\t# input_file: ", input_file);
-  if data_file != "" then 
+  if data_file != "" then
     writeln("\t# datafile: ", data_file);
   else
     writeln("\t# datafile: none");
@@ -389,7 +388,7 @@ proc printSim() {
   else writeln("LJ");
   writeln("\t# atoms: ", numAtoms);
   write("\t# System size: ");
-  writef("%.2dr %.2dr %.2dr (unit cells: %i %i %i)\n", 
+  writef("%.2dr %.2dr %.2dr (unit cells: %i %i %i)\n",
       box(1), box(2), box(3), problemSize(1), problemSize(2), problemSize(3));
   writef("\t# density: %.6dr\n", density);
   writef("\t# Force cutoff: %.6dr\n", force_cut);
@@ -440,7 +439,7 @@ proc create_atoms() {
       for i in 1..3 {
         withinBounds = withinBounds && temp(i) >= boxlo(i) && temp(i) < boxhi(i);
       }
-                          
+
       if withinBounds {
         n = (curCoord(3) * (2 * problemSize(2)) * (2*problemSize(1)) + curCoord(2) * (2 * problemSize(1)) + curCoord(1) + 1) : int;
         for i in 1..3 {
@@ -486,7 +485,7 @@ proc create_velocity() {
   var vtot : v3;
 
   // find the total velocity
-  vtot = + reduce forall (bin, c) in zip(Bins, RealCount) do 
+  vtot = + reduce forall (bin, c) in zip(Bins, RealCount) do
     + reduce forall a in bin[1..c] do a.v;
 
   // get the average

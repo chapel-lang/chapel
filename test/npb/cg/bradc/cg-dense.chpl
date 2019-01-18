@@ -5,14 +5,14 @@ type elemType = real(64);
 enum classVals {S, W, A, B, C, D};
 
 
-const Class: domain(classVals);
-const probSizes:   [Class] int = ( 1400, 7000, 14000, 75000, 150000, 150000 ),
-      nonZeroes:   [Class] int = ( 7, 8, 11, 13, 15, 21 ),
-      shifts:      [Class] int = ( 10, 12, 20, 60, 110, 500 ),
-      numIters:    [Class] int = ( 15, 15, 15, 75, 75, 100 ),
-      verifyZetas: [Class] elemType = ( 8.5971775078648, 10.362595087124,
+const Class = {classVals.S..classVals.D};
+const probSizes:   [Class] int = [ 1400, 7000, 14000, 75000, 150000, 150000 ],
+      nonZeroes:   [Class] int = [ 7, 8, 11, 13, 15, 21 ],
+      shifts:      [Class] int = [ 10, 12, 20, 60, 110, 500 ],
+      numIters:    [Class] int = [ 15, 15, 15, 75, 75, 100 ],
+      verifyZetas: [Class] elemType = [ 8.5971775078648, 10.362595087124,
                                         17.130235054029,  22.712745482631,
-                                        28.973605592845,  52.5145321058 );
+                                        28.973605592845,  52.5145321058 ];
 
 config const probClass = classVals.S;
 
@@ -27,6 +27,11 @@ config const numTrials = 1,
              debug = false,
              printTiming = false;
 
+
+proc truncateZero(x: real) {
+  const eps = 1e-8;
+  return if abs(x) < eps then 0.0 else x;
+}
 
 proc main() {
   const MatrixSpace = {1..n, 1..n};
@@ -57,7 +62,7 @@ proc main() {
 
       zeta = shift + 1.0 / + reduce (X*Z);
 
-      if verbose then writeln(it, " ", rnorm, " ", zeta);
+      if verbose then writeln(it, " ", truncateZero(rnorm), " ", truncateZero(zeta));
 
       X = (1.0 / sqrt(+ reduce(Z*Z))) * Z;
     }

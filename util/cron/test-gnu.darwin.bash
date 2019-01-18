@@ -4,12 +4,9 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
-
-# Use relay SMTP server, since postfix does not reliably start when test
-# machine is rebooted.
-export CHPL_UTIL_SMTP_HOST=relaya
+source $CWD/common-darwin.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gnu.darwin"
 
 export CHPL_HOST_COMPILER=gnu
-$CWD/nightly -cron
+$CWD/nightly -cron -examples

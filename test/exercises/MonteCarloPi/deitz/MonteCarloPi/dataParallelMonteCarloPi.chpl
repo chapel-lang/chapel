@@ -27,7 +27,7 @@ writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
 // accesses to this object, set parSafe to false to avoid locking
 // overhead.
 //
-var rs = new NPBRandomStream(seed, parSafe=false);
+var rs = new owned NPBRandomStream(real, seed, parSafe=false);
 
 //
 // Create a domain over the number of random points to generate.
@@ -43,11 +43,6 @@ var D = {1..n};
 // to iterate starts at the point after the first iterator finishes).
 //
 var count = + reduce [(x,y) in zip(rs.iterate(D),rs.iterate(D))] x**2+y**2 <= 1.0;
-
-//
-// Delete the Random Stream object.
-//
-delete rs;
 
 //
 // Output the approximation of PI.

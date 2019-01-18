@@ -60,7 +60,7 @@ config const verify = true;
 config const allowUnusedLocales = false,
              gridRows = computeGridRows(),
              gridCols = numLocales / gridRows;
-const targetLocales => setupLocaleGrid();
+const targetLocales = setupLocaleGrid();
 
 //
 // The program entry point
@@ -76,8 +76,8 @@ proc main() {
   //
   const MatVectSpace: domain(2)
     dmapped DimensionalDist2D(targetLocales,
-                              new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
-                              new BlockCyclicDim(gridCols, lowIdx=1, blkSize))
+                              new unmanaged BlockCyclicDim(gridRows, lowIdx=1, blkSize),
+                              new unmanaged BlockCyclicDim(gridCols, lowIdx=1, blkSize))
                     = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
@@ -115,7 +115,7 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
      point (blk, blk) is the upper-left location of the currently
      unfactored matrix (the dotted region represents the areas
      factored in prior iterations).  The unfactored matrix is
-     partioned into four subdomains: tl, tr, bl, and br, and an
+     partitioned into four subdomains: tl, tr, bl, and br, and an
      additional domain (not shown), l, that is the union of tl and bl.
 
                 (point blk, blk)
@@ -158,7 +158,7 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
 
 //
 // Distributed matrix-multiply for HPL. The idea behind this algorithm is that
-// some point the matrix will be partioned as shown in the following diagram:
+// some point the matrix will be partitioned as shown in the following diagram:
 //
 //    [1]----+-----+-----+-----+
 //     |     |bbbbb|bbbbb|bbbbb|  Solve for the dotted region by
@@ -190,8 +190,8 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
   //
-  const replA => replicateD2(Ab, AD),
-        replB => replicateD1(Ab, BD);
+  const ref replA = replicateD2(Ab, AD),
+            replB = replicateD1(Ab, BD);
 
   // do local matrix-multiply on a block-by-block basis
   forall (row,col) in Rest by (blkSize, blkSize) {
@@ -214,8 +214,8 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 proc replicateD1(Ab, BD) {
   const replBD = {1..blkSize, 1..n+1}
     dmapped DimensionalDist2D(targetLocales,
-                              new ReplicatedDim(gridRows),
-                              new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
+                              new unmanaged ReplicatedDim(gridRows),
+                              new unmanaged BlockCyclicDim(gridCols, lowIdx=1, blkSize));
   var replB: [replBD] elemType;
 
   coforall dest in targetLocales[.., 0] do
@@ -231,8 +231,8 @@ proc replicateD1(Ab, BD) {
 proc replicateD2(Ab, AD) {
   const replAD = {1..n, 1..blkSize}
     dmapped DimensionalDist2D(targetLocales,
-                              new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
-                              new ReplicatedDim(gridCols));
+                              new unmanaged BlockCyclicDim(gridRows, lowIdx=1, blkSize),
+                              new unmanaged ReplicatedDim(gridCols));
   var replA: [replAD] elemType;
 
   coforall dest in targetLocales[0, ..] do

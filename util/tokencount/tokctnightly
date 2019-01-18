@@ -116,7 +116,8 @@ if ($debug == 1) {
 
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
-$num_procs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`;
+$here = dirname(__FILE__);
+$num_procs = `$here/../buildRelease/chpl-make-cpu_count`;
 chomp($num_procs);
 
 mysystem("cd $tokctdir && make > /dev/null", "building token counter", 1, 1);
@@ -127,7 +128,9 @@ $allcppfiles = "`find -name '*.cpp'` `find -name '*.c'` `find -name '*.h'`";
 $findflags = "-name '*.cpp' -print -or -name '*.c' -print -or -name '*.h' -print";
 
 $compdir = "$chplhomedir/compiler";
-$bindir = "$chplhomedir/bin/$ENV{'CHPL_HOST_PLATFORM'}";
+$binsubdir = `$here/../chplenv/chpl_bin_subdir.py --host`;
+chomp $binsubdir;
+$bindir = "$chplhomedir/bin/$binsubdir";
 
 # remove generated files
 mysystem("cd $compdir && rm -f */*.g.d_parser.cpp vparser/cast_code.cpp analysis/prim_data.h analysis/prim_data.cpp");
@@ -159,7 +162,7 @@ mysystem("$tokctr `find $chplhomedir/runtime $findflags` > $chplhomedir/runtime/
 
 mysystem("cd $chplhomedir && make -j$num_procs comprt", "making compiler", 1, 1);
 $ENV{'CHPL_HOME'} = $chplhomedir;
-mysystem("$bindir/chpl --count-tokens $chplhomedir/modules/standard/*.chpl $chplhomedir/modules/internal/*.chpl $chplhomedir/modules/dists/*.chpl $chplhomedir/modules/layouts/*.chpl >& $compdir/chpcode.ntoks", "counting module tokens", 1, 1);
+mysystem("$bindir/chpl --count-tokens $chplhomedir/modules/standard/*.chpl $chplhomedir/modules/internal/*.chpl $chplhomedir/modules/dists/*.chpl $chplhomedir/modules/layouts/*.chpl > $compdir/chpcode.ntoks 2>&1", "counting module tokens", 1, 1);
 
 $asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
 $adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);
@@ -297,18 +300,22 @@ sub mysystem {
         $status = $status / 256;
 	print "Error $_[1]: $status\n";
 
-	if ($mailmsg != 0) {
-            $mailsubject = "$subjectid Failure";
-            $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
+    if ($mailmsg != 0) {
+        $mailsubject = "$subjectid Failure";
+        $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
+        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
             print "Trying to mail message... using $mailcommand\n";
-	    open(MAIL, $mailcommand);
-	    print MAIL "=== Summary ===================================================\n";
-	    print MAIL "ERROR $_[1]: $status\n";
-	    print MAIL "===============================================================\n";
-	    print MAIL "Build: ", $buildurl, "\n";
-	    close(MAIL);
-	}
+            open(MAIL, $mailcommand);
+            print MAIL "=== Summary ===================================================\n";
+            print MAIL "ERROR $_[1]: $status\n";
+            print MAIL "===============================================================\n";
+            print MAIL "Build: ", $buildurl, "\n";
+            close(MAIL);
+        } else {
+            print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+        }
+    }
 
 	if ($fatal != 0) {
 	    `echo "$statdate\t-" >> $statfile`;

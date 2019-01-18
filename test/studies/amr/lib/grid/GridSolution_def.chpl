@@ -15,41 +15,41 @@ use GridVariable_def;
 
 class GridSolution {
 
-  const grid:     Grid;
+  const grid:     unmanaged Grid;
   
-  var old_data:     GridVariable;
-  var current_data: GridVariable;
+  var old_data:     unmanaged GridVariable;
+  var current_data: unmanaged GridVariable;
   var old_time:     real;
   var current_time: real;
   
   
 
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
   
-  proc GridSolution (grid: Grid) {
+  proc init (grid: unmanaged Grid) {
     this.grid = grid;
-    old_data =     new GridVariable(grid = grid);
-    current_data = new GridVariable(grid = grid);
+    old_data =     new unmanaged GridVariable(grid = grid);
+    current_data = new unmanaged GridVariable(grid = grid);
   }
   // /|''''''''''''''''''''/|
-  //< |    constructor    < |
+  //< |    initializer    < |
   // \|....................\|
   
   
   
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
-  proc ~GridSolution () 
+  proc deinit () 
   {
     delete old_data;
     delete current_data;
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
   

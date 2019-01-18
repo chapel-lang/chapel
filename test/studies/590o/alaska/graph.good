@@ -1,6 +1,3 @@
-graph.chpl:506: In function 'readGraph':
-graph.chpl:559: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-graph.chpl:560: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
 Reading graph from graph.dat
 New source node A
 New dest node B
@@ -83,4 +80,12 @@ Found back edge {F}<---{C}
 * init_rank  *
 **************
 Init rank for {A} to 1
-graph.chpl:267: error: halt reached - Edge from {A} to {B} but ranks are 1 -> 0
+	B of rank 2
+	 propagate_rank(B)
+	D of rank 3
+	 propagate_rank(D)
+	C of rank 2
+	 propagate_rank(C)
+	F of rank 1
+	 propagate_rank(F)
+graph.chpl:256: error: halt reached - Edge from {C} to {F} but ranks are 2 -> 1

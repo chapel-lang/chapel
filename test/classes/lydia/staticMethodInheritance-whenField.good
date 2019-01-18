@@ -1,0 +1,14 @@
+staticMethodInheritance-whenField.chpl:15: warning: result of new Parent is now managed by default
+staticMethodInheritance-whenField.chpl:15: note: 'new unmanaged Parent' gives old behavior
+staticMethodInheritance-whenField.chpl:15: note: 'new borrowed Parent' is the new default
+staticMethodInheritance-whenField.chpl:15: note: 'new owned Parent', 'new shared Parent' also available
+staticMethodInheritance-whenField.chpl:15: note: get more help with --warn-unstable
+staticMethodInheritance-whenField.chpl:16: warning: result of new Child is now managed by default
+staticMethodInheritance-whenField.chpl:16: note: 'new unmanaged Child' gives old behavior
+staticMethodInheritance-whenField.chpl:16: note: 'new borrowed Child' is the new default
+staticMethodInheritance-whenField.chpl:16: note: 'new owned Child', 'new shared Child' also available
+staticMethodInheritance-whenField.chpl:16: note: get more help with --warn-unstable
+Parent
+Child
+3
+3

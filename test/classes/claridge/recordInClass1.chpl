@@ -7,8 +7,11 @@ class Container {
 }
 
 proc main {
-  var c = new Container();
+  var c = new unmanaged Container();
+
   // writeln(c.r.indices);
   writeln("hello");
   c.r.indices = {1..1};
+
+  delete c;
 }

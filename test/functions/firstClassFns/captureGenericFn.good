@@ -1,0 +1,5 @@
+captureGenericFn.chpl:23: error: 'f1' cannot be captured as a value because it is a generic function
+captureGenericFn.chpl:24: error: 'f2' cannot be captured as a value because it is a generic function
+captureGenericFn.chpl:25: error: 'f3' cannot be captured as a value because it is a generic function
+captureGenericFn.chpl:26: error: 'f4' cannot be captured as a value because it is a generic function
+captureGenericFn.chpl:28: error: illegal access of first class function

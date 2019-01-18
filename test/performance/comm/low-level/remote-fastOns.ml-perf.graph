@@ -1,0 +1,5 @@
+perfkeys: Performance (mOps/sec) =
+files: many-to-one-fastOns.dat
+graphkeys: FastExecuteOns to 1 node
+graphtitle: Remote FastExecuteOn Performance
+ylabel: Performance (10**6 ops/sec)

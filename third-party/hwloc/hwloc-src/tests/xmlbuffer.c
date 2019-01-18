@@ -1,5 +1,5 @@
 /*
- * Copyright © 2010 inria.  All rights reserved.
+ * Copyright © 2010-2017 Inria.  All rights reserved.
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
@@ -78,29 +78,29 @@ int main(void)
   int err;
 
   printf("using default import and export\n");
-  putenv("HWLOC_NO_LIBXML_IMPORT=0");
-  putenv("HWLOC_NO_LIBXML_EXPORT=0");
+  putenv("HWLOC_LIBXML_IMPORT=1");
+  putenv("HWLOC_LIBXML_EXPORT=1");
   err = one_test();
   if (err < 0)
     return err;
 
   printf("using minimalistic import and default export\n");
-  putenv("HWLOC_NO_LIBXML_IMPORT=1");
-  putenv("HWLOC_NO_LIBXML_EXPORT=0");
+  putenv("HWLOC_LIBXML_IMPORT=0");
+  putenv("HWLOC_LIBXML_EXPORT=1");
   err = one_test();
   if (err < 0)
     return err;
 
   printf("using default import and minimalistic export\n");
-  putenv("HWLOC_NO_LIBXML_IMPORT=0");
-  putenv("HWLOC_NO_LIBXML_EXPORT=1");
+  putenv("HWLOC_LIBXML_IMPORT=1");
+  putenv("HWLOC_LIBXML_EXPORT=0");
   err = one_test();
   if (err < 0)
     return err;
 
   printf("using minimalistic import and export\n");
-  putenv("HWLOC_NO_LIBXML_IMPORT=1");
-  putenv("HWLOC_NO_LIBXML_EXPORT=1");
+  putenv("HWLOC_LIBXML_IMPORT=0");
+  putenv("HWLOC_LIBXML_EXPORT=0");
   err = one_test();
   if (err < 0)
     return err;

@@ -1,0 +1,1 @@
+futures-error-void.chpl:3: error: async() task function (expecting arguments) provided without arguments

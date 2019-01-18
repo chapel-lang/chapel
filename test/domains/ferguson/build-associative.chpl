@@ -6,7 +6,7 @@ config const table = false;
 use Time;
 use Random;
 
-var rng = makeRandomStream(0, false, int, RNG.PCG);
+var rng = makeRandomStream(eltType=int, seed=0, parSafe=false, algorithm=RNG.PCG);
 
 //var t2 = new Timer();
 //var t3 = new Timer();
@@ -24,9 +24,12 @@ var configs = [
 if table {
   for (cfg,i) in zip(configs, 1..) {
     var (iters, size, num_domains) = cfg;
+
     if correctness then iters = 1;
-    writeln(i, ": iters=", iters, " size=", size, " num_domains=", num_domains); 
+
+    writeln(i, ": iters=", iters, " size=", size, " num_domains=", num_domains);
   }
+
   writeln();
 
   for (cfg,idx) in zip(configs, 1..) {
@@ -43,20 +46,25 @@ for (cfg,idx) in zip(configs, 1..) {
   if correctness then iters = 1;
 
   var t1 = new Timer();
+
   t1.start();
+
   for it in 1..iters {
     var D1:[1..num_domains] domain(int, parSafe=false);
+
     // Doesn't work with tuple?
     for i in 1..size {
       var j = rng.getNext(1, num_domains);
       D1(j) += i;
     }
+
     for j in 1..num_domains {
       D1(j).clear();
     }
   }
+
   t1.stop();
-  
+
   if timing {
     if perf {
       writef("%i: % 6.3r\n", idx, t1.elapsed());
@@ -75,4 +83,3 @@ if timing {
 if perf || correctness {
   writeln("SUCCESS");
 }
-

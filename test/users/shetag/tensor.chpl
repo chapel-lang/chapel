@@ -1,7 +1,7 @@
-//Array with empty/queried domain can only be used as a formal argument 
+//Array with empty/queried domain can only be used as a formal argument
 //type -> a has to be defined in terms of n.
 
-//Array aliasing requires a new variable declaration -> 
+//Array aliasing requires a new variable declaration ->
 //wrap cannot be implemented.
 
 use Math;
@@ -16,11 +16,11 @@ type elemType = real(64);
 
 class Vector {
   var n : int;
-  var a : [1..n] elemType; 
+  var a : [1..n] elemType;
 
   //error: internal failure SYM1167 chpl Version 0.5
   //due to default constructor semantics i think?
-  /* 
+  /*
   proc Vector(arg) {
     if (arg.type == int) then {
       n = arg;
@@ -36,24 +36,24 @@ class Vector {
   proc normf() {
     return sqrt(+ reduce a**2);
   }
-    
+
   proc inner(other) {
     return + reduce (a*other.a);
   }
-    
+
   proc gaxpy(alpha,other,beta) {
     a = alpha*a + beta*other.a;
-    return this;
+    return _to_unmanaged(this);
   }
-    
+
   proc scale(s) {
     a = a*s;
-    return this;
+    return _to_unmanaged(this);
   }
 
   proc emul(other) {
     a = a*other.a;
-    return this;
+    return _to_unmanaged(this);
   }
 
   proc getitem(ind) {
@@ -63,16 +63,16 @@ class Vector {
   proc setitem(ind,value) {
     a(ind) = value;
   }
-    
+
   proc getslice(lo,hi) {
-    var aslice => a(lo..hi);
-    return new Vector(aslice.numElements,aslice);
+    ref aslice = a(lo..hi);
+    return new unmanaged Vector(aslice.numElements,aslice);
   }
 
   proc setslice(lo,hi,value) {
     a(lo..hi) = value;
   }
- 
+
   proc len() {
     return n;
   }
@@ -90,7 +90,7 @@ class Matrix {
   //due to default constructor semantics i think?
   /*
   proc Matrix(arg0,arg1=-1) {
-    if (arg1 == -1) 
+    if (arg1 == -1)
     then {
       n = arg0.domain.dim(1).high;
       m = arg0.domain.dim(2).high;
@@ -112,14 +112,14 @@ class Matrix {
     m = arg0.domain.dim(2).high;
     a = arg0;
   }
-  
+
   proc Matrix(arg0,arg1) {
     n = arg0;
     m = arg1;
     a = 0.0;
   }
   */
-  
+
   proc dims() {
     return (n,m);
   }
@@ -134,49 +134,49 @@ class Matrix {
 
   // does (nxm)*(mx1)
   proc mul(v) {
-    var r = new Vector(n);
-    
-    //Case 1 -- works fine if v is of type [1..m]. 
+    var r = new unmanaged Vector(n);
+
+    //Case 1 -- works fine if v is of type [1..m].
     //tested by m4.mul(v3.a) from main(); v3.a is of type [1..m].
     //[i in 1..n] r.setitem(i, + reduce a(i,1..m)*v);
-  
-    //Case 2 -- if v is of type Vector, then compiler throws the error: 
+
+    //Case 2 -- if v is of type Vector, then compiler throws the error:
     //"type mismatch in assignment from _ic_+ to real".
-    //tested by m4.mul(v3) from main(). 
-    //Note that v3, of type Vector, wraps an array of type [1..m]. 
-    //Comment: Here [1..m] is wrapped inside a Vector, while case 1 above
-    //passes [1..m] in directly. Otherwise, the two are identical. 
-    [i in 1..n] r.setitem(i, + reduce (a(i,1..m)*v.a));
-  
-    //Case 3 -- if v is of type Vector, then this gives a tensor product.
-    //tested by m4.mul(v3) from main().  
+    //tested by m4.mul(v3) from main().
     //Note that v3, of type Vector, wraps an array of type [1..m].
-    //Comment: This was to debug case 2. I expected a zipper product here. 
-    //[i in 1..n] writeln(a(i,1..m)*v.a); 
-    
+    //Comment: Here [1..m] is wrapped inside a Vector, while case 1 above
+    //passes [1..m] in directly. Otherwise, the two are identical.
+    [i in 1..n] r.setitem(i, + reduce (a(i,1..m)*v.a));
+
+    //Case 3 -- if v is of type Vector, then this gives a tensor product.
+    //tested by m4.mul(v3) from main().
+    //Note that v3, of type Vector, wraps an array of type [1..m].
+    //Comment: This was to debug case 2. I expected a zipper product here.
+    //[i in 1..n] writeln(a(i,1..m)*v.a);
+
     return r;
   }
- 
-  // does (1xn)*(nxm) 
-  proc rmul(v) {
-    var r = new Vector(m);
 
-    //Case 1 -- works fine if v is of type [1..n]. 
-    //tested by m4.rmul(v4.a) from main(); v4.a is of type [1..n]. 
+  // does (1xn)*(nxm)
+  proc rmul(v) {
+    var r = new unmanaged Vector(m);
+
+    //Case 1 -- works fine if v is of type [1..n].
+    //tested by m4.rmul(v4.a) from main(); v4.a is of type [1..n].
     //[i in 1..m] r.setitem(i, + reduce v*a(1..n,i));
 
-    //Case 2 -- if v is of type Vector, then compiler throws the error: 
-    //"type mismatch in assignment from _ic_+ to real". 
+    //Case 2 -- if v is of type Vector, then compiler throws the error:
+    //"type mismatch in assignment from _ic_+ to real".
     //tested by m4.rmul(v4) from main().
     //Note that v4, of type Vector, wraps an array of type [1..n].
-    //Comment: Here [1..n] is wrapped inside a Vector, while case 1 above 
+    //Comment: Here [1..n] is wrapped inside a Vector, while case 1 above
     //passes [1..n] in directly. Otherwise, the two are identical.
     [i in 1..m] r.setitem(i, + reduce (v.a*a(1..n,i)));
 
     //Case 3 -- if v is of type Vector, then this gives a tensor product.
     //tested by m4.rmul(v4) from main().
     //Note that v4, of type Vector, wraps an array of type [1..n].
-    //Comment: This was to debug case 2. I expected a zipper product here. 
+    //Comment: This was to debug case 2. I expected a zipper product here.
     //[i in 1..m] writeln(v.a*a(1..n,i));
 
     return r;
@@ -184,15 +184,15 @@ class Matrix {
 }
 
 proc main() {
-  const v1 = new Vector(6);
+  const v1 = new unmanaged Vector(6);
   writeln("v1 = ",v1);
 
-  var a2 : [1..6] elemType = [i in 1..6] i; 
-  var v2 = new Vector(a2.numElements,a2);
+  var a2 : [1..6] elemType = [i in 1..6] i;
+  var v2 = new unmanaged Vector(a2.numElements,a2);
   writeln("v2 = ",v2);
 
   var a3 : [1..6] elemType = [1..6] 10.0;
-  var v3 = new Vector(a3.numElements,a3);
+  var v3 = new unmanaged Vector(a3.numElements,a3);
   writeln("v3 = ",v3);
 
   writeln("v1.normf() = ",v1.normf());
@@ -202,7 +202,7 @@ proc main() {
   writeln("v1.inner(v2) = ",v1.inner(v2));
   writeln("v1.inner(v3) = ",v1.inner(v3));
   writeln("v2.inner(v3) = ",v2.inner(v3));
-  
+
   v2 = v2.gaxpy(2,v3,10.0);
   writeln("v2.gaxpy(2,v3,10.0) = ",v2);
 
@@ -210,13 +210,13 @@ proc main() {
   writeln("v2.scale(3.0) = ",v2);
 
   v2 = v2.emul(v3);
-  writeln("v2.emul(v3) = ",v2);  
-  
+  writeln("v2.emul(v3) = ",v2);
+
   writeln("v2.getitem(5) = ",v2.getitem(5));
-  
+
   v2.setitem(5,1.5);
   writeln("v2.setitem(5,1.5) = ",v2);
-  
+
   var v4 = v2.getslice(1,3);
   writeln("v4 = v2.getslice(1,3) = ",v4);
 
@@ -236,13 +236,27 @@ proc main() {
   writeln("m4 = ",m4);
 
   writeln("m1.dims() = ",m1.dims());
-  writeln("m4.dims() = ",m4.dims()); 
+  writeln("m4.dims() = ",m4.dims());
 
   writeln("m4.getitem(2,2) = ",m4.getitem(2,2));
-  
+
   m4.setitem(2,2,100);
   writeln("m4.setitem(2,2,100) = ",m4);
 
-  writeln("m4.mul(v3) = ",m4.mul(v3));
-  writeln("m4.rmul(v4) = ",m4.rmul(v4));
+
+  var v5 = m4.mul(v3);
+  var v6 = m4.rmul(v4);
+
+  writeln("m4.mul(v3) = ",  v5);
+  writeln("m4.rmul(v4) = ", v6);
+
+  delete m1;
+  delete m4;
+
+  delete v6;
+  delete v5;
+  delete v4;
+  delete v3;
+  delete v2;
+  delete v1;
 }

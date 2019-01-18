@@ -284,7 +284,7 @@ proc WrapperRectDom.dsiLow                return whole.low;
 proc WrapperRectDom.dsiHigh               return whole.high;
 proc WrapperRectDom.dsiStride             return whole.stride;
 proc WrapperRectDom.dsiNumIndices         return whole.numIndices;
-proc WrapperRectDom.dsiMember(indexx)     return whole.member(indexx);
+proc WrapperRectDom.dsiMember(indexx)     return whole.contains(indexx);
 proc WrapperRectDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
 
 proc WrapperRectDom.dsiSerialWrite(f: Writer): void { f.write(whole); }
@@ -299,11 +299,12 @@ proc WrapperRectDom.dsiGetIndices()  return whole.dims();
 //== creation, SetIndices, Access
 
 proc WrapperDist.dsiNewRectangularDom(param rank: int,
-                                          type idxType,
-                                          param stridable: bool)
+                                      type idxType,
+                                      param stridable: bool,
+                                      inds)
 {
   const origdom = origDist.dsiNewRectangularDom(this.origRank,
-                                                idxType, stridable);
+                                                idxType, stridable, inds);
   ensureHasBeenPrivatized(this);
   ensureHasBeenPrivatized(origdom);
 
@@ -312,6 +313,7 @@ proc WrapperDist.dsiNewRectangularDom(param rank: int,
                                     stridable=stridable, dist=this,
                                     origDom=origdom);
   reportNewDom("dsiNewRectangularDom", result);
+  result.dsiSetIndices(inds);
   return result;
 }
 
@@ -326,28 +328,6 @@ proc WrapperRectDom.dsiSetIndices(newRanges): void where isTuple(newRanges) {
   whole = {(...newRanges)};
   _reportSetIndices(newRanges);
   origDom.dsiSetIndices(origIx(newRanges));
-}
-
-proc WrapperRectDom.dsiBuildRectangularDom(param rank: int,
-                                           type idxType,
-                                           param stridable: bool,
-                                           ranges: rank * range(idxType,
-                                                 BoundedRangeType.bounded,
-                                                                stridable))
-{
-  const origdom = origDom.dsiBuildRectangularDom(this.dist.origRank,
-                                                 idxType, stridable,
-                                                 origIx(ranges));
-  ensureHasBeenPrivatized(this.dist);
-  ensureHasBeenPrivatized(origdom);
-
-  // 'kind' is determined by this.dist.kind and affects initialData()
-  const result = new WrapperRectDom(rank=rank, idxType=idxType,
-                                    stridable=stridable,
-                            dist=this.dist, origDom = origdom,
-                            whole = {(...ranges)});
-  reportNewDom("dsiBuildRectangularDom", result);
-  return result;
 }
 
 proc WrapperRectDom.dsiBuildArray(type eltType) {
@@ -378,120 +358,6 @@ iter WrapperRectDom.these() {
     yield ix;
 }
 
-
-//== slicing, reindexing, rank change
-
-proc WrapperDist.dsiCreateReindexDist(newSpace, oldSpace) {
-  return genericDsiCreateReindexDist(this, this.rank, newSpace, oldSpace);
-}
-
-proc WrapperArr.dsiReindex(reindexDef: WrapperRectDom) {
-  const reindexee = this;
-
-  // The following can give a different return type than genericDsiReindex(),
-  // so alas have to disable it.
-  //if reindexee.dom == reindexDef then
-  //  return reindexee;
-
-  if reindexDef.isReindexing() then
-    return genericDsiReindex(reindexee, reindexDef);
-  else {
-    // For now, the only way to get here is from newAlias().
-    assert(reindexee.dom == reindexDef);
-    return reindexee;
-  }
-}
-
-proc WrapperDist.dsiCreateRankChangeDist(param newRank: int, args) {
-  return genericDsiCreateRankChangeDist(this, newRank, args);
-}
-
-proc WrapperArr.dsiRankChange(sliceDefDom: WrapperRectDom,
-                                  param newRank: int,
-                                  param newStridable: bool,
-                                  sliceDefIndsRanges) {
-  return genericDsiRankChange(this, sliceDefDom, newRank, newStridable,
-                              sliceDefIndsRanges);
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// 'reindex' WrapperDist
-
-//== creating and using it - see e.g.
-// DimensionalDist2D.dsiCreateReindexDist(), DimensionalArr.dsiReindex()
-
-// For 'origRank', use origDist's rank if available,
-// otherwise newSpace.size or oldSpace.size.
-//
-inline
-proc genericDsiCreateReindexDist(reindexeeDist, param origRank,
-                                 newSpace, oldSpace)
-  where reindexeeDist: BaseDist
-{
-  compilerAssert(origRank == newSpace.size);
-  compilerAssert(origRank == oldSpace.size);
-
-  ensureHasBeenPrivatized(reindexeeDist);
-
-  const new2old = n2oAll(origRank);
-  compilerAssert(origRank == new2old.size);
-
-  // verify our multidimensional forumla in the case of 2d
-  if origRank == 2 then
-    assert(new2old == (n2oOne(1),n2oOne(2)));
-
-  return newWrapperReindexDist(reindexeeDist = reindexeeDist, deltaToOrig = new2old);
-
-  // helper functions
-
-  proc n2oAll(param numDims)
-    return if numDims == 1 then (n2oOne(1),)
-           else ((...n2oAll(numDims-1)), n2oOne(numDims));
-
-  proc n2oOne(param dim) {
-    const newr = newSpace(dim), oldr = oldSpace(dim);
-    if newr.stride != oldr.stride then
-      halt("reindexing from ", oldr, " to ", newr,
-           " is not supported by ", "WrapperDist", //?? was: oldr.toString
-           " due to a change in stride");
-    //writeln("dim", dim, "  ", oldr, " >> ", newr,
-    //        "  delta ", oldr.low - newr.low);
-    return oldr.low - newr.low;
-  }
-}
-
-inline
-proc genericDsiReindex(reindexeeArr, reindexDef: WrapperRectDom)
-  where reindexeeArr: BaseArr  &&  reindexDef.isReindexing()
-{
-  ensureHasBeenPrivatized(reindexeeArr);
-  ensureHasBeenPrivatized(reindexDef);
-
-  // todo: do anything special in this case?
-  //if reindexeeArr.dom == reindexDef then return reindexeeArr;
-
-  const result = new WrapperArr(eltType = reindexeeArr.eltType,
-                        dom = reindexDef,
-                        origArr = reindexeeArr);
-  reportNewArr("genericDsiReindex", result);
-  return result;
-}
-
-
-//== reindex-specific constructors
-// todo: which are needed? if just the Dist one, move it up
-
-proc newWrapperReindexDist(reindexeeDist, deltaToOrig)
-{
-  const result = new WrapperDist(origDist = reindexeeDist,
-                                 kind     = WrapperKind.reindex,
-                                _data     = deltaToOrig);
-  compilerAssert(result.isReindexing());
-  compilerAssert(result.rank == deltaToOrig.size);
-  reportNewDist("newWrapperReindexDist", result);
-  return result;
-}
 
 proc WrapperRectDom.initialData() where isReindexing()  return dist.deltaToOrig;
 proc WrapperArr.initialData()     where isReindexing()  return dom.deltaToOrig;
@@ -591,69 +457,6 @@ iter WrapperArr.these(param tag: iterKind, followThis) ref where tag == iterKind
     yield v;
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// 'rankchange' WrapperDist
-
-//== creating and using it - see e.g.
-// DimensionalDist2D.dsiCreateRankChangeDist(), DimensionalArr.dsiRankChange()
-
-inline
-proc genericDsiCreateRankChangeDist(sliceeDist, param newRank: int,
-                                    sliceDefIndsRanges)
-  where sliceeDist: BaseDist
-{
-  ensureHasBeenPrivatized(sliceeDist);
-  const result = newWrapperRankChangeDist(sliceeDist = sliceeDist,
-                                          sliceDef = sliceDefIndsRanges);
-  compilerAssert(result.rank == newRank);
-  return result;
-}
-
-// All args except 'sliceDefDom' are here for asserts only.
-// (That should be cheap after inlining.)
-//
-// NOTE: for the 'result' WrapperArr, result.dom.origDom != result.origArr.dom.
-// Indeed, result.dom==sliceDefDom, which is obtained by dmapping
-// a fresh domain (sliceDefDom.origDom) with a WrapperDist.
-// sliceDefDom.origDom is obtained as a rank change of result.origArr.dom,
-// so it is different. (todo: verify/fix this explanation)
-//
-inline
-proc genericDsiRankChange(sliceeArr,
-                          sliceDefDom: WrapperRectDom,
-                          param newRank: int,
-                          param newStridable: bool,
-                          sliceDefIndsRanges)
-  where sliceeArr: BaseArr
-{
-  // Sanity checking, since the same sliceDefInds were supposedly used
-  // when creating sliceDefDom.dist.
-  compilerAssert(sliceDefIndsRanges.type == sliceDefDom.dist.sliceDef.type);
-  compilerAssert(newRank == sliceDefDom.rank);
-  compilerAssert(newStridable == sliceDefDom.stridable);
-
-  ensureHasBeenPrivatized(sliceeArr);
-  ensureHasBeenPrivatized(sliceDefDom);
-
-  const result = new WrapperArr(eltType = sliceeArr.eltType,
-                        dom = sliceDefDom,
-                        origArr = sliceeArr);
-  reportNewArr("genericDsiRankChange", result);
-  return result;
-}
-
-
-//== rankchange-specific constructors
-
-proc newWrapperRankChangeDist(sliceeDist, sliceDef) {
-  const result = new WrapperDist(origDist = sliceeDist,
-                                 kind     = WrapperKind.rankchange,
-                                _data     = sliceDef);
-  compilerAssert(result.isRankChange());
-  reportNewDist("newWrapperRankChangeDist", result);
-  return result;
-}
 
 proc WrapperRectDom.initialData() where isRankChange()  return 0;  // nothing
 proc WrapperArr.initialData()     where isRankChange()  return 0;  // nothing
@@ -883,7 +686,7 @@ proc WrapperRectDom._origToUserDenseFT(denseOrigFT) where isRankChange()
   // the intersection check
   proc handleCDim(origRanges, param origDim) {
     compilerAssert(dist.isCollapsedOrigDim(origDim));
-    if !origRanges(origDim).member(dist.sliceDef(origDim)) then
+    if !origRanges(origDim).contains(dist.sliceDef(origDim)) then
         intersects = false;
   }
   // slice one of the origRanges

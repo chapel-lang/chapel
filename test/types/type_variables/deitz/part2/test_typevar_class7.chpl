@@ -1,6 +1,8 @@
 class bar {
   type t;
-  var y : t;
+
+  var  y : t;
+
   proc print() {
     writeln(y);
   }
@@ -8,16 +10,18 @@ class bar {
 
 class foo {
   type t;
-  var x : t;
+  var  x : t;
+
   proc print() {
     writeln(x);
   }
 }
 
-var f1 : foo(t=int) = new foo(t = int);
-var b1 : bar(t=int) = new bar(t = int);
-var f2 : foo(t=string) = new foo(t = string);
-var b2 : bar(t=string) = new bar(t = string);
+var f1 : borrowed foo(t=int)    = new borrowed foo(t = int);
+var b1 : borrowed bar(t=int)    = new borrowed bar(t = int);
+
+var f2 : borrowed foo(t=string) = new borrowed foo(t = string);
+var b2 : borrowed bar(t=string) = new borrowed bar(t = string);
 
 f1.x = 12;
 f2.x = "hello";

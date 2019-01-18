@@ -25,8 +25,8 @@ The primary packages required by `chpldoc` are: `Sphinx`,
 installation). The dependencies for these packages are listed in the next
 section.
 
-The primary packages required by `start_test` are: `subprocess32`,
-`argparse`, `PyYAML`, and `virtualenv` (for installation).
+The primary packages required by `start_test` are: `argparse`, `PyYAML`, and
+`virtualenv` (for installation).
 
 ### Sphinx
 
@@ -76,21 +76,12 @@ A YAML parser and emitter for Python
 
 **Website**: https://pypi.python.org/pypi/PyYAML
 
-### subprocess32
-
-Enhanced version of the subprocess standard library module, backported from
-Python 3.
-
-**License**: Python Software Foundation License
-
-**Website**: https://pypi.python.org/pypi/subprocess32
-
 ### virtualenv
 
 Virtual Python Environment builder
 
 Used to create isolated environment to install other python packages, without
-interfering with system ppython packages.
+interfering with system python packages.
 
 **License**: Python Software Foundation License
 

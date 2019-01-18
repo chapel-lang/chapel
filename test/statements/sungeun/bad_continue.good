@@ -1,1 +1,3 @@
-bad_continue.chpl:29: error: bad label on break or continue
+bad_continue.chpl:29: error: bad label 'l3' on break or continue
+bad_continue.chpl:32: error: bad label 'l2' on break or continue
+bad_continue.chpl:37: error: bad label 'l1' on break or continue

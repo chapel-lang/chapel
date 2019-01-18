@@ -18,14 +18,28 @@ class C {
 
 record R {
   var x: int = 0;
-  var c: C;
+  var c: unmanaged C;
 }
 
-proc ref R.init(x:int, allow_zero:bool=false) {
+proc R.init(x : int = 0, c : unmanaged C = nil) {
+  if debug then writeln("in R.init(", x, ", ", c, ")");
+  this.x = x;
+  this.c = c;
+  this.complete();
+  this.setup(x, true);
+}
+
+proc R.init(other:R) {
+  if debug then writeln("in R.init(", other, ")");
+  this.complete();
+  this.setup(other.x, true);
+}
+
+proc ref R.setup(x:int, allow_zero:bool=false) {
   if !allow_zero then assert(x != 0);
 
   if debug {
-    printf("in init deallocating c=%p ", c);
+    printf("in setup deallocating c=%p ", c);
     writeln(c);
   }
 
@@ -34,11 +48,11 @@ proc ref R.init(x:int, allow_zero:bool=false) {
   this.c = nil;
 
   this.x = x;
-  this.c = new C(x = x, id = 1+c_counter.fetchAdd(1));
+  this.c = new unmanaged C(x = x, id = 1+c_counter.fetchAdd(1));
   
   extern proc printf(fmt:c_string, arg:C);
   if debug {
-    printf("in init allocated c=%p ", c);
+    printf("in setup allocated c=%p ", c);
     writeln(c);
   }
 
@@ -59,7 +73,7 @@ proc ref R.increment() {
 }
 
 
-proc R.~R() {
+proc R.deinit() {
   extern proc printf(fmt:c_string, arg:C);
   if debug {
     printf("in destructor for c=%p ", c);
@@ -70,15 +84,17 @@ proc R.~R() {
   delete c;
 }
 
-proc ref R.verify() {
+proc R.verify() {
   extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
 
   // default initialized records have nil ptr, OK
-  if c == nil && x == 0 then return;
+  if c == nil && x == 0 {
+    return;
+  }
 
   if c == nil {
     // any time we set x!=0 the class should be initialized
-    // (in R.init).
+    // (in R.setup).
     writeln("R.verify failed - no class but x != 0");
   }
   // otherwise, check that R.x == R.c.x
@@ -86,59 +102,6 @@ proc ref R.verify() {
     writeln("R.verify failed - got x=", x, " but c.x=", c.x);
     assert(false);
   }
-}
-
-// We'd like this to be by ref, but doing so leads to an internal
-// compiler error.  See
-// $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
-pragma "donor fn"
-pragma "auto copy fn"
-proc chpl__autoCopy(arg: R) {
-  extern proc printf(fmt:c_string, arg:C);
-  extern proc printf(fmt:c_string, arg:C, arg2:C);
-  if debug {
-    printf("in auto copy from arg.c=%p ", arg.c);
-    writeln("x=", arg.x, " ", arg.c);
-  }
-
-  // TODO - is no auto destroy necessary here?
-  pragma "no auto destroy"
-  var ret: R;
-
-  // allow copies of default initialized record
-  if allocateAlways || arg.x!=0 || arg.c!=nil {
-    ret.init(x = arg.x, true);
-  }
-
-  if debug {
-    printf("leaving auto copy from arg.c=%p to ret.c=%p ", arg.c, ret.c);
-    writeln(arg.c, ret.c);
-  }
-
-  return ret;
-}
-
-// I'd like this to be ref, but that breaks
-//    var outerX: R; begin { var x = outerX; }
-pragma "init copy fn"
-proc chpl__initCopy(arg: R) {
-  extern proc printf(fmt:c_string, arg:C);
-  extern proc printf(fmt:c_string, arg:C, arg2:C);
-  if debug {
-    printf("in init copy from arg.c=%p ", arg.c);
-    writeln(arg.c);
-  }
-
-  var ret: R;
-
-  ret.init(x = arg.x, true);
-
-  if debug {
-    printf("leaving init copy from arg.c=%p to ret.c=%p ", arg.c, ret.c);
-    writeln(arg.c, ret.c);
-  }
-
-  return ret;
 }
 
 proc =(ref lhs: R, rhs: R) {
@@ -149,7 +112,7 @@ proc =(ref lhs: R, rhs: R) {
     writeln(rhs.c);
   }
 
-  lhs.init(x = rhs.x, true);
+  lhs.setup(x = rhs.x, true);
 
   if debug {
     printf("leaving assign lhs.c %p = rhs.c %p ", lhs.c, rhs.c);

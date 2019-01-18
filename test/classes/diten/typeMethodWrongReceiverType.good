@@ -1,0 +1,2 @@
+typeMethodWrongReceiverType.chpl:7: error: unresolved call 'type int(64).typeMethod()'
+typeMethodWrongReceiverType.chpl:2: note: candidates are: C.type typeMethod()

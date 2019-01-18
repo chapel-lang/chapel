@@ -3,7 +3,7 @@ class outerClass {
     var a: int;
   }
   proc foo() {
-    var c = new aClass(4);
+    var c = new unmanaged aClass(4);
     writeln(c.a);
     delete c;
   }
@@ -14,8 +14,8 @@ class aClass {
 }
 
 proc main() {
-  var a = new aClass(3);
-  var b = new outerClass();
+  var a = new unmanaged aClass(3);
+  var b = new unmanaged outerClass();
   b.foo();
   writeln(a.b);
   delete a;

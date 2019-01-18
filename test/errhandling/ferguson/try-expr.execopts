@@ -1,0 +1,9 @@
+--test=1 # try-expr.1.good
+--test=2 # try-expr.2.good
+--test=3 # try-expr.3.good
+--test=4 # try-expr.4.good
+--test=5 # try-expr.5.good
+--test=6 # try-expr.6.good
+--test=7 # try-expr.7.good
+--test=8 # try-expr.8.good
+--test=9 # try-expr.9.good

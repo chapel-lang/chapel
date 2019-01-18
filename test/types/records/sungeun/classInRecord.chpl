@@ -1,18 +1,18 @@
 class myC {
   var i: int;
-  proc myC() { i = -1; }
+  proc init() { i = -1; }
 }
 
 record myR {
-  var c: myC;
-  proc myR() { c = new myC(); }
-  proc ~myR() { delete c; }
+  var c: unmanaged myC;
+  proc init() { c = new unmanaged myC(); }
+  proc deinit() { delete c; }
 }
 
 inline proc chpl__autoDestroy(x: myR) { }
 
 proc =(ref a: myR, b: myR) {
-  a.c = new myC(); // leak memory here.
+  a.c = new unmanaged myC(); // leak memory here.
   a.c.i = b.c.i;
 }
 

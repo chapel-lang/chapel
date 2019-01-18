@@ -1,0 +1,12 @@
+feature request: argv[0] should not reveal '_real' binary
+
+In my opinion, if a launcher is used, argv[0] should not print the
+name of the '_real' binary, beecause that's not what the user is
+running.  Moreover, such handling of argv[] arguments would ideally be
+handled in the launcher before queueing/launching (i.e., why sit in a
+queue only to get --help output?).  When the argv feature was added,
+we kicked around other ways of doing argument processing (e.g., having
+modules define handlers that would be called by the runtime) which
+might be more amenable to moving into the launcher code than the
+current argv approach.  It may be worth reconsidering those ideas as
+a path toward improving this situation.

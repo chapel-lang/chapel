@@ -3,7 +3,7 @@ use LevelVariable_def;
 
 
 proc LevelVariable.storeCTUOperator(
-  q:        LevelVariable,
+  q:        unmanaged LevelVariable,
   velocity: dimension*real,
   dt:       real)
 {

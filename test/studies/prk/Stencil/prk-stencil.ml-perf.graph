@@ -1,0 +1,5 @@
+perfkeys: Rate (MFlops/s): , Rate (MFlops/s): , Rate (MFlops/s): 
+files: stencil-blockdist.dat, stencil-stencildist.dat, stencil-opt.dat
+graphkeys: blockdist, stencildist, optimized
+graphtitle: PRK Stencil Variations Perf
+ylabel: Rate (MFlops/s)

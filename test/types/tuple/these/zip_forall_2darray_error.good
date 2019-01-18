@@ -1,0 +1,1 @@
+zip_forall_2darray_error.chpl:7: error: Tuple zipped with incompatible iterator expression.

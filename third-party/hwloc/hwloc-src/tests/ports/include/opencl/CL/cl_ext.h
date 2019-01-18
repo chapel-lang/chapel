@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2014 Inria.  All rights reserved.
+ * Copyright © 2013-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -9,7 +9,7 @@
 typedef char cl_char;
 typedef unsigned long cl_ulong;
 typedef unsigned int cl_uint;
-typedef unsigned int cl_int;
+typedef int cl_int;
 typedef unsigned int cl_device_type;
 typedef unsigned int cl_platform_info;
 typedef unsigned int cl_device_info;

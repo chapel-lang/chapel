@@ -9,11 +9,9 @@ module M1 {
 
 module M2 {
   proc main {
-    use Time;
     for i in 1..100 {
       begin {
-        sleep(1);
-        { use M1; }
+        use M1;
       }
     }
   }

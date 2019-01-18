@@ -1,5 +1,2 @@
 # These tests require 2 locales.
 CHPL_COMM==none
-# And they give different numbers for segment-fast
-# so we just test everything for simplicity.
-CHPL_GASNET_SEGMENT!=everything

@@ -1,0 +1,4 @@
+--failOnStep=0 # defer-manual-container.success.good
+--failOnStep=1 # defer-manual-container.fail1.good
+--failOnStep=2 # defer-manual-container.fail2.good
+--failOnStep=3 # defer-manual-container.fail3.good

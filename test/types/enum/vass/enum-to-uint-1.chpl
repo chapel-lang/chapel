@@ -5,17 +5,17 @@ config var e1var: e1;
 config var e2var: e2;
 
 // simple example
-var k:uint(8) = e2var;
+var k = e2var: uint(8);
 writeln(k);
 
 // bonus testing
 proc test(param w) {
 
   type tt = uint(w);
-  var i1: tt = e1.a;
-  var i2: tt = e1var;
-  var j1: tt = e2.b;
-  var j2: tt = e2var;
+  var i1 = e1.a: tt;
+  var i2 = e1var: tt;
+  var j1 = e2.b: tt;
+  var j2 = e2var: tt;
 
   writeln((tt:string, i1,i2,j1,j2));
 }

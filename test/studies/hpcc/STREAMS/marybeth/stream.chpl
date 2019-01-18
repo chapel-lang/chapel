@@ -71,15 +71,13 @@ proc main() {
 }
 
 proc initStreamVectors() {
-  var randlist = new NPBRandomStream(seed);
+  var randlist = new borrowed NPBRandomStream(eltType=real, seed=seed);
 
   randlist.fillRandom(A);
   randlist.fillRandom(B);
   randlist.fillRandom(C);
 
   A = 2.0 * A;
-
-  delete randlist;
 }
 
 proc computeStreamResults() {
@@ -91,7 +89,7 @@ proc computeStreamResults() {
 
 
 proc checkSTREAMresults() {
-  var randlist = new NPBRandomStream(seed);
+  var randlist = new unmanaged NPBRandomStream(real, seed);
 
   var Aref, Bref, Cref, error : [VecDomain] elemType;
 

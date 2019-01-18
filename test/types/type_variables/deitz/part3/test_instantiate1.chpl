@@ -11,7 +11,9 @@ class bar {
   var y : int;
 }
 
-var f : foo(t=bar) = new foo(t=bar);
+var f : unmanaged foo(t=borrowed bar) = new unmanaged foo(t=borrowed bar);
 
 writeln(f);
 f.print();
+
+delete f;

@@ -65,7 +65,7 @@ record NBodySystem {
   var bodies = [sun, jupiter, saturn, uranus, neptune];
   const numbodies = bodies.numElements;
 
-  proc initialize() {
+  proc postinit() {
     var p: 3*real;
     for b in bodies do
       p += b.v * b.mass;  // TODO: reduce?

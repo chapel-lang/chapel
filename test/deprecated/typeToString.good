@@ -1,2 +1,0 @@
-typeToString.chpl:1: warning: typeToString() has been deprecated.  Please use a cast instead: '(type-expression):string'
-real(64)

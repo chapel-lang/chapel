@@ -21,7 +21,7 @@ for i in foo(10) do
 // AFTER
 //
 proc goo(n: int)
-  return new bar(n);
+  return new unmanaged bar(n);
 
 class bar {
   var n, i, result: int;
@@ -71,8 +71,13 @@ label L2
 }
 
 var ic = goo(10);
-var c = ic.getHeadCursor();
+var c  = ic.getHeadCursor();
+
 while (ic.isValidCursor(c)) {
   writeln(ic.getValue(c));
+
   c = ic.getNextCursor(c);
 }
+
+delete ic;
+

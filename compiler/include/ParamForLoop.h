@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -79,6 +79,9 @@ private:
                          ParamForLoop();
 
   Type*                  indexType();
+  void                   validateLoop(VarSymbol* lvar,
+                                      VarSymbol* hvar,
+                                      VarSymbol* svar);
 
   //
   // NOAKES 2014/12/11

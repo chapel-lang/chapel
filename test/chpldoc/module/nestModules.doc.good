@@ -1,8 +1,61 @@
+.. default-domain:: chpl
+
+.. module:: outer
+   :synopsis: This is the outer module's comment 
+
 outer
-   This is the outer module's comment 
-Submodules for this module are located in the outer/ directory
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use outer;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   outer/*
+
+This is the outer module's comment 
+
+.. default-domain:: chpl
+
+.. module:: inner
+   :synopsis: This is the inner module's comment 
+
 inner
-   This is the inner module's comment 
-Submodules for this module are located in the inner/ directory
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use outer.inner;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   inner/*
+
+This is the inner module's comment 
+
+.. default-domain:: chpl
+
+.. module:: innermost
+   :synopsis: This is the innermost module's comment 
+
 innermost
-   This is the innermost module's comment 
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use outer.inner.innermost;
+
+This is the innermost module's comment 
+

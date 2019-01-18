@@ -1,13 +1,34 @@
+.. default-domain:: chpl
+
+.. module:: enums.doc
+
 enums.doc
-   enum Color { Red, Yellow, Blue }
-      This is a color enum. 
+=========
+**Usage**
 
-   Class: colorCup
-      This class holds many different colors 
+.. code-block:: chapel
 
-      var defOnly = Color.Yellow
-         Field has only enum as a default value 
-      var typeOnly: Color
-         Field has only enum as its type 
-      var both: Color = Color.Red
-         Field has both a type and default value 
+   use enums.doc;
+
+.. enum:: enum Color { Red, Yellow, Blue }
+
+   This is a color enum. 
+
+
+.. class:: colorCup
+
+   This class holds many different colors 
+
+
+   .. attribute:: var defOnly = Color.Yellow
+
+      Field has only enum as a default value 
+
+   .. attribute:: var typeOnly: Color
+
+      Field has only enum as its type 
+
+   .. attribute:: var both: Color = Color.Red
+
+      Field has both a type and default value 
+

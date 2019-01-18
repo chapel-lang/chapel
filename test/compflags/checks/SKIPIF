@@ -1,0 +1,6 @@
+#
+# tests in this directory check execution-time checks, so we should
+# skip them if the --fast or --no-checks flags are set.
+#
+COMPOPTS <= --fast
+COMPOPTS <= --no-checks

@@ -1,0 +1,16 @@
+.. default-domain:: chpl
+
+.. module:: arrayLiteral.doc
+
+arrayLiteral.doc
+================
+**Usage**
+
+.. code-block:: chapel
+
+   use arrayLiteral.doc;
+
+.. data:: var x = [i in 1..10] i;
+
+   This is an array created using the forall loop initialization 
+

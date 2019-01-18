@@ -1,0 +1,1 @@
+tooBig.chpl:1: error: Integer literal overflow: 1000000000000000000000000000000 is too big for type uint64

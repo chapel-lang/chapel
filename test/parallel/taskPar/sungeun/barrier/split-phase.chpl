@@ -1,4 +1,4 @@
-use Barrier;
+use Barriers;
 use BlockDist;
 
 config const numTasks = 31;
@@ -41,12 +41,9 @@ localTest(b, numTasks);
 
 b.reset(numRemoteTasks);
 remoteTest(b, numRemoteTasks);
-delete b;
 
-var sb1 = new Barrier(numTasks, BarrierType.Sync);
-localTest(sb1, numTasks);
-delete sb1;
+var sb = new Barrier(numTasks, BarrierType.Sync);
+localTest(sb, numTasks);
 
-var sb2 = new Barrier(numRemoteTasks, BarrierType.Sync);
-remoteTest(sb2, numRemoteTasks);
-delete sb2;
+sb.reset(numRemoteTasks);
+remoteTest(sb, numRemoteTasks);

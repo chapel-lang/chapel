@@ -13,20 +13,22 @@ class D : C {
 
   var ranges: rank*range(dim_type, BoundedRangeType.bounded, stridable);
 
-  proc bbox(d: int) {
+  override proc bbox(d: int) {
     const r: range(dim_type, BoundedRangeType.bounded, false) = ranges(d);
     return r;
   }
 }
 
 class E : C {
-  var parentDom: C;
+  var parentDom: unmanaged C;
 
   var rowRange = parentDom.bbox(1);
 }
 
 
-var myD = new D(2, int, false);
+
+
+var myD = new unmanaged D(2, int, false);
 
 myD.ranges(1) = 1..10;
 myD.ranges(2) = 1..20;
@@ -37,6 +39,13 @@ var r2 = myD.bbox(2);
 writeln("r1 = ", r1);
 writeln("r2 = ", r2);
 
-var myE = new E(myD);
+
+
+
+
+var myE = new unmanaged E(myD);
 
 writeln(myE.rowRange);
+
+delete myD;
+delete myE;

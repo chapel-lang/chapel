@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,10 +21,12 @@
 /*
   Support for simple assert() routines.
 
-  .. note:: 
-            In the current implementation, these asserts never become
-            no-ops.  That is, using them will always incur
-            execution-time checks.
+  .. note:: All Chapel programs automatically ``use`` this module by default.
+            An explicit ``use`` statement is not necessary.
+
+  In the current implementation, these asserts never become no-ops.  That is,
+  using them will always incur execution-time checks.
+
 */
 module Assert {
 

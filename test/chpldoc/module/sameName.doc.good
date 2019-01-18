@@ -1,11 +1,44 @@
-sameName.doc
-   proc outerFn()
-      This function is outside the defined module 
+.. default-domain:: chpl
 
-Submodules for this module are located in the sameName.doc/ directory
+.. module:: sameName.doc
+
+sameName.doc
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use sameName.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   sameName.doc/*
+
+.. function:: proc outerFn()
+
+   This function is outside the defined module 
+
+.. default-domain:: chpl
+
+.. module:: sameName
+   :synopsis: This module has the same name as its file but doesn't
+
 sameName
-   This module has the same name as its file but doesn't
-   contain all the code within the file 
-   proc innerFn()
-      Here is a proc within that module 
+========
+**Usage**
+
+.. code-block:: chapel
+
+   use sameName.doc.sameName;
+
+This module has the same name as its file but doesn't
+contain all the code within the file 
+
+.. function:: proc innerFn()
+
+   Here is a proc within that module 
 

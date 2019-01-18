@@ -22,7 +22,7 @@ module cholesky_test_unsymmetric_ranges {
 
   proc main {
 
-    var Rand = new RandomStream ( seed = 314159) ;
+    var Rand = new owned RandomStream ( real, seed = 314159) ;
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
@@ -175,7 +175,7 @@ module cholesky_test_unsymmetric_ranges {
           
     print_lower_triangle ( C );
 
-    var C_reindex : [0..#n, 0..#n] => C;
+    ref C_reindex = C.reindex(0..#n, 0..#n);
           
     positive_definite = 
       elemental_cholesky_symmetric_index_ranges ( C_reindex );

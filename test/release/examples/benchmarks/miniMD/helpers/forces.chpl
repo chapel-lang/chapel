@@ -10,8 +10,21 @@ class Force {
 
   var wipetime, maintime: real;
 
+  proc init() {}
+
   proc compute(store : bool) : void {}
 }
+
+class Funcfl {
+  var eamFile : string;
+  var numDensity, numPotentials : int;
+  var deltaDensity, deltaPotential, cut, mass : real;
+  var zrSpace : domain(1);
+  var frhoSpace : domain(1);
+  var frho : [frhoSpace] real;
+  var rhor, zr : [zrSpace] real;
+} 
+
 
 // 'Embedded atom model'
 class ForceEAM : Force  {
@@ -33,19 +46,10 @@ class ForceEAM : Force  {
 
   var FP: [DistSpace] [perBinSpace] real;
               
-  class Funcfl {
-    var eamFile : string;
-    var numDensity, numPotentials : int;
-    var deltaDensity, deltaPotential, cut, mass : real;
-    var zrSpace : domain(1);
-    var frhoSpace : domain(1);
-    var frho : [frhoSpace] real;
-    var rhor, zr : [zrSpace] real;
-  } 
+  var funcfl : owned Funcfl;
 
-  var funcfl : Funcfl;
-
-  proc ForceEAM(cf : real) {
+  proc init(cf : real) {
+    this.complete();
     // use the fluff domain already calculated for communication
     cutforcesq = cf*cf;
     coeff("Cu_u6.eam");
@@ -53,7 +57,7 @@ class ForceEAM : Force  {
   }
 
   proc coeff(fname : string) {
-    funcfl = new Funcfl();
+    funcfl = new owned Funcfl();
     funcfl.eamFile = fname;
     var fchan = open(fname, iomode.r);
     var rd = fchan.reader();
@@ -209,7 +213,7 @@ class ForceEAM : Force  {
     list[1] = list[2];
   }
 
-  proc compute(store : bool) {
+  override proc compute(store : bool) {
     if debug then writeln("entering EAM compute...");
     var evdwl, vir : atomic real;
     virial = 0.0;
@@ -307,11 +311,12 @@ class ForceEAM : Force  {
 
 // Lennard-Jones potential
 class ForceLJ : Force {
-  proc ForceLJ(cf : real) {
+  proc init(cf : real) {
+    this.complete();
     cutforcesq = cf * cf;
   }
 
-  proc compute(store : bool) : void {
+  override proc compute(store : bool) : void {
     eng_vdwl = 0;
     virial = 0;
     var fTimer : Timer;
@@ -338,7 +343,7 @@ class ForceLJ : Force {
     const cfsq = cutforcesq;
 
     var t_eng, t_vir : real;
-    forall (b,p,c,r) in zip(Bins, RealPos, RealCount, binSpace) with (in cfsq, + reduce t_eng, + reduce t_vir) {
+    forall (b,p,c,r) in zip(Bins, RealPos, RealCount, binSpace) with (const in cfsq, + reduce t_eng, + reduce t_vir) {
       for (a, x, j) in zip(b[1..c],p[1..c],1..c) {
         for(n,i) in a.neighs[1..a.ncount] {
           const del = x - Pos[n][i];

@@ -1,0 +1,2 @@
+hash2.chpl:1: In function 'main':
+hash2.chpl:4: error: unresolved enumerated type symbol or call 'type Digest.SHA1024'

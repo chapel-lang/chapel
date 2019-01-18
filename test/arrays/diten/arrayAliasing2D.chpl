@@ -12,7 +12,7 @@ proc reset(A: [] int) {
 }
 
 {
-var B: [aliasDom] => A[1..5, 1..5];
+ref B = A[1..5, 1..5].reindex(aliasDom);
 B = 1;
 writeln(A);
 reset(A);
@@ -20,7 +20,7 @@ reset(A);
 
 writeln("------");
 {
-var B: [aliasDom] => A[1..9 by 2, 1..9 by 2];
+ref B = A[1..9 by 2, 1..9 by 2].reindex(aliasDom);
 B = 1;
 writeln(A);
 reset(A);
@@ -28,7 +28,7 @@ reset(A);
 
 writeln("------");
 {
-var B: [aliasDom] => A[5..9, 5..9];
+ref B = A[5..9, 5..9].reindex(aliasDom);
 B = 1;
 writeln(A);
 reset(A);

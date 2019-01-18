@@ -1,3 +1,1 @@
-threeclasstypes-construct.chpl:18: error: constructor for class 'mysumreduce' requires a generic argument called 'intype'
-threeclasstypes-construct.chpl:18: error: constructor for class 'mysumreduce' requires a generic argument called 'statetype'
-threeclasstypes-construct.chpl:18: error: constructor for class 'mysumreduce' requires a generic argument called 'outtype'
+result is: 55

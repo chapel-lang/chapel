@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 // Memory tracking activated?
@@ -74,5 +78,9 @@ void chpl_track_realloc_post(void* moreMemAlloc,
 #define chpl_setMemtrack()
 
 #endif // LAUNCHER
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif

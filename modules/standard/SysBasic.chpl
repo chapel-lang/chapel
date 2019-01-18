@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,7 @@
    
    This module provides basic types when those types are not
    platform-dependent. The module :mod:`SysCTypes` contains the
-   platform-dependent declarations for C compatability.
+   platform-dependent declarations for C compatibility.
 
    This module also defines the error types :type:`syserr` and :type:`err_t`.
 
@@ -59,7 +59,7 @@ extern type socklen_t = int(32);
 // C File type
 //type c_file = _file;
 
-// stdin/stdout/sterr
+// stdin/stdout/stderr
 //extern proc chpl_cstdin():_file;
 pragma "no doc"
 extern proc chpl_cstdout():_file;
@@ -97,7 +97,7 @@ extern type syserr; // = c_int, opaque so we can manually override ==,!=,etc
  */
 extern type err_t = c_int;
 
-/* A system file descriptior. This is really just a `c_int`, but code is
+/* A system file descriptor. This is really just a `c_int`, but code is
    clearer if you use fd_t to indicate arguments, variables, and return types
    that are system file descriptors.
  */
@@ -111,7 +111,7 @@ private extern proc qio_err_to_int(a:syserr):int(32);
 private extern proc qio_int_to_err(a:int(32)):syserr;
 private extern proc qio_err_iserr(a:syserr):c_int;
 
-/* The error code indicating that no error occured (Chapel specific) */
+/* The error code indicating that no error occurred (Chapel specific) */
 inline proc ENOERR return 0:err_t;
 
 // When err_t is no longer just int(32), will need to add cases for err_t too.

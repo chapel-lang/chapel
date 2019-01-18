@@ -1,0 +1,9 @@
+Removing Mason dependency test
+
+[root]
+name = "Tester"
+version = "0.1.0"
+
+[dependencies]
+
+

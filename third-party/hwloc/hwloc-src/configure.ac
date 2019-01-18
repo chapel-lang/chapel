@@ -1,7 +1,7 @@
 # -*- shell-script -*-
 #
 # Copyright © 2009      CNRS
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2018 Inria.  All rights reserved.
 # Copyright © 2009, 2011-2012      Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 #
@@ -18,7 +18,7 @@
 
 AC_INIT([hwloc],
         [m4_normalize(esyscmd([config/hwloc_get_version.sh VERSION --version]))],
-        [http://www.open-mpi.org/projects/hwloc/], [hwloc])
+        [http://github.com/open-mpi/hwloc/issues], [hwloc])
 AC_PREREQ(2.63)
 AC_CONFIG_AUX_DIR(./config)
 # Note that this directory must *exactly* match what was specified via
@@ -193,6 +193,8 @@ fi
 # Show which optional support we'll be building
 hwloc_xml_status=basic
 AS_IF([test "$hwloc_libxml2_happy" = "yes"], [hwloc_xml_status=full])
+hwloc_cairo_status=$hwloc_cairo_happy
+AS_IF([test "$enable_embedded_mode" = "yes"], [hwloc_cairo_status="no (disabled in embedded mode)"])
 
 # Prepare the I/O summary
 hwloc_probeio_list=
@@ -219,7 +221,7 @@ cat <<EOF
 Hwloc optional build support status (more details can be found above):
 
 Probe / display I/O devices:$hwloc_probeio_list
-Graphical output (Cairo):    $hwloc_cairo_happy
+Graphical output (Cairo):    $hwloc_cairo_status
 XML input / output:          $hwloc_xml_status
 EOF
 

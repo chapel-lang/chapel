@@ -36,12 +36,9 @@ config const maxColor = 15;
 //
 proc plot(NumSteps:[]) where NumSteps.rank == 2 {
   //
-  // An associative domain+array mapping from the image type enum to
-  // file extensions.  Note that associative domains over enumerated
-  // types are fully-populated by default.
+  // An array mapping from the image type enum to file extensions.
   //
-  const extensionSpace: domain(imageType);
-  const extensions: [extensionSpace] string = ("pbm", "pgm", "ppm");
+  const extensions: [imageType.bw..imageType.color] string = ("pbm", "pgm", "ppm");
 
   if format == "pbm" || format == "pgm" || format == "ppm" {
     format = extensions(imgType);
@@ -98,6 +95,7 @@ proc plotToFilePPM(NumSteps: [?Dom], outfile) {
   // it wasn't the user-supplied cutoff.
   //
   const maxSteps = max reduce NumSteps;
+  assert(maxSteps != 0, "NumSteps contains no positive values");
 
   //
   // Write the output data.  Though verbose, we use three loop nests
@@ -181,6 +179,7 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
   // it wasn't the user-supplied cutoff.
   //
   const maxSteps = max reduce NumSteps;
+  assert(maxSteps != 0, "NumSteps contains no positive values");
 
   //
   // Write the output data.  Though verbose, we use three loop nests

@@ -1,0 +1,2 @@
+feature request: avoid extra iterator invocation upon reduce
+#11884

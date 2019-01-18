@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -90,6 +90,8 @@ public:
   void                   appendEnumDecl(EnumType* et);
   void                   appendVarDef(VarSymbol* var);
 
+  void                   appendExpr(Expr* expr, bool printingType);
+
 private:
 
   //
@@ -130,9 +132,6 @@ private:
   //
   // Formatting the expressions found in formals (skeleton)
   //
-  void                   appendExpr(Expr*              expr,
-                                    bool               printingType);
-
   void                   appendExpr(UnresolvedSymExpr* expr);
 
   void                   appendExpr(SymExpr*           expr,

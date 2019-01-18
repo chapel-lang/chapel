@@ -1,0 +1,5 @@
+perfkeys: min =, avg =
+repeat-files: stream.glob.dat
+graphkeys: min global stream runtime, avg global stream runtime
+graphtitle: HPCC: Global STREAM Time (sec) - n=5,723,827,200
+ylabel: Time (seconds)

@@ -1,3 +1,1 @@
-sparse-mismatch-dom-err-domdom.chpl:3: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-sparse-mismatch-dom-err-domdom.chpl:4: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 sparse-mismatch-dom-err-domdom.chpl:6: error: halt reached - Sparse domains can't be zippered with anything other than themselves and their arrays

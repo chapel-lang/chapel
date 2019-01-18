@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,9 +25,11 @@
 #include "chpl-comm.h"
 #include "chpl-mem.h"
 #include "chplcast.h"
+#include "chplcgfns.h"
 #include "chpl-tasks.h"
 #include "config.h"
 #include "error.h"
+#include "chplsys.h"
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -38,6 +40,7 @@
 #include <string.h>
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 typedef struct {
@@ -55,14 +58,30 @@ struct thread_list {
   thread_list_p next;
 };
 
+// List of stack pointers
+typedef struct thread_stack_list* thread_stack_list_p;
+struct thread_stack_list {
+  void*               stack;
+  pthread_t           owner_pthread;
+
+  thread_stack_list_p next;
+  thread_stack_list_p prec;
+};
+
+chpl_bool              chpl_use_guard_page;     // we have to add guard pages?
+chpl_bool              chpl_alloc_stack_in_heap;// we have to alloc the stack?
+
 static chpl_bool       exiting = false;         // are we shutting down?
 
 static pthread_mutex_t thread_info_lock;        // mutual exclusion lock
+static pthread_mutex_t thread_stack_list_lock;  // lock for task stack list
 
 static int64_t         curr_thread_id = 0;
 
 static thread_list_p   thread_list_head = NULL; // head of thread_list
 static thread_list_p   thread_list_tail = NULL; // tail of thread_list
+
+static thread_stack_list_p   thread_stack_list_head = NULL;
 
 static pthread_attr_t  thread_attributes;
 
@@ -81,6 +100,166 @@ static void            (*saved_threadEndFn)(void);
 static void*           initial_pthread_func(void*);
 static void*           pthread_func(void*);
 
+/* Function prototypes */
+void                   chpl_init_heap_stack(void);
+void*                  chpl_alloc_pthread_stack(size_t);
+void                   chpl_free_pthread_stack(void*);
+
+/* We have to see if the thread stacks should be allocated in
+ * the chapel heap and if we need to add a guard page for catch
+ * a stack overflow
+ */
+void chpl_init_heap_stack(void){
+
+  // We don't want a guard page, but we want the stack in the heap
+  if (CHPL_STACK_CHECKS == 0) {
+    chpl_alloc_stack_in_heap = true;
+    chpl_use_guard_page      = false;
+    return;
+  }
+
+  /* Special case: we want a guard page, but we can't add it. So
+   * we use a pthread stack that provides a guard page.
+   */
+#if defined(CHPL_USING_CSTDLIB_MALLOC) && defined(__APPLE__)
+  chpl_alloc_stack_in_heap = false;
+  chpl_use_guard_page      = false;
+  return;
+#else
+  if (chpl_getHeapPageSize() != chpl_getSysPageSize()) {
+    chpl_alloc_stack_in_heap = false;
+    chpl_use_guard_page      = false;
+    return;
+  } 
+  
+  // We want a guard page and we can add it
+  chpl_alloc_stack_in_heap = true;
+  chpl_use_guard_page      = true;
+#endif
+}
+
+void* chpl_alloc_pthread_stack(size_t stack_size){
+  size_t page_size, mem_size;
+  void*  stack;
+  void*  mem_buffer;
+  int    rc;
+
+  rc = 0;
+  // Gets the system page size since we'll use it for guard pages
+  // and guard pages are only enabled when not using a huge-pages heap.
+  page_size = chpl_getSysPageSize();
+  mem_size = (chpl_use_guard_page ? stack_size + page_size : stack_size);
+
+  // uses memalign to align to page_size to simplify logic for the guard page
+  // case but thread stacks could be allocated without such alignment
+  mem_buffer = chpl_memalign(page_size, mem_size);
+
+  if(mem_buffer == NULL){
+    return NULL;
+  }
+
+  stack = mem_buffer;
+
+  if(chpl_use_guard_page){
+    /* This is architecture-dependent
+    *
+    * Since the stack grows downward, I have to insert the guard 
+    * page at the lowest address.
+    */
+    stack = (unsigned char*)mem_buffer + page_size;
+
+    rc = mprotect(mem_buffer, page_size, PROT_NONE);
+    if( rc != 0 ) {
+      chpl_free(mem_buffer);
+      return NULL;
+    }
+  }
+
+  return stack;
+}
+
+void chpl_free_pthread_stack(void* stack){
+  int free_flag;
+  size_t page_size;
+  
+  free_flag = 0;
+  page_size = 0;
+
+  if(chpl_use_guard_page){
+    free_flag = PROT_READ | PROT_WRITE | PROT_EXEC;
+    page_size = chpl_getSysPageSize();
+    mprotect((unsigned char*)stack - page_size, page_size, free_flag);
+    chpl_free((unsigned char*)stack - page_size);
+  }
+  else
+    chpl_free(stack);
+}
+
+static int do_pthread_create(pthread_t* thread,
+                             pthread_attr_t* attr,
+                             void *(*start_routine)(void *),
+                             void *restrict arg) {
+  thread_stack_list_p tslp;
+  pthread_attr_t local_attr;
+  size_t stack_size;
+  void* stack;
+  int rc;
+
+  /* If we don't need to allocate the stack in the chapel heap, just call
+   * pthread_create
+   */
+  if(!chpl_alloc_stack_in_heap)
+    return pthread_create(thread, attr, start_routine, arg);
+
+  memset(&local_attr, 0, sizeof(local_attr)); // avoid cygwin bug: see #5146
+  rc = pthread_attr_init(&local_attr);
+  if( rc != 0 ) {
+    memset(thread, 0, sizeof(pthread_t));
+    return rc;
+  }
+
+  stack_size = threadCallStackSize;
+  stack = chpl_alloc_pthread_stack(stack_size);
+  if( stack == NULL ){
+    memset(thread, 0, sizeof(pthread_t));
+    return EAGAIN;
+  }
+  
+  rc = pthread_attr_setstack(&local_attr, stack, stack_size);
+  if( rc != 0 ) {
+    memset(thread, 0, sizeof(pthread_t));
+    chpl_free_pthread_stack(stack);
+    return rc;
+  }
+
+  rc = pthread_create(thread, &local_attr, start_routine, arg);
+  if( rc != 0 ) {
+    memset(thread, 0, sizeof(pthread_t));
+    chpl_free_pthread_stack(stack);
+    return rc;
+  }
+
+  // Add the new stack to the stack list
+  tslp = (thread_stack_list_p) chpl_mem_alloc(sizeof(struct thread_stack_list),
+                                       CHPL_RT_MD_THREAD_STACK_DESC, 0, 0);
+
+  tslp->stack = stack;
+  tslp->owner_pthread = *thread;
+  tslp->prec = NULL;
+  
+  pthread_mutex_lock(&thread_stack_list_lock);
+
+  tslp->next = thread_stack_list_head;
+  if(thread_stack_list_head != NULL)
+    thread_stack_list_head->prec = tslp;
+
+  thread_stack_list_head = tslp;
+
+  pthread_mutex_unlock(&thread_stack_list_lock);
+
+  pthread_attr_destroy(&local_attr);
+  return rc;
+}
 
 // Mutexes
 
@@ -239,6 +418,9 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
 
   pthread_mutex_init(&thread_info_lock, NULL);
   pthread_mutex_init(&numThreadsLock, NULL);
+  pthread_mutex_init(&thread_stack_list_lock, NULL);
+
+  chpl_init_heap_stack();
 
   //
   // This is something of a hack, but it makes us a bit more resilient
@@ -279,12 +461,13 @@ static void* initial_pthread_func(void* ignore) {
 
 int chpl_thread_createCommThread(chpl_fn_p fn, void* arg) {
   pthread_t polling_thread;
-  return pthread_create(&polling_thread, NULL, (void*(*)(void*))fn, arg);
+  return do_pthread_create(&polling_thread, &thread_attributes, (void*(*)(void*))fn, arg);
 }
 
 void chpl_thread_exit(void) {
   chpl_bool debug = false;
   thread_list_p tlp;
+  thread_stack_list_p tslp;
 
   pthread_mutex_lock(&thread_info_lock);
   exiting = true;
@@ -297,13 +480,38 @@ void chpl_thread_exit(void) {
 
   pthread_mutex_unlock(&thread_info_lock);
 
+  pthread_mutex_lock(&thread_stack_list_lock);
+
   while (thread_list_head != NULL) {
-    if (pthread_join(thread_list_head->thread, NULL) != 0)
-      chpl_internal_error("thread join failed");
     tlp = thread_list_head;
+    if (pthread_join(tlp->thread, NULL) != 0)
+      chpl_internal_error("thread join failed");
+
+    /* We have joined with tlp->thread, so now we search for its stack
+     * in the thread_stack_list_head list and free it. This is for be
+     * sure that we free stacks used only by terminated threads.
+     */
+    for (tslp = thread_stack_list_head; tslp != NULL; tslp = tslp->next) {
+      if(pthread_equal(tlp->thread, tslp->owner_pthread)){
+          chpl_free_pthread_stack(tslp->stack);
+          if(tslp->prec == NULL)
+            thread_stack_list_head = tslp->next;
+          else
+            tslp->prec->next = tslp->next;
+          
+          if(tslp->next != NULL)
+            tslp->next->prec = tslp->prec;
+          
+          chpl_mem_free(tslp, 0, 0);
+          break;
+      }
+    }
+
     thread_list_head = thread_list_head->next;
     chpl_mem_free(tlp, 0, 0);
   }
+
+  pthread_mutex_unlock(&thread_stack_list_lock);
 
   CHPL_TLS_DELETE(chpl_thread_id);
   CHPL_TLS_DELETE(chpl_thread_data);
@@ -349,7 +557,7 @@ int chpl_thread_create(void* arg)
   numThreads++;
   pthread_mutex_unlock(&numThreadsLock);
 
-  if (pthread_create(&pthread, &thread_attributes, pthread_func, arg)) {
+  if (do_pthread_create(&pthread, &thread_attributes, pthread_func, arg)) {
     pthread_mutex_lock(&numThreadsLock);
     numThreads--;
     pthread_mutex_unlock(&numThreadsLock);

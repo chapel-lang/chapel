@@ -19,7 +19,7 @@ class mink : ReduceScanOp {
     }
   }
 
-  proc combine(state: mink(eltType)) {
+  proc combine(state: borrowed mink(eltType)) {
     for stateValue in state.v {
       accumulate(stateValue);
     }

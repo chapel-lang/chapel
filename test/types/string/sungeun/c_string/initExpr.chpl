@@ -41,10 +41,10 @@ checkType(A1.eltType);
   }
 
  const blah = "blah";
- var c0: C;
+ var c0: borrowed C;
  c0.checkMe();
- var c1 = new C("hi", "hi", blah.c_str());
+ var c1 = new borrowed C("hi", "hi", blah.c_str());
  c1.checkMe();
- var c2 = new C(blah, blah, blah.c_str());
+ var c2 = new borrowed C(blah, blah, blah.c_str());
  c2.checkMe();
 }

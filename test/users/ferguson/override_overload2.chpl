@@ -8,15 +8,15 @@ class BaseReader {
 }
 
 class SubReader : BaseReader {
-  proc readPrimitive(inout x) {
+  override proc readPrimitive(inout x) {
     writeln("Sub Primitive ", x.type:string);
   }
 }
 
-var s1 = new SubReader();
+var s1 = new borrowed SubReader();
 
 var x:int;
 var y:real;
+
 s1.read(x);
 s1.read(y);
-

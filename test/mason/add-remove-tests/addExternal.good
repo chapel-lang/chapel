@@ -1,0 +1,12 @@
+Adding external dependency with spec test@1.2.3
+
+[brick]
+name = "Tester"
+version = "0.1.0"
+
+[dependencies]
+
+[external]
+test = "test@1.2.3"
+
+

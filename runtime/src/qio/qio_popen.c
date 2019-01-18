@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@
 #include "chplrt.h"
 #endif
 
+#include "chpl-mem-sys.h" // need to call system allocator
 #include "qio.h"
 #include "sys.h"
 
@@ -34,8 +35,7 @@
 #include <unistd.h>
 #include <spawn.h>
 
-// We need to be able to call malloc, free, etc.
-#include "chpl-mem-no-warning-macros.h"
+#include <pthread.h>
 
 // current environment variables
 extern char** environ;
@@ -55,7 +55,7 @@ extern char** environ;
 const char* qio_spawn_strdup(const char* str)
 {
   size_t len = strlen(str);
-  char* ret = malloc(len + 1);
+  char* ret = sys_malloc(len + 1);
   // note: also copies '\0' at end of string.
   memcpy(ret, str, len + 1);
   return ret;
@@ -63,18 +63,18 @@ const char* qio_spawn_strdup(const char* str)
 
 const char** qio_spawn_allocate_ptrvec(size_t count)
 {
-  char** ret = calloc(count, sizeof(char*));
+  char** ret = sys_calloc(count, sizeof(char*));
   return (const char**) ret;
 }
 
 void qio_spawn_free_ptrvec(const char** args)
 {
-  free((void*) args);
+  sys_free((void*) args);
 }
 
 void qio_spawn_free_str(const char* str)
 {
-  free((void*) str);
+  sys_free((void*) str);
 }
 
 
@@ -109,8 +109,8 @@ static qioerr setup_actions(
 
   if( *std__fd == QIO_FD_FORWARD ) {
     // Do nothing. Assume file descriptor childfd does not have close-on-exec.
-  } else if( *std__fd == QIO_FD_PIPE ) {
-    // child can't write to the parent end of the pipe. 
+  } else if( *std__fd == QIO_FD_PIPE || *std__fd == QIO_FD_BUFFERED_PIPE ) {
+    // child can't write to the parent end of the pipe.
     rc = posix_spawn_file_actions_addclose(actions, pipe_parent_end);
     if( rc ) return qio_int_to_err(errno);
 
@@ -129,7 +129,7 @@ static qioerr setup_actions(
     *hasactions = true;
   } else if( *std__fd == QIO_FD_TO_STDOUT ) {
     // Do nothing.
-    assert(0);
+
   } else {
     // Use a given file descriptor for childfd (e.g. stdin).
     rc = posix_spawn_file_actions_adddup2(actions, *std__fd, childfd);
@@ -148,7 +148,7 @@ static qioerr setup_actions(
     -1 -> use the existing stdin/stdout
     -2 -> close the file descriptor
     -3 -> create a pipe and return the parent's end
-    >0 -> use this file discriptor
+    >0 -> use this file descriptor
    When this function returns, any file descriptors with a negative
    value indicating a pipe should be created (-3)
    will have their value replaced with the new pipe file descriptor.
@@ -156,7 +156,8 @@ static qioerr setup_actions(
    executable == NULL or "" -> search the path for argv[0]
 
  */
-qioerr qio_openproc(const char** argv,
+static
+qioerr qio_do_openproc(const char** argv,
                     const char** envp,
                     const char* executable,
                     int* stdin_fd,
@@ -187,21 +188,21 @@ qioerr qio_openproc(const char** argv,
 
   // Create pipes
 
-  if( *stdin_fd == QIO_FD_PIPE ) {
+  if( *stdin_fd == QIO_FD_PIPE || *stdin_fd == QIO_FD_BUFFERED_PIPE ) {
     rc = pipe(in_pipe);
     if( rc != 0 ) {
       err = qio_int_to_err(errno);
       goto error;
     }
   }
-  if( *stdout_fd == QIO_FD_PIPE ) {
+  if( *stdout_fd == QIO_FD_PIPE || *stdout_fd == QIO_FD_BUFFERED_PIPE ) {
     rc = pipe(out_pipe);
     if( rc != 0 ) {
       err = qio_int_to_err(errno);
       goto error;
     }
   }
-  if( *stderr_fd == QIO_FD_PIPE ) {
+  if( *stderr_fd == QIO_FD_PIPE || *stderr_fd == QIO_FD_BUFFERED_PIPE ) {
     rc = pipe(err_pipe);
     if( rc != 0 ) {
       err = qio_int_to_err(errno);
@@ -225,7 +226,7 @@ qioerr qio_openproc(const char** argv,
   // set the spawn attr POSIX_SPAWN_USEVFORK.
   // It is unclear whether or not the linux implementation
   // will work correctly when combining POSIX_SPAWN_USEVFORK
-  // with file actions (e.g. to make a pipe for stdin/stdout). 
+  // with file actions (e.g. to make a pipe for stdin/stdout).
 
   // If we seek to improve performance on linux, here are some options:
   //  * POSIX_SPAWN_USEVFORK
@@ -251,7 +252,8 @@ qioerr qio_openproc(const char** argv,
   if( err ) goto error;
 
   // handle QIO_FD_TO_STDOUT
-  if( *stderr_fd == QIO_FD_TO_STDOUT && *stdout_fd == QIO_FD_PIPE ) {
+  if( *stderr_fd == QIO_FD_TO_STDOUT &&
+      (*stdout_fd == QIO_FD_PIPE || *stdout_fd == QIO_FD_BUFFERED_PIPE) ) {
     // forward stderr to stdout.
     err = setup_actions(&actions, stderr_fd, out_pipe, 2, false, &hasactions);
     if( err ) goto error;
@@ -304,7 +306,7 @@ qioerr qio_openproc(const char** argv,
   DONE_SLOW_SYSCALL;
 
   return 0;
- 
+
 error:
   DONE_SLOW_SYSCALL;
   // intentionally ignoring error returns here...
@@ -320,6 +322,73 @@ error:
   return err;
 }
 
+struct openproc_args_s {
+  const char** argv;
+  const char** envp;
+  const char* executable;
+  int* stdin_fd;
+  int* stdout_fd;
+  int* stderr_fd;
+  int64_t* pid_out;
+  qioerr err;
+};
+
+static
+void* qio_openproc_wrapper(void* arg)
+{
+  struct openproc_args_s* s = (struct openproc_args_s*) arg;
+  s->err = qio_do_openproc(s->argv, s->envp, s->executable,
+                           s->stdin_fd, s->stdout_fd, s->stderr_fd,
+                           s->pid_out);
+  return NULL;
+}
+
+qioerr qio_openproc(const char** argv,
+                    const char** envp,
+                    const char* executable,
+                    int* stdin_fd,
+                    int* stdout_fd,
+                    int* stderr_fd,
+                    int64_t *pid_out)
+{
+  // runs qio_do_openproc in a pthread in order
+  // to avoid issues where a Chapel task is allocated
+  // from memory with MAP_SHARED.
+  //
+  // If such a thread is the thread running fork(),
+  // after the fork() occurs, there will be 2 threads
+  // sharing the same stack.
+  //
+  // If it mattered, we could do this extra step
+  // only for configurations where the Chapel heap
+  // has this problem (GASNet with SEGMENT=fast,large
+  // and possibly others).
+
+  int rc;
+  pthread_t thread;
+  struct openproc_args_s s;
+
+  s.argv = argv;
+  s.envp = envp;
+  s.executable = executable;
+  s.stdin_fd = stdin_fd;
+  s.stdout_fd = stdout_fd;
+  s.stderr_fd = stderr_fd;
+  s.pid_out = pid_out;
+  s.err = 0;
+
+  rc = pthread_create(&thread, NULL, qio_openproc_wrapper, &s);
+  if (rc)
+    QIO_RETURN_CONSTANT_ERROR(EAGAIN, "failed pthread_create in qio_openproc");
+
+  rc = pthread_join(thread, NULL);
+  if (rc)
+    QIO_RETURN_CONSTANT_ERROR(EAGAIN, "failed pthread_join in qio_openproc");
+
+  return s.err;
+}
+
+
 // waitpid
 qioerr qio_waitpid(int64_t pid,
                    int blocking, int* done, int* exitcode)
@@ -328,9 +397,19 @@ qioerr qio_waitpid(int64_t pid,
   int flags = 0;
   pid_t got;
 
-  if( ! blocking ) flags |= WNOHANG;
+  flags |= WNOHANG;
 
-  got = waitpid((pid_t) pid, &status, flags);
+  do {
+    got = waitpid((pid_t) pid, &status, flags);
+    if ( got == -1 && errno == EINTR ) {
+      // Try again is a non-blocking wait was interrupted
+      got = 0;
+    }
+    if ( ! blocking ) {
+      break;
+    }
+    chpl_task_yield();
+  } while (got == 0);
 
   // Check for error
   if( got == -1 ) {
@@ -359,11 +438,8 @@ qioerr qio_waitpid(int64_t pid,
 // since output channel has the buffered data).
 qioerr qio_proc_communicate(
     const int threadsafe,
-    qio_file_t* input_file,
     qio_channel_t* input,
-    qio_file_t* output_file,
     qio_channel_t* output,
-    qio_file_t* error_file,
     qio_channel_t* error) {
 
   qioerr err = 0;
@@ -381,18 +457,27 @@ qioerr qio_proc_communicate(
   int output_fd = -1;
   int error_fd = -1;
 
-
   if( threadsafe ) {
     // lock all three channels.
+    // but unlock them immediately and set them to NULL
+    // if they are already closed.
     if( input ) {
       err = qio_lock(&input->lock);
       if( err ) return err;
+      if( qio_channel_isclosed(false, input) ) {
+        qio_unlock(&input->lock);
+        input = NULL;
+      }
     }
     if( output ) {
       err = qio_lock(&output->lock);
       if( err ) {
         if( input ) qio_unlock(&input->lock);
         return err;
+      }
+      if( qio_channel_isclosed(false, output) ) {
+        qio_unlock(&output->lock);
+        output = NULL;
       }
     }
     if( error ) {
@@ -401,6 +486,10 @@ qioerr qio_proc_communicate(
         if( input ) qio_unlock(&input->lock);
         if( output ) qio_unlock(&output->lock);
         return err;
+      }
+      if( qio_channel_isclosed(false, error) ) {
+        qio_unlock(&error->lock);
+        error = NULL;
       }
     }
   }
@@ -437,10 +526,6 @@ qioerr qio_proc_communicate(
       err = qio_int_to_err(errno);
     }
   }
-
-
-
-
 
   // mark the output and error channels so that we
   // can just keep advancing to read while buffering
@@ -489,7 +574,10 @@ qioerr qio_proc_communicate(
     // Run select to wait for something
     if( do_input || do_output || do_error ) {
       // TODO -- use sys_select so threading can interact
-      rc = select(nfds, &rfds, &wfds, &efds, NULL);
+      struct timeval t;
+      t.tv_sec = 0;
+      t.tv_usec = 10;
+      rc = select(nfds, &rfds, &wfds, &efds, &t);
       if (rc > 0) {
         // read ready file descriptors
         input_ready = input_fd != -1 && FD_ISSET(input_fd, &wfds);
@@ -508,12 +596,9 @@ qioerr qio_proc_communicate(
     if( do_input && input_ready ) {
       err = _qio_channel_flush_qio_unlocked(input);
       if( !err ) {
-        qioerr err2 = 0;
         do_input = false;
         // Close input channel.
         err = qio_channel_close(false, input);
-        err2 = qio_file_close(input_file);
-        if( err2 && !err ) err = err2;
       }
       if( qio_err_to_int(err) == EAGAIN ) err = 0;
       if( err ) break;
@@ -523,10 +608,13 @@ qioerr qio_proc_communicate(
       // read some into our buffer.
       err = qio_channel_advance(false, output, qbytes_iobuf_size);
       if( qio_err_to_int(err) == EEOF ) {
+        qio_file_t* output_file = qio_channel_get_file(output);
+
         do_output = false;
         // close the output file (not channel), in case closing output
         // causes the program to output on stderr, e.g.
-        err = qio_file_close(output_file);
+        if( output_file )
+          err = qio_file_close(output_file);
         // Set the output channel maximum position
         // This prevents a read on output from trying to get
         // more data from the (now closed) file.
@@ -540,9 +628,12 @@ qioerr qio_proc_communicate(
       // read some into our buffer.
       err = qio_channel_advance(false, error, qbytes_iobuf_size);
       if( qio_err_to_int(err) == EEOF ) {
+        qio_file_t* error_file = qio_channel_get_file(error);
+
         do_error = false;
         // close the error file (not channel)
-        err = qio_file_close(error_file);
+        if( error_file )
+          err = qio_file_close(error_file);
         // Set the error channel maximum position
         error->end_pos = qio_channel_offset_unlocked(error);
       }
@@ -550,6 +641,7 @@ qioerr qio_proc_communicate(
       if( err ) break;
     }
 
+    chpl_task_yield();
   }
 
   // we could close the file descriptors at this point,

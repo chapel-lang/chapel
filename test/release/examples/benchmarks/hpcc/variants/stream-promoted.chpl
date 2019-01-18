@@ -103,7 +103,7 @@ proc printConfiguration() {
 // optionally print them to the console
 //
 proc initVectors(B, C) {
-  var randlist = new NPBRandomStream(seed);
+  var randlist = new NPBRandomStream(eltType=real, seed=seed);
 
   randlist.fillRandom(B);
   randlist.fillRandom(C);
@@ -112,8 +112,6 @@ proc initVectors(B, C) {
     writeln("B is: ", B, "\n");
     writeln("C is: ", C, "\n");
   }
-
-  delete randlist;
 }
 
 //

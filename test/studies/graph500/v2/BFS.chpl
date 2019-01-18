@@ -11,8 +11,8 @@ proc BFS ( root : vertex_id, ParentTree, G )
   type Vertex_List = domain ( vertex_id );
   var visited$ : [vertex_domain] sync int = -1;
 
-  var Active_Level = new Level_Set (Vertex_List);
-  var Next_Level = new Level_Set (Vertex_List);
+  var Active_Level = new unmanaged Level_Set (Vertex_List);
+  var Next_Level = new unmanaged Level_Set (Vertex_List);
 
   var Root_vertex : vertex_id = root;
 
@@ -49,14 +49,17 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
 //    writeln("Active Level is ",Active_Level);
 
+    delete Active_Level;
     Active_Level = Next_Level;
-    Next_Level = new Level_Set (Vertex_List);
+    Next_Level = new unmanaged Level_Set (Vertex_List);
 
     Next_Level.Members.clear ();
     Next_Level.previous = Active_Level;
 
   }
 //  writeln("Active Level is ",Active_Level);
+  delete Active_Level;
+  delete Next_Level;
 }
 
 

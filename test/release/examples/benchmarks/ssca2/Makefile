@@ -63,7 +63,7 @@ default: all
 all: $(TARGET)
 
 $(TARGET): $(SRCS)
-	$(CHPL) -o $@ $(CHPL_FLAGS) $(OFLAGS) $<
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $(OFLAGS) $<
 
 clean: FORCE
 	rm -f $(TARGET) $(REAL)

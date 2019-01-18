@@ -1,3 +1,21 @@
+/*
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 // Make sure that we get the RE2 extensions for Chapel
 #ifndef CHPL_RE2
@@ -5,23 +23,25 @@
 #endif
 
 #include <limits>
-#include <algorithm>
 #include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-extern "C" {
-  #include <stdlib.h>
-  #include <stdio.h>
+// We have run into issues when using our chpl-atomics.h file from C++ code
+// under CHPL_ATOMICS=cstdlib. As a workaround, just use std::atomic and avoid
+// bringing in the Chapel implementation. We know this is safe in this case
+// because re2 itself requires std::atomics, and won't build without them.
+#define QIO_USE_STD_ATOMICS_REF_CNT 1
+
 #ifndef CHPL_RT_UNIT_TEST
-  #include "stdchplrt.h"
+#include "stdchplrt.h"
 #endif
-  #include "qio_regexp.h"
-  #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
-  #include "qio.h" // for channel operations
-  #undef printf
-}
+#include "qio_regexp.h"
+#include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
+#include "qio.h" // for channel operations
+#undef printf
 
 #include "re2/re2.h"
-//#include "re2/regexp.h"
 
 using namespace re2;
 
@@ -55,11 +75,22 @@ struct re_cache {
 static pthread_key_t key;
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 
+static void local_cache_destroy_elts(re_cache* c);
+
+static
+void destroy_key(void* ptr)
+{
+  re_cache* c = (re_cache*) ptr;
+  local_cache_destroy_elts(c);
+  qio_free(c);
+}
+
 static
 void make_key(void)
 {
-  (void) pthread_key_create(&key, NULL);
+  (void) pthread_key_create(&key, &destroy_key);
 }
+
 
 static inline
 re_cache* local_cache(void)
@@ -168,6 +199,20 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options
   DO_RETAIN(re);
   return re;
 }
+
+static
+void local_cache_destroy_elts(re_cache* c) {
+  if (c) {
+    // Destroy all of the elements in the local cache.
+    for( int i = 0; i < REGEXP_CACHE_SIZE; i++ ) {
+      re_t* re = c->elems[i].re;
+      if (re) {
+        DO_RELEASE(re, re_free);
+      }
+    }
+  }
+}
+
 
 
 

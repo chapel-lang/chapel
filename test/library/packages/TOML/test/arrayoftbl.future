@@ -1,0 +1,6 @@
+bug: Arrays of tables are currently not supported
+
+This is a feature we expect to support fairly soon. We 
+are currently not supporting dependency resolution between
+libraries of differing verisions, so the need for arrays of 
+tables are not needed yet. 

@@ -75,7 +75,7 @@ version follow, files are listed in order of chronological addition:
 ./bradc/spectralnorm-blc.chpl
   Replaces lydia/spectral-norm-no-reduct's serial reduction helper function with
   a serial statement surrounding the original reduction, utilizes writef()-style
-  output, makes the shift operation divison by 2 again, and utilizes promoted
+  output, makes the shift operation division by 2 again, and utilizes promoted
   multiplication.  Contains other clean-up and stylistic changes as well.
 
 ./bradc/spectralnorm-partred.chpl

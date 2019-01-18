@@ -10,7 +10,7 @@ module M2 {
   class D: C {
     type t;
     var y: t;
-    proc foo() {
+    override proc foo() {
       writeln("D.foo = ", this);
       y.goo();
     }
@@ -19,19 +19,24 @@ module M2 {
 
 module M3 {
   use M1;
-  proc bar(c: C) {
+  proc bar(c: borrowed C) {
     c.foo();
   }
 }
 
 module M4 {
   use M1, M2, M3;
+
   record R {
     var z: int;
     proc goo() { writeln("R.goo"); }
   }
+
   proc main() {
-    var c: C = new D(t=R);
+    var c: borrowed C = new borrowed D(t=R);
+
     bar(c);
+
+
   }
 }

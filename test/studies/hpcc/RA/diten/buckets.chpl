@@ -1,19 +1,19 @@
 class Update {
   var value: uint(64);
-  var forward: Update;
+  var forward: unmanaged Update;
 }
 
 class Bucket {
-  var updateList: Update;
+  var updateList: unmanaged Update;
   var numUpdates: int = 0;
 }
 
 class UpdateManager {
-  var updateList: Update;
+  var updateList: unmanaged Update;
 
   proc getUpdate() {
     if updateList == nil {
-      return new Update();
+      return new unmanaged Update();
     } else {
       var update = updateList;
       updateList = updateList.forward;
@@ -44,9 +44,22 @@ class Buckets {
 
   const numLocs: int = numLocales;
   var pendingUpdates = 0;
-  var BucketArray: [0..#numLocs] Bucket = [0..#numLocs] new Bucket(nil, 0);
-  var heap = new MaxHeap(numLocs);
-  var updateManager = new UpdateManager();
+  var BucketArray: [0..#numLocs] unmanaged Bucket; // = [0..#numLocs] new borrowed Bucket(nil, 0);
+  var heap = new borrowed MaxHeap(numLocs);
+  var updateManager = new borrowed UpdateManager();
+
+  // These postinit() and deinit() are a workaround for #11314.
+  // Once that is resolved, this code can be simplified (as in #11321) by:
+  //  - removing postinit() and deinit(),
+  //  - uncommenting the default expression for the field BucketArray above,
+  //  - removing the explicit type of the BucketArray field.
+  proc postinit() {
+    forall bucket in BucketArray do
+      bucket = new unmanaged Bucket(nil, 0);
+  }
+  proc deinit() {
+    delete BucketArray;
+  }
 
   proc insertUpdate(ran: uint(64), loc: int) {
     local {

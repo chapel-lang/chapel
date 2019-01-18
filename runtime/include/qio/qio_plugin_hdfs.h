@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -18,7 +18,7 @@
  */
 
 // This defines the HDFS implementation/interface to the QIO filesystem plugin.
-// Documentation can be found in $CHPL_HOME/doc/release/technotes/
+// Documentation can be found in $CHPL_HOME/doc/rst/technotes/auxIO.rst
 #ifndef QIOPLUGIN_HDFS_H_
 #define QIOPLUGIN_HDFS_H_ 
 

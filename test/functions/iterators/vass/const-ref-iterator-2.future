@@ -1,0 +1,3 @@
+bug: index variable of a loop with a 'const ref' iterator is not considered 'const'
+
+Issue #6142

@@ -3,10 +3,10 @@ class storage {
 }
 
 class A {
-  var stored: storage = new storage();
-  var uninit: storage;
+  var stored: unmanaged storage = new unmanaged storage();
+  var uninit: unmanaged storage;
 
-  proc ~A() {
+  proc deinit() {
     delete stored;
     delete uninit;
   }
@@ -16,6 +16,6 @@ class B: A {
   var count: int = 1;
 }
 
-var instantiated: B = new B();
+var instantiated: unmanaged B = new unmanaged B();
 writeln(instantiated);
 delete instantiated;

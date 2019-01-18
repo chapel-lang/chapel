@@ -2,21 +2,21 @@
 //   618.233 with default arguments, linear search for sparse domain this()
 //    62.169 with --cflags=-O3, linear search
 //    25.4556 with --cflags=-O3, binary search
-use LayoutCSR, CGMakeA, Time;
+use LayoutCS, CGMakeA, Time;
 
 type elemType = real(64);
 
 enum classVals {S, W, A, B, C, D};
 
 
-const Class: domain(classVals);
-const probSizes:   [Class] int = ( 1400, 7000, 14000, 75000, 150000, 150000 ),
-      nonZeroes:   [Class] int = ( 7, 8, 11, 13, 15, 21 ),
-      shifts:      [Class] int = ( 10, 12, 20, 60, 110, 500 ),
-      numIters:    [Class] int = ( 15, 15, 15, 75, 75, 100 ),
-      verifyZetas: [Class] elemType = ( 8.5971775078648, 10.362595087124,
+const Class = {classVals.S..classVals.D};
+const probSizes:   [Class] int = [ 1400, 7000, 14000, 75000, 150000, 150000 ],
+      nonZeroes:   [Class] int = [ 7, 8, 11, 13, 15, 21 ],
+      shifts:      [Class] int = [ 10, 12, 20, 60, 110, 500 ],
+      numIters:    [Class] int = [ 15, 15, 15, 75, 75, 100 ],
+      verifyZetas: [Class] elemType =[ 8.5971775078648, 10.362595087124,
                                         17.130235054029,  22.712745482631,
-                                        28.973605592845,  52.5145321058 );
+                                        28.973605592845,  52.5145321058 ];
 
 config const probClass = classVals.S;
 
@@ -35,7 +35,7 @@ config const numTrials = 1,
 
 proc main() {
   const DenseSpace = {1..n, 1..n};
-  const MatrixSpace: sparse subdomain(DenseSpace) dmapped(new dmap(new CSR()))
+  const MatrixSpace: sparse subdomain(DenseSpace) dmapped(new dmap(new CS()))
                    = genAIndsSorted(elemType, n, nonzer, shift);
   var A: [MatrixSpace] elemType;
 

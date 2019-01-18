@@ -37,8 +37,8 @@ class Level {
   // the level.
   //--------------------------------------------------------------
   
+  const possible_cells:       domain(dimension, stridable=true);
   const possible_ghost_cells: domain(dimension, stridable=true);
-  const possible_cells:       subdomain(possible_ghost_cells);
 
 
   //==== Child grid info ====
@@ -52,17 +52,17 @@ class Level {
   // arithmetic domains.  Iteration syntax is the same as well.
   //---------------------------------------------------------------------
 
-  var grids:                 domain(Grid);
-  var sibling_ghost_regions: [grids] SiblingGhostRegion;
-  var boundary:              [grids] MultiDomain(dimension,stridable=true);
+  var grids:                 domain(unmanaged Grid);
+  var sibling_ghost_regions: [grids] unmanaged SiblingGhostRegion;
+  var boundary:              [grids] unmanaged MultiDomain(dimension,stridable=true);
 
 
 
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
 
-  proc Level(
+  proc init(
     x_low: dimension*real,
     x_high: dimension*real,
     n_cells: dimension*int,
@@ -90,20 +90,20 @@ class Level {
     // must be multiplied by 2 because a cell is 2 indices wide.
     //---------------------------------------------------------------
 
-    possible_ghost_cells = possible_cells.expand(2*n_ghost_cells);    
+    possible_ghost_cells = possible_cells.expand(2*n_ghost_cells);
 
   }
   // /|''''''''''''''''''''/|
-  //< |    constructor    < |
+  //< |    initializer    < |
   // \|....................\|
   
   
   
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
-  proc ~Level () 
+  proc deinit () 
   {
     for grid in grids
     {
@@ -113,7 +113,7 @@ class Level {
     }
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
   
@@ -211,7 +211,7 @@ proc Level.addGrid(
 
 
   //==== Create and add new grid ====
-  var new_grid = new Grid(x_low         = x_low_grid,
+  var new_grid = new unmanaged Grid(x_low         = x_low_grid,
                           x_high        = x_high_grid,
                           i_low         = i_low_grid,
                           n_cells       = n_cells_grid,
@@ -274,9 +274,10 @@ proc Level.complete ()
 
   for grid in grids 
   {
-    sibling_ghost_regions(grid) = new SiblingGhostRegion(this,grid);
+    sibling_ghost_regions(grid) = new unmanaged
+      SiblingGhostRegion(_to_unmanaged(this),grid);
     
-    boundary(grid) = new MultiDomain(dimension,stridable=true);
+    boundary(grid) = new unmanaged MultiDomain(dimension,stridable=true);
 
     for D in grid.ghost_domains do boundary(grid).add( D );
 
@@ -313,18 +314,19 @@ proc Level.complete ()
 
 class SiblingGhostRegion {
 
-  const neighbors: domain(Grid);
+  const neighbors: domain(unmanaged Grid);
   const overlaps:  [neighbors] domain(dimension,stridable=true);
   
   
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
   
-  proc SiblingGhostRegion (
-    level: Level,
-    grid:  Grid)
+  proc init (
+    level: unmanaged Level,
+    grid:  unmanaged Grid)
   {
+    this.complete();
     for sibling in level.grids 
     {
       if sibling != grid 
@@ -339,19 +341,19 @@ class SiblingGhostRegion {
     }
   }
   // /|''''''''''''''''''''/|
-  //< |    constructor    < |
+  //< |    initializer    < |
   // \|....................\|
   
   
   
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
-  proc ~SiblingGhostRegion () {}
+  proc deinit () {}
 
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
   
@@ -412,7 +414,7 @@ iter Level.ordered_grids {
   var grid_list = grids;
   
   while grid_list.numIndices > 0 {
-    var lowest_grid: Grid;
+    var lowest_grid: unmanaged Grid;
     var i_lowest = possible_ghost_cells.high;
 
     for grid in grid_list {
@@ -465,7 +467,7 @@ proc readLevel(file_name: string){
   input_file.readln( (...n_cells) );
   input_file.readln( (...n_ghost) );
 
-  var level = new Level(x_low         = x_low,
+  var level = new unmanaged Level(x_low         = x_low,
                         x_high        = x_high,
                         n_cells       = n_cells,
                         n_ghost_cells = n_ghost);

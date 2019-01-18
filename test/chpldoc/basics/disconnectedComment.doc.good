@@ -1,24 +1,44 @@
+.. default-domain:: chpl
+
+.. module:: unattached
+   :synopsis: This comment should be attached to unattached but not reallyCommentless, 
+
 unattached
-   This comment should be attached to unattached but not reallyCommentless, 
-   even when before the defined module 
-   proc reallyCommentless()
-   proc commentLess()
-      This comment should be attached to the method 
+==========
+**Usage**
 
-   proc commentLess2()
-      This comment also should be attached 
-      even though it is a longer comment 
+.. code-block:: chapel
 
-   proc commentLess3()
-      This comment also should be attached, even though
-      it is further away from the method 
+   use unattached;
 
-   proc hasArg(val: int)
-      This comment should be attached even with an argument 
+This comment should be attached to unattached but not reallyCommentless, 
+even when before the defined module 
 
-   proc hasBody()
-      This comment should be attached, even with a body 
+.. function:: proc reallyCommentless()
 
-   proc hasBodyAndArg(val: int)
-      Attach me, even with a body and an argument 
+.. function:: proc commentLess()
+
+   This comment should be attached to the function 
+
+.. function:: proc commentLess2()
+
+   This comment also should be attached 
+   even though it is a longer comment 
+
+.. function:: proc commentLess3()
+
+   This comment also should be attached, even though
+   it is further away from the function 
+
+.. function:: proc hasArg(val: int)
+
+   This comment should be attached even with an argument 
+
+.. function:: proc hasBody()
+
+   This comment should be attached, even with a body 
+
+.. function:: proc hasBodyAndArg(val: int)
+
+   Attach me, even with a body and an argument 
 

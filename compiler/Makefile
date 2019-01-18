@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -34,8 +34,9 @@ SUBDIRS = \
 	adt \
 	AST \
 	backend \
+	codegen \
 	ifa \
-	ipe \
+	llvm \
 	main \
 	optimizations \
 	parser \
@@ -58,8 +59,11 @@ endif
 # the location of the BUILD_VERSION file
 #
 BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
-
-
+# configured prefix file
+CONFIGURED_PREFIX_FILE = $(COMPILER_ROOT)/main/CONFIGURED_PREFIX
+# file storing the names of clang, clang++ for CHPL_LLVM=system
+# also stores the clang-sysroot-arguments
+CLANG_SETTINGS_FILE = $(COMPILER_ROOT)/main/CLANG_SETTINGS
 
 #
 # include source subdirectories here
@@ -67,8 +71,9 @@ BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
 include adt/Makefile.include
 include AST/Makefile.include
 include backend/Makefile.include
+include codegen/Makefile.include
 include ifa/Makefile.include
-include ipe/Makefile.include
+include llvm/Makefile.include
 include main/Makefile.include
 include optimizations/Makefile.include
 include parser/Makefile.include
@@ -82,8 +87,9 @@ CHPL_OBJS = \
 	$(ADT_OBJS) \
 	$(AST_OBJS) \
 	$(BACKEND_OBJS) \
+	$(CODEGEN_OBJS) \
 	$(IFA_OBJS) \
-	$(IPE_OBJS) \
+	$(LLVM_OBJS) \
 	$(MAIN_OBJS) \
 	$(OPTIMIZATIONS_OBJS) \
 	$(PARSER_OBJS) \
@@ -92,11 +98,21 @@ CHPL_OBJS = \
 	$(SYMTAB_OBJS) \
 	$(UTIL_OBJS) \
 
-EXECS = $(CHPL) $(CHPLDOC) $(CHPLIPE)
+EXECS = $(CHPL) $(CHPLDOC)
 
-PRETARGETS = $(BUILD_VERSION_FILE) third-party-pkgs
-TARGETS = $(CHPL)
+PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) llvm $(CLANG_SETTINGS_FILE)
+TARGETS = $(CHPL) $(CHPL_OLD)
 
+# Set up variables representing paths that will be installed
+# and how to fix them (for CLANG_SETTINGS).
+# So far, this only needs to fix CHPL_THIRD_PARTY/CHPL_HOME.
+ifndef CHPL_MAKE_THIRD_PARTY
+CHPL_MAKE_THIRD_PARTY = $(CHPL_MAKE_HOME)/third-party
+endif
+
+FIXPATH_CMD := $(CHPL_MAKE_HOME)/util/config/replace-paths.py \
+                  --fixpath '$$CHPL_THIRD_PARTY' $(CHPL_MAKE_THIRD_PARTY) \
+                  --fixpath '$$CHPL_HOME' $(CHPL_MAKE_HOME)
 
 #
 # main rules
@@ -110,26 +126,40 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 #
 
 CHPL_CONFIG_CHECK_PREFIX = $(CHPL_BIN_DIR)/.built-for
-CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_PREFIX)-$(CHPL_MAKE_COMPILER_SUBDIR)
+CHPL_CONFIG_CHECK_DIR = $(CHPL_CONFIG_CHECK_PREFIX)/$(CHPL_MAKE_COMPILER_SUBDIR)
+CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_DIR)/built-for
 
 UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
+CLEAN_TARGS += $(CLANG_SETTINGS_FILE)
+
 $(BUILD_VERSION_FILE): FORCE
-	@({ test -x $(CHPL_MAKE_HOME)/.git ; } && \
-	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@) || \
+	@({ test -e $(CHPL_MAKE_HOME)/.git ; } && \
+	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@ $(CHPL_MAKE_HOME)) || \
 	test -r $(BUILD_VERSION_FILE) || (echo '"0"' > $@);
 
+$(CHPL_MAKE_HOME)/configured-prefix:
+	echo > $(CHPL_MAKE_HOME)/configured-prefix
+
+$(CONFIGURED_PREFIX_FILE): $(CHPL_MAKE_HOME)/configured-prefix
+	echo '"'`cat $(CHPL_MAKE_HOME)/configured-prefix`'"' \ > $(CONFIGURED_PREFIX_FILE)
+
+$(CLANG_SETTINGS_FILE):
+	echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' | $(FIXPATH_CMD) > $(CLANG_SETTINGS_FILE)
+
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
-	rm -f $(CHPL_CONFIG_CHECK_PREFIX)-*
+	rm -rf $(CHPL_CONFIG_CHECK_PREFIX)
+	mkdir -p $(CHPL_CONFIG_CHECK_DIR)
 	echo $(CHPL_MAKE_COMPILER_SUBDIR) > $(CHPL_CONFIG_CHECK)
 
 
 $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
-	rm -f $(CHPLIPE)
-	ln -s $(notdir $(CHPL)) $(CHPLIPE)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
+
+$(CHPL_OLD): $(CHPL) $(CHPL_OLD_BIN_DIR)
+	cp "$(CHPL_MAKE_HOME)/util/config/old-chpl.sh" "$(CHPL_OLD_BIN_DIR)/chpl"
 
 $(CHPLDOC): $(CHPL)
 	rm -f $(CHPLDOC)
@@ -143,13 +173,21 @@ parser: FORCE
 $(CHPL_BIN_DIR):
 	mkdir -p $@
 
-THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs --compiler)
-# NOTE: If any of these builds fail, we won't stop building
-third-party-pkgs:
-	@for p in $(THIRD_PARTY_PKGS); do \
-		$(MAKE) -C $(THIRD_PARTY_DIR) $$p; \
-	done
+$(CHPL_OLD_BIN_DIR):
+	mkdir -p $@
 
+
+# third-party pkgs could be automatically built with the below.
+#
+#THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs --compiler)
+# NOTE: If any of these builds fail, we won't stop building
+#third-party-pkgs:
+#	@for p in $(THIRD_PARTY_PKGS); do \
+#		$(MAKE) -C $(THIRD_PARTY_DIR) $$p; \
+#	done
+
+llvm: FORCE
+	$(MAKE) -C $(THIRD_PARTY_DIR)/llvm $(CHPL_MAKE_LLVM)
 
 #
 # include standard footer for compiler

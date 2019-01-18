@@ -1,11 +1,12 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
+#include <private/autogen/config.h>
 #include <hwloc.h>
 
 #include <stdlib.h>
@@ -62,7 +63,7 @@ fig_declare_color(void *loutput_, int r, int g, int b)
 
   color = declare_color(r, g, b);
 
-  fprintf(file, "0 %d #%02x%02x%02x\n", 32 + color, r, g, b);
+  fprintf(file, "0 %d #%02x%02x%02x\n", 32 + color, (unsigned) r, (unsigned) g, (unsigned) b);
 }
 
 static void
@@ -99,16 +100,16 @@ fig_line(void *loutput_, int r, int g, int b, unsigned depth, unsigned x1, unsig
 }
 
 static void
-fig_text(void *loutput_, int r, int g, int b, int size, unsigned depth, unsigned x, unsigned y, const char *text)
+fig_text(void *loutput_, int r, int g, int b, unsigned depth, unsigned x, unsigned y, const char *text)
 {
   struct lstopo_output *loutput = loutput_;
   FILE *file = loutput->file;
   int len = (int)strlen(text);
   int color = rgb_to_fig(r, g, b);
+  int size = (fontsize * 16) / 10;
   x *= FIG_FACTOR;
   y *= FIG_FACTOR;
-  size = (size * 16) / 10;
-  fprintf(file, "4 0 %d %u -1 0 %d 0.0 4 %d %u %u %u %s\\001\n", color, depth, size, size * 10, len * size * 10, x, y + size * 10, text);
+  fprintf(file, "4 0 %d %u -1 0 %d 0.0 4 %d %d %u %u %s\\001\n", color, depth, size, size * 10, len * size * 10, x, y + size * 10, text);
 }
 
 static struct draw_methods fig_draw_methods = {

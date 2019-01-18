@@ -186,7 +186,7 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
       //
       forall lo in bankStart..#str do
         on ADom.dist.idxToLocale(lo) do
-          local butterfly(wk1, wk2, wk3, A.localSlice(lo..by str #radix));
+          local do butterfly(wk1, wk2, wk3, A.localSlice(lo..by str #radix));
 
       //
       // update the multipliers for the high bank
@@ -201,7 +201,7 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
       //
       forall lo in bankStart+span..#str do
         on ADom.dist.idxToLocale(lo) do
-          local butterfly(wk1, wk2, wk3, A.localSlice(lo.. by str #radix));
+          local do butterfly(wk1, wk2, wk3, A.localSlice(lo.. by str #radix));
     }
   }
 
@@ -217,7 +217,7 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
     if (str*radix == numElements) {
       forall lo in 0..#str do
         on ADom.dist.idxToLocale(lo) do
-          local butterfly(1.0, 1.0, 1.0, A.localSlice(lo.. by str # radix));
+          local do butterfly(1.0, 1.0, 1.0, A.localSlice(lo.. by str # radix));
     }
     //
     // ...otherwise using a simple radix-2 butterfly scheme

@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,6 +26,7 @@ extern bool parsed;
 extern bool normalized;
 extern bool resolved;
 extern bool intentsResolved;
+extern bool iteratorsLowered;
 
 
 //
@@ -44,6 +45,7 @@ void copyPropagation();
 void createTaskFunctions();
 void cullOverReferences();
 void deadCodeElimination();
+void denormalize();
 void docs();
 void expandExternArrayCalls();
 void flattenClasses();
@@ -53,20 +55,19 @@ void insertLineNumbers();
 void insertWideReferences();
 void localizeGlobals();
 void loopInvariantCodeMotion();
+void lowerErrorHandling();
 void lowerIterators();
 void makeBinary();
 void normalize();
 void optimizeOnClauses();
 void parallel();
-void parse();
-void processIteratorYields();
 void prune();
 void prune2();
 void readExternC();
 void refPropagation();
 void removeEmptyRecords();
 void removeUnnecessaryAutoCopyCalls();
-void removeWrapRecords();
+void replaceArrayAccessesWithRefTemps();
 void resolve();
 void resolveIntents();
 void returnStarTuplesByRefArgs();
@@ -83,6 +84,7 @@ void checkPostResolution();
 void checkNoUnresolveds();
 // These checks can be applied after any pass.
 void checkForDuplicateUses();
+void checkArgsAndLocals();
 void checkReturnTypesHaveRefTypes();
 
 //
@@ -91,26 +93,55 @@ void checkReturnTypesHaveRefTypes();
 
 // buildDefaultFunctions.cpp
 void buildDefaultDestructor(AggregateType* ct);
+void buildEnumFunctions(EnumType* et);
+FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
+                         bool setter, bool typeMethod);
 
 // createTaskFunctions.cpp -> implementForallIntents.cpp
 extern Symbol* markPruned;
 extern Symbol* markUnspecified;
-void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses);
 void replaceVarUses(Expr* topAst, SymbolMap& vars);
-void pruneThisArg(Symbol* parent, SymbolMap& uses);
+void pruneOuterVars(Symbol* parent, SymbolMap& uses);
 
 // deadCodeElimination.cpp
 void deadBlockElimination();
 
 // flattenFunctions.cpp
+void flattenNestedFunction(FnSymbol* nestedFunction);
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
-// callDestructors.cpp
-void insertReferenceTemps(CallExpr* call);
+// implementForallIntents.cpp
+bool preserveShadowVar(Symbol* var);
+void adjustVoidShadowVariables();
+
+// inlineFunctions.cpp
+BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
+
+// iterator.cpp
+CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
+                                 bool fromForExpr);
+void setIteratorRecordShape(CallExpr* call);
+bool checkIteratorFromForExpr(Expr* ref, Symbol* shape);
+
+// lowerIterators.cpp, lowerForalls.cpp
+void lowerForallStmtsInline();
+void handleChplPropagateErrorCall(CallExpr* call);
+void fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller);
+void addDummyErrorArgumentToCall(CallExpr* call);
+bool isVirtualIterator(Symbol* iterator);
+
+// normalize.cpp
+void normalize(FnSymbol* fn);
+void normalize(Expr* expr);
+void checkUseBeforeDefs(FnSymbol* fn);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
+CallExpr* findDownEndCount(FnSymbol* fn);
+
+// resolution
+Expr*     resolveExpr(Expr* expr);
 
 // type.cpp
 void initForTaskIntents();

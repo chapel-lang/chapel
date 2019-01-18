@@ -1,3 +1,5 @@
 a is {a = 1, b = 2, x = 3, y = 4}
 writing {b=5,y=7,a=4,x=6}
-read-class-reorder3.chpl:26: error: bad format in channel.read(ref a:Child) with path "test.txt" offset 9
+uncaught BadFormatError: bad format (in channel.read(ref a:Child) with path "test.txt" offset 9)
+  read-class-reorder3.chpl:26: thrown here
+  read-class-reorder3.chpl:26: uncaught here

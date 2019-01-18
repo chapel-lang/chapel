@@ -1,0 +1,1 @@
+0-call-modifies-returned-record.chpl:23: error: non-lvalue actual is passed to 'ref' formal 'r' of setToTwo()

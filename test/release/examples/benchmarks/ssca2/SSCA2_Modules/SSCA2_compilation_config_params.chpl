@@ -16,7 +16,7 @@ module SSCA2_compilation_config_params
 // |  documentation.  This mode is normally used with the preceding mode to   |
 // |  create deterministic output for compiler regression testing.            |
 // |                                                                          |
-// |  "DISTRIBUTION_TYPE" selects among different distribution possiblities.  |
+// |  "DISTRIBUTION_TYPE" selects among different distribution possibilities. |
 // |  At present, only "BLOCK" distributions is supported in the code.        |
 // |  The alternative to "BLOCK" is "none" (undistributed).                   |
 // +==========================================================================+
@@ -38,7 +38,7 @@ module SSCA2_compilation_config_params
 
   config param DEBUG_KERNEL4 = false;
 
-  config param DELETE_KERNEL4_DS = false;
+  config param DELETE_KERNEL4_DS = true;
 
   config param REPRODUCIBLE_PROBLEMS = true;
 

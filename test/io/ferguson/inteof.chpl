@@ -2,7 +2,7 @@ config const filename = "inteof-test.nums";
 config const verbose = false;
 const sizes = ( 1, 100, 1000, 10000, 100000, 1000000 );
 
-for i in 1..sizes.size 
+for i in 1..sizes.size
 {
   var n = sizes[i];
   for reopen in 1..1 // TODO 0..1
@@ -34,10 +34,12 @@ for i in 1..sizes.size
         reader.read(x);
       }
 
-      var err: syserr = ENOERR;
       var badint: int;
-      reader.read(badint, error=err);
-      if (err != EEOF) then halt("Data remains at end of file");
+      try! {
+        reader.read(badint);
+      } catch e: SystemError {
+        if (e.err != EEOF) then halt("Data remains at end of file");
+      }
 
       infile.close();
     }
@@ -68,10 +70,12 @@ for i in 1..sizes.size
         reader.readln(x);
       }
 
-      var err: syserr = ENOERR;
       var badint: int;
-      reader.read(badint, error=err);
-      if (err != EEOF) then halt("Data remains at end of file");
+      try! {
+        reader.read(badint);
+      } catch e: SystemError {
+        if (e.err != EEOF) then halt("Data remains at end of file");
+      }
 
       infile.close();
     }
@@ -102,10 +106,12 @@ for i in 1..sizes.size
         reader.read(x);
       }
 
-      var err: syserr = ENOERR;
       var badint: int;
-      reader.read(badint, error=err);
-      if (err != EEOF) then halt("Data remains at end of file");
+      try! {
+        reader.read(badint);
+      } catch e: SystemError {
+        if (e.err != EEOF) then halt("Data remains at end of file");
+      }
 
       infile.close();
     }

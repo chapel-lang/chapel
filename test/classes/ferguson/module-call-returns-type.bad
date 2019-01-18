@@ -1,0 +1,2 @@
+module-call-returns-type.chpl:13: In function 'test':
+module-call-returns-type.chpl:15: error: unresolved call 'my_struct.my_field'

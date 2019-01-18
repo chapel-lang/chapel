@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -115,7 +115,7 @@ void chpl_rmem_consist_fence(memory_order order, int ln, int32_t fn) {
 
     if( release ) chpl_rmem_consist_release(ln, fn);
     if( acquire ) chpl_rmem_consist_acquire(ln, fn);
-    atomic_thread_fence(order);
+    chpl_atomic_thread_fence(order);
   }
 }
 

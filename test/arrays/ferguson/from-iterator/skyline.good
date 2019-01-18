@@ -1,0 +1,8 @@
+subarray 1
+subarray domain {1..1}
+subarray (B) type domain {1..1}
+subarray 2 0
+subarray domain {1..2}
+subarray (B) type domain {1..2}
+AA domain {1..2}
+AA (element) eltType domain {1..1}

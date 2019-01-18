@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -37,10 +37,6 @@
 #ifndef LAUNCHER
 
 #define _noop(x)
-
-#include "chpl-mem-warning-macros.h"
-
-#define exit    dont_use_exit_use_chpl_exit_instead
 
 #endif // LAUNCHER
 

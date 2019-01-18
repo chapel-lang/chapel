@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -16,21 +16,36 @@
 # limitations under the License.
 
 AST_SRCS =                                          \
+           AggregateType.cpp                        \
            alist.cpp                                \
            astutil.cpp                              \
            baseAST.cpp                              \
            bb.cpp                                   \
            build.cpp                                \
+           CatchStmt.cpp                            \
+           CallExpr.cpp                             \
            checkAST.cpp                             \
+           DeferStmt.cpp                            \
            dominator.cpp                            \
            expr.cpp                                 \
-           iterator.cpp                             \
+           foralls.cpp                              \
            flags.cpp                                \
+           FnSymbol.cpp                             \
+           ForallStmt.cpp                           \
+           IfExpr.cpp                               \
+           iterator.cpp                             \
+           LoopExpr.cpp                             \
+           ModuleSymbol.cpp                         \
+           PartialCopyData.cpp                      \
            primitive.cpp                            \
            stmt.cpp                                 \
            symbol.cpp                               \
+           TryStmt.cpp                              \
            type.cpp                                 \
+           UnmanagedClassType.cpp                   \
+           UseStmt.cpp                              \
            view.cpp                                 \
+           wellknown.cpp                            \
                                                     \
            LoopStmt.cpp                             \
                                                     \
@@ -47,6 +62,8 @@ AST_SRCS =                                          \
            AstDump.cpp                              \
            AstDumpToHtml.cpp                        \
            AstDumpToNode.cpp                        \
+                                                    \
+           AstCount.cpp                             \
                                                     \
            AstPrintDocs.cpp                         \
                                                     \

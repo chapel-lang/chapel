@@ -1,0 +1,2 @@
+bogusShadowVar.chpl:4: error: could not find the outer variable for 'bogusVar1'
+bogusShadowVar.chpl:5: error: could not find the outer variable for 'bogusVar2'

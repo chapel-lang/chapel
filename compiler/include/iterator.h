@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,7 @@
 
 #ifndef _ITERATOR_H_
 #define _ITERATOR_H_
+#include "symbol.h"
 #include "vec.h"
 
 class BaseAST;
@@ -26,17 +27,9 @@ class AggregateType;
 class FnSymbol;
 class CallExpr;
 
-enum IteratorTag { 
-  it_iterator, 
-  it_leader,
-  it_follower 
-};
-
 class IteratorInfo {
 public:
   IteratorInfo();
-
-  IteratorTag    tag;
 
   FnSymbol*      iterator;
   FnSymbol*      getIterator;
@@ -51,7 +44,33 @@ public:
   FnSymbol*      getValue;
   FnSymbol*      init;
   FnSymbol*      incr;
+
+  Type*          yieldedType;
+  RetTag         iteratorRetTag;
 };
+
+void cleanupIteratorInfo(FnSymbol* host);
+
+class IteratorGroup {
+public:
+  FnSymbol* serial;
+  FnSymbol* standalone;
+  FnSymbol* leader;
+  FnSymbol* follower;
+
+  // Search for a standalone/leader gave a non-iterator/forwarder.
+  bool noniterSA, noniterL;
+
+  IteratorGroup();
+};
+
+void resolveAlsoParallelIterators(FnSymbol* serial, Expr* call);
+void verifyIteratorGroup(FnSymbol* it);
+void cleanupIteratorGroup(FnSymbol* it);
+
+void showIteratorGroup(IteratorGroup* igroup);
+void showIteratorGroup(BaseAST* ast);
+void showIteratorGroup(int id);
 
 CallExpr* isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts);
 void lowerIterator(FnSymbol* fn);

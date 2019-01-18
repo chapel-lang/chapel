@@ -1,12 +1,6 @@
-paramNon.chpl:47: error: ambiguous call 'plus(bool, 4)'
-paramNon.chpl:17: note: candidates are: plus(x, param y)
-paramNon.chpl:28: note:                 plus(x: uint(64), y: int(64))
-paramNon.chpl:33: note:                 plus(x: int(64), y: uint(64))
-paramNon.chpl:1: note:                 plus(x: int(8), y: int(8))
-paramNon.chpl:1: note:                 plus(x: int(16), y: int(16))
-paramNon.chpl:1: note:                 plus(x: int(32), y: int(32))
-paramNon.chpl:1: note:                 plus(x: int(64), y: int(64))
-paramNon.chpl:6: note:                 plus(x: uint(8), y: uint(8))
-paramNon.chpl:6: note:                 plus(x: uint(16), y: uint(16))
-paramNon.chpl:6: note:                 plus(x: uint(32), y: uint(32))
-paramNon.chpl:6: note:                 plus(x: uint(64), y: uint(64))
+In uint/param int version
+5
+In uint/param int version
+5
+In uint/int version
+compilerError: uint/int op error

@@ -58,7 +58,7 @@ else
   exit
 fi
 
-DEPS="$OPTS -Wall -DCHPL_RT_UNIT_TEST $DEFS $RE2INCLS"
+DEPS="$OPTS --std=gnu++11 -Wall -DCHPL_RT_UNIT_TEST $DEFS $RE2INCLS"
 LDEPS="$RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/qio_error.c $RSRC/deque.c $RSRC/regexp/re2/re2-interface.cc $RE2LIB -lpthread"
 
 T1="$CXX $DEPS -g regexp_test.cc -o regexp_test $LDEPS"

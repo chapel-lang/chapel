@@ -1,0 +1,2 @@
+# PGI compiler has a different idea for what nan <= nan does
+CHPL_TARGET_COMPILER<=pgi

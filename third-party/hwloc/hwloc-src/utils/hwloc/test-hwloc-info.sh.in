@@ -3,7 +3,7 @@
 
 #
 # Copyright © 2009 CNRS
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2017 Inria.  All rights reserved.
 # Copyright © 2009 Université Bordeaux
 # See COPYING in top-level directory.
 #
@@ -32,6 +32,12 @@ set -e
 (
   $info --if synthetic --input "node:2 core:3 pu:4"
   echo
+  $info --if synthetic --input "node:2 core:3 pu:4" --topology
+  echo
+  $info --if synthetic --input "node:2 core:3 pu:4" --support
+  echo
+  $info --if synthetic --input "node:2 core:3 pu:4" --objects
+  echo
   $info --if synthetic --input "node:2 core:3 pu:4" core:2-4
   echo
   $info --if synthetic --input "node:2 core:3 pu:4" -n --ancestors pu:10-11
@@ -41,6 +47,10 @@ set -e
   $info --if synthetic --input "node:2 core:2 ca:2 ca:2 pu:2" --ancestor l2 pu:12
   echo
   $info --if synthetic --input "node:2 core:2 ca:2 ca:2 pu:2" --ancestor l1 -s pu:7-10
+  echo
+  $info --if synthetic --input "node:2 core:2 ca:2 ca:2 pu:2" --children -s l2:1 node:1.core:1
+  echo
+  $info --if synthetic --input "node:2 core:2 ca:2 ca:2 pu:2" --descendants l1d -s core:1-2
 ) \
  | grep -v " info hwlocVersion = $HWLOC_VERSION" \
  | grep -v " info ProcessName = hwloc-info" \

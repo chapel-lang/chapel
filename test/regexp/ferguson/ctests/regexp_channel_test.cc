@@ -1,10 +1,8 @@
 
-extern "C" {
 #include "qio.h"
 #include "qio_regexp.h"
 #include <assert.h>
 #include <stdio.h>
-}
 
 
 #include "re2/re2.h"
@@ -221,8 +219,8 @@ void check_channel(qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_ch
          discard_check_mask,
          allow_buffer_search,
 	 idx );
-  free(fhints);
-  free(chhints);
+  qio_free(fhints);
+  qio_free(chhints);
 
   printf("[%d] '%s' vs '%s'\n", test->kind, test->data, test->pattern);
 

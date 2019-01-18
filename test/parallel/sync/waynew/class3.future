@@ -1,0 +1,13 @@
+bug: Compiler is attempting to bypass sync API
+
+This program executed to completion when ChapelSyncvar was implemented
+as a class.  Conversion to a record-wrapped class revealed that this
+test, and only this test, caused the compiler to generate AST that
+fetched fields of the class directly.
+
+This in turn lead to a recognition that the semantics of sync class is
+not as clear as it should be and so it was not clear how to support
+this test for the new implementation.
+
+A decision was made to define this as a future until the use cases for
+sync class are better understood

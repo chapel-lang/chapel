@@ -11,7 +11,7 @@ to introduce concurrency into a program.
 \item \rsec{Synchronization_Variables} describes synchronization
 variables, an unstructured mechanism for synchronizing tasks.
 \item \rsec{Atomic_Variables} describes atomic variables, a mechanism
-for supporting atomic operations. 
+for supporting atomic operations.
 \item \rsec{Cobegin} describes the cobegin statement, a structured way to
 introduce concurrency into a program.
 \item \rsec{Coforall} describes the coforall loop, another structured way to
@@ -63,11 +63,16 @@ scopes are considered to be passed into a task function by default intent,
 unless a different \emph{task intent} is specified explicitly
 by a \sntx{task-intent-clause}.
 
+% Should this be placed more prominently right before this section?
+Accesses to the same variable from different tasks are subject
+to the Memory Consistency Model (\rsec{Memory_Consistency_Model}).
+Such accesses can result from aliasing due to \chpl{ref} argument intents
+or task intents, among others.
 
 \section{The Begin Statement}
 \label{Begin}
 \index{begin@\chpl{begin}}
-\index{statements!begin}
+\index{statements!begin@\chpl{begin}}
 
 The begin statement creates a task to execute a statement.  The syntax
 for the begin statement is given by
@@ -174,10 +179,10 @@ A synchronization variable is specified with a sync or single type
 given by the following syntax:
 \begin{syntax}
 sync-type:
-  `sync' type-specifier
+  `sync' type-expression
 
 single-type:
-  `single' type-specifier
+  `single' type-expression
 \end{syntax}
 
 If a synchronization variable declaration has an initialization
@@ -189,11 +194,11 @@ The code
 \begin{chapel}
 class Tree {
   var isLeaf: bool;
-  var left, right: Tree;
+  var left, right: unmanaged Tree;
   var value: int;
 
   proc sum():int {
-    if (isLeaf) then 
+    if (isLeaf) then
        return value;
 
     var x(*\texttt{\$}*): sync int;
@@ -204,12 +209,12 @@ class Tree {
 }
 \end{chapel}
 \begin{chapelpost}
-var tree: Tree = new Tree(false, new Tree(false, new Tree(true, nil, nil, 1),
-                                                 new Tree(true, nil, nil, 1), 1),
-                                 new Tree(false, new Tree(true, nil, nil, 1),
-                                                 new Tree(true, nil, nil, 1), 1), 1);
+var tree: unmanaged Tree = new unmanaged Tree(false, new unmanaged Tree(false, new unmanaged Tree(true, nil, nil, 1),
+                                                 new unmanaged Tree(true, nil, nil, 1), 1),
+                                 new unmanaged Tree(false, new unmanaged Tree(true, nil, nil, 1),
+                                                 new unmanaged Tree(true, nil, nil, 1), 1), 1);
 writeln(tree.sum());
-proc Tree.~Tree() {
+proc Tree.deinit() {
   if isLeaf then return;
   delete left;
   delete right;
@@ -255,6 +260,7 @@ before either had written its updated value, causing one of the
 increments to be lost.
 \end{chapelexample}
 
+\pagebreak
 \begin{chapelexample}{singleVar.chpl}
 The following code implements a simple split-phase barrier using a
 single variable.
@@ -344,6 +350,7 @@ single variable remains full when this method completes.
 This method implements the normal read of a \chpl{single} variable.
 \end{protobody}
 
+\pagebreak
 \index{readXX (sync var)@\chpl{readXX} (sync var)}
 \index{predefined functions!readXX (sync var)@\chpl{readXX} (sync var)}
 \begin{protohead}
@@ -472,7 +479,7 @@ writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*).readFF(), z));
 
 Atomic variables are variables that support atomic operations. Chapel
 currently supports atomic operations for bools, all supported sizes of
-signed and unsigned integers, as well as all supported sizes of reals. 
+signed and unsigned integers, as well as all supported sizes of reals.
 
 \begin{rationale}
 The choice of supported atomic variable types as well as the atomic
@@ -481,14 +488,14 @@ operations was strongly influenced by the C11 standard.
 
 Atomic is a type qualifier that precedes the variable's type in
 the declaration. Atomic operations are supported for bools, and all
-sizes of ints, uints, and reals.  
+sizes of ints, uints, and reals.
 
-An atomic variable is specified with an atomic type given by the 
+An atomic variable is specified with an atomic type given by the
 following syntax:
 
 \begin{syntax}
 atomic-type:
-  `atomic' type-specifier
+  `atomic' type-expression
 \end{syntax}
 
 \subsection{Predefined Atomic Methods}
@@ -497,7 +504,7 @@ atomic-type:
 
 The following methods are defined for variables of atomic type. Note
 that not all operations are supported for all atomic types. The
-supported types are listed for each method.  
+supported types are listed for each method.
 
 \index{atomic types!memory order}
 Most of the predefined atomic methods accept an optional argument
@@ -534,9 +541,10 @@ conservative ordering than specified.
 proc (atomic t).read(memory_order order): t
 \end{protohead}
 \begin{protobody}
-Reads and returns the stored value. Defined for all atomic types.  
+Reads and returns the stored value. Defined for all atomic types.
 \end{protobody}
 
+\pagebreak
 \index{peek (atomic var)@\chpl{peek} (atomic var)}
 \index{predefined functions!peek (atomic var)@\chpl{peek} (atomic var)}
 \begin{protohead}
@@ -553,7 +561,7 @@ Defined for all atomic types.
 proc (atomic t).write(v: t, memory_order order)
 \end{protohead}
 \begin{protobody}
-Stores \chpl{v} as the new value. Defined for all atomic types.  
+Stores \chpl{v} as the new value. Defined for all atomic types.
 \end{protobody}
 
 \index{poke (atomic var)@\chpl{poke} (atomic var)}
@@ -573,7 +581,7 @@ proc (atomic t).exchange(v: t, memory_order order): t
 \end{protohead}
 \begin{protobody}
 Stores \chpl{v} as the new value and returns the original
-value. Defined for all atomic types. 
+value. Defined for all atomic types.
 \end{protobody}
 
 \index{compareExchangWeak (atomic var)@\chpl{compareExchangeWeak} (atomic var)}
@@ -829,7 +837,7 @@ the last line until all of the tasks have completed.
 If a variable is referenced within the lexical scope of a
 \chpl{begin}, \chpl{cobegin}, or \chpl{coforall} statement
 and is declared outside that statement, it is considered
-to be passed as an actual argument to the corresponding task function 
+to be passed as an actual argument to the corresponding task function
 at task creation time. All references to the variable
 within the task function implicitly refer to the task function's
 corresponding formal argument.
@@ -853,12 +861,23 @@ task-intent-clause:
   `with' ( task-intent-list )
 
 task-intent-list:
+  task-intent-item
+  task-intent-item, task-intent-list
+
+task-intent-item:
   formal-intent identifier
-  formal-intent identifier, task-intent-list
+  task-private-var-decl
 \end{syntax}
 
 where the following intents can be used as a \sntx{formal-intent}:
 \chpl{ref}, \chpl{in}, \chpl{const}, \chpl{const in}, \chpl{const ref}.
+\sntx{task-private-var-decl} is defined in \rsec{Task_Private_Variables}.
+In addition, \sntx{task-intent-item} may define a \chpl{reduce} intent.
+Reduce intents are described in the \emph{Reduce Intents} technical note
+in the online documentation:
+\\ %formatting
+\mbox{$$ $$ $$} %indent
+\url{https://chapel-lang.org/docs/technotes/reduceIntents.html}
 
 % TODO for task intents:
 % * Introduce a 'task-formal-intent' syntactic rule
@@ -880,8 +899,6 @@ subject to such treatment within nested task constructs, if any.
 
 
 \begin{rationale}
-% Ideally, replace "task intents" throughout the foregoing
-% with a more appropriate name for this feature.
 The primary motivation for task intents is to avoid some races on
 scalar/record variables, which are possible when one task modifies a
 variable and another task reads it. Without task intents,
@@ -927,7 +944,7 @@ race-avoidance benefit available to more code.
 
 We decided to apply task intents to module level variables, in addition
 to local variables. Again, this is for consistency. One could view module
-level variables differently than local variables (e.g. a module level 
+level variables differently than local variables (e.g. a module level
 variable is ``always available''), but we favored consistency over such
 an approach.
 
@@ -936,7 +953,7 @@ the variables in the dynamic scope of a task construct. This is to
 keep this feature manageable, so that all variables subject to task
 intents can be obtained by examining just the lexical scope of the
 task construct. In general, the set of closure variables can be hard
-to determine, unweildy to implement and reason about, it is unclear
+to determine, unwieldy to implement and reason about, it is unclear
 what to do with extern functions, etc.
 
 We do not provide \chpl{inout} or \chpl{out} as task intents because they
@@ -1195,7 +1212,7 @@ while (head) {
   next = head.next;
   delete head;
   head = next;
-} 
+}
 \end{chapelpost}
 \begin{chapeloutput}
 atomic.chpl:13: warning: atomic keyword is ignored (not implemented)

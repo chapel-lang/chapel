@@ -1,0 +1,2 @@
+use-before-field.chpl:9: In initializer:
+use-before-field.chpl:10: error: field "b" used before it is initialized

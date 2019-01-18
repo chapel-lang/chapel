@@ -1,0 +1,19 @@
+
+[brick]
+name = "sampleModule"
+version = "0.1.0"
+chplVersion = "1.17.0"
+
+[dependencies]
+_MasonTest1 = "0.2.0"
+
+[examples]
+examples = ["depExample.chpl", "withOpts.chpl", "examplesubdir/subdirExample.chpl", "example.chpl"]
+         [examples.depExample]
+         compopts = "--fast"
+
+         [examples.withOpts]
+         execopts = "--exConfig=Passed!"
+
+         [examples.subdirExample]
+         compopts = "--no-lifetime-checking"

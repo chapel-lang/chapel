@@ -1,15 +1,17 @@
 <!--
   Copyright © 2009      CNRS
-  Copyright © 2009-2014 Inria.  All rights reserved.
+  Copyright © 2009-2017 Inria.  All rights reserved.
   Copyright © 2009-2011 Université Bordeaux.
   See COPYING in top-level directory.
+
+  This is the DTD for hwloc v1.x XMLs and diff XMLs.
  -->
 
 <!ELEMENT topology (object)+>
 <!ELEMENT root (object)+>
 
 <!ELEMENT object (page_type*,info*,distances*,userdata*,object*)>
-<!ATTLIST object type (System | Machine | Misc | Group | NUMANode | Package | Cache | Core | PU | Bridge | PCIDev | OSDev) #REQUIRED>
+<!ATTLIST object type (System | Machine | Misc | Group | NUMANode | Socket | Package | Cache | Core | PU | Bridge | PCIDev | OSDev) #REQUIRED>
 <!ATTLIST object os_level CDATA "-1" >
 <!ATTLIST object os_index CDATA "-1" >
 <!ATTLIST object name CDATA "" >

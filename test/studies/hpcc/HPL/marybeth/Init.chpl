@@ -61,7 +61,7 @@ record HPLparams {
   var L1, U: transtype;
   var memAlign: int;
 
-  proc initialize() {
+  proc postinit() {
      var infile = open(inFileName, iomode.r).reader();
 
      infile.readln();
@@ -181,12 +181,10 @@ proc init(A:[?D]) {
 //  This is to match the previous version of benchmark where
 //  A and b were stored separately. 
   var n = D.dim(1).length;
-  var Asquare => A(..,1..n);
-  var b => A(..,n+1);
-  var rstream = new RandomStream(seed=1234567891);
+  ref Asquare = A(..,1..n);
+  ref b = A(..,n+1);
+  var rstream = new owned RandomStream(real, seed=1234567891);
 
   rstream.fillRandom(Asquare);
   rstream.fillRandom(b);
-
-  delete rstream;
 }

@@ -1,0 +1,20 @@
+proc getNameFromClass(obj:object) : string
+{
+  var cid =  __primitive("getcid", obj);
+  var cs: c_string = __primitive("class name by id", cid);
+  var str = cs:string;
+  return str;
+}
+
+class Parent {
+  var x:int;
+}
+
+class Child : Parent {
+  var y:int;
+}
+
+var x:owned Parent = new owned Parent(1);
+var y:owned Parent = new owned Child(1,2);
+writeln(getNameFromClass(x), " ", x);
+writeln(getNameFromClass(y), " ", y);

@@ -1,16 +1,13 @@
 #!/usr/bin/env python
-import os
 import sys
 
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
-
+import overrides
 from utils import memoize
 
 
 @memoize
 def get():
-    timers_val = os.environ.get('CHPL_TIMERS', 'generic')
+    timers_val = overrides.get('CHPL_TIMERS', 'generic')
     return timers_val
 
 

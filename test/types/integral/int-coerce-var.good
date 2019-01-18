@@ -1,0 +1,3 @@
+int-coerce-var.chpl:9: In function 'test':
+int-coerce-var.chpl:12: error: unresolved call 'acceptIntRef(int(8))'
+int-coerce-var.chpl:1: note: candidates are: acceptIntRef(ref arg: int)

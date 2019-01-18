@@ -11,3 +11,5 @@ proc foo(s) {
 var s: list(int) = makeList(1, 2, 3, 4);
 
 foo(s);
+
+s.destroy();

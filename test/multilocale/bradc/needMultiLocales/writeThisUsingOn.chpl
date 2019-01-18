@@ -3,7 +3,7 @@ use Time;
 class LocC {
   var id: int;
   
-  proc writeThis(x: Writer) {
+  proc writeThis(x) {
     on this {
       x.write(id);
     }
@@ -11,17 +11,17 @@ class LocC {
 }
 
 class C {
-  var locCs: [LocaleSpace] LocC;
+  var locCs: [LocaleSpace] unmanaged LocC;
 
-  proc initialize() {
+  proc postinit() {
     for loc in LocaleSpace {
       on Locales(loc) {
-        locCs(loc) = new LocC(loc);
+        locCs(loc) = new unmanaged LocC(loc);
       }
     }
   }
 
-  proc writeThis(x: Writer) {
+  proc writeThis(x) {
     for loc in LocaleSpace {
       on Locales(loc) {
         if loc != 0 then
@@ -39,7 +39,7 @@ class C {
 // working.
 cobegin {
   {
-    var myC = new C();
+    var myC = new unmanaged C();
     writeln("C is: ", myC);
   }
   {

@@ -3,6 +3,7 @@
 import sys, os, shutil, time, math, re, stat
 from optparse import OptionParser
 
+import datetime
 import fileReadHelp
 import json
 try:
@@ -198,8 +199,11 @@ def data_to_csv(data, csvFile):
 def sort_csv(csvFile):
     data = parse_csv(csvFile)
 
+    if len(data) == 1:
+        return
+
     # transpose the data so that we can sort by row
-    data = zip(*data)
+    data = list(zip(*data))
     # remove the Date perfkey and the actual dates as they screw up sorting
     dates = data.pop(0)
 
@@ -220,8 +224,46 @@ def sort_csv(csvFile):
     # add the dates back in
     data.insert(0, dates)
     # untranspose the data
-    data = zip(*data)
+    data = list(zip(*data))
 
+    data_to_csv(data, csvFile)
+
+# Yield dateformat-ed dates in the range [start_date, end_date]
+def date_range(start_date, end_date, dateformat='%Y-%m-%d'):
+  cur_date = datetime.datetime.strptime(start_date, dateformat)
+  end_date = datetime.datetime.strptime(end_date, dateformat)
+
+  while cur_date <= end_date:
+    yield cur_date.strftime(dateformat)
+    cur_date += datetime.timedelta(days=1)
+
+# Fill in missing dates in the csv file. Grabs the start and end date from the
+# file, and ensures that we have an entry for every date in the range.
+# We do this because annotations require an actual data point to attach to, so
+# we make sure there will always be a day available
+def fill_sparse_csv(csvFile):
+    data = parse_csv(csvFile)
+    keys = data.pop(0)
+    if len(data) > 1:
+        dates = list(zip(*data)).pop(0)
+        dates = [date[0] for date in dates]
+        if len(dates) > 1:
+            start_date = dates[0]
+            end_date = dates[-1]
+
+            # for all the missing days append an empty entry to the end of the
+            # data (we'll sort later to get things in the right order)
+            missing_dates = set(date_range(start_date, end_date)) - set(dates)
+            for date in missing_dates:
+               # emptydate = [[date], [''], [''], ...]
+               emptydate = [[date]] + [['']]*(len(keys)-1)
+               data.append(emptydate)
+
+        # sort our data, we don't need to convert our date strings to datetimes
+        # because for ISO 8601 dates lexical order is also chronological order
+        data.sort()
+
+    data.insert(0, keys)
     data_to_csv(data, csvFile)
 
 
@@ -234,7 +276,7 @@ def strip_series(csvFile, numseries):
     data = parse_csv(csvFile)
     labels = [a[0] for a in data[0]]
     newData = []
-    data = zip(*data)
+    data = list(zip(*data))
     numFound = 0
     newData.append(data[0])
     if multiConf:
@@ -251,7 +293,7 @@ def strip_series(csvFile, numseries):
             newData.append(data[i])
 
     # untranspose the data
-    data = zip(*newData)
+    data = list(zip(*newData))
 
     data_to_csv(data, csvFile)
 
@@ -259,6 +301,9 @@ def strip_series(csvFile, numseries):
 
 
 ############
+
+class CouldNotReadGraphFile(Exception):
+    pass
 
 # Global info about generating graphs
 class GraphStuff:
@@ -409,15 +454,18 @@ class GraphStuff:
 
 
     def genGraphStuff(self, fname, suites):
-        fullFname = self.testdir+'/'+fname
-        if not os.path.exists(fullFname):
-            fullFname = './'+fname
+        if os.path.isabs(fname):
+            fullFname = fname
+        else:
+            fullFname = self.testdir+'/'+fname
+            if not os.path.exists(fullFname):
+                fullFname = './'+fname
         if verbose:
             sys.stdout.write('Reading %s...\n'%(fullFname))
         lines=fileReadHelp.ReadFileWithComments(fullFname)
         if lines==None:
             sys.stdout.write('WARNING: Could not read graph description from %s.  Ignoring.\n'%(fullFname))
-            return
+            raise CouldNotReadGraphFile
 
         basename = os.path.splitext(os.path.basename(fname))[0]
 
@@ -451,9 +499,9 @@ class GraphStuff:
                 if len(graphs[currgraph].perfkeys) % len(dFiles) != 0:
                     sys.stdout.write('[Warning: num .dat files did not evenly divide into num perfkeys for %s. Ignoring.]\n'%(fullFname))
                     return
-                keysRange = range(0, (len(graphs[currgraph].perfkeys) / len(dFiles)))
+                keysRange = range(0, (len(graphs[currgraph].perfkeys) // len(dFiles)))
                 for dFile in dFiles:
-		    graphs[currgraph].datfilenames += [ dFile for i in keysRange ]
+                    graphs[currgraph].datfilenames += [ dFile for i in keysRange ]
             elif key == 'graphtitle':
                 graphs[currgraph].title = rest.strip()
             elif key == 'graphname':
@@ -524,7 +572,10 @@ class GraphClass:
     def __str__(self):
         l  = 'Graph: '+str(self.name)+' (id='+str(self.id)+')\n'
         l += '\ttitle: '+self.title+'\n'
-        l += '\tsuites: ['+','.join(suites)+']\n'
+        if self.suites == None or self.suites == [] or self.suites == [None]:
+            l += '\tsuites: none\n'
+        else:
+            l += '\tsuites: ['+','.join(self.suites)+']\n'
         l += '\tgraphname: '+self.graphname+'\n'
         l += '\tylabel: '+self.ylabel+'\n'
         if self.startdate != None:
@@ -600,7 +651,7 @@ class GraphClass:
 
         first = True
         done = False
-        for i in xrange(numKeys):
+        for i in range(numKeys):
             # The file may be missing (in the case where only a subdirectory
             # has been tested for performance).  If so, we don't want to
             # try to access a non-existent datfile
@@ -625,7 +676,7 @@ class GraphClass:
         found_data = False
         while not done:
             done = True
-            for i in xrange(numKeys):
+            for i in range(numKeys):
                 # The file may be missing (in the case where only a subdirectory
                 # has been tested for performance).  If so, we don't want to
                 # try to access a non-existent datfile
@@ -662,7 +713,7 @@ class GraphClass:
                 try:
                     df = datfiles[self.datfilenames[i]]
                     if currLines[i] < len(df.lines):
-                        fields = zip(*df.lines[currLines[i]])
+                        fields = list(zip(*df.lines[currLines[i]]))
                         myDate = fields[0][0]
                         if myDate == minDate:
                             # consume this line
@@ -727,6 +778,8 @@ class GraphClass:
         if self.sort:
             sort_csv(fname)
 
+        fill_sparse_csv(fname)
+
         if self.numseries > 0:
             strip_series(fname, self.numseries)
 
@@ -749,8 +802,8 @@ class GraphClass:
 
     def generateGraphData(self, graphInfo, gnum):
         if debug:
-            print '==='
-            print self
+            print('===')
+            print(self)
 
         if verbose:
             sys.stdout.write('Generating graph data for %s (graph #%d)\n'%(self.name, gnum))
@@ -858,7 +911,7 @@ class GraphClass:
         datfiles = {}
         for i in range(nperfkeys):
             d = self.datfilenames[i]
-            if not datfiles.has_key(d):
+            if d not in datfiles:
                 datfiles[d] = self.DatFileClass(d)
             try:
                 if hasattr(datfiles[d], 'dfile'):
@@ -879,7 +932,7 @@ class GraphClass:
         self.generateData(graphInfo, datfiles)
         graphInfo.genGraphInfo(self)
 
-        for n, d in datfiles.iteritems():
+        for n, d in datfiles.items():
             del d
 
 
@@ -993,6 +1046,9 @@ def main():
                 # suites it belongs to, else add it add it to the graphList
                 graphnames = [x[0] for x in graphList]
                 if graphnames.count(l):
+                    if currSuite in graphList[graphnames.index(l)][1]:
+                        sys.stdout.write('[Warning: duplicate graph "{0}" '
+                            'found in suite "{1}"]\n'.format(l, currSuite))
                     graphList[graphnames.index(l)][1].append(currSuite)
                     # the suites at the top of our list our more often 'meta'
                     # suites that contains graphs from various suites. To keep
@@ -1017,6 +1073,8 @@ def main():
         try:
             graphInfo.genGraphStuff(graph[0], graph[1])
             numGraphfiles += 1
+        except (CouldNotReadGraphFile):
+            pass  # do not increment numGraphfiles
         except (ValueError, IOError, OSError):
             return -1
 

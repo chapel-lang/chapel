@@ -83,17 +83,17 @@ class LocTree {
      */
     proc this(node: Node) ref {
         oneAtATime$;
-        if !nodes.member(node) {
+        if !nodes.contains(node) {
             nodes += node;
         }
        
-        var c => coeffs[node]; 
+        ref c = coeffs[node];
         oneAtATime$ = true;
         return c;
     }
-    proc this(node: Node) {
+    proc this(node: Node) const ref {
         oneAtATime$;
-        if !nodes.member(node) {
+        if !nodes.contains(node) {
           // This is a getter so it shouldn't be modifying what
           // we return, should be safe to return the zero vector.
           // FIXME: Zeroes should really be a const, but can't
@@ -102,7 +102,7 @@ class LocTree {
           return zeroes;
         }
        
-        var c => coeffs[node]; 
+        ref c = coeffs[node];
         oneAtATime$ = true;
         return c;
     }
@@ -141,7 +141,7 @@ class LocTree {
      */
     proc has_coeffs(node: Node) {
         oneAtATime$;
-        const b = nodes.member(node);
+        const b = nodes.contains(node);
         oneAtATime$ = true;
         return b;
     }
@@ -151,7 +151,7 @@ class LocTree {
      */
     proc remove(node: Node) {
         oneAtATime$;
-        if nodes.member(node) then nodes.remove(node);
+        if nodes.contains(node) then nodes.remove(node);
         oneAtATime$ = true;
     }
 
@@ -166,7 +166,7 @@ class LocTree {
     }
 
     //AGS: Provide constructor that can copy a tree instead of create-then-copy
-    proc copy(t: LocTree) {
+    proc copy(t: unmanaged LocTree) {
         nodes = t.nodes;
         // get around restriction of matching domains for assoc arrays
         forall i in coeffs.domain do coeffs(i) = t.coeffs(i);
@@ -176,20 +176,21 @@ class LocTree {
 class FTree {
     const order   : int;
     const coeffDom: domain(1);
-    const tree    : [LocaleSpace] LocTree;
+    const tree    : [LocaleSpace] unmanaged LocTree;
 
-    proc FTree(order: int) {
+    proc init(order: int) {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
 
         this.order = order;
         this.coeffDom = {0..order-1};
+        this.complete();
 
         coforall loc in Locales do
-            on loc do tree[loc.id] = new LocTree(coeffDom);
+            on loc do tree[loc.id] = new unmanaged LocTree(coeffDom);
     }
 
-    proc ~FTree() {
+    proc deinit() {
         coforall loc in Locales do
             on loc do delete tree[loc.id];
     }
@@ -252,7 +253,7 @@ class FTree {
     /** Return a copy of this FTree
      */
     proc copy() {
-        const f = new FTree(order);
+        const f = new unmanaged FTree(order);
         for loc in LocaleSpace do
             f.tree[loc].copy(tree[loc]);
         return f;
@@ -272,10 +273,10 @@ class FTree {
 }
 
 proc main() {
-    var f = new FTree(2);
+    var f = new unmanaged FTree(2);
 
     for (i, j) in {1..3, 2..4} {
-        const node = new Node(i, j); 
+        const node = new unmanaged Node(i, j); 
         f[node] = (i, j);
     }
 
@@ -285,7 +286,7 @@ proc main() {
             writeln(coeffs);
     }
     
-    var node = new Node(4, 5);
+    var node = new unmanaged Node(4, 5);
     writeln("\n\nf.has_coeffs((4, 5)) = ", f.has_coeffs(node));
     writeln("f.peek((4, 5)) = ", f.peek(node));
     writeln("f[(4, 5)] = ", f[node]);
@@ -293,7 +294,7 @@ proc main() {
     f.remove(node);
     delete node;
 
-    node = new Node(1, 2);
+    node = new unmanaged Node(1, 2);
     writeln("\n\nf.has_coeffs((1, 2)) = ", f.has_coeffs(node));
     writeln("f.peek((1, 2)) = ", f.peek(node));
     writeln("f[(1, 2)] = ", f[node]);

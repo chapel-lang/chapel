@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -215,7 +215,8 @@ module Sys {
   extern record sys_sockaddr_t {
     var addr:sys_sockaddr_storage_t;
     var len:socklen_t;
-    proc sys_sockaddr_t() {
+    proc init() {
+      this.complete();
       sys_init_sys_sockaddr_t(this);
     }
   }

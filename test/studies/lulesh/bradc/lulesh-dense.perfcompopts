@@ -1,1 +1,1 @@
--snoRefCount=true -suseBlockDist --no-local -M../../../release/examples/benchmarks/lulesh
+-suseBlockDist --no-local -M../../../release/examples/benchmarks/lulesh

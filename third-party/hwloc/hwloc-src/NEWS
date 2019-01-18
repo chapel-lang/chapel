@@ -1,5 +1,5 @@
 Copyright © 2009 CNRS
-Copyright © 2009-2016 Inria.  All rights reserved.
+Copyright © 2009-2018 Inria.  All rights reserved.
 Copyright © 2009-2013 Université Bordeaux
 Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
 
@@ -17,10 +17,183 @@ bug fixes (and other actions) for each version of hwloc since version
 in v0.9.1).
 
 
+Version 1.11.11 (also included in 2.0.2)
+---------------
+* Add support for Hygon Dhyana processors in the x86 backend,
+  thanks to Pu Wen for the patch.
+* Fix symbol renaming to also rename internal components,
+  thanks to Evan Ramos for the patch.
+* Fix build on HP-UX, thanks to Richard Lloyd for reporting the issues.
+* Detect PCI link speed without being root on Linux >= 4.13.
+
+
+Version 1.11.10 (also included in 2.0.1)
+---------------
+* Fix detection of cores and hyperthreads on Mac OS X.
+* Serialize pciaccess discovery to fix concurrent topology loads in
+  multiple threads.
+* Fix first touch area memory binding on Linux when thread memory
+  binding is different.
+* Some minor fixes to memory binding.
+* Fix hwloc-dump-hwdata to only process SMBIOS information that correspond
+  to the KNL and KNM configuration.
+* Add a heuristic for guessing KNL/KNM memory and cluster modes when
+  hwloc-dump-hwdata could not run as root earlier.
+* Fix discovery of NVMe OS devices on Linux >= 4.0.
+* Add get_area_memlocation() on Windows.
+* Add CPUVendor, Model, ... attributes on Mac OS X.
+
+
+Version 1.11.9
+--------------
+* Add support for Zhaoxin ZX-C and ZX-D processors in the x86 backend,
+  thanks to Jeff Zhao for the patch.
+* Fix AMD Epyc 24-core L3 cache locality in the x86 backend.
+* Don't crash in the x86 backend when the CPUID vendor string is unknown.
+* Fix the missing pu discovery support bit on some OS.
+* Fix the management of the lstopoStyle info attribute for custom colors.
+* Add verbose warnings when failing to load hwloc v2.0+ XMLs.
+
+
+Version 1.11.8
+--------------
+* Multiple Solaris improvements, thanks to Maureen Chew for the help:
+  + Detect caches on Sparc.
+  + Properly detect allowed/disallowed PUs and NUMA nodes with processor sets.
+  + Add hwloc_get_last_cpu_location() support for the current thread.
+* Add support for CUDA compute capability 7.0 and fix support for 6.[12].
+* Tools improvements
+  + Fix search for objects by physical index in command-line tools.
+  + Add missing "cpubind:get_thisthread_last_cpu_location" in the output
+    of hwloc-info --support.
+  + Add --pid and --name to specify target processes in hwloc-ps.
+  + Display thread names in lstopo and hwloc-ps on Linux.
+* Doc improvements
+  + Add a FAQ entry about building on Windows.
+  + Install missing sub-manpage for hwloc_obj_add_info() and
+    hwloc_obj_get_info_by_name().
+
+
+Version 1.11.7
+--------------
+* Fix hwloc-bind --membind for CPU-less NUMA nodes (again).
+  Thanks to Gilles Gouaillardet for reporting the issue.
+* Fix a memory leak on IBM S/390 platforms running Linux.
+* Fix a memory leak when forcing the x86 backend first on amd64/topoext
+  platforms running Linux.
+* Command-line tools now support "hbm" instead "numanode" for filtering
+  only high-bandwidth memory nodes when selecting locations.
+  + hwloc-bind also support --hbm and --no-hbm for filtering only or
+    no HBM nodes.
+  Thanks to Nicolas Denoyelle for the suggestion.
+* Add --children and --descendants to hwloc-info for listing object
+  children or object descendants of a specific type.
+* Add --no-index, --index, --no-attrs, --attrs to disable/enable display
+  of index numbers or attributes in the graphical lstopo output.
+* Try to gather hwloc-dump-hwdata output from all possible locations
+  in hwloc-gather-topology.
+* Updates to the documentation of locations in hwloc(7) and
+  command-line tools manpages.
+
+
+Version 1.11.6
+--------------
+* Make the Linux discovery about twice faster, especially on the CPU side,
+  by trying to avoid sysfs file accesses as much as possible.
+* Add support for AMD Family 17h processors (Zen) SMT cores in the Linux
+  and x86 backends.
+* Add the HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES flag (and the
+  HWLOC_THISSYSTEM_ALLOWED_RESOURCES environment variable) for reading the
+  set of allowed resources from the local operating system even if the
+  topology was loaded from XML or synthetic.
+* Fix hwloc_bitmap_set/clr_range() for infinite ranges that do not
+  overlap currently defined ranges in the bitmap.
+* Don't reset the lstopo zoom scale when moving the X11 window.
+* lstopo now has --flags for manually setting topology flags.
+* hwloc_get_depth_type() returns HWLOC_TYPE_DEPTH_UNKNOWN for Misc objects.
+
+
+Version 1.11.5
+--------------
+* Add support for Knights Mill Xeon Phi, thanks to Piotr Luc for the patch.
+* Reenable distance gathering on Solaris, disabled by mistake since v1.0.
+  Thanks to TU Wien for the help.
+* Fix hwloc_get_*obj*_inside_cpuset() functions to ignore objects with
+  empty CPU sets, for instance, CPU-less NUMA nodes such as KNL MCDRAM.
+  Thanks to Nicolas Denoyelle for the report.
+* Fix XML import of multiple distance matrices.
+* Add a FAQ entry about "hwloc is only a structural model, it ignores
+  performance models, memory bandwidth, etc.?"
+
+
+Version 1.11.4
+--------------
+* Add MemoryMode and ClusterMode attributes in the Machine object on KNL.
+  Add doc/examples/get-knl-modes.c for an example of retrieving them.
+  Thanks to Grzegorz Andrejczuk.
+* Fix Linux build with -m32 with respect to libudev.
+  Thanks to Paul Hargrove for reporting the issue.
+* Fix build with Visual Studio 2015, thanks to Eloi Gaudry for reporting
+  the issue and providing the patch.
+* Don't forget to display OS device children in the graphical lstopo.
+* Fix a memory leak on Solaris, thanks to Bryon Gloden for the patch.
+* Properly handle realloc() failures, thanks to Bryon Gloden for reporting
+  the issue.
+* Fix lstopo crash in ascii/fig/windows outputs when some objects have a
+  lstopoStyle info attribute.
+
+
 Version 1.11.3
 --------------
-* Fix /proc/mounts parsing on Linux by using mntent.h.
-  Thanks to Nathan Hjelm for reporting the issue.
+* Bug fixes
+  + Fix a memory leak on Linux S/390 hosts with books.
+  + Fix /proc/mounts parsing on Linux by using mntent.h.
+    Thanks to Nathan Hjelm for reporting the issue.
+  + Fix a x86 infinite loop on VMware due to the x2APIC feature being
+    advertised without actually being fully supported.
+    Thanks to Jianjun Wen for reporting the problem and testing the patch.
+  + Fix the return value of hwloc_alloc() on mmap() failure.
+    Thanks to Hugo Brunie for reporting the issue.
+  + Fix the return value of command-line tools in some error cases.
+  + Do not break individual thread bindings during x86 backend discovery in a
+    multithreaded process. Thanks to Farouk Mansouri for the report.
+  + Fix hwloc-bind --membind for CPU-less NUMA nodes.
+  + Fix some corner cases in the XML export/import of application userdata.
+* API Improvements
+  + Add HWLOC_MEMBIND_BYNODESET flag so that membind() functions accept
+    either cpusets or nodesets.
+  + Add hwloc_get_area_memlocation() to check where pages are actually
+    allocated. Only implemented on Linux for now.
+    - There's no _nodeset() variant, but the new flag HWLOC_MEMBIND_BYNODESET
+      is supported.
+  + Make hwloc_obj_type_sscanf() parse back everything that may be outputted
+    by hwloc_obj_type_snprintf().
+* Detection Improvements
+  + Allow the x86 backend to add missing cache levels, so that it completes
+    what the Solaris backend lacks.
+    Thanks to Ryan Zezeski for reporting the issue.
+  + Do not filter-out FibreChannel PCI adapters by default anymore.
+    Thanks to Matt Muggeridge for the report.
+  + Add support for CUDA compute capability 6.x.
+* Tools
+  + Add --support to hwloc-info to list supported features, just like with
+    hwloc_topology_get_support().
+    - Also add --objects and --topology to explicitly switch between the
+      default modes.
+  + Add --tid to let hwloc-bind operate on individual threads on Linux.
+  + Add --nodeset to let hwloc-bind report memory binding as NUMA node sets.
+  + hwloc-annotate and lstopo don't drop application userdata from XMLs anymore.
+    - Add --cu to hwloc-annotate to drop these application userdata.
+  + Make the hwloc-dump-hwdata dump directory configurable through configure
+    options such as --runstatedir or --localstatedir.
+* Misc Improvements
+  + Add systemd service template contrib/systemd/hwloc-dump-hwdata.service
+    for launching hwloc-dump-hwdata at boot on Linux.
+    Thanks to Grzegorz Andrejczuk.
+  + Add HWLOC_PLUGINS_BLACKLIST environment variable to prevent some plugins
+    from being loaded. Thanks to Alexandre Denis for the suggestion.
+  + Small improvements for various Windows build systems,
+    thanks to Jonathan L Peyton and Marco Atzeri.
 
 
 Version 1.11.2

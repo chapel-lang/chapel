@@ -1,0 +1,4 @@
+defer-throw-relaxed.chpl:5: In function 'deferThrow':
+defer-throw-relaxed.chpl:6: error: error handling in defer blocks must be complete
+defer-throw-relaxed.chpl:11: In function 'deferTry':
+defer-throw-relaxed.chpl:12: error: error handling in defer blocks must be complete

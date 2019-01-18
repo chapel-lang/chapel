@@ -1,0 +1,2 @@
+user_def_unique_initializer_const_multipleassign.chpl:6: In initializer:
+user_def_unique_initializer_const_multipleassign.chpl:11: error: cannot update a const field, "x", in phase 2

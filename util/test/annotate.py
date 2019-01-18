@@ -35,9 +35,8 @@ def load(path):
   # replace all of the date strings with actual time structs
   try:
     for group in data:
-      for date in data[group].keys():
-        data[group][time.strptime(date, _dat_date_format)] = data[group][date]
-        del data[group][date]
+      for date in data[group].copy().keys():
+        data[group][time.strptime(date, _dat_date_format)] = data[group].pop(date)
   except AttributeError:
     raise InputError("Invalid annotation format in {0}".format(path))
 
@@ -53,7 +52,7 @@ def get(data, graph, series, start, end, config_name):
   for i, date in enumerate(sorted(matches.keys()), start=1):
     date_string = time.strftime(_csv_date_format, date)
     ann_text = json.dumps('{0}: {1}'.format(date_string,
-      r'\n'.join(matches[date])))
+      '\n'.join(matches[date])))
     formatted.append(_annotation_format.format(
         series = series,
         x = date_string,
@@ -66,7 +65,7 @@ def get(data, graph, series, start, end, config_name):
 
 def _find_annotations(graph, matches, data, start, end, config_name):
   if graph in data:
-    for date, annotations in data[graph].iteritems():
+    for date, annotations in data[graph].items():
       if start <= date and date <= end:
         for ann in annotations:
           if isinstance(ann, dict):

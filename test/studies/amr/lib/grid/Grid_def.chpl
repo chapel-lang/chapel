@@ -40,19 +40,19 @@ class Grid {
 
   const dx: dimension*real;
           
+  const cells:          domain(dimension, stridable=true);
   const extended_cells: domain(dimension, stridable=true);
-  const cells:          subdomain(extended_cells);
   
   // const ghost_domains: MultiDomain(dimension, stridable=true);
-  const ghost_domains: List( domain(dimension, stridable=true) );
+  const ghost_domains: unmanaged List( domain(dimension, stridable=true) );
 
 
 
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
   
-  proc Grid (
+  proc init (
     x_low:         dimension*real,
     x_high:        dimension*real,
     i_low:         dimension*int,
@@ -66,9 +66,6 @@ class Grid {
     this.i_low         = i_low;
     this.n_cells       = n_cells;
     this.n_ghost_cells = n_ghost_cells;
-
-    //==== Sanity check ====
-    sanityChecks();
 
     //==== dx ====
     dx = (x_high - x_low) / n_cells;
@@ -102,23 +99,30 @@ class Grid {
     // the grid and stored in a linked list.
     //-------------------------------------------------------------
 
-    ghost_domains = new List( domain(dimension,stridable=true) );
+    ghost_domains = new unmanaged List( domain(dimension,stridable=true) );
+    this.complete();
 
-    var inner_location: dimension*int;
+    //==== Sanity check ====
+    sanityChecks();
+
+    var inner_location: dimension*loc1d;
     for d in dimensions do inner_location(d) = loc1d.inner;
 
     var ghost_domain: domain(dimension, stridable=true);
-    for loc in (loc1d.below:int .. loc1d.above by 2)**dimension {
+    for loc in (loc1d.below .. loc1d.above by 2)**dimension {
       if loc != inner_location {
         for d in dimensions {
-          if loc(d) == loc1d.below then 
-            ranges(d) = ((extended_cells.low(d).. by 2) #n_ghost_cells(d)).alignHigh();
-          else if loc(d) == loc1d.inner then
+          if loc(d) == loc1d.below {
+            var tmp = ((extended_cells.low(d).. by 2) #n_ghost_cells(d));
+            ranges(d) = tmp.alignHigh();
+          } else if loc(d) == loc1d.inner {
             ranges(d) = cells.dim(d);
-          else
+          } else {
             // ((..extended_cells.high(d) by 2) #-n_ghost_cells(d)).alignLow();
             // hilde sez: Mathematical precision meets ease of use
-            ranges(d) = ((..extended_cells.high(d) by 2 align extended_cells.high(d)) #-n_ghost_cells(d)).alignLow();
+            var tmp = ((..extended_cells.high(d) by 2 align extended_cells.high(d)) #-n_ghost_cells(d));
+            ranges(d) = tmp.alignLow();
+          }
         }
         ghost_domain = ranges;
         ghost_domains.add(ghost_domain);
@@ -128,19 +132,19 @@ class Grid {
 
   }
   // /|''''''''''''''''''''/|
-  //< |    Constructor    < |
+  //< |    Initializer    < |
   // \|....................\|
 
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
 
-  proc ~Grid () { delete ghost_domains; }
+  proc deinit () { delete ghost_domains; }
   
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
 
 
@@ -150,7 +154,7 @@ class Grid {
   //|/..........................|/
 
   //--------------------------------------------------------------
-  // Performs some basic sanity checks on the constructor inputs.
+  // Performs some basic sanity checks on the initializer inputs.
   //--------------------------------------------------------------
 
   proc sanityChecks () {
@@ -182,11 +186,11 @@ class Grid {
     var loc: dimension*int;
 
     for d in dimensions {
-           if idx(d) <  i_low(d)  then loc(d) = loc1d.below;
-      else if idx(d) == i_low(d)  then loc(d) = loc1d.low;
-      else if idx(d) <  i_high(d) then loc(d) = loc1d.inner;
-      else if idx(d) == i_high(d) then loc(d) = loc1d.high;
-      else                             loc(d) = loc1d.above;
+           if idx(d) <  i_low(d)  then loc(d) = loc1d.below: int;
+      else if idx(d) == i_low(d)  then loc(d) = loc1d.low: int;
+      else if idx(d) <  i_high(d) then loc(d) = loc1d.inner: int;
+      else if idx(d) == i_high(d) then loc(d) = loc1d.high: int;
+      else                             loc(d) = loc1d.above: int;
     }
 
     return loc;
@@ -307,7 +311,7 @@ proc readGrid(file_name: string) {
   var i_low: dimension*int;
 
 
-  return new Grid(x_low, x_high, i_low, n_cells, n_ghost_cells);
+  return new unmanaged Grid(x_low, x_high, i_low, n_cells, n_ghost_cells);
 
 }
 // /|"""""""""""""""""""""""""/|

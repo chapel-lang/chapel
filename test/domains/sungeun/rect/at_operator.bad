@@ -1,0 +1,4 @@
+at_operator.chpl:6: Invalid token: near '@'
+at_operator.chpl:6: syntax error: near 'n'
+at_operator.chpl:8: Invalid token: near '@'
+at_operator.chpl:8: syntax error: near 'n'

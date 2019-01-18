@@ -54,12 +54,12 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
     //            |A22| is updated after the LU factorization
     //                  of A1
   
-    var A1  => A[UnfactoredInds, CurrentPanelInds],
-        A2  => A[UnfactoredInds, TrailingCols],
-        A11 => A[CurrentPanelInds, CurrentPanelInds],
-        A21 => A[TrailingRows, CurrentPanelInds],
-        A12 => A[CurrentPanelInds, TrailingCols],
-        A22 => A[TrailingRows, TrailingCols];
+    ref A1  = A[UnfactoredInds, CurrentPanelInds],
+        A2  = A[UnfactoredInds, TrailingCols],
+        A11 = A[CurrentPanelInds, CurrentPanelInds],
+        A21 = A[TrailingRows, CurrentPanelInds],
+        A12 = A[CurrentPanelInds, TrailingCols],
+        A22 = A[TrailingRows, TrailingCols];
 
     // First compute the LU factorization of A1...
     //
@@ -124,9 +124,9 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
     // step.  There are options for communication that need to be reflected
     // here or in distribution.
     // A1 (nb x nb) is broadcast across processors in process row.
-    var U => A11; // Want each processor in process row to have local copy of A1.
+    ref U = A11; // Want each processor in process row to have local copy of A1.
     for columnblk in blkIter(TrailingCols,blk) {   // TODO: would like forall
-      var Ublk => A12[CurrentPanelInds,columnblk];
+      ref Ublk = A12[CurrentPanelInds,columnblk];
       //On processor that owns Ublk, do the following update:
       forall j in columnblk do
         for k in CurrentPanelInds do
@@ -143,9 +143,9 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
     //   processors in process column.
     // Computation occurs on processor that contains Ablk (nb x nb).
     for (rowblk, columnblk) in blkIter2D(TrailingRows,TrailingCols,blk) {
-      var Lblk => A21[rowblk,CurrentPanelInds];
-      var Ublk => A12[CurrentPanelInds,columnblk];
-      var Ablk => A22[rowblk,columnblk];
+      ref Lblk = A21[rowblk,CurrentPanelInds];
+      ref Ublk = A12[CurrentPanelInds,columnblk];
+      ref Ablk = A22[rowblk,columnblk];
       // On processor that owns Ablk, do the following computation:
       for (i,j) in {rowblk, columnblk} do
         for k in CurrentPanelInds do
@@ -223,7 +223,7 @@ proc LUSolve (A: [?ADom], x: [?xDom]) {
 
    var n = ADom.dim(1).length;
    var AD1 = ADom.dim(1);
-   var b => A(.., n+1);
+   ref b = A(.., n+1);
 
    x = b;
    for j in (2..n) by -1 {

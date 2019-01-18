@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,9 +23,11 @@
 // This pass implements scalar replacement of aggregates.
 //
 
-#include "astutil.h"
-#include "expr.h"
 #include "optimizations.h"
+
+#include "astutil.h"
+#include "driver.h"
+#include "expr.h"
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -105,9 +107,9 @@ removeIdentityDefs(Symbol* sym) {
 
   for_defs(def, defMap, sym) {
     CallExpr* move = toCallExpr(def->parentExpr);
-    if (move && move->isPrimitive(PRIM_MOVE)) {
+    if (move && isMoveOrAssign(move)) {
       SymExpr* rhs = toSymExpr(move->get(2));
-      if (rhs && def->var == rhs->var) {
+      if (rhs && def->symbol() == rhs->symbol()) {
         move->remove();
         change = true;
       }
@@ -133,7 +135,7 @@ removeUnusedClassInstance(Symbol* sym) {
     for_defs(def, defMap, sym) {
       if (def->parentSymbol) {
         CallExpr* move = toCallExpr(def->parentExpr);
-        if (move && move->isPrimitive(PRIM_MOVE)) {
+        if (move && isMoveOrAssign(move)) {
           move->remove();
           change = true;
         }
@@ -153,14 +155,14 @@ unifyClassInstances(Symbol* sym) {
   for_defs(def, defMap, sym) {
     if (def->parentSymbol) {
       CallExpr* move = toCallExpr(def->parentExpr);
-      if (!move || !move->isPrimitive(PRIM_MOVE))
+      if (!move || !isMoveOrAssign(move))
         return false;
       SymExpr* se = toSymExpr(move->get(2));
       if (!se)
         return false;
-      if (rhs && rhs->var != gNil && se->var != gNil)
+      if (rhs && rhs->symbol() != gNil && se->symbol() != gNil)
         return false;
-      if (!rhs || se->var != gNil)
+      if (!rhs || se->symbol() != gNil)
         rhs = se;
     }
   }
@@ -169,7 +171,7 @@ unifyClassInstances(Symbol* sym) {
     return false;
 
   for_uses(se, useMap, sym) {
-    se->var = rhs->var;
+    se->setSymbol(rhs->symbol());
     addUse(useMap, se);
   }
 
@@ -196,20 +198,20 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
   // first definition is the cast to the appropriate type.  The
   // statement previous to that is the allocation.
   CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
-  if (!move || !move->isPrimitive(PRIM_MOVE))
+  if (!move || !isMoveOrAssign(move))
     return false;
   CallExpr* cast = toCallExpr(move->get(2));
   if (!cast || !cast->isPrimitive(PRIM_CAST))
     return false;
   CallExpr* prevMove = toCallExpr(move->prev);
-  if (!prevMove || !prevMove->isPrimitive(PRIM_MOVE))
+  if (!prevMove || !isMoveOrAssign(prevMove))
     return false;
   CallExpr* alloc = toCallExpr(prevMove->get(2));
   if (!alloc)
     return false;
   if (!
       (alloc->isResolved() &&
-       alloc->isResolved()->hasFlag(FLAG_ALLOCATOR)))
+       alloc->resolvedFunction()->hasFlag(FLAG_ALLOCATOR)))
     return false;
 
   //
@@ -235,10 +237,10 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
             // chpl_here_free() have as its first argument a void *
             call->isPrimitive(PRIM_CAST_TO_VOID_STAR) ||
             (call->isResolved() &&
-             (call->isResolved()->hasFlag(FLAG_ALLOCATOR) ||
+             (call->resolvedFunction()->hasFlag(FLAG_ALLOCATOR) ||
               // TODO: don't know this is necessary as the arg to free
               // is a void *
-              call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE)))))
+              call->resolvedFunction()->hasFlag(FLAG_LOCALE_MODEL_FREE)))))
         return false;
     }
   }
@@ -253,6 +255,7 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
   for_fields(field, ct) {
     SET_LINENO(sym);
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
+    var->qual = field->qualType().getQual();
     fieldMap.put(field, var);
     sym->defPoint->insertBefore(new DefExpr(var));
     if (sym->hasFlag(FLAG_TEMP))
@@ -277,19 +280,19 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
       SET_LINENO(call);
       if (call->isPrimitive(PRIM_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
-        SymExpr* use = new SymExpr(fieldMap.get(member->var));
-        call->replace(new CallExpr(PRIM_ADDR_OF, use));
+        SymExpr* use = new SymExpr(fieldMap.get(member->symbol()));
+        call->replace(new CallExpr(PRIM_SET_REFERENCE, use));
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
-        SymExpr* use = new SymExpr(fieldMap.get(member->var));
+        SymExpr* use = new SymExpr(fieldMap.get(member->symbol()));
         call->replace(use);
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_SETCID) ||
                  // TODO: don't know if this is still needed.  The
                  // PRIM_CAST_TO_VOID_STAR case may take care of it.
                  (call->isResolved() &&
-                  call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE))) {
+                  call->resolvedFunction()->hasFlag(FLAG_LOCALE_MODEL_FREE))) {
         //
         // we can remove the setting of the cid because it is never
         // used and we are otherwise able to remove the class
@@ -303,7 +306,7 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
         CallExpr* parentNext = toCallExpr(parent->next);
         if (parentNext &&
             parentNext->isResolved() &&
-            parentNext->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE))
+            parentNext->resolvedFunction()->hasFlag(FLAG_LOCALE_MODEL_FREE))
           parentNext->remove();
         parent->remove();
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
@@ -311,11 +314,12 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
         call->primitive = primitives[PRIM_MOVE];
         call->get(2)->remove();
         call->get(1)->remove();
-        SymExpr* def = new SymExpr(fieldMap.get(member->var));
+        SymExpr* def = new SymExpr(fieldMap.get(member->symbol()));
         call->insertAtHead(def);
         addDef(defMap, def);
-        if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
-          call->insertAtTail(new CallExpr(PRIM_ADDR_OF, call->get(2)->remove()));
+        if (call->get(1)->isRef() && call->get(2)->isRef() == false) {
+          call->insertAtTail(new CallExpr(PRIM_SET_REFERENCE, call->get(2)->remove()));
+        }
       } else {
         /*
          * If we fall into this case, it suggests that we did not
@@ -334,6 +338,33 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
   return true;
 }
 
+static bool isHandledRecordUse(SymExpr* se) {
+  CallExpr* call = toCallExpr(se->parentExpr);
+  INT_ASSERT(call != NULL);
+
+  bool ret = false;
+
+  if (call->isPrimitive(PRIM_GET_MEMBER) ||
+      call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+      call->isPrimitive(PRIM_ASSIGN)) {
+    ret = true;
+  } else if (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) {
+    ret = true;
+  } else if (call->isPrimitive(PRIM_MOVE)) {
+    INT_ASSERT(call->get(2) == se);
+    if (call->get(1)->isRef()) {
+      if (se->isRef() == false) {
+        // like a PRIM_ASSIGN: *(ref) = se;
+        ret = true;
+      }
+    } else {
+      ret = true; // var = se;
+    }
+  }
+
+  return ret;
+}
+
 static bool
 scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
 
@@ -345,7 +376,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
     if (se->parentSymbol) {
       CallExpr* call = toCallExpr(se->parentExpr);
       if (!call ||
-          !call->isPrimitive(PRIM_MOVE) ||
+          !isMoveOrAssign(call)  ||
           // Do we need to add PRIM_ASSIGN here?
           !(isSymExpr(call->get(2)) ||
             toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE))) {
@@ -355,19 +386,27 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
   }
 
   //
-  // only scalar replace sym if all of the uses are handled primitives
+  // only scalar replace sym if:
+  // - all of the uses are handled primitives
+  // - we access at least one member of sym. Otherwise there's no point
   //
+  bool memberAccessed = false;
   for_uses(se, useMap, sym) {
-    if (se->parentSymbol) {
-      CallExpr* call = toCallExpr(se->parentExpr);
-      if (!call ||
-          !((call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
-            call->isPrimitive(PRIM_GET_MEMBER) ||
-            call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-            call->isPrimitive(PRIM_MOVE)))
-        // Do we need to add PRIM_ASSIGN here?
+    CallExpr* parent = toCallExpr(se->parentExpr);
+    if (se->inTree() && parent != NULL) {
+      if (isHandledRecordUse(se) == false) {
         return false;
+      }
+      if (parent->isPrimitive(PRIM_GET_MEMBER) ||
+          parent->isPrimitive(PRIM_SET_MEMBER) ||
+          parent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+        // TODO: svec primitives?
+        memberAccessed = true;
+      }
     }
+  }
+  if (memberAccessed == false) {
+    return false;
   }
 
   if (fReportScalarReplace) srRecordReplaced++;
@@ -380,6 +419,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
   for_fields(field, ct) {
     SET_LINENO(sym);
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
+    var->qual = field->qualType().getQual();
     fieldMap.put(field, var);
     sym->defPoint->insertBefore(new DefExpr(var));
     if (sym->hasFlag(FLAG_TEMP))
@@ -394,46 +434,50 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
   //
   for_defs(se, defMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call) {
-        SET_LINENO(sym);
-        INT_ASSERT(call->isPrimitive(PRIM_MOVE));
-        Symbol *rhs;
-        if (isSymExpr(call->get(2))) {
-          rhs = toSymExpr(call->get(2))->var;
-        } else if (isCallExpr(call->get(2))) {
-          // rhs is a tuple in a record
-          CallExpr* oldrhs = toCallExpr(call->get(2));
-          INT_ASSERT(toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE));
-          SymExpr *a1 = toSymExpr(oldrhs->get(1))->copy();
-          SymExpr *a2 = toSymExpr(oldrhs->get(2))->copy();
+      SET_LINENO(sym);
+      INT_ASSERT(isMoveOrAssign(call));
+      Symbol *rhs;
+      if (isSymExpr(call->get(2))) {
+        rhs = toSymExpr(call->get(2))->symbol();
+      } else if (isCallExpr(call->get(2))) {
+        // rhs is a tuple in a record
+        CallExpr* oldrhs = toCallExpr(call->get(2));
+        INT_ASSERT(toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE));
+        SymExpr *base = toSymExpr(oldrhs->get(1))->copy();
+        SymExpr *member = toSymExpr(oldrhs->get(2))->copy();
 
-          // create a temporary to hold a reference to the tuple field
-          rhs = newTemp(astr(sym->name, "_"),
-                        oldrhs->typeInfo()->symbol->type->refType);
-          sym->defPoint->insertBefore(new DefExpr(rhs));
+        // create a temporary to hold a reference to the tuple field
+        rhs = newTemp(astr(sym->name, "_"),
+                      oldrhs->qualType().toRef());
+        sym->defPoint->insertBefore(new DefExpr(rhs));
 
-          // get the reference to the field to use for the rhs
-          SymExpr *a3 = new SymExpr(rhs);
-          call->insertBefore(new CallExpr(PRIM_MOVE, a3,
-                               new CallExpr(PRIM_GET_MEMBER, a1, a2)));
-          addUse(useMap, a1);
-          addUse(useMap, a2);
-          addDef(defMap, a3);
-        } else {
-          rhs = NULL; // to silence compiler warnings
-          INT_ASSERT(false);
+        // get the reference to the field to use for the rhs
+        // BHARSH TODO: Teach PRIM_GET_MEMBER that if it's accessing a ref
+        // field, it should behave like PRIM_GET_MEMBER_VALUE
+        SymExpr *a3 = new SymExpr(rhs);
+        PrimitiveTag op = PRIM_GET_MEMBER;
+        if (member->isRef() && a3->isRef()) {
+          op = PRIM_GET_MEMBER_VALUE;
         }
-        for_fields(field, ct) {
-          SymExpr* rhsCopy = new SymExpr(rhs);
-          SymExpr* use = new SymExpr(fieldMap.get(field));
-          call->insertBefore(
-            new CallExpr(PRIM_MOVE, use,
-              new CallExpr(PRIM_GET_MEMBER_VALUE, rhsCopy, field)));
-          addDef(defMap, use);
-          addUse(useMap, rhsCopy);
-        }
-        call->remove();
+        call->insertBefore(new CallExpr(PRIM_MOVE, a3,
+                             new CallExpr(op, base, member)));
+        addUse(useMap, base);
+        addUse(useMap, member);
+        addDef(defMap, a3);
+      } else {
+        rhs = NULL; // to silence compiler warnings
+        INT_ASSERT(false);
       }
+      for_fields(field, ct) {
+        SymExpr* rhsCopy = new SymExpr(rhs);
+        SymExpr* use = new SymExpr(fieldMap.get(field));
+        call->insertBefore(
+          new CallExpr(PRIM_MOVE, use,
+            new CallExpr(PRIM_GET_MEMBER_VALUE, rhsCopy, field)));
+        addDef(defMap, use);
+        addUse(useMap, rhsCopy);
+      }
+      call->remove();
     }
   }
 
@@ -452,7 +496,8 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       SET_LINENO(sym);
       // Do we need to add a case for PRIM_ASSIGN?
-      if (call->isPrimitive(PRIM_MOVE)) {
+      if (isMoveOrAssign(call)) {
+        INT_ASSERT(call->get(1)->getValType() == call->get(2)->getValType());
         SymExpr* lhs = toSymExpr(call->get(1));
         for_fields(field, ct) {
           SymExpr* lhsCopy = lhs->copy();
@@ -465,12 +510,12 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
         call->remove();
       } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
-        SymExpr* use = new SymExpr(fieldMap.get(member->var));
-        call->replace(new CallExpr(PRIM_ADDR_OF, use));
+        SymExpr* use = new SymExpr(fieldMap.get(member->symbol()));
+        call->replace(new CallExpr(PRIM_SET_REFERENCE, use));
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
-        SymExpr* use = new SymExpr(fieldMap.get(member->var));
+        SymExpr* use = new SymExpr(fieldMap.get(member->symbol()));
         call->replace(use);
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
@@ -478,11 +523,12 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
         call->primitive = primitives[PRIM_MOVE];
         call->get(2)->remove();
         call->get(1)->remove();
-        SymExpr* def = new SymExpr(fieldMap.get(member->var));
+        SymExpr* def = new SymExpr(fieldMap.get(member->symbol()));
         call->insertAtHead(def);
         addDef(defMap, def);
-        if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
-          call->insertAtTail(new CallExpr(PRIM_ADDR_OF, call->get(2)->remove()));
+        if (call->get(1)->isRef() && call->get(2)->isRef() == false) {
+          call->insertAtTail(new CallExpr(PRIM_SET_REFERENCE, call->get(2)->remove()));
+        }
       } else {
         /*
          * If we fall into this case, it suggests that we did not
@@ -559,6 +605,11 @@ scalarReplace() {
     //
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (AggregateType* ct = toAggregateType(var->type)) {
+        if (var->isRef() && !isReferenceType(var->type)) {
+          // Handle qualified refs without the _ref type
+          ct = var->type->refType;
+        }
+        INT_ASSERT(ct);
         if (Vec<Symbol*>* varVec = typeVarMap.get(ct)) {
           if (isFnSymbol(var->defPoint->parentSymbol)) {
             varSet.set_add(var);

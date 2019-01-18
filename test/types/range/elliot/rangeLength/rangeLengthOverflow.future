@@ -17,5 +17,5 @@ that only masks the problem for some ranges.
 I think I'd at least prefer some error checking that will report that overflow
 is going to occur so the user isn't completely surprised by this.
 
-See JIRA issue 161 for more info:
-  https://chapel.atlassian.net/browse/CHAPEL-161
+See issue #7530 for more info:
+  https://github.com/chapel-lang/chapel/issues/7530

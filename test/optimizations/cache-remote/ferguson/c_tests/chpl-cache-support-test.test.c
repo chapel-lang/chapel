@@ -316,6 +316,7 @@ static void chpl_cache_support_test(void)
   assert(round_down_to_mask(16, 15) == 16);
   assert(round_down_to_mask(17, 15) == 16);
   assert(round_up_to_mask(0, 15) == 0);
+  assert(round_up_to_mask(1, 15) == 16);
   assert(round_up_to_mask(10, 15) == 16);
   assert(round_up_to_mask(15, 15) == 16);
   assert(round_up_to_mask(16, 15) == 16);

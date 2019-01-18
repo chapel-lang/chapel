@@ -1,4 +1,4 @@
-use CommDiagnostics;
+use CommUtil;
 
 config const n = 100000;
 record C {
@@ -12,8 +12,7 @@ for i in 1..n {
   A[i] = new C(i, i+1, i+2);
 }
 
-resetCommDiagnostics();
-startCommDiagnostics();
+start();
 
 on Locales[1] {
   for c in A {
@@ -23,9 +22,9 @@ on Locales[1] {
   }
 }
 
-stopCommDiagnostics();
+stop();
 
 writeln(A[1]);
 writeln(A[n]);
 
-writeln(getCommDiagnostics());
+report(maxGets=5, maxOns=1);

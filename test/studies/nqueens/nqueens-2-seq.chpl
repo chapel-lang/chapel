@@ -30,7 +30,13 @@ proc countSolutions(boardSize: int, showEachSoln: bool) {
   showEachSolution = showEachSoln;
   if showEachSoln then
     writeln("Solving N Queens for N=", boardSize, "...");
-  tryQueenInNextRow(createBoard(boardSize));  // forego dealloc of this board
+
+  var board = createBoard(boardSize);
+
+  tryQueenInNextRow(board);  // forego dealloc of this board
+
+  delete board;
+
   writeln("Found ", solutionCount, " solutions for N=", boardSize);
 }
 
@@ -42,7 +48,7 @@ proc countSolutions(boardSize: int, showEachSoln: bool) {
 // If the column succeeds, we proceed to the next row
 // (or show the result if we have filled all rows).
 //
-proc tryQueenInNextRow(board: Board): void {
+proc tryQueenInNextRow(board: unmanaged Board): void {
   // iterate over the columns
   for col in 1..board.boardSize {
     // place the queen in that column if legal
@@ -90,7 +96,7 @@ class Board {
 // NB could not do this by writing our own constructor.
 //
 proc createBoard(boardSize:int) {
-  return new Board(boardSize = boardSize);
+  return new unmanaged Board(boardSize = boardSize);
 }
 
 // If placing a queen at (lastfilled+1,col) is legal, do so and return true.
@@ -136,7 +142,7 @@ proc Board.nextPlacementIsLegal(col: int): bool {
 //
 config var show1line: bool = true;
 
-proc Board.writeThis(f) {
+override proc Board.writeThis(f) {
   if boardSize <= 0 {
     f.write("the board is empty");
     return;

@@ -1,0 +1,2 @@
+#!/bin/bash
+mpirun -np 4 ./test_mpi.x --localChapel=true | sort | diff - test_mpi.good

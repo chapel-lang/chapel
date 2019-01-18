@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,13 +18,14 @@
  */
 
 #include "LoopStmt.h"
-#include "codegen.h"
+#include "ForallStmt.h"
 
 LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
 {
   mBreakLabel       = 0;
   mContinueLabel    = 0;
   mOrderIndependent = false;
+  mVectorizationHazard = false;
 }
 
 LoopStmt::~LoopStmt()
@@ -67,46 +68,79 @@ void LoopStmt::orderIndependentSet(bool orderIndependent)
   mOrderIndependent = orderIndependent;
 }
 
+bool LoopStmt::hasVectorizationHazard() const
+{
+  return mVectorizationHazard;
+}
+
+void LoopStmt::setHasVectorizationHazard(bool v)
+{
+  mVectorizationHazard = v;
+}
+
+bool LoopStmt::isVectorizable() const
+{
+  return mOrderIndependent && !mVectorizationHazard;
+}
+
+// what if the nearest enclosing loop is a forall?
 LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr)
 {
   LoopStmt* retval = NULL;
 
   if (LoopStmt* loop = toLoopStmt(expr))
+  {
     retval = loop;
+  }
 
   else if (expr->parentExpr)
+  {
     retval = findEnclosingLoop(expr->parentExpr);
+  }
 
   else
+  {
     retval = NULL;
+  }
 
   return retval;
 
 }
 
-// If vectorization is enabled and this loop is order independent, codegen
-// CHPL_PRAGMA_IVDEP. This method is a no-op if vectorization is off, or the
-// loop is not order independent.
-void LoopStmt::codegenOrderIndependence()
+LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr, const char* name)
 {
-  if (fNoVectorize == false && isOrderIndependent())
+  LoopStmt* retval = LoopStmt::findEnclosingLoop(expr);
+
+  while (retval != NULL && retval->isNamed(name) == false)
   {
-    GenInfo* info = gGenInfo;
-
-    // Note: This *must* match the macro definitions provided in the runtime
-    std:: string ivdepStr = "CHPL_PRAGMA_IVDEP";
-    if (fReportOrderIndependentLoops)
-    {
-      ModuleSymbol *mod = toModuleSymbol(this->getModule());
-      INT_ASSERT(mod);
-
-      if (developer || mod->modTag == MOD_USER)
-      {
-        printf("Adding %s to %s for %s:%d\n", ivdepStr.c_str(),
-            this->astTagAsString(), mod->name, this->linenum());
-      }
-    }
-
-    info->cStatements.push_back(ivdepStr+'\n');
+    retval = LoopStmt::findEnclosingLoop(retval->parentExpr);
   }
+
+  return retval;
+}
+
+Stmt* LoopStmt::findEnclosingLoopOrForall(Expr* expr)
+{
+  for (Expr* curr = expr; curr != NULL; curr = curr->parentExpr) {
+    if (LoopStmt* loop = toLoopStmt(curr)) {
+      return loop;
+    }
+    if (ForallStmt* forall = toForallStmt(curr)) {
+      return forall;
+    }
+  }
+  // no enclosing loops
+  return NULL;
+}
+
+bool LoopStmt::isNamed(const char* name) const
+{
+  bool retval = false;
+
+  if (userLabel != NULL)
+  {
+    retval = (strcmp(userLabel, name) == 0) ? true : false;
+  }
+
+  return retval;
 }

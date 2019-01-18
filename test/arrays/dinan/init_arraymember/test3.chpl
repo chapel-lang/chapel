@@ -7,13 +7,11 @@ class C {
   var d = {1..10};
   var x: [d] real;
   
-  proc initialize() {
+  proc init() {
     x = f(d);
   }
 }
 
-var c = new C();
+var c = new owned C();
 
 writeln(c.x);
-
-delete c;

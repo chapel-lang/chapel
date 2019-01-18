@@ -1,4 +1,4 @@
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2016 Inria.  All rights reserved.
 # Copyright © 2009, 2011-2012 Université Bordeaux
 # Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -50,8 +50,7 @@ libhwloc_port_aix_la_SOURCES = \
 libhwloc_port_aix_la_CPPFLAGS = $(common_CPPFLAGS) \
 	-I$(HWLOC_top_srcdir)/tests/ports/include/aix \
 	-DHWLOC_AIX_SYS \
-	-DHWLOC_HAVE_PTHREAD_GETTHRDS_NP \
-	-DHAVE__SC_LARGE_PAGESIZE -D_SC_LARGE_PAGESIZE=33
+	-DHWLOC_HAVE_PTHREAD_GETTHRDS_NP
 
 nodist_libhwloc_port_bgq_la_SOURCES = topology-bgq.c
 libhwloc_port_bgq_la_SOURCES = \
@@ -66,8 +65,7 @@ libhwloc_port_darwin_la_SOURCES = \
 	include/darwin/sys/sysctl.h
 libhwloc_port_darwin_la_CPPFLAGS = $(common_CPPFLAGS) \
 	-I$(HWLOC_top_srcdir)/tests/ports/include/darwin \
-	-DHWLOC_DARWIN_SYS \
-	-DHAVE__SC_LARGE_PAGESIZE -D_SC_LARGE_PAGESIZE=33
+	-DHWLOC_DARWIN_SYS
 
 nodist_libhwloc_port_freebsd_la_SOURCES = topology-freebsd.c
 libhwloc_port_freebsd_la_SOURCES = \
@@ -113,8 +111,7 @@ libhwloc_port_osf_la_SOURCES = \
 	include/osf/radset.h
 libhwloc_port_osf_la_CPPFLAGS = $(common_CPPFLAGS) \
 	-I$(HWLOC_top_srcdir)/tests/ports/include/osf \
-	-DHWLOC_OSF_SYS \
-	-DHAVE__SC_LARGE_PAGESIZE -D_SC_LARGE_PAGESIZE=33
+	-DHWLOC_OSF_SYS
 
 nodist_libhwloc_port_solaris_la_SOURCES = topology-solaris.c topology-solaris-chiptype.c
 libhwloc_port_solaris_la_SOURCES = \
@@ -128,8 +125,7 @@ libhwloc_port_solaris_la_CPPFLAGS = $(common_CPPFLAGS) \
 	-I$(HWLOC_top_srcdir)/tests/ports/include/solaris \
 	-DHWLOC_SOLARIS_SYS \
 	-DHAVE_LIBLGRP \
-	-DHAVE__SC_LARGE_PAGESIZE -D_SC_LARGE_PAGESIZE=33 \
-	-DHAVE_LGRP_LATENCY_COOKIE \
+	-DHAVE_DECL_LGRP_LATENCY_COOKIE=1 \
 	-DHAVE_LIBKSTAT \
 	-DHAVE_PICL_H
 
@@ -138,8 +134,7 @@ libhwloc_port_windows_la_SOURCES = \
 	include/windows/windows.h
 libhwloc_port_windows_la_CPPFLAGS = $(common_CPPFLAGS) \
 	-I$(HWLOC_top_srcdir)/tests/ports/include/windows \
-	-DHWLOC_WIN_SYS \
-	-DHAVE__SC_LARGE_PAGESIZE -D_SC_LARGE_PAGESIZE=33
+	-DHWLOC_WIN_SYS
 
 nodist_libhwloc_port_opencl_la_SOURCES = topology-opencl.c
 libhwloc_port_opencl_la_SOURCES = \

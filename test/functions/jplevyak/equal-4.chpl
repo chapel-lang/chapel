@@ -1,4 +1,13 @@
 class foo { var a : int;  }
-var x : foo = new foo();
-x = new foo();
+
+var x : unmanaged foo = new unmanaged foo();
+
+delete x;
+
+
+
+x = new unmanaged foo();
+
 writeln(x);
+
+delete x;

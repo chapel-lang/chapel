@@ -21,9 +21,9 @@ setupLocales(tl1, tl2);
 var phase = 0;
 proc leapphase() { phase += 20; fphase(phase); }
 
-const dd1 =new BlockDim(numLocales=tl1,
+const dd1 =new unmanaged BlockDim(numLocales=tl1,
                          boundingBoxLow=start1, boundingBoxHigh=end1);
-const dd2 =new BlockDim(numLocales=tl2,
+const dd2 =new unmanaged BlockDim(numLocales=tl2,
                          boundingBoxLow=start2, boundingBoxHigh=end2);
 
 const space = {1..n, 1..n+1};
@@ -61,7 +61,8 @@ proc test(A, ix1, ix2) {
   forall a in A do msg(a);
   tl();
 
-  const D: domain(A.rank, A.domain.idxType, A.domain.stridable) = A.domain;
+  var D: domain(A.rank, A.domain.idxType, A.domain.stridable);
+  D = A.domain;
 
   hd("zippered iterator (A,D)");
   forall (a,i) in zip(A,D) do msg(i, "  ", a);

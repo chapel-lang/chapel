@@ -2,12 +2,12 @@
    no elements, a single element, last row, out-of-bounds, etc.
 */
 
-use LayoutCSR;
+use LayoutCS;
 
 const rr = 4, cc = 5;
 
 var dd = {1..rr, 1..cc};
-var sd: sparse subdomain(dd) dmapped new dmap(new CSR());
+var sd: sparse subdomain(dd) dmapped new dmap(new CS());
 
 var cnt = 0;
 proc show(msg...) {

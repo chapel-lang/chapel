@@ -87,7 +87,7 @@ var unn:  UnionType;
 
 var rng1: range;
 var rng2: range(uint(8), BoundedRangeType.boundedNone, true);
-var dmp = new dmap(new DefaultDist());
+var dmp = defaultDist;
 var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
@@ -103,7 +103,7 @@ var aReal:  atomic real;
 
 /////////////////////////////////////////////////////////////////////////////
 
-proc report(param is: bool, param msg: c_string) {
+proc report(param is: bool, param msg: string) {
   if is then compilerWarning(msg);
 }
 

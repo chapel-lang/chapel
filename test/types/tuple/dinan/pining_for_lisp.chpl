@@ -1,6 +1,6 @@
 class NilClass { }
 
-proc Nil(): NilClass
+proc Nil(): borrowed NilClass
   return nil;
 
 proc isNil(x): bool {

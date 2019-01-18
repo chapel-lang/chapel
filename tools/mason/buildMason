@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+
+export CHPL_COMM=none
+export CHPL_LAUNCHER=none
+
+if command -v module > /dev/null 2>&1 ; then
+  echo "Unloading hugepages..."
+  module unload $(module list 2>&1 | \grep "craype-hugepage" | sed -e"s:[0-9]*)::g")
+fi
+
+if ! $chplBinDir/chpl mason.chpl ; then
+  echo
+  echo "Error building mason. Check that you have built a runtime configuration that supports:
+  CHPL_COMM=none
+  CHPL_LAUNCHER=none
+  CHPL_REGEXP=re2"
+  exit 1;
+fi

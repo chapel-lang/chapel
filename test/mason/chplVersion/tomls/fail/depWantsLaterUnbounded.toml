@@ -1,0 +1,8 @@
+
+[brick]
+name = "depWantsLaterUnbounded"
+version = "0.1.0"
+chplVersion = "1.16"
+
+[dependencies]
+twoZero = "0.1.0"

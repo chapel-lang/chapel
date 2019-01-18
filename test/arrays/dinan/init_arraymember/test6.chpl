@@ -7,12 +7,12 @@ class C {
   var d = {1..10};
   var x: [d] real;
   
-  proc initialize() {
+  proc init() {
     x = f();
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 
 writeln(c.x);
 

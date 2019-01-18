@@ -1,0 +1,5 @@
+d-duplicate.chpl:18: error: ambiguous forwarded call
+d-duplicate.chpl:10: note: candidates include: A.foo()
+d-duplicate.chpl:2: note: from forwarding statement here
+d-duplicate.chpl:14: note: candidates include: B.foo()
+d-duplicate.chpl:3: note: from forwarding statement here

@@ -6,11 +6,11 @@
  *
  */
 
-config const N = 7;
+config const n = 7;
 
-assert(N >=3, "N must be in 3..");
+assert(n >=3, "n must be in 3..");
 
-const D = {0..N};
+const D = {0..n};
 var s, t: [D] int;
 
 proc main() {
@@ -18,7 +18,7 @@ proc main() {
     s[i] = i;
   const (checksum, maxFlips) = tk();
   writeln(checksum);
-  writeln("Pfannkuchen(", N, ") = ", maxFlips);
+  writeln("Pfannkuchen(", n, ") = ", maxFlips);
 }
 
 
@@ -28,7 +28,7 @@ proc tk() {
   var c: [D] int;
 
   var i = 0;
-  while i < N {
+  while i < n {
     rotate(i);
     if c[i] >= i {
       c[i] = 0;

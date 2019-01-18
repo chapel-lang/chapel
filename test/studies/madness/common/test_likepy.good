@@ -1,5 +1,3 @@
-./FTree.chpl:148: In function 'copy':
-./FTree.chpl:150: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 
 
 
@@ -310,7 +308,7 @@ difference coefficients:
  -- 0.35:  F_numeric()=-8.60551785  f_analytic()=-8.60662966 err > thresh
  -- 0.40:  F_numeric()= 15.81301766  f_analytic()= 15.81138830 err > thresh
  -- 0.45:  F_numeric()=-44.71585694  f_analytic()=-44.72135955 err > thresh
- -- 0.50:  F_numeric()=-1033981881073271.62500000  f_analytic()= 0.00000000 err > thresh
+ -- 0.50:  F_numeric()=-1033981881073270.00000000  f_analytic()= 0.00000000 err > thresh
  -- 0.55:  F_numeric()= 44.71585694  f_analytic()= 44.72135955 err > thresh
  -- 0.60:  F_numeric()=-15.81301766  f_analytic()=-15.81138830 err > thresh
  -- 0.65:  F_numeric()= 8.60551785  f_analytic()= 8.60662966 err > thresh

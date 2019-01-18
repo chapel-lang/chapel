@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,14 @@
 #ifndef _VERSION_H_
 #define _VERSION_H_
 
-void get_version(char *);
+#include <string>
+
+void get_version(char * buf);
+void get_major_minor_version(char * buf);
+const char* get_configured_prefix();
+
+std::string get_clang_cc();
+std::string get_clang_cxx();
+std::string get_clang_sysroot_args();
 
 #endif

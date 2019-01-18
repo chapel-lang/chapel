@@ -1,0 +1,19 @@
+Usage: c-ray [options]
+  Reads a scene file, writes a ray-traced image file, prints timing to stderr.
+
+Primary Options:
+  --size <w>x<h>        plot an image of 'w'idth x 'h'eight pixels
+  --samples <rays>      antialias using 'rays' samples per pixel
+  --scene <file>        read scene from 'file' (can be 'stdin')
+  --image <file>        write image to 'file' (can be 'stdout')
+  --imgType [ppm|bmp]   override the default image file type
+  --usage               print this usage information
+
+Other options:
+  --fieldOfView <fov>   use a field-of-view of 'fov' radians
+  --maxRayDepth <max>   rays will reflect no more than 'max' times
+  --rayMagnitude <mag>  trace rays with magnitude 'mag'
+  --errorMargin <err>   avoid surface acne via error margin 'err'
+  --noTiming            don't print timing information
+  --useCRand            use C's rand() rather than Chapel's RNG
+  --seed                a seed for the RNG, 0 == 'don't care'

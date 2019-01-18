@@ -1,1 +1,2 @@
-Unrecognized log flag: 'v'
+Unrecognized flag: '-d' (use '-h' for help)
+       Did you mean --devel ?

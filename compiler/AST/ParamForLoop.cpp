@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "resolution.h"
+#include "resolveFunction.h"
 #include "stringutil.h"
 
 /************************************ | *************************************
@@ -71,10 +72,18 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
   outer->insertAtTail(new DefExpr(indexVar, new_IntSymbol((int64_t) 0)));
 
   outer->insertAtTail(new DefExpr(lowVar));
-  outer->insertAtTail(new CallExpr(PRIM_MOVE, lowVar,    low));
+  // Allows for proper coercion rules for param loops, and eliminates types like
+  // string from consideration (which had caused internal errors in the past)
+  CallExpr* computeLow = new CallExpr("chpl_compute_low_param_loop_bound", low,
+                                      high);
+  outer->insertAtTail(new CallExpr(PRIM_MOVE, lowVar, computeLow));
 
   outer->insertAtTail(new DefExpr(highVar));
-  outer->insertAtTail(new CallExpr(PRIM_MOVE, highVar,   high));
+  // Allows for proper coercion rules for param loops, and eliminates types like
+  // string from consideration (which had caused internal errors in the past)
+  CallExpr* computeHigh = new CallExpr("chpl_compute_high_param_loop_bound",
+                                       low->copy(), high->copy());
+  outer->insertAtTail(new CallExpr(PRIM_MOVE, highVar, computeHigh));
 
   outer->insertAtTail(new DefExpr(strideVar));
   outer->insertAtTail(new CallExpr(PRIM_MOVE, strideVar, stride));
@@ -274,8 +283,8 @@ void ParamForLoop::accept(AstVisitor* visitor)
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (modUses)
-      modUses->accept(visitor);
+    if (useList)
+      useList->accept(visitor);
 
     if (byrefVars)
       byrefVars->accept(visitor);
@@ -288,17 +297,20 @@ void ParamForLoop::verify()
 {
   BlockStmt::verify();
 
-  if (mResolveInfo              == 0)
+  if (mResolveInfo              == NULL)
     INT_FATAL(this, "ParamForLoop::verify. mResolveInfo is NULL");
 
-  if (BlockStmt::blockInfoGet() != 0)
+  if (BlockStmt::blockInfoGet() != NULL)
     INT_FATAL(this, "ParamForLoop::verify. blockInfo is not NULL");
 
-  if (modUses                   != 0)
-    INT_FATAL(this, "ParamForLoop::verify. modUses   is not NULL");
+  if (useList                   != NULL)
+    INT_FATAL(this, "ParamForLoop::verify. useList   is not NULL");
 
-  if (byrefVars                 != 0)
+  if (byrefVars                 != NULL)
     INT_FATAL(this, "ParamForLoop::verify. byrefVars is not NULL");
+
+  if (forallIntents             != NULL)
+    INT_FATAL(this, "ParamForLoop::verify. forallIntents is not NULL");
 }
 
 GenRet ParamForLoop::codegen()
@@ -344,7 +356,7 @@ Expr* ParamForLoop::getNextExpr(Expr* expr)
 
    * Inserts the body before the expression beforeHere
    * i should be a loop variable index (used to label iterations)
-   * Assumes that map already contains the mapping redifining
+   * Assumes that map already contains the mapping redefining
      the index variable.
    * continueSym is the symbol for the loop's continue label.
      This function will replace that with a new continue label
@@ -374,22 +386,15 @@ CallExpr* ParamForLoop::foldForResolve()
   SymExpr*   hse       = highExprGet();
   SymExpr*   sse       = strideExprGet();
 
-  if (!lse             || !hse             || !sse)
-    USR_FATAL(this, "param for loop must be defined over a bounded param range");
-
-  VarSymbol* lvar      = toVarSymbol(lse->var);
-  VarSymbol* hvar      = toVarSymbol(hse->var);
-  VarSymbol* svar      = toVarSymbol(sse->var);
+  VarSymbol* lvar      = toVarSymbol(lse->symbol());
+  VarSymbol* hvar      = toVarSymbol(hse->symbol());
+  VarSymbol* svar      = toVarSymbol(sse->symbol());
 
   CallExpr*  noop      = new CallExpr(PRIM_NOOP);
 
-  if (!lvar            || !hvar            || !svar)
-    USR_FATAL(this, "param for loop must be defined over a bounded param range");
+  validateLoop(lvar, hvar, svar);
 
-  if (!lvar->immediate || !hvar->immediate || !svar->immediate)
-    USR_FATAL(this, "param for loop must be defined over a bounded param range");
-
-  Symbol*      idxSym  = idxExpr->var;
+  Symbol*      idxSym  = idxExpr->symbol();
   Symbol*      continueSym = continueLabelGet();
   Type*        idxType = indexType();
   IF1_int_type idxSize = (get_width(idxType) == 32) ? INT_SIZE_32 : INT_SIZE_64;
@@ -439,7 +444,11 @@ CallExpr* ParamForLoop::foldForResolve()
       {
         SymbolMap map;
 
-        map.put(idxSym, new_UIntSymbol(i, idxSize));
+        if (is_bool_type(idxType)) {
+          map.put(idxSym, new_BoolSymbol(i, BOOL_SIZE_SYS));
+        } else {
+          map.put(idxSym, new_UIntSymbol(i, idxSize));
+        }
 
         copyBodyHelper(noop, i, &map, this, continueSym);
       }
@@ -450,7 +459,11 @@ CallExpr* ParamForLoop::foldForResolve()
       {
         SymbolMap map;
 
-        map.put(idxSym, new_UIntSymbol(i, idxSize));
+        if (is_bool_type(idxType)) {
+          map.put(idxSym, new_BoolSymbol(i, BOOL_SIZE_SYS));
+        } else {
+          map.put(idxSym, new_UIntSymbol(i, idxSize));
+        }
 
         copyBodyHelper(noop, i, &map, this, continueSym);
       }
@@ -466,6 +479,26 @@ CallExpr* ParamForLoop::foldForResolve()
   return noop;
 }
 
+// Checks things like bounding and paramness of the range.
+// The calls to chpl_compute_low_param_loop_bound and
+// chpl_compute_high_param_loop_bound in buildParamForLoop should ensure that
+// the appropriate type is used for these loops
+void ParamForLoop::validateLoop(VarSymbol* lvar,
+                                VarSymbol* hvar,
+                                VarSymbol* svar) {
+  if (!lvar            || !hvar            || !svar)
+    USR_FATAL(this,
+              "param for loop must be defined over a bounded param range");
+
+  if (!lvar->immediate || !hvar->immediate || !svar->immediate)
+    USR_FATAL(this,
+              "param for loop must be defined over a bounded param range");
+
+  if (!is_int_type(svar->type) && !is_uint_type(svar->type)) {
+    USR_FATAL(this, "Range stride must be an int");
+  }
+}
+
 //
 // Determine the index type for a ParamForLoop.
 //
@@ -477,26 +510,29 @@ Type* ParamForLoop::indexType()
   SymExpr*  lse     = lowExprGet();
   SymExpr*  hse     = highExprGet();
   CallExpr* range    = new CallExpr("chpl_build_bounded_range",
-                                    lse->copy(), hse->copy());
+                                    lse->copy(),
+                                    hse->copy());
   Type*     idxType = 0;
 
   insertBefore(range);
 
   resolveCall(range);
 
-  if (FnSymbol* sym = range->isResolved())
+  if (FnSymbol* sym = range->resolvedFunction())
   {
-    resolveFormals(sym);
+    resolveSignature(sym);
 
     DefExpr* formal = toDefExpr(sym->formals.get(1));
 
-    if (toArgSymbol(formal->sym)->typeExpr)
+    if (toArgSymbol(formal->sym)->typeExpr != NULL) {
       idxType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
-    else
+    } else {
       idxType = formal->sym->type;
+    }
 
     range->remove();
   }
+
   else
   {
     INT_FATAL("unresolved range");

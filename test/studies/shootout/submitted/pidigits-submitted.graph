@@ -1,0 +1,5 @@
+perfkeys: real, real, real, real
+graphkeys: release (elegant), release (fast), submitted, submitted (2)
+files: pidigits.dat, pidigits-fast.dat, pidigits-submitted.dat, pidigits2-submitted.dat
+graphtitle: Submitted Pi digits Shootout Benchmark
+ylabel: Time (seconds)

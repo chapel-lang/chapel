@@ -26,9 +26,9 @@ gasnet/
            support for multi-locale/distributed-memory systems.
 
   License: GASNet is made available under a BSD-style license, which
-           can be found in gasnet/GASNet-<version>/license.txt
+           can be found in gasnet/gasnet-src/license.txt
 
-  Website: http://gasnet.cs.berkeley.edu
+  Website: https://gasnet.lbl.gov/
 
   See also: gasnet/README
 
@@ -49,11 +49,11 @@ hwloc/
            provides a portable abstraction of the hierarchical
            topology of modern architectures.
 
-  License: BSD (see hwloc/hwloc-<version>/COPYING)
+  License: BSD (see hwloc/hwloc-src/COPYING)
 
   Website: http://www.open-mpi.org/projects/hwloc
 
-  See also: hwloc/README and hwloc/hwloc-<version>/README
+  See also: hwloc/README and hwloc/hwloc-src/README
 
 
 jemalloc/
@@ -62,7 +62,7 @@ jemalloc/
            and can be used when a shared heap is required.
 
   License: jemalloc is released under a BSD-derived License (see
-           jemalloc/jemalloc-*/COPYING)
+           jemalloc/jemalloc-src/COPYING)
 
   Website: http://www.canonware.com/jemalloc/
 
@@ -72,7 +72,7 @@ jemalloc/
 llvm/
   Summary: This directory holds LLVM and Clang.  LLVM is provided as
            an optional back-end target in place of C (see
-           doc/technotes/llvm.rst for details).  CLANG is used to
+           doc/rst/technotes/llvm.rst for details).  CLANG is used to
            support "extern blocks" within Chapel -- a capability for
            embedding C code into a Chapel source file.
 
@@ -117,7 +117,8 @@ qthread/
 
 re2/
   Summary: The RE2 regular expression library used to support regular
-           expression operations described in doc/technotes/regexp.rst
+           expression operations described in
+           doc/rst/modules/standard/Regexp.rst
 
   License: New BSD license (see re2/re2/LICENSE)
 
@@ -149,3 +150,14 @@ libhdfs3/
   Website: https://github.com/PivotalRD/libhdfs3
 
   See also: libhdfs3/README
+
+libunwind/
+  Summary: libunwind is a portable and efficient C programming
+           interface (API) to determine the call-chain of a program
+
+  License: MIT (see libunwind/libunwind-<version>/COPYING and
+           libunwind/libunwind-<version>/LICENSE)
+
+  Website: http://www.nongnu.org/libunwind/
+
+  See also: libunwind/README and libunwind/libunwind-<version>/README

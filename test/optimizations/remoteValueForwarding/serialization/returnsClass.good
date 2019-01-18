@@ -1,0 +1,1 @@
+returnsClass.chpl:9: error: chpl__serialize must return a type that can be automatically memory managed (e.g. a record)

@@ -15,11 +15,19 @@ config type elt = int;
 // ARepl - the replicated array to be tested
 
 const repllocales = Locales;  // in case this changes
-var ReplBlockDist = new dmap(new ReplicatedDist());
+var ReplBlockDist = new dmap(new Replicated());
 var DRepl: domain(2) dmapped ReplBlockDist = Dsub;
 var ARepl: [DRepl] elt;
 
-proc show() { write(ARepl, "\n"); }
+proc show() {
+  for loc in Locales {
+    on loc {
+      writeln(loc, ":");
+      writeln(ARepl);
+    }
+  }
+}
+    
 
 // set everything to predetermined values
 proc reset() {
@@ -43,12 +51,10 @@ proc start(msg...) { write("\n---  ", (...msg), "\n"); }
 
 // run all the tests when the reference array A is under a given domain map
 
-proc trydist(domainmap, teston: locale, dmname) {
+proc trydist(mydmap, teston: locale, dmname) {
   write("\n----------- testing on ", teston,
         " with ", dmname, " -----------\n");
 
-  // gotta create new dmap() on the same locale as 'domainmap'
-  var mydmap = new dmap(domainmap);
 
 on teston {
 
@@ -178,9 +184,10 @@ iter testLocs(): locale {
 }
 
 for tloc in testLocs() {
-  trydist(new DefaultDist(), tloc, "default");
-  trydist(new Block(boundingBox=Dbase), tloc, "block");
-  trydist(new Cyclic(startIdx=Dbase.low), tloc, "cyclic");
+  // gotta create new dmap() on the same locale as 'domainmap'
+  trydist(defaultDist, tloc, "default");
+  trydist(new dmap(new Block(boundingBox=Dbase)), tloc, "block");
+  trydist(new dmap(new Cyclic(startIdx=Dbase.low)), tloc, "cyclic");
 }
 
 write("\nDone\n");

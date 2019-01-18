@@ -1,0 +1,7 @@
+--f=bool.toml                              # bool.good
+--f=empty.toml                             # empty.good
+--f=float.toml                             # float.good
+--f=integer.toml                           # integer.good
+--f=key-equals-nospace.toml                # key-equals-nospace.good
+--f=long-integer.toml                      # long-integer.good
+--f=table-empty.toml                       # table-empty.good

@@ -29,11 +29,12 @@ class BarrierWF {
   var counts: 2 * atomic int;
 
   // constructor
-  proc BarrierWF(numTasks: int) {
+  proc init(numTasks: int) {
     // otherwise the barrier conditions are hosed
     if numTasks <= 0 then halt("BarrierWF constructor expects numTasks>0",
                                " but received ", numTasks);
     tasks = numTasks;
+    this.complete();
     setup(1);
   }
 

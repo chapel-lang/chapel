@@ -1,0 +1,2 @@
+init-param-from-non-param.chpl:3: In initializer:
+init-param-from-non-param.chpl:5: error: Initializing parameter 'p' to value not known at compile time

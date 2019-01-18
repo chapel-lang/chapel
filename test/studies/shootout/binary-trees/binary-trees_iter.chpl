@@ -1,37 +1,34 @@
 //Binary-Tree Shootout
-//http://shootout.alioth.debian.org
+//http://benchmarksgame.alioth.debian.org
 
 config const n = 10;
 
 class Tree {
-  var item: int;
-  var left, right: Tree;
+  var left, right: unmanaged Tree;
 }
 
 proc main() {
   const minDepth = 4, maxDepth = max(minDepth + 2, n);
   const stretchDepth: int = maxDepth + 1;
-  var stretchTree = bottomUpTree(0,stretchDepth);
+  var stretchTree = bottomUpTree(stretchDepth);
   var check: int = itemCheck(stretchTree);
   free_iter(stretchTree);
 
   writeln("stretch tree of depth ",stretchDepth,"\t check: ",check);
 
   var results: [1..maxDepth, 1..2] int;
-  var longLivedTree : Tree = bottomUpTree(0,maxDepth);
+  var longLivedTree : unmanaged Tree = bottomUpTree(maxDepth);
 
   forall depth in minDepth..maxDepth by 2 {
     var iterations: int = 1 << (maxDepth - depth + minDepth);
     var check: int = 0;
 			
     for i in 1..iterations {
-      var posT = bottomUpTree(i,depth);
-      var negT = bottomUpTree(-i,depth);
-      check += itemCheck(posT) + itemCheck(negT);
-      free_iter(posT);
-      free_iter(negT);
+      var t = bottomUpTree(depth);
+      check += itemCheck(t);
+      free_iter(t);
     }
-    results[depth,1] = iterations*2;
+    results[depth,1] = iterations;
     results[depth,2] = check;
   }
 
@@ -44,23 +41,23 @@ proc main() {
   free_iter(longLivedTree);
 }
 
-proc bottomUpTree(item: int, depth: int): Tree {
-  var T = new Tree(item);
+proc bottomUpTree(depth: int): unmanaged Tree {
+  var T = new unmanaged Tree();
   if depth > 0 {
-    T.left  = bottomUpTree(2*item-1, depth-1);
-    T.right = bottomUpTree(2*item, depth-1);
+    T.left  = bottomUpTree(depth-1);
+    T.right = bottomUpTree(depth-1);
   }
   return T;
 }
 
-proc itemCheck(T: Tree): int{
-  if (T.left==nil) then return T.item;
-  else return T.item + itemCheck(T.left) - itemCheck(T.right);
+proc itemCheck(T: borrowed Tree): int{
+  if (T.left==nil) then return 1;
+  else return 1 + itemCheck(T.left) + itemCheck(T.right);
 }
 
 // Feel free to turn this into a parallel leader-follower
 // for additional testing goodness
-iter postorder(tree: Tree): Tree {
+iter postorder(tree: unmanaged Tree): unmanaged Tree {
   if tree != nil {
     for child in postorder(tree.left) do yield child;
     for child in postorder(tree.right) do yield child;
@@ -68,6 +65,6 @@ iter postorder(tree: Tree): Tree {
   }
 }
 
-proc free_iter(T: Tree) {
+proc free_iter(T: unmanaged Tree) {
   for node in postorder(T) { delete node; }
 }

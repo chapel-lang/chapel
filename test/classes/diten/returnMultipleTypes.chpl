@@ -7,23 +7,23 @@ class A {
 
 class B:A {
   var name:string = "B";
-  proc sayTypeName() {
+  override proc sayTypeName() {
     writeln("B");
   }
 }
 
 class C:B {
   var name:string = "C";
-  proc sayTypeName() {
+  override proc sayTypeName() {
     writeln("C");
   }
 }
 
 proc foo(i: int) {
   if i > 0 then
-    return new B();
+    return new owned B();
   else
-    return new C();
+    return new owned C();
 }
 
 proc main {
@@ -34,7 +34,4 @@ proc main {
   writeln(a.name);
   b.sayTypeName();
   writeln(b.name);
-
-  delete a;
-  delete b;
 }

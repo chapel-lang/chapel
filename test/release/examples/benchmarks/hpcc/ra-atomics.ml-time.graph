@@ -1,0 +1,5 @@
+perfkeys: Execution time =
+files: ra.atomic-n33.dat
+graphkeys: ra-atomics runtime
+graphtitle: HPCC: RA-atomics Time (sec) - n=2^33
+ylabel: Time (seconds)

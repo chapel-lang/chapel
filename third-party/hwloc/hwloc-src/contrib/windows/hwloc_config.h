@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -29,16 +29,6 @@
 #include <windows.h>
 #include <BaseTsd.h>
 typedef DWORDLONG hwloc_uint64_t;
-typedef SSIZE_T ssize_t;
-#define snprintf _snprintf
-#define strcasecmp _stricmp
-#define strncasecmp _strnicmp
-#define strdup _strdup
-#define strtoull _strtoui64
-#define strtoll _strtoi64
-#define S_ISREG(m) ((m)&_S_IFREG)
-#define S_ISDIR( m ) (((m) & S_IFMT) == S_IFDIR)
-#define putenv _putenv
 
 #if defined( _USRDLL ) /* dynamic linkage */
 #if defined( DECLSPEC_EXPORTS )

@@ -25,7 +25,7 @@ iter treeiter ( param tag: iterKind, n: int, id: int=0) : int
    if (id < n) {
      yield id;
 
-     // recursive ... but still have to yeild here
+     // recursive ... but still have to yield here
      cobegin {
        if 2*id+1 < n then on Locales[2*id+1] do
          for z in treeiter(n=n, id=2*id + 1, tag=iterKind.standalone) do yield z;
@@ -164,7 +164,7 @@ write("cubeiter: ");
 for z in cubeiter(numLocales) do write(" ", z);
 writeln();
 
-resumeVdebug("cubeiter");
+tagVdebug("cubeiter");
 
 forall z in cubeiter(numLocales) do  d[z] = here.id;
 
@@ -212,7 +212,7 @@ pauseVdebug();
 // for a in id2com(0,8) do write (a, " ");
 // writeln ();
 
-resumeVdebug("cubeiter2");
+tagVdebug("cubeiter2");
 
 forall x in cubeiter2(numLocales) do e[x] = here.id;
 

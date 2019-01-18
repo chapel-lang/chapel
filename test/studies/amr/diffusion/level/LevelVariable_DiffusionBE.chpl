@@ -7,29 +7,29 @@ use LevelBC_def;
 //|===> LevelVariable.storeCGSolution ===>
 //|__________________________________/
 proc LevelVariable.storeCGSolution(
-  rhs: LevelVariable,
-  bc:  LevelBC,
+  rhs: unmanaged LevelVariable,
+  bc:  unmanaged LevelBC,
   diffusivity: real,
   dt: real,
   tolerance: real)
 {
   
   //==== Initialize residual ====
-  var residual = new LevelVariable(level = level);
-  bc.apply_Homogeneous(this);
-  residual.storeBEOperator(this, diffusivity, dt);
+  var residual = new unmanaged LevelVariable(level = level);
+  bc.apply_Homogeneous(_to_unmanaged(this));
+  residual.storeBEOperator(_to_unmanaged(this), diffusivity, dt);
   for grid in level.grids do
     residual(grid,grid.cells) = rhs(grid,grid.cells) - residual(grid,grid.cells);			       
 
 
   //==== Initialize search direction ====
-  var search_dir = new LevelVariable(level = level);
+  var search_dir = new unmanaged LevelVariable(level = level);
   for grid in level.grids do
     search_dir(grid,grid.cells) = residual(grid,grid.cells);
 
 
   //==== Initialize residual update direction ====
-  var residual_update = new LevelVariable(level = level);
+  var residual_update = new unmanaged LevelVariable(level = level);
   bc.apply_Homogeneous(search_dir);
   residual_update.storeBEOperator(search_dir, diffusivity, dt);
 
@@ -91,7 +91,10 @@ proc LevelVariable.storeCGSolution(
   // /::::::::::::::::::::/
   //<=== CG iteration <===
   // \::::::::::::::::::::\
-  
+
+  delete residual_update;
+  delete search_dir;
+  delete residual;
 }
 // /""""""""""""""""""""""""""""""""""/
 //<=== LevelVariable.storeCGSolution <==<
@@ -104,7 +107,7 @@ proc LevelVariable.storeCGSolution(
 //|===> LevelVariable.storeBEOperator ===>
 //|__________________________________/
 proc LevelVariable.storeBEOperator(
-  q:           LevelVariable,
+  q:           unmanaged LevelVariable,
   diffusivity: real,
   dt:          real)
 {
@@ -123,7 +126,7 @@ proc LevelVariable.storeBEOperator(
 
 
 proc LevelVariable.storeFluxDivergence(
-  q:           LevelVariable,
+  q:           unmanaged LevelVariable,
   diffusivity: real)
 {
   q.fillOverlaps();

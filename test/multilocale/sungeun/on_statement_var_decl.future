@@ -1,5 +1,3 @@
 bug: On statement variable declarations not supported
 
-e.g.,
-  on Locales(1) var x: real;
-
+Issue #7704

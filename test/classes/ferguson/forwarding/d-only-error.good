@@ -1,0 +1,2 @@
+d-only-error.chpl:17: error: unresolved call 'Wrapper(unmanaged C).foo()'
+d-only-error.chpl:11: note: candidates are: C.foo()

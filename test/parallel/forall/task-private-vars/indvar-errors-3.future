@@ -1,0 +1,12 @@
+error message: indicate that these are loop induction variables
+
+Issue: #9127
+
+When the initialization or type expression of a task-private variable
+references an induction variable of its forall loop, we should
+issue the same errors as in indvar-errors-1.chpl. This is more
+helpful in preventing the user from mistakenly using induction variables
+to initialize task-private variables.
+
+The difference of indvar-errors-3 from indvar-errors-2 is that in the
+former there are no like-named variables in an outer scope.

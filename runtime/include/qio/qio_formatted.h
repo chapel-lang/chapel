@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -435,10 +435,6 @@ static inline
 qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, int32_t* restrict chr) {
   qioerr err;
   uint32_t codepoint=0, state;
-  
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
-  }
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -514,10 +510,13 @@ int qio_nbytes_char(int32_t chr)
     }
   } else {
 #ifdef HAS_WCTYPE_H
+    char buf[MB_CUR_MAX];
     mbstate_t ps;
     size_t got;
     memset(&ps, 0, sizeof(mbstate_t));
-    got = wcrtomb(NULL, chr, &ps);
+    // The buf argument is never used, but if we put NULL there,
+    // wcrtomb ignores chr and assumes L'\0' per the C standard.
+    got = wcrtomb(buf, chr, &ps);
     if( got == (size_t) -1 ) {
       return 0;
     } else {
@@ -579,7 +578,7 @@ qioerr qio_encode_char_buf(char* dst, int32_t chr)
 
 // Returns NULL if it's an illegal character OR we're out of memory; otherwise,
 // a newly-allocated ASCIIZ string containing the result.
-c_string_copy qio_encode_to_string(int32_t chr);
+c_string qio_encode_to_string(int32_t chr);
 
 static inline
 qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const char* buf, ssize_t buflen)
@@ -670,10 +669,6 @@ qioerr qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, 
 {
   qioerr err;
 
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
-  }
-
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) return err;
@@ -728,10 +723,6 @@ qioerr qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, 
 
 static inline
 int qio_unicode_supported(void) {
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
-  }
-
   return qio_glocale_utf8 == QIO_GLOCALE_UTF8;
 }
 
@@ -759,7 +750,7 @@ typedef struct qio_truncate_info_ {
 } qio_truncate_info_t;
 
 // Quote a string according to a style (we have this one for some error
-// situations in which it's undesireable to use the stdout channel
+// situations in which it's undesirable to use the stdout channel
 // because of e.g. Chapel module initialization order)
 qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** out, qio_truncate_info_t* ti);
 // like qio_quote_string, but only get length information.

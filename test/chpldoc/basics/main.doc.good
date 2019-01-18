@@ -1,5 +1,19 @@
-main
-   This is the only valid doc string in this modules. 
+.. default-domain:: chpl
 
-   proc foo()
-   iter bar()
+.. module:: main
+   :synopsis: This is the only valid doc string in this module. 
+
+main
+====
+**Usage**
+
+.. code-block:: chapel
+
+   use main;
+
+This is the only valid doc string in this module. 
+
+.. function:: proc foo()
+
+.. iterfunction:: iter bar()
+

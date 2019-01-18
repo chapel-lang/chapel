@@ -1,4 +1,4 @@
-# Copyright 2004-2016 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -24,11 +24,13 @@ ifndef RUNTIME_ROOT
 RUNTIME_ROOT=$(CHPL_MAKE_HOME)/runtime/
 endif
 
+ifdef CHPL_MAKE_RUNTIME_INCL
+RUNTIME_INCLUDE_ROOT = $(CHPL_MAKE_RUNTIME_INCL)
+else
 RUNTIME_INCLUDE_ROOT = $(RUNTIME_ROOT)/include
+endif
 
 RUNTIME_DEFS += \
-        -DCHPL_TASKS_MODEL_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
-        -DCHPL_THREADS_MODEL_H=\"threads-$(CHPL_MAKE_THREADS).h\" \
 	$(CHPL_MAKE_WIDE_POINTERS_DEFINES)
 
 ifeq ($(DEBUG),1)
@@ -48,11 +50,11 @@ ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
 	CHPL_AUXIO_INCLUDE ?= \
 		-I$(JAVA_INSTALL)/include \
 		-I$(JAVA_INSTALL)/include/linux \
-		-I$(HADOOP_INSTALL)/src/c++/libhdfs \
+		-I$(HADOOP_INSTALL)/include \
 
 	CHPL_AUXIO_LIBS ?= \
 		-L$(JAVA_INSTALL)/jre/lib/amd64/server \
-		-L$(HADOOP_INSTALL)/c++/Linux-amd64-64/lib 
+		-L$(HADOOP_INSTALL)/lib/native 
 endif 
 
 
@@ -65,14 +67,12 @@ RUNTIME_INCLS += \
         -I$(RUNTIME_INCLUDE_ROOT)/comm \
         -I$(RUNTIME_INCLUDE_ROOT)/tasks/$(CHPL_MAKE_TASKS) \
         -I$(RUNTIME_INCLUDE_ROOT)/threads/$(CHPL_MAKE_THREADS) \
-        -I$(RUNTIME_INCLUDE_ROOT)/comp-$(CHPL_MAKE_COMPILER) \
-        -I$(RUNTIME_INCLUDE_ROOT)/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
         -I$(RUNTIME_INCLUDE_ROOT) \
         -I$(RUNTIME_INCLUDE_ROOT)/qio \
         -I$(RUNTIME_INCLUDE_ROOT)/atomics/$(CHPL_MAKE_ATOMICS) \
         -I$(RUNTIME_INCLUDE_ROOT)/mem/$(CHPL_MAKE_MEM) \
         -I$(THIRD_PARTY_DIR)/utf8-decoder \
-        -I$(CHPL_MAKE_HOME)/runtime/src/$(RUNTIME_OBJDIR) \
+        -I$(RUNTIME_BUILD)/include \
 
 RUNTIME_CYGWIN=0
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cygwin32)
@@ -87,25 +87,41 @@ ifeq ($(RUNTIME_CYGWIN),1)
   RUNTIME_INCLS += -I/usr/include/w32api
 endif
 
-# Add any further includes for memory
+# Add any further includes for memory including jemalloc target memory,
+# when making the launcher.
 MEM_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.mem-$(CHPL_MAKE_MEM)
 ifneq ($(strip $(wildcard $(MEM_INCLUDE))),)
   include $(MEM_INCLUDE)
 endif
 
+ifeq ($(MAKE_LAUNCHER),1)
+  ifeq ($(CHPL_MAKE_TARGET_MEM),jemalloc)
+    TARGET_MEM_INCLUDE=\
+      $(RUNTIME_ROOT)/make/Makefile.runtime.mem-$(CHPL_MAKE_TARGET_MEM)
+    -include $(TARGET_MEM_INCLUDE)
+  endif
+endif
+
+# Add any further includes for COMM.
+COMM_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.comm-$(CHPL_MAKE_COMM)
+-include $(COMM_INCLUDE)
+
 # Add any further includes for GMP.
 GMP_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.gmp-$(CHPL_MAKE_GMP)
 -include $(GMP_INCLUDE)
+
+# Add any further includes for unwind.
+UNWIND_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.unwind-$(CHPL_MAKE_UNWIND)
+-include $(UNWIND_INCLUDE)
 
 # Add any further includes for HWLOC.
 HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)
 -include $(HWLOC_INCLUDE)
 
-#
-# For use with pyChapel / library-mode.
-# Position independent code is required to create shared objects.
-ifeq ($(CHPL_LIBMODE),shared)
-RUNTIME_DEFS += -fPIC
+# For use with library-mode. Position independent code is required by shared
+# objects that want to bring in our static runtime/third-party libraries
+ifeq ($(CHPL_LIB_PIC),pic)
+RUNTIME_DEFS += $(SHARED_LIB_CFLAGS)
 endif
 
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)

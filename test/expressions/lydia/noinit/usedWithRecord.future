@@ -1,0 +1,1 @@
+bug: compiler does not respect _defaultOf for concrete records with initializers

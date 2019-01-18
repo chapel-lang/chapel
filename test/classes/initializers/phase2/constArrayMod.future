@@ -1,0 +1,5 @@
+bug: failure to error when const array field contents modified in Phase 2
+
+We are not allowed to update const fields during Phase 2, but the error message
+is not applied if a const array field's contents are being updated (even though
+we detect this in normal code)

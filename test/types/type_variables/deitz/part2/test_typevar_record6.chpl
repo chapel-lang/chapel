@@ -1,18 +1,20 @@
 class node {
   type t;
   var element : t;
-  var next : node(t);
+  var next : unmanaged node(t);
 }
 
 record foo {
   type t;
   var length : int;
-  var first : node(t);
-  var last : node(t);
+  var first : unmanaged node(t);
+  var last : unmanaged node(t);
 
   proc append(e : t) {
-   var anew : node(t) = new node(t);
+   var anew : unmanaged node(t) = new unmanaged node(t);
+
     anew.element = e;
+
     if length > 0 {
       last.next = anew;
       last = anew;
@@ -20,31 +22,40 @@ record foo {
       first = anew;
       last = anew;
     }
+
     length += 1;
+
     return this;
   }
 
   proc copy() {
     var anew : foo(t);
     var tmp = first;
-    while (tmp != nil) {
+
+    while tmp != nil {
       anew.append(tmp.element);
-      tmp  = tmp.next;    
+      tmp  = tmp.next;
     }
-    return anew;     
+
+    return anew;
   }
 }
 
 proc foo.writeThis(fp) {
   fp.write("(/");
+
   var tmp = first;
+
   while tmp != nil {
     fp.write(tmp.element);
+
     tmp = tmp.next;
+
     if (tmp != nil) {
       fp.write(", ");
     }
   }
+
   fp.write("/)");
 }
 

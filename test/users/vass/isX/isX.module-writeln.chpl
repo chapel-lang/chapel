@@ -25,7 +25,7 @@ const hetInstance = (101, 102.5, "hetInstance");
 class ClassType {
   var zzz: int;
 }
-const cInstance = new ClassType(44444444);
+const cInstance = new borrowed ClassType(44444444);
 
 record RecordSmall {
   var xxx: int;
@@ -87,13 +87,13 @@ var enm:    EnumType;
 var homtup: HomTupType;
 var hettup: HetTupType;
 
-var cls:  ClassType;
+var cls:  borrowed ClassType;
 var rec1: RecordSmall;
 var unn:  UnionType;
 
 var rng1: range;
 var rng2: range(uint(8), BoundedRangeType.boundedNone, true);
-var dmp = new dmap(new DefaultDist());
+var dmp = defaultDist;
 var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
@@ -1798,7 +1798,7 @@ report(isAtomicValue(rng2), "isAtomicValue");
 report(isAtomicType(rng2.type), "isAtomicType");
 writeln("  .");
 
-write("new dmap(new DefaultDist()) (dmp)");
+write("defaultDist (dmp)");
 report(isBool(dmp), "isBool");
 report(isBoolValue(dmp), "isBoolValue");
 report(isBoolType(dmp.type), "isBoolType");

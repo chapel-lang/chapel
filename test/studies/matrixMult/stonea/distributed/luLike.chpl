@@ -27,9 +27,9 @@ const localesAcross = sqrt(numLocales) : int;
 const blkSize = n / localesAcross : int;
 
 class WrappedArray {
-    proc WrappedArray() { }
+    proc init() { }
 
-    proc WrappedArray(row, col, numRows, numCols) {
+    proc init(row, col, numRows, numCols) {
         dom = {row..row+numRows-1, col..col+numCols-1};
     }
 
@@ -43,19 +43,19 @@ class WrappedArray {
 
 proc luLikeMultiply(
     myLocales  : [?localesDom] locale,
-    A          : [localesDom] WrappedArray,
+    A          : [localesDom] unmanaged WrappedArray,
     aLocales   : subdomain(localesDom),
     bLocales   : subdomain(localesDom),
     solLocales : subdomain(localesDom))
 {
-    var rowCopies : [solLocales] WrappedArray;
-    var colCopies : [solLocales] WrappedArray;
+    var rowCopies : [solLocales] unmanaged WrappedArray;
+    var colCopies : [solLocales] unmanaged WrappedArray;
 
     // initialize row and col copies
     coforall (locRow, locCol) in solLocales do on myLocales[locRow,locCol] {
-        rowCopies[locRow, locCol] = new WrappedArray(
+        rowCopies[locRow, locCol] = new unmanaged WrappedArray(
             (locRow-1)*blkSize+1, 1, blkSize, blkSize);
-        colCopies[locRow, locCol] = new WrappedArray(
+        colCopies[locRow, locCol] = new unmanaged WrappedArray(
             1, (locCol-1)*blkSize+1, blkSize, blkSize);
     }
 
@@ -81,9 +81,9 @@ proc luLikeMultiply(
 
     // do local matrix-multiply
     forall (locRow, locCol) in solLocales do on myLocales[locRow,locCol] {
-        var localA   => rowCopies[locRow,locCol].data;
-        var localB   => colCopies[locRow,locCol].data;
-        var localSol => A[locRow,locCol].data;
+        ref localA   = rowCopies[locRow,locCol].data;
+        ref localB   = colCopies[locRow,locCol].data;
+        ref localSol = A[locRow,locCol].data;
 
         forall i in localSol.domain.dim(1) {
             forall j in localSol.domain.dim(2) {
@@ -94,6 +94,8 @@ proc luLikeMultiply(
             }
         }
     }
+    for r in rowCopies do delete r;
+    for c in colCopies do delete c;
 }
 
 
@@ -132,9 +134,9 @@ proc main() {
     }
 
     // Initialize array
-    var A : [myLocales.domain] WrappedArray;
+    var A : [myLocales.domain] unmanaged WrappedArray;
     forall (i,j) in myLocales.domain do on myLocales[i,j] {
-            A[i,j] = new WrappedArray(
+            A[i,j] = new unmanaged WrappedArray(
                 (i-1)*blkSize+1, (j-1)*blkSize+1, blkSize, blkSize);
 
         forall (locRow, locCol) in A[i,j].dom {
@@ -181,5 +183,7 @@ proc main() {
     }
 
     if passed then writeln("PASSED"); else writeln("FAILED");
+
+    for a in A do delete a;
 }
 

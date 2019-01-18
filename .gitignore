@@ -5,6 +5,8 @@ a.out_real
 *~
 output
 gen
+.mason
+Mason.lock
 *.ntoks
 *.o
 *.pyc
@@ -12,36 +14,42 @@ gen
 TAGS
 tags
 *.DS_Store
+*.vagrant
 
 
 # Top level ignores.
 /BUILD_VERSION
 /Chapel.xcodeproj
-/STATUS
+/chplconfig
+/configured-prefix
+/configured-chpl-home
 /SVNLOG
 /.SVNLOG-revnum
 /bin
+/build
 /lib
 /tar
 
 # Compiler ignores.
 /compiler/BROWSE
 /compiler/chpl
+/compiler/codegen/reservedSymbolNames.h
 /compiler/ifa/prim_data.cpp
 /compiler/ifa/prim_data.h
 /compiler/ifa/make_prims/make_prims
 /compiler/ifa/make_prims/cygwin
 /compiler/main/BUILD_VERSION
+/compiler/main/CLANG_SETTINGS
+/compiler/main/CONFIGURED_PREFIX
 /compiler/main/COPYRIGHT
 /compiler/main/LICENSE
 /compiler/parser/bison-chapel.output
-/compiler/passes/reservedSymbolNames.h
 
 # Doc ignores.
 /doc/**/*.aux
 /doc/**/*.log
-/doc/chips/html
-/doc/chips/tmp
+/doc/developer/chips/html
+/doc/developer/chips/tmp
 /doc/developer/compilerOverview/compiler.pdf
 /doc/developer/compilerOverview/compiler.dvi
 /doc/developer/compilerOverview/compiler.toc
@@ -55,21 +63,6 @@ tags
 /doc/tutorial/workbooks/*.bbl
 /doc/tutorial/workbooks/*.blg
 /doc/sphinx/build
-/doc/sphinx/source/*.rst
-/doc/sphinx/source/platforms/*.rst
-/doc/sphinx/source/technotes/*.rst
-/doc/sphinx/source/usingchapel/*.rst
-/doc/sphinx/source/modules/standard
-/doc/sphinx/source/modules/dists
-/doc/sphinx/source/modules/layouts
-/doc/sphinx/source/modules/internal
-/doc/sphinx/source/modules/packages
-/doc/sphinx/source/language/*.pdf
-/doc/sphinx/source/tools/chpldoc/man.rst
-!/doc/sphinx/source/index.rst
-!/doc/sphinx/source/technotes/index.rst
-!/doc/sphinx/source/platforms/index.rst
-!/doc/sphinx/source/usingchapel/index.rst
 
 
 # Make ignores.
@@ -78,23 +71,14 @@ tags
 
 # Man ignores.
 /man/man1/
+/man/man3/
 
 # Modules ignores.
 /modules/docs
-/modules/internal/tasks/muxed
-/modules/internal/threads/soft-threads
 /modules/webdocs
 
 # Runtime ignores.
-/runtime/etc/Makefile.comm-ugni
-/runtime/etc/Makefile.threads-soft-threads
 /runtime/include/chpl_rt_utils.h
-/runtime/include/comm/ugni
-/runtime/include/tasks/muxed
-/runtime/include/threads/soft-threads
-/runtime/src/comm/ugni
-/runtime/src/tasks/muxed
-/runtime/src/threads/soft-threads
 /runtime/src/timers/
 
 # Spec ignores.
@@ -115,6 +99,7 @@ tags
 # Test ignores.
 /test/FUTURES
 /test/Logs
+/test/**/compperfdat
 /test/**/perfdat
 
 /test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
@@ -134,8 +119,6 @@ tags
 /test/chplvis/overhead/OH
 /test/chplvis/overhead/OH2
 
-/test/compflags/albrecht/chplenv/chplenv.good
-
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
 /test/compflags/bradc/gdbddash/.gdb_history
@@ -152,6 +135,8 @@ tags
 /test/compflags/bradc/printstuff/zhelplice.good
 /test/compflags/bradc/printstuff/zhelpvers.good
 /test/compflags/bradc/printstuff/zlicevers.good
+
+/test/compflags/diten/log
 
 /test/compflags/lydia/library/libtesting.a
 
@@ -181,67 +166,13 @@ tags
 /test/compflags/waynew/*.h
 /test/compflags/waynew/chplmake.out
 
+/test/deprecated/parentNameErr.good
+
 /test/distributions/dm/hplx.exec.out.tmp.orig
 
-/test/distributions/robust/arithmetic/basics/test_array_assignment.good
-/test/distributions/robust/arithmetic/basics/test_array_iteration1.good
-/test/distributions/robust/arithmetic/basics/test_array_of_distributed_array1.good
-/test/distributions/robust/arithmetic/basics/test_array_swap.good
-/test/distributions/robust/arithmetic/basics/test_class_of_distributed_array.good
-/test/distributions/robust/arithmetic/basics/test_distributed_array_of_array1.good
-/test/distributions/robust/arithmetic/basics/test_distributed_array_of_array2.good
-/test/distributions/robust/arithmetic/basics/test_distributed_array_of_distributed_array1.good
-/test/distributions/robust/arithmetic/basics/test_distributed_array_of_record1.good
-/test/distributions/robust/arithmetic/basics/test_distributed_array_of_record2.good
-/test/distributions/robust/arithmetic/basics/test_domain_assignment.good
-/test/distributions/robust/arithmetic/basics/test_domain_iteration1.good
-/test/distributions/robust/arithmetic/basics/test_infer_array_type.good
-/test/distributions/robust/arithmetic/basics/test_promotion1.good
-/test/distributions/robust/arithmetic/basics/test_promotion2.good
-/test/distributions/robust/arithmetic/basics/test_promotion3.good
-/test/distributions/robust/arithmetic/basics/test_record_of_distributed_array.good
-/test/distributions/robust/arithmetic/basics/test_reduce1.good
-/test/distributions/robust/arithmetic/basics/test_reshape.good
-/test/distributions/robust/arithmetic/basics/test_scan1.good
-/test/distributions/robust/arithmetic/basics/test_strided_serial_iteration.good
-/test/distributions/robust/arithmetic/collapsing/test_array_rank_change1.good
-/test/distributions/robust/arithmetic/collapsing/test_domain_rank_change1.good
-/test/distributions/robust/arithmetic/collapsing/test_domain_rank_change_OOB.good
-/test/distributions/robust/arithmetic/modules/test_module_Norm.good
-/test/distributions/robust/arithmetic/modules/test_module_Random.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic.comm-gasnet.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record.comm-gasnet.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple.comm-gasnet.good
-/test/distributions/robust/arithmetic/performance/multilocale/alloc.good
-/test/distributions/robust/arithmetic/performance/multilocale/alloc_all.good
-/test/distributions/robust/arithmetic/performance/multilocale/assign.good
-/test/distributions/robust/arithmetic/performance/multilocale/assignAlias.good
-/test/distributions/robust/arithmetic/performance/multilocale/assignSlice.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduce.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduceAlias.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduceSlice.good
-/test/distributions/robust/arithmetic/reindexing/test_array_alias1.good
-/test/distributions/robust/arithmetic/reindexing/test_array_alias2.good
-/test/distributions/robust/arithmetic/reindexing/test_array_alias3.good
-/test/distributions/robust/arithmetic/reindexing/test_reindexing6.good
-/test/distributions/robust/arithmetic/reindexing/test_strided_reindex1.good
-/test/distributions/robust/arithmetic/reindexing/test_strided_reindex2.good
-/test/distributions/robust/arithmetic/resizing/test_domain_resize1.good
-/test/distributions/robust/arithmetic/slicing/test_array_slicing1.good
-/test/distributions/robust/arithmetic/slicing/test_array_slicing2.good
-/test/distributions/robust/arithmetic/slicing/test_array_slicing3.good
-/test/distributions/robust/arithmetic/slicing/test_domain_slicing1.good
-/test/distributions/robust/arithmetic/slicing/test_strided_slice1.good
-/test/distributions/robust/arithmetic/slicing/test_strided_slice2.good
-/test/distributions/robust/arithmetic/trivial/test_domain_plus_minus_index.good
-/test/distributions/robust/arithmetic/trivial/test_dot_domain.good
-/test/distributions/robust/arithmetic/trivial/test_dot_expand.good
-/test/distributions/robust/arithmetic/trivial/test_dot_exterior.good
-/test/distributions/robust/arithmetic/trivial/test_dot_interior.good
-/test/distributions/robust/arithmetic/trivial/test_dot_numIndices.good
-/test/distributions/robust/arithmetic/trivial/test_dot_translate.good
-/test/distributions/robust/arithmetic/trivial/test_tuple_to_array.good
-/test/distributions/robust/arithmetic/trivial/test_writeln.good
 
 /test/domains/shannon/OUTPUT
 
@@ -274,59 +205,68 @@ tags
 /test/memory/shannon/jacobi.log
 /test/memory/shannon/configVarFile.log
 
-/test/modules/gbt/printchplenv.good
-/test/modules/standard/FileSystem/fsouza/chdir/destination
-/test/modules/standard/FileSystem/fsouza/chown/file.txt
-/test/modules/standard/FileSystem/fsouza/isdir/my_dir
-/test/modules/standard/FileSystem/fsouza/isdir/my_file
-/test/modules/standard/FileSystem/fsouza/isfile/my_dir
-/test/modules/standard/FileSystem/fsouza/isfile/my_file
-/test/modules/standard/FileSystem/lydia/chmod/dir
-/test/modules/standard/FileSystem/lydia/chmod/file
-/test/modules/standard/FileSystem/lydia/copy/bar.txt
-/test/modules/standard/FileSystem/lydia/copyFile/bar.txt
-/test/modules/standard/FileSystem/lydia/copyTree/complexDest
-/test/modules/standard/FileSystem/lydia/copyTree/emptyDest
-/test/modules/standard/FileSystem/lydia/copyTree/sparseDest
-/test/modules/standard/FileSystem/lydia/copyTree/verySparseDest
-/test/modules/standard/FileSystem/lydia/copyTree/shortDest
-/test/modules/standard/FileSystem/lydia/copyTree/denseDest
-/test/modules/standard/FileSystem/lydia/copyTree/cutoffDest
-/test/modules/standard/FileSystem/lydia/copyTree/existing_dir
-/test/modules/standard/FileSystem/lydia/copyTree/hasLink
-/test/modules/standard/FileSystem/lydia/copyTree/willLink
-/test/modules/standard/FileSystem/lydia/copyTree/willCopy
-/test/modules/standard/FileSystem/lydia/exists/broken_link
-/test/modules/standard/FileSystem/lydia/exists/dir
-/test/modules/standard/FileSystem/lydia/exists/dir_link
-/test/modules/standard/FileSystem/lydia/exists/file
-/test/modules/standard/FileSystem/lydia/exists/file_link
-/test/modules/standard/FileSystem/lydia/exists/going_away
-/test/modules/standard/FileSystem/lydia/isLink/broken_dir_link
-/test/modules/standard/FileSystem/lydia/isLink/broken_file_link
-/test/modules/standard/FileSystem/lydia/isLink/my_dir
-/test/modules/standard/FileSystem/lydia/isLink/my_file
-/test/modules/standard/FileSystem/lydia/isLink/my_link_dir
-/test/modules/standard/FileSystem/lydia/isLink/my_link_file
-/test/modules/standard/FileSystem/lydia/isMount/symlinkToRoot
-/test/modules/standard/FileSystem/lydia/isMount/notAMonkey/symlinkToRoot
-/test/modules/standard/FileSystem/lydia/moveDir/complexCopy
-/test/modules/standard/FileSystem/lydia/moveDir/complexDest
-/test/modules/standard/FileSystem/lydia/moveDir/hasLink
-/test/modules/standard/FileSystem/lydia/moveDir/linkDest
-/test/modules/standard/FileSystem/lydia/sameFile/linkToIt
-/test/modules/standard/FileSystem/lydia/sameFile/moveMe.txt
-/test/modules/standard/FileSystem/lydia/symlink/bar.txt
-/test/modules/standard/Path/lydia/realpath/blahblahblah.txt
-/test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
-/test/modules/standard/machine/numPUs.good
-/test/modules/standard/memory/countMemory/countMemory.*.good
+/test/library/packages/HDF5/ex_lite1.h5
+/test/library/packages/HDF5/ex_lite3.h5
+/test/library/standard/FileSystem/copyFile/*.out
+/test/library/standard/FileSystem/fsouza/chdir/destination
+/test/library/standard/FileSystem/fsouza/chown/file.txt
+/test/library/standard/FileSystem/fsouza/isdir/my_dir
+/test/library/standard/FileSystem/fsouza/isdir/my_file
+/test/library/standard/FileSystem/fsouza/isfile/my_dir
+/test/library/standard/FileSystem/fsouza/isfile/my_file
+/test/library/standard/FileSystem/lydia/chmod/dir
+/test/library/standard/FileSystem/lydia/chmod/file
+/test/library/standard/FileSystem/lydia/copy/bar.txt
+/test/library/standard/FileSystem/lydia/copyFile/bar.txt
+/test/library/standard/FileSystem/lydia/copyTree/complexDest
+/test/library/standard/FileSystem/lydia/copyTree/emptyDest
+/test/library/standard/FileSystem/lydia/copyTree/sparseDest
+/test/library/standard/FileSystem/lydia/copyTree/verySparseDest
+/test/library/standard/FileSystem/lydia/copyTree/shortDest
+/test/library/standard/FileSystem/lydia/copyTree/denseDest
+/test/library/standard/FileSystem/lydia/copyTree/cutoffDest
+/test/library/standard/FileSystem/lydia/copyTree/existing_dir
+/test/library/standard/FileSystem/lydia/copyTree/hasLink
+/test/library/standard/FileSystem/lydia/copyTree/willLink
+/test/library/standard/FileSystem/lydia/copyTree/willCopy
+/test/library/standard/FileSystem/lydia/exists/broken_link
+/test/library/standard/FileSystem/lydia/exists/dir
+/test/library/standard/FileSystem/lydia/exists/dir_link
+/test/library/standard/FileSystem/lydia/exists/file
+/test/library/standard/FileSystem/lydia/exists/file_link
+/test/library/standard/FileSystem/lydia/exists/going_away
+/test/library/standard/FileSystem/lydia/isLink/broken_dir_link
+/test/library/standard/FileSystem/lydia/isLink/broken_file_link
+/test/library/standard/FileSystem/lydia/isLink/my_dir
+/test/library/standard/FileSystem/lydia/isLink/my_file
+/test/library/standard/FileSystem/lydia/isLink/my_link_dir
+/test/library/standard/FileSystem/lydia/isLink/my_link_file
+/test/library/standard/FileSystem/lydia/isMount/symlinkToRoot
+/test/library/standard/FileSystem/lydia/isMount/notAMonkey/symlinkToRoot
+/test/library/standard/FileSystem/lydia/moveDir/complexCopy
+/test/library/standard/FileSystem/lydia/moveDir/complexDest
+/test/library/standard/FileSystem/lydia/moveDir/hasLink
+/test/library/standard/FileSystem/lydia/moveDir/linkDest
+/test/library/standard/FileSystem/lydia/sameFile/linkToIt
+/test/library/standard/FileSystem/lydia/sameFile/moveMe.txt
+/test/library/standard/FileSystem/lydia/symlink/bar.txt
+/test/library/standard/Path/saru/getParentName/parentName.good
+/test/library/standard/Path/saru/getParentName/parentNameErr.good
+/test/library/standard/Path/lydia/realpath/blahblahblah.txt
+/test/library/standard/Spawn/stdout-stderr_real
+/test/library/standard/Time/stonea/getCurrentDayOfWeek.good
+/test/library/standard/machine/numPUs.good
+/test/library/standard/Memory/countMemory/countMemory.*.good
+
+/test/localeModels/dmk/locale_name.good
 
 /test/multilocale/deitz/needMultiLocales/test_remote_file_read_class.txt
 /test/multilocale/numLocales/bradc/testVerboseFlag.good
 /test/multilocale/numLocales/bradc/testVFlag.good
 
 /test/npb/cg/bradc/latex
+
+/test/optimizations/bulkcomm/bharshbarg/remote.good
 
 /test/parallel/taskPar/taskIntents/src/*.d
 /test/parallel/taskPar/taskIntents/src/*.o
@@ -381,14 +321,9 @@ tags
 /test/runtime/sungeun/chpl-env-gen.h
 /test/runtime/sungeun/chpl-env-gen.test.gen.c
 
-test/separate_compilation/jturner/libclassextern2.so.a
-test/separate_compilation/jturner/libfcfunc.so.a
-test/separate_compilation/jturner/libiterator.so.a
-test/separate_compilation/jturner/libmethodextern2.so.a
-test/separate_compilation/jturner/libsimplefloat.so.a
-test/separate_compilation/jturner/libsubclass.so.a
-
 /test/studies/590o/alexco/*.txt
+/test/studies/IMSuite/leader_elect_lcr/outputleader_elect_lcr_*.txt
+/test/studies/IMSuite/vertexColor/outputvertexColoring*.txt
 /test/studies/amr/**/_output
 /test/studies/amr/**/*.tmp.save
 /test/studies/dijkstra/RtsGraph_out.txt
@@ -437,7 +372,6 @@ test/separate_compilation/jturner/libsubclass.so.a
 /test/studies/ssca2/graphio/graphio.2.ev2_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.start_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.weight_snapshot.data
-/test/studies/ssca2/performance/SSCA2_kernels.chpl
 /test/studies/ssca2/rachels/SSCA2_main.RMAT.good
 /test/studies/ssca2/rachels/SSCA2_main.1Dtorus.good
 /test/studies/ssca2/rachels/SSCA2_main.2Dtorus.good
@@ -483,16 +417,9 @@ test/separate_compilation/jturner/libsubclass.so.a
 # Third party ignores.
 /third-party/**/build
 /third-party/**/install
-/third-party/gmp/gmp-6.0.0
-/third-party/hwloc/hwloc-1.7.2
 /third-party/llvm/llvm
-/third-party/re2/re2/**/*.orig
-/third-party/re2/re2/core
-/third-party/re2/re2/obj
-/third-party/re2/re2/.git
 
-/third-party/qthread/qthread-1.10/autom4te.cache/
-/third-party/qthread/qthread-1.10/config.h.in
+/third-party/gmp/gmp-src/doc/gmp.info.*
 
 /third-party/fltk/build.*
 /third-party/fltk/install.*
@@ -513,3 +440,7 @@ test/separate_compilation/jturner/libsubclass.so.a
 /util/tokencount/tokencount.output
 /util/tokencount/tokencount.tab.c
 /util/tokencount/tokencount.tab.h
+
+/util/devel/test/vagrant/log
+/util/devel/test/vagrant/log2
+/util/devel/test/vagrant/*/*-cloudimg-console.log

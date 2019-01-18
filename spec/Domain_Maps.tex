@@ -39,7 +39,7 @@ in Cray Chapel online documentation here:
 \\ %formatting
 \mbox{$$ $$ $$} %indent
 % Should this be "craychapel"?
-\url{http://chapel.cray.com/docs/latest/}
+\url{https://chapel-lang.org/docs/modules/layoutdist.html}
 
 \item specification of user-defined domain maps is forthcoming;
 please refer to the \emph{Domain Map Standard Interface} page
@@ -48,7 +48,7 @@ in Cray Chapel online documentation here:
 \\ %formatting
 \mbox{$$ $$ $$} %indent
 % Should this be "craychapel"?
-\url{http://chapel.cray.com/docs/latest/}
+\url{https://chapel-lang.org/docs/technotes/dsi.html}
 
 \end{itemize}
 
@@ -81,6 +81,7 @@ Arrays declared over rectangular domains with this default map
 are laid out in memory in row-major order.
 \end{craychapel}
 
+\pagebreak
 \index{dmap value}
 \index{dmapped clause}
 \index{domain maps!dmap value}
@@ -112,11 +113,12 @@ var MyBlockDist: dmap(Block(rank=2));
 \end{chapel}
 declares a variable capable of storing dmap values
 for a two-dimensional Block distribution.
-The Block distribution is described in more detail here:
+The Block distribution is described in more detail
+in the standard library documentation. See:
 \\ %formatting
 \mbox{$$ $$ $$} %indent
 % Should this be "craychapel"?
-\url{http://chapel.cray.com/docs/latest/}
+\url{https://chapel-lang.org/docs/modules/dists/BlockDist.html}
 \end{example}
 
 \begin{example}
@@ -142,7 +144,7 @@ that is mapped using a Block distribution.
 
 The following syntactic sugar is provided within the \chpl{dmapped} clause.
 If a \chpl{dmapped} clause starts with the name of a domain map class,
-it is considered to be a constructor expression as if preceeded by
+it is considered to be an initialization expression as if preceded by
 \chpl{new}. The resulting domain map instance is wrapped in a newly-created
 instance of \chpl{dmap} implicitly.
 

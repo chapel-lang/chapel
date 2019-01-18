@@ -1,0 +1,2 @@
+forallSiblingCall.chpl:4: In initializer:
+forallSiblingCall.chpl:6: error: use of this.init() call in a forall loop body

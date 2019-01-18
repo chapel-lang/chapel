@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,9 +21,9 @@
 // vectorizeOnly iterators found at the bottom of this file.
 /*
   Data parallel constructs (such as ``forall`` loops) are implicitly
-  vectorizable. If the ``--vectorize`` compiler flag is thrown (implied by
-  ``--fast``), the Chapel compiler will emit vectorization hints to the backend
-  compiler, though the effects will vary based on the target compiler.
+  vectorizable. If the ``--vectorize`` compiler flag is thrown the Chapel
+  compiler will emit vectorization hints to the backend compiler, though the
+  effects will vary based on the target compiler.
 
   In order to allow users to explicitly request vectorization, this prototype
   vectorizing iterator is being provided. Loops that invoke this iterator will
@@ -35,18 +35,25 @@
   be moved to a standard module and will likely require a ``use`` statement to
   make it available.
  */
+pragma "error mode fatal" // avoid compiler errors here
+pragma "unsafe"
 module ChapelIteratorSupport {
+  use ChapelStandard;
+
   //
   // module support for iterators
   //
   pragma "no doc"
+  pragma "allow ref" // needs to to return tuples with refs
+  pragma "fn returns iterator"
   proc iteratorIndex(ic: _iteratorClass) {
     ic.advance();
     return ic.getValue();
   }
 
   pragma "no doc"
-  pragma "expand tuples with values"
+  pragma "expand tuples with values"  // needs to return tuples with refs
+  pragma "fn returns iterator"
   proc iteratorIndex(t: _tuple) {
     pragma "expand tuples with values"
     proc iteratorIndexHelp(t: _tuple, param dim: int) {
@@ -68,14 +75,215 @@ module ChapelIteratorSupport {
     return i.type;
   }
 
+  proc iteratorToArrayElementType(type t:_iteratorRecord) type {
+    // Todo: chpl__unref() may be unnecessary. Ensure this test passes:
+    //   test/expressions/loop-expr/zip-arrays.chpl
+    return chpl__unref(
+      chpl_buildStandInRTT(__primitive("scalar promotion type", t)) );
+  }
+
+  //
+  // The two chpl_buildStandInRTT(type) functions accept, at run time,
+  // the _RuntimeTypeInfo for domType/arrType that is **uninitialized**.
+  // They returns a fresh domain/array type of the same kind, whose
+  // RTT is **initialized**. Important: no accessing the uninitialized RTTs.
+  //
+  // It took some acrobatics to get the domain's distribution type,
+  // rank, idxType, stridable from 'domType', and the same plus
+  // (even more acrobatics) eltType from 'arrType'.
+  // Ideally we'd get them **directly** from domType/arrType.
+  //
+
+  proc chpl_buildStandInRTT(type domType: domain) type
+  { //
+    // domType._instance has no runtime type, so accessing its type
+    // does not execute any code at run time. So it does not access
+    // any contents of domType's _RuntimeTypeInfo. This is good -
+    // because the _RuntimeTypeInfo is uninitialized.
+    //
+    var instanceObj: __primitive("static field type", domType, "_instance");
+
+    return chpl_buildStandInRTT(instanceObj);
+  }
+
+  proc chpl_buildStandInRTT(type arrType: []) type
+  {
+    // Analogously to instanceObj in chpl_buildStandInRTT(domType).
+    type arrInstType = __primitive("static field type", arrType, "_instance");
+    type domInstType = __primitive("static field type", arrInstType, "dom");
+
+    // No runtime types - no code is executed at run time here.
+    var domInstance: domInstType;
+
+    // This is a domain built from properly-initialized _RuntimeTypeInfo.
+    pragma "no auto destroy"
+    var standinDomain: chpl_buildStandInRTT(domInstance);
+
+    var instanceObj: arrInstType;
+
+    // Luckily, "static typeof" shields us from accessing the field
+    // instanceObj.eltType at run time - even when it is a run-time type.
+    // Without "static typeof", it would access a field of instanceObj
+    // and crash because the latter, by design, is nil.
+    //
+    // If 'instanceEltType' is a runtime type, its _RuntimeTypeInfo
+    // is uninitialized.
+    type instanceEltType = __primitive("static typeof", instanceObj.eltType);
+
+    return chpl__buildArrayRuntimeType(standinDomain,
+                                       chpl_buildStandInRTT(instanceEltType));
+  }
+
+  //
+  // When the argument is an _iteratorRecord, return the type of the array
+  // that is created when this iterator is promoted to an array.
+  // Its domain is ir._shape_ or an empty 1-d domain if there is no shape.
+  // Its element type is given by the iterator's "scalar promotion type".
+  //
+  proc chpl_buildStandInRTT(type irType: _iteratorRecord) type
+  {
+    type shapeType = chpl_iteratorShapeStaticTypeOrVoid(irType);
+
+    proc standinType() type {
+      if shapeType == void {
+        // shapeless case
+        return domain(1);
+
+      } else if isRange(shapeType) {
+        // the shape is given by a range
+        return domain(1);
+
+    // The rest are pieces from chpl_buildStandInRTT(arrType).
+      } else {
+        // shapeful case
+
+        // No runtime types - no code is executed at run time here.
+        var domInstance: shapeType;
+
+        // Verify that there are no runtime types so far.
+        compilerAssert(!isDomain(domInstance) && !isArray(domInstance));
+
+        return chpl_buildStandInRTT(domInstance);
+      }
+    }
+
+    // This is a domain built using properly-initialized _RuntimeTypeInfo.
+    pragma "no auto destroy"
+    var standinDomain: standinType();
+
+    return chpl__buildArrayRuntimeType(standinDomain,
+      chpl_buildStandInRTT(__primitive("scalar promotion type", irType)) );
+  }
+
+  //
+  // If the type is neither an array nor a domain, then there is no run-time
+  // content - nothing that can be uninitialized. Use the type directly.
+  //
+  proc chpl_buildStandInRTT(type nonRTtype) type
+  {
+    return nonRTtype;
+  }
+
+  //
+  // The following overloads accept BaseDom subclasses.
+  // The argument is always 'nil', so we cannot get any
+  // run-time types from it. So we create them from scratch.
+  //
+  proc chpl_buildStandInRTT(domInst) type
+    where domInst.type <= unmanaged DefaultRectangularDom
+  {
+    // The only _RuntimeTypeInfo component for a domain type is
+    // a BaseDist subclass. We use 'defaultDist' for that.
+    // The other args are always compile-time only.
+    return chpl__buildDomainRuntimeType(defaultDist, domInst.rank,
+                                        domInst.idxType, domInst.stridable);
+  }
+
+  // Other kinds of arrays/domains are not supported.
+  proc chpl_buildStandInRTT(domInst) type
+  {
+    if domInst.type <= unmanaged BaseDom then
+      compilerError("for/forall/promoted expressions are not implemented when the elements are or contain non-DefaultRectangular domains or arrays");
+    else
+      compilerError("unexpected argument of type ", domInst.type:string, " for chpl_buildStandInRTT()");
+  }
+
+  inline proc chpl_computeIteratorShape(arg: []) {
+    return chpl_computeIteratorShape(arg.domain);
+  }
+  inline proc chpl_computeIteratorShape(arg: domain) {
+    return arg._instance;
+  }
+  inline proc chpl_computeIteratorShape(arg: range(?)) {
+    return arg;
+  }
+  inline proc chpl_computeIteratorShape(arg: _iteratorRecord) {
+    if chpl_iteratorHasShape(arg) then
+      return arg._shape_;
+    else {
+      const myvoid = _void; // workaround for #9152
+      return myvoid;
+    }
+  }
+  inline proc chpl_computeIteratorShape(arg) {
+    // none of the above cases
+    return _void;
+  }
+
+  proc chpl_iteratorHasShape(ir: _iteratorRecord) param {
+    use Reflection;
+    if hasField(ir.type, "_shape_") then
+      return ir._shape_.type != void;
+    else
+      return false;
+  }
+  inline proc chpl_iteratorHasDomainShape(ir: _iteratorRecord) param {
+    use Reflection;
+    if hasField(ir.type, "_shape_") then
+      return isSubtype(ir._shape_.type, BaseDom);
+    else
+      return false;
+  }
+  inline proc chpl_iteratorHasRangeShape(ir: _iteratorRecord) param {
+    use Reflection;
+    if hasField(ir.type, "_shape_") then
+      return isRange(ir._shape_.type);
+    else
+      return false;
+  }
+
+  // This is the static type of chpl_computeIteratorShape(ir).
+  proc chpl_iteratorShapeStaticTypeOrVoid(type ir: _iteratorRecord) type
+  {
+    use Reflection;
+    if hasField(ir, "_shape_") then
+      return __primitive("static field type", ir, "_shape_");
+    else
+      return void;
+  }
+
+  proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {
+    use Reflection;
+    if canResolveMethod(ir, "_fromForExpr_") then
+      return ir._fromForExpr_;
+    else
+      return false;
+  }
+  proc chpl_iteratorFromForExpr(arg) param {
+    // non-iterator-record cases are always parallel
+    // Todo: what if it is an array or domain whose domain map
+    // that does not provide parallel iterators?
+    return false;
+  }
+
   proc _iteratorRecord.writeThis(f) {
     var first: bool = true;
     for e in this {
       if !first then
-        f.write(" ");
+        f <~> " ";
       else
         first = false;
-      f.write(e);
+      f <~> e;
     }
   }
 
@@ -84,27 +292,40 @@ module ChapelIteratorSupport {
       e = x;
   }
 
+  // TODO: replace use of iteratorIndexType?
   pragma "suppress lvalue error"
   proc =(ref ic: _iteratorRecord, x: iteratorIndexType(ic)) {
     for e in ic do
       e = x;
   }
 
-  inline proc _getIterator(x) {
+  pragma "suppress lvalue error"
+  pragma "fn returns iterator"
+  pragma "no borrow convert" // e.g. iteration over tuple of owned
+  // argument is const ref for e.g. for x in (someSharedThing1, someSharedThing2)
+  inline proc _getIterator(const ref x) {
     return _getIterator(x.these());
   }
 
   inline proc _getIterator(ic: _iteratorClass)
     return ic;
 
+  pragma "fn returns iterator"
   proc _getIterator(type t) {
-    compilerError("cannot iterate over a type");
+    return _getIterator(t.these());
   }
 
+  pragma "fn returns iterator"
   inline proc _getIteratorZip(x) {
     return _getIterator(x);
   }
 
+  pragma "fn returns iterator"
+  inline proc _getIteratorZip(type t) {
+    return _getIterator(t);
+  }
+
+  pragma "fn returns iterator"
   inline proc _getIteratorZip(x: _tuple) {
     inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
       if dim == x.size then
@@ -118,12 +339,20 @@ module ChapelIteratorSupport {
       return _getIteratorZipInternal(x, 1);
   }
 
-  proc _checkIterator(type t) {
-    compilerError("cannot iterate over a type");
-  }
+  pragma "fn returns iterator"
+  inline proc _getIteratorZip(type t: _tuple) {
+    inline proc _getIteratorZipInternal(type t: _tuple, param dim: int) {
+      var x : t; //have to make an instance of the tuple to query the size
 
-  inline proc _checkIterator(x) {
-    return x;
+      if dim == x.size then // dim == t.size then
+        return (_getIterator(t(dim)),);
+      else
+        return (_getIterator(t(dim)), (..._getIteratorZipInternal(t, dim+1)));
+    }
+    if t == (t(1),) then // t.size == 1 then
+      return _getIterator(t(1));
+    else
+      return _getIteratorZipInternal(t, 1);
   }
 
   inline proc _freeIterator(ic: _iteratorClass) {
@@ -135,30 +364,31 @@ module ChapelIteratorSupport {
       _freeIterator(x(i));
   }
 
+  pragma "fn returns iterator"
   pragma "no implicit copy"
-  inline proc _toLeader(iterator: _iteratorClass)
-    return chpl__autoCopy(__primitive("to leader", iterator));
-
   inline proc _toLeader(ir: _iteratorRecord) {
-    pragma "no copy" var ic = _getIterator(ir);
-    pragma "no copy" var leader = _toLeader(ic);
-    _freeIterator(ic);
-    return leader;
+    return chpl__autoCopy(__primitive("to leader", ir));
   }
 
+  pragma "suppress lvalue error"
+  pragma "fn returns iterator"
   inline proc _toLeader(x)
     return _toLeader(x.these());
 
+  pragma "fn returns iterator"
   inline proc _toLeaderZip(x)
     return _toLeader(x);
 
+  pragma "fn returns iterator"
   inline proc _toLeaderZip(x: _tuple)
     return _toLeader(x(1));
 
   pragma "no implicit copy"
+  pragma "fn returns iterator"
   inline proc _toStandalone(iterator: _iteratorClass)
     return chpl__autoCopy(__primitive("to standalone", iterator));
 
+  pragma "fn returns iterator"
   inline proc _toStandalone(ir: _iteratorRecord) {
     pragma "no copy" var ic = _getIterator(ir);
     pragma "no copy" var standalone = _toStandalone(ic);
@@ -166,6 +396,8 @@ module ChapelIteratorSupport {
     return standalone;
   }
 
+  pragma "suppress lvalue error"
+  pragma "fn returns iterator"
   inline proc _toStandalone(x) {
     return _toStandalone(x.these());
   }
@@ -180,35 +412,35 @@ module ChapelIteratorSupport {
 
   pragma "no implicit copy"
   pragma "expand tuples with values"
-  inline proc _toLeader(iterator: _iteratorClass, args...)
-    return chpl__autoCopy(__primitive("to leader", iterator, (...args)));
-
-  pragma "expand tuples with values"
+  pragma "fn returns iterator"
   inline proc _toLeader(ir: _iteratorRecord, args...) {
-    pragma "no copy" var ic = _getIterator(ir);
-    pragma "no copy" var leader = _toLeader(ic, (...args));
-    _freeIterator(ic);
-    return leader;
+    return chpl__autoCopy(__primitive("to leader", ir, (...args)));
   }
 
+  pragma "suppress lvalue error"
   pragma "expand tuples with values"
+  pragma "fn returns iterator"
   inline proc _toLeader(x, args...)
     return _toLeader(x.these(), (...args));
 
   pragma "expand tuples with values"
+  pragma "fn returns iterator"
   inline proc _toLeaderZip(x, args...)
     return _toLeader(x, (...args));
 
   pragma "expand tuples with values"
+  pragma "fn returns iterator"
   inline proc _toLeaderZip(x: _tuple, args...)
     return _toLeader(x(1), (...args));
 
   pragma "no implicit copy"
   pragma "expand tuples with values"
+  pragma "fn returns iterator"
   inline proc _toStandalone(iterator: _iteratorClass, args...)
     return chpl__autoCopy(__primitive("to standalone", iterator, (...args)));
 
   pragma "expand tuples with values"
+  pragma "fn returns iterator"
   inline proc _toStandalone(ir: _iteratorRecord, args...) {
     pragma "no copy" var ic = _getIterator(ir);
     pragma "no copy" var standalone = _toStandalone(ic, (...args));
@@ -216,7 +448,9 @@ module ChapelIteratorSupport {
     return standalone;
   }
 
+  pragma "suppress lvalue error"
   pragma "expand tuples with values"
+  pragma "fn returns iterator"
   inline proc _toStandalone(x, args...) {
     return _toStandalone(x.these(), (...args));
   }
@@ -295,9 +529,11 @@ module ChapelIteratorSupport {
   }
 
   pragma "no implicit copy"
+  pragma "fn returns iterator"
   inline proc _toFollower(iterator: _iteratorClass, leaderIndex)
     return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex));
 
+  pragma "fn returns iterator"
   inline proc _toFollower(ir: _iteratorRecord, leaderIndex) {
     pragma "no copy" var ic = _getIterator(ir);
     pragma "no copy" var follower = _toFollower(ic, leaderIndex);
@@ -305,18 +541,23 @@ module ChapelIteratorSupport {
     return follower;
   }
 
+  pragma "suppress lvalue error"
+  pragma "fn returns iterator"
   inline proc _toFollower(x, leaderIndex) {
     return _toFollower(x.these(), leaderIndex);
   }
 
+  pragma "fn returns iterator"
   inline proc _toFollowerZip(x, leaderIndex) {
     return _toFollower(x, leaderIndex);
   }
 
+  pragma "fn returns iterator"
   inline proc _toFollowerZip(x: _tuple, leaderIndex) {
     return _toFollowerZipInternal(x, leaderIndex, 1);
   }
 
+  pragma "fn returns iterator"
   inline proc _toFollowerZipInternal(x: _tuple, leaderIndex, param dim: int) {
     if dim == x.size then
       return (_toFollower(x(dim), leaderIndex),);
@@ -326,10 +567,12 @@ module ChapelIteratorSupport {
   }
 
   pragma "no implicit copy"
+  pragma "fn returns iterator"
   inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex, fast: bool) {
     return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex, true));
   }
 
+  pragma "fn returns iterator"
   inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex, fast: bool) {
     pragma "no copy" var ic = _getIterator(ir);
     pragma "no copy" var follower = _toFastFollower(ic, leaderIndex, fast=true);
@@ -337,30 +580,25 @@ module ChapelIteratorSupport {
     return follower;
   }
 
-  pragma "no implicit copy"
-  inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex) {
-    return _toFollower(iterator, leaderIndex);
-  }
-
-  inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex) {
-    return _toFollower(ir, leaderIndex);
-  }
-
+  pragma "fn returns iterator"
   inline proc _toFastFollower(x, leaderIndex) {
     if chpl__staticFastFollowCheck(x) then
-      return _toFastFollower(x.these(), leaderIndex, fast=true);
+      return _toFastFollower(_getIterator(x), leaderIndex, fast=true);
     else
-      return _toFollower(x.these(), leaderIndex);
+      return _toFollower(_getIterator(x), leaderIndex);
   }
 
+  pragma "fn returns iterator"
   inline proc _toFastFollowerZip(x, leaderIndex) {
     return _toFastFollower(x, leaderIndex);
   }
 
+  pragma "fn returns iterator"
   inline proc _toFastFollowerZip(x: _tuple, leaderIndex) {
     return _toFastFollowerZip(x, leaderIndex, 1);
   }
 
+  pragma "fn returns iterator"
   inline proc _toFastFollowerZip(x: _tuple, leaderIndex, param dim: int) {
     if dim == x.size-1 then
       return (_toFastFollowerZip(x(dim), leaderIndex),

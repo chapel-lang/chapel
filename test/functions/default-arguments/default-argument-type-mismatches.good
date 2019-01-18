@@ -1,0 +1,3 @@
+default-argument-type-mismatches.chpl:4: error: Default expression not convertible to formal type
+default-argument-type-mismatches.chpl:10: error: Default expression not convertible to formal type
+default-argument-type-mismatches.chpl:19: error: illegal assignment of type to value

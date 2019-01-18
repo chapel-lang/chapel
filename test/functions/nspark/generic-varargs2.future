@@ -1,0 +1,5 @@
+bug: unresolved call error upon calling initializer with varargs
+
+This is a variation of generic-varargs1.chpl, where the eltType of the generic
+class is inferred and set from the type of the varargs argument(s).  This
+currently provides a compiler error, generic-varargs2.bad.

@@ -1,7 +1,7 @@
 class mysumreduce {
   type t;
-  var state: t;
-  
+  var  state: t;
+
   proc ident() {
     return 0;
   }
@@ -21,11 +21,15 @@ forall i in D {
   A(i) = i;
 }
 
-var myreduce = new mysumreduce(t = int);
+var myreduce   = new unmanaged mysumreduce(t = int);
 myreduce.state = myreduce.ident();
+
 for i in D {
   myreduce.state = myreduce.combine(myreduce.state, A(i));
 }
+
 var result = myreduce.state;
 
 writeln("result is: ", result);
+
+delete myreduce;

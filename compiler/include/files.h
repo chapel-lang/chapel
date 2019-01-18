@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,13 +27,16 @@
 #include "vec.h"
 
 extern char executableFilename[FILENAME_MAX+1];
+extern char libmodeHeadername[FILENAME_MAX+1];
+extern char fortranModulename[FILENAME_MAX+1];
+extern char pythonModulename[FILENAME_MAX+1];
 extern char saveCDir[FILENAME_MAX+1];
 extern std::string ccflags;
 extern std::string ldflags;
 extern bool ccwarnings;
-extern Vec<const char*> incDirs;
-extern int numLibFlags;
-extern const char** libFlag;
+extern std::vector<const char*> incDirs;
+extern std::vector<const char*> libDirs;
+extern std::vector<const char*> libFiles;
 
 struct fileinfo {
   FILE* fptr;
@@ -41,13 +44,13 @@ struct fileinfo {
   const char* pathname;
 };
 
-void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL, bool skip_compile_link=false);
+void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL, bool skip_compile_link=false, const std::vector<const char *>& splitFiles = std::vector<const char*>());
 
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 const char* getCwd();
 const char* makeTempDir(const char* dirPrefix);
 void deleteDir(const char* dirname);
-void deleteTmpDir(void);
+void deleteTmpDir();
 const char* objectFileForCFile(const char* cfile);
 
 const char* genIntermediateFilename(const char* filename);
@@ -57,8 +60,15 @@ void closeCFile(fileinfo* fi, bool beautifyIt=true);
 
 fileinfo* openTmpFile(const char* tmpfilename, const char* mode = "w");
 
-void openfile(fileinfo* thefile, const char* mode);
-void closefile(fileinfo* thefile);
+void      openfile(fileinfo*   thefile,
+                   const char* mode);
+
+FILE*     openfile(const char* filename,
+                   const char* mode  = "w",
+                   bool        fatal = true);
+
+void      closefile(fileinfo* thefile);
+void      closefile(FILE*     thefile);
 
 FILE* openInputFile(const char* filename);
 void closeInputFile(FILE* infile);
@@ -69,7 +79,8 @@ bool isObjFile(const char* filename);
 void addSourceFiles(int numFilenames, const char* filename[]);
 void addSourceFile(const char* filename);
 const char* nthFilename(int i);
-void addLibInfo(const char* filename);
+void addLibPath(const char* filename);
+void addLibFile(const char* filename);
 void addIncInfo(const char* incDir);
 
 void genIncludeCommandLineHeaders(FILE* outfile);
@@ -77,30 +88,21 @@ void genIncludeCommandLineHeaders(FILE* outfile);
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
 std::string runPrintChplEnv(std::map<std::string, const char*> varMap);
+std::string getVenvDir();
+bool compilingWithPrgEnv();
 std::string runCommand(std::string& command);
-
-void setupModulePaths(void);
-void addFlagModulePath(const char* newpath);
-void addDashMsToUserPath(void);
-void addModulePathFromFilename(const char* filename);
-
-const char* modNameToFilename(const char* modName,
-                              bool        isInternal,
-                              bool*       isStandard);
-const char* stdModNameToFilename(const char* modName);
 
 const char* filenameToModulename(const char* filename);
 
-const char* pathNameForInternalFile(const char* baseName);
-const char* pathNameForStandardFile(const char* baseName);
-
-void printModuleSearchPath(void);
-
 const char* getIntermediateDirName();
-void readArgsFromCommand(const char* cmd, std::vector<std::string> & cmds);
 
-char* dirHasFile(const char *dir, const char *file);
-char* findProgramPath(const char* argv0);
-bool isSameFile(const char* pathA, const char* pathB);
+void readArgsFromCommand(std::string path, std::vector<std::string>& args);
+void readArgsFromFile(std::string path, std::vector<std::string>& cmds);
+void expandInstallationPaths(std::string& arg);
+void expandInstallationPaths(std::vector<std::string>& args);
+
+char*       dirHasFile(const char* dir, const char* file);
+char*       findProgramPath(const char* argv0);
+bool        isSameFile(const char* pathA, const char* pathB);
 
 #endif

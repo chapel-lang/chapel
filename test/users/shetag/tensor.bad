@@ -1,0 +1,3 @@
+tensor.chpl:67: In function 'getslice':
+tensor.chpl:69: error: unresolved call 'Vector.init(int(64), [domain(1,int(64),false)] real(64))'
+tensor.chpl:17: note: candidates are: Vector.init(n: int(64), a: [domain(1,int(64),false)] real(64))

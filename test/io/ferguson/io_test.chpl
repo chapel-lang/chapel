@@ -39,9 +39,13 @@ proc testio(x)
 
   for i in 1..styles.size {
     var style = styles[i];
+    if noisy then writeln("STYLE ", i, " iodynamic");
     testio(iodynamic, style, x);
+    if noisy then writeln("STYLE ", i, " ionative");
     testio(ionative, style, x);
+    if noisy then writeln("STYLE ", i, " iobig");
     testio(iobig, style, x);
+    if noisy then writeln("STYLE ", i, " iolittle");
     testio(iolittle, style, x);
   }
 }
@@ -77,7 +81,7 @@ proc test_readlines()
   if noisy then writeln("Testing readlines: itemReader");
   {
     var style = defaultIOStyle();
-    style.string_format = QIO_STRING_FORMAT_TOEND;
+    style.string_format = iostringformat.toend:uint(8);
     style.string_end = 0x0a;
     var ch = f.reader(style=style);
     for (line,i) in zip(ch.itemReader(string),1..) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,7 @@
 
 #include "docs.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <fstream>
 #include <iostream>
@@ -95,7 +96,7 @@ void docs(void) {
         if (isNotSubmodule(mod)) {
           std::string filename = filenameFromMod(mod, docsRstDir);
 
-          AstPrintDocs *docsVisitor = new AstPrintDocs(mod->name, filename);
+          AstPrintDocs *docsVisitor = new AstPrintDocs(mod->name, filename, "");
           mod->accept(docsVisitor);
           delete docsVisitor;
 
@@ -103,7 +104,7 @@ void docs(void) {
           // get the old category based output (or alphabetical). Note that
           // this will be restored (hopefully soon)... (thomasvandoren, 2015-02-22)
           //
-          // printModule(file, mod, 0);
+          // printModule(file, mod, 0, "");
         }
       }
     }
@@ -160,13 +161,12 @@ void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
   }
 }
 
-// Returns true if the provided fn is a module initializer, class constructor,
-// type constructor, or module copy of a class method.  These functions are
-// only printed in developer mode.  Is not applicable to printing class
-// functions.
+// Returns true if the provided fn is a module initializer, type constructor,
+// or module copy of a class method.  These functions are only printed in
+// developer mode.  Is not applicable to printing class functions.
 bool devOnlyFunction(FnSymbol *fn) {
   return (fn->hasFlag(FLAG_MODULE_INIT) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) 
-          || fn->hasFlag(FLAG_CONSTRUCTOR) || fn->isPrimaryMethod());
+          || fn->isPrimaryMethod());
 }
 
 // Returns true if the provide module is one of the internal or standard 
@@ -176,29 +176,29 @@ bool devOnlyModule(ModuleSymbol *mod) {
   return mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD;
 }
 
-void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs) {
+void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std::string parentName) {
   if (!mod->noDocGen()) {
-    mod->printDocs(file, tabs);
+    mod->printDocs(file, tabs, parentName);
 
-    Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
+    std::vector<VarSymbol*> configs = mod->getTopLevelConfigVars();
     if (fDocsAlphabetize)
-      qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
-    forv_Vec(VarSymbol, var, configs) {
+      qsort(&configs[0], configs.size(), sizeof(VarSymbol*), compareNames);
+    for_vector(VarSymbol, var, configs) {
       var->printDocs(file, tabs + 1);
     }
 
-    Vec<VarSymbol*> variables = mod->getTopLevelVariables();
+    std::vector<VarSymbol*> variables = mod->getTopLevelVariables();
     if (fDocsAlphabetize)
-      qsort(variables.v, variables.n, sizeof(variables.v[0]), compareNames);
-    forv_Vec(VarSymbol, var, variables) {
+      qsort(&variables[0], variables.size(), sizeof(VarSymbol*), compareNames);
+    for_vector(VarSymbol, var, variables) {
       var->printDocs(file, tabs + 1);
     }
-    Vec<FnSymbol*> fns = mod->getTopLevelFunctions(fDocsIncludeExterns);
+    std::vector<FnSymbol*> fns = mod->getTopLevelFunctions(fDocsIncludeExterns);
     // If alphabetical option passed, fDocsAlphabetizes the output
     if (fDocsAlphabetize)
-      qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
+      qsort(&fns[0], fns.size(), sizeof(FnSymbol*), compareNames);
   
-    forv_Vec(FnSymbol, fn, fns) {
+    for_vector(FnSymbol, fn, fns) {
       // TODO: Add flag to compiler to turn on doc dev only output
 
       // We want methods on classes that are defined at the module level to be
@@ -208,22 +208,27 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs) {
       }
     }
 
-    Vec<AggregateType*> classes = mod->getTopLevelClasses();
+    std::vector<AggregateType*> classes = mod->getTopLevelClasses();
     if (fDocsAlphabetize)
-      qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
+      qsort(&classes[0], classes.size(), sizeof(AggregateType*), compareClasses);
 
-    forv_Vec(AggregateType, cl, classes) {
+    for_vector(AggregateType, cl, classes) {
       printClass(file, cl, tabs + 1);
     }
 
-    Vec<ModuleSymbol*> mods = mod->getTopLevelModules();
+    std::vector<ModuleSymbol*> mods = mod->getTopLevelModules();
     if (fDocsAlphabetize)
-      qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
+      qsort(&mods[0], mods.size(), sizeof(ModuleSymbol*), compareNames);
   
-    forv_Vec(ModuleSymbol, subMod, mods) {
+    for_vector(ModuleSymbol, subMod, mods) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!devOnlyModule(subMod)) {
-        printModule(file, subMod, tabs + 1);
+        std::string parent = "";
+        if (parentName != "") {
+          parent = parentName + ".";
+        }
+        parent = parent + mod->name;
+        printModule(file, subMod, tabs + 1, parent);
       }
     }
   }
@@ -300,13 +305,11 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   // Set the PATH and VIRTUAL_ENV variables in the environment. The values are
   // based on the install path in the third-party/chpl-venv/ dir.
 
-  const char * venvDir = astr(
-    CHPL_HOME, "/third-party/chpl-venv/install/",
-    CHPL_HOST_PLATFORM, "/chpl-virtualenv");
+  const char * venvDir = astr(getVenvDir().c_str());
   const char * venvBinDir = astr(venvDir, "/bin");
-  const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
+  const char * sphinxBuild = astr("sphinx-build");
 
-  const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && "
+  const char * envVars = astr("export PATH=\"", venvBinDir, ":$PATH\" && "
                               "export VIRTUAL_ENV=", venvDir, " && "
                               "export CHPLDOC_AUTHOR='", fDocsAuthor, "'");
 

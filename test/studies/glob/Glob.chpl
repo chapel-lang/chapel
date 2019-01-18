@@ -76,7 +76,7 @@ iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
     dirBuff.clear();
 
     // Now spawn off tasks for each dir
-    coforall dir in dirBuffCopy {
+    coforall dir in dirBuffCopy with (ref dirBuff) {
       for flConst in my_wordexp(pattern, false, flags, dir) {
         var fl = flConst;
         if recursive && chpl_isdir(fl.c_str()) == 1 {
@@ -139,7 +139,7 @@ iter my_glob(param tag:iterKind, pattern:string, recursive:bool = false,
     dirBuff.clear();
 
     // Now spawn off tasks for each dir
-    coforall dir in dirBuffCopy {
+    coforall dir in dirBuffCopy with (ref dirBuff) {
       for flConst in my_glob(pattern, false, flags, dir) {
         var fl = flConst;
         if recursive && chpl_isdir(fl.c_str()) == 1 {

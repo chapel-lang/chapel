@@ -1,0 +1,1 @@
+void otherFunction(int* arr);
