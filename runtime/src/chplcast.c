@@ -64,10 +64,19 @@ static int illegalFirstUnsChar(char c) {
                                                           int* invalid,    \
                                                           char* invalidCh) { \
     char* endPtr;                                                       \
+    char* newStr = NULL;                                                \
     int numberBase = 10;                                                \
+    int negative = 0;                                                   \
     _type(base, width) val;                                             \
     while (*str && isspace(*str))                                       \
       str++;                                                            \
+                                                                        \
+    if (str[0] == '-') {                                                \
+      negative = 1;                                                     \
+      str++;                                                            \
+    } else if (str[0] == '+') {                                         \
+      str++;                                                            \
+    }                                                                   \
     if (strlen(str) >= 2 && str[0] == '0') {                            \
       if (str[1] == 'b' || str[1] == 'B') {                             \
         numberBase = 2;                                                 \
@@ -80,19 +89,33 @@ static int illegalFirstUnsChar(char c) {
         str += 2;                                                       \
       }                                                                 \
     }                                                                   \
+    if (str[0] == '-' || str[0] == '+') {                               \
+      *invalid = 1;                                                     \
+      *invalidCh = *str;                                                \
+      return -1;                                                        \
+    }                                                                   \
+    if (negative) {                                                     \
+      newStr = malloc(strlen(str) + 2);                                 \
+      newStr[0] = '-';                                                  \
+      strcpy(&newStr[1], str);                                          \
+    } else {                                                            \
+      newStr = malloc(strlen(str) + 1);                                 \
+      strcpy(newStr, str);                                              \
+    }                                                                   \
     if (uns)                                                            \
-      val = (_type(base, width))strtoull(str, &endPtr, numberBase);     \
+      val = (_type(base, width))strtoull(newStr, &endPtr, numberBase);  \
     else                                                                \
-      val = (_type(base, width))strtoll(str, &endPtr, numberBase);      \
+      val = (_type(base, width))strtoll(newStr, &endPtr, numberBase);   \
     while (*endPtr && isspace(*endPtr))                                 \
       endPtr++;                                                         \
-    *invalid = (*str == '\0' || *endPtr != '\0');                       \
+    *invalid = (*newStr == '\0' || *endPtr != '\0');                    \
     *invalidCh = *endPtr;                                               \
     /* for negatives, strtol works, but we wouldn't want chapel to */   \
-    if (*invalid == 0 && uns && illegalFirstUnsChar(*str)) {            \
+    if (*invalid == 0 && uns && illegalFirstUnsChar(*newStr)) {         \
       *invalid = 1;                                                     \
       *invalidCh = *str;                                                \
     }                                                                   \
+    free(newStr);                                                       \
     return val;                                                         \
   }
 
