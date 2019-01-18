@@ -1,0 +1,1 @@
+-Llib/ -larrayOpaquePointer_noArgDom `$CHPL_HOME/util/config/compileline --libraries`

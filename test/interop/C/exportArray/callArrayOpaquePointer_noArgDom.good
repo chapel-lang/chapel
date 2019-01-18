@@ -1,0 +1,8 @@
+callArrayOpaquePointer_noArgDom.test.c:12:14: warning: incompatible pointer types passing 'chpl_opaque_array *' to parameter of type 'chpl_external_array *' [-Wincompatible-pointer-types]
+  printBlock(&arr); // Expected to fail
+             ^~~~
+./lib/arrayOpaquePointer_noArgDom.h:6:39: note: passing argument to parameter 'x' here
+void printBlock(chpl_external_array * x);
+                                      ^
+1 warning generated.
+timedexec: target program died with signal 11, without coredump
