@@ -2861,7 +2861,7 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
       // Transform the outside representation into a Chapel array, and send that
       // in the call to the original function.
 
-      // if (formal.type == dtExternalArray) then
+      // if (formal.type is dtExternalArray) then
       //    formalname_arr = makeArrayFromExternArray(formal, eltExpr)
       //    else formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
       CallExpr* checkFormalType = new CallExpr(PRIM_IS_SUBTYPE,
