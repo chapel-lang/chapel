@@ -22,6 +22,7 @@
 #include "chplcast.h"
 #include "chpltypes.h"
 #include "chplfp.h"
+#include "chpl-mem.h"
 #include "error.h"
 
 #include <ctype.h>
@@ -95,11 +96,11 @@ static int illegalFirstUnsChar(char c) {
       return -1;                                                        \
     }                                                                   \
     if (negative) {                                                     \
-      newStr = malloc(strlen(str) + 2);                                 \
+      newStr = chpl_malloc(strlen(str) + 2);                            \
       newStr[0] = '-';                                                  \
       strcpy(&newStr[1], str);                                          \
     } else {                                                            \
-      newStr = malloc(strlen(str) + 1);                                 \
+      newStr = chpl_malloc(strlen(str) + 1);                            \
       strcpy(newStr, str);                                              \
     }                                                                   \
     if (uns)                                                            \
@@ -115,7 +116,7 @@ static int illegalFirstUnsChar(char c) {
       *invalid = 1;                                                     \
       *invalidCh = *str;                                                \
     }                                                                   \
-    free(newStr);                                                       \
+    chpl_free(newStr);                                                  \
     return val;                                                         \
   }
 
