@@ -2853,20 +2853,30 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
                                                   call->copy()));
       formal->typeExpr->insertAtTail(newFormalType);
 
-      // var formalname_arr;
-      // Param conditional v
-      // if (formal.type == dtExternalArray) then
-      //    formalname_arr = makeArrayFromExternArray(formal, eltExpr)
-      //    else formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
+      VarSymbol* chplArr = new VarSymbol(astr(formal->name, "_arr"));
+      retCall->insertBefore(new DefExpr(chplArr));
 
       // Transform the outside representation into a Chapel array, and send that
       // in the call to the original function.
-      //CallExpr* makeChplArray = new CallExpr("makeArrayFromExternArray",
-      //                                       new SymExpr(formal),
-      //                                       eltExpr->copy());
-      // Old thing, pls keep ^
 
-      // Version 1 while I test.  Will eventually be in a param conditional
+      // if (formal.type == dtExternalArray) then
+      //    formalname_arr = makeArrayFromExternArray(formal, eltExpr)
+      //    else formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
+      CallExpr* checkFormalType = new CallExpr(PRIM_IS_SUBTYPE,
+                                               dtExternalArray->symbol,
+                                               new CallExpr(PRIM_TYPEOF,
+                                                            formal));
+
+      // Handle chpl_external_array
+      BlockStmt* ifBody = new BlockStmt();
+      CallExpr* makeChplArrayFromExt = new CallExpr("makeArrayFromExternArray",
+                                                    new SymExpr(formal),
+                                                    eltExpr->copy());
+      ifBody->insertAtTail(new CallExpr(PRIM_MOVE, chplArr,
+                                        makeChplArrayFromExt));
+
+      // Handle chpl_opaque_array
+      BlockStmt* elseBody = new BlockStmt();
       // Array type creator
       VarSymbol* oldTypeExpr = new VarSymbol(astr(formal->name,
                                                   "_oldTypeExpr"));
@@ -2875,7 +2885,7 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
       retCall->insertBefore(new CallExpr(PRIM_MOVE, oldTypeExpr, call->copy()));
       // Get the _instance field's type for that array
       VarSymbol* instanceType = new VarSymbol(astr(formal->name, "_instype"));
-      instanceType->addFlag(FLAG_MAYBE_TYPE); // Right?
+      instanceType->addFlag(FLAG_MAYBE_TYPE);
       CallExpr* makeIT = new CallExpr(PRIM_STATIC_FIELD_TYPE,
                                       oldTypeExpr,
                                       new_StringSymbol("_instance"));
@@ -2886,12 +2896,11 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
       CallExpr* makeChplArray = new CallExpr("makeArrayFromOpaque",
                                              new SymExpr(formal),
                                              instanceType);
+      elseBody->insertAtTail(new CallExpr(PRIM_MOVE, chplArr, makeChplArray));
+      CondStmt* cond = new CondStmt(checkFormalType, ifBody, elseBody);
 
 
-
-      VarSymbol* chplArr = new VarSymbol(astr(formal->name, "_arr"));
-      retCall->insertBefore(new DefExpr(chplArr));
-      retCall->insertBefore(new CallExpr(PRIM_MOVE, chplArr, makeChplArray));
+      retCall->insertBefore(cond);
 
       callOrigFn->insertAtTail(new SymExpr(chplArr));
 
