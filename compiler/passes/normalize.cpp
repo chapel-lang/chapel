@@ -1324,10 +1324,10 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
     }
 
     SymExpr* dom = toSymExpr(call->get(1));
-    if (dom != NULL && dom->symbol() == gNil) {
-      // The domain is nil.  Try to make a chpl_external_array with it.
+    if ((dom != NULL && dom->symbol() == gNil) || eltExpr == NULL) {
+      // The domain/eltType is nil.  Try to make a chpl_external_array with it.
       // If that doesn't work, the user must be more explicit with their
-      // domain
+      // return type
       fn->retExprType->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
     } else {
       // Create a representation of the array return type that is accessible
