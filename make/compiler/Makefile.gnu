@@ -146,7 +146,7 @@ GEN_CFLAGS += $(C_STD)
 # Flags for turning on warnings for C++/C code
 #
 WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
-WARN_CXXFLAGS = $(WARN_COMMONFLAGS)
+WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment
 WARN_CFLAGS = $(WARN_COMMONFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
@@ -180,7 +180,7 @@ endif
 # On Ubuntu, gcc 8 complains about multiline comments in Clang header files.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-class-memaccess -Walloc-size-larger-than=18446744073709551615 -Wno-comment
+WARN_CXXFLAGS += -Wno-class-memaccess -Walloc-size-larger-than=18446744073709551615
 RUNTIME_CFLAGS += -Wno-stringop-overflow
 SQUASH_WARN_GEN_CFLAGS += -Wno-array-bounds
 endif
