@@ -60,7 +60,6 @@
   m(COMM_PRV_BCAST_DATA,  "comm layer private broadcast data",        false), \
   m(MEM_HEAP_SPACE,       "mem layer heap expansion space",           false), \
   m(GLOM_STRINGS_DATA,    "glom strings data",                        true ), \
-  m(STR_CAST_TO_INT,      "cast string to int",                       true), \
   m(STR_COPY_DATA,        "string copy data",                         true ), \
   m(STR_COPY_REMOTE,      "remote string copy",                       true ), \
   m(STR_CONCAT_DATA,      "string concat data",                       true ), \

@@ -97,12 +97,12 @@ static int illegalFirstUnsChar(char c) {
     }                                                                   \
     if (negative) {                                                     \
       newStr = chpl_mem_alloc(strlen(str) + 2,                          \
-                              CHPL_RT_MD_STR_CAST_TO_INT, 0, 0);        \
+                              CHPL_RT_MD_STR_COPY_DATA, 0, 0);          \
       newStr[0] = '-';                                                  \
       strcpy(&newStr[1], str);                                          \
     } else {                                                            \
       newStr = chpl_mem_alloc(strlen(str) + 1,                          \
-                              CHPL_RT_MD_STR_CAST_TO_INT, 0, 0);        \
+                              CHPL_RT_MD_STR_COPY_DATA, 0, 0);          \
       strcpy(newStr, str);                                              \
     }                                                                   \
     if (uns)                                                            \
