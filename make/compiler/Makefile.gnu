@@ -145,6 +145,9 @@ GEN_CFLAGS += $(C_STD)
 #
 # Flags for turning on warnings for C++/C code
 #
+# On Ubuntu, gcc complains about multiline comments in some versions
+# of Clang header files.
+#
 WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
 WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment
 WARN_CFLAGS = $(WARN_COMMONFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
@@ -177,7 +180,6 @@ endif
 # Avoid false positive warnings about class member access and string overflows.
 # The string overflow false positives occur in runtime code unlike gcc 7.
 # Also avoid false positives for allocation size, array bounds, and comments.
-# On Ubuntu, gcc 8 complains about multiline comments in Clang header files.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-class-memaccess -Walloc-size-larger-than=18446744073709551615
