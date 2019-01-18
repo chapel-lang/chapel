@@ -385,9 +385,12 @@ static bool isObjectSize(const Value *V, uint64_t Size, const DataLayout &DL,
 /// particular for 32b programs with negative indices that rely on two's
 /// complement wrap-arounds for precise alias information.
 static int64_t adjustToPointerSize(int64_t Offset, unsigned PointerSize) {
-  assert(PointerSize <= 64 && "Invalid PointerSize!");
-  unsigned ShiftBits = 64 - PointerSize;
-  return (int64_t)((uint64_t)Offset << ShiftBits) >> ShiftBits;
+  if (PointerSize < 64) {
+    unsigned ShiftBits = 64 - PointerSize;
+    return (int64_t)((uint64_t)Offset << ShiftBits) >> ShiftBits;
+  } else {
+    return Offset;
+  }
 }
 
 /// If V is a symbolic pointer expression, decompose it into a base pointer
