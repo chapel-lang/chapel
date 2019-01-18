@@ -106,12 +106,12 @@ typedef enum {
 } memory_order;
 
 static inline
-void atomic_thread_fence(memory_order order)
+void chpl_atomic_thread_fence(memory_order order)
 {
   // No idea!
 }
 static inline
-void atomic_signal_fence(memory_order order)
+void chpl_atomic_signal_fence(memory_order order)
 {
   // No idea!
 }

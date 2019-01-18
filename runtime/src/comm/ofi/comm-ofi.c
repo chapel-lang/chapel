@@ -1319,7 +1319,7 @@ void amRequestCommon(c_nodeid_t node,
       CHK_TRUE(mrGetLocalKey(NULL, pDone, sizeof(*pDone)) == 0);
     }
     *pDone = 0;
-    atomic_thread_fence(memory_order_release);
+    chpl_atomic_thread_fence(memory_order_release);
 
     *ppDone = pDone;
   }
@@ -1714,7 +1714,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
   if (amo->result != NULL) {
     if (amo->b.node == chpl_nodeID) {
       memcpy(amo->result, &result, resSize);
-      atomic_thread_fence(memory_order_release);
+      chpl_atomic_thread_fence(memory_order_release);
     } else {
       CHK_TRUE(mrGetKey(NULL, amo->b.node, amo->result, resSize) == 0);
       (void) ofi_put(&result, amo->b.node, amo->result, resSize);

@@ -115,7 +115,7 @@ void chpl_rmem_consist_fence(memory_order order, int ln, int32_t fn) {
 
     if( release ) chpl_rmem_consist_release(ln, fn);
     if( acquire ) chpl_rmem_consist_acquire(ln, fn);
-    atomic_thread_fence(order);
+    chpl_atomic_thread_fence(order);
   }
 }
 

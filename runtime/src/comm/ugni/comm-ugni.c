@@ -2605,7 +2605,7 @@ void register_memory(void)
   }
 
   can_register_memory = true;
-  atomic_thread_fence(memory_order_release);
+  chpl_atomic_thread_fence(memory_order_release);
 }
 
 
@@ -2986,7 +2986,7 @@ void make_registered_heap(void)
     registered_heap_size  = 0;
     registered_heap_start = NULL;
     registered_heap_info_set = 1;
-    atomic_thread_fence(memory_order_release);
+    chpl_atomic_thread_fence(memory_order_release);
     return;
   }
 
@@ -3116,7 +3116,7 @@ void make_registered_heap(void)
   registered_heap_size  = size;
   registered_heap_start = start;
   registered_heap_info_set = 1;
-  atomic_thread_fence(memory_order_release);
+  chpl_atomic_thread_fence(memory_order_release);
 }
 
 
@@ -3155,7 +3155,7 @@ void set_hugepage_info(void)
   }
 
   hugepage_info_set = 1;
-  atomic_thread_fence(memory_order_release);
+  chpl_atomic_thread_fence(memory_order_release);
 
   DBG_P_L(DBGF_HUGEPAGES,
           "setting hugepage info: use hugepages %s, sz %#zx",
@@ -3219,7 +3219,7 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
                     chpl_mem_descString(mr_mregs_supplement[mr_i].desc));
       write(fileno(stderr), buf, strlen(buf));
       exit_without_cleanup = true;
-      atomic_thread_fence(memory_order_release);
+      chpl_atomic_thread_fence(memory_order_release);
       chpl_exit_any(1);
     }
   }
@@ -7662,7 +7662,7 @@ void do_fork_post(c_nodeid_t locale,
       p_rf_req->rf_done = rf_done_alloc();
     }
     *p_rf_req->rf_done = 0;
-    atomic_thread_fence(memory_order_release);
+    chpl_atomic_thread_fence(memory_order_release);
 
     post_desc_p = &stack_post_desc;
   } else {

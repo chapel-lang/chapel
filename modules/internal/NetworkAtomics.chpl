@@ -99,7 +99,7 @@ module NetworkAtomics {
         while (this.read(order=memory_order_relaxed) != value) {
           chpl_task_yield();
         }
-        atomic_thread_fence(order);
+        chpl_atomic_thread_fence(order);
       }
     }
 
@@ -277,7 +277,7 @@ module NetworkAtomics {
         while (this.read(order=memory_order_relaxed) != value) {
           chpl_task_yield();
         }
-        atomic_thread_fence(order);
+        chpl_atomic_thread_fence(order);
       }
     }
 

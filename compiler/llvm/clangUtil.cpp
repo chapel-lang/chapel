@@ -2969,13 +2969,6 @@ void makeBinaryLLVM(void) {
     command += libName;
   }
 
-  // Clang doesn't automatically link against GNU's libatomic, so we need to
-  // bring it in. If we start using compiler-rt, this shouldn't be needed
-  if (strcmp(CHPL_ATOMICS, "cstdlib") == 0 &&
-      strcmp(CHPL_TARGET_PLATFORM, "darwin") != 0) {
-    command += " -latomic";
-  }
-
   if( printSystemCommands ) {
     printf("%s\n", command.c_str());
     fflush(stdout); fflush(stderr);
