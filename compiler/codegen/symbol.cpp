@@ -1054,6 +1054,10 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
     // Allow python declarations to accept anything iterable to translate to
     // an array, instead of limiting to a specific Python type
     return "";
+  } else if (t->symbol->hasFlag(FLAG_REF) &&
+             t->getValType() == dtOpaqueArray &&
+             (pxd == PYTHON_PYX || pxd == C_PYX)) {
+    return "ChplOpaqueArray ";
   } else {
     return getPythonTypeName(t, pxd) + " ";
   }
@@ -1105,6 +1109,13 @@ std::string ArgSymbol::getPythonArgTranslation() {
 
       return res;
     }
+  } else if (t->symbol->hasFlag(FLAG_REF) &&
+             t->getValType() == dtOpaqueArray) {
+    // Opaque arrays have a Python representation that stores the C contents in
+    // a field named val
+    std::string res = "\tchpl_" + strname + " = &" + strname + ".val\n";
+    return res;
+
   } else if (t->symbol->hasEitherFlag(FLAG_C_PTR_CLASS, FLAG_REF)) {
     // Lydia TODO 12/04/18: Might be good to use a template where we can
     // replace all instances of a placeholder with the argument name instead of
