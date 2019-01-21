@@ -20,9 +20,3 @@ cdef extern from "chpl-external-array.h":
 		int64_t _pid
 		void* _instance
 		bint _unowned
-
-cdef class ChplOpaqueArray:
-	cdef chpl_opaque_array val
-
-	cdef inline setVal(self, chpl_opaque_array val):
-		self.val = val

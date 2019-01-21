@@ -438,8 +438,7 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
     fprintf(pyx.fptr, "from chplrt cimport chpl_library_init, ");
     fprintf(pyx.fptr, "chpl_library_finalize, chpl_external_array, ");
     fprintf(pyx.fptr, "chpl_make_external_array, chpl_make_external_array_ptr");
-    fprintf(pyx.fptr, ", chpl_free_external_array, chpl_opaque_array,");
-    fprintf(pyx.fptr, " ChplOpaqueArray\n");
+    fprintf(pyx.fptr, ", chpl_free_external_array, chpl_opaque_array\n");
 
     std::vector<FnSymbol*> moduleInits;
     std::vector<FnSymbol*> exported;
@@ -479,6 +478,11 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
     // Necessary for supporting pointers
     fprintf(pyx.fptr, "import ctypes\n");
     fprintf(pyx.fptr, "from libc.stdint cimport intptr_t\n\n");
+
+    fprintf(pyx.fptr, "cdef class ChplOpaqueArray:\n");
+    fprintf(pyx.fptr, "\tcdef chpl_opaque_array val\n\n");
+    fprintf(pyx.fptr, "\tcdef inline setVal(self, chpl_opaque_array val):\n");
+    fprintf(pyx.fptr, "\t\tself.val = val\n\n");
 
     makePYXSetupFunctions(moduleInits);
 
