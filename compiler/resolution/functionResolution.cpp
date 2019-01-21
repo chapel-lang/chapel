@@ -7317,7 +7317,11 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
         if (retType == dtVoid) {
           USR_FATAL(deserializeFn, "chpl__deserialize cannot return void");
         } else if (retType != at) {
-          USR_FATAL(deserializeFn, "chpl__deserialize returning '%s' when it must return '%s'", retType->symbol->name, at->symbol->name);
+          const char* rt = (developer == false) ? retType->symbol->name
+                                                : retType->symbol->cname;
+          const char* att =  (developer == false) ? at->symbol->name
+                                                  : at->symbol->cname;
+          USR_FATAL(deserializeFn, "chpl__deserialize returning '%s' when it must return '%s'", rt, att);
         }
       }
 
