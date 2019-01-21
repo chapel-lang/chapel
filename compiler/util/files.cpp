@@ -655,7 +655,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY);
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
 
-  // Generate one variable containing all envMap information to pass to printchplenv
+  // Store the chplenv in the makefile cache
   for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env)
   {
     const std::string& key = env->first;
@@ -666,8 +666,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
     std::string chpl_make_key = newPrefix + keySuffix;
     chplmakeallvars += chpl_make_key + "=" + std::string(env->second) + "|";
   }
-
-  fprintf(makefile.fptr, "\nexport CHPL_MAKE_SETTINGS_NO_NEWLINES := %s\n", chplmakeallvars.c_str());
+  fprintf(makefile.fptr, "\nexport CHPL_MAKE_CHPLENV_CACHE := %s\n", chplmakeallvars.c_str());
 
 
   // LLVM builds just use the makefile for the launcher and
