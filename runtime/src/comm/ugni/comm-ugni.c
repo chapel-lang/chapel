@@ -1503,13 +1503,13 @@ static void      do_remote_put(void*, c_nodeid_t, void*, size_t,
                                mem_region_t*, drpg_may_proxy_t);
 static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
                                  mem_region_t**, drpg_may_proxy_t);
-static void      do_remote_buff_get(void*, c_nodeid_t , void* , size_t,
-                                    drpg_may_proxy_t );
+static void      do_remote_buff_get(void*, c_nodeid_t, void*, size_t,
+                                    drpg_may_proxy_t);
+static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
+                               drpg_may_proxy_t);
 static void      do_remote_get_V(int, void**, c_nodeid_t*, mem_region_t**,
                                  void**, size_t*, mem_region_t**,
                                  drpg_may_proxy_t);
-static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
-                               drpg_may_proxy_t);
 static void      do_nic_get(void*, c_nodeid_t, mem_region_t*,
                             void*, size_t, mem_region_t*);
 static int       amo_cmd_2_nic_op(fork_amo_cmd_t, int);
@@ -1517,6 +1517,8 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
                             gni_fma_cmd_type_t, void*, mem_region_t*);
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
+static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
+                                 gni_fma_cmd_type_t*, mem_region_t**);
 static void      buff_amo_init(void);
 static void      buff_get_init(void);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
@@ -6891,7 +6893,7 @@ void buff_amo_init(void) {
 
 
 static
-void do_remote_amo_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
+void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
                      void** object_v, size_t* size_v,
                      gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v) {
 
@@ -6963,7 +6965,7 @@ void chpl_comm_atomic_buff_flush() {
     if (*amo_vi_p[i] != 0) {
       spinlock_lock(amo_lock_p[i]);
       if (*amo_vi_p[i] != 0) {
-        do_remote_amo_V(*amo_vi_p[i], amo_opnd1_vp[i], amo_locale_vp[i],
+        do_nic_amo_nf_V(*amo_vi_p[i], amo_opnd1_vp[i], amo_locale_vp[i],
                         amo_object_vp[i], amo_size_vp[i], amo_cmd_vp[i],
                         amo_remote_mr_vp[i]);
         *amo_vi_p[i] = 0;
@@ -7059,7 +7061,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
 
   // flush if buffers are full
   if (vi == MAX_CHAINED_AMO_LEN) {
-    do_remote_amo_V(vi, opnd1_v, locale_v, object_v, size_v, cmd_v, remote_mr_v);
+    do_nic_amo_nf_V(vi, opnd1_v, locale_v, object_v, size_v, cmd_v, remote_mr_v);
     vi = 0;
   }
 
