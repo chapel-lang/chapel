@@ -1,9 +1,0 @@
-bug: cast from string to uint(32) on ILP32 clips to LONG_MAX
-
-When the underlying C sizeof(long) is 4, a string representing an
-integer between LONG_MAX and ULONG_MAX will be clipped to LONG_MAX
-when cast to uint(32).  This is due to strtol() in the casting code.
-
-This isn't a problem when sizeof(long) is 8, as LONG_MAX is large
-enough for any uint(32).  And casting to uint(64) goes down a
-different path.
