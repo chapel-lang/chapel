@@ -75,8 +75,7 @@
      buffers are flushed, the operations are performed all at once. Cray Linux
      Environment (CLE) 5.2.UP04 or newer is required for best performance. In
      our experience, buffered atomics can achieve up to a 5X performance
-     improvement over non-buffered atomics for CLE 5.2UP04 or newer and up to a
-     2.5X improvement for older versions of CLE.
+     improvement over non-buffered atomics for CLE 5.2UP04 or newer.
  */
 module BufferedAtomics {
 
