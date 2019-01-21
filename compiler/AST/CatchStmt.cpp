@@ -215,7 +215,7 @@ void CatchStmt::cleanup()
     newBody->insertAtTail(oldBody);
 
   } else {
-    CallExpr*  errorExists    = new CallExpr(PRIM_NOTEQUAL, castedError, gNil);
+    CallExpr*  errorExists = new CallExpr(PRIM_NOTEQUAL, castedError, gNil);
 
     BlockStmt* ifBody = new BlockStmt();
     BlockStmt* elseBody = new BlockStmt();

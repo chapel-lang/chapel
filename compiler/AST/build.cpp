@@ -2826,10 +2826,14 @@ buildSyncStmt(Expr* stmt) {
   // errors from waited-for tasks.
   BlockStmt* saveError = new BlockStmt();
 
-  saveError->insertAtTail(new CallExpr("chpl_save_task_error_owned",  endCount, new UnresolvedSymExpr("chpl_sync_error")));
+  const char* ename = "chpl_sync_error";
+
+  saveError->insertAtTail(new CallExpr("chpl_save_task_error_owned",
+                                       endCount,
+                                       new UnresolvedSymExpr(ename)));
 
   BlockStmt* catches = new BlockStmt();
-  catches->insertAtTail(CatchStmt::build("chpl_sync_error", saveError));
+  catches->insertAtTail(CatchStmt::build(ename, saveError));
 
   BlockStmt* body = toBlockStmt(stmt);
   body->blockTag = BLOCK_NORMAL; // or at least, not scopeless
