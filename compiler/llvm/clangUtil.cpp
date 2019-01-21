@@ -1610,7 +1610,9 @@ void runClang(const char* just_parse_filename) {
   sysroot_arguments += "/configured-clang-sysroot-arguments";
 
   // read arguments from configured-clang-sysroot-arguments
+  // these might include a key -isysroot argument on Mac OS X
   readArgsFromFile(sysroot_arguments, args);
+
   // read arguments that we captured at compile time
   readArgsFromString(get_clang_sysroot_args(), args);
 

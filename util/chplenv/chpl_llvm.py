@@ -8,19 +8,30 @@ from chpl_home_utils import get_chpl_third_party
 from utils import memoize
 
 @memoize
-def get_uniq_cfg_path():
-    host_bin_subdir = chpl_bin_subdir.get('host')
-    host_compiler = chpl_compiler.get('host')
-    llvm_target_dir = '{0}-{1}'.format(host_bin_subdir, host_compiler)
+def get_uniq_cfg_path_for(llvm_val):
+    if llvm_val == "llvm":
+      # put platform-arch-compiler for included llvm
+      host_bin_subdir = chpl_bin_subdir.get('host')
+      host_compiler = chpl_compiler.get('host')
+      llvm_target_dir = '{0}-{1}'.format(host_bin_subdir, host_compiler)
+    else:
+      # just put 'system' for system llvm
+      llvm_target_dir = llvm_val
+
     return llvm_target_dir
 
+@memoize
+def get_uniq_cfg_path():
+    llvm_val = get()
+    return get_uniq_cfg_path_for(llvm_val)
 
 @memoize
 def get():
     llvm_val = overrides.get('CHPL_LLVM')
     if not llvm_val:
+        # compute a default based on if the included llvm is built
         chpl_third_party = get_chpl_third_party()
-        llvm_target_dir = get_uniq_cfg_path()
+        llvm_target_dir = get_uniq_cfg_path_for('llvm')
         llvm_subdir = os.path.join(chpl_third_party, 'llvm', 'install',
                                    llvm_target_dir)
         llvm_header = os.path.join(llvm_subdir, 'include', 'llvm',
