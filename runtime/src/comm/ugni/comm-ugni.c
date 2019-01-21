@@ -5244,6 +5244,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
     locale_v += MAX_CHAINED_PUT_LEN;
     tgt_addr_v += MAX_CHAINED_PUT_LEN;
     size_v += MAX_CHAINED_PUT_LEN;
+    remote_mr_v += MAX_CHAINED_PUT_LEN;
   }
 
   if (v_len <= 0)
@@ -5315,7 +5316,6 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
   //
   // This GNI is too old to support chained transactions.  Just do
   // normal ones.
-  // TODO -- do NB puts and wait for them to complete?
   //
   for (int vi = 0; vi < v_len; vi++) {
     do_remote_put(src_addr_v[vi], locale_v[vi], tgt_addr_v[vi], size_v[vi],
@@ -5330,7 +5330,8 @@ static
 void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
                      mem_region_t** remote_mr_v, void** src_addr_v,
                      size_t* size_v, mem_region_t** local_mr_v,
-                     drpg_may_proxy_t may_proxy) {
+                     drpg_may_proxy_t may_proxy)
+{
 
   DBG_P_LP(DBGF_GETPUT, "DoRemGetV(%d) %p <- %d:%p (%#zx), proxy %c",
            v_len, tgt_addr_v[0], (int) locale_v[0], src_addr_v[0], size_v[0],
@@ -5349,12 +5350,12 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
     do_remote_get_V(MAX_CHAINED_GET_LEN, tgt_addr_v, locale_v, remote_mr_v,
                     src_addr_v, size_v, local_mr_v, may_proxy);
     v_len -= MAX_CHAINED_GET_LEN;
-    src_addr_v += MAX_CHAINED_GET_LEN;
-    locale_v += MAX_CHAINED_GET_LEN;
     tgt_addr_v += MAX_CHAINED_GET_LEN;
+    locale_v += MAX_CHAINED_GET_LEN;
+    remote_mr_v += MAX_CHAINED_GET_LEN;
+    src_addr_v += MAX_CHAINED_GET_LEN;
     size_v += MAX_CHAINED_GET_LEN;
     local_mr_v  += MAX_CHAINED_GET_LEN;
-    remote_mr_v += MAX_CHAINED_GET_LEN;
   }
 
   if (v_len <= 0)
@@ -5431,7 +5432,6 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
   //
   // This GNI is too old to support chained transactions.  Just do
   // normal ones.
-  // TODO -- do NB gets and wait for them to complete?
   //
   for (int vi = 0; vi < v_len; vi++) {
     do_remote_get(tgt_addr_v[vi], locale_v[vi], src_addr_v[vi], size_v[vi],
@@ -5445,9 +5445,29 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
 static
 void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
                      void** object_v, size_t* size_v,
-                     gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v) {
+                     gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v)
+{
 
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+  //
+  // This GNI is new enough to support chained transactions.
+  //
+
+  //
+  // If there are more than we can handle at once, block them up.
+  //
+  while (v_len > MAX_CHAINED_AMO_LEN) {
+    do_nic_amo_nf_V(MAX_CHAINED_PUT_LEN, opnd1_v, locale_v, object_v,
+                    size_v, cmd_v, remote_mr_v);
+    v_len -= MAX_CHAINED_AMO_LEN;
+    opnd1_v += MAX_CHAINED_AMO_LEN;
+    locale_v += MAX_CHAINED_AMO_LEN;
+    object_v += MAX_CHAINED_AMO_LEN;
+    size_v += MAX_CHAINED_AMO_LEN;
+    cmd_v += MAX_CHAINED_AMO_LEN;
+    remote_mr_v += MAX_CHAINED_AMO_LEN;
+  }
 
   gni_post_descriptor_t post_desc;
   gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
