@@ -5442,6 +5442,71 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
 }
 
 
+static
+void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
+                     void** object_v, size_t* size_v,
+                     gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v) {
+
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+  gni_post_descriptor_t post_desc;
+  gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
+  int vi, ci;
+
+  if (v_len <= 0)
+    return;
+
+  //
+  // Build up the base post descriptor
+  //
+  post_desc.next_descr      = NULL;
+  post_desc.type            = GNI_POST_AMO;
+  post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
+  post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
+  post_desc.rdma_mode       = 0;
+  post_desc.src_cq_hndl     = 0;
+  post_desc.remote_addr     = (uint64_t) (intptr_t) object_v[0];
+  post_desc.remote_mem_hndl = remote_mr_v[0]->mdh;
+  post_desc.length          = size_v[0];
+  post_desc.amo_cmd         = cmd_v[0];
+  post_desc.first_operand   = opnd1_v[0];
+
+  //
+  // Build up the chain of descriptors
+  //
+  for (vi=1, ci=0; vi<v_len; vi++, ci++) {
+    if (ci == 0)
+      post_desc.next_descr  = &pdc[0];
+    else
+      pdc[ci-1].next_descr  = &pdc[ci];
+    pdc[ci].next_descr      = NULL;
+    pdc[ci].remote_addr     = (uint64_t) (intptr_t) object_v[vi];
+    pdc[ci].remote_mem_hndl = remote_mr_v[vi]->mdh;
+    pdc[ci].length          = size_v[vi];
+    pdc[ci].amo_cmd         = cmd_v[vi];
+    pdc[ci].first_operand   = opnd1_v[vi];
+  }
+
+  //
+  // Initiate the transaction and wait for it to complete.
+  //
+  post_fma_ct_and_wait(locale_v, &post_desc);
+
+#else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+  //
+  // This GNI is too old to support chained transactions.  Just do
+  // normal ones.
+  //
+  for (int vi = 0; vi < v_len; vi++) {
+    do_nic_amo_nf(&opnd1_v[vi], locale_v[vi], object_v[vi], size_v[vi],
+                  cmd_v[vi], remote_mr_v[vi]);
+  }
+
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+}
+
+
 void chpl_comm_buff_get(void* addr, c_nodeid_t locale, void* raddr,
                        size_t size, int32_t typeIndex,
                        int32_t commID, int ln, int32_t fn)
@@ -6891,70 +6956,6 @@ void buff_amo_init(void) {
   atomic_init_uint_least32_t(&amo_thread_counter, 0);
 }
 
-
-static
-void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
-                     void** object_v, size_t* size_v,
-                     gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v) {
-
-#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
-
-  gni_post_descriptor_t post_desc;
-  gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
-  int vi, ci;
-
-  if (v_len <= 0)
-    return;
-
-  //
-  // Build up the base post descriptor
-  //
-  post_desc.next_descr      = NULL;
-  post_desc.type            = GNI_POST_AMO;
-  post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
-  post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
-  post_desc.rdma_mode       = 0;
-  post_desc.src_cq_hndl     = 0;
-  post_desc.remote_addr     = (uint64_t) (intptr_t) object_v[0];
-  post_desc.remote_mem_hndl = remote_mr_v[0]->mdh;
-  post_desc.length          = size_v[0];
-  post_desc.amo_cmd         = cmd_v[0];
-  post_desc.first_operand   = opnd1_v[0];
-
-  //
-  // Build up the chain of descriptors
-  //
-  for (vi=1, ci=0; vi<v_len; vi++, ci++) {
-    if (ci == 0)
-      post_desc.next_descr  = &pdc[0];
-    else
-      pdc[ci-1].next_descr  = &pdc[ci];
-    pdc[ci].next_descr      = NULL;
-    pdc[ci].remote_addr     = (uint64_t) (intptr_t) object_v[vi];
-    pdc[ci].remote_mem_hndl = remote_mr_v[vi]->mdh;
-    pdc[ci].length          = size_v[vi];
-    pdc[ci].amo_cmd         = cmd_v[vi];
-    pdc[ci].first_operand   = opnd1_v[vi];
-  }
-
-  //
-  // Initiate the transaction and wait for it to complete.
-  //
-  post_fma_ct_and_wait(locale_v, &post_desc);
-
-#else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
-
-  //
-  // This GNI is too old to support chained transactions.  Just do
-  // normal ones.
-  //
-  for (int vi = 0; vi < v_len; vi++) {
-    do_nic_amo_nf(&opnd1_v[vi], locale_v[vi], object_v[vi], size_v[vi],
-                  cmd_v[vi], remote_mr_v[vi]);
-  }
-
-#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
-}
 
 // for each thread that has done buffered atomics, grab the lock for that
 // thread and if there are built up operations flush them and reset the index
