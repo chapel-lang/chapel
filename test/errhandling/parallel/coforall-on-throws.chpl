@@ -5,7 +5,7 @@ proc test() {
     writeln("before coforall block");
     coforall i in 1..2 {
       on Locales[numLocales-1] {
-        throw new StringError("test error");
+        throw new owned StringError("test error");
       }
     }
     writeln("after coforall block");

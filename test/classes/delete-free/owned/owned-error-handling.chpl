@@ -3,7 +3,7 @@
 
 class Foo {
   proc foobar() throws {
-    throw new unmanaged Error();
+    throw new owned Error();
   }
 }
 

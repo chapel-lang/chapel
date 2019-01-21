@@ -1,12 +1,12 @@
 proc throwAnError() throws {
-  throw new Error();
+  throw new owned Error();
 }
 
 
 class OtherError : Error { }
 
 proc throwOtherError() throws {
-  throw new OtherError();
+  throw new owned OtherError();
 }
 
 class StringError : Error {

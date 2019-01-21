@@ -5,17 +5,17 @@ config const i = 2;
 
 iter myiter() throws {
   if i == 0 then
-    throw new StringError("Test error 0");
+    throw new owned StringError("Test error 0");
 
   yield 1;
 
   if i == 1 then
-    throw new StringError("Test error 1");
+    throw new owned StringError("Test error 1");
   
   yield 2;
   
   if i == 2 then
-    throw new StringError("Test error 2");
+    throw new owned StringError("Test error 2");
 }
 
 proc test() {

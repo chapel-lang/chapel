@@ -46,7 +46,7 @@ proc masonBuild(args) throws {
       }
       else if arg == '--' {
         if example then
-          throw new MasonError("Examples do not support `--` syntax");
+          throw new owned MasonError("Examples do not support `--` syntax");
         opt = true;
       }
       else if arg == '--release' {
@@ -91,7 +91,7 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
   const (success, low, hi) = verifyChapelVersion(root);
 
   if success == false {
-    throw new MasonError("Build failure: lock file expecting chplVersion " + prettyVersionRange(low, hi));
+    throw new owned MasonError("Build failure: lock file expecting chplVersion " + prettyVersionRange(low, hi));
   }
 }
 
@@ -139,13 +139,13 @@ proc buildProgram(release: bool, show: bool, force: bool, cmdLineCompopts: [?d] 
           writeln("Build Successful\n");
         }
         else {
-          throw new MasonError("Build Failed");
+          throw new owned MasonError("Build Failed");
         }
         // Close memory
         toParse.close();
       }
       else {
-        throw new MasonError("Cannot build: no Mason.lock found");
+        throw new owned MasonError("Cannot build: no Mason.lock found");
       }
     }
     else {
@@ -173,7 +173,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
   const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
 
   if !isFile(pathToProj) {
-    throw new MasonError("Mason could not find your project");
+    throw new owned MasonError("Mason could not find your project");
   }
   else {
     var command: string = 'chpl ' + pathToProj + moveTo + ' ' + ' '.join(compopts);

@@ -3,7 +3,7 @@ module ExceptionWarning {
   proc main() {
     try {
       try {
-        throw new NilThrownError();
+        throw new owned NilThrownError();
       }
       catch e1: NilThrownError {
         writeln("Caught NilThrownError");

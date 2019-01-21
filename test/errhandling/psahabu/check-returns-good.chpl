@@ -1,6 +1,6 @@
 proc minusOne(x: int): int throws {
   if x == 0 then
-    throw new Error();
+    throw new owned Error();
   return x - 1;
 }
 

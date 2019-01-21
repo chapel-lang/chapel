@@ -17,7 +17,7 @@ config const throwOnStep = 2;
 
 proc maybeThrows(x:int) throws {
   if x == throwOnStep then
-    throw new Error();
+    throw new owned Error();
 }
 
 proc create_thing() {

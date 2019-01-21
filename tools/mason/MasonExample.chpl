@@ -153,7 +153,7 @@ private proc determineExamples(exampleNames: [?d1] string,
   if examplesRequested.domain.size > 0 {
     for example in examplesRequested {
       if exampleNames.count(example) == 0 {
-        throw new MasonError("Mason could not find example: " + example);
+        throw new owned MasonError("Mason could not find example: " + example);
       }
       else {
         examplesToRun.push_back(example);
@@ -246,7 +246,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
       }
     }
     else {
-      throw new MasonError("No examples were found in /example");
+      throw new owned MasonError("No examples were found in /example");
     }
   }
   catch e: MasonError {
@@ -266,7 +266,7 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
 
   const exampleResult = runWithStatus(command, true);
   if exampleResult != 0 {
-    throw new MasonError("Mason failed to find and run compiled example: " + exampleName + ".chpl");
+    throw new owned MasonError("Mason failed to find and run compiled example: " + exampleName + ".chpl");
   }
 }  
 

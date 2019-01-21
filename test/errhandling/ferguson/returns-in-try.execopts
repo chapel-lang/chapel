@@ -1,0 +1,7 @@
+--throwOnTest=0 #returns-in-try.0.good
+--throwOnTest=1 #returns-in-try.1.good
+--throwOnTest=2 #returns-in-try.2.good
+--throwOnTest=3 #returns-in-try.3.good
+--throwOnTest=4 #returns-in-try.4.good
+--throwOnTest=5 #returns-in-try.5.good
+--throwOnTest=6 #returns-in-try.6.good

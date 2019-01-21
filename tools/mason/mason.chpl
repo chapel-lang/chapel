@@ -97,7 +97,7 @@ proc main(args: [] string) throws {
       when '-V' do printVersion();
       when '--version' do printVersion();
       otherwise {
-        throw new MasonError('No such subcommand \ntry mason --help');
+        throw new owned MasonError('No such subcommand \ntry mason --help');
         exit(1);
       }
     }

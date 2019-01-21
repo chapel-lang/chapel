@@ -39,7 +39,7 @@ proc masonExternal(args: [] string) {
     }
     else if args[2] == "--setup" {
       if isDir(SPACK_ROOT) then
-        throw new MasonError("Spack backend is already installed");
+        throw new owned MasonError("Spack backend is already installed");
       else {
         setupSpack();
         exit(0);
@@ -76,7 +76,7 @@ private proc specHelp() {
 
 private proc spackInstalled() throws {
   if !isDir(SPACK_ROOT) {
-    throw new MasonError("To use `mason external` call `mason external --setup`");
+    throw new owned MasonError("To use `mason external` call `mason external --setup`");
   }
   return true;
 }
@@ -90,7 +90,7 @@ proc setupSpack() throws {
   const status = runWithStatus(clone);
   gitC(destination, checkout);
   if status != 0 {
-    throw new MasonError("Spack installation failed");
+    throw new owned MasonError("Spack installation failed");
   }
 }
 
@@ -324,7 +324,7 @@ proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throw
       }
     }
     else {
-      throw new MasonError("No package installed by the name of: " + pkgName);
+      throw new owned MasonError("No package installed by the name of: " + pkgName);
     }
   }
   catch e: MasonError {
@@ -338,7 +338,7 @@ proc getSpkgPath(spec: string) throws {
   const command = "spack location -i " + spec;
   const pkgPath = getSpackResult(command, quiet=true);
   if pkgPath == "" {
-    throw new MasonError("Mason could not find " + spec);
+    throw new owned MasonError("Mason could not find " + spec);
   }
   return pkgPath.strip();
 }
@@ -360,7 +360,7 @@ proc getSpkgDependencies(spec: string) throws {
     }
   }
   if !found {
-    throw new MasonError("Mason could not find dependency: " + spec);
+    throw new owned MasonError("Mason could not find dependency: " + spec);
   }
   return dependencies;
 }
@@ -385,7 +385,7 @@ proc installSpkg(args: [?d] string) throws {
 
     const status = runSpackCommand(" ".join(command, spec));
     if status != 0 {
-      throw new MasonError("Package could not be installed");
+      throw new owned MasonError("Package could not be installed");
     }
   }
 }
@@ -430,7 +430,7 @@ proc uninstallSpkg(args: [?d] string) throws {
 
     const status = runSpackCommand(" ".join(command, uninstallArgs, pkgName));
     if status != 0 {
-      throw new MasonError("Package could not be uninstalled");
+      throw new owned MasonError("Package could not be uninstalled");
     }
   }
 }

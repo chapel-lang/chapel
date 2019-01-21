@@ -177,9 +177,9 @@ proc parseChplVersion(brick:borrowed Toml) {
 
     // Expecting 1 or 2 version strings
     if versions.size > 2 || versions.size < 1 {
-      throw new MasonError("Expecting 1 or 2 versions in chplVersion range." + formatMessage);
+      throw new owned MasonError("Expecting 1 or 2 versions in chplVersion range." + formatMessage);
     } else if versions.size == 2 && (versions[1] == "" || versions[2] == "") {
-      throw new MasonError("Unbounded chplVersion ranges are not allowed." + formatMessage);
+      throw new owned MasonError("Unbounded chplVersion ranges are not allowed." + formatMessage);
     }
 
     proc parseString(ver:string) throws {
@@ -189,7 +189,7 @@ proc parseChplVersion(brick:borrowed Toml) {
       const pattern = "^(\\d+\\.\\d+(\\.\\d+)?)$";
       var semver : string;
       if compile(pattern).match(ver, semver).matched == false {
-        throw new MasonError("Invalid Chapel version format: " + ver + formatMessage);
+        throw new owned MasonError("Invalid Chapel version format: " + ver + formatMessage);
       }
       const nums = for s in semver.split(".") do s:int;
       ret.major = nums[1];
@@ -208,7 +208,7 @@ proc parseChplVersion(brick:borrowed Toml) {
     }
 
     if (low <= hi) == false then
-      throw new MasonError("Lower bound of chplVersion must be <= upper bound: " + low.str() + " > " + hi.str());
+      throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + low.str() + " > " + hi.str());
   } catch e : Error {
     const name = brick["name"].s + "-" + brick["version"].s;
     stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);

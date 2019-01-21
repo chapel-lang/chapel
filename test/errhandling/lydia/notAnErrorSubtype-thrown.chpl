@@ -4,6 +4,6 @@ class Foo {
 
 proc main() throws {
   try {
-    throw new Foo();
+    throw new owned Foo();
   }
 }

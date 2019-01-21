@@ -7,7 +7,7 @@ class C {
   proc foo() throws {
     writeln("C.foo()");
     if cthrow then
-      throw new StringError("test error C");
+      throw new owned StringError("test error C");
   }
 }
 
@@ -15,7 +15,7 @@ class D : C {
   override proc foo() throws {
     writeln("D.foo()");
     if dthrow then
-      throw new StringError("test error D");
+      throw new owned StringError("test error D");
   }
 }
 

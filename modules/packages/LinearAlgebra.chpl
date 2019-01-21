@@ -1311,10 +1311,10 @@ proc svd(A: [?Adom] ?t) throws
 
   if info > 0 {
     var msg = 'SVD computation did not converge. Number of superdiagonals of the intermediate bidiagonal that did not converge to zero: ' + info:string;
-    throw new LinearAlgebraError(msg);
+    throw new owned LinearAlgebraError(msg);
   } else if info < 0 {
     var msg = 'SVD received an illegal argument in LAPACK.gesvd() argument position: ' + info:string;
-    throw new LinearAlgebraError(msg);
+    throw new owned LinearAlgebraError(msg);
   }
 
 

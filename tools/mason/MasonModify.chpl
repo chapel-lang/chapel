@@ -55,8 +55,8 @@ proc masonModify(args) throws {
           dep = arg;
         }
       }
-      if external && system then throw new MasonError("Invalid combination of arguments");
-      else if dep == "" then throw new MasonError("Must enter a dependency");
+      if external && system then throw new owned MasonError("Invalid combination of arguments");
+      else if dep == "" then throw new owned MasonError("Must enter a dependency");
       else {
         const result = modifyToml(add, dep, external, system, projectHome);
         generateToml(result[1], result[2]);
@@ -82,7 +82,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
     // Adding a dependency
     if add {
       if spec.find("@") == 0 {
-        throw new MasonError("Dependency formatted incorrectly.\nFormat: package@version");
+        throw new owned MasonError("Dependency formatted incorrectly.\nFormat: package@version");
       }
       const split = spec.split('@');
       const dependency = split[1];
@@ -140,7 +140,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
 private proc masonAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
   if toml.pathExists("dependencies") {
     if toml.pathExists("dependencies." + toAdd) {
-      throw new MasonError("A dependency by that name already exists in Mason.toml");
+      throw new owned MasonError("A dependency by that name already exists in Mason.toml");
     }
     else {
       toml["dependencies"][toAdd] = version;
@@ -165,11 +165,11 @@ private proc masonRemove(toml: unmanaged Toml, toRm: string) throws {
       delete old;
     }
     else {
-      throw new MasonError("No dependency exists by that name");
+      throw new owned MasonError("No dependency exists by that name");
     }
   }
   else {
-    throw new MasonError("No dependencies");
+    throw new owned MasonError("No dependencies");
   }
   return toml;
 }
@@ -179,7 +179,7 @@ private proc masonSystemAdd(toml: unmanaged Toml, toAdd: string, version: string
   
   if toml.pathExists("system") {
     if toml.pathExists("system." + toAdd) {
-      throw new MasonError("A dependency by that name already exists in Mason.toml");
+      throw new owned MasonError("A dependency by that name already exists in Mason.toml");
     }
     else {
       toml["system"][toAdd] = version;
@@ -203,11 +203,11 @@ private proc masonSystemRemove(toml: unmanaged Toml, toRm: string) throws {
       delete old;
     }
     else {
-      throw new MasonError("No system dependency exists by " + toRm);
+      throw new owned MasonError("No system dependency exists by " + toRm);
     }
   }
   else {
-    throw new MasonError("No system dependency exists by " + toRm);
+    throw new owned MasonError("No system dependency exists by " + toRm);
   }
   return toml;
 }
@@ -216,7 +216,7 @@ private proc masonSystemRemove(toml: unmanaged Toml, toRm: string) throws {
 private proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, spec: string) throws {
   if toml.pathExists("external") {
     if toml.pathExists("external." + toAdd) {
-      throw new MasonError("An external dependency by that name already exists in Mason.toml");
+      throw new owned MasonError("An external dependency by that name already exists in Mason.toml");
     }
     else {
       toml["external"][toAdd] = spec;
@@ -240,11 +240,11 @@ private proc masonExternalRemove(toml: unmanaged Toml, toRm: string) throws {
       delete old;
     }
     else {
-      throw new MasonError("No external dependency exists by that name");
+      throw new owned MasonError("No external dependency exists by that name");
     }
   }
   else {
-    throw new MasonError("No external dependency exists by that name");
+    throw new owned MasonError("No external dependency exists by that name");
   }
   return toml;
 }
@@ -262,13 +262,13 @@ private proc checkVersion(version: string) throws {
 
   const pattern = compile("([0-9].[0-9].[0-9][a-zA-Z]?)");
   if !pattern.match(version) {
-    throw new MasonError("Version formatting incorrect. ex. 1.2.3");
+    throw new owned MasonError("Version formatting incorrect. ex. 1.2.3");
   }
 }
 
 private proc checkDepName(dep: string) throws {
   if !isIdentifier(dep) {
-      throw new MasonError("Bad package name '" + dep +
+      throw new owned MasonError("Bad package name '" + dep +
                              "' - only Chapel identifiers are legal package names");  
   }
 }

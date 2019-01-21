@@ -53,18 +53,18 @@ proc masonNew(args) throws {
       }
       
       if name == '' {
-        throw new MasonError("No package name specified");
+        throw new owned MasonError("No package name specified");
       }
       else if !isIdentifier(name) {
-        throw new MasonError("Bad package name '" + name +
+        throw new owned MasonError("Bad package name '" + name +
                              "' - only Chapel identifiers are legal package names");
       }
       else if name.count("$") > 0 {
-        throw new MasonError("Bad package name '" + name +
+        throw new owned MasonError("Bad package name '" + name +
                              "' - $ is not allowed in package names");
       }
       else if isDir(name) {
-          throw new MasonError("A directory named '" + name + "' already exists");
+          throw new owned MasonError("A directory named '" + name + "' already exists");
       }
       else {
         InitProject(name, vcs, show);
@@ -93,7 +93,7 @@ proc InitProject(name, vcs, show) throws {
     writeln("Created new library project: " + name);
   }
   else {
-    throw new MasonError("Failed to create project");
+    throw new owned MasonError("Failed to create project");
   }
 }
 

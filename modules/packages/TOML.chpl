@@ -174,7 +174,7 @@ module TomlParser {
               parseAssign();
             }
             else {
-              throw new TomlError("Line "+ debugCounter +": Unexpected Token -> " + getToken(source));
+              throw new owned TomlError("Line "+ debugCounter +": Unexpected Token -> " + getToken(source));
             }
             debugCounter += 1;
             if debugTomlParser {
@@ -394,7 +394,7 @@ module TomlParser {
         }
         // Error
         else {
-          throw new TomlError("Line "+ debugCounter +": Unexpected Token -> " + getToken(source));
+          throw new owned TomlError("Line "+ debugCounter +": Unexpected Token -> " + getToken(source));
           return val;
         }
       }
@@ -600,7 +600,7 @@ used to recursively hold tables and respective values
       else {
         var next = '.'.join(indx[top+1..]);
         if !this.A.domain.contains(indx[top]) {
-          throw new TomlError("No index found for " + tbl);
+          throw new owned TomlError("No index found for " + tbl);
         }
         return this.A[indx[top]][next];
       }
@@ -752,13 +752,13 @@ used to recursively hold tables and respective values
             f.write(key, ' = ', toString(value));
           }
           when fieldEmpty {
-            throw new TomlError("Keys must have a value");
+            throw new owned TomlError("Keys must have a value");
           }
           when fieldDate {
             f.write(key, ' = ', toString(value));
           }
           otherwise {
-            throw new TomlError("Not yet supported");
+            throw new owned TomlError("Not yet supported");
           }
         }
         f.writeln();
@@ -805,13 +805,13 @@ used to recursively hold tables and respective values
             f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldEmpty {
-            throw new TomlError("Keys must have a value");
+            throw new owned TomlError("Keys must have a value");
           }
           when fieldDate {
             f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           otherwise {
-            throw new TomlError("Not yet supported");
+            throw new owned TomlError("Not yet supported");
           }
         }
         if i != v.D.size {
@@ -847,7 +847,7 @@ used to recursively hold tables and respective values
         when fieldEmpty do return ""; // empty
         when fieldDate do return val.dt.isoformat();
         otherwise {
-          throw new TomlError("Error in printing " + val.s);
+          throw new owned TomlError("Error in printing " + val.s);
           return val.s;
         }
       }
@@ -886,7 +886,7 @@ used to recursively hold tables and respective values
         when fieldDate do return 'datetime';
         when fieldToml do return 'toml';
         otherwise {
-          throw new TomlError("Unknown type");
+          throw new owned TomlError("Unknown type");
           return "nil";
         }
       }
@@ -915,7 +915,7 @@ module TomlReader {
   /* Returns the next token in the current line without removing it */
   proc top(source) throws {
     if !source.nextLine() {
-      throw new TomlError("Reached end of file unexpectedly");
+      throw new owned TomlError("Reached end of file unexpectedly");
     }
     return source.currentLine[source.currentLine.D.first];
   }
@@ -1039,7 +1039,7 @@ module TomlReader {
     /* retrieves next token in currentLine */
     proc nextToke() throws {
       if !nextLine() {
-        throw new TomlError("Reached end of file unexpectedly");
+        throw new owned TomlError("Reached end of file unexpectedly");
       }
       return currentLine.next();
     }

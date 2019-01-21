@@ -452,7 +452,7 @@ module Spawn {
     else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
 
     if args.size == 0 then
-      throw new IllegalArgumentError('args cannot be an empty array');
+      throw new owned IllegalArgumentError('args cannot be an empty array');
 
     // When memory is registered with the NIC under ugni, a fork will currently
     // segfault. Here we halt before such a call is made to provide an
@@ -656,7 +656,7 @@ module Spawn {
                   param kind=iokind.dynamic, param locking=true) throws
   {
     if command.isEmptyString() then
-      throw new IllegalArgumentError('command cannot be an empty string');
+      throw new owned IllegalArgumentError('command cannot be an empty string');
 
     var args = [command];
     if shellarg != "" then args.push_front(shellarg);

@@ -11,7 +11,7 @@ module CannotThrow {
 
   proc willthrow(x: int, y: int) throws {
     if throwx == x && throwy == y then
-      throw new MyError(x,y);
+      throw new owned MyError(x,y);
     return x;
   }
   proc main() {

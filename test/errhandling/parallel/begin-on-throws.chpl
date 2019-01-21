@@ -5,10 +5,10 @@ proc test() {
     writeln("before sync block");
     sync {
       begin on Locales[numLocales-1] {
-        throw new StringError("test error");
+        throw new owned StringError("test error");
       }
       begin on Locales[numLocales-1] {
-        throw new StringError("test error");
+        throw new owned StringError("test error");
       }
     }
     writeln("after sync block");

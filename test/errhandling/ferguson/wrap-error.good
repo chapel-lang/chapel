@@ -1,0 +1,4 @@
+Logger inited with type _owned(UserError)
+Logger(_owned(UserError)): [DateHere TimeHere] UserError: Something failed.
+deinit called for Logger
+deinit called for UserError('Something failed.')

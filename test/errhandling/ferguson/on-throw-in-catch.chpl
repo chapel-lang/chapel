@@ -7,7 +7,7 @@ proc test() throws {
       try {
         writeln(i);
         if i == 4 then
-          throw new StringError("test");
+          throw new owned StringError("test");
       } catch e {
         writeln("inner catch caught error");
         throw e;

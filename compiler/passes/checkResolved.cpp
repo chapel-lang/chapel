@@ -119,6 +119,9 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
         call->resolvedFunction()->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM))
       return 1;
 
+    if (call->isPrimitive(PRIM_RT_ERROR))
+      return 1;
+
     if (call->isPrimitive(PRIM_MOVE) ||
         call->isPrimitive(PRIM_ASSIGN))
     {

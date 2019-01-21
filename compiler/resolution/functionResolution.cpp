@@ -6258,6 +6258,9 @@ Expr* resolveExpr(Expr* expr) {
   FnSymbol* fn     = toFnSymbol(expr->parentSymbol);
   Expr*     retval = NULL;
 
+  if (expr->id == breakOnResolveID)
+    gdbShouldBreakHere();
+
   SET_LINENO(expr);
 
   if (isContextCallExpr(expr) == true) {

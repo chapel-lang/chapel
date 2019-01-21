@@ -10,7 +10,7 @@ config const doThrow = false;
 
 proc canThrowError() throws {
   if doThrow then
-    throw new Error();
+    throw new owned Error();
 }
 
 

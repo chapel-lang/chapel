@@ -732,6 +732,15 @@ void AstDump::exitTryStmt(TryStmt* node) {
 bool AstDump::enterCatchStmt(CatchStmt* node) {
   newline();
   write("Catch");
+  if (node->name() != NULL)
+    write(node->name());
+  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(node->type())) {
+    write(":");
+    write(urse->unresolved);
+  } else if (SymExpr* se = toSymExpr(node->type())) {
+    write(":");
+    write(se->symbol()->name);
+  }
   newline();
   write("{");
   ++mIndent;

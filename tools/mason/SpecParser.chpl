@@ -68,7 +68,7 @@ proc getSpecFields(spec: string) {
 private proc inferCompiler() throws {
   var compiler = CHPL_TARGET_COMPILER;
   if compiler.length < 1 {
-    throw new MasonError("Could not infer target compiler");
+    throw new owned MasonError("Could not infer target compiler");
   }
   return compiler;
 }
@@ -137,7 +137,7 @@ proc parseSpec(tokenList: [?d] string) throws {
   var variants: [0..1] string;
 
   if tokenList.size < 0 {
-    throw new MasonError("Empty spec in Mason.toml");
+    throw new owned MasonError("Empty spec in Mason.toml");
   }
   while tokenList.size > 0 {
     var toke = tokenList.pop_front();
@@ -168,7 +168,7 @@ proc parseSpec(tokenList: [?d] string) throws {
       // throw an error if we reach a compiler without seeing
       // a package version.
       if pkgVersion.length < 1 {
-        throw new MasonError("No package version found in spec");
+        throw new owned MasonError("No package version found in spec");
       }
       // Match package compiler if one hasnt been matched
       if compiler.length < 1 {

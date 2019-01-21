@@ -46,23 +46,32 @@ scoping rules without needing to know about CatchStmt
 class CatchStmt : public Stmt {
 
 public:
+  static CatchStmt* build(DefExpr* def, BlockStmt* body);
+  static CatchStmt* build(const char* name, Expr* type, BlockStmt* body);
+  static CatchStmt* build(const char* name, BlockStmt* body);
   static CatchStmt* build(BlockStmt* body);
-  static CatchStmt* build(Expr* expr, BlockStmt* body);
 
-  CatchStmt(Expr* expr, BlockStmt* body);
+  CatchStmt(const char* name, Expr* type, BlockStmt* body);
   ~CatchStmt();
 
-  DefExpr*   expr() const;
-  BlockStmt* body() const;
+  const char* name() const;
+  Expr*       type() const;
+  BlockStmt*  body() const;
+  bool        isCatchall() const;
 
   void                accept(AstVisitor* visitor);
   void                replaceChild(Expr* old_ast, Expr* new_ast);
   Expr*               getFirstExpr();
+  Expr*               getNextExpr(Expr* expr);
   void                verify();
+  void                cleanup();
+
   GenRet              codegen();
   DECLARE_COPY(CatchStmt);
 
-  BlockStmt* _body;
+  const char* _name;
+  Expr*       _type;
+  BlockStmt*  _body;
 
 private:
   CatchStmt();

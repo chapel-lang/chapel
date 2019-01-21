@@ -62,7 +62,7 @@ proc masonSystem(args) {
 proc pkgConfigExists() throws {
   var status = runWithStatus("pkg-config --version", false);
   if status != 0 {
-    throw new MasonError("pkg-config is not installed");
+    throw new owned MasonError("pkg-config is not installed");
   }
   return true;
 }
@@ -95,7 +95,7 @@ proc pkgSearch(args) throws {
     }
   }
   if pkgName == "" {
-    throw new MasonError("Must include a package name");
+    throw new owned MasonError("Must include a package name");
   }
   const pattern = compile(pkgName, ignorecase=true);
   const command = "pkg-config --list-all";
@@ -156,7 +156,7 @@ proc printPkgPc(args) throws {
         writeln("\n-------------------\n");
       }
       else {
-        throw new MasonError("Mason could not find " + pkgName + " on your system");
+        throw new owned MasonError("Mason could not find " + pkgName + " on your system");
       }
     }
     catch e: FileNotFoundError {
@@ -221,11 +221,11 @@ proc getPkgInfo(pkgName: string, version: string) throws {
     pkgInfo["include"] = include;
 
     if pcVersion != version && version != "*" {
-      throw new MasonError("Unable to locate " + pkgName + ": " +version + "\n Found " + pcVersion);
+      throw new owned MasonError("Unable to locate " + pkgName + ": " +version + "\n Found " + pcVersion);
     }
   }
   else {
-    throw new MasonError("No pkg-config package by the name of: " + pkgName);
+    throw new owned MasonError("No pkg-config package by the name of: " + pkgName);
   }
   return pkgInfo;
 }

@@ -4,14 +4,14 @@ module A {
 
   proc deferThrow() throws {
     defer {
-      throw new Error();
+      throw new owned Error();
     }
   }
 
   proc deferTry() throws {
     defer {
       try {
-        throw new Error();
+        throw new owned Error();
       } catch e: UnexpectedEOFError {
         writeln("this shouldn't happen");
       }
@@ -21,7 +21,7 @@ module A {
   proc deferTryComplete() {
     defer {
       try {
-        throw new UnexpectedEOFError();
+        throw new owned UnexpectedEOFError();
       } catch {
         writeln("this is ok");
       }
@@ -31,7 +31,7 @@ module A {
   proc deferTryBang() {
     defer {
       try! {
-        throw new Error();
+        throw new owned Error();
       }
     }
   }

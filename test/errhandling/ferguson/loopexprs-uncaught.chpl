@@ -1,6 +1,6 @@
 module CannotThrow {
   proc willthrow(x: int) throws {
-    throw new Error();
+    throw new owned Error();
     return x;
   }
   proc main() throws {

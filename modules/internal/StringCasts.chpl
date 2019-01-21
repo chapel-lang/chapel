@@ -46,13 +46,13 @@ module StringCasts {
   proc _cast(type t:chpl_anybool, x: string) throws {
     var str = x.strip();
     if str.isEmptyString() {
-      throw new unmanaged IllegalArgumentError("bad cast from empty string to bool");
+      throw new owned IllegalArgumentError("bad cast from empty string to bool");
     } else if (str == "true") {
       return true;
     } else if (str == "false") {
       return false;
     } else {
-      throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to bool");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to bool");
     }
     return false;
   }
@@ -71,7 +71,7 @@ module StringCasts {
     // this should only happen if the runtime is broken
     if isErr {
       try! {
-        throw new unmanaged IllegalArgumentError("Unexpected case in integral_to_c_string");
+        throw new owned IllegalArgumentError("Unexpected case in integral_to_c_string");
       }
     }
 
@@ -117,7 +117,7 @@ module StringCasts {
         if numElements > 1 then break;
       }
       if numElements > 1 then
-        throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
+        throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
 
       // remove underscores everywhere but the first position
       if localX.length >= 2 then
@@ -125,7 +125,7 @@ module StringCasts {
     }
 
     if localX.isEmptyString() then
-      throw new unmanaged IllegalArgumentError("bad cast from empty string to " + t:string);
+      throw new owned IllegalArgumentError("bad cast from empty string to " + t:string);
 
     if isIntType(t) {
       select numBits(t) {
@@ -146,7 +146,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
 
     return retVal;
   }
@@ -192,7 +192,7 @@ module StringCasts {
     const localX = x.localize();
 
     if localX.isEmptyString() then
-      throw new unmanaged IllegalArgumentError("bad cast from empty string to real(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from empty string to real(" + numBits(t) + ")");
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -201,7 +201,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t) + ")");
 
     return retVal;
   }
@@ -217,7 +217,7 @@ module StringCasts {
     const localX = x.localize();
 
     if localX.isEmptyString() then
-      throw new unmanaged IllegalArgumentError("bad cast from empty string to imag(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from empty string to imag(" + numBits(t) + ")");
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
@@ -226,7 +226,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t) + ")");
 
     return retVal;
   }
@@ -269,7 +269,7 @@ module StringCasts {
     const localX = x.localize();
 
     if localX.isEmptyString() then
-      throw new unmanaged IllegalArgumentError("bad cast from empty string to complex(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from empty string to complex(" + numBits(t) + ")");
 
     select numBits(t) {
       when 64 do retVal = c_string_to_complex64(localX.c_str(), isErr);
@@ -278,7 +278,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new unmanaged IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t) + ")");
 
     return retVal;
   }

@@ -2824,15 +2824,16 @@ buildSyncStmt(Expr* stmt) {
   // The result is that an error within a sync block will be reported
   // in a TaskErrors group. It is that way because there could also be
   // errors from waited-for tasks.
-  VarSymbol* e = new VarSymbol("error");
-  DefExpr* defError = new DefExpr(e, NULL, new UnresolvedSymExpr("Error"));
   BlockStmt* saveError = new BlockStmt();
 
-  saveError->insertAtTail(new CallExpr("chpl_save_task_error",  endCount, e));
-  saveError->insertAtTail(new CallExpr(PRIM_MOVE, e, gNil));
+  const char* ename = "chpl_sync_error";
+
+  saveError->insertAtTail(new CallExpr("chpl_save_task_error_owned",
+                                       endCount,
+                                       new UnresolvedSymExpr(ename)));
 
   BlockStmt* catches = new BlockStmt();
-  catches->insertAtTail(CatchStmt::build(defError, saveError));
+  catches->insertAtTail(CatchStmt::build(ename, saveError));
 
   BlockStmt* body = toBlockStmt(stmt);
   body->blockTag = BLOCK_NORMAL; // or at least, not scopeless

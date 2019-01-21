@@ -3881,11 +3881,11 @@ inline proc channel.readbits(out v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if reading more bits than fit into v
     if numBits(v.type) < nbits then
-      throw new IllegalArgumentError("v, nbits", "readbits nbits=" + nbits +
+      throw new owned IllegalArgumentError("v, nbits", "readbits nbits=" + nbits +
                                                  " > bits in v:" + v.type:string);
     // Error if reading negative number of bits
     if isIntType(nbits.type) && nbits < 0 then
-      throw new IllegalArgumentError("nbits", "readbits nbits=" + nbits + " < 0");
+      throw new owned IllegalArgumentError("nbits", "readbits nbits=" + nbits + " < 0");
   }
 
   var tmp:ioBits;
@@ -3924,11 +3924,11 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if writing more bits than fit into v
     if numBits(v.type) < nbits then
-      throw new IllegalArgumentError("v, nbits", "writebits nbits=" + nbits +
+      throw new owned IllegalArgumentError("v, nbits", "writebits nbits=" + nbits +
                                                  " > bits in v:" + v.type:string);
     // Error if writing negative number of bits
     if isIntType(nbits.type) && nbits < 0 then
-      throw new IllegalArgumentError("nbits", "writebits nbits=" + nbits + " < 0");
+      throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits + " < 0");
   }
 
   return try this.write(new ioBits(v:uint(64), nbits:int(8)));
@@ -4354,7 +4354,7 @@ proc channel.isclosed() {
 pragma "no doc"
 proc channel.readBytes(x, len:ssize_t) throws {
   if here != this.home then
-    throw new unmanaged IllegalArgumentError("bad remote channel.readBytes");
+    throw new owned IllegalArgumentError("bad remote channel.readBytes");
   var err = qio_channel_read_amt(false, _channel_internal, x, len);
   if err then try this._ch_ioerror(err, "in channel.readBytes");
 }
@@ -6439,7 +6439,7 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
             err = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
           } otherwise {
             // Unhandled argument type!
-            throw new IllegalArgumentError("args(" + i + ")",
+            throw new owned IllegalArgumentError("args(" + i + ")",
                                            "writef internal error " + argType(i));
           }
         }
@@ -6753,7 +6753,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
                 }
               }
             } otherwise {
-              throw new IllegalArgumentError("args(" + i + ")",
+              throw new owned IllegalArgumentError("args(" + i + ")",
                                              "readf internal error " + argType(i));
             }
           }

@@ -5,6 +5,7 @@ Initializing Modules:
     String
      SysCTypes
      StringCasts
+    OwnedObject
     ChapelDebugPrint
     ChapelBase
     MemConsistency

@@ -21,7 +21,7 @@ config const case = 1;
 proc returnOrThrow(i:int):MyRecord throws {
 
   if case == i {
-    throw new StringError("test error");
+    throw new owned StringError("test error");
   }
   return new MyRecord(i);
 }

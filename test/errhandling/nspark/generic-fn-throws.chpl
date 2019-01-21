@@ -1,6 +1,6 @@
 use ExampleErrors;
 proc throwIfIntegral(x) throws where isIntegral(x) {
-  throw new StringError("got an integer");
+  throw new owned StringError("got an integer");
 }
 
 proc throwIfIntegral(x) {
