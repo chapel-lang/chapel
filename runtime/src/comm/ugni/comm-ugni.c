@@ -1503,13 +1503,13 @@ static void      do_remote_put(void*, c_nodeid_t, void*, size_t,
                                mem_region_t*, drpg_may_proxy_t);
 static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
                                  mem_region_t**, drpg_may_proxy_t);
-static void      do_remote_buff_get(void*, c_nodeid_t , void* , size_t,
-                                    drpg_may_proxy_t );
+static void      do_remote_buff_get(void*, c_nodeid_t, void*, size_t,
+                                    drpg_may_proxy_t);
+static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
+                               drpg_may_proxy_t);
 static void      do_remote_get_V(int, void**, c_nodeid_t*, mem_region_t**,
                                  void**, size_t*, mem_region_t**,
                                  drpg_may_proxy_t);
-static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
-                               drpg_may_proxy_t);
 static void      do_nic_get(void*, c_nodeid_t, mem_region_t*,
                             void*, size_t, mem_region_t*);
 static int       amo_cmd_2_nic_op(fork_amo_cmd_t, int);
@@ -1517,6 +1517,8 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
                             gni_fma_cmd_type_t, void*, mem_region_t*);
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
+static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
+                                 gni_fma_cmd_type_t*, mem_region_t**);
 static void      buff_amo_init(void);
 static void      buff_get_init(void);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
@@ -5242,6 +5244,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
     locale_v += MAX_CHAINED_PUT_LEN;
     tgt_addr_v += MAX_CHAINED_PUT_LEN;
     size_v += MAX_CHAINED_PUT_LEN;
+    remote_mr_v += MAX_CHAINED_PUT_LEN;
   }
 
   if (v_len <= 0)
@@ -5313,7 +5316,6 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
   //
   // This GNI is too old to support chained transactions.  Just do
   // normal ones.
-  // TODO -- do NB puts and wait for them to complete?
   //
   for (int vi = 0; vi < v_len; vi++) {
     do_remote_put(src_addr_v[vi], locale_v[vi], tgt_addr_v[vi], size_v[vi],
@@ -5328,7 +5330,8 @@ static
 void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
                      mem_region_t** remote_mr_v, void** src_addr_v,
                      size_t* size_v, mem_region_t** local_mr_v,
-                     drpg_may_proxy_t may_proxy) {
+                     drpg_may_proxy_t may_proxy)
+{
 
   DBG_P_LP(DBGF_GETPUT, "DoRemGetV(%d) %p <- %d:%p (%#zx), proxy %c",
            v_len, tgt_addr_v[0], (int) locale_v[0], src_addr_v[0], size_v[0],
@@ -5347,12 +5350,12 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
     do_remote_get_V(MAX_CHAINED_GET_LEN, tgt_addr_v, locale_v, remote_mr_v,
                     src_addr_v, size_v, local_mr_v, may_proxy);
     v_len -= MAX_CHAINED_GET_LEN;
-    src_addr_v += MAX_CHAINED_GET_LEN;
-    locale_v += MAX_CHAINED_GET_LEN;
     tgt_addr_v += MAX_CHAINED_GET_LEN;
+    locale_v += MAX_CHAINED_GET_LEN;
+    remote_mr_v += MAX_CHAINED_GET_LEN;
+    src_addr_v += MAX_CHAINED_GET_LEN;
     size_v += MAX_CHAINED_GET_LEN;
     local_mr_v  += MAX_CHAINED_GET_LEN;
-    remote_mr_v += MAX_CHAINED_GET_LEN;
   }
 
   if (v_len <= 0)
@@ -5429,11 +5432,95 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
   //
   // This GNI is too old to support chained transactions.  Just do
   // normal ones.
-  // TODO -- do NB gets and wait for them to complete?
   //
   for (int vi = 0; vi < v_len; vi++) {
     do_remote_get(tgt_addr_v[vi], locale_v[vi], src_addr_v[vi], size_v[vi],
                   may_proxy);
+  }
+
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+}
+
+
+static
+void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
+                     void** object_v, size_t* size_v,
+                     gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v)
+{
+
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+  //
+  // This GNI is new enough to support chained transactions.
+  //
+
+  //
+  // If there are more than we can handle at once, block them up.
+  //
+  while (v_len > MAX_CHAINED_AMO_LEN) {
+    do_nic_amo_nf_V(MAX_CHAINED_PUT_LEN, opnd1_v, locale_v, object_v,
+                    size_v, cmd_v, remote_mr_v);
+    v_len -= MAX_CHAINED_AMO_LEN;
+    opnd1_v += MAX_CHAINED_AMO_LEN;
+    locale_v += MAX_CHAINED_AMO_LEN;
+    object_v += MAX_CHAINED_AMO_LEN;
+    size_v += MAX_CHAINED_AMO_LEN;
+    cmd_v += MAX_CHAINED_AMO_LEN;
+    remote_mr_v += MAX_CHAINED_AMO_LEN;
+  }
+
+  gni_post_descriptor_t post_desc;
+  gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
+  int vi, ci;
+
+  if (v_len <= 0)
+    return;
+
+  //
+  // Build up the base post descriptor
+  //
+  post_desc.next_descr      = NULL;
+  post_desc.type            = GNI_POST_AMO;
+  post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
+  post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
+  post_desc.rdma_mode       = 0;
+  post_desc.src_cq_hndl     = 0;
+  post_desc.remote_addr     = (uint64_t) (intptr_t) object_v[0];
+  post_desc.remote_mem_hndl = remote_mr_v[0]->mdh;
+  post_desc.length          = size_v[0];
+  post_desc.amo_cmd         = cmd_v[0];
+  post_desc.first_operand   = opnd1_v[0];
+
+  //
+  // Build up the chain of descriptors
+  //
+  for (vi=1, ci=0; vi<v_len; vi++, ci++) {
+    if (ci == 0)
+      post_desc.next_descr  = &pdc[0];
+    else
+      pdc[ci-1].next_descr  = &pdc[ci];
+    pdc[ci].next_descr      = NULL;
+    pdc[ci].remote_addr     = (uint64_t) (intptr_t) object_v[vi];
+    pdc[ci].remote_mem_hndl = remote_mr_v[vi]->mdh;
+    pdc[ci].length          = size_v[vi];
+    pdc[ci].amo_cmd         = cmd_v[vi];
+    pdc[ci].first_operand   = opnd1_v[vi];
+  }
+
+  //
+  // Initiate the transaction and wait for it to complete.
+  //
+  post_fma_ct_and_wait(locale_v, &post_desc);
+
+#else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+  //
+  // This GNI is too old to support chained transactions.  Just do
+  // normal ones.
+  //
+  for (int vi = 0; vi < v_len; vi++) {
+    do_nic_amo_nf(&opnd1_v[vi], locale_v[vi], object_v[vi], size_v[vi],
+                  cmd_v[vi], remote_mr_v[vi]);
   }
 
 #endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
@@ -6890,70 +6977,6 @@ void buff_amo_init(void) {
 }
 
 
-static
-void do_remote_amo_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
-                     void** object_v, size_t* size_v,
-                     gni_fma_cmd_type_t* cmd_v, mem_region_t** remote_mr_v) {
-
-#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
-
-  gni_post_descriptor_t post_desc;
-  gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
-  int vi, ci;
-
-  if (v_len <= 0)
-    return;
-
-  //
-  // Build up the base post descriptor
-  //
-  post_desc.next_descr      = NULL;
-  post_desc.type            = GNI_POST_AMO;
-  post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
-  post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
-  post_desc.rdma_mode       = 0;
-  post_desc.src_cq_hndl     = 0;
-  post_desc.remote_addr     = (uint64_t) (intptr_t) object_v[0];
-  post_desc.remote_mem_hndl = remote_mr_v[0]->mdh;
-  post_desc.length          = size_v[0];
-  post_desc.amo_cmd         = cmd_v[0];
-  post_desc.first_operand   = opnd1_v[0];
-
-  //
-  // Build up the chain of descriptors
-  //
-  for (vi=1, ci=0; vi<v_len; vi++, ci++) {
-    if (ci == 0)
-      post_desc.next_descr  = &pdc[0];
-    else
-      pdc[ci-1].next_descr  = &pdc[ci];
-    pdc[ci].next_descr      = NULL;
-    pdc[ci].remote_addr     = (uint64_t) (intptr_t) object_v[vi];
-    pdc[ci].remote_mem_hndl = remote_mr_v[vi]->mdh;
-    pdc[ci].length          = size_v[vi];
-    pdc[ci].amo_cmd         = cmd_v[vi];
-    pdc[ci].first_operand   = opnd1_v[vi];
-  }
-
-  //
-  // Initiate the transaction and wait for it to complete.
-  //
-  post_fma_ct_and_wait(locale_v, &post_desc);
-
-#else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
-
-  //
-  // This GNI is too old to support chained transactions.  Just do
-  // normal ones.
-  //
-  for (int vi = 0; vi < v_len; vi++) {
-    do_nic_amo_nf(&opnd1_v[vi], locale_v[vi], object_v[vi], size_v[vi],
-                  cmd_v[vi], remote_mr_v[vi]);
-  }
-
-#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
-}
-
 // for each thread that has done buffered atomics, grab the lock for that
 // thread and if there are built up operations flush them and reset the index
 void chpl_comm_atomic_buff_flush() {
@@ -6963,7 +6986,7 @@ void chpl_comm_atomic_buff_flush() {
     if (*amo_vi_p[i] != 0) {
       spinlock_lock(amo_lock_p[i]);
       if (*amo_vi_p[i] != 0) {
-        do_remote_amo_V(*amo_vi_p[i], amo_opnd1_vp[i], amo_locale_vp[i],
+        do_nic_amo_nf_V(*amo_vi_p[i], amo_opnd1_vp[i], amo_locale_vp[i],
                         amo_object_vp[i], amo_size_vp[i], amo_cmd_vp[i],
                         amo_remote_mr_vp[i]);
         *amo_vi_p[i] = 0;
@@ -7059,7 +7082,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
 
   // flush if buffers are full
   if (vi == MAX_CHAINED_AMO_LEN) {
-    do_remote_amo_V(vi, opnd1_v, locale_v, object_v, size_v, cmd_v, remote_mr_v);
+    do_nic_amo_nf_V(vi, opnd1_v, locale_v, object_v, size_v, cmd_v, remote_mr_v);
     vi = 0;
   }
 
