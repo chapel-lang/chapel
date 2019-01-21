@@ -23,7 +23,7 @@ endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-unexport CHPL_MAKE_SETTINGS_NO_NEWLINES
+unexport CHPL_MAKE_CHPLENV_CACHE
 
 bdir=$(CHPL_BIN_DIR)
 link=../../tools/mason/mason

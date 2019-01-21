@@ -65,7 +65,7 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   #
   COMPILELINE_STDERR_REDIRECT=2> /dev/null
   INCS_DEFS := \
-    $(shell unset CHPL_MAKE_SETTINGS_NO_NEWLINES && CHPL_COMM=none $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
+    $(shell unset CHPL_MAKE_CHPLENV_CACHE && CHPL_COMM=none $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
                $(COMPILELINE_STDERR_REDIRECT) \
             || echo compilelineFAILURE)
   ifneq (, $(findstring compilelineFAILURE,$(INCS_DEFS)))

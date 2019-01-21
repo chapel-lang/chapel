@@ -70,13 +70,13 @@ endif
 # CHPL_MAKE_JEMALLOC_UNIQ_CFG_PATH etc
 # CHPL_MAKE_THIRD_PARTY_LINK_ARGS
 # Don't recompute the settings every time!
-ifndef CHPL_MAKE_SETTINGS_NO_NEWLINES
+ifndef CHPL_MAKE_CHPLENV_CACHE
 # ... but it involves a little bit of Make-craziness because
 # $(shell) changes newlines into spaces.
 # Evaluate all of the definitions in CHPL_MAKE_ALL_VARS before running
 # printchplenv in order to pass the existing values from the compiler forward
 
-export CHPL_MAKE_SETTINGS_NO_NEWLINES := $(shell $(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --all --internal --no-tidy --make | tr '\n' '|' )
+export CHPL_MAKE_CHPLENV_CACHE := $(shell $(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --all --internal --no-tidy --make | tr '\n' '|' )
 endif
 
 # This really needs TWO newlines!
@@ -88,7 +88,7 @@ endef
 # Turn the newlines we replaced with | back into newlines
 # and use a multi-line define so Make is OK having newlines in the variable.
 define CHPL_MAKE_SETTINGS
-$(subst |,$(newline),$(CHPL_MAKE_SETTINGS_NO_NEWLINES))
+$(subst |,$(newline),$(CHPL_MAKE_CHPLENV_CACHE))
 endef
 
 # Now eval our settings to set the Make variables to
@@ -96,7 +96,7 @@ endef
 $(eval $(CHPL_MAKE_SETTINGS))
 
 # Try this to debug issues with CHPL_MAKE_* variables
-# $(info $(CHPL_MAKE_SETTINGS_NO_NEWLINES))
+# $(info $(CHPL_MAKE_CHPLENV_CACHE))
 
 # Now do some minor situational clean-ups.
 
