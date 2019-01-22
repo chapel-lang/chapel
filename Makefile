@@ -64,6 +64,13 @@ comprt: FORCE
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
+notcompiler: FORCE
+	@$(MAKE) third-party-try-opt
+	@$(MAKE) always-build-test-venv
+	@$(MAKE) always-build-chpldoc
+	@$(MAKE) runtime
+	@$(MAKE) modules
+
 compiler: FORCE
 	cd compiler && $(MAKE)
 
