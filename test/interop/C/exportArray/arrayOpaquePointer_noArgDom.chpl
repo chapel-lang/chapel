@@ -6,7 +6,9 @@ export proc makeBlockArray(): [D] int {
   return x;
 }
 
-export proc printBlock(x: [D] int) {
+// Will generate a different signature than the return type for the previous
+// function
+export proc printBlock(x: [] int) {
   var output = "";
   var first = true;
   for idx in x.dom {
@@ -19,8 +21,4 @@ export proc printBlock(x: [D] int) {
     output += x[idx]: string;
   }
   writeln(output);
-}
-
-export proc addEltBlock(x: [D] int, idx: int, val: int) {
-  x[idx] = val;
 }

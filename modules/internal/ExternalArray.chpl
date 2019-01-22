@@ -166,6 +166,22 @@ module ExternalArray {
     }
   }
 
+  proc getExternalArrayType(type arg) type {
+    if (!isArrayType(arg))  {
+      compilerError("must call with an array");
+    } else {
+      type _instanceType = __primitive("static field type", arg, "_instance");
+      // Workaround until #12095 is resolved (problem calling static method on
+      // type of unmanaged field)
+      type borrowedAlt = _to_borrowed(_instanceType);
+      if (borrowedAlt.isDefaultRectangular()) {
+        return chpl_external_array;
+      } else {
+        return chpl_opaque_array;
+      }
+    }
+  }
+
   // Need to export this but that requires some compiler changes due to our
   // hiding of interal module exported functions.
   // Can't create an _array wrapper to call the cleanup function for us, so do

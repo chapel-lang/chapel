@@ -330,6 +330,7 @@ module ChapelDistribution {
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
 
+    proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;
 
     proc isSliceDomainView() param return false; // likely unnecessary?
@@ -749,6 +750,7 @@ module ChapelDistribution {
     proc dsiRequiresPrivatization() param return false;
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
+    proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;
 
     proc doiCanBulkTransferRankChange() param return false;

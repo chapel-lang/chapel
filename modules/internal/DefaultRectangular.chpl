@@ -142,6 +142,7 @@ module DefaultRectangular {
     proc linksDistribution() param return false;
     override proc dsiLinksDistribution()     return false;
 
+    proc type isDefaultRectangular() param return true;
     proc isDefaultRectangular() param return true;
 
     proc init(param rank, type idxType, param stridable, dist) {
@@ -2172,6 +2173,7 @@ module DefaultRectangular {
   }
 
   proc DefaultRectangularArr.isDefaultRectangular() param return true;
+  proc type DefaultRectangularArr.isDefaultRectangular() param return true;
 
   /*
   The runtime implementation's loop over the current stride level will look

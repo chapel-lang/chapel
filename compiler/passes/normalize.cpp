@@ -1323,8 +1323,8 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
                      " for Python compilation");
     }
 
-    fn->retExprType->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
-
+    // Let the return type get determined by the result of the conversion call
+    fn->retExprType->remove();
     CallExpr* retCall = toCallExpr(fn->body->body.tail);
     INT_ASSERT(retCall && retCall->isPrimitive(PRIM_RETURN));
 
@@ -2791,6 +2791,9 @@ static bool isArrayFormal(ArgSymbol* arg) {
   return false;
 }
 
+static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
+                                        Expr* eltExpr, Expr* oldCall);
+
 static void fixupExportedArrayFormals(FnSymbol* fn) {
   CallExpr* retCall = toCallExpr(fn->body->body.tail);
   INT_ASSERT(retCall);
@@ -2811,6 +2814,8 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
       // validated during resolution, but we need the type expression to
       // correctly create our Chapel array wrapper.
       CallExpr*             call     = toCallExpr(typeExpr->body.tail);
+      // Should be handled by the isArrayFormal call
+      INT_ASSERT(call->isNamed("chpl__buildArrayRuntimeType"));
       int                   nArgs    = call->numActuals();
       Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
 
@@ -2833,18 +2838,39 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
         // TODO: handle call expression stuff.
       }
 
-      // Create a representation of the array argument that is accessible
-      // outside of Chapel (in the form of a pointer and a corresponding size)
-      formal->typeExpr->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+      SymExpr* dom = toSymExpr(call->get(1));
+      if (dom != NULL && dom->symbol() == gNil) {
+        // The domain is nil, meaning the argument did not specify its domain.
+        // chpl_opaque_array cannot adjust for that today, but
+        // chpl_external_array might be able to, so try to make a
+        // chpl_external_array with it.  If that doesn't work, the user must be
+        // more explicit with their domain.
+        formal->typeExpr->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+      } else {
+        // Create a representation of the array argument that is accessible
+        // outside of Chapel, depending on the type of the array.  If the array
+        // is supported by our C/Python interop, it will be represented as a
+        // chpl_external_array.  Otherwise, it will be a chpl_opaque_array
+        VarSymbol* typeExprTmp = new VarSymbol("typeExpr");
+        typeExprTmp->addFlag(FLAG_MAYBE_TYPE);
+
+        CallExpr* newFormalType = new CallExpr("getExternalArrayType",
+                                               typeExprTmp);
+        formal->typeExpr->replace(new BlockStmt(new DefExpr(typeExprTmp)));
+        formal->typeExpr->insertAtTail(new CallExpr(PRIM_MOVE, typeExprTmp,
+                                                    call->copy()));
+        formal->typeExpr->insertAtTail(newFormalType);
+      }
+
+      VarSymbol* chplArr = new VarSymbol(astr(formal->name, "_arr"));
+      retCall->insertBefore(new DefExpr(chplArr));
 
       // Transform the outside representation into a Chapel array, and send that
       // in the call to the original function.
-      CallExpr* makeChplArray = new CallExpr("makeArrayFromExternArray",
-                                             new SymExpr(formal),
-                                             eltExpr->copy());
-      VarSymbol* chplArr = new VarSymbol(astr(formal->name, "_arr"));
-      retCall->insertBefore(new DefExpr(chplArr));
-      retCall->insertBefore(new CallExpr(PRIM_MOVE, chplArr, makeChplArray));
+      CondStmt* cond = makeCondToTransformArr(formal, chplArr, eltExpr,
+                                              call);
+
+      retCall->insertBefore(cond);
 
       callOrigFn->insertAtTail(new SymExpr(chplArr));
 
@@ -2853,6 +2879,49 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
     }
   }
 }
+
+// Create an if statement based on the formal type to transform
+// chpl_external_array or chpl_opaque_array into a normal Chapel array
+static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
+                                        Expr* eltExpr, Expr* oldCall) {
+  // if (formal.type is dtExternalArray) then
+  //    formalname_arr = makeArrayFromExternArray(formal, eltExpr)
+  //    else formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
+  CallExpr* checkFormalType = new CallExpr(PRIM_IS_SUBTYPE,
+                                           dtExternalArray->symbol,
+                                           new CallExpr(PRIM_TYPEOF, formal));
+
+  // Handle chpl_external_array
+  BlockStmt* ifBody = new BlockStmt();
+  CallExpr* makeChplArrayFromExt = new CallExpr("makeArrayFromExternArray",
+                                                new SymExpr(formal),
+                                                eltExpr->copy());
+  ifBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArrayFromExt));
+
+  // Handle chpl_opaque_array
+  BlockStmt* elseBody = new BlockStmt();
+  // Array type creator
+  VarSymbol* oldTypeExpr = new VarSymbol(astr(formal->name,
+                                              "_oldTypeExpr"));
+  oldTypeExpr->addFlag(FLAG_MAYBE_TYPE);
+  elseBody->insertAtTail(new DefExpr(oldTypeExpr));
+  elseBody->insertAtTail(new CallExpr(PRIM_MOVE, oldTypeExpr, oldCall->copy()));
+  // Get the _instance field's type for that array
+  VarSymbol* instanceType = new VarSymbol(astr(formal->name, "_instype"));
+  instanceType->addFlag(FLAG_MAYBE_TYPE);
+  CallExpr* makeIT = new CallExpr(PRIM_STATIC_FIELD_TYPE, oldTypeExpr,
+                                  new_StringSymbol("_instance"));
+  elseBody->insertAtTail(new DefExpr(instanceType));
+  elseBody->insertAtTail(new CallExpr(PRIM_MOVE, instanceType, makeIT));
+  // Make a proper array using the argument and the _instance field's type
+  // that we determined
+  CallExpr* makeChplArray = new CallExpr("makeArrayFromOpaque",
+                                         new SymExpr(formal), instanceType);
+  elseBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArray));
+  CondStmt* cond = new CondStmt(checkFormalType, ifBody, elseBody);
+  return cond;
+}
+
 // Preliminary validation is performed within the caller
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   BlockStmt*            typeExpr = formal->typeExpr;
