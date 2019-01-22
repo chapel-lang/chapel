@@ -2811,6 +2811,8 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
       // validated during resolution, but we need the type expression to
       // correctly create our Chapel array wrapper.
       CallExpr*             call     = toCallExpr(typeExpr->body.tail);
+      // Should be handled by the isArrayFormal call
+      INT_ASSERT(call->isNamed("chpl__buildArrayRuntimeType"));
       int                   nArgs    = call->numActuals();
       Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
 
@@ -2835,9 +2837,11 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
 
       SymExpr* dom = toSymExpr(call->get(1));
       if (dom != NULL && dom->symbol() == gNil) {
-        // The domain is nil.  Try to make a chpl_external_array with it.
-        // If that doesn't work, the user must be more explicit with their
-        // domain
+        // The domain is nil, meaning the argument did not specify its domain.
+        // chpl_opaque_array cannot adjust for that today, but
+        // chpl_external_array might be able to, so try to make a
+        // chpl_external_array with it.  If that doesn't work, the user must be
+        // more explicit with their domain.
         formal->typeExpr->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
       } else {
         // Create a representation of the array argument that is accessible
