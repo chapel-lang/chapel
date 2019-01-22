@@ -15,3 +15,8 @@ cdef extern from "chpl-external-array.h":
 	chpl_external_array chpl_make_external_array(uint64_t elt_size, uint64_t num_elts)
 	chpl_external_array chpl_make_external_array_ptr(void* elts, uint64_t size)
 	void chpl_free_external_array(chpl_external_array x)
+
+	ctypedef struct chpl_opaque_array:
+		int64_t _pid
+		void* _instance
+		bint _unowned
