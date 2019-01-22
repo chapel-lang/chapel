@@ -83,10 +83,10 @@ function get_src_version()
     esac
 
     # release_type is developer, get the git revision
-    local gitrev="-999"
+    local gitrev = "-999"
     if [ -e "$1/.git" ]
     then
-      gitrev=`git rev-parse --short HEAD`
+      gitrev = `git rev-parse --short HEAD`
     fi
 
     # and return src_version as major.minor.update.gitrev
