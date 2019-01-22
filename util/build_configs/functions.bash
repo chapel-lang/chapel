@@ -82,15 +82,12 @@ function get_src_version()
     ( * )   echo "$major.$minor.$update"; return;;
     esac
 
-    # release_type is developer, get the contents of BUILD_VERSION file
-    local subdir=`$1/util/printchplenv --simple --internal --all | grep CHPL_COMPILER_SUBDIR | cut -d = -f 2`
-    local build_version_file="$1/build/compiler/$subdir/BUILD_VERSION"
-    ls >/dev/null "$build_version_file" || {
-        log_error "$thisfunc: Missing source file '$build_version_file'"
-        exit 2
-    }
-
-    local gitrev=$( sed -e 's,",,g' < "$build_version_file" )
+    # release_type is developer, get the git revision
+    local gitrev = "-999"
+    if [ -e "$1/.git" ]
+    then
+      gitrev = `git rev-parse --short HEAD`
+    fi
 
     # and return src_version as major.minor.update.gitrev
     case "$gitrev" in
