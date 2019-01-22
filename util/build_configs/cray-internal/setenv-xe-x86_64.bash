@@ -139,7 +139,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
             --launcher=$launchers \
             --substrate=$substrates \
             --auxfs=$auxfs \
-            notcompiler
+            -- notcompiler
 
         # NOTE: don't rebuild compiler above (or else problems with switching GCC versions)
         # NOTE: "--target-compiler" values shown above will be discarded by the setenv callback.
