@@ -234,7 +234,7 @@ foreach $dir (@code_dirs) {
         chomp $fullpath;
         $file = $fullpath;
         $file =~ s/(\S+\/)+//g;
-        if ($file =~ /(\.(h|cpp|c|ypp|lex)$)|Makefile|README|BUILD_VERSION/) {
+        if ($file =~ /(\.(h|cpp|c|ypp|lex)$)|Makefile|README/) {
             # print "$fullpath\n";
             push @tarfiles, "$reldir/$fullpath";
         }
