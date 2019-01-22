@@ -1,4 +1,4 @@
-(execute_on = 36, execute_on_nb = 105) (get = 694, put = 5, execute_on = 36, execute_on_fast = 7) (get = 694, put = 5, execute_on = 36, execute_on_fast = 7) (get = 694, put = 5, execute_on = 36, execute_on_fast = 7) (get = 694, put = 5, execute_on = 36, execute_on_fast = 7) (get = 694, put = 5, execute_on = 36, execute_on_fast = 7) (get = 694, put = 5, execute_on = 36, execute_on_fast = 7) (get = 694, put = 5, execute_on = 18, execute_on_fast = 7) (get = 694, put = 5, execute_on_fast = 7) (get = 694, put = 5, execute_on_fast = 7) (get = 694, put = 5, execute_on_fast = 7) (get = 694, put = 5, execute_on_fast = 7) (get = 694, put = 5, execute_on_fast = 7) (get = 694, put = 5, execute_on_fast = 7) (get = 694, put = 5, execute_on_fast = 7) (get = 694, put = 5, execute_on_fast = 7)
+(execute_on = 36, execute_on_nb = 21) (get = 262, put = 5, execute_on = 18, execute_on_fast = 7) (get = 262, put = 5, execute_on_fast = 7) (get = 262, put = 5, execute_on_fast = 7)
 0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
 0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
 0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
@@ -10,4 +10,4 @@
 0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
 0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
 0.0 4.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.0
-(execute_on_nb = 75) (execute_on_fast = 5) (execute_on_fast = 5) (execute_on_fast = 5) (get = 6, execute_on_fast = 5) (execute_on_fast = 5) (execute_on_fast = 5) (execute_on_fast = 5) (get = 12, execute_on_fast = 5) (get = 6, execute_on_fast = 5) (get = 6, execute_on_fast = 5) (get = 4, execute_on_fast = 5) (get = 4, execute_on_fast = 5) (execute_on_fast = 5) (execute_on_fast = 5) (execute_on_fast = 5)
+(execute_on_nb = 15) (execute_on_fast = 5) (get = 16, execute_on_fast = 5) (get = 8, execute_on_fast = 5)
