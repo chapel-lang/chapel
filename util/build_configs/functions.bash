@@ -83,7 +83,8 @@ function get_src_version()
     esac
 
     # release_type is developer, get the contents of BUILD_VERSION file
-    local build_version_file="$1/compiler/main/BUILD_VERSION"
+    local subdir=`$1/util/printchplenv --simple --internal --all | grep CHPL_COMPILER_SUBDIR | cut -d = -f 2`
+    local build_version_file="$1/build/compiler/$subdir/BUILD_VERSION"
     ls >/dev/null "$build_version_file" || {
         log_error "$thisfunc: Missing source file '$build_version_file'"
         exit 2
