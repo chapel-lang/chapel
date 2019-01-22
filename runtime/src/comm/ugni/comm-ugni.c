@@ -5591,49 +5591,72 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
 }
 
 
-// Max number of threads that can do buffered gets
-#define MAX_BUFF_GET_THREADS 1024
+/*
+ *** START OF BUFFERED GET OPERATIONS ***
+ *
+ * Support for buffered GET operations. We internally buffer GET operations and
+ * then initiate them with chained transactions for increased transaction rate.
+ */
 
-static int* get_vi_p[MAX_BUFF_GET_THREADS];
-static spinlock* get_lock_p[MAX_BUFF_GET_THREADS];
+// Per thread information about GET buffers
+typedef struct get_buff_thread_info_t {
+  int                            vi;
+  spinlock                       lock;
+  void*                          tgt_addr_v[MAX_CHAINED_GET_LEN];
+  c_nodeid_t                     locale_v[MAX_CHAINED_GET_LEN];
+  mem_region_t*                  remote_mr_v[MAX_CHAINED_GET_LEN];
+  void*                          src_addr_v[MAX_CHAINED_GET_LEN];
+  size_t                         size_v[MAX_CHAINED_GET_LEN];
+  mem_region_t*                  local_mr_v[MAX_CHAINED_GET_LEN];
+  struct get_buff_thread_info_t* next;
+} get_buff_thread_info_t;
 
-// pointers to thread local buffered AMO argument buffers
-static void** get_src_addr_vp[MAX_BUFF_GET_THREADS];
-static void** get_tgt_addr_vp[MAX_BUFF_GET_THREADS];
-static c_nodeid_t* get_locale_vp[MAX_BUFF_GET_THREADS];
-static size_t* get_size_vp[MAX_BUFF_GET_THREADS];
-static mem_region_t** get_local_mr_vp[MAX_BUFF_GET_THREADS];
-static mem_region_t** get_remote_mr_vp[MAX_BUFF_GET_THREADS];
+// Contains linked list of all thread private GET buffer infos (so we can flush
+// all of them) and a lock to protect access to the list
+typedef struct {
+  get_buff_thread_info_t* list;
+  spinlock                lock;
+} get_buff_global_info_t;
 
-// buffered AMO initialization lock and thread counter
-static spinlock get_init_lock;
-static atomic_uint_least32_t get_thread_counter;
+static __thread get_buff_thread_info_t get_buff_thread_info;
+
+static get_buff_global_info_t get_buff_global_info;
 
 static
 void buff_get_init(void) {
-  spinlock_init(&get_init_lock);
-  atomic_init_uint_least32_t(&get_thread_counter, 0);
+  get_buff_global_info.list = NULL;
+  spinlock_init(&get_buff_global_info.lock);
 }
 
-void chpl_comm_get_buff_flush() {
-  uint32_t sz, i;
-  sz = atomic_load_uint_least32_t(&get_thread_counter);
-  for(i=0; i<sz; i++) {
-    if (*get_vi_p[i] != 0) {
-      spinlock_lock(get_lock_p[i]);
-      if (*get_vi_p[i] != 0) {
-        do_remote_get_V(*get_vi_p[i], get_tgt_addr_vp[i], get_locale_vp[i],
-                        get_remote_mr_vp[i], get_src_addr_vp[i],
-                        get_size_vp[i], get_local_mr_vp[i], may_proxy_true);
-        *get_vi_p[i] = 0;
-      }
-      spinlock_unlock(get_lock_p[i]);
-    }
+// Flush buffered GET operations for the specified thread and reset the
+// counter. Should be called with info lock acquired
+static
+inline
+void flush_get_buff(get_buff_thread_info_t* info) {
+  if (info->vi > 0) {
+    do_remote_get_V(info->vi, info->tgt_addr_v, info->locale_v,
+                    info->remote_mr_v, info->src_addr_v, info->size_v,
+                    info->local_mr_v, may_proxy_true);
+    info->vi = 0;
   }
 }
 
+void chpl_comm_get_buff_flush() {
+  get_buff_thread_info_t* info;
+
+  spinlock_lock(&get_buff_global_info.lock);
+  info = get_buff_global_info.list;
+  while (info != NULL) {
+    spinlock_lock(&info->lock);
+    flush_get_buff(info);
+    spinlock_unlock(&info->lock);
+    info = info->next;
+  }
+  spinlock_unlock(&get_buff_global_info.lock);
+}
 
 static
+inline
 void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
                         size_t size, drpg_may_proxy_t may_proxy)
 {
@@ -5660,88 +5683,43 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     return;
   }
 
-  // thread local index and lock
-  static __thread int vi = 0;
-  static __thread spinlock lock;
+  static __thread chpl_bool inited = false;
+  get_buff_thread_info_t* info = &get_buff_thread_info;
 
-  // thread local buffers for all arguments
-  static __thread void* src_addr_v[MAX_CHAINED_GET_LEN];
-  static __thread void* tgt_addr_v[MAX_CHAINED_GET_LEN];
-  static __thread c_nodeid_t locale_v[MAX_CHAINED_GET_LEN];
-  static __thread size_t size_v[MAX_CHAINED_GET_LEN];
-  static __thread mem_region_t* local_mr_v[MAX_CHAINED_GET_LEN];
-  static __thread mem_region_t* remote_mr_v[MAX_CHAINED_GET_LEN];
+  if (!inited) {
+    spinlock_init(&info->lock);
+    info->vi = 0;
 
-  // thread local init status (0=first-call, -1=out-of-entries, 1=have-entry)
-  static __thread int init_status = 0;
+    spinlock_lock(&get_buff_global_info.lock);
+    info->next = get_buff_global_info.list;
+    get_buff_global_info.list = info;
+    spinlock_unlock(&get_buff_global_info.lock);
 
-  if (init_status == 1) {
-    // no-op
-  } else if (init_status == -1) {
-    do_nic_get(tgt_addr, locale, remote_mr, src_addr, size, local_mr);
-    return;
-  } else {
-    uint32_t idx;
-
-    // grab initialization lock
-    spinlock_lock(&get_init_lock);
-
-    // initialize the lock for this thread and figure out our index into the
-    // buffer of GET operation pointers. If we've exceeded the buffer length,
-    // warn and do blocking operations instead
-    spinlock_init(&lock);
-    idx = atomic_load_uint_least32_t(&get_thread_counter);
-    if (idx >= MAX_BUFF_GET_THREADS) {
-      chpl_warning("Exceeded MAX_BUFF_GET_THREADS, buffered gets performance degraded", 0, 0);
-      init_status = -1;
-      spinlock_unlock(&get_init_lock);
-      do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
-      return;
-    }
-
-    // store pointers to our thread local index, lock, and buffers so
-    // operations can be flushed from outside of this routine
-    get_vi_p[idx]         = &vi;
-    get_lock_p[idx]       = &lock;
-
-    get_src_addr_vp[idx]  = &src_addr_v[0];
-    get_tgt_addr_vp[idx]  = &tgt_addr_v[0];
-    get_locale_vp[idx]    = &locale_v[0];
-    get_size_vp[idx]      = &size_v[0];
-    get_local_mr_vp[idx]  = &local_mr_v[0];
-    get_remote_mr_vp[idx] = &remote_mr_v[0];
-
-    init_status = 1;
-    //// actually update the thread counter (needs to be done after the buffer
-    //// pointers are setup, otherwise we have a race with flushing)
-    (void) atomic_fetch_add_uint_least32_t(&get_thread_counter, 1);
-
-    // release initialization lock
-    spinlock_unlock(&get_init_lock);
+    inited = true;
   }
 
   // grab lock for this thread
-  spinlock_lock(&lock);
+  spinlock_lock(&info->lock);
 
-  src_addr_v[vi] = src_addr;
-  tgt_addr_v[vi] = tgt_addr;
-  locale_v[vi] = locale;
-  size_v[vi] = size;
-  local_mr_v[vi] = local_mr;
-  remote_mr_v[vi] = remote_mr;
-  vi++;
+  int vi = info->vi;
+  info->tgt_addr_v[vi] = tgt_addr;
+  info->locale_v[vi] = locale;
+  info->remote_mr_v[vi] = remote_mr;
+  info->src_addr_v[vi] = src_addr;
+  info->size_v[vi] = size;
+  info->local_mr_v[vi] = local_mr;
+  info->vi++;
 
   // flush if buffers are full
-  if (vi == MAX_CHAINED_GET_LEN) {
-    do_remote_get_V(vi, tgt_addr_v, locale_v, remote_mr_v, src_addr_v, size_v,
-                    local_mr_v, may_proxy_true);
-    vi = 0;
+  if (info->vi == MAX_CHAINED_GET_LEN) {
+    flush_get_buff(info);
   }
 
   // release lock for this thread
-  spinlock_unlock(&lock);
-
+  spinlock_unlock(&info->lock);
 }
+/*** END OF BUFFERED GET OPERATIONS ***/
+
 
 static
 void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
