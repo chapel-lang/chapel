@@ -58,7 +58,7 @@ endif
 #
 # the location of the BUILD_VERSION file
 #
-BUILD_VERSION_FILE = $(COMPILER_BUILD)/BUILD_VERSION
+BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
 # configured prefix file
 CONFIGURED_PREFIX_FILE = $(COMPILER_BUILD)/CONFIGURED_PREFIX
 # file storing the names of clang, clang++ for CHPL_LLVM=system
@@ -133,7 +133,7 @@ UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
 CLEAN_TARGS += $(CLANG_SETTINGS_FILE)
 
-$(BUILD_VERSION_FILE): $(COMPILER_BUILD) FORCE
+$(BUILD_VERSION_FILE): FORCE
 	@({ test -e $(CHPL_MAKE_HOME)/.git ; } && \
 	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@ $(CHPL_MAKE_HOME)) || \
 	test -r $(BUILD_VERSION_FILE) || (echo '"0"' > $@);
