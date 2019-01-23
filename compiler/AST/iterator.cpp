@@ -624,12 +624,11 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
                                       bool           is_use,
                                       Vec<BaseAST*>& asts)
 {
-  // BHARSH TODO: fix this to correctly utilize qualified refs
   // Get the expression that sets or uses the symexpr.
   CallExpr* call = toCallExpr(se->parentExpr);
 
   // Create a new temp and load the field value into it.
-  VarSymbol* tmp = newTemp(se->symbol()->type);
+  VarSymbol* tmp = newTemp(se->symbol()->qualType());
 
   // Find the statement containing the symexpr access.
   Expr* stmt = se->getStmtExpr();
@@ -1812,7 +1811,7 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
   std::map<Symbol*, std::vector<CallExpr*> > formalToPrimMap;
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree() && call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL)) {
-      AggregateType* ir = toAggregateType(toArgSymbol((toSymExpr(call->get(1))->symbol()))->type);
+      Type* ir = call->get(1)->getValType();
       if (ii->irecord == ir) {
         Symbol* formal = toSymExpr(call->get(2))->symbol();
         formalToPrimMap[formal].push_back(call);

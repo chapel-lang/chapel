@@ -3,21 +3,40 @@
  * value and its location (i.e. `(value, location)`).
  */
 
+// This is a workaround for #9605. Instead we'd like (max(eltType(1)), 0).
+// This workaround may be costly when eltType(1) is an array.
+proc miniIdentity(type eltType) {
+  var result: eltType;
+  result(1) = max(result(1).type);
+  return result;
+}
+
 class mini : ReduceScanOp {
   type eltType;
-  var value: eltType = max(eltType);
-  var location: int;
+  var value = miniIdentity(eltType);
 
-  proc accumulate(t: (eltType, int)) {
-    if t(1) < value then
-      (value, location) = t;
+  proc identity() {
+    return miniIdentity(eltType);
   }
 
-  proc combine(state: mini(eltType)) {
-    accumulate((state.value, state.location));
+  proc accumulateOntoState(ref state: eltType, t: eltType) {
+    if t(1) < state(1) then
+      state = t;
+  }
+
+  proc accumulate(t: eltType) {
+    accumulateOntoState(value, t);
+  }
+
+  proc combine(other: mini(eltType)) {
+    accumulate(other.value);
   }
 
   proc generate() {
-    return (value, location);
+    return value;
+  }
+
+  proc clone() {
+    return new unmanaged mini(eltType=eltType);
   }
 }

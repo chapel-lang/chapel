@@ -396,20 +396,31 @@ ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV, SymbolMap& map) :
 
 // Remove the return statement and the def of 'ret'. Return 'ret'.
 // See also removeRetSymbolAndUses().
-static Symbol* removeParIterReturn(BlockStmt* cloneBody, bool moreRefs) {
+static Symbol* removeParIterReturn(BlockStmt* cloneBody, Symbol* retsym) {
   CallExpr* retexpr = toCallExpr(cloneBody->body.tail);
   INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
-  Symbol* retsym = toSymExpr(retexpr->get(1))->symbol();
-  INT_ASSERT(retsym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+  if (retsym == NULL) {
+    retsym = toSymExpr(retexpr->get(1))->symbol();
+    INT_ASSERT(retsym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+
+  } else {
+    CallExpr* move = toCallExpr(retsym->getSingleDef()->getStmtExpr());
+    INT_ASSERT(move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN));
+    retsym = toSymExpr(move->get(2))->symbol();
+    move->remove();
+  }
 
   retexpr->remove();
-  if (!moreRefs) retsym->defPoint->remove();
-  // There should not be any references left to 'ret', unless moreRefs.
-  INT_ASSERT(moreRefs || retsym->firstSymExpr() == NULL);
-
   return retsym;
 }
 
+static void removeVoidReturn(BlockStmt* cloneBody) {
+  CallExpr* retexpr = toCallExpr(cloneBody->body.tail);
+  INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
+  INT_ASSERT(toSymExpr(retexpr->get(1))->symbol() == gVoid);
+
+  retexpr->remove();
+}
 
 /////////// standardized svar actions ///////////
 
@@ -1076,7 +1087,9 @@ static void handleRecursiveIter(ForallStmt* fs,
   PARBlock->insertAtTail(iterRecDef->remove());
   PARBlock->insertAtTail(parIterDef->remove());
   PARBlock->insertAtTail(parIdxDef->remove());
-  PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, parIterCall->remove()));
+  INT_ASSERT(toSymExpr(parIterCall->argList.tail)->symbol() == gRetByRefToken);
+  parIterCall->argList.tail->replace(new SymExpr(iterRec)); // ret by ref
+  PARBlock->insertAtTail(parIterCall->remove());
   PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, parIter, callGetIter->remove()));
 
   ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
@@ -1103,19 +1116,111 @@ static void handleRecursiveIter(ForallStmt* fs,
 
 /////////// iterator forwarders ///////////
 
+// Indicate whether the function is considered an iterator, NOT a forwarder.
+// This used to admit only parallel iterators,
+// before we started also allowing serial iterators in ForallStmt loops.
+static bool isProperIterator(FnSymbol* fn) {
+  return fn->isIterator();
+}
+
+// Remove the retArg temp and its initialization as the address of currSym.
+static void cleanupRetArg(Symbol* retArg, Symbol* currSym) {
+  retArg->defPoint->remove();
+
+  // Ensure we are removing the set-ref of currSym.
+  SymExpr* def = retArg->firstSymExpr();
+  CallExpr* move = toCallExpr(def->parentExpr);
+  INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+  CallExpr* setref = toCallExpr(move->get(2));
+  INT_ASSERT(setref && setref->isPrimitive(PRIM_SET_REFERENCE));
+  SymExpr* refee = toSymExpr(setref->get(1));
+  INT_ASSERT(refee && refee->symbol() == currSym);
+  move->remove();
+
+  // Ensure no other uses.
+  INT_ASSERT(retArg->firstSymExpr() == NULL);
+}
+
+/*
+Handle the case where 'currSym' in stripReturnScaffolding()
+is defined by calling a retArg-ified function, for example:
+
+  call _toLeader(ic,currSym)
+
+If the callee looks like:
+
+  proc _toLeader(ic, ref retArg) {
+    doSomething;
+    retArg = someExpr;
+  }
+
+Then replace the call _toLeader(ic,currSym) with:
+
+  doSomething;
+  currSym = someExpr;
+
+then stripReturnScaffolding() can continue, using the same currSym.
+
+*/
+static Symbol* inlineRetArgFunction(CallExpr* defCall, FnSymbol* defFn,
+                                    Symbol* currSym)
+{
+  BlockStmt* defBody = copyFnBodyForInlining(defCall, defFn,
+                                             defCall->getStmtExpr());
+
+  // Expect the last statement to be "return void".
+  CallExpr* retexpr = toCallExpr(defBody->body.tail);
+  INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
+  INT_ASSERT(toSymExpr(retexpr->get(1))->symbol() == gVoid);
+
+  // Expect the last statement before 'return' to assign into the retarg.
+  CallExpr* prev      = toCallExpr(retexpr->prev);
+  CallExpr* retAssign = prev;
+
+  if (FnSymbol* fn = prev->resolvedFunction()) {
+    // ... or an autoDestroy, which we need to remove.
+    // The assignment, then, comes right before.
+    INT_ASSERT(fn->hasFlag(FLAG_AUTO_DESTROY_FN));
+    retAssign = toCallExpr(prev->prev);
+    prev->remove();
+  }    
+
+  INT_ASSERT(retAssign && retAssign->isPrimitive(PRIM_ASSIGN));
+
+  SET_LINENO(defCall);
+  SymExpr* retArgSE = toSymExpr(retAssign->get(1));
+
+  // Assign into currSym instead of the retarg.
+  retArgSE->replace(new SymExpr(currSym));
+
+  // Or - ask copyFnBodyForInlining() to assign directly into the actual,
+  // avoiding the temp for retarg.
+  cleanupRetArg(retArgSE->symbol(), currSym);
+  retexpr->remove();
+
+  // Otherwise how do we replace it?
+  INT_ASSERT(defCall == defCall->getStmtExpr());
+  defCall->replace(defBody);
+
+  // Continue with the same symbol.
+  return currSym;
+}
+
 //
 // For 'block' the body of a function, return the single CallExpr*
 // that computes the return value. Fail if it does not exist.
 // Remove the return symbol and the temps that propagate this value
 // into the return statement.
 //
-static CallExpr* stripReturnScaffolding(BlockStmt* block) {
-  Symbol* currSym  = removeParIterReturn(block, true); // 'ret'
+static CallExpr* stripReturnScaffolding(BlockStmt* block, Symbol* currSym) {
+  currSym  = removeParIterReturn(block, currSym);
 
   while (true) {
     if (SymExpr* defSE = currSym->getSingleDef())
-      if (CallExpr* defMove = toCallExpr(defSE->parentExpr))
-        if (defMove->isPrimitive(PRIM_MOVE)) {
+      if (CallExpr* defMove = toCallExpr(defSE->parentExpr)) {
+        if (defMove->isPrimitive(PRIM_MOVE)  ||
+            defMove->isPrimitive(PRIM_ASSIGN)) {
+          INT_ASSERT(defSE == defMove->get(1));
           currSym->defPoint->remove();
           Expr* defSrc = defMove->get(2);
 
@@ -1126,12 +1231,35 @@ static CallExpr* stripReturnScaffolding(BlockStmt* block) {
             continue;
           }
           if (CallExpr* srcCall = toCallExpr(defSrc)) {
+            if (srcCall->resolvedFunction()->hasFlag(FLAG_AUTO_COPY_FN)) {
+              // This should be unnecessary once we get rid of _toLeader fns.
+              defMove->remove();
+              currSym = toSymExpr(srcCall->get(1))->symbol();
+              // Remove the corresponding autoDestroy.
+              for_SymbolSymExprs(curSE, currSym)
+                if (CallExpr* curCall = toCallExpr(curSE->parentExpr))
+                  if (FnSymbol* curCallFn = curCall->resolvedFunction())
+                    if (curCallFn->hasFlag(FLAG_AUTO_DESTROY_FN))
+                      {  curCall->remove();  break;  }
+              continue;
+            }
             // Found it. Place it where our ForallStmt will go.
             defMove->replace(srcCall->remove());
             INT_ASSERT(currSym->firstSymExpr() == NULL); // no other refs to it
             return srcCall;
           }
+        } else if (FnSymbol* defFn = defMove->resolvedFunction()) {
+          if (defFn->hasFlag(FLAG_FN_RETARG)) {
+            if (isProperIterator(defFn)) {
+              // 'defMove' is the iterator call that we want.
+              return defMove;
+            } else {
+              currSym = inlineRetArgFunction(defMove, defFn, currSym);
+              continue;
+            }
+          }
         }
+      }
 
     // The AST is beyond our expectations. Bail out.
     USR_FATAL(currSym, "only simple control flow is allowed in a procedure that returns an iterator for use in a forall loop");
@@ -1142,9 +1270,8 @@ static CallExpr* stripReturnScaffolding(BlockStmt* block) {
 }
 
 //
-// If the iterable expression calls something that is NOT
-// a parallel iterator proper, pre-process it and update
-// 'iterCall' and 'iterFn' to be the new iterable expression.
+// If the iterable expression calls something that is NOT a proper iterator,
+// pre-process it, then point 'iterCall' and 'iterFn' to the new callee.
 //
 // Tests:
 //   library/packages/Collection/CollectionCounter.chpl
@@ -1154,8 +1281,24 @@ static CallExpr* stripReturnScaffolding(BlockStmt* block) {
 static void handleIteratorForwarders(ForallStmt* fs,
                                      CallExpr*& iterCall, FnSymbol*& iterFn)
 {
+ do {  // Repeat this until the new iterFn is a proper iterator.
+
   // These should have been replaced away in convertIteratorForLoopexpr().
-  INT_ASSERT(!isLoopExprFun(iterFn));
+  INT_ASSERT(iterFn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
+
+  // Handle a return by reference. Ex.:
+  //  distributions/bradc/assoc/userAssoc-domain-stress
+  Symbol* retRefSym = NULL;
+  if (iterFn->hasFlag(FLAG_FN_RETARG)) {
+    SymExpr* retRefSE     = toSymExpr(iterCall->argList.tail);
+    Symbol*  retRefFormal = toDefExpr(iterFn->formals.tail)->sym;
+    INT_ASSERT(retRefSE->symbol() == gRetByRefToken);
+    INT_ASSERT(retRefFormal->hasFlag(FLAG_RETARG));
+    SET_LINENO(retRefSE);
+    retRefSym = newTemp("retRef", retRefFormal->type);
+    retRefSym->qual = QUAL_REF;
+    retRefSE->replace(new SymExpr(retRefSym));
+  }
 
   // Inline the forwarder, i.e. 'iterFn', like so:
   //
@@ -1174,7 +1317,7 @@ static void handleIteratorForwarders(ForallStmt* fs,
   BlockStmt* fBody = copyFnBodyForInlining(iterCall, iterFn, fs);
   fs->replace(fBody);
 
-  CallExpr* forwardee = stripReturnScaffolding(fBody);
+  CallExpr* forwardee = stripReturnScaffolding(fBody, retRefSym);
 
   forwardee->replace(fs);
   iterCall->replace(forwardee);
@@ -1182,9 +1325,7 @@ static void handleIteratorForwarders(ForallStmt* fs,
   iterCall = forwardee;
   iterFn   = iterCall->resolvedFunction();
 
-  // Todo: handle the case where the new 'iterFn' is yet
-  // another forwarder. If so, repeat the same steps
-  // until we reach an iterFn that is a parallel iterator.
+ } while (! isProperIterator(iterFn));
 }
 
 
@@ -1208,11 +1349,11 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   }
 
   // Make sure it is a parallel iterator, not a forwarder.
-  if (!parIterFn->hasFlag(FLAG_INLINE_ITERATOR))
+  if (! isProperIterator(parIterFn))
     // This updates parIterCall, parIterFn.
     handleIteratorForwarders(fs, parIterCall, parIterFn);
 
-  INT_ASSERT(parIterFn->hasFlag(FLAG_INLINE_ITERATOR));
+  INT_ASSERT(isProperIterator(parIterFn));
 
   if (parIterFn->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
     handleRecursiveIter(fs, parIterFn, parIterCall);
@@ -1231,7 +1372,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   // Clone the iterator body.
   // Cf. expandIteratorInline() and inlineCall().
   BlockStmt* ibody = copyFnBodyForInlining(parIterCall, parIterFn, ianch);
-  removeParIterReturn(ibody, false);
+  removeVoidReturn(ibody);
 
   // Let us remove 'fs' later, for debugging convenience.
   fs->insertAfter(iwrap);
@@ -1263,6 +1404,7 @@ static void removeDeadIters() {
     {
       if (fn->hasFlag(FLAG_INLINE_ITERATOR) || isTaskFun(fn))
         // Got a parallel iterator or task function with no uses. Remove.
+        // TODO: do the same for non-parallel iterators.
         fn->defPoint->remove();
     }
     else
@@ -1279,4 +1421,6 @@ void lowerForallStmtsInline()
   USR_STOP();
 
   removeDeadIters();
+
+  INT_ASSERT(gRetByRefToken->firstSymExpr() == NULL);
 }

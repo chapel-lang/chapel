@@ -1,0 +1,4 @@
+sudoku-reduce4.chpl:5: In function 'R':
+sudoku-reduce4.chpl:8: error: unresolved call 'linearize(Xs=promoted expression, tag=iterKind, followThis=1*range(int(64),bounded,false))'
+$CHPL_HOME/modules/internal/ChapelArray.chpl:4106: note: candidates are: linearize(Xs)
+sudoku-reduce4.chpl:1: note:                 linearize(Xs)

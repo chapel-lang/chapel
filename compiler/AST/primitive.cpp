@@ -584,6 +584,7 @@ initPrimitive() {
   prim_def(PRIM_TRY_EXPR, "try-expr", returnInfoFirst);
   prim_def(PRIM_TRYBANG_EXPR, "try!-expr", returnInfoFirst);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
+  prim_def(PRIM_REDUCE, "reduce", returnInfoVoid, true); // pre-resolve only
   prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_PLUS, "u+", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_NOT, "u~", returnInfoFirstDeref);
@@ -797,6 +798,7 @@ initPrimitive() {
   // BlockStmt::blockInfo - unlocal local block
   prim_def(PRIM_BLOCK_UNLOCAL, "unlocal block", returnInfoVoid);
 
+  prim_def(PRIM_HAS_LEADER, "has leader", returnInfoBool);
   prim_def(PRIM_TO_LEADER, "to leader", returnInfoVoid);
   prim_def(PRIM_TO_FOLLOWER, "to follower", returnInfoVoid);
   prim_def(PRIM_TO_STANDALONE, "to standalone", returnInfoVoid);

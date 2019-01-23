@@ -678,8 +678,10 @@ void initPrimitiveTypes() {
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
 
   dtMethodToken = createInternalType ("_MT", "_MT");
+  dtRetByRefToken = createInternalType ("_RetByRef", "_RetByRef");
 
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
+  CREATE_DEFAULT_SYMBOL(dtRetByRefToken, gRetByRefToken, "_retByRef");
 
   dtTypeDefaultToken = createInternalType("_TypeDefaultT", "_TypeDefaultT");
 

@@ -100,21 +100,40 @@ proc dist(x: coord, y:coord) {
 //
 // User-defined reduction class for computing updated center locations
 //
-class kmeans: ReduceScanOp {
-  type eltType;                        // required field
+
+record Accumulation {
   var error: real;                     // accumulated error
   var clusterSize: [centerSpace] int;  // histogram of data->center counts
   var offset: [centerSpace] coord;     // offset for each center
+}
+
+class kmeans: ReduceScanOp {
+  type eltType;                        // required field
+  var state: Accumulation;
+
+  proc identity {
+    return new Accumulation();
+  }
 
   //
   // the accumulator takes a distance, center, and data coordinate and
   // updates the error, the appropriate clusterSize, and the offset
   // for that center
   //
-  proc accumulate(((dist, ctr), datum, centers)) {
-    error += dist;    
-    clusterSize(ctr) += 1;
-    offset(ctr) += datum - centers(ctr);
+  proc accumulateOntoState(ref state, ((dist, ctr), datum, centers)) {
+    state.error            += dist;    
+    state.clusterSize(ctr) += 1;
+    state.offset(ctr)      += datum - centers(ctr);
+  }
+
+  proc accumulate(value) {
+    accumulateOntoState(state, value);
+  }
+
+  proc accumulate(other: Accumulation) {
+    state.error       += other.error;
+    state.clusterSize += other.clusterSize;
+    state.offset      += other.offset;
   }
 
   //
@@ -122,9 +141,7 @@ class kmeans: ReduceScanOp {
   // them
   //
   proc combine(other: borrowed kmeans) {
-    error += other.error;
-    clusterSize += other.clusterSize;
-    offset += other.offset;
+    accumulate(other.state);
   }
 
   //
@@ -132,12 +149,16 @@ class kmeans: ReduceScanOp {
   //
   proc generate() {
     // this is a bug workaround
-    offset = offset / clusterSize;
-    return (error, offset);
+    state.offset = state.offset / state.clusterSize;
+    return (state.error, state.offset);
     // the original was
     //return (error, offset / clusterSize);
     // but that seems to return an iterator record and then causes
     // a type mismatch compilation error on the arrays branch.
+  }
+
+  proc clone() {
+    return new unmanaged kmeans(eltType=eltType);
   }
 }
 

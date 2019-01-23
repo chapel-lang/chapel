@@ -11,16 +11,35 @@
       var per = (max-min)/NBUCKETS;
       var counts:NBUCKETS*int;
 
-      proc accumulate(x) {
+      proc identity {
+        var result:NBUCKETS*int;
+        return result;
+      }
+
+      proc accumulateOntoState(ref counts, x:eltType) {
         counts[1 + x/per] += 1;
       }
-      proc combine(x) {
+
+      proc accumulate(x:eltType) {
+        accumulateOntoState(counts, x);
+      }
+
+      proc accumulate(other:NBUCKETS*int) {
         for i in 1..NBUCKETS {
-          counts[i] += x.counts[i];
+          counts[i] += other[i];
         }
       }
+
+      proc combine(x) {
+        accumulate(x.counts);
+      }
+
       proc generate() {
         return counts;
+      }
+
+      proc clone() {
+        return new unmanaged myhisto(eltType=eltType);
       }
     }
   }

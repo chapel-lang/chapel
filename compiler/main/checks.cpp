@@ -616,6 +616,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_IS_TUPLE_TYPE:
         case PRIM_IS_STAR_TUPLE_TYPE:
         case PRIM_IS_SUBTYPE:
+        case PRIM_REDUCE:
         case PRIM_REDUCE_ASSIGN:
         case PRIM_TUPLE_EXPAND:
         case PRIM_QUERY:
@@ -811,6 +812,13 @@ checkFormalActualTypesMatch()
           // All other cases == error.
           INT_FATAL(call, "nil is passed to the formal %s of a non-class type",
                     formal->name);
+        }
+
+        if (SymExpr* se = toSymExpr(actual)) {
+          if (se->symbol() == gRetByRefToken &&
+              formal->hasFlag(FLAG_RETARG))
+            // The compiler generates this combination.
+            continue;
         }
 
         if (formal->getValType() != actual->getValType()) {

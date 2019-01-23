@@ -2040,16 +2040,28 @@ static void insertAndResolveInitialAccumulate(ForallStmt* fs, BlockStmt* hld,
 }
 
 // Finalize the reduction:  outerVar = globalOp.generate()
-static void insertFinalGenerate(Expr* ref, Symbol* fiVarSym, Symbol* globalOp) {
-  Expr* next = ref->next; // nicer ordering of the following insertions
+static void insertFinalGenerate(ForallStmt* fs,
+                                Symbol* fiVarSym, Symbol* globalOp)
+{
+  Expr* next = fs->next; // nicer ordering of the following insertions
   INT_ASSERT(next);
   VarSymbol* genTemp = newTemp("chpl_gentemp");
-  // TODO: Should we try to free chpl_gentemp right after the assignment?
-  genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   next->insertBefore(new DefExpr(genTemp));
   next->insertBefore("'move'(%S, generate(%S,%S))",
                      genTemp, gMethodToken, globalOp);
-  next->insertBefore(new CallExpr("=", fiVarSym, genTemp));
+  if (fs->insertInitialAccumulate()) {
+    next->insertBefore(new CallExpr("=", fiVarSym, genTemp));
+    // TODO: Should we try to free chpl_gentemp right after the assignment?
+    genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  } else {
+    // Initialize, not assign. Do everything *after* 'fs'.
+    // This is what we get out of lowerPrimReduce().
+    INT_ASSERT(fiVarSym->defPoint != NULL);
+    INT_ASSERT(fiVarSym->firstSymExpr()->symbolSymExprsNext ==
+               fiVarSym->lastSymExpr()); // only two uses
+    next->insertBefore(fiVarSym->defPoint->remove());
+    next->insertBefore(new CallExpr(PRIM_INIT_VAR, fiVarSym, genTemp));
+  }
 }
 
 static void moveInstantiationPoint(BlockStmt* to, BlockStmt* from, Type* type) {
@@ -2118,7 +2130,9 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
   insertFinalGenerate(fs, fiVarSym, globalOp);
 
   resolveBlockStmt(hld);
-  insertAndResolveInitialAccumulate(fs, hld, globalOp, fiVarSym);
+
+  if (fs->insertInitialAccumulate())
+    insertAndResolveInitialAccumulate(fs, hld, globalOp, fiVarSym);
 
   moveInstantiationPoint(toBlockStmt(hld->parentExpr), hld, globalOp->type);
 
@@ -2145,7 +2159,8 @@ static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
     } else {
       INT_ASSERT(isLcnSymbol(riSym)); // what else can a globalOp be??
 
-      insertAndResolveInitialAccumulate(fs, NULL, riSym, fiVarSym);
+      if (fs->insertInitialAccumulate())
+        insertAndResolveInitialAccumulate(fs, NULL, riSym, fiVarSym);
 
       // The user will manage allocation and deallocation of 'riSym'.
       // So we only need to add a call generate().

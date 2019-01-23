@@ -229,11 +229,7 @@ void lowerLoopExprs(BaseAST* ast) {
 
 
 static Expr* getShapeForZippered(Expr* tupleRef) {
-  Symbol* tupleSym = toSymExpr(tupleRef)->symbol();
-  SymExpr* tupleDef = tupleSym->getSingleDef();
-  CallExpr* move = toCallExpr(tupleDef->parentExpr);
-  INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-  CallExpr* buildTup = toCallExpr(move->get(2));
+  CallExpr* buildTup = toCallExpr(getDefOfTemp(toSymExpr(tupleRef)));
   INT_ASSERT(buildTup->isNamed("_build_tuple"));
   // The shape comes from the first tuple component.
   return buildTup->get(1);
@@ -415,6 +411,15 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   return sifn;
 }
 
+static Expr* buildLIFNwhere(ArgSymbol* lifnTag, ArgSymbol* lifnIterator,
+                            bool zippered)
+{
+  Symbol* tlsym = new_StringSymbol(zippered ? "_toLeaderZip" : "_toLeader");
+  Expr* checkTag = new CallExpr("==", lifnTag, gLeaderTag);
+  Expr* checkToLeader = new CallExpr(PRIM_CALL_RESOLVES, tlsym, lifnIterator);
+  return new CallExpr("&&", checkTag, checkToLeader);
+}
+
 static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
                                        bool zippered)
 {
@@ -429,7 +434,7 @@ static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
   ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   lifn->insertFormalAtTail(lifnIterator);
 
-  lifn->where = new BlockStmt(new CallExpr("==", lifnTag, tag->copy()));
+  lifn->where = new BlockStmt(buildLIFNwhere(lifnTag, lifnIterator, zippered));
 
   VarSymbol* leaderIterator = newTempConst("_leaderIterator");
   leaderIterator->addFlag(FLAG_EXPR_TEMP);

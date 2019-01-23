@@ -48,7 +48,9 @@
 #include "callInfo.h"
 #include "driver.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
+#include "iterator.h"
 #include "UnmanagedClassType.h"
 #include "passes.h"
 #include "resolution.h"
@@ -1610,6 +1612,8 @@ static Expr*      getIndices(PromotionInfo& promotion);
 
 static Expr*      getIterator(PromotionInfo& promotion);
 
+static bool       haveLeader(CallExpr* call, PromotionInfo& promotion);
+
 static CallExpr* createPromotedCallForWrapper(PromotionInfo& promotion);
 
 static void       collectPromotionFormals(PromotionInfo& promotion,
@@ -1619,12 +1623,6 @@ static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
                                                            FnSymbol* fn);
 
 static void fixDefaultArgumentsInWrapCall(PromotionInfo& promotion);
-
-static void       buildFastFollowerCheck(bool                  isStatic,
-                                         bool                  addLead,
-                                         CallInfo&             info,
-                                         FnSymbol*             wrapper,
-                                         std::set<ArgSymbol*>& formals);
 
 // insert PRIM_ITERATOR_RECORD_SET_SHAPE(iterRecord,shapeSource)
 static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
@@ -1826,6 +1824,9 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
   return retval;
 }
 
+// The info needed to call buildFastFollowerChecksIfNeeded() later.
+static std::map<FnSymbol*, std::set<ArgSymbol*> > promotionFormalsMap;
+
 static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
                                      BlockStmt* instantiationPt,
                                      CallInfo&  info,
@@ -1844,6 +1845,8 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
   yieldTmp->addFlag(FLAG_EXPR_TEMP);
 
+ if (haveLeader(info.call, promotion))
+ {
   buildLeaderIterator(wrapFn, instantiationPt, iterator, zippered);
 
   buildFollowerIterator(promotion, instantiationPt, indices, iterator, wrapCall);
@@ -1853,14 +1856,14 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
     collectPromotionFormals(promotion, requiresPromotion);
 
-    // Build static (param) fast follower check functions
-    buildFastFollowerCheck(true,  false, info, wrapFn, requiresPromotion);
-    buildFastFollowerCheck(true,  true,  info, wrapFn, requiresPromotion);
+    INT_ASSERT(!promotionFormalsMap.count(wrapFn));
 
-    // Build dynamic fast follower check functions
-    buildFastFollowerCheck(false, false, info, wrapFn, requiresPromotion);
-    buildFastFollowerCheck(false, true,  info, wrapFn, requiresPromotion);
+    // We will buildFastFollowerCheck() later, when (a) they are called for,
+    // and (b) when we have the _iteratorRecord type for the promoted expr.
+    // Test: studies/kmeans/kmeans-blc.chpl
+    promotionFormalsMap[wrapFn] = requiresPromotion;
   }
+ }
 
   yieldBlock->insertAtTail(new DefExpr(yieldTmp));
 
@@ -1885,12 +1888,6 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
   VarSymbol*  liIndex    = newTemp("p_leaderIndex");
   VarSymbol*  liIterator = newTemp("p_leaderIterator");
 
-  const char* leaderName = zippered ? "_toLeaderZip" : "_toLeader";
-
-  BlockStmt*  loop       = NULL;
-  BlockStmt*  loopBody   = new BlockStmt(new CallExpr(PRIM_YIELD, liIndex));
-  CallExpr*   toLeader   = NULL;
-
   // Leader iterators always return by value
   liFn->retTag = RET_VALUE;
 
@@ -1904,13 +1901,20 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
 
   liIterator->addFlag(FLAG_EXPR_TEMP);
 
-  toLeader = new CallExpr(leaderName, iterator->copy(&leaderMap));
+  const char* leaderName = zippered ? "_toLeaderZip" : "_toLeader";
+  CallExpr*  toLeader = new CallExpr(leaderName, iterator->copy(&leaderMap));
+  BlockStmt* loopBody = new BlockStmt(new CallExpr(PRIM_YIELD, liIndex));
 
-  loop     = ForLoop::buildForLoop(new SymExpr(liIndex),
-                                   new SymExpr(liIterator),
-                                   loopBody,
-                                   false,
-                                   zippered);
+  ForallStmt* fs = ForallStmt::buildStmt(new SymExpr(liIndex),
+                                         new SymExpr(liIterator),
+                                         NULL, // intents
+                                         loopBody,
+                                         false); // only leader - not zippered
+
+  // This means "do not mess with iterator" and "no shadow vars please".
+  fs->fFromForLoop = true;
+  
+  BlockStmt* loop = buildChapelStmt(fs);
 
   liFn->addFlag(FLAG_INLINE_ITERATOR);
   liFn->addFlag(FLAG_GENERIC);
@@ -1929,8 +1933,6 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
   liFn->insertAtTail(loop);
 
   theProgram->block->insertAtTail(new DefExpr(liFn));
-
-  toBlockStmt(loopBody->parentExpr)->insertAtHead(new DefExpr(liIndex));
 
   normalize(liFn);
 
@@ -2175,6 +2177,49 @@ static Expr* getIterator(PromotionInfo& promotion) {
   return retval;
 }
 
+static Expr* getLeaderArg(CallExpr* call, PromotionInfo& promotion) {
+  for (int i = 0; i < (int)(promotion.promotedType.size()); i++)
+    if (promotion.promotedType[i] != NULL)
+      return call->get(i+1);
+
+  INT_ASSERT(false); // did not find any promoted things
+  return NULL;
+}
+
+static Expr* stripNamedExpr(Expr* expr) {
+  if (NamedExpr* named = toNamedExpr(expr)) return named->actual;
+  else                                      return expr;
+}
+
+static std::set<Symbol*> haveLeaderSymbolStack;
+
+static bool haveLeader(CallExpr* call, PromotionInfo& promotion) {
+  Expr*   leadingArg  = stripNamedExpr(getLeaderArg(call, promotion));
+  Symbol* leadingSym  = toSymExpr(leadingArg)->symbol();
+  Type*   leadingType = leadingSym->type;
+
+  if (leadingType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    // This is an iterator or a forwarder. Check its IteratorGroup.
+    FnSymbol* serialIter = getTheIteratorFn(leadingType);
+    return serialIter->iteratorGroup->leader != NULL;
+
+  } else {
+    if (haveLeaderSymbolStack.count(leadingSym) > 0)
+      return false; // We are recursing. Skip it, then.
+
+    haveLeaderSymbolStack.insert(leadingSym);
+    // Not an iterator. To iterate over it, need to invoke these().
+    CallExpr* callLeader = new CallExpr("these", gMethodToken,
+      leadingSym, new NamedExpr(astrTag, new SymExpr(gLeaderTag)));
+    BlockStmt* container = new BlockStmt(callLeader);
+    call->getStmtExpr()->insertAfter(container);
+    FnSymbol* leaderFn = tryResolveCall(callLeader);
+    container->remove();
+    haveLeaderSymbolStack.erase(leadingSym);
+    return leaderFn != NULL;
+  }
+}
+
 // Returns a CallExpr which contains the call to the original function
 // as the last statement. Assumes that addDefaultsAndReorder will
 // eventually be called for this call. It will have the wrong
@@ -2336,13 +2381,13 @@ static void fixDefaultArgumentsInWrapCall(PromotionInfo& promotion) {
 //
 static void buildFastFollowerCheck(bool                  isStatic,
                                    bool                  addLead,
-                                   CallInfo&             info,
                                    FnSymbol*             wrapper,
+                                   Type*                 IRtype,
                                    std::set<ArgSymbol*>& requiresPromotion) {
   const char* fnName     = NULL;
   FnSymbol*   checkFn    = NULL;
 
-  ArgSymbol*  x          = new ArgSymbol(INTENT_BLANK, "x", dtIteratorRecord);
+  ArgSymbol*  x          = new ArgSymbol(INTENT_BLANK, "x", IRtype);
 
   CallExpr*   buildTuple = new CallExpr("_build_tuple_always_allow_ref");
 
@@ -2366,8 +2411,6 @@ static void buildFastFollowerCheck(bool                  isStatic,
     checkFn->retTag = RET_VALUE;
   }
 
-  checkFn->addFlag(FLAG_GENERIC);
-
   checkFn->insertFormalAtTail(x);
 
   if (addLead == true) {
@@ -2377,8 +2420,12 @@ static void buildFastFollowerCheck(bool                  isStatic,
 
     forward = new CallExpr(astr(fnName, "Zip"), pTup, lead);
 
+    checkFn->addFlag(FLAG_GENERIC);
+
   } else {
     forward = new CallExpr(astr(fnName, "Zip"), pTup);
+
+    INT_ASSERT(! x->type->symbol->hasFlag(FLAG_GENERIC));
   }
 
   for_formals(formal, wrapper) {
@@ -2397,11 +2444,6 @@ static void buildFastFollowerCheck(bool                  isStatic,
     }
   }
 
-  CallExpr* typeOfLhs = new CallExpr(PRIM_TYPEOF, x);
-  CallExpr* typeOfRhs = new CallExpr(PRIM_TYPEOF, info.call->copy());
-
-  checkFn->where = new BlockStmt(new CallExpr("==", typeOfLhs, typeOfRhs));
-
   checkFn->insertAtTail(new DefExpr(pTup));
   checkFn->insertAtTail(new CallExpr(PRIM_MOVE, pTup, buildTuple));
 
@@ -2412,8 +2454,35 @@ static void buildFastFollowerCheck(bool                  isStatic,
   theProgram->block->insertAtTail(new DefExpr(checkFn));
 
   normalize(checkFn);
+}
 
-  checkFn->setInstantiationPoint(info.call);
+void buildFastFollowerChecksIfNeeded(CallExpr* checkCall) {
+  if (checkCall->numActuals() == 0) return; // weird, don't deal handle it
+
+  Type* ir = checkCall->get(1)->getValType();
+  if (! ir->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    // We build check fns only for promotion wrappers.
+    return;
+
+  FnSymbol* wrapFn = getTheIteratorFn(ir);
+  if (promotionFormalsMap.count(wrapFn) == 0)
+    // Either this wrapFn has been handled, or we are not supposed to
+    // create fast follower checks, ex. for a chpl__loopexpr_iter.
+    return;
+
+  std::set<ArgSymbol*>& requiresPromotion = promotionFormalsMap[wrapFn];
+  SET_LINENO(wrapFn);
+
+  // Build static (param) fast follower check functions
+  buildFastFollowerCheck(true,  false, wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(true,  true,  wrapFn, ir, requiresPromotion);
+
+  // Build dynamic fast follower check functions
+  buildFastFollowerCheck(false, false, wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(false, true,  wrapFn, ir, requiresPromotion);
+
+  // Done with this wrapFn.
+  promotionFormalsMap.erase(wrapFn);
 }
 
 /************************************* | **************************************

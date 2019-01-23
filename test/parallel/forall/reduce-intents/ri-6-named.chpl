@@ -9,7 +9,8 @@ class UserReduceOp: ReduceScanOp {
   var value: eltType;
 
   proc identity         return 0: eltType;
-  proc accumulate(elm)  { value = value + elm; }
+  proc accumulate(elm)  { accumulateOntoState(value, elm); }
+  proc accumulateOntoState(ref value, elm)  { value = value + elm; }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
   proc clone()          return new unmanaged UserReduceOp(eltType=eltType);

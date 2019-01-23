@@ -1,35 +1,51 @@
-class slowSum: ReduceScanOp {
-  type eltType = real;
+record stateType {
   var exps: domain(int);
   var vals: [exps] real;
+}
+
+class slowSum: ReduceScanOp {
+  type eltType = real;
+  var  state: stateType;
 
   proc identity {
     assert(eltType == real, "slowSum currently only supports reals");
-    return 0.0;
+    return new stateType();
   }
 
-  proc accumulate(value) {
+  proc accumulateOntoState(ref state, value) {
     var exp: c_int;
     extern proc frexp(value: real, ref exp: c_int): real;
     frexp(value, exp);
-    if (!exps.contains(exp)) then
-      exps += exp;
-    vals[exp] += value;
+    if (!state.exps.contains(exp)) then
+      state.exps += exp;
+    state.vals[exp] += value;
+  }
+
+  proc accumulate(value: eltType) {
+    accumulateOntoState(state, value);
+  }
+
+  proc accumulate(other: stateType) {
+    for (exp, val) in zip(other.exps, other.vals) do {
+      if (!this.state.exps.contains(exp)) then
+        this.state.exps += exp;
+      this.state.vals[exp] += val;
+    }
   }
 
   proc combine(other) {
-    for (exp, val) in zip(other.exps, other.vals) do {
-      if (!exps.contains(exp)) then
-        exps += exp;
-      vals[exp] += val;
-    }
+    accumulate(other.state);
   }
 
   proc generate() {
     var sum = 0.0;
-    for val in vals do
+    for val in state.vals do
       sum += val;
     return sum;
+  }
+
+  proc clone() {
+    return new unmanaged slowSum(eltType = eltType);
   }
 }
 
