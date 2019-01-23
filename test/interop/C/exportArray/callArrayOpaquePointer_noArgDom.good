@@ -1,9 +1,0 @@
-callArrayOpaquePointer_noArgDom.test.c: In function ‘main’:
-callArrayOpaquePointer_noArgDom.test.c:12:14: warning: passing argument 1 of ‘printBlock’ from incompatible pointer type [-Wincompatible-pointer-types]
-   printBlock(&arr); // Expected to fail
-              ^~~~
-In file included from callArrayOpaquePointer_noArgDom.test.c:3:
-lib/arrayOpaquePointer_noArgDom.h:6:39: note: expected ‘chpl_external_array *’ {aka ‘struct <anonymous> *’} but argument is of type ‘chpl_opaque_array *’ {aka ‘struct <anonymous> *’}
- void printBlock(chpl_external_array * x);
-                 ~~~~~~~~~~~~~~~~~~~~~~^
-timedexec: target program died with signal 11, without coredump

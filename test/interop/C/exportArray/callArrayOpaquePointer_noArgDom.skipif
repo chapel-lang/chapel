@@ -1,2 +1,0 @@
-# Use gcc errors only
-CHPL_TARGET_COMPILER != gnu
