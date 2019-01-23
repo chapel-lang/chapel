@@ -1506,6 +1506,7 @@ static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
 static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
 static void      remote_get_buff_init(void);
+static void      remote_get_buff_flush(void);
 static void      do_remote_get_buff(void*, c_nodeid_t, void*, size_t,
                                     drpg_may_proxy_t);
 static void      do_remote_get_V(int, void**, c_nodeid_t*, mem_region_t**,
@@ -1519,6 +1520,7 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
 static void      nic_amo_buff_init(void);
+static void      nic_amo_nf_buff_flush(void);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
 static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
@@ -5558,6 +5560,10 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
   do_remote_get_buff(addr, locale, raddr, size, may_proxy_true);
 }
 
+void chpl_comm_get_unordered_fence(void) {
+  remote_get_buff_flush();
+}
+
 
 void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
                    size_t size, int32_t typeIndex,
@@ -5632,7 +5638,7 @@ void remote_get_buff_init(void) {
 // counter. Should be called with info lock acquired
 static
 inline
-void flush_get_buff(get_buff_thread_info_t* info) {
+void get_buff_thread_info_flush(get_buff_thread_info_t* info) {
   if (info->vi > 0) {
     do_remote_get_V(info->vi, info->tgt_addr_v, info->locale_v,
                     info->remote_mr_v, info->src_addr_v, info->size_v,
@@ -5641,14 +5647,17 @@ void flush_get_buff(get_buff_thread_info_t* info) {
   }
 }
 
-void chpl_comm_get_unordered_fence(void) {
+// Flush buffered GET operations for all threads
+static
+inline
+void remote_get_buff_flush(void) {
   get_buff_thread_info_t* info;
 
   spinlock_lock(&get_buff_global_info.lock);
   info = get_buff_global_info.list;
   while (info != NULL) {
     spinlock_lock(&info->lock);
-    flush_get_buff(info);
+    get_buff_thread_info_flush(info);
     spinlock_unlock(&info->lock);
     info = info->next;
   }
@@ -5712,7 +5721,7 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 
   // flush if buffers are full
   if (info->vi == MAX_CHAINED_GET_LEN) {
-    flush_get_buff(info);
+    get_buff_thread_info_flush(info);
   }
 
   // release lock for this thread
@@ -6886,6 +6895,9 @@ DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double, NEGATE_U_OR_R)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_SUB
 
+void chpl_comm_atomic_unordered_fence(void) {
+  nic_amo_nf_buff_flush();
+}
 
 static
 inline
@@ -6982,7 +6994,9 @@ void flush_amo_nf_buff(amo_nf_buff_thread_info_t* info) {
 }
 
 // Flush buffered atomic operations for all threads
-void chpl_comm_atomic_unordered_fence() {
+static
+inline
+void nic_amo_nf_buff_flush(void) {
   amo_nf_buff_thread_info_t* info;
 
   spinlock_lock(&amo_nf_buff_global_info.lock);
