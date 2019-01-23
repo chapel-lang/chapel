@@ -239,6 +239,33 @@ void AggregateType::codegenDef() {
       type = llvm::ArrayType::get(elementType, fields.length);
 #endif
     }
+  } else if (symbol->hasFlag(FLAG_C_ARRAY)) {
+    TypeSymbol* eltTS = NULL;
+    VarSymbol* sizeVar = NULL;
+    form_Map(SymbolMapElem, e, substitutions) {
+      if (TypeSymbol* ets = toTypeSymbol(e->value))
+        eltTS = ets;
+      else if (VarSymbol* evs = toVarSymbol(e->value))
+        sizeVar = evs;
+    }
+    INT_ASSERT(eltTS && sizeVar);
+    Immediate* imm = getSymbolImmediate(sizeVar);
+    INT_ASSERT(imm);
+    const char* eltTypeCName = eltTS->cname;
+    int64_t sizeInt = imm->to_int();
+    if( outfile ) {
+      fprintf(outfile, "typedef ");
+      fprintf(outfile, "%s", eltTypeCName);
+      fprintf(outfile, " %s", symbol->codegen().c.c_str());
+      fprintf(outfile, "[%d];\n\n", (int) sizeInt);
+      return;
+    } else {
+#ifdef HAVE_LLVM
+      llvm::Type *elementType = eltTS->type->codegen().type;
+      type = llvm::ArrayType::get(elementType, sizeInt);
+#endif
+    }
+
   } else if (symbol->hasFlag(FLAG_REF)) {
     TypeSymbol* base = getField(1)->type->symbol;
     const char* baseType = base->cname;

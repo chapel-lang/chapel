@@ -2343,6 +2343,7 @@ static void fixRecordWrappedTypes() {
           }
         }
       }
+      // TODO: also for c_array
     } else if (ts->hasFlag(FLAG_WIDE_CLASS)) {
       Type* addr = ts->type->getField("addr")->type;
       if (canWidenRecord(addr)) {

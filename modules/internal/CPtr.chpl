@@ -105,16 +105,29 @@ module CPtr {
   */
   //   Similar to c_ptr but includes a param width
   //   (matching a C fixed-size array).
-  pragma "data class"
-  pragma "no object"
-  pragma "no default functions"
-  pragma "no wide class"
-  pragma "c_ptr class"
-  class c_array {
+  //pragma "data class"
+  //pragma "no object"
+  //pragma "no default functions"
+  //pragma "no wide class"
+  //pragma "c_ptr class"
+  pragma "c_array record"
+  record c_array {
     /* The array element type */
     type eltType;
     /* The fixed number of elements */
     param size;
+
+    /*pragma "no doc"
+    pragma "no codegen"
+    pragma "no init field"
+    var x1: eltType; // this field keeps type alive until code generation
+     */
+
+    proc init(type eltType, param size) {
+      this.eltType = eltType;
+      this.size = size;
+    }
+
     /* Retrieve the i'th element (zero based) from the array.
       Does the equivalent of arr[i] in C.
         Includes bounds checking when such checks are enabled.
@@ -140,20 +153,20 @@ module CPtr {
 
     /* Print the elements */
     proc writeThis(ch) {
-      if __primitive("ptr_eq", this, nil) {
+      /*if __primitive("ptr_eq", this, nil) {
         ch <~> new ioLiteral("nil");
         return;
-      }
+      }*/
 
       ch <~> new ioLiteral("[");
       var first = true;
-      for i in 0..#size {
+      /*for i in 0..#size {
 
         ch <~> this(i);
 
         if i != size-1 then
           ch <~> new ioLiteral(", ");
-      }
+      }*/
       ch <~> new ioLiteral("]");
     }
 
@@ -292,7 +305,6 @@ module CPtr {
   pragma "no doc"
   inline proc _cast(type t:uint(64), x:c_ptr) where c_uintptr != int(64)
     return __primitive("cast", t, x);
-
 
   pragma "compiler generated"
   pragma "last resort"
