@@ -489,14 +489,15 @@ void init_ofiEpNumCtxs(void) {
   if (fixedNumThreads > 0) {
     //
     // The tasking layer uses a fixed number of threads.  If we can
-    // have at least that many worker tx contexts then each tasking
-    // layer thread can have a private one for the duration of the
-    // run.
+    // have at least that many worker tx contexts, plus 1 for threads
+    // that aren't fixed workers (like the process itself for example),
+    // then each tasking layer fixed thread can have a private context
+    // for the duration of the run.
     //
     CHK_TRUE(fixedNumThreads == chpl_task_getMaxPar()); // sanity
-    if (numWorkerTxCtxs > fixedNumThreads)
-      numWorkerTxCtxs = fixedNumThreads;
-    tciTabFixedAssignments = (numWorkerTxCtxs == fixedNumThreads);
+    if (numWorkerTxCtxs > fixedNumThreads + 1)
+      numWorkerTxCtxs = fixedNumThreads + 1;
+    tciTabFixedAssignments = (numWorkerTxCtxs == fixedNumThreads + 1);
   } else {
     //
     // The tasking layer doesn't have a fixed number of threads, but
@@ -522,9 +523,10 @@ void init_ofiEpNumCtxs(void) {
   CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
   ofi_info->ep_attr->rx_ctx_cnt = numAmHandlers;
 
-  DBG_PRINTF(DBG_CFG, "per node, %zd tx ctxs%s, %zd rx ctxs",
+  DBG_PRINTF(DBG_CFG,
+             "per node, %zd tx ctxs (%d fixed to workers), %zd rx ctxs",
              ofi_info->ep_attr->tx_ctx_cnt,
-             tciTabFixedAssignments ? " (fixed to workers)" : "",
+             tciTabFixedAssignments ? fixedNumThreads : 0,
              ofi_info->ep_attr->rx_ctx_cnt);
 }
 
@@ -1935,11 +1937,15 @@ struct perTxCtxInfo_t* tciAlloc(chpl_bool bindToAmHandler) {
   }
 
   //
-  // Find a tx context that isn't busy and use that one.
+  // Find a tx context that isn't busy and use that one.  If this is
+  // for either the AM handler or a tasking layer fixed worker thread,
+  // bind it permanently.
   //
   tcip = findFreeTciTabEntry(bindToAmHandler);
-  if (bindToAmHandler || tciTabFixedAssignments)
+  if (bindToAmHandler
+      || (tciTabFixedAssignments && chpl_task_isFixedThread())) {
     tcip->bound = true;
+  }
   DBG_PRINTF(DBG_THREADS, "I have%s tciTab[%td]",
              tcip->bound ? " bound" : "", tcip - tciTab);
   return tcip;
@@ -1960,19 +1966,18 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
     //
     // AM handlers use tciTab[numWorkerTxCtxs .. tciTabLen - 1].  For
     // now we only support a single AM handler, so this is simple.  If
-    // we ever have more, the CHK_TRUE force us to revisit this code.
+    // we ever have more, the CHK_FALSE will force us to revisit this.
     //
     tcip = &tciTab[numWorkerTxCtxs];
     CHK_FALSE(atomic_exchange_bool(&tcip->allocated, true));
-    tcip->bound = true;
     return tcip;
   }
 
   //
   // Workers use tciTab[0 .. numWorkerTxCtxs - 1].  Search forever for
   // an entry we can use.  Give up (and kill the program) only if we
-  // discover they're all bound, because we won't be able to get one
-  // in that case.
+  // discover they're all bound, because if that's true we can predict
+  // we'll never find a free one.
   //
   static __thread int last_iw = 0;
   tcip = NULL;
