@@ -1,3 +1,0 @@
-#!/bin/bash
-echo Compiling arrayOpaquePointer_noArgDom.chpl
-$3 --library --static arrayOpaquePointer_noArgDom.chpl
