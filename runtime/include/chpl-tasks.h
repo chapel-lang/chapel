@@ -354,6 +354,19 @@ uint32_t chpl_task_getFixedNumThreads(void) {
 }
 
 //
+// If the tasking layer runs tasks on a fixed number of threads and
+// the calling thread is one of those, this returns true.  Otherwise,
+// it returns false.
+//
+#ifndef CHPL_TASK_IMPL_IS_FIXED_THREAD
+#define CHPL_TASK_IMPL_IS_FIXED_THREAD() 0
+#endif
+static inline
+uint32_t chpl_task_isFixedThread(void) {
+  return CHPL_TASK_IMPL_IS_FIXED_THREAD();
+}
+
+//
 // returns the total number of threads that currently exist, whether running,
 // blocked, or idle
 //

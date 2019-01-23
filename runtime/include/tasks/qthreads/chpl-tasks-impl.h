@@ -237,6 +237,9 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
 uint32_t chpl_task_impl_getFixedNumThreads(void);
 
 
+#define CHPL_TASK_IMPL_IS_FIXED_THREAD() (qthread_shep() != NO_SHEPHERD)
+
+
 //
 // Can we support remote caching?
 //
