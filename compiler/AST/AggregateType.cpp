@@ -1323,7 +1323,14 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
           typeConstrSetFieldSetMember(fn, field, call);
 
         } else if (Expr* init = field->defPoint->init) {
-          typeConstrSetFieldInitField(fn, field, init->copy());
+          // It might be appealing to change this, but that causes
+          // problems for fields with loop init expressions
+          // (the field should end up with array type).
+
+          //typeConstrSetFieldInitField(fn, field, init->copy());
+          CallExpr* call = new CallExpr("chpl__initCopy", init->copy());
+
+          typeConstrSetFieldSetMember(fn, field, call);
 
         } else {
           ArgSymbol* arg = insertGenericArg(fn, field);

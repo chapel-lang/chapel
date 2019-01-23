@@ -634,7 +634,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
             INT_ASSERT(dstSe);
 
             // check that the initCopy is copying the variable we just set
-            if (copiedSe->symbol() == useLhs) {
+            if (copiedSe->symbol() == useLhs &&
+                useLhs->hasFlag(FLAG_TEMP)) {
               ArgSymbol* formalArg  = rhsFn->getFormal(1);
               Type*      formalType = formalArg->type;
               Type*      actualType = copiedSe->symbol()->getValType();
