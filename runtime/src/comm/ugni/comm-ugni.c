@@ -5527,11 +5527,11 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
 }
 
 
-void chpl_comm_buff_get(void* addr, c_nodeid_t locale, void* raddr,
-                       size_t size, int32_t typeIndex,
-                       int32_t commID, int ln, int32_t fn)
+void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
+                             size_t size, int32_t typeIndex, int32_t commID,
+                             int ln, int32_t fn)
 {
-  DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_buff_get(%p, %d, %p, %zd)",
+  DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_unordered(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
 
   assert(addr != NULL);
@@ -5552,7 +5552,7 @@ void chpl_comm_buff_get(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("buff get", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("unordered get", locale, size, ln, fn);
   chpl_comm_diags_incr(get);
 
   do_remote_get_buff(addr, locale, raddr, size, may_proxy_true);
@@ -5641,7 +5641,7 @@ void flush_get_buff(get_buff_thread_info_t* info) {
   }
 }
 
-void chpl_comm_get_buff_flush() {
+void chpl_comm_get_unordered_fence(void) {
   get_buff_thread_info_t* info;
 
   spinlock_lock(&get_buff_global_info.lock);
@@ -6616,14 +6616,14 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
         }                                                               \
                                                                         \
         /*==============================*/                              \
-        void chpl_comm_atomic_##_o##_buff_##_f(void* opnd,              \
+        void chpl_comm_atomic_##_o##_unordered_##_f(void* opnd,         \
                                                int32_t loc,             \
                                                void* obj,               \
                                                int ln, int32_t fn)      \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
-                   "IFACE chpl_comm_atomic_"#_o"_buff_"#_f              \
+                   "IFACE chpl_comm_atomic_"#_o"_unordered_"#_f         \
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
@@ -6748,14 +6748,14 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
         }                                                               \
                                                                         \
         /*==============================*/                              \
-        void chpl_comm_atomic_add_buff_##_f(void* opnd,                 \
+        void chpl_comm_atomic_add_unordered_##_f(void* opnd,            \
                                             int32_t loc,                \
                                             void* obj,                  \
                                             int ln, int32_t fn)         \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
-                   "IFACE chpl_comm_atomic_add_buff_"#_f                \
+                   "IFACE chpl_comm_atomic_add_unordered_"#_f           \
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
@@ -6840,7 +6840,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
         }                                                               \
                                                                         \
          /*==============================*/                             \
-        void chpl_comm_atomic_sub_buff_##_f(void* opnd,                 \
+        void chpl_comm_atomic_sub_unordered_##_f(void* opnd,            \
                                             int32_t loc,                \
                                             void* obj,                  \
                                             int ln, int32_t fn)         \
@@ -6848,11 +6848,11 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
           _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
-                   "IFACE chpl_comm_atomic_sub_buff_"#_f                \
+                   "IFACE chpl_comm_atomic_sub_unordered_"#_f           \
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          chpl_comm_atomic_add_buff_##_f(&nopnd, loc, obj, ln, fn);     \
+          chpl_comm_atomic_add_unordered_##_f(&nopnd, loc, obj, ln, fn);\
         }                                                               \
                                                                         \
         /*==============================*/                              \
@@ -6982,7 +6982,7 @@ void flush_amo_nf_buff(amo_nf_buff_thread_info_t* info) {
 }
 
 // Flush buffered atomic operations for all threads
-void chpl_comm_atomic_buff_flush() {
+void chpl_comm_atomic_unordered_fence() {
   amo_nf_buff_thread_info_t* info;
 
   spinlock_lock(&amo_nf_buff_global_info.lock);

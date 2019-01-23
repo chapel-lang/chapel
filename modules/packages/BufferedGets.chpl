@@ -65,7 +65,7 @@ module BufferedGets {
     if !(isNumericType(LHS.type) && LHS.type == RHS.type) then
       compilerError("getBuff is only supported on numeric types");
     if CHPL_COMM == 'ugni' {
-      __primitive("chpl_comm_buff_get", LHS, RHS.locale.id, RHS, numBytes(RHS.type));
+      __primitive("chpl_comm_get_unordered", LHS, RHS.locale.id, RHS, numBytes(RHS.type));
     } else {
       __primitive("chpl_comm_get", LHS, RHS.locale.id, RHS, numBytes(RHS.type));
     }
@@ -78,9 +78,9 @@ module BufferedGets {
    */
   inline proc flushGetBuff(): void {
     if CHPL_COMM == 'ugni' {
-      extern proc chpl_comm_get_buff_flush();
+      extern proc chpl_comm_get_unordered_fence();
       coforall loc in Locales do on loc {
-        chpl_comm_get_buff_flush();
+        chpl_comm_get_unordered_fence();
       }
     }
   }
