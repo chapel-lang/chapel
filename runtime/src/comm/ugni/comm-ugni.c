@@ -1503,10 +1503,11 @@ static void      do_remote_put(void*, c_nodeid_t, void*, size_t,
                                mem_region_t*, drpg_may_proxy_t);
 static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
                                  mem_region_t**, drpg_may_proxy_t);
-static void      do_remote_buff_get(void*, c_nodeid_t, void*, size_t,
-                                    drpg_may_proxy_t);
 static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
+static void      remote_get_buff_init(void);
+static void      do_remote_get_buff(void*, c_nodeid_t, void*, size_t,
+                                    drpg_may_proxy_t);
 static void      do_remote_get_V(int, void**, c_nodeid_t*, mem_region_t**,
                                  void**, size_t*, mem_region_t**,
                                  drpg_may_proxy_t);
@@ -1517,12 +1518,11 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
                             gni_fma_cmd_type_t, void*, mem_region_t*);
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
-static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
-                                 gni_fma_cmd_type_t*, mem_region_t**);
-static void      buff_amo_init(void);
-static void      buff_get_init(void);
+static void      nic_amo_buff_init(void);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
+static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
+                                 gni_fma_cmd_type_t*, mem_region_t**);
 static void      amo_add_real32_cpu_cmpxchg(void*, void*, void*);
 static void      amo_add_real64_cpu_cmpxchg(void*, void*, void*);
 static void      fork_call_common(int, c_sublocid_t,
@@ -2053,8 +2053,8 @@ void chpl_comm_post_task_init(void)
   nb_desc_init();
   rf_done_init();
   amo_res_init();
-  buff_amo_init();
-  buff_get_init();
+  nic_amo_buff_init();
+  remote_get_buff_init();
 
   //
   // Create all the communication domains, including their GNI NIC
@@ -5555,7 +5555,7 @@ void chpl_comm_buff_get(void* addr, c_nodeid_t locale, void* raddr,
   chpl_comm_diags_verbose_rdma("buff get", locale, size, ln, fn);
   chpl_comm_diags_incr(get);
 
-  do_remote_buff_get(addr, locale, raddr, size, may_proxy_true);
+  do_remote_get_buff(addr, locale, raddr, size, may_proxy_true);
 }
 
 
@@ -5623,7 +5623,7 @@ static __thread get_buff_thread_info_t get_buff_thread_info;
 static get_buff_global_info_t get_buff_global_info;
 
 static
-void buff_get_init(void) {
+void remote_get_buff_init(void) {
   get_buff_global_info.list = NULL;
   spinlock_init(&get_buff_global_info.lock);
 }
@@ -5657,7 +5657,7 @@ void chpl_comm_get_buff_flush() {
 
 static
 inline
-void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
+void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
                         size_t size, drpg_may_proxy_t may_proxy)
 {
   mem_region_t*         local_mr;
@@ -6964,7 +6964,7 @@ static __thread amo_nf_buff_thread_info_t amo_nf_buff_thread_info;
 static amo_nf_buff_global_info_t amo_nf_buff_global_info;
 
 static
-void buff_amo_init(void) {
+void nic_amo_buff_init(void) {
   amo_nf_buff_global_info.list = NULL;
   spinlock_init(&amo_nf_buff_global_info.lock);
 }
