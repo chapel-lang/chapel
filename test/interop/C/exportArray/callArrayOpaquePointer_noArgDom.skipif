@@ -1,2 +1,4 @@
-# Use gcc errors only
+# Use linux gcc errors only
 CHPL_TARGET_COMPILER != gnu
+CHPL_TARGET_PLATFORM >= linux
+CHPL_LLVM != none
