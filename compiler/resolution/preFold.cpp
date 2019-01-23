@@ -482,11 +482,13 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       }
     }
 
+  /*
   } else if (call->isPrimitive(PRIM_INIT)) {
     if (Expr* expr = resolvePrimInit(call)) {
       // call was replaced by expr.
       retval = expr;
     }
+  */
 
   } else if (call->isPrimitive(PRIM_IS_ATOMIC_TYPE)) {
     if (isAtomicType(call->get(1)->typeInfo())) {
@@ -704,6 +706,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     call->replace(retval);
 
   } else if (call->isPrimitive(PRIM_NO_INIT)) {
+    USR_FATAL("noinit is not currently supported");
+#if 0
     // Lydia note: fUseNoinit does not control this section.  This was
     // necessary because with the definition of type defaults in the module
     // code, return temporary variables would cause an infinite loop by
@@ -780,7 +784,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
         inits.add(call);
       }
     }
-
+#endif
   } else if (call->isPrimitive(PRIM_NUM_FIELDS)) {
     Type*          t          = canonicalClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);

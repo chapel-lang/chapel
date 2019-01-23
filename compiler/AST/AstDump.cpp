@@ -404,6 +404,8 @@ bool AstDump::enterBlockStmt(BlockStmt* node) {
     write("scopeless");
   if ((node->blockTag & BLOCK_TYPE_ONLY))
     write("type");
+  if ((node->blockTag & BLOCK_EXTERN))
+    write("extern");
 
   ++mIndent;
 

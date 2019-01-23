@@ -616,9 +616,6 @@ void initPrimitiveTypes() {
   dtFile = createPrimitiveType ("_file", "_cfile");
   dtFile->symbol->addFlag(FLAG_EXTERN);
 
-  CREATE_DEFAULT_SYMBOL(dtFile, gFile, "NULL");
-  gFile->addFlag(FLAG_EXTERN);
-
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
 
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");

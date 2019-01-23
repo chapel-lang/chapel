@@ -242,9 +242,13 @@ private:
 
   bool                        setNextGenericField();
 
-  void                        typeConstrSetField(FnSymbol*  fn,
+  void                        typeConstrSetFieldSetMember(FnSymbol*  fn,
                                                  VarSymbol* field,
                                                  Expr*      expr)        const;
+  void                        typeConstrSetFieldInitField(FnSymbol*  fn,
+                                                 VarSymbol* field,
+                                                 Expr*      expr)        const;
+
 
   ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
                                                VarSymbol* field)  const;

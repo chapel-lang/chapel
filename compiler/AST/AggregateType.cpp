@@ -1303,7 +1303,7 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
         if (superCall != NULL) {
           CallExpr* call = new CallExpr(PRIM_TYPE_INIT, superCall);
 
-          typeConstrSetField(fn, field, call);
+          typeConstrSetFieldSetMember(fn, field, call);
         }
 
       } else {
@@ -1313,19 +1313,17 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
             field->hasFlag(FLAG_PARAM) == true) {
           ArgSymbol* arg = insertGenericArg(fn, field);
 
-          typeConstrSetField(fn, field, new SymExpr(arg));
+          typeConstrSetFieldSetMember(fn, field, new SymExpr(arg));
 
         } else if (field->defPoint->exprType
                    && !isFieldTypeExprGeneric(field->defPoint->exprType)) {
           Expr* type = field->defPoint->exprType;
           CallExpr* call = new CallExpr(PRIM_TYPE_INIT, type->copy());
 
-          typeConstrSetField(fn, field, call);
+          typeConstrSetFieldSetMember(fn, field, call);
 
         } else if (Expr* init = field->defPoint->init) {
-          CallExpr* call = new CallExpr("chpl__initCopy", init->copy());
-
-          typeConstrSetField(fn, field, call);
+          typeConstrSetFieldInitField(fn, field, init->copy());
 
         } else {
           ArgSymbol* arg = insertGenericArg(fn, field);
@@ -1333,7 +1331,7 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
           if (symbol->hasFlag(FLAG_REF) == false) {
             CallExpr* call = new CallExpr(PRIM_TYPE_INIT, new SymExpr(arg));
 
-            typeConstrSetField(fn, field, call);
+            typeConstrSetFieldSetMember(fn, field, call);
           }
         }
       }
@@ -1345,7 +1343,7 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
   resolveUnresolvedSymExprs(fn);
 }
 
-void AggregateType::typeConstrSetField(FnSymbol*  fn,
+void AggregateType::typeConstrSetFieldSetMember(FnSymbol*  fn,
                                        VarSymbol* field,
                                        Expr*      expr) const {
   Symbol* _this = fn->_this;
@@ -1353,6 +1351,15 @@ void AggregateType::typeConstrSetField(FnSymbol*  fn,
 
   fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, _this, name, expr));
 }
+void AggregateType::typeConstrSetFieldInitField(FnSymbol*  fn,
+                                       VarSymbol* field,
+                                       Expr*      expr) const {
+  Symbol* _this = fn->_this;
+  Symbol* name  = new_CStringSymbol(field->name);
+
+  fn->insertAtTail(new CallExpr(PRIM_INIT_FIELD, _this, name, expr));
+}
+
 
 ArgSymbol* AggregateType::insertGenericArg(FnSymbol*  fn,
                                            VarSymbol* field) const {

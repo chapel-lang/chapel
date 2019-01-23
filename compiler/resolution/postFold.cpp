@@ -587,6 +587,9 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
     } else if (SymExpr* rhs = toSymExpr(call->get(2))) {
       Symbol* rhsSym = rhs->symbol();
 
+      while (paramMap.get(rhsSym) != NULL) {
+        rhsSym = paramMap.get(rhsSym);
+      }
       if (rhsSym->isImmediate() == true ||
           isEnumSymbol(rhsSym)  == true) {
         paramMap.put(lhsSym, rhsSym);

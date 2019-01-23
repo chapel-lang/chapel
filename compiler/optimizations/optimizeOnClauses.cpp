@@ -256,7 +256,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_REDUCE_ASSIGN:
   case PRIM_NEW:
 
-  case PRIM_INIT:
+  //case PRIM_DEFAULT_INIT_FIELD:
+  case PRIM_DEFAULT_INIT_VAR:
   case PRIM_INIT_FIELD:
   case PRIM_INIT_VAR:
   case PRIM_NO_INIT:

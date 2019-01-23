@@ -659,6 +659,23 @@ bool givesType(Symbol* sym) {
   return retval;
 }
 
+static bool isNumericTypeSymExpr(Expr* expr) {
+  if (SymExpr* se = toSymExpr(expr)) {
+    Symbol* sym = se->symbol();
+    Type* t = sym->type;
+    // if it's the actual type symbol for that type
+    if (t->symbol == sym && sym->hasFlag(FLAG_TYPE_VARIABLE))
+      return is_bool_type(t) ||
+             is_int_type(t) ||
+             is_uint_type(t) ||
+             is_real_type(t) ||
+             is_imag_type(t) ||
+             is_complex_type(t);
+  }
+
+  return false;
+}
+
 bool isTypeExpr(Expr* expr) {
   bool retval = false;
 
@@ -695,6 +712,12 @@ bool isTypeExpr(Expr* expr) {
           retval = field->hasFlag(FLAG_TYPE_VARIABLE);
         }
       }
+
+    } else if (call->numActuals() == 1 &&
+               call->baseExpr &&
+               isNumericTypeSymExpr(call->baseExpr)) {
+      // e.g. call 'int' 64 is a type expression (resulting in int(64))
+      retval = true;
 
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       retval = fn->retTag == RET_TYPE;
