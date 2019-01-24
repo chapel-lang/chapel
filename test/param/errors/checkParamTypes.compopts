@@ -14,10 +14,10 @@
 -st=uint(64)
 -st=uint
 -st=color
--st=real(32)      # checkParamTypes-nofloat32.good
+-st=real(32)
 -st=real(64)
 -st=real
--st=imag(32)      # checkParamTypes-nofloat32.good
+-st=imag(32)
 -st=imag(64)
 -st=imag
 -st=complex(64)   # checkParamTypes-error.good
