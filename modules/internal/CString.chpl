@@ -25,10 +25,6 @@
 module CString {
   use ChapelStandard;
 
-  // The following method is called by the compiler to determine the default
-  // value of a given type.
-  inline proc _defaultOf(type t:c_string) return c_nil:c_string;
-
   //inline proc c_string.c_str() return this;
 
   pragma "init copy fn"

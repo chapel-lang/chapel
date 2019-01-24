@@ -9265,6 +9265,9 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   } else {
     SET_LINENO(call);
 
+    // enum types should have a defaultValue
+    INT_ASSERT(!isEnumType(type));
+
     CallExpr* defaultCall = new CallExpr("_defaultOf", type->symbol);
     CallExpr* move = new CallExpr(PRIM_MOVE, val, defaultCall);
 
