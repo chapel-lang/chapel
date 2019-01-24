@@ -9254,8 +9254,9 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
     resolvePrimInitGenericRecordVar(call, val, at);
 
-  // extern types
-  } else if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
+  // extern types (but not memory_order)
+  } else if (type->symbol->hasFlag(FLAG_EXTERN) &&
+             !type->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE)) {
 
     // Just let the memory be uninitialized
     call->convertToNoop();
