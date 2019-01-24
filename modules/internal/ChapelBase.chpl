@@ -1148,10 +1148,10 @@ module ChapelBase {
   inline proc _cast(type t:unmanaged, x:t)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:borrowed, x:_nilType)
+  inline proc _cast(type t:borrowed, pragma "nil from arg" x:_nilType)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:unmanaged, x:_nilType)
+  inline proc _cast(type t:unmanaged, pragma "nil from arg" x:_nilType)
     return __primitive("cast", t, x);
 
   // dynamic cast handles class casting based upon runtime class type
