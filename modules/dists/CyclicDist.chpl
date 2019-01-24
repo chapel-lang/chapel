@@ -831,8 +831,10 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
           myLocArr.locRAD.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
-      pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
+      //pragma "no copy" pragma "no auto destroy" 
+        ref myLocRAD = myLocArr.locRAD;
+      //pragma "no copy" pragma "no auto destroy" 
+        ref radata = myLocRAD.RAD;
       if radata(rlocIdx).data != nil {
         const startIdx = myLocArr.locCyclicRAD.startIdx;
         const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
