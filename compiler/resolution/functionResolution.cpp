@@ -9372,7 +9372,9 @@ static void resolvePrimInitGenericRecordVar(CallExpr* call,
   call->convertToNoop();
 
   if (at && at->isRecord() && at->hasPostInitializer()) {
-    call->insertBefore(new CallExpr("postinit", gMethodToken, val));
+    CallExpr* postinit = new CallExpr("postinit", gMethodToken, val);
+    call->insertBefore(postinit);
+    resolveCallAndCallee(postinit);
   }
 }
 
