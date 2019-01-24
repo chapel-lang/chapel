@@ -2298,7 +2298,8 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 }
 
 static void normVarNoinit(DefExpr* defExpr) {
-  USR_WARN(defExpr, "noinit is currently ignored");
+  if (fUseNoinit)
+    USR_WARN(defExpr, "noinit is currently ignored");
   defExpr->init->remove();
   normVarTypeWoutInit(defExpr);
 }
