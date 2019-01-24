@@ -101,6 +101,13 @@ module CString {
   }
 
   //
+  // casts from nil to c_string
+  //
+  inline proc _cast(type t:c_string, x: _nilType) {
+    return __primitive("cast", t, x);
+  }
+
+  //
   // casts from c_string to c_void_ptr
   //
   inline proc _cast(type t:c_void_ptr, x: c_string) {

@@ -5287,7 +5287,7 @@ static bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType) {
     retval = false;
 
   } else if (rhsType == dtNil) {
-    if (lhsType != dtNil && isClass(lhsType) == false) {
+    if (lhsType != dtNil && lhsType != dtStringC && !isClass(lhsType)) {
       retval = false;
     }
   }
@@ -7623,81 +7623,6 @@ static bool isCompilerGenerated(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-/*
-static Type* recordInitType(CallExpr* init);
-
-static void resolveRecordInitializers() {
-  forv_Vec(CallExpr, init, inits) {
-    if (Type* type = recordInitType(init)) {
-      SET_LINENO(init);
-
-      if (init->isPrimitive(PRIM_NO_INIT) == true) {
-        AggregateType* rec = toAggregateType(type);
-        FnSymbol*      fn  = rec->typeConstructor;
-        CallExpr*      res = new CallExpr(fn);
-
-        for_formals(formal, fn) {
-          Vec<Symbol*> keys;
-
-          rec->substitutions.get_keys(keys);
-
-          forv_Vec(Symbol, key, keys) {
-            if (strcmp(formal->name, key->name) == 0) {
-              Symbol*  formalVal  = rec->substitutions.get(key);
-              SymExpr* formalExpr = new SymExpr(formalVal);
-
-              res->insertAtTail(new NamedExpr(formal->name, formalExpr));
-            }
-          }
-        }
-
-        init->get(1)->replace(res);
-        resolveCall(res);
-
-        toCallExpr(init->parentExpr)->convertToNoop();
-
-      } else if (type->defaultValue != NULL) {
-        INT_FATAL(init, "PRIM_INIT should have been replaced already");
-
-      } else {
-        INT_ASSERT(type->symbol->hasFlag(FLAG_DISTRIBUTION) == false);
-
-        CallExpr* call = new CallExpr("_defaultOf", type->symbol);
-
-        init->replace(call);
-        resolveCallAndCallee(call);
-
-      }
-    }
-  }
-}
-
-static Type* recordInitType(CallExpr* init) {
-  Type* retval = NULL;
-
-  if (init->inTree()) {
-    Type* type = init->get(1)->typeInfo();
-
-    if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
-      if (type->symbol->hasFlag(FLAG_REF) == false) {
-        retval = type;
-
-      } else {
-        retval = retval->getValType();
-      }
-    }
-  }
-
-  return retval;
-}
-*/
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
 static void resolveOther() {
   //
   // When compiling with --minimal-modules, gPrintModuleInitFn is not
@@ -9300,6 +9225,13 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   // Generate a more specific USR_FATAL if resolution would fail
   } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
     primInitHaltForUnacceptableGeneric(call, type);
+
+  // These types default to nil
+  } else if (isClassLikeOrNil(type)) {
+    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, gNil);
+    call->insertBefore(moveDefault);
+    resolveExpr(moveDefault);
+    call->convertToNoop();
 
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)
