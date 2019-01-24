@@ -4905,9 +4905,15 @@ static void resolveInitVar(CallExpr* call) {
     resolveMove(call);
 
   } else if (dst->hasFlag(FLAG_NO_COPY) ||
-             isPrimitiveScalar(srcType) ||
+             isPrimitiveScalar(targetType) ||
              isEnumType(targetType)) {
+
     call->primitive = primitives[PRIM_MOVE];
+    if (srcType->isRef()) {
+      // don't infer the type of the LHS to be a ref type
+      srcExpr->remove();
+      call->insertAtTail(new CallExpr(PRIM_DEREF, srcExpr));
+    }
     resolveMove(call);
 
   } else if (isRecord(targetType) == false ||
