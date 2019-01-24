@@ -4,14 +4,7 @@ class Foo {
 
 }
 
-inline proc _defaultOf(type t:unmanaged Foo) {
-  writeln("I default initialized!");
-  return nil:t;
-}
-
-
-
-var foo:unmanaged Foo = noinit; // Should not print out message
+var foo:unmanaged Foo = noinit;
 
 foo = new unmanaged Foo(4, true);
 
@@ -21,7 +14,7 @@ delete foo;
 
 
 
-var bam:unmanaged Foo;          // Should print out message
+var bam:unmanaged Foo;
 
 bam = new unmanaged Foo(3, false);
 

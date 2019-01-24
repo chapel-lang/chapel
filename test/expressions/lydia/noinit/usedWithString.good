@@ -1,2 +1,2 @@
-usedWithString.chpl:1: warning: type string does not currently support noinit, using default initialization
+usedWithString.chpl:1: warning: noinit is currently ignored
 Hello, world
