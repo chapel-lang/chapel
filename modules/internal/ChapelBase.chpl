@@ -1971,7 +1971,7 @@ module ChapelBase {
   inline proc _defaultOf(type t:chpl_anyimag) return 0.0i:t;
   // Also, complexes cannot yet be parameterized
   inline proc _defaultOf(type t:chpl_anycomplex):t {
-    var ret:t = noinit;
+    var ret:t;
     param floatwidth = numBits(t)/2;
     ret.re = 0.0:real(floatwidth);
     ret.im = 0.0:real(floatwidth);

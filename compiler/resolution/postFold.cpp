@@ -690,14 +690,6 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
       lhsSym->removeFlag(FLAG_EXPR_TEMP);
     }
 
-    if (rhs->isPrimitive(PRIM_NO_INIT) == true) {
-      // If the lhs is a primitive, then we can remove this value.
-      // Otherwise retain this statement through resolveRecordInitializers.
-      if (isAggregateType(rhs->get(1)->getValType()) == false) {
-        call->convertToNoop();
-      }
-    }
-
   } else {
     INT_ASSERT(false);
   }

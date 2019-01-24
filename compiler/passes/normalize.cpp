@@ -101,8 +101,6 @@ static void        normalizeVariableDefinition(DefExpr* defExpr);
 
 static void        normRefVar(DefExpr* defExpr);
 
-static bool        moduleHonorsNoinit(Symbol* var, Expr* init);
-
 static void        updateVariableAutoDestroy(DefExpr* defExpr);
 
 static TypeSymbol* expandTypeAlias(SymExpr* se);
@@ -2299,47 +2297,9 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
   defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr, typeExpr));
 }
 
-// Internal and Standard modules always honor no-init
-//
-// As a minimum, the complex type appears to rely on this
-static bool moduleHonorsNoinit(Symbol* var, Expr* init) {
-  bool isNoinit = init->isNoInitExpr();
-  bool retval   = false;
-
-  if (isNoinit == true && fUseNoinit == false) {
-    Symbol* moduleSource = var;
-
-    while (isModuleSymbol(moduleSource)  == false &&
-           moduleSource                  != NULL &&
-           moduleSource->defPoint        != NULL) {
-      moduleSource = moduleSource->defPoint->parentSymbol;
-    }
-
-    if (ModuleSymbol* mod = toModuleSymbol(moduleSource)) {
-      if (moduleSource->defPoint != NULL) {
-        retval = mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD;
-      }
-    }
-  }
-
-  return retval;
-}
-
 static void normVarNoinit(DefExpr* defExpr) {
-  Symbol* var  = defExpr->sym;
-  Expr*   init = defExpr->init;
-
-  init->remove();
-
-  if (fUseNoinit == true || moduleHonorsNoinit(var, init) == true) {
-    Expr*     type   = defExpr->exprType;
-    CallExpr* noinit = new CallExpr(PRIM_NO_INIT, type->remove());
-
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, noinit));
-  } else {
-    // Ignore no-init expression and fall back on default init
-    normVarTypeWoutInit(defExpr);
-  }
+  USR_WARN(defExpr, "noinit is currently ignored");
+  normVarTypeWoutInit(defExpr);
 }
 
 //

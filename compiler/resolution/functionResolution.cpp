@@ -2075,7 +2075,6 @@ void resolveCall(CallExpr* call) {
       resolvePrimInit(call);
       break;
 
-    case PRIM_NO_INIT:
     case PRIM_TYPE_INIT:
       resolveGenericActuals(call);
       break;
@@ -9142,7 +9141,7 @@ static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
 
 /************************************* | **************************************
 *                                                                             *
-* Handles PRIM_INIT or PRIM_NO_INIT                                           *
+* Handles PRIM_DEFAULT_INIT_VAR
 *                                                                             *
 * Returns NULL if no substitution was made.                                   *
 * Otherwise remove the primitive and return the new expression.               *

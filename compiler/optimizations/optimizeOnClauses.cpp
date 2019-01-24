@@ -260,7 +260,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_DEFAULT_INIT_VAR:
   case PRIM_INIT_FIELD:
   case PRIM_INIT_VAR:
-  case PRIM_NO_INIT:
   case PRIM_TYPE_INIT:
 
   case PRIM_LOGICAL_FOLDER:
