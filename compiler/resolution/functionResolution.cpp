@@ -9208,6 +9208,13 @@ static void resolvePrimInit(CallExpr* call,
   }
 }
 
+static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {
+  if (val->hasFlag(FLAG_PARAM) &&
+      val->hasFlag(FLAG_TEMP) == false &&
+      isLegalParamType(type) == false) {
+    USR_FATAL_CONT(call, "'%s' is not of a supported param type", val->name);
+  }
+}
 
 static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
@@ -9222,6 +9229,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // These are handled in replaceRuntimeTypePrims().
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
+    errorInvalidParamInit(call, val, at);
 
   // Shouldn't be default-initializing iterator records here
   } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)  == true) {
@@ -9234,6 +9242,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // These types default to nil
   } else if (isClassLikeOrNil(type)) {
+    // primitive initialization error happens later
     CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, gNil);
     call->insertBefore(moveDefault);
     resolveExpr(moveDefault);
@@ -9242,6 +9251,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)
   } else if (type->defaultValue != NULL) {
+    // primitive initialization error happens later
     CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, type->defaultValue);
     call->insertBefore(moveDefault);
     resolveExpr(moveDefault);
@@ -9252,12 +9262,15 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
              at->instantiatedFrom                         == NULL &&
              isNonGenericRecordWithInitializers(at)       == true) {
 
+
+    errorInvalidParamInit(call, val, at);
     resolvePrimInitNonGenericRecordVar(call, val, at);
 
   // generic records with initializers
   } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE) == false &&
             (at->isRecord() || at->isUnion())) {
 
+    errorInvalidParamInit(call, val, at);
     resolvePrimInitGenericRecordVar(call, val, at);
 
   // extern types (but not memory_order)
@@ -9265,10 +9278,13 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
              !type->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE)) {
 
     // Just let the memory be uninitialized
+    errorInvalidParamInit(call, val, at);
     call->convertToNoop();
 
   // other types (sync, single, ..)
   } else {
+    errorInvalidParamInit(call, val, at);
+
     SET_LINENO(call);
 
     // enum types should have a defaultValue
@@ -9288,12 +9304,6 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 static void resolvePrimInitNonGenericRecordVar(CallExpr* call,
                                                Symbol* val,
                                                AggregateType* at) {
-  if (val->hasFlag(FLAG_PARAM) &&
-      val->hasFlag(FLAG_TEMP) == false &&
-      isLegalParamType(at) == false) {
-    USR_FATAL_CONT(val, "'%s' is not of a supported param type", val->name);
-  }
-
   // This code not intended to handle _array etc (but these are generic, right?)
   INT_ASSERT(isRecordWrappedType(at->getValType()) == false);
 
