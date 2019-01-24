@@ -530,6 +530,7 @@ void initPrimitiveTypes() {
 
   dtString                             = new AggregateType(AGGREGATE_RECORD);
   dtString->symbol                     = new TypeSymbol("string", dtString);
+  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtLocale                             = new AggregateType(AGGREGATE_RECORD);
   dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
@@ -550,14 +551,11 @@ void initPrimitiveTypes() {
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
-  dtStringC->defaultValue              = gNil;
 
   dtBool                               = dtBools[BOOL_SIZE_SYS];
 
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
-
-  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   gTryToken = new VarSymbol("chpl__tryToken", dtBool);
 
@@ -566,6 +564,9 @@ void initPrimitiveTypes() {
 
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
+
+  // dtStringC defaults to nil
+  dtStringC->defaultValue = gNil;
 
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
