@@ -4909,7 +4909,7 @@ static void resolveInitVar(CallExpr* call) {
              isEnumType(targetType)) {
 
     call->primitive = primitives[PRIM_MOVE];
-    if (srcType->isRef()) {
+    if (srcType->isRef() && !dst->hasFlag(FLAG_NO_COPY)) {
       // don't infer the type of the LHS to be a ref type
       srcExpr->remove();
       call->insertAtTail(new CallExpr(PRIM_DEREF, srcExpr));
