@@ -5438,10 +5438,16 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       GenRet elem = codegenElementPtr(call->get(1), call->get(2));
       GenRet ref  = codegenAddrOf(elem);
 
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      TypeSymbol* arrTS = call->get(1)->typeInfo()->symbol;
+
+      // Handle the case that the array is a wide class/reference
+      if (arrTS->hasFlag(FLAG_WIDE_CLASS) || arrTS->hasFlag(FLAG_WIDE_REF)) {
         ret = ref;
 
-      } else if (target && (target->qualType().isWideRef() || target->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
+      // array is not wide, but what if the target is?
+      } else if (target &&
+                 (target->qualType().isWideRef() ||
+                  target->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
         // resulting reference is wide, but the array is local.
         // This can happen with c_ptr for extern integration...
         ret =  codegenAddrOf(codegenWideHere(ref));

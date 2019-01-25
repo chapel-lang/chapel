@@ -140,7 +140,7 @@ module CPtr {
        Does the equivalent of arr[i] in C.
        Includes bounds checking when such checks are enabled.
     */
-    inline proc this(i: integral) ref : eltType {
+    inline proc ref this(i: integral) ref : eltType {
       if boundsChecking then
         if i < 0 || i >= size then
           HaltWrappers.boundsCheckHalt("c array index out of bounds " + i +
@@ -148,16 +148,35 @@ module CPtr {
 
       return __primitive("array_get", this, i);
     }
+    pragma "no doc"
+    inline proc const ref this(i: integral) const ref : eltType {
+      if boundsChecking then
+        if i < 0 || i >= size then
+          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i +
+                                       "(indices are 0.." + (size-1) + ")");
+
+      return __primitive("array_get", this, i);
+    }
+
     /* As with the previous function, returns the i'th element (zero based)
         from the array. This one emits a compilation error if i is out of bounds.
     */
-    inline proc this(param i: integral) ref : eltType {
+    inline proc ref this(param i: integral) ref : eltType {
       if i < 0 || i >= size then
         compilerError("c array index out of bounds " + i +
                       "(indices are 0.." + (size-1) + ")");
 
       return __primitive("array_get", this, i);
     }
+    pragma "no doc"
+    inline proc const ref this(param i: integral) const ref : eltType {
+      if i < 0 || i >= size then
+        compilerError("c array index out of bounds " + i +
+                      "(indices are 0.." + (size-1) + ")");
+
+      return __primitive("array_get", this, i);
+    }
+
 
     /* Print the elements */
     proc writeThis(ch) {
@@ -203,7 +222,7 @@ module CPtr {
       lhs[i] = rhs[i];
     }
   }
-  proc =(ref lhs:c_ptr, rhs:c_array) where lhs.eltType == rhs.eltType {
+  proc =(ref lhs:c_ptr, ref rhs:c_array) where lhs.eltType == rhs.eltType {
     lhs = c_ptrTo(rhs[0]);
   }
 
@@ -242,11 +261,11 @@ module CPtr {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:c_ptr(?e), x:c_array) where x.eltType == e {
+  inline proc _cast(type t:c_ptr(?e), ref x:c_array) where x.eltType == e {
     return c_ptrTo(x[0]);
   }
   pragma "no doc"
-  inline proc _cast(type t:c_void_ptr, x:c_array) {
+  inline proc _cast(type t:c_void_ptr, ref x:c_array) {
     return c_ptrTo(x[0]):c_void_ptr;
   }
   pragma "no doc"
