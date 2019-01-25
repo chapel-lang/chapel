@@ -1,1 +1,9 @@
 numLocales 1  total 0
+do    {}    numLocales 1  total 0
+do    do{}  numLocales 1  total 0
+{}    do    numLocales 1  total 0
+{}    {}    numLocales 1  total 0
+{}    do{}  numLocales 1  total 0
+do{}  do    numLocales 1  total 0
+do{}  {}    numLocales 1  total 0
+do{}  do{}  numLocales 1  total 0

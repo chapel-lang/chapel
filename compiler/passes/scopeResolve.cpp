@@ -774,6 +774,21 @@ void resolveUnresolvedSymExprs(BaseAST* inAst) {
    }
 }
 
+static bool callSpecifiesTaskIntents(CallExpr* call) {
+  if (call->isPrimitive(PRIM_ACTUALS_LIST))
+    if (BlockStmt* pblock = toBlockStmt(call->parentExpr))
+      if (CallExpr* blockInfo = pblock->blockInfoGet())
+        if (blockInfo->isPrimitive(PRIM_BLOCK_COFORALL)    ||
+            blockInfo->isPrimitive(PRIM_BLOCK_COFORALL_ON) ||
+            blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)     ||
+            blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN_ON)  ||
+            blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)       ||
+            blockInfo->isPrimitive(PRIM_BLOCK_BEGIN_ON)    )
+          return true;
+
+  return false;
+}
+
 static bool isStableClassType(Type* t) {
   bool ok = false;
 
@@ -859,8 +874,8 @@ static Expr* handleUnstableClassType(SymExpr* se) {
               // don't count base expr so we can warn on
               // var x:MyGenericClass(int).
               break;
-            } else if (SymExpr* se = toSymExpr(p->baseExpr)) {
-              if (isTypeSymbol(se->symbol()))
+            } else if (SymExpr* curSE = toSymExpr(p->baseExpr)) {
+              if (isTypeSymbol(curSE->symbol()))
                 // Don't count calls to types (type construction)
                 break;
             } else if (p->isNamed("chpl__buildArrayRuntimeType")) {
@@ -874,6 +889,9 @@ static Expr* handleUnstableClassType(SymExpr* se) {
         if (pCall) {
           if (callSpecifiesClassKind(pCall)) {
             // It's OK, it's decorated
+            ok = true;
+          } else if (callSpecifiesTaskIntents(pCall)) {
+            // 'se' is probably a reduce intent, leave it alone.
             ok = true;
           }
           CallExpr* outerCall = toCallExpr(pCall->parentExpr);
@@ -969,6 +987,7 @@ static Expr* handleUnstableClassType(SymExpr* se) {
             se->replace(call);
             call->insertAtTail(se);
             return call;
+
           } else if (fWarnUnstable) {
             // error
             USR_WARN(se, "undecorated class type %s is unstable", ts->name);

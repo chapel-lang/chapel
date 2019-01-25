@@ -1358,6 +1358,15 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
 }
 
 
+// Remove an extra level of BlockStmt to simplify pattern matching later
+// in compilation. Ex. test/parallel/taskPar/taskIntents/ri-coforall+on.chpl
+static void removeWrappingBlock(BlockStmt*& block) {
+  if (block->length() == 1)
+    if (block->isRealBlockStmt())
+      if (BlockStmt* nested = toBlockStmt(block->body.head))
+        block = (BlockStmt*)nested->remove();
+}
+
 // Build up AST for coforalls. For something like:
 //
 //     coforall indices in iterator with (byref_vars) { body(); }
@@ -1407,6 +1416,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  BlockStmt* body,
                                  bool zippered)
 {
+  removeWrappingBlock(body); // may update 'body'
   checkControlFlow(body, "coforall statement");
 
   // insert temporary index when elided by user
