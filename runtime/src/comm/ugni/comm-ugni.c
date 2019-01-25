@@ -1776,23 +1776,35 @@ static void dbg_catf(FILE* out_f, const char* in_fname, const char* match)
 
 
 
-// Simple wrappers for spinlock lock/unlock with more relaxed orderings and
-// proper yielding for locks. Should only be used when contention is expected
-// to be very low.
+// Simple wrapper for spinlock with more relaxed orderings and proper yielding
+// for locks. Should only be used when contention is expected to be very low.
 typedef atomic_bool spinlock;
-
 static inline void spinlock_init(spinlock* s) {
   atomic_init_bool(s, false);
 }
-
 static inline void spinlock_lock(spinlock* s) {
   while (atomic_exchange_explicit_bool(s, true, memory_order_acquire)) {
     local_yield();
   }
 }
-
 static inline void spinlock_unlock(spinlock* s) {
   atomic_store_explicit_bool(s, false, memory_order_release);
+}
+
+// Simple wrapper for a pthread reader/writer lock with proper yielding for
+// locks. Use the non-blocking calls and yield instead of blocking the thread.
+typedef pthread_rwlock_t rwlock;
+static inline void rwlock_init(rwlock* l) {
+  pthread_rwlock_init(l, NULL);
+}
+static inline void rwlock_writer_lock(rwlock* l) {
+  while (pthread_rwlock_trywrlock(l) == EBUSY) { local_yield(); }
+}
+static inline void rwlock_reader_lock(rwlock* l) {
+  while (pthread_rwlock_tryrdlock(l) == EBUSY) { local_yield(); }
+}
+static inline void rwlock_unlock(rwlock* l) {
+  pthread_rwlock_unlock(l);
 }
 
 
@@ -5615,7 +5627,7 @@ typedef struct get_buff_thread_info_t {
 // all of them) and a lock to protect access to the list
 typedef struct {
   get_buff_thread_info_t* list;
-  spinlock                lock;
+  rwlock                  lock;
 } get_buff_global_info_t;
 
 static __thread get_buff_thread_info_t get_buff_thread_info;
@@ -5625,7 +5637,7 @@ static get_buff_global_info_t get_buff_global_info;
 static
 void buff_get_init(void) {
   get_buff_global_info.list = NULL;
-  spinlock_init(&get_buff_global_info.lock);
+  rwlock_init(&get_buff_global_info.lock);
 }
 
 // Flush buffered GET operations for the specified thread and reset the
@@ -5644,7 +5656,7 @@ void flush_get_buff(get_buff_thread_info_t* info) {
 void chpl_comm_get_buff_flush() {
   get_buff_thread_info_t* info;
 
-  spinlock_lock(&get_buff_global_info.lock);
+  rwlock_reader_lock(&get_buff_global_info.lock);
   info = get_buff_global_info.list;
   while (info != NULL) {
     spinlock_lock(&info->lock);
@@ -5652,7 +5664,7 @@ void chpl_comm_get_buff_flush() {
     spinlock_unlock(&info->lock);
     info = info->next;
   }
-  spinlock_unlock(&get_buff_global_info.lock);
+  rwlock_unlock(&get_buff_global_info.lock);
 }
 
 static
@@ -5690,10 +5702,10 @@ void do_remote_buff_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     spinlock_init(&info->lock);
     info->vi = 0;
 
-    spinlock_lock(&get_buff_global_info.lock);
+    rwlock_writer_lock(&get_buff_global_info.lock);
     info->next = get_buff_global_info.list;
     get_buff_global_info.list = info;
-    spinlock_unlock(&get_buff_global_info.lock);
+    rwlock_unlock(&get_buff_global_info.lock);
 
     inited = true;
   }
@@ -6956,7 +6968,7 @@ typedef struct amo_nf_buff_thread_info_t {
 // all of them) and a lock to protect access to the list
 typedef struct {
   amo_nf_buff_thread_info_t* list;
-  spinlock                   lock;
+  rwlock                     lock;
 } amo_nf_buff_global_info_t;
 
 static __thread amo_nf_buff_thread_info_t amo_nf_buff_thread_info;
@@ -6966,7 +6978,7 @@ static amo_nf_buff_global_info_t amo_nf_buff_global_info;
 static
 void buff_amo_init(void) {
   amo_nf_buff_global_info.list = NULL;
-  spinlock_init(&amo_nf_buff_global_info.lock);
+  rwlock_init(&amo_nf_buff_global_info.lock);
 }
 
 // Flush buffered atomic operations for the specified thread and reset the
@@ -6985,7 +6997,7 @@ void flush_amo_nf_buff(amo_nf_buff_thread_info_t* info) {
 void chpl_comm_atomic_buff_flush() {
   amo_nf_buff_thread_info_t* info;
 
-  spinlock_lock(&amo_nf_buff_global_info.lock);
+  rwlock_reader_lock(&amo_nf_buff_global_info.lock);
   info = amo_nf_buff_global_info.list;
   while (info != NULL) {
     spinlock_lock(&info->lock);
@@ -6993,7 +7005,7 @@ void chpl_comm_atomic_buff_flush() {
     spinlock_unlock(&info->lock);
     info = info->next;
   }
-  spinlock_unlock(&amo_nf_buff_global_info.lock);
+  rwlock_unlock(&amo_nf_buff_global_info.lock);
 }
 
 // Append to thread local buffers of operations and flush if full
@@ -7012,10 +7024,10 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     spinlock_init(&info->lock);
     info->vi = 0;
 
-    spinlock_lock(&amo_nf_buff_global_info.lock);
+    rwlock_writer_lock(&amo_nf_buff_global_info.lock);
     info->next = amo_nf_buff_global_info.list;
     amo_nf_buff_global_info.list = info;
-    spinlock_unlock(&amo_nf_buff_global_info.lock);
+    rwlock_unlock(&amo_nf_buff_global_info.lock);
 
     inited = true;
   }
