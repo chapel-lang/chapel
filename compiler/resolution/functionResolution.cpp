@@ -9262,13 +9262,17 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     // note: error for bad param initialization checked for in resolving move
 
     Expr* nilExpr = NULL;
-    if (gNil->type == type)
+    SymExpr* typeSe = NULL;
+    if (gNil->type == type) {
       nilExpr = new SymExpr(gNil);
-    else
-      nilExpr = new CallExpr(PRIM_CAST, type->symbol, gNil);
+    } else {
+      typeSe = new SymExpr(type->symbol);
+      nilExpr = new CallExpr(PRIM_CAST, typeSe, gNil);
+    }
 
     CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, nilExpr);
     call->insertBefore(moveDefault);
+    if (typeSe) resolveExprTypeConstructor(typeSe);
     resolveExpr(moveDefault);
     call->convertToNoop();
 
@@ -9278,13 +9282,17 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     // note: error for bad param initialization checked for in resolving move
 
     Expr* defaultExpr = NULL;
-    if (type->defaultValue->type == type)
+    SymExpr* typeSe = NULL;
+    if (type->defaultValue->type == type) {
       defaultExpr = new SymExpr(type->defaultValue);
-    else
+    } else {
+      typeSe = new SymExpr(type->symbol);
       defaultExpr = new CallExpr(PRIM_CAST, type->symbol, type->defaultValue);
+    }
 
     CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, defaultExpr);
     call->insertBefore(moveDefault);
+    if (typeSe) resolveExprTypeConstructor(typeSe);
     resolveExpr(moveDefault);
     call->convertToNoop();
 
