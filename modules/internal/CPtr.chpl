@@ -183,26 +183,32 @@ module CPtr {
       ch <~> new ioLiteral("]");
     }
 
-    /*proc init(other: c_array) {
-      // TODO: size mismatch error
-      // TODO: eltType mismatch error
-      //if other.size != this.size then
-      //  compilerError("Size mismatch in c array initialization");
+    inline proc length {
+      return size;
+    }
 
+    proc init(other: c_array) {
       this.eltType = other.eltType;
       this.size = other.size;
+      this.complete();
       for i in 0..#size {
-        this[i] = other[i];
+        pragma "no auto destroy"
+        var value: eltType;
+        value = other[i];
+        // this is a move, transfering ownership
+        __primitive("=", this(i), value);
       }
-    }*/
+    }
   }
 
   /* Copy the elements from one c_array to another.
      Raises an error at compile time if the array sizes or
      element types do not match. */
   proc =(ref lhs:c_array, rhs:c_array) {
+    if lhs.eltType != rhs.eltType then
+      compilerError("element type mismatch in c_array assignment");
     if lhs.size != rhs.size then
-      compilerError("Size mismatch in c array assignment");
+      compilerError("size mismatch in c_array assignment");
 
     for i in 0..#lhs.size {
       lhs[i] = rhs[i];
