@@ -108,6 +108,8 @@ class SystemError : Error {
       return new owned UnexpectedEOFError(details, err);
     } else if err == EFORMAT {
       return new owned BadFormatError(details, err);
+    } else if err == EIO {
+      return new owned IOError(err, details);
     }
 
     return new owned SystemError(err, details);
