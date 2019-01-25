@@ -1,0 +1,2 @@
+throw-borrowed.chpl:4: In function 'test':
+throw-borrowed.chpl:6: warning: Throwing borrowed error - please throw owned
