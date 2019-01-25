@@ -473,6 +473,12 @@ build-associative:
   07/14/17:
     - Extend parallel array initialization to POD arrays (#6675)
 
+cast-from-string:
+  12/14/18:
+    - Allow underscores in the number when casting from string to integral (#11880)
+  01/20/19:
+    - Update string-to-int cast functions to look for a 0x style prefix (#12097)
+
 chameneos-redux:
   07/08/13:
     - altered output order for chameneos data, old data incompatible
@@ -744,7 +750,11 @@ jacobi:
   07/19/18:
     - Do not introduce ref temps (#10010)
   10/16/18:
-    - No-alias hints for LLVM (#11324)
+    - No-alias hints for LLVM (no compiler perf impact) (#11324)
+  12/14/18:
+    - Allow underscores in the number when casting from string to integral (#11880)
+  01/22/18:
+    - Catch blocks catch owned, test code throws owned (#12090)
 
 knucleotide:
   10/17/15:
