@@ -4,13 +4,12 @@ class bar {
 
 var global = new unmanaged bar(4);
 
-proc _defaultOf(type t:unmanaged bar):t {
-  return global:unmanaged bar;
-}
+// it is not currently possible to change the default
+// value for a class type to be anything other than nil.
 
 var foo: unmanaged bar;
 
 writeln(foo);
 
-delete foo;
+delete global;
 
