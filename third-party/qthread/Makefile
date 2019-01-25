@@ -55,17 +55,20 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
   #
-  # Note that we call compileline with CHPL_COMM=none. Under
-  # CHPL_COMM=gasnet, compileline will fail if gasnet is not built, so
-  # in order to avoid ordering/dependencies just ignore the comm setting
-  # since it does not impact the qthreads build.
+  # Note that we call compileline with CHPL_MAKE_COMM=none. Under
+  # CHPL_MAKE_COMM=gasnet, compileline will fail if gasnet is not built,
+  # so in order to avoid ordering/dependencies just ignore the comm
+  # setting since it does not impact the qthreads build. We don't want
+  # to reset the CHPLENV_CACHE since the regular CHPL_COMM setting could
+  # impact things like CHPL_TARGET_CPU, which is part of the build path
   #
   # Throw COMPILELINE_STDERR_REDIRECT= if compileline failure is reported
   # and you want to see the stderr from that.
   #
   COMPILELINE_STDERR_REDIRECT=2> /dev/null
+  COMM_NONE_CHPLENV_CACHE := $(shell echo "$(CHPL_MAKE_CHPLENV_CACHE)" | sed 's/|CHPL_MAKE_COMM=[^|]*|/|CHPL_MAKE_COMM=none|/')
   INCS_DEFS := \
-    $(shell unset CHPL_MAKE_CHPLENV_CACHE && CHPL_COMM=none $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
+    $(shell CHPL_MAKE_CHPLENV_CACHE="$(COMM_NONE_CHPLENV_CACHE)" $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
                $(COMPILELINE_STDERR_REDIRECT) \
             || echo compilelineFAILURE)
   ifneq (, $(findstring compilelineFAILURE,$(INCS_DEFS)))
