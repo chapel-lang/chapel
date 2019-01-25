@@ -240,19 +240,10 @@ void AggregateType::codegenDef() {
 #endif
     }
   } else if (symbol->hasFlag(FLAG_C_ARRAY)) {
-    TypeSymbol* eltTS = NULL;
-    VarSymbol* sizeVar = NULL;
-    form_Map(SymbolMapElem, e, substitutions) {
-      if (TypeSymbol* ets = toTypeSymbol(e->value))
-        eltTS = ets;
-      else if (VarSymbol* evs = toVarSymbol(e->value))
-        sizeVar = evs;
-    }
-    INT_ASSERT(eltTS && sizeVar);
-    Immediate* imm = getSymbolImmediate(sizeVar);
-    INT_ASSERT(imm);
+    Type* eltType = cArrayElementType();
+    int64_t sizeInt = cArrayLength();
+    TypeSymbol* eltTS = eltType->symbol;
     const char* eltTypeCName = eltTS->cname;
-    int64_t sizeInt = imm->to_int();
     if( outfile ) {
       fprintf(outfile, "typedef ");
       fprintf(outfile, "%s", eltTypeCName);

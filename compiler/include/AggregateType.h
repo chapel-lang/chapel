@@ -158,6 +158,9 @@ public:
                                              bool &hasDefault)           const;
 
 
+  Type*                       cArrayElementType()                        const;
+  int                         cArrayLength()                             const;
+
   //
   // Public fields
   //
