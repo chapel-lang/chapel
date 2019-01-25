@@ -606,13 +606,11 @@ void initPrimitiveTypes() {
   // used in some runtime interfaces
   dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtCVoidPtr->defaultValue = gNil;
+
   dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
-  CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
-  gCVoidPtr->cname = "NULL";
-  gCVoidPtr->addFlag(FLAG_EXTERN);
-  dtCVoidPtr->defaultValue = gCVoidPtr;
-  dtCFnPtr->defaultValue = gCVoidPtr;
+  dtCFnPtr->defaultValue = gNil;
 
   dtFile = createPrimitiveType ("_file", "_cfile");
   dtFile->symbol->addFlag(FLAG_EXTERN);

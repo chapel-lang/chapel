@@ -5320,7 +5320,12 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
     USR_FATAL(call, "unable to resolve type");
 
   } else if (rhsType == dtNil) {
-    if (lhsType != dtNil && isClassLike(lhsType) == false) {
+    bool lhsIsPointer = isClassLike(lhsType) ||
+                        lhsType == dtCVoidPtr ||
+                        lhsType == dtCFnPtr ||
+                        lhsType == dtFile;
+
+    if (lhsType != dtNil && !lhsIsPointer) {
       USR_FATAL(userCall(call),
                 "type mismatch in assignment from nil to %s",
                 toString(lhsType));
@@ -7791,7 +7796,19 @@ initializeClass(Expr* stmt, Symbol* sym) {
     if (!field->hasFlag(FLAG_SUPER_CLASS)) {
       SET_LINENO(field);
       if (field->type->defaultValue) {
-        stmt->insertBefore(new CallExpr(PRIM_SET_MEMBER, sym, field, field->type->defaultValue));
+        Type* type = field->type;
+        Expr* deflt = NULL;
+        if (type->defaultValue->type == type) {
+          deflt = new SymExpr(type->defaultValue);
+        } else {
+          VarSymbol* defaultTmp = newTemp("_init_class_def_", type);
+          Expr* mv = new CallExpr(PRIM_MOVE, defaultTmp,
+                                  new CallExpr(PRIM_CAST, type->symbol, deflt));
+          stmt->insertBefore(new DefExpr(defaultTmp));
+          stmt->insertBefore(mv);
+          deflt = new SymExpr(defaultTmp);
+        }
+        stmt->insertBefore(new CallExpr(PRIM_SET_MEMBER, sym, field, deflt));
       } else if (isRecord(field->type)) {
         VarSymbol* tmp = newTemp("_init_class_tmp_", field->type);
         stmt->insertBefore(new DefExpr(tmp));
@@ -9242,8 +9259,15 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // These types default to nil
   } else if (isClassLikeOrNil(type)) {
-    // primitive initialization error happens later
-    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, gNil);
+    // note: error for bad param initialization checked for in resolving move
+
+    Expr* nilExpr = NULL;
+    if (gNil->type == type)
+      nilExpr = new SymExpr(gNil);
+    else
+      nilExpr = new CallExpr(PRIM_CAST, type->symbol, gNil);
+
+    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, nilExpr);
     call->insertBefore(moveDefault);
     resolveExpr(moveDefault);
     call->convertToNoop();
@@ -9251,8 +9275,15 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)
   } else if (type->defaultValue != NULL) {
-    // primitive initialization error happens later
-    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, type->defaultValue);
+    // note: error for bad param initialization checked for in resolving move
+
+    Expr* defaultExpr = NULL;
+    if (type->defaultValue->type == type)
+      defaultExpr = new SymExpr(type->defaultValue);
+    else
+      defaultExpr = new CallExpr(PRIM_CAST, type->symbol, type->defaultValue);
+
+    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, defaultExpr);
     call->insertBefore(moveDefault);
     resolveExpr(moveDefault);
     call->convertToNoop();
