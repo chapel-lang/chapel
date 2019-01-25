@@ -2233,13 +2233,13 @@ std::string FnSymbol::getPythonArrayReturnStmts() {
   std::string typeStrCDefs = getPythonTypeName(eltType->type, C_PYX);
   // Create the numpy array to return
   // E.g. cdef numpy.ndarray [C element type, ndim=1] ret =
-  //          numpy.zeros(shape = ret_arr.size, dtype = Python element type)
+  //          numpy.zeros(shape = ret_arr.num_elts, dtype = Python element type)
   std::string res = "\tcdef numpy.ndarray [" + typeStrCDefs + ", ndim=1] ret";
-  res += " = numpy.zeros(shape = ret_arr.size, dtype = " + typeStr + ")\n";
+  res += " = numpy.zeros(shape = ret_arr.num_elts, dtype = " + typeStr + ")\n";
 
   // Populate it with the contents we return (which translated C types into
   // Python types)
-  res += "\tfor i in range(ret_arr.size):\n";
+  res += "\tfor i in range(ret_arr.num_elts):\n";
   res += "\t\tret[i] = (<" + typeStrCDefs + "*>ret_arr.elts)[i]\n";
 
   // Free the returned array now that its contents have been stored elsewhere
