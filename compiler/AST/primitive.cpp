@@ -268,13 +268,14 @@ returnInfoNumericUp(CallExpr* call) {
 
 static QualifiedType
 returnInfoArrayIndexValue(CallExpr* call) {
-  Type* type = call->get(1)->typeInfo();
+  Type* type = call->get(1)->getValType();
   if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
     type = type->getField("addr")->type;
   if (!type->substitutions.n)
     INT_FATAL(call, "bad primitive");
   // Is this conditional necessary?  Can just assume condition is true?
-  if (type->symbol->hasFlag(FLAG_DATA_CLASS)) {
+  if (type->symbol->hasFlag(FLAG_DATA_CLASS) ||
+      type->symbol->hasFlag(FLAG_C_ARRAY)) {
     return QualifiedType(toTypeSymbol(getDataClassType(type->symbol))->type, QUAL_VAL);
   }
   else {

@@ -126,13 +126,26 @@ module CPtr {
     proc init(type eltType, param size) {
       this.eltType = eltType;
       this.size = size;
+      this.complete();
+      for i in 0..#size {
+        pragma "no auto destroy"
+        var default: eltType;
+        // this is a move, transfering ownership
+        __primitive("=", this(i), default);
+      }
+    }
+
+    proc deinit() {
+      for i in 0..#size {
+        chpl__autoDestroy(this(i));
+      }
     }
 
     /* Retrieve the i'th element (zero based) from the array.
       Does the equivalent of arr[i] in C.
         Includes bounds checking when such checks are enabled.
     */
-    inline proc this(i: integral) ref {
+    inline proc this(i: integral) ref : eltType {
       if boundsChecking then
         if i < 0 || i >= size then
           HaltWrappers.boundsCheckHalt("c array index out of bounds " + i +
@@ -143,7 +156,7 @@ module CPtr {
     /* As with the previous function, returns the i'th element (zero based)
         from the array. This one emits a compilation error if i is out of bounds.
     */
-    inline proc this(param i: integral) ref {
+    inline proc this(param i: integral) ref : eltType {
       if i < 0 || i >= size then
         compilerError("c array index out of bounds " + i +
                       "(indices are 0.." + (size-1) + ")");
@@ -160,13 +173,13 @@ module CPtr {
 
       ch <~> new ioLiteral("[");
       var first = true;
-      /*for i in 0..#size {
+      for i in 0..#size {
 
         ch <~> this(i);
 
         if i != size-1 then
           ch <~> new ioLiteral(", ");
-      }*/
+      }
       ch <~> new ioLiteral("]");
     }
 
