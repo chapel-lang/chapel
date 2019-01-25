@@ -671,7 +671,8 @@ void ReturnByRef::transform()
 
     if (CallExpr* parentCall = toCallExpr(parent))
     {
-      if (parentCall->isPrimitive(PRIM_MOVE))
+      if (parentCall->isPrimitive(PRIM_MOVE)   ||
+          parentCall->isPrimitive(PRIM_ASSIGN) )
       {
         transformMove(parentCall);
       }

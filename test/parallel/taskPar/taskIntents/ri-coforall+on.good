@@ -1,1 +1,9 @@
 numLocales 4  total 6
+do    {}    numLocales 4  total 12
+do    do{}  numLocales 4  total 18
+{}    do    numLocales 4  total 24
+{}    {}    numLocales 4  total 30
+{}    do{}  numLocales 4  total 36
+do{}  do    numLocales 4  total 42
+do{}  {}    numLocales 4  total 48
+do{}  do{}  numLocales 4  total 54
