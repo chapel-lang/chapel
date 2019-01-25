@@ -1231,6 +1231,9 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     isStarTuple = true;
     // Star tuples should only be passed by reference here...
     INT_ASSERT(base.isLVPtr != GEN_VAL);
+  } else if (baseType->symbol->hasFlag(FLAG_C_ARRAY)) {
+    eltType = toAggregateType(baseType)->cArrayElementType();
+    isStarTuple = true;
   } else if( baseType->symbol->hasFlag(FLAG_DATA_CLASS) ) {
     eltType = getDataClassType(baseType->symbol)->typeInfo();
     isStarTuple = false;
@@ -3151,9 +3154,16 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   if( ! type ) type = to_ptr.chplType;
   INT_ASSERT(type);
 
-  bool isStarTuple = type->symbol->hasFlag(FLAG_STAR_TUPLE);
+  bool isStarTuple = false;
   int starTupleLength = 0;
-  if( isStarTuple ) starTupleLength = toAggregateType(type)->fields.length;
+
+  if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    isStarTuple = true;
+    starTupleLength = toAggregateType(type)->fields.length;
+  } else if (type->symbol->hasFlag(FLAG_C_ARRAY)) {
+    isStarTuple = true;
+    starTupleLength = toAggregateType(type)->cArrayLength();
+  }
 
   // if from is a wide ptr a ref to dtNil, set from to
   // a nil pointer of the correct type.
@@ -3186,14 +3196,12 @@ void codegenAssign(GenRet to_ptr, GenRet from)
            starTupleLength <= tuple_copy_limit &&
            !isTupleOfTuple(type) ) {
           // tuple copy optimization
-          int i = 0;
-          for_fields(field, toAggregateType(type)) {
+          for (int i = 0; i < starTupleLength; i++) {
             GenRet to_i =
               codegenElementPtr(to_ptr, new_IntSymbol(i, INT_SIZE_64));
             GenRet from_i =
               codegenElementPtr(from, new_IntSymbol(i, INT_SIZE_64));
             codegenAssign(to_i, from_i);
-            i++;
           }
       } else {
         // tuple copy but use memcpy
