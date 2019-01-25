@@ -193,8 +193,7 @@ module CPtr {
       this.complete();
       for i in 0..#size {
         pragma "no auto destroy"
-        var value: eltType;
-        value = other[i];
+        var value: eltType = other[i];
         // this is a move, transfering ownership
         __primitive("=", this(i), value);
       }
