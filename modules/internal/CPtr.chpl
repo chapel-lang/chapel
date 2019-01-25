@@ -142,8 +142,8 @@ module CPtr {
     }
 
     /* Retrieve the i'th element (zero based) from the array.
-      Does the equivalent of arr[i] in C.
-        Includes bounds checking when such checks are enabled.
+       Does the equivalent of arr[i] in C.
+       Includes bounds checking when such checks are enabled.
     */
     inline proc this(i: integral) ref : eltType {
       if boundsChecking then
