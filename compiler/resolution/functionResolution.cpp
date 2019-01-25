@@ -1059,9 +1059,20 @@ bool canCoerce(Type*     actualType,
                        fn,
                        promotes);
 
-  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-      (formalType == dtCVoidPtr))
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && formalType == dtCVoidPtr)
     return true;
+
+  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && formalType == dtCVoidPtr)
+    return true;
+
+  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) &&
+      formalType->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    // check element types match
+    Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
+    Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
+    if (actualElt && formalElt && actualElt == formalElt)
+      return true;
+  }
 
   return false;
 }

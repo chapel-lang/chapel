@@ -103,13 +103,6 @@ module CPtr {
   in copying the elements (vs resulting in two pointers that refer to the same
   elements).  A `nil` c_array is not representable in Chapel.
   */
-  //   Similar to c_ptr but includes a param width
-  //   (matching a C fixed-size array).
-  //pragma "data class"
-  //pragma "no object"
-  //pragma "no default functions"
-  //pragma "no wide class"
-  //pragma "c_ptr class"
   pragma "c_array record"
   record c_array {
     /* The array element type */
@@ -117,27 +110,29 @@ module CPtr {
     /* The fixed number of elements */
     param size;
 
-    /*pragma "no doc"
-    pragma "no codegen"
-    pragma "no init field"
-    var x1: eltType; // this field keeps type alive until code generation
-     */
-
     proc init(type eltType, param size) {
       this.eltType = eltType;
       this.size = size;
       this.complete();
-      for i in 0..#size {
+      var i = 0;
+      while i < size {
+        // create a default value we'll transfer into the element
         pragma "no auto destroy"
         var default: eltType;
+        // this use of primitive works around an order-of-resolution issue.
+        ref eltRef = __primitive("array_get", this, i);
         // this is a move, transfering ownership
-        __primitive("=", this(i), default);
+        __primitive("=", eltRef, default);
+        i += 1;
       }
     }
 
     proc deinit() {
-      for i in 0..#size {
-        chpl__autoDestroy(this(i));
+      var i = 0;
+      while i < size {
+        // this use of primitive works around an order-of-resolution issue.
+        chpl__autoDestroy(__primitive("array_get", this, i));
+        i += 1;
       }
     }
 
@@ -166,11 +161,6 @@ module CPtr {
 
     /* Print the elements */
     proc writeThis(ch) {
-      /*if __primitive("ptr_eq", this, nil) {
-        ch <~> new ioLiteral("nil");
-        return;
-      }*/
-
       ch <~> new ioLiteral("[");
       var first = true;
       for i in 0..#size {
@@ -213,6 +203,9 @@ module CPtr {
       lhs[i] = rhs[i];
     }
   }
+  proc =(ref lhs:c_ptr, rhs:c_array) where lhs.eltType == rhs.eltType {
+    lhs = c_ptrTo(rhs[0]);
+  }
 
   pragma "no doc"
   inline proc c_void_ptr.writeThis(ch) {
@@ -249,8 +242,12 @@ module CPtr {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:c_array, x:c_ptr) {
-    return __primitive("cast", t, x);
+  inline proc _cast(type t:c_ptr(?e), x:c_array) where x.eltType == e {
+    return c_ptrTo(x[0]);
+  }
+  pragma "no doc"
+  inline proc _cast(type t:c_void_ptr, x:c_array) {
+    return c_ptrTo(x[0]):c_void_ptr;
   }
   pragma "no doc"
   inline proc _cast(type t:c_void_ptr, x:c_ptr) {
