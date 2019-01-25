@@ -1,0 +1,3 @@
+c-array-bad-coercion.chpl:5: In function 'main':
+c-array-bad-coercion.chpl:8: error: unresolved call 'f(c_array(int(64),2))'
+c-array-bad-coercion.chpl:1: note: candidates are: f(ptr: c_ptr(real))
