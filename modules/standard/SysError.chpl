@@ -383,14 +383,17 @@ private proc quote_string(s:string, len:ssize_t) {
   return new string(ret, isowned=true, needToCopy=false);
 }
 
-/* Throw a :class:`SystemError` if an error occurred, formatting a useful
-   message based on the provided arguments. Do nothing if the error argument
-   does not indicate an error occurred.
+/* Create and throw a :class:`SystemError` if an error occurred, formatting a
+   useful message based on the provided arguments. Do nothing if the error
+   argument does not indicate an error occurred.
 
    :arg error: the error code
    :arg msg: extra information to include in the thrown error
    :arg path: a path to include in the thrown error
    :arg offset: an offset to include in the thrown error
+
+   :throws SystemError: A subtype is thrown when the error argument indicates an
+                        error occurred
  */
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 {
@@ -418,13 +421,15 @@ proc ioerror(error:syserr, msg:string) throws
   if error then throw SystemError.fromSyserr(error, msg);
 }
 
-/* Throw an :class:`IOError` and include a formatted message based on the
-   provided arguments.
+/* Create and throw an :class:`IOError` and include a formatted message based on
+   the provided arguments.
 
    :arg errstr: the error string
    :arg msg: extra information to print after the error description
    :arg path: a path to print out that is related to the error
    :arg offset: an offset to print out that is related to the error
+
+   :throws IOError: always throws an IOError
  */
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 {
