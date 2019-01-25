@@ -1,6 +1,7 @@
 Initializing Modules:
    ChapelStandard
     CPtr
+     HaltWrappers
     CString
     String
      SysCTypes
@@ -13,7 +14,6 @@ Initializing Modules:
     ChapelThreads
     ChapelTuple
     ChapelRange
-     HaltWrappers
     ChapelTaskDataHelp
     LocaleModel
      LocaleModelHelpFlat
