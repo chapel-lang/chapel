@@ -27,7 +27,7 @@ typedef void (*chpl_free_func)(void*);
 
 typedef struct {
   void* elts;
-  uint64_t size;
+  uint64_t num_elts;
 
   void* freer;
 } chpl_external_array;
@@ -35,9 +35,9 @@ typedef struct {
 chpl_external_array chpl_make_external_array(uint64_t elt_size,
                                              uint64_t num_elts);
 chpl_external_array chpl_make_external_array_ptr(void* elts,
-                                                 uint64_t size);
+                                                 uint64_t num_elts);
 chpl_external_array chpl_make_external_array_ptr_free(void* elts,
-                                                      uint64_t size);
+                                                      uint64_t num_elts);
 void chpl_free_external_array(chpl_external_array x);
 void chpl_call_free_func(void* func, void* elts);
 
