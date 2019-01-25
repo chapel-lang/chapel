@@ -2103,7 +2103,7 @@ Type* AggregateType::cArrayElementType() const {
   return eltTS->type;
 }
 
-int AggregateType::cArrayLength() const {
+int64_t AggregateType::cArrayLength() const {
   VarSymbol* sizeVar = NULL;
   INT_ASSERT(symbol->hasFlag(FLAG_C_ARRAY));
   form_Map(SymbolMapElem, e, substitutions) {
@@ -2114,9 +2114,7 @@ int AggregateType::cArrayLength() const {
   Immediate* imm = getSymbolImmediate(sizeVar);
   INT_ASSERT(imm);
   int64_t sizeInt = imm->to_int();
-  if (sizeInt > INT_MAX)
-    USR_FATAL(symbol, "c_array is too large");
   if (sizeInt < 0)
     USR_FATAL(symbol, "c_array must have positive size");
-  return (int) sizeInt;
+  return sizeInt;
 }

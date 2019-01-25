@@ -159,7 +159,7 @@ public:
 
 
   Type*                       cArrayElementType()                        const;
-  int                         cArrayLength()                             const;
+  int64_t                     cArrayLength()                             const;
 
   //
   // Public fields

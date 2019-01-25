@@ -3162,7 +3162,10 @@ void codegenAssign(GenRet to_ptr, GenRet from)
     starTupleLength = toAggregateType(type)->fields.length;
   } else if (type->symbol->hasFlag(FLAG_C_ARRAY)) {
     isStarTuple = true;
-    starTupleLength = toAggregateType(type)->cArrayLength();
+    int64_t sizeInt = toAggregateType(type)->cArrayLength();
+    if (sizeInt > INT_MAX)
+      USR_FATAL(type->symbol, "c_array is too large");
+    starTupleLength = (int) sizeInt;
   }
 
   // if from is a wide ptr a ref to dtNil, set from to

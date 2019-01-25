@@ -248,7 +248,7 @@ void AggregateType::codegenDef() {
       fprintf(outfile, "typedef ");
       fprintf(outfile, "%s", eltTypeCName);
       fprintf(outfile, " %s", symbol->codegen().c.c_str());
-      fprintf(outfile, "[%d];\n\n", (int) sizeInt);
+      fprintf(outfile, "[%ld];\n\n", (long int) sizeInt);
       return;
     } else {
 #ifdef HAVE_LLVM
