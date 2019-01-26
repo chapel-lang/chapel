@@ -162,6 +162,8 @@ const char* toString(Type* type) {
 
     if (retval == NULL)
       retval = vt->symbol->name;
+    if (developer)
+      retval = vt->symbol->cname;
 
   } else {
     retval = "null type";

@@ -2171,6 +2171,10 @@ module ChapelArray {
   pragma "has runtime type"
   pragma "ignore noinit"
   pragma "default intent is ref if modified"
+  // this has always been true, but hard-coded into the compiler; here
+  // we put it into the module code to remove a special-case and force
+  // the serialize routines to fire, when there where-clause permits.
+  pragma "always RVF"
   /* The array type */
   record _array {
     var _pid:int;  // only used when privatized
@@ -2180,6 +2184,43 @@ module ChapelArray {
     var _unowned:bool;
     var _externally_managed: bool = false;
 
+    proc chpl__rvfMe() param {
+      compilerWarning("In _array.rvfMe, instance.type = " + _instance.type:string);
+      param retval = _instance.chpl__rvfMe();
+      compilerWarning("returning " + retval);
+      return retval;
+    }
+
+    proc type chpl__rvfMeType() param {
+      compilerWarning("In _array.type.rvfMe, this = " + this:string);
+      var x: this;
+      compilerWarning("x.type = ", x.type:string);
+      param retval = x.chpl__rvfMe();
+      compilerWarning("_array.type.rvfMe returning " + retval);
+      return retval;
+    }
+    
+    proc chpl__serialize() where chpl__rvfMe() {
+      return _instance.chpl__serialize();
+    }
+
+    proc type chpl__typeOfInstance() type {
+      var x: this;
+      return x._instance.type;
+    }
+
+    pragma "no doc"
+    pragma "no copy return"
+    proc type chpl__deserialize(data) where chpl__rvfMeType() {
+      var arrinst = _to_borrowed(this.chpl__typeOfInstance()).chpl__deserialize(data);
+      compilerWarning("chpl__desserialize() got ", arrinst.type:string);
+      pragma "no copy"
+      var retval = new _array(nullPid, arrinst);
+      compilerWarning("chpl__deserialize() returning ", retval.type:string);
+      compilerWarning("instance field is of type: ", retval._instance.type:string);
+      return retval;
+    }
+    
     proc chpl__promotionType() type {
       return _value.eltType;
     }

@@ -24,6 +24,8 @@
 //
 module ArrayViewSlice {
   use ChapelStandard;
+  use DefaultRectangular;
+  use BlockDist;
 
   private proc buildIndexCacheHelper(arr, dom) {
     param isRankChangeReindex = arr.isRankChangeArrayView() ||
@@ -80,6 +82,86 @@ module ArrayViewSlice {
                       doiBulkTransferFromAny,  doiBulkTransferToAny;
 
 
+    proc chpl__rvfMe() param {
+      compilerWarning("In ArrayViewSliceArr.rvfMe, type = " + this.type:string);
+      param retval = dsiSupportsPrivatization();
+      compilerWarning("retval = " + retval:string);
+      return retval;
+    }
+
+    record mySliceHelper {
+      param domRank: int;
+      param domStridable: bool;
+      type domIdxType;
+
+      param arrRank: int;
+      param arrStridable: bool;
+      type arrIdxType;
+      type arrEltType;
+
+      const dompid: int;
+      const arrpid: int;
+    }
+
+    proc chpl__serialize() {
+      var buff: chpl__inPlaceBuffer;
+      //    writeln("[", here.id, "] In serialize, sending ", (_value._DomPid, _value._ArrPid));
+      return new mySliceHelper(privDom.rank, privDom.stridable, privDom.idxType, arr.rank, arr.stridable, arr.idxType, arr.eltType, _DomPid, _ArrPid);
+    }
+
+    proc type myArrayRank(type t) param {
+      var x: t;
+      return x.rank;
+    }
+
+    proc type myArrayIdxType(type t) type {
+      var x: t;
+      return x.idxType;
+    }
+
+    proc type myArrayEltType(type t) type {
+      var x: t;
+      return x.eltType;
+    }
+
+    // TODO: The following assumes that we're only slicing into Block-distributed arrays using Block domains, but ultimately, we need to
+    // be able to slice into them using DefaultRectangular domains as well...
+
+    proc type chpl__deserialize(data) {
+      //    compilerWarning(this:string);
+      param rank = myArrayRank(this);
+      //    compilerWarning(rank:string);
+
+      type idxType = myArrayIdxType(this);
+      //    compilerWarning(idxType:string);
+
+      type eltType = myArrayEltType(this);
+      //    compilerWarning(eltType:string);
+
+      //    writeln("[", here.id, "] in my deserialize routine, received", (data.dompid, data.arrpid));
+      const dompid = data.dompid;
+      //    const dom = chpl_getPrivatizedCopy(BlockDom(rank=2, idxType=int, stridable=false, sparseLayoutType=unmanaged DefaultDist), dompid);
+      const dom = chpl_getPrivatizedCopy(unmanaged BlockDom(data.domRank, data.domIdxType, data.domStridable, unmanaged DefaultDist), dompid);
+      const arrpid = data.arrpid;
+      const arr = chpl_getPrivatizedCopy(unmanaged BlockArr(data.arrRank, data.arrIdxType, data.arrStridable, data.arrEltType, sparseLayoutType=unmanaged DefaultDist), arrpid);
+
+      // This is not so helpful because the "array" pragma causes us to sugar
+      // this thing's type in unfortunate ways...
+      //
+      // writeln(this:string);
+
+
+      var retval = new unmanaged ArrayViewSliceArr(eltType=eltType,
+                                            _DomPid=data.dompid,
+                                            dom = dom,
+                                            _ArrPid=data.arrpid,
+                                            _ArrInstance = arr);
+
+      compilerWarning("returning ", retval.type:string);
+      return retval;
+    }
+
+    
     //
     // standard generic aspects of arrays
     //

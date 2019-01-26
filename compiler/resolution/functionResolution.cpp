@@ -7350,6 +7350,7 @@ static void resolveBroadcasters(AggregateType* at) {
   Serializers& ser = serializeMap[at];
   INT_ASSERT(ser.serializer != NULL);
 
+  USR_WARN(at, "resolving broadcaster");
   VarSymbol* tmp = newTemp("global_temp", at);
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
 
@@ -7392,7 +7393,7 @@ static void resolveSerializers() {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isRecord(at) == true) {
           bool success = resolveSerializeDeserialize(at);
-          if (success) {
+          if (success && !ts->hasFlag(FLAG_ARRAY)) {
             resolveBroadcasters(at);
           }
         }

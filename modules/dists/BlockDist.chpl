@@ -75,6 +75,7 @@ config param testFastFollowerOptimization = false;
 //
 // This flag is used to disable lazy initialization of the RAD cache.
 //
+config param defaultDisableLazyRADOpt = false;
 config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
 
 //

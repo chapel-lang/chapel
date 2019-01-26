@@ -30,13 +30,14 @@ module ChapelSerializedBroadcast {
 
   proc chpl__broadcastGlobal(ref localeZeroGlobal : ?T, id : int)
   where chpl__enableSerializedGlobals {
+    compilerWarning("in broadcast global: ", localeZeroGlobal.type:string);
     const data = localeZeroGlobal.chpl__serialize();
     const root = here.id;
     coforall loc in Locales do on loc {
       if here.id != root {
         pragma "no copy"
         pragma "no auto destroy"
-        var temp = T.chpl__deserialize(data);
+        var temp = localeZeroGlobal.type.chpl__deserialize(data);
 
         const destVoidPtr = chpl_get_global_serialize_table(id);
         const dest = destVoidPtr:c_ptr(localeZeroGlobal.type);

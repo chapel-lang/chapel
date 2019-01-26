@@ -644,6 +644,10 @@ module ChapelDistribution {
     var pid:int = nullPid; // privatized ID, if privatization is supported
     var _decEltRefCounts : bool = false;
 
+    proc chpl__rvfMe() param {
+      return false;
+    }
+
     proc isSliceArrayView() param {
       return false;
     }
