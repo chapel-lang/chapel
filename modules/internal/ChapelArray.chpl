@@ -2371,17 +2371,36 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc this(d: domain) {
-      if d.rank == rank then
-        return this((...d.getIndices()));
-      else
+      if d.rank == rank {
+        if boundsChecking then
+          checkSlice(d);
+
+        //
+        // If this is already a slice array view, we can short-circuit
+        // down to the underlying array.
+        //
+        const (arr, arrpid) = if (_value.isSliceArrayView())
+                              then (this._value.arr, this._value._ArrPid)
+                              else (this._value, this._pid);
+
+        var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
+                                                _DomPid=d._pid,
+                                                dom=d._instance,
+                                                _ArrPid=arrpid,
+                                                _ArrInstance=arr);
+
+        // this doesn't need to lock since we just created the domain d
+        d._value.add_arr(a);
+        return _newArray(a);
+      } else
         compilerError("slicing an array with a domain of a different rank");
     }
 
     pragma "no doc"
-    proc checkSlice(ranges...rank) where chpl__isTupleOfRanges(ranges) {
+    proc checkSlice(d: domain) {
       for param i in 1.._value.dom.rank do
-        if !_value.dom.dsiDim(i).boundsCheck(ranges(i)) then
-          halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
+        if !_value.dom.dsiDim(i).boundsCheck(d.dsiDim(i)) then
+          halt("array slice out of bounds in dimension ", i, ": ", d.dsiDim(i));
     }
 
     // array slicing by a tuple of ranges
@@ -2389,29 +2408,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc this(ranges...rank) where chpl__isTupleOfRanges(ranges) {
-      if boundsChecking then
-        checkSlice((... ranges));
-
-      pragma "no auto destroy" var d = _dom((...ranges));
-      d._value._free_when_no_arrs = true;
-
-      //
-      // If this is already a slice array view, we can short-circuit
-      // down to the underlying array.
-      //
-      const (arr, arrpid) = if (_value.isSliceArrayView())
-                              then (this._value.arr, this._value._ArrPid)
-                              else (this._value, this._pid);
-
-      var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
-                                    _DomPid=d._pid,
-                                    dom=d._instance,
-                                    _ArrPid=arrpid,
-                                    _ArrInstance=arr);
-
-      // this doesn't need to lock since we just created the domain d
-      d._value.add_arr(a, locking=false);
-      return _newArray(a);
+      return this({(...ranges)});
     }
 
     // array rank change
