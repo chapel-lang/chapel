@@ -105,7 +105,7 @@ module ArrayViewSlice {
 
     proc chpl__serialize() {
       var buff: chpl__inPlaceBuffer;
-      //    writeln("[", here.id, "] In serialize, sending ", (_value._DomPid, _value._ArrPid));
+      writeln("[", here.id, "] In serialize, sending ", (_DomPid, _ArrPid));
       return new mySliceHelper(privDom.rank, privDom.stridable, privDom.idxType, arr.rank, arr.stridable, arr.idxType, arr.eltType, _DomPid, _ArrPid);
     }
 
@@ -138,7 +138,7 @@ module ArrayViewSlice {
       type eltType = myArrayEltType(this);
       //    compilerWarning(eltType:string);
 
-      //    writeln("[", here.id, "] in my deserialize routine, received", (data.dompid, data.arrpid));
+      writeln("[", here.id, "] in my deserialize routine, received", (data.dompid, data.arrpid));
       const dompid = data.dompid;
       //    const dom = chpl_getPrivatizedCopy(BlockDom(rank=2, idxType=int, stridable=false, sparseLayoutType=unmanaged DefaultDist), dompid);
       const dom = chpl_getPrivatizedCopy(unmanaged BlockDom(data.domRank, data.domIdxType, data.domStridable, unmanaged DefaultDist), dompid);
