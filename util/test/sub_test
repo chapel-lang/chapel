@@ -2184,7 +2184,8 @@ for testname in testsrc:
                             err_strings = ['got exn while reading exit code: connection closed',
                                            'slave got an unknown command on coord socket:',
                                            'Slave got an xSocket: connection closed on recv',
-                                           'recursive failure in AMUDP_SPMDShutdown']
+                                           'recursive failure in AMUDP_SPMDShutdown',
+                                           'AM_ERR_RESOURCE \(Problem with requested resource\)']
                             for s in err_strings:
                                 if re.search(s, output, re.IGNORECASE) != None:
                                     extra_msg = '(possible JIRA 154) '
