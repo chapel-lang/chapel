@@ -2389,11 +2389,11 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
           ofiOp, ofiType, sizeof(Type));                                \
   }                                                                     \
                                                                         \
-  void chpl_comm_atomic_##fnOp##_buff_##fnType                          \
+  void chpl_comm_atomic_##fnOp##_unordered_##fnType                     \
          (void* operand, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_%s_buff_%s(<%s>, %d, %p, %d, %s)",     \
+               "chpl_comm_atomic_%s_unordered_%s(<%s>, %d, %p, %d, %s)",\
                #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
                object, ln, chpl_lookupFilename(fn));                    \
     chpl_comm_atomic_##fnOp##_##fnType(operand, node, object, ln, fn);  \
@@ -2447,11 +2447,11 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
           FI_SUM, ofiType, sizeof(Type));                               \
   }                                                                     \
                                                                         \
-  void chpl_comm_atomic_sub_buff_##fnType                               \
+  void chpl_comm_atomic_sub_unordered_##fnType                          \
          (void* operand, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
-               "chpl_comm_atomic_sub_buff_%s(<%s>, %d, %p, "            \
+               "chpl_comm_atomic_sub_unordered_%s(<%s>, %d, %p, "       \
                "%d, %s)",                                               \
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                ln, chpl_lookupFilename(fn));                            \
@@ -2483,7 +2483,7 @@ DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double, NEGATE_U_OR_R)
 
 
-void chpl_comm_atomic_buff_flush(void) {
+void chpl_comm_atomic_unordered_fence(void) {
   return;
 }
 
