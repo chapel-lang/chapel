@@ -588,7 +588,26 @@ buildFollowLoop(VarSymbol* iter,
   return followBlock;
 }
 
-// The respective temp is not needed any longer. Remove it.
+// Returns true for: .=( se, "_shape_", whatever)
+static bool isSettingShape(SymExpr* se) {
+  if (CallExpr* parent = toCallExpr(se->parentExpr))
+    if (parent->isPrimitive(PRIM_SET_MEMBER))
+      if (SymExpr* field = toSymExpr(parent->get(2)))
+        if (!strcmp(field->symbol()->name, "_shape_"))
+          return true;
+  return false;
+}
+
+// Returns true for: iteratorIndexType(se)
+static bool isIITcall(SymExpr* se) {
+  if (CallExpr* parent = toCallExpr(se->parentExpr))
+    if (parent->isNamed("iteratorIndexType")    ||
+        parent->isNamed("iteratorIndexTypeZip") )
+      return true;
+  return false;
+}
+
+// The respective temp may not be needed any longer. Remove it.
 static void removeOrigIterCall(SymExpr* origSE)
 {
   INT_ASSERT(!origSE->inTree());
@@ -596,28 +615,38 @@ static void removeOrigIterCall(SymExpr* origSE)
   Symbol* origSym = origSE->symbol();
   INT_ASSERT(origSym->hasFlag(FLAG_TEMP));
 
-  SymExpr* otherSE = origSym->firstSymExpr();
+  // If the temp is used only to set its shape, remove it. BTW there may be
+  // up to 3 shape-settings, due to a ref/value/constRef ContextCall.
+  //
+  // Or, the temp can be passed to iteratorIndexType/Zip() to determine
+  // the input type for a reduce expr. If so, keep it.
+  // Ex. associative/ferguson/plus-reduce-assoc.chpl
+  //     associative/bharshbarg/domains/reduceArrOfAssocDom.chpl
+  //
+  // If there is another scenario, the compiler will hit INT_ASSERT() below.
+  // This will alert us to look at it to make sure it is legit.
 
-  // First is its def.
-  bool ok = false;
-  if (CallExpr* def = toCallExpr(otherSE->parentExpr))
-    if (def->isPrimitive(PRIM_MOVE))
-      if (otherSE == def->get(1))
-        def->remove(),
-        ok = true;
-  INT_ASSERT(ok);
+  SymExpr* defSE = origSym->getSingleDef();
+  bool otherUses = false;
 
-  // We may also be settings its shape. If so, delete that as well.
-  // There may be up to 3 settings, due to ref/value/constRef ContextCall.
-  for_SymbolSymExprs(se, origSym) {
-    bool ok2 = false;
-    if (CallExpr* parent = toCallExpr(se->parentExpr))
-      if (parent->isPrimitive(PRIM_SET_MEMBER))
-        if (SymExpr* field = toSymExpr(parent->get(2)))
-          if (!strcmp(field->symbol()->name, "_shape_"))
-            parent->remove(),
-            ok2 = true;
-    INT_ASSERT(ok2);
+  for_SymbolSymExprs(se1, origSym)
+    if (se1 != defSE && ! isSettingShape(se1))
+      {
+        INT_ASSERT(isIITcall(se1));
+        otherUses = true;
+      }
+
+  if (otherUses)
+    return;  // Keep the temp.
+
+  // The temp is not needed, indeed. Remove it.
+
+  INT_ASSERT(toCallExpr(defSE->parentExpr)->isPrimitive(PRIM_MOVE));
+  defSE->parentExpr->remove();
+
+  for_SymbolSymExprs(se2, origSym) {
+    INT_ASSERT(isSettingShape(se2));
+    se2->parentExpr->remove();
   }
 
   origSym->defPoint->remove();

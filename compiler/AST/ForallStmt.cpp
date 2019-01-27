@@ -580,6 +580,7 @@ ForallStmt* ForallStmt::fromReduceExpr(VarSymbol* idx, SymExpr* dataExpr,
                                   idx, result->numIteratedExprs());
   } else {
     idx->addFlag(FLAG_INDEX_VAR);
+    idx->addFlag(FLAG_INSERT_AUTO_DESTROY); // how about the zippered case?
     result->inductionVariables().insertAtTail(new DefExpr(idx));
     result->iteratedExpressions().insertAtTail(dataExpr);
   }

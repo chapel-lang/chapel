@@ -1,15 +1,2 @@
-bug: compiler crashes with an assertion
-#12121
-
-Once that is fixed, revert .bad and .future to the original intention:
-
 feature request: avoid extra iterator invocation upon reduce
 #11884
-
-.bad:
----------------------------------
-start myIter
-start myIter
-finish myIter
-5 7 9
----------------------------------
