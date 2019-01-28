@@ -1733,7 +1733,9 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
         CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
         do {
           const int count = fi_cntr_read(tcip->txCntr);
-          if (count > 0) {
+          if (count == 0) {
+            sched_yield();
+          } else {
             DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
             tcip->numTxsOut -= count;
           }
@@ -2241,7 +2243,9 @@ void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut, uint64_t xpctFlags) {
                          err.err, bufProv);
       }
 
-      if (ret > 0) {
+      if (ret <= 0) {
+        sched_yield();
+      } else {
         const int numEvents = ret;
         numRetired += numEvents;
         for (int i = 0; i < numEvents; i++) {
