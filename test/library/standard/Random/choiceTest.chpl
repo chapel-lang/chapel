@@ -3,47 +3,54 @@ use Random;
 config const debug = false;
 
 proc main() {
-  testArray([1], trials=10);
-  testArray([2, 2], trials=10);
-  testArray([0, 1], trials=10);
-  testArray([0.1, 0.9]);
-  testArray([4, 16]);
-  testArray([1, 1, 2]);
-  testArray([2.0001, 2.0002]);
-  testArray([1,2], t=real(64));
-  testArray([1,2], t=real(32));
-  testArray([1,2], t=int(64));
-  testArray([1,2], t=int(32));
-  testArray([1,2], t=uint(32));
-  testArray([1,2], t=uint(16));
-
-  var uints: [1..3] uint = [100:uint, 100:uint, 400:uint];
-  testArray(uints);
-
-  var real32s: [1..4] real(32) = [0.1:real(32), 0.2:real(32), 0.3:real(32), 0.4:real(32)];
-  testArray(real32s);
-
-  // prob overload
-  testArray([1,2], [0, 1], trials=10);
-  testArray([1,2], [0.1, 0.9]);
-  testArray([1,1,2], [0.1, 0.4, 0.5]);
-  testArray([1,2], [10, 90], t=real(32));
-  testArray([1,2], [10, 90], t=int(32));
-  testArray([1,2], [10, 90], t=uint(32));
-  testArray([1,2], [10, 90], t=uint(16));
+  var pcg = makeRandomStream(real, algorithm=RNG.PCG);
+  runTests(pcg);
+  var npb = makeRandomStream(real, algorithm=RNG.NPB);
+  runTests(npb);
 }
 
-proc testArray(arr: [] ?eltType, type t=eltType, trials=10000) throws {
+proc runTests(stream) {
+  testArray(stream, [1], trials=10);
+  testArray(stream, [2, 2], trials=10);
+  testArray(stream, [0, 1], trials=10);
+  testArray(stream, [0.1, 0.9]);
+  testArray(stream, [4, 16]);
+  testArray(stream, [1, 1, 2]);
+  testArray(stream, [2.0001, 2.0002]);
+  testArray(stream, [1,2], t=real(64));
+  testArray(stream, [1,2], t=real(32));
+  testArray(stream, [1,2], t=int(64));
+  testArray(stream, [1,2], t=int(32));
+  testArray(stream, [1,2], t=uint(32));
+  testArray(stream, [1,2], t=uint(16));
+
+  var uints: [1..3] uint = [100:uint, 100:uint, 400:uint];
+  testArray(stream, uints);
+
+  var real32s: [1..4] real(32) = [0.1:real(32), 0.2:real(32), 0.3:real(32), 0.4:real(32)];
+  testArray(stream, real32s);
+
+  // prob overload
+  testArray(stream, [1,2], [0, 1], trials=10);
+  testArray(stream, [1,2], [0.1, 0.9]);
+  testArray(stream, [1,1,2], [0.1, 0.4, 0.5]);
+  testArray(stream, [1,2], [10, 90], t=real(32));
+  testArray(stream, [1,2], [10, 90], t=int(32));
+  testArray(stream, [1,2], [10, 90], t=uint(32));
+  testArray(stream, [1,2], [10, 90], t=uint(16));
+}
+
+proc testArray(stream, arr: [] ?eltType, type t=eltType, trials=10000) throws {
   var d = {1..0};
   var prob: [d] real;
   var typedArr: [arr.domain] t = arr: t;
-  testArray(typedArr, prob, trials=trials);
+  testArray(stream, typedArr, prob, trials=trials);
 }
 
 
-proc testArray(arr: [], prob: [] ?eltType, type t=eltType, trials=10000) throws {
+proc testArray(stream, arr: [], prob: [] ?eltType, type t=eltType, trials=10000) throws {
   var typedProb: [prob.domain] t = prob: t;
-  var counts = runTrials(arr, typedProb, trials);
+  var counts = runTrials(stream, arr, typedProb, trials);
 
   if debug {
     writeln('Counts for array: ', arr);
@@ -91,18 +98,18 @@ proc getExpectedRatios(arr: [], prob: []) throws {
 }
 
 
-proc runTrials(arr: [], prob: [],  trials: int) throws {
+proc runTrials(stream, arr: [], prob: [],  trials: int) throws {
   var countsDom: domain(arr.eltType);
   var counts: [countsDom] int;
 
   if prob.size > 0 {
     for 1..trials {
-      var c = choice(arr, prob);
+      var c = stream.choice(arr, prob);
       counts[c] += 1;
     }
   } else {
     for 1..trials {
-      var c = choice(arr);
+      var c = stream.choice(arr);
       counts[c] += 1;
     }
   }
@@ -110,6 +117,7 @@ proc runTrials(arr: [], prob: [],  trials: int) throws {
   return counts;
 }
 
+/* This should really be part of the standard library! */
 proc isClose(a: real, b: real, epsilon=0.05) {
   return abs(a - b) < epsilon;
 }
