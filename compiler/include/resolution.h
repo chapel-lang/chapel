@@ -131,7 +131,6 @@ void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 FnSymbol* findCopyInit(AggregateType* ct);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
-FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
 
 // forall intents
