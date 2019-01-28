@@ -66,6 +66,7 @@ void chpl_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
                              int ln, int32_t fn);
 
 void chpl_comm_get_unordered_fence(void);
+void chpl_comm_get_unordered_task_fence(void);
 
 //
 // Internal statistics gathering and reporting.

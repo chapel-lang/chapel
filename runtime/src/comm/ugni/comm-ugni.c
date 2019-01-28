@@ -1507,6 +1507,7 @@ static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
 static void      remote_get_buff_init(void);
 static void      remote_get_buff_flush(void);
+static void      remote_get_buff_task_flush(void);
 static void      do_remote_get_buff(void*, c_nodeid_t, void*, size_t,
                                     drpg_may_proxy_t);
 static void      do_remote_get_V(int, void**, c_nodeid_t*, mem_region_t**,
@@ -5576,6 +5577,10 @@ void chpl_comm_get_unordered_fence(void) {
   remote_get_buff_flush();
 }
 
+void chpl_comm_get_unordered_task_fence(void) {
+  remote_get_buff_task_flush();
+}
+
 
 void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
                    size_t size, int32_t typeIndex,
@@ -5620,6 +5625,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
 typedef struct get_buff_thread_info_t {
   int                            vi;
   spinlock                       lock;
+  chpl_bool                      inited;
   void*                          tgt_addr_v[MAX_CHAINED_GET_LEN];
   c_nodeid_t                     locale_v[MAX_CHAINED_GET_LEN];
   mem_region_t*                  remote_mr_v[MAX_CHAINED_GET_LEN];
@@ -5678,6 +5684,23 @@ void remote_get_buff_flush(void) {
 
 static
 inline
+void remote_get_buff_task_flush(void) {
+  if (chpl_task_canMigrateThreads()) {
+    remote_get_buff_flush();
+  } else {
+    get_buff_thread_info_t* info = &get_buff_thread_info;
+    // Safe to check inited/vi outside the lock because no other thread can be
+    // modifying them, but concurrent flushing from other threads is possible.
+    if (info->inited && info->vi > 0) {
+      spinlock_lock(&info->lock);
+      get_buff_thread_info_flush(info);
+      spinlock_unlock(&info->lock);
+    }
+  }
+}
+
+static
+inline
 void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
                         size_t size, drpg_may_proxy_t may_proxy)
 {
@@ -5704,10 +5727,9 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     return;
   }
 
-  static __thread chpl_bool inited = false;
   get_buff_thread_info_t* info = &get_buff_thread_info;
 
-  if (!inited) {
+  if (!info->inited) {
     spinlock_init(&info->lock);
     info->vi = 0;
 
@@ -5716,7 +5738,7 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     get_buff_global_info.list = info;
     rwlock_unlock(&get_buff_global_info.lock);
 
-    inited = true;
+    info->inited = true;
   }
 
   // grab lock for this thread
