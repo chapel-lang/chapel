@@ -367,6 +367,22 @@ uint32_t chpl_task_isFixedThread(void) {
 }
 
 //
+// If the tasking layer will always execute tasks on the same thread
+// they started on, this returns true.  Otherwise, it returns false.
+// For example CHPL_TASKS=fifo a task is a thread, so tasks can't
+// migrate.  For CHPL_TASKS=qthreads some schedulers support
+// work-stealing where tasks can be stolen and moved to a diferent
+// then they started on.
+//
+#ifndef CHPL_TASK_IMPL_CAN_MIGRATE_THREADS
+#define CHPL_TASK_IMPL_CAN_MIGRATE_THREADS() 1
+#endif
+static inline
+uint32_t chpl_task_canMigrateThreads(void) {
+  return CHPL_TASK_IMPL_CAN_MIGRATE_THREADS();
+}
+
+//
 // returns the total number of threads that currently exist, whether running,
 // blocked, or idle
 //

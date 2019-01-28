@@ -126,6 +126,7 @@ c_sublocid_t chpl_task_getRequestedSubloc(void) {
   return c_sublocid_any;
 }
 
+#define CHPL_TASK_IMPL_CAN_MIGRATE_THREADS() 0
 
 #ifdef CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL
 #error "CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL is already defined!"

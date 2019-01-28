@@ -194,9 +194,11 @@ qthread-build: FORCE
 ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
 SUPPORTS_REMOTE_CACHE = 1
 ONE_WORKER_PER_SHEPHERD = 1
+TASKS_CAN_MIGRATE_THREADS = 0
 else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),distrib nottingham sherwood))
 SUPPORTS_REMOTE_CACHE = 0
 ONE_WORKER_PER_SHEPHERD = 0
+TASKS_CAN_MIGRATE_THREADS = 1
 else
 $(error Unrecognized Qthreads scheduler '$(SCHEDULER)')
 endif
@@ -207,6 +209,9 @@ qthread-chapel-h: FORCE
 	     > $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 	echo "#define CHPL_QTHREAD_SCHEDULER_ONE_WORKER_PER_SHEPHERD" \
 	     $(ONE_WORKER_PER_SHEPHERD) \
+	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_TASKS_CAN_MIGRATE_THREADS" \
+	     $(TASKS_CAN_MIGRATE_THREADS) \
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 	echo "#define CHPL_QTHREAD_HAVE_GUARD_PAGES" \
 	     $(HAVE_GUARD_PAGES) \
