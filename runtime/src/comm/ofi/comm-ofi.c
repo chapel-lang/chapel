@@ -1745,6 +1745,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
 
   if (amo->b.node == chpl_nodeID) {
     *amo->pDone = 1;
+    atomic_thread_fence(memory_order_release);
   } else {
     amSendDone(amo->b.node, amo->pDone);
   }
@@ -2176,13 +2177,11 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
                               ofi_rxAddrs[node], (uint64_t) object, mrKey,
                               ofiType, ofiOp, NULL));
   } else if (result != NULL) {
-    CHK_TRUE(operand2 == NULL);
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
                             myOpnd1, 1, mrDescOpnd1, myRes, mrDescRes,
                             ofi_rxAddrs[node], (uint64_t) object, mrKey,
                             ofiType, ofiOp, NULL));
   } else {
-    CHK_TRUE(operand2 == NULL);
     OFI_CHK(fi_atomic(tcip->txCtx,
                       myOpnd1, 1, mrDescOpnd1,
                       ofi_rxAddrs[node], (uint64_t) object, mrKey,
@@ -2509,9 +2508,20 @@ void doAMO(c_nodeid_t node, void* object,
     struct perTxCtxInfo_t* tcip = NULL;
     CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
 
+    int ofiCanDo;
     size_t count;
-    if (fi_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count) == 0
-        && count > 0) {
+    if (ofiOp == FI_CSWAP) {
+      ofiCanDo = fi_compare_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count);
+    } else {
+      CHK_TRUE(operand2 == NULL);
+      if (result == NULL) {
+        ofiCanDo = fi_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count);
+      } else {
+        ofiCanDo = fi_fetch_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count);
+      }
+    }
+    
+    if (ofiCanDo == 0 && count > 0) {
       //
       // The object address is remotely-accessible and the atomic op
       // and type are supported in the network.  Do the AMO natively.
@@ -2523,6 +2533,16 @@ void doAMO(c_nodeid_t node, void* object,
     }
 
     tciFree(tcip);
+  }
+
+  //
+  // We can't do the AMO on the network, so we're going to do it on
+  // the CPU.  If the object is on our own node do that directly;
+  // otherwise, send an AM to do it.
+  //
+  if (node == chpl_nodeID) {
+    doCpuAMO(object, operand1, operand2, result, ofiOp, ofiType, size);
+    return;
   }
 
   amRequestAMO(node, object, operand1, operand2, result,
