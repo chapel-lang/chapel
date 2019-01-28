@@ -7,10 +7,12 @@ proc main() throws {
 
   var success = true;
 
+  var stream = makeRandomStream(real);
+
   // Empty array
   try {
     var empty: [1..0] real;
-    var c = choice(empty);
+    var c = stream.choice(empty);
     success = false;
   } catch e: IllegalArgumentError {
     if debug then writeln(e.message());
@@ -18,7 +20,7 @@ proc main() throws {
 
   // Non-matching domain
   try {
-    var c = choice([1,2,3], [0.5, 0.5]);
+    var c = stream.choice([1,2,3], [0.5, 0.5]);
     success = false;
   } catch e: IllegalArgumentError {
     if debug then writeln(e.message());
@@ -27,7 +29,7 @@ proc main() throws {
 
   // Array of 0s
   try {
-    var c = choice([0, 0]);
+    var c = stream.choice([0, 0]);
     success = false;
   } catch e: IllegalArgumentError {
     if debug then writeln(e.message());
@@ -35,7 +37,7 @@ proc main() throws {
 
   // Negative values
   try {
-    var c = choice([1, -1]);
+    var c = stream.choice([1, -1]);
     success = false;
   } catch e: IllegalArgumentError {
     if debug then writeln(e.message());
