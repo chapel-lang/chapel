@@ -1,4 +1,3 @@
-use Time;
 // Test sync var using mostly read, reset, and isFull methods
 
 var done: sync bool = true;
@@ -12,18 +11,19 @@ proc foo(type t, u: t, v: t, name) {
   sync {
     begin {
       writeln("2: initial value is ", s.readXX(), " of type ", name);
+      done = true;
       write  ("2: value is now ", s.readFE());
       writeln(" and it is ", if s.isFull then "full" else "empty");
       done = true;
       write  ("2: value has changed to ", s.readFF());
       writeln(" and it is ", if s.isFull then "full" else "empty");
-      sleep(1);
+      chpl_task_yield();
       writeln("2: after sleeping, value is still ", s.readXX());
       s.reset();
       writeln("2: value has been reset to ", s.readFE());
       done = true;
     }
-    sleep(1);
+    done.readFE();
     writeln("1: woke up. writing ", u);
     s = u;
     if done then s = v;
