@@ -15,12 +15,12 @@ int main(int argc, char* argv[]) {
   chpl_external_array arr = foo(&arg);
   int64_t* actual = (int64_t*)arr.elts;
 
-  if (arr.size != arg.size) {
+  if (arr.num_elts != arg.num_elts) {
     printf("Uh oh!");
   }
 
   // Write its elements
-  for (int i = 0; i < arr.size; i++) {
+  for (int i = 0; i < arr.num_elts; i++) {
     printf("Element[%d] = %" PRId64 "\n", i, actual[i]);
   }
 

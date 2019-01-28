@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
   int64_t* actual = (int64_t*)arr.elts;
 
   // Write its elements
-  for (int i = 0; i < arr.size; i++) {
+  for (int i = 0; i < arr.num_elts; i++) {
     printf("Element[%d] = %" PRId64 "\n", i, actual[i]);
   }
 
