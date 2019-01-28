@@ -192,6 +192,122 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls, FnSet& fns)
   }
 }
 
+static inline bool isParIterOrForwarder(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_ITERATOR_FN))
+    // This is an iterator. Is it parallel?
+    return fn->hasFlag(FLAG_INLINE_ITERATOR);
+
+  if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    // This is a forwarder. Query the iterator itself.
+    return getTheIteratorFn(fn->retType)->hasFlag(FLAG_INLINE_ITERATOR);
+
+  // Otherwise, no.
+  return false;
+}
+
+static CallExpr* callingExpr(SymExpr* targetSE) {
+  if (CallExpr* call = toCallExpr(targetSE->parentExpr))
+    if (targetSE == call->baseExpr)
+      return call;
+  return NULL;
+}
+
+// Does 'fn' return the result of a call to 'se' ?
+static bool isReturnedValue(FnSymbol* fn, SymExpr* se) {
+  Symbol* currSym  = fn->getReturnSymbol();
+
+  // Traverse the chain of moves. Like in stripReturnScaffolding().
+  while (true) {
+    if (SymExpr* defSE = currSym->getSingleDef())
+      if (CallExpr* defMove = toCallExpr(defSE->parentExpr))
+        if (defMove->isPrimitive(PRIM_MOVE)) {
+          Expr* defSrc = defMove->get(2);
+
+          if (CallExpr* srcCall = toCallExpr(defSrc))
+            if (srcCall->baseExpr == se)
+              return true;  // found it
+
+          if (SymExpr* srcSE = toSymExpr(defSrc)) {
+            currSym = srcSE->symbol();
+            continue;  // continue traversing the chain of moves
+          }
+        }
+    // The chain of moves is over. Return false.
+    break;
+  }
+  return false;
+}
+
+static bool feedsIntoForallIterableExpr(FnSymbol* fn, SymExpr* use) {
+  if (CallExpr* call = callingExpr(use))
+  {
+    if (isForallIterExpr(call))
+      return true;
+
+    if (FnSymbol* useFn = toFnSymbol(use->parentSymbol))
+      // Does 'useFn' return the value of 'use' ?
+      if (useFn->retType == fn->retType &&
+          isReturnedValue(useFn, use))
+      {
+        bool forForall = false;
+        bool otherUse  = false;
+        for_SymbolSymExprs(use2, useFn) {
+          CallExpr* call2 = callingExpr(use2);
+          if (isForallIterExpr(call2)) forForall = true;
+          else                          otherUse = true;
+        }
+
+        INT_ASSERT(!(forForall && otherUse));
+        return forForall;
+      }
+  }
+
+  // Otherwise, no.
+  return false;
+}
+
+/*
+If the only uses of the parallel iterator are as the iterable expression
+in ForallStmts, it will be inlined.
+Its return value, which is an iterator record, is irrelevant.
+The return-by-ref transformation adds clutter, so skip it in this case.
+
+A parallel iterator can also be used in a for-loop.
+Such a for-loop is converted into a forall during resolution using
+replaceEflopiWithForall() - only if the loop body contains a yield statement.
+Otherwise it remains a for-loop. (Todo: convert in this case as well?)
+
+Another double-use scenario is in an astr_loopexpr_iterNN via _toLeader.
+Todo: replace astr_loopexpr_iterNN with a ForallStmt.
+
+When the same parallel iterator is used both ways,
+we need to split the uses into two so that each category
+is treated appropriately.
+*/
+static void detectParIterUses(FnSymbol* fn, bool& forForall, bool& otherUse) {
+  for_SymbolSymExprs(use, fn) {
+    if (feedsIntoForallIterableExpr(fn, use))
+      forForall = true;
+    else
+      otherUse = true;
+  }
+}
+
+// Redirect uses of 'fn' in ForallStmts to fn's clone
+// so it does not undergo the ReturnByRef transformation.
+static void splitParIterUses(FnSymbol* fn) {
+  SET_LINENO(fn);
+  FnSymbol* clone = fn->copy();
+  fn->defPoint->insertAfter(new DefExpr(clone));
+
+  for_SymbolSymExprs(use, fn)
+    if (feedsIntoForallIterableExpr(fn, use)) {
+      // go ahead redirect
+      SET_LINENO(use);
+      use->replace(new SymExpr(clone));
+    }
+}
+
 ReturnByRef::TransformationKind
 ReturnByRef::transformableFunctionKind(FnSymbol* fn)
 {
@@ -230,6 +346,20 @@ ReturnByRef::transformableFunctionKind(FnSymbol* fn)
   if (fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
     if (isUserDefinedRecord(fn->iteratorInfo->yieldedType))
       retval = true;
+  }
+
+  if (retval && isParIterOrForwarder(fn)) {
+    bool forForall = false;
+    bool otherUses = false;
+    // compute forForall and otherUses
+    detectParIterUses(fn, forForall, otherUses);
+
+    if (forForall && otherUses)
+      splitParIterUses(fn);
+
+    if (!otherUses)
+      // Do not transform the returns.
+      asgn = true;
   }
 
   if (asgn)
@@ -539,17 +669,19 @@ void ReturnByRef::transform()
     CallExpr* call   = mCalls[i];
     Expr*     parent = call->parentExpr;
 
-    if (CallExpr* parentCall = toCallExpr(parent)) {
+    if (CallExpr* parentCall = toCallExpr(parent))
+    {
       if (parentCall->isPrimitive(PRIM_MOVE))
+      {
         transformMove(parentCall);
+      }
       else
+      {
         INT_ASSERT(false);
-
-    } else if (isForallIterExpr(call)) {
-      SET_LINENO(call);
-      call->insertAtTail(gDummyRef);
-
-    } else {
+      }
+    }
+    else
+    {
       // task functions within iterators can yield
       // but technically return void
       //INT_ASSERT(false);
