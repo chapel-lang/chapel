@@ -1,10 +1,11 @@
-typedef int mypair[2];
+typedef int mytriple[3];
 
-static mypair myglobal;
+static mytriple myglobal;
 
-static void setpair(mypair arg) {
+static void setpair(mytriple arg) {
   arg[0] = 0;
   arg[1] = 1;
+  arg[2] = 2;
 }
 
 typedef struct {

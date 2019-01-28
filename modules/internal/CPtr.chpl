@@ -104,6 +104,7 @@ module CPtr {
   elements).  A `nil` c_array is not representable in Chapel.
   */
   pragma "c_array record"
+  pragma "default intent is ref if modified"
   record c_array {
     /* The array element type */
     type eltType;

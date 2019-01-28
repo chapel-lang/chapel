@@ -1,4 +1,4 @@
-extern type mytriple = c_array(c_int, 3);
+extern type mytriple = c_ptr(c_int); // a lie we intentionally support
 
 extern var myglobal: mytriple;
 
@@ -38,30 +38,3 @@ proc test4() {
   writeln(loc);
 }
 test4();
-
-proc test5() {
-  writeln("test5");
-  var loc: mytriple;
-  setpair(loc);
-  writeln(loc);
-}
-test5();
-
-proc test6() {
-  writeln("test6");
-  var loc: mytriple;
-  setpair(loc);
-  var x = loc;
-  writeln(x);
-}
-test6();
-
-proc test7() {
-  writeln("test7");
-  var loc: mytriple;
-  setpair(loc);
-  var x: mytriple;
-  x = loc;
-  writeln(x);
-}
-test7();

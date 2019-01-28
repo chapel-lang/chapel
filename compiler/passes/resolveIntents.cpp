@@ -210,6 +210,11 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
     return blankIntentForThisArg(arg->type);
   else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_CONST)
     return constIntentForThisArg(arg->type);
+  else if (/*fn->hasFlag(FLAG_EXTERN) &&*/ arg->intent == INTENT_BLANK &&
+           llvmCodegen && arg->getValType()->symbol->hasFlag(FLAG_C_ARRAY))
+    // Pass c_array by ref by default for --llvm
+    // (for C, an argument like int arg[2] is actually just int* arg)
+    return INTENT_REF_MAYBE_CONST;
   else if (fn->hasFlag(FLAG_EXTERN) && arg->intent == INTENT_BLANK)
     return INTENT_CONST_IN;
   else if (fn->hasFlag(FLAG_ALLOW_REF) && arg->type->symbol->hasFlag(FLAG_REF))

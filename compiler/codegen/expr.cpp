@@ -1092,10 +1092,10 @@ GenRet doCodegenFieldPtr(
       // Normally, we just use a GEP.
       bool isCArrayField = false;
       int fieldno = cBaseType->getMemberGEP(c_field_name, isCArrayField);
-      if (isCArrayField) {
-        // Accessing a field of C array type yields
-        // a pointer to the include array
-        // aka a pointer to the first element.
+      if (isCArrayField &&
+          ret.chplType->getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+        // Accessing field that is a C array declared with c_ptr(eltType)
+        // should result in a pointer to the first element.
         ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
         ret.val = info->irBuilder->CreateStructGEP(NULL, ret.val, 0);
         ret.isLVPtr = GEN_VAL;
