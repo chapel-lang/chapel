@@ -38,9 +38,15 @@ proc runTests(stream) {
   testArray(stream, [1,2], [10, 90], t=int(32));
   testArray(stream, [1,2], [10, 90], t=uint(32));
   testArray(stream, [1,2], [10, 90], t=uint(16));
+
+  // choices
+  testArray(stream, [1,2], [0, 1], trials=10, sampleSize=100);
+  testArray(stream, [1,1,2], [0.1, 0.4, 0.5], sampleSize=100);
+  testArray(stream, [2, 2], trials=10, sampleSize=100);
+  testArray(stream, [0, 1], trials=10, sampleSize=100);
 }
 
-proc testArray(stream, arr: [] ?eltType, type t=eltType, trials=10000) throws {
+proc testArray(stream, arr: [] ?eltType, type t=eltType, trials=10000, sampleSize=0) throws {
   var d = {1..0};
   var prob: [d] real;
   var typedArr: [arr.domain] t = arr: t;
@@ -48,9 +54,9 @@ proc testArray(stream, arr: [] ?eltType, type t=eltType, trials=10000) throws {
 }
 
 
-proc testArray(stream, arr: [], prob: [] ?eltType, type t=eltType, trials=10000) throws {
+proc testArray(stream, arr: [], prob: [] ?eltType, type t=eltType, trials=10000, sampleSize=0) throws {
   var typedProb: [prob.domain] t = prob: t;
-  var counts = runTrials(stream, arr, typedProb, trials);
+  var counts = runTrials(stream, arr, typedProb, trials, sampleSize);
 
   if debug {
     writeln('Counts for array: ', arr);
@@ -59,7 +65,8 @@ proc testArray(stream, arr: [], prob: [] ?eltType, type t=eltType, trials=10000)
     }
   }
 
-  var actualRatios = counts / trials:real;
+  var actualRatios = if sampleSize == 0 then counts / trials:real
+                     else counts / (trials*sampleSize): real;
 
   // Confirm that resulting ratios are within 0.05 of expected ratios
   var expectedRatios = if prob.size > 0 then getExpectedRatios(arr, prob) else
@@ -98,22 +105,35 @@ proc getExpectedRatios(arr: [], prob: []) throws {
 }
 
 
-proc runTrials(stream, arr: [], prob: [],  trials: int) throws {
+proc runTrials(stream, arr: [], prob: [],  trials: int, sampleSize: int) throws {
   var countsDom: domain(arr.eltType);
   var counts: [countsDom] int;
 
-  if prob.size > 0 {
-    for 1..trials {
-      var c = stream.choice(arr, prob);
-      counts[c] += 1;
+  if sampleSize == 0 {
+    if prob.size > 0 {
+      for 1..trials {
+        var c = stream.choice(arr, prob);
+        counts[c] += 1;
+      }
+    } else {
+      for 1..trials {
+        var c = stream.choice(arr);
+        counts[c] += 1;
+      }
     }
   } else {
-    for 1..trials {
-      var c = stream.choice(arr);
-      counts[c] += 1;
+    if prob.size > 0 {
+      for 1..trials {
+        var cs = stream.choices(arr, prob, sampleSize);
+        for c in cs do counts[c] += 1;
+      }
+    } else {
+      for 1..trials {
+        var cs = stream.choices(arr, sampleSize);
+        for c in cs do counts[c] += 1;
+      }
     }
   }
-
   return counts;
 }
 

@@ -404,6 +404,20 @@ module Random {
       compilerError("RandomStreamInterface.choice called");
     }
 
+    /* TODO */
+    proc choices(arr: [] ?arrEltType, sampleSize: int) throws
+      where isIntegralType(arrEltType) || isRealType(arrEltType)
+    {
+      compilerError("RandomStreamInterface.choices called");
+    }
+
+    /* TODO */
+    proc choices(arr: [], prob: [] ?probEltType, sampleSize: int) throws
+      where isIntegralType(probEltType) || isRealType(probEltType)
+    {
+      compilerError("RandomStreamInterface.choices called");
+    }
+
     /*
 
        Returns an iterable expression for generating `D.numIndices` random
@@ -822,6 +836,37 @@ module Random {
         var randNum = this.getNext();
         var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
         return arr[idx];
+      }
+
+      /* TODO */
+      proc choices(arr: [] ?arrEltType, sampleSize: int) throws
+        where isIntegralType(arrEltType) || isRealType(arrEltType)
+      {
+        return choices(arr, arr, sampleSize);
+      }
+
+      /* TODO */
+      proc choices(arr: [], prob: [] ?probEltType, sampleSize: int) throws
+        where isIntegralType(probEltType) || isRealType(probEltType)
+      {
+        use Search only;
+
+        if !isRealType(this.eltType) then
+          compilerError('choice() can only be used on RandomStream with eltType=real');
+
+        if sampleSize < 1 then
+          throw new IllegalArgumentError('choices() sampleSize must be greater than 0');
+
+        var cumulativeArr = _choiceSumArr(arr, prob);
+
+        var samples: [1..sampleSize] arr.eltType;
+
+        for sample in samples {
+          var randNum = this.getNext();
+          var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
+          sample = arr[idx];
+        }
+        return samples;
       }
 
 
@@ -2324,6 +2369,37 @@ module Random {
         var randNum = this.getNext();
         var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
         return arr[idx];
+      }
+
+      /* TODO */
+      proc choices(arr: [] ?arrEltType, sampleSize: int) throws
+        where isIntegralType(arrEltType) || isRealType(arrEltType)
+      {
+        return choices(arr, arr, sampleSize);
+      }
+
+      /* TODO */
+      proc choices(arr: [], prob: [] ?probEltType, sampleSize: int) throws
+        where isIntegralType(probEltType) || isRealType(probEltType)
+      {
+        use Search only;
+
+        if !isRealType(this.eltType) then
+          compilerError('choice() can only be used on RandomStream with eltType=real');
+
+        if sampleSize < 1 then
+          throw new IllegalArgumentError('choices() sampleSize must be greater than 0');
+
+        var cumulativeArr = _choiceSumArr(arr, prob);
+
+        var samples: [1..sampleSize] arr.eltType;
+
+        for sample in samples {
+          var randNum = this.getNext();
+          var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
+          sample = arr[idx];
+        }
+        return samples;
       }
 
 

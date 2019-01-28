@@ -43,6 +43,14 @@ proc main() throws {
     if debug then writeln(e.message());
   }
 
+  // Sample size of 0
+  try {
+    var c = stream.choices([1, 2], sampleSize=0);
+    success = false;
+  } catch e: IllegalArgumentError {
+    if debug then writeln(e.message());
+  }
+
 
   if !success {
     writeln('Error: An error was not thrown');
