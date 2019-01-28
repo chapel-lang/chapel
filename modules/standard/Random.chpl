@@ -210,6 +210,34 @@ module Random {
       compilerError("Unknown random number generator");
   }
 
+  pragma "no doc"
+  /* Helper function for common functionality across choice implementations */
+  proc _choiceSumArr(arr: [], prob: []) throws {
+    use Sort only;
+
+    // If stride, offset, or size don't match, we're in trouble
+    if arr.domain != prob.domain then
+      throw new IllegalArgumentError('choice() arrays must have equal domains');
+
+    if prob.size == 0 then
+      throw new IllegalArgumentError('choice() arrays cannot be empty');
+
+    // Construct cumulative sum array
+    var cumulativeArr = (+ scan prob): real;
+
+    if !Sort.isSorted(cumulativeArr) then
+      throw new IllegalArgumentError("choice() array cannot contain negative values");
+
+    // Confirm the array has at least one value > 0
+    if cumulativeArr[prob.domain.last] <= 0 then
+      throw new IllegalArgumentError('choice() array requires a value greater than 0');
+
+    // Normalize cumulative sum array
+    var total = cumulativeArr[prob.domain.last];
+    cumulativeArr /= total;
+    return cumulativeArr;
+  }
+
   /*
 
     Models a stream of pseudorandom numbers.  This class is defined for
@@ -334,7 +362,8 @@ module Random {
 
      .. code-block:: chapel
 
-        var result = choice([10, 40, 50]);
+        var stream = makeRandomStream(real);
+        var result = stream.choice([10, 40, 50]);
 
      In the above example, the elements sum to ``100``, so the chances of returning each element are as follows::
 
@@ -784,34 +813,13 @@ module Random {
         where isIntegralType(probEltType) || isRealType(probEltType)
       {
         use Search only;
-        use Sort only;
 
         if !isRealType(this.eltType) then
           compilerError('choice() can only be used on RandomStream with eltType=real');
 
-        // If stride, offset, or size don't match, we're in trouble
-        if arr.domain != prob.domain then
-          throw new IllegalArgumentError('choice() arrays must have equal domains');
-
-        if prob.size == 0 then
-          throw new IllegalArgumentError('choice() arrays cannot be empty');
-
-        // Construct cumulative sum array
-        var cumulativeArr = (+ scan prob): real;
-
-        if !Sort.isSorted(cumulativeArr) then
-          throw new IllegalArgumentError("choice() array cannot contain negative values");
-
-        // Confirm the array has at least one value > 0
-        if cumulativeArr[prob.domain.last] <= 0 then
-          throw new IllegalArgumentError('choice() array requires a value greater than 0');
-
-        // Normalize cumulative sum array
-        var total = cumulativeArr[prob.domain.last];
-        cumulativeArr /= total;
+        var cumulativeArr = _choiceSumArr(arr, prob);
 
         var randNum = this.getNext();
-
         var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
         return arr[idx];
       }
@@ -2307,34 +2315,13 @@ module Random {
         where isIntegralType(probEltType) || isRealType(probEltType)
       {
         use Search only;
-        use Sort only;
 
         if !isRealType(this.eltType) then
           compilerError('choice() can only be used on RandomStream with eltType=real');
 
-        // If stride, offset, or size don't match, we're in trouble
-        if arr.domain != prob.domain then
-          throw new IllegalArgumentError('choice() arrays must have equal domains');
-
-        if prob.size == 0 then
-          throw new IllegalArgumentError('choice() arrays cannot be empty');
-
-        // Construct cumulative sum array
-        var cumulativeArr = (+ scan prob): real;
-
-        if !Sort.isSorted(cumulativeArr) then
-          throw new IllegalArgumentError("choice() array cannot contain negative values");
-
-        // Confirm the array has at least one value > 0
-        if cumulativeArr[prob.domain.last] <= 0 then
-          throw new IllegalArgumentError('choice() array requires a value greater than 0');
-
-        // Normalize cumulative sum array
-        var total = cumulativeArr[prob.domain.last];
-        cumulativeArr /= total;
+        var cumulativeArr = _choiceSumArr(arr, prob);
 
         var randNum = this.getNext();
-
         var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
         return arr[idx];
       }
