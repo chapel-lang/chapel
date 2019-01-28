@@ -547,7 +547,7 @@ void ReturnByRef::transform()
 
     } else if (isForallIterExpr(call)) {
       SET_LINENO(call);
-      call->insertAtTail(gRetByRefToken);
+      call->insertAtTail(gDummyRef);
 
     } else {
       // task functions within iterators can yield

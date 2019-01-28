@@ -411,8 +411,8 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   return sifn;
 }
 
-static Expr* buildLIFNwhere(ArgSymbol* lifnTag, ArgSymbol* lifnIterator,
-                            bool zippered)
+static Expr* buildLeaderIteratorWhereClause(ArgSymbol* lifnTag,
+                                       ArgSymbol* lifnIterator, bool zippered)
 {
   Symbol* tlsym = new_StringSymbol(zippered ? "_toLeaderZip" : "_toLeader");
   Expr* checkTag = new CallExpr("==", lifnTag, gLeaderTag);
@@ -434,7 +434,8 @@ static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
   ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   lifn->insertFormalAtTail(lifnIterator);
 
-  lifn->where = new BlockStmt(buildLIFNwhere(lifnTag, lifnIterator, zippered));
+  lifn->where = new BlockStmt(buildLeaderIteratorWhereClause(
+                                lifnTag, lifnIterator, zippered));
 
   VarSymbol* leaderIterator = newTempConst("_leaderIterator");
   leaderIterator->addFlag(FLAG_EXPR_TEMP);

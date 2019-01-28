@@ -726,7 +726,9 @@ extern StringChainHash uniqueStringHash;
 extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
-extern Symbol *gRetByRefToken;
+// Pass this to a return-by-ref formal when the result is not needed.
+// Used when inlining iterators for ForallStmts.
+extern Symbol *gDummyRef;
 extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
 extern Symbol *gModuleToken;

@@ -2049,7 +2049,7 @@ static void insertFinalGenerate(ForallStmt* fs,
   next->insertBefore(new DefExpr(genTemp));
   next->insertBefore("'move'(%S, generate(%S,%S))",
                      genTemp, gMethodToken, globalOp);
-  if (fs->insertInitialAccumulate()) {
+  if (fs->needsInitialAccumulate()) {
     next->insertBefore(new CallExpr("=", fiVarSym, genTemp));
     // TODO: Should we try to free chpl_gentemp right after the assignment?
     genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -2131,7 +2131,7 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
 
   resolveBlockStmt(hld);
 
-  if (fs->insertInitialAccumulate())
+  if (fs->needsInitialAccumulate())
     insertAndResolveInitialAccumulate(fs, hld, globalOp, fiVarSym);
 
   moveInstantiationPoint(toBlockStmt(hld->parentExpr), hld, globalOp->type);
@@ -2159,7 +2159,7 @@ static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
     } else {
       INT_ASSERT(isLcnSymbol(riSym)); // what else can a globalOp be??
 
-      if (fs->insertInitialAccumulate())
+      if (fs->needsInitialAccumulate())
         insertAndResolveInitialAccumulate(fs, NULL, riSym, fiVarSym);
 
       // The user will manage allocation and deallocation of 'riSym'.

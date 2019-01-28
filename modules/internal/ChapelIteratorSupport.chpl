@@ -69,8 +69,8 @@ module ChapelIteratorSupport {
 
   pragma "no doc"
   proc iteratorIndexType(x) type {
-   // If the result is a runtime type, we better avoid invoking
-   // ic.advance() in iteratorIndex().
+   // If the result is a runtime type, we do not want to call iteratorIndex()
+   // - to avoid ic.advance(). We can do this for an array or a domain.
    if (isArray(x)) {
     return x.eltType;
    } else if isDomain(x) {

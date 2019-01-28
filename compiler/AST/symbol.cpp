@@ -42,7 +42,7 @@
 Symbol *gNil = NULL;
 Symbol *gUnknown = NULL;
 Symbol *gMethodToken = NULL;
-Symbol *gRetByRefToken = NULL;
+Symbol *gDummyRef = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
 Symbol *gModuleToken = NULL;

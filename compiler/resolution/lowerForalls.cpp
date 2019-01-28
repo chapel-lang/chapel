@@ -1087,7 +1087,7 @@ static void handleRecursiveIter(ForallStmt* fs,
   PARBlock->insertAtTail(iterRecDef->remove());
   PARBlock->insertAtTail(parIterDef->remove());
   PARBlock->insertAtTail(parIdxDef->remove());
-  INT_ASSERT(toSymExpr(parIterCall->argList.tail)->symbol() == gRetByRefToken);
+  INT_ASSERT(toSymExpr(parIterCall->argList.tail)->symbol() == gDummyRef);
   parIterCall->argList.tail->replace(new SymExpr(iterRec)); // ret by ref
   PARBlock->insertAtTail(parIterCall->remove());
   PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, parIter, callGetIter->remove()));
@@ -1292,7 +1292,7 @@ static void handleIteratorForwarders(ForallStmt* fs,
   if (iterFn->hasFlag(FLAG_FN_RETARG)) {
     SymExpr* retRefSE     = toSymExpr(iterCall->argList.tail);
     Symbol*  retRefFormal = toDefExpr(iterFn->formals.tail)->sym;
-    INT_ASSERT(retRefSE->symbol() == gRetByRefToken);
+    INT_ASSERT(retRefSE->symbol() == gDummyRef);
     INT_ASSERT(retRefFormal->hasFlag(FLAG_RETARG));
     SET_LINENO(retRefSE);
     retRefSym = newTemp("retRef", retRefFormal->type);
@@ -1422,5 +1422,6 @@ void lowerForallStmtsInline()
 
   removeDeadIters();
 
-  INT_ASSERT(gRetByRefToken->firstSymExpr() == NULL);
+  // Ensure gDummyRef is no longer used.
+  INT_ASSERT(gDummyRef->firstSymExpr() == NULL);
 }

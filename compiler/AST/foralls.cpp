@@ -530,7 +530,7 @@ static bool isIteratorRecord(Symbol* sym) {
 static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
 {
   return pfs->createdFromForLoop() ||
-         pfs->fRequireSerialIterator;
+         pfs->requireSerialIterator();
 }
 
 
@@ -636,8 +636,9 @@ static void removeOrigIterCall(SymExpr* origSE)
         otherUses = true;
       }
 
-  if (otherUses)
+  if (otherUses) {
     return;  // Keep the temp.
+  }
 
   // The temp is not needed, indeed. Remove it.
 
@@ -747,7 +748,7 @@ static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall,
   }
 
   // try serial
-  if (!gotParallel && pfs->fAllowSerialIterator) {
+  if (!gotParallel && pfs->allowSerialIterator()) {
     gotSA = true;
     tag->remove();
     if (origTarget != NULL) {
@@ -1047,7 +1048,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
     if (origTarget == origIterFn) {
       INT_ASSERT(gotSA);
-      INT_ASSERT(pfs->fAllowSerialIterator);
+      INT_ASSERT(pfs->allowSerialIterator());
       INT_ASSERT(origIterFn == igroup->serial);
     } else if (gotSA) {
       INT_ASSERT(origIterFn == igroup->standalone);
@@ -1244,7 +1245,7 @@ void resolveForallStmts2() {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
 
-    if (fs->fFromReduce) continue; // not an error
+    if (fs->fromReduce()) continue; // not an error
 
     // formerly nonLeaderParCheckInt()
     FnSymbol* parent = fs->getFunction();
@@ -1314,7 +1315,7 @@ void lowerPrimReduce(CallExpr* call, Expr*& retval) {
   SymExpr*   opSE = toSymExpr(call->get(1)->remove());           // 1st arg
   SymExpr* dataSE = toSymExpr(call->get(1)->remove());           // 2nd arg
   bool   zippered = toSymExpr(call->get(1))->symbol() == gTrue;  // 3rd arg
-  bool  reqSerial = false; // vass todo - require in some cases
+  bool  reqSerial = false; // We may need it for #11819, otherwise remove it.
 
   Expr* opExpr = lowerReduceOp(callStmt, opSE, dataSE, zippered);
 

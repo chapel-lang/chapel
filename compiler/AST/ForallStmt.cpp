@@ -36,12 +36,12 @@ ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   fZippered(zippered),
   fLoopBody(body),
   fVectorizationHazard(false),
-  fContinueLabel(NULL),
-  fErrorHandlerLabel(NULL),
   fFromForLoop(false),
   fFromReduce(false),
   fAllowSerialIterator(false),
   fRequireSerialIterator(false),
+  fContinueLabel(NULL),
+  fErrorHandlerLabel(NULL),
   fRecIterIRdef(NULL),
   fRecIterICdef(NULL),
   fRecIterGetIterator(NULL),
@@ -374,7 +374,7 @@ static VarSymbol* createAndAddIndexVar(AList& fIterVars, int idxPosition) {
 }
 
 // Support different users of fsDestructureWhenSingleIdxVar().
-static inline VarSymbol* indexNodeToVarSymbol(BaseAST* index) {
+static inline VarSymbol* indexExprToVarSymbol(BaseAST* index) {
   if (UnresolvedSymExpr* USE = toUnresolvedSymExpr(index))
     return new VarSymbol(USE->unresolved);
   if (VarSymbol* VS = toVarSymbol(index))
@@ -398,7 +398,7 @@ static void fsDestructureWhenSingleIdxVar(ForallStmt* fs, AList& fIterVars,
     bt->insertAtTail(idx_i);
   }
 
-  VarSymbol* idxUser = indexNodeToVarSymbol(index);
+  VarSymbol* idxUser = indexExprToVarSymbol(index);
   idxUser->addFlag(FLAG_INDEX_VAR);
   idxUser->addFlag(FLAG_INSERT_AUTO_DESTROY);
   DefExpr* idxDef = new DefExpr(idxUser);
@@ -496,8 +496,9 @@ static void adjustReduceOpNames(ForallStmt* fs) {
     }
 }
 
-ForallStmt* ForallStmt::buildStmt(Expr* indices, Expr* iterator, CallExpr* intents,
-                                  BlockStmt* body, bool zippered)
+ForallStmt* ForallStmt::buildHelper(Expr* indices, Expr* iterator,
+                                    CallExpr* intents, BlockStmt* body,
+                                    bool zippered, bool fromForLoop)
 {
   ForallStmt* fs = new ForallStmt(zippered, body);
 
@@ -513,6 +514,7 @@ ForallStmt* ForallStmt::buildStmt(Expr* indices, Expr* iterator, CallExpr* inten
 
   adjustReduceOpNames(fs);
   body->blockTag = BLOCK_NORMAL; // do not flatten it in cleanup(), please
+  fs->fFromForLoop = fromForLoop;
 
   return fs;
 }
@@ -526,8 +528,8 @@ BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndices(indices);
 
-  ForallStmt* fs = ForallStmt::buildStmt(indices, iterator, intents, body,
-                                         zippered);
+  ForallStmt* fs = ForallStmt::buildHelper(indices, iterator, intents, body,
+                                           zippered, false);
   return buildChapelStmt(fs);
 }
 

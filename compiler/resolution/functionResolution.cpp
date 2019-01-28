@@ -6872,12 +6872,12 @@ static void adjustInternalSymbols() {
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
 
-  // we want gRetByRefToken to be passable to 'ref' formals
-  makeRefType(dtRetByRefToken);
-  gRetByRefToken->type = dtRetByRefToken->getRefType();
-  gRetByRefToken->qual = QUAL_REF;
-  gRetByRefToken->addFlag(FLAG_REF);
-  gRetByRefToken->removeFlag(FLAG_CONST);
+  // we want gDummyRef to be passable to 'ref' formals
+  makeRefType(dtDummyRef);
+  gDummyRef->type = dtDummyRef->getRefType();
+  gDummyRef->qual = QUAL_REF;
+  gDummyRef->addFlag(FLAG_REF);
+  gDummyRef->removeFlag(FLAG_CONST);
 }
 
 

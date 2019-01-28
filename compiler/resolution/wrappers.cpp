@@ -1905,14 +1905,13 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
   CallExpr*  toLeader = new CallExpr(leaderName, iterator->copy(&leaderMap));
   BlockStmt* loopBody = new BlockStmt(new CallExpr(PRIM_YIELD, liIndex));
 
-  ForallStmt* fs = ForallStmt::buildStmt(new SymExpr(liIndex),
-                                         new SymExpr(liIterator),
-                                         NULL, // intents
-                                         loopBody,
-                                         false); // only leader - not zippered
-
-  // This means "do not mess with iterator" and "no shadow vars please".
-  fs->fFromForLoop = true;
+  ForallStmt* fs = ForallStmt::buildHelper(new SymExpr(liIndex),
+                                           new SymExpr(liIterator),
+                                           NULL, // intents
+                                           loopBody,
+                                           false, //only leader - not zippered
+                                           true); // do not mess with iterator
+                                                  // and no shadow vars please
   
   BlockStmt* loop = buildChapelStmt(fs);
 

@@ -396,7 +396,7 @@ TYPE_EXTERN PrimitiveType*    dtValue;
 TYPE_EXTERN PrimitiveType*    dtBorrowed;
 TYPE_EXTERN PrimitiveType*    dtUnmanaged;
 TYPE_EXTERN PrimitiveType*    dtMethodToken;
-TYPE_EXTERN PrimitiveType*    dtRetByRefToken;
+TYPE_EXTERN PrimitiveType*    dtDummyRef;
 TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
 TYPE_EXTERN PrimitiveType*    dtModuleToken;
 

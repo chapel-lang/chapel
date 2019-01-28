@@ -815,8 +815,7 @@ checkFormalActualTypesMatch()
         }
 
         if (SymExpr* se = toSymExpr(actual)) {
-          if (se->symbol() == gRetByRefToken &&
-              formal->hasFlag(FLAG_RETARG))
+          if (se->symbol() == gDummyRef && formal->hasFlag(FLAG_RETARG))
             // The compiler generates this combination.
             continue;
         }
