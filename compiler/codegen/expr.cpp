@@ -3164,7 +3164,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
     isStarTuple = true;
     int64_t sizeInt = toAggregateType(type)->cArrayLength();
     if (sizeInt > INT_MAX)
-      USR_FATAL(type->symbol, "c_array is too large");
+      USR_FATAL(type->symbol->instantiationPoint, "c_array is too large");
     starTupleLength = (int) sizeInt;
   }
 
