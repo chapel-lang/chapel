@@ -2536,22 +2536,17 @@ void doCpuAMO(void* obj,
               enum fi_op ofiOp, enum fi_datatype ofiType, size_t size) {
   CHK_TRUE(size == 4 || size == 8);
 
-  chpl_amo_datum_t myOpnd1 = { 0 };
-  if (operand1 != NULL)
-    memcpy(&myOpnd1, operand1, size);
-
-  chpl_amo_datum_t myOpnd2 = { 0 };
-  if (operand2 != NULL)
-    memcpy(&myOpnd2, operand2, size);
-
-  chpl_amo_datum_t* myResult = (chpl_amo_datum_t*) result;
+  chpl_amo_datum_t* myOpnd1 = (chpl_amo_datum_t*) operand1;
+  chpl_amo_datum_t* myOpnd2 = (chpl_amo_datum_t*) operand2;
 
 #define CPU_INT_ARITH_AMO(_o, _t, _m)                                   \
   do {                                                                  \
-    _t my_res = atomic_fetch_##_o##_##_t((atomic_##_t*) obj,            \
-                                         myOpnd1._m);                   \
-    if (result != NULL) {                                               \
-      myResult->_m = my_res;                                            \
+    if (result == NULL) {                                               \
+      (void) atomic_fetch_##_o##_##_t((atomic_##_t*) obj,               \
+                                      myOpnd1->_m);                     \
+    } else {                                                            \
+      *(_t*) result = atomic_fetch_##_o##_##_t((atomic_##_t*) obj,      \
+                                               myOpnd1->_m);            \
     }                                                                   \
   } while (0)
 
@@ -2565,41 +2560,43 @@ void doCpuAMO(void* obj,
       // write
       //
       if (size == 4) {
-        atomic_store_uint_least32_t(obj, myOpnd1.u32);
+        atomic_store_uint_least32_t(obj, myOpnd1->u32);
       } else {
-        atomic_store_uint_least64_t(obj, myOpnd1.u64);
+        atomic_store_uint_least64_t(obj, myOpnd1->u64);
       }
     } else {
       //
       // exchange
       //
       if (size == 4) {
-        myResult->u32 = atomic_exchange_uint_least32_t(obj, myOpnd1.u32);
+        *(uint32_t*) result = atomic_exchange_uint_least32_t(obj,
+                                                             myOpnd1->u32);
       } else {
-        myResult->u64 = atomic_exchange_uint_least64_t(obj, myOpnd1.u64);
+        *(uint64_t*) result = atomic_exchange_uint_least64_t(obj,
+                                                             myOpnd1->u64);
       }
     }
     break;
 
   case FI_ATOMIC_READ:
     if (size == 4) {
-      myResult->u32 = atomic_load_uint_least32_t(obj);
+      *(uint32_t*) result = atomic_load_uint_least32_t(obj);
     } else {
-      myResult->u64 = atomic_load_uint_least64_t(obj);
+      *(uint64_t*) result = atomic_load_uint_least64_t(obj);
     }
     break;
 
   case FI_CSWAP:
     if (size == 4) {
-      myResult->b32 =
+      *(chpl_bool32*) result =
         atomic_compare_exchange_strong_uint_least32_t(obj,
-                                                      myOpnd1.u32,
-                                                      myOpnd2.u32);
+                                                      myOpnd1->u32,
+                                                      myOpnd2->u32);
     } else {
-      myResult->b32 =
+      *(chpl_bool32*) result =
         atomic_compare_exchange_strong_uint_least64_t(obj,
-                                                      myOpnd1.u64,
-                                                      myOpnd2.u64);
+                                                      myOpnd1->u64,
+                                                      myOpnd2->u64);
     }
     break;
 
@@ -2664,14 +2661,14 @@ void doCpuAMO(void* obj,
 
       do {
         xpctd.u32 = atomic_load_int_least32_t(obj);
-        dsrd.r32 = xpctd.r32 + myOpnd1.r32;
+        dsrd.r32 = xpctd.r32 + myOpnd1->r32;
         done = atomic_compare_exchange_strong_uint_least32_t(obj,
                                                              xpctd.u32,
                                                              dsrd.u32);
       } while (!done);
 
       if (result != NULL) {
-        myResult->r32 = xpctd.r32;
+        *(float*) result = xpctd.r32;
       }
     } else if (ofiType == FI_DOUBLE) {
       chpl_amo_datum_t xpctd;
@@ -2680,14 +2677,14 @@ void doCpuAMO(void* obj,
 
       do {
         xpctd.u64 = atomic_load_int_least64_t(obj);
-        dsrd.r64 = xpctd.r64 + myOpnd1.r64;
+        dsrd.r64 = xpctd.r64 + myOpnd1->r64;
         done = atomic_compare_exchange_strong_uint_least64_t(obj,
                                                              xpctd.u64,
                                                              dsrd.u64);
       } while (!done);
 
       if (result != NULL) {
-        myResult->r64 = xpctd.r64;
+        *(double*) result = xpctd.r64;
       }
     } else {
       INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
@@ -2799,36 +2796,26 @@ void doCpuAMO(void* obj,
   }
 
   if (DBG_TEST_MASK(DBG_AMO)) {
-    chpl_amo_datum_t myObj = { 0 };
-    if (ofiType == FI_INT32)
-      memcpy(&myObj.i32, obj, sizeof(myObj.i32));
-    else if (ofiType == FI_UINT32)
-      memcpy(&myObj.u32, obj, sizeof(myObj.u32));
-    else if (ofiType == FI_INT64)
-      memcpy(&myObj.i64, obj, sizeof(myObj.i64));
-    else if (ofiType == FI_UINT64)
-      memcpy(&myObj.u64, obj, sizeof(myObj.u64));
-    else if (ofiType == FI_FLOAT)
-      memcpy(&myObj.r32, obj, sizeof(myObj.i32));
-    else
-      memcpy(&myObj.r64, obj, sizeof(myObj.r64));
-
-    if (result == NULL)
+    chpl_amo_datum_t* myObj = (chpl_amo_datum_t*) obj;
+    if (result == NULL) {
       DBG_PRINTF(DBG_AMO,
                  "doCpuAMO(%p, %d, %d, %s): now %s",
                  obj, ofiOp, ofiType,
-                 DBG_VAL(&myOpnd1, ofiType),
-                 DBG_VAL(&myObj, ofiType));
-    else {
+                 DBG_VAL(myOpnd1, ofiType),
+                 DBG_VAL(myObj, ofiType));
+    } else if (ofiOp == FI_ATOMIC_READ) {
       DBG_PRINTF(DBG_AMO,
-                 "doCpuAMO(%p, %d, %d, %s, %s): now %s, %p = was %s",
+                 "doCpuAMO(%p, %d, %d): res %p is %s",
+                 obj, ofiOp, ofiType, result,
+                 DBG_VAL(result, ofiType));
+    } else {
+      DBG_PRINTF(DBG_AMO,
+                 "doCpuAMO(%p, %d, %d, %s, %s): now %s, res %p is %s",
                  obj, ofiOp, ofiType,
-                 DBG_VAL(&myOpnd1, ofiType),
-                 DBG_VAL(&myOpnd2, ofiType),
-                 DBG_VAL(&myObj, ofiType), result,
-                 ((ofiOp == FI_CSWAP)
-                  ? DBG_VAL(&myResult, FI_INT32)
-                  : DBG_VAL(&myResult, ofiType)));
+                 DBG_VAL(myOpnd1, ofiType),
+                 DBG_VAL(myOpnd2, ofiType),
+                 DBG_VAL(myObj, ofiType), result,
+                 DBG_VAL(result, (ofiOp == FI_CSWAP) ? FI_INT32 : ofiType));
     }
   }
 
