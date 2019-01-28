@@ -2136,13 +2136,6 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
                               void* result,
                               enum fi_op ofiOp, enum fi_datatype ofiType,
                               size_t size) {
-  DBG_PRINTF(DBG_AMO,
-             "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, res %p, "
-             "op %d, typ %d, sz %zd",
-             (int) node, object,
-             DBG_VAL(operand1, ofiType), DBG_VAL(operand2, ofiType), result,
-             ofiOp, ofiType, size);
-
   void* myRes = result;
   size_t resSize = (ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : size;
   void* mrDescRes = NULL;
@@ -2195,6 +2188,23 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   if (myRes != result) {
     memcpy(result, myRes, resSize);
     freeBounceBuf(myRes);
+  }
+
+  if (result == NULL) {
+    DBG_PRINTF(DBG_AMO,
+               "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, "
+               "op %d, typ %d, sz %zd",
+               (int) node, object,
+               DBG_VAL(myOpnd1, ofiType), DBG_VAL(myOpnd2, ofiType),
+               ofiOp, ofiType, size);
+  } else {
+    DBG_PRINTF(DBG_AMO,
+               "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, res %p <%s>, "
+               "op %d, typ %d, sz %zd",
+               (int) node, object,
+               DBG_VAL(myOpnd1, ofiType), DBG_VAL(myOpnd2, ofiType), result,
+               DBG_VAL(result, (ofiOp == FI_CSWAP) ? FI_INT32 : ofiType),
+               ofiOp, ofiType, size);
   }
 
   if (myOpnd1 != operand1) {
@@ -2816,13 +2826,12 @@ void doCpuAMO(void* obj,
   }
 
   if (DBG_TEST_MASK(DBG_AMO)) {
-    chpl_amo_datum_t* myObj = (chpl_amo_datum_t*) obj;
     if (result == NULL) {
       DBG_PRINTF(DBG_AMO,
                  "doCpuAMO(%p, %d, %d, %s): now %s",
                  obj, ofiOp, ofiType,
                  DBG_VAL(myOpnd1, ofiType),
-                 DBG_VAL(myObj, ofiType));
+                 DBG_VAL((chpl_amo_datum_t*) obj, ofiType));
     } else if (ofiOp == FI_ATOMIC_READ) {
       DBG_PRINTF(DBG_AMO,
                  "doCpuAMO(%p, %d, %d): res %p is %s",
@@ -2834,7 +2843,7 @@ void doCpuAMO(void* obj,
                  obj, ofiOp, ofiType,
                  DBG_VAL(myOpnd1, ofiType),
                  DBG_VAL(myOpnd2, ofiType),
-                 DBG_VAL(myObj, ofiType), result,
+                 DBG_VAL((chpl_amo_datum_t*) obj, ofiType), result,
                  DBG_VAL(result, (ofiOp == FI_CSWAP) ? FI_INT32 : ofiType));
     }
   }
