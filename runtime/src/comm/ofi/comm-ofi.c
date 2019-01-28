@@ -2487,6 +2487,10 @@ void chpl_comm_atomic_unordered_fence(void) {
   return;
 }
 
+void chpl_comm_atomic_unordered_task_fence(void) {
+  return;
+}
+
 
 //
 // internal AMO utilities

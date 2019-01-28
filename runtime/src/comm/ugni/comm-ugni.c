@@ -1522,6 +1522,7 @@ static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
 static void      nic_amo_buff_init(void);
 static void      nic_amo_nf_buff_flush(void);
+static void      nic_amo_nf_buff_task_flush(void);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
 static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
@@ -6933,6 +6934,10 @@ void chpl_comm_atomic_unordered_fence(void) {
   nic_amo_nf_buff_flush();
 }
 
+void chpl_comm_atomic_unordered_task_fence(void) {
+  nic_amo_nf_buff_task_flush();
+}
+
 static
 inline
 int amo_cmd_2_nic_op(fork_amo_cmd_t cmd, int fetching)
@@ -6989,6 +6994,7 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
 typedef struct amo_nf_buff_thread_info_t {
   int                               vi;
   spinlock                          lock;
+  chpl_bool                         inited;
   uint64_t                          opnd1_v[MAX_CHAINED_AMO_LEN];
   c_nodeid_t                        locale_v[MAX_CHAINED_AMO_LEN];
   void*                             object_v[MAX_CHAINED_AMO_LEN];
@@ -7044,6 +7050,24 @@ void nic_amo_nf_buff_flush(void) {
   rwlock_unlock(&amo_nf_buff_global_info.lock);
 }
 
+// Flush buffered atomic operations for this task
+static
+inline
+void nic_amo_nf_buff_task_flush(void) {
+  if (chpl_task_canMigrateThreads()) {
+    nic_amo_nf_buff_flush();
+  } else {
+    amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
+    // Safe to check inited/vi outside the lock because no other thread can be
+    // modifying them, but concurrent flushing from other threads is possible.
+    if (info->inited && info->vi > 0) {
+      spinlock_lock(&info->lock);
+      flush_amo_nf_buff(info);
+      spinlock_unlock(&info->lock);
+    }
+  }
+}
+
 // Append to thread local buffers of operations and flush if full
 static
 inline
@@ -7053,10 +7077,9 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
                         mem_region_t* remote_mr)
 {
 
-  static __thread chpl_bool inited = false;
   amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
 
-  if (!inited) {
+  if (!info->inited) {
     spinlock_init(&info->lock);
     info->vi = 0;
 
@@ -7065,7 +7088,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
     amo_nf_buff_global_info.list = info;
     rwlock_unlock(&amo_nf_buff_global_info.lock);
 
-    inited = true;
+    info->inited = true;
   }
 
   check_nic_amo(size, object, remote_mr);
