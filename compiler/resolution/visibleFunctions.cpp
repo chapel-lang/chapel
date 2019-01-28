@@ -28,6 +28,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "view.h"
 
 #include <map>
 #include <set>
@@ -224,22 +225,18 @@ static void getVisibleFunctions(const char*           name,
 
     if (call->id == breakOnResolveID) {
       if (moduleBlock)
-        printf("visible fns: block %i module %s %s:%i\n",
-               block->id, inMod->name,
-               block->fname(), block->linenum());
+        printf("visible fns: block %i  module %s  %s\n",
+               block->id, inMod->name, debugLoc(block));
       else if (fnBlock)
-        printf("visible fns: block %i fn %s %s:%i\n",
-               block->id, inFn->name,
-               block->fname(), block->linenum());
+        printf("visible fns: block %i  fn %s  %s\n",
+               block->id, inFn->name, debugLoc(block));
       else
-        printf("visible fns: block %i %s:%i\n",
-               block->id,
-               block->fname(), block->linenum());
+        printf("visible fns: block %i  %s\n",
+               block->id, debugLoc(block));
 
       if (instantiationPt) {
-        printf("  instantiated from block %i %s:%i\n",
-               instantiationPt->id,
-               instantiationPt->fname(), instantiationPt->linenum());
+        printf("  instantiated from block %i  %s\n",
+               instantiationPt->id, debugLoc(instantiationPt));
       }
     }
 

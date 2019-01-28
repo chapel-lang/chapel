@@ -92,7 +92,6 @@ void        whocalls(BaseAST* ast);
 
 FnSymbol*   debugGetTheIteratorFn(int id);
 FnSymbol*   debugGetTheIteratorFn(BaseAST* ast);
-FnSymbol*   debugGetTheIteratorFn(Symbol* sym);
 FnSymbol*   debugGetTheIteratorFn(Type* type);
 FnSymbol*   debugGetTheIteratorFn(ForLoop* forLoop);
 

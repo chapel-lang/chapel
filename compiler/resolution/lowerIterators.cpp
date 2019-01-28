@@ -51,10 +51,6 @@ FnSymbol* getTheIteratorFn(Symbol* ic) {
   return getTheIteratorFn(ic->type);
 }
 
-FnSymbol* getTheIteratorFn(CallExpr* call) {
-  return getTheIteratorFn(call->get(1)->typeInfo());
-}
-
 // icType is either an _iteratorClass type or a tuple thereof
 // When icType is a tuple, this function returns
 //  the getIterator function for the first tuple element.
@@ -78,6 +74,7 @@ FnSymbol* getTheIteratorFn(Type* icType)
   return icTypeAgg->iteratorInfo->iterator;
 }
 
+// When debugging, avoid assertion failures of the production version.
 FnSymbol* debugGetTheIteratorFn(Type* type) {
   FnSymbol* result = NULL;
   if (AggregateType* agg = toAggregateType(type)) {
@@ -95,10 +92,6 @@ FnSymbol* debugGetTheIteratorFn(Type* type) {
       if (IteratorInfo* ii = agg->iteratorInfo)
         result = ii->iterator;
   }
-  if (result && result->hasFlag(FLAG_AUTO_II))
-    if (AggregateType* rettype = toAggregateType(result->retType))
-      if (FnSymbol* newresult = debugGetTheIteratorFn(rettype))
-        result = newresult;
   return result;
 }
 
