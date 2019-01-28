@@ -55,7 +55,16 @@ var error : real = 0;
 var counts: [1..k] int = 0;
 var c1:[1..k] m*int;
 
-proc accumulate (da: eltType)
+proc AccumState type
+    return (error, counts, c1).type;
+
+proc identity
+{
+    var result: AccumState;
+    return result;
+}
+
+proc accumulateOntoState (ref state, da: eltType)
 {
     //find nearest Cluster for this point
     
@@ -79,33 +88,48 @@ proc accumulate (da: eltType)
 
     //Add the result into reduction object
 
-    error = error + min_distance;
+    state(1) += min_distance;
 
-    counts[min_disposition] = counts[min_disposition] + 1;
+    state(2)[min_disposition] += 1;
     
     for param j in 1..m
     {
-        c1[min_disposition][j] = c1[min_disposition][j] + da[j];
+        state(3)[min_disposition][j] += + da[j];
     }
 }
 
-proc combine(km: borrowed kmeansReduction(eltType))
+proc accumulate (da: eltType)
 {
-    counts = counts + km.counts;
-    error = error + km.error;
+    accumulateOntoState((error, counts, c1), da);
+}
+
+proc accumulate(km: AccumState)
+{
+    counts += km(2);
+    error += km(1);
     
     for i in 1..k
     {
         for param j in 1..m
         {
-            c1[i][j] = c1[i][j] + km.c1[i][j];
+            c1[i][j] += km(3)[i][j];
         }
     }
 }
 
+proc combine(km: borrowed kmeansReduction(eltType))
+{
+    accumulate((km.error, km.counts, km.c1));
+}
+
 proc generate()
 {
-  return (error, counts, c1);
+    return (error, counts, c1);
+}
+
+proc clone()
+{
+    return new unmanaged kmeansReduction(eltType=eltType);
 }
 }
 

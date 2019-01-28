@@ -40,8 +40,7 @@ iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx,
   }
 
 iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx,
-    param tag: iterKind) where tag == iterKind.standalone &&
-    __primitive("method call resolves", ranges(onlyDim), "these", tag) {
+    param tag: iterKind) where tag == iterKind.standalone {
 
     if !dsiPartialDomain(onlyDim).contains(otherIdx) then return;
     for i in ranges(onlyDim).these(tag) do yield i;
@@ -69,20 +68,16 @@ iter DefaultRectangularArr.dsiPartialThese(param onlyDim, otherIdx,
 
     for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag,
         followThis) do
-      yield dsiAccess(i);
+      yield dsiAccess(otherIdx.withIdx(onlyDim, i));
 }
 
-// FIXME this standalone iterator forwarding hits a compiler bug.
-// The assertion in astutil.cpp:622 triggers. Engin
-/*
-iter DefaultRectangularArr.dsiPartialThese(onlyDim,
+iter DefaultRectangularArr.dsiPartialThese(param onlyDim,
     otherIdx=createTuple(rank-1, idxType, 0:idxType),
     param tag: iterKind) where tag == iterKind.standalone {
 
   for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) do
-    yield dsiAccess(i);
+    yield dsiAccess(otherIdx.withIdx(onlyDim, i));
 }
-*/
 //
 // end DefaultRectangular support
 //

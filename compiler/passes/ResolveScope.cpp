@@ -43,6 +43,7 @@
 
 #include "ResolveScope.h"
 
+#include "ForallStmt.h"
 #include "LoopExpr.h"
 #include "scopeResolve.h"
 
@@ -78,6 +79,9 @@ ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
 
     } else if (LoopExpr* fe = toLoopExpr(ast)) {
       retval = new ResolveScope(fe, NULL);
+
+    } else if (ForallStmt* fs = toForallStmt(ast)) {
+      retval = new ResolveScope(fs, NULL);
 
     } else {
       INT_ASSERT(false);

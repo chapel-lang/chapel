@@ -42,6 +42,7 @@
 Symbol *gNil = NULL;
 Symbol *gUnknown = NULL;
 Symbol *gMethodToken = NULL;
+Symbol *gDummyRef = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
 Symbol *gModuleToken = NULL;
@@ -349,6 +350,16 @@ SymExpr* Symbol::getSingleDef() const {
   SymExpr* ret = NULL;
   for_SymbolDefs(def, this) {
     if (ret != NULL) return NULL;
+    ret = def;
+  }
+  return ret;
+}
+
+SymExpr* Symbol::getSingleDefUnder(Symbol* parent) const {
+  SymExpr* ret = NULL;
+  for_SymbolDefs(def, this) {
+    if (ret != NULL) return NULL;
+    if (def->parentSymbol != parent) continue;
     ret = def;
   }
   return ret;
@@ -1905,6 +1916,37 @@ Immediate* getSymbolImmediate(Symbol* sym) {
   }
 
   return imm;
+}
+
+
+// Return the expression PRIM_MOVE-ed into origSE->symbol().
+// Return NULL if the def is not found or is uncertain.
+Expr* getDefOfTemp(SymExpr* origSE)
+{
+  Symbol* origSym = origSE->symbol();
+  if (!origSym->hasFlag(FLAG_TEMP)) return NULL;  // only temps
+
+  SymExpr* otherSE = origSym->getSingleDef();
+
+
+  if (otherSE == NULL) {
+    // Sometimes the DefExpr for 'origSym' is hoisted to the module level -
+    // see static 'globalTemps' in normalize.cpp. Then, 'origSym' does not get
+    // cloned while instantiating the enclosing function, so we get two defs.
+    // We have to run getSingleDef() first because origSE may be not in tree.
+    // Tests:
+    //   arrays/deitz/runtime_types/test_array_type4.chpl
+    //   studies/kmeans/kmeans-blc.chpl
+    otherSE = origSym->getSingleDefUnder(origSE->parentSymbol);
+  }
+
+  if (CallExpr* def = toCallExpr(otherSE->parentExpr))
+    if (def->isPrimitive(PRIM_MOVE))
+      if (otherSE == def->get(1))
+        return def->get(2);
+
+  // uncertain situation
+  return NULL;
 }
 
 

@@ -147,6 +147,10 @@ void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2);
 void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2);
 bool isReduceOp(Type* type);
 
+void lowerPrimReduce(CallExpr* call, Expr*& retval);
+
+void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
+
 FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 void      instantiateBody(FnSymbol* fn);

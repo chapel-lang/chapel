@@ -8,5 +8,5 @@ record TEST {
   iter these() { yield 5; }
 }
 var t: TEST;
-forall i in t do
+[i in t]
   writeln(i);

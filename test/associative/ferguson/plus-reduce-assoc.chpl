@@ -10,3 +10,7 @@ proc makeD(x:int) {
 D = + reduce [i in 1..10] makeD(i);
 
 writeln(D.sorted());
+
+var D2 = + reduce for i in 1..10 do makeD(i);
+
+writeln(D2.sorted());

@@ -252,6 +252,7 @@ classifyPrimitive(CallExpr *call) {
     // Shouldn't this be return FAST_NOT_LOCAL ?
     return NOT_FAST_NOT_LOCAL;
 
+  case PRIM_REDUCE:
   case PRIM_REDUCE_ASSIGN:
   case PRIM_NEW:
 
@@ -359,6 +360,7 @@ classifyPrimitive(CallExpr *call) {
     // Temporarily unclassified (legacy) cases.
     // These formerly defaulted to false (slow), so we leave them
     // here until they are proven fast.
+  case PRIM_HAS_LEADER:
   case PRIM_TO_LEADER:
   case PRIM_TO_FOLLOWER:
   case PRIM_CALL_DESTRUCTOR:

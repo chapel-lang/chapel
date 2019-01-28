@@ -6866,6 +6866,21 @@ static void resolveExternVarSymbols()
 }
 
 
+static void adjustInternalSymbols() {
+  SET_LINENO(rootModule);
+
+  // call _nilType nil so as to not confuse the user
+  dtNil->symbol->name = gNil->name;
+
+  // we want gDummyRef to be passable to 'ref' formals
+  makeRefType(dtDummyRef);
+  gDummyRef->type = dtDummyRef->getRefType();
+  gDummyRef->qual = QUAL_REF;
+  gDummyRef->addFlag(FLAG_REF);
+  gDummyRef->removeFlag(FLAG_CONST);
+}
+
+
 static bool isObviousType(Type* type) {
   return isPrimitiveType(type) && ! type->isInternalType;
 }
@@ -6916,6 +6931,23 @@ static void resolveObviousGlobals() {
 }
 
 
+static void markGenericFunctions() {
+  bool changed = true;
+
+  // Iterate until all generic functions have been tagged with FLAG_GENERIC
+  while (changed == true) {
+    changed = false;
+
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      // Returns true if status of fn is changed
+      if (fn->tagIfGeneric() == true) {
+        changed = true;
+      }
+    }
+  }
+}
+
+
 static void
 computeStandardModuleSet() {
   // Lydia NOTE: 09/12/16 - this code does not follow the same code path used
@@ -6955,30 +6987,17 @@ computeStandardModuleSet() {
 
 
 void resolve() {
-  bool changed = true;
-
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
 
   computeStandardModuleSet(); // Lydia NOTE 09/12/16: is not linked to our
   // treatment on functions included by default, leading to bugs with qualified
   // access to symbols included in this way.
 
-  // call _nilType nil so as to not confuse the user
-  dtNil->symbol->name = gNil->name;
-
-  // Iterate until all generic functions have been tagged with FLAG_GENERIC
-  while (changed == true) {
-    changed = false;
-
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      // Returns true if status of fn is changed
-      if (fn->tagIfGeneric() == true) {
-        changed = true;
-      }
-    }
-  }
+  markGenericFunctions();
 
   unmarkDefaultedGenerics();
+
+  adjustInternalSymbols(); // must go after tagIfGeneric()
 
   resolveExternVarSymbols();
 

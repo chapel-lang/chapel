@@ -214,6 +214,8 @@ public:
   SymExpr*           getSingleUse()                            const;
   // Return the single def of this Symbol, or NULL if there are 0 or >= 2
   SymExpr*           getSingleDef()                            const;
+  // Same, considering only defs under 'parent'.
+  SymExpr*           getSingleDefUnder(Symbol* parent)         const;
 
   // The compiler really ought to view a call to `init` that
   // constructs a const record as the single "def". However it
@@ -705,6 +707,9 @@ bool argMustUseCPtr(Type* t);
 // Is 'expr' a SymExpr for the outerVar of some ShadowVarSymbol?
 bool isOuterVarOfShadowVar(Expr* expr);
 
+// The source of the PRIM_MOVE whose destination is this temp.
+Expr* getDefOfTemp(SymExpr* origSE);
+
 // Parser support.
 class ForallIntents;
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);
@@ -721,6 +726,9 @@ extern StringChainHash uniqueStringHash;
 extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
+// Pass this to a return-by-ref formal when the result is not needed.
+// Used when inlining iterators for ForallStmts.
+extern Symbol *gDummyRef;
 extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
 extern Symbol *gModuleToken;

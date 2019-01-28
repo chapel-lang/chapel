@@ -1,5 +1,4 @@
-$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:453: internal error: UTI-MIS-0597 chpl version 1.19.0 pre-release (cfeb6592b3)
-Note: This source location is a guess.
+eval-of-arg-of-.type.chpl:8: internal error: AST-SYM-BOL-nnnn chpl version mmmm
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 

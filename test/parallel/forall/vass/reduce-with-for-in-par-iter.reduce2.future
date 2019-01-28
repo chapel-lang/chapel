@@ -1,3 +1,0 @@
-bug: reduce expression crashes compiler in a corner case
-
-Issue #7945

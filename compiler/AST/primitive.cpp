@@ -584,6 +584,12 @@ initPrimitive() {
   prim_def(PRIM_TRY_EXPR, "try-expr", returnInfoFirst);
   prim_def(PRIM_TRYBANG_EXPR, "try!-expr", returnInfoFirst);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
+
+  // Represents a Chapel reduce expression "OP reduce DATA".
+  // Args: (OP, DATA, is zippered (gTrue/gFalse)).
+  // Lowered during resolution.
+  prim_def(PRIM_REDUCE, "reduce", returnInfoVoid, true);
+
   prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_PLUS, "u+", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_NOT, "u~", returnInfoFirstDeref);
@@ -796,6 +802,10 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);
   // BlockStmt::blockInfo - unlocal local block
   prim_def(PRIM_BLOCK_UNLOCAL, "unlocal block", returnInfoVoid);
+
+  // The arg is an iterator record (or iterator class) temp or iterator call.
+  // Indicates whether the iterator has the corresponding leader iterator.
+  prim_def(PRIM_HAS_LEADER, "has leader", returnInfoBool);
 
   prim_def(PRIM_TO_LEADER, "to leader", returnInfoVoid);
   prim_def(PRIM_TO_FOLLOWER, "to follower", returnInfoVoid);

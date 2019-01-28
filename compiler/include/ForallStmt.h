@@ -37,9 +37,13 @@ public:
   BlockStmt* loopBody()       const; // the body of the forall loop
   LabelSymbol* continueLabel();      // create it if not already
 
-  // when originating from a ForLoop
-  bool       createdFromForLoop()    const;  // is converted from a for-loop
-  bool       needToHandleOuterVars() const;  // yes, convert to shadow vars
+  // when originating from a ForLoop or a reduce expression
+  bool createdFromForLoop()     const;  // is converted from a for-loop
+  bool needToHandleOuterVars()  const;  // yes, convert to shadow vars
+  bool needsInitialAccumulate() const;  // for a reduce intent
+  bool fromReduce()             const;  // for a Chapel reduce expression
+  bool allowSerialIterator()    const;  // ok to loop over a serial iterator?
+  bool requireSerialIterator()  const;  // do not seek standalone or leader
 
   DECLARE_COPY(ForallStmt);
 
@@ -51,11 +55,18 @@ public:
   virtual Expr*       getFirstExpr();
   virtual Expr*       getNextExpr(Expr* expr);
 
-  // for the parser
-  static BlockStmt* build(Expr* indices, Expr* iterator, CallExpr* intents,
-                          BlockStmt* body, bool zippered = false);
+  static ForallStmt* buildHelper(Expr* indices, Expr* iterator,
+                                 CallExpr* intents, BlockStmt* body,
+                                 bool zippered, bool fromForLoop);
+
+  static BlockStmt*  build(Expr* indices, Expr* iterator, CallExpr* intents,
+                           BlockStmt* body, bool zippered = false);
 
   static ForallStmt* fromForLoop(ForLoop* forLoop);
+
+  static ForallStmt* fromReduceExpr(VarSymbol* idx, SymExpr* dataExpr,
+                                    ShadowVarSymbol* svar,
+                                    bool zippered, bool requireSerial);
 
   // helpers
 
@@ -70,19 +81,23 @@ public:
 
   bool hasVectorizationHazard() const;
   void setHasVectorizationHazard(bool v);
+
 private:
   bool           fZippered;
   AList          fIterVars;
   AList          fIterExprs;
   AList          fShadowVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present
-  bool           fFromForLoop; // see comment below
   bool           fVectorizationHazard;
+  bool           fFromForLoop; // see comment below
+  bool           fFromReduce;
+  bool           fAllowSerialIterator;
+  bool           fRequireSerialIterator;
 
   ForallStmt(bool zippered, BlockStmt* body);
 
 public:
-  LabelSymbol*   fContinueLabel;     // update_symbols() needs the labels
+  LabelSymbol*   fContinueLabel;
   LabelSymbol*   fErrorHandlerLabel;
 
   // for recursive iterators during lowerIterators
@@ -92,7 +107,8 @@ public:
   CallExpr*      fRecIterFreeIterator;
 };
 
-/* fFromForLoop and its accessors
+/*
+fFromForLoop and its accessors
 
 These support handling of some ForLoops by converting them to ForallStmts.
 They cause skipping certain actions for these "conversion" ForallStmt nodes.
@@ -101,9 +117,10 @@ Why not just have a single accessor to fFromForLoop? This is to emphasize
 that the three accessors check different properties. These properties could
 potentially be independent of each other.
 
-As fFromForLoop is currently local to implementForallIntents, we may be able
-to replace fFromForLoop with a HashSet. If so, we need to ensure that the
-set membership is propagated through cloning, if applicable.
+fFromReduce and its accessors
+
+These support handling of reduce exprs by converting them to ForallStmts.
+Same idea as fFromForLoop.
 */
 
 /// accessor implementations ///
@@ -116,6 +133,10 @@ inline BlockStmt* ForallStmt::loopBody()     const { return fLoopBody;   }
 
 inline bool ForallStmt::needToHandleOuterVars() const { return !fFromForLoop; }
 inline bool ForallStmt::createdFromForLoop()    const { return  fFromForLoop; }
+inline bool ForallStmt::needsInitialAccumulate()const { return !fFromReduce;  }
+inline bool ForallStmt::fromReduce()            const { return fFromReduce;            }
+inline bool ForallStmt::allowSerialIterator()   const { return fAllowSerialIterator;   }
+inline bool ForallStmt::requireSerialIterator() const { return fRequireSerialIterator; }
 
 /// conveniences ///
 

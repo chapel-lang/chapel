@@ -308,6 +308,11 @@ module ChapelReduce {
         ((x(1) == value(1)) && (x(2) < value(2))) then
         value = x;
     }
+    proc accumulateOntoState(ref state, x) {
+      if x(1) > state(1) ||
+        ((x(1) == state(1)) && (x(2) < state(2))) then
+        state = x;
+    }
     proc combine(x) {
       if x.value(1) > value(1) ||
         ((x.value(1) == value(1)) && (x.value(2) < value(2))) {
@@ -327,6 +332,11 @@ module ChapelReduce {
       if x(1) < value(1) ||
         ((x(1) == value(1)) && (x(2) < value(2))) then
         value = x;
+    }
+    proc accumulateOntoState(ref state, x) {
+      if x(1) < state(1) ||
+        ((x(1) == state(1)) && (x(2) < state(2))) then
+        state = x;
     }
     proc combine(x) {
       if x.value(1) < value(1) ||

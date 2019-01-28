@@ -1,1 +1,13 @@
-bug: parallel iterators don't dynamically dispatch correctly (#6998)
+bug: compiler crashes with an assertion
+#12123
+
+Once that is fixed, revert .bad and .future to the original intention:
+
+bug: parallel iterators don't dynamically dispatch correctly
+#6998
+
+.bad:
+---------------------------------
+parallel-virtual-par-iters.chpl:20: error: virtual parallel iterators are not yet supported (see issue #6998)
+parallel-virtual-par-iters.chpl:21: error: virtual parallel iterators are not yet supported (see issue #6998)
+---------------------------------
