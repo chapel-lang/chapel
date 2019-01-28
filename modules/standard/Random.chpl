@@ -371,11 +371,9 @@ module Random {
       Chance of returning 40 = 40/100 = 40%
       Chance of returning 50 = 50/100 = 50%
 
+     This method will only work for randomStreams with ``eltType=real``.
+
      :arg arr: a 1-D integral or real array, with no negative values and at least one non-zero value.
-     :arg seed: the seed to use when choosing an element. Defaults to
-      `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
-     :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
-     :type algorithm: :type:`RNG`
 
      :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values.
     */
@@ -389,12 +387,10 @@ module Random {
      :proc:`choice` overload that allows a separate ``prob`` array to define the
      probabilities of choosing an element from ``arr``.
 
+     This method will only work for randomStreams with ``eltType=real``.
+
      :arg arr: a 1-D array with a domain equal to ``prob.domain``.
      :arg prob: a 1-D integral or real array, with no negative values and at least one non-zero value.
-     :arg seed: the seed to use when choosing an element. Defaults to
-      `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
-     :arg algorithm: A param indicating which algorithm to use. :param:`defaultRNG`.
-     :type algorithm: :type:`RNG`
 
      :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``arr.domain != prob.domain``.
      */
@@ -404,14 +400,43 @@ module Random {
       compilerError("RandomStreamInterface.choice called");
     }
 
-    /* TODO */
+    /*
+     Returns an array of size ``sampleSize`` with elements chosen from the
+     input ``arr`` weighted by the value of the ``arr`` elements.
+
+     When sampling multiple elements from an array, it is much more
+     computationally efficient to use this method rather than call
+     :proc:`choice` multiple times.
+
+     This method will only work for randomStreams with ``eltType=real``.
+
+     :arg arr: a 1-D array with a domain equal to ``prob.domain``.
+     :arg sampleSize: Number of elements to choose.
+
+     :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``sampleSize < 1``.
+    */
     proc choices(arr: [] ?arrEltType, sampleSize: int) throws
       where isIntegralType(arrEltType) || isRealType(arrEltType)
     {
       compilerError("RandomStreamInterface.choices called");
     }
 
-    /* TODO */
+    /*
+     :proc:`choices` overload that allows a separate ``prob`` array to define the
+     probabilities of choosing an element from ``arr``.
+
+     When sampling multiple elements from an array, it is much more
+     computationally efficient to use this method rather than call
+     :proc:`choice` multiple times.
+
+     This method will only work for randomStreams with ``eltType=real``.
+
+     :arg arr: a 1-D array with a domain equal to ``prob.domain``.
+     :arg prob: a 1-D integral or real array, with no negative values and at least one non-zero value.
+     :arg sampleSize: Number of elements to choose.
+
+     :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``arr.domain != prob.domain`` or if ``sampleSize < 1``.
+    */
     proc choices(arr: [], prob: [] ?probEltType, sampleSize: int) throws
       where isIntegralType(probEltType) || isRealType(probEltType)
     {
@@ -819,6 +844,10 @@ module Random {
       proc choice(arr: [] ?arrEltType) throws
         where isIntegralType(arrEltType) || isRealType(arrEltType)
       {
+        // Redundant check in this overload can be removed when #12176 is resolved
+        if !isRealType(this.eltType) then
+          compilerError('choice() can only be used on RandomStream with eltType=real');
+
         return choice(arr, arr);
       }
 
@@ -842,6 +871,10 @@ module Random {
       proc choices(arr: [] ?arrEltType, sampleSize: int) throws
         where isIntegralType(arrEltType) || isRealType(arrEltType)
       {
+        // Redundant check in this overload can be removed when #12176 is resolved
+        if !isRealType(this.eltType) then
+          compilerError('choices() can only be used on RandomStream with eltType=real');
+
         return choices(arr, arr, sampleSize);
       }
 
@@ -2351,6 +2384,10 @@ module Random {
       proc choice(arr: [] ?arrEltType) throws
         where isIntegralType(arrEltType) || isRealType(arrEltType)
       {
+        // Redundant check in this overload can be removed when #12176 is resolved
+        if !isRealType(this.eltType) then
+          compilerError('choice() can only be used on RandomStream with eltType=real');
+
         return choice(arr, arr);
       }
 
@@ -2375,6 +2412,10 @@ module Random {
       proc choices(arr: [] ?arrEltType, sampleSize: int) throws
         where isIntegralType(arrEltType) || isRealType(arrEltType)
       {
+        // Redundant check in this overload can be removed when #12176 is resolved
+        if !isRealType(this.eltType) then
+          compilerError('choices() can only be used on RandomStream with eltType=real');
+
         return choices(arr, arr, sampleSize);
       }
 
@@ -2385,7 +2426,7 @@ module Random {
         use Search only;
 
         if !isRealType(this.eltType) then
-          compilerError('choice() can only be used on RandomStream with eltType=real');
+          compilerError('choices() can only be used on RandomStream with eltType=real');
 
         if sampleSize < 1 then
           throw new IllegalArgumentError('choices() sampleSize must be greater than 0');
