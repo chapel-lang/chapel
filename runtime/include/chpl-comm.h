@@ -492,6 +492,10 @@ int chpl_comm_numPollingTasks(void);
 // an atomic variable for other tasks to finish).
 void chpl_comm_make_progress(void);
 
+// This is a hook that's called when a task is ending. It allows for things
+// like say flushing task private buffers.
+void chpl_comm_task_end(void);
+
 //
 // Comm diagnostics stuff
 //

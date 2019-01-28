@@ -106,7 +106,6 @@ proc main() {
   //
   forall (_, r) in zip(Updates, RAStream()) do
     T(r & indexMask).xorBuff(r);
-  flushAtomicBuff();
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 

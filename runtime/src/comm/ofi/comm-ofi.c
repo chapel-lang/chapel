@@ -1140,10 +1140,9 @@ int chpl_comm_numPollingTasks(void) {
   return 1;
 }
 
+void chpl_comm_make_progress(void) { }
 
-void chpl_comm_make_progress(void) {
-}
-
+void chpl_comm_task_end(void) { }
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,

@@ -1942,6 +1942,10 @@ int chpl_comm_numPollingTasks(void)
   return 1;
 }
 
+void chpl_comm_task_end(void) {
+  remote_get_buff_task_flush();
+  nic_amo_nf_buff_task_flush();
+}
 
 void chpl_comm_post_task_init(void)
 {

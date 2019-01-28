@@ -44,7 +44,6 @@ proc main() {
     use BufferedAtomics;
     forall r in rindex do
       A[r].addBuff(1);
-    flushAtomicBuff();
   } else {
    forall r in rindex do
     A[r].add(1);

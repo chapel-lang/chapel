@@ -1007,6 +1007,8 @@ module ChapelBase {
   pragma "down end count fn"
   proc _downEndCount(e: _EndCount, err: unmanaged Error) {
     chpl_save_task_error(e, err);
+    extern proc chpl_comm_task_end(): void;
+    chpl_comm_task_end();
     // inform anybody waiting that we're done
     e.i.sub(1, memory_order_release);
   }
