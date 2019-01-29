@@ -13,8 +13,8 @@ int main(int argc, char* argv[]) {
   addEltBlock(&arr, 2, 3);
   printBlock(&arr);
 
-  // Call clean up function when exported
-  //chpl_mem_free(arr, 0, 0);
+  // Call clean up function when done with it
+  cleanupOpaqueArray(&arr);
 
   chpl_library_finalize();
   return 0;
