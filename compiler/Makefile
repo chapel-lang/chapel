@@ -190,7 +190,7 @@ $(CHPL_OLD_BIN_DIR):
 #	done
 
 llvm: FORCE
-	$(MAKE) -C $(THIRD_PARTY_DIR)/llvm $(CHPL_MAKE_LLVM)
+	$(MAKE) -C $(THIRD_PARTY_DIR) llvm
 
 #
 # include standard footer for compiler
