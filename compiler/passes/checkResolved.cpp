@@ -501,6 +501,10 @@ static void checkExternProcs() {
         break;
       }
     }
+
+    if (fn->retType->symbol->hasFlag(FLAG_C_ARRAY)) {
+      USR_FATAL_CONT(fn, "extern procedures should not return c_array");
+    }
   }
 }
 
@@ -519,6 +523,10 @@ static void checkExportedProcs() {
     if (fn->retType == dtString) {
       USR_FATAL_CONT(fn, "exported procedures should not return strings, use "
                      "c_strings instead");
+    }
+
+    if (fn->retType->symbol->hasFlag(FLAG_C_ARRAY)) {
+      USR_FATAL_CONT(fn, "exported procedures should not return c_array");
     }
   }
 }

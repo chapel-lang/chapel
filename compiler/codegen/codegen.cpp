@@ -1072,6 +1072,8 @@ static void codegen_aggregate_def(AggregateType* ct) {
     vt = ct->symbol->getValType();
   else if(ct->symbol->hasFlag(FLAG_DATA_CLASS))
     vt = getDataClassType(ct->symbol)->typeInfo();
+  else if(ct->symbol->hasFlag(FLAG_C_ARRAY))
+    vt = ct->cArrayElementType();
   if (vt) {
     if (AggregateType* fct = toAggregateType(vt)) {
       codegen_aggregate_def(fct);

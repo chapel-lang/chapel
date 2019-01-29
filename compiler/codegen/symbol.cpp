@@ -392,6 +392,9 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
   GenRet ret;
   ret.chplType = typeInfo();
 
+  if (id == breakOnCodegenID)
+    gdbShouldBreakHere();
+
   if( outfile ) {
     // dtString immediates don't actually codegen as immediates, we just use
     // them for param string functionality.
@@ -581,13 +584,15 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       // check LVT for value
       GenRet got = info->lvt->getValue(cname);
       got.chplType = typeInfo();
-      // handle extern C arrays
-      // these should generate a pointer to the first element
-      if (got.val && hasFlag(FLAG_EXTERN)) {
-        if (info->lvt->isCArray(cname)) {
-          got.val = info->irBuilder->CreateStructGEP(NULL, got.val, 0);
-          got.isLVPtr = GEN_VAL;
-        }
+      // extern C arrays might be declared with type c_ptr(eltType)
+      // (which is a lie but works OK in C). In that event, generate
+      // a pointer to the first element when the variable is used.
+      if (got.val &&
+          hasFlag(FLAG_EXTERN) &&
+          getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+          info->lvt->isCArray(cname)) {
+        got.val = info->irBuilder->CreateStructGEP(NULL, got.val, 0);
+        got.isLVPtr = GEN_VAL;
       }
       if (got.val)
         return got;
@@ -632,7 +637,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
 #endif
   }
 
-  INT_FATAL("Could not code generate %s - "
+  USR_FATAL("Could not find C type %s - "
             "perhaps it is a complex macro?", cname);
   return ret;
 }
@@ -1200,8 +1205,7 @@ void TypeSymbol::codegenDef() {
     llvm::Type *type = info->lvt->getType(cname);
 
     if(type == NULL) {
-      printf("No type '%s'/'%s' found\n", cname, name);
-      INT_FATAL(this, "No type found");
+      USR_FATAL(this, "Could not find C type for %s", cname);
     }
 
     llvmType = type;
