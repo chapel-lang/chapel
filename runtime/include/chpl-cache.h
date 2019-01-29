@@ -34,7 +34,9 @@ extern const int CHPL_CACHE_REMOTE;
 static inline
 int chpl_cache_enabled(void)
 {
-  return CHPL_CACHE_REMOTE && chpl_task_supportsRemoteCache();
+  // The remote cache uses thread local storage, so if tasks can migrate
+  // between threads we lose out ability to correctly fence.
+  return CHPL_CACHE_REMOTE && !chpl_task_canMigrateThreads();
 }
 
 
