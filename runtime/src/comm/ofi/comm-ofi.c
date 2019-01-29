@@ -80,6 +80,21 @@ static struct fid_cq* ofi_rxCQ;         // receive endpoint CQ
 static struct fid_av* ofi_av;           // address vector, table style
 static fi_addr_t* ofi_rxAddrs;          // remote receive addrs
 
+//
+// For performance reasons, we use manual progress.  We direct RMA
+// traffic and AM traffic to different endpoints so we can spread the
+// progress load across multiple threads.  Thus the AM handler looks
+// primarily at its AM request endpoint and occasionally progresses
+// the RMA endpoint, while everyone else who comes in here just helps
+// do the latter.
+//
+static struct fid_ep* ofi_rxEpRma;      // RMA target endpoint
+static struct fid_cntr* ofi_rxCntrRma;  // RMA target endpoint counter
+static struct fid_av* ofi_avRma;        // address vector for RMA
+static fi_addr_t* ofi_rxAddrsRma;       // remote RMA addresses
+static pthread_mutex_t rxEpRmaLock      // lock for RMA endpoint; it's shared
+                       = PTHREAD_MUTEX_INITIALIZER;
+
 static int txCQSize;                    // txCQ size
 
 struct perTxCtxInfo_t {
@@ -369,6 +384,7 @@ void init_ofiFabricDomain(void) {
   ofi_avAttr.rx_ctx_bits = 0;
 
   OFI_CHK(fi_av_open(ofi_domain, &ofi_avAttr, &ofi_av, NULL));
+  OFI_CHK(fi_av_open(ofi_domain, &ofi_avAttr, &ofi_avRma, NULL));
 }
 
 
@@ -447,6 +463,16 @@ void init_ofiEp(void) {
   OFI_CHK(fi_cq_open(ofi_domain, &rxCqAttr, &ofi_rxCQ, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
+
+  struct fi_cntr_attr rxCntrRmaAttr = { 0 };
+  rxCntrRmaAttr.events = FI_CNTR_EVENTS_COMP;
+  rxCntrRmaAttr.wait_obj = FI_WAIT_NONE;
+
+  OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
+  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_avRma->fid, 0));
+  OFI_CHK(fi_cntr_open(ofi_domain, &rxCntrRmaAttr, &ofi_rxCntrRma, NULL));
+  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCntrRma->fid, FI_RECV));
+  OFI_CHK(fi_enable(ofi_rxEpRma));
 }
 
 
@@ -589,6 +615,24 @@ void init_ofiExchangeAvInfo(void) {
     }
     DBG_PRINTF(DBG_CFGAV, "====================");
   }
+
+  void* my_addrRma;
+  void* addrsRma;
+
+  my_addr_len = 0;
+  CHK_TRUE(fi_getname(&ofi_rxEpRma->fid, NULL, &my_addr_len) == -FI_ETOOSMALL);
+  CHPL_CALLOC_SZ(my_addrRma, my_addr_len, 1);
+  OFI_CHK(fi_getname(&ofi_rxEpRma->fid, my_addrRma, &my_addr_len));
+  CHPL_CALLOC_SZ(addrsRma, chpl_numNodes, my_addr_len);
+  chpl_comm_ofi_oob_allgather(my_addrRma, addrsRma, my_addr_len);
+
+  CHPL_CALLOC(ofi_rxAddrsRma, chpl_numNodes);
+  CHK_TRUE(fi_av_insert(ofi_avRma, addrsRma, chpl_numNodes, ofi_rxAddrsRma, 0,
+                        NULL)
+           == chpl_numNodes);
+
+  CHPL_FREE(my_addrRma);
+  CHPL_FREE(addrsRma);
 }
 
 
@@ -791,10 +835,13 @@ void fini_ofi(void) {
 
   CHPL_FREE(amLZs);
 
+  CHPL_FREE(ofi_rxAddrsRma);
   CHPL_FREE(ofi_rxAddrs);
 
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
+  OFI_CHK(fi_close(&ofi_rxEpRma->fid));
+  OFI_CHK(fi_close(&ofi_rxCntrRma->fid));
 
   for (int i = 0; i < tciTabLen; i++) {
     OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
@@ -804,6 +851,7 @@ void fini_ofi(void) {
   }
 
   OFI_CHK(fi_close(&ofi_txEp->fid));
+  OFI_CHK(fi_close(&ofi_avRma->fid));
   OFI_CHK(fi_close(&ofi_av->fid));
   OFI_CHK(fi_close(&ofi_domain->fid));
   OFI_CHK(fi_close(&ofi_fabric->fid));
@@ -1140,9 +1188,20 @@ int chpl_comm_numPollingTasks(void) {
   return 1;
 }
 
-void chpl_comm_make_progress(void) { }
+
+void chpl_comm_make_progress(void) {
+  const int lockRet = pthread_mutex_trylock(&rxEpRmaLock);
+  if (lockRet == 0) {
+    (void) fi_cntr_read(ofi_rxCntrRma);  // ensure progress
+    PTHREAD_CHK(pthread_mutex_unlock(&rxEpRmaLock));
+  } else {
+    CHK_TRUE(lockRet == EBUSY);
+  }
+}
+
 
 void chpl_comm_task_end(void) { }
+
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
@@ -1386,8 +1445,10 @@ void amRequestCommon(c_nodeid_t node,
     //
     DBG_PRINTF(DBG_AM | DBG_AMSEND,
                "waiting for done indication in %p", pDone);
-    while (!*(volatile chpl_comm_amDone_t*) pDone)
+    while (!*(volatile chpl_comm_amDone_t*) pDone) {
       local_yield();
+      chpl_comm_make_progress();
+    }
     DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw done indication in %p", pDone);
     if (pDone != &myDone)
       freeBounceBuf(pDone);
@@ -1485,6 +1546,12 @@ void amHandler(void* argNil) {
     if (count > 0) {
       DBG_PRINTF(DBG_ACK, "tx ack counter %d", count);
       tcip->numTxsOut -= count;
+    }
+
+    {
+      static __thread int progressInterval;
+      if ((++progressInterval & 0x100) != 0)
+        chpl_comm_make_progress();
     }
   }
 
@@ -1735,6 +1802,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
           const int count = fi_cntr_read(tcip->txCntr);
           if (count == 0) {
             sched_yield();
+            chpl_comm_make_progress();
           } else {
             DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
             tcip->numTxsOut -= count;
@@ -2047,7 +2115,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64,
                (int) node, raddr, myAddr, size, mrKey);
     OFI_CHK(fi_write(tcip->txCtx, myAddr, size,
-                     mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+                     mrDesc, ofi_rxAddrsRma[node], (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
 
     if (tcip->txCtxHasCQ) {
@@ -2104,7 +2172,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
                "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64,
                myAddr, (int) node, raddr, size, mrKey);
     OFI_CHK(fi_read(tcip->txCtx, myAddr, size,
-                    mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+                    mrDesc, ofi_rxAddrsRma[node], (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
 
     CHK_TRUE(tcip->txCtxHasCQ);
@@ -2169,17 +2237,17 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
     OFI_CHK(fi_compare_atomic(tcip->txCtx,
                               myOpnd2, 1, mrDescOpnd2, myOpnd1, mrDescOpnd1,
                               myRes, mrDescRes,
-                              ofi_rxAddrs[node], (uint64_t) object, mrKey,
+                              ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                               ofiType, ofiOp, NULL));
   } else if (result != NULL) {
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
                             myOpnd1, 1, mrDescOpnd1, myRes, mrDescRes,
-                            ofi_rxAddrs[node], (uint64_t) object, mrKey,
+                            ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                             ofiType, ofiOp, NULL));
   } else {
     OFI_CHK(fi_atomic(tcip->txCtx,
                       myOpnd1, 1, mrDescOpnd1,
-                      ofi_rxAddrs[node], (uint64_t) object, mrKey,
+                      ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                       ofiType, ofiOp, NULL));
   }
 
@@ -2245,6 +2313,7 @@ void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut, uint64_t xpctFlags) {
 
       if (ret <= 0) {
         sched_yield();
+        chpl_comm_make_progress();
       } else {
         const int numEvents = ret;
         numRetired += numEvents;
