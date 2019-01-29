@@ -62,7 +62,7 @@ follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 6.  rm -r llvm-src/test llvm-src/tools/clang/test
 7.  Remove the line that says "tools/clang" from llvm-src/.gitignore
 8.  git add --force llvm-src
-    ('--force' is needed so that the 'git add' ignores our .gitignore)
+    ('--force' is needed to ensure git adds all files in the subdirectory)
 9.  update the LLVM_VERSION file to contain the first two components
     of the new LLVM version number, e.g. 7.0
 10. update $CHPL_HOME/doc/rst/usingchapel/chplenv.rst for the new LLVM version
