@@ -298,8 +298,14 @@ void init_ofiFabricDomain(void) {
   hints->ep_attr->type = FI_EP_RDM;
 
   hints->domain_attr->threading = FI_THREAD_UNSPEC;
-  hints->domain_attr->control_progress = FI_PROGRESS_MANUAL/*FI_PROGRESS_AUTO*/;
-  hints->domain_attr->data_progress = FI_PROGRESS_MANUAL/*FI_PROGRESS_AUTO*/;
+
+  int prg = ((DBG_TEST_MASK(DBG_CFG)
+              && chpl_env_rt_get_bool("COMM_OFI_AUTO_PROGRESS", false))
+             ? FI_PROGRESS_AUTO
+             : FI_PROGRESS_MANUAL);
+  hints->domain_attr->control_progress = prg;
+  hints->domain_attr->data_progress = prg;
+
   hints->domain_attr->av_type = FI_AV_TABLE;
   hints->domain_attr->mr_mode = ((strcmp(provider, "gni") == 0)
                                  ? FI_MR_BASIC
