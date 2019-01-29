@@ -47,4 +47,6 @@ typedef struct {
   bool _unowned;
 } chpl_opaque_array;
 
+void cleanupOpaqueArray(chpl_opaque_array * arr);
+
 #endif
