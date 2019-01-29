@@ -8,7 +8,10 @@ iters      = 10000
 flushIters = 1000
 if net_atomics == 'ugni':
   iters      = 1000000
-  flushiters = 10000
+  flushIters = 5000
 
-print('--concurrentFlushing=false --iters={0}'.format(iters))
-print('--concurrentFlushing=true  --iters={0}'.format(flushIters))
+print('--concurrentFlushing=false --iters={0} --oversubscription=1'.format(iters))
+print('--concurrentFlushing=false --iters={0} --oversubscription=2'.format(iters//2))
+print('--concurrentFlushing=true  --iters={0} --oversubscription=1'.format(flushIters))
+print('--concurrentFlushing=true  --iters={0} --oversubscription=2'.format(flushIters//2))
+print('--concurrentFlushing=true  --iters={0} --oversubscription=10'.format(flushIters//10))
