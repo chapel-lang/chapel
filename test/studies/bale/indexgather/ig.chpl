@@ -45,7 +45,6 @@ proc main() {
     use BufferedGets;
     forall i in D2 do
       getBuff(tmp.localAccess[i], A[rindex.localAccess[i]]);
-    flushGetBuff();
   } else {
     forall i in D2 do
       tmp.localAccess[i] = A[rindex.localAccess[i]];

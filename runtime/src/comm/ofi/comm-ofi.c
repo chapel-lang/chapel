@@ -1140,10 +1140,9 @@ int chpl_comm_numPollingTasks(void) {
   return 1;
 }
 
+void chpl_comm_make_progress(void) { }
 
-void chpl_comm_make_progress(void) {
-}
-
+void chpl_comm_task_end(void) { }
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
@@ -2484,6 +2483,10 @@ DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double, NEGATE_U_OR_R)
 
 
 void chpl_comm_atomic_unordered_fence(void) {
+  return;
+}
+
+void chpl_comm_atomic_unordered_task_fence(void) {
   return;
 }
 

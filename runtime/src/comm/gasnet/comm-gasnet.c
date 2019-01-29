@@ -1586,6 +1586,7 @@ void chpl_comm_make_progress(void)
   gasnet_AMPoll();
 }
 
+void chpl_comm_task_end(void) { }
 
 void chpl_startVerboseComm() {
   chpl_verbose_comm = 1;

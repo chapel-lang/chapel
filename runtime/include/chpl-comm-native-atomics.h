@@ -163,5 +163,6 @@ DECL_CHPL_COMM_ATOMIC_BINARY(sub, real32)
 DECL_CHPL_COMM_ATOMIC_BINARY(sub, real64)
 
 void chpl_comm_atomic_unordered_fence(void);
+void chpl_comm_atomic_unordered_task_fence(void);
 
 #endif // _chpl_comm_native_atomics_h_
