@@ -51,8 +51,6 @@ const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   return "";
 }
 
-static SymbolMap serialIterToLabeledIter;
-
 
 /////////////////////////////////
 // ForallIntents
@@ -858,26 +856,6 @@ static void checkForNonIterator(IteratorGroup* igroup, bool gotSA,
   }
 }
 
-// If iterFn is a serial iterator, make it look parallel, as downstream
-// passes depend on that. I.e. label with FLAG_INLINE_ITERATOR.
-// Create a clone to avoid potential impact on non-parallel uses.
-static void labelSerialIterAsParallel(CallExpr* iterCall, FnSymbol*& iterFn) {
-  if (iterFn->hasFlag(FLAG_INLINE_ITERATOR) ||
-      ! iterFn->hasFlag(FLAG_ITERATOR_FN)) // vass: only _toLeader functions?
-    return;
-  FnSymbol* replacement = toFnSymbol(serialIterToLabeledIter.get(iterFn));
-  if (replacement == NULL) {
-    replacement = iterFn->copy();
-    replacement->addFlag(FLAG_INLINE_ITERATOR);
-    replacement->addFlag(FLAG_INVISIBLE_FN);
-    iterFn->defPoint->insertAfter(new DefExpr(replacement));
-    serialIterToLabeledIter.put(iterFn, replacement);
-  }
-  INT_ASSERT(iterCall->resolvedFunction() == iterFn);
-  iterCall->baseExpr->replace(new SymExpr(replacement));
-  iterFn = replacement;
-}
-
 static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
                                              CallExpr* iterCall,
                                              FnSymbol* origIterator,
@@ -1065,8 +1043,6 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
     resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
 
     setupAndResolveShadowVars(pfs);
-
-    labelSerialIterAsParallel(iterCall, origIterFn); //may update origIterFn
 
     if (gotSA) {
       if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
