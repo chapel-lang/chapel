@@ -7,7 +7,7 @@ from string import punctuation
 from sys import stderr, stdout
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
-from compiler_utils import CompVersion, compiler_is_prgenv, get_compiler_version
+from compiler_utils import CompVersion, target_compiler_is_prgenv, get_compiler_version
 from utils import memoize, run_command
 
 
@@ -506,10 +506,7 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
 
-    isprgenv = compiler_is_prgenv(compiler_val)
-    if compiler_val == 'clang-included':
-      isprgenv = compiler_is_prgenv(chpl_compiler.get(flag,
-                                                      llvm_mode="orig"))
+    isprgenv = flag == 'target' and target_compiler_is_prgenv()
 
     if isprgenv:
         cray_cpu = os.environ.get('CRAY_CPU_TARGET', 'none')
@@ -580,7 +577,6 @@ def verify_cpu(cpu, flag):
     comm_val = chpl_comm.get()
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
-    isprgenv = compiler_is_prgenv(compiler_val)
 
     # Only try to do any architecture verification when:
     # comm == none  -- The inverse means that we are probably cross-compiling.
@@ -589,9 +585,9 @@ def verify_cpu(cpu, flag):
     # cygwin           Crays will be handled through the craype-* modules
     #
     check_cpu = False
-    if not isprgenv:
-        if flag == 'target':
-            if comm_val == 'none':
+    if flag == 'target':
+        if comm_val == 'none':
+            if not target_compiler_is_prgenv():
                 if ('linux' in platform_val or
                      platform_val == 'darwin' or
                      platform_val.startswith('cygwin')):
@@ -663,23 +659,25 @@ def get(flag, map_to_compiler=False, get_lcd=False):
     verify_cpu(cpu, flag)
 
     compiler_val = chpl_compiler.get(flag)
-    isprgenv = compiler_is_prgenv(compiler_val)
+    isprgenv = flag == 'target' and target_compiler_is_prgenv()
     if map_to_compiler and not isprgenv:
         # Map cpu to compiler argument
         # Don't do this for PrgEnv compiles since the compiler driver
         # handles specialization.
         version = get_compiler_version(compiler_val)
         cpu = argument_map.find(cpu, compiler_val, version)
+
+    argname = None
     if cpu and cpu != 'none' and cpu != 'unknown':
         # x86 uses -march= where the others use -mcpu=
         if is_x86_variant(get_native_machine()):
-            flag = 'arch'
+            argname = 'arch'
         else:
-            flag = 'cpu'
+            argname = 'cpu'
     else:
-        flag = 'none'
+        argname = 'none'
 
-    return cpu_tuple(flag or 'none', cpu or 'unknown')
+    return cpu_tuple(argname or 'none', cpu or 'unknown')
 
 
 # Returns the default machine.  The flag argument is 'host' or 'target'.

@@ -27,10 +27,16 @@ if [[ $FAIL == 1 || -z $2 || -z $3 || -z $4 ]]; then
     exit 1
 fi
 
-# Try loading PrgEnv-gnu if no module is loaded
-module list --terse 2>&1 | grep -q PrgEnv
-if [ $? != 0 ]
+# Ensure that PrgEnv-gnu is loaded
+existing_prgenv=$(module list --terse 2>&1 | grep PrgEnv-)
+if [ -z "${existing_prgenv}" ]
 then
+  # No PrgEnv loaded, load PrgEnv-gnu
+  module load PrgEnv-gnu
+elif [[ "${existing_prgenv}" != PrgEnv-gnu* ]]
+then
+  # Replace current PrgEnv with PrgEnv-gnu
+  module unload "${existing_prgenv}"
   module load PrgEnv-gnu
 fi
 
@@ -40,7 +46,7 @@ export PE_PKGCONFIG_PRODUCTS="PE_CHAPEL:$PE_PKGCONFIG_PRODUCTS"
 export PE_CHAPEL_MODULE_NAME="chapel"
 export PE_CHAPEL_PKGCONFIG_LIBS=`$CHPL_HOME/util/config/gather-pe-chapel-pkgconfig-libs.bash "$2" "$3" "$4"`
 
-COMMANDS=`cc -craype-verbose 2>/dev/null`
+COMMANDS=`cc -craype-verbose -### 2>/dev/null`
 
   for arg in $COMMANDS
   do
@@ -50,9 +56,8 @@ COMMANDS=`cc -craype-verbose 2>/dev/null`
     elif [[ $arg == -D* && $COMPILE == 1 ]]
     then
       echo $arg
-    elif [[ $arg == -W* && $arg != -Wl,--as-needed,* && $LINK == 1 ]]
+    elif [[ $arg == -Wl* && $LINK == 1 ]]
     then
-        # don't echo -Wl these aren't found.
       echo $arg
     elif [[ $arg == -L* && $LINK == 1 ]]
     then
