@@ -5670,6 +5670,26 @@ void get_buff_thread_info_flush(get_buff_thread_info_t* info) {
 }
 
 static
+void get_buff_thread_info_init(get_buff_thread_info_t* info) {
+  rwlock_writer_lock(&get_buff_global_info.lock);
+  // need to recheck now that we have to lock
+  if (!info->inited) {
+    spinlock_init(&info->lock);
+    info->vi = 0;
+
+    // add thread to linked list
+    info->next = get_buff_global_info.list;
+    get_buff_global_info.list = info;
+
+    // dummy key binding needed so key destructor is called
+    pthread_setspecific(get_buff_global_info.destructor_key, info);
+
+    info->inited = true;
+  }
+  rwlock_unlock(&get_buff_global_info.lock);
+}
+
+static
 void get_buff_thread_info_destroy(void* p) {
   get_buff_thread_info_t* info = &get_buff_thread_info;
 
@@ -5770,20 +5790,7 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   get_buff_thread_info_t* info = &get_buff_thread_info;
 
   if (!info->inited) {
-    rwlock_writer_lock(&get_buff_global_info.lock);
-    if (!info->inited) {
-      spinlock_init(&info->lock);
-      info->vi = 0;
-
-      info->next = get_buff_global_info.list;
-      get_buff_global_info.list = info;
-
-      // dummy key binding needed so key destructor is called
-      pthread_setspecific(get_buff_global_info.destructor_key, info);
-
-      info->inited = true;
-    }
-    rwlock_unlock(&get_buff_global_info.lock);
+    get_buff_thread_info_init(info);
   }
 
   // grab lock for this thread
@@ -7073,6 +7080,27 @@ void amo_nf_buff_thread_info_flush(amo_nf_buff_thread_info_t* info) {
 }
 
 static
+void amo_nf_buff_thread_info_init(amo_nf_buff_thread_info_t* info) {
+  rwlock_writer_lock(&amo_nf_buff_global_info.lock);
+  // need to recheck now that we have to lock
+  if (!info->inited) {
+
+    spinlock_init(&info->lock);
+    info->vi = 0;
+
+    // add thread to linked list
+    info->next = amo_nf_buff_global_info.list;
+    amo_nf_buff_global_info.list = info;
+
+    // dummy key binding needed so key destructor is called
+    pthread_setspecific(amo_nf_buff_global_info.destructor_key, info);
+
+    info->inited = true;
+  }
+  rwlock_unlock(&amo_nf_buff_global_info.lock);
+}
+
+static
 void amo_nf_buff_thread_info_destroy(void* p) {
   amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
 
@@ -7154,21 +7182,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
   amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
 
   if (!info->inited) {
-    rwlock_writer_lock(&amo_nf_buff_global_info.lock);
-    if (!info->inited) {
-
-      spinlock_init(&info->lock);
-      info->vi = 0;
-
-      info->next = amo_nf_buff_global_info.list;
-      amo_nf_buff_global_info.list = info;
-
-      // dummy key binding needed so key destructor is called
-      pthread_setspecific(amo_nf_buff_global_info.destructor_key, info);
-
-      info->inited = true;
-    }
-    rwlock_unlock(&amo_nf_buff_global_info.lock);
+    amo_nf_buff_thread_info_init(info);
   }
 
   check_nic_amo(size, object, remote_mr);
