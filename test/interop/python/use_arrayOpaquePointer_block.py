@@ -7,6 +7,7 @@ arrayOpaquePointer_block.printBlock(x)
 arrayOpaquePointer_block.addEltBlock(x, 2, 3)
 arrayOpaquePointer_block.printBlock(x)
 
-# clean up pointer once the clean up function is exported
+# clean up pointer
+x.cleanup()
 
 arrayOpaquePointer_block.chpl_cleanup()
