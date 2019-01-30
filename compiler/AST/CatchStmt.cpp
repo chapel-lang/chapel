@@ -78,6 +78,10 @@ bool CatchStmt::isCatchall() const {
     if (typeSe->symbol()->type == dtError)
       return true;
 
+  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(type()))
+    if (urse->unresolved == dtError->symbol->name)
+      return true;
+
   return false;
 }
 
