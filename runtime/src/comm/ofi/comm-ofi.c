@@ -299,10 +299,11 @@ void init_ofiFabricDomain(void) {
 
   hints->domain_attr->threading = FI_THREAD_UNSPEC;
 
-  int prg = ((DBG_TEST_MASK(DBG_CFG)
-              && chpl_env_rt_get_bool("COMM_OFI_AUTO_PROGRESS", false))
-             ? FI_PROGRESS_AUTO
-             : FI_PROGRESS_MANUAL);
+  chpl_bool autoProgress = (strcmp(provider, "sockets") == 0);
+  if (DBG_TEST_MASK(DBG_CFG))
+    autoProgress = chpl_env_rt_get_bool("COMM_OFI_AUTO_PROGRESS",
+                                        autoProgress);
+  const int prg = autoProgress ? FI_PROGRESS_AUTO : FI_PROGRESS_MANUAL;
   hints->domain_attr->control_progress = prg;
   hints->domain_attr->data_progress = prg;
 
@@ -1195,13 +1196,16 @@ int chpl_comm_numPollingTasks(void) {
 }
 
 
+inline
 void chpl_comm_make_progress(void) {
-  const int lockRet = pthread_mutex_trylock(&rxEpRmaLock);
-  if (lockRet == 0) {
-    (void) fi_cntr_read(ofi_rxCntrRma);  // ensure progress
-    PTHREAD_CHK(pthread_mutex_unlock(&rxEpRmaLock));
-  } else {
-    CHK_TRUE(lockRet == EBUSY);
+  if (ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
+    const int lockRet = pthread_mutex_trylock(&rxEpRmaLock);
+    if (lockRet == 0) {
+      (void) fi_cntr_read(ofi_rxCntrRma);  // ensure progress
+      PTHREAD_CHK(pthread_mutex_unlock(&rxEpRmaLock));
+    } else {
+      CHK_TRUE(lockRet == EBUSY);
+    }
   }
 }
 
