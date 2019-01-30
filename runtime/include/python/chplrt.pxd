@@ -20,3 +20,5 @@ cdef extern from "chpl-external-array.h":
 		int64_t _pid
 		void* _instance
 		bint _unowned
+
+	void cleanupOpaqueArray(chpl_opaque_array* arr)
