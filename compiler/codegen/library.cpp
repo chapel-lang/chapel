@@ -531,6 +531,13 @@ static void makeOpaqueArrayClass() {
 
   fprintf(outfile, "\tdef cleanup(self):\n");
   fprintf(outfile, "\t\tcleanupOpaqueArray(&self.val);\n\n");
+
+  // Allows the Python type to be created and cleaned up appropriately in a
+  // Python "with" clause
+  fprintf(outfile, "\tdef __enter__(self):\n");
+  fprintf(outfile, "\t\treturn self\n\n");
+  fprintf(outfile, "\tdef __exit__(self, exc_type, exc_value, traceback):\n");
+  fprintf(outfile, "\t\tself.cleanup()\n\n");
 }
 
 // create the Python file which will be used to compile the .pyx, .pxd, library,
