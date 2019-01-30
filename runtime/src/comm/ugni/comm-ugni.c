@@ -5651,12 +5651,6 @@ static __thread get_buff_thread_info_t get_buff_thread_info;
 
 static get_buff_global_info_t get_buff_global_info;
 
-static
-void remote_get_buff_init(void) {
-  get_buff_global_info.list = NULL;
-  rwlock_init(&get_buff_global_info.lock);
-}
-
 // Flush buffered GET operations for the specified thread and reset the
 // counter. Should be called with info lock acquired
 static
@@ -5668,6 +5662,12 @@ void get_buff_thread_info_flush(get_buff_thread_info_t* info) {
                     info->local_mr_v, may_proxy_true);
     info->vi = 0;
   }
+}
+
+static
+void remote_get_buff_init(void) {
+  get_buff_global_info.list = NULL;
+  rwlock_init(&get_buff_global_info.lock);
 }
 
 // Flush buffered GET operations for all threads
@@ -7021,22 +7021,22 @@ static __thread amo_nf_buff_thread_info_t amo_nf_buff_thread_info;
 
 static amo_nf_buff_global_info_t amo_nf_buff_global_info;
 
-static
-void nic_amo_buff_init(void) {
-  amo_nf_buff_global_info.list = NULL;
-  rwlock_init(&amo_nf_buff_global_info.lock);
-}
-
 // Flush buffered atomic operations for the specified thread and reset the
 // counter. Should be called with info lock acquired
 static
 inline
-void flush_amo_nf_buff(amo_nf_buff_thread_info_t* info) {
+void amo_nf_buff_thread_info_flush(amo_nf_buff_thread_info_t* info) {
   if (info->vi > 0) {
     do_nic_amo_nf_V(info->vi, info->opnd1_v, info->locale_v, info->object_v,
                     info->size_v, info->cmd_v, info->remote_mr_v);
     info->vi = 0;
   }
+}
+
+static
+void nic_amo_buff_init(void) {
+  amo_nf_buff_global_info.list = NULL;
+  rwlock_init(&amo_nf_buff_global_info.lock);
 }
 
 // Flush buffered atomic operations for all threads
@@ -7049,7 +7049,7 @@ void nic_amo_nf_buff_flush(void) {
   info = amo_nf_buff_global_info.list;
   while (info != NULL) {
     spinlock_lock(&info->lock);
-    flush_amo_nf_buff(info);
+    amo_nf_buff_thread_info_flush(info);
     spinlock_unlock(&info->lock);
     info = info->next;
   }
@@ -7068,7 +7068,7 @@ void nic_amo_nf_buff_task_flush(void) {
     // modifying them, but concurrent flushing from other threads is possible.
     if (info->inited && info->vi > 0) {
       spinlock_lock(&info->lock);
-      flush_amo_nf_buff(info);
+      amo_nf_buff_thread_info_flush(info);
       spinlock_unlock(&info->lock);
     }
   }
@@ -7082,7 +7082,6 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
                         gni_fma_cmd_type_t cmd,
                         mem_region_t* remote_mr)
 {
-
   amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
 
   if (!info->inited) {
@@ -7119,7 +7118,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
 
   // flush if buffers are full
   if (info->vi == MAX_CHAINED_AMO_LEN) {
-    flush_amo_nf_buff(info);
+    amo_nf_buff_thread_info_flush(info);
   }
 
   // release lock for this thread
