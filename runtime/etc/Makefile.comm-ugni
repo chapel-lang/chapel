@@ -26,7 +26,8 @@ LD = $(CXX)
 # libhugetlbfs ourselves.
 #
 ifeq (,$(findstring HUGETLB,$(PE_PRODUCT_LIST)))
-GEN_LFLAGS += -lhugetlbfs
+# --whole-archive is a workaround for issues with clang-included/--llvm
+GEN_LFLAGS += -Wl,--whole-archive,-lhugetlbfs,--no-whole-archive
 endif
 
 GEN_LFLAGS += -lpthread

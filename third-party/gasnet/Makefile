@@ -49,10 +49,14 @@ CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
 CHPL_GASNET_CFG_OPTIONS += --enable-gemini-multi-domain
 CHPL_GASNET_CFG_OPTIONS += --disable-aries --disable-mpi --disable-smp --disable-ofi
+# workaround problem with clang and library constructors in hugetlbfs.
+CHPL_GASNET_CFG_OPTIONS += --enable-hugetlbfs-whole-archive
 else
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),aries)
 CHPL_GASNET_CFG_OPTIONS += --enable-aries-multi-domain
 CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-mpi --disable-smp --disable-ofi
+# workaround problem with clang and library constructors in hugetlbfs.
+CHPL_GASNET_CFG_OPTIONS += --enable-hugetlbfs-whole-archive
 else
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),mpi)
 CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-aries --disable-smp --disable-ofi
