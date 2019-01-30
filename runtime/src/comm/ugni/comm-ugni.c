@@ -1794,6 +1794,10 @@ static inline void spinlock_lock(spinlock* s) {
 static inline void spinlock_unlock(spinlock* s) {
   atomic_store_explicit_bool(s, false, memory_order_release);
 }
+static inline void spinlock_destroy(spinlock* s) {
+  atomic_destroy_bool(s);
+}
+
 
 // Simple wrapper for a pthread reader/writer lock with proper yielding for
 // locks. Use the non-blocking calls and yield instead of blocking the thread.
@@ -5645,6 +5649,7 @@ typedef struct get_buff_thread_info_t {
 typedef struct {
   get_buff_thread_info_t* list;
   rwlock                  lock;
+  pthread_key_t           destructor_key;
 } get_buff_global_info_t;
 
 static __thread get_buff_thread_info_t get_buff_thread_info;
@@ -5665,9 +5670,39 @@ void get_buff_thread_info_flush(get_buff_thread_info_t* info) {
 }
 
 static
+void get_buff_thread_info_destroy(void* p) {
+  get_buff_thread_info_t* info = &get_buff_thread_info;
+
+  // flush any pending ops
+  spinlock_lock(&info->lock);
+  get_buff_thread_info_flush(info);
+  spinlock_unlock(&info->lock);
+  spinlock_destroy(&info->lock);
+
+  rwlock_writer_lock(&get_buff_global_info.lock);
+
+  // remove the thread from the linked list
+  get_buff_thread_info_t* global_info = get_buff_global_info.list;
+  if (info == global_info) {
+    get_buff_global_info.list = info->next;
+  } else {
+    while (global_info != NULL) {
+      if (info == global_info->next) {
+        global_info->next = info->next;
+        break;
+      }
+      global_info = global_info->next;
+    }
+  }
+
+  rwlock_unlock(&get_buff_global_info.lock);
+}
+
+static
 void remote_get_buff_init(void) {
   get_buff_global_info.list = NULL;
   rwlock_init(&get_buff_global_info.lock);
+  pthread_key_create(&get_buff_global_info.destructor_key, get_buff_thread_info_destroy);
 }
 
 // Flush buffered GET operations for all threads
@@ -5742,6 +5777,9 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 
       info->next = get_buff_global_info.list;
       get_buff_global_info.list = info;
+
+      // dummy key binding needed so key destructor is called
+      pthread_setspecific(get_buff_global_info.destructor_key, info);
 
       info->inited = true;
     }
@@ -7015,6 +7053,7 @@ typedef struct amo_nf_buff_thread_info_t {
 typedef struct {
   amo_nf_buff_thread_info_t* list;
   rwlock                     lock;
+  pthread_key_t              destructor_key;
 } amo_nf_buff_global_info_t;
 
 static __thread amo_nf_buff_thread_info_t amo_nf_buff_thread_info;
@@ -7034,9 +7073,39 @@ void amo_nf_buff_thread_info_flush(amo_nf_buff_thread_info_t* info) {
 }
 
 static
+void amo_nf_buff_thread_info_destroy(void* p) {
+  amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
+
+  // flush any pending ops
+  spinlock_lock(&info->lock);
+  amo_nf_buff_thread_info_flush(info);
+  spinlock_unlock(&info->lock);
+  spinlock_destroy(&info->lock);
+
+  rwlock_writer_lock(&amo_nf_buff_global_info.lock);
+
+  // remove the thread from the linked list
+  amo_nf_buff_thread_info_t* global_info = amo_nf_buff_global_info.list;
+  if (info == global_info) {
+    amo_nf_buff_global_info.list = info->next;
+  } else {
+    while (global_info != NULL) {
+      if (info == global_info->next) {
+        global_info->next = info->next;
+        break;
+      }
+      global_info = global_info->next;
+    }
+  }
+
+  rwlock_unlock(&amo_nf_buff_global_info.lock);
+}
+
+static
 void nic_amo_buff_init(void) {
   amo_nf_buff_global_info.list = NULL;
   rwlock_init(&amo_nf_buff_global_info.lock);
+  pthread_key_create(&amo_nf_buff_global_info.destructor_key, amo_nf_buff_thread_info_destroy);
 }
 
 // Flush buffered atomic operations for all threads
@@ -7093,6 +7162,9 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
 
       info->next = amo_nf_buff_global_info.list;
       amo_nf_buff_global_info.list = info;
+
+      // dummy key binding needed so key destructor is called
+      pthread_setspecific(amo_nf_buff_global_info.destructor_key, info);
 
       info->inited = true;
     }
