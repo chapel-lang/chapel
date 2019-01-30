@@ -33,7 +33,8 @@ proc fortranArrayToChapelArray(ref FA: CFI_cdesc_t, param rank, type eltType) {
 
   var dims: rank*range;
   for param i in 1..rank {
-    dims[i] = FA.dim[i-1].lower_bound..#FA.dim[i-1].extent;
+    assert(FA.dim[i-1].lower_bound == 0);
+    dims[i] = 1..#FA.dim[i-1].extent;
   }
   var D = {(...dims)};
   var A = D.buildArrayWith(eltType,
