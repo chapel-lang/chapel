@@ -5735,15 +5735,17 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   get_buff_thread_info_t* info = &get_buff_thread_info;
 
   if (!info->inited) {
-    spinlock_init(&info->lock);
-    info->vi = 0;
-
     rwlock_writer_lock(&get_buff_global_info.lock);
-    info->next = get_buff_global_info.list;
-    get_buff_global_info.list = info;
-    rwlock_unlock(&get_buff_global_info.lock);
+    if (!info->inited) {
+      spinlock_init(&info->lock);
+      info->vi = 0;
 
-    info->inited = true;
+      info->next = get_buff_global_info.list;
+      get_buff_global_info.list = info;
+
+      info->inited = true;
+    }
+    rwlock_unlock(&get_buff_global_info.lock);
   }
 
   // grab lock for this thread
@@ -7084,15 +7086,18 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
   amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
 
   if (!info->inited) {
-    spinlock_init(&info->lock);
-    info->vi = 0;
-
     rwlock_writer_lock(&amo_nf_buff_global_info.lock);
-    info->next = amo_nf_buff_global_info.list;
-    amo_nf_buff_global_info.list = info;
-    rwlock_unlock(&amo_nf_buff_global_info.lock);
+    if (!info->inited) {
 
-    info->inited = true;
+      spinlock_init(&info->lock);
+      info->vi = 0;
+
+      info->next = amo_nf_buff_global_info.list;
+      amo_nf_buff_global_info.list = info;
+
+      info->inited = true;
+    }
+    rwlock_unlock(&amo_nf_buff_global_info.lock);
   }
 
   check_nic_amo(size, object, remote_mr);

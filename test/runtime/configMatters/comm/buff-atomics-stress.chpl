@@ -1,6 +1,7 @@
 use BufferedAtomics;
 
-config const numTasksPerLocale = here.maxTaskPar;
+config const oversubscription = 1;
+config const numTasksPerLocale = here.maxTaskPar * oversubscription;
 const numTasks = numLocales * numTasksPerLocale;
 
 config const iters = 10000;
