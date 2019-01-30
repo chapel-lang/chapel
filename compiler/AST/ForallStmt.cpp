@@ -31,15 +31,15 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
+ForallStmt::ForallStmt(BlockStmt* body):
   Stmt(E_ForallStmt),
-  fZippered(zippered),
   fLoopBody(body),
-  fVectorizationHazard(false),
+  fZippered(false),
   fFromForLoop(false),
   fFromReduce(false),
   fAllowSerialIterator(false),
   fRequireSerialIterator(false),
+  fVectorizationHazard(false),
   fContinueLabel(NULL),
   fErrorHandlerLabel(NULL),
   fRecIterIRdef(NULL),
@@ -50,13 +50,13 @@ ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   fIterVars.parent = this;
   fIterExprs.parent = this;
   fShadowVars.parent = this;
+  INT_ASSERT(fLoopBody != NULL);
 
   gForallStmts.add(this);
 }
 
 ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
-  ForallStmt* _this  = new ForallStmt(fZippered,
-                                      COPY_INT(fLoopBody));
+  ForallStmt* _this  = new ForallStmt(COPY_INT(fLoopBody));
   for_alist(expr, fIterVars)
     _this->fIterVars.insertAtTail(COPY_INT(expr));
   for_alist(expr, fIterExprs)
@@ -64,12 +64,13 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   for_alist(expr, fShadowVars)
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
 
+  _this->fZippered    = fZippered;
   _this->fFromForLoop = fFromForLoop;
   _this->fFromReduce  = fFromReduce;
-  _this->fVectorizationHazard = fVectorizationHazard;
-  // todo: fContinueLabel, fErrorHandlerLabel
   _this->fAllowSerialIterator   = fAllowSerialIterator;
   _this->fRequireSerialIterator = fRequireSerialIterator;
+  _this->fVectorizationHazard   = fVectorizationHazard;
+  // todo: fContinueLabel, fErrorHandlerLabel
 
   _this->fRecIterIRdef        = COPY_INT(fRecIterIRdef);
   _this->fRecIterICdef        = COPY_INT(fRecIterICdef);
@@ -500,7 +501,10 @@ ForallStmt* ForallStmt::buildHelper(Expr* indices, Expr* iterator,
                                     CallExpr* intents, BlockStmt* body,
                                     bool zippered, bool fromForLoop)
 {
-  ForallStmt* fs = new ForallStmt(zippered, body);
+  ForallStmt* fs = new ForallStmt(body);
+  fs->fZippered    = zippered;
+  fs->fFromForLoop = fromForLoop;
+  body->blockTag   = BLOCK_NORMAL; // do not flatten it in cleanup(), please
 
   // Transfer the DefExprs of the intent variables (ShadowVarSymbols).
   if (intents) {
@@ -511,16 +515,13 @@ ForallStmt* ForallStmt::buildHelper(Expr* indices, Expr* iterator,
   fsDestructureIterables(fs, iterator);
   fsDestructureIndices(fs, indices);
   fsVerifyNumIterables(fs);
-
   adjustReduceOpNames(fs);
-  body->blockTag = BLOCK_NORMAL; // do not flatten it in cleanup(), please
-  fs->fFromForLoop = fromForLoop;
 
   return fs;
 }
 
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
-                             BlockStmt* body, bool zippered)
+                             BlockStmt* body, bool zippered, bool serialOK)
 {
   checkControlFlow(body, "forall statement");
 
@@ -530,6 +531,8 @@ BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
 
   ForallStmt* fs = ForallStmt::buildHelper(indices, iterator, intents, body,
                                            zippered, false);
+  fs->fAllowSerialIterator = serialOK;
+
   return buildChapelStmt(fs);
 }
 
@@ -543,7 +546,7 @@ ForallStmt* ForallStmt::fromForLoop(ForLoop* forLoop) {
   // conversion from zippered is not implemented
   INT_ASSERT(forLoop->zipperedGet() == false);
 
-  ForallStmt* result = new ForallStmt(false, new BlockStmt());
+  ForallStmt* result = new ForallStmt(new BlockStmt());
   result->fFromForLoop = true;
 
   return result;
@@ -569,8 +572,9 @@ ForallStmt* ForallStmt::fromReduceExpr(VarSymbol* idx, SymExpr* dataExpr,
   Symbol* ata = new_IntSymbol(-7, INT_SIZE_64); // atavism, ignored
   CallExpr* reduceAssign = new CallExpr(PRIM_REDUCE_ASSIGN, ata, svar, idx);
   BlockStmt*  fsBody = new BlockStmt(reduceAssign);
-  ForallStmt* result = new ForallStmt(zippered, fsBody);
+  ForallStmt* result = new ForallStmt(fsBody);
 
+  result->fZippered   = zippered;
   result->fFromReduce = true;
   result->fAllowSerialIterator = true;
   result->fRequireSerialIterator = requireSerial;

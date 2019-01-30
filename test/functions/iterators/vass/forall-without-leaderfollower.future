@@ -1,9 +1,0 @@
-feature request: 'these' should enable forall loops
-#11819
-
-This is a variation on
-
-  test/functions/promotion/theseShouldPromote2.future
-
-except with an explicit forall instead of (implicit) promotion.
-The record-vs-class difference is insignificant w.r.t. #5114 / #11819 .

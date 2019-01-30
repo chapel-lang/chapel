@@ -60,7 +60,7 @@ public:
                                  bool zippered, bool fromForLoop);
 
   static BlockStmt*  build(Expr* indices, Expr* iterator, CallExpr* intents,
-                           BlockStmt* body, bool zippered = false);
+                           BlockStmt* body, bool zippered, bool serialOK);
 
   static ForallStmt* fromForLoop(ForLoop* forLoop);
 
@@ -83,18 +83,19 @@ public:
   void setHasVectorizationHazard(bool v);
 
 private:
-  bool           fZippered;
   AList          fIterVars;
   AList          fIterExprs;
   AList          fShadowVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present
-  bool           fVectorizationHazard;
+  bool           fZippered;
   bool           fFromForLoop; // see comment below
   bool           fFromReduce;
   bool           fAllowSerialIterator;
   bool           fRequireSerialIterator;
+  bool           fVectorizationHazard;
 
-  ForallStmt(bool zippered, BlockStmt* body);
+  // constructor
+  ForallStmt(BlockStmt* body);
 
 public:
   LabelSymbol*   fContinueLabel;
