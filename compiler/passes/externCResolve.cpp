@@ -25,6 +25,7 @@
 #include "codegen.h"
 #include "driver.h"
 #include "expr.h"
+#include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -35,6 +36,7 @@
 // clang headers
 #include "clang/AST/Decl.h"
 #include "clang/AST/Type.h"
+#include "llvm/ADT/SmallSet.h"
 
 // Functions for converting parsed Clang AST (ie C declarations)
 // into Chapel. Note that these functions might create new
@@ -44,58 +46,69 @@
 //For naming of variadic function variables (and temporary names for void *'s).
 static int query_uid = 1;
 
-static const char* convertTypedef(ModuleSymbol*           module,
-                                  clang::TypedefNameDecl* tdn,
-                                  Vec<Expr*>&             results);
+
+static void addCDef(ModuleSymbol* module, DefExpr* def);
+static void addCDefs(ModuleSymbol* module, BlockStmt* block);
+
+static Expr* tryCResolveExpr(BaseAST* context, const char* name);
+
+static const char* convertTypedef(ModuleSymbol* module,
+                                  clang::TypedefNameDecl* tdn);
 
 
-static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Vec<Expr*> & results, const char* typedefName=NULL);
+static Expr* convertToChplType(ModuleSymbol* module,
+                               const clang::Type *type,
+                               const char* typedefName=NULL);
 
-static Expr* convertTypedefToChplType(ModuleSymbol* module, const clang::TypedefType *td, Vec<Expr*> & results, const char* typedefName=NULL) {
+static Expr* convertTypedefToChplType(ModuleSymbol* module,
+                                      const clang::TypedefType *td,
+                                      const char* typedefName=NULL) {
 
   // Get the typedef decl for that
   clang::TypedefNameDecl* tdn = td->getDecl();
 
-  const char* typedef_name = convertTypedef(module, tdn, results);
+  const char* typedef_name = convertTypedef(module, tdn);
 
-  return new UnresolvedSymExpr(typedef_name);
+  return tryCResolveExpr(module, typedef_name);
 }
 
-static Expr* convertPointerToChplType(ModuleSymbol* module, const clang::QualType pointeeType, Vec<Expr*> & results, const char* typedefName=NULL) {
+static Expr* convertPointerToChplType(ModuleSymbol* module,
+                                      const clang::QualType pointeeType,
+                                      const char* typedefName=NULL) {
 
 
   //Pointers to c_char must be converted to Chapel's C string type
   // but only if they are const char*.
-  if ( pointeeType.isConstQualified() &&
-       pointeeType.getTypePtr()->isCharType() ) {
-    return new UnresolvedSymExpr("c_string");
+  if (pointeeType.isConstQualified() &&
+      pointeeType.getTypePtr()->isCharType()) {
+    return tryCResolveExpr(module, "c_string");
   }
 
   // Pointers to C functions become c_fn_ptr
-  if ( pointeeType.getTypePtr()->isFunctionType()) {
-    return new UnresolvedSymExpr("c_fn_ptr");
+  if (pointeeType.getTypePtr()->isFunctionType()) {
+    return tryCResolveExpr(module, "c_fn_ptr");
   }
 
-  Expr* pointee = convertToChplType(module, pointeeType.getTypePtr(), results);
-
-  // void *  generates as c_void_ptr.
-  if(!pointee) {
-    return new UnresolvedSymExpr("c_void_ptr");
+  // Pointers to void (aka void*) convert to c_void_ptr
+  if (pointeeType.getTypePtr()->isVoidType()) {
+    return tryCResolveExpr(module, "c_void_ptr");
   }
 
+  Expr* pointee = convertToChplType(module, pointeeType.getTypePtr());
 
-  //Pointers (other than char*) are represented as calls to
-  // c_ptr(chapel_type).
-  // PRIM_ACTUALS_LIST is not needed here.
+  // Other pointers are represented as a call to c_ptr.
   return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
 }
 
-static Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module, const clang::ConstantArrayType* arrayType, Vec<Expr*> & results, const char* typedefName=NULL) {
+static
+Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module,
+                                      const clang::ConstantArrayType* arrayType,
+                                      const char* typedefName=NULL) {
 
   llvm::APInt size = arrayType->getSize();
   clang::QualType eltType = arrayType->getElementType();
 
-  Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr(), results);
+  Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr());
 
   if (size.getMinSignedBits() > 64)
     USR_FATAL("C array is too large");
@@ -106,17 +119,23 @@ static Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module, const clang::
   return new CallExpr("c_array", eltTypeChapel, new SymExpr(isym));
 }
 
-static Expr* convertArrayToChplType(ModuleSymbol* module, const clang::ArrayType* arrayType, Vec<Expr*> & results, const char* typedefName=NULL) {
+static
+Expr* convertArrayToChplType(ModuleSymbol* module,
+                             const clang::ArrayType* arrayType,
+                             const char* typedefName=NULL) {
 
   clang::QualType eltType = arrayType->getElementType();
 
-  Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr(), results);
+  Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr());
 
   // For now, just represent it as a c_ptr
   return new CallExpr("c_ptr", eltTypeChapel);
 }
 
-static Expr* convertStructToChplType(ModuleSymbol* module, const clang::RecordType* structType, Vec<Expr*> & results, const char* typedefName=NULL) {
+static
+Expr* convertStructToChplType(ModuleSymbol* module,
+                              const clang::RecordType* structType,
+                              const char* typedefName=NULL) {
 
   clang::RecordDecl *rd = structType->getDecl();
   const char* tmp_name = astr(rd->getNameAsString().c_str());
@@ -128,64 +147,61 @@ static Expr* convertStructToChplType(ModuleSymbol* module, const clang::RecordTy
 
   // For handling typedef struct { } bar
   //   ie an anonymous struct, use the name in the typedef.
-  if( tmp_name[0] == '\0' && typedefName ) {
+  if (tmp_name[0] == '\0' && typedefName) {
     cname = tmp_name = typedefName;
   }
 
-  //don't create a new struct if it already exists
-  // So we've found something.... set it as converted.
-  if( ! alreadyConvertedExtern(module, cname) ) {
-    setAlreadyConvertedExtern(module, cname);
+  //convert the struct to Chapel
+  BlockStmt* fields = new BlockStmt();
 
-    //convert the struct to Chapel
-    BlockStmt* fields = new BlockStmt();
+  for (clang::RecordDecl::field_iterator it = rd->field_begin();
+       it != rd->field_end();
+       ++it) {
+    clang::FieldDecl* field      = (*it);
+    const char* field_name = astr(field->getNameAsString().c_str());
+    Expr* field_type = convertToChplType(module, field->getType().getTypePtr());
+    DefExpr* varDefn = new DefExpr(new VarSymbol(field_name), NULL, field_type);
+    BlockStmt* stmt = buildChapelStmt(varDefn);
 
-    for (clang::RecordDecl::field_iterator it = rd->field_begin(); it != rd->field_end(); ++it) {
-      clang::FieldDecl* field      = (*it);
-      const char*       field_name = astr(field->getNameAsString().c_str());
-      Expr*             field_type = convertToChplType(module, field->getType().getTypePtr(), results);
-      DefExpr*          varDefn    = new DefExpr(new VarSymbol(field_name), NULL, field_type);
-      BlockStmt*        stmt       = buildChapelStmt(varDefn);
-
-      fields->insertAtTail(buildVarDecls(stmt));
-    }
-
-    DefExpr* strct = buildClassDefExpr(tmp_name,
-                                       NULL,
-                                       AGGREGATE_RECORD,
-                                       NULL,
-                                       fields,
-                                       FLAG_EXTERN,
-                                       NULL);
-
-    //...and patch up the resulting struct so that its cname is
-    //  correct and codegen can find it.
-    if (strct) {
-      strct->sym->cname = cname;
-      results.add(strct);
-    }
+    fields->insertAtTail(buildVarDecls(stmt));
   }
 
-  return new UnresolvedSymExpr(tmp_name);
+  DefExpr* strct = buildClassDefExpr(tmp_name,
+                                     NULL,
+                                     AGGREGATE_RECORD,
+                                     NULL,
+                                     fields,
+                                     FLAG_EXTERN,
+                                     NULL);
 
+  //...and patch up the resulting struct so that its cname is
+  //  correct and codegen can find it.
+  if (strct) {
+    strct->sym->cname = cname;
+    addCDef(module, strct);
+  }
+
+  return tryCResolveExpr(module, tmp_name);
 }
 
-//Given a clang type, returns the corresponding chapel type (usually as
-//  an UnresolvedSymExpr to be resolved by scopeResolve).
-static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Vec<Expr*> & results, const char* typedefName) {
+// Given a clang type, returns the corresponding chapel type.
+// Returns e.g. a SymExpr(TypeSymbol) or a CallExpr to a type constructor.
+static Expr* convertToChplType(ModuleSymbol* module,
+                               const clang::Type *type,
+                               const char* typedefName) {
 
   //typedefs
   if (const clang::TypedefType *td =
       llvm::dyn_cast_or_null<clang::TypedefType>(type)) {
 
-    return convertTypedefToChplType(module, td, results, typedefName);
+    return convertTypedefToChplType(module, td, typedefName);
 
   //pointers
   } else if (type->isPointerType()) {
 
     clang::QualType pointeeType = type->getPointeeType();
 
-    return convertPointerToChplType(module, pointeeType, results, typedefName);
+    return convertPointerToChplType(module, pointeeType, typedefName);
 
   //arrays
   } else if (type->isArrayType()) {
@@ -194,11 +210,11 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
       const clang::ConstantArrayType* cat =
         llvm::dyn_cast<clang::ConstantArrayType>(type);
 
-      return convertFixedSizeArrayToChplType(module, cat, results, typedefName);
+      return convertFixedSizeArrayToChplType(module, cat, typedefName);
     } else {
       const clang::ArrayType* at = llvm::dyn_cast<clang::ArrayType>(type);
 
-      return convertArrayToChplType(module, at, results, typedefName);
+      return convertArrayToChplType(module, at, typedefName);
     }
 
     USR_FATAL("variable sized C array types not yet supported");
@@ -207,7 +223,7 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
   } else if (type->isStructureType()) {
 
     return convertStructToChplType(module, type->getAsStructureType(),
-                                   results, typedefName);
+                                   typedefName);
 
   } else if (type->isFunctionType()) {
     // This should be handled in the pointer-to-function case above
@@ -225,42 +241,47 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
       INT_ASSERT(type && "Could not get enum integer type pointer");
     }
 
+    if (type->isVoidType())
+      return NULL;
+
     // handle numeric types
 
     //Unsigned types
+    const char* t = NULL;
     if (type->isSpecificBuiltinType(clang::BuiltinType::Bool))
-      return new UnresolvedSymExpr("bool");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::Char_U))
-      return new UnresolvedSymExpr("c_char");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::UChar))
-      return new UnresolvedSymExpr("c_uchar");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::UShort))
-      return new UnresolvedSymExpr("c_ushort");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::UInt))
-      return new UnresolvedSymExpr("c_uint");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::ULong))
-      return new UnresolvedSymExpr("c_ulong");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::ULongLong))
-      return new UnresolvedSymExpr("c_ulonglong");
+      t = "bool";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::Char_U))
+      t = "c_char";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::UChar))
+      t = "c_uchar";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::UShort))
+      t = "c_ushort";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::UInt))
+      t = "c_uint";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::ULong))
+      t = "c_ulong";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::ULongLong))
+      t = "c_ulonglong";
     //Signed types
-    if (type->isSpecificBuiltinType(clang::BuiltinType::Char_S))
-      return new UnresolvedSymExpr("c_char");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::SChar))
-      return new UnresolvedSymExpr("c_schar");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::Short))
-      return new UnresolvedSymExpr("c_short");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::Int))
-      return new UnresolvedSymExpr("c_int");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::Long))
-      return new UnresolvedSymExpr("c_long");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::LongLong))
-      return new UnresolvedSymExpr("c_longlong");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::Float))
-      return new UnresolvedSymExpr("c_float");
-    if (type->isSpecificBuiltinType(clang::BuiltinType::Double))
-      return new UnresolvedSymExpr("c_double");
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::Char_S))
+      t = "c_char";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::SChar))
+      t = "c_schar";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::Short))
+      t = "c_short";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::Int))
+      t = "c_int";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::Long))
+      t = "c_long";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::LongLong))
+      t = "c_longlong";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::Float))
+      t = "c_float";
+    else if (type->isSpecificBuiltinType(clang::BuiltinType::Double))
+      t = "c_double";
 
-    if (type->isVoidType()) return NULL;
+    if (t != NULL)
+      return tryCResolveExpr(module, t);
   }
 
   //give up...
@@ -271,9 +292,8 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
 static void convertMacroToChpl(ModuleSymbol* module,
                                const char*   name,
                                Type*         chplType,
-                               Expr*         chplTypeExpr,
-                               Vec<Expr*>&   results) {
-  if( ! module->extern_info ) return;
+                               Expr*         chplTypeExpr) {
+  INT_ASSERT(module->extern_info);
 
   VarSymbol* v = NULL;
   if (chplType)
@@ -290,21 +310,11 @@ static void convertMacroToChpl(ModuleSymbol* module,
   else
     def = new DefExpr(v);
 
-  results.add(def);
-
-  forv_Vec(Expr*, result, results) {
-    if (!result->inTree()) {
-      SET_LINENO(result);
-      module->block->insertAtHead(result);
-    }
-  }
-  setAlreadyConvertedExtern(module, name);
+  addCDef(module, def);
 }
 
 static const char* convertTypedef(ModuleSymbol*           module,
-                                  clang::TypedefNameDecl* tdn,
-                                  Vec<Expr*>&             results) {
-
+                                  clang::TypedefNameDecl* tdn) {
   //handle typedefs
 
   bool do_typedef = true;
@@ -315,12 +325,7 @@ static const char* convertTypedef(ModuleSymbol*           module,
   if (typedef_name == dtStringC->symbol->name)
     return typedef_name;
 
-  //If we've already converted this, return immediately to
-  //  avoid multiple Chapel definitions.
-  if( alreadyConvertedExtern(module, typedef_name) )
-    return typedef_name;
-
-  if( contents_type->isStructureType() ) {
+  if (contents_type->isStructureType()) {
     clang::RecordDecl *rd = contents_type->getAsStructureType()->getDecl();
     const char* struct_name = astr(rd->getNameAsString().c_str());
     // We already make 'struct some_structure { .. }' create a
@@ -328,7 +333,7 @@ static const char* convertTypedef(ModuleSymbol*           module,
     // creating an alias for 'struct some_structure' == 'some_structure',
     // just return the result of adding the structure.
     if( typedef_name == struct_name ) {
-      convertToChplType(module, contents_type, results);
+      convertToChplType(module, contents_type);
       do_typedef = false;
     }
     // If the struct is unnamed, we don't need to make
@@ -336,7 +341,7 @@ static const char* convertTypedef(ModuleSymbol*           module,
     // to name the structure by passing the typedefName
     // argument to convertToChplType).
     if( struct_name[0] == '\0' ) {
-      convertToChplType(module, contents_type, results, typedef_name);
+      convertToChplType(module, contents_type, typedef_name);
       do_typedef = false;
     }
   }
@@ -349,33 +354,29 @@ static const char* convertTypedef(ModuleSymbol*           module,
     DefExpr* type_expr = new DefExpr(v,
                                      convertToChplType(module,
                                                        contents_type,
-                                                       results,
                                                        typedef_name),
                                      NULL);
 
     BlockStmt* typeBlock = new BlockStmt(type_expr, BLOCK_TYPE);
-    results.add(convertTypesToExtern(typeBlock));
+    addCDefs(module, convertTypesToExtern(typeBlock));
   }
-
-  setAlreadyConvertedExtern(module, typedef_name);
 
   return typedef_name;
 }
 
 
 
+// Returns a DefExpr already added to the AST that defines
+// the C object with name cname
+static
 void convertDeclToChpl(ModuleSymbol* module,
-                       const char*   name,
-                       Vec<Expr*>&   results) {
-  if (name == NULL || !externC || name == astrSdot || !strcmp("", name))
-   return;
-
-  //If module doesn't have an extern block, we shouldn't be here.
-  if (!module->extern_info) return;
-
-  //If we've already converted this, return immediately to
-  //  avoid multiple Chapel definitions.
-  if( alreadyConvertedExtern(module, name) ) return;
+                       const char*   cname) {
+  INT_ASSERT(cname != NULL);
+  INT_ASSERT(externC);
+  INT_ASSERT(cname != astrSdot);
+  INT_ASSERT(cname[0] != '\0');
+  INT_ASSERT(module != NULL);
+  INT_ASSERT(module->extern_info != NULL);
 
   clang::TypeDecl* cType = NULL;
   clang::ValueDecl* cValue = NULL;
@@ -383,9 +384,13 @@ void convertDeclToChpl(ModuleSymbol* module,
   Type* chplType = NULL;
   astlocT astloc(0, NULL);
 
+  bool got = lookupInExternBlock(module, cname,
+                                 &cType, &cValue, &cCastedToType,
+                                 &chplType, &astloc);
+
   // If we've got nothing... give up.
-  if(!lookupInExternBlock(module, name, &cType, &cValue, &cCastedToType,
-        &chplType, &astloc)) return;
+  if (got == false)
+    return;
 
   // use currentAstLoc if astloc was empty
   if (astloc.lineno == 0)
@@ -400,58 +405,58 @@ void convertDeclToChpl(ModuleSymbol* module,
       // If the macro contained a cast, replace the Chapel type
       // with a type expression.
       chplType = NULL;
-      chplTypeExpr = new UnresolvedSymExpr(cCastedToType);
+      chplTypeExpr = tryCResolveExpr(module, cCastedToType);
     }
 
-    convertMacroToChpl(module, name, chplType, chplTypeExpr, results);
+    convertMacroToChpl(module, cname, chplType, chplTypeExpr);
     return;
   }
 
   //struct
   if (clang::RecordDecl *rd =
       llvm::dyn_cast_or_null<clang::RecordDecl>(cType)) {
-    results.add(convertToChplType(module, rd->getTypeForDecl(), results));
+    convertToChplType(module, rd->getTypeForDecl());
   }
 
   //enum constant
   if (clang::EnumConstantDecl *ed =
       llvm::dyn_cast_or_null<clang::EnumConstantDecl>(cValue)) {
-    VarSymbol* v = new VarSymbol(name);
+    VarSymbol* v = new VarSymbol(cname);
     v->addFlag(FLAG_EXTERN);
     v->addFlag(FLAG_CONST);
-    results.add(new DefExpr(v,
-                            NULL,
-                            convertToChplType(module,
-                                              ed->getType().getTypePtr(),
-                                              results)));
+    Expr* t = convertToChplType(module, ed->getType().getTypePtr());
+    DefExpr* def = new DefExpr(v, NULL, t);
+    addCDef(module, def);
   }
 
 
   //vars
   if (clang::VarDecl *vd =
       llvm::dyn_cast_or_null<clang::VarDecl>(cValue)) {
-    VarSymbol* v = new VarSymbol(name);
+    VarSymbol* v = new VarSymbol(cname);
     v->addFlag(FLAG_EXTERN);
-    results.add(new DefExpr(v, NULL, convertToChplType(module, vd->getType().getTypePtr(), results)));
+    Expr* t = convertToChplType(module, vd->getType().getTypePtr());
+    DefExpr* def = new DefExpr(v, NULL, t);
+    addCDef(module, def);
   }
 
   //typedefs
   if (clang::TypedefNameDecl *tdn =
       llvm::dyn_cast_or_null<clang::TypedefNameDecl>(cType)) {
-    convertTypedef(module, tdn, results);
+    convertTypedef(module, tdn);
   }
 
   //functions
   if (clang::FunctionDecl *fd =
       llvm::dyn_cast_or_null<clang::FunctionDecl>(cValue)) {
     clang::QualType resultType = fd->getReturnType();
-    FnSymbol* f = new FnSymbol(name);
+    FnSymbol* f = new FnSymbol(cname);
     f->addFlag(FLAG_EXTERN);
     f->addFlag(FLAG_LOCAL_ARGS);
-    Expr* chpl_type = convertToChplType(module, resultType.getTypePtr(), results);
+    Expr* retT = convertToChplType(module, resultType.getTypePtr());
     BlockStmt* result = buildFunctionDecl( f, // fn
                                            RET_VALUE, // retTag
-                                           chpl_type, // ret type
+                                           retT, // ret type
                                            false,  // throws
                                            NULL, // where
                                            NULL, // lifetime constraints
@@ -462,7 +467,7 @@ void convertDeclToChpl(ModuleSymbol* module,
     for (clang::FunctionDecl::param_iterator it=fd->param_begin(); it < fd->param_end(); ++it) {
       clang::ParmVarDecl* parm = (*it);
       const char* parm_name = astr(parm->getNameAsString().c_str());
-      Expr* parm_type = convertToChplType(module, parm->getType().getTypePtr(), results);
+      Expr* parm_type = convertToChplType(module, parm->getType().getTypePtr());
       f = buildFunctionFormal(f, buildArgDefExpr(INTENT_BLANK, parm_name, parm_type, NULL, NULL));
     }
 
@@ -473,32 +478,110 @@ void convertDeclToChpl(ModuleSymbol* module,
       f = buildFunctionFormal(f, buildArgDefExpr(INTENT_BLANK, "chpl__query_c", NULL, NULL, variadic));
     }
 
-    //Functions have to be inserted in a different location
-    //  in the AST than other nodes.
-    if (!result->inTree()) {
-      SET_LINENO(result);
-      module->block->insertAtHead(result);
-    }
+    DefExpr* def = toDefExpr(result->body.first());
+    INT_ASSERT(def);
 
-    //flatten scopeless block (as in cleanup.cpp)
-    for_alist(stmt, result->body) {
-      stmt->remove();
-      result->insertBefore(stmt);
-      results.add(stmt);
-    }
-    result->remove();
+    addCDef(module, def);
+  }
+}
+
+static Symbol* tryCResolve(BaseAST* context,
+                           ModuleSymbol* module,
+                           const char*                       name,
+                           llvm::SmallSet<ModuleSymbol*, 24> &visited);
+
+Symbol* tryCResolve(BaseAST* context, const char* name) {
+  Symbol* retval = NULL;
+
+  ModuleSymbol* module = context->getModule();
+
+  if (externC == true) {
+    llvm::SmallSet<ModuleSymbol*, 24> visited;
+
+    retval = tryCResolve(context, module, name, visited);
   }
 
-  // So we've found something.... set it as converted.
-  setAlreadyConvertedExtern(module, name);
+  return retval;
+}
 
-  //Add results to the AST.
-  forv_Vec(Expr*, result, results) {
-    if (!result->inTree()) {
-      SET_LINENO(result);
-      module->block->insertAtHead(result);
+static Symbol* tryCResolve(BaseAST* context,
+                           ModuleSymbol* module,
+                           const char*                       name,
+                           llvm::SmallSet<ModuleSymbol*, 24> &visited) {
+
+  // Try looking up the symbol with scope resolve's tables.
+  // This covers the case of finding a symbol already converted.
+  Symbol* got = lookup(name, context);
+  if (got != NULL)
+    return got;
+
+  if (module == NULL) {
+    return NULL;
+
+  } else if (visited.insert(module).second) {
+    // visited.insert(module)) {
+    // we added it to the set, so continue.
+
+  } else {
+    // It was already in the set.
+    return NULL;
+  }
+
+  if (0 == strcmp(name, "makeX"))
+    gdbShouldBreakHere();
+
+  // try the modules used by this module.
+  // TODO: handle only, except, etc
+  forv_Vec(ModuleSymbol, usedMod, module->modUseList) {
+    if (usedMod->modTag == MOD_USER) { // no extern blocks in internal code
+      Symbol* got = tryCResolve(context, usedMod, name, visited);
+      if (got != NULL)
+        return got;
     }
   }
+
+  // Is it resolveable in this module?
+  if (module->extern_info != NULL) {
+    convertDeclToChpl(module, name);
+    // Try to resolve it again.
+    return lookup(name, context);
+  }
+
+  return NULL;
+}
+
+static void addCDefs(ModuleSymbol* module, BlockStmt* block) {
+
+  module->block->insertAtHead(block);
+
+  std::vector<DefExpr*> v;
+  collectDefExprs(block, v);
+  for_vector(DefExpr, def, v) {
+    addCDef(module, def);
+  }
+}
+
+static void addCDef(ModuleSymbol* module, DefExpr* def) {
+  module->block->insertAtHead(def);
+
+  addToSymbolTable(def);
+
+  if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
+    if (AggregateType* ct = toAggregateType(ts->type)) {
+      SET_LINENO(ct->symbol);
+      // If this is a class DefExpr,
+      //  make sure its initializer gets created.
+      ct->buildTypeConstructor();
+    }
+  }
+}
+
+static Expr* tryCResolveExpr(BaseAST* context, const char* name) {
+  Symbol* sym = tryCResolve(context, name);
+  if (sym == NULL)
+    USR_FATAL(context, "Could not find C type %s\n", name);
+
+  return new SymExpr(sym);
 }
 
 #endif

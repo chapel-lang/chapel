@@ -44,12 +44,6 @@
 #include <map>
 #include <set>
 
-#ifdef HAVE_LLVM
-// TODO: Remove uses of old-style collectors from LLVM-specific code.
-#include "oldCollectors.h"
-#include "llvm/ADT/SmallSet.h"
-#endif
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -720,10 +714,6 @@ static bool isMethodNameLocal(const char* name, Type* type);
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE);
 
-#ifdef HAVE_LLVM
-static bool tryCResolve(ModuleSymbol* module, const char* name);
-#endif
-
 static void resolveUnresolvedSymExprs() {
   //
   // Translate M.x where M is a ModuleSymbol into just x where x is
@@ -1080,10 +1070,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
     updateMethod(usymExpr);
 
 #ifdef HAVE_LLVM
-    if (gExternBlockStmts.size() > 0 &&
-        tryCResolve(usymExpr->getModule(), name) == true) {
-      // Try resolution again since the symbol should exist now
-      resolveUnresolvedSymExpr(usymExpr);
+    if (gExternBlockStmts.size() > 0) {
+      Symbol* got = tryCResolve(usymExpr->getModule(), name);
+      if (got != NULL)
+        // Try resolution again since the symbol should exist now
+        resolveUnresolvedSymExpr(usymExpr);
     }
 #endif
   }
@@ -1491,7 +1482,7 @@ static void resolveModuleCall(CallExpr* call) {
           }
 
 #ifdef HAVE_LLVM
-        } else if (tryCResolve(currModule, mbrName) == true) {
+        } else if (tryCResolve(currModule, mbrName) != NULL) {
           resolveModuleCall(call);
 #endif
 
@@ -1528,90 +1519,6 @@ static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym) {
 
   return NULL;
 }
-
-#ifdef HAVE_LLVM
-static bool tryCResolve(ModuleSymbol*                     module,
-                        const char*                       name,
-                        llvm::SmallSet<ModuleSymbol*, 24> visited);
-
-static bool tryCResolve(ModuleSymbol* module, const char* name) {
-  bool retval = false;
-
-  if (externC == true) {
-    llvm::SmallSet<ModuleSymbol*, 24> visited;
-
-    retval = tryCResolve(module, name, visited);
-  }
-
-  return retval;
-}
-
-static bool tryCResolve(ModuleSymbol*                     module,
-                        const char*                       name,
-                        llvm::SmallSet<ModuleSymbol*, 24> visited) {
-
-  if (module == NULL) {
-    return false;
-
-  } else if (visited.insert(module).second) {
-    // visited.insert(module)) {
-    // we added it to the set, so continue.
-
-  } else {
-    // It was already in the set.
-    return false;
-  }
-
-  // Is it resolveable in this module?
-  if (module->extern_info != NULL) {
-    // Try resolving it
-    Vec<Expr*> c_exprs;
-
-    // Try to create an extern declaration for name,
-    //  if it exists in the module's extern blocks.
-    // The resulting Chapel extern declarations are put into
-    //  c_exprs and will need to be resolved.
-    convertDeclToChpl(module, name, c_exprs);
-
-    if (c_exprs.count()) {
-      forv_Vec(Expr*, c_expr, c_exprs) {
-        std::vector<DefExpr*> v;
-
-        collectDefExprs(c_expr, v);
-
-        for_vector(DefExpr, def, v) {
-          addToSymbolTable(def);
-        }
-
-        if (DefExpr* de = toDefExpr(c_expr)) {
-          if (TypeSymbol* ts = toTypeSymbol(de->sym)) {
-            if (AggregateType* ct = toAggregateType(ts->type)) {
-              SET_LINENO(ct->symbol);
-              // If this is a class DefExpr,
-              //  make sure its initializer gets created.
-              ct->buildTypeConstructor();
-            }
-          }
-        }
-      }
-
-      //any new UnresolvedSymExprs will be called in another for loop
-      // in scopeResolve.
-      return true;
-    }
-  }
-
-  // Otherwise, try the modules used by this module.
-  forv_Vec(ModuleSymbol, usedMod, module->modUseList) {
-    if (tryCResolve(usedMod, name, visited) == true) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-#endif
 
 /************************************* | **************************************
 *                                                                             *
