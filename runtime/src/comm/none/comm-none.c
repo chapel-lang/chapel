@@ -222,19 +222,3 @@ int chpl_comm_numPollingTasks(void) { return 0; }
 void chpl_comm_make_progress(void) { }
 
 void chpl_comm_task_end(void) { }
-
-void chpl_startVerboseComm() { }
-void chpl_stopVerboseComm() { }
-void chpl_startVerboseCommHere() { }
-void chpl_stopVerboseCommHere() { }
-
-void chpl_startCommDiagnostics() { }
-void chpl_stopCommDiagnostics() { }
-void chpl_startCommDiagnosticsHere() { }
-void chpl_stopCommDiagnosticsHere() { }
-
-void chpl_resetCommDiagnosticsHere() { }
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
-  memset(cd, 0, sizeof(chpl_commDiagnostics));
-}
-
