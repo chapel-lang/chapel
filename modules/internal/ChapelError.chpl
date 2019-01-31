@@ -171,17 +171,17 @@ module ChapelError {
       var n = 0;
       cur = head;
       while cur != nil {
-	var curnext = cur._next;
-	var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
-	if asTaskErr == nil {
-	  n += 1;
-	} else {
-	  for e in asTaskErr {
-	    if e != nil then
-	      n += 1;
-	  }
-	}
-	cur = curnext;
+        var curnext = cur._next;
+        var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
+        if asTaskErr == nil {
+          n += 1;
+        } else {
+          for e in asTaskErr {
+            if e != nil then
+              n += 1;
+          }
+        }
+        cur = curnext;
       }
 
       // Allocate the array to the appropriate size
@@ -194,21 +194,21 @@ module ChapelError {
       var idx = 0;
       cur = head;
       while cur != nil {
-	var curnext = cur._next;
-	cur._next = nil; // remove from any lists
-	var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
-	if asTaskErr == nil {
-	  errorsArray[idx].retain(cur);
-	  idx += 1;
-	} else {
-	  for e in asTaskErr {
-	    if e != nil {
-	      errorsArray[idx] = e;
-	      idx += 1;
-	    }
-	  }
-	}
-	cur = curnext;
+        var curnext = cur._next;
+        cur._next = nil; // remove from any lists
+        var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
+        if asTaskErr == nil {
+          errorsArray[idx].retain(cur);
+          idx += 1;
+        } else {
+          for e in asTaskErr {
+            if e != nil {
+              errorsArray[idx] = e;
+              idx += 1;
+            }
+          }
+        }
+        cur = curnext;
       }
     }
 
@@ -256,7 +256,7 @@ module ChapelError {
     proc first() ref : owned Error {
       var first = 0;
       for i in 0..#nErrors {
-	if errorsArray[i] != nil {
+        if errorsArray[i] != nil {
           first = i;
         }
       }
