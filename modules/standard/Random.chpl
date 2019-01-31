@@ -841,67 +841,55 @@ module Random {
       }
 
       /* TODO */
-      proc choice(arr: [] ?arrEltType) throws
-        where isIntegralType(arrEltType) || isRealType(arrEltType)
-      {
-        // Redundant check in this overload can be removed when #12176 is resolved
-        if !isRealType(this.eltType) then
-          compilerError('choice() can only be used on RandomStream with eltType=real');
-
-        return choice(arr, arr);
-      }
-
-      /* TODO */
-      proc choice(arr: [], prob: [] ?probEltType) throws
-        where isIntegralType(probEltType) || isRealType(probEltType)
+      proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
+        throws
       {
         use Search only;
 
+        // Check random stream type
         if !isRealType(this.eltType) then
           compilerError('choice() can only be used on RandomStream with eltType=real');
 
-        var cumulativeArr = _choiceSumArr(arr, prob);
+        // Check types of optional void args
+        if !isVoidType(probType) {
+          if !isArrayType(prob) then
+            compilerError('choice() prob must be an array');
+          if !(isIntegralType(prob.eltType) || isRealType(prob.eltType)) then
+            compilerError('choice() prob.eltType must be real or integral');
+        }
+        if !isVoidType(sizeType) {
+          if !isIntegral(size) then
+            compilerError('choice() size must be integral');
+          if size < 0 then
+            throw new IllegalArgumentError('choices() sampleSize must be greater than 0');
+        }
 
-        var randNum = this.getNext();
-        var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
-        return arr[idx];
-      }
+        var evenProbabilities: [1..arr.size] real = 1.0;
+        var probabilities = if isVoidType(probType) then evenProbabilities
+                            else prob;
 
-      /* TODO */
-      proc choices(arr: [] ?arrEltType, sampleSize: int) throws
-        where isIntegralType(arrEltType) || isRealType(arrEltType)
-      {
-        // Redundant check in this overload can be removed when #12176 is resolved
-        if !isRealType(this.eltType) then
-          compilerError('choices() can only be used on RandomStream with eltType=real');
+        var cumulativeArr = _choiceSumArr(arr, probabilities);
 
-        return choices(arr, arr, sampleSize);
-      }
-
-      /* TODO */
-      proc choices(arr: [], prob: [] ?probEltType, sampleSize: int) throws
-        where isIntegralType(probEltType) || isRealType(probEltType)
-      {
-        use Search only;
-
-        if !isRealType(this.eltType) then
-          compilerError('choice() can only be used on RandomStream with eltType=real');
-
-        if sampleSize < 1 then
-          throw new IllegalArgumentError('choices() sampleSize must be greater than 0');
-
-        var cumulativeArr = _choiceSumArr(arr, prob);
-
-        var samples: [1..sampleSize] arr.eltType;
-
-        for sample in samples {
+        if isVoidType(sizeType) {
           var randNum = this.getNext();
           var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
-          sample = arr[idx];
-        }
-        return samples;
-      }
+          return arr[idx];
+        } else {
+          var samples: [1..size] arr.eltType;
 
+          for sample in samples {
+            var randNum = this.getNext();
+            var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
+            sample = arr[idx];
+            if !replace {
+              cumulativeArr.remove(idx);
+              arr.remove(idx);
+            }
+
+          }
+          return samples;
+        }
+      }
 
       /* Randomly shuffle a 1-D array. */
       proc shuffle(arr: [?D] ?eltType ) {
@@ -2380,69 +2368,7 @@ module Random {
                       ") can only be used to fill arrays of ", eltType:string);
       }
 
-      /* TODO */
-      proc choice(arr: [] ?arrEltType) throws
-        where isIntegralType(arrEltType) || isRealType(arrEltType)
-      {
-        // Redundant check in this overload can be removed when #12176 is resolved
-        if !isRealType(this.eltType) then
-          compilerError('choice() can only be used on RandomStream with eltType=real');
-
-        return choice(arr, arr);
-      }
-
-
-      /* TODO */
-      proc choice(arr: [], prob: [] ?probEltType) throws
-        where isIntegralType(probEltType) || isRealType(probEltType)
-      {
-        use Search only;
-
-        if !isRealType(this.eltType) then
-          compilerError('choice() can only be used on RandomStream with eltType=real');
-
-        var cumulativeArr = _choiceSumArr(arr, prob);
-
-        var randNum = this.getNext();
-        var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
-        return arr[idx];
-      }
-
-      /* TODO */
-      proc choices(arr: [] ?arrEltType, sampleSize: int) throws
-        where isIntegralType(arrEltType) || isRealType(arrEltType)
-      {
-        // Redundant check in this overload can be removed when #12176 is resolved
-        if !isRealType(this.eltType) then
-          compilerError('choices() can only be used on RandomStream with eltType=real');
-
-        return choices(arr, arr, sampleSize);
-      }
-
-      /* TODO */
-      proc choices(arr: [], prob: [] ?probEltType, sampleSize: int) throws
-        where isIntegralType(probEltType) || isRealType(probEltType)
-      {
-        use Search only;
-
-        if !isRealType(this.eltType) then
-          compilerError('choices() can only be used on RandomStream with eltType=real');
-
-        if sampleSize < 1 then
-          throw new IllegalArgumentError('choices() sampleSize must be greater than 0');
-
-        var cumulativeArr = _choiceSumArr(arr, prob);
-
-        var samples: [1..sampleSize] arr.eltType;
-
-        for sample in samples {
-          var randNum = this.getNext();
-          var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
-          sample = arr[idx];
-        }
-        return samples;
-      }
-
+      // TODO: NPB - proc choice()
 
       /*
 
