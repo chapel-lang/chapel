@@ -1,0 +1,7 @@
+Caught some TaskErrors
+UserError.deinit(2)
+UserError.deinit(3)
+UserError.deinit(0)
+Outer catch
+UserError.deinit(1)
+End of main
