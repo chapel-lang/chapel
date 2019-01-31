@@ -324,9 +324,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals);
 //
 // Logically, this routine implements a 1-sided broadcast of a value
 // across all the compute nodes.  Only one task total will call into
-// this routine per logical broadcast.  For that reason, this routine
-// will tend to need to be implemented by utilizing an active message
-// (or equivalent) on the remote side.
+// this routine per logical broadcast.
 //
 // The job of this task is to broadcast 'size' bytes stored at the
 // address indicated by chpl_private_broadcast_table[id] to all of the
@@ -337,9 +335,9 @@ void chpl_comm_broadcast_global_vars(int numGlobals);
 // of the generated C code may store globals at different addresses
 // (like Mac OS X).
 //
-// Note that this routine is currently used only during program
-// initialization, so it is arguably not as performance critical as
-// other more core communication routines (like puts, gets, executeOns).
+// This routine is used both during program initialization, for initial
+// values, and during execution to do things like enabling and disabling
+// memory tracking/reporting and comm diagnostics.
 //
 // The third argument, 'tid' (type ID) is intended for use when
 // targeting heterogeneous architectures where byte swapping may be
