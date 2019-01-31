@@ -1,0 +1,2 @@
+# on-stmts don't currently work from non tasking-layer threads #12226
+CHPL_NETWORK_ATOMICS==none
