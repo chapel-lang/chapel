@@ -1,7 +1,11 @@
+UserError.init
+UserError.init
+UserError.init
+UserError.init
 Caught some TaskErrors
-UserError.deinit(2)
-UserError.deinit(3)
-UserError.deinit(0)
+UserError.deinit
+UserError.deinit
+UserError.deinit
 Outer catch
-UserError.deinit(1)
+UserError.deinit
 End of main

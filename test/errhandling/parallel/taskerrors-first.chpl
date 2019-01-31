@@ -1,8 +1,13 @@
 module ReThrown {
 class UserError: Error {
   var x: int;
-  proc init(x: int) { this.x = x; }
-  proc deinit() { writeln("UserError.deinit(", this.x, ")"); }
+  proc init(x: int) {
+    this.x = x;
+    writeln("UserError.init");
+  }
+  proc deinit() {
+    writeln("UserError.deinit");
+  }
 }
 proc main() {
   try {
