@@ -5693,15 +5693,8 @@ static
 void get_buff_thread_info_destroy(void* p) {
   get_buff_thread_info_t* info = &get_buff_thread_info;
 
-  // flush any pending ops
-  spinlock_lock(&info->lock);
-  get_buff_thread_info_flush(info);
-  spinlock_unlock(&info->lock);
-  spinlock_destroy(&info->lock);
-
-  rwlock_writer_lock(&get_buff_global_info.lock);
-
   // remove the thread from the linked list
+  rwlock_writer_lock(&get_buff_global_info.lock);
   get_buff_thread_info_t* global_info = get_buff_global_info.list;
   if (info == global_info) {
     get_buff_global_info.list = info->next;
@@ -5714,8 +5707,13 @@ void get_buff_thread_info_destroy(void* p) {
       global_info = global_info->next;
     }
   }
-
   rwlock_unlock(&get_buff_global_info.lock);
+
+  // flush any pending ops
+  spinlock_lock(&info->lock);
+  get_buff_thread_info_flush(info);
+  spinlock_unlock(&info->lock);
+  spinlock_destroy(&info->lock);
 }
 
 static
@@ -7104,15 +7102,8 @@ static
 void amo_nf_buff_thread_info_destroy(void* p) {
   amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
 
-  // flush any pending ops
-  spinlock_lock(&info->lock);
-  amo_nf_buff_thread_info_flush(info);
-  spinlock_unlock(&info->lock);
-  spinlock_destroy(&info->lock);
-
-  rwlock_writer_lock(&amo_nf_buff_global_info.lock);
-
   // remove the thread from the linked list
+  rwlock_writer_lock(&amo_nf_buff_global_info.lock);
   amo_nf_buff_thread_info_t* global_info = amo_nf_buff_global_info.list;
   if (info == global_info) {
     amo_nf_buff_global_info.list = info->next;
@@ -7125,8 +7116,13 @@ void amo_nf_buff_thread_info_destroy(void* p) {
       global_info = global_info->next;
     }
   }
-
   rwlock_unlock(&amo_nf_buff_global_info.lock);
+
+  // flush any pending ops
+  spinlock_lock(&info->lock);
+  amo_nf_buff_thread_info_flush(info);
+  spinlock_unlock(&info->lock);
+  spinlock_destroy(&info->lock);
 }
 
 static
