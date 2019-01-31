@@ -3,10 +3,11 @@
 import os
 
 net_atomics = os.getenv('CHPL_NETWORK_ATOMICS', 'none')
+proc_atomics = os.getenv('CHPL_ATOMICS', 'none')
 
 iters      = 10000
 flushIters = 1000
-if net_atomics == 'ugni':
+if net_atomics == 'ugni' and proc_atomics == 'cstdlib':
   iters      = 1000000
   flushIters = 5000
 
