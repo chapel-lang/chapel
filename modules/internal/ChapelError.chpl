@@ -150,10 +150,14 @@ module ChapelError {
 
    */
   class TaskErrors : Error {
+
+    // This could use a regular array but uses a c_ptr
+    // instead to work around order-of-resolution issues
+    // with the parallel array initialization code.
     pragma "no doc"
-    var errorsDomain = {0..-1};
+    var nErrors: int;
     pragma "no doc"
-    var errorsArray: [errorsDomain] owned Error;
+    var errorsArray: c_ptr(owned Error);
 
     pragma "no doc"
     proc init(ref group:chpl_TaskErrors) {
@@ -180,11 +184,14 @@ module ChapelError {
 	cur = curnext;
       }
 
-      // Reallocate the array to the appropriate size
-      errorsDomain = {1..#n};
+      // Allocate the array to the appropriate size
+      // (Note, this assumes that owned Error can be zero'd
+      //  and that is valid initialization)
+      nErrors = n;
+      errorsArray = c_calloc(owned Error, n);
 
       // Gather the errors into errorsArray starting at index idx
-      var idx = errorsDomain.low;
+      var idx = 0;
       cur = head;
       while cur != nil {
 	var curnext = cur._next;
@@ -207,14 +214,26 @@ module ChapelError {
 
     /* Create a :class:`TaskErrors` containing only the passed error */
     proc init(err: unmanaged Error) {
-      errorsDomain = {1..1};
+      nErrors = 1;
+      errorsArray = c_calloc(owned Error, 1);
       this.complete();
       err._next = nil;
-      errorsArray[1].retain(err);
+      errorsArray[0].retain(err);
     }
 
     /* Create a :class:`TaskErrors` not containing any errors */
     proc init() {
+      nErrors = 0;
+      errorsArray = nil;
+    }
+
+    proc deinit() {
+      if errorsArray {
+        for i in 0..#nErrors {
+          errorsArray[i].clear();
+        }
+        c_free(errorsArray);
+      }
     }
 
     /* Iterate over the errors contained in this :class:`TaskErrors`.
@@ -228,31 +247,15 @@ module ChapelError {
            }
 
      */
-    // this and the following is meant to just "forward" to the array
     iter these() ref : owned Error {
-      for e in errorsArray do
-        yield e;
-    }
-    pragma "no doc"
-    iter these(param tag: iterKind) ref : owned Error
-      where tag == iterKind.leader {
-      for followThis in errorsArray.these(tag) do
-        yield followThis;
-    }
-    pragma "no doc"
-    iter these(param tag: iterKind, followThis) ref : owned Error
-      where tag == iterKind.follower {
-
-      for i in errorsArray.these(tag, followThis) do
-	yield i;
+      for i in 0..#nErrors do
+        yield errorsArray[i];
     }
 
     /* Returns the first non-nil error contained in this TaskErrors group */
     proc first() ref : owned Error {
-      var low = errorsDomain.low;
-      var high = errorsDomain.high;
-      var first = low;
-      for i in low..high {
+      var first = 0;
+      for i in 0..#nErrors {
 	if errorsArray[i] != nil {
           first = i;
         }
