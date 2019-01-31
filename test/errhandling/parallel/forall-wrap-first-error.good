@@ -1,0 +1,11 @@
+UserError.init
+UserError.init
+UserError.init
+UserError.init
+Caught some TaskErrors
+UserError.deinit
+UserError.deinit
+UserError.deinit
+Outer catch
+UserError.deinit
+End of main

@@ -150,64 +150,90 @@ module ChapelError {
 
    */
   class TaskErrors : Error {
+
+    // This could use a regular array but uses a c_ptr
+    // instead to work around order-of-resolution issues
+    // with the parallel array initialization code.
     pragma "no doc"
-    var _head: unmanaged Error = nil;
+    var nErrors: int;
+    pragma "no doc"
+    var errorsArray: c_ptr(owned Error);
 
     pragma "no doc"
     proc init(ref group:chpl_TaskErrors) {
-      var cur: unmanaged Error = group._head;
+      var head: unmanaged Error = group._head;
       group._head = nil;
-      _head = nil;
       this.complete();
 
-      // Flatten nested TaskErrors
+      var cur: unmanaged Error;
 
+      // Count the number of errors, including from nested errors
+      var n = 0;
+      cur = head;
       while cur != nil {
-        // remove it from that list
         var curnext = cur._next;
-        cur._next = nil;
-
-        // Add head / errors in it to this list
         var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
         if asTaskErr == nil {
-          append(cur);
+          n += 1;
         } else {
-          // Remove & add errors in the sub-list
-          var sub: unmanaged Error = asTaskErr._head;
-          asTaskErr._head = nil;
-          while sub != nil {
-            // remove it from that list
-            var subnext = sub._next;
-            sub._next = nil;
-
-            // add it to this list
-            append(sub);
-
-            sub = subnext;
+          for e in asTaskErr {
+            if e != nil then
+              n += 1;
           }
-          delete asTaskErr;
+        }
+        cur = curnext;
+      }
+
+      // Allocate the array to the appropriate size
+      // (Note, this assumes that owned Error can be zero'd
+      //  and that is valid initialization)
+      nErrors = n;
+      errorsArray = c_calloc(owned Error, n);
+
+      // Gather the errors into errorsArray starting at index idx
+      var idx = 0;
+      cur = head;
+      while cur != nil {
+        var curnext = cur._next;
+        cur._next = nil; // remove from any lists
+        var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
+        if asTaskErr == nil {
+          errorsArray[idx].retain(cur);
+          idx += 1;
+        } else {
+          for e in asTaskErr {
+            if e != nil {
+              errorsArray[idx] = e;
+              idx += 1;
+            }
+          }
         }
         cur = curnext;
       }
     }
 
-    /*
-       append a single error to the group
-     */
-    proc append(err: unmanaged Error) {
-      var tmp = _head;
-      err._next = tmp;
-      _head = err;
-    }
-
     /* Create a :class:`TaskErrors` containing only the passed error */
     proc init(err: unmanaged Error) {
-      _head = err;
+      nErrors = 1;
+      errorsArray = c_calloc(owned Error, 1);
+      this.complete();
+      err._next = nil;
+      errorsArray[0].retain(err);
     }
 
     /* Create a :class:`TaskErrors` not containing any errors */
     proc init() {
-      _head = nil;
+      nErrors = 0;
+      errorsArray = nil;
+    }
+
+    proc deinit() {
+      if errorsArray {
+        for i in 0..#nErrors {
+          errorsArray[i].clear();
+        }
+        c_free(errorsArray);
+      }
     }
 
     /* Iterate over the errors contained in this :class:`TaskErrors`.
@@ -221,23 +247,21 @@ module ChapelError {
            }
 
      */
-    iter these() {
-      var e = _head;
-      while e != nil {
-        yield _to_unmanaged(e);
-        e = e._next;
-      }
+    iter these() ref : owned Error {
+      for i in 0..#nErrors do
+        yield errorsArray[i];
     }
 
-    pragma "no doc"
-    proc deinit() {
-      var e = _head;
-      var todelete: unmanaged Error;
-      while e != nil {
-        todelete = e;
-        e = e._next;
-        delete todelete;
+    /* Returns the first non-nil error contained in this TaskErrors group */
+    proc first() ref : owned Error {
+      var first = 0;
+      for i in 0..#nErrors {
+        if errorsArray[i] != nil {
+          first = i;
+          break;
+        }
       }
+      return errorsArray[first];
     }
 
     /*
@@ -252,8 +276,8 @@ module ChapelError {
 
       var minMsg:string;
       var maxMsg:string;
-      var first:unmanaged Error;
-      var last:unmanaged Error;
+      var first:borrowed Error;
+      var last:borrowed Error;
 
       for e in these() {
         if minMsg == "" || e.message() < minMsg then
@@ -296,7 +320,7 @@ module ChapelError {
        Iterate over those errors contained that are the passed type
        or a subclass of that type.
      */
-    iter filter(type t) where isSubtype(_to_borrowed(t),borrowed Error) {
+    iter filter(type t) where isSubtype(_to_borrowed(t), borrowed Error) {
       for e in these() {
         var tmp = _to_unmanaged(e):_to_unmanaged(t);
         if tmp then
