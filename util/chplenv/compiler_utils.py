@@ -2,6 +2,8 @@
 import os
 import re
 
+import chpl_compiler
+
 from collections import namedtuple
 
 from utils import error, memoize, run_command
@@ -19,6 +21,7 @@ def get_compiler_name(compiler):
         return 'icc'
     elif compiler == 'pgi':
         return 'pgcc'
+    # Note this would return 'other' for 'clang-included' in --llvm compiles
     return 'other'
 
 
@@ -57,8 +60,19 @@ def CompVersion(version_string):
 
 @memoize
 def compiler_is_prgenv(compiler_val):
-  return (compiler_val.startswith('cray-prgenv') or
-     os.environ.get('CHPL_ORIG_TARGET_COMPILER','').startswith('cray-prgenv'))
+  return compiler_val.startswith('cray-prgenv')
+
+
+@memoize
+def target_compiler_is_prgenv():
+    compiler_val = chpl_compiler.get('target')
+
+    # But for --llvm, look at the original target compiler
+    if compiler_val == 'clang-included':
+        compiler_val = chpl_compiler.get('target', llvm_mode="orig")
+
+    isprgenv = compiler_is_prgenv(compiler_val)
+    return isprgenv
 
 
 def strip_preprocessor_lines(lines):

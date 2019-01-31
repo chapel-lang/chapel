@@ -697,7 +697,7 @@ def set_up_environment():
         #   libnuma which is only available as a .so)
         # - massivethreads (because it depends on various .sos)
         darwin = tgt_platform == 'darwin'
-        prgenv = compiler_utils.compiler_is_prgenv(chpl_compiler.get('target'))
+        prgenv = compiler_utils.target_compiler_is_prgenv()
         cray_memkind = prgenv and 'CRAY_MEMKIND' in os.environ
         not_flat = chpl_locale_model.get() != 'flat'
         massivethreads = chpl_tasks.get() == 'massivethreads'
