@@ -256,7 +256,7 @@ void ForallStmt::setNotZippered() {
   fZippered = false;
 }
 
-// Return the enclosing forall statement for 'expr', or NULL if none.
+// Return the nearest enclosing forall statement for 'expr', or NULL if none.
 ForallStmt* enclosingForallStmt(Expr* expr) {
   for (Expr* curr = expr->parentExpr; curr; curr = curr->parentExpr)
     if (ForallStmt* fs = toForallStmt(curr))
@@ -264,42 +264,42 @@ ForallStmt* enclosingForallStmt(Expr* expr) {
   return NULL;
 }
 
-// Is 'expr' the DefExpr of an induction variable in some ForallStmt?
-bool isForallIterVarDef(Expr* expr) {
+// Return a ForallStmt* if 'expr' is the DefExpr of its induction variable.
+ForallStmt* isForallIterVarDef(Expr* expr) {
   if (expr->list != NULL)
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
       if (expr->list == &pfs->inductionVariables())
-        return true;
-  return false;
+        return pfs;
+  return NULL;
 }
 
-// Is 'expr' an iterable-expression for some ForallStmt?
-bool isForallIterExpr(Expr* expr) {
+// Return a ForallStmt* if 'expr' is its iterable-expression.
+ForallStmt* isForallIterExpr(Expr* expr) {
   if (expr->list != NULL)
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
       if (expr->list == &pfs->iteratedExpressions())
-        return true;
-  return false;
+        return pfs;
+  return NULL;
 }
 
-// Is 'expr' the fs->loopBody() for some 'fs' ?
-bool isForallLoopBody(Expr* expr) {
+// Return a ForallStmt* if 'expr' is its loopBody.
+ForallStmt* isForallLoopBody(Expr* expr) {
   if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
     if (expr == pfs->loopBody())
-      return true;
-  return false;
+      return pfs;
+  return NULL;
 }
 
-// Is 'expr' one of fs->fRecIter* for some 'fs' ?
-bool isForallRecIterHelper(Expr* expr) {
+// Return a ForallStmt* if 'expr' is one of its fRecIter* helpers.
+ForallStmt* isForallRecIterHelper(Expr* expr) {
   if (expr->list == NULL)
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
       if (expr == pfs->fRecIterIRdef ||
           expr == pfs->fRecIterICdef ||
           expr == pfs->fRecIterGetIterator ||
           expr == pfs->fRecIterFreeIterator)
-        return true;
-  return false;
+        return pfs;
+  return NULL;
 }
 
 // Return the index variable of the parallel loop.

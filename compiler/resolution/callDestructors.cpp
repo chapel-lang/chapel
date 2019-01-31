@@ -74,20 +74,13 @@ public:
 
 private:
   typedef std::map<int, ReturnByRef*> RefMap;
-  typedef std::set<FnSymbol*>         FnSet;
-  typedef enum {
-    TF_NONE,  // do not transform
-    TF_FULL,  // transform fully
-    TF_ASGN   // run only updateAssignments()
-  } TransformationKind;  // how to transform a function
 
-  static void             returnByRefCollectCalls(RefMap& calls, FnSet& fns);
-  static TransformationKind transformableFunctionKind(FnSymbol* fn);
+  static void             returnByRefCollectCalls(RefMap& calls);
+  static bool             isTransformableFunction(FnSymbol* fn);
   static void             transformFunction(FnSymbol* fn);
   static ArgSymbol*       addFormal(FnSymbol* fn);
   static void             insertAssignmentToFormal(FnSymbol*  fn,
                                                    ArgSymbol* formal);
-  static void             updateAssignments(FnSymbol* fn);
   static void             updateAssignmentsFromRefArgToValue(FnSymbol* fn);
   static void             updateAssignmentsFromRefTypeToValue(FnSymbol* fn);
   static void             updateAssignmentsFromModuleLevelValue(FnSymbol* fn);
@@ -115,15 +108,11 @@ void ReturnByRef::apply()
 {
   RefMap           map;
   RefMap::iterator iter;
-  FnSet            asgnUpdates;
 
-  returnByRefCollectCalls(map, asgnUpdates);
+  returnByRefCollectCalls(map);
 
   for (iter = map.begin(); iter != map.end(); iter++)
     iter->second->transform();
-
-  for_set(FnSymbol, fn, asgnUpdates)
-    updateAssignments(fn);
 
   for (int i = 0; i < virtualMethodTable.n; i++)
   {
@@ -134,12 +123,9 @@ void ReturnByRef::apply()
       for (int j = 0; j < numFns; j++)
       {
         FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
-        TransformationKind tfKind = transformableFunctionKind(fn);
 
-        if (tfKind == TF_FULL)
+        if (isTransformableFunction(fn))
           transformFunction(fn);
-        else if (tfKind == TF_ASGN)
-          updateAssignments(fn);
       }
     }
   }
@@ -150,7 +136,7 @@ void ReturnByRef::apply()
 // and all calls to these functions.
 //
 
-void ReturnByRef::returnByRefCollectCalls(RefMap& calls, FnSet& fns)
+void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
 {
   RefMap::iterator iter;
 
@@ -165,9 +151,7 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls, FnSet& fns)
       // The common case is a user-level call to a resolved function
       // Also handle the PRIMOP for a virtual method call
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
-       TransformationKind tfKind = transformableFunctionKind(fn);
-       if (tfKind == TF_FULL)
-       {
+       if (isTransformableFunction(fn)) {
         RefMap::iterator iter = calls.find(fn->id);
         ReturnByRef*     info = NULL;
 
@@ -183,20 +167,14 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls, FnSet& fns)
 
         info->addCall(call);
        }
-       else if (tfKind == TF_ASGN)
-       {
-         fns.insert(fn);
-       }
       }
     }
   }
 }
 
-ReturnByRef::TransformationKind
-ReturnByRef::transformableFunctionKind(FnSymbol* fn)
+bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
 {
   bool retval = false;
-  bool asgn   = false;
 
   if (AggregateType* type = toAggregateType(fn->retType))
   {
@@ -232,12 +210,7 @@ ReturnByRef::transformableFunctionKind(FnSymbol* fn)
       retval = true;
   }
 
-  if (asgn)
-    return TF_ASGN;
-  else if (retval)
-    return TF_FULL;
-  else
-    return TF_NONE;
+  return retval;
 }
 
 void ReturnByRef::transformFunction(FnSymbol* fn)
@@ -251,7 +224,11 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
   if (fn->hasFlag(FLAG_ITERATOR_FN) == false && formal != NULL) {
     insertAssignmentToFormal(fn, formal);
   }
-  updateAssignments(fn);
+
+  updateAssignmentsFromRefArgToValue(fn);
+  updateAssignmentsFromRefTypeToValue(fn);
+  updateAssignmentsFromModuleLevelValue(fn);
+
   if (formal != NULL) {
     updateReturnStatement(fn);
     updateReturnType(fn);
@@ -311,12 +288,6 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
   // if that turns out to be necessary. It might well be
   // necessary in order to return array slices by value.
   returnOrFirstAutoDestroy->insertBefore(moveExpr);
-}
-
-void ReturnByRef::updateAssignments(FnSymbol* fn) {
-  updateAssignmentsFromRefArgToValue(fn);
-  updateAssignmentsFromRefTypeToValue(fn);
-  updateAssignmentsFromModuleLevelValue(fn);
 }
 
 //
@@ -539,7 +510,8 @@ void ReturnByRef::transform()
     CallExpr* call   = mCalls[i];
     Expr*     parent = call->parentExpr;
 
-    if (CallExpr* parentCall = toCallExpr(parent)) {
+    if (CallExpr* parentCall = toCallExpr(parent))
+    {
       if (parentCall->isPrimitive(PRIM_MOVE)   ||
           parentCall->isPrimitive(PRIM_ASSIGN) )
         transformMove(parentCall);
