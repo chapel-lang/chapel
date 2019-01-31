@@ -6241,8 +6241,6 @@ void resolveBlockStmt(BlockStmt* blockStmt) {
 
 static bool        isParamResolved(FnSymbol* fn, Expr* expr);
 
-static ForallStmt* toForallForIteratedExpr(SymExpr* expr);
-
 static Expr*       resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr);
 
 static CallExpr*   toPrimToLeaderCall(Expr* expr);
@@ -6306,7 +6304,7 @@ Expr* resolveExpr(Expr* expr) {
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 
-    if (ForallStmt* pfs = toForallForIteratedExpr(se)) {
+    if (ForallStmt* pfs = isForallIterExpr(se)) {
       CallExpr* call = resolveForallHeader(pfs, se);
 
       if (tryFailure == false) {
@@ -6379,13 +6377,6 @@ static bool isParamResolved(FnSymbol* fn, Expr* expr) {
   }
 
   return retval;
-}
-
-static ForallStmt* toForallForIteratedExpr(SymExpr* expr) {
-  if (isForallIterExpr(expr))
-    return toForallStmt(expr->parentExpr);
-  else
-    return NULL;
 }
 
 static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {

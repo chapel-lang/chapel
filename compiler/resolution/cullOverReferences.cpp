@@ -779,8 +779,8 @@ void cullOverReferences() {
         ForLoop* followerForLoop = NULL;
         std::vector<IteratorDetails> detailsVector;
 
-        if (isForallIterExpr(call)) {
-          ForallStmt* pfs = toForallStmt(call->parentExpr);
+        if (ForallStmt* pfs = isForallIterExpr(call)) {
+
           gatherLoopDetails(pfs, isForall, leaderDetails,
                             followerForLoop, detailsVector);
           foundLoop = true;

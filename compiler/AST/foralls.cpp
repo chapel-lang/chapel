@@ -657,7 +657,7 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE,
 {
   CallExpr* iterCall = NULL;
 
-  if (origSE->symbol()->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+  if (isIteratorRecord(origSE->symbol())) {
     // Our iterable expression is an iterator call.
 
     if (ArgSymbol* origArg = toArgSymbol(origSE->symbol())) {
@@ -710,7 +710,7 @@ static void checkForExplicitTagArgs(CallExpr* iterCall) {
   int cnt = 0;
   for_actuals(actual, iterCall) {
     ++cnt;
-    if ((actual->qualType().type()->getValType() == gStandaloneTag->type) ||
+    if ((actual->getValType() == gStandaloneTag->type) ||
         (isNamedExpr(actual) && toNamedExpr(actual)->name == astrTag)
     ) {
       USR_FATAL_CONT(iterCall, "user invocation of a parallel iterator should not supply tag arguments -- they are added implicitly by the compiler");

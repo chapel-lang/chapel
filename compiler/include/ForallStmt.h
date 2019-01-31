@@ -159,11 +159,11 @@ inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head;  }
 
 /// helpers ///
 
-bool        isForallIterVarDef(Expr* expr);
-bool        isForallIterExpr(Expr* expr);
-bool        isForallRecIterHelper(Expr* expr);
-bool        isForallLoopBody(Expr* expr);
 ForallStmt* enclosingForallStmt(Expr* expr);
+ForallStmt* isForallIterVarDef(Expr* expr);
+ForallStmt* isForallIterExpr(Expr* expr);
+ForallStmt* isForallRecIterHelper(Expr* expr);
+ForallStmt* isForallLoopBody(Expr* expr);
 VarSymbol*  parIdxVar(ForallStmt* fs);
 
 /// done ///
