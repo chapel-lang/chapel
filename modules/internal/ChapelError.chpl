@@ -258,6 +258,7 @@ module ChapelError {
       for i in 0..#nErrors {
         if errorsArray[i] != nil {
           first = i;
+          break;
         }
       }
       return errorsArray[first];
