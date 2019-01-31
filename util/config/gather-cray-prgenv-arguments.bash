@@ -46,7 +46,14 @@ export PE_PKGCONFIG_PRODUCTS="PE_CHAPEL:$PE_PKGCONFIG_PRODUCTS"
 export PE_CHAPEL_MODULE_NAME="chapel"
 export PE_CHAPEL_PKGCONFIG_LIBS=`$CHPL_HOME/util/config/gather-pe-chapel-pkgconfig-libs.bash "$2" "$3" "$4"`
 
-COMMANDS=`cc -craype-verbose -### 2>/dev/null`
+# Adding -lhugetlbfs gets the PrgEnv driver to add the appropriate
+# linker option for static linking with it. While it's not always
+# used with Chapel programs, it is expected to be the common case
+# when running on a Cray, so just always linking it is acceptable.
+#
+# Note that the GCC option -### causes the compiler to not actually
+# compile anything but just print out what it would do to stderr.
+COMMANDS=`cc -craype-verbose -### -lhugetlbfs 2>/dev/null`
 
   for arg in $COMMANDS
   do
