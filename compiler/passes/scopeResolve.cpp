@@ -1005,17 +1005,19 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
   SET_LINENO(usymExpr);
 
   const char* name = usymExpr->unresolved;
+  int nSymbols = 0;
 
-  if (name == astrSdot || !usymExpr->inTree()) {
+  if (name == astrSdot || !usymExpr->inTree())
+    return;
 
-  } else if (Symbol* sym = lookup(name, usymExpr)) {
+  Symbol* sym = lookupAndCount(name, usymExpr, nSymbols);
+  if (sym != NULL) {
     resolveUnresolvedSymExpr(usymExpr, sym);
-
   } else {
     updateMethod(usymExpr);
 
 #ifdef HAVE_LLVM
-    if (gExternBlockStmts.size() > 0) {
+    if (nSymbols == 0 && gExternBlockStmts.size() > 0) {
       Symbol* got = tryCResolve(usymExpr, name);
       if (got != NULL)
         resolveUnresolvedSymExpr(usymExpr, got);
@@ -1632,11 +1634,16 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym)
 
 // Given a name and a calling context, determine the symbol referred to
 // by that name in the context of that call
-Symbol* lookup(const char* name, BaseAST* context) {
+Symbol* lookupAndCount(const char*           name,
+                       BaseAST*              context,
+                       int&                  nSymbolsFound) {
+
   std::vector<Symbol*> symbols;
   Symbol*              retval = NULL;
 
   lookup(name, context, symbols);
+
+  nSymbolsFound = symbols.size();
 
   if (symbols.size() == 0) {
     retval = NULL;
@@ -1662,6 +1669,11 @@ Symbol* lookup(const char* name, BaseAST* context) {
   }
 
   return retval;
+}
+
+Symbol* lookup(const char* name, BaseAST* context) {
+  int nSymbolsFound = 0;
+  return lookupAndCount(name, context, nSymbolsFound);
 }
 
 void lookup(const char*           name,

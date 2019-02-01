@@ -515,6 +515,8 @@ Symbol* tryCResolveLocally(ModuleSymbol* module, const char* name) {
     // Try to resolve it again.
     return lookup(name, module->block);
   }
+
+  return NULL;
 }
 
 Symbol* tryCResolve(BaseAST* context, const char* name) {
@@ -524,8 +526,9 @@ Symbol* tryCResolve(BaseAST* context, const char* name) {
 
   // Try looking up the symbol with scope resolve's tables.
   // This covers the case of finding a symbol already converted.
-  Symbol* got = lookup(name, context);
-  if (got != NULL)
+  int nSymbolsFound = 0;
+  Symbol* got = lookupAndCount(name, context, nSymbolsFound);
+  if (nSymbolsFound != 0)
     return got;
 
   if (externC == true) {
