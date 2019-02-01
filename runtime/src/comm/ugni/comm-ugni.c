@@ -735,9 +735,9 @@ static __thread comm_dom_t* cd = NULL;
 static __thread int cd_idx = -1;
 
 #define INIT_CD_BUSY(cd)      atomic_init_bool(&(cd)->busy, false)
-#define CHECK_CD_BUSY(cd)     atomic_load_bool(&(cd)->busy)
-#define ACQUIRE_CD_MAYBE(cd)  (atomic_exchange_bool(&(cd)->busy, true) == false)
-#define RELEASE_CD(cd)        atomic_store_bool(&(cd)->busy, false)
+#define CHECK_CD_BUSY(cd)     atomic_load_explicit_bool(&(cd)->busy, memory_order_acquire)
+#define ACQUIRE_CD_MAYBE(cd)  (!atomic_exchange_explicit_bool(&(cd)->busy, true, memory_order_acquire))
+#define RELEASE_CD(cd)        atomic_store_explicit_bool(&(cd)->busy, false, memory_order_release)
 
 
 //
