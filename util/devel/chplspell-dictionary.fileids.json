@@ -15,11 +15,17 @@
   "07648a72-5b7a-11e8-af7e-10ddb1d4c3d5": [
     "compiler/AST/AggregateType.cpp"
   ],
+  "d774177c-244d-11e9-b712-843835579daa": [
+    "compiler/AST/AstDump.cpp"
+  ],
   "02edde22-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/AstDumpToHtml.cpp"
   ],
   "3f2e197e-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/AstToText.cpp"
+  ],
+  "fb18cb3c-244d-11e9-b712-843835579daa": [
+    "compiler/AST/FnSymbol.cpp"
   ],
   "641fb78e-4110-11e8-af7e-10ddb1d4c3d5": [
     "compiler/AST/ForallStmt.cpp"
@@ -589,6 +595,9 @@
   "011204e0-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-bitops.h"
   ],
+  "af0a00d4-244e-11e9-b712-843835579daa": [
+    "runtime/include/chpl-comm-diags.h"
+  ],
   "1ae55fde-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-wide-ptr-fns.h"
   ],
@@ -638,6 +647,9 @@
   ],
   "b7c60ac2-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/mpirun/launch-mpirun.c"
+  ],
+  "b5c2175e-244e-11e9-b712-843835579daa": [
+    "runtime/src/launch/mpirun4ofi/launch-mpirun4ofi.c"
   ],
   "af6e03d4-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/pbs-aprun/launch-pbs-aprun.c"
