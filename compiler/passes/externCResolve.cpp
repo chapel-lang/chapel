@@ -332,10 +332,6 @@ static const char* convertTypedef(ModuleSymbol*           module,
   const char* typedef_name = astr(tdn->getNameAsString().c_str());
   const clang::Type* contents_type = tdn->getUnderlyingType().getTypePtr();
 
-  // Don't convert it if it's already converted
-  if (lookup(typedef_name, module->block))
-    return typedef_name;
-
   if (contents_type->isStructureType()) {
     clang::RecordDecl *rd = contents_type->getAsStructureType()->getDecl();
     const char* struct_name = astr(rd->getNameAsString().c_str());
@@ -358,18 +354,24 @@ static const char* convertTypedef(ModuleSymbol*           module,
   }
 
   if( do_typedef ) {
-    //emulate chapel's type foo = blarg; behavior
+    // Don't convert it if it's already converted
+    if (lookup(typedef_name, module->block))
+      return typedef_name;
+
+    // Create a a DefExpr without the initializing expression
+    // (we'll fill that in later) to allow for recursive uses of types.
     VarSymbol* v = new VarSymbol(typedef_name);
     v->addFlag(FLAG_TYPE_VARIABLE);
+    v->addFlag(FLAG_EXTERN);
+    Expr* dummyInitExpr = new CallExpr(PRIM_NOOP);
+    DefExpr* def = new DefExpr(v, dummyInitExpr, NULL);
 
-    DefExpr* type_expr = new DefExpr(v,
-                                     convertToChplType(module,
-                                                       contents_type,
-                                                       typedef_name),
-                                     NULL);
+    // Add the def before converting the type do base it on
+    addCDef(module, def);
 
-    BlockStmt* typeBlock = new BlockStmt(type_expr, BLOCK_TYPE);
-    addCDefs(module, convertTypesToExtern(typeBlock));
+    // Determine the type to base it on
+    Expr* initExpr = convertToChplType(module, contents_type, typedef_name);
+    dummyInitExpr->replace(initExpr);
   }
 
   return typedef_name;
