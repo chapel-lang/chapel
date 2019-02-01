@@ -829,6 +829,12 @@ module ChapelDistribution {
     proc deinit() {
       // this is a bug workaround
     }
+    override proc decEltCountsIfNeeded() {
+      if _decEltRefCounts {
+        // unlink domain referred to by eltType
+        chpl_decRefCountsForDomainsInArrayEltTypes(_to_unmanaged(this), eltType);
+      }
+    }
   }
 
   /*
