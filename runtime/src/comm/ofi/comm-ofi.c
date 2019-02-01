@@ -80,6 +80,18 @@ static struct fid_cq* ofi_rxCQ;         // receive endpoint CQ
 static struct fid_av* ofi_av;           // address vector, table style
 static fi_addr_t* ofi_rxAddrs;          // remote receive addrs
 
+//
+// We direct RMA traffic and AM traffic to different endpoints so we can
+// spread the progress load across all the threads when we're doing
+// manual progress.
+//
+static struct fid_ep* ofi_rxEpRma;      // RMA/AMO target endpoint
+static struct fid_cntr* ofi_rxCntrRma;  // RMA target endpoint counter
+static struct fid_av* ofi_avRma;        // address vector for RMA
+static fi_addr_t* ofi_rxAddrsRma;       // remote RMA addresses
+static pthread_mutex_t rxEpRmaLock      // lock for RMA endpoint; it's shared
+                       = PTHREAD_MUTEX_INITIALIZER;
+
 static int txCQSize;                    // txCQ size
 
 struct perTxCtxInfo_t {
@@ -283,8 +295,15 @@ void init_ofiFabricDomain(void) {
   hints->ep_attr->type = FI_EP_RDM;
 
   hints->domain_attr->threading = FI_THREAD_UNSPEC;
-  hints->domain_attr->control_progress = FI_PROGRESS_MANUAL/*FI_PROGRESS_AUTO*/;
-  hints->domain_attr->data_progress = FI_PROGRESS_MANUAL/*FI_PROGRESS_AUTO*/;
+
+  chpl_bool autoProgress = (strcmp(provider, "sockets") == 0);
+  if (DBG_TEST_MASK(DBG_CFG))
+    autoProgress = chpl_env_rt_get_bool("COMM_OFI_AUTO_PROGRESS",
+                                        autoProgress);
+  const int prg = autoProgress ? FI_PROGRESS_AUTO : FI_PROGRESS_MANUAL;
+  hints->domain_attr->control_progress = prg;
+  hints->domain_attr->data_progress = prg;
+
   hints->domain_attr->av_type = FI_AV_TABLE;
   hints->domain_attr->mr_mode = ((strcmp(provider, "gni") == 0)
                                  ? FI_MR_BASIC
@@ -369,6 +388,7 @@ void init_ofiFabricDomain(void) {
   ofi_avAttr.rx_ctx_bits = 0;
 
   OFI_CHK(fi_av_open(ofi_domain, &ofi_avAttr, &ofi_av, NULL));
+  OFI_CHK(fi_av_open(ofi_domain, &ofi_avAttr, &ofi_avRma, NULL));
 }
 
 
@@ -447,6 +467,16 @@ void init_ofiEp(void) {
   OFI_CHK(fi_cq_open(ofi_domain, &rxCqAttr, &ofi_rxCQ, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
+
+  struct fi_cntr_attr rxCntrRmaAttr = { 0 };
+  rxCntrRmaAttr.events = FI_CNTR_EVENTS_COMP;
+  rxCntrRmaAttr.wait_obj = FI_WAIT_NONE;
+
+  OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
+  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_avRma->fid, 0));
+  OFI_CHK(fi_cntr_open(ofi_domain, &rxCntrRmaAttr, &ofi_rxCntrRma, NULL));
+  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCntrRma->fid, FI_RECV));
+  OFI_CHK(fi_enable(ofi_rxEpRma));
 }
 
 
@@ -589,6 +619,24 @@ void init_ofiExchangeAvInfo(void) {
     }
     DBG_PRINTF(DBG_CFGAV, "====================");
   }
+
+  void* my_addrRma;
+  void* addrsRma;
+
+  my_addr_len = 0;
+  CHK_TRUE(fi_getname(&ofi_rxEpRma->fid, NULL, &my_addr_len) == -FI_ETOOSMALL);
+  CHPL_CALLOC_SZ(my_addrRma, my_addr_len, 1);
+  OFI_CHK(fi_getname(&ofi_rxEpRma->fid, my_addrRma, &my_addr_len));
+  CHPL_CALLOC_SZ(addrsRma, chpl_numNodes, my_addr_len);
+  chpl_comm_ofi_oob_allgather(my_addrRma, addrsRma, my_addr_len);
+
+  CHPL_CALLOC(ofi_rxAddrsRma, chpl_numNodes);
+  CHK_TRUE(fi_av_insert(ofi_avRma, addrsRma, chpl_numNodes, ofi_rxAddrsRma, 0,
+                        NULL)
+           == chpl_numNodes);
+
+  CHPL_FREE(my_addrRma);
+  CHPL_FREE(addrsRma);
 }
 
 
@@ -791,10 +839,13 @@ void fini_ofi(void) {
 
   CHPL_FREE(amLZs);
 
+  CHPL_FREE(ofi_rxAddrsRma);
   CHPL_FREE(ofi_rxAddrs);
 
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
+  OFI_CHK(fi_close(&ofi_rxEpRma->fid));
+  OFI_CHK(fi_close(&ofi_rxCntrRma->fid));
 
   for (int i = 0; i < tciTabLen; i++) {
     OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
@@ -804,6 +855,7 @@ void fini_ofi(void) {
   }
 
   OFI_CHK(fi_close(&ofi_txEp->fid));
+  OFI_CHK(fi_close(&ofi_avRma->fid));
   OFI_CHK(fi_close(&ofi_av->fid));
   OFI_CHK(fi_close(&ofi_domain->fid));
   OFI_CHK(fi_close(&ofi_fabric->fid));
@@ -1140,9 +1192,23 @@ int chpl_comm_numPollingTasks(void) {
   return 1;
 }
 
-void chpl_comm_make_progress(void) { }
+
+inline
+void chpl_comm_make_progress(void) {
+  if (ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
+    const int lockRet = pthread_mutex_trylock(&rxEpRmaLock);
+    if (lockRet == 0) {
+      (void) fi_cntr_read(ofi_rxCntrRma);  // ensure progress
+      PTHREAD_CHK(pthread_mutex_unlock(&rxEpRmaLock));
+    } else {
+      CHK_TRUE(lockRet == EBUSY);
+    }
+  }
+}
+
 
 void chpl_comm_task_end(void) { }
+
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
@@ -1386,8 +1452,10 @@ void amRequestCommon(c_nodeid_t node,
     //
     DBG_PRINTF(DBG_AM | DBG_AMSEND,
                "waiting for done indication in %p", pDone);
-    while (!*(volatile chpl_comm_amDone_t*) pDone)
+    while (!*(volatile chpl_comm_amDone_t*) pDone) {
       local_yield();
+      chpl_comm_make_progress();
+    }
     DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw done indication in %p", pDone);
     if (pDone != &myDone)
       freeBounceBuf(pDone);
@@ -1485,6 +1553,19 @@ void amHandler(void* argNil) {
     if (count > 0) {
       DBG_PRINTF(DBG_ACK, "tx ack counter %d", count);
       tcip->numTxsOut -= count;
+    }
+
+    //
+    // Backstop the worker threads which have primary responsibility for
+    // progress when we're doing manual.  This covers cases such as when
+    // what we're progressing is an AMO from a remote node to us, but no
+    // worker thread on our side is communicating and thus doing
+    // progress.  The AM handler is the only candidate in this case.
+    //
+    {
+      static __thread int progressInterval;
+      if ((++progressInterval & 0xff) == 0)
+        chpl_comm_make_progress();
     }
   }
 
@@ -1733,7 +1814,10 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
         CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
         do {
           const int count = fi_cntr_read(tcip->txCntr);
-          if (count > 0) {
+          if (count == 0) {
+            sched_yield();
+            chpl_comm_make_progress();
+          } else {
             DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
             tcip->numTxsOut -= count;
           }
@@ -2045,7 +2129,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64,
                (int) node, raddr, myAddr, size, mrKey);
     OFI_CHK(fi_write(tcip->txCtx, myAddr, size,
-                     mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+                     mrDesc, ofi_rxAddrsRma[node], (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
 
     if (tcip->txCtxHasCQ) {
@@ -2102,7 +2186,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
                "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64,
                myAddr, (int) node, raddr, size, mrKey);
     OFI_CHK(fi_read(tcip->txCtx, myAddr, size,
-                    mrDesc, ofi_rxAddrs[node], (uint64_t) raddr, mrKey, 0));
+                    mrDesc, ofi_rxAddrsRma[node], (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
 
     CHK_TRUE(tcip->txCtxHasCQ);
@@ -2167,17 +2251,17 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
     OFI_CHK(fi_compare_atomic(tcip->txCtx,
                               myOpnd2, 1, mrDescOpnd2, myOpnd1, mrDescOpnd1,
                               myRes, mrDescRes,
-                              ofi_rxAddrs[node], (uint64_t) object, mrKey,
+                              ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                               ofiType, ofiOp, NULL));
   } else if (result != NULL) {
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
                             myOpnd1, 1, mrDescOpnd1, myRes, mrDescRes,
-                            ofi_rxAddrs[node], (uint64_t) object, mrKey,
+                            ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                             ofiType, ofiOp, NULL));
   } else {
     OFI_CHK(fi_atomic(tcip->txCtx,
                       myOpnd1, 1, mrDescOpnd1,
-                      ofi_rxAddrs[node], (uint64_t) object, mrKey,
+                      ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                       ofiType, ofiOp, NULL));
   }
 
@@ -2241,7 +2325,10 @@ void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut, uint64_t xpctFlags) {
                          err.err, bufProv);
       }
 
-      if (ret > 0) {
+      if (ret <= 0) {
+        sched_yield();
+        chpl_comm_make_progress();
+      } else {
         const int numEvents = ret;
         numRetired += numEvents;
         for (int i = 0; i < numEvents; i++) {
