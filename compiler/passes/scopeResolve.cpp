@@ -87,6 +87,9 @@ static void          resolveUnresolvedSymExprs();
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
 
+static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
+                                              Symbol* toSymbol);
+
 static void          setupShadowVars();
 
 static void          resolveEnumeratedTypes();
@@ -737,14 +740,8 @@ static void resolveUnresolvedSymExprs() {
   // Note that the extern C resolution might add new UnresolvedSymExprs, and it
   // might do that within resolveModuleCall, so we try resolving unresolved
   // symbols a second time as the extern C block support might have added some.
-  // Alternatives include:
-  //  - have the extern C wrapper-builder directly call resolveUnresolved
-  //      (but that complicates the way scopeResolve works now)
-  //  - import all C symbols at an earlier point
-  //      (but that might add lots of unused garbage to the Chapel AST
-  //       for e.g. #include <stdio.h>; and it might cause the C-to-Chapel
-  //       translator to need to handle more platform/compiler-specific stuff,
-  //       and it might lead to extra naming conflicts).
+  //
+  // TODO: have the externCresolve call resolveUnresolved directly
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     // Only try resolving symbols that are new after last attempt.
     if (i >= maxResolved) {
@@ -1012,71 +1009,76 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
   if (name == astrSdot || !usymExpr->inTree()) {
 
   } else if (Symbol* sym = lookup(name, usymExpr)) {
-    FnSymbol* fn = toFnSymbol(sym);
-
-    if (fn == NULL) {
-      // This deprecation should be removed in 1.19
-      if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-        if (0 == strcmp(name, "Owned"))
-          USR_WARN(usymExpr, "Owned is deprecated, use owned instead");
-        if (0 == strcmp(name, "Shared"))
-          USR_WARN(usymExpr, "Shared is deprecated, use shared instead");
-      }
-
-      SymExpr* symExpr = new SymExpr(sym);
-
-      usymExpr->replace(symExpr);
-
-      if (fWarnUnstable || fDefaultUnmanaged)
-        handleUnstableClassType(symExpr);
-
-      updateMethod(usymExpr, sym, symExpr);
-
-    // sjd: stopgap to avoid shadowing variables or functions by methods
-    } else if (fn->isMethod() == true) {
-      updateMethod(usymExpr);
-
-    // handle function call without parentheses
-    } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
-      checkIdInsideWithClause(usymExpr, usymExpr);
-      usymExpr->replace(new CallExpr(fn));
-
-    } else if (Expr* parent = usymExpr->parentExpr) {
-      CallExpr* call = toCallExpr(parent);
-
-      if (call == NULL || call->baseExpr != usymExpr) {
-        CallExpr* primFn = NULL;
-
-        // Wrap the FN in the appropriate way
-        if (call != NULL && call->isNamed("c_ptrTo") == true) {
-          primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_C);
-        } else {
-          primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL);
-        }
-
-        usymExpr->replace(primFn);
-
-        primFn->insertAtTail(usymExpr);
-
-      } else {
-        updateMethod(usymExpr, sym);
-      }
-
-    } else {
-      updateMethod(usymExpr, sym);
-    }
+    resolveUnresolvedSymExpr(usymExpr, sym);
 
   } else {
     updateMethod(usymExpr);
 
 #ifdef HAVE_LLVM
     if (gExternBlockStmts.size() > 0) {
-      Symbol* got = tryCResolve(usymExpr->getModule(), name);
+      Symbol* got = tryCResolve(usymExpr, name);
       if (got != NULL)
-        // Try resolution again since the symbol should exist now
-        resolveUnresolvedSymExpr(usymExpr);
+        resolveUnresolvedSymExpr(usymExpr, got);
     }
 #endif
+  }
+}
+
+static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
+                                     Symbol* sym) {
+  const char* name = usymExpr->unresolved;
+  FnSymbol* fn = toFnSymbol(sym);
+
+  if (fn == NULL) {
+    // This deprecation should be removed in 1.19
+    if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (0 == strcmp(name, "Owned"))
+        USR_WARN(usymExpr, "Owned is deprecated, use owned instead");
+      if (0 == strcmp(name, "Shared"))
+        USR_WARN(usymExpr, "Shared is deprecated, use shared instead");
+    }
+
+    SymExpr* symExpr = new SymExpr(sym);
+
+    usymExpr->replace(symExpr);
+
+    if (fWarnUnstable || fDefaultUnmanaged)
+      handleUnstableClassType(symExpr);
+
+    updateMethod(usymExpr, sym, symExpr);
+
+  // sjd: stopgap to avoid shadowing variables or functions by methods
+  } else if (fn->isMethod() == true) {
+    updateMethod(usymExpr);
+
+  // handle function call without parentheses
+  } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
+    checkIdInsideWithClause(usymExpr, usymExpr);
+    usymExpr->replace(new CallExpr(fn));
+
+  } else if (Expr* parent = usymExpr->parentExpr) {
+    CallExpr* call = toCallExpr(parent);
+
+    if (call == NULL || call->baseExpr != usymExpr) {
+      CallExpr* primFn = NULL;
+
+      // Wrap the FN in the appropriate way
+      if (call != NULL && call->isNamed("c_ptrTo") == true) {
+        primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_C);
+      } else {
+        primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL);
+      }
+
+      usymExpr->replace(primFn);
+
+      primFn->insertAtTail(usymExpr);
+
+    } else {
+      updateMethod(usymExpr, sym);
+    }
+
+  } else {
+    updateMethod(usymExpr, sym);
   }
 }
 
@@ -1448,7 +1450,17 @@ static void resolveModuleCall(CallExpr* call) {
 
         currModule->moduleUseAdd(mod);
 
-        if (Symbol* sym  = scope->lookupNameLocally(mbrName)) {
+        // First, try regular scope resolution
+        Symbol* sym = scope->lookupNameLocally(mbrName);
+
+        // Failing that, try looking in an extern block.
+#ifdef HAVE_LLVM
+        if (sym == NULL && gExternBlockStmts.size() > 0) {
+          sym = tryCResolveLocally(mod, mbrName);
+        }
+#endif
+
+        if (sym != NULL) {
           if (sym->isVisible(call) == true) {
             if (FnSymbol* fn = toFnSymbol(sym)) {
               if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
@@ -1480,11 +1492,6 @@ static void resolveModuleCall(CallExpr* call) {
                       mbrName,
                       mod->name);
           }
-
-#ifdef HAVE_LLVM
-        } else if (tryCResolve(currModule, mbrName) != NULL) {
-          resolveModuleCall(call);
-#endif
 
         } else {
           USR_FATAL_CONT(call,
@@ -1691,9 +1698,9 @@ static void lookup(const char*           name,
     }
 
     if (scope->getModule()->block == scope) {
-      if (getScope(scope) != NULL) {
-        lookup(name, context, getScope(scope), visited, symbols);
-      }
+      BaseAST* outerScope = getScope(scope);
+      if (outerScope != NULL)
+        lookup(name, context, outerScope, visited, symbols);
 
     } else {
       // Otherwise, look in the next scope up.

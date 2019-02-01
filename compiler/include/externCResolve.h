@@ -23,6 +23,7 @@
 #ifdef HAVE_LLVM
 
 class BaseAST;
+class ModuleSymbol;
 class Symbol;
 
 // Return a symbol for the extern decl for a C declaration named cname
@@ -32,6 +33,7 @@ class Symbol;
 // it can call lookup() and addToSymbolTable()
 //
 Symbol* tryCResolve(BaseAST* context, const char* cname);
+Symbol* tryCResolveLocally(ModuleSymbol* module, const char* cname);
 
 #endif
 

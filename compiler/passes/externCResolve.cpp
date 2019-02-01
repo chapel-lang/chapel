@@ -50,7 +50,8 @@ static int query_uid = 1;
 static void addCDef(ModuleSymbol* module, DefExpr* def);
 static void addCDefs(ModuleSymbol* module, BlockStmt* block);
 
-static Expr* tryCResolveExpr(BaseAST* context, const char* name);
+static Expr* tryCResolveExpr(ModuleSymbol* module, const char* name);
+static Expr* lookupExpr(ModuleSymbol* module, const char* name);
 
 static const char* convertTypedef(ModuleSymbol* module,
                                   clang::TypedefNameDecl* tdn);
@@ -138,8 +139,8 @@ Expr* convertStructToChplType(ModuleSymbol* module,
                               const char* typedefName=NULL) {
 
   clang::RecordDecl *rd = structType->getDecl();
-  const char* tmp_name = astr(rd->getNameAsString().c_str());
-  const char* cname = tmp_name;
+  const char* chpl_name = astr(rd->getNameAsString().c_str());
+  const char* cname = chpl_name;
 
   if (!llvmCodegen) {
     cname = astr("struct ", cname);
@@ -147,11 +148,30 @@ Expr* convertStructToChplType(ModuleSymbol* module,
 
   // For handling typedef struct { } bar
   //   ie an anonymous struct, use the name in the typedef.
-  if (tmp_name[0] == '\0' && typedefName) {
-    cname = tmp_name = typedefName;
+  if (chpl_name[0] == '\0' && typedefName) {
+    cname = chpl_name = typedefName;
   }
 
-  //convert the struct to Chapel
+  // Don't convert it if it's already converted
+  if (Symbol* sym = lookup(chpl_name, module->block))
+    return new SymExpr(sym);
+
+  // Create an empty struct and add it to the AST
+  // This allows fields of struct* type or other recursion.
+
+  AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
+  ct->defaultValue = NULL;
+  TypeSymbol* ts = new TypeSymbol(chpl_name, ct);
+  ts->cname = cname;
+  ts->addFlag(FLAG_EXTERN);
+  DefExpr* def = new DefExpr(ts);
+
+  addCDef(module, def);
+
+  Expr* ret = lookupExpr(module, chpl_name);
+  INT_ASSERT(ret != NULL);
+
+  // Convert the fields
   BlockStmt* fields = new BlockStmt();
 
   for (clang::RecordDecl::field_iterator it = rd->field_begin();
@@ -166,22 +186,13 @@ Expr* convertStructToChplType(ModuleSymbol* module,
     fields->insertAtTail(buildVarDecls(stmt));
   }
 
-  DefExpr* strct = buildClassDefExpr(tmp_name,
-                                     NULL,
-                                     AGGREGATE_RECORD,
-                                     NULL,
-                                     fields,
-                                     FLAG_EXTERN,
-                                     NULL);
+  // Add the fields to the struct
+  ct->addDeclarations(fields);
 
-  //...and patch up the resulting struct so that its cname is
-  //  correct and codegen can find it.
-  if (strct) {
-    strct->sym->cname = cname;
-    addCDef(module, strct);
-  }
+  // Create the type constructor
+  ct->buildTypeConstructor();
 
-  return tryCResolveExpr(module, tmp_name);
+  return ret;
 }
 
 // Given a clang type, returns the corresponding chapel type.
@@ -281,7 +292,7 @@ static Expr* convertToChplType(ModuleSymbol* module,
       t = "c_double";
 
     if (t != NULL)
-      return tryCResolveExpr(module, t);
+      return lookupExpr(module, t);
   }
 
   //give up...
@@ -321,8 +332,8 @@ static const char* convertTypedef(ModuleSymbol*           module,
   const char* typedef_name = astr(tdn->getNameAsString().c_str());
   const clang::Type* contents_type = tdn->getUnderlyingType().getTypePtr();
 
-  // Don't convert primitive types
-  if (typedef_name == dtStringC->symbol->name)
+  // Don't convert it if it's already converted
+  if (lookup(typedef_name, module->block))
     return typedef_name;
 
   if (contents_type->isStructureType()) {
@@ -377,6 +388,10 @@ void convertDeclToChpl(ModuleSymbol* module,
   INT_ASSERT(cname[0] != '\0');
   INT_ASSERT(module != NULL);
   INT_ASSERT(module->extern_info != NULL);
+
+  // Don't convert it if it's already converted
+  if (Symbol* sym = lookup(cname, module->block))
+    return;
 
   clang::TypeDecl* cType = NULL;
   clang::ValueDecl* cValue = NULL;
@@ -480,6 +495,7 @@ void convertDeclToChpl(ModuleSymbol* module,
 
     DefExpr* def = toDefExpr(result->body.first());
     INT_ASSERT(def);
+    def->remove();
 
     addCDef(module, def);
   }
@@ -487,13 +503,28 @@ void convertDeclToChpl(ModuleSymbol* module,
 
 static Symbol* tryCResolve(BaseAST* context,
                            ModuleSymbol* module,
-                           const char*                       name,
+                           const char* name,
                            llvm::SmallSet<ModuleSymbol*, 24> &visited);
+
+Symbol* tryCResolveLocally(ModuleSymbol* module, const char* name) {
+  // Is it resolveable in this module?
+  if (module->extern_info != NULL) {
+    convertDeclToChpl(module, name);
+    // Try to resolve it again.
+    return lookup(name, module->block);
+  }
+}
 
 Symbol* tryCResolve(BaseAST* context, const char* name) {
   Symbol* retval = NULL;
 
   ModuleSymbol* module = context->getModule();
+
+  // Try looking up the symbol with scope resolve's tables.
+  // This covers the case of finding a symbol already converted.
+  Symbol* got = lookup(name, context);
+  if (got != NULL)
+    return got;
 
   if (externC == true) {
     llvm::SmallSet<ModuleSymbol*, 24> visited;
@@ -508,12 +539,6 @@ static Symbol* tryCResolve(BaseAST* context,
                            ModuleSymbol* module,
                            const char*                       name,
                            llvm::SmallSet<ModuleSymbol*, 24> &visited) {
-
-  // Try looking up the symbol with scope resolve's tables.
-  // This covers the case of finding a symbol already converted.
-  Symbol* got = lookup(name, context);
-  if (got != NULL)
-    return got;
 
   if (module == NULL) {
     return NULL;
@@ -540,14 +565,7 @@ static Symbol* tryCResolve(BaseAST* context,
     }
   }
 
-  // Is it resolveable in this module?
-  if (module->extern_info != NULL) {
-    convertDeclToChpl(module, name);
-    // Try to resolve it again.
-    return lookup(name, context);
-  }
-
-  return NULL;
+  return tryCResolveLocally(module, name);
 }
 
 static void addCDefs(ModuleSymbol* module, BlockStmt* block) {
@@ -557,7 +575,7 @@ static void addCDefs(ModuleSymbol* module, BlockStmt* block) {
   std::vector<DefExpr*> v;
   collectDefExprs(block, v);
   for_vector(DefExpr, def, v) {
-    addCDef(module, def);
+    addToSymbolTable(def);
   }
 }
 
@@ -565,21 +583,22 @@ static void addCDef(ModuleSymbol* module, DefExpr* def) {
   module->block->insertAtHead(def);
 
   addToSymbolTable(def);
-
-  if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
-    if (AggregateType* ct = toAggregateType(ts->type)) {
-      SET_LINENO(ct->symbol);
-      // If this is a class DefExpr,
-      //  make sure its initializer gets created.
-      ct->buildTypeConstructor();
-    }
-  }
 }
 
-static Expr* tryCResolveExpr(BaseAST* context, const char* name) {
-  Symbol* sym = tryCResolve(context, name);
+static Expr* tryCResolveExpr(ModuleSymbol* module, const char* name) {
+  BaseAST* context = module->block;
+  Symbol* sym = tryCResolve(context, astr(name));
   if (sym == NULL)
-    USR_FATAL(context, "Could not find C type %s\n", name);
+    USR_FATAL(context, "Could not find C type %s", name);
+
+  return new SymExpr(sym);
+}
+
+static Expr* lookupExpr(ModuleSymbol* module, const char* name) {
+  BaseAST* context = module->block;
+  Symbol* sym = lookup(astr(name), context);
+  if (sym == NULL)
+    USR_FATAL(context, "Could not find type %s", name);
 
   return new SymExpr(sym);
 }
