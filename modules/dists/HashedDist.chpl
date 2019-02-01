@@ -647,7 +647,7 @@ class LocUserMapAssocDom {
 //
 // the global array class
 //
-class UserMapAssocArr: BaseArr {
+class UserMapAssocArr: AbsBaseArr {
   // GENERICS:
 
   //
@@ -655,11 +655,6 @@ class UserMapAssocArr: BaseArr {
   //
   type idxType;
   type mapperType;
-
-  //
-  // the array's element type
-  //
-  type eltType;
 
   // LINKAGE:
 

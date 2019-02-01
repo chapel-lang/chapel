@@ -754,7 +754,30 @@ module ChapelDistribution {
     proc isDefaultRectangular() param return false;
 
     proc doiCanBulkTransferRankChange() param return false;
+
+    proc decEltCountsIfNeeded() {
+      // degenerate so it can be overridden
+    }
   }
+
+  /* This subclass is created to allow eltType to be defined in one place
+     instead of every subclass of BaseArr.  It can't be put on BaseArr due to
+     BaseDom relying on BaseArr not being generic (it creates a list of BaseArrs
+     that it refers to and lists can't contain multiple instantiations of a
+     generic).
+   */
+  pragma "base array"
+  class AbsBaseArr: BaseArr {
+    type eltType;
+
+    override proc decEltCountsIfNeeded() {
+      if _decEltRefCounts {
+        // unlink domain referred to by eltType
+        chpl_decRefCountsForDomainsInArrayEltTypes(_to_unmanaged(this), eltType);
+      }
+    }
+  }
+
 
   /* BaseArrOverRectangularDom has this signature so that dsiReallocate
      can be overridden with the right tuple size.
@@ -813,8 +836,7 @@ module ChapelDistribution {
    * implementing sparse array classes.
    */
   pragma "base array"
-  class BaseSparseArr: BaseArr {
-    type eltType;
+  class BaseSparseArr: AbsBaseArr {
     param rank : int;
     type idxType;
 
@@ -926,15 +948,12 @@ module ChapelDistribution {
     // array implementation can destroy data or other members
     arr.dsiDestroyArr();
 
-    if arr._decEltRefCounts {
-      // unlink domain referred to by arr.eltType
-      // not necessary for aliases/slices because the original
-      // array will take care of it.
-      // This needs to be done after the array elements are destroyed
-      // (by dsiDestroyArray above) because the array elements might
-      // refer to this inner domain.
-      chpl_decRefCountsForDomainsInArrayEltTypes(arr, arr.eltType);
-    }
+    // not necessary for aliases/slices because the original
+    // array will take care of it.
+    // This needs to be done after the array elements are destroyed
+    // (by dsiDestroyArray above) because the array elements might
+    // refer to this inner domain.
+    arr.decEltCountsIfNeeded();
 
     if privatized {
       _freePrivatizedClass(arr.pid, arr);

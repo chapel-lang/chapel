@@ -165,8 +165,7 @@ module DefaultOpaque {
   }
   
   
-  class DefaultOpaqueArr: BaseArr {
-    type eltType;
+  class DefaultOpaqueArr: AbsBaseArr {
     type idxType;
     param parSafe: bool;
   

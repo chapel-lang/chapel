@@ -44,9 +44,7 @@ module ArrayViewSlice {
   // class implementations, it supports the standard dsi interface.
   //
   pragma "aliasing array"
-  class ArrayViewSliceArr: BaseArr {
-    type eltType;  // see note on commented-out proc eltType below...
-
+  class ArrayViewSliceArr: AbsBaseArr {
     // the representation of the slicing domain
     //
     // TODO: Can we privatize upon creation of the array-view slice and cache
@@ -66,7 +64,7 @@ module ArrayViewSlice {
     const indexCache;
 
     proc init(type eltType, const _DomPid, const dom, const _ArrPid, const _ArrInstance) {
-      this.eltType      = eltType;
+      super.init(eltType = eltType);
       this._DomPid      = _DomPid;
       this.dom          = dom;
       this._ArrPid      = _ArrPid;

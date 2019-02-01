@@ -416,10 +416,9 @@ proc ReplicatedDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 //
 // global array class
 //
-class ReplicatedArr : BaseArr {
+class ReplicatedArr : AbsBaseArr {
   // These two are hard-coded in the compiler - it computes the array's
   // type string as '[dom.type] eltType.type'
-  type eltType;
   const dom; // must be a ReplicatedDom
 
   // the replicated arrays
@@ -473,7 +472,7 @@ class LocReplicatedArr {
 // the fields in the parent class, BaseArr, are initialized to their defaults.
 //
 proc ReplicatedArr.init(type eltType, dom) {
-  this.eltType = eltType;
+  super.init(eltType = eltType);
   this.dom = dom;
 }
 

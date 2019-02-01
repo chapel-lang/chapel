@@ -342,9 +342,7 @@ module ArrayViewReindex {
   // class implementations, it supports the standard dsi interface.
   //
   pragma "aliasing array"
-  class ArrayViewReindexArr: BaseArr {
-    type eltType;  // see note on commented-out proc eltType below...
-
+  class ArrayViewReindexArr: AbsBaseArr {
     // the representation of the slicing domain
     //
     // TODO: Can we privatize upon creation of the array-view slice and cache
@@ -367,7 +365,7 @@ module ArrayViewReindex {
     proc init(type eltType, const _DomPid, const dom,
               const _ArrPid, const _ArrInstance,
               const ownsArrInstance : bool = false) {
-      this.eltType         = eltType;
+      super.init(eltType = eltType);
       this._DomPid         = _DomPid;
       this.dom             = dom;
       this._ArrPid         = _ArrPid;
