@@ -301,8 +301,8 @@ static uint64_t debug_stats_flag = 0;
 // 
 //#define PERFSTATS_TIME_ZERO_INIT 1
 
-#define _PSV_C_TYPE      uint_least64_t
-#define _PSV_FMT         PRIu64
+#define _PSV_C_TYPE      int_least64_t
+#define _PSV_FMT         PRId64
 
 #define _PSV_SYM(x)      _PSV_SYM2(x, _PSV_C_TYPE)
 #define _PSV_SYM2(x, t)  _PSV_SYM3(x, t)
@@ -312,7 +312,7 @@ static uint64_t debug_stats_flag = 0;
 #define _PSV_LD_FUNC     _PSV_SYM(atomic_load)
 #define _PSV_ST_FUNC     _PSV_SYM(atomic_store)
 #define _PSV_ADD_FUNC    _PSV_SYM(atomic_fetch_add)
-#define _PSV_SUB_FUNC    _PSV_SYM(atomic_fetch_sub)
+#define _PSV_ADD_FUNC_E  _PSV_SYM(atomic_fetch_add_explicit)
 
 #define _PSV_DECL(psv)  _PSV_ATOMIC_TYPE psv;
 typedef struct chpl_comm_pstats {
@@ -332,7 +332,7 @@ chpl_comm_pstats_t chpl_comm_pstats;
 #define PERFSTATS_LD(cnt)         _PSV_LD_FUNC(&_PSV_VAR(cnt))
 #define PERFSTATS_ST(cnt, val)    _PSV_ST_FUNC(&_PSV_VAR(cnt), val)
 #define PERFSTATS_STZ(cnt)        PERFSTATS_ST(cnt, 0)
-#define PERFSTATS_ADD(cnt, val)   (void) _PSV_ADD_FUNC(&_PSV_VAR(cnt), val)
+#define PERFSTATS_ADD(cnt, val)   (void) _PSV_ADD_FUNC_E(&_PSV_VAR(cnt), val, memory_order_relaxed)
 #define PERFSTATS_INC(cnt)        PERFSTATS_ADD(cnt, 1)
 
 #include <time.h>
