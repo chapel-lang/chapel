@@ -1,3 +1,5 @@
+config const useInternal = false;
+
 proc willthrow() throws {
   throw new owned Error();
   return 777;
@@ -6,9 +8,7 @@ proc willthrow() throws {
 var RRR = 0..3;
 
 proc test(expr) {
-  for zip(RRR, expr) {
-    if numLocales < 0 then writeln("hi"); // no-op
-  }
+  var array1 = for i in {RRR} do willthrow();
 }
 
 test( for RRR do willthrow() );
