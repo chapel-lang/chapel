@@ -213,29 +213,6 @@ module Random {
   pragma "no doc"
   /* Helper function for common functionality across choice implementations */
   proc _choiceSumArr(arr: [], prob: []) throws {
-    use Sort only;
-
-    // If stride, offset, or size don't match, we're in trouble
-    if arr.domain != prob.domain then
-      throw new IllegalArgumentError('choice() arrays must have equal domains');
-
-    if prob.size == 0 then
-      throw new IllegalArgumentError('choice() arrays cannot be empty');
-
-    // Construct cumulative sum array
-    var cumulativeArr = (+ scan prob): real;
-
-    if !Sort.isSorted(cumulativeArr) then
-      throw new IllegalArgumentError("choice() array cannot contain negative values");
-
-    // Confirm the array has at least one value > 0
-    if cumulativeArr[prob.domain.last] <= 0 then
-      throw new IllegalArgumentError('choice() array requires a value greater than 0');
-
-    // Normalize cumulative sum array
-    var total = cumulativeArr[prob.domain.last];
-    cumulativeArr /= total;
-    return cumulativeArr;
   }
 
   /*
@@ -845,6 +822,7 @@ module Random {
         throws
       {
         use Search only;
+        use Sort only;
 
         // Check random stream type
         if !isRealType(this.eltType) then
@@ -852,42 +830,106 @@ module Random {
 
         // Check types of optional void args
         if !isVoidType(probType) {
-          if !isArrayType(prob) then
+          if !isArrayType(probType) then
             compilerError('choice() prob must be an array');
           if !(isIntegralType(prob.eltType) || isRealType(prob.eltType)) then
             compilerError('choice() prob.eltType must be real or integral');
         }
         if !isVoidType(sizeType) {
-          if !isIntegral(size) then
-            compilerError('choice() size must be integral');
-          if size < 0 then
-            throw new IllegalArgumentError('choices() sampleSize must be greater than 0');
+          if isIntegralType(sizeType) {
+            if size < 0 then
+            throw new IllegalArgumentError('choices() sIze must be greater than 0');
+          } else if isTupleType(sizeType) {
+            if !isRangeType(size[1].type) then
+              compilerError('choice() tuple must contain ranges');
+          } else {
+            compilerError('choice() size must be integral or tuple of ranges');
+          }
         }
 
         var evenProbabilities: [1..arr.size] real = 1.0;
-        var probabilities = if isVoidType(probType) then evenProbabilities
+        ref probabilities = if isVoidType(probType) then evenProbabilities
                             else prob;
 
-        var cumulativeArr = _choiceSumArr(arr, probabilities);
+        // If stride, offset, or size don't match, we're in trouble
+        if arr.domain != probabilities.domain then
+          throw new IllegalArgumentError('choice() arrays must have equal domains');
 
+        if probabilities.size == 0 then
+          throw new IllegalArgumentError('choice() arrays cannot be empty');
+
+        // Construct cumulative sum array
+        var cumulativeArr = (+ scan probabilities): real;
+
+        if !Sort.isSorted(cumulativeArr) then
+          throw new IllegalArgumentError("choice() array cannot contain negative values");
+
+        // Confirm the array has at least one value > 0
+        if cumulativeArr[probabilities.domain.last] <= 0 then
+          throw new IllegalArgumentError('choice() array requires a value greater than 0');
+
+        // Normalize cumulative sum array
+        var total = cumulativeArr[probabilities.domain.last];
+        cumulativeArr /= total;
+
+        // Begin sampling
         if isVoidType(sizeType) {
+          // Return 1 sample
           var randNum = this.getNext();
-          var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
+          var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
           return arr[idx];
         } else {
-          var samples: [1..size] arr.eltType;
+          // Return numElements samples
 
-          for sample in samples {
-            var randNum = this.getNext();
-            var (found, idx) = Search.search(cumulativeArr, randNum, sorted=true);
-            sample = arr[idx];
-            if !replace {
-              cumulativeArr.remove(idx);
-              arr.remove(idx);
+          // Compute numElements for tuple case
+          var m = 1;
+          if isTupleType(sizeType) then for i in size do m *= i.size;
+
+          var numElements = if isTupleType(sizeType) then m
+                            else if isIntegralType(sizeType) then size:int
+                            else compilerError('choice() size type must be integral or tuple of ranges');
+
+          // Return N samples
+          var samples: [1..numElements] arr.eltType;
+
+          if replace {
+            for sample in samples {
+              var randNum = this.getNext();
+              var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
+              sample = arr[idx];
             }
+          } else {
+            var indicesChosen: domain(int);
+            var i = 1;
+            while indicesChosen.size < samples.size {
 
+              // Recalculate normalized cumulativeArr
+              if indicesChosen.size > 0 {
+                cumulativeArr = (+ scan probabilities): real;
+                total = cumulativeArr[probabilities.domain.last];
+                cumulativeArr /= total;
+              }
+
+              var remainingSamples = samples.size - indicesChosen.size;
+              for randNum in this.iterate({1..(samples.size - indicesChosen.size)}) {
+                // A potential optimization: Generate rand nums ahead of time
+                // and do a multi-target binary search to find all of their positions
+                var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
+                if !indicesChosen.contains(indexChosen) {
+                  indicesChosen += indexChosen;
+                  samples[i] += arr[indexChosen];
+                  i += 1;
+                }
+                probabilities[indexChosen] = 0;
+              }
+            }
           }
-          return samples;
+          if isIntegralType(sizeType) {
+            return samples;
+          } else if isTupleType(sizeType) {
+            var retDomain = {(...size)};
+            return reshape(samples, retDomain);
+          }
         }
       }
 
