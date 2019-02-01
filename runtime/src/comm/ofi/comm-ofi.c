@@ -81,14 +81,11 @@ static struct fid_av* ofi_av;           // address vector, table style
 static fi_addr_t* ofi_rxAddrs;          // remote receive addrs
 
 //
-// For performance reasons, we use manual progress.  We direct RMA
-// traffic and AM traffic to different endpoints so we can spread the
-// progress load across multiple threads.  Thus the AM handler looks
-// primarily at its AM request endpoint and occasionally progresses
-// the RMA endpoint, while everyone else who comes in here just helps
-// do the latter.
+// We direct RMA traffic and AM traffic to different endpoints so we can
+// spread the progress load across all the threads when we're doing
+// manual progress.
 //
-static struct fid_ep* ofi_rxEpRma;      // RMA target endpoint
+static struct fid_ep* ofi_rxEpRma;      // RMA/AMO target endpoint
 static struct fid_cntr* ofi_rxCntrRma;  // RMA target endpoint counter
 static struct fid_av* ofi_avRma;        // address vector for RMA
 static fi_addr_t* ofi_rxAddrsRma;       // remote RMA addresses
@@ -1558,9 +1555,16 @@ void amHandler(void* argNil) {
       tcip->numTxsOut -= count;
     }
 
+    //
+    // Backstop the worker threads which have primary responsibility for
+    // progress when we're doing manual.  This covers cases such as when
+    // what we're progressing is an AMO from a remote node to us, but no
+    // worker thread on our side is communicating and thus doing
+    // progress.  The AM handler is the only candidate in this case.
+    //
     {
       static __thread int progressInterval;
-      if ((++progressInterval & 0x100) != 0)
+      if ((++progressInterval & 0xff) == 0)
         chpl_comm_make_progress();
     }
   }
