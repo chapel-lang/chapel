@@ -96,7 +96,7 @@ module CPtr {
   This class represents a C array with fixed size.  A variable of type c_array
   can coerce to a c_ptr with the same element type.  In that event, the
   pointer will be equivalent to `c_ptrTo(array[0])`.  A c_array behaves
-  similarly to a homogenous tuple except that its indices start at 0 and it is
+  similarly to a homogeneous tuple except that its indices start at 0 and it is
   guaranteed to be stored in contiguous memory.  A c_array variable has value
   semantics. Declaring one as a function local variable will create the array
   elements in the function's stack. Assigning or copy initializing will result
@@ -122,7 +122,7 @@ module CPtr {
         var default: eltType;
         // this use of primitive works around an order-of-resolution issue.
         ref eltRef = __primitive("array_get", this, i);
-        // this is a move, transfering ownership
+        // this is a move, transferring ownership
         __primitive("=", eltRef, default);
         i += 1;
       }
@@ -204,7 +204,7 @@ module CPtr {
       for i in 0..#size {
         pragma "no auto destroy"
         var value: eltType = other[i];
-        // this is a move, transfering ownership
+        // this is a move, transferring ownership
         __primitive("=", this(i), value);
       }
     }
