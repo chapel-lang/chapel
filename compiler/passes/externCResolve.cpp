@@ -557,9 +557,6 @@ static Symbol* tryCResolve(BaseAST* context,
     return NULL;
   }
 
-  if (0 == strcmp(name, "makeX"))
-    gdbShouldBreakHere();
-
   // try the modules used by this module.
   // TODO: handle only, except, etc
   forv_Vec(ModuleSymbol, usedMod, module->modUseList) {
