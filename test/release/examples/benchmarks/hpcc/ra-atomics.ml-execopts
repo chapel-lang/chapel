@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+
+# Run ra with n=33 and 10 million updates. ugni is much faster for ra-atomics,
+# so bump the number of updates to 1 billion to get stable timings. ugni can
+# also do comm+compute overlap so have a config that enables oversubscription.
+import os
+
+comm = os.getenv('CHPL_COMM')
+ugni = comm == 'ugni'
+
+nu = 10000000
+if ugni:
+  nu = 1000000000
+
+print('--n=33 --N_U={0} --verify=false # ra.atomic-n33'.format(nu))
+
+if ugni:
+  print('--n=33 --N_U={0} --verify=false --tasksPerCore=2 # ra.atomic-oversub2-n33'.format(nu))
+  print('--n=33 --N_U={0} --verify=false --tasksPerCore=4 # ra.atomic-oversub4-n33'.format(nu))
