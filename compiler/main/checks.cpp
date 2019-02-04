@@ -604,7 +604,6 @@ checkResolveRemovedPrims(void) {
       switch(call->primitive->tag) {
         case PRIM_BLOCK_PARAM_LOOP:
 
-        //case PRIM_DEFAULT_INIT_FIELD:
         case PRIM_DEFAULT_INIT_VAR:
         case PRIM_INIT_FIELD:
         case PRIM_INIT_VAR:

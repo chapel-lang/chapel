@@ -775,20 +775,9 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 static std::set<VarSymbol*> globalTemps;
 
 static void moveGlobalDeclarationsToModuleScope() {
-  //bool move = false;
 
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
-      // If the last iteration set "move" to true, move this block to the end
-      // of the module (see below).
-      /*if (move == true) {
-        INT_ASSERT(isBlockStmt(expr));
-
-        mod->block->insertAtTail(expr->remove());
-
-        move = false;
-
-      } else*/
       if (DefExpr* def = toDefExpr(expr)) {
         // Non-temporary variable declarations are moved out to module scope.
         if (VarSymbol* vs = toVarSymbol(def->sym)) {
@@ -797,19 +786,6 @@ static void moveGlobalDeclarationsToModuleScope() {
           // can find them)
           if (vs->hasFlag(FLAG_END_COUNT))
             continue;
-
-          // If the var declaration is an extern, we want to move its
-          // initializer block with it.
-          /*if (vs->hasFlag(FLAG_EXTERN) == true) {
-            if (BlockStmt* block = toBlockStmt(def->next)) {
-              // This block should have been marked as BLOCK_EXTERN_TYPE
-              // in other parts of normalization.
-              INT_ASSERT( (block->blockTag & BLOCK_TYPE_ONLY) != 0);
-
-              // Set the flag, so we move it out to module scope.
-              move = true;
-            }
-          }*/
 
           // move the DefExpr
           mod->block->insertAtTail(def->remove());

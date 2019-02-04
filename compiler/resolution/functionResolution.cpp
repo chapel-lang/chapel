@@ -114,7 +114,6 @@ int                                explainCallLine           = 0;
 SymbolMap                          paramMap;
 
 Vec<CallExpr*>                     callStack;
-//Vec<CallExpr*>                     inits;
 
 Vec<BlockStmt*>                    standardModuleSet;
 
@@ -192,7 +191,6 @@ static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
 static void resolveSerializers();
 static void resolveDestructors();
-//static void resolveRecordInitializers();
 static Type* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
@@ -2069,7 +2067,6 @@ void resolveCall(CallExpr* call) {
       resolveSetMember(call);
       break;
 
-    //case PRIM_DEFAULT_INIT_FIELD:
     case PRIM_DEFAULT_INIT_VAR:
       resolveGenericActuals(call);
       resolvePrimInit(call);
@@ -2080,7 +2077,6 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_INIT_FIELD:
-      //resolveGenericActuals(call);
       resolveInitField(call);
       break;
 
@@ -7002,8 +6998,6 @@ void resolve() {
   insertRuntimeTypeTemps();
 
   resolveAutoCopies();
-
-  //resolveRecordInitializers();
 
   resolveOther();
 

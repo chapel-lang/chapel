@@ -569,9 +569,6 @@ initPrimitive() {
 
   // fn->_this, the name of the field, value/type, optional declared type
   prim_def(PRIM_INIT_FIELD, "init field", returnInfoVoid, false);
-  // fn->_this, the name of the field, declared type
-  // TODO: this could just be PRIM_DEFAULT_INIT_VAR if we wanted.
-  //prim_def(PRIM_DEFAULT_INIT_FIELD, "default init field", returnInfoVoid, false);
 
   // dst, init-expr, optional declared type
   prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);

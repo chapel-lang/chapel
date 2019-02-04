@@ -482,14 +482,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       }
     }
 
-  /*
-  } else if (call->isPrimitive(PRIM_INIT)) {
-    if (Expr* expr = resolvePrimInit(call)) {
-      // call was replaced by expr.
-      retval = expr;
-    }
-  */
-
   } else if (call->isPrimitive(PRIM_IS_ATOMIC_TYPE)) {
     if (isAtomicType(call->get(1)->typeInfo())) {
       retval = new SymExpr(gTrue);
