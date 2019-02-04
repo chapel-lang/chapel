@@ -211,6 +211,11 @@ static uint64_t debug_stats_flag = 0;
 #endif
 
 
+// not generally true, but should be for XE/XC
+#define CACHE_LINE_SIZE 64
+#define CACHE_LINE_ALIGN __attribute__((aligned(CACHE_LINE_SIZE)))
+
+
 ////////////////////////////////////////
 //
 // Statistics gathering
@@ -314,7 +319,7 @@ static uint64_t debug_stats_flag = 0;
 #define _PSV_ADD_FUNC    _PSV_SYM(atomic_fetch_add)
 #define _PSV_ADD_FUNC_E  _PSV_SYM(atomic_fetch_add_explicit)
 
-#define _PSV_DECL(psv)  _PSV_ATOMIC_TYPE psv;
+#define _PSV_DECL(psv)  _PSV_ATOMIC_TYPE CACHE_LINE_ALIGN psv;
 typedef struct chpl_comm_pstats {
   PERFSTATS_VARS_ALL(_PSV_DECL)
 } chpl_comm_pstats_t;
@@ -337,6 +342,7 @@ chpl_comm_pstats_t chpl_comm_pstats;
 
 #include <time.h>
 
+// useful to get time elapsed since comm layer init
 static struct timespec perfstats_timeBase;
 
 static _PSV_C_TYPE timer_overhead;
@@ -345,7 +351,7 @@ static inline _PSV_C_TYPE perfstats_timer_get(void)
 {
   struct timespec _ts;
   (void) clock_gettime(CLOCK_MONOTONIC, &_ts);
-  return (_PSV_C_TYPE) (_ts.tv_sec - perfstats_timeBase.tv_sec) * 1000000000UL
+  return (_PSV_C_TYPE) (_ts.tv_sec - perfstats_timeBase.tv_sec) * 1000000000L
          + (_PSV_C_TYPE) _ts.tv_nsec;
 }
 
@@ -365,7 +371,9 @@ static void perfstats_init(void)
   // and timer_overhead is used to adjust for the measurement cost.
   //
   {
-    const int nTrials = 10000; // ~80 ns per trial on XC, so < 1 ms total
+    // ~420 ns per trial on XC for syscall, ~15 ns for vDSO. If timers are
+    // used heavily, it benefits to use dynamic linking so we can use vDSO
+    const int nTrials = 10000;
 
     for (int i = 0; i < nTrials; i++) {
       PERFSTATS_TSTAMP(ts);
@@ -699,9 +707,6 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
         (void) atomic_fetch_add_uint_least32_t(&(cd)->cq_cnt_curr, 1)
 #define CQ_CNT_DEC(cd)        \
         (void) atomic_fetch_sub_uint_least32_t(&(cd)->cq_cnt_curr, 1)
-
-// not generally true, but should be for XE/XC
-#define CACHE_LINE_ALIGN __attribute__((aligned(64)))
 
 typedef struct {
   atomic_bool        busy CACHE_LINE_ALIGN;
