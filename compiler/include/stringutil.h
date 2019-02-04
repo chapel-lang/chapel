@@ -77,4 +77,6 @@ inline std::string ltrim(std::string s);
 
 void readArgsFromString(std::string s, std::vector<std::string>& args);
 
+bool startsWith(const char* str, const char* prefix);
+
 #endif

@@ -435,3 +435,7 @@ void readArgsFromString(std::string s, std::vector<std::string>& args) {
       args.push_back(word);
   }
 }
+
+bool startsWith(const char* str, const char* prefix) {
+  return (0 == memcmp(str, prefix, strlen(prefix)));
+}
