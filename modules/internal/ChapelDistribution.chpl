@@ -778,7 +778,6 @@ module ChapelDistribution {
     }
   }
 
-
   /* BaseArrOverRectangularDom has this signature so that dsiReallocate
      can be overridden with the right tuple size.
 
@@ -829,6 +828,7 @@ module ChapelDistribution {
     proc deinit() {
       // this is a bug workaround
     }
+
     override proc decEltCountsIfNeeded() {
       if _decEltRefCounts {
         // unlink domain referred to by eltType
