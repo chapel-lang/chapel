@@ -114,7 +114,7 @@ module ArrayViewSlice {
 
     proc chpl__serialize() where chpl__rvfMe() {
       //      writeln("[", here.id, "] In serialize, sending ", (_DomPid, _ArrPid));
-      return (_to_borrowed(dom).chpl__serialize(42), _to_borrowed(arr).chpl__serialize(42));
+      return (_to_borrowed(dom).chpl__serialize(), _to_borrowed(arr).chpl__serialize());
       /*
       return new mySliceHelper(privDom.rank, privDom.stridable, privDom.idxType, arr.rank, arr.stridable, arr.idxType, arr.eltType, _DomPid, _ArrPid);
       */
@@ -146,8 +146,8 @@ module ArrayViewSlice {
       compilerWarning("arrType = ", arrType:string);
       compilerWarning("data.type = ", data.type:string);
       */
-      const dom = _to_borrowed(domType).chpl__deserialize(data(1), 42);
-      const arr = _to_borrowed(arrType).chpl__deserialize(data(2), 42);
+      const dom = _to_borrowed(domType).chpl__deserialize(data(1));
+      const arr = _to_borrowed(arrType).chpl__deserialize(data(2));
       return new unmanaged ArrayViewSliceArr(eltType=arr.eltType,
                                              _DomPid=data(1),
                                              dom = dom,

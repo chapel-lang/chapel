@@ -1073,7 +1073,7 @@ module ChapelArray {
       }
     }
 
-    forwarding _value;
+    forwarding _value except chpl__serialize, chpl__deserialize, chpl__rvfMe;
 
     pragma "no doc"
     proc chpl__serialize()
@@ -2237,7 +2237,8 @@ module ChapelArray {
     }
 
     forwarding _value except doiBulkTransferFromKnown, doiBulkTransferToKnown,
-                             doiBulkTransferFromAny,  doiBulkTransferToAny;
+                             doiBulkTransferFromAny,  doiBulkTransferToAny,
+                             chpl__serialize, chpl__deserialize, chpl__rvfMe;
 
     pragma "no doc"
     proc deinit() {
