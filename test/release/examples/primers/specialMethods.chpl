@@ -9,16 +9,29 @@
 // iterating over an class or record, and defining the way a class or record
 // is read from or written to a channel.
 //
-// Throughout this primer, the methods are defined as secondary methods
-// using the form: ``proc TypeName.methodName() ...``
-//
-// It is also possible to declare these methods within the body of the
-// class or record as primary methods: ``proc methodName() ...``
+// Note that there are two ways to declare a method. Methods declared within
+// a class or record are called primary methods:
+
+record ExampleRecord1 {
+  var exampleField: int;
+  proc primaryMethod() { }
+}
+
+
+// Methods declared outside of a class or record are called secondary methods:
+
+record ExampleRecord2 {
+  var exampleField: int;
+}
+proc ExampleRecord2.secondaryMethod() { }
+
+// This primer will use the secondary method form, but all of the special
+// methods can also be written as primary methods.
 
 // First we will declare a simple record with a field that is a tuple of
 // integers.  We'll add special methods and iterators to this record later.
 record R {
-  param size: int;
+  param size: int = 10;
   var vals: size*int;
 }
 
@@ -28,21 +41,15 @@ record R {
 */
 
 // An initializer is called when creating an instance of the class or record,
-// for example with the ``new`` keyword. Here we initialize the record with
-// the given size.
-proc R.init(param size: int = 10) {
-  writeln("Initialized an R instance");
-  this.size = size;
-}
+// for example with the ``new`` keyword. An initializer with no arguments is
+// called a "default initializer".  An initializer that takes another instance
+// of the same class or record is called a "copy initializer".
 
-var r = new R();
-
-// The ``deinit`` method will deinitialize the record when it leaves scope.
-// If the record contained any unmanaged classes, open files, etc. this
-// method would be the place to delete them or otherwise clean them up.
-proc R.deinit() {
-  writeln("Deinitialized an R instance");
-}
+// The ``deinit`` method will deinitialize a record when it leaves scope,
+// or a class when ``delete`` is called on it. If the class or record
+// contained any unmanaged classes, open files, etc. this method would be
+// the place to delete them or otherwise clean them up. See the :doc:`records`
+// primer for more details on initializers and deinitializers.
 
 /*
   The ``this`` Accessor
@@ -57,6 +64,11 @@ proc R.this(n: int) ref {
   return vals[n];
 }
 
+var r = new R();
+
+// All functions and methods in Chapel can be called using either parenthesis
+// or square brackets. Here we use square brackets to style it as an array
+// access.
 r[1] = 1;
 r[3] = 3;
 
@@ -80,36 +92,14 @@ for val in r {
 }
 writeln(r.vals);
 
-// Classes and records can also define parallel iterators.  Here we define
-// a standalone parallel iterator. This iterator cannot be zippered with
-// other iterators like leader/follower iterators, but can be simpler
-// to write and faster to execute since it doesn't need to conform to
-// the expectations of other iterators.
-//
-// For more information on parallel iterators, see the :doc:`parIters` primer.
-iter R.these(param tag: iterKind) ref where tag == iterKind.standalone {
-  use RangeChunk;
-  const nTasks = 4;
-
-  coforall tid in 0..#nTasks {
-    var myChunk = chunk(1..size, nTasks, tid);
-
-    for i in myChunk {
-      yield vals[i];
-    }
-  }
-}
-
-forall val in r {
-  val += 1;
-}
-writeln(r.vals);
+// Classes and records can also define parallel iterators including
+// leader/follower iterator pairs and standalone parallel iterators. For
+// more information on parallel iterators, see the :doc:`parIters` primer.
 
 /*
   IO Methods
   ----------
 */
-
 
 // Define how to write an instance of R to a channel. We'll write the
 // 'vals' tuple between asterisks. See section
@@ -141,8 +131,6 @@ proc R.readThis(ch: channel) {
   var ch = f.reader();
   var r2 = new R();
   ch.readln(r2);
-  writeln("r:  ", r);
-  writeln("r2: ", r2);
   assert(r == r2);
 }
 
@@ -171,3 +159,14 @@ proc R.readWriteThis(ch: channel) {
   assert(r == r2);
   
 }
+
+/*
+  Operator Overloads
+  ------------------
+*/
+
+// Operators can be overloaded for class and record types to support
+// assignment (``=``), comparisons, (``<``, ``<=``, ``>``, ``>=``, ``==``,
+// ``!=``), and other general operators (``+``, ``-``, ``*``, ``/``, ...).
+// These are declared as regular functions with two arguments, not as methods
+// on the class or record.
