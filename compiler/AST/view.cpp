@@ -128,7 +128,7 @@ forall_explanation_start(BaseAST* ast, BaseAST* parentAst) {
 static void forallPreamble(Expr* expr, BaseAST* parentAst, int indent) {
   if (ForallStmt* pfs = toForallStmt(parentAst)) {
     if (expr == pfs->fRecIterIRdef) {
-      print_on_its_own_line(indent, "fRecIterIRdef et al.\n", pfs->zippered());
+      print_on_its_own_line(indent, "fRecIterIRdef et al.\n");
     } else if (expr == pfs->loopBody()) {
       if (pfs->numShadowVars() == 0)
         print_on_its_own_line(indent, "with() do\n", !pfs->fRecIterIRdef);
@@ -219,6 +219,7 @@ static void
 list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
   bool do_list_line = false;
   bool is_C_loop = false;
+  bool empty_block = false;
   const char* block_explain = NULL;
   if (Expr* expr = toExpr(ast)) {
     forallPreamble(expr, parentAst, indent);
@@ -238,11 +239,14 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       } else {
         list_ast(e->label, ast, indent+1);
       }
-    } else if (toBlockStmt(ast)) {
+    } else if (BlockStmt* block = toBlockStmt(ast)) {
       block_explain = block_explanation(ast, parentAst);
       const char* block_kind = ast->astTagAsString();
       if (!strcmp(block_kind, "BlockStmt")) block_kind = "";
-      printf("%s{%s\n", block_explain, block_kind);
+      printf("%s{%s", block_explain, block_kind);
+      if (block->isRealBlockStmt() && block->length() == 0)
+        empty_block = true;
+      printf("%s", empty_block ? " " : "\n");
     } else if (toCondStmt(ast)) {
       printf("if ");
     } else if (toIfExpr(ast)) {
@@ -301,10 +305,12 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       printf(") ");
     }
     if (toBlockStmt(ast)) {
-      printf("%-7d ", expr->id);
       if (*block_explain)
         indent -= 2;
-      print_indent(indent);
+      if (!empty_block) {
+        printf("%-7d ", expr->id);
+        print_indent(indent);
+      }
       if ((parent_C_loop && parent_C_loop->get(3) == expr) || *block_explain)
         printf("} ");
       else if (isDeferStmt(parentAst))
@@ -1080,20 +1086,16 @@ FnSymbol* debugGetTheIteratorFn(BaseAST* ast) {
     return NULL;
   }
   else if (Symbol* sym = toSymbol(ast))
-    return debugGetTheIteratorFn(sym);
+    return debugGetTheIteratorFn(sym->type);
+  else if (SymExpr* se = toSymExpr(ast))
+    return debugGetTheIteratorFn(se->symbol()->type);
   else if (Type* type = toType(ast))
     return debugGetTheIteratorFn(type);
   else if (ForLoop* fl = toForLoop(ast))
-    return debugGetTheIteratorFn(fl->iteratorGet()->symbol());
-  else if (SymExpr* se = toSymExpr(ast))
-    return debugGetTheIteratorFn(se->symbol());
+    return debugGetTheIteratorFn(fl);
   else {
     printf("<don't know how to get the iterator for node %s %d>\n",
            ast->astTagAsString(), ast->id);
     return NULL;
   }
-}
-
-FnSymbol* debugGetTheIteratorFn(Symbol* sym) {
-  return sym ? debugGetTheIteratorFn(sym->type) : NULL;
 }

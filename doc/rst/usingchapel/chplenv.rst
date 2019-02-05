@@ -665,22 +665,21 @@ CHPL_LLVM
    If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
    llvm in third-party and ``none`` otherwise.
 
-   Chapel currently supports LLVM 6.0.  Earlier versions of LLVM
-   required the use of internal Clang header files.  LLVM 5.0 has a
-   known optimization bug that affects Chapel.
+   Chapel currently supports LLVM 7.0.
 
    .. note::
 
-       We have had success with this procedure to install LLVM 6.0
+       We have had success with this procedure to install LLVM 7.0
        dependencies on Ubuntu.
 
-       First, place the appropriate lines from ``https://apt.llvm.org``
-       into ``/etc/apt/sources.list.d/llvm-toolchain.list``, then do
-       the following.
+       First, follow the instructions at ``https://apt.llvm.org`` that
+       explain how to place the appropriate lines into
+       ``/etc/apt/sources.list.d/llvm-toolchain.list`` and retrieve
+       the archive signature, then do the following.
 
         .. code-block:: sh
 
-            apt-get install llvm-6.0-dev llvm-6.0 llvm-6.0-tools clang-6.0 libclang-6.0-dev libedit-dev
+            apt-get install llvm-7-dev llvm-7 llvm-7-tools clang-7 libclang-7-dev libedit-dev
 
 .. _readme-chplenv.CHPL_UNWIND:
 

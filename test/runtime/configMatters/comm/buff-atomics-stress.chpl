@@ -1,6 +1,7 @@
 use BufferedAtomics;
 
-config const numTasksPerLocale = here.maxTaskPar;
+config const oversubscription = 1;
+config const numTasksPerLocale = here.maxTaskPar * oversubscription;
 const numTasks = numLocales * numTasksPerLocale;
 
 config const iters = 10000;
@@ -18,7 +19,6 @@ coforall loc in Locales do on loc {
     }
   }
 }
-flushAtomicBuff();
 assert(a.read() == numTasks * itersSum);
 
 coforall loc in Locales do on loc {
@@ -29,5 +29,4 @@ coforall loc in Locales do on loc {
     }
   }
 }
-flushAtomicBuff();
 assert(a.read() == 0);

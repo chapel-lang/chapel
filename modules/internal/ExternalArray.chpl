@@ -33,7 +33,7 @@ module ExternalArray {
 
   extern record chpl_external_array {
     var elts: c_void_ptr;
-    var size: uint;
+    var num_elts: uint;
 
     var freer: c_void_ptr;
   }
@@ -42,19 +42,19 @@ module ExternalArray {
   chpl_make_external_array(elt_size: uint, num_elts: uint): chpl_external_array;
 
   extern proc chpl_make_external_array_ptr(elts: c_void_ptr,
-                                           size: uint): chpl_external_array;
+                                           num_elts: uint): chpl_external_array;
 
   extern proc
   chpl_make_external_array_ptr_free(elts: c_void_ptr,
-                                    size: uint): chpl_external_array;
+                                    num_elts: uint): chpl_external_array;
 
   extern proc chpl_free_external_array(x: chpl_external_array);
   extern proc chpl_call_free_func(func: c_void_ptr, elts: c_void_ptr);
 
   // Creates an instance of our new array type
   pragma "no copy return"
-  proc makeArrayFromPtr(value: c_ptr, size: uint) {
-    var data = chpl_make_external_array_ptr(value : c_void_ptr, size);
+  proc makeArrayFromPtr(value: c_ptr, num_elts: uint) {
+    var data = chpl_make_external_array_ptr(value : c_void_ptr, num_elts);
     return makeArrayFromExternArray(data, value.eltType);
   }
 
@@ -63,7 +63,7 @@ module ExternalArray {
     var dom = defaultDist.dsiNewRectangularDom(rank=1,
                                                idxType=int,
                                                stridable=false,
-                                               inds=(0..#value.size,));
+                                               inds=(0..#value.num_elts,));
     dom._free_when_no_arrs = true;
     var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
                                                   rank=1,
@@ -182,11 +182,9 @@ module ExternalArray {
     }
   }
 
-  // Need to export this but that requires some compiler changes due to our
-  // hiding of interal module exported functions.
   // Can't create an _array wrapper to call the cleanup function for us, so do
   // the next best thing.
-  proc cleanupOpaqueArray(arr: chpl_opaque_array) {
+  export proc cleanupOpaqueArray(arr: chpl_opaque_array) {
     var cleanup = arr._instance: unmanaged BaseArr;
     _do_destroy_arr(arr._unowned, false, cleanup);
   }

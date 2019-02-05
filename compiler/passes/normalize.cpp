@@ -2839,8 +2839,10 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
       }
 
       SymExpr* dom = toSymExpr(call->get(1));
-      if (dom != NULL && dom->symbol() == gNil) {
-        // The domain is nil, meaning the argument did not specify its domain.
+      if ((dom != NULL && dom->symbol() == gNil) ||
+          isDefExpr(call->get(1))) {
+        // Either the domain is nil or the domain is a query expression, meaning
+        // the argument did not specify its domain.
         // chpl_opaque_array cannot adjust for that today, but
         // chpl_external_array might be able to, so try to make a
         // chpl_external_array with it.  If that doesn't work, the user must be

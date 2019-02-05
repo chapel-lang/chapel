@@ -92,6 +92,141 @@ module CPtr {
     }
   }
 
+  /*
+  This class represents a C array with fixed size.  A variable of type c_array
+  can coerce to a c_ptr with the same element type.  In that event, the
+  pointer will be equivalent to `c_ptrTo(array[0])`.  A c_array behaves
+  similarly to a homogeneous tuple except that its indices start at 0 and it is
+  guaranteed to be stored in contiguous memory.  A c_array variable has value
+  semantics. Declaring one as a function local variable will create the array
+  elements in the function's stack. Assigning or copy initializing will result
+  in copying the elements (vs resulting in two pointers that refer to the same
+  elements).  A `nil` c_array is not representable in Chapel.
+  */
+  pragma "c_array record"
+  pragma "default intent is ref if modified"
+  record c_array {
+    /* The array element type */
+    type eltType;
+    /* The fixed number of elements */
+    param size;
+
+    proc init(type eltType, param size) {
+      this.eltType = eltType;
+      this.size = size;
+      this.complete();
+      var i = 0;
+      while i < size {
+        // create a default value we'll transfer into the element
+        pragma "no auto destroy"
+        var default: eltType;
+        // this use of primitive works around an order-of-resolution issue.
+        ref eltRef = __primitive("array_get", this, i);
+        // this is a move, transferring ownership
+        __primitive("=", eltRef, default);
+        i += 1;
+      }
+    }
+
+    proc deinit() {
+      var i = 0;
+      while i < size {
+        // this use of primitive works around an order-of-resolution issue.
+        chpl__autoDestroy(__primitive("array_get", this, i));
+        i += 1;
+      }
+    }
+
+    /* Retrieve the i'th element (zero based) from the array.
+       Does the equivalent of arr[i] in C.
+       Includes bounds checking when such checks are enabled.
+    */
+    inline proc ref this(i: integral) ref : eltType {
+      if boundsChecking then
+        if i < 0 || i >= size then
+          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i +
+                                       "(indices are 0.." + (size-1) + ")");
+
+      return __primitive("array_get", this, i);
+    }
+    pragma "no doc"
+    inline proc const ref this(i: integral) const ref : eltType {
+      if boundsChecking then
+        if i < 0 || i >= size then
+          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i +
+                                       "(indices are 0.." + (size-1) + ")");
+
+      return __primitive("array_get", this, i);
+    }
+
+    /* As with the previous function, returns the i'th element (zero based)
+        from the array. This one emits a compilation error if i is out of bounds.
+    */
+    inline proc ref this(param i: integral) ref : eltType {
+      if i < 0 || i >= size then
+        compilerError("c array index out of bounds " + i +
+                      "(indices are 0.." + (size-1) + ")");
+
+      return __primitive("array_get", this, i);
+    }
+    pragma "no doc"
+    inline proc const ref this(param i: integral) const ref : eltType {
+      if i < 0 || i >= size then
+        compilerError("c array index out of bounds " + i +
+                      "(indices are 0.." + (size-1) + ")");
+
+      return __primitive("array_get", this, i);
+    }
+
+
+    /* Print the elements */
+    proc writeThis(ch) {
+      ch <~> new ioLiteral("[");
+      var first = true;
+      for i in 0..#size {
+
+        ch <~> this(i);
+
+        if i != size-1 then
+          ch <~> new ioLiteral(", ");
+      }
+      ch <~> new ioLiteral("]");
+    }
+
+    inline proc length {
+      return size;
+    }
+
+    proc init(other: c_array) {
+      this.eltType = other.eltType;
+      this.size = other.size;
+      this.complete();
+      for i in 0..#size {
+        pragma "no auto destroy"
+        var value: eltType = other[i];
+        // this is a move, transferring ownership
+        __primitive("=", this(i), value);
+      }
+    }
+  }
+
+  /* Copy the elements from one c_array to another.
+     Raises an error at compile time if the array sizes or
+     element types do not match. */
+  proc =(ref lhs:c_array, rhs:c_array) {
+    if lhs.eltType != rhs.eltType then
+      compilerError("element type mismatch in c_array assignment");
+    if lhs.size != rhs.size then
+      compilerError("size mismatch in c_array assignment");
+
+    for i in 0..#lhs.size {
+      lhs[i] = rhs[i];
+    }
+  }
+  proc =(ref lhs:c_ptr, ref rhs:c_array) where lhs.eltType == rhs.eltType {
+    lhs = c_ptrTo(rhs[0]);
+  }
+
   pragma "no doc"
   inline proc c_void_ptr.writeThis(ch) {
     try {
@@ -125,6 +260,14 @@ module CPtr {
   pragma "no doc"
   inline proc _cast(type t:c_ptr, x:c_ptr) {
     return __primitive("cast", t, x);
+  }
+  pragma "no doc"
+  inline proc _cast(type t:c_ptr(?e), ref x:c_array) where x.eltType == e {
+    return c_ptrTo(x[0]);
+  }
+  pragma "no doc"
+  inline proc _cast(type t:c_void_ptr, ref x:c_array) {
+    return c_ptrTo(x[0]):c_void_ptr;
   }
   pragma "no doc"
   inline proc _cast(type t:c_void_ptr, x:c_ptr) {
@@ -197,7 +340,6 @@ module CPtr {
   pragma "no doc"
   inline proc _cast(type t:uint(64), x:c_ptr) where c_uintptr != int(64)
     return __primitive("cast", t, x);
-
 
   pragma "compiler generated"
   pragma "last resort"

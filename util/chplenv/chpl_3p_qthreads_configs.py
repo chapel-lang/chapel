@@ -1,6 +1,5 @@
 import chpl_compiler, chpl_hwloc, chpl_llvm, chpl_locale_model, chpl_mem
 import third_party_utils
-from compiler_utils import compiler_is_prgenv
 from utils import memoize
 
 
@@ -21,7 +20,7 @@ def get_link_args():
                                                       '-lchpl',
                                                       'libqthread.la'])
     compiler_val = chpl_compiler.get('target')
-    if ( compiler_val == 'cray-prgenv-cray' or
-         (compiler_is_prgenv(compiler_val) and chpl_llvm.get() != 'none' )):
+    if compiler_val == 'cray-prgenv-cray':
         link_args.append('-lrt')
+
     return link_args

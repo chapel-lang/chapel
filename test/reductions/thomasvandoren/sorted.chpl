@@ -16,36 +16,57 @@ use Sort;
 // break, though, so I'm leaving it in for now.
 //
 
-class isSorted : ReduceScanOp {
+record AccumState {
   type eltType;
-  param communicative = false;  // Note: This has no effect in the current
-                                // Chapel compiler; it was part of a plan
-                                // that was never implemented to date  (and
-                                // should read 'commutative', I think?
   var status = true;
   var first, last: eltType;
-
   var _accumulatedFirst = false;
+}
 
-  proc accumulate(value: eltType) {
-    if !_accumulatedFirst {
-      first = value;
-      last = value;
-      _accumulatedFirst = true;
-    }
-    if last > value then
-      status = false;
-    last = value;
+class isSorted : ReduceScanOp {
+  type eltType;
+  param commutative = false;    // Note: This has no effect in the current
+                                // Chapel compiler; it was part of a plan
+                                // that was never implemented to date.
+  var state: AccumState(eltType);
+
+  proc identity {
+    var id: state.type;
+    return id;
   }
 
-  // FIXME: This reference to 'sorted' is a typo that results in the
-  // compiler falling back to a (more) serial(ized) implementation
-  proc combine(state: sorted(eltType)) { 
-    status = status && state.status && last <= state.first;
-    last = state.last;
+  proc accumulateOntoState(ref state: AccumState(eltType), value: eltType) {
+    if !state._accumulatedFirst {
+      state.first = value;
+      state.last = value;
+      state._accumulatedFirst = true;
+    }
+    if state.last > value then
+      state.status = false;
+    state.last = value;
+  }
+
+  proc accumulate(value: eltType) {
+    accumulateOntoState(state, value);
+  }
+
+  proc accumulate(other: AccumState(eltType)) {
+    this.state.status = this.state.status && state.status && this.state.last <= state.first;
+    this.state.last = state.last;
+  }
+
+  // FIXME: the current reduction framework does not provide a way to enforce
+  // ordering of combine() calls. Instead, it assumes that combine() calls are
+  // commutative. This can result in a wrong answer computed by the reduction.
+  proc combine(other: unmanaged isSorted(eltType)) {
+    accumulate(other.state);
   }
 
   proc generate() {
-    return status;
+    return state.status;
+  }
+
+  proc clone() {
+    return new unmanaged isSorted(eltType=eltType);
   }
 }

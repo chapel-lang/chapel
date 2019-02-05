@@ -670,25 +670,6 @@ chpl_task_bundle_t* chpl_task_getPrvBundle(void) {
   return arg;
 }
 
-
-//
-// Can this tasking layer support remote caching?
-//
-// (In practice this answers: "Are tasks bound to specific pthreads
-// or, if not, does the tasking layer make memory consistency calls
-// whenever it might move a task from one pthread to another?"  Remote
-// caching uses pthread-specific data (TLS) extensively, so it turns
-// itself off when it's used with a tasking layer that can't support
-// that.)
-//
-#ifndef CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL
-int chpl_task_supportsRemoteCache(void) {
-  enter_();
-  return_from_();
-  return 0;
-}
-#endif
-
 //
 // Returns the maximum width of parallelism the tasking layer expects
 // to be able to provide on the calling (sub)locale.  With some

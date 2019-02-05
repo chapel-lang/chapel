@@ -761,7 +761,6 @@ nlbuf
 nlimbs
 nlruns
 nmatches
-nmemb
 nocapture
 nodelay
 nodelist
@@ -2595,7 +2594,9 @@ nbbq
 nbbs
 
 FILEID: f4c93d2c-1d0a-11e6-a3a6-10ddb1d4c3d5
+cfgname
 fifn
+firstvar
 llib
 noparens
 parloopexpr
@@ -2711,11 +2712,15 @@ fcopy
 
 FILEID: a4542298-1d83-11e6-a3a6-10ddb1d4c3d5
 blarg
+isize
+isym
 strct
 
 FILEID: e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5
+formalname
 gparent
 hashset
+instype
 outervar
 urse
 usetype
@@ -2724,6 +2729,7 @@ yret
 
 FILEID: 0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5
 itexpr
+pblock
 ppne
 sdef
 typefunction
@@ -2882,6 +2888,7 @@ FILEID: a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5
 fooy
 
 FILEID: f705d2b6-1f0e-11e6-a3a6-10ddb1d4c3d5
+gotit
 inds
 locidtup
 locidx
@@ -3164,7 +3171,6 @@ blkcnt
 bsize
 mtim
 nlink
-nmemb
 rdev
 takz
 
@@ -3822,10 +3828,13 @@ astrs
 cdesc
 disubprogram
 dtype
+isinstance
 ndarray
 nfor
 optos
 simport
+sswap
+strname
 toctree
 
 FILEID: fcd32732-b78b-11e6-9740-843835579daa
@@ -4316,6 +4325,8 @@ telapsed
 tget
 themself
 tidx
+tryrdlock
+trywrlock
 tstamp
 xchgval
 
@@ -4362,9 +4373,9 @@ hbwmalloc
 kindstr
 lmemkind
 memkind
-nmemb
 
 FILEID: edb63ad0-0c15-11e7-980e-10ddb1d4c3d5
+gotit
 rview
 
 FILEID: 40d00fe6-1a82-11e7-980e-10ddb1d4c3d5
@@ -4476,7 +4487,9 @@ rtmp
 
 FILEID: ad56c506-780b-11e7-88ba-10ddb1d4c3d5
 constup
+iitr
 svdef
+tcall
 tpvs
 wmikanik
 xtra
@@ -4623,6 +4636,9 @@ amsend
 appnum
 atomicvalid
 bxor
+cfgav
+cfgfab
+cfgfabsall
 commprogress
 configmore
 cqes
@@ -4634,6 +4650,7 @@ fabfail
 fabsall
 freeinfo
 lcpus
+libiberty
 mrdesc
 mrkey
 ofichkerr
@@ -4649,10 +4666,12 @@ readfrom
 rmaread
 rmawrite
 rxed
+schpl
 spages
 statsnodes
 statsprogress
 statsthreads
+straddr
 tciia
 tciiw
 tcip
@@ -4660,6 +4679,8 @@ threaddetails
 tostr
 tstamp
 txed
+xcrc
+xpct
 xpctd
 
 FILEID: 0502b256-07ea-11e8-bed3-10ddb1d4c3d5
@@ -4669,6 +4690,7 @@ readfrom
 FILEID: 1873381c-2cbe-11e8-aa67-10ddb1d4c3d5
 detemp
 detemps
+sswap
 
 FILEID: 7626c32a-2f20-11e8-aa67-10ddb1d4c3d5
 condtest
@@ -4694,6 +4716,7 @@ ivsym
 
 FILEID: 7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5
 nfor
+sswap
 
 FILEID: 9fb5188e-4110-11e8-af7e-10ddb1d4c3d5
 forwardee
@@ -4701,8 +4724,10 @@ ianch
 iwrap
 mappee
 nfor
+refee
 retexpr
 retsym
+setref
 vclone
 wmikanik
 
@@ -4774,6 +4799,7 @@ myvoid
 ttype
 
 FILEID: d551f4f6-d1a9-11e8-954d-10ddb1d4c3d5
+tlsym
 xifn
 
 FILEID: eb10d276-d1a9-11e8-954d-10ddb1d4c3d5
@@ -4782,6 +4808,7 @@ lastiter
 maxiters
 
 FILEID: f765ca54-d1a9-11e8-954d-10ddb1d4c3d5
+bdynamic
 casttype
 ffast
 fsin
@@ -4790,6 +4817,7 @@ imodules
 infs
 inparens
 ipra
+isysroot
 maino
 mpicxx
 ploc
@@ -4857,6 +4885,18 @@ urxvt
 FILEID: a37c5ce4-f6a4-11e8-8d7e-10ddb1d4c3d5
 maxlargc
 
+FILEID: d774177c-244d-11e9-b712-843835579daa
+urse
+
+FILEID: fb18cb3c-244d-11e9-b712-843835579daa
+mymethod
+
+FILEID: af0a00d4-244e-11e9-b712-843835579daa
+sexecute
+
+FILEID: b5c2175e-244e-11e9-b712-843835579daa
+rmaps
+
 NATURAL:
 aarch
 abcd
@@ -4869,6 +4909,7 @@ acqs
 actuals
 addmul
 addons
+addressof
 addrform
 addrinfo
 addrs
@@ -4934,6 +4975,7 @@ arounds
 arpa
 arrayness
 asciiz
+ascontiguousarray
 asenjo
 ashwin
 asinh
@@ -5223,6 +5265,7 @@ ctags
 ctime
 ctor
 ctrunc
+ctypes
 cuda
 curdim
 curlfile
@@ -5705,6 +5748,7 @@ godoc
 gokhberg
 google
 gothic
+gotit
 gotostmt
 gouy
 gperf
@@ -6008,6 +6052,7 @@ kieee
 kissinger
 klib
 kludge
+kmeans
 knoxville
 knucleotide
 knuth
@@ -6047,6 +6092,7 @@ ldaps
 ldexp
 ldflags
 ldim
+ldshared
 leaderfollower
 ledrug
 leftjustify
@@ -6236,6 +6282,7 @@ minlen
 minloc
 minnesota
 misassumption
+miscompiles
 misdistributed
 mitre
 mjolnir
@@ -6369,6 +6416,7 @@ nikhil
 nimit
 nist
 nixos
+nmemb
 noakes
 noalias
 noblock
@@ -6639,6 +6687,7 @@ ptrdiff
 ptrs
 publickey
 punny
+pushback
 putchar
 pvalloc
 pvar
@@ -6790,6 +6839,7 @@ runcmd
 runtest
 rvalue
 rvalues
+rwlock
 sadayappan
 safecasts
 sagar
@@ -7404,6 +7454,7 @@ zeromq
 zguide
 zhang
 zima
+zipcall
 zixian
 zlib
 zolotov

@@ -2091,3 +2091,30 @@ void AggregateType::generateUnmanagedClassTypes() {
     at->symbol->defPoint->insertAfter(defUnmanaged);
   }
 }
+
+Type* AggregateType::cArrayElementType() const {
+  TypeSymbol* eltTS = NULL;
+  INT_ASSERT(symbol->hasFlag(FLAG_C_ARRAY));
+  form_Map(SymbolMapElem, e, substitutions) {
+    if (TypeSymbol* ets = toTypeSymbol(e->value))
+      eltTS = ets;
+  }
+  INT_ASSERT(eltTS);
+  return eltTS->type;
+}
+
+int64_t AggregateType::cArrayLength() const {
+  VarSymbol* sizeVar = NULL;
+  INT_ASSERT(symbol->hasFlag(FLAG_C_ARRAY));
+  form_Map(SymbolMapElem, e, substitutions) {
+    if (VarSymbol* evs = toVarSymbol(e->value))
+      sizeVar = evs;
+  }
+  INT_ASSERT(sizeVar);
+  Immediate* imm = getSymbolImmediate(sizeVar);
+  INT_ASSERT(imm);
+  int64_t sizeInt = imm->to_int();
+  if (sizeInt < 0)
+    USR_FATAL(symbol, "c_array must have positive size");
+  return sizeInt;
+}

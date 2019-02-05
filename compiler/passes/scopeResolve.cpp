@@ -522,6 +522,8 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt))  {
+      scopeResolveExpr(cond->condExpr, scope);
+
       scopeResolve(cond->thenStmt, scope);
 
       if (cond->elseStmt != NULL) {
@@ -1374,6 +1376,12 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
   // and calling resolveUnresolvedSymExpr() on it.
 
   SET_LINENO(svar);
+
+  if (svar->outerVarSE != NULL) {
+    // This happens for reduce expressions. Nothing to do.
+    INT_ASSERT(svar->intent == TFI_REDUCE);
+    return;
+  }
 
   if (Symbol* ovar = lookup(svar->name, fs->parentExpr)) {
     if (isFnSymbol(ovar) || isField(ovar)) {

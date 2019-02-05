@@ -520,9 +520,15 @@ static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
 }
 
 
+static bool isIteratorRecord(Symbol* sym) {
+  return sym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD);
+}
+
+
 static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
 {
-  return pfs->createdFromForLoop();
+  return pfs->createdFromForLoop() ||
+         pfs->requireSerialIterator();
 }
 
 
@@ -580,23 +586,26 @@ buildFollowLoop(VarSymbol* iter,
   return followBlock;
 }
 
-// Return NULL if the def is not found or is uncertain.
-static Expr* findDefOfTemp(SymExpr* origSE)
-{
-  Symbol* origSym = origSE->symbol();
-  if (!origSym->hasFlag(FLAG_TEMP)) return NULL;  // only temps
-
-  SymExpr* otherSE = origSym->getSingleDef();
-
-  if (CallExpr* def = toCallExpr(otherSE->parentExpr))
-    if (def->isPrimitive(PRIM_MOVE))
-      if (otherSE == def->get(1))
-        return def->get(2);
-
-  // uncertain situation
-  return NULL;
+// Returns true for: .=( se, "_shape_", whatever)
+static bool isSettingShape(SymExpr* se) {
+  if (CallExpr* parent = toCallExpr(se->parentExpr))
+    if (parent->isPrimitive(PRIM_SET_MEMBER))
+      if (SymExpr* field = toSymExpr(parent->get(2)))
+        if (!strcmp(field->symbol()->name, "_shape_"))
+          return true;
+  return false;
 }
 
+// Returns true for: iteratorIndexType(se)
+static bool isIITcall(SymExpr* se) {
+  if (CallExpr* parent = toCallExpr(se->parentExpr))
+    if (parent->isNamed("iteratorIndexType")    ||
+        parent->isNamed("iteratorIndexTypeZip") )
+      return true;
+  return false;
+}
+
+// The respective temp may not be needed any longer. Remove it.
 static void removeOrigIterCall(SymExpr* origSE)
 {
   INT_ASSERT(!origSE->inTree());
@@ -604,21 +613,42 @@ static void removeOrigIterCall(SymExpr* origSE)
   Symbol* origSym = origSE->symbol();
   INT_ASSERT(origSym->hasFlag(FLAG_TEMP));
 
-  SymExpr* otherSE = origSym->firstSymExpr();
-  // Only one SE for this symbol
-  INT_ASSERT(origSym->lastSymExpr() == otherSE);
-  
-  if (CallExpr* def = toCallExpr(otherSE->parentExpr))
-    if (def->isPrimitive(PRIM_MOVE))
-      if (otherSE == def->get(1)) {
-        // Remove origSym - except caller will remove origSE.
-        def->remove();
-        origSym->defPoint->remove();
-        return;
+  // If the temp is used only to set its shape, remove it. BTW there may be
+  // up to 3 shape-settings, due to a ref/value/constRef ContextCall.
+  //
+  // Or, the temp can be passed to iteratorIndexType/Zip() to determine
+  // the input type for a reduce expr. If so, keep it.
+  // Ex. associative/ferguson/plus-reduce-assoc.chpl
+  //     associative/bharshbarg/domains/reduceArrOfAssocDom.chpl
+  //
+  // If there is another scenario, the compiler will hit INT_ASSERT() below.
+  // This will alert us to look at it to make sure it is legit.
+
+  SymExpr* defSE = origSym->getSingleDef();
+  bool otherUses = false;
+
+  for_SymbolSymExprs(se1, origSym)
+    if (se1 != defSE && ! isSettingShape(se1))
+      {
+        INT_ASSERT(isIITcall(se1));
+        otherUses = true;
       }
 
-  // The above did not succeed.
-  INT_ASSERT(false);
+  if (otherUses) {
+    return;  // Keep the temp.
+  }
+
+  // The temp is not needed, indeed. Remove it.
+
+  INT_ASSERT(toCallExpr(defSE->parentExpr)->isPrimitive(PRIM_MOVE));
+  defSE->parentExpr->remove();
+
+  for_SymbolSymExprs(se2, origSym) {
+    INT_ASSERT(isSettingShape(se2));
+    se2->parentExpr->remove();
+  }
+
+  origSym->defPoint->remove();
 }
 
 // Replaces 'origSE' in the tree with the result.
@@ -627,7 +657,7 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE,
 {
   CallExpr* iterCall = NULL;
 
-  if (origSE->symbol()->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+  if (isIteratorRecord(origSE->symbol())) {
     // Our iterable expression is an iterator call.
 
     if (ArgSymbol* origArg = toArgSymbol(origSE->symbol())) {
@@ -637,8 +667,9 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE,
       USR_STOP();
     }
 
-    CallExpr* origIterCall = toCallExpr(findDefOfTemp(origSE));
+    CallExpr* origIterCall = toCallExpr(getDefOfTemp(origSE));
     // What to do if we do not find it?
+    // For example, if the forall is over a formal that is an IR.
     INT_ASSERT(origIterCall);
 
     FnSymbol* origTarget = origIterCall->resolvedFunction();
@@ -679,7 +710,7 @@ static void checkForExplicitTagArgs(CallExpr* iterCall) {
   int cnt = 0;
   for_actuals(actual, iterCall) {
     ++cnt;
-    if ((actual->qualType().type()->getValType() == gStandaloneTag->type) ||
+    if ((actual->getValType() == gStandaloneTag->type) ||
         (isNamedExpr(actual) && toNamedExpr(actual)->name == astrTag)
     ) {
       USR_FATAL_CONT(iterCall, "user invocation of a parallel iterator should not supply tag arguments -- they are added implicitly by the compiler");
@@ -689,7 +720,8 @@ static void checkForExplicitTagArgs(CallExpr* iterCall) {
   }
 }
 
-static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall)
+static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall,
+                                   SymExpr* origSE, FnSymbol* origTarget)
 {
   bool gotParallel = false;
   bool gotSA = true;
@@ -711,6 +743,20 @@ static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall)
     gotSA = false;
     tag->actual->replace(new SymExpr(gLeaderTag));
     gotParallel = tryResolveCall(iterCall);
+  }
+
+  // try serial
+  if (!gotParallel && pfs->allowSerialIterator()) {
+    gotSA = true;
+    tag->remove();
+    if (origTarget != NULL) {
+      gotParallel = true;
+      iterCall->baseExpr->replace(new SymExpr(origTarget));
+    } else {
+      // Iterating over a variable that does not have parallel .these() iters.
+      INT_ASSERT(! isIteratorRecord(origSE->symbol()));
+      gotParallel = tryResolveCall(iterCall);
+    }
   }
 
   if (!gotParallel) {
@@ -967,8 +1013,9 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   INT_ASSERT(iterCall         == pfs->firstIteratedExpr());
   INT_ASSERT(origSE->inTree() == false);
 
+  // gotSA=true when we end up with standalone, original, or serial iter. 
   bool gotSA = acceptUnmodifiedIterCall(pfs, iterCall) ||
-               findStandaloneOrLeader(pfs, iterCall);
+               findStandaloneOrLeader(pfs, iterCall, origSE, origTarget);
   resolveCallAndCallee(iterCall, false);
 
   FnSymbol* origIterFn = iterCall->resolvedFunction();
@@ -977,8 +1024,15 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
     IteratorGroup* igroup = origTarget->iteratorGroup;
     checkForNonIterator(igroup, gotSA, iterCall);
 
-    if (gotSA) INT_ASSERT(origIterFn == igroup->standalone);
-    else       INT_ASSERT(origIterFn == igroup->leader);
+    if (origTarget == origIterFn) {
+      INT_ASSERT(gotSA);
+      INT_ASSERT(pfs->allowSerialIterator());
+      INT_ASSERT(origIterFn == igroup->serial);
+    } else if (gotSA) {
+      INT_ASSERT(origIterFn == igroup->standalone);
+    } else {
+      INT_ASSERT(origIterFn == igroup->leader);
+    }
   }
 
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
@@ -1132,51 +1186,8 @@ static void removeOuterVarArgs(CallExpr* iterCall, FnSymbol* oldCallee,
   }
 }
 
-/*
-If the first iterable is a loop expr, it is represented as a call
-to chpl__loopexpr_iter. convertIteratorForLoopexpr() changed it
-to call the leader iterator directly. chpl__loopexpr_iter() accepts
-a tuple of all things within the zip() syntax, while the leader iterator
-accepts only the first of those things. Adjust the call to pass
-only the first component of the tuple. For example:
-
-At start of convertIteratorForLoopexpr():
-  def call_tmp:(_ref(array1),_ref(array2)) // when zippered over two arrays
-  .....
-  forall ..... in
-    call( fn chpl__loopexpr_iter2 call_tmp )
-  do .....
-
-At start of adjustForZipperedLoopexpr(): same except
-    call( fn these call_tmp )  // call 'these' instead
-
-After adjustForZipperedLoopexpr():
-  def call_tmp:(_ref(array1),_ref(array2))
-  .....
-  def firstField: _ref(array1)
-  move(firstField, .v(call_tmp, x1))
-  forall ..... in
-    call( fn these firstField )  // pass 'firstField' instead
-  do .....
-*/
-static void adjustForZipperedLoopexpr(CallExpr* iterCall, FnSymbol* iterator) {
-  Expr* firstArg = iterCall->get(1);
-  if (firstArg->getValType() == iterator->getFormal(1)->getValType())
-    return; // no adjustments are needed
-
-  Expr* stmt = iterCall->getStmtExpr();
-  AggregateType* ag = toAggregateType(firstArg->getValType());
-  INT_ASSERT(ag->symbol->hasFlag(FLAG_TUPLE));
-  // We need to pass only the first component of the tuple.
-  Symbol* firstField = ag->getField(1);
-  VarSymbol* temp = newTemp("firstField", firstField->type);
-  firstArg->replace(new SymExpr(temp));
-  stmt->insertBefore(new DefExpr(temp));
-  stmt->insertBefore("'move'(%S,'.v'(%E,%S))", temp, firstArg, firstField);
-}
-
 //
-// Handle the case where the leader iterator is _iterator_for_loopexpr.
+// Handle the case where the leader iterator is chpl__loopexpr_iter.
 // Not doing so confuses ReturnByRef and lowering of ForallStmts.
 //
 // Tests:
@@ -1188,6 +1199,7 @@ static void convertIteratorForLoopexpr(ForallStmt* fs) {
   if (CallExpr* iterCall = toCallExpr(fs->iteratedExpressions().head))
     if (SymExpr* calleeSE = toSymExpr(iterCall->baseExpr))
       if (FnSymbol* calleeFn = toFnSymbol(calleeSE->symbol()))
+       if (! calleeFn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
         if (isLoopExprFun(calleeFn)) {
           // In this case, we have a _toLeader call and no side effects.
           // Just use the iterator corresponding to the iterator record.
@@ -1197,7 +1209,9 @@ static void convertIteratorForLoopexpr(ForallStmt* fs) {
           if (calleeFn->firstSymExpr() == NULL)
             calleeFn->defPoint->remove(); // not needed any more
           removeOuterVarArgs(iterCall, calleeFn, iterator);
-          adjustForZipperedLoopexpr(iterCall, iterator);
+          // Adds coercions as needed.
+          if (iterCall->get(1)->getValType() != iterator->getFormal(1)->getValType())
+            resolveCall(iterCall);
         }
 }
 
@@ -1207,6 +1221,8 @@ void resolveForallStmts2() {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
 
+    if (fs->fromReduce()) continue; // not an error
+
     // formerly nonLeaderParCheckInt()
     FnSymbol* parent = fs->getFunction();
     // If isTaskFun(parent), error is still reported in nonLeaderParCheckInt.
@@ -1215,4 +1231,79 @@ void resolveForallStmts2() {
     
     convertIteratorForLoopexpr(fs);
   }
+}
+
+
+///////////////////////////////
+//                           //
+//   PRIM_REDUCE lowering    //
+//                           //
+///////////////////////////////
+
+// Insert a call temp. It is simpler than the full-blown normalize()
+// and the caller can reference the temp.
+static SymExpr* normalizeIITR(Expr* ref, Expr* iitr) {
+  VarSymbol* temp = newTemp("iitr_temp");
+  temp->addFlag(FLAG_TYPE_VARIABLE);
+  ref->insertBefore(new DefExpr(temp));
+  ref->insertBefore("'move'(%S,%E)", temp, iitr);
+  return new SymExpr(temp);
+}
+
+// Given a reduce expression like "op reduce data", return op(inputType).
+// inputType is the type of things being reduced - when iterating over 'data'.
+// This matches the case where inputType is provided by the user.
+static Expr* lowerReduceOp(Expr* ref, SymExpr* opSE, SymExpr* dataSE,
+                           bool zippered)
+{
+  CallExpr* iit = NULL;
+  if (zippered) {
+    // Cf. destructZipperedIterables. 'zipcall' will be removed there.
+    CallExpr* zipcall = toCallExpr(getDefOfTemp(dataSE)->copy());
+    INT_ASSERT(zipcall->isPrimitive(PRIM_ZIP));
+    iit = new CallExpr("iteratorIndexTypeZip");
+    for_actuals(actual, zipcall)
+      iit->insertAtTail(toSymExpr(actual)->symbol());
+  } else {
+    iit = new CallExpr("iteratorIndexType", dataSE->symbol());
+  }
+
+  ref->insertBefore(iit);
+  Expr* iitR = resolveExpr(iit)->remove();
+  if (!isSymExpr(iitR)) iitR = normalizeIITR(ref, iitR);
+
+  return new CallExpr(opSE, iitR);
+}
+
+// Within resolveBlockStmt / for_exprs_postorder framework,
+// we need to lower PRIM_REDUCE prior to the resolveCall()
+// that gets invoked from resolveExpr(). That way the
+// ForallStmt plus scaffolding that lowerPrimReduce() injects
+// can come after 'retval'. resolveCall() does not support that.
+
+void lowerPrimReduce(CallExpr* call, Expr*& retval) {
+  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+
+  Expr*   callStmt = call->getStmtExpr();
+  CallExpr*   noop = new CallExpr(PRIM_NOOP);
+  callStmt->insertBefore(noop);
+
+  SymExpr*   opSE = toSymExpr(call->get(1)->remove());           // 1st arg
+  SymExpr* dataSE = toSymExpr(call->get(1)->remove());           // 2nd arg
+  bool   zippered = toSymExpr(call->get(1))->symbol() == gTrue;  // 3rd arg
+  bool  reqSerial = false; // We may need it for #11819, otherwise remove it.
+
+  Expr* opExpr = lowerReduceOp(callStmt, opSE, dataSE, zippered);
+
+  VarSymbol* result = newTemp("chpl_redResult");
+  callStmt->insertBefore(new DefExpr(result));
+
+  VarSymbol*       idx  = newTemp("chpl_redIdx");
+  ShadowVarSymbol* svar = new ShadowVarSymbol(TFI_REDUCE, "chpl_redSVar",
+                                              new SymExpr(result), opExpr);
+  ForallStmt*      fs   = ForallStmt::fromReduceExpr(idx, dataSE, svar,
+                                                     zippered, reqSerial);
+  callStmt->insertBefore(fs);
+  call->replace(new SymExpr(result));
+  retval = noop;
 }

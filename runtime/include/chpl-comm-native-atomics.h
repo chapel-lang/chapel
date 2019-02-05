@@ -120,8 +120,8 @@ DECL_CHPL_COMM_ATOMIC_CMPXCHG(real64)
   void chpl_comm_atomic_ ## op ## _ ## type                             \
          (void* operand, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn);
-#define DECL_CHPL_COMM_ATOMIC_NONFETCH_BUFF_BINARY(op, type)            \
-  void chpl_comm_atomic_ ## op ## _buff_ ## type                        \
+#define DECL_CHPL_COMM_ATOMIC_NONFETCH_UNORDERED_BINARY(op, type)       \
+  void chpl_comm_atomic_ ## op ## _unordered_ ## type                   \
          (void* operand, c_nodeid_t node, void* object,                 \
           int ln, int32_t fn);
 #define DECL_CHPL_COMM_ATOMIC_FETCH_BINARY(op, type)                    \
@@ -130,7 +130,7 @@ DECL_CHPL_COMM_ATOMIC_CMPXCHG(real64)
           int ln, int32_t fn);
 #define DECL_CHPL_COMM_ATOMIC_BINARY(op, type)                          \
   DECL_CHPL_COMM_ATOMIC_NONFETCH_BINARY(op, type)                       \
-  DECL_CHPL_COMM_ATOMIC_NONFETCH_BUFF_BINARY(op, type)                  \
+  DECL_CHPL_COMM_ATOMIC_NONFETCH_UNORDERED_BINARY(op, type)             \
   DECL_CHPL_COMM_ATOMIC_FETCH_BINARY(op, type)
 
 DECL_CHPL_COMM_ATOMIC_BINARY(and, int32)
@@ -162,6 +162,7 @@ DECL_CHPL_COMM_ATOMIC_BINARY(sub, uint64)
 DECL_CHPL_COMM_ATOMIC_BINARY(sub, real32)
 DECL_CHPL_COMM_ATOMIC_BINARY(sub, real64)
 
-void chpl_comm_atomic_buff_flush(void);
+void chpl_comm_atomic_unordered_fence(void);
+void chpl_comm_atomic_unordered_task_fence(void);
 
 #endif // _chpl_comm_native_atomics_h_

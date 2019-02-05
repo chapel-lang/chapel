@@ -31,11 +31,14 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
+ForallStmt::ForallStmt(BlockStmt* body):
   Stmt(E_ForallStmt),
-  fZippered(zippered),
   fLoopBody(body),
+  fZippered(false),
   fFromForLoop(false),
+  fFromReduce(false),
+  fAllowSerialIterator(false),
+  fRequireSerialIterator(false),
   fVectorizationHazard(false),
   fContinueLabel(NULL),
   fErrorHandlerLabel(NULL),
@@ -47,13 +50,13 @@ ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   fIterVars.parent = this;
   fIterExprs.parent = this;
   fShadowVars.parent = this;
+  INT_ASSERT(fLoopBody != NULL);
 
   gForallStmts.add(this);
 }
 
 ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
-  ForallStmt* _this  = new ForallStmt(fZippered,
-                                      COPY_INT(fLoopBody));
+  ForallStmt* _this  = new ForallStmt(COPY_INT(fLoopBody));
   for_alist(expr, fIterVars)
     _this->fIterVars.insertAtTail(COPY_INT(expr));
   for_alist(expr, fIterExprs)
@@ -61,8 +64,12 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   for_alist(expr, fShadowVars)
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
 
+  _this->fZippered    = fZippered;
   _this->fFromForLoop = fFromForLoop;
-  _this->fVectorizationHazard = fVectorizationHazard;
+  _this->fFromReduce  = fFromReduce;
+  _this->fAllowSerialIterator   = fAllowSerialIterator;
+  _this->fRequireSerialIterator = fRequireSerialIterator;
+  _this->fVectorizationHazard   = fVectorizationHazard;
   // todo: fContinueLabel, fErrorHandlerLabel
 
   _this->fRecIterIRdef        = COPY_INT(fRecIterIRdef);
@@ -249,7 +256,7 @@ void ForallStmt::setNotZippered() {
   fZippered = false;
 }
 
-// Return the enclosing forall statement for 'expr', or NULL if none.
+// Return the nearest enclosing forall statement for 'expr', or NULL if none.
 ForallStmt* enclosingForallStmt(Expr* expr) {
   for (Expr* curr = expr->parentExpr; curr; curr = curr->parentExpr)
     if (ForallStmt* fs = toForallStmt(curr))
@@ -257,42 +264,42 @@ ForallStmt* enclosingForallStmt(Expr* expr) {
   return NULL;
 }
 
-// Is 'expr' the DefExpr of an induction variable in some ForallStmt?
-bool isForallIterVarDef(Expr* expr) {
+// Return a ForallStmt* if 'expr' is the DefExpr of its induction variable.
+ForallStmt* isForallIterVarDef(Expr* expr) {
   if (expr->list != NULL)
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
       if (expr->list == &pfs->inductionVariables())
-        return true;
-  return false;
+        return pfs;
+  return NULL;
 }
 
-// Is 'expr' an iterable-expression for some ForallStmt?
-bool isForallIterExpr(Expr* expr) {
+// Return a ForallStmt* if 'expr' is its iterable-expression.
+ForallStmt* isForallIterExpr(Expr* expr) {
   if (expr->list != NULL)
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
       if (expr->list == &pfs->iteratedExpressions())
-        return true;
-  return false;
+        return pfs;
+  return NULL;
 }
 
-// Is 'expr' the fs->loopBody() for some 'fs' ?
-bool isForallLoopBody(Expr* expr) {
+// Return a ForallStmt* if 'expr' is its loopBody.
+ForallStmt* isForallLoopBody(Expr* expr) {
   if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
     if (expr == pfs->loopBody())
-      return true;
-  return false;
+      return pfs;
+  return NULL;
 }
 
-// Is 'expr' one of fs->fRecIter* for some 'fs' ?
-bool isForallRecIterHelper(Expr* expr) {
+// Return a ForallStmt* if 'expr' is one of its fRecIter* helpers.
+ForallStmt* isForallRecIterHelper(Expr* expr) {
   if (expr->list == NULL)
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
       if (expr == pfs->fRecIterIRdef ||
           expr == pfs->fRecIterICdef ||
           expr == pfs->fRecIterGetIterator ||
           expr == pfs->fRecIterFreeIterator)
-        return true;
-  return false;
+        return pfs;
+  return NULL;
 }
 
 // Return the index variable of the parallel loop.
@@ -341,12 +348,18 @@ static void fsDestructureIterables(ForallStmt* fs, Expr* iterator) {
   }
 }
 
+// when there is already a Symbol
+static void createAndAddIndexVar(AList& fIterVars, Symbol* idxVar) {
+  idxVar->addFlag(FLAG_INDEX_VAR);
+  idxVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  INT_ASSERT(idxVar->defPoint == NULL); // ensure we do not overwrite it
+  fIterVars.insertAtTail(new DefExpr(idxVar));
+}
+
 // when 'name' is known
 static VarSymbol* createAndAddIndexVar(AList& fIterVars, const char* name) {
   VarSymbol* idxVar = new VarSymbol(name);
-  idxVar->addFlag(FLAG_INDEX_VAR);
-  idxVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  fIterVars.insertAtTail(new DefExpr(idxVar));
+  createAndAddIndexVar(fIterVars, idxVar);
   return idxVar;
 }
 
@@ -361,8 +374,18 @@ static VarSymbol* createAndAddIndexVar(AList& fIterVars, int idxPosition) {
   return result;
 }
 
+// Support different users of fsDestructureWhenSingleIdxVar().
+static inline VarSymbol* indexExprToVarSymbol(BaseAST* index) {
+  if (UnresolvedSymExpr* USE = toUnresolvedSymExpr(index))
+    return new VarSymbol(USE->unresolved);
+  if (VarSymbol* VS = toVarSymbol(index))
+    return VS;
+  // Caller responsibility.
+  return NULL;
+}
+
 static void fsDestructureWhenSingleIdxVar(ForallStmt* fs, AList& fIterVars,
-                                 UnresolvedSymExpr* index, int numIterables)
+                                          BaseAST* index, int numIterables)
 {
   // This is the case like:  forall idx in zip(A,B) ...
   // i.e. zippered with a single index variable.
@@ -376,7 +399,7 @@ static void fsDestructureWhenSingleIdxVar(ForallStmt* fs, AList& fIterVars,
     bt->insertAtTail(idx_i);
   }
 
-  VarSymbol* idxUser = new VarSymbol(index->unresolved);
+  VarSymbol* idxUser = indexExprToVarSymbol(index);
   idxUser->addFlag(FLAG_INDEX_VAR);
   idxUser->addFlag(FLAG_INSERT_AUTO_DESTROY);
   DefExpr* idxDef = new DefExpr(idxUser);
@@ -396,6 +419,10 @@ static void fsDestructureIndex(ForallStmt* fs, AList& fIterVars,
   if (UnresolvedSymExpr* indexUSE = toUnresolvedSymExpr(index)) {
     // User specified the index variable - use it.
     createAndAddIndexVar(fIterVars, indexUSE->unresolved);
+
+  } else if (SymExpr* indexSE = toSymExpr(index)) {
+    // There is already a Symbol for it - use it.
+    createAndAddIndexVar(fIterVars, indexSE->symbol());
 
   } else {
     // We need to create an index variable and go from there.
@@ -470,8 +497,31 @@ static void adjustReduceOpNames(ForallStmt* fs) {
     }
 }
 
+ForallStmt* ForallStmt::buildHelper(Expr* indices, Expr* iterator,
+                                    CallExpr* intents, BlockStmt* body,
+                                    bool zippered, bool fromForLoop)
+{
+  ForallStmt* fs = new ForallStmt(body);
+  fs->fZippered    = zippered;
+  fs->fFromForLoop = fromForLoop;
+  body->blockTag   = BLOCK_NORMAL; // do not flatten it in cleanup(), please
+
+  // Transfer the DefExprs of the intent variables (ShadowVarSymbols).
+  if (intents) {
+    while (Expr* src = intents->argList.head)
+      fs->shadowVariables().insertAtTail(src->remove());
+  }
+
+  fsDestructureIterables(fs, iterator);
+  fsDestructureIndices(fs, indices);
+  fsVerifyNumIterables(fs);
+  adjustReduceOpNames(fs);
+
+  return fs;
+}
+
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
-                             BlockStmt* body, bool zippered)
+                             BlockStmt* body, bool zippered, bool serialOK)
 {
   checkControlFlow(body, "forall statement");
 
@@ -479,29 +529,15 @@ BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndices(indices);
 
-  ForallStmt* fs = new ForallStmt(zippered, body);
-
-  // Transfer the DefExprs of the intent variables (ShadowVarSymbols).
-  if (intents) {
-    while (Expr* src = intents->argList.head) {
-      DefExpr* svDef = toDefExpr(src->remove());
-      INT_ASSERT(svDef);
-      fs->shadowVariables().insertAtTail(svDef);
-    }
-  }
-
-  fsDestructureIterables(fs, iterator);
-  fsDestructureIndices(fs, indices);
-  fsVerifyNumIterables(fs);
-
-  adjustReduceOpNames(fs);
-  body->blockTag = BLOCK_NORMAL; // do not flatten it in cleanup(), please
+  ForallStmt* fs = ForallStmt::buildHelper(indices, iterator, intents, body,
+                                           zippered, false);
+  fs->fAllowSerialIterator = serialOK;
 
   return buildChapelStmt(fs);
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// support for converting from a for loop
+// support for converting from a for loop etc.
 /////////////////////////////////////////////////////////////////////////////
 
 ForallStmt* ForallStmt::fromForLoop(ForLoop* forLoop) {
@@ -510,12 +546,53 @@ ForallStmt* ForallStmt::fromForLoop(ForLoop* forLoop) {
   // conversion from zippered is not implemented
   INT_ASSERT(forLoop->zipperedGet() == false);
 
-  ForallStmt* result = new ForallStmt(false, new BlockStmt());
+  ForallStmt* result = new ForallStmt(new BlockStmt());
   result->fFromForLoop = true;
 
   return result;
 }
 
+// "Undo" the tuple for a zippered 'fs'.
+static void destructZipperedIterables(ForallStmt* fs, SymExpr* dataExpr) {
+  CallExpr* zipcall = toCallExpr(getDefOfTemp(dataExpr));
+  INT_ASSERT(zipcall->isPrimitive(PRIM_ZIP));
+  for_actuals(actual, zipcall)
+    fs->iteratedExpressions().insertAtTail(actual->remove());
+
+  // Ensure removing zipcall is OK.
+  CallExpr* move = toCallExpr(zipcall->parentExpr);
+  INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+  move->remove();
+}
+
+ForallStmt* ForallStmt::fromReduceExpr(VarSymbol* idx, SymExpr* dataExpr,
+                                       ShadowVarSymbol* svar,
+                                       bool zippered, bool requireSerial)
+{
+  Symbol* ata = new_IntSymbol(-7, INT_SIZE_64); // atavism, ignored
+  CallExpr* reduceAssign = new CallExpr(PRIM_REDUCE_ASSIGN, ata, svar, idx);
+  BlockStmt*  fsBody = new BlockStmt(reduceAssign);
+  ForallStmt* result = new ForallStmt(fsBody);
+
+  result->fZippered   = zippered;
+  result->fFromReduce = true;
+  result->fAllowSerialIterator = true;
+  result->fRequireSerialIterator = requireSerial;
+  result->shadowVariables().insertAtTail(new DefExpr(svar));
+
+  if (zippered) {
+    destructZipperedIterables(result, dataExpr);
+    fsDestructureWhenSingleIdxVar(result, result->inductionVariables(),
+                                  idx, result->numIteratedExprs());
+  } else {
+    idx->addFlag(FLAG_INDEX_VAR);
+    idx->addFlag(FLAG_INSERT_AUTO_DESTROY); // how about the zippered case?
+    result->inductionVariables().insertAtTail(new DefExpr(idx));
+    result->iteratedExpressions().insertAtTail(dataExpr);
+  }
+
+  return result;
+}
 
 
 // vectorization

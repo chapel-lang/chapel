@@ -1586,62 +1586,7 @@ void chpl_comm_make_progress(void)
   gasnet_AMPoll();
 }
 
-
-void chpl_startVerboseComm() {
-  chpl_verbose_comm = 1;
-  chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
-  chpl_comm_diags_enable();
-}
-
-void chpl_stopVerboseComm() {
-  chpl_verbose_comm = 0;
-  chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
-  chpl_comm_diags_enable();
-}
-
-void chpl_startVerboseCommHere() {
-  chpl_verbose_comm = 1;
-}
-
-void chpl_stopVerboseCommHere() {
-  chpl_verbose_comm = 0;
-}
-
-void chpl_startCommDiagnostics() {
-  chpl_comm_diagnostics = 1;
-  chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
-  chpl_comm_diags_enable();
-}
-
-void chpl_stopCommDiagnostics() {
-  chpl_comm_diagnostics = 0;
-  chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
-  chpl_comm_diags_enable();
-}
-
-void chpl_startCommDiagnosticsHere() {
-  chpl_comm_diagnostics = 1;
-}
-
-void chpl_stopCommDiagnosticsHere() {
-  chpl_comm_diagnostics = 0;
-}
-
-void chpl_resetCommDiagnosticsHere() {
-  chpl_comm_diags_reset();
-}
-
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
-  chpl_comm_diags_copy(cd);
-}
+void chpl_comm_task_end(void) { }
 
 void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide_addr) {
   if (chpl_nodeID == 0) {

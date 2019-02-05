@@ -1,8 +1,0 @@
-bug: user defined reduction accumulate() with tuple arg fails to resolve
-
-The issue seems to be related to a bad interaction between tuples and
-references. Specifically, the compiler is passing a ref-to-eltType into the
-routine as the first tuple element, but due to the way tuples are handled, it
-doesn't seem to be resolving to the routine that simply wants an eltType as its
-first tuple element (and we don't have a way to declare that it should be
-ref-to-eltType, nor am I certain we would want to).

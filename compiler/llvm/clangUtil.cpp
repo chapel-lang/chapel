@@ -2781,7 +2781,6 @@ void makeBinaryLLVM(void) {
 
   std::string options = "";
 
-  // TODO: fixme
 
   std::string maino(CHPL_RUNTIME_LIB);
   maino += "/";
@@ -2793,10 +2792,10 @@ void makeBinaryLLVM(void) {
   runtime_libs += CHPL_RUNTIME_SUBDIR;
   runtime_libs += "/list-libraries";
 
+  std::vector<std::string> runtimeArgs;
+  readArgsFromFile(runtime_libs, runtimeArgs);
+
   std::vector<std::string> clangLDArgs;
-  readArgsFromFile(runtime_libs, clangLDArgs);
-  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
-  expandInstallationPaths(clangLDArgs);
 
   if (compilingWithPrgEnv()) {
     std::string gather_prgenv(CHPL_HOME);
@@ -2817,8 +2816,35 @@ void makeBinaryLLVM(void) {
     gather_prgenv += "' '";
     gather_prgenv += CHPL_AUX_FILESYS;
     gather_prgenv += "'";
-    readArgsFromCommand(gather_prgenv, clangLDArgs);
+
+    std::vector<std::string> gatheredArgs;
+    readArgsFromCommand(gather_prgenv, gatheredArgs);
+
+    // Replace -lchpl_lib_token with the runtime arguments
+    // but don't add a redundant -lhugetlbfs because that
+    // library is already included
+    bool found = false;
+    for(size_t i = 0; i < gatheredArgs.size(); ++i) {
+      if (gatheredArgs[i] == "-lchpl_lib_token") {
+        found = true;
+        for(size_t j = 0; j < runtimeArgs.size(); ++j) {
+          if (runtimeArgs[j] != "-lhugetlbfs")
+            clangLDArgs.push_back(runtimeArgs[j]);
+        }
+      } else {
+        clangLDArgs.push_back(gatheredArgs[i]);
+      }
+    }
+
+    if (!found) INT_FATAL("could not find -lchpl_lib_token in gathered arguments");
+
+  } else {
+    clangLDArgs = runtimeArgs;
   }
+
+  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+  expandInstallationPaths(clangLDArgs);
+
 
   std::string runtime_ld_override(CHPL_RUNTIME_LIB);
   runtime_ld_override += "/";

@@ -124,13 +124,21 @@ proc masonClean() {
 
 proc masonDoc(args) {
   try! {
+    const tomlName = 'Mason.toml';
     const cwd = getEnv("PWD");
-    const projectHome = getProjectHome(cwd);
-    const toDoc = basename(projectHome);
-    const project = toDoc + '.chpl';
+
+    const projectHome = getProjectHome(cwd, tomlName);
+    const tomlPath = projectHome + "/" + tomlName;
+
+    const toParse = open(projectHome + "/" + tomlName, iomode.r);
+    var tomlFile = new owned(parseToml(toParse));
+
+    const projectName = tomlFile["brick"]["name"].s;
+    const projectFile = projectName + '.chpl';
+
     if isDir(projectHome + '/src/') {
-      if isFile(projectHome + '/src/' + project) {
-        const command = 'chpldoc ' + projectHome + '/src/' + project + ' -o ' + projectHome + '/doc/';
+      if isFile(projectHome + '/src/' + projectFile) {
+        const command = 'chpldoc ' + projectHome + '/src/' + projectFile + ' -o ' + projectHome + '/doc/';
         writeln(command);
         runCommand(command);
       }

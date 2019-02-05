@@ -1059,9 +1059,20 @@ bool canCoerce(Type*     actualType,
                        fn,
                        promotes);
 
-  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-      (formalType == dtCVoidPtr))
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && formalType == dtCVoidPtr)
     return true;
+
+  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && formalType == dtCVoidPtr)
+    return true;
+
+  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) &&
+      formalType->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    // check element types match
+    Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
+    Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
+    if (actualElt && formalElt && actualElt == formalElt)
+      return true;
+  }
 
   return false;
 }
@@ -6230,8 +6241,6 @@ void resolveBlockStmt(BlockStmt* blockStmt) {
 
 static bool        isParamResolved(FnSymbol* fn, Expr* expr);
 
-static ForallStmt* toForallForIteratedExpr(SymExpr* expr);
-
 static Expr*       resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr);
 
 static CallExpr*   toPrimToLeaderCall(Expr* expr);
@@ -6295,7 +6304,7 @@ Expr* resolveExpr(Expr* expr) {
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 
-    if (ForallStmt* pfs = toForallForIteratedExpr(se)) {
+    if (ForallStmt* pfs = isForallIterExpr(se)) {
       CallExpr* call = resolveForallHeader(pfs, se);
 
       if (tryFailure == false) {
@@ -6368,13 +6377,6 @@ static bool isParamResolved(FnSymbol* fn, Expr* expr) {
   }
 
   return retval;
-}
-
-static ForallStmt* toForallForIteratedExpr(SymExpr* expr) {
-  if (isForallIterExpr(expr))
-    return toForallStmt(expr->parentExpr);
-  else
-    return NULL;
 }
 
 static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
@@ -6866,6 +6868,21 @@ static void resolveExternVarSymbols()
 }
 
 
+static void adjustInternalSymbols() {
+  SET_LINENO(rootModule);
+
+  // call _nilType nil so as to not confuse the user
+  dtNil->symbol->name = gNil->name;
+
+  // we want gDummyRef to be passable to 'ref' formals
+  makeRefType(dtDummyRef);
+  gDummyRef->type = dtDummyRef->getRefType();
+  gDummyRef->qual = QUAL_REF;
+  gDummyRef->addFlag(FLAG_REF);
+  gDummyRef->removeFlag(FLAG_CONST);
+}
+
+
 static bool isObviousType(Type* type) {
   return isPrimitiveType(type) && ! type->isInternalType;
 }
@@ -6916,6 +6933,23 @@ static void resolveObviousGlobals() {
 }
 
 
+static void markGenericFunctions() {
+  bool changed = true;
+
+  // Iterate until all generic functions have been tagged with FLAG_GENERIC
+  while (changed == true) {
+    changed = false;
+
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      // Returns true if status of fn is changed
+      if (fn->tagIfGeneric() == true) {
+        changed = true;
+      }
+    }
+  }
+}
+
+
 static void
 computeStandardModuleSet() {
   // Lydia NOTE: 09/12/16 - this code does not follow the same code path used
@@ -6955,30 +6989,17 @@ computeStandardModuleSet() {
 
 
 void resolve() {
-  bool changed = true;
-
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
 
   computeStandardModuleSet(); // Lydia NOTE 09/12/16: is not linked to our
   // treatment on functions included by default, leading to bugs with qualified
   // access to symbols included in this way.
 
-  // call _nilType nil so as to not confuse the user
-  dtNil->symbol->name = gNil->name;
-
-  // Iterate until all generic functions have been tagged with FLAG_GENERIC
-  while (changed == true) {
-    changed = false;
-
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      // Returns true if status of fn is changed
-      if (fn->tagIfGeneric() == true) {
-        changed = true;
-      }
-    }
-  }
+  markGenericFunctions();
 
   unmarkDefaultedGenerics();
+
+  adjustInternalSymbols(); // must go after tagIfGeneric()
 
   resolveExternVarSymbols();
 

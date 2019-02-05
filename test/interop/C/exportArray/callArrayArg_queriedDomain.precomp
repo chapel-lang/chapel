@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling arrayArg_queriedDomain.chpl
+$3 --library --static arrayArg_queriedDomain.chpl

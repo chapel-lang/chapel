@@ -1,12 +1,17 @@
-/*
- * When retiring this future, we should beef it up to also test:
- *  - class
- *  - the case where there is one of (leader, follower) but not the other.
- */
 
 record TEST {
   iter these() { yield 5; }
 }
 var t: TEST;
-forall i in t do
+[i in t]
   writeln(i);
+
+class CTEST {
+  iter these() { yield 6; yield 7; }
+  iter these(param tag, followThis) { yield followThis; } // should be unused
+}
+var c = new owned CTEST();
+[j in c]
+  writeln(j);
+
+writeln("done");

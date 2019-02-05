@@ -1015,12 +1015,17 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
       USR_FATAL_CONT(node,
                      "cannot access parent field \"%s\" before super.init() or this.init()",
                      field->sym->name);
+    } else if (state->isPhase1()) {
+      node->baseExpr->remove();
+      node->baseExpr = NULL;
+      node->primitive = primitives[PRIM_GET_MEMBER];
     }
     return false;
   } else if (isAssignment(node)) {
     if (CallExpr* LHS = toCallExpr(node->get(1))) {
       if (isThisDot(LHS)) {
         if (LHS->square == false) {
+          node->get(1)->accept(this);
           // Regular 'this.x = ' , just look at the RHS
           node->get(2)->accept(this);
           return false;

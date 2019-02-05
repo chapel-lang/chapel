@@ -418,6 +418,7 @@ static void makePXDFile(std::vector<FnSymbol*> functions) {
 }
 
 static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits);
+static void makeOpaqueArrayClass();
 
 // Generate the .pyx file for the library.  This will also be used when
 // creating the Python module.
@@ -438,7 +439,8 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
     fprintf(pyx.fptr, "from chplrt cimport chpl_library_init, ");
     fprintf(pyx.fptr, "chpl_library_finalize, chpl_external_array, ");
     fprintf(pyx.fptr, "chpl_make_external_array, chpl_make_external_array_ptr");
-    fprintf(pyx.fptr, ", chpl_free_external_array, chpl_opaque_array\n");
+    fprintf(pyx.fptr, ", chpl_free_external_array, chpl_opaque_array,");
+    fprintf(pyx.fptr, " cleanupOpaqueArray\n");
 
     std::vector<FnSymbol*> moduleInits;
     std::vector<FnSymbol*> exported;
@@ -479,12 +481,8 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
     fprintf(pyx.fptr, "import ctypes\n");
     fprintf(pyx.fptr, "from libc.stdint cimport intptr_t\n\n");
 
-    fprintf(pyx.fptr, "cdef class ChplOpaqueArray:\n");
-    fprintf(pyx.fptr, "\tcdef chpl_opaque_array val\n\n");
-    fprintf(pyx.fptr, "\tcdef inline setVal(self, chpl_opaque_array val):\n");
-    fprintf(pyx.fptr, "\t\tself.val = val\n\n");
-
     makePYXSetupFunctions(moduleInits);
+    makeOpaqueArrayClass();
 
     // Add Python wrapper for the exported functions, to translate the types
     // appropriately
@@ -519,7 +517,27 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   // Shut down the runtime and libraries.  chpl_cleanup should get called when
   // the exported Chapel code is no longer needed
   fprintf(outfile, "def chpl_cleanup():\n");
-  fprintf(outfile, "\tchpl_library_finalize()\n");
+  fprintf(outfile, "\tchpl_library_finalize()\n\n");
+}
+
+static void makeOpaqueArrayClass() {
+  GenInfo* info = gGenInfo;
+  FILE* outfile = info->cfile;
+
+  fprintf(outfile, "cdef class ChplOpaqueArray:\n");
+  fprintf(outfile, "\tcdef chpl_opaque_array val\n\n");
+  fprintf(outfile, "\tcdef inline setVal(self, chpl_opaque_array val):\n");
+  fprintf(outfile, "\t\tself.val = val\n\n");
+
+  fprintf(outfile, "\tdef cleanup(self):\n");
+  fprintf(outfile, "\t\tcleanupOpaqueArray(&self.val);\n\n");
+
+  // Allows the Python type to be created and cleaned up appropriately in a
+  // Python "with" clause
+  fprintf(outfile, "\tdef __enter__(self):\n");
+  fprintf(outfile, "\t\treturn self\n\n");
+  fprintf(outfile, "\tdef __exit__(self, exc_type, exc_value, traceback):\n");
+  fprintf(outfile, "\t\tself.cleanup()\n\n");
 }
 
 // create the Python file which will be used to compile the .pyx, .pxd, library,

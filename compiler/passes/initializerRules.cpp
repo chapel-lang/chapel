@@ -586,6 +586,9 @@ static InitNormalize preNormalize(AggregateType* at,
                       field->sym->name);
 
           } else {
+            if (state.isPhase1()) {
+              state.processThisUses(callExpr);
+            }
             stmt = stmt->next;
           }
         }

@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of new reduce expressions
-GITHUB_USER=vasslitvinov
-GITHUB_BRANCH=serial-ForallStmt
-SHORT_NAME=reduce-exprs
-START_DATE=12/14/18
+# Test performance automatically fencing unordered ops at task completion
+GITHUB_USER=ronawho
+GITHUB_BRANCH=fence-unordered-ops-task-end
+SHORT_NAME=fence-unordered-ops
+START_DATE=01/27/19
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

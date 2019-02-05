@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "driver.h"
 #include "ForallStmt.h"
+#include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
 #include "resolution.h"
@@ -795,8 +796,18 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
+  } else if (call->isPrimitive(PRIM_HAS_LEADER)) {
+    FnSymbol* iterator   = getTheIteratorFn(call->get(1)->typeInfo());
+    Symbol* result = gFalse;
+    if (IteratorGroup* igroup = iterator->iteratorGroup)
+      if (igroup->leader != NULL)
+        result = gTrue;
+
+    retval = new SymExpr(result);
+    call->replace(retval);
+
   } else if (call->isPrimitive(PRIM_TO_FOLLOWER)) {
-    FnSymbol* iterator     = getTheIteratorFn(call);
+    FnSymbol* iterator     = getTheIteratorFn(call->get(1)->typeInfo());
     CallExpr* followerCall = NULL;
 
     if (FnSymbol* f2 = findForallexprFollower(iterator)) {
@@ -859,7 +870,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = leaderCall;
 
   } else if (call->isPrimitive(PRIM_TO_STANDALONE)) {
-    FnSymbol* iterator       = getTheIteratorFn(call);
+    FnSymbol* iterator       = getTheIteratorFn(call->get(1)->typeInfo());
     CallExpr* standaloneCall = new CallExpr(iterator->name);
 
     for_formals(formal, iterator) {
@@ -1096,6 +1107,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = new CallExpr(PRIM_SIZEOF_DDATA_ELEMENT, sizeType->symbol);
     call->replace(retval);
 
+  } else if (call->isPrimitive(PRIM_REDUCE)) {
+    // Need to do this ahead of resolveCall().
+    lowerPrimReduce(call, retval);
   }
 
   return retval;
@@ -1387,6 +1401,7 @@ static Expr* preFoldNamed(CallExpr* call) {
         }
       }
     }
+
   } else if (call->isNamed("==")) {
     if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
       Type* lt = call->get(1)->getValType();
@@ -1438,6 +1453,11 @@ static Expr* preFoldNamed(CallExpr* call) {
         }
       }
     }
+
+  } else if (call->isNamed("chpl__staticFastFollowCheck")  ||
+             call->isNamed("chpl__dynamicFastFollowCheck")  ) {
+    if (! call->isResolved())
+      buildFastFollowerChecksIfNeeded(call);
   }
 
   return retval;

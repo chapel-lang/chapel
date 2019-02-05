@@ -1,49 +1,80 @@
 use Random;
 
-class lastmaxloc: ReduceScanOp {
+record LastLocState {
   type eltType;
-  var value: eltType = min(eltType);
+  var value: eltType;
   var uninitialized = true;
 
-  proc accumulate(x) {
-    if uninitialized || (x(1) > value(1)) ||
-      ((x(1) == value(1)) && (x(2) > value(2))) then
-      value = x;
-    uninitialized = false;
+  proc init(type eltType) {
+    this.eltType = eltType;
   }
-  proc combine(x) {
-    if uninitialized || (x.value(1) > value(1)) ||
-      ((x.value(1) == value(1)) && (x.value(2) > value(2))) {
-      if !x.uninitialized {
-        value = x.value;
-        uninitialized = false;
-      }
-    }
+
+  proc init(type eltType, startMin: bool) {
+    this.eltType = eltType;
+    this.value = if startMin then min(eltType) else max(eltType);
   }
-  proc generate() return value;
+}
+
+class lastmaxloc: ReduceScanOp {
+  type eltType;
+  var state: LastLocState(eltType);
+
+  proc identity  return new LastLocState(eltType, startMin=true);
+
+  proc accumulate(otherSt) { accumulateOntoState(this.state, otherSt.value); }
+
+  proc accumulateOntoState(ref state, otherVal) {
+    if state.uninitialized                  ||
+       ( otherVal(1) > state.value(1) )     ||
+       ( (otherVal(1) == state.value(1)) &&
+         (otherVal(2) > state.value(2))   )
+    then
+      state.value = otherVal;
+
+    state.uninitialized = false;
+  }
+
+  proc combine(otherOp) {
+    if otherOp.state.uninitialized then
+      ; // no update is needed
+    else
+      accumulate(otherOp.state);
+  }
+
+  proc generate()  return state.value;
+
+  proc clone()     return new unmanaged lastmaxloc(eltType = eltType);
 }
 
 class lastminloc: ReduceScanOp {
   type eltType;
-  var value: eltType = max(eltType);
-  var uninitialized = true;
+  var state: LastLocState(eltType);
 
-  proc accumulate(x) {
-    if uninitialized || (x(1) < value(1)) ||
-      ((x(1) == value(1)) && (x(2) > value(2))) then
-      value = x;
-    uninitialized = false;
+  proc identity  return new LastLocState(eltType, startMin=false);
+
+  proc accumulate(otherSt) { accumulateOntoState(this.state, otherSt.value); }
+
+  proc accumulateOntoState(ref state, otherVal) {
+    if state.uninitialized                  ||
+       ( otherVal(1) < state.value(1) )     ||
+       ( (otherVal(1) == state.value(1)) &&
+         (otherVal(2) > state.value(2))   )
+    then
+      state.value = otherVal;
+
+    state.uninitialized = false;
   }
-  proc combine(x) {
-    if uninitialized || (x.value(1) < value(1)) ||
-      ((x.value(1) == value(1)) && (x.value(2) > value(2))) {
-      if !x.uninitialized {
-        value = x.value;
-        uninitialized = false;
-      }
-    }
+
+  proc combine(otherOp) {
+    if otherOp.state.uninitialized then
+      ; // no update is needed
+    else
+      accumulate(otherOp.state);
   }
-  proc generate() return value;
+
+  proc generate()  return state.value;
+
+  proc clone()     return new unmanaged lastminloc(eltType = eltType);
 }
 
 config const seed = 889;

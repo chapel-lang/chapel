@@ -1,9 +1,0 @@
-feature request: 'these' should enable forall loops
-
-This is a variation on
-
-  test/functions/promotion/theseShouldPromote2.future
-  https://github.com/chapel-lang/chapel/issues/5114
-
-except with an explicit forall instead of (implicit) promotion.
-The record-vs-class difference is insignificant w.r.t. #5114 .

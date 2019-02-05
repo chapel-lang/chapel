@@ -1,2 +1,0 @@
-visibility-error.chpl:9: In function 'chpl__staticFastFollowCheck':
-visibility-error.chpl:9: error: unresolved call 'physicalMemory3([domain(1,int(64),false)] locale)'

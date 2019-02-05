@@ -367,15 +367,6 @@ module OwnedObject {
     f <~> this.chpl_p;
   }
 
-  // Note, coercion from _owned -> _owned.chpl_t is sometimes directly
-  // supported in the compiler via a call to borrow() and
-  // sometimes uses this cast.
-  pragma "no doc"
-  inline proc _cast(type t, pragma "nil from arg" const ref x:_owned)
-  where isSubtype(t,x.chpl_t) {
-    return x.borrow();
-  }
-
   // This cast supports coercion from _owned(SubClass) to _owned(ParentClass)
   // (i.e. when class SubClass : ParentClass ).
   // It only works in a value context (i.e. when the result of the

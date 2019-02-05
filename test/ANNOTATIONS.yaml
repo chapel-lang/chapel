@@ -574,6 +574,8 @@ ep.ml-perf: &ep-ml-base
     - Fix problems with tuples (#9572)
   06/26/18:
     - Make associative domains of enums more standard (#9978)
+  1/28/19:
+    - Represent reduce expressions using ForallStmt (#12131)
 ep.ml-time:
   <<: *ep-ml-base
 
@@ -997,6 +999,8 @@ memleaksfull:
     - Adding an exercise about finding duplicate files (#11358)
   10/25/18:
     - Fix reduction leak for identity() method (#11458)
+  1/28/19:
+    - Represent reduce expressions using ForallStmt (#12131)
 
 meteor:
   12/18/13:

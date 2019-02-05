@@ -7,7 +7,14 @@ class mink : ReduceScanOp {
   const k : int = numMins;
   var v: [1..k] eltType = max(eltType);
   
+  proc identity return [1..k] max(eltType);
+  
   proc accumulate(x: eltType)
+  {
+    accumulateOntoState(v, x);
+  }
+  
+  proc accumulateOntoState(state, x: eltType)
   {
     if (x < v[1])
       {
@@ -36,6 +43,8 @@ class mink : ReduceScanOp {
     writeln("returning: ", t);
     return t;
   }
+  
+  proc clone() return new unmanaged mink(eltType=eltType);
 }
 
 var A: [1..n] int = 1..n;

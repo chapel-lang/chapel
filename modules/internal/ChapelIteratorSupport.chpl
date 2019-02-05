@@ -69,10 +69,30 @@ module ChapelIteratorSupport {
 
   pragma "no doc"
   proc iteratorIndexType(x) type {
+   // If the result is a runtime type, we do not want to call iteratorIndex()
+   // - to avoid ic.advance(). We can do this for an array or a domain.
+   if (isArray(x)) {
+    return x.eltType;
+   } else if isDomain(x) {
+    return if x.rank == 1 then x.idxType else x.rank * x.idxType;
+   } else {
     pragma "no copy" var ic = _getIterator(x);
     pragma "no copy" var i = iteratorIndex(ic);
     _freeIterator(ic);
     return i.type;
+   }
+  }
+
+  pragma "no doc"
+  proc iteratorIndexTypeZip(xs...) type {
+    proc iteratorIndexTypeZipHelp(param dim) type {
+      if dim == xs.size then
+        return (iteratorIndexType(xs(dim)),);
+      else
+        return (iteratorIndexType(xs(dim)),
+                (...iteratorIndexTypeZipHelp(dim+1)));
+    }
+    return iteratorIndexTypeZipHelp(1);
   }
 
   proc iteratorToArrayElementType(type t:_iteratorRecord) type {
@@ -263,8 +283,7 @@ module ChapelIteratorSupport {
   }
 
   proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {
-    use Reflection;
-    if canResolveMethod(ir, "_fromForExpr_") then
+    if Reflection.canResolveMethod(ir, "_fromForExpr_") then
       return ir._fromForExpr_;
     else
       return false;
@@ -366,21 +385,24 @@ module ChapelIteratorSupport {
 
   pragma "fn returns iterator"
   pragma "no implicit copy"
-  inline proc _toLeader(ir: _iteratorRecord) {
+  inline proc _toLeader(ir: _iteratorRecord)
+    where __primitive("has leader", ir)
     return chpl__autoCopy(__primitive("to leader", ir));
-  }
 
   pragma "suppress lvalue error"
   pragma "fn returns iterator"
   inline proc _toLeader(x)
+    where !isSubtype(x.type, _iteratorRecord) && __primitive("has leader", x.these())
     return _toLeader(x.these());
 
   pragma "fn returns iterator"
   inline proc _toLeaderZip(x)
+    where !isTuple(x) && Reflection.canResolve("_toLeader", x)
     return _toLeader(x);
 
   pragma "fn returns iterator"
   inline proc _toLeaderZip(x: _tuple)
+    where Reflection.canResolve("_toLeader", x(1))
     return _toLeader(x(1));
 
   pragma "no implicit copy"

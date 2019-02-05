@@ -55,17 +55,20 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
   #
-  # Note that we call compileline with CHPL_COMM=none. Under
-  # CHPL_COMM=gasnet, compileline will fail if gasnet is not built, so
-  # in order to avoid ordering/dependencies just ignore the comm setting
-  # since it does not impact the qthreads build.
+  # Note that we call compileline with CHPL_MAKE_COMM=none. Under
+  # CHPL_MAKE_COMM=gasnet, compileline will fail if gasnet is not built,
+  # so in order to avoid ordering/dependencies just ignore the comm
+  # setting since it does not impact the qthreads build. We don't want
+  # to reset the CHPLENV_CACHE since the regular CHPL_COMM setting could
+  # impact things like CHPL_TARGET_CPU, which is part of the build path
   #
   # Throw COMPILELINE_STDERR_REDIRECT= if compileline failure is reported
   # and you want to see the stderr from that.
   #
   COMPILELINE_STDERR_REDIRECT=2> /dev/null
+  COMM_NONE_CHPLENV_CACHE := $(shell echo "$(CHPL_MAKE_CHPLENV_CACHE)" | sed 's/|CHPL_MAKE_COMM=[^|]*|/|CHPL_MAKE_COMM=none|/')
   INCS_DEFS := \
-    $(shell unset CHPL_MAKE_CHPLENV_CACHE && CHPL_COMM=none $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
+    $(shell CHPL_MAKE_CHPLENV_CACHE="$(COMM_NONE_CHPLENV_CACHE)" $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
                $(COMPILELINE_STDERR_REDIRECT) \
             || echo compilelineFAILURE)
   ifneq (, $(findstring compilelineFAILURE,$(INCS_DEFS)))
@@ -189,21 +192,21 @@ qthread-build: FORCE
 # we'll need separate checks to set them.
 #
 ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
-SUPPORTS_REMOTE_CACHE = 1
 ONE_WORKER_PER_SHEPHERD = 1
+TASKS_CAN_MIGRATE_THREADS = 0
 else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),distrib nottingham sherwood))
-SUPPORTS_REMOTE_CACHE = 0
 ONE_WORKER_PER_SHEPHERD = 0
+TASKS_CAN_MIGRATE_THREADS = 1
 else
 $(error Unrecognized Qthreads scheduler '$(SCHEDULER)')
 endif
 
 qthread-chapel-h: FORCE
-	echo "#define CHPL_QTHREAD_SUPPORTS_REMOTE_CACHE" \
-	     $(SUPPORTS_REMOTE_CACHE) \
-	     > $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 	echo "#define CHPL_QTHREAD_SCHEDULER_ONE_WORKER_PER_SHEPHERD" \
 	     $(ONE_WORKER_PER_SHEPHERD) \
+	     > $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_TASKS_CAN_MIGRATE_THREADS" \
+	     $(TASKS_CAN_MIGRATE_THREADS) \
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 	echo "#define CHPL_QTHREAD_HAVE_GUARD_PAGES" \
 	     $(HAVE_GUARD_PAGES) \

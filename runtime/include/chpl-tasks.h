@@ -284,20 +284,6 @@ chpl_task_ChapelData_t* chpl_task_getChapelData(void)
 
 
 //
-// Can this tasking layer support remote caching?
-//
-// (In practice this answers: "Are tasks bound to specific pthreads
-// or, if not, does the tasking layer make memory consistency calls
-// whenever it might move a task from one pthread to another?"  Remote
-// caching uses pthread-specific data (TLS) extensively, so it turns
-// itself off when it's used with a tasking layer that can't support
-// that.)
-//
-#ifndef CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL
-int chpl_task_supportsRemoteCache(void);
-#endif
-
-//
 // Returns the maximum width of parallelism the tasking layer expects
 // to be able to provide on the calling (sub)locale.  With some
 // exceptions for uncommon cases, this is the greatest parallel
@@ -364,6 +350,22 @@ uint32_t chpl_task_getFixedNumThreads(void) {
 static inline
 uint32_t chpl_task_isFixedThread(void) {
   return CHPL_TASK_IMPL_IS_FIXED_THREAD();
+}
+
+//
+// If the tasking layer will always execute tasks on the same thread
+// they started on, this returns true.  Otherwise, it returns false.
+// For example CHPL_TASKS=fifo a task is a thread, so tasks can't
+// migrate.  For CHPL_TASKS=qthreads some schedulers support
+// work-stealing where tasks can be stolen and moved to a different
+// thread than they started on.
+//
+#ifndef CHPL_TASK_IMPL_CAN_MIGRATE_THREADS
+#define CHPL_TASK_IMPL_CAN_MIGRATE_THREADS() 1
+#endif
+static inline
+uint32_t chpl_task_canMigrateThreads(void) {
+  return CHPL_TASK_IMPL_CAN_MIGRATE_THREADS();
 }
 
 //

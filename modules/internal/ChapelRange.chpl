@@ -2385,7 +2385,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           f <~> a;
           _alignment = a;
         } else {
-          // If the range is not strideable, it can't store an alignment.
+          // If the range is not stridable, it can't store an alignment.
           // TODO: once Channels can store Chapel errors,
           // create a more descriptive error for this case
           f.setError(EFORMAT:syserr);

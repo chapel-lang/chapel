@@ -55,7 +55,7 @@ void checkArgsAndLocals()
   // Check that each VarSymbol and each ArgSymbol
   // has a DefExpr that is in the FnSymbol
   // or a parent of it.
-  forv_Vec(SymExpr, se, gSymExprs)
+  for_alive_in_Vec(SymExpr, se, gSymExprs)
   {
     DefExpr* def = se->symbol()->defPoint;
     Symbol* defInSym = def->parentSymbol;
@@ -115,8 +115,10 @@ void checkPrimitives()
      case PRIM_INIT_VAR:
 
      case PRIM_TYPE_TO_STRING:
+     case PRIM_HAS_LEADER:
      case PRIM_TO_LEADER:
      case PRIM_TO_FOLLOWER:
+     case PRIM_TO_STANDALONE:
      case PRIM_FIELD_NUM_TO_NAME:
      case PRIM_FIELD_NAME_TO_NUM:
      case PRIM_FIELD_BY_NUM:
@@ -252,7 +254,7 @@ void checkPrimitives()
      case PRIM_USED_MODULES_LIST:       // used modules in BlockStmt::modUses
      case PRIM_TUPLE_EXPAND:
      case PRIM_CHPL_COMM_GET:           // Direct calls to the Chapel comm layer
-     case PRIM_CHPL_COMM_BUFF_GET:
+     case PRIM_CHPL_COMM_GET_UNORDERED:
      case PRIM_CHPL_COMM_PUT:
      case PRIM_CHPL_COMM_ARRAY_GET:
      case PRIM_CHPL_COMM_ARRAY_PUT:

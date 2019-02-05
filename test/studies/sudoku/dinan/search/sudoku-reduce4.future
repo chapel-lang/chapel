@@ -1,0 +1,2 @@
+bug: forall in zip(leader+follower, serial) is not supported
+#11793

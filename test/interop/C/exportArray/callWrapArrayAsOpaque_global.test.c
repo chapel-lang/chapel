@@ -24,11 +24,13 @@ int main(int argc, char* argv[]) {
   chpl_opaque_array arr4 = makeBlockArray();
   printBlock(&arr4);
 
-  // Call clean up function when exported (on how many?)
-  //chpl_mem_free(arr, 0, 0);
-  //chpl_mem_free(arr2, 0, 0);
-  //chpl_mem_free(arr3, 0, 0);
-  //chpl_mem_free(arr4, 0, 0);
+  // Call clean up function when done with them (should not cause memory
+  // errors if called on shared global, should just clean up appropriately
+  // at end of program without freeing early)
+  cleanupOpaqueArray(&arr);
+  cleanupOpaqueArray(&arr2);
+  cleanupOpaqueArray(&arr3);
+  cleanupOpaqueArray(&arr4);
 
   chpl_library_finalize();
   return 0;

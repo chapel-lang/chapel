@@ -1972,8 +1972,9 @@ for testname in testsrc:
                                   env=dict(list(os.environ.items()) + list(testenv.items())),
                                   stdin=my_stdin,
                                   stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
-                        output = p.communicate()[0]
+                                  stderr=subprocess.PIPE)
+                        (stdoutOutput, stderrOutput) = p.communicate()
+                        output = stdoutOutput + stderrOutput
                         status = p.returncode
 
                         # Check for well-known failure modes
@@ -2000,8 +2001,9 @@ for testname in testsrc:
                                   env=dict(list(os.environ.items()) + list(testenv.items())),
                                   stdin=my_stdin,
                                   stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
-                        output = p.communicate()[0]
+                                  stderr=subprocess.PIPE)
+                        (stdoutOutput, stderrOutput) = p.communicate()
+                        output = stdoutOutput + stderrOutput
                         status = p.returncode
 
                         if status == 222:
@@ -2034,9 +2036,9 @@ for testname in testsrc:
                                   env=dict(list(os.environ.items()) + list(testenv.items())),
                                   stdin=my_stdin,
                                   stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
+                                  stderr=subprocess.PIPE)
                         try:
-                            output = SuckOutputWithTimeout(p.stdout, timeout)
+                            stdoutOutput = SuckOutputWithTimeout(p.stdout, timeout)
                         except ReadTimeoutException:
                             exectimeout = True
                             sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
@@ -2046,6 +2048,8 @@ for testname in testsrc:
                             sys.stdout.write(']\n')
                             KillProc(p, killtimeout)
 
+                        stderrOutput = p.communicate()[1]
+                        output = stdoutOutput + stderrOutput
                         status = p.returncode
 
                 # executable is done running
@@ -2184,7 +2188,8 @@ for testname in testsrc:
                             err_strings = ['got exn while reading exit code: connection closed',
                                            'slave got an unknown command on coord socket:',
                                            'Slave got an xSocket: connection closed on recv',
-                                           'recursive failure in AMUDP_SPMDShutdown']
+                                           'recursive failure in AMUDP_SPMDShutdown',
+                                           'AM_ERR_RESOURCE \(Problem with requested resource\)']
                             for s in err_strings:
                                 if re.search(s, output, re.IGNORECASE) != None:
                                     extra_msg = '(possible JIRA 154) '

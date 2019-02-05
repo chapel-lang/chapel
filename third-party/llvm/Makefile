@@ -31,7 +31,7 @@ ifdef CHPL_RV
 CHPL_RV_CMAKE = -DRV_ENABLE_CRT=on -DLLVM_ENABLE_CXX1Y=on
 endif
 
-LLVM_SRC_FILE := llvm/CMakeLists.txt
+LLVM_SRC_FILE := llvm-src/CMakeLists.txt
 LLVM_CMAKE_FILE := $(LLVM_BUILD_DIR)/CMakeCache.txt
 LLVM_CONFIGURED_HEADER_FILE := $(LLVM_BUILD_DIR)/include/llvm/Config/llvm-config.h
 LLVM_HEADER_FILE := $(LLVM_INSTALL_DIR)/include/llvm/PassSupport.h
@@ -91,9 +91,6 @@ clobber: FORCE
 #	  -DCMAKE_CXX_FLAGS=$(CXXFLAGS) \
 #
 
-$(LLVM_SRC_FILE):
-	./unpack-llvm.sh
-
 # Note, for Polly+GPU, we'd need to add
 # -DLLVM_TARGETS_TO_BUILD="host;X86;AArch64;NVPTX"
 # -DPOLLY_ENABLE_GPGPU_CODEGEN=ON
@@ -116,6 +113,7 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    -DCLANG_ENABLE_STATIC_ANALYZER=0 \
 	    -DLLVM_TARGETS_TO_BUILD="host;X86;AArch64" \
 	    -DLLVM_INSTALL_UTILS=ON \
+	    -DLLVM_INCLUDE_TESTS=OFF \
 	    $(CHPL_LLVM_DYNAMIC_OPTS) \
 	    $(CHPL_RV_CMAKE) \
 	    -Wno-dev \
