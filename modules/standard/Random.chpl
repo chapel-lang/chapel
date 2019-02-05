@@ -443,20 +443,24 @@ module Random {
     }
 
     /*
-     :proc:`choice` overload that allows a separate ``prob`` array to define the
-     probabilities of choosing an element from ``arr``.
+     Returns a random sample from a given 1-D array.
 
      This method will only work for randomStreams with ``eltType=real``.
 
      :arg arr: a 1-D array with a domain equal to ``prob.domain``.
-     :arg prob: a 1-D integral or real array, with no negative values and at least one non-zero value.
-     :arg size: Number of elements to choose.
+     :arg size: An ``integral`` value specifying the number of elements to
+                choose, or a ``domain`` specifying the dimensions of the
+                sampled array to be filled.
+     :arg replace: a ``bool`` specifying whether or not to sample with
+                   replacement.
+     :arg prob: a 1-D integral or real array, with no negative values and at
+                least one non-zero value.
 
      :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``arr.domain != prob.domain`` or if ``sampleSize < 1``.
 
      :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``arr.domain != prob.domain``.
      */
-    proc choice(arr: [], prob: [] ?eltType) throws
+    proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void) throws
       where isIntegralType(eltType) || isRealType(eltType)
     {
       compilerError("RandomStreamInterface.choice called");
