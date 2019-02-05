@@ -81,7 +81,6 @@ module ArrayViewSlice {
 
 
     proc chpl__rvfMe() param {
-      //      return true;
       if (dom.dsiSupportsPrivatization() && arr.dsiSupportsPrivatization()) {
         //        compilerWarning("In ArrayViewSliceArr.rvfMe, returning true for type = " + this.type:string);
         return true;
@@ -89,61 +88,16 @@ module ArrayViewSlice {
         //        compilerWarning("In ArrayViewSliceArr.rvfMe, returning false for type = " + this.type:string);
         return false;
       }
-      /*
-      param retval = arr.dsiSupportsPrivatization();
-      compilerWarning("retval = " + retval:string);
-      return retval;
-      */
-    }
-
-    record mySliceHelper {
-      param domRank: int;
-      param domStridable: bool;
-      type domIdxType;
-
-      param arrRank: int;
-      param arrStridable: bool;
-      type arrIdxType;
-      type arrEltType;
-
-      const dompid: int;
-      const arrpid: int;
     }
 
     proc chpl__serialize() where chpl__rvfMe() {
-      //      writeln("[", here.id, "] In serialize, sending ", (_DomPid, _ArrPid));
-      return (_to_borrowed(dom).chpl__serialize(), _to_borrowed(arr).chpl__serialize());
-      /*
-      return new mySliceHelper(privDom.rank, privDom.stridable, privDom.idxType, arr.rank, arr.stridable, arr.idxType, arr.eltType, _DomPid, _ArrPid);
-      */
+      return (_to_borrowed(dom).chpl__serialize(),
+              _to_borrowed(arr).chpl__serialize());
     }
-
-    proc type myArrayRank(type t) param {
-      var x: t;
-      return x.rank;
-    }
-
-    proc type myArrayIdxType(type t) type {
-      var x: t;
-      return x.idxType;
-    }
-
-    proc type myArrayEltType(type t) type {
-      var x: t;
-      return x.eltType;
-    }
-
-    // TODO: The following assumes that we're only slicing into Block-distributed arrays using Block domains, but ultimately, we need to
-    // be able to slice into them using DefaultRectangular domains as well...
 
     proc type chpl__deserialize(data) {
       type domType = __primitive("static field type", this, "dom");
       type arrType = __primitive("static field type", this, "_ArrInstance");
-      /*
-      compilerWarning("domType = ", domType:string);
-      compilerWarning("arrType = ", arrType:string);
-      compilerWarning("data.type = ", data.type:string);
-      */
       const dom = _to_borrowed(domType).chpl__deserialize(data(1));
       const arr = _to_borrowed(arrType).chpl__deserialize(data(2));
       return new unmanaged ArrayViewSliceArr(eltType=arr.eltType,
@@ -151,43 +105,9 @@ module ArrayViewSlice {
                                              dom = dom,
                                              _ArrPid=data(2),
                                              _ArrInstance=arr);
-      //      return 42;
-      /*
-      //    compilerWarning(this:string);
-      param rank = myArrayRank(this);
-      //    compilerWarning(rank:string);
-
-      type idxType = myArrayIdxType(this);
-      //    compilerWarning(idxType:string);
-
-      type eltType = myArrayEltType(this);
-      //    compilerWarning(eltType:string);
-
-      //      writeln("[", here.id, "] in my deserialize routine, received", (data.dompid, data.arrpid));
-      const dompid = data.dompid;
-      //    const dom = chpl_getPrivatizedCopy(BlockDom(rank=2, idxType=int, stridable=false, sparseLayoutType=unmanaged DefaultDist), dompid);
-      const dom = chpl_getPrivatizedCopy(unmanaged BlockDom(data.domRank, data.domIdxType, data.domStridable, unmanaged DefaultDist), dompid);
-      const arrpid = data.arrpid;
-      const arr = chpl_getPrivatizedCopy(unmanaged BlockArr(data.arrRank, data.arrIdxType, data.arrStridable, data.arrEltType, sparseLayoutType=unmanaged DefaultDist), arrpid);
-
-      // This is not so helpful because the "array" pragma causes us to sugar
-      // this thing's type in unfortunate ways...
-      //
-      // writeln(this:string);
-
-
-      var retval = new unmanaged ArrayViewSliceArr(eltType=eltType,
-                                            _DomPid=data.dompid,
-                                            dom = dom,
-                                            _ArrPid=data.arrpid,
-                                            _ArrInstance = arr);
-
-      compilerWarning("returning ", retval.type:string);
-      return retval;
-      */
     }
 
-    
+
     //
     // standard generic aspects of arrays
     //
@@ -343,11 +263,13 @@ module ArrayViewSlice {
     // privatization
     //
 
-    // Don't want to privatize a DefaultRectangular, so pass the query on to
-    // the wrapped array
+    // We don't want to privatize array slices proactively anymore,
+    // but lazily through remote value forwarding
     proc dsiSupportsPrivatization() param
       return false;
 
+
+    // TODO: We should be able to remove these calls now
     proc dsiGetPrivatizeData() {
       return (_DomPid, dom, _ArrPid, _ArrInstance);
     }
