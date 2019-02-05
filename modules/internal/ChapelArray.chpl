@@ -2374,12 +2374,55 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", d.dsiDim(i));
     }
 
+    pragma "no doc"
+    proc checkSlice(ranges...rank) where chpl__isTupleOfRanges(ranges) {
+      for param i in 1.._value.dom.rank do
+        if !_value.dom.dsiDim(i).boundsCheck(ranges(i)) then
+          halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
+    }
+
     // array slicing by a tuple of ranges
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc this(ranges...rank) where chpl__isTupleOfRanges(ranges) {
-      return this({(...ranges)});
+      if (!chpl__anyUnbounded(ranges)) {
+        // if all the ranges are bounded, then we're good to go
+        return this({(...ranges)});
+      } else {
+        // otherwise, we need to make them bounded before making a domain
+        // from them
+        // TODO: If we could create domains with unbounded ranges (which
+        // I think we should support), then we wouldn't need this
+        // complexity.
+        param stridable = chpl__anyStridable(ranges);
+        var branges: rank*range(idxType = ranges(1).idxType, 
+                                stridable = stridable);
+        for param r in 1..rank {
+          select (ranges[r].boundedType) {
+          when BoundedRangeType.bounded do
+            branges[r] = ranges[r];
+          when BoundedRangeType.boundedLow do
+            if (stridable) then
+              branges[r] = ranges[r].low..this.domain.dim(r).high by ranges[r].stride;
+            else
+              branges[r] = ranges[r].low..this.domain.dim(r).high;
+          
+          when BoundedRangeType.boundedHigh do
+            if stridable then
+              branges[r] = this.domain.dim(r).low..ranges[r].high by ranges[r].stride;
+            else
+              branges[r] = this.domain.dim(r).low..ranges[r].high;
+
+          when BoundedRangeType.boundedNone do
+            if stridable then
+              branges[r] = this.domain.dim(r).low..this.domain.dim(r).high by ranges[r].stride;
+            else
+              branges[r] = this.domain.dim(r).low..this.domain.dim(r).high;
+          }
+        }
+        return this({(...branges)});
+      }
     }
 
     // array rank change
@@ -3639,6 +3682,14 @@ module ChapelArray {
   proc chpl__anyStridable(ranges) param {
     for param i in 1..ranges.size do
       if ranges(i).stridable then
+        return true;
+    return false;
+  }
+
+  // computes || reduction over boundedness of ranges
+  proc chpl__anyUnbounded(ranges) param {
+    for param i in 1..ranges.size do
+      if ranges(i).boundedType != BoundedRangeType.bounded then
         return true;
     return false;
   }
