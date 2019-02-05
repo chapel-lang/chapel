@@ -5,24 +5,13 @@ config const debug = false;
 proc main() {
   var pcg = makeRandomStream(real, algorithm=RNG.PCG);
   runTests(pcg);
-  var npb = makeRandomStream(real, algorithm=RNG.NPB);
-  runTests(npb);
+  //var npb = makeRandomStream(real, algorithm=RNG.NPB);
+  //runTests(npb);
 }
 
 proc runTests(stream) {
   testArray(stream, [1], trials=10);
-  testArray(stream, [2, 2], trials=10);
-  testArray(stream, [0, 1], trials=10);
-  testArray(stream, [0.1, 0.9]);
-  testArray(stream, [4, 16]);
-  testArray(stream, [1, 1, 2]);
-  testArray(stream, [2.0001, 2.0002]);
-  testArray(stream, [1,2], t=real(64));
-  testArray(stream, [1,2], t=real(32));
-  testArray(stream, [1,2], t=int(64));
-  testArray(stream, [1,2], t=int(32));
-  testArray(stream, [1,2], t=uint(32));
-  testArray(stream, [1,2], t=uint(16));
+  testArray(stream, [1, 2, 3]);
 
   var uints: [1..3] uint = [100:uint, 100:uint, 400:uint];
   testArray(stream, uints);
@@ -30,33 +19,75 @@ proc runTests(stream) {
   var real32s: [1..4] real(32) = [0.1:real(32), 0.2:real(32), 0.3:real(32), 0.4:real(32)];
   testArray(stream, real32s);
 
-  // prob overload
-  testArray(stream, [1,2], [0, 1], trials=10);
-  testArray(stream, [1,2], [0.1, 0.9]);
-  testArray(stream, [1,1,2], [0.1, 0.4, 0.5]);
-  testArray(stream, [1,2], [10, 90], t=real(32));
-  testArray(stream, [1,2], [10, 90], t=int(32));
-  testArray(stream, [1,2], [10, 90], t=uint(32));
-  testArray(stream, [1,2], [10, 90], t=uint(16));
+  // prob array
+  testArray(stream, [1,2], prob=[0, 1], trials=10);
+  testArray(stream, [1,2], prob=[0.1, 0.9]);
+  testArray(stream, [1,1,2], prob=[0.1, 0.4, 0.5]);
 
-  // choices
-  testArray(stream, [1,2], [0, 1], trials=10, sampleSize=100);
-  testArray(stream, [1,1,2], [0.1, 0.4, 0.5], sampleSize=100);
-  testArray(stream, [2, 2], trials=10, sampleSize=100);
-  testArray(stream, [0, 1], trials=10, sampleSize=100);
+  // Numeric types
+  var preal32: [1..2] real(32) = 1;
+  testArray(stream, [1,2], prob=preal32, size=1000, trials=1);
+  var pint: [1..2] int = 1;
+  testArray(stream, [1,2], prob=pint, size=1000, trials=1);
+  var pint32: [1..2] int(32) = 1;
+  testArray(stream, [1,2], prob=pint32, size=1000, trials=1);
+  var puint32: [1..2] uint(32) = 1;
+  testArray(stream, [1,2], prob=puint32, size=1000, trials=1);
+  var puint16: [1..2] uint(16) = 1;
+  testArray(stream, [1,2], prob=puint16, size=1000, trials=1);
+
+  // replace=false
+  testArray(stream, [1,2,3,4], size=4, replace=false, trials=1);
+
+  //// domain-type size
+  var A = [1,2,3,4];
+  var p = [0.1, 0.2, 0.3, 0.4];
+  testArray(stream, A, prob=p, size={1..4});
+  testArray(stream, A, prob=p, size={1..4, 1..3});
+  testArray(stream, A, prob=p, size={1..4, 1..3, 1..2});
+
+  // Ensure we maintain reference to domain passed in
+  var dom = {1..5};
+  var B: [dom] int;
+
+  var ret = stream.choice([1,2,3,4,5], size=dom);
+
+  dom = {1..10};
+  if ret.size != 10 then
+    writeln('error: domain reference not maintained');
 }
 
-proc testArray(stream, arr: [] ?eltType, type t=eltType, trials=10000, sampleSize=0) throws {
-  var d = {1..0};
-  var prob: [d] real;
-  var typedArr: [arr.domain] t = arr: t;
-  testArray(stream, typedArr, prob, trials=trials);
-}
+proc testArray(stream, arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void, trials=10000) throws {
+  var countsDom: domain(arr.eltType);
+  var counts: [countsDom] int;
 
+  // Collect statistics
+  if isVoidType(probType) {
+    if isVoidType(sizeType) {
+      for 1..trials {
+        var c = stream.choice(arr, replace=replace);
+        counts[c] += 1;
+      }
+    } else {
+      for 1..trials {
+        var cs = stream.choice(arr, size=size, replace=replace);
+        for c in cs do counts[c] += 1;
+      }
+    }
+  } else {
+    if isVoidType(sizeType) {
+      for 1..trials {
+        var c = stream.choice(arr, prob=prob, replace=replace);
+        counts[c] += 1;
+      }
+    } else {
+      for 1..trials {
+        var cs = stream.choice(arr, prob=prob, size=size, replace=replace);
+        for c in cs do counts[c] += 1;
+      }
+    }
+  }
 
-proc testArray(stream, arr: [], prob: [] ?eltType, type t=eltType, trials=10000, sampleSize=0) throws {
-  var typedProb: [prob.domain] t = prob: t;
-  var counts = runTrials(stream, arr, typedProb, trials, sampleSize);
 
   if debug {
     writeln('Counts for array: ', arr);
@@ -65,77 +96,53 @@ proc testArray(stream, arr: [], prob: [] ?eltType, type t=eltType, trials=10000,
     }
   }
 
-  var actualRatios = if sampleSize == 0 then counts / trials:real
-                     else counts / (trials*sampleSize): real;
+  var m = 1;
+  if isDomainType(sizeType) then m = size.size;
+  else if isIntegralType(sizeType) then m = size;
 
-  // Confirm that resulting ratios are within 0.05 of expected ratios
-  var expectedRatios = if prob.size > 0 then getExpectedRatios(arr, prob) else
-                                             getExpectedRatios(arr, arr);
 
-  var success = true;
-  for value in actualRatios.domain {
-    if !isClose(actualRatios[value], expectedRatios[value]) {
-      writeln('Choice counts are not within 5% of expected value');
-      writeln('value: ', value);;
-      writeln('expected %: ', expectedRatios[value]);;
-      writeln('actual %: ', actualRatios[value]);;
-      success = false;
-    }
-  }
-  if !success {
-    writeln('Failed with input:');
-    writeln('arr =  ', arr);
-    if prob.size > 1 {
-      writeln('prob = ', prob);
-    }
-  }
-}
+  var actualRatios = if isVoidType(sizeType) then counts / trials:real
+                     else counts / (trials*m): real;
 
-proc getExpectedRatios(arr: [], prob: []) throws {
+
+
+  var ones: [1..arr.size] real = 1;
+
+  var probabilities = if isVoidType(prob.type) then ones else prob;
+
+  // Get expected ratios
   var uniqueValues: domain(arr.eltType);
   var expectedRatios: [uniqueValues] real;
 
-  var total = (+ reduce prob):real;
+  var total = (+ reduce probabilities):real;
 
   for i in arr.domain{
-    expectedRatios[arr[i]] += prob[i]:real / total;
+    expectedRatios[arr[i]] += probabilities[i]:real / total;
   }
 
-  return expectedRatios;
-}
-
-
-proc runTrials(stream, arr: [], prob: [],  trials: int, sampleSize: int) throws {
-  var countsDom: domain(arr.eltType);
-  var counts: [countsDom] int;
-
-  if sampleSize == 0 {
-    if prob.size > 0 {
-      for 1..trials {
-        var c = stream.choice(arr, prob);
-        counts[c] += 1;
-      }
-    } else {
-      for 1..trials {
-        var c = stream.choice(arr);
-        counts[c] += 1;
+  // Confirm that resulting ratios are within 0.05 of expected ratios
+  var success = true;
+  if replace {
+    for value in actualRatios.domain {
+      if !isClose(actualRatios[value], expectedRatios[value]) {
+        success = false;
       }
     }
-  } else {
-    if prob.size > 0 {
-      for 1..trials {
-        var cs = stream.choices(arr, prob, sampleSize);
-        for c in cs do counts[c] += 1;
-      }
-    } else {
-      for 1..trials {
-        var cs = stream.choices(arr, sampleSize);
-        for c in cs do counts[c] += 1;
+    if !success {
+      writeln('Failed with args:');
+      write('choice(');
+      write('[', arr, '], ');
+      if !isVoidType(prob.type) then write('prob = ', prob, ', ');
+      if !isVoidType(size.type) then writeln('size = ', size, ', ');
+      writeln('replace = ', replace, ');');
+      for value in actualRatios.domain {
+        writeln('value   expected   actual');
+        writeln(value, '       ', expectedRatios[value],'        ', actualRatios[value]);
       }
     }
   }
-  return counts;
 }
+
 
 /* This should really be part of the standard library! */
 proc isClose(a: real, b: real, epsilon=0.05) {

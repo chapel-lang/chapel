@@ -9,51 +9,40 @@ proc main() throws {
 
   var stream = makeRandomStream(real);
 
-  // Empty array
+  // size=0
+  try {
+    var c = stream.choice([1,2], size=0);
+    writeln('Error: size=0 did not throw error');
+  } catch e: IllegalArgumentError {
+    if debug then writeln(e.message());
+  }
+
   try {
     var empty: [1..0] real;
     var c = stream.choice(empty);
-    success = false;
+    writeln('Error: Empty array did not throw error');
   } catch e: IllegalArgumentError {
     if debug then writeln(e.message());
   }
 
-  // Non-matching domain
   try {
-    var c = stream.choice([1,2,3], [0.5, 0.5]);
-    success = false;
+    var c = stream.choice([1,2,3], prob=[0.5, 0.5]);
+    writeln('Error: Non-matching domain did not throw error');
   } catch e: IllegalArgumentError {
     if debug then writeln(e.message());
   }
 
-
-  // Array of 0s
   try {
-    var c = stream.choice([0, 0]);
-    success = false;
+    var c = stream.choice([1,2], prob=[1, -1]);
+    writeln('Error: Probability array with negative values did not throw error');
   } catch e: IllegalArgumentError {
     if debug then writeln(e.message());
   }
 
-  // Negative values
   try {
-    var c = stream.choice([1, -1]);
-    success = false;
+    var c = stream.choice([1,2], prob=[0, 0]);
+    writeln('Error: Probability array of 0s did not throw error');
   } catch e: IllegalArgumentError {
     if debug then writeln(e.message());
   }
-
-  // Sample size of 0
-  try {
-    var c = stream.choices([1, 2], sampleSize=0);
-    success = false;
-  } catch e: IllegalArgumentError {
-    if debug then writeln(e.message());
-  }
-
-
-  if !success {
-    writeln('Error: An error was not thrown');
-  }
-
 }

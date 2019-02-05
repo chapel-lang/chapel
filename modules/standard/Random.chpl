@@ -210,10 +210,6 @@ module Random {
       compilerError("Unknown random number generator");
   }
 
-  pragma "no doc"
-  /* Helper function for common functionality across choice implementations */
-  proc _choiceSumArr(arr: [], prob: []) throws {
-  }
 
   /*
 
@@ -334,33 +330,6 @@ module Random {
     }
 
     /*
-     Returns an element from the input ``arr`` weighted by the value of the
-     ``arr`` elements.
-
-     .. code-block:: chapel
-
-        var stream = makeRandomStream(real);
-        var result = stream.choice([10, 40, 50]);
-
-     In the above example, the elements sum to ``100``, so the chances of returning each element are as follows::
-
-      Chance of returning 10 = 10/100 = 10%
-      Chance of returning 40 = 40/100 = 40%
-      Chance of returning 50 = 50/100 = 50%
-
-     This method will only work for randomStreams with ``eltType=real``.
-
-     :arg arr: a 1-D integral or real array, with no negative values and at least one non-zero value.
-
-     :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values.
-    */
-    proc choice(arr: [] ?eltType) throws
-      where isIntegralType(eltType) || isRealType(eltType)
-    {
-        compilerError("RandomStreamInterface.choice called");
-    }
-
-    /*
      :proc:`choice` overload that allows a separate ``prob`` array to define the
      probabilities of choosing an element from ``arr``.
 
@@ -368,6 +337,9 @@ module Random {
 
      :arg arr: a 1-D array with a domain equal to ``prob.domain``.
      :arg prob: a 1-D integral or real array, with no negative values and at least one non-zero value.
+     :arg size: Number of elements to choose.
+
+     :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``arr.domain != prob.domain`` or if ``sampleSize < 1``.
 
      :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``arr.domain != prob.domain``.
      */
@@ -375,49 +347,6 @@ module Random {
       where isIntegralType(eltType) || isRealType(eltType)
     {
       compilerError("RandomStreamInterface.choice called");
-    }
-
-    /*
-     Returns an array of size ``sampleSize`` with elements chosen from the
-     input ``arr`` weighted by the value of the ``arr`` elements.
-
-     When sampling multiple elements from an array, it is much more
-     computationally efficient to use this method rather than call
-     :proc:`choice` multiple times.
-
-     This method will only work for randomStreams with ``eltType=real``.
-
-     :arg arr: a 1-D array with a domain equal to ``prob.domain``.
-     :arg sampleSize: Number of elements to choose.
-
-     :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``sampleSize < 1``.
-    */
-    proc choices(arr: [] ?arrEltType, sampleSize: int) throws
-      where isIntegralType(arrEltType) || isRealType(arrEltType)
-    {
-      compilerError("RandomStreamInterface.choices called");
-    }
-
-    /*
-     :proc:`choices` overload that allows a separate ``prob`` array to define the
-     probabilities of choosing an element from ``arr``.
-
-     When sampling multiple elements from an array, it is much more
-     computationally efficient to use this method rather than call
-     :proc:`choice` multiple times.
-
-     This method will only work for randomStreams with ``eltType=real``.
-
-     :arg arr: a 1-D array with a domain equal to ``prob.domain``.
-     :arg prob: a 1-D integral or real array, with no negative values and at least one non-zero value.
-     :arg sampleSize: Number of elements to choose.
-
-     :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``arr.domain != prob.domain`` or if ``sampleSize < 1``.
-    */
-    proc choices(arr: [], prob: [] ?probEltType, sampleSize: int) throws
-      where isIntegralType(probEltType) || isRealType(probEltType)
-    {
-      compilerError("RandomStreamInterface.choices called");
     }
 
     /*
@@ -837,8 +766,8 @@ module Random {
         }
         if !isVoidType(sizeType) {
           if isIntegralType(sizeType) {
-            if size < 0 then
-            throw new IllegalArgumentError('choices() size must be greater than 0');
+            if size <= 0 then
+            throw new IllegalArgumentError('choice() size must be greater than 0');
           } else if !isDomainType(sizeType) {
             compilerError('choice() size must be integral or domain');
           }
@@ -859,11 +788,11 @@ module Random {
         var cumulativeArr = (+ scan probabilities): real;
 
         if !Sort.isSorted(cumulativeArr) then
-          throw new IllegalArgumentError("choice() array cannot contain negative values");
+          throw new IllegalArgumentError("choice() prob array cannot contain negative values");
 
         // Confirm the array has at least one value > 0
         if cumulativeArr[probabilities.domain.last] <= 0 then
-          throw new IllegalArgumentError('choice() array requires a value greater than 0');
+          throw new IllegalArgumentError('choice() prob array requires a value greater than 0');
 
         // Normalize cumulative sum array
         var total = cumulativeArr[probabilities.domain.last];
