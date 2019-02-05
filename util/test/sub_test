@@ -623,6 +623,21 @@ def translateOutput(output):
     return known_error, was_timeout
 
 
+# Convert tuples of (stdout, stderr) bytes or strings to a single bytearray
+def combineOutputStreams(output):
+    convertedOutput = b''
+    for o in output:
+        if type(o) is str:
+            if sys.version_info <= (3,):
+                convertedOutput += bytes(o)
+            else:
+                convertedOutput += bytes(o, 'utf-8')
+        else:
+            convertedOutput += o
+
+    return convertedOutput
+
+
 # Start of sub_test proper
 #
 
@@ -1973,8 +1988,7 @@ for testname in testsrc:
                                   stdin=my_stdin,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE)
-                        (stdoutOutput, stderrOutput) = p.communicate()
-                        output = stdoutOutput + stderrOutput
+                        output = combineOutputStreams(p.communicate())
                         status = p.returncode
 
                         # Check for well-known failure modes
@@ -2002,8 +2016,7 @@ for testname in testsrc:
                                   stdin=my_stdin,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE)
-                        (stdoutOutput, stderrOutput) = p.communicate()
-                        output = stdoutOutput + stderrOutput
+                        output = combineOutputStreams(p.communicate())
                         status = p.returncode
 
                         if status == 222:
@@ -2038,7 +2051,7 @@ for testname in testsrc:
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE)
                         try:
-                            stdoutOutput = SuckOutputWithTimeout(p.stdout, timeout)
+                            rawStdout = SuckOutputWithTimeout(p.stdout, timeout)
                         except ReadTimeoutException:
                             exectimeout = True
                             sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
@@ -2048,8 +2061,7 @@ for testname in testsrc:
                             sys.stdout.write(']\n')
                             KillProc(p, killtimeout)
 
-                        stderrOutput = p.communicate()[1]
-                        output = stdoutOutput + stderrOutput
+                        output = combineOutputStreams((rawStdout, p.communicate()[1]))
                         status = p.returncode
 
                 # executable is done running
