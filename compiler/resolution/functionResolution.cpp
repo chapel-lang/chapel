@@ -7414,7 +7414,7 @@ static void resolveSerializers() {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isRecord(at) == true) {
           bool success = resolveSerializeDeserialize(at);
-          if (success && !ts->hasFlag(FLAG_ARRAY)) {
+          if (success) {
             resolveBroadcasters(at);
           }
         }
