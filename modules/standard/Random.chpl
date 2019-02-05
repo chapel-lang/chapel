@@ -838,12 +838,9 @@ module Random {
         if !isVoidType(sizeType) {
           if isIntegralType(sizeType) {
             if size < 0 then
-            throw new IllegalArgumentError('choices() sIze must be greater than 0');
-          } else if isTupleType(sizeType) {
-            if !isRangeType(size[1].type) then
-              compilerError('choice() tuple must contain ranges');
-          } else {
-            compilerError('choice() size must be integral or tuple of ranges');
+            throw new IllegalArgumentError('choices() size must be greater than 0');
+          } else if !isDomainType(sizeType) {
+            compilerError('choice() size must be integral or domain');
           }
         }
 
@@ -883,9 +880,9 @@ module Random {
 
           // Compute numElements for tuple case
           var m = 1;
-          if isTupleType(sizeType) then for i in size do m *= i.size;
+          if isDomainType(sizeType) then m = size.size;
 
-          var numElements = if isTupleType(sizeType) then m
+          var numElements = if isDomainType(sizeType) then m
                             else if isIntegralType(sizeType) then size:int
                             else compilerError('choice() size type must be integral or tuple of ranges');
 
@@ -926,9 +923,8 @@ module Random {
           }
           if isIntegralType(sizeType) {
             return samples;
-          } else if isTupleType(sizeType) {
-            var retDomain = {(...size)};
-            return reshape(samples, retDomain);
+          } else if isDomainType(sizeType) {
+            return reshape(samples, size);
           }
         }
       }
