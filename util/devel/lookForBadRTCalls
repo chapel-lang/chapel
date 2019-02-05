@@ -2,7 +2,8 @@
 
 """Check Chapel runtime for 'inappropriate' function calls
 
-Check the chapel runtime for calls to the system allocator or calls to exit.
+Check the chapel runtime for calls to the system allocator, exit routines, or
+direct calls to atomic_*_fence routines.
 
 Generally speaking, unless the memory layer hasn't been initialized, or you
 need memory that isn't registered, the runtime should use the chapel allocator,
@@ -15,6 +16,9 @@ alloc wrapper (chpl-mem-sys.h)
 
 Also checks for calls to exit. We want to use chpl_exit_* instead so there's a
 common place to break.
+
+We have chpl_ wrappers for the atomic_*_fence() calls and we want to use those
+for portability.
 """
 
 import os
@@ -36,6 +40,12 @@ def main():
     alloc_exclude_paths = ['chpl-mem-sys.h']
     alloc_funcs = look_for_calls.get_alloc_funcs()
     ret = look_for_calls.check_for_calls(alloc_funcs, runtime_dir, alloc_exclude_paths)
+
+    # Check runtime (except cstdlib chpl-atomics.h) for atomic_*_fence calls
+    cstdlib_header = os.path.join('atomics', 'cstdlib','chpl-atomics.h')
+    atomic_exclude_paths = [cstdlib_header]
+    atomic_funcs = ['atomic_thread_fence', 'atomic_signal_fence']
+    ret = ret or look_for_calls.check_for_calls(atomic_funcs, runtime_dir, atomic_exclude_paths)
 
     # Check runtime for exit calls
     exit_exclude_paths = ['error.h', 'chplexit.c', 'chplexit.h']
