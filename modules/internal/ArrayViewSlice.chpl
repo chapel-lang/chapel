@@ -24,8 +24,6 @@
 //
 module ArrayViewSlice {
   use ChapelStandard;
-  use DefaultRectangular;
-  use BlockDist;
 
   private proc buildIndexCacheHelper(arr, dom) {
     param isRankChangeReindex = arr.isRankChangeArrayView() ||
