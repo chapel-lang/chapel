@@ -1829,7 +1829,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
 
   if (amo->b.node == chpl_nodeID) {
     *amo->pDone = 1;
-    atomic_thread_fence(memory_order_release);
+    chpl_atomic_thread_fence(memory_order_release);
   } else {
     amSendDone(amo->b.node, amo->pDone);
   }
