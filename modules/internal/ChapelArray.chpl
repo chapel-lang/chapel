@@ -1080,7 +1080,6 @@ module ChapelArray {
       where this._value.isDefaultRectangular() {
 
       return this._value.chpl__serialize();
-      //return new _serialized_domain(rank, idxType, stridable, dims(), true);
     }
 
     /* Here is a draft at what chpl__serialize might look like to
@@ -1096,27 +1095,13 @@ module ChapelArray {
     }*/
 
 
-    // TODO: we *SHOULD* be allowed to query param properties from a type....
+    // TODO: we *SHOULD* be allowed to query the type of '_instance' directly
     // This function may not use any run-time type information passed to it
     // in the form of the 'this' argument. Static/param information is OK.
-    // TODO: only consider DR case for now
     pragma "no doc"
     proc type chpl__deserialize(data) {
-      //      if data.isDefaultRectangular {
-        // DefaultRectangular
-        type valueType = __primitive("static field type", this, "_instance");
-        return _newDomain(_to_borrowed(valueType).chpl__deserialize(data));
-        /*
-      }
-      else
-        compilerError("chpl__deserialized called for not-DefaultRectangular");
-        /* Here is a sketch
-        return _newDomain(data.dist.newRectangularDom(data.rank,
-                                                      data.idxType,
-                                                      data.stridable,
-                                                      data.dims,
-                                                      data.privdata)); */
-*/
+      type valueType = __primitive("static field type", this, "_instance");
+      return _newDomain(_to_borrowed(valueType).chpl__deserialize(data));
     }
 
     proc _do_destroy () {
@@ -2187,21 +2172,9 @@ module ChapelArray {
     var _externally_managed: bool = false;
 
     proc chpl__rvfMe() param {
-      //      compilerWarning("In _array.rvfMe, instance.type = " + _instance.type:string);
-      param retval = _instance.chpl__rvfMe();
-      //      compilerWarning("returning " + retval);
-      return retval;
+      return _instance.chpl__rvfMe();
     }
 
-    proc type chpl__rvfMeType() param {
-      //      compilerWarning("In _array.type.rvfMe, this = " + this:string);
-      var x: this;
-      //      compilerWarning("x.type = ", x.type:string);
-      param retval = x.chpl__rvfMe();
-      //      compilerWarning("_array.type.rvfMe returning " + retval);
-      return retval;
-    }
-    
     proc chpl__serialize() where chpl__rvfMe() {
       return _instance.chpl__serialize();
     }
@@ -2213,16 +2186,11 @@ module ChapelArray {
 
     pragma "no doc"
     pragma "no copy return"
-    proc type chpl__deserialize(data) /*where chpl__rvfMeType() */{
+    proc type chpl__deserialize(data) {
       var arrinst = _to_borrowed(this.chpl__typeOfInstance()).chpl__deserialize(data);
-      //      compilerWarning("chpl__desserialize() got ", arrinst.type:string);
-      pragma "no copy"
-      var retval = new _array(nullPid, arrinst);
-      //      compilerWarning("chpl__deserialize() returning ", retval.type:string);
-      //      compilerWarning("instance field is of type: ", retval._instance.type:string);
-      return retval;
+      return new _array(nullPid, arrinst);
     }
-    
+
     proc chpl__promotionType() type {
       return _value.eltType;
     }
