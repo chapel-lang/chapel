@@ -1270,8 +1270,7 @@ proc BlockDom.chpl__serialize(param x: int) {
 }
 
 proc type BlockDom.chpl__deserialize(data, param x: int) {
-  // TODO: make this right
-  return chpl_getPrivatizedCopy(unmanaged BlockDom(rank=2, idxType=int, stridable=false, sparseLayoutType=unmanaged DefaultDist), data);
+  return chpl_getPrivatizedCopy(unmanaged BlockDom(rank=this.rank, idxType=this.idxType, stridable=this.stridable, sparseLayoutType=this.sparseLayoutType), data);
 }
 
 proc BlockArr.chpl__serialize(param x: int) {
@@ -1279,9 +1278,8 @@ proc BlockArr.chpl__serialize(param x: int) {
 }
 
 proc type BlockArr.chpl__deserialize(data, param x: int) {
-  // TODO: make this right
   //  compilerWarning("In BlockArr.deserialize(), " + data.type:string);
-  return chpl_getPrivatizedCopy(unmanaged BlockArr(rank=2, idxType=int, stridable=false, eltType=real, sparseLayoutType=unmanaged DefaultDist), data);
+  return chpl_getPrivatizedCopy(unmanaged BlockArr(rank=this.rank, idxType=this.idxType, stridable=this.stridable, eltType=this.eltType, sparseLayoutType=this.sparseLayoutType), data);
 }
 
 record BlockDomPrvData {

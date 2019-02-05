@@ -148,7 +148,7 @@ module ArrayViewSlice {
       */
       const dom = _to_borrowed(domType).chpl__deserialize(data(1), 42);
       const arr = _to_borrowed(arrType).chpl__deserialize(data(2), 42);
-      return new unmanaged ArrayViewSliceArr(eltType=real, // TODO: FIXME
+      return new unmanaged ArrayViewSliceArr(eltType=arr.eltType,
                                              _DomPid=data(1),
                                              dom = dom,
                                              _ArrPid=data(2),
