@@ -83,10 +83,19 @@ module ArrayViewSlice {
 
 
     proc chpl__rvfMe() param {
-      compilerWarning("In ArrayViewSliceArr.rvfMe, type = " + this.type:string);
+      //      return true;
+      if (dom.dsiSupportsPrivatization() && arr.dsiSupportsPrivatization()) {
+        //        compilerWarning("In ArrayViewSliceArr.rvfMe, returning true for type = " + this.type:string);
+        return true;
+      } else {
+        //        compilerWarning("In ArrayViewSliceArr.rvfMe, returning false for type = " + this.type:string);
+        return false;
+      }
+      /*
       param retval = arr.dsiSupportsPrivatization();
       compilerWarning("retval = " + retval:string);
       return retval;
+      */
     }
 
     record mySliceHelper {
@@ -103,10 +112,12 @@ module ArrayViewSlice {
       const arrpid: int;
     }
 
-    proc chpl__serialize() {
-      var buff: chpl__inPlaceBuffer;
+    proc chpl__serialize() where chpl__rvfMe() {
       //      writeln("[", here.id, "] In serialize, sending ", (_DomPid, _ArrPid));
+      return (_to_borrowed(dom).chpl__serialize(42), _to_borrowed(arr).chpl__serialize(42));
+      /*
       return new mySliceHelper(privDom.rank, privDom.stridable, privDom.idxType, arr.rank, arr.stridable, arr.idxType, arr.eltType, _DomPid, _ArrPid);
+      */
     }
 
     proc type myArrayRank(type t) param {
@@ -128,6 +139,22 @@ module ArrayViewSlice {
     // be able to slice into them using DefaultRectangular domains as well...
 
     proc type chpl__deserialize(data) {
+      type domType = __primitive("static field type", this, "dom");
+      type arrType = __primitive("static field type", this, "_ArrInstance");
+      /*
+      compilerWarning("domType = ", domType:string);
+      compilerWarning("arrType = ", arrType:string);
+      compilerWarning("data.type = ", data.type:string);
+      */
+      const dom = _to_borrowed(domType).chpl__deserialize(data(1), 42);
+      const arr = _to_borrowed(arrType).chpl__deserialize(data(2), 42);
+      return new unmanaged ArrayViewSliceArr(eltType=real, // TODO: FIXME
+                                             _DomPid=data(1),
+                                             dom = dom,
+                                             _ArrPid=data(2),
+                                             _ArrInstance=arr);
+      //      return 42;
+      /*
       //    compilerWarning(this:string);
       param rank = myArrayRank(this);
       //    compilerWarning(rank:string);
@@ -159,6 +186,7 @@ module ArrayViewSlice {
 
       compilerWarning("returning ", retval.type:string);
       return retval;
+      */
     }
 
     

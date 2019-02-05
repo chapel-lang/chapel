@@ -30,8 +30,12 @@ module ChapelSerializedBroadcast {
 
   proc chpl__broadcastGlobal(ref localeZeroGlobal : ?T, id : int)
   where chpl__enableSerializedGlobals {
-    compilerWarning("in broadcast global: ", localeZeroGlobal.type:string);
+    if (!(isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal))) {
     const data = localeZeroGlobal.chpl__serialize();
+    //    compilerWarning("in broadcast global: ", localeZeroGlobal.type:string, " data.type = ", data.type:string);
+    if (isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal)) {
+      compilerError("trying to broadcast slice");
+    }
     const root = here.id;
     coforall loc in Locales do on loc {
       if here.id != root {
@@ -44,6 +48,7 @@ module ChapelSerializedBroadcast {
 
         __primitive("=", dest.deref(), temp);
       }
+    }
     }
   }
 

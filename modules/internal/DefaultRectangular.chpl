@@ -158,6 +158,18 @@ module DefaultRectangular {
       return dist;
     }
 
+    proc chpl__serialize() {
+      return new _serialized_domain(rank, idxType, stridable, dsiDims(), true);
+    }
+
+    proc type chpl__deserialize(data) {
+      return defaultDist.newRectangularDom(data.rank,
+                                           data.idxType,
+                                           data.stridable,
+                                           data.dims);
+
+    }
+
     proc dsiDisplayRepresentation() {
       writeln("ranges = ", ranges);
     }

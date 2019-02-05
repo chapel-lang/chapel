@@ -1265,6 +1265,25 @@ proc Block.dsiReprivatize(other, reprivatizeData) {
 
 proc BlockDom.dsiSupportsPrivatization() param return true;
 
+proc BlockDom.chpl__serialize(param x: int) {
+  return pid;
+}
+
+proc type BlockDom.chpl__deserialize(data, param x: int) {
+  // TODO: make this right
+  return chpl_getPrivatizedCopy(unmanaged BlockDom(rank=2, idxType=int, stridable=false, sparseLayoutType=unmanaged DefaultDist), data);
+}
+
+proc BlockArr.chpl__serialize(param x: int) {
+  return pid;
+}
+
+proc type BlockArr.chpl__deserialize(data, param x: int) {
+  // TODO: make this right
+  //  compilerWarning("In BlockArr.deserialize(), " + data.type:string);
+  return chpl_getPrivatizedCopy(unmanaged BlockArr(rank=2, idxType=int, stridable=false, eltType=real, sparseLayoutType=unmanaged DefaultDist), data);
+}
+
 record BlockDomPrvData {
   var distpid;
   var dims;

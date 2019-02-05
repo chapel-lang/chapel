@@ -7350,7 +7350,7 @@ static void resolveBroadcasters(AggregateType* at) {
   Serializers& ser = serializeMap[at];
   INT_ASSERT(ser.serializer != NULL);
 
-  USR_WARN(at, "resolving broadcaster");
+  //  USR_WARN(at, "resolving broadcaster");
   VarSymbol* tmp = newTemp("global_temp", at);
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
 
