@@ -1,0 +1,6 @@
+#! /usr/bin/env bash
+
+#
+# Set umask as expected by at least some of these tests.
+#
+umask 0022 && ${CHPL_HOME}/util/test/sub_test $1
