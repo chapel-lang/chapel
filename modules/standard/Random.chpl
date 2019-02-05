@@ -210,6 +210,119 @@ module Random {
       compilerError("Unknown random number generator");
   }
 
+  pragma "no doc"
+  /* Actual implementation of choice() */
+  proc _choice(stream, arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
+    throws
+  {
+
+    use Search only;
+    use Sort only;
+
+    // Check random stream type
+    if !isRealType(stream.eltType) then
+      compilerError('choice() can only be used on RandomStream with eltType=real');
+
+    // Check types of optional void args
+    if !isVoidType(probType) {
+      if !isArrayType(probType) then
+        compilerError('choice() prob must be an array');
+      if !(isIntegralType(prob.eltType) || isRealType(prob.eltType)) then
+        compilerError('choice() prob.eltType must be real or integral');
+    }
+    if !isVoidType(sizeType) {
+      if isIntegralType(sizeType) {
+        if size <= 0 then
+        throw new IllegalArgumentError('choice() size must be greater than 0');
+      } else if !isDomainType(sizeType) {
+        compilerError('choice() size must be integral or domain');
+      }
+    }
+
+    var evenProbabilities: [1..arr.size] real = 1.0;
+    ref probabilities = if isVoidType(probType) then evenProbabilities
+                        else prob;
+
+    // If stride, offset, or size don't match, we're in trouble
+    if arr.domain != probabilities.domain then
+      throw new IllegalArgumentError('choice() arrays must have equal domains');
+
+    if probabilities.size == 0 then
+      throw new IllegalArgumentError('choice() arrays cannot be empty');
+
+    // Construct cumulative sum array
+    var cumulativeArr = (+ scan probabilities): real;
+
+    if !Sort.isSorted(cumulativeArr) then
+      throw new IllegalArgumentError("choice() prob array cannot contain negative values");
+
+    // Confirm the array has at least one value > 0
+    if cumulativeArr[probabilities.domain.last] <= 0 then
+      throw new IllegalArgumentError('choice() prob array requires a value greater than 0');
+
+    // Normalize cumulative sum array
+    var total = cumulativeArr[probabilities.domain.last];
+    cumulativeArr /= total;
+
+    // Begin sampling
+    if isVoidType(sizeType) {
+      // Return 1 sample
+      var randNum = stream.getNext();
+      var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
+      return arr[idx];
+    } else {
+      // Return numElements samples
+
+      // Compute numElements for tuple case
+      var m = 1;
+      if isDomainType(sizeType) then m = size.size;
+
+      var numElements = if isDomainType(sizeType) then m
+                        else if isIntegralType(sizeType) then size:int
+                        else compilerError('choice() size type must be integral or tuple of ranges');
+
+      // Return N samples
+      var samples: [1..numElements] arr.eltType;
+
+      if replace {
+        for sample in samples {
+          var randNum = stream.getNext();
+          var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
+          sample = arr[idx];
+        }
+      } else {
+        var indicesChosen: domain(int);
+        var i = 1;
+        while indicesChosen.size < samples.size {
+
+          // Recalculate normalized cumulativeArr
+          if indicesChosen.size > 0 {
+            cumulativeArr = (+ scan probabilities): real;
+            total = cumulativeArr[probabilities.domain.last];
+            cumulativeArr /= total;
+          }
+
+          var remainingSamples = samples.size - indicesChosen.size;
+          for randNum in stream.iterate({1..(samples.size - indicesChosen.size)}) {
+            // A potential optimization: Generate rand nums ahead of time
+            // and do a multi-target binary search to find all of their positions
+            var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
+            if !indicesChosen.contains(indexChosen) {
+              indicesChosen += indexChosen;
+              samples[i] += arr[indexChosen];
+              i += 1;
+            }
+            probabilities[indexChosen] = 0;
+          }
+        }
+      }
+      if isIntegralType(sizeType) {
+        return samples;
+      } else if isDomainType(sizeType) {
+        return reshape(samples, size);
+      }
+    }
+  }
 
   /*
 
@@ -750,112 +863,7 @@ module Random {
       proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
         throws
       {
-        use Search only;
-        use Sort only;
-
-        // Check random stream type
-        if !isRealType(this.eltType) then
-          compilerError('choice() can only be used on RandomStream with eltType=real');
-
-        // Check types of optional void args
-        if !isVoidType(probType) {
-          if !isArrayType(probType) then
-            compilerError('choice() prob must be an array');
-          if !(isIntegralType(prob.eltType) || isRealType(prob.eltType)) then
-            compilerError('choice() prob.eltType must be real or integral');
-        }
-        if !isVoidType(sizeType) {
-          if isIntegralType(sizeType) {
-            if size <= 0 then
-            throw new IllegalArgumentError('choice() size must be greater than 0');
-          } else if !isDomainType(sizeType) {
-            compilerError('choice() size must be integral or domain');
-          }
-        }
-
-        var evenProbabilities: [1..arr.size] real = 1.0;
-        ref probabilities = if isVoidType(probType) then evenProbabilities
-                            else prob;
-
-        // If stride, offset, or size don't match, we're in trouble
-        if arr.domain != probabilities.domain then
-          throw new IllegalArgumentError('choice() arrays must have equal domains');
-
-        if probabilities.size == 0 then
-          throw new IllegalArgumentError('choice() arrays cannot be empty');
-
-        // Construct cumulative sum array
-        var cumulativeArr = (+ scan probabilities): real;
-
-        if !Sort.isSorted(cumulativeArr) then
-          throw new IllegalArgumentError("choice() prob array cannot contain negative values");
-
-        // Confirm the array has at least one value > 0
-        if cumulativeArr[probabilities.domain.last] <= 0 then
-          throw new IllegalArgumentError('choice() prob array requires a value greater than 0');
-
-        // Normalize cumulative sum array
-        var total = cumulativeArr[probabilities.domain.last];
-        cumulativeArr /= total;
-
-        // Begin sampling
-        if isVoidType(sizeType) {
-          // Return 1 sample
-          var randNum = this.getNext();
-          var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-          return arr[idx];
-        } else {
-          // Return numElements samples
-
-          // Compute numElements for tuple case
-          var m = 1;
-          if isDomainType(sizeType) then m = size.size;
-
-          var numElements = if isDomainType(sizeType) then m
-                            else if isIntegralType(sizeType) then size:int
-                            else compilerError('choice() size type must be integral or tuple of ranges');
-
-          // Return N samples
-          var samples: [1..numElements] arr.eltType;
-
-          if replace {
-            for sample in samples {
-              var randNum = this.getNext();
-              var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-              sample = arr[idx];
-            }
-          } else {
-            var indicesChosen: domain(int);
-            var i = 1;
-            while indicesChosen.size < samples.size {
-
-              // Recalculate normalized cumulativeArr
-              if indicesChosen.size > 0 {
-                cumulativeArr = (+ scan probabilities): real;
-                total = cumulativeArr[probabilities.domain.last];
-                cumulativeArr /= total;
-              }
-
-              var remainingSamples = samples.size - indicesChosen.size;
-              for randNum in this.iterate({1..(samples.size - indicesChosen.size)}) {
-                // A potential optimization: Generate rand nums ahead of time
-                // and do a multi-target binary search to find all of their positions
-                var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
-                if !indicesChosen.contains(indexChosen) {
-                  indicesChosen += indexChosen;
-                  samples[i] += arr[indexChosen];
-                  i += 1;
-                }
-                probabilities[indexChosen] = 0;
-              }
-            }
-          }
-          if isIntegralType(sizeType) {
-            return samples;
-          } else if isDomainType(sizeType) {
-            return reshape(samples, size);
-          }
-        }
+        return _choice(this, arr, size=size, replace=replace, prob=prob);
       }
 
       /* Randomly shuffle a 1-D array. */
@@ -2336,6 +2344,11 @@ module Random {
       }
 
       // TODO: NPB - proc choice()
+      proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
+        throws
+      {
+        return _choice(this, arr, size=size, replace=replace, prob=prob);
+      }
 
       /*
 
