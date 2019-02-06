@@ -2346,6 +2346,10 @@ module ChapelArray {
         if boundsChecking then
           checkSlice(d);
 
+        //        pragma "no auto destroy"
+        //        const d2 = d;
+        //        d._value._free_when_no_arrs = true;
+
         //
         // If this is already a slice array view, we can short-circuit
         // down to the underlying array.
@@ -2360,8 +2364,12 @@ module ChapelArray {
                                                 _ArrPid=arrpid,
                                                 _ArrInstance=arr);
 
+        /*
+        writeln("About to add a new slice");
+        writeln(a.isSliceArrayView());
+        */
         // this doesn't need to lock since we just created the domain d
-        d._value.add_arr(a);
+        //        d2._value.add_arr(a, locking=false);
         return _newArray(a);
       } else
         compilerError("slicing an array with a domain of a different rank");

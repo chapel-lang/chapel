@@ -257,6 +257,15 @@ module ChapelDistribution {
     }
 
     inline proc add_arr(x:unmanaged BaseArr, param locking=true) {
+      /*
+      extern proc printf(x...);
+      printf("In add_arr\n");
+      if x.isSliceArrayView() {
+        printf("Is slice\n");
+      } else {
+        printf("Is not slice\n");
+      }
+      */
       on this {
         if locking then
           _lock_arrs();
@@ -279,6 +288,10 @@ module ChapelDistribution {
     }
 
     inline proc add_containing_arr(x:unmanaged BaseArr) {
+      /*
+      extern proc printf(x...);
+      printf("In add_containing_arr\n");
+      */
       on this {
         _lock_arrs();
         _arrs_containing_dom += 1;
@@ -992,11 +1005,27 @@ module ChapelDistribution {
     param stridable = lhs.stridable;
 
     for e in lhs._arrs do {
+      /*
+      extern proc printf(x...);
+      printf("%s\n", e.type:string);
+      if (e:arrType != nil) {
+        printf("cast works before on clause\n");
+      } else {
+        printf("cast doesn't work before on clause\n");
+      }
+      if e.isSliceArrayView() {
+        printf("Is slice\n");
+      } else {
+        printf("Is not slice\n");
+      }
+      */
       on e {
         var eCast = e:arrType;
-        if eCast == nil then
+        if eCast == nil then {
+          //          printf("%s\n", e.type:string);
           halt("internal error: ", t:string,
                " contains an bad array type ", arrType:string);
+        }
 
         var inds = rhs.getIndices();
         var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
