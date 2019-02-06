@@ -773,9 +773,8 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
   int i;
   for (i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      chpl_comm_put(chpl_private_broadcast_table[id], i,
-                    chpl_private_broadcast_table[id], size,
-                    -1 /*typeIndex: unused*/, CHPL_COMM_UNKNOWN_ID, 0, 0);
+      (void) ofi_put(chpl_private_broadcast_table[id], i,
+                     chpl_private_broadcast_table[id], size);
     }
   }
 }
