@@ -132,6 +132,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         substrates=aries,mpi,none
         locale_models=flat,knl
         auxfs=none,lustre
+        libpics=none,pic
 
         log_info "Start build_configs $dry_run $verbose # no make target"
 
@@ -142,6 +143,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
             --substrate=$substrates \
             --locale-model=$locale_models \
             --auxfs=$auxfs \
+            --lib-pic=$libpics \
             -- notcompiler
 
         # NOTE: don't rebuild compiler above (or else problems with switching GCC versions)
@@ -266,7 +268,19 @@ else
     log_debug "with config=$BUILD_CONFIGS_CALLBACK"
 
     # Exit immediately to skip (avoid building) unwanted Chapel configs
-
+    
+    if [ "$CHPL_LIB_PIC" == pic ]; then
+      if [ "$CHPL_COMM" != none ]; then
+        log_info "Skip Chapel make for libpic=$CHPL_LIB_PIC, comm=$CHPL_COMM"
+        exit 0
+      fi
+      if [ "$CHPL_LAUNCHER" != none ]; then
+        log_info "Skip Chapel make for libpic=$CHPL_LIB_PIC, launcher=$CHPL_LAUNCHER"
+        exit 0
+      fi
+    fi
+    
+    
     if [ "$CHPL_COMM" == ugni ]; then
         if [ "$CHPL_LAUNCHER" == none ]; then
 
