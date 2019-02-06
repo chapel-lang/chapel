@@ -40,10 +40,15 @@ record R {
   -------------------------------
 */
 
-// An initializer is called when creating an instance of the class or record,
-// for example with the ``new`` keyword. An initializer accepting zero
-// arguments is called a *default initializer*.  An initializer that takes
-// another instance of the same class or record is called a *copy initializer*.
+// An initializer named ``init`` is called when creating an instance of the
+// class or record, for example with the ``new`` keyword. An initializer
+// accepting zero arguments is called a *default initializer*.  An initializer
+// that takes another instance of the same class or record is called a
+// *copy initializer*.
+
+// If a method named ``postinit`` that accepts zero arguments exists for a
+// class or record type, it will automatically be called after the
+// initializer call completes.
 
 // The ``deinit`` method will deinitialize a record when it leaves scope,
 // or a class when ``delete`` is called on it. If the class or record
@@ -57,20 +62,22 @@ record R {
 */
 
 // The ``this`` method gives the record the ability to be accessed like an
-// array.  Here we use the index to choose a tuple element.
+// array.  Here we use the the argument as an index to choose a tuple element.
 proc R.this(n: int) ref {
   if n < 1 || n > size then
     halt("index out of bounds accessing R");
   return vals[n];
 }
 
-var r = new R();
 
 // All functions and methods in Chapel can be called using either parenthesis
-// or square brackets. Here we use square brackets to style it as an array
-// access.
+// or square brackets. Here we'll access the record by implicitly calling
+// the ``this`` method defined above.
+
+var r = new R();
+
 r[1] = 1;
-r[3] = 3;
+r(3) = 3;
 
 writeln(r.vals);
 
@@ -79,8 +86,9 @@ writeln(r.vals);
   -----------------
 */
 
-// An iterator named ``these`` is automatically called when a record or class
-// instance is used in the iterator position of a ``for`` loop.
+// An iterator named ``these`` that can accept 0 arguments is automatically
+// called when a record or class instance is used in the iterator position
+// of a ``for`` loop.
 iter R.these() ref {
   for i in 1..size {
     yield vals[i];
@@ -101,8 +109,8 @@ writeln(r.vals);
   ----------
 */
 
-// Define how to write an instance of R to a channel. We'll write the
-// 'vals' tuple between asterisks. See section
+// The ``writeThis`` method defines how to write an instance of R to a
+// channel. We'll write the ``vals`` tuple between asterisks. See section
 // :ref:`readThis-writeThis-readWriteThis` for more information  on the
 // ``writeThis``, ``readThis``, and ``readWriteThis`` methods.
 proc R.writeThis(ch: channel) {
@@ -117,8 +125,9 @@ proc R.writeThis(ch: channel) {
   ch.writeln(r);
 }
 
-// Define how to read an instance of R from a channel. We'll read the
-// 'vals' tuple between asterisks.
+// The ``readThis`` method defines how to read an instance of R from a
+// channel. We'll read the ``vals`` tuple between asterisks like how it
+// was written above.
 proc R.readThis(ch: channel) {
   var star = new ioLiteral("*");
   ch.read(star);
@@ -135,16 +144,16 @@ proc R.readThis(ch: channel) {
 }
 
 // If the record should be read and written using the same
-// format, the combined 'readWriteThis' method can replace the
-// 'readThis' and 'writeThis' methods. This method will be
-// used for both reading and writing the 'vals' tuple
+// format, the combined ``readWriteThis`` method can replace the
+// ``readThis`` and ``writeThis`` methods. This method will be
+// used for both reading and writing the ``vals`` tuple
 // surrounded by double asterisks. The ``readThis`` and
 // ``writeThis`` methods defined above have higher precedence
 // than ``readWriteThis``, so this function is not used because
 // they are defined.
 proc R.readWriteThis(ch: channel) {
-  const star = new ioLiteral("**");
-  ch <~> star <~> vals <~> star;
+  const stars = new ioLiteral("**");
+  ch <~> stars <~> vals <~> stars;
 }
 
 {
