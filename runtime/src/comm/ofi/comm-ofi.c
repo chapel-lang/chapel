@@ -2265,8 +2265,30 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   }
 
   tcip->numTxsOut++;
-  CHK_TRUE(tcip->txCtxHasCQ);  // (so far) only expect AMOs from workers
-  waitForTxCQ(tcip, 1, FI_ATOMIC);
+
+  //
+  // AMOs have to be done in order, so we at least need to wait for the
+  // completion before proceeding.
+  //
+  if (tcip->txCtxHasCQ) {
+    waitForTxCQ(tcip, 1, FI_ATOMIC);
+  } else {
+    //
+    // We can't determine completion ordering with only a counter, so 
+    // we have to wait for it go all the way to zero in order to be
+    // assured that the AMO is done.
+    //
+    do {
+      const int count = fi_cntr_read(tcip->txCntr);
+      if (count == 0) {
+        sched_yield();
+        chpl_comm_make_progress();
+      } else {
+        DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
+        tcip->numTxsOut -= count;
+      }
+    } while (tcip->numTxsOut > 0);
+  }
 
   if (myRes != result) {
     memcpy(result, myRes, resSize);
