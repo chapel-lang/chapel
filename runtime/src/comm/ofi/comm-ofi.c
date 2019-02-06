@@ -147,6 +147,7 @@ static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                                 void*, size_t);
 static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                                 void*, size_t);
+static void waitForAmoComplete(struct perTxCtxInfo_t*);
 static void waitForTxCQ(struct perTxCtxInfo_t*, int, uint64_t);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
@@ -1330,6 +1331,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
              (int) node, object,
              DBG_VAL(operand1, ofiType), DBG_VAL(operand2, ofiType), result,
              ofiOp, ofiType, size);
+
   void* myResult = result;
   size_t resSize = (ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : size;
   if (myResult != NULL) {
@@ -2219,13 +2221,20 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
                               void* result,
                               enum fi_op ofiOp, enum fi_datatype ofiType,
                               size_t size) {
-  void* myRes = result;
-  size_t resSize = (ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : size;
+  //
+  // A wrinkle: for a cmpxchg/CSWAP our caller wants chpl_bool32 true
+  // if the compare&swap succeeded, false otherwise.  But the libfabric
+  // atomic compare returns the previous value of the operand, not T/F.
+  // We have to synthesize the result to be returned to our caller,
+  // based on comparing that previous value to the comparand.
+  //
+  chpl_amo_datum_t ofiCmpRes;
+  void* myRes = (ofiOp == FI_CSWAP) ? &ofiCmpRes : result;
   void* mrDescRes = NULL;
-  if (myRes != NULL && mrGetLocalDesc(&mrDescRes, myRes, resSize) != 0) {
-    myRes = allocBounceBuf(resSize);
+  if (myRes != NULL && mrGetLocalDesc(&mrDescRes, myRes, size) != 0) {
+    myRes = allocBounceBuf(size);
     DBG_PRINTF(DBG_AMO, "AMO result BB: %p", myRes);
-    CHK_TRUE(mrGetLocalDesc(&mrDescRes, myRes, resSize) == 0);
+    CHK_TRUE(mrGetLocalDesc(&mrDescRes, myRes, size) == 0);
   }
 
   void* myOpnd1 = (void*) operand1;
@@ -2252,47 +2261,30 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
                               myRes, mrDescRes,
                               ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                               ofiType, ofiOp, NULL));
+    tcip->numTxsOut++;
+    waitForAmoComplete(tcip);
+    *(chpl_bool32*) result = (memcmp(myRes, operand1, size) == 0);
+    if (myRes != &ofiCmpRes) {
+      freeBounceBuf(myRes);
+    }
   } else if (result != NULL) {
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
                             myOpnd1, 1, mrDescOpnd1, myRes, mrDescRes,
                             ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                             ofiType, ofiOp, NULL));
+    tcip->numTxsOut++;
+    waitForAmoComplete(tcip);
+    if (myRes != result) {
+      memcpy(result, myRes, size);
+      freeBounceBuf(myRes);
+    }
   } else {
     OFI_CHK(fi_atomic(tcip->txCtx,
                       myOpnd1, 1, mrDescOpnd1,
                       ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                       ofiType, ofiOp, NULL));
-  }
-
-  tcip->numTxsOut++;
-
-  //
-  // AMOs have to be done in order, so we at least need to wait for the
-  // completion before proceeding.
-  //
-  if (tcip->txCtxHasCQ) {
-    waitForTxCQ(tcip, 1, FI_ATOMIC);
-  } else {
-    //
-    // We can't determine completion ordering with only a counter, so 
-    // we have to wait for it go all the way to zero in order to be
-    // assured that the AMO is done.
-    //
-    do {
-      const int count = fi_cntr_read(tcip->txCntr);
-      if (count == 0) {
-        sched_yield();
-        chpl_comm_make_progress();
-      } else {
-        DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
-        tcip->numTxsOut -= count;
-      }
-    } while (tcip->numTxsOut > 0);
-  }
-
-  if (myRes != result) {
-    memcpy(result, myRes, resSize);
-    freeBounceBuf(myRes);
+    tcip->numTxsOut++;
+    waitForAmoComplete(tcip);
   }
 
   if (result == NULL) {
@@ -2321,6 +2313,34 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   }
 
   return NULL;
+}
+
+
+static
+void waitForAmoComplete(struct perTxCtxInfo_t* tcip) {
+  //
+  // AMOs have to be done in order, so we need to wait for completion
+  // before proceeding.
+  //
+  if (tcip->txCtxHasCQ) {
+    waitForTxCQ(tcip, 1, FI_ATOMIC);
+  } else {
+    //
+    // The counter cannot tell us about completion ordering, so we have
+    // to wait for it go all the way to zero in order to be assured that
+    // the AMO is done.
+    //
+    do {
+      const int count = fi_cntr_read(tcip->txCntr);
+      if (count == 0) {
+        sched_yield();
+        chpl_comm_make_progress();
+      } else {
+        DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
+        tcip->numTxsOut -= count;
+      }
+    } while (tcip->numTxsOut > 0);
+  }
 }
 
 
