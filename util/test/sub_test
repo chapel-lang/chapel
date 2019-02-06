@@ -182,6 +182,15 @@ def bytes_to_str(byte_string):
     else:
         return byte_string
 
+def concat_streams(stdout, stderr):
+    """ Concats stderr to stdout. Returns str is stdout is str, bytes otherwise """
+    if sys.version_info[0] >= 3:
+        if isinstance(bytes_to_str(stdout), str):
+            return bytes_to_str(stdout) + bytes_to_str(stderr)
+        elif isinstance(stderr, str):
+            return stdout + bytes(stderr, 'utf-8')
+
+    return stdout + stderr
 
 class Py3CompatPopen(object):
 
@@ -221,7 +230,7 @@ def SetNonBlock(stream):
 
 def SuckOutputWithTimeout(stream, timeout):
     SetNonBlock(stream)
-    buffer = ''
+    buffer = b''
     end_time = time.time() + timeout
     while True:
         now = time.time()
@@ -1553,11 +1562,11 @@ for testname in testsrc:
         else:
             p = Popen([cmd]+args,
                       env=dict(list(os.environ.items()) + list(testcompenv.items())),
-                      stdin=open(cmpstdin, 'r'),
+                      stdin=open(compstdin, 'r'),
                       stdout=subprocess.PIPE,
                       stderr=subprocess.STDOUT)
             try:
-                output = SuckOutputWithTimeout(p.stdout, comptimeout)
+                output = bytes_to_str(SuckOutputWithTimeout(p.stdout, comptimeout))
             except ReadTimeoutException:
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, test_filename))
@@ -1568,6 +1577,7 @@ for testname in testsrc:
                 cleanup(printpassesfile)
                 continue # on to next compopts
 
+            p.poll()
             status = p.returncode
 
         elapsedCompTime = time.time() - compStart
@@ -1973,8 +1983,8 @@ for testname in testsrc:
                                   stdin=my_stdin,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE)
-                        (stdoutOutput, stderrOutput) = p.communicate()
-                        output = stdoutOutput + stderrOutput
+                        (stdout, stderr) = p.communicate()
+                        output = concat_streams(stdout, stderr)
                         status = p.returncode
 
                         # Check for well-known failure modes
@@ -2002,8 +2012,8 @@ for testname in testsrc:
                                   stdin=my_stdin,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE)
-                        (stdoutOutput, stderrOutput) = p.communicate()
-                        output = stdoutOutput + stderrOutput
+                        (stdout, stderr) = p.communicate()
+                        output = concat_streams(stdout, stderr)
                         status = p.returncode
 
                         if status == 222:
@@ -2048,8 +2058,9 @@ for testname in testsrc:
                             sys.stdout.write(']\n')
                             KillProc(p, killtimeout)
 
-                        stderrOutput = p.communicate()[1]
-                        output = stdoutOutput + stderrOutput
+                        stderrOutput = p.stderr.read()
+                        output = concat_streams(stdoutOutput, stderrOutput)
+                        p.poll()
                         status = p.returncode
 
                 # executable is done running
