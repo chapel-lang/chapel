@@ -1996,9 +1996,7 @@ countYieldsInFn(FnSymbol* fn)
 static bool
 canInlineIterator(FnSymbol* iterator) {
   int count = countYieldsInFn(iterator);
-
-  // count==0 e.g. in users/biesack/test_recursive_iterator.chpl
-  return (count >= 1 && count <= inline_iter_yield_limit);
+  return count <= inline_iter_yield_limit;
 }
 
 static void
