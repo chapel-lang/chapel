@@ -210,9 +210,44 @@ module Random {
       compilerError("Unknown random number generator");
   }
 
+  pragma "no doc"
+  /* Actual implementation of choice() */
+  proc _choice(stream, arr: [], size:?sizeType, replace, prob:?probType)
+    throws
+  {
+
+    if arr.rank != 1 {
+      compilerError('choice() array must be 1 dimensional');
+    }
+
+    // Check types of optional void args
+    if !isVoidType(probType) {
+      if !isArrayType(probType) then
+        compilerError('choice() prob must be an array');
+      if !(isIntegralType(prob.eltType) || isRealType(prob.eltType)) then
+        compilerError('choice() prob.eltType must be real or integral');
+      if prob.rank != 1 {
+        compilerError('choice() prob array must be 1 dimensional');
+      }
+    }
+    if !isVoidType(sizeType) {
+      if isIntegralType(sizeType) {
+        if size <= 0 then
+        throw new IllegalArgumentError('choice() size must be greater than 0');
+      } else if !isDomainType(sizeType) {
+        compilerError('choice() size must be integral or domain');
+      }
+    }
+
+    if isVoidType(probType) {
+      return _choiceUniform(stream, arr, size, replace);
+    } else {
+      return _choiceProbabilities(stream, arr, size, replace, prob);
+    }
+  }
 
   pragma "no doc"
-  /* */
+  /* _choice branch for uniform distribution */
   proc _choiceUniform(stream, arr:[], size:?sizeType, replace) throws
   {
     // Potential optimization: Support getNext(min, max, resultType) and use
@@ -257,7 +292,7 @@ module Random {
   }
 
   pragma "no doc"
-  /* */
+  /* _choice branch for distribution defined by probabilities array */
   proc _choiceProbabilities(stream, arr:[], size:?sizeType, replace, prob:?probType) throws
   {
     use Search only;
@@ -341,42 +376,6 @@ module Random {
       } else if isDomainType(sizeType) {
         return reshape(samples, size);
       }
-    }
-  }
-
-  pragma "no doc"
-  /* Actual implementation of choice() */
-  proc _choice(stream, arr: [], size:?sizeType, replace, prob:?probType)
-    throws
-  {
-
-    if arr.rank != 1 {
-      compilerError('choice() array must be 1 dimensional');
-    }
-
-    // Check types of optional void args
-    if !isVoidType(probType) {
-      if !isArrayType(probType) then
-        compilerError('choice() prob must be an array');
-      if !(isIntegralType(prob.eltType) || isRealType(prob.eltType)) then
-        compilerError('choice() prob.eltType must be real or integral');
-      if prob.rank != 1 {
-        compilerError('choice() prob array must be 1 dimensional');
-      }
-    }
-    if !isVoidType(sizeType) {
-      if isIntegralType(sizeType) {
-        if size <= 0 then
-        throw new IllegalArgumentError('choice() size must be greater than 0');
-      } else if !isDomainType(sizeType) {
-        compilerError('choice() size must be integral or domain');
-      }
-    }
-
-    if isVoidType(probType) {
-      return _choiceUniform(stream, arr, size, replace);
-    } else {
-      return _choiceProbabilities(stream, arr, size, replace, prob);
     }
   }
 
