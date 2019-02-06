@@ -86,7 +86,7 @@ writeln(r.vals);
   -----------------
 */
 
-// An iterator named ``these`` that can accept 0 arguments is automatically
+// An iterator named ``these`` that can accept zero arguments is automatically
 // called when a record or class instance is used in the iterator position
 // of a ``for`` loop.
 iter R.these() ref {
