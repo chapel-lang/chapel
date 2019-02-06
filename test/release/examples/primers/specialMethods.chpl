@@ -41,9 +41,9 @@ record R {
 */
 
 // An initializer is called when creating an instance of the class or record,
-// for example with the ``new`` keyword. An initializer with no arguments is
-// called a "default initializer".  An initializer that takes another instance
-// of the same class or record is called a "copy initializer".
+// for example with the ``new`` keyword. An initializer accepting zero
+// arguments is called a *default initializer*.  An initializer that takes
+// another instance of the same class or record is called a *copy initializer*.
 
 // The ``deinit`` method will deinitialize a record when it leaves scope,
 // or a class when ``delete`` is called on it. If the class or record
@@ -165,8 +165,8 @@ proc R.readWriteThis(ch: channel) {
   ------------------
 */
 
-// Operators can be overloaded for class and record types to support
+// Operators can be overloaded for record types to support
 // assignment (``=``), comparisons, (``<``, ``<=``, ``>``, ``>=``, ``==``,
 // ``!=``), and other general operators (``+``, ``-``, ``*``, ``/``, ...).
 // These are declared as regular functions with two arguments, not as methods
-// on the class or record.
+// on the record.
