@@ -734,14 +734,15 @@ static uint32_t     comm_dom_cnt_max;
 
 static comm_dom_t*  comm_doms;
 
-static __thread int comm_dom_free_idx;
+static atomic_int_least32_t global_init_cdi;
+static __thread int comm_dom_free_idx = -1;
 static __thread comm_dom_t* cd = NULL;
 static __thread int cd_idx = -1;
 
 #define INIT_CD_BUSY(cd)      atomic_init_bool(&(cd)->busy, false)
-#define CHECK_CD_BUSY(cd)     atomic_load_bool(&(cd)->busy)
-#define ACQUIRE_CD_MAYBE(cd)  (atomic_exchange_bool(&(cd)->busy, true) == false)
-#define RELEASE_CD(cd)        atomic_store_bool(&(cd)->busy, false)
+#define CHECK_CD_BUSY(cd)     atomic_load_explicit_bool(&(cd)->busy, memory_order_acquire)
+#define ACQUIRE_CD_MAYBE(cd)  (!atomic_exchange_explicit_bool(&(cd)->busy, true, memory_order_acquire))
+#define RELEASE_CD(cd)        atomic_store_explicit_bool(&(cd)->busy, false, memory_order_release)
 
 
 //
@@ -2097,7 +2098,8 @@ void chpl_comm_post_task_init(void)
   for (int i = 0; i < comm_dom_cnt; i++)
     gni_setup_per_comm_dom(i);
 
-  comm_dom_free_idx = 0;
+  atomic_init_int_least32_t(&global_init_cdi, 0);
+
 
   //
   // Register memory.
@@ -7899,6 +7901,10 @@ void acquire_comm_dom(void)
     return;
   }
 
+  if (comm_dom_free_idx == -1) {
+    comm_dom_free_idx = atomic_fetch_add_int_least32_t(&global_init_cdi, 1) % comm_dom_cnt;
+  }
+
   assert(cd == NULL);
 
   //
@@ -7973,6 +7979,10 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
 #ifdef DEBUG_STATS
   uint64_t acq_looks = 0;
 #endif
+
+  if (comm_dom_free_idx == -1) {
+    comm_dom_free_idx = atomic_fetch_add_int_least32_t(&global_init_cdi, 1) % comm_dom_cnt;
+  }
 
   assert(cd == NULL);
 
