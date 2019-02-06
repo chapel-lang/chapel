@@ -86,8 +86,7 @@ module ExternalArray {
     // Don't clean up arrays we create in this way or the user will have garbage
     // memory after the first function call
     ret._pid = value._pid;
-    ret._unowned = value._unowned;
-    ret._externally_managed = true;
+    ret._unowned = true;
     return ret;
   }
 
@@ -129,11 +128,10 @@ module ExternalArray {
   proc convertToExternalArray(arr: []): chpl_opaque_array
     where (getExternalArrayType(arr) == chpl_opaque_array) {
 
-    arr._externally_managed = true;
     var ret: chpl_opaque_array;
     ret._pid = arr._pid;
     ret._instance = arr._value: c_void_ptr;
-    ret._unowned = arr._unowned;
+    ret._unowned = true;
     return ret;
   }
 
@@ -186,6 +184,6 @@ module ExternalArray {
   // the next best thing.
   export proc cleanupOpaqueArray(arr: chpl_opaque_array) {
     var cleanup = arr._instance: unmanaged BaseArr;
-    _do_destroy_arr(arr._unowned, false, cleanup);
+    _do_destroy_arr(arr._unowned, cleanup);
   }
 }
