@@ -182,13 +182,21 @@ def bytes_to_str(byte_string):
     else:
         return byte_string
 
+def str_to_bytes(str_string):
+    if sys.version_info[0] >= 3 and not isinstance(str_string, bytes):
+        return bytes(str_string, 'utf-8')
+    else:
+        return str_string
+
 def concat_streams(stdout, stderr):
-    """ Concats stderr to stdout. Returns str is stdout is str, bytes otherwise """
+    """ Concats stderr to stdout. Returns str if both are utf-8 strings, bytes otherwise """
     if sys.version_info[0] >= 3:
-        if isinstance(bytes_to_str(stdout), str):
-            return bytes_to_str(stdout) + bytes_to_str(stderr)
-        elif isinstance(stderr, str):
-            return stdout + bytes(stderr, 'utf-8')
+        str_stdout = bytes_to_str(stdout)
+        str_stderr = bytes_to_str(stderr)
+        if isinstance(str_stdout, str) and isinstance(str_stderr, str):
+            return str_stdout + str_stderr
+        else:
+            return str_to_bytes(stdout) + str_to_bytes(stderr)
 
     return stdout + stderr
 
@@ -2106,20 +2114,20 @@ for testname in testsrc:
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT).communicate()[0]
                     if sys.version_info[0] >= 3 and isinstance(cat_output, bytes):
-                        output = bytes(output, 'utf-8')
+                        output = str_to_bytes(output)
                     output += cat_output
 
                 # Sadly the scripts used below require an actual file
                 open_mode = 'w' if isinstance(output, str) else 'wb'
                 with open(execlog, open_mode) as execlogfile:
-                    if sys.version_info[0] >= 3 and open_mode == 'wb' and not isinstance(pre_exec_output, bytes):
-                        pre_exec_output_content = bytes(pre_exec_output, 'utf-8')
+                    if open_mode == 'wb':
+                        pre_exec_output_content = str_to_bytes(pre_exec_output)
                     else:
                         pre_exec_output_content = pre_exec_output
                     execlogfile.write(pre_exec_output_content)
 
-                    if sys.version_info[0] >= 3 and open_mode == 'wb' and not isinstance(output, bytes):
-                        output_content = bytes(output, 'utf-8')
+                    if open_mode == 'wb':
+                        output_content =str_to_bytes(output)
                     else:
                         output_content = output
                     execlogfile.write(output_content)
