@@ -707,14 +707,31 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 #define CQ_CNT_DEC(cd)        \
         (void) atomic_fetch_sub_uint_least32_t(&(cd)->cq_cnt_curr, 1)
 
+// We create an array of comm domains and try to spread our threads to
+// different indices. For tasking layers with a fixed number of threads
+// this results in each thread acquiring an affinity for a comm domain,
+// eliminating contention across comm domains (assuming we can create as
+// many comm domains as there are threads.) We cacheline align/pad the
+// comm_dom_t struct to avoid false sharing between threads accessing
+// different comm domains (this is extremely important for performance)
+//
+// Because there are configurations where there aren't a fixed number of
+// threads and machines where there would be more threads than comm
+// domains we put `busy` on its own cacheline to avoid contention
+// between a thread operating on an acquired CD and another thread
+// that's trying to acquire it. We also try to limit cache thrashing on
+// `busy` by acquiring the lock with a test-and-test-and-set op, but the
+// effectiveness of that depends on which atomic layer is used (cstdlib
+// is the only one with cheap atomic reads.)
+
 typedef struct {
   atomic_bool        busy CACHE_LINE_ALIGN;
+  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
   chpl_bool          firmly_bound;
   gni_nic_handle_t   nih;
   gni_ep_handle_t*   remote_eps;
   gni_cq_handle_t    cqh;
   cq_cnt_t           cq_cnt_max;
-  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
 #ifdef DEBUG_STATS
   uint64_t           acqs;
   uint64_t           acqs_looks;
@@ -2090,7 +2107,7 @@ void chpl_comm_post_task_init(void)
   // handles, endpoints, and completion queues.
   //
   comm_doms =
-    (comm_dom_t*) chpl_mem_memalign(sizeof(comm_dom_t),
+    (comm_dom_t*) chpl_mem_memalign(CACHE_LINE_SIZE,
                                     comm_dom_cnt * sizeof(comm_dom_t),
                                     CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
 
