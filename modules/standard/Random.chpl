@@ -282,7 +282,7 @@ module Random {
 
       if replace {
         for sample in samples {
-          var randNum = stream.getNext();
+          var randNum = stream.getNext(resultType=real);
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
           sample = arr[idx];
         }
@@ -299,7 +299,7 @@ module Random {
           }
 
           var remainingSamples = samples.size - indicesChosen.size;
-          for randNum in stream.iterate({1..(samples.size - indicesChosen.size)}) {
+          for randNum in stream.iterate({1..(samples.size - indicesChosen.size)}, resultType=real) {
             // A potential optimization: Generate rand nums ahead of time
             // and do a multi-target binary search to find all of their positions
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
@@ -441,8 +441,6 @@ module Random {
 
     /*
      Returns a random sample from a given 1-D array, ``arr``.
-
-     This method will only work for randomStreams with ``eltType=real``.
 
      :arg arr: a 1-D array with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
@@ -873,8 +871,6 @@ module Random {
 
       /*
      Returns a random sample from a given 1-D array, ``arr``.
-
-     This method will only work for randomStreams with ``eltType=real``.
 
      :arg arr: a 1-D array with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to

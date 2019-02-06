@@ -5,6 +5,8 @@ config const debug = false;
 proc main() {
   var pcg = makeRandomStream(real, algorithm=RNG.PCG);
   runTests(pcg);
+  var pcgInt = makeRandomStream(int, algorithm=RNG.PCG);
+  runTests(pcgInt);
 }
 
 proc runTests(stream) {
