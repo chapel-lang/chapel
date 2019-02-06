@@ -2346,10 +2346,22 @@ module ChapelArray {
         if boundsChecking then
           checkSlice(d);
 
-        //        pragma "no auto destroy"
-        //        const d2 = d;
-        //        d._value._free_when_no_arrs = true;
 
+        // The following implements strategy 5a from issue #12272.
+        // If we could determine whether or not a domain was constant,
+        // it could be strategy 5b which is strictly better and better
+        // than what is on master today.
+        if d.dist == this.domain.dist /* && d.isConst() */ then {
+          return _newArray(setupArraySliceHelper(d, true));
+        } else {
+          writeln("Creating a new domain");
+          pragma "no auto destroy"
+          const newd = _dom((...d.dsiDims()));
+          newd._value._free_when_no_arrs = true;
+          return _newArray(setupArraySliceHelper(newd, false));
+        }
+
+        proc setupArraySliceHelper(dom, param locking: bool) {
         //
         // If this is already a slice array view, we can short-circuit
         // down to the underlying array.
@@ -2359,8 +2371,8 @@ module ChapelArray {
                               else (this._value, this._pid);
 
         var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
-                                                _DomPid=d._pid,
-                                                dom=d._instance,
+                                                _DomPid=dom._pid,
+                                                dom=dom._instance,
                                                 _ArrPid=arrpid,
                                                 _ArrInstance=arr);
 
@@ -2369,8 +2381,10 @@ module ChapelArray {
         writeln(a.isSliceArrayView());
         */
         // this doesn't need to lock since we just created the domain d
-        //        d2._value.add_arr(a, locking=false);
-        return _newArray(a);
+        if locking == false then
+          dom._value.add_arr(a, locking=locking);
+        return a;
+        }
       } else
         compilerError("slicing an array with a domain of a different rank");
     }
