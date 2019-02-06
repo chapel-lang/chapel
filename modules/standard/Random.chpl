@@ -442,23 +442,36 @@ module Random {
       compilerError("RandomStreamInterface.fillRandom called");
     }
 
+
     /*
-     Returns a random sample from a given 1-D array.
+     Returns a random sample from a given 1-D array, ``arr``.
 
      This method will only work for randomStreams with ``eltType=real``.
 
-     :arg arr: a 1-D array with a domain equal to ``prob.domain``.
-     :arg size: An ``integral`` value specifying the number of elements to
-                choose, or a ``domain`` specifying the dimensions of the
-                sampled array to be filled.
-     :arg replace: a ``bool`` specifying whether or not to sample with
-                   replacement.
-     :arg prob: a 1-D integral or real array, with no negative values and at
-                least one non-zero value.
+     :arg arr: a 1-D array with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``arr``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The domain must be equal to that of ``arr.domain``.
 
-     :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``arr.domain != prob.domain`` or if ``sampleSize < 1``.
+     :return: An element chosen from ``arr`` is ``size == 1``, or an array of
+              element chosen from ``arr`` if ``size > 1`` or ``size`` is a
+              domain.
 
-     :throws IllegalArgumentError: Thrown if ``arr`` is empty, contains a negative value, or has no non-zero values. Also thrown if ``arr.domain != prob.domain``.
+     :throws IllegalArgumentError: if ``arr.size == 0``,
+                                   if ``arr`` contains a negative value,
+                                   if ``arr`` has no non-zero values.,
+                                   if ``arr.domain != prob.domain``,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > arr.size || size.size > arr.size``
      */
     proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void) throws
       where isIntegralType(eltType) || isRealType(eltType)
@@ -863,7 +876,36 @@ module Random {
           x = r;
       }
 
-      /* TODO */
+      /*
+     Returns a random sample from a given 1-D array, ``arr``.
+
+     This method will only work for randomStreams with ``eltType=real``.
+
+     :arg arr: a 1-D array with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``arr``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The domain must be equal to that of ``arr.domain``.
+
+     :return: An element chosen from ``arr`` is ``size == 1``, or an array of
+              element chosen from ``arr`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``arr.size == 0``,
+                                   if ``arr`` contains a negative value,
+                                   if ``arr`` has no non-zero values.,
+                                   if ``arr.domain != prob.domain``,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > arr.size || size.size > arr.size``
+     */
       proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
         throws
       {
@@ -2347,7 +2389,36 @@ module Random {
                       ") can only be used to fill arrays of ", eltType:string);
       }
 
-      // TODO: NPB - proc choice()
+     /*
+     Returns a random sample from a given 1-D array, ``arr``.
+
+     This method will only work for randomStreams with ``eltType=real``.
+
+     :arg arr: a 1-D array with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``arr``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The domain must be equal to that of ``arr.domain``.
+
+     :return: An element chosen from ``arr`` is ``size == 1``, or an array of
+              element chosen from ``arr`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``arr.size == 0``,
+                                   if ``arr`` contains a negative value,
+                                   if ``arr`` has no non-zero values.,
+                                   if ``arr.domain != prob.domain``,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > arr.size || size.size > arr.size``
+      */
       proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
         throws
       {
