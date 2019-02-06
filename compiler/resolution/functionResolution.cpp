@@ -7046,7 +7046,6 @@ void resolve() {
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
-  resolveForallStmts1();
 
   insertReturnTemps();
 
