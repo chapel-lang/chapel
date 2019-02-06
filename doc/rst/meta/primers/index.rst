@@ -13,6 +13,7 @@ Language Basics
    Procedures <procedures>
    Classes <classes>
    Records <records>
+   Special Methods on Classes and Records <specialMethods>
    Generic Classes and Records <genericClasses>
    Tuples <tuples>
    Variadic Arguments (var args) <varargs>

@@ -32,6 +32,7 @@ demonstrate Chapel feature areas in detail.
      replicated.chpl             : Replicated distribution
      slices.chpl                 : Array slicing and reindexing examples
      sparse.chpl                 : Sparse domains and arrays
+     specialMethods.chpl         : Class/Record methods treated specially
      syncsingle.chpl             : Sync and single variables
      taskParallel.chpl           : Task parallel language concepts
      timers.chpl                 : Time standard module
