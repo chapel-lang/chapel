@@ -37,6 +37,11 @@ void     lookup(const char*           name,
                 BaseAST*              context,
                 std::vector<Symbol*>& symbols);
 
+Symbol*  lookupAndCount(const char*           name,
+                        BaseAST*              context,
+                        int&                  nSymbolsFound);
+
+
 BaseAST* getScope(BaseAST* ast);
 
 void resolveUnresolvedSymExprs(BaseAST* ast);
