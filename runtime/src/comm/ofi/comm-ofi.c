@@ -129,6 +129,8 @@ typedef struct memEntry (memTab_t)[MAX_MEM_REGIONS];
 static memTab_t memTab;
 static memTab_t* memTabMap;
 
+#define AM_MAX_MSG_SIZE (10 * 10240) // TODO: safe (?), but awfully large
+
 static int numAmHandlers = 1;
 
 static void* amLZs;
@@ -711,10 +713,11 @@ void init_ofiForAms(void) {
   //
   // Set the minimum multi-receive buffer space.  Some providers don't
   // have fi_setopt() for some ep types, so allow this to fail in that
-  // case.
+  // case.  Note, however, that if it does fail and we get overruns,
+  // we'll die.
   //
   {
-    const size_t sz = 2048; // TODO
+    const size_t sz = AM_MAX_MSG_SIZE;
     const int ret = fi_setopt(&ofi_rxEp->fid, FI_OPT_ENDPOINT,
                               FI_OPT_MIN_MULTI_RECV, &sz, sizeof(sz));
     CHK_TRUE(ret == FI_SUCCESS || ret == -FI_ENOSYS);
@@ -734,7 +737,9 @@ void init_ofiForAms(void) {
   ofi_msg_reqs.context = NULL;
   ofi_msg_reqs.data = 0x0;
   OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
-  DBG_PRINTF(DBG_AM | DBG_AMRECV, "pre-post fi_recvmsg(AMReqs)");
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "pre-post fi_recvmsg(AMLZs, len %zd)",
+             ofi_msg_reqs.msg_iov->iov_len);
 
   init_amHandling();
 }
@@ -1291,6 +1296,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                      chpl_fn_int_t fid,
                      chpl_comm_on_bundle_t* arg, size_t argSize,
                      chpl_bool fast, chpl_bool blocking) {
+  CHK_TRUE(argSize <= AM_MAX_MSG_SIZE);
   arg->comm.xo = (struct chpl_comm_bundleData_execOn_t)
                    { .b = (struct chpl_comm_bundleData_base_t)
                           { .op = am_opCall, .node = chpl_nodeID },
@@ -1594,7 +1600,30 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
 
   int ret;
   CHK_TRUE((ret = fi_cq_read(ofi_rxCQ, cqes, maxAmsToDo)) > 0
-           || ret == -FI_EAGAIN);
+           || ret == -FI_EAGAIN
+           || ret == -FI_EAVAIL);
+
+  if (ret == -FI_EAVAIL) {
+    struct fi_cq_err_entry err = { 0 };
+    fi_cq_readerr(ofi_rxCQ, &err, 0);
+    if (err.err == FI_ETRUNC) {
+      //
+      // We ran out of inbound buffer space and a message was truncated.
+      // If the fi_setopt(FI_OPT_MIN_MULTI_RECV) worked and nobody sent
+      // anything larger than that, this shouldn't happen.  In any case,
+      // we can't recover, but let's provide some information to help
+      // aid failure analysis.
+      //
+      INTERNAL_ERROR_V("fi_cq_readerr(): AM recv buf FI_ETRUNC: "
+                       "flags %#" PRIx64 ", len %zd, olen %zd",
+                       err.flags, err.len, err.olen);
+    } else {
+      char bufProv[100];
+      (void) fi_cq_strerror(ofi_rxCQ, err.prov_errno, err.err_data,
+                            bufProv, sizeof(bufProv));
+      INTERNAL_ERROR_V("fi_cq_read(): err %d, strerror %s", err.err, bufProv);
+    }
+  }
 
   if (ret > 0) {
     const int numEvents = ret;
@@ -1605,8 +1634,10 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         //
         chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) cqes[i].buf;
         DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                   "CQ rx AM req %p, seqId %d:%" PRIu64 ", op %d, len %zd",
-                   req, req->comm.b.node, req->comm.b.seq, req->comm.b.op,
+                   "CQ rx AM req, "
+                   "offset %zd, seqId %d:%" PRIu64 ", op %d, len %zd",
+                   (char*) req - (char*) ofi_msg_reqs.msg_iov->iov_base,
+                   req->comm.b.node, req->comm.b.seq, req->comm.b.op,
                    cqes[i].len);
         tcip->numAmReqsRxed++;
 
@@ -1676,7 +1707,9 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         // Multi-receive buffer filled; post another one.
         //
         OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
-        DBG_PRINTF(DBG_AM | DBG_AMRECV, "re-post fi_recvmsg(AMReqs)");
+        DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                   "re-post fi_recvmsg(AMLZs, len %zd)",
+                   ofi_msg_reqs.msg_iov->iov_len);
       }
 
       CHK_TRUE((cqes[i].flags & ~(FI_MSG | FI_RECV | FI_MULTI_RECV)) == 0);
