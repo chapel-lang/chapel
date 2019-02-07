@@ -1378,6 +1378,8 @@ proc isDenseMatrix(A: []) param : bool {
   return A.rank == 2 && isDenseArr(A);
 }
 
+// Work-around for #8543
+pragma "no doc"
 proc type _array.rank param {
   var x: this;
   return x.rank;
