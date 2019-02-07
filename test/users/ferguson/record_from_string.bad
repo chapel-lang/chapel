@@ -1,1 +1,1 @@
-record_from_string.chpl:11: error: illegal cast to non-type
+record_from_string.chpl:11: error: illegal cast from string to Point
