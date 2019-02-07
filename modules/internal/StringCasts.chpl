@@ -189,10 +189,19 @@ module StringCasts {
 
     var retVal: t;
     var isErr: bool;
-    const localX = x.localize();
+    var localX = x.localize();
 
     if localX.isEmptyString() then
       throw new owned IllegalArgumentError("bad cast from empty string to real(" + numBits(t) + ")");
+
+    if localX.length >= 2 && localX[2..].find("_") != 0 {
+      if localX.length > 2 && (localX.startsWith("0x") ||
+                               localX.startsWith("0X")) {
+        localX = localX.replace("_", "");
+      } else {
+        localX = localX[1] + localX[2..].replace("_", "");
+      }
+    }
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -214,10 +223,20 @@ module StringCasts {
 
     var retVal: t;
     var isErr: bool;
-    const localX = x.localize();
+    var localX = x.localize();
+    var len = localX.length;
 
     if localX.isEmptyString() then
       throw new owned IllegalArgumentError("bad cast from empty string to imag(" + numBits(t) + ")");
+
+    if len >= 2 && localX[2..].find("_") != 0 {
+      if len > 2 && (localX.startsWith("0x") ||
+                               localX.startsWith("0X")) {
+        localX = localX.replace("_", "");
+      } else {
+        localX = localX[1] + localX[2..].replace("_", "");
+      }
+    }
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
