@@ -2346,12 +2346,25 @@ module ChapelArray {
         if boundsChecking then
           checkSlice(d);
 
-
+        proc appropriateType() param {
+          const newd = _dom((...d.dsiDims()));
+          writeln("Should never actually run this");
+          return newd.type == d.type;
+        }
+        
         // The following implements strategy 5a from issue #12272.
         // If we could determine whether or not a domain was constant,
         // it could be strategy 5b which is strictly better and better
         // than what is on master today.
-        if d.dist == this.domain.dist /* && d.isConst() */ then {
+        if appropriateType() && d.dist == this.domain.dist /* && d.isConst() */ then {
+          // This is incorrect or at least different than what we do
+          // today: We have to intersect d with the array's domain
+          // because we (currently) consider a slice to be a domain
+          // intersection followed by a subarray access to handle
+          // cases like slicing by [1..] or slicing a strided array by
+          // [1..n].  Or else we have to redefine what slicing by a
+          // domain means and only do the intersection for the range
+          // case...
           return _newArray(setupArraySliceHelper(d, true));
         } else {
           writeln("Creating a new domain");
