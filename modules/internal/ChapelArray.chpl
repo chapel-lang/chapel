@@ -2380,9 +2380,8 @@ module ChapelArray {
         writeln("About to add a new slice");
         writeln(a.isSliceArrayView());
         */
-        // this doesn't need to lock since we just created the domain d
-        if locking == false then
-          dom._value.add_arr(a, locking=locking);
+        // lock only if we're sharing an existing domain
+        dom._value.add_arr(a, locking=locking);
         return a;
         }
       } else
