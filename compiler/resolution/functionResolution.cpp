@@ -7043,11 +7043,11 @@ void resolve() {
 
   resolveDestructors();
 
-  insertDynamicDispatchCalls();
-
   beforeLoweringForallStmts = false;
 
   insertReturnTemps();
+
+  insertDynamicDispatchCalls();
 
   // Resolve the string literal constructors after everything else since new
   // ones may be created during postFold
@@ -7749,6 +7749,36 @@ static void resolveOther() {
 }
 
 
+// Copied from iterator.cpp.
+static bool isIteratorOrForwarder(FnSymbol* it) {
+  // The test 'it->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)'
+  // gives a false negative when it->retType is "unknown"
+  // or a false positive for chpl__autoCopy(_iteratorRecord).
+  // FLAG_FN_RETURNS_ITERATOR is not a great test either because
+  // iteratorIndex() has it whereas it usually doesn't.
+
+  return it->hasFlag(FLAG_ITERATOR_FN) ||
+         it->hasFlag(FLAG_FN_RETURNS_ITERATOR);
+}
+
+// Handle the case where 'call' is a statement-level iterator invocation.
+// Adds a forall over 'tmp'.
+static void handleStatementLevelIteratorCall(DefExpr* def, VarSymbol* tmp)
+{
+  BlockStmt* block = ForallStmt::build(new UnresolvedSymExpr("SLIidx"),
+                                       new SymExpr(tmp), NULL,
+                                       new BlockStmt(), false, true);
+
+  // We do not actually need the BlockStmt.
+  INT_ASSERT(block->length() == 1);
+  ForallStmt* fs = toForallStmt(block->body.head->remove());
+
+  def->next->insertAfter(fs);
+  resolveForallHeader(fs, toSymExpr(fs->firstIteratedExpr()));
+  resolveBlockStmt(fs->loopBody());
+}
+
+
 static Type*
 buildRuntimeTypeInfo(FnSymbol* fn) {
   SET_LINENO(fn);
@@ -7778,8 +7808,7 @@ static void insertReturnTemps() {
   // variable captures the result. If the value is a sync/single var or a
   // reference to a sync/single var, pass it through the _statementLevelSymbol
   // function to get the semantics of reading a sync/single var. If the value
-  // is an iterator pass it through another overload of
-  // _statementLevelSymbol to iterate through it for side effects.
+  // is an iterator, iterate over it in a ForallStmt for side effects.
   // Note that we do not do this for --minimal-modules compilation
   // because we do not support sync/singles for minimal modules.
   //
@@ -7808,7 +7837,7 @@ static void insertReturnTemps() {
             continue; // not really a top-level expression
 
           if (!isCallExpr(parent) && !isDefExpr(parent)) { // no use
-            SET_LINENO(call); // TODO: reset_ast_loc() below?
+            SET_LINENO(call);
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr*   def = new DefExpr(tmp);
 
@@ -7816,19 +7845,25 @@ static void insertReturnTemps() {
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
             contextCallOrCall->insertBefore(def);
+            def->insertAfter(new CallExpr(PRIM_MOVE,
+                                          tmp,
+                                          contextCallOrCall->remove()));
 
             if (fMinimalModules == false) {
+              if (isIteratorOrForwarder(fn)) {
+                handleStatementLevelIteratorCall(def, tmp);
+
+              } else
               if ((fn->retType->getValType() &&
                    (isSyncType(fn->retType->getValType()) ||
                     isSingleType(fn->retType->getValType())))         ||
 
                   isSyncType(fn->retType)                             ||
-                  isSingleType(fn->retType)                           ||
-                  fn->isIterator()) {
+                  isSingleType(fn->retType)                           )
+              {
                 CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
 
-                contextCallOrCall->insertBefore(sls);
-                reset_ast_loc(sls, call);
+                def->next->insertAfter(sls);
                 resolveCallAndCallee(sls);
               }
             }
@@ -7837,9 +7872,6 @@ static void insertReturnTemps() {
               tmp->addFlag(FLAG_MAYBE_TYPE);
               tmp->addFlag(FLAG_MAYBE_PARAM);
             }
-            def->insertAfter(new CallExpr(PRIM_MOVE,
-                                          tmp,
-                                          contextCallOrCall->remove()));
           }
         }
       }
