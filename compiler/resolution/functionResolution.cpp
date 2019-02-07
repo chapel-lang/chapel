@@ -9299,13 +9299,6 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     errorInvalidParamInit(call, val, at);
     resolvePrimInitNonGenericRecordVar(call, val, at);
 
-  // generic records with initializers
-  } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE) == false &&
-            (at->isRecord() || at->isUnion())) {
-
-    errorInvalidParamInit(call, val, at);
-    resolvePrimInitGenericRecordVar(call, val, at);
-
   // extern types (but not memory_order)
   } else if (type->symbol->hasFlag(FLAG_EXTERN) &&
              !type->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE)) {
@@ -9313,6 +9306,13 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     // Just let the memory be uninitialized
     errorInvalidParamInit(call, val, at);
     call->convertToNoop();
+
+  // generic records with initializers
+  } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE) == false &&
+            (at->isRecord() || at->isUnion())) {
+
+    errorInvalidParamInit(call, val, at);
+    resolvePrimInitGenericRecordVar(call, val, at);
 
   // other types (sync, single, ..)
   } else {
