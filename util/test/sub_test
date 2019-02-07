@@ -609,8 +609,6 @@ def translateOutput(output):
                'Jira 17 -- Missing output file for'),
               ('aprun: Unexpected close of the apsys control connection',
                'Jira 193 -- Unexpected close of apsys for'),
-              ('Transient MPP reservation error on create',
-               'Jira 203 -- Transient MPP reservation error for'),
               ('qsub: cannot connect to server sdb',
                'Jira 283 -- Sporadic: qstat failed to connect to server sdb'),
               ('Failed to recv data from background qsub',
