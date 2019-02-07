@@ -791,6 +791,13 @@ void VarSymbol::codegenDef() {
   if (type == dtVoid)
     return;
 
+  // Check sizes for c_array
+  if (type->symbol->hasFlag(FLAG_C_ARRAY)) {
+    int64_t sizeInt = toAggregateType(type)->cArrayLength();
+    if (sizeInt > INT_MAX)
+        USR_FATAL(type->symbol->instantiationPoint, "c_array is too large");
+  }
+
   if( info->cfile ) {
     codegenDefC();
   } else {
