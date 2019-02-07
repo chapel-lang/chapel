@@ -1,0 +1,1 @@
+configSinglesNotSupported.chpl:1: error: config variables of single type are not supported

@@ -1086,6 +1086,13 @@ module ChapelBase {
   }
 
   proc _do_command_line_cast(type t, x:c_string) throws {
+    if isSyncType(t) then
+      compilerError("config variables of sync type are not supported");
+    if isSingleType(t) then
+      compilerError("config variables of single type are not supported");
+    if isAtomicType(t) then
+      compilerError("config variables of atomic type are not supported");
+
     var str = x:string;
     if t == string {
       return str;

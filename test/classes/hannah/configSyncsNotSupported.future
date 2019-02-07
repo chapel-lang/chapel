@@ -1,1 +1,0 @@
-error message: current error message not helpful, tells user illegal cast from string to sync var, when should tell user config syncs not supported

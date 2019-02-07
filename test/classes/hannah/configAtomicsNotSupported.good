@@ -1,0 +1,1 @@
+configAtomicsNotSupported.chpl:1: error: config variables of atomic type are not supported
