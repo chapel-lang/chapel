@@ -9118,16 +9118,9 @@ void resolvePrimInit(CallExpr* call) {
 
   INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR));
 
-  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
-    valExpr = call->get(1);
-    fieldNameExpr = NULL;
-    typeExpr = call->get(2);
-  }/* else if (call->isPrimitive(PRIM_DEFAULT_INIT_FIELD)) {
-    valExpr = call->get(1);
-    fieldNameExpr = call->get(2);
-    typeExpr = call->get(3);
-    INT_ASSERT(fieldNameExpr);
-  }*/
+  valExpr = call->get(1);
+  fieldNameExpr = NULL;
+  typeExpr = call->get(2);
   INT_ASSERT(valExpr && typeExpr);
 
   SymExpr* valSe = toSymExpr(valExpr);
