@@ -48,7 +48,6 @@ static int query_uid = 1;
 
 
 static void addCDef(ModuleSymbol* module, DefExpr* def);
-static void addCDefs(ModuleSymbol* module, BlockStmt* block);
 
 static Expr* tryCResolveExpr(ModuleSymbol* module, const char* name);
 static Expr* lookupExpr(ModuleSymbol* module, const char* name);
@@ -392,7 +391,7 @@ void convertDeclToChpl(ModuleSymbol* module,
   INT_ASSERT(module->extern_info != NULL);
 
   // Don't convert it if it's already converted
-  if (Symbol* sym = lookup(cname, module->block))
+  if (lookup(cname, module->block) != NULL)
     return;
 
   clang::TypeDecl* cType = NULL;
@@ -568,17 +567,6 @@ static Symbol* tryCResolve(BaseAST* context,
   }
 
   return tryCResolveLocally(module, name);
-}
-
-static void addCDefs(ModuleSymbol* module, BlockStmt* block) {
-
-  module->block->insertAtHead(block);
-
-  std::vector<DefExpr*> v;
-  collectDefExprs(block, v);
-  for_vector(DefExpr, def, v) {
-    addToSymbolTable(def);
-  }
 }
 
 static void addCDef(ModuleSymbol* module, DefExpr* def) {
