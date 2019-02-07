@@ -273,8 +273,7 @@ static uint64_t debug_stats_flag = 0;
         MACRO(acq_cd_rb_cnt)                                            \
         MACRO(acq_cd_rb_na_cnt)                                         \
         MACRO(acq_cd_rb_cq_cnt)                                         \
-        MACRO(acq_cd_rb_frf_1_cnt)                                      \
-        MACRO(acq_cd_rb_frf_2_cnt)                                      \
+        MACRO(acq_cd_rb_frf_cnt)                                        \
         MACRO(reacq_cd_cnt)                                             \
         MACRO(wait_rfork_cnt)                                           \
         MACRO(wait_glb_cq_ev_cnt)                                       \
@@ -7878,7 +7877,7 @@ void do_fork_post(c_nodeid_t locale,
 }
 
 
-static
+static inline
 void acquire_comm_dom(void)
 {
   int want_cdi;
@@ -7897,7 +7896,6 @@ void acquire_comm_dom(void)
     cd->acqs++;
     cd->acqs_looks++;
 #endif
-
     return;
   }
 
@@ -7921,24 +7919,16 @@ void acquire_comm_dom(void)
 #ifdef DEBUG_STATS
     acq_looks++;
 #endif
-    if (!CHECK_CD_BUSY(want_cd)) {
+    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
-        if (ACQUIRE_CD_MAYBE(want_cd)) {
-          if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max)
-            break;
-          else {
-            PERFSTATS_INC(acq_cd_cq_cnt);
-            RELEASE_CD(want_cd);
-          }
-        }
-        else
-          PERFSTATS_INC(acq_cd_na_cnt);
-      }
-      else
+        break;
+      } else {
         PERFSTATS_INC(acq_cd_cq_cnt);
-    }
-    else
+        RELEASE_CD(want_cd);
+      }
+    } else {
       PERFSTATS_INC(acq_cd_na_cnt);
+    }
 
     want_cdi++;
     want_cd++;
@@ -7952,11 +7942,6 @@ void acquire_comm_dom(void)
       local_yield();
     }
   } while (1);
-
-  if (want_cdi < comm_dom_cnt - 1)
-    comm_dom_free_idx = want_cdi + 1;
-  else
-    comm_dom_free_idx = 0;
 
   cd = want_cd;
   cd_idx = want_cdi;
@@ -8001,45 +7986,23 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
     acq_looks++;
 #endif
 
-    if (!CHECK_CD_BUSY(want_cd)) {
+    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
         for (rbi = 0; rbi < FORK_REQ_BUFS_PER_CD; rbi++) {
           if (*SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi, rbi)) {
-            if (ACQUIRE_CD_MAYBE(want_cd)) {
-              //
-              // We found a CD that was available, had room left in its
-              // completion queue, and had a free fork request buffer.  We
-              // have successfully acquired it.  If it still has room in
-              // its CQ and that fork request buffer or a subsequent one
-              // is still free then it's ours.  Otherwise, release it and
-              // keep looking.
-              //
-              if (CQ_CNT_LOAD(want_cd) >= want_cd->cq_cnt_max) {
-                PERFSTATS_INC(acq_cd_rb_cq_cnt);
-                RELEASE_CD(want_cd);
-              }
-              else {
-                do {
-                  if (*SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi,
-                                                    rbi))
-                    goto found_CD;
-                } while (++rbi < FORK_REQ_BUFS_PER_CD);
-                PERFSTATS_INC(acq_cd_rb_frf_1_cnt);
-                RELEASE_CD(want_cd);
-              }
-            }
-            else
-              PERFSTATS_INC(acq_cd_rb_na_cnt);
+            goto found_CD;
+          } else {
+            PERFSTATS_INC(acq_cd_rb_frf_cnt);
           }
-          else
-            PERFSTATS_INC(acq_cd_rb_frf_2_cnt);
         }
-      }
-      else
+        RELEASE_CD(want_cd);
+      } else {
+        RELEASE_CD(want_cd);
         PERFSTATS_INC(acq_cd_rb_cq_cnt);
-    }
-    else
+      }
+    } else {
       PERFSTATS_INC(acq_cd_rb_na_cnt);
+    }
 
     want_cdi++;
     want_cd++;
@@ -8055,10 +8018,6 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
   } while (1);
 
  found_CD:
-  if (want_cdi < comm_dom_cnt - 1)
-    comm_dom_free_idx = want_cdi + 1;
-  else
-    comm_dom_free_idx = 0;
 
   *SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi, rbi) = false;
 
