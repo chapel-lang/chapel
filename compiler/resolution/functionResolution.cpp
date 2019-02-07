@@ -7808,8 +7808,7 @@ static void insertReturnTemps() {
   // variable captures the result. If the value is a sync/single var or a
   // reference to a sync/single var, pass it through the _statementLevelSymbol
   // function to get the semantics of reading a sync/single var. If the value
-  // is an iterator pass it through another overload of
-  // _statementLevelSymbol to iterate through it for side effects.
+  // is an iterator, iterate over it in a ForallStmt for side effects.
   // Note that we do not do this for --minimal-modules compilation
   // because we do not support sync/singles for minimal modules.
   //
@@ -7838,7 +7837,7 @@ static void insertReturnTemps() {
             continue; // not really a top-level expression
 
           if (!isCallExpr(parent) && !isDefExpr(parent)) { // no use
-            SET_LINENO(call); // TODO: reset_ast_loc() below?
+            SET_LINENO(call);
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr*   def = new DefExpr(tmp);
 
@@ -7865,7 +7864,6 @@ static void insertReturnTemps() {
                 CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
 
                 def->next->insertAfter(sls);
-                reset_ast_loc(sls, call);
                 resolveCallAndCallee(sls);
               }
             }
