@@ -250,15 +250,10 @@ module Random {
   /* _choice branch for uniform distribution */
   proc _choiceUniform(stream, arr:[], size:?sizeType, replace) throws
   {
-    // Potential optimization: Support getNext(min, max, resultType) and use
-    // that to generate indices rather than this array.
-    var indices: [arr.domain] int = arr.domain;
-    shuffle(indices);
-
     if isVoidType(sizeType) {
       // Return 1 sample
-      var randIdx = stream.getNext(1, arr.size);
-      return arr[indices[1]];
+      var randIdx = stream.getNext(resultType=int, 1, arr.size);
+      return arr[randIdx];
     } else {
       // Return numElements samples
 
@@ -275,10 +270,12 @@ module Random {
 
       if replace {
         for sample in samples {
-          sample = arr[indices[1]];
-          stream.shuffle(indices);
+          var randIdx = stream.getNext(resultType=int, 1, arr.size);
+          sample = arr[randIdx];
         }
       } else {
+        var indices: [arr.domain] int = arr.domain;
+        shuffle(indices);
         for i in samples.domain {
           samples[i] = arr[indices[i]];
         }
