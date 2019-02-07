@@ -49,11 +49,9 @@ static void build_enum_enumerate_function(EnumType* et);
 static void build_enum_size_function(EnumType* et);
 static void build_enum_order_functions(EnumType* et);
 
-static void build_extern_init_function(Type* type);
 static void build_extern_assignment_function(Type* type);
 
 static void build_record_assignment_function(AggregateType* ct);
-static void build_record_cast_function(AggregateType* ct);
 static void check_not_pod(AggregateType* ct);
 static void build_record_hash_function(AggregateType* ct);
 static void build_record_equality_function(AggregateType* ct);
@@ -115,7 +113,6 @@ void buildDefaultFunctions() {
           }
 
           build_record_assignment_function(ct);
-          build_record_cast_function(ct);
           build_record_hash_function(ct);
 
           check_not_pod(ct);
@@ -140,7 +137,7 @@ void buildDefaultFunctions() {
         // for extern types that are simple (as far as we can tell), we build
         // definitions for those assignments here.
         if (type->hasFlag(FLAG_EXTERN)) {
-          build_extern_init_function(type->type);
+          //build_extern_init_function(type->type);
           build_extern_assignment_function(type->type);
         }
       }
@@ -1171,38 +1168,6 @@ static void build_record_assignment_function(AggregateType* ct) {
   normalize(fn);
 }
 
-static void build_extern_init_function(Type* type)
-{
-  if (function_exists("_defaultOf", type))
-    return;
-
-  // In the world where initialization lived entirely within the compiler,
-  // externs did not initialize themselves except in very rare cases (see
-  // c_strings).  This is the same as using noinit with the type instance.
-  // In the world of module default initializers, externs can be specified to
-  // use noinit here, while specific externs that differ can define their own
-  // default initialization in the modules.  If we had a way to determine that
-  // a type was extern from just the provided type, this code could also move
-  // to the modules.
-  FnSymbol* fn = new FnSymbol("_defaultOf");
-  fn->addFlag(FLAG_INLINE);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", type);
-  arg->addFlag(FLAG_TYPE_VARIABLE);
-  fn->insertFormalAtTail(arg);
-  VarSymbol* ret = new VarSymbol("ret", type);
-  fn->insertAtTail(new CallExpr(PRIM_MOVE, ret,
-                                new CallExpr(PRIM_NO_INIT, new SymExpr(type->symbol))));
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
-  fn->insertAtHead(new DefExpr(ret));
-  fn->retType = type;
-  DefExpr* def = new DefExpr(fn);
-  type->symbol->defPoint->insertBefore(def);
-  reset_ast_loc(def, type->symbol);
-  normalize(fn);
-}
-
 static void build_extern_assignment_function(Type* type)
 {
   if (function_exists("=", type, type))
@@ -1230,40 +1195,6 @@ static void build_extern_assignment_function(Type* type)
   normalize(fn);
 }
 
-
-// _cast is automatically called to perform coercions.
-// If the coercion is permissible, then the operand can be statically cast to
-// the target type.
-static void build_record_cast_function(AggregateType* ct) {
-
-  // Don't do this for tuples.
-  // Tuple cast function is generated during resolution.
-  if (ct->symbol->hasFlag(FLAG_TUPLE))
-    return;
-
-  // Don't do this for Owned/etc.
-  if (ct->symbol->hasFlag(FLAG_MANAGED_POINTER))
-    return;
-
-  FnSymbol* fn = new FnSymbol(astr_cast);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  fn->addFlag(FLAG_INLINE);
-  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", ct);
-  t->addFlag(FLAG_TYPE_VARIABLE);
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "arg", dtAny);
-  fn->insertFormalAtTail(t);
-  fn->insertFormalAtTail(arg);
-  VarSymbol* ret = newTemp();
-  fn->insertAtTail(new DefExpr(ret));
-  fn->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_INIT, t)));
-  fn->insertAtTail(new CallExpr("=", ret, arg));
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
-  DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->insertBefore(def);
-  reset_ast_loc(def, ct->symbol);
-  normalize(fn);
-}
 
 // TODO: we should know what field is active after assigning unions
 static void build_union_assignment_function(AggregateType* ct) {

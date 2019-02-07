@@ -587,6 +587,9 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
     } else if (SymExpr* rhs = toSymExpr(call->get(2))) {
       Symbol* rhsSym = rhs->symbol();
 
+      while (paramMap.get(rhsSym) != NULL) {
+        rhsSym = paramMap.get(rhsSym);
+      }
       if (rhsSym->isImmediate() == true ||
           isEnumSymbol(rhsSym)  == true) {
         paramMap.put(lhsSym, rhsSym);
@@ -685,14 +688,6 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
         lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true  ||
         lhsSym->type->symbol->hasFlag(FLAG_ARRAY)              == true) {
       lhsSym->removeFlag(FLAG_EXPR_TEMP);
-    }
-
-    if (rhs->isPrimitive(PRIM_NO_INIT) == true) {
-      // If the lhs is a primitive, then we can remove this value.
-      // Otherwise retain this statement through resolveRecordInitializers.
-      if (isAggregateType(rhs->get(1)->getValType()) == false) {
-        call->convertToNoop();
-      }
     }
 
   } else {

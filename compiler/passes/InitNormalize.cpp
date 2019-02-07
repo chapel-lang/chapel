@@ -348,8 +348,8 @@ Expr* InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
 
   VarSymbol* tmp      = newTemp("tmp", type);
   DefExpr*   tmpDefn  = new DefExpr(tmp);
-  CallExpr*  tmpExpr  = new CallExpr(PRIM_INIT, field->exprType->copy());
-  CallExpr*  tmpInit  = new CallExpr(PRIM_MOVE, tmp, tmpExpr);
+  CallExpr*  tmpInit  = new CallExpr(PRIM_DEFAULT_INIT_VAR,
+                                     tmp, field->exprType->copy());
 
   tmp->addFlag(FLAG_PARAM);
 
@@ -361,7 +361,7 @@ Expr* InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
   insertBefore->insertBefore(tmpInit);
   insertBefore->insertBefore(fieldSet);
 
-  return tmpExpr;
+  return tmpInit;
 }
 
 /************************************* | **************************************
@@ -490,14 +490,15 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 
 Expr* InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
                                            DefExpr* field) const {
+
   SET_LINENO(insertBefore);
 
   Type* type = field->sym->type;
 
   VarSymbol* tmp      = newTemp("tmp", type);
   DefExpr*   tmpDefn  = new DefExpr(tmp);
-  CallExpr*  tmpExpr  = new CallExpr(PRIM_INIT, field->exprType->copy());
-  CallExpr*  tmpInit  = new CallExpr(PRIM_MOVE, tmp, tmpExpr);
+  CallExpr*  tmpInit  = new CallExpr(PRIM_DEFAULT_INIT_VAR,
+                                     tmp, field->exprType->copy());
 
   Symbol*    _this    = mFn->_this;
   Symbol*    name     = new_CStringSymbol(field->sym->name);
@@ -507,7 +508,7 @@ Expr* InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
   insertBefore->insertBefore(tmpInit);
   insertBefore->insertBefore(fieldSet);
 
-  return tmpExpr;
+  return tmpInit;
 }
 
 /************************************* | **************************************

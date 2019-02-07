@@ -188,7 +188,8 @@ module Collection {
     */
     iter these() : eltType {
       halt("'iter these() : eltType' is not supported...");
-      yield _defaultOf(eltType);
+      var default: eltType;
+      yield default;
     }
   }
 

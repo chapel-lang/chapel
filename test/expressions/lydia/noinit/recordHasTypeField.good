@@ -1,3 +1,5 @@
+recordHasTypeField.chpl:12: warning: noinit is currently ignored
+I default initialized!
 (i = 7)
 I default initialized!
 (i = 3)

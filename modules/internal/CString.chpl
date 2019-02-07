@@ -25,10 +25,6 @@
 module CString {
   use ChapelStandard;
 
-  // The following method is called by the compiler to determine the default
-  // value of a given type.
-  inline proc _defaultOf(type t:c_string) return c_nil:c_string;
-
   //inline proc c_string.c_str() return this;
 
   pragma "init copy fn"
@@ -98,6 +94,13 @@ module CString {
   inline proc _cast(type t:c_string, x: chpl_anybool) {
     compilerWarning("cast from bool to c_string is deprecated");
     return chpl_bool_to_c_string(x:bool);
+  }
+
+  //
+  // casts from nil to c_string
+  //
+  inline proc _cast(type t:c_string, x: _nilType) {
+    return __primitive("cast", t, x);
   }
 
   //

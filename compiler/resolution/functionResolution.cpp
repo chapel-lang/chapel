@@ -114,7 +114,6 @@ int                                explainCallLine           = 0;
 SymbolMap                          paramMap;
 
 Vec<CallExpr*>                     callStack;
-Vec<CallExpr*>                     inits;
 
 Vec<BlockStmt*>                    standardModuleSet;
 
@@ -192,7 +191,6 @@ static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
 static void resolveSerializers();
 static void resolveDestructors();
-static void resolveRecordInitializers();
 static Type* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
@@ -2069,8 +2067,11 @@ void resolveCall(CallExpr* call) {
       resolveSetMember(call);
       break;
 
-    case PRIM_INIT:
-    case PRIM_NO_INIT:
+    case PRIM_DEFAULT_INIT_VAR:
+      resolveGenericActuals(call);
+      resolvePrimInit(call);
+      break;
+
     case PRIM_TYPE_INIT:
       resolveGenericActuals(call);
       break;
@@ -4900,8 +4901,15 @@ static void resolveInitVar(CallExpr* call) {
     resolveMove(call);
 
   } else if (dst->hasFlag(FLAG_NO_COPY) ||
-             isPrimitiveScalar(srcType)) {
+             isPrimitiveScalar(targetType) ||
+             isEnumType(targetType)) {
+
     call->primitive = primitives[PRIM_MOVE];
+    if (srcType->isRef() && !dst->hasFlag(FLAG_NO_COPY)) {
+      // don't infer the type of the LHS to be a ref type
+      srcExpr->remove();
+      call->insertAtTail(new CallExpr(PRIM_DEREF, srcExpr));
+    }
     resolveMove(call);
 
   } else if (isRecord(targetType) == false ||
@@ -5281,7 +5289,7 @@ static bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType) {
     retval = false;
 
   } else if (rhsType == dtNil) {
-    if (lhsType != dtNil && isClass(lhsType) == false) {
+    if (lhsType != dtNil && lhsType != dtStringC && !isClass(lhsType)) {
       retval = false;
     }
   }
@@ -5308,7 +5316,12 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
     USR_FATAL(call, "unable to resolve type");
 
   } else if (rhsType == dtNil) {
-    if (lhsType != dtNil && isClassLike(lhsType) == false) {
+    bool lhsIsPointer = isClassLike(lhsType) ||
+                        lhsType == dtCVoidPtr ||
+                        lhsType == dtCFnPtr ||
+                        lhsType == dtFile;
+
+    if (lhsType != dtNil && !lhsIsPointer) {
       USR_FATAL(userCall(call),
                 "type mismatch in assignment from nil to %s",
                 toString(lhsType));
@@ -5388,43 +5401,6 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
     }
 
     moveFinalize(call);
-
-  } else if (rhs->isPrimitive(PRIM_INIT) == true) {
-    moveFinalize(call);
-    Symbol* LHS = toSymExpr(call->get(1))->symbol();
-
-    // Skip for runtime types, otherwise we would print this message twice...
-    if (LHS->hasFlag(FLAG_PARAM) &&
-        LHS->hasFlag(FLAG_TEMP) == false &&
-        isLegalParamType(rhs->typeInfo()) == false &&
-        rhs->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
-      USR_FATAL_CONT(LHS, "'%s' is not of a supported param type", LHS->name);
-    }
-
-    if (SymExpr* se = toSymExpr(rhs->get(1))) {
-      Type* seType = se->symbol()->getValType();
-
-      if (isNonGenericRecordWithInitializers(seType) == true &&
-          isRecordWrappedType(seType) == false) {
-        Expr*     callLhs  = call->get(1)->remove();
-        CallExpr* callInit = new CallExpr("init", gMethodToken, callLhs);
-
-        // This juggling is required by use of
-        // for_exprs_postorder() in resolveBlockStmt
-        call->insertBefore(callInit);
-        call->convertToNoop();
-
-        resolveCallAndCallee(callInit);
-
-        if (AggregateType* at = toAggregateType(callLhs->getValType())) {
-          if (isRecord(at) && at->hasPostInitializer()) {
-            CallExpr* postinit = new CallExpr("postinit", gMethodToken, callLhs->copy());
-            call->insertBefore(postinit);
-            resolveCallAndCallee(postinit);
-          }
-        }
-      }
-    }
 
   // Fix up PRIM_COERCE : remove it if it has a param RHS.
   } else if (rhs->isPrimitive(PRIM_COERCE) == true) {
@@ -6850,20 +6826,18 @@ parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
 }
 
 
-static void resolveExternVarSymbols()
+static void resolveExterns()
 {
-  forv_Vec(VarSymbol, vs, gVarSymbols)
-  {
-    if (! vs->hasFlag(FLAG_EXTERN))
-      continue;
-
-    DefExpr* def = vs->defPoint;
-    Expr* init = def->next;
-    // We expect the expression following the DefExpr for an extern to be a
-    // type block that initializes the variable.
-    BlockStmt* block = toBlockStmt(init);
-    if (block)
-      resolveBlockStmt(block);
+  // This code resolves extern variable and type definitions
+  // early in resolution.
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    for_alist(expr, mod->initFn->body->body) {
+      if (BlockStmt* block = toBlockStmt(expr)) {
+        if ((block->blockTag & BLOCK_EXTERN)) {
+          resolveBlockStmt(block);
+        }
+      }
+    }
   }
 }
 
@@ -7001,7 +6975,7 @@ void resolve() {
 
   adjustInternalSymbols(); // must go after tagIfGeneric()
 
-  resolveExternVarSymbols();
+  resolveExterns();
 
   resolveObviousGlobals();
 
@@ -7024,8 +6998,6 @@ void resolve() {
   insertRuntimeTypeTemps();
 
   resolveAutoCopies();
-
-  resolveRecordInitializers();
 
   resolveOther();
 
@@ -7656,79 +7628,6 @@ static bool isCompilerGenerated(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* recordInitType(CallExpr* init);
-
-static void resolveRecordInitializers() {
-  forv_Vec(CallExpr, init, inits) {
-    if (Type* type = recordInitType(init)) {
-      SET_LINENO(init);
-
-      if (init->isPrimitive(PRIM_NO_INIT) == true) {
-        AggregateType* rec = toAggregateType(type);
-        FnSymbol*      fn  = rec->typeConstructor;
-        CallExpr*      res = new CallExpr(fn);
-
-        for_formals(formal, fn) {
-          Vec<Symbol*> keys;
-
-          rec->substitutions.get_keys(keys);
-
-          forv_Vec(Symbol, key, keys) {
-            if (strcmp(formal->name, key->name) == 0) {
-              Symbol*  formalVal  = rec->substitutions.get(key);
-              SymExpr* formalExpr = new SymExpr(formalVal);
-
-              res->insertAtTail(new NamedExpr(formal->name, formalExpr));
-            }
-          }
-        }
-
-        init->get(1)->replace(res);
-        resolveCall(res);
-
-        toCallExpr(init->parentExpr)->convertToNoop();
-
-      } else if (type->defaultValue != NULL) {
-        INT_FATAL(init, "PRIM_INIT should have been replaced already");
-
-      } else {
-        INT_ASSERT(type->symbol->hasFlag(FLAG_DISTRIBUTION) == false);
-
-        CallExpr* call = new CallExpr("_defaultOf", type->symbol);
-
-        init->replace(call);
-        resolveCallAndCallee(call);
-
-      }
-    }
-  }
-}
-
-static Type* recordInitType(CallExpr* init) {
-  Type* retval = NULL;
-
-  if (init->inTree()) {
-    Type* type = init->get(1)->typeInfo();
-
-    if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
-      if (type->symbol->hasFlag(FLAG_REF) == false) {
-        retval = type;
-
-      } else {
-        retval = retval->getValType();
-      }
-    }
-  }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
 static void resolveOther() {
   //
   // When compiling with --minimal-modules, gPrintModuleInitFn is not
@@ -7891,7 +7790,19 @@ initializeClass(Expr* stmt, Symbol* sym) {
     if (!field->hasFlag(FLAG_SUPER_CLASS)) {
       SET_LINENO(field);
       if (field->type->defaultValue) {
-        stmt->insertBefore(new CallExpr(PRIM_SET_MEMBER, sym, field, field->type->defaultValue));
+        Type* type = field->type;
+        Expr* deflt = NULL;
+        if (type->defaultValue->type == type) {
+          deflt = new SymExpr(type->defaultValue);
+        } else {
+          VarSymbol* defaultTmp = newTemp("_init_class_def_", type);
+          Expr* mv = new CallExpr(PRIM_MOVE, defaultTmp,
+                                  new CallExpr(PRIM_CAST, type->symbol, deflt));
+          stmt->insertBefore(new DefExpr(defaultTmp));
+          stmt->insertBefore(mv);
+          deflt = new SymExpr(defaultTmp);
+        }
+        stmt->insertBefore(new CallExpr(PRIM_SET_MEMBER, sym, field, deflt));
       } else if (isRecord(field->type)) {
         VarSymbol* tmp = newTemp("_init_class_tmp_", field->type);
         stmt->insertBefore(new DefExpr(tmp));
@@ -9085,20 +8996,22 @@ static void replaceReturnedValuesWithRuntimeTypes()
   }
 }
 
-static void replaceInitPrim(CallExpr* call) {
-  SymExpr* se = toSymExpr(call->get(1));
-  Type*    rt = se->symbol()->type;
+static void replaceRuntimeTypeDefaultInit(CallExpr* call) {
+  SymExpr* varSe = toSymExpr(call->get(1));
+  Symbol* var = varSe->symbol();
+  SymExpr* typeSe = toSymExpr(call->get(2));
+  Type*    rt = typeSe->symbol()->type;
 
   if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-    // ('init' foo), where typeof(foo) has flag "runtime type value"
+    // ('init' x foo), where typeof(foo) has flag "runtime type value"
     //
     // ==>
     //
-    // (var _runtime_type_tmp_1)
-    // ('move' _runtime_type_tmp_1 ('.v' foo "field1"))
-    // (var _runtime_type_tmp_2)
-    // ('move' _runtime_type_tmp_2 ('.v' foo "field2"))
-    // (chpl__convertRuntimeTypeToValue _runtime_type_tmp_1 _rtt_2 ... )
+    // (var _rtt_1)
+    // ('move' _rtt_1 ('.v' foo "field1"))
+    // (var _rtt_2)
+    // ('move' _rtt_2 ('.v' foo "field2"))
+    // ('move' x chpl__convertRuntimeTypeToValue _rtt_1 _rtt_2 ... )
     SET_LINENO(call);
     FnSymbol* runtimeTypeToValueFn = runtimeTypeToValueMap.get(rt);
     INT_ASSERT(runtimeTypeToValueFn);
@@ -9110,16 +9023,13 @@ static void replaceInitPrim(CallExpr* call) {
       call->getStmtExpr()->insertBefore(new DefExpr(tmp));
       call->getStmtExpr()->insertBefore(
           new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                                    se->symbol(), field)));
+                                                    typeSe->symbol(), field)));
       if (formal->hasFlag(FLAG_TYPE_VARIABLE))
         tmp->addFlag(FLAG_TYPE_VARIABLE);
       runtimeTypeToValueCall->insertAtTail(tmp);
     }
 
-    VarSymbol* tmp = newTemp("_runtime_type_tmp_", runtimeTypeToValueFn->retType);
-    call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-    call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, runtimeTypeToValueCall));
-    call->replace(new SymExpr(tmp));
+    call->replace(new CallExpr(PRIM_MOVE, var, runtimeTypeToValueCall));
 
   } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
     //
@@ -9135,26 +9045,6 @@ static void replaceInitPrim(CallExpr* call) {
     //
     call->getStmtExpr()->remove();
 
-  } else {
-    Expr* expr = resolvePrimInit(call);
-
-    if (! expr) {
-      // This PRIM_INIT could not be resolved.
-
-      // But that's OK if it's an extern type.
-      // (We don't expect extern types to have initializers.)
-      // Also, we don't generate initializers for iterator records.
-      // Maybe we can avoid adding PRIM_INIT for these cases in the first
-      // place....
-      if (rt->symbol->hasFlag(FLAG_EXTERN) ||
-          rt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-        INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
-
-        toCallExpr(call->parentExpr)->convertToNoop();
-      } else {
-        INT_FATAL(call, "PRIM_INIT should have already been handled");
-      }
-    }
   }
 }
 
@@ -9182,8 +9072,8 @@ static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
         continue;
       }
 
-      if (call->isPrimitive(PRIM_INIT)) {
-        replaceInitPrim(call);
+      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+        replaceRuntimeTypeDefaultInit(call);
       } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
         replaceRuntimeTypeGetField(call);
       }
@@ -9193,7 +9083,7 @@ static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
 
 /************************************* | **************************************
 *                                                                             *
-* Handles PRIM_INIT or PRIM_NO_INIT                                           *
+* Handles PRIM_DEFAULT_INIT_VAR
 *                                                                             *
 * Returns NULL if no substitution was made.                                   *
 * Otherwise remove the primitive and return the new expression.               *
@@ -9205,27 +9095,50 @@ static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
 
 static Symbol* resolvePrimInitGetField(CallExpr* call);
 
-static Expr*   resolvePrimInit(CallExpr* call, Type* type);
+static void    resolvePrimInit(CallExpr* call, Symbol* val, Expr* fieldNameExpr, Type* type);
+static void    resolvePrimInit(CallExpr* call, Symbol* val, Type* type);
+
+static void resolvePrimInitNonGenericRecordVar(CallExpr* call,
+                                               Symbol* val,
+                                               AggregateType* at);
+
+static void resolvePrimInitGenericRecordVar(CallExpr* call,
+                                            Symbol* val,
+                                            AggregateType* at);
+
 
 static bool    primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
 
 static void    primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type);
 
-Expr* resolvePrimInit(CallExpr* call) {
-  Expr* retval = NULL;
+void resolvePrimInit(CallExpr* call) {
+  Expr* valExpr = NULL;
+  Expr* fieldNameExpr = NULL;
+  Expr* typeExpr = NULL;
 
-  if (SymExpr* se = toSymExpr(call->get(1))) {
+  INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR));
+
+  valExpr = call->get(1);
+  fieldNameExpr = NULL;
+  typeExpr = call->get(2);
+  INT_ASSERT(valExpr && typeExpr);
+
+  SymExpr* valSe = toSymExpr(valExpr);
+  INT_ASSERT(valSe);
+  Symbol* val = valSe->symbol();
+
+  if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      retval = resolvePrimInit(call, resolveTypeAlias(se));
+      resolvePrimInit(call, val, fieldNameExpr, resolveTypeAlias(se));
 
     } else {
       USR_FATAL(call, "invalid type specification");
     }
 
-  } else if (CallExpr* ce = toCallExpr(call->get(1))) {
+  } else if (CallExpr* ce = toCallExpr(typeExpr)) {
     if (Symbol* field = resolvePrimInitGetField(ce)) {
       if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-        retval = resolvePrimInit(call, field->typeInfo());
+        resolvePrimInit(call, val, fieldNameExpr, field->typeInfo());
 
       } else {
         USR_FATAL(call, "invalid type specification");
@@ -9235,8 +9148,6 @@ Expr* resolvePrimInit(CallExpr* call) {
   } else {
     INT_FATAL(call, "Unsupported primInit");
   }
-
-  return retval;
 }
 
 static Symbol* resolvePrimInitGetField(CallExpr* call) {
@@ -9273,121 +9184,240 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
   return retval;
 }
 
-static Expr* resolvePrimInit(CallExpr* call, Type* type) {
+
+static void resolvePrimInit(CallExpr* call,
+                            Symbol* val,
+                            Expr* fieldNameExpr,
+                            Type* type) {
+
+  if (fieldNameExpr == NULL) {
+    resolvePrimInit(call, val, type);
+  } else {
+    // TODO: this is dead code
+
+    // Reduce it to variable initialization
+    //   - create temporary variable
+    //   - default-initialize it
+    //   - move it to the field
+    VarSymbol* temp = newTemp("default_tmp", type);
+    Expr* stmt = call->getStmtExpr();
+    stmt->insertBefore(new DefExpr(temp));
+    resolvePrimInit(call, temp, type);
+
+    CallExpr* setit = new CallExpr(PRIM_SET_MEMBER, val,
+                                   fieldNameExpr->copy(), temp);
+
+    stmt->insertBefore(setit);
+    resolveExpr(setit);
+  }
+}
+
+static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {
+  if (val->hasFlag(FLAG_PARAM) &&
+      val->hasFlag(FLAG_TEMP) == false &&
+      isLegalParamType(type) == false) {
+    USR_FATAL_CONT(call, "'%s' is not of a supported param type", val->name);
+  }
+}
+
+static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
+
   if (call->id == breakOnResolveID) gdbShouldBreakHere();
 
   AggregateType* at     = toAggregateType(type);
-  Expr*          retval = NULL;
 
-  // These are handled later
-  if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
-    INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
+  val->type = type;
+
+  // Shouldn't be called with ref types
+  INT_ASSERT(at == NULL || at->getValType() == at);
 
   // These are handled in replaceRuntimeTypePrims().
-  } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
+  if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
+    errorInvalidParamInit(call, val, at);
 
-  // Initializers for IteratorRecords cannot be used as constructors
+  // Shouldn't be default-initializing iterator records here
   } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)  == true) {
+
+    INT_ASSERT(false);
 
   // Generate a more specific USR_FATAL if resolution would fail
   } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
     primInitHaltForUnacceptableGeneric(call, type);
 
-  // NonGeneric records with initializers do not support _defaultOf
+  // These types default to nil
+  } else if (isClassLikeOrNil(type)) {
+    // note: error for bad param initialization checked for in resolving move
+
+    Expr* nilExpr = NULL;
+    SymExpr* typeSe = NULL;
+    if (gNil->type == type) {
+      nilExpr = new SymExpr(gNil);
+    } else {
+      typeSe = new SymExpr(type->symbol);
+      nilExpr = new CallExpr(PRIM_CAST, typeSe, gNil);
+    }
+
+    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, nilExpr);
+    call->insertBefore(moveDefault);
+    if (typeSe) resolveExprTypeConstructor(typeSe);
+    resolveExpr(moveDefault);
+    call->convertToNoop();
+
+  // any type with a defaultValue is easy enough
+  // (expect this to handle numeric types and classes)
+  } else if (type->defaultValue != NULL) {
+    // note: error for bad param initialization checked for in resolving move
+
+    Expr* defaultExpr = NULL;
+    SymExpr* typeSe = NULL;
+    if (type->defaultValue->type == type) {
+      defaultExpr = new SymExpr(type->defaultValue);
+    } else {
+      typeSe = new SymExpr(type->symbol);
+      defaultExpr = new CallExpr(PRIM_CAST, type->symbol, type->defaultValue);
+    }
+
+    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, defaultExpr);
+    call->insertBefore(moveDefault);
+    if (typeSe) resolveExprTypeConstructor(typeSe);
+    resolveExpr(moveDefault);
+    call->convertToNoop();
+
+  // non-generic records with initializers
   } else if (at                                           != NULL &&
              at->instantiatedFrom                         == NULL &&
              isNonGenericRecordWithInitializers(at)       == true) {
-    // Parent PRIM_MOVE will be updated to init() later in resolution
+
+
+    errorInvalidParamInit(call, val, at);
+    resolvePrimInitNonGenericRecordVar(call, val, at);
+
+  // extern types (but not memory_order)
+  } else if (type->symbol->hasFlag(FLAG_EXTERN) &&
+             !type->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE)) {
+
+    // Just let the memory be uninitialized
+    errorInvalidParamInit(call, val, at);
+    call->convertToNoop();
+
+  // generic records with initializers
   } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE) == false &&
             (at->isRecord() || at->isUnion())) {
-    AggregateType* root = at->getRootInstantiation();
-    VarSymbol* default_temp = newTemp("default_init_temp", root);
-    Expr* stmt = call->getStmtExpr();
-    stmt->insertBefore(new DefExpr(default_temp));
 
-    CallExpr* initCall = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(default_temp)));
-    form_Map(SymbolMapElem, e, at->substitutions) {
-      Symbol* field = root->getField(e->key->name);
-      bool hasDefault = false;
-      bool isGenericField = root->fieldIsGeneric(field, hasDefault);
+    errorInvalidParamInit(call, val, at);
+    resolvePrimInitGenericRecordVar(call, val, at);
 
-      Expr* appendExpr = NULL;
-      if (field->isParameter()) {
-        appendExpr = new SymExpr(e->value);
-      } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
-        if (e->value->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          // BHARSH 2018-11-02: This technically generates code that would
-          // crash at runtime because aggregate types don't contain the runtime
-          // type information for their fields, so this temporary will go
-          // uninitialized. At the moment we fortunately do not access such
-          // fields for default-initialized records, and avoid crashing.
-          VarSymbol* tmp = newTemp("default_runtime_temp");
-          tmp->addFlag(FLAG_TYPE_VARIABLE);
-          CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD, at->symbol, new_CStringSymbol(e->key->name));
-          CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
-
-          stmt->insertBefore(new DefExpr(tmp));
-          stmt->insertBefore(move);
-
-          resolveExpr(query);
-          resolveExpr(move);
-
-          appendExpr = new SymExpr(tmp);
-        } else {
-          appendExpr = new SymExpr(e->value);
-        }
-      } else if (isGenericField && hasDefault == false) {
-        // Create a temporary to pass for the fully-generic field (e.g. "var x;")
-        VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
-        CallExpr* tempCall = new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, e->value));
-
-        stmt->insertBefore(new DefExpr(temp));
-        stmt->insertBefore(tempCall);
-        resolveExpr(tempCall->get(2));
-        resolveExpr(tempCall);
-        appendExpr = new SymExpr(temp);
-
-      } else {
-        INT_FATAL("Unhandled case for default-init");
-      }
-
-      appendExpr = new NamedExpr(e->key->name, appendExpr);
-
-      initCall->insertAtTail(appendExpr);
-    }
-
-    stmt->insertBefore(initCall);
-    resolveCallAndCallee(initCall);
-    retval = new SymExpr(default_temp);
-    call->replace(retval);
-
-    if (at && at->isRecord() && at->hasPostInitializer()) {
-      CallExpr* move = toCallExpr(stmt);
-      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-      SymExpr*  var  = toSymExpr(move->get(1));
-      move->insertAfter(new CallExpr("postinit", gMethodToken, var->copy()));
-    }
-
+  // other types (sync, single, ..)
   } else {
+    errorInvalidParamInit(call, val, at);
+
     SET_LINENO(call);
 
-    CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+    // enum types should have a defaultValue
+    INT_ASSERT(!isEnumType(type));
 
-    call->replace(defOfCall);
+    CallExpr* defaultCall = new CallExpr("_defaultOf", type->symbol);
+    CallExpr* move = new CallExpr(PRIM_MOVE, val, defaultCall);
 
-    resolveCallAndCallee(defOfCall);
+    call->insertBefore(move);
+    call->convertToNoop();
 
-    retval = foldTryCond(postFold(defOfCall));
+    resolveCallAndCallee(defaultCall);
+    resolveExpr(move);
+  }
+}
 
-    if (at && at->isRecord() && at->hasPostInitializer()) {
-      CallExpr* move = toCallExpr(defOfCall->parentExpr);
-      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-      SymExpr*  var  = toSymExpr(move->get(1));
-      move->insertAfter(new CallExpr("postinit", gMethodToken, var->copy()));
+static void resolvePrimInitNonGenericRecordVar(CallExpr* call,
+                                               Symbol* val,
+                                               AggregateType* at) {
+  // This code not intended to handle _array etc (but these are generic, right?)
+  INT_ASSERT(isRecordWrappedType(at->getValType()) == false);
+
+  CallExpr* callInit = new CallExpr("init", gMethodToken, val);
+
+  // This juggling is required by use of
+  // for_exprs_postorder() in resolveBlockStmt
+  call->insertBefore(callInit);
+  call->convertToNoop();
+
+  val->type = at;
+
+  resolveCallAndCallee(callInit);
+
+  if (isRecord(at) && at->hasPostInitializer()) {
+    CallExpr* postinit = new CallExpr("postinit", gMethodToken, val);
+    call->insertBefore(postinit);
+    resolveCallAndCallee(postinit);
+  }
+}
+
+static void resolvePrimInitGenericRecordVar(CallExpr* call,
+                                            Symbol* val,
+                                            AggregateType* at) {
+  AggregateType* root = at->getRootInstantiation();
+
+  val->type = root;
+
+  CallExpr* initCall = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(val)));
+  form_Map(SymbolMapElem, e, at->substitutions) {
+    Symbol* field = root->getField(e->key->name);
+    bool hasDefault = false;
+    bool isGenericField = root->fieldIsGeneric(field, hasDefault);
+
+    Expr* appendExpr = NULL;
+    if (field->isParameter()) {
+      appendExpr = new SymExpr(e->value);
+    } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (e->value->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        // BHARSH 2018-11-02: This technically generates code that would
+        // crash at runtime because aggregate types don't contain the runtime
+        // type information for their fields, so this temporary will go
+        // uninitialized. At the moment we fortunately do not access such
+        // fields for default-initialized records, and avoid crashing.
+        VarSymbol* tmp = newTemp("default_runtime_temp");
+        tmp->addFlag(FLAG_TYPE_VARIABLE);
+        CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD, at->symbol, new_CStringSymbol(e->key->name));
+        CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
+
+        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(move);
+
+        resolveExpr(query);
+        resolveExpr(move);
+
+        appendExpr = new SymExpr(tmp);
+      } else {
+        appendExpr = new SymExpr(e->value);
+      }
+    } else if (isGenericField && hasDefault == false) {
+      // Create a temporary to pass for the fully-generic field (e.g. "var x;")
+      VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
+      CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, e->value);
+
+      call->insertBefore(new DefExpr(temp));
+      call->insertBefore(tempCall);
+      resolveExpr(tempCall->get(2));
+      resolveExpr(tempCall);
+      appendExpr = new SymExpr(temp);
+
+    } else {
+      INT_FATAL("Unhandled case for default-init");
     }
+
+    appendExpr = new NamedExpr(e->key->name, appendExpr);
+
+    initCall->insertAtTail(appendExpr);
   }
 
-  return retval;
+  call->insertBefore(initCall);
+  resolveCallAndCallee(initCall);
+  call->convertToNoop();
+
+  if (at && at->isRecord() && at->hasPostInitializer()) {
+    CallExpr* postinit = new CallExpr("postinit", gMethodToken, val);
+    call->insertBefore(postinit);
+    resolveCallAndCallee(postinit);
+  }
 }
 
 // Return true if this type is generic *and* resolution will fail

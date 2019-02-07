@@ -41,10 +41,10 @@ if dist=='NONE' {
 
 proc dobench(mydist, mydom) {
 
-var a={1..n2}:[mydist]int;
+var a:[mydist]int = {1..n2};
 var b:[mydist]int;
 
-var at={1..n2}:[mydom]int;
+var at:[mydom]int = {1..n2};
 var bt:[mydom]int;
 var still_correct = true;
 

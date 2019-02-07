@@ -28,15 +28,16 @@ module CPtr {
   use ChapelStandard;
 
   /* A Chapel version of a C NULL pointer. */
-  extern const c_nil:c_void_ptr;
+  inline proc c_nil:c_void_ptr {
+    return __primitive("cast", c_void_ptr, nil);
+  }
 
-  // To generate legal C prototypes, we have to manually instantiate this
-  // prototype for each pointer type that might be associated with 'x'.
-
-  /* :returns: true if the passed value is a NULL pointer (ie 0) */
-  pragma "no prototype"
-  pragma "no doc"
-  extern proc is_c_nil(x):bool;
+  /*
+     :returns: true if the passed value is a NULL pointer (ie 0).
+   */
+  inline proc is_c_nil(x):bool {
+    return __primitive("cast", c_void_ptr, x) == c_nil;
+  }
 
   /*
 
@@ -253,9 +254,12 @@ module CPtr {
   }
   pragma "no doc"
   inline proc _cast(type t:c_void_ptr, x:_nilType) {
-    return c_nil;
+    return __primitive("cast", c_void_ptr, nil);
   }
-
+  pragma "no doc"
+  inline proc _cast(type t:c_fn_ptr, x:_nilType) {
+    return __primitive("cast", c_fn_ptr, nil);
+  }
 
   pragma "no doc"
   inline proc _cast(type t:c_ptr, x:c_ptr) {
@@ -341,26 +345,6 @@ module CPtr {
   inline proc _cast(type t:uint(64), x:c_ptr) where c_uintptr != int(64)
     return __primitive("cast", t, x);
 
-  pragma "compiler generated"
-  pragma "last resort"
-  pragma "no doc"
-  inline proc _defaultOf(type t:c_void_ptr) {
-      return __primitive("cast", t, nil);
-  }
-
-  pragma "compiler generated"
-  pragma "last resort"
-  pragma "no doc"
-  inline proc _defaultOf(type t:c_ptr) {
-      return __primitive("cast", t, nil);
-  }
-
-  pragma "compiler generated"
-  pragma "last resort"
-  pragma "no doc"
-  inline proc _defaultOf(type t:c_fn_ptr) {
-      return __primitive("cast", t, nil);
-  }
 
   pragma "no doc"
   inline proc =(ref a:c_fn_ptr, b:_nilType) { __primitive("=", a, c_nil); }

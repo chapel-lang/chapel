@@ -564,15 +564,14 @@ initPrimitive() {
   // dst, src. PRIM_MOVE can set a reference.
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false);
 
-  // 1 argument: type to create a default-initialized value of
-  prim_def(PRIM_INIT,       "init",       returnInfoFirstDeref);
+  // dst, type to default-init
+  prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
 
   // fn->_this, the name of the field, value/type, optional declared type
   prim_def(PRIM_INIT_FIELD, "init field", returnInfoVoid, false);
 
   // dst, init-expr, optional declared type
   prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
-  prim_def(PRIM_NO_INIT,    "no init",    returnInfoFirstDeref);
 
   // Used in a context where only a type is needed.
   // Establishes the type of the result without

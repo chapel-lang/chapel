@@ -790,23 +790,25 @@ static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
       Expr*     initExpr = NULL;
 
       if (lastCall != NULL && lastCall->isPrimitive(PRIM_MOVE) == true) {
-        initExpr = new CallExpr(PRIM_INIT, lastCall->get(1)->copy());
+        initExpr = new CallExpr(PRIM_DEFAULT_INIT_VAR,
+                                temp, lastCall->get(1)->copy());
 
       } else {
-        initExpr = new CallExpr(PRIM_INIT, lastExpr->remove());
+        initExpr = new CallExpr(PRIM_DEFAULT_INIT_VAR,
+                                temp, lastExpr->remove());
       }
 
-      body->insertAtTail(new CallExpr(PRIM_MOVE, temp, initExpr));
+      body->insertAtTail(initExpr);
     }
 
   } else {
     Expr* expr = new SymExpr(formal->type->symbol);
 
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-      expr = new CallExpr(PRIM_INIT, expr);
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+      body->insertAtTail(new CallExpr(PRIM_MOVE, temp, expr));
+    } else {
+      body->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, expr));
     }
-
-    body->insertAtTail(new CallExpr(PRIM_MOVE, temp, expr));
   }
 }
 

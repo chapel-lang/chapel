@@ -1,12 +1,6 @@
-proc _defaultOf(type t:bool) {
-  writeln("I default initialized!");
-  return false:t;
-}
-
-
 type a = bool;
-var foo: a = noinit; // Should not print out the message
+var foo: a = noinit;
 foo = true;
 writeln(foo);
-var bar: a;          // Should print out the message
+var bar: a;
 writeln(bar);

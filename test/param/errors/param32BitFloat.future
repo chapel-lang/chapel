@@ -1,8 +1,0 @@
-bug: We should support 32-bit float params
-
-I believe the only reason these aren't supported today is because we
-can neither param-represent 0.0 as a 32-bit float nor param-cast 0.0
-to a 32-bit float in the _defaultOf() routines for 32-bit floats.
-Other than that, I think our Immediates are set up to handle them
-just fine.
-

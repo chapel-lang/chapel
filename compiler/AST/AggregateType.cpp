@@ -1323,6 +1323,11 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
           typeConstrSetField(fn, field, call);
 
         } else if (Expr* init = field->defPoint->init) {
+          // It might be appealing to change this to PRIM_INIT_FIELD -
+          // but that causes problems for fields with loop init expressions.
+          // The field should end up with array type rather than iterator
+          // record type.
+
           CallExpr* call = new CallExpr("chpl__initCopy", init->copy());
 
           typeConstrSetField(fn, field, call);

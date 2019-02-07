@@ -1,1 +1,3 @@
+noinitInFunctionGood.chpl:1: In function 'main':
+noinitInFunctionGood.chpl:2: warning: noinit is currently ignored
 4

@@ -821,9 +821,6 @@ module ChapelBase {
     return __primitive("cast", t, x);
   }
 
-  inline proc _defaultOf(type t:_ddata)
-    return __primitive("cast", t, nil);
-
   // Removing the 'eltType' arg results in errors for --baseline
   inline proc _ddata_shift(type eltType, data: _ddata(eltType), shift: integral) {
     var ret: _ddata(eltType);
@@ -915,7 +912,7 @@ module ChapelBase {
   pragma "no default functions"
   class _EndCountBase {
     var errors: chpl_TaskErrors;
-    var taskList: c_void_ptr = _defaultOf(c_void_ptr);
+    var taskList: c_void_ptr;
   }
 
   pragma "end count"
@@ -1089,6 +1086,13 @@ module ChapelBase {
   }
 
   proc _do_command_line_cast(type t, x:c_string) throws {
+    if isSyncType(t) then
+      compilerError("config variables of sync type are not supported");
+    if isSingleType(t) then
+      compilerError("config variables of single type are not supported");
+    if isAtomicType(t) then
+      compilerError("config variables of atomic type are not supported");
+
     var str = x:string;
     if t == string {
       return str;
@@ -1151,10 +1155,10 @@ module ChapelBase {
   inline proc _cast(type t:unmanaged, x:t)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:borrowed, x:_nilType)
+  inline proc _cast(type t:borrowed, pragma "nil from arg" x:_nilType)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:unmanaged, x:_nilType)
+  inline proc _cast(type t:unmanaged, pragma "nil from arg" x:_nilType)
     return __primitive("cast", t, x);
 
   // dynamic cast handles class casting based upon runtime class type
@@ -1955,47 +1959,10 @@ module ChapelBase {
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit;
 
-  // What follows are the type _defaultOf methods, used to initialize types
-  // Booleans
-  inline proc _defaultOf(type t:chpl_anybool) param return false:t;
-
-  // ints, reals, imags, complexes
-  inline proc _defaultOf(type t:integral) param return 0:t;
-  // TODO: In order to make _defaultOf param for reals and imags we had to split
-  // the cases into their default size and a non-param case.  It is hoped that
-  // in the future, floating point numbers may be castable whilst param.  In that
-  // world, we can again shrink these calls into the size-ignorant case.
-  inline proc _defaultOf(type t:real) param return 0.0;
-  inline proc _defaultOf(type t:chpl_anyreal) return 0.0:t;
-  inline proc _defaultOf(type t:imag) param return 0.0i;
-  inline proc _defaultOf(type t:chpl_anyimag) return 0.0i:t;
-  // Also, complexes cannot yet be parameterized
-  inline proc _defaultOf(type t:chpl_anycomplex):t {
-    var ret:t = noinit;
-    param floatwidth = numBits(t)/2;
-    ret.re = 0.0:real(floatwidth);
-    ret.im = 0.0:real(floatwidth);
-    return ret;
-  }
-
-  // Enums
-  inline proc _defaultOf(type t:enumerated) param
-    return chpl_enum_first(t);
-
-  // Classes
-  inline proc _defaultOf(type t:borrowed)
-    return __primitive("cast", t, nil);
-  inline proc _defaultOf(type t:unmanaged)
-    return __primitive("cast", t, nil);
-
-  // Various types whose default value is known
-  inline proc _defaultOf(type t:void) param return _void;
-  inline proc _defaultOf(type t:opaque) return _nullOpaque;
-  inline proc _defaultOf(type t:chpl_taskID_t) return chpl_nullTaskID;
-  inline proc _defaultOf(type t:_sync_aux_t) return _nullSyncVarAuxFields;
-
-  // There used to be a catch-all _defaultOf that return nil:t, but that
-  // was the nexus of several tricky resolution bugs.
+  // The compiler does not emit _defaultOf for numeric and class types
+  // directly. If _defaultOf is required, use variable initialization
+  // to access it
+  //    var x: T;
 
   // type constructor for unmanaged pointers
   // this could in principle be just _unmanaged (similar to type
