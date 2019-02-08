@@ -2178,7 +2178,6 @@ module ChapelArray {
     pragma "alias scope from this"
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
-    var _externally_managed: bool = false;
 
     proc chpl__promotionType() type {
       return _value.eltType;
@@ -2198,7 +2197,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc deinit() {
-      _do_destroy_arr(_unowned, _externally_managed, _instance);
+      _do_destroy_arr(_unowned, _instance);
     }
 
     /* The type of elements contained in the array */
@@ -3271,9 +3270,8 @@ module ChapelArray {
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
   // being a method on _array so that it could be called on unwrapped
   // _instance fields
-  inline proc _do_destroy_arr(_unowned: bool, _externally_managed: bool,
-                              _instance) {
-    if ! _unowned && ! _externally_managed {
+  inline proc _do_destroy_arr(_unowned: bool, _instance) {
+    if ! _unowned {
       on _instance {
         var (arrToFree, domToRemove) = _instance.remove();
         var domToFree:unmanaged BaseDom = nil;
