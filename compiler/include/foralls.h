@@ -55,7 +55,6 @@ public:
 };
 
 bool astUnderFI(const Expr* ast, ForallIntents* fi);
-void resolveForallStmts1();
 void resolveForallStmts2();
 
 #define for_riSpecs_vector(VAL, FI) \

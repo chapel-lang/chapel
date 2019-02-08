@@ -995,6 +995,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   preFS->flattenAndRemove();
 }
 
+void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall);
+
+
 // see also comments above
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 {
@@ -1056,17 +1059,13 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
     INT_ASSERT(iterCall == pfs->iteratedExpressions().tail); // only 1 elem
 
     retval = iterCall;
+
+    setupRecIterFields(pfs, iterCall);
   }
 
   return retval;
 }
 
-
-///////////////////////////////
-//                           //
-//   ForallStmt lowering 1   //
-//                           //
-///////////////////////////////
 
 // The fRecIter* fields:
 //   fRecIterIRdef, fRecIterICdef, fRecIterGetIterator, fRecIterFreeIterator
@@ -1083,10 +1082,8 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 // Since we do not know it here, we do the work
 // even in the (common) case where it will not be needed.
 //
-void static setupRecIterFields(ForallStmt* fs)
+void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall)
 {
-  CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
-  INT_ASSERT(parIterCall && !parIterCall->next); // expected
   SET_LINENO(parIterCall);
 
   // From the original buildStandaloneForallLoopStmt(), with "sa" -> "par".
@@ -1143,14 +1140,6 @@ void static setupRecIterFields(ForallStmt* fs)
 
   INT_ASSERT(holder->body.empty());
   holder->remove();
-}
-
-void resolveForallStmts1() {
-  forv_Vec(ForallStmt, fs, gForallStmts) {
-    if (!fs->inTree() || !fs->getFunction()->isResolved())
-      continue;
-    setupRecIterFields(fs);
-  }
 }
 
 
@@ -1215,7 +1204,7 @@ static void convertIteratorForLoopexpr(ForallStmt* fs) {
         }
 }
 
-// Todo: can we merge this with resolveForallStmts1() ?
+// Todo: can we merge this into resolveForallHeader() ?
 void resolveForallStmts2() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())

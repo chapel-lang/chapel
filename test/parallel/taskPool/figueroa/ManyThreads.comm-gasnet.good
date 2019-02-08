@@ -1,2 +1,2 @@
-CHPL_RT_NUM_THREADS_PER_LOCALE = 300 is too large; limit is 255
 total is 4501500
+CHPL_RT_NUM_THREADS_PER_LOCALE = 300 is too large; limit is 255

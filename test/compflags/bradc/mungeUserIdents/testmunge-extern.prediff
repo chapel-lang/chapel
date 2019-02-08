@@ -13,7 +13,7 @@ actualGenCodeFile = os.path.join(genCodeDir, sys.argv[1]+'.c')
 genHeader         = os.path.join(genCodeDir, 'chpl__header.h')
 testOutputFile = sys.argv[2]
 
-names = ["foo", "bar", "baz", "globStruct"]
+names = ["bar", "baz", "globStruct"]
 names = names + [n + "_chpl" for n in names]
 counts = {n:0 for n in names}
 

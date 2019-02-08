@@ -27,6 +27,7 @@ TARGETS = \
 	replicated \
 	slices \
 	sparse \
+	specialMethods \
 	syncsingle \
 	taskParallel \
 	timers \

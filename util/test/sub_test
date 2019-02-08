@@ -182,6 +182,23 @@ def bytes_to_str(byte_string):
     else:
         return byte_string
 
+def str_to_bytes(str_string):
+    if sys.version_info[0] >= 3 and not isinstance(str_string, bytes):
+        return bytes(str_string, 'utf-8')
+    else:
+        return str_string
+
+def concat_streams(stdout, stderr):
+    """ Concats stderr to stdout. Returns str if both are utf-8 strings, bytes otherwise """
+    if sys.version_info[0] >= 3:
+        str_stdout = bytes_to_str(stdout)
+        str_stderr = bytes_to_str(stderr)
+        if isinstance(str_stdout, str) and isinstance(str_stderr, str):
+            return str_stdout + str_stderr
+        else:
+            return str_to_bytes(stdout) + str_to_bytes(stderr)
+
+    return stdout + stderr
 
 class Py3CompatPopen(object):
 
@@ -221,7 +238,7 @@ def SetNonBlock(stream):
 
 def SuckOutputWithTimeout(stream, timeout):
     SetNonBlock(stream)
-    buffer = ''
+    buffer = b''
     end_time = time.time() + timeout
     while True:
         now = time.time()
@@ -592,8 +609,6 @@ def translateOutput(output):
                'Jira 17 -- Missing output file for'),
               ('aprun: Unexpected close of the apsys control connection',
                'Jira 193 -- Unexpected close of apsys for'),
-              ('Transient MPP reservation error on create',
-               'Jira 203 -- Transient MPP reservation error for'),
               ('qsub: cannot connect to server sdb',
                'Jira 283 -- Sporadic: qstat failed to connect to server sdb'),
               ('Failed to recv data from background qsub',
@@ -1553,11 +1568,11 @@ for testname in testsrc:
         else:
             p = Popen([cmd]+args,
                       env=dict(list(os.environ.items()) + list(testcompenv.items())),
-                      stdin=open(cmpstdin, 'r'),
+                      stdin=open(compstdin, 'r'),
                       stdout=subprocess.PIPE,
                       stderr=subprocess.STDOUT)
             try:
-                output = SuckOutputWithTimeout(p.stdout, comptimeout)
+                output = bytes_to_str(SuckOutputWithTimeout(p.stdout, comptimeout))
             except ReadTimeoutException:
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, test_filename))
@@ -1568,6 +1583,7 @@ for testname in testsrc:
                 cleanup(printpassesfile)
                 continue # on to next compopts
 
+            p.poll()
             status = p.returncode
 
         elapsedCompTime = time.time() - compStart
@@ -1972,8 +1988,9 @@ for testname in testsrc:
                                   env=dict(list(os.environ.items()) + list(testenv.items())),
                                   stdin=my_stdin,
                                   stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
-                        output = p.communicate()[0]
+                                  stderr=subprocess.PIPE)
+                        (stdout, stderr) = p.communicate()
+                        output = concat_streams(stdout, stderr)
                         status = p.returncode
 
                         # Check for well-known failure modes
@@ -2000,8 +2017,9 @@ for testname in testsrc:
                                   env=dict(list(os.environ.items()) + list(testenv.items())),
                                   stdin=my_stdin,
                                   stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
-                        output = p.communicate()[0]
+                                  stderr=subprocess.PIPE)
+                        (stdout, stderr) = p.communicate()
+                        output = concat_streams(stdout, stderr)
                         status = p.returncode
 
                         if status == 222:
@@ -2034,9 +2052,9 @@ for testname in testsrc:
                                   env=dict(list(os.environ.items()) + list(testenv.items())),
                                   stdin=my_stdin,
                                   stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
+                                  stderr=subprocess.PIPE)
                         try:
-                            output = SuckOutputWithTimeout(p.stdout, timeout)
+                            stdoutOutput = SuckOutputWithTimeout(p.stdout, timeout)
                         except ReadTimeoutException:
                             exectimeout = True
                             sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
@@ -2046,6 +2064,9 @@ for testname in testsrc:
                             sys.stdout.write(']\n')
                             KillProc(p, killtimeout)
 
+                        stderrOutput = p.stderr.read()
+                        output = concat_streams(stdoutOutput, stderrOutput)
+                        p.poll()
                         status = p.returncode
 
                 # executable is done running
@@ -2091,20 +2112,20 @@ for testname in testsrc:
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT).communicate()[0]
                     if sys.version_info[0] >= 3 and isinstance(cat_output, bytes):
-                        output = bytes(output, 'utf-8')
+                        output = str_to_bytes(output)
                     output += cat_output
 
                 # Sadly the scripts used below require an actual file
                 open_mode = 'w' if isinstance(output, str) else 'wb'
                 with open(execlog, open_mode) as execlogfile:
-                    if sys.version_info[0] >= 3 and open_mode == 'wb' and not isinstance(pre_exec_output, bytes):
-                        pre_exec_output_content = bytes(pre_exec_output, 'utf-8')
+                    if open_mode == 'wb':
+                        pre_exec_output_content = str_to_bytes(pre_exec_output)
                     else:
                         pre_exec_output_content = pre_exec_output
                     execlogfile.write(pre_exec_output_content)
 
-                    if sys.version_info[0] >= 3 and open_mode == 'wb' and not isinstance(output, bytes):
-                        output_content = bytes(output, 'utf-8')
+                    if open_mode == 'wb':
+                        output_content =str_to_bytes(output)
                     else:
                         output_content = output
                     execlogfile.write(output_content)

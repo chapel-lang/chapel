@@ -1,5 +1,3 @@
-config const useInternal = false;
-
 proc willthrow() throws {
   throw new owned Error();
   return 777;
@@ -8,12 +6,8 @@ proc willthrow() throws {
 var RRR = 0..3;
 
 proc test(expr) {
-  // Put both errors on the same line, for .bad convenience.
-  // When 'useInternal", it calls chpl__initCopy(ir: _iteratorRecord),
-  // which runs the same zippered loop as in the the !useInternal case here.
-  if useInternal { var array1 = for i in {RRR} do willthrow(); } else { for zip(RRR, expr) {
-      if numLocales < 0 then writeln("hi"); // no-op
-    }
+  for zip(RRR, expr) {
+    if numLocales < 0 then writeln("hi"); // no-op
   }
 }
 

@@ -1,3 +1,3 @@
-CHPL_RT_NUM_THREADS_PER_LOCALE = 257 is too large; limit is 255
-CHPL_RT_NUM_THREADS_PER_LOCALE = 257 is too large; limit is 255
 Running program
+CHPL_RT_NUM_THREADS_PER_LOCALE = 257 is too large; limit is 255
+CHPL_RT_NUM_THREADS_PER_LOCALE = 257 is too large; limit is 255

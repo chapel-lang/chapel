@@ -321,6 +321,9 @@ else
     gen_version_gcc=6.1.0
     gen_version_intel=16.0.3.210
     gen_version_cce=8.6.3
+    if [ "$CHPL_LOCALE_MODEL" == knl ]; then
+        gen_version_cce=8.7.3
+    fi
 
     target_cpu_module=craype-sandybridge
 

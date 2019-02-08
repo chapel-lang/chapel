@@ -1,3 +1,3 @@
-noinitSkippedCase.chpl:20: warning: type R does not currently support noinit, using default initialization
+noinitSkippedCase.chpl:20: warning: noinit is currently ignored
 default init!
 default init!

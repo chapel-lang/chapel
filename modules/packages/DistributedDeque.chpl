@@ -527,7 +527,8 @@ module DistributedDeque {
     proc popBack() : (bool, eltType) {
       // Test for if we can continue...
       if enterRemoveBarrier() == false {
-        return (false, _defaultOf(eltType));
+        var default: eltType;
+        return (false, default);
       }
 
       // We find our slot based on another fetch-add counter, making this wait-free as well.
@@ -558,7 +559,8 @@ module DistributedDeque {
     proc popFront() : (bool, eltType) {
       // Test for if we can continue...
       if enterRemoveBarrier() == false {
-        return (false, _defaultOf(eltType));
+        var default: eltType;
+        return (false, default);
       }
 
       // We find our slot based on another fetch-add counter, making this wait-free as well.

@@ -211,6 +211,11 @@ static uint64_t debug_stats_flag = 0;
 #endif
 
 
+// not generally true, but should be for XE/XC
+#define CACHE_LINE_SIZE 64
+#define CACHE_LINE_ALIGN __attribute__((aligned(CACHE_LINE_SIZE)))
+
+
 ////////////////////////////////////////
 //
 // Statistics gathering
@@ -268,8 +273,7 @@ static uint64_t debug_stats_flag = 0;
         MACRO(acq_cd_rb_cnt)                                            \
         MACRO(acq_cd_rb_na_cnt)                                         \
         MACRO(acq_cd_rb_cq_cnt)                                         \
-        MACRO(acq_cd_rb_frf_1_cnt)                                      \
-        MACRO(acq_cd_rb_frf_2_cnt)                                      \
+        MACRO(acq_cd_rb_frf_cnt)                                        \
         MACRO(reacq_cd_cnt)                                             \
         MACRO(wait_rfork_cnt)                                           \
         MACRO(wait_glb_cq_ev_cnt)                                       \
@@ -301,8 +305,8 @@ static uint64_t debug_stats_flag = 0;
 // 
 //#define PERFSTATS_TIME_ZERO_INIT 1
 
-#define _PSV_C_TYPE      uint_least64_t
-#define _PSV_FMT         PRIu64
+#define _PSV_C_TYPE      int_least64_t
+#define _PSV_FMT         PRId64
 
 #define _PSV_SYM(x)      _PSV_SYM2(x, _PSV_C_TYPE)
 #define _PSV_SYM2(x, t)  _PSV_SYM3(x, t)
@@ -312,9 +316,9 @@ static uint64_t debug_stats_flag = 0;
 #define _PSV_LD_FUNC     _PSV_SYM(atomic_load)
 #define _PSV_ST_FUNC     _PSV_SYM(atomic_store)
 #define _PSV_ADD_FUNC    _PSV_SYM(atomic_fetch_add)
-#define _PSV_SUB_FUNC    _PSV_SYM(atomic_fetch_sub)
+#define _PSV_ADD_FUNC_E  _PSV_SYM(atomic_fetch_add_explicit)
 
-#define _PSV_DECL(psv)  _PSV_ATOMIC_TYPE psv;
+#define _PSV_DECL(psv)  _PSV_ATOMIC_TYPE CACHE_LINE_ALIGN psv;
 typedef struct chpl_comm_pstats {
   PERFSTATS_VARS_ALL(_PSV_DECL)
 } chpl_comm_pstats_t;
@@ -332,11 +336,12 @@ chpl_comm_pstats_t chpl_comm_pstats;
 #define PERFSTATS_LD(cnt)         _PSV_LD_FUNC(&_PSV_VAR(cnt))
 #define PERFSTATS_ST(cnt, val)    _PSV_ST_FUNC(&_PSV_VAR(cnt), val)
 #define PERFSTATS_STZ(cnt)        PERFSTATS_ST(cnt, 0)
-#define PERFSTATS_ADD(cnt, val)   (void) _PSV_ADD_FUNC(&_PSV_VAR(cnt), val)
+#define PERFSTATS_ADD(cnt, val)   (void) _PSV_ADD_FUNC_E(&_PSV_VAR(cnt), val, memory_order_relaxed)
 #define PERFSTATS_INC(cnt)        PERFSTATS_ADD(cnt, 1)
 
 #include <time.h>
 
+// useful to get time elapsed since comm layer init
 static struct timespec perfstats_timeBase;
 
 static _PSV_C_TYPE timer_overhead;
@@ -345,7 +350,7 @@ static inline _PSV_C_TYPE perfstats_timer_get(void)
 {
   struct timespec _ts;
   (void) clock_gettime(CLOCK_MONOTONIC, &_ts);
-  return (_PSV_C_TYPE) (_ts.tv_sec - perfstats_timeBase.tv_sec) * 1000000000UL
+  return (_PSV_C_TYPE) (_ts.tv_sec - perfstats_timeBase.tv_sec) * 1000000000L
          + (_PSV_C_TYPE) _ts.tv_nsec;
 }
 
@@ -365,7 +370,9 @@ static void perfstats_init(void)
   // and timer_overhead is used to adjust for the measurement cost.
   //
   {
-    const int nTrials = 10000; // ~80 ns per trial on XC, so < 1 ms total
+    // ~420 ns per trial on XC for syscall, ~15 ns for vDSO. If timers are
+    // used heavily, it benefits to use dynamic linking so we can use vDSO
+    const int nTrials = 10000;
 
     for (int i = 0; i < nTrials; i++) {
       PERFSTATS_TSTAMP(ts);
@@ -700,9 +707,6 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 #define CQ_CNT_DEC(cd)        \
         (void) atomic_fetch_sub_uint_least32_t(&(cd)->cq_cnt_curr, 1)
 
-// not generally true, but should be for XE/XC
-#define CACHE_LINE_ALIGN __attribute__((aligned(64)))
-
 typedef struct {
   atomic_bool        busy CACHE_LINE_ALIGN;
   chpl_bool          firmly_bound;
@@ -729,14 +733,15 @@ static uint32_t     comm_dom_cnt_max;
 
 static comm_dom_t*  comm_doms;
 
-static __thread int comm_dom_free_idx;
+static atomic_int_least32_t global_init_cdi;
+static __thread int comm_dom_free_idx = -1;
 static __thread comm_dom_t* cd = NULL;
 static __thread int cd_idx = -1;
 
 #define INIT_CD_BUSY(cd)      atomic_init_bool(&(cd)->busy, false)
-#define CHECK_CD_BUSY(cd)     atomic_load_bool(&(cd)->busy)
-#define ACQUIRE_CD_MAYBE(cd)  (atomic_exchange_bool(&(cd)->busy, true) == false)
-#define RELEASE_CD(cd)        atomic_store_bool(&(cd)->busy, false)
+#define CHECK_CD_BUSY(cd)     atomic_load_explicit_bool(&(cd)->busy, memory_order_acquire)
+#define ACQUIRE_CD_MAYBE(cd)  (!atomic_exchange_explicit_bool(&(cd)->busy, true, memory_order_acquire))
+#define RELEASE_CD(cd)        atomic_store_explicit_bool(&(cd)->busy, false, memory_order_release)
 
 
 //
@@ -2092,7 +2097,8 @@ void chpl_comm_post_task_init(void)
   for (int i = 0; i < comm_dom_cnt; i++)
     gni_setup_per_comm_dom(i);
 
-  comm_dom_free_idx = 0;
+  atomic_init_int_least32_t(&global_init_cdi, 0);
+
 
   //
   // Register memory.
@@ -7871,7 +7877,7 @@ void do_fork_post(c_nodeid_t locale,
 }
 
 
-static
+static inline
 void acquire_comm_dom(void)
 {
   int want_cdi;
@@ -7890,8 +7896,11 @@ void acquire_comm_dom(void)
     cd->acqs++;
     cd->acqs_looks++;
 #endif
-
     return;
+  }
+
+  if (comm_dom_free_idx == -1) {
+    comm_dom_free_idx = atomic_fetch_add_int_least32_t(&global_init_cdi, 1) % comm_dom_cnt;
   }
 
   assert(cd == NULL);
@@ -7910,24 +7919,16 @@ void acquire_comm_dom(void)
 #ifdef DEBUG_STATS
     acq_looks++;
 #endif
-    if (!CHECK_CD_BUSY(want_cd)) {
+    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
-        if (ACQUIRE_CD_MAYBE(want_cd)) {
-          if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max)
-            break;
-          else {
-            PERFSTATS_INC(acq_cd_cq_cnt);
-            RELEASE_CD(want_cd);
-          }
-        }
-        else
-          PERFSTATS_INC(acq_cd_na_cnt);
-      }
-      else
+        break;
+      } else {
         PERFSTATS_INC(acq_cd_cq_cnt);
-    }
-    else
+        RELEASE_CD(want_cd);
+      }
+    } else {
       PERFSTATS_INC(acq_cd_na_cnt);
+    }
 
     want_cdi++;
     want_cd++;
@@ -7941,11 +7942,6 @@ void acquire_comm_dom(void)
       local_yield();
     }
   } while (1);
-
-  if (want_cdi < comm_dom_cnt - 1)
-    comm_dom_free_idx = want_cdi + 1;
-  else
-    comm_dom_free_idx = 0;
 
   cd = want_cd;
   cd_idx = want_cdi;
@@ -7969,6 +7965,10 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
   uint64_t acq_looks = 0;
 #endif
 
+  if (comm_dom_free_idx == -1) {
+    comm_dom_free_idx = atomic_fetch_add_int_least32_t(&global_init_cdi, 1) % comm_dom_cnt;
+  }
+
   assert(cd == NULL);
 
   //
@@ -7986,45 +7986,23 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
     acq_looks++;
 #endif
 
-    if (!CHECK_CD_BUSY(want_cd)) {
+    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
         for (rbi = 0; rbi < FORK_REQ_BUFS_PER_CD; rbi++) {
           if (*SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi, rbi)) {
-            if (ACQUIRE_CD_MAYBE(want_cd)) {
-              //
-              // We found a CD that was available, had room left in its
-              // completion queue, and had a free fork request buffer.  We
-              // have successfully acquired it.  If it still has room in
-              // its CQ and that fork request buffer or a subsequent one
-              // is still free then it's ours.  Otherwise, release it and
-              // keep looking.
-              //
-              if (CQ_CNT_LOAD(want_cd) >= want_cd->cq_cnt_max) {
-                PERFSTATS_INC(acq_cd_rb_cq_cnt);
-                RELEASE_CD(want_cd);
-              }
-              else {
-                do {
-                  if (*SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi,
-                                                    rbi))
-                    goto found_CD;
-                } while (++rbi < FORK_REQ_BUFS_PER_CD);
-                PERFSTATS_INC(acq_cd_rb_frf_1_cnt);
-                RELEASE_CD(want_cd);
-              }
-            }
-            else
-              PERFSTATS_INC(acq_cd_rb_na_cnt);
+            goto found_CD;
+          } else {
+            PERFSTATS_INC(acq_cd_rb_frf_cnt);
           }
-          else
-            PERFSTATS_INC(acq_cd_rb_frf_2_cnt);
         }
-      }
-      else
+        RELEASE_CD(want_cd);
+      } else {
+        RELEASE_CD(want_cd);
         PERFSTATS_INC(acq_cd_rb_cq_cnt);
-    }
-    else
+      }
+    } else {
       PERFSTATS_INC(acq_cd_rb_na_cnt);
+    }
 
     want_cdi++;
     want_cd++;
@@ -8040,10 +8018,6 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
   } while (1);
 
  found_CD:
-  if (want_cdi < comm_dom_cnt - 1)
-    comm_dom_free_idx = want_cdi + 1;
-  else
-    comm_dom_free_idx = 0;
 
   *SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi, rbi) = false;
 

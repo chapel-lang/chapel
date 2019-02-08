@@ -17,17 +17,18 @@ def writeOutput( value ):
   if DEBUG_MODE: print(value)
   fh.close()
 
-[test_serial_input, test_parallel_input] = input.split( "PARALLELISM START" )
-
-# Somewhere in the serial part this one line of stderr output
-# must occur precisely once.
+# This one line of stderr output must occur precisely once.  (sub_test
+# will put it at the end but we are concerned only with test behavior,
+# not testing system behavior, and do not depend on that.)
 line_of_stderr = 'This goes to standard error\n'
-[tsi_pre, tsi_sep, tsi_post] = test_serial_input.partition( line_of_stderr )
-if tsi_sep == line_of_stderr:
-  test_serial_input = tsi_pre + tsi_post
+[input_pre, input_sep, input_post] = input.partition( line_of_stderr )
+if input_sep == line_of_stderr and input_post.count( line_of_stderr ) == 0:
+  input = input_pre + input_post
 else:
-  writeOutput( "FAILED! " + str( line_of_stderr ) + " not seen" )
+  writeOutput( "FAILED! " + str( line_of_stderr ) + " not seen exactly 1 time" )
   exit( -1-i )
+
+[test_serial_input, test_parallel_input] = input.split( "PARALLELISM START" )
 
 [test_serial, test_parallel] = [ list(filter( remove_empty, test_serial_input.split("\n"))), \
                                  list(filter( remove_empty, test_parallel_input.split("\n") ))]

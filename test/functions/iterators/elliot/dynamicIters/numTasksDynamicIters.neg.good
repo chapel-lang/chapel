@@ -1,13 +1,13 @@
-numTasksDynamicIters.chpl:11: warning: 'numTasks' < 0, defaulting to numTasks=1
-numTasksDynamicIters.chpl:12: warning: 'numTasks' < 0, defaulting to numTasks=1
-numTasksDynamicIters.chpl:15: warning: 'numTasks' < 0, defaulting to numTasks=1
-numTasksDynamicIters.chpl:16: warning: 'numTasks' < 0, defaulting to numTasks=1
-numTasksDynamicIters.chpl:19: warning: 'numTasks' < 0, defaulting to numTasks=1
-numTasksDynamicIters.chpl:20: warning: 'numTasks' < 0, defaulting to numTasks=1
-numTasksDynamicIters.chpl:11: warning: 'numTasks' < 0, defaulting to numTasks=1
-numTasksDynamicIters.chpl:12: warning: 'numTasks' < 0, defaulting to numTasks=1
-numTasksDynamicIters.chpl:15: warning: 'numTasks' < 0, defaulting to numTasks=1
-numTasksDynamicIters.chpl:16: warning: 'numTasks' < 0, defaulting to numTasks=1
-numTasksDynamicIters.chpl:19: warning: 'numTasks' < 0, defaulting to numTasks=1
-numTasksDynamicIters.chpl:20: warning: 'numTasks' < 0, defaulting to numTasks=1
 24 24 24 24 24 24 24 24 24 24
+numTasksDynamicIters.chpl:11: warning: 'numTasks' < 0, defaulting to numTasks=1
+numTasksDynamicIters.chpl:12: warning: 'numTasks' < 0, defaulting to numTasks=1
+numTasksDynamicIters.chpl:15: warning: 'numTasks' < 0, defaulting to numTasks=1
+numTasksDynamicIters.chpl:16: warning: 'numTasks' < 0, defaulting to numTasks=1
+numTasksDynamicIters.chpl:19: warning: 'numTasks' < 0, defaulting to numTasks=1
+numTasksDynamicIters.chpl:20: warning: 'numTasks' < 0, defaulting to numTasks=1
+numTasksDynamicIters.chpl:11: warning: 'numTasks' < 0, defaulting to numTasks=1
+numTasksDynamicIters.chpl:12: warning: 'numTasks' < 0, defaulting to numTasks=1
+numTasksDynamicIters.chpl:15: warning: 'numTasks' < 0, defaulting to numTasks=1
+numTasksDynamicIters.chpl:16: warning: 'numTasks' < 0, defaulting to numTasks=1
+numTasksDynamicIters.chpl:19: warning: 'numTasks' < 0, defaulting to numTasks=1
+numTasksDynamicIters.chpl:20: warning: 'numTasks' < 0, defaulting to numTasks=1

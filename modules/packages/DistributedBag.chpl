@@ -843,7 +843,8 @@ module DistributedBag {
 
     inline proc takeElement() {
       if isEmpty {
-        return (false, _defaultOf(eltType));
+        var default: eltType;
+        return (false, default);
       }
 
       if headBlock.isEmpty {
@@ -1103,7 +1104,8 @@ module DistributedBag {
 
                     if parentHandle.targetLocales.size == 1 {
                       segment.releaseStatus();
-                      return (false, _defaultOf(eltType));
+                      var default: eltType;
+                      return (false, default);
                     }
 
                     // Attempt to become the sole work stealer for this node. If we
@@ -1115,7 +1117,8 @@ module DistributedBag {
                       loadBalanceInProgress.waitFor(false);
                       var notEmpty = loadBalanceResult.read();
                       if !notEmpty {
-                        return (false, _defaultOf(eltType));
+                        var default: eltType;
+                        return (false, default);
                       }
 
                       // Reset our phase and scan for more elements...
@@ -1204,7 +1207,8 @@ module DistributedBag {
 
                     // At this point, if no work has been found, we will return empty...
                     if isEmpty.read() {
-                      return (false, _defaultOf(eltType));
+                      var default: eltType;
+                      return (false, default);
                     } else {
                       // Otherwise, we try to get data like everyone else.
                       phase = REMOVE_BEST_CASE;

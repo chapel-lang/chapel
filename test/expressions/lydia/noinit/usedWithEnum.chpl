@@ -1,12 +1,7 @@
 enum enumt { foo=0, bar=1, baz=2};
 
-inline proc _defaultOf(type t:enumt) {
-  writeln("I default initialized!");
-  return enumt.foo;
-}
-
-var blah: enumt = noinit; // Should not print out the message
+var blah: enumt = noinit;
 blah = enumt.bar;
 writeln(blah);
-var blah2: enumt;         // Should print out the message
+var blah2: enumt;
 writeln(blah2);
