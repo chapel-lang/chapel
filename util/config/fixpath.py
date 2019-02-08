@@ -78,6 +78,6 @@ if __name__ == '__main__':
     else:
         delim = ':'
 
-    newpath = main(args[1], delim=delim)
+    newpath = main(args[0], delim=delim)
 
     print(newpath)
