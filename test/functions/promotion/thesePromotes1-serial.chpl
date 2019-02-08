@@ -9,6 +9,8 @@ class C {
     yield y;
     yield z;
   }
+
+  proc chpl__promotionType() type return int;
 }
 
 var myC = new borrowed C();
