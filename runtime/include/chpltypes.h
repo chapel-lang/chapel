@@ -59,8 +59,6 @@ typedef _Bool chpl_bool;
 typedef bool chpl_bool;
 #endif
 
-#define c_nil NULL
-static inline chpl_bool is_c_nil(void* x) { return (chpl_bool)(x==c_nil); }
 static inline void* c_pointer_return(void* x) { return x; }
 
 typedef enum {

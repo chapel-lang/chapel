@@ -584,14 +584,18 @@ module Random {
       }
 
       pragma "no doc"
-      proc PCGRandomStreamPrivate_getNext_noLock(type resultType=eltType) {
+      proc PCGRandomStreamPrivate_getNext_noLock(type resultType) {
         PCGRandomStreamPrivate_count += 1;
         return randlc(resultType, PCGRandomStreamPrivate_rngs);
       }
       pragma "no doc"
-      proc PCGRandomStreamPrivate_getNext_noLock(min:eltType, max:eltType) {
+      proc PCGRandomStreamPrivate_getNext_noLock(type resultType,
+                                                 min:resultType,
+                                                 max:resultType) {
+
+        // If the resultType is a type that fits into
         PCGRandomStreamPrivate_count += 1;
-        return randlc_bounded(eltType, PCGRandomStreamPrivate_rngs,
+        return randlc_bounded(resultType, PCGRandomStreamPrivate_rngs,
                               seed, PCGRandomStreamPrivate_count-1, min, max);
       }
 
@@ -643,7 +647,22 @@ module Random {
       proc getNext(min: eltType, max:eltType): eltType {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
-        const result = PCGRandomStreamPrivate_getNext_noLock(min,max);
+
+        const result = PCGRandomStreamPrivate_getNext_noLock(eltType,min,max);
+        if parSafe then
+          PCGRandomStreamPrivate_lock$;
+        return result;
+      }
+
+      /*
+        As with getNext(min, max) but allows specifying the result type.
+       */
+      proc getNext(type resultType,
+                   min: resultType, max:resultType): resultType {
+        if parSafe then
+          PCGRandomStreamPrivate_lock$ = true;
+
+        const result = PCGRandomStreamPrivate_getNext_noLock(resultType,min,max);
         if parSafe then
           PCGRandomStreamPrivate_lock$;
         return result;
@@ -684,7 +703,7 @@ module Random {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
         PCGRandomStreamPrivate_skipToNth_noLock(n);
-        const result = PCGRandomStreamPrivate_getNext_noLock();
+        const result = PCGRandomStreamPrivate_getNext_noLock(eltType);
         if parSafe then
           PCGRandomStreamPrivate_lock$;
         return result;

@@ -25,17 +25,44 @@ module MemConsistency {
   // value, then this method should work.  Until then, my stopgap will be
   // an external function in the runtime.
 
-  //inline proc _defaultOf(type t) where t == memory_order
+  //inline proc _defaultOf(type t:memory_order): memory_order
   //  return memory_order_seq_cst;
 
   pragma "no instantiation limit"
   pragma "last resort"
   pragma "no doc"
-  inline proc _defaultOf(type t) where t == memory_order {
+  inline proc _defaultOf(type t:memory_order) {
     pragma "no doc"
     extern proc _defaultOfMemoryOrder(): memory_order;
 
     return _defaultOfMemoryOrder();
+  }
+
+  proc ==(a:memory_order, b:memory_order):bool {
+    return __primitive("==", a, b);
+  }
+  proc !=(a:memory_order, b:memory_order):bool {
+    return __primitive("!=", a, b);
+  }
+  proc =(ref lhs:memory_order, rhs:memory_order) {
+    __primitive("=", lhs, rhs);
+  }
+
+  proc memory_order.writeThis(ch) {
+    if this == memory_order_relaxed then
+      ch <~> "memory_order_relaxed";
+    else if this == memory_order_consume then
+      ch <~> "memory_order_consume";
+    else if this == memory_order_acquire then
+      ch <~> "memory_order_acquire";
+    else if this == memory_order_release then
+      ch <~> "memory_order_release";
+    else if this == memory_order_acq_rel then
+      ch <~> "memory_order_acq_rel";
+    else if this == memory_order_seq_cst then
+      ch <~> "memory_order_seq_cst";
+    else
+      ch <~> "memory_order_unknown";
   }
 
   extern const memory_order_relaxed:memory_order;

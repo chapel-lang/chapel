@@ -437,9 +437,7 @@ module ArrayViewRankChange {
   // interface.
   //
   pragma "aliasing array"
-  class ArrayViewRankChangeArr: BaseArr {
-    type eltType;  // see note on commented-out proc eltType below...
-
+  class ArrayViewRankChangeArr: AbsBaseArr {
     // the representation of the slicing domain.  For a rank change
     // like A[lo..hi, 3] this is the lower-dimensional domain {lo..hi}.
     // It is represented as an ArrayViewRankChangeDom.
@@ -473,7 +471,7 @@ module ArrayViewRankChange {
               const _ArrPid, const _ArrInstance,
               const collapsedDim, const idx,
               const ownsArrInstance : bool = false) {
-      this.eltType         = eltType;
+      super.init(eltType = eltType);
       this._DomPid         = _DomPid;
       this.dom             = dom;
       this._ArrPid         = _ArrPid;

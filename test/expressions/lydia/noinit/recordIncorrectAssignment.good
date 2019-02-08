@@ -1,1 +1,2 @@
+recordIncorrectAssignment.chpl:10: warning: noinit is currently ignored
 recordIncorrectAssignment.chpl:11: error: type mismatch in assignment from aRecord([domain(1,int(64),false)] int(64)) to aRecord(int(64))

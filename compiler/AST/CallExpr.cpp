@@ -627,8 +627,7 @@ void CallExpr::prettyPrint(std::ostream* o) {
     }
 
   } else if (primitive != NULL) {
-    if (primitive->tag == PRIM_INIT ||
-      primitive->tag == PRIM_TYPE_INIT) {
+    if (primitive->tag == PRIM_TYPE_INIT) {
       unusual = true;
       argList.head->prettyPrint(o);
     }

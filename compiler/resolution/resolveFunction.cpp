@@ -1478,9 +1478,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
 
           typeTmp->addFlag(FLAG_MAYBE_TYPE);
 
-          fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                        tmp,
-                                        new CallExpr(PRIM_INIT, typeTmp)));
+          fn->insertAtHead(new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp, typeTmp));
 
           fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                         typeTmp,
@@ -1785,10 +1783,10 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 // In the future, it would be nice if this could no-init
                 // a LHS array and then move records into it from the RHS.
-                CallExpr* init     = new CallExpr(PRIM_INIT, fromType);
-                CallExpr* moveInit = new CallExpr(PRIM_MOVE, to, init);
 
-                call->insertBefore(moveInit);
+                CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR,
+                                              to, fromType);
+                call->insertBefore(init);
 
                 // Since the initialization pattern normally does not
                 // require adding an auto-destroy for a call-expr-temp,
@@ -1803,7 +1801,6 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // Resolve each of the new CallExprs They need to be resolved
                 // separately since resolveExpr does not recurse.
                 resolveExpr(init);
-                resolveExpr(moveInit);
                 resolveExpr(assign);
 
                 // Enable error messages assignment between local

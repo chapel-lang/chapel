@@ -183,7 +183,8 @@ module Atomics {
         proc atomic_init(ref obj:externT(bool), value:bool): void;
 
       this.complete();
-      atomic_init(_v, _defaultOf(bool));
+      const default: bool;
+      atomic_init(_v, default);
     }
 
     pragma "no doc"
@@ -325,7 +326,8 @@ module Atomics {
 
       this.T = T;
       this.complete();
-      atomic_init(_v, _defaultOf(T));
+      const default: T;
+      atomic_init(_v, default);
     }
 
     pragma "no doc"

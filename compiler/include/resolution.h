@@ -47,8 +47,6 @@ extern Vec<CallExpr*>                   callStack;
 
 extern bool                             tryFailure;
 
-extern Vec<CallExpr*>                   inits;
-
 extern Vec<BlockStmt*>                  standardModuleSet;
 
 extern char                             arrayUnrefName[];
@@ -66,7 +64,7 @@ extern std::map<CallExpr*, CallExpr*>   eflopiMap;
 
 bool       propagateNotPOD(Type* t);
 
-Expr*      resolvePrimInit(CallExpr* call);
+void       resolvePrimInit(CallExpr* call);
 
 bool       isTupleContainingOnlyReferences(Type* t);
 

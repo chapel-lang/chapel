@@ -110,7 +110,7 @@ void checkPrimitives()
       break;
 
       // These do not survive past resolution.
-     case PRIM_INIT:
+     case PRIM_DEFAULT_INIT_VAR:
      case PRIM_INIT_FIELD:
      case PRIM_INIT_VAR:
 
