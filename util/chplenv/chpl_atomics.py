@@ -32,7 +32,12 @@ def get(flag='target'):
             # cstdlib atomics. We know our clang-included will have compiler
             # support for atomics and llvm requires gcc 4.8 (or a compiler with
             # equivalent features) to be built so we know we'll have system
-            # header support too.
+            # header support too. Intel 18 and cce 8.7.7 support cstdlib
+            # atomics but it's fairly easy to build with an older version on a
+            # cray and compile with a newer one, so we use a portability shim
+            # cstdlib-atomics that will decide which implementation to use
+            # based on compiler versions. This allows us to build the runtime
+            # with intrinsics and the generated code with cstdlib atomics.
             #
             # We support intrinsics for gcc, intel, cray and clang. gcc added
             # initial support in 4.1, and added support for 64-bit atomics on
@@ -51,9 +56,9 @@ def get(flag='target'):
                 elif version >= CompVersion('4.1') and not platform_val.endswith('32'):
                     atomics_val = 'intrinsics'
             elif compiler_val == 'intel' or compiler_val == 'cray-prgenv-intel':
-                atomics_val = 'intrinsics'
+                atomics_val = 'cstdlib-intrinsics'
             elif compiler_val == 'cray-prgenv-cray':
-                atomics_val = 'intrinsics'
+                atomics_val = 'cstdlib-intrinsics'
             elif compiler_val in ['allinea', 'cray-prgenv-allinea']:
                 atomics_val = 'cstdlib'
             elif compiler_val == 'clang':

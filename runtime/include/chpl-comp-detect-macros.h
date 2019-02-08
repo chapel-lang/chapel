@@ -55,7 +55,7 @@
 // the commit message for links to documentation on these macros.
 
 //  Version number format:
-//  - Cray  : _RELEASE_MAJOR, _RELEASE_MINOR
+//  - Cray  : _RELEASE_MAJOR, _RELEASE_MINOR, _RELEASE_PATCHLEVEL
 //  - Intel : __INTEL_COMPILER
 //  - Clang : < Use Feature Checking Macros Instead >
 //  - GCC   : __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__
@@ -64,6 +64,16 @@
 #if RT_COMP_CC == RT_COMP_CRAY
 #define RT_COMP_CRAY_VERSION_MAJOR _RELEASE_MAJOR
 #define RT_COMP_CRAY_VERSION_MINOR _RELEASE_MINOR
+
+// cce 8.6.5 added support for _RELEASE_PATCHLEVEL. We can't check for the
+// patch level until then so only check for it if we're using at least cce
+// 8.7. For older versions assume patch version is 0.
+#if RT_COMP_CRAY_VERSION_MAJOR > 8 || \
+  RT_COMP_CRAY_VERSION_MAJOR == 8 && RT_COMP_CRAY_VERSION_MINOR >=7
+#define RT_COMP_CRAY_VERSION_PATCH _RELEASE_PATCHLEVEL
+#else
+#define RT_COMP_CRAY_VERSION_PATCH 0
+#endif
 
 #elif RT_COMP_CC == RT_COMP_INTEL
 // Intel only has a single macro for the version and the form isn't well
