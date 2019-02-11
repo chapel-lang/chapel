@@ -56,6 +56,10 @@ endif
 # Get system headers...
 comm_ugni_CFLAGS = $(CHPL_UGNI_PRGENV_CFLAGS)
 
+ifneq ($(UGNI_PERFSTATS),)
+comm_ugni_CFLAGS += -DPERFSTATS_COMM_UGNI
+endif
+
 # Building with IPA enabled results in execution time bugs. See JIRA issue 185
 # for more details: https://chapel.atlassian.net/browse/CHAPEL-185
 ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
