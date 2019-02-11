@@ -27,6 +27,7 @@
 #include "resolution.h"
 #include "stringutil.h"
 #include "wellknown.h"
+#include <set>
 
 /*
 
@@ -314,6 +315,7 @@ from such a shadow variable - because it is a "ref".
 
 */
 
+
 ///////////                                                      ///////////
 /////////// Lower ForallStmts by inlining the parallel iterator. ///////////
 ///////////                                                      ///////////
@@ -495,6 +497,67 @@ static void addCloneOfDeinitBlock(Expr* aFini, SymbolMap& map, ShadowVarSymbol* 
   aFini->insertAfter(copyDB);
   // Let's drop the BlockStmt wrapper, to simplify the AST.
   copyDB->flattenAndRemove();
+}
+
+
+/////////// checkForallsInInitDeinitBlocks ///////////
+
+/*
+Consider the following situation:
+
+* We are lowering a ForallStmt 'fs1' by inling its iterator,
+  which invokes a task function. While inlining the task function...
+
+* For each of fs1's ShadowVarSymbol, we add its init block
+  to the start of (a clone of) the task function, and its deinit block
+  to the end of that clone. Because a ShadowVarSymbol's init and deinit
+  blocks exist exactly to contain the task-startup and task-shutdown actions.
+
+* If one of these de/init blocks contains its own ForallStmt 'fs2', then
+  we create a copy of it. That copy gets copies of fs1's ShadowVarSymbols.
+
+* Later, it will come time to lower that copy by inlining its iterator.
+  If that iterator calls task function(s), they will get copies of fs1's
+  ShadowVarSymbols' de/init blocks. Which will create yet another ForallStmt.
+
+* This process will continue ad infinitum.
+
+The below check issues an error if there is a danger of that happening.
+
+We could mitigate the impact by inlining the potentially-offending ForallStmts
+first. For that, such a ForallStmt should either not invoke task functions, or
+not contain other ForallStmts in its ShadowVarSymbols' de/init blocks, if any.
+Leaving this a future work for now.
+*/
+
+static std::set<ForallStmt*> forallsAlreadyChecked;
+
+static void checkForallsInShadowVarBlock(ShadowVarSymbol* svar,
+                                         BlockStmt* block, bool& gotError) {
+  std::vector<ForallStmt*> fss;
+  collectForallStmts(block, fss);
+
+  if (! fss.empty()) {
+    gotError = true;
+    USR_FATAL_CONT(svar,
+      "A forall statement with a shadow or task-private var '%s'"
+      " containing, in turn, another forall statement is not implemented",
+      svar->name);
+  }
+}
+
+static void checkForallsInInitDeinitBlocks(ForallStmt* forall) {
+  if (forallsAlreadyChecked.count(forall)) return;
+  forallsAlreadyChecked.insert(forall);
+  bool gotError = false;
+
+  for_shadow_vars(svar, temp, forall) {
+    checkForallsInShadowVarBlock(svar, svar->initBlock(), gotError);
+    checkForallsInShadowVarBlock(svar, svar->deinitBlock(), gotError);
+  }
+
+  // Allow other USR_FATAL_CONTs if this ForallStmt is clear.
+  if (gotError) USR_STOP();
 }
 
 
@@ -747,6 +810,8 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
   // We need it so that we can place the def of 'fcopy' anywhere
   // while preserving correct scoping of its SymExprs.
   INT_ASSERT(isGlobal(taskFn));
+
+  checkForallsInInitDeinitBlocks(EV->forall);
 
   FnSymbol* cloneTaskFn = taskFn->copy();
 
@@ -1141,6 +1206,17 @@ static void cleanupRetArg(Symbol* retArg, Symbol* currSym) {
   INT_ASSERT(retArg->firstSymExpr() == NULL);
 }
 
+// Remove the autoDestroy of 'currSym', if present.
+static void removeAutoDestroyCallIfPresent(Symbol* currSym) {
+  for_SymbolSymExprs(curSE, currSym)
+    if (CallExpr* curCall = toCallExpr(curSE->parentExpr))
+      if (FnSymbol* curCallFn = curCall->resolvedFunction())
+        if (curCallFn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+          curCall->remove();
+          break;
+        }
+}
+
 /*
 Handle the case where 'currSym' in stripReturnScaffolding()
 is defined by calling a retArg-ified function, for example:
@@ -1226,6 +1302,9 @@ static CallExpr* stripReturnScaffolding(BlockStmt* block, Symbol* currSym) {
 
           if (SymExpr* srcSE = toSymExpr(defSrc)) {
             defMove->remove();
+            // The autoCopy may be deleted in callDestructors, with autoDestroy
+            // still around. Ex. test/functions/promotion/forallPromotes.chpl
+            removeAutoDestroyCallIfPresent(currSym);
             INT_ASSERT(currSym->firstSymExpr() == NULL); // no other refs to it
             currSym = srcSE->symbol();
             continue;
@@ -1235,12 +1314,8 @@ static CallExpr* stripReturnScaffolding(BlockStmt* block, Symbol* currSym) {
               // This should be unnecessary once we get rid of _toLeader fns.
               defMove->remove();
               currSym = toSymExpr(srcCall->get(1))->symbol();
-              // Remove the corresponding autoDestroy.
-              for_SymbolSymExprs(curSE, currSym)
-                if (CallExpr* curCall = toCallExpr(curSE->parentExpr))
-                  if (FnSymbol* curCallFn = curCall->resolvedFunction())
-                    if (curCallFn->hasFlag(FLAG_AUTO_DESTROY_FN))
-                      {  curCall->remove();  break;  }
+              removeAutoDestroyCallIfPresent(currSym);
+              INT_ASSERT(currSym->firstSymExpr() == NULL); // no other refs to it
               continue;
             }
             // Found it. Place it where our ForallStmt will go.

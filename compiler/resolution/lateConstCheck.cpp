@@ -22,6 +22,7 @@
 #include "AggregateType.h"
 #include "driver.h"
 #include "expr.h"
+#include "iterator.h"
 #include "resolution.h"
 #include "symbol.h"
 
@@ -90,6 +91,28 @@ static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
   }
 
   *lastPrintedReason = reason;
+}
+
+
+/*
+If 'fn' is a leader iterator, it does not access its formals
+the way the correponding follower iterator does.
+If a formal has the "ref-maybe-const" intent, it may turn into
+"const-ref" for the leader even though it IS modified
+by the follower and so is racy.
+This may happen, for example for receivers of record methods.
+
+So, instead of the leader we will analyze the corresponding
+serial iterator, if we can get to it easily.
+Getting the follower, which is probably more adequate, is tricker.
+*/
+static FnSymbol* getSerialIterator(FnSymbol* fn) {
+  if (IteratorGroup* igroup = fn->iteratorGroup)
+    if (fn == igroup->leader)
+      return igroup->serial;
+
+  // Otherwise stick with the original 'fn', ex. for standalone.
+  return fn;
 }
 
 /* Since const-checking can depend on ref-pair determination
@@ -317,17 +340,22 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
   // Additionally check that promotion wrappers using a scalar this
   // don't take it in by `ref`
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
+        fn->hasFlag(FLAG_INLINE_ITERATOR)    )
+    {
+      fn = getSerialIterator(fn);
       for_formals(formal, fn) {
         if (formal->intent == INTENT_REF) {
           Type* vt = formal->getValType();
           if (vt->scalarPromotionType == NULL &&
               !(isAtomicType(vt) || isSyncType(vt) || isSingleType(vt)) &&
               !formal->hasFlag(FLAG_ERROR_VARIABLE)) {
-            const char* err = "Racy promotion of scalar value";
             if (formal == fn->_this)
-              err = "Racy promotion of scalar method receiver";
-            USR_FATAL_CONT(fn, err);
+              USR_FATAL_CONT(fn, "Racy promotion of scalar method receiver");
+            else
+              USR_FATAL_CONT(fn,
+                    "Racy promotion of scalar argument for the formal '%s'",
+                    formal->name);
           }
         }
       }

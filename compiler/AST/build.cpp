@@ -1128,6 +1128,7 @@ buildForallLoopStmt(Expr*      indices,
                     bool       zippered,
                     VarSymbol* useThisGlobalOp)
 {
+  INT_ASSERT(false); //ensure we do not use it
   checkControlFlow(loopBody, "forall statement");
   SET_LINENO(loopBody);
 

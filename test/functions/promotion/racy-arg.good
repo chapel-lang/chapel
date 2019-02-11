@@ -1,4 +1,2 @@
-racy-arg.chpl:1: error: non-lvalue actual is passed to 'ref' formal 'rcv' of increment()
-racy-arg.chpl:28: note: The shadow variable 'rcv' is constant due to forall intents in this loop
-racy-arg.chpl:41: error: non-lvalue actual is passed to 'ref' formal 'rcv' of addem()
-racy-arg.chpl:58: note: The shadow variable 'rcv' is constant due to forall intents in this loop
+racy-arg.chpl:28: error: Racy promotion of scalar argument for the formal 'rcv'
+racy-arg.chpl:58: error: Racy promotion of scalar argument for the formal 'rcv'

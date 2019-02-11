@@ -700,6 +700,8 @@ void implementForallIntents1(DefExpr* defChplIter)
     return;
   }
   
+  INT_ASSERT(false); //ensure we do not use the rest
+
   //
   // Find the corresponding forall loop body(s).
   //
@@ -1712,6 +1714,7 @@ void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall) {
       stashPristineCopyOfLeaderIter(origLeader, /*ignore_isResolved:*/ false);
     }
   } else {
+    INT_ASSERT(false); //ensure we do not use these
     if (isLoopExprFun(origLeader)) {
       propagateExtraArgsForLoopIter(call, origToLeaderCall, origLeader);
     } else {
@@ -1763,6 +1766,7 @@ static void unresolveWrapper(FnSymbol* wrapper) {
 // Handle the wrapper if applicable.
 void implementForallIntents2wrapper(CallExpr* call, CallExpr* eflopiHelper)
 {
+  INT_ASSERT(false); //ensure we do not use it
   FnSymbol* dest = call->resolvedFunction();
 
   if (!dest->hasFlag(FLAG_WRAPPER)) {
