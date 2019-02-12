@@ -185,7 +185,7 @@ module StringCasts {
     var len = s.length;
 
     if s.isEmptyString() then
-      throw new owned IllegalArgumentError("bad cast from empty string to imag(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);
 
     if len >= 2 && s[2..].find("_") != 0 {
       // Don't remove a leading underscore in the string number,
