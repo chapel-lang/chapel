@@ -2367,7 +2367,6 @@ module ChapelArray {
           // case...
           return _newArray(setupArraySliceHelper(d, true));
         } else {
-          writeln("Creating a new domain");
           pragma "no auto destroy"
           const newd = _dom((...d.dsiDims()));
           newd._value._free_when_no_arrs = true;
