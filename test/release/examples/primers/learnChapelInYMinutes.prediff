@@ -25,8 +25,10 @@ line_of_stderr = 'This goes to standard error\n'
 if input_sep == line_of_stderr and input_post.count( line_of_stderr ) == 0:
   input = input_pre + input_post
 else:
+  with open (outfile+'.preserved', 'w') as f:
+    f.write(input)
   writeOutput( "FAILED! " + str( line_of_stderr ) + " not seen exactly 1 time" )
-  exit( -1-i )
+  exit( 1 )
 
 [test_serial_input, test_parallel_input] = input.split( "PARALLELISM START" )
 

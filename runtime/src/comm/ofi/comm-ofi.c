@@ -129,6 +129,8 @@ typedef struct memEntry (memTab_t)[MAX_MEM_REGIONS];
 static memTab_t memTab;
 static memTab_t* memTabMap;
 
+#define AM_MAX_MSG_SIZE (10 * 10240) // TODO: safe (?), but awfully large
+
 static int numAmHandlers = 1;
 
 static void* amLZs;
@@ -147,6 +149,7 @@ static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                                 void*, size_t);
 static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                                 void*, size_t);
+static void waitForAmoComplete(struct perTxCtxInfo_t*);
 static void waitForTxCQ(struct perTxCtxInfo_t*, int, uint64_t);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
@@ -710,10 +713,11 @@ void init_ofiForAms(void) {
   //
   // Set the minimum multi-receive buffer space.  Some providers don't
   // have fi_setopt() for some ep types, so allow this to fail in that
-  // case.
+  // case.  Note, however, that if it does fail and we get overruns,
+  // we'll die.
   //
   {
-    const size_t sz = 2048; // TODO
+    const size_t sz = AM_MAX_MSG_SIZE;
     const int ret = fi_setopt(&ofi_rxEp->fid, FI_OPT_ENDPOINT,
                               FI_OPT_MIN_MULTI_RECV, &sz, sizeof(sz));
     CHK_TRUE(ret == FI_SUCCESS || ret == -FI_ENOSYS);
@@ -733,7 +737,9 @@ void init_ofiForAms(void) {
   ofi_msg_reqs.context = NULL;
   ofi_msg_reqs.data = 0x0;
   OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
-  DBG_PRINTF(DBG_AM | DBG_AMRECV, "pre-post fi_recvmsg(AMReqs)");
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "pre-post fi_recvmsg(AMLZs, len %zd)",
+             ofi_msg_reqs.msg_iov->iov_len);
 
   init_amHandling();
 }
@@ -773,9 +779,8 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
   int i;
   for (i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      chpl_comm_put(chpl_private_broadcast_table[id], i,
-                    chpl_private_broadcast_table[id], size,
-                    -1 /*typeIndex: unused*/, CHPL_COMM_UNKNOWN_ID, 0, 0);
+      (void) ofi_put(chpl_private_broadcast_table[id], i,
+                     chpl_private_broadcast_table[id], size);
     }
   }
 }
@@ -1291,6 +1296,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                      chpl_fn_int_t fid,
                      chpl_comm_on_bundle_t* arg, size_t argSize,
                      chpl_bool fast, chpl_bool blocking) {
+  CHK_TRUE(argSize <= AM_MAX_MSG_SIZE);
   arg->comm.xo = (struct chpl_comm_bundleData_execOn_t)
                    { .b = (struct chpl_comm_bundleData_base_t)
                           { .op = am_opCall, .node = chpl_nodeID },
@@ -1331,6 +1337,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
              (int) node, object,
              DBG_VAL(operand1, ofiType), DBG_VAL(operand2, ofiType), result,
              ofiOp, ofiType, size);
+
   void* myResult = result;
   size_t resSize = (ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : size;
   if (myResult != NULL) {
@@ -1593,7 +1600,30 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
 
   int ret;
   CHK_TRUE((ret = fi_cq_read(ofi_rxCQ, cqes, maxAmsToDo)) > 0
-           || ret == -FI_EAGAIN);
+           || ret == -FI_EAGAIN
+           || ret == -FI_EAVAIL);
+
+  if (ret == -FI_EAVAIL) {
+    struct fi_cq_err_entry err = { 0 };
+    fi_cq_readerr(ofi_rxCQ, &err, 0);
+    if (err.err == FI_ETRUNC) {
+      //
+      // We ran out of inbound buffer space and a message was truncated.
+      // If the fi_setopt(FI_OPT_MIN_MULTI_RECV) worked and nobody sent
+      // anything larger than that, this shouldn't happen.  In any case,
+      // we can't recover, but let's provide some information to help
+      // aid failure analysis.
+      //
+      INTERNAL_ERROR_V("fi_cq_readerr(): AM recv buf FI_ETRUNC: "
+                       "flags %#" PRIx64 ", len %zd, olen %zd",
+                       err.flags, err.len, err.olen);
+    } else {
+      char bufProv[100];
+      (void) fi_cq_strerror(ofi_rxCQ, err.prov_errno, err.err_data,
+                            bufProv, sizeof(bufProv));
+      INTERNAL_ERROR_V("fi_cq_read(): err %d, strerror %s", err.err, bufProv);
+    }
+  }
 
   if (ret > 0) {
     const int numEvents = ret;
@@ -1604,8 +1634,10 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         //
         chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) cqes[i].buf;
         DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                   "CQ rx AM req %p, seqId %d:%" PRIu64 ", op %d, len %zd",
-                   req, req->comm.b.node, req->comm.b.seq, req->comm.b.op,
+                   "CQ rx AM req, "
+                   "offset %zd, seqId %d:%" PRIu64 ", op %d, len %zd",
+                   (char*) req - (char*) ofi_msg_reqs.msg_iov->iov_base,
+                   req->comm.b.node, req->comm.b.seq, req->comm.b.op,
                    cqes[i].len);
         tcip->numAmReqsRxed++;
 
@@ -1675,7 +1707,9 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         // Multi-receive buffer filled; post another one.
         //
         OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
-        DBG_PRINTF(DBG_AM | DBG_AMRECV, "re-post fi_recvmsg(AMReqs)");
+        DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                   "re-post fi_recvmsg(AMLZs, len %zd)",
+                   ofi_msg_reqs.msg_iov->iov_len);
       }
 
       CHK_TRUE((cqes[i].flags & ~(FI_MSG | FI_RECV | FI_MULTI_RECV)) == 0);
@@ -2220,13 +2254,20 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
                               void* result,
                               enum fi_op ofiOp, enum fi_datatype ofiType,
                               size_t size) {
-  void* myRes = result;
-  size_t resSize = (ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : size;
+  //
+  // A wrinkle: for a cmpxchg/CSWAP our caller wants chpl_bool32 true
+  // if the compare&swap succeeded, false otherwise.  But the libfabric
+  // atomic compare returns the previous value of the operand, not T/F.
+  // We have to synthesize the result to be returned to our caller,
+  // based on comparing that previous value to the comparand.
+  //
+  chpl_amo_datum_t ofiCmpRes;
+  void* myRes = (ofiOp == FI_CSWAP) ? &ofiCmpRes : result;
   void* mrDescRes = NULL;
-  if (myRes != NULL && mrGetLocalDesc(&mrDescRes, myRes, resSize) != 0) {
-    myRes = allocBounceBuf(resSize);
+  if (myRes != NULL && mrGetLocalDesc(&mrDescRes, myRes, size) != 0) {
+    myRes = allocBounceBuf(size);
     DBG_PRINTF(DBG_AMO, "AMO result BB: %p", myRes);
-    CHK_TRUE(mrGetLocalDesc(&mrDescRes, myRes, resSize) == 0);
+    CHK_TRUE(mrGetLocalDesc(&mrDescRes, myRes, size) == 0);
   }
 
   void* myOpnd1 = (void*) operand1;
@@ -2253,25 +2294,30 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
                               myRes, mrDescRes,
                               ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                               ofiType, ofiOp, NULL));
+    tcip->numTxsOut++;
+    waitForAmoComplete(tcip);
+    *(chpl_bool32*) result = (memcmp(myRes, operand1, size) == 0);
+    if (myRes != &ofiCmpRes) {
+      freeBounceBuf(myRes);
+    }
   } else if (result != NULL) {
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
                             myOpnd1, 1, mrDescOpnd1, myRes, mrDescRes,
                             ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                             ofiType, ofiOp, NULL));
+    tcip->numTxsOut++;
+    waitForAmoComplete(tcip);
+    if (myRes != result) {
+      memcpy(result, myRes, size);
+      freeBounceBuf(myRes);
+    }
   } else {
     OFI_CHK(fi_atomic(tcip->txCtx,
                       myOpnd1, 1, mrDescOpnd1,
                       ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
                       ofiType, ofiOp, NULL));
-  }
-
-  tcip->numTxsOut++;
-  CHK_TRUE(tcip->txCtxHasCQ);  // (so far) only expect AMOs from workers
-  waitForTxCQ(tcip, 1, FI_ATOMIC);
-
-  if (myRes != result) {
-    memcpy(result, myRes, resSize);
-    freeBounceBuf(myRes);
+    tcip->numTxsOut++;
+    waitForAmoComplete(tcip);
   }
 
   if (result == NULL) {
@@ -2300,6 +2346,34 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   }
 
   return NULL;
+}
+
+
+static
+void waitForAmoComplete(struct perTxCtxInfo_t* tcip) {
+  //
+  // AMOs have to be done in order, so we need to wait for completion
+  // before proceeding.
+  //
+  if (tcip->txCtxHasCQ) {
+    waitForTxCQ(tcip, 1, FI_ATOMIC);
+  } else {
+    //
+    // The counter cannot tell us about completion ordering, so we have
+    // to wait for it go all the way to zero in order to be assured that
+    // the AMO is done.
+    //
+    do {
+      const int count = fi_cntr_read(tcip->txCntr);
+      if (count == 0) {
+        sched_yield();
+        chpl_comm_make_progress();
+      } else {
+        DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
+        tcip->numTxsOut -= count;
+      }
+    } while (tcip->numTxsOut > 0);
+  }
 }
 
 

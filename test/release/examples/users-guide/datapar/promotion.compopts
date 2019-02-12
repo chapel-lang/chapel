@@ -1,2 +1,3 @@
 -stestError=false   # promotion.good
--stestError=true    # promotion-error.good
+-stestError=true -stestError2=false    # promotion.error1.good
+-stestError=true -stestError2=true     # promotion.error2.good
