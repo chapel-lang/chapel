@@ -181,6 +181,23 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
+  inline proc _cleanupStringForRealCast(type t, ref s: string) throws {
+    var len = s.length;
+
+    if s.isEmptyString() then
+      throw new owned IllegalArgumentError("bad cast from empty string to imag(" + numBits(t) + ")");
+
+    if len >= 2 && s[2..].find("_") != 0 {
+      // Don't remove a leading underscore in the string number,
+      // but remove the rest.
+      if len > 2 && s[1] == "_" {
+        s = s[1] + s[2..].replace("_", "");
+      } else {
+        s = s.replace("_", "");
+      }
+    }
+  }
+
   inline proc _cast(type t:chpl_anyreal, x: string) throws {
     pragma "insert line file info"
     extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
@@ -191,17 +208,7 @@ module StringCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    if localX.isEmptyString() then
-      throw new owned IllegalArgumentError("bad cast from empty string to real(" + numBits(t) + ")");
-
-    if localX.length >= 2 && localX[2..].find("_") != 0 {
-      if localX.length > 2 && (localX.startsWith("0x") ||
-                               localX.startsWith("0X")) {
-        localX = localX.replace("_", "");
-      } else {
-        localX = localX[1] + localX[2..].replace("_", "");
-      }
-    }
+    _cleanupStringForRealCast(t, localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -224,19 +231,8 @@ module StringCasts {
     var retVal: t;
     var isErr: bool;
     var localX = x.localize();
-    var len = localX.length;
 
-    if localX.isEmptyString() then
-      throw new owned IllegalArgumentError("bad cast from empty string to imag(" + numBits(t) + ")");
-
-    if len >= 2 && localX[2..].find("_") != 0 {
-      if len > 2 && (localX.startsWith("0x") ||
-                               localX.startsWith("0X")) {
-        localX = localX.replace("_", "");
-      } else {
-        localX = localX[1] + localX[2..].replace("_", "");
-      }
-    }
+    _cleanupStringForRealCast(t, localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
