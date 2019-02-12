@@ -20,6 +20,7 @@ proc main() {
   {
     var c = new unmanaged Chunk();
     on Locales[numLocales-1] do c.data[1] = 5;
+    delete c;
   }
 
   var chunks : [0..#numLocales] unmanaged Chunk;
