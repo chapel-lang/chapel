@@ -2737,10 +2737,8 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   if (!isDefExpr(domExpr)) {
     std::vector<DefExpr*> defExprs;
     collectDefExprs(domExpr, defExprs);
-    if (defExprs.size() > 0) {
-      for_vector(DefExpr, def, defExprs) {
-        USR_FATAL_CONT(def, "cannot query part of a domain");
-      }
+    for_vector(DefExpr, def, defExprs) {
+      USR_FATAL_CONT(def, "cannot query part of a domain");
     }
   }
   //
