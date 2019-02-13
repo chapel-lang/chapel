@@ -843,7 +843,7 @@ module Random {
       }
       /*
         Return the next random value but within a particular range.
-        Returns a number in [`min`, `max`] (inclusive).
+        Returns a number in [`min`, `max`] (inclusive). Halts if ``min > max``.
 
         .. note::
 
@@ -856,14 +856,14 @@ module Random {
            value. Note that not all possible floating point values in
            the interval [`min`, `max`] can be constructed in this way.
 
-        :throws IllegalArgumentError: if ``min > max``
        */
       proc getNext(min: eltType, max:eltType): eltType throws {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
 
-        if min > max then
-          throw new owned IllegalArgumentError('Cannot generate random numbers within empty range: [%n, %n]'.format(min, max));
+        if boundsChecking && min > max then
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [%n, %n]".format(min, max));
+
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType,min,max);
         if parSafe then
           PCGRandomStreamPrivate_lock$;
