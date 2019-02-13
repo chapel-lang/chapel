@@ -270,6 +270,9 @@ else
     # Exit immediately to skip (avoid building) unwanted Chapel configs
     
     if [ "$CHPL_LIB_PIC" == pic ]; then
+      # skip Chapel make for any communication and launcher that are not none
+      # because pic support is for python interoperability which
+      # only runs on the login node at the moment.
       if [ "$CHPL_COMM" != none ]; then
         log_info "Skip Chapel make for libpic=$CHPL_LIB_PIC, comm=$CHPL_COMM"
         exit 0
