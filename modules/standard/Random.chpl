@@ -219,6 +219,9 @@ module Random {
     if arr.rank != 1 {
       compilerError('choice() array must be 1 dimensional');
     }
+    if arr.size < 1 {
+      throw new owned IllegalArgumentError('choice() array.size must be greater than 0');
+    }
 
     // Check types of optional void args
     if !isVoidType(probType) {
@@ -228,6 +231,10 @@ module Random {
         compilerError('choice() prob.eltType must be real or integral');
       if prob.rank != 1 {
         compilerError('choice() prob array must be 1 dimensional');
+      }
+
+      if prob.domain != arr.domain {
+        throw new owned IllegalArgumentError('choice() array arguments must have same domain');
       }
     }
     if !isVoidType(sizeType) {
@@ -255,6 +262,7 @@ module Random {
     if isVoidType(sizeType) {
       // Return 1 sample
       var randIdx = stream.getNext(resultType=int, 1, A.size);
+      writeln('randIdx: ', randIdx);
       return A[randIdx];
     } else {
       // Return numElements samples
