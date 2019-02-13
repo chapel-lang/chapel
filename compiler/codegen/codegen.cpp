@@ -1420,6 +1420,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
       }
     }
     fprintf(hdrfile, "\n};\n");
+    fprintf(hdrfile, "const int chpl_private_broadcast_table_len = %d;\n", i);
   }
 }
 
