@@ -19,6 +19,19 @@ proc runTests(stream) {
   var real32s: [1..4] real(32) = [0.1:real(32), 0.2:real(32), 0.3:real(32), 0.4:real(32)];
   testArray(stream, real32s);
 
+  // offset & strided domain
+  var strideDom = {10..#10 by 3};
+  var strideArr: [strideDom] int;
+  var strideProb: [strideDom] real;
+  for i in strideDom {
+    strideArr[i] = i;
+    strideProb[i] = i;
+  }
+
+
+  testArray(stream, strideArr, size=20);
+  testArray(stream, strideArr, prob=strideProb, size=20);
+
   // prob array
   testArray(stream, [1,2], prob=[0, 1], trials=10);
   testArray(stream, [1,2], prob=[0.1, 0.9]);
@@ -106,7 +119,7 @@ proc testArray(stream, arr: [], size:?sizeType=_void, replace=true, prob:?probTy
 
 
 
-  var ones: [1..arr.size] real = 1;
+  var ones: [arr.domain] real = 1;
 
   var probabilities = if isVoidType(prob.type) then ones else prob;
 

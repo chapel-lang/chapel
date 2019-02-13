@@ -233,7 +233,7 @@ module Random {
     if !isVoidType(sizeType) {
       if isIntegralType(sizeType) {
         if size <= 0 then
-        throw new IllegalArgumentError('choice() size must be greater than 0');
+        throw new owned IllegalArgumentError('choice() size must be greater than 0');
       } else if !isDomainType(sizeType) {
         compilerError('choice() size must be integral or domain');
       }
@@ -250,10 +250,12 @@ module Random {
   /* _choice branch for uniform distribution */
   proc _choiceUniform(stream, arr:[], size:?sizeType, replace) throws
   {
+    ref A = arr.reindex(1..arr.size);
+
     if isVoidType(sizeType) {
       // Return 1 sample
-      var randIdx = stream.getNext(resultType=int, 1, arr.size);
-      return arr[randIdx];
+      var randIdx = stream.getNext(resultType=int, 1, A.size);
+      return A[randIdx];
     } else {
       // Return numElements samples
 
@@ -266,18 +268,18 @@ module Random {
                         else compilerError('choice() size type must be integral or tuple of ranges');
 
       // Return N samples
-      var samples: [1..numElements] arr.eltType;
+      var samples: [1..numElements] A.eltType;
 
       if replace {
         for sample in samples {
-          var randIdx = stream.getNext(resultType=int, 1, arr.size);
-          sample = arr[randIdx];
+          var randIdx = stream.getNext(resultType=int, 1, A.size);
+          sample = A[randIdx];
         }
       } else {
-        var indices: [arr.domain] int = arr.domain;
+        var indices: [A.domain] int = A.domain;
         shuffle(indices);
         for i in samples.domain {
-          samples[i] = arr[indices[i]];
+          samples[i] = A[indices[i]];
         }
       }
       if isIntegralType(sizeType) {
@@ -297,23 +299,26 @@ module Random {
 
     // If stride, offset, or size don't match, we're in trouble
     if arr.domain != prob.domain then
-      throw new IllegalArgumentError('choice() arrays must have equal domains');
+      throw new owned IllegalArgumentError('choice() arrays must have equal domains');
 
     if prob.size == 0 then
-      throw new IllegalArgumentError('choice() arrays cannot be empty');
+      throw new owned IllegalArgumentError('choice() arrays cannot be empty');
+
+    ref A = arr.reindex(1..arr.size);
+    ref P = prob.reindex(1..arr.size);
 
     // Construct cumulative sum array
-    var cumulativeArr = (+ scan prob): real;
+    var cumulativeArr = (+ scan P): real;
 
     if !Sort.isSorted(cumulativeArr) then
-      throw new IllegalArgumentError("choice() prob array cannot contain negative values");
+      throw new owned IllegalArgumentError("choice() prob array cannot contain negative values");
 
     // Confirm the array has at least one value > 0
-    if cumulativeArr[prob.domain.last] <= 0 then
-      throw new IllegalArgumentError('choice() prob array requires a value greater than 0');
+    if cumulativeArr[P.domain.last] <= 0 then
+      throw new owned IllegalArgumentError('choice() prob array requires a value greater than 0');
 
     // Normalize cumulative sum array
-    var total = cumulativeArr[prob.domain.last];
+    var total = cumulativeArr[P.domain.last];
     cumulativeArr /= total;
 
     // Begin sampling
@@ -321,7 +326,7 @@ module Random {
       // Return 1 sample
       var randNum = stream.getNext(resultType=real);
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-      return arr[idx];
+      return A[idx];
     } else {
       // Return numElements samples
 
@@ -340,7 +345,7 @@ module Random {
         for sample in samples {
           var randNum = stream.getNext(resultType=real);
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-          sample = arr[idx];
+          sample = A[idx];
         }
       } else {
         var indicesChosen: domain(int);
@@ -349,8 +354,8 @@ module Random {
 
           // Recalculate normalized cumulativeArr
           if indicesChosen.size > 0 {
-            cumulativeArr = (+ scan prob): real;
-            total = cumulativeArr[prob.domain.last];
+            cumulativeArr = (+ scan P): real;
+            total = cumulativeArr[P.domain.last];
             cumulativeArr /= total;
           }
 
@@ -361,10 +366,10 @@ module Random {
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
             if !indicesChosen.contains(indexChosen) {
               indicesChosen += indexChosen;
-              samples[i] += arr[indexChosen];
+              samples[i] += A[indexChosen];
               i += 1;
             }
-            prob[indexChosen] = 0;
+            P[indexChosen] = 0;
           }
         }
       }
