@@ -262,7 +262,6 @@ module Random {
     if isVoidType(sizeType) {
       // Return 1 sample
       var randIdx = stream.getNext(resultType=int, 1, A.size);
-      writeln('randIdx: ', randIdx);
       return A[randIdx];
     } else {
       // Return numElements samples
