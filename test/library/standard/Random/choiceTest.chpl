@@ -3,9 +3,9 @@ use Random;
 config const debug = false;
 
 proc main() {
-  var pcg = makeRandomStream(real, algorithm=RNG.PCG);
+  var pcg = makeRandomStream(real, algorithm=RNG.PCG, seed=42);
   runTests(pcg);
-  var pcgInt = makeRandomStream(int, algorithm=RNG.PCG);
+  var pcgInt = makeRandomStream(int, algorithm=RNG.PCG, seed=420);
   runTests(pcgInt);
 }
 
