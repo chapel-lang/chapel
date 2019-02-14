@@ -277,6 +277,13 @@ Curl Support Types and Functions
  */
 module Curl {
 
+require "-lcurl";
+require "CurlHelper/qio_plugin_curl.h";
+//require "CurlHelper/qio_plugin_curl.c";
+
+pragma "no doc"
+extern type curl_handle;
+
 // This corresponds to struct curl_slist* when we have curl enabled
 pragma "no doc"
 extern type chpl_slist;
@@ -410,6 +417,7 @@ proc slist.free() {
 extern const curlopt_file                       : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_URL.html */
 extern const curlopt_url                        : c_int ;
+extern const CURLOPT_URL                        : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_PORT.html */
 extern const curlopt_port                       : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_PROXY.html */
@@ -461,7 +469,7 @@ extern const curlopt_crlf                       : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_QUOTE.html */
 extern const curlopt_quote                      : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_HEADERDATA.html */
-extern const curlopt_writeheader                : c_int ;
+extern const CURLOPT_HEADERDATA                 : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_COOKIEFILE.html */
 extern const curlopt_cookiefile                 : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_SSLVERSION.html */
@@ -704,6 +712,8 @@ extern const curlopt_copypostfields             : c_int ;
 extern const curlopt_proxy_transfer_mode        : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_SEEKFUNCTION.html */
 extern const curlopt_seekfunction               : c_int ;
+extern const CURLOPT_WRITEFUNCTION              : c_int ;
+extern const CURLOPT_NOBODY                     : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_SEEKDATA.html */
 extern const curlopt_seekdata                   : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_CRLFILE.html */
@@ -742,5 +752,259 @@ extern const curlopt_mail_from                  : c_int ;
 extern const curlopt_mail_rcpt                  : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_MAIL_AUTH.html */
 extern const curlopt_mail_auth                  : c_int ;
+
+extern const CURLINFO_CONTENT_LENGTH_DOWNLOAD   : c_int ;
+
+pragma "no doc"
+extern type CURL;
+
+extern type CURLoption=c_int;
+extern type CURLcode=c_int;
+extern type CURLINFO=c_int;
+
+extern proc curl_easy_init():c_ptr(CURL);
+extern proc chpl_curl_easy_setopt_long(curl:c_ptr(CURL), option:CURLoption, arg:c_long):CURLcode;
+extern proc chpl_curl_easy_setopt_ptr(curl:c_ptr(CURL), option:CURLoption, arg:c_void_ptr):CURLcode;
+extern proc chpl_curl_easy_setopt_offset(curl:c_ptr(CURL), option:CURLoption, offset:int(64)):CURLcode;
+extern proc chpl_curl_easy_getinfo_ptr(curl:c_ptr(CURL), info:CURLINFO, c_void_ptr):CURLcode;
+
+extern proc curl_easy_perform(curl:c_ptr(CURL)):CURLcode;
+extern proc curl_easy_cleanup(curl:c_ptr(CURL)):void;
+
+// Since a curl handle does not hold where it has read to, we need to do
+// this here.
+// As well, since we can many times request byte-ranges (for HTTP/HTTPS)
+// we keep track of that here as well.
+
+class CurlFile : QioPluginFile {
+
+  var curl: c_ptr(CURL);  // Curl handle
+  var pathnm: c_string;     // Path/URL
+  var length: ssize_t;    // length of what we are reading, -1 if we can't get
+
+  // Note: This is racy if we open up more than one channel on a given curl
+  // handle.  It is expected of the user that they will not open more than one
+  // channel at once on a given Curl handle and use openreader() and
+  // openwriter() in order to open up channels for Curl.
+
+  var current_offset: size_t;
+  var seekable: bool;
+
+
+  proc deinit() {
+  }
+
+  override proc writev(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtWritten:ssize_t):syserr {
+    return ENOSYS;
+  }
+  override proc readv(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtRead:ssize_t):syserr {
+    return ENOSYS;
+  }
+
+  override proc pwritev(iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtWritten:ssize_t):syserr {
+    return ENOSYS;
+  }
+  override proc preadv(iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtRead:ssize_t):syserr {
+    return ENOSYS;
+  }
+
+  override proc seek(amount:int(64), whence:c_int, out offset:int(64)):syserr {
+    return ENOSYS;
+  }
+
+  override proc filelength(out length:int(64)):syserr {
+    return ENOSYS;
+  }
+  override proc getpath(out path:string):syserr {
+    return ENOSYS;
+  }
+
+  override proc fsync():syserr {
+    return ENOSYS;
+  }
+  override proc getChunk(out length:int(64)):syserr {
+    return ENOSYS;
+  }
+  override proc getLocalesForRegion(start:int(64), end:int(64), out
+      localeNames:c_ptr(c_string), ref nLocales:int(64)):syserr {
+    return ENOSYS;
+  }
+
+  override proc close():syserr {
+    c_free(pathnm:c_void_ptr);
+    pathnm = nil;
+    curl_easy_cleanup(curl);
+    return ENOERR;
+  }
+}
+
+pragma "no doc"
+class CurlFilesystem : QioPluginFilesystem {
+  // TODO: should these throw instead of returning qio errors?
+
+/*
+  override proc open(path:c_string, pathlen:ssize_t, access:c_string, hints:int(64), out file:QioPluginFile):syserr {
+    return ENOSYS;
+  }
+  override proc getCwd(out path:c_string, out len:ssize_t):syserr {
+    return ENOSYS;
+  }
+  override proc getFsType(out fsType:int(64)):syserr {
+    return ENOSYS;
+  }*/
+  /*proc handlesUrl(url: string): bool {
+    return url.startsWith("http://", "https://",
+                          "ftp://", "ftps://",
+                          "smtp://", "smtps://",
+                          "imap://", "imaps://");
+  }*/
+}
+
+
+record curl_str_buf {
+  var mem:c_ptr(uint(8));
+  var len: size_t;
+  var alloced: size_t;
+}
+
+
+private proc startsWith(haystack:c_string, needle:c_string) {
+  extern proc strncmp(s1:c_string, s2:c_string, n:size_t):c_int;
+
+  return strncmp(haystack, needle, needle.length:size_t) == 0;
+}
+
+private proc chpl_curl_write_string(contents: c_void_ptr, size:size_t, nmemb:size_t, userp: c_void_ptr) {
+  var realsize:size_t = size * nmemb;
+  var bufptr = userp:c_ptr(curl_str_buf);
+  ref buf = bufptr.deref(); 
+
+  if buf.len + realsize < buf.alloced {
+    // OK
+  } else {
+    var newsize = 2 * buf.alloced + realsize;
+    var oldsize = buf.len;
+    var newbuf:c_ptr(uint(8));
+    newbuf = c_calloc(uint(8), newsize);
+    if newbuf == nil then
+      return 0;
+    c_memcpy(newbuf, buf.mem, oldsize);
+    c_free(buf.mem);
+    buf.mem = newbuf;
+  }
+
+  c_memcpy(c_ptrTo(buf.mem[buf.len]), contents, realsize);
+  buf.len += realsize;
+  buf.mem[buf.len] = 0;
+
+  return realsize;
+}
+ 
+private proc seekable(fl:CurlFile, out length:int(64)):bool {
+  var buf:curl_str_buf;
+  var ret = false;
+
+  if startsWith(fl.pathnm, "http://") || startsWith(fl.pathnm, "https://") {
+    // We're on HTTP/HTTPS so we should look for byte ranges to see if we
+    // can request them
+
+    // The size doesn't really matter, we just want a place on the heap. This
+    // will get expanded in curl_write_string.
+
+    // Headers tend to be ~800, although they can grow much larger than this. If
+    // it is larger than this, we'll take care of it in chpl_curl_write_string.
+
+    buf.mem = c_calloc(uint(8), 800);
+    buf.len = 0;
+    buf.alloced = 800;
+
+    chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_WRITEFUNCTION, c_ptrTo(chpl_curl_write_string):c_void_ptr);
+    chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_HEADERDATA, c_ptrTo(buf));
+    chpl_curl_easy_setopt_long(fl.curl, CURLOPT_NOBODY, 1);
+
+    curl_easy_perform(fl.curl);
+
+    chpl_curl_easy_setopt_long(fl.curl, CURLOPT_NOBODY, 0);
+    chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_WRITEFUNCTION, nil:c_void_ptr);
+    chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_HEADERDATA, nil:c_void_ptr);
+
+    extern proc strstr(haystack:c_string, needle:c_string):c_string;
+    // Does this URL accept range requests?
+    if strstr(buf.mem:c_string, c"Accept-Ranges"):c_void_ptr == nil:c_void_ptr {
+      ret = false;
+    } else {
+      ret = true;
+    }
+
+    c_free(buf.mem);
+  }
+
+  var lengthDouble: real(64); 
+  // This works for things other than http
+  chpl_curl_easy_getinfo_ptr(fl.curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, c_ptrTo(lengthDouble));
+  length = lengthDouble: int(64);
+  // One day, use CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
+
+  // We can always "seek" on ftp (with the REST command/RESUME_FROM_LARGE)
+  if startsWith(fl.pathnm, "ftp://") then
+    ret = true;
+
+  return ret;
+}
+
+proc openurl(url:string,
+             mode:iomode = iomode.r,
+             style:iostyle = defaultIOStyle()) throws {
+
+  var err_out: syserr = ENOERR;
+  var rc = 0;
+  var filelength: int(64);
+
+  var fl = new unmanaged CurlFile();
+
+  //STARTING_SLOW_SYSCALL;
+
+  fl.curl =  curl_easy_init();
+
+  if fl.curl == nil then
+    throw SystemError.fromSyserr(ENOSYS, "Unable to create a Curl handle"); 
+
+  // Save the url requested
+  var url_c = c_calloc(uint(8), url.length+1);
+  c_memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.length);
+
+  // Setopt with the url
+  chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_URL, url_c:c_void_ptr);
+
+  fl.pathnm = url_c:c_string;
+  fl.current_offset = 0;
+
+  // Read the header in order to get the length of the thing we are reading
+  // If we are writing, we can't really get this information (even if we try
+  // to do a 0 length read).
+  if (mode == iomode.cw || mode == iomode.cwr) {
+    fl.length = -1;
+    fl.seekable = false;
+  } else {
+    fl.seekable = seekable(fl, filelength);
+    fl.length = filelength:ssize_t;
+  }
+
+  writeln(fl.seekable);
+  writeln(fl.length);
+
+  //DONE_SLOW_SYSCALL;
+
+  var ret: file;
+
+  try {
+    ret = openplugin(fl, mode, fl.seekable, style);
+  } catch e {
+    delete fl;
+    throw e;
+  }
+
+  return ret;
+}
 
 } /* end of module */

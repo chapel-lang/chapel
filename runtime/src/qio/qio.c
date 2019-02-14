@@ -37,6 +37,7 @@
 
 #include "qio.h"
 #include "qbuffer.h"
+#include "qio_plugin_api.h"
 
 #include "error.h"
 
@@ -78,6 +79,8 @@
 #endif
 #endif
 #endif
+
+static qioerr open_flags_for_string(const char* s, int *flags_out);
 
 // A few global variables that control which I/O strategy is used.
 // See choose_io_method.
@@ -133,6 +136,10 @@ void qio_unlock(qio_lock_t* x) {
 }
 #endif
 
+#ifdef CHPL_RT_UNIT_TEST
+#include "qio_plugin_api_dummy.c"
+#endif
+
 qioerr qio_readv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read)
 {
   ssize_t nread = 0;
@@ -159,14 +166,12 @@ qioerr qio_readv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer
   if( err ) goto error;
 
   // read into our buffer.
-  if (file->fd != -1) // See if we have an fd
+  if (file->fd != -1)
     err = qio_int_to_err(sys_readv(file->fd, iov, iovcnt, &nread));
-  else // Dont have an fd
-    if(file->fsfns){ // We have a foreign function?
-      if (file->fsfns->readv) { // Do we have readv?
-        err = file->fsfns->readv(file->file_info, iov, iovcnt, &nread, file->fs_info);
-      } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "missing readv");
-    } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
+  else if (file->file_info)
+    err = chpl_qio_readv(file->file_info, iov, iovcnt, &nread);
+  else
+    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -204,14 +209,12 @@ qioerr qio_writev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffe
   if( err ) goto error;
 
   // write from our buffer
-  if (file->fd != -1) // Have fd?
+  if (file->fd != -1)
     err = qio_int_to_err(sys_writev(file->fd, iov, iovcnt, &nwritten));
-  else // Dont have an fd
-    if (file->fsfns) { // We have something 
-      if (file->fsfns->writev) {// So see if we have writev
-        err = file->fsfns->writev(file->file_info, iov, iovcnt, &nwritten, file->fs_info);
-      } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "missing writev");
-    } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
+  else if (file->file_info)
+    err = chpl_qio_writev(file->file_info, iov, iovcnt, &nwritten);
+  else
+    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -249,14 +252,12 @@ qioerr qio_preadv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffe
   if( err ) goto error;
 
   // read into our buffer.
-  if (file->fd != -1) // Do we have an fd?
+  if (file->fd != -1)
     err = qio_int_to_err(sys_preadv(file->fd, iov, iovcnt, seek_to_offset, &nread));
-  else 
-  if (file->fsfns){ // Have something
-    if (file->fsfns->preadv) {// We have preadv
-      err = file->fsfns->preadv(file->file_info, iov, iovcnt, seek_to_offset, &nread, file->fs_info);
-    } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "missing preadv");
-  } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
+  else if (file->file_info)
+    err = chpl_qio_preadv(file->file_info, iov, iovcnt, seek_to_offset, &nread);
+  else
+    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -391,14 +392,12 @@ qioerr qio_pwritev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuff
   if( err ) goto error;
 
   // write from our buffer
-  if (file->fd != -1) // So see if we have an fd we can use
+  if (file->fd != -1)
     err = qio_int_to_err(sys_pwritev(file->fd, iov, iovcnt, seek_to_offset, &nwritten));
-  else // Don't have an fd
-  if (file->fsfns) { // We have something
-    if (file->fsfns->pwritev) { // Do we have pwritev
-      err = file->fsfns->pwritev(file->file_info, iov, iovcnt, seek_to_offset, &nwritten, file->fs_info);
-    } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "missing pwritev");
-  } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
+  else if (file->file_info)
+    err = chpl_qio_pwritev(file->file_info, iov, iovcnt, seek_to_offset, &nwritten);
+  else
+    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -534,27 +533,11 @@ qio_hint_t choose_io_method(qio_file_t* file, qio_hint_t hints, qio_hint_t defau
   // 'or' in hints from default_hints.
   ret |= (default_hints & ~(QIO_METHODMASK|QIO_CHTYPEMASK));
 
-  if (file->fsfns) { // We have a foreign FS
-    if(fdflags & QIO_FDFLAG_SEEKABLE) { // We can seek
-    // Read only
-    if((fdflags & QIO_FDFLAG_READABLE)    && 
-        !(fdflags & QIO_FDFLAG_WRITEABLE) && 
-        file->fsfns->preadv)
+  if (file->file_info) { // We have a foreign FS
+    if (fdflags & QIO_FDFLAG_SEEKABLE)
       method = QIO_METHOD_PREADPWRITE;
-    
-    // Write only
-    if((fdflags & QIO_FDFLAG_WRITEABLE)  && 
-        !(fdflags & QIO_FDFLAG_READABLE) &&
-        file->fsfns->pwritev)
-      method = QIO_METHOD_PREADPWRITE;
-
-    // Read and write
-    if((fdflags & QIO_FDFLAG_READABLE)   &&
-        (fdflags & QIO_FDFLAG_WRITEABLE) &&
-        file->fsfns->preadv && file->fsfns->pwritev)
-      method = QIO_METHOD_PREADPWRITE;
-    } else method = QIO_METHOD_READWRITE; // Else we can't seek, so set to use readv and writev
-
+    else
+      method = QIO_METHOD_READWRITE;
   } else { // Regular FS. So do what we did before
     if( method < QIO_MIN_METHOD || method > QIO_MAX_METHOD ) {
       // bad method number. Use default, or choose one.
@@ -849,7 +832,7 @@ qioerr qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohint
   file->closed = false;
   file->initial_length = initial_length;
   file->initial_pos = initial_pos;
-  file->fsfns = NULL; // Dont have anything so set it to NULL
+  file->file_info = NULL; // Dont have anything so set it to NULL
 
   hinted_type = (qio_chtype_t) (iohints & QIO_METHODMASK);
 
@@ -887,7 +870,7 @@ error:
   return err;
 }
 
-qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohints, int flags, const qio_style_t* style, void* fs_info, const qio_file_functions_t* fns)
+qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, int fdflags, const qio_style_t* style)
 {
   off_t initial_pos = 0;
   int64_t initial_length = 0;
@@ -896,10 +879,11 @@ qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohi
   qio_file_t* file = NULL;
   off_t seek_ret = 0;
   int seekable = 0;
+  qio_hint_t iohints = 0;
 
-  if(fns->seek) { // we have seek in our FS
+  if( (fdflags & QIO_FDFLAG_SEEKABLE) > 0 ) {
     // try to seek.
-    err = fns->seek(file_info, 0, SEEK_CUR, &seek_ret, fs_info);
+    err = chpl_qio_seek(file_info, 0, SEEK_CUR, &seek_ret);
     err_code = qio_err_to_int(err);
     if( err_code == ESPIPE || err_code == ENOSYS || err_code == EINVAL ) {
       // not seekable. Don't worry about it.
@@ -911,20 +895,17 @@ qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohi
     }
   }
 
-  if( (flags & QIO_FDFLAG_SEEKABLE) > 0 ) {
-    seekable = 1;
-  }
-
-  if (fns->filelength) { // We can get length in our FS
-    err = fns->filelength(file_info, &initial_length, fs_info);
+  if (seekable) {
+    err = chpl_qio_filelength(file_info, &initial_length);
     // Disregard errors in case it is not seekable (and if we need seek to get the
     // length). If we can't get the length, we'll set initial_pos below anyways.
+    if (err) initial_length = 0;
     err = 0;
   }
 
   if( seekable ) {
     // seekable.
-    flags = (qio_fdflag_t) (flags | QIO_FDFLAG_SEEKABLE);
+    fdflags = fdflags | QIO_FDFLAG_SEEKABLE;
     initial_pos = seek_ret;
   } else {
      // Not seekable.
@@ -941,18 +922,19 @@ qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohi
   file->fd = -1;
   file->use_fp = 0;
   file->buf = NULL;
-  file->fdflags = (qio_fdflag_t) flags;
+  file->fdflags = (qio_fdflag_t) fdflags;
   file->closed = false;
   file->initial_length = initial_length;
   file->initial_pos = initial_pos;
-  file->fs_info = fs_info;
-  file->fsfns = fns; // Put our functions in
+  //file->fs_info = fs_info;
   file->file_info  = file_info;
 
   file->hints = choose_io_method(file, iohints, 0, initial_length,
-                                 (flags & QIO_FDFLAG_READABLE) > 0,
-                                 (flags & QIO_FDFLAG_WRITEABLE) > 0,
+                                 (fdflags & QIO_FDFLAG_READABLE) > 0,
+                                 (fdflags & QIO_FDFLAG_WRITEABLE) > 0,
                                  file->fp != 0 && file->use_fp );
+
+  file->hints |= QIO_HINT_OWNED;
 
   file->mmap = NULL;
   err = qio_lock_init(&file->lock);
@@ -1010,9 +992,9 @@ qioerr _qio_file_do_close(qio_file_t* f)
     f->fd = -1;
   }
 
-  if (f->fsfns) {
+  if (f->file_info) {
     if (f->hints & QIO_HINT_OWNED)  // Should always be true
-      err = f->fsfns->close(f->file_info, f->fs_info);
+      err = chpl_qio_close(f->file_info);
     f->hints &= ~QIO_HINT_OWNED;
   }
 
@@ -1058,9 +1040,8 @@ qioerr qio_file_sync(qio_file_t* f)
     if( ! err ) err = newerr;
   } else if( f->fd >= 0 ) {
     err = qio_int_to_err(sys_fsync(f->fd));
-  } else if( f->fsfns && f->fsfns->fsync ) {
-    err = f->fsfns->fsync(f->file_info, f->fs_info);
-
+  } else if( f->file_info ) {
+    err = chpl_qio_fsync(f->file_info);
   }
 
   return err;
@@ -1180,24 +1161,18 @@ qioerr qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mod
   return qio_file_init(file_out, fp, fd, iohints | QIO_HINT_OWNED, style, fp != NULL);
 }
 
+/*
 qioerr qio_file_open_usr(
     qio_file_t** file_out, const char* pathname,
     int flags, mode_t mode, qio_hint_t iohints, const qio_style_t* style,
-    void* fs_info,
-    const qio_file_functions_t* s)
+    void* fs_info)
 {
   qioerr err = 0;
-  void* file_info;
+  void* file_info = NULL;
 
-  if (s->open) { // We have open
-    err = s->open(&file_info, pathname, &flags, mode, iohints, fs_info);
-    // MPF - commented out the code below because we need
-    // a different (more generic) way to handle it. In particular,
-    // an HDFS seek function should just return EINVAL, ESPIPE, or ENOSYS
-    // for files that can't seek. 
-    //if (flags & O_WRONLY) // Specific to HDFS. 
-    // s->seek = NULL;  // We can only seek when opened in O_RDONLY
-  } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "missing open");
+  err = chpl_qio_open(fs_info, pathname, strlen(pathname), &flags, mode, iohints, &file_info);
+  if (file_info == NULL)
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "open returned NULL");
 
   if( err ) {
     *file_out = NULL;
@@ -1206,8 +1181,9 @@ qioerr qio_file_open_usr(
 
   // We opened this file, so file_out owns it.
   // On error , file_out is NULL, so deleting it is harmless.
-  return qio_file_init_usr(file_out, file_info, iohints | QIO_HINT_OWNED, flags, style, fs_info, s);
+  return qio_file_init_usr(file_out, file_info, iohints | QIO_HINT_OWNED, flags, style, fs_info);
 }
+*/
 
 // If buf is NULL, we create a new buffer. flags indicates readable/writeable/seekable.
 // (default fdflags should be QIO_FDFLAG_READABLE|QIO_FDFLAG_WRITEABLE|QIO_FDFLAG_SEEKABLE
@@ -1286,11 +1262,11 @@ qioerr qio_file_open_access(qio_file_t** file_out, const char* pathname, const c
 
   return qio_file_open(file_out, pathname, flags, mode, iohints, style);
 }
-
+/*
 qioerr qio_file_open_access_usr(
     qio_file_t** file_out, const char* pathname, const char* access,
     qio_hint_t iohints, const qio_style_t* style,
-    void* fs_info, const qio_file_functions_t* s)
+    void* fs_info)
 {
   qioerr err = 0;
   int flags = 0;
@@ -1300,8 +1276,9 @@ qioerr qio_file_open_access_usr(
   if( err ) return err;
 
   return qio_file_open_usr(file_out, pathname, flags, mode, iohints,
-      style, fs_info, s);
+      style, fs_info);
 }
+*/
 
 qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_style_t* style)
 {
@@ -1396,13 +1373,8 @@ qioerr qio_file_path(qio_file_t* f, const char** string_out)
 {
   if (f->fd != -1)
     return qio_file_path_for_fd(f->fd, string_out);
-  else {
-    if (f->fsfns){ 
-      if(f->fsfns->getpath) {
-        return f->fsfns->getpath(f->file_info, string_out, f->fs_info);
-      } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "missing getpath");
-    } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
-  }
+  else
+    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 }
 
 qioerr qio_file_length(qio_file_t* f, int64_t *len_out)
@@ -1422,11 +1394,11 @@ qioerr qio_file_length(qio_file_t* f, int64_t *len_out)
     stats.st_size = 0;
     err = qio_int_to_err(sys_fstat(f->fd, &stats));
     *len_out = stats.st_size;
-  } else if(f->fsfns) {
-    if (f->fsfns->filelength){
-      err = f->fsfns->filelength(f->file_info, len_out, f->fs_info);
-    } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "missing filelength");
-  } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
+  } else if (f->file_info) {
+    err = chpl_qio_filelength(f->file_info, len_out);
+  } else {
+    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
+  }
 
   qio_unlock(& f->lock);
 
@@ -1745,12 +1717,15 @@ qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* pa
   const char* relpath = NULL;
   qioerr err;
 
-  // TODO: Ensure that cwd is a malloc'd string.
-  if (file->fsfns && file->fsfns->getcwd) {
-    err = file->fsfns->getcwd(file, &cwd, file->fs_info);
-  } else {
-    err = qio_int_to_err(sys_getcwd(&cwd));
+  if (file->file_info) {
+    // This just returns path_in for plugin files
+    // Does it make sense to do anything else?
+    *path_out = qio_strdup(path_in);
+    if( ! *path_out ) err = QIO_ENOMEM;
+    return err;
   }
+
+  err = qio_int_to_err(sys_getcwd(&cwd));
 
   if( err ) return err;
 
@@ -4154,12 +4129,8 @@ qioerr qio_get_fs_type(qio_file_t* fl, int* out)
   sys_statfs_t s;
   int rc = 1;
 
-  if (fl->fsfns && fl->fsfns->get_fs_type) {
-    *out = fl->fsfns->get_fs_type(fl->file_info, fl->fs_info);
-    return 0;
-  } 
+  // TODO: what should this do for plugin filesystems?
 
-  // else
   if (fl->fp)
     rc = sys_fstatfs(fileno(fl->fp), &s);
   else if (fl->fd != -1)
@@ -4188,8 +4159,8 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
   int fd = 0;
   sys_statfs_t s;
 
-  if (fl->fsfns && fl->fsfns->get_chunk) {
-    err = fl->fsfns->get_chunk(fl->file_info, len_out, fl->fs_info);
+  if (fl->file_info) {
+    err = chpl_qio_get_chunk(fl->file_info, len_out);
   } else {
     fd = fl->fd;
     if (fl->fp) fd = fileno(fl->fp);
@@ -4217,11 +4188,12 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
   return err;
 }
 
-qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** loc_names_out, int* num_locs_out)
+qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const
+    char*** loc_names_out, int64_t* num_locs_out)
 { 
   qioerr err = 0;
-  if (fl->fsfns && fl->fsfns->get_locales_for_region) {
-    err = fl->fsfns->get_locales_for_region(fl->file_info, start, end, loc_names_out, num_locs_out, fl->fs_info);
+  if (fl->file_info) {
+    err = chpl_qio_get_locales_for_region(fl->file_info, start, end, loc_names_out, num_locs_out);
     return err;
   } else {
     *num_locs_out = 0;

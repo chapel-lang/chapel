@@ -328,6 +328,7 @@ int curl_seekable(void* file, double* length_out)
 
   // This works for things other than http
   curl_easy_getinfo(to_curl_handle(file)->curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, length_out);
+  // One day, use CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
 
   // We can always "seek" on ftp (with the REST command/RESUME_FROM_LARGE)
   if (startWith(to_curl_handle(file)->pathnm, "ftp://"))

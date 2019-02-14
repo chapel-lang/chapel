@@ -31,8 +31,6 @@ QIO_OBJDIR = $(RUNTIME_OBJDIR)
 include Makefile.share
 
 SUBDIRS = regexp/$(CHPL_MAKE_REGEXP)
-SUBDIRS += auxFilesys/hdfs
-SUBDIRS += auxFilesys/curl
 TARGETS = $(QIO_OBJS)
 
 ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))

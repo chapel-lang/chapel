@@ -21,8 +21,10 @@
 #define QIOPLUGIN_CURL_H_
 
 #include "sys_basic.h"
+#include "chplrt.h"
 #include "qio.h"
 #include <stdarg.h>
+#include <curl/curl.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,8 +34,8 @@ typedef struct curl_handle curl_handle;
 typedef curl_handle* curl_handle_ptr;
 typedef struct curl_slist* chpl_slist;
 
-extern qio_file_functions_t curl_function_struct;
-extern const qio_file_functions_ptr_t curl_function_struct_ptr;
+//extern qio_file_functions_t curl_function_struct;
+//extern const qio_file_functions_ptr_t curl_function_struct_ptr;
 
 qioerr chpl_curl_perform(qio_file_t* fl);
 qioerr chpl_curl_set_opt(qio_file_t* fl, int opt, ...);
@@ -210,6 +212,25 @@ extern const int curlopt_lastentry                  ;
 extern const int curlopt_mail_from                  ;
 extern const int curlopt_mail_rcpt                  ;
 extern const int curlopt_mail_auth                  ;
+
+static inline
+CURLcode chpl_curl_easy_setopt_long(CURL* curl, CURLoption option, long arg) {
+  return curl_easy_setopt(curl, option, arg);
+}
+static inline
+CURLcode chpl_curl_easy_setopt_ptr(CURL* curl, CURLoption option, void* arg) {
+  return curl_easy_setopt(curl, option, arg);
+}
+static inline
+CURLcode chpl_curl_easy_setopt_offset(CURL* curl, CURLoption option, int64_t offset) {
+  curl_off_t tmp = offset;
+  return curl_easy_setopt(curl, option, tmp);
+}
+
+static inline
+CURLcode chpl_curl_easy_getinfo_ptr(CURL* curl, CURLINFO info, void* arg) {
+  return curl_easy_getinfo(curl, info, arg);
+}
 
 #ifdef __cplusplus
 } // end extern "C"

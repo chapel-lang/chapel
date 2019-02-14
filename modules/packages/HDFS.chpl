@@ -143,6 +143,10 @@ extern record hdfs_block_byte_map_t {
   var len: int(64);
 }
 
+private extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
+private extern proc hdfs_connect(out fs: c_void_ptr, path: c_string, port: int): syserr;
+private extern proc hdfs_do_release(fs:c_void_ptr);
+
 // Connect to HDFS
 private extern proc hdfs_connect(out fs: c_void_ptr, path: c_string, port: int): syserr;
 

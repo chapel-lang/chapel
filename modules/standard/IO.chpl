@@ -711,6 +711,13 @@ pragma "no doc"
 extern type qio_file_ptr_t;
 private extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
 
+
+pragma "no doc"
+extern record qiovec_t {
+  var iov_base: c_void_ptr;
+  var iov_len: size_t;
+}
+
 pragma "no doc"
 extern type qio_file_functions_ptr_t; // pointer to function ptr struct
 pragma "no doc"
@@ -854,6 +861,140 @@ extern record iostyle { // aka qio_style_t
   var tuple_style:uint(8) = 0;
 }
 
+// This class helps in implementing runtime calls
+pragma "no doc"
+class QioPluginFile {
+  // Assume instance has a link to filesystem if needed
+
+  // TODO: should these throw instead of returning qio errors?
+
+  proc writev(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtWritten:ssize_t):syserr {
+    return ENOSYS;
+  }
+  proc readv(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtRead:ssize_t):syserr {
+    return ENOSYS;
+  }
+
+  proc pwritev(iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtWritten:ssize_t):syserr {
+    return ENOSYS;
+  }
+  proc preadv(iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtRead:ssize_t):syserr {
+    return ENOSYS;
+  }
+
+  proc seek(amount:int(64), whence:c_int, out offset:int(64)):syserr {
+    return ENOSYS;
+  }
+
+  proc filelength(out length:int(64)):syserr {
+    return ENOSYS;
+  }
+  proc getpath(out path:string):syserr {
+    return ENOSYS;
+  }
+
+  proc fsync():syserr {
+    return ENOSYS;
+  }
+  proc getChunk(out length:int(64)):syserr {
+    return ENOSYS;
+  }
+  proc getLocalesForRegion(start:int(64), end:int(64), out
+      localeNames:c_ptr(c_string), ref nLocales:int(64)):syserr {
+    return ENOSYS;
+  }
+
+  proc close():syserr {
+    return ENOSYS;
+  }
+}
+
+pragma "no doc"
+class QioPluginFilesystem {
+  // TODO: should these throw instead of returning qio errors?
+
+  proc open(path:c_string, pathlen:ssize_t, ref flags:c_int, mode:int(64), hints:int(64), out file:QioPluginFile):syserr {
+    return ENOSYS;
+  }
+  proc getCwd(out path:c_string, out len:ssize_t):syserr {
+    return ENOSYS;
+  }
+  proc getFsType(out fsType:int(64)):syserr {
+    return ENOSYS;
+  }
+
+  /*
+  proc handlesUrl(url: string): bool {
+    return false;
+  }*/
+}
+
+// These functions let the C QIO code call the plugins
+// TODO: Move more of the QIO code to be pure Chapel
+export proc chpl_qio_writev(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, out amtWritten:ssize_t):syserr {
+  var f=file:QioPluginFile;
+  return f.writev(iov, iovcnt, amtWritten);
+}
+export proc chpl_qio_readv(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, out amtRead:ssize_t):syserr {
+  var f=file:QioPluginFile;
+  return f.readv(iov, iovcnt, amtRead);
+}
+export proc chpl_qio_pwritev(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtWritten:ssize_t):syserr {
+  var f=file:QioPluginFile;
+  return f.pwritev(iov, iovcnt, offset, amtWritten);
+}
+export proc chpl_qio_preadv(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtRead:ssize_t):syserr {
+  var f=file:QioPluginFile;
+  return f.preadv(iov, iovcnt, offset, amtRead);
+}
+export proc chpl_qio_seek(file:c_void_ptr, amount:int(64), whence:c_int, out offset:int(64)):syserr {
+  var f=file:QioPluginFile;
+  return f.seek(amount, whence, offset);
+}
+export proc chpl_qio_filelength(file:c_void_ptr, out length:int(64)):syserr {
+  var f=file:QioPluginFile;
+  return f.filelength(length);
+}
+/*export proc chpl_qio_getpath(file:c_void_ptr, out str:c_string, out len:ssize_t):syserr {
+  var f=file:QioPluginFile;
+  return f.getpath(str, len);
+}*/
+export proc chpl_qio_fsync(file:c_void_ptr):syserr {
+  var f=file:QioPluginFile;
+  return f.fsync();
+}
+export proc chpl_qio_get_chunk(file:c_void_ptr, out length:int(64)):syserr {
+  var f=file:QioPluginFile;
+  return f.getChunk(length);
+}
+export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64), end:int(64), out localeNames:c_ptr(c_string), ref nLocales:int(64)):syserr {
+  var f=file:QioPluginFile;
+  return f.getLocalesForRegion(start, end, localeNames, nLocales);
+}
+export proc chpl_qio_close(file:c_void_ptr):syserr {
+  var f = file:unmanaged QioPluginFile;
+  var err = f.close();
+  delete f;
+  return err;
+}
+
+
+export proc chpl_qio_open(filesystem:c_void_ptr, path:c_string, pathlen:ssize_t, ref flags:c_int, mode:int(64), hints:int(64), out file:c_void_ptr):syserr {
+  var fs=filesystem:QioPluginFilesystem;
+  var f:QioPluginFile;
+  var err:syserr;
+  err = fs.open(path, pathlen, flags, mode, hints, f);
+  file = f:c_void_ptr;
+  return err;
+}
+export proc chpl_qio_get_cwd(filesystem:c_void_ptr, out path:c_string, out len:ssize_t):syserr {
+  var fs=filesystem:QioPluginFilesystem;
+  return fs.getCwd(path, len);
+}
+export proc chpl_qio_get_fs_type(filesystem:c_void_ptr, out fsType:int(64)):syserr {
+  var fs=filesystem:QioPluginFilesystem;
+  return fs.getFsType(fsType);
+}
 
 // Extern functions
 // TODO -- move these declarations to where they are used or into
@@ -1036,20 +1177,6 @@ private extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_p
 private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):syserr;
 
 private extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
-
-/*********************** Curl/HDFS support ******************/
-
-/***************** C U R L *******************/
-pragma "no doc"
-extern type curl_handle;
-private extern const curl_function_struct:qio_file_functions_t;
-private extern const curl_function_struct_ptr:qio_file_functions_ptr_t;
-
-/****************** H D F S ******************/
-private extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
-private extern proc hdfs_connect(out fs: c_void_ptr, path: c_string, port: int): syserr;
-private extern proc hdfs_do_release(fs:c_void_ptr);
-// End
 
 pragma "no doc"
 extern record qio_conv_t {
@@ -1487,6 +1614,15 @@ proc _modestring(mode:iomode) {
 }
 
 /*
+var pluginFilesystems:[1..0] owned QioPluginFilesystem;
+
+pragma "no doc"
+chpl_register_io_plugin(owned plugin:QioPluginFilesystem) {
+  pluginFilesystems.push_back(plugin);
+}
+*/
+
+/*
 
 Open a file on a filesystem or stored at a particular URL. Note that once the
 file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
@@ -1515,8 +1651,9 @@ to create a channel to actually perform I/O operations
 :throws SystemError: Thrown if the file could not be opened.
 */
 proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle(), url:string=""): file throws {
+          style:iostyle = defaultIOStyle()): file throws {
 
+  /*
   proc parse_hdfs_path(path:string) throws {
     // hdfs://<host>:<port>/<path>
     var host_start = path.find("//") + 2;
@@ -1556,14 +1693,15 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
     var file_path = "";
     if path_start > 0 then file_path = path[path_start..];
     return (host, port, file_path);
-  }
+  }*/
 
   var local_style = style;
   var error: syserr = ENOERR;
   var ret: file;
   ret.home = here;
+  /*
   if (url != "") {
-    if (url.startsWith("hdfs://")) { // HDFS
+    /*if (url.startsWith("hdfs://")) { // HDFS
       var (host, port, file_path) = try parse_hdfs_path(url);
       var fs:c_void_ptr;
 
@@ -1587,8 +1725,22 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
 
     } else {
       try ioerror(ENOENT:syserr, "Invalid URL passed to open");
-    }
-  } else {
+    }*/
+    /*for fs in pluginFilesystems {
+      if fs.handlesUrl(url) {
+        var file:QioPluginFile;
+        error = fs.open(url.c_str(), url.length,
+                        _modestring(mode).c_str(),
+                        hints, file);
+        if error then
+          try ioerror(error, "in open", path);
+      }
+    }*/
+
+    // throw error - not handled
+    try ioerror(ENOENT:syserr, "Invalid URL passed to open");
+
+  } else */{
     if (path == "") then
       try ioerror(ENOENT:syserr, "in open: Both path and url were blank");
 
@@ -1597,6 +1749,77 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
       try ioerror(error, "in open", path);
   }
 
+  return ret;
+}
+
+proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultIOStyle(), url:string=""): file throws {
+  compilerError("open with url argument has been deprecated. Please use the appropriate open function in another module, e.g. Curl.openurl");
+}
+
+
+proc openplugin(pluginFile: QioPluginFile, mode:iomode,
+                seekable:bool, style:iostyle) throws {
+  
+  extern proc qio_file_init_plugin(ref file_out:qio_file_ptr_t,
+      file_info:c_void_ptr, flags:c_int, const ref style:iostyle):syserr;
+
+  var local_style = style;
+  var ret:file;
+  ret.home = here;
+
+  var flags:c_int = 0;
+  select mode {
+    when iomode.r {
+      flags |= QIO_FDFLAG_READABLE;
+    }
+    when iomode.rw {
+      flags |= QIO_FDFLAG_READABLE;
+      flags |= QIO_FDFLAG_WRITEABLE;
+    }
+    when iomode.cw {
+      flags |= QIO_FDFLAG_WRITEABLE;
+    }
+    when iomode.cwr {
+      flags |= QIO_FDFLAG_READABLE;
+      flags |= QIO_FDFLAG_WRITEABLE;
+    }
+    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
+  }
+
+  if seekable then
+    flags |= QIO_FDFLAG_SEEKABLE;
+
+  var err = qio_file_init_plugin(ret._file_internal, pluginFile:c_void_ptr, flags, style);
+  if err {
+    var path:string = "unknown";
+    if pluginFile {
+      var path_err = pluginFile.getpath(path);
+      if path_err then
+        path = "unknown";
+    }
+
+    try ioerror(err, "in openplugin", path);
+  }
+
+  return ret;
+}
+
+// documented in open() throws version
+pragma "no doc"
+proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultIOStyle(), url:string=""):file {
+  compilerWarning("This version of open() is deprecated; " +
+                  "please switch to a throwing version");
+  error = ENOERR;
+  var ret: file;
+  try {
+    ret = open(path, mode, hints, style, url);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
   return ret;
 }
 

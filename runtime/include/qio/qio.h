@@ -83,113 +83,6 @@ typedef uint32_t qio_hint_t;
 //    a.writeThis() which calls
 //        write(16) for example
 
-// ---- Typedefs for plugin API -----
-
-typedef qioerr (*qio_readv_fptr)(void*, // plugin file pointer
-                const struct iovec*,    // Data to write into
-                int,                    // number of elements in iovec
-                ssize_t*,               // Amount that was written into iovec
-                void*);                 // plugin filesystem pointer
-
-typedef qioerr (*qio_writev_fptr) (void*, // plugin fp
-                const struct iovec*,      // data to write from
-                int,                      // Number of elements in iovec
-                ssize_t*,                 // Amount written on return
-                void*);                   // plugin filesystem pointer
-
-typedef qioerr (*qio_preadv_fptr) (void*, // plugin fp
-                const struct iovec*,      // Data to write into
-                int,                      // number of elements in iovec
-                off_t,                    // Offset to read from
-                ssize_t*,                 // Amount that was written into iovec
-                void*);                   // plugin filesystem pointer
-
-typedef qioerr (*qio_pwritev_fptr) (void*,//plugin fp
-                const struct iovec*,      // data to write from
-                int,                      // Number of elements in iovec 
-                off_t,                    // offset to write 
-                ssize_t*,                 // Amount written on return
-                void*);                   // plugin filesystem pointer
-
-typedef qioerr (*qio_seek_fptr)(void*,  // plugin fp
-                                off_t,  // offset to seek from
-                                int,    // Amount to seek
-                                off_t*, // Offset on return from seek
-                                void*); // plugin filesystem pointer
-
-typedef qioerr (*qio_filelength_fptr)(void*,     // file information 
-                                      int64_t*,  // length on return
-                                      void*);    // plugin filesystem pointer
-
-typedef qioerr (*qio_getpath_fptr)(void*,        // file information
-                                   const char**, // string/path on return
-                                   void*);       // plugin filesystem pointer
-
-typedef qioerr (*qio_open_fptr)(void**,      // file information on return
-                                const char*, // pathname to file
-                                int*,        // flags. User can change these if they wish
-                                mode_t,      // mode
-                                qio_hint_t,  // Hints for opening the file
-                                void*);      // plugin filesystem pointer
-
-typedef qioerr (*qio_close_fptr)(void*, // file information
-                                 void*); // fs info
-
-typedef qioerr (*qio_fsync_fptr)(void*, void*); // file information, fs info
-
-typedef int (*qio_get_fs_type_fptr)(void*, void*); // file information, fs info
-
-typedef qioerr (*qio_getcwd_fptr)(void*,  // file information (maybe NULL)
-                                          // (useful in proxying situations,
-                                          // such as with a local channel for
-                                          // a remote file)
-                                  const char**,  // path on return
-                                  void*); // plugin filesystem pointer
-
-typedef qioerr (*qio_get_chunk_fptr)(void*, // file info
-                                     int64_t*, // length
-                                     void*); // fs info
-
-typedef qioerr (*qio_get_locales_for_region_fptr) (void*,       // file info
-                                                   off_t,       // start
-                                                   off_t,       // end
-                                                   const char***, // locale names out
-                                                   int*,        // number of locales that we got total
-                                                   void*);      // fs info
-
-// The ordering of these fields is important due to struct initialization
-typedef struct qio_file_functions_s {
-  qio_writev_fptr  writev; 
-  qio_readv_fptr   readv;
-
-  qio_pwritev_fptr pwritev;
-  qio_preadv_fptr  preadv;
-
-  qio_close_fptr   close;
-  qio_open_fptr    open;
-
-  // seek is currently only used in initialization
-  qio_seek_fptr   seek;
-
-  qio_filelength_fptr filelength;
-  qio_getpath_fptr getpath;
-
-  qio_fsync_fptr fsync;
-  qio_getcwd_fptr getcwd;
-  qio_get_fs_type_fptr get_fs_type;
-
-  // multilocale API
-  qio_get_chunk_fptr get_chunk;
-  qio_get_locales_for_region_fptr get_locales_for_region;
-
-  // We used to store void* fs here, but it moved to the
-  // qio file structure and an argument to qio file functions
-  // so that qio_file_functions_t can be const.
-} qio_file_functions_t;
-
-typedef qio_file_functions_t* qio_file_functions_ptr_t;
-// -- end --
-
 #ifdef __cplusplus
 } // end extern "C"
 #endif
@@ -489,8 +382,7 @@ typedef struct qio_file_s {
                   // so access to this must be protected
                   // by the file's lock.
 
-  void* fs_info; // Holds the filesystem information (as a user defined struct)
-  const qio_file_functions_t* fsfns; // Holds the functions for the filesystem
+  //void* fs_info; // Holds the filesystem information (as a user defined struct)
   void* file_info; // Holds the file information (as a user defined struct)
 
   qio_fdflag_t fdflags;
@@ -557,26 +449,22 @@ qioerr qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, const qio_style_
 
 qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_style_t* style);
 
-qioerr qio_file_open_usr(qio_file_t** file_out, const char* pathname, 
+/*qioerr qio_file_open_usr(qio_file_t** file_out, const char* pathname, 
                         int flags, mode_t mode, qio_hint_t iohints, 
                         const qio_style_t* style,
-                        void* fs_info,
-                        const qio_file_functions_t* s);
+                        void* fs_info);*/
 
-qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, 
-                        qio_hint_t iohints, int flags, const qio_style_t* style, 
-                        void* fs_info,
-                        const qio_file_functions_t* fns);
+qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, 
+                            int fdflags, const qio_style_t* style);
 
 qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, 
                                const char* access, qio_hint_t iohints, 
                                const qio_style_t* style,
-                               void* fs_info,
-                               const qio_file_functions_t* s);
+                               void* fs_info);
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out);
 qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out);
-qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** locale_names_out, int* num_locs_out);
+qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** locale_names_out, int64_t* num_locs_out);
 
 // This can be called to run close and to check the return value.
 // That's important because some implementations (such as NFS)
@@ -637,6 +525,11 @@ static inline
 bool qio_file_isopen(qio_file_t* f) 
 {
   return !(f->closed);
+}
+
+static inline
+void* qio_file_get_plugin(qio_file_t* f) {
+  return f->file_info;
 }
 
 // Return the current length of a file.
