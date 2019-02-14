@@ -1,0 +1,7 @@
+throw-new-borrowed2.chpl:1: In function 'main':
+throw-new-borrowed2.chpl:2: warning: result of new Error is now managed by default
+throw-new-borrowed2.chpl:2: note: 'new unmanaged Error' gives old behavior
+throw-new-borrowed2.chpl:2: note: 'new borrowed Error' is the new default
+throw-new-borrowed2.chpl:2: note: 'new owned Error', 'new shared Error' also available
+throw-new-borrowed2.chpl:2: note: get more help with --warn-unstable
+throw-new-borrowed2.chpl:3: error: Throwing borrowed error - please throw owned
