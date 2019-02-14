@@ -761,26 +761,54 @@ void chpl_comm_rollcall(void) {
 }
 
 
+//
+// Chapel global and private variable support
+//
+
+static void*** chplPrivBcastTabMap;
+
+
 void chpl_comm_broadcast_global_vars(int numGlobals) {
-  // TODO: this won't work in the presence of address space randomization
-  int i;
-  if (chpl_nodeID != 0) {
-    for (i = 0; i < numGlobals; i++) {
-      chpl_comm_get(chpl_globals_registry[i], 0, chpl_globals_registry[i],
-                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/,
-                    CHPL_COMM_UNKNOWN_ID, 0, 0);
+  //
+  // Broadcast the wide addresses of the registered globals from
+  // node 0 to the other nodes.
+  //
+  wide_ptr_t* glbWideAddrs;
+  CHPL_CALLOC(glbWideAddrs, chpl_numGlobalsOnHeap);
+  if (chpl_nodeID == 0) {
+    for (int i = 0; i < numGlobals; i++) {
+      glbWideAddrs[i] = *chpl_globals_registry[i];
     }
+  }
+  chpl_comm_ofi_oob_bcast(glbWideAddrs, numGlobals * sizeof(glbWideAddrs[0]));
+  if (chpl_nodeID != 0) {
+    for (int i = 0; i < numGlobals; i++) {
+      *chpl_globals_registry[i] = glbWideAddrs[i];
+    }
+  }
+  CHPL_FREE(glbWideAddrs);
+
+  //
+  // While here, also share the nodes' private broadcast tables around.
+  // These are needed by chpl_comm_broadcast_private(), below.
+  //
+  void** pbtMap;
+  size_t pbtSize = chpl_private_broadcast_table_len
+                   * sizeof(chpl_private_broadcast_table[0]);
+  CHPL_CALLOC(pbtMap, chpl_numNodes * pbtSize);
+  chpl_comm_ofi_oob_allgather(chpl_private_broadcast_table, pbtMap, pbtSize);
+  CHPL_CALLOC(chplPrivBcastTabMap, chpl_numNodes);
+  for (int i = 0; i < chpl_numNodes; i++) {
+    chplPrivBcastTabMap[i] = &pbtMap[i * chpl_private_broadcast_table_len];
   }
 }
 
 
 void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
-  // TODO: this won't work in the presence of address space randomization
-  int i;
-  for (i = 0; i < chpl_numNodes; i++) {
+  for (int i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
       (void) ofi_put(chpl_private_broadcast_table[id], i,
-                     chpl_private_broadcast_table[id], size);
+                     chplPrivBcastTabMap[i][id], size);
     }
   }
 }
