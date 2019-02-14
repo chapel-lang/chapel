@@ -105,7 +105,10 @@ static bool findCallToParallelIterator(ForLoop* forLoop, EflopiInfo& eInfo)
     return false;
 
   CallExpr* iterCall = toCallExpr(asgnToCallTemp->get(2));
-  INT_ASSERT(iterCall);
+  if (! iterCall) {
+    USR_STOP(); // do not crash if there have been user errors
+    INT_ASSERT(iterCall);
+  }
 
   if (callingParallelIterator(iterCall)) {
     // Found it. Fill in the information before returning.
