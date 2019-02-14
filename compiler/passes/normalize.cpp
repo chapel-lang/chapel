@@ -2732,6 +2732,15 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   std::vector<SymExpr*> symExprs;
 
+  // Our AST and transformations are not set up to handle multiple query
+  // expressions inside of an array's domain.  Give the user an error for now.
+  if (!isDefExpr(domExpr)) {
+    std::vector<DefExpr*> defExprs;
+    collectDefExprs(domExpr, defExprs);
+    for_vector(DefExpr, def, defExprs) {
+      USR_FATAL_CONT(def, "cannot query part of a domain");
+    }
+  }
   //
   // Only fix array formals with 'in' intent if there was:
   // - a type query, or
