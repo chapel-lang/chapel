@@ -370,6 +370,8 @@ all:
   02/07/19:
     - text: Simplify how we acquire comm domains in ugni (#12258)
       config: 16 node XC
+  02/08/19:
+    - replace PRIM_INIT with PRIM_DEFAULT_INIT_VAR (#12154)
 
 
 AllCompTime:
@@ -1238,6 +1240,8 @@ revcomp:
     - Use zero-arg initializer in BaseDom (#9250)
   10/30/18:
     - Improve string comparisons (#11479)
+  02/05/19:
+    - Make stdout, stderr ordering predictable in test output (#12236)
 
 sad:
   05/03/16:
