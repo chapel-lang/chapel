@@ -914,7 +914,6 @@ static void adjustMinMaxReduceOp(Expr* reduceOp) {
   }
 }
 
-// Todo: replace with ForallIntents or similar.
 void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar) {
   Expr* ovar = new UnresolvedSymExpr(svar->name);
   if (Expr* ri = svar->reduceOpExpr()) {

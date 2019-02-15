@@ -37,7 +37,6 @@
 #include "driver.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
-#include "implementForallIntents.h"
 #include "initializerResolution.h"
 #include "initializerRules.h"
 #include "iterator.h"
@@ -107,8 +106,6 @@ char                               primCoerceTmpName[] = "init_coerce_tmp";
 
 bool                               resolved                  = false;
 bool                               tryFailure                = false;
-bool                               beforeLoweringForallStmts = true;
-
 int                                explainCallLine           = 0;
 
 SymbolMap                          paramMap;
@@ -6985,8 +6982,6 @@ void resolve() {
   resolveSerializers();
 
   resolveDestructors();
-
-  beforeLoweringForallStmts = false;
 
   insertReturnTemps();
 

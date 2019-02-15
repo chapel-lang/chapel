@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include "implementForallIntents.h"
-
-#include "foralls.h"
-#include "resolveFunction.h"
+#include "DeferStmt.h"
+#include "ForallStmt.h"
+#include "ForLoop.h"
+#include "resolution.h"
 
 #include <map>
 #include <vector>

@@ -22,7 +22,6 @@
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "ForallStmt.h"
-#include "implementForallIntents.h"
 #include "passes.h"
 #include "resolution.h"
 #include "stringutil.h"
@@ -1093,9 +1092,6 @@ static void reorderShadowVsTaskPrivateVars(ForallStmt* fs) {
 //
 // If 'fs' has only ref intents, or none at all,
 // revert to old iterator-record-based implementation.
-// If so, do what the original buildStandaloneForallLoopStmt()
-// did during parsing, with modifications.
-//
 // Remove 'fs' and replace it with a ForLoop.
 //
 static void handleRecursiveIter(ForallStmt* fs,

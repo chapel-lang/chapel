@@ -20,7 +20,6 @@
 #include "ForallStmt.h"
 #include "AstVisitor.h"
 #include "build.h"
-#include "foralls.h"
 #include "ForLoop.h"
 #include "passes.h"
 #include "stringutil.h"
@@ -151,7 +150,6 @@ void ForallStmt::verify() {
   INT_ASSERT(!fLoopBody->useList);
   INT_ASSERT(!fLoopBody->userLabel);
   INT_ASSERT(!fLoopBody->byrefVars);
-  INT_ASSERT(!fLoopBody->forallIntents);
 
   // ForallStmts are lowered away during lowerIterators().
   INT_ASSERT(!iteratorsLowered);

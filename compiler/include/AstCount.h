@@ -35,7 +35,6 @@ foreach_ast(decl_members);
 
   // Create member variables for AST types not handled
   // by the baseAST macro.
-  int numForallIntents;
   int numWhileDoStmt;
   int numDoWhileStmt;
   int numCForLoop;
@@ -115,7 +114,6 @@ foreach_ast(decl_members);
   virtual bool   enterBlockStmt      (BlockStmt*         node);
   virtual void   exitBlockStmt       (BlockStmt*         node);
 
-  virtual void   visitForallIntents  (ForallIntents*   clause);
   virtual bool   enterForallStmt     (ForallStmt*        node);
   virtual void   exitForallStmt      (ForallStmt*        node);
 

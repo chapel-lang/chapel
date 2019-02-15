@@ -37,8 +37,6 @@ struct Serializers {
 };
 
 
-extern bool                             beforeLoweringForallStmts;
-
 extern int                              explainCallLine;
 
 extern SymbolMap                        paramMap;
@@ -129,10 +127,19 @@ FnSymbol* findCopyInit(AggregateType* ct);
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(Type* icType);
 
+// task intents
+extern Symbol* markPruned;
+bool isReduceOp(Type* type);
+
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
+void  resolveForallStmts2();
+Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
+void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
+                     ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
 void setupAndResolveShadowVars(ForallStmt* fs);
-bool isReduceOp(Type* type);
+bool preserveShadowVar(Symbol* var);
+void adjustVoidShadowVariables();
 void lowerPrimReduce(CallExpr* call, Expr*& retval);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
