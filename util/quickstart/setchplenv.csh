@@ -10,9 +10,9 @@ if ( ! -d "util" || ! -d "compiler" || ! -d "runtime" || ! -d "modules" ) then
 endif
 
 # Remove any previously existing CHPL_HOME paths
-set MYPATH = `./util/config/fixpath.py PATH`
+set MYPATH = `./util/config/fixpath.py "$PATH"`
 set exitcode = $?
-set MYMANPATH = `./util/config/fixpath.py MANPATH`
+set MYMANPATH = `./util/config/fixpath.py "$MANPATH"`
 
 # Double check $MYPATH before overwriting $PATH
 if ( "$MYPATH" == "" || "$exitcode" != 0) then

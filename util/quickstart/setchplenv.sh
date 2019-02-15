@@ -10,9 +10,9 @@ if [ ! -d "util" ] || [ ! -d "compiler" ] || [ ! -d "runtime" ] || [ ! -d "modul
     echo "Error: You must use '. util/setchplenv.sh' from within the chapel root directory."
     return 1
 fi
-MYPATH=`./util/config/fixpath.py PATH`
+MYPATH=`./util/config/fixpath.py "$PATH"`
 exitcode=$?
-MYMANPATH=`./util/config/fixpath.py MANPATH`
+MYMANPATH=`./util/config/fixpath.py "$MANPATH"`
 
 # Double check $MYPATH before overwriting $PATH
 if [ -z "${MYPATH}" -o "${exitcode}" -ne 0 ]; then
