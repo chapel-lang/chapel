@@ -6,8 +6,8 @@
 
 Example:
 
-    ./fixpath.py "$PATH" --shell=fish
-
+    ./fixpath.py "$PATH"
+    ./fixpath.py \\\\"$PATH\\\\" --shell=fish
 
 This is used by the setchplenv.* scripts to reduce PATH/MANPATH pollution. It
 may be called in several situations:
@@ -33,47 +33,45 @@ components since there should be no components starting with $CHPL_HOME.
 Mentioned only to avoid reintroducing #10196 when this function is modified.
 """
 
-from __future__ import print_function
-
-from os import getenv
-from sys import argv
-import re
-
 import optparse
+import os
+import re
+import sys
 
 def escape_path(p, delim):
+    """Wrap fish paths in quotes to prevent splitting on spaces in paths"""
     if delim == ' ':
-        # Suppress splitting of fish so that the path will be treated as a whole
         return '"{}"'.format(p)
     return p
 
-def main(env_val, delim=':'):
+
+def remove_chpl_from_path(path_val, delim):
     """
-    :env_val: path environment variable value ('$PATH' or '$MANPATH')
+    :path_val: path environment variable value ('$PATH' or '$MANPATH')
     :delim: path delimiter (':' or ' ')
     :returns: new path with $CHPL_HOME components removed
     """
 
-    chpl_home = getenv('CHPL_HOME')
+    chpl_home = os.getenv('CHPL_HOME')
 
-    # Find ':'s that are not escaped
+    if not chpl_home or chpl_home not in path_val:
+        return path_val
+
+    # Find delims that are not escaped
+    # Note: Fish shell still uses ':' delimiter for printing with \\"$PATH\\"
     pattern = r'(?<!\\)\:'
 
-    # Split path into list separated by non-escaped ':'s, and sieve chpl_home
-    newpath = [escape_path(p, delim)
-                 for p in re.split(pattern, env_val)
-                     if chpl_home is None or chpl_home not in p]
+    # Split path by non-escape delimiters and sieve chpl_home
+    newpath = [escape_path(p, delim) for p in re.split(pattern, path_val)]
+    newpath = [p for p in newpath if chpl_home not in p]
 
-    # Return path delimited by shell-type (':' vs. ' ')
     return delim.join(newpath)
 
 
-if __name__ == '__main__':
-
-
+def main():
     parser = optparse.OptionParser(usage=__doc__)
     parser.add_option('--shell', dest='shell', default='bash',
-                      help='shell being used');
+                      help='shell being used')
 
     (options, args) = parser.parse_args()
 
@@ -82,6 +80,15 @@ if __name__ == '__main__':
     else:
         delim = ':'
 
-    newpath = main(args[0], delim=delim)
+    if len(args) == 0:
+        sys.stdout.write(__doc__)
+        sys.exit(1)
 
-    print(newpath)
+    path = args[0]
+
+    newpath = remove_chpl_from_path(path, delim)
+    sys.stdout.write('{0}'.format(newpath))
+
+
+if __name__ == '__main__':
+    main()
