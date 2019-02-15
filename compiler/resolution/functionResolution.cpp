@@ -117,8 +117,6 @@ Vec<CallExpr*>                     callStack;
 
 Vec<BlockStmt*>                    standardModuleSet;
 
-std::map<CallExpr*, CallExpr*>     eflopiMap;
-
 std::map<Type*,     FnSymbol*>     autoCopyMap;
 std::map<Type*,     Serializers>   serializeMap;
 
@@ -6219,8 +6217,6 @@ static bool        isParamResolved(FnSymbol* fn, Expr* expr);
 
 static Expr*       resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr);
 
-static CallExpr*   toPrimToLeaderCall(Expr* expr);
-
 static Expr*       resolveExprResolveEachCall(ContextCallExpr* cc);
 
 static bool        contextTypesMatch(FnSymbol* valueFn,
@@ -6271,11 +6267,7 @@ Expr* resolveExpr(Expr* expr) {
     }
 
   } else if (DefExpr* def = toDefExpr(expr)) {
-    if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
-      implementForallIntents1(def);
-    }
-
-    retval = foldTryCond(postFold(expr));
+    retval = foldTryCond(postFold(def));
 
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
@@ -6376,14 +6368,6 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
     resolveCall(call);
 
     if (tryFailure == false && call->isResolved() == true) {
-      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr)) {
-        // ForallLeaderArgs: process the leader that 'call' invokes.
-        implementForallIntents2(call, origToLeaderCall);
-
-      } else if (CallExpr* eflopiHelper = eflopiMap[call]) {
-        implementForallIntents2wrapper(call, eflopiHelper);
-      }
-
       if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
         expr = resolveExprResolveEachCall(cc);
 
@@ -6405,19 +6389,6 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
 
   } else {
     retval = foldTryCond(postFold(expr));
-  }
-
-  return retval;
-}
-
-static CallExpr* toPrimToLeaderCall(Expr* expr) {
-  CallExpr* retval = NULL;
-
-  if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_TO_LEADER)     == true ||
-        call->isPrimitive(PRIM_TO_STANDALONE) == true) {
-      retval = call;
-    }
   }
 
   return retval;

@@ -941,7 +941,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                 zippered);
 
   if (fNoFastFollowers == false) {
-    // from the original buildForallLoopStmt()
     Symbol* T1 = newTemp();
     Symbol* T2 = newTemp();
 

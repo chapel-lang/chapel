@@ -37,7 +37,6 @@
 // functions currently defined/used across implementForallIntents*.cpp
 
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
-bool  callingParallelIterator(CallExpr* call);
 void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
                      ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
 

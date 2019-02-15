@@ -58,8 +58,6 @@ extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
 
 extern std::map<Type*,     Serializers> serializeMap;
 
-extern std::map<CallExpr*, CallExpr*>   eflopiMap;
-
 
 
 bool       propagateNotPOD(Type* t);
@@ -133,17 +131,8 @@ FnSymbol* getTheIteratorFn(Type* icType);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
-void implementForallIntents1(DefExpr* defChplIter);
-void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
-void implementForallIntents2wrapper(CallExpr* call, CallExpr* origToLeaderCall);
 void setupAndResolveShadowVars(ForallStmt* fs);
-void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignoreIsResolved);
-
-// reduce intents
-void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2);
-void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2);
 bool isReduceOp(Type* type);
-
 void lowerPrimReduce(CallExpr* call, Expr*& retval);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);

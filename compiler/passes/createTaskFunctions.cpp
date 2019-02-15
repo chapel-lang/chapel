@@ -24,6 +24,7 @@
 #include "resolution.h"
 #include "stmt.h"
 #include "stlUtil.h"
+#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
@@ -205,6 +206,64 @@ ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent) {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+
+// Is 'type' a Reduce/Scan Op?
+// similar to isArrayClass()
+bool isReduceOp(Type* type) {
+  bool retval = false;
+
+  type = canonicalClassType(type);
+
+  if (type->symbol->hasFlag(FLAG_REDUCESCANOP) == true) {
+    retval = true;
+
+  } else if (AggregateType* at = toAggregateType(type)) {
+    forv_Vec(AggregateType, t, at->dispatchParents) {
+      if (isReduceOp(t) == true) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  return retval;
+}
+
+//
+// Set up anchors, if not already, so we can add reduction-related code
+// via refRef->insertBefore() within 'fn'.
+//
+// "redRef" is short for "reference for reduction".
+// redRef1 goes at the beginning of fn, redRef2 at the end.
+//
+static void setupRedRefs(FnSymbol* fn, bool nested,
+                         Expr*& redRef1, Expr*& redRef2)
+{
+  if (redRef1) return;
+
+  // We will insert new ASTs at the beginning of 'fn' -> before 'redRef1',
+  // and at the end of 'fn' -> before 'redRef2'.
+  redRef1 = new CallExpr("redRef1");
+  redRef2 = new CallExpr("redRef2");
+  fn->insertAtHead(redRef1);
+  fn->insertBeforeEpilogue(redRef2);
+  if (nested) {
+    // move redRef2 one up so it is just before _downEndCount()
+    CallExpr* dc = toCallExpr(redRef2->prev);
+    INT_ASSERT(dc && dc->isNamed("_downEndCount"));
+    dc->insertBefore(redRef2->remove());
+  }
+}
+
+//
+// We won't need the redRef anchors any more. Remove them if we set them up.
+//
+static void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
+  if (!redRef1) return;
+  redRef1->remove();
+  redRef2->remove();
+  redRef1 = redRef2 = NULL;
+}
 
 //
 // Find the _waitEndCount and _endCountFree calls that comes after 'fromHere'.

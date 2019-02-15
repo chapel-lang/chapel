@@ -302,11 +302,6 @@ This is because unused functions are pruned at the end of resolution.
 
 Further key todos:
 
-* Not all forall-like things in Chapel code get transformed
-into ForallStmt nodes. Some forall intents are implemented
-in implementForallIntents1(), implementForallIntents2().
-Todo: switch those to this "modern" implementation.
-
 * When a global is passed by [const] ref intent,
 replace references to the corresponding shadow variable
 in loop body with the global itself.
