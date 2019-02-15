@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 
-"""
-Removes path components that begin with $CHPL_HOME, to reduce
-$PATH & $MANPATH pollution
+"""Removes path components that begin with $CHPL_HOME from the given path.
 
-This is used by the setchplenv.* scripts, and may be called in several
-situations:
+    ./fixpath.py path-value [--shell shell]
+
+Example:
+
+    ./fixpath.py "$PATH" --shell=fish
+
+
+This is used by the setchplenv.* scripts to reduce PATH/MANPATH pollution. It
+may be called in several situations:
+
 1. No Chapel environment settings (new shell)
 2. Same $CHPL_HOME as last time (re-running setchplenv in same dir)
 3. Different $CHPL_HOME (cd ../other-chapel-dir).
@@ -66,8 +72,6 @@ if __name__ == '__main__':
 
 
     parser = optparse.OptionParser(usage=__doc__)
-    #parser.add_arg('env_val', dest='env_val',
-    #                  help='Value of path to be split');
     parser.add_option('--shell', dest='shell', default='bash',
                       help='shell being used');
 
