@@ -2921,9 +2921,12 @@ void makeBinaryLLVM(void) {
   readArgsFromFile(sysroot_arguments, sysroot_args);
 
   // add arguments from configured-clang-sysroot-arguments
+  bool saw_sysroot = false;
   for (auto &s : sysroot_args) {
     options += " ";
     options += s;
+    if (s == "-isysroot")
+      saw_sysroot = true;
   }
   // add arguments that we captured at compile time
   options += " ";
@@ -2991,6 +2994,11 @@ void makeBinaryLLVM(void) {
   for_vector(const char, dirName, libDirs) {
     command += " -L";
     command += dirName;
+  }
+  if (saw_sysroot) {
+    // Work around a bug in some versions of Clang that forget to
+    // search /usr/local/lib if there is a -isysroot argument.
+    command += " -L/usr/local/lib";
   }
   for_vector(const char, libName, libFiles) {
     command += " -l";
