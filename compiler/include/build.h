@@ -96,12 +96,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
 BlockStmt* buildDeleteStmt(CallExpr* exprlist);
-BlockStmt* buildForallLoopStmt(Expr* indices,
-                               Expr* iterator,
-                               ForallIntents* forall_intents,
-                               BlockStmt* body,
-                               bool zippered = false,
-                               VarSymbol* useThisGlobalOp = NULL);
 Expr* buildForLoopExpr(Expr* indices,
                        Expr* iterator,
                        Expr* expr,

@@ -30,7 +30,6 @@ AstCount::AstCount() {
 
   // Initialize other member variables for AST types
   // not handled by the baseAST macro.
-  numForallIntents = 0;
   numWhileDoStmt = 0;
   numDoWhileStmt = 0;
   numCForLoop = 0;
@@ -50,7 +49,6 @@ foreach_ast(count_members);
 #undef count_members
 
   // and then add those not covered by the baseAST macro
-  sum += numForallIntents;
   sum += numWhileDoStmt;
   sum += numDoWhileStmt;
   sum += numCForLoop;
@@ -199,10 +197,6 @@ bool AstCount::enterBlockStmt(BlockStmt* node) {
 }
 
 void AstCount::exitBlockStmt(BlockStmt* node) {
-}
-
-void AstCount::visitForallIntents(ForallIntents* clause) {
-  numForallIntents++;
 }
 
 bool AstCount::enterForallStmt(ForallStmt* node)
