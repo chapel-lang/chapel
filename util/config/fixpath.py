@@ -57,7 +57,7 @@ def remove_chpl_from_path(path_val, delim):
     if not chpl_home or chpl_home not in path_val:
         return path_val
 
-    # Find delims that are not escaped
+    # Find ':'s that are not escaped
     # Note: Fish shell still uses ':' delimiter for printing with \\"$PATH\\"
     pattern = r'(?<!\\)\:'
 
