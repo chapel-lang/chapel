@@ -81,7 +81,8 @@ def main():
         delim = ':'
 
     if len(args) == 0:
-        sys.stdout.write(__doc__)
+        sys.stderr.write('Error: path-value must be supplied\n\n')
+        parser.print_help()
         sys.exit(1)
 
     path = args[0]
