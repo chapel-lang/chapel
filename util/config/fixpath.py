@@ -61,7 +61,7 @@ def remove_chpl_from_path(path_val, delim):
     # Note: Fish shell still uses ':' delimiter for printing with \\"$PATH\\"
     pattern = r'(?<!\\)\:'
 
-    # Split path by non-escape delimiters and sieve chpl_home
+    # Split path by non-escaped ':'s, and sieve chpl_home
     newpath = [escape_path(p, delim) for p in re.split(pattern, path_val)]
     newpath = [p for p in newpath if chpl_home not in p]
 
