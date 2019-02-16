@@ -208,7 +208,15 @@ void addForallIntent(CallExpr* call, ShadowVarSymbol* svar) {
 //  * follower iterator(s), if needed, are invoked from within the leader loop
 //  * all inductionVariables()' DefExprs are moved to the original loop body
 
+enum ParIterFlavor {
+  PIF_NONE,
+  PIF_SERIAL,     // can mean "using directly the indicated iterator"
+  PIF_STANDALONE,
+  PIF_LEADER
+};
+
 /////////// fsIterYieldType ///////////
+
 static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
                                      FnSymbol* origIterFn,
                                      bool alreadyResolved);
@@ -332,6 +340,7 @@ static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
   }
 }
 
+/////////// helpers ///////////
 
 static bool isIteratorRecord(Symbol* sym) {
   return sym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD);
@@ -533,11 +542,10 @@ static void checkForExplicitTagArgs(CallExpr* iterCall) {
   }
 }
 
-static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall,
-                                   SymExpr* origSE, FnSymbol* origTarget)
+static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
+                                 SymExpr* origSE, FnSymbol* origTarget)
 {
-  bool gotParallel = false;
-  bool gotSA = true;
+  ParIterFlavor retval = PIF_NONE;
 
   checkForExplicitTagArgs(iterCall);
 
@@ -548,31 +556,32 @@ static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall,
 
   // try standalone
   if (!pfs->zippered()) {
-    gotParallel = tryResolveCall(iterCall);
+    bool gotSA = tryResolveCall(iterCall);
+    if (gotSA) retval = PIF_STANDALONE;
   }
 
   // try leader
-  if (!gotParallel) {
-    gotSA = false;
+  if (retval == PIF_NONE) {
     tag->actual->replace(new SymExpr(gLeaderTag));
-    gotParallel = tryResolveCall(iterCall);
+    bool gotLeader = tryResolveCall(iterCall);
+    if (gotLeader) retval = PIF_LEADER;
   }
 
   // try serial
-  if (!gotParallel && pfs->allowSerialIterator()) {
-    gotSA = true;
+  if (retval == PIF_NONE && pfs->allowSerialIterator()) {
     tag->remove();
     if (origTarget != NULL) {
-      gotParallel = true;
+      retval = PIF_SERIAL;
       iterCall->baseExpr->replace(new SymExpr(origTarget));
     } else {
       // Iterating over a variable that does not have parallel .these() iters.
       INT_ASSERT(! isIteratorRecord(origSE->symbol()));
-      gotParallel = tryResolveCall(iterCall);
+      bool gotSerial = tryResolveCall(iterCall);
+      if (gotSerial) retval = PIF_SERIAL;
     }
   }
 
-  if (!gotParallel) {
+  if (retval == PIF_NONE) {
     // Cannot USR_FATAL_CONT in general: e.g. if these() is not found,
     // we do not know the type of the index variable.
     // Without which we cannot typecheck the loop body.
@@ -582,8 +591,145 @@ static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall,
       USR_FATAL(iterCall, "A%s leader iterator is not found for the iterable expression in this forall loop", pfs->zippered() ? "" : " standalone or");
   }
 
-  return gotSA;
+  return retval;
 }
+
+/////////// handleZipperedSerial /////////// 
+
+static FnSymbol* trivialLeader          = NULL;
+static Type*     trivialLeaderYieldType = NULL;
+
+static void hzsCheckParallelIterator(ForallStmt* fs, FnSymbol* origIterFn) {
+  if (isLeaderIterator(origIterFn) || isStandaloneIterator(origIterFn)) {
+    USR_FATAL_CONT(fs->iteratedExpressions().head,
+          "cannot use a parallel iterator as the first iterable expression"
+          "in a zippered forall loop");
+    USR_PRINT(origIterFn, "the parallel iterator being invoked is here");
+    USR_STOP();
+  }
+}
+
+// Return a _build_tuple of fs's index variables.
+static CallExpr* hzsMakeIndices(ForallStmt* fs) {
+  CallExpr* indices = new CallExpr("_build_tuple");
+
+  for_alist(inddef, fs->inductionVariables())
+    indices->insertAtTail(toDefExpr(inddef)->sym);
+
+  // Todo detect the case where the forall loop in the source code
+  // had a single index variable. We can tell that by checking whether
+  // all 'inddef' vars are fed into a _build_tuple_always_allow_ref call.
+  // If so, simplify the AST by having 'indices' be a single SymExpr
+  // that is PRIM_MOVE'ed to from that call.
+
+  return indices;
+}
+
+// Return a PRIM_ZIP of fs's iterables.
+static CallExpr* hzsMakeIterators(ForallStmt* fs, FnSymbol* origIterFn,
+                                  SymExpr* origSE)
+{
+  // Looks like the first of the iterables is a copy of the def of origSE.
+  // So use origSE instead.
+  CallExpr* iter1 = toCallExpr(fs->firstIteratedExpr());
+  INT_ASSERT(iter1->resolvedFunction() == origIterFn);
+  iter1->replace(origSE); // relies on origSE not inTree()
+
+  // Move all iterables to the zip call.
+  CallExpr* iterators = new CallExpr(PRIM_ZIP);
+  for_alist(iter, fs->iteratedExpressions()) {
+    iterators->insertAtTail(iter->remove());
+  }
+
+  return iterators;
+}
+
+// Wrap fs's loopBody in a zippered ForLoop over fs's iterables.
+static void hzsBuildZipperedForLoop(ForallStmt* fs, FnSymbol* origIterFn,
+                                    SymExpr* origSE)
+{
+  CallExpr* indices   = hzsMakeIndices(fs);
+  CallExpr* iterators = hzsMakeIterators(fs, origIterFn, origSE);
+
+  BlockStmt* origLoopBody = fs->loopBody();
+  BlockStmt* newLoopBody  = new BlockStmt();
+  origLoopBody->replace(newLoopBody);
+
+  BlockStmt* forBlock = ForLoop::buildForLoop(indices, iterators,
+                                              origLoopBody, false, true);
+  newLoopBody->insertAtTail(forBlock);
+
+  ForLoop* forLoop = toForLoop(origLoopBody->parentExpr);
+
+  SymExpr* loopIterDef = forLoop->iteratorGet()->symbol()->getSingleDef();
+  normalize(loopIterDef->parentExpr); // because of buildForLoop()
+
+  // Move the index variables' DefExprs to 'forLoop'.
+  while (Expr* inddef = fs->inductionVariables().tail)
+    forLoop->insertAtHead(inddef->remove());
+
+  origLoopBody->flattenAndRemove();
+  forBlock->flattenAndRemove();
+}
+
+// Use 'trivialLeader' as fs's parallel iterator.
+static CallExpr* hzsCallTrivialParIter(ForallStmt* fs) {
+  CallExpr* result = NULL;
+
+  if (trivialLeader == NULL) {
+    result = new CallExpr("chpl_trivialLeader");
+    rootModule->block->insertAtTail(result);
+    resolveCallAndCallee(result, false);
+    result->remove();
+
+    trivialLeader = result->resolvedFunction();
+    trivialLeaderYieldType = trivialLeader->iteratorInfo->getValue->retType;
+
+  } else {
+    result = new CallExpr(trivialLeader);
+  }
+
+  VarSymbol* trivialIdx = newTemp("chpl_trivialIdx", trivialLeaderYieldType);
+  trivialIdx->addFlag(FLAG_INDEX_VAR);
+
+  fs->inductionVariables().insertAtTail(new DefExpr(trivialIdx));
+  fs->iteratedExpressions().insertAtTail(result);
+
+  return result;
+}
+
+/*
+Background:
+
+ForallStmt lowering requires a single iterator to inline.
+For a non-zippered loop, it can be standalone or serial.
+For a zippered loop, it has to be a leader, with the followers
+being iterated over with a zippered regular ForLoop
+that we put in ForallStmt->loopBody().
+
+The case at hand:
+
+For a zippered loop over **serial** iterators, we do not have
+such a leader, as serial iterators cannot be "followed".
+So we give the ForallStmt a trivial leader, then have loopBody()
+be a regular ForLoop, zippered over these serial iterators.
+
+Retaining the ForallStmt itself means that forall intents, if any,
+will be hanled by existing code.
+*/
+static CallExpr* handleZipperedSerial(ForallStmt* fs, FnSymbol* origIterFn,
+                                      SymExpr* origSE)
+{
+  hzsCheckParallelIterator(fs, origIterFn);
+
+  hzsBuildZipperedForLoop(fs, origIterFn, origSE);
+
+  CallExpr* trivialCall = hzsCallTrivialParIter(fs);
+
+  return trivialCall;
+}
+
+/////////// final transformations /////////// 
 
 static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
   if (gotSA) {
@@ -658,10 +804,12 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
   INT_ASSERT(fs->numInductionVars() == 1);
 }
 
-static void checkForNonIterator(IteratorGroup* igroup, bool gotSA,
+static void checkForNonIterator(IteratorGroup* igroup, ParIterFlavor flavor,
                                 CallExpr* parCall)
 {
-  if (gotSA ? igroup->noniterSA : igroup->noniterL) {
+  if ((flavor == PIF_STANDALONE && igroup->noniterSA) ||
+      (flavor == PIF_LEADER     && igroup->noniterL)   )
+  {
     FnSymbol* dest = parCall->resolvedFunction();
     USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
     USR_PRINT(dest, "The function '%s' is declared here", dest->name);
@@ -728,7 +876,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   INT_ASSERT(pfs->loopBody()->body.empty());
 
   BlockStmt* preFS           = new BlockStmt(BLOCK_SCOPELESS);
-  // cf in build.cpp: new ForLoop(leadIdx, leadIter, NULL, zippered)
   BlockStmt* leadForLoop     = pfs->loopBody();
 
   VarSymbol* iterRec         = newTemp("chpl__iterLF"); // serial iter, LF case
@@ -809,8 +956,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 
 void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall);
 
+/////////// resolveForallHeader, setupRecIterFields ///////////
 
-// see also comments above
+// Returns the next expression to resolve.
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 {
   CallExpr* retval = NULL;
@@ -828,19 +976,25 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   INT_ASSERT(iterCall         == pfs->firstIteratedExpr());
   INT_ASSERT(origSE->inTree() == false);
 
-  // gotSA=true when we end up with standalone, original, or serial iter. 
-  bool gotSA = acceptUnmodifiedIterCall(pfs, iterCall) ||
-               findStandaloneOrLeader(pfs, iterCall, origSE, origTarget);
+  bool useOriginal = acceptUnmodifiedIterCall(pfs, iterCall);
+  ParIterFlavor flavor =
+    useOriginal ? PIF_SERIAL
+                : findParIter(pfs, iterCall, origSE, origTarget);
+
   resolveCallAndCallee(iterCall, false);
 
-  FnSymbol* origIterFn = iterCall->resolvedFunction();
+  // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
+  if (tryFailure) return NULL;
 
-  if (!tryFailure && origTarget) {
+  FnSymbol* origIterFn = iterCall->resolvedFunction();
+  bool gotSA = (flavor != PIF_LEADER); // "got Single iterAtor"
+
+  if (origTarget) {
     IteratorGroup* igroup = origTarget->iteratorGroup;
-    checkForNonIterator(igroup, gotSA, iterCall);
+    checkForNonIterator(igroup, flavor, iterCall);
 
     if (origTarget == origIterFn) {
-      INT_ASSERT(gotSA);
+      INT_ASSERT(flavor == PIF_SERIAL);
       INT_ASSERT(pfs->allowSerialIterator());
       INT_ASSERT(origIterFn == igroup->serial);
     } else if (gotSA) {
@@ -850,9 +1004,15 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
     }
   }
 
-  // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
-  if (tryFailure == false)
-  {
+  if (flavor == PIF_SERIAL && pfs->numIteratedExprs() > 1) {
+    // numIteratedExprs() is a good number to check, right?
+    INT_ASSERT(pfs->numIteratedExprs() == pfs->numInductionVars());
+
+    retval = handleZipperedSerial(pfs, origIterFn, origSE);
+
+    setupAndResolveShadowVars(pfs);
+
+  } else {
     addParIdxVarsAndRestruct(pfs, gotSA);
 
     resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
