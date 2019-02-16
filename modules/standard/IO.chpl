@@ -5478,7 +5478,10 @@ proc _toIntegral(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isEnumType(t) then
+      ret = (chpl__enumToOrder(x), true);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
@@ -5521,7 +5524,10 @@ proc _toSigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isEnumType(t) then
+      ret = (chpl__enumToOrder(x), true);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
@@ -5565,7 +5571,10 @@ proc _toUnsigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (uint, bool);
   try {
-    ret = (x:uint, true);
+    if isEnumType(t) then
+      ret = (chpl__enumToOrder(x):uint, true);
+    else
+      ret = (x:uint, true);
   } catch {
     ret = (0:uint, false);
   }
@@ -5588,7 +5597,10 @@ proc _toReal(x:?t) where _isIoPrimitiveType(t) && !isRealType(t)
 {
   var ret: (real, bool);
   try {
-    ret = (x:real, true);
+    if isEnumType(t) then
+      ret = (chpl__enumToOrder(x):real, true);
+    else
+      ret = (x:real, true);
   } catch {
     ret = (0.0, false);
   }
@@ -5610,7 +5622,10 @@ proc _toImag(x:?t) where _isIoPrimitiveType(t) && !isImagType(t)
 {
   var ret: (imag, bool);
   try {
-    ret = (x:imag, true);
+    if isEnumType(t) then
+      ret = (chpl__enumToOrder(x):imag, true);
+    else
+      ret = (x:imag, true);
   } catch {
     ret = (0.0i, false);
   }
@@ -5633,7 +5648,10 @@ proc _toComplex(x:?t) where _isIoPrimitiveType(t) && !isComplexType(t)
 {
   var ret: (complex, bool);
   try {
-    ret = (x:complex, true);
+    if isEnumType(t) then
+      ret = (chpl__enumToOrder(x):complex, true);
+    else
+      ret = (x:complex, true);
   } catch {
     ret = (0.0+0.0i, false);
   }
@@ -5677,7 +5695,10 @@ proc _toNumeric(x:?t) where _isIoPrimitiveType(t) && !isNumericType(t)
   // enums, bools get cast to int.
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isEnumType(t) then
+      ret = (chpl__enumToOrder(x), true);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
