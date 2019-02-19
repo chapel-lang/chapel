@@ -228,6 +228,10 @@ module ChapelIteratorSupport {
       compilerError("unexpected argument of type ", domInst.type:string, " for chpl_buildStandInRTT()");
   }
 
+  iter chpl_trivialLeader() {
+    yield 0;
+  }
+
   inline proc chpl_computeIteratorShape(arg: []) {
     return chpl_computeIteratorShape(arg.domain);
   }
