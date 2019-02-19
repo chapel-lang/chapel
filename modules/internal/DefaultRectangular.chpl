@@ -1761,6 +1761,7 @@ module DefaultRectangular {
       // that along with the size of the array. This is only possible when the
       // byte order is set to native or its equivalent.
       pragma "no prototype"
+      pragma "fn synchronization free"
       extern proc sizeof(type x): size_t;
       const elemSize = sizeof(arr.eltType);
       if boundsChecking {
@@ -1878,6 +1879,7 @@ module DefaultRectangular {
 
     if debugBulkTransfer {
       pragma "no prototype"
+      pragma "fn synchronization free"
       extern proc sizeof(type x): int;
       const elemSize =sizeof(B.eltType);
       chpl_debug_writeln("In DefaultRectangular._simpleTransfer():",

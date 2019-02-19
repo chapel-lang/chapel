@@ -187,8 +187,10 @@ module Atomics {
       atomic_init(_v, default);
     }
 
+    pragma "fn synchronization free"
     pragma "no doc"
     proc deinit() {
+      pragma "fn synchronization free"
       extern externFunc("destroy", bool, explicit=false)
         proc atomic_destroy(ref obj:externT(bool)): void;
 
@@ -330,8 +332,10 @@ module Atomics {
       atomic_init(_v, default);
     }
 
+    pragma "fn synchronization free"
     pragma "no doc"
     proc deinit() {
+      pragma "fn synchronization free"
       extern externFunc("destroy", T, explicit=false)
         proc atomic_destroy(ref obj:externT(T)): void;
 

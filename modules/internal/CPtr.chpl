@@ -426,6 +426,7 @@ module CPtr {
 
 
   pragma "no doc"
+  pragma "fn synchronization free"
   extern proc c_pointer_return(ref x:?t):c_ptr(t);
 
 
@@ -485,6 +486,7 @@ module CPtr {
   // for more.
   private proc offset_ARRAY_ELEMENTS {
     extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
+    pragma "fn synchronization free"
     extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
     return CHPL_RT_MD_ARRAY_ELEMENTS - chpl_memhook_md_num();
   }
@@ -503,6 +505,7 @@ module CPtr {
          * Behavior given a Chapel class type is not well-defined
    */
   inline proc c_sizeof(type x): size_t {
+    pragma "fn synchronization free"
     extern proc sizeof(type x): size_t;
     return sizeof(x);
   }
@@ -587,7 +590,9 @@ module CPtr {
     :arg src: the source memory area to copy from
     :arg n: the number of bytes from src to copy to dest
    */
+  pragma "fn synchronization free"
   inline proc c_memmove(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
+    pragma "fn synchronization free"
     extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: size_t);
     memmove(dest, src, n.safeCast(size_t));
   }
@@ -602,7 +607,9 @@ module CPtr {
     :arg src: the source memory area to copy from
     :arg n: the number of bytes from src to copy to dest
    */
+  pragma "fn synchronization free"
   inline proc c_memcpy(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
+    pragma "fn synchronization free"
     extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: size_t);
     memcpy(dest, src, n.safeCast(size_t));
   }
@@ -616,7 +623,9 @@ module CPtr {
               the first n bytes of s1 are found, respectively, to be less than,
               to match, or be greater than the first n bytes of s2.
    */
+  pragma "fn synchronization free"
   inline proc c_memcmp(const s1:c_void_ptr, const s2:c_void_ptr, n: integral) {
+    pragma "fn synchronization free"
     extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: size_t) : c_int;
     return memcmp(s1, s2, n.safeCast(size_t)).safeCast(int);
   }
@@ -632,7 +641,9 @@ module CPtr {
 
     :returns: s
    */
+  pragma "fn synchronization free"
   inline proc c_memset(s:c_void_ptr, c:integral, n: integral) {
+    pragma "fn synchronization free"
     extern proc memset(s: c_void_ptr, c: c_int, n: size_t) : c_void_ptr;
     memset(s, c.safeCast(c_int), n.safeCast(size_t));
     return s;
