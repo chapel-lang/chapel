@@ -1,6 +1,5 @@
 use Random;
 
-// These can be provided on the command line, e.g. --minimum=1000
 config const n = 10000;
 config const seed = 1;
 
