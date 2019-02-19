@@ -601,11 +601,7 @@ static Type*     trivialLeaderYieldType = NULL;
 
 static void hzsCheckParallelIterator(ForallStmt* fs, FnSymbol* origIterFn) {
   if (isLeaderIterator(origIterFn) || isStandaloneIterator(origIterFn)) {
-    USR_FATAL_CONT(fs->iteratedExpressions().head,
-          "cannot use a parallel iterator as the first iterable expression"
-          "in a zippered forall loop");
-    USR_PRINT(origIterFn, "the parallel iterator being invoked is here");
-    USR_STOP();
+    USR_FATAL(fs->iteratedExpressions().head, "Support for this combination of zippered iterators is not currently implemented");
   }
 }
 
