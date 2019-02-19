@@ -14,9 +14,9 @@ if [ ! -d "$chpl_home/util" -o ! -d "$chpl_home/compiler" -o ! -d "$chpl_home/ru
 end
 
 # Remove any previously existing CHPL_HOME paths
-eval set MYPATH (eval "$chpl_home/util/config/fixpath.py \"PATH\" \"fish\"")
+eval set MYPATH (eval "$chpl_home/util/config/fixpath.py \"$PATH\" \"--shell=fish\"")
 set exitcode $status
-eval set MYMANPATH (eval "$chpl_home/util/config/fixpath.py \"MANPATH\" \"fish\"")
+eval set MYMANPATH (eval "$chpl_home/util/config/fixpath.py \"$MANPATH\" \"--shell=fish\"")
 
 # Double check $MYPATH before overwriting $PATH
 if [ (count $MYPATH) = 0 -o ! $exitcode = 0 ]
