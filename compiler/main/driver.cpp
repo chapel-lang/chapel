@@ -176,6 +176,7 @@ bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
 bool fIncrementalCompilation = false;
+bool fNoOptimizeForallUnordered = false;
 
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
@@ -210,10 +211,12 @@ bool fPrintDispatch = false;
 bool fPrintUnusedFns = false;
 bool fPrintUnusedInternalFns = false;
 bool fReportAliases = false;
+bool fReportBlocking = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportInlinedIterators = false;
 bool fReportVectorizedLoops = false;
 bool fReportOptimizedOn = false;
+bool fReportOptimizeForallUnordered = false;
 bool fReportPromotion = false;
 bool fReportScalarReplace = false;
 bool fReportDeadBlocks = false;
@@ -766,6 +769,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoInferLocalFields = true;         // --no-infer-local-fields
   //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
   fDenormalize = false;               // --no-denormalize
+  fNoOptimizeForallUnordered = true;  // --no-optimize-forall-unordered-ops
 }
 
 static void setCacheEnable(const ArgumentDescription* desc, const char* unused) {
@@ -894,6 +898,7 @@ static ArgumentDescription arg_desc[] = {
  {"inline-iterators-yield-limit", ' ', "<limit>", "Limit number of yields permitted in inlined iterators", "I", &inline_iter_yield_limit, "CHPL_INLINE_ITER_YIELD_LIMIT", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoLoopInvariantCodeMotion, NULL, NULL},
+ {"optimize-forall-unordered-ops", ' ', NULL, "Enable [disable] optimization of foralls to unordered operations", "n", &fNoOptimizeForallUnordered, "CHPL_DISABLE_OPTIMIZE_FORALL_UNORDERED_OPS", NULL},
  {"optimize-range-iteration", ' ', NULL, "Enable [disable] optimization of iteration over anonymous ranges", "n", &fNoOptimizeRangeIteration, "CHPL_DISABLE_OPTIMIZE_RANGE_ITERATION", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
  {"optimize-on-clauses", ' ', NULL, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", NULL},
@@ -1022,6 +1027,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
  {"report-aliases", ' ', NULL, "Report aliases in user code", "N", &fReportAliases, NULL, NULL},
+ {"report-blocking", ' ', NULL, "Report blocking functions in user code", "N", &fReportBlocking, NULL, NULL},
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
@@ -1029,6 +1035,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-inlined-iterators", ' ', NULL, "Print stats on inlined iterators", "F", &fReportInlinedIterators, NULL, NULL},
  {"report-vectorized-loops", ' ', NULL, "Show which loops have vectorization hints", "F", &fReportVectorizedLoops, NULL, NULL},
  {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},
+ {"report-optimized-forall-unordered-ops", ' ', NULL, "Show which statements in foralls have been converted to unordered operations", "F", &fReportOptimizeForallUnordered, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
  {"default-unmanaged", ' ', NULL, "Enable [disable] class type defaulting to unmanaged", "N", &fDefaultUnmanaged, "CHPL_DEFAULT_UNMANAGED", NULL},

@@ -392,7 +392,7 @@ static void markVectorizableForallLoops()
             const char* nom = "SumReduceScanOp";
             size_t len = strlen(nom);
 
-            if (0 == memcmp(nom, opType->symbol->name, len))
+            if (0 == strncmp(nom, opType->symbol->name, len))
               ok = true;
           }
           if (ok == false)
