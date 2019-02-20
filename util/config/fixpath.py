@@ -7,7 +7,7 @@
 Example:
 
     ./fixpath.py "$PATH"
-    ./fixpath.py \\\\"$PATH\\\\" --shell=fish
+    ./fixpath.py \\" $PATH \\" --shell=fish
 
 This is used by the setchplenv.* scripts to reduce PATH/MANPATH pollution. It
 may be called in several situations:
@@ -57,12 +57,12 @@ def remove_chpl_from_path(path_val, delim):
     if not chpl_home or chpl_home not in path_val:
         return path_val
 
-    # Find ':'s that are not escaped
-    # Note: Fish shell still uses ':' delimiter for printing with \\"$PATH\\"
-    pattern = r'(?<!\\)\:'
+    # Find delims that are not escaped
+    pattern = r'(?<!\\)\{0}'.format(delim)
 
-    # Split path by non-escaped ':'s, and sieve chpl_home
-    newpath = [escape_path(p, delim) for p in re.split(pattern, path_val)]
+    # Split path by non-escaped delims, and sieve chpl_home
+    # Fish input includes hanging quotation marks, so we drop those here
+    newpath = [escape_path(p, delim) for p in re.split(pattern, path_val) if p != '"']
     newpath = [p for p in newpath if chpl_home not in p]
 
     return delim.join(newpath)
@@ -85,7 +85,7 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    path = args[0]
+    path = delim.join(args)
 
     newpath = remove_chpl_from_path(path, delim)
     sys.stdout.write('{0}'.format(newpath))
