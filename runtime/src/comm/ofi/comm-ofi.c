@@ -1212,6 +1212,10 @@ typedef enum {
   am_opAMO,                             // do an AMO
 } amOp_t;
 
+#ifdef CHPL_COMM_DEBUG
+static const char* am_op2name(amOp_t);
+#endif
+
 static void amRequestExecOn(c_nodeid_t, c_sublocid_t, chpl_fn_int_t,
                             chpl_comm_on_bundle_t*, size_t,
                             chpl_bool, chpl_bool);
@@ -1487,13 +1491,12 @@ void amRequestCommon(c_nodeid_t node,
     memcpy(myArg, arg, argSize);
   }
 
+  DBG_PRINTF(DBG_AM | DBG_AMSEND,
+             "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, pDone %p",
+             node, chpl_nodeID, myArg->comm.b.seq,
+             am_op2name(myArg->comm.b.op), argSize, pDone);
   OFI_CHK(fi_send(tcip->txCtx, myArg, argSize, mrDesc, ofi_rxAddrs[node],
                   NULL));
-  DBG_PRINTF(DBG_AM | DBG_AMSEND,
-             "tx AM req to %d, seqId %d:%" PRIu64 ", op %d, size %zd, "
-             "pDone %p",
-             node, chpl_nodeID, myArg->comm.b.seq, (int) myArg->comm.b.op,
-             argSize, pDone);
   tcip->numAmReqsTxed++;
   tcip->numTxsOut++;
 
@@ -1545,7 +1548,8 @@ static void amWrapExecOnLrgBody(void*);
 static void amWrapGet(void*);
 static void amWrapPut(void*);
 static void amHandleAMO(chpl_comm_on_bundle_t*);
-static void amSendDone(c_nodeid_t, chpl_comm_amDone_t*);
+static inline void amSendDone(struct chpl_comm_bundleData_base_t*,
+                              chpl_comm_amDone_t*);
 
 static inline void doCpuAMO(void*, const void*, const void*, void*,
                             enum fi_op, enum fi_datatype, size_t size);
@@ -1690,11 +1694,11 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         //
         chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) cqes[i].buf;
         DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                   "CQ rx AM req, "
-                   "offset %zd, seqId %d:%" PRIu64 ", op %d, len %zd",
+                   "CQ rx AM req @ buffer offset %zd: "
+                   "seqId %d:%" PRIu64 ", %s, size %zd",
                    (char*) req - (char*) ofi_msg_reqs.msg_iov->iov_base,
-                   req->comm.b.node, req->comm.b.seq, req->comm.b.op,
-                   cqes[i].len);
+                   req->comm.b.node, req->comm.b.seq,
+                   am_op2name(req->comm.b.op), cqes[i].len);
         tcip->numAmReqsRxed++;
 
 #if defined(CHPL_COMM_DEBUG) && defined(DEBUG_CRC_MSGS)
@@ -1728,8 +1732,6 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
           // completion counter would make it hard to tell when that GET
           // had completed.
           //
-          DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                     "AM req startMovedTask(amWrapGet())");
           chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapGet,
                                    chpl_comm_on_bundle_task_bundle(req),
                                    sizeof(*req), c_sublocid_any,
@@ -1744,8 +1746,6 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
           // completion counter would make it hard to tell when that PUT
           // had completed.
           //
-          DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                     "AM req startMovedTask(amWrapPut())");
           chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapPut,
                                    chpl_comm_on_bundle_task_bundle(req),
                                    sizeof(*req), c_sublocid_any,
@@ -1782,8 +1782,8 @@ static
 void amHandleExecOn(chpl_comm_on_bundle_t* req) {
   struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "amHandleExecOn() seqId %d:%" PRIu64,
-             (int) xo->b.node, xo->b.seq);
+             "amHandleExecOn(seqId %d:%" PRIu64 "): fid %d, pDone %p",
+             (int) xo->b.node, xo->b.seq, xo->fid, xo->pDone);
 
   //
   // We only need a wrapper if we have to send a 'done' indicator back.
@@ -1800,14 +1800,14 @@ static inline
 void amWrapExecOnBody(void* p) {
   chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
   struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
-
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "amWrapExecOnBody(%p): "
-             "seqId %d:%" PRIu64 ", %schpl_ftable_call(%d, %p)",
-             p, xo->b.node, xo->b.seq,
+             "amWrapExecOnBody(seqId %d:%" PRIu64 "): "
+             "%schpl_ftable_call(%d, %p)",
+             (int) xo->b.node, xo->b.seq,
              (xo->fast ? "fast " : ""), (int) xo->fid, p);
+
   chpl_ftable_call(xo->fid, p);
-  amSendDone(xo->b.node, xo->pDone);
+  amSendDone(&xo->b, xo->pDone);
 }
 
 
@@ -1815,8 +1815,8 @@ static
 void amHandleExecOnLrg(chpl_comm_on_bundle_t* req) {
   struct chpl_comm_bundleData_execOnLrg_t* xol = &req->comm.xol;
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "amHandleExecOnLrg() seqId %d:%" PRIu64,
-             (int) xol->b.node, xol->b.seq);
+             "amHandleExecOnLrg(seqId %d:%" PRIu64 "): fid %d, pDone %p",
+             (int) xol->b.node, xol->b.seq, xol->fid, xol->pDone);
 
   chpl_task_startMovedTask(xol->fid, (chpl_fn_p) amWrapExecOnLrgBody,
                            chpl_comm_on_bundle_task_bundle(req),
@@ -1829,11 +1829,10 @@ void amWrapExecOnLrgBody(void* p) {
   chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
   struct chpl_comm_bundleData_execOnLrg_t* xol = &req->comm.xol;
   c_nodeid_t node = xol->b.node;
-
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "amWrapExecOnLrgBody: "
-             "seqId %d:%" PRIu64 ", chpl_ftable_call(%d, %p)",
-             node, xol->b.seq, (int) xol->fid, p);
+             "amWrapExecOnLrgBody(seqId %d:%" PRIu64 "): "
+             "chpl_ftable_call(%d, %p)",
+             (int) node, xol->b.seq, (int) xol->fid, p);
 
   //
   // Create space for the full bundle and fill in the header part from
@@ -1874,7 +1873,7 @@ void amWrapExecOnLrgBody(void* p) {
   //
   chpl_ftable_call(xol->fid, req);
   if (xol->pDone != NULL) {
-    amSendDone(node, xol->pDone);
+    amSendDone(&xol->b, xol->pDone);
   }
 
   CHPL_FREE(req);
@@ -1885,14 +1884,15 @@ static
 void amWrapGet(void* p) {
   chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
   struct chpl_comm_bundleData_RMA_t* rma = &req->comm.rma;
-
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "amWrapGet(): %p <-- %d:%p (%zd bytes)",
+             "amWrapGet(seqId %d:%" PRIu64 "): %p <- %d:%p (%zd bytes)",
+             (int) rma->b.node, rma->b.seq,
              rma->addr, (int) rma->b.node, rma->raddr, rma->size);
+
   CHK_TRUE(mrGetKey(NULL, rma->b.node, rma->raddr, rma->size) == 0); // sanity
   (void) ofi_get(rma->addr, rma->b.node, rma->raddr, rma->size);
 
-  amSendDone(rma->b.node, rma->pDone);
+  amSendDone(&rma->b, rma->pDone);
 }
 
 
@@ -1900,14 +1900,15 @@ static
 void amWrapPut(void* p) {
   chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
   struct chpl_comm_bundleData_RMA_t* rma = &req->comm.rma;
-
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "amWrapPut() %d:%p <-- %p (%zd bytes)",
+             "amWrapPut(seqId %d:%" PRIu64 ") %d:%p <-- %p (%zd bytes)",
+             (int) rma->b.node, rma->b.seq,
              (int) rma->b.node, rma->raddr, rma->addr, rma->size);
+
   CHK_TRUE(mrGetKey(NULL, rma->b.node, rma->raddr, rma->size) == 0); // sanity
   (void) ofi_put(rma->addr, rma->b.node, rma->raddr, rma->size);
 
-  amSendDone(rma->b.node, rma->pDone);
+  amSendDone(&rma->b, rma->pDone);
 }
 
 
@@ -1916,33 +1917,35 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
   struct chpl_comm_bundleData_AMO_t* amo = &req->comm.amo;
   if (amo->ofiOp == FI_CSWAP) {
     DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
-               "amHandleAMO() for node %d: obj %p, opnd1 %s, opnd2 %s, "
+               "amHandleAMO(seqId %d:%" PRIu64 "): "
+               "obj %p, opnd1 %s, opnd2 %s, "
                "res %p, ofiOp %d, ofiType %d, sz %d",
-               amo->b.node, amo->obj,
+               (int) amo->b.node, amo->b.seq,
+               amo->obj,
                DBG_VAL(&amo->operand1, amo->ofiType),
                DBG_VAL(&amo->operand2, amo->ofiType),
                amo->result, amo->ofiOp, amo->ofiType, amo->size);
   } else if (amo->result != NULL) {
     if (amo->ofiOp == FI_ATOMIC_READ) {
       DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
-                 "amHandleAMO() for node %d: obj %p, "
-                 "res %p, ofiOp %d, ofiType %d, sz %d",
-                 amo->b.node, amo->obj,
-                 amo->result, amo->ofiOp, amo->ofiType, amo->size);
+                 "amHandleAMO(seqId %d:%" PRIu64 "): "
+                 "obj %p, res %p, ofiOp %d, ofiType %d, sz %d",
+                 (int) amo->b.node, amo->b.seq,
+                 amo->obj, amo->result, amo->ofiOp, amo->ofiType, amo->size);
     } else {
       DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
-                 "amHandleAMO() for node %d: obj %p, opnd %s, "
-                 "res %p, ofiOp %d, ofiType %d, sz %d",
-                 amo->b.node, amo->obj,
-                 DBG_VAL(&amo->operand1, amo->ofiType),
+                 "amHandleAMO(seqId %d:%" PRIu64 "): "
+                 "obj %p, opnd %s, res %p, ofiOp %d, ofiType %d, sz %d",
+                 (int) amo->b.node, amo->b.seq,
+                 amo->obj, DBG_VAL(&amo->operand1, amo->ofiType),
                  amo->result, amo->ofiOp, amo->ofiType, amo->size);
     }
   } else {
     DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
-               "amHandleAMO() for node %d: obj %p, opnd %s, "
-               "ofiOp %d, ofiType %d, sz %d",
-               amo->b.node, amo->obj,
-               DBG_VAL(&amo->operand1, amo->ofiType),
+               "amHandleAMO(seqId %d:%" PRIu64 "): "
+               "obj %p, opnd %s, ofiOp %d, ofiType %d, sz %d",
+               (int) amo->b.node, amo->b.seq,
+               amo->obj, DBG_VAL(&amo->operand1, amo->ofiType),
                amo->ofiOp, amo->ofiType, amo->size);
   }
   chpl_amo_datum_t result;
@@ -1991,13 +1994,14 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
     *amo->pDone = 1;
     chpl_atomic_thread_fence(memory_order_release);
   } else {
-    amSendDone(amo->b.node, amo->pDone);
+    amSendDone(&amo->b, amo->pDone);
   }
 }
 
 
-static
-void amSendDone(c_nodeid_t node, chpl_comm_amDone_t* pDone) {
+static inline
+void amSendDone(struct chpl_comm_bundleData_base_t* b,
+                chpl_comm_amDone_t* pDone) {
   static __thread chpl_comm_amDone_t* myDone = NULL;
   if (myDone == NULL) {
     myDone = allocBounceBuf(1);
@@ -2005,9 +2009,10 @@ void amSendDone(c_nodeid_t node, chpl_comm_amDone_t* pDone) {
     *myDone = 1;
   }
 
-  CHK_TRUE(mrGetKey(NULL, node, pDone, sizeof(*pDone)) == 0);
-  DBG_PRINTF(DBG_AM, "AM set pDone %d:%p", node, pDone);
-  (void) ofi_put(myDone, node, pDone, sizeof(*pDone));
+  CHK_TRUE(mrGetKey(NULL, b->node, pDone, sizeof(*pDone)) == 0);
+  DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set pDone %p",
+             (int) b->node, b->seq, pDone);
+  (void) ofi_put(myDone, b->node, pDone, sizeof(*pDone));
 }
 
 
@@ -3406,6 +3411,20 @@ char* chpl_comm_ofi_dbg_val(const void* pV, enum fi_datatype ofiType) {
     iBuf = 0;
 
   return s;
+}
+
+
+static
+const char* am_op2name(amOp_t op) {
+  switch (op) {
+  case am_opNil: return "opNil";
+  case am_opExecOn: return "opExecOn";
+  case am_opExecOnLrg: return "opExecOnLrg";
+  case am_opGet: return "opGet";
+  case am_opPut: return "opPut";
+  case am_opAMO: return "opAMO";
+  }
+  return "op???";
 }
 
 #endif
