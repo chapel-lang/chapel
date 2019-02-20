@@ -75,22 +75,24 @@ static struct fi_info* ofi_info;        // fabric interface info
 static struct fid_fabric* ofi_fabric;   // fabric domain
 static struct fid_domain* ofi_domain;   // fabric access domain
 static struct fid_ep* ofi_txEp;         // scalable transmit endpoint
-static struct fid_ep* ofi_rxEp;         // AM req receive endpoint
-static struct fid_cq* ofi_rxCQ;         // receive endpoint CQ
-static struct fid_av* ofi_av;           // address vector, table style
-static fi_addr_t* ofi_rxAddrs;          // remote receive addrs
 
 //
 // We direct RMA traffic and AM traffic to different endpoints so we can
 // spread the progress load across all the threads when we're doing
 // manual progress.
 //
+static struct fid_ep* ofi_rxEp;         // AM req receive endpoint
+static struct fid_cq* ofi_rxCQ;         // AM req receive endpoint CQ
 static struct fid_ep* ofi_rxEpRma;      // RMA/AMO target endpoint
-static struct fid_cntr* ofi_rxCntrRma;  // RMA target endpoint counter
-static struct fid_av* ofi_avRma;        // address vector for RMA
-static fi_addr_t* ofi_rxAddrsRma;       // remote RMA addresses
-static pthread_mutex_t rxEpRmaLock      // lock for RMA endpoint; it's shared
+static struct fid_cntr* ofi_rxCntrRma;  // RMA/AMO target endpoint counter
+static pthread_mutex_t rxEpRmaLock      // lock for (shared) RMA/AMO endpoint
                        = PTHREAD_MUTEX_INITIALIZER;
+
+static struct fid_av* ofi_av;           // address vector, table style
+static fi_addr_t* ofi_rxAddrs;          // remote receive addrs
+
+#define rxMsgAddr(n) (ofi_rxAddrs[2 * node])
+#define rxRmaAddr(n) (ofi_rxAddrs[2 * node + 1])
 
 static int txCQSize;                    // txCQ size
 
@@ -386,12 +388,11 @@ void init_ofiFabricDomain(void) {
   //
   struct fi_av_attr ofi_avAttr = { 0 };
   ofi_avAttr.type = FI_AV_TABLE;
-  ofi_avAttr.count = chpl_numNodes;
+  ofi_avAttr.count = chpl_numNodes * 2;
   ofi_avAttr.name = NULL;
   ofi_avAttr.rx_ctx_bits = 0;
 
   OFI_CHK(fi_av_open(ofi_domain, &ofi_avAttr, &ofi_av, NULL));
-  OFI_CHK(fi_av_open(ofi_domain, &ofi_avAttr, &ofi_avRma, NULL));
 }
 
 
@@ -476,7 +477,7 @@ void init_ofiEp(void) {
   rxCntrRmaAttr.wait_obj = FI_WAIT_NONE;
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
-  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_avRma->fid, 0));
+  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_av->fid, 0));
   OFI_CHK(fi_cntr_open(ofi_domain, &rxCntrRmaAttr, &ofi_rxCntrRma, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCntrRma->fid, FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEpRma));
@@ -569,77 +570,68 @@ void init_ofiExchangeAvInfo(void) {
   //
   // Exchange addresses with the rest of the nodes.
   //
-  void* my_addr;
-  void* addrs;
-  size_t my_addr_len = 0;
 
   //
   // Get everybody else's address.
-  // Note: this assumes my_addr_len is the same on all nodes.
+  // Note: this assumes all addresses, job-wide, are the same length.
   //
+  if (DBG_TEST_MASK(DBG_CFGAV)) {
+    //
+    // Sanity-check our same-address-length assumption.
+    //
+    size_t len = 0;
+    size_t lenRma = 0;
+
+    CHK_TRUE(fi_getname(&ofi_rxEp->fid, NULL, &len) == -FI_ETOOSMALL);
+    CHK_TRUE(fi_getname(&ofi_rxEpRma->fid, NULL, &lenRma) == -FI_ETOOSMALL);
+    CHK_TRUE(len == lenRma);
+
+    size_t* lens;
+    CHPL_CALLOC(lens, chpl_numNodes);
+    chpl_comm_ofi_oob_allgather(&len, lens, sizeof(len));
+    if (chpl_nodeID == 0) {
+      for (int i = 0; i < chpl_numNodes; i++) {
+        CHK_TRUE(lens[i] == len);
+      }
+    }
+  }
+
+  char* my_addr;
+  char* addrs;
+  size_t my_addr_len = 0;
+
   CHK_TRUE(fi_getname(&ofi_rxEp->fid, NULL, &my_addr_len) == -FI_ETOOSMALL);
-  CHPL_CALLOC_SZ(my_addr, my_addr_len, 1);
+  CHPL_CALLOC_SZ(my_addr, 2 * my_addr_len, 1);
   OFI_CHK(fi_getname(&ofi_rxEp->fid, my_addr, &my_addr_len));
-  CHPL_CALLOC_SZ(addrs, chpl_numNodes, my_addr_len);
+  OFI_CHK(fi_getname(&ofi_rxEpRma->fid, my_addr + my_addr_len, &my_addr_len));
+  CHPL_CALLOC_SZ(addrs, chpl_numNodes, 2 * my_addr_len);
   if (DBG_TEST_MASK(DBG_CFGAV)) {
     char nameBuf[128];
     size_t nameLen;
     nameLen = sizeof(nameBuf);
+    char nameBuf2[128];
+    size_t nameLen2;
+    nameLen2 = sizeof(nameBuf2);
     (void) fi_av_straddr(ofi_av, my_addr, nameBuf, &nameLen);
-    DBG_PRINTF(DBG_CFGAV, "my_addr: %.*s%s",
+    (void) fi_av_straddr(ofi_av, my_addr + my_addr_len, nameBuf2, &nameLen2);
+    DBG_PRINTF(DBG_CFGAV, "my_addrs: %.*s%s, %.*s%s",
                (int) nameLen, nameBuf,
-               (nameLen <= sizeof(nameBuf)) ? "" : "[...]");
+               (nameLen <= sizeof(nameBuf)) ? "" : "[...]",
+               (int) nameLen2, nameBuf2,
+               (nameLen2 <= sizeof(nameBuf2)) ? "" : "[...]");
   }
-  chpl_comm_ofi_oob_allgather(my_addr, addrs, my_addr_len);
+  chpl_comm_ofi_oob_allgather(my_addr, addrs, 2 * my_addr_len);
 
   //
   // Insert the addresses into the address vectors and build up a vector
   // of remote receive endpoints.
   //
-  CHPL_CALLOC(ofi_rxAddrs, chpl_numNodes);
-  CHK_TRUE(fi_av_insert(ofi_av, addrs, chpl_numNodes, ofi_rxAddrs, 0, NULL)
-           == chpl_numNodes);
+  CHPL_CALLOC(ofi_rxAddrs, 2 * chpl_numNodes);
+  CHK_TRUE(fi_av_insert(ofi_av, addrs, 2 * chpl_numNodes, ofi_rxAddrs, 0, NULL)
+           == 2 * chpl_numNodes);
 
   CHPL_FREE(my_addr);
   CHPL_FREE(addrs);
-
-  if (chpl_nodeID == 0 && DBG_TEST_MASK(DBG_CFGAV)) {
-    DBG_PRINTF(DBG_CFGAV, "====================");
-    DBG_PRINTF(DBG_CFGAV, "Address vector");
-    char addrBuf[my_addr_len + 1];
-    size_t addrLen;
-    char nameBuf[128];
-    size_t nameLen;
-    for (int i = 0; i < chpl_numNodes; i++) {
-      addrLen = sizeof(addrBuf);
-      OFI_CHK(fi_av_lookup(ofi_av, i, addrBuf, &addrLen));
-      CHK_TRUE(addrLen <= sizeof(addrBuf));
-      nameLen = sizeof(nameBuf);
-      (void) fi_av_straddr(ofi_av, addrBuf, nameBuf, &nameLen);
-      DBG_PRINTF(DBG_CFGAV, "addrVec[%d]: %.*s%s",
-                 i, (int) nameLen, nameBuf,
-                 (nameLen <= sizeof(nameBuf)) ? "" : "[...]");
-    }
-    DBG_PRINTF(DBG_CFGAV, "====================");
-  }
-
-  void* my_addrRma;
-  void* addrsRma;
-
-  my_addr_len = 0;
-  CHK_TRUE(fi_getname(&ofi_rxEpRma->fid, NULL, &my_addr_len) == -FI_ETOOSMALL);
-  CHPL_CALLOC_SZ(my_addrRma, my_addr_len, 1);
-  OFI_CHK(fi_getname(&ofi_rxEpRma->fid, my_addrRma, &my_addr_len));
-  CHPL_CALLOC_SZ(addrsRma, chpl_numNodes, my_addr_len);
-  chpl_comm_ofi_oob_allgather(my_addrRma, addrsRma, my_addr_len);
-
-  CHPL_CALLOC(ofi_rxAddrsRma, chpl_numNodes);
-  CHK_TRUE(fi_av_insert(ofi_avRma, addrsRma, chpl_numNodes, ofi_rxAddrsRma, 0,
-                        NULL)
-           == chpl_numNodes);
-
-  CHPL_FREE(my_addrRma);
-  CHPL_FREE(addrsRma);
 }
 
 
@@ -872,7 +864,6 @@ void fini_ofi(void) {
 
   CHPL_FREE(amLZs);
 
-  CHPL_FREE(ofi_rxAddrsRma);
   CHPL_FREE(ofi_rxAddrs);
 
   OFI_CHK(fi_close(&ofi_rxEp->fid));
@@ -888,7 +879,6 @@ void fini_ofi(void) {
   }
 
   OFI_CHK(fi_close(&ofi_txEp->fid));
-  OFI_CHK(fi_close(&ofi_avRma->fid));
   OFI_CHK(fi_close(&ofi_av->fid));
   OFI_CHK(fi_close(&ofi_domain->fid));
   OFI_CHK(fi_close(&ofi_fabric->fid));
@@ -1495,7 +1485,7 @@ void amRequestCommon(c_nodeid_t node,
              "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, pDone %p",
              node, chpl_nodeID, myArg->comm.b.seq,
              am_op2name(myArg->comm.b.op), argSize, pDone);
-  OFI_CHK(fi_send(tcip->txCtx, myArg, argSize, mrDesc, ofi_rxAddrs[node],
+  OFI_CHK(fi_send(tcip->txCtx, myArg, argSize, mrDesc, rxMsgAddr(node),
                   NULL));
   tcip->numAmReqsTxed++;
   tcip->numTxsOut++;
@@ -2294,7 +2284,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64,
                (int) node, raddr, myAddr, size, mrKey);
     OFI_CHK(fi_write(tcip->txCtx, myAddr, size,
-                     mrDesc, ofi_rxAddrsRma[node], (uint64_t) raddr, mrKey, 0));
+                     mrDesc, rxRmaAddr(node), (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
 
     if (tcip->txCtxHasCQ) {
@@ -2351,7 +2341,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
                "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64,
                myAddr, (int) node, raddr, size, mrKey);
     OFI_CHK(fi_read(tcip->txCtx, myAddr, size,
-                    mrDesc, ofi_rxAddrsRma[node], (uint64_t) raddr, mrKey, 0));
+                    mrDesc, rxRmaAddr(node), (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
 
     CHK_TRUE(tcip->txCtxHasCQ);
@@ -2423,7 +2413,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
     OFI_CHK(fi_compare_atomic(tcip->txCtx,
                               myOpnd2, 1, mrDescOpnd2, myOpnd1, mrDescOpnd1,
                               myRes, mrDescRes,
-                              ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
+                              rxRmaAddr(node), (uint64_t) object, mrKey,
                               ofiType, ofiOp, NULL));
     tcip->numTxsOut++;
     waitForAmoComplete(tcip);
@@ -2434,7 +2424,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   } else if (result != NULL) {
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
                             myOpnd1, 1, mrDescOpnd1, myRes, mrDescRes,
-                            ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
+                            rxRmaAddr(node), (uint64_t) object, mrKey,
                             ofiType, ofiOp, NULL));
     tcip->numTxsOut++;
     waitForAmoComplete(tcip);
@@ -2445,7 +2435,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   } else {
     OFI_CHK(fi_atomic(tcip->txCtx,
                       myOpnd1, 1, mrDescOpnd1,
-                      ofi_rxAddrsRma[node], (uint64_t) object, mrKey,
+                      rxRmaAddr(node), (uint64_t) object, mrKey,
                       ofiType, ofiOp, NULL));
     tcip->numTxsOut++;
     waitForAmoComplete(tcip);
