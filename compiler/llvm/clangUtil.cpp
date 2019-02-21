@@ -2559,12 +2559,15 @@ void checkAdjustedDataLayout() {
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
+static void makeLLVMLibrary(std::string moduleFilename, const char* tmpbinname,
+                            std::vector<std::string> dotOFiles);
 static void runLLVMLinking(std::string useLinkCXX, std::string options,
                            std::string moduleFilename, std::string maino,
                            const char* tmpbinname,
                            std::vector<std::string> dotOFiles,
                            std::vector<std::string> clangLDArgs,
                            bool saw_sysroot);
+static void moveGeneratedLibraryFile(const char* tmpbinname);
 static void moveGeneratedExecutable(const char* tmpbinname);
 
 void makeBinaryLLVM(void) {
@@ -2981,12 +2984,23 @@ void makeBinaryLLVM(void) {
   codegen_makefile(&mainfile, &tmpbinname, true);
   INT_ASSERT(tmpbinname);
 
-  runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
-                 dotOFiles, clangLDArgs, saw_sysroot);
+  if (fLibraryCompile) {
+    makeLLVMLibrary(moduleFilename, tmpbinname, dotOFiles);
+  } else {
+    // Runs the LLVM link command
+    runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
+                   dotOFiles, clangLDArgs, saw_sysroot);
+  }
+
 
   // If we're not using a launcher, copy the program here
   if (0 == strcmp(CHPL_LAUNCHER, "none")) {
-    moveGeneratedExecutable(tmpbinname);
+
+    if (fLibraryCompile) {
+      moveGeneratedLibraryFile(tmpbinname);
+    } else {
+      moveGeneratedExecutable(tmpbinname);
+    }
 
   } else {
     // Now run the makefile to move from tmpbinname to the proper program
@@ -3003,6 +3017,21 @@ void makeBinaryLLVM(void) {
 
     mysystem(makecmd, "Make Binary - Building Launcher and Copying");
   }
+}
+
+static void makeLLVMLibrary(std::string moduleFilename, const char* tmpbinname,
+                            std::vector<std::string> dotOFiles) {
+  std::string commandBase = "ar -c -r -s"; // Stolen from Makefile.static
+  std::string command = commandBase + " " + tmpbinname + " " +  moduleFilename;
+  for( size_t i = 0; i < dotOFiles.size(); i++ ) {
+    command += " ";
+    command += dotOFiles[i];
+  }
+  if( printSystemCommands ) {
+    printf("%s\n", command.c_str());
+    fflush(stdout); fflush(stderr);
+  }
+  mysystem(command.c_str(), "Make Library File - Linking");
 }
 
 static void runLLVMLinking(std::string useLinkCXX, std::string options,
@@ -3055,6 +3084,81 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
     fflush(stdout); fflush(stderr);
   }
   mysystem(command.c_str(), "Make Binary - Linking");
+}
+
+static void moveGeneratedLibraryFile(const char* tmpbinname) {
+  // Need to reuse some of the stuff in codegen_makefile.  It doesn't save the
+  // full filename that is used when in library mode, so we don't have an
+  // alternative to making a modified version of executableFilename again
+  const char* exeExt = getLibraryExtension();
+  const char* libraryPrefix = "";
+  int libLength = strlen("lib");
+  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  if (!startsWithLib) {
+    libraryPrefix = "lib";
+  }
+  const char* fullLibraryName = astr(libDir, "/", libraryPrefix,
+                                     executableFilename, exeExt);
+
+  std::error_code err;
+
+  // rm -f hello
+  if( printSystemCommands )
+    printf("rm -f %s\n", fullLibraryName);
+
+  err = llvm::sys::fs::remove(fullLibraryName);
+  if (err) {
+    USR_FATAL("removing file %s failed: %s\n",
+              fullLibraryName,
+              err.message().c_str());
+  }
+  // mv tmp/hello.tmp hello
+  if( printSystemCommands )
+    printf("mv %s %s\n", tmpbinname, fullLibraryName);
+
+  err = llvm::sys::fs::rename(tmpbinname, fullLibraryName);
+  if (err) {
+    // But that might fail if /tmp is on a different filesystem.
+
+    std::string mv("mv ");
+    mv += tmpbinname;
+    mv += " ";
+    mv += fullLibraryName;
+
+    mysystem(mv.c_str(), mv.c_str());
+
+    /* For future LLVM,
+       err = llvm::sys::fs::copy_file(tmpbinname, fullLibraryName);
+       if (err) {
+         USR_FATAL("copying file %s to %s failed: %s\n",
+                   tmpbinname,
+                   fullLibraryName,
+                   err.message().c_str());
+       }
+
+       // and then set permissions, like mv
+       auto maybePerms = llvm::sys::fs::getPermissions(tmpbinname);
+       if (maybePerms.getError()) {
+         USR_FATAL("reading permissions on %s failed: %s\n",
+                   tmpbinname,
+                   err.message().c_str());
+       }
+       err = llvm::sys::fs::setPermissions(fullLibraryName, *maybePerms);
+       if (err) {
+         USR_FATAL("setting permissions on %s failed: %s\n",
+                   fullLibraryName,
+                   err.message().c_str());
+       }
+
+       // and then remove the file, so it's like mv
+       err = llvm::sys::fs::remove(tmpbinname);
+       if (err) {
+         USR_FATAL("removing file %s failed: %s\n",
+                   tmpbinname,
+                   err.message().c_str());
+       }*/
+  }
+
 }
 
 static void moveGeneratedExecutable(const char* tmpbinname) {
