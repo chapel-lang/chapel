@@ -1,8 +1,5 @@
 use Random;
 
-config const debug = false;
-
-
 proc main() throws {
 
   var pcgStream = makeRandomStream(int, algorithm=RNG.PCG);

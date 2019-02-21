@@ -878,6 +878,9 @@ module Random {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
 
+        if boundsChecking && min > max then
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [%n, %n]".format(min, max));
+
         const result = PCGRandomStreamPrivate_getNext_noLock(resultType,min,max);
         if parSafe then
           PCGRandomStreamPrivate_lock$;
