@@ -36,6 +36,7 @@ void clearGenericWellKnownFunctions();
 extern AggregateType* dtArray;
 extern AggregateType* dtBaseArr;
 extern AggregateType* dtBaseDom;
+extern AggregateType* dtCFI_cdesc_t;
 extern AggregateType* dtDist;
 extern AggregateType* dtError;
 extern AggregateType* dtExternalArray;

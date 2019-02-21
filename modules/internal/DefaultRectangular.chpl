@@ -28,7 +28,7 @@ module DefaultRectangular {
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
   use DSIUtil, ChapelArray;
-  use ExternalArray;
+  use ExternalArray, ISO_Fortran_binding;
 
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;
