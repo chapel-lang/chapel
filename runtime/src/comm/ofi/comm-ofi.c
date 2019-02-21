@@ -74,7 +74,8 @@
 static struct fi_info* ofi_info;        // fabric interface info
 static struct fid_fabric* ofi_fabric;   // fabric domain
 static struct fid_domain* ofi_domain;   // fabric access domain
-static struct fid_ep* ofi_txEp;         // scalable transmit endpoint
+static int useScalableTxEp;             // use a scalable tx endpoint?
+static struct fid_ep* ofi_txEpScal;     // scalable transmit endpoint
 
 //
 // We direct RMA traffic and AM traffic to different endpoints so we can
@@ -88,17 +89,19 @@ static struct fid_cntr* ofi_rxCntrRma;  // RMA/AMO target endpoint counter
 static pthread_mutex_t rxEpRmaLock      // lock for (shared) RMA/AMO endpoint
                        = PTHREAD_MUTEX_INITIALIZER;
 
-static struct fid_av* ofi_av;           // address vector, table style
-static fi_addr_t* ofi_rxAddrs;          // remote receive addrs
-
-#define rxMsgAddr(n) (ofi_rxAddrs[2 * node])
-#define rxRmaAddr(n) (ofi_rxAddrs[2 * node + 1])
+#define rxMsgAddr(tcip, n) ((tcip)->rxAddrs[2 * (n)])
+#define rxRmaAddr(tcip, n) ((tcip)->rxAddrs[2 * (n) + 1])
 
 static int txCQSize;                    // txCQ size
+
+static int numTxCtxs;
+static int numRxCtxs;
 
 struct perTxCtxInfo_t {
   atomic_bool allocated;
   chpl_bool bound;
+  struct fid_av* av;
+  fi_addr_t* rxAddrs;
   chpl_bool txCtxHasCQ;
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
@@ -382,29 +385,25 @@ void init_ofiFabricDomain(void) {
   //
   OFI_CHK(fi_fabric(ofi_info->fabric_attr, &ofi_fabric, NULL));
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
-
-  //
-  // Create the address vector covering the nodes.
-  //
-  struct fi_av_attr ofi_avAttr = { 0 };
-  ofi_avAttr.type = FI_AV_TABLE;
-  ofi_avAttr.count = chpl_numNodes * 2;
-  ofi_avAttr.name = NULL;
-  ofi_avAttr.rx_ctx_bits = 0;
-
-  OFI_CHK(fi_av_open(ofi_domain, &ofi_avAttr, &ofi_av, NULL));
 }
 
 
 static
 void init_ofiEp(void) {
+  struct fi_av_attr avAttr = (struct fi_av_attr)
+                             { .type = FI_AV_TABLE,
+                               .count = chpl_numNodes * 2 /*hack*/ * 2,
+                               .name = NULL,
+                               .rx_ctx_bits = 0 };
+
   //
   // Compute numbers of transmit and receive contexts, and then create
   // the transmit context table.
   //
+  useScalableTxEp = (ofi_info->domain_attr->max_ep_tx_ctx > 1);
   init_ofiEpNumCtxs();
 
-  tciTabLen = ofi_info->ep_attr->tx_ctx_cnt;
+  tciTabLen = numTxCtxs;
   CHPL_CALLOC(tciTab, tciTabLen);
 
   //
@@ -416,8 +415,20 @@ void init_ofiEp(void) {
   // our AM handling time, so we want to be able to have many responses
   // in flight at once.
   //
-  OFI_CHK(fi_scalable_ep(ofi_domain, ofi_info, &ofi_txEp, NULL));
-  OFI_CHK(fi_scalable_ep_bind(ofi_txEp, &ofi_av->fid, 0));
+  if (useScalableTxEp) {
+    //
+    // Use a scalable transmit endpoint and multiple tx contexts.  Make
+    // just one address vector, in the first tciTab[] entry.  The others
+    // will be synonyms for that one, to make the references easier.
+    //
+    OFI_CHK(fi_scalable_ep(ofi_domain, ofi_info, &ofi_txEpScal, NULL));
+    OFI_CHK(fi_av_open(ofi_domain, &avAttr, &tciTab[0].av, NULL));
+    OFI_CHK(fi_scalable_ep_bind(ofi_txEpScal, &tciTab[0].av->fid, 0));
+  } else {
+    //
+    // Use regular transmit endpoints; see below.
+    //
+  }
 
   txCQSize = 100;  // TODO
 
@@ -435,23 +446,28 @@ void init_ofiEp(void) {
   // can just use counters.
   //
   const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
-  for (int i = 0; i < numWorkerTxCtxs; i++) {
+  for (int i = 0; i < tciTabLen; i++) {
     atomic_init_bool(&tciTab[i].allocated, false);
     tciTab[i].bound = false;
-    OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &tciTab[i].txCtx, NULL));
-    OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &tciTab[i].txCQ, NULL));
-    OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCQ->fid, FI_TRANSMIT));
-    tciTab[i].txCtxHasCQ = true;
-    OFI_CHK(fi_enable(tciTab[i].txCtx));
-  }
-
-  for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
-    atomic_init_bool(&tciTab[i].allocated, false);
-    tciTab[i].bound = false;
-    OFI_CHK(fi_tx_context(ofi_txEp, i, NULL, &tciTab[i].txCtx, NULL));
-    OFI_CHK(fi_cntr_open(ofi_domain, &txCntrAttr, &tciTab[i].txCntr, NULL));
-    OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCntr->fid, FI_WRITE));
-    tciTab[i].txCtxHasCQ = false;
+    if (useScalableTxEp) {
+      tciTab[i].av = tciTab[0].av;
+      OFI_CHK(fi_tx_context(ofi_txEpScal, i, NULL, &tciTab[i].txCtx, NULL));
+    } else {
+      OFI_CHK(fi_av_open(ofi_domain, &avAttr, &tciTab[i].av, NULL));
+      OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &tciTab[i].txCtx, NULL));
+      OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].av->fid, 0));
+    }
+    if (i < numWorkerTxCtxs) {
+      // worker tx context
+      OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &tciTab[i].txCQ, NULL));
+      OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCQ->fid, FI_TRANSMIT));
+      tciTab[i].txCtxHasCQ = true;
+    } else {
+      // AM handler tx context
+      OFI_CHK(fi_cntr_open(ofi_domain, &txCntrAttr, &tciTab[i].txCntr, NULL));
+      OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCntr->fid, FI_WRITE));
+      tciTab[i].txCtxHasCQ = false;
+    }
     OFI_CHK(fi_enable(tciTab[i].txCtx));
   }
 
@@ -467,7 +483,7 @@ void init_ofiEp(void) {
   rxCqAttr.wait_obj = FI_WAIT_NONE;
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
-  OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_av->fid, 0));
+  OFI_CHK(fi_ep_bind(ofi_rxEp, &tciTab[0].av->fid, 0));
   OFI_CHK(fi_cq_open(ofi_domain, &rxCqAttr, &ofi_rxCQ, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
@@ -477,7 +493,7 @@ void init_ofiEp(void) {
   rxCntrRmaAttr.wait_obj = FI_WAIT_NONE;
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
-  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_av->fid, 0));
+  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &tciTab[0].av->fid, 0));
   OFI_CHK(fi_cntr_open(ofi_domain, &rxCntrRmaAttr, &ofi_rxCntrRma, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCntrRma->fid, FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEpRma));
@@ -503,7 +519,12 @@ void init_ofiEpNumCtxs(void) {
   // have its own, plus at least one more.
   //
   const struct fi_domain_attr* dom_attr = ofi_info->domain_attr;
-  int numWorkerTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
+  int numWorkerTxCtxs;
+  if (useScalableTxEp)
+    numWorkerTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
+  else
+    numWorkerTxCtxs = dom_attr->ep_cnt - numAmHandlers;
+
   CHK_TRUE(numWorkerTxCtxs > 0);
 
   //
@@ -548,20 +569,30 @@ void init_ofiEpNumCtxs(void) {
   //
   // Now we know how many transmit contexts we'll have.
   //
-  ofi_info->ep_attr->tx_ctx_cnt = numWorkerTxCtxs + numAmHandlers;
+  numTxCtxs = numWorkerTxCtxs + numAmHandlers;
 
   //
   // Receive contexts are much easier -- we just need one
   // for each AM handler.
   //
   CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
-  ofi_info->ep_attr->rx_ctx_cnt = numAmHandlers;
+  numRxCtxs = numAmHandlers;
 
-  DBG_PRINTF(DBG_CFG,
-             "per node, %zd tx ctxs (%d fixed to workers), %zd rx ctxs",
-             ofi_info->ep_attr->tx_ctx_cnt,
-             tciTabFixedAssignments ? fixedNumThreads : 0,
-             ofi_info->ep_attr->rx_ctx_cnt);
+  if (useScalableTxEp) {
+    DBG_PRINTF(DBG_CFG,
+               "per node: 1 scalable tx ep + %d tx ctx%s (%d fixed), "
+               "%d rx ctx%s",
+               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
+               tciTabFixedAssignments ? fixedNumThreads : 0,
+               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
+  } else {
+    DBG_PRINTF(DBG_CFG,
+               "per node: %d regular tx ep+ctx%s (%d fixed), "
+               "%d rx ctx%s",
+               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
+               tciTabFixedAssignments ? fixedNumThreads : 0,
+               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
+  }
 }
 
 
@@ -612,8 +643,8 @@ void init_ofiExchangeAvInfo(void) {
     char nameBuf2[128];
     size_t nameLen2;
     nameLen2 = sizeof(nameBuf2);
-    (void) fi_av_straddr(ofi_av, my_addr, nameBuf, &nameLen);
-    (void) fi_av_straddr(ofi_av, my_addr + my_addr_len, nameBuf2, &nameLen2);
+    (void) fi_av_straddr(tciTab[0].av, my_addr, nameBuf, &nameLen);
+    (void) fi_av_straddr(tciTab[0].av, my_addr + my_addr_len, nameBuf2, &nameLen2);
     DBG_PRINTF(DBG_CFGAV, "my_addrs: %.*s%s, %.*s%s",
                (int) nameLen, nameBuf,
                (nameLen <= sizeof(nameBuf)) ? "" : "[...]",
@@ -623,12 +654,31 @@ void init_ofiExchangeAvInfo(void) {
   chpl_comm_ofi_oob_allgather(my_addr, addrs, 2 * my_addr_len);
 
   //
-  // Insert the addresses into the address vectors and build up a vector
+  // Insert the addresses into the address vector and build up a vector
   // of remote receive endpoints.
   //
-  CHPL_CALLOC(ofi_rxAddrs, 2 * chpl_numNodes);
-  CHK_TRUE(fi_av_insert(ofi_av, addrs, 2 * chpl_numNodes, ofi_rxAddrs, 0, NULL)
+  // All the transmit context table entries have address vectors and we
+  // always use the one associated with our tx context.  But if we have
+  // a scalable endpoint then all of those AVs are really the same one.
+  // Only when the provider cannot support scalable EPs and we have
+  // multiple actual endpoints are the AVs individualized to those.
+  //
+  CHPL_CALLOC(tciTab[0].rxAddrs, 2 * chpl_numNodes);
+  CHK_TRUE(fi_av_insert(tciTab[0].av, addrs, 2 * chpl_numNodes,
+                        tciTab[0].rxAddrs, 0, NULL)
            == 2 * chpl_numNodes);
+
+  for (int i = 1; i < tciTabLen; i++) {
+    if (useScalableTxEp) {
+      tciTab[i].av = tciTab[0].av;
+      tciTab[i].rxAddrs = tciTab[0].rxAddrs;
+    } else {
+      CHPL_CALLOC(tciTab[i].rxAddrs, 2 * chpl_numNodes);
+      CHK_TRUE(fi_av_insert(tciTab[i].av, addrs, 2 * chpl_numNodes,
+                            tciTab[i].rxAddrs, 0, NULL)
+               == 2 * chpl_numNodes);
+    }
+  }
 
   CHPL_FREE(my_addr);
   CHPL_FREE(addrs);
@@ -700,7 +750,6 @@ void init_ofiForAms(void) {
   // it needs renewing.
   //
   const size_t amLZSize = (size_t) 40 << 20;
-
 
   //
   // Set the minimum multi-receive buffer space.  Some providers don't
@@ -864,7 +913,13 @@ void fini_ofi(void) {
 
   CHPL_FREE(amLZs);
 
-  CHPL_FREE(ofi_rxAddrs);
+  if (useScalableTxEp) {
+    CHPL_FREE(tciTab[0].rxAddrs);
+  } else {
+    for (int i = 0; i < tciTabLen; i++) {
+      CHPL_FREE(tciTab[i].rxAddrs);
+    }
+  }
 
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
@@ -878,8 +933,15 @@ void fini_ofi(void) {
                      : &tciTab[i].txCntr->fid));
   }
 
-  OFI_CHK(fi_close(&ofi_txEp->fid));
-  OFI_CHK(fi_close(&ofi_av->fid));
+  if (useScalableTxEp) {
+    OFI_CHK(fi_close(&ofi_txEpScal->fid));
+    OFI_CHK(fi_close(&tciTab[0].av->fid));
+  } else {
+    for (int i = 0; i < tciTabLen; i++) {
+      OFI_CHK(fi_close(&tciTab[i].av->fid));
+    }
+  }
+
   OFI_CHK(fi_close(&ofi_domain->fid));
   OFI_CHK(fi_close(&ofi_fabric->fid));
 
@@ -1485,7 +1547,7 @@ void amRequestCommon(c_nodeid_t node,
              "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, pDone %p",
              node, chpl_nodeID, myArg->comm.b.seq,
              am_op2name(myArg->comm.b.op), argSize, pDone);
-  OFI_CHK(fi_send(tcip->txCtx, myArg, argSize, mrDesc, rxMsgAddr(node),
+  OFI_CHK(fi_send(tcip->txCtx, myArg, argSize, mrDesc, rxMsgAddr(tcip, node),
                   NULL));
   tcip->numAmReqsTxed++;
   tcip->numTxsOut++;
@@ -2284,7 +2346,8 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64,
                (int) node, raddr, myAddr, size, mrKey);
     OFI_CHK(fi_write(tcip->txCtx, myAddr, size,
-                     mrDesc, rxRmaAddr(node), (uint64_t) raddr, mrKey, 0));
+                     mrDesc, rxRmaAddr(tcip, node),
+                     (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
 
     if (tcip->txCtxHasCQ) {
@@ -2341,7 +2404,8 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
                "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64,
                myAddr, (int) node, raddr, size, mrKey);
     OFI_CHK(fi_read(tcip->txCtx, myAddr, size,
-                    mrDesc, rxRmaAddr(node), (uint64_t) raddr, mrKey, 0));
+                    mrDesc, rxRmaAddr(tcip, node),
+                    (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
 
     CHK_TRUE(tcip->txCtxHasCQ);
@@ -2413,7 +2477,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
     OFI_CHK(fi_compare_atomic(tcip->txCtx,
                               myOpnd2, 1, mrDescOpnd2, myOpnd1, mrDescOpnd1,
                               myRes, mrDescRes,
-                              rxRmaAddr(node), (uint64_t) object, mrKey,
+                              rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
                               ofiType, ofiOp, NULL));
     tcip->numTxsOut++;
     waitForAmoComplete(tcip);
@@ -2424,7 +2488,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   } else if (result != NULL) {
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
                             myOpnd1, 1, mrDescOpnd1, myRes, mrDescRes,
-                            rxRmaAddr(node), (uint64_t) object, mrKey,
+                            rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
                             ofiType, ofiOp, NULL));
     tcip->numTxsOut++;
     waitForAmoComplete(tcip);
@@ -2435,7 +2499,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   } else {
     OFI_CHK(fi_atomic(tcip->txCtx,
                       myOpnd1, 1, mrDescOpnd1,
-                      rxRmaAddr(node), (uint64_t) object, mrKey,
+                      rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
                       ofiType, ofiOp, NULL));
     tcip->numTxsOut++;
     waitForAmoComplete(tcip);
