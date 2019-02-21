@@ -304,12 +304,19 @@ void init_ofiFabricDomain(void) {
 
   hints->domain_attr->threading = FI_THREAD_UNSPEC;
 
-  chpl_bool autoProgress = (strcmp(provider, "sockets") == 0);
-  if (DBG_TEST_MASK(DBG_CFG))
-    autoProgress = chpl_env_rt_get_bool("COMM_OFI_AUTO_PROGRESS",
-                                        autoProgress);
-  const int prg = autoProgress ? FI_PROGRESS_AUTO : FI_PROGRESS_MANUAL;
-  hints->domain_attr->control_progress = prg;
+  enum fi_progress prg = FI_PROGRESS_UNSPEC;
+  if (DBG_TEST_MASK(DBG_CFG)) {
+    const char* ev = chpl_env_rt_get("COMM_OFI_PROGRESS", "");
+    if (strcmp(ev, "") != 0) {
+      if (strcasecmp(ev, "auto") == 0)
+        prg = FI_PROGRESS_AUTO;
+      else if (strcasecmp(ev, "manual") == 0)
+        prg = FI_PROGRESS_MANUAL;
+      else
+        CHK_TRUE((strcasecmp(ev, "unspec") == 0));
+    }
+  }
+  hints->domain_attr->control_progress = FI_PROGRESS_UNSPEC; // don't need
   hints->domain_attr->data_progress = prg;
 
   hints->domain_attr->av_type = FI_AV_TABLE;
