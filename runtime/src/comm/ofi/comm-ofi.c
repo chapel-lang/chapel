@@ -85,14 +85,13 @@ static struct fid_ep* ofi_txEpScal;     // scalable transmit endpoint
 static struct fid_ep* ofi_rxEp;         // AM req receive endpoint
 static struct fid_cq* ofi_rxCQ;         // AM req receive endpoint CQ
 static struct fid_ep* ofi_rxEpRma;      // RMA/AMO target endpoint
+static struct fid_cq* ofi_rxCQRma;      // RMA/AMO target endpoint CQ
 static struct fid_cntr* ofi_rxCntrRma;  // RMA/AMO target endpoint counter
 static pthread_mutex_t rxEpRmaLock      // lock for (shared) RMA/AMO endpoint
                        = PTHREAD_MUTEX_INITIALIZER;
 
 #define rxMsgAddr(tcip, n) ((tcip)->rxAddrs[2 * (n)])
 #define rxRmaAddr(tcip, n) ((tcip)->rxAddrs[2 * (n) + 1])
-
-static int txCQSize;                    // txCQ size
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -102,7 +101,6 @@ struct perTxCtxInfo_t {
   chpl_bool bound;
   struct fid_av* av;
   fi_addr_t* rxAddrs;
-  chpl_bool txCtxHasCQ;
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
   struct fid_cntr* txCntr;
@@ -155,7 +153,8 @@ static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
 static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                                 void*, size_t);
 static void waitForAmoComplete(struct perTxCtxInfo_t*);
-static void waitForTxCQ(struct perTxCtxInfo_t*, int, uint64_t);
+static void waitForTxCQ(struct perTxCtxInfo_t*, size_t, uint64_t);
+static inline ssize_t readCQ(struct fid_cq*, void*, size_t);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
 static inline void local_yield(void);
@@ -397,12 +396,6 @@ void init_ofiFabricDomain(void) {
 
 static
 void init_ofiEp(void) {
-  struct fi_av_attr avAttr = (struct fi_av_attr)
-                             { .type = FI_AV_TABLE,
-                               .count = chpl_numNodes * 2 /*hack*/ * 2,
-                               .name = NULL,
-                               .rx_ctx_bits = 0 };
-
   //
   // Compute numbers of transmit and receive contexts, and then create
   // the transmit context table.
@@ -422,6 +415,27 @@ void init_ofiEp(void) {
   // our AM handling time, so we want to be able to have many responses
   // in flight at once.
   //
+  struct fi_av_attr avAttr = (struct fi_av_attr)
+                             { .type = FI_AV_TABLE,
+                               .count = chpl_numNodes * 2,
+                               .name = NULL,
+                               .rx_ctx_bits = 0, };
+
+  //
+  // Provisional hack for the verbs provider: based on tracebacks after
+  // internal error aborts, that provider seems to want to record an
+  // address per accessing endpoint for at least some AVs (perhaps just
+  // those for which it handles progress?).  It uses the AV attribute
+  // 'count' member to size the data structure in which it stores those.
+  // So, bump the count here to account for all transmitting endpoints.
+  //
+  {
+    const char* vp = "verbs";
+    if (strncmp(ofi_info->fabric_attr->prov_name, vp, strlen(vp)) == 0) {
+      avAttr.count *= numTxCtxs;
+    }
+  }
+
   if (useScalableTxEp) {
     //
     // Use a scalable transmit endpoint and multiple tx contexts.  Make
@@ -437,20 +451,17 @@ void init_ofiEp(void) {
     //
   }
 
-  txCQSize = 100;  // TODO
-
-  struct fi_cq_attr txCqAttr = { 0 };
-  txCqAttr.format = FI_CQ_FORMAT_MSG;
-  txCqAttr.size = txCQSize;
-  txCqAttr.wait_obj = FI_WAIT_NONE;
-
-  struct fi_cntr_attr txCntrAttr = { 0 };
-  txCntrAttr.events = FI_CNTR_EVENTS_COMP;
-  txCntrAttr.wait_obj = FI_WAIT_NONE;
+  struct fi_cq_attr txCqAttr = (struct fi_cq_attr)
+                               { .format = FI_CQ_FORMAT_MSG,
+                                 .size = 100, // TODO
+                                 .wait_obj = FI_WAIT_NONE, };
+  struct fi_cntr_attr cntrAttr = (struct fi_cntr_attr)
+                                 { .events = FI_CNTR_EVENTS_COMP,
+                                   .wait_obj = FI_WAIT_NONE, };
 
   //
   // Worker TX contexts need completion queues.  Those for AM handlers
-  // can just use counters.
+  // can just use counters, if they're supported (i.e., not in verbs).
   //
   const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
   for (int i = 0; i < tciTabLen; i++) {
@@ -468,12 +479,16 @@ void init_ofiEp(void) {
       // worker tx context
       OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &tciTab[i].txCQ, NULL));
       OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCQ->fid, FI_TRANSMIT));
-      tciTab[i].txCtxHasCQ = true;
     } else {
       // AM handler tx context
-      OFI_CHK(fi_cntr_open(ofi_domain, &txCntrAttr, &tciTab[i].txCntr, NULL));
-      OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCntr->fid, FI_WRITE));
-      tciTab[i].txCtxHasCQ = false;
+      if (ofi_info->domain_attr->cntr_cnt == 0) {
+        OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &tciTab[i].txCQ, NULL));
+        OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCQ->fid,
+                           FI_TRANSMIT));
+      } else {
+        OFI_CHK(fi_cntr_open(ofi_domain, &cntrAttr, &tciTab[i].txCntr, NULL));
+        OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCntr->fid, FI_WRITE));
+      }
     }
     OFI_CHK(fi_enable(tciTab[i].txCtx));
   }
@@ -484,10 +499,10 @@ void init_ofiEp(void) {
   // For the CQ length, allow for an appreciable proportion of the job
   // to send requests to us at once.
   //
-  struct fi_cq_attr rxCqAttr = { 0 };
-  rxCqAttr.format = FI_CQ_FORMAT_DATA;
-  rxCqAttr.size = chpl_numNodes * numWorkerTxCtxs;
-  rxCqAttr.wait_obj = FI_WAIT_NONE;
+  struct fi_cq_attr rxCqAttr = (struct fi_cq_attr)
+                               { .format = FI_CQ_FORMAT_DATA,
+                                 .size = chpl_numNodes * numWorkerTxCtxs,
+                                 .wait_obj = FI_WAIT_NONE, };
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &tciTab[0].av->fid, 0));
@@ -495,14 +510,15 @@ void init_ofiEp(void) {
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
 
-  struct fi_cntr_attr rxCntrRmaAttr = { 0 };
-  rxCntrRmaAttr.events = FI_CNTR_EVENTS_COMP;
-  rxCntrRmaAttr.wait_obj = FI_WAIT_NONE;
-
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEpRma, &tciTab[0].av->fid, 0));
-  OFI_CHK(fi_cntr_open(ofi_domain, &rxCntrRmaAttr, &ofi_rxCntrRma, NULL));
-  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCntrRma->fid, FI_RECV));
+  if (ofi_info->domain_attr->cntr_cnt == 0) {
+    OFI_CHK(fi_cq_open(ofi_domain, &rxCqAttr, &ofi_rxCQRma, NULL));
+    OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCQRma->fid, FI_RECV));
+  } else {
+    OFI_CHK(fi_cntr_open(ofi_domain, &cntrAttr, &ofi_rxCntrRma, NULL));
+    OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCntrRma->fid, FI_RECV));
+  }
   OFI_CHK(fi_enable(ofi_rxEpRma));
 }
 
@@ -931,13 +947,19 @@ void fini_ofi(void) {
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
   OFI_CHK(fi_close(&ofi_rxEpRma->fid));
-  OFI_CHK(fi_close(&ofi_rxCntrRma->fid));
+  if (ofi_rxCQRma != NULL) {
+    OFI_CHK(fi_close(&ofi_rxCQRma->fid));
+  } else {
+    OFI_CHK(fi_close(&ofi_rxCntrRma->fid));
+  }
 
   for (int i = 0; i < tciTabLen; i++) {
     OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
-    OFI_CHK(fi_close(tciTab[i].txCtxHasCQ
-                     ? &tciTab[i].txCQ->fid
-                     : &tciTab[i].txCntr->fid));
+    if (tciTab[i].txCQ != NULL) {
+      OFI_CHK(fi_close(&tciTab[i].txCQ->fid));
+    } else {
+      OFI_CHK(fi_close(&tciTab[i].txCntr->fid));
+    }
   }
 
   if (useScalableTxEp) {
@@ -1295,7 +1317,12 @@ void chpl_comm_make_progress(void) {
   if (ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
     const int lockRet = pthread_mutex_trylock(&rxEpRmaLock);
     if (lockRet == 0) {
-      (void) fi_cntr_read(ofi_rxCntrRma);  // ensure progress
+      if (ofi_rxCQRma != NULL) {
+        struct fi_cq_data_entry cqe;
+        (void) readCQ(ofi_rxCQRma, &cqe, 1);
+      } else {
+        (void) fi_cntr_read(ofi_rxCntrRma);
+      }
       PTHREAD_CHK(pthread_mutex_unlock(&rxEpRmaLock));
     } else {
       CHK_TRUE(lockRet == EBUSY);
@@ -1566,7 +1593,7 @@ void amRequestCommon(c_nodeid_t node,
   //
   // Wait for network completion.
   //
-  waitForTxCQ(tcip, 1, FI_SEND | FI_MSG);
+  waitForTxCQ(tcip, 1, FI_SEND);
 
   tciFree(tcip);
 
@@ -1675,10 +1702,16 @@ void amHandler(void* argNil) {
   while (!atomic_load_bool(&amHandlersExit)) {
     processRxAmReq(tcip);
 
-    const int count = fi_cntr_read(tcip->txCntr);
-    if (count > 0) {
-      DBG_PRINTF(DBG_ACK, "tx ack counter %d", count);
-      tcip->numTxsOut -= count;
+    if (tcip->txCQ != NULL) {
+      if (tcip->numTxsOut > 1) {
+        waitForTxCQ(tcip, 1, 0);
+      }
+    } else {
+      const int count = fi_cntr_read(tcip->txCntr);
+      if (count > 0) {
+        DBG_PRINTF(DBG_ACK, "tx ack counter %d", count);
+        tcip->numTxsOut -= count;
+      }
     }
 
     //
@@ -1714,125 +1747,101 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
   //
   // Process requests received on the AM request endpoint.
   //
-  const int maxAmsToDo = 10;
-  struct fi_cq_data_entry cqes[maxAmsToDo];
+  const size_t maxEvents = 10;
+  struct fi_cq_data_entry cqes[maxEvents];
+  const ssize_t numEvents = readCQ(ofi_rxCQ, cqes, maxEvents);
 
-  int ret;
-  CHK_TRUE((ret = fi_cq_read(ofi_rxCQ, cqes, maxAmsToDo)) > 0
-           || ret == -FI_EAGAIN
-           || ret == -FI_EAVAIL);
+  if (numEvents == -EAGAIN)
+    return;
 
-  if (ret == -FI_EAVAIL) {
-    struct fi_cq_err_entry err = { 0 };
-    fi_cq_readerr(ofi_rxCQ, &err, 0);
-    if (err.err == FI_ETRUNC) {
+  for (int i = 0; i < numEvents; i++) {
+    if ((cqes[i].flags & FI_RECV) != 0) {
       //
-      // We ran out of inbound buffer space and a message was truncated.
-      // If the fi_setopt(FI_OPT_MIN_MULTI_RECV) worked and nobody sent
-      // anything larger than that, this shouldn't happen.  In any case,
-      // we can't recover, but let's provide some information to help
-      // aid failure analysis.
+      // This event is for an inbound AM request.  Handle it.
       //
-      INTERNAL_ERROR_V("fi_cq_readerr(): AM recv buf FI_ETRUNC: "
-                       "flags %#" PRIx64 ", len %zd, olen %zd",
-                       err.flags, err.len, err.olen);
-    } else {
-      char bufProv[100];
-      (void) fi_cq_strerror(ofi_rxCQ, err.prov_errno, err.err_data,
-                            bufProv, sizeof(bufProv));
-      INTERNAL_ERROR_V("fi_cq_read(): err %d, strerror %s", err.err, bufProv);
-    }
-  }
-
-  if (ret > 0) {
-    const int numEvents = ret;
-    for (int i = 0; i < numEvents; i++) {
-      if ((cqes[i].flags & FI_RECV) != 0) {
-        //
-        // This event is for an inbound AM request.  Handle it.
-        //
-        chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) cqes[i].buf;
-        DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                   "CQ rx AM req @ buffer offset %zd: "
-                   "seqId %d:%" PRIu64 ", %s, size %zd",
-                   (char*) req - (char*) ofi_msg_reqs.msg_iov->iov_base,
-                   req->comm.b.node, req->comm.b.seq,
-                   am_op2name(req->comm.b.op), cqes[i].len);
-        tcip->numAmReqsRxed++;
+      chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) cqes[i].buf;
+      DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                 "CQ rx AM req @ buffer offset %zd: "
+                 "seqId %d:%" PRIu64 ", %s, size %zd",
+                 (char*) req - (char*) ofi_msg_reqs.msg_iov->iov_base,
+                 req->comm.b.node, req->comm.b.seq,
+                 am_op2name(req->comm.b.op), cqes[i].len);
+      tcip->numAmReqsRxed++;
 
 #if defined(CHPL_COMM_DEBUG) && defined(DEBUG_CRC_MSGS)
-        if (DBG_TEST_MASK(DBG_AM)) {
-          unsigned int sent_crc = req->comm.b.crc;
-          req->comm.b.crc = 0;
-          unsigned int rcvd_crc = xcrc32((void*) req, req->comm.xo.argSize,
-                                         0xffffffff);
-          CHK_TRUE(rcvd_crc == sent_crc);
-        }
+      if (DBG_TEST_MASK(DBG_AM)) {
+        unsigned int sent_crc = req->comm.b.crc;
+        req->comm.b.crc = 0;
+        unsigned int rcvd_crc = xcrc32((void*) req, req->comm.xo.argSize,
+                                       0xffffffff);
+        CHK_TRUE(rcvd_crc == sent_crc);
+      }
 #endif
 
-        switch (req->comm.b.op) {
-        case am_opExecOn:
-          if (req->comm.xo.fast) {
-            amWrapExecOnBody(req);
-          } else {
-            amHandleExecOn(req);
-          }
-          break;
-
-        case am_opExecOnLrg:
-          amHandleExecOnLrg(req);
-          break;
-
-        case am_opGet:
-          //
-          // We use a task here mainly to ensure that the GET this AM
-          // performs completes before we send the 'done' indicator.  If
-          // the AM handler did the GET directly, its contextless RMA
-          // completion counter would make it hard to tell when that GET
-          // had completed.
-          //
-          chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapGet,
-                                   chpl_comm_on_bundle_task_bundle(req),
-                                   sizeof(*req), c_sublocid_any,
-                                   chpl_nullTaskID);
-          break;
-
-        case am_opPut:
-          //
-          // We use a task here mainly to ensure that the PUT this AM
-          // performs completes before we send the 'done' indicator.  If
-          // the AM handler did the PUT directly, its contextless RMA
-          // completion counter would make it hard to tell when that PUT
-          // had completed.
-          //
-          chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapPut,
-                                   chpl_comm_on_bundle_task_bundle(req),
-                                   sizeof(*req), c_sublocid_any,
-                                   chpl_nullTaskID);
-          break;
-
-        case am_opAMO:
-          amHandleAMO(req);
-          break;
-
-        default:
-          INTERNAL_ERROR_V("unexpected AM op %d", req->comm.b.op);
-          break;
+      switch (req->comm.b.op) {
+      case am_opExecOn:
+        if (req->comm.xo.fast) {
+          amWrapExecOnBody(req);
+        } else {
+          amHandleExecOn(req);
         }
-      }
+        break;
 
-      if ((cqes[i].flags & FI_MULTI_RECV) != 0) {
-        //
-        // Multi-receive buffer filled; post another one.
-        //
-        OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
-        DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                   "re-post fi_recvmsg(AMLZs, len %zd)",
-                   ofi_msg_reqs.msg_iov->iov_len);
-      }
+      case am_opExecOnLrg:
+        amHandleExecOnLrg(req);
+        break;
 
-      CHK_TRUE((cqes[i].flags & ~(FI_MSG | FI_RECV | FI_MULTI_RECV)) == 0);
+      case am_opGet:
+        //
+        // We use a task here mainly to ensure that the GET this AM
+        // performs completes before we send the 'done' indicator.  If
+        // the AM handler did the GET directly, its contextless RMA
+        // completion counter would make it hard to tell when that GET
+        // had completed.
+        //
+        chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapGet,
+                                 chpl_comm_on_bundle_task_bundle(req),
+                                 sizeof(*req), c_sublocid_any,
+                                 chpl_nullTaskID);
+        break;
+
+      case am_opPut:
+        //
+        // We use a task here mainly to ensure that the PUT this AM
+        // performs completes before we send the 'done' indicator.  If
+        // the AM handler did the PUT directly, its contextless RMA
+        // completion counter would make it hard to tell when that PUT
+        // had completed.
+        //
+        chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapPut,
+                                 chpl_comm_on_bundle_task_bundle(req),
+                                 sizeof(*req), c_sublocid_any,
+                                 chpl_nullTaskID);
+        break;
+
+      case am_opAMO:
+        amHandleAMO(req);
+        break;
+
+      default:
+        INTERNAL_ERROR_V("unexpected AM op %d", req->comm.b.op);
+        break;
+      }
     }
+
+    if ((cqes[i].flags & FI_MULTI_RECV) != 0) {
+      //
+      // Multi-receive buffer filled; post another one.  This should
+      // not be seen except on the last received event!
+      //
+      CHK_TRUE(i == numEvents - 1);
+      OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
+      DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                 "re-post fi_recvmsg(AMLZs, len %zd)",
+                 ofi_msg_reqs.msg_iov->iov_len);
+    }
+
+    CHK_TRUE((cqes[i].flags & ~(FI_MSG | FI_RECV | FI_MULTI_RECV)) == 0);
   }
 }
 
@@ -2357,8 +2366,8 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                      (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
 
-    if (tcip->txCtxHasCQ) {
-      waitForTxCQ(tcip, 1, FI_RMA | FI_WRITE);
+    if (tcip->txCQ != NULL) {
+      waitForTxCQ(tcip, 1, FI_WRITE);
     } else {
       const int count = fi_cntr_read(tcip->txCntr);
       DBG_PRINTF(DBG_ACK, "tx ack counter %d after PUT", count);
@@ -2414,10 +2423,7 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
                     mrDesc, rxRmaAddr(tcip, node),
                     (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
-
-    CHK_TRUE(tcip->txCtxHasCQ);
-    waitForTxCQ(tcip, 1, FI_RMA | FI_READ);
-
+    waitForTxCQ(tcip, 1, FI_READ);
     tciFree(tcip);
   } else {
     //
@@ -2547,7 +2553,7 @@ void waitForAmoComplete(struct perTxCtxInfo_t* tcip) {
   // AMOs have to be done in order, so we need to wait for completion
   // before proceeding.
   //
-  if (tcip->txCtxHasCQ) {
+  if (tcip->txCQ != NULL) {
     waitForTxCQ(tcip, 1, FI_ATOMIC);
   } else {
     //
@@ -2570,44 +2576,64 @@ void waitForAmoComplete(struct perTxCtxInfo_t* tcip) {
 
 
 static
-void waitForTxCQ(struct perTxCtxInfo_t* tcip, int numOut, uint64_t xpctFlags) {
-  if (numOut > 0) {
+void waitForTxCQ(struct perTxCtxInfo_t* tcip, size_t numOut,
+                 uint64_t xpctFlags) {
+  while (numOut > 0) {
     struct fi_cq_msg_entry cqes[numOut];
-    int numRetired = 0;
+    const ssize_t numEvents = readCQ(tcip->txCQ, cqes, numOut);
+    CHK_TRUE(numEvents >= 0 || numEvents == -FI_EAGAIN);
 
-    do {
-      int ret;
-      CHK_TRUE((ret = fi_cq_read(tcip->txCQ, cqes, numOut)) > 0
-               || ret == -FI_EAGAIN
-               || ret == -FI_EAVAIL);
-
-      if (ret == -FI_EAVAIL) {
-        struct fi_cq_err_entry err = { 0 };
-        char bufProv[100];
-        fi_cq_readerr(tcip->txCQ, &err, 0);
-        (void) fi_cq_strerror(tcip->txCQ, err.prov_errno, err.err_data,
-                              bufProv, sizeof(bufProv));
-        INTERNAL_ERROR_V("fi_cq_read(): err %d, strerror %s",
-                         err.err, bufProv);
+    if (numEvents == -EAGAIN) {
+      sched_yield();
+      chpl_comm_make_progress();
+    } else {
+      numOut -= numEvents;
+      tcip->numTxsOut -= numEvents;
+      for (int i = 0; i < numEvents; i++) {
+        DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64 ", xpct %#" PRIx64,
+                   cqes[i].flags, xpctFlags);
+        if (xpctFlags != 0)
+          CHK_TRUE((cqes[i].flags & xpctFlags) == xpctFlags);
       }
-
-      if (ret <= 0) {
-        sched_yield();
-        chpl_comm_make_progress();
-      } else {
-        const int numEvents = ret;
-        numRetired += numEvents;
-        for (int i = 0; i < numEvents; i++) {
-          DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64 ", xpct %#" PRIx64,
-                     cqes[i].flags, xpctFlags);
-          if (xpctFlags != 0)
-            CHK_TRUE((cqes[i].flags & xpctFlags) == xpctFlags);
-        }
-      }
-    } while (numRetired < numOut);
-
-    tcip->numTxsOut -= numRetired;
+    }
   }
+}
+
+
+static inline
+ssize_t readCQ(struct fid_cq* cq, void* buf, size_t count) {
+  ssize_t ret;
+  CHK_TRUE((ret = fi_cq_read(cq, buf, count)) > 0
+           || ret == -FI_EAGAIN
+           || ret == -FI_EAVAIL);
+
+  if (ret == -FI_EAVAIL) {
+    struct fi_cq_err_entry err = { 0 };
+    fi_cq_readerr(cq, &err, 0);
+    if (err.err == FI_ETRUNC) {
+      //
+      // This only happens when reading from the CQ associated with the
+      // inbound AM request multi-receive buffer.
+      //
+      // We ran out of inbound buffer space and a message was truncated.
+      // If the fi_setopt(FI_OPT_MIN_MULTI_RECV) worked and nobody sent
+      // anything larger than that, this shouldn't happen.  In any case,
+      // we can't recover, but let's provide some information to help
+      // aid failure analysis.
+      //
+      INTERNAL_ERROR_V("fi_cq_readerr(): AM recv buf FI_ETRUNC: "
+                       "flags %#" PRIx64 ", len %zd, olen %zd",
+                       err.flags, err.len, err.olen);
+    } else {
+      char bufProv[100];
+      (void) fi_cq_strerror(cq, err.prov_errno, err.err_data,
+                            bufProv, sizeof(bufProv));
+      INTERNAL_ERROR_V("fi_cq_read(): err %d, strerror %s",
+                       err.err, bufProv);
+    }
+  }
+
+  return ret;
 }
 
 
