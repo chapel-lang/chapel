@@ -259,6 +259,9 @@ qioerr qio_preadv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffe
   else
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 
+  if (file->file_info)
+    printf("QIO read %i\n", (int) nread);
+
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
 
@@ -875,7 +878,7 @@ qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, int fdflags,
   off_t initial_pos = 0;
   int64_t initial_length = 0;
   qioerr err = 0;
-  err_t err_code;
+  //err_t err_code;
   qio_file_t* file = NULL;
   off_t seek_ret = 0;
   int seekable = 0;
@@ -883,7 +886,7 @@ qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, int fdflags,
 
   if( (fdflags & QIO_FDFLAG_SEEKABLE) > 0 ) {
     // try to seek.
-    err = chpl_qio_seek(file_info, 0, SEEK_CUR, &seek_ret);
+    /*err = chpl_qio_seek(file_info, 0, SEEK_CUR, &seek_ret);
     err_code = qio_err_to_int(err);
     if( err_code == ESPIPE || err_code == ENOSYS || err_code == EINVAL ) {
       // not seekable. Don't worry about it.
@@ -892,7 +895,8 @@ qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, int fdflags,
       return err;
     } else {
       seekable = 1;
-    }
+    }*/
+    seekable = 1;
   }
 
   if (seekable) {

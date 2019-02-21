@@ -288,6 +288,10 @@ extern type curl_handle;
 pragma "no doc"
 extern type chpl_slist;
 
+// QIO functions used
+private extern proc sys_iov_total_bytes(iov:c_ptr(qiovec_t), iovcnt:c_int):int(64);
+private extern proc qio_mkerror_errno():syserr;
+
 private extern proc chpl_curl_set_opt(fl:qio_file_ptr_t, opt:c_int, arg...):syserr;
 private extern proc chpl_curl_perform(fl:qio_file_ptr_t):syserr;
 private extern proc chpl_curl_slist_append(ref list:chpl_slist, str:c_string):syserr;
@@ -436,10 +440,14 @@ extern const curlopt_errorbuffer                : c_int ;
 extern const curlopt_writefunction              : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_READFUNCTION.html */
 extern const curlopt_readfunction               : c_int ;
+extern const CURLOPT_READFUNCTION               : c_int ;
+extern const CURLOPT_READDATA                   : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_TIMEOUT.html */
 extern const curlopt_timeout                    : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_INFILESIZE.html */
 extern const curlopt_infilesize                 : c_int ;
+extern const CURLOPT_INFILESIZE                 : c_int ;
+extern const CURLOPT_INFILESIZE_LARGE           : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_POSTFIELDS.html */
 extern const curlopt_postfields                 : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_REFERER.html */
@@ -498,6 +506,7 @@ extern const curlopt_nobody                     : c_int ;
 extern const curlopt_failonerror                : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_UPLOAD.html */
 extern const curlopt_upload                     : c_int ;
+extern const CURLOPT_UPLOAD                     : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_POST.html */
 extern const curlopt_post                       : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_DIRLISTONLY.html */
@@ -628,6 +637,7 @@ extern const curlopt_maxfilesize                : c_int ;
 extern const curlopt_infilesize_large           : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_RESUME_FROM_LARGE.html */
 extern const curlopt_resume_from_large          : c_int ;
+extern const CURLOPT_RESUME_FROM_LARGE          : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_MAXFILESIZE_LARGE.html */
 extern const curlopt_maxfilesize_large          : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_NETRC_FILE.html */
@@ -713,6 +723,7 @@ extern const curlopt_proxy_transfer_mode        : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_SEEKFUNCTION.html */
 extern const curlopt_seekfunction               : c_int ;
 extern const CURLOPT_WRITEFUNCTION              : c_int ;
+extern const CURLOPT_WRITEDATA                  : c_int ;
 extern const CURLOPT_NOBODY                     : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_SEEKDATA.html */
 extern const curlopt_seekdata                   : c_int ;
@@ -754,6 +765,8 @@ extern const curlopt_mail_rcpt                  : c_int ;
 extern const curlopt_mail_auth                  : c_int ;
 
 extern const CURLINFO_CONTENT_LENGTH_DOWNLOAD   : c_int ;
+extern const CURLE_RANGE_ERROR: c_int;
+extern const CURLE_OK: c_int;
 
 pragma "no doc"
 extern type CURL;
@@ -770,6 +783,12 @@ extern proc chpl_curl_easy_getinfo_ptr(curl:c_ptr(CURL), info:CURLINFO, c_void_p
 
 extern proc curl_easy_perform(curl:c_ptr(CURL)):CURLcode;
 extern proc curl_easy_cleanup(curl:c_ptr(CURL)):void;
+extern proc curl_easy_pause(curl:c_ptr(CURL), bitmask:c_int):CURLcode;
+
+extern const CURL_READFUNC_PAUSE:size_t;
+extern const CURL_WRITEFUNC_PAUSE:size_t;
+extern const CURLPAUSE_ALL: c_int;
+extern const CURLPAUSE_CONT: c_int;
 
 // Since a curl handle does not hold where it has read to, we need to do
 // this here.
@@ -787,25 +806,23 @@ class CurlFile : QioPluginFile {
   // channel at once on a given Curl handle and use openreader() and
   // openwriter() in order to open up channels for Curl.
 
-  var current_offset: size_t;
+  var current_offset: int;
   var seekable: bool;
 
-
-  proc deinit() {
-  }
-
   override proc writev(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtWritten:ssize_t):syserr {
-    return ENOSYS;
+    return curl_writev(this, iov, iovcnt, amtWritten);
   }
   override proc readv(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtRead:ssize_t):syserr {
-    return ENOSYS;
+    writeln("in readv");
+    return curl_preadv_internal(this, iov, iovcnt, -1, amtRead);
   }
 
   override proc pwritev(iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtWritten:ssize_t):syserr {
     return ENOSYS;
   }
   override proc preadv(iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtRead:ssize_t):syserr {
-    return ENOSYS;
+    writeln("in preadv");
+    return curl_preadv_internal(this, iov, iovcnt, offset, amtRead);
   }
 
   override proc seek(amount:int(64), whence:c_int, out offset:int(64)):syserr {
@@ -813,10 +830,18 @@ class CurlFile : QioPluginFile {
   }
 
   override proc filelength(out length:int(64)):syserr {
-    return ENOSYS;
+    if this.length == -1 then {
+      return ENOTSUP;
+    }
+
+    length = this.length;
+    return ENOERR;
   }
   override proc getpath(out path:string):syserr {
-    return ENOSYS;
+    //var s = new string(this.pathnm);
+    //path = s;
+    path = this.pathnm;
+    return ENOERR;
   }
 
   override proc fsync():syserr {
@@ -860,6 +885,258 @@ class CurlFilesystem : QioPluginFilesystem {
   }*/
 }
 
+// Since the callback is called many times from a call to curl_easy_perform,
+// and since we know the amount that we need to read into the iovec passed into
+// preadv/readv resp. we put the entire iovec (that is passed into readv/preadv)
+// into the vec field of this struct. This way, we only call
+// curl_easy_perform once (and thus, get rid of the overhead that multiple
+// calls could cause).
+
+record curl_iovec_t {
+  var vec:c_ptr(qiovec_t); // iovec to read into --
+                           // (the iovec passed in curl_readv/curl_preadv)
+  var total_read:size_t;   // total amount read
+  var amt_read:size_t;     // amount read into the current iovec buffer
+  var count:c_int;         // number of buffers in the iovec
+  var offset:size_t;       // offset that we want to skip to
+                           // (in the case where we cannot request byteranges)
+  var curr:c_int;          // the index of the current buffer
+};
+
+// userdata, is a curl_iovec_t. This is set to be passed into this function,
+// when we
+// call CURLOPT_WRITEDATA in curl_preadv and curl_readv.
+// FUTURE: If we have filled the iovec, but have not finished reading from the curl
+// handle, pause it (i.e., return CURL_WRITE_PAUSE).
+
+proc pause_writer(ptr:c_void_ptr, size:size_t, nmemb:size_t, userdata:c_void_ptr):size_t
+{
+  writeln("in pause_writer");
+  return CURL_WRITEFUNC_PAUSE;
+}
+proc pause_reader(ptr:c_void_ptr, size:size_t, nmemb:size_t, userdata:c_void_ptr):size_t
+{
+  writeln("in pause_reader");
+  return CURL_READFUNC_PAUSE;
+}
+
+
+proc buf_writer(ptr:c_void_ptr, size:size_t, nmemb:size_t, userdata:c_void_ptr):size_t
+{
+  var ptr_data = ptr:c_ptr(uint(8));
+  var realsize:size_t = size*nmemb;
+  var real_realsize:size_t = realsize;
+  var retptr = userdata:c_ptr(curl_iovec_t);
+  ref ret = retptr.deref();
+
+  if size > sys_iov_total_bytes(ret.vec, ret.count) {
+    writeln("in buf_writer PAUSE");
+    return CURL_WRITEFUNC_PAUSE;
+  }
+
+  writeln("in buf_writer");
+
+  // so that we can "seek" when we cannot request byteranges
+  if realsize < ret.offset {
+    ret.offset -= realsize;
+    writeln("A: ", realsize);
+    return realsize;
+  } else {
+    // nop when we are done -- non-zero the first time through
+    ptr_data = ptr_data + ret.offset;
+    realsize -= ret.offset;
+    ret.offset = 0;
+    writeln("B: ", realsize);
+  }
+
+  // The amount that we have been given by curl is more than we can stick into a
+  // single iovbuf. So we need to go from one iovbuf to the other
+  while (realsize > ret.vec[ret.curr].iov_len - ret.amt_read) {
+    writeln("C: ", realsize);
+    var curbase = (ret.vec[ret.curr].iov_base):c_ptr(uint(8));
+    var dst = curbase + ret.amt_read;
+    var amt = ret.vec[ret.curr].iov_len - ret.amt_read;
+    c_memcpy(dst, ptr_data, amt);
+    ret.total_read += amt;
+    realsize -= amt;
+    ptr_data = ptr_data + amt;
+    // Reset the amount that we have read into this vector.
+    ret.amt_read = 0;
+    if (ret.curr == ret.count-1) { // last iovbuf in this vector - stop reading
+      return 0; // stop reading
+    } else { // go to the next buf in this vector
+      ret.curr += 1;
+    }
+  }
+
+  // The amount of data that we have been given by curl is <= to the amount
+  // of space that we have left in this iovbuf. So we can simply read it all in.
+  if (realsize <= (ret.vec[ret.curr].iov_len - ret.amt_read)) {
+    writeln("D: ", realsize);
+    var curbase = (ret.vec[ret.curr].iov_base):c_ptr(uint(8));
+    var dst = curbase + ret.amt_read;
+    var amt = realsize;
+    c_memcpy(dst, ptr_data, amt);
+    ret.total_read += realsize;
+    ret.amt_read += realsize;
+    // We have fully populated this iovbuf
+    if (ret.vec[ret.curr].iov_len == ret.amt_read) {
+      if ret.curr == ret.count - 1 { // last iovbuf in this vector
+        return 0; // stop reading
+      } else { // else, step to the next buf.
+        ret.curr += 1;
+        ret.amt_read = 0;
+      }
+    }
+  }
+  writeln("E: ", real_realsize);
+  return real_realsize;
+}
+
+// We want to upload data from the iovec passed into curl_writev. We populate a
+// curl_iovec_t in curl_writev, and set it to be passed in when we call
+// CURLOPT_READDATA. Note, that we can only return a chunk of memory at most
+// size*nmemb big to curl (i.e., sizeof(ptr) <= size*nmemb after this function
+// is called by CURL).
+proc read_data(ptr:c_void_ptr, size:size_t, nmemb:size_t, userp:c_void_ptr):size_t
+{
+  var cur:c_void_ptr = ptr;
+  var realsize:size_t = size*nmemb;
+  var retptr = userp:c_ptr(curl_iovec_t);
+  ref ret = retptr.deref();
+
+  if (size == 0) || (nmemb == 0) || ((size*nmemb) < 1) ||
+     (ret.curr >= ret.count) {
+    return 0; // stop putting data
+  }
+
+  // We can upload more than one iovbuf at once, so do it.
+  while (realsize > ret.vec[ret.curr].iov_len - ret.amt_read)  {
+    var curbase = (ret.vec[ret.curr].iov_base):c_ptr(uint(8));
+    var src = curbase + ret.amt_read;
+    var amt = ret.vec[ret.curr].iov_len - ret.amt_read;
+    c_memcpy(cur, src, amt);
+    ret.total_read += amt;
+    realsize -= amt;
+    cur = (cur:c_ptr(uint(8)) + amt):c_void_ptr;
+    // Reset the amount that we have read out of this vector.
+    ret.amt_read = 0;
+    // go to the next vector
+    ret.curr += 1;
+    if ret.curr >= ret.count then
+      return ret.total_read;
+  }
+
+  // The amount of data that we need to hand to curl is <= the amount of space
+  // that we have left in this iovbuf, so we have to be careful not to exceed it
+  if (realsize <= (ret.vec[ret.curr].iov_len - ret.amt_read)) {
+    var curbase = ret.vec[ret.curr].iov_base;
+    var src = (curbase:c_ptr(uint(8)) + ret.amt_read):c_void_ptr;
+    c_memcpy(cur, src, realsize);
+    ret.total_read += realsize;
+    ret.amt_read += realsize;
+    // We have fully read this iovbuf
+    if (ret.vec[ret.curr].iov_len == ret.amt_read) {
+      ret.curr += 1;
+      ret.amt_read = 0;
+    }
+  }
+  return ret.total_read;
+}
+
+// TODO: while it's OK to "seek" to a particular offset,
+// it's not good that we're restarting the transfer
+// on every call here with the readv case.. not sure how that's happening
+proc curl_preadv_internal(local_handle:CurlFile, vector:c_ptr(qiovec_t), count:c_int, in offset:int(64), out num_read_out:ssize_t)
+{
+  var err:CURLcode = 0;
+  var got_total:ssize_t;
+  var err_out:syserr = ENOERR;
+  var write_vec:curl_iovec_t;
+
+  writeln("in curl_preadv_internal offset ", offset);
+  //STARTING_SLOW_SYSCALL;
+
+  got_total = 0;
+  write_vec.total_read = 0;
+  write_vec.count = count;
+  write_vec.vec = vector;
+  write_vec.amt_read = 0;
+  write_vec.offset = 0;
+  write_vec.curr = 0;
+
+  // offset = -1 if we want readv
+  if offset == -1 then
+    offset = local_handle.current_offset;
+
+  if local_handle.seekable {  // we can request byteranges
+    chpl_curl_easy_setopt_offset(local_handle.curl, CURLOPT_RESUME_FROM_LARGE, offset);
+    writeln("setting resume from large");
+  } else {
+    write_vec.offset = offset:size_t;
+    writeln("setting offset");
+  }
+
+  chpl_curl_easy_setopt_ptr(local_handle.curl, CURLOPT_WRITEFUNCTION, c_ptrTo(buf_writer):c_void_ptr);
+
+  // Read into write_vec
+  chpl_curl_easy_setopt_ptr(local_handle.curl, CURLOPT_WRITEDATA, c_ptrTo(write_vec):c_void_ptr);
+
+  // Continue anything that is paused
+  err = curl_easy_pause(local_handle.curl, CURLPAUSE_CONT);
+
+  //DONE_SLOW_SYSCALL;
+  got_total = write_vec.total_read:int(64);
+  local_handle.current_offset += got_total;
+
+  if (err == CURLE_RANGE_ERROR ||  err == CURLE_OK) &&
+     got_total == 0 &&
+     sys_iov_total_bytes(vector, count) != 0 then
+    err_out = EEOF;
+
+  chpl_curl_easy_setopt_ptr(local_handle.curl, CURLOPT_WRITEFUNCTION, c_ptrTo(pause_writer):c_void_ptr);
+  chpl_curl_easy_setopt_ptr(local_handle.curl, CURLOPT_WRITEDATA, nil:c_void_ptr);
+
+  num_read_out = got_total;
+  return err_out;
+}
+
+proc curl_writev(fl:CurlFile, iov:c_ptr(qiovec_t), iovcnt:c_int, out num_written_out:ssize_t):syserr
+{
+  var ret:CURLcode = 0;
+  var err_out:syserr = 0;
+  var write_vec:curl_iovec_t;
+
+  write_vec.total_read = 0;
+  write_vec.count = iovcnt;
+  write_vec.vec = iov;
+  write_vec.amt_read = 0;
+  write_vec.offset = 0;
+  write_vec.curr = 0;
+
+  //STARTING_SLOW_SYSCALL;
+  /*tell it to "upload" to the URL*/
+  chpl_curl_easy_setopt_long(fl.curl, CURLOPT_UPLOAD, 1);
+  // set it up to write over curl
+  chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_READFUNCTION, c_ptrTo(read_data):c_void_ptr);
+  // Tell curl how much data to expect
+  chpl_curl_easy_setopt_offset(fl.curl, CURLOPT_INFILESIZE_LARGE, sys_iov_total_bytes(iov, iovcnt));
+  chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_READDATA, c_ptrTo(write_vec));
+  ret = curl_easy_pause(fl.curl, CURLPAUSE_CONT);
+  num_written_out = write_vec.total_read:int(64);
+
+  if ret != CURLE_OK then
+    err_out = qio_mkerror_errno();
+
+  chpl_curl_easy_setopt_long(fl.curl, CURLOPT_UPLOAD, 0);
+  chpl_curl_easy_setopt_long(fl.curl, CURLOPT_INFILESIZE_LARGE, 0);
+  chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_READFUNCTION, c_ptrTo(pause_reader):c_void_ptr);
+  chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_READDATA, nil:c_void_ptr);
+
+  //DONE_SLOW_SYSCALL;
+
+  return err_out;
+}
 
 record curl_str_buf {
   var mem:c_ptr(uint(8));
@@ -925,12 +1202,12 @@ private proc seekable(fl:CurlFile, out length:int(64)):bool {
     curl_easy_perform(fl.curl);
 
     chpl_curl_easy_setopt_long(fl.curl, CURLOPT_NOBODY, 0);
-    chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_WRITEFUNCTION, nil:c_void_ptr);
+    chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_WRITEFUNCTION, c_ptrTo(pause_writer):c_void_ptr);
     chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_HEADERDATA, nil:c_void_ptr);
 
     extern proc strstr(haystack:c_string, needle:c_string):c_string;
     // Does this URL accept range requests?
-    if strstr(buf.mem:c_string, c"Accept-Ranges"):c_void_ptr == nil:c_void_ptr {
+    if strstr(buf.mem:c_string, c"Accept-Ranges: bytes"):c_void_ptr == nil:c_void_ptr {
       ret = false;
     } else {
       ret = true;
@@ -989,6 +1266,23 @@ proc openurl(url:string,
     fl.seekable = seekable(fl, filelength);
     fl.length = filelength:ssize_t;
   }
+
+  var err: CURLcode = 0;
+
+  // Pause the curl handle now
+  err = curl_easy_pause(fl.curl, CURLPAUSE_ALL);
+
+  chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_READFUNCTION, c_ptrTo(pause_reader):c_void_ptr);
+  chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_WRITEFUNCTION, c_ptrTo(pause_writer):c_void_ptr);
+
+  writeln("X");
+  // Set everything up
+  // TODO XXX I think this has to use the multi interface in order
+  // to function correctly.
+  // I'm not sure that the pausing is helping.
+  //  - multi socket -- wait until some data is ready
+  err = curl_easy_perform(fl.curl);
+  writeln("Y");
 
   writeln(fl.seekable);
   writeln(fl.length);

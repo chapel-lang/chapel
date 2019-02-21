@@ -931,31 +931,31 @@ class QioPluginFilesystem {
 
 // These functions let the C QIO code call the plugins
 // TODO: Move more of the QIO code to be pure Chapel
-export proc chpl_qio_writev(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, out amtWritten:ssize_t):syserr {
+export proc chpl_qio_writev(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, ref amtWritten:ssize_t):syserr {
   var f=file:QioPluginFile;
   return f.writev(iov, iovcnt, amtWritten);
 }
-export proc chpl_qio_readv(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, out amtRead:ssize_t):syserr {
+export proc chpl_qio_readv(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, ref amtRead:ssize_t):syserr {
   var f=file:QioPluginFile;
   return f.readv(iov, iovcnt, amtRead);
 }
-export proc chpl_qio_pwritev(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtWritten:ssize_t):syserr {
+export proc chpl_qio_pwritev(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), ref amtWritten:ssize_t):syserr {
   var f=file:QioPluginFile;
   return f.pwritev(iov, iovcnt, offset, amtWritten);
 }
-export proc chpl_qio_preadv(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtRead:ssize_t):syserr {
+export proc chpl_qio_preadv(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), ref amtRead:ssize_t):syserr {
   var f=file:QioPluginFile;
   return f.preadv(iov, iovcnt, offset, amtRead);
 }
-export proc chpl_qio_seek(file:c_void_ptr, amount:int(64), whence:c_int, out offset:int(64)):syserr {
+export proc chpl_qio_seek(file:c_void_ptr, amount:int(64), whence:c_int, ref offset:int(64)):syserr {
   var f=file:QioPluginFile;
   return f.seek(amount, whence, offset);
 }
-export proc chpl_qio_filelength(file:c_void_ptr, out length:int(64)):syserr {
+export proc chpl_qio_filelength(file:c_void_ptr, ref length:int(64)):syserr {
   var f=file:QioPluginFile;
   return f.filelength(length);
 }
-/*export proc chpl_qio_getpath(file:c_void_ptr, out str:c_string, out len:ssize_t):syserr {
+/*export proc chpl_qio_getpath(file:c_void_ptr, ref str:c_string, ref len:ssize_t):syserr {
   var f=file:QioPluginFile;
   return f.getpath(str, len);
 }*/
@@ -963,11 +963,11 @@ export proc chpl_qio_fsync(file:c_void_ptr):syserr {
   var f=file:QioPluginFile;
   return f.fsync();
 }
-export proc chpl_qio_get_chunk(file:c_void_ptr, out length:int(64)):syserr {
+export proc chpl_qio_get_chunk(file:c_void_ptr, ref length:int(64)):syserr {
   var f=file:QioPluginFile;
   return f.getChunk(length);
 }
-export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64), end:int(64), out localeNames:c_ptr(c_string), ref nLocales:int(64)):syserr {
+export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64), end:int(64), ref localeNames:c_ptr(c_string), ref nLocales:int(64)):syserr {
   var f=file:QioPluginFile;
   return f.getLocalesForRegion(start, end, localeNames, nLocales);
 }
@@ -979,7 +979,7 @@ export proc chpl_qio_close(file:c_void_ptr):syserr {
 }
 
 
-export proc chpl_qio_open(filesystem:c_void_ptr, path:c_string, pathlen:ssize_t, ref flags:c_int, mode:int(64), hints:int(64), out file:c_void_ptr):syserr {
+export proc chpl_qio_open(filesystem:c_void_ptr, path:c_string, pathlen:ssize_t, ref flags:c_int, mode:int(64), hints:int(64), ref file:c_void_ptr):syserr {
   var fs=filesystem:QioPluginFilesystem;
   var f:QioPluginFile;
   var err:syserr;
@@ -987,11 +987,11 @@ export proc chpl_qio_open(filesystem:c_void_ptr, path:c_string, pathlen:ssize_t,
   file = f:c_void_ptr;
   return err;
 }
-export proc chpl_qio_get_cwd(filesystem:c_void_ptr, out path:c_string, out len:ssize_t):syserr {
+export proc chpl_qio_get_cwd(filesystem:c_void_ptr, ref path:c_string, ref len:ssize_t):syserr {
   var fs=filesystem:QioPluginFilesystem;
   return fs.getCwd(path, len);
 }
-export proc chpl_qio_get_fs_type(filesystem:c_void_ptr, out fsType:int(64)):syserr {
+export proc chpl_qio_get_fs_type(filesystem:c_void_ptr, ref fsType:int(64)):syserr {
   var fs=filesystem:QioPluginFilesystem;
   return fs.getFsType(fsType);
 }
