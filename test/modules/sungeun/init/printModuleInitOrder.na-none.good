@@ -24,6 +24,7 @@ Initializing Modules:
         ChapelArray
          Sort
         ExternalArray
+        ISO_Fortran_binding
        ChapelNumLocales
        Sys
         SysBasic
