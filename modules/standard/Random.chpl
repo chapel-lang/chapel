@@ -862,7 +862,7 @@ module Random {
           PCGRandomStreamPrivate_lock$ = true;
 
         if boundsChecking && min > max then
-          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [%n, %n]".format(min, max));
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max +  "]");
 
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType,min,max);
         if parSafe then
@@ -879,7 +879,7 @@ module Random {
           PCGRandomStreamPrivate_lock$ = true;
 
         if boundsChecking && min > max then
-          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [%n, %n]".format(min, max));
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max + "]");
 
         const result = PCGRandomStreamPrivate_getNext_noLock(resultType,min,max);
         if parSafe then
