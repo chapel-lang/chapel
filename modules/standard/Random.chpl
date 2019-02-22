@@ -843,7 +843,7 @@ module Random {
       }
       /*
         Return the next random value but within a particular range.
-        Returns a number in [`min`, `max`] (inclusive). Halts if ``min > max``.
+        Returns a number in [`min`, `max`] (inclusive). Halts if checks are enabled and ``min > max``.
 
         .. note::
 
