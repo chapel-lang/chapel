@@ -2,7 +2,7 @@
 // jupiter:/opt/intel/compilers_and_libraries_2019.0.117/linux/compiler/include/ISO_Fortran_binding.h
 module ISO_Fortran_binding {
   use SysCTypes;
-  require "ISO_Fortran_binding.h";
+  require "chpl-ISO_Fortran_binding.h";
 
 
   // #define'd integer literals:
