@@ -1363,16 +1363,22 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 // Type helpers
 //
 
+// TODO: Add this to public interface eventually
+pragma "no doc"
 /* Returns ``true`` if the array is dense N-dimensional non-distributed array. */
 proc isDenseArr(A: [?D]) param : bool {
   return isDenseDom(D);
 }
 
+// TODO: Add this to public interface eventually
+pragma "no doc"
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isDenseDom(D: domain) param : bool {
   return isRectangularDom(D) && (D.dist.type == defaultDist.type || D.dist.type < ArrayViewRankChangeDist);
 }
 
+// TODO: Add this to public interface eventually
+pragma "no doc"
 /* Returns ``true`` if the array is dense 2-dimensional non-distributed array. */
 proc isDenseMatrix(A: []) param : bool {
   return A.rank == 2 && isDenseArr(A);
