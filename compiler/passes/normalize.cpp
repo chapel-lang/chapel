@@ -50,7 +50,7 @@ static void        insertModuleInit();
 static FnSymbol*   toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
 static void        handleModuleDeinitFn(ModuleSymbol* mod);
 static void        transformLogicalShortCircuit();
-static void        handleReduceAssign();
+static void        checkReduceAssign();
 
 static bool        isArrayFormal(ArgSymbol* arg);
 
@@ -118,7 +118,7 @@ void normalize() {
 
   transformLogicalShortCircuit();
 
-  handleReduceAssign();
+  checkReduceAssign();
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (isClassWithInitializers(at)  == true ||
@@ -175,9 +175,7 @@ void normalize() {
     // state (empty) if they are used but not assigned to anything.
     forv_Vec(SymExpr, se, gSymExprs) {
       if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
-        if (se == se->getStmtExpr() &&
-            // avoid exprs under ForallIntents
-            (isDirectlyUnderBlockStmt(se) || !isBlockStmt(se->parentExpr))) {
+        if (se == se->getStmtExpr()) {
           // Don't add these calls for the return type, since
           // _statementLevelSymbol would do nothing in that case
           // anyway, and it contributes to order-of-resolution issues for
@@ -424,16 +422,14 @@ static void transformLogicalShortCircuit() {
 }
 
 //
-// handleReduceAssign(): check+process the reduce= calls
+// checkReduceAssign(): check correctness of the reduce= calls
 //
-static void handleReduceAssign() {
+static void checkReduceAssign() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_REDUCE_ASSIGN) == true) {
+    if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
       INT_ASSERT(call->numActuals() == 2); // comes from the parser
 
       SET_LINENO(call);
-
-      int rOpIdx;
 
       // l.h.s. must be a single variable
       if (SymExpr* lhsSE = toSymExpr(call->get(1))) {
@@ -445,8 +441,8 @@ static void handleReduceAssign() {
                          "The reduce= operator must occur within "
                          "a forall statement.");
 
-        } else if ((rOpIdx = enclosingFS->reduceIntentIdx(lhsVar)) >= 0) {
-          call->insertAtHead(new_IntSymbol(rOpIdx, INT_SIZE_64));
+        } else if (enclosingFS->isReduceIntent(lhsVar)) {
+          // Great.
 
         } else {
           USR_FATAL(lhsSE,
@@ -2732,6 +2728,15 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   std::vector<SymExpr*> symExprs;
 
+  // Our AST and transformations are not set up to handle multiple query
+  // expressions inside of an array's domain.  Give the user an error for now.
+  if (!isDefExpr(domExpr)) {
+    std::vector<DefExpr*> defExprs;
+    collectDefExprs(domExpr, defExprs);
+    for_vector(DefExpr, def, defExprs) {
+      USR_FATAL_CONT(def, "cannot query part of a domain");
+    }
+  }
   //
   // Only fix array formals with 'in' intent if there was:
   // - a type query, or

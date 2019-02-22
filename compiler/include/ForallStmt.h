@@ -75,10 +75,8 @@ public:
   int numShadowVars()     const;
 
   Expr* firstIteratedExpr() const;
-
-  int   reduceIntentIdx(Symbol* var);
   void  setNotZippered();
-
+  bool  isReduceIntent(Symbol* var) const;
   bool hasVectorizationHazard() const;
   void setHasVectorizationHazard(bool v);
 

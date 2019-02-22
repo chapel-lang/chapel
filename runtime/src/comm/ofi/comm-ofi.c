@@ -761,26 +761,54 @@ void chpl_comm_rollcall(void) {
 }
 
 
+//
+// Chapel global and private variable support
+//
+
+static void*** chplPrivBcastTabMap;
+
+
 void chpl_comm_broadcast_global_vars(int numGlobals) {
-  // TODO: this won't work in the presence of address space randomization
-  int i;
-  if (chpl_nodeID != 0) {
-    for (i = 0; i < numGlobals; i++) {
-      chpl_comm_get(chpl_globals_registry[i], 0, chpl_globals_registry[i],
-                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/,
-                    CHPL_COMM_UNKNOWN_ID, 0, 0);
+  //
+  // Broadcast the wide addresses of the registered globals from
+  // node 0 to the other nodes.
+  //
+  wide_ptr_t* glbWideAddrs;
+  CHPL_CALLOC(glbWideAddrs, chpl_numGlobalsOnHeap);
+  if (chpl_nodeID == 0) {
+    for (int i = 0; i < numGlobals; i++) {
+      glbWideAddrs[i] = *chpl_globals_registry[i];
     }
+  }
+  chpl_comm_ofi_oob_bcast(glbWideAddrs, numGlobals * sizeof(glbWideAddrs[0]));
+  if (chpl_nodeID != 0) {
+    for (int i = 0; i < numGlobals; i++) {
+      *chpl_globals_registry[i] = glbWideAddrs[i];
+    }
+  }
+  CHPL_FREE(glbWideAddrs);
+
+  //
+  // While here, also share the nodes' private broadcast tables around.
+  // These are needed by chpl_comm_broadcast_private(), below.
+  //
+  void** pbtMap;
+  size_t pbtSize = chpl_private_broadcast_table_len
+                   * sizeof(chpl_private_broadcast_table[0]);
+  CHPL_CALLOC(pbtMap, chpl_numNodes * pbtSize);
+  chpl_comm_ofi_oob_allgather(chpl_private_broadcast_table, pbtMap, pbtSize);
+  CHPL_CALLOC(chplPrivBcastTabMap, chpl_numNodes);
+  for (int i = 0; i < chpl_numNodes; i++) {
+    chplPrivBcastTabMap[i] = &pbtMap[i * chpl_private_broadcast_table_len];
   }
 }
 
 
 void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
-  // TODO: this won't work in the presence of address space randomization
-  int i;
-  for (i = 0; i < chpl_numNodes; i++) {
+  for (int i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
       (void) ofi_put(chpl_private_broadcast_table[id], i,
-                     chpl_private_broadcast_table[id], size);
+                     chplPrivBcastTabMap[i][id], size);
     }
   }
 }
@@ -2464,7 +2492,7 @@ static inline void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
 #define DEFN_CHPL_COMM_ATOMIC_WRITE(fnType, ofiType, Type)              \
   void chpl_comm_atomic_write_##fnType                                  \
          (void* desired, c_nodeid_t node, void* object,                 \
-          int ln, int32_t fn) {                                         \
+          memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_INTERFACE,                                           \
                "chpl_comm_atomic_write_%s(%p, %d, %p, %d, %s)",         \
                #fnType, desired, (int) node, object,                    \
@@ -2487,7 +2515,7 @@ DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, double)
 #define DEFN_CHPL_COMM_ATOMIC_READ(fnType, ofiType, Type)               \
   void chpl_comm_atomic_read_##fnType                                   \
          (void* result, c_nodeid_t node, void* object,                  \
-          int ln, int32_t fn) {                                         \
+          memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_INTERFACE,                                           \
                "chpl_comm_atomic_read_%s(%p, %d, %p, %d, %s)",          \
                #fnType, result, (int) node, object,                     \
@@ -2507,7 +2535,7 @@ DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, double)
 #define DEFN_CHPL_COMM_ATOMIC_XCHG(fnType, ofiType, Type)               \
   void chpl_comm_atomic_xchg_##fnType                                   \
          (void* desired, c_nodeid_t node, void* object, void* result,   \
-          int ln, int32_t fn) {                                         \
+          memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_INTERFACE,                                           \
                "chpl_comm_atomic_xchg_%s(%p, %d, %p, %p, %d, %s)",      \
                #fnType, desired, (int) node, object, result,            \
@@ -2527,7 +2555,7 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, double)
 #define DEFN_CHPL_COMM_ATOMIC_CMPXCHG(fnType, ofiType, Type)            \
   void chpl_comm_atomic_cmpxchg_##fnType                                \
          (void* expected, void* desired, c_nodeid_t node, void* object, \
-          chpl_bool32* result,                                          \
+          chpl_bool32* result, memory_order order,                      \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
                "chpl_comm_atomic_cmpxchg_%s(%p, %p, %d, %p, %p, "       \
@@ -2549,7 +2577,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
 #define DEFN_IFACE_AMO_SIMPLE_OP(fnOp, ofiOp, fnType, ofiType, Type)    \
   void chpl_comm_atomic_##fnOp##_##fnType                               \
          (void* operand, c_nodeid_t node, void* object,                 \
-          int ln, int32_t fn) {                                         \
+          memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_INTERFACE,                                           \
                "chpl_comm_atomic_%s_%s(<%s>, %d, %p, %d, %s)",          \
                #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
@@ -2565,12 +2593,13 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
                "chpl_comm_atomic_%s_unordered_%s(<%s>, %d, %p, %d, %s)",\
                #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
                object, ln, chpl_lookupFilename(fn));                    \
-    chpl_comm_atomic_##fnOp##_##fnType(operand, node, object, ln, fn);  \
+    chpl_comm_atomic_##fnOp##_##fnType(operand, node, object,           \
+                                       memory_order_seq_cst, ln, fn);   \
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_fetch_##fnOp##_##fnType                         \
          (void* operand, c_nodeid_t node, void* object, void* result,   \
-          int ln, int32_t fn) {                                         \
+          memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_INTERFACE,                                           \
                "chpl_comm_atomic_fetch_%s_%s(<%s>, %d, %p, %p, "        \
                "%d, %s)",                                               \
@@ -2606,7 +2635,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
 #define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type, negate)               \
   void chpl_comm_atomic_sub_##fnType                                    \
          (void* operand, c_nodeid_t node, void* object,                 \
-          int ln, int32_t fn) {                                         \
+          memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_INTERFACE,                                           \
                "chpl_comm_atomic_sub_%s(<%s>, %d, %p, %d, %s)",         \
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
@@ -2624,12 +2653,13 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
                "%d, %s)",                                               \
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                ln, chpl_lookupFilename(fn));                            \
-    chpl_comm_atomic_sub_##fnType(operand, node, object, ln, fn);       \
+    chpl_comm_atomic_sub_##fnType(operand, node, object,                \
+                                  memory_order_seq_cst, ln, fn);        \
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_fetch_sub_##fnType                              \
          (void* operand, c_nodeid_t node, void* object, void* result,   \
-          int ln, int32_t fn) {                                         \
+          memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_INTERFACE,                                           \
                "chpl_comm_atomic_fetch_sub_%s(<%s>, %d, %p, %p, "       \
                "%d, %s)",                                               \

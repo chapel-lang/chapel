@@ -1,2 +1,5 @@
-throw-borrowed.chpl:4: In function 'test':
-throw-borrowed.chpl:6: warning: Throwing borrowed error - please throw owned
+throw-borrowed.chpl:8: In function 'test':
+throw-borrowed.chpl:9: warning: Throwing unmanaged error - please throw owned
+uncaught Error: 
+  throw-borrowed.chpl:9: thrown here
+  throw-borrowed.chpl:12: uncaught here

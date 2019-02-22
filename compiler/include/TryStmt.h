@@ -28,7 +28,6 @@ class TryStmt : public Stmt
 public:
 
   static BlockStmt*   build(bool tryBang, Expr*      expr);
-  static BlockStmt*   build(bool tryBang, BlockStmt* body);
   static BlockStmt*   build(bool tryBang, BlockStmt* body, BlockStmt* catches,
                             bool isSyncTry = false);
   static BlockStmt*   buildWithCatchall(BlockStmt* body, BlockStmt* onErr);

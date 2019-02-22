@@ -22,7 +22,6 @@
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "ForallStmt.h"
-#include "implementForallIntents.h"
 #include "passes.h"
 #include "resolution.h"
 #include "stringutil.h"
@@ -301,11 +300,6 @@ This is because unused functions are pruned at the end of resolution.
 ---------------------------------
 
 Further key todos:
-
-* Not all forall-like things in Chapel code get transformed
-into ForallStmt nodes. Some forall intents are implemented
-in implementForallIntents1(), implementForallIntents2().
-Todo: switch those to this "modern" implementation.
 
 * When a global is passed by [const] ref intent,
 replace references to the corresponding shadow variable
@@ -1098,9 +1092,6 @@ static void reorderShadowVsTaskPrivateVars(ForallStmt* fs) {
 //
 // If 'fs' has only ref intents, or none at all,
 // revert to old iterator-record-based implementation.
-// If so, do what the original buildStandaloneForallLoopStmt()
-// did during parsing, with modifications.
-//
 // Remove 'fs' and replace it with a ForLoop.
 //
 static void handleRecursiveIter(ForallStmt* fs,

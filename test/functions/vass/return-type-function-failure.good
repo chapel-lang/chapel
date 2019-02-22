@@ -1,1 +1,2 @@
-return-type-function-failure.chpl:4: error: cannot use a function as a type, unless it is an invocation of a type function
+return-type-function-failure.chpl:4: In function 'valfun':
+return-type-function-failure.chpl:5: error: invalid type specification

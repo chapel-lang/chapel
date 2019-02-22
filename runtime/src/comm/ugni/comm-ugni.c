@@ -707,14 +707,31 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 #define CQ_CNT_DEC(cd)        \
         (void) atomic_fetch_sub_uint_least32_t(&(cd)->cq_cnt_curr, 1)
 
+// We create an array of comm domains and try to spread our threads to
+// different indices. For tasking layers with a fixed number of threads
+// this results in each thread acquiring an affinity for a comm domain,
+// eliminating contention across comm domains (assuming we can create as
+// many comm domains as there are threads.) We cacheline align/pad the
+// comm_dom_t struct to avoid false sharing between threads accessing
+// different comm domains (this is extremely important for performance)
+//
+// Because there are configurations where there aren't a fixed number of
+// threads and machines where there would be more threads than comm
+// domains we put `busy` on its own cacheline to avoid contention
+// between a thread operating on an acquired CD and another thread
+// that's trying to acquire it. We also try to limit cache thrashing on
+// `busy` by acquiring the lock with a test-and-test-and-set op, but the
+// effectiveness of that depends on which atomic layer is used (cstdlib
+// is the only one with cheap atomic reads.)
+
 typedef struct {
   atomic_bool        busy CACHE_LINE_ALIGN;
+  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
   chpl_bool          firmly_bound;
   gni_nic_handle_t   nih;
   gni_ep_handle_t*   remote_eps;
   gni_cq_handle_t    cqh;
   cq_cnt_t           cq_cnt_max;
-  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
 #ifdef DEBUG_STATS
   uint64_t           acqs;
   uint64_t           acqs_looks;
@@ -2090,7 +2107,7 @@ void chpl_comm_post_task_init(void)
   // handles, endpoints, and completion queues.
   //
   comm_doms =
-    (comm_dom_t*) chpl_mem_memalign(sizeof(comm_dom_t),
+    (comm_dom_t*) chpl_mem_memalign(CACHE_LINE_SIZE,
                                     comm_dom_cnt * sizeof(comm_dom_t),
                                     CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
 
@@ -6457,6 +6474,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
         void chpl_comm_atomic_write_##_f(void* val,                     \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6519,6 +6537,7 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
         void chpl_comm_atomic_read_##_f(void* res,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6572,6 +6591,7 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
                                         int32_t loc,                    \
                                         void* obj,                      \
                                         void* res,                      \
+                                        memory_order order,             \
                                         int ln, int32_t fn)             \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6632,6 +6652,7 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
                                            int32_t loc,                 \
                                            void* obj,                   \
                                            chpl_bool32* res,            \
+                                           memory_order order,          \
                                            int ln, int32_t fn)          \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6687,6 +6708,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
         void chpl_comm_atomic_##_o##_##_f(void* opnd,                   \
                                           int32_t loc,                  \
                                           void* obj,                    \
+                                          memory_order order,           \
                                           int ln, int32_t fn)           \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6750,6 +6772,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
                                                 int32_t loc,            \
                                                 void* obj,              \
                                                 void* res,              \
+                                                memory_order order,     \
                                                 int ln, int32_t fn)     \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6819,6 +6842,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
         void chpl_comm_atomic_add_##_f(void* opnd,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6882,6 +6906,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                                              int32_t loc,               \
                                              void* obj,                 \
                                              void* res,                 \
+                                             memory_order order,        \
                                              int ln, int32_t fn)        \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6926,6 +6951,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
         void chpl_comm_atomic_sub_##_f(void* opnd,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
@@ -6935,7 +6961,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          chpl_comm_atomic_add_##_f(&nopnd, loc, obj, ln, fn);          \
+          chpl_comm_atomic_add_##_f(&nopnd, loc, obj, order, ln, fn);   \
         }                                                               \
                                                                         \
          /*==============================*/                             \
@@ -6959,6 +6985,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                                              int32_t loc,               \
                                              void* obj,                 \
                                              void* res,                 \
+                                             memory_order order,        \
                                              int ln, int32_t fn)        \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
@@ -6968,7 +6995,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                    "(%p, %d, %p, %p)",                                  \
                    opnd, (int) loc, obj, res);                          \
                                                                         \
-          chpl_comm_atomic_fetch_add_##_f(&nopnd, loc, obj, res,        \
+          chpl_comm_atomic_fetch_add_##_f(&nopnd, loc, obj, res, order, \
                                           ln, fn);                      \
         }
 
@@ -8339,6 +8366,8 @@ void chpl_comm_statsReport(chpl_bool sum_over_locales)
   }
   else
     _psv_print(chpl_nodeID, &chpl_comm_pstats);
+#else
+  chpl_warning("ugni was not built with support for perfstats reporting", 0, 0);
 #endif
 }
 
@@ -8370,6 +8399,7 @@ static void _psv_print(int li, chpl_comm_pstats_t* ps)
   else
     printf("comm perfstats on locale %d (%.*s)\n", li,
            (int) buf_cnt - 2, buf);
+  fflush(stdout);
 
 #undef _PSV_PRINT
 }
