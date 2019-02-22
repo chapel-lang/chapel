@@ -760,8 +760,8 @@ module ZMQ {
       :throws IllegalArgumentError: Thrown when the option provided is not
                                     supported for getsockopt
      */
-    proc getsockopt(option: int) where (getsockoptRetTypeHelper(option) ==
-                                        getsockoptHelper.yesString) throws {
+    proc getsockopt(option: int) throws where (getsockoptRetTypeHelper(option)
+                                               == getsockoptHelper.yesString) {
 
       extern proc zmq_getsockopt_string_helper(s: c_void_ptr, option: c_int,
                                                ref res: c_string);
@@ -781,8 +781,8 @@ module ZMQ {
     }
 
     pragma "no doc"
-    proc getsockopt(option: int) where (getsockoptRetTypeHelper(option) ==
-                                        getsockoptHelper.yesInt) throws {
+    proc getsockopt(option: int) throws where (getsockoptRetTypeHelper(option)
+                                               == getsockoptHelper.yesInt) {
       // When more options that return ints are supported, add them to this
       // if branch.  When all options listed in the API are supported, remove
       // the if branch entirely.
@@ -798,8 +798,8 @@ module ZMQ {
     // etc. get supported, they should have their own version of the getsockopt
     // method
     pragma "no doc"
-    proc getsockopt(option: int) where (getsockoptRetTypeHelper(option) ==
-                                        getsockoptHelper.no) throws {
+    proc getsockopt(option: int) throws where (getsockoptRetTypeHelper(option)
+                                               == getsockoptHelper.no) {
       throw new IllegalArgumentError("option not supported for getsockopt");
     }
 
