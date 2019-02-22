@@ -62,17 +62,39 @@
 */
 module Path {
 
+
 use SysError;
 use Sys;
 
-/* Represents generally the current directory.  This starts as the directory
-   where the program is being executed from.
- */
+
+// Represents the current directory.
 const curDir = ".";
-/* Represents generally the parent directory. */
+// Represents the parent directory.
 const parentDir = "..";
-/* Denotes the separator between a directory and its child. */
+// Denotes the separator between a parent directory and its child.
 const pathSep = "/";
+
+
+/*
+
+   Collapse paths such as `foo//bar`, `foo/bar/`, `foo/./bar`, and
+   `foo/baz/../bar` into `foo/bar`.  Warning: may alter meaning of paths
+   containing symbolic links.  Similar to :proc:`normCase`, on Windows will
+   replace forward slashes.
+
+   :arg name: a potential path to collapse, possibly destroying the meaning of
+              the path if symbolic links were included.
+   :type name: `string`
+
+   :return: the collapsed version of `name`
+   :rtype: `string`
+*/
+proc normPath(name: string): string {
+   
+
+   return "";
+}
+
 
 /* Returns the basename of the file name provided.  For instance:
 
@@ -88,7 +110,7 @@ const pathSep = "/";
    :type name: `string`
 */
 proc basename(name: string): string {
-  return splitPath(name)[2];
+   return splitPath(name)[2];
 }
 
 /* Determines and returns the longest common path prefix of
