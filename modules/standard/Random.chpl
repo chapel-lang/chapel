@@ -857,7 +857,7 @@ module Random {
            the interval [`min`, `max`] can be constructed in this way.
 
        */
-      proc getNext(min: eltType, max:eltType): eltType throws {
+      proc getNext(min: eltType, max:eltType): eltType {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
 
