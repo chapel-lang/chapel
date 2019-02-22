@@ -24,7 +24,7 @@ const collapseToA3 = 'foo/baz/../bar';
 const multiCurDir = '././.';
 const multiParentDir = '../../..';
 const multiMixedParentCurDir = './.././.././..';
-const multiOnlyPathSep = '////';
+const multiOnlyPathSep = '/////';
 const pathSep2 = '//';
 
 

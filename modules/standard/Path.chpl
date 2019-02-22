@@ -90,6 +90,7 @@ private proc countLeadingSlashes(name: string) {
 }
 
 
+// TODO: Implement version which plays well on Windows?
 /*
    Collapse paths such as `foo//bar`, `foo/bar/`, `foo/./bar`, and
    `foo/baz/../bar` into `foo/bar`.  Warning: may alter meaning of paths
@@ -109,10 +110,12 @@ proc normPath(name: string): string {
 
    var leadingSlashes = countLeadingSlashes(name);
 
+   // POSIX treats more than two slashes as a single slash.
    if leadingSlashes > 2 then
-      leadingSlashes = 2;
+      leadingSlashes = 1;
 
    var comps = name.split(pathSep);
+   // There has to be a more intuitive way to declare an empty array?
    var outComps : [1..0] string;
 
    for comp in comps {
@@ -120,12 +123,12 @@ proc normPath(name: string): string {
          continue;
 
       // Second case exists because we cannot go up past mount point.
+      // Third case continues a chain of leading up-levels.
       if comp != parentDir || (!leadingSlashes && outComps.isEmpty()) ||
-            (!outComps.isEmpty() && outComps.back() != parentDir) {
+            (!outComps.isEmpty() && outComps.back() == parentDir) then
          outComps.push_back(comp);
-      } else if !outComps.isEmpty() {
+      else if outComps.size then
          outComps.pop_back();
-      }
    }
 
    var result = pathSep.join(outComps);

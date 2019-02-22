@@ -19,7 +19,6 @@ curDir = '.'
 parentDir = '..'
 pathSep = '/'
 pathSep2 = '//'
-emptyPath = ''
 
 
 def collapse(path):
