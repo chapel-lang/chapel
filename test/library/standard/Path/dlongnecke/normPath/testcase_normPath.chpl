@@ -25,43 +25,43 @@ const multiCurDir = '././.';
 const multiParentDir = '../../..';
 const multiMixedParentCurDir = './.././.././..';
 const multiOnlyPathSep = '////';
+const pathSep2 = '//';
 
 
+proc collapse(name: string) {
+   writeln(name, ' becomes ', normPath(name));
+}
+
+
+// No change when given a valid path.
+collapse(collapsedA);
 // Collapse redundant separators.
-writeln(normPath(collapseToA0) == collapsedA);
-
+collapse(collapseToA0);
 // Eliminate trailing path separators.
-writeln(normPath(collapseToA1) == collapsedA);
-
-// Eliminate current directory "." symbols.
-writeln(normPath(collapseToA2) == collapsedA);
-
-// Collapse up-level references.
-writeln(normPath(collapseToA3) == collapsedA);
-
-// Empty string yields a single current dir.
-writeln(normPath('') == curDir);
-
-// Single current dir yields a single current dir.
-writeln(normPath(curDir) == curDir);
-
-// Single parent dir yields a single parent dir.
-writeln(normPath(parentDir) == parentDir);
-
-// Only current/parent dirs yields only parent dirs.
-writeln(normPath(multiMixedParentCurDir) == multiParentDir);
-
+collapse(collapseToA1);
+// Eliminate current directory symbols.
+collapse(collapseToA2);
+// Properly collapse up-level references.
+collapse(collapseToA3);
+// Empty string yields single current dir.
+collapse('');
+// Single current dir yields single current dir.
+collapse(curDir);
+// Single parent dir yields single parent dir.
+collapse(parentDir);
 // Only current dirs yields single current dir.
-writeln(normPath(multiCurDir) == curDir);
-
-// Only parent dirs yields no change.
-writeln(normPath(multiParentDir) == multiParentDir);
-
-// Only path separators yields single path separator.
-writeln(normPath(multiOnlyPathSep) == pathSep);
-
-// Path separators followed by parent dirs yields single path separator.
-writeln(normPath(multiOnlyPathSep + multiParentDir) == pathSep);
-
-// Path separators followed by current dirs yields single path separator.
-writeln(normPath(multiOnlyPathSep + multiCurDir) == pathSep);
+collapse(multiCurDir);
+// No change when given only parent dirs.
+collapse(multiParentDir);
+// Mix of current/parent dirs yields only parent dirs.
+collapse(multiMixedParentCurDir);
+// More than two path separators yields single path separator.
+collapse(multiOnlyPathSep);
+// No change when given single path separator.
+collapse(pathSep);
+// No change when given two path separators.
+collapse(pathSep2);
+// Path separators followed by parent dirs yields one path separator.
+collapse(multiOnlyPathSep + multiParentDir);
+// Path separators followed by current dirs yields one path separator.
+collapse(multiOnlyPathSep + multiCurDir);

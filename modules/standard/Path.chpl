@@ -73,10 +73,24 @@ const curDir = ".";
 const parentDir = "..";
 // Denotes the separator between a parent directory and its child.
 const pathSep = "/";
+// Represents an empty path.
+const emptyPath = "";
+
+
+private proc countLeadingSlashes(name: string) {
+   if !name.startsWith(pathSep) || name.isEmptyString() then
+      return 0;
+
+   var result = 0;
+
+   for ch in name do
+      if ch != pathSep then break; else result += 1;
+
+   return result;
+}
 
 
 /*
-
    Collapse paths such as `foo//bar`, `foo/bar/`, `foo/./bar`, and
    `foo/baz/../bar` into `foo/bar`.  Warning: may alter meaning of paths
    containing symbolic links.  Similar to :proc:`normCase`, on Windows will
@@ -90,9 +104,39 @@ const pathSep = "/";
    :rtype: `string`
 */
 proc normPath(name: string): string {
-   
+   if name.isEmptyString() then
+      return curDir;
 
-   return "";
+   var leadingSlashes = countLeadingSlashes(name);
+
+   if leadingSlashes > 2 then
+      leadingSlashes = 2;
+
+   var comps = name.split(pathSep);
+   var outComps : [1..0] string;
+
+   for comp in comps {
+      if comp.isEmptyString() || comp == curDir then
+         continue;
+
+      // Second case exists because we cannot go up past mount point.
+      if comp != parentDir || (!leadingSlashes && outComps.isEmpty()) ||
+            (!outComps.isEmpty() && outComps.back() != parentDir) {
+         outComps.push_back(comp);
+      } else if !outComps.isEmpty() {
+         outComps.pop_back();
+      }
+   }
+
+   var result = pathSep.join(outComps);
+
+   if leadingSlashes then
+      result = (pathSep * leadingSlashes) + result;
+
+   if result.isEmptyString() then
+      return curDir;
+
+   return result;
 }
 
 
