@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -627,7 +627,7 @@ err_t sys_lstat(const char* path, struct stat* buf)
 }
 
 #ifdef SYS_HAS_LLAPI
-err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out) 
+err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out)
 {
   struct lov_user_md_v1 *lum;
   size_t lum_size = sizeof(*lum) + LOV_MAX_STRIPE_COUNT * sizeof(struct lov_user_ost_data_v1);
@@ -1441,23 +1441,23 @@ err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr)
 
    -BLC */
 
-//  err_t sys_getaddrinfo(const char* node, const char* service, 
+//  err_t sys_getaddrinfo(const char* node, const char* service,
 //                       const sys_addrinfo_t* hints, sys_addrinfo_t ** res_out)
 //  {
 //    int got;
 //    err_t err_out;
-//  
+//
 //    STARTING_SLOW_SYSCALL;
-//  
+//
 //    got = getaddrinfo(node, service, hints, res_out);
 //    if( got == 0 ) {
 //      err_out = 0;
 //    } else {
 //      err_out = got + GAI_ERROR_OFFSET;
 //    }
-//  
+//
 //    DONE_SLOW_SYSCALL;
-//  
+//
 //    return err_out;
 //  }
 
@@ -1516,7 +1516,7 @@ err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_o
     host_buf = new_host_buf;
     serv_buf = new_serv_buf;
 
-    got = getnameinfo((const struct sockaddr*) & addr->addr, addr->len, 
+    got = getnameinfo((const struct sockaddr*) & addr->addr, addr->len,
                       host_buf, host_buf_sz,
                       serv_buf, serv_buf_sz,
                       flags);
@@ -1803,6 +1803,51 @@ err_t sys_socketpair(int domain, int type, int protocol, fd_t* sockfd_out_a, fd_
   return err_out;
 }
 
+extern void chpl_task_yield(void);
+
+err_t sys_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, struct timeval* timeout, int* nset) {
+
+  int got_nset;
+  err_t err_out = 0;
+  struct timeval deadline;
+  struct timeval now;
+  struct timeval real_timeout;
+  long wait_usec = 5;
+
+  if (timeout != NULL) {
+    gettimeofday(&deadline, NULL);
+    deadline.tv_sec += timeout->tv_sec;
+    deadline.tv_usec += timeout->tv_usec;
+    if (deadline.tv_usec > 1000000) {
+	deadline.tv_sec++;
+	deadline.tv_usec -= 1000000;
+    }
+  } else if (timeout->tv_sec == 0) {
+    if (timeout->tv_usec < wait_usec)
+      wait_usec = timeout->tv_usec;
+  }
+
+  real_timeout.tv_sec = 0;
+  real_timeout.tv_usec = wait_usec;
+
+  while (1) {
+    // It would be nicer if the tasking layer supported a select
+    // call and knew to wait in the select call if no task was waiting
+    got_nset = select(nfds, readfds, writefds, exceptfds, &real_timeout);
+    if (got_nset == -1) err_out = errno; // save error
+    if (got_nset != 0) break; // exit loop if something happened
+#ifndef CHPL_RT_UNIT_TEST
+    chpl_task_yield();
+#endif
+    gettimeofday(&now, NULL);
+    if (now.tv_sec > deadline.tv_sec ||
+        (now.tv_sec == deadline.tv_sec && now.tv_usec > deadline.tv_usec))
+      break;
+  }
+
+  *nset = got_nset;
+  return err_out;
+}
 
 err_t sys_unlink(const char* path)
 {
