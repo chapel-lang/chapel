@@ -96,6 +96,10 @@ const pathSep = "/";
    :rtype: `string`
 */
 proc normPath(name: string): string {
+
+   // Python 3.7 implementation:
+   // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
+
    if name == "" then
       return curDir;
 
