@@ -281,8 +281,8 @@ require "-lcurl";
 require "CurlHelper/qio_plugin_curl.h";
 //require "CurlHelper/qio_plugin_curl.c";
 
-pragma "no doc"
-extern type curl_handle;
+use Sys only ;
+use Time only ;
 
 // This corresponds to struct curl_slist* when we have curl enabled
 pragma "no doc"
@@ -770,9 +770,12 @@ extern const CURLE_OK: c_int;
 
 pragma "no doc"
 extern type CURL;
+pragma "no doc"
+extern type CURLM;
 
 extern type CURLoption=c_int;
 extern type CURLcode=c_int;
+extern type CURLMcode=c_int;
 extern type CURLINFO=c_int;
 
 extern proc curl_easy_init():c_ptr(CURL);
@@ -784,6 +787,14 @@ extern proc chpl_curl_easy_getinfo_ptr(curl:c_ptr(CURL), info:CURLINFO, c_void_p
 extern proc curl_easy_perform(curl:c_ptr(CURL)):CURLcode;
 extern proc curl_easy_cleanup(curl:c_ptr(CURL)):void;
 extern proc curl_easy_pause(curl:c_ptr(CURL), bitmask:c_int):CURLcode;
+
+extern proc curl_multi_init():c_ptr(CURLM);
+extern proc curl_multi_add_handle(curlm:c_ptr(CURLM), curl:c_ptr(CURL)):CURLMcode;
+extern proc curl_multi_timeout(curlm:c_ptr(CURLM), ref timeout:c_long):CURLMcode;
+extern proc curl_multi_fdset(curlm:c_ptr(CURLM), read_fd_set:c_ptr(fd_set), write_fd_set:c_ptr(fd_set), exc_fd_set:c_ptr(fd_set), ref max_fd:c_int):CURLMcode;
+extern proc curl_multi_perform(curlm:c_ptr(CURLM), ref running_handles):CURLMcode;
+extern proc curl_multi_remove_handle(curlm:c_ptr(CURLM), curl:c_ptr(CURL)):CURLMcode;
+extern proc curl_multi_cleanup(curlm:c_ptr(CURLM)):CURLcode;
 
 extern const CURL_READFUNC_PAUSE:size_t;
 extern const CURL_WRITEFUNC_PAUSE:size_t;
@@ -798,6 +809,8 @@ extern const CURLPAUSE_CONT: c_int;
 class CurlFile : QioPluginFile {
 
   var curl: c_ptr(CURL);  // Curl handle
+  var curlm: c_ptr(CURLM);  // Curl multi handle
+  var running_handles: c_int;
   var pathnm: c_string;     // Path/URL
   var length: ssize_t;    // length of what we are reading, -1 if we can't get
 
@@ -858,7 +871,9 @@ class CurlFile : QioPluginFile {
   override proc close():syserr {
     c_free(pathnm:c_void_ptr);
     pathnm = nil;
+    curl_multi_remove_handle(curlm, curl);
     curl_easy_cleanup(curl);
+    curl_multi_cleanup(curlm);
     return ENOERR;
   }
 }
@@ -1050,6 +1065,7 @@ proc read_data(ptr:c_void_ptr, size:size_t, nmemb:size_t, userp:c_void_ptr):size
 proc curl_preadv_internal(local_handle:CurlFile, vector:c_ptr(qiovec_t), count:c_int, in offset:int(64), out num_read_out:ssize_t)
 {
   var err:CURLcode = 0;
+  var serr:syserr = 0;
   var got_total:ssize_t;
   var err_out:syserr = ENOERR;
   var write_vec:curl_iovec_t;
@@ -1084,6 +1100,39 @@ proc curl_preadv_internal(local_handle:CurlFile, vector:c_ptr(qiovec_t), count:c
 
   // Continue anything that is paused
   err = curl_easy_pause(local_handle.curl, CURLPAUSE_CONT);
+
+  var timeoutMillis:c_long;
+  curl_multi_timeout(local_handle.curlm, timeoutMillis);
+  if timeoutMillis < 0 then
+    timeoutMillis = 0;
+
+  var timeout:timeval;
+  timeout.tv_sec = timeoutMillis / 1000;
+  timeout.tv_usec = (timeoutMillis % 1000) * 1000;
+
+  var fdread: fd_set;
+  var fdwrite: fd_set;
+  var fdexcept: fd_set;
+  var maxfd:c_int = -1;
+  sys_fd_zero(fdread);
+  sys_fd_zero(fdwrite);
+  sys_fd_zero(fdexcept);
+
+  err  = curl_multi_fdset(local_handle.curlm, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), maxfd);
+  if maxfd == -1 {
+    // we can't wait with sockets for some reason, so wait for operation
+    Time.sleep(0.1);
+    writeln("sleeping");
+  } else {
+    writeln("selecting ", maxfd);
+    var nset:c_int;
+    serr = Sys.sys_select(maxfd+1, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), c_ptrTo(timeout), nset);
+    if serr != 0 then
+      return serr;
+  }
+
+  writeln("performing");
+  err = curl_multi_perform(local_handle.curlm, local_handle.running_handles);
 
   //DONE_SLOW_SYSCALL;
   got_total = write_vec.total_read:int(64);
@@ -1242,9 +1291,12 @@ proc openurl(url:string,
   //STARTING_SLOW_SYSCALL;
 
   fl.curl =  curl_easy_init();
+  fl.curlm = curl_multi_init();
 
   if fl.curl == nil then
     throw SystemError.fromSyserr(ENOSYS, "Unable to create a Curl handle"); 
+  if fl.curlm == nil then
+    throw SystemError.fromSyserr(ENOSYS, "Unable to create a Curl mhandle"); 
 
   // Save the url requested
   var url_c = c_calloc(uint(8), url.length+1);
@@ -1276,12 +1328,8 @@ proc openurl(url:string,
   chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_WRITEFUNCTION, c_ptrTo(pause_writer):c_void_ptr);
 
   writeln("X");
-  // Set everything up
-  // TODO XXX I think this has to use the multi interface in order
-  // to function correctly.
-  // I'm not sure that the pausing is helping.
-  //  - multi socket -- wait until some data is ready
-  err = curl_easy_perform(fl.curl);
+  err = curl_multi_add_handle(fl.curlm, fl.curl);
+
   writeln("Y");
 
   writeln(fl.seekable);
