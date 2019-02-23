@@ -74,7 +74,7 @@ use Sys;
 const curDir = ".";
 /* Represents generally the parent directory. */
 const parentDir = "..";
-/* Denotes the separator between a parent directory and its child. */
+/* Denotes the separator between a directory and its child. */
 const pathSep = "/";
 
 
