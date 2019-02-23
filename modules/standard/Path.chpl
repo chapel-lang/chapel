@@ -67,35 +67,26 @@ use SysError;
 use Sys;
 
 
-// Represents the current directory.
+/*
+   Represents generally the current directory. This starts as the directory
+   where the program is being executed from.
+*/
 const curDir = ".";
-// Represents the parent directory.
+/* Represents generally the parent directory. */
 const parentDir = "..";
-// Denotes the separator between a parent directory and its child.
+/* Denotes the separator between a parent directory and its child. */
 const pathSep = "/";
-// Represents an empty path.
-const emptyPath = "";
 
 
-private proc countLeadingSlashes(name: string) {
-   if !name.startsWith(pathSep) || name.isEmptyString() then
-      return 0;
-
-   var result = 0;
-
-   for ch in name do
-      if ch != pathSep then break; else result += 1;
-
-   return result;
-}
-
-
-// TODO: Implement version which plays well on Windows?
 /*
    Collapse paths such as `foo//bar`, `foo/bar/`, `foo/./bar`, and
    `foo/baz/../bar` into `foo/bar`.  Warning: may alter meaning of paths
-   containing symbolic links.  Similar to :proc:`normCase`, on Windows will
-   replace forward slashes.
+   containing symbolic links.
+
+   .. note::
+
+      Unlike its Python counterpart, this function does not (currently) change
+      slashes to backslashes on Windows.
 
    :arg name: a potential path to collapse, possibly destroying the meaning of
               the path if symbolic links were included.
@@ -105,38 +96,34 @@ private proc countLeadingSlashes(name: string) {
    :rtype: `string`
 */
 proc normPath(name: string): string {
-   if name.isEmptyString() then
+   if name == "" then
       return curDir;
 
-   var leadingSlashes = countLeadingSlashes(name);
+   var leadingSlashes = if name.startsWith(pathSep) then 1 else 0;
 
-   // POSIX treats more than two slashes as a single slash.
-   if leadingSlashes > 2 then
-      leadingSlashes = 1;
+   // Two leading slashes has a special meaning in POSIX.
+   if name.startsWith(pathSep * 2) && !name.startsWith(pathSep * 3) then
+      leadingSlashes = 2;
 
    var comps = name.split(pathSep);
-   // There has to be a more intuitive way to declare an empty array?
    var outComps : [1..0] string;
 
    for comp in comps {
-      if comp.isEmptyString() || comp == curDir then
+      if comp == "" || comp == curDir then
          continue;
 
-      // Second case exists because we cannot go up past mount point.
+      // Second case exists because we cannot go up past top level.
       // Third case continues a chain of leading up-levels.
       if comp != parentDir || (!leadingSlashes && outComps.isEmpty()) ||
             (!outComps.isEmpty() && outComps.back() == parentDir) then
          outComps.push_back(comp);
-      else if outComps.size then
+      else if !outComps.isEmpty() then
          outComps.pop_back();
    }
 
-   var result = pathSep.join(outComps);
+   var result = pathSep * leadingSlashes + pathSep.join(outComps);
 
-   if leadingSlashes then
-      result = (pathSep * leadingSlashes) + result;
-
-   if result.isEmptyString() then
+   if result == "" then
       return curDir;
 
    return result;

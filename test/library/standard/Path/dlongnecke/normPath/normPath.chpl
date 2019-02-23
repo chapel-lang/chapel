@@ -1,12 +1,19 @@
 /*
-   proc normPath(name: string): string;
-
    Collapse paths such as `foo//bar`, `foo/bar/`, `foo/./bar`, and
    `foo/baz/../bar` into `foo/bar`.  Warning: may alter meaning of paths
-   containing symbolic links.  Similar to :proc:`normCase`, on Windows will
-   replace forward slashes.
+   containing symbolic links.
 
-   TODO: Add appropriate tests for Windows machines.
+   .. note::
+
+      This is currently only implemented in a Unix environment.  It will not
+      behave correctly in a non-Unix environment.
+
+   :arg name: a potential path to collapse, possibly destroying the meaning of
+              the path if symbolic links were included.
+   :type name: `string`
+
+   :return: the collapsed version of `name`
+   :rtype: `string`
 */
 
 
