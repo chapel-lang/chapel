@@ -778,7 +778,7 @@ int FnSymbol::hasGenericFormals() const {
       if (typeHasGenericDefaults               == false ||
           formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
           formal                               == _this) {
-        if (!(formal == _this && isInitializer())) {
+        if (!(formal == _this && (isInitializer() || isCopyInit()))) {
           isGeneric = true;
         }
       }
@@ -931,6 +931,10 @@ bool FnSymbol::isDefaultInit() const {
   return hasFlag(FLAG_COMPILER_GENERATED) &&
          hasFlag(FLAG_COPY_INIT) == false &&
          isInitializer();
+}
+
+bool FnSymbol::isCopyInit() const {
+  return isMethod() && strcmp(name, astrInitEquals) == 0;
 }
 
 // This function or method is an iterator (as opposed to a procedure).

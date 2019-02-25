@@ -206,7 +206,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
         }
 
         // A 'const' record should be able to be initialized
-        if (calledFn->name == astrInit) {
+        if (calledFn->isInitializer() || calledFn->isCopyInit()) {
           error = false;
         }
 
