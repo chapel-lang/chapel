@@ -3239,6 +3239,14 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
     return NULL;
   }
 
+  if (call->isNamedAstr(astrInit) && call->numActuals() >= 1) {
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      if (se->symbol() == gMethodToken) {
+        return NULL;
+      }
+    }
+  }
+
   // Detect cycles
   detectForwardingCycle(call);
 
