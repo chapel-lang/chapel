@@ -647,6 +647,7 @@ typedef struct qio_channel_s {
   qioerr error;
 
   qio_file_t* file;
+  void* chan_info; // plugin
   qio_lock_t lock;
 
   // less frequently used.
@@ -1124,6 +1125,17 @@ qioerr qio_channel_require_write(const int threadsafe, qio_channel_t* ch, int64_
   return err;
 }
 
+// returns the number of bytes "available", that is, number of bytes
+// from right_mark_start (aka current offset) to av_end.
+qioerr qio_channel_nbytes_available(const int threadsafe, qio_channel_t* ch, int64_t* space);
+qioerr qio_channel_nbytes_write_behind(const int threadsafe, qio_channel_t* ch, int64_t* space);
+
+
+// Copies the len bytes starting at ptr to the channel
+// allocating buffer space if necessary in the channel.
+qioerr qio_channel_copy_to_available(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len);
+qioerr qio_channel_copy_from_buffered(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* n_written_out);
+
 void _qio_buffered_setup_cached(qio_channel_t* ch);
 void _qio_buffered_advance_cached(qio_channel_t* ch);
 
@@ -1181,6 +1193,11 @@ qioerr qio_channel_isbuffered(const int threadsafe, qio_channel_t* ch, char* isb
   return 0;
 }
 
+
+static inline
+bool qio_channel_writable(qio_channel_t* ch) {
+  return (ch->flags & QIO_FDFLAG_WRITEABLE) > 0;
+}
 
 qioerr qio_channel_offset(const int threadsafe, qio_channel_t* ch, int64_t* offset_out);
 

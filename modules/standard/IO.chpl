@@ -868,10 +868,10 @@ class QioPluginFile {
 
   // TODO: should these throw instead of returning qio errors?
 
-  proc writev(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtWritten:ssize_t):syserr {
-    return ENOSYS;
-  }
-  proc readv(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtRead:ssize_t):syserr {
+  proc setup(out pluginChannel:QioPluginChannel,
+             start:int(64),
+             end:int(64),
+             qioChannelPtr:qio_channel_ptr_t):syserr {
     return ENOSYS;
   }
 
@@ -882,14 +882,10 @@ class QioPluginFile {
     return ENOSYS;
   }
 
-  proc seek(amount:int(64), whence:c_int, out offset:int(64)):syserr {
-    return ENOSYS;
-  }
-
   proc filelength(out length:int(64)):syserr {
     return ENOSYS;
   }
-  proc getpath(out path:string):syserr {
+  proc getpath(out path:c_string, out len:ssize_t):syserr {
     return ENOSYS;
   }
 
@@ -904,6 +900,25 @@ class QioPluginFile {
     return ENOSYS;
   }
 
+  proc close():syserr {
+    return ENOSYS;
+  }
+}
+
+class QioPluginChannel {
+  proc readAtLeast(amt:int(64)):syserr {
+    return ENOSYS;
+  }
+  proc write(amt:int(64)):syserr {
+    return ENOSYS;
+  }
+  /*
+  proc writev(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtWritten:ssize_t):syserr {
+    return ENOSYS;
+  }
+  proc readv(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtRead:ssize_t):syserr {
+    return ENOSYS;
+  }*/
   proc close():syserr {
     return ENOSYS;
   }
@@ -931,14 +946,40 @@ class QioPluginFilesystem {
 
 // These functions let the C QIO code call the plugins
 // TODO: Move more of the QIO code to be pure Chapel
-export proc chpl_qio_writev(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, ref amtWritten:ssize_t):syserr {
-  var f=file:QioPluginFile;
-  return f.writev(iov, iovcnt, amtWritten);
+
+/*
+export proc chpl_qio_writev(ch:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, ref amtWritten:ssize_t):syserr {
+  var c=ch:QioPluginChannel;
+  return c.writev(iov, iovcnt, amtWritten);
 }
-export proc chpl_qio_readv(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, ref amtRead:ssize_t):syserr {
-  var f=file:QioPluginFile;
-  return f.readv(iov, iovcnt, amtRead);
+export proc chpl_qio_readv(ch:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, ref amtRead:ssize_t):syserr {
+  var c=ch:QioPluginChannel;
+  return c.readv(iov, iovcnt, amtRead);
+}*/
+export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
+  var c=ch_plugin:QioPluginChannel;
+  return c.readAtLeast(amt);
 }
+export proc chpl_qio_write(ch_plugin:c_void_ptr, amt:int(64)) {
+  var c=ch_plugin:QioPluginChannel;
+  return c.write(amt);
+}
+export proc chpl_qio_channel_close(ch:c_void_ptr):syserr {
+  var c=ch:unmanaged QioPluginChannel;
+  var err = c.close();
+  delete c;
+  return err;
+}
+
+export proc chpl_qio_setup(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):syserr {
+  var f=file:QioPluginFile;
+  var pluginChannel:QioPluginChannel = nil;
+  var ret = f.setup(pluginChannel, start, end, qio_ch);
+  plugin_ch = pluginChannel:c_void_ptr;
+  return ret;
+}
+
+/*
 export proc chpl_qio_pwritev(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), ref amtWritten:ssize_t):syserr {
   var f=file:QioPluginFile;
   return f.pwritev(iov, iovcnt, offset, amtWritten);
@@ -946,19 +987,16 @@ export proc chpl_qio_pwritev(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int,
 export proc chpl_qio_preadv(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), ref amtRead:ssize_t):syserr {
   var f=file:QioPluginFile;
   return f.preadv(iov, iovcnt, offset, amtRead);
-}
-export proc chpl_qio_seek(file:c_void_ptr, amount:int(64), whence:c_int, ref offset:int(64)):syserr {
-  var f=file:QioPluginFile;
-  return f.seek(amount, whence, offset);
-}
+}*/
+
 export proc chpl_qio_filelength(file:c_void_ptr, ref length:int(64)):syserr {
   var f=file:QioPluginFile;
   return f.filelength(length);
 }
-/*export proc chpl_qio_getpath(file:c_void_ptr, ref str:c_string, ref len:ssize_t):syserr {
+export proc chpl_qio_getpath(file:c_void_ptr, ref str:c_string, ref len:ssize_t):syserr {
   var f=file:QioPluginFile;
   return f.getpath(str, len);
-}*/
+}
 export proc chpl_qio_fsync(file:c_void_ptr):syserr {
   var f=file:QioPluginFile;
   return f.fsync();
@@ -971,7 +1009,7 @@ export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64), end:
   var f=file:QioPluginFile;
   return f.getLocalesForRegion(start, end, localeNames, nLocales);
 }
-export proc chpl_qio_close(file:c_void_ptr):syserr {
+export proc chpl_qio_file_close(file:c_void_ptr):syserr {
   var f = file:unmanaged QioPluginFile;
   var err = f.close();
   delete f;
@@ -1752,6 +1790,7 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
   return ret;
 }
 
+pragma "last resort"
 proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle = defaultIOStyle(), url:string=""): file throws {
   compilerError("open with url argument has been deprecated. Please use the appropriate open function in another module, e.g. Curl.openurl");
@@ -1794,9 +1833,14 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
   if err {
     var path:string = "unknown";
     if pluginFile {
-      var path_err = pluginFile.getpath(path);
-      if path_err then
+      var str:c_string = nil;
+      var len:ssize_t;
+      var path_err = pluginFile.getpath(str, len);
+      if path_err {
         path = "unknown";
+      } else {
+        path = new string(str, len, isowned=true, needToCopy=false);
+      }
     }
 
     try ioerror(err, "in openplugin", path);

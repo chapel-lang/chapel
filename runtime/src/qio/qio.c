@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -149,7 +149,7 @@ qioerr qio_readv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer
   size_t iovcnt;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err = 0;
- 
+
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
     QIO_RETURN_CONSTANT_ERROR(EINVAL, "negative count");
   }
@@ -168,8 +168,8 @@ qioerr qio_readv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer
   // read into our buffer.
   if (file->fd != -1)
     err = qio_int_to_err(sys_readv(file->fd, iov, iovcnt, &nread));
-  else if (file->file_info)
-    err = chpl_qio_readv(file->file_info, iov, iovcnt, &nread);
+  //else if (file->file_info)
+  //  err = chpl_qio_readv(file->file_info, iov, iovcnt, &nread);
   else
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 
@@ -192,7 +192,7 @@ qioerr qio_writev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffe
   size_t iovcnt;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err;
- 
+
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
     QIO_RETURN_CONSTANT_ERROR(EINVAL, "negative count");
   }
@@ -211,8 +211,8 @@ qioerr qio_writev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffe
   // write from our buffer
   if (file->fd != -1)
     err = qio_int_to_err(sys_writev(file->fd, iov, iovcnt, &nwritten));
-  else if (file->file_info)
-    err = chpl_qio_writev(file->file_info, iov, iovcnt, &nwritten);
+  //else if (file->file_info)
+  //  err = chpl_qio_writev(file->file_info, iov, iovcnt, &nwritten);
   else
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 
@@ -235,7 +235,7 @@ qioerr qio_preadv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffe
   size_t iovcnt;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err;
- 
+
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
     QIO_RETURN_CONSTANT_ERROR(EINVAL, "negative count");
   }
@@ -254,8 +254,8 @@ qioerr qio_preadv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffe
   // read into our buffer.
   if (file->fd != -1)
     err = qio_int_to_err(sys_preadv(file->fd, iov, iovcnt, seek_to_offset, &nread));
-  else if (file->file_info)
-    err = chpl_qio_preadv(file->file_info, iov, iovcnt, seek_to_offset, &nread);
+  //else if (file->file_info)
+  //  err = chpl_qio_preadv(file->file_info, iov, iovcnt, seek_to_offset, &nread);
   else
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 
@@ -283,7 +283,7 @@ qioerr qio_freadv(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
   size_t i;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err;
- 
+
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
     QIO_RETURN_CONSTANT_ERROR(EINVAL, "negative count");
   }
@@ -331,7 +331,7 @@ qioerr qio_fwritev(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_
   size_t i;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err;
- 
+
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
     QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
   }
@@ -378,7 +378,7 @@ qioerr qio_pwritev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuff
   size_t iovcnt;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err;
- 
+
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
     QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
   }
@@ -397,8 +397,8 @@ qioerr qio_pwritev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuff
   // write from our buffer
   if (file->fd != -1)
     err = qio_int_to_err(sys_pwritev(file->fd, iov, iovcnt, seek_to_offset, &nwritten));
-  else if (file->file_info)
-    err = chpl_qio_pwritev(file->file_info, iov, iovcnt, seek_to_offset, &nwritten);
+  //else if (file->file_info)
+  //  err = chpl_qio_pwritev(file->file_info, iov, iovcnt, seek_to_offset, &nwritten);
   else
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 
@@ -530,7 +530,7 @@ qio_hint_t choose_io_method(qio_file_t* file, qio_hint_t hints, qio_hint_t defau
   qio_hint_t method = (qio_hint_t) (hints & QIO_METHODMASK);
   qio_chtype_t type = (qio_chtype_t) (hints & QIO_CHTYPEMASK);
   qio_hint_t ret = hints;
- 
+
   ret &= ~(QIO_METHODMASK|QIO_CHTYPEMASK); // clear method number, channel type
 
   // 'or' in hints from default_hints.
@@ -706,7 +706,7 @@ qioerr qio_mmap_initial(qio_file_t* file)
       sys_munmap(data, len);
       return err;
     }
- 
+
     err = qbytes_create_generic(&file->mmap, data, len, qbytes_free_munmap);
     if( err ) {
       // A nonzero err code indicates that allocation of the qbytes buffer
@@ -819,8 +819,8 @@ qioerr qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohint
     }
     // could get other access flags to know if e.g. append only
   }
-  
-  
+
+
   file = (qio_file_t*) qio_calloc(sizeof(qio_file_t), 1);
   if( ! file ) {
     return QIO_ENOMEM;
@@ -915,7 +915,7 @@ qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, int fdflags,
      // Not seekable.
     initial_pos = 0;
   }
-  
+
   file = (qio_file_t*) qio_calloc(sizeof(qio_file_t), 1);
   if( ! file ) {
     return QIO_ENOMEM;
@@ -998,7 +998,7 @@ qioerr _qio_file_do_close(qio_file_t* f)
 
   if (f->file_info) {
     if (f->hints & QIO_HINT_OWNED)  // Should always be true
-      err = chpl_qio_close(f->file_info);
+      err = chpl_qio_file_close(f->file_info);
     f->hints &= ~QIO_HINT_OWNED;
   }
 
@@ -1229,7 +1229,7 @@ qioerr qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t
   file->initial_length = qbuffer_end_offset(file->buf);
   file->initial_pos = qbuffer_start_offset(file->buf);
   file->mmap = NULL;
-  
+
   if( style ) qio_style_copy(&file->style, style);
   else qio_style_init_default(&file->style);
 
@@ -1359,7 +1359,7 @@ qioerr qio_file_path_for_fd(fd_t fd, const char** string_out)
     *string_out = NULL;
     return err;
   }
-#else 
+#else
   *string_out = qio_strdup("unknown");
   return 0;
 #endif
@@ -1375,8 +1375,11 @@ qioerr qio_file_path_for_fp(FILE* fp, const char** string_out)
 // string_out must be freed by the caller.
 qioerr qio_file_path(qio_file_t* f, const char** string_out)
 {
+  ssize_t len = 0;
   if (f->fd != -1)
     return qio_file_path_for_fd(f->fd, string_out);
+  else if (f->file_info != NULL)
+    return chpl_qio_getpath(f->file_info, string_out, &len);
   else
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 }
@@ -1458,19 +1461,28 @@ qioerr _qio_channel_init_file_internal(qio_channel_t* ch, qio_file_t* file, qio_
   ch->hints = use_hints;
   ch->flags = file->fdflags;
   if( ! readable ) {
-    // channel is not readable... 
+    // channel is not readable...
     ch->flags = (qio_fdflag_t) (ch->flags & ~QIO_FDFLAG_READABLE);
   }
   if( ! writeable ) {
-    // channel is not writeable... 
+    // channel is not writeable...
     ch->flags = (qio_fdflag_t) (ch->flags & ~QIO_FDFLAG_WRITEABLE);
+  }
+
+  ch->start_pos = start;
+  ch->end_pos = end;
+
+  // Setup any plugin channel, if necessary
+  if (file->file_info != NULL) {
+    void* chan_info = NULL;
+    err = chpl_qio_setup(file->file_info, &chan_info, start, end, ch);
+    if (err) return err;
+    ch->chan_info = chan_info;
   }
 
   qio_file_retain(file);
   ch->file = file;
 
-  ch->start_pos = start;
-  ch->end_pos = end;
   // update the file with start_pos.
   err = 0;
   newerr = qio_lock(&ch->file->lock);
@@ -1772,12 +1784,14 @@ qioerr qio_channel_path_offset(const int threadsafe, qio_channel_t* ch, const ch
 
   *offset_out = qio_channel_offset_unlocked(ch);
 
-  err = qio_file_path(ch->file, &tmp);
-  if( !err ) {
-    err = qio_shortest_path(ch->file, string_out, tmp);
-  }
+  if (ch->file) {
+    err = qio_file_path(ch->file, &tmp);
+    if( !err ) {
+      err = qio_shortest_path(ch->file, string_out, tmp);
+    }
 
-  qio_free((void*) tmp);
+    qio_free((void*) tmp);
+  }
 
   if( threadsafe ) {
     qio_unlock(&ch->lock);
@@ -1866,6 +1880,10 @@ qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
 
   // set end_pos to the current position.
   ch->end_pos = qio_channel_offset_unlocked(ch);
+
+  // Close plugin structure if any
+  if (ch->chan_info != NULL)
+    chpl_qio_channel_close(ch->chan_info);
 
   if( !destroyed_buffer && qbuffer_is_initialized(&ch->buf) ) {
     // Destroy the buffer.
@@ -2132,7 +2150,7 @@ qioerr _buffered_get_memory(qio_channel_t* ch, int64_t amt, int writing)
 
   err = _qio_channel_needbuffer_unlocked(ch);
   if( err ) return err;
-  
+
   // lock the file's buffer, which protects
   // access to file->buf.
   err = qio_lock(&ch->file->lock);
@@ -2213,8 +2231,8 @@ qioerr _buffered_get_mmap(qio_channel_t* ch, int64_t amt_in, int writing)
       // do it this way (vs ftruncate) since if somebody else
       // extends the file past this position after we called fstat,
       // we won't mess up their mmap.
-      
-     
+
+
       // Make sure that we have actual disk space for the mapping.
       // Note that posix_fallocate returns an error code.
 #ifdef __linux__
@@ -2295,6 +2313,10 @@ qioerr _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
   if( amt > max_amt ) {
     amt = max_amt;
     return_eof = 1;
+  }
+
+  if (ch->chan_info) {
+    return chpl_qio_read_atleast(ch->chan_info, amt);
   }
 
   //printf("Allocating bufferspace %lli\n", (long long int) amt);
@@ -2420,8 +2442,8 @@ void _qio_buffered_advance_cached(qio_channel_t* ch)
   // call failing.
   err = _qio_flush_bits_if_needed_unlocked(ch);
 
-  // The cached data is from 
-  //   ch->cached_start_pos to 
+  // The cached data is from
+  //   ch->cached_start_pos to
   //   ch->cached_start_pos + (ch->cached_end - ch->cached_start)
   // The current position, according to the cached data, is
   //   ch->cached_start_pos + (ch->cached_cur - ch->cached_start)
@@ -2445,6 +2467,122 @@ void _qio_buffered_advance_cached(qio_channel_t* ch)
   }
 
   _qio_channel_set_error_unlocked(ch, err);
+}
+
+// returns the number of bytes "available", that is, number of bytes
+// from right_mark_start (aka current offset) to av_end.
+qioerr qio_channel_nbytes_available(const int threadsafe, qio_channel_t* ch, int64_t* space)
+{
+  qioerr err;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  *space = ch->av_end - ch->mark_stack[ch->mark_cur];
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+qioerr qio_channel_nbytes_write_behind(const int threadsafe, qio_channel_t* ch, int64_t* space)
+{
+  qioerr err;
+  qbuffer_iter_t write_start;
+  qbuffer_iter_t write_end;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  write_start = qbuffer_begin(&ch->buf);
+  write_end = _av_start_iter(ch);
+
+  *space = qbuffer_iter_num_bytes(write_start, write_end);
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
+qioerr qio_channel_copy_to_available(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len)
+{
+  qbuffer_iter_t read_start;
+  qbuffer_iter_t read_end;
+  int64_t amt;
+  int64_t max_amt;
+  int return_eof = 0;
+  qioerr err;
+
+  amt = len;
+  max_amt = INT64_MAX;
+  if (ch->end_pos < INT64_MAX) {
+    max_amt = ch->end_pos - ch->av_end;
+    if (max_amt < 0) max_amt = 0; // handle channel position beyond end
+  }
+
+  if (amt > max_amt) {
+    amt = max_amt;
+    return_eof = 1;
+  }
+
+  err = _buffered_allocate_bufferspace(ch, amt, max_amt);
+  if (err) return err;
+
+  read_start = _av_end_iter(ch);
+  read_end = read_start;
+  qbuffer_iter_advance(&ch->buf, &read_end, amt);
+
+  err = qbuffer_copyin(&ch->buf, read_start, read_end, ptr, amt);
+  if (err) return err;
+
+  ch->av_end += amt;
+
+  if( return_eof ) return QIO_EEOF;
+  return 0;
+}
+
+qioerr qio_channel_copy_from_buffered(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* n_written_out) {
+  qbuffer_iter_t write_start;
+  qbuffer_iter_t write_end;
+  qioerr err;
+  ssize_t use_len;
+  int64_t buffered_bytes;
+
+  write_start = qbuffer_begin(&ch->buf);
+  write_end = _av_start_iter(ch);
+
+  buffered_bytes = qbuffer_iter_num_bytes(write_start, write_end);
+  use_len = buffered_bytes;
+
+  // It's OK if we have buffered more than the ptr/len has space for,
+  // just fill whatever they had in that event.
+  if (len < buffered_bytes) {
+    // write only len bytes
+    write_end = write_start;
+    qbuffer_iter_advance(&ch->buf, &write_end, len);
+    use_len = len;
+  }
+  // Otherwise, len >= buffered_bytes
+
+  err = qbuffer_copyout(&ch->buf, write_start, write_end, ptr, use_len);
+  if (err == 0) {
+    // Trim the copied portion out
+    qbuffer_trim_front(&ch->buf, use_len);
+    *n_written_out = use_len;
+  }
+
+  return err;
 }
 
 void _qio_buffered_setup_cached(qio_channel_t* ch)
@@ -2504,6 +2642,7 @@ qioerr _qio_buffered_behind(qio_channel_t* ch, int flushall)
   qioerr err;
   ssize_t num_written;
   qio_method_t method = (qio_method_t) (ch->hints & QIO_METHODMASK);
+  int64_t nbytes;
 
   // If we are a FILE* type buffer, we want to automatically
   // flush after every write, so that C I/O can be intermixed
@@ -2526,13 +2665,19 @@ qioerr _qio_buffered_behind(qio_channel_t* ch, int flushall)
 
   // If there's nothing to write, just return. We don't even need
   // to update the iterators. This is the common case.
-  if( qbuffer_iter_num_bytes(write_start, write_end) == 0 ) {
+  nbytes = qbuffer_iter_num_bytes(write_start, write_end);
+
+  if (nbytes == 0) {
     err = 0;
     goto done;
   }
 
   //fprintf(stderr, "starting write\n");
   //debug_print_qbuffer(&ch->buf);
+
+  if (ch->chan_info && (ch->flags & QIO_FDFLAG_WRITEABLE)) {
+    return chpl_qio_write(ch->chan_info, nbytes);
+  }
 
   if(ch->hints & QIO_HINT_DIRECT) {
     // Round out the data to write to the end of the current chunk.
@@ -2647,8 +2792,12 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
   qioerr err;
   int eof;
 
+  // Include whatever data we got in cached_cur/cached_end
+  //_qio_buffered_advance_cached(ch);
+
   // handle channel position beyond end.
-  if( _right_mark_start(ch) > ch->end_pos ) return QIO_EEOF;
+  //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
+  if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
 
   // do the actual read. (require calls advance_cached)
   err = _qio_channel_require_unlocked(ch, len, 0);
@@ -2703,8 +2852,12 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   qioerr err;
   int eof;
 
+  // Include whatever data we got in cached_cur/cached_end
+  //_qio_buffered_advance_cached(ch);
+
   // handle channel position beyond end.
-  if( _right_mark_start(ch) > ch->end_pos ) return QIO_EEOF;
+  //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
+  if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
 
   // make sure we have buffer space. (require calls advance_cached)
   err = _qio_channel_require_unlocked(ch, len, 1);
@@ -2772,7 +2925,7 @@ qioerr _qio_unbuffered_write(qio_channel_t* ch, const void* ptr, ssize_t len_in,
         case QIO_METHOD_READWRITE:
           err = qio_int_to_err(sys_write(ch->file->fd, ptr, len, &num_written));
           break;
-        case QIO_METHOD_MMAP: // mmap uses pread/pwrite when we're 
+        case QIO_METHOD_MMAP: // mmap uses pread/pwrite when we're
                               // outside the mmap'd region.
         case QIO_METHOD_PREADPWRITE:
           err = qio_int_to_err(sys_pwrite(ch->file->fd, ptr, len, _right_mark_start(ch), &num_written));
@@ -2983,7 +3136,7 @@ int _use_buffered(qio_channel_t* ch, ssize_t len)
   else if (method == QIO_METHOD_MEMORY) return 1;
   // Do not bother initializing the buffer if we are going
   // to read outside of the channel's region.
-  else if (offset == ch->end_pos) return 0; 
+  else if (offset == ch->end_pos) return 0;
   else if (offset > ch->start_pos &&
            offset + len < ch->end_pos) return 1;
   else return 0;
@@ -3036,7 +3189,7 @@ qioerr _qio_slow_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* amt_re
   if( qio_err_to_int(ret) == EEOF ) {
     // Update the channel end position if we got EOF
     // (this makes the EOF sticky).
-    ch->end_pos = ch->av_end; 
+    ch->end_pos = ch->av_end;
   }
 
   return ret;
@@ -3489,7 +3642,7 @@ qioerr qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch
       return err;
     }
   }
- 
+
   if( flushbits ) {
     err = _qio_flush_bits_if_needed_unlocked(ch);
     if( err ) goto error;
@@ -3497,7 +3650,7 @@ qioerr qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch
 
   // includes the amount we've got in cached in the channel.
   pos = qio_channel_offset_unlocked(ch);
-  
+
   if( ch->mark_cur + 1 >= ch->mark_stack_size ) {
     new_size = 2 * (ch->mark_cur + 1);
 
@@ -3653,7 +3806,7 @@ void qio_channel_revert_unlocked(qio_channel_t* restrict ch)
 
   // seek back to ch->mark_stack[ch->mark_cur].
   target = ch->mark_stack[ch->mark_cur-1];
-  
+
   // Is that within the cached area?
   if( ch->cached_start && target >= ch->cached_start_pos ) {
     // OK, great, just move the cached pointer.
@@ -3703,8 +3856,8 @@ void qio_channel_commit_unlocked(qio_channel_t* ch)
   ch->mark_stack[ch->mark_cur] = pos;
 
   // We wrote it to our buffer.. in some way
-  // the write succeeded. 
-  // So we ignore an error code from 
+  // the write succeeded.
+  // So we ignore an error code from
   // post cached write.
   // (that way, functions that return an error
   //  indicate nothing was written)
@@ -3764,7 +3917,7 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
   // How many bytes to write?
   to_copy = sizeof(qio_bitbuffer_t) -
                 qio_ptr_align(ch->cached_cur, sizeof(qio_bitbuffer_t));
-  
+
   //printf("WRITE BITS REALIGNALIGNED WRITING %llx %i\n", (long long int) part_one_bits, (int) (8*to_copy));
   // memcpy will work because part_one_bits is big endian now.
   qio_memcpy(ch->cached_cur, &part_one_bits_be, to_copy);
@@ -3862,7 +4015,7 @@ qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8
 
   // Now we have parts[0,1] and part_bits.
   // Write out the full bytes.
-  
+
   // avoid flushing bit-buffer in this write
   ch->bit_buffer_bits = 0;
   ch->bits_read_bytes = 0;
@@ -4100,7 +4253,7 @@ qioerr _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restric
 
 error:
   _qio_channel_set_error_unlocked(ch, err);
-  
+
   return err;
 }
 
@@ -4169,7 +4322,7 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
     fd = fl->fd;
     if (fl->fp) fd = fileno(fl->fp);
 
-#ifdef SYS_HAS_LLAPI 
+#ifdef SYS_HAS_LLAPI
     {
       int ftype = 0;
       // This will be set in the lustre plugin if we have Lustre support available
@@ -4194,7 +4347,7 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
 
 qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const
     char*** loc_names_out, int64_t* num_locs_out)
-{ 
+{
   qioerr err = 0;
   if (fl->file_info) {
     err = chpl_qio_get_locales_for_region(fl->file_info, start, end, loc_names_out, num_locs_out);
