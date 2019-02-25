@@ -62,81 +62,17 @@
 */
 module Path {
 
-
 use SysError;
 use Sys;
 
-
-/*
-  Represents generally the current directory. This starts as the directory
-  where the program is being executed from.
+/* Represents generally the current directory. This starts as the directory
+   where the program is being executed from.
 */
 const curDir = ".";
 /* Represents generally the parent directory. */
 const parentDir = "..";
 /* Denotes the separator between a directory and its child. */
 const pathSep = "/";
-
-
-/*
-  Normalize a path by eliminating redundant separators and up-level references.
-  The paths ``foo//bar``, ``foo/bar/``, ``foo/./bar``, and ``foo/baz/../bar``
-  would all be changed to ``foo/bar``.
-
-  .. warning::
-
-    May alter meaning of paths containing symbolic links.
-
-  .. note::
-
-    Unlike its Python counterpart, this function does not (currently) change
-    slashes to backslashes on Windows.
-
-  :arg name: a potential path to collapse, possibly destroying the meaning of
-             the path if symbolic links were included.
-  :type name: `string`
-
-  :return: the collapsed version of `name`
-  :rtype: `string`
-*/
-proc normPath(name: string): string {
-
-  // Python 3.7 implementation:
-  // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
-
-  if name == "" then
-    return curDir;
-
-  var leadingSlashes = if name.startsWith(pathSep) then 1 else 0;
-
-  // Two leading slashes has a special meaning in POSIX.
-  if name.startsWith(pathSep * 2) && !name.startsWith(pathSep * 3) then
-    leadingSlashes = 2;
-
-  var comps = name.split(pathSep);
-  var outComps : [1..0] string;
-
-  for comp in comps {
-    if comp == "" || comp == curDir then
-      continue;
-
-    // Second case exists because we cannot go up past top level.
-    // Third case continues a chain of leading up-levels.
-    if comp != parentDir || (!leadingSlashes && outComps.isEmpty()) ||
-        (!outComps.isEmpty() && outComps.back() == parentDir) then
-      outComps.push_back(comp);
-    else if !outComps.isEmpty() then
-      outComps.pop_back();
-  }
-
-  var result = pathSep * leadingSlashes + pathSep.join(outComps);
-
-  if result == "" then
-    return curDir;
-
-  return result;
-}
-
 
 /* Returns the basename of the file name provided.  For instance:
 
@@ -483,6 +419,72 @@ proc joinPath(paths: string ...?n): string {
       result = result + "/" + temp;
     }
   }
+  return result;
+}
+
+// Normalize leading slash count to a value between 0 and 2.
+private proc normalizeLeadingSlashCount(name: string): int {
+  var result = if name.startsWith(pathSep) then 1 else 0;
+
+  // Two leading slashes has a special meaning in POSIX.
+  if name.startsWith(pathSep * 2) && !name.startsWith(pathSep * 3) then
+    result = 2;
+
+  return result;
+}
+
+/*
+  Normalize a path by eliminating redundant separators and up-level references.
+  The paths ``foo//bar``, ``foo/bar/``, ``foo/./bar``, and ``foo/baz/../bar``
+  would all be changed to ``foo/bar``.
+
+  .. warning::
+
+    May alter the meaning of paths containing symbolic links.
+
+  .. note::
+
+    Unlike its Python counterpart, this function does not (currently) change
+    slashes to backslashes on Windows.
+
+  :arg name: a potential path to collapse, possibly destroying the meaning of
+             the path if symbolic links were included.
+  :type name: `string`
+
+  :return: the collapsed version of `name`
+  :rtype: `string`
+*/
+proc normPath(name: string): string {
+
+  // Python 3.7 implementation:
+  // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
+
+  if name == "" then
+    return curDir;
+
+  const leadingSlashes = normalizeLeadingSlashCount(name);
+
+  var comps = name.split(pathSep);
+  var outComps : [1..0] string;
+
+  for comp in comps {
+    if comp == "" || comp == curDir then
+      continue;
+
+    // Second case exists because we cannot go up past the top level.
+    // Third case continues a chain of leading up-levels.
+    if comp != parentDir || (leadingSlashes == 0 && outComps.isEmpty()) ||
+        (!outComps.isEmpty() && outComps.back() == parentDir) then
+      outComps.push_back(comp);
+    else if !outComps.isEmpty() then
+      outComps.pop_back();
+  }
+
+  var result = pathSep * leadingSlashes + pathSep.join(outComps);
+
+  if result == "" then
+    return curDir;
+
   return result;
 }
 
