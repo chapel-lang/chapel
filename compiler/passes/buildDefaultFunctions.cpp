@@ -1270,10 +1270,14 @@ static void buildClassBorrowMethod(AggregateType* ct) {
 static void check_not_pod(AggregateType* at) {
   if (function_exists("chpl__initCopy", at) == NULL) {
 
-    // Compiler-generated copy-initializers should not disable POD
-    FnSymbol* fn = function_exists("init", dtMethodToken, at, at);
-    if (fn != NULL && fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+    if (at->getRootInstantiation()->hasUserDefinedInitEquals()) {
       at->symbol->addFlag(FLAG_NOT_POD);
+    } else {
+      // Compiler-generated copy-initializers should not disable POD
+      FnSymbol* fn = function_exists("init", dtMethodToken, at, at);
+      if (fn != NULL && fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+        at->symbol->addFlag(FLAG_NOT_POD);
+      }
     }
   }
 }

@@ -94,6 +94,7 @@ public:
 
   bool                        hasInitializers()                          const;
   bool                        hasPostInitializer()                       const;
+  bool                        hasUserDefinedInitEquals()                 const;
 
   bool                        mayHaveInstances()                         const;
 

@@ -562,6 +562,18 @@ bool AggregateType::hasPostInitializer() const {
   return retval;
 }
 
+bool AggregateType::hasUserDefinedInitEquals() const {
+  bool retval = false;
+  for (int i = 0; i < methods.n && retval == false; i++) {
+    FnSymbol* method = methods.v[i];
+    if (method->isCopyInit() && method->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
 // For a record
 //     Return true if there are uses of new for this type
 //
