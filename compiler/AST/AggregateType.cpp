@@ -1678,7 +1678,7 @@ void AggregateType::buildCopyInitializer() {
 
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_DEFAULT_COPY_INIT);
+    fn->addFlag(FLAG_COPY_INIT);
 
     _this->addFlag(FLAG_ARG_THIS);
 
