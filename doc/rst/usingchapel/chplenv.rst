@@ -718,8 +718,9 @@ CHPL_LIB_PIC
 
 Character Set
 -------------
-   Chapel is tested with the Unicode character set and the traditional
-   C collating sequence using the following settings.
+   We have the most experience running Chapel with the Unicode
+   character set and the traditional C collating sequence using the
+   following settings.
 
    .. code-block:: sh
 
@@ -727,6 +728,8 @@ Character Set
        LC_COLLATE=C
        LC_ALL=""
 
+   .. note::
+       This may change in the future.
 
 Compiler Command Line Option Defaults
 -------------------------------------
