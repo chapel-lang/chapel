@@ -231,6 +231,8 @@ static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn) {
       USR_PRINT(iterFn, "the corresponding iterator is here");
       USR_PRINT(iterFn, "try declaring its return type");
       USR_STOP();
+      QualifiedType dummy(dtUnknown);
+      return dummy;
     }
 
   } else {
