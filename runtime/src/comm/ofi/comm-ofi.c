@@ -217,6 +217,12 @@ const char* getProviderName(void) {
   return provName;
 }
 
+//
+// Provider-specific behavior control.
+//
+static chpl_bool provCtl_sizeAvsByNumEps;  // size AVs by numEPs (RxD)
+static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
+
 
 ////////////////////////////////////////
 //
@@ -391,6 +397,33 @@ void init_ofiFabricDomain(void) {
   //
   OFI_CHK(fi_fabric(ofi_info->fabric_attr, &ofi_fabric, NULL));
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
+
+  //
+  // Set provider-based controls.  So far these just have to do with the
+  // RxD utility provider which supplies RDM support for verbs.
+  // - Based on tracebacks after internal error aborts, RxD seems to
+  //   want to record an address per accessing endpoint for at least
+  //   some AVs (perhaps just those for which it handles progress?).  It
+  //   uses the AV attribute 'count' member to size the data structure
+  //   in which it stores those.  So, that member will need to account
+  //   for all transmitting endpoints.
+  // - Based on analyzing a segfault, RxD has to have a non-NULL buf arg
+  //   for fi_fetch_atomic(FI_ATOMIC_READ) even though the fi_atomic man
+  //   page says buf is ignored for that operation and may be NULL.
+  //
+  {
+    char* tok;
+    char* strSave;
+    for (char* s = ofi_info->fabric_attr->prov_name;
+         (tok = strtok_r(s, ";", &strSave)) != NULL;
+         s = NULL) {
+      if (strcmp(tok, "ofi_rxd") == 0) {
+        provCtl_sizeAvsByNumEps = true;
+        provCtl_readAmoNeedsOpnd = true;
+        break;
+      }
+    }
+  }
 }
 
 
@@ -417,23 +450,12 @@ void init_ofiEp(void) {
   //
   struct fi_av_attr avAttr = (struct fi_av_attr)
                              { .type = FI_AV_TABLE,
-                               .count = chpl_numNodes * 2,
+                               .count = chpl_numNodes * 2 /* AM, RMA+AMO */,
                                .name = NULL,
                                .rx_ctx_bits = 0, };
-
-  //
-  // Provisional hack for the verbs provider: based on tracebacks after
-  // internal error aborts, that provider seems to want to record an
-  // address per accessing endpoint for at least some AVs (perhaps just
-  // those for which it handles progress?).  It uses the AV attribute
-  // 'count' member to size the data structure in which it stores those.
-  // So, bump the count here to account for all transmitting endpoints.
-  //
-  {
-    const char* vp = "verbs";
-    if (strncmp(ofi_info->fabric_attr->prov_name, vp, strlen(vp)) == 0) {
-      avAttr.count *= numTxCtxs;
-    }
+  if (provCtl_sizeAvsByNumEps) {
+    // Workaround for RxD peculiarity.
+    avAttr.count *= numTxCtxs;
   }
 
   if (useScalableTxEp) {
@@ -2499,14 +2521,14 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
       freeBounceBuf(myRes);
     }
   } else if (result != NULL) {
-    //
-    // Verbs, or actually RxD, seems to expect a non-NULL buf argument
-    // for FI_ATOMIC_READ even though the man page says not needed.
-    //
-    static int64_t dummy;
-    void* bufArg = ((ofiOp == FI_ATOMIC_READ && myOpnd1 == NULL)
-                    ? &dummy
-                    : myOpnd1);
+    void* bufArg = myOpnd1;
+    if (provCtl_readAmoNeedsOpnd) {
+      // Workaround for RxD bug.
+      if (ofiOp == FI_ATOMIC_READ && bufArg == NULL) {
+        static int64_t dummy;
+        bufArg = &dummy;
+      }
+    }
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
                             bufArg, 1, mrDescOpnd1, myRes, mrDescRes,
                             rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
