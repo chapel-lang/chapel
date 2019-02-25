@@ -721,9 +721,12 @@ Character Set
    Chapel is tested with the Unicode character set and the traditional
    C collating sequence using the following settings.
 
+   .. code-block:: sh
+
        LANG=en_US.UTF-8
        LC_COLLATE=C
        LC_ALL=""
+
 
 Compiler Command Line Option Defaults
 -------------------------------------
