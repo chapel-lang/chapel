@@ -716,6 +716,15 @@ CHPL_LIB_PIC
 
    If unset, ``CHPL_LIB_PIC`` defaults to ``none``
 
+Character Set
+-------------
+   Chapel is tested with the Unicode character set and the traditional
+   C collating sequence using the following settings.
+
+       LANG=en_US.UTF-8
+       LC_COLLATE=C
+       LANG=""
+
 Compiler Command Line Option Defaults
 -------------------------------------
 
