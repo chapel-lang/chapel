@@ -2499,8 +2499,16 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
       freeBounceBuf(myRes);
     }
   } else if (result != NULL) {
+    //
+    // Verbs, or actually RxD, seems to expect a non-NULL buf argument
+    // for FI_ATOMIC_READ even though the man page says not needed.
+    //
+    static int64_t dummy;
+    void* bufArg = ((ofiOp == FI_ATOMIC_READ && myOpnd1 == NULL)
+                    ? &dummy
+                    : myOpnd1);
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
-                            myOpnd1, 1, mrDescOpnd1, myRes, mrDescRes,
+                            bufArg, 1, mrDescOpnd1, myRes, mrDescRes,
                             rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
                             ofiType, ofiOp, NULL));
     tcip->numTxsOut++;
