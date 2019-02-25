@@ -615,6 +615,9 @@ void init_ofiEpNumCtxs(void) {
   // Now we know how many transmit contexts we'll have.
   //
   numTxCtxs = numWorkerTxCtxs + numAmHandlers;
+  if (useScalableTxEp) {
+    ofi_info->ep_attr->tx_ctx_cnt = numTxCtxs;
+  }
 
   //
   // Receive contexts are much easier -- we just need one
