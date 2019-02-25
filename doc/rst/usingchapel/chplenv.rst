@@ -729,7 +729,7 @@ Character Set
        LC_ALL=""
 
    .. note::
-       This may change in the future.
+       Other settings might be recommended in the future.
 
 Compiler Command Line Option Defaults
 -------------------------------------
