@@ -1,0 +1,20 @@
+MODE 0
+errors.chpl:27: error: halt reached - front() called on empty vector
+MODE 1
+errors.chpl:29: error: halt reached - back() called on empty vector
+MODE 2
+errors.chpl:31: error: halt reached - pop_back() called on empty vector
+MODE 3
+errors.chpl:33: error: halt reached - pop_front() called on empty vector
+MODE 4
+errors.chpl:35: error: halt reached - vector.insert called with invalid index '500' which must be in range '0..10'
+MODE 5
+errors.chpl:37: error: halt reached - vector.insert called with invalid index '10' which must be in range '0..9'
+MODE 6
+errors.chpl:39: error: halt reached - vector.remove called with invalid range: must be within '0..9'
+MODE 7
+errors.chpl:41: error: halt reached - vector.remove called with invalid upper-bounded range: bound must be within '0..9'
+MODE 8
+errors.chpl:43: error: halt reached - vector.remove called with invalid lower-bounded range: bound must be within '0..9'
+MODE 9
+errors.chpl:45: error: halt reached - out of bounds: 5

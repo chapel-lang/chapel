@@ -1,0 +1,6 @@
+empty vector: ''
+empty vector: ''
+init with array: '1 2 3 4 5'
+copy init: '1 2 3 4 5'
+with capacity: ''
+  capacity = 100
