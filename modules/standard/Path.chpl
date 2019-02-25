@@ -29,7 +29,6 @@
       This module is currently missing the implementation for `absPath
       <https://github.com/chapel-lang/chapel/issues/6005>`_, `expandUser
       <https://github.com/chapel-lang/chapel/issues/6008>`_, `normCase
-      <https://github.com/chapel-lang/chapel/issues/6013>`_, `normPath
       <https://github.com/chapel-lang/chapel/issues/6015>`_, and `relPath
       <https://github.com/chapel-lang/chapel/issues/6017>`_.  Once those are
       implemented, it will be considered complete.
@@ -43,6 +42,7 @@
    :proc:`commonPath`
    :proc:`realPath`
    :proc:`file.realPath`
+   :proc:`normPath`
 
    Path Manipulations
    ------------------
@@ -68,8 +68,8 @@ use Sys;
 
 
 /*
-   Represents generally the current directory. This starts as the directory
-   where the program is being executed from.
+  Represents generally the current directory. This starts as the directory
+  where the program is being executed from.
 */
 const curDir = ".";
 /* Represents generally the parent directory. */
@@ -79,58 +79,62 @@ const pathSep = "/";
 
 
 /*
-   Collapse paths such as `foo//bar`, `foo/bar/`, `foo/./bar`, and
-   `foo/baz/../bar` into `foo/bar`.  Warning: may alter meaning of paths
-   containing symbolic links.
+  Normalize a path by eliminating redundant separators and up-level references.
+  The paths ``foo//bar``, ``foo/bar/``, ``foo/./bar``, and ``foo/baz/../bar``
+  would all be changed to ``foo/bar``.
 
-   .. note::
+  .. warning::
 
-      Unlike its Python counterpart, this function does not (currently) change
-      slashes to backslashes on Windows.
+    May alter meaning of paths containing symbolic links.
 
-   :arg name: a potential path to collapse, possibly destroying the meaning of
-              the path if symbolic links were included.
-   :type name: `string`
+  .. note::
 
-   :return: the collapsed version of `name`
-   :rtype: `string`
+    Unlike its Python counterpart, this function does not (currently) change
+    slashes to backslashes on Windows.
+
+  :arg name: a potential path to collapse, possibly destroying the meaning of
+             the path if symbolic links were included.
+  :type name: `string`
+
+  :return: the collapsed version of `name`
+  :rtype: `string`
 */
 proc normPath(name: string): string {
 
-   // Python 3.7 implementation:
-   // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
+  // Python 3.7 implementation:
+  // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
 
-   if name == "" then
-      return curDir;
+  if name == "" then
+    return curDir;
 
-   var leadingSlashes = if name.startsWith(pathSep) then 1 else 0;
+  var leadingSlashes = if name.startsWith(pathSep) then 1 else 0;
 
-   // Two leading slashes has a special meaning in POSIX.
-   if name.startsWith(pathSep * 2) && !name.startsWith(pathSep * 3) then
-      leadingSlashes = 2;
+  // Two leading slashes has a special meaning in POSIX.
+  if name.startsWith(pathSep * 2) && !name.startsWith(pathSep * 3) then
+    leadingSlashes = 2;
 
-   var comps = name.split(pathSep);
-   var outComps : [1..0] string;
+  var comps = name.split(pathSep);
+  var outComps : [1..0] string;
 
-   for comp in comps {
-      if comp == "" || comp == curDir then
-         continue;
+  for comp in comps {
+    if comp == "" || comp == curDir then
+      continue;
 
-      // Second case exists because we cannot go up past top level.
-      // Third case continues a chain of leading up-levels.
-      if comp != parentDir || (!leadingSlashes && outComps.isEmpty()) ||
-            (!outComps.isEmpty() && outComps.back() == parentDir) then
-         outComps.push_back(comp);
-      else if !outComps.isEmpty() then
-         outComps.pop_back();
-   }
+    // Second case exists because we cannot go up past top level.
+    // Third case continues a chain of leading up-levels.
+    if comp != parentDir || (!leadingSlashes && outComps.isEmpty()) ||
+        (!outComps.isEmpty() && outComps.back() == parentDir) then
+      outComps.push_back(comp);
+    else if !outComps.isEmpty() then
+      outComps.pop_back();
+  }
 
-   var result = pathSep * leadingSlashes + pathSep.join(outComps);
+  var result = pathSep * leadingSlashes + pathSep.join(outComps);
 
-   if result == "" then
-      return curDir;
+  if result == "" then
+    return curDir;
 
-   return result;
+  return result;
 }
 
 
