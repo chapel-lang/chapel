@@ -723,7 +723,7 @@ Character Set
 
        LANG=en_US.UTF-8
        LC_COLLATE=C
-       LANG=""
+       LC_ALL=""
 
 Compiler Command Line Option Defaults
 -------------------------------------
