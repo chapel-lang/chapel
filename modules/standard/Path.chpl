@@ -76,15 +76,17 @@ const parentDir = "..";
 const pathSep = "/";
 
 /*
-  Creates an absolute version of the path specified.  Equivalent to the call
-  :proc:`normPath`(:proc:`joinPath`(:proc:`cwd`(), name)) when the path is not
-  already absolute and returns the original string otherwise.
+  Returns a normalized absolutized version of a path. Equivalent to the call
+  :proc:`normPath(joinPath(here.cwd(), name)` when the path is not already
+  absolute and returns the original string otherwise.
 
-  :arg name: the path whose absolute path is desired.
+  :arg name: The path whose absolute path is desired.
   :type name: `string`
 
-  :return: An absolute version of the path specified
+  :return: An absolute version of the path specified.
   :rtype: `string`
+
+  :throws SystemError: When a call to :proc:`locale.cwd()` fails.
 */
 proc absPath(name: string): string throws {
   if !isAbsPath(name) {
@@ -92,21 +94,22 @@ proc absPath(name: string): string throws {
     const cwd = try here.cwd();
     return normPath(joinPath(cwd, name));
   }
-  
+
   return normPath(name);
 }
 
 /*
   Create an absolute version of the path in this :type:`~IO.file`.  Equivalent
-  to the call
-  :proc:`normPath`(:proc:`joinPath`(:proc:`cwd`(), :proc:`file.path`)) when
-  the path is not already absolute and returns the original :proc:`file.path`
+  to the call :proc:`normPath(joinPath(here.cwd(), file.path))` when the path
+  is not already absolute and returns the original :proc:`file.path`
   otherwise.
 
-  :return: An absolute version of the path for this file
+  :return: An absolute version of the path for this file.
   :rtype: `string`
+
+  :throws SystemError: When a call to :proc:`locale.cwd()` fails.
 */
-proc file.absPath(): string {
+proc file.absPath(): string throws {
   return "";
 }
 
