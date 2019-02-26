@@ -487,12 +487,12 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
           INT_FATAL("Cannot fold ** on floating point values"); \
           break; \
       }
 
-#define DO_FOLDB(_op) \
+#define DO_FOLDB(_op,_complex_combine) \
       switch (im1.const_kind) { \
         case NUM_KIND_NONE: \
           break; \
@@ -536,6 +536,21 @@ coerce_immediate(Immediate *from, Immediate *to) {
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
+        case NUM_KIND_COMPLEX: \
+          switch (im1.num_index) { \
+            case COMPLEX_SIZE_64: \
+              imm->v_bool = (im1.v_complex64.r _op im2.v_complex64.r) \
+                            _complex_combine \
+                            (im1.v_complex64.i _op im2.v_complex64.i); \
+              break; \
+            case COMPLEX_SIZE_128: \
+              imm->v_bool = (im1.v_complex128.r _op im2.v_complex128.r) \
+                            _complex_combine \
+                            (im1.v_complex128.i _op im2.v_complex128.i); \
+              break; \
+            default: INT_FATAL("Unhandled case in switch statement"); \
+          } \
+          break; \
       }
 
 #define DO_FOLDI(_op) \
@@ -573,11 +588,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
-          switch (imm->num_index) { \
-            default: INT_FATAL("Unhandled case in switch statement"); \
-          } \
-          break; \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
+          INT_FATAL("Unhandled case in switch statement"); \
       }
 
 #define DO_FOLD1(_op) \
@@ -624,6 +636,19 @@ coerce_immediate(Immediate *from, Immediate *to) {
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
+        case NUM_KIND_COMPLEX: \
+          switch (imm->num_index) { \
+            case COMPLEX_SIZE_64: \
+              imm->v_complex64.r = _op im1.v_complex64.r; \
+              imm->v_complex64.i = _op im1.v_complex64.i; \
+              break; \
+            case COMPLEX_SIZE_128: \
+              imm->v_complex128.r = _op im1.v_complex128.r; \
+              imm->v_complex128.i = _op im1.v_complex128.i; \
+              break; \
+            default: INT_FATAL("Unhandled case in switch statement"); \
+          } \
+          break; \
       }
 
 #define DO_FOLD1I(_op) \
@@ -661,10 +686,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
-          switch (imm->num_index) { \
-            default: INT_FATAL("Unhandled case in switch statement"); \
-          } \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
+          INT_FATAL("Unhandled case in switch statement"); \
           break; \
       }
 
@@ -881,12 +904,12 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
     case P_prim_subtract: DO_FOLD(-); break;
     case P_prim_lsh: DO_FOLDI(<<); break;
     case P_prim_rsh: DO_FOLDI(>>); break;
-    case P_prim_less: DO_FOLDB(<); break;
-    case P_prim_lessorequal: DO_FOLDB(<=); break;
-    case P_prim_greater: DO_FOLDB(>); break;
-    case P_prim_greaterorequal: DO_FOLDB(>=); break;
-    case P_prim_equal: DO_FOLDB(==); break;
-    case P_prim_notequal: DO_FOLDB(!=); break;
+    case P_prim_less: DO_FOLDB(<, &&); break;
+    case P_prim_lessorequal: DO_FOLDB(<=, &&); break;
+    case P_prim_greater: DO_FOLDB(>, &&); break;
+    case P_prim_greaterorequal: DO_FOLDB(>=, &&); break;
+    case P_prim_equal: DO_FOLDB(==, &&); break;
+    case P_prim_notequal: DO_FOLDB(!=, ||); break;
     case P_prim_and: DO_FOLDI(&); break;
     case P_prim_xor: DO_FOLDI(^); break;
     case P_prim_or: DO_FOLDI(|); break;
