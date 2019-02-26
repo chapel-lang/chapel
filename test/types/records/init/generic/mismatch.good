@@ -1,1 +1,2 @@
-mismatch.chpl:16: error: type mismatch in assignment from A(real(64)) to A(int(64))
+mismatch.chpl:16: error: unresolved call 'A(int(64)).init=(type A(int(64)), A(real(64)))'
+mismatch.chpl:1: note: candidates are: A.init=(type ThisType, other: ThisType)

@@ -1,2 +1,3 @@
 explicitAssignment.chpl:15: In function 'main':
-explicitAssignment.chpl:16: error: type mismatch in assignment from Foo(int(64)) to Foo(real(64))
+explicitAssignment.chpl:16: error: unresolved call 'Foo(real(64)).init=(type Foo(real(64)), Foo(int(64)))'
+explicitAssignment.chpl:3: note: candidates are: Foo.init=(type ThisType, other: ThisType)
