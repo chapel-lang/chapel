@@ -134,6 +134,17 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
+    proc init=(type ThisType, const other : _syncvar) {
+      if other.type != ThisType then compilerError("init= error");
+      this.init(other);
+    }
+
+    proc init=(type ThisType, const other : ThisType.valType) {
+      this.init(ThisType.valType);
+      // TODO: initialize the sync class impl with 'other'
+      this.writeEF(other);
+    }
+
     proc deinit() {
       if isOwned == true then
         delete _to_unmanaged(wrapped);
@@ -645,6 +656,16 @@ module ChapelSyncvar {
       this.valType = other.valType;
       wrapped = other.wrapped;
       isOwned = false;
+    }
+
+    proc init=(type ThisType, const other : _singlevar) {
+      if other.type != ThisType then compilerError("init= error");
+      this.init(other);
+    }
+
+    proc init=(type ThisType, const other : ThisType.valType) {
+      this.init(ThisType.valType);
+      this.writeEF(other);
     }
 
     proc deinit() {
