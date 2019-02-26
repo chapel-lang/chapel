@@ -124,3 +124,22 @@ checkYes(two32 - one32 == one32);
 checkYes(two64 - one64 == one64);
 checkYes(two32 - one64 == one64);
 checkYes(two64 - one32 == one64);
+
+if !isComplexType(t32) && !isImagType(t32) {
+  // *
+  checkYes(one32 * one32 == one32);
+  checkYes(one64 * one64 == one64);
+  checkYes(one32 * two32 == two32);
+  checkYes(two64 * one64 == two64);
+
+  checkYes(two32 * two32 == four32);
+  checkYes(two64 * two64 == four64);
+  checkYes(two32 * two64 == four64);
+  checkYes(two64 * two32 == four64);
+
+  // /
+  checkYes(four32 / two32 == two32);
+  checkYes(four64 / two64 == two64);
+  checkYes(four32 / two64 == two64);
+  checkYes(four64 / two32 == two64);
+}
