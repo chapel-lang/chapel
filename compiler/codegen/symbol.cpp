@@ -485,9 +485,20 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           INT_ASSERT(immediate->num_index == INT_SIZE_64);
           ret.c = "COMMID(" + int64_to_string(iconst) + ")";
         }
-      } else if ((immediate->const_kind == NUM_KIND_REAL ||
-                  immediate->const_kind == NUM_KIND_IMAG)) {
-        ret.c = cname; // in C, all floating point literals are (double)
+      } else if (immediate->const_kind == NUM_KIND_REAL ||
+                 immediate->const_kind == NUM_KIND_IMAG) {
+        double value = immediate->real_value();
+        const char* castString = NULL;
+        switch (immediate->num_index) {
+        case FLOAT_SIZE_32:
+          castString = "REAL32(";
+          break;
+        case FLOAT_SIZE_64:
+          castString = "REAL64(";
+          break;
+        }
+
+        ret.c = castString + real_to_string(value) + ")";
       } else if (immediate->const_kind == NUM_KIND_COMPLEX) {
 
         IF1_float_type flType = FLOAT_SIZE_32;
