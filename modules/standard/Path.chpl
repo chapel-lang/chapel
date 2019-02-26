@@ -89,12 +89,8 @@ const pathSep = "/";
   :throws SystemError: When a call to :proc:`locale.cwd()` fails.
 */
 proc absPath(name: string): string throws {
-  if !isAbsPath(name) {
-    // The call to here.cwd() can throw and is not parallel safe.
-    const cwd = try here.cwd();
-    return normPath(joinPath(cwd, name));
-  }
-
+  if !isAbsPath(name) then
+    return normPath(joinPath(try here.cwd(), name));
   return normPath(name);
 }
 
@@ -110,7 +106,8 @@ proc absPath(name: string): string throws {
   :throws SystemError: When a call to :proc:`locale.cwd()` fails.
 */
 proc file.absPath(): string throws {
-  return "";
+  // If we don't use the namespace we get a funky compiler type error.
+  return try Path.absPath(this.path);
 }
 
 /* Returns the basename of the file name provided.  For instance:

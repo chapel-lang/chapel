@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 
+# Produces the "absPath.good" file containing expected output for the Chapel
+# Path.absPath function. Nothing sophisticated yet, the calls in the Chapel
+# test code will mirror the ones found here.
+
 
 import sys
 import os.path
 
 
-# Wide assortment of test strings.
+# Assortment of test strings.
 wellFormed0 = 'foo'
 
 curDir = '.'
@@ -42,5 +46,5 @@ absolutize(pathSep2 + wellFormed0)
 # Path with 3 leading slashes yields absolute path, 1 leading slash.
 absolutize(pathSep3 + wellFormed0)
 
-# Path with more parent dirs than cwd components yields single slash.
+# Path with cwd yields absolute path with cwd.
 absolutize(os.getcwd())
