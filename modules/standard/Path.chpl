@@ -40,9 +40,9 @@
    Path Computations
    -----------------
    :proc:`commonPath`
+   :proc:`normPath`
    :proc:`realPath`
    :proc:`file.realPath`
-   :proc:`normPath`
 
    Path Manipulations
    ------------------
