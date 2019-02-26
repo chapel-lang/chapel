@@ -16,7 +16,7 @@ module CSVtest {
       var myData = r.readCSV((...(4*real)), string);
 
       for d in myData {
-        w.writeRecordCSV(d);
+        w.writeCSV(d);
       }
     } catch error {
       writeln("Error: ", error);
@@ -39,7 +39,7 @@ module CSVtest {
       var myData = r.readCSV(Row);
 
       for d in myData {
-        w.writeRecordCSV(d);
+        w.writeCSV(d);
       }
     } catch error {
       writeln("Error: ", error);

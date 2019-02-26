@@ -1,21 +1,51 @@
+/*
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* Support for reading and writing Comma Separated Value files.
+
+   This module provides the :record:`CSVIO` type for reading and writing
+   CSV files.
+ */
 module CSV {
+  /* The `CSVIO` record can be initialized with a reader or writer channel
+     for reading or writing CSV files.
+   */
   record CSVIO {
     var ch: channel;
-    var sep: string = ",";
-    var hasHeader = true;
+    var sep: string;
+    var hasHeader: bool;
 
     class ReaderWriterMismatchError: Error {}
 
-    proc init(filename: string, reader:bool=true, sep=",") {
-      if reader then ch = openreader(filename);
-                else ch = openwriter(filename);
-    }
-    proc init(ch: channel, sep: string=",", hasHeader=true) {
+    /* Initialize a CSVIO record.
+       :arg ch: The channel to read from or write to.
+       :arg sep: (optional) The delimiter to separate fields
+       :arg hasHeader: (optional) If true, treat the first line of data
+                       as a header and skip it
+     */
+    proc init(ch: channel, sep: string=",", hasHeader: bool=false) {
       this.ch = ch;
       this.sep = sep;
       this.hasHeader = hasHeader;
     }
-
+    /* Read a CSV file with lines matching the types of the fields in a record
+     */
     iter readCSV(type t) throws where isRecordType(t) {
       use Reflection;
       var r: t;
@@ -41,6 +71,9 @@ module CSV {
       }
     }
 
+    /* Read a CSV file with fields of the types given by
+       the arguments to the function
+     */
     iter readCSV(type t...) throws {
       if ch.writing {
         throw new owned ReaderWriterMismatchError();
@@ -63,7 +96,10 @@ module CSV {
       }
     }
 
-    proc writeRecordCSV(r: ?t) throws where isRecordType(t) {
+    /* Write a record to the channel owned by this `CSVIO` instance
+       resulting in a single row being added to the channel.
+     */
+    proc writeCSV(r: ?t) throws where isRecordType(t) {
       use Reflection;
 
       if !ch.writing {
@@ -78,7 +114,10 @@ module CSV {
       ch.writeln();
     }
 
-    proc writeRecordCSV(tup: ?t) throws where isTupleType(t) {
+    /* Write a tuple to the channel owned by this `CSVIO` instance
+       resulting in a single row being added to the channel.
+     */
+    proc writeCSV(tup: ?t) throws where isTupleType(t) {
       if !ch.writing {
         throw new ReaderWriterMismatchError();
       }
@@ -88,80 +127,6 @@ module CSV {
           ch.write(sep);
       }
       ch.writeln();
-    }
-  }
-}
-
-module Test {
-  use CSV;
-  config const infile  = "",
-               outfile = "";
-
-  proc main {
-
-    writeln("First read");
-    try {
-      // read and write using a tuple. The type arguments to `readCSV` define
-      // the types in each row.
-      var myReader = if infile == "" then stdin else openreader(infile);
-      var myWriter = if outfile == "" then stdout else openwriter(outfile);
-      var r = new CSVIO(myReader, hasHeader=false);
-      var w = new CSVIO(myWriter);
-      var myData = r.readCSV((...(4*real)), string);
-
-      for d in myData {
-        w.writeRecordCSV(d);
-      }
-    } catch error {
-      writeln("Error: ", error);
-    }
-
-    writeln("Second read");
-
-    try {
-      // read and write using a record to declare the data types in each row
-      record Row {
-        var val1, val2, val3, val4: real;
-        var seriesLabel: string;
-      }
-
-      var myReader = if infile == "" then stdin else openreader(infile);
-      var myWriter = if outfile == "" then stdout else openwriter(outfile);
-      var r = new CSVIO(myReader, hasHeader=false);
-      var w = new CSVIO(myWriter);
-
-      var myData = r.readCSV(Row);
-
-      for d in myData {
-        w.writeRecordCSV(d);
-      }
-    } catch error {
-      writeln("Error: ", error);
-    }
-
-    try {
-      // read the data into tuples like before, then copy it
-      // into a 2D array and 1D array of labels
-      var myReader = if infile == "" then stdin else openreader(infile);
-      var myWriter = if outfile == "" then stdout else openwriter(outfile);
-      var r = new CSVIO(myReader, hasHeader=false);
-      var w = new CSVIO(myWriter);
-
-      var myData = r.readCSV((...(4*real)), string);
-      var A: [1..myData.numElements, 1..myData[1].size-1] real;
-      var labels: [1..myData.numElements] string;
-
-      for i in 1..myData.numElements {
-        for param j in 1..myData[1].size-1 {
-          A[i,j] = myData[i][j];
-        }
-        labels[i] = myData[i][myData[1].size];
-      }
-
-      writeln(A);
-      writeln(labels);
-    } catch error {
-      writeln("Error: ", error);
     }
   }
 }
