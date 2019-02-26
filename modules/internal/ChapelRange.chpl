@@ -288,6 +288,25 @@ module ChapelRange {
       compilerError("non-stridable range initializer called with stridable=true");
   }
 
+  pragma "no doc"
+  proc range.init=(type ThisType, other : range(?i,?b,?s)) {
+    type idxType = ThisType.idxType;
+    if ThisType.boundedType != b {
+      compilerError("range(boundedType=" + ThisType.boundedType:string + ") cannot be initialized from range(boundedType=" + b:string + ")");
+    }
+
+    if !ThisType.stridable && s then
+      compilerError("cannot initialize a non-stridable range from a stridable range");
+
+    const str = if ThisType.stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
+
+    this.init(idxType, ThisType.boundedType, ThisType.stridable,
+              chpl__intToIdx(idxType, other._low), chpl__intToIdx(idxType, other._high),
+              str,
+              chpl__intToIdx(idxType, chpl__idxToInt(other.alignment)),
+              other.aligned);
+  }
+
   /////////////////////////////////
   // for debugging
   pragma "no doc"
