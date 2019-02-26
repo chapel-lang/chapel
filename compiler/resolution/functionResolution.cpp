@@ -4895,12 +4895,6 @@ static void resolveInitVar(CallExpr* call) {
     targetType = srcType;
   }
 
-  // Next, the primitive is replaced with appropriate AST (depending on the
-  // relevant types and flags).
-
-  // Target type will never be a reference
-  targetType = targetType->getValType();
-
   if (dst->hasFlag(FLAG_NO_COPY) ||
       isPrimitiveScalar(targetType) ||
       isEnumType(targetType) ||
@@ -4933,7 +4927,7 @@ static void resolveInitVar(CallExpr* call) {
     resolveMove(call);
 
   } else if (isRecord(targetType->getValType())) {
-    AggregateType* at = toAggregateType(targetType);
+    AggregateType* at = toAggregateType(targetType->getValType());
 
     // Clear FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW
     // since the result of the 'new' will "move" into
