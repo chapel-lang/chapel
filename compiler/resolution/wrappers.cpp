@@ -1549,11 +1549,14 @@ namespace {
     FnSymbol* fn;
     FnSymbol* wrapperFn;
     bool      zippered;
+    bool      resultIsUsed;
+
     // The following vectors are indexed by the i'th formal to fn (0-based).
 
     // The TypeSymbol representing the type that is promoted (e.g. array)
     // or NULL if that argument isn't promoted.
     std::vector<TypeSymbol*> promotedType;
+
     std::vector<uint8_t> defaulted;
 
     // for the i'th formal to fn, fnFormals is NULL
@@ -1734,7 +1737,8 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
   fn(fn),
   // these are established later along with wrapperFormals
   wrapperFn(NULL),
-  zippered(false)
+  zippered(false),
+  resultIsUsed(info.call != info.call->getStmtExpr())
 {
   int numActuals = actualFormals.size();
 
@@ -1793,27 +1797,14 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
                                        CallInfo&  info,
                                        bool       fastFollowerChecks) {
 
-  BlockStmt* loop       = NULL;
   initPromotionWrapper(promotion, instantiationPt);
   FnSymbol*  retval     = promotion.wrapperFn;
   FnSymbol*  fn         = promotion.fn;
 
-  if (fn->retType == dtVoid || fn->getReturnSymbol() == gVoid) {
-    Expr*      indices  = getIndices (promotion);
-    Expr*      iterator = getIterator(promotion);
-    CallExpr*  wrapCall = createPromotedCallForWrapper(promotion);
-    BlockStmt* block    = new BlockStmt(wrapCall);
-    bool       zippered = promotion.zippered;
-
-    loop = buildForallLoopStmt(indices, iterator, NULL, block, zippered);
-
-    // Save the wrapCall to adjust it later
-    promotion.wrapCalls.push_back(wrapCall);
-  } else {
-    loop = buildPromotionLoop(promotion, instantiationPt, info, fastFollowerChecks);
-  }
-
-  retval->insertAtTail(new BlockStmt(loop));
+  BlockStmt* loop = buildPromotionLoop(promotion, instantiationPt, info,
+                                       fastFollowerChecks);
+  retval->insertAtTail(loop);
+  loop->flattenAndRemove();
 
   fn->defPoint->insertBefore(new DefExpr(retval));
 
@@ -1824,6 +1815,23 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
   fixDefaultArgumentsInWrapCall(promotion);
 
   return retval;
+}
+
+static void insertAndSaveWrapCall(PromotionInfo& promotion, BlockStmt* block,
+                                  VarSymbol* temp, CallExpr* wrapCall)
+{
+  if (promotion.resultIsUsed) {
+    block->insertAtTail(new DefExpr(temp));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapCall));
+    block->insertAtTail(new CallExpr(PRIM_YIELD, temp));
+
+  } else {
+    // No need to yield. NB wrapCall's type may be 'void'.
+    block->insertAtTail(wrapCall);
+  }
+
+  // Save the wrapCall to adjust it later
+  promotion.wrapCalls.push_back(wrapCall);
 }
 
 // The info needed to call buildFastFollowerChecksIfNeeded() later.
@@ -1867,12 +1875,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
   }
  }
 
-  yieldBlock->insertAtTail(new DefExpr(yieldTmp));
-
-  yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, wrapCall));
-  yieldBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-  // Save the wrapCall to adjust it later
-  promotion.wrapCalls.push_back(wrapCall);
+  insertAndSaveWrapCall(promotion, yieldBlock, yieldTmp, wrapCall);
 
   return ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered);
 }
@@ -2048,21 +2051,13 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
 
   yieldTmp->addFlag(FLAG_EXPR_TEMP);
 
-  block->insertAtTail(new DefExpr(yieldTmp));
-
   CallExpr* wrapCallCopy = wrapCall->copy(&followerMap);
-  promotion.wrapCalls.push_back(wrapCallCopy);
 
-  // Save the wrapCall to adjust it later
-  block->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, wrapCallCopy));
-
-  block->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
+  insertAndSaveWrapCall(promotion, block, yieldTmp, wrapCallCopy);
 
   return ForLoop::buildForLoop(indices->copy(&followerMap),
                                new SymExpr(followerIterator),
-                               block,
-                               false,
-                               isCallExpr(iterator) ? true : false);
+                               block, false, promotion.zippered);
 }
 
 // The returned string is canonical ie from astr().

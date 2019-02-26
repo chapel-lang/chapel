@@ -345,6 +345,17 @@ use TestUtils;
   assertEqual(dot(v13, v31), S, "dot(Matrix(1, 3), Matrix(3, 1))");
 }
 
+/* dot - rank-change slice */
+{
+  var M = Matrix(3, 3);
+  M = 1;
+
+  var slice = M[1..3, 1];
+
+  var result = dot(slice, slice);
+  assertEqual(result, 3, 'dot(M[1..3, 1], M[1..3, 1])');
+}
+
 /* outer */
 {
   var v = Vector(3);

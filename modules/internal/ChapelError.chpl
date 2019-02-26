@@ -362,7 +362,7 @@ module ChapelError {
   pragma "always propagate line file info"
   // TODO -- deprecate this version
   proc chpl_fix_thrown_error(err: borrowed Error): unmanaged Error {
-    compilerWarning("Throwing borrowed error - please throw owned", 1);
+    compilerError("Throwing borrowed error - please throw owned", 1);
 
     return chpl_do_fix_thrown_error(_to_unmanaged(err));
   }

@@ -21,7 +21,7 @@
 #define _STMT_H_
 
 #include "expr.h"
-#include "foralls.h"
+#include "stlUtil.h"
 
 #include <cstdio>
 #include <map>
@@ -81,7 +81,6 @@ public:
                       BlockStmt(Expr*    initBody     = NULL,
                                 BlockTag initBlockTag = BLOCK_NORMAL);
                       BlockStmt(BlockTag initBlockTag);
-  virtual            ~BlockStmt();
 
   DECLARE_COPY(BlockStmt);
 
@@ -108,10 +107,7 @@ public:
   virtual bool        isCForLoop()                                 const;
 
   virtual void        checkConstLoops();
-  void                removeForallIntents();
-
   virtual bool        deadBlockCleanup();
-
   void                appendChapelStmt(BlockStmt* stmt);
   void                flattenAndRemove();
 
@@ -146,7 +142,6 @@ public:
   CallExpr*           useList;       // module/enum uses for this block
   const char*         userLabel;
   CallExpr*           byrefVars;     // task intents - task constructs only
-  ForallIntents*      forallIntents; // only for forall-body blocks
 
 private:
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
@@ -308,9 +303,6 @@ extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 // Probably belongs in Expr; doesn't really mean Stmt, but rather
 // statement-level expression.
 void         codegenStmt(Expr* stmt);
-
-// Serving ForallStmt and forall intents.
-bool isDirectlyUnderBlockStmt(const Expr* expr);
 
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,
 // if possible; NULL otherwise.

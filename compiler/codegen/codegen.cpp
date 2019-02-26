@@ -1420,6 +1420,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
       }
     }
     fprintf(hdrfile, "\n};\n");
+    genGlobalInt("chpl_private_broadcast_table_len", i, false);
   }
 }
 
@@ -1864,6 +1865,8 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
           private_broadcastTableType, private_broadcastTable));
     info->lvt->addGlobalValue("chpl_private_broadcast_table",
                               private_broadcastTableGVar, GEN_PTR, true);
+    genGlobalInt("chpl_private_broadcast_table_len",
+                 private_broadcastTable.size(), false);
 #endif
   }
 

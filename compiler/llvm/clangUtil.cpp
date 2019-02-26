@@ -1684,14 +1684,22 @@ void runClang(const char* just_parse_filename) {
 
   // Note that these CC arguments will be saved in info->clangCCArgs
   // and will be used when compiling C files as well.
+  bool saw_sysroot = false;
   for( size_t i = 0; i < args.size(); ++i ) {
     clangCCArgs.push_back(args[i]);
+    if (args[i] == "-isysroot")
+      saw_sysroot = true;
   }
 
   for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
+  if (saw_sysroot) {
+    // Work around a bug in some versions of Clang that forget to
+    // search /usr/local/include if there is a -isysroot argument.
+    clangCCArgs.push_back(std::string("-I/usr/local/include"));
+  }
 
   //split ccflags by spaces
   std::stringstream ccArgsStream(ccflags);
@@ -2921,9 +2929,12 @@ void makeBinaryLLVM(void) {
   readArgsFromFile(sysroot_arguments, sysroot_args);
 
   // add arguments from configured-clang-sysroot-arguments
+  bool saw_sysroot = false;
   for (auto &s : sysroot_args) {
     options += " ";
     options += s;
+    if (s == "-isysroot")
+      saw_sysroot = true;
   }
   // add arguments that we captured at compile time
   options += " ";
@@ -2991,6 +3002,11 @@ void makeBinaryLLVM(void) {
   for_vector(const char, dirName, libDirs) {
     command += " -L";
     command += dirName;
+  }
+  if (saw_sysroot) {
+    // Work around a bug in some versions of Clang that forget to
+    // search /usr/local/lib if there is a -isysroot argument.
+    command += " -L/usr/local/lib";
   }
   for_vector(const char, libName, libFiles) {
     command += " -l";

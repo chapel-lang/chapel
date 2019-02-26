@@ -128,7 +128,7 @@ module Random {
      `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
     :type seed: `int(64)`
 
-    :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
+    :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
     :type algorithm: :type:`RNG`
   */
   proc fillRandom(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
@@ -156,6 +156,7 @@ module Random {
     var randNums = makeRandomStream(seed, eltType=arr.domain.idxType, parSafe=false, algorithm=algorithm);
     randNums.shuffle(arr);
   }
+
 
   /* Produce a random permutation, storing it in a 1-D array.
      The resulting array will include each value from low..high
@@ -192,7 +193,7 @@ module Random {
     :arg parSafe: The parallel safety setting.  Defaults to `true`.
     :type parSafe: `bool`
 
-    :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
+    :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
     :type algorithm: :type:`RNG`
 
     :returns: an owned RandomStream
@@ -207,6 +208,184 @@ module Random {
       return new owned NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
     else
       compilerError("Unknown random number generator");
+  }
+
+  pragma "no doc"
+  /* Actual implementation of choice() */
+  proc _choice(stream, arr: [], size:?sizeType, replace, prob:?probType)
+    throws
+  {
+
+    if arr.rank != 1 {
+      compilerError('choice() array must be 1 dimensional');
+    }
+    if arr.size < 1 {
+      throw new owned IllegalArgumentError('choice() array.size must be greater than 0');
+    }
+
+    // Check types of optional void args
+    if !isVoidType(probType) {
+      if !isArrayType(probType) then
+        compilerError('choice() prob must be an array');
+      if !(isIntegralType(prob.eltType) || isRealType(prob.eltType)) then
+        compilerError('choice() prob.eltType must be real or integral');
+      if prob.rank != 1 {
+        compilerError('choice() prob array must be 1 dimensional');
+      }
+
+      if prob.domain != arr.domain {
+        throw new owned IllegalArgumentError('choice() array arguments must have same domain');
+      }
+    }
+    if !isVoidType(sizeType) {
+      if isIntegralType(sizeType) {
+        if size <= 0 then
+        throw new owned IllegalArgumentError('choice() size must be greater than 0');
+      } else if !isDomainType(sizeType) {
+        compilerError('choice() size must be integral or domain');
+      }
+    }
+
+    if isVoidType(probType) {
+      return _choiceUniform(stream, arr, size, replace);
+    } else {
+      return _choiceProbabilities(stream, arr, size, replace, prob);
+    }
+  }
+
+  pragma "no doc"
+  /* _choice branch for uniform distribution */
+  proc _choiceUniform(stream, arr:[], size:?sizeType, replace) throws
+  {
+    ref A = arr.reindex(1..arr.size);
+
+    if isVoidType(sizeType) {
+      // Return 1 sample
+      var randIdx = stream.getNext(resultType=int, 1, A.size);
+      return A[randIdx];
+    } else {
+      // Return numElements samples
+
+      // Compute numElements for tuple case
+      var m = 1;
+      if isDomainType(sizeType) then m = size.size;
+
+      var numElements = if isDomainType(sizeType) then m
+                        else if isIntegralType(sizeType) then size:int
+                        else compilerError('choice() size type must be integral or tuple of ranges');
+
+      // Return N samples
+      var samples: [1..numElements] A.eltType;
+
+      if replace {
+        for sample in samples {
+          var randIdx = stream.getNext(resultType=int, 1, A.size);
+          sample = A[randIdx];
+        }
+      } else {
+        var indices: [A.domain] int = A.domain;
+        shuffle(indices);
+        for i in samples.domain {
+          samples[i] = A[indices[i]];
+        }
+      }
+      if isIntegralType(sizeType) {
+        return samples;
+      } else if isDomainType(sizeType) {
+        return reshape(samples, size);
+      }
+    }
+  }
+
+  pragma "no doc"
+  /* _choice branch for distribution defined by probabilities array */
+  proc _choiceProbabilities(stream, arr:[], size:?sizeType, replace, prob:?probType) throws
+  {
+    use Search only;
+    use Sort only;
+
+    // If stride, offset, or size don't match, we're in trouble
+    if arr.domain != prob.domain then
+      throw new owned IllegalArgumentError('choice() arrays must have equal domains');
+
+    if prob.size == 0 then
+      throw new owned IllegalArgumentError('choice() arrays cannot be empty');
+
+    ref A = arr.reindex(1..arr.size);
+    ref P = prob.reindex(1..arr.size);
+
+    // Construct cumulative sum array
+    var cumulativeArr = (+ scan P): real;
+
+    if !Sort.isSorted(cumulativeArr) then
+      throw new owned IllegalArgumentError("choice() prob array cannot contain negative values");
+
+    // Confirm the array has at least one value > 0
+    if cumulativeArr[P.domain.last] <= 0 then
+      throw new owned IllegalArgumentError('choice() prob array requires a value greater than 0');
+
+    // Normalize cumulative sum array
+    var total = cumulativeArr[P.domain.last];
+    cumulativeArr /= total;
+
+    // Begin sampling
+    if isVoidType(sizeType) {
+      // Return 1 sample
+      var randNum = stream.getNext(resultType=real);
+      var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
+      return A[idx];
+    } else {
+      // Return numElements samples
+
+      // Compute numElements for tuple case
+      var m = 1;
+      if isDomainType(sizeType) then m = size.size;
+
+      var numElements = if isDomainType(sizeType) then m
+                        else if isIntegralType(sizeType) then size:int
+                        else compilerError('choice() size type must be integral or tuple of ranges');
+
+      // Return N samples
+      var samples: [1..numElements] arr.eltType;
+
+      if replace {
+        for sample in samples {
+          var randNum = stream.getNext(resultType=real);
+          var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
+          sample = A[idx];
+        }
+      } else {
+        var indicesChosen: domain(int);
+        var i = 1;
+        while indicesChosen.size < samples.size {
+
+          // Recalculate normalized cumulativeArr
+          if indicesChosen.size > 0 {
+            cumulativeArr = (+ scan P): real;
+            total = cumulativeArr[P.domain.last];
+            cumulativeArr /= total;
+          }
+
+          var remainingSamples = samples.size - indicesChosen.size;
+          for randNum in stream.iterate({1..(samples.size - indicesChosen.size)}, resultType=real) {
+            // A potential optimization: Generate rand nums ahead of time
+            // and do a multi-target binary search to find all of their positions
+            var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
+            if !indicesChosen.contains(indexChosen) {
+              indicesChosen += indexChosen;
+              samples[i] += A[indexChosen];
+              i += 1;
+            }
+            P[indexChosen] = 0;
+          }
+        }
+      }
+      if isIntegralType(sizeType) {
+        return samples;
+      } else if isDomainType(sizeType) {
+        return reshape(samples, size);
+      }
+    }
   }
 
   /*
@@ -325,6 +504,40 @@ module Random {
     pragma "no doc"
     proc fillRandom(arr: []) {
       compilerError("RandomStreamInterface.fillRandom called");
+    }
+
+
+    /*
+     Returns a random sample from a given 1-D array, ``arr``.
+
+     :arg arr: a 1-D array with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``arr``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The domain must be equal to that of ``arr.domain``.
+
+     :return: An element chosen from ``arr`` is ``size == 1``, or an array of
+              element chosen from ``arr`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``arr.size == 0``,
+                                   if ``arr`` contains a negative value,
+                                   if ``arr`` has no non-zero values.,
+                                   if ``arr.domain != prob.domain``,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > arr.size || size.size > arr.size``
+     */
+    proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void) throws
+    {
+      compilerError("RandomStreamInterface.choice called");
     }
 
     /*
@@ -630,7 +843,7 @@ module Random {
       }
       /*
         Return the next random value but within a particular range.
-        Returns a number in [`min`, `max`] (inclusive).
+        Returns a number in [`min`, `max`] (inclusive). Halts if checks are enabled and ``min > max``.
 
         .. note::
 
@@ -648,6 +861,9 @@ module Random {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
 
+        if boundsChecking && min > max then
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max +  "]");
+
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType,min,max);
         if parSafe then
           PCGRandomStreamPrivate_lock$;
@@ -661,6 +877,9 @@ module Random {
                    min: resultType, max:resultType): resultType {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
+
+        if boundsChecking && min > max then
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max + "]");
 
         const result = PCGRandomStreamPrivate_getNext_noLock(resultType,min,max);
         if parSafe then
@@ -722,6 +941,40 @@ module Random {
       proc fillRandom(arr: [] eltType) {
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
           x = r;
+      }
+
+      /*
+     Returns a random sample from a given 1-D array, ``arr``.
+
+     :arg arr: a 1-D array with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``arr``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The domain must be equal to that of ``arr.domain``.
+
+     :return: An element chosen from ``arr`` is ``size == 1``, or an array of
+              element chosen from ``arr`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``arr.size == 0``,
+                                   if ``arr`` contains a negative value,
+                                   if ``arr`` has no non-zero values.,
+                                   if ``arr.domain != prob.domain``,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > arr.size || size.size > arr.size``
+     */
+      proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
+        throws
+      {
+        return _choice(this, arr, size=size, replace=replace, prob=prob);
       }
 
       /* Randomly shuffle a 1-D array. */
@@ -2199,6 +2452,13 @@ module Random {
       proc fillRandom(arr: []) {
         compilerError("NPBRandomStream(eltType=", eltType:string,
                       ") can only be used to fill arrays of ", eltType:string);
+      }
+
+      pragma "no doc"
+      proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
+        throws
+      {
+        compilerError("NPBRandomStream.choice() is not supported.");
       }
 
       /*

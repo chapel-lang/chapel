@@ -10,4 +10,3 @@ chpl_opaque_array
 0 0 0 0
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-warning: clean up of this array type might leak memory

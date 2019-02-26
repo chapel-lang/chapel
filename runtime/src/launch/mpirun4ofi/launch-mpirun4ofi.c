@@ -39,11 +39,10 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
                     (char*) _nlbuf,
                     (char*) "-map-by",
                     (char*) "ppr:1:node",
-                    (char*) "-mca",
-                    (char*) "rmaps_base_oversubscribe",
-                    (char*) "true",
+                    (char*) "-map-by",
+                    (char*) "node:oversubscribe",
                     (char*) "-bind-to",
-                    (char*) "none:overload-allowed",
+                    (char*) "none",
                   };
   const int largc = sizeof(largv) / sizeof(largv[0]);
   return chpl_bundle_exec_args(argc, argv, largc, largv);

@@ -44,7 +44,6 @@ class LoopExpr;
 
 class UseStmt;
 class BlockStmt;
-class ForallIntents;
 class ForallStmt;
 class WhileDoStmt;
 class DoWhileStmt;
@@ -142,7 +141,6 @@ public:
   virtual bool   enterBlockStmt      (BlockStmt*         node) = 0;
   virtual void   exitBlockStmt       (BlockStmt*         node) = 0;
 
-  virtual void   visitForallIntents  (ForallIntents*   clause) = 0;
   virtual bool   enterForallStmt     (ForallStmt*        node) = 0;
   virtual void   exitForallStmt      (ForallStmt*        node) = 0;
 

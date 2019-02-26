@@ -364,6 +364,14 @@ all:
       config: 16 node XC
   01/07/19:
     - Default to cstdlib atomics for gcc >= 5 (#11963)
+  02/06/19:
+    - text: Reduce contention on ugni's comm domains (#12240)
+      config: 16 node XC
+  02/07/19:
+    - text: Simplify how we acquire comm domains in ugni (#12258)
+      config: 16 node XC
+  02/08/19:
+    - replace PRIM_INIT with PRIM_DEFAULT_INIT_VAR (#12154)
 
 
 AllCompTime:
@@ -755,7 +763,7 @@ jacobi:
     - No-alias hints for LLVM (no compiler perf impact) (#11324)
   12/14/18:
     - Allow underscores in the number when casting from string to integral (#11880)
-  01/22/18:
+  01/22/19:
     - Catch blocks catch owned, test code throws owned (#12090)
 
 knucleotide:
@@ -1232,6 +1240,8 @@ revcomp:
     - Use zero-arg initializer in BaseDom (#9250)
   10/30/18:
     - Improve string comparisons (#11479)
+  02/05/19:
+    - Make stdout, stderr ordering predictable in test output (#12236)
 
 sad:
   05/03/16:
@@ -1240,8 +1250,10 @@ sad:
 search:
   04/20/17:
     - Update RE2 (#6024)
-  05/26/18:
+  04/26/18:
     - Update tuples to use special function instead of constructors (#9317)
+  12/14/18:
+    - Tuple iteration yields (const) refs (#11866)
 
 spectralnorm:
   01/21/15:

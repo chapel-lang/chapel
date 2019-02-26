@@ -1,4 +1,0 @@
-promotion.chpl:51: error: non-lvalue actual is passed to 'ref' formal 'x' of maybeCopy()
-promotion.chpl:106: note: The shadow variable 'x' is constant due to forall intents in this loop
-promotion.chpl:109: error: non-lvalue actual is passed to 'ref' formal 'x' of maybeCopy()
-promotion.chpl:108: note: The shadow variable 'r' is constant due to forall intents in this loop

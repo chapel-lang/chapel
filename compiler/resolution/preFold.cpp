@@ -944,9 +944,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
     // Convert this 'call' into a call to accumulateOntoState().
-    INT_ASSERT(call->numActuals() == 3);
-    Expr*         rhs       = call->get(3)->remove();
-    Expr*         lhs       = call->get(2)->remove();
+    INT_ASSERT(call->numActuals() == 2);
+    Expr*         rhs       = call->get(2)->remove();
+    Expr*         lhs       = call->get(1)->remove();
     ShadowVarSymbol*   svar = toShadowVarSymbol(toSymExpr(lhs)->symbol());
     Symbol*       globalOp  = svar->ReduceOpForAccumState();
 

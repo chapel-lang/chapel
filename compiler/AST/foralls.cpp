@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-#include "foralls.h"
-
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "DeferStmt.h"
@@ -52,166 +50,13 @@ const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
 }
 
 
-/////////////////////////////////
-// ForallIntents
-/////////////////////////////////
+/////////////////////
+//                 //
+// parser support  //
+//                 //
+/////////////////////
 
-// constructor
-ForallIntents::ForallIntents() :
-  iterRec(NULL),
-  leadIdx(NULL),
-  leadIdxCopy(NULL)
-{}
-
-ForallIntents* ForallIntents::copy(SymbolMap* map, bool internal) {
-  // If this fails, see localMap and update_symbols() in DECLARE_COPY().
-  // NB we can't DECLARE_COPY(ForallIntents) because it has _this->astloc.
-  INT_ASSERT(map && internal);
-
-  // Start would-be copyInner().
-  ForallIntents* _this = new ForallIntents();
-
-  // alas std::vector does not have a constructor that "reserves" slots
-  int nv = numVars();
-  _this->fiVars.reserve(nv);
-  _this->fIntents.reserve(nv);
-  _this->riSpecs.reserve(nv);
-
-  for (int i = 0; i < nv; i++) {
-    _this->fiVars  .push_back(COPY_INT(fiVars[i]));
-    _this->fIntents.push_back(         fIntents[i]);
-    _this->riSpecs .push_back(COPY_INT(riSpecs[i]));
-  }
-
-  _this->iterRec     = COPY_INT(iterRec);
-  _this->leadIdx     = COPY_INT(leadIdx);
-  _this->leadIdxCopy = COPY_INT(leadIdxCopy);
-
-  // Finish would-be copyInner().
-  // No update_symbols() because !internal is false.
-
-  return _this;
-}
-
-//
-// Returns true if the child has been found (and replaced).
-//
-bool ForallIntents::replaceChildFI(Expr* oldAst, Expr* newAst) {
-  INT_ASSERT(oldAst != NULL);
-#define UPDATE(dest, newNode) \
-    if ((dest) == oldAst) { (dest) = newNode; return true; }
-
-  for (std::vector<Expr*>::iterator itv = fiVars.begin();
-       itv != fiVars.end(); itv++)
-    UPDATE(*itv, newAst);
-    
-  for (std::vector<Expr*>::iterator itr = riSpecs.begin();
-       itr != riSpecs.end(); itr++)
-    UPDATE(*itr, newAst);
-
-  // Does this ever get invoked with newAst==NULL?
-  // If so, the 'if' should read "if (newSE || !newAst)".
-  INT_ASSERT(newAst);
-  if (SymExpr* newSE = toSymExpr(newAst)) {
-    UPDATE(iterRec,     newSE);
-    UPDATE(leadIdx,     newSE);
-    UPDATE(leadIdxCopy, newSE);
-  }
-  
-  // nothing matched
-#undef UPDATE
-  return false;
-}
-
-// This is intended to mimick Expr::remove(), without 'this' being an Expr.
-void ForallIntents::removeFI(Expr* parentB) {
-  // If this fails need to use trace_remove() instead of remove_help()
-  // - see Expr::remove().
-  INT_ASSERT(parentB->parentSymbol);
-
-  // "Remove" all ASTs that 'this' contains.
-#define REMOVE(dest) if (dest) remove_help(dest, 'r')
-
-  for_vector(Expr, var, fiVars) REMOVE(var);
-  for_riSpecs_vector(ri, this)  REMOVE(ri);
-  REMOVE(iterRec);
-  REMOVE(leadIdx);
-  REMOVE(leadIdxCopy);
-
-#undef REMOVE    
-}
-
-void ForallIntents::verifyFI(Expr* parentE) const {
-  int nv = numVars();
-  INT_ASSERT((int)(fiVars.size())   == nv);
-  INT_ASSERT((int)(fIntents.size()) == nv);
-  INT_ASSERT((int)(riSpecs.size())  == nv);
-
-  for (int i = 0; i < nv; i++) {
-    Expr* fiVar = fiVars[i];
-    if (SymExpr* fiVarSE = toSymExpr(fiVar)) {
-      INT_ASSERT(isVarSymbol(fiVarSE->symbol()) ||
-                 isArgSymbol(fiVarSE->symbol()));  // no modules, fns, etc.
-    } else {
-      // fiVars[i] is either resolved or unresolved sym expr; never NULL.
-      INT_ASSERT(isUnresolvedSymExpr(fiVar));
-      // These should be resolved during scopeResolve.
-      INT_ASSERT(!normalized);
-    }
-    verifyNotOnList(fiVar);
-    INT_ASSERT(fiVar->parentExpr == parentE);
-
-    Expr* ri = riSpecs[i];
-    INT_ASSERT(isReduce(i) == !!ri);
-    if (ri) {
-      // ri can be UnresolvedSymExpr, SymExpr, CallExpr, ... (?)
-      verifyNotOnList(ri);
-      INT_ASSERT(ri->parentExpr == parentE);
-    }
-  }
-
-  INT_ASSERT(!iterRec || iterRec->parentExpr == parentE);
-  INT_ASSERT(!leadIdx || leadIdx->parentExpr == parentE);
-  INT_ASSERT(!leadIdxCopy || leadIdxCopy->parentExpr == parentE);
-  verifyNotOnList(iterRec);
-  verifyNotOnList(leadIdx);
-  verifyNotOnList(leadIdxCopy);
-
-  // ForallIntents are gone during resolve().
-  INT_ASSERT(!resolved);
-}
-
-void ForallIntents::acceptFI(AstVisitor* visitor) {
-  visitor->visitForallIntents(this);
-}
-
-
-//
-// parser support
 // These functions report a user error for an unexpected intent.
-//
-
-static ForallIntentTag argIntentToForallIntent(Expr* ref, IntentTag intent) {
-  switch (intent) {
-    case INTENT_IN:        return TFI_IN;
-    case INTENT_CONST:     return TFI_CONST;
-    case INTENT_CONST_IN:  return TFI_CONST_IN;
-    case INTENT_REF:       return TFI_REF;
-    case INTENT_CONST_REF: return TFI_CONST_REF;
-    case INTENT_BLANK:     return TFI_DEFAULT;
-
-    case INTENT_OUT:
-    case INTENT_INOUT:
-    case INTENT_PARAM:
-    case INTENT_TYPE:
-    case INTENT_REF_MAYBE_CONST:
-      USR_FATAL_CONT(ref, "%s is not supported in a 'with' clause",
-                          intentDescrString(intent));
-      return TFI_DEFAULT;
-  }
-  INT_ASSERT(false); // unexpected IntentTag; 'intent' contains garbage?
-  return TFI_DEFAULT; // dummy
-}
 
 static ShadowVarSymbol* buildShadowVariable(ShadowVarPrefix prefix,
                                             const char* name, Expr* ovar)
@@ -304,6 +149,7 @@ static ShadowVarSymbol* buildTaskPrivateVariable(ShadowVarPrefix prefix,
 //
 // The returned ShadowVarSymbol comes with a DefExpr in its defPoint.
 //
+
 ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
                                     Expr* nameExp, Expr* type, Expr* init)
 {
@@ -316,7 +162,6 @@ ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
     return buildTaskPrivateVariable(prefix, nameString, nameExp, type, init);
 }
 
-
 ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
                                                         Expr* riExpr)
 {
@@ -327,41 +172,9 @@ ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
   return result;
 }
 
-// old style
-void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
-  ForallIntentTag tfi = ri ? TFI_REDUCE : argIntentToForallIntent(var, intent);
-  fi->fiVars.push_back(var);
-  fi->fIntents.push_back(tfi);
-  fi->riSpecs.push_back(ri);
-}
-
-// new style
 void addForallIntent(CallExpr* call, ShadowVarSymbol* svar) {
   call->insertAtTail(svar->defPoint);
 }
-
-//
-// Returns true if 'ast' is directly under 'fi'.
-// BTW in this case fi's enclosing BlockStmt is ast's parentExpr.
-// BTW we could use AST_CALL_STDVEC/AST_CALL_CHILD for a "directly or
-//  indirectly under fi" check, although we'd need extra effort
-//  to make them return a bool and abort early if the answer is known.
-//
-bool astUnderFI(const Expr* ast, ForallIntents* fi) {
-  if (!fi) return false;
-
-#define CHECK(arg) { if (((Expr*)(arg)) == ast) return true; }
-
-  for_vector(Expr, var, fi->fiVars) CHECK(var);
-  for_riSpecs_vector(ri, fi)        CHECK(ri);
-  CHECK(fi->iterRec);
-  CHECK(fi->leadIdx);
-  CHECK(fi->leadIdxCopy);
-
-#undef CHECK
-  // none found
-  return false;
-}  
 
 
 /////////////////////////////////////////////////////
@@ -395,135 +208,46 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
 //  * follower iterator(s), if needed, are invoked from within the leader loop
 //  * all inductionVariables()' DefExprs are moved to the original loop body
 
-/////////// fsIterYieldType ///////////
-static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
-                                     FnSymbol* origIterFn,
-                                     bool alreadyResolved);
+enum ParIterFlavor {
+  PIF_NONE,
+  PIF_SERIAL,     // can mean "using directly the indicated iterator"
+  PIF_STANDALONE,
+  PIF_LEADER
+};
 
-/*
-When we are dealing with a recursive parallel iterator, we call
-fsIterYieldType() while resolving it. At that time, IteratorInfo
-has not been created yet. Also the yield type is not yet available
-anywhere, because it is the type of a tuple of the original return type
-plus one component per shadow variable.
+/////////// helpers ///////////
 
-Ex. standalone iter walkdirs() in FileSystem module, as tested by:
-  test/library/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+// Given an iterator or forwarder function, find the type that it yields.
+static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn) {
+  INT_ASSERT(iterFn->isResolved());
 
-Therefore we compute this extended yield type manually.
-*/
-static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymbol* origIterFn) {
-  if (fs->numShadowVars() == 0) {
-    // The iterator has not undergone extendLeader().
-    // It still yields whatever the user wrote.
-    // Its return symbol is still in tact.
-
-    QualifiedType result(iterFn->getReturnSymbol()->type);
-    // What is the right qualifier?
-    return result;
-  }
-
-  // Otherwise, build the tuple mocking what iterFn yields, supposedly.
-  CallExpr* constup = new CallExpr("_type_construct__tuple");
-
-  // Yield type must have been declared by user for recursive iterator,
-  // and the function that declaration is attached to is origIterFn.
-  bool alreadyResolved = origIterFn->isResolved();
-  QualifiedType origQt = fsIterYieldType(fs, origIterFn, NULL, alreadyResolved);
-  Type* origYieldedType = origQt.type();
-
-  INT_ASSERT(origYieldedType && origYieldedType != dtUnknown);
-  constup->insertAtTail(origYieldedType->symbol);
-
-  // The other tuple components are refs to shadow variables,
-  // so their types come from respective outer variables.
-  for_shadow_vars(svar, temp, fs) {
-    Symbol* ovar = NULL;
-    switch (svar->intent) {
-      case TFI_DEFAULT:
-      case TFI_CONST:
-      case TFI_IN_PARENT:
-      case TFI_IN:
-      case TFI_CONST_IN:
-      case TFI_REF:
-      case TFI_CONST_REF:
-        ovar = svar->outerVarSym();
-        break;
-
-      case TFI_REDUCE:
-        // ... except for reduce intents - they are TODO.
-        USR_FATAL_CONT(svar, "Reduce intents are currently not implemented"
-          " for forall- or for-loops over recursive parallel iterators");
-        USR_PRINT(iterFn, "the parallel iterator is here");
-        USR_STOP();
-        break;
-
-      case TFI_REDUCE_OP:
-      case TFI_REDUCE_PARENT_AS:
-      case TFI_REDUCE_PARENT_OP:
-        // The error should have been issued above upon TFI_REDUCE.
-        break;
-
-      case TFI_TASK_PRIVATE:
-        // task-private variables are TODO too.
-        USR_FATAL_CONT(svar,
-          "Task-private variables are currently not implemented"
-          " for forall- or for-loops over recursive parallel iterators");
-        USR_PRINT(iterFn, "the parallel iterator is here");
-        USR_STOP();
-        break;
-    }
-    INT_ASSERT(ovar != NULL);
-    INT_ASSERT(ovar->type != dtUnknown);
-
-    constup->insertAtTail(ovar->type->getRefType()->symbol);
-  }
-
-  int numComponents = constup->numActuals();
-  constup->insertAtHead(new_IntSymbol(numComponents));
-
-  // Resolve it now.
-  fs->insertBefore(constup);
-  resolveCall(constup);
-  constup->remove();
-
-  // What is the right qualifier?
-  QualifiedType result(constup->qualType().type());
-  return result;
-}
-
-//
-// Given an iterator function, find the type that it yields.
-// It would be fn->retType, alas protoIteratorClass() messes with that.
-// This helper is ForallStmt-specific because of the assumptions it makes.
-//
-static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
-                                     FnSymbol* origIterFn,
-                                     bool alreadyResolved)
-{
   if (iterFn->isIterator()) {
     if (IteratorInfo* ii = iterFn->iteratorInfo) {
       return ii->getValue->getReturnQualType();
     } else {
       // We are in the midst of resolving a recursive iterator.
-      INT_ASSERT(alreadyResolved);
-      return buildIterYieldType(fs, iterFn, origIterFn);
+      USR_FATAL_CONT(fs, "the recursion pattern seen in the first iterable"
+                         " in this forall loop is not supported");
+      USR_PRINT(iterFn, "the corresponding iterator is here");
+      USR_PRINT(iterFn, "try declaring its return type");
+      USR_STOP();
+      QualifiedType dummy(dtUnknown);
+      return dummy;
     }
+
   } else {
-    // e.g. "proc these() return _value.these();"
+    // An iterator forwarder, ex. "proc these() return _value.these();"
     AggregateType* retType = toAggregateType(iterFn->retType);
     INT_ASSERT(retType && retType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
     FnSymbol* iterator = retType->iteratorInfo->iterator;
-    INT_ASSERT(iterator->isIterator()); // no more recursion?
-    return fsIterYieldType(fs, iterator, origIterFn, alreadyResolved);
+    INT_ASSERT(iterator->isIterator()); // 'iterator' is from an IteratorInfo
+    return fsIterYieldType(fs, iterator);
   }
 }
-
 
 static bool isIteratorRecord(Symbol* sym) {
   return sym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD);
 }
-
 
 static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
 {
@@ -720,11 +444,10 @@ static void checkForExplicitTagArgs(CallExpr* iterCall) {
   }
 }
 
-static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall,
-                                   SymExpr* origSE, FnSymbol* origTarget)
+static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
+                                 SymExpr* origSE, FnSymbol* origTarget)
 {
-  bool gotParallel = false;
-  bool gotSA = true;
+  ParIterFlavor retval = PIF_NONE;
 
   checkForExplicitTagArgs(iterCall);
 
@@ -735,31 +458,32 @@ static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall,
 
   // try standalone
   if (!pfs->zippered()) {
-    gotParallel = tryResolveCall(iterCall);
+    bool gotSA = tryResolveCall(iterCall);
+    if (gotSA) retval = PIF_STANDALONE;
   }
 
   // try leader
-  if (!gotParallel) {
-    gotSA = false;
+  if (retval == PIF_NONE) {
     tag->actual->replace(new SymExpr(gLeaderTag));
-    gotParallel = tryResolveCall(iterCall);
+    bool gotLeader = tryResolveCall(iterCall);
+    if (gotLeader) retval = PIF_LEADER;
   }
 
   // try serial
-  if (!gotParallel && pfs->allowSerialIterator()) {
-    gotSA = true;
+  if (retval == PIF_NONE && pfs->allowSerialIterator()) {
     tag->remove();
     if (origTarget != NULL) {
-      gotParallel = true;
+      retval = PIF_SERIAL;
       iterCall->baseExpr->replace(new SymExpr(origTarget));
     } else {
       // Iterating over a variable that does not have parallel .these() iters.
       INT_ASSERT(! isIteratorRecord(origSE->symbol()));
-      gotParallel = tryResolveCall(iterCall);
+      bool gotSerial = tryResolveCall(iterCall);
+      if (gotSerial) retval = PIF_SERIAL;
     }
   }
 
-  if (!gotParallel) {
+  if (retval == PIF_NONE) {
     // Cannot USR_FATAL_CONT in general: e.g. if these() is not found,
     // we do not know the type of the index variable.
     // Without which we cannot typecheck the loop body.
@@ -769,8 +493,141 @@ static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall,
       USR_FATAL(iterCall, "A%s leader iterator is not found for the iterable expression in this forall loop", pfs->zippered() ? "" : " standalone or");
   }
 
-  return gotSA;
+  return retval;
 }
+
+/////////// handleZipperedSerial /////////// 
+
+static FnSymbol* trivialLeader          = NULL;
+static Type*     trivialLeaderYieldType = NULL;
+
+static void hzsCheckParallelIterator(ForallStmt* fs, FnSymbol* origIterFn) {
+  if (isLeaderIterator(origIterFn) || isStandaloneIterator(origIterFn)) {
+    USR_FATAL(fs->iteratedExpressions().head, "Support for this combination of zippered iterators is not currently implemented");
+  }
+}
+
+// Return a _build_tuple of fs's index variables.
+static CallExpr* hzsMakeIndices(ForallStmt* fs) {
+  CallExpr* indices = new CallExpr("_build_tuple");
+
+  for_alist(inddef, fs->inductionVariables())
+    indices->insertAtTail(toDefExpr(inddef)->sym);
+
+  // Todo detect the case where the forall loop in the source code
+  // had a single index variable. We can tell that by checking whether
+  // all 'inddef' vars are fed into a _build_tuple_always_allow_ref call.
+  // If so, simplify the AST by having 'indices' be a single SymExpr
+  // that is PRIM_MOVE'ed to from that call.
+
+  return indices;
+}
+
+// Return a PRIM_ZIP of fs's iterables.
+static CallExpr* hzsMakeIterators(ForallStmt* fs, FnSymbol* origIterFn,
+                                  SymExpr* origSE)
+{
+  // Looks like the first of the iterables is a copy of the def of origSE.
+  // So use origSE instead.
+  CallExpr* iter1 = toCallExpr(fs->firstIteratedExpr());
+  INT_ASSERT(iter1->resolvedFunction() == origIterFn);
+  iter1->replace(origSE); // relies on origSE not inTree()
+
+  // Move all iterables to the zip call.
+  CallExpr* iterators = new CallExpr(PRIM_ZIP);
+  for_alist(iter, fs->iteratedExpressions()) {
+    iterators->insertAtTail(iter->remove());
+  }
+
+  return iterators;
+}
+
+// Wrap fs's loopBody in a zippered ForLoop over fs's iterables.
+static void hzsBuildZipperedForLoop(ForallStmt* fs, FnSymbol* origIterFn,
+                                    SymExpr* origSE)
+{
+  CallExpr* indices   = hzsMakeIndices(fs);
+  CallExpr* iterators = hzsMakeIterators(fs, origIterFn, origSE);
+
+  BlockStmt* origLoopBody = fs->loopBody();
+  BlockStmt* newLoopBody  = new BlockStmt();
+  origLoopBody->replace(newLoopBody);
+
+  BlockStmt* forBlock = ForLoop::buildForLoop(indices, iterators,
+                                              origLoopBody, false, true);
+  newLoopBody->insertAtTail(forBlock);
+
+  ForLoop* forLoop = toForLoop(origLoopBody->parentExpr);
+
+  SymExpr* loopIterDef = forLoop->iteratorGet()->symbol()->getSingleDef();
+  normalize(loopIterDef->parentExpr); // because of buildForLoop()
+
+  // Move the index variables' DefExprs to 'forLoop'.
+  while (Expr* inddef = fs->inductionVariables().tail)
+    forLoop->insertAtHead(inddef->remove());
+
+  origLoopBody->flattenAndRemove();
+  forBlock->flattenAndRemove();
+}
+
+// Use 'trivialLeader' as fs's parallel iterator.
+static CallExpr* hzsCallTrivialParIter(ForallStmt* fs) {
+  CallExpr* result = NULL;
+
+  if (trivialLeader == NULL) {
+    result = new CallExpr("chpl_trivialLeader");
+    rootModule->block->insertAtTail(result);
+    resolveCallAndCallee(result, false);
+    result->remove();
+
+    trivialLeader = result->resolvedFunction();
+    trivialLeaderYieldType = trivialLeader->iteratorInfo->getValue->retType;
+
+  } else {
+    result = new CallExpr(trivialLeader);
+  }
+
+  VarSymbol* trivialIdx = newTemp("chpl_trivialIdx", trivialLeaderYieldType);
+  trivialIdx->addFlag(FLAG_INDEX_VAR);
+
+  fs->inductionVariables().insertAtTail(new DefExpr(trivialIdx));
+  fs->iteratedExpressions().insertAtTail(result);
+
+  return result;
+}
+
+/*
+Background:
+
+ForallStmt lowering requires a single iterator to inline.
+For a non-zippered loop, it can be standalone or serial.
+For a zippered loop, it has to be a leader, with the followers
+being iterated over with a zippered regular ForLoop
+that we put in ForallStmt->loopBody().
+
+The case at hand:
+
+For a zippered loop over **serial** iterators, we do not have
+such a leader, as serial iterators cannot be "followed".
+So we give the ForallStmt a trivial leader, then have loopBody()
+be a regular ForLoop, zippered over these serial iterators.
+
+Retaining the ForallStmt itself means that forall intents, if any,
+will be hanled by existing code.
+*/
+static CallExpr* handleZipperedSerial(ForallStmt* fs, FnSymbol* origIterFn,
+                                      SymExpr* origSE)
+{
+  hzsCheckParallelIterator(fs, origIterFn);
+
+  hzsBuildZipperedForLoop(fs, origIterFn, origSE);
+
+  CallExpr* trivialCall = hzsCallTrivialParIter(fs);
+
+  return trivialCall;
+}
+
+/////////// final transformations /////////// 
 
 static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
   if (gotSA) {
@@ -845,10 +702,12 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
   INT_ASSERT(fs->numInductionVars() == 1);
 }
 
-static void checkForNonIterator(IteratorGroup* igroup, bool gotSA,
+static void checkForNonIterator(IteratorGroup* igroup, ParIterFlavor flavor,
                                 CallExpr* parCall)
 {
-  if (gotSA ? igroup->noniterSA : igroup->noniterL) {
+  if ((flavor == PIF_STANDALONE && igroup->noniterSA) ||
+      (flavor == PIF_LEADER     && igroup->noniterL)   )
+  {
     FnSymbol* dest = parCall->resolvedFunction();
     USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
     USR_PRINT(dest, "The function '%s' is declared here", dest->name);
@@ -861,15 +720,8 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
                                              FnSymbol* origIterator,
                                              bool gotSA)
 {
-  // The par iterator probably has been extendLeader()-ed for forall intents.
-  FnSymbol* parIter = iterCall->resolvedFunction();
-  bool alreadyResolved = parIter->isResolved();
-
-  resolveFunction(parIter);
-
   // Set QualifiedType of the index variable.
-  QualifiedType iType = fsIterYieldType(pfs, parIter,
-                                        origIterator, alreadyResolved);
+  QualifiedType iType = fsIterYieldType(pfs, iterCall->resolvedFunction());
 
   VarSymbol* idxVar = parIdxVar(pfs);
   if (idxVar->id == breakOnResolveID) gdbShouldBreakHere();
@@ -915,7 +767,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   INT_ASSERT(pfs->loopBody()->body.empty());
 
   BlockStmt* preFS           = new BlockStmt(BLOCK_SCOPELESS);
-  // cf in build.cpp: new ForLoop(leadIdx, leadIter, NULL, zippered)
   BlockStmt* leadForLoop     = pfs->loopBody();
 
   VarSymbol* iterRec         = newTemp("chpl__iterLF"); // serial iter, LF case
@@ -941,7 +792,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                 zippered);
 
   if (fNoFastFollowers == false) {
-    // from the original buildForallLoopStmt()
     Symbol* T1 = newTemp();
     Symbol* T2 = newTemp();
 
@@ -997,8 +847,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 
 void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall);
 
+/////////// resolveForallHeader, setupRecIterFields ///////////
 
-// see also comments above
+// Returns the next expression to resolve.
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 {
   CallExpr* retval = NULL;
@@ -1016,19 +867,25 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   INT_ASSERT(iterCall         == pfs->firstIteratedExpr());
   INT_ASSERT(origSE->inTree() == false);
 
-  // gotSA=true when we end up with standalone, original, or serial iter. 
-  bool gotSA = acceptUnmodifiedIterCall(pfs, iterCall) ||
-               findStandaloneOrLeader(pfs, iterCall, origSE, origTarget);
+  bool useOriginal = acceptUnmodifiedIterCall(pfs, iterCall);
+  ParIterFlavor flavor =
+    useOriginal ? PIF_SERIAL
+                : findParIter(pfs, iterCall, origSE, origTarget);
+
   resolveCallAndCallee(iterCall, false);
 
-  FnSymbol* origIterFn = iterCall->resolvedFunction();
+  // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
+  if (tryFailure) return NULL;
 
-  if (!tryFailure && origTarget) {
+  FnSymbol* origIterFn = iterCall->resolvedFunction();
+  bool gotSA = (flavor != PIF_LEADER); // "got Single iterAtor"
+
+  if (origTarget) {
     IteratorGroup* igroup = origTarget->iteratorGroup;
-    checkForNonIterator(igroup, gotSA, iterCall);
+    checkForNonIterator(igroup, flavor, iterCall);
 
     if (origTarget == origIterFn) {
-      INT_ASSERT(gotSA);
+      INT_ASSERT(flavor == PIF_SERIAL);
       INT_ASSERT(pfs->allowSerialIterator());
       INT_ASSERT(origIterFn == igroup->serial);
     } else if (gotSA) {
@@ -1038,9 +895,15 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
     }
   }
 
-  // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
-  if (tryFailure == false)
-  {
+  if (flavor == PIF_SERIAL && pfs->numIteratedExprs() > 1) {
+    // numIteratedExprs() is a good number to check, right?
+    INT_ASSERT(pfs->numIteratedExprs() == pfs->numInductionVars());
+
+    retval = handleZipperedSerial(pfs, origIterFn, origSE);
+
+    setupAndResolveShadowVars(pfs);
+
+  } else {
     addParIdxVarsAndRestruct(pfs, gotSA);
 
     resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
@@ -1086,7 +949,6 @@ void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall)
 {
   SET_LINENO(parIterCall);
 
-  // From the original buildStandaloneForallLoopStmt(), with "sa" -> "par".
   VarSymbol* iterRec = newTemp("chpl__iterPAR"); // serial iter, PAR case
   VarSymbol* parIter = newTemp("chpl__parIter");
   VarSymbol* parIdx  = parIdxVar(fs);
