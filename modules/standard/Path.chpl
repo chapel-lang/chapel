@@ -26,10 +26,9 @@
 
    .. note::
 
-      This module is currently missing the implementation for `absPath
-      <https://github.com/chapel-lang/chapel/issues/6005>`_, `expandUser
+      This module is currently missing the implementation for `expandUser
       <https://github.com/chapel-lang/chapel/issues/6008>`_, `normCase
-      <https://github.com/chapel-lang/chapel/issues/6015>`_, and `relPath
+      <https://github.com/chapel-lang/chapel/issues/6013>`_, and `relPath
       <https://github.com/chapel-lang/chapel/issues/6017>`_.  Once those are
       implemented, it will be considered complete.
 
@@ -46,6 +45,7 @@
 
    Path Manipulations
    ------------------
+   :proc:`absPath`
    :proc:`expandVars`
    :proc:`joinPath`
    :proc:`splitPath`
@@ -62,6 +62,7 @@
 */
 module Path {
 
+use FileSystem;
 use SysError;
 use Sys;
 
@@ -73,6 +74,41 @@ const curDir = ".";
 const parentDir = "..";
 /* Denotes the separator between a directory and its child. */
 const pathSep = "/";
+
+/*
+  Creates an absolute version of the path specified.  Equivalent to the call
+  :proc:`normPath`(:proc:`joinPath`(:proc:`cwd`(), name)) when the path is not
+  already absolute and returns the original string otherwise.
+
+  :arg name: the path whose absolute path is desired.
+  :type name: `string`
+
+  :return: An absolute version of the path specified
+  :rtype: `string`
+*/
+proc absPath(name: string): string throws {
+  if !isAbsPath(name) {
+    // The call to here.cwd() can throw and is not parallel safe.
+    const cwd = try here.cwd();
+    return normPath(joinPath(cwd, name));
+  }
+  
+  return normPath(name);
+}
+
+/*
+  Create an absolute version of the path in this :type:`~IO.file`.  Equivalent
+  to the call
+  :proc:`normPath`(:proc:`joinPath`(:proc:`cwd`(), :proc:`file.path`)) when
+  the path is not already absolute and returns the original :proc:`file.path`
+  otherwise.
+
+  :return: An absolute version of the path for this file
+  :rtype: `string`
+*/
+proc file.absPath(): string {
+  return "";
+}
 
 /* Returns the basename of the file name provided.  For instance:
 
