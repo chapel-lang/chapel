@@ -338,6 +338,7 @@ void convert_string_to_immediate(const char *str, Immediate *imm);
 const char* istrFromUserUint(long long unsigned int i);
 const char* istrFromUserInt(long long int i);
 const char* istrFromUserDouble(double i);
+const char* istrFromUserImag(double i);
 const char* istrFromUserComplex(double re, double im);
 
 #endif

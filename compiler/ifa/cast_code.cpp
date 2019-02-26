@@ -657,7 +657,6 @@ switch (to->const_kind) {
        INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
      } break;
    case NUM_KIND_REAL:
-   case NUM_KIND_IMAG:
      switch (from->num_index) {
      case FLOAT_SIZE_32:
        to->v_string = istrFromUserDouble(from->v_float32); break;
@@ -666,19 +665,28 @@ switch (to->const_kind) {
      default:
        INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
      } break;
-     case NUM_KIND_COMPLEX:
-       switch (from->num_index) {
-       case COMPLEX_SIZE_64:
-         to->v_string = istrFromUserComplex(from->v_complex64.r,
-                                            from->v_complex64.i);
-         break;
-       case COMPLEX_SIZE_128:
-         to->v_string = istrFromUserComplex(from->v_complex128.r,
-                                            from->v_complex128.i);
-         break;
-       default:
-         INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
-       } break;
+   case NUM_KIND_IMAG:
+     switch (from->num_index) {
+     case FLOAT_SIZE_32:
+       to->v_string = istrFromUserImag(from->v_float32); break;
+     case FLOAT_SIZE_64:
+       to->v_string = istrFromUserImag(from->v_float64); break;
+     default:
+       INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
+     } break;
+   case NUM_KIND_COMPLEX:
+     switch (from->num_index) {
+     case COMPLEX_SIZE_64:
+       to->v_string = istrFromUserComplex(from->v_complex64.r,
+                                          from->v_complex64.i);
+       break;
+     case COMPLEX_SIZE_128:
+       to->v_string = istrFromUserComplex(from->v_complex128.r,
+                                          from->v_complex128.i);
+       break;
+     default:
+       INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
+     } break;
    } break;
  case NUM_KIND_COMPLEX:
    switch (to->num_index) {

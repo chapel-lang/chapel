@@ -40,15 +40,21 @@ snprint_float_val(char* str, size_t max, double val, bool hex) {
     return numchars;
   }
 }
+static int
+snprint_imag_val(char* str, size_t max, double val, bool hex) {
+  int numchars = snprint_float_val(str, max, val, hex);
+  strncat(str, "i", max-numchars);
+  return numchars + 1;
+}
+
 
 static int
 snprint_complex_val(char* str, size_t max, double real, double imm) {
   int numchars = 0;
-  numchars += snprintf(str+numchars, max-numchars, "(");
   numchars += snprint_float_val(str+numchars, max-numchars, real, false);
-  numchars += snprintf(str+numchars, max-numchars, ",");
+  numchars += snprintf(str+numchars, max-numchars, " + ");
   numchars += snprint_float_val(str+numchars, max-numchars, imm, false);
-  numchars += snprintf(str+numchars, max-numchars, "i)");
+  numchars += snprintf(str+numchars, max-numchars, "i");
   return numchars;
 }
 /*
@@ -992,6 +998,14 @@ const char* istrFromUserDouble(double i) {
     INT_FATAL("istr buffer overflow");
   return astr(s);
 }
+
+const char* istrFromUserImag(double i) {
+  char s[64];
+  if (snprint_imag_val(s, sizeof(s), i, false) > (int) sizeof(s))
+    INT_FATAL("istr buffer overflow");
+  return astr(s);
+}
+
 
 const char* istrFromUserComplex(double re, double im) {
   char s[140];
