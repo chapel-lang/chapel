@@ -1,0 +1,16 @@
+AtomicT(int(64))
+1
+AtomicT(uint(64))
+2
+AtomicT(int(8))
+3
+AtomicT(int(64))
+4
+AtomicT(real(64))
+1.0
+AtomicT(real(32))
+2.0
+AtomicT(real(64))
+3.0
+AtomicBool
+true
