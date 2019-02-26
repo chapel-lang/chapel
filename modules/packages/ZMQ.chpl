@@ -383,7 +383,7 @@ module ZMQ {
     The :proc:`Socket.setsockopt()` option value to specify the linger period
     for the associated :record:`Socket` object.
    */
-  param LINGER = 1;//ZMQ_LINGER;
+  param LINGER = 17;//ZMQ_LINGER;
   private extern const ZMQ_LINGER: c_int;
 
   private extern const ZMQ_RECONNECT_IVL: c_int;
@@ -400,7 +400,7 @@ module ZMQ {
     The :proc:`Socket.getsockopt()` option value to retrieve the last endpoint
     bound for TCP/IPC transports on the associated :record:`Socket` object.
   */
-  param LAST_ENDPOINT = 2;//ZMQ_LAST_ENDPOINT;
+  param LAST_ENDPOINT = 32;//ZMQ_LAST_ENDPOINT;
   private extern const ZMQ_LAST_ENDPOINT: c_int;
 
   private extern const ZMQ_ROUTER_MANDATORY: c_int;
@@ -762,7 +762,7 @@ module ZMQ {
         var ret: string;
         on classRef.home {
           var str: c_string;
-          zmq_getsockopt_string_helper(classRef.socket, ZMQ_LAST_ENDPOINT, str);
+          zmq_getsockopt_string_helper(classRef.socket, option, str);
           ret = new string(str, needToCopy=false);
         }
         return ret;
