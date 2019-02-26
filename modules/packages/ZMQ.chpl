@@ -383,7 +383,7 @@ module ZMQ {
     The :proc:`Socket.setsockopt()` option value to specify the linger period
     for the associated :record:`Socket` object.
    */
-  const LINGER = ZMQ_LINGER;
+  param LINGER = 1;//ZMQ_LINGER;
   private extern const ZMQ_LINGER: c_int;
 
   private extern const ZMQ_RECONNECT_IVL: c_int;
@@ -400,7 +400,7 @@ module ZMQ {
     The :proc:`Socket.getsockopt()` option value to retrieve the last endpoint
     bound for TCP/IPC transports on the associated :record:`Socket` object.
   */
-  const LAST_ENDPOINT = ZMQ_LAST_ENDPOINT;
+  param LAST_ENDPOINT = 2;//ZMQ_LAST_ENDPOINT;
   private extern const ZMQ_LAST_ENDPOINT: c_int;
 
   private extern const ZMQ_ROUTER_MANDATORY: c_int;
@@ -593,18 +593,6 @@ module ZMQ {
     }
   }
 
-  // Used to determine which options are supported for getsockopt and how.
-  // getsockopt has various return types (supported in C by void pointers),
-  // but today we only support a subset of the options (and getsockopt does not
-  // support every option defined by ZMQ)
-  //
-  // yesInt = supported and returns an int
-  // yesString = supported and returns a string
-  // no = not supported at all (either due to the return type or due to the
-  //      option itself.
-  pragma "no doc"
-  enum getsockoptHelper { yesInt, yesString, no };
-
   /*
     A ZeroMQ socket. See :ref:`more on using Sockets <using-sockets>`.
     Note that this record contains private fields not listed below.
@@ -760,8 +748,8 @@ module ZMQ {
       :throws IllegalArgumentError: Thrown when the option provided is not
                                     supported for getsockopt
      */
-    proc getsockopt(option: int) throws where (getsockoptRetTypeHelper(option)
-                                               == getsockoptHelper.yesString) {
+    proc getsockopt(param option: int) throws where (getsockoptRetTypeHelper(option)
+                                               == string) {
 
       extern proc zmq_getsockopt_string_helper(s: c_void_ptr, option: c_int,
                                                ref res: c_string);
@@ -770,27 +758,29 @@ module ZMQ {
       // the if branch entirely.
       if (option != LAST_ENDPOINT) {
         throw new IllegalArgumentError("option not supported for getsockopt");
+      } else {
+        var ret: string;
+        on classRef.home {
+          var str: c_string;
+          zmq_getsockopt_string_helper(classRef.socket, ZMQ_LAST_ENDPOINT, str);
+          ret = new string(str, needToCopy=false);
+        }
+        return ret;
       }
-      var ret: string;
-      on classRef.home {
-        var str: c_string;
-        zmq_getsockopt_string_helper(classRef.socket, option, str);
-        ret = new string(str, needToCopy=false);
-      }
-      return ret;
     }
 
     pragma "no doc"
-    proc getsockopt(option: int) throws where (getsockoptRetTypeHelper(option)
-                                               == getsockoptHelper.yesInt) {
+    proc getsockopt(param option: int) throws where (getsockoptRetTypeHelper(option)
+                                               == int) {
       // When more options that return ints are supported, add them to this
       // if branch.  When all options listed in the API are supported, remove
       // the if branch entirely.
       if (option != LINGER) {
         throw new IllegalArgumentError("option not supported for getsockopt");
-      }
-      on classRef.home {
-        // TODO: this
+      } else {
+        on classRef.home {
+          // TODO: this
+        }
       }
     }
 
@@ -798,23 +788,21 @@ module ZMQ {
     // etc. get supported, they should have their own version of the getsockopt
     // method
     pragma "no doc"
-    proc getsockopt(option: int) throws where (getsockoptRetTypeHelper(option)
-                                               == getsockoptHelper.no) {
+    proc getsockopt(param option: int) throws where (getsockoptRetTypeHelper(option)
+                                               == void) {
       throw new IllegalArgumentError("option not supported for getsockopt");
     }
 
     // Determines what the return type will be for the function
-    // Since the option argument must be an execution variable, we cannot use
-    // a type function and instead have defined an enum, getsockoptHelper, for
-    // the options that are supported.
+    // Note: this relies on what the Chapel user provides being a param
     pragma "no doc"
-    proc getsockoptRetTypeHelper(option: int): getsockoptHelper {
+    proc getsockoptRetTypeHelper(param option: int) type {
       if (option == LINGER) {
-        return getsockoptHelper.yesInt;
+        return int;
       } else if (option == LAST_ENDPOINT) {
-        return getsockoptHelper.yesString;
+        return string;
       } else {
-        return getsockoptHelper.no;
+        return _void.type;
       }
     }
 
