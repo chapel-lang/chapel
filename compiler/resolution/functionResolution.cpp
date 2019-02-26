@@ -4841,36 +4841,55 @@ static void resolveInitVar(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  // First, determine whether there is a specified type for the variable and
-  // whether a coercion is required.
-
   Type* targetType = NULL;
-  SymExpr* targetTypeExpr = NULL;
-  bool insertCoerce = false;
+  bool addedCoerce = false;
   if (call->numActuals() >= 3) {
-    targetTypeExpr = toSymExpr(call->get(3)->remove());
-    targetType = targetTypeExpr->symbol()->type;
+    SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
+    targetType = targetTypeExpr->typeInfo();
 
-    // If the target type is generic, compute the appropriate
-    // instantiation type (just as we would when instantiating
-    // a generic function's argument)
+    // If the target type is generic, compute the appropriate instantiation
+    // type.
     if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
-      Type* useType = getInstantiationType(srcType, targetType);
+      Type* inst = getInstantiationType(srcType, targetType);
 
-      if (useType == NULL) {
-        USR_FATAL(call, "Could not coerce %s to %s in initialization",
-                        srcType->symbol->name,
-                        targetType->symbol->name);
+      // Does not allow initializations of the form:
+      //   var x : MyGenericType = <expr>;
+      // Left as future work until 'init=' design finalized
+      if (inst == NULL) {
+        USR_FATAL(call, "Could not coerce '%s' to '%s' in initialization",
+                  srcType->symbol->name,
+                  targetType->symbol->name);
+      } else if (inst != NULL) {
+        targetType = inst;
       }
-
-      targetType = useType;
     }
 
-    if (targetType->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
+    bool mismatch = targetType->getValType() != srcType->getValType();
+    // Insert a coercion if the types are different. Some internal types use a
+    // coercion because their initCopy returns a different type.
+    if (targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
         isSyncType(src->getValType()) ||
         isSingleType(src->getValType()) ||
-        targetType->getValType() != srcType->getValType()) {
-      insertCoerce = true;
+        (targetType->symbol->hasFlag(FLAG_TUPLE) && mismatch) ||
+        (isRecord(targetType->getValType()) == false && mismatch)) {
+      VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
+      tmp->addFlag(FLAG_EXPR_TEMP);
+
+      CallExpr* coerce = new CallExpr(PRIM_COERCE,
+                                      srcExpr->copy(),
+                                      targetTypeExpr);
+      CallExpr* move = new CallExpr(PRIM_MOVE, tmp, coerce);
+
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(move);
+      resolveCoerce(coerce);
+      resolveMove(move);
+
+      // Use the targetType as the srcType
+      srcExpr->setSymbol(tmp);
+      srcType = targetType;
+
+      addedCoerce = true;
     }
   } else {
     targetType = srcType;
@@ -4882,30 +4901,11 @@ static void resolveInitVar(CallExpr* call) {
   // Target type will never be a reference
   targetType = targetType->getValType();
 
-  if (insertCoerce) {
-    // create a temp variable to store the result of PRIM_COERCE
-    VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
-    tmp->addFlag(FLAG_EXPR_TEMP);
-
-    CallExpr* coerce = new CallExpr(PRIM_COERCE,
-                                    srcExpr->copy(),
-                                    targetTypeExpr);
-    CallExpr* move = new CallExpr(PRIM_MOVE, tmp, coerce);
-
-    call->insertBefore(new DefExpr(tmp));
-    call->insertBefore(move);
-    resolveCoerce(coerce);
-    resolveMove(move);
-
-    // Use coercion result 'tmp' in the original call
-    srcExpr->setSymbol(tmp);
-
-    call->primitive = primitives[PRIM_MOVE];
-    resolveMove(call);
-
-  } else if (dst->hasFlag(FLAG_NO_COPY) ||
-             isPrimitiveScalar(targetType) ||
-             isEnumType(targetType)) {
+  if (dst->hasFlag(FLAG_NO_COPY) ||
+      isPrimitiveScalar(targetType) ||
+      isEnumType(targetType) ||
+      addedCoerce) {
+    dst->type = targetType;
 
     call->primitive = primitives[PRIM_MOVE];
     if (srcType->isRef() && !dst->hasFlag(FLAG_NO_COPY)) {
@@ -4915,17 +4915,16 @@ static void resolveInitVar(CallExpr* call) {
     }
     resolveMove(call);
 
-  } else if (isRecord(targetType) == false ||
+  } else if (isRecord(targetType->getValType()) == false ||
              isParamString ||
-             isSyncType(targetType) ||
-             isSingleType(targetType) ||
-             isRecordWrappedType(targetType) ||
-             targetType->symbol->hasFlag(FLAG_TUPLE) ||
-             targetType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+             isSyncType(srcType->getValType()) ||
+             isSingleType(srcType->getValType()) ||
+             isRecordWrappedType(targetType->getValType()) ||
+             srcType->getValType()->symbol->hasFlag(FLAG_TUPLE) ||
+             srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // These cases require an initCopy to implement special initialization
     // semantics (e.g. reading a sync for variable initialization).
 
-    SET_LINENO(call);
     CallExpr* initCopy = new CallExpr("chpl__initCopy", srcExpr->remove());
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
@@ -4933,7 +4932,7 @@ static void resolveInitVar(CallExpr* call) {
     resolveExpr(initCopy);
     resolveMove(call);
 
-  } else if (isRecord(targetType) == true) {
+  } else if (isRecord(targetType->getValType())) {
     AggregateType* at = toAggregateType(targetType);
 
     // Clear FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW
@@ -4943,32 +4942,61 @@ static void resolveInitVar(CallExpr* call) {
 
     // Don't need to copy string literals when initializing a string
     bool moveStringLiteral = src->hasFlag(FLAG_CHAPEL_STRING_LITERAL) &&
-                             targetType == dtString;
+                             targetType->getValType() == dtString;
 
-    // The LHS will "own" a temp without an auto-destroy
+    // The LHS will "own" the temp without an auto-destroy, provided the
+    // types are the same.
     bool canStealTemp = src->hasFlag(FLAG_TEMP) &&
                         src->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false &&
+                        srcType->getValType() == targetType->getValType() &&
                         src->isRef() == false;
 
     if (moveStringLiteral || canStealTemp) {
-      dst->type       = src->type;
+      dst->type = src->type;
 
       call->primitive = primitives[PRIM_MOVE];
 
       resolveMove(call);
+    } else if (isRecordWithInitializers(at) == false) {
+      INT_FATAL("Unable to initialize record variable with type '%s'", at->symbol->name);
     } else {
-      INT_ASSERT(isRecordWithInitializers(at));
 
-      dst->type = targetType;
+      dst->type = targetType->getValType();
+      src->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
-      call->setUnresolvedFunction("init");
       call->insertAtHead(gMethodToken);
+
+      bool foundOldStyleInit = false;
+      // Try resolving the old-style copy initializer first
+      if (at->getRootInstantiation()->hasUserDefinedInitEquals() == false &&
+          srcType->getValType() == targetType->getValType()) {
+        call->setUnresolvedFunction("init");
+
+        foundOldStyleInit = tryResolveCall(call) != NULL;
+
+        if (foundOldStyleInit) {
+          resolveNormalCallFinalChecks(call);
+        }
+      }
+
+      if (foundOldStyleInit == false) {
+        call->setUnresolvedFunction(astrInitEquals);
+        if (at->symbol->hasFlag(FLAG_GENERIC) == false &&
+            at->instantiatedFrom != NULL &&
+            at != at->instantiatedFrom) {
+          // Initializing a genric type, need to pass the type as an argument
+          Expr* last = call->argList.tail->remove();
+          call->insertAtTail(new SymExpr(at->symbol));
+          call->insertAtTail(last);
+        }
+
+        resolveCall(call);
+      }
+      // else: warning about old-style 'init' vs. init= would go here
 
       if (at->hasPostInitializer() == true) {
         call->insertAfter(new CallExpr("postinit", gMethodToken, dst));
       }
-
-      resolveCall(call);
 
     }
 
@@ -4989,9 +5017,24 @@ static void resolveInitVar(CallExpr* call) {
 
 FnSymbol* findCopyInit(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
-  CallExpr*  call  = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
 
-  FnSymbol* ret = resolveUninsertedCall(at, call, false);
+  FnSymbol* ret = NULL;
+
+  if (at->getRootInstantiation()->hasUserDefinedInitEquals() == false) {
+    CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
+    ret = resolveUninsertedCall(at, call, false);
+  }
+
+  if (ret == NULL) {
+    CallExpr* call = NULL;
+    if (at->getRootInstantiation()->symbol->hasFlag(FLAG_GENERIC)) {
+      call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, new SymExpr(at->symbol), tmpAt);
+    } else {
+      call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
+    }
+
+    ret = resolveUninsertedCall(at, call, false);
+  }
 
   // ret's instantiationPoint points to the dummy BlockStmt created by
   // resolveUninsertedCall, so it needs to be updated.

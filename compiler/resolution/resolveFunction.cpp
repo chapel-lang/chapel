@@ -281,7 +281,7 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
   // Adjust compiler-generated record copy-init to take in RHS by ref
   // if it contains a record field marked with FLAG_COPY_MUTATES.
   } else if (fn->hasFlag(FLAG_COPY_INIT) &&
-             formal == fn->getFormal(3) &&
+             fn->hasFlag(FLAG_COMPILER_GENERATED) &&
              recordContainingCopyMutatesField(formal->getValType())) {
     retval = true;
     *needRefIntent = true;
