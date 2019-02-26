@@ -27,6 +27,8 @@
 
 #include <stdio.h>
 
+void zmq_getsockopt_string_helper(void* s, int option, const char** res);
+
 void zmq_getsockopt_string_helper(void* s, int option, const char** res) {
   size_t len = 256;
   char* resbuf = (char *)qio_malloc(len*sizeof(char));
