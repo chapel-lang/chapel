@@ -994,14 +994,14 @@ const char* istrFromUserInt(long long int i) {
 
 const char* istrFromUserDouble(double i) {
   char s[64];
-  if (snprint_float_val(s, sizeof(s), i, false) > (int) sizeof(s))
+  if (snprint_float_val(s, sizeof(s), i, false) >= (int) sizeof(s))
     INT_FATAL("istr buffer overflow");
   return astr(s);
 }
 
 const char* istrFromUserImag(double i) {
   char s[64];
-  if (snprint_imag_val(s, sizeof(s), i, false) > (int) sizeof(s))
+  if (snprint_imag_val(s, sizeof(s), i, false) >= (int) sizeof(s))
     INT_FATAL("istr buffer overflow");
   return astr(s);
 }
@@ -1009,7 +1009,7 @@ const char* istrFromUserImag(double i) {
 
 const char* istrFromUserComplex(double re, double im) {
   char s[140];
-  if (snprint_complex_val(s, sizeof(s), re, im) > (int) sizeof(s))
+  if (snprint_complex_val(s, sizeof(s), re, im) >= (int) sizeof(s))
     INT_FATAL("istr buffer overflow");
   return astr(s);
 }
