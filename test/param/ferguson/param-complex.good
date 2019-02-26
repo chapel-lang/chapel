@@ -109,6 +109,43 @@ z=2.0 + 1.0i complex(64) 2.0 + 1.0i
 a=2.0 + 1.0i complex(64) 2.0 + 1.0i
 
 
+complex(128) initialized by complex(128) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+
+complex(128) initialized by complex(128) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+
+complex(128) initialized by complex(64) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+
+complex(64) initialized by complex(128) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+
+complex(64) initialized by complex(128) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+
+complex(64) initialized by complex(64) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+
+
 complex(128) initialized by int(64) -1
 x=-1.0 + 0.0i complex(128) -1.0 + 0.0i
 y=-1.0 + 0.0i complex(128) -1.0 + 0.0i

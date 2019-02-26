@@ -52,6 +52,16 @@ check(complex(64), (2.0+1.0i):complex(128));
 check(complex(64), (2.0+1.0i):complex(64));
 writeln();
 
+// again with a negative value
+check(complex(128), -2.0-1.0i);
+check(complex(128), (-2.0-1.0i):complex(128));
+check(complex(128), (-2.0-1.0i):complex(64));
+check(complex(64), -2.0-1.0i);
+check(complex(64), (-2.0-1.0i):complex(128));
+check(complex(64), (-2.0-1.0i):complex(64));
+writeln();
+
+
 // initializing from int of different sizes
 check(complex(128), -1);
 check(complex(128), -1:int(64));

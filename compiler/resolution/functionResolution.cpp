@@ -1403,6 +1403,7 @@ bool isNumericParamDefaultType(Type* t)
   if (t == dtInt[INT_SIZE_DEFAULT] ||
       t == dtReal[FLOAT_SIZE_DEFAULT] ||
       t == dtImag[FLOAT_SIZE_DEFAULT] ||
+      t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
       t == dtBools[BOOL_SIZE_DEFAULT])
     return true;
 

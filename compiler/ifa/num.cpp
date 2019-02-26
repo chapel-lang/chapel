@@ -52,8 +52,13 @@ static int
 snprint_complex_val(char* str, size_t max, double real, double imm) {
   int numchars = 0;
   numchars += snprint_float_val(str+numchars, max-numchars, real, false);
-  numchars += snprintf(str+numchars, max-numchars, " + ");
-  numchars += snprint_float_val(str+numchars, max-numchars, imm, false);
+  if (imm >= 0.0) {
+    numchars += snprintf(str+numchars, max-numchars, " + ");
+    numchars += snprint_float_val(str+numchars, max-numchars, imm, false);
+  } else {
+    numchars += snprintf(str+numchars, max-numchars, " - ");
+    numchars += snprint_float_val(str+numchars, max-numchars, -imm, false);
+  }
   numchars += snprintf(str+numchars, max-numchars, "i");
   return numchars;
 }
