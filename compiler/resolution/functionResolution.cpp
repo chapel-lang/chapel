@@ -6720,7 +6720,6 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
       if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
         outerCompilerErrorMap[fn] = str;
     } else {
-      gdbShouldBreakHere();
       USR_WARN (from, "%s", str);
       if (FnSymbol* fn = callStack.tail()->resolvedFunction())
         innerCompilerWarningMap[fn] = str;
