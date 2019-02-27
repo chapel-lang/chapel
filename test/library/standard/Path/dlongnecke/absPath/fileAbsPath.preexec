@@ -12,6 +12,7 @@ import sys
 import os.path
 
 
+fileDoesNotExist = 'ThisFileDoesNotExist.txt'
 filePathRelative = 'test.txt'
 filePathAbsolute = os.path.abspath(filePathRelative)
 
@@ -22,7 +23,6 @@ def absolutize_file(somefile):
 
 # Perform tests using a given input path.
 def do_tests(somepath):
-    # Open the test file using a relative path.
     f = None
     try:
         f = open(somepath, 'r')
@@ -52,5 +52,6 @@ stdout = sys.stdout
 sys.stdout = open('fileAbsPath.good', 'w')
 
 
+do_tests(fileDoesNotExist)
 do_tests(filePathRelative)
 do_tests(filePathAbsolute)

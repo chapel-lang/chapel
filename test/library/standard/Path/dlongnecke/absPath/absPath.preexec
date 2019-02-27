@@ -46,5 +46,5 @@ absolutize(pathSep2 + wellFormed0)
 # Path with 3 leading slashes yields absolute path, 1 leading slash.
 absolutize(pathSep3 + wellFormed0)
 
-# Path with cwd yields absolute path with cwd.
+# Should just print the current working directory (does nothing).
 absolutize(os.getcwd())

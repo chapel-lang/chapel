@@ -32,6 +32,5 @@ absolutize(pathSep2 + wellFormed0);
 // Path with 3 leading slashes yields absolute path, 1 leading slash.
 absolutize(pathSep3 + wellFormed0);
 
-// Path with more parent dirs than cwd components yields single slash.
-// NOTE: The call to locale.cwd is not parallel safe and throws.
+// Should just print the current working directory (does nothing).
 absolutize(here.cwd());
