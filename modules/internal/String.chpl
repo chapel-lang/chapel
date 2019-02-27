@@ -151,6 +151,7 @@ module String {
   pragma "no doc"
   extern type chpl_mem_descInt_t = int(16);
 
+  pragma "fn synchronization free"
   private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
 
   // Calls to chpl_here_alloc increment the memory descriptor by
@@ -171,8 +172,11 @@ module String {
   pragma "no doc"
   type bufferType = c_ptr(uint(8));
 
+  pragma "fn synchronization free"
   private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
+  pragma "fn synchronization free"
   private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
+  pragma "fn synchronization free"
   private extern proc qio_nbytes_char(chr:int(32)):c_int;
 
   pragma "no doc"
@@ -181,10 +185,12 @@ module String {
   pragma "no doc"
   extern record chpl__inPlaceBuffer {};
 
+  pragma "fn synchronization free"
   pragma "no doc"
   extern proc chpl__getInPlaceBufferData(const ref data : chpl__inPlaceBuffer) : c_ptr(uint(8));
 
   // Signal to the Chapel compiler that the actual argument may be modified.
+  pragma "fn synchronization free"
   pragma "no doc"
   extern proc chpl__getInPlaceBufferDataForWrite(ref data : chpl__inPlaceBuffer) : c_ptr(uint(8));
 
@@ -2035,41 +2041,49 @@ module String {
   extern type wint_t = int(32);
 
   private inline proc codepoint_isUpper(c: int(32)) : bool {
+    pragma "fn synchronization free"
     extern proc iswupper(wc: wint_t): c_int;
     return iswupper(c: wint_t) != 0;
   }
 
   private inline proc codepoint_isLower(c: int(32)) : bool {
+    pragma "fn synchronization free"
     extern proc iswlower(wc: wint_t): c_int;
     return iswlower(c: wint_t) != 0;
   }
 
   private inline proc codepoint_isAlpha(c: int(32)) : bool {
+    pragma "fn synchronization free"
     extern proc iswalpha(wc: wint_t): c_int;
     return iswalpha(c: wint_t) != 0;
   }
 
   private inline proc codepoint_isDigit(c: int(32)) : bool {
+    pragma "fn synchronization free"
     extern proc iswdigit(wc: wint_t): c_int;
     return iswdigit(c) != 0;
   }
 
   private inline proc codepoint_isWhitespace(c: int(32)) : bool {
+    pragma "fn synchronization free"
     extern proc iswspace(wc: wint_t): c_int;
     return iswspace(c) != 0;
   }
 
   private inline proc codepoint_isPrintable(c: int(32)) : bool {
+    pragma "fn synchronization free"
     extern proc iswprint(wc: wint_t): c_int;
     return iswprint(c) != 0;
   }
 
   private inline proc codepoint_toLower(c: int(32)) : int(32) {
+    pragma "fn synchronization free"
     extern proc towlower(wc: wint_t): wint_t;
     return towlower(c: wint_t): int(32);
   }
 
   private inline proc codepoint_toUpper(c: int(32)) : int(32) {
+    pragma "fn synchronization free"
     extern proc towupper(wc: wint_t): wint_t;
     return towupper(c: wint_t): int(32);
   }

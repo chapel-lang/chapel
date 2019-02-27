@@ -411,9 +411,11 @@ module ChapelBase {
   inline proc **(a: real(?w), b: real(w)) return __primitive("**", a, b);
   inline proc **(a: complex(?w), b: complex(w)) {
     if a.type == complex(128) {
+      pragma "fn synchronization free"
       extern proc cpow(x: complex(128), y: complex(128)): complex(128);
       return cpow(a, b);
     } else {
+      pragma "fn synchronization free"
       extern proc cpowf(x: complex(64), y: complex(64)): complex(64);
       return cpowf(a, b);
     }
@@ -620,9 +622,11 @@ module ChapelBase {
   }
   inline proc chpl_anycomplex.re {
     if this.type == complex(128) {
+      pragma "fn synchronization free"
       extern proc creal(x:complex(128)): real(64);
       return creal(this);
     } else {
+      pragma "fn synchronization free"
       extern proc crealf(x:complex(64)): real(32);
       return crealf(this);
     }
@@ -632,9 +636,11 @@ module ChapelBase {
   }
   inline proc chpl_anycomplex.im {
     if this.type == complex(128) {
+      pragma "fn synchronization free"
       extern proc cimag(x:complex(128)): real(64);
       return cimag(this);
     } else {
+      pragma "fn synchronization free"
       extern proc cimagf(x:complex(64)): real(32);
       return cimagf(this);
     }
@@ -745,9 +751,8 @@ module ChapelBase {
       if !isPODType(t) {
         initMethod = ArrayInit.serialInit;
       } else {
-        extern proc sizeof(type t): size_t;
         const elemsizeInBytes = if isNumericType(t) then numBytes(t)
-                                else sizeof(t).safeCast(int);
+                                else c_sizeof(t).safeCast(int);
         const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
         param heuristicThresh = 2 * 1024 * 1024;
         const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
@@ -838,19 +843,21 @@ module ChapelBase {
 
   inline proc _ddata_allocate(type eltType, size: integral,
                               subloc = c_sublocid_none) {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
-                                       subloc: chpl_sublocID_t,
-                                       ref callPostAlloc: bool): c_void_ptr;
+    extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
+                                     subloc: chpl_sublocID_t,
+                                     ref callPostAlloc: bool): c_void_ptr;
     var ret: _ddata(eltType);
     var callPostAlloc: bool;
     ret = chpl_mem_array_alloc(size:size_t, _ddata_sizeof_element(ret),
                                subloc, callPostAlloc):ret.type;
     init_elts(ret, size, eltType);
     if callPostAlloc {
+      pragma "fn synchronization free"
       pragma "insert line file info"
-        extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
-                                             eltSize: size_t);
+      extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
+                                           eltSize: size_t);
       chpl_mem_array_postAlloc(ret:c_void_ptr, size:size_t,
                                _ddata_sizeof_element(ret));
     }
@@ -858,9 +865,10 @@ module ChapelBase {
   }
 
   inline proc _ddata_free(data: _ddata, size: integral) {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_array_free(data: c_void_ptr,
-                                      nmemb: size_t, eltSize: size_t);
+    extern proc chpl_mem_array_free(data: c_void_ptr,
+                                    nmemb: size_t, eltSize: size_t);
     chpl_mem_array_free(data:c_void_ptr, size:size_t,
                         _ddata_sizeof_element(data));
   }
@@ -966,6 +974,7 @@ module ChapelBase {
   // statement needed.
   pragma "dont disable remote value forwarding"
   pragma "no remote memory fence"
+  pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
     if isAtomic(e.taskCnt) {
       e.i.add(1, memory_order_release);
@@ -1001,9 +1010,11 @@ module ChapelBase {
   // statement is needed because the call to sub() will do a remote
   // fork (on) if needed.
   pragma "dont disable remote value forwarding"
+  pragma "task complete impl fn"
   pragma "down end count fn"
   proc _downEndCount(e: _EndCount, err: unmanaged Error) {
     chpl_save_task_error(e, err);
+    pragma "task complete impl fn"
     extern proc chpl_comm_task_end(): void;
     chpl_comm_task_end();
     // inform anybody waiting that we're done
@@ -1014,6 +1025,7 @@ module ChapelBase {
   // on statement needed.
   // called for sync blocks (implicit or explicit), unbounded coforalls
   pragma "dont disable remote value forwarding"
+  pragma "task join impl fn"
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true) throws {
     // Remove the task that will just be waiting/yielding in the following
@@ -1043,6 +1055,7 @@ module ChapelBase {
 
   // called for bounded coforalls and cobegins
   pragma "dont disable remote value forwarding"
+  pragma "task join impl fn"
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) throws {
     // See if we can help with any of the started tasks
@@ -1062,12 +1075,14 @@ module ChapelBase {
       throw new owned TaskErrors(e.errors);
   }
 
+  pragma "task spawn impl fn"
   proc _upDynamicEndCount(param countRunningTasks=true) {
     var e = __primitive("get dynamic end count");
     _upEndCount(e, countRunningTasks);
   }
 
   pragma "dont disable remote value forwarding"
+  pragma "task complete impl fn"
   pragma "down end count fn"
   proc _downDynamicEndCount(err: unmanaged Error) {
     var e = __primitive("get dynamic end count");
@@ -1075,6 +1090,7 @@ module ChapelBase {
   }
 
   // This version is called for normal sync blocks.
+  pragma "task join impl fn"
   pragma "unchecked throws"
   proc _waitDynamicEndCount(param countRunningTasks=true) throws {
     var e = __primitive("get dynamic end count");

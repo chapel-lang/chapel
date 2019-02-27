@@ -1760,9 +1760,7 @@ module DefaultRectangular {
       // since _ddata is just a pointer to the memory location we just pass
       // that along with the size of the array. This is only possible when the
       // byte order is set to native or its equivalent.
-      pragma "no prototype"
-      extern proc sizeof(type x): size_t;
-      const elemSize = sizeof(arr.eltType);
+      const elemSize = c_sizeof(arr.eltType);
       if boundsChecking {
         var rw = if f.writing then "write" else "read";
         assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(ssize_t):uint,
@@ -1878,6 +1876,7 @@ module DefaultRectangular {
 
     if debugBulkTransfer {
       pragma "no prototype"
+      pragma "fn synchronization free"
       extern proc sizeof(type x): int;
       const elemSize =sizeof(B.eltType);
       chpl_debug_writeln("In DefaultRectangular._simpleTransfer():",
