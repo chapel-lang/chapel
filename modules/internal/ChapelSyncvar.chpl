@@ -134,8 +134,8 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
-    proc init=(type ThisType, const other : ThisType.valType) {
-      this.init(ThisType.valType);
+    proc init=(const other : this.valType) {
+      this.init(other.type);
       // TODO: initialize the sync class impl with 'other'
       this.writeEF(other);
     }
@@ -653,8 +653,8 @@ module ChapelSyncvar {
       isOwned = false;
     }
 
-    proc init=(type ThisType, const other : ThisType.valType) {
-      this.init(ThisType.valType);
+    proc init=(const other : this.type.valType) {
+      this.init(other.type);
       this.writeEF(other);
     }
 

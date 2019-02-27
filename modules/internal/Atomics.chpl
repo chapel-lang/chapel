@@ -346,14 +346,14 @@ module Atomics {
     }
 
     pragma "no doc"
-    proc init=(type ThisType, other : ThisType) {
+    proc init=(other : this.type) {
       this.T = other.T;
       this._v = other._v;
     }
 
     pragma "no doc"
-    proc init=(type ThisType, other : ThisType.T) {
-      this.T = ThisType.T;
+    proc init=(other : this.type.T) {
+      this.T = other.type;
       this.complete();
 
       extern externFunc("init", T, explicit=false)

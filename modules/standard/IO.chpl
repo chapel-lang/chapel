@@ -1974,8 +1974,7 @@ proc channel.init(x: channel) {
   }
 }
 
-proc channel.init=(type ThisType, x: channel) {
-  if x.type != ThisType then compilerError("init= error");
+proc channel.init=(x: this.type) {
   this.init(x);
 }
 
