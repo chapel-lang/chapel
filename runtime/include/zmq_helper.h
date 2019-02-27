@@ -37,6 +37,8 @@ void zmq_getsockopt_int_helper(void* s, int option, int* res);
 // this header, which is `require`d by the ZMQ module and thus will only be
 // included when ZMQ is present.
 
+// Used when the option specified for zmq_getsockopt would modify a char*,
+// due to c_strings in Chapel being const char*.
 void zmq_getsockopt_string_helper(void* s, int option, const char** res) {
   size_t len = 256;
   char* resbuf = (char *)qio_malloc(len*sizeof(char));
@@ -45,6 +47,9 @@ void zmq_getsockopt_string_helper(void* s, int option, const char** res) {
   *res = resbuf;
 }
 
+// Used when the option specified for zmq_getsockopt would modify the int
+// argument.  Mostly done for symmetry, this version could likely have been
+// called directly from Chapel.
 void zmq_getsockopt_int_helper(void* s, int option, int* res) {
   size_t intsize = sizeof(*res);
   int err = zmq_getsockopt(s, option, res, &intsize);
