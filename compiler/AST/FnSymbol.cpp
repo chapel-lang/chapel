@@ -764,6 +764,8 @@ int FnSymbol::hasGenericFormals() const {
   bool hasGenericDefaults =  true;
   int  retval             =     0;
 
+  bool isInit = isInitializer() || isCopyInit();
+
   for_formals(formal, this) {
     bool isGeneric = false;
 
@@ -780,6 +782,19 @@ int FnSymbol::hasGenericFormals() const {
           formal                               == _this) {
         if (!(formal == _this && (isInitializer() || isCopyInit()))) {
           isGeneric = true;
+        }
+      }
+
+    // Mark initializer formals using 'this' as generic
+    } else if (isInit && _this->type->symbol->hasFlag(FLAG_GENERIC)) {
+      if (formal->typeExpr) {
+        std::vector<SymExpr*> syms;
+        collectSymExprs(formal->typeExpr, syms);
+
+        for_vector(SymExpr, se, syms) {
+          if (se->symbol() == _this) {
+            isGeneric = true;
+          }
         }
       }
     }
@@ -1180,6 +1195,14 @@ const char* toString(FnSymbol* fn) {
         if (arg->typeExpr != NULL) {
           if (SymExpr* sym = toSymExpr(arg->typeExpr->body.tail)) {
             retval = astr(retval, arg->name, ": ", sym->symbol()->name);
+          } else if (CallExpr* call = toCallExpr(arg->typeExpr->body.tail)) {
+            // TODO: need to preserve the original string for function signatures...
+            if (call->isPrimitive(PRIM_TYPEOF)) {
+              SymExpr* se = toSymExpr(call->get(1));
+              retval = astr(retval, arg->name, ": ", se->symbol()->name, ".type");
+            } else {
+              retval = astr(retval, arg->name);
+            }
 
           } else {
             retval = astr(retval, arg->name);

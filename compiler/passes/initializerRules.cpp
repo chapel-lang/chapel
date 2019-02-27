@@ -65,6 +65,8 @@ static bool     isSymbolThis(Expr* expr);
 
 static void     addSuperInit(FnSymbol* fn);
 
+static DefExpr* toLocalField(AggregateType* at, CallExpr* expr);
+
 /************************************* | **************************************
 *                                                                             *
 * Attempt to assign a type to the symbol for each field in some of the        *
@@ -199,9 +201,24 @@ void errorOnFieldsInArgList(FnSymbol* fn) {
 
     for_vector(SymExpr, se, symExprs) {
       if (se->symbol() == fn->_this) {
-        USR_FATAL_CONT(se,
-                       "invalid access of class member in "
-                       "initializer argument list");
+        bool error = true;
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          AggregateType* at = toAggregateType(fn->_this->getValType());
+          if (call->isPrimitive(PRIM_TYPEOF)) {
+            error = false;
+          } else if (DefExpr* def = toLocalField(at, call)) {
+            Symbol* sym = def->sym;
+            if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
+                sym->hasFlag(FLAG_PARAM)) {
+              error = false;
+            }
+          }
+        }
+        if (error) {
+          USR_FATAL_CONT(se,
+                         "invalid access of class member in "
+                         "initializer argument list");
+        }
 
         break;
       }
@@ -875,8 +892,6 @@ static bool isUnacceptableTry(Expr* stmt) {
 * If so return the field                                                      *
 *                                                                             *
 ************************************** | *************************************/
-
-static DefExpr* toLocalField(AggregateType* at, CallExpr* expr);
 
 static DefExpr* fieldByName(AggregateType* at, const char* name);
 
