@@ -4492,9 +4492,11 @@ static void resolveTupleExpand(CallExpr* call) {
     }
   }
 
-  if (size == 0) {
+  if (size == 0)
     INT_FATAL(call, "Invalid tuple expand primitive");
-  }
+
+  if (parent != NULL && parent->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE))
+    size = 1; // use the first component of the tuple for the shape
 
   stmt->insertBefore(noop);
 
