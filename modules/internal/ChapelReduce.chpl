@@ -22,18 +22,6 @@
 module ChapelReduce {
   use ChapelStandard;
 
-  iter chpl__scanIteratorZipHelp(op, data) {
-    for e in zip((...data)) {
-      op.accumulate(e);
-      yield op.generate();
-    }
-  }
-
-  proc chpl__accumgen(op, d) {
-    op.accumulate(d);
-    return op.generate();
-  }
-
   proc chpl__scanIteratorZip(op, data) {
     // want:
     //
@@ -53,6 +41,16 @@ module ChapelReduce {
     }
   }
 
+  // This is a workaround helper routine, introduced in order to
+  // workaround the lack of the preferred implementation of
+  // chpl__scanIteratorZip().
+  iter chpl__scanIteratorZipHelp(op, data) {
+    for e in zip((...data)) {
+      op.accumulate(e);
+      yield op.generate();
+    }
+  }
+
   proc chpl__scanIterator(op, data) {
     var arr = for d in data do chpl__accumgen(op, d);
 
@@ -63,6 +61,13 @@ module ChapelReduce {
       op.accumulate(d);
       return op.generate();
     }
+  }
+
+  // helper routine to run the accumulate + generate steps of a scan
+  // in an expression context.
+  proc chpl__accumgen(op, d) {
+    op.accumulate(d);
+    return op.generate();
   }
 
   proc chpl__reduceCombine(globalOp, localOp) {
