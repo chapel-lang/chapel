@@ -292,6 +292,8 @@ err_t sys_unlink(const char* path);
 // Allocates a string to store the current directory which must be freed.
 err_t sys_getcwd(const char** path_out);
 
+err_t sys_gethostname(const char** name);
+
 #ifdef __cplusplus
 } // end extern "C"
 #endif

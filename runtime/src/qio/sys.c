@@ -1854,3 +1854,11 @@ err_t sys_getcwd(const char** path_out)
 
   return err;
 }
+
+err_t sys_gethostname(const char** name) {
+  size_t len = 256;
+  char* resbuf = (char*) qio_malloc(len);
+  err_t err = gethostname(resbuf, len);
+  *name = resbuf;
+  return err;
+}
