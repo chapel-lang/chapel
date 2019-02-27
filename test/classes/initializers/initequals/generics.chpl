@@ -18,7 +18,7 @@ record R {
 
 writeln("----- User-Defined Copy Initialization -----");
 
-proc R.init=(type ThisType, other : ThisType) {
+proc R.init=(other : this.type) {
   writeln("copy-init from: ", other.type:string);
   this.T = other.T;
   this.x = other.x;
@@ -34,9 +34,9 @@ writeln("\n\n");
 
 writeln("----- Init= from non-record -----");
 
-proc R.init=(type ThisType, other : ThisType.T) {
+proc R.init=(other : this.type.T) {
   writeln("init= from ", other.type:string);
-  this.T = ThisType.T;
+  this.T = this.type.T;
   this.x = other;
 }
 
