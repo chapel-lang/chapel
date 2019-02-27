@@ -496,6 +496,8 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         case FLOAT_SIZE_64:
           castString = "REAL64(";
           break;
+        default:
+          INT_FATAL("Unexpected immediate->num_index");
         }
 
         ret.c = castString + real_to_string(value) + ")";
