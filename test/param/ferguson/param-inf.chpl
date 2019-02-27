@@ -15,8 +15,10 @@ param naninf = inf / inf;
 param negnaninf = -naninf;
 
 proc printit(name:string, arg:real(64), str:string, nosign=false) {
-  extern proc signbit(x:real):c_int;
-  var neg = signbit(arg) > 0;
+  extern proc copysign(x:real(64), y:real(64)):real(64);
+  var one = 1.0;
+  var pos_neg_one = copysign(one, arg);
+  var neg = pos_neg_one < 0.0;
   writef("% 8s % 14s %10r % 12s", arg.type:string, name, arg, str);
   if nosign || !neg then
     writeln();
