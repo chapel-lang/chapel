@@ -1,7 +1,27 @@
+/*
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // generated from:
 // jupiter:/opt/intel/compilers_and_libraries_2019.0.117/linux/compiler/include/ISO_Fortran_binding.h
 module ISO_Fortran_binding {
-  require "ISO_Fortran_binding.h";
+  use SysCTypes;
+  require "chpl-ISO_Fortran_binding.h";
 
 
   // #define'd integer literals:
@@ -157,4 +177,30 @@ module ISO_Fortran_binding {
   extern type CFI_rank_t = c_ptrdiff;
 
   extern type CFI_type_t = c_ptrdiff;
+
+  proc makeArrayFromFortranArray(ref FA: CFI_cdesc_t,
+                                 type eltType,
+                                 param rank=1) {
+    assert(CFI_is_contiguous(FA) == 1);
+    assert(FA.rank == rank);
+
+    var cumulativeLength = 1;
+    for param i in 1..rank {
+      const eltSize = c_sizeof(eltType): int;
+      assert(FA.dim[i-1].sm == cumulativeLength * eltSize);
+      cumulativeLength *= FA.dim[i-1].extent;
+    }
+
+    var dims: rank*range;
+    for param i in 1..rank {
+      assert(FA.dim[i-1].lower_bound == 0);
+      dims[i] = 1..#FA.dim[i-1].extent;
+    }
+    var D = {(...dims)};
+    var A = D.buildArrayWith(eltType,
+                             FA.base_addr: _ddata(eltType),
+                             D.numIndices);
+    A._unowned = true;
+    return A;
+  }
 }
