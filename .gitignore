@@ -189,6 +189,8 @@ tags
 /test/extern/bradc/externSystem.appendme
 /test/extern/deitz/myfile.dat
 
+/test/interop/fortran/genFortranInterface/lib
+
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
 /test/io/ferguson/asserteof.test.nums
