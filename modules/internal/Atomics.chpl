@@ -187,7 +187,6 @@ module Atomics {
       atomic_init(_v, default);
     }
 
-    pragma "fn synchronization free"
     pragma "no doc"
     proc deinit() {
       pragma "fn synchronization free"
@@ -332,7 +331,6 @@ module Atomics {
       atomic_init(_v, default);
     }
 
-    pragma "fn synchronization free"
     pragma "no doc"
     proc deinit() {
       pragma "fn synchronization free"
