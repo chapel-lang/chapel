@@ -202,7 +202,7 @@ Immediate::string_value( void) const {
 
 inline double
 Immediate::real_value( void) const {
-  double val;
+  double val = 0.0;
   INT_ASSERT(const_kind == NUM_KIND_REAL || const_kind == NUM_KIND_IMAG);
   switch (num_index) {
   case FLOAT_SIZE_32: val = v_float32; break;
