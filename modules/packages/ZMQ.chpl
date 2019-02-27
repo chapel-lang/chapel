@@ -772,15 +772,19 @@ module ZMQ {
     pragma "no doc"
     proc getsockopt(param option: int) throws where (getsockoptRetTypeHelper(option)
                                                == int) {
+      extern proc zmq_getsockopt_int_helper(s: c_void_ptr, option: c_int,
+                                            ref res: c_int);
       // When more options that return ints are supported, add them to this
       // if branch.  When all options listed in the API are supported, remove
       // the if branch entirely.
       if (option != LINGER) {
         throw new IllegalArgumentError("option not supported for getsockopt");
       } else {
+        var ret: c_int;
         on classRef.home {
-          // TODO: this
+          zmq_getsockopt_int_helper(classRef.socket, option, ret);
         }
+        return ret;
       }
     }
 
