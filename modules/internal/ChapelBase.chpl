@@ -751,10 +751,8 @@ module ChapelBase {
       if !isPODType(t) {
         initMethod = ArrayInit.serialInit;
       } else {
-        pragma "fn synchronization free"
-        extern proc sizeof(type t): size_t;
         const elemsizeInBytes = if isNumericType(t) then numBytes(t)
-                                else sizeof(t).safeCast(int);
+                                else c_sizeof(t).safeCast(int);
         const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
         param heuristicThresh = 2 * 1024 * 1024;
         const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
