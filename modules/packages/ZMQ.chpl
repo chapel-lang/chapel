@@ -380,8 +380,8 @@ module ZMQ {
   private extern const ZMQ_TYPE: c_int;
 
   /*
-    The :proc:`Socket.setsockopt()` option value to specify the linger period
-    for the associated :record:`Socket` object.
+    The :proc:`Socket.setsockopt()` and :proc:`Socket.getsockopt()` option value
+    to specify the linger period for the associated :record:`Socket` object.
    */
   param LINGER = 17;//ZMQ_LINGER;
   private extern const ZMQ_LINGER: c_int;
