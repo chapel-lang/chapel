@@ -265,6 +265,8 @@ switch (to->const_kind) {
        switch (from->num_index) {
        case FLOAT_SIZE_32:
          to->v_uint64 = (uint64_t)from->v_float32; break;
+       case FLOAT_SIZE_64:
+         to->v_uint64 = (uint64_t)from->v_float64; break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
