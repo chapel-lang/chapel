@@ -394,8 +394,6 @@ module ChapelBase {
     return __primitive("*", a:real(w), b):imag(w);
   }
 
-  //inline proc *(param a: complex(?w), param b: complex(w)) param return __primitive("*", a, b);
-
   inline proc /(param a: int(?w), param b: int(w)) param {
     if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
@@ -405,27 +403,17 @@ module ChapelBase {
     return __primitive("/", a, b);
   }
   inline proc /(param a: real(?w), param b: real(w)) param {
-    if b == 0.0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
   inline proc /(param a: imag(?w), param b: imag(w)) param {
-    if b == 0.0i then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b):real(w);
   }
   inline proc /(param a: real(?w), param b: imag(w)) param {
-    if b == 0.0i then compilerError("Attempt to divide by zero");
     return __primitive("/", -a, b:real(w)):imag(w);
   }
   inline proc /(param a: imag(?w), param b: real(w)) param {
-    if b == 0.0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a:real(w), b):imag(w);
   }
-  /*inline proc /(param a: complex(?w), param b: complex(w)) param {
-    if b == (0.0+0.0i) then compilerError("Attempt to divide by zero");
-    return __primitive("/", a, b);
-  }*/
-
-
 
 
   //

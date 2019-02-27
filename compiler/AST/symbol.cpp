@@ -68,6 +68,8 @@ VarSymbol* gLocal = NULL;
 VarSymbol* gWarnUnstable = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
+VarSymbol *gInfinity = NULL;
+VarSymbol *gNan = NULL;
 
 void verifyInTree(BaseAST* ast, const char* msg) {
   if (ast != NULL && ast->inTree() == false) {

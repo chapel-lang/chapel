@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,17 +29,31 @@
 #include "stringutil.h"
 
 static int
-snprint_float_val(char* str, size_t max, double val, bool hex) {
-  int numchars = snprintf(str, max, "%g", val);
-  if (strchr(str, '.') == NULL &&
-      strchr(str, 'e') == NULL &&
-      strchr(str, 'p') == NULL) {
-    strncat(str, ".0", max-numchars);
-    return numchars + 2;
+snprint_float_val(char* buf, size_t max, double val, bool hex) {
+  if (std::isfinite(val)) {
+    int nc = 0;
+    if (std::signbit(val)) nc = snprintf(buf, max, "-%g" , -val);
+    else                   nc = snprintf(buf, max, "%g" , val);
+
+    if (strchr(buf, '.') == NULL &&
+        strchr(buf, 'e') == NULL &&
+        strchr(buf, 'p') == NULL) {
+      strncat(buf, ".0", max-nc);
+      return nc + 2;
+    } else {
+      return nc;
+    }
+  } else if (std::isinf(val)) {
+    if (std::signbit(val)) strncpy(buf, "-INFINITY", max);
+    else                   strncpy(buf, "INFINITY", max);
+    return strlen(buf);
   } else {
-    return numchars;
+    if (std::signbit(val)) strncpy(buf, "-NAN", max);
+    else                   strncpy(buf, "NAN", max);
+    return strlen(buf);
   }
 }
+
 static int
 snprint_imag_val(char* str, size_t max, double val, bool hex) {
   int numchars = snprint_float_val(str, max, val, hex);
@@ -265,7 +279,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
       char str[80];
       const char* size = NULL;
       switch (imm.num_index) {
-        case FLOAT_SIZE_32: 
+        case FLOAT_SIZE_32:
           res = snprint_float_val(str, sizeof(str), imm.v_float32, false);
           size = "(32)";
           break;
@@ -790,7 +804,7 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
       im1 = im2;
       im2 = t;
     }
- 
+
     if (im2->const_kind == NUM_KIND_UINT ||
         im2->const_kind == NUM_KIND_INT) {
       int index2 = num_kind_int_to_float(im2->num_index);
@@ -819,7 +833,7 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
                  im2->const_kind == NUM_KIND_IMAG);
       imm->num_index = max(im1->num_index, im2->num_index);
     }
- 
+
     imm->const_kind = NUM_KIND_REAL;
     return;
   }

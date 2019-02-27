@@ -55,6 +55,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstring>
 #include <cstdio>
 #include <vector>
@@ -2499,10 +2500,16 @@ std::string uint64_to_string(uint64_t i)
 std::string real_to_string(double num)
 {
   char buf[32];
-  if (std::signbit(num)) {
-    snprintf(buf, sizeof(buf), "-%a" , -num);
+
+  if (std::isfinite(num)) {
+    if (std::signbit(num)) snprintf(buf, sizeof(buf), "-%a" , -num);
+    else                   snprintf(buf, sizeof(buf), "%a" , num);
+  } else if (std::isinf(num)) {
+    if (std::signbit(num)) strncpy(buf, "-INFINITY", sizeof(buf));
+    else                   strncpy(buf, "INFINITY", sizeof(buf));
   } else {
-    snprintf(buf, sizeof(buf), "%a" , num);
+    if (std::signbit(num)) strncpy(buf, "-NAN", sizeof(buf));
+    else                   strncpy(buf, "NAN", sizeof(buf));
   }
   std::string ret(buf);
   return ret;

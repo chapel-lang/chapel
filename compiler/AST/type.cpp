@@ -40,6 +40,8 @@
 #include "UnmanagedClassType.h"
 #include "vec.h"
 
+#include <cmath>
+
 static bool isDerivedType(Type* type, Flag flag);
 
 Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
@@ -538,15 +540,17 @@ void initPrimitiveTypes() {
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
 
+  gFalse->addFlag(FLAG_PARAM);
   gFalse->immediate                    = new Immediate;
   gFalse->immediate->v_bool            = false;
   gFalse->immediate->const_kind        = NUM_KIND_BOOL;
-  gFalse->immediate->num_index         = BOOL_SIZE_SYS;
+  gFalse->immediate->num_index         = BOOL_SIZE_DEFAULT;
 
+  gTrue->addFlag(FLAG_PARAM);
   gTrue->immediate                     = new Immediate;
   gTrue->immediate->v_bool             = true;
   gTrue->immediate->const_kind         = NUM_KIND_BOOL;
-  gTrue->immediate->num_index          = BOOL_SIZE_SYS;
+  gTrue->immediate->num_index          = BOOL_SIZE_DEFAULT;
 
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
@@ -601,6 +605,23 @@ void initPrimitiveTypes() {
 
   INIT_PRIM_COMPLEX( "complex(64)", 64);
   INIT_PRIM_COMPLEX( "complex", 128);       // default size
+
+  // Set up INFINITY and NAN params
+  gInfinity = createSymbol(dtReal[FLOAT_SIZE_DEFAULT], "chpl_INFINITY");
+  gInfinity->addFlag(FLAG_PARAM);
+  gInfinity->immediate = new Immediate;
+  gInfinity->immediate->v_float64 = INFINITY;
+  gInfinity->immediate->const_kind = NUM_KIND_REAL;
+  gInfinity->immediate->num_index = FLOAT_SIZE_DEFAULT;
+
+  gNan = createSymbol(dtReal[FLOAT_SIZE_DEFAULT], "chpl_NAN");
+  gNan->addFlag(FLAG_PARAM);
+  gNan->immediate = new Immediate;
+  gNan->immediate->v_float64 = NAN;
+  gNan->immediate->const_kind = NUM_KIND_REAL;
+  gNan->immediate->num_index = FLOAT_SIZE_DEFAULT;
+
+
 
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
