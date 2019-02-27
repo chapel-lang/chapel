@@ -253,6 +253,8 @@ tags
 /test/library/standard/Path/saru/getParentName/parentNameErr.good
 /test/library/standard/Path/lydia/realpath/blahblahblah.txt
 /test/library/standard/Path/dlongnecke/normPath/normPath.good
+/test/library/standard/Path/dlongnecke/absPath/absPath.good
+/test/library/standard/Path/dlongnecke/absPath/fileAbsPath.good
 /test/library/standard/Spawn/stdout-stderr_real
 /test/library/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/library/standard/machine/numPUs.good
