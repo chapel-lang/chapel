@@ -22,13 +22,12 @@
 
 #include "zmq.h"
 #include "chplrt.h"
-#include "qio_error.h"
 #include "qio.h"
 
 #include <stdio.h>
 
-void zmq_getsockopt_string_helper(void* s, int option, const char** res);
-void zmq_getsockopt_int_helper(void* s, int option, int* res);
+int zmq_getsockopt_string_helper(void* s, int option, const char** res);
+int zmq_getsockopt_int_helper(void* s, int option, int* res);
 
 // Lydia NOTE 2019-02-26: the helper function implementations need to be defined
 // in this header file.  Otherwise, we expect any .c file to be built as part of
@@ -39,21 +38,21 @@ void zmq_getsockopt_int_helper(void* s, int option, int* res);
 
 // Used when the option specified for zmq_getsockopt would modify a char*,
 // due to c_strings in Chapel being const char*.
-void zmq_getsockopt_string_helper(void* s, int option, const char** res) {
+int zmq_getsockopt_string_helper(void* s, int option, const char** res) {
   size_t len = 256;
   char* resbuf = (char *)qio_malloc(len*sizeof(char));
   int err = zmq_getsockopt(s, option, resbuf, &len);
-  // TODO: handle error code
   *res = resbuf;
+  return err;
 }
 
 // Used when the option specified for zmq_getsockopt would modify the int
 // argument.  Mostly done for symmetry, this version could likely have been
 // called directly from Chapel.
-void zmq_getsockopt_int_helper(void* s, int option, int* res) {
+int zmq_getsockopt_int_helper(void* s, int option, int* res) {
   size_t intsize = sizeof(*res);
   int err = zmq_getsockopt(s, option, res, &intsize);
-  // TODO: handle error code
+  return err;
 }
 
 #endif

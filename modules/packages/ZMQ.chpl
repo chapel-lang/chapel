@@ -752,7 +752,7 @@ module ZMQ {
                                                == string) {
 
       extern proc zmq_getsockopt_string_helper(s: c_void_ptr, option: c_int,
-                                               ref res: c_string);
+                                               ref res: c_string): c_int;
       // When more options that return strings are supported, add them to this
       // if branch.  When all options listed in the API are supported, remove
       // the if branch entirely.
@@ -762,7 +762,13 @@ module ZMQ {
         var ret: string;
         on classRef.home {
           var str: c_string;
-          zmq_getsockopt_string_helper(classRef.socket, option, str);
+          var err = zmq_getsockopt_string_helper(classRef.socket, option, str);
+          // This followed the precedent set by setsockopt.  It would be good to
+          // throw an Error instead, see issue #12397 on Github
+          if (err == -1) {
+            var errmsg = zmq_strerror(errno): string;
+            halt("Error in Socket.getsockopt(): ", errmsg);
+          }
           ret = new string(str, needToCopy=false);
         }
         return ret;
@@ -773,7 +779,7 @@ module ZMQ {
     proc getsockopt(param option: int) throws where (getsockoptRetTypeHelper(option)
                                                == int) {
       extern proc zmq_getsockopt_int_helper(s: c_void_ptr, option: c_int,
-                                            ref res: c_int);
+                                            ref res: c_int): c_int;
       // When more options that return ints are supported, add them to this
       // if branch.  When all options listed in the API are supported, remove
       // the if branch entirely.
@@ -782,7 +788,13 @@ module ZMQ {
       } else {
         var ret: c_int;
         on classRef.home {
-          zmq_getsockopt_int_helper(classRef.socket, option, ret);
+          var err = zmq_getsockopt_int_helper(classRef.socket, option, ret);
+          // This followed the precedent set by setsockopt.  It would be good to
+          // throw an Error instead, see issue #12397 on Github
+          if (err == -1) {
+            var errmsg = zmq_strerror(errno): string;
+            halt("Error in Socket.getsockopt(): ", errmsg);
+          }
         }
         return ret;
       }
