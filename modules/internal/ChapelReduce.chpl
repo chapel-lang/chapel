@@ -29,23 +29,40 @@ module ChapelReduce {
     }
   }
 
+  proc chpl__accumgen(op, d) {
+    op.accumulate(d);
+    return op.generate();
+  }
+
   proc chpl__scanIteratorZip(op, data) {
-    var arr = chpl__scanIteratorZipHelp(op, data);
-    var arr2: [data(1).domain] arr[1].type;
-    for (a,b) in zip(arr2, arr) do
+    // want:
+    //
+    // var arr = for d in zip((...data)) do accumgen(d);
+    // but it causes the compiler to segfault... :(
+    //
+    // SO:
+    var arr: [data(1).domain] accumgenType();
+    for (a,b) in zip (arr, chpl__scanIteratorZipHelp(op, data)) do
       a = b;
     delete op;
-    return arr2;
+    return arr;
+
+    proc accumgenType() type {
+      var x = op.generate();
+      return x.type;
+    }
   }
 
   proc chpl__scanIterator(op, data) {
-    var arr = data;
-    for e in arr {
-      op.accumulate(e);
-      e = op.generate();
-    }
+    var arr = for d in data do chpl__accumgen(op, d);
+
     delete op;
     return arr;
+
+    proc accumgen(d) {
+      op.accumulate(d);
+      return op.generate();
+    }
   }
 
   proc chpl__reduceCombine(globalOp, localOp) {
