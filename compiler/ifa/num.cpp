@@ -52,12 +52,12 @@ static int
 snprint_complex_val(char* str, size_t max, double real, double imm) {
   int numchars = 0;
   numchars += snprint_float_val(str+numchars, max-numchars, real, false);
-  if (imm >= 0.0) {
-    numchars += snprintf(str+numchars, max-numchars, " + ");
-    numchars += snprint_float_val(str+numchars, max-numchars, imm, false);
-  } else {
+  if (std::signbit(imm)) {
     numchars += snprintf(str+numchars, max-numchars, " - ");
     numchars += snprint_float_val(str+numchars, max-numchars, -imm, false);
+  } else {
+    numchars += snprintf(str+numchars, max-numchars, " + ");
+    numchars += snprint_float_val(str+numchars, max-numchars, imm, false);
   }
   numchars += snprintf(str+numchars, max-numchars, "i");
   return numchars;
@@ -324,7 +324,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
 #include "cast_code.cpp"
 }
 
-#define DO_FOLD(_op) \
+#define DO_FOLD(_op,add,sub) \
       switch (imm->const_kind) { \
         case NUM_KIND_NONE: \
           break; \
@@ -364,21 +364,53 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case NUM_KIND_REAL: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
             case FLOAT_SIZE_32: \
-              imm->v_float32 = im1.v_float32 _op im2.v_float32; break; \
+              if (add && im1.v_float32 == 0.0) \
+                imm->v_float32 = im2.v_float32; \
+              else if (sub && im1.v_float32 == 0.0) \
+                imm->v_float32 = -im2.v_float32; \
+              else \
+                imm->v_float32 = im1.v_float32 _op im2.v_float32; \
+              break; \
             case FLOAT_SIZE_64: \
-              imm->v_float64 = im1.v_float64 _op im2.v_float64; break; \
+              if (add && im1.v_float64 == 0.0) \
+                imm->v_float64 = im2.v_float64; \
+              else if (sub && im1.v_float64 == 0.0) \
+                imm->v_float64 = -im2.v_float64; \
+              else \
+                imm->v_float64 = im1.v_float64 _op im2.v_float64; \
+              break; \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
         case NUM_KIND_COMPLEX: \
           switch (imm->num_index) { \
             case COMPLEX_SIZE_64: \
-              imm->v_complex64.r = im1.v_complex64.r _op im2.v_complex64.r; \
-              imm->v_complex64.i = im1.v_complex64.i _op im2.v_complex64.i; \
+              if (add && im1.v_complex64.r == 0.0) \
+                imm->v_complex64.r = im2.v_complex64.r; \
+              else if (sub && im1.v_complex64.r == 0.0) \
+                imm->v_complex64.r = -im2.v_complex64.r; \
+              else \
+                imm->v_complex64.r = im1.v_complex64.r _op im2.v_complex64.r; \
+              if (add && im1.v_complex64.i == 0.0) \
+                imm->v_complex64.i = im2.v_complex64.i; \
+              else if (sub && im1.v_complex64.i == 0.0) \
+                imm->v_complex64.i = -im2.v_complex64.i; \
+              else \
+                imm->v_complex64.i = im1.v_complex64.i _op im2.v_complex64.i; \
               break; \
             case COMPLEX_SIZE_128: \
-              imm->v_complex128.r = im1.v_complex128.r _op im2.v_complex128.r; \
-              imm->v_complex128.i = im1.v_complex128.i _op im2.v_complex128.i; \
+              if (add && im1.v_complex128.r == 0.0) \
+                imm->v_complex128.r = im2.v_complex128.r; \
+              else if (sub && im1.v_complex128.r == 0.0) \
+                imm->v_complex128.r = -im2.v_complex128.r; \
+              else \
+                imm->v_complex128.r = im1.v_complex128.r _op im2.v_complex128.r; \
+              if (add && im1.v_complex128.i == 0.0) \
+                imm->v_complex128.i = im2.v_complex128.i; \
+              else if (sub && im1.v_complex128.i == 0.0) \
+                imm->v_complex128.i = -im2.v_complex128.i; \
+              else \
+                imm->v_complex128.i = im1.v_complex128.i _op im2.v_complex128.i; \
               break; \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
@@ -902,11 +934,11 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
   }
   switch (op) {
     default: INT_FATAL("fold constant op not supported"); break;
-    case P_prim_mult: DO_FOLD(*); break;
-    case P_prim_div: DO_FOLD(/); break;
+    case P_prim_mult: DO_FOLD(*, false, false); break;
+    case P_prim_div: DO_FOLD(/, false, false); break;
     case P_prim_mod: DO_FOLDI(%); break;
-    case P_prim_add: DO_FOLD(+); break;
-    case P_prim_subtract: DO_FOLD(-); break;
+    case P_prim_add: DO_FOLD(+, true, false); break;
+    case P_prim_subtract: DO_FOLD(-, false, true); break;
     case P_prim_lsh: DO_FOLDI(<<); break;
     case P_prim_rsh: DO_FOLDI(>>); break;
     case P_prim_less: DO_FOLDB(<, &&); break;
@@ -918,8 +950,8 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
     case P_prim_and: DO_FOLDI(&); break;
     case P_prim_xor: DO_FOLDI(^); break;
     case P_prim_or: DO_FOLDI(|); break;
-    case P_prim_land: DO_FOLD(&&); break;
-    case P_prim_lor: DO_FOLD(||); break;
+    case P_prim_land: DO_FOLD(&&, false, false); break;
+    case P_prim_lor: DO_FOLD(||, false, false); break;
     case P_prim_plus: DO_FOLD1(+); break;
     case P_prim_minus: DO_FOLD1(-); break;
     case P_prim_not: DO_FOLD1I(~); break;

@@ -2499,7 +2499,11 @@ std::string uint64_to_string(uint64_t i)
 std::string real_to_string(double num)
 {
   char buf[32];
-  snprintf(buf, sizeof(buf), "%a" , num);
+  if (std::signbit(num)) {
+    snprintf(buf, sizeof(buf), "-%a" , -num);
+  } else {
+    snprintf(buf, sizeof(buf), "%a" , num);
+  }
   std::string ret(buf);
   return ret;
 }
