@@ -188,6 +188,7 @@ tags
 
 /test/extern/bradc/externSystem.appendme
 /test/extern/deitz/myfile.dat
+/test/extern/lydia/checkGethostname.good
 
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat

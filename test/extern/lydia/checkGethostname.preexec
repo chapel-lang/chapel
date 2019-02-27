@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+import socket
+
+with open("checkGethostname.good", "w+") as goodfile:
+     goodfile.write(socket.gethostname())
+     goodfile.write("\n")
