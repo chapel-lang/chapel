@@ -11,7 +11,7 @@ This document contains a mixture of tips for git beginners and specific
 Chapel workflow recommendations.
 
 Below are instructions for setting up a github account, developing a
-feature,and submitting pull requests.
+feature, and submitting pull requests.
 
 .. note:: A `contributor license agreement`_ must be signed before any contributing pull requests can be merged.
 
