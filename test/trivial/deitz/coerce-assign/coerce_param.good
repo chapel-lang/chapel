@@ -1,1 +1,1 @@
-coerce_param.chpl:1: error: Initializing parameter 'x' to value not known at compile time
+1.0

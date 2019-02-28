@@ -55,6 +55,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstring>
 #include <cstdio>
 #include <vector>
@@ -2480,25 +2481,39 @@ GenInfo::GenInfo()
 
 std::string numToString(int64_t num)
 {
-  char name[32];
-  sprintf(name, "%" PRId64, num);
-  return std::string(name);
+  return int64_to_string(num);
 }
 std::string int64_to_string(int64_t i)
 {
   char buf[32];
-  sprintf(buf, "%" PRId64, i);
+  snprintf(buf, sizeof(buf), "%" PRId64, i);
   std::string ret(buf);
   return ret;
 }
 std::string uint64_to_string(uint64_t i)
 {
   char buf[32];
-  sprintf(buf, "%" PRIu64, i);
+  snprintf(buf, sizeof(buf), "%" PRIu64, i);
   std::string ret(buf);
   return ret;
 }
+std::string real_to_string(double num)
+{
+  char buf[32];
 
+  if (std::isfinite(num)) {
+    if (std::signbit(num)) snprintf(buf, sizeof(buf), "-%a" , -num);
+    else                   snprintf(buf, sizeof(buf), "%a" , num);
+  } else if (std::isinf(num)) {
+    if (std::signbit(num)) strncpy(buf, "-INFINITY", sizeof(buf));
+    else                   strncpy(buf, "INFINITY", sizeof(buf));
+  } else {
+    if (std::signbit(num)) strncpy(buf, "-NAN", sizeof(buf));
+    else                   strncpy(buf, "NAN", sizeof(buf));
+  }
+  std::string ret(buf);
+  return ret;
+}
 void genComment(const char* comment, bool push) {
   GenInfo* info = gGenInfo;
   if( info->cfile ) {

@@ -257,6 +257,9 @@ void ResolveScope::addBuiltIns() {
   extend(gLocal);
   extend(gWarnUnstable);
   extend(gNodeID);
+
+  extend(gInfinity);
+  extend(gNan);
 }
 
 /************************************* | **************************************

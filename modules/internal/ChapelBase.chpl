@@ -157,10 +157,19 @@ module ChapelBase {
   // param enum routines are defined as module code to avoid having to
   // teach the compiler how to implement all enum comparisons.
 
+  inline proc ==(param a: real(?w), param b: real(w)) param return __primitive("==", a, b);
+  inline proc ==(param a: imag(?w), param b: imag(w)) param return __primitive("==", a, b);
+  inline proc ==(param a: complex(?w), param b: complex(w)) param return __primitive("==", a, b);
+
   inline proc !=(param a: bool, param b: bool) param return __primitive("!=", a, b);
   inline proc !=(param a: int(?w), param b: int(w)) param return __primitive("!=", a, b);
   inline proc !=(param a: uint(?w), param b: uint(w)) param return __primitive("!=", a, b);
+
   inline proc !=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("!=", chpl__enumToOrder(a), chpl__enumToOrder(b));
+
+  inline proc !=(param a: real(?w), param b: real(w)) param return __primitive("!=", a, b);
+  inline proc !=(param a: imag(?w), param b: imag(w)) param return __primitive("!=", a, b);
+  inline proc !=(param a: complex(?w), param b: complex(w)) param return __primitive("!=", a, b);
 
   //
   // ordered comparison on primitive types
@@ -220,18 +229,26 @@ module ChapelBase {
   inline proc <=(param a: int(?w), param b: int(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: uint(?w), param b: uint(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  inline proc <=(param a: real(?w), param b: real(w)) param return __primitive("<=", a, b);
+  inline proc <=(param a: imag(?w), param b: imag(w)) param return __primitive("<=", a, b);
 
   inline proc >=(param a: int(?w), param b: int(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: uint(?w), param b: uint(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  inline proc >=(param a: real(?w), param b: real(w)) param return __primitive(">=", a, b);
+  inline proc >=(param a: imag(?w), param b: imag(w)) param return __primitive(">=", a, b);
 
   inline proc <(param a: int(?w), param b: int(w)) param return __primitive("<", a, b);
   inline proc <(param a: uint(?w), param b: uint(w)) param return __primitive("<", a, b);
   inline proc <(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  inline proc <(param a: real(?w), param b: real(w)) param return __primitive("<", a, b);
+  inline proc <(param a: imag(?w), param b: imag(w)) param return __primitive("<", a, b);
 
   inline proc >(param a: int(?w), param b: int(w)) param return __primitive(">", a, b);
   inline proc >(param a: uint(?w), param b: uint(w)) param return __primitive(">", a, b);
   inline proc >(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  inline proc >(param a: real(?w), param b: real(w)) param return __primitive(">", a, b);
+  inline proc >(param a: imag(?w), param b: imag(w)) param return __primitive(">", a, b);
 
   //
   // unary + and - on primitive types
@@ -250,6 +267,9 @@ module ChapelBase {
 
   inline proc +(param a: int(?w)) param return a;
   inline proc +(param a: uint(?w)) param return a;
+  inline proc +(param a: real(?w)) param return a;
+  inline proc +(param a: imag(?w)) param return a;
+  inline proc +(param a: complex(?w)) param return a;
 
   inline proc -(param a: int(?w)) param return __primitive("u-", a);
   inline proc -(param a: uint(?w)) param {
@@ -258,6 +278,10 @@ module ChapelBase {
     else
       return -(a:int(w));
   }
+
+  inline proc -(param a: real(?w)) param return __primitive("u-", a);
+  inline proc -(param a: imag(?w)) param return __primitive("u-", a);
+  inline proc -(param a: complex(?w)) param return __primitive("u-", a);
 
   //
   // binary + and - on primitive types for runtime values
@@ -293,10 +317,24 @@ module ChapelBase {
   //
   inline proc +(param a: int(?w), param b: int(w)) param return __primitive("+", a, b);
   inline proc +(param a: uint(?w), param b: uint(w)) param return __primitive("+", a, b);
-
+  inline proc +(param a: real(?w), param b: real(w)) param return __primitive("+", a, b);
+  inline proc +(param a: imag(?w), param b: imag(w)) param return __primitive("+", a, b);
+  inline proc +(param a: complex(?w), param b: complex(w)) param return __primitive("+", a, b);
+  /*inline proc +(param a: real(?w), param b: imag(w)) param return __primitive("+", a, b);
+  inline proc +(param a: imag(?w), param b: real(w)) param return __primitive("+", a, b);
+  inline proc +(param a: real(?w), param b: complex(w*2)) param return
+  __primitive("+", a, b);*/
+ 
   inline proc -(param a: int(?w), param b: int(w)) param return __primitive("-", a, b);
   inline proc -(param a: uint(?w), param b: uint(w)) param return __primitive("-", a, b);
-
+  inline proc -(param a: real(?w), param b: real(w)) param return __primitive("-", a, b);
+  inline proc -(param a: imag(?w), param b: imag(w)) param return __primitive("-", a, b);
+  inline proc -(param a: complex(?w), param b: complex(w)) param return __primitive("-", a, b);
+  /*inline proc -(param a: real(?w), param b: imag(w)) param return __primitive("-", a, b);
+  inline proc -(param a: imag(?w), param b: real(w)) param return __primitive("-", a, b);
+  inline proc -(param a: real(?w), param b: complex(w*2)) param return
+  __primitive("-", a, b);*/
+ 
   //
   // * and / on primitive types
   //
@@ -345,6 +383,16 @@ module ChapelBase {
 
   inline proc *(param a: int(?w), param b: int(w)) param return __primitive("*", a, b);
   inline proc *(param a: uint(?w), param b: uint(w)) param return __primitive("*", a, b);
+  inline proc *(param a: real(?w), param b: real(w)) param return __primitive("*", a, b);
+  inline proc *(param a: imag(?w), param b: imag(w)) param {
+    return __primitive("*", -a, b):real(w);
+  }
+  inline proc *(param a: real(?w), param b: imag(w)) param {
+    return __primitive("*", a, b:real(w)):imag(w);
+  }
+  inline proc *(param a: imag(?w), param b: real(w)) param {
+    return __primitive("*", a:real(w), b):imag(w);
+  }
 
   inline proc /(param a: int(?w), param b: int(w)) param {
     if b == 0 then compilerError("Attempt to divide by zero");
@@ -354,6 +402,19 @@ module ChapelBase {
     if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
+  inline proc /(param a: real(?w), param b: real(w)) param {
+    return __primitive("/", a, b);
+  }
+  inline proc /(param a: imag(?w), param b: imag(w)) param {
+    return __primitive("/", a, b):real(w);
+  }
+  inline proc /(param a: real(?w), param b: imag(w)) param {
+    return __primitive("/", -a, b:real(w)):imag(w);
+  }
+  inline proc /(param a: imag(?w), param b: real(w)) param {
+    return __primitive("/", a:real(w), b):imag(w);
+  }
+
 
   //
   // % on primitive types
@@ -681,6 +742,16 @@ module ChapelBase {
   inline proc min(param x: uint(?w), param y: uint(w)) param
     return if x < y then x else y;
   inline proc max(param x: uint(?w), param y: uint(w)) param
+    return if x > y then x else y;
+
+  inline proc min(param x: real(?w), param y: real(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: real(?w), param y: real(w)) param
+    return if x > y then x else y;
+
+  inline proc min(param x: imag(?w), param y: imag(w)) param
+    return if x < y then x else y;
+  inline proc max(param x: imag(?w), param y: imag(w)) param
     return if x > y then x else y;
 
   inline proc min(x, y) where isAtomic(x) || isAtomic(y) {
