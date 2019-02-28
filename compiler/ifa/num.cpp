@@ -76,73 +76,7 @@ snprint_complex_val(char* str, size_t max, double real, double imm) {
   numchars += snprintf(str+numchars, max-numchars, "i");
   return numchars;
 }
-/*
-int
-snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm) {
-  int res = -1;
-  switch (imm.const_kind) {
-    case NUM_KIND_NONE:
-      break;
-    case NUM_KIND_BOOL: {
-      res = snprintf(str, max, control_string, imm.bool_value()); break;
-    }
-    case NUM_KIND_UINT: {
-      switch (imm.num_index) {
-        case INT_SIZE_8:
-          res = snprintf(str, max, control_string, imm.v_uint8); break;
-        case INT_SIZE_16:
-          res = snprintf(str, max, control_string, imm.v_uint16); break;
-        case INT_SIZE_32:
-          res = snprintf(str, max, control_string, imm.v_uint32); break;
-        case INT_SIZE_64:
-          res = snprintf(str, max, control_string, imm.v_uint64); break;
-        default: INT_FATAL("Unhandled case in switch statement");
-      }
-      break;
-    }
-    case NUM_KIND_INT: {
-      switch (imm.num_index) {
-        case INT_SIZE_8:
-          res = snprintf(str, max, control_string, imm.v_int8); break;
-        case INT_SIZE_16:
-          res = snprintf(str, max, control_string, imm.v_int16); break;
-        case INT_SIZE_32:
-          res = snprintf(str, max, control_string, imm.v_int32); break;
-        case INT_SIZE_64:
-          res = snprintf(str, max, control_string, imm.v_int64); break;
-        default: INT_FATAL("Unhandled case in switch statement");
-      }
-      break;
-    }
-    case NUM_KIND_REAL: case NUM_KIND_IMAG:
-      switch (imm.num_index) {
-        case FLOAT_SIZE_32:
-          res = snprintf(str, max, control_string, imm.v_float32); break;
-        case FLOAT_SIZE_64:
-          res = snprintf(str, max, control_string, imm.v_float64); break;
-        default: INT_FATAL("Unhandled case in switch statement");
-      }
-      break;
-    case NUM_KIND_COMPLEX:
-      switch (imm.num_index) {
-        case COMPLEX_SIZE_64:
-          res = snprintf(str, max, control_string,
-                        imm.v_complex64.r, imm.v_complex64.i);
-          break;
-        case COMPLEX_SIZE_128:
-          res = snprintf(str, max, control_string,
-                        imm.v_complex128.r, imm.v_complex128.i);
-          break;
-        default: INT_FATAL("Unhandled case in switch statement");
-      }
-      break;
-    case CONST_KIND_STRING:
-      res = snprintf(str, max, control_string, imm.v_string);
-      break;
-  }
-  return res;
-}
-*/
+
 int
 snprint_imm(char *str, size_t max, const Immediate &imm) {
   int res = -1;
