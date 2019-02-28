@@ -3239,6 +3239,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
     return NULL;
   }
 
+  // Do not forward initializers
   if (call->isNamedAstr(astrInit) && call->numActuals() >= 1) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (se->symbol() == gMethodToken) {
@@ -4854,7 +4855,8 @@ static void resolveInitVar(CallExpr* call) {
 
       // Does not allow initializations of the form:
       //   var x : MyGenericType = <expr>;
-      // Left as future work until 'init=' design finalized
+      // if the type of <expr> is not an instantiation of 'MyGenericType'.
+      // Left as future work until 'init=' design finalized.
       if (inst == NULL) {
         USR_FATAL(call, "Could not coerce '%s' to '%s' in initialization",
                   srcType->symbol->name,
