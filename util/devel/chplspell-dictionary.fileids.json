@@ -107,15 +107,11 @@
   "9de1a12a-8644-11e8-ad82-10ddb1d4c3d5": [
     "compiler/include/files.h"
   ],
-  "e1293828-ca86-11e7-8b8c-10ddb1d4c3d5": [
-    "compiler/include/implementForallIntents.h"
-  ],
   "b9f0367c-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/list.h"
   ],
   "59041530-69c5-11e6-90f0-10ddb1d4c3d5": [
-    "compiler/include/llvmDebug.h",
-    "compiler/util/llvmDebug.cpp"
+    "compiler/include/llvmDebug.h"
   ],
   "de79f068-ca86-11e7-8b8c-10ddb1d4c3d5": [
     "compiler/include/llvmVer.h"
@@ -206,9 +202,6 @@
   "a4542298-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/externCResolve.cpp"
   ],
-  "34a911f8-3901-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/passes/filesToAST.cpp"
-  ],
   "2c37162c-1a84-11e7-980e-10ddb1d4c3d5": [
     "compiler/passes/initializerRules.cpp"
   ],
@@ -269,29 +262,14 @@
   "e95fef8a-2015-11e7-980e-10ddb1d4c3d5": [
     "compiler/resolution/virtualDispatch.cpp"
   ],
-  "f8d1f5e4-2015-11e7-980e-10ddb1d4c3d5": [
-    "compiler/resolution/visibleCandidates.cpp"
-  ],
   "01f4f6a8-2016-11e7-980e-10ddb1d4c3d5": [
     "compiler/resolution/visibleFunctions.cpp"
   ],
   "c6d25ce8-a183-11e6-91b8-10ddb1d4c3d5": [
     "compiler/resolution/wrappers.cpp"
   ],
-  "fe909ee2-1d85-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/util/clangUtil.cpp"
-  ],
   "390fbcc4-4e3c-11e6-907f-843835579daa": [
     "compiler/util/files.cpp"
-  ],
-  "c4a256e8-ad6d-11e7-a204-10ddb1d4c3d5": [
-    "compiler/util/llvmAggregateGlobalOps.cpp"
-  ],
-  "4f8f1724-1d86-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/util/llvmGlobalToWide.cpp"
-  ],
-  "606babf2-1d86-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/util/llvmUtil.cpp"
   ],
   "9627af8c-e581-11e8-954d-10ddb1d4c3d5": [
     "compiler/util/stringutil.cpp"
@@ -364,9 +342,6 @@
   "d819ca0c-1e45-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/hdfs_and_chapel/intro.tex"
   ],
-  "59b9a50c-1a83-11e7-980e-10ddb1d4c3d5": [
-    "doc/rst/platforms/arm.rst"
-  ],
   "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
     "doc/rst/platforms/aws.rst"
   ],
@@ -408,9 +383,6 @@
   ],
   "cd28f34a-a1b9-11e7-a204-10ddb1d4c3d5": [
     "doc/rst/usingchapel/prereqs.rst"
-  ],
-  "d634896c-70c9-11e6-8028-843835579daa": [
-    "doc/rst/usingchapel/usingchapel.rst"
   ],
   "d741a952-4110-11e8-af7e-10ddb1d4c3d5": [
     "man/chpl.rst"
@@ -616,9 +588,6 @@
   "8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/chpl-timers.c"
   ],
-  "9e8a4742-0c12-11e7-980e-10ddb1d4c3d5": [
-    "runtime/src/chpl-topo.c"
-  ],
   "726887c4-bc39-11e6-9740-843835579daa": [
     "runtime/src/chplsys.c"
   ],
@@ -627,14 +596,10 @@
   ],
   "f2c0b4da-07e9-11e8-bed3-10ddb1d4c3d5": [
     "runtime/src/comm/ofi/comm-ofi-internal.h",
-    "runtime/src/comm/ofi/comm-ofi-oob.c",
     "runtime/src/comm/ofi/comm-ofi.c"
   ],
   "91c58b86-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/src/comm/ofi/comm-ofi-oob-pmi.c"
-  ],
-  "0502b256-07ea-11e8-bed3-10ddb1d4c3d5": [
-    "runtime/src/comm/ofi/comm-ofi-put-get.c"
   ],
   "c09c5496-ff1f-11e7-bed3-10ddb1d4c3d5": [
     "runtime/src/comm/ugni/comm-ugni-launch.c"
@@ -721,9 +686,6 @@
   "ec772e36-2953-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Statements.tex"
   ],
-  "22f875dc-4e3e-11e6-907f-843835579daa": [
-    "spec/Syntax.tex"
-  ],
   "ef5af4e8-2953-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Task_Parallelism_and_Synchronization.tex"
   ],
@@ -752,12 +714,7 @@
     "test/exercises/boundedBuffer/solutions/boundedBuffer-sync.chpl"
   ],
   "0738cf48-a89f-11e6-91b8-10ddb1d4c3d5": [
-    "test/exercises/c-ray/c-ray.chpl",
-    "test/exercises/c-ray/forStudents/Image.chpl",
-    "test/exercises/c-ray/forStudents/c-ray.chpl"
-  ],
-  "b321068e-a888-11e6-91b8-10ddb1d4c3d5": [
-    "test/exercises/c-ray/forStudents/README"
+    "test/exercises/c-ray/c-ray.chpl"
   ],
   "2409dd7e-b858-11e6-9740-843835579daa": [
     "test/release/examples/benchmarks/hpcc/fft.chpl"
@@ -805,11 +762,6 @@
     "test/release/examples/benchmarks/miniMD/README"
   ],
   "d0d2e0ae-b85e-11e6-9740-843835579daa": [
-    "test/release/examples/benchmarks/miniMD/explicit/helpers/forces.chpl",
-    "test/release/examples/benchmarks/miniMD/explicit/helpers/initMD.chpl",
-    "test/release/examples/benchmarks/miniMD/explicit/helpers/neighbor.chpl",
-    "test/release/examples/benchmarks/miniMD/explicit/helpers/thermo.chpl",
-    "test/release/examples/benchmarks/miniMD/explicit/miniMD.chpl",
     "test/release/examples/benchmarks/miniMD/helpers/forces.chpl",
     "test/release/examples/benchmarks/miniMD/helpers/initMD.chpl",
     "test/release/examples/benchmarks/miniMD/helpers/neighbor.chpl",

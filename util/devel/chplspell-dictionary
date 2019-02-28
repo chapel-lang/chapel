@@ -2780,34 +2780,6 @@ ftemp
 newresult
 rauto
 
-FILEID: fe909ee2-1d85-11e6-a3a6-10ddb1d4c3d5
-casttype
-ffast
-fsyntax
-imodules
-infs
-inparens
-ipra
-maino
-mcpu
-mpicxx
-ploc
-qunused
-reassoc
-srcm
-thunderx
-tlii
-wmissing
-wstrict
-wwrite
-
-FILEID: 4f8f1724-1d86-11e6-a3a6-10ddb1d4c3d5
-sroa
-widecast
-
-FILEID: 606babf2-1d86-11e6-a3a6-10ddb1d4c3d5
-xfloat
-
 FILEID: e3aa346c-1d8a-11e6-a3a6-10ddb1d4c3d5
 binarytrees
 chameneos
@@ -3367,9 +3339,6 @@ jvec
 rowno
 wfmt
 
-FILEID: 34a911f8-3901-11e6-a3a6-10ddb1d4c3d5
-wkfn
-
 FILEID: 7de3ce6c-3f64-11e6-907f-843835579daa
 cabsf
 cacos
@@ -3646,9 +3615,6 @@ tmpheader
 tmpheadername
 tofix
 
-FILEID: 22f875dc-4e3e-11e6-907f-843835579daa
-parenthesesless
-
 FILEID: 3277f5dc-4e3e-11e6-907f-843835579daa
 parenthesesless
 
@@ -3694,9 +3660,6 @@ utilised
 utilising
 vmtable
 vmtables
-
-FILEID: d634896c-70c9-11e6-8028-843835579daa
-chplconfig
 
 FILEID: b53f219e-718d-11e6-8e91-843835579daa
 fastaredux
@@ -3772,11 +3735,6 @@ bdce
 ccfbb
 urse
 uscore
-
-FILEID: b321068e-a888-11e6-91b8-10ddb1d4c3d5
-catfiles
-cleanfiles
-sphfract
 
 FILEID: 0738cf48-a89f-11e6-91b8-10ddb1d4c3d5
 bitmapinfoheader
@@ -4278,9 +4236,6 @@ toktext
 FILEID: 208f1cd2-0c12-11e7-980e-10ddb1d4c3d5
 cref
 
-FILEID: 9e8a4742-0c12-11e7-980e-10ddb1d4c3d5
-nbobjs
-
 FILEID: aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5
 adrerr
 allgathers
@@ -4429,9 +4384,6 @@ downarr
 downrank
 uprank
 
-FILEID: 59b9a50c-1a83-11e7-980e-10ddb1d4c3d5
-aarch
-
 FILEID: 2c37162c-1a84-11e7-980e-10ddb1d4c3d5
 wout
 
@@ -4445,11 +4397,6 @@ icts
 parg
 pthis
 ptype
-
-FILEID: f8d1f5e4-2015-11e7-980e-10ddb1d4c3d5
-cfns
-multipledestructor
-replmt
 
 FILEID: 01f4f6a8-2016-11e7-980e-10ddb1d4c3d5
 fock
@@ -4582,10 +4529,6 @@ eliben
 fnints
 pycparser
 
-FILEID: c4a256e8-ad6d-11e7-a204-10ddb1d4c3d5
-agoid
-agomask
-
 FILEID: cd80a742-ad6d-11e7-a204-10ddb1d4c3d5
 intented
 
@@ -4619,9 +4562,6 @@ ovse
 
 FILEID: de79f068-ca86-11e7-8b8c-10ddb1d4c3d5
 llvmver
-
-FILEID: e1293828-ca86-11e7-8b8c-10ddb1d4c3d5
-extd
 
 FILEID: ebe3ea10-ca86-11e7-8b8c-10ddb1d4c3d5
 skind
@@ -4687,10 +4627,6 @@ txed
 xcrc
 xpct
 xpctd
-
-FILEID: 0502b256-07ea-11e8-bed3-10ddb1d4c3d5
-ctxs
-readfrom
 
 FILEID: 1873381c-2cbe-11e8-aa67-10ddb1d4c3d5
 detemp
