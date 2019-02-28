@@ -23,32 +23,10 @@ module ChapelReduce {
   use ChapelStandard;
 
   proc chpl__scanIteratorZip(op, data) {
-    // want:
-    //
-    // var arr = for d in zip((...data)) do accumgen(d);
-    // but it causes the compiler to segfault... :(
-    //
-    // SO:
-    var arr: [data(1).domain] accumgenType();
-    for (a,b) in zip (arr, chpl__scanIteratorZipHelp(op, data)) do
-      a = b;
+    var arr = for d in zip((...data)) do chpl__accumgen(op, d);
+
     delete op;
     return arr;
-
-    proc accumgenType() type {
-      var x = op.generate();
-      return x.type;
-    }
-  }
-
-  // This is a workaround helper routine, introduced in order to
-  // workaround the lack of the preferred implementation of
-  // chpl__scanIteratorZip().
-  iter chpl__scanIteratorZipHelp(op, data) {
-    for e in zip((...data)) {
-      op.accumulate(e);
-      yield op.generate();
-    }
   }
 
   proc chpl__scanIterator(op, data) {
@@ -56,11 +34,6 @@ module ChapelReduce {
 
     delete op;
     return arr;
-
-    proc accumgen(d) {
-      op.accumulate(d);
-      return op.generate();
-    }
   }
 
   // helper routine to run the accumulate + generate steps of a scan
