@@ -1077,6 +1077,14 @@ module ChapelBase {
     }
   }
 
+  pragma "task complete impl fn"
+  extern proc chpl_comm_task_end(): void;
+
+  pragma "task complete impl fn"
+  proc chpl_after_forall_fence() {
+    chpl_comm_task_end(); // TODO: change to chpl_comm_unordered_task_fence()
+  }
+
   // This function is called once by each newly initiated task.  No on
   // statement is needed because the call to sub() will do a remote
   // fork (on) if needed.
@@ -1085,8 +1093,6 @@ module ChapelBase {
   pragma "down end count fn"
   proc _downEndCount(e: _EndCount, err: unmanaged Error) {
     chpl_save_task_error(e, err);
-    pragma "task complete impl fn"
-    extern proc chpl_comm_task_end(): void;
     chpl_comm_task_end();
     // inform anybody waiting that we're done
     e.i.sub(1, memory_order_release);

@@ -3248,8 +3248,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
 
 
   // Don't forward forwarding expr (infinite loop ensues)
-  const char* ignorePrefix = "chpl_forwarding_expr";
-  if (0 == memcmp(ignorePrefix, calledName, strlen(ignorePrefix)))
+  if (startsWith(calledName, "chpl_forwarding_expr"))
     return NULL;
 
   // This is a workaround for resolvePromotionType being called

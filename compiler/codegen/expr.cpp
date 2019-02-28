@@ -4038,6 +4038,63 @@ DEFINE_PRIM(PRIM_ASSIGN) {
       codegenAssign(lhs, rg);
     }
 }
+
+static bool commGetUnorderedAvailable(Type* elementType) {
+  if (0 == strcmp(CHPL_COMM, "ugni")) {
+    // the ugni layer only supports unordered gets for up to 8 bytes
+    // and we use numeric type as a stand-in for that
+    if (is_bool_type(elementType) ||
+        is_int_type(elementType) ||
+        is_uint_type(elementType) ||
+        is_real_type(elementType) ||
+        is_imag_type(elementType) ||
+        elementType == dtComplex[COMPLEX_SIZE_64] ||
+        // note: default sized complex is too big at present
+        is_enum_type(elementType))
+      return true;
+  }
+  return false;
+}
+
+DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
+
+  Expr* lhsExpr = call->get(1);
+  Expr* rhsExpr = call->get(2);
+  bool lhsWide = lhsExpr->isWideRef();
+  bool rhsWide = rhsExpr->isWideRef();
+
+  if (lhsWide == false && rhsWide == true &&
+      commGetUnorderedAvailable(lhsExpr->getValType())) {
+    // do an unordered GET
+    // chpl_comm_get_unordered(
+    //   void *dst,
+    //   c_nodeid_t src_node, void* src_raddr,
+    //   size_t size, int32_t typeIndex, int32_t commID,
+    //   int ln, int32_t fn);
+    GenRet dst = codegenValuePtr(call->get(1));
+    GenRet src = call->get(2);
+    GenRet ln = call->get(3);
+    GenRet fn = call->get(4);
+    TypeSymbol* dt = call->get(1)->typeInfo()->getValType()->symbol;
+    GenRet size = codegenSizeof(dt->typeInfo());
+
+    if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
+      dst = codegenDeref(dst);
+
+    codegenCall("chpl_comm_get_unordered",
+                codegenCastToVoidStar(codegenAddrOf(dst)),
+                codegenRnode(src),
+                codegenRaddr(src),
+                size,
+                genTypeStructureIndex(dt),
+                genCommID(gGenInfo),
+                ln,
+                fn);
+  } else {
+    // Handle it like a normal assign
+    FORWARD_PRIM(PRIM_ASSIGN);
+  }
+}
 DEFINE_PRIM(PRIM_ADD_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " += ", codegenAdd);
 }
@@ -5084,6 +5141,10 @@ DEFINE_PRIM(PRIM_COPIES_NO_ALIAS_SET) {
     }
 #endif
   }
+}
+
+DEFINE_PRIM(PRIM_OPTIMIZATION_INFO) {
+  // No action required here
 }
 
 void CallExpr::registerPrimitivesForCodegen() {

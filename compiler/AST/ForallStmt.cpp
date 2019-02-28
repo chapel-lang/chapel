@@ -595,3 +595,44 @@ bool ForallStmt::hasVectorizationHazard() const {
 void ForallStmt::setHasVectorizationHazard(bool v) {
   fVectorizationHazard = v;
 }
+
+static void gatherFollowerLoopBodies(BlockStmt* block,
+                                     std::vector<BlockStmt*>& bodies) {
+  for_alist(stmt, block->body) {
+    if (ForLoop* forLoop = toForLoop(stmt)) {
+      if (SymExpr* indexSe = forLoop->indexGet())
+        if (indexSe->symbol()->hasFlag(FLAG_FOLLOWER_INDEX))
+          bodies.push_back(forLoop);
+    } else if (BlockStmt* inner = toBlockStmt(stmt)) {
+      if (inner->isRealBlockStmt())
+        gatherFollowerLoopBodies(inner, bodies);
+    }
+  }
+}
+
+std::vector<BlockStmt*> ForallStmt::loopBodies() const {
+  std::vector<BlockStmt*> bodies;
+
+  // First, check for follower loops with fast follower check.
+  for_alist(stmt, fLoopBody->body) {
+    if (CondStmt* cond = toCondStmt(stmt)) {
+      gatherFollowerLoopBodies(cond->thenStmt, bodies);
+      if (cond->elseStmt)
+        gatherFollowerLoopBodies(cond->elseStmt, bodies);
+    }
+  }
+  if (bodies.size() == 0) {
+    // No fast follower check. Try a fast follower loop.
+    gatherFollowerLoopBodies(fLoopBody, bodies);
+  }
+
+  // With the fast follower check, we might have 2 bodies,
+  // but it's probably an error if we find more than that.
+  INT_ASSERT(bodies.size() <= 2);
+
+  if (bodies.size() == 0) {
+    // No follower loops, must be standalone pattern, just use normal body
+    bodies.push_back(fLoopBody);
+  }
+  return bodies;
+}

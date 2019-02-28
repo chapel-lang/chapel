@@ -101,7 +101,6 @@ module Atomics {
     chpl_rmem_consist_fence(order);
   }
 
-
   private proc isSupported(type T) param {
     return T == bool || isInt(T) || isUint(T) || isReal(T);
   }
