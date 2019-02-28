@@ -613,7 +613,7 @@ So we give the ForallStmt a trivial leader, then have loopBody()
 be a regular ForLoop, zippered over these serial iterators.
 
 Retaining the ForallStmt itself means that forall intents, if any,
-will be hanled by existing code.
+will be handled by existing code.
 */
 static CallExpr* handleZipperedSerial(ForallStmt* fs, FnSymbol* origIterFn,
                                       SymExpr* origSE)
