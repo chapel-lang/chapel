@@ -241,6 +241,7 @@ module SharedObject {
 
     // Initialize generic 'shared' var-decl from owned:
     //   var s : shared = ownedThing;
+    pragma "no doc"
     proc init=(pragma "nil from arg" in take: owned) {
       this.init(take);
     }

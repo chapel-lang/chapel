@@ -246,11 +246,13 @@ module OwnedObject {
       this.chpl_p = src.release();
     }
 
+    pragma "no doc"
     proc init=(type ThisType, src : _nilType) {
       this.init(ThisType.chpl_t);
     }
 
     // Copy-init implementation to allow for 'new _owned(foo)' in module code
+    pragma "no doc"
     proc init(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
       this.chpl_t = src.chpl_t;
       this.chpl_p = src.release();
