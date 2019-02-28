@@ -764,8 +764,6 @@ int FnSymbol::hasGenericFormals() const {
   bool hasGenericDefaults =  true;
   int  retval             =     0;
 
-  bool isInit = isInitializer() || isCopyInit();
-
   for_formals(formal, this) {
     bool isGeneric = false;
 
@@ -786,7 +784,8 @@ int FnSymbol::hasGenericFormals() const {
       }
 
     // Mark initializer formals using 'this' as generic
-    } else if (isInit && _this->type->symbol->hasFlag(FLAG_GENERIC)) {
+    } else if (isCopyInit() && _this->type->symbol->hasFlag(FLAG_GENERIC)) {
+      isGeneric = true;
       if (formal->typeExpr) {
         std::vector<SymExpr*> syms;
         collectSymExprs(formal->typeExpr, syms);

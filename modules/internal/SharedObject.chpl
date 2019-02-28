@@ -235,10 +235,6 @@ module SharedObject {
       this.complete();
     }
 
-    proc init=(pragma "nil from arg" in take:owned) {
-      this.init(take);
-    }
-
     // Initialize generic 'shared' var-decl from owned:
     //   var s : shared = ownedThing;
     pragma "no doc"
@@ -260,6 +256,10 @@ module SharedObject {
 
       if this.chpl_pn != nil then
         this.chpl_pn.retain();
+    }
+
+    proc init=(src : _nilType) {
+      this.init(this.type.chpl_t);
     }
 
     /*
