@@ -46,7 +46,7 @@ module CSV {
     }
     /* Read a CSV file with lines matching the types of the fields in a record
      */
-    iter readCSV(type t) throws where isRecordType(t) {
+    iter read(type t) throws where isRecordType(t) {
       use Reflection;
       var r: t;
       var skipHeader = hasHeader;
@@ -74,7 +74,7 @@ module CSV {
     /* Read a CSV file with fields of the types given by
        the arguments to the function
      */
-    iter readCSV(type t...) throws {
+    iter read(type t...) throws {
       if ch.writing {
         throw new owned ReaderWriterMismatchError();
       }
@@ -99,7 +99,7 @@ module CSV {
     /* Write a record to the channel owned by this `CSVIO` instance
        resulting in a single row being added to the channel.
      */
-    proc writeCSV(r: ?t) throws where isRecordType(t) {
+    proc write(r: ?t) throws where isRecordType(t) {
       use Reflection;
 
       if !ch.writing {
@@ -117,7 +117,7 @@ module CSV {
     /* Write a tuple to the channel owned by this `CSVIO` instance
        resulting in a single row being added to the channel.
      */
-    proc writeCSV(tup: ?t) throws where isTupleType(t) {
+    proc write(tup: ?t) throws where isTupleType(t) {
       if !ch.writing {
         throw new ReaderWriterMismatchError();
       }

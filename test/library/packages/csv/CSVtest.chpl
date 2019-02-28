@@ -7,16 +7,16 @@ module CSVtest {
 
     writeln("First read");
     try {
-      // read and write using a tuple. The type arguments to `readCSV` define
+      // read and write using a tuple. The type arguments to `read` define
       // the types in each row.
       var myReader = if infile == "" then stdin else openreader(infile);
       var myWriter = if outfile == "" then stdout else openwriter(outfile);
       var r = new CSVIO(myReader, hasHeader=false);
       var w = new CSVIO(myWriter);
-      var myData = r.readCSV((...(4*real)), string);
+      var myData = r.read((...(4*real)), string);
 
       for d in myData {
-        w.writeCSV(d);
+        w.write(d);
       }
     } catch error {
       writeln("Error: ", error);
@@ -36,10 +36,10 @@ module CSVtest {
       var r = new CSVIO(myReader, hasHeader=false);
       var w = new CSVIO(myWriter);
 
-      var myData = r.readCSV(Row);
+      var myData = r.read(Row);
 
       for d in myData {
-        w.writeCSV(d);
+        w.write(d);
       }
     } catch error {
       writeln("Error: ", error);
@@ -54,7 +54,7 @@ module CSVtest {
       var r = new CSVIO(myReader, hasHeader=false);
       var w = new CSVIO(myWriter);
 
-      var myData = r.readCSV((...(4*real)), string);
+      var myData = r.read((...(4*real)), string);
       var A: [1..myData.numElements, 1..myData[1].size-1] real;
       var labels: [1..myData.numElements] string;
 
