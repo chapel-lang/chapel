@@ -1685,6 +1685,7 @@ void AggregateType::buildCopyInitializer() {
     bool isGeneric = false;
     // If this type is generic, then the 'other' formal needs to be generic as
     // well
+    // TODO: Why can't we use 'fieldIsGeneric' here?
     for_fields(fieldDefExpr, this) {
       if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
         if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
