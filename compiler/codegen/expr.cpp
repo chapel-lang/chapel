@@ -4045,8 +4045,21 @@ DEFINE_PRIM(PRIM_ASSIGN) {
     }
 }
 
-static bool commGetUnorderedAvailable() {
-  return (0 == strcmp(CHPL_COMM, "ugni"));
+static bool commGetUnorderedAvailable(Type* elementType) {
+  if (0 == strcmp(CHPL_COMM, "ugni")) {
+    // the ugni layer only supports unordered gets for up to 8 bytes
+    // and we use numeric type as a stand-in for that
+    if (is_bool_type(elementType) ||
+        is_int_type(elementType) ||
+        is_uint_type(elementType) ||
+        is_real_type(elementType) ||
+        is_imag_type(elementType) ||
+        elementType == dtComplex[COMPLEX_SIZE_64] ||
+        // note: default sized complex is too big at present
+        is_enum_type(elementType))
+      return true;
+  }
+  return false;
 }
 
 DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
@@ -4056,7 +4069,8 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
   bool lhsWide = lhsExpr->isWideRef();
   bool rhsWide = rhsExpr->isWideRef();
 
-  if (lhsWide == false && rhsWide == true && commGetUnorderedAvailable()) {
+  if (lhsWide == false && rhsWide == true &&
+      commGetUnorderedAvailable(lhsExpr->getValType())) {
     // do an unordered GET
     // chpl_comm_get_unordered(
     //   void *dst,
