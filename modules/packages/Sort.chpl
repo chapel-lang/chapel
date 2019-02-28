@@ -802,6 +802,46 @@ proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
     compilerError("selectionSort() requires 1-D array");
 }
 
+proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
+               var start=Dom.low, var end=Dom.high)
+  where !Dom.stridable
+{
+  chpl_check_comparator(comparator, eltType);
+
+  // Based on Sedgewick's Shell Sort -- see
+  // Analysis of Shellsort and Related Algorithms 1996
+  // and see Marcin Ciura - Best Increments for the Average Case of Shellsort
+  // for the choice of these increments.
+  var start_n = start;
+  var end_n = end;
+  var n = 1 + end_n - start_n;
+  var js,h,hs:int;
+  var v,tmp:A.eltType;
+  const incs = (701, 301, 132, 57, 23, 10, 4, 1);
+  const nincs = incs.size;
+  for k in 1..nincs {
+    h = incs[k];
+    hs = h + start_n;
+    for is in hs..end_n {
+      v = A[is];
+      js = is;
+      while js >= hs && chpl_compare(v,A[js-h]) < 0 {
+        A[js] = A[js - h];
+        js -= h;
+      }
+      A[js] = v;
+    }
+  }
+}
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("shellSort() requires 1-D array");
+}
+
+
 
 /* Comparators */
 
