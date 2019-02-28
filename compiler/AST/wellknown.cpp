@@ -27,6 +27,7 @@
 AggregateType* dtArray;
 AggregateType* dtBaseArr;
 AggregateType* dtBaseDom;
+AggregateType* dtCFI_cdesc_t;
 AggregateType* dtDist;
 AggregateType* dtError;
 AggregateType* dtExternalArray;
@@ -90,7 +91,7 @@ void gatherIteratorTags() {
 }
 
 // This structure and the following array provide a list of types that must be
-// defined in module code.  At this point, they are all classes.
+// defined in module code.
 struct WellKnownType
 {
   const char*     name;
@@ -104,6 +105,7 @@ static WellKnownType sWellKnownTypes[] = {
   { "BaseArr",               &dtBaseArr,          true  },
   { "BaseDom",               &dtBaseDom,          true  },
   { "BaseDist",              &dtDist,             true  },
+  { "CFI_cdesc_t",           &dtCFI_cdesc_t,      false },
   { "chpl_external_array",   &dtExternalArray,    false },
   { "chpl_localeID_t",       &dtLocaleID,         false },
   { "chpl_main_argument",    &dtMainArgument,     false },

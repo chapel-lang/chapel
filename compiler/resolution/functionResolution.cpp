@@ -4492,9 +4492,11 @@ static void resolveTupleExpand(CallExpr* call) {
     }
   }
 
-  if (size == 0) {
+  if (size == 0)
     INT_FATAL(call, "Invalid tuple expand primitive");
-  }
+
+  if (parent != NULL && parent->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE))
+    size = 1; // use the first component of the tuple for the shape
 
   stmt->insertBefore(noop);
 
@@ -8015,7 +8017,9 @@ static void cleanupVoidVarsAndFields() {
   // Remove most uses of void variables and fields
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree()) {
-      if (call->isPrimitive(PRIM_MOVE)) {
+     if (call->isPrimitive())
+      switch (call->primitive->tag) {
+      case PRIM_MOVE: {
         if (isVoidOrVoidTupleType(call->get(2)->typeInfo()) ||
             call->get(2)->typeInfo() == dtVoid->refType) {
           INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
@@ -8036,7 +8040,9 @@ static void cleanupVoidVarsAndFields() {
             call->remove();
           }
         }
-      } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+        break;
+      }
+      case PRIM_SET_MEMBER: {
         if (isVoidOrVoidTupleType(call->get(3)->typeInfo())) {
           INT_ASSERT(call->get(2)->typeInfo() == call->get(3)->typeInfo());
           // Remove set_member(a, void, void) calls
@@ -8048,7 +8054,9 @@ static void cleanupVoidVarsAndFields() {
             call->remove();
           }
         }
-      } else if (call->isPrimitive(PRIM_RETURN)) {
+        break;
+      }
+      case PRIM_RETURN: {
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
             call->get(1)->typeInfo() == dtVoid->refType) {
           // Change functions that return void to use the global
@@ -8060,7 +8068,9 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
-      } else if (call->isPrimitive(PRIM_YIELD)) {
+        break;
+      }
+      case PRIM_YIELD: {
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
             call->get(1)->typeInfo() == dtVoid->refType) {
           // Change iterators that yield void to use the global
@@ -8072,12 +8082,19 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
-      } else if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
+        break;
+      }
+      case PRIM_CALL_DESTRUCTOR: {
         // Remove calls to destructors for homogeneous tuples of void
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo())) {
           call->remove();
         }
+        break;
       }
+      default:
+        break;
+      } // switch (call->primitive->tag)
+     else
       if (FnSymbol* fn = call->resolvedFunction()) {
         bool seenVoid = false;
         // Remove actual arguments that are void from function calls

@@ -5,14 +5,8 @@ export proc chpl_library_init_ftn() {
   chpl__init_chapelProcs();
 }
 
-export proc takesArray(ref FA: CFI_cdesc_t) {
-
-  assert(FA.rank == 2);
-  assert(FA.ctype == CFI_type_double);
-
-  ref A = makeArrayFromFortranArray(FA, real, 2);
-
-  forall (i,j) in A.domain {
-    A[i,j] = i*100+j;
+export proc takesArray(A: [] real) {
+  forall i in A.domain {
+    A[i] = i*10;
   }
 }

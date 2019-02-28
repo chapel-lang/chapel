@@ -2640,7 +2640,14 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
         // chpl_external_array might be able to, so try to make a
         // chpl_external_array with it.  If that doesn't work, the user must be
         // more explicit with their domain.
-        formal->typeExpr->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+        if (!fLibraryFortran) {
+          formal->typeExpr->replace(
+            new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+        } else {
+          formal->typeExpr->replace(
+            new BlockStmt(new SymExpr(dtCFI_cdesc_t->symbol)));
+          formal->intent = INTENT_REF;
+        }
       } else {
         // Create a representation of the array argument that is accessible
         // outside of Chapel, depending on the type of the array.  If the array
@@ -2662,8 +2669,7 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
 
       // Transform the outside representation into a Chapel array, and send that
       // in the call to the original function.
-      CondStmt* cond = makeCondToTransformArr(formal, chplArr, eltExpr,
-                                              call);
+      CondStmt* cond = makeCondToTransformArr(formal, chplArr, eltExpr, call);
 
       retCall->insertBefore(cond);
 
@@ -2676,12 +2682,16 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
 }
 
 // Create an if statement based on the formal type to transform
-// chpl_external_array or chpl_opaque_array into a normal Chapel array
+// chpl_external_array, CFI_cdesc_t, or chpl_opaque_array into a normal
+// Chapel array
 static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
                                         Expr* eltExpr, Expr* oldCall) {
   // if (formal.type is dtExternalArray) then
-  //    formalname_arr = makeArrayFromExternArray(formal, eltExpr)
-  //    else formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
+  //   formalname_arr = makeArrayFromExternArray(formal, eltExpr)
+  // else if (formal.type is dtCFI_cdesc_t) then
+  //   formalname_arr = makeArrayFromFortranArray(formal, eltExpr)
+  // else
+  //   formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
   CallExpr* checkFormalType = new CallExpr(PRIM_IS_SUBTYPE,
                                            dtExternalArray->symbol,
                                            new CallExpr(PRIM_TYPEOF, formal));
@@ -2692,6 +2702,16 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
                                                 new SymExpr(formal),
                                                 eltExpr->copy());
   ifBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArrayFromExt));
+
+  CallExpr* checkFormalType2 = new CallExpr(PRIM_IS_SUBTYPE,
+                                            dtCFI_cdesc_t->symbol,
+                                            new CallExpr(PRIM_TYPEOF, formal));
+  BlockStmt* elseIfBody = new BlockStmt();
+  CallExpr* makeChplArrayFromFort = new CallExpr("makeArrayFromFortranArray",
+                                                 new SymExpr(formal),
+                                                 eltExpr->copy());
+
+  elseIfBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArrayFromFort));
 
   // Handle chpl_opaque_array
   BlockStmt* elseBody = new BlockStmt();
@@ -2713,7 +2733,7 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
   CallExpr* makeChplArray = new CallExpr("makeArrayFromOpaque",
                                          new SymExpr(formal), instanceType);
   elseBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArray));
-  CondStmt* cond = new CondStmt(checkFormalType, ifBody, elseBody);
+  CondStmt* cond = new CondStmt(checkFormalType, ifBody, new CondStmt(checkFormalType2, elseIfBody, elseBody));
   return cond;
 }
 

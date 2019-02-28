@@ -189,6 +189,8 @@ tags
 /test/extern/bradc/externSystem.appendme
 /test/extern/deitz/myfile.dat
 
+/test/interop/fortran/genFortranInterface/lib
+
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
 /test/io/ferguson/asserteof.test.nums
@@ -253,6 +255,8 @@ tags
 /test/library/standard/Path/saru/getParentName/parentNameErr.good
 /test/library/standard/Path/lydia/realpath/blahblahblah.txt
 /test/library/standard/Path/dlongnecke/normPath/normPath.good
+/test/library/standard/Path/dlongnecke/absPath/absPath.good
+/test/library/standard/Path/dlongnecke/absPath/fileAbsPath.good
 /test/library/standard/Spawn/stdout-stderr_real
 /test/library/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/library/standard/machine/numPUs.good
