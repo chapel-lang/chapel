@@ -33,7 +33,7 @@ void qtperf_free_perf_list(qtstategroup_t*,qtperf_perf_list_t*);
 static inline void spin_lock(volatile uint32_t* busy);
 
 static inline void spin_lock(volatile uint32_t* busy){
-  register bool stopped = 0;
+  bool stopped = 0;
   while(qthread_cas32(busy, 0, 1) != 0){
     stopped = 1;
   }

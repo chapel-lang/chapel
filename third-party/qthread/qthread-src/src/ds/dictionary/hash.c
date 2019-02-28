@@ -21,7 +21,7 @@ uint64_t API_FUNC qt_hash64(uint64_t key)
     };
 
 #if (SIZEOF_VOIDP == 8) /* i.e. a 64-bit machine */
-    register uint64_t a, b, c;
+    uint64_t a, b, c;
 
     a = b = 0x9e3779b97f4a7c13LL;   // the golden ratio
     c = 0xdeadbeefcafebabeULL + sizeof(uint64_t);
@@ -50,7 +50,7 @@ uint64_t API_FUNC qt_hash64(uint64_t key)
     return c;
 
 #else /* i.e. a 32-bit machine */
-    register uint32_t a, b, c;
+    uint32_t a, b, c;
 
     a = b = 0x9e3779b9;   // golden ratio
     c = 0xdeadbeef + sizeof(uint64_t);
@@ -115,7 +115,7 @@ aligned_t API_FUNC qt_hash_bytes(void     *key_ptr,
                                  size_t    bytes,
                                  aligned_t state)
 {
-    register aligned_t a, b, c;   /* internal state */
+    aligned_t a, b, c;   /* internal state */
     size_t             len = bytes;
     const uint8_t     *k   = key_ptr;
 
