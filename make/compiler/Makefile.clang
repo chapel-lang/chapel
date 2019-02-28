@@ -139,7 +139,7 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 ifeq ($(WARNINGS), 1)
 COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
-RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS) -Wno-deprecated-register
+RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 #WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 
