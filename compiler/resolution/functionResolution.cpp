@@ -4962,7 +4962,7 @@ static void resolveInitVar(CallExpr* call) {
 
       bool foundOldStyleInit = false;
       // Try resolving the old-style copy initializer first
-      if (at->getRootInstantiation()->hasUserDefinedInitEquals() == false &&
+      if (at->hasUserDefinedInitEquals() == false &&
           srcType->getValType() == targetType->getValType()) {
         call->setUnresolvedFunction("init");
 
@@ -5014,7 +5014,7 @@ FnSymbol* findCopyInit(AggregateType* at) {
 
   FnSymbol* ret = NULL;
 
-  if (at->getRootInstantiation()->hasUserDefinedInitEquals() == false) {
+  if (at->hasUserDefinedInitEquals() == false) {
     CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
     ret = resolveUninsertedCall(at, call, false);
   }

@@ -564,11 +564,16 @@ bool AggregateType::hasPostInitializer() const {
 
 bool AggregateType::hasUserDefinedInitEquals() const {
   bool retval = false;
-  for (int i = 0; i < methods.n && retval == false; i++) {
-    FnSymbol* method = methods.v[i];
-    if (method->isCopyInit() && method->hasFlag(FLAG_COMPILER_GENERATED) == false) {
-      retval = true;
+
+  if (instantiatedFrom == NULL) {
+    for (int i = 0; i < methods.n && retval == false; i++) {
+      FnSymbol* method = methods.v[i];
+      if (method->isCopyInit() && method->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+        retval = true;
+      }
     }
+  } else {
+    retval = instantiatedFrom->hasUserDefinedInitEquals();
   }
 
   return retval;
