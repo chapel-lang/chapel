@@ -2748,6 +2748,7 @@ fock
 forexpr
 iact
 icts
+iidx
 intpart
 multipledestructor
 otharrs
@@ -4486,8 +4487,10 @@ FILEID: 26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5
 rtmp
 
 FILEID: ad56c506-780b-11e7-88ba-10ddb1d4c3d5
+ator
 constup
 iitr
+inddef
 svdef
 tcall
 tpvs
@@ -4640,6 +4643,7 @@ cfgav
 cfgfab
 cfgfabsall
 commprogress
+comparand
 configmore
 cqes
 cswap
@@ -4655,6 +4659,7 @@ mrdesc
 mrkey
 ofichkerr
 ofichkret
+olen
 opnd
 pmichkret
 pmichksuccess
@@ -4709,6 +4714,7 @@ dabc
 
 FILEID: c51f1070-3a21-11e8-af7e-10ddb1d4c3d5
 abcdefghijklmnopqrstuvwxyz
+absolutized
 pathlen
 
 FILEID: 641fb78e-4110-11e8-af7e-10ddb1d4c3d5
@@ -4896,6 +4902,9 @@ sexecute
 
 FILEID: b5c2175e-244e-11e9-b712-843835579daa
 rmaps
+
+FILEID: 77dd4c52-3b13-11e9-b712-843835579daa
+urse
 
 NATURAL:
 aarch
@@ -5131,6 +5140,7 @@ ccflags
 ccopy
 ccwarnings
 cdef
+cdesc
 cdiv
 certinfo
 cfgfile
@@ -5244,6 +5254,7 @@ coverity
 cppflags
 cppreference
 cproj
+cptr
 cpuaffinity
 cpubind
 cpuinfo
@@ -5254,6 +5265,7 @@ craig
 craype
 crays
 creoleparser
+cresolve
 crlf
 crlfile
 crout
@@ -5587,6 +5599,7 @@ ethiopic
 etime
 etimedout
 etinternational
+etrunc
 etxtbsy
 euclean
 eunatch
@@ -5900,6 +5913,7 @@ interoperating
 interoperation
 interprocedural
 interruptible
+intmax
 intptr
 intrinsics
 ints
@@ -6110,6 +6124,7 @@ lgfortran
 lgmp
 lgpl
 lhdfs
+lhugetlbfs
 libclang
 libcrypto
 libcurl
@@ -6612,6 +6627,7 @@ pointee
 pontelli
 popcount
 portably
+posixpath
 poslast
 postamble
 postblit
@@ -6905,7 +6921,9 @@ setbit
 setchplenv
 setdetachstate
 setenv
+setit
 setopt
+setpointer
 setseq
 setsockopt
 setuptools
@@ -7158,6 +7176,7 @@ technotes
 telnet
 telugu
 tempdata
+tempfile
 templated
 testcase
 testfile
@@ -7221,6 +7240,7 @@ tounmanaged
 towlower
 towupper
 traceback
+tracebacks
 tradeoff
 tradeoffs
 transfertext

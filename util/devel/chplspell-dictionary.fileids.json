@@ -24,6 +24,9 @@
   "3f2e197e-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/AstToText.cpp"
   ],
+  "77dd4c52-3b13-11e9-b712-843835579daa": [
+    "compiler/AST/CatchStmt.cpp"
+  ],
   "fb18cb3c-244d-11e9-b712-843835579daa": [
     "compiler/AST/FnSymbol.cpp"
   ],
