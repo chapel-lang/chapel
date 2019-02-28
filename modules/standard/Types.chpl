@@ -114,6 +114,12 @@ proc isEnumType(type t) param {
   return isEnumHelp(t);
 }
 
+/* Returns `true` if the type `t` is an abstract `enum` type (one in which
+   not all symbols have associated integer values). */
+proc isAbstractEnumType(type t) param {
+  return __primitive("is abstract enum type", t);
+}
+
 /* Returns `true` if the type `t` is a `complex` type, of any width. */
 pragma "no instantiation limit"
 proc isComplexType(type t) param return

@@ -273,6 +273,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_IS_UNION_TYPE:
   case PRIM_IS_ATOMIC_TYPE:
   case PRIM_IS_EXTERN_TYPE:
+  case PRIM_IS_ABS_ENUM_TYPE:
   case PRIM_IS_TUPLE_TYPE:
   case PRIM_IS_STAR_TUPLE_TYPE:
   case PRIM_IS_SUBTYPE:
