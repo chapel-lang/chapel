@@ -19,7 +19,6 @@ writeln("\n\n");
 
 writeln("----- User-Defined Copy Initialization -----");
 
-// will be 'init=' eventually
 proc R.init=(other : R) {
   writeln("classic copy initialization");
   this.x = other.x;
