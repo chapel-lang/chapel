@@ -1389,6 +1389,16 @@ void finishCodegenLLVM() {
   // Now finish any Clang code generation.
   finishClang(info->clangInfo);
 
+  // Now overwrite the value of llvm.ident to show Chapel
+  char version[128];
+  char chapel_string[256];
+  get_version(version);
+  snprintf(chapel_string, 256, "Chapel version %s", version);
+  info->module->getNamedMetadata("llvm.ident")->setOperand(0,
+    llvm::MDNode::get(info->module->getContext(),
+      llvm::MDString::get(info->module->getContext(), chapel_string))
+  );
+
   if(debug_info)debug_info->finalize();
 
   // Verify the LLVM module.
