@@ -4044,6 +4044,11 @@ DEFINE_PRIM(PRIM_ASSIGN) {
       codegenAssign(lhs, rg);
     }
 }
+
+static bool commGetUnorderedAvailable() {
+  return (0 == strcmp(CHPL_COMM, "ugni"));
+}
+
 DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
 
   Expr* lhsExpr = call->get(1);
@@ -4051,7 +4056,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
   bool lhsWide = lhsExpr->isWideRef();
   bool rhsWide = rhsExpr->isWideRef();
 
-  if (lhsWide == false && rhsWide == true) {
+  if (lhsWide == false && rhsWide == true && commGetUnorderedAvailable()) {
     // do an unordered GET
     // chpl_comm_get_unordered(
     //   void *dst,
