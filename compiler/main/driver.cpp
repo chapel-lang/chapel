@@ -176,7 +176,7 @@ bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
 bool fIncrementalCompilation = false;
-bool fNoOptimizeForallUnordered = false;
+bool fNoOptimizeForallUnordered = true;
 
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
