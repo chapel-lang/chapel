@@ -646,6 +646,7 @@ private proc commonPrefixLength(a1, a2: [] string): int {
 
   return result;
 }
+
 /*
   Returns a relative filepath to `name` either from the current directory or a
   optional `start` directory. The filesystem is not accessed to verify the
@@ -716,7 +717,8 @@ proc relPath(name: string, start:string=curDir): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc file.relPath(start:string=curDir): string throws {
-  return relPath(this.path, start);
+  // Have to prefix module name to avoid muddying name resolution.
+  return Path.relPath(this.path, start);
 }
 
 /* Split name into a tuple that is equivalent to (:proc:`dirname`,
