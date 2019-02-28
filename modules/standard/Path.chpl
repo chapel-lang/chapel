@@ -28,8 +28,7 @@
 
       This module is currently missing the implementation for `expandUser
       <https://github.com/chapel-lang/chapel/issues/6008>`_, `normCase
-      <https://github.com/chapel-lang/chapel/issues/6013>`_, and `relPath
-      <https://github.com/chapel-lang/chapel/issues/6017>`_.  Once those are
+      <https://github.com/chapel-lang/chapel/issues/6013>`_, Once those are
       implemented, it will be considered complete.
 
    Operations which occur on the files or directories referred to by these paths
@@ -42,6 +41,8 @@
    :proc:`normPath`
    :proc:`realPath`
    :proc:`file.realPath`
+   :proc:`relPath`
+   :proc:`file.relPath`
 
    Path Manipulations
    ------------------
@@ -470,6 +471,27 @@ proc joinPath(paths: string ...?n): string {
   return result;
 }
 
+// This overload is private for now, needed for relPath.
+private proc joinPath(paths: [] string): string {
+  if paths.isEmpty() then
+    return "";
+
+  var result = paths(1);
+
+  // Wholesale rip of the implementation above, thanks!
+  for i in 2..paths.size {
+    var path = paths(i);
+    if path.startsWith('/') then
+      result = path;
+    else if result.endsWith('/') then
+      result += path;
+    else
+      result += '/' + path;
+  }
+
+  return result;
+}
+
 // Normalize leading slash count to a value between 0 and 2.
 private proc normalizeLeadingSlashCount(name: string): int {
   var result = if name.startsWith(pathSep) then 1 else 0;
@@ -608,6 +630,93 @@ proc file.realPath(out error: syserr): string {
     error = EINVAL;
   }
   return "";
+}
+
+// Compute the common prefix length between two lists of path components.
+private proc commonPrefixLength(a1, a2: [] string): int {
+  // Can we use the builtin min/max functions for this?
+  var (min, max) = if a1.size < a2.size then (a1, a2) else (a2, a1);
+  var result = 0;
+
+  for i in 1..min.size do
+    if min(i) != max(i) then
+      return result;
+    else
+      result += 1;
+
+  return result;
+}
+/*
+  Returns a relative filepath to `name` either from the current directory or a
+  optional `start` directory. The filesystem is not accessed to verify the
+  existence of the named path or the specified starting location.
+
+  .. warning::
+
+    This method is unsafe for use in a parallel environment due to its
+    reliance on :proc:`locale.cwd()`. Another task on the current locale
+    may change the current working directory at any time.
+
+  :arg name: A path which the caller would like to access.
+  :type name: `string`
+
+  :arg start: The location from which access to name is desired. If no value
+    is provided, defaults to :const:`curDir`.
+  :type start: `string`
+
+  :return: The relative path to `name` from the current directory.
+  :rtype: `string`
+
+  :throws SystemError: Upon failure to get the current working directory.
+*/
+proc relPath(name: string, start:string=curDir): string throws {
+  var realstart = if start == "" then curDir else start;
+
+  // NOTE: Reliance on locale.cwd() can't be avoided.
+  var startComps = absPath(realstart).split(pathSep, -1, true);
+  var nameComps = absPath(name).split(pathSep, -1, true);
+
+  var prefixLen = commonPrefixLength(startComps, nameComps);
+  var outComps : [1..0] string;
+
+  // Add up-levels until we reach where the two paths diverge.
+  for i in 1..(startComps.size - prefixLen) do
+    outComps.push_back([parentDir]);
+
+  // Append the portion of name following the common prefix.
+  if !nameComps.isEmpty() then
+    outComps.push_back(nameComps((prefixLen + 1)..nameComps.size));
+
+  if outComps.isEmpty() then
+    return curDir;
+
+  return joinPath(outComps);
+}
+
+/*
+  Returns a relative filepath to the path in this :type:`~IO.file` either from
+  the current directory or a optional `start` directory. The filesystem is not
+  accessed to verify the existence of the named path or the specified starting
+  location.
+
+  .. warning::
+
+    This method is unsafe for use in a parallel environment due to its
+    reliance on :proc:`locale.cwd()`. Another task on the current locale
+    may change the current working directory at any time.
+
+  :arg start: The location from which access to the path in this
+    :type:`~IO.file` is desired. If no value is provided, defaults to
+    :const:`curDir`.
+  :type start: `string`
+
+  :return: The relative filepath to the path in this :type:`~IO.file`.
+  :rtype: `string`
+
+  :throws SystemError: Upon failure to get the current working directory.
+*/
+proc file.relPath(start:string=curDir): string throws {
+  return relPath(this.path, start);
 }
 
 /* Split name into a tuple that is equivalent to (:proc:`dirname`,

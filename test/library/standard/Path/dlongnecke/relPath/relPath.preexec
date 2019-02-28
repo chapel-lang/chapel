@@ -1,0 +1,141 @@
+#!/usr/bin/env python
+
+# Produces the "relPath.good" file containing expected output for the Chapel
+# Path.relPath function.
+
+# Below are the testing categories that I used.
+
+# PARAMETER "NAME"          PARAMETER "START"
+#--------------------------------------------------------
+# _ '/'                     _ No start
+# _ '//'                    _ No common prefix
+# _ Absolute path           _ Common prefix, start < name
+# _ Absolute path '//'      _ Common prefix, start > name
+# _ Relative path           _ Common prefix, start = name
+
+# As an aside, my testing methods are getting to be so ridiculous that I need
+# to adopt a more programmatic method, because this is starting to take too
+# much time...
+
+
+import sys
+import os.path
+
+
+# Path separators.
+curDir = '.'
+parentDir = '..'
+pathSep = '/'
+pathSep2 = '//'
+
+
+def do_test(name, start=""):
+    print name, 'and', start, 'becomes', os.path.relpath(name, start)
+
+
+# Redirect STDOUT to the "absPath.good" file.
+stdout = sys.stdout
+sys.stdout = open('relPath.good', 'w')
+
+
+
+# Single slash, no start.
+do_test(pathSep)
+
+# Single slash, no common prefix (easy).
+do_test(pathSep, 'foo/bar/baz')
+
+# Single slash, common prefix, start < name (means it's empty).
+do_test(pathSep, "")
+
+# Single slash, common prefix, start > name.
+do_test(pathSep, '/foo/bar/baz')
+
+# Single slash, common prefix, start = name.
+do_test(pathSep, pathSep)
+
+
+
+# Double slash, no start.
+do_test(pathSep2)
+
+# Double slash, no common prefix (easy).
+do_test(pathSep2, 'foo/bar/baz')
+
+# Double slash, common prefix, start < name (means it's empty).
+do_test(pathSep2, "")
+
+# Double slash, common prefix, start > name.
+do_test(pathSep2, (pathSep2 + 'foo/bar/baz'))
+
+# Double slash, common prefix, start = name.
+do_test(pathSep2, pathSep2)
+
+
+
+# Absolute path, no start.
+do_test('/foo/bar/baz')
+
+# Absolute path, no common prefix (easy).
+do_test('/foo/bar/baz', 'hello/world')
+
+# Absolute path, common prefix, start < name.
+do_test('/foo/bar/baz', '/foo/bar')
+
+# Absolute path, common prefix, start > name.
+do_test('/foo/bar/baz', '/foo/bar/baz/ding')
+
+# Absolute path, common prefix, start = name.
+do_test('/foo/bar/baz', '/foo/bar/baz')
+
+
+
+# Absolute path ('//'), no start.
+do_test('//foo/bar/baz')
+
+# Absolute path ('//'), no common prefix (easy).
+do_test('//foo/bar/baz', 'hello/world')
+
+# Absolute path ('//'), common prefix, start < name.
+do_test('//foo/bar/baz', '//foo/bar')
+
+# Absolute path ('//'), common prefix, start > name.
+do_test('//foo/bar/baz', '//foo/bar/baz/ding')
+
+# Absolute path ('//'), common prefix, start = name.
+do_test('//foo/bar/baz', '//foo/bar/baz')
+
+
+
+# Relative path, no start.
+do_test('foo/bar/baz')
+
+# Relative path, no common prefix (easy).
+do_test('foo/bar/baz', 'meaning/of/life')
+
+# Relative path, common prefix, start < name.
+do_test('foo/bar/baz', 'foo/bar')
+
+# Relative path, common prefix, start > name.
+do_test('foo/bar/baz', 'foo/bar/baz/ding')
+
+# Relative path, common prefix, start = name.
+do_test('foo/bar/baz', 'foo/bar/baz')
+
+
+
+# OTHER CASES (I did not have enough energy to commit to 80+ permutations):
+
+
+
+# Relative path, start has leading up-levels.
+do_test('foo/bar/baz', '../baz/ding/')
+
+# Relative path, start has trailing up-levels.
+do_test('foo/bar/baz', 'foo/bar/..')
+
+# Relative path, leading up-levels, no start.
+do_test('../../foo/bar')
+
+# Relative path, trailing up-levels, no start.
+do_test('foo/bar/baz/../../')
