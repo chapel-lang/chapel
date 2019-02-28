@@ -96,6 +96,11 @@ module CSV {
       }
     }
 
+    iter read(type t) throws where isTupleType(t) {
+      for r in read((...t)) {
+        yield r;
+      }
+    }
     /* Write a record to the channel owned by this `CSVIO` instance
        resulting in a single row being added to the channel.
      */

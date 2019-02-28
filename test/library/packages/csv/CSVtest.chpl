@@ -70,5 +70,24 @@ module CSVtest {
     } catch error {
       writeln("Error: ", error);
     }
+
+    writeln("Fourth read");
+    try {
+      // read and write using a tuple. The type arguments to `read` define
+      // the types in each row.
+      type t = ((...(4*real)), string);
+      var myReader = if infile == "" then stdin else openreader(infile);
+      var myWriter = if outfile == "" then stdout else openwriter(outfile);
+      var r = new CSVIO(myReader, hasHeader=false);
+      var w = new CSVIO(myWriter);
+      var myData = r.read(t);
+
+      for d in myData {
+        w.write(d);
+      }
+    } catch error {
+      writeln("Error: ", error);
+    }
+
   }
 }
