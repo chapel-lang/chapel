@@ -1,1 +1,4 @@
-string-isEmptyString.chpl:1: warning: 'isEmptyString' has been deprecated, use 'isEmpty' method instead
+string-isEmptyString.chpl:1: warning: isEmptyString is deprecated - please use isEmpty instead
+string-isEmptyString.chpl:2: warning: isEmptyString is deprecated - please use isEmpty instead
+false
+true

@@ -1,1 +1,2 @@
-var b = 'deprecate me please'.isEmptyString();
+writeln('deprecate me please'.isEmptyString());
+writeln(''.isEmptyString());
