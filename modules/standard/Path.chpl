@@ -633,7 +633,7 @@ proc file.realPath(out error: syserr): string {
 }
 
 // Compute the common prefix length between two lists of path components.
-private proc commonPrefixLength(a1, a2: [] string): int {
+private proc commonPrefixLength(a, a2: [] string): int {
   // Can we use the builtin min/max functions for this?
   var (min, max) = if a1.size < a2.size then (a1, a2) else (a2, a1);
   var result = 0;
@@ -648,7 +648,7 @@ private proc commonPrefixLength(a1, a2: [] string): int {
 }
 
 /*
-  Returns a relative filepath to `name` either from the current directory or a
+  Returns a relative filepath to `name` either from the current directory or an
   optional `start` directory. The filesystem is not accessed to verify the
   existence of the named path or the specified starting location.
 
@@ -696,7 +696,7 @@ proc relPath(name: string, start:string=curDir): string throws {
 
 /*
   Returns a relative filepath to the path in this :type:`~IO.file` either from
-  the current directory or a optional `start` directory. The filesystem is not
+  the current directory or an optional `start` directory. The filesystem is not
   accessed to verify the existence of the named path or the specified starting
   location.
 
