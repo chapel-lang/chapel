@@ -5767,7 +5767,11 @@ private inline
 proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoPrimitiveType(t)
 {
   try {
-    lhs = rhs:t;
+    if isAbstractEnumType(t) {
+      return ERANGE;
+    } else {
+      lhs = rhs:t;
+    }
   } catch {
     return ERANGE;
   }
