@@ -434,6 +434,15 @@ proc isAbsPath(name: string): bool {
   }
 }
 
+private proc joinPathComponent(comp: string, ref result: string) {
+  if comp.startsWith('/') || result == "" then
+    result = comp;
+  else if result.endsWith('/') then
+    result += comp;
+  else
+    result += '/' + comp;
+}
+
 /* Join and return one or more paths, putting precedent on the last absolute
    path seen.  Return value is the concatenation of the paths with one
    directory separator following each non-empty argument except the last.
@@ -454,20 +463,11 @@ proc isAbsPath(name: string): bool {
    :rtype: `string`
 */
 proc joinPath(paths: string ...?n): string {
-  var result : string = paths(1); // result variable stores final answer
-  // loop to iterate over all the paths
-  for i in 2..n {
-    var temp : string = paths(i);
-    if temp.startsWith('/') {
-      result = temp;
-    }
-    else if result.endsWith('/') {
-      result = result + temp;
-    }
-    else {
-      result = result + "/" + temp;
-    }
-  }
+  var result: string;
+
+  for path in paths do
+    joinPathComponent(path, result);
+
   return result;
 }
 
@@ -476,18 +476,10 @@ private proc joinPath(paths: [] string): string {
   if paths.isEmpty() then
     return "";
 
-  var result = paths(1);
+  var result: string;
 
-  // Wholesale rip of the implementation above, thanks!
-  for i in 2..paths.size {
-    var path = paths(i);
-    if path.startsWith('/') then
-      result = path;
-    else if result.endsWith('/') then
-      result += path;
-    else
-      result += '/' + path;
-  }
+  for path in paths do
+    joinPathComponent(path, result);
 
   return result;
 }
@@ -633,7 +625,7 @@ proc file.realPath(out error: syserr): string {
 }
 
 // Compute the common prefix length between two lists of path components.
-private proc commonPrefixLength(a: [] string, a2: [] string): int {
+private proc commonPrefixLength(a1: [] string, a2: [] string): int {
   // Can we use the builtin min/max functions for this?
   var (min, max) = if a1.size < a2.size then (a1, a2) else (a2, a1);
   var result = 0;
