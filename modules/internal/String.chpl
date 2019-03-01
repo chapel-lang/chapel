@@ -425,7 +425,7 @@ module String {
     pragma "no doc"
     proc ref reinitString(buf: bufferType, s_len: int, size: int,
                           needToCopy:bool = true) {
-      if this.isEmptyString() && buf == nil then return;
+      if this.isEmpty() && buf == nil then return;
 
       // If the this.buff is longer than buf, then reuse the buffer if we are
       // allowed to (this.isowned == true)
@@ -434,7 +434,7 @@ module String {
           if !this.isowned || s_len+1 > this._size {
             // If the new string is too big for our current buffer or we dont
             // own our current buffer then we need a new one.
-            if this.isowned && !this.isEmptyString() then
+            if this.isowned && !this.isEmpty() then
               chpl_here_free(this.buff);
             // TODO: should I just allocate 'size' bytes?
             const allocSize = chpl_here_good_alloc_size(s_len+1);
@@ -447,7 +447,7 @@ module String {
           c_memmove(this.buff, buf, s_len);
           this.buff[s_len] = 0;
         } else {
-          if this.isowned && !this.isEmptyString() then
+          if this.isowned && !this.isEmpty() then
             chpl_here_free(this.buff);
           this.buff = buf;
           this._size = size;
@@ -455,7 +455,7 @@ module String {
       } else {
         // If s_len is 0, 'buf' may still have been allocated. Regardless, we
         // need to free the old buffer if 'this' is isowned.
-        if this.isowned && !this.isEmptyString() then chpl_here_free(this.buff);
+        if this.isowned && !this.isEmpty() then chpl_here_free(this.buff);
         this._size = 0;
 
         // If we need to copy, we can just set 'buff' to nil. Otherwise the
@@ -758,7 +758,7 @@ module String {
     // TODO: I wasn't very good about caching variables locally in this one.
     proc this(r: range(?)) : string {
       var ret: string;
-      if this.isEmptyString() then return ret;
+      if this.isEmpty() then return ret;
 
       const r2 = this._getView(r);
       if r2.size <= 0 {
@@ -808,10 +808,17 @@ module String {
     }
 
     /*
+     Deprecated, use :proc:`string.isEmpty`.
+     */
+    inline proc isEmptyString() : bool {
+      return this.isEmpty();
+    }
+
+    /*
       :returns: * `true`  -- when the string is empty
                 * `false` -- otherwise
      */
-    inline proc isEmptyString() : bool {
+    inline proc isEmpty() : bool {
       return this.len == 0; // this should be enough of a check
     }
 
@@ -834,7 +841,7 @@ module String {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for needle in needles {
-          if needle.isEmptyString() {
+          if needle.isEmpty() {
             ret = true;
             break;
           }
@@ -1032,7 +1039,7 @@ module String {
      */
     // TODO: specifying return type leads to un-inited string?
     iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /* : string */ {
-      if !(maxsplit == 0 && ignoreEmpty && this.isEmptyString()) {
+      if !(maxsplit == 0 && ignoreEmpty && this.isEmpty()) {
         const localThis: string = this.localize();
         const localSep: string = sep.localize();
 
@@ -1063,7 +1070,7 @@ module String {
             }
           }
 
-          if !(ignoreEmpty && chunk.isEmptyString()) {
+          if !(ignoreEmpty && chunk.isEmpty()) {
             // Putting the yield inside the if prevents us from being inlined
             // in the zippered case, but I don't think there is any way to avoid
             // that easily
@@ -1085,7 +1092,7 @@ module String {
     //       single yield statement, which makes it confusing to read
     // TODO: specifying return type leads to un-inited string?
     iter split(maxsplit: int = -1) /* : string */ {
-      if !this.isEmptyString() {
+      if !this.isEmpty() {
         const localThis: string = this.localize();
         var done : bool = false;
         var yieldChunk : bool = false;
@@ -1271,8 +1278,8 @@ module String {
                 characters in `chars` removed as appropriate.
     */
     proc strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
-      if this.isEmptyString() then return "";
-      if chars.isEmptyString() then return this;
+      if this.isEmpty() then return "";
+      if chars.isEmpty() then return this;
 
       const localThis: string = this.localize();
       const localChars: string = chars.localize();
@@ -1339,7 +1346,7 @@ module String {
                 * `false` -- otherwise
      */
     proc isUpper() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
 
       var result: bool;
       on __primitive("chpl_on_locale_num",
@@ -1366,7 +1373,7 @@ module String {
                 * `false` -- otherwise
      */
     proc isLower() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
 
       var result: bool;
       on __primitive("chpl_on_locale_num",
@@ -1393,7 +1400,7 @@ module String {
                 * `false` -- otherwise
      */
     proc isSpace() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
@@ -1415,7 +1422,7 @@ module String {
                 * `false` -- otherwise
      */
     proc isAlpha() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
@@ -1437,7 +1444,7 @@ module String {
                 * `false` -- otherwise
      */
     proc isDigit() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
@@ -1459,7 +1466,7 @@ module String {
                 * `false` -- otherwise
      */
     proc isAlnum() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
@@ -1481,7 +1488,7 @@ module String {
                 * `false` -- otherwise
      */
     proc isPrintable() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
@@ -1504,7 +1511,7 @@ module String {
                 * `false` -- otherwise
      */
     proc isTitle() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
@@ -1549,7 +1556,7 @@ module String {
     */
     proc toLower() : string {
       var result: string = this;
-      if result.isEmptyString() then return result;
+      if result.isEmpty() then return result;
 
       var i = 0;
       while i < result.len {
@@ -1582,7 +1589,7 @@ module String {
     */
     proc toUpper() : string {
       var result: string = this;
-      if result.isEmptyString() then return result;
+      if result.isEmpty() then return result;
 
       var i = 0;
       while i < result.len {
@@ -1616,7 +1623,7 @@ module String {
      */
     proc toTitle() : string {
       var result: string = this;
-      if result.isEmptyString() then return result;
+      if result.isEmpty() then return result;
 
       param UN = 0, LETTER = 1;
       var last = UN;
@@ -1661,7 +1668,7 @@ module String {
     pragma "no doc"
     proc capitalize() : string {
       var result: string = this.toLower();
-      if result.isEmptyString() then return result;
+      if result.isEmpty() then return result;
 
       var codepoint: int(32);
       var nbytes: c_int;
@@ -2104,7 +2111,7 @@ module String {
      :returns: The byte value of the first character in `a` as an integer.
   */
   inline proc ascii(a: string) : uint(8) {
-    if a.isEmptyString() then return 0;
+    if a.isEmpty() then return 0;
 
     if _local || a.locale_id == chpl_nodeID {
       // the string must be local so we can index into buff
