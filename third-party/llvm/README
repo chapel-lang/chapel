@@ -45,6 +45,9 @@ as follows:
   deleted because we do not use them.  Their deletion saves
   significant space and checkout time.
 
+Our deletion of the test directories as noted above makes the
+following patch necessary.
+
 * The llvm-src/CMakeLists.txt file was edited to set
   LLVM_INCLUDE_TESTS to OFF by default instead of ON.  It is necessary
   to make this change instead of passing -DLLVM_INCLUDE_TESTS=OFF to
