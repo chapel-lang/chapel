@@ -55,7 +55,15 @@
 
 #include <algorithm>
 #include <cctype>
-#include <math.h> // could be cmath once we assume C++11
+
+// TODO: simplify this once we can rely on C++11
+#if __cplusplus > 199711L
+#include <cmath>
+using namespace std;
+#else
+#include <math.h>
+#endif
+
 #include <cstring>
 #include <cstdio>
 #include <vector>
