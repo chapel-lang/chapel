@@ -1373,7 +1373,7 @@ static numeric_type_t classifyNumericType(Type* t)
   if (is_real_type(t)) return NUMERIC_TYPE_REAL;
   if (is_imag_type(t)) return NUMERIC_TYPE_IMAG;
   if (is_complex_type(t)) return NUMERIC_TYPE_COMPLEX;
-  INT_ASSERT("Unhandled type in classifyNumericType");
+  INT_FATAL("Unhandled type in classifyNumericType");
   return NUMERIC_TYPE_BOOL;
 }
 
@@ -1503,7 +1503,7 @@ static bool fits_in_mantissa_exponent(int mantissa_width,
     else if(imm->num_index == FLOAT_SIZE_64)
       v = imm->v_float64;
     else
-      INT_ASSERT("unsupported real/imag size");
+      INT_FATAL("unsupported real/imag size");
   } else if (imm->const_kind == NUM_KIND_COMPLEX) {
     if (imm->num_index == COMPLEX_SIZE_64) {
       if (realPart)
@@ -1516,9 +1516,9 @@ static bool fits_in_mantissa_exponent(int mantissa_width,
       else
         v = imm->v_complex128.i;
     } else
-      INT_ASSERT("unsupported complex size");
+      INT_FATAL("unsupported complex size");
   } else
-    INT_ASSERT("unsupported number kind");
+    INT_FATAL("unsupported number kind");
 
   double frac = 0.0;
   int exp = 0;
