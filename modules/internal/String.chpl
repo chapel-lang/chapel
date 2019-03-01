@@ -811,6 +811,7 @@ module String {
      Deprecated, use :proc:`string.isEmpty`.
      */
     inline proc isEmptyString() : bool {
+      compilerWarning("'isEmptyString' has been deprecated, use 'isEmpty' method instead");
       return this.isEmpty();
     }
 
