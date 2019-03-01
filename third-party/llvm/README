@@ -7,7 +7,7 @@ convenience and was obtained from
 
 https://www.llvm.org/
 
-Three Chapel-related patches were added to this copy
+Four Chapel-related patches were made to this copy
 of the code, and the LLVM test subdirectories were deleted.
 
 Any Chapel issues that seem to be related to LLVM should be directed
@@ -44,6 +44,17 @@ as follows:
 * The llvm-src/test and llvm-src/tools/clang/test directories were
   deleted because we do not use them.  Their deletion saves
   significant space and checkout time.
+
+Our deletion of the test directories as noted above makes the
+following patch necessary.
+
+* The llvm-src/CMakeLists.txt file was edited to set
+  LLVM_INCLUDE_TESTS to OFF by default instead of ON.  It is necessary
+  to make this change instead of passing -DLLVM_INCLUDE_TESTS=OFF to
+  cmake because Clang's build procedure does not always preserve this
+  flag.  With this change made, the appropriate line in
+  llvm-src/CMakeLists.txt looks like the following:
+option(LLVM_INCLUDE_TESTS "Generate build targets for the LLVM unit tests." OFF)
 
 Upgrading LLVM versions
 =======================
