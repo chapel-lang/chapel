@@ -45,7 +45,7 @@ module StringCasts {
 
   proc _cast(type t:chpl_anybool, x: string) throws {
     var str = x.strip();
-    if str.isEmptyString() {
+    if str.isEmpty() {
       throw new owned IllegalArgumentError("bad cast from empty string to bool");
     } else if (str == "true") {
       return true;
@@ -134,7 +134,7 @@ module StringCasts {
         localX = localX[1] + localX[2..].replace("_", "");
     }
 
-    if localX.isEmptyString() then
+    if localX.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t:string);
 
     if isIntType(t) {
@@ -196,7 +196,7 @@ module StringCasts {
   inline proc _cleanupStringForRealCast(type t, ref s: string) throws {
     var len = s.length;
 
-    if s.isEmptyString() then
+    if s.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);
 
     if len >= 2 && s[2..].find("_") != 0 {
@@ -301,7 +301,7 @@ module StringCasts {
     var isErr: bool;
     const localX = x.localize();
 
-    if localX.isEmptyString() then
+    if localX.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to complex(" + numBits(t) + ")");
 
     select numBits(t) {
