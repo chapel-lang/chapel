@@ -4990,6 +4990,13 @@ static void resolveInitVar(CallExpr* call) {
                targetType->getValType()->symbol->hasFlag(FLAG_POD)) {
       dst->type = targetType->getValType();
       call->primitive = primitives[PRIM_MOVE];
+
+      // Need to dereference in order to avoid const-ness issues
+      if (srcType->isRef()) {
+        srcExpr->remove();
+        call->insertAtTail(new CallExpr(PRIM_DEREF, srcExpr));
+      }
+
       resolveMove(call);
 
     } else {
