@@ -783,19 +783,10 @@ int FnSymbol::hasGenericFormals() const {
         }
       }
 
-    // Mark initializer formals using 'this' as generic
+    // init= on generic types need to be considered generic so that 'this.type'
+    // stuff will resolve.
     } else if (isCopyInit() && _this->type->symbol->hasFlag(FLAG_GENERIC)) {
       isGeneric = true;
-      if (formal->typeExpr) {
-        std::vector<SymExpr*> syms;
-        collectSymExprs(formal->typeExpr, syms);
-
-        for_vector(SymExpr, se, syms) {
-          if (se->symbol() == _this) {
-            isGeneric = true;
-          }
-        }
-      }
     }
 
     if (isGeneric == true) {

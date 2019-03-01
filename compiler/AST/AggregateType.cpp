@@ -1679,7 +1679,7 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
 }
 
 void AggregateType::buildCopyInitializer() {
-  if (isRecordWithInitializers(this) == true && hasUserDefinedInitEquals() == false) {
+  if (isRecordWithInitializers(this) == true) {
     SET_LINENO(this);
 
     bool isGeneric = false;
