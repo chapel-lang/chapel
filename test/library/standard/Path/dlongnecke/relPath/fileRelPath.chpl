@@ -1,3 +1,4 @@
+use FileSystem;
 use Path;
 
 
@@ -15,8 +16,6 @@ proc test(f: file, start: string="") {
 
 
 proc doTests(somepath: string) {
-  use FileSystem;
-
   var f : file;
   try {
     f = open(somepath, iomode.r);

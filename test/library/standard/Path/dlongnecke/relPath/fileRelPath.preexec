@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# Produces the "fileRelPath.good" file containing expected output for the
-# Chapel file.absPath function.
+# Produces the output file containing expected output for the Chapel
+# file.absPath function.
 
 
 import sys
@@ -111,7 +111,7 @@ def do_tests(somepath):
     f.close()
 
 
-# Redirect STDOUT to the "fileAbsPath.good" file.
+# Redirect STDOUT to the output file.
 stdout = sys.stdout
 sys.stdout = open('fileRelPath.good', 'w')
 

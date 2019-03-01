@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Produces the "relPath.good" file containing expected output for the Chapel
+# Produces the output file containing expected output for the Chapel
 # Path.relPath function.
 
 
@@ -20,7 +20,7 @@ def test(name, start=""):
     print os.path.relpath(name, start)
 
 
-# Redirect STDOUT to the "absPath.good" file.
+# Redirect STDOUT to the output file.
 stdout = sys.stdout
 sys.stdout = open('relPath.good', 'w')
 
