@@ -341,6 +341,10 @@ module String {
       }
     }
 
+    proc init=(s: string) {
+      this.init(s);
+    }
+
     /*
       Initialize a new string from the `c_string` `cs`. If `isowned` is set to
       true, the backing buffer will be freed when the new record is destroyed.
@@ -355,6 +359,10 @@ module String {
       this.complete();
       const cs_len = length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
+    }
+
+    proc init=(cs: c_string) {
+      this.init(cs);
     }
 
     /*

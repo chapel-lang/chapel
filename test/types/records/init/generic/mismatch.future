@@ -1,7 +1,0 @@
-error message: confusing error for mismatched generic type assignment
-
-This test is complaining about an unresolved call to an initializer
-that we're arguably not making.  Compiling in developer mode, it seems
-to be coming from one of our compiler-generated `defaultOf()` calls.
-But why should we be calling `defaultOf()` for a case that has an
-explicit initializer.  Are we still double-initializing?

@@ -2,13 +2,23 @@ record history_real {
   param size : int;
   var h : size*real;
   var f : real;
+
+  proc add(r : real) {
+    for i in 2..size by -1 do
+      h(i) = h(i-1);
+    h(1) = f;
+    f = r;
+  }
+
+  proc init=(type ThisType, r : real) {
+    this.size = ThisType.size;
+    this.complete();
+    add(r);
+  }
 }
 
 proc =(ref x : history_real, y : real) {
-  for i in 2..x.size by -1 do
-    x.h(i) = x.h(i-1);
-  x.h(1) = x.f;
-  x.f = y;
+  x.add(y);
 }
 
 proc >(x : history_real, y : real) {

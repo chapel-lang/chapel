@@ -1,1 +1,3 @@
-emptySeq3.chpl:3: error: type mismatch in assignment from nil to list(int(64))
+emptySeq3.chpl:3: error: unresolved call 'list(int(64)).init=(type list(int(64)), nil)'
+$CHPL_HOME/modules/standard/List.chpl:77: note: candidates are: list.init=(type ThisType, l: list(?t))
+$CHPL_HOME/modules/standard/List.chpl:53: note:                 list.init=(type ThisType, other: ThisType)

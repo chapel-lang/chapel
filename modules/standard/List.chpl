@@ -74,7 +74,8 @@ record list {
   }
 
   pragma "no doc"
-  proc init(l : list(?t)) {
+  proc init=(type ThisType, l : list(?t)) {
+    if l.type != ThisType then compilerError("init= error");
     this.eltType = t;
     this.complete();
     for i in l do

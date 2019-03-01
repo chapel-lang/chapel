@@ -3545,7 +3545,7 @@ GenRet CallExpr::codegen() {
 
       // Handle setting LLVM invariant on const records after
       // they are initialized
-      if (fn->isInitializer()) {
+      if (fn->isInitializer() || fn->isCopyInit()) {
         if (isUserDefinedRecord(get(1)->typeInfo())) {
           if (SymExpr* initedSe = toSymExpr(get(1))) {
             if (initedSe->symbol()->isConstValWillNotChange()) {

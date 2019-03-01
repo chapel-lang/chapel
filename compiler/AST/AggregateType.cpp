@@ -562,6 +562,23 @@ bool AggregateType::hasPostInitializer() const {
   return retval;
 }
 
+bool AggregateType::hasUserDefinedInitEquals() const {
+  bool retval = false;
+
+  if (instantiatedFrom == NULL) {
+    for (int i = 0; i < methods.n && retval == false; i++) {
+      FnSymbol* method = methods.v[i];
+      if (method->isCopyInit() && method->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+        retval = true;
+      }
+    }
+  } else {
+    retval = instantiatedFrom->hasUserDefinedInitEquals();
+  }
+
+  return retval;
+}
+
 // For a record
 //     Return true if there are uses of new for this type
 //
@@ -1665,43 +1682,51 @@ void AggregateType::buildCopyInitializer() {
   if (isRecordWithInitializers(this) == true) {
     SET_LINENO(this);
 
-    FnSymbol*  fn    = new FnSymbol("init");
+    bool isGeneric = false;
+    // If this type is generic, then the 'other' formal needs to be generic as
+    // well
+    // TODO: Why can't we use 'fieldIsGeneric' here?
+    for_fields(fieldDefExpr, this) {
+      if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+        if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
+          if (field->hasFlag(FLAG_PARAM) || field->isType() ||
+              (field->defPoint->init == NULL && field->defPoint->exprType == NULL)) {
+            isGeneric = true;
+          }
+        }
+      }
+    }
+
+    FnSymbol*  fn    = new FnSymbol(astrInitEquals);
 
     DefExpr*   def   = new DefExpr(fn);
 
     ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",   dtMethodToken);
     ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this",  this);
-    ArgSymbol* other = new ArgSymbol(INTENT_BLANK, "other", this);
+
+    ArgSymbol* ThisType = NULL;
+    ArgSymbol* other = NULL;
+    if (isGeneric) {
+      ThisType = new ArgSymbol(INTENT_TYPE, "ThisType", dtAny);
+      ThisType->addFlag(FLAG_TYPE_VARIABLE);
+      other = new ArgSymbol(INTENT_BLANK, "other", dtUnknown, new SymExpr(ThisType));
+      other->addFlag(FLAG_MARKED_GENERIC);
+    } else {
+      other = new ArgSymbol(INTENT_BLANK, "other", this);
+    }
 
     fn->cname = fn->name;
     fn->_this = _this;
 
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_DEFAULT_COPY_INIT);
+    fn->addFlag(FLAG_COPY_INIT);
 
     _this->addFlag(FLAG_ARG_THIS);
 
-    // Detect if the type has at least one generic field,
-    // so we should mark the "other" arg as generic.
-    for_fields(fieldDefExpr, this) {
-      if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-        if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
-          if (field->hasFlag(FLAG_PARAM) ||
-              field->isType() == true    ||
-              (field->defPoint->init     == NULL &&
-               field->defPoint->exprType == NULL)) {
-
-            if (other->hasFlag(FLAG_MARKED_GENERIC) == false) {
-              other->addFlag(FLAG_MARKED_GENERIC);
-            }
-          }
-        }
-      }
-    }
-
     fn->insertFormalAtTail(_mt);
     fn->insertFormalAtTail(_this);
+    if (ThisType != NULL) fn->insertFormalAtTail(ThisType);
     fn->insertFormalAtTail(other);
 
     if (symbol->hasFlag(FLAG_EXTERN)) {
