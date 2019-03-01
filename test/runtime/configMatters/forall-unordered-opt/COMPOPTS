@@ -1,1 +1,1 @@
---report-optimized-forall-unordered-ops
+-sPODValAccess=false --optimize-forall-unordered-ops --report-optimized-forall-unordered-ops
