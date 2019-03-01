@@ -1,0 +1,68 @@
+name= / start= 
+../../../../../../../../../../../../..
+name= / start= foo/bar/baz
+../../../../../../../../../../../../../../../..
+name= / start= 
+../../../../../../../../../../../../..
+name= / start= /foo/bar/baz
+../../..
+name= / start= /
+.
+name= // start= 
+../../../../../../../../../../../../..
+name= // start= foo/bar/baz
+../../../../../../../../../../../../../../../..
+name= // start= 
+../../../../../../../../../../../../..
+name= // start= //foo/bar/baz
+../../..
+name= // start= //
+.
+name= /foo/bar/baz start= 
+../../../../../../../../../../../../../foo/bar/baz
+name= /foo/bar/baz start= hello/world
+../../../../../../../../../../../../../../../foo/bar/baz
+name= /foo/bar/baz start= /foo/bar
+baz
+name= /foo/bar/baz start= /foo/bar/baz/ding
+..
+name= /foo/bar/baz start= /foo/bar/baz
+.
+name= //foo/bar/baz start= 
+../../../../../../../../../../../../../foo/bar/baz
+name= //foo/bar/baz start= hello/world
+../../../../../../../../../../../../../../../foo/bar/baz
+name= //foo/bar/baz start= //foo/bar
+baz
+name= //foo/bar/baz start= //foo/bar/baz/ding
+..
+name= //foo/bar/baz start= //foo/bar/baz
+.
+name= foo/bar/baz start= 
+foo/bar/baz
+name= foo/bar/baz start= meaning/of/life
+../../../foo/bar/baz
+name= foo/bar/baz start= foo/bar
+baz
+name= foo/bar/baz start= foo/bar/baz/ding
+..
+name= foo/bar/baz start= foo/bar/baz
+.
+name= foo/bar/baz start= ../baz/ding/
+../../relPath/foo/bar/baz
+name= foo/bar/baz start= foo/bar/..
+bar/baz
+name= ../../foo/bar start= 
+../../foo/bar
+name= foo/bar/baz/../../ start= 
+foo
+name= foo/bar/baz start= ../baz/ding/
+../../dlongnecke/foo/bar/baz
+name= foo/bar/baz start= foo/bar/..
+bar/baz
+name= ../../foo/bar start= 
+../../foo/bar
+name= foo/bar/baz/../../ start= 
+foo
+name= /Users/dlongnecke/Documents/dev/repos/forks/chapel/test/library/standard/Path/dlongnecke start= /Users/dlongnecke/Documents/dev/repos/forks/chapel/test/library/standard/Path/dlongnecke/relPath
+..

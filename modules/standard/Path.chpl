@@ -647,8 +647,8 @@ private proc commonPrefixLength(a1: [] string, a2: [] string): int {
   .. warning::
 
     This method is unsafe for use in a parallel environment due to its
-    reliance on :proc:`locale.cwd()`. Another task on the current locale
-    may change the current working directory at any time.
+    reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
+    locale may change the current working directory at any time.
 
   :arg name: A path which the caller would like to access.
   :type name: `string`
@@ -695,8 +695,8 @@ proc relPath(name: string, start:string=curDir): string throws {
   .. warning::
 
     This method is unsafe for use in a parallel environment due to its
-    reliance on :proc:`locale.cwd()`. Another task on the current locale
-    may change the current working directory at any time.
+    reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
+    locale may change the current working directory at any time.
 
   :arg start: The location from which access to the path in this
     :type:`~IO.file` is desired. If no value is provided, defaults to
