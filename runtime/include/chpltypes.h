@@ -252,8 +252,12 @@ typedef struct chpl_main_argument_s {
 } chpl_main_argument;
 
 #ifndef __cplusplus
-_complex128 _chpl_complex128(_real64 re, _real64 im);
-_complex64 _chpl_complex64(_real32 re, _real32 im);
+static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
+  return re + im*_Complex_I;
+}
+static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
+  return re + im*_Complex_I;
+}
 
 static inline _real64* complex128GetRealRef(_complex128* cplx) {
   return ((_real64*)cplx) + 0;
