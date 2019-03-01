@@ -333,8 +333,8 @@ module ChapelTuple {
   //
   // TODO: These could instead use 'noinit' and manually assign the fields.
   //
-  // Note: statically inlining the _chpl_complex function is necessary for
-  // good performance
+  // Note: statically inlining the _chpl_complex runtime functions is necessary
+  // for good performance
   //
   inline proc _cast(type t, x: (?,?)) where t == complex(64) {
     extern proc _chpl_complex64(re:real(32),im:real(32)) : complex(64);
