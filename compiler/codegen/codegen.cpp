@@ -55,7 +55,7 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cmath>
+#include <math.h> // could be cmath once we assume C++11
 #include <cstring>
 #include <cstdio>
 #include <vector>
@@ -2501,15 +2501,15 @@ std::string real_to_string(double num)
 {
   char buf[32];
 
-  if (std::isfinite(num)) {
-    if (std::signbit(num)) snprintf(buf, sizeof(buf), "-%a" , -num);
-    else                   snprintf(buf, sizeof(buf), "%a" , num);
-  } else if (std::isinf(num)) {
-    if (std::signbit(num)) strncpy(buf, "-INFINITY", sizeof(buf));
-    else                   strncpy(buf, "INFINITY", sizeof(buf));
+  if (isfinite(num)) {
+    if (signbit(num)) snprintf(buf, sizeof(buf), "-%a" , -num);
+    else              snprintf(buf, sizeof(buf), "%a" , num);
+  } else if (isinf(num)) {
+    if (signbit(num)) strncpy(buf, "-INFINITY", sizeof(buf));
+    else              strncpy(buf, "INFINITY", sizeof(buf));
   } else {
-    if (std::signbit(num)) strncpy(buf, "-NAN", sizeof(buf));
-    else                   strncpy(buf, "NAN", sizeof(buf));
+    if (signbit(num)) strncpy(buf, "-NAN", sizeof(buf));
+    else              strncpy(buf, "NAN", sizeof(buf));
   }
   std::string ret(buf);
   return ret;
