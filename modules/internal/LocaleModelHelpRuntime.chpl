@@ -61,13 +61,16 @@ module LocaleModelHelpRuntime {
   proc chpl__initCopy(initial: chpl_localeID_t): chpl_localeID_t;
 
   // Runtime interface for manipulating global locale IDs.
+  pragma "fn synchronization free"
   extern
     proc chpl_rt_buildLocaleID(node: chpl_nodeID_t,
                                subloc: chpl_sublocID_t): chpl_localeID_t;
 
+  pragma "fn synchronization free"
   extern
     proc chpl_rt_nodeFromLocaleID(loc: chpl_localeID_t): chpl_nodeID_t;
 
+  pragma "fn synchronization free"
   extern
     proc chpl_rt_sublocFromLocaleID(loc: chpl_localeID_t): chpl_sublocID_t;
 

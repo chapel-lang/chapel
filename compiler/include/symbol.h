@@ -124,7 +124,6 @@ enum ForallIntentTag {
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
 // for task intents and forall intents
-ArgSymbol* tiMarkForIntent(IntentTag intent);
 ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent);
 
 // parser support
@@ -711,8 +710,6 @@ bool isOuterVarOfShadowVar(Expr* expr);
 Expr* getDefOfTemp(SymExpr* origSE);
 
 // Parser support.
-class ForallIntents;
-void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);
 void addForallIntent(CallExpr* fi, ShadowVarSymbol* svar);
 void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar);
 
@@ -749,6 +746,8 @@ extern VarSymbol *gLocal;
 extern VarSymbol* gWarnUnstable;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
+extern VarSymbol *gInfinity;
+extern VarSymbol *gNan;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

@@ -417,7 +417,7 @@ template <class IterT>
 aligned_t run_qtd (void *arg)
 {
     IterT *iter        = (IterT *)arg;
-    register int count = iter->Count();
+    int count = iter->Count();
 
     for (int i = 0; i < count; i++) {
         iter->Run();

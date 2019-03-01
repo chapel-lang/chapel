@@ -174,6 +174,9 @@ typedef void* chpl_opaque;
 #define UINT32( i) ((uint32_t)(UINT32_C(i)))
 #define UINT64( i) ((uint64_t)(UINT64_C(i)))
 
+#define REAL32(i) ((float)(i))
+#define REAL64(i) ((double)(i))
+
 #define COMMID( i)  ((int64_t)(INT64_C(i)))
 
 

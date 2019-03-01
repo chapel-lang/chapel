@@ -37,7 +37,6 @@
 #include "driver.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
-#include "implementForallIntents.h"
 #include "initializerResolution.h"
 #include "initializerRules.h"
 #include "iterator.h"
@@ -107,8 +106,6 @@ char                               primCoerceTmpName[] = "init_coerce_tmp";
 
 bool                               resolved                  = false;
 bool                               tryFailure                = false;
-bool                               beforeLoweringForallStmts = true;
-
 int                                explainCallLine           = 0;
 
 SymbolMap                          paramMap;
@@ -116,8 +113,6 @@ SymbolMap                          paramMap;
 Vec<CallExpr*>                     callStack;
 
 Vec<BlockStmt*>                    standardModuleSet;
-
-std::map<CallExpr*, CallExpr*>     eflopiMap;
 
 std::map<Type*,     FnSymbol*>     autoCopyMap;
 std::map<Type*,     Serializers>   serializeMap;
@@ -828,6 +823,25 @@ static bool canParamCoerce(Type*   actualType,
     }
   }
 
+  if (is_imag_type(formalType)) {
+    int mantissa_width = get_mantissa_width(formalType);
+
+    // coerce literal/param imag that are exactly representable
+    if (VarSymbol* var = toVarSymbol(actualSym)) {
+      if (var->immediate) {
+        if (is_imag_type(actualType)) {
+          if (fits_in_mantissa_exponent(mantissa_width,
+                                        get_exponent_width(formalType),
+                                        var->immediate)) {
+            *paramNarrows = true;
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+
   if (is_complex_type(formalType)) {
     int mantissa_width = get_mantissa_width(formalType);
 
@@ -1389,6 +1403,7 @@ bool isNumericParamDefaultType(Type* t)
   if (t == dtInt[INT_SIZE_DEFAULT] ||
       t == dtReal[FLOAT_SIZE_DEFAULT] ||
       t == dtImag[FLOAT_SIZE_DEFAULT] ||
+      t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
       t == dtBools[BOOL_SIZE_DEFAULT])
     return true;
 
@@ -3233,8 +3248,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
 
 
   // Don't forward forwarding expr (infinite loop ensues)
-  const char* ignorePrefix = "chpl_forwarding_expr";
-  if (0 == memcmp(ignorePrefix, calledName, strlen(ignorePrefix)))
+  if (startsWith(calledName, "chpl_forwarding_expr"))
     return NULL;
 
   // This is a workaround for resolvePromotionType being called
@@ -3983,10 +3997,20 @@ static void testArgMapping(FnSymbol*                    fn1,
     reason = "scalar type vs not";
 
   } else if (prefersCoercionToOtherNumericType(actualScalarType, f1Type, f2Type)) {
-    prefer1 = WEAKER; reason = "preferred coercion to other";
+    if (paramWithDefaultSize)
+      prefer1 = WEAKEST;
+    else
+      prefer1 = WEAKER;
+
+    reason = "preferred coercion to other";
 
   } else if (prefersCoercionToOtherNumericType(actualScalarType, f2Type, f1Type)) {
-    prefer2 = WEAKER; reason = "preferred coercion to other";
+    if (paramWithDefaultSize)
+      prefer2 = WEAKEST;
+    else
+      prefer2 = WEAKER;
+
+    reason = "preferred coercion to other";
 
   } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
     prefer1 = actualParam ? WEAKEST : STRONG;
@@ -4497,9 +4521,11 @@ static void resolveTupleExpand(CallExpr* call) {
     }
   }
 
-  if (size == 0) {
+  if (size == 0)
     INT_FATAL(call, "Invalid tuple expand primitive");
-  }
+
+  if (parent != NULL && parent->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE))
+    size = 1; // use the first component of the tuple for the shape
 
   stmt->insertBefore(noop);
 
@@ -6219,8 +6245,6 @@ static bool        isParamResolved(FnSymbol* fn, Expr* expr);
 
 static Expr*       resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr);
 
-static CallExpr*   toPrimToLeaderCall(Expr* expr);
-
 static Expr*       resolveExprResolveEachCall(ContextCallExpr* cc);
 
 static bool        contextTypesMatch(FnSymbol* valueFn,
@@ -6271,11 +6295,7 @@ Expr* resolveExpr(Expr* expr) {
     }
 
   } else if (DefExpr* def = toDefExpr(expr)) {
-    if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
-      implementForallIntents1(def);
-    }
-
-    retval = foldTryCond(postFold(expr));
+    retval = foldTryCond(postFold(def));
 
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
@@ -6376,14 +6396,6 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
     resolveCall(call);
 
     if (tryFailure == false && call->isResolved() == true) {
-      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr)) {
-        // ForallLeaderArgs: process the leader that 'call' invokes.
-        implementForallIntents2(call, origToLeaderCall);
-
-      } else if (CallExpr* eflopiHelper = eflopiMap[call]) {
-        implementForallIntents2wrapper(call, eflopiHelper);
-      }
-
       if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
         expr = resolveExprResolveEachCall(cc);
 
@@ -6405,19 +6417,6 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
 
   } else {
     retval = foldTryCond(postFold(expr));
-  }
-
-  return retval;
-}
-
-static CallExpr* toPrimToLeaderCall(Expr* expr) {
-  CallExpr* retval = NULL;
-
-  if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_TO_LEADER)     == true ||
-        call->isPrimitive(PRIM_TO_STANDALONE) == true) {
-      retval = call;
-    }
   }
 
   return retval;
@@ -7014,8 +7013,6 @@ void resolve() {
   resolveSerializers();
 
   resolveDestructors();
-
-  beforeLoweringForallStmts = false;
 
   insertReturnTemps();
 
@@ -8050,7 +8047,9 @@ static void cleanupVoidVarsAndFields() {
   // Remove most uses of void variables and fields
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree()) {
-      if (call->isPrimitive(PRIM_MOVE)) {
+     if (call->isPrimitive())
+      switch (call->primitive->tag) {
+      case PRIM_MOVE: {
         if (isVoidOrVoidTupleType(call->get(2)->typeInfo()) ||
             call->get(2)->typeInfo() == dtVoid->refType) {
           INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
@@ -8071,7 +8070,9 @@ static void cleanupVoidVarsAndFields() {
             call->remove();
           }
         }
-      } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+        break;
+      }
+      case PRIM_SET_MEMBER: {
         if (isVoidOrVoidTupleType(call->get(3)->typeInfo())) {
           INT_ASSERT(call->get(2)->typeInfo() == call->get(3)->typeInfo());
           // Remove set_member(a, void, void) calls
@@ -8083,7 +8084,9 @@ static void cleanupVoidVarsAndFields() {
             call->remove();
           }
         }
-      } else if (call->isPrimitive(PRIM_RETURN)) {
+        break;
+      }
+      case PRIM_RETURN: {
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
             call->get(1)->typeInfo() == dtVoid->refType) {
           // Change functions that return void to use the global
@@ -8095,7 +8098,9 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
-      } else if (call->isPrimitive(PRIM_YIELD)) {
+        break;
+      }
+      case PRIM_YIELD: {
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
             call->get(1)->typeInfo() == dtVoid->refType) {
           // Change iterators that yield void to use the global
@@ -8107,12 +8112,19 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
-      } else if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
+        break;
+      }
+      case PRIM_CALL_DESTRUCTOR: {
         // Remove calls to destructors for homogeneous tuples of void
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo())) {
           call->remove();
         }
+        break;
       }
+      default:
+        break;
+      } // switch (call->primitive->tag)
+     else
       if (FnSymbol* fn = call->resolvedFunction()) {
         bool seenVoid = false;
         // Remove actual arguments that are void from function calls

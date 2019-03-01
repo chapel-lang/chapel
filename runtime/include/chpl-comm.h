@@ -68,6 +68,7 @@ extern const int chpl_numGlobalsOnHeap;
 extern ptr_wide_ptr_t chpl_globals_registry[];
 
 extern void* const chpl_private_broadcast_table[];
+extern int const chpl_private_broadcast_table_len;
 
 extern void* const chpl_global_serialize_table[];
 

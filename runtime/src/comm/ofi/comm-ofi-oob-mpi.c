@@ -76,7 +76,7 @@ void chpl_comm_ofi_oob_barrier(void) {
 }
 
 
-void chpl_comm_ofi_oob_allgather(void* mine, void* all, size_t size) {
+void chpl_comm_ofi_oob_allgather(const void* mine, void* all, size_t size) {
   DBG_PRINTF(DBG_OOB, "OOB allGather: %zd", size);
 
   //
@@ -88,4 +88,10 @@ void chpl_comm_ofi_oob_allgather(void* mine, void* all, size_t size) {
   MPI_CHK(MPI_Allgather(mine, size, MPI_BYTE,
                         all, size, MPI_BYTE,
                         MPI_COMM_WORLD));
+}
+
+
+void chpl_comm_ofi_oob_bcast(void* buf, size_t size) {
+  DBG_PRINTF(DBG_OOB, "OOB bcast: %zd", size);
+  MPI_CHK(MPI_Bcast(buf, size, MPI_BYTE, 0, MPI_COMM_WORLD));
 }

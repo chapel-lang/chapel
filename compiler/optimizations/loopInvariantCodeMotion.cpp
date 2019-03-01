@@ -1261,6 +1261,9 @@ void loopInvariantCodeMotion(void) {
   // compute array element alias sets
   computeNoAliasSets();
 
+  // optimize certain statements in foralls to unordered
+  optimizeForallUnorderedOps();
+
   if(fNoLoopInvariantCodeMotion) {
     return;
   }

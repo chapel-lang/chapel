@@ -50,7 +50,7 @@ static void        insertModuleInit();
 static FnSymbol*   toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
 static void        handleModuleDeinitFn(ModuleSymbol* mod);
 static void        transformLogicalShortCircuit();
-static void        handleReduceAssign();
+static void        checkReduceAssign();
 
 static bool        isArrayFormal(ArgSymbol* arg);
 
@@ -118,7 +118,7 @@ void normalize() {
 
   transformLogicalShortCircuit();
 
-  handleReduceAssign();
+  checkReduceAssign();
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (isClassWithInitializers(at)  == true ||
@@ -175,9 +175,7 @@ void normalize() {
     // state (empty) if they are used but not assigned to anything.
     forv_Vec(SymExpr, se, gSymExprs) {
       if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
-        if (se == se->getStmtExpr() &&
-            // avoid exprs under ForallIntents
-            (isDirectlyUnderBlockStmt(se) || !isBlockStmt(se->parentExpr))) {
+        if (se == se->getStmtExpr()) {
           // Don't add these calls for the return type, since
           // _statementLevelSymbol would do nothing in that case
           // anyway, and it contributes to order-of-resolution issues for
@@ -424,16 +422,14 @@ static void transformLogicalShortCircuit() {
 }
 
 //
-// handleReduceAssign(): check+process the reduce= calls
+// checkReduceAssign(): check correctness of the reduce= calls
 //
-static void handleReduceAssign() {
+static void checkReduceAssign() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_REDUCE_ASSIGN) == true) {
+    if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
       INT_ASSERT(call->numActuals() == 2); // comes from the parser
 
       SET_LINENO(call);
-
-      int rOpIdx;
 
       // l.h.s. must be a single variable
       if (SymExpr* lhsSE = toSymExpr(call->get(1))) {
@@ -445,8 +441,8 @@ static void handleReduceAssign() {
                          "The reduce= operator must occur within "
                          "a forall statement.");
 
-        } else if ((rOpIdx = enclosingFS->reduceIntentIdx(lhsVar)) >= 0) {
-          call->insertAtHead(new_IntSymbol(rOpIdx, INT_SIZE_64));
+        } else if (enclosingFS->isReduceIntent(lhsVar)) {
+          // Great.
 
         } else {
           USR_FATAL(lhsSE,
@@ -2644,7 +2640,14 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
         // chpl_external_array might be able to, so try to make a
         // chpl_external_array with it.  If that doesn't work, the user must be
         // more explicit with their domain.
-        formal->typeExpr->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+        if (!fLibraryFortran) {
+          formal->typeExpr->replace(
+            new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+        } else {
+          formal->typeExpr->replace(
+            new BlockStmt(new SymExpr(dtCFI_cdesc_t->symbol)));
+          formal->intent = INTENT_REF;
+        }
       } else {
         // Create a representation of the array argument that is accessible
         // outside of Chapel, depending on the type of the array.  If the array
@@ -2666,8 +2669,7 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
 
       // Transform the outside representation into a Chapel array, and send that
       // in the call to the original function.
-      CondStmt* cond = makeCondToTransformArr(formal, chplArr, eltExpr,
-                                              call);
+      CondStmt* cond = makeCondToTransformArr(formal, chplArr, eltExpr, call);
 
       retCall->insertBefore(cond);
 
@@ -2680,12 +2682,16 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
 }
 
 // Create an if statement based on the formal type to transform
-// chpl_external_array or chpl_opaque_array into a normal Chapel array
+// chpl_external_array, CFI_cdesc_t, or chpl_opaque_array into a normal
+// Chapel array
 static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
                                         Expr* eltExpr, Expr* oldCall) {
   // if (formal.type is dtExternalArray) then
-  //    formalname_arr = makeArrayFromExternArray(formal, eltExpr)
-  //    else formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
+  //   formalname_arr = makeArrayFromExternArray(formal, eltExpr)
+  // else if (formal.type is dtCFI_cdesc_t) then
+  //   formalname_arr = makeArrayFromFortranArray(formal, eltExpr)
+  // else
+  //   formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
   CallExpr* checkFormalType = new CallExpr(PRIM_IS_SUBTYPE,
                                            dtExternalArray->symbol,
                                            new CallExpr(PRIM_TYPEOF, formal));
@@ -2696,6 +2702,16 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
                                                 new SymExpr(formal),
                                                 eltExpr->copy());
   ifBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArrayFromExt));
+
+  CallExpr* checkFormalType2 = new CallExpr(PRIM_IS_SUBTYPE,
+                                            dtCFI_cdesc_t->symbol,
+                                            new CallExpr(PRIM_TYPEOF, formal));
+  BlockStmt* elseIfBody = new BlockStmt();
+  CallExpr* makeChplArrayFromFort = new CallExpr("makeArrayFromFortranArray",
+                                                 new SymExpr(formal),
+                                                 eltExpr->copy());
+
+  elseIfBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArrayFromFort));
 
   // Handle chpl_opaque_array
   BlockStmt* elseBody = new BlockStmt();
@@ -2717,7 +2733,7 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
   CallExpr* makeChplArray = new CallExpr("makeArrayFromOpaque",
                                          new SymExpr(formal), instanceType);
   elseBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArray));
-  CondStmt* cond = new CondStmt(checkFormalType, ifBody, elseBody);
+  CondStmt* cond = new CondStmt(checkFormalType, ifBody, new CondStmt(checkFormalType2, elseIfBody, elseBody));
   return cond;
 }
 
@@ -2732,6 +2748,15 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   std::vector<SymExpr*> symExprs;
 
+  // Our AST and transformations are not set up to handle multiple query
+  // expressions inside of an array's domain.  Give the user an error for now.
+  if (!isDefExpr(domExpr)) {
+    std::vector<DefExpr*> defExprs;
+    collectDefExprs(domExpr, defExprs);
+    for_vector(DefExpr, def, defExprs) {
+      USR_FATAL_CONT(def, "cannot query part of a domain");
+    }
+  }
   //
   // Only fix array formals with 'in' intent if there was:
   // - a type query, or

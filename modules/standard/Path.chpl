@@ -26,11 +26,9 @@
 
    .. note::
 
-      This module is currently missing the implementation for `absPath
-      <https://github.com/chapel-lang/chapel/issues/6005>`_, `expandUser
+      This module is currently missing the implementation for `expandUser
       <https://github.com/chapel-lang/chapel/issues/6008>`_, `normCase
-      <https://github.com/chapel-lang/chapel/issues/6013>`_, `normPath
-      <https://github.com/chapel-lang/chapel/issues/6015>`_, and `relPath
+      <https://github.com/chapel-lang/chapel/issues/6013>`_, and `relPath
       <https://github.com/chapel-lang/chapel/issues/6017>`_.  Once those are
       implemented, it will be considered complete.
 
@@ -41,11 +39,14 @@
    Path Computations
    -----------------
    :proc:`commonPath`
+   :proc:`normPath`
    :proc:`realPath`
    :proc:`file.realPath`
 
    Path Manipulations
    ------------------
+   :proc:`absPath`
+   :proc:`file.absPath`
    :proc:`expandVars`
    :proc:`joinPath`
    :proc:`splitPath`
@@ -65,14 +66,61 @@ module Path {
 use SysError;
 use Sys;
 
-/* Represents generally the current directory.  This starts as the directory
+/* Represents generally the current directory. This starts as the directory
    where the program is being executed from.
- */
+*/
 const curDir = ".";
 /* Represents generally the parent directory. */
 const parentDir = "..";
 /* Denotes the separator between a directory and its child. */
 const pathSep = "/";
+
+/*
+  Creates a normalized absolutized version of a path. On most platforms this is
+  equivalent to the call :code:`normPath(joinPath(here.cwd(), name)`.
+
+  .. warning::
+
+    This function is unsafe for use in a parallel environment due to its
+    reliance on :proc:`locale.cwd()`. Another task on the current locale may
+    change the current working directory at any time.
+
+  :arg name: The path whose absolute path is desired.
+  :type name: `string`
+
+  :return: A normalized, absolutized version of the path specified.
+  :rtype: `string`
+
+  :throws SystemError: Upon failure to get the current working directory.
+*/
+proc absPath(name: string): string throws {
+  use FileSystem;
+
+  if !isAbsPath(name) then
+    return normPath(joinPath(try here.cwd(), name));
+  return normPath(name);
+}
+
+/*
+  Creates a normalized absolutized version of the path in this :type:`~IO.file`.
+  On most platforms this is equivalent to the call
+  :code:`normPath(joinPath(here.cwd(), file.path))`.
+
+  .. warning::
+
+    This method is unsafe for use in a parallel environment due to its
+    reliance on :proc:`locale.cwd()`. Another task on the current locale
+    may change the current working directory at any time.
+
+  :return: A normalized, absolutized version of the path for this file.
+  :rtype: `string`
+
+  :throws SystemError: Upon failure to get the current working directory.
+*/
+proc file.absPath(): string throws {
+  // If we don't use the namespace we get a funky compiler type error.
+  return try Path.absPath(this.path);
+}
 
 /* Returns the basename of the file name provided.  For instance:
 
@@ -88,7 +136,7 @@ const pathSep = "/";
    :type name: `string`
 */
 proc basename(name: string): string {
-  return splitPath(name)[2];
+   return splitPath(name)[2];
 }
 
 /* Determines and returns the longest common path prefix of
@@ -419,6 +467,72 @@ proc joinPath(paths: string ...?n): string {
       result = result + "/" + temp;
     }
   }
+  return result;
+}
+
+// Normalize leading slash count to a value between 0 and 2.
+private proc normalizeLeadingSlashCount(name: string): int {
+  var result = if name.startsWith(pathSep) then 1 else 0;
+
+  // Two leading slashes has a special meaning in POSIX.
+  if name.startsWith(pathSep * 2) && !name.startsWith(pathSep * 3) then
+    result = 2;
+
+  return result;
+}
+
+/*
+  Normalize a path by eliminating redundant separators and up-level references.
+  The paths ``foo//bar``, ``foo/bar/``, ``foo/./bar``, and ``foo/baz/../bar``
+  would all be changed to ``foo/bar``.
+
+  .. warning::
+
+    May alter the meaning of paths containing symbolic links.
+
+  .. note::
+
+    Unlike its Python counterpart, this function does not (currently) change
+    slashes to backslashes on Windows.
+
+  :arg name: a potential path to collapse, possibly destroying the meaning of
+             the path if symbolic links were included.
+  :type name: `string`
+
+  :return: the collapsed version of `name`
+  :rtype: `string`
+*/
+proc normPath(name: string): string {
+
+  // Python 3.7 implementation:
+  // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
+
+  if name == "" then
+    return curDir;
+
+  const leadingSlashes = normalizeLeadingSlashCount(name);
+
+  var comps = name.split(pathSep);
+  var outComps : [1..0] string;
+
+  for comp in comps {
+    if comp == "" || comp == curDir then
+      continue;
+
+    // Second case exists because we cannot go up past the top level.
+    // Third case continues a chain of leading up-levels.
+    if comp != parentDir || (leadingSlashes == 0 && outComps.isEmpty()) ||
+        (!outComps.isEmpty() && outComps.back() == parentDir) then
+      outComps.push_back(comp);
+    else if !outComps.isEmpty() then
+      outComps.pop_back();
+  }
+
+  var result = pathSep * leadingSlashes + pathSep.join(outComps);
+
+  if result == "" then
+    return curDir;
+
   return result;
 }
 

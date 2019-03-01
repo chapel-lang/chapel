@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include "implementForallIntents.h"
-
-#include "foralls.h"
-#include "resolveFunction.h"
+#include "DeferStmt.h"
+#include "ForallStmt.h"
+#include "ForLoop.h"
+#include "resolution.h"
 
 #include <map>
 #include <vector>
@@ -48,6 +48,36 @@ public:
   CallExpr*   asgnToIter;
   Symbol*     iterCallTemp;
 };
+
+// Is 'call' invoking a parallel iterator?
+// Since the call is not resolved, we can't use isLeaderIterator(),
+// and this implementation is a heuristic.
+static bool callingParallelIterator(CallExpr* call) {
+  // Check 'call' for an actual argument that's a parallel tag.
+  // Todo: handle the case where the actual's value is not known yet.
+  for_actuals(actual, call) {
+
+    Expr* nonameActual = actual;
+    if (NamedExpr* ne = toNamedExpr(nonameActual)) {
+      nonameActual = ne->actual;
+    }
+
+    if (SymExpr* se = toSymExpr(nonameActual)) {
+      Symbol* tag = se->symbol();
+      // a quick check first
+      if (tag->type == gLeaderTag->type) {
+        if (tag == gLeaderTag ||
+            tag == gStandaloneTag ||
+            paramMap.get(tag) == gLeaderTag ||
+            paramMap.get(tag) == gStandaloneTag)
+          // yep, most likely over parallel iterator
+          return true;
+      }
+    }
+  }
+
+  return false;
+}
 
 //
 // Is 'forLoop' a loop over a parallel iterator?
@@ -105,7 +135,10 @@ static bool findCallToParallelIterator(ForLoop* forLoop, EflopiInfo& eInfo)
     return false;
 
   CallExpr* iterCall = toCallExpr(asgnToCallTemp->get(2));
-  INT_ASSERT(iterCall);
+  if (! iterCall) {
+    USR_STOP(); // do not crash if there have been user errors
+    INT_ASSERT(iterCall);
+  }
 
   if (callingParallelIterator(iterCall)) {
     // Found it. Fill in the information before returning.

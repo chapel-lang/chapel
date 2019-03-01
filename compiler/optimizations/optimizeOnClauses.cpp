@@ -140,10 +140,12 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_INVARIANT_START:
   case PRIM_NO_ALIAS_SET:
   case PRIM_COPIES_NO_ALIAS_SET:
+  case PRIM_OPTIMIZATION_INFO:
     return FAST_AND_LOCAL;
 
   case PRIM_MOVE:
   case PRIM_ASSIGN:
+  case PRIM_UNORDERED_ASSIGN:
   case PRIM_ADD_ASSIGN:
   case PRIM_SUBTRACT_ASSIGN:
   case PRIM_MULT_ASSIGN:

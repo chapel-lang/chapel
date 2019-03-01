@@ -1284,7 +1284,7 @@ PARALLEL_FUNC(min, dmin, MIN, double, double)
  * repeated operations on the same array will divide the array in the same
  * fashion every time.
  */
-#define SWAP(a, m, n) do { register double temp = a[m]; a[m] = a[n]; a[n] = temp; } while (0)
+#define SWAP(a, m, n) do { double temp = a[m]; a[m] = a[n]; a[n] = temp; } while (0)
 static int dcmp(const void *restrict a,
                 const void *restrict b)
 {

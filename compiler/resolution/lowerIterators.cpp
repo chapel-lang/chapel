@@ -389,10 +389,7 @@ static void markVectorizableForallLoops()
               is_real_type(accumType)
               // TODO: is_complex_type
              ) {
-            const char* nom = "SumReduceScanOp";
-            size_t len = strlen(nom);
-
-            if (0 == memcmp(nom, opType->symbol->name, len))
+            if (startsWith(opType->symbol->name, "SumReduceScanOp"))
               ok = true;
           }
           if (ok == false)

@@ -562,12 +562,9 @@ static void markIterator(FnSymbol* fn) {
 
   //
   // Mark leader and standalone parallel iterators for inlining.
-  // Also stash a pristine copy of the iterator (required by forall intents)
   //
-  if (isLeaderIterator(fn)     == true ||
-      isStandaloneIterator(fn) == true) {
+  if (isLeaderIterator(fn) || isStandaloneIterator(fn)) {
     fn->addFlag(FLAG_INLINE_ITERATOR);
-    stashPristineCopyOfLeaderIter(fn, true);
   }
 }
 

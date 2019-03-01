@@ -101,7 +101,6 @@ module Atomics {
     chpl_rmem_consist_fence(order);
   }
 
-
   private proc isSupported(type T) param {
     return T == bool || isInt(T) || isUint(T) || isReal(T);
   }
@@ -189,6 +188,7 @@ module Atomics {
 
     pragma "no doc"
     proc deinit() {
+      pragma "fn synchronization free"
       extern externFunc("destroy", bool, explicit=false)
         proc atomic_destroy(ref obj:externT(bool)): void;
 
@@ -332,6 +332,7 @@ module Atomics {
 
     pragma "no doc"
     proc deinit() {
+      pragma "fn synchronization free"
       extern externFunc("destroy", T, explicit=false)
         proc atomic_destroy(ref obj:externT(T)): void;
 

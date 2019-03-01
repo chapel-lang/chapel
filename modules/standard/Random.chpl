@@ -843,7 +843,7 @@ module Random {
       }
       /*
         Return the next random value but within a particular range.
-        Returns a number in [`min`, `max`] (inclusive).
+        Returns a number in [`min`, `max`] (inclusive). Halts if checks are enabled and ``min > max``.
 
         .. note::
 
@@ -861,6 +861,9 @@ module Random {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
 
+        if boundsChecking && min > max then
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max +  "]");
+
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType,min,max);
         if parSafe then
           PCGRandomStreamPrivate_lock$;
@@ -874,6 +877,9 @@ module Random {
                    min: resultType, max:resultType): resultType {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
+
+        if boundsChecking && min > max then
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max + "]");
 
         const result = PCGRandomStreamPrivate_getNext_noLock(resultType,min,max);
         if parSafe then

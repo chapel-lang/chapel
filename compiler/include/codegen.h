@@ -148,11 +148,16 @@ bool isBuiltinExternCFunction(const char* cname);
 std::string numToString(int64_t num);
 std::string int64_to_string(int64_t i);
 std::string uint64_to_string(uint64_t i);
+std::string real_to_string(double num);
 std::string zlineToString(BaseAST* ast);
 void zlineToFileIfNeeded(BaseAST* ast, FILE* outfile);
 const char* idCommentTemp(BaseAST* ast);
 void genComment(const char* comment, bool push=false);
 void flushStatements(void);
+
+GenRet codegenCallExpr(const char* fnName);
+GenRet codegenCallExpr(const char* fnName, GenRet a1);
+GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 
 void registerPrimitiveCodegens();
 

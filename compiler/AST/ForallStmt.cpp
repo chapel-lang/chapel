@@ -20,7 +20,6 @@
 #include "ForallStmt.h"
 #include "AstVisitor.h"
 #include "build.h"
-#include "foralls.h"
 #include "ForLoop.h"
 #include "passes.h"
 #include "stringutil.h"
@@ -151,7 +150,6 @@ void ForallStmt::verify() {
   INT_ASSERT(!fLoopBody->useList);
   INT_ASSERT(!fLoopBody->userLabel);
   INT_ASSERT(!fLoopBody->byrefVars);
-  INT_ASSERT(!fLoopBody->forallIntents);
 
   // ForallStmts are lowered away during lowerIterators().
   INT_ASSERT(!iteratorsLowered);
@@ -231,20 +229,15 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
 // helpers
 /////////////////////////////////////////////////////////////////////////////
 
-// If 'var' is listed in this's with-clause with a reduce intent,
-// return its position in the with-clause, otherwise return -1.
-// Used in preFold for PRIM_REDUCE_ASSIGN, set up in normalize.
-int ForallStmt::reduceIntentIdx(Symbol* var) {
-  int idx = 0;
-  for_shadow_vars(sv, temp, this) {
-    idx++;
-    if (sv->isReduce())
-      if (sv == var)
-        return idx;
-  }
+// Is 'var' listed in this's with-clause with a reduce intent?
+// Used in normalize for PRIM_REDUCE_ASSIGN.
+bool ForallStmt:: isReduceIntent(Symbol* var) const {
+  if (ShadowVarSymbol* svar = toShadowVarSymbol(var))
+    if (svar->defPoint->list == &fShadowVars)
+      if (svar->isReduce())
+        return true;
 
-  // Did not see 'var' with a reduce intent.
-  return -1;
+  return false;
 }
 
 // If there is only one induction var, treat this forall as non-zippered
@@ -569,8 +562,7 @@ ForallStmt* ForallStmt::fromReduceExpr(VarSymbol* idx, SymExpr* dataExpr,
                                        ShadowVarSymbol* svar,
                                        bool zippered, bool requireSerial)
 {
-  Symbol* ata = new_IntSymbol(-7, INT_SIZE_64); // atavism, ignored
-  CallExpr* reduceAssign = new CallExpr(PRIM_REDUCE_ASSIGN, ata, svar, idx);
+  CallExpr* reduceAssign = new CallExpr(PRIM_REDUCE_ASSIGN, svar, idx);
   BlockStmt*  fsBody = new BlockStmt(reduceAssign);
   ForallStmt* result = new ForallStmt(fsBody);
 
@@ -602,4 +594,45 @@ bool ForallStmt::hasVectorizationHazard() const {
 
 void ForallStmt::setHasVectorizationHazard(bool v) {
   fVectorizationHazard = v;
+}
+
+static void gatherFollowerLoopBodies(BlockStmt* block,
+                                     std::vector<BlockStmt*>& bodies) {
+  for_alist(stmt, block->body) {
+    if (ForLoop* forLoop = toForLoop(stmt)) {
+      if (SymExpr* indexSe = forLoop->indexGet())
+        if (indexSe->symbol()->hasFlag(FLAG_FOLLOWER_INDEX))
+          bodies.push_back(forLoop);
+    } else if (BlockStmt* inner = toBlockStmt(stmt)) {
+      if (inner->isRealBlockStmt())
+        gatherFollowerLoopBodies(inner, bodies);
+    }
+  }
+}
+
+std::vector<BlockStmt*> ForallStmt::loopBodies() const {
+  std::vector<BlockStmt*> bodies;
+
+  // First, check for follower loops with fast follower check.
+  for_alist(stmt, fLoopBody->body) {
+    if (CondStmt* cond = toCondStmt(stmt)) {
+      gatherFollowerLoopBodies(cond->thenStmt, bodies);
+      if (cond->elseStmt)
+        gatherFollowerLoopBodies(cond->elseStmt, bodies);
+    }
+  }
+  if (bodies.size() == 0) {
+    // No fast follower check. Try a fast follower loop.
+    gatherFollowerLoopBodies(fLoopBody, bodies);
+  }
+
+  // With the fast follower check, we might have 2 bodies,
+  // but it's probably an error if we find more than that.
+  INT_ASSERT(bodies.size() <= 2);
+
+  if (bodies.size() == 0) {
+    // No follower loops, must be standalone pattern, just use normal body
+    bodies.push_back(fLoopBody);
+  }
+  return bodies;
 }

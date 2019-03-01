@@ -37,8 +37,6 @@ struct Serializers {
 };
 
 
-extern bool                             beforeLoweringForallStmts;
-
 extern int                              explainCallLine;
 
 extern SymbolMap                        paramMap;
@@ -57,8 +55,6 @@ extern Map<Type*,     FnSymbol*>        autoDestroyMap;
 extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
 
 extern std::map<Type*,     Serializers> serializeMap;
-
-extern std::map<CallExpr*, CallExpr*>   eflopiMap;
 
 
 
@@ -131,19 +127,19 @@ FnSymbol* findCopyInit(AggregateType* ct);
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(Type* icType);
 
-// forall intents
-CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
-void implementForallIntents1(DefExpr* defChplIter);
-void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
-void implementForallIntents2wrapper(CallExpr* call, CallExpr* origToLeaderCall);
-void setupAndResolveShadowVars(ForallStmt* fs);
-void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignoreIsResolved);
-
-// reduce intents
-void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2);
-void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2);
+// task intents
+extern Symbol* markPruned;
 bool isReduceOp(Type* type);
 
+// forall intents
+CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
+void  resolveForallStmts2();
+Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
+void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
+                     ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
+void setupAndResolveShadowVars(ForallStmt* fs);
+bool preserveShadowVar(Symbol* var);
+void adjustVoidShadowVariables();
 void lowerPrimReduce(CallExpr* call, Expr*& retval);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);

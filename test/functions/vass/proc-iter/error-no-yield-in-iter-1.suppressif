@@ -1,7 +1,0 @@
-# Known LLVM issue with yield-nothing iterators
-#
-# This is a known issue with the interface to the LLVM back end not
-# being able to handle iterators that yield nothing.  See github issue
-# #6338.  Suppress this for now.
-
-CHPL_LLVM!=none

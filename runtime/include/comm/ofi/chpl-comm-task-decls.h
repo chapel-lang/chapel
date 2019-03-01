@@ -65,6 +65,16 @@ struct chpl_comm_bundleData_execOn_t {
   chpl_comm_amDone_t* pDone;    // initiator's 'done' flag; nonblocking if NULL
 };
 
+struct chpl_comm_bundleData_execOnLrg_t {
+  struct chpl_comm_bundleData_base_t b;
+  chpl_fn_int_t fid;            // function table index to call
+  uint32_t argSize;             // #bytes in whole arg bundle
+  void* arg;                    // address of arg, on initiator
+  c_sublocid_t subloc;          // target sublocale
+  chpl_comm_amDone_t gotArg;    // initiator's 'got large arg' flag
+  chpl_comm_amDone_t* pDone;    // initiator's 'done' flag; nonblocking if NULL
+};
+
 struct chpl_comm_bundleData_RMA_t {
   struct chpl_comm_bundleData_base_t b;
   void* addr;                   // address on AM target node
@@ -98,6 +108,7 @@ struct chpl_comm_bundleData_AMO_t {
 typedef union {
   struct chpl_comm_bundleData_base_t b;
   struct chpl_comm_bundleData_execOn_t xo;
+  struct chpl_comm_bundleData_execOnLrg_t xol;
   struct chpl_comm_bundleData_RMA_t rma;
   struct chpl_comm_bundleData_AMO_t amo;
 } chpl_comm_bundleData_t;

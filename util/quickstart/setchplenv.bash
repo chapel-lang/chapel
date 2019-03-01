@@ -24,9 +24,9 @@ if [ ! -d "$chpl_home/util" ] || [ ! -d "$chpl_home/compiler" ] || [ ! -d "$chpl
 fi
 
 # Remove any previously existing CHPL_HOME paths
-MYPATH=`$chpl_home/util/config/fixpath.py PATH`
+MYPATH=`$chpl_home/util/config/fixpath.py "$PATH"`
 exitcode=$?
-MYMANPATH=`$chpl_home/util/config/fixpath.py MANPATH`
+MYMANPATH=`$chpl_home/util/config/fixpath.py "$MANPATH"`
 
 # Double check $MYPATH before overwriting $PATH
 if [ -z "${MYPATH}" -o "${exitcode}" -ne 0 ]; then

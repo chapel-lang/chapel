@@ -44,11 +44,10 @@ module UgniPerfStats {
 
   /* Zero performance counters on all locales */
   proc resetStats() {
-    var nonHereLocales = {0..numLocales-1}.remove(here.id);
-    coforall locid in nonHereLocales do on Locales[locid] {
-      resetCommPerfstatsHere();
+    for loc in Locales do on loc {
+      resetStatsHere();
     }
-    resetCommPerfstatsHere();
+    resetStatsHere();
   }
 
   /* Print stats on the current locale. By default it prints only the local
@@ -70,7 +69,7 @@ module UgniPerfStats {
    */
   proc printStats() {
     for loc in Locales do on loc {
-      printCommPerfstatsHere(false);
+      printStatsHere(false);
     }
   }
 }
