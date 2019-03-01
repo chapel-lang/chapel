@@ -48,9 +48,9 @@ as follows:
 * The llvm-src/CMakeLists.txt file was edited to set
   LLVM_INCLUDE_TESTS to OFF by default instead of ON.  It is necessary
   to make this change instead of passing -DLLVM_INCLUDE_TESTS=OFF to
-  cmake because Clang's build procedure calls cmake recursively and
-  does not preserve this flag, on purpose.  With this change made, the
-  appropriate line in llvm-src/CMakeLists.txt looks like the following:
+  cmake because Clang's build procedure does not always preserve this
+  flag.  With this change made, the appropriate line in
+  llvm-src/CMakeLists.txt looks like the following:
 option(LLVM_INCLUDE_TESTS "Generate build targets for the LLVM unit tests." OFF)
 
 Upgrading LLVM versions
