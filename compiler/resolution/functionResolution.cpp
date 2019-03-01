@@ -4986,6 +4986,12 @@ static void resolveInitVar(CallExpr* call) {
       resolveMove(call);
     } else if (isRecordWithInitializers(at) == false) {
       INT_FATAL("Unable to initialize record variable with type '%s'", at->symbol->name);
+    } else if (targetType->getValType() == srcType->getValType() &&
+               targetType->getValType()->symbol->hasFlag(FLAG_POD)) {
+      dst->type = targetType->getValType();
+      call->primitive = primitives[PRIM_MOVE];
+      resolveMove(call);
+
     } else {
 
       dst->type = targetType->getValType();
