@@ -74,6 +74,8 @@ extern int  scalar_replace_limit;
 extern int  inline_iter_yield_limit;
 extern int  tuple_copy_limit;
 
+extern bool fNoOptimizeForallUnordered;
+extern bool fReportOptimizeForallUnordered;
 
 extern bool report_inlining;
 
@@ -193,6 +195,7 @@ extern bool fDefaultUnmanaged;
 extern bool fLegacyNew;
 
 extern bool fReportAliases;
+extern bool fReportBlocking;
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportInlinedIterators;
 extern bool fReportVectorizedLoops;

@@ -285,7 +285,7 @@ module MPI {
       coforall loc in Locales do on loc {
           // This must be done on all locales!
           var pmiGniCookie = C_Env.getenv("PMI_GNI_COOKIE") : string;
-          if !pmiGniCookie.isEmptyString() {
+          if !pmiGniCookie.isEmpty() {
             // This may be a colon separated string.
             var cookieJar = pmiGniCookie.split(":");
             const lastcookie = cookieJar.domain.last;

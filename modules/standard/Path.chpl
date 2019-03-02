@@ -26,10 +26,9 @@
 
    .. note::
 
-      This module is currently missing the implementation for `absPath
-      <https://github.com/chapel-lang/chapel/issues/6005>`_, `expandUser
+      This module is currently missing the implementation for `expandUser
       <https://github.com/chapel-lang/chapel/issues/6008>`_, `normCase
-      <https://github.com/chapel-lang/chapel/issues/6015>`_, and `relPath
+      <https://github.com/chapel-lang/chapel/issues/6013>`_, and `relPath
       <https://github.com/chapel-lang/chapel/issues/6017>`_.  Once those are
       implemented, it will be considered complete.
 
@@ -46,6 +45,8 @@
 
    Path Manipulations
    ------------------
+   :proc:`absPath`
+   :proc:`file.absPath`
    :proc:`expandVars`
    :proc:`joinPath`
    :proc:`splitPath`
@@ -73,6 +74,53 @@ const curDir = ".";
 const parentDir = "..";
 /* Denotes the separator between a directory and its child. */
 const pathSep = "/";
+
+/*
+  Creates a normalized absolutized version of a path. On most platforms this is
+  equivalent to the call :code:`normPath(joinPath(here.cwd(), name)`.
+
+  .. warning::
+
+    This function is unsafe for use in a parallel environment due to its
+    reliance on :proc:`locale.cwd()`. Another task on the current locale may
+    change the current working directory at any time.
+
+  :arg name: The path whose absolute path is desired.
+  :type name: `string`
+
+  :return: A normalized, absolutized version of the path specified.
+  :rtype: `string`
+
+  :throws SystemError: Upon failure to get the current working directory.
+*/
+proc absPath(name: string): string throws {
+  use FileSystem;
+
+  if !isAbsPath(name) then
+    return normPath(joinPath(try here.cwd(), name));
+  return normPath(name);
+}
+
+/*
+  Creates a normalized absolutized version of the path in this :type:`~IO.file`.
+  On most platforms this is equivalent to the call
+  :code:`normPath(joinPath(here.cwd(), file.path))`.
+
+  .. warning::
+
+    This method is unsafe for use in a parallel environment due to its
+    reliance on :proc:`locale.cwd()`. Another task on the current locale
+    may change the current working directory at any time.
+
+  :return: A normalized, absolutized version of the path for this file.
+  :rtype: `string`
+
+  :throws SystemError: Upon failure to get the current working directory.
+*/
+proc file.absPath(): string throws {
+  // If we don't use the namespace we get a funky compiler type error.
+  return try Path.absPath(this.path);
+}
 
 /* Returns the basename of the file name provided.  For instance:
 
@@ -373,7 +421,7 @@ proc file.getParentName(out error:syserr): string {
 */
 
 proc isAbsPath(name: string): bool {
-  if name.isEmptyString() {
+  if name.isEmpty() {
     return false;
   }
   const len: int = name.length;

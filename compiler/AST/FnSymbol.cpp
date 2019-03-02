@@ -778,10 +778,15 @@ int FnSymbol::hasGenericFormals() const {
       if (typeHasGenericDefaults               == false ||
           formal->hasFlag(FLAG_MARKED_GENERIC) == true ||
           formal                               == _this) {
-        if (!(formal == _this && isInitializer())) {
+        if (!(formal == _this && (isInitializer() || isCopyInit()))) {
           isGeneric = true;
         }
       }
+
+    // init= on generic types need to be considered generic so that 'this.type'
+    // stuff will resolve.
+    } else if (isCopyInit() && _this->type->symbol->hasFlag(FLAG_GENERIC)) {
+      isGeneric = true;
     }
 
     if (isGeneric == true) {
@@ -929,8 +934,12 @@ bool FnSymbol::isPostInitializer() const {
 
 bool FnSymbol::isDefaultInit() const {
   return hasFlag(FLAG_COMPILER_GENERATED) &&
-         hasFlag(FLAG_DEFAULT_COPY_INIT) == false &&
+         hasFlag(FLAG_COPY_INIT) == false &&
          isInitializer();
+}
+
+bool FnSymbol::isCopyInit() const {
+  return isMethod() && strcmp(name, astrInitEquals) == 0;
 }
 
 // This function or method is an iterator (as opposed to a procedure).
@@ -1176,6 +1185,14 @@ const char* toString(FnSymbol* fn) {
         if (arg->typeExpr != NULL) {
           if (SymExpr* sym = toSymExpr(arg->typeExpr->body.tail)) {
             retval = astr(retval, arg->name, ": ", sym->symbol()->name);
+          } else if (CallExpr* call = toCallExpr(arg->typeExpr->body.tail)) {
+            // TODO: need to preserve the original string for function signatures...
+            if (call->isPrimitive(PRIM_TYPEOF)) {
+              SymExpr* se = toSymExpr(call->get(1));
+              retval = astr(retval, arg->name, ": ", se->symbol()->name, ".type");
+            } else {
+              retval = astr(retval, arg->name);
+            }
 
           } else {
             retval = astr(retval, arg->name);

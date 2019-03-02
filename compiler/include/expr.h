@@ -359,6 +359,15 @@ Expr* getNextExpr(Expr* expr);
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);
 
+// This mechanism allows storing optimization/analysis results
+// in case they need to be used by later passes.
+// The optimization/analysis result is stored in a PRIM_OPTIMIZATION_INFO
+// expression after insertAfter, or added to one if it already exists.
+void addOptimizationFlag(Expr* insertAfter, Flag flag);
+// Returns true if a nearby PRIM_OPTIMIZATION_INFO includes this flag
+bool hasOptimizationFlag(Expr* anchor, Flag flag);
+
+
 #ifdef HAVE_LLVM
 llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
 llvm::Value* createTempVarLLVM(llvm::Type* type);

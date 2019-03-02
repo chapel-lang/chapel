@@ -278,6 +278,7 @@ studies/paracr/asenjo/PARACR-BC.graph
 library/standard/BitOps/c-tests/performance/bitops.graph
 studies/rbc/tvandoren/RBC.graph
 exercises/c-ray/old/c-ray.graph
+scan/scanPerf.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph

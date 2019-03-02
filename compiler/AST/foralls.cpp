@@ -24,6 +24,7 @@
 #include "ForLoop.h"
 #include "ForallStmt.h"
 #include "iterator.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -273,6 +274,8 @@ buildFollowLoop(VarSymbol* iter,
   //destructureIndices(followBody, indices, new SymExpr(followIdx), false);
 
   followBlock->insertAtTail(new DefExpr(followIter));
+
+  followIdx->addFlag(FLAG_FOLLOWER_INDEX);
 
   if (fast) {
 

@@ -667,7 +667,8 @@ module ChapelLocale {
     on this do queuedTasks = chpl_task_getNumQueuedTasks();
     return queuedTasks;
   }
-  
+
+  pragma "fn synchronization free"
   pragma "no doc"
   proc locale.runningTasks() {
     return this.runningTaskCnt();

@@ -1,4 +1,3 @@
 owned-record-instantiation-types-user-init-owns-error.chpl:18: error: unresolved call 'GenericCollection.init(MyClass)'
 owned-record-instantiation-types-user-init-owns-error.chpl:7: note: candidates are: GenericCollection.init(type t)
 owned-record-instantiation-types-user-init-owns-error.chpl:11: note:                 GenericCollection.init(arg: owned )
-owned-record-instantiation-types-user-init-owns-error.chpl:5: note:                 GenericCollection.init(other: GenericCollection)

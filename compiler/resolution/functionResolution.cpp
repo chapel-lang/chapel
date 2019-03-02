@@ -823,6 +823,25 @@ static bool canParamCoerce(Type*   actualType,
     }
   }
 
+  if (is_imag_type(formalType)) {
+    int mantissa_width = get_mantissa_width(formalType);
+
+    // coerce literal/param imag that are exactly representable
+    if (VarSymbol* var = toVarSymbol(actualSym)) {
+      if (var->immediate) {
+        if (is_imag_type(actualType)) {
+          if (fits_in_mantissa_exponent(mantissa_width,
+                                        get_exponent_width(formalType),
+                                        var->immediate)) {
+            *paramNarrows = true;
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+
   if (is_complex_type(formalType)) {
     int mantissa_width = get_mantissa_width(formalType);
 
@@ -1165,6 +1184,8 @@ bool doCanDispatch(Type*     actualType,
       if (fn                              != NULL        &&
           fn->name                        != astrSequals &&
           strcmp(fn->name, "these")       != 0           &&
+          fn->retTag                      != RET_TYPE    &&
+          fn->retTag                      != RET_PARAM   &&
           actualType->scalarPromotionType != NULL        &&
           doCanDispatch(actualType->scalarPromotionType,
                         NULL,
@@ -1384,6 +1405,7 @@ bool isNumericParamDefaultType(Type* t)
   if (t == dtInt[INT_SIZE_DEFAULT] ||
       t == dtReal[FLOAT_SIZE_DEFAULT] ||
       t == dtImag[FLOAT_SIZE_DEFAULT] ||
+      t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
       t == dtBools[BOOL_SIZE_DEFAULT])
     return true;
 
@@ -2226,7 +2248,7 @@ static bool isGenericRecordInit(CallExpr* call) {
   bool retval = false;
 
   if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
-    if (strcmp(ures->unresolved, "init") == 0 &&
+    if ((strcmp(ures->unresolved, "init") == 0 || strcmp(ures->unresolved, astrInitEquals) == 0) &&
         call->numActuals()               >= 2) {
       Type* t1 = call->get(1)->typeInfo();
       Type* t2 = call->get(2)->typeInfo();
@@ -2923,7 +2945,7 @@ void trimVisibleCandidates(CallInfo&       info,
     }
   }
 
-  bool isInit   = isMethod && call->isNamedAstr(astrInit);
+  bool isInit   = isMethod && (call->isNamedAstr(astrInit) || call->isNamedAstr(astrInitEquals));
   bool isNew    = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
   bool isDeinit = isMethod && call->isNamedAstr(astrDeinit);
 
@@ -2939,7 +2961,7 @@ void trimVisibleCandidates(CallInfo&       info,
       BaseAST* actual = NULL;
       BaseAST* formal = NULL;
 
-      if ((isInit && fn->isInitializer()) || (isDeinit && fn->isMethod())) {
+      if ((fn->isInitializer()) || (isDeinit && fn->isMethod()) || fn->isCopyInit()) {
         actual = call->get(2);
         formal = fn->_this;
       } else if (isNew && (fn->hasFlag(FLAG_NEW_WRAPPER) || fn->isInitializer())) {
@@ -3228,8 +3250,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
 
 
   // Don't forward forwarding expr (infinite loop ensues)
-  const char* ignorePrefix = "chpl_forwarding_expr";
-  if (0 == memcmp(ignorePrefix, calledName, strlen(ignorePrefix)))
+  if (startsWith(calledName, "chpl_forwarding_expr"))
     return NULL;
 
   // This is a workaround for resolvePromotionType being called
@@ -3237,6 +3258,15 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
   // is preferred.
   if (0 == strcmp(calledName, "chpl__promotionType")) {
     return NULL;
+  }
+
+  // Do not forward initializers
+  if (call->isNamedAstr(astrInit) && call->numActuals() >= 1) {
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      if (se->symbol() == gMethodToken) {
+        return NULL;
+      }
+    }
   }
 
   // Detect cycles
@@ -3567,7 +3597,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
     ResolutionCandidate* candidate1         = candidates.v[i];
     bool                 singleMostSpecific = true;
 
-    bool forGenericInit = candidate1->fn->isInitializer();
+    bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
 
     EXPLAIN("%s\n\n", toString(candidate1->fn));
 
@@ -3978,10 +4008,20 @@ static void testArgMapping(FnSymbol*                    fn1,
     reason = "scalar type vs not";
 
   } else if (prefersCoercionToOtherNumericType(actualScalarType, f1Type, f2Type)) {
-    prefer1 = WEAKER; reason = "preferred coercion to other";
+    if (paramWithDefaultSize)
+      prefer1 = WEAKEST;
+    else
+      prefer1 = WEAKER;
+
+    reason = "preferred coercion to other";
 
   } else if (prefersCoercionToOtherNumericType(actualScalarType, f2Type, f1Type)) {
-    prefer2 = WEAKER; reason = "preferred coercion to other";
+    if (paramWithDefaultSize)
+      prefer2 = WEAKEST;
+    else
+      prefer2 = WEAKER;
+
+    reason = "preferred coercion to other";
 
   } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
     prefer1 = actualParam ? WEAKEST : STRONG;
@@ -4370,7 +4410,7 @@ void lvalueCheck(CallExpr* call) {
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
 
       Symbol* actSym = isSymExpr(actual) ? toSymExpr(actual)->symbol() : NULL;
-      bool isInitParam = actSym->hasFlag(FLAG_PARAM) && calleeFn->isInitializer();
+      bool isInitParam = actSym->hasFlag(FLAG_PARAM) && (calleeFn->isInitializer() || calleeFn->isCopyInit());
 
       if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {
         // This assert is FYI. Perhaps can remove it if it fails.
@@ -4492,9 +4532,11 @@ static void resolveTupleExpand(CallExpr* call) {
     }
   }
 
-  if (size == 0) {
+  if (size == 0)
     INT_FATAL(call, "Invalid tuple expand primitive");
-  }
+
+  if (parent != NULL && parent->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE))
+    size = 1; // use the first component of the tuple for the shape
 
   stmt->insertBefore(noop);
 
@@ -4833,71 +4875,66 @@ static void resolveInitVar(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  // First, determine whether there is a specified type for the variable and
-  // whether a coercion is required.
-
   Type* targetType = NULL;
-  SymExpr* targetTypeExpr = NULL;
-  bool insertCoerce = false;
+  bool addedCoerce = false;
   if (call->numActuals() >= 3) {
-    targetTypeExpr = toSymExpr(call->get(3)->remove());
-    targetType = targetTypeExpr->symbol()->type;
+    SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
+    targetType = targetTypeExpr->typeInfo();
 
-    // If the target type is generic, compute the appropriate
-    // instantiation type (just as we would when instantiating
-    // a generic function's argument)
+    // If the target type is generic, compute the appropriate instantiation
+    // type.
     if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
-      Type* useType = getInstantiationType(srcType, targetType);
+      Type* inst = getInstantiationType(srcType, targetType);
 
-      if (useType == NULL) {
-        USR_FATAL(call, "Could not coerce %s to %s in initialization",
-                        srcType->symbol->name,
-                        targetType->symbol->name);
+      // Does not allow initializations of the form:
+      //   var x : MyGenericType = <expr>;
+      // if the type of <expr> is not an instantiation of 'MyGenericType'.
+      // Left as future work until 'init=' design finalized.
+      if (inst == NULL) {
+        USR_FATAL(call, "Could not coerce '%s' to '%s' in initialization",
+                  srcType->symbol->name,
+                  targetType->symbol->name);
+      } else if (inst != NULL) {
+        targetType = inst;
       }
-
-      targetType = useType;
     }
 
-    if (targetType->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
+    bool mismatch = targetType->getValType() != srcType->getValType();
+    // Insert a coercion if the types are different. Some internal types use a
+    // coercion because their initCopy returns a different type.
+    if (targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
         isSyncType(src->getValType()) ||
         isSingleType(src->getValType()) ||
-        targetType->getValType() != srcType->getValType()) {
-      insertCoerce = true;
+        (targetType->symbol->hasFlag(FLAG_TUPLE) && mismatch) ||
+        (isRecord(targetType->getValType()) == false && mismatch)) {
+      VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
+      tmp->addFlag(FLAG_EXPR_TEMP);
+
+      CallExpr* coerce = new CallExpr(PRIM_COERCE,
+                                      srcExpr->copy(),
+                                      targetTypeExpr);
+      CallExpr* move = new CallExpr(PRIM_MOVE, tmp, coerce);
+
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(move);
+      resolveCoerce(coerce);
+      resolveMove(move);
+
+      // Use the targetType as the srcType
+      srcExpr->setSymbol(tmp);
+      srcType = targetType;
+
+      addedCoerce = true;
     }
   } else {
     targetType = srcType;
   }
 
-  // Next, the primitive is replaced with appropriate AST (depending on the
-  // relevant types and flags).
-
-  // Target type will never be a reference
-  targetType = targetType->getValType();
-
-  if (insertCoerce) {
-    // create a temp variable to store the result of PRIM_COERCE
-    VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
-    tmp->addFlag(FLAG_EXPR_TEMP);
-
-    CallExpr* coerce = new CallExpr(PRIM_COERCE,
-                                    srcExpr->copy(),
-                                    targetTypeExpr);
-    CallExpr* move = new CallExpr(PRIM_MOVE, tmp, coerce);
-
-    call->insertBefore(new DefExpr(tmp));
-    call->insertBefore(move);
-    resolveCoerce(coerce);
-    resolveMove(move);
-
-    // Use coercion result 'tmp' in the original call
-    srcExpr->setSymbol(tmp);
-
-    call->primitive = primitives[PRIM_MOVE];
-    resolveMove(call);
-
-  } else if (dst->hasFlag(FLAG_NO_COPY) ||
-             isPrimitiveScalar(targetType) ||
-             isEnumType(targetType)) {
+  if (dst->hasFlag(FLAG_NO_COPY) ||
+      isPrimitiveScalar(targetType) ||
+      isEnumType(targetType) ||
+      addedCoerce) {
+    dst->type = targetType;
 
     call->primitive = primitives[PRIM_MOVE];
     if (srcType->isRef() && !dst->hasFlag(FLAG_NO_COPY)) {
@@ -4907,17 +4944,16 @@ static void resolveInitVar(CallExpr* call) {
     }
     resolveMove(call);
 
-  } else if (isRecord(targetType) == false ||
+  } else if (isRecord(targetType->getValType()) == false ||
              isParamString ||
-             isSyncType(targetType) ||
-             isSingleType(targetType) ||
-             isRecordWrappedType(targetType) ||
-             targetType->symbol->hasFlag(FLAG_TUPLE) ||
-             targetType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+             isSyncType(srcType->getValType()) ||
+             isSingleType(srcType->getValType()) ||
+             isRecordWrappedType(targetType->getValType()) ||
+             srcType->getValType()->symbol->hasFlag(FLAG_TUPLE) ||
+             srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // These cases require an initCopy to implement special initialization
     // semantics (e.g. reading a sync for variable initialization).
 
-    SET_LINENO(call);
     CallExpr* initCopy = new CallExpr("chpl__initCopy", srcExpr->remove());
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
@@ -4925,8 +4961,8 @@ static void resolveInitVar(CallExpr* call) {
     resolveExpr(initCopy);
     resolveMove(call);
 
-  } else if (isRecord(targetType) == true) {
-    AggregateType* at = toAggregateType(targetType);
+  } else if (isRecord(targetType->getValType())) {
+    AggregateType* at = toAggregateType(targetType->getValType());
 
     // Clear FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW
     // since the result of the 'new' will "move" into
@@ -4935,32 +4971,53 @@ static void resolveInitVar(CallExpr* call) {
 
     // Don't need to copy string literals when initializing a string
     bool moveStringLiteral = src->hasFlag(FLAG_CHAPEL_STRING_LITERAL) &&
-                             targetType == dtString;
+                             targetType->getValType() == dtString;
 
-    // The LHS will "own" a temp without an auto-destroy
+    // The LHS will "own" the temp without an auto-destroy, provided the
+    // types are the same.
     bool canStealTemp = src->hasFlag(FLAG_TEMP) &&
                         src->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false &&
+                        srcType->getValType() == targetType->getValType() &&
                         src->isRef() == false;
 
     if (moveStringLiteral || canStealTemp) {
-      dst->type       = src->type;
+      dst->type = src->type;
 
       call->primitive = primitives[PRIM_MOVE];
 
       resolveMove(call);
+    } else if (isRecordWithInitializers(at) == false) {
+      INT_FATAL("Unable to initialize record variable with type '%s'", at->symbol->name);
     } else {
-      INT_ASSERT(isRecordWithInitializers(at));
 
-      dst->type = targetType;
+      dst->type = targetType->getValType();
+      src->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
-      call->setUnresolvedFunction("init");
       call->insertAtHead(gMethodToken);
+
+      bool foundOldStyleInit = false;
+      // Try resolving the old-style copy initializer first
+      if (at->hasUserDefinedInitEquals() == false &&
+          srcType->getValType() == targetType->getValType()) {
+        call->setUnresolvedFunction("init");
+
+        foundOldStyleInit = tryResolveCall(call) != NULL;
+
+        if (foundOldStyleInit) {
+          resolveNormalCallFinalChecks(call);
+        }
+      }
+
+      if (foundOldStyleInit == false) {
+        call->setUnresolvedFunction(astrInitEquals);
+
+        resolveCall(call);
+      }
+      // else: warning about old-style 'init' vs. init= would go here
 
       if (at->hasPostInitializer() == true) {
         call->insertAfter(new CallExpr("postinit", gMethodToken, dst));
       }
-
-      resolveCall(call);
 
     }
 
@@ -4981,9 +5038,21 @@ static void resolveInitVar(CallExpr* call) {
 
 FnSymbol* findCopyInit(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
-  CallExpr*  call  = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
 
-  FnSymbol* ret = resolveUninsertedCall(at, call, false);
+  FnSymbol* ret = NULL;
+
+  if (at->hasUserDefinedInitEquals() == false) {
+    CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
+    ret = resolveUninsertedCall(at, call, false);
+  }
+
+  if (ret == NULL) {
+    CallExpr* call = NULL;
+
+    call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
+
+    ret = resolveUninsertedCall(at, call, false);
+  }
 
   // ret's instantiationPoint points to the dummy BlockStmt created by
   // resolveUninsertedCall, so it needs to be updated.
@@ -6720,7 +6789,6 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
       if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
         outerCompilerErrorMap[fn] = str;
     } else {
-      gdbShouldBreakHere();
       USR_WARN (from, "%s", str);
       if (FnSymbol* fn = callStack.tail()->resolvedFunction())
         innerCompilerWarningMap[fn] = str;
@@ -8016,7 +8084,9 @@ static void cleanupVoidVarsAndFields() {
   // Remove most uses of void variables and fields
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree()) {
-      if (call->isPrimitive(PRIM_MOVE)) {
+     if (call->isPrimitive())
+      switch (call->primitive->tag) {
+      case PRIM_MOVE: {
         if (isVoidOrVoidTupleType(call->get(2)->typeInfo()) ||
             call->get(2)->typeInfo() == dtVoid->refType) {
           INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
@@ -8037,7 +8107,9 @@ static void cleanupVoidVarsAndFields() {
             call->remove();
           }
         }
-      } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+        break;
+      }
+      case PRIM_SET_MEMBER: {
         if (isVoidOrVoidTupleType(call->get(3)->typeInfo())) {
           INT_ASSERT(call->get(2)->typeInfo() == call->get(3)->typeInfo());
           // Remove set_member(a, void, void) calls
@@ -8049,7 +8121,9 @@ static void cleanupVoidVarsAndFields() {
             call->remove();
           }
         }
-      } else if (call->isPrimitive(PRIM_RETURN)) {
+        break;
+      }
+      case PRIM_RETURN: {
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
             call->get(1)->typeInfo() == dtVoid->refType) {
           // Change functions that return void to use the global
@@ -8061,7 +8135,9 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
-      } else if (call->isPrimitive(PRIM_YIELD)) {
+        break;
+      }
+      case PRIM_YIELD: {
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
             call->get(1)->typeInfo() == dtVoid->refType) {
           // Change iterators that yield void to use the global
@@ -8073,12 +8149,19 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
-      } else if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
+        break;
+      }
+      case PRIM_CALL_DESTRUCTOR: {
         // Remove calls to destructors for homogeneous tuples of void
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo())) {
           call->remove();
         }
+        break;
       }
+      default:
+        break;
+      } // switch (call->primitive->tag)
+     else
       if (FnSymbol* fn = call->resolvedFunction()) {
         bool seenVoid = false;
         // Remove actual arguments that are void from function calls

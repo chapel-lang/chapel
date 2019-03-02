@@ -1,0 +1,331 @@
+complex(128) initialized by real(64) 1.0
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=1.0 real(64) 1.0
+
+complex(128) initialized by real(64) 1.0
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=1.0 real(64) 1.0
+
+complex(128) initialized by real(32) 1.0
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=1.0 real(32) 1.0
+
+complex(64) initialized by real(64) 1.0
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=1.0 real(64) 1.0
+
+complex(64) initialized by real(64) 1.0
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=1.0 real(64) 1.0
+
+complex(64) initialized by real(32) 1.0
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=1.0 real(32) 1.0
+
+
+complex(128) initialized by imag(64) 1.0i
+x=0.0 + 1.0i complex(128) 0.0 + 1.0i
+y=0.0 + 1.0i complex(128) 0.0 + 1.0i
+z=0.0 + 1.0i complex(128) 0.0 + 1.0i
+a=1.0i imag(64) 1.0i
+
+complex(128) initialized by imag(64) 1.0i
+x=0.0 + 1.0i complex(128) 0.0 + 1.0i
+y=0.0 + 1.0i complex(128) 0.0 + 1.0i
+z=0.0 + 1.0i complex(128) 0.0 + 1.0i
+a=1.0i imag(64) 1.0i
+
+complex(128) initialized by imag(32) 1.0i
+x=0.0 + 1.0i complex(128) 0.0 + 1.0i
+y=0.0 + 1.0i complex(128) 0.0 + 1.0i
+z=0.0 + 1.0i complex(128) 0.0 + 1.0i
+a=1.0i imag(32) 1.0i
+
+complex(64) initialized by imag(64) 1.0i
+x=0.0 + 1.0i complex(64) 0.0 + 1.0i
+y=0.0 + 1.0i complex(64) 0.0 + 1.0i
+z=0.0 + 1.0i complex(64) 0.0 + 1.0i
+a=1.0i imag(64) 1.0i
+
+complex(64) initialized by imag(64) 1.0i
+x=0.0 + 1.0i complex(64) 0.0 + 1.0i
+y=0.0 + 1.0i complex(64) 0.0 + 1.0i
+z=0.0 + 1.0i complex(64) 0.0 + 1.0i
+a=1.0i imag(64) 1.0i
+
+complex(64) initialized by imag(32) 1.0i
+x=0.0 + 1.0i complex(64) 0.0 + 1.0i
+y=0.0 + 1.0i complex(64) 0.0 + 1.0i
+z=0.0 + 1.0i complex(64) 0.0 + 1.0i
+a=1.0i imag(32) 1.0i
+
+
+complex(128) initialized by complex(128) 2.0 + 1.0i
+x=2.0 + 1.0i complex(128) 2.0 + 1.0i
+y=2.0 + 1.0i complex(128) 2.0 + 1.0i
+z=2.0 + 1.0i complex(128) 2.0 + 1.0i
+a=2.0 + 1.0i complex(128) 2.0 + 1.0i
+
+complex(128) initialized by complex(128) 2.0 + 1.0i
+x=2.0 + 1.0i complex(128) 2.0 + 1.0i
+y=2.0 + 1.0i complex(128) 2.0 + 1.0i
+z=2.0 + 1.0i complex(128) 2.0 + 1.0i
+a=2.0 + 1.0i complex(128) 2.0 + 1.0i
+
+complex(128) initialized by complex(64) 2.0 + 1.0i
+x=2.0 + 1.0i complex(128) 2.0 + 1.0i
+y=2.0 + 1.0i complex(128) 2.0 + 1.0i
+z=2.0 + 1.0i complex(128) 2.0 + 1.0i
+a=2.0 + 1.0i complex(64) 2.0 + 1.0i
+
+complex(64) initialized by complex(128) 2.0 + 1.0i
+x=2.0 + 1.0i complex(64) 2.0 + 1.0i
+y=2.0 + 1.0i complex(64) 2.0 + 1.0i
+z=2.0 + 1.0i complex(64) 2.0 + 1.0i
+a=2.0 + 1.0i complex(128) 2.0 + 1.0i
+
+complex(64) initialized by complex(128) 2.0 + 1.0i
+x=2.0 + 1.0i complex(64) 2.0 + 1.0i
+y=2.0 + 1.0i complex(64) 2.0 + 1.0i
+z=2.0 + 1.0i complex(64) 2.0 + 1.0i
+a=2.0 + 1.0i complex(128) 2.0 + 1.0i
+
+complex(64) initialized by complex(64) 2.0 + 1.0i
+x=2.0 + 1.0i complex(64) 2.0 + 1.0i
+y=2.0 + 1.0i complex(64) 2.0 + 1.0i
+z=2.0 + 1.0i complex(64) 2.0 + 1.0i
+a=2.0 + 1.0i complex(64) 2.0 + 1.0i
+
+
+complex(128) initialized by complex(128) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+
+complex(128) initialized by complex(128) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+
+complex(128) initialized by complex(64) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+
+complex(64) initialized by complex(128) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+
+complex(64) initialized by complex(128) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(128) -2.0 - 1.0i
+
+complex(64) initialized by complex(64) -2.0 - 1.0i
+x=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+y=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+z=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+a=-2.0 - 1.0i complex(64) -2.0 - 1.0i
+
+
+complex(128) initialized by int(64) -1
+x=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+y=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+z=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+a=-1 int(64) -1
+
+complex(128) initialized by int(64) -1
+x=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+y=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+z=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+a=-1 int(64) -1
+
+complex(128) initialized by int(32) -1
+x=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+y=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+z=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+a=-1 int(32) -1
+
+complex(128) initialized by int(16) -1
+x=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+y=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+z=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+a=-1 int(16) -1
+
+complex(128) initialized by int(8) -1
+x=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+y=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+z=-1.0 + 0.0i complex(128) -1.0 + 0.0i
+a=-1 int(8) -1
+
+complex(64) initialized by int(64) -1
+x=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+y=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+z=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+a=-1 int(64) -1
+
+complex(64) initialized by int(64) -1
+x=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+y=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+z=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+a=-1 int(64) -1
+
+complex(64) initialized by int(32) -1
+x=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+y=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+z=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+a=-1 int(32) -1
+
+complex(64) initialized by int(16) -1
+x=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+y=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+z=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+a=-1 int(16) -1
+
+complex(64) initialized by int(8) -1
+x=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+y=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+z=-1.0 + 0.0i complex(64) -1.0 + 0.0i
+a=-1 int(8) -1
+
+
+complex(128) initialized by uint(64) 1
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=1 uint(64) 1
+
+complex(128) initialized by uint(64) 1
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=1 uint(64) 1
+
+complex(128) initialized by uint(32) 1
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=1 uint(32) 1
+
+complex(128) initialized by uint(16) 1
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=1 uint(16) 1
+
+complex(128) initialized by uint(8) 1
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=1 uint(8) 1
+
+complex(64) initialized by int(64) 1
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=1 int(64) 1
+
+complex(64) initialized by uint(64) 1
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=1 uint(64) 1
+
+complex(64) initialized by uint(32) 1
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=1 uint(32) 1
+
+complex(64) initialized by uint(16) 1
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=1 uint(16) 1
+
+complex(64) initialized by uint(8) 1
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=1 uint(8) 1
+
+
+complex(128) initialized by bool true
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=true bool true
+
+complex(128) initialized by bool(64) true
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=true bool(64) true
+
+complex(128) initialized by bool(32) true
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=true bool(32) true
+
+complex(128) initialized by bool(16) true
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=true bool(16) true
+
+complex(128) initialized by bool(8) true
+x=1.0 + 0.0i complex(128) 1.0 + 0.0i
+y=1.0 + 0.0i complex(128) 1.0 + 0.0i
+z=1.0 + 0.0i complex(128) 1.0 + 0.0i
+a=true bool(8) true
+
+complex(64) initialized by bool true
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=true bool true
+
+complex(64) initialized by bool(64) true
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=true bool(64) true
+
+complex(64) initialized by bool(32) true
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=true bool(32) true
+
+complex(64) initialized by bool(16) true
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=true bool(16) true
+
+complex(64) initialized by bool(8) true
+x=1.0 + 0.0i complex(64) 1.0 + 0.0i
+y=1.0 + 0.0i complex(64) 1.0 + 0.0i
+z=1.0 + 0.0i complex(64) 1.0 + 0.0i
+a=true bool(8) true
+
+

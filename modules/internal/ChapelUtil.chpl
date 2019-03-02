@@ -112,6 +112,7 @@ module ChapelUtil {
 
   proc chpl_convert_args(arg: chpl_main_argument) {
     var local_arg = arg;
+    pragma "fn synchronization free"
     extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_string;
     // This is odd.  Why are the strings inside the array getting destroyed?
     pragma "no auto destroy"

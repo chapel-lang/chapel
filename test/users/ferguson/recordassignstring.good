@@ -1,1 +1,2 @@
-recordassignstring.chpl:10: error: type mismatch in assignment from string to Point
+recordassignstring.chpl:10: error: unresolved call 'Point.init=(string)'
+recordassignstring.chpl:1: note: candidates are: Point.init=(other: Point)

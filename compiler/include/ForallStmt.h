@@ -35,6 +35,7 @@ public:
   AList&     iteratedExpressions();  // Exprs, one per iterated expr
   AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
   BlockStmt* loopBody()       const; // the body of the forall loop
+  std::vector<BlockStmt*> loopBodies() const; // body or bodies of followers
   LabelSymbol* continueLabel();      // create it if not already
 
   // when originating from a ForLoop or a reduce expression

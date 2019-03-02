@@ -450,7 +450,8 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   // Set up the arguments
   if (fn->hasFlag(FLAG_METHOD) &&
       fn->_this != NULL &&
-      fn->isInitializer() == false) {
+      fn->isInitializer() == false &&
+      fn->isCopyInit() == false) {
     // Set up mt and this arguments
     Symbol* thisArg = fn->_this;
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
@@ -704,7 +705,8 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   // Add method token, this if needed
   if (fn->hasFlag(FLAG_METHOD) &&
       fn->_this != NULL &&
-      fn->isInitializer() == false) {
+      fn->isInitializer() == false &&
+      fn->isCopyInit() == false) {
     // Set up mt and _this arguments
     newCall->insertAtTail(gMethodToken);
     Symbol* usedFormal = fn->_this;
