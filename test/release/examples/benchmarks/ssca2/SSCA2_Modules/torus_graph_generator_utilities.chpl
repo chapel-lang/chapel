@@ -29,7 +29,11 @@ module torus_graph_generator_utilities {
       {
 	Rand_Gen.fillRandom ( Unif_Random );
 
-        // Todo: switch to a []-loop, see #12424.
+      /* Issue #12424: instead of the for-loop below, we would like to write:
+	G.edge_weight (v) = floor ( 1 + 
+				    Unif_Random * MAX_EDGE_WEIGHT )
+	  : int;
+      */
         for (w,r) in zip(G.edge_weight(v), Unif_Random) do
           w = floor ( 1 + r * MAX_EDGE_WEIGHT ) : int;
 
