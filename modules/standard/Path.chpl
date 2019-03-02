@@ -434,6 +434,7 @@ proc isAbsPath(name: string): bool {
   }
 }
 
+/* Build up path components as described in joinPath(). */
 private proc joinPathComponent(comp: string, ref result: string) {
   if comp.startsWith('/') || result == "" then
     result = comp;
@@ -471,7 +472,7 @@ proc joinPath(paths: string ...?n): string {
   return result;
 }
 
-// This overload is private for now, needed for relPath.
+/* This overload is private for now, needed for relPath. */
 private proc joinPath(paths: [] string): string {
   if paths.isEmpty() then
     return "";
@@ -624,14 +625,14 @@ proc file.realPath(out error: syserr): string {
   return "";
 }
 
-// Compute the common prefix length between two lists of path components.
-private proc commonPrefixLength(a1: [] string, a2: [] string): int {
-  // Can we use the builtin min/max functions for this?
-  var (min, max) = if a1.size < a2.size then (a1, a2) else (a2, a1);
+/* Compute the common prefix length between two lists of path components. */
+private
+proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
+  const ref (a, b) = if a1.size < a2.size then (a1, a2) else (a2, a1);
   var result = 0;
 
-  for i in 1..min.size do
-    if min(i) != max(i) then
+  for i in 1..a.size do
+    if a[i] != b[i] then
       return result;
     else
       result += 1;
@@ -663,22 +664,20 @@ private proc commonPrefixLength(a1: [] string, a2: [] string): int {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc relPath(name: string, start:string=curDir): string throws {
-  var realstart = if start == "" then curDir else start;
+  const realstart = if start == "" then curDir else start;
 
   // NOTE: Reliance on locale.cwd() can't be avoided.
-  var startComps = absPath(realstart).split(pathSep, -1, true);
-  var nameComps = absPath(name).split(pathSep, -1, true);
+  const startComps = absPath(realstart).split(pathSep, -1, true);
+  const nameComps = absPath(name).split(pathSep, -1, true);
 
-  var prefixLen = commonPrefixLength(startComps, nameComps);
-  var outComps : [1..0] string;
+  const prefixLen = commonPrefixLength(startComps, nameComps);
 
-  // Add up-levels until we reach where the two paths diverge.
-  for i in 1..(startComps.size - prefixLen) do
-    outComps.push_back([parentDir]);
+  // Append up-levels until we reach the point where the paths diverge.
+  var outComps : [1..(startComps.size - prefixLen)] string = parentDir;
 
   // Append the portion of name following the common prefix.
   if !nameComps.isEmpty() then
-    outComps.push_back(nameComps((prefixLen + 1)..nameComps.size));
+    outComps.push_back(nameComps[(prefixLen + 1)..nameComps.size]);
 
   if outComps.isEmpty() then
     return curDir;
