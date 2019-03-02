@@ -32,7 +32,7 @@ Initializing Modules:
      LocaleModelHelpMem
     LocalesArray
     ChapelDistribution
-     List
+     LinkedList
     ChapelIO
      IO
       SysError
