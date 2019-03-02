@@ -319,7 +319,16 @@ proc chpl_check_comparator(comparator, type eltType) {
  */
 // TODO: This should have a flag `stable` to request a stable sort
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  quickSort(Data, comparator=comparator);
+
+  use Reflection;
+
+  if !Dom.stridable &&
+     (canResolveMethod(comparator, "key", Data[Dom.low]) ||
+      canResolveMethod(comparator, "keyPart", Data[Dom.low], 1)) {
+    msbRadixSort(Data, comparator=comparator);
+  } else {
+    quickSort(Data, comparator=comparator);
+  }
 }
 
 
