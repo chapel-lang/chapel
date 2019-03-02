@@ -19,7 +19,7 @@
 
 module ChapelDistribution {
 
-  use List;
+  use LinkedList;
 
   extern proc chpl_task_yield();
 
@@ -31,7 +31,7 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _doms: list(unmanaged BaseDom); // domains declared over this distribution
+    var _doms: linkedList(unmanaged BaseDom); // domains declared over this distribution
     var _domsLock: chpl__processorAtomicType(bool); // lock for concurrent access
     var _free_when_no_doms: bool; // true when original _distribution is destroyed
     var pid:int = nullPid; // privatized ID, if privatization is supported
@@ -174,7 +174,7 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _arrs: list(unmanaged BaseArr);  // arrays declared over this domain
+    var _arrs: linkedList(unmanaged BaseArr);  // arrays declared over this domain
     var _arrs_containing_dom: int; // number of arrays using this domain
                                    // as var A: [D] [1..2] real
                                    // is using {1..2}
