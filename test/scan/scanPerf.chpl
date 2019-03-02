@@ -12,13 +12,15 @@ config const n = defaultN,
 
 var A: [1..n] int = 1;
 
+var t: Timer;
+
 // time scan
-const startTime = getCurrentTime();
+t.start();
 var B = + scan A;
-const stopTime = getCurrentTime();
+t.stop();
 
 if printTiming then
-  writeln("Scan of ", n, " elements took ", stopTime - startTime, " seconds");
+  writeln("Scan of ", n, " elements took ", t.elapsed(), " seconds");
 
 if printArray then
   writeln(B);
