@@ -2178,9 +2178,13 @@ expandForLoop(ForLoop* forLoop) {
       // after the call to the iterator function.
       // Scroll backwards to find the error handling block.
 
-      // TODO: finish this case
+      // TODO: finish this case, see GitHub #7134
       //       I think we need to use the ForLoop's break label
-      USR_FATAL("Throwing non-inlined iterators are not yet supported");
+
+      USR_FATAL_CONT(forLoop,
+        "throwing non-inlined iterators are not yet supported");
+      USR_PRINT(iterFn, "the invoked iterator is here");
+      USR_STOP();
     }
 
     SymExpr*     se1       = toSymExpr(forLoop->indexGet());
