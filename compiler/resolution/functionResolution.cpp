@@ -5008,14 +5008,6 @@ static void resolveInitVar(CallExpr* call) {
 
       if (foundOldStyleInit == false) {
         call->setUnresolvedFunction(astrInitEquals);
-        if (at->symbol->hasFlag(FLAG_GENERIC) == false &&
-            at->instantiatedFrom != NULL &&
-            at != at->instantiatedFrom) {
-          // Initializing a genric type, need to pass the type as an argument
-          Expr* last = call->argList.tail->remove();
-          call->insertAtTail(new SymExpr(at->symbol));
-          call->insertAtTail(last);
-        }
 
         resolveCall(call);
       }
@@ -5054,11 +5046,8 @@ FnSymbol* findCopyInit(AggregateType* at) {
 
   if (ret == NULL) {
     CallExpr* call = NULL;
-    if (at->getRootInstantiation()->symbol->hasFlag(FLAG_GENERIC)) {
-      call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, new SymExpr(at->symbol), tmpAt);
-    } else {
-      call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
-    }
+
+    call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
 
     ret = resolveUninsertedCall(at, call, false);
   }

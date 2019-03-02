@@ -17,7 +17,7 @@ record Vector {
   }
 
   // Classic copy-initializer
-  proc init=(type ThisType, other : ThisType) {
+  proc init=(other : this.type) {
     writeln("classic copy init");
     this.T = other.T;
     this.D = other.D;
@@ -35,9 +35,9 @@ writeln("----- Classic Initialization -----");
 writeln("\n\n\n");
 
 // Initialize a particular Vector type from an array of the same eltType
-proc Vector.init=(type ThisType, data : [] ThisType.T) {
+proc Vector.init=(data : [] this.type.T) {
   writeln("typed init= from array");
-  this.T = ThisType.T;
+  this.T = this.type.T;
   this.D = data.domain;
   this.A = data;
 }

@@ -860,7 +860,7 @@ record ReverseComparator {
    :arg revcomp: :ref:`ReverseComparator <reverse-comparator>` to copy.
    */
   pragma "no doc"
-  proc init=(type ThisType, revcomp: ReverseComparator(?)) {
+  proc init=(revcomp: ReverseComparator(?)) {
     this.comparator = revcomp.comparator;
   }
 

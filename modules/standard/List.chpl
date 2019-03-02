@@ -74,9 +74,8 @@ record list {
   }
 
   pragma "no doc"
-  proc init=(type ThisType, l : list(?t)) {
-    if l.type != ThisType then compilerError("init= error");
-    this.eltType = t;
+  proc init=(l : this.type) {
+    this.eltType = l.eltType;
     this.complete();
     for i in l do
       this.append(i);

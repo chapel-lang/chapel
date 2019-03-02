@@ -782,6 +782,11 @@ int FnSymbol::hasGenericFormals() const {
           isGeneric = true;
         }
       }
+
+    // init= on generic types need to be considered generic so that 'this.type'
+    // stuff will resolve.
+    } else if (isCopyInit() && _this->type->symbol->hasFlag(FLAG_GENERIC)) {
+      isGeneric = true;
     }
 
     if (isGeneric == true) {
@@ -1180,6 +1185,14 @@ const char* toString(FnSymbol* fn) {
         if (arg->typeExpr != NULL) {
           if (SymExpr* sym = toSymExpr(arg->typeExpr->body.tail)) {
             retval = astr(retval, arg->name, ": ", sym->symbol()->name);
+          } else if (CallExpr* call = toCallExpr(arg->typeExpr->body.tail)) {
+            // TODO: need to preserve the original string for function signatures...
+            if (call->isPrimitive(PRIM_TYPEOF)) {
+              SymExpr* se = toSymExpr(call->get(1));
+              retval = astr(retval, arg->name, ": ", se->symbol()->name, ".type");
+            } else {
+              retval = astr(retval, arg->name);
+            }
 
           } else {
             retval = astr(retval, arg->name);

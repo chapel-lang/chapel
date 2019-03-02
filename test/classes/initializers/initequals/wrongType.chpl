@@ -3,7 +3,7 @@ record R {
   type T;
   var x : T;
 
-  proc init=(type ThisType, other: int) {
+  proc init=(other: int) {
     this.T = (int, int);
     this.x = (other, other);
   }

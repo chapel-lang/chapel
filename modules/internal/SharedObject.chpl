@@ -235,10 +235,6 @@ module SharedObject {
       this.complete();
     }
 
-    proc init=(type ThisType, pragma "nil from arg" in take:owned) {
-      this.init(take);
-    }
-
     // Initialize generic 'shared' var-decl from owned:
     //   var s : shared = ownedThing;
     pragma "no doc"
@@ -251,8 +247,8 @@ module SharedObject {
        that refers to the same class instance as `src`.
        These will share responsibility for managing the instance.
      */
-    proc init=(type ThisType, pragma "nil from arg" const ref src:_shared(?)) {
-      this.chpl_t = ThisType.chpl_t;
+    proc init=(pragma "nil from arg" const ref src:_shared(?)) {
+      this.chpl_t = this.type.chpl_t;
       this.chpl_p = src.chpl_p;
       this.chpl_pn = src.chpl_pn;
 
@@ -260,6 +256,10 @@ module SharedObject {
 
       if this.chpl_pn != nil then
         this.chpl_pn.retain();
+    }
+
+    proc init=(src : _nilType) {
+      this.init(this.type.chpl_t);
     }
 
     /*

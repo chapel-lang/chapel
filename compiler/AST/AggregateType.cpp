@@ -1707,9 +1707,7 @@ void AggregateType::buildCopyInitializer() {
     ArgSymbol* ThisType = NULL;
     ArgSymbol* other = NULL;
     if (isGeneric) {
-      ThisType = new ArgSymbol(INTENT_TYPE, "ThisType", dtAny);
-      ThisType->addFlag(FLAG_TYPE_VARIABLE);
-      other = new ArgSymbol(INTENT_BLANK, "other", dtUnknown, new SymExpr(ThisType));
+      other = new ArgSymbol(INTENT_BLANK, "other", dtUnknown, new CallExpr(PRIM_TYPEOF, new SymExpr(_this)));
       other->addFlag(FLAG_MARKED_GENERIC);
     } else {
       other = new ArgSymbol(INTENT_BLANK, "other", this);

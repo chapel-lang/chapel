@@ -6,8 +6,8 @@ record R {
   type T;
   var x : T;
 
-  proc init=(type ThisType, other: ThisType.T) {
-    this.T = ThisType.T;
+  proc init=(other: this.type.T) {
+    this.T = this.type.T;
     this.x = other;
   }
 }

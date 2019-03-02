@@ -1,2 +1,2 @@
-owned-record-instantiation-types-user-init-borrows-error.chpl:17: error: unresolved call 'GenericCollection(_owned(MyClass)).init=(type GenericCollection(_owned(MyClass)), GenericCollection(MyClass))'
-owned-record-instantiation-types-user-init-borrows-error.chpl:5: note: candidates are: GenericCollection.init=(type ThisType, other: ThisType)
+owned-record-instantiation-types-user-init-borrows-error.chpl:17: error: unresolved call 'GenericCollection(_owned(MyClass)).init=(GenericCollection(MyClass))'
+owned-record-instantiation-types-user-init-borrows-error.chpl:5: note: candidates are: GenericCollection.init=(other: this.type)
