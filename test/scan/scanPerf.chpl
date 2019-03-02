@@ -1,6 +1,6 @@
 use Time, Memory, BlockDist;
 
-// compute a target problem size if one is not specified
+// compute a target problem size if one is not specified; assume homogeneity
 config const memFraction = 0;
 const totMem = here.physicalMemory(unit = MemUnits.Bytes);
 const defaultN = if memFraction == 0
