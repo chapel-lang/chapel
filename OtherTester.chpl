@@ -1,7 +1,7 @@
 use BitOps;
  use Sort;
  use Random;
- use OtherMSBRadix;
+ //use OtherMSBRadix;
  use Time;
 
  config const printStats = true;
@@ -86,6 +86,19 @@ use BitOps;
    var start = input.domain.low;
    var end = input.domain.high;
 
+   var settingsTuple =
+     (new MSBRadixSortSettings(CHECK_SORTS=true), // default settings
+      new MSBRadixSortSettings(DISTRIBUTE_BUFFER=1,
+                               sortSwitch=1,
+                               minForTask=1,
+                               CHECK_SORTS=true,
+                               alwaysSerial=true),
+      new MSBRadixSortSettings(DISTRIBUTE_BUFFER=10,
+                               sortSwitch=1,
+                               minForTask=1,
+                               CHECK_SORTS=true,
+                               alwaysSerial=false));
+
    writeln(comparator.type:string);
    writef("Sorting    %ht\n", input);
 
@@ -99,15 +112,20 @@ use BitOps;
    writef("shellSort- %ht\n", Ar);
    testReverseSorted(Ar, comparator);
 
-   var B = input;
-   msbRadixSort(start, end, B, comparator);
-   writef("radixSort  %ht\n", B);
-   testSorted(B, comparator);
+   for param i in 1..settingsTuple.size {
+     var s = settingsTuple(i);
+     var B = input;
+     msbRadixSort(start, end, B, comparator, 0, s);
+     if i == 1 then
+       writef("radixSort  %ht\n", B);
+     testSorted(B, comparator);
 
-   var Br = input;
-   msbRadixSort(start, end, Br, new ReverseComparator(comparator));
-   writef("radixSort- %ht\n", Br);
-   testReverseSorted(Br, comparator);
+     var Br = input;
+     msbRadixSort(start, end, Br, new ReverseComparator(comparator), 0, s);
+     if i == 1 then
+       writef("radixSort- %ht\n", Br);
+     testReverseSorted(Br, comparator);
+   }
  }
 
  proc testSortsPositive(input) {
@@ -182,7 +200,8 @@ proc testSortsUnsigned(input) {
    var t: Timer;
    t.start();
 
-   msbRadixSort(1, size, array, new intCriterion());
+   msbRadixSort(1, size, array, new intCriterion(), 0, new
+       MSBRadixSortSettings());
 
    t.stop();
  
