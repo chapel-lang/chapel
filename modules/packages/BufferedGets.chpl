@@ -65,9 +65,9 @@ module BufferedGets {
     if !(isNumericType(LHS.type) && LHS.type == RHS.type) then
       compilerError("getBuff is only supported on numeric types");
     if CHPL_COMM == 'ugni' {
-      __primitive("chpl_comm_get_unordered", LHS, RHS.locale.id, RHS, numBytes(RHS.type));
+      __primitive("unordered=", LHS, RHS);
     } else {
-      __primitive("chpl_comm_get", LHS, RHS.locale.id, RHS, numBytes(RHS.type));
+      __primitive("=", LHS, RHS);
     }
   }
 
