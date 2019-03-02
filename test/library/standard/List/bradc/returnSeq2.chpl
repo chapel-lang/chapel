@@ -1,4 +1,4 @@
-use List;
+use LinkedList;
 
 proc foo(s) {
 
@@ -7,7 +7,7 @@ proc foo(s) {
   return s;
 }
 
-var t: list(int) = makeList( 1, 2, 3 );
+var t: linkedList(int) = makeList( 1, 2, 3 );
 var a = foo(t);
 writeln("a is: ", a);
 t.append(4);

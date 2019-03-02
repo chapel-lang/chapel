@@ -1,7 +1,7 @@
-use List;
+use LinkedList;
 
 {
-  var mylist = new list(int);
+  var mylist = new linkedList(int);
 
   mylist.append(1);
   mylist.append(2);
@@ -24,7 +24,7 @@ var f = opentmp();
 {
   var reader = f.reader();
 
-  var mylist:list(int);
+  var mylist:linkedList(int);
 
   reader.readf("%jt", mylist);
 
@@ -47,7 +47,7 @@ var f = opentmp();
 {
   var reader = f.reader();
 
-  var mylist:list(int);
+  var mylist:linkedList(int);
 
   reader.readf("%jt", mylist);
 
@@ -71,7 +71,7 @@ var f = opentmp();
 {
   var reader = f.reader();
 
-  var mylist:list(int);
+  var mylist:linkedList(int);
 
   reader.readf("%jt", mylist);
 
@@ -94,7 +94,7 @@ var f = opentmp();
 {
   var reader = f.reader();
 
-  var mylist:list(int);
+  var mylist:linkedList(int);
 
   reader.readf("%jt", mylist);
 
@@ -117,7 +117,7 @@ var f = opentmp();
 {
   var reader = f.reader();
 
-  var mylist:list(int);
+  var mylist:linkedList(int);
 
   reader.readf("%jt", mylist);
 

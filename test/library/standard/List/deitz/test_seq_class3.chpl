@@ -1,10 +1,10 @@
-use List;
+use LinkedList;
 
 class C {
   var x: int;
 }
 
-var s: list(unmanaged C);
+var s: linkedList(unmanaged C);
 
 writeln(s);
 

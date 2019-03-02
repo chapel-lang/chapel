@@ -1,5 +1,5 @@
-use List;
+use LinkedList;
 
-var s: list(int);
+var s: linkedList(int);
 
 writeln("s is: ", s);

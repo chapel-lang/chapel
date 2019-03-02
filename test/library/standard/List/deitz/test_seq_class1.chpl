@@ -1,4 +1,4 @@
-use List;
+use LinkedList;
 
 class C {
   var x : int;
@@ -6,7 +6,7 @@ class C {
 }
 
 var c : unmanaged C = new unmanaged C(1, 2.3);
-var s : list(unmanaged C) = makeList(c);
+var s : linkedList(unmanaged C) = makeList(c);
 
 writeln(s);
 

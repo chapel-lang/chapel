@@ -1,4 +1,4 @@
-use List;
+use LinkedList;
 
 record myrecord {
   var x: int;
@@ -12,7 +12,7 @@ newrecord.y = 2.3;
 
 writeln("newrecord is: ", newrecord);
 
-var myseq: list(myrecord) = makeList( newrecord );
+var myseq: linkedList(myrecord) = makeList( newrecord );
 
 writeln("myseq is: ", myseq);
 

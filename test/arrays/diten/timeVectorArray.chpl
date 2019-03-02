@@ -1,4 +1,4 @@
-use Random, Time, Search, Sort;
+use Random, Time, Search, Sort, LinkedList;
 
 config const n: int = 30000;
 const linearN: int = n/1000; // problem size for slow "linear" opeations
@@ -6,7 +6,7 @@ config const randSeed: int = 11;
 
 class Runner {
   proc run(A) { halt("virtual function run called"); }
-  proc runList(ref L: list(int)) { halt("virtual function runList called");}
+  proc runList(ref L: linkedList(int)) { halt("virtual function runList called");}
 }
 
 class PushBack: Runner {
@@ -103,7 +103,7 @@ class Remove: Runner {
 // try a few similar operation on a list to compare
 class ListAppend: Runner {
   const n: int;
-  override proc runList(ref L: list(int)) {
+  override proc runList(ref L: linkedList(int)) {
     for i in 1..n {
       L.append(i);
     }
@@ -112,7 +112,7 @@ class ListAppend: Runner {
 
 class SumReduceList: Runner {
   const n: int;
-  override proc runList(ref L: list(int)) {
+  override proc runList(ref L: linkedList(int)) {
     var sum = 0;
     for val in L {
       sum += val;
@@ -122,7 +122,7 @@ class SumReduceList: Runner {
 }
 
 class ListDestroy: Runner {
-  override proc runList(ref L: list(int)) {
+  override proc runList(ref L: linkedList(int)) {
     L.destroy();
   }
 }
@@ -136,7 +136,7 @@ proc timeRun(r: borrowed Runner, A) {
   return t.elapsed();
 }
 
-proc timeRunList(r: borrowed Runner, ref L: list(int)) {
+proc timeRunList(r: borrowed Runner, ref L: linkedList(int)) {
   var t = new Timer();
   t.start();
   r.runList(L);
@@ -187,7 +187,7 @@ proc main {
   r = new owned PushBack(n); r.run(A);
   r = new owned Remove(n, false); output("RemoveBack", timeRun(r, A));
 
-  var l = new list(int);
+  var l = new linkedList(int);
   r = new owned ListAppend(n); output("ListAppend", timeRunList(r,l));
   assert(l.length == n);
   r = new owned SumReduceList(n); output("ListReduce", timeRunList(r, l));

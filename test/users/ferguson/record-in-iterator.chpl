@@ -1,3 +1,6 @@
+
+use LinkedList;
+
 iter myiter(N /* adding :int makes it work */) {
 
   /* Moving record myrecord outside of myiter makes it work */
@@ -9,7 +12,7 @@ iter myiter(N /* adding :int makes it work */) {
   }
 
 
-  var li: list(myrecord);
+  var li: linkedList(myrecord);
 
   var r = new myrecord(0);
   var r2 = new myrecord(2);

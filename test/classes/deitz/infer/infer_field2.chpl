@@ -1,11 +1,11 @@
-use List;
+use LinkedList;
 use infer_field2_common;
 
 proc foo() {
   var c  = new unmanaged C();
   var cc = c;
 
-  var s : list(int);
+  var s : linkedList(int);
 
   c = next_foo(c);
 

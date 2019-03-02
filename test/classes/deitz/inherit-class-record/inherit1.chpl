@@ -1,8 +1,8 @@
-use List;
+use LinkedList;
 
 module M1 {
   class C {
-    var s: list(int);
+    var s: linkedList(int);
 
     proc deinit() {
       s.destroy();

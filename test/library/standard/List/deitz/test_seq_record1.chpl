@@ -1,4 +1,4 @@
-use List;
+use LinkedList;
 
 record R {
   var x : int;
@@ -6,7 +6,7 @@ record R {
 }
 
 var r : R       = new R(1, 2.3);
-var s : list(R) = makeList(r);
+var s : linkedList(R) = makeList(r);
 
 writeln(s);
 

@@ -1,5 +1,5 @@
 record MyRecord {
-  var numbers:list(int); // could it be [1..0] int ?
+  var numbers:linkedList(int); // could it be [1..0] int ?
 
   proc deinit() {
     numbers.destroy();

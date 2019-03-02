@@ -1,7 +1,7 @@
-use List;
+use LinkedList;
 
-var s1 : list(int) = makeList( 3, 1, 4, 1, 5, 9 );
-var s2 : list(int);
+var s1 : linkedList(int) = makeList( 3, 1, 4, 1, 5, 9 );
+var s2 : linkedList(int);
 
 writeln(s1);
 

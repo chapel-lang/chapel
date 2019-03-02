@@ -1,6 +1,6 @@
-use List;
+use LinkedList;
 
-var s: list(int);
+var s: linkedList(int);
 
 s.append(1);
 

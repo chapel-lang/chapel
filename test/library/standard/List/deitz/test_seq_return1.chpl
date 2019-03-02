@@ -1,7 +1,7 @@
-use List;
+use LinkedList;
 
 proc f() {
-  var s : list(int);
+  var s : linkedList(int);
   var i : int;
   while i < 10 {
     s.append(i*4);

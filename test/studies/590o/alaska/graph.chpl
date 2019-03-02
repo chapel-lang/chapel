@@ -1,4 +1,6 @@
 
+use LinkedList;
+
 config var filename="graph.dat";
 
 /*
@@ -82,13 +84,13 @@ class MultiMap {
   const keyD : domain(keyType);
   var keySpD : sparse subdomain(keyD);
 
-  var bins : [keySpD] list(eltType);
+  var bins : [keySpD] linkedList(eltType);
 
   proc add( key: keyType, d: eltType ) : bool {
     var list_head=nil;
     if(keySpD.contains(key) == false){
       keySpD.add(key);
-      list_head = list(eltType);
+      list_head = linkedList(eltType);
     } else {
       list_head = bins[key];
       for el in list_head do {
@@ -102,8 +104,8 @@ class MultiMap {
   /* list of elements mapping to
    * the specific key
    */
-  proc get( key: keyType ) : list(eltType) {
-    var list_head = list(eltType);
+  proc get( key: keyType ) : linkedList(eltType) {
+    var list_head = linkedList(eltType);
 
     if(keySpD.contains(key)){
       list_head = bins[key];
@@ -158,18 +160,18 @@ class Graph {
   var nodes : [NodeDom] unmanaged Node;
   var edges : [EdgeDom] unmanaged Edge;
 
-  var inEdges : [NodeDom] list(unmanaged Edge);
+  var inEdges : [NodeDom] linkedList(unmanaged Edge);
   proc inEdges(n:borrowed Node) ref { return inEdges[n.id]; }
   proc inEdges(i:index(NodeDom)) ref { return inEdges[i]; }
 
-  var outEdges : [NodeDom] list(unmanaged Edge);
+  var outEdges : [NodeDom] linkedList(unmanaged Edge);
   proc outEdges(n:borrowed Node) ref { return outEdges[n.id]; }
   proc outEdges(i:index(NodeDom)) ref { return outEdges[i]; }
 
 
 
-  var adjacent : [NodeDom] list(int);
-  var undir_adjacent: [NodeDom] list(int);
+  var adjacent : [NodeDom] linkedList(int);
+  var undir_adjacent: [NodeDom] linkedList(int);
 
   var __slack : [EdgeDom] int = -1;
   proc slack(e:borrowed Edge) ref { return slack[e.id]; }

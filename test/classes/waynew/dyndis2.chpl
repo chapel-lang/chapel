@@ -1,4 +1,4 @@
-use List;
+use LinkedList;
 
 class somedata {
   type elt_type;
@@ -30,7 +30,7 @@ class bclass: base {
 }
 
 class contain {
-  var objs: list(borrowed base);
+  var objs: linkedList(borrowed base);
 
   proc deinit() {
     objs.destroy();
