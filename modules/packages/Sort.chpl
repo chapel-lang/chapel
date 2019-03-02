@@ -215,19 +215,41 @@ pragma "no doc"
      a > b : returns value > 0
      a == b: returns 0
 */
-inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
+inline proc chpl_compare(a:?t, b:t, comparator:?rec/*=defaultComparator*/) {
   use Reflection;
 
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
   // Compare results of comparator.key(a) if is defined by user
-  if canResolveMethod(comparator, "key", a) && canResolveMethod(comparator, "key", b) {
+  if canResolveMethod(comparator, "key", a) {
     return chpl_compare(comparator.key(a), comparator.key(b));
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
     return comparator.compare(a ,b);
+  } else if canResolveMethod(comparator, "keyPart", a, 1) {
+    var curPart = 1;
+    //writeln("compare ", a, " ", b);
+    while true {
+      var (aSection, aPart) = comparator.keyPart(a, curPart);
+      var (bSection, bPart) = comparator.keyPart(b, curPart);
+      if aSection != 0 || bSection != 0 {
+        //writeln(aSection-bSection);
+        return aSection - bSection;
+      }
+      if aPart < bPart {
+        //writeln(-1);
+        return -1;
+      }
+      if aPart > bPart {
+        //writeln(1);
+        return 1;
+      }
+
+      curPart += 1;
+    }
+    return 1; // This should never be reached.
   } else {
-    compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
+    compilerError("The comparator " + comparator.type:string + " requires a 'key(a)' or 'compare(a, b)' method");
   }
 }
 
@@ -264,6 +286,19 @@ proc chpl_check_comparator(comparator, type eltType) {
     if !(isNumericType(comparetype)) then
       compilerError("The compare method must return a numeric type");
   }
+  else if canResolveMethod(comparator, "keyPart", data, 1) {
+    var idx: int = 1;
+    type partType = comparator.keyPart(data, idx).type;
+    if !isTupleType(partType) then
+      compilerError("The keyPart method must return a tuple");
+    var tmp: partType;
+    var expectInt = tmp(1);
+    var expectIntUint = tmp(2);
+    if !isInt(expectInt.type) then
+      compilerError("The keyPart method must return a tuple with 1st element int(?)");
+    if !(isInt(expectIntUint) || isUint(expectIntUint)) then
+      compilerError("The keyPart method must return a tuple with 2nd element int(?) or uint(?)");
+  }
   else {
     // If we make it this far, the passed comparator was defined incorrectly
     compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
@@ -282,6 +317,7 @@ proc chpl_check_comparator(comparator, type eltType) {
       data is sorted.
 
  */
+// TODO: This should have a flag `stable` to request a stable sort
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   quickSort(Data, comparator=comparator);
 }
@@ -357,7 +393,10 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
  */
 iter sorted(x, comparator:?rec=defaultComparator) {
   var y = x;
-  quickSort(y, comparator=comparator);
+  if !isArrayValue(y) then
+    compilerError("Sort.sorted called on non-iterable");
+
+  sort(y, comparator=comparator);
   for i in y do
     yield i;
 }
@@ -803,7 +842,7 @@ proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 }
 
 proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
-               var start=Dom.low, var end=Dom.high)
+               start=Dom.low, end=Dom.high)
   where !Dom.stridable
 {
   chpl_check_comparator(comparator, eltType);
@@ -816,20 +855,20 @@ proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
   var end_n = end;
   var n = 1 + end_n - start_n;
   var js,h,hs:int;
-  var v,tmp:A.eltType;
+  var v,tmp:Data.eltType;
   const incs = (701, 301, 132, 57, 23, 10, 4, 1);
   const nincs = incs.size;
   for k in 1..nincs {
     h = incs[k];
     hs = h + start_n;
     for is in hs..end_n {
-      v = A[is];
+      v = Data[is];
       js = is;
-      while js >= hs && chpl_compare(v,A[js-h]) < 0 {
-        A[js] = A[js - h];
+      while js >= hs && chpl_compare(v,Data[js-h],comparator) < 0 {
+        Data[js] = Data[js - h];
         js -= h;
       }
-      A[js] = v;
+      Data[js] = v;
     }
   }
 }
@@ -840,6 +879,7 @@ proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
   where Dom.rank != 1 {
     compilerError("shellSort() requires 1-D array");
 }
+
 
 
 
@@ -864,6 +904,21 @@ record DefaultComparator {
     if a < b { return -1; }
     else if b < a { return 1; }
     else return 0;
+  }
+
+  proc keyPart(x:string, i:int):(int(8), uint(8)) {
+    // This assumes that the string is local, which should
+    // be OK for the sort module (because the array containing
+    // the string must currently be local).
+    // In the future it should use bytes access into the string.
+    if boundsChecking then
+      assert(x.locale_id == here.id);
+
+    var ptr = x.c_str():c_ptr(uint(8));
+    var len = x.length;
+    var section = if i <= len then 0:int(8) else -1:int(8);
+    var part =    if i <= len then ptr[i-1] else  0:uint(8);
+    return (section, part);
   }
 }
 
@@ -904,9 +959,53 @@ record ReverseComparator {
     this.comparator = revcomp.comparator;
   }
 
+  pragma "no doc"
+  proc hasKey(a) param {
+    use Reflection;
+    return canResolveMethod(this.comparator, "key", a);
+  }
+  pragma "no doc"
+  proc hasKeyPart(a) param {
+    use Reflection;
+    return canResolveMethod(this.comparator, "keyPart", a, 1);
+  }
+  pragma "no doc"
+  proc hasCompare(a,b) param {
+    use Reflection;
+    return canResolveMethod(this.comparator, "compare", a, b);
+  }
+
+  proc key(a) where hasKey(a) {
+    chpl_check_comparator(this.comparator, a.type);
+
+    //writeln("Reverse key");
+    const k = this.comparator.key(a);
+    if isUint(k) then
+      return ~k;
+    else if isNumericType(k) then
+      return -k;
+    else
+      compilerError("key must return a numeric type");
+  }
+
+  proc keyPart(a, i) where hasKeyPart(a) {
+    chpl_check_comparator(this.comparator, a.type);
+
+    var (section, part) = this.comparator.keyPart(a, i);
+    //writeln("Reverse keyPart ", section, " ", part);
+    if isUint(part) {
+      //writeln("Reverse keyPart ", -section, " ", ~part);
+      return (-section, ~part);
+    } else if isInt(part) {
+      //writeln("Reverse keyPart ", -section, " ", -part);
+      return (-section, -part);
+    } else {
+      compilerError("keyPart must return int or uint");
+    }
+  }
+
   /*
-   Reversed compare method defined based on ``comparator.key`` if defined,
-   otherwise ``comparator.compare``.
+   Reverses ``comparator.compare``.
 
    :arg a: Array element
    :type a: `eltType`
@@ -916,25 +1015,14 @@ record ReverseComparator {
    :returns: 0 if ``a == b``
    :returns: 1 if ``a < b``
    */
-  proc compare(a, b) {
-    use Reflection;
+  proc compare(a, b) where hasCompare(a, b) {
 
     chpl_check_comparator(this.comparator, a.type);
 
-    // Key defined
-    if canResolveMethod(this.comparator, "key", a) && canResolveMethod(this.comparator, "key", b) {
-      const A = this.comparator.key(a),
-            B = this.comparator.key(b);
-      if B < A { return -1; }
-      else if A < B { return 1; }
-      else return 0;
-
-    // Compare defined
-    } else if canResolveMethod(this.comparator, "compare", a, b) && canResolveMethod(this.comparator, "compare", a, b) {
-      return this.comparator.compare(b, a);
-    } else {
-      compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
-    }
+    //writeln("Reverse compare");
+    return this.comparator.compare(b, a);
   }
 }
+
+
 } // Sort Module
