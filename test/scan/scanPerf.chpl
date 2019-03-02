@@ -30,5 +30,5 @@ var exp = (n/2 * (1 + n)) + ((n%2) * (n/2 + 1));
 var tot = + reduce B;
 if (tot != exp) then
   writeln("Verification failed: ", tot, " != ", exp);
- else
+else
    writeln("Verification passed!");
