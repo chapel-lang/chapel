@@ -31,8 +31,6 @@ module CSV {
     var sep: string;
     var hasHeader: bool;
 
-    class ReaderWriterMismatchError: Error {}
-
     /* Initialize a CSVIO record.
        :arg ch: The channel to read from or write to.
        :arg sep: (optional) The delimiter to separate fields
@@ -50,10 +48,7 @@ module CSV {
       use Reflection;
       var r: t;
       var skipHeader = hasHeader;
-
-      if ch.writing {
-        throw new owned ReaderWriterMismatchError();
-      }
+      if ch.writing then compilerError("reading from a writing channel");
 
       for l in ch.lines() {
         const line = l.strip(leading=false);
@@ -75,9 +70,8 @@ module CSV {
        the arguments to the function
      */
     iter read(type t...) throws {
-      if ch.writing {
-        throw new owned ReaderWriterMismatchError();
-      }
+      if ch.writing then compilerError("reading from a writing channel");
+
       var r: t;
       var skipHeader = hasHeader;
       for l in ch.lines() {
@@ -106,10 +100,7 @@ module CSV {
      */
     proc write(r: ?t) throws where isRecordType(t) {
       use Reflection;
-
-      if !ch.writing {
-        throw new owned ReaderWriterMismatchError();
-      }
+      if !ch.writing then compilerError("writing to a reading channel");
 
       for param i in 1..numFields(t) {
         ch.write(getField(r, i));
@@ -123,9 +114,8 @@ module CSV {
        resulting in a single row being added to the channel.
      */
     proc write(tup: ?t) throws where isTupleType(t) {
-      if !ch.writing {
-        throw new ReaderWriterMismatchError();
-      }
+      if !ch.writing then compilerError("writing to a reading channel");
+
       for param i in 1..tup.size {
         ch.write(tup(i));
         if i < tup.size then
