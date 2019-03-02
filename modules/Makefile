@@ -123,7 +123,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/DistributedBag.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
-	packages/TOML.chpl
+	packages/TOML.chpl \
+	packages/UnorderedCopy.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
