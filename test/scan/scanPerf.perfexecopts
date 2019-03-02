@@ -1,1 +1,1 @@
---printTiming --printArray=false
+--printTiming --printArray=false --memFraction=4

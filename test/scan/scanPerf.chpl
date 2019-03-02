@@ -1,7 +1,7 @@
 use Time, Memory;
 
 // compute a target problem size if one is not specified
-config param memFraction = 0;
+config const memFraction = 0;
 const totalMem = here.physicalMemory(unit = MemUnits.Bytes);
 const defaultN = if memFraction == 0 then 10
                                      else (totalMem / numBytes(int)) / memFraction;
