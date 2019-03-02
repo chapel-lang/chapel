@@ -1,1 +1,1 @@
-badRange2.chpl:5: error: iteration over a range with no bounds
+badRange2.chpl:5: error: parallel iteration is not supported over unbounded ranges
