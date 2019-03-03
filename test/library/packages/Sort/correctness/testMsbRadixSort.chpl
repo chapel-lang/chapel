@@ -4,7 +4,7 @@ use BitOps;
  //use OtherMSBRadix;
  use Time;
 
- config const printStats = true;
+ config const printStats = false;
  config const size = 10000;
 
  record uintCriterion8 {

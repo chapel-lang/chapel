@@ -178,5 +178,4 @@ shellSort  ["", "a", "b", "boo", "hi", "hii", "hiii", "x", "zoo"]
 shellSort- ["zoo", "x", "hiii", "hii", "hi", "boo", "b", "a", ""]
 radixSort  ["", "a", "b", "boo", "hi", "hii", "hiii", "x", "zoo"]
 radixSort- ["zoo", "x", "hiii", "hii", "hi", "boo", "b", "a", ""]
-Time: 0.013121
 sorted array: true
