@@ -309,6 +309,22 @@ proc chpl_check_comparator(comparator, type eltType) {
 
 /* Basic Functions */
 
+pragma "no doc"
+proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
+  if !Dom.stridable {
+    var tmp:Data[Dom.low].type;
+    if canResolveMethod(comparator, "keyPart", tmp, 1) {
+      return true;
+    } else if canResolveMethod(comparator, "key", tmp) {
+      type keyType = comparator.key(Data[Dom.low]).type;
+      if isUintType(keyType) || isIntType(keyType) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /*
    General purpose sorting interface.
 
@@ -326,19 +342,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   if Dom.low >= Dom.high then
     return;
 
-  var radixSortOk = false;
-
-  if !Dom.stridable {
-    var tmp:Data[Dom.low].type;
-    if canResolveMethod(comparator, "keyPart", tmp, 1) {
-      radixSortOk = true;
-    } else if canResolveMethod(comparator, "key", tmp) {
-      type keyType = comparator.key(Data[Dom.low]).type;
-      radixSortOk = isUintType(keyType) || isIntType(keyType);
-    }
-  }
-
-  if radixSortOk {
+  if radixSortOk(Data, comparator) {
     msbRadixSort(Data, comparator=comparator);
   } else {
     quickSort(Data, comparator=comparator);
