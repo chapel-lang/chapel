@@ -3945,11 +3945,8 @@ module ChapelArray {
     } else if chpl__serializeAssignment(a, b) {
       for (aa,bb) in zip(a,b) do
         aa = bb;
-    } else if chpl__tryToken { // try to parallelize using leader and follower iterators
-      forall (aa,bb) in zip(a,b) do
-        aa = bb;
     } else {
-      for (aa,bb) in zip(a,b) do
+      [ (aa,bb) in zip(a,b) ]
         aa = bb;
     }
   }
