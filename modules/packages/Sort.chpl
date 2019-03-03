@@ -1031,7 +1031,13 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
 
   //writeln("COUNTS: ", offsets);
   // Step 2: accumulate
-  end_offsets = + scan offsets;
+
+  //end_offsets = + scan offsets;
+  var sum = 0;
+  for (off,end) in zip(offsets,end_offsets) {
+    sum += off;
+    end = sum;
+  }
   for (off,end) in zip(offsets,end_offsets) {
     off = start_n + end - off;
     end = start_n + end;
