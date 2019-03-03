@@ -970,6 +970,7 @@ proc binForRecordKeyPart(a, criterion, startbit:int):int
     return (1 << RADIX_BITS) + 1;
 }
 
+inline
 proc binForRecord(a, criterion, startbit:int):int
 {
   use Reflection;
@@ -1186,17 +1187,20 @@ record DefaultComparator {
    :returns: -1 if ``a < b``
 
    */
+  inline
   proc compare(a, b) {
     if a < b { return -1; }
     else if b < a { return 1; }
     else return 0;
   }
 
+  inline
   proc keyPart(x: integral, i:int):(int(8), x.type) {
     var section:int(8) = if i > 1 then -1:int(8) else 0:int(8);
     return (section, x);
   }
 
+  inline
   proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
                                        (isInt(x(1)) || isUint(x(1))) {
     if i > x.size then
@@ -1205,6 +1209,7 @@ record DefaultComparator {
     return (0, x(i));
   }
 
+  inline
   proc keyPart(x:string, i:int):(int(8), uint(8)) {
     // This assumes that the string is local, which should
     // be OK for the sort module (because the array containing
@@ -1274,6 +1279,7 @@ record ReverseComparator {
     return canResolveMethod(this.comparator, "compare", a, b);
   }
 
+  inline
   proc key(a) where hasKey(a) {
     chpl_check_comparator(this.comparator, a.type);
 
@@ -1287,6 +1293,7 @@ record ReverseComparator {
       compilerError("key must return a numeric type");
   }
 
+  inline
   proc keyPart(a, i) where hasKeyPart(a) {
     chpl_check_comparator(this.comparator, a.type);
 
@@ -1314,6 +1321,7 @@ record ReverseComparator {
    :returns: 0 if ``a == b``
    :returns: 1 if ``a < b``
    */
+  inline
   proc compare(a, b) where hasCompare(a, b) {
 
     chpl_check_comparator(this.comparator, a.type);
