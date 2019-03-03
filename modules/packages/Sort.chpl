@@ -222,7 +222,8 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec/*=defaultComparator*/) {
   //         key data once and sort the keyed data, mirroring swaps in data.
   // Compare results of comparator.key(a) if is defined by user
   if canResolveMethod(comparator, "key", a) {
-    return chpl_compare(comparator.key(a), comparator.key(b));
+    // Use the default comparator to compare the integer keys
+    return defaultComparator.compare(comparator.key(a), comparator.key(b));
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
     return comparator.compare(a ,b);
@@ -321,6 +322,9 @@ proc chpl_check_comparator(comparator, type eltType) {
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 
   use Reflection;
+
+  if Dom.low >= Dom.high then
+    return;
 
   if !Dom.stridable &&
      (canResolveMethod(comparator, "key", Data[Dom.low]) ||
