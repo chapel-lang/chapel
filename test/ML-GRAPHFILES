@@ -119,6 +119,7 @@ parallel/taskCompare/elliot/taskSpawnArg.ml-time.graph
 performance/comm/barrier/empty-chpl-barrier.ml-time.graph
 performance/elliot/no-op.ml-time.graph
 performance/comm/low-level/remote-gets.ml-perf.graph
+performance/comm/low-level/remote-unordered-gets.ml-perf.graph
 performance/comm/low-level/remote-puts.ml-perf.graph
 performance/comm/low-level/remote-fetchAmos.ml-perf.graph
 performance/comm/low-level/remote-amos.ml-perf.graph
