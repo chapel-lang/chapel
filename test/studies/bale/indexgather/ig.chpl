@@ -10,7 +10,7 @@ config const printStats = true,
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
-config const useBufferedGets = false;
+config const useUnorderedCopy = false;
 
 const numTasksPerLocale = here.maxTaskPar;
 const numTasks = numLocales * numTasksPerLocale;
@@ -36,15 +36,15 @@ proc main() {
     r = mod(r, tableSize);
   }
 
-  var tmp: [D2] int;
+  var tmp: [D2] int = -1;
 
   var t: Timer;
   t.start();
 
-  if useBufferedGets {
-    use BufferedGets;
+  if useUnorderedCopy {
+    use UnorderedCopy;
     forall i in D2 do
-      getBuff(tmp.localAccess[i], A[rindex.localAccess[i]]);
+      unorderedCopy(tmp.localAccess[i], A[rindex.localAccess[i]]);
   } else {
     forall i in D2 do
       tmp.localAccess[i] = A[rindex.localAccess[i]];
@@ -62,7 +62,7 @@ proc main() {
   }
 
   if verify {
-    // TODO not really sure what to do for verification here
+    [t in tmp] assert (t >= 0 && t < tableSize);
   }
 
   if printArrays {
