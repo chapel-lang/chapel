@@ -1,3 +1,6 @@
+// This tester allows exploration of sort performance
+// for differing algorithms, input data distributions, and input sizes. 
+
 use Sort;
 use Random;
 use Time;
@@ -93,20 +96,22 @@ proc testsize(size:int) {
       t.stop();
     }
     var mibs = mibibytes * ntrials / t.elapsed();
-    //if printStats then writef(" % 10s", t.elapsed());
     if printStats then writef(" % 12s", mibs:string);
     assert(isSorted(input));
   }
-  writeln();
+  if printStats then writeln();
 }
 
 proc main() {
-  writef("% 16s", "size");
+  if printStats then
+    writef("% 16s", "size");
 
   for m in methods {
-    writef(" % 12s", m);
+    if printStats then
+      writef(" % 12s", m);
   }
-  writeln();
+  if printStats then
+    writeln();
 
   var size = minSize;
   while size <= maxSize {
