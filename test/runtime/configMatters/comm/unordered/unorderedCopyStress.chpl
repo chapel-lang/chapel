@@ -1,4 +1,5 @@
 use BlockDist;
+use CommDiagnostics;
 use Time;
 use UnorderedCopy;
 
@@ -10,6 +11,7 @@ config const oversubscription = 1,
 
 config param useUnorderedCopy = true;
 config const concurrentFencing = false;
+config param commDiags = false;
 
 config const sizePerLocale = 10000,
              size = sizePerLocale * numLocales;
@@ -30,34 +32,42 @@ var t: Timer;
 
 proc start() {
   reversedA = 0;
+  if commDiags { resetCommDiagnostics(); startCommDiagnostics(); }
   t.clear(); t.start();
 }
 
 proc stop(opType: string) {
   t.stop();
+  if commDiags { stopCommDiagnostics(); }
   const ordering = if useUnorderedCopy then "Unordered " else "Ordered ";
   const timing = if printStats then " time: " + t.elapsed() else "";
-  writeln(ordering + opType + timing);
+  const rate = if printStats then " rate(mOps/sec): " + (size / t.elapsed()) / 1e6 else "";
+  const gets = +reduce getCommDiagnostics().get;
+  const puts = +reduce getCommDiagnostics().put;
+  const diags = if commDiags then " (GETS: " + gets + ", PUTS: " + puts + ")" else "";
+
+  writeln(ordering + opType + timing, " : " + ordering + opType + rate + diags);
 
   if verify then
     forall (rA, i) in zip(reversedA, D) do
       assert(rA == size-i);
 }
 
+
 start();
 forall i in D {
   assign(reversedA[i], A[size-i]);
 }
-stop("GET");
+stop("GET   ");
 
 start();
 forall i in D {
   assign(reversedA[size-i], A[i]);
 }
-stop("PUT");
+stop("PUT   ");
 
 start();
-const offset = size/numLocales;
+const offset = 2 * (size/numLocales);
 forall i in D {
   const offIdx = (i + offset) % (size+1);
   assign(reversedA[offIdx], A[size-offIdx]);

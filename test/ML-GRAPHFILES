@@ -128,4 +128,7 @@ performance/comm/low-level/remote-ons.ml-perf.graph
 performance/comm/low-level/remote-fastOns.ml-perf.graph
 performance/comm/low-level/array-gets.ml-perf.graph
 performance/comm/low-level/array-puts.ml-perf.graph
+runtime/configMatters/comm/unordered/many-to-many-gets.ml-perf.graph
+runtime/configMatters/comm/unordered/many-to-many-puts.ml-perf.graph
+runtime/configMatters/comm/unordered/many-to-many-getputs.ml-perf.graph
 optimizations/bulkcomm/block/exchange.ml-time.graph
