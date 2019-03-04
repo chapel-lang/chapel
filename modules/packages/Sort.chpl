@@ -265,7 +265,7 @@ pragma "no doc"
       data is sorted.
 
  */
-proc chpl_check_comparator(comparator, type eltType) {
+proc chpl_check_comparator(comparator, type eltType) param {
   use Reflection;
 
   // Dummy data for checking method resolution
@@ -304,6 +304,8 @@ proc chpl_check_comparator(comparator, type eltType) {
     // If we make it this far, the passed comparator was defined incorrectly
     compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
   }
+
+  return true;
 }
 
 
