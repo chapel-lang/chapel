@@ -35,7 +35,7 @@ class listNode {
 
 
   pragma "no doc"
-  proc =(ref l1: linkedList(?t), const ref l2: linkedList(?t2)) {
+  proc =(ref l1: LinkedList(?t), const ref l2: LinkedList(?t2)) {
     l1.destroy();
     for i in l2 do
       l1.append(i);
@@ -47,10 +47,10 @@ class listNode {
 
   .. note::
 
-      :proc:`~linkedList.destroy` must be called to reclaim any memory used by the list.
+      :proc:`~LinkedList.destroy` must be called to reclaim any memory used by the list.
 
  */
-record linkedList {
+record LinkedList {
   /*
     The type of the data stored in every node.
    */
@@ -152,7 +152,7 @@ record linkedList {
   /*
     Append all the elements in `l` to the end of the list.
    */
-  proc concat(l: linkedList(eltType)) {
+  proc concat(l: LinkedList(eltType)) {
     for e in l do
       append(e);
   }
@@ -336,15 +336,15 @@ record linkedList {
 }
 
 /*
-  Initialize a new :record:`linkedList` containing all of the supplied arguments.
+  Initialize a new :record:`LinkedList` containing all of the supplied arguments.
 
   :arg x: Every argument must be of type `T`.
   :type x: `T`
-  :rtype: linkedList(T)
+  :rtype: LinkedList(T)
  */
 // TODO: could just be an initializer?
 proc makeList(x ...?k) {
-  var s: linkedList(x(1).type);
+  var s: LinkedList(x(1).type);
   for param i in 1..k do
     s.append(x(i));
   return s;

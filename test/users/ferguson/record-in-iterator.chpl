@@ -12,7 +12,7 @@ iter myiter(N /* adding :int makes it work */) {
   }
 
 
-  var li: linkedList(myrecord);
+  var li: LinkedList(myrecord);
 
   var r = new myrecord(0);
   var r2 = new myrecord(2);

@@ -2,7 +2,7 @@ use LinkedLists;
 
 module M1 {
   class C {
-    var s: linkedList(int);
+    var s: LinkedList(int);
 
     proc deinit() {
       s.destroy();

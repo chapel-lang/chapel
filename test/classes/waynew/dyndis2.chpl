@@ -30,7 +30,7 @@ class bclass: base {
 }
 
 class contain {
-  var objs: linkedList(borrowed base);
+  var objs: LinkedList(borrowed base);
 
   proc deinit() {
     objs.destroy();

@@ -5,7 +5,7 @@ const n = (phrase.length);
 
 var encoded = phrase[1..n by 2] + phrase[2..n by 2];
 
-var decoder : linkedList(int);
+var decoder : LinkedList(int);
 
 for i in 1..n/2 {
   var l = makeList(i, n/2 + n % 2 + i);

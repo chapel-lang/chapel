@@ -1,7 +1,7 @@
 use LinkedLists;
 
 proc main {
-  var lst: linkedList(int);
+  var lst: LinkedList(int);
   lst.append(1);
   on Locales(1) do
     lst.append(2);

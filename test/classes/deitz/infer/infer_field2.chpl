@@ -5,7 +5,7 @@ proc foo() {
   var c  = new unmanaged C();
   var cc = c;
 
-  var s : linkedList(int);
+  var s : LinkedList(int);
 
   c = next_foo(c);
 

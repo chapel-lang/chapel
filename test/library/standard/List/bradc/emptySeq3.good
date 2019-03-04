@@ -1,3 +1,3 @@
-emptySeq3.chpl:3: error: unresolved call 'linkedList(int(64)).init=(nil)'
-$CHPL_HOME/modules/standard/LinkedList.chpl:77: note: candidates are: linkedList.init=(l: this.type )
-$CHPL_HOME/modules/standard/LinkedList.chpl:53: note:                 linkedList.init=(other: this.type)
+emptySeq3.chpl:3: error: unresolved call 'LinkedList(int(64)).init=(nil)'
+$CHPL_HOME/modules/standard/LinkedLists.chpl:77: note: candidates are: LinkedList.init=(l: this.type )
+$CHPL_HOME/modules/standard/LinkedLists.chpl:53: note:                 LinkedList.init=(other: this.type)

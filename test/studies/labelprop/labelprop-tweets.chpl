@@ -64,7 +64,7 @@ var max_user_id : atomic int;
 
 proc main(args:[] string) {
   var files = args[1..];
-  var todo:linkedList(string);
+  var todo:LinkedList(string);
 
   for arg in files {
     if isDir(arg) {
@@ -91,7 +91,7 @@ proc main(args:[] string) {
 
 
 
-proc run(ref todo:linkedList(string), ref Pairs) {
+proc run(ref todo:LinkedList(string), ref Pairs) {
   var t:Timer;
   t.start();
 
@@ -158,7 +158,7 @@ record TweetUser {
 record TweetEntities {
   // read somethig like user_mentions=[1, 3, 4, 5]
   //var user_mentions:[1..0] TweetUser; // TODO - support this
-  var user_mentions:linkedList(TweetUser);
+  var user_mentions:LinkedList(TweetUser);
 }
 
 record User {

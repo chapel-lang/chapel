@@ -1,5 +1,5 @@
 use LinkedLists;
 
-var s: linkedList(int) = nil;
+var s: LinkedList(int) = nil;
 
 writeln("s is: ", s);

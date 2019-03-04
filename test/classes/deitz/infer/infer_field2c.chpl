@@ -5,7 +5,7 @@ proc foo() {
   var c  = next_foo(new unmanaged C());
   var cc = c;
 
-  var s : linkedList(c.result.type);
+  var s : LinkedList(c.result.type);
 
   while c != nil {
     s.append(c.result);

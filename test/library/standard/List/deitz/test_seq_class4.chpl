@@ -8,7 +8,7 @@ class D: C {
   var y: int;
 }
 
-var s: linkedList(unmanaged C);
+var s: LinkedList(unmanaged C);
 
 s.append(new unmanaged D(1, 2));
 s.append(new unmanaged C(3));

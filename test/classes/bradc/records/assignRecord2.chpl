@@ -6,7 +6,7 @@ class myclass {
 }
 
 record myrecord {
-  var a: linkedList(int);
+  var a: LinkedList(int);
 }
 
 proc main() {

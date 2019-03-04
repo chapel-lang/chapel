@@ -8,7 +8,7 @@ proc foo(s) {
   writeln(s);
 }
 
-var s: linkedList(int) = makeList(1, 2, 3, 4);
+var s: LinkedList(int) = makeList(1, 2, 3, 4);
 
 foo(s);
 

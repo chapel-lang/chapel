@@ -12,7 +12,7 @@ newrecord.y = 2.3;
 
 writeln("newrecord is: ", newrecord);
 
-var myseq: linkedList(myrecord) = makeList( newrecord );
+var myseq: LinkedList(myrecord) = makeList( newrecord );
 
 writeln("myseq is: ", myseq);
 

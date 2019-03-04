@@ -5,7 +5,7 @@ record R {
   var y : int;
 }
 
-var s : linkedList(R);
+var s : LinkedList(R);
 
 s.append(new R(1, 2));
 

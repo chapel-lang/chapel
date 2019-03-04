@@ -1,12 +1,12 @@
 use LinkedLists;
 
-var s1 : linkedList(int)       = makeList(1, 2, 3, 4);
-var s2 : linkedList(int)       = makeList(5, 6, 7, 8);
+var s1 : LinkedList(int)       = makeList(1, 2, 3, 4);
+var s2 : LinkedList(int)       = makeList(5, 6, 7, 8);
 
 writeln(s1);
 writeln(s2);
 
-var ss : linkedList(linkedList(int)) = makeList(s1, s2);
+var ss : LinkedList(LinkedList(int)) = makeList(s1, s2);
 
 writeln(ss);
 

@@ -27,7 +27,7 @@ module Structure {
 
 
   class ListerGrandParent {
-    var lst: unmanaged linkedList(unmanaged GrandParent);
+    var lst: unmanaged LinkedList(unmanaged GrandParent);
   }
 
   class ListerParent : ListerGrandParent {

@@ -4,7 +4,7 @@ class C {
   var x: int;
 }
 
-var s: linkedList(unmanaged C);
+var s: LinkedList(unmanaged C);
 
 writeln(s);
 

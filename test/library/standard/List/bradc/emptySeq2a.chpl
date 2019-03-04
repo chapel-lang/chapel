@@ -1,6 +1,6 @@
 use LinkedLists;
 
-var s: linkedList(int);
+var s: LinkedList(int);
 
 s.append(1);
 

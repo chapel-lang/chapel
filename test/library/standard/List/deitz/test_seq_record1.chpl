@@ -6,7 +6,7 @@ record R {
 }
 
 var r : R       = new R(1, 2.3);
-var s : linkedList(R) = makeList(r);
+var s : LinkedList(R) = makeList(r);
 
 writeln(s);
 
