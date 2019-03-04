@@ -357,7 +357,6 @@ static bool isUse(SymExpr* se)
       return false;
 
      case PRIM_CHPL_COMM_GET:
-     case PRIM_CHPL_COMM_GET_UNORDERED:
      case PRIM_CHPL_COMM_PUT:
      case PRIM_CHPL_COMM_ARRAY_GET:
      case PRIM_CHPL_COMM_ARRAY_PUT:
