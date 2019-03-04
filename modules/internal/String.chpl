@@ -582,7 +582,7 @@ module String {
     */
     iter bytes(): uint(8) {
       for i in 1..this.len {
-	yield this[i].buff[0];
+        yield this[i].buff[0];
       }
     }
 
