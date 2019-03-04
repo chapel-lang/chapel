@@ -22,6 +22,8 @@
 module ChapelReduce {
   use ChapelStandard;
 
+  config param enableParScan = false;
+
   proc chpl__scanIteratorZip(op, data) {
     compilerWarning("scan has been serialized (see issue #5760)");
     var arr = for d in zip((...data)) do chpl__accumgen(op, d);
@@ -32,10 +34,14 @@ module ChapelReduce {
 
   proc chpl__scanIterator(op, data) {
     use Reflection;
-    if (isArray(data)  && canResolveMethod(data, "_scan", op)) {
+    param supportsPar = isArray(data) && canResolveMethod(data, "_scan", op);
+    if (enableParScan && supportsPar) {
       return data._scan(op);
     } else {
       compilerWarning("scan has been serialized (see issue #5760)");
+      if (supportsPar) {
+        compilerWarning("(recompile with -senableParScan=true to enable a prototype parallelization)");
+      }
       var arr = for d in data do chpl__accumgen(op, d);
 
       delete op;
