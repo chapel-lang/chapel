@@ -31,8 +31,7 @@ LIBS += -lfabric -ldl
 # Conservatively use CXX as the linker, in case regexp (or other C++
 # code) is being linked in.
 #
-#LD = $(CXX)
-LD = $(CC)
+LD = $(CXX)
 
 ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
   ifneq ($(MPI_DIR),)
