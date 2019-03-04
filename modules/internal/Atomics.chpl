@@ -178,6 +178,7 @@ module Atomics {
 
     pragma "no doc"
     proc init() {
+      pragma "fn synchronization free"
       extern externFunc("init", bool, explicit=false)
         proc atomic_init(ref obj:externT(bool), value:bool): void;
 
@@ -195,6 +196,7 @@ module Atomics {
     proc init=(other : bool) {
       this.complete();
 
+      pragma "fn synchronization free"
       extern externFunc("init", bool, explicit=false)
         proc atomic_init(ref obj:externT(bool), value:bool): void;
 
@@ -336,6 +338,7 @@ module Atomics {
 
     pragma "no doc"
     proc init(type T) {
+      pragma "fn synchronization free"
       extern externFunc("init", T, explicit=false)
         proc atomic_init(ref obj:externT(T), value:T): void;
 
@@ -356,6 +359,7 @@ module Atomics {
       this.T = other.type;
       this.complete();
 
+      pragma "fn synchronization free"
       extern externFunc("init", T, explicit=false)
         proc atomic_init(ref obj:externT(T), value:T): void;
 
