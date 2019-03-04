@@ -1,2 +1,2 @@
---N=20 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --useBufferedGets=false
---N=20 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --useBufferedGets=true
+--N=20 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --useUnorderedCopy=false
+--N=20 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --useUnorderedCopy=true
