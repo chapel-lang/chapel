@@ -16,7 +16,14 @@
 # limitations under the License.
 
 ifneq ($(LIBFABRIC_DIR),)
-GEN_LFLAGS += -L$(LIBFABRIC_DIR)/lib -Wl,-rpath,$(LIBFABRIC_DIR)/lib
+  LIBFAB_DIR_CACHE := $(shell if [ -d $(LIBFABRIC_DIR)/lib ] ; then \
+                                echo $(LIBFABRIC_DIR)/lib ; \
+                              elif [ -d $(LIBFABRIC_DIR)/lib64 ] ; then \
+                                echo $(LIBFABRIC_DIR)/lib64 ; \
+                              fi)
+  ifneq ($(LIBFAB_DIR_CACHE),)
+    GEN_LFLAGS += -L$(LIBFAB_DIR_CACHE) -Wl,-rpath,$(LIBFAB_DIR_CACHE)
+  endif
 endif
 LIBS += -lfabric -ldl
 
@@ -24,9 +31,20 @@ LIBS += -lfabric -ldl
 # Conservatively use CXX as the linker, in case regexp (or other C++
 # code) is being linked in.
 #
-LD = $(CXX)
+#LD = $(CXX)
+LD = $(CC)
 
 ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
-GEN_LFLAGS += -L$(MPI_LIB) -Wl,-rpath,$(MPI_LIB)
-LIBS += -lmpi
+  GEN_LFLAGS += -L$(MPI_DIR)/lib -Wl,-rpath,$(MPI_DIR)/lib
+  ifneq ($(MPI_DIR),)
+    LIBMPI_CACHE := \
+      $(shell if $$(ls $(MPI_DIR)/lib/libmpi.* >&/dev/null) ; then \
+                echo mpi ; \
+              elif $$(ls $(MPI_DIR)/lib/libmpich.* >&/dev/null) ; then \
+                echo mpich ; \
+              fi)
+    ifneq ($(LIBMPI_CACHE),)
+      LIBS += -l$(LIBMPI_CACHE)
+    endif
+  endif
 endif
