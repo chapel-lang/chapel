@@ -627,14 +627,14 @@ module String {
     }
 
     /*
-      :returns: The value of the `i`th byte as an integer.
+      :returns: The value of the `i` th byte as an integer.
     */
     proc byte(i: int): uint(8) {
       return this[i].buff[0];
     }
 
     /*
-      :returns: The value of the `i`th multibyte character as an integer.
+      :returns: The value of the `i` th multibyte character as an integer.
      */
     proc codePoint(i: int): int(32) {
       const idx = i: int;
