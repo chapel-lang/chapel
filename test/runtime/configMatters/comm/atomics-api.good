@@ -1,5 +1,6 @@
 Testing 'atomic bool':
   init        a=false
+  init=       a=false, i=true
   read        a=false, i=false
   write       a=true
   xchg        a=false, i=true
@@ -15,6 +16,7 @@ Testing 'atomic bool':
 
 Testing 'atomic int(8)':
   init        a=0
+  init=       a=0, i=1
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
@@ -38,6 +40,7 @@ Testing 'atomic int(8)':
 
 Testing 'atomic int(16)':
   init        a=0
+  init=       a=0, i=1
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
@@ -61,6 +64,7 @@ Testing 'atomic int(16)':
 
 Testing 'atomic int(32)':
   init        a=0
+  init=       a=0, i=1
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
@@ -84,6 +88,7 @@ Testing 'atomic int(32)':
 
 Testing 'atomic int(64)':
   init        a=0
+  init=       a=0, i=1
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
@@ -107,6 +112,7 @@ Testing 'atomic int(64)':
 
 Testing 'atomic int(64)':
   init        a=0
+  init=       a=0, i=1
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
@@ -130,6 +136,7 @@ Testing 'atomic int(64)':
 
 Testing 'atomic uint(8)':
   init        a=0
+  init=       a=0, i=1
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
@@ -153,6 +160,7 @@ Testing 'atomic uint(8)':
 
 Testing 'atomic uint(16)':
   init        a=0
+  init=       a=0, i=1
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
@@ -176,6 +184,7 @@ Testing 'atomic uint(16)':
 
 Testing 'atomic uint(32)':
   init        a=0
+  init=       a=0, i=1
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
@@ -199,6 +208,7 @@ Testing 'atomic uint(32)':
 
 Testing 'atomic uint(64)':
   init        a=0
+  init=       a=0, i=1
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
@@ -222,6 +232,7 @@ Testing 'atomic uint(64)':
 
 Testing 'atomic uint(64)':
   init        a=0
+  init=       a=0, i=1
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
@@ -245,6 +256,7 @@ Testing 'atomic uint(64)':
 
 Testing 'atomic real(32)':
   init        a=0.0
+  init=       a=0.0, i=1.0
   read        a=0.0, i=0.0
   write       a=1.0
   xchg        a=2.0, i=1.0
@@ -262,6 +274,7 @@ Testing 'atomic real(32)':
 
 Testing 'atomic real(64)':
   init        a=0.0
+  init=       a=0.0, i=1.0
   read        a=0.0, i=0.0
   write       a=1.0
   xchg        a=2.0, i=1.0
@@ -279,6 +292,7 @@ Testing 'atomic real(64)':
 
 Testing 'atomic real(64)':
   init        a=0.0
+  init=       a=0.0, i=1.0
   read        a=0.0, i=0.0
   write       a=1.0
   xchg        a=2.0, i=1.0
