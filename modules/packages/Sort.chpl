@@ -930,9 +930,11 @@ record MSBRadixSortSettings {
 // startbit is starting from 0
 // bin 0 is for the end was reached
 // bins 1..256 are for data with next part 0..255.
+//
+// returns (bin, ubits)
 pragma "no doc"
 inline
-proc binForRecordKeyPart(a, criterion, startbit:int):int
+proc binForRecordKeyPart(a, criterion, startbit:int)
 {
   // We have keyPart(element, start):(section:int(8), part:int/uint)
   var testRet: criterion.keyPart(a, 1).type;
@@ -965,15 +967,15 @@ proc binForRecordKeyPart(a, criterion, startbit:int):int
    //      startbit, ubin, ubits, whichpart, bitsinpart, (bitsPerPart - bitsinpart), section);
 
   if section == 0 then
-    return ubin:int + 1;
+    return (ubin:int + 1, ubits);
   else if section < 0 then
-    return 0;
+    return (0, ubits);
   else
-    return (1 << RADIX_BITS) + 1;
+    return ((1 << RADIX_BITS) + 1, ubits);
 }
 
 inline
-proc binForRecord(a, criterion, startbit:int):int
+proc binForRecord(a, criterion, startbit:int)
 {
   use Reflection;
 
@@ -1004,6 +1006,28 @@ proc msbRadixSortParamEndBit(Data:[], comparator) param {
   }
 
   return -1;
+}
+
+pragma "no doc"
+proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
+  use BitOps;
+
+  var xor = min_ubits ^ max_ubits;
+
+  // TODO: Clear the top bits in xor if they are after bitsinpart
+  param bitsPerPart = numBits(min_ubits.type);
+  const bitsinpart = startbit % bitsPerPart;
+  xor <<= bitsinpart;
+  xor >>= bitsinpart;
+
+  var new_start = clz(xor);
+  //writeln("new_start=", new_start);
+  var new_digit = new_start / RADIX_BITS;
+  //writeln("new_digit=", new_digit);
+  var new_start_bit_rounded = new_digit * RADIX_BITS;
+  //writeln("rounded=", new_start_bit_rounded);
+
+  return new_start_bit_rounded:int;
 }
 
 pragma "no doc"
@@ -1040,13 +1064,32 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
   // 0th bin is for records where we've consumed all the key.
   var offsets:[0..radix] int;
   var end_offsets:[0..radix] int;
+  type ubitsType = binForRecord(A[start_n], criterion, startbit)(2).type;
+  var min_ubits: ubitsType = max(ubitsType);
+  var max_ubits: ubitsType = 0;
 
   // Step 1: count.
-  // Could be parallel... but that's hard to write unless we
-  // can do a custom reduction? Or have thread-private variables?
+  // TODO: make this parallel for large enough sizes
   for i in start_n..end_n {
-    var bin = binForRecord(A[i], criterion, startbit);
+    const (bin, ubits) = binForRecord(A[i], criterion, startbit);
+    //writeln("ubits=", ubits);
+    if ubits < min_ubits then
+      min_ubits = ubits;
+    if ubits > max_ubits then
+      max_ubits = ubits;
     offsets[bin] += 1;
+  }
+
+  // If the data parts we gathered all have the same leading bits,
+  // we might be able to skip ahead immediately to the next count step.
+  var dataStartBit = findDataStartBit(startbit, min_ubits, max_ubits);
+  //writeln("startbit=", startbit, " endbit=", endbit, " min_ubits=", min_ubits, " max_ubits=", max_ubits, " dataStartBit=", dataStartBit);
+  if dataStartBit > startbit {
+    //writeln("Skipping to dataStartBit ", dataStartBit);
+    // Re-start count again immediately at the new start position.
+    msbRadixSort(start_n, end_n, A, criterion,
+                 dataStartBit, settings);
+    return;
   }
 
   if settings.progress then writeln("accumulate");
@@ -1096,7 +1139,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       // Now go through the records in buf
       // putting them in their right home.
       for param j in 1..max_buf {
-        var bin = binForRecord(buf[j], criterion, startbit);
+        const (bin, _) = binForRecord(buf[j], criterion, startbit);
 //          prefetch(A[offsets[bin]]); it does not help
         // Swap buf[j] into its appropriate bin.
         // Leave buf[j] with the next unsorted item.
@@ -1109,7 +1152,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       // Put buf[j] into its right home
       var j = 1;
       while used_buf > 0 && j <= used_buf {
-        var bin = binForRecord(buf[j], criterion, startbit);
+        const (bin, _) = binForRecord(buf[j], criterion, startbit);
         // Swap buf[j] into its appropriate bin.
         // Leave buf[j] with the next unsorted item.
         // But offsets[bin] might in the region we already read.
