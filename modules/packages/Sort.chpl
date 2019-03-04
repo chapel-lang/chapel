@@ -1229,7 +1229,9 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       const bin_start = offsets[bin];
       const bin_end = if bin+1<=radix then offsets[bin+1]-1 else end_n;
       const num = 1 + bin_end - bin_start;
-      if num > 1 && (hasendbit && startbit >= endbit) {
+      if num <= 1 || (hasendbit && startbit >= endbit) {
+        // do nothing
+      } else {
         // sort it in this thread
         msbRadixSort(bin_start, bin_end, A, criterion,
                      startbit + radixbits, settings);
