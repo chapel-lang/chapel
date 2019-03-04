@@ -3266,8 +3266,8 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc _scan(op) where Reflection.canResolveMethod(_value, "dsiScan", op, this.domain) {
-      return _value.dsiScan(op, this.domain);
+    proc _scan(op) where Reflection.canResolveMethod(_value, "doiScan", op, this.domain) {
+      return _value.doiScan(op, this.domain);
     }
 
   }  // record _array

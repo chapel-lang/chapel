@@ -2177,7 +2177,7 @@ module DefaultRectangular {
   config param debugDRScan = false;
 
   /* This computes a 1D scan in parallel on the array, for 1D arrays only */
-  proc DefaultRectangularArr.dsiScan(op, dom) where (rank == 1) {
+  proc DefaultRectangularArr.doiScan(op, dom) where (rank == 1) {
     use RangeChunk;
 
     type resType = op.generate().type;
