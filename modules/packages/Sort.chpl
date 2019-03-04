@@ -305,7 +305,7 @@ proc chpl_check_comparator(comparator, type eltType) param {
   }
   else {
     // If we make it this far, the passed comparator was defined incorrectly
-    compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
+    compilerError("The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method " + " for element type " + eltType:string );
   }
 
   return true;
@@ -1038,7 +1038,7 @@ proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
 }
 
 pragma "no doc"
-proc msbRadixSort(Data:[], comparator) {
+proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
 
   msbRadixSort(start_n=Data.domain.low, end_n=Data.domain.high,
                Data, comparator,
