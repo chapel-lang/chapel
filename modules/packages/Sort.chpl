@@ -1378,9 +1378,43 @@ record ReverseComparator {
   }
 
   pragma "no doc"
-  proc hasKey(a) param {
+  proc typeIsBitReversible(type t) param {
+    if isHomogeneousTupleType(t) {
+      var tmp:t;
+      return typeIsBitReversible(tmp(1).type);
+    }
+    if isUintType(t) then
+      return true;
+    if isIntType(t) then
+      return true;
+
+    return false;
+  }
+  pragma "no doc"
+  proc typeIsNegateReversible(type t) param {
+    if isHomogeneousTupleType(t) {
+      var tmp:t;
+      return typeIsNegateReversible(tmp(1).type);
+    }
+    if isIntType(t) || isUintType(t) then
+      // You might think that int(8) should have its sort order
+      // reversed by negating it, but that runs into the problem
+      // that -128 -> 128 which won't fit into an int(8).
+      return false;
+    if isNumericType(t) then
+      return true;
+
+    return false;
+  }
+
+  pragma "no doc"
+  proc hasReversibleKey(a) param {
     use Reflection;
-    return canResolveMethod(this.comparator, "key", a);
+    if canResolveMethod(this.comparator, "key", a) {
+      type t = this.comparator.key(a).type;
+      return typeIsBitReversible(t) || typeIsNegateReversible(t);
+    }
+    return false;
   }
   pragma "no doc"
   proc hasKeyPart(a) param {
@@ -1394,17 +1428,17 @@ record ReverseComparator {
   }
 
   inline
-  proc key(a) where hasKey(a) {
+  proc key(a) where hasReversibleKey(a) {
     chpl_check_comparator(this.comparator, a.type);
 
-    //writeln("Reverse key");
     const k = this.comparator.key(a);
-    if isUint(k) then
+    if typeIsBitReversible(k.type) {
       return ~k;
-    else if isNumeric(k) then
+    } else if typeIsNegateReversible(k.type) {
       return -k;
-    else
-      compilerError("key must return a numeric type");
+    } else {
+      compilerError("internal error: please update hasReversibleKey");
+    }
   }
 
   inline
@@ -1412,12 +1446,9 @@ record ReverseComparator {
     chpl_check_comparator(this.comparator, a.type);
 
     var (section, part) = this.comparator.keyPart(a, i);
-    //writeln("Reverse keyPart ", section, " ", part);
-    if isUint(part) {
-      //writeln("Reverse keyPart ", -section, " ", ~part);
+    if typeIsBitReversible(part.type) {
       return (-section, ~part);
-    } else if isInt(part) {
-      //writeln("Reverse keyPart ", -section, " ", -part);
+    } else if typeIsNegateReversible(part.type) {
       return (-section, -part);
     } else {
       compilerError("keyPart must return int or uint");
