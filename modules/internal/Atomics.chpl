@@ -193,13 +193,13 @@ module Atomics {
     }
 
     pragma "no doc"
-    proc init=(other : AtomicBool) {
+    proc init=(other:AtomicBool) {
       this.complete();
       init_helper(other.read());
     }
 
     pragma "no doc"
-    proc init=(other : bool) {
+    proc init=(other:bool) {
       this.complete();
       init_helper(other);
     }
