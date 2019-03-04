@@ -282,26 +282,26 @@ proc chpl_check_comparator(comparator, type eltType) param {
     const keydata = comparator.key(data);
     type keytype = keydata.type;
     if !(canResolve("<", keydata, keydata)) then
-      compilerError("The key method must return an object that supports the '<' function");
+      compilerError("The key method in ", comparator.type:string, " must return an object that supports the '<' function when used with ", eltType:string, " elements");
   }
   else if canResolveMethod(comparator, "compare", data, data) {
     // Check return type of compare
     type comparetype = comparator.compare(data, data).type;
     if !(isNumericType(comparetype)) then
-      compilerError("The compare method must return a numeric type");
+      compilerError("The compare method in ", comparator.type:string, " must return a numeric type when used with ", eltType:string, " elements");
   }
   else if canResolveMethod(comparator, "keyPart", data, 1) {
     var idx: int = 1;
     type partType = comparator.keyPart(data, idx).type;
     if !isTupleType(partType) then
-      compilerError("The keyPart method must return a tuple");
+      compilerError("The keyPart method in ", comparator.type:string, " must return a tuple when used with ", eltType:string, " elements");
     var tmp: partType;
     var expectInt = tmp(1);
     var expectIntUint = tmp(2);
     if !isInt(expectInt.type) then
-      compilerError("The keyPart method must return a tuple with 1st element int(?)");
+      compilerError("The keyPart method in ", comparator.type:string, " must return a tuple with 1st element int(?) when used with ", eltType:string, " elements");
     if !(isInt(expectIntUint) || isUint(expectIntUint)) then
-      compilerError("The keyPart method must return a tuple with 2nd element int(?) or uint(?)");
+      compilerError("The keyPart method in ", comparator.type:string, " must return a tuple with 2nd element int(?) or uint(?) when used with ", eltType:string, " elements");
   }
   else {
     // If we make it this far, the passed comparator was defined incorrectly
