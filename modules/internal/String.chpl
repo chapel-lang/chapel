@@ -618,7 +618,7 @@ module String {
     iter uchars(): int(32) {
       compilerWarning("uchars is deprecated - please use codePoints instead");
       for codepoint in this.codePoints() do
-	yield codepoint;
+        yield codepoint;
     }
 
     /*
