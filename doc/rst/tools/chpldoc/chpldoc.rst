@@ -164,6 +164,42 @@ types. A link to the type will be created, if possible. For example:
 For more information see the `Documenting argument, return, and yield values
 and types <#documenting-argument-return-and-yield-values-and-types>`_ section.
 
+Documenting functions that throw
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Errors that are thrown from functions can be documented using the ``:throw:`` or
+``:throws:`` field.  The field will include the ``Error`` subtype being thrown,
+for example ``:throws FileNotFoundError:``.  The description should be a short
+summary of when that error could occur, using a sentence, or two.  For example:
+
+.. code-block:: chapel
+
+   /* Set the permissions of the file or directory specified by the argument
+      `name` to that indicated by the argument `mode`.
+
+      Will throw an error message if one occurs.
+
+      :arg name: The name of the file or directory whose permissions should be
+                 altered.
+      :type name: `string`
+      :arg mode: The permissions desired for the file or directory in question.
+                 See description of :const:`S_IRUSR`, for instance, for
+                 potential values.
+      :type mode: `int`
+
+      :throws FileNotFoundError: Thrown when the name specified does not
+                                 correspond to a file or directory that exists.
+      :throws PermissionError: Thrown when the current user does not have
+                               permission to change the permissions
+   */
+   proc chmod(name: string, mode: int) throws {
+     ...
+
+.. note::
+
+   * Leave an empty line above and below all these fields for best results.
+   * All of these fields must be left-aligned with the outer most paragraph(s).
+
 
 Stifling documentation
 ~~~~~~~~~~~~~~~~~~~~~~
