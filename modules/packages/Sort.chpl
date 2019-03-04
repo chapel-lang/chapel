@@ -311,7 +311,7 @@ proc chpl_check_comparator(comparator, type eltType) param {
 
 /* Basic Functions */
 
-pragma "no doc"
+private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
   if !Dom.stridable {
     var tmp:Data[Dom.low].type;
@@ -932,8 +932,7 @@ record MSBRadixSortSettings {
 // bins 1..256 are for data with next part 0..255.
 //
 // returns (bin, ubits)
-pragma "no doc"
-inline
+private inline
 proc binForRecordKeyPart(a, criterion, startbit:int)
 {
   // We have keyPart(element, start):(section:int(8), part:int/uint)
@@ -974,7 +973,7 @@ proc binForRecordKeyPart(a, criterion, startbit:int)
     return ((1 << RADIX_BITS) + 1, ubits);
 }
 
-inline
+private inline
 proc binForRecord(a, criterion, startbit:int)
 {
   use Reflection;
@@ -991,7 +990,7 @@ proc binForRecord(a, criterion, startbit:int)
   }
 }
 
-pragma "no doc"
+private
 proc msbRadixSortParamEndBit(Data:[], comparator) param {
   // Compute end_bit if it's known
   const ref element = Data[Data.domain.low];
@@ -1008,31 +1007,27 @@ proc msbRadixSortParamEndBit(Data:[], comparator) param {
   return -1;
 }
 
-pragma "no doc"
+private
 proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
   use BitOps;
 
   var xor = min_ubits ^ max_ubits;
 
-  // TODO: Clear the top bits in xor if they are after bitsinpart
+  // Clear the top bits in xor if they are after bitsinpart
   param bitsPerPart = numBits(min_ubits.type);
   const bitsinpart = startbit % bitsPerPart;
   xor <<= bitsinpart;
   xor >>= bitsinpart;
 
   var new_start = clz(xor);
-  //writeln("new_start=", new_start);
   var new_digit = new_start / RADIX_BITS;
-  //writeln("new_digit=", new_digit);
   var new_start_bit_rounded = new_digit * RADIX_BITS;
-  //writeln("rounded=", new_start_bit_rounded);
 
   return new_start_bit_rounded:int;
 }
 
 pragma "no doc"
 proc msbRadixSort(Data:[], comparator) {
-
 
   msbRadixSort(start_n=Data.domain.low, end_n=Data.domain.high,
                Data, comparator,
@@ -1229,7 +1224,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
   if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
 }
 
-pragma "no doc"
+private
 proc checkSorted(start_n:int, end_n:int, A:[], criterion, startbit = 0)
 {
   for i in start_n+1..end_n {
