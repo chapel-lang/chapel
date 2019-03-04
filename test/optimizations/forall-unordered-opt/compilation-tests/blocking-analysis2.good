@@ -3,7 +3,7 @@ blocking-analysis2.chpl:17: note: atomics,blocking blocking_atomic_while
 blocking-analysis2.chpl:22: note: atomics,blocking blocking_atomic_do_while
 blocking-analysis2.chpl:27: note: atomics,blocking blocking_atomic_for_range
 blocking-analysis2.chpl:40: note: atomics,blocking blocking_atomic_for_iterator
-blocking-analysis2.chpl:47: note: completes-tasks,joins-tasks,atomics,blocking blocking_atomic_in_forall
+blocking-analysis2.chpl:47: note: completes-tasks,creates-tasks,joins-tasks,atomics,blocking blocking_atomic_in_forall
 blocking-analysis2.chpl:54: note: recursive,atomics,blocking blocking_recursive
 blocking-analysis2.chpl:5: note: computed main
 blocking-analysis2.chpl:65: note: atomics,blocking calls_blocking
