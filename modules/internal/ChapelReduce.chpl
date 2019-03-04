@@ -40,7 +40,7 @@ module ChapelReduce {
     } else {
       compilerWarning("scan has been serialized (see issue #5760)");
       if (supportsPar) {
-        compilerWarning("(recompile with -senableParScan=true to enable a prototype parallelization)");
+        compilerWarning("(recompile with -senableParScan to enable a prototype parallel implementation)");
       }
       var arr = for d in data do chpl__accumgen(op, d);
 
