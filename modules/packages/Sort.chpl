@@ -1001,9 +1001,11 @@ proc binForRecord(a, criterion, startbit:int)
 // Returns -1 if no such ending is known at compile-time.
 private
 proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
+  use Reflection;
+
   // Compute end_bit if it's known
   const ref element = Data[Data.domain.low];
-  if isSubtype(comparator.type, DefaultComparator) &&
+  if comparator.type == DefaultComparator &&
      (isUint(element) || isInt(element)) {
     // Default comparator on integers has fixed width
     return numBits(element.type) - RADIX_BITS;
@@ -1302,10 +1304,12 @@ record DefaultComparator {
   inline
   proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
                                        (isInt(x(1)) || isUint(x(1))) {
-    if i > x.size then
-      return (-1, 0);
+    type tt = x(1).type;
 
-    return (0, x(i));
+    if i > x.size then
+      return (-1, 0:tt);
+
+    return (0, x(i):tt);
   }
 
   /*
