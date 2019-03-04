@@ -254,7 +254,6 @@ void checkPrimitives()
      case PRIM_USED_MODULES_LIST:       // used modules in BlockStmt::modUses
      case PRIM_TUPLE_EXPAND:
      case PRIM_CHPL_COMM_GET:           // Direct calls to the Chapel comm layer
-     case PRIM_CHPL_COMM_GET_UNORDERED:
      case PRIM_CHPL_COMM_PUT:
      case PRIM_CHPL_COMM_ARRAY_GET:
      case PRIM_CHPL_COMM_ARRAY_PUT:
