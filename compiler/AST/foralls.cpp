@@ -518,12 +518,6 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
 static FnSymbol* trivialLeader          = NULL;
 static Type*     trivialLeaderYieldType = NULL;
 
-static void hzsCheckParallelIterator(ForallStmt* fs, FnSymbol* origIterFn) {
-  if (isLeaderIterator(origIterFn) || isStandaloneIterator(origIterFn)) {
-    USR_FATAL(fs->iteratedExpressions().head, "Support for this combination of zippered iterators is not currently implemented");
-  }
-}
-
 // Return a _build_tuple of fs's index variables.
 static Expr* hzsMakeIndices(ForallStmt* fs) {
   if (fs->numInductionVars() == 1) {
@@ -638,7 +632,8 @@ will be hanled by existing code.
 static CallExpr* handleZipperedSerial(ForallStmt* fs, FnSymbol* origIterFn,
                                       CallExpr* iterCall, SymExpr* origSE)
 {
-  if (origIterFn) hzsCheckParallelIterator(fs, origIterFn);
+  if (origIterFn != NULL && isParallelIterator(origIterFn))
+    USR_FATAL(fs->iteratedExpressions().head, "Support for this combination of zippered iterators is not currently implemented");
 
   hzsBuildZipperedForLoop(fs, origIterFn, iterCall, origSE);
 
