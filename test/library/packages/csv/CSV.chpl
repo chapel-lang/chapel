@@ -69,7 +69,10 @@ module CSV {
     /* Read a CSV file with fields of the types given by
        the arguments to the function
      */
-    iter read(type t...) throws where t.size > 1 || t(1) != string {
+    iter read(type t...) throws where t.size > 1 ||
+                                      (t(1) != string &&
+                                       !isRecordType(t(1)) &&
+                                       !isTupleType(t(1))) {
       if ch.writing then compilerError("reading from a writing channel");
 
       var r: t;
