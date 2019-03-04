@@ -2204,6 +2204,7 @@ module DefaultRectangular {
         res[i] = myop.generate();
       }
       state[tid] = res[rngs[tid].high];
+      delete myop;
     }
     if debugDRScan {
       writeln("res = ", res);
@@ -2217,6 +2218,7 @@ module DefaultRectangular {
       state[i] <=> next;
       metaop.accumulateOntoState(next, state[i]);
     }
+    delete metaop;
     if debugDRScan then
       writeln("state = ", state);
 
