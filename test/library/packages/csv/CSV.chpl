@@ -46,7 +46,7 @@ module CSV {
     }
     /* Read a CSV file with lines matching the types of the fields in a record
      */
-    iter read(type t) throws where isRecordType(t) {
+    iter read(type t) throws where isRecordType(t) && t != string {
       use Reflection;
       var r: t;
       var skipHeader = hasHeader;
@@ -74,7 +74,7 @@ module CSV {
     /* Read a CSV file with fields of the types given by
        the arguments to the function
      */
-    iter read(type t...) throws {
+    iter read(type t...) throws where t.size > 1 || t(1) != string {
       if ch.writing {
         throw new owned ReaderWriterMismatchError();
       }
@@ -96,11 +96,44 @@ module CSV {
       }
     }
 
+    /* Read a CSV file with fields of the types given
+       in the tuple argument to the function
+     */
     iter read(type t) throws where isTupleType(t) {
       for r in read((...t)) {
         yield r;
       }
     }
+
+    /* Read a CSV file with arbitrarily many rows and columns. Returns the
+       data as strings in a 2D array. */
+    proc read(type t) throws where t == string {
+      if ch.writing {
+        throw new owned ReaderWriterMismatchError();
+      }
+      var r: t;
+      var skipHeader = hasHeader;
+
+      var lines = ch.lines();
+      var firstLine = lines[1];
+      var vals = firstLine.strip().split(sep);
+      var A: [1..lines.numElements, 1..vals.numElements] string;
+
+      if !skipHeader {
+        A[1, ..] = vals;
+      }
+
+      for i in 2..lines.numElements {
+        const line = lines[i].strip(leading=false);
+        if line.length == 0 then
+          continue;
+        const vals = line.split(sep);
+        A[i, ..] = vals;
+      }
+      return A;
+    }
+
+
     /* Write a record to the channel owned by this `CSVIO` instance
        resulting in a single row being added to the channel.
      */
