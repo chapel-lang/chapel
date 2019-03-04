@@ -2185,7 +2185,7 @@ module DefaultRectangular {
 
     // Compute who owns what
     // TODO: throttle tasks better than this
-    const numTasks = here.numPUs();
+    const numTasks = min(here.numPUs(), dom.dsiDim(1).size);
     const rngs = RangeChunk.chunks(dom.dsiDim(1), numTasks);
     if debugDRScan {
       writeln("Using ", numTasks, " tasks");
