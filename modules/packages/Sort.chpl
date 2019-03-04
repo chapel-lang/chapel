@@ -1074,7 +1074,9 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
   type ubitsType = binForRecord(A[start_n], criterion, startbit)(2).type;
   var min_ubits: ubitsType = max(ubitsType);
   var max_ubits: ubitsType = 0;
-
+  var min_bin = radix+1;
+  var max_bin = 0;
+  var any_ending = false;
   // Step 1: count.
   // TODO: make this parallel for large enough sizes
   for i in start_n..end_n {
@@ -1083,17 +1085,21 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       min_ubits = ubits;
     if ubits > max_ubits then
       max_ubits = ubits;
+    if bin == 0 || bin == radix then
+      any_ending = true;
     offsets[bin] += 1;
   }
 
   // If the data parts we gathered all have the same leading bits,
   // we might be able to skip ahead immediately to the next count step.
-  var dataStartBit = findDataStartBit(startbit, min_ubits, max_ubits);
-  if dataStartBit > startbit {
-    // Re-start count again immediately at the new start position.
-    msbRadixSort(start_n, end_n, A, criterion,
-                 dataStartBit, settings);
-    return;
+  if any_ending == false {
+    var dataStartBit = findDataStartBit(startbit, min_ubits, max_ubits);
+    if dataStartBit > startbit {
+      // Re-start count again immediately at the new start position.
+      msbRadixSort(start_n, end_n, A, criterion,
+                   dataStartBit, settings);
+      return;
+    }
   }
 
   if settings.progress then writeln("accumulate");
