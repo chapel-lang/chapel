@@ -495,7 +495,7 @@ module String {
       :returns: The number of codepoints in the string.
       */
     inline proc codePointSize {
-      return this.codePointLength
+      return this.codePointLength;
     }
 
     /*
