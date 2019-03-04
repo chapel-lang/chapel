@@ -215,7 +215,7 @@ class LinearAlgebraError : Error {
 
     pragma "no doc"
     override proc message() {
-      if info.isEmptyString() then
+      if info.isEmpty() then
         return "LinearAlgebra error";
       else
         return "LinearAlgebra error : " + info;

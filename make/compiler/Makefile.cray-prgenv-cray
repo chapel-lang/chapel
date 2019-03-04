@@ -25,8 +25,9 @@ CRAYPE_GEN_CFLAGS += -hnomessage=186
 # certain cases of __asm__
 CRAYPE_GEN_CFLAGS += -hnomessage=3140
 
-# Suppress warnings about floating-point value cannot be represented exactly.
-CRAYPE_GEN_CFLAGS += -hnomessage=1046
+# Suppress warnings about floating-point values that cannot be represented
+# exactly, or are out of range (e.g. infinity).
+CRAYPE_GEN_CFLAGS += -hnomessage=1046 -hnomessage=7227
 
 # Suppress warnings about incompatible casts that are acceptable in other
 # settings.  Temporary fix for a ZMQ issue

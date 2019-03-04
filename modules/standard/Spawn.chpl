@@ -655,7 +655,7 @@ module Spawn {
                   executable="/bin/sh", shellarg="-c",
                   param kind=iokind.dynamic, param locking=true) throws
   {
-    if command.isEmptyString() then
+    if command.isEmpty() then
       throw new owned IllegalArgumentError('command cannot be an empty string');
 
     var args = [command];

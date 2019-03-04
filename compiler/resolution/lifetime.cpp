@@ -428,7 +428,8 @@ static void markArgumentsReturnScope(FnSymbol* fn) {
   }
 
   if (fn->isMethod() && fn->_this != NULL && !anyReturnScope &&
-      fn->name != astrInit && !fn->lifetimeConstraints) {
+      fn->name != astrInit && fn->name != astrInitEquals &&
+      !fn->lifetimeConstraints) {
     // Methods default to 'this' return scope
     // ('init' functions aren't really methods for this purpose)
     fn->_this->addFlag(FLAG_RETURN_SCOPE);
@@ -1024,7 +1025,8 @@ static bool formalArgumentDoesNotImpactReturnLifetime(ArgSymbol* formal)
 
   // record initializer's this argument doesn't impact return lifetime
   if (formal->hasFlag(FLAG_ARG_THIS) &&
-      formal->getFunction()->name == astrInit)
+      (formal->getFunction()->name == astrInit ||
+      formal->getFunction()->name == astrInitEquals))
     return true;
 
   // arguments marked with FLAG_SCOPE don't determine the lifetime
@@ -1061,7 +1063,8 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
 
   bool returnsBorrow = false;
   Type* returnType = calledFn->retType;
-  if (calledFn->isMethod() && calledFn->name == astrInit) {
+  if (calledFn->isMethod() &&
+      (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
     returnType = calledFn->getFormal(1)->getValType();
   } else if(calledFn->hasFlag(FLAG_FN_RETARG)) {
     ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
@@ -1412,7 +1415,8 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
   }
 
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-    if (calledFn->isMethod() && calledFn->name == astrInit) {
+    if (calledFn->isMethod() &&
+        (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       Symbol* sym = se->symbol();

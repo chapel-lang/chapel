@@ -1,7 +1,7 @@
 start: C.init()
 R.init()
 end: C.init()
-R.init(R): 1
+R.init=(R): 1
 temp = (x = 1)
 R.deinit(): 0
 R.deinit(): 1

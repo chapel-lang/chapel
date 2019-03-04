@@ -1067,6 +1067,7 @@ module ChapelBase {
 
   pragma "dont disable remote value forwarding"
   pragma "no remote memory fence"
+  pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
     e.i.add(numTasks:int, memory_order_release);
 

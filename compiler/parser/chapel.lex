@@ -231,6 +231,8 @@ zip              return processToken(yyscanner, TZIP);
 ">>="            return processToken(yyscanner, TASSIGNSR);
 "reduce="        return processToken(yyscanner, TASSIGNREDUCE);
 
+"init="          return processToken(yyscanner, TINITEQUALS);
+
 "=>"             return processToken(yyscanner, TALIAS);
 
 "<=>"            return processToken(yyscanner, TSWAP);

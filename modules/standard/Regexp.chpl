@@ -579,7 +579,7 @@ record regexp {
   proc init() {
   }
 
-  proc init(x: regexp) {
+  proc init=(x: regexp) {
     this.home = x.home;
     this._regexp = x._regexp;
     this.complete();

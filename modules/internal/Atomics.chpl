@@ -178,12 +178,29 @@ module Atomics {
 
     pragma "no doc"
     proc init() {
+      pragma "fn synchronization free"
       extern externFunc("init", bool, explicit=false)
         proc atomic_init(ref obj:externT(bool), value:bool): void;
 
       this.complete();
       const default: bool;
       atomic_init(_v, default);
+    }
+
+    pragma "no doc"
+    proc init=(other : AtomicBool) {
+      this._v = other._v;
+    }
+
+    pragma "no doc"
+    proc init=(other : bool) {
+      this.complete();
+
+      pragma "fn synchronization free"
+      extern externFunc("init", bool, explicit=false)
+        proc atomic_init(ref obj:externT(bool), value:bool): void;
+
+      atomic_init(_v, other);
     }
 
     pragma "no doc"
@@ -321,6 +338,7 @@ module Atomics {
 
     pragma "no doc"
     proc init(type T) {
+      pragma "fn synchronization free"
       extern externFunc("init", T, explicit=false)
         proc atomic_init(ref obj:externT(T), value:T): void;
 
@@ -328,6 +346,24 @@ module Atomics {
       this.complete();
       const default: T;
       atomic_init(_v, default);
+    }
+
+    pragma "no doc"
+    proc init=(other : this.type) {
+      this.T = other.T;
+      this._v = other._v;
+    }
+
+    pragma "no doc"
+    proc init=(other : this.type.T) {
+      this.T = other.type;
+      this.complete();
+
+      pragma "fn synchronization free"
+      extern externFunc("init", T, explicit=false)
+        proc atomic_init(ref obj:externT(T), value:T): void;
+
+      atomic_init(_v, other);
     }
 
     pragma "no doc"
