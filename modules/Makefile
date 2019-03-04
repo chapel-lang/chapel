@@ -95,7 +95,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
 	packages/BLAS.chpl \
 	packages/BufferedAtomics.chpl \
-	packages/BufferedGets.chpl \
 	packages/Buffers.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
