@@ -321,10 +321,10 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
     if canResolveMethod(comparator, "keyPart", tmp, 1) {
       return true;
     } else if canResolveMethod(comparator, "key", tmp) {
-      type keyType = comparator.key(Data[Dom.low]).type;
-      if isUintType(keyType) || isIntType(keyType) {
+      var key:comparator.key(tmp).type;
+      // Does the defaultComparator have a keyPart for this?
+      if canResolveMethod(defaultComparator, "keyPart", key, 1) then
         return true;
-      }
     }
   }
   return false;
@@ -990,7 +990,8 @@ proc binForRecord(a, criterion, startbit:int)
                                defaultComparator,
                                startbit);
   } else {
-    compilerError("Bad comparator for radix sort");
+    compilerError("Bad comparator for radix sort ", criterion.type:string,
+                  " with eltType ", a.type:string);
   }
 }
 
@@ -1422,9 +1423,30 @@ record ReverseComparator {
     return canResolveMethod(this.comparator, "keyPart", a, 1);
   }
   pragma "no doc"
+  proc hasKeyPartFromKey(a) param {
+    use Reflection;
+    if canResolveMethod(this.comparator, "key", a) {
+      var key:comparator.key(a).type;
+      // Does the defaultComparator have a keyPart for this?
+      return canResolveMethod(defaultComparator, "keyPart", key, 1);
+    }
+    return false;
+  }
+
+  pragma "no doc"
   proc hasCompare(a,b) param {
     use Reflection;
     return canResolveMethod(this.comparator, "compare", a, b);
+  }
+  pragma "no doc"
+  proc hasCompareFromKey(a) param {
+    use Reflection;
+    if canResolveMethod(this.comparator, "key", a) {
+      var key:comparator.key(a).type;
+      // Does the defaultComparator have a compare for this?
+      return canResolveMethod(defaultComparator, "compare", key, key);
+    }
+    return false;
   }
 
   inline
@@ -1441,11 +1463,10 @@ record ReverseComparator {
     }
   }
 
+  pragma "no doc"
   inline
-  proc keyPart(a, i) where hasKeyPart(a) {
-    chpl_check_comparator(this.comparator, a.type);
-
-    var (section, part) = this.comparator.keyPart(a, i);
+  proc getKeyPart(cmp, a, i) {
+    var (section, part) = cmp.keyPart(a, i);
     if typeIsBitReversible(part.type) {
       return (-section, ~part);
     } else if typeIsNegateReversible(part.type) {
@@ -1453,6 +1474,24 @@ record ReverseComparator {
     } else {
       compilerError("keyPart must return int or uint");
     }
+  }
+
+  inline
+  proc keyPart(a, i) where hasKeyPart(a) || hasKeyPartFromKey(a) {
+    chpl_check_comparator(this.comparator, a.type);
+
+    if hasKeyPartFromKey(a) {
+      return getKeyPart(defaultComparator, this.comparator.key(a), i);
+    } else {
+      return getKeyPart(this.comparator, a, i);
+    }
+
+  }
+
+  pragma "no doc"
+  inline
+  proc doCompare(cmp, a, b) {
+    return cmp.compare(b, a);
   }
 
   /*
@@ -1467,12 +1506,17 @@ record ReverseComparator {
    :returns: 1 if ``a < b``
    */
   inline
-  proc compare(a, b) where hasCompare(a, b) {
+  proc compare(a, b) where hasCompare(a, b) || hasCompareFromKey(a) {
 
     chpl_check_comparator(this.comparator, a.type);
 
-    //writeln("Reverse compare");
-    return this.comparator.compare(b, a);
+    if hasCompareFromKey(a) {
+      return doCompare(defaultComparator,
+                       this.comparator.key(a),
+                       this.comparator.key(b));
+    } else {
+      return doCompare(this.comparator, a, b);
+    }
   }
 }
 
