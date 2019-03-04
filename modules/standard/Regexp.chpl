@@ -1097,8 +1097,7 @@ proc string.match(pattern: regexp):reMatch
 }
 
 /* Match the receiving string to a regular expression already compiled
-   by calling :proc:`regexp.match`. `string.match` is just a convenient
-   wrapper. Hence, `string.match` ends up just calling :proc:`regexp.match`.
+   by calling :proc:`regexp.match`.
 
    :arg pattern: the compiled regular expression to match
    :arg captures: (optional) what to capture from the regular expression. These
