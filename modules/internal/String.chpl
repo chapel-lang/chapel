@@ -674,7 +674,7 @@ module String {
       Index into a string
 
       :returns: A string with the complete multibyte character starting at the
-                specified byte index from `1..string.length`
+                specified byte index from ``1..string.length``
      */
     proc this(i: int) : string {
       if boundsChecking && (i <= 0 || i > this.len)
@@ -714,7 +714,7 @@ module String {
       Index into a string
 
       :returns: A Unicode codepoint starting at the
-                specified codepoint index from `1..string.codePointLength`
+                specified codepoint index from ``1..string.codePointLength``
      */
     proc this(cpi: codePointIndex) : string {
       if this.isEmpty() then return "";
@@ -790,11 +790,11 @@ module String {
 
     /*
       Slice a string. Halts if r is not completely inside the range
-      `1..string.length`.
+      ``1..string.length``.
 
       :arg r: range of the indices the new string should be made from
 
-      :returns: a new string that is a substring within `1..string.length`. If
+      :returns: a new string that is a substring within ``1..string.length``. If
                 the length of `r` is zero, an empty string is returned.
      */
     // TODO: I wasn't very good about caching variables locally in this one.
@@ -1004,7 +1004,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within `1..string.length`
+                   within ``1..string.length``
 
       :returns: the index of the first occurrence of `needle` within a
                 string, or 0 if the `needle` is not in the string.
@@ -1018,7 +1018,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within `1..string.length`
+                   within ``1..string.length``
 
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or 0 if the `needle` is not in the string.
@@ -1031,7 +1031,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within `1..string.length`
+                   within ``1..string.length``
 
       :returns: the number of times `needle` occurs in the string
      */
