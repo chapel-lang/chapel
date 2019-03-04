@@ -22,11 +22,11 @@
 
   .. warning::
 
-      This module has been deprecated.
+      This module has been deprecated - please use :mod:`LinkedList` instead.
  */
 module List {
 
-compilerWarning("Module 'List' has been deprecated in favor of 'LinkedList'");
+compilerWarning("List module is deprecated - please use LinkedList instead");
 
 pragma "no doc"
 class listNode {
