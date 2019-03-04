@@ -32,6 +32,17 @@ module NetworkAtomics {
   record RAtomicBool {
     var _v: int(64);
 
+    pragma "no doc"
+    proc init=(other : RAtomicBool) {
+      this._v = other._v;
+    }
+
+    pragma "no doc"
+    proc init=(other : bool) {
+      this.complete();
+      this.write(other);
+    }
+
     inline proc _localeid(): int(32) {
       return _v.locale.id:int(32);
     }
@@ -121,6 +132,20 @@ module NetworkAtomics {
   record RAtomicT {
     type T;
     var _v: T;
+
+    pragma "no doc"
+    proc init=(other : this.type) {
+      this.T = other.T;
+      this._v = other._v;
+    }
+
+    pragma "no doc"
+    proc init=(other : this.type.T) {
+      this.T = other.type;
+      this.complete();
+
+      this.write(other);
+    }
 
     inline proc _localeid(): int(32) {
       return _v.locale.id:int(32);
