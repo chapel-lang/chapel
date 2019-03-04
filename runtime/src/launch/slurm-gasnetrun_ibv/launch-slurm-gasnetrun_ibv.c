@@ -180,6 +180,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* projectString = getenv(launcherAccountEnvvar);
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
+  char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
   char* basenamePtr = strrchr(argv[0], '/');
   char* nodeAccessEnv = NULL;
   pid_t mypid;
@@ -238,10 +239,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (projectString && strlen(projectString) > 0)
       fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
 
-    if (outputfn!=NULL) 
+    if (outputfn != NULL)
       fprintf(slurmFile, "#SBATCH -o %s\n", outputfn);
     else
       fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
+
+    if (errorfn != NULL)
+      fprintf(slurmFile, "#SBATCH -e %s\n", errorfn);
 
     fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d -N %d",
             CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
