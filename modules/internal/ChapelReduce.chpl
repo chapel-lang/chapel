@@ -23,6 +23,7 @@ module ChapelReduce {
   use ChapelStandard;
 
   proc chpl__scanIteratorZip(op, data) {
+    compilerWarning("scan has been serialized");
     var arr = for d in zip((...data)) do chpl__accumgen(op, d);
 
     delete op;
@@ -30,10 +31,23 @@ module ChapelReduce {
   }
 
   proc chpl__scanIterator(op, data) {
+    compilerWarning("scan has been serialized");
     var arr = for d in data do chpl__accumgen(op, d);
 
     delete op;
     return arr;
+  }
+
+  proc supportsParScans(arr) param {
+    if arr._value.isDefaultRectangular() && arr.rank == 1 then
+      return true;
+    return false;
+  }
+  
+  proc chpl__scanIterator(op, arr: []) where supportsParScans(arr) {
+    var res: [arr.domain] op.generate().type;
+    arr._value.dsiScan(op, res);
+    return res;
   }
 
   // helper routine to run the accumulate + generate steps of a scan

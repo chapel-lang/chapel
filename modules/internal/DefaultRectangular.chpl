@@ -2174,6 +2174,47 @@ module DefaultRectangular {
   proc DefaultRectangularArr.isDefaultRectangular() param return true;
   proc type DefaultRectangularArr.isDefaultRectangular() param return true;
 
+  proc DefaultRectangularArr.dsiScan(op, res) {
+    use RangeChunk;
+    
+    assert(rank == 1);
+    const numTasks = here.numPUs();
+    //    writeln("Using ", numTasks, " tasks");
+    const rngs = RangeChunk.chunks(dom.dsiDim(1), numTasks);
+    //    writeln("And chunks are: ", rngs);
+    type resType = op.generate().type;
+    var state: [1..numTasks] resType;
+    coforall tid in 1..numTasks {
+      const current: resType;
+      const myop = op.clone();
+      for i in rngs[tid] {
+        ref elem = dsiAccess(i);
+        myop.accumulate(elem);
+        res[i] = myop.generate();
+      }
+      state[tid] = res[rngs[tid].high];
+    }
+    //    writeln("res = ", res);
+    //    writeln("state = ", state);
+    const metaop = op.clone();
+    var next: resType = metaop.identity;
+    for i in 1..numTasks {
+      state[i] <=> next;
+      metaop.accumulateOntoState(next, state[i]);
+    }
+    //    writeln("res = ", res);
+    //    writeln("state = ", state);
+    coforall tid in 1..numTasks {
+      const myadjust = state[tid];
+      for i in rngs[tid] {
+        op.accumulateOntoState(res[i], myadjust);
+      }
+    }
+    //    writeln("res = ", res);
+    //    writeln("state = ", state);
+    delete op;
+  }
+
   /*
   The runtime implementation's loop over the current stride level will look
   something like this:
