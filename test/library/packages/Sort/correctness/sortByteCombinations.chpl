@@ -9,7 +9,7 @@ proc checkSorts(arr) {
   assert(isSorted(a));
   // check msbRadixSort
   var b = arr;
-  sort(b);
+  msbRadixSort(b);
   assert(isSorted(b));
   // check quickSort
   var c = arr;
