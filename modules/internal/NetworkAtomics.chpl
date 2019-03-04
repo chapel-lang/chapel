@@ -34,13 +34,12 @@ module NetworkAtomics {
 
     pragma "no doc"
     proc init=(other:RAtomicBool) {
-      this._v = other.read();
+      this._v = other.read():int(64);
     }
 
     pragma "no doc"
     proc init=(other:bool) {
-      this.complete();
-      this.write(other);
+      this._v = other:int(64);
     }
 
     inline proc _localeid(): int(32) {
@@ -134,17 +133,15 @@ module NetworkAtomics {
     var _v: T;
 
     pragma "no doc"
-    proc init=(other : this.type) {
+    proc init=(other:this.type) {
       this.T = other.T;
       this._v = other.read();
     }
 
     pragma "no doc"
-    proc init=(other : this.type.T) {
+    proc init=(other:this.type.T) {
       this.T = other.type;
-      this.complete();
-
-      this.write(other);
+      this._v = other;
     }
 
     inline proc _localeid(): int(32) {
