@@ -482,13 +482,20 @@ module String {
     inline proc size return len;
 
     /*
-      :returns: The number of codepoints in the string (typically Unicode).
+      :returns: The number of codepoints in the string.
       */
     proc codePointLength {
       var n = 0;
       for codepoint in this.codePoints() do
         n += 1;
       return n;
+    }
+
+    /*
+      :returns: The number of codepoints in the string.
+      */
+    inline proc codePointSize {
+      return this.codePointLength
     }
 
     /*
