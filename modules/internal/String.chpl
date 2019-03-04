@@ -492,9 +492,10 @@ module String {
     }
 
     /*
-      :returns: The number of codepoints in the string.
+      Deprecated, use :proc:`string.codePointLength`.
       */
-    inline proc codePointSize {
+    inline proc ulength {
+      compilerWarning("ulength is deprecated - please use codePointLength instead");
       return this.codePointLength;
     }
 
@@ -609,6 +610,15 @@ module String {
         yield codepoint;
         i += nbytes;
       }
+    }
+
+    /*
+      Deprecated, use :proc:`string.codePoints`.
+    */
+    iter uchars(): int(32) {
+      compilerWarning("uchars is deprecated - please use codePoints instead");
+      for codepoint in this.codePoints() do
+	yield codepoint;
     }
 
     /*
