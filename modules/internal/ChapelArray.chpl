@@ -3265,6 +3265,11 @@ module ChapelArray {
       return this.domain.shape;
     }
 
+    pragma "no doc"
+    proc _scan(op) where Reflection.canResolveMethod(_value, "dsiScan", op, this.domain) {
+      return _value.dsiScan(op, this.domain);
+    }
+
   }  // record _array
 
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from

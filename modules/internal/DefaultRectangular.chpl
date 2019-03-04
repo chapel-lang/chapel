@@ -2174,16 +2174,27 @@ module DefaultRectangular {
   proc DefaultRectangularArr.isDefaultRectangular() param return true;
   proc type DefaultRectangularArr.isDefaultRectangular() param return true;
 
-  proc DefaultRectangularArr.dsiScan(op, res) {
+  config param debugDRScan = false;
+
+  /* This computes a 1D scan in parallel on the array, for 1D arrays only */
+  proc DefaultRectangularArr.dsiScan(op, dom) where (rank == 1) {
     use RangeChunk;
-    
-    assert(rank == 1);
-    const numTasks = here.numPUs();
-    //    writeln("Using ", numTasks, " tasks");
-    const rngs = RangeChunk.chunks(dom.dsiDim(1), numTasks);
-    //    writeln("And chunks are: ", rngs);
+
     type resType = op.generate().type;
+    var res: [dom] resType;
+
+    // Compute who owns what
+    // TODO: throttle tasks better than this
+    const numTasks = here.numPUs();
+    const rngs = RangeChunk.chunks(dom.dsiDim(1), numTasks);
+    if debugDRScan {
+      writeln("Using ", numTasks, " tasks");
+      writeln("Whose chunks are: ", rngs);
+    }
+
     var state: [1..numTasks] resType;
+
+    // Take first pass over data doing per-chunk scans
     coforall tid in 1..numTasks {
       const current: resType;
       const myop = op.clone();
@@ -2194,25 +2205,34 @@ module DefaultRectangular {
       }
       state[tid] = res[rngs[tid].high];
     }
-    //    writeln("res = ", res);
-    //    writeln("state = ", state);
+    if debugDRScan {
+      writeln("res = ", res);
+      writeln("state = ", state);
+    }
+
+    // Scan state vector itself
     const metaop = op.clone();
     var next: resType = metaop.identity;
     for i in 1..numTasks {
       state[i] <=> next;
       metaop.accumulateOntoState(next, state[i]);
     }
-    //    writeln("res = ", res);
-    //    writeln("state = ", state);
+    if debugDRScan then
+      writeln("state = ", state);
+
+    // Take second pass updating result based on scanned state
     coforall tid in 1..numTasks {
       const myadjust = state[tid];
       for i in rngs[tid] {
         op.accumulateOntoState(res[i], myadjust);
       }
     }
-    //    writeln("res = ", res);
-    //    writeln("state = ", state);
+    if debugDRScan then
+      writeln("res = ", res);
+
+    // Clean up and return
     delete op;
+    return res;
   }
 
   /*
