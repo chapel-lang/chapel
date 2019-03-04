@@ -1,6 +1,6 @@
 var mystring1 = "événement";
 
-for c in mystring1.uchars() {
+for c in mystring1.codePoints() {
   const str = codePointToString(c);
   write(c, "\t", str);
   for i in 0..#str.length do
