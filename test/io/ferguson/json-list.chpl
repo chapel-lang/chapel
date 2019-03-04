@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 {
   var mylist = new linkedList(int);

@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 record myrecord {
   var x: int;

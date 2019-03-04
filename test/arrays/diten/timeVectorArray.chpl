@@ -1,4 +1,4 @@
-use Random, Time, Search, Sort, LinkedList;
+use Random, Time, Search, Sort, LinkedLists;
 
 config const n: int = 30000;
 const linearN: int = n/1000; // problem size for slow "linear" opeations

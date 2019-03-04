@@ -1,5 +1,5 @@
 
-use LinkedList;
+use LinkedLists;
 
 config var filename="graph.dat";
 

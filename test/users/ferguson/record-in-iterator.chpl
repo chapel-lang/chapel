@@ -1,5 +1,5 @@
 
-use LinkedList;
+use LinkedLists;
 
 iter myiter(N /* adding :int makes it work */) {
 

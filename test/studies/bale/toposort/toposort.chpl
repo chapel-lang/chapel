@@ -4,7 +4,7 @@ use LayoutCS;
 use BlockDist;
 use CommDiagnostics;
 use Sort;
-use LinkedList;
+use LinkedLists;
 
 config param enableRuntimeDebugging = true;
 config const debugAll : bool = false;

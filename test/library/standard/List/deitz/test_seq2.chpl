@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 var s : linkedList(string) = makeList( "this", "is", "a", "sequence", "of", "strings" );
 

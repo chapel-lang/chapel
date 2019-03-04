@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 proc main {
   var lst: linkedList(int);

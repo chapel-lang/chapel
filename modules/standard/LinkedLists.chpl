@@ -24,7 +24,7 @@
 
       This module is expected to change in the future.
  */
-module LinkedList {
+module LinkedLists {
 
 pragma "no doc"
 class listNode {
@@ -350,4 +350,4 @@ proc makeList(x ...?k) {
   return s;
 }
 
-} // end module LinkedList
+} // end module LinkedLists

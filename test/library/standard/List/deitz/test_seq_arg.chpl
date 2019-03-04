@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 proc foo(s : linkedList(string)) {
   writeln("foo called on a sequence of strings: ", s);

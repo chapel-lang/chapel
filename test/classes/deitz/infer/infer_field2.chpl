@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 use infer_field2_common;
 
 proc foo() {

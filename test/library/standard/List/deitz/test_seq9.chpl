@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 var s1 : linkedList(int)    = makeList( 2, 3, 4, 5 );
 var s2 : linkedList(string) = makeList( "hot", "dog" );

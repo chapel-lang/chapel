@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 proc foo() {
   var s: linkedList(int) = makeList( 1, 2, 3 );

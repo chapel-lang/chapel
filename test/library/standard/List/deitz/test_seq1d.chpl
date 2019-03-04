@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 var i : int = 2;
 var j : int = 3;

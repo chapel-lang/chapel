@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 config var phrase : string = "shuffle me please";
 const n = (phrase.length);

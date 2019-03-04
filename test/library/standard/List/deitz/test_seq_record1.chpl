@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 record R {
   var x : int;

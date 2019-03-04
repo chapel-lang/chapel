@@ -19,7 +19,7 @@
 
 module ChapelDistribution {
 
-  use LinkedList;
+  use LinkedLists;
 
   extern proc chpl_task_yield();
 

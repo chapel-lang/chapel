@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 var t1 : 2*int = (1, 2);
 var t2 : 2*int = (3, 4);

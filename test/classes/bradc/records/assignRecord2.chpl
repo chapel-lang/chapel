@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 class myclass {
   var a: int;

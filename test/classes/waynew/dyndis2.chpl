@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 class somedata {
   type elt_type;

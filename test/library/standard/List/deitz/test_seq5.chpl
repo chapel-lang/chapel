@@ -1,4 +1,4 @@
-use LinkedList;
+use LinkedLists;
 
 var s1 : linkedList(int) = makeList(3, 1, 4, 1, 5, 9);
 

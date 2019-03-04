@@ -1,5 +1,5 @@
 use Memory;
-use LinkedList;
+use LinkedLists;
 
 var mem : uint;
 proc output()
