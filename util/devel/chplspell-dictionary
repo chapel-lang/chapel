@@ -4847,6 +4847,7 @@ aarch
 abcd
 abcdefg
 ablock
+accumgen
 achtung
 acknowledgements
 acosh
@@ -5057,6 +5058,7 @@ calloc
 callsite
 callsites
 callstack
+callstate
 caltech
 canadian
 canonicalizations
@@ -5101,6 +5103,7 @@ checksums
 cherokee
 chiki
 childnum
+childstate
 chksum
 chmod
 cholesky
@@ -5594,12 +5597,14 @@ flowgraph
 fltk
 fmtstr
 fname
+fnstate
 fnsub
 fnsymbol
 focussed
 foldable
 followlinks
 followlocation
+followme
 fonzi
 foobar
 fopen
@@ -6485,6 +6490,7 @@ openssl
 opentmp
 openwriter
 optimizable
+optinfo
 optlen
 optname
 optval
@@ -6947,6 +6953,7 @@ socktype
 solaris
 somesuch
 sourceforge
+sourceoutlives
 souza
 spartee
 spawner
