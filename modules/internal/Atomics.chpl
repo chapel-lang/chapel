@@ -177,30 +177,31 @@ module Atomics {
     var _v:externT(bool);
 
     pragma "no doc"
-    proc init() {
+    proc init_helper(value:bool) {
       pragma "fn synchronization free"
       extern externFunc("init", bool, explicit=false)
         proc atomic_init(ref obj:externT(bool), value:bool): void;
 
+      atomic_init(_v, value);
+    }
+
+    pragma "no doc"
+    proc init() {
       this.complete();
       const default: bool;
-      atomic_init(_v, default);
+      init_helper(default);
     }
 
     pragma "no doc"
     proc init=(other : AtomicBool) {
-      this._v = other._v;
+      this.complete();
+      init_helper(other.read());
     }
 
     pragma "no doc"
     proc init=(other : bool) {
       this.complete();
-
-      pragma "fn synchronization free"
-      extern externFunc("init", bool, explicit=false)
-        proc atomic_init(ref obj:externT(bool), value:bool): void;
-
-      atomic_init(_v, other);
+      init_helper(other);
     }
 
     pragma "no doc"
@@ -337,33 +338,34 @@ module Atomics {
     var _v:externT(T);
 
     pragma "no doc"
-    proc init(type T) {
+    proc init_helper(value:T) {
       pragma "fn synchronization free"
       extern externFunc("init", T, explicit=false)
         proc atomic_init(ref obj:externT(T), value:T): void;
 
+      atomic_init(_v, value);
+    }
+
+    pragma "no doc"
+    proc init(type T) {
       this.T = T;
       this.complete();
       const default: T;
-      atomic_init(_v, default);
+      init_helper(default);
     }
 
     pragma "no doc"
-    proc init=(other : this.type) {
+    proc init=(other:this.type) {
       this.T = other.T;
-      this._v = other._v;
+      this.complete();
+      init_helper(other.read());
     }
 
     pragma "no doc"
-    proc init=(other : this.type.T) {
+    proc init=(other:this.type.T) {
       this.T = other.type;
       this.complete();
-
-      pragma "fn synchronization free"
-      extern externFunc("init", T, explicit=false)
-        proc atomic_init(ref obj:externT(T), value:T): void;
-
-      atomic_init(_v, other);
+      init_helper(other);
     }
 
     pragma "no doc"

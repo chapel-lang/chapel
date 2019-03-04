@@ -17,6 +17,9 @@ proc testAtomicBool(a, ref i, ref b) {
   writeln("Testing 'atomic bool':");
                                                     writea ("init    ", a);
                 var initval : a.type = true;        writeai("init=   ", a, initval);
+                var initval2 : a.type = a;          writeai("init=(a)", a, initval2);
+                var initval3 = a;                   writeai("init=(a)", a, initval3);
+                assert(initval3.type == atomic bool);
                 i = a.read();                       writeai("read    ", a, i);
                     a.write(t);                     writea ("write   ", a);
                 i = a.exchange(f);                  writeai("xchg    ", a, i);
@@ -40,6 +43,9 @@ proc testAtomicT(a, ref i, ref b, type basetype) {
                                                     writea ("init    ", a);
                 if isArray(a) == false {
                   var initval : a.type = 1;         writeai("init=   ", a, initval);
+                  var initval2 : a.type = a;        writeai("init=(a)", a, initval2);
+                  var initval3 = a;                 writeai("init=(a)", a, initval3);
+                  assert(initval3.type == atomic basetype);
                 }
                 i = a.read();                       writeai("read    ", a, i);
                     a.write(1);                     writea ("write   ", a);

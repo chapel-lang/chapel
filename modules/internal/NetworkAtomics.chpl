@@ -33,12 +33,12 @@ module NetworkAtomics {
     var _v: int(64);
 
     pragma "no doc"
-    proc init=(other : RAtomicBool) {
-      this._v = other._v;
+    proc init=(other:RAtomicBool) {
+      this._v = other.read();
     }
 
     pragma "no doc"
-    proc init=(other : bool) {
+    proc init=(other:bool) {
       this.complete();
       this.write(other);
     }
@@ -136,7 +136,7 @@ module NetworkAtomics {
     pragma "no doc"
     proc init=(other : this.type) {
       this.T = other.T;
-      this._v = other._v;
+      this._v = other.read();
     }
 
     pragma "no doc"
