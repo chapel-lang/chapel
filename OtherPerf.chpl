@@ -6,6 +6,8 @@ config const printStats = true;
 config const minSize = 1;
 config const maxSize = 1024*1024*128;
 
+config const inputDataScheme = 1;
+
 config const parallel = true;
 
 var methods = ["default", "msbRadixSort", "quickSort"];
@@ -34,8 +36,34 @@ proc testsort(input, method, parallel) {
 
 proc testsize(size:int) {
   var array:[1..size] int; 
-  fillRandom(array);
- 
+
+  if inputDataScheme == 0 {
+    // scheme 0 : all zeros
+  } else if inputDataScheme == 1 {
+    // scheme 1: random ints
+    fillRandom(array);
+  } else if inputDataScheme == 2 {
+    // scheme 2: random ints, only top byte set
+    fillRandom(array);
+    for a in array {
+      a >>= 56;
+      a <<= 56;
+    }
+  } else if inputDataScheme == 3 {
+    // scheme 3: random ints, only a middle byte set
+    fillRandom(array);
+    for a in array {
+      a >>= 56;
+      a <<= 56;
+      a >>= 16;
+    }
+  } else if inputDataScheme == 4 {
+    // scheme 4: random ints, only bottom byte set
+    fillRandom(array);
+    for a in array {
+      a &= 0xff;
+    }
+  }
 
   var bytes = size*8;
   var kibibytes = bytes/1024.0;
