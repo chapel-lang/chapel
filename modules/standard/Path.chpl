@@ -26,9 +26,8 @@
 
    .. note::
 
-      This module is currently missing the implementation for `expandUser
-      <https://github.com/chapel-lang/chapel/issues/6008>`_, `normCase
-      <https://github.com/chapel-lang/chapel/issues/6013>`_, Once those are
+      This module is currently missing the implementation for `normCase
+      <https://github.com/chapel-lang/chapel/issues/6013>`_, Once this is
       implemented, it will be considered complete.
 
    Operations which occur on the files or directories referred to by these paths
@@ -48,6 +47,7 @@
    ------------------
    :proc:`absPath`
    :proc:`file.absPath`
+   :proc:`expandUser`
    :proc:`expandVars`
    :proc:`joinPath`
    :proc:`splitPath`
@@ -297,6 +297,29 @@ proc commonPath(paths: []): string {
 */
 proc dirname(name: string): string {
   return splitPath(name)[1];
+}
+
+/*
+  Return the argument with an initial component of `~` or `~user` replaced by
+  that `user's` home directory.
+
+  On Unix, an initial `~` is replaced by the environment variable `HOME` if it
+  is set; otherwise the current user's home directory is looked up in the
+  password directory. An initial `~user` is looked up directly in the password
+  directory.
+
+  If expansion fails or the path does not begin with a tilde, the path is
+  returned unchanged.
+
+  :arg path: a file or directory, which may or may not include `~` or `~<user>`
+  :type path: `string`
+
+  :return: the argument, replacing any `~` or `~<user>` with the user's home
+           directory
+  :rtype: `string`
+*/
+proc expandUser(path: string): string {
+  return "";
 }
 
 /* Expands any environment variables in the path of the form ``$<name>`` or

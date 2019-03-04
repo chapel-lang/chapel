@@ -259,6 +259,7 @@ tags
 /test/library/standard/Path/dlongnecke/absPath/fileAbsPath.good
 /test/library/standard/Path/relPath/relPath.good
 /test/library/standard/Path/relPath/fileRelPath.good
+/test/library/standard/Path/expandUser/expandUser.good
 /test/library/standard/Spawn/stdout-stderr_real
 /test/library/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/library/standard/machine/numPUs.good

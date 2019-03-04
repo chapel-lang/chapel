@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+
+
+import os
+import os.path
+import sys
+
+
+def test(path):
+    print 'path=', path
+    print os.path.expanduser(path)
+
+
+def do_tests(someuser):
+    # A single tilde should expand to home if it is set.
+    test('~')
+
+    # Expand the current user with leading tilde.
+    test('~' + someuser)
+
+    # Expand the current user with no leading tilde.
+    test(someuser)
+
+    # Expand the current user with multiple leading tildes.
+    test('~~~' + someuser)
+
+    # Expand the current user with multiple trailing tildes.
+    test(someuser + '~~~')
+
+    # Current user with up-level in front.
+    test('..' + '~' + someuser)
+
+    # Current user with trailing up-level.
+    test('~' + someuser + '..')
+
+
+# Redirect STDOUT to write to our test file.
+stdout = sys.stdout
+sys.stdout = open('expandUser.good', 'w')
+
+# Get the current user's home directory. Assumes a UNIX environment.
+username = os.environ.get('USER')
+if not username:
+    print 'Unable to fetch the $USER environment variable!'
+    username = ''
+
+
+# Run all the tests.
+do_tests('SomeVeryLongUsernameNotLikelyToExist')
+do_tests(username)
+do_tests('~~~')
+
+
+# Restore the original value of STDOUT.
+sys.stdout = stdout
