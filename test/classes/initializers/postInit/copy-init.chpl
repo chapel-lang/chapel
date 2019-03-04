@@ -12,8 +12,8 @@ record MyRecord {
 
   }
 
-  proc init(other : MyRecord) {
-    writeln('    MyRecord.init(other : MyRecord)');
+  proc init=(other : MyRecord) {
+    writeln('    MyRecord.init=(other : MyRecord)');
 
     id       = other.id + 1;
 

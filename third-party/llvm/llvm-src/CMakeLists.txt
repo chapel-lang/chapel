@@ -521,7 +521,7 @@ option(LLVM_INCLUDE_EXAMPLES "Generate build targets for the LLVM examples" ON)
 
 option(LLVM_BUILD_TESTS
   "Build LLVM unit tests. If OFF, just generate build targets." OFF)
-option(LLVM_INCLUDE_TESTS "Generate build targets for the LLVM unit tests." ON)
+option(LLVM_INCLUDE_TESTS "Generate build targets for the LLVM unit tests." OFF)
 option(LLVM_INCLUDE_GO_TESTS "Include the Go bindings tests in test build targets." ON)
 
 option (LLVM_BUILD_DOCS "Build the llvm documentation." OFF)

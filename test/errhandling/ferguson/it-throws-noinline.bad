@@ -1,2 +1,3 @@
-it-throws-noinline.chpl:24: error: Throwing non-inlined iterators are not yet supported
-Note: This source location is a guess.
+it-throws-noinline.chpl:21: In function 'test':
+it-throws-noinline.chpl:24: error: throwing non-inlined iterators are not yet supported
+it-throws-noinline.chpl:6: note: the invoked iterator is here

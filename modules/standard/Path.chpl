@@ -421,7 +421,7 @@ proc file.getParentName(out error:syserr): string {
 */
 
 proc isAbsPath(name: string): bool {
-  if name.isEmptyString() {
+  if name.isEmpty() {
     return false;
   }
   const len: int = name.length;

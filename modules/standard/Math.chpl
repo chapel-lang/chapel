@@ -83,11 +83,6 @@ module Math {
   // Helper constants and functions (not included in chpldocs).
   //
   pragma "fn synchronization free"
-  private extern proc chpl_macro_INFINITY():real(32);
-  pragma "fn synchronization free"
-  private extern proc chpl_macro_NAN():real(32);
-
-  pragma "fn synchronization free"
   private extern proc chpl_macro_double_isinf(x: real(64)): c_int;
   pragma "fn synchronization free"
   private extern proc chpl_macro_float_isinf(x: real(32)): c_int;
@@ -689,7 +684,7 @@ module Math {
 
 
   /* Returns a value for which :proc:`isinf` will return `true`. */
-  inline proc INFINITY: real(64) return chpl_macro_INFINITY();
+  inline proc INFINITY param : real(64) return chpl_INFINITY;
 
 
   /* Returns `true` if the argument `x` is a representation of a finite value;
@@ -934,7 +929,7 @@ module Math {
 
 
   /* Returns a value for which :proc:`isnan` will return `true`. */
-  inline proc NAN : real(64) return chpl_macro_NAN();
+  inline proc NAN param : real(64) return chpl_NAN;
 
 
   /* Returns the rounded integral value of the argument `x` determined by the

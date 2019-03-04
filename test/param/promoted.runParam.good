@@ -1,0 +1,2 @@
+promoted.chpl:16: error: unresolved call 'paramFun(range(int(64),bounded,false))'
+promoted.chpl:9: note: candidates are: paramFun(arg: int)

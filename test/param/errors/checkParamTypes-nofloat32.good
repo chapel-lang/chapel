@@ -1,2 +1,0 @@
-checkParamTypes.chpl:16: error: Initializing parameter 'p' to value not known at compile time
-checkParamTypes.chpl:18: error: Passed!

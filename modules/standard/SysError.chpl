@@ -60,7 +60,7 @@ class SystemError : Error {
     var errstr              = sys_strerror_syserr_str(err, strerror_err);
     var err_msg             = new string(errstr, isowned=true, needToCopy=false);
 
-    if !details.isEmptyString() then
+    if !details.isEmpty() then
       err_msg += " (" + details + ")";
 
     return err_msg;

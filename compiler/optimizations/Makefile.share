@@ -25,6 +25,7 @@ OPTIMIZATIONS_SRCS = \
 	localizeGlobals.cpp \
 	loopInvariantCodeMotion.cpp \
 	noAliasSets.cpp \
+        optimizeForallUnorderedOps.cpp \
 	optimizeOnClauses.cpp \
 	refPropagation.cpp \
 	remoteValueForwarding.cpp \

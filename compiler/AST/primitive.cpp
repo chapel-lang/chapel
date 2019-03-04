@@ -614,6 +614,9 @@ initPrimitive() {
 
   // dst, src. PRIM_ASSIGN with reference dst sets *dst
   prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
+  // like PRIM_ASSIGN but the operation can be put off until end of
+  // the enclosing task or forall.
+  prim_def(PRIM_UNORDERED_ASSIGN, "unordered=", returnInfoVoid, true, true);
   prim_def(PRIM_ADD_ASSIGN, "+=", returnInfoVoid, true);
   prim_def(PRIM_SUBTRACT_ASSIGN, "-=", returnInfoVoid, true);
   prim_def(PRIM_MULT_ASSIGN, "*=", returnInfoVoid, true);
@@ -765,6 +768,10 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false);
   prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
+  // PRIM_ARRAY_SET / PRIM_ARRAY_SET_FIRST have these arguments
+  //   base pointer
+  //   index
+  //   value
   prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
 
@@ -957,6 +964,11 @@ initPrimitive() {
   // 1st argument is symbol to set alias set
   // 2nd argument is symbol to base it on
   prim_def(PRIM_COPIES_NO_ALIAS_SET, "copies no alias set", returnInfoUnknown, false, false);
+
+  // Argument is a symbol and we attach flags to that symbol to
+  // indicate optimization information.
+  // That symbol includes OPT_INFO_... flags.
+  prim_def(PRIM_OPTIMIZATION_INFO, "optimization info", returnInfoVoid, true, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

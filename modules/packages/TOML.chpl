@@ -240,7 +240,7 @@ module TomlParser {
       var tblname: string;
       var tblD: domain(string);
       var tbl: [tblD] unmanaged Toml;
-      if curTable.isEmptyString() {
+      if curTable.isEmpty() {
         tblname = key;
         rootTable[key] = tbl;
       }
@@ -271,7 +271,7 @@ module TomlParser {
         }
         else {
           var value = parseValue();
-          if curTable.isEmptyString() then rootTable[key] = value;
+          if curTable.isEmpty() then rootTable[key] = value;
           else rootTable[curTable][key] = value;
         }
       }

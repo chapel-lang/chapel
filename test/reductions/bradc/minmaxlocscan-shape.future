@@ -1,6 +1,0 @@
-bug: array shape not preserved in scan
-
-bug: array type inference
-
-As in other tests that we've seen, inferred types for scans
-aren't of the proper shape, but are just 1D arrays.

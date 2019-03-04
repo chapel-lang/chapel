@@ -35,6 +35,7 @@ public:
   AList&     iteratedExpressions();  // Exprs, one per iterated expr
   AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
   BlockStmt* loopBody()       const; // the body of the forall loop
+  std::vector<BlockStmt*> loopBodies() const; // body or bodies of followers
   LabelSymbol* continueLabel();      // create it if not already
 
   // when originating from a ForLoop or a reduce expression
@@ -42,6 +43,7 @@ public:
   bool needToHandleOuterVars()  const;  // yes, convert to shadow vars
   bool needsInitialAccumulate() const;  // for a reduce intent
   bool fromReduce()             const;  // for a Chapel reduce expression
+  bool overTupleExpand()        const;  // contains (...tuple) iterable(s)
   bool allowSerialIterator()    const;  // ok to loop over a serial iterator?
   bool requireSerialIterator()  const;  // do not seek standalone or leader
 
@@ -74,9 +76,10 @@ public:
   int numIteratedExprs()  const;
   int numShadowVars()     const;
 
-  Expr* firstIteratedExpr() const;
-  void  setNotZippered();
-  bool  isReduceIntent(Symbol* var) const;
+  DefExpr* firstInductionVarDef() const;
+  Expr*    firstIteratedExpr()    const;
+  void setNotZippered();
+  bool isReduceIntent(Symbol* var) const;
   bool hasVectorizationHazard() const;
   void setHasVectorizationHazard(bool v);
 
@@ -88,6 +91,7 @@ private:
   bool           fZippered;
   bool           fFromForLoop; // see comment below
   bool           fFromReduce;
+  bool           fOverTupleExpand;
   bool           fAllowSerialIterator;
   bool           fRequireSerialIterator;
   bool           fVectorizationHazard;
@@ -133,7 +137,8 @@ inline BlockStmt* ForallStmt::loopBody()     const { return fLoopBody;   }
 inline bool ForallStmt::needToHandleOuterVars() const { return !fFromForLoop; }
 inline bool ForallStmt::createdFromForLoop()    const { return  fFromForLoop; }
 inline bool ForallStmt::needsInitialAccumulate()const { return !fFromReduce;  }
-inline bool ForallStmt::fromReduce()            const { return fFromReduce;            }
+inline bool ForallStmt::fromReduce()            const { return  fFromReduce;  }
+inline bool ForallStmt::overTupleExpand()       const { return fOverTupleExpand;       }
 inline bool ForallStmt::allowSerialIterator()   const { return fAllowSerialIterator;   }
 inline bool ForallStmt::requireSerialIterator() const { return fRequireSerialIterator; }
 
@@ -143,6 +148,7 @@ inline int   ForallStmt::numInductionVars()  const { return fIterVars.length; }
 inline int   ForallStmt::numIteratedExprs()  const { return fIterExprs.length;}
 inline int   ForallStmt::numShadowVars()     const { return fShadowVars.length;}
 inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head;  }
+inline DefExpr* ForallStmt::firstInductionVarDef() const { return toDefExpr(fIterVars.head); }
 
 #define for_shadow_var_defs(SVD,TEMP,FS)    \
   for_alist(TEMP,(FS)->shadowVariables())   \
@@ -163,6 +169,10 @@ ForallStmt* isForallIterExpr(Expr* expr);
 ForallStmt* isForallRecIterHelper(Expr* expr);
 ForallStmt* isForallLoopBody(Expr* expr);
 VarSymbol*  parIdxVar(ForallStmt* fs);
+
+QualifiedType fsIterYieldType(Expr* ref, FnSymbol* iterFn);
+bool fsGotFollower(Expr* anchor, Symbol* followThis, Symbol* iterSym);
+void fsCheckNumIdxVarsVsIterables(ForallStmt* fs, int numIdx, int numIter);
 
 /// done ///
 

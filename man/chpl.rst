@@ -180,6 +180,12 @@ OPTIONS
     moved. This is currently a rather conservative pass in the sense that it
     may not identify all code that is truly invariant.
 
+**--[no-]optimize-forall-unordered-ops**
+
+    Enable [disable] optimization of the last statement in forall statements
+    to use unordered communication. This optimization works with runtime
+    support for unordered operations with CHPL_COMM=ugni.
+
 **--[no-]ignore-local-classes**
 
     Disable [enable] local classes

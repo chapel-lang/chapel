@@ -174,6 +174,7 @@ public:
   bool                       isInitializer()                             const;
   bool                       isPostInitializer()                         const;
   bool                       isDefaultInit()                             const;
+  bool                       isCopyInit()                                const;
 
   AggregateType*             getReceiver()                               const;
 
