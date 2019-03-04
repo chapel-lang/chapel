@@ -16,10 +16,10 @@
 # limitations under the License.
 
 ifneq ($(LIBFABRIC_DIR),)
-  LIBFAB_DIR_CACHE := $(shell if [ -d $(LIBFABRIC_DIR)/lib ] ; then \
-                                echo $(LIBFABRIC_DIR)/lib ; \
-                              elif [ -d $(LIBFABRIC_DIR)/lib64 ] ; then \
+  LIBFAB_DIR_CACHE := $(shell if [ -d $(LIBFABRIC_DIR)/lib64 ] ; then \
                                 echo $(LIBFABRIC_DIR)/lib64 ; \
+                              elif [ -d $(LIBFABRIC_DIR)/lib ] ; then \
+                                echo $(LIBFABRIC_DIR)/lib ; \
                               fi)
   ifneq ($(LIBFAB_DIR_CACHE),)
     GEN_LFLAGS += -L$(LIBFAB_DIR_CACHE) -Wl,-rpath,$(LIBFAB_DIR_CACHE)
@@ -35,16 +35,23 @@ LIBS += -lfabric -ldl
 LD = $(CC)
 
 ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
-  GEN_LFLAGS += -L$(MPI_DIR)/lib -Wl,-rpath,$(MPI_DIR)/lib
   ifneq ($(MPI_DIR),)
-    LIBMPI_CACHE := \
-      $(shell if $$(ls $(MPI_DIR)/lib/libmpi.* >&/dev/null) ; then \
-                echo mpi ; \
-              elif $$(ls $(MPI_DIR)/lib/libmpich.* >&/dev/null) ; then \
-                echo mpich ; \
-              fi)
-    ifneq ($(LIBMPI_CACHE),)
-      LIBS += -l$(LIBMPI_CACHE)
+    MPI_DIR_CACHE := $(shell if [ -d $(MPI_DIR)/lib64 ] ; then \
+                               echo $(MPI_DIR)/lib64 ; \
+                             elif [ -d $(MPI_DIR)/lib ] ; then \
+                               echo $(MPI_DIR)/lib ; \
+                             fi)
+    ifneq ($(MPI_DIR_CACHE),)
+      GEN_LFLAGS += -L$(MPI_DIR_CACHE) -Wl,-rpath,$(MPI_DIR_CACHE)
+      LIBMPI_CACHE := \
+        $(shell if $$(ls $(MPI_DIR_CACHE)/libmpi.* >&/dev/null) ; then \
+                  echo mpi ; \
+                elif $$(ls $(MPI_DIR_CACHE)/libmpich.* >&/dev/null) ; then \
+                  echo mpich ; \
+                fi)
+      ifneq ($(LIBMPI_CACHE),)
+        LIBS += -l$(LIBMPI_CACHE)
+      endif
     endif
   endif
 endif
