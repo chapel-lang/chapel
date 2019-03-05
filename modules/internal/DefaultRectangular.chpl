@@ -2177,16 +2177,18 @@ module DefaultRectangular {
   config param debugDRScan = false;
 
   /* This computes a 1D scan in parallel on the array, for 1D arrays only */
-  proc DefaultRectangularArr.doiScan(op, dom) where (rank == 1) {
+  proc DefaultRectangularArr.doiScan(op, dom) where (rank == 1) &&
+                                                chpl__scanStateResTypesMatch(op) {
     use RangeChunk;
 
     type resType = op.generate().type;
     var res: [dom] resType;
 
     // Compute who owns what
-    // TODO: throttle tasks better than this
-    const numTasks = min(here.numPUs(), dom.dsiDim(1).size);
-    const rngs = RangeChunk.chunks(dom.dsiDim(1), numTasks);
+    const rng = dom.dsiDim(1);
+    const numTasks = if __primitive("task_get_serial") then
+                      1 else _computeNumChunks(rng.size);
+    const rngs = RangeChunk.chunks(rng, numTasks);
     if debugDRScan {
       writeln("Using ", numTasks, " tasks");
       writeln("Whose chunks are: ", rngs);

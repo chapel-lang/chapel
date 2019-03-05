@@ -24,6 +24,12 @@ module ChapelReduce {
 
   config param enableParScan = false;
 
+  proc chpl__scanStateResTypesMatch(op) param {
+    type resType = op.generate().type;
+    type stateType = op.identity.type;
+    return (resType == stateType);
+  }
+
   proc chpl__scanIteratorZip(op, data) {
     compilerWarning("scan has been serialized (see issue #5760)");
     var arr = for d in zip((...data)) do chpl__accumgen(op, d);
