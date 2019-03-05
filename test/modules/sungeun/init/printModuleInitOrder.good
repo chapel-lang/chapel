@@ -26,6 +26,7 @@ Initializing Modules:
          Sort
         ExternalArray
         ISO_Fortran_binding
+        RangeChunk
        ChapelNumLocales
        Sys
         SysBasic
@@ -49,6 +50,5 @@ Initializing Modules:
     ChapelTaskData
     Assert
     AlignedTSupport
-    RangeChunk
    printModuleInitOrder
     moduleInitTest
