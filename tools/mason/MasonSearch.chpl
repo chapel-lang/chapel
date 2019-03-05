@@ -94,7 +94,7 @@ proc findLatest(packageDir) {
     }
     else {
       var warning_str = "file with bad/(not a .toml) extension encountered. skipping ";
-      warning_str += fi + " . in package " + packageDir;
+      warning_str += fi + "  in package " + packageDir;
       warning(warning_str);
     }
   }

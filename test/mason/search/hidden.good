@@ -3,5 +3,5 @@ WithCaps (0.1.0)
 badFileNaming (1.0.0)
 capsize (0.1.0)
 multiVersion (1.0.0)
-../../../tools/mason//MasonSearch.chpl:98: warning: file with bad/(not a .toml) extension encountered. skipping 2.0.0 . in package /Users/anubhavujjawal/Desktop/work/gsoc/contrib/chapel/test/mason/search/.mason/registry/Bricks/badFileNaming
-../../../tools/mason//MasonSearch.chpl:98: warning: file with bad/(not a .toml) extension encountered. skipping 0.5.0 . in package /Users/anubhavujjawal/Desktop/work/gsoc/contrib/chapel/test/mason/search/.mason/registry/Bricks/badFileNaming
+../../../tools/mason//MasonSearch.chpl:98: warning: file with bad/(not a .toml) extension encountered. skipping 2.0.0  in package /Users/anubhavujjawal/Desktop/work/gsoc/contrib/chapel/test/mason/search/.mason/registry/Bricks/badFileNaming
+../../../tools/mason//MasonSearch.chpl:98: warning: file with bad/(not a .toml) extension encountered. skipping 0.5.0  in package /Users/anubhavujjawal/Desktop/work/gsoc/contrib/chapel/test/mason/search/.mason/registry/Bricks/badFileNaming
