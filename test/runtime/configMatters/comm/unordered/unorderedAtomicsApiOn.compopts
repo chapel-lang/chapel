@@ -8,7 +8,7 @@ import os
 none_atomics = 'none'
 net_atomics = os.getenv('CHPL_NETWORK_ATOMICS', none_atomics)
 
-print('--network-atomics={0}'.format(net_atomics))
+print('-M ../ --network-atomics={0}'.format(net_atomics))
 
 if net_atomics != none_atomics:
-  print('--network-atomics={0}'.format(none_atomics))
+  print('-M ../ --network-atomics={0}'.format(none_atomics))

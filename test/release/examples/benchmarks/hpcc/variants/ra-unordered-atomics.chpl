@@ -9,7 +9,7 @@ use BlockDist, Time;
 //
 use HPCCProblemSize, RARandomStream;
 
-use BufferedAtomics;
+use UnorderedAtomics;
 
 //
 // The number of tables as well as the element and index types of
@@ -105,7 +105,7 @@ proc main() {
   // as the update value.
   //
   forall (_, r) in zip(Updates, RAStream()) do
-    T(r & indexMask).xorBuff(r);
+    T(r & indexMask).unorderedXor(r);
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 

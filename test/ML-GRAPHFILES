@@ -5,7 +5,7 @@ release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
-release/examples/benchmarks/hpcc/variants/ra-buff-atomics.ml-perf.graph
+release/examples/benchmarks/hpcc/variants/ra-unordered-atomics.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-perf.graph
 release/examples/benchmarks/hpcc/stream.ml-perf.graph
@@ -23,7 +23,7 @@ release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
-release/examples/benchmarks/hpcc/variants/ra-buff-atomics.ml-perf.graph
+release/examples/benchmarks/hpcc/variants/ra-unordered-atomics.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-perf.graph
 release/examples/benchmarks/hpcc/stream.ml-perf.graph
@@ -40,7 +40,7 @@ release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
-release/examples/benchmarks/hpcc/variants/ra-buff-atomics.ml-perf.graph
+release/examples/benchmarks/hpcc/variants/ra-unordered-atomics.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-perf.graph
 release/examples/benchmarks/hpcc/stream.ml-perf.graph
@@ -123,7 +123,7 @@ performance/comm/low-level/remote-unordered-gets.ml-perf.graph
 performance/comm/low-level/remote-puts.ml-perf.graph
 performance/comm/low-level/remote-fetchAmos.ml-perf.graph
 performance/comm/low-level/remote-amos.ml-perf.graph
-performance/comm/low-level/remote-buffAmos.ml-perf.graph
+performance/comm/low-level/remote-unordered-amos.ml-perf.graph
 performance/comm/low-level/remote-ons.ml-perf.graph
 performance/comm/low-level/remote-fastOns.ml-perf.graph
 performance/comm/low-level/array-gets.ml-perf.graph
