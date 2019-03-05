@@ -1,0 +1,9 @@
+has-arg-list.chpl:11: In function 'main':
+has-arg-list.chpl:13: error: type in 'new' expression is missing its argument list
+has-arg-list.chpl:14: error: type in 'new' expression is missing its argument list
+has-arg-list.chpl:15: error: type in 'new' expression is missing its argument list
+has-arg-list.chpl:16: error: type in 'new' expression is missing its argument list
+has-arg-list.chpl:20: error: type in 'new' expression is missing its argument list
+has-arg-list.chpl:21: error: type in 'new' expression is missing its argument list
+has-arg-list.chpl:22: error: type in 'new' expression is missing its argument list
+has-arg-list.chpl:23: error: type in 'new' expression is missing its argument list
