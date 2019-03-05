@@ -1735,7 +1735,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       // accurate state vector
       myLocArr._value.chpl__postScan(op, res, numTasks, rngs, state);
       if debugBlockScan then
-        writeln(locid, ": ", myResElems);
+        writeln(locid, ": ", myLocArr);
 
       delete myop;
     }
