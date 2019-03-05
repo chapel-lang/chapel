@@ -26,9 +26,9 @@
    all ``int``, ``uint``, and ``real`` types.  Unordered versions of
    :proc:`~Atomics.add()`, :proc:`~Atomics.sub()`, :proc:`~Atomics.or()`,
    :proc:`~Atomics.and()`, and :proc:`~Atomics.xor()` are provided. The results
-   of these functions are not visible until task termination or an explicit
-   :proc:`unorderedAtomicFence()`, but they can provide a significant speedup
-   for bulk atomic operations that do not require ordering of operations:
+   of these functions are not visible until task or forall termination or an
+   explicit :proc:`unorderedAtomicFence()`, but they can provide a significant
+   speedup for bulk atomic operations that do not require ordering:
 
    .. code-block:: chapel
 
@@ -52,8 +52,8 @@
 
    It's important to be aware that unordered atomic operations are not
    consistent with regular atomic operations and updates may not be visible
-   until the task that issued them terminates or they are explicitly fenced
-   with :proc:`unorderedAtomicFence()`.
+   until the task or forall that issued them terminates or they are explicitly
+   fenced with :proc:`unorderedAtomicFence()`.
 
    .. code-block:: chapel
 

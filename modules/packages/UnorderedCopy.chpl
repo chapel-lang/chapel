@@ -22,10 +22,10 @@
      This module represents work in progress. The API is unstable and likely to
      change over time.
 
-   This module provides a unordered version of copy/assign for ``numeric``
-   types. The results from this function are not visible until task termination
-   or an explicit :proc:`unorderedCopyFence()`, but it can provide a
-   significant speedup for bulk assignment operations that do not require
+   This module provides an unordered version of copy/assign for ``numeric``
+   types. The results from this function are not visible until task or forall
+   termination or an explicit :proc:`unorderedCopyFence()`, but it can provide
+   a significant speedup for bulk assignment operations that do not require
    ordering of operations:
 
    .. code-block:: chapel
@@ -40,15 +40,15 @@
      forall i in D do
        unorderedCopy(reversedA[i], A[size-i]);
 
-     // no fence required, fenced at task termination
+     // no fence required, fenced at task/forall termination
 
      forall (rA, i) in zip(reversedA, D) do
        assert(rA == size-i);
 
 
    It's important to be aware that unordered operations are not consistent with
-   regular operations and updates may not be visible until the task that issued
-   them terminates or they are fenced with :proc:`unorderedCopyFence()`.
+   regular operations and updates may not be visible until the task or forall
+   that issued them terminates or an explicit :proc:`unorderedCopyFence()`.
 
    .. code-block:: chapel
 
