@@ -16,7 +16,7 @@ config const parallel = true;
 config param reverse = false;
 config type eltType = int;
 
-var methods = ["default", "msbRadixSort", "quickSort"];
+var methods = ["default", "msbRadixSort", "quickSort", "mergeSort"];
 
 proc testsort(input, method, parallel, cmp) {
 
@@ -37,6 +37,12 @@ proc testsort(input, method, parallel, cmp) {
       serial { quickSort(input, comparator=cmp); }
     } else {
       quickSort(input, comparator=cmp);
+    }
+  } else if method == "mergeSort" {
+    if parallel == false {
+      serial { mergeSort(input); }
+    } else {
+      mergeSort(input);
     }
   }
 }
