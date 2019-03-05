@@ -862,7 +862,9 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
     // the literal '42' is an int(64), and the field might be a uint(64). In
     // such cases, we need to coerce to a new symbol that will be placed in
     // the substitutions map.
-    if (fieldType != NULL && fieldType != sym->getValType()) {
+    if (fieldType != NULL  &&
+        fieldType != dtUnknown &&
+        fieldType != sym->getValType()) {
       Immediate coerce = getDefaultImmediate(fieldType);
       Immediate* from = toVarSymbol(sym)->immediate;
       coerce_immediate(from, &coerce);
