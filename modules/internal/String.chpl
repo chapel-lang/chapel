@@ -589,8 +589,10 @@ module String {
       Iterates over the string byte by byte.
     */
     iter bytes(): uint(8) {
-      for i in 1..this.len {
-        yield this[i].buff[0];
+      var localThis: string = this.localize();
+
+      for i in 0..#localThis.len {
+        yield localThis.buff[i];
       }
     }
 
@@ -647,7 +649,11 @@ module String {
       :returns: The value of the `i` th byte as an integer.
     */
     proc byte(i: int): uint(8) {
-      return this[i].buff[0];
+      var localThis: string = this.localize();
+
+      if boundsChecking && (i <= 0 || i > localThis.len)
+        then halt("index out of bounds of string: ", i);
+      return localThis.buff[i - 1];
     }
 
     /*
