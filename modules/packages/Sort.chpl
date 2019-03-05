@@ -892,7 +892,6 @@ proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
   var js,hs:int;
   var v,tmp:Data.eltType;
   const incs = (701, 301, 132, 57, 23, 10, 4, 1);
-  const nincs = incs.size;
   for h in incs {
     hs = h + start;
     for is in hs..end {
