@@ -11,8 +11,7 @@
 // Creating and accessing the documentation:
 
 // To generate the documentation for this and any source file, you may either
-// compile using the command 'chpldoc <sourceName.chpl>' or using the command
-// 'chpl --docs <sourceName.chpl>'.
+// compile using the command 'chpldoc <sourceName.chpl>'.
 
 // The documentation files will be found in a special folder created by the
 // chpldoc tool.  If you are compiling a Chapel file that is deeper than your
