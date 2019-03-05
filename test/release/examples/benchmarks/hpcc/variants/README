@@ -10,9 +10,9 @@ annual HPCC competition).
 
 The main files for these benchmarks are as follows:
 
-     stream-promoted.chpl   : global STREAM Triad using promotion
-     ra-buff-atomics.chpl   : a version of RA using buffered atomic vars
-     ra-cleanloop.chpl      : global RA with a cleaner update loop
+     stream-promoted.chpl      : global STREAM Triad using promotion
+     ra-unordered-atomics.chpl : a version of RA using unordered atomic vars
+     ra-cleanloop.chpl         : global RA with a cleaner update loop
 
 The helper modules are the ones from the parent directory requiring a
 -M .. on the compiler line (or an explicit naming of the module file).
