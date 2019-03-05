@@ -4,7 +4,7 @@ use Time, Memory, BlockDist;
 config const memFraction = 0;
 const totMem = here.physicalMemory(unit = MemUnits.Bytes);
 const defaultN = if memFraction == 0
-                   then 10
+                   then 30
                    else numLocales * ((totMem / numBytes(int)) / memFraction);
 
 config const n = defaultN,
