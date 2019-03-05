@@ -201,18 +201,10 @@ module BLAS {
    */
   config param blasHeader = '';
 
-  /* *Deprecated.* Use ``--set blasImpl=mkl`` instead */
-  config param isBLAS_MKL = false;
-
-  if isBLAS_MKL {
-    compilerWarning('"isBLAS_MKL" flag is deprecated.');
-    compilerWarning('Use "blasImpl" instead: --set blasImpl=mkl');
-  }
-
   pragma "no doc"
   param header = if blasHeader == '' then
                    if blasImpl == BlasImpl.none then ''
-                   else if blasImpl == BlasImpl.mkl || isBLAS_MKL then 'mkl_cblas.h'
+                   else if blasImpl == BlasImpl.mkl then 'mkl_cblas.h'
                    else 'cblas.h'
                  else blasHeader;
 
