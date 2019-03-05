@@ -87,11 +87,16 @@ proc findLatest(packageDir) {
   const suffix = ".toml";
 
   for fi in listdir(packageDir, files=true, dirs=false) {
-    assert(fi.endsWith(suffix));
-    const end = fi.length - suffix.length;
-    const ver = new VersionInfo(fi[1..end]);
-
-    if ver > ret then ret = ver;
+    if fi.endsWith(suffix) {
+      const end = fi.length - suffix.length;
+      const ver = new VersionInfo(fi[1..end]);
+      if ver > ret then ret = ver;
+    }
+    else {
+      var warning_str = "file with bad/(not a .toml) extension encountered. skipping ";
+      warning_str += fi + " . in package " + packageDir;
+      warning(warning_str);
+    }
   }
 
   return ret;
