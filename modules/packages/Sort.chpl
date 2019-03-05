@@ -1018,12 +1018,32 @@ proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
   return -1;
 }
 
+pragma "no doc"
+proc msbRadixSortClz(val) {
+  // This could use BitOps.clz but that adds new
+  // module dependencies that confuse testing.
+  // Since it's not performance critical, here we
+  // have a version using a while loop.
+  param nBits = numBits(val.type);
+  if val == 0 {
+    return nBits;
+  }
+
+  var cur = val;
+  var one = 1:val.type;
+  var hi = one << (nBits - 1);
+  var n = 0;
+  while (cur & hi) == 0 {
+    n += 1;
+    cur <<= 1;
+  }
+  return n;
+}
+
 // Compute the startbit location that could be used based on the
 // min/max of values returned by keyPart.
 private
 proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
-  use BitOps;
-
   var xor = min_ubits ^ max_ubits;
 
   // Clear the top bits in xor if they are after bitsinpart
@@ -1032,7 +1052,7 @@ proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
   xor <<= bitsinpart;
   xor >>= bitsinpart;
 
-  var new_start = clz(xor);
+  var new_start = msbRadixSortClz(xor);
   var new_digit = new_start / RADIX_BITS;
   var new_start_bit_rounded = new_digit * RADIX_BITS;
 
