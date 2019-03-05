@@ -37,4 +37,3 @@ on Locales[onLocale] {
   write("Promotion -- ");
   testUnorderedAtomicT(AInt, IInt, BInt, int);
 }
-
