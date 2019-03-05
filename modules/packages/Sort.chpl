@@ -419,13 +419,13 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
         stride = abs(Dom.stride);
 
   // Heapify
-  var lo = if high == low then high
+  var start = if high == low then high
               else if size % 2 then low + ((size - 1)/2) * stride
               else low + (size/2 - 1) * stride;
 
-  while (high >= low) {
+  while (start >= low) {
     SiftDown(high, high, comparator);
-    high = high - stride;
+    start = start - stride;
   }
 
   // Sort, moving max element to end and re-heapifying the rest
