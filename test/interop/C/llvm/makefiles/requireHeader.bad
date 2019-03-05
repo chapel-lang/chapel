@@ -1,0 +1,2 @@
+Makefile:32: lib/Makefile.requireHeader: No such file or directory
+make: *** No rule to make target 'lib/Makefile.requireHeader'.  Stop.

@@ -1,0 +1,2 @@
+Makefile:1: lib/Makefile.getMakefile: No such file or directory
+make: *** No rule to make target 'lib/Makefile.getMakefile'.  Stop.
