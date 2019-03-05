@@ -11,8 +11,6 @@ unstable-new.chpl:20: warning: new MyClass is unstable
 unstable-new.chpl:20: note: use 'new unmanaged MyClass' 'new owned MyClass' 'new shared MyClass' or 'new borrowed MyClass'
 unstable-new.chpl:21: warning: new MyGenericClass is unstable
 unstable-new.chpl:21: note: use 'new unmanaged MyGenericClass' 'new owned MyGenericClass' 'new shared MyGenericClass' or 'new borrowed MyGenericClass'
-unstable-new.chpl:27: warning: 'delete' can only be applied to unmanaged classes
-unstable-new.chpl:28: warning: 'delete' can only be applied to unmanaged classes
 unstable-new.chpl:31: In function 'ok':
 unstable-new.chpl:36: warning: initializing owned from a borrow is deprecated
 unstable-new.chpl:37: warning: initializing owned from a borrow is deprecated

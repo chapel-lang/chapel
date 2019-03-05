@@ -1,1 +1,2 @@
+throw-new-borrowed2.chpl:1: In function 'main':
 throw-new-borrowed2.chpl:3: error: Throwing borrowed error - please throw owned
