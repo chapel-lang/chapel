@@ -14,6 +14,7 @@ config const inputDataScheme = 1;
 config const parallel = true;
 
 config param reverse = false;
+config type eltType = int;
 
 var methods = ["default", "msbRadixSort", "quickSort"];
 
@@ -82,7 +83,7 @@ proc testsize(size:int) {
   if printStats then
     writef("% 16s", sizestr);
 
-  var input = array;
+  var input = forall a in array do a:eltType;
 
   var ntrials = 1;
   if mibibytes < 1 then
@@ -94,7 +95,7 @@ proc testsize(size:int) {
     const ref cmp = if reverse then reverseComparator else defaultComparator;
     var t: Timer;
     for i in 1..ntrials {
-      input = array;
+      input = forall a in array do a:eltType;
       t.start();
       testsort(input, m, parallel, cmp);
       t.stop();
@@ -107,8 +108,10 @@ proc testsize(size:int) {
 }
 
 proc main() {
-  if printStats then
+  if printStats {
+    writeln("Note, speeds are in MiB/s");
     writef("% 16s", "size");
+  }
 
   for m in methods {
     if printStats then
