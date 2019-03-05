@@ -76,6 +76,7 @@ MODULES_TO_DOCUMENT = \
 	standard/GMP.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
+	standard/LinkedLists.chpl \
 	standard/List.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \

@@ -1,4 +1,4 @@
-use List;
+use LinkedLists;
 
 class C {
   var x: int;
@@ -10,7 +10,7 @@ class D: C {
   override proc foo() { writeln("D: ", this); }
 }
 
-var s: list(borrowed C) = makeList( new borrowed C(1), new borrowed D(2,3), new borrowed C(4), new borrowed D(5,6) );
+var s: LinkedList(borrowed C) = makeList( new borrowed C(1), new borrowed D(2,3), new borrowed C(4), new borrowed D(5,6) );
 
 writeln(s);
 

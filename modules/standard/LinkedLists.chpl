@@ -20,13 +20,11 @@
 /*
   This module provides a simple singly linked list.
 
-  .. warning::
+  .. note::
 
-      This module has been deprecated - please use :mod:`LinkedLists` instead.
+      This module is expected to change in the future.
  */
-module List {
-
-compilerWarning("List module is deprecated - please use LinkedLists instead");
+module LinkedLists {
 
 pragma "no doc"
 class listNode {
@@ -37,7 +35,7 @@ class listNode {
 
 
   pragma "no doc"
-  proc =(ref l1: list(?t), const ref l2: list(?t2)) {
+  proc =(ref l1: LinkedList(?t), const ref l2: LinkedList(?t2)) {
     l1.destroy();
     for i in l2 do
       l1.append(i);
@@ -49,10 +47,10 @@ class listNode {
 
   .. note::
 
-      :proc:`~list.destroy` must be called to reclaim any memory used by the list.
+      :proc:`~LinkedList.destroy` must be called to reclaim any memory used by the list.
 
  */
-record list {
+record LinkedList {
   /*
     The type of the data stored in every node.
    */
@@ -154,7 +152,7 @@ record list {
   /*
     Append all the elements in `l` to the end of the list.
    */
-  proc concat(l: list(eltType)) {
+  proc concat(l: LinkedList(eltType)) {
     for e in l do
       append(e);
   }
@@ -338,18 +336,18 @@ record list {
 }
 
 /*
-  Initialize a new :record:`list` containing all of the supplied arguments.
+  Initialize a new :record:`LinkedList` containing all of the supplied arguments.
 
   :arg x: Every argument must be of type `T`.
   :type x: `T`
-  :rtype: list(T)
+  :rtype: LinkedList(T)
  */
 // TODO: could just be an initializer?
 proc makeList(x ...?k) {
-  var s: list(x(1).type);
+  var s: LinkedList(x(1).type);
   for param i in 1..k do
     s.append(x(i));
   return s;
 }
 
-} // end module List
+} // end module LinkedLists
