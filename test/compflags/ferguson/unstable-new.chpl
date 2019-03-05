@@ -23,9 +23,6 @@ proc errors() {
   writeln("in errors");
   writeln(x);
   writeln(y);
-
-  //delete x;
-  //delete y;
 }
 
 proc ok() {
