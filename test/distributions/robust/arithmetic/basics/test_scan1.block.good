@@ -1,4 +1,5 @@
 test_scan1.chpl:8: warning: scan has been serialized (see issue #5760)
+test_scan1.chpl:8: warning: (recompile with -senableParScan to enable a prototype parallel implementation)
 test_scan1.chpl:9: warning: scan has been serialized (see issue #5760)
 test_scan1.chpl:10: warning: scan has been serialized (see issue #5760)
 test_scan1.chpl:11: warning: scan has been serialized (see issue #5760)
