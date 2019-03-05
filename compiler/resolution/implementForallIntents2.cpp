@@ -169,7 +169,7 @@ static ForallStmt* doReplaceWithForall(ForLoop* src)
         if (idxSE == srcIndex->getSingleUse()) {
           // great
         } else {
-          // happens for eflopies in extendLeader()-ed iterators
+          // todo: does this ever happen?
           if (isMoveToOIOI(idxSE)) gotMoveToOIOI = true;
         }
       }
@@ -208,7 +208,6 @@ Expr* replaceForWithForallIfNeeded(ForLoop* forLoop) {
     return forLoop;
 
   // Yes, it is a parallel for-loop. Replace it.
-  // invokesParallelIterator() filled out eflopiInfo.
   ForallStmt* fs = doReplaceWithForall(forLoop);
 
   // If >1 iterated exprs, how to call resolveForallHeader?
