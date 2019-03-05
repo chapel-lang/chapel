@@ -1,4 +1,0 @@
-colon-where.chpl:11: In function 'myfunc':
-colon-where.chpl:11: warning: Special handling for : in where clauses has been deprecated. Please use isSubtype instead.
-in myfunc, type is Child
-in myfunc, type is Parent
