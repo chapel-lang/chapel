@@ -853,6 +853,22 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
   retval->substitutions.copy(substitutions);
 
   if (field->hasFlag(FLAG_PARAM) == true) {
+    Type* fieldType = NULL;
+    if (field->defPoint->exprType) {
+      fieldType = field->defPoint->exprType->typeInfo();
+    }
+
+    // Sometimes 'sym' might be a different type from the field. For example,
+    // the literal '42' is an int(64), and the field might be a uint(64). In
+    // such cases, we need to coerce to a new symbol that will be placed in
+    // the substitutions map.
+    if (fieldType != NULL && fieldType != sym->getValType()) {
+      Immediate coerce = getDefaultImmediate(fieldType);
+      Immediate* from = toVarSymbol(sym)->immediate;
+      coerce_immediate(from, &coerce);
+      sym = new_ImmediateSymbol(&coerce);
+    }
+
     retval->substitutions.put(field, sym);
     retval->symbol->renameInstantiatedSingle(sym);
 
