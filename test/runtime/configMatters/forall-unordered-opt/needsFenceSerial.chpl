@@ -1,15 +1,15 @@
 config const N = 1000;
-config const useBufferedAtomics = false;
+config const useUnorderedAtomics = false;
 
 proc serialTest() {
   var A:[1..N] atomic int;
 
   on Locales[numLocales-1] {
     serial {
-      if useBufferedAtomics {
-        use BufferedAtomics;
+      if useUnorderedAtomics {
+        use UnorderedAtomics;
         forall i in 1..N {
-          A[i].addBuff(1);
+          A[i].unorderedAdd(1);
         }
       } else {
         forall i in 1..N {

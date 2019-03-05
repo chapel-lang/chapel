@@ -14,7 +14,7 @@ record NotPod1 {
 record NotPod2 {
   var x:int;
   proc init() { x = 0; }
-  proc init(from:NotPod2) {
+  proc init=(from:NotPod2) {
     writeln("custom auto copy");
     x = from.x;
   }
@@ -50,7 +50,7 @@ record NotPod8 {
   var x : int;
   var y : int;
   proc init() { }
-  proc init(other:NotPod8) {
+  proc init=(other:NotPod8) {
     this.x = other.x + 1;
     this.y = other.y + 1;
   }

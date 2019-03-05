@@ -1,2 +1,2 @@
 var-init-integral-bad.chpl:1: In function 'test':
-var-init-integral-bad.chpl:2: error: Could not coerce string to integral in initialization
+var-init-integral-bad.chpl:2: error: Could not coerce 'string' to 'integral' in initialization

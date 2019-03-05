@@ -1,4 +1,2 @@
 borrowed-arguments.chpl:12: In function 'saveit':
-borrowed-arguments.chpl:14: warning: 'delete' can only be applied to unmanaged classes
-borrowed-arguments.chpl:13: error: Scoped variable global would outlive the value it is set to
-borrowed-arguments.chpl:12: note: consider scope of arg
+borrowed-arguments.chpl:14: error: 'delete' can only be applied to unmanaged classes

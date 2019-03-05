@@ -21,18 +21,19 @@
 #define __STDC_FORMAT_MACROS
 #endif
 #include <inttypes.h>
-#include <cmath>
+
 #include <cstring>
 #include <cstdio>
+#include "chplmath.h"
 #include "num.h"
 #include "prim_data.h"
 #include "stringutil.h"
 
 static int
 snprint_float_val(char* buf, size_t max, double val, bool hex) {
-  if (std::isfinite(val)) {
+  if (chpl_isfinite(val)) {
     int nc = 0;
-    if (std::signbit(val)) nc = snprintf(buf, max, "-%g" , -val);
+    if (chpl_signbit(val)) nc = snprintf(buf, max, "-%g" , -val);
     else                   nc = snprintf(buf, max, "%g" , val);
 
     if (strchr(buf, '.') == NULL &&
@@ -43,12 +44,12 @@ snprint_float_val(char* buf, size_t max, double val, bool hex) {
     } else {
       return nc;
     }
-  } else if (std::isinf(val)) {
-    if (std::signbit(val)) strncpy(buf, "-INFINITY", max);
+  } else if (chpl_isinf(val)) {
+    if (chpl_signbit(val)) strncpy(buf, "-INFINITY", max);
     else                   strncpy(buf, "INFINITY", max);
     return strlen(buf);
   } else {
-    if (std::signbit(val)) strncpy(buf, "-NAN", max);
+    if (chpl_signbit(val)) strncpy(buf, "-NAN", max);
     else                   strncpy(buf, "NAN", max);
     return strlen(buf);
   }
@@ -66,7 +67,7 @@ static int
 snprint_complex_val(char* str, size_t max, double real, double imm) {
   int numchars = 0;
   numchars += snprint_float_val(str+numchars, max-numchars, real, false);
-  if (std::signbit(imm)) {
+  if (chpl_signbit(imm)) {
     numchars += snprintf(str+numchars, max-numchars, " - ");
     numchars += snprint_float_val(str+numchars, max-numchars, -imm, false);
   } else {

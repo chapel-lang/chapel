@@ -1,5 +1,5 @@
 MyRec.init()
 SubRec.init(20, 30)
-SubRec.init((a = 20, b = 30))
+SubRec.init=((a = 20, b = 30))
 
 r: (x = 10, y = (a = 20, b = 30), z = (a = 20, b = 30))

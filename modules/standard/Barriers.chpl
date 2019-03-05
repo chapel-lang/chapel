@@ -113,7 +113,7 @@ module Barriers {
 
     /* copy initializer */
     pragma "no doc"
-    proc init(b: Barrier) {
+    proc init=(b: Barrier) {
       this.bar = b.bar;
       this.isowned = false;
     }

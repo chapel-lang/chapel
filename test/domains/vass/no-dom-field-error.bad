@@ -1,7 +1,1 @@
-no-dom-field-error.chpl:21: In function 'dsiClone':
-no-dom-field-error.chpl:22: warning: result of new GlobalDistribution is now managed by default
-no-dom-field-error.chpl:22: note: 'new unmanaged GlobalDistribution' gives old behavior
-no-dom-field-error.chpl:22: note: 'new borrowed GlobalDistribution' is the new default
-no-dom-field-error.chpl:22: note: 'new owned GlobalDistribution', 'new shared GlobalDistribution' also available
-no-dom-field-error.chpl:22: note: get more help with --warn-unstable
 no-dom-field-error.chpl:4: error: rectangular domains not supported by this distribution

@@ -12,7 +12,7 @@ record Foo {
     y = true;
   }
 
-  proc init(other: Foo) {
+  proc init=(other: Foo) {
     x = other.x;
     y = false;
   }

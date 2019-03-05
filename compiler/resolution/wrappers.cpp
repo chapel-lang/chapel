@@ -450,7 +450,8 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   // Set up the arguments
   if (fn->hasFlag(FLAG_METHOD) &&
       fn->_this != NULL &&
-      fn->isInitializer() == false) {
+      fn->isInitializer() == false &&
+      fn->isCopyInit() == false) {
     // Set up mt and this arguments
     Symbol* thisArg = fn->_this;
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
@@ -704,7 +705,8 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   // Add method token, this if needed
   if (fn->hasFlag(FLAG_METHOD) &&
       fn->_this != NULL &&
-      fn->isInitializer() == false) {
+      fn->isInitializer() == false &&
+      fn->isCopyInit() == false) {
     // Set up mt and _this arguments
     newCall->insertAtTail(gMethodToken);
     Symbol* usedFormal = fn->_this;
@@ -1549,6 +1551,7 @@ namespace {
     FnSymbol* fn;
     FnSymbol* wrapperFn;
     bool      zippered;
+    bool      hasLeaderFollowers;
     bool      resultIsUsed;
 
     // The following vectors are indexed by the i'th formal to fn (0-based).
@@ -1617,7 +1620,8 @@ static Expr*      getIndices(PromotionInfo& promotion);
 
 static Expr*      getIterator(PromotionInfo& promotion);
 
-static bool       haveLeader(CallExpr* call, PromotionInfo& promotion);
+static bool       haveLeaderAndFollowers(PromotionInfo& promotion,
+                                         CallExpr* call);
 
 static CallExpr* createPromotedCallForWrapper(PromotionInfo& promotion);
 
@@ -1629,6 +1633,17 @@ static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
 
 static void fixDefaultArgumentsInWrapCall(PromotionInfo& promotion);
 
+
+static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call) {
+  int i = 0;
+  for_actuals(actual, call)
+    if (promotion.promotedType[i++] != NULL)
+      return symbolForActual(actual);
+
+  INT_ASSERT(false); // did not find any promoted things
+  return NULL;
+}
+
 // insert PRIM_ITERATOR_RECORD_SET_SHAPE(iterRecord,shapeSource)
 static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
   CallExpr* move = toCallExpr(call->parentExpr);
@@ -1638,28 +1653,17 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
   INT_ASSERT(move->isPrimitive(PRIM_MOVE));
   Symbol* irTemp = toSymExpr(move->get(1))->symbol();
 
-  // Which of call's arguments determines the shape?
-  Symbol* shapeSource = NULL;
-  int i = 0;
-  for_actuals(actual, call) {
-    if (promotion.promotedType[i++] != NULL) {
-      SymExpr* se = NULL;
-      if (NamedExpr* ne = toNamedExpr(actual)) {
-        se = toSymExpr(ne->actual);
-      } else {
-        se = toSymExpr(actual);
-      }
-      shapeSource = se->symbol();
-      break;
-    }
-  }
+  // The first promoted argument argument determines the shape.
+  Symbol* shapeSource = leadingArg(promotion, call);
 
-  Symbol* fromForExpr =
-    checkIteratorFromForExpr(move, shapeSource) ? gTrue : gFalse;
+  Symbol* fromForExpr = (! promotion.hasLeaderFollowers             ||
+                         checkIteratorFromForExpr(move, shapeSource) )
+                        ? gTrue : gFalse;
 
   move->insertAfter(new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE,
                                  irTemp, shapeSource, fromForExpr));
 }
+
 
 bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
                          std::vector<ArgSymbol*>& actualFormals) {
@@ -1738,6 +1742,7 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
   // these are established later along with wrapperFormals
   wrapperFn(NULL),
   zippered(false),
+  hasLeaderFollowers(false),
   resultIsUsed(info.call != info.call->getStmtExpr())
 {
   int numActuals = actualFormals.size();
@@ -1855,8 +1860,10 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
   yieldTmp->addFlag(FLAG_EXPR_TEMP);
 
- if (haveLeader(info.call, promotion))
+ if (haveLeaderAndFollowers(promotion, info.call))
  {
+  promotion.hasLeaderFollowers = true;
+
   buildLeaderIterator(wrapFn, instantiationPt, iterator, zippered);
 
   buildFollowerIterator(promotion, instantiationPt, indices, iterator, wrapCall);
@@ -2173,47 +2180,97 @@ static Expr* getIterator(PromotionInfo& promotion) {
   return retval;
 }
 
-static Expr* getLeaderArg(CallExpr* call, PromotionInfo& promotion) {
-  for (int i = 0; i < (int)(promotion.promotedType.size()); i++)
-    if (promotion.promotedType[i] != NULL)
-      return call->get(i+1);
-
-  INT_ASSERT(false); // did not find any promoted things
-  return NULL;
-}
-
-static Expr* stripNamedExpr(Expr* expr) {
-  if (NamedExpr* named = toNamedExpr(expr)) return named->actual;
-  else                                      return expr;
-}
 
 static std::set<Symbol*> haveLeaderSymbolStack;
 
-static bool haveLeader(CallExpr* call, PromotionInfo& promotion) {
-  Expr*   leadingArg  = stripNamedExpr(getLeaderArg(call, promotion));
-  Symbol* leadingSym  = toSymExpr(leadingArg)->symbol();
-  Type*   leadingType = leadingSym->type;
+static FnSymbol* leaderForSymbol(Expr* anchor, Symbol* leadingSym) {
+  Type* leadingType = leadingSym->getValType();
 
   if (leadingType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // This is an iterator or a forwarder. Check its IteratorGroup.
     FnSymbol* serialIter = getTheIteratorFn(leadingType);
-    return serialIter->iteratorGroup->leader != NULL;
+    return serialIter->iteratorGroup->leader;
 
   } else {
     if (haveLeaderSymbolStack.count(leadingSym) > 0)
-      return false; // We are recursing. Skip it, then.
+      return NULL; // We are recursing. Report no leader, then.
 
     haveLeaderSymbolStack.insert(leadingSym);
     // Not an iterator. To iterate over it, need to invoke these().
     CallExpr* callLeader = new CallExpr("these", gMethodToken,
       leadingSym, new NamedExpr(astrTag, new SymExpr(gLeaderTag)));
     BlockStmt* container = new BlockStmt(callLeader);
-    call->getStmtExpr()->insertAfter(container);
+    anchor->insertAfter(container);
     FnSymbol* leaderFn = tryResolveCall(callLeader);
     container->remove();
     haveLeaderSymbolStack.erase(leadingSym);
-    return leaderFn != NULL;
+    return leaderFn;
   }
+}
+
+//
+// We should create the leader and follower flavors of the serial iterator
+// for a promotion - only when those flavors are available from the arguments
+// of the promoted call, as follows:
+//
+// * The leading argument, i.e. the first of the promoted arguments,
+//   must provide a leader iterator. If it provides a leader iterator
+//   and does NOT provide a follower iterator, it is a user error.
+//
+// * All promoted arguments must provide follower iterators.
+//
+// If these conditions are not satisfied, we cannot execute the promoted
+// expression in parallel. If we generate the L/F iterators in this case,
+// the compiler will find and invoke them. However, their bodies will fail
+// to resolve, causing compilation error inappropriately. If we do not
+// generate L/F, the compiler will be forced to use the serial iterator,
+// which is the correct semantics.
+//
+// One example is:  test/studies/sudoku/deitz/sudoku3.chpl
+// whose simple version is the promotion of '&' in: (A!=k) & linearize(A!=k)
+// Here, the first arg of & has parallel iterators, the second doesn't.
+//
+// Taking the standalone iterator into account - when there is only a single
+// promoted argument - is future work - GitHub Issue #12323.
+//
+static bool haveLeaderAndFollowers(PromotionInfo& promotion, CallExpr* call) {
+  // This is analogous to optionalFollowersAreMissing() in foralls.cpp,
+  // with an additional check for the first leader and the first follower.
+  Expr* anchor = call->getStmtExpr();
+  FnSymbol* leader = NULL;  // non-null for promoted args after the first
+  VarSymbol* followme = NULL;
+  int i = 0;
+
+  for_actuals(actualExpr, call) {
+    if (promotion.promotedType[i++] != NULL) {
+      Symbol* actual = symbolForActual(actualExpr);
+
+      if (leader == NULL) {
+        // The first argument. Needs both L+F.
+        leader = leaderForSymbol(anchor, actual);
+        if (leader == NULL) return false; // no leader
+
+        // We are going to resolve follower calls to determine whether the
+        // followers are available. So we need to know the type of followThis,
+        // which is the leader's yield type. For that, resolve the leader.
+        resolveFunction(leader);
+
+        QualifiedType yType = fsIterYieldType(call, leader);
+        followme = new VarSymbol("followme", yType);
+
+        if (! fsGotFollower(anchor, followme, actual)) {
+          USR_FATAL_CONT(call, "a follower iterator is required for %d-th argument of the promoted expression", i);
+          USR_PRINT(call, "because it is the first promoted argument and has a leader iterator");
+          USR_PRINT(leader, "the leader iterator is here");
+        }
+      } else {
+        // A subsequent argument. Needs a follower.
+        if (! fsGotFollower(anchor, followme, actual))
+          return false;
+      }
+    }
+  }
+  return true; // all needed iterators are present
 }
 
 // Returns a CallExpr which contains the call to the original function

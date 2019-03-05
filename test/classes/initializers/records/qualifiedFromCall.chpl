@@ -4,9 +4,9 @@ record R {
     writeln("R.init()");
     this.x = 0;
   }
-  proc init(other:R) {
+  proc init=(other:R) {
     this.x = other.x + 1;
-    writeln("R.init(R): ", this.x);
+    writeln("R.init=(R): ", this.x);
   }
   proc deinit() {
     writeln("R.deinit(): ", this.x);

@@ -1987,6 +1987,7 @@ const char* astrSswap = NULL;
 const char* astr_cast = NULL;
 const char* astr_defaultOf = NULL;
 const char* astrInit = NULL;
+const char* astrInitEquals = NULL;
 const char* astrNew = NULL;
 const char* astrDeinit = NULL;
 const char* astrTag = NULL;
@@ -2009,6 +2010,7 @@ void initAstrConsts() {
   astr_cast   = astr("_cast");
   astr_defaultOf = astr("_defaultOf");
   astrInit    = astr("init");
+  astrInitEquals = astr("init=");
   astrNew     = astr("_new");
   astrDeinit  = astr("deinit");
   astrTag     = astr("tag");

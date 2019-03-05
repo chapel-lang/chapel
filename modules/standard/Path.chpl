@@ -28,8 +28,7 @@
 
       This module is currently missing the implementation for `expandUser
       <https://github.com/chapel-lang/chapel/issues/6008>`_, `normCase
-      <https://github.com/chapel-lang/chapel/issues/6013>`_, and `relPath
-      <https://github.com/chapel-lang/chapel/issues/6017>`_.  Once those are
+      <https://github.com/chapel-lang/chapel/issues/6013>`_, Once those are
       implemented, it will be considered complete.
 
    Operations which occur on the files or directories referred to by these paths
@@ -42,6 +41,8 @@
    :proc:`normPath`
    :proc:`realPath`
    :proc:`file.realPath`
+   :proc:`relPath`
+   :proc:`file.relPath`
 
    Path Manipulations
    ------------------
@@ -421,7 +422,7 @@ proc file.getParentName(out error:syserr): string {
 */
 
 proc isAbsPath(name: string): bool {
-  if name.isEmptyString() {
+  if name.isEmpty() {
     return false;
   }
   const len: int = name.length;
@@ -431,6 +432,16 @@ proc isAbsPath(name: string): bool {
   } else {
     return false;
   }
+}
+
+/* Build up path components as described in joinPath(). */
+private proc joinPathComponent(comp: string, ref result: string) {
+  if comp.startsWith('/') || result == "" then
+    result = comp;
+  else if result.endsWith('/') then
+    result += comp;
+  else
+    result += '/' + comp;
 }
 
 /* Join and return one or more paths, putting precedent on the last absolute
@@ -453,20 +464,24 @@ proc isAbsPath(name: string): bool {
    :rtype: `string`
 */
 proc joinPath(paths: string ...?n): string {
-  var result : string = paths(1); // result variable stores final answer
-  // loop to iterate over all the paths
-  for i in 2..n {
-    var temp : string = paths(i);
-    if temp.startsWith('/') {
-      result = temp;
-    }
-    else if result.endsWith('/') {
-      result = result + temp;
-    }
-    else {
-      result = result + "/" + temp;
-    }
-  }
+  var result: string;
+
+  for path in paths do
+    joinPathComponent(path, result);
+
+  return result;
+}
+
+/* This overload is private for now, needed for relPath. */
+private proc joinPath(paths: [] string): string {
+  if paths.isEmpty() then
+    return "";
+
+  var result: string;
+
+  for path in paths do
+    joinPathComponent(path, result);
+
   return result;
 }
 
@@ -608,6 +623,93 @@ proc file.realPath(out error: syserr): string {
     error = EINVAL;
   }
   return "";
+}
+
+/* Compute the common prefix length between two lists of path components. */
+private
+proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
+  const ref (a, b) = if a1.size < a2.size then (a1, a2) else (a2, a1);
+  var result = 0;
+
+  for i in 1..a.size do
+    if a[i] != b[i] then
+      return result;
+    else
+      result += 1;
+
+  return result;
+}
+
+/*
+  Returns a relative filepath to `name` either from the current directory or an
+  optional `start` directory. The filesystem is not accessed to verify the
+  existence of the named path or the specified starting location.
+
+  .. warning::
+
+    This method is unsafe for use in a parallel environment due to its
+    reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
+    locale may change the current working directory at any time.
+
+  :arg name: A path which the caller would like to access.
+  :type name: `string`
+
+  :arg start: The location from which access to name is desired. If no value
+    is provided, defaults to :const:`curDir`.
+  :type start: `string`
+
+  :return: The relative path to `name` from the current directory.
+  :rtype: `string`
+
+  :throws SystemError: Upon failure to get the current working directory.
+*/
+proc relPath(name: string, start:string=curDir): string throws {
+  const realstart = if start == "" then curDir else start;
+
+  // NOTE: Reliance on locale.cwd() can't be avoided.
+  const startComps = absPath(realstart).split(pathSep, -1, true);
+  const nameComps = absPath(name).split(pathSep, -1, true);
+
+  const prefixLen = commonPrefixLength(startComps, nameComps);
+
+  // Append up-levels until we reach the point where the paths diverge.
+  var outComps : [1..(startComps.size - prefixLen)] string = parentDir;
+
+  // Append the portion of name following the common prefix.
+  if !nameComps.isEmpty() then
+    outComps.push_back(nameComps[(prefixLen + 1)..nameComps.size]);
+
+  if outComps.isEmpty() then
+    return curDir;
+
+  return joinPath(outComps);
+}
+
+/*
+  Returns a relative filepath to the path in this :type:`~IO.file` either from
+  the current directory or an optional `start` directory. The filesystem is not
+  accessed to verify the existence of the named path or the specified starting
+  location.
+
+  .. warning::
+
+    This method is unsafe for use in a parallel environment due to its
+    reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
+    locale may change the current working directory at any time.
+
+  :arg start: The location from which access to the path in this
+    :type:`~IO.file` is desired. If no value is provided, defaults to
+    :const:`curDir`.
+  :type start: `string`
+
+  :return: The relative filepath to the path in this :type:`~IO.file`.
+  :rtype: `string`
+
+  :throws SystemError: Upon failure to get the current working directory.
+*/
+proc file.relPath(start:string=curDir): string throws {
+  // Have to prefix module name to avoid muddying name resolution.
+  return Path.relPath(this.path, start);
 }
 
 /* Split name into a tuple that is equivalent to (:proc:`dirname`,

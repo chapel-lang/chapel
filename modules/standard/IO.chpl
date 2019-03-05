@@ -1276,6 +1276,10 @@ proc file.init(x: file) {
   }
 }
 
+proc file.init=(x: file) {
+  this.init(x);
+}
+
 pragma "no doc"
 proc =(ref ret:file, x:file) {
   // retain -- release
@@ -1968,6 +1972,10 @@ proc channel.init(x: channel) {
   on x.home {
     qio_channel_retain(x._channel_internal);
   }
+}
+
+proc channel.init=(x: this.type) {
+  this.init(x);
 }
 
 //
