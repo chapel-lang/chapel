@@ -123,6 +123,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
 	packages/TOML.chpl \
+	packages/UnorderedAtomics.chpl \
 	packages/UnorderedCopy.chpl
 
 DISTS_TO_DOCUMENT = \
