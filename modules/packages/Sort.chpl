@@ -419,13 +419,13 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
         stride = abs(Dom.stride);
 
   // Heapify
-  var start = if high == low then high
+  var lo = if high == low then high
               else if size % 2 then low + ((size - 1)/2) * stride
               else low + (size/2 - 1) * stride;
 
-  while (start >= low) {
-    SiftDown(start, high, comparator);
-    start = start - stride;
+  while (high >= low) {
+    SiftDown(high, high, comparator);
+    high = high - stride;
   }
 
   // Sort, moving max element to end and re-heapifying the rest
@@ -436,8 +436,8 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
     SiftDown(low, end, comparator);
   }
 
-  proc SiftDown(start, end, comparator:?rec=defaultComparator) {
-    var root = start;
+  proc SiftDown(high, end, comparator:?rec=defaultComparator) {
+    var root = high;
     while ((2*root - low + stride) <= end) {
       const child = 2*root - low + stride;
       var swap = root;
@@ -591,54 +591,64 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
  */
 proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  _MergeSort(Data, minlen, comparator);
+  _MergeSort(Data, Dom.low, Dom.high+1, minlen, comparator);
 }
 
-private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultComparator)
+private proc _MergeSort(Data: [?Dom], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator)
   where Dom.rank == 1 {
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
-  if hi-lo < minlen {
-    insertionSort(Data, comparator);
+  if (hi-lo < minlen) {
+    var sorted = Data[lo..(hi-1)];
+    insertionSort(sorted, comparator=comparator);
+    for (i) in (lo..(hi-1)) {
+      Data(i) = sorted(i);
+    }
+    return;
+  }
+  // Base cases in case minlen is too low
+  if hi-lo == 2 {
+    _Merge(Data, lo, lo+1, hi, comparator);
+    return;
+  } else if hi-lo == 1 {
     return;
   }
   const mid = (hi-lo)/2+lo;
-  var A1 = Data[lo..mid];
-  var A2 = Data[mid+1..hi];
   cobegin {
-    { _MergeSort(A1, minlen, comparator); }
-    { _MergeSort(A2, minlen, comparator); }
+    { _MergeSort(Data, lo, mid, minlen, comparator); }
+    { _MergeSort(Data, mid, hi, minlen, comparator); }
   }
-
-  // TODO -- This iterator causes unnecessary overhead - we can do without it
-  for (a, _a) in zip(Data[lo..hi], _MergeIterator(A1, A2, comparator=comparator)) do a = _a;
+  _Merge(Data, lo, mid, hi, comparator);
 }
 
-
-private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=defaultComparator) {
-  var a1 = A1.domain.dim(1).low;
-  const a1hi = A1.domain.dim(1).high;
-  var a2 = A2.domain.dim(1).low;
-  const a2hi = A2.domain.dim(1).high;
-  while ((a1 <= a1hi) && (a2 <= a2hi)) {
-    while (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
-      yield A1(a1);
+private proc _Merge(Data: [] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+  var a1max = mid-1;
+  var A1 = Data[lo..(a1max)];
+  var a2max = hi-1;
+  var A2 = Data[mid..(a2max)];
+  var a1 = lo;
+  var a2 = mid;
+  var i = lo;
+  while ((a1 <= a1max) && (a2 <= a2max)) {
+    if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
+      Data(i) = A1(a1);
       a1 += 1;
-      if a1 > a1hi then break;
-    }
-    if a1 > a1hi then break;
-    while (chpl_compare(A2(a2), A1(a1), comparator) <= 0) {
-      yield A2(a2);
+      i += 1;
+    } else {
+      Data(i) = A2(a2);
       a2 += 1;
-      if a2 > a2hi then break;
+      i += 1;
     }
   }
-  if a1 == a1hi then yield A1(a1);
-  else if a2 == a2hi then yield A2(a2);
-  if a1 < a1hi then for a in A1[a1..a1hi] do yield a;
-  else if a2 < a2hi then for a in A2[a2..a2hi] do yield a;
+  while (a1 <= a1max) {
+    Data(i) = A1(a1);
+    a1 += 1;
+    i += 1;
+  }
+  while (a2 <= a2max) {
+    Data(i) = A2(a2);
+    a2 += 1;
+    i += 1;
+  }
 }
-
 
 pragma "no doc"
 /* Error message for multi-dimension arrays */
