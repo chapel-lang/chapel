@@ -1,9 +1,17 @@
 var mystring1 = "événement";
 
-for c in mystring1.codePoints() {
+for (i, c) in zip(1.., mystring1.codePoints()) {
   const str = codePointToString(c);
-  write(c, "\t", str);
-  for i in 0..#str.length do
-    write(" ", str.buff[i]:int);
+  write(c);
+  var c2 = mystring1.codePoint(i);
+  if c2 != c then
+    write("#", c2);
+  write("\t", str);
+  for (j, bval) in zip(1.., str.bytes()) {
+    write(" ", bval);
+    var bval2 = str.byte(j);
+    if bval2 != bval then
+      write("#", bval2);
+  }
   writeln();
 }
