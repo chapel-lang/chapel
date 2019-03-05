@@ -120,7 +120,7 @@ default. For example, :proc:`~string.length` returns the length in bytes and
 
 The string type currently supports code point units as well. In some cases these
 units are indicated by the method name, for example with
-:proc:`~string.codePointLength`. Other methods, including :proc:`~string.this`, support
+:proc:`~string.numCodePoints`. Other methods, including :proc:`~string.this`, support
 arguments of type :record:`codePointIndex` (instead of `int`) in order to
 request code point units.
 
@@ -484,7 +484,7 @@ module String {
     /*
       :returns: The number of codepoints in the string.
       */
-    proc codePointLength {
+    proc numCodePoints {
       var n = 0;
       for codepoint in this.codePoints() do
         n += 1;
@@ -492,11 +492,11 @@ module String {
     }
 
     /*
-      Deprecated, use :proc:`string.codePointLength`.
+      Deprecated, use :proc:`string.numCodePoints`.
       */
     inline proc ulength {
-      compilerWarning("ulength is deprecated - please use codePointLength instead");
-      return this.codePointLength;
+      compilerWarning("ulength is deprecated - please use numCodePoints instead");
+      return this.numCodePoints;
     }
 
     /*
@@ -720,7 +720,7 @@ module String {
       Index into a string
 
       :returns: A Unicode codepoint starting at the
-                specified codepoint index from ``1..string.codePointLength``
+                specified codepoint index from ``1..string.numCodePoints``
      */
     proc this(cpi: codePointIndex) : string {
       if this.isEmpty() then return "";

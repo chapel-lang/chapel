@@ -1,5 +1,5 @@
 string-uchars-ulength.chpl:1: warning: uchars is deprecated - please use codePoints instead
-string-uchars-ulength.chpl:4: warning: ulength is deprecated - please use codePointLength instead
+string-uchars-ulength.chpl:4: warning: ulength is deprecated - please use numCodePoints instead
 100
 101
 112
