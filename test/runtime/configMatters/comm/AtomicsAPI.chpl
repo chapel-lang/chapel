@@ -70,17 +70,17 @@ proc testAtomicT(a, ref i, ref b, type basetype) {
   writeln();
 }
 
-proc testBuffAtomicT(a, ref i, ref b, type basetype) {
-  use BufferedAtomics;
-  inline proc flush() { flushAtomicBuff(); }
+proc testUnorderedAtomicT(a, ref i, ref b, type basetype) {
+  use UnorderedAtomics;
+  inline proc fence() { unorderedAtomicFence(); }
   param isInt = isIntegral(basetype);
 
   writeln("Testing 'atomic " + basetype:string + "':");
                                                     writea ("init    ", a);
-                    a.addBuff(8); flush();          writea ("add     ", a);
-                    a.subBuff(1); flush();          writea ("sub     ", a);
-  if isInt {        a.orBuff(10); flush();          writea ("or      ", a);      }
-  if isInt {        a.andBuff(5); flush();          writea ("and     ", a);      }
-  if isInt {        a.xorBuff(5); flush();          writea ("xor     ", a);      }
+                    a.unorderedAdd(8); fence();     writea ("add     ", a);
+                    a.unorderedSub(1); fence();     writea ("sub     ", a);
+  if isInt {        a.unorderedOr(10); fence();     writea ("or      ", a); }
+  if isInt {        a.unorderedAnd(5); fence();     writea ("and     ", a); }
+  if isInt {        a.unorderedXor(5); fence();     writea ("xor     ", a); }
   writeln();
 }

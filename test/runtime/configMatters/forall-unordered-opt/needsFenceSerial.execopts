@@ -1,2 +1,2 @@
---useBufferedAtomics=true
---useBufferedAtomics=false
+--useUnorderedAtomics=true
+--useUnorderedAtomics=false

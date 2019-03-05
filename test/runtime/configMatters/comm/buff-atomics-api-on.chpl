@@ -8,7 +8,7 @@ proc declareAndTestAtomicT(type basetype) {
   var i: basetype;
   var b: bool;
   on Locales[onLocale] {
-    testBuffAtomicT(a, i, b, basetype);
+    testUnorderedAtomicT(a, i, b, basetype);
   }
 }
 
@@ -35,6 +35,6 @@ var IInt: [1..3] int;
 var BInt: [1..3] bool;
 on Locales[onLocale] {
   write("Promotion -- ");
-  testBuffAtomicT(AInt, IInt, BInt, int);
+  testUnorderedAtomicT(AInt, IInt, BInt, int);
 }
 
