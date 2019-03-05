@@ -1,1 +1,1 @@
--Llib/ -lexportFuncWithRealArr `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -lexportFuncWithRealArr `$CHPL_HOME/util/config/compileline --libraries` -lexportFuncWithRealArr

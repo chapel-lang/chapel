@@ -1,1 +1,1 @@
--Llib/ -lreturnArrayTakesArrayArg3 `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -lreturnArrayTakesArrayArg3 `$CHPL_HOME/util/config/compileline --libraries` -lreturnArrayTakesArrayArg3
