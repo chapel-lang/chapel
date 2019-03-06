@@ -207,6 +207,7 @@ module ChapelError {
               idx += 1;
             }
           }
+          delete asTaskErr;
         }
         cur = curnext;
       }
