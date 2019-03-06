@@ -1,2 +1,2 @@
 errors-comparator.chpl:9: In function 'main':
-errors-comparator.chpl:17: error: The key method cannot be provided in a comparator that provides a keyPart method
+errors-comparator.chpl:17: error: keyAndKeyPart contains both a key method and a keyPart method
