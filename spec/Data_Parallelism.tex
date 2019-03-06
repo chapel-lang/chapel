@@ -52,7 +52,10 @@ forall-statement:
 \end{syntax}
 As with the for statement, the indices may be omitted if they are
 unnecessary and the \chpl{do} keyword may be omitted before a block
-statement.  The square bracketed form is a syntactic convenience.
+statement.  The square bracketed form will resort to serial iteration
+when \sntx{iteratable-expression} does not support parallel iteration.
+The \chpl{forall} form will result in an error when parallel iteration
+is not available.
 
 The handling of the outer variables within the forall statement and
 the role of \sntx{task-intent-clause} are defined in \rsec{Forall_Intents}.
@@ -163,8 +166,10 @@ forall-expression:
 \end{syntax}
 As with the for expression, the indices may be omitted if they are
 unnecessary.  The \chpl{do} keyword is always required in the
-keyword-based notation.  The bracketed form is a syntactic
-convenience.
+keyword-based notation. As with the forall statement, the square bracketed
+form will resort to serial iteration when \sntx{iteratable-expression}
+does not support parallel iteration.  The \chpl{forall} form will
+result in an error when parallel iteration is not available.
 
 The handling of the outer variables within the forall expression and
 the role of \sntx{task-intent-clause} are defined in \rsec{Forall_Intents}.
