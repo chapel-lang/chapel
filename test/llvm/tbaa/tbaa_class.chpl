@@ -20,7 +20,7 @@ proc f(i: int, r: real) {
   // CHECK-SAME: !tbaa ![[REALVIACLS:[0-9]+]]
 }
 
-myClass = new MyClass;
+myClass = new MyClass();
 f(42, 3.14);
 writeln(myClass);
 
