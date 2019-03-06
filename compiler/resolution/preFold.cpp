@@ -1131,7 +1131,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_REDUCE: {
     // Need to do this ahead of resolveCall().
-    lowerPrimReduce(call, retval);
+    retval = lowerPrimReduce(call);
     break;
   }
 

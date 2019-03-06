@@ -1217,13 +1217,26 @@ static Expr* lowerReduceOp(Expr* ref, SymExpr* opSE, SymExpr* dataSE,
   return new CallExpr(opSE, iitR);
 }
 
-// Within resolveBlockStmt / for_exprs_postorder framework,
-// we need to lower PRIM_REDUCE prior to the resolveCall()
-// that gets invoked from resolveExpr(). That way the
-// ForallStmt plus scaffolding that lowerPrimReduce() injects
-// can come after 'retval'. resolveCall() does not support that.
-
-void lowerPrimReduce(CallExpr* call, Expr*& retval) {
+//
+// lowerPrimReduce(call), where 'call' is PRIM_REDUCE, converts:
+//   move call_tmp, call
+// to:
+//   no-op      // the original move is removed
+//   ForallStmt                          // with a reduce-intent shadow var
+//     with (.... reduce chpl_redSVar)   // whose outer var is call_tmp
+//     { chpl_redSVar reduce= chpl_redIdx; }
+//
+// 'call' can also occurs on its own, ex. when the reduce expression
+// is the default initializer for a field or a formal argument.
+// If so, a new temp chpl_redResult plays the role of call_tmp above. Also,
+// we add SymExpr(chpl_redResult) after the ForallStmt (at the statement
+// level), which represents the result of the reduce expression.
+//
+// The return value is the no-op. This is where resolution will resume.
+// We ensure resolution of the ForallStmt within the resolveBlockStmt /
+// for_exprs_postorder framework by placing it after the no-op.
+//
+Expr* lowerPrimReduce(CallExpr* call) {
   if (call->id == breakOnResolveID) gdbShouldBreakHere();
 
   Expr*   callStmt = call->getStmtExpr();
@@ -1237,15 +1250,28 @@ void lowerPrimReduce(CallExpr* call, Expr*& retval) {
 
   Expr* opExpr = lowerReduceOp(callStmt, opSE, dataSE, zippered);
 
-  VarSymbol* result = newTemp("chpl_redResult");
-  callStmt->insertBefore(new DefExpr(result));
+  Symbol* result = NULL;
+  if (callStmt == call) {
+    result = newTemp("chpl_redResult");
+    callStmt->insertBefore(new DefExpr(result));
+  } else {
+    CallExpr* move = toCallExpr(callStmt);
+    INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+    INT_ASSERT(move->get(2) == call);
+    result = toSymExpr(move->get(1))->symbol();
+  }
 
   VarSymbol*       idx  = newTemp("chpl_redIdx");
   ShadowVarSymbol* svar = new ShadowVarSymbol(TFI_REDUCE, "chpl_redSVar",
                                               new SymExpr(result), opExpr);
   ForallStmt*      fs   = ForallStmt::fromReduceExpr(idx, dataSE, svar,
                                                      zippered, reqSerial);
-  callStmt->insertBefore(fs);
-  call->replace(new SymExpr(result));
-  retval = noop;
+  if (callStmt == call) {
+    callStmt->insertBefore(fs);
+    call->replace(new SymExpr(result));
+  } else {
+    callStmt->replace(fs);
+  }
+
+  return noop;
 }

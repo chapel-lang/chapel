@@ -218,28 +218,79 @@ static void insertAndResolveInitialAccumulate(ForallStmt* fs, BlockStmt* hld,
   resolveFnForCall(initAccumOutcome, initAccum);
 }
 
+//
+// This works around #12497, whereby FLAG_EXPR_TEMP works correctly
+// for all cases except when:
+// * the result of a reduce expression is detupled in a variable decl, ex.
+//     var (val,idx) = minloc reduce ...;
+// * the result of the reduce op's generate() is a tuple containing an array.
+//
+// If so, we get valgrind failure due to double-deletion in these tests:
+//   reductions/vass/reproducer-tuple-with-array
+//   studies/kmeans/kmeans-blc
+//   studies/kmeans/kmeansonepassreduction-minchange
+//
+// This is invoked only for ForallStmts representing reduce expressions.
+//
+static void workaroundForReduceIntoDetupleDecl(ForallStmt* fs, Symbol* svar) {
+  //
+  // The pattern we are looking for is when 'svar' is used twice:
+  // * as an outer variable of one of fs's shadow variables, and
+  // * in a PRIM_INIT_VAR of a variable with FLAG_NO_COPY
+  //   which is created in buildTupleVarDeclStmt().
+  //
+
+  // Find the SE using 'svar' as an outer var.
+  SymExpr* ovarSE = NULL;
+  for_shadow_vars(sv2,temp,fs)
+    if (SymExpr* ovar2 = sv2->outerVarSE)
+      if (ovar2->symbol() == svar)
+        { ovarSE = ovar2; break; }
+  if (ovarSE == NULL) return; // not our pattern
+
+  // Find the other use of 'svar'.
+  SymExpr* otherUse = NULL;
+  for_SymbolUses(useSE, svar)
+    if (useSE != ovarSE) {
+      if (otherUse != NULL) return; // too many uses - not our pattern
+      otherUse = useSE;
+    }
+  if (otherUse == NULL) return; // not our pattern
+
+  // Find the var initialized from 'otherUse', if any.
+  if (CallExpr* initCall = toCallExpr(otherUse->parentExpr))
+    if (initCall->isPrimitive(PRIM_INIT_VAR))
+      if (SymExpr* initSE = toSymExpr(initCall->get(1))) {
+        INT_ASSERT(initSE != otherUse); // otherwise 'otherUse' is not a "use"
+        // The final check...
+        if (initSE->symbol()->hasFlag(FLAG_NO_COPY))
+          // Yes, found the pattern we are looking for!
+          // React to it:
+          svar->removeFlag(FLAG_EXPR_TEMP);
+      }
+}
+
 // Finalize the reduction:  outerVar = globalOp.generate()
 static void insertFinalGenerate(ForallStmt* fs,
                                 Symbol* fiVarSym, Symbol* globalOp)
 {
   Expr* next = fs->next; // nicer ordering of the following insertions
   INT_ASSERT(next);
-  VarSymbol* genTemp = newTemp("chpl_gentemp");
-  next->insertBefore(new DefExpr(genTemp));
-  next->insertBefore("'move'(%S, generate(%S,%S))",
-                     genTemp, gMethodToken, globalOp);
   if (fs->needsInitialAccumulate()) {
+    VarSymbol* genTemp = newTemp("chpl_gentemp");
+    next->insertBefore(new DefExpr(genTemp));
+    next->insertBefore("'move'(%S, generate(%S,%S))",
+                     genTemp, gMethodToken, globalOp);
     next->insertBefore(new CallExpr("=", fiVarSym, genTemp));
     // TODO: Should we try to free chpl_gentemp right after the assignment?
     genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   } else {
     // Initialize, not assign. Do everything *after* 'fs'.
-    // This is what we get out of lowerPrimReduce().
-    INT_ASSERT(fiVarSym->defPoint != NULL);
-    INT_ASSERT(fiVarSym->firstSymExpr()->symbolSymExprsNext ==
-               fiVarSym->lastSymExpr()); // only two uses
     next->insertBefore(fiVarSym->defPoint->remove());
-    next->insertBefore(new CallExpr(PRIM_INIT_VAR, fiVarSym, genTemp));
+    next->insertBefore("'move'(%S, generate(%S,%S))",
+                       fiVarSym, gMethodToken, globalOp);
+    fiVarSym->addFlag(FLAG_EXPR_TEMP);
+    workaroundForReduceIntoDetupleDecl(fs, fiVarSym);
   }
 }
 
