@@ -1102,6 +1102,12 @@ proc binForRecord(a, criterion, startbit:int)
   }
 }
 
+private
+proc fixedWidthType(type eltTy) param {
+  return isUintType(eltTy) || isIntType(eltTy) ||
+         isRealType(eltTy) || isImagType(eltTy);
+}
+
 // Returns a compile-time known final startbit
 // e.g. for uint(64), returns 56 (since that's 64-8 and the
 // last sort pass will sort on the last 8 bits).
@@ -1112,14 +1118,14 @@ proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
   use Reflection;
 
   // Compute end_bit if it's known
+  // Default comparator on integers has fixed width
   const ref element = Data[Data.domain.low];
   if comparator.type == DefaultComparator &&
-     (isUint(element) || isInt(element)) {
-    // Default comparator on integers has fixed width
+     fixedWidthType(element.type) {
     return numBits(element.type) - RADIX_BITS;
   } else if canResolveMethod(comparator, "key", element) {
     type keyType = comparator.key(element).type;
-    if isUintType(keyType) || isIntType(keyType) then
+    if fixedWidthType(keyType) then
       return numBits(keyType) - RADIX_BITS;
   }
 
