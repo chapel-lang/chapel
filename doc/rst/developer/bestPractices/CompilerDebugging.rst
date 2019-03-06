@@ -2,37 +2,37 @@
 Tips On Debugging The Compiler
 ===============================
 
-See also: CompilerIRTricks.rst, GeneratedCode.rst.
-See also: compiler overview in ``$CHPL_HOME/doc/rst/developer/compilerOverview``.
+``~/.gdbinit``: ``CompilerIRTricks.rst``, ``GeneratedCode.rst``.
+``~/.gdbinit``: compiler overview in ``$CHPL_HOME/doc/rst/developer/compilerOverview``.
 
 With ``--print-passes``, the compiler prints individual passes as they progress.
 
-We typically debug the compiler with gdb.
+We typically debug the compiler with ``gdb``.
 
 
 
 
 Starting GDB and setup
-----------------------
+-----------------------
 
 * the easiest:  ``chpl --gdb <other compiler argument as usual>``
 
-  This fires up gdb and sets it up with useful shortcuts
+  This fires up ``gdb`` and sets it up with useful shortcuts
   (by reading in ``$CHPL_HOME/compiler/etc/gdb.commands``).
 
   Typing ``C-x 2`` within gdb should split the window, showing the source code.
 
-* traditional:  gdb $CHPL_HOME/bin/$CHPL_HOST_PLATFORM/chpl
+* traditional:  ``gdb $CHPL_HOME/bin/$CHPL_HOST_PLATFORM/chpl``
 
 * from within emacs:  ``M-x gdb <enter>``
-  then provide the path to 'chpl', e.g. ``/users/vass/chapel/bin/linux64/chpl``
+  then provide the path to ``chpl``, e.g. ``/users/vass/chapel/bin/linux64/chpl``
 
-  This engages emacs's "gud" mode, providing e.g. convenient access
-  to compiler source code at breakpoints/stepping/stack unwinding
-  and browsing/searching convenience of an emacs buffer.
+  This engages emacs's ``gud`` mode, providing e.g. convenient access
+  to compiler source code at ``breakpoints/stepping/stack`` unwinding
+  and ``browsing/searching`` convenience of an emacs buffer.
 
 Unless you start with ``chpl --gdb``, you need to set up gdb by hand.
-Place the following in your ~/.gdbinit:
+Place the following in your ``~/.gdbinit``:
 
 .. code-block:: bash
 
@@ -56,10 +56,9 @@ Place the following in your ~/.gdbinit:
  ###########
 
 
-
 then call ``schp`` from the gdb prompt (do not use ``~`` or ``$CHPL_HOME``), e.g.:
 
-(gdb) schp /users/vass/chapel
+(gdb) ``schp /users/vass/chapel``
 setting for Chapel in /users/vass/chapel
 (gdb)
 
@@ -67,9 +66,9 @@ setting for Chapel in /users/vass/chapel
 
 
 Other useful shortcuts/setup
-----------------------------
+------------------------------
 
-Here are some other useful additions to your ~/.gdbinit:
+Here are some other useful additions to your ``~/.gdbinit``:
 
 .. code-block:: bash
 
@@ -80,7 +79,7 @@ Here are some other useful additions to your ~/.gdbinit:
  ###########
 
 
-``set print object on`` makes gdb print a C++ object based on its
+The ``set print object on`` makes ``gdb`` print a C++ object based on its
 dynamic, rather than static, type. E.g. if the variable ``p`` has the
 (static) type Expr*, then 'print *p' in gdb will include the fields
 corresponding to whatever subclass of Expr 'p' is pointing to at the
@@ -88,11 +87,11 @@ moment (e.g. DefExpr, SymExpr, etc.).
 
 
 TUI mode
---------
+---------
 
-GDB has the "TUI" mode that provides for convenient viewing of the
+GDB has the ``TUI`` mode that provides for convenient viewing of the
 source code during debugging, among other things, when running GDB in
-a terminal. It is somewhat similar to Emacs's gud mode.
+a terminal. It is somewhat similar to Emacs\'s ``gud`` mode.
 
 Turn the TUI mode on/off using one of: ``C-x C-a``, ``C-x a``, ``C-x A``.
 Some additional information is, for example, here:
@@ -103,51 +102,61 @@ Some additional information is, for example, here:
 AST viewing and other compiler helper functions
 ------------------------------------------------
 
-They are defined mostly in compiler/AST/view.cpp
-with corresponding shortcuts in compiler/etc/gdb.commands:
+They are defined mostly in ``compiler/AST/view.cpp``
+with corresponding shortcuts in ``compiler/etc/gdb.commands``:
 
-legend: C function # gdb shortcut  # comment
+.. code-block:: bash
 
-print_view(BaseAST*)  # view, vi    # not showing ID
-nprint_view(BaseAST*) # nview, nv
-iprint_view(int id)   # iview, iv   # for the given ID
-list_view(BaseAST*)   # lview, lv   # looks somewhat like Chapel code
-various ways to print out the AST subtree at the given node
+  legend: C function # gdb shortcut
 
-viewFlags(Symbol*)    # flags
-  prints the flags set on this Symbol
+  print_view(BaseAST*)  # view, vi    # not showing ID
+  nprint_view(BaseAST*) # nview, nv
+  iprint_view(int id)   # iview, iv   # for the given ID
+  list_view(BaseAST*)   # lview, lv   # looks somewhat like Chapel code
 
-BaseAST::stringLoc()  # loc
-  prints the ast's location in the source code
 
-printCallStack()
-  prints the source code call stack leading to the part of the program where
-  the compiler is currently working, esp. during name/function resolution (?)
 
-``aid(int id)``
-  give the pointer to the AST node with the given ID
+  #various ways to print out the AST subtree at the given node#
+
+  viewFlags(Symbol*)    # flags
+    #prints the flags set on this Symbol
+
+  BaseAST::stringLoc()  # loc
+    #prints the ast\'s location in the source code
+
+  printCallStack()
+    #prints the source code call stack leading to the part of the program where
+    #the compiler is currently working, esp. during name/function resolution (?)
+
+  aid(int id)
+    #give the pointer to the AST node with the given ID
+
+
 
 
 Other tips
-----------
+-----------
 
-(gdb) lv userModules.v[0]
-  prints the entire user module
-  can search the output for a symbol name or ast ID
-  if multiple user modules, do .v[1] etc. (right?)
+.. code-block:: bash
 
-(gdb) ``break normalize``
-  stop right before the normalization pass
+  (gdb) lv userModules.v[0]
+    prints the entire user module
+    can search the output for a symbol name or ast ID
+    if multiple user modules, do .v[1] etc. (right?)
 
-(gdb) ``break checkNormalized``
-  stop right after the normalization pass
+  (gdb) break normalize
+    stop right before the normalization pass
 
-``gdbShouldBreakHere()``
-  ``compiler/etc/gdb.commands`` sets a breakpoint on this function
+  (gdb) break checkNormalized
+    stop right after the normalization pass
 
-  E.g. it is invoked when a compiler emits an error (or is about to die
-  for another reason) and for ``--break-on-id``.
-  You can call it in your debugging instrumentation as well.
+  gdbShouldBreakHere()
+    compiler/etc/gdb.commands sets a breakpoint on this function
+
+
+E.g. it is invoked when a compiler emits an error (or is about to die
+for another reason) and for ``--break-on-id``.
+You can call it in your debugging instrumentation as well.
 
 
 Examining the source code
@@ -161,12 +170,13 @@ TAGS
 
 BROWSE
   Created like TAGS above. Reflects the class hierarchy within the compiler,
-  compatible with emacs\'s ``ebrowse-tree``.
-  Presently there is little more than the BaseAST and Vec<> hierarchies.
+  ebrowses\'s ``ebrowse-tree``.
+  Presently there is little more than the ``BaseAST`` and ``Vec<>`` hierarchies.
 
-grepcomp
-greprt
-grepmod
+- ``grepcomp``
+- ``greprt``
+- ``grepmod``
+
 ...
   Shortcuts in ``$CHPL_HOME/util/devel`` to grep the compiler, runtime, and
   Chapel module sources, resp.
