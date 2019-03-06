@@ -1,2 +1,0 @@
-Makefile:12: lib/Makefile.myLib: No such file or directory
-make: *** No rule to make target 'lib/Makefile.myLib'.  Stop.
