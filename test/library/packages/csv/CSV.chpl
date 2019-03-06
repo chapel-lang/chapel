@@ -44,7 +44,7 @@ module CSV {
     }
     /* Read a CSV file with lines matching the types of the fields in a record
      */
-    iter read(type t) throws where isRecordType(t) {
+    iter read(type t) throws where isRecord(t) && t != string {
       use Reflection;
       var r: t;
       var skipHeader = hasHeader;
@@ -66,10 +66,15 @@ module CSV {
       }
     }
 
+    pragma "no doc"
+    proc isSpecialCaseType(type t) param {
+      return t == string || isRecord(t) || isTuple(t);
+    }
+
     /* Read a CSV file with fields of the types given by
        the arguments to the function
      */
-    iter read(type t...) throws {
+    iter read(type t...) throws where t.size > 1 || !isSpecialCaseType(t(1)) {
       if ch.writing then compilerError("reading from a writing channel");
 
       var r: t;
@@ -90,15 +95,49 @@ module CSV {
       }
     }
 
-    iter read(type t) throws where isTupleType(t) {
+    /* Read a CSV file with fields of the types given
+       in the tuple argument to the function
+     */
+    iter read(type t) throws where isTuple(t) {
       for r in read((...t)) {
         yield r;
       }
     }
+
+    /* Read a CSV file with arbitrarily many rows and columns. Returns the
+       data as strings in a 2D array. */
+    proc read(type t: string) throws {
+      if ch.writing then compilerError("reading from a writing channel");
+      var r: t;
+      var skipHeader = hasHeader;
+
+      var lines = ch.lines();
+      var firstLine = lines[1];
+      var vals = firstLine.strip().split(sep);
+      const numRows = if skipHeader then lines.numElements - 1
+                                    else lines.numElements;
+      var A: [1..numRows, 1..vals.numElements] string;
+
+      if !skipHeader {
+        A[1, ..] = vals;
+      }
+
+      for i in 2..lines.numElements {
+        const line = lines[i].strip(leading=false);
+        if line.length == 0 then
+          continue;
+        const vals = line.split(sep);
+        const row = if skipHeader then i-1 else i;
+        A[row, ..] = vals;
+      }
+      return A;
+    }
+
+
     /* Write a record to the channel owned by this `CSVIO` instance
        resulting in a single row being added to the channel.
      */
-    proc write(r: ?t) throws where isRecordType(t) {
+    proc write(r: ?t) throws where isRecord(t) {
       use Reflection;
       if !ch.writing then compilerError("writing to a reading channel");
 
@@ -113,7 +152,7 @@ module CSV {
     /* Write a tuple to the channel owned by this `CSVIO` instance
        resulting in a single row being added to the channel.
      */
-    proc write(tup: ?t) throws where isTupleType(t) {
+    proc write(tup: ?t) throws where isTuple(t) {
       if !ch.writing then compilerError("writing to a reading channel");
 
       for param i in 1..tup.size {
