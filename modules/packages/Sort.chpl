@@ -36,7 +36,7 @@ an instance of it to the sort function. Examples are shown below.
 Comparators need to include at least one of the following methods:
 
  * ``key(a)``  -- see `The .key method`_
- * ``compare(a,b)``  -- see `The .compare method`_
+ * ``compare(a, b)``  -- see `The .compare method`_
  * ``keyPart(a, i)`` -- see `The .keyPart method`_
 
 See the section below for discussion of each of these methods.
@@ -420,11 +420,14 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
 
 /*
 
-Sort the elements in an array.
+Sort the elements in an array. It is up to the implementation to choose
+the sorting algorithm.
 
 .. note::
-  This function currently uses parallel radix sort if the following
-  conditions are met:
+  This function currently either uses a parallel radix sort or a serial
+  quickSort. The algorithms used will change over time.
+
+  It currently uses parallel radix sort if the following conditions are met:
 
     * the array being sorted is over a non-strided domain
     * ``comparator`` includes a ``keyPart`` method for ``eltType``
