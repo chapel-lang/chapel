@@ -532,6 +532,19 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_IS_ABS_ENUM_TYPE: {
+    EnumType* et = toEnumType(call->get(1)->typeInfo());
+    if (et && et->isAbstract()) {
+      retval = new SymExpr(gTrue);
+    } else {
+      retval = new SymExpr(gFalse);
+    }
+
+    call->replace(retval);
+
+    break;
+  }
+    
   case PRIM_IS_CLASS_TYPE: {
     Type* t = call->get(1)->typeInfo();
 
