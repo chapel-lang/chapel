@@ -1389,15 +1389,12 @@ record DefaultComparator {
 
   /*
    Default compare method used in sort functions.
+   Uses the `<` operator to compute the ordering between ``a`` and ``b``.
+   See also `The .compare method`_.
 
-   :arg a: Array element
-   :type a: `eltType`
-   :arg b: Array element
-   :type b: `eltType`
    :returns: 1 if ``b < a``
    :returns: 0 if ``a == b``
    :returns: -1 if ``a < b``
-
    */
   inline
   proc compare(a, b) {
@@ -1408,11 +1405,12 @@ record DefaultComparator {
 
   /*
    Default keyPart method for integral values.
+   See also `The .keyPart method`_.
 
    :arg x: the `int` or `uint` of any size to sort
    :arg i: the part number requested
 
-   :returns: (0, x) if i==0, or (-1, x) otherwise
+   :returns: ``(0, x)`` if ``i==0``, or ``(-1, x)`` otherwise
    */
   inline
   proc keyPart(x: integral, i:int):(int(8), x.type) {
@@ -1422,11 +1420,12 @@ record DefaultComparator {
 
   /*
    Default keyPart method for tuples of integral values.
+   See also `The .keyPart method`_.
 
    :arg x: tuple of the `int` or `uint` (of any bit width) to sort
    :arg i: the part number requested
 
-   :returns: (0, x(i)) if i <= x.size, or (-1, 0) otherwise
+   :returns: ``(0, x(i))`` if ``i <= x.size``, or ``(-1, 0)`` otherwise
    */
   inline
   proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
@@ -1440,7 +1439,7 @@ record DefaultComparator {
   }
 
   /*
-   Default keyPart method for sorting strings
+   Default keyPart method for sorting strings. See also `The .keyPart method`_.
 
    .. note::
      Currently assumes that the string is local.
@@ -1448,7 +1447,7 @@ record DefaultComparator {
    :arg x: the string to sort
    :arg i: the part number requested
 
-   :returns: (0, byte i of string) or (-1, 0) if i > x.size
+   :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if ``i > x.size``
    */
   inline
   proc keyPart(x:string, i:int):(int(8), uint(8)) {
@@ -1605,6 +1604,9 @@ record ReverseComparator {
     }
   }
 
+  /*
+   Reverses comparator.keyPart. See also `The .keyPart method`_.
+   */
   inline
   proc keyPart(a, i) where hasKeyPart(a) || hasKeyPartFromKey(a) {
     chpl_check_comparator(this.comparator, a.type);
@@ -1624,15 +1626,7 @@ record ReverseComparator {
   }
 
   /*
-   Reverses ``comparator.compare``.
-
-   :arg a: Array element
-   :type a: `eltType`
-   :arg b: Array element
-   :type b: `eltType`
-   :returns: -1 if ``b < a``
-   :returns: 0 if ``a == b``
-   :returns: 1 if ``a < b``
+   Reverses ``comparator.compare``. See also `The .compare method`_.
    */
   inline
   proc compare(a, b) where hasCompare(a, b) || hasCompareFromKey(a) {
