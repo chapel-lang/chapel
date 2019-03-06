@@ -1,6 +1,6 @@
-use List;
+use LinkedLists;
 
-var s : list(int)  = makeList(1, 2, 3);
+var s : LinkedList(int)  = makeList(1, 2, 3);
 var t : (int, int) = (1, 2);
 
 writeln(s);

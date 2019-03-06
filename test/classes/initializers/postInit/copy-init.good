@@ -3,7 +3,7 @@ main            DefaultInit  rec100
     MyRecord.postinit()
  
   fnCall        CopyInit     rec101 with (id = 100)
-    MyRecord.init(other : MyRecord)
+    MyRecord.init=(other : MyRecord)
     MyRecord.postinit()
  
   fnCall        De-Init      rec101      (id = 101)

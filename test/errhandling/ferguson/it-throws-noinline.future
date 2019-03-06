@@ -1,4 +1,5 @@
 bug: throwing from non-inlined iterators not yet supported
+#7134
 
 When removing this .future, also remove
 it-throws-inline.skipif and forall-iterator-throws-follower.skipif.

@@ -39,8 +39,10 @@ class BaseAST;
 class BitVec;
 class BlockStmt;
 class FnSymbol;
+class ForallStmt;
 class Symbol;
 class SymExpr;
+class LifetimeInformation;
 
 void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel = false);
 size_t localCopyPropagation(FnSymbol* fn);
@@ -51,6 +53,12 @@ void eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 size_t singleAssignmentRefPropagation(FnSymbol* fn);
 void deadVariableElimination(FnSymbol* fn);
 void deadExpressionElimination(FnSymbol* fn);
+
+bool outlivesBlock(LifetimeInformation* info, Symbol* sym, BlockStmt* block);
+
+void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
+                                         LifetimeInformation* lifetimeInfo);
+void optimizeForallUnorderedOps();
 
 void liveVariableAnalysis(FnSymbol* fn,
                           Vec<Symbol*>& locals,

@@ -215,7 +215,7 @@ class LinearAlgebraError : Error {
 
     pragma "no doc"
     override proc message() {
-      if info.isEmptyString() then
+      if info.isEmpty() then
         return "LinearAlgebra error";
       else
         return "LinearAlgebra error : " + info;
@@ -485,26 +485,12 @@ proc _array.T where isDenseMatrix(this)
   return transpose(this);
 }
 
-/* Element-wise addition. Deprecated for ``A + B`` */
-proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDenseArr(A) && isDenseArr(B) {
-  compilerWarning('matPlus has been deprecated. ' +
-                  'try: A + B');
-  return A.plus(B);
-}
-
 /* Element-wise addition. Same as ``A + B``. */
 proc _array.plus(A: [?Adom] ?eltType) where isDenseArr(A) && isDenseArr(this) {
   if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
   if Adom.shape != this.domain.shape then halt("Unmatched shapes");
   var C: [Adom] eltType = this + A;
   return C;
-}
-
-/* Element-wise subtraction. Deprecated for ``A - B``*/
-proc matMinus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDenseArr(A) && isDenseArr(B) {
-  compilerWarning('matMinus has been deprecated. ' +
-                  'try: A - B');
-  return A.minus(B);
 }
 
 /* Element-wise subtraction. Same as ``A - B``. */

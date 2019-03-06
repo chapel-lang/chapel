@@ -1,0 +1,5 @@
+perfkeys: GET    rate(mOps/sec):, GET    rate(mOps/sec):, GET    rate(mOps/sec):
+files: ordered-many-to-many.dat, ordered-oversub-many-to-many.dat, unordered-many-to-many.dat
+graphkeys: GET (ordered), GET (4x oversub), GET (unordered)
+graphtitle: Remote many-to-many GET Performance
+ylabel: Performance (10**6 ops/sec)

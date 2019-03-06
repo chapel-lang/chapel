@@ -489,7 +489,7 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
   } else {
     INT_ASSERT(field->type == value->type);
   }
-  INT_ASSERT(checkIteratorFromForExpr(ref, ir) == fromForExpr);
+  INT_ASSERT(fromForExpr || !checkIteratorFromForExpr(ref, ir));
 
   return new CallExpr(PRIM_SET_MEMBER, ir, field, value);
 }

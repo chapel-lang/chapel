@@ -3265,6 +3265,11 @@ module ChapelArray {
       return this.domain.shape;
     }
 
+    pragma "no doc"
+    proc _scan(op) where Reflection.canResolveMethod(_value, "doiScan", op, this.domain) {
+      return _value.doiScan(op, this.domain);
+    }
+
   }  // record _array
 
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
@@ -3945,11 +3950,8 @@ module ChapelArray {
     } else if chpl__serializeAssignment(a, b) {
       for (aa,bb) in zip(a,b) do
         aa = bb;
-    } else if chpl__tryToken { // try to parallelize using leader and follower iterators
-      forall (aa,bb) in zip(a,b) do
-        aa = bb;
     } else {
-      for (aa,bb) in zip(a,b) do
+      [ (aa,bb) in zip(a,b) ]
         aa = bb;
     }
   }

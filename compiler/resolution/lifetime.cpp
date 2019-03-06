@@ -22,12 +22,14 @@
 #include "AstVisitorTraverse.h"
 #include "driver.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "loopDetails.h"
-#include "UnmanagedClassType.h"
+#include "optimizations.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "symbol.h"
+#include "UnmanagedClassType.h"
 #include "view.h"
 #include "wellknown.h"
 
@@ -95,6 +97,17 @@ static const bool debugOutputOnError = false;
        won't be invalid if the borrow is from something
        being destroyed in the same block.
  */
+
+namespace {
+  struct LifetimeState;
+}
+
+// Used to communicate lifetime queries between this and
+// the unordered forall optimization
+class LifetimeInformation {
+  public:
+    LifetimeState* lifetimes;
+};
 
 
 namespace {
@@ -356,10 +369,7 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   fn->accept(&gather);
 
   if (debugging) {
-    for (LocalFunctionsSet::iterator it = state.inFns.begin();
-         it != state.inFns.end();
-         ++it) {
-      FnSymbol* inFn = *it;
+    for_set(FnSymbol, inFn, state.inFns) {
       printf("Visiting function %s id %i\n", inFn->name, inFn->id);
       nprint_view(inFn);
     }
@@ -394,6 +404,14 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   emit.lifetimes = &state;
   fn->accept(&emit);
   emit.emitErrors();
+
+  // Give forall unordered ops optimization a chance to check
+  // lifetimes of certain variables.
+  LifetimeInformation info;
+  info.lifetimes = &state;
+  for_set(FnSymbol, inFn, state.inFns) {
+    checkLifetimesForForallUnorderedOps(inFn, &info);
+  }
 }
 
 
@@ -410,7 +428,8 @@ static void markArgumentsReturnScope(FnSymbol* fn) {
   }
 
   if (fn->isMethod() && fn->_this != NULL && !anyReturnScope &&
-      fn->name != astrInit && !fn->lifetimeConstraints) {
+      fn->name != astrInit && fn->name != astrInitEquals &&
+      !fn->lifetimeConstraints) {
     // Methods default to 'this' return scope
     // ('init' functions aren't really methods for this purpose)
     fn->_this->addFlag(FLAG_RETURN_SCOPE);
@@ -1006,7 +1025,8 @@ static bool formalArgumentDoesNotImpactReturnLifetime(ArgSymbol* formal)
 
   // record initializer's this argument doesn't impact return lifetime
   if (formal->hasFlag(FLAG_ARG_THIS) &&
-      formal->getFunction()->name == astrInit)
+      (formal->getFunction()->name == astrInit ||
+      formal->getFunction()->name == astrInitEquals))
     return true;
 
   // arguments marked with FLAG_SCOPE don't determine the lifetime
@@ -1043,7 +1063,8 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
 
   bool returnsBorrow = false;
   Type* returnType = calledFn->retType;
-  if (calledFn->isMethod() && calledFn->name == astrInit) {
+  if (calledFn->isMethod() &&
+      (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
     returnType = calledFn->getFormal(1)->getValType();
   } else if(calledFn->hasFlag(FLAG_FN_RETARG)) {
     ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
@@ -1394,7 +1415,8 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
   }
 
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-    if (calledFn->isMethod() && calledFn->name == astrInit) {
+    if (calledFn->isMethod() &&
+        (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       Symbol* sym = se->symbol();
@@ -2299,6 +2321,23 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
                 key, inferred.borrowed, lifetimes);
     }
   }
+}
+
+bool outlivesBlock(LifetimeInformation* info, Symbol* sym, BlockStmt* block) {
+  LifetimeState* lifetimes = info->lifetimes;
+  INT_ASSERT(lifetimes);
+  LifetimePair lp = lifetimes->inferredLifetimeForSymbol(sym);
+  bool referentOutlivesBlock = false;
+  if (lp.referent.unknown == false) {
+    if (lp.referent.infinite || lp.referent.returnScope) {
+      referentOutlivesBlock = true;
+    } else if (lp.referent.fromSymbolScope != NULL) {
+      BlockStmt* referentDefBlock = getDefBlock(lp.referent.fromSymbolScope);
+      if (isBlockWithinBlock(referentDefBlock, block) == false)
+        referentOutlivesBlock = true;
+    }
+  }
+  return referentOutlivesBlock;
 }
 
 // variables with a type with `infinite borrow lifetime` should have

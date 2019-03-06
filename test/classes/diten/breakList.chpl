@@ -1,6 +1,6 @@
 module LibGL {
   // Hidden in the bowels of some huge but useful Chapel library like LibGL.
-  proc list.append(x: int) {
+  proc LinkedList.append(x: int) {
     halt("I Got you!");
   }
 }
@@ -11,7 +11,7 @@ proc main {
 }
 
 proc foo() {
-  var li = new list(real);
+  var li = new LinkedList(real);
   li.append(3);
   li.append(4);
   writeln(li);
@@ -19,6 +19,6 @@ proc foo() {
 
 proc bar() {
   use LibGL;
-  var li = new list(real);
+  var li = new LinkedList(real);
   li.append(3);
 }
