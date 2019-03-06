@@ -1,8 +1,0 @@
-badFileName (1.0.0)
-../../../../tools/mason//MasonSearch.chpl:105: warning: file with bad/(not a .toml) extension encountered. skipping 1.0.0  in package /Users/anubhavujjawal/Desktop/work/gsoc/contrib/chapel/test/mason/search/badFileName/.mason/registry/Bricks/badFileName2
-../../../../tools/mason//MasonSearch.chpl:105: warning: file with bad/(not a .toml) extension encountered. skipping 2.0.0  in package /Users/anubhavujjawal/Desktop/work/gsoc/contrib/chapel/test/mason/search/badFileName/.mason/registry/Bricks/badFileName2
-../../../../tools/mason//MasonSearch.chpl:105: warning: file with bad/(not a .toml) extension encountered. skipping 0.1.0  in package /Users/anubhavujjawal/Desktop/work/gsoc/contrib/chapel/test/mason/search/badFileName/.mason/registry/Bricks/badFileName2
-../../../../tools/mason//MasonSearch.chpl:105: warning: file with bad/(not a .toml) extension encountered. skipping 0.5.0  in package /Users/anubhavujjawal/Desktop/work/gsoc/contrib/chapel/test/mason/search/badFileName/.mason/registry/Bricks/badFileName2
-../../../../tools/mason//MasonSearch.chpl:70: warning: skipping package badFileName2 as no valid version was found.
-../../../../tools/mason//MasonSearch.chpl:105: warning: file with bad/(not a .toml) extension encountered. skipping 2.0.0  in package /Users/anubhavujjawal/Desktop/work/gsoc/contrib/chapel/test/mason/search/badFileName/.mason/registry/Bricks/badFileName
-../../../../tools/mason//MasonSearch.chpl:105: warning: file with bad/(not a .toml) extension encountered. skipping 0.5.0  in package /Users/anubhavujjawal/Desktop/work/gsoc/contrib/chapel/test/mason/search/badFileName/.mason/registry/Bricks/badFileName

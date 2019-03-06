@@ -65,13 +65,10 @@ proc masonSearch(origArgs : [] string) {
           }
         }  else {
           const ver = findLatest(searchDir + dir);
-          if ver[1] == false {
-            var warning_str = "skipping package " + dir + " as no valid version was found.";
-            warning(warning_str);
-          }
-          else {
-            results.push_back(name + " (" + ver[2].str() + ")");
-          }
+          const versionZero = new VersionInfo(0, 0, 0);
+
+          if ver != versionZero then
+            results.push_back(name + " (" + ver.str() + ")");
         }
       }
     }
@@ -100,12 +97,14 @@ proc findLatest(packageDir) {
       foundValidVersion = true;
     }
     else {
-      var warning_str = "file with bad/(not a .toml) extension encountered. skipping ";
-      warning_str += fi + "  in package " + packageDir;
-      warning(warning_str);
+      var warningStr = "File without '.toml' extension encountered - skipping ";
+      var packageName = basename(packageDir);
+
+      warningStr += packageName + " " + fi;
+      warning(warningStr);
     }
   }
-  return (foundValidVersion, ret);
+  return ret;
 }
 
 proc consumeArgs(ref args : [] string) {
