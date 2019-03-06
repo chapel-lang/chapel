@@ -30,14 +30,26 @@ Comparators
 
 Comparators allow sorting data by a mechanism other than the
 default comparison operations between array elements. To use a comparator,
-define a record with either a ``key(a)`` or ``compare(a, b)`` method, and pass
-an instance of that record to the sort function (examples shown below).
+define a record or a class with an appropriate method and then pass
+an instance of it to the sort function. Examples are shown below.
 
-If both methods are implemented on the record passed as the comparator, the
-``key(a)`` method will take priority over the ``compare(a, b)`` method.
+Comparators need to include at least one of the following methods:
 
-Key Comparator
-~~~~~~~~~~~~~~
+ * ``key(a)``  -- see `The .key method`_
+ * ``compare(a, b)``  -- see `The .compare method`_
+ * ``keyPart(a, i)`` -- see `The .keyPart method`_
+
+See the section below for discussion of each of these methods.
+
+A comparator can contain both ``compare`` and ``keyPart`` methods. In that
+event, the sort algorithm will use whichever is appropriate for the algorithm
+and expect that they have consistent results.
+
+It is an error for a comparator to contain a ``key`` method as well as one of
+the other methods.
+
+The .key method
+~~~~~~~~~~~~~~~
 
 The ``key(a)`` method accepts 1 argument, which will be an element from the
 array being sorted.
@@ -83,8 +95,8 @@ themselves like so:
   }
 
 
-Compare Comparator
-~~~~~~~~~~~~~~~~~~
+The .compare method
+~~~~~~~~~~~~~~~~~~~
 
 The ``compare(a, b)`` method accepts 2 arguments, which will be 2 elements from
 the array being sorted. The return value should be a numeric signed type
@@ -99,7 +111,7 @@ indicating how a and b compare to each other. The conditions between ``a`` and
   ``< 0``      ``a < b``
   ============ ==========
 
-The default compare method for a numeric signed type would look like this:
+The default compare method for a signed integral type can look like this:
 
 .. code-block:: chapel
 
@@ -129,6 +141,67 @@ implemented with a compare method:
 
   // This will output: -1, 2, 3, -4
   writeln(Array);
+
+The .keyPart method
+~~~~~~~~~~~~~~~~~~~
+
+A ``keyPart(a, i)`` method returns *parts* of key value at a time. This
+interface supports radix sorting for variable length data types, such as
+strings. It accepts two arguments:
+
+ * ``a`` is the element being sorted
+ * ``i`` is the part number of the key requested, starting from 1
+
+A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
+
+ * The *section* can be any signed integral type and should have the value `-1`,
+   `0`, or `1`. It indicates when the end of the ``a`` has been reached
+   and in that event how it should be sorted relative to other array elements.
+
+   ================ ====================================
+   Returned section Interpretation
+   ================ ====================================
+   ``-1``           no more key parts for ``a``,
+                    sort it before those with more parts
+
+   ``0``            a key part for ``a`` is returned in
+                    the second tuple element
+
+   ``1``            no more key parts for ``a``,
+                    sort it after those with more parts
+   ================ ====================================
+
+ * The *part* can be any signed or unsigned integral type and can contain any
+   value. The *part* will be ignored unless the *section* returned is ``0``.
+
+
+Let's consider several example ``keyPart`` methods. All of these are
+simplifications of ``keyPart`` methods already available in the
+``DefaultComparator``.
+
+This ``keyPart`` method supports sorting tuples of 2 integers:
+
+.. code-block:: chapel
+
+  proc keyPart(x:2*int, i:int) {
+    if i > 2 then
+      return (-1, 0);
+
+    return (0, x(i));
+  }
+
+
+Here is a ``keyPart`` to support sorting of strings:
+
+.. code-block:: chapel
+
+  proc keyPart(x:string, i:int):(int(8), uint(8)) {
+    var len = x.length;
+    var section = if i <= len then 0:int(8) else -1:int(8);
+    var part =    if i <= len then x.byte(i) else  0:uint(8);
+    return (section, part);
+  }
+
 
 .. _reverse-comparator:
 
@@ -231,6 +304,9 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
    If a comparator with a compare method is passed, it will return the value of
    comparator.compare(a, b).
 
+   Otherwise, if the comparator supports keyPart calls, it will
+   use those to compare the elements.
+
    Return values conventions:
 
      a < b : returns value < 0
@@ -275,6 +351,8 @@ proc chpl_check_comparator(comparator, type eltType) param {
   // This may need updating when constructors support non-default args
   const data: eltType;
 
+  param errorDepth = 2;
+
   if comparator.type == DefaultComparator {}
   // Check for valid comparator methods
   else if canResolveMethod(comparator, "key", data) {
@@ -282,30 +360,38 @@ proc chpl_check_comparator(comparator, type eltType) param {
     const keydata = comparator.key(data);
     type keytype = keydata.type;
     if !(canResolve("<", keydata, keydata)) then
-      compilerError("The key method in ", comparator.type:string, " must return an object that supports the '<' function when used with ", eltType:string, " elements");
+      compilerError(errorDepth=errorDepth, "The key method in ", comparator.type:string, " must return an object that supports the '<' function when used with ", eltType:string, " elements");
+
+    // Check that there isn't also a compare or keyPart
+    if canResolveMethod(comparator, "compare", data, data) {
+      compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a compare method");
+    }
+    if canResolveMethod(comparator, "keyPart", data, 1) {
+      compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a keyPart method");
+    }
   }
   else if canResolveMethod(comparator, "compare", data, data) {
     // Check return type of compare
     type comparetype = comparator.compare(data, data).type;
     if !(isNumericType(comparetype)) then
-      compilerError("The compare method in ", comparator.type:string, " must return a numeric type when used with ", eltType:string, " elements");
+      compilerError(errorDepth=errorDepth, "The compare method in ", comparator.type:string, " must return a numeric type when used with ", eltType:string, " elements");
   }
   else if canResolveMethod(comparator, "keyPart", data, 1) {
     var idx: int = 1;
     type partType = comparator.keyPart(data, idx).type;
     if !isTupleType(partType) then
-      compilerError("The keyPart method in ", comparator.type:string, " must return a tuple when used with ", eltType:string, " elements");
+      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple when used with ", eltType:string, " elements");
     var tmp: partType;
     var expectInt = tmp(1);
     var expectIntUint = tmp(2);
     if !isInt(expectInt.type) then
-      compilerError("The keyPart method in ", comparator.type:string, " must return a tuple with 1st element int(?) when used with ", eltType:string, " elements");
+      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with 1st element int(?) when used with ", eltType:string, " elements");
     if !(isInt(expectIntUint) || isUint(expectIntUint)) then
-      compilerError("The keyPart method in ", comparator.type:string, " must return a tuple with 2nd element int(?) or uint(?) when used with ", eltType:string, " elements");
+      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with 2nd element int(?) or uint(?) when used with ", eltType:string, " elements");
   }
   else {
     // If we make it this far, the passed comparator was defined incorrectly
-    compilerError("The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method " + " for element type " + eltType:string );
+    compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method " + " for element type " + eltType:string );
   }
 
   return true;
@@ -316,6 +402,8 @@ proc chpl_check_comparator(comparator, type eltType) param {
 
 private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
+  use Reflection;
+
   if !Dom.stridable {
     var tmp:Data[Dom.low].type;
     if canResolveMethod(comparator, "keyPart", tmp, 1) {
@@ -331,18 +419,38 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
 }
 
 /*
-   General purpose sorting interface.
 
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
+Sort the elements in an array. It is up to the implementation to choose
+the sorting algorithm.
+
+.. note::
+  This function currently either uses a parallel radix sort or a serial
+  quickSort. The algorithms used will change over time.
+
+  It currently uses parallel radix sort if the following conditions are met:
+
+    * the array being sorted is over a non-strided domain
+    * ``comparator`` includes a ``keyPart`` method for ``eltType``
+      or includes a ``key`` returning a value for which the default comparator
+      includes a ``keyPart`` method
+
+  Note that the default comparator includes ``keyPart`` methods for:
+
+    * ``int``
+    * tuples of ``int``
+    * ``uint``
+    * tuples of ``uint``
+    * ``string``
+
+:arg Data: The array to be sorted
+:type Data: [] `eltType`
+:arg comparator: :ref:`Comparator <comparators>` record that defines how the
+  data is sorted.
 
  */
 // TODO: This should have a flag `stable` to request a stable sort
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-
-  use Reflection;
+  chpl_check_comparator(comparator, eltType);
 
   if Dom.low >= Dom.high then
     return;
@@ -1284,15 +1392,12 @@ record DefaultComparator {
 
   /*
    Default compare method used in sort functions.
+   Uses the `<` operator to compute the ordering between ``a`` and ``b``.
+   See also `The .compare method`_.
 
-   :arg a: Array element
-   :type a: `eltType`
-   :arg b: Array element
-   :type b: `eltType`
    :returns: 1 if ``b < a``
    :returns: 0 if ``a == b``
    :returns: -1 if ``a < b``
-
    */
   inline
   proc compare(a, b) {
@@ -1302,12 +1407,13 @@ record DefaultComparator {
   }
 
   /*
-   Default keyPart method for integral values.
+   Default ``keyPart`` method for integral values.
+   See also `The .keyPart method`_.
 
    :arg x: the `int` or `uint` of any size to sort
    :arg i: the part number requested
 
-   :returns: (0, x) if i==0, or (-1, x) otherwise
+   :returns: ``(0, x)`` if ``i==0``, or ``(-1, x)`` otherwise
    */
   inline
   proc keyPart(x: integral, i:int):(int(8), x.type) {
@@ -1316,12 +1422,13 @@ record DefaultComparator {
   }
 
   /*
-   Default keyPart method for tuples of integral values.
+   Default ``keyPart`` method for tuples of integral values.
+   See also `The .keyPart method`_.
 
    :arg x: tuple of the `int` or `uint` (of any bit width) to sort
    :arg i: the part number requested
 
-   :returns: (0, x(i)) if i <= x.size, or (-1, 0) otherwise
+   :returns: ``(0, x(i))`` if ``i <= x.size``, or ``(-1, 0)`` otherwise
    */
   inline
   proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
@@ -1335,7 +1442,7 @@ record DefaultComparator {
   }
 
   /*
-   Default keyPart method for sorting strings
+   Default ``keyPart`` method for sorting strings. See also `The .keyPart method`_.
 
    .. note::
      Currently assumes that the string is local.
@@ -1343,7 +1450,7 @@ record DefaultComparator {
    :arg x: the string to sort
    :arg i: the part number requested
 
-   :returns: (0, byte i of string) or (-1, 0) if i > x.size
+   :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if ``i > x.size``
    */
   inline
   proc keyPart(x:string, i:int):(int(8), uint(8)) {
@@ -1430,15 +1537,6 @@ record ReverseComparator {
   }
 
   pragma "no doc"
-  proc hasReversibleKey(a) param {
-    use Reflection;
-    if canResolveMethod(this.comparator, "key", a) {
-      type t = this.comparator.key(a).type;
-      return typeIsBitReversible(t) || typeIsNegateReversible(t);
-    }
-    return false;
-  }
-  pragma "no doc"
   proc hasKeyPart(a) param {
     use Reflection;
     return canResolveMethod(this.comparator, "keyPart", a, 1);
@@ -1470,20 +1568,6 @@ record ReverseComparator {
     return false;
   }
 
-  inline
-  proc key(a) where hasReversibleKey(a) {
-    chpl_check_comparator(this.comparator, a.type);
-
-    const k = this.comparator.key(a);
-    if typeIsBitReversible(k.type) {
-      return ~k;
-    } else if typeIsNegateReversible(k.type) {
-      return -k;
-    } else {
-      compilerError("internal error: please update hasReversibleKey");
-    }
-  }
-
   pragma "no doc"
   inline
   proc getKeyPart(cmp, a, i) {
@@ -1497,6 +1581,9 @@ record ReverseComparator {
     }
   }
 
+  /*
+   Reverses ``comparator.keyPart``. See also `The .keyPart method`_.
+   */
   inline
   proc keyPart(a, i) where hasKeyPart(a) || hasKeyPartFromKey(a) {
     chpl_check_comparator(this.comparator, a.type);
@@ -1516,15 +1603,7 @@ record ReverseComparator {
   }
 
   /*
-   Reverses ``comparator.compare``.
-
-   :arg a: Array element
-   :type a: `eltType`
-   :arg b: Array element
-   :type b: `eltType`
-   :returns: -1 if ``b < a``
-   :returns: 0 if ``a == b``
-   :returns: 1 if ``a < b``
+   Reverses ``comparator.compare``. See also `The .compare method`_.
    */
   inline
   proc compare(a, b) where hasCompare(a, b) || hasCompareFromKey(a) {
