@@ -402,6 +402,8 @@ proc chpl_check_comparator(comparator, type eltType) param {
 
 private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
+  use Reflection;
+
   if !Dom.stridable {
     var tmp:Data[Dom.low].type;
     if canResolveMethod(comparator, "keyPart", tmp, 1) {
