@@ -2566,7 +2566,7 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                            const char* tmpbinname,
                            std::vector<std::string> dotOFiles,
                            std::vector<std::string> clangLDArgs,
-                           bool saw_sysroot);
+                           bool sawSysroot);
 static void moveGeneratedLibraryFile(const char* tmpbinname);
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
 
@@ -2939,12 +2939,12 @@ void makeBinaryLLVM(void) {
   readArgsFromFile(sysroot_arguments, sysroot_args);
 
   // add arguments from configured-clang-sysroot-arguments
-  bool saw_sysroot = false;
+  bool sawSysroot = false;
   for (auto &s : sysroot_args) {
     options += " ";
     options += s;
     if (s == "-isysroot")
-      saw_sysroot = true;
+      sawSysroot = true;
   }
   // add arguments that we captured at compile time
   options += " ";
@@ -2989,7 +2989,7 @@ void makeBinaryLLVM(void) {
   } else {
     // Runs the LLVM link command
     runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
-                   dotOFiles, clangLDArgs, saw_sysroot);
+                   dotOFiles, clangLDArgs, sawSysroot);
   }
 
 
@@ -3100,7 +3100,7 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                            const char* tmpbinname,
                            std::vector<std::string> dotOFiles,
                            std::vector<std::string> clangLDArgs,
-                           bool saw_sysroot) {
+                           bool sawSysroot) {
   // Run the linker. We always use a C++ compiler because some third-party
   // libraries are written in C++. Here we use clang++ or possibly a
   // linker override specified by the Makefiles (e.g. setting it to mpicxx)
@@ -3130,7 +3130,7 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
     command += " -L";
     command += dirName;
   }
-  if (saw_sysroot) {
+  if (sawSysroot) {
     // Work around a bug in some versions of Clang that forget to
     // search /usr/local/lib if there is a -isysroot argument.
     command += " -L/usr/local/lib";
