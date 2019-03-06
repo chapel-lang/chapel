@@ -6,7 +6,7 @@ This directory contains rough notes intended to be helpful in pointing
 out features/quirks of the Chapel development experience for new
 developers.  A possible reading order is roughly as follows:
 
-GettingStarted.txt
+GettingStarted.rst
   A list of suggested "first steps" for new developers.
 
 ContributorInfo.rst
@@ -18,29 +18,29 @@ Compiler documentation:
   The compiler overview document
     in $CHPL_HOME/doc/rst/developer/compilerOverview
 
-  CompilerDebugging.txt
+  CompilerDebugging.rst
     Tips on debugging the compiler.
 
-  CompilerIRTricks.txt
+  CompilerIRTricks.rst
     Tips on examining compiler IR during/after compilation.
 
-  ErrorWarningMessaging.txt
+  ErrorWarningMessaging.rst
     The standard ways to report errors and warnings in Chapel/compiler/runtime.
 
-RuntimeLibrary.txt
+RuntimeLibrary.rst
   All about the runtime library.
 
-GeneratedCode.txt
+GeneratedCode.rst
   All about compiler-generated code: where it is, timing it,
   debugging/profiling, etc.
 
-GASNetOnDesktops.txt
+GASNetOnDesktops.rst
   Tips on running and debugging Chapel programs with GASNet on your desktop.
 
 GitCheatsheet.rst
   Tips for using git.
 
-CHPL_DEVELOPER.txt
+CHPL_DEVELOPER.rst
   The most important environment variable you want to set, and what it does.
 
 TestSystem.rst
@@ -49,7 +49,7 @@ TestSystem.rst
 SpellChecking.rst
   How to use chplspell to spellcheck the Chapel project.
 
-Potpourri.txt
+Potpourri.rst
   Notes not in any of the above categories.
 
 Valgrind.rst
