@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -e
+
+MASON_HOME=$PWD/.mason/registry/Bricks
+
+# Make fake package dirs
+mkdir -p $MASON_HOME/badFileName
+mkdir -p $MASON_HOME/badFileName2
+
+# Make the version files
+touch $MASON_HOME/badFileName/0.1.0.toml
+touch $MASON_HOME/badFileName/0.5.0
+touch $MASON_HOME/badFileName/1.0.0.toml
+touch $MASON_HOME/badFileName/2.0.0 
+
+touch $MASON_HOME/badFileName2/0.1.0
+touch $MASON_HOME/badFileName2/0.5.0
+touch $MASON_HOME/badFileName2/1.0.0
+touch $MASON_HOME/badFileName2/2.0.0
