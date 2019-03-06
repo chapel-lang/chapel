@@ -6,8 +6,8 @@
 //
 // While this reproducer does not add testing coverage,
 // I am adding it to facilitate resolution of #12497
-// and just in case the other two tests are modified and do not exhibit
-// the problematic pattern any longer.
+// and just in case the other two tests are modified
+// and do not exhibit the problematic pattern any longer.
 
 var GLOBAL: [1..3] int;
 

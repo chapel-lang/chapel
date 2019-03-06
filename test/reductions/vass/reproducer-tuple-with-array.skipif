@@ -1,2 +1,0 @@
-# Do not bother under non-valgrind configurations
-CHPL_TEST_VGRND_EXE != on
