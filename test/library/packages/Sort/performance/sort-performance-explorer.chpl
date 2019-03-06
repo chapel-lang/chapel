@@ -13,26 +13,29 @@ config const inputDataScheme = 1;
 
 config const parallel = true;
 
+config param reverse = false;
+
 var methods = ["default", "msbRadixSort", "quickSort"];
 
-proc testsort(input, method, parallel) {
+proc testsort(input, method, parallel, cmp) {
+
   if method == "default" {
     if parallel == false {
-      serial { sort(input); }
+      serial { sort(input, cmp); }
     } else {
-      sort(input);
+      sort(input, cmp);
     }
   } else if method == "msbRadixSort" {
     if parallel == false {
-      serial { msbRadixSort(input, defaultComparator); }
+      serial { msbRadixSort(input, cmp); }
     } else {
-      msbRadixSort(input, defaultComparator);
+      msbRadixSort(input, cmp);
     }
   } else if method == "quickSort" {
     if parallel == false {
-      serial { quickSort(input); }
+      serial { quickSort(input, comparator=cmp); }
     } else {
-      quickSort(input);
+      quickSort(input, comparator=cmp);
     }
   }
 }
@@ -88,16 +91,17 @@ proc testsize(size:int) {
     ntrials = 100;
 
   for m in methods {
+    const ref cmp = if reverse then reverseComparator else defaultComparator;
     var t: Timer;
     for i in 1..ntrials {
       input = array;
       t.start();
-      testsort(input, m, parallel);
+      testsort(input, m, parallel, cmp);
       t.stop();
     }
     var mibs = mibibytes * ntrials / t.elapsed();
     if printStats then writef(" % 12s", mibs:string);
-    assert(isSorted(input));
+    assert(isSorted(input, cmp));
   }
   if printStats then writeln();
 }
