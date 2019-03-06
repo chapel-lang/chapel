@@ -1427,6 +1427,31 @@ record DefaultComparator {
     return (section, x);
   }
 
+  inline
+  proc keyPart(x: chpl_anyreal, i:int):(int(8), uint(numBits(x.type))) {
+    var section:int(8) = if i > 1 then -1:int(8) else 0:int(8);
+
+    param nbits = numBits(x.type);
+    // Convert the real bits to a uint
+    var src = x;
+    var dst: uint(nbits);
+    c_memcpy(c_ptrTo(dst), c_ptrTo(src), c_sizeof(src.type));
+
+    if (dst >> (nbits-1)) == 1 {
+      // negative bit is set, flip all bits
+      dst = ~dst;
+    } else {
+      const one: uint(nbits) = 1;
+      // negative bit is not set, flip only top bit
+      dst = dst ^ (one << (nbits-1));
+    }
+    return (section, dst);
+  }
+  inline
+  proc keyPart(x: chpl_anyimag, i:int):(int(8), uint(numBits(x.type))) {
+    return keyPart(x:real(numBits(x.type)), i);
+  }
+
   /*
    Default ``keyPart`` method for tuples of integral values.
    See also `The .keyPart method`_.
