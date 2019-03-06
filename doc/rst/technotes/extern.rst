@@ -158,21 +158,21 @@ type T. This pointer should normally only point to local memory - since no
 communication will be generated when it is dereferenced.  Of course, the
 pointed-to type T should be one that is supported in C interoperability if the
 c_ptr(T) is used for C interoperability. The c_ptr(T) type supports
-indexing to get a reference to the i'th element.
+indexing to get a reference to the i'th element (starting from 0).
 
 c_array(T,n)
 ~~~~~~~~~~~~
 
 The c_array(T,n) type is a generic value type representing a C fixed-size
-array. Here n must be known at compile-time.
+array. Here 'n' is the number of elements and must be known at compile-time.
 
 The c_array type is a value type in Chapel code but it can coerce to
 a c_ptr(T) type.
 
 Allocating a variable of c_array type in a function will allocate that
 variable on the stack. Indexing into a c_array works similarly to
-indexing into a c_ptr. c_array supports by-value copy initialization and
-assignment.
+indexing into a c_ptr and starts from 0. c_array supports by-value copy
+initialization and assignment.
 
 ref intents
 ~~~~~~~~~~~
