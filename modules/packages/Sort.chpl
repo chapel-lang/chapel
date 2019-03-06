@@ -1534,6 +1534,7 @@ record ReverseComparator {
     return false;
   }
 
+  /*
   pragma "no doc"
   proc hasReversibleKey(a) param {
     use Reflection;
@@ -1542,7 +1543,8 @@ record ReverseComparator {
       return typeIsBitReversible(t) || typeIsNegateReversible(t);
     }
     return false;
-  }
+  }*/
+
   pragma "no doc"
   proc hasKeyPart(a) param {
     use Reflection;
@@ -1575,6 +1577,7 @@ record ReverseComparator {
     return false;
   }
 
+  /*
   inline
   proc key(a) where hasReversibleKey(a) {
     chpl_check_comparator(this.comparator, a.type);
@@ -1587,7 +1590,7 @@ record ReverseComparator {
     } else {
       compilerError("internal error: please update hasReversibleKey");
     }
-  }
+  }*/
 
   pragma "no doc"
   inline
