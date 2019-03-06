@@ -1730,7 +1730,6 @@ void FnSymbol::codegenPrototype() {
   GenInfo *info = gGenInfo;
 
   if (hasFlag(FLAG_EXTERN) && !hasFlag(FLAG_GENERATE_SIGNATURE)) return;
-  if (hasFlag(FLAG_NO_PROTOTYPE)) return;
   if (hasFlag(FLAG_NO_CODEGEN))   return;
 
   if( id == breakOnCodegenID ||
@@ -2033,7 +2032,6 @@ void FnSymbol::codegenFortran(int indent) {
   int beginIndent = indent;
 
   if (!hasFlag(FLAG_EXPORT)) return;
-  if (hasFlag(FLAG_NO_PROTOTYPE)) return;
   if (hasFlag(FLAG_NO_CODEGEN)) return;
 
   if (info->cfile) {
@@ -2139,7 +2137,6 @@ void FnSymbol::codegenPython(PythonFileType pxd) {
   GenInfo *info = gGenInfo;
 
   if (!hasFlag(FLAG_EXPORT)) return;
-  if (hasFlag(FLAG_NO_PROTOTYPE)) return;
   if (hasFlag(FLAG_NO_CODEGEN)) return;
 
   // Should I add the break-on-codegen-id stuff here?
