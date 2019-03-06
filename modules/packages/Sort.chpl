@@ -1473,6 +1473,15 @@ record DefaultComparator {
     var part =    if i <= len then ptr[i-1] else  0:uint(8);
     return (section, part);
   }
+
+  inline
+  proc keyPart(x:c_string, i:int):(int(8), uint(8)) {
+    var ptr = x:c_ptr(uint(8));
+    var byte = ptr[i-1];
+    var section = if byte != 0 then 0:int(8) else -1:int(8);
+    var part = byte;
+    return (section, part);
+  }
 }
 
 /* Reverse comparator built from another comparator.*/
