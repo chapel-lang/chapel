@@ -1875,7 +1875,6 @@ module DefaultRectangular {
     if len == 0 then return;
 
     if debugBulkTransfer {
-      pragma "no prototype"
       pragma "fn synchronization free"
       extern proc sizeof(type x): int;
       const elemSize =sizeof(B.eltType);
