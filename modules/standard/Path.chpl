@@ -318,7 +318,30 @@ proc dirname(name: string): string {
            directory
   :rtype: `string`
 */
-proc expandUser(path: string): string {
+proc expandUser(path: string): string throws {
+  // Had to wrap some C level functionality first.
+  extern proc chpl_fs_get_home(ref outs: c_string, ref outf: c_int, user: c_string): syserr;
+  extern proc chpl_fs_get_home_uid(ref outs: c_string, ref outf: c_int, uid: c_int): syserr;
+  extern proc chpl_fs_get_cuid(): c_int;
+
+  const uid = chpl_fs_get_cuid();
+
+  var outs: c_string;
+  var outf: c_int;
+
+  var err = chpl_fs_get_home_uid(outs, outf, uid);
+
+  if err != ENOERR then
+    halt('Temporary halt.');
+
+  // Handle the case where the current user was not found.
+  if outf == 0 then
+    return path;
+
+  var homedir = new string(outs, isowned=true, needToCopy=false);
+
+  writeln('Login directory of current process owner is: ', homedir);
+
   return "";
 }
 

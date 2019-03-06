@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,6 +31,10 @@
 #include <sys/stat.h>
 #include <utime.h> // Defines utimbuf and utime()
 
+#include <sys/types.h>
+#include <unistd.h>
+#include <pwd.h>
+#include <string.h>
 
 qioerr chpl_fs_chdir(const char* name) {
   qioerr err = 0;
@@ -111,6 +115,78 @@ qioerr chpl_fs_exists(int* ret, const char* name) {
     *ret = 1;
   }
   return err;
+}
+
+int chpl_fs_get_cuid(void) {
+  return getuid();
+}
+
+/*
+  Quick implementation of strcpy() using qio_malloc(). If it already exists
+  I can easily replace this.
+*/
+char* copy_string(const char* input);
+char* copy_string(const char* input) {
+  char* result = NULL;
+  size_t len = strlen(input);
+
+  result = qio_malloc(len + 1);
+
+  if (result == NULL) { return NULL; }
+
+  result[len] = 0;
+  strncpy(result, input, len);
+
+  return result;
+}
+
+/* Common code shared by "chpl_fs_get_home()" and "chpl_fs_get_home_uid()". */
+static qioerr
+copy_passwd_login_dir(const char** outs, int* outf, struct passwd* pw) {
+  char* result_str = NULL;
+  int result_found = 0;
+
+  // If we've found the given user, attempt to copy their login dir.
+  if (pw != NULL) {
+    result_str = copy_string(pw->pw_dir);
+    if (result_str == NULL) { return qio_mkerror_errno(); }
+    result_found = 1;
+  }
+
+  *outs = (const char *) result_str;
+  *outf = result_found;
+
+  return 0;
+}
+
+qioerr
+chpl_fs_get_home(const char** outs, int* outf, const char* user) {
+  struct passwd* pw = NULL;
+
+  // Clear errno to distinguish an error from lookup failure.
+  errno = 0;
+
+  // This is neither reentrant nor threadsafe.
+  pw = getpwnam(user);
+
+  if (errno != 0) { return qio_mkerror_errno(); }
+
+  // Bridge code shared between both this and "get_home_uid()".
+  return copy_passwd_login_dir(outs, outf, pw);
+}
+
+qioerr chpl_fs_get_home_uid(const char** outs, int* outf, int uid) {
+  struct passwd* pw = NULL;
+
+  // Clear errno to distinguish an error from lookup failure.
+  errno = 0;
+
+  // This is neither reentrant nor threadsafe.
+  pw = getpwuid(uid);
+
+  if (errno != 0) { return qio_mkerror_errno(); }
+
+  return copy_passwd_login_dir(outs, outf, pw);
 }
 
 qioerr chpl_fs_get_size(int64_t* ret, const char* name) {

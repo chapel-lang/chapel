@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,6 +39,46 @@ qioerr chpl_fs_copy_metadata(const char* source, const char* dest);
 qioerr chpl_fs_cwd(const char** working_dir);
 
 qioerr chpl_fs_exists(int* ret, const char* name);
+
+/*
+  Get the UID of the calling process. This function is UNIX only and cannot
+  fail.
+*/
+int chpl_fs_get_cuid(void);
+
+/*
+  Fetch a user's home directory given a username.
+
+  If a user given by the string "user" was able to be looked up in the password
+  database, this function will write a copy of that user's login directory to
+  "out" and set "out_found" to TRUE, else it will not write to "out" and set
+  "out_found" to FALSE.
+
+  Neither output parameter is written to if this function fails.
+
+  The "out" string must be deallocated by the caller.
+
+  UNIX implementations use "getpwuid()", making them neither reentrant nor
+  threadsafe.
+*/
+qioerr chpl_fs_get_home(const char** outs, int* outf, const char* user);
+
+/*
+  Fetch a user's home directory given a UID.
+
+  If a user given by the UID "uid" was able to be looked up in the password
+  database, this function will write a copy of that user's login directory to
+  "out" and set "out_found" to TRUE, else it will not write to "out" and set
+  "out_found" to FALSE.
+
+  Neither output parameter is written to if this function fails.
+
+  The "out" string must be deallocated by the caller.
+
+  UNIX implementations use "getpwuid()", making them neither reentrant nor
+  threadsafe.
+*/
+qioerr chpl_fs_get_home_uid(const char** outs, int* outf, int uid);
 
 qioerr chpl_fs_get_size(int64_t* ret, const char* name);
 qioerr chpl_fs_get_uid(int* ret, const char* name);
