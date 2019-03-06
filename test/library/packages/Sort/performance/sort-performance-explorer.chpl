@@ -1,5 +1,5 @@
 // This tester allows exploration of sort performance
-// for differing algorithms, input data distributions, and input sizes. 
+// for differing algorithms, input data distributions, and input sizes.
 
 use Sort;
 use Random;
@@ -47,8 +47,30 @@ proc testsort(input, method, parallel, cmp) {
   }
 }
 
+proc doString() param {
+  return eltType == string || eltType == c_string;
+}
+proc makeInput(array, inputStrings) {
+  if doString() {
+    if eltType == c_string {
+      var result = forall a in inputStrings do a.c_str();
+      return result;
+    } else {
+      return inputStrings;
+    }
+  } else {
+    if isFloatType(eltType) {
+      var result = forall a in array do (a/1000.0 + a - 500.0):eltType;
+      return result;
+    } else {
+      var result = forall a in array do a:eltType;
+      return result;
+    }
+  }
+}
+
 proc testsize(size:int) {
-  var array:[1..size] int; 
+  var array:[1..size] int;
 
   if inputDataScheme == 0 {
     // scheme 0 : all zeros
@@ -78,6 +100,13 @@ proc testsize(size:int) {
     }
   }
 
+  var inputStringsDomain = {1..0};
+  var inputStrings:[inputStringsDomain] string;
+  if doString() {
+    inputStringsDomain = array.domain;
+    inputStrings = forall a in array do a:string;
+  }
+
   var bytes = size*8;
   var kibibytes = bytes/1024.0;
   var mibibytes = kibibytes/1024.0;
@@ -89,7 +118,7 @@ proc testsize(size:int) {
   if printStats then
     writef("% 16s", sizestr);
 
-  var input = forall a in array do a:eltType;
+  var input = makeInput(array, inputStrings);
 
   var ntrials = 1;
   if mibibytes < 1 then
@@ -101,7 +130,7 @@ proc testsize(size:int) {
     const ref cmp = if reverse then reverseComparator else defaultComparator;
     var t: Timer;
     for i in 1..ntrials {
-      input = forall a in array do a:eltType;
+      input = makeInput(array, inputStrings);
       t.start();
       testsort(input, m, parallel, cmp);
       t.stop();
