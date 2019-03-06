@@ -30,14 +30,26 @@ Comparators
 
 Comparators allow sorting data by a mechanism other than the
 default comparison operations between array elements. To use a comparator,
-define a record with either a ``key(a)`` or ``compare(a, b)`` method, and pass
-an instance of that record to the sort function (examples shown below).
+define a record or a class with an appropriate method and then pass
+an instance of it to the sort function. Examples are shown below.
 
-If both methods are implemented on the record passed as the comparator, the
-``key(a)`` method will take priority over the ``compare(a, b)`` method.
+Comparators need to include at least one of the following methods:
 
-Key Comparator
-~~~~~~~~~~~~~~
+ * ``key(a)``  -- see `The .key method`_
+ * ``compare(a,b)``  -- see `The .compare method`_
+ * ``keyPart(a, i)`` -- see `The .keyPart method`_
+
+See the section below for discussion of each of these methods.
+
+A comparator can contain both ``compare`` and ``keyPart`` methods. In that
+event, the sort algorithm will use whichever is appropriate for the algorithm
+and expect that they have consistent results.
+
+It is an error for a comparator to contain a ``key`` method as well as one of
+the other methods.
+
+The .key method
+~~~~~~~~~~~~~~~
 
 The ``key(a)`` method accepts 1 argument, which will be an element from the
 array being sorted.
@@ -83,8 +95,8 @@ themselves like so:
   }
 
 
-Compare Comparator
-~~~~~~~~~~~~~~~~~~
+The .compare method
+~~~~~~~~~~~~~~~~~~~
 
 The ``compare(a, b)`` method accepts 2 arguments, which will be 2 elements from
 the array being sorted. The return value should be a numeric signed type
@@ -99,7 +111,7 @@ indicating how a and b compare to each other. The conditions between ``a`` and
   ``< 0``      ``a < b``
   ============ ==========
 
-The default compare method for a numeric signed type would look like this:
+The default compare method for a signed integral type can look like this:
 
 .. code-block:: chapel
 
@@ -129,6 +141,67 @@ implemented with a compare method:
 
   // This will output: -1, 2, 3, -4
   writeln(Array);
+
+The .keyPart method
+~~~~~~~~~~~~~~~~~~~
+
+A ``keyPart(a, i)`` method returns *parts* of key value at a time. This
+interface supports radix sorting for variable length data types, such as
+strings. It accepts two arguments:
+
+ * ``a`` is the element being sorted
+ * ``i`` is the part number of the key requested, starting from 1
+
+A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
+
+ * The *section* can be any signed integral type and should have the value `-1`,
+   `0`, or `1`. It indicates when the end of the ``a`` has been reached
+   and in that event how it should be sorted relative to other array elements.
+
+   ================ ====================================
+   Returned section Interpretation
+   ================ ====================================
+   ``-1``           no more key parts for ``a``,
+                    sort it before those with more parts
+
+   ``0``            a key part for ``a`` is returned in
+                    the second tuple element
+
+   ``1``            no more key parts for ``a``,
+                    sort it after those with more parts
+   ================ ====================================
+
+ * The *part* can be any signed or unsigned integral type and can contain any
+   value. The *part* will be ignored unless the *section* returned is ``0``.
+
+
+Let's consider several example ``keyPart`` methods. All of these are
+simplifications of ``keyPart`` methods already available in the
+DefaultComparator.
+
+This ``keyPart`` method supports sorting tuples of 2 integers:
+
+.. code-block:: chapel
+
+  proc keyPart(x:2*int, i:int) {
+    if i > 2 then
+      return (-1, 0);
+
+    return (0, x(i));
+  }
+
+
+Here is a ``keyPart`` to support sorting of strings:
+
+.. code-block:: chapel
+
+  proc keyPart(x:string, i:int):(int(8), uint(8)) {
+    var len = x.length;
+    var section = if i <= len then 0:int(8) else -1:int(8);
+    var part =    if i <= len then x.byte(i) else  0:uint(8);
+    return (section, part);
+  }
+
 
 .. _reverse-comparator:
 
@@ -230,6 +303,9 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
 
    If a comparator with a compare method is passed, it will return the value of
    comparator.compare(a, b).
+
+   Otherwise, if the comparator supports keyPart calls, it will
+   use those to compare the elements.
 
    Return values conventions:
 
@@ -341,12 +417,30 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
 }
 
 /*
-   General purpose sorting interface.
 
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
+Sort the elements in an array.
+
+.. note::
+  This function currently uses parallel radix sort if the following
+  conditions are met:
+
+    * the array being sorted is over a non-strided domain
+    * ``comparator`` includes a ``keyPart`` method for ``eltType``
+      or includes a ``key`` returning a value for which the default comparator
+      includes a ``keyPart`` method
+
+  Note that the default comparator includes ``keyPart`` methods for:
+
+    * ``int``
+    * tuples of ``int``
+    * ``uint``
+    * tuples of ``uint``
+    * ``string``
+
+:arg Data: The array to be sorted
+:type Data: [] `eltType`
+:arg comparator: :ref:`Comparator <comparators>` record that defines how the
+  data is sorted.
 
  */
 // TODO: This should have a flag `stable` to request a stable sort
