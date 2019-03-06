@@ -97,6 +97,7 @@ The Chapel names for C types are:
   size_t
   c_void_ptr
   c_ptr(T)
+  c_array(T,n)
   c_string
 
 For consistency, the following type aliases are also provided even
@@ -108,14 +109,16 @@ Chapel types to always be usable):
   c_float  // (a real(32) in Chapel)
   c_double // (a real(64) in Chapel)
 
-c_void_ptr, c_string, and c_ptr(T) are described in the next section.
+c_void_ptr, c_string, c_ptr(T), and c_array(T,n) are
+described in the next section.
 
 
 Pointer and String Types
 ------------------------
 
 Chapel supports four C pointer types: c_void_ptr, c_ptr(T), c_string, and
-c_fn_ptr.
+c_fn_ptr. In addition, it supports c_array(T,n).
+
 These types are the same as C types:
 
 .. code-block:: text
@@ -124,11 +127,12 @@ These types are the same as C types:
   c_ptr(T) is T*
   c_string is const char*
   c_fn_ptr represents a C function pointer (with unspecified arg and return types)
+  c_array(T,n) is T[n]
 
 Note that in some cases, a ref argument intent may be used in place of
 c_void_ptr or c_ptr(T).
 
-All four of these pointer types may only point to local memory. The intent is
+These pointer types may only point to local memory. The intent is
 that they will be used to interoperate with C libraries that run within a
 single locale. In addition, these pointer types must be treated carefully as it
 is possible to create the same kinds of problems as in C - in particular, it is
@@ -153,7 +157,22 @@ The c_ptr(T) type is a generic type representing a C pointer to an arbitrary
 type T. This pointer should normally only point to local memory - since no
 communication will be generated when it is dereferenced.  Of course, the
 pointed-to type T should be one that is supported in C interoperability if the
-c_ptr(T) is used for C interoperability.
+c_ptr(T) is used for C interoperability. The c_ptr(T) type supports
+indexing to get a reference to the i'th element.
+
+c_array(T,n)
+~~~~~~~~~~~~
+
+The c_array(T,n) type is a generic value type representing a C fixed-size
+array. Here n must be known at compile-time.
+
+The c_array type is a value type in Chapel code but it can coerce to
+a c_ptr(T) type.
+
+Allocating a variable of c_array type in a function will allocate that
+variable on the stack. Indexing into a c_array works similarly to
+indexing into a c_ptr. c_array supports by-value copy initialization and
+assignment.
 
 ref intents
 ~~~~~~~~~~~
@@ -262,7 +281,7 @@ Chapel using:
     extern type foo = int(64);
 
 Static, fixed-size C array types can be described within Chapel using
-its homogeneous tuple type.  For example, the following C typedef:
+c_array. For example, the following C typedef:
 
 .. code-block:: chapel
 
@@ -272,7 +291,7 @@ could be described in Chapel using:
 
 .. code-block:: chapel
 
-    extern type vec = 3*real(64);
+    extern type vec = c_array(real(64),3);
 
 To refer to more complex C types like external structs or pointers to
 structs, see the section on `Declaring External C Structs`_ below.
