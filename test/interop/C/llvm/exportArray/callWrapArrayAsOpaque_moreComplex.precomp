@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling wrapArrayAsOpaque_moreComplex.chpl
+$3 --llvm --library --static wrapArrayAsOpaque_moreComplex.chpl

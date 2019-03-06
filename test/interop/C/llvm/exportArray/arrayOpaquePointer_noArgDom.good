@@ -1,0 +1,2 @@
+arrayOpaquePointer_noArgDom.chpl:11: warning: generating chpl_external_array as type of argument 'x' when only chpl_opaque_array returns are detected
+arrayOpaquePointer_noArgDom.chpl:11: note: you might want to explicitly specify the domain to prevent this

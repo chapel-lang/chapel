@@ -1,0 +1,1 @@
+-Llib/ -lreturnArrayGenericDecl `$CHPL_HOME/util/config/compileline --libraries` -lreturnArrayGenericDecl
