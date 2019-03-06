@@ -20,11 +20,13 @@
 /*
   This module provides a simple singly linked list.
 
-  .. note::
+  .. warning::
 
-      This module is expected to change in the future.
+      This module has been deprecated - please use :mod:`LinkedLists` instead.
  */
 module List {
+
+compilerWarning("List module is deprecated - please use LinkedLists instead");
 
 pragma "no doc"
 class listNode {

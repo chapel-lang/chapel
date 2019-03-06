@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+
+import os
+
+net_atomics = os.getenv('CHPL_NETWORK_ATOMICS', 'none')
+proc_atomics = os.getenv('CHPL_ATOMICS', 'none')
+
+iters      = 10000
+fenceIters = 1000
+if net_atomics == 'ugni' and proc_atomics == 'cstdlib':
+  iters      = 1000000
+  fenceIters = 5000
+
+print('--concurrentFencing=false --iters={0} --oversubscription=1'.format(iters))
+print('--concurrentFencing=false --iters={0} --oversubscription=2'.format(iters//2))
+print('--concurrentFencing=true  --iters={0} --oversubscription=1'.format(fenceIters))
+print('--concurrentFencing=true  --iters={0} --oversubscription=2'.format(fenceIters//2))
+print('--concurrentFencing=true  --iters={0} --oversubscription=10'.format(fenceIters//10))

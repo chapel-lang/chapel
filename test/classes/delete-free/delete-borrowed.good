@@ -1,1 +1,1 @@
-delete-borrowed.chpl:6: warning: 'delete' can only be applied to unmanaged classes
+delete-borrowed.chpl:6: error: 'delete' can only be applied to unmanaged classes

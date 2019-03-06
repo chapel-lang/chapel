@@ -2667,7 +2667,6 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCall(fnName, args);
 }
 
-/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -2684,7 +2683,8 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a8);
   args.push_back(a9);
   codegenCall(fnName, args);
-}*/
+}
+
 /*static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -4039,7 +4039,7 @@ DEFINE_PRIM(PRIM_ASSIGN) {
     }
 }
 
-static bool commGetUnorderedAvailable(Type* elementType) {
+static bool commUnorderedOpsAvailable(Type* elementType) {
   if (0 == strcmp(CHPL_COMM, "ugni")) {
     // the ugni layer only supports unordered gets for up to 8 bytes
     // and we use numeric type as a stand-in for that
@@ -4063,26 +4063,52 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
   bool lhsWide = lhsExpr->isWideRef();
   bool rhsWide = rhsExpr->isWideRef();
 
-  if (lhsWide == false && rhsWide == true &&
-      commGetUnorderedAvailable(lhsExpr->getValType())) {
+  // Unordered ops not supported or both sides are narrow, do a normal assign
+  Type* elementType = lhsExpr->getValType();
+  if (!commUnorderedOpsAvailable(elementType) || (!lhsWide && !rhsWide)) {
+    FORWARD_PRIM(PRIM_ASSIGN);
+    return;
+  }
+
+  GenRet dst = call->get(1);
+  GenRet src = call->get(2);
+  GenRet ln = call->get(3);
+  GenRet fn = call->get(4);
+  TypeSymbol* dt = call->get(1)->typeInfo()->getValType()->symbol;
+  GenRet size = codegenSizeof(dt->typeInfo());
+
+  if (!lhsWide && rhsWide) {
     // do an unordered GET
     // chpl_comm_get_unordered(
     //   void *dst,
-    //   c_nodeid_t src_node, void* src_raddr,
+    //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t typeIndex, int32_t commID,
     //   int ln, int32_t fn);
-    GenRet dst = codegenValuePtr(call->get(1));
-    GenRet src = call->get(2);
-    GenRet ln = call->get(3);
-    GenRet fn = call->get(4);
-    TypeSymbol* dt = call->get(1)->typeInfo()->getValType()->symbol;
-    GenRet size = codegenSizeof(dt->typeInfo());
 
+    dst = codegenValuePtr(dst);
     if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
       dst = codegenDeref(dst);
 
     codegenCall("chpl_comm_get_unordered",
                 codegenCastToVoidStar(codegenAddrOf(dst)),
+                codegenRnode(src),
+                codegenRaddr(src),
+                size,
+                genTypeStructureIndex(dt),
+                genCommID(gGenInfo),
+                ln,
+                fn);
+  } else if (lhsWide && rhsWide) {
+    // do an unordered GETPUT
+    // chpl_comm_getput_unordered(
+    //   c_nodeid_t dst_locale, void* dst_raddr,
+    //   c_nodeid_t src_locale, void* src_raddr,
+    //   size_t size, int32_t typeIndex, int32_t commID,
+    //   int ln, int32_t fn);
+
+    codegenCall("chpl_comm_getput_unordered",
+                codegenRnode(dst),
+                codegenRaddr(dst),
                 codegenRnode(src),
                 codegenRaddr(src),
                 size,
@@ -4378,9 +4404,7 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     TypeSymbol* dt;
     bool isget = true;
 
-    if (call->primitive->tag == PRIM_CHPL_COMM_GET_UNORDERED) {
-      fn = "chpl_comm_get_unordered";
-    } else if (call->primitive->tag == PRIM_CHPL_COMM_GET ||
+    if (call->primitive->tag == PRIM_CHPL_COMM_GET ||
         call->primitive->tag == PRIM_CHPL_COMM_ARRAY_GET) {
       fn = "chpl_gen_comm_get";
     } else {
@@ -4493,9 +4517,6 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     }
 }
 DEFINE_PRIM(PRIM_CHPL_COMM_GET) {
-  codegenPutGet(call, ret);
-}
-DEFINE_PRIM(PRIM_CHPL_COMM_GET_UNORDERED) {
   codegenPutGet(call, ret);
 }
 DEFINE_PRIM(PRIM_CHPL_COMM_PUT) {

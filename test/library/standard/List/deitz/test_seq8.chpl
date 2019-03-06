@@ -1,6 +1,6 @@
-use List;
+use LinkedLists;
 
-var s1 : list(int) = makeList( 3, 1, 4, 1, 5, 9 );
+var s1 : LinkedList(int) = makeList( 3, 1, 4, 1, 5, 9 );
 
 writeln(s1);
 
@@ -13,7 +13,7 @@ s1.destroy();
 
 
 
-var s2 : list(string) = makeList( "three", "one", "four" );
+var s2 : LinkedList(string) = makeList( "three", "one", "four" );
 
 writeln(s2);
 

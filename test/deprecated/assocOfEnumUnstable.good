@@ -1,1 +1,0 @@
-assocOfEnumUnstable.chpl:5: warning: As of Chapel 1.18, associative domains of enums are empty by default rather than full, and associative domains and arrays of enums no longer maintain order

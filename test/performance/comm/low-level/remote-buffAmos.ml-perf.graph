@@ -1,5 +1,0 @@
-perfkeys: Performance (mOps/sec) =, Performance (mOps/sec) =
-files: many-to-one-amos.dat, many-to-one-buffAmos.dat
-graphkeys: AMOs to 1 node, Buffered AMOs to 1 node
-graphtitle: Remote Buffered AMO Performance
-ylabel: Performance (10**6 ops/sec)

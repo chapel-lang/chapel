@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/packages/BufferedAtomics.chpl:80: warning: BufferedAtomics module is deprecated - please use UnorderedAtomics instead
+1

@@ -1,5 +1,6 @@
 // Test that isRefIter() works for various non-these() iterators on records
 
+use printrefness;
 
 //
 // record with ref and non-ref versions of serial, standalone, and l/f iters
@@ -47,9 +48,6 @@ writeln(isRefIter(r.myRefIter(tag=iterKind.follower, 0)));
 //
 // check ref-ness of iters when passed as an argument to a proc
 //
-proc printIterRefness(myIter) where  isRefIter(myIter) { writeln("ref iter"); }
-proc printIterRefness(myIter) where !isRefIter(myIter) { writeln("val iter"); }
-
 printIterRefness(r.myValIter());
 printIterRefness(r.myRefIter());
 
@@ -66,23 +64,14 @@ printIterRefness(r.myRefIter(tag=iterKind.follower, 0));
 //
 // check ref-ness of iters when passed as an argument to a wrapping iter
 //
-iter printIterRefnessWrapper(myIter) ref where isRefIter(myIter) {
-  writeln("ref iter");
-  for i in myIter do yield i;
-}
-iter printIterRefnessWrapper(myIter) where !isRefIter(myIter) {
-  writeln("val iter");
-  for i in myIter do yield i;
-}
-
 for i in printIterRefnessWrapper(r.myValIter()) do;
 for i in printIterRefnessWrapper(r.myRefIter()) do;
 
-for i in printIterRefnessWrapper(r.myValIter(tag=iterKind.standalone)) do;
-for i in printIterRefnessWrapper(r.myRefIter(tag=iterKind.standalone)) do;
+for i in printIterRefnessWrapperP(r.myValIter(tag=iterKind.standalone)) do;
+for i in printIterRefnessWrapperP(r.myRefIter(tag=iterKind.standalone)) do;
 
-for i in printIterRefnessWrapper(r.myValIter(tag=iterKind.leader)) do;
-for i in printIterRefnessWrapper(r.myRefIter(tag=iterKind.leader)) do
+for i in printIterRefnessWrapperP(r.myValIter(tag=iterKind.leader)) do;
+for i in printIterRefnessWrapperP(r.myRefIter(tag=iterKind.leader)) do
 
 for i in printIterRefnessWrapper(r.myValIter(tag=iterKind.follower, 0)) do;
 for i in printIterRefnessWrapper(r.myRefIter(tag=iterKind.follower, 0)) do;

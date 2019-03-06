@@ -120,7 +120,7 @@ default. For example, :proc:`~string.length` returns the length in bytes and
 
 The string type currently supports code point units as well. In some cases these
 units are indicated by the method name, for example with
-:proc:`~string.ulength`. Other methods, including :proc:`~string.this`, support
+:proc:`~string.numCodePoints`. Other methods, including :proc:`~string.this`, support
 arguments of type :record:`codePointIndex` (instead of `int`) in order to
 request code point units.
 
@@ -482,13 +482,21 @@ module String {
     inline proc size return len;
 
     /*
-      :returns: The number of Unicode codepoints in the string.
+      :returns: The number of codepoints in the string.
       */
-    proc ulength {
+    proc numCodePoints {
       var n = 0;
-      for codepoint in this.uchars() do
+      for codepoint in this.codePoints() do
         n += 1;
       return n;
+    }
+
+    /*
+      Deprecated, use :proc:`string.numCodePoints`.
+      */
+    inline proc ulength {
+      compilerWarning("ulength is deprecated - please use numCodePoints instead");
+      return this.numCodePoints;
     }
 
     /*
@@ -578,9 +586,20 @@ module String {
     }
 
     /*
+      Iterates over the string byte by byte.
+    */
+    iter bytes(): uint(8) {
+      var localThis: string = this.localize();
+
+      for i in 0..#localThis.len {
+        yield localThis.buff[i];
+      }
+    }
+
+    /*
       Iterates over the string Unicode character by Unicode character.
     */
-    iter uchars(): int(32) {
+    iter codePoints(): int(32) {
       var localThis: string = this.localize();
 
       var i = 0;
@@ -596,12 +615,21 @@ module String {
     }
 
     /*
+      Deprecated, use :proc:`string.codePoints`.
+    */
+    iter uchars(): int(32) {
+      compilerWarning("uchars is deprecated - please use codePoints instead");
+      for codepoint in this.codePoints() do
+        yield codepoint;
+    }
+
+    /*
       Iterates over the string Unicode character by Unicode character,
       and includes the byte index and byte length of each character.
       Skip characters that begin prior to the specified starting byte index.
     */
     pragma "no doc"
-    iter _ucharsIndexLen(start: int = 1) {
+    iter _cpIndexLen(start: int = 1) {
       var localThis: string = this.localize();
 
       var i = 0;
@@ -618,10 +646,41 @@ module String {
     }
 
     /*
+      :returns: The value of the `i` th byte as an integer.
+    */
+    proc byte(i: int): uint(8) {
+      var localThis: string = this.localize();
+
+      if boundsChecking && (i <= 0 || i > localThis.len)
+        then halt("index out of bounds of string: ", i);
+      return localThis.buff[i - 1];
+    }
+
+    /*
+      :returns: The value of the `i` th multibyte character as an integer.
+     */
+    proc codePoint(i: int): int(32) {
+      const idx = i: int;
+      if boundsChecking && idx <= 0 then
+        halt("index out of bounds of string: ", idx);
+
+      var j = 1;
+      for codepoint in this.codePoints() {
+        if j == idx then
+          return codepoint;
+        j += 1;
+      }
+      // We have reached the end of the string without finding our index.
+      if boundsChecking then
+        halt("index out of bounds of string: ", idx);
+      return 0: int(32);
+    }
+
+    /*
       Index into a string
 
       :returns: A string with the complete multibyte character starting at the
-                specified byte index from `1..string.length`
+                specified byte index from ``1..string.length``
      */
     proc this(i: int) : string {
       if boundsChecking && (i <= 0 || i > this.len)
@@ -661,23 +720,12 @@ module String {
       Index into a string
 
       :returns: A Unicode codepoint starting at the
-                specified codepoint index from `1..string.ulength`
+                specified codepoint index from ``1..string.numCodePoints``
      */
     proc this(cpi: codePointIndex) : string {
+      if this.isEmpty() then return "";
       const idx = cpi: int;
-      if boundsChecking && idx <= 0 then
-        halt("index out of bounds of string: ", idx);
-
-      var i = 1;
-      for codepoint in this.uchars() {
-        if i == idx then
-          return codePointToString(codepoint);
-        i += 1;
-      }
-      // We have reached the end of the string without finding our index.
-      if boundsChecking then
-        halt("index out of bounds of string: ", idx);
-      return "";
+      return codePointToString(this.codePoint(idx));
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
@@ -722,7 +770,7 @@ module String {
       var byte_low = this.len + 1;  // empty range if bounds outside string
       var byte_high = this.len;
       if cp_high > 0 {
-        for (c, i, nbytes) in this._ucharsIndexLen() {
+        for (c, i, nbytes) in this._cpIndexLen() {
           if cp_count == cp_low {
             byte_low = i;
             if !r.hasHighBound() then
@@ -748,11 +796,11 @@ module String {
 
     /*
       Slice a string. Halts if r is not completely inside the range
-      `1..string.length`.
+      ``1..string.length``.
 
       :arg r: range of the indices the new string should be made from
 
-      :returns: a new string that is a substring within `1..string.length`. If
+      :returns: a new string that is a substring within ``1..string.length``. If
                 the length of `r` is zero, an empty string is returned.
      */
     // TODO: I wasn't very good about caching variables locally in this one.
@@ -962,7 +1010,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within `1..string.length`
+                   within ``1..string.length``
 
       :returns: the index of the first occurrence of `needle` within a
                 string, or 0 if the `needle` is not in the string.
@@ -976,7 +1024,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within `1..string.length`
+                   within ``1..string.length``
 
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or 0 if the `needle` is not in the string.
@@ -989,7 +1037,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within `1..string.length`
+                   within ``1..string.length``
 
       :returns: the number of times `needle` occurs in the string
      */
@@ -1107,7 +1155,7 @@ module String {
         var inChunk : bool = false;
         var chunkStart : int;
 
-        for (c, i, nbytes) in localThis._ucharsIndexLen() {
+        for (c, i, nbytes) in localThis._cpIndexLen() {
           // emit whole string, unless all whitespace
           if noSplits {
             done = true;
@@ -1289,8 +1337,8 @@ module String {
       var end = localThis.len;
 
       if leading {
-        label outer for (thisChar, i, nbytes) in localThis._ucharsIndexLen() {
-          for removeChar in localChars.uchars() {
+        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen() {
+          for removeChar in localChars.codePoints() {
             if thisChar == removeChar {
               start = i + nbytes;
               continue outer;
@@ -1306,8 +1354,8 @@ module String {
         // are already past the end of the string, and then update the end
         // point as we are proven wrong.
         end = 0;
-        label outer for (thisChar, i, nbytes) in localThis._ucharsIndexLen(start) {
-          for removeChar in localChars.uchars() {
+        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen(start) {
+          for removeChar in localChars.codePoints() {
             if thisChar == removeChar {
               continue outer;
             }
@@ -1353,7 +1401,7 @@ module String {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         var locale_result = false;
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if codepoint_isLower(codepoint) {
             locale_result = false;
             break;
@@ -1380,7 +1428,7 @@ module String {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         var locale_result = false;
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if codepoint_isUpper(codepoint) {
             locale_result = false;
             break;
@@ -1406,7 +1454,7 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if !(codepoint_isWhitespace(codepoint)) {
             result = false;
             break;
@@ -1428,7 +1476,7 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if !codepoint_isAlpha(codepoint) {
             result = false;
             break;
@@ -1450,7 +1498,7 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if !codepoint_isDigit(codepoint) {
             result = false;
             break;
@@ -1472,7 +1520,7 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if !(codepoint_isAlpha(codepoint) || codepoint_isDigit(codepoint)) {
             result = false;
             break;
@@ -1494,7 +1542,7 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if !codepoint_isPrintable(codepoint) {
             result = false;
             break;
@@ -1519,7 +1567,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         param UN = 0, UPPER = 1, LOWER = 2;
         var last = UN;
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if codepoint_isLower(codepoint) {
             if last == UPPER || last == LOWER {
               last = LOWER;
