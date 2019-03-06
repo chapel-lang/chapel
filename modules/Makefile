@@ -116,7 +116,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
 	packages/Sort.chpl \
-	packages/UgniPerfStats.chpl \
 	packages/VisualDebug.chpl \
 	packages/ZMQ.chpl \
 	packages/Collection.chpl \
