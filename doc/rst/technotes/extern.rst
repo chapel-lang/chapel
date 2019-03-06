@@ -483,7 +483,7 @@ External C struct types can be referred to within Chapel by prefixing
 a Chapel record definition with the extern keyword.  For example,
 given an external C structure defined in foo.h called fltdbl:
 
-.. code-block:: chapel
+.. code-block:: c
 
     typedef struct _fltdbl {
       float x;
@@ -541,6 +541,27 @@ accessed within the Chapel program:
 
    extern record fltdbl {
    }
+
+
+Extern records can work with pointers or fixed-sized arrays.
+Suppose we have this C structure:
+
+.. code-block:: c
+
+    typedef struct bufptr {
+      int buf[16];
+      int* ptr;
+    } bufptr;
+
+It can be declared in Chapel as follows:
+
+.. code-block:: chapel
+
+   extern record bufptr {
+     var buf:c_array(c_int, 16);
+     var ptr:c_ptr(c_int);
+   }
+
 
 A C header file containing the struct's definition in C must be
 specified on the chpl compiler command line or in a ``require`` statement
