@@ -364,10 +364,10 @@ proc chpl_check_comparator(comparator, type eltType) param {
 
     // Check that there isn't also a compare or keyPart
     if canResolveMethod(comparator, "compare", data, data) {
-      compilerError(errorDepth=errorDepth, "The key method cannot be provided in a comparator that provides a compare method");
+      compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a compare method");
     }
     if canResolveMethod(comparator, "keyPart", data, 1) {
-      compilerError(errorDepth=errorDepth, "The key method cannot be provided in a comparator that provides a keyPart method");
+      compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a keyPart method");
     }
   }
   else if canResolveMethod(comparator, "compare", data, data) {
