@@ -5777,6 +5777,12 @@ proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoP
   try {
     if isAbstractEnumType(t) {
       return ERANGE;
+    } else if isEnumType(t) {
+      if (isIntType(t2) || isStringType(t2)) {
+        lhs = rhs:t;
+      } else {
+        lhs = rhs:int:t;
+      }
     } else {
       lhs = rhs:t;
     }
