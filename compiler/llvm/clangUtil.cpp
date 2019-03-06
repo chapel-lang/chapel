@@ -2568,7 +2568,7 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                            std::vector<std::string> clangLDArgs,
                            bool saw_sysroot);
 static void moveGeneratedLibraryFile(const char* tmpbinname);
-static void moveGeneratedExecutable(const char* tmpbinname);
+static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
 
 void makeBinaryLLVM(void) {
 
@@ -2999,7 +2999,7 @@ void makeBinaryLLVM(void) {
     if (fLibraryCompile) {
       moveGeneratedLibraryFile(tmpbinname);
     } else {
-      moveGeneratedExecutable(tmpbinname);
+      moveResultFromTmp(executableFilename, tmpbinname);
     }
 
   } else {
@@ -3032,6 +3032,67 @@ static void makeLLVMLibrary(std::string moduleFilename, const char* tmpbinname,
     fflush(stdout); fflush(stderr);
   }
   mysystem(command.c_str(), "Make Library File - Linking");
+}
+
+static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
+  std::error_code err;
+
+  // rm -f hello
+  if( printSystemCommands )
+    printf("rm -f %s\n", resultName);
+
+  err = llvm::sys::fs::remove(resultName);
+  if (err) {
+    USR_FATAL("removing file %s failed: %s\n",
+              resultName,
+              err.message().c_str());
+  }
+  // mv tmp/hello.tmp hello
+  if( printSystemCommands )
+    printf("mv %s %s\n", tmpbinname, resultName);
+
+  err = llvm::sys::fs::rename(tmpbinname, resultName);
+  if (err) {
+    // But that might fail if /tmp is on a different filesystem.
+
+    std::string mv("mv ");
+    mv += tmpbinname;
+    mv += " ";
+    mv += resultName;
+
+    mysystem(mv.c_str(), mv.c_str());
+
+    /* For future LLVM,
+       err = llvm::sys::fs::copy_file(tmpbinname, resultName);
+       if (err) {
+         USR_FATAL("copying file %s to %s failed: %s\n",
+                   tmpbinname,
+                   resultName,
+                   err.message().c_str());
+       }
+
+       // and then set permissions, like mv
+       auto maybePerms = llvm::sys::fs::getPermissions(tmpbinname);
+       if (maybePerms.getError()) {
+         USR_FATAL("reading permissions on %s failed: %s\n",
+                   tmpbinname,
+                   err.message().c_str());
+       }
+       err = llvm::sys::fs::setPermissions(resultName, *maybePerms);
+       if (err) {
+         USR_FATAL("setting permissions on %s failed: %s\n",
+                   resultName,
+                   err.message().c_str());
+       }
+
+       // and then remove the file, so it's like mv
+       err = llvm::sys::fs::remove(tmpbinname);
+       if (err) {
+         USR_FATAL("removing file %s failed: %s\n",
+                   tmpbinname,
+                   err.message().c_str());
+       }*/
+  }
 }
 
 static void runLLVMLinking(std::string useLinkCXX, std::string options,
@@ -3100,126 +3161,7 @@ static void moveGeneratedLibraryFile(const char* tmpbinname) {
   const char* fullLibraryName = astr(libDir, "/", libraryPrefix,
                                      executableFilename, exeExt);
 
-  std::error_code err;
-
-  // rm -f hello
-  if( printSystemCommands )
-    printf("rm -f %s\n", fullLibraryName);
-
-  err = llvm::sys::fs::remove(fullLibraryName);
-  if (err) {
-    USR_FATAL("removing file %s failed: %s\n",
-              fullLibraryName,
-              err.message().c_str());
-  }
-  // mv tmp/hello.tmp hello
-  if( printSystemCommands )
-    printf("mv %s %s\n", tmpbinname, fullLibraryName);
-
-  err = llvm::sys::fs::rename(tmpbinname, fullLibraryName);
-  if (err) {
-    // But that might fail if /tmp is on a different filesystem.
-
-    std::string mv("mv ");
-    mv += tmpbinname;
-    mv += " ";
-    mv += fullLibraryName;
-
-    mysystem(mv.c_str(), mv.c_str());
-
-    /* For future LLVM,
-       err = llvm::sys::fs::copy_file(tmpbinname, fullLibraryName);
-       if (err) {
-         USR_FATAL("copying file %s to %s failed: %s\n",
-                   tmpbinname,
-                   fullLibraryName,
-                   err.message().c_str());
-       }
-
-       // and then set permissions, like mv
-       auto maybePerms = llvm::sys::fs::getPermissions(tmpbinname);
-       if (maybePerms.getError()) {
-         USR_FATAL("reading permissions on %s failed: %s\n",
-                   tmpbinname,
-                   err.message().c_str());
-       }
-       err = llvm::sys::fs::setPermissions(fullLibraryName, *maybePerms);
-       if (err) {
-         USR_FATAL("setting permissions on %s failed: %s\n",
-                   fullLibraryName,
-                   err.message().c_str());
-       }
-
-       // and then remove the file, so it's like mv
-       err = llvm::sys::fs::remove(tmpbinname);
-       if (err) {
-         USR_FATAL("removing file %s failed: %s\n",
-                   tmpbinname,
-                   err.message().c_str());
-       }*/
-  }
-
-}
-
-static void moveGeneratedExecutable(const char* tmpbinname) {
-  std::error_code err;
-
-  // rm -f hello
-  if( printSystemCommands )
-    printf("rm -f %s\n", executableFilename);
-
-  err = llvm::sys::fs::remove(executableFilename);
-  if (err) {
-    USR_FATAL("removing file %s failed: %s\n",
-              executableFilename,
-              err.message().c_str());
-  }
-  // mv tmp/hello.tmp hello
-  if( printSystemCommands )
-    printf("mv %s %s\n", tmpbinname, executableFilename);
-
-  err = llvm::sys::fs::rename(tmpbinname, executableFilename);
-  if (err) {
-    // But that might fail if /tmp is on a different filesystem.
-
-    std::string mv("mv ");
-    mv += tmpbinname;
-    mv += " ";
-    mv += executableFilename;
-
-    mysystem(mv.c_str(), mv.c_str());
-
-    /* For future LLVM,
-       err = llvm::sys::fs::copy_file(tmpbinname, executableFilename);
-       if (err) {
-         USR_FATAL("copying file %s to %s failed: %s\n",
-                   tmpbinname,
-                   executableFilename,
-                   err.message().c_str());
-       }
-
-       // and then set permissions, like mv
-       auto maybePerms = llvm::sys::fs::getPermissions(tmpbinname);
-       if (maybePerms.getError()) {
-         USR_FATAL("reading permissions on %s failed: %s\n",
-                   tmpbinname,
-                   err.message().c_str());
-       }
-       err = llvm::sys::fs::setPermissions(executableFilename, *maybePerms);
-       if (err) {
-         USR_FATAL("setting permissions on %s failed: %s\n",
-                   executableFilename,
-                   err.message().c_str());
-       }
-
-       // and then remove the file, so it's like mv
-       err = llvm::sys::fs::remove(tmpbinname);
-       if (err) {
-         USR_FATAL("removing file %s failed: %s\n",
-                   tmpbinname,
-                   err.message().c_str());
-       }*/
-  }
+  moveResultFromTmp(fullLibraryName, tmpbinname);
 }
 
 #endif
