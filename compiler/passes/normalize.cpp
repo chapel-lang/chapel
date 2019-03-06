@@ -1035,7 +1035,21 @@ static void processManagedNew(CallExpr* newCall) {
   }
 
   if (argListError) {
-    USR_FATAL_CONT(newCall, "type in 'new' expression is missing its argument list");
+    FnSymbol* parent = newCall->getFunction();
+
+    //
+    // Later in normalization valid AST like "('new' (call R))" will turn into
+    // "('new' R)" during fixPrimNew. If those expressions were run through
+    // normalization again, they would encounter this error.
+    //
+    // This conditional avoids known cases where those expressions are
+    // re-normalized.
+    //
+    if (parent->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false &&
+        parent->hasFlag(FLAG_NEW_WRAPPER) == false &&
+        parent->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+      USR_FATAL_CONT(newCall, "type in 'new' expression is missing its argument list");
+    }
   }
 }
 
