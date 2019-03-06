@@ -143,6 +143,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* account = getenv("CHPL_LAUNCHER_ACCOUNT");
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
+  char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
   char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
   const char* nodeAccessStr = NULL;
 
@@ -172,7 +173,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   const char* tmpDir    = getTmpDir();
   char stdoutFile         [MAX_COM_LEN];
   char stdoutFileNoFmt    [MAX_COM_LEN];
-  char tmpStdoutFile      [MAX_COM_LEN];
   char tmpStdoutFileNoFmt [MAX_COM_LEN];
 
   // command line walltime takes precedence over env var
@@ -302,10 +302,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // We only redirect the program output to the tmp file
     fprintf(slurmFile, "#SBATCH --output=%s\n", stdoutFile);
 
+    if (errorfn != NULL) {
+      fprintf(slurmFile, "#SBATCH --error=%s\n", errorfn);
+    }
+
     // If we're buffering the output, set the temp output file name.
     // It's always <tmpDir>/binaryName.<jobID>.out.
     if (bufferStdout != NULL) {
-      sprintf(tmpStdoutFile,      "%s/%s.%s.out", tmpDir, argv[0], "%j");
       sprintf(tmpStdoutFileNoFmt, "%s/%s.%s.out", tmpDir, argv[0], "$SLURM_JOB_ID");
     }
 
@@ -318,9 +321,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "'%s' ", argv[i]);
     }
 
-    // buffer program output to the tmp stdout file
+    // buffer stdout to the tmp stdout file
     if (bufferStdout != NULL) {
-      fprintf(slurmFile, "&> %s", tmpStdoutFileNoFmt);
+      fprintf(slurmFile, "> %s", tmpStdoutFileNoFmt);
     }
     fprintf(slurmFile, "\n");
 

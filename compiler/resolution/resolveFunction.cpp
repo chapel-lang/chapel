@@ -561,9 +561,9 @@ static void markIterator(FnSymbol* fn) {
   }
 
   //
-  // Mark leader and standalone parallel iterators for inlining.
+  // Mark parallel iterators for inlining.
   //
-  if (isLeaderIterator(fn) || isStandaloneIterator(fn)) {
+  if (isParallelIterator(fn)) {
     fn->addFlag(FLAG_INLINE_ITERATOR);
   }
 }
@@ -604,6 +604,21 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
   }
 
   return retval;
+}
+
+// leader or standalone
+bool isParallelIterator(FnSymbol* fn) {
+  if (!fn->isIterator())
+    return false;
+
+  for_formals(formal, fn) {
+    if (formal->type == gLeaderTag->type          &&
+        (paramMap.get(formal) == gLeaderTag    ||
+         paramMap.get(formal) == gStandaloneTag )  )
+      return true;
+  }
+
+  return false;
 }
 
 /************************************* | **************************************

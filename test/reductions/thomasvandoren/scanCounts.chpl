@@ -16,6 +16,11 @@ class scanCounts : ReduceScanOp {
   // for user code.
   var _curValue: eltType = min(eltType);
 
+  proc identity {
+    var empty: [1..k] int;
+    return empty;
+  }
+
   proc accumulate(value: eltType) {
     _curValue = value;
     v[value] += 1;

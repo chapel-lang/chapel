@@ -338,6 +338,13 @@ static inline void verifyNotOnList(Expr* expr) {
     INT_FATAL(expr, "Expr is in a list incorrectly");
 }
 
+// Strip NamedExpr, if present.
+static inline Symbol* symbolForActual(Expr* actual) {
+  if (NamedExpr* ne = toNamedExpr(actual))
+    actual = ne->actual;
+  return toSymExpr(actual)->symbol();
+}
+
 
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure

@@ -19,8 +19,7 @@
 
 /*
    .. warning::
-     This module represents work in progress. The API is unstable and likely to
-     change over time.
+     This module has been deprecated - please use :mod:`UnorderedAtomics` instead.
 
    This module provides buffered versions of non-fetching atomic operations for
    all ``int``, ``uint``, and ``real`` types.  Buffered versions of
@@ -78,6 +77,7 @@
      improvement over non-buffered atomics for CLE 5.2UP04 or newer.
  */
 module BufferedAtomics {
+  compilerWarning("BufferedAtomics module is deprecated - please use UnorderedAtomics instead");
 
   private proc externFunc(param s: string, type T) param {
     if isInt(T)  then return "chpl_comm_atomic_" + s + "_int"  + numBits(T):string;

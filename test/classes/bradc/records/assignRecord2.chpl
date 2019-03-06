@@ -1,4 +1,4 @@
-use List;
+use LinkedLists;
 
 class myclass {
   var a: int;
@@ -6,7 +6,7 @@ class myclass {
 }
 
 record myrecord {
-  var a: list(int);
+  var a: LinkedList(int);
 }
 
 proc main() {

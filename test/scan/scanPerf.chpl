@@ -1,16 +1,20 @@
-use Time, Memory;
+use Time, Memory, BlockDist;
 
-// compute a target problem size if one is not specified
+// compute a target problem size if one is not specified; assume homogeneity
 config const memFraction = 0;
-const totalMem = here.physicalMemory(unit = MemUnits.Bytes);
-const defaultN = if memFraction == 0 then 10
-                                     else (totalMem / numBytes(int)) / memFraction;
+const totMem = here.physicalMemory(unit = MemUnits.Bytes);
+const defaultN = if memFraction == 0
+                   then 30
+                   else numLocales * ((totMem / numBytes(int)) / memFraction);
 
 config const n = defaultN,
              printTiming = false,
              printArray = true;
 
-var A: [1..n] int = 1;
+var D = if CHPL_COMM=='none' then {1..n}
+                             else {1..n} dmapped Block({1..n});
+
+var A: [D] int = 1;
 
 var t: Timer;
 
@@ -32,3 +36,11 @@ if (tot != exp) then
   writeln("Verification failed: ", tot, " != ", exp);
 else
    writeln("Verification passed!");
+
+if printArray {
+  writeln("distributed:");
+  forall b in B do
+    b = here.id;
+  writeln(B);
+}
+

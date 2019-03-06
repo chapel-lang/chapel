@@ -1657,6 +1657,94 @@ where useBulkTransferDist {
   return true;
 }
 
+config param debugBlockScan = false;
+
+proc BlockArr.doiScan(op, dom) where (rank == 1) &&
+                                     chpl__scanStateResTypesMatch(op) {
+
+  // The result of this scan, which will be Block-distributed as well
+  type resType = op.generate().type;
+  var res: [dom] resType;
+
+  // Store one element per locale in order to track our local total
+  // for a cross-locale scan as well as flags to negotiate reading and
+  // writing it.  This domain really wants an easier way to express
+  // it...
+  use ReplicatedDist;
+  ref targetLocs = this.dsiTargetLocales();
+  const elemPerLocDom = {1..1} dmapped Replicated(targetLocs);
+  var elemPerLoc: [elemPerLocDom] resType;
+  var inputReady$: [elemPerLocDom] sync bool;
+  var outputReady$: [elemPerLocDom] sync bool;
+
+  // Fire up tasks per participating locale
+  coforall locid in dom.dist.targetLocDom {
+    on targetLocs[locid] {
+      const myop = op.clone(); // this will be deleted by doiScan()
+
+      // set up some references to our LocBlockArr descriptor, our
+      // local array, local domain, and local result elements
+      ref myLocArrDesc = locArr[locid];
+      ref myLocArr = myLocArrDesc.myElems;
+      const ref myLocDom = myLocArr.domain;
+
+      // Compute the local pre-scan on our local array
+      var (numTasks, rngs, state, tot) = myLocArr._value.chpl__preScan(myop, res);
+      if debugBlockScan then
+        writeln(locid, ": ", (numTasks, rngs, state, tot));
+
+      // save our local scan total away and signal that it's ready
+      elemPerLoc[1] = tot;
+      inputReady$[1] = true;
+
+      // the "first" locale scans the per-locale contributions as they
+      // become ready
+      if (locid == dom.dist.targetLocDom.low) {
+        const metaop = op.clone();
+
+        var next: resType = metaop.identity;
+        for locid in dom.dist.targetLocDom {
+          const targetloc = targetLocs[locid];
+          const locready = inputReady$.replicand(targetloc)[1];
+
+          // store the scan value and mark that it's ready
+          ref locVal = elemPerLoc.replicand(targetloc)[1];
+          locVal <=> next;
+          outputReady$.replicand(targetloc)[1] = true;
+
+          // accumulate to prep for the next iteration
+          metaop.accumulateOntoState(next, locVal);
+        }
+        delete metaop;
+      }
+
+      // block until someone tells us that our local value has been updated
+      // and then read it
+      const resready = outputReady$[1];
+      const myadjust = elemPerLoc[1];
+      if debugBlockScan then
+        writeln(locid, ": myadjust = ", myadjust);
+
+      // update our state vector with our locale's adjustment value
+      for s in state do
+        s += myadjust;
+      if debugBlockScan then
+        writeln(locid, ": state = ", state);
+
+      // have our local array compute its post scan with the globally
+      // accurate state vector
+      myLocArr._value.chpl__postScan(op, res, numTasks, rngs, state);
+      if debugBlockScan then
+        writeln(locid, ": ", myLocArr);
+
+      delete myop;
+    }
+  }
+
+  delete op;
+  return res;
+}
+
 proc newBlockDom(dom: domain) {
   return dom dmapped Block(dom);
 }

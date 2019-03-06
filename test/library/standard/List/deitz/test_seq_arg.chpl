@@ -1,10 +1,10 @@
-use List;
+use LinkedLists;
 
-proc foo(s : list(string)) {
+proc foo(s : LinkedList(string)) {
   writeln("foo called on a sequence of strings: ", s);
 }
 
-proc foo(s : list(int)) {
+proc foo(s : LinkedList(int)) {
   writeln("foo called on a sequence of ints: ", s);
 }
 

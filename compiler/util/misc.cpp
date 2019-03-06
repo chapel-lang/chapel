@@ -277,6 +277,11 @@ static bool printErrorHeader(const BaseAST* ast) {
             suppress = (strcmp(err_fn->name, "init") != 0) ? true : false;
           }
 
+          // Suppress internal function names
+          if (!developer && strncmp(err_fn->name, "chpl_", 5) == 0) {
+            suppress = true;
+          }
+
           if (suppress == false) {
             fprintf(stderr,
                     "%s:%d: In ",

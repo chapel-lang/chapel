@@ -1,4 +1,5 @@
 scanPreserveDomain.chpl:2: warning: scan has been serialized (see issue #5760)
+scanPreserveDomain.chpl:2: warning: (recompile with -senableParScan to enable a prototype parallel implementation)
 scanPreserveDomain.chpl:7: warning: scan has been serialized (see issue #5760)
 1 2 3 4
 {3..6}

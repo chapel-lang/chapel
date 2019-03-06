@@ -289,7 +289,12 @@ module MPI {
             // This may be a colon separated string.
             var cookieJar = pmiGniCookie.split(":");
             const lastcookie = cookieJar.domain.last;
-            cookieJar[lastcookie] = ((cookieJar[lastcookie]):int + 1):string;
+            try {
+              cookieJar[lastcookie] = ((cookieJar[lastcookie]):int + 1):string;
+            } catch e {
+              writeln("Unable to parse PMI_GNI_COOKIE");
+              C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
+            }
             const newVal = ":".join(cookieJar);
             C_Env.setenv("PMI_GNI_COOKIE",newVal.c_str(),1);
           }

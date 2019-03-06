@@ -738,6 +738,9 @@ module Spawn {
     if !running {
       if this.spawn_error then
         try ioerror(this.spawn_error, "in subprocess.wait");
+
+      // Otherwise, do nothing, since the child process already ended.
+      return;
     }
 
     var stdin_err:syserr  = ENOERR;
@@ -831,6 +834,14 @@ module Spawn {
    */
   proc subprocess.communicate() throws {
     try _throw_on_launch_error();
+
+    if !running {
+      if this.spawn_error then
+        try ioerror(this.spawn_error, "in subprocess.communicate");
+
+      // Otherwise, do nothing, since the child process already ended.
+      return;
+    }
 
     var err:syserr = ENOERR;
     on home {

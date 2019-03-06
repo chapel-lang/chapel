@@ -26,6 +26,7 @@ Initializing Modules:
          Sort
         ExternalArray
         ISO_Fortran_binding
+        RangeChunk
        ChapelNumLocales
        Sys
         SysBasic
@@ -33,7 +34,7 @@ Initializing Modules:
      LocaleModelHelpMem
     LocalesArray
     ChapelDistribution
-     List
+     LinkedLists
     ChapelIO
      IO
       SysError
@@ -49,6 +50,5 @@ Initializing Modules:
     ChapelTaskData
     Assert
     AlignedTSupport
-    RangeChunk
    printModuleInitOrder
     moduleInitTest

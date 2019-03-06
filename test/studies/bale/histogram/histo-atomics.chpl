@@ -10,7 +10,7 @@ config const printStats = true,
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
-config const useBufferedAtomics = false;
+config const useUnorderedAtomics = false;
 
 const numTasksPerLocale = here.maxTaskPar;
 const numTasks = numLocales * numTasksPerLocale;
@@ -40,10 +40,10 @@ proc main() {
   var t: Timer;
   t.start();
 
-  if useBufferedAtomics {
-    use BufferedAtomics;
+  if useUnorderedAtomics {
+    use UnorderedAtomics;
     forall r in rindex do
-      A[r].addBuff(1);
+      A[r].unorderedAdd(1);
   } else {
    forall r in rindex do
     A[r].add(1);
