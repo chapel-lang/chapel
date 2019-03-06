@@ -177,7 +177,7 @@ A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
 
 Let's consider several example ``keyPart`` methods. All of these are
 simplifications of ``keyPart`` methods already available in the
-DefaultComparator.
+``DefaultComparator``.
 
 This ``keyPart`` method supports sorting tuples of 2 integers:
 
@@ -1404,7 +1404,7 @@ record DefaultComparator {
   }
 
   /*
-   Default keyPart method for integral values.
+   Default ``keyPart`` method for integral values.
    See also `The .keyPart method`_.
 
    :arg x: the `int` or `uint` of any size to sort
@@ -1419,7 +1419,7 @@ record DefaultComparator {
   }
 
   /*
-   Default keyPart method for tuples of integral values.
+   Default ``keyPart`` method for tuples of integral values.
    See also `The .keyPart method`_.
 
    :arg x: tuple of the `int` or `uint` (of any bit width) to sort
@@ -1439,7 +1439,7 @@ record DefaultComparator {
   }
 
   /*
-   Default keyPart method for sorting strings. See also `The .keyPart method`_.
+   Default ``keyPart`` method for sorting strings. See also `The .keyPart method`_.
 
    .. note::
      Currently assumes that the string is local.
@@ -1579,7 +1579,7 @@ record ReverseComparator {
   }
 
   /*
-   Reverses comparator.keyPart. See also `The .keyPart method`_.
+   Reverses ``comparator.keyPart``. See also `The .keyPart method`_.
    */
   inline
   proc keyPart(a, i) where hasKeyPart(a) || hasKeyPartFromKey(a) {
