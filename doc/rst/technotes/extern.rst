@@ -577,46 +577,6 @@ records.  This restriction could be lifted in the future if considered
 useful to users.
 
 
-Referring to External C Pointer-to-Structs ("extern classes")
--------------------------------------------------------------
-
-You can also refer to an external C pointer-to-struct types by
-considering it to be an 'extern class' in Chapel.  The declaration
-style is similar to that described above, it simply has different
-implications on the underlying C types.
-
-As an example, given the declaration:
-
-.. code-block:: chapel
-
-  extern class D {
-    var x: real;
-  }
-
-The requirements on the corresponding C code are:
-
-1) There must be a struct type that is typedef'd to have the name _D.
-
-2) A pointer-to-_D type must be typedef'd to have the name D.
-
-3) The _D struct type must contain a field named 'x' of type double.
-   Like external records/structs, it may also contain other fields
-   that will simply be ignored by the Chapel compiler.
-
-Thus, the following C typedef would fulfill the external Chapel class
-declaration shown above:
-
-.. code-block:: chapel
-
-   typedef struct __D {
-     double x;
-     int y;
-   } _D, *D;
-
-where the Chapel compiler would not know about the 'y' field and
-therefore could not refer to it or manipulate it.
-
-
 Opaque Types
 ------------
 
