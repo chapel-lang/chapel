@@ -51,14 +51,14 @@ int chpl_fs_get_cuid(void);
 
   If a user given by the string "user" was able to be looked up in the password
   database, this function will write a copy of that user's login directory to
-  "out" and set "out_found" to TRUE, else it will not write to "out" and set
-  "out_found" to FALSE.
+  "outs" and set "outf" to TRUE, else it will not write to "outs" and set
+  "outf" to FALSE.
 
-  Neither output parameter is written to if this function fails.
+  Neither output parameter is written to if an error occurs.
 
-  The "out" string must be deallocated by the caller.
+  If "outf" is TRUE then the "outs" string must be cleaned up by the caller.
 
-  UNIX implementations use "getpwuid()", making them neither reentrant nor
+  UNIX implementations use "getpwnam()", making them neither reentrant nor
   threadsafe.
 */
 qioerr chpl_fs_get_home(const char** outs, int* outf, const char* user);
@@ -68,12 +68,12 @@ qioerr chpl_fs_get_home(const char** outs, int* outf, const char* user);
 
   If a user given by the UID "uid" was able to be looked up in the password
   database, this function will write a copy of that user's login directory to
-  "out" and set "out_found" to TRUE, else it will not write to "out" and set
-  "out_found" to FALSE.
+  "outs" and set "outf" to TRUE, else it will not write to "outs" and set
+  "outf" to FALSE.
 
-  Neither output parameter is written to if this function fails.
+  Neither output parameter is written to if an error occurs.
 
-  The "out" string must be deallocated by the caller.
+  If "outf" is TRUE then the "outs" string must be cleaned up by the caller.
 
   UNIX implementations use "getpwuid()", making them neither reentrant nor
   threadsafe.

@@ -300,6 +300,82 @@ proc dirname(name: string): string {
 }
 
 /*
+  Get the login directory of a given user. If the given user's login directory
+  was found, this function returns (true, logindir), else it will return
+  (false, '').
+
+  Underlying C implementation is currently not reentrant/threadsafe.
+*/
+private
+proc getUserLoginDir(user: string): (bool, string) throws {
+  // This returns a manually malloc'd string that needs to be cleaned up.
+  extern proc chpl_fs_get_home(
+      ref outs: c_string,
+      ref outf: c_int,
+      user: c_string
+  ): syserr;
+
+  var outs: c_string;
+  var outf: c_int;
+
+  // Make sure to localize the "user" string first to prevent a halt.
+  user.localize();
+  const err = chpl_fs_get_home(outs, outf, user.c_string());
+
+  // If there was an error then "outs" was never allocated.
+  if err != ENOERR then
+    try ioerror(err);
+
+  // If "outf" is 0 then "outs" was never allocated.
+  if outf == 0 then
+    return (false, '');
+
+  // Handing off ownership of "outs" takes care of cleanup.
+  var logindir = new string(outs, isowned=true, needToCopy=false);
+
+  return (true, logindir);
+}
+
+/*
+  Get the login directory of the current user (process owner). If the current
+  user's was found, this function returns (true, logindir), else it will
+  return (false, '').
+
+  Underlying C implementation is currently not reentrant/threadsafe.
+*/
+private
+proc getUserLoginDir(): (bool, string) throws {
+  extern proc chpl_fs_get_cuid(): c_int;
+  // This returns a manually malloc'd string that needs to be cleaned up.
+  extern proc chpl_fs_get_home_uid(
+      ref outs: c_string,
+      ref outf: c_int,
+      uid: c_int
+  ): syserr;
+
+  // This is per process, meaning it will be different on each locale?
+  const cuid = chpl_fs_get_cuid();
+
+  var outs: c_string;
+  var outf: c_int;
+
+  const err = chpl_fs_get_home_uid(outs, outf, cuid);
+
+  // If there was an error then "outs" was never allocated.
+  if err != ENOERR then
+    try ioerror(err);
+
+  // If "outf" is false then "outs" was never allocated.
+  if outf == 0 then
+    return (false, '');
+
+  // Handing off ownership of "outs" takes care of cleanup.
+  var logindir = new string(outs, isowned=true, needToCopy=false);
+
+  return (true, result);
+}
+
+/*
   Return the argument with an initial component of `~` or `~user` replaced by
   that `user's` home directory.
 
@@ -319,28 +395,6 @@ proc dirname(name: string): string {
   :rtype: `string`
 */
 proc expandUser(path: string): string throws {
-  // Had to wrap some C level functionality first.
-  extern proc chpl_fs_get_home(ref outs: c_string, ref outf: c_int, user: c_string): syserr;
-  extern proc chpl_fs_get_home_uid(ref outs: c_string, ref outf: c_int, uid: c_int): syserr;
-  extern proc chpl_fs_get_cuid(): c_int;
-
-  const uid = chpl_fs_get_cuid();
-
-  var outs: c_string;
-  var outf: c_int;
-
-  var err = chpl_fs_get_home_uid(outs, outf, uid);
-
-  if err != ENOERR then
-    halt('Temporary halt.');
-
-  // Handle the case where the current user was not found.
-  if outf == 0 then
-    return path;
-
-  var homedir = new string(outs, isowned=true, needToCopy=false);
-
-  writeln('Login directory of current process owner is: ', homedir);
 
   return "";
 }
