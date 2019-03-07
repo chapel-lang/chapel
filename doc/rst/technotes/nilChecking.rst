@@ -22,6 +22,7 @@ Consider this example program:
 .. code-block:: chapel
 
   // ex.chpl
+
   class MyClass {
     var x: int;
     proc method() { }
