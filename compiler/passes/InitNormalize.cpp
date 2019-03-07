@@ -291,14 +291,10 @@ void InitNormalize::initializeField(Expr* insertBefore,
   }
 
   if (typeExpr == NULL && initExpr == NULL) {
-    if (toEnumType(field->sym->type) != NULL) {
-      USR_FATAL(field, "can't handle enums local to a class/record/union yet");
-    } else {
-      USR_FATAL_CONT(insertBefore,
-                     "can't omit initialization of field \"%s\", "
-                     "no type or default value provided",
-                     field->sym->name);
-    }
+    USR_FATAL_CONT(insertBefore,
+                   "can't omit initialization of field \"%s\", "
+                   "no type or default value provided",
+                   field->sym->name);
   } else if (field->sym->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
     if (typeExpr != NULL && initExpr == NULL) {
       ret = genericFieldInitTypeWoutInit(insertBefore, field);
@@ -1104,6 +1100,7 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
 
   return retval;
 }
+
 
 void InitNormalize::describe(int offset) const {
   char pad[512];

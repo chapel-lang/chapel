@@ -122,6 +122,10 @@ void preNormalizeFields(AggregateType* at) {
             sym->type = type;
           }
         }
+      } else if (TypeSymbol* ts = toTypeSymbol(defExpr->sym)) {
+        if (isEnumType(ts->type)) {
+          USR_FATAL(field, "'chpl' can't handle enums local to a class/record/union yet");
+        }
       }
     }
   }
