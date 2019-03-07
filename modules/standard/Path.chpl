@@ -83,8 +83,8 @@ const pathSep = "/";
   .. warning::
 
     This function is unsafe for use in a parallel environment due to its
-    reliance on :proc:`locale.cwd()`. Another task on the current locale may
-    change the current working directory at any time.
+    reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
+    locale may change the current working directory at any time.
 
   :arg name: The path whose absolute path is desired.
   :type name: `string`
@@ -110,8 +110,8 @@ proc absPath(name: string): string throws {
   .. warning::
 
     This method is unsafe for use in a parallel environment due to its
-    reliance on :proc:`locale.cwd()`. Another task on the current locale
-    may change the current working directory at any time.
+    reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
+    locale may change the current working directory at any time.
 
   :return: A normalized, absolutized version of the path for this file.
   :rtype: `string`
