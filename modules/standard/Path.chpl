@@ -300,15 +300,16 @@ proc dirname(name: string): string {
 }
 
 /*
-  Get the login directory of a given user. If the given user's login directory
-  was found, this function returns (true, logindir), else it will return
-  (false, '').
+  Get the login directory of a given user. Throws an error if a system error
+  occurred or if the current user's login directory was not found.
 
-  Underlying C implementation is currently not reentrant/threadsafe.
+  The call to chpl_fs_get_home() returns a malloc'd buffer. The buffer "outs"
+  is never allocated if the call to chpl_fs_get_home() returns an error or
+  if "outf" is set to TRUE.
+
+  The underlying C implementation is not currently reentrant/threadsafe.
 */
-private
-proc getUserLoginDir(user: string): (bool, string) throws {
-  // This returns a manually malloc'd string that needs to be cleaned up.
+private proc getUserLoginDir(user: string): string throws {
   extern proc chpl_fs_get_home(
       ref outs: c_string,
       ref outf: c_int,
@@ -320,40 +321,38 @@ proc getUserLoginDir(user: string): (bool, string) throws {
 
   // Make sure to localize the "user" string first to prevent a halt.
   user.localize();
-  const err = chpl_fs_get_home(outs, outf, user.c_string());
+  const err = chpl_fs_get_home(outs, outf, user.c_str());
 
-  // If there was an error then "outs" was never allocated.
   if err != ENOERR then
-    try ioerror(err);
+    try ioerror(err, "getUserLoginDir");
 
-  // If "outf" is 0 then "outs" was never allocated.
   if outf == 0 then
-    return (false, '');
+    throw new owned
+      IllegalArgumentError("Failed to find " + user + " in pwd.");
 
-  // Handing off ownership of "outs" takes care of cleanup.
-  var logindir = new string(outs, isowned=true, needToCopy=false);
-
-  return (true, logindir);
+  return new string(outs, isowned=true, needToCopy=false);
 }
 
 /*
-  Get the login directory of the current user (process owner). If the current
-  user's was found, this function returns (true, logindir), else it will
-  return (false, '').
+  Get the login directory of the current user (process owner). Throws an error
+  if a system error occurred or if the current user's login directory was
+  not found.
 
-  Underlying C implementation is currently not reentrant/threadsafe.
+  The call to chpl_fs_get_home() returns a malloc'd buffer. The buffer "outs"
+  is never allocated if the call to chpl_fs_get_home() returns an error or
+  if "outf" is set to TRUE.
+
+  The underlying C implementation is not currently reentrant/threadsafe.
 */
-private
-proc getUserLoginDir(): (bool, string) throws {
+private proc getUserLoginDir(): string throws {
   extern proc chpl_fs_get_cuid(): c_int;
-  // This returns a manually malloc'd string that needs to be cleaned up.
   extern proc chpl_fs_get_home_uid(
       ref outs: c_string,
       ref outf: c_int,
       uid: c_int
   ): syserr;
 
-  // This is per process, meaning it will be different on each locale?
+  // QUESTION: This is per process, meaning different on each locale?
   const cuid = chpl_fs_get_cuid();
 
   var outs: c_string;
@@ -361,18 +360,14 @@ proc getUserLoginDir(): (bool, string) throws {
 
   const err = chpl_fs_get_home_uid(outs, outf, cuid);
 
-  // If there was an error then "outs" was never allocated.
   if err != ENOERR then
-    try ioerror(err);
+    try ioerror(err, "getUserLoginDir");
 
-  // If "outf" is false then "outs" was never allocated.
   if outf == 0 then
-    return (false, '');
+    throw new owned
+      IllegalArgumentError("Failed to find current user in pwd.");
 
-  // Handing off ownership of "outs" takes care of cleanup.
-  var logindir = new string(outs, isowned=true, needToCopy=false);
-
-  return (true, result);
+  return new string(outs, isowned=true, needToCopy=false);
 }
 
 /*
@@ -394,9 +389,37 @@ proc getUserLoginDir(): (bool, string) throws {
            directory
   :rtype: `string`
 */
-proc expandUser(path: string): string throws {
+proc expandUser(path: string): string {
+  param homeSymbol = '~';
 
-  return "";
+  if path.isEmpty() || !path.startsWith(homeSymbol) then
+    return path;
+
+  var splitPathOnce = path.split(pathSep, 1, true);
+  const firstComp = splitPathOnce.pop_front();
+
+  var logindir: string;
+
+  try {
+    if firstComp == homeSymbol {
+      var outs: c_string;
+      if sys_getenv("$HOME", outs) == 0 then
+        logindir = getUserLoginDir();
+      else
+        logindir = outs:string;
+    } else {
+      logindir = getUserLoginDir(firstComp[2..]);
+    }
+  } catch {
+    return path;
+  }
+
+  if !splitPathOnce.isEmpty() {
+    splitPathOnce.push_front(logindir);
+    return joinPath(splitPathOnce);
+  }
+
+  return logindir;
 }
 
 /* Expands any environment variables in the path of the form ``$<name>`` or
