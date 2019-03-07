@@ -88,13 +88,11 @@ proc isHidden(name : string) : bool {
 proc findLatest(packageDir) {
   var ret = new VersionInfo(0, 0, 0);
   const suffix = ".toml";
-  var foundValidVersion = false;
   for fi in listdir(packageDir, files=true, dirs=false) {
     if fi.endsWith(suffix) {
       const end = fi.length - suffix.length;
       const ver = new VersionInfo(fi[1..end]);
       if ver > ret then ret = ver;
-      foundValidVersion = true;
     }
     else {
       var warningStr = "File without '.toml' extension encountered - skipping ";
