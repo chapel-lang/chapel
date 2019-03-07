@@ -19,6 +19,11 @@ options for communication include:
 * ``gasnet``: specifies that communication should be implemented using
   the open-source GASNet library developed at Berkeley.
 
+* ``ofi``: specifies that communication should be implemented using
+  the open-source libfabric library component of OpenFabrics Interfaces
+  (OFI).   This configuration is preliminary; see :ref:`readme-libfabric` for
+  more information.
+
 When using the Chapel module on Cray systems, a third option is also
 available:
 

@@ -23,6 +23,7 @@ Networks
    :maxdepth: 1
 
    infiniband
+   libfabric
    omnipath
    udp
 

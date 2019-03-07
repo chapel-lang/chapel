@@ -312,6 +312,8 @@ system rather than the login node's.
 Special Notes for Cray XC, XE, and XK Series Systems
 ----------------------------------------------------
 
+.. _ugni-comm-on-cray:
+
 Native ugni Communication Layer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

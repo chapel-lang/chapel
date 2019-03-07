@@ -5,8 +5,11 @@ Using Chapel with InfiniBand
 ============================
 
 This document describes how to run Chapel across multiple machines in an
-InfiniBand cluster. The :ref:`readme-multilocale` describes general
-information about running Chapel in a multilocale configuration.
+InfiniBand cluster using GASNet-based communication.
+:ref:`readme-multilocale` describes general information about running
+Chapel in a multilocale configuration.  The ofi communication layer can
+also be used on InfiniBand-based systems; see :ref:`readme-libfabric`
+for more information.
 
 Avoiding Slow Job Launch
 ++++++++++++++++++++++++

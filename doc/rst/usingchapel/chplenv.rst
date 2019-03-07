@@ -281,7 +281,7 @@ CHPL_TARGET_CPU
           will occur.
 
         * If :ref:`readme-chplenv.CHPL_COMM` is set, no attempt to set a useful value will be
-          made, ``CHPL_TARGET_CPU`` will be ``unknown``.
+          made and ``CHPL_TARGET_CPU`` will be ``unknown``.
 
         * If :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` is ``darwin``, ``linux*``, or
           ``cygwin*`` ``CHPL_TARGET_CPU`` will be ``native``, passing the
@@ -396,14 +396,18 @@ CHPL_COMM
         ======= ============================================
         none    only supports single-locale execution
         gasnet  use the GASNet-based communication layer
+        ofi     use the (preliminary) libfabric-based communication layer
         ugni    Cray-specific native communication layer
         ======= ============================================
 
    If unset, ``CHPL_COMM`` defaults to ``none`` in most cases.  On Cray XE
    and XC systems it defaults to ``ugni``.  On Cray CS systems it defaults
    to ``gasnet``.  See :ref:`readme-multilocale` for more information on
-   executing Chapel programs using multiple locales.  See :ref:`readme-cray`
-   for more information about Cray-specific runtime layers.
+   executing Chapel programs using multiple locales.
+   See :ref:`readme-libfabric` for more information about the ofi
+   communication layer.
+   See :ref:`readme-cray` for more information about Cray-specific runtime
+   layers.
 
 
 .. _readme-chplenv.CHPL_MEM:
@@ -424,7 +428,8 @@ CHPL_MEM
    If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
    .. note::
-     Certain ``CHPL_COMM`` settings (e.g. ugni and gasnet segment fast/large)
+     Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
+     ofi with the gni provider)
      register the heap to improve communication performance.  Registering the
      heap requires special allocator support that not all allocators provide.
      Currently only ``jemalloc`` is capable of supporting configurations that
