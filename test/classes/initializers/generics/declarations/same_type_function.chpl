@@ -13,5 +13,5 @@ class Foo {
   }
 }
 
-var f: Foo(int);
+var f: borrowed Foo(int);
 writeln(f.type: string);

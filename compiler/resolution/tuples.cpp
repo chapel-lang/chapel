@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -121,9 +121,8 @@ makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
 
   typeCtor->retTag             = RET_TYPE;
   typeCtor->retType            = newType;
-  typeCtor->numPreTupleFormals = 1;
   typeCtor->instantiatedFrom   = gGenericTupleTypeCtor;
-  typeCtor->instantiationPoint = instantiationPoint;
+  typeCtor->setInstantiationPoint(instantiationPoint);
 
   typeCtor->insertAtTail(ret);
 
@@ -165,7 +164,7 @@ FnSymbol* makeBuildTupleType(std::vector<ArgSymbol*> typeCtorArgs,
   buildTupleType->substitutions.copy(newType->substitutions);
 
   buildTupleType->instantiatedFrom = gBuildTupleType;
-  buildTupleType->instantiationPoint = instantiationPoint;
+  buildTupleType->setInstantiationPoint(instantiationPoint);
 
   tupleModule->block->insertAtTail(new DefExpr(buildTupleType));
 
@@ -202,7 +201,7 @@ FnSymbol* makeBuildStarTupleType(std::vector<ArgSymbol*> typeCtorArgs,
   buildStarTupleType->substitutions.copy(newType->substitutions);
 
   buildStarTupleType->instantiatedFrom = gBuildStarTupleType;
-  buildStarTupleType->instantiationPoint = instantiationPoint;
+  buildStarTupleType->setInstantiationPoint(instantiationPoint);
 
   tupleModule->block->insertAtTail(new DefExpr(buildStarTupleType));
   return buildStarTupleType;
@@ -273,7 +272,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
   ctor->insertAtTail(ret);
   ctor->substitutions.copy(newType->substitutions);
 
-  ctor->instantiationPoint = instantiationPoint;
+  ctor->setInstantiationPoint(instantiationPoint);
 
   tupleModule->block->insertAtTail(new DefExpr(ctor));
 
@@ -316,7 +315,7 @@ FnSymbol* makeDestructTuple(TypeSymbol* newTypeSymbol,
   dtor->substitutions.copy(newType->substitutions);
 
   dtor->instantiatedFrom = gGenericTupleDestroy;
-  dtor->instantiationPoint = instantiationPoint;
+  dtor->setInstantiationPoint(instantiationPoint);
 
   tupleModule->block->insertAtTail(new DefExpr(dtor));
 
@@ -517,7 +516,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
 
   CallExpr* ret = new CallExpr(PRIM_RETURN, call);
 
-  fn->body->replace( new BlockStmt( ret));
+  fn->replaceBodyStmtsWithStmt(ret);
   normalize(fn);
 }
 
@@ -737,7 +736,7 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
   ArgSymbol*     arg   = fn->getFormal(2);
   AggregateType* fromT = toAggregateType(arg->type);
 
-  BlockStmt* block = new BlockStmt();
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
   VarSymbol* retv = new VarSymbol("retv", toT);
   block->insertAtTail(new DefExpr(retv));
@@ -826,7 +825,7 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
   }
 
   block->insertAtTail(new CallExpr(PRIM_RETURN, retv));
-  fn->body->replace(block);
+  fn->replaceBodyStmtsWithStmts(block);
   normalize(fn);
 }
 
@@ -846,7 +845,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
     ct = computeCopyTuple(origCt, valueOnly, copy_fun, fn->body);
   }
 
-  BlockStmt* block = new BlockStmt();
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
   VarSymbol* retv = new VarSymbol("retv", ct);
   block->insertAtTail(new DefExpr(retv));
@@ -880,7 +879,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
   }
 
   block->insertAtTail(new CallExpr(PRIM_RETURN, retv));
-  fn->body->replace(block);
+  fn->replaceBodyStmtsWithStmts(block);
   normalize(fn);
 }
 
@@ -918,7 +917,7 @@ instantiate_tuple_unref(FnSymbol* fn)
   const char* useCopy = "chpl__initCopy";
   ct = computeCopyTuple(origCt, true, useCopy, fn->body);
 
-  BlockStmt* block = new BlockStmt();
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
   if( ct == origCt ) {
     // Just return the passed argument.
@@ -965,7 +964,7 @@ instantiate_tuple_unref(FnSymbol* fn)
     block->insertAtTail(new CallExpr(PRIM_RETURN, retv));
   }
 
-  fn->body->replace(block);
+  fn->replaceBodyStmtsWithStmts(block);
   normalize(fn);
 }
 
@@ -989,14 +988,15 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
                                                 IntentTag      intent,
                                                 AggregateType* at,
                                                 const char*    copyWith,
-                                                BlockStmt*     testBlock) {
+                                                BlockStmt*     testBlock,
+                                                bool borrowConvert) {
   INT_ASSERT(at->symbol->hasFlag(FLAG_TUPLE));
 
   // Construct tuple that would be used for a particular argument intent.
   std::vector<TypeSymbol*> args;
   bool                     allSame            = true;
   FnSymbol*                typeConstr         = at->typeConstructor;
-  BlockStmt*               instantiationPoint = typeConstr->instantiationPoint;
+  BlockStmt*             instantiationPoint = typeConstr->instantiationPoint();
   int                      i                  = 0;
   AggregateType*           retval             = NULL;
 
@@ -1022,7 +1022,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
         INT_ASSERT(useAt);
 
         useType = do_computeTupleWithIntent(valueOnly, intent, useAt,
-                                            copyWith, testBlock);
+                                            copyWith, testBlock, borrowConvert);
 
         if (valueOnly == false) {
           if (intent == INTENT_BLANK || intent == INTENT_CONST) {
@@ -1035,6 +1035,13 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
         }
 
       } else if (shouldChangeTupleType(useType) == true) {
+        // Argument instantiated from any that is a tuple of owned
+        // -> tuple of borrow
+        if (isManagedPtrType(useType) && borrowConvert) {
+          if (intent == INTENT_CONST || intent == INTENT_BLANK)
+            useType = getManagedPtrBorrowType(useType);
+        }
+
         if (valueOnly == false) {
           // If the tuple is passed with blank intent
           // *and* the concrete intent for the element type
@@ -1075,19 +1082,31 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
   return retval;
 }
 
+
+AggregateType* computeTupleWithIntentForArg(IntentTag intent, AggregateType* t, ArgSymbol* arg)
+{
+  INT_ASSERT(arg);
+  bool borrowConvert = false;
+  if (arg->hasFlag(FLAG_INSTANTIATED_FROM_ANY) &&
+      !arg->getFunction()->hasFlag(FLAG_NO_BORROW_CONVERT))
+    borrowConvert = true;
+
+  return do_computeTupleWithIntent(false, intent, t, NULL, NULL, borrowConvert);
+}
+
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
 {
-  return do_computeTupleWithIntent(false, intent, t, NULL, NULL);
+  return do_computeTupleWithIntent(false, intent, t, NULL, NULL, false);
 }
 
 AggregateType* computeNonRefTuple(AggregateType* t)
 {
-  return do_computeTupleWithIntent(true, INTENT_BLANK, t, NULL, NULL);
+  return do_computeTupleWithIntent(true, INTENT_BLANK, t, NULL, NULL, false);
 }
 
 AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly, const char* copyName, BlockStmt* testBlock)
 {
-  return do_computeTupleWithIntent(valueOnly, INTENT_BLANK, t, copyName, testBlock);
+  return do_computeTupleWithIntent(valueOnly, INTENT_BLANK, t, copyName, testBlock, false);
 }
 
 
@@ -1178,9 +1197,21 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
       SymExpr*   se = toSymExpr(actual);
       VarSymbol* v  = toVarSymbol(se->symbol());
 
-      INT_ASSERT(v != NULL && v->immediate != NULL);
+      // If 'se' is not an Immediate, then this is not a legal tuple
+      // type expression, so return NULL.  This happens, for example,
+      // when we try to instantiate the *(param int, type) tuple
+      // builder with a boolean const, which we seem to do pretty
+      // aggressively (i.e., even if there is a better *() overload
+      // available...).  This can be seen in
+      // types/tuple/homog/boolTupleSize-nonparam.future even if the
+      // 'last resort' pragmas are removed from the *(bool,) overloads
+      // in modules/internal/ChapelTuple.chpl.
+      //
+      if (v == NULL || v->immediate == NULL) {
+        return NULL;
+      }
 
-      actualN = v->immediate->int_value();
+      actualN = v->immediate->to_int();
 
     } else {
       // Subsequent arguments are tuple types.
@@ -1226,7 +1257,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     }
   }
 
-  BlockStmt* point = getVisibilityBlock(call);
+  BlockStmt* point = getInstantiationPoint(call);
   TupleInfo info   = getTupleInfo(args, point, noRef);
 
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {

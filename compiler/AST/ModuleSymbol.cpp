@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,8 @@
 
 #include "AstVisitor.h"
 #include "docsDriver.h"
+#include "driver.h"
+#include "files.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -177,12 +179,23 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromCommandLine() {
       if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
         if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) == true) {
           if (retval != NULL) {
-            USR_FATAL_CONT("a program with multiple user modules "
-                           "requires a main function");
-            USR_PRINT("alternatively, specify a main module with "
-                      "--main-module");
+            if (fLibraryCompile) {
+              // "Main module" is not a valid concept in library compilation
+              if (executableFilename[0] == '\0') {
+                // But we need to know the name to use for the generated library
+                // So if the user hasn't set the executableFilename via -o,
+                // generate an error message
+                USR_FATAL("You must use -o to specify the library name when "
+                          "building a library with multiple modules");
+              }
+            } else {
+              USR_FATAL_CONT("a program with multiple user modules "
+                             "requires a main function");
+              USR_PRINT("alternatively, specify a main module with "
+                        "--main-module");
 
-            USR_STOP();
+              USR_STOP();
+            }
           }
 
           retval = mod;
@@ -276,15 +289,15 @@ ModuleSymbol* ModuleSymbol::copyInner(SymbolMap* map) {
 // construction of the initFn is cleaned up.
 //
 
-Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
-  Vec<AggregateType*> classes;
+std::vector<AggregateType*> ModuleSymbol::getTopLevelClasses() {
+  std::vector<AggregateType*> classes;
 
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr)) {
 
       if (TypeSymbol* type = toTypeSymbol(def->sym)) {
         if (AggregateType* cl = toAggregateType(type->type)) {
-          classes.add(cl);
+          classes.push_back(cl);
         }
 
       // Step in to the initFn
@@ -294,7 +307,7 @@ Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
             if (DefExpr* def2 = toDefExpr(expr2)) {
               if (TypeSymbol* type = toTypeSymbol(def2->sym)) {
                 if (AggregateType* cl = toAggregateType(type->type)) {
-                  classes.add(cl);
+                  classes.push_back(cl);
                 }
               }
             }
@@ -458,15 +471,16 @@ std::string ModuleSymbol::path() const {
 //
 // See the comment on getTopLevelFunctions() for the rationale behind the AST
 // traversal
-void ModuleSymbol::getTopLevelConfigOrVariables(Vec<VarSymbol*>* contain,
-                                                Expr*            expr,
-                                                bool             config) {
+void
+ModuleSymbol::getTopLevelConfigOrVariables(std::vector<VarSymbol*>* contain,
+                                           Expr* expr,
+                                           bool  config) {
   if (DefExpr* def = toDefExpr(expr)) {
 
     if (VarSymbol* var = toVarSymbol(def->sym)) {
       if (var->hasFlag(FLAG_CONFIG) == config) {
         // The config status of the variable matches what we are looking for
-        contain->add(var);
+        contain->push_back(var);
       }
 
     } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -477,7 +491,7 @@ void ModuleSymbol::getTopLevelConfigOrVariables(Vec<VarSymbol*>* contain,
               if (var->hasFlag(FLAG_CONFIG) == config) {
                 // The config status of the variable matches what we are
                 // looking for
-                contain->add(var);
+                contain->push_back(var);
               }
             }
           }
@@ -488,8 +502,8 @@ void ModuleSymbol::getTopLevelConfigOrVariables(Vec<VarSymbol*>* contain,
 }
 
 // Collect the top-level config variables for this Module.
-Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
-  Vec<VarSymbol*> configs;
+std::vector<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
+  std::vector<VarSymbol*> configs;
 
   for_alist(expr, block->body) {
     getTopLevelConfigOrVariables(&configs, expr, true);
@@ -499,8 +513,8 @@ Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
 }
 
 // Collect the top-level variables that aren't configs for this Module.
-Vec<VarSymbol*> ModuleSymbol::getTopLevelVariables() {
-  Vec<VarSymbol*> variables;
+std::vector<VarSymbol*> ModuleSymbol::getTopLevelVariables() {
+  std::vector<VarSymbol*> variables;
 
   for_alist(expr, block->body) {
     getTopLevelConfigOrVariables(&variables, expr, false);
@@ -515,8 +529,8 @@ Vec<VarSymbol*> ModuleSymbol::getTopLevelVariables() {
 // getTopLevelClasses() except that it collects any
 // functions and then steps in to initFn if it finds it.
 //
-Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
-  Vec<FnSymbol*> fns;
+std::vector<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
+  std::vector<FnSymbol*> fns;
 
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr)) {
@@ -527,7 +541,7 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
           continue;
         }
 
-        fns.add(fn);
+        fns.push_back(fn);
 
         // The following additional overhead and that present in getConfigVars
         // and getClasses is a result of the docs pass occurring before
@@ -544,7 +558,7 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
                   continue;
                 }
 
-                fns.add(fn2);
+                fns.push_back(fn2);
               }
             }
           }
@@ -556,14 +570,14 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
   return fns;
 }
 
-Vec<ModuleSymbol*> ModuleSymbol::getTopLevelModules() {
-  Vec<ModuleSymbol*> mods;
+std::vector<ModuleSymbol*> ModuleSymbol::getTopLevelModules() {
+  std::vector<ModuleSymbol*> mods;
 
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
         if (strcmp(mod->defPoint->parentSymbol->name, name) == 0)
-          mods.add(mod);
+          mods.push_back(mod);
       }
   }
 

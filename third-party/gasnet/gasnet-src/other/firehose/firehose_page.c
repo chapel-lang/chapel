@@ -5,7 +5,7 @@
  */
 #include <firehose.h>
 #include <firehose_internal.h>
-#include <gasnet.h>
+#include <gasnetex.h>
 
 #ifdef FIREHOSE_PAGE
 
@@ -184,7 +184,7 @@ fh_bucket_init_freelist(int max_buckets_pinned)
 
 GASNETI_INLINE(fh_bucket_lookup)
 fh_bucket_t *
-fh_bucket_lookup(gasnet_node_t node, uintptr_t bucket_addr)
+fh_bucket_lookup(gex_Rank_t node, uintptr_t bucket_addr)
 {
 	FH_TABLE_ASSERT_LOCKED;
 
@@ -196,7 +196,7 @@ fh_bucket_lookup(gasnet_node_t node, uintptr_t bucket_addr)
 }
 
 static fh_bucket_t *
-fh_bucket_add(gasnet_node_t node, uintptr_t bucket_addr)
+fh_bucket_add(gex_Rank_t node, uintptr_t bucket_addr)
 {
 	fh_bucket_t	*entry;
 
@@ -332,7 +332,7 @@ fh_bucket_PopfromPool(fhi_RegionPool_t *rpool)
  * Uses fh_bucket_lookup() to query if the current page is pinned.
  */
 int
-fh_region_ispinned(gasnet_node_t node, uintptr_t addr, size_t len)
+fh_region_ispinned(gex_Rank_t node, uintptr_t addr, size_t len)
 {
  	uintptr_t	bucket_addr;
 	uintptr_t	end_addr = addr + len - 1;
@@ -392,7 +392,7 @@ fh_commit_try_remote_region(firehose_request_t *req)
 {
 	uintptr_t	bucket_addr, end_addr  = req->addr + req->len - 1;
 	fh_bucket_t	*bd;
-	gasnet_node_t	node = req->node;
+	gex_Rank_t	node = req->node;
 
 	FH_TABLE_ASSERT_LOCKED;
 
@@ -699,7 +699,8 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
     {
         unsigned	med_regions, med_buckets;
 
-        med_regions = (gasnet_AMMaxMedium() 
+        med_regions = (MIN(gex_AM_LUBRequestMedium(),
+                           gex_AM_LUBReplyMedium())
     			- sizeof(firehose_remotecallback_args_t))
     			/ sizeof(firehose_region_t);
 
@@ -810,7 +811,7 @@ fh_fini_plugin(void)
  * Returns non-zero if any pinned pages were found.
  */
 int
-fh_region_partial(gasnet_node_t node, uintptr_t *addr_p, size_t *len_p)
+fh_region_partial(gex_Rank_t node, uintptr_t *addr_p, size_t *len_p)
 {
 	uintptr_t	tmp_addr = 0;
 	uintptr_t	addr, end_addr, bucket_addr;
@@ -1081,7 +1082,7 @@ fhi_InitLocalRegionsList(int local_ref, firehose_region_t *region,
  *          request are pinned.
  */
 int
-fh_PendingCallbacksProgress(gasnet_node_t node, fh_bucket_t **bd_list, 
+fh_PendingCallbacksProgress(gex_Rank_t node, fh_bucket_t **bd_list,
 			      int num_buckets, fh_pollq_t *PendQ)
 {
     fh_bucket_t	*bd, *bdi;
@@ -1173,7 +1174,7 @@ fh_PendingCallbacksProgress(gasnet_node_t node, fh_bucket_t **bd_list,
  *	    reply is recieved.
  */
 int
-fh_find_pending_callbacks(gasnet_node_t node, firehose_region_t *region,
+fh_find_pending_callbacks(gex_Rank_t node, firehose_region_t *region,
 			  int nreg, void *context, fh_pollq_t *PendQ)
 {
     int		numpend = 0, callspend = 0;
@@ -1396,7 +1397,7 @@ fhsmp_TryAcquireLocalRegion(firehose_request_t *req, fhi_RegionPool_t *pin_p,
     uintptr_t	end_addr = req->addr + (uintptr_t)req->len - 1;
     fh_bucket_t	*bd;
 
-    gasnet_node_t node = req->node;
+    gex_Rank_t node = req->node;
 
     FH_TABLE_ASSERT_LOCKED;
 
@@ -1445,7 +1446,7 @@ fhsmp_TryAcquireLocalRegion(firehose_request_t *req, fhi_RegionPool_t *pin_p,
 }
 
 fh_bucket_t *
-fhsmp_ConsumeRemoteBucket(gasnet_node_t node, fhi_RegionPool_t *unpin_p)
+fhsmp_ConsumeRemoteBucket(gex_Rank_t node, fhi_RegionPool_t *unpin_p)
 {
     fh_fifoq_t	*fifo_head = &fh_RemoteNodeFifo[node];
     fh_refc_t	*rp;
@@ -1504,7 +1505,7 @@ fhsmp_ConsumeRemoteBucket(gasnet_node_t node, fhi_RegionPool_t *unpin_p)
  */
 int
 fhsmp_EstimateRemoteRequest(int *myda, int *dacount, int *n_pending, 
-			    gasnet_node_t node, uintptr_t start, uintptr_t end)
+			    gex_Rank_t node, uintptr_t start, uintptr_t end)
 {
     int		count, pending = 0;
     uintptr_t	bucket_addr;
@@ -1575,7 +1576,7 @@ fhsmp_PinRemoteAllHit(firehose_request_t *req, int n_pending, uintptr_t start, u
     uintptr_t	 bucket_addr;
     fh_bucket_t *bd;
 
-    gasnet_node_t node = req->node;
+    gex_Rank_t node = req->node;
 
     FH_FOREACH_BUCKET(start, end, bucket_addr) {
 	bd = fh_bucket_lookup(node, bucket_addr);
@@ -1604,7 +1605,7 @@ fhsmp_PinRemoteNoLog(firehose_request_t *req,
     fh_bucket_t *bd;
     int		 first_pending = 1, new_b;
 
-    gasnet_node_t node = req->node;
+    gex_Rank_t node = req->node;
 
     pin_p->buckets_num = 0;
     pin_p->regions_num = 0;
@@ -1696,7 +1697,7 @@ fhsmp_PinRemoteNoLog(firehose_request_t *req,
  */
 
 uintptr_t
-fhsmp_RemotePinWithLog(int n_avail, gasnet_node_t node, 
+fhsmp_RemotePinWithLog(int n_avail, gex_Rank_t node,
 		 uintptr_t start, uintptr_t end, 
 	         fhi_RegionPool_t *pin_p, fhi_RegionPool_t *unpin_p)
 {
@@ -1770,7 +1771,7 @@ fhsmp_RemotePinWithLog(int n_avail, gasnet_node_t node,
  * RemotePinWithLogAgain.
  */
 uintptr_t
-fhsmp_RemotePinWithLogAgain(int n_avail, gasnet_node_t node, 
+fhsmp_RemotePinWithLogAgain(int n_avail, gex_Rank_t node,
 		      uintptr_t start, uintptr_t end, 
 	              fhi_RegionPool_t *pin_p, fhi_RegionPool_t *unpin_p)
 {
@@ -1841,7 +1842,7 @@ fhsmp_RemotePinWithLogAgain(int n_avail, gasnet_node_t node,
  * in our unpin pool.
  */
 int
-fhsmp_RevalidateResources(gasnet_node_t node, fhi_RegionPool_t *unpin_p)
+fhsmp_RevalidateResources(gex_Rank_t node, fhi_RegionPool_t *unpin_p)
 {
     int		i;
     uintptr_t	bucket_addr, bucket_end;
@@ -1946,7 +1947,7 @@ fhsmp_LocalRollback(fhi_RegionPool_t *pin_p, fhi_RegionPool_t *unpin_p,
 }
 
 void
-fhsmp_RemoteRollback(gasnet_node_t node, 
+fhsmp_RemoteRollback(gex_Rank_t node,
 	       uintptr_t start_addr, uintptr_t saved_addr,
 	       fhi_RegionPool_t *pin_p, fhi_RegionPool_t *unpin_p)
 {
@@ -2038,7 +2039,7 @@ fhsmp_Commit(firehose_request_t *req,
     fh_bucket_t *bd;
     int		 i, first_pending = 1;
 
-    gasnet_node_t node = req->node;
+    gex_Rank_t node = req->node;
 
     GASNETI_TRACE_PRINTF(C, ("Firehose SMP Commit (req=%p)", req));
 
@@ -2294,7 +2295,7 @@ fh_acquire_remote_region(firehose_request_t *req,
     int	my_da = 0;
     int n_buckets, n_avail, n_pending, n_avail_old;
 
-    gasnet_node_t   node = req->node;
+    gex_Rank_t   node = req->node;
     uintptr_t	    end_addr = req->addr + req->len - 1;
     uintptr_t	    start_addr = req->addr;
     uintptr_t	    saved_addr, bucket_addr;
@@ -2526,15 +2527,16 @@ send_am:
 
 	req->flags |= FH_FLAG_INFLIGHT;
 
-	MEDIUM_REQ(4,5,
-		    (node,
+	gex_AM_RequestMedium(
+		    gasneti_THUNK_TM, node,
 		    fh_handleridx(fh_am_move_reqh),
 		    reg_alloc, 
 		    sizeof(firehose_region_t)*tot_r+args_len,
+		    GEX_EVENT_NOW, 0,
 		    (uint32_t) flags,
 		    (uint32_t) pin_r,
 		    (uint32_t) unpin_r,
-		    PACK(NULL)));
+		    PACK(NULL));
 
 	goto done_unlocked;
     }
@@ -2617,7 +2619,7 @@ fhuni_TryAcquireRemoteRegion(firehose_request_t *req,
 	int		new_r = 0, b_num;
 	int		has_callback;
 	fh_bucket_t	*bd;
-	gasnet_node_t	node;
+	gex_Rank_t	node;
 
 	end_addr = req->addr + (uintptr_t) req->len - 1;
 
@@ -2783,7 +2785,7 @@ fh_acquire_remote_region(firehose_request_t *req,
 {
 	int			 notpinned, new_r = 0;
 	fh_completion_callback_t  ccb;
-	gasnet_node_t node;
+	gex_Rank_t node;
 
 	FH_TABLE_ASSERT_LOCKED;
 
@@ -2880,15 +2882,16 @@ fh_acquire_remote_region(firehose_request_t *req,
 
 		req->flags |= FH_FLAG_INFLIGHT;
 
-                MEDIUM_REQ(4,5,
-			   (node,
+                gex_AM_RequestMedium(
+			    gasneti_THUNK_TM, node,
 			    fh_handleridx(fh_am_move_reqh),
 			    reg_alloc, 
 			    sizeof(firehose_region_t)*(new_r+old_r)+args_len, 
+			    GEX_EVENT_NOW, 0,
 			    flags,
 			    new_r,
 			    old_r,
-			    PACK(NULL)));
+			    PACK(NULL));
 	}
 	else {
 		/* Only set the PINNED flag if the request is not set on any
@@ -2953,7 +2956,7 @@ fh_release_remote_region(firehose_request_t *request)
 /* ACTIVE MESSAGES                                                       */ 
 /* ##################################################################### */
 int
-fh_move_request(gasnet_node_t node,
+fh_move_request(gex_Rank_t node,
 		firehose_region_t *new_reg, size_t r_new,
 		firehose_region_t *old_reg, size_t r_old,
 		void *context)

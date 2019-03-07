@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,8 +23,10 @@
 
 #include "stringutil.h"
 
+#include "baseAST.h"
 #include "map.h"
 #include "misc.h"
+#include "symbol.h"
 
 #include <algorithm>
 #include <climits>
@@ -47,7 +49,8 @@ canonicalize_string(const char *s) {
 
 const char*
 astr(const char* s1, const char* s2, const char* s3, const char* s4,
-     const char* s5, const char* s6, const char* s7, const char* s8) {
+     const char* s5, const char* s6, const char* s7, const char* s8,
+     const char* s9) {
   int len;
   len = strlen(s1);
   if (s2)
@@ -64,6 +67,8 @@ astr(const char* s1, const char* s2, const char* s3, const char* s4,
     len += strlen(s7);
   if (s8)
     len += strlen(s8);
+  if (s9)
+    len += strlen(s9);
   char* s = (char*)malloc(len+1);
   strcpy(s, s1);
   if (s2)
@@ -80,6 +85,8 @@ astr(const char* s1, const char* s2, const char* s3, const char* s4,
     strcat(s, s7);
   if (s8)
     strcat(s, s8);
+  if (s9)
+    strcat(s, s9);
   const char* t = canonicalize_string(s);
   if (s != t)
     free(s);
@@ -141,7 +148,10 @@ void deleteStrings() {
 
 
 #define define_str2Int(type, format)                              \
-  type##_t str2##type(const char* str) {                          \
+  type##_t str2##type(const char* str,                            \
+                      bool userSupplied,                          \
+                      const char* filename,                       \
+                      int line) {                                 \
     if (!str) {                                                   \
       INT_FATAL("NULL string passed to strTo_" #type "()");       \
     }                                                             \
@@ -151,8 +161,26 @@ void deleteStrings() {
     }                                                             \
     type##_t val;                                                 \
     int numitems = sscanf(str, format, &val);                     \
+    char checkStr[len+1];                                         \
+    snprintf(checkStr, len+1, format, val);                       \
     if (numitems != 1) {                                          \
       INT_FATAL("Illegal string passed to strTo_" #type "()");    \
+    }                                                             \
+    /* Remove leading 0s */                                       \
+    int startPos = 0;                                             \
+    while (str[startPos] == '0' && startPos < len-1) {            \
+      startPos++;                                                 \
+    }                                                             \
+    if (strcmp(str+startPos, checkStr) != 0) {                    \
+      if (userSupplied) {                                         \
+        VarSymbol* lineTemp = createASTforLineNumber(filename,    \
+                                                     line);       \
+        USR_FATAL(lineTemp, "Integer literal overflow: %s is too" \
+                  " big for type " #type, str);                   \
+      } else {                                                    \
+        INT_FATAL("Integer literal overflow: %s is too "          \
+                  "big for type " #type, str);                    \
+      }                                                           \
     }                                                             \
     return val;                                                   \
   }
@@ -167,16 +195,33 @@ define_str2Int(uint32, "%" SCNu32)
 define_str2Int(uint64, "%" SCNu64)
 
 
-uint64_t binStr2uint64(const char* str) {
+uint64_t binStr2uint64(const char* str, bool userSupplied,
+                       const char* filename, int line) {
   if (!str) {
     INT_FATAL("NULL string passed to binStrToUint64()");
   }
   int len = strlen(str);
+
   if (len < 3 || str[0] != '0' || (str[1] != 'b' && str[1] != 'B')) {
     INT_FATAL("Illegal string passed to binStrToUint64()");
   }
+  /* Remove leading 0s */
+  int startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+  if (strlen(str+startPos) > 64) {
+    if (userSupplied) {
+      VarSymbol* lineTemp = createASTforLineNumber(filename, line);
+      USR_FATAL(lineTemp, "Integer literal overflow: '%s' is too big "
+                "for type uint64", str);
+    } else {
+      INT_FATAL("Integer literal overflow: '%s' is too big "
+                "for type uint64", str);
+    }
+  }
   uint64_t val = 0;
-  for (int i=2; i<len; i++) {
+  for (int i=startPos; i<len; i++) {
     val <<= 1;
     switch (str[i]) {
     case '0':
@@ -191,7 +236,8 @@ uint64_t binStr2uint64(const char* str) {
   return val;
 }
 
-uint64_t octStr2uint64(const char* str) {
+uint64_t octStr2uint64(const char* str, bool userSupplied,
+                       const char* filename, int line) {
   if (!str) {
     INT_FATAL("NULL string passed to octStrToUint64()");
   }
@@ -199,14 +245,35 @@ uint64_t octStr2uint64(const char* str) {
   if (len < 3 || str[0] != '0' || (str[1] != 'o' && str[1] != 'O')) {
     INT_FATAL("Illegal string passed to octStrToUint64()");
   }
-  uint64_t val = strtoul(str+2, NULL, 8);
-  // strtoul() converts the string to a number with base provided, in this
-  // case 8.  It returns a long; we are assuming here that an implicit
-  // conversion to a uint64_t is safe.
+
+  /* Remove leading 0s */
+  int startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+
+  if (len-startPos > 22 || (len-startPos == 22 && str[startPos] != '1')) {
+    if (userSupplied) {
+      VarSymbol* lineTemp = createASTforLineNumber(filename, line);
+      USR_FATAL(lineTemp, "Integer literal overflow: '%s' is too big "
+                "for type uint64", str);
+    } else {
+      INT_FATAL("Integer literal overflow: '%s' is too big "
+                "for type uint64", str);
+    }
+  }
+
+  uint64_t val;
+  int numitems = sscanf(str+2, "%" SCNo64, &val);
+  if (numitems != 1) {
+    INT_FATAL("Illegal string passed to octStrToUint64");
+  }
+
   return val;
 }
 
-uint64_t hexStr2uint64(const char* str) {
+uint64_t hexStr2uint64(const char* str, bool userSupplied,
+                       const char* filename, int line) {
   if (!str) {
     INT_FATAL("NULL string passed to hexStrToUint64()");
   }
@@ -214,6 +281,23 @@ uint64_t hexStr2uint64(const char* str) {
   if (len < 3 || str[0] != '0' || (str[1] != 'x' && str[1] != 'X')) {
     INT_FATAL("Illegal string passed to hexStrToUint64()");
   }
+  /* Remove leading 0s */
+  int startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+
+  if (strlen(str+startPos) > 16) {
+    if (userSupplied) {
+      VarSymbol* lineTemp = createASTforLineNumber(filename, line);
+      USR_FATAL(lineTemp, "Integer literal overflow: '%s' is too big "
+                "for type uint64", str);
+    } else {
+      INT_FATAL("Integer literal overflow: '%s' is too big "
+                "for type uint64", str);
+    }
+  }
+
   uint64_t val;
   int numitems = sscanf(str+2, "%" SCNx64, &val);
   if (numitems != 1) {
@@ -350,4 +434,8 @@ void readArgsFromString(std::string s, std::vector<std::string>& args) {
     while(argsStream >> word)
       args.push_back(word);
   }
+}
+
+bool startsWith(const char* str, const char* prefix) {
+  return (0 == strncmp(str, prefix, strlen(prefix)));
 }

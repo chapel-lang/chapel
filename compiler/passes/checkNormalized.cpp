@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,14 +45,6 @@ static void checkFunctionSignatures() {
       if (fn->retTag == RET_PARAM) {
         USR_FATAL_CONT(fn, "iterators may not yield or return parameters");
       }
-
-    } else if (fn->hasFlag(FLAG_CONSTRUCTOR)         == true &&
-               fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false) {
-      if (fn->retExprType != NULL) {
-        USR_FATAL_CONT(fn, "initializers may not declare a return type");
-      }
-
-      errorOnFieldsInArgList(fn);
 
     } else if (fn->hasFlag(FLAG_DESTRUCTOR) == true) {
       if (fn->retExprType != NULL) {

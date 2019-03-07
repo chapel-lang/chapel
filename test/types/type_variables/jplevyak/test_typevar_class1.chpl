@@ -6,7 +6,7 @@ class foo {
   }
 }
 
-var f : foo(int) = new borrowed foo(t=int);
+var f : borrowed foo(int) = new borrowed foo(t=int);
 
 f.x = 2;
 

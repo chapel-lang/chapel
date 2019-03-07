@@ -1,6 +1,6 @@
 use DataFrames;
 
-var noIndex = new TypedSeries([1, 2, 3, 4, 5]);
+var noIndex = new owned TypedSeries([1, 2, 3, 4, 5]);
 writeln("noIndex:");
 writeln(noIndex);
 writeln();

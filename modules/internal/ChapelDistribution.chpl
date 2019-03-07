@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,7 @@
 
 module ChapelDistribution {
 
-  use List;
+  use LinkedLists;
 
   extern proc chpl_task_yield();
 
@@ -27,15 +27,13 @@ module ChapelDistribution {
   // Abstract distribution class
   //
   pragma "base dist"
-  pragma "use default init"
   class BaseDist {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _doms: list(unmanaged BaseDom);     // domains declared over this distribution
-    var _domsLock: atomicbool;    //   and lock for concurrent access
-    var _free_when_no_doms: bool; // true when the original _distribution
-                                  // has been destroyed
+    var _doms: LinkedList(unmanaged BaseDom); // domains declared over this distribution
+    var _domsLock: chpl__processorAtomicType(bool); // lock for concurrent access
+    var _free_when_no_doms: bool; // true when original _distribution is destroyed
     var pid:int = nullPid; // privatized ID, if privatization is supported
 
     proc deinit() {
@@ -116,11 +114,11 @@ module ChapelDistribution {
       // a remote locale, you should consider wrapping the call in
       // an on clause to avoid excessive remote forks due to the
       // testAndSet()
-      while (_domsLock.testAndSet()) do chpl_task_yield();
+      while (_domsLock.testAndSet(memory_order_acquire)) do chpl_task_yield();
     }
 
     inline proc _unlock_doms() {
-      _domsLock.clear();
+      _domsLock.clear(memory_order_release);
     }
 
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
@@ -162,6 +160,10 @@ module ChapelDistribution {
     // effort to free it. DefaultDist is a singleton.
     proc singleton() param return false;
     // We could add dsiSingleton as a dynamically-dispatched counterpart
+
+    // indicates if this distribution is a layout. This helps
+    // with certain warnings.
+    proc dsiIsLayout() param return false;
   }
 
   //
@@ -172,11 +174,11 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _arrs: list(unmanaged BaseArr);  // arrays declared over this domain
+    var _arrs: LinkedList(unmanaged BaseArr);  // arrays declared over this domain
     var _arrs_containing_dom: int; // number of arrays using this domain
                                    // as var A: [D] [1..2] real
                                    // is using {1..2}
-    var _arrsLock: atomicbool; //   and lock for concurrent access
+    var _arrsLock: chpl__processorAtomicType(bool); // lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
 
@@ -289,11 +291,11 @@ module ChapelDistribution {
       // a remote locale, you should consider wrapping the call in
       // an on clause to avoid excessive remote forks due to the
       // testAndSet()
-      while (_arrsLock.testAndSet()) do chpl_task_yield();
+      while (_arrsLock.testAndSet(memory_order_acquire)) do chpl_task_yield();
     }
 
     inline proc _unlock_arrs() {
-      _arrsLock.clear();
+      _arrsLock.clear(memory_order_release);
     }
 
     // used for associative domains/arrays
@@ -324,16 +326,11 @@ module ChapelDistribution {
     proc dsiLinksDistribution() return true;
 
     // Overload to to customize domain destruction
-    //
-    // BHARSH 2017-02-05: Making dsiDestroyDom a virtual method 'tricks' the
-    // compiler into thinking there's recursion for dsiDestroyDom when there is
-    // none. This can result in incorrect generated code if recursive iterators
-    // are inlined. See GitHub issue #5311 for more.
-    //
-    //proc dsiDestroyDom() { }
+    proc dsiDestroyDom() { }
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
 
+    proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;
 
     proc isSliceDomainView() param return false; // likely unnecessary?
@@ -366,7 +363,6 @@ module ChapelDistribution {
     //   }
   }
 
-  pragma "use default init"
   class BaseRectangularDom : BaseDom {
     param rank : int;
     type idxType;
@@ -392,7 +388,6 @@ module ChapelDistribution {
     }
   }
 
-  pragma "use default init"
   class BaseSparseDomImpl : BaseSparseDom {
 
     var nnzDom = {1..nnz};
@@ -401,7 +396,7 @@ module ChapelDistribution {
       // this is a bug workaround
     }
 
-    proc dsiBulkAdd(inds: [] index(rank, idxType),
+    override proc dsiBulkAdd(inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, preserveInds=true){
 
       if !dataSorted && preserveInds {
@@ -553,7 +548,6 @@ module ChapelDistribution {
 
   }
 
-  pragma "use default init"
   class BaseSparseDom : BaseDom {
     // rank and idxType will be moved to BaseDom
     param rank: int;
@@ -582,7 +576,7 @@ module ChapelDistribution {
 
     proc boundsCheck(ind: index(rank, idxType)):void {
       if boundsChecking then
-        if !(parentDom.member(ind)) then
+        if !(parentDom.contains(ind)) then
           halt("Sparse domain/array index out of bounds: ", ind,
               " (expected to be within ", parentDom, ")");
     }
@@ -612,7 +606,6 @@ module ChapelDistribution {
   } // end BaseSparseDom
 
 
-  pragma "use default init"
   class BaseAssociativeDom : BaseDom {
     proc deinit() {
       // this is a bug workaround
@@ -629,7 +622,6 @@ module ChapelDistribution {
 
   }
 
-  pragma "use default init"
   class BaseOpaqueDom : BaseDom {
     proc deinit() {
       // this is a bug workaround
@@ -645,7 +637,6 @@ module ChapelDistribution {
   // Abstract array class
   //
   pragma "base array"
-  pragma "use default init"
   class BaseArr {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
@@ -759,9 +750,32 @@ module ChapelDistribution {
     proc dsiRequiresPrivatization() param return false;
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
+    proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;
 
     proc doiCanBulkTransferRankChange() param return false;
+
+    proc decEltCountsIfNeeded() {
+      // degenerate so it can be overridden
+    }
+  }
+
+  /* This subclass is created to allow eltType to be defined in one place
+     instead of every subclass of BaseArr.  It can't be put on BaseArr due to
+     BaseDom relying on BaseArr not being generic (it creates a list of BaseArrs
+     that it refers to and lists can't contain multiple instantiations of a
+     generic).
+   */
+  pragma "base array"
+  class AbsBaseArr: BaseArr {
+    type eltType;
+
+    override proc decEltCountsIfNeeded() {
+      if _decEltRefCounts {
+        // unlink domain referred to by eltType
+        chpl_decRefCountsForDomainsInArrayEltTypes(_to_unmanaged(this), eltType);
+      }
+    }
   }
 
   /* BaseArrOverRectangularDom has this signature so that dsiReallocate
@@ -774,7 +788,6 @@ module ChapelDistribution {
      another base class.
    */
   pragma "base array"
-  pragma "use default init"
   class BaseArrOverRectangularDom: BaseArr {
     param rank : int;
     type idxType;
@@ -784,8 +797,17 @@ module ChapelDistribution {
     // the matching tuple of ranges.
 
     // Q. Should this pass in a BaseRectangularDom or ranges?
-    proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+    proc dsiReallocate(bounds: rank*range(idxType,BoundedRangeType.bounded,stridable)) {
       halt("reallocating not supported for this array type");
+    }
+
+    // This dsiReallocate version is used by array vector operations, which
+    // are supported on 1-D arrays only, so can work directly with ranges
+    // instead of requiring tuples of ranges.  They require two ranges
+    // because the allocated size and logical size can differ.
+    proc dsiReallocate(allocBound: range(idxType, BoundedRangeType.bounded, stridable),
+                       arrayBound: range(idxType, BoundedRangeType.bounded, stridable)) where rank == 1 {
+       halt("reallocating not supported for this array type");
     }
 
     override proc dsiPostReallocate() {
@@ -799,13 +821,19 @@ module ChapelDistribution {
   }
 
   pragma "base array"
-  pragma "use default init"
   class BaseRectangularArr: BaseArrOverRectangularDom {
     /* rank, idxType, stridable are from BaseArrOverRectangularDom */
     type eltType;
 
     proc deinit() {
       // this is a bug workaround
+    }
+
+    override proc decEltCountsIfNeeded() {
+      if _decEltRefCounts {
+        // unlink domain referred to by eltType
+        chpl_decRefCountsForDomainsInArrayEltTypes(_to_unmanaged(this), eltType);
+      }
     }
   }
 
@@ -814,9 +842,7 @@ module ChapelDistribution {
    * implementing sparse array classes.
    */
   pragma "base array"
-  pragma "use default init"
-  class BaseSparseArr: BaseArr {
-    type eltType;
+  class BaseSparseArr: AbsBaseArr {
     param rank : int;
     type idxType;
 
@@ -839,7 +865,6 @@ module ChapelDistribution {
    * go here.
    */
   pragma "base array"
-  pragma "use default init"
   class BaseSparseArrImpl: BaseSparseArr {
 
     proc deinit() {
@@ -861,7 +886,7 @@ module ChapelDistribution {
     // existing items in data array and initialize new indices with irv.
     // oldnnz is the number of elements in the array. As the function is called
     // at the end of bulkAdd, it is almost certain that oldnnz!=data.size
-    proc sparseBulkShiftArray(shiftMap, oldnnz){
+    override proc sparseBulkShiftArray(shiftMap, oldnnz){
       var newIdx: int;
       var prevNewIdx = 1;
 
@@ -915,14 +940,7 @@ module ChapelDistribution {
 
   proc _delete_dom(dom, param privatized:bool) {
 
-    // This is a workaround for the recursive iterator bug discussed in
-    // GitHub issue #5311. Implementing 'dsiDestroyDom' on 'BaseDom' leads
-    // the compiler into thinking there's recursion due to virtual methods,
-    // when in fact there is no recursion at all.
-    use Reflection;
-    if canResolveMethod(dom, "dsiDestroyDom") {
-      dom.dsiDestroyDom();
-    }
+    dom.dsiDestroyDom();
 
     if privatized {
       _freePrivatizedClass(dom.pid, dom);
@@ -930,21 +948,17 @@ module ChapelDistribution {
 
     delete dom;
   }
-  // arr is a subclass of :BaseArr but is generic so
-  // that arr.eltType is meaningful.
-  proc _delete_arr(arr, param privatized:bool) {
+
+  proc _delete_arr(arr: unmanaged BaseArr, param privatized:bool) {
     // array implementation can destroy data or other members
     arr.dsiDestroyArr();
 
-    if arr._decEltRefCounts {
-      // unlink domain referred to by arr.eltType
-      // not necessary for aliases/slices because the original
-      // array will take care of it.
-      // This needs to be done after the array elements are destroyed
-      // (by dsiDestroyArray above) because the array elements might
-      // refer to this inner domain.
-      chpl_decRefCountsForDomainsInArrayEltTypes(arr, arr.eltType);
-    }
+    // not necessary for aliases/slices because the original
+    // array will take care of it.
+    // This needs to be done after the array elements are destroyed
+    // (by dsiDestroyArray above) because the array elements might
+    // refer to this inner domain.
+    arr.decEltCountsIfNeeded();
 
     if privatized {
       _freePrivatizedClass(arr.pid, arr);
@@ -980,7 +994,7 @@ module ChapelDistribution {
       on e {
         var eCast = e:arrType;
         if eCast == nil then
-          halt("internal error: ", t.type:string,
+          halt("internal error: ", t:string,
                " contains an bad array type ", arrType:string);
 
         var inds = rhs.getIndices();
@@ -1023,7 +1037,7 @@ module ChapelDistribution {
     // dsiAssignDomain instead of using this method.
 
     for i in lhs.dsiIndsIterSafeForRemoving() {
-      if !rhs.member(i) {
+      if !rhs.contains(i) {
         lhs.dsiRemove(i);
       }
     }

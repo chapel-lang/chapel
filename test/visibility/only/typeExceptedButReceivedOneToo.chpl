@@ -5,8 +5,6 @@ use secondaryMethod only returnAFoo;
 // that type and then calling a secondary method on it behaves as expected.
 proc main() {
   var a = returnAFoo(12);
-  // We should error in the above assignment, since we're getting a variable of
-  // the type we specifically didn't want to see?
+  // We may want a warning in the above assignment.
   writeln(a.outerMethod(2));
-  // The only prevents us from seeing this method, but we want to fail sooner?
 }

@@ -4,12 +4,12 @@ param SIZE = 100000;
 var idomain: domain(uint);
 
 proc icheck( i) {
-  writeln( "member(", i, ") = ", idomain.member( i));
+  writeln( "contains(", i, ") = ", idomain.contains( i));
 }
 
 for i in 1..ITERATIONS {
   for d in 1..2*SIZE {       // empty domain
-    if (idomain.member(d:uint)) then
+    if (idomain.contains(d:uint)) then
       idomain.remove(d:uint);
   }
 
@@ -18,12 +18,12 @@ for i in 1..ITERATIONS {
   }
 
   for d in 1..SIZE/2 {       // delete half
-    if (idomain.member(d:uint)) then
+    if (idomain.contains(d:uint)) then
       idomain.remove(d:uint);
   }
 
   for d in SIZE+1..2*SIZE {  // add some
-    if (idomain.member(d:uint)) then
+    if (idomain.contains(d:uint)) then
       idomain.remove(d:uint);
   }
 
@@ -33,7 +33,7 @@ for i in 1..ITERATIONS {
   }
 
   for d in SIZE/2..SIZE {    // delete some
-    if (idomain.member(d:uint)) then
+    if (idomain.contains(d:uint)) then
       idomain.remove(d:uint);
   }
 }

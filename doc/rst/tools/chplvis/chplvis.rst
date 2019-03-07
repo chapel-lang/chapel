@@ -399,8 +399,8 @@ tag.
 Example 3
 ---------
 
-The program prog3.chpl is similar to the program
-``examples/programs/jacobi.chpl``.  This version uses dmapped domains
+The program prog3.chpl computes the solution of a Laplace equation using
+the Jacobi method. This version uses dmapped domains
 and VisualDebug.  Only parts of the code are shown to illustrate
 other ``chplvis`` features.  First, config variables are handy here so one
 can create different directories of chplvis data on different runs.

@@ -10,12 +10,6 @@ use Spawn;
 
 var home = CHPL_HOME;
 
-extern proc getenv(name: c_string): c_string;
-extern proc setenv(name: c_string, val: c_string, overwrite: c_int): c_int;
-
-var path = getenv("PATH"):string;
-setenv("PATH", (home + "/bin/" + CHPL_HOST_PLATFORM + ":" + path).c_str(), 1);
-
 var genScript = home + "/util/devel/gen-chpl-bash-completion";
 var completeScript = home + "/util/chpl-completion.bash";
 

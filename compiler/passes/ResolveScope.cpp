@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -79,6 +79,9 @@ ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
 
     } else if (LoopExpr* fe = toLoopExpr(ast)) {
       retval = new ResolveScope(fe, NULL);
+
+    } else if (ForallStmt* fs = toForallStmt(ast)) {
+      retval = new ResolveScope(fs, NULL);
 
     } else {
       INT_ASSERT(false);
@@ -208,11 +211,8 @@ void ResolveScope::addBuiltIns() {
 
   extend(dtCVoidPtr->symbol);
   extend(dtCFnPtr->symbol);
-  extend(gCVoidPtr);
-  extend(dtSymbol->symbol);
 
   extend(dtFile->symbol);
-  extend(gFile);
 
   extend(dtOpaque->symbol);
   extend(gOpaque);
@@ -257,6 +257,9 @@ void ResolveScope::addBuiltIns() {
   extend(gLocal);
   extend(gWarnUnstable);
   extend(gNodeID);
+
+  extend(gInfinity);
+  extend(gNan);
 }
 
 /************************************* | **************************************
@@ -486,7 +489,7 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
     // Do not use for_vector(); it terminates on a NULL
     for (size_t i = 0; i < useList.size(); i++) {
       if (const UseStmt* use = useList[i]) {
-        if (use->skipSymbolSearch(name) == false) {
+        if (use->skipSymbolSearch(name, true) == false) {
           BaseAST*    scopeToUse = use->getSearchScope();
           const char* nameToUse  = name;
 
@@ -663,6 +666,18 @@ void ResolveScope::getFields(const char* fieldName,
       INT_ASSERT(false);
     }
   }
+
+  if (symbols.size() > 0) {
+    for (std::vector<Symbol*>::iterator it = symbols.begin();
+         it != symbols.end();
+         it++) {
+      if (*it == mAstRef) {
+        // Only and except lists should not return the original module name.
+        symbols.erase(it);
+        break;
+      }
+    }
+  }
 }
 
 bool ResolveScope::getFieldsWithUses(const char* fieldName,
@@ -681,7 +696,7 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
         const UseStmt* use = useList[i];
 
         if (use != NULL) {
-          if (use->skipSymbolSearch(fieldName) == false) {
+          if (use->skipSymbolSearch(fieldName, true) == false) {
             BaseAST*    scopeToUse = use->getSearchScope();
             const char* nameToUse  = NULL;
 

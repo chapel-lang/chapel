@@ -1,8 +1,8 @@
-SUBDIRS = mantevo
+SUBDIRS = mantevo finepoints
 
 .PHONY: buildall buildtests buildextra benchmarks
 
-DIST_SUBDIRS = mantevo rose_bots rose_lulesh
+DIST_SUBDIRS = mantevo finepoints
 
 generic_benchmarks = \
                      time_gcd \
@@ -148,29 +148,6 @@ qthreadlib = $(outputdir)/libqthread.la
 utils_rnglib = $(top_builddir)/test/utils/rng/librng.la
 
 LDADD = $(qthreadlib)
-
-if COMPILE_ROSE_EXTENSIONS
-if HAVE_LIBM
-buildall: $(benchmarks)
-	$(MAKE) -C rose_bots buildall
-	$(MAKE) -C rose_lulesh buildall
-	$(MAKE) -C mantevo buildall
-buildextra: $(benchmarks)
-	$(MAKE) -C rose_bots buildextra
-	$(MAKE) -C rose_lulesh buildextra
-	$(MAKE) -C mantevo buildextra
-else
-buildall: $(benchmarks)
-	$(MAKE) -C mantevo buildall
-buildextra: $(benchmarks)
-	$(MAKE) -C mantevo buildextra
-endif
-else
-buildall: $(benchmarks)
-	$(MAKE) -C mantevo buildall
-buildextra: $(benchmarks)
-	$(MAKE) -C mantevo buildextra
-endif
 
 benchmarks: buildextra
 

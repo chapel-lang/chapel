@@ -2,10 +2,10 @@
 
 class C {
   const home = here.id;
-  proc writeThis(f) { f.write("here=", here.id, " home=", home); }
+  override proc writeThis(f) { f.write("here=", here.id, " home=", home); }
 }
 
-for l in Locales do on l do { const c = new C(); writeln(c); }
+for l in Locales do on l do { const c = new borrowed C(); writeln(c); }
 writeln();
 
 

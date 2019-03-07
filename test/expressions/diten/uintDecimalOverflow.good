@@ -1,0 +1,1 @@
+uintDecimalOverflow.chpl:1: error: Integer literal overflow: 18446744073709551616 is too big for type uint64

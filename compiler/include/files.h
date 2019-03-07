@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,8 @@
 
 extern char executableFilename[FILENAME_MAX+1];
 extern char libmodeHeadername[FILENAME_MAX+1];
+extern char fortranModulename[FILENAME_MAX+1];
+extern char pythonModulename[FILENAME_MAX+1];
 extern char saveCDir[FILENAME_MAX+1];
 extern std::string ccflags;
 extern std::string ldflags;

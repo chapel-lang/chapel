@@ -86,7 +86,7 @@ writeSpsArr();
 // rather as the *IRV* or *Implicitly Replicated Value*.  This value can
 // be changed for a given array by assigning to that array's *IRV*
 // field, allowing a more interesting value/string/class instance to
-// be stored at all the *nonzero* values.
+// be stored at all the *zero* values.
 //
 spsArr.IRV = 7.7;
 writeln("Printing spsArr after changing its IRV:");
@@ -94,7 +94,7 @@ writeSpsArr();
 
 
 //
-// OK, now let's actually add some sparse indices to the ``DaSps`` domain
+// OK, now let's actually add some sparse indices to the ``spsDom`` domain
 // and see what happens:
 //
 spsDom += (1,n);
@@ -138,17 +138,18 @@ writeSpsArr();
 
 //
 // Values can only be assigned to array positions that are members in
-// the sparse domain index set.  The boolean method Domain.member(x)
+// the sparse domain index set.  The boolean method Domain.contains(x)
 // can be used to check whether a certain index ``(x)`` is a member of the
 // domain's index set. Note that, in multi-dimensional domains, the member
-// method can accept the index as a tuple like ``spsDom.member((i,j))``
-// or as a parameter list like ``spsDom.member(i,j)``. Below, we print ``*`` for
-// the positions that are members in the sparse domain, and ``.`` otherwise.
+// method can accept the index as a tuple like ``spsDom.contains((i,j))``
+// or as a parameter list like ``spsDom.contains(i,j)``. Below, we print
+// ``*`` for the positions that are members in the sparse domain, and ``.``
+// otherwise.
 //
 writeln("Positions that are members in the sparse domain are marked by a '*':");
 
 for (i,j) in dnsDom {
-  if spsDom.member(i,j) then
+  if spsDom.contains(i,j) then
     write("* "); // (i,j) is a member in the sparse index set
   else
     write(". "); // (i,j) is not a member in the sparse index set

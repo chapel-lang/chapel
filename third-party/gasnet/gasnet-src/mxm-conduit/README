@@ -1,6 +1,25 @@
 GASNet mxm-conduit documentation
 ============================================
 
+=====================================================================
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+=====================================================================
+
+The mxm-conduit is now DEPRECATED.
+No further development of this conduit is anticipated.
+It may be removed in a future release.
+
+Users with InfiniBand hardware are recommended to use ibv-conduit
+by passing the following to GASNet's configure script.
+  --enable-ibv --disable-mxm
+
+=====================================================================
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+=====================================================================
+
+
 User Information:
 -----------------
 
@@ -83,24 +102,30 @@ Recognized environment variables:
 
 * All the standard GASNet environment variables (see top-level README)
 
-* GASNET_PHYSMEM_MAX (default 0 = auto detect)
-  If non-zero this parameter tells mxm-conduit the maximum amount of memory to
-  pin for the segment in a (default) GASNET_SEGMENT_FAST build.  The suffixes
-  "M" and "G" are interpreted as Megabytes and Gigabytes respectively.  The
-  current default is zero, which means to probe the limits imposed by the O/S
-  and HCA.  Setting to a non-zero value will limit how large the GASNet
-  segment can be.
+* GASNET_PHYSMEM_MAX (default is set at configure time, see below)
+  If set non-zero this parameter tells mxm-conduit the maximum amount of
+  memory to pin for the segment in a (default) GASNET_SEGMENT_FAST build.  The
+  value may specify either a relative or absolute size.  If the value parses
+  as a floating-point value less than 1.0 (including fractions such as "5/8"),
+  then this is taken as a fraction of the (estimated) physical memory.
+  Otherwise the value is taken as an absolute memory size, with "M", "G" and
+  "T" suffixes accepted to indicate units of Megabytes, Gigabytes, and
+  Terabytes, respectively.
+  For backwards compatibility, "0" means 2/3 of estimated physical memory.
+  The default may be set at configure time using --with-mxm-physmem-max=VALUE,
+  and otherwise is "2/3" (pin up to 2/3 of the estimated physical memory).
 
   This is a per-node value - if there are multiple processes per shared memory
   node the value given by this variable will be divided by the number of
   processes per shared memory node to determine the maximum segment size.
 
-* GASNET_PHYSMEM_PROBE (default 0 = do not probe)
+* GASNET_PHYSMEM_PROBE (default is set at configure time, see below)
   This gives a boolean: "0" to disable or "1" to force a probe to verify the
-  value given by GASNET_PHYSMEM_MAX.  If GASNET_PHYSMEM_MAX is zero or unset,
-  this variable is ignored.  Enabling this setting may greatly slow startup,
-  but can avoid unexpected runtime failures if GASNET_PHYSMEM_MAX exceeds the
-  limits imposed by the O/S and HCA.
+  value given by GASNET_PHYSMEM_MAX.  Enabling this setting may greatly slow
+  startup, but can avoid unexpected runtime failures if GASNET_PHYSMEM_MAX
+  exceeds the limits imposed by the O/S and HCA.
+  The default is OFF (probe disabled).  However, this can be changed to a
+  default of ON by configuring using --enable-mxm-physmem-probe.
 
 * GASNET_MXM_MAX_OUTSTANDING_MSGS (default = 500)
   This gives the maximum number of MXM-level operations which can be in-flight

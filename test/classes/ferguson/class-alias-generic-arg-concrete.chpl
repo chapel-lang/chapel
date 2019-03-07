@@ -1,5 +1,6 @@
 class A {
-  var x;
+  type T;
+  var x : T;
 }
 
 proc doit(type C)
@@ -9,5 +10,4 @@ proc doit(type C)
   writeln(c.x);
 }
 
-doit(A(int));
-
+doit(unmanaged A(int));

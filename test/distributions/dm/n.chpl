@@ -76,7 +76,6 @@ class WrapperRectDom : BaseRectangularDom {
   var pid: int = -1;
 }
 
-pragma "use default init"
 class WrapperArr: BaseArr {
   // required
   type eltType;
@@ -285,7 +284,7 @@ proc WrapperRectDom.dsiLow                return whole.low;
 proc WrapperRectDom.dsiHigh               return whole.high;
 proc WrapperRectDom.dsiStride             return whole.stride;
 proc WrapperRectDom.dsiNumIndices         return whole.numIndices;
-proc WrapperRectDom.dsiMember(indexx)     return whole.member(indexx);
+proc WrapperRectDom.dsiMember(indexx)     return whole.contains(indexx);
 proc WrapperRectDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
 
 proc WrapperRectDom.dsiSerialWrite(f: Writer): void { f.write(whole); }
@@ -687,7 +686,7 @@ proc WrapperRectDom._origToUserDenseFT(denseOrigFT) where isRankChange()
   // the intersection check
   proc handleCDim(origRanges, param origDim) {
     compilerAssert(dist.isCollapsedOrigDim(origDim));
-    if !origRanges(origDim).member(dist.sliceDef(origDim)) then
+    if !origRanges(origDim).contains(dist.sliceDef(origDim)) then
         intersects = false;
   }
   // slice one of the origRanges

@@ -18,7 +18,7 @@ proc getRealRandoms(method:int) {
   }
 
   if method == 1 {
-    var R = new Owned(makeRandomStream(eltType=real));
+    var R = makeRandomStream(eltType=real);
 
     if debug then
       writeln("method ", method, ", seed ", R.seed);
@@ -29,7 +29,7 @@ proc getRealRandoms(method:int) {
 
 
   if method == 2 {
-    var R = new Owned(makeRandomStream(eltType=real, algorithm=RNG.PCG));
+    var R = makeRandomStream(eltType=real, algorithm=RNG.PCG);
 
     if debug then
       writeln("method ", method, ", seed ", R.seed);
@@ -56,8 +56,6 @@ proc getRealRandoms(method:int) {
 
     for a in A do
       a = R.getNext();
-
-    delete R;
   }
 
   return A;
@@ -77,7 +75,7 @@ proc getUintRandoms(method:int) {
   }
 
   if method == 1 {
-    var R = new Owned(makeRandomStream(eltType=uint));
+    var R = makeRandomStream(eltType=uint);
 
     if debug then
       writeln("method ", method, ", seed ", R.seed);
@@ -87,7 +85,7 @@ proc getUintRandoms(method:int) {
   }
 
   if method == 2 {
-    var R = new Owned(makeRandomStream(eltType=uint, algorithm=RNG.PCG));
+    var R = makeRandomStream(eltType=uint, algorithm=RNG.PCG);
 
     if debug then
       writeln("method ", method, ", seed ", R.seed);

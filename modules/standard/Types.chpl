@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -114,6 +114,12 @@ proc isEnumType(type t) param {
   return isEnumHelp(t);
 }
 
+/* Returns `true` if the type `t` is an abstract `enum` type (one in which
+   not all symbols have associated integer values). */
+proc isAbstractEnumType(type t) param {
+  return __primitive("is abstract enum type", t);
+}
+
 /* Returns `true` if the type `t` is a `complex` type, of any width. */
 pragma "no instantiation limit"
 proc isComplexType(type t) param return
@@ -166,7 +172,7 @@ proc isPODType(type t) param {
 
 // Returns the unsigned equivalent of the input type.
 pragma "no doc"
-proc chpl__unsignedType(type t) type 
+proc chpl__unsignedType(type t) type
 {
   return uint(numBits(t));
 }
@@ -174,7 +180,7 @@ proc chpl__unsignedType(type t) type
 
 // Returns the signed equivalent of the input type.
 pragma "no doc"
-proc chpl__signedType(type t) type 
+proc chpl__signedType(type t) type
 {
   return int(numBits(t));
 }
@@ -226,7 +232,38 @@ proc isEnumValue(e)      param  return isEnumType(e.type);
 // isTupleValue
 // isHomogeneousTupleValue
 pragma "no doc"
-proc isClassValue(e)     param  return isClassType(e.type);
+proc isClassValue(e)              param return isClassType(e.type);
+
+pragma "no doc"
+proc isOwnedClassType(type t:_owned)         param return true;
+pragma "no doc"
+proc isOwnedClassType(type t)                param return false;
+pragma "no doc"
+proc isSharedClassType(type t:_shared)       param return true;
+pragma "no doc"
+proc isSharedClassType(type t)               param return false;
+pragma "no doc"
+proc isUnmanagedClassType(type t:_unmanaged) param return true;
+pragma "no doc"
+proc isUnmanagedClassType(type t)            param return false;
+pragma "no doc"
+proc isBorrowedClassType(type t:_borrowed)   param return true;
+pragma "no doc"
+proc isBorrowedClassType(type t)             param return false;
+
+pragma "no doc"
+pragma "no borrow convert"
+proc isOwnedClassValue(e)     param return isOwnedClassType(e.type);
+pragma "no doc"
+pragma "no borrow convert"
+proc isSharedClassValue(e)    param return isSharedClassType(e.type);
+pragma "no doc"
+pragma "no borrow convert"
+proc isUnmanagedClassValue(e) param return isUnmanagedClassType(e.type);
+pragma "no doc"
+pragma "no borrow convert"
+proc isBorrowedClassValue(e)  param return isBorrowedClassType(e.type);
+
 pragma "no doc"
 proc isRecordValue(e)    param  return isRecordType(e.type);
 pragma "no doc"
@@ -282,6 +319,14 @@ pragma "no doc"
 proc isHomogeneousTuple(type t)  param  return isHomogeneousTupleType(t);
 pragma "no doc"
 proc isClass(type t)     param  return isClassType(t);
+pragma "no doc"
+proc isOwnedClass(type t) param  return isOwnedClassType(t);
+pragma "no doc"
+proc isSharedClass(type t) param  return isSharedClassType(t);
+pragma "no doc"
+proc isUnmanagedClass(type t) param  return isUnmanagedClassType(t);
+pragma "no doc"
+proc isBorrowedClass(type t) param  return isBorrowedClassType(t);
 pragma "no doc"
 proc isRecord(type t)    param  return isRecordType(t);
 pragma "no doc"
@@ -351,6 +396,18 @@ proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
 /* Returns `true` if the argument is a class type or value
    that is not an ``extern`` class, or when the argument is ``nil``. */
 proc isClass(e)     param  return isClassValue(e);
+/* Returns `true` if the argument is an ``owned`` class type. */
+pragma "no borrow convert"
+proc isOwnedClass(e)     param  return isOwnedClassValue(e);
+/* Returns `true` if the argument is a ``shared`` class type. */
+pragma "no borrow convert"
+proc isSharedClass(e)     param  return isSharedClassValue(e);
+/* Returns `true` if the argument is a ``unmanaged`` class type. */
+pragma "no borrow convert"
+proc isUnmanagedClass(e)     param  return isUnmanagedClassValue(e);
+/* Returns `true` if the argument is a ``borrowed`` class type. */
+pragma "no borrow convert"
+proc isBorrowedClass(e)     param  return isBorrowedClassValue(e);
 /* Returns `true` if the argument is a record type or value. */
 proc isRecord(e)    param  return isRecordValue(e);
 /* Returns `true` if the argument is a union type or value. */
@@ -393,20 +450,11 @@ proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 
 // Is 'sub' a subtype (or equal to) 'super'?
 /* isSubtype Returns `true` if the type `sub` is a subtype of the type `super`. */
-// TODO -- fix documentation
+// isSubtype is directly handled by compiler
 
 // Is 'sub' a proper subtype of 'super'?
-/* Returns `true` if the type `sub` is a subtype of the type `super`
-   and is not `super`. */
-proc isProperSubtype(type sub, type super) param
-  where isSubtype(sub, super) && sub != super
-  return true;
-pragma "no doc"
-proc isProperSubtype(type sub, type super) param
-  return false;
-
-
-
+// isProperSubtype returns true if so
+// isProperSubtype is directly handled by compiler.
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 pragma "no doc"
@@ -547,7 +595,7 @@ proc min(type t) where isComplexType(t) {
 Returns the maximum value the type `t` can store.
 `t` can be one of the following types, of any width:
 `bool`, `int`, `uint`, `real`, `imag`, `complex`.
-When `t` is a `bool` type, it returns `false`.
+When `t` is a `bool` type, it returns `true`.
 When `t` is a `real`, `imag`, or `complex` type,
 it is a non-``param`` function.
 */
@@ -620,18 +668,18 @@ no checks at all will be done.
 */
 inline proc integral.safeCast(type T) : T where isUintType(T) {
   if castChecking {
-    use ChapelHaltWrappers;
     if isIntType(this.type) {
       // int(?) -> uint(?)
       if this < 0 then // runtime check
-        safeCastCheckHalt("casting "+this.type:string+" less than 0 to "+T:string);
+        HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            " less than 0 to "+T:string);
     }
 
     if max(this.type):uint > max(T):uint {
       // [u]int(?) -> uint(?)
       if (this:uint > max(T):uint) then // runtime check
-        safeCastCheckHalt("casting "+this.type:string+" with a value " +
-            "greater than the maximum of "+ T:string+" to "+T:string);
+        HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            " with a value greater than the maximum of "+ T:string+" to "+T:string);
     }
   }
   return this:T;
@@ -640,28 +688,27 @@ inline proc integral.safeCast(type T) : T where isUintType(T) {
 pragma "no doc" // documented with the other safeCast above
 inline proc integral.safeCast(type T) : T where isIntType(T) {
   if castChecking {
-    use ChapelHaltWrappers;
     if max(this.type):uint > max(T):uint {
       // this isUintType check lets us avoid a runtime check for this < 0
       if isUintType(this.type) {
         // uint(?) -> int(?)
         if this:uint > max(T):uint then // runtime check
-          safeCastCheckHalt("casting "+this.type:string+" with a value " +
-              "greater than the maximum of "+ T:string+" to "+T:string);
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+              " with a value greater than the maximum of "+ T:string+" to "+T:string);
       } else {
         // int(?) -> int(?)
         // max(T) <= max(int), so cast to int is safe
         if this:int > max(T):int then // runtime check
-          safeCastCheckHalt("casting "+this.type:string+" with a value " +
-              "greater than the maximum of "+ T:string+" to "+T:string);
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+              " with a value greater than the maximum of "+ T:string+" to "+T:string);
       }
     }
     if isIntType(this.type) {
       if min(this.type):int < min(T):int {
         // int(?) -> int(?)
         if this:int < min(T):int then // runtime check
-          safeCastCheckHalt("casting "+this.type:string+" with a value less " +
-              "than the minimum of "+ T:string+" to "+T:string);
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+              " with a value less than the minimum of "+ T:string+" to "+T:string);
       }
     }
   }

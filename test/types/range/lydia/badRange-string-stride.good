@@ -1,0 +1,2 @@
+badRange-string-stride.chpl:1: In function 'main':
+badRange-string-stride.chpl:2: error: Range stride must be an int

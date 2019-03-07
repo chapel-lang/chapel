@@ -6,10 +6,20 @@
 [1D Block] Remote read (Locale0): fast executeOns: 0
 [1D Block] Remote read (Locale0): nb executeOns: 0
 [1D Block] Remote write (Locale0): gets: 0
-[1D Block] Remote write (Locale0): puts: 0
+[1D Block] Remote write (Locale0): puts: 1
 [1D Block] Remote write (Locale0): executeOns: 0
 [1D Block] Remote write (Locale0): fast executeOns: 0
 [1D Block] Remote write (Locale0): nb executeOns: 0
+[1D Block] Remote read (Locale1): gets: 0
+[1D Block] Remote read (Locale1): puts: 0
+[1D Block] Remote read (Locale1): executeOns: 0
+[1D Block] Remote read (Locale1): fast executeOns: 0
+[1D Block] Remote read (Locale1): nb executeOns: 0
+[1D Block] Remote write (Locale1): gets: 0
+[1D Block] Remote write (Locale1): puts: 1
+[1D Block] Remote write (Locale1): executeOns: 0
+[1D Block] Remote write (Locale1): fast executeOns: 0
+[1D Block] Remote write (Locale1): nb executeOns: 0
 
 [1D Cyclic] Remote read (Locale0): gets: 0
 [1D Cyclic] Remote read (Locale0): puts: 0
@@ -17,7 +27,17 @@
 [1D Cyclic] Remote read (Locale0): fast executeOns: 0
 [1D Cyclic] Remote read (Locale0): nb executeOns: 0
 [1D Cyclic] Remote write (Locale0): gets: 0
-[1D Cyclic] Remote write (Locale0): puts: 0
+[1D Cyclic] Remote write (Locale0): puts: 1
 [1D Cyclic] Remote write (Locale0): executeOns: 0
 [1D Cyclic] Remote write (Locale0): fast executeOns: 0
 [1D Cyclic] Remote write (Locale0): nb executeOns: 0
+[1D Cyclic] Remote read (Locale1): gets: 0
+[1D Cyclic] Remote read (Locale1): puts: 0
+[1D Cyclic] Remote read (Locale1): executeOns: 0
+[1D Cyclic] Remote read (Locale1): fast executeOns: 0
+[1D Cyclic] Remote read (Locale1): nb executeOns: 0
+[1D Cyclic] Remote write (Locale1): gets: 0
+[1D Cyclic] Remote write (Locale1): puts: 1
+[1D Cyclic] Remote write (Locale1): executeOns: 0
+[1D Cyclic] Remote write (Locale1): fast executeOns: 0
+[1D Cyclic] Remote write (Locale1): nb executeOns: 0

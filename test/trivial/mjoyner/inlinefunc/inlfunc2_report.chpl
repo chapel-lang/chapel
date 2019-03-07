@@ -8,7 +8,7 @@ class Foo {
 }
 
 proc main() {
-  var f : Foo = new Foo();
+  var f : unmanaged Foo = new unmanaged Foo();
 
   /* setter method will be created, temporary should not be created for f
    * since formal param this will be a ref */

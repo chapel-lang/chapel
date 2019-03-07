@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -189,7 +189,8 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
 /* List of primitives that we shouldn't be hitting at this point in compilation
 
     case PRIM_DIV:
-    case PRIM_SIZEOF:
+    case PRIM_SIZEOF_BUNDLE:
+    case PRIM_SIZEOF_DDATA_ELEMENT:
     case PRIM_USED_MODULES_LIST:
     case PRIM_STRING_COPY:
     case PRIM_CAST_TO_VOID_STAR:
@@ -205,6 +206,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
     case PRIM_IS_UNION_TYPE:
     case PRIM_IS_ATOMIC_TYPE:
     case PRIM_IS_REF_ITER_TYPE:
+    case PRIM_IS_EXTERN_TYPE:
     case PRIM_IS_POD:
     case PRIM_COERCE:
     case PRIM_CALL_RESOLVES:
@@ -224,7 +226,8 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
       bool isRefStore = ce->get(1)->isRefOrWideRef() && !ce->get(2)->isRefOrWideRef();
       return !isRefStore;
     }
-    case PRIM_SIZEOF:
+    case PRIM_SIZEOF_BUNDLE:
+    case PRIM_SIZEOF_DDATA_ELEMENT:
     case PRIM_STRING_COPY:
     case PRIM_GET_SERIAL:
     case PRIM_NOOP:
@@ -267,7 +270,6 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_DEREF:
     case PRIM_PTR_EQUAL:
     case PRIM_PTR_NOTEQUAL:
-    case PRIM_IS_SUBTYPE:
     case PRIM_DYNAMIC_CAST:
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
@@ -278,11 +280,13 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_IS_WIDE_PTR:
     case PRIM_CAPTURE_FN_FOR_CHPL:
     case PRIM_CAPTURE_FN_FOR_C:
-    case PRIM_GET_PRIV_CLASS:
     case PRIM_GET_SVEC_MEMBER:
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_STACK_ALLOCATE_CLASS:
     case PRIM_GET_DYNAMIC_END_COUNT:
+    case PRIM_INVARIANT_START:
+    case PRIM_NO_ALIAS_SET:
+    case PRIM_COPIES_NO_ALIAS_SET:
       return true;
     case PRIM_UNKNOWN:
       if(strcmp(prim->name, "string_length") == 0 ||

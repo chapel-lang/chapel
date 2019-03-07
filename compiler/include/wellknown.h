@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,13 +36,14 @@ void clearGenericWellKnownFunctions();
 extern AggregateType* dtArray;
 extern AggregateType* dtBaseArr;
 extern AggregateType* dtBaseDom;
+extern AggregateType* dtCFI_cdesc_t;
 extern AggregateType* dtDist;
 extern AggregateType* dtError;
 extern AggregateType* dtExternalArray;
-extern AggregateType* dtLocale;
 extern AggregateType* dtLocaleID;
 extern AggregateType* dtMainArgument;
 extern AggregateType* dtOnBundleRecord;
+extern AggregateType* dtOpaqueArray;
 extern AggregateType* dtOwned;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtTuple;
@@ -65,5 +66,7 @@ extern FnSymbol *gChplUncaughtError;
 extern FnSymbol *gChplPropagateError;
 extern FnSymbol *gChplSaveTaskError;
 extern FnSymbol *gChplForallError;
+extern FnSymbol *gAtomicFenceFn;
+extern FnSymbol *gChplAfterForallFence;
 
 #endif

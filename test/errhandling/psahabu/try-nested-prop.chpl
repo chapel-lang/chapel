@@ -1,6 +1,5 @@
 use ExampleErrors;
 
-pragma "use default init"
 class SpecificError : Error { }
 
 proc nestedTries() throws {
@@ -8,7 +7,7 @@ proc nestedTries() throws {
     writeln("outer try");
     try {
       writeln("inner try");
-      throw new OtherError();
+      throw new owned OtherError();
     } catch err: SpecificError {
       writeln("fail: error should not be caught here");
     }

@@ -5,8 +5,8 @@ class Superclass {
 }
 
 class Subclass:Superclass {
-  proc parens() { writeln("parens() in Subclass"); }
-  iter itest() { yield "Subclass"; }
+  override proc parens() { writeln("parens() in Subclass"); }
+  override iter itest() { yield "Subclass"; }
 }
 
 var c: unmanaged Superclass;

@@ -8,7 +8,5 @@ module A2 {
     var rnd  = makeRandomStream(real, seed=314159265, algorithm=rtype);
 
     writeln(rnd);
-
-    delete rnd;
   }
 }

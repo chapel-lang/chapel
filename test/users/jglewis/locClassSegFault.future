@@ -1,5 +1,1 @@
-bug: seg fault for local class in generic function
-
-It appears that when a class is declared within a generic function,
-we fail to create a defaultTypeConstructor for it.  John Lewis ran
-into this when working on SSCA2.
+bug: resolution failure for == between local class and 'nil'

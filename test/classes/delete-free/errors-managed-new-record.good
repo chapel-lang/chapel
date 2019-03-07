@@ -1,0 +1,4 @@
+errors-managed-new-record.chpl:4: error: Cannot use new owned with record R
+errors-managed-new-record.chpl:5: error: Cannot use new shared with record R
+errors-managed-new-record.chpl:7: error: Cannot use new unmanaged with record R
+errors-managed-new-record.chpl:8: error: Cannot use new borrowed with record R

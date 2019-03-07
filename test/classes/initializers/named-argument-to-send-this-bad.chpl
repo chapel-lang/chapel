@@ -7,10 +7,10 @@ class Foo {
   }
 }
 
-proc badCall(arg: Foo, val) {
+proc badCall(arg: borrowed Foo, val) {
   arg.x = val;
 }
 
-var foo = new Foo(3);
+var foo = new unmanaged Foo(3);
 writeln(foo);
 delete foo;

@@ -5,14 +5,15 @@ config const debug = false;
 config const maxFluff = 2;
 
 proc test(dom : domain) {
-  for i in 1..maxFluff do
-    test(dom, i);
+  for i in 1..maxFluff {
+    var halo : dom.rank * int;
+    for j in 1..dom.rank do halo(j) = i;
+    test(dom, halo);
+  }
 }
 
-proc test(dom : domain, hval : int) {
+proc test(dom : domain, halo : dom.rank * int) {
   param rank = dom.rank;
-  var halo : rank*int;
-  for i in 1..rank do halo(i) = hval;
 
   if debug then writeln("Testing domain ", dom, " with halo ", halo);
   var Space = dom dmapped Stencil(dom, fluff=halo, periodic=true);
@@ -39,5 +40,12 @@ test({-20..-10, -20..-10});
 test({1..10, 1..10, 1..10});
 test({-10..#30, -10..#30, -10..#30} by 3);
 test({-10..1, 5..24, 0..10} by 2);
+
+// At least one dimension has no fluff
+test({1..10, 1..10}, (1, 0));
+test({1..10, 1..10}, (0, 1));
+test({1..10, 1..10, 1..10}, (0, 1, 0));
+test({1..10, 1..10, 1..10}, (1, 0, 1));
+
 
 writeln("Success!");

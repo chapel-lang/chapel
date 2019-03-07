@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,82 +20,164 @@
 
 /*
 
-   :record:`Owned` (along with :record:`~SharedObject.Shared`) manage the
-   deallocation of a class instance. :record:`Owned` is meant to be used when
-   only one reference to an object needs to manage that object's storage.
+`owned` (along with :record:`~SharedObject.shared`) manage the
+deallocation of a class instance. :record:`owned` is meant to be used when
+only one reference to an object needs to manage that object's storage.
 
-   To use :record:`Owned`, store a new class instance in a new Owned
-   record as is shown in this example:
+Using `owned`
+-------------
 
-   .. code-block:: chapel
+To use :record:`owned`, use the `owned` keyword when allocating a class
+instance, as shown in this example:
 
-     use OwnedObject;
-     class MyClass { }
+.. code-block:: chapel
 
-     var myOwnedObject = new Owned(new MyClass());
+ class MyClass { }
 
-   When myOwnedObject goes out of scope, the class instance
-   it refers to will be deleted.
+ var myOwnedObject = new owned MyClass();
 
-   Copy initializing from ``myOwnedObject`` or assigning it to another
-   :record:`Owned` will leave ``myOwnedObject`` storing a nil value
-   and transfer the owned class instance to the other value.
+When ``myOwnedObject`` goes out of scope, the class instance
+it refers to will be deleted.
 
-   .. code-block:: chapel
+Copy initializing from ``myOwnedObject`` or assigning it to another
+:record:`owned` will leave ``myOwnedObject`` storing a nil value
+and transfer the owned class instance to the other value.
 
-     var otherOwnedObject = myOwnedObject;
-     // now myOwnedObject stores nil
-     // the value it stored earlier has moved to otherOwnedObject
+.. code-block:: chapel
 
-     myOwnedObject = otherOwnedObject;
-     // this assignment moves the value from the right-hand-side
-     // to the left-hand-side, leaving the right-hand-side empty.
-     // after the assignment, otherOwnedObject stores nil
-     // and myOwnedObject stores a value that will be deleted
-     // when myOwnedObject goes out of scope.
+ var otherOwnedObject = myOwnedObject;
+ // now myOwnedObject stores nil
+ // the value it stored earlier has moved to otherOwnedObject
 
-   The compiler includes support for introducing automatic coercions
-   from :record:`Owned` to the contained class type. For example:
+ myOwnedObject = otherOwnedObject;
+ // this assignment moves the value from the right-hand-side
+ // to the left-hand-side, leaving the right-hand-side empty.
+ // after the assignment, otherOwnedObject stores nil
+ // and myOwnedObject stores a value that will be deleted
+ // when myOwnedObject goes out of scope.
 
-   .. code-block:: chapel
+It is possible to transfer the ownership to another `owned`
+variable before that happens.
+
+`owned` forms part of a type and can be used in type expressions:
+
+.. code-block:: chapel
+
+ var emptyOwnedObject: owned MyClass;
 
 
-     proc f(arg:MyClass) {
-       writeln(arg);
-     }
+.. _about-owned-borrowing:
 
-     var myOwned = new Owned(new MyClass());
-     f(myOwned); // compiler coerces to MyClass via borrow()
+Borrowing from `owned`
+----------------------
 
-   Additionally, the compiler includes support for coercing a value
-   of type ``Owned(T)`` to ``Owned(U)`` when ``T`` is a subclass of ``U``.
-   For example:
+The :proc:`owned.borrow` method returns the pointer managed by the
+:record:`owned`. This pointer is only valid as long as the :record:`owned`
+is storing that pointer.
 
-   .. code-block:: chapel
+The compiler includes a component called the lifetime checker that
+can, in many cases, check that a `borrow` does not refer to an object
+that could be deleted before the `borrow`. For example:
 
-     class Person { }
-     class Student : Person { }
+.. code-block:: chapel
 
-     var myStudent = new Owned(new Student());
-     var myPerson:Owned(Person) = myStudent;
-     // relies on coercion from Owned(Student) to Owned(Person)
-     // moves the instance from myStudent to myPerson, leaving
-     // myStudent containing nil.
+ proc test() {
+   var a: owned MyClass = new owned MyClass();
+   // the instance referred to by a is deleted at end of scope
+   var c: borrowed MyClass = a.borrow();
+   // c "borrows" to the instance managed by a
+   return c; // lifetime checker error! returning borrow from local variable
+   // a is deleted here
+ }
 
-   .. note::
+.. _about-owned-coercions:
 
-     The ways in which :record:`Owned` may be used are currently limited.
-     Copy-initialization, assignment, and `in` intent are expected to work.
-     However, it is currently an error to use a :record:`Owned` in a way that
-     causes the compiler to add an implicitly copy, such as by returning a
-     :record:`Owned` that was passed by reference.
+Coercions for `owned`
+---------------------
+
+The compiler includes support for introducing automatic coercions
+from :record:`owned` to the contained class type. This is equivalent
+to calling the :proc:`owned.borrow` method. For example:
+
+.. code-block:: chapel
+
+ proc f(arg:MyClass) {
+   writeln(arg);
+ }
+
+ var myOwned = new owned MyClass();
+ f(myOwned); // compiler coerces to MyClass via borrow()
+
+
+Additionally, the compiler includes support for coercing a value
+of type ``owned T`` to ``owned U`` when ``T`` is a subclass of ``U``.
+For example:
+
+.. code-block:: chapel
+
+ class Person { }
+ class Student : Person { }
+
+ var myStudent = new owned Student();
+ var myPerson:owned Person = myStudent;
+ // relies on coercion from owned Student to owned Person
+ // moves the instance from myStudent to myPerson, leaving
+ // myStudent containing nil.
+
+
+.. _about-owned-intents-and-instantiation:
+
+`owned` Intents and Instantiation
+---------------------------------
+
+The default intent for :record:`owned` currently depends on whether
+or not the formal argument was declared with a type.
+
+If the formal argument has a declared type, the default intent is `in`, meaning
+that ownership will occur.
+
+.. code-block:: chapel
+
+  var global: owned MyClass;
+  proc saveit(arg: owned MyClass) {
+    global = arg; // OK! Transfers ownership from 'arg' to 'global'
+    // now that instance will be deleted at end of program
+  }
+  proc test0() {
+    var x = new owned MyClass();
+    saveit(x);
+    // now x stores `nil` since ownership was transfer to the argument
+  }
+
+If the formal argument had no type (i.e. it is generic) and used `const` or
+default intent, the argument will not cause ownership transfer and the
+function will be instantiated with the borrow type if an owned actual is
+supplied. For example:
+
+.. code-block:: chapel
+
+  proc f(x) {
+    writeln("in f, x.type is ", x.type:string);
+  }
+  proc test1() {
+    writeln("in test1");
+    var x = new owned MyClass();
+    f(x); // f gets a borrow
+    writeln("back in test1");
+    writeln(x); // so x is not 'nil' at this point
+  }
+
+.. note::
+
+  It is expected that this rule will change in the future with
+  more experience with this language design.
 
  */
 module OwnedObject {
 
   /*
-     :record:`Owned` manages the deletion of a class instance assuming
-     that this :record:`Owned` is the only thing responsible for managing
+     :record:`owned` manages the deletion of a class instance assuming
+     that this :record:`owned` is the only thing responsible for managing
      the lifetime of the class instance.
    */
   pragma "no copy"
@@ -103,70 +185,99 @@ module OwnedObject {
   pragma "managed pointer"
   record _owned {
     pragma "no doc"
-    type t;                // contained type (class type)
+    type chpl_t;                // contained type (class type)
 
     pragma "no doc"
     pragma "owned"
-    var p:t;               // contained pointer (class type)
+    var chpl_p:chpl_t;          // contained pointer (class type)
 
-    forwarding p;
+    forwarding chpl_p;
 
     /*
-       Default-initialize a :record:`Owned`.
+       Default-initialize a :record:`owned` to store type `chpl_t`
      */
-    proc init(type a) {
-      this.t = _to_borrowed(a);
-      this.p = nil;
+    pragma "leaves this nil"
+    proc init(type chpl_t) {
+      if !isClass(chpl_t) then
+        compilerError("owned only works with classes");
+
+      this.chpl_t = _to_borrowed(chpl_t);
+      this.chpl_p = nil;
+    }
+
+    pragma "no doc"
+    proc init(p:borrowed) {
+      compilerWarning("initializing owned from a borrow is deprecated");
+      this.init(_to_unmanaged(p));
     }
 
     /*
-       Initialize a :record:`Owned` with a class instance.
-       When this :record:`Owned` goes out of scope, it will
+       Initialize a :record:`owned` with a class instance.
+       When this :record:`owned` goes out of scope, it will
        delete whatever class instance it is storing.
 
        It is an error to directly delete the class instance
-       while it is managed by a :record:`Owned`.
+       while it is managed by a :record:`owned`.
 
-       :arg p: the class instance to manage. Must be of class type.
+       :arg p: the class instance to manage. Must be of unmanaged class type.
+
      */
-    proc init(p) {
-      this.t = _to_borrowed(p.type);
+    proc init(pragma "nil from arg" p:unmanaged) {
+      this.chpl_t = _to_borrowed(p.type);
+      this.chpl_p = _to_borrowed(p);
+    }
 
-      if !isClass(p) then
-        compilerError("Owned only works with classes");
 
-      this.p = p;
+    proc init(p:?T) where isClass(T) == false && isSubtype(T, _owned) == false  &&
+                    isIterator(p) == false {
+      compilerError("owned only works with classes");
+      this.chpl_t = T;
+      this.chpl_p = p;
     }
 
     /*
-       Copy-initializer. Creates a new :record:`Owned`
+       Copy-initializer. Creates a new :record:`owned`
        that takes over ownership from `src`. `src` will
        refer to `nil` after this call.
      */
-    proc init(ref src:_owned) {
-      this.t = src.t;
-      this.p = src.release();
+    proc init=(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
+      // Use 'this.type.chpl_t' in case RHS is a subtype
+      this.chpl_t = this.type.chpl_t;
+      this.chpl_p = src.release();
+    }
+
+    pragma "no doc"
+    proc init=(src : _nilType) {
+      this.init(this.type.chpl_t);
+    }
+
+    // Copy-init implementation to allow for 'new _owned(foo)' in module code
+    pragma "no doc"
+    proc init(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
+      this.chpl_t = src.chpl_t;
+      this.chpl_p = src.release();
     }
 
     /*
-       The deinitializer for :record:`Owned` will destroy the class
-       instance it manages when the :record:`Owned` goes out of scope.
+       The deinitializer for :record:`owned` will destroy the class
+       instance it manages when the :record:`owned` goes out of scope.
      */
     proc deinit() {
-      if isClass(p) { // otherwise, let error happen on init call
-        if p != nil then
-          delete p;
+      if isClass(chpl_p) { // otherwise, let error happen on init call
+        if chpl_p != nil then
+          delete _to_unmanaged(chpl_p);
       }
     }
 
     /*
-       Empty this :record:`Owned` so that it stores `nil`.
+       Empty this :record:`owned` so that it stores `nil`.
        Deletes the previously managed object, if any.
      */
+    pragma "leaves this nil"
     proc ref clear() {
-      if p != nil {
-        delete p;
-        p = nil;
+      if chpl_p != nil {
+        delete _to_unmanaged(chpl_p);
+        chpl_p = nil;
       }
     }
 
@@ -175,67 +286,83 @@ module OwnedObject {
        Change the instance managed by this class to `newPtr`.
        If this record was already managing a non-nil instance,
        that instance will be deleted.
+
+       Here `t` refers to the object type managed by this :record:`owned`.
      */
-    proc ref retain(newPtr:unmanaged p.type) {
-      var oldPtr = p;
-      p = newPtr;
+    proc ref retain(pragma "nil from arg" newPtr:unmanaged chpl_t) {
+      var oldPtr = chpl_p;
+      chpl_p = newPtr;
       if oldPtr then
-        delete oldPtr;
+        delete _to_unmanaged(oldPtr);
     }
 
     /*
-       Empty this :record:`Owned` so that it manages `nil`.
-       Returns the instance previously managed by this :record:`Owned`.
+       Empty this :record:`owned` so that it manages `nil`.
+       Returns the instance previously managed by this :record:`owned`.
+
+       Here `t` refers to the object type managed by this :record:`owned`.
      */
-    proc ref release():unmanaged p.type {
-      var oldPtr = p;
-      p = nil;
+    pragma "leaves this nil"
+    pragma "nil from this"
+    proc ref release():unmanaged chpl_t {
+      var oldPtr = chpl_p;
+      chpl_p = nil;
       return _to_unmanaged(oldPtr);
     }
 
     /*
-       Return the object managed by this :record:`Owned` without
+       Return the object managed by this :record:`owned` without
        impacting its lifetime at all. It is an error to use the
-       value returned by this function after the :record:`Owned`
-       goes out of scope.
+       value returned by this function after the :record:`owned`
+       goes out of scope or deletes the contained class instance
+       for another reason, such as with `=` or :proc`retain`.
+       In some cases such errors are caught at compile-time.
      */
+    pragma "nil from this"
     proc /*const*/ borrow() {
-      return p;
+      return chpl_p;
     }
   }
 
-  pragma "no doc"
-  proc =(ref lhs:_owned, ref rhs: _owned) {
+  /*
+    Assign one :record:`owned` to another. Deletes the object managed by
+    ``lhs``, if any. Transfers ownership of the object managed by ``rhs``
+    to ``lhs``, leaving ``lhs`` storing `nil`.
+  */
+  proc =(ref lhs:_owned,
+         pragma "leaves arg nil"
+         ref rhs: _owned) {
     lhs.retain(rhs.release());
   }
+
   pragma "no doc"
   proc =(ref lhs:_owned, rhs:_nilType) {
     lhs.clear();
   }
-  pragma "no doc"
+  /*
+    Swap two :record:`owned` objects.
+  */
   proc <=>(ref lhs:_owned(?t), ref rhs:_owned(t)) {
-    lhs.p <=> rhs.p;
+    lhs.chpl_p <=> rhs.chpl_p;
   }
 
 
   // initCopy is defined explicitly as a workaround
-  // for problems with generic initializers
+  // for problems with initializers in this case
   pragma "init copy fn"
   pragma "no doc"
-  pragma "unsafe"
-  proc chpl__initCopy(ref src: _owned) {
+  proc chpl__initCopy(pragma "leaves arg nil" pragma "nil from arg"
+                      ref src: _owned) {
     var ret = new _owned(src);
     return ret;
   }
 
-  // autoCopy is defined explicitly to create a
-  // compilation error if it is invoked
-  // (if we decided it was OK, we'd need to do const-checking
-  //  on the argument to this autoCopy call).
+  // autoCopy is defined explicitly as a workaround
+  // for problems with initializers in this case
   pragma "no doc"
   pragma "auto copy fn"
-  pragma "unsafe"
-  proc chpl__autoCopy(ref src: _owned) {
+  proc chpl__autoCopy(pragma "leaves arg nil" pragma "nil from arg"
+                      ref src: _owned) {
     var ret = new _owned(src);
     return ret;
   }
@@ -243,21 +370,14 @@ module OwnedObject {
   // chpl__autoDestroy(x:object) from internal coercions.
   pragma "no doc"
   pragma "auto destroy fn"
-  proc chpl__autoDestroy(x: _owned) {
-    __primitive("call destructor", x);
+  proc chpl__autoDestroy(ref x: _owned) {
+    __primitive("call destructor", __primitive("deref", x));
   }
 
-  // Don't print out 'p' when printing an _owned, just print class pointer
+  // Don't print out 'chpl_p' when printing an _owned, just print class pointer
   pragma "no doc"
   proc _owned.readWriteThis(f) {
-    f <~> this.p;
-  }
-
-  // Note, coercion from _owned -> _owned.t is sometimes directly
-  // supported in the compiler via a call to borrow() and
-  // sometimes uses this cast.
-  inline proc _cast(type t, const ref x:_owned) where isSubtype(t,x.t) {
-    return x.borrow();
+    f <~> this.chpl_p;
   }
 
   // This cast supports coercion from _owned(SubClass) to _owned(ParentClass)
@@ -265,12 +385,23 @@ module OwnedObject {
   // It only works in a value context (i.e. when the result of the
   // coercion is a value, not a reference).
   pragma "no doc"
-  inline proc _cast(type t:_owned, in x:_owned) where isSubtype(x.t,t.t) {
-    // the :t.t cast in the next line is what actually changes the
+  inline proc _cast(type t:_owned, pragma "nil from arg" in x:_owned)
+  where isSubtype(x.chpl_t,t.chpl_t) {
+    // the :t.chpl_t cast in the next line is what actually changes the
     // returned value to have type t; otherwise it'd have type _owned(x.type).
-    var ret = new _owned(x.release():t.t);
+    var ret = new _owned(x.release():_to_unmanaged(t.chpl_t));
     return ret;
   }
 
+  // cast from nil to owned
+  pragma "no doc"
+  inline proc _cast(type t:_owned, pragma "nil from arg" x:_nilType) {
+    var tmp:t;
+    return tmp;
+  }
+
+  /* This type allows code using the pre-1.18 `Owned` record
+     to continue to compile. It will be removed in a future release.
+   */
   type Owned = _owned;
 }

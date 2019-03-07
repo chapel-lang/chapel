@@ -19,16 +19,16 @@ proc BFS ( root : vertex_id, ParentTree, G )
   var visited$ : [vertex_domain] sync int = -1;
 
   use ReplicatedVar;
-  var Active_Level: [rcDomain] Level_Set (Vertex_List);
-  var Next_Level: [rcDomain] Level_Set (Vertex_List);
+  var Active_Level: [rcDomain] unmanaged Level_Set (Vertex_List);
+  var Next_Level: [rcDomain] unmanaged Level_Set (Vertex_List);
   var Active_Remaining: [LocaleSpace] bool = true;
 
   var Root_vertex : vertex_id = root;
 
   coforall loc in Locales do on loc {
-    rcLocal(Active_Level) = new Level_Set (Vertex_List);
+    rcLocal(Active_Level) = new unmanaged Level_Set (Vertex_List);
     rcLocal(Active_Level).previous = nil;
-    rcLocal(Next_Level) = new Level_Set (Vertex_List);
+    rcLocal(Next_Level) = new unmanaged Level_Set (Vertex_List);
     rcLocal(Next_Level).previous = rcLocal(Active_Level);
   }
 
@@ -83,7 +83,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
       delete rcLocal(Active_Level);
       rcLocal(Active_Level) = rcLocal(Next_Level);
-      rcLocal(Next_Level) = new Level_Set (Vertex_List);
+      rcLocal(Next_Level) = new unmanaged Level_Set (Vertex_List);
 
       rcLocal(Next_Level).previous = rcLocal(Active_Level);
 

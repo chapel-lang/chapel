@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,14 +20,15 @@
 /*
   This module provides a simple singly linked list.
 
-  .. note::
+  .. warning::
 
-      This module is expected to change in the future.
+      This module has been deprecated - please use :mod:`LinkedLists` instead.
  */
 module List {
 
+compilerWarning("List module is deprecated - please use LinkedLists instead");
+
 pragma "no doc"
-pragma "use default init"
 class listNode {
   type eltType;
   var data: eltType;
@@ -75,8 +76,8 @@ record list {
   }
 
   pragma "no doc"
-  proc init(l : list(?t)) {
-    this.eltType = t;
+  proc init=(l : this.type) {
+    this.eltType = l.eltType;
     this.complete();
     for i in l do
       this.append(i);
@@ -185,19 +186,19 @@ record list {
      Remove the first element from the list and return it.
      It is an error to call this function on an empty list.
    */
- proc pop_front():eltType {
-   if boundsChecking && length < 1 {
-     use ChapelHaltWrappers;
-     boundsCheckHalt("pop_front on empty list");
+   proc pop_front():eltType {
+     if boundsChecking && length < 1 {
+       HaltWrappers.boundsCheckHalt("pop_front on empty list");
+     }
+     var oldfirst = first;
+     var newfirst = first.next;
+     var ret = oldfirst.data;
+     first = newfirst;
+     if last == oldfirst then last = newfirst;
+     length -= 1;
+     delete oldfirst;
+     return ret;
    }
-   var oldfirst = first;
-   var newfirst = first.next;
-   var ret = oldfirst.data;
-   first = newfirst;
-   if last == oldfirst then last = newfirst;
-   length -= 1;
-   return ret;
- }
 
   /*
     Delete every node in the list.
@@ -217,6 +218,7 @@ record list {
   /*
     Destructor
    */
+  pragma "no doc"
   proc deinit(){
     destroy();
   }

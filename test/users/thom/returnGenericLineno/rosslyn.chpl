@@ -55,11 +55,11 @@ module Rosslyn
     class BenchmarkFactory
     {   
         //abstract
-        proc getInstance() : Benchmark
+        proc getInstance() : unmanaged Benchmark
         {
             assert(false,"BenchmarkFactory.getInstance() should be",
                          "overridden in the subclass");
-            return new Benchmark();
+            return new unmanaged Benchmark();
         }
 
 
@@ -73,12 +73,12 @@ module Rosslyn
 
     class BenchmarkRunner
     {
-        var factory : BenchmarkFactory;
+        var factory : unmanaged BenchmarkFactory;
         var repeats : int;
            
 
         /** Explicit form of default constructor */
-        proc init(factory : BenchmarkFactory, repeats = 5 )
+        proc init(factory : unmanaged BenchmarkFactory, repeats = 5 )
         {
             this.factory = factory;
             this.repeats = repeats;
@@ -86,7 +86,7 @@ module Rosslyn
 
         proc runBenchmark()// : ResultSet
         {
-            var benchmark : Benchmark;
+            var benchmark : unmanaged Benchmark;
             writeln("Running benchmark: \"",factory,"\", ",repeats," runs");
             var results : [1..repeats] real;//TimeResult;
             for run in 1..repeats

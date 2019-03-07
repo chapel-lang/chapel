@@ -58,8 +58,6 @@ for i in 1..k {
   printGrid();
 }
 
-delete rs;
-
 // print a generation
 proc printGrid() {
   write("+"); for i in 1..n do write("-"); writeln("+");

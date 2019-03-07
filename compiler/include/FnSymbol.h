@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,7 +20,10 @@
 #ifndef _FN_SYMBOL_H_
 #define _FN_SYMBOL_H_
 
+#include "library.h"
 #include "symbol.h"
+
+class IteratorGroup;
 
 enum RetTag {
   RET_VALUE,
@@ -41,19 +44,26 @@ public:
   Type*                      retType;
 
   BlockStmt*                 where;
+  BlockStmt*                 lifetimeConstraints;
   BlockStmt*                 retExprType;
   BlockStmt*                 body;
   IntentTag                  thisTag;
   RetTag                     retTag;
 
-  // Attached original (user) iterators before lowering.
+  // Support for iterator lowering.
   IteratorInfo*              iteratorInfo;
+  // Pointers to other iterator variants - serial, standalone, etc.
+  IteratorGroup*             iteratorGroup;
 
   Symbol*                    _this;
-  Symbol*                    _outer;
   FnSymbol*                  instantiatedFrom;
   SymbolMap                  substitutions;
-  BlockStmt*                 instantiationPoint;
+
+private:
+  BlockStmt*                 _instantiationPoint;
+  FnSymbol*                  _backupInstantiationPoint;
+
+public:
   std::vector<BasicBlock*>*  basicBlocks;
   Vec<CallExpr*>*            calledBy;
   const char*                userString;
@@ -67,9 +77,6 @@ public:
 
   // Used to store the return symbol during partial copying.
   Symbol*                    retSymbol;
-
-  // Number of formals before tuple type constructor formals are added.
-  int                        numPreTupleFormals;
 
 #ifdef HAVE_LLVM
   llvm::MDNode*              llvmDISubprogram;
@@ -100,6 +107,11 @@ public:
   void                       codegenHeaderC();
   void                       codegenPrototype();
   void                       codegenDef();
+  void                       codegenFortran(int indent);
+  void                       codegenPython(PythonFileType pxd);
+  GenRet                     codegenPXDType();
+  GenRet                     codegenPYXType();
+  std::string                getPythonArrayReturnStmts();
 
   void                       insertAtHead(Expr* ast);
   void                       insertAtHead(const char* format, ...);
@@ -123,6 +135,18 @@ public:
   Symbol*                    replaceReturnSymbol(Symbol* newRetSymbol,
                                                  Type*   newRetType);
 
+  // Removes all statements from body and adds all statements from block.
+  void                       replaceBodyStmtsWithStmts(BlockStmt* block);
+  // Removes all statements from body and adds the passed statement.
+  void                       replaceBodyStmtsWithStmt(Expr* stmt);
+
+  // Sets instantiationPoint and backupInstantiationPoint appropriately
+  //  expr might be a call or a BlockStmt
+  void                       setInstantiationPoint(Expr* expr);
+  // returns instantiationPoint or uses the backupInstantiationPoint
+  // if necessary
+  BlockStmt*                 instantiationPoint()                        const;
+
   int                        numFormals()                                const;
   ArgSymbol*                 getFormal(int i)                            const;
 
@@ -145,10 +169,12 @@ public:
 
   bool                       isPrimaryMethod()                           const;
   bool                       isSecondaryMethod()                         const;
+  bool                       isCompilerGenerated()                       const;
 
   bool                       isInitializer()                             const;
   bool                       isPostInitializer()                         const;
   bool                       isDefaultInit()                             const;
+  bool                       isCopyInit()                                const;
 
   AggregateType*             getReceiver()                               const;
 

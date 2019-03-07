@@ -139,7 +139,7 @@ class Assignment {
 	
 	// returns the IGNode (representing the assignment) associated with the variable
 	proc this(i : int) ref {
-		assert(domVars.member(i), "Check if i is member of assignment.");
+		assert(domVars.contains(i), "Check if i is member of assignment.");
 		return values(i);
 	}
 	

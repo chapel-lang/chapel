@@ -5,7 +5,7 @@ class C {
   var xx: tt;
 }
 
-proc foo(c: C(tt=?tt, ?t)) {
+proc foo(c: unmanaged C(tt=?tt, ?t)) {
   var y: t;
   var yy: tt;
   writeln((y, yy));

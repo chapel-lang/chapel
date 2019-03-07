@@ -23,11 +23,12 @@ component types.
 The syntax of a tuple type is given by:
 \begin{syntax}
 tuple-type:
-  ( type-specifier , type-list )
+  ( type-expression , type-list )
+  ( type-expression , )
 
 type-list:
-  type-specifier
-  type-specifier , type-list
+  type-expression
+  type-expression , type-list
 \end{syntax}
 
 \index{tuples!homogeneous}
@@ -37,11 +38,7 @@ types of the components are identical.  Homogeneous tuples have fewer
 restrictions for how they can be indexed~(\rsec{Tuple_Indexing}).
 Homogeneous tuple types can be defined using the above syntax, or they
 can be defined as a product of an integral parameter (a compile-time
-constant integer) and a type.  This latter specification is
-implemented by overloading \chpl{*} with the following prototype:
-\begin{chapel}
-proc *(param p: int, type t) type
-\end{chapel}
+constant integer) and a type.
 
 \begin{rationale}
 Homogeneous tuples require the size to be specified as a parameter

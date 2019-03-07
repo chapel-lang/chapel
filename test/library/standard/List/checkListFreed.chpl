@@ -1,11 +1,11 @@
 use Memory;
-use List;
+use LinkedLists;
 
 var mem : uint;
 proc output()
 {
 	mem=memoryUsed();
-	var ls : list(int);
+	var ls : LinkedList(int);
 	ls.push_back(5);
 	ls.push_back(8);
 	ls.push_back(10);

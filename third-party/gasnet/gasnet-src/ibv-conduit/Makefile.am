@@ -82,8 +82,8 @@ CONDUIT_FILELIST =               \
       gasnet_core_internal.h     \
       gasnet_extended.c          \
       gasnet_extended_fwd.h      \
-      gasnet_extended_internal.h \
       gasnet_firehose.c          \
+      gasnet_ibv.h               \
       firehose_fwd.h             \
       license.txt                
 
@@ -109,7 +109,7 @@ CONDUIT_EXTRAHEADERS = $(fh_extraheaders) $(fca_extraheaders) $(blcr_extraheader
 
 
 # headers selected by default rules that should NOT be installed
-CONDUIT_PRIVATEHEADERS = $(fh_privheaders) $(fca_privheaders) $(blcr_privheaders)
+CONDUIT_PRIVATEHEADERS = $(fh_privheaders) $(fca_privheaders) $(blcr_privheaders) gasnet_ibv.h
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
@@ -163,12 +163,12 @@ libgasnet-ibv-parsync.a: $(libgasnet_dependencies)
 
 if USE_IBV_CONDUIT  
 lib_LIBRARIES = $(libraries) 
-all-local: $(lib_LIBRARIES) $(makefile_fragments)
+all-local: $(lib_LIBRARIES) $(pkgconfig_files)
 clean-local: do-clean-local
 install-data-local: do-install-data-local
 uninstall-local: do-uninstall-local
 else
-$(top_srcdir)/gasnet.h: do-error
+$(top_srcdir)/gasnetex.h: do-error
 endif
 
 

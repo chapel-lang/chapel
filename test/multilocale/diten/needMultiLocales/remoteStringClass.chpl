@@ -3,7 +3,7 @@ class C {
 }
 
 proc main {
-  var c = new C("a string");
+  var c = new borrowed C("a string");
   var b: int;
   writeln(c);
   on Locales(1) {

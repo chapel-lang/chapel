@@ -5,6 +5,6 @@ import os, stat
 parent_path = os.path.abspath(os.path.join('testFile.txt', os.pardir))
 
 f = open('parentName.good', 'w')
-os.chmod("parentName.good", 0777);
+os.chmod("parentName.good", 0o777);
 f.write(parent_path + '\n')
 f.close()

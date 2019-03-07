@@ -7,7 +7,7 @@ proc createArray() {
   return retA;
 }
 proc consumesArray(A:[] R) {
-  return new ClassStoringArray(A);
+  return new unmanaged ClassStoringArray(A);
 }
 
 var c = consumesArray(createArray());

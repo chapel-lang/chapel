@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #ifndef CLANGUTIL_H
 #define CLANGUTIL_H
 
+#include "baseAST.h"
 #include "files.h"
 #include "genret.h"
 
@@ -36,6 +37,7 @@ namespace llvm {
   class Value;
 }
 namespace clang {
+  class Decl;
   class TypeDecl;
   class ValueDecl;
 }
@@ -57,7 +59,7 @@ GenRet codegenCValue(const clang::ValueDecl *vd);
 
 llvm::Function* getFunctionLLVM(const char* name);
 llvm::Type* getTypeLLVM(const char* name);
-int getCRecordMemberGEP(const char* typeName, const char* fieldName);
+int getCRecordMemberGEP(const char* typeName, const char* fieldName, bool& isCArrayField);
 void makeBinaryLLVM();
 void prepareCodegenLLVM();
 void finishCodegenLLVM();
@@ -67,7 +69,8 @@ bool lookupInExternBlock(ModuleSymbol* module, const char* name,
                          clang::TypeDecl** cTypeOut,
                          clang::ValueDecl** cValueOut,
                          const char** cCastedToTypeOut,
-                         Type** chplTypeOut);
+                         Type** chplTypeOut,
+                         astlocT* astlocOut);
 bool alreadyConvertedExtern(ModuleSymbol* module, const char* name);
 bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
 

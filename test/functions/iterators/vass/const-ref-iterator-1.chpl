@@ -1,13 +1,19 @@
 // Can't yield non-const vars by const ref.
 
-var globalVar: int;
+const globalVar = 5;
 
-iter MYITER() const ref {
-  yield globalVar;  // illegal
+proc refToGlobalVar() const ref {
+  return globalVar;
+}
+
+iter MYITER() ref {
+  yield globalVar;         // illegal
+  yield refToGlobalVar();  // illegal
 }
 
 proc main {
   for IDX in MYITER() {
     writeln(IDX);
+    IDX += 10;
   }
 }

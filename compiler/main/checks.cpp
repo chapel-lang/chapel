@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -587,18 +587,8 @@ static void checkIsIterator() {
 //
 static void checkAggregateTypes() {
   for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
-    if (at->defaultInitializer == NULL &&
-        at->initializerStyle   == DEFINES_CONSTRUCTOR) {
-      INT_FATAL(at,
-                "aggregate type did not define an initializer "
-                "and has no default constructor");
-    }
-
-    if (at->typeConstructor  == NULL &&
-        at->initializerStyle != DEFINES_CONSTRUCTOR) {
-      INT_FATAL(at,
-                "aggregate type did not define an initializer and "
-                "has no default type constructor");
+    if (at->typeConstructor == NULL) {
+      INT_FATAL(at, "aggregate type has no type constructor");
     }
   }
 }
@@ -614,10 +604,9 @@ checkResolveRemovedPrims(void) {
       switch(call->primitive->tag) {
         case PRIM_BLOCK_PARAM_LOOP:
 
-        case PRIM_INIT:
+        case PRIM_DEFAULT_INIT_VAR:
         case PRIM_INIT_FIELD:
         case PRIM_INIT_VAR:
-        case PRIM_NO_INIT:
         case PRIM_TYPE_INIT:
 
         case PRIM_LOGICAL_FOLDER:
@@ -626,6 +615,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_IS_TUPLE_TYPE:
         case PRIM_IS_STAR_TUPLE_TYPE:
         case PRIM_IS_SUBTYPE:
+        case PRIM_REDUCE:
         case PRIM_REDUCE_ASSIGN:
         case PRIM_TUPLE_EXPAND:
         case PRIM_QUERY:
@@ -821,6 +811,12 @@ checkFormalActualTypesMatch()
           // All other cases == error.
           INT_FATAL(call, "nil is passed to the formal %s of a non-class type",
                     formal->name);
+        }
+
+        if (SymExpr* se = toSymExpr(actual)) {
+          if (se->symbol() == gDummyRef && formal->hasFlag(FLAG_RETARG))
+            // The compiler generates this combination.
+            continue;
         }
 
         if (formal->getValType() != actual->getValType()) {

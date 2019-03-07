@@ -1,9 +1,7 @@
-pragma "use default init"
 class R {
   type t;
   var x:t;
 
-  pragma "use default init"
   record A {
     type t;
     var y:t;

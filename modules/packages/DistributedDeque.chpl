@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -73,8 +73,7 @@
 
   .. note::
 
-    This package module is new in 1.16 and may contain bugs. The interface may
-    change.  The documentation is being incrementally revised and improved
+    This module is a work in progress and may change in future releases.
 
   Usage
   _____
@@ -168,7 +167,6 @@
 module DistributedDeque {
 
   use Collection;
-  use SharedObject;
 
   /*
     Size of each unroll block for each local deque node.
@@ -191,9 +189,9 @@ module DistributedDeque {
     var _pid : int;
 
     proc deinit() {
-      chpl_getPrivatizedCopy(DistributedDequeImpl(eltType), _pid).Destroy();
+      chpl_getPrivatizedCopy(unmanaged DistributedDequeImpl(eltType), _pid).Destroy();
       coforall loc in Locales do on loc {
-        delete chpl_getPrivatizedCopy(DistributedDequeImpl(eltType), _pid);
+        delete chpl_getPrivatizedCopy(unmanaged DistributedDequeImpl(eltType), _pid);
       }
 
     }
@@ -218,12 +216,12 @@ module DistributedDeque {
     var _pid : int;
     // Reference counting
     pragma "no doc"
-    var _rc : Shared(DistributedDequeRC(eltType));
+    var _rc : shared DistributedDequeRC(eltType);
 
     proc init(type eltType, cap = -1, targetLocales = Locales) {
       this.eltType = eltType;
       this._pid = (new unmanaged DistributedDequeImpl(eltType, cap, targetLocales)).pid;
-      this._rc = new Shared(new DistributedDequeRC(eltType, _pid = _pid));
+      this._rc = new shared DistributedDequeRC(eltType, _pid = _pid);
     }
 
     pragma "no doc"
@@ -232,20 +230,6 @@ module DistributedDeque {
         halt("DistDeque is uninitialized...");
       }
       return chpl_getPrivatizedCopy(DistributedDequeImpl(eltType), _pid);
-    }
-
-    pragma "no doc"
-    pragma "fn returns iterator"
-    inline proc these(param order : Ordering = Ordering.NONE) {
-      return _value.these(order);
-    }
-
-    pragma "no doc"
-    pragma "fn returns iterator"
-    inline proc these(param order : Ordering = Ordering.NONE, param tag) where
-        (tag == iterKind.leader || tag == iterKind.standalone)
-        && __primitive("method call resolves", _value, "these", tag=tag) {
-      return _value.these(order, tag=tag);
     }
 
     forwarding _value;
@@ -284,13 +268,13 @@ module DistributedDeque {
 
     // Keeps track of which slot we are on...
     pragma "no doc"
-    var globalHead : DistributedDequeCounter;
+    var globalHead : unmanaged DistributedDequeCounter;
 
     pragma "no doc"
-    var globalTail : DistributedDequeCounter;
+    var globalTail : unmanaged DistributedDequeCounter;
 
     pragma "no doc"
-    var queueSize : DistributedDequeCounter;
+    var queueSize : unmanaged DistributedDequeCounter;
 
     // We maintain an array of slots, wherein each slot is a pointer into a node's
     // address space. To maximize parallelism, we maintain numLocales * maxTaskPar
@@ -302,7 +286,7 @@ module DistributedDeque {
     var slotSpace = {0..-1};
 
     pragma "no doc"
-    var slots : [slotSpace] LocalDeque(eltType);
+    var slots : [slotSpace] unmanaged LocalDeque(eltType);
 
     proc init(type eltType,
               cap : int = -1,
@@ -482,14 +466,14 @@ module DistributedDeque {
     /*
       Syntactic sugar for `pushBack`.
     */
-    proc add(elt : eltType) : bool {
+    override proc add(elt : eltType) : bool {
       return pushBack(elt);
     }
 
     /*
       Syntactic sugar for `popFront`.
     */
-    proc remove() : (bool, eltType) {
+    override proc remove() : (bool, eltType) {
       return popFront();
     }
 
@@ -543,7 +527,8 @@ module DistributedDeque {
     proc popBack() : (bool, eltType) {
       // Test for if we can continue...
       if enterRemoveBarrier() == false {
-        return (false, _defaultOf(eltType));
+        var default: eltType;
+        return (false, default);
       }
 
       // We find our slot based on another fetch-add counter, making this wait-free as well.
@@ -574,7 +559,8 @@ module DistributedDeque {
     proc popFront() : (bool, eltType) {
       // Test for if we can continue...
       if enterRemoveBarrier() == false {
-        return (false, _defaultOf(eltType));
+        var default: eltType;
+        return (false, default);
       }
 
       // We find our slot based on another fetch-add counter, making this wait-free as well.
@@ -587,14 +573,14 @@ module DistributedDeque {
     /*
       Obtains the number of elements held by this queue.
     */
-    proc getSize() : int {
+    override proc getSize() : int {
       return queueSize.read();
     }
 
     /*
       Performs a lookup for the element in the data structure.
     */
-    proc contains(elt : eltType) : bool {
+    override proc contains(elt : eltType) : bool {
       var containsElem : atomic bool;
       forall elem in this {
         if elem == elt {

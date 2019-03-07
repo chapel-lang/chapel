@@ -1,0 +1,1 @@
+warning: dynamic heap on hugepages needs CHPL_JE_MALLOC_CONF set properly

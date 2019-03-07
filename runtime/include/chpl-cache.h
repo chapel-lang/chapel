@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -34,7 +34,9 @@ extern const int CHPL_CACHE_REMOTE;
 static inline
 int chpl_cache_enabled(void)
 {
-  return CHPL_CACHE_REMOTE && chpl_task_supportsRemoteCache();
+  // The remote cache uses thread local storage, so if tasks can migrate
+  // between threads we lose out ability to correctly fence.
+  return CHPL_CACHE_REMOTE && !chpl_task_canMigrateThreads();
 }
 
 

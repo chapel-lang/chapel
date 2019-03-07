@@ -97,9 +97,9 @@ def get_sys_c_types(docs=False):
     # Make CHPL_COMM=none for the compile line command, we dont want any of the
     # stuff from gasnet (we dont want to require gasnet to be built)
     compileline_env['CHPL_COMM'] = 'none'
-    # We need to clear CHPL_MAKE_SETTINGS_NO_NEWLINES for our change to
+    # We need to clear CHPL_MAKE_CHPLENV_CACHE for our change to
     # CHPL_COMM to actually work
-    compileline_env.pop('CHPL_MAKE_SETTINGS_NO_NEWLINES', None)
+    compileline_env.pop('CHPL_MAKE_CHPLENV_CACHE', None)
     compileline_proc = subprocess.Popen([compileline_cmd, '--compile'],
         stdout=subprocess.PIPE, env=compileline_env)
     compileline = compileline_proc.communicate()[0].decode().strip();

@@ -1,0 +1,13 @@
+bug: exported functions should be able to be called remotely
+
+This test shows that currently we seem to assume that exported
+functions can/will only be called with local arguments.  While this is
+true for a call from an external language like C, it isn't true if the
+exported function is called from within Chapel.  Exporting a function
+should not preclude it from being called from within Chapel, nor from
+being called remotely from within Chapel.  In cases like this, I
+believe the correct thing to do is to clone the function such that
+there's a locals-only version that is exported (using the
+user-provided name) and a wide-is-OK version that uses a different
+name and is used for calls from within Chapel programs for --no-local
+compilations.

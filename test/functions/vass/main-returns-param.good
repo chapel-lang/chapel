@@ -1,0 +1,1 @@
+main-returns-param.chpl:6: error: main function cannot return a type or a param

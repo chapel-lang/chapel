@@ -11,16 +11,24 @@ Description="Chapel"
 
 Keywords={
   { Id=1,
-   List={"as", "align", "atomic", "begin", "break", "by", "catch", "class",
-         "cobegin", "coforall", "config", "const", "continue", "delete",
-         "dmapped", "do", "domain", "else", "enum", "except", "export",
-         "extern", "false", "for", "forall", "if", "in", "index", "inline",
-         "inout", "iter", "label", "lambda", "let", "local", "module", "new",
-         "nil", "noinit", "on", "only", "otherwise", "out", "param", "private",
-         "proc", "prototype",
-         "public", "record", "reduce", "ref", "require", "return",
-         "scan", "select", "serial", "single", "sparse", "subdomain", "sync",
-         "then", "throw", "throws", "true", "try", "type", "union", "use",
+   List={"as", "align", "atomic",
+         "begin", "borrowed", "break", "by",
+         "catch", "class", "cobegin", "coforall",
+         "config", "const", "continue",
+         "delete", "dmapped", "do", "domain",
+         "else", "enum", "except", "export", "extern",
+         "false", "for", "forall",
+         "if", "in", "index", "inline", "inout", "iter",
+         "label", "lambda", "let", "local",
+         "module",
+         "new", "nil", "noinit",
+         "on", "only", "otherwise", "out", "override", "owned",
+         "param", "private", "proc", "prototype", "public",
+         "record", "reduce", "ref", "require", "return",
+         "scan", "select", "serial", "shared",
+         "single", "sparse", "subdomain", "sync",
+         "then", "throw", "throws", "true", "try", "type",
+         "union", "unmanaged", "use",
          "var", "when", "where", "while", "with", "yield", "zip"
         }
   },
@@ -50,6 +58,9 @@ Comments = {
 }
 
 IgnoreCase=false
+
+-- matches binary, octal, decimal, hexadecimal integers and decimal and hexadecimal floating point
+Digits=[[ 0[bB][01\_]+|0[oO][0-7]+|\d+\.[eE][\-\+]?\d+|0[xX][0-9a-fA-F\_]+\.[pP][\-\+]?\d+|0[xX][0-9a-fA-F\_]*\.?[0-9a-fA-F\_]+(?:[pP][\-\+]?\d+)?|\d*\.?[\d\_]+(?:[eE][\-\+]?\d+)? ]]
 
 Operators=[[\(|\)|\[|\]|\{|\}|\,|\;|\.|\:|\/|\*|\%|\+|\-|=|\&|\?|<|>|\!|\~|\||\^|!|#]]
 

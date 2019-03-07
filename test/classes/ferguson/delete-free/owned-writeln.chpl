@@ -1,5 +1,3 @@
-use OwnedObject;
-
 class MyClass {
   var x = 1;
   proc deinit() {

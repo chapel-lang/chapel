@@ -6,7 +6,6 @@
  * could determine a ranking of the particles within each octant.
  */
 
-pragma "use default init"
 class scanCounts : ReduceScanOp {
   type eltType;
   const k: int = 8;
@@ -16,6 +15,11 @@ class scanCounts : ReduceScanOp {
   // as arbitrary default value here, in lieu of no "default of type" support
   // for user code.
   var _curValue: eltType = min(eltType);
+
+  proc identity {
+    var empty: [1..k] int;
+    return empty;
+  }
 
   proc accumulate(value: eltType) {
     _curValue = value;

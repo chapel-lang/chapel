@@ -7,6 +7,6 @@ var c = new borrowed C(f = 1);
 
 writeln(c);
 
-var d : C(int) = new borrowed C(int, 12);
+var d : borrowed C(int) = new borrowed C(int, 12);
 
 writeln(d);

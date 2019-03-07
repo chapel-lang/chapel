@@ -4,14 +4,9 @@ import os
 import sys
 
 from distutils.spawn import find_executable
-from sys import stderr, stdout
-
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_platform, overrides
 from utils import error, memoize
-
 
 
 @memoize
@@ -19,13 +14,26 @@ def get(flag='host', llvm_mode='default'):
 
     if flag == 'host':
         compiler_val = overrides.get('CHPL_HOST_COMPILER', '')
+
+        if llvm_mode != 'default':
+            error("bad call to chpl_compiler.get('host', llvm_mode!=default)")
+
     elif flag == 'target':
         compiler_val = overrides.get('CHPL_TARGET_COMPILER', '')
 
         if llvm_mode == 'llvm':
             compiler_val = 'clang-included'
-        elif llvm_mode == 'default' and "CHPL_LLVM_CODEGEN" in os.environ:
-            compiler_val = 'clang-included'
+        elif llvm_mode == 'default':
+            if ("CHPL_LLVM_CODEGEN" in os.environ and
+                os.environ["CHPL_LLVM_CODEGEN"] != "0"):
+                compiler_val = 'clang-included'
+        elif llvm_mode == 'orig':
+            # If we're in the middle of a chpl --llvm call,
+            # CHPL_TARGET_COMPILER is already clang-included, but
+            # the original target compiler is saved in an environment variable.
+            # (otherwise, use compiler_val set above with CHPL_TARGET_COMPILER)
+            if "CHPL_ORIG_TARGET_COMPILER" in os.environ:
+                compiler_val = os.environ["CHPL_ORIG_TARGET_COMPILER"]
 
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
@@ -43,7 +51,7 @@ def get(flag='host', llvm_mode='default'):
         else:
             subcompiler = os.environ.get('PE_ENV', 'none')
             if subcompiler == 'none':
-                stderr.write("Warning: Compiling on {0} without a PrgEnv loaded\n".format(platform_val))
+                sys.stderr.write("Warning: Compiling on {0} without a PrgEnv loaded\n".format(platform_val))
             compiler_val = "cray-prgenv-{0}".format(subcompiler.lower())
     elif chpl_platform.is_cross_compiling():
         if flag == 'host':
@@ -58,8 +66,6 @@ def get(flag='host', llvm_mode='default'):
             if chpl_platform.get('host') == platform_val:
                 compiler_val = get('host')
         elif platform_val.startswith('pwr'):
-            compiler_val = 'ibm'
-        elif platform_val == 'marenostrum':
             compiler_val = 'ibm'
         elif platform_val == 'darwin' or platform_val == 'freebsd':
             if find_executable('clang'):
@@ -80,7 +86,7 @@ def _main():
     (options, args) = parser.parse_args()
 
     compiler_val = get(options.flag)
-    stdout.write("{0}\n".format(compiler_val))
+    sys.stdout.write("{0}\n".format(compiler_val))
 
 
 if __name__ == '__main__':

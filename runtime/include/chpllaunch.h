@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -37,6 +37,8 @@ int chpl_launch_using_exec(const char* command, char * const argv1[],
 int chpl_launch_using_system(char* command, char* argv0);
 
 char* chpl_get_enviro_keys(char sep);
+int chpl_get_charset_env_nargs(void);
+int chpl_get_charset_env_args(char *argv[]);
 
 void chpl_compute_real_binary_name(const char* argv0);
 const char* chpl_get_real_binary_wrapper(void);

@@ -1,53 +1,95 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
+"""Removes path components that begin with $CHPL_HOME from the given path.
 
-from os import getenv
-from sys import argv
+    ./fixpath.py path-value [--shell shell]
+
+Example:
+
+    ./fixpath.py "$PATH"
+    ./fixpath.py \\" $PATH \\" --shell=fish
+
+This is used by the setchplenv.* scripts to reduce PATH/MANPATH pollution. It
+may be called in several situations:
+
+1. No Chapel environment settings (new shell)
+2. Same $CHPL_HOME as last time (re-running setchplenv in same dir)
+3. Different $CHPL_HOME (cd ../other-chapel-dir).
+4. $CHPL_HOME is set, but path doesn't include an old one.
+   ($CHPL_HOME was hand-set, now setchplenv is run)
+
+For case 1, just return the existing environment variable.
+
+For case 2, return the environment variable without the components
+that begin with $CHPL_HOME.
+
+For case 3, setchplenv invokes this script before setting the new
+$CHPL_HOME.  We still have the old $CHPL_HOME set, so we can remove
+the old $PATH and $MANPATH entries.  The upshot is we do the same thing
+as in case 2.
+
+Case 4 should also be the same as case 2, but we won't remove any
+components since there should be no components starting with $CHPL_HOME.
+Mentioned only to avoid reintroducing #10196 when this function is modified.
+"""
+
+import optparse
+import os
 import re
+import sys
 
-def escape_path(p):
-    if len(argv) >=3 and argv[2] == 'fish':
-        # Suppress splitting of fish so that the path will be treated as a whole
+def escape_path(p, delim):
+    """Wrap fish paths in quotes to prevent splitting on spaces in paths"""
+    if delim == ' ':
         return '"{}"'.format(p)
     return p
 
-def main(env='PATH', delim=':'):
-    """
-    Removes path components that begin with $CHPL_HOME, to reduce
-    $PATH & $MANPATH pollution
 
-    :env: path environment variable ('PATH' or 'MANPATH')
+def remove_chpl_from_path(path_val, delim):
+    """
+    :path_val: path environment variable value ('$PATH' or '$MANPATH')
     :delim: path delimiter (':' or ' ')
     :returns: new path with $CHPL_HOME components removed
     """
 
-    # Get environment variables, $(MAN)PATH will be always be ':' delimited
-    path = getenv(env, default=' ')
-    chpl_home = getenv('CHPL_HOME', default=' ')
+    chpl_home = os.getenv('CHPL_HOME')
 
-    # Find ':'s that are not escaped
-    pattern = r'(?<!\\)\:'
+    if not chpl_home or chpl_home not in path_val:
+        return path_val
 
-    # Split path into list separated by non-escaped ':'s, and sieve chpl_home
-    newpath = [escape_path(p) for p in re.split(pattern, path) if chpl_home not in p]
+    # Find delims that are not escaped
+    pattern = r'(?<!\\)\{0}'.format(delim)
 
-    # Return path delimited by shell-type (':' vs. ' ')
+    # Split path by non-escaped delims, and sieve chpl_home
+    # Fish input includes hanging quotation marks, so we drop those here
+    newpath = [escape_path(p, delim) for p in re.split(pattern, path_val) if p != '"']
+    newpath = [p for p in newpath if chpl_home not in p]
+
     return delim.join(newpath)
 
 
-if __name__ == '__main__':
+def main():
+    parser = optparse.OptionParser(usage=__doc__)
+    parser.add_option('--shell', dest='shell', default='bash',
+                      help='shell being used')
 
-    if len(argv) < 2:
-        newpath = main()
-    elif len(argv) < 3:
-        newpath = main(env=argv[1])
+    (options, args) = parser.parse_args()
+
+    if options.shell == 'fish':
+        delim = ' '
     else:
-        if argv[2] == 'fish':
-            # fishy path (space-separated)
-            newpath = main(env=argv[1], delim=' ')
-        else:
-            # Default: bash/sh/csh/tcsh-like path
-            newpath = main(env=argv[1], delim=':')
+        delim = ':'
 
-    print(newpath)
+    if len(args) == 0:
+        sys.stderr.write('Error: path-value must be supplied\n\n')
+        parser.print_help()
+        sys.exit(1)
+
+    path = delim.join(args)
+
+    newpath = remove_chpl_from_path(path, delim)
+    sys.stdout.write('{0}'.format(newpath))
+
+
+if __name__ == '__main__':
+    main()

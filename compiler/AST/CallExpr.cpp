@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -627,8 +627,7 @@ void CallExpr::prettyPrint(std::ostream* o) {
     }
 
   } else if (primitive != NULL) {
-    if (primitive->tag == PRIM_INIT ||
-      primitive->tag == PRIM_TYPE_INIT) {
+    if (primitive->tag == PRIM_TYPE_INIT) {
       unusual = true;
       argList.head->prettyPrint(o);
     }
@@ -729,7 +728,8 @@ CallExpr* callChplHereAlloc(Type* type, VarSymbol* md) {
 
   // Since the type is not necessarily known, resolution will fix up
   // this sizeof() call to take the resolved type of s as an argument
-  CallExpr*  sizeExpr  = new CallExpr(PRIM_SIZEOF, new SymExpr(type->symbol));
+  CallExpr*  sizeExpr  = new CallExpr(PRIM_SIZEOF_BUNDLE,
+                                      new SymExpr(type->symbol));
   VarSymbol* mdExpr    = (md != NULL) ? md : newMemDesc(type);
   CallExpr*  allocExpr = new CallExpr("chpl_here_alloc", sizeExpr, mdExpr);
 
@@ -753,7 +753,7 @@ void insertChplHereAlloc(Expr*      call,
   Symbol*        sizeTmp   = newTemp("chpl_here_alloc_size", SIZE_TYPE);
   CallExpr*      sizeExpr  = new CallExpr(PRIM_MOVE,
                                           sizeTmp,
-                                          new CallExpr(PRIM_SIZEOF,
+                                          new CallExpr(PRIM_SIZEOF_BUNDLE,
                                                        (ct != NULL) ?
                                                        ct->symbol   :
                                                        t->symbol));

@@ -1,12 +1,10 @@
 pragma "safe"
 module RO {
 
-pragma "use default init"
 class MyClass {
   var x:int;
 }
 
-pragma "use default init"
 record MyRecord {
   var instance: owned MyClass;
 }

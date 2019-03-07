@@ -44,3 +44,12 @@ extern proc hasReturnTypeCommentless(): int;
 extern proc hasReturnTypeAndArg(val: int): int;
 
 extern proc hasReturnTypeAndArgCommentless(val: int): int;
+
+extern "test_name" proc withExternCName();
+
+/* test param method for withParamExternCName */
+proc getName() param {
+  return "name";
+}
+
+extern "test"+getName() proc withParamExternCName();

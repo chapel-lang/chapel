@@ -4,11 +4,11 @@ class C {
 
 record R {
 // private:
-  var c, c2: C;
+  var c, c2: unmanaged C;
 // public:
-  proc R(a:int, b:int) {
-    c = new C(a, b);
-    c2 = new C(a, b);
+  proc init(a:int, b:int) {
+    c = new unmanaged C(a, b);
+    c2 = new unmanaged C(a, b);
   }
   proc deinit() {
     delete c;

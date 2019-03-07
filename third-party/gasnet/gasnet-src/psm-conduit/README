@@ -95,9 +95,9 @@ PSM has a restriction in which only one endpoint may be opened per process.
 For users of this conduit, this means that if an MPI is used for process
 spawning, that MPI must NOT also attempt to use PSM for communication.
 
-If compiled with PSM support (such as the openmpi_gcc_hfi RPM package
-distributed with Intel Fabric Suite package), Open MPI will try to use
-PSM by default.  To override, set the MPIRUN_CMD variable.
+If compiled with PSM support (such as the openmpi_gcc_hfi RPM package 
+distributed with Intel Fabric Suite package), Open MPI will try to use 
+PSM by default.  To override, set the MPIRUN_CMD variable.  
 With Open MPI, for example:
 
 export MPIRUN_CMD="mpirun -np %N -mca mtl ^psm,psm2 %P %A"
@@ -219,17 +219,17 @@ Known problems:
   The most up-to-date information on this bug is maintained at:
     http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3419
   Note this problem seems especially likely to arise when running on a KNL
-  architecture with a heterogenous configuration of KNL memory/cluster modes
+  architecture with a heterogeneous configuration of KNL memory/cluster modes
   across the nodes comprising a job. We recommend that all nodes comprising
   a GASNet job be configured to use the same KNL memory/cluster mode.
 
-* The default limit for number of inflight isend and irecv MQ requests in
+* The default limit for number of in-flight isend and irecv MQ requests in
   PSM2 is 1048576. If the user encounters exhaustion of the isend or irecv
   descriptors (see error message below), it is possible to extend the MQ size by
   setting the environment variable as "PSM2_MEMORY=large". This will increase the
-  inflight isend and irecv limit to 16777216.
+  in-flight isend and irecv limit to 16777216.
   A different way to independently configure the number of sends or
-  receives inflight is by setting the PSM2_MQ_{SEND,RECV}REQS_MAX environment
+  receives in-flight is by setting the PSM2_MQ_{SEND,RECV}REQS_MAX environment
   variables (PSM2_MEMORY internally sets both).
   Example error message:
   `Exhausted 1048576 MQ isend request descriptors, which usually indicates a user

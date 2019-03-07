@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "CatchStmt.h"
 #include "expr.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -40,13 +41,11 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn);
 
 static void destructureTupleAssignment(CallExpr* call);
 
-static void replaceIsSubtypeWithPrimitive(CallExpr* call);
+static void replaceIsSubtypeWithPrimitive(CallExpr* call, bool proper);
 
 static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
 static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
-
-static void changeCastInWhere(FnSymbol* fn);
 
 static void fixupVoidReturnFn(FnSymbol* fn);
 
@@ -95,8 +94,10 @@ static void cleanup(ModuleSymbol* module) {
     } else if (CallExpr* call = toCallExpr(ast)) {
       if (call->isNamed("_build_tuple"))
         destructureTupleAssignment(call);
-      if (call->isNamed("isSubtype"))
-        replaceIsSubtypeWithPrimitive(call);
+      else if (call->isNamed("isSubtype"))
+        replaceIsSubtypeWithPrimitive(call, false);
+      else if (call->isNamed("isProperSubtype"))
+        replaceIsSubtypeWithPrimitive(call, true);
 
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -106,9 +107,10 @@ static void cleanup(ModuleSymbol* module) {
           applyAtomicTypeToPrimaryMethod(ts, fn);
         }
 
-        changeCastInWhere(fn);
         fixupVoidReturnFn(fn);
       }
+    } else if (CatchStmt* catchStmt = toCatchStmt(ast)) {
+      catchStmt->cleanup();
     }
   }
 }
@@ -195,12 +197,14 @@ static void destructureTupleAssignment(CallExpr* call) {
 }
 
 
-static void replaceIsSubtypeWithPrimitive(CallExpr* call) {
+static void replaceIsSubtypeWithPrimitive(CallExpr* call, bool proper) {
   Expr* sub = call->get(1);
   Expr* sup = call->get(2);
   sub->remove();
   sup->remove();
-  call->replace(new CallExpr(PRIM_IS_SUBTYPE, sup, sub));
+
+  PrimitiveTag prim = proper ? PRIM_IS_PROPER_SUBTYPE : PRIM_IS_SUBTYPE;
+  call->replace(new CallExpr(prim, sup, sub));
 }
 
 //
@@ -340,33 +344,5 @@ static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
 static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
   if (ts->hasFlag(FLAG_ATOMIC_TYPE)) {
     fn->addFlag(FLAG_ATOMIC_TYPE);
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void changeCastInWhere(FnSymbol* fn) {
-  if (fn->where != NULL) {
-    std::vector<BaseAST*> asts;
-
-    collect_asts(fn->where, asts);
-
-    for_vector(BaseAST, ast, asts) {
-      if (CallExpr* call = toCallExpr(ast)) {
-        if (call->isCast() == true) {
-          Expr* to   = call->castTo();
-          Expr* from = call->castFrom();
-
-          to->remove();
-          from->remove();
-
-          call->replace(new CallExpr(PRIM_IS_SUBTYPE, to, from));
-        }
-      }
-    }
   }
 }

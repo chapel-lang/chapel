@@ -1,1 +1,0 @@
--L. -lreliesOnGlobal `$CHPL_HOME/util/config/compileline --libraries`

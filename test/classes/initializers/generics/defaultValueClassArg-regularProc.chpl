@@ -6,8 +6,9 @@ class Foo {
   }
 }
 
-proc anyFunc(yVal = new Foo(3)) {
+proc anyFunc(yVal = new unmanaged Foo(3)) {
   writeln(yVal);
+  delete yVal;
 }
 
 anyFunc();

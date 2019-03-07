@@ -1,3 +1,3 @@
-generic-collection-owned-int-error.chpl:13: In function 'test':
-generic-collection-owned-int-error.chpl:14: error: unresolved type specifier 'Collection(type int(64))'
-generic-collection-owned-int-error.chpl:5: note: candidates are: Collection(type element)
+generic-collection-owned-int-error.chpl:11: In function 'test':
+generic-collection-owned-int-error.chpl:12: error: unresolved type specifier 'Collection(type int(64))'
+generic-collection-owned-int-error.chpl:3: note: candidates are: Collection(type element)

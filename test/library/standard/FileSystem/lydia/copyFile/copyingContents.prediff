@@ -2,7 +2,7 @@
 
 import os, sys
 
-with open(sys.argv[2], 'ab') as fp:
+with open(sys.argv[2], 'a') as fp:
     # The two files should have differing executable permissions
     if os.stat("foo.txt").st_mode != os.stat("bar.txt").st_mode:
         fp.write("didn't match\n")

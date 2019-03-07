@@ -1,0 +1,4 @@
+expr-mustpar-arr-err-iter1par.chpl:5: error: a parallel iterator is not used for the iterable expression in this forall-expression
+This is a limitation of the current implementation, see Issue #11622.
+To allow serial execution, replace "forall...do...." with "[...]...."
+or "forall...{....}" with "[...]{....}".

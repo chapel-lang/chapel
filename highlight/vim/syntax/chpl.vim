@@ -82,31 +82,39 @@ syn case ignore
 syn match	cNumbers	display transparent "\<\d\|\.\d" contains=cNumber,cFloat,cOctalError,cOctal
 " Same, but without octal error (for comments)
 syn match	cNumbersCom	display contained transparent "\<\d\|\.\d" contains=cNumber,cFloat,cOctal
-syn match	cNumber		display contained "\d\+\(u\=l\{0,2}\|ll\=u\)\>"
-"hex number
-syn match	cNumber		display contained "0x\x\+\(u\=l\{0,2}\|ll\=u\)\>"
-" Flag the first zero of an octal number as something special
-syn match	cOctal		display contained "0\o\+\(u\=l\{0,2}\|ll\=u\)\>" contains=cOctalZero
-syn match	cOctalZero	display contained "\<0"
-syn match	cFloat		display contained "\d\+f"
+" decimal number
+syn match	cNumber		display contained "\d\+\>"
+syn match	cNumber		display contained "\d\(_\|\d\)*\>"
+" hex number
+syn match	cNumber		display contained "0x\x\+\>"
+syn match	cNumber		display contained "0x\x\(_\|\x\)*\>"
+" octal number
+syn match	cOctal		display contained "0o\o\+\>"
+syn match	cOctal		display contained "0o\o\(_\|\o\)*\>"
+" binary number
+syn match	cNumber         display contained "0b[0-1]\+\>"
+syn match	cNumber         display contained "0b[0-1]\(_\|[0-1]\)*\>"
 "floating point number, with dot, optional exponent
-"syn match	cFloat		display contained "\d\+\.\d*\(e[-+]\=\d\+\)\=[fl]\="
-syn match	cFloat		display contained "\d\+\.\d\+\(e[-+]\=\d\+\)\=[fl]\="
+syn match	cFloat		display contained "\d\(_\|\d\)*\.\d\(_\|\d\)*\(e[-+]\=\d\(_\|\d\)*\)\=\>"
 "floating point number, starting with a dot, optional exponent
-syn match	cFloat		display contained "\.\d\+\(e[-+]\=\d\+\)\=[fl]\=\>"
+syn match	cFloat		display contained "\.\d[_\d]*\(e[-+]\=\d[_\d]*\)\=\>"
 " Avoid highlighting '..'
 syn match	cNone		display "\.\{2}"
 "floating point number, without dot, with exponent
-syn match	cFloat		display contained "\d\+e[-+]\=\d\+[fl]\=\>"
+syn match	cFloat		display contained "\d\(_\|\d\)*e[-+]\=\d\(_\|\d\)*\>"
 if !exists("c_no_c99")
   "hexadecimal floating point number, optional leading digits, with dot, with exponent
-  syn match	cFloat		display contained "0x\x*\.\x\+p[-+]\=\d\+[fl]\=\>"
+  syn match	cFloat		display contained "0x\(\x\(_\|\x\)*\)\=\.\x\(_\|\x\)*p[-+]\=\d\(_\|\d\)*\>"
+"  syn match	cFloat		display contained "0x\x*\.\x\+p[-+]\=\d\+[fl]\=\>"
   "hexadecimal floating point number, with leading digits, optional dot, with exponent
-  syn match	cFloat		display contained "0x\x\+\.\=p[-+]\=\d\+[fl]\=\>"
+  syn match	cFloat		display contained "0x\x\(_\|\x\)*\.\=p[-+]\=\d\(_\|\d\)*\>"
+"  syn match	cFloat		display contained "0x\x\+\.\=p[-+]\=\d\+[fl]\=\>"
 endif
 
 " flag an octal number with wrong digits
-syn match	cOctalError	display contained "0\o*[89]\d*"
+syn match	cOctalError	display contained "0o\o*[89a-f]\x*"
+" let binary errors tag along with octal
+syn match	cOctalError	display contained "0b[01]*[2-9a-f]\x*"
 syn case match
 
 if exists("c_comment_strings")
@@ -249,11 +257,12 @@ syn keyword chplStorageClass    const config export extern var
 syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool
 syn keyword chplType            file string opaque integral numeric enumerated
 syn keyword chplType            locale sync atomic single dmapped
+syn keyword chplType            owned shared borrowed unmanaged
 syn keyword chplOperator	on reduce scan by align
 syn keyword chplStructure	class record union enum
 syn keyword chplStructure	proc iter cobegin begin local sync let select where
 syn keyword chplStructure	pragma inline with private public forwarding
-syn keyword chplStructure	prototype
+syn keyword chplStructure	prototype override
 syn keyword chplBoolean		true false
 syn keyword chplConditional	if then else
 syn keyword chplConstant	nil

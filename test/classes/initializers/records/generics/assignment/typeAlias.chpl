@@ -2,7 +2,7 @@ record Generic {
   type eltType;
   var value: eltType;
 
-  proc init(value: ?eltType) where !value: Generic {
+  proc init(type eltType, value: eltType) where !isSubtype(value.type, Generic) {
     this.eltType = eltType;
     this.value   = value;
   }

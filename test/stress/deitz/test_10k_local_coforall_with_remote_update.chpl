@@ -4,10 +4,10 @@ class C {
   var A: [1..n] int;
 }
 
-var c: C;
+var c: unmanaged C;
 
 on Locales(1) {
-  c = new C();
+  c = new unmanaged C();
 }
 
 coforall i in 1..n {
@@ -19,3 +19,5 @@ for i in 1..n do
     halt("error detected");
 
 writeln("success");
+
+delete c;

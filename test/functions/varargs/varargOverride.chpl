@@ -6,7 +6,7 @@ class Parent {
 }
 
 class Child: Parent {
-  proc foo(elts: int ... ?nElts) {
+  override proc foo(elts: int ... ?nElts) {
     writeln("Child");
     for e in elts do writeln(e);
   }

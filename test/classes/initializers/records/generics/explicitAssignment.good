@@ -1,2 +1,3 @@
-(x = 1.0)
-(x = 1.0)
+explicitAssignment.chpl:15: In function 'main':
+explicitAssignment.chpl:16: error: unresolved call 'Foo(real(64)).init=(Foo(int(64)))'
+explicitAssignment.chpl:3: note: candidates are: Foo.init=(other: this.type)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -73,7 +73,6 @@ The arguments are as follows:
       is used internally by the implementation and
       should not be specified by the user code
 */
-pragma "use default init"
 class BlockCyclicDim {
   // distribution parameters
   const numLocales: int;
@@ -89,7 +88,6 @@ class BlockCyclicDim {
   const cycleSizePos: bcdPosInt = (blockSize:bcdPosInt) * (numLocales:bcdPosInt);
 }
 
-pragma "use default init"
 class BlockCyclic1dom {
   type idxType;
   type stoIndexT;
@@ -116,7 +114,6 @@ class BlockCyclic1dom {
   var dsiSetIndicesUnimplementedCase: bool;
 }
 
-pragma "use default init"
 class BlockCyclic1locdom {
   type idxType;
   type stoIndexT;
@@ -380,7 +377,7 @@ where storagePerCycle is determined to ensure uniqueness of storageIdx(i)
 
  storagePerCycle
    = 1 + max(locOff(i) div |wSt|) for any i s.t.
-                                  whole.member(i)==true and locNo(i) is fixed
+                                  whole.contains(i)==true and locNo(i) is fixed
    approximated as: 1 + ( (max locOff(i) for any i) div |wSt| )
    = 1 + ((blockSize-1) div |wSt|)
 

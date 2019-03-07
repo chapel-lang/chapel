@@ -1,0 +1,8 @@
+feature request: support arbitrarily nested module disambiguation
+
+Currently, we support the ability to disambiguate configs using the
+config's module name.  But we don't support disambiguation using a
+path of module symbols in the event that the ambiguity is in an inner
+module.  This is something we ultimately need to be able to do in
+order to compose large programs from different authors where the
+sources may not be within our control.

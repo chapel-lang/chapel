@@ -1,4 +1,4 @@
-# Copyright 2004-2018 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -29,8 +29,6 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
-	cp $(TMPHEADERNAME) $(HEADERNAME)
-	rm $(TMPHEADERNAME)
 endif
 	$(TAGS_COMMAND)
 

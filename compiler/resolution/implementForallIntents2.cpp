@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,37 +17,38 @@
  * limitations under the License.
  */
 
-#include "implementForallIntents.h"
-
-#include "foralls.h"
+#include "DeferStmt.h"
+#include "ForallStmt.h"
+#include "ForLoop.h"
+#include "resolution.h"
 #include "resolveFunction.h"
 
 #include <map>
 #include <vector>
 
-/////////// EFLOPI: Enclosing For Loop Over Parallel Iterator ///////////
+// Todo: merge this file into foralls.cpp ?
 
-// 
-// Info we gather while looking for an eflopi or an enclosing forall loop
 //
-// The contents are valid only after a call to findEnclosingParallelLoop()
-// as follows:
+// If the loop is zippered, ensure there are no parallel iterators.
+// Because it is unclear how to execute a for-loop over parallel iterator(s).
+// When/if we address that, we need to convert this ForLoop to a ForallStmt.
+// Otherwise we may get data races on the shadow variable(s) 'sum' here:
+//   forall .... with (+ reduce sum) {
+//     for idx in zip(myIter(tag=standalone), anotherIter()) do
+//       sum reduce= f(idx);
+//   }
 //
-//  * 'eflopiForall' and 'eflopiLoop' are always set up
-//   -  to the corresponding ForallStmt or ForLoop node if one is found,
-//   -  to NULL if neither is found.
+// If a zippered loop is over a single iterator, we treat is as non-zippered.
 //
-//  * the other fields are set up only if eflopiLoop != NULL.
-//
-class EflopiInfo {
-public:
-  ForallStmt* eflopiForall;
-  ForLoop*    eflopiLoop;
-  // more details if eflopiLoop
-  CallExpr*   eflopiCall;
-  CallExpr*   asgnToIter;
-  Symbol*     iterCallTemp;
-};
+static void checkZipperedParallelIterators(ForLoop* loop, Type* iterType) {
+  for_fields(field, toAggregateType(iterType)) {
+    if (is_arithmetic_type(field->type)) continue; // skip 'size'
+    FnSymbol* iter = getTheIteratorFn(field->type);
+    if (isParallelIterator(iter))
+      USR_FATAL_CONT(loop, "A zipered for-loop over parallel iterator(s)"
+                           " is currently not implemented");
+  }
+}
 
 //
 // Is 'forLoop' a loop over a parallel iterator?
@@ -57,68 +58,16 @@ public:
 // We could improve it by using for_SymbolSymExprs()
 // or by having ForLoop include the iterator call directly.
 //
-static bool findCallToParallelIterator(ForLoop* forLoop, EflopiInfo& eInfo)
+static bool invokesParallelIterator(ForLoop* forLoop)
 {
   Symbol* iterSym = forLoop->iteratorGet()->symbol();
-
-  // Find an assignment to 'iterSym'.
-  // It is usually located within a short walk before forLoop.
-  CallExpr* asgnToIter = NULL;
-  for (Expr* curr = forLoop->prev; curr; curr = curr->prev)
-    if (CallExpr* call = toCallExpr(curr))
-      if (call->isPrimitive(PRIM_MOVE))
-        if (SymExpr* lhs1 = toSymExpr(call->get(1)))
-          if (lhs1->symbol() == iterSym) {
-            asgnToIter = call;
-            break;
-          }
-  INT_ASSERT(asgnToIter);
-
-  // We have:
-  //   move( call_tmp call( ITERATOR args... ) )
-  //   move( _iterator call( _getIterator call_tmp ) )
-  // We need to see if args... contain a leader or standalone tag.
-  // 'asgnToIter' is the second of the above moves. Find the first one.
-  CallExpr* rhs1 = toCallExpr(asgnToIter->get(2));
-  if (rhs1->isNamed("_build_tuple") ||
-      rhs1->isNamed("_getIteratorZip"))
-    // This is a zippered for-loop. Currently implies not parallel.
+  if (iterSym->type->symbol->hasFlag(FLAG_TUPLE)) {
+    checkZipperedParallelIterators(forLoop, iterSym->type);
     return false;
-  INT_ASSERT(rhs1->isNamed("_getIterator"));
-
-  Symbol* calltemp = toSymExpr(rhs1->get(1))->symbol();
-  CallExpr* asgnToCallTemp = NULL;
-  for (Expr* curr = asgnToIter->prev; curr; curr = curr->prev)
-    if (CallExpr* call = toCallExpr(curr))
-      if (call->isPrimitive(PRIM_MOVE))
-        if (SymExpr* lhs2 = toSymExpr(call->get(1)))
-          if (lhs2->symbol() == calltemp) {
-            asgnToCallTemp = call;
-            break;
-          }
-
-  // Sometimes, e.g. forall over a range - ri-5-c.chpl, _getIterator is invoked
-  // on a non-temp. We notice this by the absence of asgnToCallTemp.
-  // In such a case, the iterator will be nontemp.these(),
-  // which is not a parallel iterator.
-  if (!asgnToCallTemp)
-    return false;
-
-  CallExpr* iterCall = toCallExpr(asgnToCallTemp->get(2));
-  INT_ASSERT(iterCall);
-
-  if (callingParallelIterator(iterCall)) {
-    // Found it. Fill in the information before returning.
-    eInfo.eflopiForall   = NULL;
-    eInfo.eflopiLoop     = forLoop;
-    eInfo.eflopiCall     = iterCall;
-    eInfo.asgnToIter     = asgnToIter;
-    eInfo.iterCallTemp   = calltemp;
-    return true;
   }
 
-  // no signs of a parallel iterator
-  return false;
+  FnSymbol* invokedIterator = getTheIteratorFn(iterSym->type);
+  return isParallelIterator(invokedIterator);
 }
 
 // We need expr->remove().
@@ -153,11 +102,39 @@ static bool isMoveToOIOI(SymExpr* se) {
   return false;
 }
 
-static ForallStmt* replaceEflopiWithForall(EflopiInfo& eInfo)
-{
-  // the loop to be replaced
-  ForLoop* src  = eInfo.eflopiLoop;
+// The ForLoop iterates over an _iteratorClass temp.
+// The ForallStmt needs to iterate over the _iteratorRecord temp
+// from which the _iteratorClass is obtained.
+// Then, we can remove the _iteratorClass temp.
+static void transferTheIterable(ForallStmt* dest, ForLoop* src) {
+  Symbol* IC = src->iteratorGet()->symbol();
 
+  SymExpr* icDef = IC->getSingleDef();
+  CallExpr* icMove = toCallExpr(icDef->parentExpr);
+  INT_ASSERT(icMove->isPrimitive(PRIM_MOVE));
+
+  CallExpr* icSrc = toCallExpr(icMove->get(2));
+  INT_ASSERT(icSrc->isNamed("_getIterator")    ||
+             icSrc->isNamed("_getIteratorZip") );
+  INT_ASSERT(icSrc->numActuals() == 1); // a single iterable
+
+  // This is our _iteratorRecord temp.
+  Symbol* IR = toSymExpr(icSrc->get(1))->symbol();
+  dest->iteratedExpressions().insertAtHead(new SymExpr(IR));
+
+  // Remove the _iteratorClass temp.
+  src->iteratorGet()->remove(); // get it out of the way
+  icMove->remove();
+  for_SymbolSymExprs(icSE, IC)
+    removeWithEnclosing(icSE->getStmtExpr());
+  IC->defPoint->remove();
+
+  // no more uses
+  INT_ASSERT(IC->firstSymExpr() == NULL);
+}
+
+static ForallStmt* doReplaceWithForall(ForLoop* src)
+{
   // Otherwise currentAstLoc points to the forall loop
   // that invokes the iterator src->parentSymbol.
   SET_LINENO(src);
@@ -192,7 +169,7 @@ static ForallStmt* replaceEflopiWithForall(EflopiInfo& eInfo)
         if (idxSE == srcIndex->getSingleUse()) {
           // great
         } else {
-          // happens for eflopies in extendLeader()-ed iterators
+          // todo: does this ever happen?
           if (isMoveToOIOI(idxSE)) gotMoveToOIOI = true;
         }
       }
@@ -201,18 +178,7 @@ static ForallStmt* replaceEflopiWithForall(EflopiInfo& eInfo)
 
   INT_ASSERT(onlySingleUse || gotMoveToOIOI);
 
-  // set the iterator call
-  dest->iteratedExpressions().insertAtHead(new SymExpr(eInfo.iterCallTemp));
-
-  // remove _iterator that keeps the iterator class
-  Symbol* IC = src->iteratorGet()->symbol();
-  src->iteratorGet()->remove(); // get it out of the way
-  for_SymbolSymExprs(icSE, IC)
-    removeWithEnclosing(icSE->getStmtExpr());
-  IC->defPoint->remove();
-
-  // no more uses
-  INT_ASSERT(IC->firstSymExpr() == NULL);
+  transferTheIterable(dest, src);
 
   // no with-clause adjustments - the for loop does not have one
 
@@ -228,19 +194,22 @@ static ForallStmt* replaceEflopiWithForall(EflopiInfo& eInfo)
   return dest;
 }
 
-// Replace a parallel ForLoop with a ForallStmt.
+//
+// Replace a parallel ForLoop over a parallel iterator with a ForallStmt.
+// Otherwise we may get data races, ex. on shadow variable(s) 'sum' here:
+//   forall .... with (+ reduce sum) {
+//     for idx in myIter(tag=standalone) do
+//       sum reduce= f(idx);
+//   }
+//
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop) {
-  EflopiInfo eflopiInfo;
-
-  if (!findCallToParallelIterator(forLoop, eflopiInfo))
+  if (!invokesParallelIterator(forLoop))
     // Not a parallel for-loop. Leave it unchanged.
     return forLoop;
 
   // Yes, it is a parallel for-loop. Replace it.
-  // findCallToParallelIterator() filled out eflopiInfo.
-  ForallStmt* fs = replaceEflopiWithForall(eflopiInfo);
+  ForallStmt* fs = doReplaceWithForall(forLoop);
 
-  fs->fFromResolvedForLoop = true;
   // If >1 iterated exprs, how to call resolveForallHeader?
   INT_ASSERT(fs->numIteratedExprs() == 1);
   SymExpr* itExpr = toSymExpr(fs->iteratedExpressions().head);
@@ -248,54 +217,4 @@ Expr* replaceForWithForallIfNeeded(ForLoop* forLoop) {
   resolveForallHeader(fs, itExpr);
 
   return fs;
-}
-
-
-ArgSymbol* newExtraFormal(ShadowVarSymbol* svar, int ix, Symbol* eActual,
-                          bool nested)
-{
-    bool     isReduce = svar->isReduce();
-    const char* eName;
-
-    if      (isReduce)
-      eName = intentArgName(ix, "reduceParent");
-    else if (nested)
-      eName = eActual->name;   // name was uniquified at the outer level
-    else if (!strcmp(eActual->name, "_tuple_expand_tmp_"))
-      eName = intentArgName(ix, "tet");
-    else
-      eName = intentArgName(ix, eActual->name);  // uniquify user arg name
-
-    Type* efType    = eActual->type;
-    IntentTag efInt = isReduce ? INTENT_CONST_IN :
-      concreteIntent(argIntentForForallIntent(svar->intent), efType);
-    bool addFlagImm = false;
-
-    if (efInt & INTENT_FLAG_REF) {
-      INT_ASSERT(!isReduce); // otherwise efType may be unknown
-      INT_ASSERT(efType != dtUnknown && efType != dtAny);
-
-      //
-      // For ref intents, we need to make it a ref type.
-      // Because eFormal will be passed to _build_tuple_always_allow_ref()
-      // call that's created in extendYieldNew().
-      // If _build_tuple_always_allow_ref's actual has a non-ref type,
-      // even if it is an ArgSymbol with a ref intent, the corresponding
-      // component of the resulting tuple will be non-ref, which will break
-      // SSCA2 and test/parallel/forall/vass/intents-all-int.chpl.
-      // Todo: fix resolution of _build_tuple_always_allow_ref.
-      //
-      efType = efType->getRefType();
-
-      if (eActual->isConstValWillNotChange())
-        addFlagImm = true;
-    }
-    
-    ArgSymbol*  eFormal = new ArgSymbol(efInt, eName, efType);
-
-    if (eFormal->isRef() &&
-        (addFlagImm || eActual->hasFlag(FLAG_REF_TO_IMMUTABLE)))
-      eFormal->addFlag(FLAG_REF_TO_IMMUTABLE);
-
-    return eFormal;
 }

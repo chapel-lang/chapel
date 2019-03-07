@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -105,8 +105,7 @@ void resolveDynamicDispatches() {
 
   filterVirtualChildren();
 
-  if (fOverrideChecking)
-    checkMethodsOverride();
+  checkMethodsOverride();
 
   if (fPrintDispatch == true) {
     printDispatchInfo();
@@ -221,26 +220,15 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
   } else {
     FnSymbol* fn = instantiate(cfn, subs);
 
-    if (ct->hasInitializers() == false) {
-      FnSymbol*  typeConstr         = ct->typeConstructor;
-      BlockStmt* instantiationPoint = typeConstr->instantiationPoint;
-
-      if (instantiationPoint == NULL) {
-        instantiationPoint = toBlockStmt(typeConstr->defPoint->parentExpr);
-      }
-
-      fn->instantiationPoint = instantiationPoint;
-    } else {
-      //
-      // BHARSH 2018-04-06:
-      //
-      // Essential for arrays to be able to use initializers.
-      //
-      // A smaller test case:
-      //   types/type_variables/deitz/test_point_of_instantiation3.chpl
-      //
-      fn->instantiationPoint = ct->symbol->instantiationPoint;
-    }
+    //
+    // BHARSH 2018-04-06:
+    //
+    // Essential for arrays to be able to use initializers.
+    //
+    // A smaller test case:
+    //   types/type_variables/deitz/test_point_of_instantiation3.chpl
+    //
+    fn->setInstantiationPoint(ct->symbol->instantiationPoint);
 
     return fn;
   }
@@ -313,15 +301,72 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
   return retval;
 }
 
+static bool checkOverrides(FnSymbol* fn) {
+  ModuleSymbol* parentMod = fn->getModule();
+  // check overrides for a given function if any of these are true...
+          // (1) the flag is on and either
+          //     (a) the function is not compiler-generated or
+          //     (b) --devel is on
+          //  or...
+  return ((fOverrideChecking && (!fn->isCompilerGenerated() || developer)) ||
+          // (2) the function is in the modules/ hierarchy
+          //     (which we manage and want to keep clean)
+          (parentMod && parentMod->modTag != MOD_USER));
+}
+
+static bool ignoreOverrides(FnSymbol* fn) {
+  return
+    // ignore errors with deinit
+    fn->name == astrDeinit ||
+    // ignore errors with init
+    fn->isInitializer() ||
+    fn->isCopyInit() ||
+    // ignore errors with postinit
+    fn->isPostInitializer();
+}
+
+static void checkIntentsMatch(FnSymbol* pfn, FnSymbol* cfn) {
+  AggregateType* ct = toAggregateType(cfn->_this->getValType());
+  // these are really a preconditions for the following code
+  INT_ASSERT(pfn->numFormals() == cfn->numFormals());
+  INT_ASSERT(ct);
+
+  int nFormals = pfn->numFormals();
+
+  for (int i = 3; i <= nFormals; i++) {
+    ArgSymbol* pa = pfn->getFormal(i);
+    ArgSymbol* ca = cfn->getFormal(i);
+
+    if (pa->originalIntent != ca->originalIntent) {
+      USR_FATAL_CONT(cfn, "%s.%s conflicting intent for argument '%s' "
+                          "in overriding method",
+                           ct->symbol->name, cfn->name, ca->name);
+      USR_FATAL_CONT(pa, "base method uses %s",
+                          intentDescrString(pa->originalIntent));
+      USR_FATAL_CONT(ca, "overriding method uses %s",
+                          intentDescrString(ca->originalIntent));
+
+      // "fix" the intent to report errors only once.
+      // This would be totally unreasonable if the compiler were
+      // to continue compiling beyond this pass.
+      ca->originalIntent = pa->originalIntent;
+    }
+  }
+}
+
+
 static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
   resolveSignature(cfn);
 
-  if (signatureMatch(pfn, cfn) == true && evaluateWhereClause(cfn) == true) {
+  if (signatureMatch(pfn, cfn) &&
+      evaluateWhereClause(cfn) &&
+      evaluateWhereClause(pfn)) {
+
     resolveFunction(cfn);
 
-    if (fOverrideChecking && !cfn->hasFlag(FLAG_OVERRIDE) &&
-        // ignore errors with deinit
-        0 != strcmp("deinit", cfn->name)) {
+    if (checkOverrides(cfn) &&
+        !ignoreOverrides(cfn) &&
+        !cfn->hasFlag(FLAG_OVERRIDE)) {
       const char* ptype = pfn->_this->type->symbol->name;
       const char* ctype = cfn->_this->type->symbol->name;
       USR_WARN(cfn, "%s.%s overrides parent class method %s.%s but "
@@ -373,6 +418,10 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
       USR_STOP();
 
     } else {
+
+      // check that the intents match
+      checkIntentsMatch(pfn, cfn);
+
       virtualDispatchUpdate(pfn, cfn);
     }
   }
@@ -817,76 +866,111 @@ static void findFunctionsProbablyMatching(TypeToNameToFns & map,
   }
 }
 
+// methods on iterator class -> the iterator defining them
+static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
+  FnSymbol* ret = fn;
+  if (fn->_this && fn->hasFlag(FLAG_AUTO_II)) {
+    // e.g. zip, advance, ...
+    if (AggregateType* iteratorClass = toAggregateType(fn->_this->getValType()))
+      if (iteratorClass->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+        ret = getTheIteratorFn(iteratorClass);
+  }
+
+  // Check that ret has a class _this
+  if (ret->_this)
+    if (AggregateType* at = toAggregateType(ret->_this->getValType()))
+      if (at->isClass())
+        return ret;
+
+  // otherwise, not a candidate.
+  return NULL;
+}
+
+// This function helps avoid redundant errors for different
+// instantiations of a generic
+static FnSymbol* getOverrideCandidateGenericFn(FnSymbol* fn)
+{
+  while (fn->instantiatedFrom)
+    fn = fn->instantiatedFrom;
+  return fn;
+}
+
 // This function checks that the override keyword is used appropriately
 // checkOverrides would also be a reasonable name for it.
 static void checkMethodsOverride() {
 
   TypeToNameToFns map;
 
+  std::set<FnSymbol*> erroredFunctions;
+
   // populate the map
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->_this)
-      if (AggregateType* ct = toAggregateType(fn->_this->getValType()))
-        if (isOverrideableMethod(fn))
-          map[ct][fn->name].push_back(fn);
+  forv_Vec(FnSymbol, aFn, gFnSymbols) {
+    if (FnSymbol* fn = getOverrideCandidate(aFn))
+      if (checkOverrides(fn))
+        if (AggregateType* ct = toAggregateType(fn->_this->getValType()))
+          if (isOverrideableMethod(fn))
+            map[ct][fn->name].push_back(fn);
   }
 
   // now check each function
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_Vec(FnSymbol, aFn, gFnSymbols) {
+    // output error for overriding for non-class methods
+    if (aFn->hasFlag(FLAG_OVERRIDE)) {
+      Type* thisType = aFn->_this->getValType();
+      if (!isClass(thisType)) {
+        const char* type = "non-class";
+        if (isRecord(thisType))
+          type = "record";
+        FnSymbol* eFn = getOverrideCandidateGenericFn(aFn);
+        if (erroredFunctions.count(eFn) == 0) {
+          USR_FATAL_CONT(aFn, "%s.%s override keyword present but "
+                         "%s methods cannot override",
+                         thisType->symbol->name, aFn->name, type);
+          erroredFunctions.insert(eFn);
+          continue;
+        }
+      }
+    }
 
-    if (fn->_this &&
-        // ignore errors with deinit
-        fn->name != astrDeinit &&
-        // ignore errors for init()
-        !fn->isInitializer() &&
-        // ignore errors for postinit()
-        !fn->isPostInitializer()) {
-      if (AggregateType* ct = toAggregateType(fn->_this->getValType())) {
+    if (FnSymbol* fn = getOverrideCandidate(aFn)) {
+      if (checkOverrides(fn) &&
+          !ignoreOverrides(fn) &&
+          // ignore duplicate errors
+          erroredFunctions.count(fn) == 0) {
 
-        if (ct->isRecord()) {
-          if (fn->hasFlag(FLAG_OVERRIDE)) {
-             USR_FATAL_CONT(fn, "%s.%s override keyword present but "
-                            "record methods cannot override",
-                            ct->symbol->name, fn->name);
-             continue;
+        AggregateType* ct = toAggregateType(fn->_this->getValType());
+        INT_ASSERT(ct && ct->isClass());
+
+
+        // Do some initial basic checking
+        if (fn->hasFlag(FLAG_OVERRIDE)) {
+          const char* msg = NULL;
+          if (fn->hasFlag(FLAG_NO_PARENS))
+            msg = "parentheses-less methods cannot override";
+          else if (fn->retTag == RET_PARAM)
+             msg = "param return methods cannot override";
+          else if (fn->retTag == RET_TYPE)
+             msg = "type return methods cannot override";
+          else if (!isOverrideableMethod(fn))
+             msg = "signature is not overrideable";
+
+          if (msg != NULL) {
+            FnSymbol* eFn = getOverrideCandidateGenericFn(fn);
+            if (erroredFunctions.count(eFn) == 0) {
+              USR_FATAL_CONT(fn, "%s.%s override keyword present but %s",
+                             ct->symbol->name, fn->name, msg);
+              erroredFunctions.insert(eFn);
+            }
+            continue;
           }
         }
 
-        if (ct->isClass()) {
-          if (fn->hasFlag(FLAG_OVERRIDE)) {
-            if (fn->hasFlag(FLAG_NO_PARENS)) {
-               USR_FATAL_CONT(fn, "%s.%s override keyword present but "
-                              "parentheses-less methods cannot override",
-                              ct->symbol->name, fn->name);
-               continue;
-            }
-
-            if (fn->retTag == RET_PARAM) {
-               USR_FATAL_CONT(fn, "%s.%s override keyword present but "
-                              "param return methods cannot override",
-                              ct->symbol->name, fn->name);
-               continue;
-            }
-
-            if (fn->retTag == RET_TYPE) {
-               USR_FATAL_CONT(fn, "%s.%s override keyword present but "
-                              "type return methods cannot override",
-                              ct->symbol->name, fn->name);
-               continue;
-            }
-
-            if (!isOverrideableMethod(fn)) {
-               USR_FATAL_CONT(fn, "%s.%s override keyword present but "
-                              "signature is not overrideable",
-                              ct->symbol->name, fn->name);
-               continue;
-            }
-          }
-
+        {
           std::vector<FnSymbol*> matches;
           forv_Vec(AggregateType, pt, ct->dispatchParents) {
             findFunctionsProbablyMatching(map, fn, pt, matches);
           }
+
           bool ok = false;
           bool okKnown = false;
 
@@ -909,7 +993,7 @@ static void checkMethodsOverride() {
               okKnown = true;
             } else {
               // We don't really know yet because there might be
-              // suprious matches
+              // spurious matches
               ok = false;
               okKnown = false;
             }
@@ -918,31 +1002,61 @@ static void checkMethodsOverride() {
           if (okKnown == false) {
             bool foundMatch = false;
             bool foundUncertainty = false;
+
             for_vector(FnSymbol, pfn, matches) {
               if (fn->isResolved() && pfn->isResolved()) {
-                if (signatureMatch(fn, pfn) &&
-                    evaluateWhereClause(fn) &&
+                // fn and pfn both concrete
+                bool typeParamDiffers = false;
+
+                // If they're both instantiated functions,
+                // check they're instantiated with the same types/params.
+                // If not, it's not a match.
+                if (fn->instantiatedFrom != NULL &&
+                    pfn->instantiatedFrom != NULL) {
+
+                  int numFormals = fn->numFormals();
+                  for (int i=3; i <= numFormals; i++) {
+                    ArgSymbol* fnArg = fn->getFormal(i);
+                    ArgSymbol* pfnArg = pfn->getFormal(i);
+                    if (fnArg->getValType() != pfnArg->getValType() ||
+                        (fnArg->originalIntent == INTENT_PARAM &&
+                         pfnArg->originalIntent == INTENT_PARAM &&
+                         paramMap.get(fnArg) != paramMap.get(pfnArg)))
+                      typeParamDiffers = true;
+                  }
+                }
+
+                if (typeParamDiffers == false &&
+                    signatureMatch(fn, pfn) &&
                     evaluateWhereClause(pfn)) {
                   foundMatch = true;
                 }
               } else if (fn->isResolved() && !pfn->isResolved()) {
                 // pfn generic
-                FnSymbol* ins = getInstantiatedFunction(fn, ct, pfn);
-                if (signatureMatch(fn, ins) &&
-                    evaluateWhereClause(fn) &&
-                    evaluateWhereClause(ins)) {
+                FnSymbol* pInst = getInstantiatedFunction(fn, ct, pfn);
+                if (signatureMatch(fn, pInst) &&
+                    evaluateWhereClause(pInst)) {
                   foundMatch = true;
                 }
               } else if (!fn->isResolved() && pfn->isResolved()) {
-                // fn is generic
-                FnSymbol* ins = getInstantiatedFunction(pfn, ct, fn);
-                if (signatureMatch(pfn, ins) &&
-                    evaluateWhereClause(pfn) &&
-                    evaluateWhereClause(ins)) {
-                  foundMatch = true;
+                // fn generic
+                if (ct->isGeneric()) {
+                  // If the receiver is generic, not much we can do
+                  // (because we don't know which instantiation will be made)
+                  // We might present other errors when checking instantiations
+                  // made in the program.
+                  foundUncertainty = true;
+                } else {
+                  FnSymbol* fnIns = getInstantiatedFunction(pfn, ct, fn);
+                  if (signatureMatch(pfn, fnIns) &&
+                           evaluateWhereClause(pfn)) {
+                    foundMatch = true;
+                  }
                 }
               } else {
                 // What would we instantiate them to?
+                // We might present other errors when checking instantiations
+                // made in the program.
                 foundUncertainty = true;
               }
             }
@@ -955,6 +1069,8 @@ static void checkMethodsOverride() {
               } else {
                 // If it is not marked override, check that there is not
                 // a parent method with the same signature.
+                // Ignore this check if this method is not applicable
+                // due to a where clause.
                 ok = !foundMatch;
               }
               okKnown = true;
@@ -962,15 +1078,21 @@ static void checkMethodsOverride() {
           }
 
           if (okKnown && ok == false) {
-            if (fn->hasFlag(FLAG_OVERRIDE)) {
-              USR_FATAL_CONT(fn, "%s.%s override keyword present but no "
-                                  "superclass method matches signature "
-                                  "to override",
-                                   ct->symbol->name, fn->name);
-            } else {
-              USR_WARN(fn, "%s.%s override keyword required for method "
-                           "matching signature of superclass method",
-                           ct->symbol->name, fn->name);
+            FnSymbol* eFn = getOverrideCandidateGenericFn(fn);
+            if (erroredFunctions.count(eFn) == 0) {
+              if (fn->hasFlag(FLAG_OVERRIDE)) {
+                USR_FATAL_CONT(fn, "%s.%s override keyword present but no "
+                                    "superclass method matches signature "
+                                    "to override",
+                                     ct->symbol->name, fn->name);
+              } else {
+                gdbShouldBreakHere();
+                USR_WARN(fn, "%s.%s override keyword required for method "
+                             "matching signature of superclass method",
+                             ct->symbol->name, fn->name);
+              }
+
+              erroredFunctions.insert(eFn);
             }
           }
         }

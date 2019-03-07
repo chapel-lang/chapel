@@ -1,2 +1,0 @@
-typeExceptedButReceivedOne.chpl:5: In function 'main':
-typeExceptedButReceivedOne.chpl:9: error: unresolved call 'foo.someMethod(3)'

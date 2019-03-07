@@ -211,8 +211,6 @@ proc main(){
     if verifyResult(space, computationDomain, verbose=false, T ) then writeln( "SUCCESS" );
     else writeln( "FAILURE" );
   }
-
-  delete generator;
 }
 
 
@@ -256,8 +254,6 @@ proc verifyResult( space: [] Cell, computationalDomain: domain(2),
 
   if passed && verbose then
      writeln( "SUCCESS!" );
-
-  delete generator;
 
   return passed;
 

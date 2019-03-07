@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -80,9 +80,6 @@ void WhileStmt::verify()
 
   if (byrefVars                 != 0)
     INT_FATAL(this, "WhileStmt::verify. byrefVars is not NULL");
-
-  if (forallIntents             != 0)
-    INT_FATAL(this, "WhileStmt::verify. forallIntents is not NULL");
 }
 
 bool WhileStmt::isWhileStmt() const

@@ -13,5 +13,5 @@ class ThisPhase2 {
 }
 
 proc main() {
-  var c: ThisPhase2 = new borrowed ThisPhase2(2.5 + 1.3i);
+  var c: borrowed ThisPhase2 = new borrowed ThisPhase2(2.5 + 1.3i);
 }

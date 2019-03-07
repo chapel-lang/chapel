@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -71,7 +71,6 @@ bool Expr::isStmt() const {
   return false;
 }
 
-// IPE: Provide the name of the symbol/variable being defined
 const char* DefExpr::name() const {
   const char* retval = 0;
 
@@ -191,7 +190,7 @@ bool Expr::isStmtExpr() const {
     retval = (parent->indexGet() != this && parent->iteratorGet() != this) ? true : false;
 
   } else {
-    retval = isDirectlyUnderBlockStmt(this);
+    retval = isBlockStmt(parentExpr);
   }
 
   return retval;
@@ -215,7 +214,7 @@ Expr* Expr::getStmtExpr() {
       if (parent->indexGet() != this && parent->iteratorGet() != this)
         return expr;
 
-    } else if (isDirectlyUnderBlockStmt(expr)) {
+    } else if (isBlockStmt(expr->parentExpr)) {
       return expr;
     }
   }
@@ -1346,4 +1345,55 @@ new_Expr(const char* format, va_list vl) {
 
   INT_ASSERT(stack.size() == 1);
   return stack.top();
+}
+
+
+static CallExpr* findOptimizationInfo(Expr* anchor) {
+  if (anchor && anchor->prev)
+    if (CallExpr* call = toCallExpr(anchor->prev))
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
+        return call;
+  if (anchor)
+    if (CallExpr* call = toCallExpr(anchor))
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
+        return call;
+  if (anchor && anchor->next)
+    if (CallExpr* call = toCallExpr(anchor->next))
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
+        return call;
+  if (anchor && anchor->next && anchor->next->next)
+    if (CallExpr* call = toCallExpr(anchor->next->next))
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
+        return call;
+
+  return NULL;
+}
+
+void addOptimizationFlag(Expr* insertAfter, Flag flag) {
+  Symbol* optInfoSym = NULL;
+  CallExpr* optInfo = findOptimizationInfo(insertAfter);
+  if (optInfo) {
+    optInfoSym = toSymExpr(optInfo->get(1))->symbol();
+  } else {
+    SET_LINENO(insertAfter);
+    optInfoSym = newTemp("optinfo", dtInt[INT_SIZE_DEFAULT]);
+    optInfoSym->addFlag(FLAG_NO_CODEGEN);
+    DefExpr* def = new DefExpr(optInfoSym);
+    insertAfter->insertAfter(def);
+    def->insertAfter(new CallExpr(PRIM_OPTIMIZATION_INFO, optInfoSym));
+  }
+
+  optInfoSym->addFlag(flag);
+}
+
+// Returns true if the PRIM_OPTIMIZATION_INFO includes this flag
+bool hasOptimizationFlag(Expr* anchor, Flag flag) {
+  Symbol* optInfoSym = NULL;
+  CallExpr* optInfo = findOptimizationInfo(anchor);
+  if (optInfo) {
+    optInfoSym = toSymExpr(optInfo->get(1))->symbol();
+    return optInfoSym->hasFlag(flag);
+  }
+
+  return false;
 }

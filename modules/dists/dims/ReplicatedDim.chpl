@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -48,7 +48,6 @@ The ``ReplicatedDim`` class initializer is available as follows:
 
 It creates a dimension specifier for replication over ``numLocales`` locales.
 */
-pragma "use default init"
 class ReplicatedDim {
   // REQ over how many locales
   // todo: can the Dimensional do without this one?
@@ -61,7 +60,6 @@ class ReplicatedDim {
   var localLocIDlegit = false;
 }
 
-pragma "use default init"
 class Replicated1dom {
   // REQ the parameters of our dimension of the domain being created
   type idxType;
@@ -82,7 +80,6 @@ class Replicated1dom {
   proc dsiSetIndicesUnimplementedCase param return false;
 }
 
-pragma "use default init"
 class Replicated1locdom {
   type stoIndexT;
   param stridable;

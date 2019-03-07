@@ -6,12 +6,12 @@ class Node {
 
 class ValueNode : Node {
   const val : int;
-  proc nodeType() : NodeType { return NodeType.value; }
+  override proc nodeType() : NodeType { return NodeType.value; }
 }
 
 class Branch : Node {
   const left, right: unmanaged Node;
-  proc nodeType() : NodeType { return NodeType.branch; }
+  override proc nodeType() : NodeType { return NodeType.branch; }
 }
 
 proc node(a:int, b:int) : unmanaged Branch {
@@ -22,7 +22,7 @@ proc node(a, b:unmanaged Node) : unmanaged Branch {
   return new unmanaged Branch(a, b);
 }
 
-iter leaves(tree : Node) : int {
+iter leaves(tree : unmanaged Node) : int {
   select tree.nodeType() {
     when NodeType.value do {
       yield (tree:ValueNode).val;

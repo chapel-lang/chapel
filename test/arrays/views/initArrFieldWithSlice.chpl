@@ -1,4 +1,3 @@
-pragma "use default init"
 class C {
   var X: [1..3] real;
 }
@@ -27,10 +26,10 @@ writeln(A2);
 writeln(A3);
 
 
-var myC = new C(A);
-var myC1 = new C(A1[1..3]);
-var myC2 = new C(A2[2, ..]);
-var myC3 = new C(A3.reindex(1..3));
+var myC = new owned C(A);
+var myC1 = new owned C(A1[1..3]);
+var myC2 = new owned C(A2[2, ..]);
+var myC3 = new owned C(A3.reindex(1..3));
 
 writeln("myC is: ", myC);
 writeln("myC1 is: ", myC1);

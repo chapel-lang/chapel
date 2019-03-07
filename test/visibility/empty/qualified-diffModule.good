@@ -1,0 +1,2 @@
+qualified-diffModule.chpl:11: In function 'main':
+qualified-diffModule.chpl:13: error: unresolved call 'Foo.secondary()'

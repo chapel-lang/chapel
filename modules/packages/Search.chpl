@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,7 +42,7 @@ module Search {
    General purpose searching interface for searching through a 1D array.
    For pre-sorted arrays, denoted by passing ``sorted=true`` as an argument,
    this function wraps :proc:`binarySearch`, otherwise it wraps
-   :proc`linearSearch`.
+   :proc:`linearSearch`.
 
    :arg Data: The array to be searched
    :type Data: [] `eltType`

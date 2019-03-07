@@ -6,7 +6,6 @@ var ARR: [1..n] int = 1..n;
 var numErrors = 0;
 
 // A (simplified) copy of the predefined SumReduceScanOp.
-pragma "use default init"
 class UserReduceOp: ReduceScanOp {
   type eltType;
   var value: eltType;
@@ -16,7 +15,7 @@ class UserReduceOp: ReduceScanOp {
   proc accumulateOntoState(ref state, elm) { state = state + elm; }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
-  proc clone()          return new UserReduceOp(eltType=eltType);
+  proc clone()          return new unmanaged UserReduceOp(eltType=eltType);
 }
 
 proc check(test:string, expected: int, actual: int) {
@@ -29,10 +28,10 @@ proc main {
   writeln("n = ", n);
 
   var sumUsr1 = 35, sumUsr2 = 36, sumUsr3 = 37;
-  const userReduceInstance = new UserReduceOp(eltType=int);
+  const userReduceInstance = new unmanaged UserReduceOp(eltType=int);
 
   forall arrElm in ARR with (userReduceInstance reduce sumUsr1,
-                             new UserReduceOp(eltType=int) reduce sumUsr2)
+                             new unmanaged UserReduceOp(eltType=int) reduce sumUsr2)
   {
     sumUsr1 = sumUsr1 + arrElm;
     sumUsr2 += arrElm;
@@ -40,7 +39,7 @@ proc main {
 
   writeln("forall finished");
 
-  testFormals(sumUsr3, new UserReduceOp(eltType=int));
+  testFormals(sumUsr3, new unmanaged UserReduceOp(eltType=int));
 
   check("sumUsr1", 35 + n*(n+1)/2, sumUsr1);
   check("sumUsr2", 36 + n*(n+1)/2, sumUsr2);
@@ -53,7 +52,7 @@ proc main {
     writeln("success");
 }
 
-proc testFormals(ref sumUsr3: int, userOp: UserReduceOp(int)) {
+proc testFormals(ref sumUsr3: int, userOp: unmanaged UserReduceOp(int)) {
   forall arrElm in ARR with (userOp reduce sumUsr3) {
     sumUsr3 reduce= arrElm;
   }

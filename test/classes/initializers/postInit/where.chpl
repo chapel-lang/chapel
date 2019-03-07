@@ -36,9 +36,9 @@ class Child : Parent {
   }
 }
 
-var c = new Child(real);
+var c = new unmanaged Child(real);
 delete c;
 writeln();
 
-var i = new Child(int);
+var i = new unmanaged Child(int);
 delete i;

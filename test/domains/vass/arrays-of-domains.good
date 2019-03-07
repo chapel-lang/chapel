@@ -1,0 +1,10 @@
+subdomain {1..1}
+subdomain (B) {1..0}
+subdomain {1..2}
+subdomain (B) {1..0}
+AA domain {1..2}
+AA (element) eltType domain {1..0}
+AAA.domain hi there
+AAA = {1..2} {1..5}
+AAB.domain hi there
+AAB = {2..2} {2..5}

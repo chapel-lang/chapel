@@ -185,16 +185,10 @@ removeUsage $file
 
 file="./Atomics.rst"
 
-removePattern "type atomic_" $file
-removePattern "proc atomic_" $file
-removePattern "proc create_" $file
 removePrefixFunctions $file
 
-replace "record" "type" $file
-
-replace "atomicbool" "atomic \(bool\)" $file
-replace "atomic_int64" "atomic \(T\)" $file
-replace "int(64)" "T" $file
+replace "record:: AtomicBool" "type:: atomic \(bool\)" $file
+replace "record:: AtomicT"    "type:: atomic \(T\)" $file
 
 fixTitle "Atomics" $file
 removeUsage $file
@@ -218,6 +212,7 @@ file="./ChapelComplex_forDocs.rst"
 removePrefixFunctions $file
 fixTitle "Complex" $file
 removeUsage $file
+replace "_complex" "complex" $file
 
 # End ChapelComplex_forDocs ##
 
@@ -233,7 +228,8 @@ removeUsage $file
 
 file="./UtilMisc_forDocs.rst"
 
-removePrefixFunctions $file
+# Don't removePrefixFunctions since it's a stand-in documentation file
+# so shouldn't have any that we don't want documented.
 fixTitle "Misc Functions" $file
 removeUsage $file
 
@@ -260,3 +256,22 @@ removeUsage $file
 file=ChapelError.rst
 fixTitle "Errors" $file
 removeUsage $file
+
+## End of ChapelError ##
+
+## OwnedObject ##
+file=OwnedObject.rst
+fixTitle "owned" $file
+replace "_owned" "owned" $file
+replace "chpl_t" "t" $file
+removeUsage $file
+## End of OwnedObject ##
+
+## SharedObject ##
+file=SharedObject.rst
+fixTitle "shared" $file
+replace "_owned" "owned" $file
+replace "_shared" "shared" $file
+replace "chpl_t" "t" $file
+removeUsage $file
+## End of SharedObject ##

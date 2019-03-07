@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -82,8 +82,8 @@ void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
 
 void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts) {
   AST_CHILDREN_CALL(ast, collectForallStmts, forallStmts);
-  if (ForallStmt* defExpr = toForallStmt(ast))
-    forallStmts.push_back(defExpr);
+  if (ForallStmt* forall = toForallStmt(ast))
+    forallStmts.push_back(forall);
 }
 
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
@@ -110,20 +110,6 @@ void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
   if (SymExpr* symExpr = toSymExpr(ast))
     symExprs.push_back(symExpr);
-}
-
-static void collectMySymExprsHelp(BaseAST*               ast,
-                                  std::vector<SymExpr*>& symExprs) {
-  if (isSymbol(ast)) return; // do not descend into nested symbols
-  AST_CHILDREN_CALL(ast, collectMySymExprsHelp, symExprs);
-  if (SymExpr* se = toSymExpr(ast))
-    symExprs.push_back(se);
-}
-
-// The same for std::vector.
-void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs) {
-  // skip the isSymbol(ast) check in collectMySymExprsHelp()
-  AST_CHILDREN_CALL(me, collectMySymExprsHelp, symExprs);
 }
 
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols) {
@@ -673,6 +659,23 @@ bool givesType(Symbol* sym) {
   return retval;
 }
 
+static bool isNumericTypeSymExpr(Expr* expr) {
+  if (SymExpr* se = toSymExpr(expr)) {
+    Symbol* sym = se->symbol();
+    Type* t = sym->type;
+    // if it's the actual type symbol for that type
+    if (t->symbol == sym && sym->hasFlag(FLAG_TYPE_VARIABLE))
+      return is_bool_type(t) ||
+             is_int_type(t) ||
+             is_uint_type(t) ||
+             is_real_type(t) ||
+             is_imag_type(t) ||
+             is_complex_type(t);
+  }
+
+  return false;
+}
+
 bool isTypeExpr(Expr* expr) {
   bool retval = false;
 
@@ -686,13 +689,10 @@ bool isTypeExpr(Expr* expr) {
     } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true ||
                call->isPrimitive(PRIM_GET_MEMBER)       == true) {
       SymExpr*       left = toSymExpr(call->get(1));
-      AggregateType* ct   = toAggregateType(left->typeInfo());
+      Type*          t    = canonicalClassType(left->getValType());
+      AggregateType* ct   = toAggregateType(t);
 
       INT_ASSERT(ct != NULL);
-
-      if (ct->symbol->hasFlag(FLAG_REF) == true) {
-        ct = toAggregateType(ct->getValType());
-      }
 
       if (left->symbol()->type->symbol->hasFlag(FLAG_TUPLE) == true &&
           left->symbol()->hasFlag(FLAG_TYPE_VARIABLE)       == true) {
@@ -712,6 +712,12 @@ bool isTypeExpr(Expr* expr) {
           retval = field->hasFlag(FLAG_TYPE_VARIABLE);
         }
       }
+
+    } else if (call->numActuals() == 1 &&
+               call->baseExpr &&
+               isNumericTypeSymExpr(call->baseExpr)) {
+      // e.g. call 'int' 64 is a type expression (resulting in int(64))
+      retval = true;
 
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       retval = fn->retTag == RET_TYPE;
@@ -782,7 +788,6 @@ static void
 visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 {
   // chpl_gen_main is always visible (if it exists).
-  // --ipe does not build chpl_gen_main
   if (chpl_gen_main)
     pruneVisit(chpl_gen_main, fns, types);
 

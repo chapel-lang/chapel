@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,8 +37,6 @@ struct Serializers {
 };
 
 
-extern bool                             beforeLoweringForallStmts;
-
 extern int                              explainCallLine;
 
 extern SymbolMap                        paramMap;
@@ -47,8 +45,6 @@ extern Vec<CallExpr*>                   callStack;
 
 extern bool                             tryFailure;
 
-extern Vec<CallExpr*>                   inits;
-
 extern Vec<BlockStmt*>                  standardModuleSet;
 
 extern char                             arrayUnrefName[];
@@ -56,23 +52,15 @@ extern char                             primCoerceTmpName[];
 
 extern Map<Type*,     FnSymbol*>        autoDestroyMap;
 
-extern Map<FnSymbol*, FnSymbol*>        iteratorLeaderMap;
-
-extern Map<FnSymbol*, FnSymbol*>        iteratorFollowerMap;
-
 extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
 
 extern std::map<Type*,     Serializers> serializeMap;
-
-extern std::map<CallExpr*, CallExpr*>   eflopiMap;
-
-
 
 
 
 bool       propagateNotPOD(Type* t);
 
-Expr*      resolvePrimInit(CallExpr* call);
+void       resolvePrimInit(CallExpr* call);
 
 bool       isTupleContainingOnlyReferences(Type* t);
 
@@ -137,22 +125,24 @@ void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 FnSymbol* findCopyInit(AggregateType* ct);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
-FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
-FnSymbol* getTheIteratorFnFromIteratorRec(Type* irType);
+
+// task intents
+extern Symbol* markPruned;
+bool isReduceOp(Type* type);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
-void implementForallIntents1(DefExpr* defChplIter);
-void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
-void implementForallIntents2wrapper(CallExpr* call, CallExpr* origToLeaderCall);
-void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall);
-void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignoreIsResolved);
+void  resolveForallStmts2();
+Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
+void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
+                     ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
+void setupAndResolveShadowVars(ForallStmt* fs);
+bool preserveShadowVar(Symbol* var);
+void adjustVoidShadowVariables();
+void lowerPrimReduce(CallExpr* call, Expr*& retval);
 
-// reduce intents
-void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2);
-void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2);
-bool isReduceOp(Type* type);
+void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
 FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
@@ -220,8 +210,6 @@ FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
 FnSymbol* getAutoDestroy(Type* t);          //  "
 FnSymbol* getUnalias(Type* t);
 
-Expr*     resolveExpr(Expr* expr);
-
 
 
 bool isPOD(Type* t);
@@ -254,6 +242,7 @@ bool fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 AggregateType* computeNonRefTuple(AggregateType* t);
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
+AggregateType* computeTupleWithIntentForArg(IntentTag intent, AggregateType* t, ArgSymbol* arg);
 
 void addTupleCoercion(AggregateType* fromT, AggregateType* toT, Symbol* fromSym, Symbol* toSym, Expr* insertBefore);
 
@@ -261,6 +250,10 @@ void addTupleCoercion(AggregateType* fromT, AggregateType* toT, Symbol* fromSym,
 bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);
+
+static inline bool isUnresolvedOrGenericReturnType(Type* retType) {
+  return retType == dtUnknown || retType->symbol->hasFlag(FLAG_GENERIC);
+}
 
 SymExpr* findSourceOfYield(CallExpr* yield);
 
@@ -281,5 +274,7 @@ void trimVisibleCandidates(CallInfo& call,
                            Vec<FnSymbol*>& visibleFns);
 
 bool isNumericParamDefaultType(Type* type);
+
+void resolveGenericActuals(CallExpr* call);
 
 #endif

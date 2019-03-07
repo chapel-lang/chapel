@@ -8,6 +8,7 @@ Transpose performance testing
 */
 
 use LinearAlgebra;
+use BLAS;
 use Time;
 
 config const m=1000,

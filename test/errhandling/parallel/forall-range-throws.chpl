@@ -7,7 +7,7 @@ proc test() {
     writeln("before forall block");
     forall i in 1..n {
       if i == 1 then
-        throw new StringError("test error");
+        throw new owned StringError("test error");
     }
     writeln("after forall block");
   } catch errors: TaskErrors {

@@ -1,5 +1,3 @@
-use OwnedObject;
-
 class C {
   var x:int;
   proc deinit() {
@@ -13,7 +11,7 @@ proc bar(arg:C) {
 }
 
 proc foo() {
-  var x = new Owned(new C());
+  var x = new owned C();
 
   bar(x.borrow());
   // but bar saves the borrow in myGlobal! Oops!

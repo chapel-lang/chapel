@@ -127,8 +127,8 @@ if useChplVis then pauseVdebug();
     writeln("   Sigma            : ", sigma, " Angstroms");
   }
 
-  proc replicate() : ForceLJ {
-    var temp = new ForceLJ();
+  proc replicate() : unmanaged ForceLJ {
+    var temp = new unmanaged ForceLJ();
     temp.cutoff = this.cutoff;
     temp.mass = this.mass;
     temp.lat = this.lat;

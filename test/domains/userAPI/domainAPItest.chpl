@@ -21,9 +21,9 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   writeln("dims()           = ", D.dims());
   writeln("dim(1)           = ", D.dim(1));
   writeln("dim(2)           = ", D.dim(2));
-  writeln("member(",idx,")   = ", D.member(idx));
-  writeln("member(", OOBidx1, ")   = ", D.member(OOBidx1));
-  writeln("member(", OOBidx2, ")   = ", D.member(OOBidx2));
+  writeln("contains(",idx,")   = ", D.contains(idx));
+  writeln("contains(", OOBidx1, ")   = ", D.contains(OOBidx1));
+  writeln("contains(", OOBidx2, ")   = ", D.contains(OOBidx2));
   writeln("indexOrder(", idx, ") = ", D.indexOrder(idx));
   
   writeln("shape            = ", D.shape);

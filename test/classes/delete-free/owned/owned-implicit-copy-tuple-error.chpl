@@ -1,4 +1,4 @@
-use OwnedObject;
+
 
 class Foo {
   var x: int;
@@ -8,7 +8,7 @@ class Foo {
   }
 }
 
-const a = new Owned(new Foo(1));
-const b = new Owned(new Foo(2));
+const a = new owned Foo(1);
+const b = new owned Foo(2);
 
 var c = (a, b);

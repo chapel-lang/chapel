@@ -100,8 +100,8 @@ What's going wrong? The isMoreVisible rule in function resolution uses
 point-of-instantiation to determine visibility.
 
 Solution: remove point-of-instantiation from consideration in
-determination of more visible function in disambiguation. A branch
-exploring this idea passes testing.
+determination of more visible function in disambiguation. This solution has
+been adopted as of Chapel 1.18.
 
 Hijacking a Generic Fn Called in a Generic
 ++++++++++++++++++++++++++++++++++++++++++
@@ -309,8 +309,9 @@ recipe does not allow for different scopes where a generic functions is called
 to instantiate differently, which is what the example is trying to do.
 
 Solution: Can generic instantiation consider the implied functions that will be
-required to resolve the generic function & where those functions are drawn
-from, as part of the type/param? Alternatively, can generic functions in different scopes be instantiated separately?
+required to resolve the generic function & where those functions are drawn from,
+as part of the type/param? Alternatively, can generic functions in different
+scopes be instantiated separately?
 
 Overloads
 +++++++++
@@ -656,9 +657,15 @@ The update results in the following output:
 
 But uh-oh, now Base.setup() calls Widget.run!
 
-What's going wrong? A method that was expected not to be virtually dispatched was overridden - causing it to be virtually dispatched.
+What's going wrong? A method that was expected not to be virtually dispatched
+was overridden - causing it to be virtually dispatched.
 
-Solutions: require an 'override' keyword to mark functions that should be overriding a base class method. In that event, ``Widget.run`` would not have an override when the library is updated and a compiler error would alert the user to the issue. It might also be reasonable to be able to mark functions as non-overrideable - but that one is probably harder to rely upon.
+Solutions: require an 'override' keyword to mark functions that should be
+overriding a base class method. In that event, ``Widget.run`` would not have an
+override when the library is updated and a compiler error would alert the user
+to the issue. It might also be reasonable to be able to mark functions as
+non-overrideable - but that one is probably harder to rely upon.  As of 1.18,
+Chapel now requires the 'override' keyword.
 
 Unexpected new Overload for an Overridden method
 ++++++++++++++++++++++++++++++++++++++++++++++++
@@ -776,7 +783,7 @@ Summary of Solutions
 ++++++++++++++++++++
 
 * remove point-of-instantiation from consideration in determination of
-  more visible function in disambiguation.
+  more visible function in disambiguation: **DONE**
 * consider changing the traversal order of getVisibleFns to visit the
   point-of-instantiation block after considering the parent scope of a
   generic
@@ -794,7 +801,7 @@ Summary of Solutions
   * could try something inspired by the D overload sets idea
 
 * Require an 'override' keyword to mark functions that should be
-  overriding a base class method.
+  overriding a base class method: **DONE**
 
   * Consider allowing 'pure virtual' or non-overrideable methods
 

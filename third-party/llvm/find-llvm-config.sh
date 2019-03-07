@@ -12,6 +12,9 @@ command_exists()
 if command_exists llvm-config-$PREFERRED_VERSION
 then
   command -v llvm-config-$PREFERRED_VERSION
+elif command_exists llvm-config-$PREFERRED_VERSION_MAJOR
+then
+  command -v llvm-config-$PREFERRED_VERSION_MAJOR
 elif command_exists llvm-config
 then
   command -v llvm-config

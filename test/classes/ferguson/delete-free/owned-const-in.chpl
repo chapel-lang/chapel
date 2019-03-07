@@ -1,5 +1,3 @@
-use OwnedObject;
-
 class C {
   var x:int;
   proc deinit() {
@@ -7,13 +5,13 @@ class C {
   }
 }
 
-proc takeOwnership(const in arg:Owned(C)) {
+proc takeOwnership(const in arg:owned C) {
   writeln("in takeOwnership with arg=", arg.borrow());
 }
 
 
 proc make() {
-  var x = new Owned(new C(1));
+  var x = new owned C(1);
   return x;
 }
 

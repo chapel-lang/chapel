@@ -86,7 +86,7 @@ gasnett_atomic_set(&((HANDLE)->atomic_vars)[(FLAG_SET)*(HANDLE)->THREADS*SMP_COL
 
 /*take the number template and replace digits 0-DIGIT_ID-1 with 0 and DIGIT with NEW_DIGIT*/
 #define SMP_COLL_MAKE_NUM_POWER2RADIX(TEMPLATE_NUMBER,DIGIT_ID,NEW_DIGIT,RADIX,LOG_2_RADIX) \
-(((TEMPLATE_NUMBER) & (-1)<<(((DIGIT_ID+1))*(LOG_2_RADIX))) + ((NEW_DIGIT) << ((DIGIT_ID))*(LOG_2_RADIX)))
+(((TEMPLATE_NUMBER) & ((unsigned int)-1)<<(((DIGIT_ID+1))*(LOG_2_RADIX))) + ((NEW_DIGIT) << ((DIGIT_ID))*(LOG_2_RADIX)))
 
 /*take the number template and replace i^th digit with NEW_DIGIT*/
 #define SMP_COLL_REPLACE_DIGIT_POWER2RADIX(TEMPLATE_NUMBER,DIGIT_ID,NEW_DIGIT,RADIX,LOG_2_RADIX) \
@@ -97,7 +97,7 @@ gasnett_atomic_set(&((HANDLE)->atomic_vars)[(FLAG_SET)*(HANDLE)->THREADS*SMP_COL
 ((NUMBER) >> ((DIGIT_ID)*(LOG_2_RADIX)))
 
 #define SMP_COLL_GET_LOWER_K_DIGITS_POWER2RADIX(NUMBER,DIGIT_ID,RADIX,LOG_2_RADIX) \
-((NUMBER) & ~((-1)<<((DIGIT_ID)*(LOG_2_RADIX))))
+((NUMBER) & ~(((unsigned int)-1)<<((DIGIT_ID)*(LOG_2_RADIX))))
 
 
 typedef void (*SMP_COLL_BARR_FN)(smp_coll_t handle, int);

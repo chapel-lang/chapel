@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -143,6 +143,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* account = getenv("CHPL_LAUNCHER_ACCOUNT");
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
+  char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
+  char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
+  const char* nodeAccessStr = NULL;
+
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
 
@@ -169,7 +173,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   const char* tmpDir    = getTmpDir();
   char stdoutFile         [MAX_COM_LEN];
   char stdoutFileNoFmt    [MAX_COM_LEN];
-  char tmpStdoutFile      [MAX_COM_LEN];
   char tmpStdoutFileNoFmt [MAX_COM_LEN];
 
   // command line walltime takes precedence over env var
@@ -190,6 +193,21 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // command line exclude takes precedence over env var
   if (!exclude) {
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
+  }
+
+  // request exclusive node access by default, but allow user to override
+  if (nodeAccessEnv == NULL || strcmp(nodeAccessEnv, "exclusive") == 0) {
+    nodeAccessStr = "exclusive";
+  } else if (strcmp(nodeAccessEnv, "shared") == 0 ||
+             strcmp(nodeAccessEnv, "share") == 0 ||
+             strcmp(nodeAccessEnv, "oversubscribed") == 0  ||
+             strcmp(nodeAccessEnv, "oversubscribe") == 0) {
+    nodeAccessStr = "share";
+  } else if (strcmp(nodeAccessEnv, "unset") == 0) {
+    nodeAccessStr = NULL;
+  } else {
+    chpl_warning("unsupported 'CHPL_LAUNCHER_NODE_ACCESS' option", 0, 0);
+    nodeAccessStr = "exclusive";
   }
 
   if (basenamePtr == NULL) {
@@ -235,8 +253,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", procsPerNode);
     fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", getCoresPerLocale());
     
-    //request exclusive access to nodes 
-    fprintf(slurmFile, "#SBATCH --exclusive\n");
+    // request specified node access
+    if (nodeAccessStr != NULL)
+      fprintf(slurmFile, "#SBATCH --%s\n", nodeAccessStr);
 
     // Set the walltime if it was specified 
     if (walltime) { 
@@ -283,10 +302,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // We only redirect the program output to the tmp file
     fprintf(slurmFile, "#SBATCH --output=%s\n", stdoutFile);
 
+    if (errorfn != NULL) {
+      fprintf(slurmFile, "#SBATCH --error=%s\n", errorfn);
+    }
+
     // If we're buffering the output, set the temp output file name.
     // It's always <tmpDir>/binaryName.<jobID>.out.
     if (bufferStdout != NULL) {
-      sprintf(tmpStdoutFile,      "%s/%s.%s.out", tmpDir, argv[0], "%j");
       sprintf(tmpStdoutFileNoFmt, "%s/%s.%s.out", tmpDir, argv[0], "$SLURM_JOB_ID");
     }
 
@@ -299,9 +321,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "'%s' ", argv[i]);
     }
 
-    // buffer program output to the tmp stdout file
+    // buffer stdout to the tmp stdout file
     if (bufferStdout != NULL) {
-      fprintf(slurmFile, "&> %s", tmpStdoutFileNoFmt);
+      fprintf(slurmFile, "> %s", tmpStdoutFileNoFmt);
     }
     fprintf(slurmFile, "\n");
 
@@ -346,8 +368,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     len += sprintf(iCom+len, "--ntasks-per-node=%d ", procsPerNode);
     len += sprintf(iCom+len, "--cpus-per-task=%d ", getCoresPerLocale());
     
-    // request exclusive access
-    len += sprintf(iCom+len, "--exclusive ");
+    // request specified node access
+    if (nodeAccessStr != NULL)
+      len += sprintf(iCom+len, "--%s ", nodeAccessStr);
 
     // kill the job if any program instance halts with non-zero exit status
     len += sprintf(iCom+len, "--kill-on-bad-exit ");
@@ -374,7 +397,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     // set any constraints 
     if (constraint) {
-      len += sprintf(iCom+len, " --constraint=%s ", constraint);
+      len += sprintf(iCom+len, "--constraint=%s ", constraint);
     }
     
     // set the account name if one was provided  

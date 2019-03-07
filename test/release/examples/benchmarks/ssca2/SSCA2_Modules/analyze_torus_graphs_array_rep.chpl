@@ -1,7 +1,7 @@
 module analyze_torus_graphs {
 
   // +========================================================================+
-  // |  Define dense arithmetic array-based representations for               |
+  // |  Define dense rectangular array-based representations for              |
   // |  k-dimensional torus graphs. For each k, provide execution template    |
   // |  for executing and verifying SSCA2 kernels 2 through 4.                |
   // +========================================================================+

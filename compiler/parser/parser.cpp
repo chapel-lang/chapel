@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +40,7 @@ const char*          yyfilename                    = NULL;
 int                  yystartlineno                 = 0;
 
 ModTag               currentModuleType             = MOD_INTERNAL;
+const char*          currentModuleName             = NULL;
 
 int                  chplLineno                    = 0;
 bool                 chplParseString               = false;
@@ -140,9 +141,6 @@ void setupModulePaths() {
   if (fMinimalModules == true) {
     modulesRoot = "modules/minimal";
 
-  } else if (fUseIPE == true) {
-    modulesRoot = "modules/ipe";
-
   } else {
     modulesRoot = "modules";
   }
@@ -185,6 +183,8 @@ void setupModulePaths() {
                       modulesRoot,
                       "/standard/gen/",
                       CHPL_TARGET_PLATFORM,
+                      "-",
+                      CHPL_TARGET_ARCH,
                       "-",
                       CHPL_TARGET_COMPILER));
 
@@ -513,6 +513,11 @@ static ModuleSymbol* parseFile(const char* path,
 
     currentFileNamedOnCommandLine = namedOnCommandLine;
 
+    // If this file only contains explicit module declarations, this
+    // 'currentModuleName' is not accurate, but also should not be
+    // used (because when the 'module' declarations are found, they
+    // will override it).
+    currentModuleName             = filenameToModulename(path);
     currentModuleType             = modTag;
 
     yyblock                       = NULL;
@@ -788,17 +793,6 @@ BlockStmt* parseString(const char* string,
 *                                                                             *
 ************************************** | *************************************/
 
-// Used by IPE
-const char* pathNameForInternalFile(const char* modName) {
-  return searchThePath(modName, true, sIntModPath);
-}
-
-// Used by IPE: Prefer user file to standard file
-const char* pathNameForStandardFile(const char* modName) {
-  bool isStandard = false;
-
-  return stdModNameToPath(modName, &isStandard);
-}
 
 static const char* stdModNameToPath(const char* modName,
                                     bool*       isStandard) {

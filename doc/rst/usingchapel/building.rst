@@ -131,6 +131,7 @@ are described below. Set the value to 1 to enable the feature.
   OPTIMIZE  Enable optimizations (e.g. add -O3 to C compiler).
   PROFILE   Enable profiling support (e.g. add -pg to C compiler).
   WARNINGS  Promote backend C compiler warnings to errors.
+  ASSERTS   Enables correctness assertions in the compiler and runtime.
   ========  =======================================================
 
 

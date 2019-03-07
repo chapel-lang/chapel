@@ -7,14 +7,16 @@ record A
   var a : int;
 }
 
-// CHECK: call {{.*}} @_construct_A_chpl
-// CHECK: store
-// CHECK: load
-// CHECK-DAG: call {}* @llvm.invariant.start.p0i8(i64 8, i8* [[CAST:%.*]])
-// CHECK-DAG: [[CAST]] = bitcast %A_chpl* [[PTR:%.*]] to i8*
-// CHECK_DAG: store %A_chpl {{%.*}}, %A_chpl* [[PTR]]
+// CHECK: @f_chpl
+// CHECK: call void @init_chpl{{.*}}(%A_chpl* [[NEW_TEMP:%.*]],
+// CHECK: [[TMP1:%.*]] = load %A_chpl, %A_chpl* [[NEW_TEMP]]
+// CHECK: store %A_chpl [[TMP1]], %A_chpl* [[TMP2:%.*]]
+// CHECK: [[TMP3:%.*]] = load %A_chpl, %A_chpl* [[TMP2]]
+// CHECK: store %A_chpl [[TMP3]], %A_chpl* [[TMP4:%.*]]
+// CHECK: [[CAST:%.*]] = bitcast %A_chpl* [[TMP4]] to i8*
+// CHECK: call {}* @llvm.invariant.start.p0i8(i64 8, i8* [[CAST]])
 // CHECK: getelementptr
-// CHECK-SAME:[[PTR]]
+// CHECK-SAME:[[TMP4]]
 // CHECK: load
 // CHECK: ret
 proc f(n)

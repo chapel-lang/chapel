@@ -15,7 +15,7 @@ class IfInit {
 }
 
 proc main() {
-  var c1 : IfInit = new borrowed IfInit(3);
+  var c1 : borrowed IfInit = new borrowed IfInit(3);
 
   writeln(c1);
 

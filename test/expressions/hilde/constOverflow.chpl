@@ -8,10 +8,13 @@
 // behavior is OK, but Chapel should try to protect users from such
 // platform-dependencies.
 
-const maxS = max(int(32));
-const maxS1 = maxS + 1;
-const m = 10;
+config const maxS = max(int(32));
 
-writeln(maxS % m);
-writeln((maxS+1) % m);
-writeln(maxS1 % 10);
+proc main() {
+  const maxS1 = maxS + 1;
+  const m = 10;
+
+  writeln(maxS % m);
+  writeln((maxS+1) % m);
+  writeln(maxS1 % 10);
+}

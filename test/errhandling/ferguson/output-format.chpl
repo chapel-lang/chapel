@@ -4,12 +4,12 @@ class MyError : Error {
     this.msg = msg;
 
   }
-  proc message() {
+  override proc message() {
     return "custom message";
   }
 }
 proc throwit() throws {
-  var e = new unmanaged MyError("test error");
+  var e = new owned MyError("test error");
   writeln(e);
   throw e;
 }

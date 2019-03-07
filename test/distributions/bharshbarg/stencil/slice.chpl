@@ -53,7 +53,7 @@ proc test(dom : domain) {
       var idx = if isTuple(m) then m else (m,);
 
       // Translate our index if needed
-      if !Space.member(idx) {
+      if !Space.contains(idx) {
         for param i in 1..rank {
           if idx(i) < Space.dim(i).low then idx(i) += Space.dim(i).size * abstr(i);
           else if idx(i) > Space.dim(i).high then idx(i) -= Space.dim(i).size * abstr(i);
@@ -91,7 +91,7 @@ proc test(dom : domain) {
         var temp = if isTuple(idx) then idx else (idx,);
         // Look at indices that should be in the cache, but are not in the
         // periodic region.
-        if !sub.member(idx) && dom.member(idx) {
+        if !sub.contains(idx) && dom.contains(idx) {
           var m = 1;
           for i in temp do m *= i;
           assert(Actual[idx] == m);

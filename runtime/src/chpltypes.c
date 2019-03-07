@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -35,14 +35,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-
-_complex128 _chpl_complex128(_real64 re, _real64 im) {
-  return re + im*_Complex_I;
-}
-
-_complex64 _chpl_complex64(_real32 re, _real32 im) {
-  return re + im*_Complex_I;
-}
 
 int64_t real2int( _real64 f) {
   // need to use a union here rather than a pointer cast to avoid gcc

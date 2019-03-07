@@ -97,8 +97,7 @@ iter randomIntPoints(followThis, param tag)
   }
 }
 
-pragma "fn returns iterator"
-proc d2(x) return x**2;
+proc d2(x: numeric) return x**2;
 
 proc test2 {
   const result = + reduce randomIntPoints();

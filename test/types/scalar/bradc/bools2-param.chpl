@@ -8,7 +8,6 @@ proc testBoolCombo(param x, param y) {
   writeln("!x = ", !x);
   writeln("x && y = ", x && y);
   writeln("x || y = ", x || y);
-  writeln("~x = ", ~x);
   writeln("x ^ y = ", x ^ y);
   writeln("x | y = ", x | y);
   writeln("x & y = ", x & y);

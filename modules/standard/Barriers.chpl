@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -69,7 +69,7 @@ module Barriers {
   /* A barrier that will cause `numTasks` to wait before proceeding. */
   record Barrier {
     pragma "no doc"
-    var bar: BarrierBaseType;
+    var bar: unmanaged BarrierBaseType;
     pragma "no doc"
     var isowned: bool = false;
 
@@ -100,8 +100,7 @@ module Barriers {
           }
         }
         otherwise {
-          use ChapelHaltWrappers;
-          exhaustiveSelectHalt("unknown barrier type");
+          HaltWrappers.exhaustiveSelectHalt("unknown barrier type");
         }
       }
       isowned = true;
@@ -114,7 +113,7 @@ module Barriers {
 
     /* copy initializer */
     pragma "no doc"
-    proc init(b: Barrier) {
+    proc init=(b: Barrier) {
       this.bar = b.bar;
       this.isowned = false;
     }
@@ -130,16 +129,12 @@ module Barriers {
        is true, reset the barrier to be used again.
      */
     inline proc barrier() {
-      on bar {
-        bar.barrier();
-      }
+      bar.barrier();
     }
 
     /* Notify the barrier that this task has reached this point. */
     inline proc notify() {
-      on bar {
-        bar.notify();
-      }
+      bar.notify();
     }
 
     /* Wait until `n` tasks have called :proc:`notify`.  If `reusable` is true,
@@ -152,9 +147,7 @@ module Barriers {
        `n` tasks have called :proc:`notify`.
      */
     inline proc wait() {
-      on bar {
-        bar.wait();
-      }
+      bar.wait();
     }
 
     /* Return `true` if `n` tasks have called :proc:`notify`
@@ -168,48 +161,39 @@ module Barriers {
        when :proc:`reset` is called, the behavior is undefined.
      */
     inline proc reset(nTasks: int) {
-      on bar {
-        bar.reset(nTasks);
-      }
+      bar.reset(nTasks);
     }
   }
 
   /* The BarrierBaseType class provides an abstract base type for barriers
    */
   pragma "no doc"
-  pragma "use default init"
   class BarrierBaseType {
     pragma "no doc"
     proc barrier() {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc notify() {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc wait() {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc check(): bool {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
     }
 
     pragma "no doc"
     proc reset(nTasks: int) {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
     }
   }
-
 
 /* A task barrier implemented using atomics. Can be used as a simple barrier
    or as a split-phase barrier.
@@ -223,9 +207,11 @@ module Barriers {
     pragma "no doc"
     var n: int;
     pragma "no doc"
-    var count: chpl__processorAtomicType(int);
+    param procAtomics = if CHPL_NETWORK_ATOMICS == "none" then true else false;
     pragma "no doc"
-    var done: chpl__processorAtomicType(bool);
+    var count: if procAtomics then chpl__processorAtomicType(int) else atomic int;
+    pragma "no doc"
+    var done: if procAtomics then chpl__processorAtomicType(bool) else atomic bool;
 
     // Hack for AllLocalesBarrier
     pragma "no doc"
@@ -243,27 +229,29 @@ module Barriers {
 
     // Hack for AllLocalesBarrier
     pragma "no doc"
-    proc init(n: int, param reusable: bool, param hackIntoCommBarrier: bool) {
+    proc init(n: int, param reusable: bool, param procAtomics: bool, param hackIntoCommBarrier: bool) {
       this.reusable = reusable;
+      this.procAtomics = procAtomics;
       this.hackIntoCommBarrier = hackIntoCommBarrier;
       this.complete();
       reset(n);
     }
 
     pragma "no doc"
-    inline proc reset(nTasks: int) {
-      on this {
+    /* inline */ override proc reset(nTasks: int) {
+      inline proc innerReset() {
         n = nTasks;
         count.write(n);
         done.write(false);
       }
+      if procAtomics then on this do innerReset(); else innerReset();
     }
 
     /* Block until n tasks have called this method.  If `reusable` is true,
        reset the barrier to be used again.
      */
-    inline proc barrier() {
-      on this {
+    /* inline */ override proc barrier() {
+      inline proc innerBarrier() {
         const myc = count.fetchSub(1);
         if myc<=1 {
           if hackIntoCommBarrier {
@@ -272,8 +260,7 @@ module Barriers {
           }
           const alreadySet = done.testAndSet();
           if boundsChecking && alreadySet {
-            use ChapelHaltWrappers;
-            boundsCheckHalt("Too many callers to barrier()");
+            HaltWrappers.boundsCheckHalt("Too many callers to barrier()");
           }
           if reusable {
             count.waitFor(n-1);
@@ -288,20 +275,21 @@ module Barriers {
           }
         }
       }
+      if procAtomics then on this do innerBarrier(); else innerBarrier();
     }
 
     /* Notify the barrier that this task has reached this point. */
-    inline proc notify() {
-      on this {
+    /* inline */ override proc notify() {
+      inline proc innerNotify() {
         const myc = count.fetchSub(1);
         if myc<=1 {
           const alreadySet = done.testAndSet();
           if boundsChecking && alreadySet {
-            use ChapelHaltWrappers;
-            boundsCheckHalt("Too many callers to notify()");
+            HaltWrappers.boundsCheckHalt("Too many callers to notify()");
           }
         }
       }
+      if procAtomics then on this do innerNotify(); else innerNotify();
     }
 
     /* Wait until `n` tasks have called :proc:`notify`.  If `reusable` is true,
@@ -309,8 +297,8 @@ module Barriers {
        :proc:`wait` will block until `n` tasks have called it after calling
        :proc:`notify`.
      */
-    inline proc wait() {
-      on this {
+    /* inline */ override proc wait() {
+      inline proc innerWait() {
         done.waitFor(true);
         if reusable {
           const myc = count.fetchAdd(1);
@@ -319,11 +307,12 @@ module Barriers {
           done.waitFor(false);
         }
       }
+      if procAtomics then on this do innerWait(); else innerWait();
     }
 
     /* Return `true` if `n` tasks have called :proc:`notify`
      */
-    inline proc check(): bool {
+    /* inline */ override proc check(): bool {
       return done.read();
     }
   }
@@ -355,7 +344,7 @@ module Barriers {
       reset(n);
     }
 
-    inline proc reset(nTasks: int) {
+    /* inline */ override proc reset(nTasks: int) {
       maxBlockers = nTasks;
       blockers.write(0);
       outGate.reset();
@@ -364,11 +353,10 @@ module Barriers {
 
     /* Block until `n` tasks have called this method.
      */
-    inline proc barrier() {
+    /* inline */ override proc barrier() {
       on this {
         if boundsChecking && blockers.read() >= maxBlockers {
-          use ChapelHaltWrappers;
-          boundsCheckHalt("Too many callers to barrier()");
+          HaltWrappers.boundsCheckHalt("Too many callers to barrier()");
         }
         inGate.readFF();
         var waiters = blockers.fetchAdd(1) + 1;
@@ -391,11 +379,10 @@ module Barriers {
     }
 
     /* Notify the barrier that this task has reached this point. */
-    inline proc notify() {
+    /* inline */ override proc notify() {
       on this {
         if boundsChecking && blockers.read() >= maxBlockers {
-          use ChapelHaltWrappers;
-          boundsCheckHalt("Too many callers to notify()");
+          HaltWrappers.boundsCheckHalt("Too many callers to notify()");
         }
 
         inGate.readFF();
@@ -408,7 +395,7 @@ module Barriers {
     }
 
     /* Wait until `n` tasks have called :proc:`notify`. */
-    inline proc wait() {
+    /* inline */ override proc wait() {
       on this {
         outGate.readFF();
         if reusable {
@@ -423,7 +410,7 @@ module Barriers {
 
     /* Return `true` if `n` tasks have called :proc:`notify`
      */
-    inline proc check(): bool {
+    /* inline */ override proc check(): bool {
       return outGate.isFull;
     }
   }

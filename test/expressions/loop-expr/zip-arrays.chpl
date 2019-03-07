@@ -1,4 +1,4 @@
 
-var A, B : [1..4] int;
-var C = [ab in zip(A,B)] ab;  // C: [1..4] (2*int)
+var A, B: [1..2,1..3] int;
+var C = [ab in zip(A,B)] ab;  // C: [A.domain] (2*int)
 writeln(C);

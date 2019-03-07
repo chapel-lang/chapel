@@ -1,9 +1,9 @@
-int is: int
-real is: real
-bool is: bool
-string is: string
-complex is: complex
-imag is: imag
-a is: 3.4
-c is: maybe
-e is: false
+redefineTypeNames.chpl:3: error: attempt to redefine reserved type 'int'
+redefineTypeNames.chpl:4: error: attempt to redefine reserved type 'real'
+redefineTypeNames.chpl:5: error: attempt to redefine reserved type 'bool'
+redefineTypeNames.chpl:6: error: attempt to redefine reserved type 'string'
+redefineTypeNames.chpl:7: error: attempt to redefine reserved type 'complex'
+redefineTypeNames.chpl:8: error: attempt to redefine reserved type 'imag'
+redefineTypeNames.chpl:18: error: attempt to redefine reserved type 'int'
+redefineTypeNames.chpl:20: error: attempt to redefine reserved type 'imag'
+redefineTypeNames.chpl:22: error: attempt to redefine reserved type 'complex'

@@ -1,5 +1,4 @@
 
-pragma "use default init"
 record DR {
   param cond : bool;
   var x : if cond then int else real;

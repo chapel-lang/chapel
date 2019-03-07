@@ -17,16 +17,14 @@ class D : C {
       ranges(i) = 1..i;
   }
 
-  proc bbox(x: int) {
+  override proc bbox(x: int) {
     return ranges(x);
   }
 }
 
-var d:C = new D(4);
+var d:unmanaged C = new unmanaged D(4);
 
 writeln(d.bbox(1));
 writeln(d.bbox(2));
 writeln(d.bbox(3));
 writeln(d.bbox(4));
-
-delete d;

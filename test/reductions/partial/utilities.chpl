@@ -102,12 +102,11 @@ proc partRedHelpCheckDimensions(resDims, srcDims) throws {
     if resDims(dim).length == 1 ||   // reduced dimension
        resDims(dim) == srcDims(dim)  // preserved dimension
     then ; // OK
-    else throw new IllegalArgumentError("the preserved dimension " + dim + " in the shape of the partial reduction differs from that in the array being reduced");
+    else throw new owned IllegalArgumentError("the preserved dimension " + dim + " in the shape of the partial reduction differs from that in the array being reduced");
   }
 }
 
 /* This class implements the reduction of partial results. */
-pragma "use default init"
 class PartRedOp: ReduceScanOp {
   type eltType;
   const perElemOp;

@@ -20,6 +20,7 @@
 #include "qt_shepherd_innards.h"
 #include "qt_visibility.h"
 #include "qt_int_ceil.h"
+#include "qt_alloc.h"
 
 typedef saligned_t qt_sinc_count_t;
 
@@ -56,7 +57,7 @@ qt_sinc_t *qt_sinc_create(const size_t sizeof_value,
                           qt_sinc_op_f op,
                           const size_t will_spawn)
 {
-    qt_sinc_t *sinc = qt_malloc(sizeof(qt_sinc_t));
+    struct qt_sinc_s *sinc = qt_malloc(sizeof(struct qt_sinc_s));
 
     assert(sinc);
 
@@ -184,12 +185,13 @@ qt_sinc_t *qt_sinc_create(const size_t sizeof_value,
         sinc->remaining = 0;
     }
 
-    return sinc;
+    return (qt_sinc_t*)sinc;
 }
 
-void qt_sinc_reset(qt_sinc_t   *sinc,
+void qt_sinc_reset(qt_sinc_t   *sinct,
                    const size_t will_spawn)
 {
+    struct qt_sinc_s *sinc = (struct qt_sinc_s*)sinct;
     // Reset values
     if (NULL != sinc->values) {
         const size_t sizeof_shep_value_part = sinc->sizeof_shep_value_part;
@@ -233,8 +235,9 @@ void qt_sinc_reset(qt_sinc_t   *sinc,
     sinc->ready = SYNCVAR_EMPTY_INITIALIZER;
 }
 
-void qt_sinc_destroy(qt_sinc_t *sinc)
+void qt_sinc_destroy(qt_sinc_t *sinct)
 {
+    struct qt_sinc_s *sinc = (struct qt_sinc_s *)sinct;
 #if defined(SINCS_PROFILE)
     const size_t sizeof_shep_count_part = sinc->sizeof_shep_count_part;
     for (size_t s = 0; s < num_sheps; s++) {
@@ -282,9 +285,10 @@ void qt_sinc_destroy(qt_sinc_t *sinc)
  * Pre:  sinc was created
  * Post: aggregate count is positive
  */
-void qt_sinc_expect(qt_sinc_t *sinc,
+void qt_sinc_expect(qt_sinc_t *sinct,
                     size_t     count)
 {
+  struct qt_sinc_s *sinc = (struct qt_sinc_s *)sinct;
     assert(sinc);
     if (count > 0) {
         const qthread_worker_id_t worker_id = qthread_readstate(CURRENT_WORKER);
@@ -312,8 +316,9 @@ void qt_sinc_expect(qt_sinc_t *sinc,
     }
 }
 
-void *qt_sinc_tmpdata(qt_sinc_t *sinc)
+void *qt_sinc_tmpdata(qt_sinc_t *sinct)
 {
+    struct qt_sinc_s *sinc = (struct qt_sinc_s *)sinct;
     if (NULL != sinc->values) {
         const size_t shep_offset   = qthread_shep() * sinc->sizeof_shep_value_part;
         const size_t worker_offset = qthread_readstate(CURRENT_WORKER) * sinc->sizeof_value;
@@ -323,8 +328,9 @@ void *qt_sinc_tmpdata(qt_sinc_t *sinc)
     }
 }
 
-static void qt_sinc_internal_collate(qt_sinc_t *sinc)
+static void qt_sinc_internal_collate(qt_sinc_t *sinct)
 {
+    struct qt_sinc_s *sinc = (struct qt_sinc_s *)sinct;
     if (sinc->values) {
         // step 1: collate results
         const size_t sizeof_value           = sinc->sizeof_value;
@@ -343,9 +349,10 @@ static void qt_sinc_internal_collate(qt_sinc_t *sinc)
     qthread_syncvar_writeF_const(&sinc->ready, 42);
 }
 
-void qt_sinc_submit(qt_sinc_t *restrict sinc,
-                    void *restrict      value)
+void qt_sinc_submit(qt_sinc_t *restrict sinct,
+                    const void *restrict      value)
 {
+    struct qt_sinc_s *sinc = (struct qt_sinc_s *)sinct;
     assert(NULL != sinc->values || NULL == value);
     assert((sinc->result && sinc->initial_value) || (!sinc->result && !sinc->initial_value));
 
@@ -429,7 +436,7 @@ void qt_sinc_submit(qt_sinc_t *restrict sinc,
                 (void)qthread_incr(count_remaining, 1);
 #endif          /* defined(SINCS_PROFILE) */
                 assert(oldr > 0);
-                if (oldr == 1) { qt_sinc_internal_collate(sinc); }
+                if (oldr == 1) { qt_sinc_internal_collate((qt_sinc_t*)sinc); }
                 return;
             } else if (old_count != 0) {
                 return;
@@ -498,7 +505,7 @@ void qt_sinc_submit(qt_sinc_t *restrict sinc,
                 (void)qthread_incr(count_remaining, 1);
 #endif          /* defined(SINCS_PROFILE) */
                 assert(oldr > 0);
-                if (oldr == 1) { qt_sinc_internal_collate(sinc); }
+                if (oldr == 1) { qt_sinc_internal_collate((qt_sinc_t*)sinc); }
                 return;
             } else if (old_count != 0) {
                 return;
@@ -511,9 +518,10 @@ void qt_sinc_submit(qt_sinc_t *restrict sinc,
     }
 }
 
-void qt_sinc_wait(qt_sinc_t *restrict sinc,
+void qt_sinc_wait(qt_sinc_t *restrict sinct,
                   void *restrict      target)
 {
+    struct qt_sinc_s *sinc = (struct qt_sinc_s *)sinct;
     qthread_syncvar_readFF(NULL, &sinc->ready);
 
     if (target) {

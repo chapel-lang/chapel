@@ -1,5 +1,5 @@
-// Modified from
-// test/classes/dinan/user_def_unique_constructor_const_multipleassign.chpl
+
+
 class C {
   const x: int;
 
@@ -10,8 +10,6 @@ class C {
   }
 }
 
-var c = new C(2, 3);
+var c = new owned C(2, 3);
 
 writeln(c.x);
-
-delete c;

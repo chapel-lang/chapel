@@ -1,0 +1,2 @@
+mismatch.chpl:16: error: unresolved call 'A(int(64)).init=(A(real(64)))'
+mismatch.chpl:1: note: candidates are: A.init=(other: this.type)

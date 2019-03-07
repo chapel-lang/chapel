@@ -13,10 +13,8 @@
   function resolution determined the types of a and d in the same
   order that the program would execute.
 
-  Changes to certain simple cases for resolution in Feb 2017 mean
-  that the types of M1.a and M2.d are known sooner and so the
-  program has started to compile.   For this case it happens to
-  produce stable output but this is not assured.
+  If the type of 'a' is set early enough (e.g. normalize) this program might
+  compile successfully.
 */
 
 module M1 {

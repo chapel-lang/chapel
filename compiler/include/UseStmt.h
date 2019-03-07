@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -59,7 +59,7 @@ public:
 
   UseStmt*        applyOuterUse(const UseStmt* outer);
 
-  bool            skipSymbolSearch(const char* name)                     const;
+  bool            skipSymbolSearch(const char* name, bool methodCall)    const;
 
   bool            providesNewSymbols(const UseStmt* other)               const;
 
@@ -81,11 +81,10 @@ private:
 
   void            validateRenamed();
 
-  void            createRelatedNames(Symbol* maybeType);
+  void            trackMethods();
+  bool            isAllowedMethodName(const char* name, bool methodCall) const;
 
   bool            matchedNameOrConstructor(const char* name)             const;
-
-  bool            inRelatedNames(const char* name)                       const;
 
   void            noRepeats()                                            const;
 
@@ -96,7 +95,8 @@ public:
 
 private:
   bool                               except;
-  std::vector<const char*>           relatedNames;
+  std::vector<const char*>           methodsAndFields;
+  std::vector<const char*>           functionsToAlwaysCheck;
 };
 
 #endif

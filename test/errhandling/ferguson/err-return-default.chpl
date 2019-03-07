@@ -8,7 +8,8 @@ extern record my_struct {
 
 record MyRecord {
   var y:my_struct;
-  proc MyRecord(i:int) {
+  proc init(i:int) {
+    this.complete();
     y.x = i:c_int;
   }
   proc deinit() {
@@ -21,7 +22,7 @@ config const case = 1;
 proc returnOrThrow(i:int, j = 4):MyRecord throws {
 
   if case == i {
-    throw new StringError("test error");
+    throw new owned StringError("test error");
   }
   return new MyRecord(i);
 }

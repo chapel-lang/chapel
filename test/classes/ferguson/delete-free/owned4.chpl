@@ -1,5 +1,3 @@
-use OwnedObject;
-
 class C {
   var x = 1;
   proc deinit() {
@@ -8,8 +6,8 @@ class C {
 }
 
 proc foo() {
-  var x:Owned(C);
-  var y = new Owned(new C(2));
+  var x:owned C;
+  var y = new owned C(2);
 
   x.retain(y.release());
 }

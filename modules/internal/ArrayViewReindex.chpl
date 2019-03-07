@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,7 +32,6 @@ module ArrayViewReindex {
   // that it creates reindexed views of, and a down-facing and up-facing
   // domain indicating the old and new index sets, respectively.
   //
-  pragma "use default init"
   class ArrayViewReindexDist: BaseDist {
     // a pointer down to the distribution that this class is creating
     // reindexed views of
@@ -91,6 +90,10 @@ module ArrayViewReindex {
       _delete_dom(updom, false);
       //      _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
+
+    proc dsiIsLayout() param {
+      return downDistInst.dsiIsLayout();
+    }
   }
 
   //
@@ -100,7 +103,6 @@ module ArrayViewReindex {
   // for rectangular domains so this is a subclass of
   // BaseRectangularDom.
   //
- pragma "use default init"
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
     var updom: unmanaged DefaultRectangularDom(rank, idxType, stridable);
@@ -254,8 +256,8 @@ module ArrayViewReindex {
     proc dsiHasSingleLocalSubdomain() param
       return downdom.dsiHasSingleLocalSubdomain();
 
-    proc dsiLocalSubdomain() {
-      const dims = downdom.dsiLocalSubdomain().dims();
+    proc dsiLocalSubdomain(loc: locale) {
+      const dims = downdom.dsiLocalSubdomain(loc).dims();
       return chpl_reindexConvertDom(dims, downdom, updom);
     }
 
@@ -275,7 +277,7 @@ module ArrayViewReindex {
       }
     }
 
-    proc dsiDestroyDom() {
+    override proc dsiDestroyDom() {
       _delete_dom(updom, false);
       _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
@@ -339,9 +341,8 @@ module ArrayViewReindex {
   // The class representing a slice of an array.  Like other array
   // class implementations, it supports the standard dsi interface.
   //
-  class ArrayViewReindexArr: BaseArr {
-    type eltType;  // see note on commented-out proc eltType below...
-
+  pragma "aliasing array"
+  class ArrayViewReindexArr: AbsBaseArr {
     // the representation of the slicing domain
     //
     // TODO: Can we privatize upon creation of the array-view slice and cache
@@ -364,7 +365,7 @@ module ArrayViewReindex {
     proc init(type eltType, const _DomPid, const dom,
               const _ArrPid, const _ArrInstance,
               const ownsArrInstance : bool = false) {
-      this.eltType         = eltType;
+      super.init(eltType = eltType);
       this._DomPid         = _DomPid;
       this.dom             = dom;
       this._ArrPid         = _ArrPid;
@@ -554,8 +555,8 @@ module ArrayViewReindex {
     proc dsiHasSingleLocalSubdomain() param
       return privDom.dsiHasSingleLocalSubdomain();
 
-    proc dsiLocalSubdomain() {
-      return privDom.dsiLocalSubdomain();
+    proc dsiLocalSubdomain(loc: locale) {
+      return privDom.dsiLocalSubdomain(loc);
     }
 
     //

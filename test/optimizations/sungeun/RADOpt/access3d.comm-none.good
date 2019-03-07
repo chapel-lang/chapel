@@ -1,0 +1,23 @@
+3 dimensional array of int(64)
+
+[3D Block] Remote read (Locale0): gets: 0
+[3D Block] Remote read (Locale0): puts: 0
+[3D Block] Remote read (Locale0): executeOns: 0
+[3D Block] Remote read (Locale0): fast executeOns: 0
+[3D Block] Remote read (Locale0): nb executeOns: 0
+[3D Block] Remote write (Locale0): gets: 0
+[3D Block] Remote write (Locale0): puts: 0
+[3D Block] Remote write (Locale0): executeOns: 0
+[3D Block] Remote write (Locale0): fast executeOns: 0
+[3D Block] Remote write (Locale0): nb executeOns: 0
+
+[3D Cyclic] Remote read (Locale0): gets: 0
+[3D Cyclic] Remote read (Locale0): puts: 0
+[3D Cyclic] Remote read (Locale0): executeOns: 0
+[3D Cyclic] Remote read (Locale0): fast executeOns: 0
+[3D Cyclic] Remote read (Locale0): nb executeOns: 0
+[3D Cyclic] Remote write (Locale0): gets: 0
+[3D Cyclic] Remote write (Locale0): puts: 0
+[3D Cyclic] Remote write (Locale0): executeOns: 0
+[3D Cyclic] Remote write (Locale0): fast executeOns: 0
+[3D Cyclic] Remote write (Locale0): nb executeOns: 0

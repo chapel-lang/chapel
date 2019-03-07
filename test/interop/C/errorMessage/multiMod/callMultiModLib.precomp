@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling multipleModules.chpl
+$3 --library -o givenName --static multipleModules.chpl

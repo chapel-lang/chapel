@@ -1,0 +1,2 @@
+query-generic-type-leaf-q-borrowed.chpl:35: error: unresolved call 'g(Wrapper(OtherGenericClass(int(64))))'
+query-generic-type-leaf-q-borrowed.chpl:18: note: candidates are: g(x: Wrapper(borrowed GenericClass(?)))

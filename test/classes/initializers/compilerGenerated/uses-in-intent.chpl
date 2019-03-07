@@ -2,11 +2,10 @@
 record R {
   var x : int;
   proc init() { writeln("R.init"); }
-  proc init(other:R) { this.x = other.x + 1; writeln("R.init(R): ", x); }
+  proc init=(other:R) { this.x = other.x + 1; writeln("R.init(R): ", x); }
   proc deinit() { writeln("R.deinit: ", x); }
 }
 
-pragma "use default init"
 class Simple {
   var r = new R();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -66,9 +66,8 @@ do not provide some standard domain/array functionality.
 This distribution may perform unnecessary communication
 between locales.
 */
-pragma "use default init"
 class Private: BaseDist {
-  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+  override proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
     for i in inds do
       if i.size != 0 then
         halt("Tried to create a privateDom with a specific index set");
@@ -82,12 +81,11 @@ class Private: BaseDist {
   proc dsiClone() return _to_unmanaged(this);
 
   proc trackDomains() param return false;
-  proc dsiTrackDomains()    return false;
+  override proc dsiTrackDomains()    return false;
 
   proc singleton() param return true;
 }
 
-pragma "use default init"
 class PrivateDom: BaseRectangularDom {
   var dist: unmanaged Private;
 
@@ -125,7 +123,7 @@ class PrivateDom: BaseRectangularDom {
 
   proc dsiRequiresPrivatization() param return true;
   proc linksDistribution() param return false;
-  proc dsiLinksDistribution()     return false;
+  override proc dsiLinksDistribution()     return false;
 
   proc dsiGetPrivatizeData() return 0;
 
@@ -138,16 +136,15 @@ class PrivateDom: BaseRectangularDom {
   proc dsiReprivatize(other, reprivatizeData) { }
 
   proc dsiMember(i) return 0 <= i && i <= numLocales-1;
-  proc dsiMyDist() return dist;
+  override proc dsiMyDist() return dist;
 }
 
-pragma "use default init"
 class PrivateArr: BaseRectangularArr {
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
   var data: eltType;
 }
 
-proc PrivateArr.dsiGetBaseDom() return dom;
+override proc PrivateArr.dsiGetBaseDom() return dom;
 
 proc PrivateArr.dsiRequiresPrivatization() param return true;
 

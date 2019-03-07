@@ -80,7 +80,6 @@ private proc locDescTypeHelper(dom1, dom2) type {
   return (dom1.dsiNewLocalDom1d(0).type, dom2.dsiNewLocalDom1d(0).type);
 }
 
-pragma "use default init"
 class DimensionalDom : BaseRectangularDom {
   // required
   param rank: int;
@@ -131,7 +130,6 @@ class LocDimensionalDom {
   var myStorageDom: domain(myBlock.rank, stoSzT, false);
 }
 
-pragma "use default init"
 class DimensionalArr : BaseArr {
   // required
   type eltType;

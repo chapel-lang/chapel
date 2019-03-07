@@ -1,0 +1,6 @@
+# The failure mode may differ on certain configurations.
+# Do not test it there, to ensure clean .bad match.
+CHPL_COMM != none
+CHPL_LOCALE_MODEL != flat
+COMPOPTS <= --baseline
+COMPOPTS <= --no-local

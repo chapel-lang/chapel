@@ -298,6 +298,9 @@ DEBUGMALLOC_VAL = @DEBUGMALLOC_VAL@
 DEBUGMALLOC_VAR = @DEBUGMALLOC_VAR@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVWARN_CFLAGS = @DEVWARN_CFLAGS@
+DEVWARN_CXXFLAGS = @DEVWARN_CXXFLAGS@
+DEVWARN_MPI_CFLAGS = @DEVWARN_MPI_CFLAGS@
 DIRNAME = @DIRNAME@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -353,7 +356,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 INTTYPES_DEFINES = @INTTYPES_DEFINES@
 KEEPTMP_CFLAGS = @KEEPTMP_CFLAGS@
-LADEBUG_PATH = @LADEBUG_PATH@
 LDFLAGS = @LDFLAGS@
 LIBGCC = @LIBGCC@
 LIBM = @LIBM@
@@ -417,9 +419,6 @@ READLINK = @READLINK@
 SEPARATE_CC = @SEPARATE_CC@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SHMEM_INCLUDES = @SHMEM_INCLUDES@
-SHMEM_LDFLAGS = @SHMEM_LDFLAGS@
-SHMEM_LIBS = @SHMEM_LIBS@
 SIZEOF_CHAR = @SIZEOF_CHAR@
 SIZEOF_DOUBLE = @SIZEOF_DOUBLE@
 SIZEOF_FLOAT = @SIZEOF_FLOAT@
@@ -428,7 +427,9 @@ SIZEOF_INT = @SIZEOF_INT@
 SIZEOF_LONG = @SIZEOF_LONG@
 SIZEOF_LONG_DOUBLE = @SIZEOF_LONG_DOUBLE@
 SIZEOF_LONG_LONG = @SIZEOF_LONG_LONG@
+SIZEOF_PTRDIFF_T = @SIZEOF_PTRDIFF_T@
 SIZEOF_SHORT = @SIZEOF_SHORT@
+SIZEOF_SIZE_T = @SIZEOF_SIZE_T@
 SIZEOF_VOID_P = @SIZEOF_VOID_P@
 SIZEOF__BOOL = @SIZEOF__BOOL@
 SMP_LIBS = @SMP_LIBS@
@@ -531,13 +532,13 @@ SUBDIRS = contrib
 # include all headers, documentation, etc.
 # and any subdirectories not containing Makefile.am's
 CONDUIT_FILELIST = \
+      license.txt            \
       gasnet_core.c          \
       gasnet_core.h          \
       gasnet_core_fwd.h      \
       gasnet_core_help.h     \
       gasnet_core_internal.h \
       gasnet_core_list.h     \
-      gasnet_extended_internal_extra.h \
       gasnet_extended.c      \
       gasnet_extended_fwd.h  \
       gasnet_extended_longmsg.c \
@@ -956,11 +957,11 @@ libgasnet-psm-par.a: $(libgasnet_dependencies)
 
 libgasnet-psm-parsync.a: $(libgasnet_dependencies)
 	@$(MAKE) do-libgasnet-parsync
-@USE_PSM_CONDUIT_TRUE@all-local: $(lib_LIBRARIES) $(makefile_fragments)
+@USE_PSM_CONDUIT_TRUE@all-local: $(lib_LIBRARIES) $(pkgconfig_files)
 @USE_PSM_CONDUIT_TRUE@clean-local: do-clean-local
 @USE_PSM_CONDUIT_TRUE@install-data-local: do-install-data-local
 @USE_PSM_CONDUIT_TRUE@uninstall-local: do-uninstall-local
-@USE_PSM_CONDUIT_FALSE@$(top_srcdir)/gasnet.h: do-error
+@USE_PSM_CONDUIT_FALSE@$(top_srcdir)/gasnetex.h: do-error
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

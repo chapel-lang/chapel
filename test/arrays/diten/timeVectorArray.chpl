@@ -1,4 +1,4 @@
-use Random, Time, Search, Sort;
+use Random, Time, Search, Sort, LinkedLists;
 
 config const n: int = 30000;
 const linearN: int = n/1000; // problem size for slow "linear" opeations
@@ -6,12 +6,12 @@ config const randSeed: int = 11;
 
 class Runner {
   proc run(A) { halt("virtual function run called"); }
-  proc runList(ref L: list(int)) { halt("virtual function runList called");}
+  proc runList(ref L: LinkedList(int)) { halt("virtual function runList called");}
 }
 
 class PushBack: Runner {
   const n: int;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     for i in 1..n {
       A.push_back(i);
     }
@@ -20,7 +20,7 @@ class PushBack: Runner {
 
 class SumElements: Runner {
   const n: int;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     var sum = 0;
     for a in A {
       sum += a;
@@ -31,7 +31,7 @@ class SumElements: Runner {
 
 class PushFront: Runner {
   const n: int;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     for i in 1..n {
       A.push_front(i);
     }
@@ -39,7 +39,7 @@ class PushFront: Runner {
 }
 
 class PopBack: Runner {
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     while !A.isEmpty() {
       A.pop_back();
     }
@@ -47,7 +47,7 @@ class PopBack: Runner {
 }
 
 class PopFront: Runner {
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     while !A.isEmpty() {
       A.pop_front();
     }
@@ -57,8 +57,8 @@ class PopFront: Runner {
 // time inserting into a random index in the array
 class InsertRandom: Runner {
   const n: int;
-  proc run(A: [] int) {
-    extern proc srand(int);
+  override proc run(A: [] int) {
+    extern proc srand(seed: int);
     extern proc rand(): int;
     srand(randSeed);
     for i in 1..linearN {
@@ -70,8 +70,8 @@ class InsertRandom: Runner {
 // generate random numbers and put them in order in the array
 class InsertSorted: Runner {
   const n: int;
-  proc run(A: [] int) {
-    extern proc srand(int);
+  override proc run(A: [] int) {
+    extern proc srand(seed: int);
     extern proc rand(): int;
     srand(randSeed);
     for i in 1..linearN {
@@ -85,7 +85,7 @@ class InsertSorted: Runner {
 class Remove: Runner {
   const n: int;
   const front: bool;
-  proc run(A: [] int) {
+  override proc run(A: [] int) {
     if front {
       for i in 1..linearN {
         A.remove(1);
@@ -103,7 +103,7 @@ class Remove: Runner {
 // try a few similar operation on a list to compare
 class ListAppend: Runner {
   const n: int;
-  proc runList(ref L: list(int)) {
+  override proc runList(ref L: LinkedList(int)) {
     for i in 1..n {
       L.append(i);
     }
@@ -112,7 +112,7 @@ class ListAppend: Runner {
 
 class SumReduceList: Runner {
   const n: int;
-  proc runList(ref L: list(int)) {
+  override proc runList(ref L: LinkedList(int)) {
     var sum = 0;
     for val in L {
       sum += val;
@@ -122,7 +122,7 @@ class SumReduceList: Runner {
 }
 
 class ListDestroy: Runner {
-  proc runList(ref L: list(int)) {
+  override proc runList(ref L: LinkedList(int)) {
     L.destroy();
   }
 }
@@ -136,7 +136,7 @@ proc timeRun(r: borrowed Runner, A) {
   return t.elapsed();
 }
 
-proc timeRunList(r: borrowed Runner, ref L: list(int)) {
+proc timeRunList(r: borrowed Runner, ref L: LinkedList(int)) {
   var t = new Timer();
   t.start();
   r.runList(L);
@@ -187,7 +187,7 @@ proc main {
   r = new owned PushBack(n); r.run(A);
   r = new owned Remove(n, false); output("RemoveBack", timeRun(r, A));
 
-  var l = new list(int);
+  var l = new LinkedList(int);
   r = new owned ListAppend(n); output("ListAppend", timeRunList(r,l));
   assert(l.length == n);
   r = new owned SumReduceList(n); output("ListReduce", timeRunList(r, l));

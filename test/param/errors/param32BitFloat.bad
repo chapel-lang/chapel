@@ -1,2 +1,0 @@
-param32BitFloat.chpl:1: error: Initializing parameter 'p1' to value not known at compile time
-param32BitFloat.chpl:2: error: Initializing parameter 'p2' to value not known at compile time

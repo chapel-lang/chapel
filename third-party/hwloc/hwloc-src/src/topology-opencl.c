@@ -12,6 +12,7 @@
 #include <private/misc.h>
 #include <private/debug.h>
 
+#define CL_TARGET_OPENCL_VERSION 220
 #ifdef __APPLE__
 #include <OpenCL/cl_ext.h>
 #else

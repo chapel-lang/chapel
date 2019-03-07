@@ -25,17 +25,20 @@ statement. For a function to throw an error, its signature must include
 a ``throws`` declaration. The declaration is put after the return
 type and before any ``where`` clauses.
 
+Only ``owned`` instances of a type inheriting from ``Error`` can be
+thrown.
+
 .. code-block:: chapel
 
   proc canThrow(i: int): int throws {
     if i < 0 then
-      throw new Error();
+      throw new owned Error();
 
     return i + 1;
   }
 
   proc alwaysThrows():int throws {
-    throw new Error();
+    throw new owned Error();
     // never reached
     return 1;
   }
@@ -307,7 +310,7 @@ or not throw if the overridden method does not throw.
 
   class ThrowingObject {
     proc f() throws {
-      throw new Error();
+      throw new owned Error();
     }
   }
 
@@ -387,7 +390,7 @@ earlier will emit a flattened ``TaskErrors``.
       writeln("before coforall block");
       coforall i in 1..2 {
         coforall j in 1..2 {
-          throw new DemoError();
+          throw new owned DemoError();
         }
       }
       writeln("after coforall block");
@@ -403,8 +406,8 @@ earlier will emit a flattened ``TaskErrors``.
     try! {
       writeln("before cobegin block");
       cobegin {
-        throw new DemoError();
-        throw new DemoError();
+        throw new owned DemoError();
+        throw new owned DemoError();
       }
       writeln("after cobegin block");
     } catch errors: TaskErrors {
@@ -427,7 +430,7 @@ is thrown by the inner loop.
     try! {
       writeln("before forall block");
       forall i in 1..2 {
-        throw new DemoError();
+        throw new owned DemoError();
       }
       writeln("after forall block");
     } catch errors: TaskErrors {

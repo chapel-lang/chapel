@@ -99,6 +99,18 @@ extern int yydebug;
     };
   };
 
+  struct WhereAndLifetime {
+    Expr* where;
+    Expr* lifetime;
+  };
+  static inline
+  WhereAndLifetime makeWhereAndLifetime(Expr* w, Expr* lt) {
+    WhereAndLifetime ret;
+    ret.where = w;
+    ret.lifetime = lt;
+    return ret;
+  }
+
   // The lexer only uses pch.
   // The remaining types are for parser productions
   union  YYSTYPE {
@@ -117,18 +129,20 @@ extern int yydebug;
     EnumType*                 penumtype;
     std::vector<DefExpr*>*    pvecOfDefs;
     FnSymbol*                 pfnsymbol;
-    Flag                      flag;
+    ModuleSymbol*             pmodsymbol;
     ProcIter                  procIter;
     FlagSet*                  flagSet;
     ShadowVarSymbol*          pShadowVar;
     ShadowVarPrefix           pShadowVarPref;
     std::vector<OnlyRename*>* ponlylist;
+    std::set<Flag>*           pflagset;
+    WhereAndLifetime          lifetimeAndWhere;
   };
 
   #endif
 
 /* Line 2058 of yacc.c  */
-#line 131 "chapel.ypp"
+#line 145 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -139,6 +153,7 @@ extern int yydebug;
     int         last_line;
     int         last_column;
     const char* comment;
+    const char* prevModule;
   };
 
   #define YYLTYPE_IS_DECLARED 1
@@ -147,7 +162,7 @@ extern int yydebug;
   #endif
 
 /* Line 2058 of yacc.c  */
-#line 153 "chapel.ypp"
+#line 168 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -177,7 +192,7 @@ extern int yydebug;
 
 
 /* Line 2058 of yacc.c  */
-#line 181 "../include/bison-chapel.h"
+#line 196 "../include/bison-chapel.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -197,143 +212,156 @@ extern int yydebug;
      TATOMIC = 267,
      TBEGIN = 268,
      TBREAK = 269,
-     TBORROWED = 270,
-     TBY = 271,
-     TCATCH = 272,
-     TCLASS = 273,
-     TCOBEGIN = 274,
-     TCOFORALL = 275,
-     TCONFIG = 276,
-     TCONST = 277,
-     TCONTINUE = 278,
-     TDEFER = 279,
-     TDELETE = 280,
-     TDMAPPED = 281,
-     TDO = 282,
-     TDOMAIN = 283,
-     TELSE = 284,
-     TENUM = 285,
-     TEXCEPT = 286,
-     TEXPORT = 287,
-     TEXTERN = 288,
-     TFOR = 289,
-     TFORALL = 290,
-     TFORWARDING = 291,
-     TIF = 292,
-     TIN = 293,
-     TINDEX = 294,
-     TINLINE = 295,
-     TINOUT = 296,
-     TITER = 297,
-     TLABEL = 298,
-     TLAMBDA = 299,
-     TLET = 300,
-     TLOCAL = 301,
-     TMINUSMINUS = 302,
-     TMODULE = 303,
-     TNEW = 304,
-     TNIL = 305,
-     TNOINIT = 306,
-     TON = 307,
-     TONLY = 308,
-     TOTHERWISE = 309,
-     TOUT = 310,
-     TOVERRIDE = 311,
-     TOWNED = 312,
-     TPARAM = 313,
-     TPLUSPLUS = 314,
-     TPRAGMA = 315,
-     TPRIMITIVE = 316,
-     TPRIVATE = 317,
-     TPROC = 318,
-     TPROTOTYPE = 319,
-     TPUBLIC = 320,
-     TRECORD = 321,
-     TREDUCE = 322,
-     TREF = 323,
-     TREQUIRE = 324,
-     TRETURN = 325,
-     TSCAN = 326,
-     TSELECT = 327,
-     TSERIAL = 328,
-     TSHARED = 329,
-     TSINGLE = 330,
-     TSPARSE = 331,
-     TSUBDOMAIN = 332,
-     TSYNC = 333,
-     TTHEN = 334,
-     TTHROW = 335,
-     TTHROWS = 336,
-     TTRY = 337,
-     TTRYBANG = 338,
-     TTYPE = 339,
-     TUNDERSCORE = 340,
-     TUNION = 341,
-     TUNMANAGED = 342,
-     TUSE = 343,
-     TVAR = 344,
-     TWHEN = 345,
-     TWHERE = 346,
-     TWHILE = 347,
-     TWITH = 348,
-     TYIELD = 349,
-     TZIP = 350,
-     TALIAS = 351,
-     TAND = 352,
-     TASSIGN = 353,
-     TASSIGNBAND = 354,
-     TASSIGNBOR = 355,
-     TASSIGNBXOR = 356,
-     TASSIGNDIVIDE = 357,
-     TASSIGNEXP = 358,
-     TASSIGNLAND = 359,
-     TASSIGNLOR = 360,
-     TASSIGNMINUS = 361,
-     TASSIGNMOD = 362,
-     TASSIGNMULTIPLY = 363,
-     TASSIGNPLUS = 364,
-     TASSIGNSL = 365,
-     TASSIGNSR = 366,
-     TBAND = 367,
-     TBNOT = 368,
-     TBOR = 369,
-     TBXOR = 370,
-     TCOLON = 371,
-     TCOMMA = 372,
-     TDIVIDE = 373,
-     TDOT = 374,
-     TDOTDOT = 375,
-     TDOTDOTDOT = 376,
-     TEQUAL = 377,
-     TEXP = 378,
-     TGREATER = 379,
-     TGREATEREQUAL = 380,
-     THASH = 381,
-     TLESS = 382,
-     TLESSEQUAL = 383,
-     TMINUS = 384,
-     TMOD = 385,
-     TNOT = 386,
-     TNOTEQUAL = 387,
-     TOR = 388,
-     TPLUS = 389,
-     TQUESTION = 390,
-     TSEMI = 391,
-     TSHIFTLEFT = 392,
-     TSHIFTRIGHT = 393,
-     TSTAR = 394,
-     TSWAP = 395,
-     TASSIGNREDUCE = 396,
-     TIO = 397,
-     TLCBR = 398,
-     TRCBR = 399,
-     TLP = 400,
-     TRP = 401,
-     TLSBR = 402,
-     TRSBR = 403,
-     TNOELSE = 404,
-     TUMINUS = 405,
-     TUPLUS = 406
+     TBOOL = 270,
+     TBORROWED = 271,
+     TBY = 272,
+     TCATCH = 273,
+     TCLASS = 274,
+     TCOBEGIN = 275,
+     TCOFORALL = 276,
+     TCOMPLEX = 277,
+     TCONFIG = 278,
+     TCONST = 279,
+     TCONTINUE = 280,
+     TDEFER = 281,
+     TDELETE = 282,
+     TDMAPPED = 283,
+     TDO = 284,
+     TDOMAIN = 285,
+     TELSE = 286,
+     TENUM = 287,
+     TEXCEPT = 288,
+     TEXPORT = 289,
+     TEXTERN = 290,
+     TFALSE = 291,
+     TFOR = 292,
+     TFORALL = 293,
+     TFORWARDING = 294,
+     TIF = 295,
+     TIMAG = 296,
+     TIN = 297,
+     TINDEX = 298,
+     TINLINE = 299,
+     TINOUT = 300,
+     TINT = 301,
+     TITER = 302,
+     TINITEQUALS = 303,
+     TLABEL = 304,
+     TLAMBDA = 305,
+     TLET = 306,
+     TLIFETIME = 307,
+     TLOCAL = 308,
+     TLOCALE = 309,
+     TMINUSMINUS = 310,
+     TMODULE = 311,
+     TNEW = 312,
+     TNIL = 313,
+     TNOINIT = 314,
+     TON = 315,
+     TONLY = 316,
+     TOTHERWISE = 317,
+     TOUT = 318,
+     TOVERRIDE = 319,
+     TOWNED = 320,
+     TPARAM = 321,
+     TPLUSPLUS = 322,
+     TPRAGMA = 323,
+     TPRIMITIVE = 324,
+     TPRIVATE = 325,
+     TPROC = 326,
+     TPROTOTYPE = 327,
+     TPUBLIC = 328,
+     TREAL = 329,
+     TRECORD = 330,
+     TREDUCE = 331,
+     TREF = 332,
+     TREQUIRE = 333,
+     TRETURN = 334,
+     TSCAN = 335,
+     TSELECT = 336,
+     TSERIAL = 337,
+     TSHARED = 338,
+     TSINGLE = 339,
+     TSPARSE = 340,
+     TSTRING = 341,
+     TSUBDOMAIN = 342,
+     TSYNC = 343,
+     TTHEN = 344,
+     TTHIS = 345,
+     TTHROW = 346,
+     TTHROWS = 347,
+     TTRUE = 348,
+     TTRY = 349,
+     TTRYBANG = 350,
+     TTYPE = 351,
+     TUINT = 352,
+     TUNDERSCORE = 353,
+     TUNION = 354,
+     TUNMANAGED = 355,
+     TUSE = 356,
+     TVAR = 357,
+     TWHEN = 358,
+     TWHERE = 359,
+     TWHILE = 360,
+     TWITH = 361,
+     TYIELD = 362,
+     TZIP = 363,
+     TALIAS = 364,
+     TAND = 365,
+     TASSIGN = 366,
+     TASSIGNBAND = 367,
+     TASSIGNBOR = 368,
+     TASSIGNBXOR = 369,
+     TASSIGNDIVIDE = 370,
+     TASSIGNEXP = 371,
+     TASSIGNLAND = 372,
+     TASSIGNLOR = 373,
+     TASSIGNMINUS = 374,
+     TASSIGNMOD = 375,
+     TASSIGNMULTIPLY = 376,
+     TASSIGNPLUS = 377,
+     TASSIGNREDUCE = 378,
+     TASSIGNSL = 379,
+     TASSIGNSR = 380,
+     TBAND = 381,
+     TBNOT = 382,
+     TBOR = 383,
+     TBXOR = 384,
+     TCOLON = 385,
+     TCOMMA = 386,
+     TDIVIDE = 387,
+     TDOT = 388,
+     TDOTDOT = 389,
+     TDOTDOTDOT = 390,
+     TEQUAL = 391,
+     TEXP = 392,
+     TGREATER = 393,
+     TGREATEREQUAL = 394,
+     THASH = 395,
+     TIO = 396,
+     TLESS = 397,
+     TLESSEQUAL = 398,
+     TMINUS = 399,
+     TMOD = 400,
+     TNOT = 401,
+     TNOTEQUAL = 402,
+     TOR = 403,
+     TPLUS = 404,
+     TQUESTION = 405,
+     TSEMI = 406,
+     TSHIFTLEFT = 407,
+     TSHIFTRIGHT = 408,
+     TSTAR = 409,
+     TSWAP = 410,
+     TLCBR = 411,
+     TRCBR = 412,
+     TLP = 413,
+     TRP = 414,
+     TLSBR = 415,
+     TRSBR = 416,
+     TNOELSE = 417,
+     TUMINUS = 418,
+     TUPLUS = 419
    };
 #endif
 
@@ -383,7 +411,7 @@ void yypstate_delete ();
 #endif
 /* "%code provides" blocks.  */
 /* Line 2058 of yacc.c  */
-#line 184 "chapel.ypp"
+#line 199 "chapel.ypp"
 
   extern int yydebug;
 
@@ -393,6 +421,6 @@ void yypstate_delete ();
 
 
 /* Line 2058 of yacc.c  */
-#line 397 "../include/bison-chapel.h"
+#line 425 "../include/bison-chapel.h"
 
 #endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */

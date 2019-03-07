@@ -1,0 +1,4 @@
+bug: representing C function pointer fields as c_fn_ptr leads to baseline failures
+#9411
+
+Please remove the .skipif when this test passes.

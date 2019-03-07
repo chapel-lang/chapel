@@ -1,4 +1,4 @@
-use HDF5_HL;
+use HDF5;
 
 config const infileName = "readChunks2DInput.h5";
 config const dsetName = "/dset";

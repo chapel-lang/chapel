@@ -7,10 +7,10 @@ use Cwd qw/ realpath /;
 #$TMP = shift @ARGV;
 
 $ORIG_CHPL_HOME = $ENV{"CHPL_HOME"};
-$PLAT=`$ORIG_CHPL_HOME/util/chplenv/chpl_platform.py --host`;
-chomp $PLAT;
+$BINSUBDIR=`$ORIG_CHPL_HOME/util/chplenv/chpl_bin_subdir.py --host`;
+chomp $BINSUBDIR;
 
-$ORIG_CHPL = "$ORIG_CHPL_HOME/bin/$PLAT/chpl";
+$ORIG_CHPL = "$ORIG_CHPL_HOME/bin/$BINSUBDIR/chpl";
 
 $ORIG_CWD = $ENV{"PWD"};
 
@@ -21,11 +21,11 @@ $TMP = tempdir( CLEANUP => 1 );
 $HOME = "$TMP/chplhome";
 $HOME2 = "$TMP/chplhome2";
 $HOME3 = "$TMP/chplhome3";
-$HOMEBIN = "$TMP/chplhome/bin/$PLAT";
-$HOME2BIN = "$TMP/chplhome2/bin/$PLAT";
-$HOME3BIN = "$TMP/chplhome3/bin/$PLAT";
+$HOMEBIN = "$TMP/chplhome/bin/$BINSUBDIR";
+$HOME2BIN = "$TMP/chplhome2/bin/$BINSUBDIR";
+$HOME3BIN = "$TMP/chplhome3/bin/$BINSUBDIR";
 $HOMELINK = "$TMP/linktohome";
-$HOMELINKBIN = "$TMP/linktohome/bin/$PLAT";
+$HOMELINKBIN = "$TMP/linktohome/bin/$BINSUBDIR";
 $BIN = "$TMP/bin";
 $BINLINK = "$TMP/linktobin";
 $TMPOUT = "$TMP/cmdout";

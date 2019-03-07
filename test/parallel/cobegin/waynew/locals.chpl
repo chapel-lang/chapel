@@ -51,14 +51,14 @@ proc function3() {
   }
 
   class D {
-    var c:C;
+    var c:unmanaged C;
   }
 
-  var c:C = new C();
+  var c:unmanaged C = new unmanaged C();
   c.a = 1;
 
-  var d:D = new D();
-  d.c = new C();
+  var d:unmanaged D = new unmanaged D();
+  d.c = new unmanaged C();
   d.c.a = 2;
 
   cobegin {

@@ -1,4 +1,4 @@
-use OwnedObject;
+
 
 class C {
   var x: int;
@@ -12,7 +12,7 @@ class C {
 }
 
 proc main() {
-  const a = [i in 1..3] new Owned(new C(i));
+  const a = [i in 1..3] new owned C(i);
   
   writeln(a);
 }

@@ -8,7 +8,7 @@ config type sparseLayoutType = DefaultDist;
 const ParentDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N},
     sparseLayoutType=sparseLayoutType);
 
-const layout = new sparseLayoutType;
+const layout = new unmanaged sparseLayoutType;
 var SparseDom: sparse subdomain(ParentDom);
 
 var SparseArr: [SparseDom] int;

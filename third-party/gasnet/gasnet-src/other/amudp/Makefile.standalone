@@ -25,9 +25,10 @@ set_opt_cxxflags   = -DAMUDP_NDEBUG=1 $(cxxoptflags)  $(MANUAL_CXXFLAGS)
 
 VPATH = $(srcdir)
 includes = -I$(srcdir) -I$(altincdir)
+defines = -D_GNU_SOURCE=1
 libraries = $(platform_libraries)
-Ccompile = $(CC) -c $(ccflags) $(platform_defines) $(MANUAL_DEFINES) $(includes)
-CXXcompile = $(CXX) -c $(cxxflags) $(platform_defines) $(MANUAL_DEFINES) $(includes)
+Ccompile = $(CC) -c $(ccflags) $(defines) $(platform_defines) $(MANUAL_DEFINES) $(includes)
+CXXcompile = $(CXX) -c $(cxxflags) $(defines) $(platform_defines) $(MANUAL_DEFINES) $(includes)
 link = $(CXX) $(cxxflags) $(platform_ldflags) $(MANUAL_LDFLAGS) $(platform_defines) $(includes) 
 linkend = $(libraries) $(MANUAL_LIBS)
 
@@ -70,14 +71,14 @@ libamudp.a: $(objects)
 tests: banner apputils.o $(testprograms)
 
 # method to convert .cpp to .o (more reliable than ".cpp.o" method)
-test%.o : $(testdir)/test%.c $(testdir)/*.h $(headers)
-	$(Ccompile) -DAMUDP -I$(testdir) $< -o $@
+test%.o : $(amxdir)/test%.c $(amxdir)/*.h $(headers)
+	$(Ccompile) -DAMUDP -I$(amxdir) $< -o $@
 
 tests-clean:
 	rm -f $(testprograms)
 	
-apputils.o : $(testdir)/apputils.c $(headers)
-	$(Ccompile) -DAMUDP -I$(testdir) $(testdir)/apputils.c -o apputils.o
+apputils.o : $(amxdir)/apputils.c $(headers)
+	$(Ccompile) -DAMUDP -I$(amxdir) $(amxdir)/apputils.c -o apputils.o
 
 amudprun: amudprun.o $(headers) libamudp.a 
 	$(link) -o $@ $< -L. -lamudp $(linkend)

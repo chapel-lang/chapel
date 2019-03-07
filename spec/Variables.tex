@@ -37,7 +37,7 @@ variable-declaration:
   identifier-list type-part no-initialization-part[OPT]
 
 type-part:
-  : type-specifier
+  : type-expression
 
 initialization-part:
   = expression
@@ -85,7 +85,11 @@ The \sntx{type-part} of a variable declaration specifies the type of
 the variable.  It is optional if the \sntx{initialization-part} is
 specified.  If the \sntx{type-part} is omitted, the type of the
 variable is inferred using local type inference described
-in~\rsec{Local_Type_Inference}.
+in~\rsec{Local_Type_Inference}. If the \sntx{type-part} refers
+to a generic type, then an \sntx{initialization-part} is required
+and will be used to determine the type of the variable. In this event,
+the compiler will fail with an error if the \sntx{initialization-part} is
+not coercible to an instantiation of the generic type.
 
 The \sntx{initialization-part} of a variable declaration specifies an
 initial expression to assign to the variable.  If
@@ -293,7 +297,7 @@ A local variable only exists during the execution of code that lies
 within that block statement.  This time is called the lifetime of the
 variable.  When execution has finished within that block statement,
 the local variable and the storage it represents is removed.
-Variables of class type are the sole exception.  Constructors of class
+Variables of class type are the sole exception.  Initializers of class
 types create storage that is not associated with any scope.  Such
 storage can be reclaimed as described
 in~\rsec{Class_Delete}.

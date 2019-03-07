@@ -1,0 +1,10 @@
+unimplemented feature: param renaming of types and vars
+
+While we support renaming of functions via general param string
+expressions, extern variables, class, and records can currently only
+be renamed using string literals, and extern types can't be renamed at
+all.  This future requests treating all of these the same and
+permitting any of them to be renamed using a param expression.  THe
+proposed approach is to add an 'Expr* cnameExpr;' field to the Symbol
+class and to resolve the name for all these declaration types in a
+unified manner.

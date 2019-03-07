@@ -1,8 +1,0 @@
-semantic: 'type int' as formal type
-
-This test uses idioms like 'type int' in a formal argument list
-which could arguably be a sugar for 'type x ... where x == int'.
-The compiler accepts it which suggests that that may be how we
-treat it.  But then it treats the two calls here as ambiguous
-which seems incorrect.  bool values can coerce to ints, but
-bool types should not coerce to int types.

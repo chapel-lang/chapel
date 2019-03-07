@@ -1,12 +1,9 @@
 #!/usr/bin/env python
-import os
 import sys
-
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_platform, overrides
 from utils import error, memoize
+
 
 @memoize
 def get():
@@ -27,6 +24,7 @@ def get():
         elif val == 'system':
             return 'system'
     return 'none'
+
 
 def _main():
     unwind_val = get()

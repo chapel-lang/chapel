@@ -45,7 +45,7 @@ var counts: [1..k] int = 0;
 var c1:[1..k] Data;
 }
 
-var RO: redObj;
+//var RO: redObj;
 var testRedObj: redObj;
 
 
@@ -68,13 +68,17 @@ for ii in 1..k
 
 /*Reduction class*/
 
-pragma "use default init"
 class kmeansReduction : ReduceScanOp{
 
 type eltType;
-//var RO : redObj;
+var RO : redObj;
 
-proc accumulate (da: eltType)
+proc identity
+{
+    return new redObj();
+}
+
+proc accumulateOntoState (ref RO: redObj, da: eltType)
 {
     //find nearest Cluster for this point
     
@@ -110,18 +114,28 @@ proc accumulate (da: eltType)
     }
 }
 
-proc combine(km: borrowed kmeansReduction(eltType))
+proc accumulate (da: eltType)
 {
-    RO.counts = RO.counts + km.RO.counts;
-    RO.error = RO.error + km.RO.error;
+    accumulateOntoState(RO, da);
+}
+
+proc accumulate(other: RO)
+{
+    RO.counts += other.counts;
+    RO.error += other.error;
     
     for i in 1..k
     {
         for j in 1..m
         {
-            RO.c1[i].dim[j] = RO.c1[i].dim[j] + km.RO.c1[i].dim[j];
+            RO.c1[i].dim[j] += other.c1[i].dim[j];
         }
     }
+}
+
+proc combine(km: borrowed kmeansReduction(eltType))
+{
+    accumulate(km.RO);
 }
 
 proc generate()
@@ -129,6 +143,11 @@ proc generate()
     var RO1:redObj;
     RO1 = RO;
     return RO1;
+}
+
+proc clone()
+{
+    return new unmanaged kmeansReduction(eltType=eltType);
 }
 }
 

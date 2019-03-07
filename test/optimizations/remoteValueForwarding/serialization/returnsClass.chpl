@@ -7,7 +7,7 @@ record Foo {
   var x : 3*int;
 
   proc chpl__serialize() {
-    return new Bar(5);
+    return new unmanaged Bar(5);
   }
 
   proc type chpl__deserialize(data) {

@@ -15,6 +15,7 @@ export CHPL_NIGHTLY_TEST_DIRS="c2chapel/"
 # .bashrc was sourced).
 #
 # TODO: emit useful error if tests will be skipped
-export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM:$PATH"
+CHPL_BIN_SUBDIR=`"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
+export PATH="$CHPL_HOME/bin/$CHPL_BIN_SUBDIR:$PATH"
 
 $CWD/nightly -cron

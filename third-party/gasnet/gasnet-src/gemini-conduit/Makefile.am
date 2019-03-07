@@ -25,7 +25,6 @@ CONDUIT_FILELIST =           \
       gasnet_core_internal.h \
       gasnet_extended.c      \
       gasnet_extended_fwd.h  \
-      gasnet_extended_help_extra.h  \
       gasnet_gemini.h        \
       gasnet_gemini.c
 
@@ -99,12 +98,12 @@ libgasnet-gemini-parsync.a: $(libgasnet_dependencies)
 
 if USE_GEMINI_CONDUIT  
 lib_LIBRARIES = $(libraries) 
-all-local: $(lib_LIBRARIES) $(makefile_fragments)
+all-local: $(lib_LIBRARIES) $(pkgconfig_files)
 clean-local: do-clean-local
 install-data-local: do-install-data-local
 uninstall-local: do-uninstall-local
 else
-$(top_srcdir)/gasnet.h: do-error
+$(top_srcdir)/gasnetex.h: do-error
 endif
 
 

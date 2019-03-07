@@ -7,7 +7,7 @@ class C {
 
 class D: C {
   var y: int;
-  proc foo() {
+  override proc foo() {
     writeln("D: ", this);
   }
 }

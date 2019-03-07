@@ -4,12 +4,10 @@
 // type field that has a default value.
 //
 
-pragma "use default init"
 class Parent {
   type idxType;
 }
 
-pragma "use default init"
 class Child : Parent {
   type foo = 2*idxType;
   var x : foo;

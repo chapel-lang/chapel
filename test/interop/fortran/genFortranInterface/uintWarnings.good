@@ -1,0 +1,2 @@
+uintWarnings.chpl:1: warning: Fortran does not support unsigned integers. Using signed integer instead.
+uintWarnings.chpl:5: warning: Fortran does not support unsigned integers. Using signed integer instead.

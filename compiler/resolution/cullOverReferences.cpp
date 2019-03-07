@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -654,6 +654,23 @@ void cullOverReferences() {
       }
     }
   }
+  // forward-flow constness for getting refs to tuples
+  // this would be handled by a FLAG_REF_TO_CONST_WHEN_CONST_THIS accessor
+  // but for whatever reason the compiler doesn't always use that for tuples.
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_MEMBER)) {
+      CallExpr* move = toCallExpr(call->parentExpr);
+      if (move->isPrimitive(PRIM_MOVE)) {
+        SymExpr* aggregateSe = toSymExpr(call->get(1));
+        SymExpr* lhsSe = toSymExpr(move->get(1));
+        AggregateType* at = toAggregateType(aggregateSe->getValType());
+        // note, at might be NULL for unmanaged SomeClass
+        if (at && !at->isClass() && aggregateSe->symbol()->qualType().isConst())
+            markSymbolConst(lhsSe->symbol());
+      }
+    }
+  }
+
 
   // Determine const-ness of ArgSymbols with INTENT_REF_MAYBE_CONST
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
@@ -762,8 +779,8 @@ void cullOverReferences() {
         ForLoop* followerForLoop = NULL;
         std::vector<IteratorDetails> detailsVector;
 
-        if (isForallIterExpr(call)) {
-          ForallStmt* pfs = toForallStmt(call->parentExpr);
+        if (ForallStmt* pfs = isForallIterExpr(call)) {
+
           gatherLoopDetails(pfs, isForall, leaderDetails,
                             followerForLoop, detailsVector);
           foundLoop = true;

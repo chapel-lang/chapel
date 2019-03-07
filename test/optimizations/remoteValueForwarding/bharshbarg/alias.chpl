@@ -11,7 +11,7 @@ var g : int = 0;
 
 var gr : R;
 
-var gc : C = new C();
+var gc : owned C = new owned C();
 
 proc test(const ref arg) {
   writeln("Testing int");
@@ -46,5 +46,3 @@ proc testClass(const ref arg) {
 test(g);
 testRecord(gr);
 testClass(gc);
-
-delete gc;

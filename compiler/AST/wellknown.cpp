@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,13 +27,14 @@
 AggregateType* dtArray;
 AggregateType* dtBaseArr;
 AggregateType* dtBaseDom;
+AggregateType* dtCFI_cdesc_t;
 AggregateType* dtDist;
 AggregateType* dtError;
 AggregateType* dtExternalArray;
-AggregateType* dtLocale;
 AggregateType* dtLocaleID;
 AggregateType* dtMainArgument;
 AggregateType* dtOnBundleRecord;
+AggregateType* dtOpaqueArray;
 AggregateType* dtOwned;
 AggregateType* dtTaskBundleRecord;
 AggregateType* dtTuple;
@@ -57,6 +58,8 @@ FnSymbol *gChplUncaughtError;
 FnSymbol *gChplPropagateError;
 FnSymbol *gChplSaveTaskError;
 FnSymbol *gChplForallError;
+FnSymbol *gAtomicFenceFn;
+FnSymbol *gChplAfterForallFence;
 
 /************************************* | **************************************
 *                                                                             *
@@ -90,7 +93,7 @@ void gatherIteratorTags() {
 }
 
 // This structure and the following array provide a list of types that must be
-// defined in module code.  At this point, they are all classes.
+// defined in module code.
 struct WellKnownType
 {
   const char*     name;
@@ -104,11 +107,12 @@ static WellKnownType sWellKnownTypes[] = {
   { "BaseArr",               &dtBaseArr,          true  },
   { "BaseDom",               &dtBaseDom,          true  },
   { "BaseDist",              &dtDist,             true  },
+  { "CFI_cdesc_t",           &dtCFI_cdesc_t,      false },
   { "chpl_external_array",   &dtExternalArray,    false },
-  { "locale",                &dtLocale,           true  },
   { "chpl_localeID_t",       &dtLocaleID,         false },
   { "chpl_main_argument",    &dtMainArgument,     false },
   { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
+  { "chpl_opaque_array",     &dtOpaqueArray,      false },
   { "_owned",                &dtOwned,            false },
   { "chpl_task_bundle_t",    &dtTaskBundleRecord, false },
   { "_tuple",                &dtTuple,            false },
@@ -162,13 +166,27 @@ void gatherWellKnownTypes() {
     USR_STOP();
 
   } else {
-    if (dtString->symbol == NULL) {
+    if (dtString->symbol == NULL || dtString->symbol->defPoint == NULL) {
       // This means there was no declaration of the string type.
+      if (dtString->symbol)
+        gTypeSymbols.remove(gTypeSymbols.index(dtString->symbol));
+
       gAggregateTypes.remove(gAggregateTypes.index(dtString));
 
       delete dtString;
 
       dtString = NULL;
+    }
+    if (dtLocale->symbol == NULL || dtLocale->symbol->defPoint == NULL) {
+      // This means there was no declaration of the locale type.
+      if (dtLocale->symbol)
+        gTypeSymbols.remove(gTypeSymbols.index(dtLocale->symbol));
+
+      gAggregateTypes.remove(gAggregateTypes.index(dtLocale));
+
+      delete dtLocale;
+
+      dtLocale = NULL;
     }
   }
 }
@@ -288,6 +306,17 @@ static WellKnownFn sWellKnownFns[] = {
     FLAG_UNKNOWN
   },
 
+  {
+    "atomic_fence",
+    &gAtomicFenceFn,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_after_forall_fence",
+    &gChplAfterForallFence,
+    FLAG_UNKNOWN
+  },
 };
 
 void gatherWellKnownFns() {

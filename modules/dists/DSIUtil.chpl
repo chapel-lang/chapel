@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -503,7 +503,7 @@ proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
   var result: rank * idxType;
   for param i in 1..rank {
     const ar = AD(i), br = BD(i);
-    if boundsChecking then assert(br.member(b(i)));
+    if boundsChecking then assert(br.contains(b(i)));
     result(i) = ar.orderToIndex(br.indexOrder(b(i)));
   }
   return result;

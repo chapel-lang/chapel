@@ -48,12 +48,12 @@ var FD: domain(int);
 for i in sortedNumbers() {
   var D: domain(int);
   var j = i;
-  while !D.member(j) {
+  while !D.contains(j) {
     D += j;
     j = biggest(j) - smallest(j);
   }
-  if !FD.member(j) {
-    while !FD.member(j) {
+  if !FD.contains(j) {
+    while !FD.contains(j) {
       FD += j;
       write(j, " ");
       j = biggest(j) - smallest(j);

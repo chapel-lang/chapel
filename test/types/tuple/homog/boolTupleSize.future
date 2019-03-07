@@ -1,0 +1,17 @@
+bug: We permit boolean tuples, but I don't think we should
+
+Defining a *(param bool, type t) overload in ChapelTuple.chpl doesn't
+seem to be preferred over the integer param version, even though it
+seems that it should be.  This seems potentially specific to the tuple
+creation magic... at least, I'm having trouble reproducing it in a
+standalone program.
+
+In particular, the following shows the surprising output when asking
+the compiler to explain-call a `param bool`*`type` expression:
+
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:43: note: candidates are: *(param size: int(64), type x1) [714380]
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:101: note:                 *(param p: uint(64), type t) [850700]
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:109: note:                 *(param p: bool, type t) [850713]
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:115: note:                 *(p: bool, type t) [850726]
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:43: note: best candidate is: *(param size: int(64), type x1) [714380]
+

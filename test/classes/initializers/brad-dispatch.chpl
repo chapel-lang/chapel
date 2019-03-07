@@ -1,5 +1,3 @@
-// Modified from
-// test/classes/constructors/brad-dispatch.chpl
 // No longer relies on the generation of a default initializer, as the
 // presence of any initializer prevents the creation of a compiler generated
 // one.

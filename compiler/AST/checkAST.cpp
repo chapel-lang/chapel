@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,7 +55,7 @@ void checkArgsAndLocals()
   // Check that each VarSymbol and each ArgSymbol
   // has a DefExpr that is in the FnSymbol
   // or a parent of it.
-  forv_Vec(SymExpr, se, gSymExprs)
+  for_alive_in_Vec(SymExpr, se, gSymExprs)
   {
     DefExpr* def = se->symbol()->defPoint;
     Symbol* defInSym = def->parentSymbol;
@@ -110,21 +110,27 @@ void checkPrimitives()
       break;
 
       // These do not survive past resolution.
-     case PRIM_INIT:
+     case PRIM_DEFAULT_INIT_VAR:
      case PRIM_INIT_FIELD:
      case PRIM_INIT_VAR:
 
      case PRIM_TYPE_TO_STRING:
+     case PRIM_HAS_LEADER:
      case PRIM_TO_LEADER:
      case PRIM_TO_FOLLOWER:
+     case PRIM_TO_STANDALONE:
      case PRIM_FIELD_NUM_TO_NAME:
      case PRIM_FIELD_NAME_TO_NUM:
      case PRIM_FIELD_BY_NUM:
      case PRIM_IS_RECORD_TYPE:
      case PRIM_IS_UNION_TYPE:
      case PRIM_IS_ATOMIC_TYPE:
+     case PRIM_IS_EXTERN_TYPE:
      case PRIM_IS_TUPLE_TYPE:
      case PRIM_IS_STAR_TUPLE_TYPE:
+     case PRIM_IS_SUBTYPE:
+     case PRIM_IS_SUBTYPE_ALLOW_VALUES:
+     case PRIM_IS_PROPER_SUBTYPE:
      case PRIM_NEW:                 // new keyword
      case PRIM_ERROR:
      case PRIM_WARNING:
@@ -237,25 +243,23 @@ void checkPrimitives()
      case PRIM_SET_DYNAMIC_END_COUNT:
      case PRIM_GET_SERIAL:              // get serial state
      case PRIM_SET_SERIAL:              // set serial state to true or false
-     case PRIM_SIZEOF:
+     case PRIM_SIZEOF_BUNDLE:
+     case PRIM_SIZEOF_DDATA_ELEMENT:
      case PRIM_INIT_FIELDS:             // initialize fields of a temporary record
      case PRIM_PTR_EQUAL:
      case PRIM_PTR_NOTEQUAL:
-     case PRIM_IS_SUBTYPE:
      case PRIM_CAST:
      case PRIM_DYNAMIC_CAST:
      case PRIM_TYPEOF:
      case PRIM_USED_MODULES_LIST:       // used modules in BlockStmt::modUses
      case PRIM_TUPLE_EXPAND:
      case PRIM_CHPL_COMM_GET:           // Direct calls to the Chapel comm layer
-     case PRIM_CHPL_COMM_PUT:           // may eventually add others (e.g.: non-blocking)
+     case PRIM_CHPL_COMM_PUT:
      case PRIM_CHPL_COMM_ARRAY_GET:
      case PRIM_CHPL_COMM_ARRAY_PUT:
      case PRIM_CHPL_COMM_REMOTE_PREFETCH:
      case PRIM_CHPL_COMM_GET_STRD:      // Direct calls to the Chapel comm layer for strided comm
      case PRIM_CHPL_COMM_PUT_STRD:      //  may eventually add others (e.g.: non-blocking)
-     case PRIM_ARRAY_ALLOC:
-     case PRIM_ARRAY_FREE:
      case PRIM_ARRAY_GET:
      case PRIM_ARRAY_GET_VALUE:
      case PRIM_ARRAY_SHIFT_BASE_POINTER:
@@ -293,7 +297,6 @@ void checkPrimitives()
      case PRIM_RT_ERROR:
      case PRIM_RT_WARNING:
      case PRIM_NEW_PRIV_CLASS:
-     case PRIM_GET_PRIV_CLASS:
      case PRIM_GET_USER_LINE:
      case PRIM_GET_USER_FILE:
      case PRIM_FTABLE_CALL:

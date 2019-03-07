@@ -18,11 +18,21 @@ The syntax to declare an iterator is given
 by:
 \begin{syntax}
 iterator-declaration-statement:
-  privacy-specifier[OPT] `iter' iterator-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
+  privacy-specifier[OPT] `iter' iterator-name argument-list[OPT] yield-intent[OPT] yield-type[OPT] where-clause[OPT]
   iterator-body
 
 iterator-name:
   identifier
+
+yield-intent:
+  `const'
+  `const ref'
+  `ref'
+  `param'
+  `type'
+
+yield-type:
+  : type-expression
 
 iterator-body:
   block-statement
@@ -37,7 +47,14 @@ some key differences:
 \item \chpl{yield} statements may appear in the body of an iterator, but not in
 a procedure.
 \item A \chpl{return} statement in the body of an iterator is not allowed to have an expression.
+\item The intent and type specified after the argument list refer to the type
+yielded, not the type returned (see previous bullet).  However, they are
+syntactically the same as a \sntx{return-intent} and a \sntx{return-type}.
 \end{itemize}
+
+\begin{openissue}
+Iterators that yield types or params are not currently supported.
+\end{openissue}
 
 \section{The Yield Statement}
 \label{The_Yield_Statement}
@@ -145,14 +162,14 @@ A post-order traversal of a tree data structure could be written like this:
 \begin{chapelnoprint}
 class Tree {
   var data: string;
-  var left, right: Tree;
+  var left, right: unmanaged Tree;
   proc deinit() {
     if left then delete left;
     if right then delete right;
   }
 }
 
-var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"), new Tree("e")));
+var tree = new unmanaged Tree("a", new unmanaged Tree("b"), new unmanaged Tree("c", new unmanaged Tree("d"), new unmanaged Tree("e")));
 \end{chapelnoprint}
 \begin{chapel}
 iter postorder(tree: Tree): string {

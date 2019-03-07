@@ -50,6 +50,6 @@ proc myClass.test {
 }
 
 proc main {
-  const mc = new myClass();
+  const mc = new owned myClass();
   mc.test;
 }

@@ -1,4 +1,4 @@
-# Copyright 2004-2018 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -72,10 +72,10 @@ LIB_DYNAMIC_FLAG = -shared
 SHARED_LIB_CFLAGS = -fPIC
 
 # Set the target architecture for optimization
-ifneq ($(CHPL_MAKE_TARGET_ARCH), none)
-ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
-ifneq ($(CHPL_MAKE_TARGET_ARCH_FLAG), none)
-SPECIALIZE_CFLAGS = -m$(CHPL_MAKE_TARGET_ARCH_FLAG)=$(CHPL_MAKE_TARGET_BACKEND_ARCH)
+ifneq ($(CHPL_MAKE_TARGET_CPU), none)
+ifneq ($(CHPL_MAKE_TARGET_CPU), unknown)
+ifneq ($(CHPL_MAKE_TARGET_CPU_FLAG), none)
+SPECIALIZE_CFLAGS = -m$(CHPL_MAKE_TARGET_CPU_FLAG)=$(CHPL_MAKE_TARGET_BACKEND_CPU)
 endif
 endif
 endif
@@ -87,8 +87,7 @@ IEEE_FLOAT_GEN_CFLAGS = -fno-fast-math
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
 ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` = ppc970 && echo -arch ppc64)
-# the -D_POSIX_C_SOURCE flag prevents nonstandard functions from polluting the global name space
-GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH)
+GEN_CFLAGS += $(ARCH)
 GEN_LFLAGS += $(ARCH)
 endif
 
@@ -146,8 +145,11 @@ GEN_CFLAGS += $(C_STD)
 #
 # Flags for turning on warnings for C++/C code
 #
+# On Ubuntu, gcc complains about multiline comments in some versions
+# of Clang header files.
+#
 WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
-WARN_CXXFLAGS = $(WARN_COMMONFLAGS)
+WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment
 WARN_CFLAGS = $(WARN_COMMONFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
@@ -177,10 +179,12 @@ endif
 #
 # Avoid false positive warnings about class member access and string overflows.
 # The string overflow false positives occur in runtime code unlike gcc 7.
+# Also avoid false positives for allocation size, array bounds, and comments.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-class-memaccess
+WARN_CXXFLAGS += -Wno-class-memaccess -Walloc-size-larger-than=18446744073709551615
 RUNTIME_CFLAGS += -Wno-stringop-overflow
+SQUASH_WARN_GEN_CFLAGS += -Wno-array-bounds
 endif
 
 #

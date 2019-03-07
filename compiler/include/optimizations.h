@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,8 +39,10 @@ class BaseAST;
 class BitVec;
 class BlockStmt;
 class FnSymbol;
+class ForallStmt;
 class Symbol;
 class SymExpr;
+class LifetimeInformation;
 
 void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel = false);
 size_t localCopyPropagation(FnSymbol* fn);
@@ -51,6 +53,12 @@ void eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 size_t singleAssignmentRefPropagation(FnSymbol* fn);
 void deadVariableElimination(FnSymbol* fn);
 void deadExpressionElimination(FnSymbol* fn);
+
+bool outlivesBlock(LifetimeInformation* info, Symbol* sym, BlockStmt* block);
+
+void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
+                                         LifetimeInformation* lifetimeInfo);
+void optimizeForallUnorderedOps();
 
 void liveVariableAnalysis(FnSymbol* fn,
                           Vec<Symbol*>& locals,
@@ -63,5 +71,6 @@ void remoteValueForwarding();
 
 void inferConstRefs();
 
+void computeNoAliasSets();
 
 #endif

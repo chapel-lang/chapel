@@ -154,3 +154,14 @@ export proc allThreeCommentless2(val: int): int {
   writeln("MAKE ME A PIZZA");
   return 11;
 }
+
+export "test_name" proc withExternCName() {
+}
+
+/* test param method for withParamExternCName */
+proc getName() param {
+  return "name";
+}
+
+export "test"+getName() proc withParamExternCName() {
+}

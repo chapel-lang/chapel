@@ -35,7 +35,8 @@ proc test1() {
 test1();
 
 class MyClass {
-  var x;
+  type T;
+  var x : T;
 }
 
 proc makeit(type t) {

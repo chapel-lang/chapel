@@ -1,0 +1,31 @@
+chameneosredux.chpl:248: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+chameneosredux.chpl:248: warning: Type 'MeetingPlace' defines a constructor here
+blue + blue -> blue
+blue + red -> yellow
+blue + yellow -> red
+red + blue -> yellow
+red + red -> red
+red + yellow -> blue
+yellow + blue -> red
+yellow + red -> blue
+yellow + yellow -> yellow
+
+ blue red yellow
+nnn zero
+nnn zero
+nnn zero
+ one two zero zero
+
+ blue red yellow red yellow blue red yellow red blue
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+nnn zero
+ one two zero zero
+

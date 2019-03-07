@@ -1,6 +1,5 @@
 config const n = 10;
 
-pragma "use default init"
 class mink : ReduceScanOp {
 
   type eltType;

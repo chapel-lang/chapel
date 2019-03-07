@@ -613,6 +613,11 @@ bool PCRE::DoMatchImpl(const StringPiece& text,
                        int* vec,
                        int vecsize) const {
   assert((1 + n) * 3 <= vecsize);  // results + PCRE workspace
+  if (NumberOfCapturingGroups() < n) {
+    // RE has fewer capturing groups than number of Arg pointers passed in.
+    return false;
+  }
+
   int matches = TryMatch(text, 0, anchor, true, vec, vecsize);
   assert(matches >= 0);  // TryMatch never returns negatives
   if (matches == 0)
@@ -623,10 +628,6 @@ bool PCRE::DoMatchImpl(const StringPiece& text,
   if (n == 0 || args == NULL) {
     // We are not interested in results
     return true;
-  }
-  if (NumberOfCapturingGroups() < n) {
-    // PCRE has fewer capturing groups than number of arg pointers passed in
-    return false;
   }
 
   // If we got here, we must have matched the whole pattern.

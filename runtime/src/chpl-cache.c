@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -273,6 +273,7 @@ use.
 
 #include "chplrt.h"
 #include "chpl-comm.h"
+#include "chpl-comm-diags.h"
 #include "chpl-tasks.h"
 #include "chpl-mem.h"
 #include "chpl-atomics.h"
@@ -2798,9 +2799,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                "from %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  if (chpl_verbose_comm)
-    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
-           chpl_lookupFilename(fn), ln, node);
+  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn);
 
 #ifdef DUMP
   chpl_cache_print();
@@ -2824,9 +2823,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                "%d:%p to %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  if (chpl_verbose_comm)
-    printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
-           chpl_lookupFilename(fn), ln, node);
+  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn);
 
 #ifdef DUMP
   chpl_cache_print();
@@ -2846,9 +2843,7 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
-  if (chpl_verbose_comm)
-    printf("%d: %s:%d: remote prefetch from %d\n", chpl_nodeID,
-           chpl_lookupFilename(fn), ln, node);
+  chpl_comm_diags_verbose_rdma("prefetch", node, size, ln, fn);
   // Always use the cache for prefetches.
   //saturating_increment(&info->prefetch_since_acquire);
   cache_get(cache, NULL, node, (raddr_t)raddr, size, task_local->last_acquire,

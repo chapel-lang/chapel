@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -94,15 +94,8 @@ void checkReturnTypesHaveRefTypes();
 // buildDefaultFunctions.cpp
 void buildDefaultDestructor(AggregateType* ct);
 void buildEnumFunctions(EnumType* et);
-
-// callDestructors.cpp
-void insertReferenceTemps(CallExpr* call);
-
-// createTaskFunctions.cpp -> implementForallIntents.cpp
-extern Symbol* markPruned;
-extern Symbol* markUnspecified;
-void replaceVarUses(Expr* topAst, SymbolMap& vars);
-void pruneOuterVars(Symbol* parent, SymbolMap& uses);
+FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
+                         bool setter, bool typeMethod);
 
 // deadCodeElimination.cpp
 void deadBlockElimination();
@@ -113,6 +106,12 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
 // inlineFunctions.cpp
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
+
+// iterator.cpp
+CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
+                                 bool fromForExpr);
+void setIteratorRecordShape(CallExpr* call);
+bool checkIteratorFromForExpr(Expr* ref, Symbol* shape);
 
 // lowerIterators.cpp, lowerForalls.cpp
 void lowerForallStmtsInline();
@@ -130,6 +129,9 @@ void checkUseBeforeDefs(FnSymbol* fn);
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
 CallExpr* findDownEndCount(FnSymbol* fn);
+
+// resolution
+Expr*     resolveExpr(Expr* expr);
 
 // type.cpp
 void initForTaskIntents();

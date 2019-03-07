@@ -1,0 +1,4 @@
+paramUintDispatchesToInt.chpl:11: error: unresolved call 'takesNonParamInt(42)'
+paramUintDispatchesToInt.chpl:1: note: candidates are: takesNonParamInt(x: int)
+paramUintDispatchesToInt.chpl:12: error: unresolved call 'takesInt(42)'
+paramUintDispatchesToInt.chpl:5: note: candidates are: takesInt(param x: int)

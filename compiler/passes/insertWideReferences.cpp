@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -183,6 +183,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "build.h"
 #include "driver.h"
 #include "expr.h"
 #include "optimizations.h"
@@ -261,7 +262,6 @@ static void narrowWideClassesThroughCalls();
 static void insertWideClassTempsForNil();
 static void insertWideCastTemps();
 static void derefWideRefsToWideClasses();
-static void widenGetPrivClass();
 static void moveAddressSourcesToTemp();
 static void fixAST();
 static void handleIsWidePointer();
@@ -412,7 +412,8 @@ static QualifiedType getNarrowType(BaseAST* bs) {
 
 static Type* getElementType(BaseAST* bs) {
   Type* arrType = getNarrowType(bs->getValType()).type();
-  INT_ASSERT(arrType->symbol->hasFlag(FLAG_DATA_CLASS));
+  INT_ASSERT(arrType->symbol->hasFlag(FLAG_DATA_CLASS)||
+             arrType->symbol->hasFlag(FLAG_C_ARRAY));
 
   return getDataClassType(arrType->symbol)->type;
 }
@@ -1438,24 +1439,6 @@ static void insertStringLiteralTemps()
   }
 }
 
-
-static void widenGetPrivClass()
-{
-  //
-  // widen class types in certain primitives, e.g., GET_PRIV_CLASS
-  //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_GET_PRIV_CLASS)) {
-      SET_LINENO(call);
-      if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-        call->get(1)->replace(new SymExpr(wideClassMap.get(call->get(1)->typeInfo())->symbol));
-      else
-        call->get(1)->replace(new SymExpr(call->get(1)->typeInfo()->symbol));
-    }
-  }
-}
-
-
 static void narrowWideClassesThroughCalls()
 {
   //
@@ -1468,9 +1451,10 @@ static void narrowWideClassesThroughCalls()
   // TODO: Can we use this for local functions?
   //
   forv_Vec(CallExpr, call, gCallExprs) {
+    FnSymbol* fn = call->resolvedFunction();
 
     // Find calls to functions expecting local arguments.
-    if (call->isResolved() && call->resolvedFunction()->hasFlag(FLAG_LOCAL_ARGS)) {
+    if (fn && fn->hasFlag(FLAG_LOCAL_ARGS)) {
       SET_LINENO(call);
       Expr* stmt = call->getStmtExpr();
 
@@ -1501,13 +1485,23 @@ static void narrowWideClassesThroughCalls()
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
             if (!fNoLocalChecks)
-              stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy()));
+              stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy(), buildCStringLiteral("cannot access remote data in local block")));
 
             // If we pass an extern class to an extern/export function,
             // we must treat it like a reference (this is by definition)
             stmt->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           }
           else if (narrowType.isRef() || narrowType.type()->symbol->hasFlag(FLAG_DATA_CLASS)) {
+
+            // Insert a local check because we cannot pass narrow references to
+            // remote data to external routines
+            if (!fNoLocalChecks) {
+              if (fn->hasFlag(FLAG_EXTERN))
+                stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy(), buildCStringLiteral(astr("references to remote data cannot be passed to external routines like '", fn->name, "'"))));
+              else if (fn->hasFlag(FLAG_EXPORT))
+                stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy(), buildCStringLiteral(astr("references to remote data cannot currently be passed to exported routines like '", fn->name, "'"))));
+            }
+
             // Also if the narrow type is a ref or data class type,
             // we must treat it like a (narrow) reference.
             stmt->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
@@ -1650,7 +1644,7 @@ static void insertLocalTemp(Expr* expr) {
   SET_LINENO(se);
   VarSymbol* var = newTemp(astr("local_", se->symbol()->name), getNarrowType(se));
   if (!fNoLocalChecks) {
-    stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, se->copy()));
+    stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, se->copy(), buildCStringLiteral("cannot access remote data in local block")));
   }
   stmt->insertBefore(new DefExpr(var));
   stmt->insertBefore(new CallExpr(PRIM_MOVE, var, se->copy()));
@@ -2134,7 +2128,7 @@ static void fixAST() {
           if (isFullyWide(base)) {
             insertNodeComparison(stmt, new SymExpr(base), rhs->copy());
           } else {
-            stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, rhs->copy()));
+            stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, rhs->copy(), buildCStringLiteral("cannot access remote data in local block")));
           }
         }
       }
@@ -2185,7 +2179,7 @@ static void fixAST() {
               call->insertAfter(new CallExpr(PRIM_MOVE, lhs->copy(), tmp));
 
               if (field->symbol()->hasFlag(FLAG_LOCAL_FIELD) && !fNoLocalChecks) {
-                call->insertAfter(new CallExpr(PRIM_LOCAL_CHECK, tmp));
+                call->insertAfter(new CallExpr(PRIM_LOCAL_CHECK, tmp, buildCStringLiteral("cannot access remote data in local block")));
               }
 
               lhs->replace(new SymExpr(tmp));
@@ -2311,83 +2305,6 @@ void handleIsWidePointer() {
 }
 
 //
-// Consider the following AST:
-//   (move ret_to_arg_ref_tmp (addr-of foobar))
-//   (call myFunc ret_to_arg_ref_tmp)
-//
-// A _retArg is used to return a record and will write into the 'foobar'
-// variable. This means that we should only widen the _retArg formal based on
-// the uses in 'myFunc', not based on the wideness of 'foobar'.
-//
-// It is not uncommon for 'foobar' to be re-used after the call to 'myFunc',
-// which sometimes involves the widening of 'foobar' unrelated to the _retArg
-// formal. This function creates a temporary for the _retArg's result so that
-// modifications to the destination do not impact the _retArg's wideness. The
-// AST above will be turned into something like this:
-//
-//   (def retarg_tmp : foobar.type)
-//   (move ref_to_retarg_result (addr-of retarg_tmp))
-//   (call myFunc ref_to_retarg_result)
-//   (move foobar retarg_tmp)
-//
-// Note: this function currently only exists to support the hacky
-// _array._instance wideness analysis.
-//
-// TODO: How to handle this kind of AST?
-//   (move ret_to_arg_ref_tmp (. base member)
-//
-static void createRetargTemps() {
-  forv_Vec(CallExpr, call, gCallExprs) {
-    FnSymbol* fn = call->resolvedFunction();
-    if (fn != NULL && fn->hasFlag(FLAG_FN_RETARG)) {
-      for_formals_actuals(formal, actual, call) {
-        if (formal->hasFlag(FLAG_RETARG) && canWidenRecord(formal->getValType())) {
-          Symbol* act = toSymExpr(actual)->symbol();
-          CallExpr* move = NULL;
-          bool refNeedsReplacing = false;
-          for_SymbolSymExprs(se, act) {
-            if (CallExpr* parent = toCallExpr(se->parentExpr)) {
-              if (parent->isPrimitive(PRIM_MOVE)) {
-                INT_ASSERT(move == NULL);
-                move = parent;
-              } else if (parent != call) {
-                refNeedsReplacing = true;
-              }
-            }
-          }
-          INT_ASSERT(move);
-
-          SET_LINENO(call);
-          CallExpr* RHS = toCallExpr(move->get(2));
-          if (RHS->isPrimitive(PRIM_ADDR_OF) || RHS->isPrimitive(PRIM_SET_REFERENCE)) {
-            SymExpr* src = toSymExpr(RHS->get(1));
-
-            VarSymbol* tmp = newTemp("retarg_tmp", src->symbol()->qualType());
-            move->insertBefore(new DefExpr(tmp));
-            src->replace(new SymExpr(tmp));
-
-            CallExpr* loadResult = new CallExpr(PRIM_MOVE, src->copy(), tmp);
-            call->insertAfter(loadResult);
-
-            if (refNeedsReplacing) {
-              VarSymbol* ref = newTemp("ref_to_retarg_result", actual->qualType());
-              call->insertBefore(new DefExpr(ref));
-              loadResult->insertAfter(new CallExpr(PRIM_MOVE, ref, new CallExpr(PRIM_SET_REFERENCE, src->copy())));
-
-              for_SymbolSymExprs(se, act) {
-                if (se->parentExpr != call && se->parentExpr != move) {
-                  se->replace(new SymExpr(ref));
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-//
 // In this pass we pretended that an _array record was a wide class in order
 // to simulate what the wideness will be for its _instance field. Now that
 // we're done analyzing, replace any 'wide array records' with normal records.
@@ -2447,8 +2364,6 @@ insertWideReferences(void) {
     return;
   }
 
-  createRetargTemps();
-
   //
   // fragmentLocalBlocks splits up local blocks, but sometimes they end up
   // being consecutive. To make the generated code easier to read, we merge
@@ -2501,12 +2416,33 @@ insertWideReferences(void) {
   buildWideRefMap();
 
   //
-  // change arrays of classes into arrays of wide classes
+  // 1) change arrays of classes into arrays of wide classes
+  // 2) apply 'local field' pragmas to arrays in classes
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->hasFlag(FLAG_DATA_CLASS)) {
       if (Type* nt = wideClassMap.get(getDataClassType(ts)->type)) {
         setDataClassType(ts, nt->symbol);
+      }
+
+    // Do not apply to records, for now, because IWR cannot identify RVF'd
+    // records. If the 'local field' flag was applied to an array inside an
+    // RVF'd record, then IWR could incorrectly localize the array field when
+    // accessed because it thinks the record is local.
+    } else if (isClass(ts->type)) {
+      AggregateType* at = toAggregateType(ts->type);
+
+      const char* prefix = "_class_locals";
+      bool isArgBundle = strncmp(at->symbol->name, prefix, strlen(prefix)) == 0;
+      if (isArgBundle == false &&
+          at->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
+          at->symbol->hasFlag(FLAG_REF) == false) {
+        for_fields(field, at) {
+          if (field->typeInfo()->symbol->hasFlag(FLAG_ARRAY) &&
+              field->isRef() == false) {
+            field->addFlag(FLAG_LOCAL_FIELD);
+          }
+        }
       }
     }
   }
@@ -2583,7 +2519,6 @@ insertWideReferences(void) {
 
   // IWR
   insertStringLiteralTemps();
-  widenGetPrivClass(); // widens class type in PRIM_GET_PRIV_CLASS
   narrowWideClassesThroughCalls();
   insertWideClassTempsForNil();
   insertWideCastTemps();

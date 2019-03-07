@@ -20,7 +20,7 @@ CONDUITMODE_SUBDIRS = \
 	fca	   
 
 CONDUITMODE_EXTRADIST = \
-	amxtests    \
+	amx         \
 	ssh-spawner \
 	mpi-spawner \
 	pmi-spawner \
@@ -43,6 +43,7 @@ EXTRA_DIST =        			\
 	tools-toggle.pl
 
 include_HEADERS = \
+	gasnet_arch_arm.h \
 	portable_inttypes.h \
 	portable_platform.h \
 	gasnet_portable_platform.h

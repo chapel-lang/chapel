@@ -58,6 +58,22 @@ module modToUse {
     return a + 3;
   }
 
+  /* ``Rec`` is a top-level record, with a field and a method defined inside
+     it.
+   */
+  record Rec {
+    var field: int;
+
+    proc method1 () {
+      writeln("In Rec.method1()");
+    }
+  }
+
+  /* ``method2`` is a secondary method defined on ``Rec``. */
+  proc Rec.method2() {
+    writeln("In Rec.method2()");
+  }
+
 } // end of modToUse module
 
 /* In the current implementation, private cannot be applied to type
@@ -342,6 +358,17 @@ module MainModule {
       writeln(modToUse.bar);  // Outputs modToUse.bar ('2')
       writeln(Conflict.bar);  // Outputs Conflict.bar ('5')
       // writeln(bar);        // this won't resolve since bar isn't available
+    }
+
+    /* When either of these are present, any instances of classes or records
+       will be able to access their symbols defined in that module.
+    */
+    {
+      use modToUse only;
+      var rec = new modToUse.Rec(4); // Only accessible via the module prefix
+      writeln(rec.field);            // Accessible because we have an instance
+      rec.method1();                 // Ditto to the field case
+      rec.method2();
     }
 
     writeln();

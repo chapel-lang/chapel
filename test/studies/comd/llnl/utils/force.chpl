@@ -1,7 +1,6 @@
 use MDTypes;
 use configs;
 
-pragma "use default init"
 class Force {
   var cutoff : real;        // potential cutoff distance in Angstroms
   var mass : real;          // mass of atoms in internal units
@@ -16,6 +15,6 @@ class Force {
   proc compute() : void { }
   proc computeLocal() : void { }
   proc print() : void {}
-  proc replicate() : Force { return nil; }
+  proc replicate() : unmanaged Force { return nil; }
   proc epilogue() : void { }
 }

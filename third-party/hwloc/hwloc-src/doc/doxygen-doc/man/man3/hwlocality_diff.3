@@ -1,4 +1,4 @@
-.TH "hwlocality_diff" 3 "Tue Mar 20 2018" "Version 1.11.10" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_diff" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -73,7 +73,7 @@ Applications that manipulate many similar topologies, for instance one for each 
 .PP
 This file offers a way to manipulate the difference between topologies and export/import it to/from XML\&. Compression may therefore be achieved by storing one topology entirely while the others are only described by their differences with the former\&. The actual topology can be reconstructed when actually needed by applying the precomputed difference to the reference topology\&.
 .PP
-This interface targets very similar nodes\&. Only very simple differences between topologies are actually supported, for instance a change in the memory size, the name of the object, or some info attribute\&. More complex differences such as adding or removing objects cannot be represented in the difference structures and therefore return errors\&.
+This interface targets very similar nodes\&. Only very simple differences between topologies are actually supported, for instance a change in the memory size, the name of the object, or some info attribute\&. More complex differences such as adding or removing objects cannot be represented in the difference structures and therefore return errors\&. Differences between object sets cannot be represented either\&.
 .PP
 It means that there is no need to apply the difference when looking at the tree organization (how many levels, how many objects per level, what kind of objects, CPU and node sets, etc) and when binding to objects\&. However the difference must be applied when looking at object attributes such as the name, the memory size or info attributes\&. 
 .SH "Typedef Documentation"

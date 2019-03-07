@@ -17,3 +17,7 @@ proc *=(a:R, b:R) {
   a.x += b.x;
 }
 
+var r1, r2: R;
+
+r1 = r2;
+r1 *= r2;

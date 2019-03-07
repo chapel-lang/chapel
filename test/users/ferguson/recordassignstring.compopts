@@ -1,2 +1,0 @@
---no-force-initializers # recordassignstring.good
---force-initializers # recordassignstring.init.good

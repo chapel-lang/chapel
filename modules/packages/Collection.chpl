@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,8 +39,7 @@
 
   .. note::
 
-    The interface for the Collection modules may change. The documentation for
-    the Collection modules are being incrementally revised and improved.
+    This module is a work in progress and may change in future releases.
 
   Bugs and Known Issues
   _____________________
@@ -189,7 +188,8 @@ module Collection {
     */
     iter these() : eltType {
       halt("'iter these() : eltType' is not supported...");
-      yield _defaultOf(eltType);
+      var default: eltType;
+      yield default;
     }
   }
 

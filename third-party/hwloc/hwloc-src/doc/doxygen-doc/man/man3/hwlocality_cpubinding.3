@@ -1,4 +1,4 @@
-.TH "hwlocality_cpubinding" 3 "Tue Mar 20 2018" "Version 1.11.10" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_cpubinding" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -43,7 +43,7 @@ hwlocality_cpubinding
 .in -1c
 .SH "Detailed Description"
 .PP 
-It is often useful to call \fBhwloc_bitmap_singlify()\fP first so that a single CPU remains in the set\&. This way, the process will not even migrate between different CPUs inside the given set\&. Some operating systems also only support that kind of binding\&.
+Some operating systems only support binding threads or processes to a single PU\&. Others allow binding to larger sets such as entire Cores or Packages or even random sets of invididual PUs\&. In such operating system, the scheduler is free to run the task on one of these PU, then migrate it to another PU, etc\&. It is often useful to call \fBhwloc_bitmap_singlify()\fP on the target CPU set before passing it to the binding function to avoid these expensive migrations\&. See the documentation of \fBhwloc_bitmap_singlify()\fP for details\&.
 .PP
 Some operating systems do not provide all hwloc-supported mechanisms to bind processes, threads, etc\&. \fBhwloc_topology_get_support()\fP may be used to query about the actual CPU binding support in the currently used operating system\&.
 .PP

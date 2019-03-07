@@ -5,11 +5,8 @@ class phone {
 
 var myFile = open("_test_fwritelnClassFile.txt", iomode.cw).writer();
 
-var smh: phone = new phone(name = "shannon", cell = 2065551212);
+var smh: borrowed phone = new borrowed phone(name = "shannon", cell = 2065551212);
 
 myFile.writeln(smh);
 
 myFile.close();
-
-delete smh;
-

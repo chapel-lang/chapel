@@ -11,11 +11,12 @@ module TestHelpers {
     var data: [data_domain] data_type;
     var epsilon: real = default_epsilon;
     
-    proc LAPACK_Matrix( type data_type, rows: int, columns: int, matrix_order: lapack_memory_order, error: real = default_epsilon  ){
+    proc init( type data_type, rows: int, columns: int, matrix_order: lapack_memory_order, error: real = default_epsilon  ){
     
+      this.data_type = data_type;
+      this.row_major = isLAPACKRowMajor( matrix_order );
       this.rows = rows;
       this.columns = columns;
-      this.row_major = isLAPACKRowMajor( matrix_order );
 
       if this.row_major then
         this.data_domain = {1..#rows,1..#columns};
@@ -25,13 +26,14 @@ module TestHelpers {
       this.epsilon = error;
     }
     
-    proc LAPACK_Matrix( type data_type, rows: int, columns: int, matrix_order: lapack_memory_order, 
+    proc init( type data_type, rows: int, columns: int, matrix_order: lapack_memory_order, 
                         error: real = default_epsilon, input_array: [?D] data_type, 
                         input_array_order: lapack_memory_order = matrix_order )
     {
+      this.data_type = data_type;
+      this.row_major = isLAPACKRowMajor( matrix_order );
       this.rows = rows;
       this.columns = columns;
-      this.row_major = isLAPACKRowMajor( matrix_order );
 
       if this.row_major then
         this.data_domain = {1..#rows,1..#columns};
@@ -40,11 +42,13 @@ module TestHelpers {
       this.matrix_domain = {1..#rows,1..#columns};
       this.epsilon = error;
       
+      this.complete();
       this.populateFromArray( input_array, input_array_order );
       
     }
     
-    proc LAPACK_Matrix( type data_type, rows: int, columns: int, row_order: bool, error: real = default_epsilon ){
+    proc init( type data_type, rows: int, columns: int, row_order: bool, error: real = default_epsilon ){
+      this.data_type = data_type;
       this.row_major = row_order;
       this.rows = rows;
       this.columns = columns;
@@ -56,10 +60,11 @@ module TestHelpers {
       this.epsilon = error;
     }
     
-    proc LAPACK_Matrix( type data_type, rows: int, columns: int, row_order: bool, 
+    proc init( type data_type, rows: int, columns: int, row_order: bool, 
                         error: real = default_epsilon, input_array: [?D] data_type, 
                         input_row_order = row_order )
     {
+      this.data_type = data_type;
       this.row_major = row_order;
       this.rows = rows;
       this.columns = columns;
@@ -70,16 +75,21 @@ module TestHelpers {
       this.matrix_domain = {1..#rows,1..#columns};
       this.epsilon = error;
       
+      this.complete();
       this.populateFromArray( input_array, input_row_order );
       
     }
     
-    proc LAPACK_Matrix( matrix: LAPACK_Matrix(?t), type data_type = t ){
+    proc init( matrix: LAPACK_Matrix(?t), type data_type = t ){
+      this.data_type = data_type;
+      this.row_major = matrix.row_major;
       this.rows = matrix.rows;
       this.columns = matrix.columns;
-      this.matrix_domain = matrix.matrix_domain;
       this.data_domain = matrix.data_domain;
-      this.row_major = matrix.row_major;
+      this.matrix_domain = matrix.matrix_domain;
+
+      this.complete();
+
       for idx in data_domain do this.data[idx] = matrix.data[idx];
       this.epsilon = matrix.epsilon;
     }
@@ -181,7 +191,7 @@ module TestHelpers {
     return (matrix_order == lapack_memory_order.row_major);
   }
   
-  proc *( A: LAPACK_Matrix(?t), B: LAPACK_Matrix(t) ): LAPACK_Matrix(t) {
+  proc *( A: LAPACK_Matrix(?t), B: LAPACK_Matrix(t) ): owned LAPACK_Matrix(t) {
     assert( A.columns == B.rows );
     var row_ordered = if ( A.isRowMajor &&  B.isRowMajor)
                       || (!A.isRowMajor && !B.isRowMajor) 
@@ -189,7 +199,7 @@ module TestHelpers {
                     else
                       true;
     
-    var retmatrix = new LAPACK_Matrix( t, A.rows, B.columns, row_ordered, error = min( A.epsilon, B.epsilon ) );
+    var retmatrix = new owned LAPACK_Matrix( t, A.rows, B.columns, row_ordered, error = min( A.epsilon, B.epsilon ) );
     
     for i in A.rowRange do
       for j in B.columnRange do

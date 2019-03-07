@@ -1,1 +1,0 @@
-definesCtor.chpl:6: error: cannot apply 'use default init' to type 'Foo', it defines a constructor here

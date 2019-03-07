@@ -383,7 +383,7 @@ firehose_partial_local_pin(uintptr_t addr, size_t len,
 }
 
 extern const firehose_request_t *
-firehose_remote_pin(gasnet_node_t node, uintptr_t addr, size_t len,
+firehose_remote_pin(gex_Rank_t node, uintptr_t addr, size_t len,
 		    uint32_t flags, firehose_request_t *ureq,
 		    firehose_remotecallback_args_fn_t remote_args_callback,
 		    firehose_completed_fn_t callback, void *context)
@@ -438,7 +438,7 @@ firehose_remote_pin(gasnet_node_t node, uintptr_t addr, size_t len,
 }
 
 extern const firehose_request_t *
-firehose_try_remote_pin(gasnet_node_t node, uintptr_t addr, size_t len,
+firehose_try_remote_pin(gex_Rank_t node, uintptr_t addr, size_t len,
 			uint32_t flags, firehose_request_t *ureq)
 {
 	firehose_request_t	*req = NULL;
@@ -480,7 +480,7 @@ firehose_try_remote_pin(gasnet_node_t node, uintptr_t addr, size_t len,
 }
 
 extern const firehose_request_t *
-firehose_partial_remote_pin(gasnet_node_t node, uintptr_t addr,
+firehose_partial_remote_pin(gex_Rank_t node, uintptr_t addr,
                             size_t len, uint32_t flags,
                             firehose_request_t *ureq)
 {
@@ -852,7 +852,7 @@ fh_priv_acquire_local(int local_ref, firehose_private_t *entry)
 }
 
 fh_refc_t *
-fh_priv_acquire_remote(gasnet_node_t node, firehose_private_t *entry)
+fh_priv_acquire_remote(gex_Rank_t node, firehose_private_t *entry)
 {
 	fh_refc_t	*rp = FH_BUCKET_REFC(entry);
 
@@ -944,7 +944,7 @@ fh_priv_release_local(int local_ref, firehose_private_t *entry)
 }
 
 fh_refc_t *
-fh_priv_release_remote(gasnet_node_t node, firehose_private_t *entry)
+fh_priv_release_remote(gex_Rank_t node, firehose_private_t *entry)
 {
 	fh_refc_t	*rp = FH_BUCKET_REFC(entry);
 
@@ -1056,7 +1056,7 @@ fh_WaitLocalFirehoses(int count, firehose_region_t *region)
 }
 
 int
-fh_WaitRemoteFirehoses(gasnet_node_t node, int count, 
+fh_WaitRemoteFirehoses(gex_Rank_t node, int count,
 			firehose_region_t *region)
 {
 	int			b_remain, b_avail, r_freed;
@@ -1099,7 +1099,7 @@ fh_WaitRemoteFirehoses(gasnet_node_t node, int count,
  *	* called from the move AM handler
  */
 void
-fh_AdjustLocalFifoAndPin(gasnet_node_t node, firehose_region_t *reg_pin,
+fh_AdjustLocalFifoAndPin(gex_Rank_t node, firehose_region_t *reg_pin,
 			size_t pin_num)
 {
 	int			b_unpin;
@@ -1214,19 +1214,20 @@ fhi_FreeRegionPool(fhi_RegionPool_t *rpool)
  * Firehose AM Request Handler
  */
 void
-fh_am_move_reqh_inner(gasnet_token_t token, void *addr, size_t nbytes,
-		      gasnet_handlerarg_t flags,
-		      gasnet_handlerarg_t r_new,
-		      gasnet_handlerarg_t r_old,
+fh_am_move_reqh_inner(gex_Token_t token, void *addr, size_t nbytes,
+		      gex_AM_Arg_t flags,
+		      gex_AM_Arg_t r_new,
+		      gex_AM_Arg_t r_old,
 		      void *context)
 {
 	firehose_region_t	*new_reg, *old_reg;
-	gasnet_node_t		node;
 	int			ret = 1;
 	int			hit_pending = 0;
 	int			remote_callback = 0;
 
-	gasnet_AMGetMsgSource(token, &node);
+	gex_Token_Info_t info;
+	gex_Token_Info(token, &info, GEX_TI_SRCRANK);
+	gex_Rank_t node = info.gex_srcrank;
 
 	new_reg = (firehose_region_t *) addr;
 	old_reg = new_reg + r_new;
@@ -1265,13 +1266,14 @@ fh_am_move_reqh_inner(gasnet_token_t token, void *addr, size_t nbytes,
 	    firehose_remote_callback(node, 
 		(const firehose_region_t *) new_reg, r_new, args);
 
-	    MEDIUM_REP(2,3,
-		(token,
+	    gex_AM_ReplyMedium(
+		token,
 		fh_handleridx(fh_am_move_reph),
 		new_reg,
 		sizeof(firehose_region_t) * r_new,
+		GEX_EVENT_NOW, 0,
 		r_new,
-		PACK(context)));
+		PACK(context));
 
 	    return;
 	}
@@ -1316,13 +1318,14 @@ fh_am_move_reqh_inner(gasnet_token_t token, void *addr, size_t nbytes,
 	#endif /* REMOTE_CALLBACK_IN_HANDLER */
 
 	else {
-		MEDIUM_REP(2,3,
-			   (token,
+		gex_AM_ReplyMedium(
+			    token,
 			    fh_handleridx(fh_am_move_reph),
 			    new_reg,
 			    sizeof(firehose_region_t) * r_new,
+			    GEX_EVENT_NOW, 0,
 			    r_new,
-			    PACK(context)));
+			    PACK(context));
 	}
 
 	return;
@@ -1337,16 +1340,17 @@ MEDIUM_HANDLER(fh_am_move_reqh,4,5,
  * by the reply.
  */
 void
-fh_am_move_reph_inner(gasnet_token_t token, void *addr,
-		      size_t nbytes, gasnet_handlerarg_t r_new,
+fh_am_move_reph_inner(gex_Token_t token, void *addr,
+		      size_t nbytes, gex_AM_Arg_t r_new,
 		      void *context)
 {
 	firehose_region_t	*regions = (firehose_region_t *) addr;
 	fh_pollq_t		pendCallbacks;
 	int			numpend;
-	gasnet_node_t		node;
 
-	gasnet_AMGetMsgSource(token, &node);
+	gex_Token_Info_t info;
+	gex_Token_Info(token, &info, GEX_TI_SRCRANK);
+	gex_Rank_t node = info.gex_srcrank;
 
 	/* 
 	 * At least one pending request is attached to a bucket, so process them
@@ -1403,20 +1407,21 @@ fh_send_firehose_reply(fh_remote_callback_t *rc)
 {
 	FH_TABLE_ASSERT_UNLOCKED;
 	/* Run the "reply" handler as a request */
-	MEDIUM_REQ(2,3,
-	    (rc->node, fh_handleridx(fh_am_move_reph),
-	     rc->pin_list, rc->reply_len, rc->pin_list_num,
-	     PACK(rc->context)));
+	gex_AM_RequestMedium(
+	     gasneti_THUNK_TM, rc->node, fh_handleridx(fh_am_move_reph),
+	     rc->pin_list, rc->reply_len,
+	     GEX_EVENT_NOW, 0,
+	     rc->pin_list_num, PACK(rc->context));
 }
 
-gasnet_handlerentry_t fh_am_handlers[] = {
+gex_AM_Entry_t fh_am_handlers[] = {
         /* ptr-width dependent handlers */
-        gasneti_handler_tableentry_with_bits(fh_am_move_reqh),
-        gasneti_handler_tableentry_with_bits(fh_am_move_reph),
-        { 0, NULL }
+        gasneti_handler_tableentry_with_bits(fh_am_move_reqh,4,5,REQUEST,MEDIUM,0),
+        gasneti_handler_tableentry_with_bits(fh_am_move_reph,2,3,REPLY,MEDIUM,0),
+        GASNETI_HANDLER_EOT
 };
 
-gasnet_handlerentry_t *
+gex_AM_Entry_t *
 firehose_get_handlertable(void) {
         return fh_am_handlers;
 }

@@ -12,7 +12,7 @@ Where this conduit runs:
 
 udp-conduit is fully portable and should work correctly on any POSIX-like
 system with a functional TCP/IP stack and a working C++98 compiler.  It is
-expected to provide competetive performance on standard Ethernet hardware.  
+expected to provide competitive performance on standard Ethernet hardware.  
 It is not intended for production use on networks that expose a
 high-performance network API, where an appropriate GASNet native conduit
 implementation should be preferred. It does not explicitly exploit any
@@ -44,7 +44,7 @@ Choosing the udp-conduit spawn mechanism (GASNET_SPAWNFN):
 ---------------------------------------------------------
 
 udp-conduit is very a portable conduit, requiring only a UNIX-like system with
-a reasonable C/C++ compilier and a standard sockets-based TCP/IP stack (which
+a reasonable C/C++ compiler and a standard sockets-based TCP/IP stack (which
 includes UDP support).  However, the one aspect that remains somewhat
 site-specific is the means for spawning the GASNet job across the UDP-connected
 worker nodes. Consequently, the primary user-visible configuration decision to
@@ -144,7 +144,7 @@ performing the spawn, upon which the following substitutions are performed:
   %D => the current working directory
   %% => %
   %M => optional list of servers taken from CSPAWN_SERVERS (the first nproc are passed)
-  %P => the program name as invoked (the orignal argv[0])
+  %P => the program name as invoked (the original argv[0])
 
 The custom command specified by CSPAWN_CMD is invoked exactly once at startup,
 and is responsible for starting all the %N remote worker processes and having
@@ -311,7 +311,7 @@ GASNet-over-AMMPI-over-MPICH-over-TCP-over-Ethernet, which was previously our
 only choice on Ethernet. 
 
 Implementing udp-conduit was basically just a matter of adapting my
-mpi-conduit-over-AMMPI glue to accomodate my AM-over-UDP implementation
+mpi-conduit-over-AMMPI glue to accommodate my AM-over-UDP implementation
 (AMUDP), which Titanium tests show can significantly outperform
 AMMPI-over-MPICH-over-TCP (primarily because AM is a natural fit for much
 smarter reliability protocols than TCP and the connectionless model of UDP is

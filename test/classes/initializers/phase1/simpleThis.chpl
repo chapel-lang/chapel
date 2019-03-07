@@ -3,7 +3,7 @@ record MyRecord {
   var y : int = 2;
 
 
-  proc init(xVal) where !xVal: MyRecord {
+  proc init(xVal) where !isSubtype(xVal.type, MyRecord) {
     x = xVal;
     y = 1 + this.x;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,7 @@
 
 
 static void checkNamedArguments(CallExpr* call);
+static void checkManagedClassKinds(CallExpr* call);
 static void checkExplicitDeinitCalls(CallExpr* call);
 static void checkPrivateDecls(DefExpr* def);
 static void checkParsedVar(VarSymbol* var);
@@ -59,6 +60,7 @@ checkParsed() {
   setupForCheckExplicitDeinitCalls();
 
   forv_Vec(CallExpr, call, gCallExprs) {
+    checkManagedClassKinds(call);
     checkNamedArguments(call);
     checkExplicitDeinitCalls(call);
   }
@@ -137,6 +139,37 @@ checkNamedArguments(CallExpr* call) {
       }
 
       names.add(named->name);
+    }
+  }
+}
+
+static const char* getClassKindSpecifier(CallExpr* call) {
+  if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+      call->isNamed("_to_unmanaged"))
+    return "unmanaged";
+  if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+      call->isNamed("_to_borrowed"))
+    return "borrowed";
+  if (call->isNamed("_owned"))
+    return "owned";
+  if (call->isNamed("_shared"))
+    return "shared";
+
+  return NULL;
+}
+
+static void checkManagedClassKinds(CallExpr* call) {
+  const char* outer = getClassKindSpecifier(call);
+
+  if (outer != NULL) {
+    CallExpr* innerCall = toCallExpr(call->get(1));
+    if (innerCall) {
+      const char* inner = getClassKindSpecifier(innerCall);
+      if (inner != NULL) {
+        USR_FATAL_CONT(call,
+                       "Type expression uses multiple class kinds: %s %s",
+                       outer, inner);
+      }
     }
   }
 }
@@ -266,11 +299,6 @@ checkParsedVar(VarSymbol* var) {
 
 static void
 checkFunction(FnSymbol* fn) {
-  // Ensure that the lhs of "=" and "<op>=" is passed by ref.
-  if (fn->hasFlag(FLAG_ASSIGNOP))
-    if (fn->getFormal(1)->intent != INTENT_REF)
-      USR_WARN(fn, "The left operand of '=' and '<op>=' should have 'ref' intent.");
-
   if ((fn->name == astrThis) && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'this' must have parentheses");
 

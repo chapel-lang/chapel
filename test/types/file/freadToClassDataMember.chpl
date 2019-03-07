@@ -6,7 +6,7 @@ class myClass {
   var y: real;
 }
 
-var a: myClass = new unmanaged myClass(x = 1, y = 2.3);
+var a: unmanaged myClass = new unmanaged myClass(x = 1, y = 2.3);
 var myInt: int = 9;
 var myFile = open("_test_freadToClassDataMember.txt", iomode.cwr);
 var w = myFile.writer();

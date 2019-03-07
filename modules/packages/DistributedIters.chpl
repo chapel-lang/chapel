@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -308,8 +308,7 @@ where tag == iterKind.follower
                   + "valid domain or range"),
                  1);
   const current = if isDomain(c)
-                  then c._value.these(tag=iterKind.follower,
-                                      followThis=followThis)
+                  then c.these(tag=iterKind.follower, followThis=followThis)
                   else unDensify(followThis(1), c);
 
   if debugDistributedIters
@@ -566,8 +565,7 @@ where tag == iterKind.follower
                   + "valid domain or range"),
                  1);
   const current = if isDomain(c)
-                  then c._value.these(tag=iterKind.follower,
-                                      followThis=followThis)
+                  then c.these(tag=iterKind.follower, followThis=followThis)
                   else unDensify(followThis(1), c);
 
   if debugDistributedIters

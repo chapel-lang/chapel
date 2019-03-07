@@ -5,13 +5,13 @@ class C {
 }
 
 class C0: C {
-  proc foo() {
+  override proc foo() {
     writeln((here.id, "C0"));
   }
 }
 
 class C1: C {
-  proc foo() {
+  override proc foo() {
     writeln((here.id, "C1"));
   }
 }
@@ -20,9 +20,9 @@ proc blah(c) {
   c.foo();
 }
 
-var c = new C();
-var c0 = new C0();
-var c1 = new C1();
+var c = new borrowed C();
+var c0 = new borrowed C0();
+var c1 = new borrowed C1();
 
 for loc in Locales do on loc {
   blah(c);

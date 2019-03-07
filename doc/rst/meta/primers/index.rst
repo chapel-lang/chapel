@@ -12,7 +12,10 @@ Language Basics
    Variables <variables>
    Procedures <procedures>
    Classes <classes>
-   Generic Classes <genericClasses>
+   Records <records>
+   Special Methods on Classes and Records <specialMethods>
+   Generic Classes and Records <genericClasses>
+   Tuples <tuples>
    Variadic Arguments (var args) <varargs>
    Modules <modules>
    Void Variables <voidVariables>

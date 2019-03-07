@@ -12,8 +12,6 @@ use Random;
 
   var v3 = rng.getNext(uint(64));
   writeln(v3.type:string);
-
-  delete rng;
 }
 
 // Test stepping for uint
@@ -27,8 +25,6 @@ use Random;
     var v1  = rng.getNext();
 
     v2 = rng.getNext();
-
-    delete rng;
   }
 
   {
@@ -39,8 +35,6 @@ use Random;
     var got_v2 = rng.getNext();
 
     assert(v2 == got_v2);
-
-    delete rng;
   }
 }
 
@@ -55,8 +49,6 @@ use Random;
     var v1 = rng.getNext();
 
     v2 = rng.getNext();
-
-    delete rng;
   }
 
   {
@@ -67,8 +59,6 @@ use Random;
     var got_v2 = rng.getNext();
 
     assert(v2 == got_v2);
-
-    delete rng;
   }
 }
 
@@ -84,8 +74,6 @@ use Random;
     var v1 = rng.getNext();
 
     v2 = rng.getNext();
-
-    delete rng;
   }
 
   {
@@ -96,8 +84,6 @@ use Random;
     var got_v2 = rng.getNext();
 
     assert(v2 == got_v2);
-
-    delete rng;
   }
 }
 

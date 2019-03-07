@@ -1,0 +1,4 @@
+-sM.p=7 -sM.c=8 -sM.v=9 -sM.t=imag # ambiguousNestedModule-setMconfigs
+-sambiguousNestedModule.p=10 -sambiguousNestedModule.c=11 -sambiguousNestedModule.v=12 -sambiguousNestedModule.t=string # ambiguousNestedModule-setImpConfigs
+-sM.p=7 -sM.c=8 -sM.v=9 -sM.t=imag -sambiguousNestedModule.p=10 -sambiguousNestedModule.c=11 -sambiguousNestedModule.v=12 -sambiguousNestedModule.t=string
+-sp=7 -sc=8 -sv=9 -st=imag # ambiguousNestedModule-setAmbig

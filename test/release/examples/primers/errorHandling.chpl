@@ -58,6 +58,8 @@ try {
   Developers can also write their own throwing functions, throwing and
   consuming errors. While there are built-in :class:`SysError.SystemError`
   types, developers can also create their own hierarchies.
+
+  Only `owned` instances that are subtypes of `Error` can be thrown.
  */
 
 class EmptyFilenameError : Error {
@@ -66,8 +68,8 @@ class EmptyFilenameError : Error {
 }
 
 proc checkFilename(f_name: string) throws {
-  if f_name.isEmptyString() then
-    throw new EmptyFilenameError();
+  if f_name.isEmpty() then
+    throw new owned EmptyFilenameError();
 }
 
 proc openFilename(f_name: string) throws {

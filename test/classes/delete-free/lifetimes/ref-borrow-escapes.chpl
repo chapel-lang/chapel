@@ -1,6 +1,6 @@
 pragma "safe"
 module refborrowescapes {
-use OwnedObject;
+
 
 class MyClass {
   var x:int;
@@ -15,7 +15,7 @@ proc badReturnRefIdentityArg(arg) const ref {
 }
 
 proc test0() {
-  var c = new Owned(new unmanaged MyClass(1));
+  var c = new owned MyClass(1);
   var borrow = c.borrow();
   const ref r = badReturnRefIdentityArg(borrow);
   writeln(r);
@@ -48,7 +48,7 @@ proc bad(const ref r) const ref {
 }
 
 proc test2() {
-  var r = new Owned(new unmanaged MyClass(1));
+  var r = new owned MyClass(1);
   const ref re = bad(r);
   writeln(re);
 }

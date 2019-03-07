@@ -9,7 +9,7 @@ class MyClass {
 /*(The question is, if you mutated a ref to a borrow, would  the other borrow
   checking rules catch an error, or would it cause a gap in the checking?)
  */
-proc bad1(ref r:MyClass) {
+proc bad1(ref r:borrowed MyClass) {
 
   var owny = new owned MyClass(1);
   r = owny.borrow();

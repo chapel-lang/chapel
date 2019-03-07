@@ -1,5 +1,3 @@
-use OwnedObject;
-
 class Foo {
   var x: int;
 
@@ -8,8 +6,8 @@ class Foo {
   }
 }
 
-var a = new Owned(new Foo(1));
-var b = new Owned(new Foo(2));
+var a = new owned Foo(1);
+var b = new owned Foo(2);
 
 var c = (a, b);
 

@@ -79,13 +79,11 @@ proc Block.changeBoundingBox(newBB) {
 
   // From Block.dsiAssign, with mods.
   boundingBox = newBB;
-  const boundingBoxDims = boundingBox.dims();
-  const targetLocDomDims = targetLocDom.dims();
   coforall locid in targetLocDom do
     on targetLocales(locid) {
       delete locDist(locid);
-      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBoxDims,
-                                    targetLocDomDims);
+      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
+                                              targetLocDom);
     }
   // NB at this point privatized copies of 'this' on other locales, if any,
   // have stale pointers in their locDist arrays.

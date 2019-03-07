@@ -1,12 +1,12 @@
 config var n = 10;
 
-var        r          = new R();
-var        s          = new R();
-var        longerName = new R();
+var        r          = new unmanaged R();
+var        s          = new unmanaged R();
+var        longerName = new unmanaged R();
 
-writeln(+ scan [1..n] r.next());
-writeln(+ scan [1..n] s.next());
-writeln(+ scan [1..n] longerName.next());
+writeln(+ scan for 1..n do r.next());
+writeln(+ scan for 1..n do s.next());
+writeln(+ scan for 1..n do longerName.next());
 
 delete longerName;
 delete s;

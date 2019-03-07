@@ -3,9 +3,9 @@ record Dummy {
   type idxType;
   param stridable : bool;
 
-  proc init(type i, param s : bool) {
-    this.idxType = i;
-    this.stridable = s;
+  proc init(type idxType, param stridable : bool) {
+    this.idxType = idxType;
+    this.stridable = stridable;
   }
 }
 
@@ -29,6 +29,6 @@ class Child : Parent {
   }
 }
 
-var c = new Child(int, false);
+var c = new unmanaged Child(int, false);
 writeln("c = ", c);
 delete c;

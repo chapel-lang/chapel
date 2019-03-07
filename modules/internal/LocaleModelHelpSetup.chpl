@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,7 +41,6 @@ module LocaleModelHelpSetup {
 
   extern var chpl_nodeID: chpl_nodeID_t;
 
-  pragma "use default init"
   record chpl_root_locale_accum {
     var nPUsPhysAcc: atomic int;
     var nPUsPhysAll: atomic int;

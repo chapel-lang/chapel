@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,20 +22,44 @@
 module ChapelReduce {
   use ChapelStandard;
 
-  iter chpl__scanIteratorZip(op, data) {
-    for e in zip((...data)) {
-      op.accumulate(e);
-      yield op.generate();
-    }
-    delete op;
+  config param enableParScan = false;
+
+  proc chpl__scanStateResTypesMatch(op) param {
+    type resType = op.generate().type;
+    type stateType = op.identity.type;
+    return (resType == stateType);
   }
 
-  iter chpl__scanIterator(op, data) {
-    for e in data {
-      op.accumulate(e);
-      yield op.generate();
-    }
+  proc chpl__scanIteratorZip(op, data) {
+    compilerWarning("scan has been serialized (see issue #5760)");
+    var arr = for d in zip((...data)) do chpl__accumgen(op, d);
+
     delete op;
+    return arr;
+  }
+
+  proc chpl__scanIterator(op, data) {
+    use Reflection;
+    param supportsPar = isArray(data) && canResolveMethod(data, "_scan", op);
+    if (enableParScan && supportsPar) {
+      return data._scan(op);
+    } else {
+      compilerWarning("scan has been serialized (see issue #5760)");
+      if (supportsPar) {
+        compilerWarning("(recompile with -senableParScan to enable a prototype parallel implementation)");
+      }
+      var arr = for d in data do chpl__accumgen(op, d);
+
+      delete op;
+      return arr;
+    }
+  }
+
+  // helper routine to run the accumulate + generate steps of a scan
+  // in an expression context.
+  proc chpl__accumgen(op, d) {
+    op.accumulate(d);
+    return op.generate();
   }
 
   proc chpl__reduceCombine(globalOp, localOp) {
@@ -51,7 +75,45 @@ module ChapelReduce {
     delete localOp;
   }
 
+  // Return true for simple cases where x.type == (x+x).type.
+  // This should be true for the great majority of cases in practice.
+  // This proc helps us avoid run-time computations upon chpl__sumType().
+  // Which is important for costly cases ex. when 'eltType' is an array.
+  // It also allows us to accept 'eltType' that is the result of
+  // __primitive("static typeof"), i.e. with uninitialized _RuntimeTypeInfo.
+  //
+  proc chpl_sumTypeIsSame(type eltType) param {
+    if isNumeric(eltType) || isString(eltType) {
+      return true;
+
+    } else if isDomain(eltType) {
+      // Since it is a param function, this code will be squashed.
+      // It will not execute at run time.
+      var d: eltType;
+      // + preserves the type for associative domains.
+      // Todo: any other easy-to-compute cases?
+      return isAssociativeDom(d);
+
+    } else if isArray(eltType) {
+      // Follow the lead of chpl_buildStandInRTT. Thankfully, this code
+      // will not execute at run time. Otherwise we could get in trouble,
+      // as "static typeof" produces uninitialized _RuntimeTypeInfo values.
+      type arrInstType = __primitive("static field type", eltType, "_instance");
+      var instanceObj: arrInstType;
+      type instanceEltType = __primitive("static typeof", instanceObj.eltType);
+      return chpl_sumTypeIsSame(instanceEltType);
+
+    } else {
+      // Otherwise, let chpl__sumType() deal with it.
+      return false;
+    }
+  }
+
   proc chpl__sumType(type eltType) type {
+   if chpl_sumTypeIsSame(eltType) {
+    return eltType;
+   } else {
+    // The answer may or may not be 'eltType'.
     var x: eltType;
     if isArray(x) {
       type xET = x.eltType;
@@ -61,19 +123,24 @@ module ChapelReduce {
       else
         return [x.domain] xST;
     } else {
+      use Reflection;
+      if ! canResolve("+", x, x) then
+        // Issue a user-friendly error.
+        compilerError("+ reduce cannot be used on values of the type ",
+                      eltType:string);
       return (x + x).type;
     }
+   }
   }
 
   pragma "ReduceScanOp"
-  pragma "use default init"
   class ReduceScanOp {
-    var l: atomicbool; // only accessed locally
+    var l: chpl__processorAtomicType(bool); // only accessed locally
 
     proc lock() {
       var lockAttempts = 0,
           maxLockAttempts = (2**10-1);
-      while l.testAndSet() {
+      while l.testAndSet(memory_order_acquire) {
         lockAttempts += 1;
         if (lockAttempts & maxLockAttempts) == 0 {
           maxLockAttempts >>= 1;
@@ -82,11 +149,10 @@ module ChapelReduce {
       }
     }
     proc unlock() {
-      l.clear();
+      l.clear(memory_order_release);
     }
   }
 
-  pragma "use default init"
   class SumReduceScanOp: ReduceScanOp {
     type eltType;
     var value: chpl__sumType(eltType);
@@ -109,7 +175,6 @@ module ChapelReduce {
     proc clone() return new unmanaged SumReduceScanOp(eltType=eltType);
   }
 
-  pragma "use default init"
   class ProductReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _prod_id(eltType);
@@ -128,7 +193,6 @@ module ChapelReduce {
     proc clone() return new unmanaged ProductReduceScanOp(eltType=eltType);
   }
 
-  pragma "use default init"
   class MaxReduceScanOp: ReduceScanOp {
     type eltType;
     var value = min(eltType);
@@ -147,7 +211,6 @@ module ChapelReduce {
     proc clone() return new unmanaged MaxReduceScanOp(eltType=eltType);
   }
 
-  pragma "use default init"
   class MinReduceScanOp: ReduceScanOp {
     type eltType;
     var value = max(eltType);
@@ -166,7 +229,6 @@ module ChapelReduce {
     proc clone() return new unmanaged MinReduceScanOp(eltType=eltType);
   }
 
-  pragma "use default init"
   class LogicalAndReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _land_id(eltType);
@@ -185,7 +247,6 @@ module ChapelReduce {
     proc clone() return new unmanaged LogicalAndReduceScanOp(eltType=eltType);
   }
 
-  pragma "use default init"
   class LogicalOrReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _lor_id(eltType);
@@ -204,7 +265,6 @@ module ChapelReduce {
     proc clone() return new unmanaged LogicalOrReduceScanOp(eltType=eltType);
   }
 
-  pragma "use default init"
   class BitwiseAndReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _band_id(eltType);
@@ -223,7 +283,6 @@ module ChapelReduce {
     proc clone() return new unmanaged BitwiseAndReduceScanOp(eltType=eltType);
   }
 
-  pragma "use default init"
   class BitwiseOrReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _bor_id(eltType);
@@ -242,7 +301,6 @@ module ChapelReduce {
     proc clone() return new unmanaged BitwiseOrReduceScanOp(eltType=eltType);
   }
 
-  pragma "use default init"
   class BitwiseXorReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _bxor_id(eltType);
@@ -264,7 +322,6 @@ module ChapelReduce {
   proc _maxloc_id(type eltType) return (min(eltType(1)), max(eltType(2)));
   proc _minloc_id(type eltType) return max(eltType); // max() on both components
 
-  pragma "use default init"
   class maxloc: ReduceScanOp {
     type eltType;
     var value = _maxloc_id(eltType);
@@ -274,6 +331,11 @@ module ChapelReduce {
       if x(1) > value(1) ||
         ((x(1) == value(1)) && (x(2) < value(2))) then
         value = x;
+    }
+    proc accumulateOntoState(ref state, x) {
+      if x(1) > state(1) ||
+        ((x(1) == state(1)) && (x(2) < state(2))) then
+        state = x;
     }
     proc combine(x) {
       if x.value(1) > value(1) ||
@@ -285,7 +347,6 @@ module ChapelReduce {
     proc clone() return new unmanaged maxloc(eltType=eltType);
   }
 
-  pragma "use default init"
   class minloc: ReduceScanOp {
     type eltType;
     var value = _minloc_id(eltType);
@@ -295,6 +356,11 @@ module ChapelReduce {
       if x(1) < value(1) ||
         ((x(1) == value(1)) && (x(2) < value(2))) then
         value = x;
+    }
+    proc accumulateOntoState(ref state, x) {
+      if x(1) < state(1) ||
+        ((x(1) == state(1)) && (x(2) < state(2))) then
+        state = x;
     }
     proc combine(x) {
       if x.value(1) < value(1) ||

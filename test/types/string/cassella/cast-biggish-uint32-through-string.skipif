@@ -1,3 +1,0 @@
-# This future fails only on ILP32, so skip if not one of
-# linux32, cygwin32, or netbsd32:
-CHPL_TARGET_PLATFORM >= 32

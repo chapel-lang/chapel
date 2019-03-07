@@ -142,18 +142,18 @@ proc doit(type myType) {
   for i in D do aA[i].write(i:myType, mo);
   var A = [a in aA] a.read(mo);
   for i in D {
-    if A[i-D.dim(1).low+1] != i:myType then
-      writeln(myType:string, ": ERROR: A[", i-D.dim(1).low+1, "]=",
-              A[i-D.dim(1).low+1], " (should be ", i, ")");
+    if A[i] != i:myType then
+      writeln(myType:string, ": ERROR: A[", i, "]=",
+              A[i], " (should be ", i, ")");
   }
   if printResults then writeln(A);
 
   for i in D do aA[i].write((i+1):myType);
   A = aA.read(mo);
   for i in D {
-    if A[i-D.dim(1).low+1] != (i+1):myType then
-      writeln(myType:string, ": ERROR: A[", i-D.dim(1).low+1, "]=",
-              A[i-D.dim(1).low+1], " (should be ", i+1, ")");
+    if A[i] != (i+1):myType then
+      writeln(myType:string, ": ERROR: A[", i, "]=",
+              A[i], " (should be ", i+1, ")");
   }
   if printResults then writeln(A);
 }

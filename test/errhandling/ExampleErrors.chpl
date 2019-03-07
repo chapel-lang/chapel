@@ -1,13 +1,12 @@
 proc throwAnError() throws {
-  throw new Error();
+  throw new owned Error();
 }
 
 
-pragma "use default init"
 class OtherError : Error { }
 
 proc throwOtherError() throws {
-  throw new OtherError();
+  throw new owned OtherError();
 }
 
 class StringError : Error {
@@ -17,7 +16,7 @@ class StringError : Error {
     this.msg = msg;
   }
 
-  proc message() {
+  override proc message() {
     return msg;
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -97,6 +97,26 @@ module ChapelTuple {
     // body inserted during generic instantiation
   }
 
+  pragma "no doc"
+  proc *(param p: uint, type t) type {
+    if p > max(int) then
+      compilerError("Tuples of size >" + max(int) + " are not currently supported");
+    param pAsInt = p: int;
+    return pAsInt*t;
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc *(param p: bool, type t) type {
+    compilerError("Tuple types cannot be defined using boolean sizes");
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc *(p: bool, type t) type {
+    compilerError("Tuple types cannot be defined using boolean sizes");
+  }
+
   pragma "do not allow ref"
   pragma "build tuple"
   pragma "build tuple type"
@@ -112,8 +132,8 @@ module ChapelTuple {
 
   // last resort since if this resolves some other way, OK
   pragma "last resort"
-  proc *(p: int, type t) type {
-    compilerError("tuple size must be static");
+  proc *(p: integral, type t) type {
+    compilerError("tuple size must be known at compile-time");
   }
 
   // make it a tuple if it is not already
@@ -135,6 +155,22 @@ module ChapelTuple {
   pragma "no doc"
   proc isHomogeneousTupleValue(x) param
     return __primitive("is star tuple type", x);
+
+  pragma "no doc"
+  proc _check_tuple_var_decl(x: _tuple, param p) param {
+    if p == x.size {
+      return true;
+    } else {
+      compilerError("tuple size must match the number of grouped variables");
+      return false;
+    }
+  }
+  pragma "no doc"
+  proc _check_tuple_var_decl(x, param p) param {
+    compilerError("illegal tuple variable declaration with non-tuple initializer");
+    return false;
+  }
+
 
   /*
     Returns `true` if its argument is a tuple type.
@@ -193,7 +229,9 @@ module ChapelTuple {
   // iterator support for tuples
   //
   pragma "no doc"
-  iter _tuple.these() {
+  pragma "reference to const when const this"
+  iter _tuple.these() ref
+  {
 
     if !isHomogeneousTuple(this) then
       compilerError("Cannot iterate over non-homogeneous tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
@@ -207,7 +245,8 @@ module ChapelTuple {
   }
 
   pragma "no doc"
-  iter _tuple.these(param tag:iterKind)
+  pragma "reference to const when const this"
+  iter _tuple.these(param tag:iterKind) ref
       where tag == iterKind.leader
   {
 
@@ -233,7 +272,8 @@ module ChapelTuple {
   }
 
   pragma "no doc"
-  iter _tuple.these(param tag:iterKind, followThis: _tuple)
+  pragma "reference to const when const this"
+  iter _tuple.these(param tag:iterKind, followThis: _tuple) ref
       where tag == iterKind.follower
   {
     if followThis.size != 1 then
@@ -291,22 +331,19 @@ module ChapelTuple {
   //
   // tuple casts to complex(64) and complex(128)
   //
+  // TODO: These could instead use 'noinit' and manually assign the fields.
+  //
+  // Note: statically inlining the _chpl_complex runtime functions is necessary
+  // for good performance
+  //
   inline proc _cast(type t, x: (?,?)) where t == complex(64) {
-    var c: complex(64) = noinit;
-    // There is no point allowing this to default initialize, we're just going
-    // to overwrite it anyways
-    c.re = x(1):real(32);
-    c.im = x(2):real(32);
-    return c;
+    extern proc _chpl_complex64(re:real(32),im:real(32)) : complex(64);
+    return _chpl_complex64(x(1):real(32),x(2):real(32));
   }
 
   inline proc _cast(type t, x: (?,?)) where t == complex(128) {
-    var c: complex(128) = noinit;
-    // There is no point allowing this to default initialize, we're just going
-    // to overwrite it anyways
-    c.re = x(1):real(64);
-    c.im = x(2):real(64);
-    return c;
+    extern proc _chpl_complex128(re:real(64),im:real(64)):complex(128);
+    return _chpl_complex128(x(1):real(64),x(2):real(64));
   }
 
   //
@@ -723,7 +760,7 @@ module ChapelTuple {
   }
 
   inline proc *(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(x, (y(1).type)) {
+                                        isSubtype(t, (y(1).type)) {
     var result: y.size * y(1).type;
     for param d in 1..y.size do
       result(d) = x * y(d);

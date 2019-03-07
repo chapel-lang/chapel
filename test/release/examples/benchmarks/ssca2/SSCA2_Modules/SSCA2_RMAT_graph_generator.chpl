@@ -410,7 +410,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     // Kernel 1: assemble graph from list of triples.
     // Include only non-self incident edges.
     // In case of (start, end) duplicates, the first triple wins.
-    // Alternatively, could skip the member(v) check (so the last triple
+    // Alternatively, could skip the contains(v) check (so the last triple
     // wins) or also use += instead of = (to sum duplicates' weights).
     // ----------------------------------------------------------
 

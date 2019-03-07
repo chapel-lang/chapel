@@ -6,7 +6,7 @@ class C {
 }
 
 class D : C {
-  proc printType() {
+  override proc printType() {
     writeln("D");
     return "D";
   }

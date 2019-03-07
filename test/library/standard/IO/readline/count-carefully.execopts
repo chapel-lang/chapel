@@ -1,0 +1,3 @@
+< count-carefully-newline.txt   # count-carefully-newline.good
+< count-carefully-nonewline.txt # count-carefully-nonewline.good
+< count-carefully-zerobyte.txt  # count-carefully-zerobyte.good

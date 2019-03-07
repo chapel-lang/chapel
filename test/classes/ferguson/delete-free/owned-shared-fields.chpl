@@ -1,78 +1,75 @@
 // This test checks several patterns of
-// records and classes with Owned and Shared fields.
+// records and classes with owned and shared fields.
 // This test is intended to make sure that fields
-// of Owned or Shared type continue to function.
-
-use OwnedObject;
-use SharedObject;
+// of owned or shared type continue to function.
 
 class MyClass {
   var x:int;
 }
 
 record R1 {
-  var fo:Owned(MyClass);
-  var fs:Shared(MyClass);
+  var fo:owned MyClass;
+  var fs:shared MyClass;
   proc init() {
   }
 }
 
 record R2 {
-  var fo:Owned(MyClass) = new Owned(nil:unmanaged MyClass);
-  var fs:Shared(MyClass) = new Shared(nil:unmanaged MyClass);
+  var fo:owned MyClass = new owned(nil:unmanaged MyClass);
+  var fs:shared MyClass = new shared(nil:unmanaged MyClass);
   proc init() {
   }
 }
 
 record R3 {
-  var fo:Owned(MyClass);
-  var fs:Shared(MyClass);
+  var fo:owned MyClass;
+  var fs:shared MyClass;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
-    fo = new Owned(a);
-    fs = new Shared(b);
+    fo = new owned(a);
+    fs = new shared(b);
   }
 }
 
 record R4 {
-  var fo:Owned(MyClass);
-  var fs:Shared(MyClass);
+  var fo:owned MyClass;
+  var fs:shared MyClass;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
     this.complete();
-    fo = new Owned(a);
-    fs = new Shared(b);
+    fo = new owned(a);
+    fs = new shared(b);
   }
 }
 
 class C1 {
-  var fo:Owned(MyClass);
-  var fs:Shared(MyClass);
+  var fo:owned MyClass;
+  var fs:shared MyClass;
   proc init() {
   }
 }
 
 class C2 {
-  var fo:Owned(MyClass) = new Owned(nil:unmanaged MyClass);
-  var fs:Shared(MyClass) = new Shared(nil:unmanaged MyClass);
+  var fo:owned MyClass = new owned(nil:unmanaged MyClass);
+  var fs:shared MyClass = new shared(nil:unmanaged MyClass);
   proc init() {
   }
 }
 
 class C3 {
-  var fo:Owned(MyClass);
-  var fs:Shared(MyClass);
+  var fo:owned MyClass;
+  var fs:shared MyClass;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
-    fo = new Owned(a);
-    fs = new Shared(b);
+    fo = new owned(a);
+    fs = new shared(b);
   }
 }
 
 class C4 {
-  var fo:Owned(MyClass);
-  var fs:Shared(MyClass);
+  var fo:owned MyClass;
+  var fs:shared MyClass;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
     super.init();
-    fo = new Owned(a);
-    fs = new Shared(b);
+    fo = new owned(a);
+    fs = new shared(b);
   }
 }
 

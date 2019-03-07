@@ -14,7 +14,7 @@ procedure importing and exporting is provided in~\rsec{Interop_Overview}.
 Details on sharing types, variables and procedures are supplied
 in \rsec{Shared_Language_Elements}.
 %  The creation and use of Chapel libraries is
-%treated in~\rsec{Interop_Libraries}.  
+%treated in~\rsec{Interop_Libraries}.
 
 \begin{future}
 
@@ -60,15 +60,27 @@ external-procedure-declaration-statement:
   `extern' external-name[OPT] `proc' function-name argument-list return-intent[OPT] return-type[OPT]
 \end{syntax}
 
-Chapel will call the external function using the parameter types supplied in
-the \chpl{extern} declaration.  Therefore, in general, the type of each argument
-in the supplied \sntx{argument-list} must be the Chapel equivalent of the
-corresponding external type.  
+Chapel code will call the external function using the parameter types supplied
+in the \chpl{extern} declaration. Therefore, in general, the type of each
+argument in the supplied \sntx{argument-list} must be the Chapel
+equivalent of the corresponding external type.
 
 The return value of the function can be used by Chapel only if its type is
 declared using the optional \sntx{return-type} specifier.  If it is omitted,
 Chapel assumes that no value is returned, or equivalently that the function
 returns \chpl{void}.
+
+It is possible to use the \sntx{external-name} syntax to create an
+\chpl{extern} function that presents a different name to Chapel code than
+the name of the function actually used when linking. The
+\sntx{external-name} expression must evaluate to a \chpl{param}
+\chpl{string}. For example, the code below declares a function callable
+in Chapel as \chpl{c_atoi} but that will actually link with the C
+\chpl{atoi} function.
+
+\begin{chapel}
+  extern "atoi" proc c_atoi(arg:c_string):c_int;
+\end{chapel}
 
 At present, external iterators are not supported.  
 
@@ -118,15 +130,25 @@ exported-procedure-declaration-statement:
     function-body
 
 external-name:
-  identifier
-  string-literal
+  expression
 \end{syntax}
 
-If the optional \sntx{external-name} is
-supplied, then it is used verbatim as the exported function symbol.  Otherwise,
-the Chapel name of the procedure is exported.  The rest of the procedure
-declaration is the same as for a non-exported function.  An exported procedure can be
-called from within Chapel as well.  Currently, iterators cannot be exported.
+The rest of the procedure declaration is the same as for a non-exported
+function.  An exported procedure can be called from within Chapel as
+well. Currently, iterators cannot be exported.
+
+As with the \sntx{extern-name} for \chpl{extern} \chpl{proc}, if this
+syntax element is provided, then it must be a \chpl{param} \chpl{string}
+and will be used to determine the name of the function to use when
+linking. For example, the code below declares a function callable in C as
+\chpl{chapel_addone} but it is callable from Chapel code as
+\chpl{addone}:
+
+\begin{chapel}
+  export "chapel_addone" proc addone(arg:c_int):c_int {
+    return arg+1;
+  }
+\end{chapel}
 
 \begin{future}
 Currently, exported functions cannot have generic, \chpl{param} or type arguments.
@@ -151,7 +173,7 @@ language is C.
 \subsection{Shared Types}
 
 This subsection discusses how specific types are shared between Chapel and
-external code.  
+external code.
 
 \subsubsection{Referring to Standard C Types}
 \label{Referring_to_Standard_C_Types}
@@ -203,7 +225,7 @@ external-type-alias-declaration-statement:
   `extern' `type' type-alias-declaration-list ;
 \end{syntax}
 
-In each \sntx{type-alias-declaration}, if the \sntx{type-specifier} part is
+In each \sntx{type-alias-declaration}, if the \sntx{type-expression} part is
 supplied, then Chapel uses the supplied type specifier internally.  Otherwise,
 it treats the named type as an opaque type.  The definition for an external type
 must be supplied by a C header file named on the \chpl{chpl} command line.
@@ -282,52 +304,6 @@ in Chapel you would refer to this \chpl{struct} via
 \end{chapel}
 
 
-\subsubsection{Referring to External Structs Through Pointers}
-\label{Referring_to_External_Structs_Through_Pointers}
-\index{interoperability!C Structs!external!pointers to}
-
-An external type which is a pointer to a \chpl{struct} can be referred to from
-Chapel using an external \chpl{class} declaration.  External class declarations
-have the following syntax.
-\begin{syntax}
-external-class-declaration-statement:
-  `extern' external-name[OPT] simple-class-declaration-statement
-\end{syntax}
-External class declarations are similar to external record declarations as
-discussed above, but place additional requirements on the C code.
-
-For example, given the declaration
-\begin{chapel}
-  extern class D {
-    var x: real;
-  }
-\end{chapel}
-\noindent
-the requirements on the corresponding C code are:
-\begin{enumerate}
-\item There must be a struct type that is typedef'd to have the name \chpl{\_D}.
-\item A pointer-to-\chpl{\_D} type must be typedef'd to have the name \chpl{D}.
-\item The \chpl{\_D} struct type must contain a field named \chpl{x} of type \chpl{double}.
-\end{enumerate}
-\noindent
-Like external records/structs, it may also contain other fields
-that will simply be ignored by the Chapel compiler.
-
-The following C typedef would fulfill the external Chapel class
-declaration shown above:
-\begin{chapel}
-   typedef struct __D {
-     double x;
-     int y;
-   } _D, *D;
-\end{chapel}
-where the Chapel compiler would not know about the 'y' field and
-therefore could not refer to it or manipulate it.
-
-If the optional \sntx{external-name} is supplied, then it is used verbatim as
-the exported class symbol.
-
-
 \subsubsection{Opaque Types}
 \label{Opaque_Types}
 \index{interoperability!opaque types}
@@ -339,7 +315,7 @@ used for operations other than argument passing and assignment.
 
 For example, Chapel could be used to call an external C function that
 returns a pointer to a structure (that can't or won't be described as
-an external class) as follows:
+a pointer to an external record) as follows:
 \begin{chapel}
     extern proc returnStructPtr(): opaque;
 
@@ -372,7 +348,7 @@ its declaration with the extern keyword.  For example:
 \end{chapel}
 \noindent
 would tell the Chapel compiler about an external C variable named
-\chpl{bar} of type \chpl{foo}.  Similarly, 
+\chpl{bar} of type \chpl{foo}.  Similarly,
 \begin{chapel}
    extern const baz: int(32);
 \end{chapel}
@@ -473,7 +449,7 @@ If the procedure body is omitted, the procedure declaration is a prototype; the
 body of the procedure must be supplied elsewhere.  In a prototype, the return
 type must be declared; otherwise, it is assumed to be \chpl{void}.  If the body
 is supplied, the return type of the exported procedure is inferred from the
-type of its return expression(s).  
+type of its return expression(s).
 
 If the optional \sntx{external-name} is supplied, that is the name used in
 linking with external code.  For example, if we declare

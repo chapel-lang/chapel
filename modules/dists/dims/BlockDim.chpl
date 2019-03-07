@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -74,7 +74,6 @@ class BlockDim {
   proc boundingBox return bbStart .. (bbStart + bbLength - 1);
 }
 
-pragma "use default init"
 class Block1dom {
   type idxType;
   param stridable: bool;
@@ -91,7 +90,6 @@ class Block1dom {
   proc dsiSetIndicesUnimplementedCase param return false;
 }
 
-pragma "use default init"
 class Block1locdom {
   var myRange;
 }

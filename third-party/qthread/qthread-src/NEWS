@@ -1,3 +1,17 @@
+--- 1.14 --
+New Features:
+ - Incorporate minor features requested by Chapel team
+ - Add experimental supports for the MPI finepoints interface in test/benchmarks/finepoints
+ - Added a new thread feature flag for "network tasks", allowing schedulers to treat communication tasks differently
+ - Added a RUNTIME_DATA_SIZE flag to qthread_readstate (Courtesy of the Chapel team)
+Improvements:
+ - Readd the "no" topology (fix proposed by the Chapel team)
+ - Updated SINC implementations to use modern Qthreads APIs
+ - Removed deprecated ROSE support
+ - Removed deprecated RCRtool support
+--- 1.13 ---
+New Features:
+ - Performance Monitoring: use --enable-performance-monitoring
 --- 1.12 ---
 New Features:
  - Pluggable allocators: use --with-alloc={base,chapel} to choose

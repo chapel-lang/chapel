@@ -1,4 +1,3 @@
-pragma "use default init"
 class GenericClass {
   type t;
   var v: int;

@@ -6,7 +6,7 @@
 **************************************************************************/
 
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -231,18 +231,14 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
     }
 }
 
-//
-// Can we support remote caching?
-//
-#ifdef CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL
-#error "CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL is already defined!"
-#else
-#define CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL 1
-#endif
-static inline
-int chpl_task_supportsRemoteCache(void) {
-  return CHPL_QTHREAD_SUPPORTS_REMOTE_CACHE;
-}
+
+#define CHPL_TASK_IMPL_GET_FIXED_NUM_THREADS() \
+    chpl_task_impl_getFixedNumThreads()
+uint32_t chpl_task_impl_getFixedNumThreads(void);
+
+#define CHPL_TASK_IMPL_IS_FIXED_THREAD() (qthread_shep() != NO_SHEPHERD)
+
+#define CHPL_TASK_IMPL_CAN_MIGRATE_THREADS() CHPL_QTHREAD_TASKS_CAN_MIGRATE_THREADS
 
 #ifdef __cplusplus
 } // end extern "C"

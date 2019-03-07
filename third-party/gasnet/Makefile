@@ -10,6 +10,19 @@ ifneq ($(CHPL_MAKE_COMM_SEGMENT),none)
 CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT)
 endif
 
+ifneq (, $(filter $(CHPL_MAKE_COMM_SUBSTRATE),psm ofi))
+ifeq (, $(call isTrue, $(CHPL_GASNET_ALLOW_BAD_SUBSTRATE)))
+$(error The $(CHPL_MAKE_COMM_SUBSTRATE) substrate is not currently supported \
+by GASNet-EX. Please contact the Chapel team if this configuration is \
+important to you)
+endif
+endif
+
+ifneq ($(CHPL_MAKE_COMM_SUBSTRATE),none)
+CHPL_GASNET_CFG_OPTIONS += --disable-auto-conduit-detect
+CHPL_GASNET_CFG_OPTIONS += --enable-$(CHPL_MAKE_COMM_SUBSTRATE)
+endif
+
 # PSHM (inter-Process SHared Memory) provide a mechanism for gasnet instances
 # on the same node to communicate through shared memory instead of the real
 # conduit. In "production" we only run a single gasnet client per node so this
@@ -27,10 +40,6 @@ ifneq ($(CHPL_MAKE_COMM_SEGMENT),everything)
 CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
 endif
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr5)
-CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
-endif
-
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr6)
 CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
 endif
@@ -39,14 +48,19 @@ ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk))
 CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
 CHPL_GASNET_CFG_OPTIONS += --enable-gemini-multi-domain
+CHPL_GASNET_CFG_OPTIONS += --disable-aries --disable-mpi --disable-smp --disable-ofi
 else
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),aries)
-CHPL_GASNET_CFG_OPTIONS += --enable-aries
 CHPL_GASNET_CFG_OPTIONS += --enable-aries-multi-domain
+CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-mpi --disable-smp --disable-ofi
+else
+ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),mpi)
+CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-aries --disable-smp --disable-ofi
 else
 # We need to do this because the auto-detect stuff for gemini is not
 # yet working as well as the portals auto-detect
 CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-aries
+endif
 endif
 endif
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xc)
@@ -58,14 +72,7 @@ XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),aarch64)
-CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
-CHPL_GASNET_CFG_SCRIPT=cross-configure-aarch64-linux
-XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
-XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
-else
 CHPL_GASNET_CFG_SCRIPT=configure
-endif
 endif
 
 # Build amudprun for the host platform and replace the default one that was
@@ -80,7 +87,7 @@ ifeq (, $(MPI_CC))
 MPI_CC=mpicc
 endif
 
-ifeq ($(CHPL_LIBMODE),shared)
+ifeq ($(CHPL_LIB_PIC),pic)
 GASNET_CFLAGS += $(SHARED_LIB_CFLAGS)
 # MPI_CFLAGS overides autodetection, which we don't want so add to MPI_CC
 MPI_CC += $(SHARED_LIB_CFLAGS)

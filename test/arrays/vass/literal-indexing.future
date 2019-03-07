@@ -1,3 +1,7 @@
+unimplemented feature: for/forall-expression with arrays as elements
+#11039
+
+Once this feature is implemented, return to the following original .future:
 bug: an unexpected interpretation of the expression: [1,2,3,4][2]
 
 Kyle discovered that [1,2,3,4] is being parsed as a forall loop.

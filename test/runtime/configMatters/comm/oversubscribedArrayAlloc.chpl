@@ -8,7 +8,7 @@ var memAvail = here.physicalMemory(unit=MemUnits.Bytes);
 if numBits(size_t) < 64 then
   memAvail = min(memAvail, 2**30);
 
-config const memFraction = 3;
+config const memFraction = 10;
 config var maxMem = memAvail / memFraction;
 const arrSize = maxMem / desiredTasks;
 

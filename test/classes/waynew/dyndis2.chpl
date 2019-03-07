@@ -1,4 +1,4 @@
-use List;
+use LinkedLists;
 
 class somedata {
   type elt_type;
@@ -16,7 +16,7 @@ class base {
 class aclass: base {
   type dtype;
   var data: dtype;
-  proc jam( x: int, d: borrowed somedata(int)) {
+  override proc jam( x: int, d: borrowed somedata(int)) {
     writeln( "aclass ", data, " ", x, " : ", d);
   }
 }
@@ -24,13 +24,13 @@ class aclass: base {
 class bclass: base {
   type dtype;
   var y: dtype;
-  proc jam( x:int, d: borrowed somedata(int)) {
+  override proc jam( x:int, d: borrowed somedata(int)) {
     writeln( "bclass ", y, " ", x, " : ", d);
   }
 }
 
 class contain {
-  var objs: list(borrowed base);
+  var objs: LinkedList(borrowed base);
 
   proc deinit() {
     objs.destroy();

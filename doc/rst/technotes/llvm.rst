@@ -54,7 +54,7 @@ Note:
 * The pre-built LLVM that Apple distributes for Macs does not include
   the header files needed for Chapel to use CHPL_LLVM=system.
   However, you can install a Mac Homebrew version of LLVM with, for
-  example, ``brew install llvm@6`` and then set CHPL_LLVM=system.
+  example, ``brew install llvm@7`` and then set CHPL_LLVM=system.
 
 ---------------------------
 Activating the LLVM support

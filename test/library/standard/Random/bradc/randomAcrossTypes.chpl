@@ -95,13 +95,3 @@ for i in 1..4 {
 writeln(A);
 writeln(B);
 writeln(C);
-
-delete rs1;
-delete rs2;
-delete rs3;
-delete rs4;
-delete rs5;
-delete rs6;
-delete rs7;
-delete rs8;
-delete rs9;

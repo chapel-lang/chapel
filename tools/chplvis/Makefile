@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Cray Inc.
+# Copyright 2015-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -30,9 +30,6 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 FLTK_CONFIG=$(FLTK_INSTALL_DIR)/bin/fltk-config
 FLTK_FLUID=$(FLTK_INSTALL_DIR)/bin/fluid
-
-CHPL_HOME= $(shell printenv CHPL_HOME)
-CHPL_HOST_PLATFORM= $(shell printenv CHPL_HOST_PLATFORM)
 
 CXXFLAGS=  -Wall -I. -g
 
@@ -80,7 +77,7 @@ clobber: clean
 	rm -f chplvis
 
 install: chplvis
-	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
+	cp chplvis $(CHPL_BIN_DIR)
 
 # Dependencies
 chplvis.cxx: chplvis.h  # This rule to get fluid run only once

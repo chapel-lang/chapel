@@ -4,4 +4,4 @@
 # Most launchers buffer stdout but not stderr which defeats the prediff processing.
 
 import os
-print(os.getenv('CHPL_LAUNCHER') not in ['none', 'amudprun'])
+print(os.getenv('CHPL_LAUNCHER') not in ['none', 'amudprun', 'mpirun4ofi'])

@@ -11,6 +11,5 @@ class Foo {
   }
 }
 
-var foo = new Foo(5);
+var foo = new shared Foo(5);
 writeln(foo);
-delete foo;

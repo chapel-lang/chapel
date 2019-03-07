@@ -1,0 +1,3 @@
+proc foo() {
+  writeln("nbd");
+}

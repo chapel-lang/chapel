@@ -1,9 +1,7 @@
 feature request: 'these' should enable promotion
-
-This future asks the question as to whether a serial 'these' should be
-sufficient to enable promotion or whether a parallel 'these' operator
-should be required.  See issue #5114 for details.
+#5114
 
 See also:
 
-  test/functions/iterators/vass/forall-without-leaderfollower.future
+  #11819
+  test/functions/iterators/vass/forall-without-leaderfollower.chpl

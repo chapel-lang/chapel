@@ -7,7 +7,7 @@
    test, and team broadcast test.  Column teams and row teams of a process grid are created and
    team barriers are performed on these teams. */
 
-#include <gasnet.h>
+#include <gasnetex.h>
 #include <gasnet_coll.h>
 
 #define MAX_SIZE 8192
@@ -17,47 +17,33 @@
 
 #include <test.h>
 
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
+
 int main(int argc, char **argv) 
 {
-  int mynode, nodes, iters=0;
+  int iters=0;
   int64_t start,total;
-  int i = 0;
-  gasnet_node_t nrows, ncols, my_row, my_col;
-  void *clientdata = NULL;
-  gasnet_team_handle_t my_row_team, my_col_team;
-  static uint8_t *A, *B, *C;
-  static int *B_int, *C_int;
-  int num_iters;
-  size_t sz;
+  gex_Rank_t nrows, ncols, my_row, my_col;
+  gex_TM_t my_row_tm, my_col_tm;
   
-  gasnet_seginfo_t teamA_scratch;
-  gasnet_seginfo_t teamB_scratch;
-  GASNET_Safe(gasnet_init(&argc, &argv));
-#if !GASNET_SEQ
-  MSG0("WARNING: This test does not work for NON-SEQ builds yet.. skipping test\n");
-  gasnet_exit(0);
-#endif
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testteambcast", &argc, &argv, 0));
 
-  GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
   
-  A = TEST_MYSEG();
-  B = A + SCRATCH_SIZE;
-  C = B + COLL_BUFF_SIZE;
-  B_int = (int*) B;
-  C_int = (int*) C;
-  gasnet_coll_init(NULL, 0, NULL, 0, 0);
+  uint8_t *A = TEST_MYSEG();
+  uint8_t *B = A + SCRATCH_SIZE;
+  uint8_t *C = B + COLL_BUFF_SIZE;
+  int *SrcArray = (int*) B;
+  int *DstArray = (int*) C;
 
   test_init("testteambcast", 1, "(nrows) (ncols) (iters)");
 
-  mynode = gasnet_mynode();
-  nodes = gasnet_nodes();
+  gex_Rank_t mynode = gex_TM_QueryRank(myteam);
+  gex_Rank_t nodes = gex_TM_QuerySize(myteam);
   
-  teamA_scratch.addr = A;
-  teamA_scratch.size = SCRATCH_SIZE/2;
-  
-  teamB_scratch.addr = A + SCRATCH_SIZE/2;
-  teamB_scratch.size = SCRATCH_SIZE/2;
-
   if (argc > 4)
     test_usage();
 
@@ -86,15 +72,33 @@ int main(int argc, char **argv)
   my_row = mynode / ncols;
   my_col = mynode % ncols;
                  
-  my_row_team = gasnet_coll_team_split(GASNET_TEAM_ALL,
-                                        my_row,
-                                        my_col,
-                                        &teamA_scratch);
+  struct {
+    uint8_t *addr;
+    size_t   size;
+  } teamA_scratch, teamB_scratch;
 
-  my_col_team = gasnet_coll_team_split(GASNET_TEAM_ALL,
-                                        my_col,
-                                        my_row,
-                                        &teamB_scratch);
+  {
+    uint8_t  *addr = A;
+    uintptr_t size = SCRATCH_SIZE / 2;
+
+    assert_always(size >= gex_TM_Split(&my_row_tm, myteam, my_row, my_col, 0, 0,
+                                       GEX_FLAG_TM_SCRATCH_SIZE_MIN));
+    assert_always(size >= gex_TM_Split(&my_col_tm, myteam, my_col, my_row, 0, 0,
+                                       GEX_FLAG_TM_SCRATCH_SIZE_MIN));
+
+    teamA_scratch.addr = addr;
+    teamA_scratch.size = size;
+
+    teamB_scratch.addr = addr + size;
+    teamB_scratch.size = size;
+  }
+
+  
+  gex_TM_Split(&my_row_tm, myteam, my_row, my_col,
+               teamA_scratch.addr, teamA_scratch.size, 0);
+
+  gex_TM_Split(&my_col_tm, myteam, my_col, my_row,
+               teamB_scratch.addr, teamB_scratch.size, 0);
 
   if (my_col == 0) {
     printf("row team %u: Running team barrier test with row teams...\n",
@@ -104,9 +108,8 @@ int main(int argc, char **argv)
 
   BARRIER();
   start = TIME();
-  for (i=0; i < iters*10; i++) {
-    gasnet_coll_barrier_notify(my_row_team, 0, GASNET_BARRIERFLAG_UNNAMED);
-    gasnet_coll_barrier_wait(my_row_team, 0, GASNET_BARRIERFLAG_UNNAMED);
+  for (int i=0; i < iters*10; i++) {
+    gex_Event_Wait(gex_Coll_BarrierNB(my_row_tm, 0));
   }
   total = TIME() - start;
 
@@ -124,9 +127,8 @@ int main(int argc, char **argv)
 
   BARRIER();
   start = TIME();
-  for (i=0; i < iters*10; i++) {
-    gasnet_coll_barrier_notify(my_col_team, 0, GASNET_BARRIERFLAG_UNNAMED);
-    gasnet_coll_barrier_wait(my_col_team, 0, GASNET_BARRIERFLAG_UNNAMED);
+  for (int i=0; i < iters*10; i++) {
+    gex_Event_Wait(gex_Coll_BarrierNB(my_col_tm, 0));
   }
   total = TIME() - start;
   
@@ -137,30 +139,28 @@ int main(int argc, char **argv)
   }
   BARRIER();
   
-  /*first do team all broadcast*/
-  for (sz = 1; sz<=MAX_SIZE; sz=sz*2) {
+  /*first do team0 broadcast*/
+  for (size_t sz = 1; sz<=MAX_SIZE; sz=sz*2) {
     int root = 0;
-    for(i=0; i<sz; i++) {
-      B_int[i] = mynode*sz+42+i;
-      C_int[i] = -1;
+    for (int i=0; i<sz; i++) {
+      SrcArray[i] = mynode*sz+42+i;
+      DstArray[i] = -1;
     }
     BARRIER();
-    gasnet_coll_broadcast(GASNET_TEAM_ALL, C_int, root, B_int, sz*sizeof(int), 
-                          GASNET_COLL_IN_ALLSYNC|GASNET_COLL_OUT_NOSYNC|GASNET_COLL_LOCAL);
+    gex_Event_Wait(gex_Coll_BroadcastNB(myteam, root, DstArray, SrcArray, sz*sizeof(int), 0));
     BARRIER();
-    for(i=0; i<sz; i++) {
+    for (int i=0; i<sz; i++) {
       int expected = root*sz+42+i;
-      if(expected != C_int[i]) {
-        fprintf(stderr, "%d> %d %d (expecting %d)\n", mynode, i, C_int[i], expected);
+      if (expected != DstArray[i]) {
+        fprintf(stderr, "%d> %d %d (expecting %d)\n", mynode, i, DstArray[i], expected);
         gasnet_exit(1);
       }
     }
     BARRIER();
     /*time this*/
     start = TIME();
-    for(i=0; i<iters; i++) {
-      gasnet_coll_broadcast(GASNET_TEAM_ALL, C_int, root, B_int, sz*sizeof(int), 
-                            GASNET_COLL_IN_ALLSYNC|GASNET_COLL_OUT_NOSYNC|GASNET_COLL_LOCAL);
+    for (int i=0; i<iters; i++) {
+      gex_Event_Wait(gex_Coll_BroadcastNB(myteam, root, DstArray, SrcArray, sz*sizeof(int), 0));
     }
     total = TIME() - start;
     
@@ -173,28 +173,26 @@ int main(int argc, char **argv)
   BARRIER();
 
   /*next do row broadcasts*/
-  for (sz = 1; sz<=MAX_SIZE; sz=sz*2) {
-    for(i=0; i<sz; i++) {
-      B_int[i] = mynode*sz+42+i;
-      C_int[i] = -1;
+  for (size_t sz = 1; sz<=MAX_SIZE; sz=sz*2) {
+    for (int i=0; i<sz; i++) {
+      SrcArray[i] = mynode*sz+42+i;
+      DstArray[i] = -1;
     }
     BARRIER();
-    gasnet_coll_broadcast(my_row_team, C_int, 0, B_int, sz*sizeof(int), 
-                          GASNET_COLL_IN_ALLSYNC|GASNET_COLL_OUT_NOSYNC|GASNET_COLL_LOCAL);
+    gex_Event_Wait(gex_Coll_BroadcastNB(my_row_tm, 0, DstArray, SrcArray, sz*sizeof(int), 0));
     BARRIER();
-    for(i=0; i<sz; i++) {
+    for (int i=0; i<sz; i++) {
       int expected = my_row*ncols*sz+42+i;
-      if(expected != C_int[i]) {
-        fprintf(stderr, "%d> %d %d (expecting %d)\n", mynode, i, C_int[i], expected);
+      if (expected != DstArray[i]) {
+        fprintf(stderr, "%d> %d %d (expecting %d)\n", mynode, i, DstArray[i], expected);
         gasnet_exit(1);
       }
     }
     BARRIER();
     /*time this*/
     start = TIME();
-    for(i=0; i<iters; i++) {
-      gasnet_coll_broadcast(my_row_team, C_int, 0, B_int, sz*sizeof(int), 
-                            GASNET_COLL_IN_ALLSYNC|GASNET_COLL_OUT_NOSYNC|GASNET_COLL_LOCAL);
+    for (int i=0; i<iters; i++) {
+      gex_Event_Wait(gex_Coll_BroadcastNB(my_row_tm, 0, DstArray, SrcArray, sz*sizeof(int), 0));
     }
     total = TIME() - start;
     
@@ -206,28 +204,26 @@ int main(int argc, char **argv)
   }
   BARRIER();
   /*next do col broadcasts*/
-  for (sz = 1; sz<=MAX_SIZE; sz=sz*2) {
-    for(i=0; i<sz; i++) {
-      B_int[i] = mynode*sz+42+i;
-      C_int[i] = -1;
+  for (size_t sz = 1; sz<=MAX_SIZE; sz=sz*2) {
+    for (int i=0; i<sz; i++) {
+      SrcArray[i] = mynode*sz+42+i;
+      DstArray[i] = -1;
     }
     BARRIER();
-    gasnet_coll_broadcast(my_col_team, C_int, 0, B_int, sz*sizeof(int), 
-                          GASNET_COLL_IN_ALLSYNC|GASNET_COLL_OUT_NOSYNC|GASNET_COLL_LOCAL);
+    gex_Event_Wait(gex_Coll_BroadcastNB(my_col_tm, 0, DstArray, SrcArray, sz*sizeof(int), 0));
     BARRIER();
-    for(i=0; i<sz; i++) {
+    for (int i=0; i<sz; i++) {
       int expected = my_col*sz+42+i;
-      if(expected != C_int[i]) {
-        fprintf(stderr, "%d> %d %d (expecting %d)\n", mynode, i, C_int[i], expected);
+      if (expected != DstArray[i]) {
+        fprintf(stderr, "%d> %d %d (expecting %d)\n", mynode, i, DstArray[i], expected);
         gasnet_exit(1);
       }
     }
     BARRIER();
     /*time this*/
     start = TIME();
-    for(i=0; i<iters; i++) {
-      gasnet_coll_broadcast(my_col_team, C_int, 0, B_int, sz*sizeof(int), 
-                            GASNET_COLL_IN_ALLSYNC|GASNET_COLL_OUT_NOSYNC|GASNET_COLL_LOCAL);
+    for (int i=0; i<iters; i++) {
+      gex_Event_Wait(gex_Coll_BroadcastNB(my_col_tm, 0, DstArray, SrcArray, sz*sizeof(int), 0));
     }
     total = TIME() - start;
     

@@ -4,7 +4,7 @@ class MyDomain : Domain {
   var x;
 }
 
-proc foo(type t) where t:unmanaged Domain
+proc foo(type t) where isSubtype(t, unmanaged Domain)
 {
   writeln("In foo where");
 }

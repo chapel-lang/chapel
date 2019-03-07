@@ -49,8 +49,8 @@ var fluffTime : Timer;
 
 proc main() {
   // Allocate the levels
-  var Levels : [LevelDom] unmanaged MGLevel;
-  for ilevel in LevelDom do Levels[ilevel] = new unmanaged MGLevel(2**ilevel);
+  var Levels : [LevelDom] owned MGLevel;
+  for ilevel in LevelDom do Levels[ilevel] = new owned MGLevel(2**ilevel);
 
   var U,V,R : [Levels[numlevels].dom] real;
 
@@ -92,9 +92,6 @@ proc main() {
     writeln("Elapsed time (seconds):", timeit.elapsed());
     writeln("Fluff time :", fluffTime.elapsed());
   }
-
-  for il in Levels do delete il;
-
 }
 
 

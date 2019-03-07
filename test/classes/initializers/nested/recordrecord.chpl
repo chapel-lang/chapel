@@ -1,8 +1,6 @@
-pragma "use default init"
 record R {
   type t;
   var x:t;
-  pragma "use default init"
   record R2 {
     type t;
     var y:t;

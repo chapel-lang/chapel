@@ -12,7 +12,7 @@ AMUDP_BEGIN_EXTERNC
 
 /* idiot proofing */
 #undef  AMUDP_SPMDStartup
-#define AMUDP_SPMDStartup AMUDP_CONCAT(AMUDP_SPMDStartup_AMUDP,AMUDP_DEBUG_CONFIG)
+#define AMUDP_SPMDStartup AMX_CONCAT(AMUDP_SPMDStartup_AMUDP,AMUDP_DEBUG_CONFIG)
 
 /* ------------------------------------------------------------------------------------ */
 /* AMUDP SPMD Entry Points */

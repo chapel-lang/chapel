@@ -214,25 +214,80 @@
     #include <inttypes.h>
   #endif
 #endif /* _INTTYPES_DEFINED */
-
-#ifndef _INTTYPE_FORMATS_DEFINED
-#define _INTTYPE_FORMATS_DEFINED
+#endif /* _PORTABLE_INTTYPES_H */
 
   /* Fixed-width printf/scanf format specifiers to go with the types defined above.
    * C99-compliant inttypes.h should already provide these, so here we just ensure
    * that's the case for the ones we care about and provide a last-ditch effort otherwise.
+   * These are processed on every include of this header, to allow context-dependent adjustment.
    *
-   * Currently only worry about the 64-bit and PTR versions, since everything else can portably be 
-   * handled as an (unsigned) int on all platforms of interest.
+   * Currently only worry about the 64-bit and PTR versions.
+   *
+   * Also provide the following best-effort extensions, as replacements for C99 length modifiers t and z:
+   *   PRI[diouxX]SZ  - size_t    (signed or unsigned)
+   *   PRI[diouxX]PD  - ptrdiff_t (signed or unsigned)
+   * these require at least ONE of: 
+   *    1. GASNet configure results
+   *    2. Advertised C99 support (via __STDC_VERSION__)
+   *    3. Defines of __PRISZ_PREFIX and __PRIPD_PREFIX selecting the prefix to use
+   *    4. Defines of HAVE_C99_FORMAT_SPECIFIERS to enable/disable use of C99 versions and 
+   *       SIZEOF_{INT,LONG,LONG_LONG) defines when disabled.
    */
-  #if SIZEOF_VOID_P == 4 || PLATFORM_ARCH_32 || __INTPTR_MAX__ == 2147483647
+  #if HAVE_C99_FORMAT_SPECIFIERS || \
+      (!defined(HAVE_C99_FORMAT_SPECIFIERS) && __STDC_VERSION__ >= 199901L)
+    /* prefer libc-provided length modifiers added in C99 if we can determine they are available */
+    #ifndef __PRISZ_PREFIX
+    #define __PRISZ_PREFIX "z"
+    #endif
+    #ifndef __PRIPD_PREFIX
+    #define __PRIPD_PREFIX "t"
+    #endif
+  #endif
+  #if !defined(__PRISZ_PREFIX) && SIZEOF_SIZE_T /* use configure info when available */
+    #if   SIZEOF_SIZE_T == SIZEOF_INT
+       #define __PRISZ_PREFIX 
+    #elif SIZEOF_SIZE_T == SIZEOF_LONG
+       #define __PRISZ_PREFIX "l"
+    #elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+       #define __PRISZ_PREFIX "ll"
+    #endif
+  #endif
+  #if !defined(__PRIPD_PREFIX) && SIZEOF_PTRDIFF_T /* use configure info when available */
+    #if   SIZEOF_PTRDIFF_T == SIZEOF_INT
+       #define __PRIPD_PREFIX 
+    #elif SIZEOF_PTRDIFF_T == SIZEOF_LONG
+       #define __PRIPD_PREFIX "l"
+    #elif SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
+       #define __PRIPD_PREFIX "ll"
+    #endif
+  #endif
+  #if !defined(__PRI64_PREFIX) /* use configure info when available */
+    #if SIZEOF_LONG == 8
+       #define __PRI64_PREFIX  "l"
+    #elif SIZEOF_INT == 8
+       #define __PRI64_PREFIX 
+    #elif SIZEOF_LONG_LONG == 8
+       #define __PRI64_PREFIX  "ll"
+    #endif
+  #endif
+  #if !defined(__PRIPTR_PREFIX) && SIZEOF_VOID_P /* use configure info when available */
+    #if   SIZEOF_VOID_P == SIZEOF_LONG
+       #define __PRIPTR_PREFIX  "l"
+    #elif SIZEOF_VOID_P == SIZEOF_INT
+       #define __PRIPTR_PREFIX 
+    #elif SIZEOF_VOID_P == SIZEOF_LONG_LONG
+       #define __PRIPTR_PREFIX  "ll"
+    #endif
+  #endif
+  /* last resort */
+  #if SIZEOF_VOID_P == 4 || PLATFORM_ARCH_32 || __INTPTR_MAX__ == 2147483647 /* assume ILP32 */
     #ifndef __PRI64_PREFIX
     #define __PRI64_PREFIX "ll"
     #endif
     #ifndef __PRIPTR_PREFIX
     #define __PRIPTR_PREFIX 
     #endif
-  #else /* assume 64-bit if unsure */
+  #else /* assume LP64 */
     #ifndef __PRI64_PREFIX
     #define __PRI64_PREFIX  "l"
     #endif
@@ -279,6 +334,48 @@
   #define PRIXPTR __PRIPTR_PREFIX "X"
   #endif
 
+ #ifdef __PRISZ_PREFIX /* these are best-effort definitions - see above */
+  #ifndef PRIiSZ
+  #define PRIiSZ __PRISZ_PREFIX "i"
+  #endif
+  #ifndef PRIdSZ
+  #define PRIdSZ __PRISZ_PREFIX "d"
+  #endif
+  #ifndef PRIuSZ
+  #define PRIuSZ __PRISZ_PREFIX "u"
+  #endif
+  #ifndef PRIoSZ
+  #define PRIoSZ __PRISZ_PREFIX "o"
+  #endif
+  #ifndef PRIxSZ
+  #define PRIxSZ __PRISZ_PREFIX "x"
+  #endif
+  #ifndef PRIXSZ
+  #define PRIXSZ __PRISZ_PREFIX "X"
+  #endif
+ #endif
+
+ #ifdef __PRIPD_PREFIX /* these are best-effort definitions - see above */
+  #ifndef PRIiPD
+  #define PRIiPD __PRIPD_PREFIX "i"
+  #endif
+  #ifndef PRIdPD
+  #define PRIdPD __PRIPD_PREFIX "d"
+  #endif
+  #ifndef PRIuPD
+  #define PRIuPD __PRIPD_PREFIX "u"
+  #endif
+  #ifndef PRIoPD
+  #define PRIoPD __PRIPD_PREFIX "o"
+  #endif
+  #ifndef PRIxPD
+  #define PRIxPD __PRIPD_PREFIX "x"
+  #endif
+  #ifndef PRIXPD
+  #define PRIXPD __PRIPD_PREFIX "X"
+  #endif
+ #endif
+
   #ifndef SCNi64
   #define SCNi64 __PRI64_PREFIX "i"
   #endif
@@ -311,6 +408,3 @@
   #define SCNxPTR __PRIPTR_PREFIX "x"
   #endif
 
-#endif /* _INTTYPE_FORMATS_DEFINED */
-
-#endif /* _PORTABLE_INTTYPES_H */

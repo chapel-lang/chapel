@@ -338,6 +338,40 @@ all:
   06/20/18:
     - text: Optimize non-fetching network atomics (#9876)
       config: 16 node XC
+  06/29/18:
+    - Avoid using syncvar_t in the qthreads shim (#10082)
+  07/04/18:
+    - Remove spinwaiting from qthreads chpl_sync_lock() (#10133)
+  08/01/18:
+    - text: cannot reproduce old numbers for gn+aries
+      config: 16 node XC
+  08/15/18:
+    - text: Revert to stack-allocated rfDone indicators. (#10728)
+      config: 16 node XC
+  09/25/18:
+    - text: Optimize blocking puts/gets and fetching network AMOs (#11176)
+      config: 16 node XC
+  12/04/18:
+    - Set up gcc 8.2 as default gcc for nightly testing (#11762)
+  12/07/18:
+    - text: Optimize remote task spawning under ugni (#11799)
+      config: 16 node XC
+  12/13/18:
+    - text: Decrement the CQ counter when we consume the CQ event in ugni (#11875)
+      config: 16 node XC
+  01/04/19:
+    - text: Improve how we align and pad comm domains in ugni (#11973)
+      config: 16 node XC
+  01/07/19:
+    - Default to cstdlib atomics for gcc >= 5 (#11963)
+  02/06/19:
+    - text: Reduce contention on ugni's comm domains (#12240)
+      config: 16 node XC
+  02/07/19:
+    - text: Simplify how we acquire comm domains in ugni (#12258)
+      config: 16 node XC
+  02/08/19:
+    - replace PRIM_INIT with PRIM_DEFAULT_INIT_VAR (#12154)
 
 
 AllCompTime:
@@ -355,6 +389,12 @@ AllCompTime:
     - Loop over Defs and Uses with SymbolSymExprs (#5285)
   05/23/18:
     - Fix problems with tuples (#9572)
+  06/01/18:
+    - Represent if-expressions with IfExpr node instead of if-functions (#9649)
+  10/05/18:
+    - Compiler error for dereferencing a nil value (#11238)
+  10/19/18:
+    - Fix compiler performance issues in nilChecking (#11396)
 
 arguments:
   09/20/17:
@@ -422,6 +462,10 @@ binary-trees: &binary-trees-base
     - Updated to n=21 problem size and new rules (#5907)
   06/23/18:
     - Update more tests to compile with --warn-unstable (#9986)
+  09/06/18:
+    - Make performance tests make better use of managed classes (#10945)
+  09/19/18:
+    - Switch study version of binary trees from owned to unmanaged (#11128)
 binarytrees-submitted:
   <<: *binary-trees-base
 
@@ -437,11 +481,19 @@ build-associative:
   07/14/17:
     - Extend parallel array initialization to POD arrays (#6675)
 
+cast-from-string:
+  12/14/18:
+    - Allow underscores in the number when casting from string to integral (#11880)
+  01/20/19:
+    - Update string-to-int cast functions to look for a 0x style prefix (#12097)
+
 chameneos-redux:
   07/08/13:
     - altered output order for chameneos data, old data incompatible
   09/15/17:
     - Chameneos initializer updates (#7328)
+  10/31/18:
+    - Enable parallelism for shape-ful expressions over ranges (#11501)
 
 CoMD:
   07/26/17:
@@ -460,6 +512,14 @@ compSampler-timecomp: &timecomp-base
     - Faster 'fixStringLiteralInit' implementation (#9506)
   05/23/18:
     - Fix problems with tuples (#9572)
+  07/10/18:
+    - use isSubtype in preference to ':' in where clauses (#10143)
+    - Refactor codegenPrimitive, add limit to denormalize (#10187)
+  07/14/18:
+    - Improve the speed of codegenPrimitive (#10321)
+  10/19/18:
+    - Fix compiler performance issues in nilChecking (#11396)
+
 
 cg:
   09/20/16:
@@ -486,6 +546,14 @@ create-views:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
   04/19/18:
     - Use zero-arg initializer in BaseDom (#9250)
+  06/30/18:
+    - text: Could not repro old numbers (later "fixed" by reboot)
+      config: chapcs
+  08/04/18:
+    - text: Machine rebooted
+      config: chapcs
+  11/10/18:
+    - Improve timing and stability of the create-views performance test (#11609)
 
 dgemm.128:
   09/06/13:
@@ -514,8 +582,14 @@ ep.ml-perf: &ep-ml-base
     - Fix problems with tuples (#9572)
   06/26/18:
     - Make associative domains of enums more standard (#9978)
+  1/28/19:
+    - Represent reduce expressions using ForallStmt (#12131)
 ep.ml-time:
   <<: *ep-ml-base
+
+empty-chpl-barrier.ml-time:
+  08/02/18:
+    - Optimize the atomic barrier implementation for network atomics (#10633)
 
 fannkuch-redux:
   07/22/14:
@@ -553,6 +627,10 @@ fasta:
       config: chapcs
   08/02/17:
     - Remove handling of references from copyPropagation (#6779)
+  07/04/18:
+    - Disable enum->int casts for enums without values (#10114)
+  07/14/18:
+    - Optimize enum->int casts for concrete types (#10308)
 
 fastaredux:
   01/14/14:
@@ -563,6 +641,10 @@ fastaredux:
     - optimize certain functions that return with ref-intent (#3101)
   03/12/16:
     - implemented good_alloc_size for jemalloc(#3446)
+  07/04/18:
+    - Disable enum->int casts for enums without values (#10114)
+  07/14/18:
+    - Optimize enum->int casts for concrete types (#10308)
 
 fft-timecomp:
   <<: *timecomp-base
@@ -629,6 +711,8 @@ isx.ml-time: &isx-ml-base
     - Avoid task yielding during ugni memory registration (#8162)
   01/24/18:
     - Stop forcing serial initialization for isx-hand-optimized (#8290)
+  08/02/18:
+    - Optimize the atomic barrier implementation for network atomics (#10633)
 isx-hand-optimized.ml-time:
   <<: *isx-ml-base
 isx-release.ml-time:
@@ -671,6 +755,16 @@ jacobi:
     - Remove handling of references from copyPropagation (#6779)
   03/13/18:
     - Enable phase one dynamic dispatch (#8790)
+  07/10/18:
+    - use isSubtype in preference to ':' in where clauses (#10143)
+  07/19/18:
+    - Do not introduce ref temps (#10010)
+  10/16/18:
+    - No-alias hints for LLVM (no compiler perf impact) (#11324)
+  12/14/18:
+    - Allow underscores in the number when casting from string to integral (#11880)
+  01/22/19:
+    - Catch blocks catch owned, test code throws owned (#12090)
 
 knucleotide:
   10/17/15:
@@ -797,6 +891,16 @@ memleaks:
     - Have reindex domains/distributions preserve locality (#5757)
   07/25/17:
     - fix leaks introduced by reindex views in PR 5757 (#6776)
+  07/24/18:
+    - Initializers on by default (#10459)
+  07/25/18:
+    - Fix size of loop expr in LCALS (#10499)
+  09/06/18:
+    - Enable usage of LinearAlgebra without BLAS/LAPACK (#10929)
+  09/19/18:
+    - Use runtime type field in chpl__distributed for sparse domains (#11140)
+  10/09/18:
+    - Resolve some global array-of-array leaks (#11307)
 
 memleaksfull:
   07/08/14:
@@ -877,14 +981,44 @@ memleaksfull:
   06/19/18:
     - Remove origin field from DefaultRectangular (#9863)
     - Allow basic usage of nested types with initializers (#9886)
+  07/20/18:
+    - Fix leak in locale.cwd() (#10411)
+  07/24/18:
+    - Initializers on by default (#10459)
+  07/25/18:
+    - Fix size of loop expr in LCALS (#10499)
+  07/26/18:
+    - Close DataFrame leaks (#10514)
+    - Fix leak in cast to string from c_ptr (#10523)
+  08/01/18:
+    - Additional SparseBlockDom/Arr dsi methods to support bale-toposort (#10604)
+  09/06/18:
+    - Enable usage of LinearAlgebra without BLAS/LAPACK (#10929)
+  09/19/18:
+    - Use runtime type field in chpl__distributed for sparse domains (#11140)
+  09/27/18:
+    - Fix some SparseBlockDist leaks (#11227)
+  10/09/18:
+    - Resolve some global array-of-array leaks (#11307)
+  10/11/18:
+    - Resolve some leaks in user code (#11321)
+    - Free the result of '_build_tuple_always_allow_ref' for index vars (#11334)
+  10/16/18:
+    - Adding an exercise about finding duplicate files (#11358)
+  10/25/18:
+    - Fix reduction leak for identity() method (#11458)
+  1/28/19:
+    - Represent reduce expressions using ForallStmt (#12131)
 
 meteor:
   12/18/13:
     - Chapel level improvement by using implicit domains
   08/10/16:
     - Updated meteor's lock to yield less frequently (#4300)
+  11/08/18:
+    - Module-scope code gets module scope temps, fix lifetime checking (#11570)
 
-mg-b:
+mg: &mg-base
   05/23/17:
     - Fix NPB MG (#6284)
   06/13/17:
@@ -893,6 +1027,12 @@ mg-b:
     - Only perform packed updateFluff when there are multiple locales (#6512)
   06/22/18:
     - Make 'for' loop in dsiReallocate parallel (#9895)
+  09/20/18:
+    -  Move strided bulk transfer into common code (#11197)
+  09/21/18:
+    -  Restore comm=none performance lost in PR 11197 (#11206)
+mg-b:
+  <<: *mg-base
 
 mg.ml-time:
   05/11/17:
@@ -947,6 +1087,8 @@ nbody:
     - upgrade jemalloc to 4.2.0 (#3919)
   04/19/18:
     - Use zero-arg initializer in BaseDom (#9250)
+  08/31/18:
+    - Refactor PRIM_NEW resolution to enable promotion (#10919)
 
 no-op:
   02/24/17:
@@ -1096,6 +1238,10 @@ revcomp:
     - Update revcomp problem size; filenames for fasta-based inputs (#9043)
   04/19/18:
     - Use zero-arg initializer in BaseDom (#9250)
+  10/30/18:
+    - Improve string comparisons (#11479)
+  02/05/19:
+    - Make stdout, stderr ordering predictable in test output (#12236)
 
 sad:
   05/03/16:
@@ -1104,12 +1250,16 @@ sad:
 search:
   04/20/17:
     - Update RE2 (#6024)
-  05/26/18:
+  04/26/18:
     - Update tuples to use special function instead of constructors (#9317)
+  12/14/18:
+    - Tuple iteration yields (const) refs (#11866)
 
 spectralnorm:
   01/21/15:
     - qthreads updated to yield every ~100 uncontested sync var locks
+  12/18/18:
+    - brad version changed to serial implementation (#11904)
 
 spectral-norm-specify-step:
   01/21/15:
@@ -1194,7 +1344,7 @@ testSerialReductions:
   08/16/14:
     - result of Greg's commit to let the tasking layer determine parallelism
 
-thread-ring: &thread-ring-base
+thread-ring:
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
@@ -1204,8 +1354,8 @@ thread-ring: &thread-ring-base
     - Enforce qualified refs after inlining (#7906)
   06/07/18:
     - Prevent serialization from qthread sync vars (#9737)
-threadring-submitted:
-  <<: *thread-ring-base
+  08/30/18:
+    - Reduce hugepage waste from call stacks (#10254)
 
 time_array_vs_ddata:
   05/31/14:
@@ -1262,6 +1412,10 @@ timeVectorArray:
     - Enforce qualified refs after inlining (#7906)
   06/22/18:
     - Make 'for' loop in dsiReallocate parallel (#9895)
+  08/17/18:
+    - Add a new dsiReallocate that is aware of allocated size (#10793)
+  09/07/18:
+    - Fix performance regression in pop_front/pop_back from PR 10793 (#11017)
 
 views-forall-iter:
   10/12/17:

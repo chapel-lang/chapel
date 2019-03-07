@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,14 +32,13 @@ module DynamicIters {
    An atomic test-and-set lock.
 */
 pragma "no doc"
-pragma "use default init"
 record vlock {
-  var l: atomic bool;
+  var l: chpl__processorAtomicType(bool);
   proc lock() {
-    on this do while l.testAndSet() != false do chpl_task_yield();
+    on this do while l.testAndSet(memory_order_acquire) do chpl_task_yield();
   }
   proc unlock() {
-    l.write(false);
+    l.clear(memory_order_release);
   }
 }
 
@@ -236,7 +235,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int, parDim
 where tag == iterKind.follower
 {
   //Invoke the default rectangular domain follower iterator
-  for i in c._value.these(tag=iterKind.follower, followThis=followThis) do
+  for i in c.these(tag=iterKind.follower, followThis=followThis) do
     yield i;
 }
 
@@ -400,7 +399,7 @@ iter guided(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
   // Invoke the default rectangular domain follower iterator.
-  for i in c._value.these(tag=iterKind.follower, followThis=followThis) do {
+  for i in c.these(tag=iterKind.follower, followThis=followThis) do {
     yield i;
   }
 }
@@ -691,7 +690,7 @@ iter adaptive(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis
 where tag == iterKind.follower
 {
   // Invoke the default rectangular domain follower iterator.
-  for i in c._value.these(tag=iterKind.follower, followThis=followThis) do {
+  for i in c.these(tag=iterKind.follower, followThis=followThis) do {
     yield i;
   }
 }
@@ -699,12 +698,15 @@ where tag == iterKind.follower
 //************************* Helper functions
 private proc defaultNumTasks(nTasks:int)
 {
-  var dnTasks=nTasks;
-  if nTasks==0 then {
-    if dataParTasksPerLocale==0 then dnTasks=here.maxTaskPar;
-      else dnTasks=dataParTasksPerLocale;
-  } else if nTasks<0 then {
-    halt("'numTasks' is negative");
+  var dnTasks = nTasks;
+  if nTasks <= 0  {
+    if dataParTasksPerLocale == 0 then
+      dnTasks = here.maxTaskPar;
+    else
+      dnTasks = dataParTasksPerLocale;
+
+    if nTasks < 0 then
+      warning("'numTasks' < 0, defaulting to numTasks=" + dnTasks);
   }
   return dnTasks;
 }

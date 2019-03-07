@@ -1,2 +1,8 @@
-count.chpl:28: error: 'new' must be followed by a type expression
-count.chpl:28: error: 'new' must be followed by a type expression
+count.chpl:33: internal error: RES-IMP-NTS-nnnn chpl version mmmm
+Note: This source location is a guess.
+
+Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
+and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+

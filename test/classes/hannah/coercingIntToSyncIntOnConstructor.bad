@@ -1,3 +1,0 @@
-coercingIntToSyncIntOnConstructor.chpl:7: In function 'main':
-coercingIntToSyncIntOnConstructor.chpl:8: error: unresolved call '_new(type Foo, 1)'
-coercingIntToSyncIntOnConstructor.chpl:2: note: candidates are: _new(type chpl_t, x$: _syncvar(int(64)))

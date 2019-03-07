@@ -1,0 +1,6 @@
+semantics: Should param uints dispatch to ints when their values fit?
+
+This test demonstrates that, at present, param uint values don't
+dispatch to ints even when their values fit.  For other cases (e.g.,
+param ints that fit into smaller sized ints), we permit the dispatch.
+Should we here as well?

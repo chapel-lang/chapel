@@ -97,7 +97,6 @@ proc clusterFlags (
 //|/______________________________|/
 
 // helper class
-pragma "use default init"
 class ArrayWrapper
 {
   var Domain: domain(1,stridable=true);

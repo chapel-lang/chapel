@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,7 +31,6 @@
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
-#include "ipe.h"
 #include "iterator.h"
 #include "misc.h"
 #include "passes.h"
@@ -40,6 +39,8 @@
 #include "symbol.h"
 #include "UnmanagedClassType.h"
 #include "vec.h"
+
+#include <cmath>
 
 static bool isDerivedType(Type* type, Flag flag);
 
@@ -387,6 +388,20 @@ bool EnumType::isAbstract() {
   return true;
 }
 
+bool EnumType::isConcrete() {
+  // if the first constant has an initializer, it's concrete;
+  // otherwise, it's not.  This loop with a guaranteed return is a
+  // lazy way of getting that first constant.
+  for_enums(constant, this) {
+    if (constant->init) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
 
 PrimitiveType* EnumType::getIntegerType() {
   INT_ASSERT(integerType);
@@ -516,38 +531,35 @@ void initPrimitiveTypes() {
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
 
   dtString                             = new AggregateType(AGGREGATE_RECORD);
+  dtString->symbol                     = new TypeSymbol("string", dtString);
+  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
+
+  dtLocale                             = new AggregateType(AGGREGATE_RECORD);
+  dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
 
+  gFalse->addFlag(FLAG_PARAM);
   gFalse->immediate                    = new Immediate;
   gFalse->immediate->v_bool            = false;
   gFalse->immediate->const_kind        = NUM_KIND_BOOL;
-  gFalse->immediate->num_index         = BOOL_SIZE_SYS;
+  gFalse->immediate->num_index         = BOOL_SIZE_DEFAULT;
 
+  gTrue->addFlag(FLAG_PARAM);
   gTrue->immediate                     = new Immediate;
   gTrue->immediate->v_bool             = true;
   gTrue->immediate->const_kind         = NUM_KIND_BOOL;
-  gTrue->immediate->num_index          = BOOL_SIZE_SYS;
-
-  //
-  // Mark the "high water mark" for types that IPE relies on directly
-  //
-  if (fUseIPE == true) {
-    ipeRootInit();
-  }
+  gTrue->immediate->num_index          = BOOL_SIZE_DEFAULT;
 
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
-  dtStringC->defaultValue              = new_CStringSymbol("");
 
   dtBool                               = dtBools[BOOL_SIZE_SYS];
 
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
-
-  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   gTryToken = new VarSymbol("chpl__tryToken", dtBool);
 
@@ -556,6 +568,9 @@ void initPrimitiveTypes() {
 
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
+
+  // dtStringC defaults to nil
+  dtStringC->defaultValue = gNil;
 
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
@@ -591,25 +606,35 @@ void initPrimitiveTypes() {
   INIT_PRIM_COMPLEX( "complex(64)", 64);
   INIT_PRIM_COMPLEX( "complex", 128);       // default size
 
+  // Set up INFINITY and NAN params
+  gInfinity = createSymbol(dtReal[FLOAT_SIZE_DEFAULT], "chpl_INFINITY");
+  gInfinity->addFlag(FLAG_PARAM);
+  gInfinity->immediate = new Immediate;
+  gInfinity->immediate->v_float64 = INFINITY;
+  gInfinity->immediate->const_kind = NUM_KIND_REAL;
+  gInfinity->immediate->num_index = FLOAT_SIZE_DEFAULT;
+
+  gNan = createSymbol(dtReal[FLOAT_SIZE_DEFAULT], "chpl_NAN");
+  gNan->addFlag(FLAG_PARAM);
+  gNan->immediate = new Immediate;
+  gNan->immediate->v_float64 = NAN;
+  gNan->immediate->const_kind = NUM_KIND_REAL;
+  gNan->immediate->num_index = FLOAT_SIZE_DEFAULT;
+
+
+
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
   dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
-  dtCVoidPtr->defaultValue = gOpaque;
+  dtCVoidPtr->defaultValue = gNil;
+
   dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
-  dtCFnPtr->defaultValue = gOpaque;
-  CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
-  gCVoidPtr->cname = "NULL";
-  gCVoidPtr->addFlag(FLAG_EXTERN);
-
-  dtSymbol = createPrimitiveType( "symbol", "_symbol");
+  dtCFnPtr->defaultValue = gNil;
 
   dtFile = createPrimitiveType ("_file", "_cfile");
   dtFile->symbol->addFlag(FLAG_EXTERN);
-
-  CREATE_DEFAULT_SYMBOL(dtFile, gFile, "NULL");
-  gFile->addFlag(FLAG_EXTERN);
 
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
 
@@ -670,8 +695,10 @@ void initPrimitiveTypes() {
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
 
   dtMethodToken = createInternalType ("_MT", "_MT");
+  dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
 
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
+  CREATE_DEFAULT_SYMBOL(dtDummyRef, gDummyRef, "_dummyRef");
 
   dtTypeDefaultToken = createInternalType("_TypeDefaultT", "_TypeDefaultT");
 
@@ -860,6 +887,7 @@ bool isLegalParamType(Type* t) {
           is_uint_type(t) ||
           is_real_type(t) ||
           is_imag_type(t) ||
+          is_complex_type(t) ||
           is_enum_type(t) ||
           isString(t) ||
           t == dtStringC ||
@@ -1035,7 +1063,7 @@ Type* getManagedPtrBorrowType(const Type* t) {
 
   INT_ASSERT(at);
 
-  Type* ret = at->getField("t")->type;
+  Type* ret = at->getField("chpl_t")->type;
   Type* borrow = canonicalClassType(ret);
   return borrow;
 }
@@ -1140,13 +1168,7 @@ bool isArrayClass(Type* type) {
 }
 
 bool isString(Type* type) {
-  bool retval = false;
-
-  if (AggregateType* aggr = toAggregateType(type)) {
-    retval = strcmp(aggr->symbol->name, "string") == 0;
-  }
-
-  return retval;
+  return type == dtString;
 }
 
 //
@@ -1351,7 +1373,7 @@ bool isNonGenericClassWithInitializers(Type* type) {
 
   if (isNonGenericClass(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      if (at->initializerStyle == DEFINES_INITIALIZER) {
+      if (at->hasUserDefinedInit == true) {
         retval = true;
       } else if (at->wantsDefaultInitializer()) {
         retval = true;
@@ -1381,7 +1403,7 @@ bool isGenericClassWithInitializers(Type* type) {
 
   if (isGenericClass(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      if (at->initializerStyle == DEFINES_INITIALIZER) {
+      if (at->hasUserDefinedInit == true) {
         retval = true;
       } else if (at->wantsDefaultInitializer()) {
         retval = true;
@@ -1398,7 +1420,7 @@ bool isClassWithInitializers(Type* type) {
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isClass()                    == true  &&
         at->symbol->hasFlag(FLAG_EXTERN) == false &&
-        (at->initializerStyle == DEFINES_INITIALIZER ||
+        (at->hasUserDefinedInit == true ||
          at->wantsDefaultInitializer())) {
       retval = true;
     }
@@ -1426,7 +1448,7 @@ bool isNonGenericRecordWithInitializers(Type* type) {
 
   if (isNonGenericRecord(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      if (at->initializerStyle == DEFINES_INITIALIZER) {
+      if (at->hasUserDefinedInit == true) {
         retval = true;
       } else if (at->wantsDefaultInitializer()) {
         retval = true;
@@ -1456,7 +1478,7 @@ bool isGenericRecordWithInitializers(Type* type) {
 
   if (isGenericRecord(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      if (at->initializerStyle == DEFINES_INITIALIZER) {
+      if (at->hasUserDefinedInit == true) {
         retval = true;
       } else if (at->wantsDefaultInitializer()) {
         retval = true;
@@ -1472,8 +1494,7 @@ bool isRecordWithInitializers(Type* type) {
 
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isRecord()                   == true  &&
-        at->symbol->hasFlag(FLAG_EXTERN) == false &&
-        (at->initializerStyle == DEFINES_INITIALIZER ||
+        (at->hasUserDefinedInit == true ||
          at->wantsDefaultInitializer())) {
       retval = true;
     }
@@ -1503,4 +1524,18 @@ bool needsGenericRecordInitializer(Type* type) {
   }
 
   return retval;
+}
+
+Immediate getDefaultImmediate(Type* t) {
+  VarSymbol* defaultVar = toVarSymbol(t->defaultValue);
+  // (or anything handled by coerce_immediate)
+  if (defaultVar == NULL || defaultVar->immediate == NULL)
+    INT_FATAL(t->symbol, "does not have a default value");
+
+  // Numeric types should have a default of the right type
+  if (defaultVar->type != t)
+    INT_FATAL(t->symbol, "does not have a default of the same type");
+
+  Immediate ret = *defaultVar->immediate;
+  return ret;
 }

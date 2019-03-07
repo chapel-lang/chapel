@@ -94,7 +94,7 @@ proc main() {
 proc memberCheck(A) {
   var fails = 0;
   forall (i,j) in A.domain with (+ reduce fails) {
-    if A.domain.member((i,j)) == false {
+    if A.domain.contains((i,j)) == false {
       fails += 1;
       writeln("NOT FOUND: ", (i,j));
     }
@@ -123,7 +123,7 @@ proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
   const nnzAB = Adom._value.nnz + Bdom._value.nnz;
   Cdom._value.nnzDom = {1..nnzAB};
 
-  var spa = new _SPA(cols=D.dim(1), eltType=A.eltType);
+  var spa = new _SPA(cols={D.dim(1)}, eltType=A.eltType);
 
   /*
    IR (row)     - nnz-rows  - A.domain._value.startIdx
@@ -159,7 +159,7 @@ proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
 pragma "no doc"
 /* Sparse-accumulator */
 record _SPA {
-  var cols; // range(?)
+  var cols: domain(1);
   type eltType = int;
   var b: [cols] bool,      // occupation
       w: [cols] eltType,   // values

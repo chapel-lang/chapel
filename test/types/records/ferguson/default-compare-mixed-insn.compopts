@@ -1,0 +1,6 @@
+-scase=1 # default-compare-mixed-insn.1.good
+-scase=2 # default-compare-mixed-insn.2.good
+-scase=3 # default-compare-mixed-insn.3.good
+-scase=4 # default-compare-mixed-insn.4.good
+-scase=5 # default-compare-mixed-insn.5.good
+-scase=6 # default-compare-mixed-insn.6.good

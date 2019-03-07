@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -141,6 +141,7 @@ void chpl_rt_init(int argc, char* argv[]) {
   // UTF-8 functions (e.g. wcrtomb) work as
   // indicated by the locale environment variables.
   setlocale(LC_CTYPE,"");
+  qio_set_glocale();
   // So that use of localtime_r is portable.
   tzset();
 
@@ -304,9 +305,14 @@ void chpl_library_init(int argc, char* argv[]) {
   chpl_task_callMain(chpl_std_module_init);     // Initialize std modules
 }
 
+// Defined in modules/internal/ChapelUtil.chpl.  Used to clean up any modules
+// we may have initialized
+extern void chpl_deinitModules(void);
+
 //
 // A wrapper around chpl-init.c:chpl_rt_finalize(...), sole purpose is 
 // to provide a "chpl_library_*" interface for the Chapel "library-user".
 void chpl_library_finalize(void) {
+  chpl_deinitModules();
   chpl_rt_finalize(0);
 }

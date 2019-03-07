@@ -433,7 +433,7 @@ static QINLINE aligned_t qthread_internal_incr_mod_(aligned_t             *opera
     aligned_t retval;
 
 #if QTHREAD_ATOMIC_CAS && (QTHREAD_SIZEOF_ALIGNED_T == 4)
-    register uint32_t oldval, newval;
+    uint32_t oldval, newval;
 
     newval = *operand;
     do {
@@ -444,7 +444,7 @@ static QINLINE aligned_t qthread_internal_incr_mod_(aligned_t             *opera
         newval = __sync_val_compare_and_swap((uint32_t *)operand, oldval, newval);
     } while (oldval != newval);
 #elif QTHREAD_ATOMIC_CAS && (QTHREAD_SIZEOF_ALIGNED_T == 8)
-    register uint64_t oldval, newval;
+    uint64_t oldval, newval;
 
     newval = *operand;
     do {
@@ -458,8 +458,8 @@ static QINLINE aligned_t qthread_internal_incr_mod_(aligned_t             *opera
 # if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32) || \
     ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) && (QTHREAD_SIZEOF_ALIGNED_T == 4))
 
-    register unsigned int incrd = incrd;        /* these don't need to be initialized */
-    register unsigned int compd = compd;        /* they're just tmp variables */
+    unsigned int incrd = incrd;        /* these don't need to be initialized */
+    unsigned int compd = compd;        /* they're just tmp variables */
 
     /* the minus in bne- means "this bne is unlikely to be taken" */
     asm volatile ("A_%=:\n\t"             /* local label */
@@ -481,8 +481,8 @@ static QINLINE aligned_t qthread_internal_incr_mod_(aligned_t             *opera
                   : "cc", "memory");
 
 # elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64)
-    register uint64_t incrd = incrd;
-    register uint64_t compd = compd;
+    uint64_t incrd = incrd;
+    uint64_t compd = compd;
 
     asm volatile ("A_%=:\n\t"             /* local label */
                   "ldarx  %0,0,%3\n\t"    /* load operand */
@@ -501,7 +501,7 @@ static QINLINE aligned_t qthread_internal_incr_mod_(aligned_t             *opera
 # elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_32) || \
     ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64) && (QTHREAD_SIZEOF_ALIGNED_T == 4))
 
-    register uint32_t oldval, newval;
+    uint32_t oldval, newval;
 
     /* newval = *operand; */
     do {
@@ -529,7 +529,7 @@ static QINLINE aligned_t qthread_internal_incr_mod_(aligned_t             *opera
     } while (oldval != newval);
 
 # elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64)
-    register aligned_t oldval, newval;
+    aligned_t oldval, newval;
 
     /* newval = *operand; */
     do {
@@ -618,7 +618,7 @@ static QINLINE aligned_t qthread_internal_incr_mod_(aligned_t             *opera
             uint32_t h;
         } s;
     } oldval, newval;
-    register char test;
+    char test;
 
     do {
 #  ifdef __PIC__

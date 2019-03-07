@@ -13,7 +13,7 @@ class D : C {
       ranges(i) = 1..i;
   }
 
-  proc bbox(x: int) {
+  override proc bbox(x: int) {
     return ranges(x);
   }
 }

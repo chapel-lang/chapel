@@ -11,7 +11,7 @@ class Array {
 }
 class MyArray : Array {
   var dom;
-  proc foo() {
+  override proc foo() {
     writeln("In child foo");
     return dom;
   }

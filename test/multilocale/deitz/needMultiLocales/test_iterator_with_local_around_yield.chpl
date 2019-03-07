@@ -10,10 +10,12 @@ class C {
   var i: int = -1;
 }
 
-var c = new C();
+var c = new unmanaged C();
 
 on Locales(1) {
   for i in ii() {
     writeln(c.i);
   }
 }
+
+delete c;

@@ -7,8 +7,8 @@ module Strassen_Main
 
     proc main()
     {
-        var factory = new StrassenFactory(n);
-        var runner = new BenchmarkRunner(factory,10);
+        var factory = new unmanaged StrassenFactory(n);
+        var runner = new unmanaged BenchmarkRunner(factory,10);
 
         runner.runBenchmark();
     }

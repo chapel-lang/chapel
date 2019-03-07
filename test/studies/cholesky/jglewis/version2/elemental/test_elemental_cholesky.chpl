@@ -18,7 +18,7 @@ module cholesky_test_elemental_symmetric_ranges {
 
   proc main {
 
-    var Rand = new RandomStream ( real, seed = 314159) ;
+    var Rand = new owned RandomStream ( real, seed = 314159) ;
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
@@ -124,8 +124,6 @@ module cholesky_test_elemental_symmetric_ranges {
       check_factorization ( A, L );
     else
       writeln ("factorization failed for non-positive semi-definite matrix");
- 
-    delete Rand;
   }
 
   proc check_factorization ( A : [], L : [] )

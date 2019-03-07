@@ -4,7 +4,7 @@ record myR {
 class myC {
   var r: myR;
 }
-var c = new myC();
+var c = new owned myC();
 var s1 = "hi";
 
 writeln(c);

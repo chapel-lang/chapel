@@ -1,5 +1,5 @@
 proc main() {
-  var f = new Foo1();
+  var f = new borrowed Foo1();
   writeln("f = ", f);
 }
 

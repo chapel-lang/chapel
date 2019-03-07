@@ -4,7 +4,7 @@ use MadAnalytics;
 class Sum: AFcn {
     var f: unmanaged AFcn;
     var g: unmanaged AFcn;
-    proc this(x) {
+    override proc this(x) {
         return f(x)+g(x);
     }
 }
@@ -12,7 +12,7 @@ class Sum: AFcn {
 class Product: AFcn {
     var f: unmanaged AFcn;
     var g: unmanaged AFcn;
-    proc this(x) {
+    override proc this(x) {
         return f(x)*g(x);
     }
 }

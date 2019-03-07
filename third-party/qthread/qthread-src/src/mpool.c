@@ -180,6 +180,9 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
       /* adjust item_size to be a multiple of pagesize */
       item_size += pagesize - (item_size % pagesize);
       max_num_items = max_alloc_size / item_size; /* floor */
+      if (max_num_items < 2) {
+          max_num_items = 2;
+      }
       alloc_size = item_size * max_num_items;
     }
 

@@ -1,2 +1,0 @@
-constructorParent.chpl:12: In initializer:
-constructorParent.chpl:13: error: unresolved call 'Parent.init(13)'

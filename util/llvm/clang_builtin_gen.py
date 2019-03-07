@@ -1,11 +1,17 @@
 #!/usr/bin/python3
 
+# Run it with e.g.
+# ./util/llvm/clang_builtin_gen.py third-party/llvm/llvm/tools/clang/include/clang/Basic/Builtins.def
+
 import sys
 import re
 import os
 import subprocess
 
 clangDelegatedBuiltins = [
+    "cabs",
+    "cabsf",
+    "cabsl",
     "cimag",
     "cimagf",
     "cimagl",
@@ -18,9 +24,10 @@ clangDelegatedBuiltins = [
 ]
 
 rewrittenBuiltins = [
-    "cabs",
-    "cabsf",
-    "cabsl",
+    # these are defined manually in chapel_libc_wrapper.h
+    # rather than in the generated clang_builtins_wrapper.h
+    #
+    # Formerly handled cabs etc
 ]
 
 
@@ -152,7 +159,7 @@ def parseBuiltin(b):
     return None
 
 def runLicenseScript(f):
-  licenseScriptPath = chplHome + "util/buildRelease/add_license_to_sources.py"
+  licenseScriptPath = chplHome + "/util/buildRelease/add_license_to_sources.py"
   subprocess.run([licenseScriptPath, f])
 
 def main():
@@ -213,6 +220,7 @@ def main():
     clangBuiltinsWrappedSetLocation = chplHome+"/compiler/include/clangBuiltinsWrappedSet.h"
     with open(clangBuiltinsWrappedSetLocation, 'w') as f:
         f.write("\n".join(clangBuiltinsWrappedSetContent))
+        f.write("\n")
 
     runLicenseScript(clangBuiltinsWrapperLocation)
     runLicenseScript(clangBuiltinsWrappedSetLocation)

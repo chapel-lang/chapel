@@ -38,7 +38,7 @@ ifeq ($(CHPL_MAKE_LOCALE_MODEL),flat)
 CHPL_HWLOC_CFG_OPTIONS += --disable-libnuma
 endif
 
-ifeq ($(CHPL_LIBMODE),shared)
+ifeq ($(CHPL_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 

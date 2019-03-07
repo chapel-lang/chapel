@@ -5,7 +5,7 @@ class D {
   var s: single real;
 }
 
-var d: D = new D();
+var d: unmanaged D = new unmanaged D();
 var f: real;
 
 begin {

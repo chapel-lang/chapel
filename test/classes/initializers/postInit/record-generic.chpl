@@ -1,5 +1,5 @@
 // Verify that postinit() is called correctly when the new
-// expression is a statement i.e. has a lock statement as
+// expression is a statement i.e. has a block statement as
 // its parent.
 //
 // This can occur in two situations

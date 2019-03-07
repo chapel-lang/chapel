@@ -6,7 +6,7 @@ record SoManyParams {
   param b = -6;
   var otherField = 10;
 
-  proc init(otherFieldVal) where !otherFieldVal: SoManyParams {
+  proc init(otherFieldVal) where !isSubtype(otherFieldVal.type, SoManyParams) {
     otherField = otherFieldVal;
     // the above is used to make the initializer actually do something.  The
     // other two fields should be given their appropriate default value.

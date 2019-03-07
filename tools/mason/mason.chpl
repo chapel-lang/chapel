@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,7 +20,7 @@
  * Github: @Spartee
  */
 
-
+use MasonModify;
 use MasonUtils;
 use MasonHelp;
 use MasonEnv;
@@ -31,6 +31,9 @@ use MasonSearch;
 use MasonTest;
 use MasonRun;
 use FileSystem;
+use MasonSystem;
+use MasonExternal;
+
 
 /*
 
@@ -65,34 +68,43 @@ Full documentation is located in the chapel release in $CHPL_HOME/doc/rst/tools/
 
 
 
-proc main(args: [] string) {
-  if args.size < 2 {
-    masonHelp();
-    exit();
-  }
 
-  select (args[1]) {
-    when 'new' do masonNew(args);
-    when 'build' do masonBuild(args);
-    when 'update' do UpdateLock(args);
-    when 'run' do masonRun(args);
-    when 'search' do masonSearch(args);
-    when 'test' do masonTest(args);
-    when 'env' do masonEnv(args);
-    when 'doc' do masonDoc(args);
-    when 'clean' do masonClean();
-    when 'help' do masonHelp();
-    when 'version' do printVersion();
-    when '--list' do masonList();
-    when '-h' do masonHelp();
-    when '--help' do masonHelp();
-    when '-V' do printVersion();
-    when '--version' do printVersion();
-    otherwise {
-      writeln('error: no such subcommand');
-      writeln('try mason --help');
-      exit();
+proc main(args: [] string) throws {
+  try! {
+    if args.size < 2 {
+      masonHelp();
+      exit(0);
     }
+    select (args[1]) {
+      when 'new' do masonNew(args);
+      when 'add' do masonModify(args);
+      when 'rm' do masonModify(args);
+      when 'build' do masonBuild(args);
+      when 'update' do UpdateLock(args);
+      when 'run' do masonRun(args);
+      when 'search' do masonSearch(args);
+      when 'system' do masonSystem(args);
+      when 'external' do masonExternal(args);
+      when 'test' do masonTest(args);
+      when 'env' do masonEnv(args);
+      when 'doc' do masonDoc(args);
+      when 'clean' do masonClean();
+      when 'help' do masonHelp();
+      when 'version' do printVersion();
+      when '--list' do masonList();
+      when '-h' do masonHelp();
+      when '--help' do masonHelp();
+      when '-V' do printVersion();
+      when '--version' do printVersion();
+      otherwise {
+        throw new owned MasonError('No such subcommand \ntry mason --help');
+        exit(1);
+      }
+    }
+  }
+  catch e: MasonError {
+    stderr.writeln(e.message());
+    exit(1);
   }
 }
 
@@ -105,20 +117,28 @@ proc masonClean() {
     runCommand('rm -rf ' + projectHome + '/target');
   }
   catch e: MasonError {
-    writeln(e.message());
+    stderr.writeln(e.message());
   }
 }
 
 
 proc masonDoc(args) {
   try! {
+    const tomlName = 'Mason.toml';
     const cwd = getEnv("PWD");
-    const projectHome = getProjectHome(cwd);
-    const toDoc = basename(projectHome);
-    const project = toDoc + '.chpl';
+
+    const projectHome = getProjectHome(cwd, tomlName);
+    const tomlPath = projectHome + "/" + tomlName;
+
+    const toParse = open(projectHome + "/" + tomlName, iomode.r);
+    var tomlFile = new owned(parseToml(toParse));
+
+    const projectName = tomlFile["brick"]["name"].s;
+    const projectFile = projectName + '.chpl';
+
     if isDir(projectHome + '/src/') {
-      if isFile(projectHome + '/src/' + project) {
-        const command = 'chpldoc ' + projectHome + '/src/' + project + ' -o ' + projectHome + '/doc/';
+      if isFile(projectHome + '/src/' + projectFile) {
+        const command = 'chpldoc ' + projectHome + '/src/' + projectFile + ' -o ' + projectHome + '/doc/';
         writeln(command);
         runCommand(command);
       }
@@ -129,7 +149,7 @@ proc masonDoc(args) {
     }
   }
   catch e: MasonError {
-    writeln(e.message());
+    stderr.writeln(e.message());
   }
 }
 

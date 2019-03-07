@@ -1,13 +1,11 @@
-pragma "use default init"
 record GenericRecord {
   var field;
 }
 
 record Wrapper {
   var f:GenericRecord;
-  proc init(type recType) {
-    var tmp:recType;
-    this.f = tmp;
+  proc init(f : GenericRecord) {
+    this.f = f;
   }
 }
 

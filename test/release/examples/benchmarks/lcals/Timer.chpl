@@ -19,13 +19,13 @@ module Timer {
 
   class ChapelTimer: TimerImpl {
     var t: Timer;
-    proc start() {
+    override proc start() {
       t.start();
     }
-    proc stop() {
+    override proc stop() {
       t.stop();
     }
-    proc elapsed() {
+    override proc elapsed() {
       return t.elapsed();
     }
   }
@@ -37,13 +37,13 @@ module Timer {
     var startTime: uint(64);
     var endTime: uint(64);
 
-    proc start() {
+    override proc start() {
       startTime = clock();
     }
-    proc stop() {
+    override proc stop() {
       endTime = clock();
     }
-    proc elapsed() {
+    override proc elapsed() {
       return (endTime - startTime): real(64) / CLOCKS_PER_SEC;
     }
   }
@@ -56,35 +56,32 @@ module Timer {
     proc init() {
       halt("CycleTimer not implemented");
     }
-    proc start() {
+    override proc start() {
       startTime = 0; // = getticks();
     }
-    proc stop() {
+    override proc stop() {
       endTime = 0; // = getticks();
     }
-    proc elapsed() {
+    override proc elapsed() {
       return 0.0;
     }
   }
 
 
   class LoopTimer {
-    var t: TimerImpl;
+    var t: owned TimerImpl;
     var was_run: bool;
 
     proc init(timerType: TimerType = defaultTimerType) {
       if timerType == TimerType.Chapel {
-        t = new ChapelTimer();
+        t = new owned ChapelTimer();
       } else if timerType == TimerType.Clock then {
-        t = new ClockTimer();
+        t = new owned ClockTimer();
       } else if timerType == TimerType.Cycle then {
-        t = new CycleTimer();
+        t = new owned CycleTimer();
       } else {
         halt("Unknown timer type");
       }
-    }
-    proc deinit() {
-      if t != nil then delete t;
     }
 
     proc start() {

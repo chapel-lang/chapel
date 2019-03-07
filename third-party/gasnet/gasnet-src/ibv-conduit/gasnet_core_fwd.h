@@ -4,8 +4,8 @@
  * Terms of use are as specified in license.txt
  */
 
-#ifndef _IN_GASNET_H
-  #error This file is not meant to be included directly- clients should include gasnet.h
+#ifndef _IN_GASNETEX_H
+  #error This file is not meant to be included directly- clients should include gasnetex.h
 #endif
 
 #ifndef _GASNET_CORE_FWD_H
@@ -15,7 +15,7 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      1.19
+#define GASNET_CORE_VERSION      2.0
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -23,21 +23,25 @@
 #define GASNET_CONDUIT_NAME_STR  _STRINGIFY(GASNET_CONDUIT_NAME)
 #define GASNET_CONDUIT_IBV       1
 
-/* 16K is the limit on the LID space, but we must allow more than 1 proc per node */
-/* 64K corresponds to 16 bits used in the AM Header and 16-bit gasnet_node_t */
-#define GASNET_MAXNODES	65535
+/* If you change GASNETC_BUFSZ then you probably want to also
+ * adjust GASNETC_PUTINMOVE_LIMIT_MAX in firehose_fwd.h
+ */
+#ifndef GASNETC_BUFSZ
+  #define GASNETC_BUFSZ 4096
+#endif
 
-/* Explicitly set some types because we depend on their sizes when encoding them */
-#define _GASNET_NODE_T
-typedef uint16_t gasnet_node_t;
-#define _GASNET_HANDLER_T
-typedef uint8_t gasnet_handler_t;
+/* 16K is the limit on the LID space, but we must allow more than 1 proc per node */
+/* 64K corresponds to 16 bits used in the AM Header and 16-bit gex_Rank_t */
+#define GASNET_MAXNODES	65535
 
   /* GASNET_PSHM defined 1 if this conduit supports PSHM. leave undefined otherwise. */
 /* As described in bug 3373, ibv_reg_mem() on Solaris only works with SYSV */
 #if GASNETI_PSHM_ENABLED && !(PLATFORM_OS_SOLARIS && !GASNETI_PSHM_SYSV)
   #define GASNET_PSHM 1
 #endif
+
+// PSHM and loopback support need to know largest Medium if larger than MAX(LUB{Request,Reply}Medium)
+#define GASNETC_MAX_MEDIUM_NBRHD GASNETC_BUFSZ
 
   /*  defined to be 1 if gasnet_init guarantees that the remote-access memory segment will be aligned  */
   /*  at the same virtual address on all nodes. defined to 0 otherwise */
@@ -64,21 +68,35 @@ typedef uint8_t gasnet_handler_t;
   #define GASNETI_CONDUIT_THREADS 1
 #endif
 
-  /* define to 1 if your conduit may interrupt an application thread 
-     (e.g. with a signal) to run AM handlers (interrupt-based handler dispatch)
-   */
-/* #define GASNETC_USE_INTERRUPTS 1 */
-  
-  /* define these to 1 if your conduit cannot use the default implementation
-     of gasnetc_amregister() (in gasnet_internal.c)
+  /* define these to 1 if your conduit needs to augment the implementation
+     of gasneti_reghandler() (in gasnet_internal.c)
    */
 /* #define GASNETC_AMREGISTER 1 */
 
-  /* define these to 1 if your conduit supports PSHM, but cannot use the
+  /* define this to 1 if your conduit supports PSHM, but cannot use the
      default interfaces. (see template-conduit/gasnet_core.c and gasnet_pshm.h)
    */
 /* #define GASNETC_GET_HANDLER 1 */
-/* #define GASNETC_TOKEN_CREATE 1 */
+
+  /* uncomment for each {Request,Reply} X {Medium,Long} pair for which your
+     conduit implements the corresponding gasnetc_AM_{Prepare,Commit}*().
+     If unset, a conduit-independent implementation in terms of the internal
+     functions gasnetc_AM{Request,Reply}{Medium,Long}V() will be used, and
+     your conduit must provide the V-suffixed functions for any of these that
+     are not defined.
+   */
+/* #define GASNETC_HAVE_NP_REQ_MEDIUM 1 */
+/* #define GASNETC_HAVE_NP_REP_MEDIUM 1 */
+/* #define GASNETC_HAVE_NP_REQ_LONG 1 */
+/* #define GASNETC_HAVE_NP_REP_LONG 1 */
+
+  /* uncomment if your conduit's gasnetc_AMRequest{Short,Medium,Long}V()
+     include a call to gasneti_AMPoll (or equivalent) for progress.
+     The preferred implementation is to Poll only in the M-suffixed calls
+     and not the V-suffixed calls (and GASNETC_REQUESTV_POLLS undefined).
+     Used if (and only if) any of the GASNETC_HAVE_NP_* values above are unset.
+   */
+/* #define GASNETC_REQUESTV_POLLS 1 */
 
   /* this can be used to add conduit-specific 
      statistical collection values (see gasnet_trace.h) */
@@ -141,5 +159,11 @@ typedef uint8_t gasnet_handler_t;
 extern void gasnetc_amrdma_balance(void);
 #define GASNETC_PROGRESSFNS_LIST(FN) \
   FN(gasnetc_pf_amrdma, COUNTED, gasnetc_amrdma_balance)
+
+/* ------------------------------------------------------------------------------------ */
+/* handler table access for PSHM (temporary global impl until PSHM can pass actual ep) */
+#define GASNETC_GET_HANDLER 1
+#define gasnetc_get_hentry(_ep,_index) (&gasnetc_ep0->_amtbl[(_index)])
+#define gasnetc_get_handler(_ep,_index,_field) (gasnetc_get_hentry((_ep),(_index))->gex_##_field)
 
 #endif

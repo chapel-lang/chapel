@@ -1,5 +1,3 @@
-// Modified from
-// test/classes/constructors/base-class-generic-args.chpl
 
 // Contributed by Rafael Larrosa Jimenez (rlarrosa@uma.es)
 
@@ -26,7 +24,7 @@ class Oval: Circle{
   }
 }
 
-proc Oval.area() return 3.14159*r2;
+override proc Oval.area() return 3.14159*r2;
 
 
 

@@ -1,33 +1,31 @@
 pragma "safe"
 module l16 {
 
-use SharedObject;
 
-pragma "use default init"
+
 class MyClass {
   var x:int;
 }
 
-pragma "use default init"
 record R {
-  var c:Shared(MyClass);
+  var c:shared MyClass;
 }
 
-proc f(c:Shared(MyClass)) {
+proc f(c:shared MyClass) {
   var r = new R(c);
   return r;
 }
 
-proc g(c:Shared(MyClass)) {
+proc g(c:shared MyClass) {
   return new R(c);
 }
 
 proc h() {
-  return new R(new Shared(new MyClass(10)));
+  return new R(new shared MyClass(10));
 }
 
 proc i() {
-  var r = new R(new Shared(new MyClass(10)));
+  var r = new R(new shared MyClass(10));
   return r;
 }
 
@@ -40,17 +38,17 @@ proc k() {
   return r;
 }
 
-proc l(c:Shared(MyClass)) {
+proc l(c:shared MyClass) {
   var r = f(c);
   return r;
 }
 
-proc m(c:Shared(MyClass)) {
+proc m(c:shared MyClass) {
   return f(c);
 }
 
 proc test() {
-  var myshared = new Shared(new MyClass(1));
+  var myshared = new shared MyClass(1);
 
   var v1 = f(myshared);
   var v2 = g(myshared);

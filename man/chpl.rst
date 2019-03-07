@@ -104,6 +104,26 @@ OPTIONS
 
     Print the module search path used to resolve module for further details.
 
+*Warning and Language Control Options*
+
+**--[no-]permit-unhandled-module-errors**
+
+    Normally, the compiler ensures that all errors are handled for code
+    inside of a module declaration (unless the module overrides that
+    behavior). This flag overrides this default, so that the compiler
+    will compile code in a module that does not handle its errors. If any
+    error comes up during execution, it will cause the program to halt.
+
+**--[no-]warn-unstable**
+
+    Enable [disable] warnings for code that has recently or will recently
+    change in meaning due to language changes.
+
+**--[no-]warnings**
+
+    Enable [disable] the printing of compiler warnings. Defaults to printing
+    warnings.
+
 *Parallelism Control Options*
 
 **--[no-]local**
@@ -159,6 +179,12 @@ OPTIONS
     loop runs into the loop's "pre-header." By default invariant code is
     moved. This is currently a rather conservative pass in the sense that it
     may not identify all code that is truly invariant.
+
+**--[no-]optimize-forall-unordered-ops**
+
+    Enable [disable] optimization of the last statement in forall statements
+    to use unordered communication. This optimization works with runtime
+    support for unordered operations with CHPL_COMM=ugni.
 
 **--[no-]ignore-local-classes**
 
@@ -409,8 +435,8 @@ OPTIONS
 
     Causes the generated C code to be compiled with flags that specialize
     the executable to the architecture that is defined by
-    CHPL\_TARGET\_ARCH. The effects of this flag will vary based on choice
-    of back-end compiler and the value of CHPL\_TARGET\_ARCH.
+    CHPL\_TARGET\_CPU. The effects of this flag will vary based on choice
+    of back-end compiler and the value of CHPL\_TARGET\_CPU.
 
 **-o, --output <filename>**
 
@@ -525,19 +551,11 @@ OPTIONS
     Print the names and source locations of unused functions within the
     user program.
 
-**-s, --set <config param>[=<value>]**
+**-s, --set <config>[=<value>]**
 
-    Overrides the default value of a configuration parameter in the code.
-    For boolean configuration variables, the value can be omitted, causing
-    the default value to be toggled.
-
-**--[no-]permit-unhandled-module-errors**
-
-    Normally, the compiler ensures that all errors are handled for code
-    inside of a module declaration (unless the module overrides that
-    behavior). This flag overrides this default, so that the compiler
-    will compile code in a module that does not handle its errors. If any
-    error comes up during execution, it will cause the program to halt.
+    Overrides the default value of a configuration param, type, var,
+    or const in the code.  If the value is omitted, it will default
+    to the value `true`.
 
 **--[no-]task-tracking**
 
@@ -547,34 +565,6 @@ OPTIONS
     adds compilation-time overhead when it will not be used, so is off by
     default.
 
-**--[no-]warn-const-loops**
-
-    Enable [disable] warnings for 'while' loops whose condition is a 'const'
-    variable, because such a loop condition is likely unintended. 'While'
-    loops with 'param' conditions do not trigger this warning.
-
-**--[no-]warn-special**
-
-    Enable [disable] all special compiler warnings issued due to syntax and
-    other language changes. Currently, these include
-    --[no-]warn-domain-literal and --[no-]warn-tuple-iteration.
-
-**--[no-]warn-domain-literal**
-
-    Enable [disable] compiler warnings regarding the potential use of the
-    old-style domain literal syntax (e.g. [1..2, 3..4]). All array literals
-    with range elements will result in warnings.
-
-**--[no-]warn-tuple-iteration**
-
-    Enable [disable] compiler warnings regarding the potential use of
-    old-style zippering syntax. All uses of tuple iteration will produce
-    warnings.
-
-**--[no-]warnings**
-
-    Enable [disable] the printing of compiler warnings. Defaults to printing
-    warnings.
 
 *Compiler Configuration Options*
 
@@ -668,11 +658,11 @@ OPTIONS
     'none' or 're2' if you've installed the re2 package in the third-party
     *directory*).
 
-**--target-arch <architecture>**
+**--target-cpu <architecture>**
 
     Specify the architecture that the compiled executable will be
     specialized to when **--specialize** is enabled. This flag corresponds
-    with and overrides the $CHPL\_TARGET\_ARCH environment variable
+    with and overrides the $CHPL\_TARGET\_CPU environment variable
     (defaults to a best guess based on $CHPL\_COMM, $CHPL\_TARGET\_COMPILER,
     and $CHPL\_TARGET\_PLATFORM).
 

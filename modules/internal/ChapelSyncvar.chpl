@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -114,7 +114,7 @@ module ChapelSyncvar {
     proc init(type valType) {
       ensureFEType(valType);
       this.valType = valType;
-      this.wrapped = new unmanaged (getSyncClassType(valType))(valType);
+      this.wrapped = new unmanaged (getSyncClassType(valType))();
     }
 
     //
@@ -134,9 +134,15 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
+    proc init=(const other : this.valType) {
+      this.init(other.type);
+      // TODO: initialize the sync class impl with 'other'
+      this.writeEF(other);
+    }
+
     proc deinit() {
       if isOwned == true then
-        delete wrapped;
+        delete _to_unmanaged(wrapped);
     }
 
     // Do not allow implicit reads of sync vars.
@@ -312,7 +318,7 @@ module ChapelSyncvar {
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _syncvar(?)) {
     if x.isOwned == true then
-      delete x.wrapped;
+      delete _to_unmanaged(x.wrapped);
   }
 
   pragma "no doc"
@@ -425,9 +431,7 @@ module ChapelSyncvar {
       return ret;
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeEF(val : valType) {
+    proc writeEF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_waitEmptyAndLock(syncAux);
@@ -439,9 +443,7 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeFF(val : valType) {
+    proc writeFF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
@@ -453,9 +455,7 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeXF(val : valType) {
+    proc writeXF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
@@ -560,9 +560,7 @@ module ChapelSyncvar {
       return ret;
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeEF(val : valType) {
+    proc writeEF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         qthread_writeEF(alignedValue, val : aligned_t);
@@ -570,9 +568,7 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeFF(val : valType) {
+    proc writeFF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         qthread_writeFF(alignedValue, val : aligned_t);
@@ -580,9 +576,7 @@ module ChapelSyncvar {
       }
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeXF(val : valType) {
+    proc writeXF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         qthread_writeF(alignedValue, val : aligned_t);
@@ -659,9 +653,14 @@ module ChapelSyncvar {
       isOwned = false;
     }
 
+    proc init=(const other : this.type.valType) {
+      this.init(other.type);
+      this.writeEF(other);
+    }
+
     proc deinit() {
       if isOwned == true then
-        delete wrapped;
+        delete _to_unmanaged(wrapped);
     }
 
     // Do not allow implicit reads of single vars.
@@ -755,7 +754,7 @@ module ChapelSyncvar {
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _singlevar(?)) {
     if x.isOwned == true then
-      delete x.wrapped;
+      delete _to_unmanaged(x.wrapped);
   }
 
   pragma "no doc"
@@ -836,9 +835,7 @@ module ChapelSyncvar {
       return ret;
     }
 
-    pragma "unsafe"
-    // TODO - once we can annotate, val argument should outlive 'this'
-    proc writeEF(val : valType) {
+    proc writeEF(val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         chpl_single_lock(singleAux);

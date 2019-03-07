@@ -29,7 +29,7 @@ class AbsDense: Arithmetic {
 }
 
 class AbsSparse: Arithmetic {
-  proc clear() {
+  override proc clear() {
     writeln("Clearing a sparse domain");
   }
 
@@ -40,7 +40,7 @@ class AbsSparse: Arithmetic {
 }
 
 class AbsAssoc: Abstract {
-  proc clear() {
+  override proc clear() {
     writeln("Clearing an associative domain");
   }
 

@@ -53,6 +53,15 @@ config const printParams = true,
              printStats = true;
 
 //
+// Number of tasks per core to use during the main computation. Using
+// multiple tasks per core may improve performance for communication
+// and tasking configurations that have support for communication and
+// computation overlap.
+//
+config const tasksPerCore = 1,
+             tasksPerLocale = here.maxTaskPar * tasksPerCore;
+
+//
 // TableDist is a 1D block distribution for domains storing indices
 // of type "indexType", and it is computed by blocking the bounding
 // box 0..m-1 across the set of locales.  UpdateDist is a similar
@@ -60,7 +69,8 @@ config const printParams = true,
 // across the locales.
 //
 const TableDist = new dmap(new Block(boundingBox={0..m-1})),
-      UpdateDist = new dmap(new Block(boundingBox={0..N_U-1}));
+      UpdateDist = new dmap(new Block(boundingBox={0..N_U-1},
+                            dataParTasksPerLocale=tasksPerLocale));
 
 //
 // TableSpace describes the index set for the table.  It is a 1D

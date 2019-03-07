@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -325,6 +325,7 @@ class EnumType : public Type {
   int codegenStructure(FILE* outfile, const char* baseoffset);
 
   bool isAbstract();  // is the enum abstract?  (has no associated values)
+  bool isConcrete();  // is the enum concrete?  (all have associated values)
   PrimitiveType* getIntegerType();
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
@@ -395,6 +396,7 @@ TYPE_EXTERN PrimitiveType*    dtValue;
 TYPE_EXTERN PrimitiveType*    dtBorrowed;
 TYPE_EXTERN PrimitiveType*    dtUnmanaged;
 TYPE_EXTERN PrimitiveType*    dtMethodToken;
+TYPE_EXTERN PrimitiveType*    dtDummyRef;
 TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
 TYPE_EXTERN PrimitiveType*    dtModuleToken;
 
@@ -407,7 +409,6 @@ TYPE_EXTERN PrimitiveType*    dtInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtUInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtReal[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtImag[FLOAT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType*    dtSymbol;
 TYPE_EXTERN PrimitiveType*    dtFile;
 TYPE_EXTERN PrimitiveType*    dtOpaque;
 TYPE_EXTERN PrimitiveType*    dtTaskID;
@@ -503,7 +504,7 @@ bool isPOD(Type* t);
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);
 
-
+Immediate getDefaultImmediate(Type* t);
 
 
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]

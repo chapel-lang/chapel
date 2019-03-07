@@ -1,10 +1,8 @@
 
-pragma "use default init"
 class Parent {
   type idxType;
 }
 
-pragma "use default init"
 class HasGenericFields : Parent {
   param stridable : bool;
 
@@ -21,7 +19,6 @@ var h = new borrowed HasGenericFields(int, false);
 writeln(h + 1);
 
 
-pragma "use default init"
 class NoGenericFields : Parent {
   proc chpl__promotionType() type return idxType;
 

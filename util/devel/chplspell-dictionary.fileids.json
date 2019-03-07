@@ -15,14 +15,23 @@
   "07648a72-5b7a-11e8-af7e-10ddb1d4c3d5": [
     "compiler/AST/AggregateType.cpp"
   ],
+  "d774177c-244d-11e9-b712-843835579daa": [
+    "compiler/AST/AstDump.cpp"
+  ],
   "02edde22-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/AstDumpToHtml.cpp"
   ],
   "3f2e197e-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/AstToText.cpp"
   ],
+  "fb18cb3c-244d-11e9-b712-843835579daa": [
+    "compiler/AST/FnSymbol.cpp"
+  ],
   "641fb78e-4110-11e8-af7e-10ddb1d4c3d5": [
     "compiler/AST/ForallStmt.cpp"
+  ],
+  "d551f4f6-d1a9-11e8-954d-10ddb1d4c3d5": [
+    "compiler/AST/LoopExpr.cpp"
   ],
   "77ab2706-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/baseAST.cpp"
@@ -68,8 +77,14 @@
   "75f1ecaa-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/codegen/codegen.cpp"
   ],
+  "6de8d7ca-9c7b-11e8-b963-10ddb1d4c3d5": [
+    "compiler/codegen/library.cpp"
+  ],
   "d20c5afc-1d7e-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/ifa/num.cpp"
+  ],
+  "82c1d8e6-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/include/baseAST.h"
   ],
   "081f50fc-91e8-11e7-b3f1-10ddb1d4c3d5": [
     "compiler/include/clangBuiltinsWrappedSet.h",
@@ -85,6 +100,9 @@
   ],
   "dbbd3434-ca86-11e7-8b8c-10ddb1d4c3d5": [
     "compiler/include/expr.h"
+  ],
+  "9de1a12a-8644-11e8-ad82-10ddb1d4c3d5": [
+    "compiler/include/files.h"
   ],
   "e1293828-ca86-11e7-8b8c-10ddb1d4c3d5": [
     "compiler/include/implementForallIntents.h"
@@ -105,11 +123,29 @@
   "e4db0dbc-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/map.h"
   ],
+  "8e2d4094-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/include/misc.h"
+  ],
   "ed3f86d6-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/parser.h"
   ],
   "7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5": [
     "compiler/include/symbol.h"
+  ],
+  "f765ca54-d1a9-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/clangUtil.cpp"
+  ],
+  "27d3b052-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmAggregateGlobalOps.cpp"
+  ],
+  "2c837c22-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmDebug.cpp"
+  ],
+  "1de0f71c-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmGlobalToWide.cpp"
+  ],
+  "253a6d0e-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmUtil.cpp"
   ],
   "5a669f74-1d80-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/main/arg.cpp"
@@ -118,6 +154,9 @@
     "compiler/main/commonFlags.cpp",
     "compiler/main/commonFlags.h",
     "compiler/main/driver.cpp"
+  ],
+  "a52d3b2e-8644-11e8-ad82-10ddb1d4c3d5": [
+    "compiler/main/docsDriver.cpp"
   ],
   "4171383e-1d81-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/optimizations/copyPropagation.cpp"
@@ -130,6 +169,9 @@
   ],
   "86988e94-1d81-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/optimizations/loopInvariantCodeMotion.cpp"
+  ],
+  "eb10d276-d1a9-11e8-954d-10ddb1d4c3d5": [
+    "compiler/optimizations/noAliasSets.cpp"
   ],
   "26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5": [
     "compiler/optimizations/refPropagation.cpp"
@@ -197,6 +239,9 @@
   "5bfd40ae-ca86-11e7-8b8c-10ddb1d4c3d5": [
     "compiler/resolution/implementForallIntents2.cpp"
   ],
+  "d5351900-d1c0-11e8-954d-10ddb1d4c3d5": [
+    "compiler/resolution/initializerResolution.cpp"
+  ],
   "1873381c-2cbe-11e8-aa67-10ddb1d4c3d5": [
     "compiler/resolution/lifetime.cpp"
   ],
@@ -206,11 +251,17 @@
   "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/lowerIterators.cpp"
   ],
+  "3bdbc4ea-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/resolution/nilChecking.cpp"
+  ],
   "e44e8ee8-2015-11e7-980e-10ddb1d4c3d5": [
     "compiler/resolution/postFold.cpp"
   ],
   "ebe3ea10-ca86-11e7-8b8c-10ddb1d4c3d5": [
     "compiler/resolution/preFold.cpp"
+  ],
+  "f203530c-8644-11e8-ad82-10ddb1d4c3d5": [
+    "compiler/resolution/tuples.cpp"
   ],
   "e95fef8a-2015-11e7-980e-10ddb1d4c3d5": [
     "compiler/resolution/virtualDispatch.cpp"
@@ -238,6 +289,9 @@
   ],
   "606babf2-1d86-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/util/llvmUtil.cpp"
+  ],
+  "9627af8c-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/util/stringutil.cpp"
   ],
   "97641a68-1e44-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/CompilerDebugging.txt"
@@ -371,6 +425,9 @@
     "modules/dists/BlockCycDist.chpl",
     "modules/dists/DSIUtil.chpl"
   ],
+  "e22d9978-8645-11e8-ad82-10ddb1d4c3d5": [
+    "modules/dists/BlockDist.chpl"
+  ],
   "f705d2b6-1f0e-11e6-a3a6-10ddb1d4c3d5": [
     "modules/dists/CyclicDist.chpl"
   ],
@@ -404,8 +461,14 @@
   "5010068a-0c15-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/ChapelArray.chpl"
   ],
+  "ce35097e-8645-11e8-ad82-10ddb1d4c3d5": [
+    "modules/internal/ChapelBase.chpl"
+  ],
   "6f2ab8ea-83ce-11e7-ad1f-10ddb1d4c3d5": [
     "modules/internal/ChapelError.chpl"
+  ],
+  "dc718a6c-ab57-11e8-b963-10ddb1d4c3d5": [
+    "modules/internal/ChapelIteratorSupport.chpl"
   ],
   "47cb0e3c-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/ChapelRange.chpl"
@@ -422,6 +485,15 @@
   "c3b7f950-1f15-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/DefaultRectangular.chpl"
   ],
+  "c3e70026-8645-11e8-ad82-10ddb1d4c3d5": [
+    "modules/internal/ExternalArray.chpl"
+  ],
+  "5e553c42-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "modules/internal/OwnedObject.chpl"
+  ],
+  "e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5": [
+    "modules/internal/String.chpl"
+  ],
   "5cb0944a-0c15-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/localeModels/knl/LocaleModel.chpl"
   ],
@@ -436,6 +508,9 @@
   ],
   "527abebe-9db6-11e7-a204-10ddb1d4c3d5": [
     "modules/packages/Crypto.chpl"
+  ],
+  "d91ef3d6-ab57-11e8-b963-10ddb1d4c3d5": [
+    "modules/packages/CryptoHandlers/openssl_c_support.h"
   ],
   "2127a88e-1f1a-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/Curl.chpl"
@@ -511,14 +586,23 @@
   "d41572f2-1f2c-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/SysBasic.chpl"
   ],
+  "f5a43844-9c7b-11e8-b963-10ddb1d4c3d5": [
+    "modules/standard/Time.chpl"
+  ],
   "e9347814-1f30-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Types.chpl"
   ],
   "011204e0-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-bitops.h"
   ],
+  "af0a00d4-244e-11e9-b712-843835579daa": [
+    "runtime/include/chpl-comm-diags.h"
+  ],
   "1ae55fde-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-wide-ptr-fns.h"
+  ],
+  "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
   ],
   "cedb8f86-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/qio/sys.h"
@@ -543,6 +627,9 @@
     "runtime/src/comm/ofi/comm-ofi-oob.c",
     "runtime/src/comm/ofi/comm-ofi.c"
   ],
+  "91c58b86-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/comm-ofi-oob-pmi.c"
+  ],
   "0502b256-07ea-11e8-bed3-10ddb1d4c3d5": [
     "runtime/src/comm/ofi/comm-ofi-put-get.c"
   ],
@@ -552,8 +639,17 @@
   "aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5": [
     "runtime/src/comm/ugni/comm-ugni.c"
   ],
+  "e4e38696-e581-11e8-954d-10ddb1d4c3d5": [
+    "runtime/src/launch/amudprun/launch-amudprun.c"
+  ],
+  "a37c5ce4-f6a4-11e8-8d7e-10ddb1d4c3d5": [
+    "runtime/src/launch/gasnetrun_common/gasnetrun_common.h"
+  ],
   "b7c60ac2-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/mpirun/launch-mpirun.c"
+  ],
+  "b5c2175e-244e-11e9-b712-843835579daa": [
+    "runtime/src/launch/mpirun4ofi/launch-mpirun4ofi.c"
   ],
   "af6e03d4-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/pbs-aprun/launch-pbs-aprun.c"
@@ -579,8 +675,14 @@
   "e2b2b296-8068-11e6-ab60-00a0cc3ee663": [
     "runtime/src/tasks/massivethreads/tasks-massivethreads.c"
   ],
+  "75ed892c-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "runtime/src/tasks/qthreads/tasks-qthreads.c"
+  ],
   "c9f78ff4-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/threads/pthreads/threads-pthreads.c"
+  ],
+  "203d644e-8648-11e8-ad82-10ddb1d4c3d5": [
+    "runtime/src/topo/hwloc/topo-hwloc.c"
   ],
   "6d1ff4ac-2952-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Arrays.tex"
@@ -784,12 +886,6 @@
   ],
   "eb31abc0-8068-11e6-ab60-00a0cc3ee663": [
     "test/release/examples/primers/taskParallel.chpl"
-  ],
-  "d72609f8-b850-11e6-9740-843835579daa": [
-    "test/release/examples/programs/beer.chpl"
-  ],
-  "eb249ff0-b850-11e6-9740-843835579daa": [
-    "test/release/examples/programs/quicksort.chpl"
   ],
   "80066972-2f20-11e8-aa67-10ddb1d4c3d5": [
     "test/release/examples/spec/Expressions/condexp.chpl"

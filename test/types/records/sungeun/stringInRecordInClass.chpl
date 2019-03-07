@@ -7,7 +7,7 @@ class myC {
 }
 
 proc main {
-  var c = new myC();
+  var c = new owned myC();
   var s = "hi";
   writeln(c);
   c.r.s = s;

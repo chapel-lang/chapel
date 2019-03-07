@@ -2,19 +2,15 @@ class E {
   var n: int;
 }
 
-var e = new E(1);
+var e = new owned E(1);
 
 class C {
   var a = e.n;
 }
 
-var c = new C();
+var c = new owned C();
 e.n = 2;
-var d = new C();
+var d = new owned C();
 
 writeln(c);
 writeln(d);
-
-delete e;
-delete c;
-delete d;

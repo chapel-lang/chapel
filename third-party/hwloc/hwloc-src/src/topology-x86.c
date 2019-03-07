@@ -77,6 +77,7 @@ enum cpuid_type {
   intel,
   amd,
   zhaoxin,
+  hygon,
   unknown
 };
 
@@ -171,13 +172,13 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
   _extendedmodel  = (eax>>16) & 0xf;
   _family         = (eax>>8) & 0xf;
   _extendedfamily = (eax>>20) & 0xff;
-  if ((cpuid_type == intel || cpuid_type == amd) && _family == 0xf) {
+  if ((cpuid_type == intel || cpuid_type == amd || cpuid_type == hygon) && _family == 0xf) {
     infos->cpufamilynumber = _family + _extendedfamily;
   } else {
     infos->cpufamilynumber = _family;
   }
   if ((cpuid_type == intel && (_family == 0x6 || _family == 0xf))
-      || (cpuid_type == amd && _family == 0xf)
+      || ((cpuid_type == amd || cpuid_type == hygon) && _family == 0xf)
       || (cpuid_type == zhaoxin && (_family == 0x6 || _family == 0x7))) {
     infos->cpumodelnumber = _model + (_extendedmodel << 4);
   } else {
@@ -262,12 +263,13 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
       node_id = 0;
       nodes_per_proc = 1;
     } else {
+      /* AMD other families or Hygon family 18h */
       node_id = ecx & 0xff;
       nodes_per_proc = ((ecx >> 8) & 7) + 1;
     }
     infos->nodeid = node_id;
     if ((infos->cpufamilynumber == 0x15 && nodes_per_proc > 2)
-	|| (infos->cpufamilynumber == 0x17 && nodes_per_proc > 4)) {
+	|| ((infos->cpufamilynumber == 0x17 || infos->cpufamilynumber == 0x18) && nodes_per_proc > 4)) {
       hwloc_debug("warning: undefined nodes_per_proc value %u, assuming it means %u\n", nodes_per_proc, nodes_per_proc);
     }
 
@@ -361,7 +363,7 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
   /* Get thread/core + cache information from cpuid 0x04
    * (not supported on AMD)
    */
-  if (cpuid_type != amd && highest_cpuid >= 0x04) {
+  if ((cpuid_type != amd && cpuid_type != hygon) && highest_cpuid >= 0x04) {
     unsigned level;
     struct cacheinfo *tmpcaches;
     unsigned oldnumcaches = infos->numcaches; /* in case we got caches above */
@@ -537,6 +539,15 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
 	 */
 	cache->cacheid = (infos->apicid % infos->max_log_proc) / cache->nbthreads_sharing /* cacheid within the package */
 	  + 2 * (infos->apicid / infos->max_log_proc); /* add 2 cache per previous package */
+      }
+    } else if (cpuid_type == hygon) {
+      if (infos->cpufamilynumber == 0x18
+	  && cache->level == 3 && cache->nbthreads_sharing == 6) {
+        /* Hygon family 0x18 always shares L3 between 8 APIC ids,
+         * even when only 6 APIC ids are enabled and reported in nbthreads_sharing
+         * (on 24-core CPUs).
+         */
+        cache->cacheid = infos->apicid / 8;
       }
     }
   }
@@ -995,6 +1006,12 @@ static void hwloc_x86_os_state_restore(hwloc_x86_os_state_t *state __hwloc_attri
 #define AMD_EDX ('e' | ('n'<<8) | ('t'<<16) | ('i'<<24))
 #define AMD_ECX ('c' | ('A'<<8) | ('M'<<16) | ('D'<<24))
 
+/* HYGON "HygonGenuine" */
+#define HYGON_EBX ('H' | ('y'<<8) | ('g'<<16) | ('o'<<24))
+#define HYGON_EDX ('n' | ('G'<<8) | ('e'<<16) | ('n'<<24))
+#define HYGON_ECX ('u' | ('i'<<8) | ('n'<<16) | ('e'<<24))
+
+/* (Zhaoxin) CentaurHauls */
 #define ZX_EBX ('C' | ('e'<<8) | ('n'<<16) | ('t'<<24))
 #define ZX_EDX ('a' | ('u'<<8) | ('r'<<16) | ('H'<<24))
 #define ZX_ECX ('a' | ('u'<<8) | ('l'<<16) | ('s'<<24))
@@ -1082,6 +1099,8 @@ int hwloc_look_x86(struct hwloc_backend *backend, int fulldiscovery)
     cpuid_type = zhaoxin;
   if (ebx == SH_EBX && ecx == SH_ECX && edx == SH_EDX)
     cpuid_type = zhaoxin;
+  else if (ebx == HYGON_EBX && ecx == HYGON_ECX && edx == HYGON_EDX)
+    cpuid_type = hygon;
 
   hwloc_debug("highest cpuid %x, cpuid type %u\n", highest_cpuid, cpuid_type);
   if (highest_cpuid < 0x01) {

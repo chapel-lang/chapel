@@ -12,14 +12,12 @@ class ThisTooEarly {
   }
 }
 
-proc foo(x: ThisTooEarly) {
+proc foo(x: borrowed ThisTooEarly) {
   writeln(x.r);
 }
 
 proc main() {
-  var c: ThisTooEarly(5.0) = new ThisTooEarly(5.0);
+  var c: borrowed ThisTooEarly(5.0) = new owned ThisTooEarly(5.0);
 
   foo(c);
-
-  delete c;
 }

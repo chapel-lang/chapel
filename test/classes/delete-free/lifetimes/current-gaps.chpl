@@ -1,7 +1,7 @@
 pragma "safe"
 module zzz {
 
-use OwnedObject;
+
 
 class MyClass {
   var x:int;
@@ -14,18 +14,18 @@ class MyClass {
  */
 
 record R {
-  var borrow:MyClass;
+  var borrow:borrowed MyClass;
 }
 var global:R;
 
-proc bad2(arg:MyClass) {
+proc bad2(arg:borrowed MyClass) {
   // This is bad because global.borrow has infinite lifetime and
   // arg does not.
   global.borrow = arg;
 }
 
 proc test() {
-  var myowned = new Owned(new MyClass(1));
+  var myowned = new owned MyClass(1);
 
   var borrow = myowned.borrow();
   bad2(borrow);
@@ -36,13 +36,13 @@ writeln(global);
 
 
 record RBorrowAndOwn {
-  var _borrowed:MyClass;
+  var _borrowed:borrowed MyClass;
 
   pragma "owned"
-  var myowned:MyClass;
+  var myowned:unmanaged MyClass;
 
   proc readOwned() {
-    return myowned;
+    return _to_borrowed(myowned);
   }
 }
 
@@ -50,12 +50,12 @@ proc RBorrowAndOwn.deinit() {
   delete myowned;
 }
 
-proc makeR(borrow:MyClass) {
-  return new RBorrowAndOwn(borrow, new MyClass(10*borrow.x));
+proc makeR(borrow:borrowed MyClass) {
+  return new RBorrowAndOwn(borrow, new unmanaged MyClass(10*borrow.x));
 }
 
 proc badF3() {
-  var c = new MyClass(1);
+  var c = new borrowed MyClass(1);
   var r = makeR(c);
   {
     var r2 = makeR(r._borrowed);

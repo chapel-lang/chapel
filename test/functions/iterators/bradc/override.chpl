@@ -7,7 +7,7 @@ class C {
 }
 
 class D : C {
-  iter these() {
+  override iter these() {
     yield 3;
     yield 2;
     yield 1;

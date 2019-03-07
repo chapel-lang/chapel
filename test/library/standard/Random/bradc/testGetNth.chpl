@@ -20,7 +20,3 @@ for i in 1..n {
     //writeln("#", i, " = ", r2);
   }
 }
-
-delete randStr1;
-delete randStr2;
-delete randStr3;

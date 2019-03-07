@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Brad Chamberlain
    derived from the GNU C version by Аноним Легионов and Jeremy Zerfas
@@ -93,7 +93,7 @@ proc repeatMake(desc, alu, n) {
         s = [i in 0..(r+lineLength)] alu[i % r]: int(8);
 
   for i in 0..n by lineLength {
-    const lo = i % r + 1,
+    const lo = i % r,
           len = min(lineLength, n-i);
     stdout.write(s[lo..#len], newline);
   }

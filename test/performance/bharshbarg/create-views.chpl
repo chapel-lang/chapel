@@ -50,7 +50,7 @@ proc test(m : mode, X : []) {
 
   t.start();
   while true {
-    if t.elapsed() > limit then break;
+    if c % 10000 == 0 && t.elapsed() > limit then break;
     if      m == mode.Slice      then makeSlice(X);
     else if m == mode.RankChange then makeRankChange(X);
     else if m == mode.Reindex    then makeReindex(X);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -131,6 +131,7 @@ proc getField(const ref x:?t, param s: string) type
    :arg s: the name of a field
    :returns: an rvalue referring to that field.
  */
+pragma "unsafe"
 proc getField(const ref x:?t, param s:string) const ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
@@ -159,6 +160,7 @@ proc getFieldRef(ref x:?t, param i:int) ref
    :arg s: the name of a field
    :returns: an rvalue referring to that field.
  */
+pragma "unsafe"
 proc getFieldRef(ref x:?t, param s:string) ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then

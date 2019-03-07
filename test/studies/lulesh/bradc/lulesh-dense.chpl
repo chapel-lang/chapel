@@ -203,11 +203,13 @@ var elemBC: [Elems] int,
 
 /* Nodal fields */
 
+type atomicReal = if useNetworkAtomics then atomic real
+                                       else chpl__processorAtomicType(real);
 var xd, yd, zd: [Nodes] real, // velocities
 
     xdd, ydd, zdd: [Nodes] real, // acceleration
 
-    fx, fy, fz: [Nodes] if useNetworkAtomics then atomic real else atomic_real64, // forces
+    fx, fy, fz: [Nodes] atomicReal, // forces
 
     nodalMass: [Nodes] real; // mass
 

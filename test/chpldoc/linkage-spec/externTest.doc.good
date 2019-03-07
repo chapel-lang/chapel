@@ -48,6 +48,14 @@ externTest.doc
 
 .. function:: proc hasReturnTypeAndArgCommentless(val: int): int
 
+.. function:: proc withExternCName()
+
+.. function:: proc getName() param
+
+   test param method for withParamExternCName 
+
+.. function:: proc withParamExternCName()
+
 .. default-domain:: chpl
 
 .. module:: Other

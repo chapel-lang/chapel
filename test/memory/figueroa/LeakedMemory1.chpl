@@ -12,19 +12,19 @@ class C3: C2 {
 }
 
 var m1 = memoryUsed();
-var c1: C1 = new C1();
+var c1: unmanaged C1 = new unmanaged C1();
 delete c1;
 var m2 = memoryUsed();
 writeln("Amount of leaked memory after deleting c1: ", m2-m1);
 
 m1 = memoryUsed();
-var c2 = new C2();
+var c2 = new unmanaged C2();
 delete c2;
 m2 = memoryUsed();
 writeln("Amount of leaked memory after deleting c2: ", m2-m1);
 
 m1 = memoryUsed();
-var c3 = new C3();
+var c3 = new unmanaged C3();
 delete c3;
 m2 = memoryUsed();
 writeln("Amount of leaked memory after deleting c3: ", m2-m1);

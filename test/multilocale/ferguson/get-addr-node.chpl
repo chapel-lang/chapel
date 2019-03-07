@@ -4,7 +4,7 @@ class C {
 
 
 proc main() {
-  var obj = new C(1);
+  var obj = new unmanaged C(1);
 
   {
     var node = __primitive("_wide_get_node", obj);

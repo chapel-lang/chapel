@@ -1,7 +1,7 @@
 record Foo {
   var x;
 
-  proc init(xVal) where !xVal: Foo {
+  proc init(xVal) where !isSubtype(xVal.type, Foo) {
     x = xVal;
   }
 }

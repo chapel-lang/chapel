@@ -35,8 +35,6 @@ use Random;
     B(i) = r;
 
   writeln(B);
-
-  delete rs;
 }
 
 {
@@ -48,6 +46,4 @@ use Random;
     B(f) = r;
 
   writeln(B);
-
-  delete rs;
 }

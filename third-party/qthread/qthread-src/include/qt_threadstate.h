@@ -17,7 +17,8 @@ typedef enum threadstate {
     QTHREAD_STATE_MIGRATING,            /* thread needs to be moved, otherwise ready-to-run */
     QTHREAD_STATE_SYSCALL,              /* thread performing external blocking operation */
     QTHREAD_STATE_ILLEGAL,              /* illegal state */
-    QTHREAD_STATE_TERM_SHEP             /* special flag to terminate the shepherd */
+    QTHREAD_STATE_TERM_SHEP,            /* special flag to terminate the shepherd */
+    QTHREAD_STATE_NUM_STATES            /* tell performance data how many states there are */
 } threadstate_t;
 
 #endif // ifndef _QT_THREADSTATE_H_

@@ -183,17 +183,15 @@ proc main {
 
   checkChecksums(run_variants, run_loop, run_loop_length);
 
-  freeLoopData();
   writeln("\n freeLoopSuiteRunInfo...");
-  freeLoopSuiteRunInfo();
   writeln("\n DONE!!! ");
 }
 
-proc computeStats(ilv: LoopVariantID, loop_stats: [] LoopStat, do_fom: bool) {
+proc computeStats(ilv: LoopVariantID, loop_stats: [] owned LoopStat, do_fom: bool) {
   for stat in loop_stats {
     for ilen in stat.loop_length_dom {
       if stat.loop_run_count[ilen] > 0 {
-        var time_sample = stat.loop_run_time[ilen];
+        var time_sample = stat.loop_run_time[ilen].borrow();
         var sample_size = time_sample.numElements;
         var mean = 0.0;
         var sdev = 0.0;
@@ -242,7 +240,7 @@ proc generatePerfTimingReport(loop_variants: [] bool) {
   }
   for iloop in suite_run_info.loop_kernel_dom {
     for variant in loop_variants.domain {
-      var stat = suite_run_info.getLoopStats(variant)[iloop];
+      var stat = suite_run_info.getLoopStats(variant)[iloop].borrow();
       if stat.loop_is_run {
         for ilen in stat.loop_length_dom {
           if stat.loop_run_count[ilen] > 0 {
@@ -315,7 +313,7 @@ proc writeMeanTimeReport(variant: LoopVariantID, output_dirname: string) {
   writer.writeln();
 
   for iloop in suite_run_info.loop_kernel_dom {
-    var stat = suite_run_info.getLoopStats(variant)[iloop];
+    var stat = suite_run_info.getLoopStats(variant)[iloop].borrow();
     if loop_names[iloop].length != 0 && stat.loop_is_run {
       writer.write(loop_names[iloop]);
       for ilen in stat.loop_length_dom {
@@ -354,7 +352,7 @@ proc writeRelativeTimeReport(variant: LoopVariantID, output_dirname: string) {
   writer.writeln();
 
   for iloop in suite_run_info.loop_kernel_dom {
-    var stat = suite_run_info.getLoopStats(variant)[iloop];
+    var stat = suite_run_info.getLoopStats(variant)[iloop].borrow();
     if loop_names[iloop].length != 0 && stat.loop_is_run {
       writer.write(loop_names[iloop]);
       for ilen in stat.loop_length_dom {
@@ -442,17 +440,17 @@ proc writeTimingSummaryReport(loop_variants: [] bool, outchannel) {
   //
 
   for iloop in suite_run_info.loop_kernel_dom {
-    var ref_variant_stat = suite_run_info.getLoopStats(LoopVariantID.RAW)[iloop];
+    var ref_variant_stat = suite_run_info.getLoopStats(LoopVariantID.RAW)[iloop].borrow();
 
     var ref_mean = ref_variant_stat.mean;
 
     if loop_names[iloop].length != 0 && ref_variant_stat.loop_is_run {
-      if iloop > 1 {
+      if iloop:int > 1 {
         outchannel.write("\n", dash_line_part);
       }
       outchannel.writef("%s (%i) --> ", loop_names[iloop], iloop);
       for (ilv, variant) in zip(0..#nvariants, loop_variants.domain) {
-        var stat = suite_run_info.getLoopStats(variant)[iloop];
+        var stat = suite_run_info.getLoopStats(variant)[iloop].borrow();
         if stat.loop_is_run {
           if ilv == 0 {
             for ilen in stat.loop_length_dom {
@@ -561,14 +559,14 @@ proc writeChecksumReport(loop_variants: [] bool, outchannel) {
 
 
   for iloop in suite_run_info.loop_kernel_dom {
-    var ref_variant_stat = suite_run_info.getLoopStats(LoopVariantID.RAW)[iloop];
+    var ref_variant_stat = suite_run_info.getLoopStats(LoopVariantID.RAW)[iloop].borrow();
     var ref_chksum = ref_variant_stat.loop_chksum;
     if loop_names[iloop].length != 0 && ref_variant_stat.loop_is_run {
-      if iloop > 1 then
+      if iloop:int > 1 then
         outchannel.write("\n", dash_line_part);
       outchannel.write(loop_names[iloop], "(", iloop:int, ") --> ");
       for (ilv, variant) in zip(0..#nvariants, loop_variant_names.domain) {
-        var stat = suite_run_info.getLoopStats(variant)[iloop];
+        var stat = suite_run_info.getLoopStats(variant)[iloop].borrow();
         if stat.loop_is_run {
 
           if ilv == 0 then outchannel.writeln();
@@ -599,17 +597,9 @@ proc generateFOMReport(loop_variants: [] bool,
                        output_dirname: string) {
 }
 
-proc freeLoopData() {
-  delete s_loop_data;
-}
-
-proc freeLoopSuiteRunInfo() {
-  delete getLoopSuiteRunInfo();
-}
-
 proc runLoopVariant(lvid: LoopVariantID, run_loop:[] bool, ilength: LoopLength) {
   var loop_suite_run_info = getLoopSuiteRunInfo();
-  var loop_stats = loop_suite_run_info.getLoopStats(lvid);
+  ref loop_stats = loop_suite_run_info.getLoopStats(lvid);
   select lvid {
     when LoopVariantID.RAW {
       runARawLoops(loop_stats, run_loop, ilength);
@@ -707,7 +697,7 @@ proc getVariantNames(lvids: [] bool) {
 
 proc computeReferenceLoopTimes() {
   var suite_info = getLoopSuiteRunInfo();
-  var ref_loop_stat = suite_info.ref_loop_stat;
+  var ref_loop_stat = suite_info.ref_loop_stat.borrow();
 
   var lstat0: LoopStat;
 
@@ -734,8 +724,8 @@ proc computeReferenceLoopTimes() {
 
 proc defineReferenceLoopRunInfo() {
   var suite_info = getLoopSuiteRunInfo();
-  var ref_loop_stat = new LoopStat();
-  suite_info.ref_loop_stat = ref_loop_stat;
+  suite_info.ref_loop_stat = new owned LoopStat();
+  var ref_loop_stat = suite_info.ref_loop_stat.borrow();
 
   ref_loop_stat.loop_length[LoopLength.LONG]        = 24336;
   ref_loop_stat.loop_length[LoopLength.MEDIUM]      = 3844;
@@ -777,7 +767,7 @@ proc defineLoopSuiteRunInfo(run_variants, run_loop,
   for ilv in run_variants.domain {
     for iloop in suite_info.loop_kernel_dom {
       var loop_name = iloop:string;
-      var loop_stat = new LoopStat();
+      var loop_stat = new owned LoopStat();
       var max_loop_indx = 0;
       if run_loop[iloop] {
         select iloop {
@@ -1149,6 +1139,6 @@ proc defineLoopSuiteRunInfo(run_variants, run_loop,
     }
   }
   defineReferenceLoopRunInfo();
-  s_loop_data = new LoopData(max(max_loop_length, suite_info.ref_loop_stat.loop_length[LoopLength.LONG]));
+  s_loop_data = new owned LoopData(max(max_loop_length, suite_info.ref_loop_stat.loop_length[LoopLength.LONG]));
 
 }

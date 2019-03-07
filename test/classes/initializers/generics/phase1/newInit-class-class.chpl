@@ -1,10 +1,10 @@
 // Initialize a class field in a class with an initializer
 class Container {
-  var y: Stored;
+  var y: unmanaged Stored;
   var v;
 
   proc init() {
-    y = new Stored(true);
+    y = new unmanaged Stored(true);
     v = 10;
 
   }
@@ -23,7 +23,7 @@ class Stored {
   }
 }
 
-var c = new Container();
+var c = new unmanaged Container();
 
 writeln(c);
 

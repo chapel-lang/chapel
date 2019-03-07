@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,7 +26,6 @@ module LocaleTree {
 
   use ChapelLocale; // For declaration of rootLocale.
 
-  pragma "use default init"
   record chpl_localeTreeRecord {
     var left, right: locale;
   }

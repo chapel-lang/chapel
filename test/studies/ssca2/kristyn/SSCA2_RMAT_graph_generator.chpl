@@ -255,7 +255,7 @@ module SSCA2_RMAT_graph_generator
 	var v = Edges (e).end  ;
 
 	if ( v != u ) then {
-	  if G.Neighbors (u).member(v) then {
+	  if G.Neighbors (u).contains(v) then {
 	    collisions += 1;
 	  }
 	  else {

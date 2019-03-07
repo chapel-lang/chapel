@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -450,9 +450,6 @@ void ForLoop::verify()
 
   if (byrefVars != 0)
     INT_FATAL(this, "ForLoop::verify. byrefVars is not NULL");
-
-  if (forallIntents != 0)
-    INT_FATAL(this, "ForLoop::verify. forallIntents is not NULL");
 }
 
 GenRet ForLoop::codegen()

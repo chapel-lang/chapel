@@ -1,2 +1,0 @@
-bug: lifetime checking does not work with push_back
-#9853

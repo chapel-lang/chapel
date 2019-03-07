@@ -1,1 +1,1 @@
-Adding CHPL_PRAGMA_IVDEP to CForLoop for InvokeStandalone:23
+InvokeIters.chpl:23: note: Vectorization hinted for CForLoop

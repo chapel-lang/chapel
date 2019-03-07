@@ -67,7 +67,7 @@ static const char *threadint2str(int id) {
   }
 }
 
-extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_mpi(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode) {
+extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_mpi(int *argc, char ***argv, gex_Rank_t *nodes, gex_Rank_t *mynode) {
   MPI_Group world;
   int err;
 

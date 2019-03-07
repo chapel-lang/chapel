@@ -547,7 +547,7 @@ void API_FUNC qutil_mergesort(double *array,
     }
 } /*}}}*/
 
-#define SWAP(t, a, m, n) do { register t temp = a[m]; a[m] = a[n]; a[n] = temp; } while (0)
+#define SWAP(t, a, m, n) do { t temp = a[m]; a[m] = a[n]; a[n] = temp; } while (0)
 #define MT_CHUNKSIZE (qthread_cacheline() / sizeof(double))
 
 struct qutil_qsort_args {

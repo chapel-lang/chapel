@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,18 +24,14 @@
 #define _POSIX_C_SOURCE 200112L  // for setenv(3) in <stdlib.h>
 
 #include <assert.h>
-#include <ctype.h>
 #include <math.h>
 #include <stdlib.h>
 
 #include "chplrt.h"
-#include "comm-ugni-heap-pages.h"
 #include "chpl-comm-launch.h"
+#include "chpl-env.h"
+#include "comm-ugni-heap-pages.h"
 #include "error.h"
-
-#ifdef CHPL_TARGET_MEM_JEMALLOC
-#include "chpl-mem-jemalloc-prefix.h"
-#endif
 
 
 //
@@ -46,40 +42,6 @@
 // initialization and we don't have a dependable way to arrange that
 // in the target program.
 //
-static
-char* jemalloc_conf_ev_name(void) {
-#define _STRFY(s)              #s
-#define _EXPAND_THEN_STRFY(s)  _STRFY(s)
-#ifdef CHPL_JEMALLOC_PREFIX
-  #define EVN_PREFIX_STR         _EXPAND_THEN_STRFY(CHPL_JEMALLOC_PREFIX)
-#else
-  #define EVN_PREFIX_STR         ""
-#endif
-
-  static char evn[100] = "";
-
-  // safe because always called serially
-  if (evn[0] != '\0')
-    return evn;
-
-  if (snprintf(evn, sizeof(evn), "%sMALLOC_CONF", EVN_PREFIX_STR)
-      >= sizeof(evn)) {
-    chpl_internal_error("jemalloc conf env var name buffer is too small");
-  }
-
-  for (int i = 0; evn[i] != '\0'; i++) {
-    if (islower(evn[i]))
-      evn[i] = toupper(evn[i]);
-  }
-
-  return evn;
-
-#undef _STRFY
-#undef _EXPAND_THEN_STRFY
-#undef EVN_PREFIX_STR
-}
-
-
 static
 void maybe_set_jemalloc_lg_chunk(void) {
   size_t hps;
@@ -113,7 +75,7 @@ void maybe_set_jemalloc_lg_chunk(void) {
   // the "purge:" setting we specify at jemalloc configuration time,
   // because the env var overrides config-time settings.
   //
-  if ((ev = getenv(jemalloc_conf_ev_name())) == NULL) {
+  if ((ev = getenv(chpl_comm_ugni_jemalloc_conf_ev_name())) == NULL) {
     const char* fmt = "purge:decay,lg_chunk:%d";
     if (snprintf(buf, sizeof(buf), fmt, hps_log2) >= sizeof(buf)) {
       chpl_internal_error("setting jemalloc conf env var would truncate");
@@ -129,7 +91,7 @@ void maybe_set_jemalloc_lg_chunk(void) {
     }
   }
 
-  if (setenv(jemalloc_conf_ev_name(), buf, 1) != 0)
+  if (setenv(chpl_comm_ugni_jemalloc_conf_ev_name(), buf, 1) != 0)
     chpl_internal_error("cannot setenv jemalloc conf env var");
 }
 
@@ -137,7 +99,11 @@ void maybe_set_jemalloc_lg_chunk(void) {
 void chpl_comm_preLaunch(void) {
   if (setenv("HUGETLB_VERBOSE", "0", 1) != 0)
     chpl_error("cannot setenv HUGETLB_VERBOSE=0", 0, 0);
-  if (setenv("HUGETLB_NO_RESERVE", "yes", 0) != 0)
-    chpl_error("cannot setenv HUGETLB_NO_RESERVE=yes", 0, 0);
+
+  if (chpl_env_rt_get("MAX_HEAP_SIZE", NULL) == NULL) {
+    if (setenv("HUGETLB_NO_RESERVE", "yes", 0) != 0)
+      chpl_error("cannot setenv HUGETLB_NO_RESERVE=yes", 0, 0);
+  }
+
   maybe_set_jemalloc_lg_chunk();
 }

@@ -2,16 +2,16 @@ module RunParallelRawLoops {
   use LCALSDataTypes;
   use Timer;
 
-  proc runParallelRawLoops(loop_stats:[] LoopStat, run_loop:[] bool, ilength: LoopLength) {
+  proc runParallelRawLoops(loop_stats:[] owned LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
 
     for iloop in loop_suite_run_info.loop_kernel_dom {
       if run_loop[iloop] {
-        var stat = loop_stats[iloop];
+        var stat = loop_stats[iloop].borrow();
         var len = stat.loop_length[ilength];
         var num_samples = stat.samples_per_pass[ilength];
-        var ltimer = new LoopTimer();
+        var ltimer = new owned LoopTimer();
 
         select iloop {
           when LoopKernelID.PRESSURE_CALC {
@@ -546,7 +546,6 @@ module RunParallelRawLoops {
           }
         }
         copyTimer(stat, ilength, ltimer);
-        delete ltimer;
       }
     }
   }

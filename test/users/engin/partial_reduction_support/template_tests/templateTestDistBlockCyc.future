@@ -1,0 +1,2 @@
+bug: compiler reports "tuple must have positive size"
+#12032

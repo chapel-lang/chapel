@@ -26,7 +26,7 @@ proc main() {
   //
   const leftover = n%digitsPerLine;
   if (leftover) {
-    for leftover..digitsPerLine do
+    for leftover..digitsPerLine-1 do
       write(" ");
     writeln("\t:", n);
   }

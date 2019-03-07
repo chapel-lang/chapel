@@ -8,4 +8,4 @@ COMPOPTS <= --incremental
 COMPOPTS <= --denormalize
 COMPOPTS <= --warn-unstable
 COMPOPTS <= --lifetime-checking
-COMPOPTS <= --force-initializers
+COMPOPTS <= ArrayStorageOrder.CMO

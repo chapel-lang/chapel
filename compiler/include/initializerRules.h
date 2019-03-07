@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,6 +36,5 @@ void      errorOnFieldsInArgList(FnSymbol* fn);
 void      preNormalizeFields(AggregateType* at);
 void      preNormalizeInitMethod(FnSymbol* fn);
 void      preNormalizePostInit(AggregateType* at);
-FnSymbol* buildClassAllocator(FnSymbol* initMethod);
 
 #endif

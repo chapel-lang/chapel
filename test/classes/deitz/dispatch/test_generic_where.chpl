@@ -7,7 +7,7 @@ class C {
 
 class D: C {
   var y: int;
-  proc foo(param rank: int) where rank == 1 {
+  override proc foo(param rank: int) where rank == 1 {
     writeln("foo<", rank, ">: (x = ", x, ", y = ", y, ")");
   }
 }

@@ -1,9 +1,9 @@
 class C {}
 
-var c: C;
+var c: unmanaged C;
 
 proc bar() {
-  c = new C();
+  c = new unmanaged C();
   return c;
 }
 

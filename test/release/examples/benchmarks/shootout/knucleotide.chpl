@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Ben Harshbarger and Brad Chamberlain
    derived from the GNU C++ version by Branimir Maksimovic
@@ -53,12 +53,11 @@ proc main(args: [] string) {
 proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
+  var arr = for (s,f) in zip(freqs.domain, freqs) do (f,s);
+
   // sort by frequencies
-  var arr = for (k,v) in zip(freqs.domain, freqs) do (v,k);
 
-  quickSort(arr, comparator=reverseComparator);
-
-  for (f, s) in arr do
+  for (f, s) in arr.sorted(comparator=reverseComparator) do
    writef("%s %.3dr\n", decode(s, nclSize), 
            (100.0 * f) / (data.size - nclSize));
   writeln();

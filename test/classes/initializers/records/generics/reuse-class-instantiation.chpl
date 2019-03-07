@@ -5,11 +5,11 @@ record Foo {
   type t;
   var x: t;
 
-  proc init(type tVal) {
-    t = tVal;
+  proc init(type t) {
+    this.t = t;
   }
 
-  proc init(xVal) where !xVal: Foo {
+  proc init(xVal) where !isSubtype(xVal.type, Foo) {
     t = xVal.type;
     x = xVal;
   }

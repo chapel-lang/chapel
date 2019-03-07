@@ -12,7 +12,10 @@
 
 namespace re2 {
 
-static const Regexp::ParseFlags TestZeroFlags = Regexp::ParseFlags(1<<30);
+// In the past, we used 1<<30 here and zeroed the bit later, but that
+// has undefined behaviour, so now we use an internal-only flag because
+// otherwise we would have to introduce a new flag value just for this.
+static const Regexp::ParseFlags TestZeroFlags = Regexp::WasDollar;
 
 struct Test {
   const char* regexp;
@@ -50,7 +53,7 @@ static Test tests[] = {
   { "a{2,3}?", "nrep{2,3 lit{a}}" },
   { "a{2,}?", "nrep{2,-1 lit{a}}" },
   { "", "emp{}" },
-  { "|", "emp{}" },  // alt{emp{}emp{}} but got factored
+  { "|", "alt{emp{}emp{}}" },
   { "|x|", "alt{emp{}lit{x}emp{}}" },
   { ".", "dot{}" },
   { "^", "bol{}" },
@@ -230,8 +233,8 @@ void TestParse(const Test* tests, int ntests, Regexp::ParseFlags flags,
       f = tests[i].flags & ~TestZeroFlags;
     }
     re[i] = Regexp::Parse(tests[i].regexp, f, &status);
-    CHECK(re[i] != NULL) << " " << tests[i].regexp << " "
-                         << status.Text();
+    ASSERT_TRUE(re[i] != NULL)
+      << " " << tests[i].regexp << " " << status.Text();
     string s = re[i]->Dump();
     EXPECT_EQ(string(tests[i].parse), s) << "Regexp: " << tests[i].regexp
       << "\nparse: " << string(tests[i].parse) << " s: " << s << " flag=" << f;
@@ -333,6 +336,16 @@ Test prefix_tests[] = {
     "cat{lit{a}alt{cat{nstar{byte{}}lit{c}}cat{nstar{byte{}}lit{b}}}}" },
   { "^/a/bc|^/a/de",
     "cat{bol{}cat{str{/a/}alt{str{bc}str{de}}}}" },
+  // In the past, factoring was limited to kFactorAlternationMaxDepth (8).
+  { "a|aa|aaa|aaaa|aaaaa|aaaaaa|aaaaaaa|aaaaaaaa|aaaaaaaaa|aaaaaaaaaa",
+    "cat{lit{a}alt{emp{}" "cat{lit{a}alt{emp{}" "cat{lit{a}alt{emp{}"
+    "cat{lit{a}alt{emp{}" "cat{lit{a}alt{emp{}" "cat{lit{a}alt{emp{}"
+    "cat{lit{a}alt{emp{}" "cat{lit{a}alt{emp{}" "cat{lit{a}alt{emp{}"
+    "lit{a}}}}}}}}}}}}}}}}}}}" },
+  { "a|aardvark|aardvarks|abaci|aback|abacus|abacuses|abaft|abalone|abalones",
+    "cat{lit{a}alt{emp{}cat{str{ardvark}alt{emp{}lit{s}}}"
+    "cat{str{ba}alt{cat{lit{c}alt{cc{0x69 0x6b}cat{str{us}alt{emp{}str{es}}}}}"
+    "str{ft}cat{str{lone}alt{emp{}lit{s}}}}}}}" },
 };
 
 // Test that prefix factoring works.
@@ -409,23 +422,23 @@ const char* only_posix[] = {
 // Test that parser rejects bad regexps.
 TEST(TestParse, InvalidRegexps) {
   for (int i = 0; i < arraysize(badtests); i++) {
-    CHECK(Regexp::Parse(badtests[i], Regexp::PerlX, NULL) == NULL)
+    ASSERT_TRUE(Regexp::Parse(badtests[i], Regexp::PerlX, NULL) == NULL)
       << " " << badtests[i];
-    CHECK(Regexp::Parse(badtests[i], Regexp::NoParseFlags, NULL) == NULL)
+    ASSERT_TRUE(Regexp::Parse(badtests[i], Regexp::NoParseFlags, NULL) == NULL)
       << " " << badtests[i];
   }
   for (int i = 0; i < arraysize(only_posix); i++) {
-    CHECK(Regexp::Parse(only_posix[i], Regexp::PerlX, NULL) == NULL)
+    ASSERT_TRUE(Regexp::Parse(only_posix[i], Regexp::PerlX, NULL) == NULL)
       << " " << only_posix[i];
     Regexp* re = Regexp::Parse(only_posix[i], Regexp::NoParseFlags, NULL);
-    CHECK(re) << " " << only_posix[i];
+    ASSERT_TRUE(re != NULL) << " " << only_posix[i];
     re->Decref();
   }
   for (int i = 0; i < arraysize(only_perl); i++) {
-    CHECK(Regexp::Parse(only_perl[i], Regexp::NoParseFlags, NULL) == NULL)
+    ASSERT_TRUE(Regexp::Parse(only_perl[i], Regexp::NoParseFlags, NULL) == NULL)
       << " " << only_perl[i];
     Regexp* re = Regexp::Parse(only_perl[i], Regexp::PerlX, NULL);
-    CHECK(re) << " " << only_perl[i];
+    ASSERT_TRUE(re != NULL) << " " << only_perl[i];
     re->Decref();
   }
 }
@@ -439,7 +452,7 @@ TEST(TestToString, EquivalentParse) {
       f = tests[i].flags & ~TestZeroFlags;
     }
     Regexp* re = Regexp::Parse(tests[i].regexp, f, &status);
-    CHECK(re != NULL) << " " << tests[i].regexp << " " << status.Text();
+    ASSERT_TRUE(re != NULL) << " " << tests[i].regexp << " " << status.Text();
     string s = re->Dump();
     EXPECT_EQ(string(tests[i].parse), s) << " " << tests[i].regexp << " " << string(tests[i].parse) << " " << s;
     string t = re->ToString();
@@ -449,12 +462,12 @@ TEST(TestToString, EquivalentParse) {
       // Unfortunately we can't check the length here, because
       // ToString produces "\\{" for a literal brace,
       // but "{" is a shorter equivalent.
-      // CHECK_LT(t.size(), strlen(tests[i].regexp))
+      // ASSERT_LT(t.size(), strlen(tests[i].regexp))
       //     << " t=" << t << " regexp=" << tests[i].regexp;
 
       // Test that if we parse the new regexp we get the same structure.
       Regexp* nre = Regexp::Parse(t, Regexp::MatchNL | Regexp::PerlX, &status);
-      CHECK(nre != NULL) << " reparse " << t << " " << status.Text();
+      ASSERT_TRUE(nre != NULL) << " reparse " << t << " " << status.Text();
       string ss = nre->Dump();
       string tt = nre->ToString();
       if (s != ss || t != tt)

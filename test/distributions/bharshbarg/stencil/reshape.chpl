@@ -11,7 +11,7 @@ var A : [Space] int;
 // Resize the domain, causing the periodic info to be recomputed
 Space = Big;
 
-[(i,j) in Space] A[i,j] = (i*Space.size)+j;
+A = [(i,j) in Space] (i*Space.size)+j;
 A.updateFluff();
 
 verifyStencil(A);

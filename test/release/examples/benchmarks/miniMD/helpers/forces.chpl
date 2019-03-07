@@ -46,7 +46,7 @@ class ForceEAM : Force  {
 
   var FP: [DistSpace] [perBinSpace] real;
               
-  var funcfl : Funcfl;
+  var funcfl : owned Funcfl;
 
   proc init(cf : real) {
     this.complete();
@@ -57,7 +57,7 @@ class ForceEAM : Force  {
   }
 
   proc coeff(fname : string) {
-    funcfl = new Funcfl();
+    funcfl = new owned Funcfl();
     funcfl.eamFile = fname;
     var fchan = open(fname, iomode.r);
     var rd = fchan.reader();
@@ -213,7 +213,7 @@ class ForceEAM : Force  {
     list[1] = list[2];
   }
 
-  proc compute(store : bool) {
+  override proc compute(store : bool) {
     if debug then writeln("entering EAM compute...");
     var evdwl, vir : atomic real;
     virial = 0.0;
@@ -316,7 +316,7 @@ class ForceLJ : Force {
     cutforcesq = cf * cf;
   }
 
-  proc compute(store : bool) : void {
+  override proc compute(store : bool) : void {
     eng_vdwl = 0;
     virial = 0;
     var fTimer : Timer;

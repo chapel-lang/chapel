@@ -4,7 +4,7 @@ class P {
 
 class C: P {
     var n: int;
-    proc f() return "D";
+    override proc f() return "D";
 }
 
 class D {

@@ -1,4 +1,0 @@
-callFuncReturnsBadArray.test.c:4:28: fatal error: returnBadArray.h: No such file or directory
- #include "returnBadArray.h"
-                            ^
-compilation terminated.

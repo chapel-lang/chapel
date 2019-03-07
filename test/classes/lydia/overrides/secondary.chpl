@@ -8,7 +8,7 @@ class A {
 class B: A {
 
 }
-proc B.foo(x) {
+override proc B.foo(x) {
   super.foo(x);
   writeln("in B.foo() with arg ", x);
 }

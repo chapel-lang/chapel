@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -468,7 +468,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   if !qio_regexp_ok(ret._regexp) {
     var err_str = qio_regexp_error(ret._regexp);
     var err_msg = err_str:string + " when compiling regexp '" + pattern + "'";
-    throw new BadRegexpError(err_msg);
+    throw new owned BadRegexpError(err_msg);
   }
   return ret;
 }
@@ -503,7 +503,6 @@ proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture,
     string.
  */
 pragma "no doc"
-pragma "use default init"
 record stringPart {
   var offset:int;
   var length:int;
@@ -525,7 +524,6 @@ record stringPart {
       if !m then do_something_if_not_matched();
 
  */
-pragma "use default init"
 record reMatch {
   /* true if the regular expression search matched successfully */
   var matched:bool;
@@ -581,7 +579,7 @@ record regexp {
   proc init() {
   }
 
-  proc init(x: regexp) {
+  proc init=(x: regexp) {
     this.home = x.home;
     this._regexp = x._regexp;
     this.complete();
@@ -619,11 +617,15 @@ record regexp {
         captures[i] = m;
       } else {
         if m.matched {
-          try {
-            captures[i] = text[m]:captures[i].type;
-          } catch {
-            var empty:captures[i].type;
-            captures[i] = empty;
+          if captures[i].type == string {
+            captures[i] = text[m];
+          } else {
+            try {
+              captures[i] = text[m]:captures[i].type;
+            } catch {
+              var empty:captures[i].type;
+              captures[i] = empty;
+            }
           }
         } else {
           var empty:captures[i].type;
@@ -1094,9 +1096,10 @@ proc string.match(pattern: regexp):reMatch
   return pattern.match(this);
 }
 
-/* Match the receiving string to a regular expression already compiled
-   by calling :proc:`regexp.match`. Only return matches where the match
-   encompasses the entire string.
+/* Match the receiving string to a regular expression already compiled by
+   calling :proc:`regexp.match`. Note that function only returns a match if
+   the start of the string matches the pattern. Use :proc:`string.search`
+   to search for the pattern at any offset.
 
    :arg pattern: the compiled regular expression to match
    :arg captures: (optional) what to capture from the regular expression. These

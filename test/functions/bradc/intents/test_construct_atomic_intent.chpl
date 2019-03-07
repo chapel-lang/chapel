@@ -1,7 +1,7 @@
 class C {
   var a: atomic int;
 
-  proc C(x: atomic int) {  // x should be passed by ref by default
+  proc init(x: atomic int) {  // x should be passed by ref by default
     a = x;
     x.add(1);
   }
@@ -9,7 +9,7 @@ class C {
 
 var b: atomic int;
 
-var myC = new C(b);
+var myC = new owned C(b);
 writeln("b is: ", b.read());
 writeln("myC is: ", myC);
 

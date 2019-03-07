@@ -9,9 +9,9 @@ class C {
 }
 
 proc getType(type t) type {
-  return C(t);
+  return borrowed C(t);
 }
 
 var myC: getType(int);
-myC = new borrowed (getType(int))(int);
+myC = new borrowed (getType(int))();
 writeln(myC);

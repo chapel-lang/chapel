@@ -3,7 +3,7 @@
 // practice.
 
 proc main() {
-  var sampleBug = new Sample();
+  var sampleBug = new unmanaged Sample();
   writeln(sampleBug.tag);
   delete sampleBug;
 }

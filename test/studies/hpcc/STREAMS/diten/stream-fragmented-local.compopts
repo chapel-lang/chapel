@@ -1,1 +1,1 @@
-../../common/probSize.chpl ../../common/bradc/hpccMultilocale.chpl
+../../common/probSize.chpl ../../common/bradc/hpccMultilocale.chpl --no-warnings

@@ -136,8 +136,7 @@ class Compiler : public Regexp::Walker<Frag> {
 
   // Compiles alternation of all the re to a new Prog.
   // Each re has a match with an id equal to its index in the vector.
-  static Prog* CompileSet(const RE2::Options& options, RE2::Anchor anchor,
-                          Regexp* re);
+  static Prog* CompileSet(Regexp* re, RE2::Anchor anchor, int64_t max_mem);
 
   // Interface for Regexp::Walker, which helps traverse the Regexp.
   // The walk is purely post-recursive: given the machines for the
@@ -286,7 +285,8 @@ int Compiler::AllocInst(int n) {
     while (inst_len_ + n > inst_cap_)
       inst_cap_ *= 2;
     Prog::Inst* ip = new Prog::Inst[inst_cap_];
-    memmove(ip, inst_, inst_len_ * sizeof ip[0]);
+    if (inst_ != NULL)
+      memmove(ip, inst_, inst_len_ * sizeof ip[0]);
     memset(ip + inst_len_, 0, (inst_cap_ - inst_len_) * sizeof ip[0]);
     delete[] inst_;
     inst_ = ip;
@@ -877,9 +877,11 @@ Frag Compiler::PostVisit(Regexp* re, Frag, Frag, Frag* child_frags,
 
     case kRegexpHaveMatch: {
       Frag f = Match(re->match_id());
-      // Remember unanchored match to end of string.
-      if (anchor_ != RE2::ANCHOR_BOTH)
-        f = Cat(DotStar(), Cat(EmptyWidth(kEmptyEndText), f));
+      if (anchor_ == RE2::ANCHOR_BOTH) {
+        // Append \z or else the subexpression will effectively be unanchored.
+        // Complemented by the UNANCHORED case in CompileSet().
+        f = Cat(EmptyWidth(kEmptyEndText), f);
+      }
       return f;
     }
 
@@ -1138,8 +1140,7 @@ void Compiler::Setup(Regexp::ParseFlags flags, int64_t max_mem,
 // The reversed flag is also recorded in the returned program.
 Prog* Compiler::Compile(Regexp* re, bool reversed, int64_t max_mem) {
   Compiler c;
-
-  c.Setup(re->parse_flags(), max_mem, RE2::ANCHOR_BOTH /* unused */);
+  c.Setup(re->parse_flags(), max_mem, RE2::UNANCHORED /* unused */);
   c.reversed_ = reversed;
 
   // Simplify to remove things like counted repetitions
@@ -1154,7 +1155,7 @@ Prog* Compiler::Compile(Regexp* re, bool reversed, int64_t max_mem) {
   bool is_anchor_end = IsAnchorEnd(&sre, 0);
 
   // Generate fragment for entire regexp.
-  Frag f = c.WalkExponential(sre, Frag(), 2*c.max_inst_);
+  Frag all = c.WalkExponential(sre, Frag(), 2*c.max_inst_);
   sre->Decref();
   if (c.failed_)
     return NULL;
@@ -1163,10 +1164,10 @@ Prog* Compiler::Compile(Regexp* re, bool reversed, int64_t max_mem) {
   // Turn off c.reversed_ (if it is set) to force the remaining concatenations
   // to behave normally.
   c.reversed_ = false;
-  Frag all = c.Cat(f, c.Match(0));
-  c.prog_->set_start(all.begin);
+  all = c.Cat(all, c.Match(0));
 
-  if (reversed) {
+  c.prog_->set_reversed(reversed);
+  if (c.prog_->reversed()) {
     c.prog_->set_anchor_start(is_anchor_end);
     c.prog_->set_anchor_end(is_anchor_start);
   } else {
@@ -1174,15 +1175,12 @@ Prog* Compiler::Compile(Regexp* re, bool reversed, int64_t max_mem) {
     c.prog_->set_anchor_end(is_anchor_end);
   }
 
-  // Also create unanchored version, which starts with a .*? loop.
-  if (c.prog_->anchor_start()) {
-    c.prog_->set_start_unanchored(c.prog_->start());
-  } else {
-    Frag unanchored = c.Cat(c.DotStar(), all);
-    c.prog_->set_start_unanchored(unanchored.begin);
+  c.prog_->set_start(all.begin);
+  if (!c.prog_->anchor_start()) {
+    // Also create unanchored version, which starts with a .*? loop.
+    all = c.Cat(c.DotStar(), all);
   }
-
-  c.prog_->set_reversed(reversed);
+  c.prog_->set_start_unanchored(all.begin);
 
   // Hand ownership of prog_ to caller.
   return c.Finish();
@@ -1235,29 +1233,29 @@ Frag Compiler::DotStar() {
 }
 
 // Compiles RE set to Prog.
-Prog* Compiler::CompileSet(const RE2::Options& options, RE2::Anchor anchor,
-                           Regexp* re) {
+Prog* Compiler::CompileSet(Regexp* re, RE2::Anchor anchor, int64_t max_mem) {
   Compiler c;
+  c.Setup(re->parse_flags(), max_mem, anchor);
 
-  Regexp::ParseFlags pf = static_cast<Regexp::ParseFlags>(options.ParseFlags());
-  c.Setup(pf, options.max_mem(), anchor);
+  Regexp* sre = re->Simplify();
+  if (sre == NULL)
+    return NULL;
 
-  // Compile alternation of fragments.
-  Frag all = c.WalkExponential(re, Frag(), 2*c.max_inst_);
-  re->Decref();
+  Frag all = c.WalkExponential(sre, Frag(), 2*c.max_inst_);
+  sre->Decref();
   if (c.failed_)
     return NULL;
 
-  if (anchor == RE2::UNANCHORED) {
-    // The trailing .* was added while handling kRegexpHaveMatch.
-    // We just have to add the leading one.
-    all = c.Cat(c.DotStar(), all);
-  }
-
-  c.prog_->set_start(all.begin);
-  c.prog_->set_start_unanchored(all.begin);
   c.prog_->set_anchor_start(true);
   c.prog_->set_anchor_end(true);
+
+  if (anchor == RE2::UNANCHORED) {
+    // Prepend .* or else the expression will effectively be anchored.
+    // Complemented by the ANCHOR_BOTH case in PostVisit().
+    all = c.Cat(c.DotStar(), all);
+  }
+  c.prog_->set_start(all.begin);
+  c.prog_->set_start_unanchored(all.begin);
 
   Prog* prog = c.Finish();
   if (prog == NULL)
@@ -1277,9 +1275,8 @@ Prog* Compiler::CompileSet(const RE2::Options& options, RE2::Anchor anchor,
   return prog;
 }
 
-Prog* Prog::CompileSet(const RE2::Options& options, RE2::Anchor anchor,
-                       Regexp* re) {
-  return Compiler::CompileSet(options, anchor, re);
+Prog* Prog::CompileSet(Regexp* re, RE2::Anchor anchor, int64_t max_mem) {
+  return Compiler::CompileSet(re, anchor, max_mem);
 }
 
 }  // namespace re2

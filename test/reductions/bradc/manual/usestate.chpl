@@ -21,7 +21,7 @@ forall i in D {
   A(i) = i;
 }
 
-var myreduce   = new mysumreduce(t = int);
+var myreduce   = new unmanaged mysumreduce(t = int);
 myreduce.state = myreduce.ident();
 
 for i in D {

@@ -39,7 +39,7 @@ def ReadCleanfiles(f, ignoreLeadingSpace=True):
 def cleanChapelTest(f):
     execname = getExecname(f)
     if execname:
-        print 'Cleaning test: '+execname
+        print('Cleaning test: '+execname)
         globfiles = glob.glob(execname+'.*.out.tmp')
         for g in globfiles:
             try:
@@ -69,7 +69,7 @@ def cleanCleanfiles(d, c, rmCore):
             else:
                 globfiles = glob.glob(f)
             for g in globfiles:
-                print 'Removing '+g
+                print('Removing '+g)
                 try:
                     if os.path.isdir(g):
                         shutil.rmtree(g)
@@ -92,7 +92,7 @@ else:
 
 for f in clean:
     if os.path.isdir(f):
-        print 'Cleaning directory: '+f
+        print('Cleaning directory: '+f)
         dirlist = glob.glob(f+'/*.chpl')+glob.glob(f+'/*.test.c')
         dirlist.sort()
         for file in dirlist:
@@ -100,6 +100,7 @@ for f in clean:
         cleanCleanfiles(f, 'CLEANFILES', True)
     else:
         cleanChapelTest(f)
+        cleanCleanfiles(os.path.dirname(f), 'CLEANFILES', True)
 
 sys.exit(0);
 

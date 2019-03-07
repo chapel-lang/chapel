@@ -3,8 +3,8 @@ class myClass {
   var y: real;
 }
 
-var a: myClass = new borrowed myClass(x = 1, y = 2.3);
-var b: myClass = new borrowed myClass(x = 9, y = 9.9);
+var a: borrowed myClass = new borrowed myClass(x = 1, y = 2.3);
+var b: borrowed myClass = new borrowed myClass(x = 9, y = 9.9);
 
 writeln("a is initialized to: ", a);
 writeln("b is initialized to: ", b);

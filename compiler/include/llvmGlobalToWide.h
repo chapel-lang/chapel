@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -155,11 +155,13 @@ struct GlobalToWideInfo {
   // so that they are not removed by the inliner.
   // This function should be removed from the module
   // once GlobalToWide completes.
+  bool hasPreservingFn;
   runtime_fn_t preservingFn;
 
   GlobalToWideInfo()
     : globalSpace(0), wideSpace(0), globalPtrBits(0),
-      localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions() { }
+      localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions(),
+      hasPreservingFn(false) { }
 };
 
 llvm::ModulePass *createGlobalToWide(GlobalToWideInfo* info,

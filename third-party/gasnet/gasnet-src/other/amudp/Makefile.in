@@ -246,7 +246,7 @@ CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CC_FAMILY = @CC_FAMILY@
 CC_SUBFAMILY = @CC_SUBFAMILY@
-CFLAGS = @GASNET_OPT_CFLAGS@ @MISC_CFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CFLAGS) $(apputils_flags) $(strict_proto_flags)
+CFLAGS = @GASNET_OPT_CFLAGS@ @DEVWARN_CFLAGS@ @MISC_CFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CFLAGS) $(apputils_flags)
 COMPLETE_INTTYPES_H = @COMPLETE_INTTYPES_H@
 COMPLETE_STDINT_H = @COMPLETE_STDINT_H@
 COMPLETE_SYS_TYPES_H = @COMPLETE_SYS_TYPES_H@
@@ -258,7 +258,7 @@ CROSS_COMPILING = @CROSS_COMPILING@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
-CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @MISC_CXXFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CXXFLAGS)
+CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @DEVWARN_CXXFLAGS@ @MISC_CXXFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CXXFLAGS)
 CXX_FAMILY = @CXX_FAMILY@
 CXX_SUBFAMILY = @CXX_SUBFAMILY@
 CYGPATH_W = @CYGPATH_W@
@@ -268,6 +268,9 @@ DEBUGMALLOC_VAL = @DEBUGMALLOC_VAL@
 DEBUGMALLOC_VAR = @DEBUGMALLOC_VAR@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVWARN_CFLAGS = @DEVWARN_CFLAGS@
+DEVWARN_CXXFLAGS = @DEVWARN_CXXFLAGS@
+DEVWARN_MPI_CFLAGS = @DEVWARN_MPI_CFLAGS@
 DIRNAME = @DIRNAME@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -323,7 +326,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 INTTYPES_DEFINES = @INTTYPES_DEFINES@
 KEEPTMP_CFLAGS = @KEEPTMP_CFLAGS@
-LADEBUG_PATH = @LADEBUG_PATH@
 LDFLAGS = @LDFLAGS@ @cxxLDFLAGS@ $(MANUAL_LDFLAGS)
 LIBGCC = @LIBGCC@
 LIBM = @LIBM@
@@ -387,9 +389,6 @@ READLINK = @READLINK@
 SEPARATE_CC = @SEPARATE_CC@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SHMEM_INCLUDES = @SHMEM_INCLUDES@
-SHMEM_LDFLAGS = @SHMEM_LDFLAGS@
-SHMEM_LIBS = @SHMEM_LIBS@
 SIZEOF_CHAR = @SIZEOF_CHAR@
 SIZEOF_DOUBLE = @SIZEOF_DOUBLE@
 SIZEOF_FLOAT = @SIZEOF_FLOAT@
@@ -398,7 +397,9 @@ SIZEOF_INT = @SIZEOF_INT@
 SIZEOF_LONG = @SIZEOF_LONG@
 SIZEOF_LONG_DOUBLE = @SIZEOF_LONG_DOUBLE@
 SIZEOF_LONG_LONG = @SIZEOF_LONG_LONG@
+SIZEOF_PTRDIFF_T = @SIZEOF_PTRDIFF_T@
 SIZEOF_SHORT = @SIZEOF_SHORT@
+SIZEOF_SIZE_T = @SIZEOF_SIZE_T@
 SIZEOF_VOID_P = @SIZEOF_VOID_P@
 SIZEOF__BOOL = @SIZEOF__BOOL@
 SMP_LIBS = @SMP_LIBS@
@@ -486,19 +487,17 @@ apputils_flags =
 @BLCR_ENABLED_TRUE@blcr_defines = -DAMUDP_BLCR_ENABLED=1 -DBLCR_BINDIR=\"@BLCR_BINDIR@\" @BLCR_CFLAGS@
 @BLCR_ENABLED_FALSE@blcr_ldflags = 
 @BLCR_ENABLED_TRUE@blcr_ldflags = @BLCR_LDFLAGS@ @BLCR_LIBS@
-@USE_STRICT_PROTOTYPES_FALSE@strict_proto_flags = 
-@USE_STRICT_PROTOTYPES_TRUE@strict_proto_flags = -DGASNET_USE_STRICT_PROTOTYPES
-platform_defines = @GASNET_EXTRA_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMUDP_ENV_PREFIX=GASNET $(blcr_defines) $(MANUAL_DEFINES)
+platform_defines = @GASNET_EXTRA_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMX_ENV_PREFIX=GASNET $(blcr_defines) $(MANUAL_DEFINES)
 platform_libraries = -L$(top_builddir) -lgasnet_tools-seq @LIBS@ @GASNET_UDP_LIBS@ $(blcr_ldflags)
-testdir = $(srcdir)/../amxtests
+amxdir = $(srcdir)/../amx
 altincdir = $(srcdir)/..
 gasnet_tools = -I$(srcdir)/../.. -I../.. -DHAVE_GASNET_TOOLS
-INCLUDES = -I$(srcdir) -I. -I$(altincdir) $(platform_defines) $(gasnet_tools)
+INCLUDES = -I$(srcdir) -I. -I$(amxdir) -I$(altincdir) $(platform_defines) $(gasnet_tools)
 compile = $(CC) $(CFLAGS) $(INCLUDES)
 cxxcompile = $(CXX) $(CXXFLAGS) $(INCLUDES)
 link = $(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCLUDES) 
 linkend = $(platform_libraries) $(MANUAL_LIBS)
-@USE_UDP_CONDUIT_TRUE@BUILT_SOURCES = amudp_portable_platform.h
+@USE_UDP_CONDUIT_TRUE@BUILT_SOURCES = amx_portable_platform.h
 @USE_UDP_CONDUIT_TRUE@lib_LIBRARIES = libamudp.a
 headers = \
 	amudp.h			\
@@ -930,8 +929,11 @@ uninstall-am: uninstall-binPROGRAMS uninstall-libLIBRARIES
 
 .PRECIOUS: Makefile
 
+# ensure 'make amudprun' works on Cygwin
+@HAVE_EXESUFFIX_TRUE@@USE_UDP_CONDUIT_TRUE@amudpru% : amudpru%$(EXESUFFIX)
+@HAVE_EXESUFFIX_TRUE@@USE_UDP_CONDUIT_TRUE@	:
 
-amudp_portable_platform.h: $(altincdir)/gasnet_portable_platform.h
+amx_portable_platform.h: $(altincdir)/gasnet_portable_platform.h
 	cp -f $< $@
 
 $(libamudp_a_DEPENDENCIES): $(allheaders)
@@ -965,31 +967,29 @@ run-tests: tests
 
 # make a distribution
 amxdist:
-	@bash -x -c ' \
-         VERSION=`grep "#define AMUDP_LIBRARY_VERSION" $(srcdir)/amudp_const.h | head -1 | awk '"'"'{ print $$3 }'"'"'` \
-         export VERSION ; \
+	@set -x ; \
+         VERSION=`grep "#define AMUDP_LIBRARY_VERSION" $(srcdir)/amudp_const.h | head -2 | $(PERL) -e '$$/=undef; my @a=split(/\s+/,<>); print "$$a[2].$$a[5]"'` ; \
 	 distdir=amudp$${VERSION} ; \
          echo "+++ Building distribution for AMUDP version $${VERSION} +++" && \
 	 rm -Rf $$distdir.tar.gz $$distdir && \
          mkdir $$distdir && \
-         cp $(srcdir)/Makefile.* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.cpp $(srcdir)/*.c $(srcdir)/*.h $(testdir)/*.[ch] \
+         cp $(srcdir)/Makefile.* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.cpp $(srcdir)/*.c $(srcdir)/*.h $(amxdir)/*.[ch] \
 	    $(altincdir)/portable_inttypes.h $(altincdir)/gasnet_portable_platform.h \
 	    $$distdir && \
 	 cd $$distdir && \
-	 mv gasnet_portable_platform.h amudp_portable_platform.h && \
+	 mv gasnet_portable_platform.h amx_portable_platform.h && \
 	 rm -f Makefile.in Makefile.am Makefile.titanium* && \
          mv Makefile.standalone Makefile && \
 	 cd .. && \
          tar -cvhf $$distdir.tar $$distdir && gzip -9 $$distdir.tar && \
          rm -Rf $$distdir && \
-         echo "+++ $$distdir.tar.gz is ready for distribution +++" \
-        '
+         echo "+++ $$distdir.tar.gz is ready for distribution +++" 
 
-test%.o : $(testdir)/test%.c $(testdir)/*.h $(allheaders)
-	$(compile) -DAMUDP -I$(testdir) -c $< -o $@
+test%.o : $(amxdir)/test%.c $(amxdir)/*.h $(allheaders)
+	$(compile) -DAMUDP -I$(amxdir) -c $< -o $@
 
-apputils.o : $(testdir)/apputils.c $(testdir)/apputils.h $(allheaders)
-	$(compile) -DAMUDP -I$(testdir) -c $(testdir)/apputils.c -o apputils.o
+apputils.o : $(amxdir)/apputils.c $(amxdir)/apputils.h $(allheaders)
+	$(compile) -DAMUDP -I$(amxdir) -c $(amxdir)/apputils.c -o apputils.o
 
 amudprun$(EXEEXT): amudprun.o $(headers) libamudp.a
 	$(link) -o $@ $< -L. -lamudp $(linkend)
@@ -1010,14 +1010,15 @@ $(top_builddir)/libgasnet_tools-seq.a: force
 amudprun-host$(EXEEXT): force
 	@ srcdir=`cd $(srcdir) && pwd`; \
 	set -x && \
-	mkdir -p host && \
-	cd host && \
+	mkdir -p .host && \
+	cd .host && \
 	ln -sf $$srcdir/Makefile* . && \
 	ln -sf $$srcdir/../portable_inttypes.h . && \
-	ln -sf $$srcdir/../gasnet_portable_platform.h amudp_portable_platform.h && \
-	$(MAKE) amudprun -f Makefile.standalone srcdir=$$srcdir altincdir=. MANUAL_DEFINES="-DAMUDP_ENV_PREFIX=GASNET $(MANUAL_DEFINES)" && \
+	ln -sf $$srcdir/../gasnet_portable_platform.h amx_portable_platform.h && \
+	ln -sf $$srcdir/../amx/*.[ch] . && \
+	$(MAKE) amudprun -f Makefile.standalone srcdir=$$srcdir altincdir=. MANUAL_DEFINES="-DAMX_ENV_PREFIX=GASNET $(MANUAL_DEFINES)" && \
 	mv amudprun ../amudprun-host && \
-	cd .. && rm -Rf host
+	cd .. && rm -Rf .host
 
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@check-exports: libamudp.a
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@	@echo Checking libamudp exports...
@@ -1025,8 +1026,9 @@ amudprun-host$(EXEEXT): force
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@            @NM@ --defined-only $$lib |                                             \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@	    @PERL@ -pe 's/ \.refptr\.//' |                                          \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@            grep -v -e ' [\._]*amudp_' -e ' [\._]*AMUDP_' -e ' [\._]*AM_'           \
+@GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@                    -e ' [\._]*amx_' -e ' [\._]*AMX_' -e ' [\._]*SOCK_'             \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@                    -e ' [\._]*gasnett_' -e ' [\._]*gasneti_'                       \
-@GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@                    -e 'get_pc_thunk'                                               \
+@GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@		    -e ' [\._][\._]*debug_' -e 'get_pc_thunk'                       \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@                    -e __FUNCTION__ -e __PRETTY_FUNCTION__ -e debug_info_seg |      \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@            @PERL@ -n -e 'print if /^[0-9a-fA-F]+\s+[A-Z]\s+/' > .$$lib.exp;        \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@          if test -s .$$lib.exp ; then                                              \
@@ -1044,6 +1046,7 @@ amudprun-host$(EXEEXT): force
 # No check-exports by default due to name mangling
 @USE_UDP_CONDUIT_TRUE@check: tests
 @USE_UDP_CONDUIT_TRUE@clean-local:
+@USE_UDP_CONDUIT_TRUE@	rm -Rf .host
 @USE_UDP_CONDUIT_TRUE@	@for f in $(testprograms); do                                \
 @USE_UDP_CONDUIT_TRUE@	  cmd="rm -f '$$f$(EXESUFFIX)'"; echo "$$cmd"; eval "$$cmd" || exit $$? ; \
 @USE_UDP_CONDUIT_TRUE@	 done;

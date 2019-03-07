@@ -164,7 +164,7 @@ class TreeNode {
 
 
 /* Compute atomically:  this = max(this, other) */
-proc atomic_int64.max(other: int) {
+proc AtomicT.max(other: int) {
   var curMax = this.read();
   while curMax < other && !this.compareExchange(curMax, other) do
     curMax = this.read();

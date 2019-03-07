@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,10 +24,12 @@
 
 #include "astutil.h"
 #include "flags.h"
+#include "library.h"
 #include "type.h"
 
 #include <bitset>
 #include <iostream>
+#include <string>
 #include <vector>
 #include <map>
 
@@ -76,35 +78,52 @@ enum IntentTag {
 
 typedef std::bitset<NUM_FLAGS> FlagSet;
 
-//
-// ForallIntentTag: a task- or forall-intent tag
-//
+/*
+enum ForallIntentTag : task- or forall-intent tags
+
+TFI_IN_PARENT
+  The compiler adds this shadow var during resolution for each TFI_IN
+  and TFI_CONST_IN. A TFI_IN_PARENT represents the task function's formal
+  that the corresponding TFI_IN or TFI_CONST_IN is to be initialized from.
+
+TFI_REDUCE
+  This shadow var replaces the uses of the outer variable in the loop body
+  in case of a 'reduce' intent. This is done in parsing and scopeResolve.
+  It is analogous to the TFI_IN shadow var for an 'in' intent.
+  A TFI_REDUCE var represents the current task's accumulation state.
+
+TFI_REDUCE_*
+  The compiler adds one each of these shadow vars during resolution
+  for each TFI_REDUCE. They represent:
+
+  TFI_REDUCE_OP        - the current task's reduction OP
+  TFI_REDUCE_PARENT_AS - the parent task's Accumulation State
+  TFI_REDUCE_PARENT_OP - the parent task's reduction OP
+
+  The *PARENT* vars, like TFI_IN_PARENT, are the task function's formals.
+
+The remaining tags should be self-explanatory.
+*/
 enum ForallIntentTag {
-  TFI_DEFAULT,        // aka TFI_BLANK
-  TFI_CONST,
-  TFI_IN_OUTERVAR,    // see below
-  TFI_IN,
-  TFI_CONST_IN,
-  TFI_REF,
-  TFI_CONST_REF,
-  TFI_REDUCE,
-  TFI_REDUCE_OP,      // see below
-  TFI_TASK_PRIVATE,   // a task-private variable, TPV
+  // user-specified intents
+  TFI_DEFAULT,  // aka TFI_BLANK
+  TFI_CONST,                       // ShadowVarSymbol nicknames:
+  TFI_IN,                          //   SI
+  TFI_CONST_IN,                    //   "
+  TFI_REF,                         //   SR
+  TFI_CONST_REF,                   //   "
+  TFI_REDUCE,                      //   AS    (for Accumulation State)
+  TFI_TASK_PRIVATE,                //   TPV
+  // compiler-added helpers
+  TFI_IN_PARENT,                   //   INP
+  TFI_REDUCE_OP,                   //   RP    (for Reduce oP)
+  TFI_REDUCE_PARENT_AS,            //   PAS
+  TFI_REDUCE_PARENT_OP,            //   PRP
 };
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
-/* ForallIntentTag enum:
-
-TFI_IN_OUTERVAR shadow var is added by compiler as a placeholder
-for the TFI_IN/TFI_CONST_IN shadow var's outer variable.
-
-TFI_REDUCE_OP shadow var is added by compiler. It is the reduce op
-for the TFI_REDUCE shadow var, which is the accumulation state.
-*/
-
 // for task intents and forall intents
-ArgSymbol* tiMarkForIntent(IntentTag intent);
 ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent);
 
 // parser support
@@ -194,6 +213,8 @@ public:
   SymExpr*           getSingleUse()                            const;
   // Return the single def of this Symbol, or NULL if there are 0 or >= 2
   SymExpr*           getSingleDef()                            const;
+  // Same, considering only defs under 'parent'.
+  SymExpr*           getSingleDefUnder(Symbol* parent)         const;
 
   // The compiler really ought to view a call to `init` that
   // constructs a const record as the single "def". However it
@@ -201,6 +222,7 @@ public:
   // is useful for finding such cases.
   // This function finds the statement expression that is responsible
   // for initializing this symbol.
+  // It can return NULL if it's unable to make sense of the AST pattern.
   Expr*              getInitialization()                       const;
 
 protected:
@@ -242,9 +264,8 @@ bool isUserDefinedRecord(Symbol* symbol);
 
 /************************************* | **************************************
 *                                                                             *
-* This class has two roles:                                                   *
-*    1) A common abstract base class for VarSymbol and ArgSymbol.             *
-*    2) Maintain location state as an IPE "optimization".                     *
+* This class's role is to serve as a common abstract base class for           *
+* VarSymbol and ArgSymbol.                                                    *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -368,6 +389,10 @@ public:
 
   GenRet          codegenType();
 
+  std::string     getPythonType(PythonFileType pxd);
+  std::string     getPythonDefaultValue();
+  std::string     getPythonArgTranslation();
+
   IntentTag       intent;
   IntentTag       originalIntent; // stores orig intent after resolve intents
   BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.
@@ -426,12 +451,14 @@ public:
   BlockStmt* initBlock()   const { return svInitBlock; }
   BlockStmt* deinitBlock() const { return svDeinitBlock; }
 
-  // Convert between TFI_[CONST]_IN and TFI_IN_OUTERVAR svars.
-  ShadowVarSymbol* OutervarForIN() const;
-  ShadowVarSymbol* INforOutervar() const;
-  // Convert between TFI_REDUCE and TFI_REDUCE_OP svars.
+  // Convert between TFI_[CONST]_IN and TFI_IN_PARENT svars.
+  ShadowVarSymbol* ParentvarForIN() const;
+  ShadowVarSymbol* INforParentvar() const;
+  // Convert between TFI_REDUCE and TFI_REDUCE_* svars.
   ShadowVarSymbol* ReduceOpForAccumState() const;
   ShadowVarSymbol* AccumStateForReduceOp() const;
+  ShadowVarSymbol* ReduceOpForParentRP()   const;
+  ShadowVarSymbol* AccumStateForParentAS() const;
 
   // Remove no-longer-needed references to outside symbols when lowering.
   void     removeSupportingReferences();
@@ -449,9 +476,6 @@ public:
   // Corresponding actions to be performed at task startup and teardown.
   BlockStmt* svInitBlock;      // always present
   BlockStmt* svDeinitBlock;    //  "
-
-  // A reduction class instance aka "Operator".
-  Symbol* reduceGlobalOp;
 
   // Once pruning is no longer needed, this should be removed.
   bool pruneit;
@@ -654,17 +678,26 @@ const char* intentDescrString(IntentTag intent);
 // cache some popular strings
 extern const char* astrSdot;
 extern const char* astrSequals;
+extern const char* astrSgt;
+extern const char* astrSgte;
+extern const char* astrSlt;
+extern const char* astrSlte;
+extern const char* astrSswap;
 extern const char* astr_cast;
 extern const char* astr_defaultOf;
 extern const char* astrInit;
+extern const char* astrInitEquals;
 extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrTag;
 extern const char* astrThis;
+extern const char* astr_chpl_cname;
+extern const char* astr_chpl_forward_tgt;
 extern const char* astr_chpl_manager;
 extern const char* astr_forallexpr;
 extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;
+
 void initAstrConsts();
 
 // Return true if the arg must use a C pointer whether or not
@@ -674,9 +707,10 @@ bool argMustUseCPtr(Type* t);
 // Is 'expr' a SymExpr for the outerVar of some ShadowVarSymbol?
 bool isOuterVarOfShadowVar(Expr* expr);
 
+// The source of the PRIM_MOVE whose destination is this temp.
+Expr* getDefOfTemp(SymExpr* origSE);
+
 // Parser support.
-class ForallIntents;
-void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);
 void addForallIntent(CallExpr* fi, ShadowVarSymbol* svar);
 void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar);
 
@@ -690,14 +724,15 @@ extern StringChainHash uniqueStringHash;
 extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
+// Pass this to a return-by-ref formal when the result is not needed.
+// Used when inlining iterators for ForallStmts.
+extern Symbol *gDummyRef;
 extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
 extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
 extern Symbol *gVoid;
 extern Symbol *gStringC;
-extern Symbol *gCVoidPtr;
-extern Symbol *gFile;
 extern Symbol *gOpaque;
 extern Symbol *gTimer;
 extern Symbol *gTaskID;
@@ -712,13 +747,13 @@ extern VarSymbol *gLocal;
 extern VarSymbol* gWarnUnstable;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
+extern VarSymbol *gInfinity;
+extern VarSymbol *gNan;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
-#define FUNC_NAME_MAX 256
-extern char llvmPrintIrName[FUNC_NAME_MAX+1];
-extern char llvmPrintIrStage[FUNC_NAME_MAX+1];
+extern FnSymbol* chplUserMain;
 
 namespace llvmStageNum {
 typedef enum {
@@ -745,20 +780,23 @@ typedef enum {
 }
 using llvmStageNum::llvmStageNum_t;
 
-//Names representations in LLVM IR and C generated code are
-//different from their names in AST. 'llvmPrintIrCName'
-//is place to keep name in LLVM IR and C version of
-//'llvmPrintIrName' variable.
-extern const char *llvmPrintIrCName;
 extern llvmStageNum_t llvmPrintIrStageNum;
-
-extern const char *llvmStageName[llvmStageNum::LAST];
 
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
 llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName);
 
+void addNameToPrintLlvmIr(const char* name);
+void addCNameToPrintLlvmIr(const char* name);
+
+bool shouldLlvmPrintIrName(const char* name);
+bool shouldLlvmPrintIrCName(const char* name);
+bool shouldLlvmPrintIrFn(FnSymbol* fn);
+
 #ifdef HAVE_LLVM
-void printLlvmIr(llvm::Function *func, llvmStageNum_t numStage);
+void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);
 #endif
+
+void preparePrintLlvmIrForCodegen();
+void completePrintLlvmIrStage(llvmStageNum_t numStage);
 
 #endif

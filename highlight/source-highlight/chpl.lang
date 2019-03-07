@@ -4,15 +4,27 @@
 preproc = "use"
 
 # \< \> means all one token.
-number =
-'\<[+-]?((0x[[:xdigit:]]+)|(([[:digit:]]*\.)?
-[[:digit:]]+([eE][+-]?[[:digit:]]+)?))\>'
+# These need to be ordered with the longest patterns first
+# decimal floating point number
+number = '\<(([[:digit:]]([[:digit:]]|_)*)?\.[[:digit:]]([[:digit:]]|_)*([Ee][+-]?[[:digit:]]([[:digit:]]|_)*)?)\>'
+number = '\<(([[:digit:]]([[:digit:]]|_)*)\.([Ee][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
+number = '\<(([[:digit:]]([[:digit:]]|_)*)([Ee][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
 
+# hexadecimal floating point number
+number = '\<0(x|X)(([[:xdigit:]]([[:xdigit:]]|_)*)?\.[[:xdigit:]]([[:xdigit:]]|_)*([Pp][+-]?[[:digit:]]([[:digit:]]|_)*)?)\>'
+number = '\<0(x|X)(([[:xdigit:]]([[:xdigit:]]|_)*)\.([Pp][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
+number = '\<0(x|X)(([[:xdigit:]]([[:xdigit:]]|_)*)([Pp][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
+
+# binary, octal, decimal, hexadecimal integer
+number = '\<(0[bB][0-1]([0-1]|_)*)\>'
+number = '\<(0[oO][0-7]([0-7]|_)*)\>'
+number = '\<(0[xX][[:xdigit:]]([[:xdigit:]]|_)*)\>'
+number = '\<([[:digit:]]([[:digit:]]|_)*)\>'
 
 string delim "\"" "\"" escape "\\"
 
 # double-quotes mean that parens are interpreted literally
-keyword = "as|atomic|begin|break|by|catch|class|cobegin|coforall|config|const|continue|iter|delete|dmapped|do|domain|else|enum|except|export|extern|false|for|forall|if|in|index|inline|inout|label|lambda|let|local|module|new|nil|noinit|on|only|otherwise|out|param|private|proc|prototype|public|record|reduce|ref|require|return|scan|select|serial|single|sparse|subdomain|sync|then|throw|throws|true|try|type|union|use|var|when|where|while|with|yield|zip"
+keyword = "as|atomic|begin|borrowed|break|by|catch|class|cobegin|coforall|config|const|continue|iter|delete|dmapped|do|domain|else|enum|except|export|extern|false|for|forall|if|in|index|inline|inout|label|lambda|let|local|module|new|nil|noinit|on|only|otherwise|out|override|owned|param|private|proc|prototype|public|record|reduce|ref|require|return|scan|select|serial|single|shared|sparse|subdomain|sync|then|throw|throws|true|try|type|union|unmanaged|use|var|when|where|while|with|yield|zip"
 
 
 # double-quotes mean that parens are interpreted literally

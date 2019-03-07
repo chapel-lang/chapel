@@ -1,14 +1,17 @@
 Initializing Modules:
    ChapelStandard
     CPtr
+     HaltWrappers
     CString
     String
      SysCTypes
      StringCasts
+    OwnedObject
     ChapelDebugPrint
     ChapelBase
     MemConsistency
     Atomics
+    NetworkAtomics
     ChapelThreads
     ChapelTuple
     ChapelRange
@@ -21,6 +24,9 @@ Initializing Modules:
         DSIUtil
         ChapelArray
          Sort
+        ExternalArray
+        ISO_Fortran_binding
+        RangeChunk
        ChapelNumLocales
        Sys
         SysBasic
@@ -28,16 +34,14 @@ Initializing Modules:
      LocaleModelHelpMem
     LocalesArray
     ChapelDistribution
-     List
-      ChapelHaltWrappers
-       ChapelIO
-        IO
-         SysError
-         FormattedIO
-          Regexp
+     LinkedLists
+    ChapelIO
+     IO
+      SysError
+      FormattedIO
+       Regexp
     LocaleTree
     DefaultAssociative
-    ExternalArray
     ChapelTaskTable
     MemTracking
     ChapelUtil
@@ -46,6 +50,5 @@ Initializing Modules:
     ChapelTaskData
     Assert
     AlignedTSupport
-    RangeChunk
    printModuleInitOrder
     moduleInitTest

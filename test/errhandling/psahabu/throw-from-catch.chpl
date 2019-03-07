@@ -14,7 +14,7 @@ proc throwDifferent() throws {
     throwAnError();
   } catch {
     writeln("throwing different error");
-    throw new Error();
+    throw new owned Error();
   }
 }
 

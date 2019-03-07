@@ -15,7 +15,7 @@ class C {
 }
 
 class D : C {
-  proc foo() {
+  override proc foo() {
     writeln("In D.foo()");
   }
 
@@ -25,7 +25,7 @@ class D : C {
 }
 
 class E : C {
-  proc foo() {
+  override proc foo() {
     writeln("In E.foo()");
   }
 
@@ -41,12 +41,8 @@ class E : C {
 }
 
 writeln("C:");
-var myC = new C();
+var myC = new owned C();
 writeln("D:");
-var myD = new D();
+var myD = new owned D();
 writeln("E:");
-var myE = new E();
-
-delete myE;
-delete myD;
-delete myC;
+var myE = new owned E();

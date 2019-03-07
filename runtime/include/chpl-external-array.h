@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,21 +20,33 @@
 #ifndef _chpl_external_array_H_
 #define _chpl_external_array_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef void (*chpl_free_func)(void*);
 
 typedef struct {
   void* elts;
-  uint64_t size;
+  uint64_t num_elts;
 
-  chpl_free_func freer;
+  void* freer;
 } chpl_external_array;
 
 chpl_external_array chpl_make_external_array(uint64_t elt_size,
                                              uint64_t num_elts);
 chpl_external_array chpl_make_external_array_ptr(void* elts,
-                                                 uint64_t size);
+                                                 uint64_t num_elts);
+chpl_external_array chpl_make_external_array_ptr_free(void* elts,
+                                                      uint64_t num_elts);
 void chpl_free_external_array(chpl_external_array x);
+void chpl_call_free_func(void* func, void* elts);
+
+typedef struct {
+  int64_t _pid;
+  void* _instance;
+  bool _unowned;
+} chpl_opaque_array;
+
+void cleanupOpaqueArray(chpl_opaque_array * arr);
 
 #endif

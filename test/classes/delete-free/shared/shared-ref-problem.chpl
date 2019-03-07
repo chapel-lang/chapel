@@ -1,13 +1,13 @@
-use SharedObject;
+
 
 class State {
   var done: int;
 }
 
-proc foo(old: Shared(State)): int {
+proc foo(old: shared State): int {
   return old.done;
 }
 
-var x = new Shared(new State(42));
+var x = new shared State(42);
 var y = foo(x);
 writeln(y);

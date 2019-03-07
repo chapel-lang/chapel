@@ -1,3 +1,0 @@
-3types-1-wrapped-plus.chpl:45: In function 'main':
-3types-1-wrapped-plus.chpl:50: warning: Rstate(int(64))
-result = 4950

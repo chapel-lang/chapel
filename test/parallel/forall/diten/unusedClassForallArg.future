@@ -1,3 +1,0 @@
-bug: otherwise unused class argument causes internal error in forall loop
-
-Issue: #10122

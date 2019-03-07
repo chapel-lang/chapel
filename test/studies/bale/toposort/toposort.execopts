@@ -1,0 +1,2 @@
+--N 20 --additionalDensity=0.3 --silentMode --implementation Serial
+--N 20 --additionalDensity=0.3 --silentMode --implementation Parallel

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -182,6 +182,7 @@ static IntentTag blankIntentForThisArg(Type* t) {
   // Range default this intent is const-in
   if (valType->symbol->hasFlag(FLAG_RANGE))
     return INTENT_CONST_IN;
+
   // For user records or types with FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST,
   // the intent for this is INTENT_REF_MAYBE_CONST
   //
@@ -190,17 +191,26 @@ static IntentTag blankIntentForThisArg(Type* t) {
       valType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
     return INTENT_REF_MAYBE_CONST;
 
-  if (isRecordWrappedType(t))  // domain / distribution
-    // array, domain, distribution wrapper records are immutable
+  if (isRecordWrappedType(t))
+    // domain / distribution
     return INTENT_CONST_REF;
-  else if (isRecord(t) || isUnion(t) || t->symbol->hasFlag(FLAG_REF))
-    // TODO - see issue #5266; also note workaround in resolveFormals
-    // makes all blank-intent _this arguments for records use INTENT_REF.
+  else if (t->symbol->hasFlag(FLAG_REF))
+    // reference
     return INTENT_REF;
   else
     return INTENT_CONST_IN;
 }
 
+static
+IntentTag blankIntentForExternFnArg(Type* type) {
+  if (llvmCodegen && type->getValType()->symbol->hasFlag(FLAG_C_ARRAY))
+    // Pass c_array by ref by default for --llvm
+    // (for C, an argument like int arg[2] is actually just int* arg).
+    // This needs to be here because otherwise the following rule overrides it.
+    return INTENT_REF_MAYBE_CONST;
+  else
+    return INTENT_CONST_IN;
+}
 
 IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
@@ -211,7 +221,7 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
   else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_CONST)
     return constIntentForThisArg(arg->type);
   else if (fn->hasFlag(FLAG_EXTERN) && arg->intent == INTENT_BLANK)
-    return INTENT_CONST_IN;
+    return blankIntentForExternFnArg(arg->type);
   else if (fn->hasFlag(FLAG_ALLOW_REF) && arg->type->symbol->hasFlag(FLAG_REF))
 
     // This is a workaround for an issue with RVF erroneously forwarding a

@@ -1,7 +1,7 @@
 pragma "safe"
 module l5 {
 
-use OwnedObject;
+
 
 record Rint {
   var x:int;
@@ -20,24 +20,24 @@ class SubClass {
 }
 
 class MyClass {
-  var sub:SubClass;
-  proc init(sub:SubClass) {
+  var sub:borrowed SubClass;
+  proc init(sub:borrowed SubClass) {
     this.sub = sub;
   }
 }
 
 record RMyClass {
-  var c:MyClass;
+  var c:borrowed MyClass;
   proc init() {
     this.c = nil;
   }
-  proc init(c:MyClass) {
+  proc init(c:borrowed MyClass) {
     this.c = c;
   }
 }
 
 // Globals
-var globalMyClass:MyClass;
+var globalMyClass:borrowed MyClass;
 var globalRMyClass:RMyClass;
 
 // Test initialization block
@@ -69,7 +69,7 @@ class MyClassA {
   var x:int;
 }
 record SubRA {
-  var c:MyClassA;
+  var c:borrowed MyClassA;
 }
 record RA {
   var sub:SubRA;
@@ -82,7 +82,7 @@ proc buildR(sub:SubRA) {
 var globalRA:RA;
 
 proc bad() {
-  var c = new Owned(new unmanaged MyClassA(1));
+  var c = new owned MyClassA(1);
   var subr = new SubRA(c.borrow());
   globalRA = buildR(subr);
 }

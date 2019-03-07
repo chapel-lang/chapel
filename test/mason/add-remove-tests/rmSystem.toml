@@ -1,0 +1,11 @@
+
+[brick]
+name = "Tester"
+version = "0.1.0"
+
+[dependencies]
+
+[system]
+test = "1.2.3"
+
+

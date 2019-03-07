@@ -1,8 +1,0 @@
-noOtherSyms.chpl:3: error: cannot apply 'use default init' to symbol 'x', not a class or record definition
-noOtherSyms.chpl:6: error: cannot apply 'use default init' to symbol 't', not a class or record definition
-noOtherSyms.chpl:9: error: cannot apply 'use default init' to symbol 'p', not a class or record definition
-noOtherSyms.chpl:12: error: cannot apply 'use default init' to symbol 'c', not a class or record definition
-noOtherSyms.chpl:18: error: cannot apply 'use default init' to symbol 'foo', not a class or record definition
-noOtherSyms.chpl:23: error: cannot apply 'use default init' to symbol 'someIter', not a class or record definition
-noOtherSyms.chpl:30: error: cannot apply 'use default init' to symbol 'anEnum', not a class or record definition
-noOtherSyms.chpl:15: error: cannot apply 'use default init' to symbol 'It', not a class or record definition

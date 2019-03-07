@@ -3,6 +3,6 @@ class C {
 }
 
 var c = new unmanaged C();
-var n : C;
+var n : borrowed C;
 var t = (c, n);
 delete c;

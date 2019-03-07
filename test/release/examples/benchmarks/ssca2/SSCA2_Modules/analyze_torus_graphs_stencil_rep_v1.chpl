@@ -6,7 +6,7 @@ module analyze_torus_graphs {
   // |  for executing and verifying SSCA2 kernels 2 through 4.                |
   // +========================================================================+
   // |                          VERSION 1                                     |
-  // |  Explicit neighbor lists as sparse arithmetic arrays                   |
+  // |  Explicit neighbor lists as sparse rectangular arrays                  |
   // |  defined over the torus stencil as a sparse domain.  Storage overhead  |
   // |  is as many tuples as nonzeros.                                        |
   // +========================================================================+

@@ -43,6 +43,7 @@
 
 #include "private/autogen/config.h"
 #include "private/components.h"
+#include "private/internal-components.h"
 #include "private/cpuid-x86.h"
 #include "private/debug.h"
 #include "private/misc.h"

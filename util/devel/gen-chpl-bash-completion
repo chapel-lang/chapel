@@ -1,6 +1,15 @@
 #!/bin/bash
 
+if [ ! -d $CHPL_HOME ]
+then
+  echo "CHPL_HOME must be set to run this script" 1>&2
+  exit -1
+fi
+
 template=$CHPL_HOME/util/devel/chpl-bash-completion-template
+
+# Make sure that chpl is on the path
+source $CHPL_HOME/util/setchplenv.bash > /dev/null 2>&1
 
 single_dev=`chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |        \
             sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep ',' | sed -e 's;,.*$;;' | \

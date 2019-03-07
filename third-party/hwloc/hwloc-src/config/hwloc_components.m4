@@ -1,4 +1,4 @@
-# Copyright © 2012 Inria.  All rights reserved.
+# Copyright © 2012-2018 Inria.  All rights reserved.
 # See COPYING in top-level directory.
 
 
@@ -50,10 +50,8 @@ done
 # $2 = list of component names
 #
 AC_DEFUN([HWLOC_LIST_STATIC_COMPONENTS], [
-for comp in [$2]; do
-  echo "HWLOC_DECLSPEC extern const struct hwloc_component hwloc_${comp}_component;" >>[$1]
-done
 cat <<EOF >>[$1]
+#include <private/internal-components.h>
 static const struct hwloc_component * hwloc_static_components[[]] = {
 EOF
 for comp in [$2]; do

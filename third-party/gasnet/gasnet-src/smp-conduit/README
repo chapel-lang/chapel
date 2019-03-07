@@ -49,6 +49,15 @@ Known problems:
   for reallocation.  For more details see gemini-conduit/README (source), or
   share/doc/gasnet/README-{aries,gemini} (installed).
 
+* Bug 3727
+  The smp-conduit support for remote atomics is limited to certain datatypes.
+  In general, support encompasses all datatypes on LP64 platforms but is limited
+  to 32-bit datatypes on ILP32 platforms.  However, there are exceptions on both
+  types of platform, many of which are compiler dependent.
+  The most up-to-date information on this bug is maintained at:
+    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3727
+  That bug report describes the problem in more detail.
+
 * See the GASNet Bugzilla server for details on other known bugs:
   http://gasnet-bugs.lbl.gov/
 

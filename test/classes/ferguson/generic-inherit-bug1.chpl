@@ -27,7 +27,7 @@ module Structure {
 
 
   class ListerGrandParent {
-    var lst: unmanaged list(unmanaged GrandParent);
+    var lst: unmanaged LinkedList(unmanaged GrandParent);
   }
 
   class ListerParent : ListerGrandParent {
@@ -40,7 +40,7 @@ module Structure {
     }
   }
 
-  proc test(lhs:?t) where unmanaged t:unmanaged ListerParent {
+  proc test(lhs:?t) where isSubtype(unmanaged t, unmanaged ListerParent) {
     type subType = lhs.getListedType();
     for e in lhs.lst {
       var eCast = e:unmanaged subType;
@@ -65,13 +65,13 @@ module Impl {
   class Child : SubParent {
     var x:eltType;
     
-    proc foo( arg: rank*range(idxType, BoundedRangeType.bounded,stridable) ) {
+    override proc foo( arg: rank*range(idxType, BoundedRangeType.bounded,stridable) ) {
       writeln("in Child(", rank, ") foo ", arg, " " , x);
     }
-    proc bar() {
+    override proc bar() {
       writeln("in Child(", rank, ") bar ", x);
     }
-    proc baz() {
+    override proc baz() {
       writeln("in Child(", rank, ") baz ", x);
     }
 

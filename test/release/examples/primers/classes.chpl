@@ -17,18 +17,35 @@ class C {
 }
 
 //
-// Class variables can be declared using the ``new`` keyword to call the
-// constructor for the class ``C``.  The default constructor has an argument for
-// each field in the class.  Once a class has been constructed, its methods
-// can be called.
+// The ``new`` keyword creates an instance of a class by calling an
+// initializer. The class ``C`` above does not declare any initializers,
+// and so the compiler-generated one is used. The compiler-generated
+// initializer has an argument for each field in the class. Once a class
+// has been initialized, its methods can be called.
 //
-var foo = new unmanaged C(1, 2);
+// Class types include a strategy for freeing them. We'll discuss this
+// more below.
+//
+// A class variable can refer to an *instance* of a class.
+var foo = new owned C(1, 3);
 foo.printFields();
 
 //
 // Default output is supported so a class can be written by making a
 // call to ``write`` or ``writeln``.  Default input is also supported.
 //
+writeln(foo);
+
+
+// A class variable can refer to an *instance* of a class. Different class
+// variables can refer to the same instance. For example, ``alias`` below
+// refers to the same memory that stores the fields of ``foo``.
+//
+// We'll talk more about ``borrow`` below.
+var alias = foo.borrow();
+// now alias.b and foo.b refer to the same field,
+// so the next line also modifies foo.b
+alias.b -= 1;
 writeln(foo);
 
 //
@@ -63,14 +80,59 @@ class D: C {
 // Because the class ``D`` is derived from ``C``, the variable ``foo`` can
 // reference an object of type ``D``.  If an overridden method such as
 // ``printFields`` is called, it is dynamically dispatched to the method
-// with the most specific dynamic type.  The ``delete`` keyword can be
-// used to free memory associated with ``foo`` before pointing it an instance
-// of ``D``.
+// with the most specific dynamic type.
 //
-delete foo;
-foo = new unmanaged D(3, 4);
+// Note that since ``foo`` is an ``owned C``, assigning to it
+// will delete the previous instance "owned" by that variable.
+foo = new owned D(3, 4);
 foo.printFields();
-delete foo;
+
+
+// A class type includes a memory management strategy. The currently supported
+// strategies are ``owned``, ``shared``, ``unmanaged``, and ``borrowed``.
+var unm: unmanaged C = new unmanaged C();
+// 'unm' refers to a manually managed instance. It needs to have ``delete``
+// called on it to free the memory.
+delete unm;
+
+var own: owned C = new owned C(1, 10);
+// The instance referred to by 'own' is deleted when it is no longer in scope.
+// Only one `owned C` can refer to a given instance at a time but the
+// ownership can be transferred to another variable.
+
+var share: shared C = new shared C(1, 10);
+// The instance referred to by 'share' is reference counted -- that is,
+// several `shared C` variables can refer to the same instance and
+// will be reclaimed when the last one goes out of scope.
+
+var tmp: borrowed C = new borrowed C(1, 10);
+// The instance referred to by 'tmp' will be deleted when it is no longer in
+// scope. The ownership can't be transferred to another variable.
+
+// It is possible to ``borrow`` from another class pointer.
+// One way to do that is by calling the ``borrow()`` method directly:
+
+var b1 = own.borrow();
+// now b1 and own refer to the same instance
+// it is illegal to:
+//  * use the borrow after whatever it is borrowed from goes out of scope
+//  * use the borrow after the instance is deleted (for example if
+//    own is assigned to)
+
+// A class type without a decorator, such as ``C``, is the same
+// as ``borrowed C``. The ``this`` argument of a method is a borrow as well.
+
+// The compiler automatically adds conversion from ``owned``, ``shared``,
+// or ``unmanaged`` in the process of resolving a function call,
+// method call, or variable initialization.
+
+var b2: borrowed C = own; // same as b2 = own.borrow();
+own.printFields(); // same as own.borrow().printFields();
+proc printSum(arg: borrowed C) {
+  var sum = arg.a + arg.b;
+  writeln(sum);
+}
+printSum(own); // same as printSum(own.borrow())
 
 //
 // There are a few method names that cause the method to have special
@@ -102,10 +164,9 @@ class ArrayLike {
 // This ``ArrayLike`` object can be indexed like a 4 element array and it
 // can be iterated over in a loop.
 //
-var a = new unmanaged ArrayLike();
+var a = new owned ArrayLike();
 a(2) = 1; // call to this method
 a(4) = 2; // call to this method
 
 for elt in a do // invocation of these iterator
   writeln(elt);
-delete a;

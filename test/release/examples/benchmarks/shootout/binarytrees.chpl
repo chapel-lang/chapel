@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Casey Battaglino, Ben Harshbarger, and Brad Chamberlain
    derived from the GNU C version by Jeremy Zerfas
@@ -18,11 +18,12 @@ proc main() {
   var stats: [depths] (int,int);           // stores statistics for the trees
 
   //
-  // Create the "stretch" tree, checksum it, print its stats, and free it.
+  // Create the short-lived "stretch" tree, checksum it, and print its stats.
   //
-  const strTree = new Tree(strDepth);
-  writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
-  delete strTree;
+  {
+    const strTree = new Tree(strDepth);
+    writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
+  }
 
   //
   // Build the long-lived tree.
@@ -41,7 +42,6 @@ proc main() {
     for i in 1..iterations {
       const t = new Tree(depth);
       sum += t.sum();
-      delete t;
     }
     stats[depth] = (iterations, sum);
   }
@@ -57,7 +57,6 @@ proc main() {
   // Checksum the long-lived tree, print its stats, and free it.
   //
   writeln("long lived tree of depth ", maxDepth, "\t check: ", llTree.sum());
-  delete llTree;
 }
 
 
@@ -65,15 +64,15 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  var left, right: Tree;
+  var left, right: unmanaged Tree;
 
   //
   // A Tree-building initializer
   //
   proc init(depth) {
     if depth > 0 {
-      left  = new Tree(depth-1);
-      right = new Tree(depth-1);
+      left  = new unmanaged Tree(depth-1);
+      right = new unmanaged Tree(depth-1);
     }
   }
 
@@ -84,8 +83,7 @@ class Tree {
     var sum = 1;
     if left {
       sum += left.sum() + right.sum();
-      delete left;
-      delete right;
+      delete left, right;
     }
     return sum;
   }

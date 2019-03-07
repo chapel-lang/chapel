@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,7 +47,6 @@ module ArrayViewRankChange {
   // rank-change domains and arrays similar to the one that caused
   // it to be created.
   //
-  pragma "use default init"
   class ArrayViewRankChangeDist: BaseDist {
     // a pointer down to the distribution that this class is creating
     // lower-dimensional views of
@@ -109,6 +108,10 @@ module ArrayViewRankChange {
 
     override proc dsiDestroyDist() {
     }
+
+    proc dsiIsLayout() param {
+      return downDistInst.dsiIsLayout();
+    }
   }
 
   private proc downDomType(param rank : int,
@@ -128,7 +131,6 @@ module ArrayViewRankChange {
   // for rectangular domains (because they're the only ones with
   // rank>1), so this is a subclass of BaseRectangularDom.
   //
- pragma "use default init"
  class ArrayViewRankChangeDom: BaseRectangularDom {
     // the lower-dimensional index set that we represent upwards
     var upDom: unmanaged DefaultRectangularDom(rank, idxType, stridable);
@@ -339,8 +341,8 @@ module ArrayViewRankChange {
     proc dsiHasSingleLocalSubdomain() param
       return downDom.dsiHasSingleLocalSubdomain();
 
-    proc dsiLocalSubdomain() {
-      const dims = downDom.dsiLocalSubdomain().dims();
+    proc dsiLocalSubdomain(loc: locale) {
+      const dims = downDom.dsiLocalSubdomain(loc).dims();
       const empty : domain(rank, idxType, chpl__anyStridable(dims));
 
       // If the rank-changed dimension's index is not a member of the range
@@ -366,7 +368,7 @@ module ArrayViewRankChange {
       }
     }
 
-    proc dsiDestroyDom() {
+    override proc dsiDestroyDom() {
       if upDom != nil then
         _delete_dom(upDom, false);
       if downDomInst != nil then
@@ -434,9 +436,8 @@ module ArrayViewRankChange {
   // other array class implementations, it supports the standard dsi
   // interface.
   //
-  class ArrayViewRankChangeArr: BaseArr {
-    type eltType;  // see note on commented-out proc eltType below...
-
+  pragma "aliasing array"
+  class ArrayViewRankChangeArr: AbsBaseArr {
     // the representation of the slicing domain.  For a rank change
     // like A[lo..hi, 3] this is the lower-dimensional domain {lo..hi}.
     // It is represented as an ArrayViewRankChangeDom.
@@ -470,7 +471,7 @@ module ArrayViewRankChange {
               const _ArrPid, const _ArrInstance,
               const collapsedDim, const idx,
               const ownsArrInstance : bool = false) {
-      this.eltType         = eltType;
+      super.init(eltType = eltType);
       this._DomPid         = _DomPid;
       this.dom             = dom;
       this._ArrPid         = _ArrPid;
@@ -666,8 +667,8 @@ module ArrayViewRankChange {
     proc dsiHasSingleLocalSubdomain() param
       return privDom.dsiHasSingleLocalSubdomain();
 
-    proc dsiLocalSubdomain() {
-      return privDom.dsiLocalSubdomain();
+    proc dsiLocalSubdomain(loc: locale) {
+      return privDom.dsiLocalSubdomain(loc);
     }
 
     //

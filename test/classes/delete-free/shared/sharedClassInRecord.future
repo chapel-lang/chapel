@@ -1,3 +1,0 @@
-bug: shared class as record member causes internal compiler error
-
-Issue #10182

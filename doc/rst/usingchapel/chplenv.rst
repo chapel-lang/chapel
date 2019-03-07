@@ -3,11 +3,11 @@
 Setting up Your Environment for Chapel
 ======================================
 
-To get started with Chapel, there are four environment settings that are
-strongly recommended for effective use of the release, and a few other optional
-settings that are useful for cross-compiling or overriding the default
-settings.  To check the values of the Chapel environment variables that are set
-or can be inferred, run the script::
+To get started with Chapel, there are three environment settings that are
+strongly recommended for effective use of the release, and a number of
+other optional settings that are useful for cross-compiling or overriding
+the default settings.  To check the values of the Chapel environment
+variables that are set or can be inferred, run the script::
 
   $CHPL_HOME/util/printchplenv
 
@@ -27,13 +27,15 @@ Recommended Settings
 
 CHPL_HOME
 ~~~~~~~~~
-   Set the ``CHPL_HOME`` environment variable to point to the location of the
+   Setting ``CHPL_HOME`` is important if you have not installed Chapel
+   and are instead working from a source directory. In that event,
+   set the ``CHPL_HOME`` environment variable to point to the location of the
    chapel/ directory that was created when you unpacked the release.
    For example:
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.17.1
+        export CHPL_HOME=~/chapel-1.18.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -42,14 +44,41 @@ CHPL_HOME
      the appropriate adjustment.
 
 
+PATH
+~~~~
+   Updating ``PATH`` is important if you have not installed Chapel
+   and are instead working from a source directory. Otherwise it might
+   be necessary to use the full path to ``chpl`` when compiling programs.
+   In that event, you can set path using the following command:
+
+    .. code-block:: sh
+
+        CHPL_BIN_SUBDIR=`"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
+        export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_BIN_SUBDIR"
+
+
+MANPATH
+~~~~~~~
+   Updating ``MANPATH`` is important if you have not installed Chapel
+   and are instead working from a source directory.
+   Set your man path to include the directory ``$CHPL_HOME/man``.
+   For example:
+
+    .. code-block:: sh
+
+        export MANPATH="$MANPATH":"$CHPL_HOME"/man
+
+Optional Settings
+-----------------
+
 .. _readme-chplenv.CHPL_HOST_PLATFORM:
 
 CHPL_HOST_PLATFORM
 ~~~~~~~~~~~~~~~~~~
-   Set the ``CHPL_HOST_PLATFORM`` environment variable to represent the platform on
-   which you're working.  For standard UNIX workstations, this can be done by
-   running the ``$CHPL_HOME/util/chplenv/chpl_platform.py`` script.  For
-   example:
+
+   You can set the ``CHPL_HOST_PLATFORM`` environment variable to
+   represent the platform on which you're working.  For standard UNIX
+   workstations, the default is sufficient, and is equivalent to
 
     .. code-block:: sh
 
@@ -68,10 +97,8 @@ CHPL_HOST_PLATFORM
         darwin       Macintosh OS X platforms
         linux32      32-bit Linux platforms
         linux64      64-bit Linux platforms
-        marenostrum  BSC's MareNostrum platform
         netbsd32     32-bit NetBSD platforms
         netbsd64     64-bit NetBSD platforms
-        pwr5         IBM Power5 SMP cluster
         pwr6         IBM Power6 SMP cluster
         sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
@@ -92,28 +119,6 @@ CHPL_HOST_PLATFORM
    Makefile for this platform and/or contact us at:
    :disguise:`chapel_info@cray.com`
 
-PATH
-~~~~
-   Set your ``PATH`` to include the directory
-   ``$CHPL_HOME/bin/$CHPL_HOST_PLATFORM`` which is created when you build the
-   compiler.  For example:
-
-    .. code-block:: sh
-
-        export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
-
-
-MANPATH
-~~~~~~~
-   Set your man path to include the directory ``$CHPL_HOME/man``.
-   For example:
-
-    .. code-block:: sh
-
-        export MANPATH="$MANPATH":"$CHPL_HOME"/man
-
-Optional Settings
------------------
 
 .. _readme-chplenv.CHPL_TARGET_PLATFORM:
 
@@ -129,6 +134,38 @@ CHPL_TARGET_PLATFORM
      If ``CHPL_TARGET_PLATFORM`` is not set, the target platform defaults to the
      same value as ``$CHPL_HOST_PLATFORM``.
 
+.. _readme-chplenv.CHPL_HOST_ARCH:
+
+CHPL_HOST_ARCH
+~~~~~~~~~~~~~~~~~~~
+   Optionally, set the ``CHPL_HOST_ARCH`` environment variable to indicate
+   the architecture type of the current machine. Normally, the default
+   value is sufficient.
+
+        ========  =============================================================
+        Value     Description
+        ========  =============================================================
+        x86_64    64-bit AMD and Intel processors
+        aarch64   64-bit ARM processors
+        ========  =============================================================
+
+   If unset, the default will be computed. The command ``uname -m``
+   should produce the same value as the default.
+
+.. _readme-chplenv.CHPL_TARGET_ARCH:
+
+CHPL_TARGET_ARCH
+~~~~~~~~~~~~~~~~~~~
+   Optionally, set the ``CHPL_TARGET_ARCH`` environment variable to indicate
+   the architecture type of the target machine. See the table above for
+   ``CHPL_HOST_ARCH`` for values this might be set to.
+
+   If unset, ``CHPL_TARGET_ARCH`` will be inferred.
+   If ``CHPL_TARGET_CPU`` is ``native``, ``unknown``, or ``none`` then
+   ``CHPL_TARGET_ARCH`` will be set to ``CHPL_HOST_ARCH``.
+   Otherwise, ``CHPL_TARGET_ARCH`` will be set based on the
+   architecture type specified in ``CHPL_TARGET_CPU``.
+
 .. _readme-chplenv.CHPL_COMPILER:
 
 CHPL_*_COMPILER
@@ -141,20 +178,22 @@ CHPL_*_COMPILER
    and generated code for ``CHPL_TARGET_PLATFORM``.  Currently supported values
    are as follows:
 
-        =================  ===================================================
-        Value              Description
-        =================  ===================================================
-        clang              The Clang compiler suite -- clang and clang++
-        clang-included     The Clang compiler in third-party/llvm
-        cray-prgenv-cray   The Cray PrgEnv compiler using the Cray CCE backend
-        cray-prgenv-gnu    The Cray PrgEnv compiler using the GNU backend
-        cray-prgenv-intel  The Cray PrgEnv compiler using the Intel backend
-        cray-prgenv-pgi    The Cray PrgEnv compiler using the PGI backend
-        gnu                The GNU compiler suite -- gcc and g++
-        ibm                The IBM compiler suite -- xlc and xlC
-        intel              The Intel compiler suite -- icc and icpc
-        pgi                The PGI compiler suite -- pgcc and pgc++
-        =================  ===================================================
+        =================== ===================================================
+        Value               Description
+        =================== ===================================================
+        allinea             The Allinea ARM compiler suite -- clang and clang++
+        clang               The Clang compiler suite -- clang and clang++
+        clang-included      The Clang compiler in third-party/llvm
+        cray-prgenv-allinea The Cray PrgEnv compiler using the Allinea backend
+        cray-prgenv-cray    The Cray PrgEnv compiler using the Cray CCE backend
+        cray-prgenv-gnu     The Cray PrgEnv compiler using the GNU backend
+        cray-prgenv-intel   The Cray PrgEnv compiler using the Intel backend
+        cray-prgenv-pgi     The Cray PrgEnv compiler using the PGI backend
+        gnu                 The GNU compiler suite -- gcc and g++
+        ibm                 The IBM compiler suite -- xlc and xlC
+        intel               The Intel compiler suite -- icc and icpc
+        pgi                 The PGI compiler suite -- pgcc and pgc++
+        =================== ===================================================
 
    The default for ``CHPL_*_COMPILER`` depends on the value of the corresponding
    ``CHPL_*_PLATFORM`` environment variable:
@@ -166,8 +205,7 @@ CHPL_*_COMPILER
                       - cray-prgenv-$PE_ENV (for ``CHPL_TARGET_COMPILER``,
                         where PE_ENV is set by PrgEnv-* modules)
         darwin        clang if available, otherwise gnu
-        marenostrum   ibm
-        pwr5, pwr6    ibm
+        pwr6          ibm
         other         gnu
         ============  ==================================================
 
@@ -180,11 +218,11 @@ CHPL_*_COMPILER
      once with clang-included. We do this in order to avoid issues in linking
      objects built by different compilers.
 
-.. _readme-chplenv.CHPL_TARGET_ARCH:
+.. _readme-chplenv.CHPL_TARGET_CPU:
 
-CHPL_TARGET_ARCH
+CHPL_TARGET_CPU
 ~~~~~~~~~~~~~~~~
-   Optionally, set the ``CHPL_TARGET_ARCH`` environment variable to indicate
+   Optionally, set the ``CHPL_TARGET_CPU`` environment variable to indicate
    that the target executable should be specialized to the given architecture
    when using ``--specialize`` (and ``--fast``). Valid options are:
 
@@ -201,27 +239,30 @@ CHPL_TARGET_ARCH
 
         **Architecture-specific values**
 
-        =========== ================
-        intel       amd
-        =========== ================
-        core2           k8
-        nehalem         k8sse3
-        westmere        barcelona
+        =========== ================ ================
+        intel       amd              arm
+        =========== ================ ================
+        core2           k8           aarch64
+        nehalem         k8sse3       thunderx
+        westmere        barcelona    thunderx2t99
         sandybridge     bdver1
         ivybridge       bdver2
         haswell         bdver3
         broadwell       bdver4
-        =========== ================
+        skylake
+        knl
+        =========== ================ ================
 
-   These values are defined to be the same as in GCC 4.9:
+   These values are defined to be the same as in GCC 7:
 
-        https://gcc.gnu.org/onlinedocs/gcc-4.9.0/gcc/i386-and-x86-64-Options.html
+        https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/x86-Options.html
+        https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/AArch64-Options.html
 
-   If you do not want ``CHPL_TARGET_ARCH`` to have any effect, you can set it
+   If you do not want ``CHPL_TARGET_CPU`` to have any effect, you can set it
    to either ``unknown`` or ``none``. Both will disable specialization, but the
    latter will not warn if ``--specialize`` is used.
 
-   Setting ``CHPL_TARGET_ARCH`` to an incorrect value for your processor may
+   Setting ``CHPL_TARGET_CPU`` to an incorrect value for your processor may
    result in an invalid binary that will not run on the intended machine.
    Special care should be taken to select the lowest common denominator when
    running on machines with heterogeneous processor architectures.
@@ -230,20 +271,20 @@ CHPL_TARGET_ARCH
    environment, in order of application these rules are:
 
         * If :ref:`CHPL_TARGET_COMPILER <readme-chplenv.chpl_compiler>` is ``cray-prgenv-*`` you do not need to
-          set anything in ``CHPL_TARGET_ARCH``. One of the ``craype-*`` modules
+          set anything in ``CHPL_TARGET_CPU``. One of the ``craype-*`` modules
           (e.g.  ``craype-sandybridge``) should be loaded to provide equivalent
           functionality. Once the proper module is loaded, ``CRAY_CPU_TARGET``
           will have the architecture being used in it.
 
         * If ``CHPL_TARGET_COMPILER`` is ``cray``, ``pgi``, or ``ibm``,
-          ``CHPL_TARGET_ARCH`` will be set to ``none`` and no specialization
+          ``CHPL_TARGET_CPU`` will be set to ``none`` and no specialization
           will occur.
 
         * If :ref:`readme-chplenv.CHPL_COMM` is set, no attempt to set a useful value will be
-          made, ``CHPL_TARGET_ARCH`` will be ``unknown``.
+          made, ``CHPL_TARGET_CPU`` will be ``unknown``.
 
         * If :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` is ``darwin``, ``linux*``, or
-          ``cygwin*`` ``CHPL_TARGET_ARCH`` will be ``native``, passing the
+          ``cygwin*`` ``CHPL_TARGET_CPU`` will be ``native``, passing the
           responsibility off to the backend C compiler to detect the specifics
           of the hardware.
 
@@ -624,22 +665,21 @@ CHPL_LLVM
    If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
    llvm in third-party and ``none`` otherwise.
 
-   Chapel currently supports LLVM 6.0.  Earlier versions of LLVM
-   required the use of internal Clang header files.  LLVM 5.0 has a
-   known optimization bug that affects Chapel.
+   Chapel currently supports LLVM 7.0.
 
    .. note::
 
-       We have had success with this procedure to install LLVM 6.0
+       We have had success with this procedure to install LLVM 7.0
        dependencies on Ubuntu.
 
-       First, place the appropriate lines from ``https://apt.llvm.org``
-       into ``/etc/apt/sources.list.d/llvm-toolchain.list``, then do
-       the following.
+       First, follow the instructions at ``https://apt.llvm.org`` that
+       explain how to place the appropriate lines into
+       ``/etc/apt/sources.list.d/llvm-toolchain.list`` and retrieve
+       the archive signature, then do the following.
 
         .. code-block:: sh
 
-            apt-get install llvm-6.0-dev llvm-6.0 llvm-6.0-tools clang-6.0 libclang-6.0-dev libedit-dev
+            apt-get install llvm-7-dev llvm-7 llvm-7-tools clang-7 libclang-7-dev libedit-dev
 
 .. _readme-chplenv.CHPL_UNWIND:
 
@@ -657,6 +697,39 @@ CHPL_UNWIND
        ========= =======================================================
 
    If unset, ``CHPL_UNWIND`` defaults to ``none``
+
+.. _readme-chplenv.CHPL_LIB_PIC:
+
+CHPL_LIB_PIC
+~~~~~~~~~~~~
+   Optionally, the ``CHPL_LIB_PIC`` environment variable can be used to build
+   position independent or position dependent code.  This is intended for use
+   when :ref:`readme-libraries`, especially when :ref:`readme-libraries.Python`
+   or when building with ``--dynamic``. Current options are:
+
+       ===== ================================
+       Value Description
+       ===== ================================
+       pic   build position independent code
+       none  build position dependent code
+       ===== ================================
+
+   If unset, ``CHPL_LIB_PIC`` defaults to ``none``
+
+Character Set
+-------------
+   We have the most experience running Chapel with the Unicode
+   character set and the traditional C collating sequence using the
+   following settings.
+
+   .. code-block:: sh
+
+       LANG=en_US.UTF-8
+       LC_COLLATE=C
+       LC_ALL=""
+
+   .. note::
+       Other settings might be recommended in the future.
 
 Compiler Command Line Option Defaults
 -------------------------------------

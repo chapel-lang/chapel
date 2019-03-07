@@ -4,8 +4,8 @@ proc test() {
   try {
     writeln("before cobegin block");
     cobegin {
-      throw new StringError("test error");
-      throw new StringError("test error");
+      throw new owned StringError("test error");
+      throw new owned StringError("test error");
     }
     writeln("after cobegin block");
   } catch errors: TaskErrors {

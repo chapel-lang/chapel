@@ -1,0 +1,11 @@
+feature request: lifetime checking not flagging loop expressions
+
+If a loop expression allocates 'new borrow's, the deallocation will
+take place within the scope of the loop expression, yet the lifeime
+checker isn't flagging this case.  This seems like a potentially easy
+thinko to make since the scope introduced by the forall expression
+is so syntactically minimal in many forms.  It'd be nice to have
+the lifetime checker flag such cases.
+
+Note that I'm not particularly wed to the error message in this
+test's .good, and am open to better wordings.

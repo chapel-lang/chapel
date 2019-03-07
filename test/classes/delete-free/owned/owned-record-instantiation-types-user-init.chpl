@@ -8,11 +8,11 @@ record GenericCollection {
     var default:t;
     field = default;
   }
-  proc init(arg:owned) {
-    field = arg;
+  proc init(field:owned) {
+    this.field = field;
   }
-  proc init(arg:borrowed) {
-    field = arg;
+  proc init(field:borrowed) {
+    this.field = field;
   }
 }
 

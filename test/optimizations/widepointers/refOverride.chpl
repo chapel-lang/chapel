@@ -8,7 +8,7 @@ class SuperPrinter {
 }
 
 class SubPrinter : SuperPrinter {
-  proc print(ref data) {
+  override proc print(ref data) {
     writeln("Subprinter: ", data.x);
   }
 }
@@ -16,8 +16,8 @@ class SubPrinter : SuperPrinter {
 class Foo { var x = 10; }
 
 proc main() {
-  var printer: SuperPrinter;
-  printer = new SubPrinter();
+  var printer: owned SuperPrinter;
+  printer = new owned SubPrinter();
 
   //
   // At the time this test was created, IWR was widening all formals in
@@ -25,8 +25,6 @@ proc main() {
   // resulted in a compile-time failure when the backend compiler encountered
   // the type mismatch between a narrow/local actual and a wide formal.
   //
-  var data = new Foo();
+  var data = new borrowed Foo();
   printer.print(data);
-
-  delete data, printer;
 }

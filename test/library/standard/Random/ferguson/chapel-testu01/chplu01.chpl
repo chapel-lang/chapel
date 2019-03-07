@@ -179,7 +179,7 @@ if testReal {
   for i in 1..10 {
     writeln(test_rand_double());
   }
-  delete rs; // start over, don't count above as run-up
+  // start over, don't count above as run-up
   rs = getRNG();
   if crush then
     run_crush_testu01_double(name.localize().c_str());
@@ -190,7 +190,7 @@ if testReal {
   for i in 1..10 {
     writef("%xu\n", test_rand_uint32());
   }
-  delete rs; // start over, don't count above as run-up
+  // start over, don't count above as run-up
   rs = getRNG();
   if crush then
     run_crush_testu01_uint(name.localize().c_str());

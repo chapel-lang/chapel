@@ -19,7 +19,7 @@ CHPL_MASSIVETHREADS_CFG_OPTIONS += --enable-myth-ld=no \
                                    --enable-eco-mode=no \
                                    --enable-bind-workers=no
 
-ifeq ($(CHPL_LIBMODE),shared)
+ifeq ($(CHPL_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 

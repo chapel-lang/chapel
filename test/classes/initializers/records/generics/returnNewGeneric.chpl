@@ -3,7 +3,7 @@ record Option {
   var state: bool;
   var value: eltType;
 
-  proc init(value: ?eltType) where !value: Option {
+  proc init(value: ?eltType) where !isSubtype(value.type, Option) {
     this.eltType = eltType;
     this.state   = true;
     this.value   = value;

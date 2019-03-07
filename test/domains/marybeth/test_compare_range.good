@@ -1,2 +1,2 @@
 test_compare_range.chpl:14: In function 'initMatrix':
-test_compare_range.chpl:20: error: iterator or promoted expression _ir_< used in if or while condition
+test_compare_range.chpl:20: error: iterator or promoted expression _ir_chpl_promo1_< used in if or while condition

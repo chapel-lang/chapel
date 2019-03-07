@@ -1,9 +1,0 @@
-#!/bin/bash
-
-if [ -f thing1.h ]; then
-   echo "found header" >> $2
-fi
-
-if [ -f thing2.a ]; then
-   echo "found library" >> $2
-fi

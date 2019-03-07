@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,4 +41,6 @@ module ChapelUtil {
 
   // Deinitialization of modules and global variables will not happen.
   proc chpl_addModule(moduleName: c_string, deinitFun: c_fn_ptr) { }
+
+  export proc chpl_deinitModules() { }
 }

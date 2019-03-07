@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -306,6 +306,8 @@ void   trace_remove(BaseAST* ast, char flag);
 
 void verifyInTree(BaseAST* ast, const char* msg);
 
+
+VarSymbol* createASTforLineNumber(const char* filename, int line);
 
 //
 // macro to update the global line number used to set the line number
@@ -628,13 +630,6 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
       AST_CALL_CHILD(stmt, BlockStmt,    blockInfoGet(), call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, BlockStmt,    useList,        call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, BlockStmt,    byrefVars,      call, __VA_ARGS__);   \
-      if (ForallIntents* bi = stmt->forallIntents) {                           \
-        AST_CALL_STDVEC(bi->fiVars,  Expr, call, __VA_ARGS__);                 \
-        AST_CALL_STDVEC(bi->riSpecs, Expr, call, __VA_ARGS__);                 \
-        AST_CALL_CHILD(bi, ForallIntents, iterRec,  call, __VA_ARGS__);        \
-        AST_CALL_CHILD(bi, ForallIntents, leadIdx,  call, __VA_ARGS__);        \
-        AST_CALL_CHILD(bi, ForallIntents, leadIdxCopy,  call, __VA_ARGS__);    \
-      }                                                                        \
     }                                                                          \
     break;                                                                     \
   }                                                                            \
@@ -658,6 +653,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST(_a, TryStmt, _catches, call, __VA_ARGS__);            \
     break;                                                              \
   case E_CatchStmt:                                                     \
+    AST_CALL_CHILD(_a, CatchStmt, _type, call, __VA_ARGS__);            \
     AST_CALL_CHILD(_a, CatchStmt, _body, call, __VA_ARGS__);            \
     break;                                                              \
   case E_ForallStmt:                                                          \
@@ -691,6 +687,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST(_a, FnSymbol, formals, call, __VA_ARGS__);            \
     AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);             \
+    AST_CALL_CHILD(_a, FnSymbol, lifetimeConstraints, call, __VA_ARGS__); \
     AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);       \
     break;                                                              \
   case E_EnumType:                                                      \

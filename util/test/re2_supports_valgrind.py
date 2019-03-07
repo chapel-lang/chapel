@@ -2,11 +2,11 @@
 import os
 import sys
 
-chplenv_dir = os.path.join(os.path.dirname(__file__), '..')
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-from chplenv import chpl_home_utils
-from chplenv import chpl_3p_re2_configs
+import chpl_home_utils
+import chpl_3p_re2_configs
 
 def get():
     """ Detects if re2 was built with CHPL_RE2_VALGRIND_SUPPORT set by checking

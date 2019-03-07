@@ -1,5 +1,5 @@
 proc illegalThrow() {
-  throw new Error();
+  throw new owned Error();
 }
 
 illegalThrow();

@@ -1,4 +1,3 @@
-pragma "use default init"
 class GenericClass {
   var f:integral;
 }

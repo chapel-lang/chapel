@@ -102,7 +102,7 @@ expression-statement:
   variable-expression ;
   member-access-expression ;
   call-expression ;
-  constructor-call-expression ;
+  new-expression ;
   let-expression ;
 \end{syntax}
 
@@ -794,9 +794,42 @@ listed visible symbols in the module or enumerated type will be made available
 without prefix.  All visible symbols not provided via these limited use
 statements are still accessible with the module or enumerated type name prefix.
 It is an error to provide a name in a \sntx{limitation-clause} that does not
-exist or is not visible in the respective module or enumerated type.  If an
-\chpl{only} list is left empty or \chpl{except} is followed by $*$ then no
-symbols are made available to the scope without prefix.
+exist or is not visible in the respective module or enumerated type.
+
+If an \chpl{only} list is left empty or \chpl{except} is followed by $*$ then no
+symbols are made available to the scope without prefix.  However, any methods or
+fields defined within a module used in this way will still be accessible on
+instances of the type.  For example:
+
+\begin{chapelexample}{limited-access.chpl}
+\begin{chapel}
+module M1 {
+  record A {
+    var x = 1;
+
+    proc foo() {
+      writeln("In A.foo()");
+    }
+  }
+}
+
+module M2 {
+  proc main() {
+    use M1 only;
+
+    var a = new M1.A(3); // Only accessible via the module prefix
+    writeln(a.x); // Accessible because we have a record instance
+    a.foo(); // Ditto
+  }
+}
+\end{chapel}
+
+will print out
+\begin{chapelprintoutput}{}
+3
+In A.foo()
+\end{chapelprintoutput}
+\end{chapelexample}
 
 Within an \chpl{only} list, a visible symbol from that module may optionally be
 given a new name using the \chpl{as} keyword.  This new name will be usable from
@@ -863,7 +896,7 @@ class Integer {
   var x:int;
 }
 proc deferInFunction() {
-  var c = new Integer(1);
+  var c = new unmanaged Integer(1);
   writeln("created ", c);
   defer {
     writeln("defer action: deleting ", c);
@@ -875,10 +908,14 @@ proc deferInFunction() {
 deferInFunction();
 \end{chapel}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapeloutput}
 created {x = 1}
 defer action: deleting {x = 1}
-\end{chapelprintoutput}
+\end{chapeloutput}
+\begin{commandline}
+created {x = 1}
+defer action: deleting {x = 1}
+\end{commandline}
 \end{chapelexample}
 
 
@@ -895,7 +932,7 @@ proc deferInNestedBlock() {
   var i = 1;
   writeln("before inner block");
   {
-    var c = new Integer(i);
+    var c = new unmanaged Integer(i);
     writeln("created ", c);
     defer {
       writeln("defer action: deleting ", c);
@@ -909,13 +946,21 @@ proc deferInNestedBlock() {
 deferInNestedBlock();
 \end{chapel}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapeloutput}
 before inner block
 created {x = 1}
 in inner block
 defer action: deleting {x = 1}
 after inner block
-\end{chapelprintoutput}
+\end{chapeloutput}
+\begin{commandline}
+before inner block
+created {x = 1}
+in inner block
+defer action: deleting {x = 1}
+after inner block
+\end{commandline}
+
 \end{chapelexample}
 
 Lastly, this example shows that when \chpl{defer} is used in a loop, the
@@ -929,7 +974,7 @@ class Integer {
 }
 proc deferInLoop() {
   for i in 1..10 {
-    var c = new Integer(i);
+    var c = new unmanaged Integer(i);
     writeln("created ", c);
     defer {
       writeln("defer action: deleting ", c);
@@ -943,14 +988,22 @@ proc deferInLoop() {
 deferInLoop();
 \end{chapel}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapeloutput}
 created {x = 1}
 {x = 1}
 defer action: deleting {x = 1}
 created {x = 2}
 {x = 2}
 defer action: deleting {x = 2}
-\end{chapelprintoutput}
+\end{chapeloutput}
+\begin{commandline}
+created {x = 1}
+{x = 1}
+defer action: deleting {x = 1}
+created {x = 2}
+{x = 2}
+defer action: deleting {x = 2}
+\end{commandline}
 \end{chapelexample}
 
 

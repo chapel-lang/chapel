@@ -106,7 +106,7 @@ proc repeatMake(desc, alu, n) {
         s = [i in 0..(r+lineLength)] alu[i % r]: int(8);
 
   for i in 0..n by lineLength {
-    const lo = i % r + 1,
+    const lo = i % r,
           len = min(lineLength, n-i);
     stdout.write(s[lo..#len], newline);
   }

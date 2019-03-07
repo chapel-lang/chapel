@@ -10,7 +10,7 @@ class Parent {
 }
 
 class Child: Parent {
-  iter myit() {
+  override iter myit() {
     var low = 1;
     var high = 8;
     var stride = 2;
@@ -22,7 +22,7 @@ class Child: Parent {
 }
 
 class Grandchild: Child {
-  iter myit() {
+  override iter myit() {
     var low = 2;
     var high = 8;
     var stride = 2;

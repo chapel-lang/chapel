@@ -1,0 +1,6 @@
+  Fetch: n.ns.  Build: nm n.ns.  Total: nm n.ns.
+Installing Spack backend ...
+Updating mason-registry
+Compiling [debug] target: masonLA
+Build Successful
+

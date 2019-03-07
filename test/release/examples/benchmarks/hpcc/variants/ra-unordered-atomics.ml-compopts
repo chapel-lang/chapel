@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+# Run ra with n=33 and 10 million updates. ugni is much faster for ra-atomics,
+# so bump the number of updates to 1 billion to get stable timings.
+import os
+
+comm = os.getenv('CHPL_COMM')
+ugni = comm == 'ugni'
+
+nu = 10000000
+if ugni:
+  nu = 1000000000
+
+print('-sn=33:indexType -sN_U={0}:indexType -sverify=false # ra.unordered-atomic-n33'.format(nu))

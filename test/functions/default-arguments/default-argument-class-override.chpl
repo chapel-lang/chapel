@@ -3,11 +3,11 @@ class C {
 }
 
 class D : C {
-  proc foo(x = 20) { writeln("D.foo:", x); }
+  override proc foo(x = 20) { writeln("D.foo:", x); }
 }
 
-var d = new D();
+var d = new borrowed D();
 d.foo();
 
-var c: C = new D();
+var c: borrowed C = new borrowed D();
 c.foo();

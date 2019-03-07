@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -116,8 +116,12 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             // Should that turn into (= call_tmp bar)?
           } else if (parent && parent->isPrimitive(PRIM_ASSIGN) && parent->get(1) == se) {
             // for_defs should handle this case
-          } else
+          } else if (parent && parent->isResolved()) {
             stillAlive = true;
+            // TODO -- a reference argument can be passed directly
+          } else {
+            stillAlive = true;
+          }
         }
         for_defs(se, defMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);

@@ -1,8 +1,0 @@
-#!/bin/sh
-
-# sort output only for certain tests
-case "$1" in (default-intent-record-with-array-field) true;; (*) exit;; esac
-
-echo sorting $2
-sort $2 > $2.prediff.tmp
-mv $2.prediff.tmp $2

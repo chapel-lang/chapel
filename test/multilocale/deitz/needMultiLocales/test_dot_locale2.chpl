@@ -2,10 +2,10 @@ class C {
   var x: int;
 }
 
-var c: C;
+var c: unmanaged C;
 
 on Locales(1) {
-  c = new C();
+  c = new unmanaged C();
 }
 
 writeln(here.id, " c.locale.id = ", c.locale.id);
@@ -36,3 +36,5 @@ proc bar() {
 }
 
 bar();
+
+delete c;

@@ -25,5 +25,5 @@ writeln();
 const bt = ths, bo = oth;
 writeln(bo);
 writeln(bt.this(bo));
-writeln(bt.member(bo));
+writeln(bt.contains(bo));
 writeln();

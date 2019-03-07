@@ -1,0 +1,3 @@
+feature request: copying array keeps inferred lifetime
+
+#11666

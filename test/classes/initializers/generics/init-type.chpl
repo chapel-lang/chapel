@@ -12,7 +12,7 @@ class A {
   // initializer for class 'A' requires a generic argument called 't'
 }
 
-var a = new A(int);
+var a = new unmanaged A(int);
 
 writeln(a);
 

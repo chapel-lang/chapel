@@ -1,9 +1,9 @@
-member(0) = false
-member(2) = true
-member(53) = false
-member(92) = false
-member(5) = false
-member(6) = true
-member(4) = false
-member(4) = true
+contains(0) = false
+contains(2) = true
+contains(53) = false
+contains(92) = false
+contains(5) = false
+contains(6) = true
+contains(4) = false
+contains(4) = true
 # ind removed: 0

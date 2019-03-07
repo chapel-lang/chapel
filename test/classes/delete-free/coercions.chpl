@@ -1,5 +1,3 @@
-use OwnedObject;
-
 class MyClass {
   var x:int;
 }
@@ -14,7 +12,7 @@ proc test1() {
 }
 
 proc test2() {
-  var instance:Owned(MyClass) = new Owned(new MyClass(1));
+  var instance:owned MyClass = new owned MyClass(1);
 }
 
 proc acceptMyClass(c:borrowed MyClass) {
@@ -22,15 +20,15 @@ proc acceptMyClass(c:borrowed MyClass) {
 }
 
 proc test3() {
-  var instance = new Owned(new MyClass(1));
+  var instance = new owned MyClass(1);
 
   acceptMyClass(instance);
 }
 
 proc test5() {
-  var instance = new Owned(new SubClass(1, 2));
+  var instance = new owned SubClass(1, 2);
 
-  var otherInstance: Owned(MyClass) = instance;
+  var otherInstance: owned MyClass = instance;
 
   acceptMyClass(otherInstance);
 }

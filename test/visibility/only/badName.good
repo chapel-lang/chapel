@@ -1,1 +1,1 @@
-badName.chpl:13: error: Bad identifier in 'only' clause, no known 'd'
+badName.chpl:13: error: Bad identifier in 'only' clause, no known 'd' defined in 'Foo'

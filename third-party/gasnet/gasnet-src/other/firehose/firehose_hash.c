@@ -78,7 +78,7 @@ inthash(fh_key_t key)
 */
 
 #if 1
-GASNETI_ALWAYS_INLINE(inthash)
+GASNETI_INLINE(inthash)
 int
 inthash(fh_key_t full_key)
 {
@@ -92,7 +92,7 @@ inthash(fh_key_t full_key)
 	return (int) key;
 }
 #else
-GASNETI_ALWAYS_INLINE(inthash)
+GASNETI_INLINE(inthash)
 int
 inthash(fh_key_t full_key)
 {

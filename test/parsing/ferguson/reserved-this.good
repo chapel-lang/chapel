@@ -1,0 +1,6 @@
+reserved-this.chpl:1: error: attempt to redefine reserved word 'this'
+reserved-this.chpl:3: error: attempt to redefine reserved word 'this'
+reserved-this.chpl:6: error: attempt to redefine reserved word 'this'
+reserved-this.chpl:7: error: attempt to redefine reserved word 'this'
+reserved-this.chpl:10: error: attempt to redefine reserved word 'this'
+reserved-this.chpl:17: error: attempt to redefine reserved word 'this'

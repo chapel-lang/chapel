@@ -428,6 +428,9 @@ other Chapel code with the name ``foo_in_chapel``
        extern "foo_in_c" proc foo_in_chapel(): c_int;
        writeln(foo_in_chapel()); // will generate a call to foo_in_c
 
+An arbitrary expression can be used instead of the string literal
+`"foo_in_c"` from this example. The expression just needs to evaluate
+to a `param` `string`.
 
 Frequently Asked Questions About Declaring External Routines
 ------------------------------------------------------------

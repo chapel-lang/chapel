@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -66,8 +66,11 @@ static void computeUsesDotLocale();
 ************************************** | *************************************/
 
 void remoteValueForwarding() {
-  if (fNoRemoteValueForwarding == false && requireOutlinedOn()) {
+
+  if (fNoInferConstRefs == false)
     inferConstRefs();
+
+  if (fNoRemoteValueForwarding == false && requireOutlinedOn()) {
     computeUsesDotLocale();
     Map<Symbol*, Vec<SymExpr*>*> defMap;
     Map<Symbol*, Vec<SymExpr*>*> useMap;
@@ -265,6 +268,8 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
   if (arg->hasFlag(FLAG_NO_RVF)) {
     retval = false;
+  } else if (arg->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
+    retval = true;
 
   // Forward array values and references to array values.
   // This is OK because the array/domain/distribution wrapper
@@ -397,6 +402,7 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
     // in that event.
     if (newStyleInIntent) {
       Expr* initExpr = actual->symbol()->getInitialization();
+      INT_ASSERT(initExpr);
 
       CallExpr* initCall = toCallExpr(initExpr);
       INT_ASSERT(initCall);

@@ -28,7 +28,7 @@ gasnet/
   License: GASNet is made available under a BSD-style license, which
            can be found in gasnet/gasnet-src/license.txt
 
-  Website: http://gasnet.cs.berkeley.edu
+  Website: https://gasnet.lbl.gov/
 
   See also: gasnet/README
 

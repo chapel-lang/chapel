@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,12 +32,6 @@ enum AggregateTag {
   AGGREGATE_CLASS,
   AGGREGATE_RECORD,
   AGGREGATE_UNION
-};
-
-enum InitializerStyle {
-  DEFINES_CONSTRUCTOR,
-  DEFINES_INITIALIZER,
-  DEFINES_NONE_USE_DEFAULT
 };
 
 
@@ -100,6 +94,7 @@ public:
 
   bool                        hasInitializers()                          const;
   bool                        hasPostInitializer()                       const;
+  bool                        hasUserDefinedInitEquals()                 const;
 
   bool                        mayHaveInstances()                         const;
 
@@ -137,18 +132,14 @@ public:
   DefExpr*                    toSuperField(SymExpr*  expr)               const;
   DefExpr*                    toSuperField(CallExpr* expr)               const;
 
-  int                         getMemberGEP(const char* name);
+  int                         getMemberGEP(const char* name,
+                                           bool& isCArrayField);
 
-  void                        createOuterWhenRelevant();
-
-  // intended to be called during scope resolve
-  void                        buildConstructors();
+  FnSymbol*                   buildTypeConstructor();
 
   void                        addRootType();
 
   void                        addClassToHierarchy();
-
-  bool                        parentDefinesInitializer()                 const;
 
   bool                        wantsDefaultInitializer()                  const;
 
@@ -168,6 +159,9 @@ public:
                                              bool &hasDefault)           const;
 
 
+  Type*                       cArrayElementType()                        const;
+  int64_t                     cArrayLength()                             const;
+
   //
   // Public fields
   //
@@ -181,11 +175,11 @@ public:
 
   FnSymbol*                   typeConstructor;
 
-  FnSymbol*                   defaultInitializer;
+  bool                        builtDefaultInit;
 
   AggregateType*              instantiatedFrom;
 
-  InitializerStyle            initializerStyle;
+  bool                        hasUserDefinedInit;
 
   bool                        initializerResolved;
 
@@ -193,9 +187,6 @@ public:
 
   // used from parsing, sets dispatchParents
   AList                       inherits;
-
-  // pointer to an outer class if this is an inner class
-  Symbol*                     outer;
 
   // Attached only to iterator class/records
   IteratorInfo*               iteratorInfo;
@@ -213,6 +204,10 @@ public:
   Vec<AggregateType*>         dispatchChildren;   // dispatch hierarchy
 
 private:
+
+  // Only used for LLVM.
+  std::map<std::string, bool> isCArrayFieldMap;
+
   static ArgSymbol*           createGenericArg(VarSymbol* field);
 
   void                        insertImplicitThis(FnSymbol*         fn,
@@ -239,8 +234,6 @@ private:
 
   AggregateType*              discoverParentAndCheck(Expr* storesName);
 
-  FnSymbol*                   buildTypeConstructor();
-
   CallExpr*                   typeConstrSuperCall(FnSymbol* fn)  const;
 
   bool                        isFieldInThisClass(const char* name)       const;
@@ -257,13 +250,9 @@ private:
   ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
                                                VarSymbol* field)  const;
 
-  void                        buildConstructor();
-
-public:
-  bool                        needsConstructor() const;
 private:
 
-  ArgSymbol*                  moveConstructorToOuter(FnSymbol* fn);
+  void                        moveTypeConstructorToOuter(FnSymbol* fn);
 
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
@@ -294,6 +283,7 @@ private:
 extern AggregateType* dtObject;
 
 extern AggregateType* dtString;
+extern AggregateType* dtLocale;
 
 DefExpr* defineObjectClass();
 

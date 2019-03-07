@@ -1,2 +1,1 @@
-typeExceptedButReceivedOneToo.chpl:6: In function 'main':
-typeExceptedButReceivedOneToo.chpl:7: error: 'returnAFoo()' returns a type that isn't visible
+10

@@ -15,7 +15,7 @@ class Doomed {
 }
 
 proc main() {
-  var c = new Doomed(7);
+  var c = new unmanaged Doomed(7);
   writeln(c);
   delete c;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -106,7 +106,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     //    writeln("Exiting setup()");
   }
 
-  proc dsiDestroyDom() {
+  override proc dsiDestroyDom() {
     coforall localeIdx in dist.targetLocDom do {
       on locDoms(localeIdx) do
         delete locDoms(localeIdx);
@@ -137,7 +137,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     return max reduce ([l in locDoms] l.mySparseBlock.last);
   }
 
-  proc bulkAdd_help(inds: [] index(rank,idxType),
+  override proc bulkAdd_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
     use Sort;
     use Search;
@@ -222,14 +222,14 @@ class SparseBlockDom: BaseSparseDomImpl {
       //on blk do
       // But can't currently have yields in on clauses:
       // invalid use of 'yield' within 'on' in serial iterator
-      for x in locDom.mySparseBlock._value.these() do
+      for x in locDom.mySparseBlock.these() do
         yield x;
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall (locDom,localeIndex) in zip(locDoms,dist.targetLocDom) {
       on locDom {
-        for followThis in locDom.mySparseBlock._value.these(tag) {
+        for followThis in locDom.mySparseBlock.these(tag) {
           yield (followThis, localeIndex);
         }
       }
@@ -258,13 +258,15 @@ class SparseBlockDom: BaseSparseDomImpl {
     }
   }
 
-  proc dsiMember(ind) {
-    on whole.dist.idxToLocale(ind) {
-      writeln("Need to add support for mapping locale to local domain");
+  proc dsiMember(ind) : bool {
+    var _retval : bool = false;
+    on dist.dsiIndexToLocale(ind) {
+      _retval = locDoms[dist.targetLocsIdx(ind)].dsiMember(ind);
     }
+    return _retval;
   }
 
-  proc dsiClear() {
+  override proc dsiClear() {
     nnz = 0;
     coforall locDom in locDoms do
       on locDom do
@@ -290,22 +292,22 @@ class SparseBlockDom: BaseSparseDomImpl {
 // stridable: generic domain stridable parameter
 // mySparseBlock: a non-distributed domain that defines the local indices
 //
-pragma "use default init"
 class LocSparseBlockDom {
   param rank: int;
   type idxType;
   param stridable: bool;
   type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
-  var sparseDist = new unmanaged sparseLayoutType; //unresolved call workaround
-  var mySparseBlock: sparse subdomain(parentDom) dmapped new dmap(sparseDist);
+  var sparseDist = if _to_borrowed(sparseLayoutType) == DefaultDist then defaultDist
+                   else new dmap(new unmanaged sparseLayoutType); //unresolved call workaround
+  var mySparseBlock: sparse subdomain(parentDom) dmapped sparseDist;
 
   proc dsiAdd(ind: rank*idxType) {
     return mySparseBlock.add(ind);
   }
 
   proc dsiMember(ind: rank*idxType) {
-    return mySparseBlock.member(ind);
+    return mySparseBlock.contains(ind);
   }
 
   proc dsiClear() {
@@ -421,7 +423,7 @@ class SparseBlockArr: BaseSparseArr {
 
   proc dsiAccess(i: rank*idxType) ref {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
+      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
         return myLocArr.dsiAccess(i);
       }
     }
@@ -430,7 +432,7 @@ class SparseBlockArr: BaseSparseArr {
   proc dsiAccess(i: rank*idxType)
   where shouldReturnRvalueByValue(eltType) {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
+      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
         return myLocArr.dsiAccess(i);
       }
     }
@@ -439,7 +441,7 @@ class SparseBlockArr: BaseSparseArr {
   proc dsiAccess(i: rank*idxType) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
+      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
         return myLocArr.dsiAccess(i);
       }
     }
@@ -460,7 +462,7 @@ class SparseBlockArr: BaseSparseArr {
 
 
 
-  proc dsiGetBaseDom() return dom;
+  override proc dsiGetBaseDom() return dom;
 
 }
 
@@ -474,7 +476,6 @@ class SparseBlockArr: BaseSparseArr {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
-pragma "use default init"
 class LocSparseBlockArr {
   type eltType;
   param rank: int;
@@ -592,7 +593,7 @@ proc SparseBlockDom.dsiIndexOrder(i) {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocSparseBlockDom.member(i) return mySparseBlock.member(i);
+proc LocSparseBlockDom.contains(i) return mySparseBlock.contains(i);
 
 proc SparseBlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
@@ -806,3 +807,22 @@ proc dropDims(D: domain, dims...) {
   return DResult;
 }
 
+proc SparseBlockDom.dsiHasSingleLocalSubdomain() param return true;
+proc SparseBlockArr.dsiHasSingleLocalSubdomain() param return true;
+
+proc SparseBlockDom.dsiLocalSubdomain(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("the Sparse Block distribution",
+                             "remote subdomain queries");
+
+  const (found, targetIdx) = dist.targetLocales.find(here);
+  return locDoms[targetIdx].mySparseBlock;
+}
+
+proc SparseBlockArr.dsiLocalSubdomain(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("the Sparse Block distribution",
+                             "remote subdomain queries");
+
+  return myLocArr.locDom.mySparseBlock;
+}

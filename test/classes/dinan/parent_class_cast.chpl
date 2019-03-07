@@ -3,11 +3,11 @@ class P {
 }
 
 class C: P {
-    proc f() return "C";
+    override proc f() return "C";
 }
 
 class D: P {
-    proc f() return "D";
+    override proc f() return "D";
 }
 
 // OK: var ps: [1..2] P = (C():P, D():P);

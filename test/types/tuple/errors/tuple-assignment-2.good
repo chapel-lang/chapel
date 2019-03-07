@@ -1,0 +1,2 @@
+tuple-assignment-2.chpl:3: In function 'modify':
+tuple-assignment-2.chpl:4: error: illegal lvalue in assignment

@@ -1,8 +1,0 @@
-bug: compiler seg fault when compiling record in generic iterator
-
-I get
-error: seg fault [misc.cpp:302]
-
-but making the iterator argument have type int or
-moving the record out of the iterator both make it work.
-

@@ -83,5 +83,3 @@ if timing {
 if perf || correctness {
   writeln("SUCCESS");
 }
-
-delete rng;

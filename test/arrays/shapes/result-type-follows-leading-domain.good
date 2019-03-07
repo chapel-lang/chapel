@@ -1,0 +1,30 @@
+result-type-follows-leading-domain.chpl:11: warning: A.domain #1 : unmanaged domain(2,int(64),false)
+result-type-follows-leading-domain.chpl:22: warning: A.domain #2 : unmanaged BlockDom(2,int(64),false,unmanaged DefaultDist)
+result-type-follows-leading-domain.chpl:31: warning: F.domain #1 : unmanaged domain(2,int(64),false)
+result-type-follows-leading-domain.chpl:37: warning: G.domain #1 : unmanaged domain(2,int(64),false)
+result-type-follows-leading-domain.chpl:46: warning: F.domain #2 : unmanaged BlockDom(2,int(64),false,unmanaged DefaultDist)
+result-type-follows-leading-domain.chpl:52: warning: G.domain #2 : unmanaged BlockDom(2,int(64),false,unmanaged DefaultDist)
+{1..2, 1..3}
+1 1 1
+1 1 1
+
+{1..2, 1..3}
+2 2 2
+2 2 2
+
+{1..2, 1..3}
+101 102 103
+201 202 203
+
+{1..2, 1..3}
+10.1 10.2 10.3
+20.1 20.2 20.3
+
+{1..2, 1..3}
+201 202 203
+401 402 403
+
+{1..2, 1..3}
+20.1 20.2 20.3
+40.1 40.2 40.3
+

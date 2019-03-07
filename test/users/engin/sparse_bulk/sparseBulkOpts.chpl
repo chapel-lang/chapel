@@ -6,7 +6,7 @@ const dimRange = 0..#N;
 const ParentDom = {dimRange, dimRange};
 
 config type layoutType = DefaultDist;
-var layout = new layoutType;
+var layout = new unmanaged layoutType;
 
 var SparseDom: sparse subdomain(ParentDom) dmapped new dmap(layout);
 var SparseMat: [SparseDom] int;

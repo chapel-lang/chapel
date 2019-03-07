@@ -15,7 +15,7 @@ record Foo {
 
   // We must explicitly exclude this initializer from consideration for copy
   // initializers
-  proc init(genericArg) where (!genericArg: Foo) {
+  proc init(genericArg) where !isSubtype(genericArg.type, Foo) {
     genericArg.someMethod();
     a = true;
   }

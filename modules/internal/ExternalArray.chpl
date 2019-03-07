@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,333 +25,168 @@
 module ExternalArray {
   use ChapelStandard;
 
+  extern record chpl_opaque_array {
+    var _pid: int;
+    var _instance: c_void_ptr;
+    var _unowned: bool;
+  }
+
   extern record chpl_external_array {
     var elts: c_void_ptr;
-    var size: uint;
+    var num_elts: uint;
+
+    var freer: c_void_ptr;
   }
 
   extern proc
   chpl_make_external_array(elt_size: uint, num_elts: uint): chpl_external_array;
 
   extern proc chpl_make_external_array_ptr(elts: c_void_ptr,
-                                           size: uint): chpl_external_array;
+                                           num_elts: uint): chpl_external_array;
+
+  extern proc
+  chpl_make_external_array_ptr_free(elts: c_void_ptr,
+                                    num_elts: uint): chpl_external_array;
 
   extern proc chpl_free_external_array(x: chpl_external_array);
-
-  pragma "use default init"
-  class ExternDist: BaseDist {
-
-    proc dsiNewRectangularDom(param rank: int = 1, type idxType = int,
-                              param stridable: bool = false, inds) {
-      if (rank != 1) {
-        halt("external arrays are only allowed a rank of 1 right now");
-      }
-      if (stridable) {
-        halt("external arrays are not allowed to be stridable right now");
-      }
-      if (!isIntegralType(idxType)) {
-        halt("external arrays only allow integral indices");
-      }
-      if (inds.size != 1) {
-        halt("there should only be one set of indices, not multiple dimensions");
-      }
-      var r = inds(1);
-      if (r.low != 0) {
-        halt("external arrays always have a lower bound of 0");
-      }
-      var newdom = new unmanaged ExternDom(idxType,
-                                           r.size,
-                                           _to_unmanaged(this));
-      return newdom;
-    }
-
-    proc dsiClone() {
-      return _to_unmanaged(this);
-    }
-
-    proc trackDomains() param return false;
-    override proc dsiTrackDomains() return false;
-
-    proc singleton() param return true;
-  }
-
-  var defaultExternDist = new unmanaged ExternDist();
-
-  // Module deinit
-  proc deinit() {
-    delete defaultExternDist;
-  }
-
-  class ExternDom: BaseRectangularDom {
-    const size: uint; // We don't need a lower bound, it will always be zero
-
-    const dist;
-
-    proc init(type idxType, size, dist) {
-      super.init(1, idxType, false);
-      this.size = size: uint;
-      this.dist = dist;
-    }
-
-    proc dsiBuildArray(type eltType) {
-      var data = chpl_make_external_array(c_sizeof(eltType), this.size);
-      var arr = new unmanaged ExternArr(eltType,
-                                        _to_unmanaged(this),
-                                        data,
-                                        true);
-      // Only give the pointer initial contents if we created it ourselves.
-      init_elts(data.elts:c_ptr(eltType), this.size, eltType);
-      return arr;
-    }
-
-    proc domRange return 0..#size;
-
-    proc dsiNumIndices return size;
-
-    proc dsiGetIndices() return (domRange,);
-
-    proc dsiSetIndices(x) {
-      halt("Can't change the indices of an external array");
-    }
-
-    iter these() {
-      for i in domRange do
-        yield i;
-    }
-
-    iter these(param tag: iterKind) where tag == iterKind.standalone {
-      forall i in domRange do
-        yield i;
-    }
-
-    iter these(param tag: iterKind) where tag == iterKind.leader {
-      for followThis in domRange {
-        yield followThis;
-      }
-    }
-
-    iter these(param tag: iterKind, followThis)
-      where tag == iterKind.follower {
-      for i in domRange do
-        yield i;
-    }
-
-    override proc dsiMyDist() {
-      return dist;
-    }
-
-    proc linksDistribution() param return false;
-    override proc dsiLinksDistribution()     return false;
-
-    proc dsiMember(ind: rank*idxType) {
-      if (ind(1) < size && ind(1) >= 0) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    proc dsiDim(d: int) {
-      if (d != rank) {
-        halt("domains over external arrays have only one dimension");
-      }
-      return domRange;
-    }
-
-    // Necessary?
-    proc dsiDim(param d: int) {
-      if (d != rank) {
-        halt("domains over external arrays have only one dimension");
-      }
-      return dsiGetIndices();
-    }
-
-    proc dsiDims()
-      return dsiGetIndices();
-
-    proc dsiLow {
-      return 0;
-    }
-
-    proc dsiAssignDomain(rhs: domain, lhsPrivate: bool) {
-      chpl_assignDomainWithGetSetIndices(this, rhs);
-    }
-
-    // What about _getActualDom?  dsiDestroyDom?
-
-    // Prolly want the privatization stuff eventually, but I don't need it right
-    // now.
-  }
-
-  class ExternArr: BaseArr {
-    type eltType;
-
-    const dom;
-    
-    const _ArrInstance: chpl_external_array;
-    const elts = _ArrInstance.elts: _ddata(eltType);
-
-    const _owned: bool;
-
-    proc init(type eltType, const dom, const _ArrInstance, _owned: bool) {
-      super.init(_decEltRefCounts = false);
-      this.eltType = eltType;
-      this.dom = dom;
-      this._ArrInstance = _ArrInstance;
-      this._owned = _owned;
-    }
-
-    proc idxType type return dom.idxType;
-    proc rank param return dom.rank;
-
-    // do I want a "isExtern" method on BaseArr?
-
-    //
-    // standard iterators
-    //
-
-    iter these() ref {
-      for elem in chpl__serialViewIter(this, privDom) do
-        yield elem;
-    }
-
-    iter these(param tag: iterKind) ref
-      where tag == iterKind.standalone && !localeModelHasSublocales &&
-           __primitive("method call resolves", privDom, "these", tag) {
-      forall i in privDom do yield dsiAccess(i);
-    }
-
-    iter these(param tag: iterKind) where tag == iterKind.leader {
-      for followThis in privDom.these(tag) do {
-        yield followThis;
-      }
-    }
-
-    iter these(param tag: iterKind, followThis) ref
-      where tag == iterKind.follower {
-      for i in privDom.these(tag, followThis) {
-        yield dsiAccess[i];
-      }
-    }
-
-    proc dsiSerialWrite(f) {
-      chpl_serialReadWriteRectangular(f, this, privDom);
-    }
-
-    proc dsiSerialRead(f) {
-      chpl_serialReadWriteRectangular(f, this, privDom);
-    }
-
-    // Probably want dsiDisplayRepresentation? (see ArrayViewSlice.chpl:153-161)
-
-    inline proc dsiAccess(i: idxType ...rank) ref {
-      return dsiAccess(i);
-    }
-
-    inline proc dsiAccess(i: idxType ...rank)
-      where shouldReturnRvalueByValue(eltType) {
-      return dsiAccess(i);
-    }
-
-    inline proc dsiAccess(i: idxType ...rank) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
-      return dsiAccess(i);
-    }
-
-    inline proc dsiAccess(i) ref {
-      checkBounds(i);
-      return elts(i(1));
-    }
-
-    inline proc dsiAccess(i)
-      where shouldReturnRvalueByValue(eltType) {
-      checkBounds(i);
-      return elts(i(1));
-    }
-
-    inline proc dsiAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType)  {
-      checkBounds(i);
-      return elts(i(1));
-    }
-
-    inline proc checkBounds(i) {
-      if boundsChecking then
-        if !dom.dsiMember(i) {
-          halt("array index out of bounds: " + _stringify_tuple(i));
-        }
-    }
-
-    override proc dsiGetBaseDom() {
-      return dom;
-    }
-
-    // _getActualArray - useful for returning the array?  Or a dangerous insight
-    // into the implementation?
-
-    // PUNT FOR NOW, WILL NEED EVENTUALLY:
-    // Do I want the locality-oriented queries? (see
-    // ArrayViewSlice.chpl:225-230)
-    // What about the privatization?
-    // doiCanBulkTransferRankChange? doiBulkTransferFromKnown?
-    // doiBulkTransferToKnown?
-
-    override proc dsiDestroyArr() {
-      if (_owned) {
-        chpl_free_external_array(_ArrInstance);
-      }
-    }
-
-    inline proc privDom {
-      /*if _isPrivatized(dom) {
-        return chpl_getPrivatizedCopy(dom.type, _DomPid);
-        } else {*/
-        return dom;
-        //}
-    }
-
-    // proc dsiReallocate(d: domain) is not supported, so don't override.
-    // proc _resize(length: int, old_map) is not supported, don't override.
-  }
+  extern proc chpl_call_free_func(func: c_void_ptr, elts: c_void_ptr);
 
   // Creates an instance of our new array type
   pragma "no copy return"
-  proc makeArrayFromPtr(value: c_ptr, size: uint) {
-    var data = chpl_make_external_array_ptr(value : c_void_ptr, size);
+  proc makeArrayFromPtr(value: c_ptr, num_elts: uint) {
+    var data = chpl_make_external_array_ptr(value : c_void_ptr, num_elts);
     return makeArrayFromExternArray(data, value.eltType);
   }
 
   pragma "no copy return"
   proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
-    var dom = defaultExternDist.dsiNewRectangularDom(idxType=int, inds=(0..#value.size,));
+    var dom = defaultDist.dsiNewRectangularDom(rank=1,
+                                               idxType=int,
+                                               stridable=false,
+                                               inds=(0..#value.num_elts,));
     dom._free_when_no_arrs = true;
-    var arr = new unmanaged ExternArr(eltType,
-                                      dom,
-                                      value,
-                                      _owned=false);
+    var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
+                                                  rank=1,
+                                                  idxType=dom.idxType,
+                                                  stridable=dom.stridable,
+                                                  dom=dom,
+                                                  data=value.elts: _ddata(eltType),
+                                                  externFreeFunc=value.freer,
+                                                  externArr=true,
+                                                  _borrowed=true);
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
   }
 
-  proc convertToExternalArray(arr: []) {
+  // Creates an _array wrapper to store the information given by chpl_opaque_array
+  // arrType is a subclass of BaseArr
+  pragma "no copy return"
+  proc makeArrayFromOpaque(value: chpl_opaque_array, type arrType) {
+    var ret = _newArray(value._instance: arrType);
+    // Don't clean up arrays we create in this way or the user will have garbage
+    // memory after the first function call
+    ret._pid = value._pid;
+    ret._unowned = true;
+    return ret;
+  }
+
+  proc convertToExternalArray(in arr: []): chpl_external_array
+    where (getExternalArrayType(arr) == chpl_external_array) {
+    if (!isExternArrEltType(arr.eltType)) {
+      use HaltWrappers;
+      safeCastCheckHalt("Cannot build an external array that stores " +
+                        arr.eltType: string);
+    }
+    if (!isIntegralType(arr.domain.idxType)) {
+      // Probably not reachable any more, but may become reachable again
+      // once support for interoperability with array types expands.
+      compilerError("cannot return an array with indices that are not " +
+                    "integrals");
+    }
     if (arr.domain.stridable) {
       compilerError("cannot return a strided array");
     }
     if (arr.domain.rank != 1) {
       compilerError("cannot return an array with rank != 1");
     }
-    if (!isIntegralType(arr.domain.idxType)) {
-      compilerError("cannot return an array with indices that are not " +
-                    "integrals");
-    }
     if (arr.domain.low != 0) {
       halt("cannot return an array when the lower bounds is not 0");
     }
-    var externalArr = chpl_make_external_array(c_sizeof(arr.eltType),
-                                               arr.size: uint);
-    chpl__uncheckedArrayTransfer(makeArrayFromExternArray(externalArr,
-                                                          arr.eltType),
-                                 arr);
+    var externalArr = chpl_make_external_array_ptr_free(c_ptrTo(arr[0]),
+                                                        arr.size: uint);
+    // Change the source array so that it does not clean up its memory, so we
+    // can safely return a chpl_external_array wrapper using it.
+    arr.externArr = true;
+    arr._borrowed = true;
     return externalArr;
+  }
+
+  // Shares name with the version returning chpl_external_array so the compiler
+  // can make the same function call and get the appropriate type depending on
+  // the argument.  Unsupported array types are turned into opaque
+  // representations
+  proc convertToExternalArray(arr: []): chpl_opaque_array
+    where (getExternalArrayType(arr) == chpl_opaque_array) {
+
+    var ret: chpl_opaque_array;
+    ret._pid = arr._pid;
+    ret._instance = arr._value: c_void_ptr;
+    ret._unowned = arr._unowned;
+    if (!arr._unowned) {
+      arr._unowned = true;
+    }
+    return ret;
+  }
+
+  // Returns a bool indicating if the type would be appropriate to use in an
+  // extern array.
+  // NOTE: once we can export types, those should also be supported here.
+  private proc isExternArrEltType(type t) param {
+    if (isPrimitive(t) && t != string) {
+      return true;
+    } else if (t == c_string) {
+      return true;
+    } else if (__primitive("is extern type", t)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  // Determine whether chpl_external_array or chpl_opaque array should be used.
+  // Will be updated as more types are supported via chpl_external_array
+  proc getExternalArrayType(arg) type {
+    if (!isArrayType(arg.type)) {
+      compilerError("must call with an array");
+    } else {
+      if (arg._value.isDefaultRectangular()) {
+        return chpl_external_array;
+      } else {
+        return chpl_opaque_array;
+      }
+    }
+  }
+
+  proc getExternalArrayType(type arg) type {
+    if (!isArrayType(arg))  {
+      compilerError("must call with an array");
+    } else {
+      type _instanceType = __primitive("static field type", arg, "_instance");
+      // Workaround until #12095 is resolved (problem calling static method on
+      // type of unmanaged field)
+      type borrowedAlt = _to_borrowed(_instanceType);
+      if (borrowedAlt.isDefaultRectangular()) {
+        return chpl_external_array;
+      } else {
+        return chpl_opaque_array;
+      }
+    }
+  }
+
+  // Can't create an _array wrapper to call the cleanup function for us, so do
+  // the next best thing.
+  export proc cleanupOpaqueArray(arr: chpl_opaque_array) {
+    var cleanup = arr._instance: unmanaged BaseArr;
+    _do_destroy_arr(arr._unowned, cleanup);
   }
 }

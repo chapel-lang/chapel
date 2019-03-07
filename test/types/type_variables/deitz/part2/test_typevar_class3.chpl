@@ -7,8 +7,8 @@ class foo {
   }
 }
 
-var f1 : foo(t=int) = new borrowed foo(t=int);
-var f2 : foo(t=string) = new borrowed foo(t=string);
+var f1 : borrowed foo(t=int) = new borrowed foo(t=int);
+var f2 : borrowed foo(t=string) = new borrowed foo(t=string);
 
 f1.x = 2;
 f2.x = "hello world";

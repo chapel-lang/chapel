@@ -1,0 +1,5 @@
+perfkeys: vec3 in-intent - startup:, vec3 in-intent - completion:, vec3 reduce intent - startup:, vec3 reduce intent - completion:, tup3 in-intent - startup:, tup3 in-intent - completion:, tup3 reduce intent - startup:, tup3 reduce intent - completion:
+repeat-files: ri-a2-AoA.dat
+graphkeys: vec3/in startup, vec3/in completion, vec3/reduce startup, vec3/reduce completion, tup3/in startup, tup3/in completion, tup3/reduce startup, tup3/reduce completion
+ylabel: Time (seconds)
+graphtitle: Forall with AoA In and Reduce Intents

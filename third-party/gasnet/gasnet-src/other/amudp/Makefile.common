@@ -6,7 +6,7 @@
 
 srcdir = .
 altincdir = $(srcdir)
-testdir = $(srcdir)
+amxdir = $(srcdir)
 
 # compiler
 CC = gcc 

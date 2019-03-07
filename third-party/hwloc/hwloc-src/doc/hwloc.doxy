@@ -872,7 +872,7 @@ of the topology.
 \endhtmlonly
 \section cli_hwloc_annotate hwloc-annotate
 
-hwloc-annotate may add object attributes such as string information
+hwloc-annotate may modify object attributes such as string information
 (see \ref attributes_info for details) or Misc children objects.
 It reads an input topology from a XML file and outputs
 the annotated topology as another XML file.
@@ -1512,8 +1512,6 @@ Indeed this OpenFabrics HCA PCI device object contains one
 one OpenFabrics software device (<em>mlx4_0</em>) and two virtual
 network interface software devices (<em>ib0</em> and <em>ib1</em>).
 
-PCI link speed is also reported for some bridges and devices
-because lstopo was privileged when it discovered the topology.
 
 Here is the corresponding textual output:
 
@@ -1853,11 +1851,11 @@ Many of them will therefore be missing on some OS.
 <dd>The operating system name, release, version, the hostname and the
 architecture name, as reported by the Unix <tt>uname</tt> command.
 </dd>
-<dt>Backend (Machine object or topology root object)</dt>
+<dt>Backend (Machine object, topology root object, or specific object added by that backend)</dt>
 <dd>The name of the hwloc backend/component that filled the topology.
 If several components were combined, multiple Backend keys may exist,
-with different values, for instance <tt>x86</tt>, <tt>Linux</tt>
-and <tt>pci</tt>.
+with different values, for instance <tt>x86</tt> and <tt>Linux</tt> in the root
+object and <tt>CUDA</tt> in CUDA OS device objects.
 </dd>
 <dt>LinuxCgroup (Machine object)</dt>
 <dd>The name the Linux control group where the calling process is
@@ -1920,14 +1918,14 @@ The Solaris kstat processor group name that was used to build this Group object.
 <dt>PCIVendor, PCIDevice (PCI devices and bridges)</dt>
 <dd>The vendor and device names of the PCI device.
 </dd>
-<dt>PCISlot</dt>
-<dd>The name/number of the physical slot where the PCI device is plugged.
+<dt>PCISlot (PCI devices)</dt>
+<dd>The name/number of the physical slot where the device is plugged.
 </dd>
-<dt>Vendor, Model, Revision, SerialNumber</dt>
+<dt>Vendor, Model, Revision, SerialNumber (Block OS devices)</dt>
 <dd>The vendor and model names, revision, and serial number of a Block OS device.
 </dd>
-<dt>LinuxDeviceID</dt>
-<dd>The major/minor device number such as 8:0 on Linux for a Block OS device.
+<dt>LinuxDeviceID (Block OS devices)</dt>
+<dd>The major/minor device number such as 8:0 of Linux device.
 </dd>
 <dt>CoProcType (Co-Processor OS devices)</dt>
 <dd>The type of co-processor, for instance <tt>"MIC"</tt>, <tt>"CUDA"</tt>
@@ -1937,13 +1935,13 @@ The Solaris kstat processor group name that was used to build this Group object.
 <dd>The vendor and model names of the GPU device.
 </dd>
 <dt>OpenCLDeviceType, OpenCLPlatformIndex,</dt>
-<dt>OpenCLPlatformName, OpenCLPlatformDeviceIndex (OpenCL GPU OS devices)</dt>
+<dt>OpenCLPlatformName, OpenCLPlatformDeviceIndex (OpenCL OS devices)</dt>
 <dd>The type of OpenCL device,
  the OpenCL platform index and name,
  and the index of the device within the platform.
 </dd>
-<dt>OpenCLComputeUnits, OpenCLGlobalMemorySize</dt>
-<dd>The number of compute units and global memory size (in kB) of a OpenCL device.
+<dt>OpenCLComputeUnits, OpenCLGlobalMemorySize (OpenCL OS devices)</dt>
+<dd>The number of compute units and global memory size (in kB) of an OpenCL device.
 </dd>
 <dt>NVIDIAUUID, NVIDIASerial (NVML GPU OS devices)</dt>
 <dd>The UUID and Serial of NVIDIA GPUs.
@@ -1956,7 +1954,7 @@ The Solaris kstat processor group name that was used to build this Group object.
  and size of the shared memory in each multiprocessor of a CUDA device.
  Sizes are in kB.
 </dd>
-<dt>MICSerialNumber</dt>
+<dt>MICSerialNumber (MIC coprocessor OS device)</dt>
 <dd>
  The serial number of an Intel Xeon Phi (MIC) coprocessor.
  hwloc may run either inside the coprocessor itself, or on the host processor.
@@ -1968,7 +1966,7 @@ The Solaris kstat processor group name that was used to build this Group object.
  When running hwloc inside a Xeon Phi coprocessor, the root object of the topology
  gets this attribute.
 </dd>
-<dt>MICFamily, MICSKU, MICActiveCores, MICMemorySize</dt>
+<dt>MICFamily, MICSKU, MICActiveCores, MICMemorySize (MIC coprocessor OS device)</dt>
 <dd>The family, SKU (model),
  number of active cores, and memory size (in kB)
  of an Intel Xeon Phi (MIC) coprocessor.
@@ -2002,16 +2000,16 @@ The Type attribute value is displayed instead of the default object type name in
 <dd>
 Information about memory modules (DIMMs) extracted from SMBIOS.
 </dd>
-<dt>hwlocVersion</dt>
+<dt>hwlocVersion (topology root, Machine object)</dt>
 <dd>The version number of the hwloc library that was used to generate
 the topology. If the topology was loaded from XML, this is not the hwloc
 version that loaded it, but rather the first hwloc instance that exported
 the topology to XML earlier.
 </dd>
-<dt>ProcessName</dt>
+<dt>ProcessName (topology root, Machine object)</dt>
 <dd>The name of the process that contains the hwloc library that was used
 to generate the topology. If the topology was from XML, this is not the
-hwloc version that loaded it, but rather the first process that exported
+hwloc process that loaded it, but rather the first process that exported
 the topology to XML earlier.
 </dd>
 </dl>
@@ -3419,8 +3417,7 @@ and at runtime with the environment variable
 hwloc discovers the topology by querying the operating system.
 Some minor features may require privileged access to the operation
 system.
-For instance memory module and PCI link speed discovery on Linux
-is reserved to root,
+For instance memory module discovery on Linux is reserved to root,
 and the entire PCI discovery on Solaris and BSDs requires access to
 some special files that are usually restricted to root
 (/dev/pci* or /devices/pci*).
@@ -3735,6 +3732,22 @@ unless user-level process binding is allowed by the NetBSD kernel.
 The <tt>security.models.extensions.user_set_cpu_affinity</tt>
 sysctl variable must be set to 1 to do so.
 Otherwise, only the number of logical processors will be detected.
+
+
+\subsection faq_aix_bind Why does binding fail on AIX?
+
+The AIX operating system requires specific user capabilities for
+attaching processes to resource sets (CAP_NUMA_ATTACH).
+Otherwise functions such as hwloc_set_cpubind() fail (return -1 with errno set to EPERM).
+
+This capability must also be inherited (through the additional CAP_PROPAGATE capability)
+if you plan to bind a process before forking another process,
+for instance with <tt>hwloc-bind</tt>.
+
+These capabilities may be given by the administrator with:
+\verbatim
+chuser "capabilities=CAP_PROPAGATE,CAP_NUMA_ATTACH" <username>
+\endverbatim
 
 
 */

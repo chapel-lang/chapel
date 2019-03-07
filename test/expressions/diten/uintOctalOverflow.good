@@ -1,0 +1,1 @@
+uintOctalOverflow.chpl:1: error: Integer literal overflow: '0o2000000000000000000000' is too big for type uint64

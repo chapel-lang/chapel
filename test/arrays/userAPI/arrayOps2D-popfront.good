@@ -1,2 +1,2 @@
-./arrayAPItest.chpl:7: In function 'testArrayAPI2D':
-./arrayAPItest.chpl:128: error: pop_front() is only supported on dense 1D arrays
+./arrayAPItest.chpl:121: In function 'testArrayAPI2D':
+./arrayAPItest.chpl:242: error: pop_front() is only supported on dense 1D arrays

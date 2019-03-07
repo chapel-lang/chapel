@@ -1,4 +1,4 @@
-// modified from test/classes/stonea/constAndParamInConstructor.chpl
+
 
 class Foo {
     var value : int;

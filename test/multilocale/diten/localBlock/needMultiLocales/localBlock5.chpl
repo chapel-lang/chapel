@@ -3,17 +3,17 @@ class C {
   var next: C;
 }
 
-var A: [1..5] C;
+var A: [1..5] unmanaged C;
 
 on Locales(1) {
-  [i in A.domain] A(i) = new C(i);
+  [i in A.domain] A(i) = new unmanaged C(i);
 }
 
-[i in A.domain] A(i).next = new C(i+1);
+[i in A.domain] A(i).next = new unmanaged C(i+1);
 
 var B = A.next;
 local {
-  B.next = new C(B.a + 1);
+  B.next = new unmanaged C(B.a + 1);
 }
 
 proc foo(c: C) {

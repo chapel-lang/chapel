@@ -5,8 +5,8 @@ record Foo {
   param p: int;
   var x: int;
 
-  proc init(param pVal) {
-    p = pVal;
+  proc init(param p) {
+    this.p = p;
   }
 }
 

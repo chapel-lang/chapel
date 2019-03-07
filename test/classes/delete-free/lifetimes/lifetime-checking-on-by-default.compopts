@@ -1,0 +1,2 @@
+ # lifetime-checking-on-by-default.good
+--no-lifetime-checking # lifetime-checking-on-by-default.no.good

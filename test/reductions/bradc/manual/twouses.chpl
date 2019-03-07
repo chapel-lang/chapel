@@ -23,7 +23,7 @@ forall i in D {
 }
 
 {
-  var myreduce   = new mysumreduce(t = int);
+  var myreduce   = new unmanaged mysumreduce(t = int);
   var state: int = myreduce.ident();
 
   for i in D {
@@ -38,7 +38,7 @@ forall i in D {
 }
 
 {
-  var myreduce    = new mysumreduce(t = real);
+  var myreduce    = new unmanaged mysumreduce(t = real);
   var state: real = myreduce.ident();
 
   for i in D {

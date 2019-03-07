@@ -1,0 +1,6 @@
+# --no-denormalize has slightly different behavior
+COMPOPTS <= --no-denormalize
+# --baseline turns on --no-denormalize
+COMPOPTS <= --baseline
+# NUMA mode adds additional loops
+CHPL_LOCALE_MODEL == numa

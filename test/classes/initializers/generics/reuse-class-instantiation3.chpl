@@ -22,19 +22,16 @@ class Foo {
     this.x = val;
   }
 
-  proc writeThis(f) {
+  override proc writeThis(f) {
     f.write(T:string, " x=", x);
   }
 }
 
 proc main() {
-  var f1 = new Foo(true);
+  var f1 = new owned Foo(true);
   writeln("\t", f1); // int(64) x=1
-  var f2 = new Foo(3:int(32));
+  var f2 = new owned Foo(3:int(32));
   writeln("\t", f2); // int(32) x=3
-  var f3 = new Foo(true, 4);
+  var f3 = new owned Foo(true, 4);
   writeln("\t", f3); // int(64) x=4
-
-  delete f3, f2, f1;
 }
-

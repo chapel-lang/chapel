@@ -1,3 +1,0 @@
-bug: class with generic field leaks memory
-
-see also record-in-record-generic.chpl

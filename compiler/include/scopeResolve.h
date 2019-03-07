@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,6 +36,11 @@ Symbol*  lookup(const char*           name,
 void     lookup(const char*           name,
                 BaseAST*              context,
                 std::vector<Symbol*>& symbols);
+
+Symbol*  lookupAndCount(const char*           name,
+                        BaseAST*              context,
+                        int&                  nSymbolsFound);
+
 
 BaseAST* getScope(BaseAST* ast);
 

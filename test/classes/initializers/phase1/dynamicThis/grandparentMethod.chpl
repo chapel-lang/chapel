@@ -34,5 +34,4 @@ class Child : Parent {
   }
 }
 
-var c = new Child();
-delete c;
+var c = new owned Child();

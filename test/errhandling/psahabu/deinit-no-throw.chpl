@@ -14,7 +14,7 @@ record ThrowingDeinit {
 
   proc deinit() throws {
     writeln("deinit");
-    throw new Error();
+    throw new owned Error();
   }
 }
 

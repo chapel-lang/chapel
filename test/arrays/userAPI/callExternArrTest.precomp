@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling externArrTest.chpl
+$3 --library --static -g externArrTest.chpl

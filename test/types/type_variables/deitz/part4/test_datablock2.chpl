@@ -13,7 +13,7 @@ class DataBlock {
   }
 }
 
-var x : DataBlock(int) = new borrowed DataBlock(int);
+var x : borrowed DataBlock(int) = new borrowed DataBlock(int);
 
 x(1) = 1;
 x(2) = 2;
@@ -23,7 +23,7 @@ writeln(x(1));
 writeln(x(2));
 writeln(x(3));
 
-var y : DataBlock(string) = new borrowed DataBlock(string);
+var y : borrowed DataBlock(string) = new borrowed DataBlock(string);
 
 y(1) = "hello";
 y(2) = "world";

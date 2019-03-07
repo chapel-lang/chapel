@@ -3,12 +3,12 @@ class C {
 }
 
 class D {
-  var cs: [0..numLocales-1] C;
+  var cs: [0..numLocales-1] unmanaged C;
 
   proc init() {
     this.complete();
     coforall i in 0..numLocales-1 do 
-      on Locales(i) do cs[i] = new C(i);
+      on Locales(i) do cs[i] = new unmanaged C(i);
   }
 
   proc deinit() {
@@ -17,7 +17,7 @@ class D {
   }
 }
 
-var d = new D();
+var d = new unmanaged D();
 writeln(d);
 writeln(d.cs);
 for i in 0..numLocales-1 do

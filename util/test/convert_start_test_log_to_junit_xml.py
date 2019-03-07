@@ -70,7 +70,8 @@ def _create_junit_report(test_cases, junit_file):
         system_out = XML.SubElement(case_elem, 'system-out')
         system_out.text = test_case['system-out']
 
-    xml_content = XML.tostring(test_suite)
+    encoding = "unicode" if sys.version_info[0] >= 3 else "us-ascii"
+    xml_content = XML.tostring(test_suite, encoding=encoding)
     xml_content = _clean_xml(xml_content)
     with open(junit_file, 'w') as fp:
         fp.write(xml_content)

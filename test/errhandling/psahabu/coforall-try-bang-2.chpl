@@ -1,6 +1,6 @@
 module Test {
   proc throwme() throws {
-    throw new Error();
+    throw new owned Error();
   }
 
   proc test() {

@@ -12,7 +12,7 @@ proc plusPRinto(ref RES,DOM,FEXPR) throws {
   defer {
     delete OP;
   }
-  DOM.dist.dsiPartialReduceInto(RES, OP, DOM, FEXPR);
+  DOM.dist._value.dsiPartialReduceInto(RES, OP, DOM, FEXPR);
 }
 
 // At the moment, this is an exact copy of DefaultDist.dsiPartialReduce()

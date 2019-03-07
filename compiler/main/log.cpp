@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -154,7 +154,7 @@ void logWriteLog(const char* passName, int passNum, char logTag) {
   if (fLog) {
     if ((logAll == true && logTag != LOG_NEVER) ||
         logOnlyName.count(passName) > 0) {
-      bool logNode = (fUseIPE || fLogNode);
+      bool logNode = (fLogNode);
       if (logNode)
         AstDumpToNode::view(passName, passNum);
       else

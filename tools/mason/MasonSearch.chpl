@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -103,9 +103,9 @@ proc consumeArgs(ref args : [] string) {
   assert(sub == "search");
   args.pop_front();
 
-  const options = {"--no-update-registry", "--debug"};
+  const options = {"--no-update", "--debug"};
 
-  while args.size > 0 && options.member(args.head()) {
+  while args.size > 0 && options.contains(args.head()) {
     args.pop_front();
   }
 }

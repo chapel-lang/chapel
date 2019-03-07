@@ -2,7 +2,6 @@ class Outer {
 
   var field:unmanaged Inner = nil;
 
-  pragma "use default init"
   class Inner {
     var x:int;
   }
@@ -12,5 +11,5 @@ class Outer {
   }
 }
 
-var x = new Outer();
+var x = new owned Outer();
 writeln(x);

@@ -23,5 +23,5 @@ class B : A {
   }
 }
 
-var b = new B();
+var b = new unmanaged B();
 delete b;

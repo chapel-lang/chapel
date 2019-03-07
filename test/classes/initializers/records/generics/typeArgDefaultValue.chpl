@@ -5,8 +5,8 @@ record Foo {
   type t;
   var x: t;
 
-  proc init(type tVal = bool) {
-    t = tVal;
+  proc init(type t = bool) {
+    this.t = t;
   }
 }
 

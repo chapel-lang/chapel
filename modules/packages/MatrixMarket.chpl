@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -26,7 +26,6 @@ module MatrixMarket {
   enum MMTypes { Real, Complex, Pattern }
   enum MMFormat { Symmetric, General }
 
-  pragma "use default init"
   record MMInfo {
     var mm_coordfmt:MMCoordFormat;
     var mm_types:MMTypes;

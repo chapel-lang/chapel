@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -47,67 +47,54 @@ chpl_bool chpl_mem_size_justifies_comm_alloc(size_t size) {
 
 
 static inline
-void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize, c_sublocid_t subloc,
-                           chpl_bool* callAgain, void* repeat_p,
+void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
+                           c_sublocid_t subloc, chpl_bool* callPostAlloc,
                            int32_t lineno, int32_t filename) {
+  //
+  // To support dynamic array registration by comm layers, in addition
+  // to the address to the allocated memory this returns either true or
+  // false in *callPostAlloc.  If we set *callPostAlloc==false then
+  // allocation is complete when we return.  But if *callPostAlloc==true
+  // then after initializing (first-touching) the memory, our caller
+  // needs to call chpl_mem_array_postAlloc() with the allocated address
+  // and the original nmemb and eltSize arguments.  At that point we will
+  // call the comm layer post-alloc function, which typically does the
+  // actual registration.  This is how we get NUMA locality correct on
+  // registered memory, when that is possible.
+  //
+  chpl_memhook_malloc_pre(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                          lineno, filename);
+
   const size_t size = nmemb * eltSize;
-  void* p;
-
-  //
-  // Temporarily, to support dynamic array registration, we accept a
-  // couple of additional arguments.  On a first call, to allocate,
-  // pass NULL for repeat_p.  This function will return a pointer to
-  // the allocated memory and either true or false in *callAgain.  If
-  // false then the allocation procedure is complete.  If true, then
-  // after initializing the memory the caller should call us again,
-  // repeating the original arguments and passing the pointer returned
-  // by the first call in repeat_p.  We will then call the comm layer
-  // post-alloc function.
-  //
-  if (repeat_p == NULL) {
-    //
-    // Allocate.
-    //
-    chpl_memhook_malloc_pre(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
-                            lineno, filename);
-
-    p = NULL;
-    *callAgain = false;
-    if (chpl_mem_size_justifies_comm_alloc(size)) {
-      p = chpl_comm_regMemAlloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
-                                lineno, filename);
-      if (p != NULL) {
-        *callAgain = true;
-      }
+  void* p = NULL;
+  *callPostAlloc = false;
+  if (chpl_mem_size_justifies_comm_alloc(size)) {
+    p = chpl_comm_regMemAlloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
+                              lineno, filename);
+    if (p != NULL) {
+      *callPostAlloc = true;
     }
-
-    if (p == NULL) {
-      p = chpl_malloc(nmemb * eltSize);
-    }
-
-    chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
-                             lineno, filename);
-  } else {
-    //
-    // do comm layer post-allocation, if we got the memory from there.
-    //
-    p = repeat_p;
-    chpl_comm_regMemPostAlloc(p, size);
   }
+
+  if (p == NULL) {
+    p = chpl_malloc(nmemb * eltSize);
+  }
+
+  chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                           lineno, filename);
 
   return p;
 }
 
 
 static inline
-void* chpl_mem_wide_array_alloc(int32_t dstNode, size_t nmemb, size_t eltSize,
-                                c_sublocid_t subloc,
-                                chpl_bool* callAgain, void* repeat_p,
-                                int32_t lineno, int32_t filename) {
-  if (dstNode != chpl_nodeID)
-    chpl_error("array vector data is not local", lineno, filename);
-  return chpl_mem_array_alloc(nmemb, eltSize, subloc, callAgain, repeat_p,
-                              lineno, filename);
+void chpl_mem_array_postAlloc(void* p, size_t nmemb, size_t eltSize,
+                              int32_t lineno, int32_t filename) {
+  //
+  // Do comm layer post-allocation.
+  //
+  const size_t size = nmemb * eltSize;
+  chpl_comm_regMemPostAlloc(p, size);
 }
 
 
@@ -130,16 +117,6 @@ void chpl_mem_array_free(void* p,
   }
 
   chpl_free(p);
-}
-
-
-static inline
-void chpl_mem_wide_array_free(int32_t dstNode, void* p,
-                              size_t nmemb, size_t eltSize,
-                              int32_t lineno, int32_t filename) {
-  if (dstNode != chpl_nodeID)
-    chpl_error("array vector data is not local", lineno, filename);
-  chpl_mem_array_free(p, nmemb, eltSize, lineno, filename);
 }
 
 #endif // LAUNCHER

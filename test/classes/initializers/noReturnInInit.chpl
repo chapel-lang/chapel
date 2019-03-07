@@ -20,14 +20,14 @@ proc main() {
   //
   // Create the "stretch" tree, checksum it, print its stats, and free it.
   //
-  const strTree = new Tree(0, strDepth);
+  const strTree = new unmanaged Tree(0, strDepth);
   writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
   delete strTree;
 
   //
   // Build the long-lived tree.
   //
-  const llTree = new Tree(0, maxDepth);
+  const llTree = new unmanaged Tree(0, maxDepth);
 
   //
   // Iterate over the depths in parallel, dynamically assigning them
@@ -39,8 +39,8 @@ proc main() {
     var   sum        = 0;
 
     for i in 1..iterations {
-      const posT = new Tree( i, depth),
-            negT = new Tree(-i, depth);
+      const posT = new unmanaged Tree( i, depth),
+            negT = new unmanaged Tree(-i, depth);
 
       sum += posT.sum() + negT.sum();
 
@@ -70,12 +70,12 @@ proc main() {
 //
 class Tree {
   const item: int;
-  const left, right: Tree;
+  const left, right: unmanaged Tree;
 
   //
   // Two initializers (constructors) for a Tree object
   //
-  proc init(item, left: Tree=nil, right: Tree=nil) {
+  proc init(item, left: unmanaged Tree=nil, right: unmanaged Tree=nil) {
     this.item  = item;
     this.left  = left;
     this.right = right;
@@ -85,10 +85,10 @@ class Tree {
 
   proc init(item, depth) {
     if depth <= 0 then
-      return new Tree(item);
+      return new unmanaged Tree(item);
     else
-      return new Tree(item, new Tree(2*item-1, depth-1),
-                            new Tree(2*item,   depth-1));
+      return new unmanaged Tree(item, new unmanaged Tree(2*item-1, depth-1),
+                            new unmanaged Tree(2*item,   depth-1));
   }
 
   //

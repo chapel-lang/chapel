@@ -32,8 +32,8 @@ class MyClass1 : MyClass0 {
 }
 
 proc main() {
-  var c0 = new MyClass1(1, 2, 3, 4);
-  var c1 = new MyClass0(1, 2);
+  var c0 = new unmanaged MyClass1(1, 2, 3, 4);
+  var c1 = new unmanaged MyClass0(1, 2);
 
   writeln('c0 : ', c0);
   writeln('c1 : ', c1);

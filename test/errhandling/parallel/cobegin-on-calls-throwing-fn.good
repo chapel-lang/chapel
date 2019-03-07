@@ -1,0 +1,5 @@
+cobegin-on-calls-throwing-fn.chpl:10: In function 'badFn':
+cobegin-on-calls-throwing-fn.chpl:14: error: call to throwing function throwingFn without throws, try, or try! (relaxed mode)
+cobegin-on-calls-throwing-fn.chpl:6: note: throwing function throwingFn defined here
+cobegin-on-calls-throwing-fn.chpl:19: error: call to throwing function throwingFn without throws, try, or try! (relaxed mode)
+cobegin-on-calls-throwing-fn.chpl:6: note: throwing function throwingFn defined here

@@ -6,7 +6,7 @@ proc foo(a:?T) {
   writeln("foo1");
 }
 
-proc foo(a: Bar(?t)) {
+proc foo(a: borrowed Bar(?t)) {
   writeln("foo2");
 }
 

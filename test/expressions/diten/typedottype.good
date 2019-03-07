@@ -1,0 +1,2 @@
+typedottype.chpl:1: error: can't apply '.type' to a type (int(64))
+typedottype.chpl:2: error: can't apply '.type' to a type (real(64))

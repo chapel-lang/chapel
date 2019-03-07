@@ -1,2 +1,2 @@
-arrayField-compInit.chpl:14: error: unresolved call '_new(type C, [BlockDom(1,int(64),false,unmanaged DefaultDist)] real(64))'
-arrayField-compInit.chpl:3: note: candidates are: _new(type chpl_t, X: [domain(1,int(64),false)] real(64))
+arrayField-compInit.chpl:14: error: unresolved call 'C.init([BlockDom(1,int(64),false,unmanaged DefaultDist)] real(64))'
+arrayField-compInit.chpl:3: note: candidates are: C.init(X: [domain(1,int(64),false)] real(64))

@@ -58,3 +58,42 @@ for i in FullDom.dim(1) {
   writeln();
 }
 
+var containsAll = true;
+var matchingLocalSubdomains = true;
+var localBag : [Locales.domain] domain(FullSparseDom.rank*FullSparseDom.idxType);
+var fullBag : domain(FullSparseDom.rank*FullSparseDom.idxType);
+var unionBag : domain(FullSparseDom.rank*FullSparseDom.idxType);
+var intersectionBag : domain(FullSparseDom.rank*FullSparseDom.idxType);
+
+for i in FullSparseDom do {
+  containsAll &= FullSparseDom.contains( i );
+  fullBag += i;
+}
+writeln( containsAll );
+
+for onLocale in Locales {
+  on onLocale {
+    for localIndex in FullSparseDom.dsiLocalSubdomain(here) {
+      localBag[ onLocale.id ] += localIndex;
+    }
+    matchingLocalSubdomains &= ( FullSparseDom.dsiLocalSubdomain(here) == FullSparseArr.dsiLocalSubdomain(here) );
+  }
+}
+
+writeln( matchingLocalSubdomains );
+
+intersectionBag = fullBag;
+
+for onLocale in Locales {
+  for i in localBag[ onLocale.id ] {
+    unionBag |= localBag[ onLocale.id ];
+    intersectionBag &= localBag[ onLocale.id ];
+  }
+}
+// union of disparate sets is the full set
+writeln( unionBag == fullBag );
+// intersection of disparate sets is the empty set
+// ... but only if there is more than one locale
+if Locales.size > 1
+  then writeln( intersectionBag.size == 0 );
+  else writeln( true );

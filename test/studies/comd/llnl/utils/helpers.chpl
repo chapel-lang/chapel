@@ -45,23 +45,23 @@ class Ticker {
 
 const timers = 19;
 enum timerEnum {TOTAL = 1, INIT, FCREATE, INITGRID, EPILOGUE, REDIST1, F1, LOOP, TIMESTEP, POSITION, VELOCITY, REDIST, ATOMHALO, SORT, FORCE, FORCE1, FORCE2, EAMHALO, COMMREDUCE};
-var tArray : [timerEnum.TOTAL..timerEnum.COMMREDUCE] Ticker = 
-(	new Ticker("total              "),
-	new Ticker("init               "),
-	new Ticker("  createForce      "),
-	new Ticker("  initGrid         "),
-	new Ticker("  replicateForce   "),
-	new Ticker("  redistributeInit "),
-	new Ticker("  forceInit        "),
-	new Ticker("loop               "),
-	new Ticker("timestep           "),
-	new Ticker("  position         "),
-	new Ticker("  velocity         "),
-	new Ticker("  redistribute     "),
-	new Ticker("    atomHalo       "),
-	new Ticker("    sortAtoms      "),
-	new Ticker("  force            "),
-	new Ticker("    force1         "),
-	new Ticker("    force2         "),
-	new Ticker("    eamHalo        "),
-	new Ticker("reductions         "));
+var tArray : [timerEnum.TOTAL..timerEnum.COMMREDUCE] unmanaged Ticker = 
+(	new unmanaged Ticker("total              "),
+	new unmanaged Ticker("init               "),
+	new unmanaged Ticker("  createForce      "),
+	new unmanaged Ticker("  initGrid         "),
+	new unmanaged Ticker("  replicateForce   "),
+	new unmanaged Ticker("  redistributeInit "),
+	new unmanaged Ticker("  forceInit        "),
+	new unmanaged Ticker("loop               "),
+	new unmanaged Ticker("timestep           "),
+	new unmanaged Ticker("  position         "),
+	new unmanaged Ticker("  velocity         "),
+	new unmanaged Ticker("  redistribute     "),
+	new unmanaged Ticker("    atomHalo       "),
+	new unmanaged Ticker("    sortAtoms      "),
+	new unmanaged Ticker("  force            "),
+	new unmanaged Ticker("    force1         "),
+	new unmanaged Ticker("    force2         "),
+	new unmanaged Ticker("    eamHalo        "),
+	new unmanaged Ticker("reductions         "));

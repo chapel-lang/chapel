@@ -9,7 +9,7 @@
 record A {
   type t = int;
   var x:t;
-  proc init(xVal) where !xVal: A {
+  proc init(xVal) where !isSubtype(xVal.type, A) {
     // I removed the argument and explicit setting of field t, to show that
     // omitted type fields work just fine.
     this.x = xVal;

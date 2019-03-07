@@ -1,7 +1,9 @@
 record Foo {
-  var x;
+  type T;
+  var x : T;
 
-  proc init(xVal) where !xVal: Foo {
+  proc init(type T, xVal : T) where !isSubtype(xVal.type, Foo) {
+    this.T = T;
     x = xVal;
   }
 }

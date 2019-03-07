@@ -18,7 +18,6 @@ examples:
      benchmarks/  : contains standard benchmarks written in Chapel
      patterns/    : examples demonstrating common tasks
      primers/     : introduce Chapel concepts narratively for new users
-     programs/    : demonstrate Chapel using small programs/idioms
      spec/        : example codes from the Chapel Specification (see below)
      users-guide/ : example codes from the Chapel Users Guide
 

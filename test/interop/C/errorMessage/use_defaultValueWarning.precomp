@@ -1,0 +1,4 @@
+#!/bin/bash
+export dep=`echo $1 | sed -e 's/use_//' | sed -e 's/.test//'`
+echo Compiling $dep.chpl
+$3 --library --static $dep.chpl

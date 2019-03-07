@@ -9,11 +9,12 @@ class Foo {
 class DefaultArg {
   var y;
 
-  proc init(yVal = new Foo(3)) {
+  proc init(yVal = new unmanaged Foo(3)) {
     y = yVal;
   }
 }
 
-var c = new DefaultArg();
+var c = new unmanaged DefaultArg();
 writeln(c);
+delete c.y;
 delete c;

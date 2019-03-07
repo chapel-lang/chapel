@@ -17,6 +17,11 @@ int size = 0;
 #define PRINT_LATENCY 0
 #define PRINT_THROUGHPUT 1
 
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
+
 typedef struct {
 	int datasize;
 	int alignment;
@@ -24,7 +29,7 @@ typedef struct {
 	uint64_t time;
 } stat_struct_t;
 
-int insegment = 0;
+int insegment = 1;
 int dogets = 1;
 int doputs = 1;
 
@@ -105,7 +110,7 @@ void oneway_test(int iters, int nbytes, int alignment)
 		/* measure the throughput of bulk put */
 		begin = TIME();
 		for (i = 0; i < iters; i++) {
-			gasnet_put_bulk(peerproc, rembuf, locbuf+pad, nbytes);
+			gex_RMA_PutBlocking(myteam, peerproc, rembuf, locbuf+pad, nbytes, 0);
 		}
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
@@ -126,7 +131,7 @@ void oneway_test(int iters, int nbytes, int alignment)
 		/* measure the throughput of bulk get */
 		begin = TIME();
 		for (i = 0; i < iters; i++) {
-	 		gasnet_get_bulk(locbuf, peerproc, rembuf+pad, nbytes);
+			gex_RMA_GetBlocking(myteam, locbuf, peerproc, rembuf+pad, nbytes, 0);
 		}
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
@@ -159,9 +164,9 @@ void oneway_nbi_test(int iters, int nbytes, int alignment)
 		/* measure the throughput of nonblocking implicit bulk put */
 		begin = TIME();
 		for (i = 0; i < iters; i++) {
-			gasnet_put_nbi_bulk(peerproc, rembuf, locbuf+pad, nbytes);
+			gex_RMA_PutNBI(myteam, peerproc, rembuf, locbuf+pad, nbytes, GEX_EVENT_DEFER, 0);
 		}
-		gasnet_wait_syncnbi_puts();
+		gex_NBI_Wait(GEX_EC_PUT,0);
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
 	}
@@ -169,7 +174,7 @@ void oneway_nbi_test(int iters, int nbytes, int alignment)
 	BARRIER();
 	
 	if (iamsender) {
-		print_stat(myproc, &st, "put_nbi_bulk throughput", PRINT_THROUGHPUT);
+		print_stat(myproc, &st, "put_nbi throughput", PRINT_THROUGHPUT);
 	}	
     }
 
@@ -178,12 +183,12 @@ void oneway_nbi_test(int iters, int nbytes, int alignment)
 	init_stat(&st, nbytes, alignment);
 
 	if (iamsender) {
-		/* measure the throughput of nonblocking implicit bulk get */
+		/* measure the throughput of nonblocking implicit get */
 		begin = TIME();
 		for (i = 0; i < iters; i++) {
-	 		gasnet_get_nbi_bulk(locbuf, peerproc, rembuf+pad, nbytes);
+	 		gex_RMA_GetNBI(myteam, locbuf, peerproc, rembuf+pad, nbytes, 0);
 		}
-		gasnet_wait_syncnbi_gets();
+		gex_NBI_Wait(GEX_EC_GET,0);
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
 	}
@@ -191,7 +196,7 @@ void oneway_nbi_test(int iters, int nbytes, int alignment)
 	BARRIER();
 	
 	if (iamsender) {
-		print_stat(myproc, &st, "get_nbi_bulk throughput", PRINT_THROUGHPUT);
+		print_stat(myproc, &st, "get_nbi throughput", PRINT_THROUGHPUT);
 	}	
     }
 }
@@ -201,7 +206,7 @@ void oneway_nb_test(int iters, int nbytes, int alignment)
     int i;
     int64_t begin, end;
     stat_struct_t st;
-    gasnet_handle_t *handles = (gasnet_handle_t*) test_malloc(sizeof(gasnet_handle_t) * iters);
+    gex_Event_t *events = (gex_Event_t*) test_malloc(sizeof(gex_Event_t) * iters);
 	
     int pad = (alignment % PAGESZ);
 
@@ -217,9 +222,9 @@ void oneway_nb_test(int iters, int nbytes, int alignment)
 		/* measure the throughput of sending a message */
 		begin = TIME();
                 for (i = 0; i < iters; i++) {
-                        handles[i] = gasnet_put_nb_bulk(peerproc, rembuf, locbuf+pad, nbytes);
+                        events[i] = gex_RMA_PutNB(myteam, peerproc, rembuf, locbuf+pad, nbytes, GEX_EVENT_DEFER, 0);
                 }
-		gasnet_wait_syncnb_all(handles, iters); 
+		gex_Event_WaitAll(events, iters, 0);
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
 	}
@@ -239,9 +244,9 @@ void oneway_nb_test(int iters, int nbytes, int alignment)
 		/* measure the throughput of receiving a message */
 		begin = TIME();
                 for (i = 0; i < iters; i++) {
-                    handles[i] = gasnet_get_nb_bulk(locbuf, peerproc, rembuf+pad, nbytes);
+                    events[i] = gex_RMA_GetNB(myteam, locbuf, peerproc, rembuf+pad, nbytes, 0);
                 } 
-		gasnet_wait_syncnb_all(handles, iters); 
+		gex_Event_WaitAll(events, iters, 0);
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
 	}
@@ -249,11 +254,11 @@ void oneway_nb_test(int iters, int nbytes, int alignment)
 	BARRIER();
 	
 	if (iamsender) {
-		print_stat(myproc, &st, "get_nb_bulk throughput", PRINT_THROUGHPUT);
+		print_stat(myproc, &st, "get_nb throughput", PRINT_THROUGHPUT);
 	}	
     }
 	
-    test_free(handles);
+    test_free(events);
 }
 
 int main(int argc, char **argv)
@@ -265,7 +270,7 @@ int main(int argc, char **argv)
     int crossmachinemode = 0;   
 
     /* call startup */
-    GASNET_Safe(gasnet_init(&argc, &argv));
+    GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testalign", &argc, &argv, 0));
     
     /* parse arguments */
     arg = 1;
@@ -302,7 +307,7 @@ int main(int argc, char **argv)
 
     if (argc > arg) { TEST_SECTION_PARSE(argv[arg]); arg++; }
  
-    GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
+    GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
     test_init("testalign", 1,
                "[options] (iters) (size) (test_sections)\n"
                "  The '-in' or '-out' option selects whether the initiator-side\n"
@@ -313,8 +318,8 @@ int main(int argc, char **argv)
     if (help || argc > arg) test_usage();
 
     /* get SPMD info */
-    myproc = gasnet_mynode();
-    numprocs = gasnet_nodes();
+    myproc = gex_TM_QueryRank(myteam);
+    numprocs = gex_TM_QuerySize(myteam);
     
     /* Only allow even number for numprocs */
     if (numprocs % 2 != 0) {
@@ -324,7 +329,7 @@ int main(int argc, char **argv)
 
     /* Setting peer thread rank */
     if (crossmachinemode) {
-      gasnet_node_t half =  numprocs / 2;
+      gex_Rank_t half =  numprocs / 2;
       iamsender = (myproc < half);
       peerproc = myproc + (iamsender ? half : -half);
     } else {

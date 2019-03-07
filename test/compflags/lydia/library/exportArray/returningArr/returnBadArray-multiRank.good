@@ -1,1 +1,0 @@
-returnBadArray-multiRank.chpl:5: error: cannot return an array with rank != 1

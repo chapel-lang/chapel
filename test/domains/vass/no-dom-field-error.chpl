@@ -14,7 +14,6 @@ class GlobalDomain : BaseDom {
   var ranges: rank * range(idxType);
 }
 
-pragma "use default init"
 class GlobalArray : BaseArr {}
 
 proc GlobalDistribution.init() {}

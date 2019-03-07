@@ -130,11 +130,11 @@ writeln();
 
 //
 // If we want to check that "Bob" and "Frank" were indeed removed we can use the
-// ``member`` function, which returns a boolean.
+// ``contains`` function, which returns a boolean.
 //
-if Names.member("Bob") then
+if Names.contains("Bob") then
   halt("Error: Bob should have been removed!");
-if Names.member("Frank") then
+if Names.contains("Frank") then
   halt("Error: Frank should have been removed!");
 
 //
@@ -267,7 +267,7 @@ writeln();
 //
 // We can also verify that the underlying ``Names`` domain was modified:
 //
-if !Names.member("Gary") then
+if !Names.contains("Gary") then
   halt("Error: 'Gary' should be present in the 'Names' domain");
 
 //

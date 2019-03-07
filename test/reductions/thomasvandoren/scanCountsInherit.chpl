@@ -10,19 +10,18 @@
 
 use counts;
 
-pragma "use default init"
 class scanCountsInherit : counts {
   // Track the current value, so it can be used in generate() method. Use min()
   // as arbitrary default value here, in lieu of no "default of type" support
   // for user code.
   var _curValue: eltType = min(eltType);
 
-  proc accumulate(value: eltType) {
+  override proc accumulate(value: eltType) {
     _curValue = value;
     super.accumulate(value);
   }
 
-  proc generate() {
+  override proc generate() {
     return v[_curValue];
   }
 }

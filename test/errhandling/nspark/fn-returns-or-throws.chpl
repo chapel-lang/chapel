@@ -1,6 +1,6 @@
 use ExampleErrors;
 proc oops(): int throws {
-  throw new StringError("called oops()");
+  throw new owned StringError("called oops()");
   return 99;
 }
 

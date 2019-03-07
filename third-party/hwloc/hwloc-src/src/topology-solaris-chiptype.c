@@ -1,7 +1,7 @@
 /*
  * Copyright © 2009-2010 Oracle and/or its affiliates.  All rights reserved.
  * Copyright © 2013 Université Bordeaux.  All rights reserved.
- * Copyright © 2016-2017 Inria.  All rights reserved.
+ * Copyright © 2016-2018 Inria.  All rights reserved.
  *
  * $COPYRIGHT$
  *
@@ -150,8 +150,8 @@ Default values are for Unknown so we can build up from there.
 *****************************************************************************/
 
 static int  called_cpu_probe      = 0;
-static char dss_chip_type[PICL_PROPNAMELEN_MAX];
-static char dss_chip_model[PICL_PROPNAMELEN_MAX];
+static char dss_chip_type[PICL_PROPNAMELEN_MAX+1];
+static char dss_chip_model[PICL_PROPNAMELEN_MAX+1];
 static long dss_chip_mode         = MODE_UNKNOWN;
 
 struct hwloc_solaris_chip_info_s chip_info;
@@ -356,7 +356,7 @@ static int probe_cpu(picl_nodehdl_t node_hdl, void* dummy_arg __hwloc_attribute_
   unsigned int    index;
   int             int_val;
   int             val;
-  char            string_val[PICL_PROPNAMELEN_MAX];
+  char            string_val[PICL_PROPNAMELEN_MAX+1];
 
   val = picl_get_first_prop(node_hdl, &p_hdl);
   while (val == PICL_SUCCESS) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -70,17 +70,17 @@ module AllLocalesBarriers {
   class AllLocalesBarrier: BarrierBaseType {
 
     const BarrierSpace = LocaleSpace dmapped Block(LocaleSpace);
-    var globalBarrier: [BarrierSpace] aBarrier(reusable=true, hackIntoCommBarrier=true);
+    var globalBarrier: [BarrierSpace] unmanaged aBarrier(reusable=true, procAtomics=true, hackIntoCommBarrier=true);
 
     proc init(numTasksPerLocale: int) {
-      globalBarrier = [b in BarrierSpace] new aBarrier(numTasksPerLocale, reusable=true, hackIntoCommBarrier=true);
+      globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(numTasksPerLocale, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
     }
 
     proc deinit() {
       [b in globalBarrier] delete b;
     }
 
-    proc barrier() {
+    override proc barrier() {
       globalBarrier.localAccess[here.id].barrier();
     }
 
@@ -89,7 +89,7 @@ module AllLocalesBarriers {
     }
   }
 
-  var allLocalesBarrier: AllLocalesBarrier;
+  var allLocalesBarrier: unmanaged AllLocalesBarrier;
 
   allLocalesBarrier = new unmanaged AllLocalesBarrier(1);
 

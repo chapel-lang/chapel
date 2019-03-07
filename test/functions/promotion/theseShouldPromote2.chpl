@@ -9,11 +9,9 @@ class C {
     yield y;
     yield z;
   }
-
-  proc chpl__promotionType() type return int;
 }
 
-var myC = new C();
+var myC = new borrowed C();
 
 for c in myC do
   writeln(c);

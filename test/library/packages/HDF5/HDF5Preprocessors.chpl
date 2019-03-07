@@ -1,12 +1,12 @@
 module HDF5Preprocessors {
-  use HDF5_HL;
+  use HDF5;
 
   class AddNPreprocessor: HDF5Preprocessor {
     const n: int;
 
     proc preprocess(A: []) {
       forall a in A {
-        a += 1;
+        a += n;
       }
     }
   }

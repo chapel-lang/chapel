@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -249,9 +249,6 @@ void CForLoop::verify()
 
   if (byrefVars                 != 0)
     INT_FATAL(this, "CForLoop::verify. byrefVars is not NULL");
-
-  if (forallIntents             != 0)
-    INT_FATAL(this, "CForLoop::verify. forallIntents is not NULL");
 }
 
 void CForLoop::accept(AstVisitor* visitor)

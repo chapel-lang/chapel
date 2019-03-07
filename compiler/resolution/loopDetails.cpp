@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -107,7 +107,7 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
 static Symbol* findPrecedingChplIter(Expr* ref)
 {
   Symbol* chpl_iter = NULL;
-  Expr* e = ref;
+  Expr* e = ref->prev;
   while (e) {
     if (DefExpr* d = toDefExpr(e)) {
       Symbol* var = d->sym;
@@ -115,6 +115,10 @@ static Symbol* findPrecedingChplIter(Expr* ref)
         chpl_iter = var;
         break;
       }
+    } else if (isForallStmt(e)) {
+      // This ForallStmt has its own set of variables.
+      // Don't look at those.
+      break;
     }
     e = e->prev;
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -354,32 +354,6 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     mOffset = mOffset + 2;
     newline();
     node->byrefVars->accept(this);
-    mOffset = mOffset - 2;
-  }
-
-  if (ForallIntents* fi = node->forallIntents)
-  {
-    newline();
-
-    write(false, "ForallIntents:", false);
-
-    mOffset = mOffset + 2;
-
-    newline();
-
-    for (int i = 0; i < fi->numVars(); i++)
-    {
-      if (i > 0)
-        fprintf(mFP, ", ");
-
-      if (fi->isReduce(i))
-        fi->riSpecs[i]->accept(this);
-
-      write(true, forallIntentTagDescription(fi->fIntents[i]), true);
-
-      fi->fiVars[i]->accept(this);
-    }
-
     mOffset = mOffset - 2;
   }
 

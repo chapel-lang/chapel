@@ -8,3 +8,4 @@ var A2 = [D] 0;
 compilerWarning(A1.domain.type:string);
 compilerWarning(A2.domain.type:string);
 compilerAssert(A1.type == A2.type);
+compilerError("done"); // enough checking

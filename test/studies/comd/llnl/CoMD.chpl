@@ -11,9 +11,9 @@ use VisualDebug;
 use rand;
 
 var vSim  : Validate;
-var f : Force;
+var f : unmanaged Force;
 
-proc initGrid(latticeConstant: real, const ref force: Force) {
+proc initGrid(latticeConstant: real, const ref force: unmanaged Force) {
   simLow  = (0.0,0.0,0.0);
   const simSize = (nx:real, ny:real, nz:real) * latticeConstant;
   simHigh = simSize;
@@ -54,7 +54,7 @@ proc initGrid(latticeConstant: real, const ref force: Force) {
       const domSize = domHigh - domLow;
 
       const invBoxSize = (1/boxSize(1), 1/boxSize(2), 1/boxSize(3));
-      var MyDom = new Domain(localDom=MyLocDom,
+      var MyDom = new unmanaged Domain(localDom=MyLocDom,
                          invBoxSize=invBoxSize, boxSpace=boxSpace, numBoxes=numBoxes,
                          domHigh=domHigh, domLow=domLow,
                          force=if(replicateForce) then force.replicate() else force);
@@ -96,7 +96,7 @@ local {
         src = dest;
         var neighbor = ijk + nOff;
         var srcOff = (0,0,0);
-        t1 = new FaceArr(d=dest);
+        t1 = new unmanaged FaceArr(d=dest);
         for i in 1..3 {
           if(neighbor(i) < 0) {
             //neighbor(i) = locDom.high(i);
@@ -115,7 +115,7 @@ local {
           }
         }
         src = src.translate(srcOff);
-        t2 = new FaceArr(d=src);
+        t2 = new unmanaged FaceArr(d=src);
         neigh = neighbor;
       }
 }
@@ -328,7 +328,7 @@ local {
           // if another box
           if(boxIdx != dBoxIdx) then {
             // check if dest box is valid and has space for another atom
-            // assert(halo.member(dBoxIdx));
+            // assert(halo.contains(dBoxIdx));
             // assert(MyDom.cells[dBoxIdx].count < MAXATOMS);
 
             // add to new box
@@ -342,7 +342,7 @@ local {
               box.atoms[ii] = box.atoms[oldCount];
 
             // decrement number of atoms if dest box not local
-            if(!MyDom.localDom.member(dBoxIdx)) then MyDom.numLocalAtoms -= 1; 
+            if(!MyDom.localDom.contains(dBoxIdx)) then MyDom.numLocalAtoms -= 1; 
           }
           else ii += 1;
         }
@@ -352,7 +352,7 @@ local {
   }
 }
 
-proc gatherAtoms(const ref MyDom:Domain, const in face : int) : int(32) {
+proc gatherAtoms(const ref MyDom:unmanaged Domain, const in face : int) : int(32) {
   // haloExchange finished sending its data over, wait until another
   // locale fills our recvBuf.
   if face % 2 then MyDom.nM$; else MyDom.nP$;
@@ -363,17 +363,17 @@ proc gatherAtoms(const ref MyDom:Domain, const in face : int) : int(32) {
       a.r += MyDom.pbc[face];
       var idx = getBoxFromCoords(a.r, MyDom.invBoxSize);
       ref box = MyDom.cells[idx];
-      //assert(MyDom.halo.member(idx), MyDom.halo, " vs. ", idx);
+      //assert(MyDom.halo.contains(idx), MyDom.halo, " vs. ", idx);
       ref count = box.count;
       count += 1;
       box.atoms[count] = a;
-      if MyDom.localDom.member(idx) then numLocalAtoms += 1;
+      if MyDom.localDom.contains(idx) then numLocalAtoms += 1;
     }
   }
   return numLocalAtoms;
 }
 
-proc haloExchange(const ref MyDom : Domain, const in face:int) {
+proc haloExchange(const ref MyDom : unmanaged Domain, const in face:int) {
   const src = MyDom.destSlice[face];
   const ref neighs = MyDom.neighs;
   ref faceArr = MyDom.temps1[face].a;
@@ -410,7 +410,7 @@ proc haloExchange(const ref MyDom : Domain, const in face:int) {
 
 // if only one cells in this dimension, then read in parallel
 // but add atoms serially
-proc exchangeData(const ref MyDom:Domain, const in i : int) {
+proc exchangeData(const ref MyDom:unmanaged Domain, const in i : int) {
   var nAtoms : int(32) = 0;
   cobegin {
     { haloExchange(MyDom, i); }
@@ -423,7 +423,7 @@ proc exchangeData(const ref MyDom:Domain, const in i : int) {
 
 // if 2 or more cells in this dimension, then read 
 // and add atoms in parallel
-proc exchangeDataTwo(const ref MyDom:Domain, const in i : int) {
+proc exchangeDataTwo(const ref MyDom:unmanaged Domain, const in i : int) {
   var nAtomsM : int(32) = 0;
   var nAtomsP : int(32) = 0;
   cobegin with (ref nAtomsM, ref nAtomsP) {
@@ -477,10 +477,10 @@ tArray[timerEnum.FORCE].stop();
 proc initSimulation() {
 tArray[timerEnum.FCREATE].start();
   if(doeam) {
-    f = new ForceEAM(potDir, potName, potType);
+    f = new unmanaged ForceEAM(potDir, potName, potType);
   }
   else {
-    f = new ForceLJ();
+    f = new unmanaged ForceLJ();
   }
 tArray[timerEnum.FCREATE].stop();
 
@@ -599,12 +599,12 @@ local {
               var r = (rx, ry, rz);
               var box : int3 = getBoxFromCoords(r, invBoxSize);
 
-              // assert(MyDom.halo.member(box));
+              // assert(MyDom.halo.contains(box));
               // assert(MyDom.cells[box].count < MAXATOMS);
 
               MyDom.cells[box].count += 1;
               MyDom.cells[box].atoms[MyDom.cells[box].count] = new Atom(gid, mass, 1 : int(32), (rx, ry, rz));
-              if(MyDom.localDom.member(box)) then MyDom.numLocalAtoms += 1; 
+              if(MyDom.localDom.contains(box)) then MyDom.numLocalAtoms += 1; 
 
             }
           }

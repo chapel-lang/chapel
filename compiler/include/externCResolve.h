@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,14 +22,19 @@
 
 #ifdef HAVE_LLVM
 
-#include "vec.h"
-
-class Expr;
+class BaseAST;
 class ModuleSymbol;
+class Symbol;
 
-void convertDeclToChpl(ModuleSymbol* module,
-                       const char*   name,
-                       Vec<Expr*>&   addedToAST);
+// Return a symbol for the extern decl for a C declaration named cname
+// or NULL if there isn't a C declaration with that name in an extern block.
+//
+// This is called during scopeResolve
+// it can call lookup() and addToSymbolTable()
+//
+Symbol* tryCResolve(BaseAST* context, const char* cname);
+Symbol* tryCResolveLocally(ModuleSymbol* module, const char* cname);
+
 #endif
 
 #endif

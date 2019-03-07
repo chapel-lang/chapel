@@ -3,7 +3,7 @@ use Extender except Foo;
 // Verifies that methods defined outside of the type can be squashed by an
 // 'except' on the type for which they are defined.
 
-var a = new Foo(7);
+var a = new borrowed Foo(7);
 writeln(a.innerMethod(3)); // Should be 21
 writeln(a.newMethod(1)); // Should fail to resolve
 

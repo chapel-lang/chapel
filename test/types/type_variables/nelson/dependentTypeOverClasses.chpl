@@ -5,11 +5,11 @@ class A {
 
 class N {
   type X;
-  var x = new X(); 
+  var x = new owned X(); 
 }
 
 proc main() {
-  var n = new N(X=A);
+  var n = new owned N(X=unmanaged A);
   n.x.hello();
 }
 

@@ -14,6 +14,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include <type_traits>
 
 #include "util/util.h"
 #include "util/logging.h"
@@ -59,7 +60,8 @@ class Prog {
   // Single instruction in regexp program.
   class Inst {
    public:
-    Inst() : out_opcode_(0), out1_(0) {}
+    // See the assertion below for why this is so.
+    Inst() = default;
 
     // Copyable.
     Inst(const Inst&) = default;
@@ -155,6 +157,11 @@ class Prog {
     friend struct PatchList;
     friend class Prog;
   };
+
+  // Inst must be trivial so that we can freely clear it with memset(3).
+  // Arrays of Inst are initialised by copying the initial elements with
+  // memmove(3) and then clearing any remaining elements with memset(3).
+  static_assert(std::is_trivial<Inst>::value, "Inst must be trivial");
 
   // Whether to anchor the search.
   enum Anchor {
@@ -257,7 +264,7 @@ class Prog {
   // SearchDFA fills matches with the match IDs of the final matching state.
   bool SearchDFA(const StringPiece& text, const StringPiece& context,
                  Anchor anchor, MatchKind kind, StringPiece* match0,
-                 bool* failed, std::vector<int>* matches);
+                 bool* failed, SparseSet* matches);
 
   // The callback issued after building each DFA state with BuildEntireDFA().
   // If next is null, then the memory budget has been exhausted and building
@@ -340,9 +347,8 @@ class Prog {
   void Fanout(SparseArray<int>* fanout);
 
   // Compiles a collection of regexps to Prog.  Each regexp will have
-  // its own Match instruction recording the index in the vector.
-  static Prog* CompileSet(const RE2::Options& options, RE2::Anchor anchor,
-                          Regexp* re);
+  // its own Match instruction recording the index in the output vector.
+  static Prog* CompileSet(Regexp* re, RE2::Anchor anchor, int64_t max_mem);
 
   // Flattens the Prog from "tree" form to "list" form. This is an in-place
   // operation in the sense that the old instructions are lost.

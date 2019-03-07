@@ -1,13 +1,13 @@
-pragma "use default init"
 record bar {
   param size: int;
   var whatev = 5;
-}
 
-proc _defaultOf(type t:bar(3)) {
-  var res: bar(3) = noinit;
-  res.whatev = 7;
-  return res;
+  proc init(param size : int) {
+    this.size = size;
+    if size == 3 {
+      this.whatev = 7;
+    }
+  }
 }
 
 var foo: bar(3);

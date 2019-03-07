@@ -18,13 +18,12 @@ class Foo {
   }
 }
 
-var foo: Foo(int);
-var foo2: Foo(bool);
+var foo: borrowed Foo(int);
+var foo2: borrowed Foo(bool);
 var val: uint = 1;
-var foo3 = new Foo(val);
+var foo3 = new borrowed Foo(val);
 writeln(foo3.type == foo.type);
 writeln(foo.type:string);
 writeln(foo2.type:string);
 writeln(foo3.type:string);
 writeln(foo3);
-delete foo3;

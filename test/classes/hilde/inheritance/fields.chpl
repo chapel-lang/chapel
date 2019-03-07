@@ -20,7 +20,7 @@ class Derived : Base {
   }
 
   proc sbName return "static Derived";
-  proc dbName() return "dynamic Derived";
+  override proc dbName() return "dynamic Derived";
 }
 
 var b:borrowed Base;

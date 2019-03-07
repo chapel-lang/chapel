@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,102 +21,64 @@
 #define __STDC_FORMAT_MACROS
 #endif
 #include <inttypes.h>
-#include <cmath>
+
 #include <cstring>
 #include <cstdio>
+#include "chplmath.h"
 #include "num.h"
 #include "prim_data.h"
 #include "stringutil.h"
 
-static int 
-sprint_float_val(char* str, double val) {
-  int numchars = sprintf(str, "%g", val);
-  if (strchr(str, '.') == NULL && strchr(str, 'e') == NULL) {
-    strcat(str, ".0");
-    return numchars + 2;
+static int
+snprint_float_val(char* buf, size_t max, double val, bool hex) {
+  if (chpl_isfinite(val)) {
+    int nc = 0;
+    if (chpl_signbit(val)) nc = snprintf(buf, max, "-%g" , -val);
+    else                   nc = snprintf(buf, max, "%g" , val);
+
+    if (strchr(buf, '.') == NULL &&
+        strchr(buf, 'e') == NULL &&
+        strchr(buf, 'p') == NULL) {
+      strncat(buf, ".0", max-nc);
+      return nc + 2;
+    } else {
+      return nc;
+    }
+  } else if (chpl_isinf(val)) {
+    if (chpl_signbit(val)) strncpy(buf, "-INFINITY", max);
+    else                   strncpy(buf, "INFINITY", max);
+    return strlen(buf);
   } else {
-    return numchars;
+    if (chpl_signbit(val)) strncpy(buf, "-NAN", max);
+    else                   strncpy(buf, "NAN", max);
+    return strlen(buf);
   }
 }
 
-static int 
-sprint_complex_val(char* str, double real, double imm) {
+static int
+snprint_imag_val(char* str, size_t max, double val, bool hex) {
+  int numchars = snprint_float_val(str, max, val, hex);
+  strncat(str, "i", max-numchars);
+  return numchars + 1;
+}
+
+
+static int
+snprint_complex_val(char* str, size_t max, double real, double imm) {
   int numchars = 0;
-  numchars += sprintf(str+numchars, "(");
-  numchars += sprint_float_val(str+numchars, real);
-  numchars += sprintf(str+numchars, ",");
-  numchars += sprint_float_val(str+numchars, imm);
-  numchars += sprintf(str+numchars, "i)");
+  numchars += snprint_float_val(str+numchars, max-numchars, real, false);
+  if (chpl_signbit(imm)) {
+    numchars += snprintf(str+numchars, max-numchars, " - ");
+    numchars += snprint_float_val(str+numchars, max-numchars, -imm, false);
+  } else {
+    numchars += snprintf(str+numchars, max-numchars, " + ");
+    numchars += snprint_float_val(str+numchars, max-numchars, imm, false);
+  }
+  numchars += snprintf(str+numchars, max-numchars, "i");
   return numchars;
 }
 
-int 
-snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm) {
-  int res = -1;
-  switch (imm.const_kind) {
-    case NUM_KIND_NONE:
-      break;
-    case NUM_KIND_BOOL: {
-      res = snprintf(str, max, control_string, imm.bool_value()); break;
-    }
-    case NUM_KIND_UINT: {
-      switch (imm.num_index) {
-        case INT_SIZE_8: 
-          res = snprintf(str, max, control_string, imm.v_uint8); break;
-        case INT_SIZE_16:
-          res = snprintf(str, max, control_string, imm.v_uint16); break;
-        case INT_SIZE_32:
-          res = snprintf(str, max, control_string, imm.v_uint32); break;
-        case INT_SIZE_64:
-          res = snprintf(str, max, control_string, imm.v_uint64); break;
-        default: INT_FATAL("Unhandled case in switch statement");
-      }
-      break;
-    }
-    case NUM_KIND_INT: {
-      switch (imm.num_index) {
-        case INT_SIZE_8: 
-          res = snprintf(str, max, control_string, imm.v_int8); break;
-        case INT_SIZE_16:
-          res = snprintf(str, max, control_string, imm.v_int16); break;
-        case INT_SIZE_32:
-          res = snprintf(str, max, control_string, imm.v_int32); break;
-        case INT_SIZE_64:
-          res = snprintf(str, max, control_string, imm.v_int64); break;
-        default: INT_FATAL("Unhandled case in switch statement");
-      }
-      break;
-    }
-    case NUM_KIND_REAL: case NUM_KIND_IMAG:
-      switch (imm.num_index) {
-        case FLOAT_SIZE_32:
-          res = snprintf(str, max, control_string, imm.v_float32); break;
-        case FLOAT_SIZE_64:
-          res = snprintf(str, max, control_string, imm.v_float64); break;
-        default: INT_FATAL("Unhandled case in switch statement");
-      }
-      break;
-    case NUM_KIND_COMPLEX:
-      switch (imm.num_index) {
-        case COMPLEX_SIZE_64:
-          res = snprintf(str, max, control_string, 
-                        imm.v_complex64.r, imm.v_complex64.i);
-          break;
-        case COMPLEX_SIZE_128:
-          res = snprintf(str, max, control_string, 
-                        imm.v_complex128.r, imm.v_complex128.i); 
-          break;
-        default: INT_FATAL("Unhandled case in switch statement");
-      }
-      break;
-    case CONST_KIND_STRING:
-      res = snprintf(str, max, control_string, imm.v_string);
-      break;
-  }
-  return res;
-}
-
-int 
+int
 snprint_imm(char *str, size_t max, const Immediate &imm) {
   int res = -1;
   switch (imm.const_kind) {
@@ -129,7 +91,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
     }
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           res = snprintf(str, max, "%u", (unsigned)imm.v_uint8); break;
         case INT_SIZE_16:
           res = snprintf(str, max, "%u", (unsigned)imm.v_uint16); break;
@@ -143,7 +105,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
     }
     case NUM_KIND_INT: {
       switch (imm.num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           res = snprintf(str, max, "%d", imm.v_int8); break;
         case INT_SIZE_16:
           res = snprintf(str, max, "%d", imm.v_int16); break;
@@ -158,19 +120,21 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
     case NUM_KIND_REAL: case NUM_KIND_IMAG:
       switch (imm.num_index) {
         case FLOAT_SIZE_32:
-          res = sprint_float_val(str, imm.v_float32); break;
+          res = snprint_float_val(str, max, imm.v_float32, true); break;
         case FLOAT_SIZE_64:
-          res = sprint_float_val(str, imm.v_float64); break;
+          res = snprint_float_val(str, max, imm.v_float64, true); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
     case NUM_KIND_COMPLEX:
       switch (imm.num_index) {
         case COMPLEX_SIZE_64:
-          res = sprint_complex_val(str,imm.v_complex64.r,imm.v_complex64.i); 
+          res = snprint_complex_val(str, max,
+                                    imm.v_complex64.r, imm.v_complex64.i);
           break;
         case COMPLEX_SIZE_128:
-          res = sprint_complex_val(str,imm.v_complex128.r,imm.v_complex128.i); 
+          res = snprint_complex_val(str, max,
+                                    imm.v_complex128.r, imm.v_complex128.i);
           break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
@@ -188,7 +152,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
   return res;
 }
 
-int 
+int
 fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
   int res = -1;
   switch (imm.const_kind) {
@@ -204,7 +168,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
     }
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           res = fprintf(fp, "%u", (unsigned)imm.v_uint8);
           if (showType) res += fputs(" :uint(8)", fp);
           break;
@@ -226,7 +190,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
     }
     case NUM_KIND_INT: {
       switch (imm.num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           res = fprintf(fp, "%d", imm.v_int8);
           if (showType) res += fputs(" :int(8)", fp);
           break;
@@ -250,12 +214,12 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
       char str[80];
       const char* size = NULL;
       switch (imm.num_index) {
-        case FLOAT_SIZE_32:  
-          res = sprint_float_val(str, imm.v_float32);
+        case FLOAT_SIZE_32:
+          res = snprint_float_val(str, sizeof(str), imm.v_float32, false);
           size = "(32)";
           break;
         case FLOAT_SIZE_64: {
-          res = sprint_float_val(str, imm.v_float64); 
+          res = snprint_float_val(str, sizeof(str), imm.v_float64, false);
           size = "(64)";
           break;
         }
@@ -271,16 +235,17 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
     case NUM_KIND_COMPLEX:
       switch (imm.num_index) {
         case COMPLEX_SIZE_64: {
-          char str[80];
-          res = sprint_complex_val(str, imm.v_complex64.r, imm.v_complex64.i); 
+          char str[160];
+          res = snprint_complex_val(str, sizeof(str),
+                                    imm.v_complex64.r, imm.v_complex64.i);
           fputs(str, fp);
           if (showType) res += fputs(" :complex(64)", fp);
           break;
         }
         case COMPLEX_SIZE_128: {
           char str[160];
-          res = sprint_complex_val(str, 
-                                   imm.v_complex128.r, imm.v_complex128.i); 
+          res = snprint_complex_val(str, sizeof(str),
+                                    imm.v_complex128.r, imm.v_complex128.i);
           fputs(str, fp);
           if (showType) res += fputs(" :complex(128)", fp);
           break;
@@ -308,7 +273,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
 #include "cast_code.cpp"
 }
 
-#define DO_FOLD(_op) \
+#define DO_FOLD(_op,add,sub) \
       switch (imm->const_kind) { \
         case NUM_KIND_NONE: \
           break; \
@@ -348,9 +313,54 @@ coerce_immediate(Immediate *from, Immediate *to) {
         case NUM_KIND_REAL: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
             case FLOAT_SIZE_32: \
-              imm->v_float32 = im1.v_float32 _op im2.v_float32; break; \
+              if (add && im1.v_float32 == 0.0) \
+                imm->v_float32 = im2.v_float32; \
+              else if (sub && im1.v_float32 == 0.0) \
+                imm->v_float32 = -im2.v_float32; \
+              else \
+                imm->v_float32 = im1.v_float32 _op im2.v_float32; \
+              break; \
             case FLOAT_SIZE_64: \
-              imm->v_float64 = im1.v_float64 _op im2.v_float64; break; \
+              if (add && im1.v_float64 == 0.0) \
+                imm->v_float64 = im2.v_float64; \
+              else if (sub && im1.v_float64 == 0.0) \
+                imm->v_float64 = -im2.v_float64; \
+              else \
+                imm->v_float64 = im1.v_float64 _op im2.v_float64; \
+              break; \
+            default: INT_FATAL("Unhandled case in switch statement"); \
+          } \
+          break; \
+        case NUM_KIND_COMPLEX: \
+          switch (imm->num_index) { \
+            case COMPLEX_SIZE_64: \
+              if (add && im1.v_complex64.r == 0.0) \
+                imm->v_complex64.r = im2.v_complex64.r; \
+              else if (sub && im1.v_complex64.r == 0.0) \
+                imm->v_complex64.r = -im2.v_complex64.r; \
+              else \
+                imm->v_complex64.r = im1.v_complex64.r _op im2.v_complex64.r; \
+              if (add && im1.v_complex64.i == 0.0) \
+                imm->v_complex64.i = im2.v_complex64.i; \
+              else if (sub && im1.v_complex64.i == 0.0) \
+                imm->v_complex64.i = -im2.v_complex64.i; \
+              else \
+                imm->v_complex64.i = im1.v_complex64.i _op im2.v_complex64.i; \
+              break; \
+            case COMPLEX_SIZE_128: \
+              if (add && im1.v_complex128.r == 0.0) \
+                imm->v_complex128.r = im2.v_complex128.r; \
+              else if (sub && im1.v_complex128.r == 0.0) \
+                imm->v_complex128.r = -im2.v_complex128.r; \
+              else \
+                imm->v_complex128.r = im1.v_complex128.r _op im2.v_complex128.r; \
+              if (add && im1.v_complex128.i == 0.0) \
+                imm->v_complex128.i = im2.v_complex128.i; \
+              else if (sub && im1.v_complex128.i == 0.0) \
+                imm->v_complex128.i = -im2.v_complex128.i; \
+              else \
+                imm->v_complex128.i = im1.v_complex128.i _op im2.v_complex128.i; \
+              break; \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
@@ -380,7 +390,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
       i /= 2;                                            \
     }                                                    \
   }
-    
+
 #define COMPUTE_UINT_POW(type, b, e)                 \
   type base = b;                                     \
   type exp = e;                                      \
@@ -463,12 +473,12 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
           INT_FATAL("Cannot fold ** on floating point values"); \
           break; \
       }
 
-#define DO_FOLDB(_op) \
+#define DO_FOLDB(_op,_complex_combine) \
       switch (im1.const_kind) { \
         case NUM_KIND_NONE: \
           break; \
@@ -512,6 +522,21 @@ coerce_immediate(Immediate *from, Immediate *to) {
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
+        case NUM_KIND_COMPLEX: \
+          switch (im1.num_index) { \
+            case COMPLEX_SIZE_64: \
+              imm->v_bool = (im1.v_complex64.r _op im2.v_complex64.r) \
+                            _complex_combine \
+                            (im1.v_complex64.i _op im2.v_complex64.i); \
+              break; \
+            case COMPLEX_SIZE_128: \
+              imm->v_bool = (im1.v_complex128.r _op im2.v_complex128.r) \
+                            _complex_combine \
+                            (im1.v_complex128.i _op im2.v_complex128.i); \
+              break; \
+            default: INT_FATAL("Unhandled case in switch statement"); \
+          } \
+          break; \
       }
 
 #define DO_FOLDI(_op) \
@@ -549,11 +574,8 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
-          switch (imm->num_index) { \
-            default: INT_FATAL("Unhandled case in switch statement"); \
-          } \
-          break; \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
+          INT_FATAL("Unhandled case in switch statement"); \
       }
 
 #define DO_FOLD1(_op) \
@@ -600,6 +622,19 @@ coerce_immediate(Immediate *from, Immediate *to) {
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
+        case NUM_KIND_COMPLEX: \
+          switch (imm->num_index) { \
+            case COMPLEX_SIZE_64: \
+              imm->v_complex64.r = _op im1.v_complex64.r; \
+              imm->v_complex64.i = _op im1.v_complex64.i; \
+              break; \
+            case COMPLEX_SIZE_128: \
+              imm->v_complex128.r = _op im1.v_complex128.r; \
+              imm->v_complex128.i = _op im1.v_complex128.i; \
+              break; \
+            default: INT_FATAL("Unhandled case in switch statement"); \
+          } \
+          break; \
       }
 
 #define DO_FOLD1I(_op) \
@@ -637,12 +672,26 @@ coerce_immediate(Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
-          switch (imm->num_index) { \
-            default: INT_FATAL("Unhandled case in switch statement"); \
-          } \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
+          INT_FATAL("Unhandled case in switch statement"); \
           break; \
       }
+
+static int
+max(int a, int b) {
+  if (a >= b)
+    return a;
+  else
+    return b;
+}
+
+static int
+num_kind_int_to_float(int num_index) {
+  if (int_type_precision[num_index] <= 32)
+    return FLOAT_SIZE_32;
+  else
+    return FLOAT_SIZE_64;
+}
 
 void
 fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
@@ -659,46 +708,74 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
   }
 
   // if non-complex and complex -> complex
-  if ((im1->const_kind == NUM_KIND_COMPLEX) ||
-      (im2->const_kind == NUM_KIND_COMPLEX)) {
-    if (im2->const_kind == NUM_KIND_COMPLEX) {   // swap im1 to the complex
+  if (im1->const_kind == NUM_KIND_COMPLEX ||
+      im2->const_kind == NUM_KIND_COMPLEX) {
+    if (im2->const_kind == NUM_KIND_COMPLEX) {
+      // swap im1 to the complex
       Immediate *t = im1;
       im1 = im2;
       im2 = t;
     }
-    // WAW: the following needs some fixing (e.g., 128-bit int/uint?)
-    if ((im2->const_kind == NUM_KIND_UINT) ||
-        (im2->const_kind == NUM_KIND_INT)) {
-      if (float_type_precision[im1->num_index] >= int_type_precision[im2->num_index]) {
-        imm->num_index = im1->num_index;
-      } else { // else, int/uint has greater width?
-        imm->num_index =  (int_type_precision[im2->num_index] <= 32) ? FLOAT_SIZE_32 : FLOAT_SIZE_64;
-      }
+    if (im2->const_kind == NUM_KIND_UINT ||
+        im2->const_kind == NUM_KIND_INT) {
+      int index2 = num_kind_int_to_float(im2->num_index);
+      imm->num_index = max(im1->num_index, index2);
     } else {  // else, im2 must be float?
-      imm->num_index = (im1->num_index >= im2->num_index) ? im1->num_index : im2->num_index;
-      }
-    im1->const_kind = NUM_KIND_COMPLEX;
+      INT_ASSERT(im2->const_kind == NUM_KIND_REAL ||
+                 im2->const_kind == NUM_KIND_IMAG);
+      imm->num_index = max(im1->num_index, im2->num_index);
+    }
+    imm->const_kind = NUM_KIND_COMPLEX;
     return;
   }
 
-  if (im2->const_kind == NUM_KIND_REAL) {
-    Immediate *t = im2; im2 = im1; im1 = t;
-  }
-  if (im1->const_kind == NUM_KIND_REAL) {
-    if (int_type_precision[im2->const_kind] <= float_type_precision[im1->const_kind]) {
-      imm->const_kind = im1->const_kind;
-      imm->num_index = im1->num_index;
-      return;
+  // non-imag and imag -> complex
+  // note if one was complex, it would have been handled in the above case.
+  if (im1->const_kind == NUM_KIND_IMAG ||
+      im2->const_kind == NUM_KIND_IMAG) {
+    if (im2->const_kind == NUM_KIND_IMAG) {
+      // swap im1 to the imag
+      Immediate *t = im1;
+      im1 = im2;
+      im2 = t;
     }
-    if (int_type_precision[im2->const_kind] <= 32) {
-      imm->const_kind = NUM_KIND_REAL;
-      imm->num_index = FLOAT_SIZE_32;
-      return;
+
+    if (im2->const_kind == NUM_KIND_UINT ||
+        im2->const_kind == NUM_KIND_INT) {
+      int index2 = num_kind_int_to_float(im2->num_index);
+      imm->num_index = max(im1->num_index, index2);
+    } else {  // else, im2 must be float?
+      imm->num_index = max(im1->num_index, im2->num_index);
     }
-    imm->const_kind = NUM_KIND_REAL;
-    imm->num_index = FLOAT_SIZE_64;
+    imm->const_kind = NUM_KIND_COMPLEX;
     return;
   }
+
+  if (im1->const_kind == NUM_KIND_REAL ||
+      im2->const_kind == NUM_KIND_REAL) {
+
+    if (im2->const_kind == NUM_KIND_REAL) {
+      // swap im1 to the real
+      Immediate *t = im2; im2 = im1; im1 = t;
+    }
+
+    if (im2->const_kind == NUM_KIND_UINT ||
+        im2->const_kind == NUM_KIND_INT) {
+      int index2 = num_kind_int_to_float(im2->num_index);
+      imm->num_index = max(im1->num_index, index2);
+    } else {  // else, im2 must be float?
+      INT_ASSERT(im2->const_kind == NUM_KIND_REAL ||
+                 im2->const_kind == NUM_KIND_IMAG);
+      imm->num_index = max(im1->num_index, im2->num_index);
+    }
+
+    imm->const_kind = NUM_KIND_REAL;
+    return;
+  }
+
+  // TODO -- check this function after this point!
+  // probably problems with int_type_precision called on bool num_index
+
   if (im1->const_kind != NUM_KIND_BOOL && im2->const_kind != NUM_KIND_BOOL) {
     // mixed signed and unsigned
     if (im1->num_index >= INT_SIZE_64 || im2->num_index >= INT_SIZE_64) {
@@ -806,24 +883,24 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
   }
   switch (op) {
     default: INT_FATAL("fold constant op not supported"); break;
-    case P_prim_mult: DO_FOLD(*); break;
-    case P_prim_div: DO_FOLD(/); break;
+    case P_prim_mult: DO_FOLD(*, false, false); break;
+    case P_prim_div: DO_FOLD(/, false, false); break;
     case P_prim_mod: DO_FOLDI(%); break;
-    case P_prim_add: DO_FOLD(+); break;
-    case P_prim_subtract: DO_FOLD(-); break;
+    case P_prim_add: DO_FOLD(+, true, false); break;
+    case P_prim_subtract: DO_FOLD(-, false, true); break;
     case P_prim_lsh: DO_FOLDI(<<); break;
     case P_prim_rsh: DO_FOLDI(>>); break;
-    case P_prim_less: DO_FOLDB(<); break;
-    case P_prim_lessorequal: DO_FOLDB(<=); break;
-    case P_prim_greater: DO_FOLDB(>); break;
-    case P_prim_greaterorequal: DO_FOLDB(>=); break;
-    case P_prim_equal: DO_FOLDB(==); break;
-    case P_prim_notequal: DO_FOLDB(!=); break;
+    case P_prim_less: DO_FOLDB(<, &&); break;
+    case P_prim_lessorequal: DO_FOLDB(<=, &&); break;
+    case P_prim_greater: DO_FOLDB(>, &&); break;
+    case P_prim_greaterorequal: DO_FOLDB(>=, &&); break;
+    case P_prim_equal: DO_FOLDB(==, &&); break;
+    case P_prim_notequal: DO_FOLDB(!=, ||); break;
     case P_prim_and: DO_FOLDI(&); break;
     case P_prim_xor: DO_FOLDI(^); break;
     case P_prim_or: DO_FOLDI(|); break;
-    case P_prim_land: DO_FOLD(&&); break;
-    case P_prim_lor: DO_FOLD(||); break;
+    case P_prim_land: DO_FOLD(&&, false, false); break;
+    case P_prim_lor: DO_FOLD(||, false, false); break;
     case P_prim_plus: DO_FOLD1(+); break;
     case P_prim_minus: DO_FOLD1(-); break;
     case P_prim_not: DO_FOLD1I(~); break;
@@ -854,7 +931,7 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
     }
     case NUM_KIND_UINT: {
       switch (imm->num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           if (str[0] != '\'')
             imm->v_uint8 = str2uint8(str);
           else {
@@ -876,7 +953,7 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
     }
     case NUM_KIND_INT: {
       switch (imm->num_index) {
-        case INT_SIZE_8: 
+        case INT_SIZE_8:
           if (str[0] != '\'')
             imm->v_int8 = str2int8(str);
           else {
@@ -908,16 +985,40 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
   }
 }
 
+
+// these support coerce_immediate (param casts)
 const char* istrFromUserUint(long long unsigned int i) {
   char s[64];
-  if (sprintf(s, "%llu", i) > 63)
+  if (snprintf(s, sizeof(s), "%llu", i) >= (int) sizeof(s))
     INT_FATAL("istr buffer overflow");
   return astr(s);
 }
 
 const char* istrFromUserInt(long long int i) {
   char s[64];
-  if (sprintf(s, "%lld", i) > 63)
+  if (snprintf(s, sizeof(s), "%lld", i) >= (int) sizeof(s))
+    INT_FATAL("istr buffer overflow");
+  return astr(s);
+}
+
+const char* istrFromUserDouble(double i) {
+  char s[64];
+  if (snprint_float_val(s, sizeof(s), i, false) >= (int) sizeof(s))
+    INT_FATAL("istr buffer overflow");
+  return astr(s);
+}
+
+const char* istrFromUserImag(double i) {
+  char s[64];
+  if (snprint_imag_val(s, sizeof(s), i, false) >= (int) sizeof(s))
+    INT_FATAL("istr buffer overflow");
+  return astr(s);
+}
+
+
+const char* istrFromUserComplex(double re, double im) {
+  char s[140];
+  if (snprint_complex_val(s, sizeof(s), re, im) >= (int) sizeof(s))
     INT_FATAL("istr buffer overflow");
   return astr(s);
 }

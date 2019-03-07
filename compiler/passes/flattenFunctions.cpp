@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -271,6 +271,8 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   std::vector<SymExpr*> symExprs;
 
   collectSymExprs(fn->body, symExprs);
+  if (fn->lifetimeConstraints)
+    collectSymExprs(fn->lifetimeConstraints, symExprs);
 
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
@@ -298,9 +300,10 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
               }
             }
 
-            if ((call->isPrimitive(PRIM_MOVE)       && call->get(1) == se) ||
-                (call->isPrimitive(PRIM_ASSIGN)     && call->get(1) == se) ||
-                (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
+            if (( (call->isPrimitive(PRIM_MOVE)       ||
+                   call->isPrimitive(PRIM_ASSIGN)     ||
+                   call->isPrimitive(PRIM_SET_MEMBER) )
+                  && call->get(1) == se)                                   ||
                 (call->isPrimitive(PRIM_GET_MEMBER))                       ||
                 (call->isPrimitive(PRIM_GET_MEMBER_VALUE))                 ||
                 (call->isPrimitive(PRIM_WIDE_GET_LOCALE))                  ||
@@ -344,21 +347,7 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       SET_LINENO(sym);
-      if (!outerCall && passByRef(sym)) {
-        // This is only a performance issue.
-        INT_ASSERT(!sym->hasFlag(FLAG_SHOULD_NOT_PASS_BY_REF));
-        /* NOTE: See note above in addVarsToFormals() */
-        if (sym->isRef())
-          call->insertAtTail(sym);
-        else {
-          VarSymbol* tmp = newTemp(sym->type->getValType()->refType);
-          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, sym)));
-          call->insertAtTail(tmp);
-        }
-      } else {
-        call->insertAtTail(sym);
-      }
+      call->insertAtTail(sym);
     }
   }
 }

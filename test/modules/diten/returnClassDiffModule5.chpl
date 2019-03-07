@@ -6,7 +6,7 @@ module M1 {
     proc foo() {
       return a+b;
     }
-    proc writeThis(f) {
+    override proc writeThis(f) {
       f.writeln("How does this get found?");
       f.write("{a = ", a, ", b = ", b, "}");
     }
@@ -22,7 +22,7 @@ module M2 {
   }
   proc bar() {
     use M1;
-    return new C();
+    return new unmanaged C();
   }
   proc baz(obj:object) {
     use M1;

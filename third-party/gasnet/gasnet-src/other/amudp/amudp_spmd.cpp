@@ -4,18 +4,11 @@
  */
 
 #undef _PORTABLE_PLATFORM_H
-#include <amudp_portable_platform.h>
+#include <amx_portable_platform.h>
 
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
-#if PLATFORM_OS_SUPERUX || PLATFORM_OS_NETBSD || \
-    PLATFORM_OS_BLRTS || PLATFORM_OS_OPENBSD
-  /* these implement sched_yield() in libpthread only, which we may not want */
-  #define UNUSABLE_SCHED_YIELD 1
-#else
-  #include <sched.h>
-#endif
 #if (PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX) && !defined(__USE_GNU)
   /* some Linuxes need this to pull in F_SETSIG */
   #define __USE_GNU
@@ -42,11 +35,6 @@ extern char **environ;
 
 #include "amudp_internal.h" // must come after any other headers
 
-#if UNUSABLE_SCHED_YIELD // must come after system header includes
-  #undef sched_yield
-  #define sched_yield() sleep(0)
-#endif
-
 #define FD_STDIN 0
 #define FD_STDOUT 1
 #define FD_STDERR 2
@@ -54,31 +42,13 @@ extern char **environ;
 #ifndef FREEZE_SLAVE
 #define FREEZE_SLAVE  0
 #endif
-volatile bool amudp_frozen = true;
-/*  all this to make sure we get a full stack frame for debugger */
-static void _freezeForDebugger(int depth) {
-  if (!depth) _freezeForDebugger(1);
-  else {
-    volatile int i = 0;
-    while (amudp_frozen) {
-      i++;
-      sleep(1);
-    }
-  }
-}
-static void freezeForDebugger() {
-  char name[255];
-  gethostname(name, 255);
-  AMUDP_Warn("slave frozen for debugger: host=%s  pid=%i", name, (int)getpid());
-  _freezeForDebugger(0);
-}
 
-#if AMUDP_DEBUG_VERBOSE
+#if AMX_DEBUG_VERBOSE
   #define DEBUG_SLAVE(msg)  do {                             \
-     if (AMUDP_ProcessLabel) AMUDP_Info("%s", msg);          \
-     else AMUDP_Info("slave %i: %s", AMUDP_SPMDMYPROC, msg); \
+     if (AMX_ProcessLabel) AMX_Info("%s", msg);              \
+     else AMX_Info("slave %i: %s", AMUDP_SPMDMYPROC, msg);   \
   } while (0)
-  #define DEBUG_MASTER(msg) AMUDP_Info("master: %s", msg)
+  #define DEBUG_MASTER(msg) AMX_Info("master: %s", msg)
 #else
   #define DEBUG_SLAVE(msg)  ((void)0)
   #define DEBUG_MASTER(msg) ((void)0)
@@ -180,15 +150,15 @@ static void flushStreams(const char *context) {
 
   if (fflush(NULL)) { /* passing NULL to fflush causes it to flush all open FILE streams */
     perror("fflush");
-    AMUDP_FatalErr("failed to fflush(NULL) in %s", context); 
+    AMX_FatalErr("failed to fflush(NULL) in %s", context); 
   }
   if (fflush(stdout)) {
     perror("fflush");
-    AMUDP_FatalErr("failed to flush stdout in %s", context); 
+    AMX_FatalErr("failed to flush stdout in %s", context); 
   }
   if (fflush(stderr)) {
     perror("fflush");
-    AMUDP_FatalErr("failed to flush stderr in %s", context); 
+    AMX_FatalErr("failed to flush stderr in %s", context); 
   }
   fsync(FD_STDOUT); /* ignore errors for output is a console */
   fsync(FD_STDERR); /* ignore errors for output is a console */
@@ -203,17 +173,19 @@ static void flushStreams(const char *context) {
   if (do_sync) {
     sync();
   }
-  sched_yield();
+  AMX_sched_yield();
 }
 //------------------------------------------------------------------------------------
 extern char *AMUDP_enStr(en_t en, char *buf) {
-  AMUDP_assert(buf != NULL);
+  static char pbuf[80];
+  if (!buf) buf = pbuf;
   SockAddr tmp((sockaddr*)&en);
   sprintf(buf, "(%s:%i)", tmp.IPStr(), tmp.port());
   return buf;
 }
 extern char *AMUDP_tagStr(tag_t tag, char *buf) {
-  AMUDP_assert(buf != NULL);
+  static char pbuf[80];
+  if (!buf) buf = pbuf;
   sprintf(buf, "0x%08x%08x", 
     (int)(uint32_t)(tag >> 32), 
     (int)(uint32_t)(tag & 0xFFFFFFFF));
@@ -232,7 +204,7 @@ static void setupStdSocket(SOCKET& ls, SocketList& list, SocketList& allList) {
       allList.remove(ls);
       ls = INVALID_SOCKET;
     }
-  } else AMUDP_Err("master detected some unrecognized activity on a std listener");
+  } else AMX_Err("master detected some unrecognized activity on a std listener");
 }
 //------------------------------------------------------------------------------------
 static void handleStdOutput(FILE *fd, fd_set *psockset, SocketList& list, SocketList& allList, int nproc) {
@@ -252,11 +224,11 @@ static void handleStdOutput(FILE *fd, fd_set *psockset, SocketList& list, Socket
   #endif
 
   if (!tempSockArr) { // first call, setup data structures
-    tempSockArr = (SOCKET *)AMUDP_malloc(sizeof(SOCKET)*nproc);
-    bufsz = atoi( AMUDP_getenv_prefixed_withdefault("LINEBUFFERSZ", _STRINGIFY(AMUDP_STD_BUFSZ)) );
+    tempSockArr = (SOCKET *)AMX_malloc(sizeof(SOCKET)*nproc);
+    bufsz = atoi( AMUDP_getenv_prefixed_withdefault("LINEBUFFERSZ", AMX_STRINGIFY(AMUDP_STD_BUFSZ)) );
     if (bufsz == 0) { // line buffering disabled, use a static buffer
       bufsz = AMUDP_STD_BUFSZ;
-      sbuf = (uint8_t *)AMUDP_malloc(bufsz);
+      sbuf = (uint8_t *)AMX_malloc(bufsz);
     } else if (bufsz > AMUDP_MAX_LINEBUFSZ) {
       bufsz = AMUDP_MAX_LINEBUFSZ; 
     }
@@ -266,31 +238,31 @@ static void handleStdOutput(FILE *fd, fd_set *psockset, SocketList& list, Socket
   if ((numset = list.getIntersection(psockset, tempSockArr, nproc))) { // we have some active std sockets
     for (int i=0; i < numset; i++) {
       SOCKET s = tempSockArr[i];
-      AMUDP_assert(FD_ISSET(s, psockset));
+      AMX_assert(FD_ISSET(s, psockset));
       ssize_t rsz = SOCKET_ERROR;
       if (sbuf) { // static buffering
         rsz = recv(s, sbuf, bufsz, 0);
         if (rsz > 0) { // other cases handled below
-          AMUDP_assert(rsz <= (ssize_t)bufsz);
+          AMX_assert(rsz <= (ssize_t)bufsz);
           fwrite(sbuf, 1, rsz, fd);
           fflush(fd);
           continue;
         }
       } else { // line buffering
         if ((size_t)s >= linebufcnt) { // grow directory
-          void *newdir = AMUDP_calloc((size_t)s+1,sizeof(struct S_linebuf));
+          void *newdir = AMX_calloc((size_t)s+1,sizeof(struct S_linebuf));
           if (linebufcnt > 0) {
             memcpy(newdir, linebuf, linebufcnt*sizeof(struct S_linebuf));
-            AMUDP_free(linebuf);
+            AMX_free(linebuf);
           }
           linebuf = (struct S_linebuf*)newdir;
           linebufcnt = (size_t)s+1;
         }
         struct S_linebuf * const e = &linebuf[s];
         if (!e->buf) { // first use
-          e->buf = (uint8_t *)AMUDP_malloc(bufsz);
+          e->buf = (uint8_t *)AMX_malloc(bufsz);
         }
-        AMUDP_assert(e->len < bufsz);
+        AMX_assert(e->len < bufsz);
         rsz = recv(s, e->buf+e->len, bufsz-e->len, 0);
         if (rsz == 0) { // socket closed
           if (e->len) { // drain buffer
@@ -301,7 +273,7 @@ static void handleStdOutput(FILE *fd, fd_set *psockset, SocketList& list, Socket
           // close handled below
         } else if (rsz > 0) {
           e->len += rsz;
-          AMUDP_assert(e->len <= bufsz);
+          AMX_assert(e->len <= bufsz);
           size_t len = e->len;
           uint8_t *bol = e->buf;
           int wrote = 0;
@@ -309,7 +281,7 @@ static void handleStdOutput(FILE *fd, fd_set *psockset, SocketList& list, Socket
           for (uint8_t *eol = bol+len-1; eol >= bol; eol--) {
             if (*eol == '\n') {
               size_t llen = eol-bol+1;
-              AMUDP_assert(llen <= len);
+              AMX_assert(llen <= len);
               fwrite(bol, 1, llen, fd);
               wrote = 1;
               len -= llen;
@@ -347,7 +319,7 @@ static void handleStdOutput(FILE *fd, fd_set *psockset, SocketList& list, Socket
 #if USE_ASYNC_TCP_CONTROL
   extern "C" void AMUDP_SPMDControlSocketCallback(int sig) {
     AMUDP_SPMDIsActiveControlSocket = TRUE;
-    AMUDP_VERBOSE_INFO(("got an AMUDP_SIGIO signal"));
+    AMX_VERBOSE_INFO(("got an AMUDP_SIGIO signal"));
     reghandler(AMUDP_SIGIO, AMUDP_SPMDControlSocketCallback);
   }
 #endif
@@ -356,19 +328,19 @@ static void handleStdOutput(FILE *fd, fd_set *psockset, SocketList& list, Socket
  * ------------------------------------------------------------------------------------ */
 extern int AMUDP_SPMDNumProcs() {
   if (!AMUDP_SPMDStartupCalled) {
-    AMUDP_Err("called AMUDP_SPMDNumProcs before AMUDP_SPMDStartup()");
+    AMX_Err("called AMUDP_SPMDNumProcs before AMUDP_SPMDStartup()");
     return -1;
   }
-  AMUDP_assert(AMUDP_SPMDNUMPROCS >= 1);
+  AMX_assert(AMUDP_SPMDNUMPROCS >= 1);
   return AMUDP_SPMDNUMPROCS;
 }
 /* ------------------------------------------------------------------------------------ */
 extern int AMUDP_SPMDMyProc() {
   if (!AMUDP_SPMDStartupCalled) {
-    AMUDP_Err("called AMUDP_SPMDMyProc before AMUDP_SPMDStartup()");
+    AMX_Err("called AMUDP_SPMDMyProc before AMUDP_SPMDStartup()");
     return -1;
   }
-  AMUDP_assert(AMUDP_SPMDMYPROC >= 0);
+  AMX_assert(AMUDP_SPMDMYPROC >= 0);
   return AMUDP_SPMDMYPROC;
 }
 /* ------------------------------------------------------------------------------------ */
@@ -386,7 +358,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
                              uint64_t *networkpid,
                              eb_t *eb, ep_t *ep) {
   
-  if (AMUDP_SPMDStartupCalled) AMUDP_RETURN_ERR(RESOURCE);
+  if (AMUDP_SPMDStartupCalled) AMX_RETURN_ERR(RESOURCE);
 
   char *linebuf = AMUDP_getenv_prefixed("LINEBUFFERSZ");
   if (!linebuf || atoi(linebuf) > 0) { // ensure we line-buffer early output
@@ -396,7 +368,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
 
   /* we need a separate socklibinit for master 
      and to prevent AM_Terminate from murdering all our control sockets */
-  if (!socklibinit()) AMUDP_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, "socklibinit() failed");
+  if (!socklibinit()) AMX_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, "socklibinit() failed");
 
   const char *env_var = getenv(AMUDP_SPMDSLAVE_ARGS);
   const int slave_flag = env_var ? atoi(env_var) : 0;
@@ -407,25 +379,25 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
   if (! slave_flag) {
     int usingdefaultdegree = 0;
     uint64_t npid;
-    if (nproc < 0 || nproc > (int)AMUDP_MAX_SPMDPROCS) AMUDP_RETURN_ERR(BAD_ARG);
+    if (nproc < 0 || nproc > (int)AMUDP_MAX_SPMDPROCS) AMX_RETURN_ERR(BAD_ARG);
 
-    if (!argc || !argv) AMUDP_RETURN_ERR(BAD_ARG);
+    if (!argc || !argv) AMX_RETURN_ERR(BAD_ARG);
 
-    #if AMUDP_DEBUG_VERBOSE
-      AMUDP_SilentMode = 0;
+    #if AMX_DEBUG_VERBOSE
+      AMX_SilentMode = 0;
     #else
-      AMUDP_SilentMode = !AMUDP_getenv_prefixed("VERBOSEENV");
+      AMX_SilentMode = !AMUDP_getenv_prefixed("VERBOSEENV");
     #endif
 
     /* defaulting */
-    if (networkdepth < 0) AMUDP_RETURN_ERR(BAD_ARG);
+    if (networkdepth < 0) AMX_RETURN_ERR(BAD_ARG);
     if (networkdepth == 0) {
       networkdepth = atoi(
-        AMUDP_getenv_prefixed_withdefault("NETWORKDEPTH", _STRINGIFY(AMUDP_DEFAULT_NETWORKDEPTH)));
+        AMUDP_getenv_prefixed_withdefault("NETWORKDEPTH", AMX_STRINGIFY(AMUDP_DEFAULT_NETWORKDEPTH)));
       if (networkdepth <= 0) networkdepth = AMUDP_DEFAULT_NETWORKDEPTH;
     }
     if (networkdepth > AMUDP_MAX_NETWORKDEPTH) { // provide useful error message
-      AMUDP_FatalErr("NETWORKDEPTH must be <= %d", AMUDP_MAX_NETWORKDEPTH);
+      AMX_FatalErr("NETWORKDEPTH must be <= %d", AMUDP_MAX_NETWORKDEPTH);
     }
 
     if (nproc == 0) { /* default to read from args */
@@ -437,7 +409,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
           "as the first argument to %s\n" 
           , AMUDP_LIBRARY_VERSION_STR, (*argv)[0]);
         exit(1);
-        AMUDP_RETURN_ERR(BAD_ARG);
+        AMX_RETURN_ERR(BAD_ARG);
       }
       
       usingdefaultdegree = 1;
@@ -454,12 +426,12 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       int maxtranslations = 0;
       int temp = AM_MaxNumTranslations(&maxtranslations);
       if (temp != AM_OK) {
-        AMUDP_Err("Failed to AM_MaxNumTranslations() in AMUDP_SPMDStartup");
-        AMUDP_RETURN(temp);
+        AMX_Err("Failed to AM_MaxNumTranslations() in AMUDP_SPMDStartup");
+        AMX_RETURN(temp);
       } else if (AMUDP_SPMDNUMPROCS > maxtranslations) {
-        AMUDP_Err("Too many nodes: AM_MaxNumTranslations (%d) less than number of requested nodes (%d)",
+        AMX_Err("Too many nodes: AM_MaxNumTranslations (%d) less than number of requested nodes (%d)",
                 maxtranslations, AMUDP_SPMDNUMPROCS);
-        AMUDP_RETURN_ERR(RESOURCE);
+        AMX_RETURN_ERR(RESOURCE);
       }
     }
 
@@ -499,7 +471,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
               toupper(AMUDP_Spawnfn_Desc[i].abbrev), AMUDP_Spawnfn_Desc[i].desc);
       }
       exit(1);
-      AMUDP_RETURN_ERR(BAD_ARG);
+      AMX_RETURN_ERR(BAD_ARG);
     }
 
     // setup bootstrap info 
@@ -509,7 +481,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     bootstrapinfo.depth = hton32(networkdepth);
 
     const char *masterHostname = getMyHostName();
-    if (!AMUDP_SilentMode) AMUDP_Info("master host name: %s", masterHostname);
+    if (!AMX_SilentMode) AMX_Info("master host name: %s", masterHostname);
 
     // TCP socket lists
     SocketList allList(AMUDP_SPMDNUMPROCS*4+10); // a list of all active sockets
@@ -519,7 +491,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     SocketList stderrList(AMUDP_SPMDNUMPROCS);   // a list of all stderr routing sockets
     SocketList * const stdList[3] = { &stdinList, &stdoutList, &stderrList };
     FILE       *stdFILE[3] = { stdin, stdout, stderr };
-    AMUDP_SPMDSlaveSocket = (SOCKET*)AMUDP_malloc(AMUDP_SPMDNUMPROCS * sizeof(SOCKET));
+    AMUDP_SPMDSlaveSocket = (SOCKET*)AMX_malloc(AMUDP_SPMDNUMPROCS * sizeof(SOCKET));
 
     try {
       // create our TCP listen ports 
@@ -539,7 +511,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         }
       }
     } catch (xBase &exn) {
-      AMUDP_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, exn.why());
+      AMX_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, exn.why());
     }
 
     { /* flatten a snapshot of the master's environment for transmission to slaves
@@ -556,7 +528,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         totalEnvSize += strlen(environ[i]) + 1;
       totalEnvSize++;
 
-      AMUDP_SPMDMasterEnvironment = (char *)AMUDP_malloc(totalEnvSize);
+      AMUDP_SPMDMasterEnvironment = (char *)AMX_malloc(totalEnvSize);
       char *p = AMUDP_SPMDMasterEnvironment;
       p[0] = '\0';
       for(i = 0; environ[i]; i++) {
@@ -564,7 +536,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         p += strlen(p) + 1;
       }
       *p = '\0';
-      AMUDP_assert((p+1) - AMUDP_SPMDMasterEnvironment == totalEnvSize);
+      AMX_assert((p+1) - AMUDP_SPMDMasterEnvironment == totalEnvSize);
       bootstrapinfo.environtablesz = hton32(totalEnvSize);
     }
 
@@ -577,10 +549,10 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         SockAddr dnsAddr = DNSLookup(getMyHostName());
         masterAddr = SockAddr(dnsAddr.IP(), masterAddr.port());
       } catch (xBase &exn) {
-        AMUDP_Warn("Master %s failed to resolve its own hostname: %s%s",
+        AMX_Warn("Master %s failed to resolve its own hostname: %s%s",
           getMyHostName(),exn.why(),
           (USE_NUMERIC_MASTER_ADDR?"\nTry setting AMUDP_MASTERIP":"")); 
-        AMUDP_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, exn.why());
+        AMX_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, exn.why());
       }
     }
 
@@ -594,7 +566,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     //  network: value of [PREFIX]_WORKERIP if given
     char slave_env[1024] = AMUDP_SPMDSLAVE_ARGS "=";
     strncat(slave_env,
-            (AMUDP_SPMDRestartActive ? "-1," : (AMUDP_SilentMode ? "1," : "2,")),
+            (AMUDP_SPMDRestartActive ? "-1," : (AMX_SilentMode ? "1," : "2,")),
             sizeof(slave_env) - 1);
     ssize_t remain = sizeof(slave_env) - (strlen(slave_env) + 1);
     if (*masterIPstr) {
@@ -617,7 +589,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       }
     }
     if (!remain) { // ran out of space!
-      AMUDP_FatalErr("Error assembling arguments to SPMD worker threads. Exiting...");
+      AMX_FatalErr("Error assembling arguments to SPMD worker threads. Exiting...");
     }
     char *extra_env[2] = { slave_env, NULL };
 
@@ -630,8 +602,8 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     }
 
     // create and initialize the translation table that we'll fill in as slaves connect
-    AMUDP_SPMDTranslation_name = (en_t*)AMUDP_malloc(AMUDP_SPMDNUMPROCS*sizeof(en_t));
-    AMUDP_SPMDTranslation_tag = (tag_t*)AMUDP_malloc(AMUDP_SPMDNUMPROCS*sizeof(tag_t));
+    AMUDP_SPMDTranslation_name = (en_t*)AMX_malloc(AMUDP_SPMDNUMPROCS*sizeof(en_t));
+    AMUDP_SPMDTranslation_tag = (tag_t*)AMX_malloc(AMUDP_SPMDNUMPROCS*sizeof(tag_t));
     for (int i=0; i < AMUDP_SPMDNUMPROCS; i++) {
       AMUDP_SPMDSlaveSocket[i] = INVALID_SOCKET;
       AMUDP_SPMDTranslation_tag[i] = hton64(npid | ((uint64_t)i) << 16);
@@ -642,7 +614,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     // call system-specific spawning routine
     AMUDP_SPMDSpawnRunning = TRUE;
     if (!spawnfn(AMUDP_SPMDNUMPROCS, *argc, *argv, extra_env))
-      AMUDP_FatalErr("Error spawning SPMD worker threads. Exiting...");
+      AMX_FatalErr("Error spawning SPMD worker threads. Exiting...");
     AMUDP_SPMDSpawnRunning = FALSE;
 
     if (!AMUDP_SPMDRedirectStdsockets) {
@@ -658,12 +630,12 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       fd_set sockset;
       fd_set* psockset = &sockset;
       int numset; // helpers for coord socket
-      SOCKET *tempSockArr = (SOCKET*)AMUDP_malloc(sizeof(SOCKET)*AMUDP_SPMDNUMPROCS);
+      SOCKET *tempSockArr = (SOCKET*)AMX_malloc(sizeof(SOCKET)*AMUDP_SPMDNUMPROCS);
       while (1) {
 pollentry:
        #ifdef FD_SETSIZE /* Should always be present, but just in case */
         if (allList.getMaxFd() >= FD_SETSIZE)
-          AMUDP_FatalErr("Open sockets exceed FD_SETSIZE=%d. Exiting...",FD_SETSIZE);
+          AMX_FatalErr("Open sockets exceed FD_SETSIZE=%d. Exiting...",FD_SETSIZE);
        #endif
         allList.makeFD_SET(psockset);
 
@@ -689,9 +661,9 @@ pollentry:
         if ((numset = stdinList.getIntersection(psockset, tempSockArr, AMUDP_SPMDNUMPROCS))) {
           for (int i=0; i < numset; i++) {
             SOCKET s = tempSockArr[i];
-            AMUDP_assert(FD_ISSET(s, psockset));
+            AMX_assert(FD_ISSET(s, psockset));
             if (isClosed(s)) DEBUG_MASTER("dropping a stdinList socket...");
-            else AMUDP_Err("Master got illegal input on a stdin socket");
+            else AMX_Err("Master got illegal input on a stdin socket");
             stdinList.remove(s);
             allList.remove(s);
           }
@@ -758,17 +730,17 @@ pollentry:
                 sendAll(AMUDP_SPMDSlaveSocket[i], AMUDP_SPMDTranslation_tag, AMUDP_SPMDNUMPROCS*sizeof(tag_t));
                 sendAll(AMUDP_SPMDSlaveSocket[i], AMUDP_SPMDMasterEnvironment, ntoh32(bootstrapinfo.environtablesz));
               }
-              if (!AMUDP_SilentMode) {
-                AMUDP_Info("Endpoint table (nproc=%i):", AMUDP_SPMDNUMPROCS);
+              if (!AMX_SilentMode) {
+                AMX_Info("Endpoint table (nproc=%i):", AMUDP_SPMDNUMPROCS);
                 for (int j=0; j < AMUDP_SPMDNUMPROCS; j++) {
                   char temp1[80], temp2[80];
-                  AMUDP_Info(" P#%i:\t%s\ttag: %s", j, 
+                  AMX_Info(" P#%i:\t%s\ttag: %s", j, 
                              AMUDP_enStr(AMUDP_SPMDTranslation_name[j], temp1),
                              AMUDP_tagStr(ntoh64(AMUDP_SPMDTranslation_tag[j]), temp2));
                 }
               }
             }
-          } else AMUDP_Err("master detected some unrecognized activity on AMUDP_SPMDListenSocket");
+          } else AMX_Err("master detected some unrecognized activity on AMUDP_SPMDListenSocket");
         }
         //------------------------------------------------------------------------------------
         // coord sockets
@@ -776,7 +748,7 @@ pollentry:
           //DEBUG_MASTER("got some activity on coord sockets");
           for (int i=0; i < numset; i++) {
             SOCKET s = tempSockArr[i];
-            AMUDP_assert(FD_ISSET(s, psockset));
+            AMX_assert(FD_ISSET(s, psockset));
             if (isClosed(s)) {
               DEBUG_MASTER("dropping a coordList socket...");
               coordList.remove(s);
@@ -790,7 +762,7 @@ pollentry:
                   sendAll(coordList[i], &exitCode_nb, sizeof(int32_t));
                   close_socket(coordList[i]);
                 }
-                if (!socklibend()) AMUDP_Err("master failed to socklibend()");
+                if (!socklibend()) AMX_Err("master failed to socklibend()");
                 DEBUG_MASTER("Lost a worker process - job aborting...");
                 exit(exitCode);
               #endif
@@ -825,20 +797,20 @@ pollentry:
                   recvAll(s, &id_nb, sizeof(int32_t));
                   recvAll(s, &len_nb, sizeof(int32_t));
                 } catch (xSocket& exn) {
-                  AMUDP_Err("got exn while reading gather len: %s", exn.why());
+                  AMX_Err("got exn while reading gather len: %s", exn.why());
                 }
                 id = ntoh32(id_nb);
                 len = ntoh32(len_nb);
-                AMUDP_assert(id >= 0 && id < AMUDP_SPMDNUMPROCS && len > 0);
+                AMX_assert(id >= 0 && id < AMUDP_SPMDNUMPROCS && len > 0);
                 if (AMUDP_SPMDGatherCount == 0) { // first slave to report
-                  AMUDP_assert(AMUDP_SPMDGatherBuf == NULL && AMUDP_SPMDGatherLen == 0);
+                  AMX_assert(AMUDP_SPMDGatherBuf == NULL && AMUDP_SPMDGatherLen == 0);
                   AMUDP_SPMDGatherLen = len;
-                  AMUDP_SPMDGatherBuf = (char *)AMUDP_malloc(AMUDP_SPMDGatherLen*AMUDP_SPMDNUMPROCS);
-                } else AMUDP_assert(len == AMUDP_SPMDGatherLen);
+                  AMUDP_SPMDGatherBuf = (char *)AMX_malloc(AMUDP_SPMDGatherLen*AMUDP_SPMDNUMPROCS);
+                } else AMX_assert(len == AMUDP_SPMDGatherLen);
                 try {
                   recvAll(s, &(AMUDP_SPMDGatherBuf[AMUDP_SPMDGatherLen*id]), AMUDP_SPMDGatherLen);
                 } catch (xSocket& exn) {
-                  AMUDP_Err("got exn while reading gather data: %s", exn.why());
+                  AMX_Err("got exn while reading gather data: %s", exn.why());
                 }
                 AMUDP_SPMDGatherCount++;
                 if (AMUDP_SPMDGatherCount == AMUDP_SPMDNUMPROCS) { // gather complete
@@ -850,7 +822,7 @@ pollentry:
                     sendAll(coordList[i], &len_nb, sizeof(int32_t));
                     sendAll(coordList[i], AMUDP_SPMDGatherBuf, AMUDP_SPMDGatherLen*AMUDP_SPMDNUMPROCS);
                   }
-                  AMUDP_free(AMUDP_SPMDGatherBuf);
+                  AMX_free(AMUDP_SPMDGatherBuf);
                   AMUDP_SPMDGatherBuf = NULL;
                   AMUDP_SPMDGatherCount = 0;
                   AMUDP_SPMDGatherLen = 0;
@@ -865,7 +837,7 @@ pollentry:
                 try {
                   recvAll(s, &exitCode_nb, sizeof(int32_t));
                 } catch (xSocket& exn) {
-                  AMUDP_Err("got exn while reading exit code: %s", exn.why());
+                  AMX_Err("got exn while reading exit code: %s", exn.why());
                 }
                 exitCode = ntoh32(exitCode_nb);
                 // tell all other slaves to terminate
@@ -879,23 +851,23 @@ pollentry:
                 /* bug 2029 - wait for any final stdout/stderr to arrive before shutdown */
                 uint64_t wait_iter = 0;
                 while (stdoutList.getCount() || stderrList.getCount()) { // await final output
-                  if (!AMUDP_SilentMode && (!wait_iter++)) AMUDP_Info("Awaiting final slave outputs...");
+                  if (!AMX_SilentMode && (!wait_iter++)) AMX_Info("Awaiting final slave outputs...");
                   for (int i=1; i <= 2; i++) {
                     if (stdList[i]->getCount()) {
                       stdList[i]->makeFD_SET(psockset);
                       handleStdOutput(stdFILE[i], psockset, *stdList[i], allList, stdList[i]->getCount());
                     }
                   }
-                  sched_yield();
+                  AMX_sched_yield();
                 }
-                if (!socklibend()) AMUDP_Err("master failed to socklibend()");
-                if (!AMUDP_SilentMode) AMUDP_Info("Exiting after AMUDP_SPMDExit(%i)...", exitCode);
+                if (!socklibend()) AMX_Err("master failed to socklibend()");
+                if (!AMX_SilentMode) AMX_Info("Exiting after AMUDP_SPMDExit(%i)...", exitCode);
                 exit(exitCode);
                 break;
               }
 
               default:
-                AMUDP_Err("master got an unknown command on coord socket: %c", command);
+                AMX_Err("master got an unknown command on coord socket: %c", command);
             }
           }
           if (coordList.getCount() == 0) {
@@ -906,9 +878,9 @@ pollentry:
         //------------------------------------------------------------------------------------
       } // loop
     } catch (xSocket& exn) {
-      AMUDP_FatalErr("Master got an xSocket: %s", exn.why());
+      AMX_FatalErr("Master got an xSocket: %s", exn.why());
     } catch (xBase& exn) {
-      AMUDP_FatalErr("Master got an xBase: %s", exn.why());
+      AMX_FatalErr("Master got an xBase: %s", exn.why());
     }
   }
   /* ------------------------------------------------------------------------------------ 
@@ -928,30 +900,31 @@ pollentry:
     int temp;
 
     /* propagate verbosity setting from master */
-    AMUDP_SilentMode = (slave_flag < 2); // TODO: values >2 for more verbose
+    AMX_SilentMode = (slave_flag < 2); // TODO: values >2 for more verbose
 
     if (doFullBoostrap) {
     #if FREEZE_SLAVE
-      freezeForDebugger();
+      AMX_freezeForDebugger();
     #else
       /* do *not* use prefixed getenv here - want an independent freeze point */
-      if (getenv("AMUDP_FREEZE")) freezeForDebugger();
+      if (getenv("AMUDP_FREEZE")) AMX_freezeForDebugger();
     #endif
     }
 
-    if (!eb || !ep) AMUDP_RETURN_ERR(BAD_ARG);
+    if (!eb || !ep) AMX_RETURN_ERR(BAD_ARG);
     if (doFullBoostrap && AM_Init() != AM_OK) {
-      AMUDP_Err("Failed to AM_Init() in AMUDP_SPMDStartup");
-      AMUDP_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, "AM_Init() failed");
+      AMX_Err("Failed to AM_Init() in AMUDP_SPMDStartup");
+      AMX_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, "AM_Init() failed");
     }
 
     // parse special env var with our arguments
-    char * slave_args = strdup(env_var);
+    char * _slave_args = AMX_strdup(env_var);
+    char * slave_args = _slave_args;
     SockAddr masterAddr;
     { // Strip required "flag," off beginning
       char *endptr;
       (void) strtol(slave_args, &endptr, 0);
-      if (! endptr || (',' != endptr[0])) AMUDP_Err("Malformed arguments '%s' to slave process", env_var);
+      if (! endptr || (',' != endptr[0])) AMX_Err("Malformed arguments '%s' to slave process", env_var);
       slave_args = endptr + 1;
     }
     
@@ -969,30 +942,30 @@ pollentry:
       if (strchr(slave_args,',')) {
         masterAddr = SockAddr(slave_args);
       } else {
-        char *IPStr = (char *)AMUDP_malloc(strlen(slave_args)+10);
+        char *IPStr = (char *)AMX_malloc(strlen(slave_args)+10);
         strcpy(IPStr, slave_args);
         char *portStr = strchr(IPStr, ':');
         if (!portStr) {
-          AMUDP_Err("Malformed address argument passed to slave:'%s' (missing port)", slave_args);
-          AMUDP_RETURN_ERR(BAD_ARG);
+          AMX_Err("Malformed address argument passed to slave:'%s' (missing port)", slave_args);
+          AMX_RETURN_ERR(BAD_ARG);
         }
         int masterPort = atoi(portStr+1);
         if (masterPort < 1 || masterPort > 65535) {
-          AMUDP_Err("Malformed address argument passed to slave:'%s' (bad port=%i)", slave_args, masterPort);
-          AMUDP_RETURN_ERR(BAD_ARG);
+          AMX_Err("Malformed address argument passed to slave:'%s' (bad port=%i)", slave_args, masterPort);
+          AMX_RETURN_ERR(BAD_ARG);
         }
         (*portStr) = '\0';
         try {
           masterAddr = SockAddr((uint32_t)DNSLookup(IPStr).IP(), (uint16_t)masterPort);
         } catch (xSocket &exn) {
-          AMUDP_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, "slave failed DNSLookup on master host name");
+          AMX_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, "slave failed DNSLookup on master host name");
         }
-        AMUDP_free(IPStr);
+        AMX_free(IPStr);
       }
     }
 
     try {
-      if (!AMUDP_SilentMode) AMUDP_Info("slave connecting to %s:%i", masterAddr.IPStr(), masterAddr.port());
+      if (!AMX_SilentMode) AMX_Info("slave connecting to %s:%i", masterAddr.IPStr(), masterAddr.port());
 
       AMUDP_SPMDControlSocket = connect_socket(masterAddr);
 
@@ -1034,26 +1007,27 @@ pollentry:
           SockAddr networkaddr(network, 0);
           char subnets[1024];
           if (! getIfaceAddr(networkaddr, myinterface, subnets, sizeof(subnets))) {
-            AMUDP_Err("Failed to find interface on requested subnet %s. Available subnets: %s", network, subnets);
-            AMUDP_RETURN(AM_ERR_RESOURCE);
+            AMX_Err("Failed to find interface on requested subnet %s. Available subnets: %s", network, subnets);
+            AMX_RETURN(AM_ERR_RESOURCE);
           }
         #else
-          AMUDP_Warn("WORKERIP set in the environment, but your platform lacks the required getifaddrs() support.  Ignoring WORKERIP.");
+          AMX_Warn("WORKERIP set in the environment, but your platform lacks the required getifaddrs() support.  Ignoring WORKERIP.");
         #endif
       }
-      if (!AMUDP_SilentMode) AMUDP_Info("slave using IP %s", myinterface.IPStr());
+      if (!AMX_SilentMode) AMX_Info("slave using IP %s", myinterface.IPStr());
       AMUDP_SetUDPInterface(myinterface.IP());
+      AMX_free(_slave_args);
         
       /* create endpoint and get name */
       temp = AM_AllocateBundle(AM_SEQ, &AMUDP_SPMDBundle);
       if (temp != AM_OK) {
-        AMUDP_Err("Failed to create bundle in AMUDP_SPMDStartup");
-        AMUDP_RETURN(temp);
+        AMX_Err("Failed to create bundle in AMUDP_SPMDStartup");
+        AMX_RETURN(temp);
       }
       temp = AM_AllocateEndpoint(AMUDP_SPMDBundle, &AMUDP_SPMDEndpoint, &AMUDP_SPMDName);
       if (temp != AM_OK) {
-        AMUDP_Err("Failed to create endpoint in AMUDP_SPMDStartup");
-        AMUDP_RETURN(temp);
+        AMX_Err("Failed to create endpoint in AMUDP_SPMDStartup");
+        AMX_RETURN(temp);
       }
 
       // send our procid and endpoint name to the master
@@ -1067,7 +1041,7 @@ pollentry:
       int32_t bootstrapinfosz_nb;
       recvAll(AMUDP_SPMDControlSocket, &bootstrapinfosz_nb, sizeof(int32_t));
       int32_t bootstrapinfosz = ntoh32(bootstrapinfosz_nb);
-      AMUDP_assert(bootstrapinfosz == sizeof(AMUDP_SPMDBootstrapInfo_t));
+      AMX_assert(bootstrapinfosz == sizeof(AMUDP_SPMDBootstrapInfo_t));
       recvAll(AMUDP_SPMDControlSocket, &bootstrapinfo, sizeof(AMUDP_SPMDBootstrapInfo_t));
       
       // unpack the bootstrapping info
@@ -1076,19 +1050,19 @@ pollentry:
         AMUDP_SPMDMYPROC = ntoh32(bootstrapinfo.procid);
       } else {
         if (AMUDP_SPMDNUMPROCS != (int32_t)ntoh32(bootstrapinfo.numprocs)) {
-          AMUDP_Err("Restarting with wrong numprocs in AMUDP_SPMDStartup");
-          AMUDP_RETURN_ERR(BAD_ARG);
+          AMX_Err("Restarting with wrong numprocs in AMUDP_SPMDStartup");
+          AMX_RETURN_ERR(BAD_ARG);
         }
         if (AMUDP_SPMDMYPROC != (int32_t)ntoh32(bootstrapinfo.procid)) {
-          AMUDP_Err("Restarting with wrong procid in AMUDP_SPMDStartup");
-          AMUDP_RETURN_ERR(BAD_ARG);
+          AMX_Err("Restarting with wrong procid in AMUDP_SPMDStartup");
+          AMX_RETURN_ERR(BAD_ARG);
         }
       }
       if (networkpid) *networkpid = ntoh64(bootstrapinfo.networkpid);
 
       // sanity checking on bootstrap info
-      AMUDP_assert(AMUDP_SPMDNUMPROCS > 0 && AMUDP_SPMDNUMPROCS < (int)AMUDP_MAX_SPMDPROCS);
-      AMUDP_assert(AMUDP_SPMDMYPROC >= 0 && AMUDP_SPMDMYPROC < (int)AMUDP_SPMDNUMPROCS);
+      AMX_assert(AMUDP_SPMDNUMPROCS > 0 && AMUDP_SPMDNUMPROCS < (int)AMUDP_MAX_SPMDPROCS);
+      AMX_assert(AMUDP_SPMDMYPROC >= 0 && AMUDP_SPMDMYPROC < (int)AMUDP_SPMDNUMPROCS);
 
       #if !DISABLE_STDSOCKET_REDIRECT
       for (int fd=0; fd <= 2; fd++) {
@@ -1108,60 +1082,60 @@ pollentry:
      #endif
 
       // retrieve translation table
-      en_t *tempTranslation_name = (en_t *)AMUDP_malloc(AMUDP_SPMDNUMPROCS*sizeof(en_t));
-      tag_t *tempTranslation_tag = (tag_t *)AMUDP_malloc(AMUDP_SPMDNUMPROCS*sizeof(tag_t));
-      AMUDP_assert(tempTranslation_name && tempTranslation_tag);
+      en_t *tempTranslation_name = (en_t *)AMX_malloc(AMUDP_SPMDNUMPROCS*sizeof(en_t));
+      tag_t *tempTranslation_tag = (tag_t *)AMX_malloc(AMUDP_SPMDNUMPROCS*sizeof(tag_t));
+      AMX_assert(tempTranslation_name && tempTranslation_tag);
       recvAll(AMUDP_SPMDControlSocket, tempTranslation_name, AMUDP_SPMDNUMPROCS*sizeof(en_t));
       recvAll(AMUDP_SPMDControlSocket, tempTranslation_tag, AMUDP_SPMDNUMPROCS*sizeof(tag_t));
 
-      AMUDP_assert(ntoh64(tempTranslation_tag[AMUDP_SPMDMYPROC]) == ntoh64(bootstrapinfo.tag));
-      AMUDP_assert(enEqual(tempTranslation_name[AMUDP_SPMDMYPROC], AMUDP_SPMDName));
+      AMX_assert(ntoh64(tempTranslation_tag[AMUDP_SPMDMYPROC]) == ntoh64(bootstrapinfo.tag));
+      AMX_assert(enEqual(tempTranslation_name[AMUDP_SPMDMYPROC], AMUDP_SPMDName));
 
 
       // setup translation table
       temp = AM_SetNumTranslations(AMUDP_SPMDEndpoint, AMUDP_SPMDNUMPROCS);
       if (temp != AM_OK) {
-        AMUDP_Err("Failed to AM_SetNumTranslations() in AMUDP_SPMDStartup");
-        AMUDP_RETURN(temp);
+        AMX_Err("Failed to AM_SetNumTranslations() in AMUDP_SPMDStartup");
+        AMX_RETURN(temp);
       }
       for (int i = 0; i < AMUDP_SPMDNUMPROCS; i++) {
         temp = AM_Map(AMUDP_SPMDEndpoint, i, tempTranslation_name[i], ntoh64(tempTranslation_tag[i]));
         if (temp != AM_OK) {
-          AMUDP_Err("Failed to AM_Map() in AMUDP_SPMDStartup");
-          AMUDP_RETURN(temp);
+          AMX_Err("Failed to AM_Map() in AMUDP_SPMDStartup");
+          AMX_RETURN(temp);
         }
       }
 
-      if (!AMUDP_ProcessLabel) {
+      if (!AMX_ProcessLabel) {
         static char label[80];
-        sprintf(label,"Node %i",AMUDP_SPMDMYPROC);
-        AMUDP_ProcessLabel = label;
+        snprintf(label,sizeof(label),"Node %i",AMUDP_SPMDMYPROC);
+        AMX_ProcessLabel = label;
       }
 
-      AMUDP_free(tempTranslation_name);
+      AMX_free(tempTranslation_name);
       tempTranslation_name = NULL;
-      AMUDP_free(tempTranslation_tag);
+      AMX_free(tempTranslation_tag);
       tempTranslation_tag = NULL;
 
       // receive snapshot of master environment
       int environtablesz = ntoh32(bootstrapinfo.environtablesz);
-      char *tempEnvironment = (char *)AMUDP_malloc(environtablesz);
-      AMUDP_assert(tempEnvironment != NULL);
+      char *tempEnvironment = (char *)AMX_malloc(environtablesz);
+      AMX_assert(tempEnvironment != NULL);
       recvAll(AMUDP_SPMDControlSocket, tempEnvironment, environtablesz);
       if (doFullBoostrap) {
         AMUDP_SPMDMasterEnvironment = tempEnvironment;
       } else  {
         // On restart we keep the environment from the initial run
-        AMUDP_assert(AMUDP_SPMDMasterEnvironment != NULL);
-        AMUDP_free(tempEnvironment);
+        AMX_assert(AMUDP_SPMDMasterEnvironment != NULL);
+        AMX_free(tempEnvironment);
       }
       
       /* allocate network buffers */
       if (doFullBoostrap) networkdepth = ntoh32(bootstrapinfo.depth);
       temp = AM_SetExpectedResources(AMUDP_SPMDEndpoint, AMUDP_SPMDNUMPROCS, networkdepth);
       if (temp != AM_OK) {
-        AMUDP_Err("Failed to AM_SetExpectedResources() in AMUDP_SPMDStartup");
-        AMUDP_RETURN(temp);
+        AMX_Err("Failed to AM_SetExpectedResources() in AMUDP_SPMDStartup");
+        AMX_RETURN(temp);
       }
       #ifdef AMUDP_BLCR_ENABLED
         AMUDP_SPMDNetworkDepth = networkdepth;
@@ -1170,12 +1144,12 @@ pollentry:
       // set tag
       temp = AM_SetTag(AMUDP_SPMDEndpoint, ntoh64(bootstrapinfo.tag));
       if (temp != AM_OK) {
-        AMUDP_Err("Failed to AM_SetTag() in AMUDP_SPMDStartup");
-        AMUDP_RETURN(temp);
+        AMX_Err("Failed to AM_SetTag() in AMUDP_SPMDStartup");
+        AMX_RETURN(temp);
       }
 
     } catch (xSocket& exn) {
-      AMUDP_FatalErr("Got an xSocket while spawning slave process: %s", exn.why());
+      AMX_FatalErr("Got an xSocket while spawning slave process: %s", exn.why());
     }
 
     *eb = AMUDP_SPMDBundle;
@@ -1194,32 +1168,32 @@ pollentry:
       reghandler(AMUDP_SIGIO, AMUDP_SPMDControlSocketCallback);
       if (fcntl(AMUDP_SPMDControlSocket, F_SETOWN, getpid())) {
         perror("fcntl(F_SETOWN, getpid())");
-        AMUDP_FatalErr("Failed to fcntl(F_SETOWN, getpid()) on TCP control socket - try disabling USE_ASYNC_TCP_CONTROL");
+        AMX_FatalErr("Failed to fcntl(F_SETOWN, getpid()) on TCP control socket - try disabling USE_ASYNC_TCP_CONTROL");
       }
       if (fcntl(AMUDP_SPMDControlSocket, F_SETSIG, AMUDP_SIGIO)) {
         perror("fcntl(F_SETSIG)");
-        AMUDP_FatalErr("Failed to fcntl(F_SETSIG, AMUDP_SIGIO) on TCP control socket - try disabling USE_ASYNC_TCP_CONTROL");
+        AMX_FatalErr("Failed to fcntl(F_SETSIG, AMUDP_SIGIO) on TCP control socket - try disabling USE_ASYNC_TCP_CONTROL");
       }
       if (fcntl(AMUDP_SPMDControlSocket, F_SETFL, O_ASYNC|O_NONBLOCK)) { 
         perror("fcntl(F_SETFL, O_ASYNC|O_NONBLOCK)");
-        AMUDP_FatalErr("Failed to fcntl(F_SETFL, O_ASYNC|O_NONBLOCK) on TCP control socket - try disabling USE_ASYNC_TCP_CONTROL");
+        AMX_FatalErr("Failed to fcntl(F_SETFL, O_ASYNC|O_NONBLOCK) on TCP control socket - try disabling USE_ASYNC_TCP_CONTROL");
       }
     #endif
 
     flushStreams("AMUDP_SPMDStartup"); // to get ENV FS_SYNC 
 
-    if (!AMUDP_SilentMode) {
+    if (!AMX_SilentMode) {
       char temp[80];
-      tag_t tag;
+      tag_t tag = 0;
       AM_GetTag(AMUDP_SPMDEndpoint, &tag);
-      AMUDP_Info("Slave %i/%i starting (tag=%s)...", 
+      AMX_Info("Slave %i/%i starting (tag=%s)...", 
         AMUDP_SPMDMyProc(), AMUDP_SPMDNumProcs(), AMUDP_tagStr(tag, temp));
     }
 
     return AM_OK;
   }
   /* ------------------------------------------------------------------------------------ */
-  AMUDP_FatalErr("never reach here");
+  AMX_FatalErr("never reach here");
   return AM_OK;
 }
 
@@ -1257,21 +1231,21 @@ extern int AMUDP_SPMDHandleControlTraffic(int *controlMessagesServiced) {
       recvAll(s, &command, 1);
       switch(command) {
         case 'B': { // barrier complete
-          AMUDP_assert(!AMUDP_SPMDBarrierDone);
+          AMX_assert(!AMUDP_SPMDBarrierDone);
           AMUDP_SPMDBarrierDone = 1; // flag completion
           break;
         }
 
         case 'G': { // gather complete
-          AMUDP_assert(!AMUDP_SPMDGatherDone && AMUDP_SPMDGatherLen > 0 && AMUDP_SPMDGatherData != NULL);
+          AMX_assert(!AMUDP_SPMDGatherDone && AMUDP_SPMDGatherLen > 0 && AMUDP_SPMDGatherData != NULL);
           try {
             int32_t len_nb = -1;
             recvAll(s, &len_nb, sizeof(int32_t));
             int32_t len = ntoh32(len_nb);
-            AMUDP_assert(len == AMUDP_SPMDGatherLen);
+            AMX_assert(len == AMUDP_SPMDGatherLen);
             recvAll(s, AMUDP_SPMDGatherData, AMUDP_SPMDGatherLen*AMUDP_SPMDNUMPROCS);
           } catch (xSocket& exn) {
-            AMUDP_FatalErr("got exn while reading gather data: %s", exn.why());
+            AMX_FatalErr("got exn while reading gather data: %s", exn.why());
           }
           AMUDP_SPMDGatherDone = 1; // flag completion
           break;
@@ -1285,21 +1259,21 @@ extern int AMUDP_SPMDHandleControlTraffic(int *controlMessagesServiced) {
             recvAll(s, &exitCode_nb, sizeof(int32_t));
             exitCode = ntoh32(exitCode_nb);
           } catch (xSocket& exn) {
-            AMUDP_Err("got exn while reading exit code: %s", exn.why());
+            AMX_Err("got exn while reading exit code: %s", exn.why());
           }
-          if (!AMUDP_SilentMode) AMUDP_Info("Exiting after exit signal from master (%i)...", exitCode);
+          if (!AMX_SilentMode) AMX_Info("Exiting after exit signal from master (%i)...", exitCode);
           AMUDP_SPMDShutdown(exitCode);
           break;
         }
 
         default:
-          AMUDP_FatalErr("slave got an unknown command on coord socket: %c", command);
+          AMX_FatalErr("slave got an unknown command on coord socket: %c", command);
         }
     } catch (xSocket& exn) {
-      AMUDP_Err("Slave got an xSocket: %s. Exiting...", exn.why());
+      AMX_Err("Slave got an xSocket: %s. Exiting...", exn.why());
       AMUDP_SPMDShutdown(1);
     } catch (xBase& exn) {
-      AMUDP_Err("Slave got an xBase: %s. Exiting...", exn.why());
+      AMX_Err("Slave got an xBase: %s. Exiting...", exn.why());
       AMUDP_SPMDShutdown(1);
     }
     if (controlMessagesServiced) (*controlMessagesServiced)++;
@@ -1322,7 +1296,7 @@ static int AMUDP_SPMDShutdown(int exitcode) {
   ASYNC_TCP_DISABLE_IGNOREERR(); /* (bug 765) prevent race where master has already reset async control socket */
   /* this function is not re-entrant - if someone tries, something is seriously wrong */
   { static int shutdownInProgress = FALSE;
-    if (shutdownInProgress) AMUDP_FatalErr("recursive failure in AMUDP_SPMDShutdown"); 
+    if (shutdownInProgress) AMX_FatalErr("recursive failure in AMUDP_SPMDShutdown"); 
     shutdownInProgress = TRUE;
   }
 
@@ -1332,13 +1306,13 @@ static int AMUDP_SPMDShutdown(int exitcode) {
 
   /* important to make this call to release resources */
   if (AM_Terminate() != AM_OK) 
-    AMUDP_Err("failed to AM_Terminate() in AMUDP_SPMDExit()");
+    AMX_Err("failed to AM_Terminate() in AMUDP_SPMDExit()");
 
   flushStreams("AMUDP_SPMDShutdown");
 
-  if (fclose(stdin))  AMUDP_VERBOSE_INFO(("failed to fclose stdin in AMUDP_SPMDExit(): %s(%i)",strerror(errno),errno)); 
-  if (fclose(stdout)) AMUDP_VERBOSE_INFO(("failed to fclose stdout in AMUDP_SPMDExit(): %s(%i)",strerror(errno),errno)); 
-  if (fclose(stderr)) AMUDP_VERBOSE_INFO(("failed to fclose stderr in AMUDP_SPMDExit(): %s(%i)",strerror(errno),errno)); 
+  if (fclose(stdin))  AMX_VERBOSE_INFO(("failed to fclose stdin in AMUDP_SPMDExit(): %s(%i)",strerror(errno),errno)); 
+  if (fclose(stdout)) AMX_VERBOSE_INFO(("failed to fclose stdout in AMUDP_SPMDExit(): %s(%i)",strerror(errno),errno)); 
+  if (fclose(stderr)) AMX_VERBOSE_INFO(("failed to fclose stderr in AMUDP_SPMDExit(): %s(%i)",strerror(errno),errno)); 
 
   /* use normal shutdown and closesocket to ignore errors */
   for (int i=0; i <= 2; i++) {
@@ -1349,35 +1323,35 @@ static int AMUDP_SPMDShutdown(int exitcode) {
     }
   }
 
-  sched_yield();
+  AMX_sched_yield();
 
   if (AMUDP_SPMDControlSocket != INVALID_SOCKET) {
     closesocket(AMUDP_SPMDControlSocket);
   }
 
-  if (!socklibend()) AMUDP_Err("slave failed to socklibend()");
+  if (!socklibend()) AMX_Err("slave failed to socklibend()");
 
   AMUDP_SPMDStartupCalled = 0;
   DEBUG_SLAVE("exiting..");
   AMUDP_SPMDkillmyprocess(exitcode);
-  AMUDP_FatalErr("AMUDP_SPMDkillmyprocess failed");
+  AMX_FatalErr("AMUDP_SPMDkillmyprocess failed");
   return AM_OK;
 }
 
 extern int AMUDP_SPMDExit(int exitcode) {
   DEBUG_SLAVE("AMUDP_SPMDExit");
-  if (!AMUDP_SPMDStartupCalled) AMUDP_RETURN_ERR(NOT_INIT);
+  if (!AMUDP_SPMDStartupCalled) AMX_RETURN_ERR(NOT_INIT);
 
   ASYNC_TCP_DISABLE_IGNOREERR(); /* (bug 765) prevent race where master has already reset async control socket */
   /* this function is not re-entrant - if someone tries, something is seriously wrong */
   { static int exitInProgress = FALSE;
-    if (exitInProgress) AMUDP_FatalErr("recursive failure in AMUDP_SPMDExit"); 
+    if (exitInProgress) AMX_FatalErr("recursive failure in AMUDP_SPMDExit"); 
     exitInProgress = TRUE;
   }
 
   flushStreams("AMUDP_SPMDExit");
 
-  sched_yield();
+  AMX_sched_yield();
 
   /* notify master we're exiting */
 
@@ -1399,7 +1373,7 @@ extern int AMUDP_SPMDExit(int exitcode) {
   DEBUG_SLAVE("AMUDP_SPMDShutdown..");
   /* exit this proc gracefully */
   AMUDP_SPMDShutdown(0);
-  AMUDP_FatalErr("AMUDP_SPMDShutdown failed");
+  AMX_FatalErr("AMUDP_SPMDShutdown failed");
   return AM_OK;
 }
 /* ------------------------------------------------------------------------------------ 
@@ -1425,10 +1399,7 @@ static void AMUDP_SPMDWaitForControl(volatile int *done) {
       AM_Poll(AMUDP_SPMDBundle);
       while (!*done) {
 
-        struct timeval tv;
-        tv.tv_sec  = timeoutusec / 1000000;
-        tv.tv_usec = timeoutusec % 1000000;
-        select(1, NULL, NULL, NULL, &tv); /* sleep a little while */
+        AMX_usleep(timeoutusec);
 
         AM_Poll(AMUDP_SPMDBundle);
         if (timeoutusec < 10000) timeoutusec *= 2;
@@ -1441,12 +1412,12 @@ static void AMUDP_SPMDWaitForControl(volatile int *done) {
  * ------------------------------------------------------------------------------------ */
 extern int AMUDP_SPMDBarrier() {
   if (!AMUDP_SPMDStartupCalled) {
-    AMUDP_Err("called AMUDP_SPMDBarrier before AMUDP_SPMDStartup()");
-    AMUDP_RETURN_ERR(NOT_INIT);
+    AMX_Err("called AMUDP_SPMDBarrier before AMUDP_SPMDStartup()");
+    AMX_RETURN_ERR(NOT_INIT);
   }
 
   flushStreams("AMUDP_SPMDBarrier");
-  AMUDP_assert(AMUDP_SPMDBarrierDone == 0);
+  AMX_assert(AMUDP_SPMDBarrierDone == 0);
   ASYNC_TCP_DISABLE();
   sendAll(AMUDP_SPMDControlSocket, "B");
   ASYNC_TCP_ENABLE();
@@ -1463,14 +1434,14 @@ extern int AMUDP_SPMDBarrier() {
  * ------------------------------------------------------------------------------------ */
 extern int AMUDP_SPMDAllGather(void *source, void *dest, size_t len) {
   if (!AMUDP_SPMDStartupCalled) {
-    AMUDP_Err("called AMUDP_SPMDAllGather before AMUDP_SPMDStartup()");
-    AMUDP_RETURN_ERR(NOT_INIT);
+    AMX_Err("called AMUDP_SPMDAllGather before AMUDP_SPMDStartup()");
+    AMX_RETURN_ERR(NOT_INIT);
   }
-  if (source == NULL) AMUDP_RETURN_ERR(BAD_ARG);
-  if (dest == NULL) AMUDP_RETURN_ERR(BAD_ARG);
-  if (len <= 0) AMUDP_RETURN_ERR(BAD_ARG);
+  if (source == NULL) AMX_RETURN_ERR(BAD_ARG);
+  if (dest == NULL) AMX_RETURN_ERR(BAD_ARG);
+  if (len <= 0) AMX_RETURN_ERR(BAD_ARG);
 
-  AMUDP_assert(AMUDP_SPMDGatherDone == 0);
+  AMX_assert(AMUDP_SPMDGatherDone == 0);
   AMUDP_SPMDGatherData = dest;
   AMUDP_SPMDGatherLen = len;
   int32_t myid_nb = hton32(AMUDP_SPMDMYPROC);
@@ -1495,7 +1466,7 @@ extern int AMUDP_SPMDAllGather(void *source, void *dest, size_t len) {
  * ------------------------------------------------------------------------------------ */
 extern const char* AMUDP_SPMDgetenvMaster(const char *keyname) {
   if (!AMUDP_SPMDMasterEnvironment) {
-    AMUDP_Err("called AMUDP_SPMDgetenvMaster before AMUDP_SPMDStartup()");
+    AMX_Err("called AMUDP_SPMDgetenvMaster before AMUDP_SPMDStartup()");
     return NULL;
   }
 
@@ -1520,7 +1491,7 @@ extern char *AMUDP_getenv_prefixed(const char *basekey) {
   else getfn = (char *(*)(const char *))getenv;
 
   if (basekey == NULL || !*basekey) return NULL;
-  sprintf(key[0], "%s_%s", AMUDP_ENV_PREFIX_STR, basekey);
+  sprintf(key[0], "%s_%s", AMX_ENV_PREFIX_STR, basekey);
   val[0] = getfn(key[0]);
   sprintf(key[1], "%s_%s", "AMUDP", basekey);
   val[1] = getfn(key[1]);
@@ -1530,7 +1501,7 @@ extern char *AMUDP_getenv_prefixed(const char *basekey) {
     if (val[i] != NULL) {
       if (winner == -1) winner = i;
       else if (strcmp(val[winner], val[i])) {
-        AMUDP_Warn("Both $%s and $%s are set, to different values. Using the former.",
+        AMX_Warn("Both $%s and $%s are set, to different values. Using the former.",
           key[winner], key[i]);
       }
     }
@@ -1546,14 +1517,14 @@ extern char *AMUDP_getenv_prefixed_withdefault(const char *basekey, const char *
   int usingdefault = 0;
   const char *dflt = "";
   if (firsttime) {
-    #if AMUDP_DEBUG_VERBOSE
+    #if AMX_DEBUG_VERBOSE
       verboseenv = 1;
     #else
       verboseenv = !!AMUDP_getenv_prefixed("VERBOSEENV");
     #endif
     firsttime = 0;
   }
-  AMUDP_assert(defaultval != NULL);
+  AMX_assert(defaultval != NULL);
   retval = AMUDP_getenv_prefixed(basekey);
   if (retval == NULL) {
     retval = (char *)defaultval;
@@ -1562,7 +1533,7 @@ extern char *AMUDP_getenv_prefixed_withdefault(const char *basekey, const char *
   }
 #ifdef gasnett_envstr_display
   { char displaykey[255];
-    sprintf(displaykey,"%s_%s",AMUDP_ENV_PREFIX_STR,basekey);
+    sprintf(displaykey,"%s_%s",AMX_ENV_PREFIX_STR,basekey);
     gasnett_envstr_display(displaykey, retval, usingdefault);
   }
 #else
@@ -1571,8 +1542,8 @@ extern char *AMUDP_getenv_prefixed_withdefault(const char *basekey, const char *
     char displaykey[255];
     int width;
     if (strlen(retval) == 0) displayval = "*empty*";
-    AMUDP_assert(strlen(basekey)+strlen(AMUDP_ENV_PREFIX_STR) < 200);
-    sprintf(displaykey,"%s_%s",AMUDP_ENV_PREFIX_STR,basekey);
+    AMX_assert(strlen(basekey)+strlen(AMX_ENV_PREFIX_STR) < 200);
+    sprintf(displaykey,"%s_%s",AMX_ENV_PREFIX_STR,basekey);
     width = MAX(10,55 - strlen(displaykey) - strlen(displayval));
     fprintf(stderr, "ENV parameter: %s = %s%*s\n", displaykey, displayval, width, dflt);
     fflush(stderr);
@@ -1587,25 +1558,25 @@ extern char *AMUDP_getenv_prefixed_withdefault(const char *basekey, const char *
  * ------------------------------------------------------------------------------------ */
 extern void AMUDP_SPMDRunRestart(char *argv0, char *dir, int nproc) {
   // BLCR-TODO: return errors on bad args?
-  AMUDP_assert(argv0 != NULL);
-  AMUDP_assert(dir != NULL);
-  AMUDP_assert(nproc > 0);
+  AMX_assert(argv0 != NULL);
+  AMX_assert(dir != NULL);
+  AMX_assert(nproc > 0);
   {
     eb_t eb; ep_t ep;
     int argc = 2;
-    char **argv = (char**)AMUDP_malloc(3*sizeof(char*));
+    char **argv = (char**)AMX_malloc(3*sizeof(char*));
     argv[0] = argv0;
     argv[1] = dir;
     argv[2] = NULL;
     AMUDP_SPMDRestartActive = 1;
     AMUDP_SPMDStartup(&argc, &argv, nproc, 0, NULL, NULL, &eb, &ep);
-    AMUDP_FatalErr("never reach here");
+    AMX_FatalErr("never reach here");
   }
 }
 extern int AMUDP_SPMDRestartProcId(int *argc, char ***argv) {
   const char *env_var = getenv(AMUDP_SPMDSLAVE_ARGS);
   const int slave_flag = env_var ? atoi(env_var) : 0;
-  AMUDP_assert(argv != NULL);
+  AMX_assert(argv != NULL);
   if (!AMUDP_SPMDStartupCalled && slave_flag == -1) {
     eb_t eb; ep_t ep;
     return AMUDP_SPMDStartup(argc, argv, 0, 0, NULL, NULL, &eb, &ep);
@@ -1621,25 +1592,25 @@ static int AMUDP_SPMDReStartup(int fd, eb_t *eb, ep_t *ep) {
   // Get location of new master from our special fd
   temp = fstat(fd, &st);
   if (temp < 0) {
-    AMUDP_Err("Failed to read restart-master");
+    AMX_Err("Failed to read restart-master");
     exit(1);
   }
   size_t len = st.st_size;
-  char *env_var = (char*)AMUDP_malloc(sizeof(char)*len);
+  char *env_var = (char*)AMX_malloc(sizeof(char)*len);
   size_t rc = read(fd, env_var, len);
   if (rc != len) {
-    AMUDP_Err("Failed to read restart env_var");
-    AMUDP_RETURN(temp);
+    AMX_Err("Failed to read restart env_var");
+    AMX_RETURN(temp);
   }
-  AMUDP_assert(env_var[len-1] == '\0');
+  AMX_assert(env_var[len-1] == '\0');
   setenv(AMUDP_SPMDSLAVE_ARGS, env_var, 1);
-  AMUDP_free(env_var);
+  AMX_free(env_var);
 
   // Free old bundle
   temp = AM_FreeBundle(AMUDP_SPMDBundle);
   if (temp != AM_OK) {
-    AMUDP_Err("Failed to free bundle in AMUDP_SPMDStartup");
-    AMUDP_RETURN(temp);
+    AMX_Err("Failed to free bundle in AMUDP_SPMDStartup");
+    AMX_RETURN(temp);
   }
 
   // Re-bootstrap from the new master
@@ -1653,12 +1624,12 @@ static int AMUDP_SPMDReStartup(int fd, eb_t *eb, ep_t *ep) {
 }
 /* ------------------------------------------------------------------------------------ */
 int AMUDP_SPMDCheckpoint(eb_t *eb, ep_t *ep, const char *dir) {
-  AMUDP_assert(dir != NULL);
+  AMX_assert(dir != NULL);
 
   /* Drain all sends */
   for (int i = 0; i < AMUDP_SPMDBundle->n_endpoints; i++) {
     ep_t ep = AMUDP_SPMDBundle->endpoints[i];
-    AMUDP_assert(ep);
+    AMX_assert(ep);
     while (ep->outstandingRequests) {
       AM_Poll(AMUDP_SPMDBundle);
     }
@@ -1667,7 +1638,7 @@ int AMUDP_SPMDCheckpoint(eb_t *eb, ep_t *ep, const char *dir) {
 
   /* Start -- equivalent to gasnet_checkpoint_create(dir) */
   size_t len = strlen(dir) + 19; // 19 = "/context.123456789\0"
-  char *buf = (char*)AMUDP_malloc(len);
+  char *buf = (char*)AMX_malloc(len);
   snprintf(buf, len, "%s/context.%d", dir, AMUDP_SPMDMYPROC);
 
   int contextFd = -1;
@@ -1676,12 +1647,12 @@ int AMUDP_SPMDCheckpoint(eb_t *eb, ep_t *ep, const char *dir) {
     const int mode = S_IRUSR;
     contextFd = open(buf, flags, mode); // BLCR-TODO: error checking
     if (contextFd < 0) {
-      AMUDP_Err("Failed to create '%s' errno=%d(%s)", buf, errno, strerror(errno));
-      AMUDP_free(buf);
+      AMX_Err("Failed to create '%s' errno=%d(%s)", buf, errno, strerror(errno));
+      AMX_free(buf);
       return -1;
     }
   }
-  AMUDP_free(buf);
+  AMX_free(buf);
   /* End -- equivalent to gasnet_checkpoint_create(dir) */
 
   // Open a "masterFd" socket, and write fileno to start of the context file

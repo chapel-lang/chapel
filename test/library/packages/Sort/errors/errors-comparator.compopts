@@ -1,4 +1,4 @@
--scomparator=empty
--scomparator=wrong
--scomparator=keyargs
--scomparator=compareargs
+-scomparator=empty        # errors-comparator.empty.good
+-scomparator=wrong        # errors-comparator.wrong.good
+-scomparator=keyargs      # errors-comparator.keyargs.good
+-scomparator=compareargs  # errors-comparator.compareargs.good

@@ -43,7 +43,7 @@ CHPL_JEMALLOC_CFG_OPTIONS += --with-malloc-conf=purge:decay
 # from git history & out-of-tree builds, explicitly set the version
 CHPL_JEMALLOC_CFG_OPTIONS += --with-version=`cat $(JEMALLOC_SUBDIR)/VERSION`
 
-ifeq ($(CHPL_LIBMODE),shared)
+ifeq ($(CHPL_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 

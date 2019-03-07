@@ -14,7 +14,6 @@ Major Platforms
    knl
    cygwin
    aws
-   arm
 
 
 Networks
@@ -35,5 +34,3 @@ Older Platforms
    :maxdepth: 1
 
    ibm
-   marenostrum
-   sgi

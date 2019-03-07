@@ -12,7 +12,7 @@ record R {
   var field;
 
   proc init() {
-    field = new Shared(new Impl(1));
+    field = new shared Impl(1);
   }
 }
 

@@ -253,7 +253,7 @@ proc Gen_RMAT_graph ( a : real,
       var v = Edges (e).end  ;
 
       if ( v != u ) then {
-        if G.Neighbors (u).member(v) then {
+        if G.Neighbors (u).contains(v) then {
           collisions += 1;
         }
         else {

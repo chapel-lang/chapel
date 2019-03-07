@@ -10,6 +10,5 @@ class Foo {
   }
 }
 
-var foo = new Foo();
+var foo = new borrowed Foo();
 writeln(foo);
-delete foo;

@@ -47,13 +47,20 @@
 //
 // See sparse_array.h for implementation details.
 
+// Doing this simplifies the logic below.
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#if __has_feature(memory_sanitizer)
+#include <sanitizer/msan_interface.h>
+#endif
 #include <algorithm>
 #include <memory>
 #include <utility>
-#include <vector>
 
 namespace re2 {
 
@@ -64,8 +71,8 @@ class SparseSetT {
   explicit SparseSetT(int max_size);
   ~SparseSetT();
 
-  typedef typename std::vector<int>::iterator iterator;
-  typedef typename std::vector<int>::const_iterator const_iterator;
+  typedef int* iterator;
+  typedef const int* const_iterator;
 
   // Return the number of entries in the set.
   int size() const {
@@ -79,17 +86,17 @@ class SparseSetT {
 
   // Iterate over the set.
   iterator begin() {
-    return dense_.begin();
+    return dense_.get();
   }
   iterator end() {
-    return dense_.begin() + size_;
+    return dense_.get() + size_;
   }
 
   const_iterator begin() const {
-    return dense_.begin();
+    return dense_.get();
   }
   const_iterator end() const {
-    return dense_.begin() + size_;
+    return dense_.get() + size_;
   }
 
   // Change the maximum size of the set.
@@ -146,7 +153,7 @@ class SparseSetT {
         create_index(i);
     }
     DebugCheckInvariants();
-    return dense_.begin() + sparse_to_dense_[i];
+    return dense_.get() + sparse_[i];
   }
 
   // Add the index i to the set.
@@ -160,24 +167,21 @@ class SparseSetT {
   // and at the beginning and end of all public non-const member functions.
   void DebugCheckInvariants() const;
 
-  static bool ShouldInitializeMemory() {
-#if defined(__has_feature)
+  // Initializes memory for elements [min, max).
+  void MaybeInitializeMemory(int min, int max) {
 #if __has_feature(memory_sanitizer)
-    return true;
-#else
-    return false;
-#endif
+    __msan_unpoison(sparse_.get() + min, (max - min) * sizeof sparse_[0]);
 #elif defined(RE2_ON_VALGRIND)
-    return true;
-#else
-    return false;
+    for (int i = min; i < max; i++) {
+      sparse_[i] = 0xababababU;
+    }
 #endif
   }
 
   int size_ = 0;
   int max_size_ = 0;
-  std::unique_ptr<int[]> sparse_to_dense_;
-  std::vector<int> dense_;
+  std::unique_ptr<int[]> sparse_;
+  std::unique_ptr<int[]> dense_;
 };
 
 template<typename Value>
@@ -190,19 +194,18 @@ void SparseSetT<Value>::resize(int max_size) {
   DebugCheckInvariants();
   if (max_size > max_size_) {
     std::unique_ptr<int[]> a(new int[max_size]);
-    if (sparse_to_dense_) {
-      std::copy_n(sparse_to_dense_.get(), max_size_, a.get());
+    if (sparse_) {
+      std::copy_n(sparse_.get(), max_size_, a.get());
     }
-    sparse_to_dense_ = std::move(a);
+    sparse_ = std::move(a);
 
-    dense_.resize(max_size);
-
-    if (ShouldInitializeMemory()) {
-      for (int i = max_size_; i < max_size; i++) {
-        sparse_to_dense_[i] = 0xababababU;
-        dense_[i] = 0xababababU;
-      }
+    std::unique_ptr<int[]> b(new int[max_size]);
+    if (dense_) {
+      std::copy_n(dense_.get(), max_size_, b.get());
     }
+    dense_ = std::move(b);
+
+    MaybeInitializeMemory(max_size_, max_size);
   }
   max_size_ = max_size;
   if (size_ > max_size_)
@@ -218,33 +221,26 @@ bool SparseSetT<Value>::contains(int i) const {
   if (static_cast<uint32_t>(i) >= static_cast<uint32_t>(max_size_)) {
     return false;
   }
-  // Unsigned comparison avoids checking sparse_to_dense_[i] < 0.
-  return (uint32_t)sparse_to_dense_[i] < (uint32_t)size_ &&
-         dense_[sparse_to_dense_[i]] == i;
+  // Unsigned comparison avoids checking sparse_[i] < 0.
+  return (uint32_t)sparse_[i] < (uint32_t)size_ &&
+         dense_[sparse_[i]] == i;
 }
 
 template<typename Value>
 void SparseSetT<Value>::create_index(int i) {
   assert(!contains(i));
   assert(size_ < max_size_);
-  sparse_to_dense_[i] = size_;
+  sparse_[i] = size_;
   dense_[size_] = i;
   size_++;
 }
 
 template<typename Value> SparseSetT<Value>::SparseSetT(int max_size) {
-  max_size_ = max_size;
-  sparse_to_dense_ = std::unique_ptr<int[]>(new int[max_size]);
-  dense_.resize(max_size);
+  sparse_.reset(new int[max_size]);
+  dense_.reset(new int[max_size]);
   size_ = 0;
-
-  if (ShouldInitializeMemory()) {
-    for (int i = 0; i < max_size; i++) {
-      sparse_to_dense_[i] = 0xababababU;
-      dense_[i] = 0xababababU;
-    }
-  }
-
+  MaybeInitializeMemory(size_, max_size);
+  max_size_ = max_size;
   DebugCheckInvariants();
 }
 
@@ -255,7 +251,7 @@ template<typename Value> SparseSetT<Value>::~SparseSetT() {
 template<typename Value> void SparseSetT<Value>::DebugCheckInvariants() const {
   assert(0 <= size_);
   assert(size_ <= max_size_);
-  assert(size_ == 0 || sparse_to_dense_ != NULL);
+  assert(size_ == 0 || sparse_ != NULL);
 }
 
 // Comparison function for sorting.

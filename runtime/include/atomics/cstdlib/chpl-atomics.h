@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -66,6 +66,16 @@ typedef Atomic(_real32) atomic__real32;
 static inline memory_order _defaultOfMemoryOrder(void) {
   return memory_order_seq_cst;
 }
+
+static inline void chpl_atomic_thread_fence(memory_order order)
+{
+  atomic_thread_fence(order);
+}
+static inline void chpl_atomic_signal_fence(memory_order order)
+{
+  atomic_signal_fence(order);
+}
+
 
 //
 // Given an input memory order, find a memory order that can be used for

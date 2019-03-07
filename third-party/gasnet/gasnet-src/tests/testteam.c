@@ -1,13 +1,10 @@
 /* $Source: bitbucket.org:berkeleylab/gasnet.git/tests/testteam.c $
- * LBNL 2009
+ * Copyright (c) 2009, The Regents of the University of California
  */
 
-/* Description: basic GASNet team implementation test and team barrier
-   test.  Column teams and row teams of a process grid are created and
-   team barriers are performed on these teams. */
+/* Description: basic test of split and barrier using row and col teams */
 
-#include <gasnet.h>
-#include <gasnet_coll.h>
+#include <gasnetex.h>
 
 #ifndef TEST_SEGSZ
 #define TEST_SEGSZ (2*1024*1024)
@@ -16,46 +13,27 @@
 #include <math.h> /* for sqrt() */
 #include <test.h>
 
+static gex_Client_t      myclient;
+static gex_EP_t          myep;
+static gex_TM_t          myteam;
+static gex_Segment_t     mysegment;
+
 int main(int argc, char **argv) 
 {
-  int mynode, nodes, iters=0;
+  int iters=0;
   int64_t start,total;
-  int i = 0;
-  gasnet_node_t nrows, ncols, my_row, my_col;
-  void *clientdata = NULL;
-  gasnet_team_handle_t my_row_team, my_col_team;
-  static uint8_t *A, *B;
+  gex_Rank_t nrows, ncols, my_row, my_col;
+  gex_TM_t my_row_tm, my_col_tm;
 
-  
-  
-  gasnet_seginfo_t teamA_scratch;
-  gasnet_seginfo_t teamB_scratch;
-  gasnet_seginfo_t const * test_segs;
-  GASNET_Safe(gasnet_init(&argc, &argv));
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testteam", &argc, &argv, 0));
 
-  GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
-  
-#if !GASNET_SEQ
-  MSG0("WARNING: This test does not work for NON-SEQ builds yet.. skipping test\n");
-  gasnet_exit(0);
-#endif
-
-  A = TEST_MYSEG();
-  
-  gasnet_coll_init(NULL, 0, NULL, 0, 0);
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
 
   test_init("testteam", 1, "(iters) (nrows) (ncols)");
 
-  mynode = gasnet_mynode();
-  nodes = gasnet_nodes();
-  test_segs = TEST_SEGINFO();
+  gex_Rank_t mynode = gex_TM_QueryRank(myteam);
+  gex_Rank_t nodes = gex_TM_QuerySize(myteam);
   
-  teamA_scratch.addr = test_segs[mynode].addr;
-  teamA_scratch.size = test_segs[mynode].size/2;
-  
-  teamB_scratch.addr = (uint8_t*)teamA_scratch.addr + teamA_scratch.size;
-  teamB_scratch.size = teamA_scratch.size;
-
   if (argc > 4)
     test_usage();
 
@@ -83,15 +61,32 @@ int main(int argc, char **argv)
   my_row = mynode / ncols;
   my_col = mynode % ncols;
                  
-  my_row_team = gasnet_coll_team_split(GASNET_TEAM_ALL,
-                                        my_row,
-                                        my_col,
-                                        &teamA_scratch);
+  struct {
+    uint8_t *addr;
+    size_t   size;
+  } teamA_scratch, teamB_scratch;
 
-  my_col_team = gasnet_coll_team_split(GASNET_TEAM_ALL,
-                                        my_col,
-                                        my_row,
-                                        &teamB_scratch);
+  {
+    uint8_t  *addr = TEST_MYSEG();
+    uintptr_t size = TEST_SEGSZ / 2;
+
+    assert_always(size >= gex_TM_Split(&my_row_tm, myteam, my_row, my_col, 0, 0,
+                                       GEX_FLAG_TM_SCRATCH_SIZE_MIN));
+    assert_always(size >= gex_TM_Split(&my_col_tm, myteam, my_col, my_row, 0, 0,
+                                       GEX_FLAG_TM_SCRATCH_SIZE_MIN));
+
+    teamA_scratch.addr = addr;
+    teamA_scratch.size = size;
+  
+    teamB_scratch.addr = addr + size;
+    teamB_scratch.size = size;
+  }
+
+  gex_TM_Split(&my_row_tm, myteam, my_row, 1+2*my_col /*gaps*/,
+               teamA_scratch.addr, teamA_scratch.size, 0);
+
+  gex_TM_Split(&my_col_tm, myteam, my_col, my_row,
+               teamB_scratch.addr, teamB_scratch.size, 0);
 
   if (my_col == 0) {
     printf("row team %u: Running team barrier test with row teams...\n",
@@ -101,9 +96,8 @@ int main(int argc, char **argv)
 
   BARRIER();
   start = TIME();
-  for (i=0; i < iters; i++) {
-    gasnet_coll_barrier_notify(my_row_team, 0, GASNET_BARRIERFLAG_UNNAMED);
-    gasnet_coll_barrier_wait(my_row_team, 0, GASNET_BARRIERFLAG_UNNAMED);
+  for (int i=0; i < iters; i++) {
+    gex_Event_Wait(gex_Coll_BarrierNB(my_row_tm, 0));
   }
   total = TIME() - start;
 
@@ -121,9 +115,8 @@ int main(int argc, char **argv)
 
   BARRIER();
   start = TIME();
-  for (i=0; i < iters; i++) {
-    gasnet_coll_barrier_notify(my_col_team, 0, GASNET_BARRIERFLAG_UNNAMED);
-    gasnet_coll_barrier_wait(my_col_team, 0, GASNET_BARRIERFLAG_UNNAMED);
+  for (int i=0; i < iters; i++) {
+    gex_Event_Wait(gex_Coll_BarrierNB(my_row_tm, 0));
   }
   total = TIME() - start;
   

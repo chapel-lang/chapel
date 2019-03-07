@@ -5,7 +5,7 @@ config const N = 16;
 const FullDom = {0..#N, 0..#N};
 
 config type layoutType = DefaultDist;
-var layout = new layoutType;
+var layout = new unmanaged layoutType;
 var FullSparseDom: sparse subdomain(FullDom) dmapped new dmap(layout);
 var FullSparseArr: [FullSparseDom] int;
 

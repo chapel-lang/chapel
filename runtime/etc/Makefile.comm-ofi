@@ -1,4 +1,4 @@
-# Copyright 2004-2018 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -15,12 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
-# Assume this variable is set:
-# - LIBFABRIC_LIB_DIR
-#
-
-GEN_LFLAGS += -L$(LIBFABRIC_LIB_DIR) -Wl,-rpath,$(LIBFABRIC_LIB_DIR)
+ifneq ($(LIBFABRIC_DIR),)
+  ifneq ($(wildcard $(LIBFABRIC_DIR)/lib64),)
+    LIBFAB_LIB_DIR := $(LIBFABRIC_DIR)/lib64
+  else ifneq ($(wildcard $(LIBFABRIC_DIR)/lib),)
+    LIBFAB_LIB_DIR := $(LIBFABRIC_DIR)/lib
+  endif
+  ifneq ($(LIBFAB_LIB_DIR),)
+    GEN_LFLAGS += -L$(LIBFAB_LIB_DIR) -Wl,-rpath,$(LIBFAB_LIB_DIR)
+  endif
+endif
 LIBS += -lfabric -ldl
 
 #
@@ -28,3 +32,21 @@ LIBS += -lfabric -ldl
 # code) is being linked in.
 #
 LD = $(CXX)
+
+ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
+  MPI_LIB_NAME = mpi
+  ifneq ($(MPI_DIR),)
+    ifneq ($(wildcard $(MPI_DIR)/lib64),)
+      MPI_LIB_DIR := $(MPI_DIR)/lib64
+    else ifneq ($(wildcard $(MPI_DIR)/lib),)
+      MPI_LIB_DIR := $(MPI_DIR)/lib
+    endif
+    ifneq ($(MPI_LIB_DIR),)
+      GEN_LFLAGS += -L$(MPI_LIB_DIR) -Wl,-rpath,$(MPI_LIB_DIR)
+      ifneq ($(wildcard $(MPI_LIB_DIR)/libmpich.*),)
+        MPI_LIB_NAME = mpich
+      endif
+    endif
+  endif
+  LIBS += -l$(MPI_LIB_NAME)
+endif

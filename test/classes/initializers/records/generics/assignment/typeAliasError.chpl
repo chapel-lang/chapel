@@ -2,7 +2,7 @@ record Generic {
   type eltType;
   var value: eltType;
 
-  proc init(value: ?eltType) {
+  proc init(type eltType, value: eltType) {
     this.eltType = eltType;
     this.value   = value;
   }

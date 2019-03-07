@@ -6,12 +6,12 @@ proc LAPACK_cgesv_test(){
   if verbose_test then
     writeln( "LAPACK_cgesv\n===============================" );
 
-  var A = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 );
-  var X = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 ); 
+  var A = new owned LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 );
+  var X = new owned LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 ); 
   var B = A*X;
   
-  var A_work = new LAPACK_Matrix( A );
-  var B_work = new LAPACK_Matrix( B );
+  var A_work = new owned LAPACK_Matrix( A );
+  var B_work = new owned LAPACK_Matrix( B );
   if verbose_test then
     writeln(  "A\n", A_work.toString(), 
             "\nX\n", X.toString(), 
@@ -52,12 +52,12 @@ proc LAPACKE_cgesv_row_major_test(){
   if verbose_test then
     writeln( "LAPACKE_cgesv_row_major\n===============================" );
 
-  var A = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  );
-  var X = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  ); 
+  var A = new owned LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  );
+  var X = new owned LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  ); 
   var B = A*X;
   
-  var A_work = new LAPACK_Matrix( A );
-  var B_work = new LAPACK_Matrix( B );
+  var A_work = new owned LAPACK_Matrix( A );
+  var B_work = new owned LAPACK_Matrix( B );
   if verbose_test then
     writeln(  "A\n", A_work.toString(), 
             "\nX\n", X.toString(), 
@@ -96,12 +96,12 @@ proc LAPACKE_cgesv_col_major_test(){
   if verbose_test then
     writeln( "LAPACKE_cgesv_col_major\n===============================" );
 
-  var A = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 );
-  var X = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 ); 
+  var A = new owned LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 );
+  var X = new owned LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 ); 
   var B = A*X;
   
-  var A_work = new LAPACK_Matrix( A );
-  var B_work = new LAPACK_Matrix( B );
+  var A_work = new owned LAPACK_Matrix( A );
+  var B_work = new owned LAPACK_Matrix( B );
   if verbose_test then
     writeln(  "A\n", A_work.toString(), 
             "\nX\n", X.toString(), 
@@ -140,12 +140,12 @@ proc gesv_row_major_test(){
   if verbose_test then
     writeln( "gesv_row_major\n===============================" );
 
-  var A = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  );
-  var X = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  ); 
+  var A = new owned LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  );
+  var X = new owned LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  ); 
   var B = A*X;
   
-  var A_work = new LAPACK_Matrix( A );
-  var B_work = new LAPACK_Matrix( B );
+  var A_work = new owned LAPACK_Matrix( A );
+  var B_work = new owned LAPACK_Matrix( B );
   if verbose_test then
     writeln(  "A\n", A_work.toString(), 
             "\nX\n", X.toString(), 
@@ -180,12 +180,12 @@ proc gesv_col_major_test(){
   if verbose_test then
     writeln( "gesv_col_major\n===============================" );
 
-  var A = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 );
-  var X = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 ); 
+  var A = new owned LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 );
+  var X = new owned LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 ); 
   var B = A*X;
   
-  var A_work = new LAPACK_Matrix( A );
-  var B_work = new LAPACK_Matrix( B );
+  var A_work = new owned LAPACK_Matrix( A );
+  var B_work = new owned LAPACK_Matrix( B );
   if verbose_test then
     writeln(  "A\n", A_work.toString(), 
             "\nX\n", X.toString(), 

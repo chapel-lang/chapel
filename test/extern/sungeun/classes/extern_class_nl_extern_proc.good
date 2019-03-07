@@ -1,3 +1,0 @@
-extern_class_nl_extern_proc.chpl:5: warning: Extern classes have been deprecated
-(x = 5)
-extern_class_nl_extern_proc.chpl:13: error: cannot pass non-local extern class to extern procedure

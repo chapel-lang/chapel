@@ -26,7 +26,6 @@ class Impl
 // When the reference count goes to zero, the implementation is deleted.
 record Handle
 {
-  pragma "unsafe"
   var _impl : unmanaged Impl;
 
   proc init() { _impl = nil; }

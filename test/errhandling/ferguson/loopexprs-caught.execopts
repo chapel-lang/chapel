@@ -1,0 +1,10 @@
+--throwx=0 --throwy=0 # loopexprs-caught.00.good
+--throwx=1 --throwy=0 # loopexprs-caught.10.good
+--throwx=1 --throwy=1 # loopexprs-caught.11.good
+--throwx=1 --throwy=2 # loopexprs-caught.12.good
+--throwx=1 --throwy=3 # loopexprs-caught.13.good
+#pending resolution of #11315:
+# --throwx=2 --throwy=0 # loopexprs-caught.20.good
+# --throwx=2 --throwy=1 # loopexprs-caught.21.good
+# --throwx=2 --throwy=2 # loopexprs-caught.22.good
+# --throwx=2 --throwy=3 # loopexprs-caught.23.good

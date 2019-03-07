@@ -196,10 +196,34 @@ writeln(x.type:string);
 \end{chapeloutput}
 \end{chapelexample}
 
+\begin{chapelexample}{query.chpl}
+Type queries can also be used to constrain the types of other function arguments
+and/or the return type.  In this example, the type query on the first argument
+establishes type constraints on the other arguments and also determines the
+return type.
+
+The code
+\begin{chapel}
+writeln(sumOfThree(1,2,3));
+writeln(sumOfThree(4.0,5.0,3.0));
+
+proc sumOfThree(x: ?t, y:t, z:t):t {
+   var sum: t;
+
+   sum = x + y + z;
+   return sum;
+}
+\end{chapel}
+produces the output
+\begin{chapelprintoutput}{}
+6
+12.0
+\end{chapelprintoutput}
+\end{chapelexample}
+
 \subsection{Formal Arguments of Generic Type}
 \label{Formal_Arguments_of_Generic_Type}
 \index{formal arguments!generic}
-\index{formal arguments!partially concrete}
 
 If the type of a formal argument is a generic type, the type of the
 formal argument is taken to be the type of the actual argument passed
@@ -218,10 +242,18 @@ proc writeTop(s: Stack) {
 \end{chapel}
 \end{example}
 
-Types and parameters may be queried from the top-level types of formal
+Types and parameters may be queried from the types of formal
 arguments as well.  In the example above, the formal argument's type
-could also be specified as \chpl{Stack(?type)} in which case the
-symbol \chpl{type} is equivalent to \chpl{s.itemType}.
+could also be specified as \chpl{Stack(?t)} in which case the
+symbol \chpl{t} is equivalent to \chpl{s.itemType}.
+
+\index{integral (generic type)@\chpl{integral} (generic type)}
+\index{numeric (generic type)@\chpl{numeric} (generic type)}
+\index{enumerated (generic type)@\chpl{enumerated} (generic type)}
+The types \chpl{integral}, \chpl{numeric} and \chpl{enumerated}
+are generic types that can only be instantiated with, respectively, the
+signed and unsigned integral types, all of the numeric types, and
+all enumerated types.
 
 Note that generic types which have default values for all of their
 generic fields, \emph{e.g. range}, are not generic when simply
@@ -246,26 +278,56 @@ proc g(c: C(?)) {
 \end{chapel}
 \end{example}
 
+\subsection{Formal Arguments of Partially Generic Type}
+\label{Formal_Arguments_of_Partially_Generic_Type}
+\index{formal arguments!partially concrete}
+\index{formal arguments!partially generic}
 \index{where@\chpl{where}!implicit}
-The generic type may be specified with some queries and some exact
-values.  Using exact values in this manner makes the argument
+
+The generic type for a formal argument may be specified with some queries
+or generic types and some concrete types or values.
+Using concrete types or values in this manner makes the argument
 \emph{partially concrete} for the purpose of function resolution.
-\begin{example}
-Given the class definition
+
+\begin{chapelexample}{nested-type-queries.chpl}
+
+Given the code:
 \begin{chapel}
 class C {
-  type t;
-  type tt;
+  type elementType;
+  type indexType;
+  type containerType;
+}
+class Container {
+  type containedType;
+}
+proc f(c: C(real,?t,?u)) {
+  // ...
 }
 \end{chapel}
-then the function definition
+
+The function \chpl{f} can only apply when the \chpl{c.elementType==real}.
+
+It's also possible to use a generic type as an argument to \chpl{C}. The
+following function, \chpl{g}, can only apply when \chpl{c.containerType} is
+an instance of \chpl{Container}:
+
 \begin{chapel}
-proc f(c: C(?t,real)) {
-  // body
+proc g(c: C(?t,?u,Container)) {
+  // ...
 }
 \end{chapel}
-specifies that \chpl{f} should be chosen only when \chpl{c.tt==real}.
-\end{example}
+
+\begin{chapelpost}
+var cc = new borrowed Container(int);
+var c = new borrowed C(real, int, cc.type);
+f(c);
+g(c);
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
 Similarly, a tuple type with query arguments
 forms a \emph{partially concrete} argument.
 \begin{example}
@@ -277,10 +339,32 @@ proc f(tuple: (?t,real)) {
 \end{chapel}
 specifies that \chpl{tuple.size == 2 && tuple(2).type == real}.
 \end{example}
+
+Homogeneous tuple arguments of generic type are also supported:
+\begin{chapelexample}{partially-concrete-star-tuple.chpl}
+\begin{chapel}
+record Number {
+  var n;
+}
+proc f(tuple: 2*Number) {
+}
+\end{chapel}
+\begin{chapelpost}
+f( (new Number(1), new Number(2)) );
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+
+specifies that \chpl{f} accepts a tuple with 2 elements, where each
+element has the same type, and that type is instantiation of
+\chpl{Number}.
+\end{chapelexample}
+
 Note that specifying a tuple consisting entirely of queried types
 does create a \emph{partially concrete argument} because the size
 of the tuple is constrained.
-\begin{example}
+\begin{chapelexample}{partially-concrete-tuple-ambiguity.chpl}
+
 The following program results in an ambiguity error:
 \begin{chapel}
 proc f(tuple: (?,real)) {
@@ -291,40 +375,20 @@ f( (1.0, 2.0) );
 \end{chapel}
 since the \chpl{tuple} arguments in both versions of \chpl{f} are
 \emph{partially concrete}.
-\end{example}
-
-\begin{chapelexample}{query.chpl}
-Type queries can also be used to constrain the types of other function arguments
-and/or the return type.  In this example, the type query on the first argument
-establishes type constraints on the other arguments and also determines the
-return type.
-
-The code
-\begin{chapel}
-writeln(sumOfThree(1,2,3));
-writeln(sumOfThree(4.0,5.0,3.0));
-
-proc sumOfThree(x: ?t, y:t, z:t):t {
-   var sum: t;
-   
-   sum = x + y + z;
-   return sum;
-}
-\end{chapel}
-produces the output
-\begin{chapelprintoutput}{}
-6
-12.0
-\end{chapelprintoutput}
+\begin{chapelprediff}
+\#!/usr/bin/env sh
+\# This prediff exists to avoid underscores in the output
+\# which confuse tex
+testname=$1
+outfile=$2
+head -n 1 $outfile > $outfile.2
+mv $outfile.2 $outfile
+\end{chapelprediff}
+\begin{chapeloutput}
+partially-concrete-tuple-ambiguity.chpl:5: error: ambiguous call 'f(2*real(64))'
+\end{chapeloutput}
 \end{chapelexample}
 
-\index{integral (generic type)@\chpl{integral} (generic type)}
-\index{numeric (generic type)@\chpl{numeric} (generic type)}
-\index{enumerated (generic type)@\chpl{enumerated} (generic type)}
-The generic types \chpl{integral}, \chpl{numeric} and \chpl{enumerated}
-are generic types that can only be instantiated with, respectively, the
-signed and unsigned integral types, all of the numeric types, and
-enumerated types.
 
 \subsection{Formal Arguments of Generic Array Types}
 \label{Formal_Arguments_of_Generic_Array_Types}
@@ -343,16 +407,13 @@ A queried domain may not be modified via the name to which it is bound
 \label{Function_Visibility_in_Generic_Functions}
 \index{generics!function visibility}
 
-Function visibility in generic functions is altered depending on the
-instantiation.  When resolving function calls made within generic
-functions, the visible functions are taken from any call site at which
+When resolving function calls made within generic
+functions, there is an additional source of visible functions. Besides
+functions visible to the generic function's point of declaration,
+visible functions are also taken from one of the call sites at which
 the generic function is instantiated for each particular
 instantiation.  The specific call site chosen is arbitrary and it is
 referred to as the \emph{point of instantiation}.
-
-For function calls that specify the module
-explicitly~(\rsec{Explicit_Naming}), an implicit use of the specified
-module exists at the call site.
 
 \begin{chapelexample}{point-of-instantiation.chpl}
 Consider the following code which defines a generic
@@ -443,20 +504,20 @@ of types and parameter values, one type or value per generic field.
 % Here are the aspects to be defined for each kind of generic field:
 % - what it makes the class/record generic over
 % - the type constructor arg that gets created
-% - the default constructor arg that gets created
-% - the requirements on the corresponding user-defined constructor arg
+% - the default initializer arg that gets created
+% - the requirements on the corresponding user-defined initializer arg
 % - for each of the above args:
 %    - what kind of actual it accepts (type, param, value)
 %    - what is the semantics;
 %      i.e. how it corresponds to the class/record's genericity
 %    - what is the arg's default, if any
-% 
+%
 % In the presentation below, some of these aspects are discussed
-% in the field-kind-specific subsections, some in the constructor-specific
+% in the field-kind-specific subsections, some in the initializer-specific
 % subsections, some in both.  I.e. there is an overlap between
-% field-kind and constructor subsections; that should be OK but feel free
+% field-kind and initializer subsections; that should be OK but feel free
 % to clean up.
-% 
+%
 % It would be cool to summarize that in a table
 % (one dimension: field kinds; the other dimension: aspects).
 
@@ -477,8 +538,8 @@ Similar to a parameter field, it cannot be assigned
 except in its declaration.
 
 The type alias becomes an argument with intent \chpl{type} to
-the compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors})
-for its class or record. This makes the compiler-generated constructor generic.
+the compiler-generated initializer (\rsec{Generic_Compiler_Generated_Initializers})
+for its class or record. This makes the compiler-generated initializer generic.
 The type alias also becomes an argument with intent \chpl{type} to
 the type constructor (\rsec{Type_Constructors}).
 If the type alias declaration binds it to a type, that type
@@ -486,8 +547,8 @@ becomes the default for these arguments, otherwise they have no defaults.
 
 The class or record is instantiated by binding the type alias
 to the actual type passed to the corresponding argument of
-a user-defined (\rsec{Generic_User_Constructors})
-or compiler-generated constructor or type constructor.
+a user-defined (\rsec{Generic_User_Initializers})
+or compiler-generated initializer or type constructor.
 If that argument has a default, the actual type can be omitted, in
 which case the default will be used instead.
 
@@ -499,11 +560,11 @@ element contained in the linked list.
 class Node {
   type eltType;
   var data: eltType;
-  var next: Node(eltType);
+  var next: unmanaged Node(eltType);
 }
 \end{chapel}
 \begin{chapelpost}
-var n: Node(real) = new Node(real, 3.14);
+var n: unmanaged Node(real) = new unmanaged Node(real, 3.14);
 writeln(n.data);
 writeln(n.next);
 writeln(n.next.type:string);
@@ -512,7 +573,7 @@ delete n;
 \begin{chapeloutput}
 3.14
 nil
-Node(real(64))
+unmanaged Node(real(64))
 \end{chapeloutput}
 The call \chpl{new Node(real, 3.14)} creates a node in the linked list
 that contains the value \chpl{3.14}.  The \chpl{next} field is set to
@@ -535,19 +596,19 @@ The field can be accessed from a class or record instance or from the
 instantiated class or record type itself.
 
 % A parameter defined in a class or record is accessed as if it were a
-% field.  This access returns a parameter.  
+% field.  This access returns a parameter.
 The parameter becomes an argument with intent \chpl{param} to the
-compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors})
+compiler-generated initializer (\rsec{Generic_Compiler_Generated_Initializers})
 for that class or record.  This makes the compiler-generated
-constructor generic.  The parameter also becomes an argument
+initializer generic.  The parameter also becomes an argument
 with intent \chpl{param} to the type  constructor (\rsec{Type_Constructors}).
 If the parameter declaration has an initialization expression, that expression
 becomes the default for these arguments, otherwise they have no defaults.
 
 The class or record is instantiated by binding the parameter
 to the actual value passed to the corresponding argument of
-a user-defined (\rsec{Generic_User_Constructors})
-or compiler-generated constructor or type constructor.
+a user-defined (\rsec{Generic_User_Initializers})
+or compiler-generated initializer or type constructor.
 If that argument has a default, the actual value can be omitted, in
 which case the default will be used instead.
 
@@ -585,17 +646,17 @@ specified by \chpl{IntegerTuple} is a generic type.
 If a \chpl{var} or \chpl{const} field in a class or record has no specified type or
 initialization expression, the class or record is generic over the
 type of that field.  The field becomes an argument with default intent to
-the compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors}).
+the compiler-generated initializer (\rsec{Generic_Compiler_Generated_Initializers}).
 That argument has no specified type and no default
-value. This makes the compiler-generated constructor generic.
+value. This makes the compiler-generated initializer generic.
 The field also becomes an argument with \chpl{type} intent and no default
 to the type constructor (\rsec{Type_Constructors}).
 Correspondingly, an actual value must always be passed to the default
-constructor argument and an actual type to the type constructor argument.
+initializer argument and an actual type to the type constructor argument.
 
 The class or record is instantiated by binding the type of the field
 to the type of the value passed to the corresponding argument
-of a user-defined (\rsec{Generic_User_Constructors}) or compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors}).
+of a user-defined (\rsec{Generic_User_Initializers}) or compiler-generated initializer (\rsec{Generic_Compiler_Generated_Initializers}).
 When the type constructor is invoked, the class or record is instantiated
 by binding the type of the field to the actual type passed to
 the corresponding argument.
@@ -609,15 +670,15 @@ rather omits the type from the \chpl{data} field.
 \begin{chapel}
 class Node {
   var data;
-  var next: Node(data.type) = nil;
+  var next: unmanaged Node(data.type) = nil;
 }
 \end{chapel}
 A node with integer element type can be defined in the call to the
-constructor.  The call \chpl{new Node(1)} defines a node with the
+initializer.  The call \chpl{new Node(1)} defines a node with the
 value \chpl{1}.  The code
 \begin{chapel}
-var list = new Node(1);
-list.next = new Node(2);
+var list = new unmanaged Node(1);
+list.next = new unmanaged Node(2);
 \end{chapel}
 \begin{chapelpost}
 writeln(list.data);
@@ -637,7 +698,7 @@ as \chpl{Node(int)}.
 \subsection{The Type Constructor}
 \label{Type_Constructors}
 \index{generics!type constructor}
-\index{constructors!type constructors}
+\index{initializers!type constructors}
 
 A type constructor is automatically created for each class or record.
 A type constructor is a type function (\rsec{Type_Return_Intent}) that has
@@ -652,7 +713,7 @@ formal argument also has intent \chpl{type}. It accepts the type
 of the field, as opposed to a value as is the case for a parameter field.
 The formal arguments occur in the same order as the fields are
 declared and have the same names as the corresponding fields.
-Unlike the compiler-generated constructor, the type constructor has only
+Unlike the compiler-generated initializer, the type constructor has only
 those arguments that correspond to generic fields.
 
 A call to a type constructor accepts actual types and parameter values
@@ -679,22 +740,23 @@ when invoking the type constructor.
 \index{methods!generic}
 
 All methods bound to generic classes or records, including
-constructors, are generic over the implicit \chpl{this} argument.
+initializers, are generic over the implicit \chpl{this} argument.
 This is in addition to being generic over any other argument that is generic.
 
-\subsection{The Compiler-Generated Constructor}
-\label{Generic_Compiler_Generated_Constructors}
-\index{generics!constructors!compiler-generated}
-\index{constructors!compiler-generated!for generic classes or records}
+\subsection{The Compiler-Generated Initializer}
+\label{Generic_Compiler_Generated_Initializers}
+\index{generics!initializers!compiler-generated}
+\index{initializers!compiler-generated!for generic classes or records}
 
-If no user-defined constructors are supplied for a given generic class, the
+If no user-defined initializers are supplied for a given generic class, the
 compiler generates one following in a manner similar to that for concrete
-classes (\rsec{The_Compiler_Generated_Constructor}).
-However, the compiler-generated constructor for a generic class or record
-(\rsec{The_Compiler_Generated_Constructor}) is generic over each argument that
+classes (\rsec{The_Compiler_Generated_Initializer}).
+However, the compiler-generated initializer for a generic class or record
+(\rsec{The_Compiler_Generated_Initializer}) is generic over each argument that
 corresponds to a generic field, as specified above.
-The argument has intent \chpl{type} for a type alias field and is a
-parameter for a parameter field. It accepts the type to be bound
+
+The argument has intent \chpl{type} for a type alias field and has intent
+\chpl{param} for a parameter field. It accepts the type to be bound
 to the type alias and the value to be bound to the parameter, respectively.
 This is the same as for the type constructor.
 For a generic \chpl{var} or \chpl{const} field, the corresponding
@@ -702,39 +764,25 @@ formal argument has the default intent and accepts the value
 for the field to be initialized with. The type of the field
 is inferred automatically to be the type of the initialization value.
 
-The default values for the generic arguments of the compiler-generated constructor
+The default values for the generic arguments of the compiler-generated initializer
 are the same as for the type constructor (\rsec{Type_Constructors}).
 For example, the arguments corresponding to the generic \chpl{var}
 and \chpl{const} fields, if any, never have defaults, so the corresponding
 actual values must always be provided.
 
-\subsection{User-Defined Constructors}
-\label{Generic_User_Constructors}
-\index{generics!constructors!user-defined}
-\index{constructors!user-defined!for generic classes or records}
+\subsection{User-Defined Initializers}
+\label{Generic_User_Initializers}
+\index{generics!initializers!user-defined}
+\index{initializers!user-defined!for generic classes or records}
 
-If a generic field of a class does not have an initialization expression
-or a type alias is unspecified, each user-defined constructor for that
-class must provide a formal argument whose name
-matches the name of the field.
+If a generic field of a class or record does not have a default value or type
+alias, each user-defined initializer for that class must explicitly initialize
+that field.
 
-If the name of a formal argument in a user-defined constructor matches the name
-of a generic field that does not have an initialization
-expression, is a type alias, or is a parameter field, the field is
-automatically initialized at the beginning of the constructor invocation
-to the actual value of that argument.
-This is done by passing that formal argument to the implicit invocation
-of the compiler-generated constructor during default-initialization (\rsec{Default_Initialization}).
+\begin{chapelexample}{initializersForGenericFields.chpl}
 
-%%  The following story is nicer but it's not how it is implemented:
-%If the name of a formal argument in a class constructor
-%matches the name of a generic field, the field is automatically initialized
-%to the actual value for that argument upon the constructor invocation.
-%If the generic field does not have an initialization expression,
-%such a matching formal argument must be provided in each constructor
-%for that class.
+% This example is horrible!
 
-\begin{chapelexample}{constructorsForGenericFields.chpl}
 In the following code:
 \begin{chapel}
 class MyGenericClass {
@@ -750,9 +798,26 @@ class MyGenericClass {
   var v5 = 555;
   var x5: t5; // this field is not generic
 
-  proc MyGenericClass(c1, v1, type t1, param p1) { }
-  proc MyGenericClass(type t5, param p5, c5, v5, x5,
-                     type t1, param p1, c1, v1, x1) { }
+  proc init(c1, v1, type t1, param p1) {
+    this.t1 = t1;
+    this.p1 = p1;
+    this.c1 = c1;
+    this.v1 = v1;
+    // compiler inserts initialization for remaining fields
+  }
+  proc init(type t5, param p5, c5, v5, x5,
+            type t1, param p1, c1, v1, x1) {
+    this.t1 = t1;
+    this.p1 = p1;
+    this.c1 = c1;
+    this.v1 = v1;
+    this.x1 = x1;
+    this.t5 = t5;
+    this.p5 = p5;
+    this.c5 = c5;
+    this.v5 = v5;
+    this.x5 = x5;
+  }
 }  // class MyGenericClass
 
 var g1 = new MyGenericClass(11, 111, int, 1);
@@ -766,33 +831,22 @@ writeln(g1);
 writeln(g2.p1);
 writeln(g2.p5);
 writeln(g2);
-delete g1;
-delete g2;
 \end{chapelpost}
+\begin{chapelcompopts}
+--no-warnings
+\end{chapelcompopts}
 \begin{chapeloutput}
 1
 a string
 {c1 = 11, v1 = 111, x1 = 0, c5 = 5.5, v5 = 555, x5 = 0.0}
 2
 this is g2
-{c1 = 222, v1 = 222.2, x1 = 0.0, c5 = 5.5, v5 = 555, x5 = 0}
+{c1 = 222, v1 = 222.2, x1 = 22.0, c5 = 3.3, v5 = 333, x5 = 3333}
 \end{chapeloutput}
-The arguments \chpl{t1}, \chpl{p1}, \chpl{c1}, and \chpl{v1} are
-required in all constructors for \chpl{MyGenericClass}. They can appear
-in any order. Both \chpl{MyGenericClass} constructors initialize the
-corresponding fields implicitly because these fields do not have initialization
-expressions. The second constructor also initializes implicitly
-the fields \chpl{t5} and \chpl{p5} because they are a type field
-and a parameter field. It does not initialize the fields \chpl{c5}
-and \chpl{v5} because they have initialization expressions, or
-the fields \chpl{x1} and \chpl{x5} because they are not generic fields
-(even though they are of generic types).
+The initializers are required to initialize fields \chpl{t1}, \chpl{p1},
+\chpl{c1}, and \chpl{v1}. Otherwise, field initializations may be omitted
+according to previously-described initializer semantics.
 \end{chapelexample}
-
-\begin{openissue}
-The design of constructors, especially for generic classes, is
-under development, so the above specification may change.
-\end{openissue}
 
 \pagebreak
 \section{User-Defined Compiler Diagnostics}
@@ -821,7 +875,7 @@ diagnostics to generate warnings and errors:
 \begin{chapel}
 proc foo(x, y) {
   if (x.type != y.type) then
-    compilerError("foo() called with non-matching types: ", 
+    compilerError("foo() called with non-matching types: ",
                   x.type:string, " != ", y.type:string);
   writeln("In 2-argument foo...");
 }
@@ -954,7 +1008,7 @@ generic method to particular cases. Unlike the previous two cases, a
 where clause can be used to declare special implementation of a function
 that works with some set of types - in other words, the special
 implementation can still be a generic function.  See also
-\rsec{Where_Expressions}.
+\rsec{Where_Clauses}.
 
 \section{Example: A Generic Stack}
 \label{Example_Generic_Stack}
@@ -964,15 +1018,15 @@ implementation can still be a generic function.  See also
 class MyNode {
   type itemType;              // type of item
   var item: itemType;         // item in node
-  var next: MyNode(itemType); // reference to next node (same type)
+  var next: unmanaged MyNode(itemType); // reference to next node (same type)
 }
 
 record Stack {
   type itemType;             // type of items
-  var top: MyNode(itemType); // top node on stack linked list
+  var top: unmanaged MyNode(itemType); // top node on stack linked list
 
   proc push(item: itemType) {
-    top = new MyNode(itemType, item, top);
+    top = new unmanaged MyNode(itemType, item, top);
   }
 
   proc pop() {

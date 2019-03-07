@@ -1,2 +1,0 @@
-reduction.chpl:7: error: unresolved call 'chpl__reduce5([domain(1,int(64),false)] int(64))'
-reduction.chpl:4: note: candidates are: R.chpl__reduce5(chpl_toReduce)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,10 +24,6 @@
 // representation, being in essence the common NUL-terminated C string.
 module CString {
   use ChapelStandard;
-
-  // The following method is called by the compiler to determine the default
-  // value of a given type.
-  inline proc _defaultOf(type t:c_string) return c_nil:c_string;
 
   //inline proc c_string.c_str() return this;
 
@@ -94,10 +90,19 @@ module CString {
     __primitive("=", a, b.c_str());
   }
 
+  pragma "fn synchronization free"
   extern proc chpl_bool_to_c_string(x:bool) : c_string;
+
   inline proc _cast(type t:c_string, x: chpl_anybool) {
     compilerWarning("cast from bool to c_string is deprecated");
     return chpl_bool_to_c_string(x:bool);
+  }
+
+  //
+  // casts from nil to c_string
+  //
+  inline proc _cast(type t:c_string, x: _nilType) {
+    return __primitive("cast", t, x);
   }
 
   //
@@ -110,6 +115,23 @@ module CString {
   // casts from c_void_ptr to c_string
   //
   inline proc _cast(type t:c_string, x: c_void_ptr) {
+    return __primitive("cast", t, x);
+  }
+
+  //
+  // casts from c_string to c_ptr(c_char/int(8)/uint(8))
+  //
+  inline proc _cast(type t:c_ptr, x: c_string)
+    where t.eltType == c_char || t.eltType == int(8) || t.eltType == uint(8)
+  {
+    return __primitive("cast", t, x);
+  }
+  //
+  // casts from c_ptr(c_char/int(8)/uint(8)) to c_string
+  //
+  inline proc _cast(type t:c_string, x: c_ptr)
+    where x.eltType == c_char || x.eltType == int(8) || x.eltType == uint(8)
+  {
     return __primitive("cast", t, x);
   }
 
@@ -139,6 +161,7 @@ module CString {
   inline proc _cast(type t:chpl_anycomplex, x:c_string) throws
     return try ((x:string).strip()): t;
 
+  pragma "fn synchronization free"
   extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
   //
   // casts from real
@@ -164,6 +187,7 @@ module CString {
   //
   proc _cast(type t:c_string, x: integral) {
     compilerWarning("cast from integral to c_string is deprecated");
+    pragma "fn synchronization free"
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
 
     var isErr: bool;
@@ -172,7 +196,7 @@ module CString {
     // this should only happen if the runtime is broken
     if isErr {
       try! {
-        throw new unmanaged IllegalArgumentError("Unexpected case in integral_to_c_string");
+        throw new owned IllegalArgumentError("Unexpected case in integral_to_c_string");
       }
     }
 
@@ -208,10 +232,13 @@ module CString {
   */
   inline proc c_string.indexOf(substring:c_string):int
     return string_index_of(this, substring);
+
+  pragma "fn synchronization free"
   extern proc string_index_of(haystack:c_string, needle:c_string):int;
 
   // Use with care.  Not for the weak.
   inline proc chpl_free_c_string(ref cs: c_string) {
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_rt_free_c_string(ref cs: c_string);
     if (cs != c_nil:c_string) then chpl_rt_free_c_string(cs);

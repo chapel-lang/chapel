@@ -158,7 +158,7 @@ yet.
 Is this a good idea?  I don't understand the semantic guarantees we
 can make for this construct in the presence of optimizations...
 
-* describe how to specify a homogenous varargs type (e.g., x: int...n)?
+* describe how to specify a homogeneous varargs type (e.g., x: int...n)?
 
 These are orthogonal.  I added an example.
 

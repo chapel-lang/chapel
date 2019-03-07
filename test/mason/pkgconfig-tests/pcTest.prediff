@@ -1,0 +1,25 @@
+#!/bin/bash
+
+outputfile=$2
+compiler=$3
+
+curver=`$compiler --version | head -1 | sed 's/chpl version \([0-9]\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/'`
+curver=`echo $curver | sed 's/\./\\\./g'`
+
+opensslVersion=`pkg-config openssl --modversion`
+opensslFlag=`pkg-config openssl --libs`
+opensslFlags="$(echo -e "${opensslFlag}" | sed -e 's/[[:space:]]*$//')"
+zlibVersion=`pkg-config zlib --modversion`
+zlibFlag=`pkg-config zlib --libs`
+zlibFlags="$(echo -e "${zlibFlag}" | sed -e 's/[[:space:]]*$//')"
+
+sed "s:$curver:CHPL_CUR_FULL:g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile
+sed "s:$opensslFlags:opensslflags:g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile
+sed "s:$opensslVersion:opensslversion:g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile
+sed "s:$zlibVersion:zlibversion:g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile
+sed "s:$zlibFlags:zlibflags:g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile

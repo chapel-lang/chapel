@@ -27,7 +27,7 @@ forall d in data with (+ reduce dosto) {
   dosto.add(d);
 }
 forall d in data {
-  if !dosto.member(d) then
+  if !dosto.contains(d) then
     halt("dosto does not include ", d);
 }
 writeln("dosto is fine");

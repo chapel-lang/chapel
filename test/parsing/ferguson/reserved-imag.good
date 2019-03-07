@@ -1,0 +1,7 @@
+reserved-imag.chpl:1: error: attempt to redefine reserved type 'imag'
+reserved-imag.chpl:3: error: attempt to redefine reserved type 'imag'
+reserved-imag.chpl:6: error: attempt to redefine reserved type 'imag'
+reserved-imag.chpl:7: error: attempt to redefine reserved type 'imag'
+reserved-imag.chpl:10: error: attempt to redefine reserved type 'imag'
+reserved-imag.chpl:12: error: attempt to redefine reserved type 'imag'
+reserved-imag.chpl:17: error: attempt to redefine reserved type 'imag'

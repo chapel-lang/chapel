@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 from distutils.spawn import find_executable
-import os
 import sys
-
-chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_platform, overrides
 from utils import memoize

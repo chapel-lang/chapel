@@ -98,7 +98,6 @@ Building Chapel for a Cray System from Source
       ...run jobs interactively on your system  gasnetrun_ibv
       ...queue jobs using PBSPro (qsub)         pbs-gasnetrun_ibv
       ...queue jobs using SLURM (sbatch)        slurm-gasnetrun_ibv
-      ...queue jobs using LSF (bsub)            lsf-gasnetrun_ibv
       ========================================  =========================
 
       ========================================  =========================
@@ -139,6 +138,7 @@ Building Chapel for a Cray System from Source
    On a Cray X-series system, ensure that you have one of the following
    Programming Environment modules loaded to specify your target compiler::
 
+       PrgEnv-allinea (ARM only)
        PrgEnv-cray
        PrgEnv-gnu
        PrgEnv-intel
@@ -224,15 +224,6 @@ Using Chapel on a Cray System
 
         Alternatively, you can set the wall clock time limit on your
         Chapel program command line using the ``--walltime`` flag.
-
-   If ``CHPL_LAUNCHER`` is ``slurm-gasnetrun_ibv``:
-
-     You must set the amount of time to request from SLURM.
-     For example, the following requests 15 minutes:
-
-      .. code-block:: sh
-
-        export CHPL_LAUNCHER_WALLTIME=00:15:00
 
    For further information about launchers, please refer to
    :ref:`readme-launcher`.
@@ -372,20 +363,34 @@ To use ugni communications:
    will probably give you satisfactory results.
 
    The Cray network interface chips (NICs) can only address memory that
-   has been registered with them, and there are limits on how many pages
-   of memory can be registered.  The Gemini(TM) NIC used on Cray XE and XK
-   systems can register no more than 16k (2**14) pages of memory.  The
-   Aries(TM) NIC used on Cray XC systems can register more, but it has an
-   on-board cache of registered page information with 16k entries and
-   performance will be reduced if the number of registered pages exceeds
-   the 16k entries in that cache.  Thus for any kind of Cray X* system,
-   you should choose a hugepage module whose page size is large enough
-   that 16k of its hugepages will cover the program's per-node memory
-   requirement or, if that is not known, the compute node memory size.
-   For example, the 2 MiB hugepages in the ``craype-hugepages2M`` module
-   will cover a 32 GiB Cray XE compute node, but on a Cray XC system
-   with 128 GiB compute nodes at least 8 MiB hugepages will be needed to
-   achieve full coverage.
+   has been registered with them, and there are some caveats with respect
+   to this memory registration.  On Cray XE and XK systems, the Gemini(TM)
+   NIC can register no more than 16k (2**14) pages of memory.  There you
+   should use a hugepage module whose pages are large enough that 16k of
+   them will span your program's per-node memory requirement or, if that
+   is not known, the compute node memory size.  For example, to cover a 32
+   GiB Cray XE compute node, you will need at least the 2 MiB hugepages in
+   the ``craype-hugepages2M`` module.
+
+   In practical terms, the Aries(TM) NIC on Cray XC systems is not limited
+   as to how much memory it can register.  However, it does have an
+   on-board cache of 512 registered page table entries, and registering
+   more than this can cause reduced performance if the program's memory
+   reference pattern causes refills in this cache.  We have seen up to a
+   15% reduction from typical nightly XC-16 performance in an ra-rmo run
+   using hugepages small enough that every reference should have missed in
+   this cache.  Covering an entire 128 GiB XC compute node with only 512
+   hugepages will require at least the ``craype-hugepages256M`` module's
+   256 MiB hugepages.
+
+   Offsetting this, using larger hugepages may reduce performance because
+   it can result in poorer NUMA affinity.  With the ugni communication
+   layer, arrays larger than 2 hugepages are allocated separately from the
+   heap, which improves NUMA affinity.  An obvious side effect of using
+   larger hugepages is that an array has to be larger to qualify.  Thus,
+   achieving the best performance for any given program may require
+   striking a balance between using larger hugepages to reduce NIC page
+   table cache refills and using smaller ones to improve NUMA locality.
 
    Note that when hugepages are used with the ugni comm layer, tasking
    layers cannot use guard pages for stack overflow detection.  Qthreads
@@ -449,12 +454,22 @@ heap is created.  If either of the latter are less than what a program
 needs, it will terminate prematurely with an "Out of memory" message.
 
 To specify a fixed heap, set the ``CHPL_RT_MAX_HEAP_SIZE`` environment
-variable to indicate its size.  Set this to just a number to specify the
-size of the heap in bytes, or to a number with a ``k`` or ``K``, ``m``
-or ``M``, or ``g`` or ``G`` suffix with no intervening spaces to specify
-the heap size in KiB (2**10 bytes), MiB (2**20 bytes), or GiB (2**30
-bytes), respectively.  Any of the following would set the heap size to 1
-GiB, for example:
+variable to indicate its size.  For the value of this variable you can
+use any of the following formats, where *num* is a positive integer
+number:
+
+    ======= ==========================================
+    Format  Resulting Heap Size
+    ======= ==========================================
+    num     num bytes
+    num[kK] num * 2**10 bytes
+    num[mM] num * 2**20 bytes
+    num[gG] num * 2**30 bytes
+    num%    percentage of compute node physical memory
+    ======= ==========================================
+
+Any of the following would specify an approximately 1 GiB heap on a
+128-GiB compute node, for example:
 
   .. code-block:: sh
 
@@ -462,11 +477,13 @@ GiB, for example:
     export CHPL_RT_MAX_HEAP_SIZE=1048576k
     export CHPL_RT_MAX_HEAP_SIZE=1024m
     export CHPL_RT_MAX_HEAP_SIZE=1g
+    export CHPL_RT_MAX_HEAP_SIZE=1% # 1.28 GiB, really
 
-Note that the value you set in ``CHPL_RT_MAX_HEAP_SIZE`` may get rounded up
-internally to match the page alignment.  How much, if any, this will add
-depends on the hugepage size in any ``craype-hugepage`` module you have
-loaded at the time you execute the program.
+Note that the resulting heap size may get rounded up to match the page
+alignment.  How much this will add, if any, depends on the hugepage size
+in any ``craype-hugepage`` module you have loaded at the time you
+execute the program.  It may also be reduced, if some resource
+limitation prevents making the heap as large as requested.
 
 
 Communication Layer Concurrency
@@ -478,11 +495,86 @@ support.  Basically, this controls how much of the communication
 resources on the NIC will be used by the program.  The default value is
 the number of hardware processor cores the program will use for Chapel
 tasks.  Usually this is enough, but for highly parallel codes that do a
-lot of remote references, increasing it may help the performance.
+lot of remote references, increasing it may improve performance.
 Useful values for ``CHPL_RT_COMM_CONCURRENCY`` are in the range 1 to 30
 on the Gemini-based Cray XE and XK systems, and 1 to 120 on the
 Aries-based Cray XC systems.  Values specified outside this range are
 silently increased or reduced so as to fall within it.
+
+
+ugni Communication Layer Registered Memory Regions
+__________________________________________________
+
+The ugni communication layer maintains information about every memory
+region it registers with the Gemini or Aries NIC.  Roughly speaking there
+are a few memory regions for each tasking layer thread, plus one for each
+array larger than 2 hugepages allocated and registered separately from the
+heap.  By default the comm layer can handle up to 4k (2**12) total memory
+regions on Cray XC systems or 2k on XE systems, which is plenty under
+normal circumstances.  In the event a program needs more than this, a
+message like the following will be printed:
+
+  .. code-block:: sh
+
+    warning: no more registered memory region table entries (max is 4096).
+             Change using CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS.
+
+To provide for more registered regions, set the
+``CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS`` environment variable to a number
+indicating how many you want to allow.  For example:
+
+  .. code-block:: sh
+
+    export CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS=10000
+
+Note that there are certain comm layer overheads that are proportional to
+the number of registered memory regions, so allowing a very high number of
+them may lead to reduced performance.
+
+
+ugni Hugepage-related Warnings
+______________________________
+
+   Communication performance with ugni is so much better when hugepages
+   are used that if you do not use them, the runtime will print the
+   following warning when a multilocale program starts::
+
+      warning: without hugepages, communication performance will suffer
+
+   If you definitely do not want to use hugepages you can quiet this
+   warning by giving the ``--quiet`` or ``-q`` option when you run the
+   executable.  Otherwise, load a hugepage module as described above in
+   `Using the ugni Communications Layer`_ before running.
+
+   When you are using hugepages and do not have a fixed heap (that is,
+   the ``CHPL_RT_MAX_HEAP_SIZE`` environment variable is not set), the
+   Chapel runtime expects certain hugepage-related environment variables
+   to have been set by the Chapel launcher.  If you do not use a Chapel
+   launcher you have to provide these settings yourself.  Not doing so
+   will result in one or both of the following messages::
+
+      warning: dynamic heap on hugepages needs HUGETLB_NO_RESERVE set to something
+      warning: dynamic heap on hugepages needs CHPL_JE_MALLOC_CONF set properly
+
+   To quiet these warnings, use the following settings:
+
+    .. code-block:: sh
+
+      export HUGETLB_NO_RESERVE=yes
+      export CHPL_JE_MALLOC_CONF=purge:decay,lg_chunk:log2HPS
+
+   where *log2HPS* is the base-2 log of the hugepage size.  For example,
+   with 16 MiB hugepages you would use:
+
+    .. code-block:: sh
+
+      export CHPL_JE_MALLOC_CONF=purge:decay,lg_chunk:24
+
+   As an alternative, you can also quiet these warnings by giving
+   ``--quiet`` or ``-q`` when you run.  However, you should be aware
+   that at least on Cray XE systems, not setting ``CHPL_JE_MALLOC_CONF``
+   in this configuration can result in internal errors and/or segfaults
+   under certain circumstances.
 
 
 gasnet Communication Layer

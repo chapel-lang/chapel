@@ -284,7 +284,7 @@ associative-domain-type:
   `domain' ( `opaque' )
 
 associative-index-type:
-  type-specifier
+  type-expression
 \end{syntax}
 
 \index{types!opaque domains}
@@ -939,7 +939,7 @@ Returns the domain map that implements this domain
 In the code
 \begin{chapel}
 use BlockDist;
-proc foo(d : domain) where d.dist : Block {
+proc foo(d : domain) where isSubtype(d.dist.type, Block) {
   writeln("Block-distributed domain");
 }
 proc foo(d : domain) {

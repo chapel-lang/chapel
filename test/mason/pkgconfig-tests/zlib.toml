@@ -1,0 +1,10 @@
+
+[brick]
+name = "zlib"
+version = "0.1.0"
+chplVersion = "1.18.0"
+
+[dependencies]
+
+[system]
+zlib = "*"

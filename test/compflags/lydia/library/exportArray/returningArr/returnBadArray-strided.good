@@ -1,1 +1,0 @@
-returnBadArray-strided.chpl:5: error: cannot return a strided array

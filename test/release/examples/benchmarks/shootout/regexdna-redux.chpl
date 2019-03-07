@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    regex-dna program contributed by Ben Harshbarger
    derived from the GNU C++ RE2 version by Alexey Zolotov

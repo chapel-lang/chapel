@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,17 +28,19 @@ use Path;
 use FileSystem;
 
 /* Runs the .chpl files found within the /tests directory */
-proc masonTest(args) {
+proc masonTest(args) throws {
 
   var show = false;
   var run = true;
   var parallel = false;
+  var update = true;
+  var compopts: [1..0] string;
 
   if args.size > 2 {
     for arg in args[2..] {
       if arg == '-h' || arg == '--help' {
         masonTestHelp();
-        exit();
+        exit(0);
       }
       else if arg == '--show' {
         show = true;
@@ -49,18 +51,24 @@ proc masonTest(args) {
       else if arg == '--parallel' {
         parallel = true;
       }
+      else if arg == '--' {
+        throw new owned MasonError("Testing does not support -- syntax");
+      }
+      else if arg == '--no-update' {
+        update = false;
+      }
       else {
-        masonTestHelp();
-        exit();
+        compopts.push_back(arg);
       }
     }
   }
-  const uargs = [""];
+  var uargs: [0..1] string;
+  if !update then uargs.push_back('--no-update');
   UpdateLock(uargs);
-  runTests(show, run, parallel);
+  runTests(show, run, parallel, compopts);
 }
 
-private proc runTests(show: bool, run: bool, parallel: bool) {
+private proc runTests(show: bool, run: bool, parallel: bool, cmdLineCompopts: [?d] string) throws {
 
   try! {
 
@@ -69,13 +77,16 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
 
     // parse lockfile
     const toParse = open(projectHome + "/Mason.lock", iomode.r);
-    const lockFile = new Owned(parseToml(toParse));
+    const lockFile = new owned(parseToml(toParse));
 
     // Get project source code and dependencies
     const sourceList = genSourceList(lockFile);
     getSrcCode(sourceList, show);
     const project = lockFile["root"]["name"].s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
+
+    // Get system, and external compopts
+    const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
 
     if isDir(joinPath(projectHome, "target/test/")) {
       rmTree(joinPath(projectHome, "target/test/"));
@@ -99,14 +110,16 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
         const testName = basename(stripExt(test, ".chpl"));
 
         // get the string of dependencies for compilation
-        const compopts = getDependencyString(sourceList, testName);
+        // also names test as --main-module
+        const masonCompopts = getMasonDependencies(sourceList, testName);
+        const allCompOpts = "".join(" ".join(compopts), masonCompopts);
 
         const moveTo = "-o " + projectHome + "/target/test/" + testName;
-        const compCommand = " ".join("chpl",testPath, projectPath, moveTo, compopts);
+        const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
         const compilation = runWithStatus(compCommand);
 
         if compilation != 0 {
-          writeln("compilation failed for " + test);
+          stderr.writeln("compilation failed for " + test);
         }
         else {
           if show || !run then writeln("compiled ", test, " successfully");
@@ -132,11 +145,12 @@ private proc runTests(show: bool, run: bool, parallel: bool) {
       }
     }
     else {
-      writeln("No tests were found in /test");
+      throw new owned MasonError("No tests were found in /test");
     }
     toParse.close();
   }
   catch e: MasonError {
+    stderr.writeln(e.message());
     exit(1);
   }
 }
@@ -146,7 +160,7 @@ private proc runTestBinary(projectHome: string, testName: string, show: bool) {
   const command = "".join(projectHome,'/target/test/', testName);
   const testResult = runWithStatus(command, show);
   return testResult;
-}  
+}
 
 
 private proc runTestBinaries(projectHome: string, testNames: [?D] string,
@@ -154,7 +168,7 @@ private proc runTestBinaries(projectHome: string, testNames: [?D] string,
 
   var resultDomain: domain(string);
   var testResults: [resultDomain] string;
-  
+
   for test in testNames {
     const testName = basename(stripExt(test, ".chpl"));
     const result = runTestBinary(projectHome, testName, show);
@@ -183,11 +197,11 @@ private proc printTestResults(testResults: [?d] string, numTests: int,
 }
 
 
-private proc getDependencyString(sourceList: [?d] (string, string, string),
+private proc getMasonDependencies(sourceList: [?d] (string, string, string),
                                  testName: string) {
 
   // Declare test to run as the main module
-  var compopts = " ".join(" --main-module", testName, " ");
+  var masonCompopts = " ".join(" --main-module", testName, " ");
 
   if sourceList.numElements > 0 {
     const depPath = MASON_HOME + "/src/";
@@ -195,13 +209,13 @@ private proc getDependencyString(sourceList: [?d] (string, string, string),
     // Add dependencies to project
     for (_, name, version) in sourceList {
       var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
-      compopts += depSrc;
+      masonCompopts += depSrc;
     }
   }
-  return compopts;
+  return masonCompopts;
 }
 
-private proc getTests(lock: Toml, projectHome: string) {
+private proc getTests(lock: borrowed Toml, projectHome: string) {
   var testNames: [1..0] string;
   const testPath = joinPath(projectHome, "test");
 

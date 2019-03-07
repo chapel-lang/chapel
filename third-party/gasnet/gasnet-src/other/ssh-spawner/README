@@ -144,6 +144,12 @@ Environment Variables:
   OpenSSH to disable them and speed the connection process (except
   where the agent forwarding is needed for authorization).
 
++ The environment variable GASNET_MASTERIP can be used to specify the
+  exact IP address which the compute nodes should use to connect to
+  the master (spawning) node.  By default the master node will pass
+  the result of gethostname() to the worker nodes, which will then
+  resolve that to an IP address using gethostbynname().
+
 @ Section: Troubleshooting Connection Problems @
 
 For the following, the term "compute node" means one of the hosts
@@ -151,7 +157,9 @@ given by GASNET_SSH_NODEFILE, GASNET_SSH_SERVERS, or obtained
 from a variable specific to the batch system.  These are nodes
 which will run application processes.  The term "master node"
 means the node from which the job was spawned.  The master node
-may also be a compute nodes, but this is not required.
+may also be a compute nodes, but this is not required.  The
+term "resolve" means translation of a hostname to an IP address
+using gethostbynname().
 
 + The ssh (or rsh) at your site must be configured to allow logins
   from the master node to compute nodes.  It is also strongly
@@ -172,9 +180,18 @@ may also be a compute nodes, but this is not required.
   with numbers over 1024) from a compute node to the master node (and
   among compute nodes unless the out-degree has been set to 0).
 
-+ The master node must be able to resolve its own hostname and the
-  hostnames of all compute nodes.
++ Setting of the GASNET_MASTERIP environment variable trivially
+  provides "resolution" of the master node's hostname.
+  Otherwise:
+    - The master node and all compute nodes must be able to resolve
+      the hostname of the master node.
 
-+ Compute nodes must able to resolve the hostname of the master node,
-  and (unless the out-degree has been set to zero) the hostnames of
-  the other compute nodes.
++ Providing only numeric IPs for compute nodes (in GASNET_SSH_SERVERS,
+  the file named by GASNET_SSH_NODEFILE, or other source specific to
+  the batch system) trivially provides "resolution" of the hostnames
+  of all compute nodes.
+  Otherwise:
+    - The master node must be able to resolve the hostnames of all
+      compute nodes.
+    - Unless the out-degree has been set to zero, compute nodes must
+      able to resolve the hostnames of the other compute nodes.

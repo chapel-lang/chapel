@@ -9,6 +9,8 @@ extern proc firstFunc(a : c_int, b : c_int, c : c_int) : void;
 
 extern proc secondFunc(a : c_int, ref b : c_int, ref c : c_ptr(c_int)) : void;
 
+extern proc secondFunc(a : c_int, b : c_ptr(c_int), c : c_ptr(c_ptr(c_int))) : void;
+
 extern proc thirdFunc(a : c_int, b : c_int) : c_int;
 
 extern proc fourthFunc(a : c_int, b : c_int, c : c_int) : void;

@@ -16,9 +16,6 @@ The directory structure of the modules/ directory is as follows:
               specification rather than as part of a library's
               documentation).
 
-  ipe/      : modules that are intended for use with the Chapel
-              Interactive Programming Environment, 'chpl-ipe'
-
   layouts/  : standard domain maps for memory layouts targeting a
               single locale.
 

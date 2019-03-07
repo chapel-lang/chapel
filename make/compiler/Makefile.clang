@@ -1,4 +1,4 @@
-# Copyright 2004-2018 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -82,10 +82,10 @@ LIB_DYNAMIC_FLAG = -shared
 SHARED_LIB_CFLAGS = -fPIC
 
 # Set the target architecture for optimization
-ifneq ($(CHPL_MAKE_TARGET_ARCH), none)
-ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
-ifneq ($(CHPL_MAKE_TARGET_ARCH_FLAG), none)
-SPECIALIZE_CFLAGS = -m$(CHPL_MAKE_TARGET_ARCH_FLAG)=$(CHPL_MAKE_TARGET_BACKEND_ARCH)
+ifneq ($(CHPL_MAKE_TARGET_CPU), none)
+ifneq ($(CHPL_MAKE_TARGET_CPU), unknown)
+ifneq ($(CHPL_MAKE_TARGET_CPU_FLAG), none)
+SPECIALIZE_CFLAGS = -m$(CHPL_MAKE_TARGET_CPU_FLAG)=$(CHPL_MAKE_TARGET_BACKEND_CPU)
 endif
 endif
 endif
@@ -99,8 +99,7 @@ ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` == ppc970 && echo -arch ppc64)
 RUNTIME_CFLAGS += $(ARCH)
 RUNTIME_CXXFLAGS += $(ARCH)
-# the -D_POSIX_C_SOURCE flag prevents nonstandard functions from polluting the global name space
-GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH) -fno-strict-overflow
+GEN_CFLAGS += $(ARCH) -fno-strict-overflow
 GEN_LFLAGS += $(ARCH)
 endif
 
@@ -155,7 +154,7 @@ RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 # -Wno-strict-prototypes has to be used because most GASNet prototypes
 # aren't strict.
 #
-CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes
+CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes -Wno-unused-variable -Wno-unused-function
 endif
 
 ifdef CHPL_COMM_DEBUG

@@ -5,7 +5,7 @@ class Foo {
   var   baz : string;
 }
 
-proc foo(x: Foo(?a, ?b, ?c)) {
+proc foo(x: borrowed Foo(?a, ?b, ?c)) {
   writeln(c);
 }
 

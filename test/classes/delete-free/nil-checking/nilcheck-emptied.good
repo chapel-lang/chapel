@@ -1,0 +1,9 @@
+nilcheck-emptied.chpl:8: In function 'bad1':
+nilcheck-emptied.chpl:11: error: attempt to dereference nil
+nilcheck-emptied.chpl:10: note: this statement may be relevant
+nilcheck-emptied.chpl:15: In function 'bad2':
+nilcheck-emptied.chpl:18: error: attempt to dereference nil
+nilcheck-emptied.chpl:17: note: this statement may be relevant
+nilcheck-emptied.chpl:22: In function 'bad3':
+nilcheck-emptied.chpl:25: error: attempt to dereference nil
+nilcheck-emptied.chpl:24: note: this statement may be relevant

@@ -87,19 +87,24 @@ if (pagePath == "") {
   pagePath = "index.html";
 }
 function dropSetup() {
-  var currentRelease = "1.17";
+  var currentRelease = "1.18"; // what does the public have?
+  var stagedRelease = "1.19";  // is there a release staged but not yet public?
+  var nextRelease = "1.19";    // what's the next release? (on docs/master)
   var button = document.getElementById("versionButton");
   // Uses unicode down-pointing triangle
   var arrow = " &#9660;";
   button.innerHTML = "version " + chplTitle + arrow;
 
   // Choose button color
-  if (chplTitle.includes("pre-release")) {
+  if (chplTitle == stagedRelease || chplTitle == nextRelease) {
+    // add pre-release label using a non-breaking hyphen
+    button.innerHTML = "version " + chplTitle + " (pre&#8209;release)" + arrow;
     button.classList.add("preRelease");
   } else if (chplTitle == currentRelease) {
     button.classList.add("currentVersion");
   } else {
-    button.innerHTML = "version " + chplTitle + " (old release)" + arrow;
+    // add old release label using a non-blocking space
+    button.innerHTML = "version " + chplTitle + " (old&nbsp;release)" + arrow;
     button.classList.add("oldVersion");
   }
 
@@ -116,10 +121,10 @@ function dropSetup() {
     dropDiv.append(link);
   }
 
-  if (!chplTitle.includes("pre-release")) {
+  if (!chplTitle.includes(nextRelease)) {
     // Add links to master version of docs
     var link = document.createElement("a");
-    link.innerHTML = "version 1.18<br>(pre-release)";
+    link.innerHTML = "version " + nextRelease + "<br>(pre-release)";
     link.href = "http://chapel-lang.org/docs/master/" + pagePath + ".html";
     dropDiv.append(link);
   }

@@ -1,7 +1,6 @@
 pragma "safe"
 module recordOwns {
 
-use OwnedObject;
 
 record Rint {
   var x:int;
@@ -20,18 +19,18 @@ class SubClass {
 }
 
 class MyClass {
-  var sub:Owned(SubClass);
-  proc init(in sub:Owned(SubClass)) {
+  var sub:owned SubClass;
+  proc init(in sub:owned SubClass) {
     this.sub = sub;
   }
 }
 
 record RMyClass {
-  var c:Owned(MyClass);
+  var c:owned MyClass;
   proc init() {
-    this.c = new Owned(nil:MyClass);
+    this.c = new owned(nil:unmanaged MyClass);
   }
-  proc init(in c:Owned(MyClass)) {
+  proc init(in c:owned MyClass) {
     this.c = c;
   }
 }
@@ -41,14 +40,14 @@ proc =(ref lhs:RMyClass, ref rhs:RMyClass) {
 }
 
 // Globals
-var globalMyClass:Owned(MyClass);
+var globalMyClass:owned MyClass;
 var globalRMyClass:RMyClass;
 
 // Test initialization block
 {
   var ri = new Rint(1);
-  var sub = new Owned(new SubClass(1, ri));
-  globalMyClass = new Owned(new MyClass(sub));
+  var sub = new owned SubClass(1, ri);
+  globalMyClass = new owned MyClass(sub);
 }
 
 proc refIdentity(ref x) ref {
@@ -57,8 +56,8 @@ proc refIdentity(ref x) ref {
 
 proc setGlobalRecord() {
   var ri = new Rint(1);
-  var sub = new Owned(new SubClass(1, ri));
-  var c = new Owned(new MyClass(sub));
+  var sub = new owned SubClass(1, ri);
+  var c = new owned MyClass(sub);
   var r = new RMyClass(c);
   
   globalRMyClass = r;

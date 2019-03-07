@@ -25,8 +25,8 @@ proc =(ref lhs:C, rhs:C)
   writeln("New value is ", lhs.i);
 }
 
-var c = new C(3);
-var d = new C(7);
+var c = new borrowed C(3);
+var d = new borrowed C(7);
 
 writeln("c = ", c);
 writeln("d = ", d);

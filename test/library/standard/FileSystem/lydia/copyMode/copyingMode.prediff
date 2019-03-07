@@ -2,7 +2,7 @@
 
 import os, sys
 
-with open(sys.argv[2], 'ab') as fp:
+with open(sys.argv[2], 'a') as fp:
     # after running, the two files should match
     if os.stat("foo.txt").st_mode != os.stat("bar.txt").st_mode:
         fp.write("Expected mode of " + str(os.stat("foo.txt").st_mode) + ", was " + str(os.stat("bar.txt").st_mode) + "\n")

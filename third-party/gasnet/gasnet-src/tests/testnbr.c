@@ -12,13 +12,18 @@
  *
 *************************************************************/
 
-#include "gasnet.h"
+#include <gasnetex.h>
 #include <math.h>
 uintptr_t maxsegmentsz;
 #ifndef TEST_SEGSZ
   #define TEST_SEGSZ_EXPR ((uintptr_t)maxsegmentsz)
 #endif
 #include "test.h"
+
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
 
 typedef struct {
 	int datasize;
@@ -57,8 +62,8 @@ int nprocs;
 #define GHOST_DIR_UPPER 0
 #define GHOST_DIR_LOWER 1
 
-#define GP_BLOCK(x) do { gasnet_handle_t h = (x);			    \
-	    if ((h) != GASNET_INVALID_HANDLE) gasnet_wait_syncnb(h); } while (0)
+#define GP_BLOCK(x) do { gex_Event_t h = (x);			    \
+	    if ((h) != GEX_EVENT_INVALID) gex_Event_Wait(h); } while (0)
 
 /*
  * Memory requirements for this test differ according to the type of ghost
@@ -101,8 +106,8 @@ struct _nbr_t {
     int  idGridLower[3];
 
     /* Upper and Lower nbrs in each dimension (GASNet node ids) */
-    gasnet_node_t  nodeidUpper[3];
-    gasnet_node_t  nodeidLower[3];
+    gex_Rank_t  nodeidUpper[3];
+    gex_Rank_t  nodeidLower[3];
 
     /* Cache dims in all Lower nbrs */
     int  dimsLower[3];
@@ -166,18 +171,18 @@ void ghostExchUPCMG         (nbr_t *nb, int iters, int axis, int pairwise_sync);
 void ghostExchGASNetNonBlock(nbr_t *nb, int iters, int axis, int pairwise_sync);
 void ghostExchAMLong        (nbr_t *nb, int iters, int axis);
 
-gasnet_handle_t ge_put   (nbr_t *nb, int type, int dir, int axis, int *flag);
-gasnet_handle_t ge_notify(nbr_t *nb, int dir, int axis);
+gex_Event_t ge_put   (nbr_t *nb, int type, int dir, int axis, int *flag);
+gex_Event_t ge_notify(nbr_t *nb, int dir, int axis);
 void	        ge_wait  (nbr_t *nb, int dir, int axis);
 void	        ge_unpack(nbr_t *nb, double *src, size_t destp, int axis);
 
-void pairwise_signal_nbrs(nbr_t *nb, gasnet_handle_t *h_nbr, int axis_in, int phase);
-void pairwise_wait_nbrs  (nbr_t *nb, gasnet_handle_t *h_nbr, int axis_in, int phase);
+void pairwise_signal_nbrs(nbr_t *nb, gex_Event_t *h_nbr, int axis_in, int phase);
+void pairwise_wait_nbrs  (nbr_t *nb, gex_Event_t *h_nbr, int axis_in, int phase);
 
 #define hidx_ghostReqHandler 201
 
 static
-void  ghostReqHandler(gasnet_token_t token, void *buf, size_t nbytes,
+void  ghostReqHandler(gex_Token_t token, void *buf, size_t nbytes,
 	              int axis, int destp)
 {
     double *src = (double *)buf;
@@ -191,8 +196,8 @@ void  ghostReqHandler(gasnet_token_t token, void *buf, size_t nbytes,
     return;
 }
 
-gasnet_handlerentry_t htable[] = {
-    { hidx_ghostReqHandler, ghostReqHandler }
+gex_AM_Entry_t htable[] = {
+    { hidx_ghostReqHandler, ghostReqHandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 2, NULL, NULL }
 };
 
 #define init_stat \
@@ -242,7 +247,7 @@ void _print_stat(nbr_t *nb, int myproc, stat_struct_t *st, const char *name)
 	 *  3. Local/Local (no updates required communication)
 	 *  4. Don't care (either local/global)
 	 */
-	gasnet_put(0, nb->stats0 + myproc, st, sizeof(stat_struct_t));
+	gex_RMA_PutBlocking(myteam, 0, nb->stats0 + myproc, st, sizeof(stat_struct_t), 0);
 
 	BARRIER();
 
@@ -338,11 +343,11 @@ main(int argc, char **argv)
     int help = 0;
 
     /* call startup */
-    GASNET_Safe(gasnet_init(&argc, &argv));
+    GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testnbr", &argc, &argv, 0));
 
     /* get SPMD info */
-    myproc = gasnet_mynode();
-    nprocs = gasnet_nodes();
+    myproc = gex_TM_QueryRank(myteam);
+    nprocs = gex_TM_QuerySize(myteam);
 
     /* XXX parse args: iters min max */
     while (argc > argn && *argv[argn] == '-') {
@@ -371,16 +376,15 @@ main(int argc, char **argv)
 
     /* setup max grid we intend to use, so we can get enough 
      * memory per proc at startup */
-    if (help || !POWER_OF_TWO(nprocs)) maxsegmentsz = 0;
+    if (help || !POWER_OF_TWO(nprocs)) maxsegmentsz = PAGESZ;
     else {
       setupGrid(&Nbr, maxdim);
       estimateMemSegment(&Nbr, &insegsz, &outsegsz);
       maxsegmentsz = outsegsz + PAGESZ*nprocs;
     }
 
-    GASNET_Safe(gasnet_attach(
-	htable, sizeof(htable)/sizeof(gasnet_handlerentry_t),
-	TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
+    GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
+    GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, sizeof(htable)/sizeof(gex_AM_Entry_t)));
     test_init("testnbr",1, "[-f] [-m] [iters] [level]\n\n"
       "-f      run full nbr exchange (NAS MG) instead of per axis\n"
       "-m      run UPC version of GASNet MG test only\n"
@@ -808,7 +812,7 @@ ghostExchUPCMGOrig(nbr_t *nb, int iters, int axis_in, int pairwise_sync)
     uint64_t	    begin, end;
     stat_struct_t   stcomm3;
     int		    axes[3];
-    gasnet_handle_t hput;
+    gex_Event_t hput;
 
     if (axis_in == AALL) {
 	axes[0] = 0; axes[1] = 1; axes[2] = 2;
@@ -830,16 +834,16 @@ ghostExchUPCMGOrig(nbr_t *nb, int iters, int axis_in, int pairwise_sync)
 
 	    /* Send data to upper and lower nbr, in turn */
 	    hput = ge_put(nb, GHOST_TYPE_PUT, GHOST_DIR_UPPER, axis, NULL);
-	    if (hput != GASNET_INVALID_HANDLE) {
-		gasnet_wait_syncnb(hput);
-		gasnet_wait_syncnb( ge_notify(nb, GHOST_DIR_UPPER, axis) );
+	    if (hput != GEX_EVENT_INVALID) {
+		gex_Event_Wait(hput);
+		gex_Event_Wait( ge_notify(nb, GHOST_DIR_UPPER, axis) );
 		ge_wait(nb, GHOST_DIR_UPPER, axis);
 	    }
 
 	    hput = ge_put(nb, GHOST_TYPE_PUT, GHOST_DIR_LOWER, axis, NULL);
-	    if (hput != GASNET_INVALID_HANDLE) {
-		gasnet_wait_syncnb(hput);
-		gasnet_wait_syncnb( ge_notify(nb, GHOST_DIR_LOWER, axis) );
+	    if (hput != GEX_EVENT_INVALID) {
+		gex_Event_Wait(hput);
+		gex_Event_Wait( ge_notify(nb, GHOST_DIR_LOWER, axis) );
 		ge_wait(nb, GHOST_DIR_LOWER, axis);
 	    }
 	}
@@ -869,7 +873,7 @@ ghostExchUPCMG(nbr_t *nb, int iters, int axis_in, int pairwise_sync)
     uint64_t	    begin, end;
     stat_struct_t   stcomm3;
     int		    axes[3];
-    gasnet_handle_t hput1, hput2;
+    gex_Event_t hput1, hput2;
 
     if (axis_in == AALL) {
 	axes[0] = 0; axes[1] = 1; axes[2] = 2;
@@ -893,20 +897,20 @@ ghostExchUPCMG(nbr_t *nb, int iters, int axis_in, int pairwise_sync)
 	    hput1 = ge_put(nb, GHOST_TYPE_PUT, GHOST_DIR_UPPER, axis, NULL);
 	    hput2 = ge_put(nb, GHOST_TYPE_PUT, GHOST_DIR_LOWER, axis, NULL);
 
-	    if (hput1 != GASNET_INVALID_HANDLE) {
-		gasnet_wait_syncnb(hput1);
-		gasnet_wait_syncnb( ge_notify(nb, GHOST_DIR_UPPER, axis) );
+	    if (hput1 != GEX_EVENT_INVALID) {
+		gex_Event_Wait(hput1);
+		gex_Event_Wait( ge_notify(nb, GHOST_DIR_UPPER, axis) );
 	    }
 
-	    if (hput2 != GASNET_INVALID_HANDLE) {
-		gasnet_wait_syncnb(hput2);
-		gasnet_wait_syncnb( ge_notify(nb, GHOST_DIR_LOWER, axis) );
+	    if (hput2 != GEX_EVENT_INVALID) {
+		gex_Event_Wait(hput2);
+		gex_Event_Wait( ge_notify(nb, GHOST_DIR_LOWER, axis) );
 	    }
 
-	    if (hput1 != GASNET_INVALID_HANDLE) 
+	    if (hput1 != GEX_EVENT_INVALID) 
 		ge_wait(nb, GHOST_DIR_LOWER, axis);
 
-	    if (hput2 != GASNET_INVALID_HANDLE) 
+	    if (hput2 != GEX_EVENT_INVALID) 
 		ge_wait(nb, GHOST_DIR_UPPER, axis);
 	}
 	end = TIME();
@@ -936,8 +940,8 @@ ghostExchGASNetNonBlock(nbr_t *nb, int iters, int axis_in, int pairwise_sync)
 
     uint64_t	    begin, end;
     stat_struct_t   stcomm3;
-    gasnet_handle_t hput[2];
-    gasnet_handle_t sput[6];
+    gex_Event_t hput[2];
+    gex_Event_t sput[6];
 
     int	    axes[3];
     int	    axis_tot;
@@ -975,8 +979,8 @@ ghostExchGASNetNonBlock(nbr_t *nb, int iters, int axis_in, int pairwise_sync)
 	    hput[0] = ge_put(nb, GHOST_TYPE_PUT, GHOST_DIR_UPPER, axis, NULL);
 
 	    /* Mark locally completed puts as done */
-	    rfacedone[0] = sfacedone[0] = (hput[0] == GASNET_INVALID_HANDLE);
-	    rfacedone[1] = sfacedone[1] = (hput[1] == GASNET_INVALID_HANDLE);
+	    rfacedone[0] = sfacedone[0] = (hput[0] == GEX_EVENT_INVALID);
+	    rfacedone[1] = sfacedone[1] = (hput[1] == GEX_EVENT_INVALID);
 	    rfaces = sfaces = sfacedone[0] + sfacedone[1];
 
 	    /*
@@ -1004,13 +1008,14 @@ ghostExchGASNetNonBlock(nbr_t *nb, int iters, int axis_in, int pairwise_sync)
 		}
 
 		/* Any of *our* ghost exchanges complete ? */
-		if (gasnet_try_syncnb_some(hput, 2) == GASNET_ERR_NOT_READY)
+                gasnet_AMPoll();
+		if (gex_Event_TestSome(hput, 2, 0) == GASNET_ERR_NOT_READY)
 		    continue;
 
 		/* Which face has completed */
 		for (face=0; face<2; face++) {
 		    /* Unless the face is done or not ready, skip it */
-		    if (sfacedone[face] || hput[face] != GASNET_INVALID_HANDLE)
+		    if (sfacedone[face] || hput[face] != GEX_EVENT_INVALID)
 			continue;
 		    sput[sent] = ge_notify(nb, face ? GHOST_DIR_LOWER 
 				                    : GHOST_DIR_UPPER, axis);
@@ -1019,8 +1024,9 @@ ghostExchGASNetNonBlock(nbr_t *nb, int iters, int axis_in, int pairwise_sync)
 		    sent++;
 		}
 
-		/* Try to progress handles in sput[] */
-	        gasnet_try_syncnb_all(sput, sent);
+		/* Try to progress events in sput[] */
+                gasnet_AMPoll();
+	        gex_Event_TestAll(sput, sent, 0);
 	    }
 	    /* When the loop ends, we've received face updates from both
 	     * nbrs */
@@ -1032,7 +1038,7 @@ ghostExchGASNetNonBlock(nbr_t *nb, int iters, int axis_in, int pairwise_sync)
 	 * is simply a non-blocking signal, we don't care when it completes
 	 * locally.
 	 */
-	gasnet_wait_syncnb_all(sput, sent);
+	gex_Event_WaitAll(sput, sent, 0);
 	BARRIER();
     }
 
@@ -1051,7 +1057,7 @@ ghostExchGASNetNonBlock(nbr_t *nb, int iters, int axis_in, int pairwise_sync)
  * It's currently unused in all three versions of nbr exchanges.
  */
 void
-pairwise_signal_nbrs(nbr_t *nb, gasnet_handle_t *h_nbr, int axis_in, int phase)
+pairwise_signal_nbrs(nbr_t *nb, gex_Event_t *h_nbr, int axis_in, int phase)
 {
     int	    i, axis, axis_tot;
     int	    axes[3];
@@ -1072,18 +1078,18 @@ pairwise_signal_nbrs(nbr_t *nb, gasnet_handle_t *h_nbr, int axis_in, int phase)
 	destup   = nb->nodeidUpper[axis];
 	destdown = nb->nodeidLower[axis];
 
-	h_nbr[i*2+0] = gasnet_put_nb_val(destup, 
+	h_nbr[i*2+0] = gex_RMA_PutNBVal(myteam, destup,
 	    (void *) NBR_SYNCADDR(nb->DirSyncComm3[destup], axis, 1, phase), 
-	    1, sizeof(int));
+	    1, sizeof(int), 0);
 
-	h_nbr[i*2+1] = gasnet_put_nb_val(destdown, 
+	h_nbr[i*2+1] = gex_RMA_PutNBVal(myteam, destdown,
 	    (void *) NBR_SYNCADDR(nb->DirSyncComm3[destdown], axis, 0, phase), 
-	    1, sizeof(int));
+	    1, sizeof(int), 0);
     }
 }
 
 void
-pairwise_wait_nbrs(nbr_t *nb, gasnet_handle_t *h_nbr, int axis_in, int phase)
+pairwise_wait_nbrs(nbr_t *nb, gex_Event_t *h_nbr, int axis_in, int phase)
 {
     int	    i, axis, axis_tot;
     int	    nfaces;
@@ -1103,7 +1109,7 @@ pairwise_wait_nbrs(nbr_t *nb, gasnet_handle_t *h_nbr, int axis_in, int phase)
     }
 
     /* Reap our previous phase handles and poll on local signals */
-    gasnet_wait_syncnb_all(h_nbr, nfaces);
+    gex_Event_WaitAll(h_nbr, nfaces, 0);
 
     do {
 	faces = 0;
@@ -1154,7 +1160,7 @@ ghostExchAMLong(nbr_t *nb, int iters, int axis_in)
     for (i = 0; i < axis_tot; i++) 
 	maxmsg = MAX(maxmsg, nb->facesz[i]*sizeof(double));
 
-    if (maxmsg > gasnet_AMMaxLongRequest()) {
+    if (maxmsg > gex_AM_MaxRequestLong(myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,2)) {
 	if (!myproc) {
 	    printf("Skipping AMLong with dim=%d (%"PRIuPTR" > AMMaxLongRequest())\n",
 			nb->dimsz, (uintptr_t)maxmsg);
@@ -1201,7 +1207,7 @@ ghostExchAMLong(nbr_t *nb, int iters, int axis_in)
     return;
 }
 
-gasnet_handle_t
+gex_Event_t
 ge_put(nbr_t *nb, int type, int dir, int axis, int *flag)
 {
     int	n=0,i,j,k;
@@ -1213,7 +1219,7 @@ ge_put(nbr_t *nb, int type, int dir, int axis, int *flag)
     int	    srcp, destp;
     size_t  len;
 
-    gasnet_node_t   node;
+    gex_Rank_t   node;
     
     if (dir == GHOST_DIR_UPPER) {
 	node = nb->nodeidUpper[axis];
@@ -1277,20 +1283,22 @@ ge_put(nbr_t *nb, int type, int dir, int axis, int *flag)
 
     if (type == GHOST_TYPE_AMLONG) {
 	/* By now, send an AMLong with data */
-	GASNET_Safe(gasnet_AMRequestLongAsync2(node,hidx_ghostReqHandler,src,len,dest, axis,destp));
-	return GASNET_INVALID_HANDLE;
+// TODO-EX: Restore "Async" nature of this when lc_opt=handle is supported
+// TODO-EX: was "gasnet_AMRequestLongAsync2(node,hidx_ghostReqHandler,src,len,dest, axis,destp)"
+	gex_AM_RequestLong2(myteam,node,hidx_ghostReqHandler,src,len,dest,GEX_EVENT_NOW,0,axis,destp);
+	return GEX_EVENT_INVALID;
     }
     else {
-	return gasnet_put_nb_bulk(node, dest, src, len);
+	return gex_RMA_PutNB(myteam, node, dest, src, len, GEX_EVENT_DEFER, 0);
     }
 
 local_copy:
     if (type == GHOST_TYPE_AMLONG)
 	*flag = 1;
-    return GASNET_INVALID_HANDLE;
+    return GEX_EVENT_INVALID;
 }
 
-gasnet_handle_t
+gex_Event_t
 ge_notify(nbr_t *nb, int dir, int axis)
 {
     int islower = (dir == GHOST_DIR_LOWER);
@@ -1299,10 +1307,10 @@ ge_notify(nbr_t *nb, int dir, int axis)
 
     if (node == myproc) {
 	*syncflag = 1;
-	return GASNET_INVALID_HANDLE;
+	return GEX_EVENT_INVALID;
     }
     else
-	return gasnet_put_nb_val(node, (void *)syncflag, 1, sizeof(int));
+	return gex_RMA_PutNBVal(myteam, node, (void *)syncflag, 1, sizeof(int), 0);
 }
 
 

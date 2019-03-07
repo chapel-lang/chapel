@@ -15,6 +15,10 @@ import smtplib
 import socket
 import sys
 
+try:
+    basestring
+except NameError:
+    basestring = str
 
 def main():
     """Parse command line arguments and send email!"""
@@ -23,10 +27,12 @@ def main():
     body = sys.stdin.read()
 
     # Send the email!
-    send_email(args.recipients, body, args.subject, args.header, args.sender, args.smtp_host)
+    send_email(args.recipients, body, args.subject, args.header, args.sender, args.smtp_host,
+        args.smtp_user, args.smtp_password, args.smtp_password_file)
 
 
-def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_host=None):
+def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_host=None,
+        smtp_user=None, smtp_password=None, smtp_password_file=None):
     """Send email!
 
     :arg recipients: list of recipients. If only one, may be a string.
@@ -35,6 +41,9 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
     :arg headers: Optional dict of headers to add.
     :arg sender: Optional sender address. Defaults to <user>@<fqdn>
     :arg smtp_host: Optional SMTP host. Defaults to 'localhost'.
+    :arg smtp_user: Optional SMTP user for login over TLS.
+    :arg smtp_password: password for smtp_user, if used.
+    :arg smtp_password_file: path to a file containing the password for smtp_user, if used.
     """
     if isinstance(recipients, basestring):
         recipients = [recipients]
@@ -49,13 +58,19 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
     msg['To'] = ','.join(recipients)
 
     if headers:
-        for key, value in headers.iteritems():
+        for key, value in headers.items():
             msg[key] = value
 
     if not os.environ.get('CHPL_TEST_NOMAIL', ''):
         logging.debug('Opening connection to: {0}'.format(smtp_host))
-        smtp = smtplib.SMTP(smtp_host)
         try:
+            if smtp_user:
+                smtp = smtplib.SMTP(smtp_host,465)
+                logging.debug('Login with user={0}'.format(smtp_user))
+                smtp.starttls()
+                smtp.login(smtp_user, _get_smtp_password(smtp_user, smtp_password, smtp_password_file))
+            else:
+                smtp = smtplib.SMTP(smtp_host)
             logging.info('Sending email to: {0} from: {1} subject: {2}'.format(
                 ','.join(recipients), sender, subject))
             logging.debug('Email headers: {0}'.format(headers))
@@ -90,15 +105,61 @@ def _parse_headers(option, opt, value, parser, *args, **kwargs):
 
 
 def _default_sender():
-    """Return default sender address, which is <user>@<hostname>."""
-    return '{0}@{1}'.format(getpass.getuser(), socket.getfqdn())
-
+    """Return default sender address, which is <user>@<hostname> unless
+    CHPL_UTIL_SMTP_SENDER is set in environment.
+    """
+    return os.environ.get('CHPL_UTIL_SMTP_SENDER', '{0}@{1}'.format(getpass.getuser(), socket.getfqdn()))
 
 def _default_smtp_host():
     """Return default smtp host, which is localhost unless CHPL_UTIL_SMTP_HOST is
     set in environment.
     """
     return os.environ.get('CHPL_UTIL_SMTP_HOST', 'localhost')
+
+def _default_smtp_user():
+    """Return default smtp user from environment variable CHPL_UTIL_SMTP_USER.
+    """
+    return os.environ.get('CHPL_UTIL_SMTP_USER')
+
+def _default_smtp_password():
+    """Return default password for smtp user from environment variable CHPL_UTIL_SMTP_PASSWORD.
+    """
+    return os.environ.get('CHPL_UTIL_SMTP_PASSWORD')
+
+def _default_smtp_password_file():
+    """Return default password file for smtp user from env var CHPL_UTIL_SMTP_PASSWORD_FILE.
+    """
+    password_file = os.environ.get('CHPL_UTIL_SMTP_PASSWORD_FILE')
+    if not password_file:
+        password_file = os.path.expanduser(os.path.join('~', '.ssh', 'chpl_util_smtp_password.txt'))
+    return password_file
+
+def _get_smtp_password(smtp_user=None, smtp_password=None, smtp_password_file=None):
+    """Return the smtp password based on available info.
+
+    :arg smtp_user: smtp_user to login to smtp_host
+    :arg smtp_password: password for smtp_user
+    :arg smtp_password_file: path to a file containing the password for smtp_user
+    """
+
+    if smtp_password:
+        logging.debug('Using --smtp-password')
+        return smtp_password
+
+    password = None
+    if smtp_password_file:
+        logging.debug('Reading --smtp-password-file={0}'.format(smtp_password_file))
+        if os.path.isfile(smtp_password_file):
+            with open(smtp_password_file, 'r') as fp:
+                password = fp.readline(80)
+        else:
+            raise ValueError('--smtp-password-file={0} not found'.format(smtp_password_file))
+
+    if password:
+        logging.debug('Using password from file')
+        return password.strip()
+    else:
+        raise ValueError('--smtp-user={0} requires valid --smtp-password or --smtp-password-file'.format(smtp_user))
 
 def _parse_args():
     """Parse and return command line arguments."""
@@ -107,6 +168,9 @@ def _parse_args():
 
         def _format_text(self, text):
             return text
+
+    show_default_text = lambda value: ' (default: %default)' if value else ''
+    hide_default_text = lambda value: ' (default: ********)' if value else ''
 
     parser = optparse.OptionParser(
         usage='usage: %prog [options] recipient_email [...]',
@@ -136,13 +200,33 @@ def _parse_args():
     )
     mail_group.add_option(
         '-S', '--sender',
+        metavar='CHPL_UTIL_SMTP_SENDER',
         default=_default_sender(),
         help='Sender email address. (default: %default)'
     )
     mail_group.add_option(
         '--smtp-host',
+        metavar='CHPL_UTIL_SMTP_HOST',
         default=_default_smtp_host(),
         help='SMTP host to use when sending email. (default: %default)'
+    )
+    mail_group.add_option(
+        '-u', '--smtp-user', metavar='CHPL_UTIL_SMTP_USER',
+        default=_default_smtp_user(),
+        help='Optional user for SMTP login. Also requests TLS connection.' +
+            show_default_text(_default_smtp_user())
+    )
+    mail_group.add_option(
+        '-p', '--smtp-password', metavar='CHPL_UTIL_SMTP_PASSWORD',
+        default=_default_smtp_password(),
+        help='Password for --smtp-user.' +
+            hide_default_text(_default_smtp_password())
+    )
+    mail_group.add_option(
+        '-P', '--smtp-password-file', metavar='CHPL_UTIL_SMTP_PASSWORD_FILE',
+        default=_default_smtp_password_file(),
+        help='Path to a file containing the password for --smtp-user.' +
+            show_default_text(_default_smtp_password_file())
     )
 
     parser.add_option_group(mail_group)

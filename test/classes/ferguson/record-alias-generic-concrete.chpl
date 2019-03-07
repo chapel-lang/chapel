@@ -1,5 +1,6 @@
 record A {
-  var x;
+  type T;
+  var x : T;
 }
 
 type C = A(int);

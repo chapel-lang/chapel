@@ -1,5 +1,8 @@
-RIDGE=BAR
-FOOBAR=WALL
-LAKE=michigan
-ABCD=wind
-ABCD_DEF=typhoon
+#!/bin/bash
+
+echo TEST_HOST_PLATFORM=$CHPL_HOST_PLATFORM
+echo RIDGE=BAR
+echo FOOBAR=WALL
+echo LAKE=michigan
+echo ABCD=wind
+echo ABCD_DEF=typhoon

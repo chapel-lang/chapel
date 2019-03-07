@@ -1,7 +1,7 @@
-use List;
+use LinkedLists;
 
 proc foo() {
-  var s: list(int) = makeList( 1, 2, 3 );
+  var s: LinkedList(int) = makeList( 1, 2, 3 );
 
   writeln("s is: ", s);
 

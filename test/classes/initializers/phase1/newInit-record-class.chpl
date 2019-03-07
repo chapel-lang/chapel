@@ -1,13 +1,9 @@
 // Initialize a class field in a record with an initializer
 record Container {
-  var y: Stored;
+  var y: owned Stored;
 
   proc init() {
-    y = new Stored(true);
-  }
-
-  proc deinit() {
-    delete y;
+    y = new owned Stored(true);
   }
 }
 

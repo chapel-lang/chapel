@@ -7,18 +7,18 @@ class A {
 }
 
 class B: A {
-  proc foo() {
+  override proc foo() {
     super.foo();
     writeln("in B.foo()");
   }
 }
 
-var a = new A();
-var b = new B();
+var a = new unmanaged A();
+var b = new unmanaged B();
 
 on Locales(1) {
-  var a2 = new A();
-  var b2 = new B();
+  var a2 = new unmanaged A();
+  var b2 = new unmanaged B();
 
   a.foo();
   b.foo();

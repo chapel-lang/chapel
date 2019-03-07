@@ -14,7 +14,7 @@ iter iTerate(start: int, end: int) {
   }
 }
 
-var c = new C(17);
+var c = new borrowed C(17);
 for i in c.iTerate(7) {
   writeln(i);
 }

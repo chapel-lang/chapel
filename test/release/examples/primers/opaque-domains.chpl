@@ -284,6 +284,4 @@ proc createRandomGraph() {
       }
     }
   }
-
-  delete myRandNums;
 }

@@ -35,5 +35,4 @@ class C : B {
   }
 }
 
-var c = new C();
-delete c;
+var c = new shared C();

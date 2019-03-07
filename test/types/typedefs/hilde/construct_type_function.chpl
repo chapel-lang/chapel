@@ -8,8 +8,8 @@ class C { var r:real; }
 
 proc foo(param flag: bool) type
 {
-  if flag then return C;
-  else return B;
+  if flag then return unmanaged C;
+  else return unmanaged B;
 }
 
 var b = new foo(false)();

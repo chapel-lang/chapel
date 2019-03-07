@@ -1,0 +1,1 @@
+recordOffset-badField.chpl:10: error: field foo not found in Test

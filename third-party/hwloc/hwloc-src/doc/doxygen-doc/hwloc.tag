@@ -3945,6 +3945,7 @@
     <docanchor file="a00323" title="How do I build hwloc for BlueGene/Q?">faq_bgq</docanchor>
     <docanchor file="a00323" title="How do I build hwloc for Windows?">faq_windows</docanchor>
     <docanchor file="a00323" title="How to get useful topology information on NetBSD?">faq_netbsd_bind</docanchor>
+    <docanchor file="a00323" title="Why does binding fail on AIX?">faq_aix_bind</docanchor>
   </compound>
   <compound kind="page">
     <name>index</name>

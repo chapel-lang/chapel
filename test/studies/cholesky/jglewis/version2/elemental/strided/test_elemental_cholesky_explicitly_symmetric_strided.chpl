@@ -25,7 +25,7 @@ module test_elemental_explicitly_strided_cholesky {
 
   proc main {
 
-    var Rand = new RandomStream ( real, seed = 314159) ;
+    var Rand = new owned RandomStream ( real, seed = 314159) ;
 
     const unstrided_MatIdx = { index_base .. #n, index_base .. #n };
 
@@ -141,8 +141,6 @@ module test_elemental_explicitly_strided_cholesky {
       check_factorization ( A, L );
     else
       writeln ("factorization failed for non-positive semi-definite matrix");
-
-    delete Rand;
   }
 
 

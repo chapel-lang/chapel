@@ -2,15 +2,15 @@ module RunCRawLoops {
   use LCALSDataTypes;
   use Timer;
 
-  proc runCRawLoops(loop_stats:[] LoopStat, run_loop:[] bool, ilength: LoopLength) {
+  proc runCRawLoops(loop_stats:[] owned LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
     for iloop in loop_suite_run_info.loop_kernel_dom {
       if run_loop[iloop] {
-        var stat = loop_stats[iloop];
+        var stat = loop_stats[iloop].borrow();
         var len = stat.loop_length[ilength];
         var num_samples = stat.samples_per_pass[ilength];
-        var ltimer = new LoopTimer();
+        var ltimer = new owned LoopTimer();
 
         select iloop {
           when LoopKernelID.HYDRO_1D {
@@ -134,9 +134,9 @@ module RunCRawLoops {
                 du2 = loop_data.RealArray_1D[1],
                 du3 = loop_data.RealArray_1D[2];
 
-            var u1 = loop_data.RealArray_3D_2xNx4[0],
-                u2 = loop_data.RealArray_3D_2xNx4[1],
-                u3 = loop_data.RealArray_3D_2xNx4[2];
+            var u1 = loop_data.RealArray_3D_2xNx4[0].borrow(),
+                u2 = loop_data.RealArray_3D_2xNx4[1].borrow(),
+                u3 = loop_data.RealArray_3D_2xNx4[2].borrow();
 
             const sig = loop_data.RealArray_scalars[0],
                   a11 = loop_data.RealArray_scalars[1],
@@ -532,7 +532,6 @@ module RunCRawLoops {
           }
         }
         copyTimer(stat, ilength, ltimer);
-        delete ltimer;
       }
     }
   }

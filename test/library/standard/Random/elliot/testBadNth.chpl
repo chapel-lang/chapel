@@ -19,6 +19,3 @@ if useNPB {
     pcgRand.skipToNth(-1);
   }
 }
-
-delete npbRand;
-delete pcgRand;

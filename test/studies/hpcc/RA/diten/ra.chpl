@@ -154,6 +154,8 @@ proc main() {
 
   const validAnswer = verifyResults();             // verify the updates
   printResults(validAnswer, execTime);             // print the results
+
+  for loc in Locales do on loc do delete myBuckets;
 }
 
 //

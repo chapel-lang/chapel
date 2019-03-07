@@ -1,5 +1,5 @@
-Updating mason-registry for registry
-Compiling FizzBuzz
+Updating mason-registry
+Compiling [debug] target: FizzBuzz
 Build Successful
 
 New library: FizzBuzz

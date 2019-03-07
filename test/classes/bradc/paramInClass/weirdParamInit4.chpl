@@ -1,9 +1,7 @@
-pragma "use default init"
 class C {
   param x: int;
 }
 
-pragma "use default init"
 class D {
   var c: borrowed C;
   param y: int = c.x;

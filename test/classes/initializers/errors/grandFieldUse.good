@@ -1,2 +1,2 @@
-grandFieldUse.chpl:15: In initializer:
-grandFieldUse.chpl:16: error: Parent field "x" used before it is initialized
+grandFieldUse.chpl:13: In initializer:
+grandFieldUse.chpl:14: error: cannot access parent field "x" before super.init() or this.init()

@@ -13,13 +13,11 @@ class Container {
 record Stored {
   var x: bool;
 
-  proc init(xVal) where !xVal: Stored {
+  proc init(xVal) where !isSubtype(xVal.type, Stored) {
     x = xVal;
   }
 }
 
-var c = new Container();
+var c = new owned Container();
 
 writeln(c);
-
-delete c;

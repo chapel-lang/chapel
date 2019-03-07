@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -345,7 +345,7 @@ c_sublocid_t chpl_topo_getThreadLocality(void) {
   CHK_ERR_ERRNO((nodeset = hwloc_bitmap_alloc()) != NULL);
 
   flags = HWLOC_CPUBIND_THREAD;
-  CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
+  CHK_ERR_ERRNO(hwloc_get_cpubind(topology, cpuset, flags) == 0);
 
   hwloc_cpuset_to_nodeset(topology, cpuset, nodeset);
 

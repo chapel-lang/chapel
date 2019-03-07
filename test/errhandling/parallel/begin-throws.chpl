@@ -5,10 +5,10 @@ proc test() {
     writeln("before sync block");
     sync {
       begin {
-        throw new StringError("test error");
+        throw new owned StringError("test error");
       }
       begin {
-        throw new StringError("test error");
+        throw new owned StringError("test error");
       }
     }
     writeln("after sync block");

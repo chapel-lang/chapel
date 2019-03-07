@@ -1,9 +1,7 @@
-use SharedObject;
-
 class C { }
 
-proc foo(in sc: Shared(C)) { }
+proc foo(in sc: shared C) { }
 
-var sc = new Shared(nil:unmanaged C);
+var sc = new shared(nil:unmanaged C);
 
 foo(sc);

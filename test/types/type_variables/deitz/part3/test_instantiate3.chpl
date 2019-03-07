@@ -11,7 +11,7 @@ class bar {
   var y : int;
 }
 
-var f : unmanaged foo(t=bar) = new unmanaged foo(t=bar);
+var f : unmanaged foo(t=unmanaged bar) = new unmanaged foo(t=unmanaged bar);
 
 f.x = new unmanaged bar(x = 12, y = 13);
 

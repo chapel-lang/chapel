@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -225,7 +225,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
     SymExpr*       base      = toSymExpr (call->get(1));
     const char*    fieldName = get_string(call->get(2));
 
-    AggregateType* at        = toAggregateType(base->getValType());
+    Type*          t         = canonicalClassType(base->getValType());
+    AggregateType* at        = toAggregateType(t);
     VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
 
     if (field->isParameter() == true || field->isType() == true) {
@@ -260,51 +261,64 @@ static Expr* postFoldPrimop(CallExpr* call) {
       }
     }
 
-  } else if (call->isPrimitive(PRIM_IS_SUBTYPE) == true) {
+  } else if (call->isPrimitive(PRIM_IS_SUBTYPE) ||
+             call->isPrimitive(PRIM_IS_SUBTYPE_ALLOW_VALUES) ||
+             call->isPrimitive(PRIM_IS_PROPER_SUBTYPE)) {
     SymExpr* parentExpr = toSymExpr(call->get(1));
     SymExpr* subExpr    = toSymExpr(call->get(2));
 
-    if (isTypeExpr(parentExpr) == true  ||
-        isTypeExpr(subExpr)    == true)  {
-      Type* st = subExpr->getValType();
-      Type* pt = parentExpr->getValType();
+    bool parentIsType = isTypeExpr(parentExpr);
+    bool subIsType = isTypeExpr(subExpr);
 
-      if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
-        AggregateType* ag = toAggregateType(st);
 
-        st = canonicalClassType(ag->getField("_instance")->type);
+    if (call->isPrimitive(PRIM_IS_SUBTYPE_ALLOW_VALUES)) {
+      if (parentIsType == false && subIsType == false)
+        USR_FATAL_CONT(call, "Subtype query requires a type");
+    } else {
+      if (parentIsType == false || subIsType == false)
+        USR_FATAL_CONT(call, "Subtype queries require two types");
+    }
+
+    Type* st = subExpr->getValType();
+    Type* pt = parentExpr->getValType();
+
+    if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
+      AggregateType* ag = toAggregateType(st);
+
+      st = canonicalClassType(ag->getField("_instance")->type);
+    } else {
+      // Try to work around some resolution order issues
+      st = resolveTypeAlias(subExpr);
+      pt = resolveTypeAlias(parentExpr);
+    }
+
+    if (st                                != dtUnknown &&
+        pt                                != dtUnknown &&
+
+        st                                != dtAny     &&
+        pt                                != dtAny     &&
+
+        st->symbol->hasFlag(FLAG_GENERIC) == false) {
+
+      bool result = isSubTypeOrInstantiation(st, pt);
+
+      if (call->isPrimitive(PRIM_IS_PROPER_SUBTYPE))
+        result = result && (st != pt);
+
+      if (result == true) {
+        retval = new SymExpr(gTrue);
+
       } else {
-        // Try to work around some resolution order issues
-        st = resolveTypeAlias(subExpr);
-        pt = resolveTypeAlias(parentExpr);
+        retval = new SymExpr(gFalse);
       }
 
-      if (st                                != dtUnknown &&
-          pt                                != dtUnknown &&
-
-          st                                != dtAny     &&
-          pt                                != dtAny     &&
-
-          st->symbol->hasFlag(FLAG_GENERIC) == false) {
-
-        if (isSubTypeOrInstantiation(st, pt) == true) {
-          retval = new SymExpr(gTrue);
-
-        } else {
-          retval = new SymExpr(gFalse);
-        }
-
-        call->replace(retval);
-
-      } else {
-        USR_FATAL(call,
-                  "Unable to perform subtype query: %s:%s",
-                  st->symbol->name,
-                  pt->symbol->name);
-      }
+      call->replace(retval);
 
     } else {
-      USR_FATAL(call, "Subtype query requires a type");
+      USR_FATAL(call,
+                "Unable to perform subtype query: %s:%s",
+                st->symbol->name,
+                pt->symbol->name);
     }
 
   } else if (call->isPrimitive(PRIM_CAST) == true) {
@@ -473,8 +487,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_ARRAY_ALLOC)                == true ||
-             strncmp(call->primitive->name, "_fscan", 6)        == 0    ||
+  } else if (strncmp(call->primitive->name, "_fscan", 6)        == 0    ||
              strcmp (call->primitive->name, "_readToEndOfLine") == 0    ||
              strcmp (call->primitive->name, "_now_timer")       == 0)   {
     for_actuals(actual, call) {
@@ -485,41 +498,20 @@ static Expr* postFoldPrimop(CallExpr* call) {
   return retval;
 }
 
+// This function implements PRIM_IS_SUBTYPE
 static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
-  bool retval = false;
 
-  if (sub == super) {
-    retval = true;
+  // Consider instantiation
+  if (super->symbol->hasFlag(FLAG_GENERIC))
+    super = getInstantiationType(sub, super);
 
-  } else if (canInstantiate(sub, super)) {
-    // handles special cases like dtIntegral, which aren't covered
-    // by at->instantiatedFrom
-    retval = true;
+  bool promotes = false;
+  bool dispatch = false;
 
-  } else if (isAggregateType(sub) || isUnmanagedClassType(sub)) {
-    // handle unmanaged / class types
-    AggregateType* subAt = toAggregateType(sub);
-    Type* useSuper = super;
+  if (sub && super)
+    dispatch = canDispatch(sub, NULL, super, NULL, &promotes);
 
-    if (classesWithSameKind(sub, super)) {
-      subAt = toAggregateType(canonicalClassType(sub));
-      useSuper = canonicalClassType(super);
-    }
-
-    if (subAt) {
-      for (int i = 0; i < subAt->dispatchParents.n && retval == false; i++) {
-        retval = isSubTypeOrInstantiation(subAt->dispatchParents.v[i], useSuper);
-      }
-
-      if (retval == false) {
-        if (subAt->instantiatedFrom != NULL) {
-          retval = isSubTypeOrInstantiation(subAt->instantiatedFrom, useSuper);
-        }
-      }
-    }
-  }
-
-  return retval;
+  return dispatch && !promotes;
 }
 
 static void insertValueTemp(Expr* insertPoint, Expr* actual) {
@@ -595,6 +587,9 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
     } else if (SymExpr* rhs = toSymExpr(call->get(2))) {
       Symbol* rhsSym = rhs->symbol();
 
+      while (paramMap.get(rhsSym) != NULL) {
+        rhsSym = paramMap.get(rhsSym);
+      }
       if (rhsSym->isImmediate() == true ||
           isEnumSymbol(rhsSym)  == true) {
         paramMap.put(lhsSym, rhsSym);
@@ -695,14 +690,6 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
       lhsSym->removeFlag(FLAG_EXPR_TEMP);
     }
 
-    if (rhs->isPrimitive(PRIM_NO_INIT) == true) {
-      // If the lhs is a primitive, then we can remove this value.
-      // Otherwise retain this statement through resolveRecordInitializers.
-      if (isAggregateType(rhs->get(1)->getValType()) == false) {
-        call->convertToNoop();
-      }
-    }
-
   } else {
     INT_ASSERT(false);
   }
@@ -718,7 +705,6 @@ bool requiresImplicitDestroy(CallExpr* call) {
         fn->isIterator()                                      == false &&
         fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
         fn->hasFlag(FLAG_AUTO_II)                             == false &&
-        fn->hasFlag(FLAG_CONSTRUCTOR)                         == false &&
         fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)                    == false &&
         fn->name != astrSequals                                        &&
         fn->name != astr_defaultOf) {

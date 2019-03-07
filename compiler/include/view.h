@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,8 @@
 #include "vec.h"
 #include <vector>
 
+class GenRet;
+
 BaseAST* aid(int id);
 BaseAST* aid09(int id);
 Expr*    aidExpr(int id);
@@ -34,6 +36,9 @@ Expr*    aidExpr(BaseAST* ast);
 
 void        list_view_noline(BaseAST* ast);
 void        nprint_view(BaseAST* ast);
+
+// defined in codegen/codegen.cpp
+void        nprint_view(GenRet& gen);
 
 // These are not used by the compiler but are available for use in GDB
 //
@@ -87,7 +92,6 @@ void        whocalls(BaseAST* ast);
 
 FnSymbol*   debugGetTheIteratorFn(int id);
 FnSymbol*   debugGetTheIteratorFn(BaseAST* ast);
-FnSymbol*   debugGetTheIteratorFn(Symbol* sym);
 FnSymbol*   debugGetTheIteratorFn(Type* type);
 FnSymbol*   debugGetTheIteratorFn(ForLoop* forLoop);
 

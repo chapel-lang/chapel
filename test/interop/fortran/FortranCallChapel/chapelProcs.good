@@ -1,0 +1,6 @@
+in setreal, r = 2.71828
+in setint, i = 1
+in getreal, chplReal = 2.71828
+in getint, chplInt = 1
+   2.7182817459106445     
+                    1

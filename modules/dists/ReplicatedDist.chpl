@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -175,7 +175,6 @@ proc Replicated.dsiPrivatize(privatizeData)
 //
 // global domain class
 //
-pragma "use default init"
 class ReplicatedDom : BaseRectangularDom {
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
@@ -197,7 +196,7 @@ class ReplicatedDom : BaseRectangularDom {
   pragma "no doc"
   proc chpl_myLocDom() {
     if boundsChecking then
-      if (!dist.targetLocDom.member(here.id)) then
+      if (!dist.targetLocDom.contains(here.id)) then
         halt("locale ", here.id, " has no local replicand");
     return localDoms[here.id];
   }
@@ -207,7 +206,6 @@ class ReplicatedDom : BaseRectangularDom {
 //
 // local domain class
 //
-pragma "use default init"
 class LocReplicatedDom {
   // copy from the global domain
   param rank: int;
@@ -240,7 +238,6 @@ override proc ReplicatedDom.dsiMyDist() return dist;
 
 proc ReplicatedDom.dsiSupportsPrivatization() param return true;
 
-pragma "use default init"
 record ReplicatedDomPrvData {
   var distpid;
   var domRep;
@@ -347,13 +344,13 @@ iter ReplicatedDom.these() {
 
 iter ReplicatedDom.these(param tag: iterKind) where tag == iterKind.leader {
   // redirect to DefaultRectangular's leader
-  for follow in chpl_myLocDom().domLocalRep._value.these(tag) do
+  for follow in chpl_myLocDom().domLocalRep.these(tag) do
     yield follow;
 }
 
 iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   // redirect to DefaultRectangular
-  for i in redirectee()._value.these(tag, followThis) do
+  for i in redirectee().these(tag, followThis) do
     yield i;
 }
 
@@ -396,12 +393,12 @@ proc ReplicatedDom.dsiNumIndices
   return redirectee().numIndices;
 
 proc ReplicatedDom.dsiMember(indexx)
-  return redirectee().member(indexx);
+  return redirectee().contains(indexx);
 
 proc ReplicatedDom.dsiIndexOrder(indexx)
   return redirectee().dsiIndexOrder(indexx);
 
-proc ReplicatedDom.dsiDestroyDom() {
+override proc ReplicatedDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom {
     on dist.targetLocales(localeIdx) do
       delete localDoms(localeIdx);
@@ -419,10 +416,9 @@ proc ReplicatedDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 //
 // global array class
 //
-class ReplicatedArr : BaseArr {
+class ReplicatedArr : AbsBaseArr {
   // These two are hard-coded in the compiler - it computes the array's
   // type string as '[dom.type] eltType.type'
-  type eltType;
   const dom; // must be a ReplicatedDom
 
   // the replicated arrays
@@ -436,7 +432,7 @@ class ReplicatedArr : BaseArr {
   pragma "no doc"
   proc chpl_myLocArr() {
     if boundsChecking then
-      if (!dom.dist.targetLocDom.member(here.id)) then
+      if (!dom.dist.targetLocDom.contains(here.id)) then
         halt("locale ", here.id, " has no local replicand");
     return localArrs[here.id];
   }
@@ -458,7 +454,6 @@ proc _array.replicand(loc: locale) ref {
 //
 // local array class
 //
-pragma "use default init"
 class LocReplicatedArr {
   // these generic fields let us give types to the other fields easily
   type eltType;
@@ -477,7 +472,7 @@ class LocReplicatedArr {
 // the fields in the parent class, BaseArr, are initialized to their defaults.
 //
 proc ReplicatedArr.init(type eltType, dom) {
-  this.eltType = eltType;
+  super.init(eltType = eltType);
   this.dom = dom;
 }
 
@@ -501,7 +496,6 @@ override proc ReplicatedArr.dsiGetBaseDom() return dom;
 
 proc ReplicatedArr.dsiSupportsPrivatization() param return true;
 
-pragma "use default init"
 record ReplicatedArrPrvData {
   var dompid;
   var localArrs;
@@ -544,7 +538,6 @@ proc ReplicatedArr.dsiAccess(indexx) ref {
 
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
-  //  writeln("in dsiSerialWrite() on locale ", here.id);
   localArrs[f.readWriteThisFromLocale().id].arrLocalRep._value.dsiSerialWrite(f);
 }
 
@@ -552,7 +545,11 @@ proc ReplicatedArr.dsiSerialRead(f, loc): void {
   localArrs[f.readWriteThisFromLocale().id].arrLocalRep._value.dsiSerialRead(f);
 }
 
-proc chpl_serialReadWriteRectangular(f, arr, dom) where isSubtype(_to_borrowed(chpl__getActualArray(arr)), ReplicatedArr) {
+proc isReplicatedArr(arr) param {
+  return isSubtype(_to_borrowed(chpl__getActualArray(arr)).type, ReplicatedArr);
+}
+
+proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {
   const origloc = f.readWriteThisFromLocale();
   on origloc do
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
@@ -581,7 +578,7 @@ iter ReplicatedArr.these(param tag: iterKind) where tag == iterKind.leader {
 
 iter ReplicatedArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   // redirect to DefaultRectangular
-  for a in chpl_myLocArr().arrLocalRep._value.these(tag, followThis) do
+  for a in chpl_myLocArr().arrLocalRep.these(tag, followThis) do
     yield a;
 }
 
@@ -604,12 +601,33 @@ proc ReplicatedArr.dsiReallocate(d: domain): void {
 */
 
 // Note: returns an associative array
+proc Replicated.dsiTargetLocales() {
+  return targetLocales;
+}
+proc ReplicatedDom.dsiTargetLocales() {
+  return dist.targetLocales;
+}
 proc ReplicatedArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
+proc ReplicatedDom.dsiHasSingleLocalSubdomain() param  return true;
 proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 
-proc ReplicatedArr.dsiLocalSubdomain() {
-  return chpl_myLocArr().myDom.domLocalRep;
+proc ReplicatedDom.dsiLocalSubdomain(loc: locale) {
+  if localDoms.domain.contains(loc.id) then
+    return domRep;
+  else {
+    var d: domain(rank, idxType, stridable);
+    return d;
+  }
+}
+
+proc ReplicatedArr.dsiLocalSubdomain(loc: locale) {
+  if localArrs.domain.contains(loc.id) then
+    return dom.domRep;
+  else {
+    var d: domain(rank, idxType, stridable);
+    return d;
+  }
 }

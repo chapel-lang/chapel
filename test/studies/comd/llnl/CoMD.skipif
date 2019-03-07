@@ -1,0 +1,3 @@
+# This test can create an absurd number of tasks, which lead to extremely long
+# execution times under fifo for low core-count systems
+CHPL_TASKS == fifo

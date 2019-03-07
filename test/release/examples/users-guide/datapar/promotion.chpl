@@ -99,15 +99,15 @@ forall (a, b, m) in zip(A, B, Mask) do
   maybeCopy(a, b, m);
 writeln(A);
 
-config param testError = false;
+config param testError = false, testError2 = false;
 
 if testError {
   var r = 0.0;
   maybeCopy(r, B, Mask);
-
+ if testError2 {
   forall (b, m) in zip(B, Mask) do
     maybeCopy(r, b, m);
-}
+} }
 
 // safe since only one mask value will modify 'r'
 Mask = [false, false, true];

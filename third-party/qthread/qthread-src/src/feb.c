@@ -1,7 +1,7 @@
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
-
+#include<qthread/performance.h>
 /* The API */
 #include "qthread/qthread.h"
 
@@ -175,6 +175,7 @@ static inline void qt_feb_schedule(qthread_t          *waiter,
 {
     qthread_debug(FEB_DETAILS, "waiter(%p:%i), shep(%p:%i): setting waiter to 'RUNNING'\n", waiter, (int)waiter->thread_id, shep, (int)shep->shepherd_id);
     waiter->thread_state = QTHREAD_STATE_RUNNING;
+    QTPERF_QTHREAD_ENTER_STATE(waiter->rdata->performance_data, QTHREAD_STATE_RUNNING);
     // Chapel hack -- we either use schedulers that don't support work stealing
     // (nemesis), or we run with stealing disabled (distrib w/ STEAL_RATIO=0).
     // Spawning to the current shepherd below serializes execution and relies
@@ -1453,6 +1454,7 @@ got_m:
         m->FEQ    = X;
         qthread_debug(FEB_DETAILS, "back to parent\n");
         me->thread_state = QTHREAD_STATE_FEB_BLOCKED;
+        QTPERF_QTHREAD_ENTER_STATE(me->rdata->performance_data, QTHREAD_STATE_FEB_BLOCKED);
         /* so that the shepherd will unlock it */
         me->rdata->blockedon.addr = m;
         QTHREAD_WAIT_TIMER_START();
@@ -1655,6 +1657,7 @@ int INTERNAL qthread_check_feb_preconds(qthread_t *t)
             X->next         = m->FFQ;
             m->FFQ          = X;
             t->thread_state = QTHREAD_STATE_NASCENT;
+            QTPERF_QTHREAD_ENTER_STATE(t->rdata->performance_data, QTHREAD_STATE_NASCENT);
             QTHREAD_FASTLOCK_UNLOCK(&m->lock);
             return 1;
         }
@@ -1663,6 +1666,11 @@ int INTERNAL qthread_check_feb_preconds(qthread_t *t)
 
     // All input preconds are full
     t->thread_state = QTHREAD_STATE_NEW;
+#ifdef QTHREAD_PERFORMANCE
+    if(t->rdata){
+      QTPERF_QTHREAD_ENTER_STATE(t->rdata->performance_data, QTHREAD_STATE_NEW);
+    }
+#endif
     qt_free(t->preconds);
     t->preconds = NULL;
 #ifdef QTHREAD_COUNT_THREADS

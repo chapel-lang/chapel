@@ -86,6 +86,10 @@
    if you don't. */
 #undef HAVE_DECL_LGRP_LATENCY_COOKIE
 
+/* Define to 1 if you have the declaration of `modff', and to 0 if you don't.
+   */
+#undef HAVE_DECL_MODFF
+
 /* Define to 1 if you have the declaration of
    `nvmlDeviceGetMaxPcieLinkGeneration', and to 0 if you don't. */
 #undef HAVE_DECL_NVMLDEVICEGETMAXPCIELINKGENERATION

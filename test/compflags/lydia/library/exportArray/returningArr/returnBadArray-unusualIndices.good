@@ -1,1 +1,0 @@
-returnBadArray-unusualIndices.chpl:3: error: cannot return an array with indices that are not integrals

@@ -1,4 +1,0 @@
-shootout resubmission: update once enum->int coercions are disabled on master
-
-Once we've disabled enum->int coercions on master, we'll need to update
-this on the CLBG website to use casts in repeatMake and randomMake

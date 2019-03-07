@@ -1,4 +1,4 @@
-use HDF5_HL;
+use HDF5;
 
 config const inputDir = "EXAMPLE_HDF5";
 config const dsetName = "/gisette";

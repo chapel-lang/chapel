@@ -4,10 +4,15 @@
  * Terms of use are as specified in license.txt
  */
 
-#include <gasnet.h>
+#include <gasnetex.h>
 
 #define TEST_DELAY 1
 #include <test.h>
+
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
 
 int main(int argc, char **argv) {
   struct delay_s {
@@ -22,12 +27,12 @@ int main(int argc, char **argv) {
   int pause_len;
   int pollcnt = 0;
 
-  GASNET_Safe(gasnet_init(&argc, &argv));
-  GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testbarrierlate", &argc, &argv, 0));
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
   test_init("testbarrierlate",1,"(iters) (pollcnt)");
 
-  mynode = gasnet_mynode();
-  nodes = gasnet_nodes();
+  mynode = gex_TM_QueryRank(myteam);
+  nodes = gex_TM_QuerySize(myteam);
 
   if (argc > 1) iters = atoi(argv[1]);
   if (!iters) iters = 10000;
@@ -85,7 +90,7 @@ int main(int argc, char **argv) {
       sleep(pause_len);
   }
   BARRIER();
-  gasnet_get(&delay_params, 0, TEST_SEG(0), sizeof(struct delay_s));
+  gex_RMA_GetBlocking(myteam, &delay_params, 0, TEST_SEG(0), sizeof(struct delay_s), 0);
   delay_us = delay_params.delay_us;
   delay_loops = delay_params.delay_loops;
   if (mynode == 0) {

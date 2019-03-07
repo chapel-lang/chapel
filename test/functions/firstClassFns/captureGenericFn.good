@@ -1,7 +1,5 @@
-captureGenericFn.chpl:17: error: Generic functions can't be captured as values
-Note: This source location is a guess.
-captureGenericFn.chpl:18: error: Generic functions can't be captured as values
-Note: This source location is a guess.
-captureGenericFn.chpl:19: error: Generic functions can't be captured as values
-Note: This source location is a guess.
-captureGenericFn.chpl:21: error: illegal access of first class function
+captureGenericFn.chpl:23: error: 'f1' cannot be captured as a value because it is a generic function
+captureGenericFn.chpl:24: error: 'f2' cannot be captured as a value because it is a generic function
+captureGenericFn.chpl:25: error: 'f3' cannot be captured as a value because it is a generic function
+captureGenericFn.chpl:26: error: 'f4' cannot be captured as a value because it is a generic function
+captureGenericFn.chpl:28: error: illegal access of first class function

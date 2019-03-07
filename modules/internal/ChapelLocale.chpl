@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -95,7 +95,7 @@ module ChapelLocale {
     and implements part of it, but requires the rest to be provided
     by the corresponding concrete classes.
    */
-  class locale {
+  class _locale {
     //- Constructor
     pragma "no doc"
     proc init() { }
@@ -179,10 +179,10 @@ module ChapelLocale {
       :returns: locale number, in the range ``0..numLocales-1``
       :rtype: int
      */
-    proc id : int return chpl_id();  // just the node part
+    proc id : int return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
 
     pragma "no doc"
-    proc localeid : chpl_localeID_t return chpl_localeid(); // full locale id
+    proc localeid : chpl_localeID_t return __primitive("_wide_get_locale", this);
 
     /*
       Get the name of this locale.
@@ -242,19 +242,19 @@ module ChapelLocale {
     // concrete classes.
     pragma "no doc"
     proc chpl_id() : int {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return -1;
     }
 
     pragma "no doc"
     proc chpl_localeid() : chpl_localeID_t {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
     }
 
     pragma "no doc"
     proc chpl_name() : string {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return "";
     }
 
@@ -264,25 +264,25 @@ module ChapelLocale {
     //
     pragma "no doc"
     proc defaultMemory() : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 
     pragma "no doc"
     proc largeMemory() : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 
     pragma "no doc"
     proc lowLatencyMemory() : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 
     pragma "no doc"
     proc highBandwidthMemory() : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 
@@ -294,7 +294,7 @@ module ChapelLocale {
 
     pragma "no doc"
     proc getChildCount() : int {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return 0;
     }
   
@@ -308,19 +308,19 @@ module ChapelLocale {
     pragma "no doc"
     proc addChild(loc:locale)
     {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
     }
   
     pragma "no doc"
     proc getChild(idx:int) : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
 //    iter getChildren() : locale  {
-//    _throwPVFCError();
+//    HaltWrappers.pureVirtualMethodHalt();
 //      yield 0;
 //    }
 
@@ -379,6 +379,7 @@ module ChapelLocale {
   // replication, set replicateRootLocale to false.
   pragma "no doc"
   pragma "locale private" var rootLocale : locale = nil;
+  pragma "no doc"
   pragma "locale private" var rootLocaleInitialized = false;
 
   pragma "no doc"
@@ -411,17 +412,17 @@ module ChapelLocale {
     // which are used as the default set of targetLocales in many
     // distributions.
     proc getDefaultLocaleSpace() const ref {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return chpl_emptyLocaleSpace;
     }
 
     proc getDefaultLocaleArray() const ref {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return chpl_emptyLocales;
     }
 
     proc localeIDtoLocale(id : chpl_localeID_t) : locale {
-      _throwPVFCError();
+      HaltWrappers.pureVirtualMethodHalt();
       return this;
     }
 
@@ -478,12 +479,10 @@ module ChapelLocale {
   // too complicated this early on, so we are using a for loop to
   // broadcast that we are done.
   pragma "no doc"
-  pragma "use default init"
   class localesSignal {
     var s: atomic bool;
   }
   pragma "no doc"
-  pragma "use default init"
   record localesBarrier {
     proc wait(locIdx, flags) {
       if locIdx==0 {
@@ -529,6 +528,9 @@ module ChapelLocale {
   // object.
   pragma "no doc"
   proc chpl_init_rootLocale() {
+    if numLocales > 1 && _local then
+      halt("Cannot run a program compiled with --local in more than 1 locale");
+
     origRootLocale = new unmanaged RootLocale();
     (origRootLocale:borrowed RootLocale).setup();
   }
@@ -583,6 +585,7 @@ module ChapelLocale {
   pragma "no doc"
   const dummyLocale = new unmanaged DummyLocale();
 
+  pragma "fn synchronization free"
   pragma "no doc"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
 
@@ -623,12 +626,20 @@ module ChapelLocale {
       return dummyLocale;
   }
 
+  // the type of elements in chpl_privateObjects.
+  extern record chpl_privateObject_t {
+    var obj:c_void_ptr;
+  }
+  extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
+
   pragma "no doc"
-  pragma "unsafe"
   pragma "fn returns infinite lifetime"
-  proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
-    return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
-  
+  // should this use pragma "local args"?
+  // Why is the compiler making the objectType argument wide?
+  inline
+  proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType {
+    return __primitive("cast", objectType, chpl_privateObjects[objectPid].obj);
+  }
 
 //########################################################################{
 //# Locale diagnostics
@@ -657,7 +668,8 @@ module ChapelLocale {
     on this do queuedTasks = chpl_task_getNumQueuedTasks();
     return queuedTasks;
   }
-  
+
+  pragma "fn synchronization free"
   pragma "no doc"
   proc locale.runningTasks() {
     return this.runningTaskCnt();
@@ -715,6 +727,6 @@ module ChapelLocale {
   //
   pragma "no doc"
   proc deinit() {
-    delete origRootLocale;
+    delete _to_unmanaged(origRootLocale);
   }
 }

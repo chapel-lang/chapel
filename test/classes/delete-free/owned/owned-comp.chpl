@@ -1,5 +1,3 @@
-use OwnedObject;
-
 class C {
   var x: int;
 
@@ -12,8 +10,8 @@ class C {
 }
 
 proc main() {
-  var a = new Owned(new C(1));
-  var b = new Owned(new C(2));
+  var a = new owned C(1);
+  var b = new owned C(2);
 
   a.matches(b);
   a.matches(a);

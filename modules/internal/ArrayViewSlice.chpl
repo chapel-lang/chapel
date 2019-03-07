@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,9 +43,8 @@ module ArrayViewSlice {
   // The class representing a slice of an array.  Like other array
   // class implementations, it supports the standard dsi interface.
   //
-  class ArrayViewSliceArr: BaseArr {
-    type eltType;  // see note on commented-out proc eltType below...
-
+  pragma "aliasing array"
+  class ArrayViewSliceArr: AbsBaseArr {
     // the representation of the slicing domain
     //
     // TODO: Can we privatize upon creation of the array-view slice and cache
@@ -65,7 +64,7 @@ module ArrayViewSlice {
     const indexCache;
 
     proc init(type eltType, const _DomPid, const dom, const _ArrPid, const _ArrInstance) {
-      this.eltType      = eltType;
+      super.init(eltType = eltType);
       this._DomPid      = _DomPid;
       this.dom          = dom;
       this._ArrPid      = _ArrPid;
@@ -225,8 +224,8 @@ module ArrayViewSlice {
     proc dsiHasSingleLocalSubdomain() param
       return privDom.dsiHasSingleLocalSubdomain();
 
-    proc dsiLocalSubdomain() {
-      return privDom.dsiLocalSubdomain();
+    proc dsiLocalSubdomain(loc: locale) {
+      return privDom.dsiLocalSubdomain(loc);
     }
 
 

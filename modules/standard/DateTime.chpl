@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +33,6 @@
  */
 
 module DateTime {
-  use SharedObject;
   /* The minimum year allowed in `date` objects */
   param MINYEAR = 1;
   /* The maximum year allowed in `date` objects */
@@ -49,11 +48,8 @@ module DateTime {
   private const DI100Y = daysBeforeYear(101);
   private const DI4Y   = daysBeforeYear(5);
 
-  // This avoids needing to create new Shared objects everywhere we need nil
-  private const nilTZ = new Shared(nil: TZInfo);
-
-  // This is here to work around issue #5267
-  private const chpl_today = datetime.today();
+  // This avoids needing to create new shared objects everywhere we need nil
+  private const nilTZ = new shared(nil: unmanaged TZInfo);
 
   /* Days in the week, starting with `Monday` = 0 */
   enum DayOfWeek {
@@ -208,7 +204,7 @@ module DateTime {
      Throws an IllegalArgumentError month is out of range. */
   proc daysInMonth(year: int, month: int) throws {
     if month < 1 || month > 12 then
-      throw new IllegalArgumentError("month must be between 1 and 12");
+      throw new owned IllegalArgumentError("month must be between 1 and 12");
     if month == 2 && isLeapYear(year) then
       return 29;
     else
@@ -269,14 +265,13 @@ module DateTime {
      1 <= `day` <= the number of days in the given month and year
   */
   proc date.init(year, month, day) {
-    use ChapelHaltWrappers;
     if year < MINYEAR-1 || year > MAXYEAR+1 then
-      initHalt("year is out of the valid range");
+      HaltWrappers.initHalt("year is out of the valid range");
     if month < 1 || month > 12 then
-      initHalt("month is out of the valid range");
+      HaltWrappers.initHalt("month is out of the valid range");
     const dim = try! daysInMonth(year, month);
     if day < 1 || day > dim then
-      initHalt("day is out of the valid range");
+      HaltWrappers.initHalt("day is out of the valid range");
 
     this.chpl_year = year;
     this.chpl_month = month;
@@ -513,7 +508,7 @@ module DateTime {
     pragma "no doc"
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
     pragma "no doc"
-    var chpl_tzinfo: Shared(TZInfo);
+    var chpl_tzinfo: shared TZInfo;
 
     /* The hour represented by this `time` value */
     proc hour {
@@ -562,16 +557,15 @@ module DateTime {
      `microsecond`, and `timezone`.  All arguments are optional
    */
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
-                 tzinfo: Shared(TZInfo)=nilTZ) {
-    use ChapelHaltWrappers;
+                 tzinfo: shared TZInfo=nilTZ) {
     if hour < 0 || hour >= 24 then
-      initHalt("hour out of range");
+      HaltWrappers.initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
-      initHalt("minute out of range");
+      HaltWrappers.initHalt("minute out of range");
     if second < 0 || second >= 60 then
-      initHalt("second out of range");
+      HaltWrappers.initHalt("second out of range");
     if microsecond < 0 || microsecond >= 1000000 then
-      initHalt("microsecond out of range");
+      HaltWrappers.initHalt("microsecond out of range");
     this.chpl_hour = hour;
     this.chpl_minute = minute;
     this.chpl_second = second;
@@ -909,7 +903,7 @@ module DateTime {
    */
   proc datetime.init(year, month, day,
                      hour=0, minute=0, second=0, microsecond=0,
-                     tzinfo: Shared(TZInfo)=new Shared(nil: TZInfo)) {
+                     tzinfo: shared TZInfo = nil) {
     // For some reason, the compiler fails if we use nilTZ for the
     // tzinfo argument above.  Almost everywhere else it works fine.
     // Testcase: test/library/standard/DateTime/testTimezone.chpl
@@ -923,7 +917,7 @@ module DateTime {
   }
 
   /* Return a `datetime` value representing the current time and date */
-  proc type datetime.now(tz: Shared(TZInfo) = nilTZ) {
+  proc type datetime.now(tz: shared TZInfo = nilTZ) {
     if tz.borrow() == nil {
       const timeSinceEpoch = getTimeOfDay();
       const lt = getLocalTime(timeSinceEpoch);
@@ -950,7 +944,7 @@ module DateTime {
   }
 
   /* The `datetime` that is `timestamp` seconds from the epoch */
-  proc type datetime.fromtimestamp(timestamp: real, tz: Shared(TZInfo) = nilTZ) {
+  proc type datetime.fromtimestamp(timestamp: real, tz: shared TZInfo = nilTZ) {
     if tz.borrow() == nil {
       var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
       const lt = getLocalTime(t);
@@ -1022,7 +1016,7 @@ module DateTime {
   }
 
   /* Return the date and time converted into the timezone in the argument */
-  proc datetime.astimezone(tz: Shared(TZInfo)) {
+  proc datetime.astimezone(tz: shared TZInfo) {
     if tzinfo == tz {
       return this;
     }
@@ -1488,7 +1482,6 @@ module DateTime {
      and microseconds. */
   proc timedelta.init(days=0, seconds=0, microseconds=0,
                       milliseconds=0, minutes=0, hours=0, weeks=0) {
-    use ChapelHaltWrappers;
     param usps = 1000000,  // microseconds per second
           uspms = 1000,    // microseconds per millisecond
           spd = 24*60*60; // seconds per day
@@ -1517,10 +1510,10 @@ module DateTime {
     this.chpl_microseconds = us;
 
     if this.days < -999999999 then
-      initHalt("Overflow: days < -999999999");
+      HaltWrappers.initHalt("Overflow: days < -999999999");
 
     if this.days > 999999999 then
-      initHalt("Overflow: days > 999999999");
+      HaltWrappers.initHalt("Overflow: days > 999999999");
   }
 
   /* Create a `timedelta` from a given number of seconds */
@@ -1662,33 +1655,28 @@ module DateTime {
   /* Abstract base class for time zones. This class should not be used
      directly, but concrete implementations of time zones should be
      derived from it. */
-  pragma "use default init"
   class TZInfo {
     /* The offset from UTC this class represents */
     proc utcoffset(dt: datetime): timedelta {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
       return new timedelta();
     }
 
     /* The `timedelta` for daylight saving time */
     proc dst(dt: datetime): timedelta {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
       return new timedelta();
     }
 
     /* The name of this time zone */
     proc tzname(dt: datetime): string {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+      HaltWrappers.pureVirtualMethodHalt();
       return "";
     }
 
     /* Convert a `time` in UTC to this time zone */
-    proc fromutc(in dt: datetime): datetime {
-      use ChapelHaltWrappers;
-      pureVirtualMethodHalt();
+    proc fromutc(dt: datetime): datetime {
+      HaltWrappers.pureVirtualMethodHalt();
       return new datetime(0,0,0);
     }
   }

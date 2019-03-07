@@ -4,7 +4,7 @@ var A = ["a", "b", "c", "d", "e"];
 var I = ["A", "B", "C", "D", "E"];
 var V = [true, false, true, false, true];
 
-var letters = new TypedSeries(A, new TypedIndex(I), V);
+var letters = new owned TypedSeries(A, new shared TypedIndex(I), V);
 
 writeln("these():");
 for t in letters do

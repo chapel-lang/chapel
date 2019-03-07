@@ -21,7 +21,7 @@ given by the following syntax:
 
 \begin{syntax}
 array-type:
-  [ domain-expression ] type-specifier
+  [ domain-expression ] type-expression
 \end{syntax}
 The \sntx{domain-expression} must specify a domain that the array can
 be declared over.  If the \sntx{domain-expression} is a domain
@@ -678,29 +678,14 @@ index set.  If the formal array's domain was declared using an
 explicit domain map, the actual array's domain must use an equivalent
 domain map.
 
-\section{Returning Arrays from Functions}
-\label{Returning_Arrays_from_Functions}
-\index{arrays!returning}
-\index{returning!array}
-
-Arrays return by value by default. The \chpl{ref} and \chpl{const ref}
-return intents can be used to return a reference to an array.
-
 \subsection{Array Promotion of Scalar Functions}
 \label{Array_Promotion_of_Scalar_Functions}
 \index{arrays!promotion}
 \index{promotion!arrays}
 
-Array promotion of a scalar function is defined over the array type
-and the element type of the array.  The domain of the returned array,
-if an array is captured by the promotion, is the domain of the array
-that promoted the function.  In the event of zipper promotion over
-multiple arrays, the promoted function returns an array with a domain
-that is equal to the domain of the first argument to the function that
-enables promotion.  If the first argument is an iterator or a range,
-the result is a one-based one-dimensional array.
-
-See also~\rsec{Promotion}.
+Arrays may be passed to a scalar function argument whose type
+matches the array's element type.  This results in a promotion of the
+scalar function as defined in~\rsec{Promotion}.
 
 \begin{chapelexample}{whole-array-ops.chpl}
 Whole array operations is a special case of array promotion of scalar
@@ -725,9 +710,17 @@ element in \chpl{A} the element-wise sum of the elements in \chpl{B}
 and \chpl{C}.
 \end{chapelexample}
 
-%
-% TODO: should have an example of promoting an actual function here
-%
+
+\section{Returning Arrays from Functions}
+\label{Returning_Arrays_from_Functions}
+\index{arrays!returning}
+\index{returning!array}
+
+Arrays return by value by default. The \chpl{ref} and \chpl{const ref}
+return intents can be used to return a reference to an array.
+
+Similarly to array arguments, the element type and/or domain of an array return
+type can be omitted.
 
 
 \section{Sparse Arrays}

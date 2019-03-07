@@ -7,7 +7,7 @@ class ThisEarly {
 }
 
 proc main() {
-  var c: ThisEarly = new unmanaged ThisEarly(5);
+  var c: unmanaged ThisEarly = new unmanaged ThisEarly(5);
 
   writeln(c.r);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,8 +76,7 @@
 
   .. note::
 
-    This package module is new in 1.16 and may contain bugs. The interface may
-    change.  The documentation is being incrementally revised and improved.
+    This module is a work in progress and may change in future releases.
 
   Usage
   _____
@@ -125,7 +124,6 @@ module DistributedBag {
 
   use Collection;
   use BlockDist;
-  use SharedObject;
 
   /*
     Below are segment statuses, which is a way to make visible to outsiders the
@@ -208,7 +206,7 @@ module DistributedBag {
 
     proc deinit() {
       coforall loc in Locales do on loc {
-          delete chpl_getPrivatizedCopy(DistributedBagImpl(eltType), _pid);
+          delete chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
       }
     }
   }
@@ -237,13 +235,13 @@ module DistributedBag {
 
     // Reference Counting...
     pragma "no doc"
-    var _rc : Shared(DistributedBagRC(eltType));
+    var _rc : shared DistributedBagRC(eltType);
 
     pragma "no doc"
     proc init(type eltType, targetLocales = Locales) {
       this.eltType = eltType;
       this._pid = (new unmanaged DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
-      this._rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
+      this._rc = new shared DistributedBagRC(eltType, _pid = _pid);
     }
 
     pragma "no doc"
@@ -252,19 +250,6 @@ module DistributedBag {
         halt("DistBag is uninitialized...");
       }
       return chpl_getPrivatizedCopy(DistributedBagImpl(eltType), _pid);
-    }
-
-    pragma "no doc"
-    pragma "fn returns iterator"
-    inline proc these() {
-      return _value.these();
-    }
-
-    pragma "no doc"
-    pragma "fn returns iterator"
-    inline proc these(param tag) where (tag == iterKind.leader || tag == iterKind.standalone)
-      && __primitive("method call resolves", _value, "these", tag=tag){
-      return _value.these(tag=tag);
     }
 
     forwarding _value;
@@ -283,7 +268,7 @@ module DistributedBag {
     // Node-local fields below. These fields are specific to the privatized instance.
     // To access them from another node, make sure you use 'getPrivatizedThis'
     pragma "no doc"
-    var bag : Bag(eltType);
+    var bag : unmanaged Bag(eltType);
 
     proc init(type eltType, targetLocales : [?targetLocDom] locale = Locales) {
       super.init(eltType);
@@ -343,7 +328,7 @@ module DistributedBag {
       Insert an element to this node's bag. The ordering is not guaranteed to be
       preserved.
     */
-    proc add(elt : eltType) : bool {
+    override proc add(elt : eltType) : bool {
       return bag.add(elt);
     }
 
@@ -352,7 +337,7 @@ module DistributedBag {
       are not guaranteed to be the same order it has been inserted. If this node's
       bag is empty, it will attempt to steal elements from bags of other nodes.
     */
-    proc remove() : (bool, eltType) {
+    override proc remove() : (bool, eltType) {
       return bag.remove();
     }
 
@@ -362,7 +347,7 @@ module DistributedBag {
       and may miss elements or even count duplicates resulting from any concurrent
       insertion or removal operations.
     */
-    proc getSize() : int {
+    override proc getSize() : int {
       var sz : atomic int;
       coforall loc in targetLocales do on loc {
         var instance = getPrivatizedThis;
@@ -380,7 +365,7 @@ module DistributedBag {
       updates across nodes, and may miss elements resulting from any concurrent
       insertion or removal operations.
     */
-    proc contains(elt : eltType) : bool {
+    override proc contains(elt : eltType) : bool {
       var foundElt : atomic bool;
       forall elem in getPrivatizedThis {
         if elem == elt {
@@ -543,7 +528,7 @@ module DistributedBag {
         parallel iteration, for both performance and memory benefit.
 
     */
-    iter these() : eltType {
+    override iter these() : eltType {
       for loc in targetLocales {
         for segmentIdx in 0..#here.maxTaskPar {
           // The size of the snapshot is only known once we have the lock.
@@ -705,8 +690,8 @@ module DistributedBag {
     // Used as a test-and-test-and-set spinlock.
     var status : atomic uint;
 
-    var headBlock : BagSegmentBlock(eltType);
-    var tailBlock : BagSegmentBlock(eltType);
+    var headBlock : unmanaged BagSegmentBlock(eltType);
+    var tailBlock : unmanaged BagSegmentBlock(eltType);
 
     var nElems : atomic uint;
 
@@ -858,7 +843,8 @@ module DistributedBag {
 
     inline proc takeElement() {
       if isEmpty {
-        return (false, _defaultOf(eltType));
+        var default: eltType;
+        return (false, default);
       }
 
       if headBlock.isEmpty {
@@ -1118,7 +1104,8 @@ module DistributedBag {
 
                     if parentHandle.targetLocales.size == 1 {
                       segment.releaseStatus();
-                      return (false, _defaultOf(eltType));
+                      var default: eltType;
+                      return (false, default);
                     }
 
                     // Attempt to become the sole work stealer for this node. If we
@@ -1130,7 +1117,8 @@ module DistributedBag {
                       loadBalanceInProgress.waitFor(false);
                       var notEmpty = loadBalanceResult.read();
                       if !notEmpty {
-                        return (false, _defaultOf(eltType));
+                        var default: eltType;
+                        return (false, default);
                       }
 
                       // Reset our phase and scan for more elements...
@@ -1219,7 +1207,8 @@ module DistributedBag {
 
                     // At this point, if no work has been found, we will return empty...
                     if isEmpty.read() {
-                      return (false, _defaultOf(eltType));
+                      var default: eltType;
+                      return (false, default);
                     } else {
                       // Otherwise, we try to get data like everyone else.
                       phase = REMOVE_BEST_CASE;

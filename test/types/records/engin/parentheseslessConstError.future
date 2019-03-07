@@ -1,5 +1,5 @@
-error message: parenthesesless constructor call 
+error message: parenthesesless initializer call
 
-Call to constructor in line 3 should probably not be supported.
+Call to initializer in line 3 should probably not be supported.
 
 Code compiles even with --verify

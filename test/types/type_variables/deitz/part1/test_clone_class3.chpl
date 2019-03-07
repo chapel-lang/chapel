@@ -6,11 +6,11 @@ class foo {
   }
 }
 
-var f1 = new foo(x = 2);
+var f1 = new unmanaged foo(x = 2);
 
 f1.print();
 
-var f2 = new foo(x = "bar");
+var f2 = new unmanaged foo(x = "bar");
 
 f2.print();
 

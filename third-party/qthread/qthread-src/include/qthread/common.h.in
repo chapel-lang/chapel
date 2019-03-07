@@ -38,9 +38,6 @@
 /* The size of `void*', as computed by sizeof. */
 #undef SIZEOF_VOIDP
 
-/* support ROSE extensions */
-#undef QTHREAD_USE_ROSE_EXTENSIONS
-
 /* alignment of aligned_t */
 #undef QTHREAD_ALIGNMENT_ALIGNED_T
 

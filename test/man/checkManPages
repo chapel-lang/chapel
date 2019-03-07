@@ -7,6 +7,7 @@ chpl check that all top-level CHPL variables from $CHPL_HOME/util/printchplenv
 are included in the man page's ENVIRONMENT section.
 """
 
+from functools import reduce
 import logging
 import operator
 import os
@@ -201,7 +202,7 @@ def _run_cmd(cmd):
     """Run command then return stdout and exit code."""
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     stdout, _ = proc.communicate()
-    return stdout, proc.returncode
+    return stdout.decode(), proc.returncode
 
 
 def _msg(level, *args):

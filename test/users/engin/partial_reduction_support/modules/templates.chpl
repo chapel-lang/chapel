@@ -45,7 +45,7 @@ proc bulkPartialReduce(arr, param onlyDim) {
   const PartialDom = dom.dsiPartialDomain(exceptDim=onlyDim);
   var ResultArr: [PartialDom] arr.eltType;
 
-  var locResDom = dist.targetLocDom dmapped new dmap(dist);
+  var locResDom = dist.targetLocDom dmapped _getDistribution(dist);
   var locRes: [locResDom] ResultArr._value.myLocArr.myElems.type;
 
   coforall l2 in
@@ -62,6 +62,7 @@ proc bulkPartialReduce(arr, param onlyDim) {
           var __target = ResultArr._value.locArr[l2].clone();
           partialReduceToTarget(arr.locArr[l], onlyDim, __target);
           partialResult += __target.myElems;
+          delete __target;
         }
       }
     }

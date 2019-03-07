@@ -140,7 +140,7 @@ set +x
       eval perl $srcdir/other/tools-toggle.pl -y $TOOLSONLYFILES
       touch "$TOOLSONLYFLAG"
     elif test "$TOOLSONLYMODE" = 0 -a -f "$TOOLSONLYFLAG" ; then
-      if test ! -d "$srcdir/template-conduit" ; then
+      if test ! -d "$srcdir/smp-conduit" ; then
         echo "+ WARNING: Attempted a conduit-mode Bootstrap, but conduit sources appear to be missing."
         echo "+ WARNING: Assuming you meant to include the -o option for a tools-only distribution."
       else

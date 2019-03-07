@@ -1,0 +1,4 @@
+1
+uncaught MyError: 
+  returns-in-try.chpl:10: thrown here
+  returns-in-try.chpl:21: uncaught here

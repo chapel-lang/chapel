@@ -116,8 +116,6 @@ The eighth argument,
 is a way of passing additional flags to control task behavior. The available
 flags are as follows:
 .TP 4
-QTHREAD_SPAWN_PARENT
-This flag only has meaning if the ROSE OpenMP interface has been enabled. It specifies that the task spawned is a parent task, and alters how task tracking happens for OpenMP taskwait operations.
 .TP
 QTHREAD_SPAWN_SIMPLE
 This flag specifies that the task spawned will not block. Violations of this promise will cause the program to abort. In exchange for making this promise, the runtime can avoid a great deal of context-swap overhead and can provide the task with much more stack space for "free" (it uses the worker thread's stack).

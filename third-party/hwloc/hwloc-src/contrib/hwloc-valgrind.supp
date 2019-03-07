@@ -1,4 +1,4 @@
-# Copyright © 2012      Inria.  All rights reserved.
+# Copyright © 2012-2018 Inria.  All rights reserved.
 # See COPYING in top-level directory.
 
 # suppressions file to be passed to valgrind with
@@ -126,13 +126,13 @@
    obj:*libatiadl*
 }
 
-# 
+#  libpciaccess global state leak
 {
    libpciaccess_device_name_leak
    Memcheck:Leak
    ...
    fun:pci_device_get_device_name
-   fun:hwloc_look_libpci
+   fun:hwloc_look_pci*
 }
 {
    libpciaccess_leak
@@ -140,6 +140,22 @@
    ...
    obj:*libpciaccess*
    ...
-   fun:hwloc_look_libpci
+   fun:hwloc_look_pci*
+}
+
+# libudev global hashes
+{
+   libudev_hashmap_property
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:udev_device_get_property_value
+}
+{
+   libudev_hashmap_sysname
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:udev_device_new_from_subsystem_sysname
 }
 

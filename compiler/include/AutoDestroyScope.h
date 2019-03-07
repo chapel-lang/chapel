@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,12 +44,12 @@ public:
 
   void                     insertAutoDestroys(FnSymbol* fn,
                                               Expr*     refStmt,
-                                              std::set<VarSymbol*> ignored);
+                                              const std::set<VarSymbol*>& ignored);
 
 private:
   void                     variablesDestroy(Expr*      refStmt,
                                             VarSymbol* excludeVar,
-                                            std::set<VarSymbol*> ignored) const;
+                                            const std::set<VarSymbol*>& ignored) const;
 
   const AutoDestroyScope*  mParent;
   const BlockStmt*         mBlock;

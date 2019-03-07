@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,18 +25,29 @@ use MasonUtils;
 use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
+use MasonSystem;
+use MasonExample;
 
-
-proc masonBuild(args) {
+proc masonBuild(args) throws {
   var show = false;
   var release = false;
   var force = false;
   var compopts: [1..0] string;
+  var opt = false;
+  var example = false;
   if args.size > 2 {
     for arg in args[2..] {
-      if arg == '-h' || arg == '--help' {
+      if opt == true {
+        compopts.push_back(arg);
+      }
+      else if arg == '-h' || arg == '--help' {
         masonBuildHelp();
-        exit();
+        exit(0);
+      }
+      else if arg == '--' {
+        if example then
+          throw new owned MasonError("Examples do not support `--` syntax");
+        opt = true;
       }
       else if arg == '--release' {
         release = true;
@@ -47,36 +58,54 @@ proc masonBuild(args) {
       else if arg == '--show' {
         show = true;
       }
+      else if arg == '--example' {
+        example = true;
+      }
+      // passed to UpdateLock
+      else if arg == '--no-update' {
+        continue;
+      }
       else {
         compopts.push_back(arg);
       }
     }
   }
-  const configNames = UpdateLock(args);
-  const tomlName = configNames[1];
-  const lockName = configNames[2];
-  buildProgram(release, show, force, compopts, tomlName, lockName);
+  if example {
+    // compopts become test names. Build never runs examples
+    compopts.push_back("--no-run");
+    if show then compopts.push_back("--show");
+    if release then compopts.push_back("--release");
+    if force then compopts.push_back("--force");
+    masonExample(compopts);
+  }
+  else {
+    const configNames = UpdateLock(args);
+    const tomlName = configNames[1];
+    const lockName = configNames[2];
+    buildProgram(release, show, force, compopts, tomlName, lockName);
+  }
 }
 
-private proc checkChplVersion(lockFile : Toml) {
+private proc checkChplVersion(lockFile : borrowed Toml) throws {
   const root = lockFile["root"];
   const (success, low, hi) = verifyChapelVersion(root);
 
   if success == false {
-    stderr.writeln("Build failure: lock file expecting chplVersion ", prettyVersionRange(low, hi));
-    exit(1);
+    throw new owned MasonError("Build failure: lock file expecting chplVersion " + prettyVersionRange(low, hi));
   }
 }
 
-proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
-                  tomlName="Mason.toml", lockName="Mason.lock") {
+
+proc buildProgram(release: bool, show: bool, force: bool, cmdLineCompopts: [?d] string,
+                  tomlName="Mason.toml", lockName="Mason.lock") throws {
+
 
   try! {
 
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd, tomlName);
     const toParse = open(projectHome + "/" + lockName, iomode.r);
-    var lockFile = new Owned(parseToml(toParse));
+    var lockFile = new owned(parseToml(toParse));
     const projectName = lockFile["root"]["name"].s;
     
     // --fast
@@ -102,26 +131,21 @@ proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
         var sourceList = genSourceList(lockFile);
         getSrcCode(sourceList, show);
 
-        // Checks for compilation options are present in Mason.toml
-        if lockFile.pathExists('root.compopts') {
-          const cmpFlags = lockFile["root"]["compopts"].s;
-          compopts.push_back(cmpFlags);
-        }
+        // get compilation options including external dependencies
+        const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
 
         // Compile Program
         if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
           writeln("Build Successful\n");
         }
         else {
-          writeln("Build Failed");
-          exit(1);
+          throw new owned MasonError("Build Failed");
         }
         // Close memory
         toParse.close();
       }
       else {
-        writeln("Cannot build: no Mason.lock found");
-        exit(1);
+        throw new owned MasonError("Cannot build: no Mason.lock found");
       }
     }
     else {
@@ -129,6 +153,7 @@ proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
     }
   }
   catch e: MasonError {
+    stderr.writeln(e.message());
     exit(1);  
   }
 }
@@ -138,8 +163,8 @@ proc buildProgram(release: bool, show: bool, force: bool, compopts: [?d] string,
    folder. Requires that the main library file be
    named after the project folder in which it is
    contained */
-proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
-                release: bool, compopts: [?dom] string, projectHome: string) : bool {
+proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
+                release: bool, compopts: [?dom] string, projectHome: string) : bool throws {
 
   const sourceList = genSourceList(lockFile);
   const depPath = MASON_HOME + '/src/';
@@ -147,7 +172,10 @@ proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
   const pathToProj = projectHome + '/src/'+ project + '.chpl';
   const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
 
-  if isFile(pathToProj) {
+  if !isFile(pathToProj) {
+    throw new owned MasonError("Mason could not find your project");
+  }
+  else {
     var command: string = 'chpl ' + pathToProj + moveTo + ' ' + ' '.join(compopts);
     if release then command += " --fast";
     if sourceList.numElements > 0 then command += " --main-module " + project;
@@ -158,8 +186,11 @@ proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
     }
 
     // Verbosity control
-    if show then writeln(command);
-    else writeln("Compiling "+ project);
+    if show then writeln("Compilation command: " + command);
+    else {
+      if release then writeln("Compiling [release] target: " + project);
+      else writeln("Compiling [debug] target: " + project);
+    }
 
     // compile Program with deps
     var compilation = runWithStatus(command);
@@ -172,20 +203,17 @@ proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
       return true;
     else return false;
   }
-  else {
-    writeln("Mason could not find your project!");
-    return false;
-  }
+  return false;
 }
 
 
 /* Generates a list of tuples that holds the git repo
    url and the name for local mason dependency pool */
-proc genSourceList(lockFile: Toml) {
+proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: [1..0] (string, string, string);
   for (name, package) in zip(lockFile.D, lockFile.A) {
     if package.tag == fieldToml {
-      if name == "root" then continue;
+      if name == "root" || name == "system" || name == "external" then continue;
       else {
         var version = lockFile[name]["version"].s;
         var source = lockFile[name]["source"].s;
@@ -228,4 +256,36 @@ proc getSrcCode(sourceList: [?d] 3*string, show) {
       gitC(destination, checkout);
     }
   }
+}
+
+// Retrieves root table compopts, external compopts, and system compopts
+proc getTomlCompopts(lock: borrowed Toml, compopts: [?d] string) {
+
+  // Checks for compilation options are present in Mason.toml
+  if lock.pathExists('root.compopts') {
+    const cmpFlags = lock["root"]["compopts"].s;
+    compopts.push_back(cmpFlags);
+  }
+  
+  if lock.pathExists('external') {
+    const exDeps = lock['external'];
+    for (name, depInfo) in zip(exDeps.D, exDeps.A) {
+      for (k,v) in allFields(depInfo) {
+        select k {
+            when "libs" do compopts.push_back("-L" + v.s); 
+            when "include" do compopts.push_back("-I" + v.s);
+            when "other" do compopts.push_back("-I" + v.s);
+            otherwise continue;
+          }
+      }
+    }
+  }
+  if lock.pathExists('system') {
+    const pkgDeps = lock['system'];
+    for (name, depInfo) in zip(pkgDeps.D, pkgDeps.A) {
+      compopts.push_back(depInfo["libs"].s);
+      compopts.push_back("-I" + depInfo["include"].s);
+    }
+  }
+  return compopts;
 }

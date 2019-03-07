@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -57,11 +57,11 @@ module LocaleModel {
     const ndName: string; // note: locale provides `proc name`
 
     override proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
-    proc chpl_localeid() {
+    override proc chpl_localeid() {
       return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
                                 sid);
     }
-    proc chpl_name() return ndName;
+    override proc chpl_name() return ndName;
 
     proc init() {
     }
@@ -72,7 +72,7 @@ module LocaleModel {
       ndName = "ND"+sid;
     }
 
-    proc writeThis(f) {
+    override proc writeThis(f) {
       parent.writeThis(f);
       f <~> '.'+ndName;
     }
@@ -131,10 +131,10 @@ module LocaleModel {
     }
 
     override proc chpl_id() return _node_id;     // top-level locale (node) number
-    proc chpl_localeid() {
+    override proc chpl_localeid() {
       return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
     }
-    proc chpl_name() return local_name;
+    override proc chpl_name() return local_name;
 
     //
     // Support for different types of memory:
@@ -159,7 +159,7 @@ module LocaleModel {
     }
 
 
-    proc writeThis(f) {
+    override proc writeThis(f) {
       // Most classes will define it like this:
       //      f <~> name;
       // but here it is defined thus for backward compatibility.
@@ -201,7 +201,7 @@ module LocaleModel {
 
     proc deinit() {
       for loc in childLocales do
-        delete loc;
+        delete _to_unmanaged(loc);
     }
  }
 
@@ -238,13 +238,13 @@ module LocaleModel {
     // numbered less than this.
     // -1 is used in the abstract locale class to specify an invalid node ID.
     override proc chpl_id() return numLocales;
-    proc chpl_localeid() {
+    override proc chpl_localeid() {
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
-    proc chpl_name() return local_name();
+    override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    proc writeThis(f) {
+    override proc writeThis(f) {
       f <~> name;
     }
 
@@ -280,7 +280,7 @@ module LocaleModel {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          delete loc;
+          delete _to_unmanaged(loc);
         }
       }
     }

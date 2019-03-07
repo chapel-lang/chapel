@@ -34,6 +34,7 @@ def main():
     """
     Parse and do some basic validation of the ANNOTATIONS.yaml file
     """
+    os.environ["TZ"] = "America/Los_Angeles"
     chpl_home = get_chpl_home()
     test_dir = os.path.join(chpl_home, 'test')
     ann_path = os.path.join(test_dir, 'ANNOTATIONS.yaml')
@@ -92,7 +93,7 @@ def check_configs(ann_data):
     known_configs = {'shootout', 'chap03', 'chap04', 'bradc-lnx', 'chapcs',
                      '16 node XC', 'Single node XC'}
     for graph in ann_data:
-        for _, annotations in ann_data[graph].iteritems():
+        for _, annotations in ann_data[graph].items():
             for ann in annotations:
                 if isinstance(ann, dict) and 'config' in ann:
                     configs = ann['config'].split(',')
@@ -105,9 +106,11 @@ def check_configs(ann_data):
 def compute_pr_to_dates():
     """Helper function to compute a map of PR numbers to commit dates"""
     pr_to_date_dict = {}
-    git_cmd = 'git log --grep "^Merge pull request #" --date=short --pretty=format:"%ad ::: %s"'
+    git_cmd = 'git log --grep "^Merge pull request #" --date=short-local --pretty=format:"%ad ::: %s"'
     p = subprocess.Popen(git_cmd, stdout=subprocess.PIPE, shell=True)
     git_log = p.communicate()[0]
+    if sys.version_info[0] >= 3 and not isinstance(git_log, str):
+        git_log = str(git_log, 'utf-8')
     for line in git_log.splitlines():
         split_line = line.split(' ::: ')
         date = split_line[0]
@@ -123,7 +126,7 @@ def check_pr_number_dates(ann_data):
     """
     pr_to_date_dict = compute_pr_to_dates()
     for graph in ann_data:
-        for date, annotations in ann_data[graph].iteritems():
+        for date, annotations in ann_data[graph].items():
             for ann in annotations:
                 if isinstance(ann, dict):
                     text = ann.get('text')

@@ -10,7 +10,7 @@ proc C.foo(z: int = 2) {
   writeln((this, z));
 }
 
-proc D.foo(z: int = 3) {
+override proc D.foo(z: int = 3) {
   writeln((this, z));
 }
 

@@ -1,1 +1,1 @@
---main-module streamEP
+--main-module streamEP --no-warnings

@@ -4,14 +4,20 @@ OUTFILE=$2
 
 TMPFILE="$outfile.prediff.tmp"
 
-PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py --host`
-COMPILER=`$CHPL_HOME/util/chplenv/chpl_compiler.py --host`
-FILECHECK=${CHPL_HOME}/third-party/llvm/install/${PLATFORM}-${COMPILER}/bin/FileCheck
+FILECHECK='FileCheck'
 
-if [ ! -x $FILECHECK ]; then
-    PREFERRED_LLVM_VERS=`cat ${CHPL_HOME}/third-party/llvm/LLVM_VERSION`
-    LLVM_CONFIG=`${CHPL_HOME}/third-party/llvm/find-llvm-config.sh $PREFERRED_LLVM_VERS`
-    FILECHECK=${LLVM_CONFIG//llvm-config/FileCheck}
+USE_LLVM=`$CHPL_HOME/util/chplenv/chpl_llvm.py`
+
+if [ "$USE_LLVM" = llvm ]
+then
+  tmp=`$CHPL_HOME/util/printchplenv --all --internal --simple | grep CHPL_LLVM_UNIQ_CFG_PATH`
+  LLVM_UNIQUE_SUBDIR=${tmp/CHPL_LLVM_UNIQ_CFG_PATH=/}
+  FILECHECK=${CHPL_HOME}/third-party/llvm/install/${LLVM_UNIQUE_SUBDIR}/bin/FileCheck
+elif [ "$USE_LLVM" = system ]
+then
+  PREFERRED_LLVM_VERS=`cat ${CHPL_HOME}/third-party/llvm/LLVM_VERSION`
+  LLVM_CONFIG=`${CHPL_HOME}/third-party/llvm/find-llvm-config.sh $PREFERRED_LLVM_VERS`
+  FILECHECK=${LLVM_CONFIG//llvm-config/FileCheck}
 fi
 
 mv $OUTFILE $TMPFILE

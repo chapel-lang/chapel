@@ -1,9 +1,9 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   contributed by Lydia Duncan, Albert Sidelnik, and Brad Chamberlain
-   derived from the GNU C version by Sebastien Loisel and the C# version
-   by Isaac Gouy
+   contributed by Brad Chamberlain
+   a serial version derived from the Chapel version by Lydia Duncan,
+   Albert Sidelnik, and Brad Chamberlain
 */
 
 config const n = 500;           // the size of A (n x n), u and v (n-vectors)
@@ -33,16 +33,24 @@ proc multiplyAtAv(v, tmp, AtAv) {
 // Compute A * v ('Av').
 //
 proc multiplyAv(v: [?Dv], Av: [?DAv]) {
-  forall i in DAv do
-    Av[i] = + reduce (for j in Dv do A[i,j] * v[j]);
+  for i in DAv {
+    var av = 0.0;
+    for j in Dv do
+      av += A[i,j] * v[j];
+    Av[i] = av;
+  }
 }
 
 //
-// Compute A-transpose * v ('Atv').
+// Compute A-tranpose * v ('Atv').
 //
 proc multiplyAtv(v: [?Dv], Atv: [?DAtv]) {
-  forall i in DAtv do
-    Atv[i] = + reduce (for j in Dv do A[j,i] * v[j]);
+  for i in DAtv {
+    var atv = 0.0;
+    for j in Dv do
+      atv += A[j,i] * v[j];
+    Atv[i] = atv;
+  }
 }
 
 //

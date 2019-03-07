@@ -8,17 +8,17 @@ module BC_dijkstra {
 
     // Initialize records
     var D1 = {0..(nNodes-1)};
-    var Records: [D1] Record;
+    var Records: [D1] unmanaged Record;
 
     for i in D1 {
       // onStack = next record on stack; -1 EOS; -2 not on stack
       // inHeap = location of this record in heap
-      Records[i]         = new Record(distance = INFINITY, onStack = -2, inHeap = -1);
-      Records[i].preEdge = new PreEdge(edge = -1, next = nil);
+      Records[i]         = new unmanaged Record(distance = INFINITY, onStack = -2, inHeap = -1);
+      Records[i].preEdge = new unmanaged PreEdge(edge = -1, next = nil);
     }
 
     // Initialize heap
-    var heap = new Heap(leafLevel = nNodes/2, IdsD = {0..(nNodes-1)});
+    var heap = new unmanaged Heap(leafLevel = nNodes/2, IdsD = {0..(nNodes-1)});
 
     for i in D1 do heap.Ids[i] = -1;
 
@@ -73,7 +73,7 @@ module BC_dijkstra {
         //     position in heap node is the pre node of neighbor
         } else if (neighborDistance > newDistance) {
 
-          var ptr: PreEdge = Records[neighbor].preEdge.next;
+          var ptr: unmanaged PreEdge = Records[neighbor].preEdge.next;
 
           Records[neighbor].distance = newDistance;
           Records[neighbor].sigma = sigma;
@@ -87,7 +87,7 @@ module BC_dijkstra {
         //     add node as a pre node of neighbor
         } else if (neighborDistance == newDistance) {
 
-          var ptr: PreEdge = new PreEdge(edge = -1, next = nil);
+          var ptr: unmanaged PreEdge = new unmanaged PreEdge(edge = -1, next = nil);
           Records[neighbor].sigma += sigma;
 
           ptr.edge = edgeIndex;
@@ -105,7 +105,7 @@ module BC_dijkstra {
 //      Nodes[node].vb += Records[node].delta;
       Nodes[node].vb$ += Records[node].delta;
 
-      var ptr: PreEdge = Records[node].preEdge;
+      var ptr: unmanaged PreEdge = Records[node].preEdge;
 
       while (ptr != nil) {
         var edge: int = ptr.edge;

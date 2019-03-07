@@ -1,2 +1,2 @@
-inheritedInitWrongName.chpl:20: error: unresolved call '_new(type D, x=3, "hi", 4.6)'
-inheritedInitWrongName.chpl:14: note: candidates are: _new(type chpl_t, a, b, c)
+inheritedInitWrongName.chpl:20: error: unresolved call 'D.init(x=3, "hi", 4.6)'
+inheritedInitWrongName.chpl:15: note: candidates are: D.init(a, b, c)

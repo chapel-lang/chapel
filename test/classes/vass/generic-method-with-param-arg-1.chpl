@@ -1,4 +1,4 @@
-proc DefaultRectangularArr.getAllocationDomainForDefaultRectangularArray3(): 3 * range(int(64), stridable=true)
+override proc DefaultRectangularArr.getAllocationDomainForDefaultRectangularArray3(): 3 * range(int(64), stridable=true)
 {
   param rank = 3;
   if this.dom.dsiNumIndices == 1000000 {

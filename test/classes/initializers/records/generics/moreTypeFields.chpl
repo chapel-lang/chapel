@@ -7,9 +7,9 @@ record Foo {
   type t2;
   var x2: t2;
 
-  proc init(type t1Val, type t2Val) {
-    t1 = t1Val;
-    t2 = t2Val;
+  proc init(type t1, type t2) {
+    this.t1 = t1;
+    this.t2 = t2;
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -130,17 +130,6 @@ module Buffers {
     this.home = here;
     this._bytes_internal = QBYTES_PTR_NULL;
   }
-  /*
-
-     defaultOf appears to be unnecessary since the initializer
-     in the class takes care of it.
-
-  inline proc _defaultOf(type t): t where t == bytes {
-    var ret:bytes = noinit;
-    ret.home = here;
-    ret._bytes_internal = QBYTES_PTR_NULL;
-    return ret;
-  }*/
 
   /* Initialize a bytes object by allocating zero-filled memory.
 
@@ -278,7 +267,6 @@ module Buffers {
 
   /* A region within a buffer (indicated by two :record:`buffer_iterator` s ) */
   pragma "ignore noinit"
-  pragma "use default init"
   record buffer_range {
     var start:buffer_iterator;
     var end:buffer_iterator;
@@ -377,18 +365,6 @@ module Buffers {
       try! this.append(b);
     }
   }
-  /*
-     defaultOf appears to be unnecessary since the initializer
-     in the class takes care of it.
-
-  inline proc _defaultOf(type t): t where t == buffer {
-    var ret:buffer = noinit;
-    ret.home = here;
-    ret._buf_internal = QBUFFER_PTR_NULL;
-    return ret;
-  }*/
-
-
 
   /* Flatten a buffer. Create a new :record:`bytes` object and copy
      the buffer into it. This function should work even if buffer is

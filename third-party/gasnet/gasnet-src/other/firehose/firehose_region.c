@@ -5,8 +5,7 @@
  */
 #include <firehose.h>
 #include <firehose_internal.h>
-#include <gasnet.h>
-#include <gasnet_handler.h>
+#include <gasnetex.h>
 
 #ifdef FIREHOSE_REGION
 
@@ -198,7 +197,7 @@ void fh_bucket_cover_and_check(fh_bucket_t *bucket)
   fh_bucket_cover(bucket);
   if (priv->visible == 0) {
     fh_fifoq_t *fifo_head = NULL;
-    gasnet_node_t node = FH_NODE(bucket);
+    gex_Rank_t node = FH_NODE(bucket);
     if (node == gasneti_mynode) {
       if (FH_IS_LOCAL_FIFO(priv)) {
 	fifo_head = &fh_LocalFifo;
@@ -221,7 +220,7 @@ void fh_bucket_cover_and_check(fh_bucket_t *bucket)
 #endif
 
 static fh_bucket_t
-*fh_bucket_lookup(gasnet_node_t node, uintptr_t addr)
+*fh_bucket_lookup(gex_Rank_t node, uintptr_t addr)
 {
         FH_TABLE_ASSERT_LOCKED;
 
@@ -395,7 +394,7 @@ int fh_clean_covered_local(int limit, firehose_region_t *reg) {
 }
 
 GASNETI_INLINE(fh_clean_covered_remote)
-int fh_clean_covered_remote(gasnet_node_t node, int limit, firehose_region_t *reg) {
+int fh_clean_covered_remote(gex_Rank_t node, int limit, firehose_region_t *reg) {
   int count = fh_clean_covered(limit, reg, &fh_RemoteNodeFifo[node]);
   fhc_RemoteVictimFifoBuckets[node] -= count;
   return count;
@@ -450,7 +449,7 @@ fh_region_to_priv(const firehose_region_t *reg)
  * The FIFO linkage is NOT initialized */
 static GASNETI_MALLOC
 firehose_private_t *
-fh_create_priv(gasnet_node_t node, const firehose_region_t *reg)
+fh_create_priv(gex_Rank_t node, const firehose_region_t *reg)
 {
     uintptr_t end_addr, bucket_addr;
     firehose_private_t *priv;
@@ -508,7 +507,7 @@ static void
 fh_destroy_priv(firehose_private_t *priv)
 {
     fh_bucket_t *bucket;
-    gasnet_node_t node;
+    gex_Rank_t node;
 
     /* Unhash & free all the buckets */
     bucket = priv->bucket;
@@ -541,7 +540,7 @@ fh_update_priv(firehose_private_t *priv, const firehose_region_t *reg)
     uintptr_t bucket_addr;
     uintptr_t old_start, new_start;
     uintptr_t old_end, new_end;
-    gasnet_node_t node = FH_NODE(priv);	/* safe because priv is remote */
+    gex_Rank_t node = FH_NODE(priv);	/* safe because priv is remote */
     fh_bucket_t *bucket;
     fh_bucket_t **prev;
 
@@ -769,7 +768,7 @@ fhi_init_local_region(int local_ref, firehose_region_t *region)
  */
 GASNETI_INLINE(fhi_find_priv)
 firehose_private_t *
-fhi_find_priv(gasnet_node_t node, uintptr_t addr, size_t len)
+fhi_find_priv(gex_Rank_t node, uintptr_t addr, size_t len)
 {
     firehose_private_t *priv = NULL;
     fh_bucket_t *bd;
@@ -833,7 +832,7 @@ fh_FreeVictim(int count, firehose_region_t *reg, fh_fifoq_t *fifo_head)
    without blocking (the FH_IS_READY test).
  */
 int
-fh_region_ispinned(gasnet_node_t node, uintptr_t addr, size_t len)
+fh_region_ispinned(gex_Rank_t node, uintptr_t addr, size_t len)
 {
     fh_bucket_t *bd;
     int retval = 0;
@@ -857,7 +856,7 @@ fh_region_ispinned(gasnet_node_t node, uintptr_t addr, size_t len)
    without blocking (the FH_IS_READY test).
 */
 int
-fh_region_partial(gasnet_node_t node, uintptr_t *addr_p, size_t *len_p)
+fh_region_partial(gex_Rank_t node, uintptr_t *addr_p, size_t *len_p)
 {
     uintptr_t start_addr, end_addr, bucket_addr;
     int is_local = (node == gasneti_mynode);
@@ -1038,7 +1037,7 @@ fh_acquire_remote_region(firehose_request_t *req,
                          firehose_remotecallback_args_fn_t args_fn)
 {
     firehose_private_t *priv;
-    gasnet_node_t node;
+    gex_Rank_t node;
 
     gasneti_assert(req != NULL);
     gasneti_assert(req->node != gasneti_mynode);
@@ -1089,7 +1088,7 @@ fh_acquire_remote_region(firehose_request_t *req,
 	if (flags & FIREHOSE_FLAG_ENABLE_REMOTE_CALLBACK) {
 	    payload_size += args_fn(context,
 			            (firehose_remotecallback_args_t *)(payload + payload_size));
-	    gasneti_assert(payload_size <= gasnet_AMMaxMedium());
+	    gasneti_assert(payload_size <= gex_AM_LUBRequestMedium());
 	}
 
 	FH_TABLE_UNLOCK;
@@ -1101,15 +1100,16 @@ fh_acquire_remote_region(firehose_request_t *req,
 
 	req->flags |= FH_FLAG_INFLIGHT;
 
-	MEDIUM_REQ(4,5,
-		   (node,
+	gex_AM_RequestMedium(
+		    gasneti_THUNK_TM, node,
 		    fh_handleridx(fh_am_move_reqh),
 		    payload,
 		    payload_size,
+		    GEX_EVENT_NOW, 0,
 		    flags,
 		    1,
 		    num_unpin,
-		    PACK(priv)));
+		    PACK(priv));
     }
     else if_pf (!FH_IS_READY(0, priv)) {
 	/* HIT Pending */
@@ -1179,7 +1179,7 @@ fh_release_remote_region(firehose_request_t *request)
  * pending requests pointing to the 'PendQ' parameter.
  */
 int
-fh_find_pending_callbacks(gasnet_node_t node, firehose_region_t *region,
+fh_find_pending_callbacks(gex_Rank_t node, firehose_region_t *region,
 			  int nreg, void *context, fh_pollq_t *PendQ)
 {
 	firehose_private_t		*priv = context;
@@ -1276,7 +1276,7 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 	int med_regions;
 #endif
 	int b_prepinned = 0;
-	gasnet_node_t num_nodes = gasneti_nodes;
+	gex_Rank_t num_nodes = gasneti_nodes;
 	int dflt_M, dflt_VM;
 	int dflt_R, dflt_VR;
 	int dflt_RS;
@@ -1287,7 +1287,8 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 
 #if 0  /* UNUSED - see param_RS computation for explanation */
 	/* Count how many regions fit into an AM Medium payload */
-	med_regions = (gasnet_AMMaxMedium() 
+        med_regions = (MIN(gex_AM_LUBRequestMedium(),
+                           gex_AM_LUBReplyMedium())
 				- sizeof(firehose_remotecallback_args_t))
 				/ sizeof(firehose_region_t);
 	gasneti_assert(med_regions > FH_MAX_UNPIN_REM); /* firehose_remotecallback_args_t too big? */
@@ -1699,7 +1700,7 @@ fh_fini_plugin(void)
 /* ##################################################################### */
 
 int
-fh_move_request(gasnet_node_t node,
+fh_move_request(gex_Rank_t node,
 		firehose_region_t *new_reg, size_t r_new,
 		firehose_region_t *old_reg, size_t r_old,
 		void *context)

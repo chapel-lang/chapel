@@ -1,5 +1,0 @@
-# No need to run this test in all configurations.
-# Maybe remove this skipif when this test is no longer a future.
-CHPL_COMM != none
-COMPOPTS <= --no-local
-COMPOPTS <= --baseline

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -177,11 +177,11 @@ module LocaleModel {
     const sid: chpl_sublocID_t;
     const mlName: string; // note: locale provides `proc name`
 
-    proc chpl_id() return parent.chpl_id(); // top-level node id
-    proc chpl_localeid() {
+    override proc chpl_id() return parent.chpl_id(); // top-level node id
+    override proc chpl_localeid() {
       return chpl_buildLocaleID(parent.chpl_id():chpl_nodeID_t, sid);
     }
-    proc chpl_name() return mlName;
+    override proc chpl_name() return mlName;
 
     //
     // Support for different types of memory:
@@ -222,13 +222,13 @@ module LocaleModel {
       mlName = kindstr+whichNuma;
     }
 
-    proc writeThis(f) {
+    override proc writeThis(f) {
       parent.writeThis(f);
       f <~> '.'+mlName;
     }
 
-    proc getChildCount(): int { return 0; }
-    proc getChild(idx:int) : locale { return nil; }
+    override proc getChildCount(): int { return 0; }
+    override proc getChild(idx:int) : locale { return nil; }
   }
 
   //
@@ -240,11 +240,11 @@ module LocaleModel {
     var ddr : MemoryLocale; // should never be modified after first assignment
     var hbm : MemoryLocale; // should never be modified after first assignment
 
-    proc chpl_id() return parent.chpl_id(); // top-level node id
-    proc chpl_localeid() {
+    override proc chpl_id() return parent.chpl_id(); // top-level node id
+    override proc chpl_localeid() {
       return chpl_buildLocaleID(parent.chpl_id():chpl_nodeID_t, sid);
     }
-    proc chpl_name() return ndName;
+    override proc chpl_name() return ndName;
 
     //
     // Support for different types of memory:
@@ -300,22 +300,22 @@ module LocaleModel {
     }
 
     proc deinit() {
-      delete ddr;
-      delete hbm;
+      delete _to_unmanaged(ddr);
+      delete _to_unmanaged(hbm);
     }
 
-    proc writeThis(f) {
+    override proc writeThis(f) {
       parent.writeThis(f);
       f <~> '.'+ndName;
     }
 
-    proc getChildCount(): int { return 0; }
+    override proc getChildCount(): int { return 0; }
     iter getChildIndices() : int {
       halt("No children to iterate over.");
       yield -1;
     }
     proc addChild(loc:locale) { halt("Cannot add children to this locale type."); }
-    proc getChild(idx:int) : locale { return nil; }
+    override proc getChild(idx:int) : locale { return nil; }
 
     iter getChildren() : locale {
       halt("No children to iterate over.");
@@ -364,11 +364,11 @@ module LocaleModel {
       setup();
     }
 
-    proc chpl_id() return _node_id;     // top-level locale (node) number
-    proc chpl_localeid() {
+    override proc chpl_id() return _node_id;     // top-level locale (node) number
+    override proc chpl_localeid() {
       return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
     }
-    proc chpl_name() return local_name;
+    override proc chpl_name() return local_name;
 
     //
     // Support for different types of memory:
@@ -391,7 +391,7 @@ module LocaleModel {
     }
 
 
-    proc writeThis(f) {
+    override proc writeThis(f) {
       // Most classes will define it like this:
       //      f <~> name;
       // but here it is defined thus for backward compatibility.
@@ -400,14 +400,14 @@ module LocaleModel {
 
     proc getChildSpace() return childSpace;
 
-    proc getChildCount() return numSublocales;
+    override proc getChildCount() return numSublocales;
 
     iter getChildIndices() : int {
       for idx in childSpace do
         yield idx;
     }
 
-    proc getChild(idx:int) : locale {
+    override proc getChild(idx:int) : locale {
       const (whichNuma, memoryKind) =
         unpackSublocID(numSublocales, idx:chpl_sublocID_t);
       if boundsChecking then
@@ -454,9 +454,9 @@ module LocaleModel {
 
     proc deinit() {
       for loc in childLocales do
-        delete loc;
-      delete ddr;
-      delete hbm;
+        delete _to_unmanaged(loc);
+      delete _to_unmanaged(ddr);
+      delete _to_unmanaged(hbm);
     }
  }
 
@@ -492,18 +492,18 @@ module LocaleModel {
     // We return numLocales for now, since we expect nodes to be
     // numbered less than this.
     // -1 is used in the abstract locale class to specify an invalid node ID.
-    proc chpl_id() return numLocales;
-    proc chpl_localeid() {
+    override proc chpl_id() return numLocales;
+    override proc chpl_localeid() {
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
-    proc chpl_name() return local_name();
+    override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    proc writeThis(f) {
+    override proc writeThis(f) {
       f <~> name;
     }
 
-    proc getChildCount() return this.myLocaleSpace.numIndices;
+    override proc getChildCount() return this.myLocaleSpace.numIndices;
 
     proc getChildSpace() return this.myLocaleSpace;
 
@@ -512,7 +512,7 @@ module LocaleModel {
         yield idx;
     }
 
-    proc getChild(idx:int) return this.myLocales[idx];
+    override proc getChild(idx:int) return this.myLocales[idx];
 
     iter getChildren() : locale  {
       for loc in this.myLocales do
@@ -522,7 +522,7 @@ module LocaleModel {
     override proc getDefaultLocaleSpace() const ref return this.myLocaleSpace;
     override proc getDefaultLocaleArray() const ref return myLocales;
 
-    proc localeIDtoLocale(id : chpl_localeID_t) {
+    override proc localeIDtoLocale(id : chpl_localeID_t) {
       const node = chpl_nodeFromLocaleID(id);
       const subloc = chpl_sublocFromLocaleID(id);
       if subloc == numaDomainForAny(
@@ -538,7 +538,7 @@ module LocaleModel {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          delete loc;
+          delete _to_unmanaged(loc);
         }
       }
     }

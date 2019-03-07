@@ -89,7 +89,7 @@ module cholesky_test {
 
   proc main {
 
-    var Rand = new RandomStream ( real, seed = 314159) ;
+    var Rand = new owned RandomStream ( real, seed = 314159) ;
 
     const mat_dom : domain (2) = { index_base .. #n, index_base .. #n };
 
@@ -258,8 +258,6 @@ module cholesky_test {
       check_factorization ( A, L );
     else
       writeln ("factorization failed for non-positive semi-definite matrix");
-
-    delete Rand;
   }
 
   proc check_factorization ( A : [], L : [] )

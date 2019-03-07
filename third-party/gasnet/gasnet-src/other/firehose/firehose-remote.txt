@@ -69,7 +69,7 @@ firehose_bucket_t *consume_one_bucket(int node, fhi_RegionPool_t *unpin_p)
   return bd;
 }
 
-int *da;        /* dynamically-allocated array of gasnet_nodes() elements */
+int *da;        /* dynamically-allocated array of gasneti_nodes elements */
 
 /* return count of the number of misses to resolve, or -1 if deadlock detected
    Note that we can call this from the deadlock resolution case, in which case

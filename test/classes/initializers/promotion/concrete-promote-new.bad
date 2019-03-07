@@ -1,1 +1,0 @@
-concrete-promote-new.chpl:7: error: type mismatch in assignment from _ir__new to C

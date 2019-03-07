@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,7 +76,7 @@ void set_hps(void)
   if (strcmp(CHPL_MEM, "jemalloc") == 0
       && chpl_env_rt_get("MAX_HEAP_SIZE", NULL) == NULL
       && (ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) != NULL) {
-    hps = chpl_env_str_to_size(ev, hps);
+    hps = chpl_env_str_to_size("HUGETLB_DEFAULT_PAGE_SIZE", ev, hps);
   }
 }
 

@@ -13,6 +13,6 @@ iter foo(param tag:iterKind) where tag == iterKind.standalone {
 proc main() {
   var x = {50..100};
   forall f in foo() with (const ref x) {
-    writeln(x.member(f.length));
+    writeln(x.contains(f.length));
   }
 }

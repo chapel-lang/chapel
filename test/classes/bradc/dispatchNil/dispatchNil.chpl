@@ -14,11 +14,11 @@ class D : C {
   var DsC: unmanaged C;
   var y: int = DsC.baz();
 
-  proc foo() {
+  override proc foo() {
     writeln("In D.foo(), y is ", y);
   }
 
-  proc baz(): int {
+  override proc baz(): int {
     return y;
   }
 

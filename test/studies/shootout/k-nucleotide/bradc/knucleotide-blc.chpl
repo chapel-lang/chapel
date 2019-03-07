@@ -63,9 +63,12 @@ proc writeFreqs(data, param nclSize) {
   //  var arr: [1..freqs.size] 2*int;
   //  for (a, k, v) in zip(arr, freqs.domain, freqs) do
   //    a = (v, k);
-  quickSort(arr, comparator=reverseComparator);
 
-  for (f, s) in arr do
+  // arr.sorted() creates another (temporary) array
+  // ideally, would like "for (f,s) in
+  //   ( for (s,f) in zip(freqs.domain, freqs) do (f,s) ).sorted(...)"
+
+  for (f, s) in arr.sorted(comparator=reverseComparator) do
    writef("%s %.3dr\n", decode(s, nclSize), 
            (100.0 * f) / (data.size - nclSize));
   writeln();

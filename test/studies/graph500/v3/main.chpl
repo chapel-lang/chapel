@@ -216,7 +216,7 @@ module Graph500_main
 
   construction_time.start();
 
-  var G = new Graph (vertex_domain);
+  var G = new unmanaged Graph (vertex_domain);
 
   constructGraph (Edges, G);
 
@@ -227,7 +227,7 @@ module Graph500_main
 
   // Generate a list of valid starting roots
   // Valid starting roots have at least one edge to another node
-  var Rand_Gen = new NPBRandomStream (seed = 9);
+  var Rand_Gen = new owned NPBRandomStream (seed = 9);
   var Unif_Random: [1..NUM_CANDIDATES] real;
   Rand_Gen.fillRandom ( Unif_Random );
   var runID: int = 1;
@@ -284,7 +284,6 @@ module Graph500_main
              BFS_time_array, BFS_nedges_traversed );
       }
 
-    delete Rand_Gen;
     delete G;
   }
 

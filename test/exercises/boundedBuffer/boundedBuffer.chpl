@@ -52,7 +52,7 @@ if (numProducers > 1 || numConsumers > 1) then
 //
 proc main() {
   // a shared bounded buffer with the requested capacity
-  var buffer = new borrowed BoundedBuffer(capacity=bufferSize);
+  var buffer = new owned BoundedBuffer(capacity=bufferSize);
 
   // per-producer/consumer counts of the number of items they processed
   var prodCounts: [1..numProducers] int,
@@ -102,7 +102,7 @@ proc main() {
 // produce 1/numProducers of the requested 'numItems' items using an
 // aligned strided range.  Return the number of items we produced.
 //
-proc producer(b: borrowed BoundedBuffer, pid: int) {
+proc producer(b: BoundedBuffer, pid: int) {
   var myItems = 0..#numItems by numProducers align pid-1;
 
   for i in myItems {
@@ -117,7 +117,7 @@ proc producer(b: borrowed BoundedBuffer, pid: int) {
 // consume items greedily until a sentinel value is found.  Return
 // the number of items we successfully consumed.
 //
-proc consumer(b: borrowed BoundedBuffer, cid: int) {
+proc consumer(b: BoundedBuffer, cid: int) {
   var count = 0;
   do {
     const (data, more) = b.consume();
@@ -173,10 +173,11 @@ proc consumer(b: borrowed BoundedBuffer, cid: int) {
 //
 // (1) atomic variables can't currently be initialized at their
 // declaration point (something we're working on fixing in the
-// language), so to establish their initial values, add a constructor
-// within the boundeded buffer class of the form:
+// language), but since they are integers, their initial values
+// will be zero, so you probably will not need to initialize them.
+// If you do, add an initializer to 'BoundedBuffer' of the form:
 //
-//   proc BoundedBuffer() {
+//   proc init() {
 //     ... put your code to initialize the atomics here ...
 //   }
 //

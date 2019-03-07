@@ -1,2 +1,2 @@
 use-before-method.chpl:13: In initializer:
-use-before-method.chpl:14: error: Field "b" used before it is initialized
+use-before-method.chpl:14: error: field "b" used before it is initialized

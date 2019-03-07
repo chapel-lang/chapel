@@ -1,0 +1,1 @@
+generic-simple.chpl:4: error: record 'R(int(64))' cannot contain a recursive field 'r' of type 'R(int(64))'

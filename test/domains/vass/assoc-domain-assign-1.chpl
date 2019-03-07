@@ -6,9 +6,9 @@ type a = int;
 var d1: domain(a) = (1,2,3,4,5);
 //nondet: writeln(d1);
 d1 = (3,4,5);
-writeln(d1.member(1));
+writeln(d1.contains(1));
 var d2: subdomain(d1) = (1,2);
-writeln(d2.member(1));
+writeln(d2.contains(1));
 }
 
 proc test2() {

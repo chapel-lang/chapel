@@ -1,0 +1,11 @@
+bug: isClass() is inconsistent on managed class types vs. values
+
+At present, isClass() queries return 'false' on 'owned' and 'shared'
+types, but 'true' on their values.  This inconsistency seems like a
+bug to me.
+
+There's arguably a question over whether these should return `true` or
+`false` given that we present the types to the user as class flavors
+but their implementation uses a record.  Personally, I believe that
+they should be `true` and that their record nature should not
+influence the impact of these queries on them.

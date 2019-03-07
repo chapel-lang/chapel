@@ -13,7 +13,7 @@ proc main() {
   const ProblemSpace: domain(1, int(64)) dmapped Dist = {1..m};
   var A, B, C: [ProblemSpace] elemType;
 
-  var randlist = new NPBRandomStream(real, seed);
+  var randlist = new owned NPBRandomStream(real, seed);
   randlist.fillRandom(B);
   randlist.fillRandom(C);
   startCommDiagnostics();

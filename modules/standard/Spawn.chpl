@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,9 +19,6 @@
 
 
 /*
-
-.. versionadded:: 1.12
-  Spawn module added.
 
 Support launching and interacting with other programs.
 
@@ -123,7 +120,7 @@ other task is consuming it.
 
 .. note::
 
-  As of Chapel v1.12, creating a subprocess that uses :const:`PIPE` to provide
+  Creating a subprocess that uses :const:`PIPE` to provide
   input or capture output does not work when using the ugni communications layer
   with hugepages enabled and when using more than one locale. In this
   circumstance, the program will halt with an error message. These scenarios do
@@ -172,7 +169,6 @@ module Spawn {
      generally not needed since the channels will be closed when the
      subprocess record is automatically destroyed.
    */
-  pragma "use default init"
   record subprocess {
     /* The kind of a subprocess is used to create the types
        for any channels that are necessary. */
@@ -433,6 +429,7 @@ module Spawn {
      :returns: a :record:`subprocess` with kind and locking set according
                to the arguments.
 
+     :throws IllegalArgumentError: Thrown when ``args`` is an empty array.
      */
   proc spawn(args:[] string, env:[] string=Spawn.empty_env, executable="",
              stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
@@ -453,6 +450,9 @@ module Spawn {
     else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
     if isIntegralType(stderr.type) then stderr_fd = stderr;
     else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
+
+    if args.size == 0 then
+      throw new owned IllegalArgumentError('args cannot be an empty array');
 
     // When memory is registered with the NIC under ugni, a fork will currently
     // segfault. Here we halt before such a call is made to provide an
@@ -648,12 +648,16 @@ module Spawn {
      :returns: a :record:`subprocess` with kind and locking set according
                to the arguments.
 
+     :throws IllegalArgumentError: Thrown when ``command`` is an empty string.
   */
   proc spawnshell(command:string, env:[] string=Spawn.empty_env,
                   stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
                   executable="/bin/sh", shellarg="-c",
                   param kind=iokind.dynamic, param locking=true) throws
   {
+    if command.isEmpty() then
+      throw new owned IllegalArgumentError('command cannot be an empty string');
+
     var args = [command];
     if shellarg != "" then args.push_front(shellarg);
     args.push_front(executable);
@@ -734,6 +738,9 @@ module Spawn {
     if !running {
       if this.spawn_error then
         try ioerror(this.spawn_error, "in subprocess.wait");
+
+      // Otherwise, do nothing, since the child process already ended.
+      return;
     }
 
     var stdin_err:syserr  = ENOERR;
@@ -827,6 +834,14 @@ module Spawn {
    */
   proc subprocess.communicate() throws {
     try _throw_on_launch_error();
+
+    if !running {
+      if this.spawn_error then
+        try ioerror(this.spawn_error, "in subprocess.communicate");
+
+      // Otherwise, do nothing, since the child process already ended.
+      return;
+    }
 
     var err:syserr = ENOERR;
     on home {

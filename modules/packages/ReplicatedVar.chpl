@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -105,14 +105,14 @@ private const rcDomainIx   = 1; // todo convert to param
    as shown :ref:`above <ReplicatedVar_subset-of-locales>`. */
 const rcDomainBase = {rcDomainIx..rcDomainIx};
 private const rcLocales    = Locales;
-private const rcDomainMap  = new Replicated(rcLocales);
+private const rcDomainMap  = new unmanaged Replicated(rcLocales);
 /* Use this domain to declare a user-level replicated variable,
    as shown :ref:`above <ReplicatedVar_basic-usage>` . */
 const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
 private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped Replicated(an array of locales)'";
 
 private proc _rcTargetLocalesHelper(replicatedVar: [?D])
-  where _to_borrowed(replicatedVar._value.type): ReplicatedArr
+  where isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
 {
   return replicatedVar.targetLocales();
 }
@@ -124,7 +124,7 @@ proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
 /* Assign a value `valToReplicate` to copies of the replicated variable
    `replicatedVar` on all locales. */
 proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
-  where _to_borrowed(replicatedVar._value.type): ReplicatedArr
+  where isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
 {
   assert(replicatedVar.domain == rcDomainBase);
   coforall loc in _rcTargetLocalesHelper(replicatedVar) do
@@ -134,17 +134,17 @@ proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
 
 pragma "no doc" // documented with the following entry
 proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
-  where ! _to_borrowed(replicatedVar._value.type): ReplicatedArr
+  where ! isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
 { compilerError("the domain of first argument to rcCollect()", _rcErr1); }
 
 /* Copy the value of the replicated variable `replicatedVar` on each locale
    into the element of the array `collected` that corresponds to that locale.*/
 proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
-  where _to_borrowed(replicatedVar._value.type): ReplicatedArr
+  where isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
 {
   var targetLocales = _rcTargetLocalesHelper(replicatedVar);
   assert(replicatedVar.domain == rcDomainBase);
-  for idx in collected.domain do assert(targetLocales.domain.member(idx));
+  for idx in collected.domain do assert(targetLocales.domain.contains(idx));
   coforall (idx, col) in zip(targetLocales.domain.sorted(), collected) do
     on targetLocales[idx] do
       col = replicatedVar[rcDomainIx];

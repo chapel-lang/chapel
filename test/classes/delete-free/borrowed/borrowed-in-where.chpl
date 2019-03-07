@@ -4,7 +4,7 @@ class MyDomain : Domain {
   var x;
 }
 
-proc foo(type t) where t:borrowed Domain
+proc foo(type t) where isSubtype(t, borrowed Domain)
 {
   writeln("In foo where");
 }

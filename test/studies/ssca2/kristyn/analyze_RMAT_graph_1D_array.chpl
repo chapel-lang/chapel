@@ -144,13 +144,13 @@ module analyze_RMAT_graph_1D_array {
       // FYI: no fast follower opt
       iter   edge_weight(v : index (vertices), param tag: iterKind)
       where tag == iterKind.leader {
-        for block in Row(v).Weight._value.these(tag) do
+        for block in Row(v).Weight.these(tag) do
           yield block;
       }
 
       iter   edge_weight(v : index (vertices), param tag: iterKind, followThis)
       where tag == iterKind.follower {
-        for elem in Row(v).Weight._value.these(tag, followThis) do
+        for elem in Row(v).Weight.these(tag, followThis) do
           yield elem;
       }
 

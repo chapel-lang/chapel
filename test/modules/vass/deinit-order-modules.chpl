@@ -41,7 +41,7 @@ module UM4noDeinit {
 module UM4explicitDeinit {
   use UUtil;
   writeln("UM4explicitDeinit.init");
-  var uv4ae = new UC("uv4ae");
+  var uv4ae = new unmanaged UC("uv4ae");
   proc deinit() {
     writeln("UM4explicitDeinit.deinit user");
     delete uv4ae;

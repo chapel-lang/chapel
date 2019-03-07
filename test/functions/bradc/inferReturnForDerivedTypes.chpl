@@ -9,8 +9,8 @@ class E: C {
   var x: real;
 }
 
-var d = new D();
-var e = new E();
+var d = new borrowed D();
+var e = new borrowed E();
 
 proc B(i) /* WORKAROUND is: ': C' */ {
   if i == 1 then return d;

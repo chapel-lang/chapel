@@ -1,0 +1,2 @@
+override-iter-spurious.chpl:11: error: Child.myiter override keyword present but no superclass method matches signature to override
+override-iter-spurious.chpl:14: error: Child.these override keyword present but no superclass method matches signature to override

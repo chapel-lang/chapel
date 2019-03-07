@@ -1,14 +1,11 @@
-pragma "use default init"
 class MyClass { var x:int; }
 
-pragma "use default init"
 record Collection {
   type elementType;
   var element: elementType;
 }
 
-pragma "unsafe" // TODO
-proc Collection.addElement(arg: elementType) {
+proc Collection.addElement(arg: elementType) lifetime this < arg {
   element = arg;
 }
 

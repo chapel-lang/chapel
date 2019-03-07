@@ -1,1 +1,1 @@
-parentheseslessConstError.chpl:3: parenthesesless constructors are not allowed
+parentheseslessConstError.chpl:3: parenthesesless calls to initializers are not allowed

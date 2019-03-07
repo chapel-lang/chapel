@@ -48,7 +48,7 @@ var passedVerifications = 0;
 
 proc main() {
   var time = new Timer();
-  var randomStream = new NPBRandomStream(real, seed);
+  var randomStream = new owned NPBRandomStream(real, seed);
   var tempreals: [1..4] real;
   var max = maxKey / 4;
 
@@ -91,8 +91,6 @@ proc main() {
     writeln(" Verification    = SUCCESSFUL");
   else
     writeln(" Verification    = FAILED ", passedVerifications);
-
-  delete randomStream;
 } 
 
 
@@ -252,16 +250,13 @@ proc fullVerify() {
   var failures = 0;
   buffer = keyArray;
 
-  serial {
-    [i in D] {
-      atomic {
-	keyBuff1(buffer(i)) -= 1;
-	keyArray(keyBuff1(buffer(i))) = buffer(i);
-      }
-    }
+  for i in D {
+    keyBuff1(buffer(i)) -= 1;
+    keyArray(keyBuff1(buffer(i))) = buffer(i);
+  }
 
-    [i in 0..D.numIndices-2 with (ref failures)] // no race - in 'serial'
-      if (keyArray(i) > keyArray(i+1)) then failures += 1;
+  for i in 0..D.numIndices-2 {
+    if (keyArray(i) > keyArray(i+1)) then failures += 1;
   }
 
   if (failures != 0) then

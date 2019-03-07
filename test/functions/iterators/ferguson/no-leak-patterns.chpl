@@ -38,7 +38,7 @@ proc testThrow() {
   try {
     for i in yield3() {
       writeln(i);
-      throw new Error();
+      throw new owned Error();
     }
   } catch {
   }
@@ -48,7 +48,7 @@ proc testForallThrow() {
   try {
     forall i in yield3() {
       writeln(i);
-      throw new Error();
+      throw new owned Error();
     }
   } catch {
   }
@@ -59,7 +59,7 @@ proc testForallZipThrow() {
     forall (i,j) in zip(yield3(),yield3()) {
       assert(i==j);
       writeln(i);
-      throw new Error();
+      throw new owned Error();
     }
   } catch {
   }
@@ -112,7 +112,7 @@ proc testLoopThrow() {
   try {
     for i in yieldLoop() {
       writeln(i);
-      throw new Error();
+      throw new owned Error();
     }
   } catch {
   }
@@ -122,7 +122,7 @@ proc testLoopForallThrow() {
   try {
     forall i in yieldLoop() {
       writeln(i);
-      throw new Error();
+      throw new owned Error();
     }
   } catch {
   }
@@ -133,7 +133,7 @@ proc testLoopForallZipThrow() {
     forall (i,j) in zip(yieldLoop(),yieldLoop()) {
       assert(i==j);
       writeln(i);
-      throw new Error();
+      throw new owned Error();
     }
   } catch {
   }

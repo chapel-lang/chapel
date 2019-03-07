@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -197,7 +197,29 @@ const reverseComparator: ReverseComparator(DefaultComparator);
 
 /* Private methods */
 
-pragma "no doc"
+private inline
+proc compareByPart(a:?t, b:t, comparator:?rec) {
+  var curPart = 1;
+  while true {
+    var (aSection, aPart) = comparator.keyPart(a, curPart);
+    var (bSection, bPart) = comparator.keyPart(b, curPart);
+    if aSection != 0 || bSection != 0 {
+      return aSection - bSection;
+    }
+    if aPart < bPart {
+      return -1;
+    }
+    if aPart > bPart {
+      return 1;
+    }
+
+    curPart += 1;
+  }
+
+  // This is never reached. The return below is a workaround for issue #10447.
+  return 1;
+}
+
 /*
    Base compare method of all sort functions.
 
@@ -215,19 +237,23 @@ pragma "no doc"
      a > b : returns value > 0
      a == b: returns 0
 */
-inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
+pragma "no doc"
+inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
   use Reflection;
 
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
   // Compare results of comparator.key(a) if is defined by user
-  if canResolveMethod(comparator, "key", a) && canResolveMethod(comparator, "key", b) {
-    return chpl_compare(comparator.key(a), comparator.key(b));
+  if canResolveMethod(comparator, "key", a) {
+    // Use the default comparator to compare the integer keys
+    return defaultComparator.compare(comparator.key(a), comparator.key(b));
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
     return comparator.compare(a ,b);
+  } else if canResolveMethod(comparator, "keyPart", a, 1) {
+    return compareByPart(a, b, comparator);
   } else {
-    compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
+    compilerError("The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method");
   }
 }
 
@@ -242,7 +268,7 @@ pragma "no doc"
       data is sorted.
 
  */
-proc chpl_check_comparator(comparator, type eltType) {
+proc chpl_check_comparator(comparator, type eltType) param {
   use Reflection;
 
   // Dummy data for checking method resolution
@@ -256,28 +282,56 @@ proc chpl_check_comparator(comparator, type eltType) {
     const keydata = comparator.key(data);
     type keytype = keydata.type;
     if !(canResolve("<", keydata, keydata)) then
-      compilerError("The key method must return an object that supports the '<' function");
+      compilerError("The key method in ", comparator.type:string, " must return an object that supports the '<' function when used with ", eltType:string, " elements");
   }
   else if canResolveMethod(comparator, "compare", data, data) {
     // Check return type of compare
     type comparetype = comparator.compare(data, data).type;
     if !(isNumericType(comparetype)) then
-      compilerError("The compare method must return a numeric type");
+      compilerError("The compare method in ", comparator.type:string, " must return a numeric type when used with ", eltType:string, " elements");
+  }
+  else if canResolveMethod(comparator, "keyPart", data, 1) {
+    var idx: int = 1;
+    type partType = comparator.keyPart(data, idx).type;
+    if !isTupleType(partType) then
+      compilerError("The keyPart method in ", comparator.type:string, " must return a tuple when used with ", eltType:string, " elements");
+    var tmp: partType;
+    var expectInt = tmp(1);
+    var expectIntUint = tmp(2);
+    if !isInt(expectInt.type) then
+      compilerError("The keyPart method in ", comparator.type:string, " must return a tuple with 1st element int(?) when used with ", eltType:string, " elements");
+    if !(isInt(expectIntUint) || isUint(expectIntUint)) then
+      compilerError("The keyPart method in ", comparator.type:string, " must return a tuple with 2nd element int(?) or uint(?) when used with ", eltType:string, " elements");
   }
   else {
     // If we make it this far, the passed comparator was defined incorrectly
-    compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
+    compilerError("The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method " + " for element type " + eltType:string );
   }
+
+  return true;
 }
 
 
 /* Basic Functions */
 
+private
+proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
+  if !Dom.stridable {
+    var tmp:Data[Dom.low].type;
+    if canResolveMethod(comparator, "keyPart", tmp, 1) {
+      return true;
+    } else if canResolveMethod(comparator, "key", tmp) {
+      var key:comparator.key(tmp).type;
+      // Does the defaultComparator have a keyPart for this?
+      if canResolveMethod(defaultComparator, "keyPart", key, 1) then
+        return true;
+    }
+  }
+  return false;
+}
+
 /*
    General purpose sorting interface.
-
-   .. note:: Currently this method calls a sequential :proc:`quickSort`, but
-             this may change the future as other algorithms are implemented.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -285,8 +339,19 @@ proc chpl_check_comparator(comparator, type eltType) {
       data is sorted.
 
  */
+// TODO: This should have a flag `stable` to request a stable sort
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  quickSort(Data, comparator=comparator);
+
+  use Reflection;
+
+  if Dom.low >= Dom.high then
+    return;
+
+  if radixSortOk(Data, comparator) {
+    msbRadixSort(Data, comparator=comparator);
+  } else {
+    quickSort(Data, comparator=comparator);
+  }
 }
 
 
@@ -360,7 +425,10 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
  */
 iter sorted(x, comparator:?rec=defaultComparator) {
   var y = x;
-  quickSort(y, comparator=comparator);
+  if !isArrayValue(y) then
+    compilerError("Sort.sorted called on non-iterable");
+
+  sort(y, comparator=comparator);
   for i in y do
     yield i;
 }
@@ -531,7 +599,7 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
   for i in low..high by stride {
     var valToInsert = Data[i],
         lo = low,
-        hi = i - stride; 
+        hi = i - stride;
 
     var (found, loc) = _binarySearchForLastOccurrence(Data, valToInsert, comparator, lo, hi);
     loc = if found then loc + stride else loc;              // insert after last occurrence if exists; else insert after expected location
@@ -582,7 +650,7 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
 
 
 /*
-   Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
+   Sort the 1D array `Data` using a parallel merge sort algorithm.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -805,11 +873,413 @@ proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
     compilerError("selectionSort() requires 1-D array");
 }
 
+pragma "no doc"
+proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
+               start=Dom.low, end=Dom.high)
+{
+  chpl_check_comparator(comparator, eltType);
+
+  if Dom.rank != 1 then
+    compilerError("shellSort() requires 1-D array");
+  if Dom.stridable then
+    compilerError("shellSort() requires an array over a non-strideable domain");
+
+  // Based on Sedgewick's Shell Sort -- see
+  // Analysis of Shellsort and Related Algorithms 1996
+  // and see Marcin Ciura - Best Increments for the Average Case of Shellsort
+  // for the choice of these increments.
+  var n = 1 + end - start;
+  var js,hs:int;
+  var v,tmp:Data.eltType;
+  const incs = (701, 301, 132, 57, 23, 10, 4, 1);
+  for h in incs {
+    hs = h + start;
+    for is in hs..end {
+      v = Data[is];
+      js = is;
+      while js >= hs && chpl_compare(v,Data[js-h],comparator) < 0 {
+        Data[js] = Data[js - h];
+        js -= h;
+      }
+      Data[js] = v;
+    }
+  }
+}
+
+// This is the number of bits to sort at a time in the radix sorter.
+// The code assumes that all integer types are a multiple of it.
+// That would need to change if it were to increase.
+//
+// At the same time, using a value less than 8 will probably perform poorly.
+private param RADIX_BITS = 8;
+
+// This structure tracks configuration for the radix sorter.
+pragma "no doc"
+record MSBRadixSortSettings {
+  param DISTRIBUTE_BUFFER = 5; // Number of temps during shuffle step
+  const sortSwitch = 256; // when sorting <= this many elements, use shell sort
+  const minForTask = 256; // when sorting >= this many elements, go parallel
+  param CHECK_SORTS = false; // do costly extra checks that data is sorted
+  param progress = false; // print progress
+  const alwaysSerial = false; // never create tasks
+  const maxTasks = here.numPUs(logical=true); // maximum number of tasks to make
+}
+
+// Get the bin for a record by calling criterion.keyPart
+//
+// startbit is starting from 0
+// bin 0 is for the end was reached (sort before)
+// bins 1..256 are for data with next part 0..255.
+// bin 256 is for the end was reached (sort after)
+//
+// ubits are the result of keyPart normalized to a uint.
+//
+// returns (bin, ubits)
+private inline
+proc binForRecordKeyPart(a, criterion, startbit:int)
+{
+  // We have keyPart(element, start):(section:int(8), part:int/uint)
+  const testRet: criterion.keyPart(a, 1).type;
+  const testPart = testRet(2);
+  param bitsPerPart = numBits(testPart.type);
+  param bitsPerPartModRadixBits = bitsPerPart % RADIX_BITS;
+  if bitsPerPartModRadixBits != 0 then
+    compilerError("part size must be a multiple of radix bits");
+    // or else the implementation below would have to handle crossing parts
+
+  // startbit must be a multiple of RADIX_BITS because the radix
+  // sort operates RADIX_BITS at a time.
+
+  // startbit might be partway through a part (e.g. 16 bits into a uint(64))
+  const whichpart = startbit / bitsPerPart;
+  const bitsinpart = startbit % bitsPerPart;
+
+  const (section, part) = criterion.keyPart(a, 1+whichpart);
+  var ubits = part:uint(bitsPerPart);
+  // If the number is signed, invert the top bit, so that
+  // the negative numbers sort below the positive numbers
+  if isInt(part) {
+    const one:ubits.type = 1;
+    ubits = ubits ^ (one << (bitsPerPart - 1));
+  }
+  param mask:uint = (1 << RADIX_BITS) - 1;
+  const ubin = (ubits >> (bitsPerPart - bitsinpart - RADIX_BITS)) & mask;
+
+  if section == 0 then
+    return (ubin:int + 1, ubits);
+  else if section < 0 then
+    return (0, ubits);
+  else
+    return ((1 << RADIX_BITS) + 1, ubits);
+}
+
+// Get the bin for a record with criterion.key or criterion.keyPart
+//
+// See binForRecordKeyPart for what the arguments / returns mean.
+private inline
+proc binForRecord(a, criterion, startbit:int)
+{
+  use Reflection;
+
+  if canResolveMethod(criterion, "keyPart", a, 1) {
+    return binForRecordKeyPart(a, criterion, startbit);
+  } else if canResolveMethod(criterion, "key", a) {
+    // Try to use the default comparator to get a keyPart.
+    return binForRecordKeyPart(criterion.key(a),
+                               defaultComparator,
+                               startbit);
+  } else {
+    compilerError("Bad comparator for radix sort ", criterion.type:string,
+                  " with eltType ", a.type:string);
+  }
+}
+
+// Returns a compile-time known final startbit
+// e.g. for uint(64), returns 56 (since that's 64-8 and the
+// last sort pass will sort on the last 8 bits).
+//
+// Returns -1 if no such ending is known at compile-time.
+private
+proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
+  use Reflection;
+
+  // Compute end_bit if it's known
+  const ref element = Data[Data.domain.low];
+  if comparator.type == DefaultComparator &&
+     (isUint(element) || isInt(element)) {
+    // Default comparator on integers has fixed width
+    return numBits(element.type) - RADIX_BITS;
+  } else if canResolveMethod(comparator, "key", element) {
+    type keyType = comparator.key(element).type;
+    if isUintType(keyType) || isIntType(keyType) then
+      return numBits(keyType) - RADIX_BITS;
+  }
+
+  return -1;
+}
+
+pragma "no doc"
+proc msbRadixSortClz(val) {
+  // This could use BitOps.clz but that adds new
+  // module dependencies that confuse testing.
+  // Since it's not performance critical, here we
+  // have a version using a while loop.
+  param nBits = numBits(val.type);
+  if val == 0 {
+    return nBits;
+  }
+
+  var cur = val;
+  var one = 1:val.type;
+  var hi = one << (nBits - 1);
+  var n = 0;
+  while (cur & hi) == 0 {
+    n += 1;
+    cur <<= 1;
+  }
+  return n;
+}
+
+// Compute the startbit location that could be used based on the
+// min/max of values returned by keyPart.
+private
+proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
+  var xor = min_ubits ^ max_ubits;
+
+  // Clear the top bits in xor if they are after bitsinpart
+  param bitsPerPart = numBits(min_ubits.type);
+  const bitsinpart = startbit % bitsPerPart;
+  xor <<= bitsinpart;
+  xor >>= bitsinpart;
+
+  var new_start = msbRadixSortClz(xor);
+  var new_digit = new_start / RADIX_BITS;
+  var new_start_bit_rounded = new_digit * RADIX_BITS;
+
+  return new_start_bit_rounded:int;
+}
+
+pragma "no doc"
+proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
+
+  msbRadixSort(start_n=Data.domain.low, end_n=Data.domain.high,
+               Data, comparator,
+               startbit=0,
+               settings=new MSBRadixSortSettings());
+}
+
+// startbit counts from 0 and is a multiple of RADIX_BITS
+pragma "no doc"
+proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
+                  startbit:int,
+                  settings /* MSBRadixSortSettings */)
+{
+  param endbit = msbRadixSortParamLastStartBit(A, criterion);
+  param hasendbit = endbit >= 0;
+  if hasendbit && startbit > endbit then
+    return;
+
+  if( end_n - start_n < settings.sortSwitch ) {
+    shellSort(A, criterion, start=start_n, end=end_n);
+    if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
+    return;
+  }
+
+  if settings.progress then writeln("radix sort start=", start_n, " end=", end_n, " startbit=", startbit, " endbit=", endbit);
+
+  const radixbits = RADIX_BITS;
+  const radix = (1 << radixbits) + 1;
+
+  // 0th bin is for records where we've consumed all the key.
+  var offsets:[0..radix] int;
+  var end_offsets:[0..radix] int;
+  type ubitsType = binForRecord(A[start_n], criterion, startbit)(2).type;
+  var min_ubits: ubitsType = max(ubitsType);
+  var max_ubits: ubitsType = 0;
+  var min_bin = radix+1;
+  var max_bin = 0;
+  var any_ending = false;
+  // Step 1: count.
+  // TODO: make this parallel for large enough sizes
+  for i in start_n..end_n {
+    const (bin, ubits) = binForRecord(A[i], criterion, startbit);
+    if ubits < min_ubits then
+      min_ubits = ubits;
+    if ubits > max_ubits then
+      max_ubits = ubits;
+    if bin == 0 || bin == radix then
+      any_ending = true;
+    offsets[bin] += 1;
+  }
+
+  // If the data parts we gathered all have the same leading bits,
+  // we might be able to skip ahead immediately to the next count step.
+  if any_ending == false {
+    var dataStartBit = findDataStartBit(startbit, min_ubits, max_ubits);
+    if dataStartBit > startbit {
+      // Re-start count again immediately at the new start position.
+      msbRadixSort(start_n, end_n, A, criterion,
+                   dataStartBit, settings);
+      return;
+    }
+  }
+
+  if settings.progress then writeln("accumulate");
+
+  // Step 2: accumulate
+  var sum = 0;
+  for (off,end) in zip(offsets,end_offsets) {
+    var binstart = sum;
+    sum += off;
+    var binend = sum;
+    off = start_n + binstart;
+    end = start_n + binend;
+  }
+
+  var curbin = 0;
+
+  if settings.progress then writeln("shuffle");
+
+  // Step 3: shuffle
+  while true {
+    // Find the next bin that isn't totally in place.
+    while curbin <= radix && offsets[curbin] == end_offsets[curbin] {
+      curbin += 1;
+    }
+    if curbin > radix {
+      break;
+    }
+
+    param max_buf = settings.DISTRIBUTE_BUFFER;
+    var buf: max_buf*A.eltType;
+    var used_buf = 0;
+    var end = end_offsets[curbin];
+    var endfast = max(offsets[curbin], end_offsets[curbin]-2*max_buf);
+    var bufstart = max(offsets[curbin], end_offsets[curbin]-max_buf);
+    var i = bufstart;
+
+    // Fill buf with up to max_buf records from the end of this bin.
+    while i < end {
+      buf[used_buf+1] = A[i];
+      used_buf += 1;
+      i += 1;
+    }
+
+    while offsets[curbin] < endfast {
+      // Now go through the records in buf
+      // putting them in their right home.
+      for param j in 1..max_buf {
+        const (bin, _) = binForRecord(buf[j], criterion, startbit);
+        // prefetch(A[offsets[bin]]) could be here but doesn't help
+
+        // Swap buf[j] into its appropriate bin.
+        // Leave buf[j] with the next unsorted item.
+        A[offsets[bin]] <=> buf[j];
+        offsets[bin] += 1;
+      }
+    }
+    // Now, handle elements in bufstart...end_offsets[cur_bin]
+    while offsets[curbin] < end {
+      // Put buf[j] into its right home
+      var j = 1;
+      while used_buf > 0 && j <= used_buf {
+        const (bin, _) = binForRecord(buf[j], criterion, startbit);
+        // Swap buf[j] into its appropriate bin.
+        // Leave buf[j] with the next unsorted item.
+        // But offsets[bin] might in the region we already read.
+        if bin == curbin && offsets[curbin] >= bufstart {
+          A[offsets[bin]] = buf[j];
+          buf[j] = buf[used_buf];
+          used_buf -= 1;
+        } else {
+          A[offsets[bin]] <=> buf[j];
+        }
+        offsets[bin] += 1;
+        j += 1;
+      }
+    }
+  }
+
+  if settings.progress then writeln("sort sub-problems");
+
+  // Step 4: sort sub-problems.
+  // Note that shuffle changed the offsets to be == end_offset..
+  // put offsets back.
+  offsets[0] = start_n;
+  for i in 1..radix {
+    offsets[i] = end_offsets[i-1];
+  }
+
+  // This is a parallel version
+  if settings.alwaysSerial == false {
+    const subbits = startbit + radixbits;
+    var nbigsubs = 0;
+    var bigsubs:[0..radix] (int,int);
+    const runningNow = here.runningTasks();
+
+    // Never recursively sort the first or last bins
+    // (these store the end)
+
+    for bin in 1..radix-1 {
+      // Does the bin contain more than one record?
+      const bin_start = offsets[bin];
+      const bin_end = if bin+1<=radix then offsets[bin+1]-1 else end_n;
+      const num = 1 + bin_end - bin_start;
+      if num <= 1 || (hasendbit && startbit >= endbit) {
+        // do nothing
+      } else if num < settings.minForTask || runningNow >= settings.maxTasks {
+        // sort it in this thread
+        msbRadixSort(bin_start, bin_end, A, criterion,
+                     subbits, settings);
+      } else {
+        // Add it to the list of things to do in parallel
+        bigsubs[nbigsubs] = (bin_start, bin_end);
+        nbigsubs += 1;
+      }
+    }
+
+    forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) {
+      msbRadixSort(bin_start, bin_end, A, criterion, subbits, settings);
+    }
+  } else {
+    // The serial version
+    for bin in 1..radix-1 {
+      // Does the bin contain more than one record?
+      const bin_start = offsets[bin];
+      const bin_end = if bin+1<=radix then offsets[bin+1]-1 else end_n;
+      const num = 1 + bin_end - bin_start;
+      if num <= 1 || (hasendbit && startbit >= endbit) {
+        // do nothing
+      } else {
+        // sort it in this thread
+        msbRadixSort(bin_start, bin_end, A, criterion,
+                     startbit + radixbits, settings);
+      }
+    }
+  }
+
+  if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
+}
+
+// Check that the elements from start_n..end_n in A are sorted by criterion
+private
+proc checkSorted(start_n:int, end_n:int, A:[], criterion, startbit = 0)
+{
+  for i in start_n+1..end_n {
+    var cmp = chpl_compare(A[i-1], A[i], criterion);
+    if cmp > 0 {
+      writeln("Error: not sorted properly at i=", i, " A[i-1]=", A[i-1], " A[i]=", A[i], " in start=", start_n, " end=", end_n);
+      writeln(A);
+
+      // Halt. Note, this is only intended to be called by unit testing.
+      halt("failed checkSorted");
+    }
+  }
+}
 
 /* Comparators */
 
 /* Default comparator used in sort functions.*/
-pragma "use default init"
 record DefaultComparator {
 
   /*
@@ -824,10 +1294,71 @@ record DefaultComparator {
    :returns: -1 if ``a < b``
 
    */
+  inline
   proc compare(a, b) {
     if a < b { return -1; }
     else if b < a { return 1; }
     else return 0;
+  }
+
+  /*
+   Default keyPart method for integral values.
+
+   :arg x: the `int` or `uint` of any size to sort
+   :arg i: the part number requested
+
+   :returns: (0, x) if i==0, or (-1, x) otherwise
+   */
+  inline
+  proc keyPart(x: integral, i:int):(int(8), x.type) {
+    var section:int(8) = if i > 1 then -1:int(8) else 0:int(8);
+    return (section, x);
+  }
+
+  /*
+   Default keyPart method for tuples of integral values.
+
+   :arg x: tuple of the `int` or `uint` (of any bit width) to sort
+   :arg i: the part number requested
+
+   :returns: (0, x(i)) if i <= x.size, or (-1, 0) otherwise
+   */
+  inline
+  proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
+                                       (isInt(x(1)) || isUint(x(1))) {
+    type tt = x(1).type;
+
+    if i > x.size then
+      return (-1, 0:tt);
+
+    return (0, x(i):tt);
+  }
+
+  /*
+   Default keyPart method for sorting strings
+
+   .. note::
+     Currently assumes that the string is local.
+
+   :arg x: the string to sort
+   :arg i: the part number requested
+
+   :returns: (0, byte i of string) or (-1, 0) if i > x.size
+   */
+  inline
+  proc keyPart(x:string, i:int):(int(8), uint(8)) {
+    // This assumes that the string is local, which should
+    // be OK for the sort module (because the array containing
+    // the string must currently be local).
+    // In the future it should use bytes access into the string.
+    if boundsChecking then
+      assert(x.locale_id == here.id);
+
+    var ptr = x.c_str():c_ptr(uint(8));
+    var len = x.length;
+    var section = if i <= len then 0:int(8) else -1:int(8);
+    var part =    if i <= len then ptr[i-1] else  0:uint(8);
+    return (section, part);
   }
 }
 
@@ -864,13 +1395,128 @@ record ReverseComparator {
    :arg revcomp: :ref:`ReverseComparator <reverse-comparator>` to copy.
    */
   pragma "no doc"
-  proc init(revcomp: ReverseComparator(?)) {
+  proc init=(revcomp: ReverseComparator(?)) {
     this.comparator = revcomp.comparator;
   }
 
+  pragma "no doc"
+  proc typeIsBitReversible(type t) param {
+    if isHomogeneousTupleType(t) {
+      var tmp:t;
+      return typeIsBitReversible(tmp(1).type);
+    }
+    if isUintType(t) then
+      return true;
+    if isIntType(t) then
+      return true;
+
+    return false;
+  }
+  pragma "no doc"
+  proc typeIsNegateReversible(type t) param {
+    if isHomogeneousTupleType(t) {
+      var tmp:t;
+      return typeIsNegateReversible(tmp(1).type);
+    }
+    if isIntType(t) || isUintType(t) then
+      // You might think that int(8) should have its sort order
+      // reversed by negating it, but that runs into the problem
+      // that -128 -> 128 which won't fit into an int(8).
+      return false;
+    if isNumericType(t) then
+      return true;
+
+    return false;
+  }
+
+  pragma "no doc"
+  proc hasReversibleKey(a) param {
+    use Reflection;
+    if canResolveMethod(this.comparator, "key", a) {
+      type t = this.comparator.key(a).type;
+      return typeIsBitReversible(t) || typeIsNegateReversible(t);
+    }
+    return false;
+  }
+  pragma "no doc"
+  proc hasKeyPart(a) param {
+    use Reflection;
+    return canResolveMethod(this.comparator, "keyPart", a, 1);
+  }
+  pragma "no doc"
+  proc hasKeyPartFromKey(a) param {
+    use Reflection;
+    if canResolveMethod(this.comparator, "key", a) {
+      var key:comparator.key(a).type;
+      // Does the defaultComparator have a keyPart for this?
+      return canResolveMethod(defaultComparator, "keyPart", key, 1);
+    }
+    return false;
+  }
+
+  pragma "no doc"
+  proc hasCompare(a,b) param {
+    use Reflection;
+    return canResolveMethod(this.comparator, "compare", a, b);
+  }
+  pragma "no doc"
+  proc hasCompareFromKey(a) param {
+    use Reflection;
+    if canResolveMethod(this.comparator, "key", a) {
+      var key:comparator.key(a).type;
+      // Does the defaultComparator have a compare for this?
+      return canResolveMethod(defaultComparator, "compare", key, key);
+    }
+    return false;
+  }
+
+  inline
+  proc key(a) where hasReversibleKey(a) {
+    chpl_check_comparator(this.comparator, a.type);
+
+    const k = this.comparator.key(a);
+    if typeIsBitReversible(k.type) {
+      return ~k;
+    } else if typeIsNegateReversible(k.type) {
+      return -k;
+    } else {
+      compilerError("internal error: please update hasReversibleKey");
+    }
+  }
+
+  pragma "no doc"
+  inline
+  proc getKeyPart(cmp, a, i) {
+    var (section, part) = cmp.keyPart(a, i);
+    if typeIsBitReversible(part.type) {
+      return (-section, ~part);
+    } else if typeIsNegateReversible(part.type) {
+      return (-section, -part);
+    } else {
+      compilerError("keyPart must return int or uint");
+    }
+  }
+
+  inline
+  proc keyPart(a, i) where hasKeyPart(a) || hasKeyPartFromKey(a) {
+    chpl_check_comparator(this.comparator, a.type);
+
+    if hasKeyPartFromKey(a) {
+      return getKeyPart(defaultComparator, this.comparator.key(a), i);
+    } else {
+      return getKeyPart(this.comparator, a, i);
+    }
+
+  }
+
+  pragma "no doc"
+  inline
+  proc doCompare(cmp, a, b) {
+    return cmp.compare(b, a);
+  }
+
   /*
-   Reversed compare method defined based on ``comparator.key`` if defined,
-   otherwise ``comparator.compare``.
+   Reverses ``comparator.compare``.
 
    :arg a: Array element
    :type a: `eltType`
@@ -880,25 +1526,20 @@ record ReverseComparator {
    :returns: 0 if ``a == b``
    :returns: 1 if ``a < b``
    */
-  proc compare(a, b) {
-    use Reflection;
+  inline
+  proc compare(a, b) where hasCompare(a, b) || hasCompareFromKey(a) {
 
     chpl_check_comparator(this.comparator, a.type);
 
-    // Key defined
-    if canResolveMethod(this.comparator, "key", a) && canResolveMethod(this.comparator, "key", b) {
-      const A = this.comparator.key(a),
-            B = this.comparator.key(b);
-      if B < A { return -1; }
-      else if A < B { return 1; }
-      else return 0;
-
-    // Compare defined
-    } else if canResolveMethod(this.comparator, "compare", a, b) && canResolveMethod(this.comparator, "compare", a, b) {
-      return this.comparator.compare(b, a);
+    if hasCompareFromKey(a) {
+      return doCompare(defaultComparator,
+                       this.comparator.key(a),
+                       this.comparator.key(b));
     } else {
-      compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
+      return doCompare(this.comparator, a, b);
     }
   }
 }
+
+
 } // Sort Module

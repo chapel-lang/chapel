@@ -48,7 +48,7 @@ proc setUnion(X, Y) {
 proc setIntersect(X, Y) {
    var Res: X.type;
    for i in X {
-     if (Y.member(i)) {
+     if (Y.contains(i)) {
        Res += i;
      }
    }

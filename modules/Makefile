@@ -1,4 +1,4 @@
-# Copyright 2004-2018 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -32,7 +32,7 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
+SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_ARCH)-$(CHPL_MAKE_COMPILER)
 SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
@@ -76,6 +76,7 @@ MODULES_TO_DOCUMENT = \
 	standard/GMP.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
+	standard/LinkedLists.chpl \
 	standard/List.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
@@ -89,42 +90,49 @@ MODULES_TO_DOCUMENT = \
 	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
-	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
 	packages/BLAS.chpl \
+	packages/BufferedAtomics.chpl \
 	packages/Buffers.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/FFTW.chpl \
 	packages/FFTW_MT.chpl \
+	packages/FunctionalOperations.chpl \
 	packages/Futures.chpl \
+	packages/HDF5.chpl \
 	packages/HDFS.chpl \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \
+	packages/NetCDF.chpl \
 	packages/Norm.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
 	packages/Sort.chpl \
+	packages/UgniPerfStats.chpl \
 	packages/VisualDebug.chpl \
 	packages/ZMQ.chpl \
 	packages/Collection.chpl \
 	packages/DistributedBag.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
-	packages/TOML.chpl
+	packages/TOML.chpl \
+	packages/UnorderedAtomics.chpl \
+	packages/UnorderedCopy.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
 	dists/BlockDist.chpl \
 	dists/CyclicDist.chpl \
 	dists/DimensionalDist2D.chpl \
+	dists/HashedDist.chpl \
 	dists/PrivateDist.chpl \
 	dists/ReplicatedDist.chpl \
 	dists/StencilDist.chpl \
@@ -162,11 +170,11 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Copying generated module documentation to ${DOC}"
 	mkdir -p ${DOC}/modules
 	mkdir -p ${DOC}/builtins
-	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC}/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC}/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC}/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC}/modules/
-	cp -rf ${MODULE_SPHINX}/source/modules/internal/ ${DOC}/builtins/
+	cp -rf ${MODULE_SPHINX}/source/modules/standard   ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/packages   ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/dists      ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/layouts    ${DOC}/modules
+	cp -rf ${MODULE_SPHINX}/source/modules/internal/* ${DOC}/builtins
 	@echo "Removing generated files and directories"
 	rm -rf ./docs
 	rm -rf ${MODULE_SPHINX}

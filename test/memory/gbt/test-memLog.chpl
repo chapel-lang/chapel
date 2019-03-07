@@ -7,7 +7,7 @@ class C {
 proc main() {
   for loc in Locales do on loc {
     startVerboseMemHere();
-    var c = new C();
+    var c = new unmanaged C();
     delete c;
     stopVerboseMemHere();
   }

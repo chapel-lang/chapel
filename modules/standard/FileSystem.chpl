@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -200,6 +200,11 @@ proc locale.chdir(out error: syserr, name: string) {
               See description of :const:`S_IRUSR`, for instance, for potential
               values.
    :type mode: `int`
+
+   :throws FileNotFoundError: Thrown when the name specified does not correspond
+                              to a file or directory that exists.
+   :throws PermissionError: Thrown when the current user does not have
+                            permission to change the permissions
 */
 proc chmod(name: string, mode: int) throws {
   extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
@@ -578,7 +583,7 @@ proc locale.cwd(): string throws {
     var tmp:c_string;
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
-    ret = tmp: string;
+    ret = new string(tmp, isowned=true, needToCopy=false);
   }
   if err != ENOERR then try ioerror(err, "in cwd");
   return ret;
@@ -613,6 +618,13 @@ proc locale.cwd(out error: syserr): string {
 */
 proc exists(name: string): bool throws {
   extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
+
+  if (name.isEmpty()) {
+    // chpl_fs_exists uses stat to determine if a file exists, which throws an
+    // error when "" is passed to it.  Check it here early and return false
+    // like Python does
+    return false;
+  }
 
   var ret:c_int;
   var err = chpl_fs_exists(ret, name.localize().c_str());
@@ -830,7 +842,6 @@ private module GlobWrappers {
 
   // glob wrapper that takes care of casting and error checking
   inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
-    use ChapelHaltWrappers;
     extern proc chpl_glob(pattern: c_string, flags: c_int,
                           ref ret_glob: glob_t): c_int;
 
@@ -843,7 +854,7 @@ private module GlobWrappers {
     // convert that into an out of memory error.
     assert (err == 0 || err == GLOB_NOMATCH || err == GLOB_NOSPACE);
     if err == GLOB_NOSPACE then
-      outOfMemoryHalt("glob()");
+      HaltWrappers.outOfMemoryHalt("glob()");
   }
 
   // glob_num wrapper that takes care of casting
@@ -932,7 +943,6 @@ iter glob(pattern: string = "*", param tag: iterKind)
 pragma "no doc"
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
-  use ChapelHaltWrappers;
   use GlobWrappers;
   var glb : glob_t;
   if (followThis.size != 1) then
@@ -942,7 +952,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
   glob_w(pattern, glb);
   const num = glob_num_w(glb);
   if (r.high >= num) then
-    zipLengthHalt("glob() is being zipped with something too big; it only has " + num + " matches");
+    HaltWrappers.zipLengthHalt("glob() is being zipped with something too big; it only has " + num + " matches");
 
   for i in r do
     yield glob_index_w(glb, i);
@@ -1041,6 +1051,13 @@ proc isFile(out error:syserr, name:string):bool {
 */
 proc isLink(name: string): bool throws {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
+
+  if (name.isEmpty()) {
+    // chpl_fs_is_link uses lstat to determine if a path is a link, which throws
+    // an error when "" is passed to it.  Check it here early and return false
+    // like Python does
+    return false;
+  }
 
   var ret:c_int;
   var err = chpl_fs_is_link(ret, name.localize().c_str());
@@ -1265,7 +1282,7 @@ proc moveDir(src: string, dest: string) throws {
         // source and destination is to fail with a helpful error message.
         // Since this error code shouldn't occur otherwise, it signals to
         // the wrapper function what has happened.
-        throw new IllegalArgumentError("src", "Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
+        throw new owned IllegalArgumentError("src", "Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
       } else {
         // dest is a directory, we'll copy src inside it
         // NOT YET SUPPORTED.  Requires basename and joinPath

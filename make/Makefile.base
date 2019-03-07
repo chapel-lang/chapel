@@ -1,4 +1,4 @@
-# Copyright 2004-2018 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -64,19 +64,19 @@ endif
 # CHPL_MAKE_WIDE_POINTERS_DEFINES="-DCHPL_WIDE_POINTER_STRUCT"
 # CHPL_MAKE_LLVM="llvm"
 # CHPL_MAKE_AUX_FILESYS="none"
-# CHPL_MAKE_COMPILER_SUBDIR=linux64.gnu.loc-flat.wide-struct.llvm-none
-# CHPL_MAKE_RUNTIME_SUBDIR=linux64.gnu.loc-flat.udp.everything.tasks-fifo.pthreads.tmr-generic.mem-default.atomics-intrinsics.none.gmp-none.hwloc-none.re-none.wide-struct.fs-none
-# CHPL_MAKE_LAUNCHER_SUBDIR=linux64.gnu.loc-flat.udp.everything.tasks-fifo.pthreads.launch-amudprun.tmr-generic.mem-default.atomics-intrinsics.none.wide-struct
+# CHPL_MAKE_COMPILER_SUBDIR=linux64/gnu/loc-flat/wide-struct/llvm-none
+# CHPL_MAKE_RUNTIME_SUBDIR=linux64/gnu/loc-flat/udp/everything/tasks-fifo/pthreads/tmr-generic/mem-default/atomics-intrinsics/none/gmp-none/hwloc-none/re-none/wide-struct/fs-none/lib_pic-none/
+# CHPL_MAKE_LAUNCHER_SUBDIR=linux64/gnu/loc-flat/udp/everything/tasks-fifo/pthreads/launch-amudprun/tmr-generic/mem-default/atomics-intrinsics/none/wide-struct
 # CHPL_MAKE_JEMALLOC_UNIQ_CFG_PATH etc
 # CHPL_MAKE_THIRD_PARTY_LINK_ARGS
 # Don't recompute the settings every time!
-ifndef CHPL_MAKE_SETTINGS_NO_NEWLINES
+ifndef CHPL_MAKE_CHPLENV_CACHE
 # ... but it involves a little bit of Make-craziness because
 # $(shell) changes newlines into spaces.
 # Evaluate all of the definitions in CHPL_MAKE_ALL_VARS before running
 # printchplenv in order to pass the existing values from the compiler forward
 
-export CHPL_MAKE_SETTINGS_NO_NEWLINES := $(shell $(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --all --internal --no-tidy --make | tr '\n' '|' )
+export CHPL_MAKE_CHPLENV_CACHE := $(shell $(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --all --internal --no-tidy --make | tr '\n' '|' )
 endif
 
 # This really needs TWO newlines!
@@ -88,7 +88,7 @@ endef
 # Turn the newlines we replaced with | back into newlines
 # and use a multi-line define so Make is OK having newlines in the variable.
 define CHPL_MAKE_SETTINGS
-$(subst |,$(newline),$(CHPL_MAKE_SETTINGS_NO_NEWLINES))
+$(subst |,$(newline),$(CHPL_MAKE_CHPLENV_CACHE))
 endef
 
 # Now eval our settings to set the Make variables to
@@ -96,7 +96,7 @@ endef
 $(eval $(CHPL_MAKE_SETTINGS))
 
 # Try this to debug issues with CHPL_MAKE_* variables
-# $(info $(CHPL_MAKE_SETTINGS_NO_NEWLINES))
+# $(info $(CHPL_MAKE_CHPLENV_CACHE))
 
 # Now do some minor situational clean-ups.
 
@@ -112,10 +112,12 @@ CHPL_MAKE_AUXFS = $(CHPL_MAKE_AUX_FILESYS)
 ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--target)
 CHPL_MAKE_COMPILER = $(CHPL_MAKE_TARGET_COMPILER)
 CHPL_MAKE_PLATFORM = $(CHPL_MAKE_TARGET_PLATFORM)
+CHPL_MAKE_ARCH = $(CHPL_MAKE_TARGET_ARCH)
 CHPL_MAKE_MEM = $(CHPL_MAKE_TARGET_MEM)
 else
 CHPL_MAKE_COMPILER = $(CHPL_MAKE_HOST_COMPILER)
 CHPL_MAKE_PLATFORM = $(CHPL_MAKE_HOST_PLATFORM)
+CHPL_MAKE_ARCH = $(CHPL_MAKE_HOST_ARCH)
 CHPL_MAKE_MEM = $(CHPL_MAKE_HOST_MEM)
 endif
 
@@ -243,11 +245,11 @@ LAUNCHER_OBJ_DIR_STAMP = $(LAUNCHER_OBJ_DIR)/.timestamp
 LIB_RT_DIR = lib/$(CHPL_MAKE_RUNTIME_SUBDIR)
 LIB_LN_DIR = lib/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 
-
-CHPL_BIN_DIR = $(CHPL_MAKE_HOME)/bin/$(CHPL_MAKE_HOST_PLATFORM)
+CHPL_BIN_DIR = $(CHPL_MAKE_HOME)/bin/$(CHPL_MAKE_HOST_BIN_SUBDIR)
+CHPL_OLD_BIN_DIR = $(CHPL_MAKE_HOME)/bin/$(CHPL_MAKE_HOST_PLATFORM)
 CHPL = $(CHPL_BIN_DIR)/chpl$(EXE_SUFFIX)
+CHPL_OLD = $(CHPL_OLD_BIN_DIR)/chpl
 CHPLDOC = $(CHPL_BIN_DIR)/chpldoc$(EXE_SUFFIX)
-CHPLIPE = $(CHPL_BIN_DIR)/chpl-ipe$(EXE_SUFFIX)
 
 
 #

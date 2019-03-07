@@ -45,7 +45,7 @@ class Vector {
     d = {1..n};
   }
 
-  proc writeThis(f) {
+  override proc writeThis(f) {
     f.write("{n = ", n, ", a = ", a, "}");
   }
 
@@ -259,11 +259,11 @@ proc main() {
   writeln("v2.add(v3) = ",v2);
   writeln("v3 = ",v3);
 
-  var m1 = new Matrix(2,3);
+  var m1 = new unmanaged Matrix(2,3);
   writeln("m1 = ",m1);
 
   var a4 : [1..3,1..6] elemType = [(i,j) in {1..3, 1..6}] i+j;
-  var m4 = new Matrix(a4.domain.dim(1).high,a4.domain.dim(2).high,a4);
+  var m4 = new unmanaged Matrix(a4.domain.dim(1).high,a4.domain.dim(2).high,a4);
   writeln("m4 = ",m4);
 
   writeln("m1.dims() = ",m1.dims());

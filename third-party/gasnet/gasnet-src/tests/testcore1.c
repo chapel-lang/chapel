@@ -34,6 +34,11 @@ typedef struct {
 
 monoseed_t	 *_mseed;
 
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
+
 int	myproc;
 int	numproc;
 int	peerproc;
@@ -120,9 +125,8 @@ chksum_test(int iters)
 
 	if (iamsender) {
 		for (i = 0; i < iters; i++)
-			GASNET_Safe(
-			    gasnet_AMRequestShort2((gasnet_node_t)peerproc, 
-				201, i, _mseed[i].seed));
+			gex_AM_RequestShort2(myteam, (gex_Rank_t)peerproc, 
+				201, 0, i, _mseed[i].seed);
 	}
 
 	while ( (received = gasnett_atomic_read(&chksum_received,0)) < iters ) {
@@ -169,8 +173,8 @@ chksum_test(int iters)
  * chksum_reph(i, src, nbytes) compares src[nbytes] to its copy of the
  * checksum at i
  */
-void chksum_reqh(gasnet_token_t token, 
-	gasnet_handlerarg_t iter, gasnet_handlerarg_t seed)
+void chksum_reqh(gex_Token_t token, 
+	gex_AM_Arg_t iter, gex_AM_Arg_t seed)
 {
         unsigned char   chksum_reqbuf[CHKSUM_TOTAL];
 
@@ -178,14 +182,14 @@ void chksum_reqh(gasnet_token_t token,
 	chksum_gen(seed, &chksum_reqbuf);
 	monoseed_trace(iter, seed, &chksum_reqbuf, NULL);
 	GASNET_Safe( 
-	    gasnet_AMReplyMedium1(token, 202, &chksum_reqbuf, 
-	        CHKSUM_TOTAL, iter));
+	    gex_AM_ReplyMedium1(token, 202, &chksum_reqbuf, 
+	        CHKSUM_TOTAL, GEX_EVENT_NOW, 0, iter));
 	return;
 }
 
 void
-chksum_reph(gasnet_token_t token, 
-	void *buf, size_t nbytes, gasnet_handlerarg_t iter) 
+chksum_reph(gex_Token_t token, 
+	void *buf, size_t nbytes, gex_AM_Arg_t iter)
 {
 	gasnett_atomic_increment(&chksum_received, 0);
 	assert_always(iter < chksum_iters && iter >= 0);
@@ -209,17 +213,19 @@ int
 main(int argc, char **argv)
 {
 	int	iters = 0;
-	gasnet_handlerentry_t htable[] = {
-		{ 201, chksum_reqh },
-		{ 202, chksum_reph }
+	gex_AM_Entry_t htable[] = {
+		{ 201, chksum_reqh, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 2 },
+		{ 202, chksum_reph, GEX_FLAG_AM_REPLY|GEX_FLAG_AM_MEDIUM, 1 }
 	};
 
 	/* call startup */
-        GASNET_Safe(gasnet_init(&argc, &argv));
-        GASNET_Safe(gasnet_attach(htable, sizeof(htable)/sizeof(gasnet_handlerentry_t), TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
+        GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testcore1", &argc, &argv, 0));
+        GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
+        GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, sizeof(htable)/sizeof(gex_AM_Entry_t)));
+
 	test_init("testcore1",0,"(iters)");
 
-        assert(CHKSUM_TOTAL <= gasnet_AMMaxMedium());
+        assert(CHKSUM_TOTAL <= gex_AM_LUBReplyMedium());
 
 	if (argc > 1) iters = atoi(argv[1]);
 	if (!iters) iters = 1000;
@@ -228,8 +234,8 @@ main(int argc, char **argv)
 
 	/* get SPMD info */
 	chksum_iters = iters;
-	myproc = gasnet_mynode();
-	numprocs = gasnet_nodes();
+	myproc = gex_TM_QueryRank(myteam);
+	numprocs = gex_TM_QuerySize(myteam);
         /* Only allow even number for numprocs */
         if (numprocs % 2 != 0) {
           MSG0("WARNING: This test requires an even number of nodes. Test skipped.\n");

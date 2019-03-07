@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -221,7 +221,7 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
         // While we haven't found the end of the path (in nextTok)
         strncat(parent, "/", 1);
         // Restore the lost path separator.
-        strncat(parent, curTok, strlen(curTok));
+        strncat(parent, curTok, strlen(curTok) + 1);
         // Add the current token to the parent list
         curTok = nextTok;
         // And prepare to check if the next token is the last in the path

@@ -3,12 +3,12 @@
 record Foo {
   var x;
 
-  proc init(xVal: int) {
-    x = xVal;
+  proc init(x: int) {
+    this.x = x;
   }
 
-  proc init(xVal: real) {
-    x = xVal;
+  proc init(x: real) {
+    this.x = x;
   }
 }
 

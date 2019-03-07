@@ -1,5 +1,3 @@
-// Modified from
-// test/classes/dinan/user_def_default_constructor.chpl
 class C {
   var x: int;
 

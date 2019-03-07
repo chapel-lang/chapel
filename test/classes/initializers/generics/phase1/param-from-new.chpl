@@ -15,6 +15,5 @@ class C {
 }
 
 proc main() {
-  var c = new C();
-  delete c;
+  var c = new owned C();
 }

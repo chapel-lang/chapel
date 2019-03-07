@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.10</span>
+   &#160;<span id="projectnumber">1.11.11</span>
    </div>
   </td>
  </tr>
@@ -155,11 +155,9 @@ Functions</h2></td></tr>
 <tr class="separator:ga14cdbc0ef0a705e84999bd48a2e649f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>The <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a> type represents a set of objects, typically OS processors &ndash; which may actually be hardware threads (represented by <a class="el" href="a00150.html#ga4bbf39b68b6f568fb92739e7c0ea7801" title="A CPU set is a bitmap whose bits are set according to CPU physical OS indexes. ">hwloc_cpuset_t</a>, which is a typedef for <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a>) &ndash; or memory nodes (represented by <a class="el" href="a00150.html#ga37e35730fa7e775b5bb0afe893d6d508" title="A node set is a bitmap whose bits are set according to NUMA memory node physical OS indexes...">hwloc_nodeset_t</a>, which is also a typedef for <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a>).</p>
-<p><em>Both CPU and node sets are always indexed by OS physical number.</em></p>
-<dl class="section note"><dt>Note</dt><dd>CPU sets and nodesets are described in <a class="el" href="a00150.html">Object Sets (hwloc_cpuset_t and hwloc_nodeset_t)</a>.</dd></dl>
-<p>A bitmap may be of infinite size (all bits are set after some point). A bitmap may even be full if all bits are set.</p>
-<dl class="section note"><dt>Note</dt><dd>Several examples of using the bitmap API are available under the doc/examples/ directory in the source tree. Regression tests such as tests/hwloc/hwloc_bitmap*.c also make intensive use of this API. </dd></dl>
+<p>The <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a> type represents a set of integers (positive or null). A bitmap may be of infinite size (all bits are set after some point). A bitmap may even be full if all bits are set.</p>
+<p>Bitmaps are used by hwloc for sets of OS processors (which may actually be hardware threads) as by <a class="el" href="a00150.html#ga4bbf39b68b6f568fb92739e7c0ea7801" title="A CPU set is a bitmap whose bits are set according to CPU physical OS indexes. ">hwloc_cpuset_t</a> (a typedef for <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a>), or sets of NUMA memory nodes as <a class="el" href="a00150.html#ga37e35730fa7e775b5bb0afe893d6d508" title="A node set is a bitmap whose bits are set according to NUMA memory node physical OS indexes...">hwloc_nodeset_t</a> (also a typedef for <a class="el" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a>). Those are used for cpuset and nodeset fields in the <a class="el" href="a00204.html" title="Structure of a topology object. ">hwloc_obj</a> structure, see <a class="el" href="a00150.html">Object Sets (hwloc_cpuset_t and hwloc_nodeset_t)</a>.</p>
+<p><em>Both CPU and node sets are always indexed by OS physical number.</em> However users should usually not build CPU and node sets manually (e.g. with <a class="el" href="a00174.html#ga55480e96ab47941bfebb9aed676526a2" title="Add index id in bitmap bitmap. ">hwloc_bitmap_set()</a>). One should rather use existing object sets and combine them with <a class="el" href="a00174.html#ga1281994d6cc3b5079224190ca820ad93" title="Or bitmaps bitmap1 and bitmap2 and store the result in bitmap res. ">hwloc_bitmap_or()</a>, etc. For instance, binding the current thread on a pair of cores may be performed with: </p><div class="fragment"><div class="line"><a class="code" href="a00204.html">hwloc_obj_t</a> core1 = ... , core2 = ... ;</div><div class="line"><a class="code" href="a00174.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> <span class="keyword">set</span> = <a class="code" href="a00174.html#gadece3d1eb5199fc2fb99bc7dcf1ccc05">hwloc_bitmap_alloc</a>();</div><div class="line"><a class="code" href="a00174.html#ga1281994d6cc3b5079224190ca820ad93">hwloc_bitmap_or</a>(<span class="keyword">set</span>, core1-&gt;<a class="code" href="a00204.html#a67925e0f2c47f50408fbdb9bddd0790f">cpuset</a>, core2-&gt;cpuset);</div><div class="line"><a class="code" href="a00158.html#ga80bc07473a8edf840cae17bd7ec21d48">hwloc_set_cpubind</a>(topology, <span class="keyword">set</span>, <a class="code" href="a00158.html#gga217dc8d373f8958cc93c154ebce1c71caf1b6bbad00d7b1017b918e3719f4d421">HWLOC_CPUBIND_THREAD</a>);</div><div class="line"><a class="code" href="a00174.html#ga156130d85b3a0674d6e0e6770fe68fbe">hwloc_bitmap_free</a>(<span class="keyword">set</span>);</div></div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Several examples of using the bitmap API are available under the doc/examples/ directory in the source tree. Regression tests such as tests/hwloc_bitmap*.c also make intensive use of this API. </dd></dl>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="ga3f6861045a8029ade373510ffa727d2a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga3f6861045a8029ade373510ffa727d2a">&#9670;&nbsp;</a></span>hwloc_bitmap_foreach_begin</h2>
@@ -521,6 +519,12 @@ Functions</h2></td></tr>
 
 <p>Compare bitmaps <code>bitmap1</code> and <code>bitmap2</code> in lexicographic order. </p>
 <p>Lexicographic comparison of bitmaps, starting for their highest indexes. Compare last indexes first, then second, etc. The empty bitmap is considered lower than anything.</p>
+<dl class="section return"><dt>Returns</dt><dd>-1 if <code>bitmap1</code> is considered smaller than <code>bitmap2</code>. </dd>
+<dd>
+1 if <code>bitmap1</code> is considered larger than <code>bitmap2</code>. </dd>
+<dd>
+0 if bitmaps are equal (contrary to <a class="el" href="a00174.html#gaa39cda1510ab721b5c012c76ead72365" title="Compare bitmaps bitmap1 and bitmap2 using their lowest index. ">hwloc_bitmap_compare_first()</a>).</dd></dl>
+<p>For instance comparing binary bitmaps 0011 and 0110 returns -1 (hence 0011 is considered smaller than 0110). Comparing 00101 and 01010 returns -1 too.</p>
 <dl class="section note"><dt>Note</dt><dd>This is different from the non-existing hwloc_bitmap_compare_last() which would only compare the highest index of each bitmap. </dd></dl>
 
 </div>
@@ -552,7 +556,12 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Compare bitmaps <code>bitmap1</code> and <code>bitmap2</code> using their lowest index. </p>
-<p>Smaller least significant bit is smaller. The empty bitmap is considered higher than anything. </p>
+<p>A bitmap is considered smaller if its least significant bit is smaller. The empty bitmap is considered higher than anything (because its least significant bit does not exist).</p>
+<dl class="section return"><dt>Returns</dt><dd>-1 if <code>bitmap1</code> is considered smaller than <code>bitmap2</code>. </dd>
+<dd>
+1 if <code>bitmap1</code> is considered larger than <code>bitmap2</code>.</dd></dl>
+<p>For instance comparing binary bitmaps 0011 and 0110 returns -1 (hence 0011 is considered smaller than 0110) because least significant bit of 0011 (0001) is smaller than least significant bit of 0110 (0010). Comparing 01001 and 00110 would also return -1 for the same reason.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 if bitmaps are considered equal, even if they are not strictly equal. They just need to have the same least significant bit. For instance, comparing binary bitmaps 0010 and 0110 returns 0 because they have the same least significant bit. </dd></dl>
 
 </div>
 </div>
@@ -762,6 +771,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Test whether bitmaps <code>bitmap1</code> and <code>bitmap2</code> intersects. </p>
+<dl class="section return"><dt>Returns</dt><dd>1 if bitmaps intersect, 0 otherwise. </dd></dl>
 
 </div>
 </div>
@@ -792,6 +802,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Test whether bitmap <code>bitmap1</code> is equal to bitmap <code>bitmap2</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>1 if bitmaps are equal, 0 otherwise. </dd></dl>
 
 </div>
 </div>
@@ -812,6 +823,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Test whether bitmap <code>bitmap</code> is completely full. </p>
+<dl class="section return"><dt>Returns</dt><dd>1 if bitmap is full, 0 otherwise.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>A full bitmap is always infinitely set. </dd></dl>
 
 </div>
@@ -843,6 +855,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Test whether bitmap <code>sub_bitmap</code> is part of bitmap <code>super_bitmap</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>1 if <code>sub_bitmap</code> is included in <code>super_bitmap</code>, 0 otherwise.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>The empty bitmap is considered included in any other bitmap. </dd></dl>
 
 </div>
@@ -874,6 +887,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Test whether index <code>id</code> is part of bitmap <code>bitmap</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>1 if the bit at index <code>id</code> is set in bitmap <code>bitmap</code>, 0 otherwise. </dd></dl>
 
 </div>
 </div>
@@ -894,6 +908,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Test whether bitmap <code>bitmap</code> is empty. </p>
+<dl class="section return"><dt>Returns</dt><dd>1 if bitmap is empty, 0 otherwise. </dd></dl>
 
 </div>
 </div>
@@ -1269,7 +1284,10 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Keep a single index among those set in bitmap <code>bitmap</code>. </p>
-<p>May be useful before binding so that the process does not have a chance of migrating between multiple logical CPUs in the original mask. </p>
+<p>May be useful before binding so that the process does not have a chance of migrating between multiple logical CPUs in the original mask. Instead of running the task on any PU inside the given CPU set, the operating system scheduler will be forced to run it on a single of these PUs. It avoids a migration overhead and cache-line ping-pongs between PUs.</p>
+<dl class="section note"><dt>Note</dt><dd>This function is NOT meant to distribute multiple processes within a single CPU set. It always return the same single bit when called multiple times on the same input set. <a class="el" href="a00169.html#ga2e3db06f766509ae2004ee4c8bbf5204" title="Distribute n items over the topology under roots. ">hwloc_distrib()</a> may be used for generating CPU sets to distribute multiple tasks below a single multi-PU object.</dd>
+<dd>
+This function cannot be applied to an object set directly. It should be applied to a copy (which may be obtained with <a class="el" href="a00174.html#gae679434c1a5f41d3560a8a7e2c1b0dee" title="Duplicate bitmap bitmap by allocating a new bitmap and copying bitmap contents. ">hwloc_bitmap_dup()</a>). </dd></dl>
 
 </div>
 </div>

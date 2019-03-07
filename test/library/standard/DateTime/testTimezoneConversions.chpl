@@ -27,18 +27,18 @@ class USTimeZone: TZInfo {
     return reprname;
   }
 
-  proc tzname(dt: datetime) {
+  override proc tzname(dt: datetime) {
     if dst(dt) != new timedelta(0) then
       return dstname;
     else
       return stdname;
   }
 
-  proc utcoffset(dt: datetime) {
+  override proc utcoffset(dt: datetime) {
     return stdoffset + dst(dt);
   }
 
-  proc dst(dt: datetime) {
+  override proc dst(dt: datetime) {
     if dt.tzinfo.borrow() == nil {
       // An exception instead may be sensible here, in one or more of
       // the cases.
@@ -56,14 +56,14 @@ class USTimeZone: TZInfo {
 
     // Can't compare naive to aware objects, so strip the timezone from
     // dt first.
-    if start <= dt.replace(tzinfo=new Shared(nil: unmanaged TZInfo)) && dt.replace(tzinfo=new Shared(nil:unmanaged TZInfo)) < end {
+    if start <= dt.replace(tzinfo=new shared(nil: unmanaged TZInfo)) && dt.replace(tzinfo=new shared(nil:unmanaged TZInfo)) < end {
       return HOUR;
     } else {
       return ZERO;
     }
   }
 
-  proc fromutc(dt: datetime) {
+  override proc fromutc(dt: datetime) {
     var dtoff = dt.utcoffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
@@ -84,19 +84,19 @@ class FixedOffset: TZInfo {
     this.dstoffset = new timedelta(minutes=dstoffset);
   }
 
-  proc utcoffset(dt: datetime) {
+  override proc utcoffset(dt: datetime) {
     return offset;
   }
 
-  proc tzname(dt: datetime) {
+  override proc tzname(dt: datetime) {
     return name;
   }
 
-  proc dst(dt: datetime) {
+  override proc dst(dt: datetime) {
     return dstoffset;
   }
 
-  proc fromutc(dt: datetime) {
+  override proc fromutc(dt: datetime) {
     var dtoff = dt.utcoffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
@@ -257,7 +257,7 @@ proc test_tricky() {
   // local clock jumps from 1 to 3).  The point here is to make sure we
   // get the 3 spelling.
   var expected = dston.replace(hour=3, tzinfo=dston.tzinfo);
-  var got = fourback.astimezone(Eastern).replace(tzinfo=new Shared(TZInfo));
+  var got = fourback.astimezone(Eastern).replace(tzinfo=new shared(TZInfo));
   assert(expected == got);
 
   // Similar, but map to 6:00 UTC == 1:00 EST == 2:00 DST.  In that
@@ -267,7 +267,7 @@ proc test_tricky() {
   // and adding -4-0 == -4 gives the 2:00 spelling.  We want the 1:00 EST
   // spelling.
   expected = dston.replace(hour=1, tzinfo=dston.tzinfo);
-  got = sixutc.astimezone(Eastern).replace(tzinfo=new Shared(TZInfo));
+  got = sixutc.astimezone(Eastern).replace(tzinfo=new shared(TZInfo));
   assert(expected == got);
 
   // Now on the day DST ends, we want "repeat an hour" behavior.
@@ -291,7 +291,7 @@ proc test_tricky() {
           expected = expectedbase.replace(minute=minute, tzinfo=expectedbase.tzinfo);
           asutc = asutcbase.replace(minute=minute, tzinfo=asutcbase.tzinfo);
           var astz = asutc.astimezone(tz);
-          assert(astz.replace(tzinfo=new Shared(TZInfo)) == expected);
+          assert(astz.replace(tzinfo=new shared(TZInfo)) == expected);
         }
         asutcbase += HOUR;
       }
@@ -307,7 +307,7 @@ proc test_fromutc() {
 
   // Always converts UTC to standard time.
   class FauxUSTimeZone: USTimeZone {
-    proc fromutc(dt: datetime) {
+    override proc fromutc(dt: datetime) {
       return dt + stdoffset;
     }
 

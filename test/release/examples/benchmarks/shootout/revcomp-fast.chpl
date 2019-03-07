@@ -1,5 +1,6 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
+
    contributed by Ben Harshbarger and Brad Chamberlain
    derived from the Rust #2 version by Matt Brubeck
 */

@@ -3,7 +3,7 @@ class C {
 }
 
 var c = nil;
-c = new C();
+c = new borrowed C();
 writeln(c);
 compilerWarning(c.type:string);
 writeln(c.x);

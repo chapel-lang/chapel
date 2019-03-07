@@ -7,7 +7,7 @@ class C {
 
 class D : C {
   var y : real = 2.0;
-  proc print() {
+  override proc print() {
     writeln(this);
   }
 }

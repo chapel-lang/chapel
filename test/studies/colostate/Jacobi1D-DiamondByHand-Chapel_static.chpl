@@ -142,8 +142,6 @@ proc main(){
     if verifyResult(space,lowerBound,upperBound,false ) then writeln( "SUCCESS" );
     else writeln( "FAILURE" );
   }
-
-  delete generator;
 }
 
 
@@ -189,8 +187,6 @@ proc verifyResult(space: [] Cell, lowerBound: int, upperBound: int,
 
   if passed && verbose then
     writeln( "SUCCESS!" );
-
-  delete generator;
 
   return passed;
 }

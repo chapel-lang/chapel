@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -484,7 +484,6 @@ proc LocBlockCyclic.writeThis(x) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
-pragma "use default init"
 class BlockCyclicDom: BaseRectangularDom {
   //
   // LEFT LINK: a pointer to the parent distribution
@@ -523,8 +522,8 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
     // result of the reduction is always 0 (for an array of ints). Looking at
     // the generated code, it seems like the reduction object is not being
     // passed through nested loops correctly (or at all).
-    for follow in locDom.myStarts._value.these(iterKind.leader, maxTasks, ignoreRunning, minSize) {
-      for i in locDom.myStarts._value.these(iterKind.follower, follow, maxTasks, ignoreRunning, minSize) {
+    for follow in locDom.myStarts.these(iterKind.leader, maxTasks, ignoreRunning, minSize) {
+      for i in locDom.myStarts.these(iterKind.follower, follow, maxTasks, ignoreRunning, minSize) {
         var retblock: rank*range(idxType);
         for param j in 1..rank {
           const lo     = if rank == 1 then i else i(j);
@@ -647,7 +646,7 @@ proc BlockCyclicDom.setup() {
     enumerateBlocks();
 }
 
-proc BlockCyclicDom.dsiDestroyDom() {
+override proc BlockCyclicDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom do
     on dist.targetLocales(localeIdx) do
       delete locDoms(localeIdx);
@@ -679,7 +678,7 @@ proc BlockCyclicDom.dsiReprivatize(other, reprivatizeData) {
 }
 
 proc BlockCyclicDom.dsiMember(i) {
-  return whole.member(i);
+  return whole.contains(i);
 }
 
 proc BlockCyclicDom.dsiIndexOrder(i) {
@@ -690,7 +689,6 @@ proc BlockCyclicDom.dsiIndexOrder(i) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Domain Class
 //
-pragma "use default init"
 class LocBlockCyclicDom {
   param rank: int;
   type idxType;
@@ -797,7 +795,6 @@ proc LocBlockCyclicDom._sizes {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
-pragma "use default init"
 class BlockCyclicArr: BaseRectangularArr {
 
   //
@@ -857,7 +854,7 @@ proc BlockCyclicArr.dsiPrivatize(privatizeData) {
 //
 proc BlockCyclicArr.dsiAccess(i: idxType) ref where rank == 1 {
   if myLocArr then /* TODO: reenable */ /* local */ {
-    if myLocArr.indexDom.myStarts.member(i) then  // TODO: This could be beefed up; true for indices other than starts
+    if myLocArr.indexDom.myStarts.contains(i) then  // TODO: This could be beefed up; true for indices other than starts
       return myLocArr.this(i);
   }
   //  var loci = dom.dist.idxToLocaleInd(i);
@@ -870,7 +867,7 @@ proc BlockCyclicArr.dsiAccess(i: idxType) ref where rank == 1 {
 proc BlockCyclicArr.dsiAccess(i: rank*idxType) ref {
 //   const myLocArr = locArr(here.id);
 //   local {
-//     if myLocArr.locDom.myStarts.member(i) then
+//     if myLocArr.locDom.myStarts.contains(i) then
 //       return myLocArr.this(i);
 //   }
   if rank == 1 {
@@ -984,11 +981,17 @@ iter do_dsiLocalSubdomains(indexDom) {
     yield {(...temp)};
   }
 }
-iter BlockCyclicArr.dsiLocalSubdomains() {
+iter BlockCyclicArr.dsiLocalSubdomains(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("BlockCyclic", "remote subdomain queries");
+
   for i in do_dsiLocalSubdomains(myLocArr.indexDom) do
     yield i;
 }
-iter BlockCyclicDom.dsiLocalSubdomains() {
+iter BlockCyclicDom.dsiLocalSubdomains(loc: locale) {
+  if loc != here then
+    unimplementedFeatureHalt("BlockCyclic", "remote subdomain queries");
+
   // TODO -- could be replaced by a privatized myLocDom in BlockCyclicDom
   // as it is with BlockCyclicArr
   var myLocDom:unmanaged LocBlockCyclicDom(rank, idxType, stridable) = nil;
@@ -1004,7 +1007,6 @@ iter BlockCyclicDom.dsiLocalSubdomains() {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Array Class
 //
-pragma "use default init"
 class LocBlockCyclicArr {
   type eltType;
   param rank: int;

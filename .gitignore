@@ -5,6 +5,8 @@ a.out_real
 *~
 output
 gen
+.mason
+Mason.lock
 *.ntoks
 *.o
 *.pyc
@@ -37,8 +39,6 @@ tags
 /compiler/ifa/make_prims/make_prims
 /compiler/ifa/make_prims/cygwin
 /compiler/main/BUILD_VERSION
-/compiler/main/CLANG_SETTINGS
-/compiler/main/CONFIGURED_PREFIX
 /compiler/main/COPYRIGHT
 /compiler/main/LICENSE
 /compiler/parser/bison-chapel.output
@@ -97,6 +97,7 @@ tags
 # Test ignores.
 /test/FUTURES
 /test/Logs
+/test/**/compperfdat
 /test/**/perfdat
 
 /test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
@@ -163,6 +164,8 @@ tags
 /test/compflags/waynew/*.h
 /test/compflags/waynew/chplmake.out
 
+/test/deprecated/parentNameErr.good
+
 /test/distributions/dm/hplx.exec.out.tmp.orig
 
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic.comm-gasnet.good
@@ -179,11 +182,14 @@ tags
 /test/exercises/Mandelbrot/mandelbrot.bmp
 /test/exercises/Mandelbrot/mandelbrot.ppm
 /test/exercises/Mandelbrot/solutions/mandelbrot.ppm
+/test/exercises/c-ray/solutions/c-ray-chplvis
 
 /test/expressions/lydia/noinit/ccode
 
 /test/extern/bradc/externSystem.appendme
 /test/extern/deitz/myfile.dat
+
+/test/interop/fortran/genFortranInterface/lib
 
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
@@ -195,8 +201,6 @@ tags
 /test/io/ferguson/test_file.txt
 
 /test/localeModels/gbt/maxTaskPar.good
-
-/test/mason/.mason
 
 /test/memory/gbt/test-memLog.memLog.*
 /test/memory/shannon/jacobi.log
@@ -250,14 +254,17 @@ tags
 /test/library/standard/Path/saru/getParentName/parentName.good
 /test/library/standard/Path/saru/getParentName/parentNameErr.good
 /test/library/standard/Path/lydia/realpath/blahblahblah.txt
+/test/library/standard/Path/dlongnecke/normPath/normPath.good
+/test/library/standard/Path/dlongnecke/absPath/absPath.good
+/test/library/standard/Path/dlongnecke/absPath/fileAbsPath.good
+/test/library/standard/Path/relPath/relPath.good
+/test/library/standard/Path/relPath/fileRelPath.good
 /test/library/standard/Spawn/stdout-stderr_real
 /test/library/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/library/standard/machine/numPUs.good
 /test/library/standard/Memory/countMemory/countMemory.*.good
 
 /test/localeModels/dmk/locale_name.good
-
-/test/mason/run/.mason
 
 /test/multilocale/deitz/needMultiLocales/test_remote_file_read_class.txt
 /test/multilocale/numLocales/bradc/testVerboseFlag.good

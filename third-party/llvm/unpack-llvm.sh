@@ -21,6 +21,7 @@ mv llvm-6.0.0.src llvm
 mv cfe-6.0.0.src llvm/tools/clang
 patch -p0 < llvm-6.0.0-BasicAliasAnalysis-patch.txt
 patch -p0 < llvm-6.0.0-ValueTracking-patch.txt
+patch -p0 < llvm-6.0.0-Linux-patch.txt
 
 #tar xf llvm-5.0.1.src.tar.xz
 #tar xf cfe-5.0.1.src.tar.xz

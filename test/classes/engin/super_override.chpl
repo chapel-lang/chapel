@@ -15,7 +15,7 @@ class B:A {
     writeln("B.foo() called");
   }
   */
-  proc foo() {
+  override proc foo() {
     super.foo();
     writeln("B.foo() called");
   }

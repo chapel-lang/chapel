@@ -1,4 +1,4 @@
-Foo(true)
-Foo(false)
+_owned(Foo(true))
+_owned(Foo(false))
 Foo(true)
 Foo(false)

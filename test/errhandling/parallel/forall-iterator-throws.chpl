@@ -8,7 +8,7 @@ iter myiter(nn: int, nt: int) throws {
   for i in 0..#nt {
     for j in i*nn..#nn {
       if j == 1 then
-        throw new StringError("test error");
+        throw new owned StringError("test error");
       yield j;
     }
   }
@@ -18,7 +18,7 @@ iter myiter(nn: int, nt: int, param tag: iterKind) throws where tag == iterKind.
   coforall i in 0..#nt {
     for j in i*nn..#nn {
       if j == 1 then
-        throw new StringError("test error");
+        throw new owned StringError("test error");
       yield j;
     }
   }
@@ -35,7 +35,7 @@ iter myiter(nn: int, nt: int, param tag: iterKind) throws where tag == iterKind.
 iter myiter(nn:int, nt: int, followThis, param tag: iterKind) throws where tag == iterKind.follower {
   for i in followThis {
     if (i&1) == 1 then
-      throw new StringError("test error");
+      throw new owned StringError("test error");
     yield i;
   }
 }

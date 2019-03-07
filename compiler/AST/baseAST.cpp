@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -170,7 +170,7 @@ void trace_remove(BaseAST* ast, char flag) {
     fprintf(deletedIdHandle, "%d %c %p %d\n",
             currentPassNo, flag, ast, ast->id);
   }
-  if (ast->id == breakOnDeleteID) {
+  if (ast->id == breakOnRemoveID) {
     if (deletedIdON() == true) fflush(deletedIdHandle);
     gdbShouldBreakHere();
   }
@@ -208,7 +208,7 @@ static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
 
 void cleanAst() {
   // Important: Sometimes scopeResolve will create dummy UseStmts that are
-  // never inserted into the tree, and will be deleted inbetween passes.
+  // never inserted into the tree, and will be deleted in between passes.
   //
   // If we do not destroy the caches, they may contain pointers back to these
   // dummy uses.
@@ -226,10 +226,6 @@ void cleanAst() {
       }
 
       if (AggregateType* ct = toAggregateType(ts->type)) {
-        if (ct->defaultInitializer               != NULL &&
-            isAliveQuick(ct->defaultInitializer) == false) {
-          ct->defaultInitializer = NULL;
-        }
 
         if (ct->hasDestructor()                  == true &&
             isAliveQuick(ct->getDestructor())    == false) {
@@ -294,7 +290,7 @@ verify() {
 
 
 int breakOnID = -1;
-int breakOnDeleteID = -1;
+int breakOnRemoveID = -1;
 
 int lastNodeIDUsed() {
   return uid - 1;
@@ -683,7 +679,6 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
     SUB_TYPE(ps->type);
     SUB_TYPE(ps->retType);
     SUB_SYMBOL(ps->_this);
-    SUB_SYMBOL(ps->_outer);
 
   } else if (ArgSymbol* ps = toArgSymbol(ast)) {
     SUB_TYPE(ps->type);
@@ -773,6 +768,16 @@ bool isCForLoop(const BaseAST* a)
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isCForLoop()) ? true : false;
+}
+
+/* Create a throw-away ast with a given filename and line number.
+   This can be used e.g. to pass a line and filename to USR_FATAL
+   since it only takes those from an AST, not directly. */
+VarSymbol* createASTforLineNumber(const char* filename, int line) {
+  astlocT astloc(line, filename);
+  astlocMarker markAstLoc(astloc);
+  VarSymbol* lineTemp = newTemp();
+  return lineTemp;
 }
 
 /************************************* | **************************************

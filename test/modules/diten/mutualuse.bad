@@ -1,2 +1,1 @@
-{field = 1}
-nil
+mutualuse.chpl:33: error: use of 'a' before encountering its definition, type unknown

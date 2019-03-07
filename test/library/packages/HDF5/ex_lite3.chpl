@@ -4,7 +4,7 @@
 param ATTR_SIZE = 5;
 
 proc main {
-  use HDF5_HL;
+  use HDF5.C_HDF5;
 
   var file_id, dset_id, space_id: hid_t;
   var dims: [0..0] hsize_t = ATTR_SIZE;

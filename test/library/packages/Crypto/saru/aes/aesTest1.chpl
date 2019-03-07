@@ -2,22 +2,22 @@ proc main(){
   use Crypto;
 
   /* Create AES instance with the version required */
-  var a = new unmanaged AES(256, CryptoChainMode.cbc);
+  var a = new owned AES(256, CryptoChainMode.cbc);
 
   /* Key Generation phase starts */
-  var salt = new unmanaged CryptoBuffer("random_salt");
-  var hash = new unmanaged Hash(Digest.SHA256);
-  var k = new unmanaged KDF(a.getByteSize(), 1000, hash);
+  var salt = new owned CryptoBuffer("random_salt");
+  var hash = new owned Hash(Digest.SHA256);
+  var k = new owned KDF(a.getByteSize(), 1000, hash);
   var key = k.passKDF("random_key", salt);
   writeln("Generated Key: ", key.toHex());
   /* Key Generation phase ends */
 
   /* IV is manipulated to return the same encryption on every run (for testing purposes) */
-  var iv = new unmanaged CryptoBuffer("random_iv_asdfiljhkalsmvncbhdhfu");
+  var iv = new owned CryptoBuffer("random_iv_asdfiljhkalsmvncbhdhfu");
   writeln("Generated IV: ", iv.toHex());
 
   /* The message to be encrypted */
-  var msg = new unmanaged CryptoBuffer("foo_bar");
+  var msg = new owned CryptoBuffer("foo_bar");
   writeln("Original Message: ", msg.toHex());
 
   /* Encrypt the message using the key and IV */
@@ -27,15 +27,4 @@ proc main(){
   /* Decrypt the message using the key and IV */
   var orig = a.decrypt(ct, key, iv);
   writeln("Obtained Plaintext: ", orig.toHex());
-
-  /* Clean up allocated classes */
-  delete orig;
-  delete ct;
-  delete msg;
-  delete iv;
-  delete key;
-  delete k;
-  delete hash;
-  delete salt;
-  delete a;
 }

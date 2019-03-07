@@ -8,7 +8,7 @@ class A {
 }
 
 class B:A {
-  iter these() {
+  override iter these() {
     for i in 1..n by -1 do
       yield i;
   }

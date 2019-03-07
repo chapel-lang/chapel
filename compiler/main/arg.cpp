@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -730,8 +730,7 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
     const char* devFlags = "Developer Flags";
     if (desc[i].description &&
         // Does the description start with devFlags?
-        strlen(desc[i].description) > strlen(devFlags) &&
-        0 == memcmp(desc[i].description, devFlags, strlen(devFlags))) {
+        startsWith(desc[i].description, devFlags)) {
       firstDeveloperOnly = i;
       break;
     }
@@ -769,8 +768,7 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
         break;
 
       if (desc[i].name[0] != '\0' &&
-          strlen(usearg) > strlen(desc[i].name) &&
-          0 == memcmp(usearg, desc[i].name, strlen(desc[i].name))) {
+          startsWith(usearg, desc[i].name)) {
         fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
         helped = true;
       }
@@ -785,8 +783,7 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
         break;
 
       if (desc[i].name[0] != '\0' &&
-          strlen(usearg) < strlen(desc[i].name) &&
-          0 == memcmp(usearg, desc[i].name, strlen(usearg))) {
+          startsWith(desc[i].name, usearg)) {
         fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
       }
     }

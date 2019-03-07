@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -81,11 +81,11 @@ static inline memory_order _defaultOfMemoryOrder(void) {
 #endif
 
 
-static inline void atomic_thread_fence(memory_order order)
+static inline void chpl_atomic_thread_fence(memory_order order)
 {
   full_memory_barrier();
 }
-static inline void atomic_signal_fence(memory_order order)
+static inline void chpl_atomic_signal_fence(memory_order order)
 {
   full_memory_barrier();
 }

@@ -122,15 +122,10 @@ postorder
 //
 class Tree {
   var data: string;
-  var left, right: Tree;
-
-  proc deinit() {
-    if left  then delete left;
-    if right then delete right;
-  }
+  var left, right: owned Tree;
 }
 
-iter postorder(tree: Tree): Tree {
+iter postorder(tree: borrowed Tree): borrowed Tree {
   if tree != nil {
     // Call the iterator recursively on the left subtree and expand.
     for child in postorder(tree.left) do
@@ -155,11 +150,11 @@ iter postorder(tree: Tree): Tree {
          / \
         d   e
 */
-var tree = new unmanaged Tree( "a",
-  new unmanaged Tree("b"),
-  new unmanaged Tree("c",
-    new unmanaged Tree("d"),
-    new unmanaged Tree("e")));
+var tree = new owned Tree( "a",
+  new owned Tree("b"),
+  new owned Tree("c",
+    new owned Tree("d"),
+    new owned Tree("e")));
 
 //
 // This method uses the postorder iterator to print out each node.
@@ -216,5 +211,3 @@ coforall node in postorder(tree) do
 
 writeln(tree);
 writeln();
-
-delete tree;

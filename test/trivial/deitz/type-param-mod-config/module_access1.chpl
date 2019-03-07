@@ -34,10 +34,8 @@ module Q {
     foo();
     bar();
 
-    var N = new M(5);
+    var N = new shared M(5);
 
     writeln(N.x);
-
-    delete N;
   }
 }

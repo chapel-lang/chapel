@@ -5,7 +5,7 @@ class aClass {
 record foo {
   var t: unmanaged aClass;
 
-  proc foo() {
+  proc init() {
     writeln("I default initialized!");
   }
 }

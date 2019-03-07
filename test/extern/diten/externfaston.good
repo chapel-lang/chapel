@@ -1,2 +1,2 @@
-0: remote (no-fork) task created on 1
-0: remote task created on 1
+0: remote executeOn, node 1
+0: remote fast executeOn, node 1

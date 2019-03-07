@@ -1,8 +1,8 @@
-use UserMapAssoc;
+use HashedDist;
 
 config const verbose = false;
 
-var newDist = new dmap(new UserMapAssoc(idxType=real));
+var newDist = new dmap(new Hashed(idxType=real));
 
 var D: domain(real) dmapped newDist;
 
@@ -24,9 +24,9 @@ for d in D.sorted() {
   writeln(d);
 }
 
-assert(D.member(1.1));
-assert(!D.member(3.5));
-assert(!D.member(100.0));
+assert(D.contains(1.1));
+assert(!D.contains(3.5));
+assert(!D.contains(100.0));
 
 var A: [D] string;
 
@@ -59,7 +59,7 @@ writeln();
 
 D.clear();
 
-assert(!D.member(9.9));
+assert(!D.contains(9.9));
 writeln("after D.clear, A is:");
 for d in D.sorted() {
   writeln(A[d]);

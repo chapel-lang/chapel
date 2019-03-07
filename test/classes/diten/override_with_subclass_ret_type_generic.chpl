@@ -6,7 +6,7 @@ class C {
 
 class D: C {
   var s;
-  proc bar() {
+  override proc bar() {
     writeln("D.bar(", s, ")");
   }
 }
@@ -20,7 +20,7 @@ class A {
 
 class B: A {
   var s;
-  proc foo() {
+  override proc foo() {
     return new unmanaged D(s);
   }
 }

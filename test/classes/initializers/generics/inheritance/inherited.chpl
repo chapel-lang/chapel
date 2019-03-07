@@ -41,8 +41,8 @@ proc main() {
 
 
 proc testLevel1() {
-  var c11 : Child1(int, 10);
-  var c12 : Child1(p1 = 10, t1 = real);
+  var c11 : borrowed Child1(int, 10);
+  var c12 : borrowed Child1(p1 = 10, t1 = real);
 
   writeln('c11.type ', c11.type : string);
   writeln('c12.type ', c12.type : string);
@@ -58,8 +58,8 @@ proc testLevel1() {
 
 
 proc testLevel2() {
-  var c21 : Child2(real, 20, int);
-  var c22 : Child2(t2 = int, t1 = real, p1 = 20);
+  var c21 : borrowed Child2(real, 20, int);
+  var c22 : borrowed Child2(t2 = int, t1 = real, p1 = 20);
 
   writeln('c21.type ', c21.type : string);
   writeln('c22.type ', c22.type : string);

@@ -6,7 +6,7 @@ proc test() {
   try {
     writeln("before for block");
     for i in 1..n {
-      throw new StringError("test error");
+      throw new owned StringError("test error");
     }
     writeln("after for block");
   } catch errors: TaskErrors {

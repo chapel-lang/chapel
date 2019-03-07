@@ -4,7 +4,7 @@
 param RANK = 2:c_int;
 
 proc main {
-  use HDF5_HL;
+  use HDF5.C_HDF5;
 
   var file_id: hid_t;
   var dims: [0..#RANK] hsize_t = [2:hsize_t, 3:hsize_t];

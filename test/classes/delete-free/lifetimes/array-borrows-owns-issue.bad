@@ -1,0 +1,9 @@
+array-borrows-owns-issue.chpl:19: In function 'test2':
+array-borrows-owns-issue.chpl:28: error: Scoped variable would outlive the value it is set to
+array-borrows-owns-issue.chpl:25: note: consider scope of innerA
+array-borrows-owns-issue.chpl:33: In function 'test3':
+array-borrows-owns-issue.chpl:42: error: Scoped variable would outlive the value it is set to
+array-borrows-owns-issue.chpl:39: note: consider scope of innerA
+array-borrows-owns-issue.chpl:51: In function 'test4':
+array-borrows-owns-issue.chpl:59: error: Scoped variable would outlive the value it is set to
+array-borrows-owns-issue.chpl:57: note: consider scope of innerA

@@ -11,7 +11,7 @@ proc test(dest, src) {
   // Assumes we enter the strided transfer path
   dest[slice] = src[slice];
   forall idx in dest.domain {
-    if slice.member(idx) then assert(dest[idx] == 3);
+    if slice.contains(idx) then assert(dest[idx] == 3);
     else assert(dest[idx] == 1);
   }
 }

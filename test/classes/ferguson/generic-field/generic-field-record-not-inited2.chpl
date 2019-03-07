@@ -1,4 +1,3 @@
-pragma "use default init"
 record GenericRecord {
   var field;
 }
@@ -6,10 +5,10 @@ record GenericRecord {
 record Wrapper {
   type t;
   var f:GenericRecord(t);
-  proc init(type recType) {
+  proc init(type t) {
     //var tmp:recType;
     //this.f = tmp;
-    t = recType;
+    this.t = t;
   }
 }
 

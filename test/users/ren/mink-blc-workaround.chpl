@@ -1,14 +1,20 @@
 config const n = 10,
              numMins = 5;
 
-pragma "use default init"
 class mink : ReduceScanOp {
 
   type eltType;
   const k : int = numMins;
   var v: [1..k] eltType = max(eltType);
   
+  proc identity return [1..k] max(eltType);
+  
   proc accumulate(x: eltType)
+  {
+    accumulateOntoState(v, x);
+  }
+  
+  proc accumulateOntoState(state, x: eltType)
   {
     if (x < v[1])
       {
@@ -23,20 +29,26 @@ class mink : ReduceScanOp {
       }
   }
   
-  proc combine(s: mink(eltType))
+  proc accumulate(state: [])
   {
     for i in 1..k
       {
-        accumulate(s.v[i]);
+        accumulate(state[i]);
       }
   }
   
+  proc combine(s: borrowed mink(eltType)) {
+    accumulate(s.v);
+  }
+
   proc generate()
   {
     var t = v;
     writeln("returning: ", t);
     return t;
   }
+  
+  proc clone() return new unmanaged mink(eltType=eltType);
 }
 
 var A: [1..n] int = 1..n;

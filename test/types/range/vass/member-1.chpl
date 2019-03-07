@@ -3,6 +3,6 @@ for al in 0..3 {
   const r = rbase align al;
   writeln("r = ", r);
   for i in 0..3 {
-    writeln("r.member(", i, ") = ", r.member(i));
+    writeln("r.contains(", i, ") = ", r.contains(i));
   }
 }

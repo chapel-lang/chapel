@@ -4,7 +4,7 @@
  * Terms of use are as specified in license.txt
  */
 
-#include <gasnet.h>
+#include <gasnetex.h>
 #include <stdio.h>
 
 /* Macro to check return codes and terminate with useful message. */
@@ -23,14 +23,18 @@
 
 int main(int argc, char **argv)
 {
-  gasnet_node_t rank, size;
+  gex_Rank_t rank, size;
   size_t segsz = GASNET_PAGESIZE;
-  size_t heapsz = GASNET_PAGESIZE;
   int argi;
 
-  GASNET_SAFE(gasnet_init(&argc, &argv));
-  rank = gasnet_mynode();
-  size = gasnet_nodes();
+  gex_Client_t      myclient;
+  gex_EP_t    myep;
+  gex_TM_t myteam;
+  gex_Segment_t     mysegment;
+
+  GASNET_SAFE(gex_Client_Init(&myclient, &myep, &myteam, "testhello", &argc, &argv, 0));
+  rank = gex_TM_QueryRank(myteam);
+  size = gex_TM_QuerySize(myteam);
 
   argi = 1;
   if (argi < argc) {
@@ -43,7 +47,7 @@ int main(int argc, char **argv)
     ++argi;
   }
     
-  GASNET_SAFE(gasnet_attach(NULL, 0, segsz, heapsz));
+  GASNET_SAFE(gex_Segment_Attach(&mysegment, myteam, segsz));
 
   /* Only first and last print here, to keep managable I/O volume at scale */
   if (!rank || (rank == size-1))

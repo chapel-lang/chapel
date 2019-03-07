@@ -11,10 +11,10 @@ class bar {
   var y : int;
 }
 
-var b : bar        = new borrowed bar(x = 12, y = 13);
+var b : borrowed bar        = new borrowed bar(x = 12, y = 13);
 writeln(b);
 
-var f : foo(t=bar) = new borrowed foo(t=bar);
+var f : borrowed foo(t=borrowed bar) = new borrowed foo(t=borrowed bar);
 
 writeln(f);
 f.print();

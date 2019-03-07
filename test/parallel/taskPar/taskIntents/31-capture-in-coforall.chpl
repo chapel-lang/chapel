@@ -17,7 +17,7 @@ const rLarge = new RecordLarge(yy01=30001, yy07=30007, yy20=30020);
 class ClassType {
   var zzz: int;
 }
-const cInstance = new ClassType(44444444);
+const cInstance = new borrowed ClassType(44444444);
 union UnionType {
   var ufield111, ufield222: int;
 }
@@ -61,7 +61,7 @@ var z128: complex(128);
 var enm: EnumType;
 /* no records for now */
 /* no unions for now */
-var cls: ClassType;
+var cls: borrowed ClassType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
@@ -297,7 +297,7 @@ var z128: complex(128);
 var enm: EnumType;
 /* no records for now */
 /* no unions for now */
-var cls: ClassType;
+var cls: borrowed ClassType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
@@ -536,7 +536,7 @@ var z128: complex(128);
 var enm: EnumType;
 /* no records for now */
 /* no unions for now */
-var cls: ClassType;
+var cls: borrowed ClassType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
@@ -777,7 +777,7 @@ var z128: complex(128);
 var enm: EnumType;
 /* no records for now */
 /* no unions for now */
-var cls: ClassType;
+var cls: borrowed ClassType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
@@ -1016,7 +1016,7 @@ var z128: complex(128);
 var enm: EnumType;
 /* no records for now */
 /* no unions for now */
-var cls: ClassType;
+var cls: borrowed ClassType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
@@ -1226,5 +1226,3 @@ writeln("done");
 }
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== done ===");
-
-delete cInstance;

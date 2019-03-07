@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,13 +20,17 @@
 #ifndef _LLVM_EXTRACT_IR_
 #define _LLVM_EXTRACT_IR_
 
+#include <set>
+
 #ifdef HAVE_LLVM
 namespace llvm
 {
   class Function;
+  class GlobalValue;
 }
 
-void extractAndPrintFunctionLLVM(llvm::Function *func);
+void extractAndPrintFunctionsLLVM(std::set<const llvm::GlobalValue*> *gvs);
+
 #endif // end HAVE_LLVM
 
 #endif

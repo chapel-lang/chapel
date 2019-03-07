@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,7 +55,6 @@ module ChapelTaskData {
     c_memcpy(c_ptrTo(prv[i]), c_ptrTo(adr), c_sizeof(c_void_ptr));
   }
 
-  pragma "unsafe"
   proc chpl_task_data_getDynamicEndCount(tls:c_ptr(chpl_task_ChapelData_t)) {
     var prv = tls:c_ptr(c_uchar);
     var i:size_t;

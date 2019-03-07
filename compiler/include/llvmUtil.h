@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -54,9 +54,6 @@ uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64
 #else
 #define TOOL_OUTPUT_FILE tool_output_file
 #endif
-
-// uncomment to enable prototype Region Vectorizer integration
-//#define HAVE_LLVM_RV
 
 #endif //HAVE_LLVM
 

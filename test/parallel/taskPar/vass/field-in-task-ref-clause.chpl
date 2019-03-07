@@ -25,7 +25,7 @@ class MyClass {
   }
 }  // class MyClass
 
-var c = new MyClass();
+var c = new owned MyClass();
 writeln(c);
 c.myBegin();
 writeln(c);

@@ -1,7 +1,7 @@
 
 class C {
   var x: int;
-  proc C(arg: int) {
+  proc init(arg: int) {
     x = arg;
     writeln("C(", x, ")");
   }
@@ -12,7 +12,7 @@ class C {
 
 record R {
   var y: int;
-  proc R(arg: int) {
+  proc init(arg: int) {
     y = arg;
     writeln("R(", y, ")");
   }

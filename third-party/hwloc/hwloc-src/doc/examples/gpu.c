@@ -1,14 +1,12 @@
-/* Example hwloc API program.
+/* This example program plays with:
+ * - finding GPU OS devices
+ * - getting CUDA and OpenCL attributes
+ * - displaying the locality of the GPU
  *
- * See other examples under doc/examples/ in the source tree
- * for more details.
- *
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2011,2017 Université Bordeaux
  * Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
- *
- * hwloc-hello.c
  */
 
 #include <hwloc.h>
@@ -37,7 +35,11 @@ int main(void)
       obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_OS_DEVICE, i);
       printf("%s:\n", obj->name);
 
+      /* obj->attr->osdev.type is HWLOC_OBJ_OSDEV_COPROC */
+
       s = hwloc_obj_get_info_by_name(obj, "Backend");
+      /* CoProcType also contains CUDA or OpenCL in v1.x */
+      /* obj->subtype also contains CUDA or OpenCL since v2.0 */
 
       if (s && !strcmp(s, "CUDA")) {
         /* This is a CUDA device */

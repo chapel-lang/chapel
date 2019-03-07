@@ -8,7 +8,7 @@ class CC : C {
 
 // The optimization passes should be able to determine that
 // p can alias q (because C inherits from CC or they are both objects)
-proc foo(n:int, ref p:CC, ref q:C)
+proc foo(n:int, ref p:borrowed CC, ref q:borrowed C)
 {
   if n <= 0 then return;
 

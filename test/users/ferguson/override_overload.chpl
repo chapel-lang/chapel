@@ -9,16 +9,16 @@ class BaseWriter {
 }
 
 class SubWriterOne : BaseWriter {
-  proc writeIt(x) {
+  override proc writeIt(x) {
     writeln("in SubWriterOne writing ", x);
   }
 }
 
 class SubWriterTwo : BaseWriter {
-  proc writeIt(x:int) {
+  override proc writeIt(x:int) {
     writeln("in SubWriterTwo writing int ", x);
   }
-  proc writeIt(x) {
+  override proc writeIt(x) {
     writeln("in SubWriterTwo writing ", x);
   }
 }

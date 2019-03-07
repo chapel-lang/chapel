@@ -6,8 +6,7 @@ class B: A {
   var x: myType;
 }
 
-var a = new A();
-var b: B;
+var a = new unmanaged A();
+var b: unmanaged B;
 
 delete a;
-

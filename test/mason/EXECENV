@@ -1,8 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env bash
 
-import os
-import sys
-
-sys.stdout.write("PATH=$CHPL_HOME/bin/%s:$PATH\n" % os.getenv("CHPL_HOST_PLATFORM"))
-sys.stdout.write("MASON_HOME=$PWD/.mason\n")
-sys.stdout.write("MASON_REGISTRY=registry|https://github.com/chapel-lang/mason-registry\n")
+bin_subdir=`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py`
+echo "PATH=\$CHPL_HOME/bin/$bin_subdir:\$PATH"
+echo "MASON_HOME=\$PWD/.mason"
+echo "MASON_REGISTRY=registry|https://github.com/chapel-lang/mason-registry"

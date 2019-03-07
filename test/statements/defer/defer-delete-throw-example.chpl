@@ -10,13 +10,13 @@ config const doThrow = false;
 
 proc canThrowError() throws {
   if doThrow then
-    throw new Error();
+    throw new owned Error();
 }
 
 
 proc test() throws {
   try {
-    var a = new C(1);
+    var a = new unmanaged C(1);
     defer {
       delete a;
     }

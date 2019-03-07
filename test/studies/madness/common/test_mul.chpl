@@ -3,7 +3,7 @@ use MadAnalytics;
 
 class Square: AFcn {
     var f: unmanaged AFcn;
-    proc this(x: real): real {
+    override proc this(x: real): real {
         return f(x)**2;
     }
 }

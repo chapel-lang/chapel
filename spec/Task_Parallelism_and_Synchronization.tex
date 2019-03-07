@@ -179,10 +179,10 @@ A synchronization variable is specified with a sync or single type
 given by the following syntax:
 \begin{syntax}
 sync-type:
-  `sync' type-specifier
+  `sync' type-expression
 
 single-type:
-  `single' type-specifier
+  `single' type-expression
 \end{syntax}
 
 If a synchronization variable declaration has an initialization
@@ -194,7 +194,7 @@ The code
 \begin{chapel}
 class Tree {
   var isLeaf: bool;
-  var left, right: Tree;
+  var left, right: unmanaged Tree;
   var value: int;
 
   proc sum():int {
@@ -209,10 +209,10 @@ class Tree {
 }
 \end{chapel}
 \begin{chapelpost}
-var tree: Tree = new Tree(false, new Tree(false, new Tree(true, nil, nil, 1),
-                                                 new Tree(true, nil, nil, 1), 1),
-                                 new Tree(false, new Tree(true, nil, nil, 1),
-                                                 new Tree(true, nil, nil, 1), 1), 1);
+var tree: unmanaged Tree = new unmanaged Tree(false, new unmanaged Tree(false, new unmanaged Tree(true, nil, nil, 1),
+                                                 new unmanaged Tree(true, nil, nil, 1), 1),
+                                 new unmanaged Tree(false, new unmanaged Tree(true, nil, nil, 1),
+                                                 new unmanaged Tree(true, nil, nil, 1), 1), 1);
 writeln(tree.sum());
 proc Tree.deinit() {
   if isLeaf then return;
@@ -495,7 +495,7 @@ following syntax:
 
 \begin{syntax}
 atomic-type:
-  `atomic' type-specifier
+  `atomic' type-expression
 \end{syntax}
 
 \subsection{Predefined Atomic Methods}
@@ -861,15 +861,19 @@ task-intent-clause:
   `with' ( task-intent-list )
 
 task-intent-list:
+  task-intent-item
+  task-intent-item, task-intent-list
+
+task-intent-item:
   formal-intent identifier
-  formal-intent identifier, task-intent-list
+  task-private-var-decl
 \end{syntax}
 
 where the following intents can be used as a \sntx{formal-intent}:
 \chpl{ref}, \chpl{in}, \chpl{const}, \chpl{const in}, \chpl{const ref}.
-In addition, \chpl{reduce} intents are allowed.
-They are similar to reduce forall intents \rsec{Forall_Intents}
-as described in the \emph{Reduce Intents} technical note
+\sntx{task-private-var-decl} is defined in \rsec{Task_Private_Variables}.
+In addition, \sntx{task-intent-item} may define a \chpl{reduce} intent.
+Reduce intents are described in the \emph{Reduce Intents} technical note
 in the online documentation:
 \\ %formatting
 \mbox{$$ $$ $$} %indent

@@ -10,14 +10,23 @@ class LastOp: ReduceScanOp {
   proc deinit() {
     count$ -= 1;
   }
+  proc identity {
+    return last;
+  }
   proc accumulate(x) {
     last = x;
+  }
+  proc accumulateOntoState(ref state, x) {
+    state = x;
   }
   proc combine(x) {
     last = x.last;
   }
   proc generate() {
     return last;
+  }
+  proc clone() {
+    return new unmanaged LastOp(eltType);
   }
 }
 

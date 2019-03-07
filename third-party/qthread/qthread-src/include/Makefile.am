@@ -55,10 +55,6 @@ noinst_HEADERS = \
 	qt_threadstate.h \
 	qt_touch.h \
 	qt_visibility.h \
-	rose_extensions.h \
-	rose_log_arrivaldetector.h \
-	rose_sinc_barrier.h \
-	rose_xomp.h \
 	spr_innards.h
 
 if COMPILE_EUREKAS

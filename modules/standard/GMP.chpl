@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -680,11 +680,11 @@ module GMP {
   extern proc mpz_cmp_d(const ref op1: mpz_t,
                         op2: c_double) : c_int;
 
-  extern chpl_mpz_cmp_si
+  extern "chpl_mpz_cmp_si"
          proc mpz_cmp_si(const ref op1: mpz_t,
                          op2: c_long) : c_int;
 
-  extern chpl_mpz_cmp_ui
+  extern "chpl_mpz_cmp_ui"
          proc mpz_cmp_ui(const ref op1: mpz_t,
                          op2: c_ulong) : c_int;
 
@@ -697,7 +697,7 @@ module GMP {
   extern proc mpz_cmpabs_ui(const ref op1: mpz_t,
                             op2: c_ulong) : c_int;
 
-  extern chpl_mpz_sgn
+  extern "chpl_mpz_sgn"
          proc mpz_sgn(const ref op: mpz_t) : c_int;
 
 
@@ -793,10 +793,10 @@ module GMP {
 
   extern proc mpz_fits_sshort_p(const ref op: mpz_t) : c_int;
 
-  extern chpl_mpz_odd_p
+  extern "chpl_mpz_odd_p"
          proc mpz_odd_p(const ref op: mpz_t) : c_int;
 
-  extern chpl_mpz_even_p
+  extern "chpl_mpz_even_p"
          proc mpz_even_p(const ref op: mpz_t) : c_int;
 
   extern proc mpz_sizeinbase(const ref op: mpz_t,
@@ -1223,6 +1223,7 @@ module GMP {
       gmp_randinit_lc_2exp_size(this.state, size.safeCast(c_ulong));
     }
 
+    pragma "no doc"
     proc deinit() {
       on this {
         gmp_randclear(this.state);

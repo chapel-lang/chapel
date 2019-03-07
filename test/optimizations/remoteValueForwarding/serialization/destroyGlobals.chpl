@@ -6,7 +6,7 @@ class Helper {
 }
 
 record Foo {
-  var h : Helper;
+  var h : unmanaged Helper;
   var serialized = false;
 
   proc chpl__serialize() {
@@ -15,7 +15,7 @@ record Foo {
 
   proc type chpl__deserialize(data) {
     var f : Foo;
-    f.h = new Helper(data);
+    f.h = new unmanaged Helper(data);
     f.serialized = true;
     return f;
   }
@@ -30,7 +30,7 @@ record Foo {
   }
 }
 
-const f = new Foo(new Helper((1,2,3)));
+const f = new Foo(new unmanaged Helper((1,2,3)));
 
 proc main() {
   on Locales.tail() {

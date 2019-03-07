@@ -2,7 +2,7 @@ use ExampleErrors;
 record Wrapper {
 
   var val: int;
-  var err: unmanaged Error = nil;
+  var err: owned Error = nil;
 
   proc action() throws {
     if err then throw err;
@@ -10,7 +10,7 @@ record Wrapper {
   }
 
   proc oops() {
-    err = new unmanaged StringError("called oops()");
+    err = new owned StringError("called oops()");
   }
 }
 

@@ -2,7 +2,7 @@
  * Copyright © 2009 CNRS
  * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
- * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
+ * Copyright © 2009-2018 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -1121,18 +1121,18 @@ hwloc_topology_diff_load_xml(hwloc_topology_t topology __hwloc_attribute_unused,
   struct hwloc__xml_import_state_s state;
   struct hwloc_xml_backend_data_s fakedata; /* only for storing global info during parsing */
   hwloc_localeswitch_declare;
-  const char *basename;
+  const char *local_basename;
   int force_nolibxml;
   int ret;
 
   state.global = &fakedata;
 
-  basename = strrchr(xmlpath, '/');
-  if (basename)
-    basename++;
+  local_basename = strrchr(xmlpath, '/');
+  if (local_basename)
+    local_basename++;
   else
-    basename = xmlpath;
-  fakedata.msgprefix = strdup(basename);
+    local_basename = xmlpath;
+  fakedata.msgprefix = strdup(local_basename);
 
   if (!hwloc_libxml_callbacks && !hwloc_nolibxml_callbacks) {
     free(fakedata.msgprefix);
@@ -1769,7 +1769,7 @@ hwloc_xml_component_instantiate(struct hwloc_disc_component *component,
   const char * xmlpath = (const char *) _data1;
   const char * xmlbuffer = (const char *) _data2;
   int xmlbuflen = (int)(uintptr_t) _data3;
-  const char *basename;
+  const char *local_basename;
   int err;
 
   if (!hwloc_libxml_callbacks && !hwloc_nolibxml_callbacks) {
@@ -1798,15 +1798,15 @@ hwloc_xml_component_instantiate(struct hwloc_disc_component *component,
   backend->is_thissystem = 0;
 
   if (xmlpath) {
-    basename = strrchr(xmlpath, '/');
-    if (basename)
-      basename++;
+    local_basename = strrchr(xmlpath, '/');
+    if (local_basename)
+      local_basename++;
     else
-      basename = xmlpath;
+      local_basename = xmlpath;
   } else {
-    basename = "xmlbuffer";
+    local_basename = "xmlbuffer";
   }
-  data->msgprefix = strdup(basename);
+  data->msgprefix = strdup(local_basename);
 
   force_nolibxml = hwloc_nolibxml_import();
 retry:

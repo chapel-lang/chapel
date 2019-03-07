@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -31,7 +31,8 @@ const char* astr(const char* s1,
                  const char* s5 = 0,
                  const char* s6 = 0,
                  const char* s7 = 0,
-                 const char* s8 = 0);
+                 const char* s8 = 0,
+                 const char* s9 = 0);
 
 const char* astr(const char* s1);
 const char* astr(const std::string& s);
@@ -42,18 +43,29 @@ const char* asubstr(const char* s, const char* e);
 
 void        deleteStrings();
 
-int8_t      str2int8(const char* str);
-int16_t     str2int16(const char* str);
-int32_t     str2int32(const char* str);
-int64_t     str2int64(const char* str);
-uint8_t     str2uint8(const char* str);
-uint16_t    str2uint16(const char* str);
-uint32_t    str2uint32(const char* str);
-uint64_t    str2uint64(const char* str);
+int8_t      str2int8(const char* str, bool userSupplied = false,
+                     const char* file = NULL, int line = -1);
+int16_t     str2int16(const char* str, bool userSupplied = false,
+                      const char* file = NULL, int line = -1);
+int32_t     str2int32(const char* str, bool userSupplied = false,
+                      const char* file = NULL, int line = -1);
+int64_t     str2int64(const char* str, bool userSupplied = false,
+                      const char* file = NULL, int line = -1);
+uint8_t     str2uint8(const char* str, bool userSupplied = false,
+                      const char* file = NULL, int line = -1);
+uint16_t    str2uint16(const char* str, bool userSupplied = false,
+                       const char* file = NULL, int line = -1);
+uint32_t    str2uint32(const char* str, bool userSupplied = false,
+                       const char* file = NULL, int line = -1);
+uint64_t    str2uint64(const char* str, bool userSupplied = false,
+                       const char* file = NULL, int line = -1);
 
-uint64_t    binStr2uint64(const char* str);
-uint64_t    octStr2uint64(const char* str);
-uint64_t    hexStr2uint64(const char* str);
+uint64_t    binStr2uint64(const char* str, bool userSupplied = false,
+                          const char* filename = NULL, int line = -1);
+uint64_t    octStr2uint64(const char* str, bool userSupplied = false,
+                          const char* filename = NULL, int line = -1);
+uint64_t    hexStr2uint64(const char* str, bool userSupplied = false,
+                          const char* filename = NULL, int line = -1);
 
 // std::string utilities
        std::string erasePrefix(std::string s, int count);
@@ -64,5 +76,7 @@ inline std::string ltrim(std::string s);
        int         minimumPrefix(std::string s);
 
 void readArgsFromString(std::string s, std::vector<std::string>& args);
+
+bool startsWith(const char* str, const char* prefix);
 
 #endif

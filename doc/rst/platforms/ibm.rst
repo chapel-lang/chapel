@@ -10,10 +10,6 @@ Using Chapel on IBM Systems
     you are interested in using Chapel on IBM Systems, please let us
     know.
 
-.. note::
-    If you are using Chapel on IBM's MareNostrum, you should refer to
-    :ref:`readme-marenostrum`.
-
 We only have limited experience using Chapel on IBM systems.  This
 file contains notes that reflect our experience, focusing first on
 PowerPC-based systems and then BG systems.  If you are not familiar
@@ -30,8 +26,7 @@ the following settings:
 #. Set ``CHPL_HOME`` and ``MANPATH`` as indicated in :ref:`readme-chplenv`.
 
 
-#. Set ``CHPL_HOST_PLATFORM`` to ``pwr5`` for a Power5 cluster or
-   ``pwr6`` for a Power6 cluster.  For example:
+#. Set ``CHPL_HOST_PLATFORM`` to ``pwr6`` for a Power6 cluster.  e.g.:
 
    .. code-block:: sh
 
@@ -103,16 +98,6 @@ the following settings:
    our experience, the details of required options for loadleveler
    scripts vary greatly from one site to another so check with your
    site's documentation for details.
-
-   There is a prototype loadleveler launcher, which can be utilized
-   by setting the ``CHPL_LAUNCHER`` environment variable to
-   ``loadleveler``. See :ref:`readme-launcher` for a general
-   description of the role of launchers in Chapel.  This launcher is
-   not sufficiently portable, robust, configurable, or interactive
-   to warrant being made the default for Power5 or Power6 machines.
-   If you are an IBM enthusiast who would like to work with us to
-   improve the utility of this launcher we would greatly appreciate
-   the help.
 
 
 Additional Notes for Power5 Clusters

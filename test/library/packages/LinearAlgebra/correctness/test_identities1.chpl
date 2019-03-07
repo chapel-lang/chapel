@@ -49,7 +49,7 @@ proc test_assoc(type t) {
   var B = Matrix(M, N, t);
   var C = Matrix(N, P, t);
 
-  var rng=new RandomStream(t, seed=seed);
+  var rng=new owned RandomStream(t, seed=seed);
   for ii in 0.. #nIters {
     rng.fillRandom(A);
     rng.fillRandom(B);
@@ -75,7 +75,7 @@ proc test_transpose_product(type t) {
   var A = Matrix(L, M, t);
   var B = Matrix(M, N, t);
 
-  var rng=new RandomStream(t, seed=seed);
+  var rng=new owned RandomStream(t, seed=seed);
   for ii in 0.. #nIters {
     rng.fillRandom(A);
     rng.fillRandom(B);
@@ -99,7 +99,7 @@ proc test_trace_rotate(type t) {
   var A = Matrix(M, N, t);
   var B = Matrix(N, M, t);
 
-  var rng=new RandomStream(t, seed=seed);
+  var rng=new owned RandomStream(t, seed=seed);
   for ii in 0.. #nIters {
     rng.fillRandom(A);
     rng.fillRandom(B);
@@ -123,7 +123,7 @@ proc test_trace_vector_rotate(type t) {
   var v = Vector(M, t);
   var w = Vector(M, t);
 
-  var rng=new RandomStream(t, seed=seed);
+  var rng=new owned RandomStream(t, seed=seed);
   for ii in 0.. #nIters {
     rng.fillRandom(A);
     rng.fillRandom(v);

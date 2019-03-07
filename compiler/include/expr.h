@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define _EXPR_H_
 
 #include "baseAST.h"
+#include "driver.h"
 
 #include "primitive.h"
 #include "symbol.h"
@@ -290,6 +291,7 @@ static inline bool isAlive(Symbol* symbol) {
 }
 
 static inline bool isAlive(Type* type) {
+  if (fMinimalModules && type == dtString) return false;
   return isAlive(type->symbol->defPoint);
 }
 
@@ -309,6 +311,10 @@ static inline bool isTaskFun(FnSymbol* fn) {
   return fn->hasFlag(FLAG_BEGIN) ||
          fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
          fn->hasFlag(FLAG_ON);
+}
+
+static inline bool isLoopExprFun(FnSymbol* fn) {
+  return 0 == strncmp(fn->name, astr_loopexpr_iter, strlen(astr_loopexpr_iter));
 }
 
 // Does this function require "capture for parallelism"?
@@ -332,6 +338,13 @@ static inline void verifyNotOnList(Expr* expr) {
     INT_FATAL(expr, "Expr is in a list incorrectly");
 }
 
+// Strip NamedExpr, if present.
+static inline Symbol* symbolForActual(Expr* actual) {
+  if (NamedExpr* ne = toNamedExpr(actual))
+    actual = ne->actual;
+  return toSymExpr(actual)->symbol();
+}
+
 
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure
@@ -352,6 +365,15 @@ Expr* getNextExpr(Expr* expr);
 
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);
+
+// This mechanism allows storing optimization/analysis results
+// in case they need to be used by later passes.
+// The optimization/analysis result is stored in a PRIM_OPTIMIZATION_INFO
+// expression after insertAfter, or added to one if it already exists.
+void addOptimizationFlag(Expr* insertAfter, Flag flag);
+// Returns true if a nearby PRIM_OPTIMIZATION_INFO includes this flag
+bool hasOptimizationFlag(Expr* anchor, Flag flag);
+
 
 #ifdef HAVE_LLVM
 llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);

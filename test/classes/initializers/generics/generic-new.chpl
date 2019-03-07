@@ -28,7 +28,7 @@ class MyBlock {
 
             param rank                = boundingBox.rank,
             type  idxType             = boundingBox.idxType,
-            type  sparseLayoutType    = DefaultDist) {
+            type  sparseLayoutType    = unmanaged DefaultDist) {
     this.rank             = rank;
     this.idxType          = idxType;
     this.sparseLayoutType = sparseLayoutType;

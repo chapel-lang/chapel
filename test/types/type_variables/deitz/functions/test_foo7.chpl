@@ -3,7 +3,7 @@ class C {
   var x : t;
 }
 
-proc foo(c : C(?u)) {
+proc foo(c : borrowed C(?u)) {
   var y : u;
   writeln("foo of ", c, " with y = ", y);
 }

@@ -1,16 +1,16 @@
-class MyClass { var x; }
+class MyClass { type T; var x : T; }
 
-var a = new unmanaged MyClass(1);
+var a = new unmanaged MyClass(int, 1);
 writeln(a);
 delete a;
  // OK
 
 
-var b = new _owned(new MyClass(1));
+var b = new _owned(new MyClass(int, 1));
 writeln(b);
  // OK
 
-var c = new owned MyClass(1);
+var c = new owned MyClass(int, 1);
 writeln(c);
  // OK
 

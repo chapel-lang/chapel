@@ -338,7 +338,7 @@ writeln(rangeCountBy);
 // In this example, printing the first index, last index, number of indices,
 // stride, and if 2 is include in the range.
 writeln((rangeCountBy.first, rangeCountBy.last, rangeCountBy.length,
-           rangeCountBy.stride, rangeCountBy.member(2)));
+           rangeCountBy.stride, rangeCountBy.contains(2)));
 
 for i in rangeCountBy {
   write(i, if i == rangeCountBy.last then "\n" else ", ");
@@ -767,7 +767,6 @@ writeln(toThisArray);
 Classes
 -------
 */
-use OwnedObject;
 // Classes are similar to those in C++ and Java, allocated on the heap.
 class MyClass {
 
@@ -815,18 +814,18 @@ class MyClass {
 
 // Call compiler-generated initializer, using default value for memberBool.
 {
-  var myObject = new Owned(new MyClass(10));
-      myObject = new Owned(new MyClass(memberInt = 10)); // Equivalent
+  var myObject = new owned MyClass(10);
+      myObject = new owned MyClass(memberInt = 10); // Equivalent
   writeln(myObject.getMemberInt());
 
   // Same, but provide a memberBool value explicitly.
-  var myDiffObject = new Owned(new MyClass(-1, true));
-      myDiffObject = new Owned(new MyClass(memberInt = -1,
-                                  memberBool = true)); // Equivalent
+  var myDiffObject = new owned MyClass(-1, true);
+      myDiffObject = new owned MyClass(memberInt = -1,
+                                       memberBool = true); // Equivalent
   writeln(myDiffObject);
 
   // Similar, but rely on the default value of memberInt, passing in memberBool.
-  var myThirdObject = new Owned(new MyClass(memberBool = true));
+  var myThirdObject = new owned MyClass(memberBool = true);
   writeln(myThirdObject);
 
   // If the user-defined initializer above had been uncommented, we could
@@ -841,19 +840,18 @@ class MyClass {
 
   // We can define an operator on our class as well, but
   // the definition has to be outside the class definition.
-  proc +(A : MyClass, B : MyClass) : Owned(MyClass) {
+  proc +(A : MyClass, B : MyClass) : owned MyClass {
     return
-      new Owned(
-        new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
-                    memberBool = A.getMemberBool() || B.getMemberBool()));
+      new owned MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
+                        memberBool = A.getMemberBool() || B.getMemberBool());
   }
 
   var plusObject = myObject + myDiffObject;
   writeln(plusObject);
 
-  // Destruction of an object: calls the deinit() routine and frees its memory
-  // would use 'delete' but it happens automatically for Owned variables
-  // when they go out of scope.
+  // Destruction of an object: calls the deinit() routine and frees its memory.
+  // ``unmanaged`` variables should have ``delete`` called on them.
+  // ``owned`` variables are destroyed when they go out of scope.
 }
 
 // Classes can inherit from one or more parent classes
@@ -902,9 +900,11 @@ class GenericClass {
   }
 } // end GenericClass
 
+// Allocate an owned instance of our class
+var realList = new owned GenericClass(real, 10);
+
 // We can assign to the member array of the object using the bracket
 // notation that we defined.
-var realList = new borrowed GenericClass(real, 10);
 for i in realList.classDomain do realList[i] = i + 1.0;
 
 // We can iterate over the values in our list with the iterator
@@ -913,12 +913,12 @@ for value in realList do write(value, ", ");
 writeln();
 
 // Make a copy of realList using the copy initializer.
-var copyList = new borrowed GenericClass(realList);
+var copyList = new owned GenericClass(realList);
 for value in copyList do write(value, ", ");
 writeln();
 
 // Make a copy of realList and change the type, also using the copy initializer.
-var copyNewTypeList = new borrowed GenericClass(realList, int);
+var copyNewTypeList = new owned GenericClass(realList, int);
 for value in copyNewTypeList do write(value, ", ");
 writeln();
 

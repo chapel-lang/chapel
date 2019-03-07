@@ -83,7 +83,7 @@ class LocTree {
      */
     proc this(node: Node) ref {
         oneAtATime$;
-        if !nodes.member(node) {
+        if !nodes.contains(node) {
             nodes += node;
         }
        
@@ -93,7 +93,7 @@ class LocTree {
     }
     proc this(node: Node) const ref {
         oneAtATime$;
-        if !nodes.member(node) {
+        if !nodes.contains(node) {
           // This is a getter so it shouldn't be modifying what
           // we return, should be safe to return the zero vector.
           // FIXME: Zeroes should really be a const, but can't
@@ -141,7 +141,7 @@ class LocTree {
      */
     proc has_coeffs(node: Node) {
         oneAtATime$;
-        const b = nodes.member(node);
+        const b = nodes.contains(node);
         oneAtATime$ = true;
         return b;
     }
@@ -151,7 +151,7 @@ class LocTree {
      */
     proc remove(node: Node) {
         oneAtATime$;
-        if nodes.member(node) then nodes.remove(node);
+        if nodes.contains(node) then nodes.remove(node);
         oneAtATime$ = true;
     }
 

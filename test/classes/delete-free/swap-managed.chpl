@@ -1,5 +1,3 @@
-use OwnedObject;
-
 class Foo {
   var x: int;
 
@@ -8,25 +6,25 @@ class Foo {
   }
 }
 
-var a = new Owned(new Foo(1));
-var b = new Owned(new Foo(2));
+var a = new owned Foo(1);
+var b = new owned Foo(2);
 
 a <=> b;
 
 writeln(a);
 writeln(b);
 
-var c = new Shared(new Foo(3));
-var d = new Shared(new Foo(4));
+var c = new shared Foo(3);
+var d = new shared Foo(4);
 var copyOfD = d;
 var anotherCopOfD = d;
 
-writeln(c.pn);
-writeln(d.pn);
+writeln(c.chpl_pn);
+writeln(d.chpl_pn);
 
 c <=> d;
 
 writeln(c);
 writeln(d);
-writeln(c.pn);
-writeln(d.pn);
+writeln(c.chpl_pn);
+writeln(d.chpl_pn);

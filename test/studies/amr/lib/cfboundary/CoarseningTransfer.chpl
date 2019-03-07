@@ -126,7 +126,7 @@ class LevelInvalidRegion {
   // grid_invalid_regions is typed by the input 'level'.
   //----------------------------------------------------------------------
 
-  proc initialize ()
+  proc postinit ()
   {
     for grid in level.grids do
       grid_invalid_regions(grid) = new unmanaged GridInvalidRegion(grid, level, fine_level);

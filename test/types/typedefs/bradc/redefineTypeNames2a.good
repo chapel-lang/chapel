@@ -1,5 +1,2 @@
-redefineTypeNames2a.chpl:1: In function 'main':
-redefineTypeNames2a.chpl:3: error: 'int' used before defined
-redefineTypeNames2a.chpl:4: note: defined here
-redefineTypeNames2a.chpl:4: error: 'real' used before defined
-redefineTypeNames2a.chpl:5: note: defined here
+redefineTypeNames2a.chpl:4: error: attempt to redefine reserved type 'int'
+redefineTypeNames2a.chpl:5: error: attempt to redefine reserved type 'real'

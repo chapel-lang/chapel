@@ -7,7 +7,7 @@ class A {
 }
 
 class B {
-  type t = A;
+  type t = unmanaged A;
   var x : t;
   proc init() {
     x = new t(2);
@@ -19,3 +19,5 @@ var b = new owned B();
 
 writeln("a = ", a);
 writeln("b = ", b);
+
+delete b.x; 

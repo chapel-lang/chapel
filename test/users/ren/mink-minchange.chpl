@@ -1,11 +1,17 @@
-pragma "use default init"
 class mink : ReduceScanOp {
 
   type eltType;
   const k : int = 10;
   var v: [1..k] eltType = max(eltType);
   
+  proc identity return [1..k] max(eltType);
+  
   proc accumulate(x: eltType)
+  {
+    accumulateOntoState(v, x);
+  }
+  
+  proc accumulateOntoState(state, x: eltType)
   {
     if (x < v[1])
       {
@@ -22,18 +28,24 @@ class mink : ReduceScanOp {
       }
   }
   
-  proc combine(s: mink(eltType))
+  proc accumulate(state: [])
   {
     for i in 1..k
       {
-        accumulate(s.v[i]);
+        accumulate(state[i]);
       }
   }
   
+  proc combine(s: borrowed mink(eltType)) {
+    accumulate(s.v);
+  }
+
   proc generate()
   {
     return v;
   }
+  
+  proc clone() return new unmanaged mink(eltType=eltType);
 }
    
 var A: [1..10] int;

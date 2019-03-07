@@ -199,8 +199,11 @@ def data_to_csv(data, csvFile):
 def sort_csv(csvFile):
     data = parse_csv(csvFile)
 
+    if len(data) == 1:
+        return
+
     # transpose the data so that we can sort by row
-    data = zip(*data)
+    data = list(zip(*data))
     # remove the Date perfkey and the actual dates as they screw up sorting
     dates = data.pop(0)
 
@@ -221,7 +224,7 @@ def sort_csv(csvFile):
     # add the dates back in
     data.insert(0, dates)
     # untranspose the data
-    data = zip(*data)
+    data = list(zip(*data))
 
     data_to_csv(data, csvFile)
 
@@ -242,7 +245,7 @@ def fill_sparse_csv(csvFile):
     data = parse_csv(csvFile)
     keys = data.pop(0)
     if len(data) > 1:
-        dates = zip(*data).pop(0)
+        dates = list(zip(*data)).pop(0)
         dates = [date[0] for date in dates]
         if len(dates) > 1:
             start_date = dates[0]
@@ -273,7 +276,7 @@ def strip_series(csvFile, numseries):
     data = parse_csv(csvFile)
     labels = [a[0] for a in data[0]]
     newData = []
-    data = zip(*data)
+    data = list(zip(*data))
     numFound = 0
     newData.append(data[0])
     if multiConf:
@@ -290,7 +293,7 @@ def strip_series(csvFile, numseries):
             newData.append(data[i])
 
     # untranspose the data
-    data = zip(*newData)
+    data = list(zip(*newData))
 
     data_to_csv(data, csvFile)
 
@@ -496,9 +499,9 @@ class GraphStuff:
                 if len(graphs[currgraph].perfkeys) % len(dFiles) != 0:
                     sys.stdout.write('[Warning: num .dat files did not evenly divide into num perfkeys for %s. Ignoring.]\n'%(fullFname))
                     return
-                keysRange = range(0, (len(graphs[currgraph].perfkeys) / len(dFiles)))
+                keysRange = range(0, (len(graphs[currgraph].perfkeys) // len(dFiles)))
                 for dFile in dFiles:
-		    graphs[currgraph].datfilenames += [ dFile for i in keysRange ]
+                    graphs[currgraph].datfilenames += [ dFile for i in keysRange ]
             elif key == 'graphtitle':
                 graphs[currgraph].title = rest.strip()
             elif key == 'graphname':
@@ -648,7 +651,7 @@ class GraphClass:
 
         first = True
         done = False
-        for i in xrange(numKeys):
+        for i in range(numKeys):
             # The file may be missing (in the case where only a subdirectory
             # has been tested for performance).  If so, we don't want to
             # try to access a non-existent datfile
@@ -673,7 +676,7 @@ class GraphClass:
         found_data = False
         while not done:
             done = True
-            for i in xrange(numKeys):
+            for i in range(numKeys):
                 # The file may be missing (in the case where only a subdirectory
                 # has been tested for performance).  If so, we don't want to
                 # try to access a non-existent datfile
@@ -710,7 +713,7 @@ class GraphClass:
                 try:
                     df = datfiles[self.datfilenames[i]]
                     if currLines[i] < len(df.lines):
-                        fields = zip(*df.lines[currLines[i]])
+                        fields = list(zip(*df.lines[currLines[i]]))
                         myDate = fields[0][0]
                         if myDate == minDate:
                             # consume this line
@@ -799,8 +802,8 @@ class GraphClass:
 
     def generateGraphData(self, graphInfo, gnum):
         if debug:
-            print '==='
-            print self
+            print('===')
+            print(self)
 
         if verbose:
             sys.stdout.write('Generating graph data for %s (graph #%d)\n'%(self.name, gnum))
@@ -908,7 +911,7 @@ class GraphClass:
         datfiles = {}
         for i in range(nperfkeys):
             d = self.datfilenames[i]
-            if not datfiles.has_key(d):
+            if d not in datfiles:
                 datfiles[d] = self.DatFileClass(d)
             try:
                 if hasattr(datfiles[d], 'dfile'):
@@ -929,7 +932,7 @@ class GraphClass:
         self.generateData(graphInfo, datfiles)
         graphInfo.genGraphInfo(self)
 
-        for n, d in datfiles.iteritems():
+        for n, d in datfiles.items():
             del d
 
 

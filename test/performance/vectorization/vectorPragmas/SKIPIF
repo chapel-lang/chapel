@@ -1,6 +1,3 @@
 # These tests require that the --inline-iterators, --inline, --vectorize, and
 # --optimize-loop-iterators flags are thrown. (Might require a few other too.)
 COMPOPTS <= --baseline
-
-# The current reporting mechanism reports what we emit to the C backend only
-COMPOPTS <= --llvm

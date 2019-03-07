@@ -1,0 +1,12 @@
+#! /usr/bin/env bash
+
+#
+# mv/cp executables and shell script wrappers so that our launcher
+# wrapper runs the emitted Chapel launcher, which runs the emitted
+# Chapel _real.
+#
+if [[ ! -a ${1}-2 ]] ; then
+  mv ${1} ${1}-2                    # emitted launcher
+  mv ${1}_real ${1}-2_real          # emitted _real
+  cp -p ${1}.wrap ${1}              # launcher wrapper
+fi

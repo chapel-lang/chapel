@@ -6,7 +6,7 @@ class C {
 var c1 = new borrowed C(int);
 var c2 = new borrowed C(real);
 
-proc foo(c: C(?)) {
+proc foo(c: borrowed C(?)) {
   writeln(c);
 }
 

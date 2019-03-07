@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,7 +51,7 @@ Compiler wrappers
 Using MPI requires pointing the compiler to the location of the
 MPI headers, and including the appropriate MPI libraries. This is
 often done by using compiler wrappers like "mpicc". Setting
-``CHPL_TARGET_COMPILER=mpi-gnu`` and ``CHPL_TARGET_ARCH=none`` will
+``CHPL_TARGET_COMPILER=mpi-gnu`` and ``CHPL_TARGET_CPU=none`` will
 get Chapel to use mpicc and assume that it works like gcc does.
 
 Note that on Cray systems, this is not necessary, since the default
@@ -285,11 +285,16 @@ module MPI {
       coforall loc in Locales do on loc {
           // This must be done on all locales!
           var pmiGniCookie = C_Env.getenv("PMI_GNI_COOKIE") : string;
-          if !pmiGniCookie.isEmptyString() {
+          if !pmiGniCookie.isEmpty() {
             // This may be a colon separated string.
             var cookieJar = pmiGniCookie.split(":");
             const lastcookie = cookieJar.domain.last;
-            cookieJar[lastcookie] = ((cookieJar[lastcookie]):int + 1):string;
+            try {
+              cookieJar[lastcookie] = ((cookieJar[lastcookie]):int + 1):string;
+            } catch e {
+              writeln("Unable to parse PMI_GNI_COOKIE");
+              C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
+            }
             const newVal = ":".join(cookieJar);
             C_Env.setenv("PMI_GNI_COOKIE",newVal.c_str(),1);
           }
@@ -602,7 +607,7 @@ module MPI {
   extern proc MPI_Get_processor_name (ref name: c_char, ref resultlen: c_int): c_int;
   extern proc MPI_Errhandler_set (comm: MPI_Comm, errhandler: MPI_Errhandler): c_int;
   extern proc MPI_Errhandler_get (comm: MPI_Comm, ref errhandler: MPI_Errhandler): c_int;
-  extern proc MPI_Error_string (errorcode: c_int, ref string: c_char, ref resultlen: c_int): c_int;
+  extern proc MPI_Error_string (errorcode: c_int, ref str: c_char, ref resultlen: c_int): c_int;
   extern proc MPI_Error_class (errorcode: c_int, ref errorclass: c_int): c_int;
   extern proc MPI_Wtime (): c_double;
   extern proc MPI_Wtick (): c_double;

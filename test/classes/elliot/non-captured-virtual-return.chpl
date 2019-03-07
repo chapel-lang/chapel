@@ -3,7 +3,7 @@ class Parent {
 }
 
 class Child: Parent {
-  proc foo() { return (1,1); }
+  override proc foo() { return (1,1); }
 }
 
 var child: borrowed Parent = new borrowed Child();

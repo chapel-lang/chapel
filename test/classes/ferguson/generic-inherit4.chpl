@@ -13,7 +13,7 @@ class Parent {
 class Child : Parent {
   type u;
   var y:u;
-  proc overridden_method() {
+  override proc overridden_method() {
     writeln(x,y);
   }
   proc child_method() {
@@ -37,4 +37,6 @@ writeln("Dynamic Child(int,real)");
 var pc:borrowed Parent(int) = c;
 pc.parent_method();
 pc.overridden_method();
-delete pc;
+
+var upc:unmanaged Parent(int) = c;
+delete upc;

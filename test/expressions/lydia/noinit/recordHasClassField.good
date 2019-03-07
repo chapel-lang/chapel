@@ -1,1 +1,2 @@
+recordHasClassField.chpl:9: warning: noinit is currently ignored
 (t = {namingIsHard = false})

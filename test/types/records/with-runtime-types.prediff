@@ -1,0 +1,13 @@
+#!/bin/bash
+
+outfile=$2
+temp=$outfile.tmp
+
+# Process the output only if valgrind saw an issue.
+if grep -q '^==[0-9]*== ' $outfile; then
+
+  # Preserve the original output.
+  mv $outfile $temp
+  grep 'Conditional jump or move' $temp | sed 's@^=[^ ]*= @@' | head -1 > $outfile
+
+fi

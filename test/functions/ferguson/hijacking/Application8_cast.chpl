@@ -15,7 +15,7 @@
     }
 
     proc main() {
-      var instance:Base = new Widget();
+      var instance:unmanaged Base = new unmanaged Widget();
       var x = 1;
       instance.run(x);
       delete instance;

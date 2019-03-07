@@ -1,4 +1,4 @@
-infinite-recursion-arg.chpl:1: internal error: RES0120 chpl version 1.17.0 pre-release (06f19a352b)
+infinite-recursion-arg.chpl:1: internal error: PAS-RES-NTS-0127 chpl version 1.19.0 pre-release (cfeb6592b3)
 Note: This source location is a guess.
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),

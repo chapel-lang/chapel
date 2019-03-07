@@ -1,0 +1,7 @@
+reserved-sync.chpl:1: error: attempt to redefine reserved type 'sync'
+reserved-sync.chpl:3: error: attempt to redefine reserved type 'sync'
+reserved-sync.chpl:6: error: attempt to redefine reserved type 'sync'
+reserved-sync.chpl:7: error: attempt to redefine reserved type 'sync'
+reserved-sync.chpl:10: error: attempt to redefine reserved type 'sync'
+reserved-sync.chpl:12: error: attempt to redefine reserved type 'sync'
+reserved-sync.chpl:17: error: attempt to redefine reserved type 'sync'

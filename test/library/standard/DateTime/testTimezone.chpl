@@ -1,4 +1,4 @@
-use DateTime, SharedObject;
+use DateTime;
 
 class FixedOffset: TZInfo {
   var offset: timedelta;
@@ -17,13 +17,13 @@ class FixedOffset: TZInfo {
     this.dstoffset = new timedelta(minutes=dstoffset);
   }
 
-  proc utcoffset(dt) {
+  override proc utcoffset(dt) {
     return offset;
   }
-  proc tzname(dt) {
+  override proc tzname(dt) {
     return name;
   }
-  proc dst(dt) {
+  override proc dst(dt) {
     return dstoffset;
   }
 }
@@ -132,7 +132,7 @@ proc test_replace() {
 
   // Ensure we can get rid of a tzinfo.
   assert(base.tzname() == "+100");
-  var base2 = base.replace(tzinfo=new Shared(TZInfo));
+  var base2 = base.replace(tzinfo=new shared(TZInfo));
   assert(base2.tzinfo.borrow() == nil);
   assert(base2.tzname() == "");
 
@@ -146,7 +146,7 @@ proc test_mixed_compare() {
   var t1 = new time(1, 2, 3);
   var t2 = new time(1, 2, 3);
   assert(t1 == t2);
-  t2 = t2.replace(tzinfo=new Shared(TZInfo));
+  t2 = t2.replace(tzinfo=new shared(TZInfo));
   assert(t1 == t2);
   t2 = t2.replace(tzinfo=new shared FixedOffset(0, ""));
 
@@ -157,14 +157,14 @@ proc test_mixed_compare() {
     proc init() {
       offset = new timedelta(minutes=22);
     }
-    proc utcoffset(dt: datetime) {
+    override proc utcoffset(dt: datetime) {
       offset += new timedelta(minutes=1);
       return offset;
     }
-    proc dst(dt: datetime) {
+    override proc dst(dt: datetime) {
       return new timedelta(0);
     }
-    proc tzname(dt: datetime) {
+    override proc tzname(dt: datetime) {
       return name;
     }
   }

@@ -7,10 +7,10 @@ class Inner {
 }
 
 class C {
-  forwarding var i = new Inner(2, true);
+  forwarding var i = new unmanaged Inner(2, true);
 }
 
-var c = new C();
+var c = new unmanaged C();
 writeln(c.x);
 delete c.i;
 delete c;

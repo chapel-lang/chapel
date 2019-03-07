@@ -201,88 +201,44 @@ writeln();
 
 
 //
-// Next, let's create a simple distributed data structure using the
-// principles above.  In particular, we'll create a linked list that
-// spans the locales with a list node per locale.
+// Reasoning about the locality of classes is complicated somewhat by
+// the fact that class variables have two components: (1) the object
+// that contains the class fields and (2) the variable storing a
+// reference to the object (where such variables may be 'nil' when
+// they don't refer to an object).  Classes are generally considered
+// to be stored on the locale where the object is stored rather than
+// the one where the reference is stored, and to that end, applying
+// `.locale` to a class variable will typically reflect the object's
+// location.  However, when the class variable is `nil`, it will
+// evaluate to the locale where the reference is stored.
+//
+// Let's explore this idea by creating a class instance and
+// querying its locality.
 //
 
-//
-// First, we'll define a standard ``Node`` class for linked lists.  Note
-// that even though the ``next`` fields will span locales, they don't need
-// to be declared specially in any way, again thanks to the [P]GAS
-// nature of the language.
-//
-class Node {
-  var data: real;
-  var next: unmanaged Node;
+class Data {
+  var x:int;
 }
 
+var myData: unmanaged Data; // myData is a class pointer stored on locale 0 whose default value is `nil`
 
-//
-// Next, we'll iterate through the locales, allocating a node on each.
-// It's worth reviewing that a class variable (like the ``next`` field
-// above) is just a reference in Chapel and the object it points to
-// is a separate thing allocated by a call to ``new``.  So in general,
-// the reference and object can live on different locales (as they
-// will in our example).
-//
-// So, in the following loop, ``current`` will always point at the last
-// node we created, while our on-clause will move the task ahead to
-// the next locale.  That way, our execution of ``new`` will create
-// the new object on that "next" locale.
-//
-var head    = new unmanaged Node(0);
-
-var current = head;
-
-for i in 1..numLocales-1 do
-  on Locales[i] {
-    current.next = new unmanaged Node(i);
-    current      = current.next;
-  }
-
-//
-// Let's loop over the linked list and output each node and the locale on
-// which it exists using ``.locale.id`` to determine the locale.  This
-// computation takes place entirely on locale 0 and accesses remote
-// memory as necessary.
-//
-current = head;
-
-while current {
-  writeln("node with data = ", current.data, " on locale ", current.locale.id);
-  current = current.next;
+on Locales[1 % numLocales] {
+  writeln("at start of 'on', myData is on locale ", myData.locale.id);
+  myData = new unmanaged Data(1);
+  // now myData points to something on Locales[1]
+  writeln("at end of 'on', myData is on locale ", myData.locale.id);
 }
+writeln("after 'on', myData is on locale ", myData.locale.id);
 
-writeln();
-
-//
-// Alternatively, we could use a data-driven execution to walk the
-// linked list.  Note that on-clauses, when applied to class
-// variables, resolve to the locale of the object, not the reference.
-//
-current = head;
-
-while current {
-  on current {
-    writeln("node with data = ", current.data, " on locale ", here.id);
-    current = current.next;
-  }
+on myData {
+  writeln("Using 'on myData', I'm now executing on locale ", here.id);
 }
 
 //
-// We can now deallocate our objects to ensure no memory leaks.
+// We can now deallocate myData to ensure no memory leaks.
 //
 
-current = head;
-
-while current {
-  on current {
-    var ptr = current;
-    current = current.next;
-    delete ptr;
-  }
-}
+delete myData;
 
 //
 // For more information about locales, refer to the Locales chapter of

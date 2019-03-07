@@ -1,0 +1,13 @@
+RRR.init 1
+CCC.init 1
+RRR.init 2
+CCC.init 2
+RRR.init 3
+CCC.init 3
+(xxx = 1, cls = {yyy = 1}) (xxx = 2, cls = {yyy = 2}) (xxx = 3, cls = {yyy = 3})
+CCC.deinit 1
+RRR.deinit 1
+CCC.deinit 2
+RRR.deinit 2
+CCC.deinit 3
+RRR.deinit 3

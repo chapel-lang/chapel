@@ -1,15 +1,9 @@
-// Modified from
-// test/classes/constructors/assign-param-segfault.chpl
-
 enum Foo { Foo0, Foo1, Foo2, Foo3 };
 enum Baz { Baz0, Baz1, Baz2, Baz3 };
 class Bar {
   param foo: Foo;
   var baz: Baz;
   proc init (param foo: Foo = Foo.Foo0) {
-    //
-    // This isn't legal, but shouldn't cause a segfault either
-    //
     this.foo = foo;
     select foo {
       when Foo.Foo0 do this.baz = Baz.Baz0;
@@ -20,6 +14,6 @@ class Bar {
       }
   }
 }
-var bar = new Bar(Foo.Foo1);
+var bar = new unmanaged Bar(Foo.Foo1);
 writeln(bar);
 delete bar;

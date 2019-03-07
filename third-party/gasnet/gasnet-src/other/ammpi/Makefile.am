@@ -16,32 +16,27 @@ else
   BUILDCONFIG_DEFINES = -DAMMPI_NDEBUG=1
 endif
 
-if USE_STRICT_PROTOTYPES
-  strict_proto_flags = -DGASNET_USE_STRICT_PROTOTYPES
-else
-  strict_proto_flags = 
-endif
-
 CC = @MPI_CC@
-CFLAGS = @MPI_CFLAGS@ $(MANUAL_MPICFLAGS) $(apputils_flags) $(strict_proto_flags)
+CFLAGS =  @DEVWARN_MPI_CFLAGS@ @MPI_CFLAGS@ $(MANUAL_MPICFLAGS) $(apputils_flags)
 LDFLAGS = @LDFLAGS@ $(MANUAL_LDFLAGS)
 
 PERL = @PERL@
 
 platform_defines = @GASNET_EXTRA_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMMPI_DISABLE_AMTAGS $(MANUAL_DEFINES)
 
-platform_libraries = @LIBS@ @MPI_LIBS@
+platform_libraries = -L$(top_builddir) -lgasnet_tools-seq @LIBS@ @MPI_LIBS@
 
 VPATH = $(srcdir)
-testdir = $(srcdir)/../amxtests
+amxdir = $(srcdir)/../amx
 altincdir = $(srcdir)/..
-INCLUDES = -I$(srcdir) -I. -I$(altincdir) $(platform_defines)
+gasnet_tools = -I$(srcdir)/../.. -I../.. -DHAVE_GASNET_TOOLS
+INCLUDES = -I$(srcdir) -I. -I$(amxdir) -I$(altincdir) $(platform_defines) $(gasnet_tools)
 compile = $(CC) $(CFLAGS) $(INCLUDES)
 link = $(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) 
 linkend = $(platform_libraries) $(MANUAL_LIBS)
 
 if USE_AMMPI
-BUILT_SOURCES = ammpi_portable_platform.h
+BUILT_SOURCES = amx_portable_platform.h
 
 lib_LIBRARIES = libammpi.a
 endif
@@ -57,10 +52,10 @@ libammpi_a_SOURCES = \
     ammpi_reqrep.c   \
     ammpi_spmd.c     
 
-ammpi_portable_platform.h: $(altincdir)/gasnet_portable_platform.h
+amx_portable_platform.h: $(altincdir)/gasnet_portable_platform.h
 	cp -f $< $@
 
-libammpi_a_DEPENDENCIES = $(libammpi_a_SOURCES:%.c=%.o)  
+libammpi_a_DEPENDENCIES = $(libammpi_a_SOURCES:%.c=%.o)
 
 $(libammpi_a_DEPENDENCIES): $(allheaders)
 
@@ -85,11 +80,11 @@ testprograms =    		\
 
 tests: apputils.o $(testprograms)
 
-test%.o : $(testdir)/test%.c $(testdir)/*.h $(allheaders)
-	$(compile) -DAMMPI -I$(testdir) -c $< -o $@
+test%.o : $(amxdir)/test%.c $(amxdir)/*.h $(allheaders)
+	$(compile) -DAMMPI -I$(amxdir) -c $< -o $@
 
-apputils.o : $(testdir)/apputils.c $(testdir)/apputils.h $(allheaders)
-	$(compile) -DAMMPI -I$(testdir) -c $(testdir)/apputils.c -o apputils.o
+apputils.o : $(amxdir)/apputils.c $(amxdir)/apputils.h $(allheaders)
+	$(compile) -DAMMPI -I$(amxdir) -c $(amxdir)/apputils.c -o apputils.o
 
 test%: test%.o apputils.o libammpi.a 
 	$(link) -o $@ $< apputils.o -L. -lammpi $(linkend)
@@ -100,8 +95,11 @@ tests-clean:
 AMMPI_RUNCMD='@MPIRUN_CMD@'
 include Makefile.tests
 
-%.o: %.c ammpi.h ammpi_spmd.h ammpi_internal.h
+%.o: %.c ammpi.h ammpi_spmd.h ammpi_internal.h $(top_builddir)/libgasnet_tools-seq.a
 	$(compile) -DAMMPI -o $@ -c $<
+
+$(top_builddir)/libgasnet_tools-seq.a: force
+	@cd $(top_builddir) && $(MAKE) libgasnet_tools-seq.a
 
 if USE_AMMPI
 if GNU_NM
@@ -115,6 +113,7 @@ check-exports: libammpi.a
             @NM@ --defined-only $$lib |                                             \
 	    @PERL@ -pe 's/ \.refptr\.//' |                                          \
             grep -v -e ' [\._]*ammpi_' -e ' [\._]*AMMPI_' -e ' [\._]*AM_'           \
+	            -e ' [\._]*amx_' -e ' [\._]*AMX_'                               \
                     -e ' [\._]*gasnett_' -e ' [\._]*gasneti_'                       \
                     -e ' [\._][\._]*debug_' -e 'get_pc_thunk'                       \
                     -e __FUNCTION__ -e __PRETTY_FUNCTION__ -e debug_info_seg |      \

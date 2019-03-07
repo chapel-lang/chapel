@@ -7,7 +7,7 @@ module iters {
     }
   }
 
-  // zipered loop in standalone with yield should get vector pragma
+  // zippered loop in standalone with yield should get vector pragma
   // Note: requires that each iter in the zippered iter gets inlined
   iter myiter(nn: int, nt: int, param tag: iterKind) where tag == iterKind.standalone {
     coforall i in 0..#nt {
@@ -23,7 +23,7 @@ module iters {
     }
   }
 
-  // zipered loop in standalone with yield should get vector pragma
+  // zippered loop in standalone with yield should get vector pragma
   // Note: requires that each iter in the zippered iter gets inlined
   iter myiter(nn:int, nt: int, followThis, param tag: iterKind) where tag == iterKind.follower {
     for (i, j) in zip(followThis, followThis) {

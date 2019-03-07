@@ -1,1 +1,0 @@
-old-ctor-generic.chpl:6: error: constructor for class 'R' requires a generic argument called 'x'

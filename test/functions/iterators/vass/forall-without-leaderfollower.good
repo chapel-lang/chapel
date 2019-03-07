@@ -1,1 +1,4 @@
-forall-without-leaderfollower.chpl:6: error: cannot iterate over values of type TEST
+5
+6
+7
+done

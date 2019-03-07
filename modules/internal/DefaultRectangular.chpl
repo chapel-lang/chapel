@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,8 @@ module DefaultRectangular {
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
   use DSIUtil, ChapelArray;
+  use ExternalArray, ISO_Fortran_binding;
+
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;
   config param debugDataPar = false;
@@ -36,11 +38,51 @@ module DefaultRectangular {
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
+  config param usePollyArrayIndex = false;
 
-  pragma "use default init"
+  enum ArrayStorageOrder { RMO, CMO }
+  config param defaultStorageOrder = ArrayStorageOrder.RMO;
+  // would like to move this into DefaultRectangularArr and
+  // DefaultRectangularDom so each instance can choose individually
+  param storageOrder = defaultStorageOrder;
+
+  // A function which help to compute the final index
+  // to be used for DefaultRectangularArr access. This function
+  // helps Polly to effectively communicate the array dimension
+  // sizes and the index subscripts to Polly.
+  pragma "lineno ok"
+  pragma "llvm readnone"
+  proc polly_array_index(arguments:int ...):int {
+    param rank = (arguments.size - 1) / 2;
+    param blkStart = 2;
+    param blkEnd = 2 + rank - 1;
+    param indStart = blkEnd + 1;
+    param indEnd = indStart + rank - 1;
+    var offset = arguments(1);
+    var blk:rank*int;
+    var ind:rank*int;
+
+    blk(rank) = 1;
+    for param i in 1..(rank-1) by -1 do
+      blk(i) = blk(i+1) * arguments(blkStart+i);
+
+    for param j in 1..rank {
+      ind(j) = arguments(indStart+j-1);
+    }
+
+    var ret:int = offset;
+    for param i in 1..rank {
+      ret += ind(i) * blk(i);
+    }
+
+    return ret;
+  }
+
   class DefaultDist: BaseDist {
-    override proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
-      const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable, _to_unmanaged(this));
+    override proc dsiNewRectangularDom(param rank: int, type idxType,
+                                       param stridable: bool, inds) {
+      const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable,
+                                                      _to_unmanaged(this));
       dom.dsiSetIndices(inds);
       return dom;
     }
@@ -69,6 +111,8 @@ module DefaultRectangular {
     override proc dsiTrackDomains()    return false;
 
     proc singleton() param return true;
+
+    proc dsiIsLayout() param return true;
   }
 
   //
@@ -78,7 +122,6 @@ module DefaultRectangular {
   pragma "locale private"
   var defaultDist = new dmap(new unmanaged DefaultDist());
 
-  pragma "unsafe"
   proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
       // FIXME benharsh: Here's what we want to do:
@@ -99,6 +142,7 @@ module DefaultRectangular {
     proc linksDistribution() param return false;
     override proc dsiLinksDistribution()     return false;
 
+    proc type isDefaultRectangular() param return true;
     proc isDefaultRectangular() param return true;
 
     proc init(param rank, type idxType, param stridable, dist) {
@@ -129,7 +173,7 @@ module DefaultRectangular {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    iter these_help(param d: int) {
+    iter these_help(param d: int) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == rank {
         for i in ranges(d) do
           yield i;
@@ -143,8 +187,25 @@ module DefaultRectangular {
             yield (i, (...j));
       }
     }
+/*
+    iter these_help(param d: int) where storageOrder == ArrayStorageOrder.CMO {
+      param rd = rank - d + 1;
+      if rd == 1 {
+        for i in ranges(rd) do
+          yield i;
+      } else if rd == 2 {
+        for i in ranges(rd) do
+          for j in these_help(rank) do
+            yield (j, i);
+      } else {
+        for i in ranges(rd) do
+          for j in these_help(d+1) do
+            yield ((...j), i);
+      }
+    }
+*/
 
-    iter these_help(param d: int, block) {
+    iter these_help(param d: int, block) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == block.size {
         for i in block(d) do
           yield i;
@@ -158,6 +219,24 @@ module DefaultRectangular {
             yield (i, (...j));
       }
     }
+
+/*
+    iter these_help(param d: int, block) where storageOrder == ArrayStorageOrder.CMO {
+      param rd = rank - d + 1;
+      if rd == 1 {
+        for i in block(rd) do
+          yield i;
+      } else if rd == 2 {
+        for i in block(rd) do
+          for j in these_help(block.size, block) do
+            yield (j, i);
+      } else {
+        for i in block(rd) do
+          for j in these_help(d+1, block) do
+            yield ((...j), i);
+      }
+    }
+*/
 
     iter these(tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -474,7 +553,7 @@ module DefaultRectangular {
 
     proc dsiMember(ind: rank*idxType) {
       for param i in 1..rank do
-        if !ranges(i).member(ind(i)) then
+        if !ranges(i).contains(ind(i)) then
           return false;
       return true;
     }
@@ -600,8 +679,10 @@ module DefaultRectangular {
     }
 
     proc dsiBuildArray(type eltType) {
-      return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
-                                      stridable=stridable, dom=_to_unmanaged(this));
+      return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
+                                                 idxType=idxType,
+                                                 stridable=stridable,
+                                                 dom=_to_unmanaged(this));
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
@@ -627,8 +708,8 @@ module DefaultRectangular {
 
     proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiLocalSubdomain() {
-      if (this.locale == here) {
+    proc dsiLocalSubdomain(loc: locale) {
+      if (this.locale == loc) {
         return _getDomain(_to_unmanaged(this));
       } else {
         var a: domain(rank, idxType, stridable);
@@ -636,8 +717,8 @@ module DefaultRectangular {
       }
     }
 
-    iter dsiLocalSubdomains() {
-      yield dsiLocalSubdomain();
+    iter dsiLocalSubdomains(loc: locale) {
+      yield dsiLocalSubdomain(loc);
     }
 
     // convenience routine for turning an int (tuple) into an index (tuple)
@@ -733,10 +814,17 @@ module DefaultRectangular {
             sum += chpl__idxToInt(ind(i)) * blk(i);
           }
         } else {
-          for param i in 1..rank-1 {
-            sum += chpl__idxToInt(ind(i)) * blk(i);
+          if storageOrder == ArrayStorageOrder.RMO {
+            for param i in 1..rank-1 {
+              sum += chpl__idxToInt(ind(i)) * blk(i);
+            }
+            sum += chpl__idxToInt(ind(rank));
+          } else {
+            for param i in 2..rank {
+              sum += chpl__idxToInt(ind(i)) * blk(i);
+            }
+            sum += chpl__idxToInt(ind(1));
           }
-          sum += chpl__idxToInt(ind(rank));
         }
 
         if !earlyShiftData then sum -= factoredOffs;
@@ -882,8 +970,7 @@ module DefaultRectangular {
     var targetLocDom: domain(rank);
     var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType,
                                               stridable);
-    var RADLocks: [targetLocDom] atomicbool; // only accessed locally
-                                             // force processor atomics
+    var RADLocks: [targetLocDom] chpl__processorAtomicType(bool); // only accessed locally
 
     proc init(type eltType, param rank: int, type idxType,
               param stridable: bool, newTargetLocDom: domain(rank)) {
@@ -898,11 +985,11 @@ module DefaultRectangular {
     // These functions must always be called locally, because the lock
     // is a (local) processor one.
     inline proc lockRAD(rlocIdx) {
-      while RADLocks(rlocIdx).testAndSet() do chpl_task_yield();
+      while RADLocks(rlocIdx).testAndSet(memory_order_acquire) do chpl_task_yield();
     }
 
     inline proc unlockRAD(rlocIdx) {
-      RADLocks(rlocIdx).clear();
+      RADLocks(rlocIdx).clear(memory_order_release);
     }
   }
 
@@ -918,17 +1005,25 @@ module DefaultRectangular {
                                            stridable=stridable);
     var off: rank*idxType;
     var blk: rank*chpl__idxTypeToIntIdxType(idxType);
+    var sizesPerDim: rank*chpl__idxTypeToIntIdxType(idxType);
     var str: rank*idxSignedType;
     var factoredOffs: chpl__idxTypeToIntIdxType(idxType);
 
+    pragma "alias scope from this"
     pragma "local field"
     var data : _ddata(eltType) = nil;
 
+    pragma "alias scope from this"
     pragma "local field"
     var shiftedData : _ddata(eltType);
 
     // note: used by pychapel
     var noinit_data: bool = false;
+
+    // note: used for external array support
+    var externArr: bool = false;
+    var _borrowed: bool = true;
+    var externFreeFunc: c_void_ptr;
 
     // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
     // pop_back, insert, remove) to allow growing or shrinking the data
@@ -956,36 +1051,34 @@ module DefaultRectangular {
     override proc dsiGetBaseDom() return dom;
 
     proc dsiDestroyDataHelper(dd, ddiNumIndices) {
-      pragma "no copy" pragma "no auto destroy" var dr = dd;
-      pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
+      compilerAssert(chpl_isDdata(dd.type));
       for i in 0..ddiNumIndices-1 {
-        pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, i);
-        pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
-        chpl__autoDestroy(ev);
+        chpl__autoDestroy(dd[i]);
       }
     }
 
     override proc dsiDestroyArr() {
-      if dom.dsiNumIndices > 0 {
-        pragma "no copy" pragma "no auto destroy" var dr = data;
-        pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
-        pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, 0);
-        pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
-        param needsDestroy = __primitive("needs auto destroy", ev);
-        if needsDestroy {
-          var numElts:intIdxType = 0;
-          // dataAllocRange may be empty or contain a meaningful value
-          if rank == 1 && !stridable then
-            numElts = dataAllocRange.length;
-          if numElts == 0 then
-            numElts = dom.dsiNumIndices;
-
-          dsiDestroyDataHelper(data, numElts);
+      if (externArr) {
+        if (!_borrowed) {
+          chpl_call_free_func(externFreeFunc, c_ptrTo(data));
         }
+      } else {
+        if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
+          param needsDestroy = __primitive("needs auto destroy",
+                                           __primitive("deref", data[0]));
+          if needsDestroy {
+            var numElts:intIdxType = 0;
+            // dataAllocRange may be empty or contain a meaningful value
+            if rank == 1 && !stridable then
+              numElts = dataAllocRange.length;
+            if numElts == 0 then
+              numElts = dom.dsiNumIndices;
+            dsiDestroyDataHelper(data, numElts);
+          }
+        }
+        const size = blk(1) * dom.dsiDim(1).length;
+        _ddata_free(data, size);
       }
-
-      const size = blk(1) * dom.dsiDim(1).length;
-      _ddata_free(data, size);
     }
 
     inline proc theData ref {
@@ -1084,11 +1177,28 @@ module DefaultRectangular {
         off(dim) = dom.dsiDim(dim).alignedLow;
         str(dim) = dom.dsiDim(dim).stride;
       }
-      blk(rank) = 1:intIdxType;
-      for param dim in 1..(rank-1) by -1 do
-        blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
+      if storageOrder == ArrayStorageOrder.RMO {
+        blk(rank) = 1:intIdxType;
+        for param dim in 1..(rank-1) by -1 do
+          blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
+      } else if storageOrder == ArrayStorageOrder.CMO {
+        blk(1) = 1:intIdxType;
+        for param dim in 2..rank {
+          blk(dim) = blk(dim-1) * dom.dsiDim(dim-1).length;
+        }
+      } else {
+        halt("unknown array storage order");
+      }
       computeFactoredOffs();
-      const size = blk(1) * dom.dsiDim(1).length;
+      const size = if storageOrder == ArrayStorageOrder.RMO
+                   then blk(1) * dom.dsiDim(1).length
+                   else blk(rank) * dom.dsiDim(rank).length;
+
+      if usePollyArrayIndex {
+        for param dim in 1..rank {
+         sizesPerDim(dim) = dom.dsiDim(dim).length;
+        }
+      }
 
       // Allow DR array initialization to pass in existing data
       if data == nil {
@@ -1127,14 +1237,35 @@ module DefaultRectangular {
           return chpl__idxToInt(ind(1));
         } else {
           var sum = 0:intIdxType;
+          var useInd = ind;
+          var useOffset:int = 0;
+          var useSizesPerDim = sizesPerDim;
 
-          for param i in 1..rank-1 {
-            sum += chpl__idxToInt(ind(i)) * blk(i);
+          if usePollyArrayIndex {
+            // Polly works better if we provide 0-based indices from the start.
+            // So instead of using factoredOffs at the end, we initially subtract
+            // the dimension offsets from the index subscripts beforehand.
+            if !wantShiftedIndex {
+             for param i in 1..rank do {
+               useInd(i) = chpl__idxToInt(useInd(i)) - chpl__idxToInt(off(i));
+             }
+           }
+           return polly_array_index(useOffset, (...useSizesPerDim), (...useInd));
+          } else {
+            if storageOrder == ArrayStorageOrder.RMO {
+              for param i in 1..rank-1 {
+                sum += chpl__idxToInt(ind(i)) * blk(i);
+              }
+              sum += chpl__idxToInt(ind(rank));
+            } else {
+              for param i in 2..rank {
+                sum += chpl__idxToInt(ind(i)) * blk(i);
+              }
+              sum += chpl__idxToInt(ind(1));
+            }
+            if !wantShiftedIndex then sum -= factoredOffs;
+            return sum;
           }
-          sum += chpl__idxToInt(ind(rank));
-
-          if !wantShiftedIndex then sum -= factoredOffs;
-          return sum;
         }
       }
     }
@@ -1228,47 +1359,90 @@ module DefaultRectangular {
       }
     }
 
-    // TODO
-    override proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
-      //if (d._value.type == dom.type) {
-
+    override proc dsiReallocate(allocBound: range(idxType,
+                                                  BoundedRangeType.bounded,
+                                                  stridable),
+                                arrayBound: range(idxType,
+                                                  BoundedRangeType.bounded,
+                                                  stridable)) where rank == 1 {
       on this {
-        var d = {(...bounds)};
-        var copy = new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
-                                            idxType=idxType,
-                                            stridable=d._value.stridable,
-                                            dom=d._value);
+        const allocD = {allocBound};
+        var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
+                                                       rank=rank,
+                                                       idxType=idxType,
+                                                       stridable=allocD._value.stridable,
+                                                       dom=allocD._value);
 
-        forall i in d((...dom.ranges)) do
+        forall i in arrayBound(dom.ranges(1)) do
           copy.dsiAccess(i) = dsiAccess(i);
+
         off = copy.off;
         blk = copy.blk;
         str = copy.str;
         factoredOffs = copy.factoredOffs;
+
         dsiDestroyArr();
         data = copy.data;
         // We can't call initShiftedData here because the new domain
         // has not yet been updated (this is called from within the
         // = function for domains.
-        if earlyShiftData && !d._value.stridable {
+        if earlyShiftData && !allocD._value.stridable {
           // Lydia note 11/04/15: a question was raised as to whether this
           // check on numIndices added any value.  Performance results
           // from removing this line seemed inconclusive, which may indicate
           // that the check is not necessary, but it seemed like unnecessary
           // work for something with no immediate reward.
-          if d.numIndices > 0 {
+          if allocD.numIndices > 0 {
             shiftedData = copy.shiftedData;
           }
         }
-        // also set dataAllocRange
         dataAllocRange = copy.dataAllocRange;
-        //numelm = copy.numelm;
         delete copy;
       }
-      //} else {
-      //  halt("illegal reallocation");
-      //}
     }
+
+
+    // Reallocate the array to have space for elements specified by `bounds`
+    override proc dsiReallocate(bounds: rank*range(idxType,
+                                                   BoundedRangeType.bounded,
+                                                   stridable)) {
+      on this {
+        const allocD = {(...bounds)};
+
+        var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
+                                            rank=rank,
+                                            idxType=idxType,
+                                            stridable=allocD._value.stridable,
+                                            dom=allocD._value);
+
+        forall i in allocD((...dom.ranges)) do
+          copy.dsiAccess(i) = dsiAccess(i);
+
+        off = copy.off;
+        blk = copy.blk;
+        str = copy.str;
+        factoredOffs = copy.factoredOffs;
+
+        dsiDestroyArr();
+        data = copy.data;
+        // We can't call initShiftedData here because the new domain
+        // has not yet been updated (this is called from within the
+        // = function for domains.
+        if earlyShiftData && !allocD._value.stridable {
+          // Lydia note 11/04/15: a question was raised as to whether this
+          // check on numIndices added any value.  Performance results
+          // from removing this line seemed inconclusive, which may indicate
+          // that the check is not necessary, but it seemed like unnecessary
+          // work for something with no immediate reward.
+          if allocD.numIndices > 0 {
+            shiftedData = copy.shiftedData;
+          }
+        }
+        dataAllocRange = copy.dataAllocRange;
+        delete copy;
+      }
+    }
+
     override proc dsiPostReallocate() {
       // No action necessary here
     }
@@ -1295,8 +1469,8 @@ module DefaultRectangular {
 
     proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiLocalSubdomain() {
-      if (this.data.locale == here) {
+    proc dsiLocalSubdomain(loc: locale) {
+      if this.data.locale == loc {
         return _getDomain(dom);
       } else {
         var a: domain(rank, idxType, stridable);
@@ -1304,8 +1478,8 @@ module DefaultRectangular {
       }
     }
 
-    iter dsiLocalSubdomains() {
-      yield dsiLocalSubdomain();
+    iter dsiLocalSubdomains(loc: locale) {
+      yield dsiLocalSubdomain(loc);
     }
   }
 
@@ -1401,6 +1575,15 @@ module DefaultRectangular {
     chpl_serialReadWriteRectangular(f, arr, arr.dom);
   }
 
+  // ReplicatedDist declares a version of this method with a 'where'
+  // clause, but current resolution rules prefer the more visible
+  // function (rather than the one with a 'where' clause) and this
+  // call is more visible (e.g. ArrayViewSlice uses DefaultRectangular
+  // but not ReplicatedDist). Applying "last resort" to this function
+  // requests the compiler prefer another overload if one is applicable.
+  // Overload sets (or a similar idea) would be a better user-facing
+  // way to solve this problem (see CHIP 20).
+  pragma "last resort"
   proc chpl_serialReadWriteRectangular(f, arr, dom) {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
   }
@@ -1577,9 +1760,7 @@ module DefaultRectangular {
       // since _ddata is just a pointer to the memory location we just pass
       // that along with the size of the array. This is only possible when the
       // byte order is set to native or its equivalent.
-      pragma "no prototype"
-      extern proc sizeof(type x): size_t;
-      const elemSize = sizeof(arr.eltType);
+      const elemSize = c_sizeof(arr.eltType);
       if boundsChecking {
         var rw = if f.writing then "write" else "read";
         assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(ssize_t):uint,
@@ -1695,6 +1876,7 @@ module DefaultRectangular {
 
     if debugBulkTransfer {
       pragma "no prototype"
+      pragma "fn synchronization free"
       extern proc sizeof(type x): int;
       const elemSize =sizeof(B.eltType);
       chpl_debug_writeln("In DefaultRectangular._simpleTransfer():",
@@ -1990,6 +2172,94 @@ module DefaultRectangular {
   }
 
   proc DefaultRectangularArr.isDefaultRectangular() param return true;
+  proc type DefaultRectangularArr.isDefaultRectangular() param return true;
+
+  config param debugDRScan = false;
+
+  /* This computes a 1D scan in parallel on the array, for 1D arrays only */
+  proc DefaultRectangularArr.doiScan(op, dom) where (rank == 1) &&
+                                                chpl__scanStateResTypesMatch(op) {
+    use RangeChunk;
+
+    type resType = op.generate().type;
+    var res: [dom] resType;
+
+    // Take first pass, computing per-task partial scans, stored in 'state'
+    var (numTasks, rngs, state, _) = this.chpl__preScan(op, res);
+
+    // Take second pass updating result based on the scanned 'state'
+    this.chpl__postScan(op, res, numTasks, rngs, state);
+
+    // Clean up and return
+    delete op;
+    return res;
+  }
+
+  // A helper routine to take the first parallel scan over a vector
+  // yielding the number of tasks used, the ranges computed by each
+  // task, and the scanned results of each task's scan.  This is
+  // broken out into a helper function in order to be made use of by
+  // distributed array scans.
+  proc DefaultRectangularArr.chpl__preScan(op, res: [] ?resType) {
+    // Compute who owns what
+    const rng = dom.dsiDim(1);
+    const numTasks = if __primitive("task_get_serial") then
+                      1 else _computeNumChunks(rng.size);
+    const rngs = RangeChunk.chunks(rng, numTasks);
+    if debugDRScan {
+      writeln("Using ", numTasks, " tasks");
+      writeln("Whose chunks are: ", rngs);
+    }
+
+    var state: [1..numTasks] resType;
+
+    // Take first pass over data doing per-chunk scans
+    coforall tid in 1..numTasks {
+      const current: resType;
+      const myop = op.clone();
+      for i in rngs[tid] {
+        ref elem = dsiAccess(i);
+        myop.accumulate(elem);
+        res[i] = myop.generate();
+      }
+      state[tid] = res[rngs[tid].high];
+      delete myop;
+    }
+    if debugDRScan {
+      writeln("res = ", res);
+      writeln("state = ", state);
+    }
+
+    // Scan state vector itself
+    const metaop = op.clone();
+    var next: resType = metaop.identity;
+    for i in 1..numTasks {
+      state[i] <=> next;
+      metaop.accumulateOntoState(next, state[i]);
+    }
+    delete metaop;
+    if debugDRScan then
+      writeln("state = ", state);
+
+    return (numTasks, rngs, state, next);
+  }
+
+  // A second helper routine that does the second parallel pass over
+  // the result vector adding the prefix state computed by the earlier
+  // tasks.  This is broken out into a helper function in order to be
+  // made use of by distributed array scans.
+  proc DefaultRectangularArr.chpl__postScan(op, res, numTasks, rngs, state) {
+    coforall tid in 1..numTasks {
+      const myadjust = state[tid];
+      for i in rngs[tid] {
+        op.accumulateOntoState(res[i], myadjust);
+      }
+    }
+    if debugDRScan then
+      writeln("res = ", res);
+  }
+
+
 
   /*
   The runtime implementation's loop over the current stride level will look

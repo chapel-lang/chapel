@@ -6,7 +6,7 @@ class C {
   var a: [d] int;
 }
 
-proc C.init(d, a) where d: domain(?) {
+proc C.init(d, a) where isSubtype(d, domain(?)) {
   this.d = d;
   this.a = a;
 }

@@ -4,7 +4,7 @@ class C {
 
 // The optimization passes should be able to determine that
 // p cannot alias q (because p is a pointer and q is an int)
-proc foo(n:int, ref p:C, ref q:int)
+proc foo(n:int, ref p:borrowed C, ref q:int)
 {
   if n <= 0 then return;
 

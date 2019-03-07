@@ -12,6 +12,6 @@ proc getType(type t) type {
   return unmanaged C(t);
 }
 
-var myC = new (getType(int))(int);
+var myC = new (getType(int))();
 writeln(myC);
 delete myC;

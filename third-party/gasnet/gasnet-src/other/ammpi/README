@@ -56,6 +56,8 @@ AMMPI has a few notable departures from the AM-2 specification:
   not provide thread safety, but can be used in a thread-funnelled mode with
   locking at the client level.
 
+* The nbytes argument to Medium and Long AM handlers has type `size_t`
+
 * AM_GetXferM is not implemented.
 
 * Clients should not take the address of AM_ entry point "functions", because
@@ -63,6 +65,17 @@ AMMPI has a few notable departures from the AM-2 specification:
 
 Change Log
 ----------
+AMMPI 2.9 (06/2018)
+- Medium and Long AM handlers change in signature on 64-bit platforms: 
+  the nbytes argument now has type size_t instead of int
+- New AMMPI_LIBRARY_VERSION_{MAJOR,MINOR} defines
+- Significant rearrangement of internal files and utilities
+- AM Handler dispatching code is now strictly spec-compliant
+- Several pseudo-public programmatic knobs renamed into the AMX_ namespace
+- AMX_ProcessLabel now supported for labelling per-node library output
+- Bug 2774: source_addr to Med/Long injection is now ignored for nbytes=0
+- Fix an unreported cosmetic output bug in AMX_RETURN error reporting
+
 AMMPI 2.8 (03/2017)
 - Add AMMPI_FS_SYNC envvar to control exit-time filesystem sync()
 - Add AMMPI_MPI_THREAD to control MPI threading mode used to init MPI 2+ in AMMPI_SPMDSetThreadMode

@@ -20,7 +20,7 @@ semantics imply that the type of a record variable is known at compile
 time (i.e. it is statically typed).
 
 A record can be created using the \chpl{new} operator, which allocates
-storage, initializes it via a call to a record constructor, and returns
+storage, initializes it via a call to a record initializer, and returns
 it.  A record is also created upon a variable declaration of a record
 type.
 
@@ -140,10 +140,8 @@ Note that the receiver of a record method is passed by \chpl{ref} or
 \index{nested records}
 \index{records!nested}
 
-Record type declarations may be nested within other class, record and union
-declarations.  Methods defined in a nested record type may access fields
-declared in the containing aggregate type either implicitly, or explicitly by
-means of an \chpl{outer} reference.
+A record defined within another class or record is a nested record. A nested
+record can be referenced only within its immediately enclosing class or record.
 
 \section{Record Variable Declarations}
 \label{Record_Variable_Declarations}
@@ -161,9 +159,8 @@ or record type.
 
 In the context of a function body, a record variable declaration
 causes storage to be allocated sufficient to store all of the fields in that
-record type.  The record variable is initialized through a call to its
-default initializer.  The default initializer for a record is defined in the
-same way as the default initializer for a class (\rsec{Default_Initialization}).
+record type.  The record variable is initialized with a call to an
+initializer (\rsec{Class_Initializers}) that accepts zero actual arguments.
 
 \subsection{Storage Allocation}
 \label{Record_Storage}
@@ -186,23 +183,18 @@ A variable of a record type declared without an initialization expression
 is initialized through a call to the record's default initializer,
 passing no arguments.  The default initializer for a record is defined in
 the same way as the default initializer for a class
-(\rsec{Default_Initialization}).
+(\rsec{The_Compiler_Generated_Initializer}).
 
-To construct a record as an expression,
+To create a record as an expression,
 i.e. without binding it to a variable, the \chpl{new} operator is
 required.  In this case, storage is allocated and reclaimed as for a record
 variable declaration (\rsec{Record_Storage}), except that the temporary record
-goes out of scope at the end of the enclosing statement.
-The constructors for a record are
-defined in the same way as those for a class (\rsec{Class_Constructors}).
+goes out of scope at the end of the enclosing block.
 
-\begin{rationale}
-
-The \chpl{new} keyword disambiguates types from values. This is needed
-because of the syntactic similarity between constructors and type
-specifiers for classes and records.
-
-\end{rationale}
+The initializers for a record are defined in the same way as those for a class
+(\rsec{Class_Initializers}). Note that records do not support inheritance and
+therefore the initializer rules for inheriting classes
+(\rsec{Initializing_Inherited}) do not apply to record initializers.
 
 \begin{chapelexample}{recordCreation.chpl}
 The program
@@ -219,9 +211,11 @@ writeln(timestampCustom);
 var idCounter = 0;
 record UniqueID {
   var id: int;
-  proc UniqueID() { idCounter += 1; id = idCounter; }
+  proc init() { idCounter += 1; id = idCounter; }
 }
 
+var firstID : UniqueID; // invokes zero-argument initializer
+writeln(firstID);
 writeln(new UniqueID());  // create and use a record value without a variable
 writeln(new UniqueID());
 \end{chapel}
@@ -231,17 +225,18 @@ produces the output
 (time = 2/2/2022)
 (id = 1)
 (id = 2)
+(id = 3)
 \end{chapelprintoutput}
 The variable \chpl{timestampDefault} is initialized with \chpl{TimeStamp}'s
 default initializer. The expression \chpl{new TimeStamp} creates a record that
 is assigned to \chpl{timestampCustom}.  It effectively
-initializes \chpl{timestampCustom} via a call to the constructor with desired
+initializes \chpl{timestampCustom} via a call to the initializer with desired
 arguments. The records created with \chpl{new UniqueID()} are discarded after
 they are used.
 \end{chapelexample}
 
-As with classes, the user can provide his own constructors
-(\rsec{User_Defined_Constructors}).  If any user-defined constructors are
+As with classes, the user can provide their own initializers
+(\rsec{User_Defined_Initializers}).  If any user-defined initializers are
 supplied, the default initializer cannot be called directly.
 
 \subsection{Record Deinitializer}
@@ -266,8 +261,8 @@ on a record object after it goes out of scope and before its memory is reclaimed
 % one of those variables.  The compiler may also choose to insert temporary copies e.g. of
 % record formals or of a record return value.
 
-% The compiler guarantees that every record constructor call will have exactly one
-% corresponding record deinitializer call.  However, the exact number of constructor-deinitializer
+% The compiler guarantees that every record initializer call will have exactly one
+% corresponding record deinitializer call.  However, the exact number of initializer-deinitializer
 % pairs is determined by the compiler, and may also be influenced by various compiler
 % options.
 
@@ -279,14 +274,18 @@ class C { var x: int; } // A class with nonzero size.
 
 // Defines a record implementing simple memory management.
 record R {
-  var c: C;
-  proc R() { c = new C(0); }
-  proc deinit() { delete c; c = nil; }
+  var c: unmanaged C;
+  proc init() {
+    c = new unmanaged C(0);
+  }
+  proc deinit() {
+    delete c; c = nil;
+  }
 }
 
 proc foo()
 {
-  var r: R; // Initialized using default constructor.
+  var r: R; // Initialized using default initializer.
   writeln(r);
   // r will go out of scope here.
   // Its deinitializer will be called to free the C object it contains.
@@ -390,6 +389,40 @@ Record method calls are written the same way as other method calls
 always resolved at compile time.
 
 \section{Common Operations}
+
+\subsection{Copy Initialization of Records}
+\label{Copy_Initialization_of_Records}
+\index{records!copy initialization}
+
+When a new record variable is created based upon an
+existing variable, we say that the new variable is
+\emph{copy initialized} from the existing variable. For example:
+\begin{chapel}
+var x: MyRecordType;
+var y = x; // this is called copy initialization
+\end{chapel}
+
+We say that y is \emph{copy initialized} from x. Since
+x and y both exist after y is initialized and they are
+different record variables, they must not be observed
+to alias. That is, modifications to a field in x should not
+cause the corresponding field in y to change.
+
+Initializing a record variable with the result of a call
+returning a record by value simply captures the result
+of the call into the variable and does not cause copy
+initialization. For example:
+\begin{chapel}
+proc returnsRecord() {
+  var ret: MyRecordType;
+  return ret;
+}
+var z = returnsRecord(); // captures result into z without copy initializing
+\end{chapel}
+
+\begin{future}
+Specifying further details of copy initialization is future work.
+\end{future}
 
 \subsection{Record Assignment}
 \label{Record_Assignment}

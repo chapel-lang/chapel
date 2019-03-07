@@ -8,8 +8,8 @@ record GenericCollection {
     var default:t;
     field = default;
   }
-  proc init(arg) { // borrows but that might be surprising
-    field = arg;
+  proc init(field) { // borrows but that might be surprising
+    this.field = field;
   }
 }
 

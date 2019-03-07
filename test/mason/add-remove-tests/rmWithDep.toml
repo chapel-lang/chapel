@@ -1,0 +1,9 @@
+
+[brick]
+name = "Tester"
+version = "0.1.0"
+author = "Sam Partee"
+
+[dependencies]
+_MasonTest1 = '0.2.0'
+test = "1.2.3"

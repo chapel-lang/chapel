@@ -118,7 +118,7 @@ proc pi() {
   var x : [0.. #N] real;
   var y : [0.. #N] real;
 
-  fillRandom(x); fillRandom(y);
+  fillRandom(x, here.id*2 + 1); fillRandom(y, here.id*4 + 1);
   var sum = 0.0;
   forall (x1,y1) in zip(x,y) with (+ reduce sum) {
     if (x1*x1+y1*y1) <= 1 then sum += 1;

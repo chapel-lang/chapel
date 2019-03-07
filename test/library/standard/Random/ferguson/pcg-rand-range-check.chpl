@@ -71,8 +71,6 @@ var histo:[0..255] int;
 
     if verbose then writef("% 3i: %i\n", i, h);
   }
-
-  delete rs;
 }
 
 
@@ -94,8 +92,6 @@ histo = 0;
 
     if verbose then writef("% 3i: %i\n", i, h);
   }
-
-  delete rs;
 }
 
 histo = 0;
@@ -117,8 +113,6 @@ histo = 0;
 
     if verbose then writef("% 3i: %i\n", i, h);
   }
-
-  delete rs;
 }
 
 

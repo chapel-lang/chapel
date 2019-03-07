@@ -4,15 +4,22 @@
  * Terms of use are as specified in license.txt
  */
 
-#include <gasnet.h>
+#include <gasnetex.h>
 #include <gasnet_tools.h>
 
 #include <test.h>
 #include <signal.h>
 
+static gex_Client_t      myclient;
+static gex_EP_t    myep;
+static gex_TM_t myteam;
+static gex_Segment_t     mysegment;
+
 int mynode, nodes;
 int peer = -1;
 int testid = 0;
+int use_allnodes = 0;
+int use_threads = 0;
 int numpthreads = 4;
 volatile int signal_bt = 0;
 #define thread_barrier() PTHREAD_BARRIER(numpthreads)
@@ -56,33 +63,28 @@ const char *crashtestdesc[] = {
   "floating-point exception"
 };
 #define NUMCRASHTEST (sizeof(crashtestdesc)/sizeof(char*))
-#ifdef GASNET_PAR
-#define NUMCRASHTEST_WITH_PAR (NUMCRASHTEST*2)
-#else
-#define NUMCRASHTEST_WITH_PAR NUMCRASHTEST
-#endif
 void do_crash_test(int crashid);
+
+static char *peerseg;
 
 #define hidx_exit_handler		201
 #define hidx_noop_handler               202
 #define hidx_ping_handler               203
 
-void test_exit_handler(gasnet_token_t token, gasnet_handlerarg_t exitcode) {
+void test_exit_handler(gex_Token_t token, gex_AM_Arg_t exitcode) {
   gasnet_exit((int)exitcode);
 }
 
-void ping_handler(gasnet_token_t token, void *buf, size_t nbytes) {
+void ping_handler(gex_Token_t token, void *buf, size_t nbytes) {
   static int x = 1; 
-  gasnet_node_t src;
-  gasnet_AMGetMsgSource(token, &src);
   x = !x;/* harmless race */
   if (x) 
-    GASNET_Safe(gasnet_AMReplyMedium0(token, hidx_noop_handler, buf, nbytes));
+    gex_AM_ReplyMedium0(token, hidx_noop_handler, buf, nbytes, GEX_EVENT_NOW, 0);
   else
-    GASNET_Safe(gasnet_AMReplyLong0(token, hidx_noop_handler, buf, nbytes, TEST_SEG(src)));
+    gex_AM_ReplyLong0(token, hidx_noop_handler, buf, nbytes, peerseg, GEX_EVENT_NOW, 0);
 }
 
-void noop_handler(gasnet_token_t token, void *buf, size_t nbytes) {
+void noop_handler(gex_Token_t token, void *buf, size_t nbytes) {
 }
 
 #ifdef GASNET_PAR
@@ -123,29 +125,33 @@ void *workerthread(void *args) {
           gasnet_exit(18); 
       } else {
         int junk = 42;
-        int lim = MIN(MIN(MIN(gasnet_AMMaxMedium(), gasnet_AMMaxLongRequest()), gasnet_AMMaxLongReply()), TEST_SEGSZ);
+        int lim = MIN(MIN(MIN(MIN(
+                        gex_AM_MaxRequestMedium(myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0),
+                        gex_AM_MaxReplyMedium  (myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0)),
+                        gex_AM_MaxRequestLong  (myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0)),
+                        gex_AM_MaxReplyLong    (myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0)),
+                        TEST_SEGSZ);
         char *p = malloc(lim);
-        char *peerseg = TEST_SEG(peer);
         while (1) {
           switch (rand() % 18) {
             case 0:  GASNET_Safe(gasnet_AMPoll()); break;
-            case 1:  GASNET_Safe(gasnet_AMRequestMedium0(peer, hidx_noop_handler, p, 4)); break;
-            case 2:  GASNET_Safe(gasnet_AMRequestMedium0(peer, hidx_ping_handler, p, 4)); break;
-            case 3:  GASNET_Safe(gasnet_AMRequestMedium0(peer, hidx_noop_handler, p, lim)); break;
-            case 4:  GASNET_Safe(gasnet_AMRequestMedium0(peer, hidx_ping_handler, p, lim)); break;
-            case 5:  GASNET_Safe(gasnet_AMRequestLong0(peer, hidx_noop_handler, p, 4, peerseg)); break;
-            case 6:  GASNET_Safe(gasnet_AMRequestLong0(peer, hidx_ping_handler, p, 4, peerseg)); break;
-            case 7:  GASNET_Safe(gasnet_AMRequestLong0(peer, hidx_noop_handler, p, lim, peerseg)); break;
-            case 8:  GASNET_Safe(gasnet_AMRequestLong0(peer, hidx_ping_handler, p, lim, peerseg)); break;
-            case 9:  gasnet_put(peer, peerseg, &junk, sizeof(int)); break;
-            case 10: gasnet_get(&junk, peer, peerseg, sizeof(int)); break;
-            case 11: gasnet_put(peer, peerseg, p, lim); break;
-            case 12: gasnet_get(p, peer, peerseg, lim); break;
-            case 13: gasnet_put_nbi(peer, peerseg, &junk, sizeof(int)); break;
-            case 14: gasnet_get_nbi(&junk, peer, peerseg, sizeof(int)); break;
-            case 15: gasnet_put_nbi(peer, peerseg, p, lim); break;
-            case 16: gasnet_get_nbi(p, peer, peerseg, lim); break;
-            case 17: gasnet_wait_syncnbi_all(); break;
+            case 1:  gex_AM_RequestMedium0(myteam, peer, hidx_noop_handler, p, 4, GEX_EVENT_NOW, 0); break;
+            case 2:  gex_AM_RequestMedium0(myteam, peer, hidx_ping_handler, p, 4, GEX_EVENT_NOW, 0); break;
+            case 3:  gex_AM_RequestMedium0(myteam, peer, hidx_noop_handler, p, lim, GEX_EVENT_NOW, 0); break;
+            case 4:  gex_AM_RequestMedium0(myteam, peer, hidx_ping_handler, p, lim, GEX_EVENT_NOW, 0); break;
+            case 5:  gex_AM_RequestLong0(myteam, peer, hidx_noop_handler, p, 4, peerseg, GEX_EVENT_NOW, 0); break;
+            case 6:  gex_AM_RequestLong0(myteam, peer, hidx_ping_handler, p, 4, peerseg, GEX_EVENT_NOW, 0); break;
+            case 7:  gex_AM_RequestLong0(myteam, peer, hidx_noop_handler, p, lim, peerseg, GEX_EVENT_NOW, 0); break;
+            case 8:  gex_AM_RequestLong0(myteam, peer, hidx_ping_handler, p, lim, peerseg, GEX_EVENT_NOW, 0); break;
+            case 9:  gex_RMA_PutBlocking(myteam, peer, peerseg, &junk, sizeof(int), 0); break;
+            case 10: gex_RMA_GetBlocking(myteam, &junk, peer, peerseg, sizeof(int), 0); break;
+            case 11: gex_RMA_PutBlocking(myteam, peer, peerseg, p, lim, 0); break;
+            case 12: gex_RMA_GetBlocking(myteam, p, peer, peerseg, lim, 0); break;
+            case 13: gex_RMA_PutNBI(myteam, peer, peerseg, &junk, sizeof(int), GEX_EVENT_NOW, 0); break;
+            case 14: gex_RMA_GetNBI(myteam, &junk, peer, peerseg, sizeof(int), 0); break;
+            case 15: gex_RMA_PutNBI(myteam, peer, peerseg, p, lim, GEX_EVENT_NOW, 0); break;
+            case 16: gex_RMA_GetNBI(myteam, p, peer, peerseg, lim, 0); break;
+            case 17: gex_NBI_Wait(GEX_EC_ALL,0); break;
           }
         }
       }
@@ -181,21 +187,23 @@ void testSignalHandler(int sig) {
 
 int main(int argc, char **argv) {
   #define MAXLINE 255
-  static char usagestr[MAXLINE*(NUMTEST+NUMCRASHTEST_WITH_PAR)];
+  static char usagestr[MAXLINE*(NUMTEST+NUMCRASHTEST)];
   char testdescstr[MAXLINE];
-  gasnet_handlerentry_t htable[] = { 
-    { hidx_exit_handler, test_exit_handler },
-    { hidx_ping_handler, ping_handler },
-    { hidx_noop_handler, noop_handler },
+  gex_AM_Entry_t htable[] = { 
+    { hidx_exit_handler, test_exit_handler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 1 },
+    { hidx_ping_handler, ping_handler,      GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDLONG, 0 },
+    { hidx_noop_handler, noop_handler,      GEX_FLAG_AM_REQREP|GEX_FLAG_AM_MEDLONG, 0 },
   };
 
-  GASNET_Safe(gasnet_init(&argc, &argv));
-  { int i;
-    snprintf(usagestr,sizeof(usagestr),
-             "[-r] (exittestnum:1..%i | crashtestnum:100..%i)", (int)NUMTEST, (int)(100+NUMCRASHTEST_WITH_PAR-1));
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testexit", &argc, &argv, 0));
+  { int i = 200+NUMCRASHTEST;
+    const char *threads="";    
     #ifdef GASNET_PAR
-      strcat(usagestr, " (num_pthreads)");
+      threads = " (num_pthreads)";
+      i += 200;
     #endif
+    snprintf(usagestr,sizeof(usagestr),
+             "[-r] (exittestnum:1..%i | crashtestnum:100..%i)%s", (int)NUMTEST, i-1, threads);
     strcat(usagestr, "\n  -r: reverse the node numbering");
     strcat(usagestr, "\n\n Exit tests:\n");
     for (i = 0; i < NUMTEST; i++) {
@@ -203,26 +211,21 @@ int main(int argc, char **argv) {
       snprintf(tmp,MAXLINE,"  %3i: %s\n", i+1, testdesc[i]);
       strcat(usagestr, tmp);
     }
-    strcat(usagestr, "\n Crash tests:\n");
+    strcat(usagestr, "\n Crash tests: (add 100 to activate all nodes");
+    #ifdef GASNET_PAR
+      strcat(usagestr,", add 200 to use multiple threads");
+    #endif
+    strcat(usagestr, ")\n");
     for (i = 0; i < NUMCRASHTEST; i++) {
       char tmp[MAXLINE];
       snprintf(tmp,MAXLINE,"  %3i: %s\n", i+100, crashtestdesc[i]);
       strcat(usagestr, tmp);
     }
-  #ifdef GASNET_PAR
-    for (i = 0; i < NUMCRASHTEST; i++) {
-      char tmp[MAXLINE];
-      snprintf(tmp,MAXLINE,"  %3i: %s from one pthread, others in thread barrier\n", 
-                   (int)(i+100+NUMCRASHTEST), crashtestdesc[i]);
-      strcat(usagestr, tmp);
-    }
-  #endif
   }
   test_init_early("testexit",0,usagestr);
-  MSG("hostname is: %s (pid=%i)", gasnett_gethostname(), (int)getpid());
 
-  mynode = gasnet_mynode();
-  nodes = gasnet_nodes();
+  mynode = gex_TM_QueryRank(myteam);
+  nodes = gex_TM_QuerySize(myteam);
 
   argv++; argc--;
   if (argc > 0 && !strcmp(*argv, "-r")) { mynode = nodes-(mynode+1); argv++; argc--; }
@@ -233,7 +236,6 @@ int main(int argc, char **argv) {
   #endif
   if (argc > 0 || testid <= 0 || 
       (testid > NUMTEST && testid < 100) || 
-      (testid >= 100+NUMCRASHTEST_WITH_PAR) || 
       numpthreads <= 1) test_usage_early();
 
   peer = mynode ^ 1;
@@ -244,12 +246,22 @@ int main(int argc, char **argv) {
 
   if (testid < 100) {
     snprintf(testdescstr, sizeof(testdescstr), "Running exit test %i: %s",testid, testdesc[testid-1]);
-  } else if (testid-100<NUMCRASHTEST) {
-    snprintf(testdescstr, sizeof(testdescstr), "Running crash test %i: %s",testid, 
-            crashtestdesc[testid-100]);
   } else {
-    snprintf(testdescstr, sizeof(testdescstr), "Running crash test %i: %s from one pthread, others in thread barrier",testid, 
-      crashtestdesc[testid-100-NUMCRASHTEST]);
+    int dispid = testid;
+    const char *thread = "", *node = "";
+    #ifdef GASNET_PAR
+      if (testid >= 300) {
+        thread = ", from one pthread w/others in thread barrier";
+        testid -= 200; use_threads = 1;
+      }
+    #endif
+    if (testid >= 200) {
+      node = ", with all nodes active";
+      testid -= 100; use_allnodes = 1;
+    }
+    if (testid < 100 || testid >= 100+NUMCRASHTEST) test_usage_early();
+    snprintf(testdescstr, sizeof(testdescstr), "Running crash test %i: %s%s%s",dispid, 
+      crashtestdesc[testid-100],thread,node);
   }
   if (testid == 6 || testid == 7) {
     PUTS0(testdescstr);
@@ -264,13 +276,13 @@ int main(int argc, char **argv) {
     }
   }
 
-  GASNET_Safe(gasnet_attach(htable,  sizeof(htable)/sizeof(gasnet_handlerentry_t),
-	                    TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
+  GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, sizeof(htable)/sizeof(gex_AM_Entry_t)));
 
   /* register a SIGQUIT handler, as permitted by GASNet spec */
   gasnett_reghandler(SIGQUIT, testSignalHandler);
 
-  TEST_SEG(mynode);
+  peerseg = TEST_SEG(peer);
 
   BARRIER();
   PUTS0(testdescstr);
@@ -308,23 +320,23 @@ int main(int argc, char **argv) {
       else while(1);
       break;
     case 10:
-      GASNET_Safe(gasnet_AMRequestShort1(peer, hidx_exit_handler, testid));
+      gex_AM_RequestShort1(myteam, peer, hidx_exit_handler, 0, testid);
       while(1) GASNET_Safe(gasnet_AMPoll());
       break;
     case 11:
       if (mynode == 0) { 
-        GASNET_Safe(gasnet_AMRequestShort1(nodes-1, hidx_exit_handler, testid));
+        gex_AM_RequestShort1(myteam, nodes-1, hidx_exit_handler, 0, testid);
       }
       while(1) GASNET_Safe(gasnet_AMPoll());
       break;
     case 12:
       if (mynode == nodes-1) { 
-        GASNET_Safe(gasnet_AMRequestShort1(mynode, hidx_exit_handler, testid));
+        gex_AM_RequestShort1(myteam, mynode, hidx_exit_handler, 0, testid);
       }
       while(1) GASNET_Safe(gasnet_AMPoll());
       break;
     case 13:
-      GASNET_Safe(gasnet_AMRequestShort1(nodes-1, hidx_exit_handler, testid));
+      gex_AM_RequestShort1(myteam, nodes-1, hidx_exit_handler, 0, testid);
       while(1) GASNET_Safe(gasnet_AMPoll());
       break;
   #ifdef GASNET_PAR
@@ -335,15 +347,13 @@ int main(int argc, char **argv) {
   #endif
   default: 
       if (testid >= 100 && testid < 100+NUMCRASHTEST) {
+      #ifdef GASNET_PAR
+        if (use_threads) {
+          test_createandjoin_pthreads(numpthreads, &workerthread, NULL, 0);
+        } else
+      #endif
         do_crash_test(testid);
-      }
-    #ifdef GASNET_PAR
-      else if (testid >= 100+NUMCRASHTEST && testid < 100+2*NUMCRASHTEST) {
-        testid -= NUMCRASHTEST;
-        test_createandjoin_pthreads(numpthreads, &workerthread, NULL, 0);
-      }
-    #endif
-      else {
+      } else {
         FATALERR("bad test id: %i", testid);
       }
   }
@@ -356,12 +366,12 @@ int main(int argc, char **argv) {
 void do_crash_test(int crashid) {
   switch(crashid) {
     case 100:
-      if (mynode == nodes-1) { sleep(1); gasnett_print_backtrace(STDERR_FILENO); }
+      if (use_allnodes || mynode == nodes-1) { sleep(1); gasnett_print_backtrace(STDERR_FILENO); }
       BARRIER();
       gasnet_exit(0);
       break;
     case 101:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         sleep(1); 
         signal_bt = 1;
         kill(getpid(), SIGQUIT);
@@ -371,21 +381,21 @@ void do_crash_test(int crashid) {
       gasnet_exit(0);
       break;
     case 102:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         gasnett_fatalerror("Synthetic fatal error");
         FATALERR("gasnett_fatalerror FAILED!!");
       }
       BARRIER();
       break;
     case 103:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         abort();
         FATALERR("abort() FAILED!!");
       }
       BARRIER();
       break;
     case 104:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         static char volatile *p = NULL;
         *p = *p + 10;
         FATALERR("Failed to generate a segmentation fault");
@@ -393,7 +403,7 @@ void do_crash_test(int crashid) {
       BARRIER();
       break;
     case 105:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         static uint64_t myarr[3];
         static char *p = ((char *)(myarr+1))+1;
         *(uint16_t volatile *)p = *(uint16_t volatile *)p + 10;
@@ -409,7 +419,7 @@ void do_crash_test(int crashid) {
       BARRIER();
       break;
     case 106:
-      if (mynode == nodes-1) { 
+      if (use_allnodes || mynode == nodes-1) { 
         static double volatile d = 0.0;
         static int volatile i = 0;
         d = 16.0 / d;

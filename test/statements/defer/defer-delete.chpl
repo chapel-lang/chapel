@@ -9,7 +9,7 @@ class C {
 var returnEarly = false;
 
 proc test() throws {
-  var a = new C(1);
+  var a = new unmanaged C(1);
   defer delete a;
   writeln("A");
   if returnEarly then return;

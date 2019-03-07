@@ -42,7 +42,7 @@ assert(D.size == recs.size);
 // Verify that each record is present in the domain.
 for 1..n {
   for r in recs {
-    assert(D.member(r));
+    assert(D.contains(r));
   }
 }
 

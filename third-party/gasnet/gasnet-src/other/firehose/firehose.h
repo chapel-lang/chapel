@@ -42,7 +42,7 @@ typedef
 struct _firehose_request_t {
 	uint16_t	flags;	/* internal -- opaque to client */
 
-	gasnet_node_t	node;
+	gex_Rank_t	node;
 	uintptr_t	addr;
 	size_t		len;
 
@@ -91,8 +91,8 @@ firehose_region_t;
  *    2. Maximum amount of regions that may be created
  *    3. Environment variables to control firehose (see
  *       GASNET_FIREHOSE_ environment variables below).
- *    4. gasnet_AMMaxMedium() as implemented by the underlying gasnet
- *       core API.
+ *    4. gex_AM_LUBR{Request,Reply}Medium() as
+ *       provided by the underlying gasnet core API.
  *    5. The size of firehose_remotecallback_args_t.
  *
  * The values returned by firehose_info_t are established at
@@ -151,7 +151,7 @@ firehose_info_t;
  * Returns: 0 on success, non-zero on failure.
  */
 extern int 
-firehose_remote_callback(gasnet_node_t node, 
+firehose_remote_callback(gex_Rank_t node,
 		const firehose_region_t *pin_list, size_t num_pinned,
 		firehose_remotecallback_args_t *args);
 
@@ -177,7 +177,7 @@ firehose_remote_callback(gasnet_node_t node,
  * Returns: 0 on success, non-zero on failure.
  */
 extern int 
-firehose_move_callback(gasnet_node_t node, 
+firehose_move_callback(gex_Rank_t node,
 		       const firehose_region_t *unpin_list, 
 		       size_t unpin_num, 
 		       firehose_region_t *pin_list, 
@@ -196,7 +196,7 @@ firehose_move_callback(gasnet_node_t node,
  * AM-handler context: May run in AM handler context
  */
 extern int 
-firehose_bind_callback(gasnet_node_t node,
+firehose_bind_callback(gex_Rank_t node,
 		       firehose_region_t *bind_list,
 		       size_t bind_num);
 #endif
@@ -214,7 +214,7 @@ firehose_bind_callback(gasnet_node_t node,
  * AM-handler context: May run in AM handler context
  */
 extern int 
-firehose_unbind_callback(gasnet_node_t node,
+firehose_unbind_callback(gex_Rank_t node,
 		         const firehose_region_t *unbind_list,
 		         size_t unbind_num);
 #endif
@@ -232,7 +232,7 @@ firehose_unbind_callback(gasnet_node_t node,
  * AM-handler context: May run in AM handler context
  */
 extern int 
-firehose_export_callback(gasnet_node_t node,
+firehose_export_callback(gex_Rank_t node,
 		         firehose_region_t *export_list,
 		         size_t export_num);
 #endif
@@ -250,7 +250,7 @@ firehose_export_callback(gasnet_node_t node,
  * AM-handler context: May run in AM handler context
  */
 extern int 
-firehose_unexport_callback(gasnet_node_t node,
+firehose_unexport_callback(gex_Rank_t node,
 			   const firehose_region_t *unexport_list,
 			   size_t unexport_num);
 #endif
@@ -267,17 +267,17 @@ firehose_unexport_callback(gasnet_node_t node,
  ***********************************
  * This function must be called by the client prior to initializing
  * the firehose interface in order to register firehose AM handlers.
- * The function returns an array of gasnet_handlerentry_t terminated
- * with a gasnet_handlerentry_t entry containing a NULL function
+ * The function returns an array of gex_AM_Entry_t terminated
+ * with a gex_AM_Entry_t entry containing a NULL function
  * pointer.
  *
  * Upon calling firehose_get_handlertable(), clients should loop over
- * the array of gasnet_handlerentry_t and fill in a valid
- * gasnet_handler_t index for each function pointer.  At firehose
+ * the array of gex_AM_Entry_t and fill in a valid
+ * gex_AM_Index_t for each function pointer.  At firehose
  * initialization, a check is made to make sure each function pointer
  * has been assigned a usable index number.
  */
-extern gasnet_handlerentry_t * firehose_get_handlertable(void);
+extern gex_AM_Entry_t * firehose_get_handlertable(void);
 
 /**************************
  * Firehose Initialization
@@ -808,7 +808,7 @@ typedef size_t (*firehose_remotecallback_args_fn_t)
  * AM-handler context: Cannot be run in a handler. 
  */
 extern const firehose_request_t *
-firehose_remote_pin(gasnet_node_t node, uintptr_t addr, size_t len,
+firehose_remote_pin(gex_Rank_t node, uintptr_t addr, size_t len,
 		    uint32_t flags, firehose_request_t *req,
 		    firehose_remotecallback_args_fn_t remote_args_callback,
 		    firehose_completed_fn_t callback, void *context);
@@ -833,7 +833,7 @@ firehose_remote_pin(gasnet_node_t node, uintptr_t addr, size_t len,
  * AM-handler context: Cannot be run in a handler. 
  */
 extern const firehose_request_t *
-firehose_try_remote_pin(gasnet_node_t node, uintptr_t addr, size_t len,
+firehose_try_remote_pin(gex_Rank_t node, uintptr_t addr, size_t len,
 			uint32_t flags, firehose_request_t *req);
 
 /******************************
@@ -862,7 +862,7 @@ firehose_try_remote_pin(gasnet_node_t node, uintptr_t addr, size_t len,
  * AM-handler context: Cannot be run in a handler.
  */
 extern const firehose_request_t *
-firehose_partial_remote_pin(gasnet_node_t node, uintptr_t addr,
+firehose_partial_remote_pin(gex_Rank_t node, uintptr_t addr,
                             size_t len, uint32_t flags,
                             firehose_request_t *req);
 

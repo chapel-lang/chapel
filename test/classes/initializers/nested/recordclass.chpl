@@ -1,16 +1,14 @@
-pragma "use default init"
 record R {
   type t;
   var x:t;
 
-  pragma "use default init"
   class R2 {
     type t;
     var y:t;
   }
 
   proc test() {
-    var r2 = new R2(t, x);
+    var r2 = new unmanaged R2(t, x);
 
     writeln(r2.y);
 

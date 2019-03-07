@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,8 @@
 
 #ifndef _LOOP_EXPR_H_
 #define _LOOP_EXPR_H_
+
+#include "stmt.h"
 
 class LoopExpr : public Expr {
 public:

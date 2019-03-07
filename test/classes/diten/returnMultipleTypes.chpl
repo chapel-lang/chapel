@@ -7,14 +7,14 @@ class A {
 
 class B:A {
   var name:string = "B";
-  proc sayTypeName() {
+  override proc sayTypeName() {
     writeln("B");
   }
 }
 
 class C:B {
   var name:string = "C";
-  proc sayTypeName() {
+  override proc sayTypeName() {
     writeln("C");
   }
 }

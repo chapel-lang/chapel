@@ -6,7 +6,7 @@ class A {
 }
 
 class B: A {
-  proc foo() {
+  override proc foo() {
     super.foo();
     writeln("in B.foo()");
   }

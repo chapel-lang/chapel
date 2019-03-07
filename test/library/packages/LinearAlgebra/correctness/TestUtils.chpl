@@ -95,3 +95,70 @@ proc assertFalse(x: bool, msg) {
     writeln('Received: ', x);
   }
 }
+
+proc assertAlmostEqual(X: [], Y: [], msg) {
+  if !correctness then writeln(msg);
+  if X.shape != Y.shape {
+    writeFailure(X, Y, msg);
+    return;
+  } else if !almostEquals(X, Y) {
+    writeFailure(X, Y, msg);
+    return;
+  }
+}
+
+
+/* TODO: contribute to standard library */
+proc almostEquals(A: [], B: []): bool {
+  //
+  // quick path for identical arrays
+  //
+  if A._value == B._value then
+    return true;
+  //
+  // quick path for rank mismatches
+  //
+  if A.rank != B.rank then
+    return false;
+
+  if A.numElements != B.numElements then
+    return false;
+
+  //
+  // check B size/shape are the same to permit legal zippering
+  //
+  if isRectangularDom(A.domain) && isRectangularDom(B.domain) {
+    for d in 1..A.rank do
+      if A.domain.dim(d).size != B.domain.dim(d).size then
+        return false;
+  }
+
+  //
+  // if all the above tests match, see if zippered equality is
+  // true everywhere
+  //
+  if isArrayType(A.eltType) {
+    var ret = true;
+    forall (Aarr, Barr) in zip(A, B) with (&& reduce ret) do
+      ret &&= almostEquals(Aarr, Barr);
+    return ret;
+  } else {
+    // TODO: Can A be written as a simple reduce?
+    var ret = true;
+    forall (Aelement, Belement) in zip(A, B) with (&& reduce ret) do
+      ret &&= almostEquals(Aelement, Belement);
+    return ret;
+  }
+}
+
+
+/*
+  Ideally, this would be supported with operator:
+
+    A ~== B
+
+  significant=7 is a better default, but 6 works well for our purposes
+ */
+proc almostEquals(a, b, significant=6) {
+  return abs(b - a) <= 10.0**-(significant-1);
+}

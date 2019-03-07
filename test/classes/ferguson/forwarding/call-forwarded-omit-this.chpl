@@ -11,7 +11,7 @@ class MyCircleImpl {
 }
 
 record MyCircle {
-  forwarding var impl: MyCircleImpl;
+  forwarding var impl: unmanaged MyCircleImpl;
   // above declaration requests forwarding
 
   // compiler creates area() method
@@ -35,7 +35,7 @@ record MyCircle {
 }
 
 
-var r = new MyCircle(new MyCircleImpl(1.0));
+var r = new MyCircle(new unmanaged MyCircleImpl(1.0));
 r.good();
 r.bad();
 r.ugly();

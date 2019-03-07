@@ -3,7 +3,7 @@ class Foo {
 }
 
 proc main() {
-  var f    = new Foo();
+  var f    = new borrowed Foo();
   var LM   = here:LocaleModel;
   var wide = false;
 
@@ -16,6 +16,4 @@ proc main() {
   }
 
   writeln(wide);
-
-  delete f;
 }

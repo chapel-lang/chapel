@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -70,7 +70,6 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   useList       = NULL;
   userLabel     = NULL;
   byrefVars     = NULL;
-  forallIntents = NULL;
   blockInfo     = NULL;
 
   body.parent   = this;
@@ -81,10 +80,19 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   gBlockStmts.add(this);
 }
 
+BlockStmt::BlockStmt(BlockTag initBlockTag) :
+  Stmt(E_BlockStmt) {
 
-BlockStmt::~BlockStmt() {
-  if (forallIntents)
-    delete forallIntents;
+
+  blockTag      = initBlockTag;
+  useList       = NULL;
+  userLabel     = NULL;
+  byrefVars     = NULL;
+  blockInfo     = NULL;
+
+  body.parent   = this;
+
+  gBlockStmts.add(this);
 }
 
 void BlockStmt::verify() {
@@ -126,14 +134,6 @@ void BlockStmt::verify() {
     }
   }
 
-  if (forallIntents) {
-    forallIntents->verifyFI(this);
-  }
-
-  if (byrefVars && forallIntents) {
-    INT_FATAL(this,"BlockStmt: byrefVars and forallIntents are both non-NULL");
-  }
-
   verifyNotOnList(useList);
   verifyNotOnList(byrefVars);
   verifyNotOnList(blockInfo);
@@ -148,7 +148,6 @@ BlockStmt::copyInner(SymbolMap* map) {
   _this->blockInfo = COPY_INT(blockInfo);
   _this->useList   = COPY_INT(useList);
   _this->byrefVars = COPY_INT(byrefVars);
-  _this->forallIntents = COPY_INT(forallIntents);
 
   for_alist(expr, body) {
     Expr* copy = COPY_INT(expr);
@@ -194,32 +193,12 @@ void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   else
     handled = false;
 
-  if (!handled &&
-      forallIntents && forallIntents->replaceChildFI(oldAst, newAst))
-    handled = true; // OK
-
   if (!handled)
     INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
 
   // TODO: Handle the above special cases uniformly by specializing the
   // traversal of the children by block statement type.  I think blockInfo is
   // being deprecated anyway....
-}
-
-void BlockStmt::removeForallIntents() {
-  forallIntents->removeFI(this);
-  forallIntents = NULL;
-}
-
-//
-// Return true when parentExpr is a BlockStmt, except for exprs
-// under BlockStmt::forallIntents.
-//
-bool isDirectlyUnderBlockStmt(const Expr* expr) {
-  if (BlockStmt* parent = toBlockStmt(expr->parentExpr))
-    return !astUnderFI(expr, parent->forallIntents);
-
-  return false;
 }
 
 CallExpr* BlockStmt::blockInfoGet() const {
@@ -547,10 +526,6 @@ BlockStmt::accept(AstVisitor* visitor) {
 
     if (byrefVars) {
       byrefVars->accept(visitor);
-    }
-
-    if (forallIntents) {
-      forallIntents->acceptFI(visitor);
     }
 
     visitor->exitBlockStmt(this);
@@ -1046,7 +1021,7 @@ ForwardingStmt::ForwardingStmt(DefExpr* toFnDef, std::set<const char*>* args, bo
     // for instance.
     for (std::map<const char*, const char*>::iterator it = renames->begin();
          it != renames->end(); ++it) {
-      renamed[it->first] = it->second;
+      renamed[it->first] = astr(it->second);
     }
   }
 }

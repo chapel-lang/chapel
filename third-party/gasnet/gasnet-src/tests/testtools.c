@@ -8,9 +8,9 @@
 #include "test.h"
 #include <limits.h> /* For INT_MAX */
 
-/* specifically omit gasnet.h/test.h to test independence */
-#if defined(_GASNET_H) || defined(TEST_GASNET_H)
-#error testtools should *not* include gasnet.h
+/* specifically omit gasnetex.h/test.h to test independence */
+#if defined(_GASNETEX_H) || defined(TEST_GASNETEX_H)
+#error testtools should *not* include gasnetex.h
 #endif
 
 #ifdef HAVE_PTHREAD_H

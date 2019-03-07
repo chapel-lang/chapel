@@ -8,36 +8,72 @@
 #define _GASNET_CORE_INTERNAL_H
 
 #include <gasnet_internal.h>
-#include <gasnet_handler.h>
 
 /*  whether or not to use spin-locking for HSL's */
 #define GASNETC_HSL_SPINLOCK 1
 
 /* ------------------------------------------------------------------------------------ */
-#define GASNETC_HANDLER_BASE  1 /* reserve 1-63 for the core API */
-#define _hidx_gasnetc_auxseg_reqh             (GASNETC_HANDLER_BASE+0)
+#define _hidx_gasnetc_exchg_reqh              (GASNETC_HANDLER_BASE+0)
 #define _hidx_gasnetc_exit_reqh               (GASNETC_HANDLER_BASE+1)
 #define _hidx_gasnetc_sys_barrier_reqh        (GASNETC_HANDLER_BASE+2)
 #define _hidx_gasnetc_sys_exchange_reqh       (GASNETC_HANDLER_BASE+3)
 /* add new core API handlers here and to the bottom of gasnet_core.c */
 
 /* ------------------------------------------------------------------------------------ */
-/* handler table (recommended impl) */
-#define GASNETC_MAX_NUMHANDLERS   256
-extern gasneti_handler_fn_t gasnetc_handler[GASNETC_MAX_NUMHANDLERS];
+/* handler table (temporary global impl) */
+extern gex_AM_Entry_t *gasnetc_handler;
 
 /* ------------------------------------------------------------------------------------ */
-/* AM category (recommended impl if supporting PSHM) */
-typedef enum {
-  gasnetc_Short=0,
-  gasnetc_Medium=1,
-  gasnetc_Long=2
-} gasnetc_category_t;
-
-/* from portals-conduit */
 /* Assert that a value is aligned to at least the given size */
 #define gasnetc_assert_aligned(_val,_align)	gasneti_assert(!((uintptr_t)(_val) % (_align)))
 
+/* ------------------------------------------------------------------------------------ */
+/* Configure gasnet_event_internal.h and gasnet_event.c */
+// TODO-EX: prefix needs to move from "extended" to "core"
+
+#define GASNETE_HAVE_LC
+
+#define GASNETE_CONDUIT_EOP_FIELDS \
+  gasneti_weakatomic_val_t initiated_cnt; \
+  gasneti_weakatomic_t     completed_cnt; \
+  gasneti_weakatomic_val_t initiated_alc; \
+  gasneti_weakatomic_val_t completed_alc;
+
+#define GASNETE_EOP_ALLOC_EXTRA(_eop) do { \
+    gasneti_weakatomic_set(&(_eop)->completed_cnt, 0 , 0); \
+    (_eop)->completed_alc = 0; \
+  } while (0)
+
+#if GASNET_DEBUG
+#define GASNETC_EOP_CNT_DONE(_eop) \
+    (gasneti_weakatomic_read(&(_eop)->completed_cnt, 0) \
+        == ((_eop)->initiated_cnt & GASNETI_ATOMIC_MAX))
+#define GASNETC_EOP_ALC_DONE(_eop) \
+    ((_eop)->completed_alc == (_eop)->initiated_alc)
+#endif
+
+#define GASNETC_EOP_CNT_FINISH(_eop) do { \
+    gasneti_assert(!GASNETC_EOP_CNT_DONE(_eop));                               \
+    gasneti_weakatomic_val_t _completed =                                      \
+        gasneti_weakatomic_add(&(_eop)->completed_cnt, 1, GASNETI_ATOMIC_ACQ); \
+    if (_completed == ((_eop)->initiated_cnt & GASNETI_ATOMIC_MAX)) {          \
+      GASNETE_EOP_MARKDONE(_eop);                                              \
+    }                                                                          \
+  } while (0)
+#define GASNETC_EOP_ALC_FINISH(_eop) do { \
+    gasneti_assert(!GASNETC_EOP_ALC_DONE(_eop));                               \
+    gasneti_weakatomic_val_t _completed = ((_eop)->completed_alc += 1);        \
+    if (_completed == (_eop)->initiated_alc) {                                 \
+      GASNETE_EOP_LC_FINISH(_eop);                                             \
+    }                                                                          \
+  } while (0)
+
+#define GASNETE_EOP_PREP_FREE_EXTRA(_eop) do { \
+    gasneti_assert(GASNETC_EOP_CNT_DONE(_eop)); \
+    gasneti_assert(GASNETC_EOP_ALC_DONE(_eop)); \
+  } while (0)
+
+#define _GASNETE_EOP_NEW_EXTRA GASNETE_EOP_PREP_FREE_EXTRA
 
 /* ------------------------------------------------------------------------------------ */
 

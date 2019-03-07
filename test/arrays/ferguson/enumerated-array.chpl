@@ -1,7 +1,7 @@
 enum classVals {S, W, A, B, C, D};
 
 const Class: domain(classVals) = classVals.S..classVals.D;
-const probSizes:   [Class] int = [classVals.S=>1400, classVals.W=>7000, classVals.A=>14000, classVals.B=>75000, classVals.C=>150000, classVals.D=>150000];
+var   probSizes:   [Class] int = [classVals.S=>1400, classVals.W=>7000, classVals.A=>14000, classVals.B=>75000, classVals.C=>150000, classVals.D=>150000];
 
 ref x = probSizes(classVals.S);
 x += 1;

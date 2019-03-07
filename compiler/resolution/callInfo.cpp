@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -85,7 +85,9 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
       // The _this actual to an initializer may be generic
-      if (strcmp(name, "init") == 0 && i == 2) {
+      bool isInit = strcmp(name, "init") == 0 ||
+                    strcmp(name, astrInitEquals) == 0;
+      if (isInit && i == 2) {
         actuals.add(sym);
 
       } else {
@@ -159,11 +161,6 @@ const char* CallInfo::toString() {
   if (developer                                   == false &&
       strncmp("_type_construct_", name, 16) == 0) {
     retval = astr(retval, name+16);
-
-  } else if (developer == false &&
-             strncmp("_construct_", name, 11) == 0) {
-    retval = astr(retval, name + 11);
-    retval = astr(retval, ".init");
 
   } else if (_this == false) {
     retval = astr(retval, name);

@@ -7,14 +7,14 @@ class C {
 
 class D : C {
   var y: int;
-  proc foo(i: int, j: int) {
+  override proc foo(i: int, j: int) {
     writeln((x, y, i, j));
   }
 }
 
 class E : D {
   var z: int;
-  proc foo(i: int, j: int) {
+  override proc foo(i: int, j: int) {
     writeln((x, y, z, i, j));
   }
 }

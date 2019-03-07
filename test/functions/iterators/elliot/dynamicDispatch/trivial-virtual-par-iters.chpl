@@ -6,13 +6,13 @@ class Parent {
 }
 
 class Child: Parent {
-  iter these(): int { yield 1; }
-  iter these(param tag: iterKind): int where tag == iterKind.standalone { yield 2; }
-  iter these(param tag: iterKind): int where tag == iterKind.leader { yield 3; }
-  iter these(param tag: iterKind, followThis): int where tag == iterKind.follower { yield 4; }
+  override iter these(): int { yield 1; }
+  override iter these(param tag: iterKind): int where tag == iterKind.standalone { yield 2; }
+  override iter these(param tag: iterKind): int where tag == iterKind.leader { yield 3; }
+  override iter these(param tag: iterKind, followThis): int where tag == iterKind.follower { yield 4; }
 }
 
-var child: Parent = new Child();
+var child: borrowed Parent = new borrowed Child();
 
 for c in child do writeln(c);
 forall c in child do writeln(c);

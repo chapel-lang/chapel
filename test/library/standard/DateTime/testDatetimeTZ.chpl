@@ -15,16 +15,16 @@ class FixedOffset: TZInfo {
     this.dstoffset = new timedelta(minutes=dstoffset);
   }
 
-  proc utcoffset(dt: datetime) {
+  override proc utcoffset(dt: datetime) {
     return offset;
   }
-  proc tzname(dt: datetime) {
+  override proc tzname(dt: datetime) {
     return name;
   }
-  proc dst(dt: datetime) {
+  override proc dst(dt: datetime) {
     return dstoffset;
   }
-  proc fromutc(dt: datetime) {
+  override proc fromutc(dt: datetime) {
     var dtoff = dt.utcoffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
@@ -184,7 +184,6 @@ proc test_tz_aware_arithmetic() {
   var maxdiff = max - min;
   assert(maxdiff == datetime.max - datetime.min +
                     new timedelta(minutes=2*1439));
-  delete rng;
 }
 
 proc test_tzinfo_now() {
@@ -254,7 +253,7 @@ proc test_tzinfo_fromtimestamp() {
   var tz = new shared FixedOffset(utcoffset, "tz", new timedelta());
   var expected = utcdatetime + utcoffset;
   var got = datetime.fromtimestamp(timestamp, tz);
-  assert(expected == got.replace(tzinfo=new Shared(nil:unmanaged TZInfo)));
+  assert(expected == got.replace(tzinfo=new shared(nil:unmanaged TZInfo)));
 }
 
 proc test_tzinfo_timetuple() {
@@ -265,7 +264,7 @@ proc test_tzinfo_timetuple() {
     proc init(i) {
       dstvalue = new timedelta(minutes=i);
     }
-    proc dst(dt) {
+    override proc dst(dt) {
       return dstvalue;
     }
   }
@@ -296,7 +295,7 @@ proc test_utctimetuple() {
     proc init(dstvalue) {
       this.dstvalue = new timedelta(minutes=dstvalue);
     }
-    proc dst(dt) {
+    override proc dst(dt) {
       return dstvalue;
     }
   }
@@ -307,7 +306,7 @@ proc test_utctimetuple() {
       super.init(dofs);
       this.uofs = new timedelta(minutes=uofs);
     }
-    proc utcoffset(dt) {
+    override proc utcoffset(dt) {
       return uofs;
     }
   }
@@ -423,7 +422,7 @@ proc test_replace() {
 
   // Ensure we can get rid of a tzinfo.
   assert(base.tzname() == "+100");
-  var base2 = base.replace(tzinfo=new Shared(nil: unmanaged TZInfo));
+  var base2 = base.replace(tzinfo=new shared(nil: unmanaged TZInfo));
   assert(base2.tzinfo.borrow() == nil);
 
   // Ensure we can add one.
@@ -463,9 +462,8 @@ proc test_more_astimezone() {
 proc test_aware_subtract() {
   // Ensure that utcoffset() is ignored when the operands have the
   // same tzinfo member.
-  pragma "use default init"
   class OperandDependentOffset: TZInfo {
-    proc utcoffset(dt: datetime) {
+    override proc utcoffset(dt: datetime) {
       if dt.minute < 10 {
         // d0 and d1 equal after adjustment
         return new timedelta(minutes=dt.minute);
@@ -516,7 +514,7 @@ proc test_mixed_compare() {
   var t1 = new datetime(1, 2, 3, 4, 5, 6, 7);
   var t2 = new datetime(1, 2, 3, 4, 5, 6, 7);
   assert(t1 == t2);
-  t2 = t2.replace(tzinfo=new Shared(nil: unmanaged TZInfo));
+  t2 = t2.replace(tzinfo=new shared(nil: unmanaged TZInfo));
   assert(t1 == t2);
   t2 = t2.replace(tzinfo=new shared FixedOffset(0, ""));
 
@@ -526,7 +524,7 @@ proc test_mixed_compare() {
     proc init() {
       offset = new timedelta(minutes=22);
     }
-    proc utcoffset(dt: datetime) {
+    override proc utcoffset(dt: datetime) {
       offset += new timedelta(minutes=1);
       return offset;
     }

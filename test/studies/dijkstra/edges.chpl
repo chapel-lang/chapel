@@ -7,7 +7,7 @@ module Edges {
     var D2 = {0..(nEdges-1)};
 
     var Counts: [D1] int;
-    var OutEdges: [D2] Edge;
+    var OutEdges: [D2] unmanaged Edge;
 
     Counts[nNodes] = nEdges;
     for i in D2 do Counts[Edges[i].n1] += 1;
@@ -25,7 +25,7 @@ module Edges {
       for end in Counts[i+1]..Counts[i] by -1 {
         for start in Counts[i]..(end-1) {
           if (OutEdges[start].n2 > OutEdges[start+1].n2) {
-            var temp: Edge = OutEdges[start]; 
+            var temp: unmanaged Edge = OutEdges[start]; 
             OutEdges[start] = OutEdges[start+1];
             OutEdges[start + 1] = temp;
           }
@@ -40,7 +40,7 @@ module Edges {
     var nodes: int;
 
     var D1 = {0..(nEdges-1)};
-    var Edges: [D1] Edge;
+    var Edges: [D1] unmanaged Edge;
 
     for i in D1 {
       var u: int = U[i];
@@ -52,7 +52,7 @@ module Edges {
         v = temp;
       }
 
-      Edges[i] = new Edge(id = i, dupl = 1, n1 = u - 1, n2 = v - 1, distance = if (w > 0.0) then w else -w);
+      Edges[i] = new unmanaged Edge(id = i, dupl = 1, n1 = u - 1, n2 = v - 1, distance = if (w > 0.0) then w else -w);
       Edges[i].vb$.writeEF(0.0);
 
       var lm: int;

@@ -6,8 +6,8 @@ class D { var r:real; }
 
 // Allocate some class objects of distinguishable type.
 
-var c = new C();
+var c = new unmanaged C();
 
-var d = new D();
+var d = new unmanaged D();
 
 // And leak them here.

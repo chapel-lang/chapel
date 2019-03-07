@@ -77,6 +77,7 @@ class Function {
         if debug then writeln("  initializing two-scale relation coefficients");
         hgDom = {0..2*k-1, 0..2*k-1};
         hg = hg_getCoeffs(k);
+        hgT = [(i,j) in hgDom] hg[j,i];
 
        
         if debug then writeln("  initializing quadrature coefficients");
@@ -91,8 +92,6 @@ class Function {
         dcDom = {0..k-1, 0..k-1};
 
         this.complete();
-
-        [(i,j) in hgDom] hgT[i,j] = hg[j,i];
 
         for i in quad_phiDom.dim(1) {
             const p = phi(quad_x[i], k);

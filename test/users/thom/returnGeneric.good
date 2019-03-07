@@ -1,2 +1,2 @@
-returnGeneric.chpl:5: In function 'foo':
-returnGeneric.chpl:6: error: type mismatch in assignment from C(int(64)) to C
+{n = 3}
+{n = 4, m = 5.5}

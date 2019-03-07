@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -136,6 +136,17 @@ module DefaultOpaque {
       var ia = new unmanaged DefaultOpaqueArr(eltType=eltType, idxType=idxType, parSafe=parSafe, dom=_to_unmanaged(this));
       return ia;
     }
+
+    proc dsiHasSingleLocalSubdomain() param return true;
+
+    proc dsiLocalSubdomain(loc: locale) {
+      if this.locale == loc {
+        return _getDomain(_to_unmanaged(this));
+      } else {
+        var a: domain(opaque);
+        return a;
+      }
+    }
   }
   
   proc DefaultOpaqueDom.dsiSerialWrite(f) {
@@ -154,9 +165,7 @@ module DefaultOpaque {
   }
   
   
-  pragma "use default init"
-  class DefaultOpaqueArr: BaseArr {
-    type eltType;
+  class DefaultOpaqueArr: AbsBaseArr {
     type idxType;
     param parSafe: bool;
   
@@ -178,8 +187,13 @@ module DefaultOpaque {
 
     proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiLocalSubdomain() {
-      return _newDomain(dom);
+    proc dsiLocalSubdomain(loc: locale) {
+      if this.locale == loc {
+        return _getDomain(dom);
+      } else {
+        var a: domain(opaque);
+        return a;
+      }
     }
   
     iter these() ref {

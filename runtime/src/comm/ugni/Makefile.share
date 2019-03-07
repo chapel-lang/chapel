@@ -1,4 +1,4 @@
-# Copyright 2004-2018 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -42,19 +42,23 @@ COMM_LAUNCHER_OBJS = \
 
 
 ifeq ($(CHPL_MAKE_COMPILER), clang-included)
-  ifneq (, $(filter cray-prgenv-%,$(CHPL_ORIG_TARGET_COMPILER)))
+  ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_ORIG_TARGET_COMPILER)))
     # if we're clang-included for a cray-prgenv-* build,
     # gather some extra include paths
 
     # only run gather-cray-prgenv-argumenst.bash once, as an optimization
     ifndef CHPL_UGNI_PRGENV_CFLAGS
-      export CHPL_UGNI_PRGENV_CFLAGS := $(shell $(CHPL_MAKE_HOME)/util/config/gather-cray-prgenv-arguments.bash compile)
+      export CHPL_UGNI_PRGENV_CFLAGS := $(shell $(CHPL_MAKE_HOME)/util/config/gather-cray-prgenv-arguments.bash compile "$(CHPL_MAKE_COMM)" "$(CHPL_MAKE_COMM_SUBSTRATE)" "$(CHPL_MAKE_AUXFS)")
     endif
   endif
 endif
 
 # Get system headers...
 comm_ugni_CFLAGS = $(CHPL_UGNI_PRGENV_CFLAGS)
+
+ifneq ($(UGNI_PERFSTATS),)
+comm_ugni_CFLAGS += -DPERFSTATS_COMM_UGNI
+endif
 
 # Building with IPA enabled results in execution time bugs. See JIRA issue 185
 # for more details: https://chapel.atlassian.net/browse/CHAPEL-185

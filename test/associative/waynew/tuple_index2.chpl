@@ -15,7 +15,7 @@ d.add( (1,0));
 d.add( (0,1));
 
 proc check( t: twod_t) {
-  writeln( t, " member = ", d.member( t));
+  writeln( t, " contains = ", d.contains( t));
 }
 
 check( (0,0));

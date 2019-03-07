@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,9 +28,13 @@
 // and want to utilize Phase 1 of the initializer body to determine
 //  the generic instantiation of it.
 
+#include "baseAST.h"
+
 class CallExpr;
 class FnSymbol;
+class Type;
 
 FnSymbol* resolveInitializer(CallExpr* call);
+void resolveNewInitializer(CallExpr* call, Type* manager = NULL);
 
 #endif

@@ -10,9 +10,9 @@ record R {
     this.x = 0;
     writeln("R.init: ", x);
   }
-  proc init(other:R) {
+  proc init=(other:R) {
     this.x = other.x + 1;
-    writeln("R.init(R): ", x);
+    writeln("R.init=(R): ", x);
   }
   proc deinit() {
     writeln("R.deinit: ", x);
@@ -27,6 +27,5 @@ class C {
 }
 
 var r = new R();
-var c = new C(r);
+var c = new owned C(r);
 writeln("c = ", c);
-delete c;

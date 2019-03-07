@@ -1,9 +1,9 @@
-use SharedObject;
+
 
 class C { }
 
 record R {
-  var sc: Shared(C);
+  var sc: shared C;
 }
 
 proc main {

@@ -8,7 +8,6 @@ record A {
 
   proc init() {
     b.foo = 5;
-    super.init();
   }
 }
 

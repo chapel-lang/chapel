@@ -12,7 +12,7 @@ class DistributedArray {
 }
 
 proc DistributedArray.this(i: int) ref {
-  if ndata.member(i) {
+  if ndata.contains(i) {
     return data[i];
   } else {
     const loc = (i-1)*numLocales/n;
@@ -28,15 +28,15 @@ proc DistributedArray.writeThis(W) {
   }
 }
 
-pragma "locale private" var A: DistributedArray;
+pragma "locale private" var A: unmanaged DistributedArray;
 
 //
 // set up DistributedArray
 //
 {
-  var AS: [0..numLocales-1] DistributedArray;
+  var AS: [0..numLocales-1] unmanaged DistributedArray;
   for loc in Locales do on loc {
-    A = new DistributedArray(n*here.id/numLocales+1..n*(here.id+1)/numLocales);
+    A = new unmanaged DistributedArray(n*here.id/numLocales+1..n*(here.id+1)/numLocales);
     AS[here.id] = A;
     if verbose then
       writeln(here.id, ": data[", A.ndata, "] = ", A.data);

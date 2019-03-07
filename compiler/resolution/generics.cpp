@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "visibleFunctions.h"
+#include "wellknown.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -50,9 +51,7 @@ static bool            fixupDefaultInitCopy(FnSymbol* fn,
 
 static void
 explainInstantiation(FnSymbol* fn) {
-  if (strcmp(fn->name, fExplainInstantiation) &&
-      (strncmp(fn->name, "_construct_", 11) ||
-       strcmp(fn->name+11, fExplainInstantiation)))
+  if (strcmp(fn->name, fExplainInstantiation) != 0)
     return;
   if (explainInstantiationModule && explainInstantiationModule != fn->defPoint->getModule())
     return;
@@ -60,18 +59,12 @@ explainInstantiation(FnSymbol* fn) {
     return;
 
   char msg[1024] = "";
-  int len;
-  if (fn->hasFlag(FLAG_CONSTRUCTOR))
-    len = sprintf(msg, "instantiated %s(", fn->_this->type->symbol->name);
-  else
-    len = sprintf(msg, "instantiated %s(", fn->name);
+  int len = sprintf(msg, "instantiated %s(", fn->name);
   bool first = true;
   for_formals(formal, fn) {
     form_Map(SymbolMapElem, e, fn->substitutions) {
       ArgSymbol* arg = toArgSymbol(e->key);
       if (!strcmp(formal->name, arg->name)) {
-        if (arg->hasFlag(FLAG_IS_MEME)) // do not show meme argument
-          continue;
         if (first)
           first = false;
         else
@@ -143,15 +136,12 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
             fn->hasFlag(FLAG_AUTO_COPY_FN) ||
             fn->hasFlag(FLAG_BUILD_TUPLE) ||
             fn->hasFlag(FLAG_NO_BORROW_CONVERT) ||
-            fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
             fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
             (fn->name == astrInit && fn->hasFlag(FLAG_COMPILER_GENERATED)) ||
             fn->name == astr_cast))
         if (ArgSymbol* arg = toArgSymbol(key))
           if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
-            if (arg->intent == INTENT_IN ||
-                arg->intent == INTENT_CONST ||
-                arg->intent == INTENT_CONST_IN ||
+            if (arg->intent == INTENT_CONST ||
                 arg->intent == INTENT_BLANK)
               if (arg->getValType() == dtAny)
                 return getManagedPtrBorrowType(actualTS->getValType())->symbol;
@@ -520,7 +510,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
         AggregateType* ct = toAggregateType(fn->retType);
 
-        if (ct->initializerStyle          != DEFINES_INITIALIZER &&
+        if (ct->hasUserDefinedInit        == false &&
             ct->wantsDefaultInitializer() == false) {
           newType = instantiateTypeForTypeConstructor(fn, subs, call, ct);
 
@@ -600,7 +590,13 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
       if (FnSymbol* initFn = findCopyInit(ct)) {
         Symbol*   thisTmp  = newTemp(ct);
         DefExpr*  def      = new DefExpr(thisTmp);
-        CallExpr* initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+        CallExpr* initCall = NULL;
+
+        if (initFn->name == astrInit) {
+          initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+        } else {
+          initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+        }
 
         newFn->insertBeforeEpilogue(def);
 
@@ -705,7 +701,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
   newFn->substitutions.map_union(allSubs);
 
   if (call) {
-    newFn->instantiationPoint = getVisibilityBlock(call);
+    newFn->setInstantiationPoint(call);
   }
 
   Expr* putBefore = fn->defPoint;
@@ -759,7 +755,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
   for_formals(formal, fn) {
     ArgSymbol* newFormal = toArgSymbol(map.get(formal));
 
-    if (formal->type == dtAny)
+    if (formal->type == dtAny || formal->type == dtTuple)
       newFormal->addFlag(FLAG_INSTANTIATED_FROM_ANY);
 
     if (Symbol* value = subs.get(formal)) {
@@ -815,6 +811,7 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn) {
   checkInstantiationLimit(fn);
 }
 
+// Note: evaluateWhereClause can apply to concrete functions too
 bool evaluateWhereClause(FnSymbol* fn) {
   if (fn->where) {
     whereStack.add(fn);

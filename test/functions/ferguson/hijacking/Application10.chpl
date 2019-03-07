@@ -16,13 +16,13 @@
     use LibraryZ4;
 
     class Widget : Base {
-      proc run(x:int) {
+      override proc run(x:int) {
         writeln("In Application.Widget.run");
       }
     }
 
     proc main() {
-      var instance = new Widget();
+      var instance = new unmanaged Widget();
       var x = 1;
       instance.setup(); // calls Base.setup()
       instance.run(x); // calls Widget.run()

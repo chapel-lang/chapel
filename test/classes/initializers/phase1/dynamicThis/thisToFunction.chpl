@@ -40,7 +40,7 @@ class Child : Parent {
     foobar(this);
   }
 
-  proc inheritedMethod() {
+  override proc inheritedMethod() {
     writeln("Child.inheritedMethod()");
   }
 }

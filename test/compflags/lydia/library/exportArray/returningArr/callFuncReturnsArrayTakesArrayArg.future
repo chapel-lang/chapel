@@ -1,9 +1,0 @@
-feature request: allow assumed domain array return types
-#8468
-
-Remove the skipif on these tests when they pass - the
-important part is the error in the precomp, which causes
-the linking failure logged as our output.  The linker
-output varies depending on platform and compiler, and
-isn't the core of the issue so is not worth tracking
-each variation on the failure output.

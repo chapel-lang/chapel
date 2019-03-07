@@ -10,9 +10,9 @@ if ( ! -d "util" || ! -d "compiler" || ! -d "runtime" || ! -d "modules" ) then
 endif
 
 # Remove any previously existing CHPL_HOME paths
-set MYPATH = `./util/config/fixpath.py PATH`
+set MYPATH = `./util/config/fixpath.py "$PATH"`
 set exitcode = $?
-set MYMANPATH = `./util/config/fixpath.py MANPATH`
+set MYMANPATH = `./util/config/fixpath.py "$MANPATH"`
 
 # Double check $MYPATH before overwriting $PATH
 if ( "$MYPATH" == "" || "$exitcode" != 0) then
@@ -25,13 +25,11 @@ echo -n "Setting CHPL_HOME "
 setenv CHPL_HOME "$cwd"
 echo "to $CHPL_HOME"
 
-echo -n "Setting CHPL_HOST_PLATFORM "
-setenv CHPL_HOST_PLATFORM `"$CHPL_HOME/util/chplenv/chpl_platform.py"`
-echo "to $CHPL_HOST_PLATFORM"
+set CHPL_BIN_SUBDIR = `"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
 
 echo -n "Updating PATH "
-setenv PATH "$CHPL_HOME/bin/$CHPL_HOST_PLATFORM":"$CHPL_HOME/util":"$MYPATH"
-echo "to include $CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
+setenv PATH "$CHPL_HOME/bin/$CHPL_BIN_SUBDIR":"$CHPL_HOME/util":"$MYPATH"
+echo "to include $CHPL_HOME/bin/$CHPL_BIN_SUBDIR"
 echo "                     and $CHPL_HOME/util"
 
 echo -n "Updating MANPATH "

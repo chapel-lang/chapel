@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -136,12 +136,18 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   chpl_free(memAlloc);
 }
 
-// Provide a handle to instrument Chapel calls to memcpy.
+// Provide handles to instrument Chapel calls to memcpy and memmove
 static inline
 void* chpl_memcpy(void* dest, const void* src, size_t num)
 {
   assert(dest != src || num == 0);
   return memcpy(dest, src, num);
+}
+
+static inline
+void* chpl_memmove(void* dest, const void* src, size_t num)
+{
+  return memmove(dest, src, num);
 }
 
 // Query the allocator to ask for a good size to allocate that is at least

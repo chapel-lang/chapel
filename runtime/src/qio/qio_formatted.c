@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -485,10 +485,6 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
   int64_t end_offset;
   ssize_t maxlen_chars = SSIZE_MAX - 1;
   int found_term = 0;
-
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
-  }
 
   if( maxlen_bytes <= 0 ) maxlen_bytes = SSIZE_MAX - 1;
 
@@ -1203,10 +1199,6 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
     // undesirable.
     ptr = "";
     len = 0;
-  }
-
-  if( qio_glocale_utf8 == 0 ) {
-    qio_set_glocale();
   }
 
   if( threadsafe ) {
@@ -2135,7 +2127,7 @@ qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, vo
 
   st.base = style->base;
   st.allow_base = style->prefix_base;
-  st.allow_pos_sign = style->showplus == 1;
+  st.allow_pos_sign = 1;
   st.allow_neg_sign = issigned;
   if(style->showpoint || style->precision > 0) {
     st.allow_point = 1;

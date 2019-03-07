@@ -513,7 +513,7 @@ proc MyBlockCyclicDom.dsiReprivatize(other, reprivatizeData) {
 }
 
 proc MyBlockCyclicDom.dsiMember(i) {
-  return whole.member(i);
+  return whole.contains(i);
 }
 
 proc MyBlockCyclicDom.dsiIndexOrder(i) {
@@ -678,7 +678,7 @@ proc MyBlockCyclicArr.dsiPrivatize(privatizeData) {
 //
 proc MyBlockCyclicArr.dsiAccess(i: idxType) var where rank == 1 {
   if myLocArr then /* TODO: reenable */ /* local */ {
-    if myLocArr.indexDom.myStarts.member(i) then  // TODO: This could be beefed up; true for indices other than starts
+    if myLocArr.indexDom.myStarts.contains(i) then  // TODO: This could be beefed up; true for indices other than starts
       return myLocArr.this(i);
   }
   //  var loci = dom.dist.idxToLocaleInd(i);
@@ -691,7 +691,7 @@ proc MyBlockCyclicArr.dsiAccess(i: idxType) var where rank == 1 {
 proc MyBlockCyclicArr.dsiAccess(i: rank*idxType) var {
 //   const myLocArr = locArr(here.id);
 //   local {
-//     if myLocArr.locDom.myStarts.member(i) then
+//     if myLocArr.locDom.myStarts.contains(i) then
 //       return myLocArr.this(i);
 //   }
   if rank == 1 {

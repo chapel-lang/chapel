@@ -13,7 +13,7 @@ class Foo {
 }
 
 proc outerFunc() throws {
-  throw new unmanaged Error();
+  throw new owned Error();
 }
 
 var foo = new unmanaged Foo();

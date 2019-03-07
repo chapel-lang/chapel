@@ -12,7 +12,7 @@ expression known as the \emph{receiver}.
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  linkage-specifier[OPT] proc-or-iter this-intent[OPT] type-binding[OPT] function-name argument-list[OPT] 
+  procedure-kind[OPT] proc-or-iter this-intent[OPT] type-binding[OPT] function-name argument-list[OPT]
     return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
 
 proc-or-iter:
@@ -89,7 +89,7 @@ class Actor {
   var name: string;
   var age: uint;
 }
-var anActor = new Actor(name="Tommy", age=27);
+var anActor = new owned Actor(name="Tommy", age=27);
 writeln(anActor);
 \end{chapelpre}
 \begin{chapel}
@@ -99,7 +99,6 @@ proc Actor.print() {
 \end{chapel}
 \begin{chapelpost}
 anActor.print();
-delete anActor;
 \end{chapelpost}
 \begin{chapeloutput}
 {name = Tommy, age = 27}
@@ -147,9 +146,8 @@ class C {
 proc bar(c: C) { writeln(c); }
 \end{chapel}
 \begin{chapelpost}
-var c1: C = new C();
+var c1: C = new owned C();
 c1.foo();
-delete c1;
 \end{chapelpost}
 \begin{chapeloutput}
 {}
@@ -157,8 +155,8 @@ delete c1;
 Then given an instance of \chpl{C} called \chpl{c1}, the method
 call \chpl{c1.foo()} results in a call to \chpl{bar} where the
 argument is \chpl{c1}.  Within primary method \chpl{C.foo()}, the
-(implicit) receiver formal has static type \chpl{C} and is referred to
-as \chpl{this}.
+(implicit) receiver formal has static type \chpl{C} (otherwise known as
+\chpl{borrowed C}) and is referred to as \chpl{this}.
 \end{chapelexample}
 
 Methods whose receivers are objects are called \emph{instance
@@ -309,7 +307,7 @@ class ThreeArray {
 }
 \end{chapel}
 \begin{chapelpost}
-var ta = new ThreeArray();
+var ta = new borrowed ThreeArray();
 ta(1) = 1;
 ta(2) = 2;
 ta(3) = 3;
@@ -352,13 +350,12 @@ class ThreeArray {
 }
 \end{chapel}
 \begin{chapelpost}
-var ta = new ThreeArray();
+var ta = new owned ThreeArray();
 for (i, j) in zip(ta, 1..) do
   i = j;
 
 for i in ta do
   writeln(i);
-delete ta;
 \end{chapelpost}
 \begin{chapeloutput}
 1

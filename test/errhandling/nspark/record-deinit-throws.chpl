@@ -2,7 +2,7 @@ use ExampleErrors;
 record Wrapper {
 
   var val: int;
-  var err: unmanaged Error;
+  var err: owned Error;
 
   proc init(v: int) {
     val = v;
@@ -14,7 +14,7 @@ record Wrapper {
   }
 
   proc oops() {
-    err = new unmanaged StringError("called oops()");
+    err = new owned StringError("called oops()");
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -243,8 +243,8 @@ Performing I/O with Channels
 
 Channels contain read and write methods, which are generic methods that can
 read or write anything, and can also take optional arguments such as I/O style
-or to return an error instead of halting. These functions generally take any
-number of arguments. See:
+or. These functions generally take any number of arguments and `throw`
+if there was an error. See:
 
  * :proc:`channel.write`
  * :proc:`channel.writeln`
@@ -612,9 +612,9 @@ proc stringStyleWithVariableLength() {
   This method returns the appropriate :record:`iostyle` ``str_style`` value
   to indicate a string format where string data is preceded by a ``lengthBytes``
   of length. Only lengths of 1, 2, 4, or 8 are supported; if this method
-  is called with any other length, it will halt with an error.
+  is called with any other length, it will throw an error.
  */
-proc stringStyleWithLength(lengthBytes:int) {
+proc stringStyleWithLength(lengthBytes:int) throws {
   var x = iostringstyle.lenVb_data;
   select lengthBytes {
     when 0 do x = iostringstyle.lenVb_data;
@@ -622,7 +622,10 @@ proc stringStyleWithLength(lengthBytes:int) {
     when 2 do x = iostringstyle.len2b_data;
     when 4 do x = iostringstyle.len4b_data;
     when 8 do x = iostringstyle.len8b_data;
-    otherwise halt("Unhandled string length prefix size");
+    otherwise
+      throw SystemError.fromSyserr(EINVAL,
+                                   "Invalid string length prefix " +
+                                   lengthBytes);
   }
   return x;
 }
@@ -1273,6 +1276,10 @@ proc file.init(x: file) {
   }
 }
 
+proc file.init=(x: file) {
+  this.init(x);
+}
+
 pragma "no doc"
 proc =(ref ret:file, x:file) {
   // retain -- release
@@ -1526,7 +1533,7 @@ proc _modestring(mode:iomode) {
     when iomode.rw do return _rw;
     when iomode.cw do return _cw;
     when iomode.cwr do return _cwr;
-    otherwise halt("Invalid mode");
+    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
   }
 }
 
@@ -1967,6 +1974,10 @@ proc channel.init(x: channel) {
   }
 }
 
+proc channel.init=(x: this.type) {
+  this.init(x);
+}
+
 //
 // Note that this is effectively the initializer that the compiler
 // would typically provide and that, by providing the next initializer
@@ -1987,12 +1998,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
 
 pragma "no doc"
 proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
-  // Note that once issue #7960 is resolved, the following could become a
-  // call to this.init(writing, kind, locking)...
-  this.writing = writing;
-  this.kind = kind;
-  this.locking = locking;
-  this.complete();
+  this.init(writing, kind, locking);
   on f.home {
     this.home = f.home;
     if kind != iokind.dynamic {
@@ -2020,13 +2026,14 @@ and :proc:`channel.write`) can use arguments of this type in order to read or
 write a single Unicode code point.
 
  */
-pragma "use default init"
 record ioChar {
   /* The code point value */
   var ch:int(32);
   pragma "no doc"
   proc writeThis(f) {
-    halt("ioChar.writeThis must handled by channel");
+    // ioChar.writeThis should not be called;
+    // I/O routines should handle ioChar directly
+    assert(false);
   }
 }
 
@@ -2051,7 +2058,6 @@ When reading an ioNewline, read routines will skip any character sequence
 ``skipWhitespaceOnly`` is set to true.
 
  */
-pragma "use default init"
 record ioNewline {
   /*
     Normally, we will skip anything at all to get to a \n,
@@ -2082,7 +2088,6 @@ When reading, the ioLiteral must be matched exactly - or else the read call
 will return an error with code :data:`SysBasic.EFORMAT`.
 
 */
-pragma "use default init"
 record ioLiteral {
   /* The value of the literal */
   var val: string;
@@ -2107,7 +2112,6 @@ Represents a value with a particular bit length that we want to read or write.
 The I/O will always be done in binary mode.
 
 */
-pragma "use default init"
 record ioBits {
   /* The bottom ``nbits`` of v will be read or written */
   var v:uint(64);
@@ -3213,7 +3217,7 @@ proc channel.readIt(ref x) {
 }
 
 pragma "no doc"
-proc channel.writeIt(x) {
+proc channel.writeIt(const x) {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
@@ -3234,7 +3238,7 @@ proc channel.writeIt(x) {
    For a reading channel, reads as with :proc:`channel.read`.
    Stores any error encountered in the channel. Does not return anything.
  */
-inline proc channel.readwrite(x) where this.writing {
+inline proc channel.readwrite(const x) where this.writing {
   this.writeIt(x);
 }
 // documented in the writing version.
@@ -3689,11 +3693,10 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
                       amount = arg.domain.high - start + 1) : bool throws
                       where arg.rank == 1 && isRectangularArr(arg) {
 
-  if arg.size == 0 || !arg.domain.member(start) ||
+  if arg.size == 0 || !arg.domain.contains(start) ||
      amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;
 
   var err:syserr = ENOERR;
-  var got_copy: int;
   on this.home {
     try! this.lock();
     param newLineChar = 0x0A;
@@ -3702,19 +3705,19 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
     const maxIdx = start + amount - 1;
     while i <= maxIdx {
       got = qio_channel_read_byte(false, this._channel_internal);
+      if got < 0 then break;
       arg[i] = got:uint(8);
       i += 1;
-      if got < 0 || got == newLineChar then break;
+      if got == newLineChar then break;
     }
     numRead = i - start;
-    if got < 0 then err = (-got):syserr;
-    got_copy = got;
+    if i == start && got < 0 then err = (-got):syserr;
     this.unlock();
   }
 
-  if !err && got_copy != 0 {
+  if !err {
     return true;
-  } else if err == EEOF || got_copy == 0 {
+  } else if err == EEOF {
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readline(arg : [] uint(8))");
@@ -3886,11 +3889,11 @@ inline proc channel.readbits(out v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if reading more bits than fit into v
     if numBits(v.type) < nbits then
-      throw new IllegalArgumentError("v, nbits", "readbits nbits=" + nbits +
+      throw new owned IllegalArgumentError("v, nbits", "readbits nbits=" + nbits +
                                                  " > bits in v:" + v.type:string);
     // Error if reading negative number of bits
     if isIntType(nbits.type) && nbits < 0 then
-      throw new IllegalArgumentError("nbits", "readbits nbits=" + nbits + " < 0");
+      throw new owned IllegalArgumentError("nbits", "readbits nbits=" + nbits + " < 0");
   }
 
   var tmp:ioBits;
@@ -3929,11 +3932,11 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if writing more bits than fit into v
     if numBits(v.type) < nbits then
-      throw new IllegalArgumentError("v, nbits", "writebits nbits=" + nbits +
+      throw new owned IllegalArgumentError("v, nbits", "writebits nbits=" + nbits +
                                                  " > bits in v:" + v.type:string);
     // Error if writing negative number of bits
     if isIntType(nbits.type) && nbits < 0 then
-      throw new IllegalArgumentError("nbits", "writebits nbits=" + nbits + " < 0");
+      throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits + " < 0");
   }
 
   return try this.write(new ioBits(v:uint(64), nbits:int(8)));
@@ -4359,7 +4362,7 @@ proc channel.isclosed() {
 pragma "no doc"
 proc channel.readBytes(x, len:ssize_t) throws {
   if here != this.home then
-    throw new unmanaged IllegalArgumentError("bad remote channel.readBytes");
+    throw new owned IllegalArgumentError("bad remote channel.readBytes");
   var err = qio_channel_read_amt(false, _channel_internal, x, len);
   if err then try this._ch_ioerror(err, "in channel.readBytes");
 }
@@ -4395,7 +4398,6 @@ proc channel.modifyStyle(f:func(iostyle, iostyle))
    of a single type. Also supports an iterator yielding
    the read values.
  */
-pragma "use default init"
 record ItemReader {
   /* What type do we read and yield? */
   type ItemType;
@@ -4438,7 +4440,6 @@ proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
   return new ItemReader(ItemType, kind, locking, this);
 }
 
-pragma "use default init"
 record ItemWriter {
   /* What type do we write? */
   type ItemType;
@@ -5485,7 +5486,10 @@ proc _toIntegral(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isAbstractEnumType(t) then
+      ret = (0, false);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
@@ -5528,7 +5532,10 @@ proc _toSigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isAbstractEnumType(t) then
+      ret = (0, false);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
@@ -5572,7 +5579,10 @@ proc _toUnsigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (uint, bool);
   try {
-    ret = (x:uint, true);
+    if isAbstractEnumType(t) then
+      ret = (0:uint, false);
+    else
+      ret = (x:uint, true);
   } catch {
     ret = (0:uint, false);
   }
@@ -5595,7 +5605,10 @@ proc _toReal(x:?t) where _isIoPrimitiveType(t) && !isRealType(t)
 {
   var ret: (real, bool);
   try {
-    ret = (x:real, true);
+    if isAbstractEnumType(t) then
+      ret = (0.0, false);
+    else
+      ret = (x:real, true);
   } catch {
     ret = (0.0, false);
   }
@@ -5617,7 +5630,10 @@ proc _toImag(x:?t) where _isIoPrimitiveType(t) && !isImagType(t)
 {
   var ret: (imag, bool);
   try {
-    ret = (x:imag, true);
+    if isAbstractEnumType(t) then
+      ret = (0.0i, false);
+    else
+      ret = (x:imag, true);
   } catch {
     ret = (0.0i, false);
   }
@@ -5640,7 +5656,10 @@ proc _toComplex(x:?t) where _isIoPrimitiveType(t) && !isComplexType(t)
 {
   var ret: (complex, bool);
   try {
-    ret = (x:complex, true);
+    if isAbstractEnumType(t) then
+      ret = (0.0+0.0i, false);
+    else
+      ret = (x:complex, true);
   } catch {
     ret = (0.0+0.0i, false);
   }
@@ -5684,7 +5703,10 @@ proc _toNumeric(x:?t) where _isIoPrimitiveType(t) && !isNumericType(t)
   // enums, bools get cast to int.
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isAbstractEnumType(t) then
+      ret = (0, false);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
@@ -5753,7 +5775,21 @@ private inline
 proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoPrimitiveType(t)
 {
   try {
-    lhs = rhs:t;
+    if isAbstractEnumType(t) {
+      if isStringType(t2) {
+        lhs = rhs:t;
+      } else {
+        return ERANGE;
+      }
+    } else if isEnumType(t) {
+      if (isIntType(t2) || isStringType(t2)) {
+        lhs = rhs:t;
+      } else {
+        lhs = rhs:int:t;
+      }
+    } else {
+      lhs = rhs:t;
+    }
   } catch {
     return ERANGE;
   }
@@ -5796,7 +5832,6 @@ proc _toRegexp(x:?t) where t != regexp
 }
 
 pragma "no doc"
-pragma "use default init"
 class _channel_regexp_info {
   var hasRegexp = false;
   var matchedRegexp = false;
@@ -5826,6 +5861,13 @@ class _channel_regexp_info {
   }
   proc deinit() {
     clear();
+  }
+  override proc writeThis(f) {
+    f <~> "{hasRegexp = " + hasRegexp: string;
+    f <~> ", matchedRegexp = " + matchedRegexp: string;
+    f <~> ", releaseRegexp = " + releaseRegexp: string;
+    f <~> ", ... capturei = " + capturei: string;
+    f <~> ", ncaptures = " + ncaptures: string + "}";
   }
 }
 
@@ -6440,7 +6482,7 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
             err = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
           } otherwise {
             // Unhandled argument type!
-            throw new IllegalArgumentError("args(" + i + ")",
+            throw new owned IllegalArgumentError("args(" + i + ")",
                                            "writef internal error " + argType(i));
           }
         }
@@ -6754,7 +6796,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
                 }
               }
             } otherwise {
-              throw new IllegalArgumentError("args(" + i + ")",
+              throw new owned IllegalArgumentError("args(" + i + ")",
                                              "readf internal error " + argType(i));
             }
           }

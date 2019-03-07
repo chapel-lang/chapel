@@ -1,4 +1,4 @@
-# Copyright 2004-2018 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -36,7 +36,7 @@ SUBDIRS = \
 	backend \
 	codegen \
 	ifa \
-	ipe \
+	llvm \
 	main \
 	optimizations \
 	parser \
@@ -60,10 +60,10 @@ endif
 #
 BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
 # configured prefix file
-CONFIGURED_PREFIX_FILE = $(COMPILER_ROOT)/main/CONFIGURED_PREFIX
+CONFIGURED_PREFIX_FILE = $(COMPILER_BUILD)/CONFIGURED_PREFIX
 # file storing the names of clang, clang++ for CHPL_LLVM=system
 # also stores the clang-sysroot-arguments
-CLANG_SETTINGS_FILE = $(COMPILER_ROOT)/main/CLANG_SETTINGS
+CLANG_SETTINGS_FILE = $(COMPILER_BUILD)/CLANG_SETTINGS
 
 #
 # include source subdirectories here
@@ -73,7 +73,7 @@ include AST/Makefile.include
 include backend/Makefile.include
 include codegen/Makefile.include
 include ifa/Makefile.include
-include ipe/Makefile.include
+include llvm/Makefile.include
 include main/Makefile.include
 include optimizations/Makefile.include
 include parser/Makefile.include
@@ -89,7 +89,7 @@ CHPL_OBJS = \
 	$(BACKEND_OBJS) \
 	$(CODEGEN_OBJS) \
 	$(IFA_OBJS) \
-	$(IPE_OBJS) \
+	$(LLVM_OBJS) \
 	$(MAIN_OBJS) \
 	$(OPTIMIZATIONS_OBJS) \
 	$(PARSER_OBJS) \
@@ -98,10 +98,12 @@ CHPL_OBJS = \
 	$(SYMTAB_OBJS) \
 	$(UTIL_OBJS) \
 
-EXECS = $(CHPL) $(CHPLDOC) $(CHPLIPE)
+EXECS = $(CHPL) $(CHPLDOC)
 
 PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) llvm $(CLANG_SETTINGS_FILE)
-TARGETS = $(CHPL)
+TARGETS = $(CHPL) $(CHPL_OLD)
+
+LIBS = -lm
 
 # Set up variables representing paths that will be installed
 # and how to fix them (for CLANG_SETTINGS).
@@ -141,10 +143,10 @@ $(BUILD_VERSION_FILE): FORCE
 $(CHPL_MAKE_HOME)/configured-prefix:
 	echo > $(CHPL_MAKE_HOME)/configured-prefix
 
-$(CONFIGURED_PREFIX_FILE): $(CHPL_MAKE_HOME)/configured-prefix
+$(CONFIGURED_PREFIX_FILE): $(COMPILER_BUILD) $(CHPL_MAKE_HOME)/configured-prefix
 	echo '"'`cat $(CHPL_MAKE_HOME)/configured-prefix`'"' \ > $(CONFIGURED_PREFIX_FILE)
 
-$(CLANG_SETTINGS_FILE):
+$(CLANG_SETTINGS_FILE): $(COMPILER_BUILD)
 	echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' | $(FIXPATH_CMD) > $(CLANG_SETTINGS_FILE)
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
@@ -155,10 +157,11 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 
 $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
-	rm -f $(CHPLIPE)
-	ln -s $(notdir $(CHPL)) $(CHPLIPE)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
+
+$(CHPL_OLD): $(CHPL) $(CHPL_OLD_BIN_DIR)
+	cp "$(CHPL_MAKE_HOME)/util/config/old-chpl.sh" "$(CHPL_OLD_BIN_DIR)/chpl"
 
 $(CHPLDOC): $(CHPL)
 	rm -f $(CHPLDOC)
@@ -169,8 +172,15 @@ chpldoc: $(CHPLDOC)
 parser: FORCE
 	$(MAKE) -C parser parser
 
+$(COMPILER_BUILD):
+	mkdir -p $@
+
 $(CHPL_BIN_DIR):
 	mkdir -p $@
+
+$(CHPL_OLD_BIN_DIR):
+	mkdir -p $@
+
 
 # third-party pkgs could be automatically built with the below.
 #
@@ -182,7 +192,7 @@ $(CHPL_BIN_DIR):
 #	done
 
 llvm: FORCE
-	$(MAKE) -C $(THIRD_PARTY_DIR)/llvm $(CHPL_MAKE_LLVM)
+	$(MAKE) -C $(THIRD_PARTY_DIR) llvm
 
 #
 # include standard footer for compiler

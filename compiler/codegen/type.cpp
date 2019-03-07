@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,13 +23,13 @@
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "build.h"
+#include "clangUtil.h"
 #include "codegen.h"
 #include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
-#include "ipe.h"
 #include "iterator.h"
 #include "LayeredValueTable.h"
 #include "llvmVer.h"
@@ -111,7 +111,7 @@ void EnumType::codegenDef() {
       info->lvt->addGlobalType(symbol->cname, type);
 
       // Convert enums to constants with the user-specified immediate,
-      // sized appropraitely, when it exists.  When it doesn't, give
+      // sized appropriately, when it exists.  When it doesn't, give
       // it the semi-arbitrary 0-based ordinal value (similar to what
       // the C back-end would do itself).  Note that once some enum
       // has a non-NULL constant->init, all subsequent ones should as
@@ -239,6 +239,24 @@ void AggregateType::codegenDef() {
       type = llvm::ArrayType::get(elementType, fields.length);
 #endif
     }
+  } else if (symbol->hasFlag(FLAG_C_ARRAY)) {
+    Type* eltType = cArrayElementType();
+    int64_t sizeInt = cArrayLength();
+    TypeSymbol* eltTS = eltType->symbol;
+    const char* eltTypeCName = eltTS->cname;
+    if( outfile ) {
+      fprintf(outfile, "typedef ");
+      fprintf(outfile, "%s", eltTypeCName);
+      fprintf(outfile, " %s", symbol->codegen().c.c_str());
+      fprintf(outfile, "[%ld];\n\n", (long int) sizeInt);
+      return;
+    } else {
+#ifdef HAVE_LLVM
+      llvm::Type *elementType = eltTS->type->codegen().type;
+      type = llvm::ArrayType::get(elementType, sizeInt);
+#endif
+    }
+
   } else if (symbol->hasFlag(FLAG_REF)) {
     TypeSymbol* base = getField(1)->type->symbol;
     const char* baseType = base->cname;
@@ -578,20 +596,18 @@ int AggregateType::codegenFieldStructure(FILE*       outfile,
   return totfields;
 }
 
-#ifdef HAVE_LLVM
-extern int getCRecordMemberGEP(const char* typeName, const char* fieldName);
-#endif
-
-int AggregateType::getMemberGEP(const char *name) {
+int AggregateType::getMemberGEP(const char *name, bool &isCArrayField) {
 #ifdef HAVE_LLVM
   if( symbol->hasFlag(FLAG_EXTERN) ) {
     // We will cache the info in the local GEP map.
     std::map<std::string, int>::const_iterator GEPIdx = GEPMap.find(name);
     if(GEPIdx != GEPMap.end()) {
+      isCArrayField = isCArrayFieldMap[name];
       return GEPIdx->second;
     }
-    int ret = getCRecordMemberGEP(symbol->cname, name);
+    int ret = getCRecordMemberGEP(symbol->cname, name, isCArrayField);
     GEPMap.insert(std::pair<std::string,int>(name, ret));
+    isCArrayFieldMap.insert(std::pair<std::string,int>(name, isCArrayField));
     return ret;
   } else {
     Vec<Type*> next, current;
