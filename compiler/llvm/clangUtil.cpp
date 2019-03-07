@@ -2559,6 +2559,16 @@ void checkAdjustedDataLayout() {
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
+static void makeLLVMLibrary(std::string moduleFilename, const char* tmpbinname,
+                            std::vector<std::string> dotOFiles);
+static void runLLVMLinking(std::string useLinkCXX, std::string options,
+                           std::string moduleFilename, std::string maino,
+                           const char* tmpbinname,
+                           std::vector<std::string> dotOFiles,
+                           std::vector<std::string> clangLDArgs,
+                           bool sawSysroot);
+static void moveGeneratedLibraryFile(const char* tmpbinname);
+static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
 
 void makeBinaryLLVM(void) {
 
@@ -2929,12 +2939,12 @@ void makeBinaryLLVM(void) {
   readArgsFromFile(sysroot_arguments, sysroot_args);
 
   // add arguments from configured-clang-sysroot-arguments
-  bool saw_sysroot = false;
+  bool sawSysroot = false;
   for (auto &s : sysroot_args) {
     options += " ";
     options += s;
     if (s == "-isysroot")
-      saw_sysroot = true;
+      sawSysroot = true;
   }
   // add arguments that we captured at compile time
   options += " ";
@@ -2974,6 +2984,123 @@ void makeBinaryLLVM(void) {
   codegen_makefile(&mainfile, &tmpbinname, true);
   INT_ASSERT(tmpbinname);
 
+  if (fLibraryCompile) {
+    makeLLVMLibrary(moduleFilename, tmpbinname, dotOFiles);
+  } else {
+    // Runs the LLVM link command
+    runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
+                   dotOFiles, clangLDArgs, sawSysroot);
+  }
+
+
+  // If we're not using a launcher, copy the program here
+  if (0 == strcmp(CHPL_LAUNCHER, "none")) {
+
+    if (fLibraryCompile) {
+      moveGeneratedLibraryFile(tmpbinname);
+    } else {
+      moveResultFromTmp(executableFilename, tmpbinname);
+    }
+
+  } else {
+    // Now run the makefile to move from tmpbinname to the proper program
+    // name and to build a launcher (if necessary).
+    const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
+    const char* makecmd = astr(astr(CHPL_MAKE, " "),
+                               makeflags,
+                               getIntermediateDirName(), "/Makefile");
+
+    if( printSystemCommands ) {
+      printf("%s\n", makecmd);
+      fflush(stdout); fflush(stderr);
+    }
+
+    mysystem(makecmd, "Make Binary - Building Launcher and Copying");
+  }
+}
+
+static void makeLLVMLibrary(std::string moduleFilename, const char* tmpbinname,
+                            std::vector<std::string> dotOFiles) {
+  std::string commandBase = "ar -c -r -s"; // Stolen from Makefile.static
+  std::string command = commandBase + " " + tmpbinname + " " +  moduleFilename;
+  for( size_t i = 0; i < dotOFiles.size(); i++ ) {
+    command += " ";
+    command += dotOFiles[i];
+  }
+  if( printSystemCommands ) {
+    printf("%s\n", command.c_str());
+    fflush(stdout); fflush(stderr);
+  }
+  mysystem(command.c_str(), "Make Library File - Linking");
+}
+
+static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
+  std::error_code err;
+
+  // rm -f hello
+  if( printSystemCommands )
+    printf("rm -f %s\n", resultName);
+
+  err = llvm::sys::fs::remove(resultName);
+  if (err) {
+    USR_FATAL("removing file %s failed: %s\n",
+              resultName,
+              err.message().c_str());
+  }
+  // mv tmp/hello.tmp hello
+  if( printSystemCommands )
+    printf("mv %s %s\n", tmpbinname, resultName);
+
+  err = llvm::sys::fs::rename(tmpbinname, resultName);
+  if (err) {
+    // But that might fail if /tmp is on a different filesystem.
+
+    std::string mv("mv ");
+    mv += tmpbinname;
+    mv += " ";
+    mv += resultName;
+
+    mysystem(mv.c_str(), mv.c_str());
+
+    /* For future LLVM,
+       err = llvm::sys::fs::copy_file(tmpbinname, resultName);
+       if (err) {
+         USR_FATAL("copying file %s to %s failed: %s\n",
+                   tmpbinname,
+                   resultName,
+                   err.message().c_str());
+       }
+
+       // and then set permissions, like mv
+       auto maybePerms = llvm::sys::fs::getPermissions(tmpbinname);
+       if (maybePerms.getError()) {
+         USR_FATAL("reading permissions on %s failed: %s\n",
+                   tmpbinname,
+                   err.message().c_str());
+       }
+       err = llvm::sys::fs::setPermissions(resultName, *maybePerms);
+       if (err) {
+         USR_FATAL("setting permissions on %s failed: %s\n",
+                   resultName,
+                   err.message().c_str());
+       }
+
+       // and then remove the file, so it's like mv
+       err = llvm::sys::fs::remove(tmpbinname);
+       if (err) {
+         USR_FATAL("removing file %s failed: %s\n",
+                   tmpbinname,
+                   err.message().c_str());
+       }*/
+  }
+}
+
+static void runLLVMLinking(std::string useLinkCXX, std::string options,
+                           std::string moduleFilename, std::string maino,
+                           const char* tmpbinname,
+                           std::vector<std::string> dotOFiles,
+                           std::vector<std::string> clangLDArgs,
+                           bool sawSysroot) {
   // Run the linker. We always use a C++ compiler because some third-party
   // libraries are written in C++. Here we use clang++ or possibly a
   // linker override specified by the Makefiles (e.g. setting it to mpicxx)
@@ -3003,7 +3130,7 @@ void makeBinaryLLVM(void) {
     command += " -L";
     command += dirName;
   }
-  if (saw_sysroot) {
+  if (sawSysroot) {
     // Work around a bug in some versions of Clang that forget to
     // search /usr/local/lib if there is a -isysroot argument.
     command += " -L/usr/local/lib";
@@ -3018,85 +3145,23 @@ void makeBinaryLLVM(void) {
     fflush(stdout); fflush(stderr);
   }
   mysystem(command.c_str(), "Make Binary - Linking");
+}
 
-  // If we're not using a launcher, copy the program here
-  if (0 == strcmp(CHPL_LAUNCHER, "none")) {
-
-    std::error_code err;
-
-    // rm -f hello
-    if( printSystemCommands )
-      printf("rm -f %s\n", executableFilename);
-
-    err = llvm::sys::fs::remove(executableFilename);
-    if (err) {
-      USR_FATAL("removing file %s failed: %s\n",
-                executableFilename,
-                err.message().c_str());
-    }
-
-    // mv tmp/hello.tmp hello
-    if( printSystemCommands )
-      printf("mv %s %s\n", tmpbinname, executableFilename);
-
-    err = llvm::sys::fs::rename(tmpbinname, executableFilename);
-    if (err) {
-      // But that might fail if /tmp is on a different filesystem.
-
-      std::string mv("mv ");
-      mv += tmpbinname;
-      mv += " ";
-      mv += executableFilename;
-
-      mysystem(mv.c_str(), mv.c_str());
-
-      /* For future LLVM,
-      err = llvm::sys::fs::copy_file(tmpbinname, executableFilename);
-      if (err) {
-        USR_FATAL("copying file %s to %s failed: %s\n",
-                  tmpbinname,
-                  executableFilename,
-                  err.message().c_str());
-      }
-
-      // and then set permissions, like mv
-      auto maybePerms = llvm::sys::fs::getPermissions(tmpbinname);
-      if (maybePerms.getError()) {
-        USR_FATAL("reading permissions on %s failed: %s\n",
-                  tmpbinname,
-                  err.message().c_str());
-      }
-      err = llvm::sys::fs::setPermissions(executableFilename, *maybePerms);
-      if (err) {
-        USR_FATAL("setting permissions on %s failed: %s\n",
-                  executableFilename,
-                  err.message().c_str());
-      }
-
-      // and then remove the file, so it's like mv
-      err = llvm::sys::fs::remove(tmpbinname);
-      if (err) {
-        USR_FATAL("removing file %s failed: %s\n",
-                  tmpbinname,
-                  err.message().c_str());
-      }*/
-    }
-
-  } else {
-    // Now run the makefile to move from tmpbinname to the proper program
-    // name and to build a launcher (if necessary).
-    const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-    const char* makecmd = astr(astr(CHPL_MAKE, " "),
-                               makeflags,
-                               getIntermediateDirName(), "/Makefile");
-
-    if( printSystemCommands ) {
-      printf("%s\n", makecmd);
-      fflush(stdout); fflush(stderr);
-    }
-
-    mysystem(makecmd, "Make Binary - Building Launcher and Copying");
+static void moveGeneratedLibraryFile(const char* tmpbinname) {
+  // Need to reuse some of the stuff in codegen_makefile.  It doesn't save the
+  // full filename that is used when in library mode, so we don't have an
+  // alternative to making a modified version of executableFilename again
+  const char* exeExt = getLibraryExtension();
+  const char* libraryPrefix = "";
+  int libLength = strlen("lib");
+  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  if (!startsWithLib) {
+    libraryPrefix = "lib";
   }
+  const char* fullLibraryName = astr(libDir, "/", libraryPrefix,
+                                     executableFilename, exeExt);
+
+  moveResultFromTmp(fullLibraryName, tmpbinname);
 }
 
 #endif

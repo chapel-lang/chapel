@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling exportFuncWithArrayArg.chpl
+$3 --llvm --library --static exportFuncWithArrayArg.chpl

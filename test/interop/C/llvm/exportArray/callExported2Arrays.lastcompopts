@@ -1,0 +1,1 @@
+-Llib/ -lexportFuncWith2Arrays `$CHPL_HOME/util/config/compileline --libraries` -lexportFuncWith2Arrays
