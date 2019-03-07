@@ -372,6 +372,24 @@ For example:
    Make sure your Python functionality is also complete before calling this
    function.
 
+Argument Default Values
+-----------------------
+
+Python has the capacity to support default values for arguments.  The ability to
+call Chapel exported functions with argument default values from Python is
+present, but is not yet fully supported.  See :ref:`the Caveat section
+<default-values>` for more details.
+
+For the cases that are not supported, the compiler will generate a warning. The
+argument must always be provided when calling the function.
+
+c_ptr Arguments
+---------------
+
+Python code can pass ``numpy`` arrays or ``ctypes`` pointers to ``c_ptr``
+arguments.
+
+
 Debugging Issues with --library-python
 --------------------------------------
 
@@ -383,6 +401,60 @@ third-party libraries).  These files are currently left in the same location as
 the generated library - if compilation fails due to generating one or more of
 these files incorrectly, you may be able to modify the file and re-run the
 Cython command yourself.
+
+Arrays
+======
+
+Arrays can be returned by exported Chapel functions as one of two C types:
+
+- ``chpl_external_array``
+
+  - For arrays that can be translated into native C or Python arrays.  In
+    Python, the contents of this type is copied into a Python array.
+
+- ``chpl_opaque_array``
+
+  - For arrays that are not currently translated.  In Python, this is used as a
+    field in a Python class named ``ChplOpaqueArray``.
+
+chpl_external_array
+-------------------
+
+A ``chpl_external_array`` can be created in C or returned by a Chapel function
+declared as returning specific Chapel array types.  To create a
+``chpl_external_array`` in C, you can call:
+
+- ``chpl_make_external_array(elt_size, num_elts)`` to create an empty array of
+  the given size.
+
+- ``chpl_make_external_array_ptr(elts, num_elts)`` where ``elts`` is an existing
+  array of the given size.
+
+Users should call ``chpl_free_external_array`` to indicate that they are done
+using the ``chpl_external_array`` instance if it was created for them by a
+Chapel function or via ``chpl_make_external_array``.  Users should explicitly
+free any memory that was stored in a ``chpl_external_array`` using
+``chpl_make_external_array_ptr``.
+
+.. note::
+   The names of these functions may change.
+
+chpl_opaque_array
+-----------------
+
+Chapel arrays that cannot be returned using ``chpl_external_array`` will be
+returned using ``chpl_opaque_array``.  ``chpl_opaque_array`` instances cannot be
+created outside of Chapel, nor can their contents be accessed.
+``chpl_opaque_array`` instances can only be received and sent to Chapel
+functions.
+
+Users should call ``cleanupOpaqueArray`` to indicate they are done using the
+``chpl_opaque_array`` instance.
+
+It is our intention to support as many Chapel array types as we can using
+``chpl_external_array``.  Chapel arrays types that are currently supported using
+``chpl_opaque_array`` may become supported by ``chpl_external_array`` instead
+in the future.
 
 Using Your Library in Chapel
 ============================
@@ -406,10 +478,10 @@ this leads to multiple definitions of these functions.
 LLVM
 ----
 
-LLVM support with ``--library`` is currently a work-in-progress.  For the
-current release, it is only supported for C with a subset of the flags, and does
-not support arrays.  It also does not fully work with ``--dynamic`` compilation.
-We expect to extend this support in later releases.
+LLVM support with ``--library`` is currently a work-in-progress.  For the 1.19
+release, it is only supported for C with a subset of the flags, and does not
+support arrays.  It also does not fully work with ``--dynamic`` compilation.  We
+expect to extend this support in later releases.
 
 
 .. _Exporting Symbols:
@@ -420,74 +492,7 @@ Exporting Symbols
 Only functions can be exported currently.  We hope to extend this support to
 types and global variables in the future.
 
-Arrays
-~~~~~~
-
-Arrays can be returned by exported Chapel functions as one of two C types:
-
-- ``chpl_external_array``
-
-  - For arrays that can be translated into native C or Python arrays.  In
-    Python, the contents of this type is copied into a Python array.
-
-- ``chpl_opaque_array``
-
-  - For arrays that are not currently translated.  In Python, this is used as a
-    field in a Python class named ``ChplOpaqueArray``.
-
-chpl_external_array
-+++++++++++++++++++
-
-A ``chpl_external_array`` can be created in C or returned by a Chapel function
-declared as returning specific Chapel array types.  To create a
-``chpl_external_array`` in C, you can call:
-
-- ``chpl_make_external_array(elt_size, num_elts)`` to create an empty array of
-  the given size.
-
-- ``chpl_make_external_array_ptr(elts, num_elts)`` where ``elts`` is an existing
-  array of the given size.
-
-The memory owned by a ``chpl_external_array`` may or may not be considered to be
-the user's responsibility.  Users should call ``chpl_free_external_array`` to
-indicate that they are done using the ``chpl_external_array`` instance if it was
-created for them by a Chapel function or via ``chpl_make_external_array``.
-Users should explicitly free any memory that was stored in a
-``chpl_external_array`` using ``chpl_make_external_array_ptr``.
-
-.. note::
-   The names of these functions may change.
-
-chpl_opaque_array
-+++++++++++++++++
-
-Chapel arrays that cannot be returned using ``chpl_external_array`` will be
-returned using ``chpl_opaque_array``.  ``chpl_opaque_array`` instances cannot be
-created outside of Chapel, nor can their contents be accessed.
-``chpl_opaque_array`` instances can only be received and sent to Chapel
-functions.
-
-The memory owned by a ``chpl_opaque_array`` may or may not be considered to be
-the user's responsibility.  Users should call ``cleanupOpaqueArray`` to indicate
-they are done using the ``chpl_opaque_array`` instance.
-
-It is our intention to support as many Chapel array types as we can using
-``chpl_external_array``.  Chapel arrays types that are currently supported using
-``chpl_opaque_array`` may become supported by ``chpl_external_array`` instead
-in the future.
-
-c_ptr Arguments
-~~~~~~~~~~~~~~~
-
-C interoperability supports calling exporting functions with ``c_ptr`` arguments
-using normal C pointers.
-
-Python interoperability supports calling these functions with a couple of
-strategies:
-
-- by passing a ``numpy`` array to the argument, or
-- by passing a ``ctypes`` pointer.
-
+.. _default-values:
 
 Argument Default Values
 ~~~~~~~~~~~~~~~~~~~~~~~
