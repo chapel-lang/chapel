@@ -403,6 +403,14 @@ program.  Each library file must include the chapel runtime and standard modules
 for its own functionality and when two or more libraries are linked to a program
 this leads to multiple definitions of these functions.
 
+LLVM
+----
+
+LLVM support with ``--library`` is currently a work-in-progress.  For the
+current release, it is only supported for C with a subset of the flags, and does
+not support arrays.  It also does not fully work with ``--dynamic`` compilation.
+We expect to extend this support in later releases.
+
 
 .. _Exporting Symbols:
 
