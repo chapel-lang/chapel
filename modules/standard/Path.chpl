@@ -329,7 +329,7 @@ private proc getUserLoginDir(user: string): string throws {
   if outf == 0 then
     // NOTE: Strange compiler error if I don't do this.
     throw new owned
-      IllegalArgumentError("Failed to find " + user + " in pwd.");
+      IllegalArgumentError("No entry for " + user + " in pwd.");
 
   return new string(outs, isowned=true, needToCopy=false);
 }
@@ -367,7 +367,7 @@ private proc getUserLoginDir(): string throws {
   if outf == 0 then
     // NOTE: Strange compiler error if I don't do this.
     throw new owned
-      IllegalArgumentError("Failed to find current user in pwd.");
+      IllegalArgumentError("No entry for current user in pwd.");
 
   return new string(outs, isowned=true, needToCopy=false);
 }
@@ -383,6 +383,11 @@ private proc getUserLoginDir(): string throws {
 
   If expansion fails or the path does not begin with a tilde, the path is
   returned unchanged.
+
+  .. warning::
+
+    The current implementation of this function is not safe for use in a
+    parallel environment.
 
   :arg path: a file or directory, which may or may not include `~` or `~<user>`
   :type path: `string`
