@@ -78,10 +78,15 @@ const pathSep = "/";
 
 /*
   Creates a normalized absolutized version of a path. On most platforms this is
-  equivalent to the call :code:`normPath(joinPath(here.cwd(), name)`. See
-  :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()` for
-  details.
+  equivalent to the code:
 
+  .. code::
+  
+    normPath(joinPath(here.cwd(), name)
+  
+  See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`
+  for details.
+    
   .. warning::
 
     This function is unsafe for use in a parallel environment due to its
@@ -106,10 +111,14 @@ proc absPath(name: string): string throws {
 
 /*
   Creates a normalized absolutized version of the path in this :type:`~IO.file`.
-  On most platforms this is equivalent to the call
-  :code:`normPath(joinPath(here.cwd(), file.path))`. See :proc:`normPath()`,
-  :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()` for details.
-
+  On most platforms this is equivalent to the code:
+  
+  .. code::
+  
+      normPath(joinPath(here.cwd(), file.path))
+      
+  See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`
+  for details.
 
   .. warning::
 
