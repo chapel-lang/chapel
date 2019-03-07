@@ -411,3 +411,65 @@ Exporting Symbols
 
 Only functions can be exported currently.  We hope to extend this support to
 types and global variables in the future.
+
+Arrays
+~~~~~~
+
+Arrays can be returned by exported Chapel functions using two strategies:
+- ``chpl_external_array``
+  - For arrays that can be translated into native C or Python arrays.  In
+    Python, the contents of this type is copied into a Python array
+- ``chpl_opaque_array``
+  - For arrays that are not currently translated
+
+chpl_external_array
++++++++++++++++++++
+
+A ``chpl_external_array`` can be created in C or returned by a Chapel function
+declared as returning specific Chapel array types.  To create a
+``chpl_external_array`` in C, you can call:
+- ``chpl_make_external_array(elt_size, num_elts)`` for an empty array of the
+  given size
+- ``chpl_make_external_array_ptr(elts, num_elts)``, where elts is an existing
+  array of the given size
+
+The memory owned by a ``chpl_external_array`` may or may not be considered as
+the user's responsibility.  Users should call ``chpl_free_external_array`` when
+they are done using the ``chpl_external_array`` instance if it was created for
+them by a Chapel function or ``chpl_make_external_array``.  Users should free
+any memory that was stored in a ``chpl_external_array`` using
+``chpl_make_external_array_ptr``.
+
+.. note::
+   The names of these functions may change.
+
+chpl_opaque_array
++++++++++++++++++
+
+Chapel arrays that cannot be returned using ``chpl_external_array`` will be
+returned using ``chpl_opaque_array``.  ``chpl_opaque_array`` instances cannot be
+created outside of Chapel, nor can their contents be accessed.
+``chpl_opaque_array`` instances can only be received and sent to Chapel
+functions.
+
+c_ptr Arguments
+~~~~~~~~~~~~~~~
+
+C interoperability supports calling exporting functions with ``c_ptr`` arguments
+using normal C pointers.
+
+Python interoperability supports calling these functions with a couple of
+strategies: by passing a ``numpy`` array to the argument, or by passing a
+``ctypes`` pointer.
+
+
+Argument Default Values
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Python interoperability currently supports default values for function
+arguments, but only when the default value is a literal (e.g. `4`, `"blah"`).
+Default values that are more complicated are not currently supported.  We hope
+to extend this support in the future.
+
+C interoperability does not support default values for function arguments.  We
+do not anticipate supporting argument default values in C.
