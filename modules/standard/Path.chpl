@@ -305,7 +305,7 @@ proc dirname(name: string): string {
 
   The call to chpl_fs_get_home() returns a malloc'd buffer. The buffer "outs"
   is never allocated if the call to chpl_fs_get_home() returns an error or
-  if "outf" is set to TRUE.
+  if "outf" is set to FALSE.
 
   The underlying C implementation is not currently reentrant/threadsafe.
 */
@@ -327,6 +327,7 @@ private proc getUserLoginDir(user: string): string throws {
     try ioerror(err, "getUserLoginDir");
 
   if outf == 0 then
+    // NOTE: Strange compiler error if I don't do this.
     throw new owned
       IllegalArgumentError("Failed to find " + user + " in pwd.");
 
@@ -340,7 +341,7 @@ private proc getUserLoginDir(user: string): string throws {
 
   The call to chpl_fs_get_home() returns a malloc'd buffer. The buffer "outs"
   is never allocated if the call to chpl_fs_get_home() returns an error or
-  if "outf" is set to TRUE.
+  if "outf" is set to FALSE.
 
   The underlying C implementation is not currently reentrant/threadsafe.
 */
@@ -364,6 +365,7 @@ private proc getUserLoginDir(): string throws {
     try ioerror(err, "getUserLoginDir");
 
   if outf == 0 then
+    // NOTE: Strange compiler error if I don't do this.
     throw new owned
       IllegalArgumentError("Failed to find current user in pwd.");
 
@@ -396,7 +398,7 @@ proc expandUser(path: string): string {
     return path;
 
   var splitPathOnce = path.split(pathSep, 1, true);
-  const firstComp = splitPathOnce.pop_front();
+  const ref firstComp = splitPathOnce[1];
 
   var logindir: string;
 
@@ -414,8 +416,8 @@ proc expandUser(path: string): string {
     return path;
   }
 
-  if !splitPathOnce.isEmpty() {
-    splitPathOnce.push_front(logindir);
+  if splitPathOnce.size > 1 {
+    splitPathOnce[1] = logindir;
     return joinPath(splitPathOnce);
   }
 

@@ -16,6 +16,9 @@ proc doTests(someuser: string) {
   // Expand the current user with leading tilde.
   test('~' + someuser);
 
+  // Expand the current user with leading tilde and slash.
+  test('~/' + someuser);
+  
   // Expand the current user with no leading tilde.
   test(someuser);
 
@@ -26,10 +29,10 @@ proc doTests(someuser: string) {
   test(someuser + '~~~');
 
   // Current user with up-level in front.
-  test('..' + '~' + someuser);
+  test('../' + '~' + someuser);
 
   // Current user with trailing up-level.
-  test('~' + someuser + '..');
+  test('~' + someuser + '/..');
 }
 
 var username_c: c_string = '';

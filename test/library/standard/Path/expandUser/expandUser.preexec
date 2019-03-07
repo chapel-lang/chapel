@@ -18,6 +18,9 @@ def do_tests(someuser):
     # Expand the current user with leading tilde.
     test('~' + someuser)
 
+    # Expand the current user with leading tilde and slash.
+    test('~/' + someuser);
+    
     # Expand the current user with no leading tilde.
     test(someuser)
 
@@ -28,10 +31,10 @@ def do_tests(someuser):
     test(someuser + '~~~')
 
     # Current user with up-level in front.
-    test('..' + '~' + someuser)
+    test('../' + '~' + someuser)
 
     # Current user with trailing up-level.
-    test('~' + someuser + '..')
+    test('~' + someuser + '/..')
 
 
 # Redirect STDOUT to write to our test file.
