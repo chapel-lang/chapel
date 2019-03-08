@@ -847,7 +847,7 @@ void cullOverReferences() {
                 /*
                 printf("print working on node %i %i\n",
                        node.variable->id, node.fieldIndex);
-                
+
                 printf("for iterator %i\n", iterator->id);
                 */
 
@@ -1473,7 +1473,7 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
     INT_ASSERT(constRefCall != NULL);
   if (which == USE_VALUE)
     INT_ASSERT(valueCall != NULL);
-  
+
   CallExpr* someCall = refCall;
   if (someCall == NULL) someCall = constRefCall;
   if (someCall == NULL) someCall = valueCall;
