@@ -50,7 +50,7 @@
    variables to make sure the optimization is valid.
 
    The overall idea of the optimization is to find statements that
-   represent the last thing occuring in a forall iteration. Since the
+   represent the last thing occurring in a forall iteration. Since the
    forall iterations could run in any order, these last statements could
    also complete in any order.
 
@@ -304,7 +304,7 @@ static const char* blockStateString(MayBlockState state) {
   if (ret[0] == ',')
     ret = astr(&ret[1]);
 
-  // put a word there so the output doesn't look too wierd
+  // put a word there so the output doesn't look too weird
   if (ret[0] == '\0' && (state & STATE_COMPUTED))
     ret = astr("computed");
 
@@ -382,7 +382,7 @@ static MayBlockState mayBlock(FnSymbol* fn) {
       // associated with completing the current task
       state = STATE_COMPLETES_TASKS;
     } else if (fn->hasFlag(FLAG_TASK_JOIN_IMPL_FN)) {
-      // wait end count functions are associatied with joining with tasks
+      // wait end count functions are associated with joining with tasks
       state = STATE_JOINS_TASKS;
     } else if (fn->hasFlag(FLAG_EXTERN)) {
       ModuleSymbol* inModule = fn->defPoint->getModule();
