@@ -306,7 +306,7 @@ proc commonPath(paths: []): string {
       writeln(dirname("/foo/bar/baz")); // Prints "/foo/bar"
       writeln(dirname("/foo/bar/")); // Also prints "/foo/bar"
 
-   :arg name: a string file name.  Note that this string does not have to be
+   :arg name: A string file name.  Note that this string does not have to be
               a valid file name, as the file itself will not be affected.
    :type name: `string`
 */
@@ -318,7 +318,7 @@ proc dirname(name: string): string {
    ``${<name>}`` into their values.  If ``<name>`` does not exist, they are left
    in place. Returns the path which includes these expansions.
 
-   :arg path: a string representation of a path, which may or may not include
+   :arg path: A string representation of a path, which may or may not include
               ``$<name>`` or ``${<name>}``.
    :type path: `string`
 
@@ -527,11 +527,11 @@ private proc normalizeLeadingSlashCount(name: string): int {
     Unlike its Python counterpart, this function does not (currently) change
     slashes to backslashes on Windows.
 
-  :arg name: a potential path to collapse, possibly destroying the meaning of
+  :arg name: A potential path to collapse, possibly destroying the meaning of
              the path if symbolic links were included.
   :type name: `string`
 
-  :return: the collapsed version of `name`
+  :return: The collapsed version of `name`.
   :rtype: `string`
 */
 proc normPath(name: string): string {
