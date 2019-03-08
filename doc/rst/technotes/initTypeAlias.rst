@@ -13,9 +13,8 @@ Overview
 Initializing a variable with a generic type has historically required users to
 pass each ``type`` and ``param`` value to the initializer as arguments. This
 can be a tedious and repetitive process if the user is initializing many
-variables of the exact same type. Some users have expressed interest in support
-for using type aliases to reduce the repetitive nature of initializing the same
-type many times. For example:
+variables of the exact same type. One might wish to use type aliases to reduce
+the repetitive nature of initializing the same type many times. For example:
 
 .. code-block:: chapel
 
@@ -94,8 +93,8 @@ initializer when using type aliases:
   // becomes...
   //   var y = new R(T=int, U=string, 5, "hello");
 
-Unification with Default-Initialization
----------------------------------------
+Default Initialization for Instantiated Generic Types
+-----------------------------------------------------
 
 When a variable with a record type is declared without an initialization
 expression, the compiler "default-initializes" the variable. For non-generic
