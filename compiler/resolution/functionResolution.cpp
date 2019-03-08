@@ -5693,6 +5693,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager);
 
 static void handleUnstableNewError(CallExpr* newExpr, Type* newType);
 
+static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager);
+
 static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType);
 
 static void resolveNew(CallExpr* newExpr) {
@@ -5771,6 +5773,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
 
+      warnForThrowNotOwned(newExpr, type, manager);
+
       // set manager for new t(1,2,3)
       // where t is e.g Owned(MyClass)
       // or for t is unmanaged(MyClass)
@@ -5785,6 +5789,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
           }
         }
       }
+
 
       // if manager is set, and we're not calling the manager's init function,
       // use the canonical class type instead of the managed type, since
@@ -5874,14 +5879,9 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
         } else if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
           if (parentCall->isNamed("chpl__tounmanaged") || // TODO -- remove case
               parentCall->isNamed("chpl__delete") || // TODO -- remove case
-              parentCall->isNamed("chpl__buildDistValue")) {
+              parentCall->isNamed("chpl__buildDistValue") ||
+              parentCall->isNamed("chpl_fix_thrown_error")) {
             // OK
-          } else if (parentCall->isNamed("chpl_fix_thrown_error")) {
-            // OK, but warn for throw new SomeError()
-            USR_WARN(parentCall,
-                     "please use 'throw new owned %s' "
-                     "instead of 'throw new %s'",
-                     newType->symbol->name, newType->symbol->name);
           } else if (parentCall->isPrimitive(PRIM_NEW) &&
                      parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
             // OK e.g. new Owned(new MyClass())
@@ -5896,6 +5896,66 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
   }
 
   return false;
+}
+
+static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager) {
+  // This function implements a warning that should be removed in 1.20
+  // in favor e.g. calling compilerError in chpl_fix_thrown_error.
+  INT_ASSERT(newExpr->parentSymbol);
+  Type* cType = canonicalClassType(newType);
+
+  if (isClass(cType) && isSubTypeOrInstantiation(cType, dtError)) {
+
+    bool unmanaged = false;
+    bool borrowed = false;
+    bool owned = false;
+    bool undecorated = false;
+
+    if (manager == dtOwned || isSubTypeOrInstantiation(newType, dtOwned))
+      owned = true;
+    else if (manager == dtUnmanaged || isUnmanagedClassType(newType))
+      unmanaged = true;
+    else if (manager == NULL)
+      undecorated = true;
+    else if (manager == dtBorrowed)
+      borrowed = true;
+
+    if (owned)
+      return; // throw owned Error is OK
+
+    SymExpr* checkSe = NULL;
+    if (CallExpr* parentCall = toCallExpr(newExpr->parentExpr))
+      if (parentCall->isPrimitive(PRIM_MOVE) ||
+          parentCall->isPrimitive(PRIM_ASSIGN))
+        if (SymExpr* lhsSe = toSymExpr(parentCall->get(1)))
+          checkSe = lhsSe;
+
+    if (checkSe) {
+      for_SymbolSymExprs(se, checkSe->symbol()) {
+        if (se == checkSe) {
+          // OK
+        } else if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
+          if (parentCall->isNamed("chpl_fix_thrown_error")) {
+            if (undecorated)
+              USR_WARN(parentCall,
+                       "please use 'throw new owned %s "
+                       "instead of 'throw new %s'",
+                       cType->symbol->name, cType->symbol->name);
+            else if (unmanaged)
+              USR_WARN(parentCall,
+                       "please throw owned %s instead of unmanaged %s",
+                       cType->symbol->name, cType->symbol->name);
+            else if (borrowed)
+              USR_FATAL(parentCall,
+                       "please throw owned %s instead borrowed %s",
+                       cType->symbol->name, cType->symbol->name);
+            else
+              USR_FATAL(parentCall, "only owned Errors can be thrown");
+          }
+        }
+      }
+    }
+  }
 }
 
 static bool isManagedPointerInit(SymExpr* typeExpr) {

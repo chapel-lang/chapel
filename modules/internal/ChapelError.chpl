@@ -361,7 +361,6 @@ module ChapelError {
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
-  // TODO -- deprecate this version
   proc chpl_fix_thrown_error(err: borrowed Error): unmanaged Error {
     compilerError("Throwing borrowed error - please throw owned", 1);
 
@@ -395,7 +394,9 @@ module ChapelError {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_fix_thrown_error(err: unmanaged Error): unmanaged Error {
-    compilerWarning("Throwing unmanaged error - please throw owned", 1);
+    // TODO: This should be an error in the future,
+    // for now the compiler already adds a warning in this case.
+    //compilerWarning("Throwing unmanaged error - please throw owned", 1);
 
     return chpl_do_fix_thrown_error(err);
   }
