@@ -82,7 +82,7 @@ const pathSep = "/";
 
   .. code-block:: Chapel
   
-    return normPath(joinPath(here.cwd(), name));
+    normPath(joinPath(here.cwd(), name))
   
   See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`
   for details.
@@ -116,7 +116,7 @@ proc absPath(name: string): string throws {
   
   .. code-block:: Chapel
   
-      return normPath(joinPath(here.cwd(), file.path));
+      normPath(joinPath(here.cwd(), file.path))
       
   See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`,
   :proc:`~IO.file.path` for details.
