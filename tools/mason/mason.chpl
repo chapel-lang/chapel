@@ -154,5 +154,5 @@ proc masonDoc(args) {
 }
 
 proc printVersion() {
-  writeln('mason 0.1.0');
+  writeln('mason 0.1.1');
 }
