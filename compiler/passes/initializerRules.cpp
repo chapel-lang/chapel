@@ -123,8 +123,8 @@ void preNormalizeFields(AggregateType* at) {
           }
         }
       } else if (TypeSymbol* ts = toTypeSymbol(defExpr->sym)) {
-        if (isEnumType(ts->type)) {
-          USR_FATAL(field, "'chpl' can't handle enums local to a class/record/union yet");
+        if (isEnumType(ts->type) && !at->wantsDefaultInitializer()) {
+          USR_FATAL(field, "'chpl' can't handle user initizers of 'enum' fields yet");
         }
       }
     }
@@ -961,7 +961,7 @@ static DefExpr* fieldByName(AggregateType* at, const char* name) {
     DefExpr*   defExpr = toDefExpr(currField);
     VarSymbol* var     = toVarSymbol(defExpr->sym);
 
-    if (var && strcmp(var->name, name) == 0) {
+    if (strcmp(var->name, name) == 0) {
       retval    = defExpr;
     } else {
       currField = currField->next;
