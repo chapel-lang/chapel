@@ -37,6 +37,17 @@ record foo {
     length += 1;
     return this;
   }
+
+  proc cleanup() {
+    var cursor: unmanaged node(t);
+    var next: unmanaged node(t);
+    cursor = first;
+    while (cursor != nil) {
+      next = cursor.next;
+      delete cursor;
+      cursor = next;
+    }
+  }
 }
 
 proc foo.writeThis(fp) {
@@ -60,3 +71,5 @@ f.prepend(3);
 f.prepend(4);
 
 writeln(f);
+
+f.cleanup();
