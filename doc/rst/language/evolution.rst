@@ -13,6 +13,37 @@ useful when migrating programs to the current version of the language.
 The purpose of this flag is to identify  portions of a program that use a
 language feature that has changed meaning.
 
+version 1.19, March 2019
+------------------------
+
+Version 1.19 includes language changes that address:
+
+  * copy-initialization
+    See :ref:`readme-evolution.init-equals`
+
+.. _readme-evolution.init-equals:
+
+compiler-generated copy initializer no longer named 'init'
+**********************************************************
+
+Code that utilized new-expressions to perform copy-initialization may need to
+be updated if the type relied on compiler-generated initializers. For example:
+
+.. code-block:: chapel
+
+  record R {
+    var x : int;
+  }
+
+  var x = new R(5);
+  var y = new R(x);
+
+will now encounter a compile-time error for the expression ``new R(x)``.
+
+The compiler-generated initializer of the form ``R.init(other:R)`` has been
+replaced by a new method named ``init=`` that cannot be invoked by
+new-expressions. See :ref:`initequals` for more information.
+
 version 1.18, September 2018
 ----------------------------
 
