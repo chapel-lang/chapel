@@ -5790,7 +5790,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         }
       }
 
-
       // if manager is set, and we're not calling the manager's init function,
       // use the canonical class type instead of the managed type, since
       // the rest of the compiler (e.g. initializer resolution) uses
@@ -5900,7 +5899,7 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
 
 static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager) {
   // This function implements a warning that should be removed in 1.20
-  // in favor e.g. calling compilerError in chpl_fix_thrown_error.
+  // in favor of e.g. calling compilerError in chpl_fix_thrown_error.
   INT_ASSERT(newExpr->parentSymbol);
   Type* cType = canonicalClassType(newType);
 
@@ -5938,16 +5937,16 @@ static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager
           if (parentCall->isNamed("chpl_fix_thrown_error")) {
             if (undecorated)
               USR_WARN(parentCall,
-                       "please use 'throw new owned %s "
+                       "please use 'throw new owned %s' "
                        "instead of 'throw new %s'",
                        cType->symbol->name, cType->symbol->name);
             else if (unmanaged)
               USR_WARN(parentCall,
-                       "please throw owned %s instead of unmanaged %s",
+                       "please throw 'owned %s' instead of 'unmanaged %s'",
                        cType->symbol->name, cType->symbol->name);
             else if (borrowed)
               USR_FATAL(parentCall,
-                       "please throw owned %s instead borrowed %s",
+                       "please throw 'owned %s' instead of 'borrowed %s'",
                        cType->symbol->name, cType->symbol->name);
             else
               USR_FATAL(parentCall, "only owned Errors can be thrown");
