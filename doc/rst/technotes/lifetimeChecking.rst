@@ -30,7 +30,11 @@ access the variable. For example:
       // scope of `f` includes the body of this function
       {
         // and any nested blocks (including loops, conditionals, etc).
+
+        var x: int;
+        // `x` scope ends here, but `f` scope does not
       }
+      // it would be an error to access `x` here
     }
     // it would be an error to access `f` here
 
@@ -44,6 +48,12 @@ access the variable. For example:
     // `g` is a global variable and its scope extends
     // to any code using this module.
   }
+
+A scope can be contained in another scope. For example, the scope of `x`
+contained is within the scope of `f` in the above example. In other
+words, anywhere that `x` can be accessed, `f` can also be accessed.
+In such a case we say that the scope of `x` is smaller than the scope of
+`g`.
 
 Lifetime
 ++++++++
@@ -69,8 +79,25 @@ the other variable.
       // `borrow`s lifetime extends to the end of this block
       // because its lifetime matches `own`
     }
+
+    var global: owned SomeClass;
+    proc settingGlobal() {
+      var x = new owned SomeClass();
+      // lifetime of x extends for entire function body
+
+      global = x; // transfers the instance from x to global
+      // leaving x storing `nil`
+
+      // lifetime of `x` extends to here, but an attempt
+      // to use `x` would result in an error from
+      // compile-time nil checking.
+    }
   }
 
+Similarly to scopes, lifetimes may be contained within each other.
+Ultimately, a lifetime is just the scope of some variable, and so we can
+say that one lifetime is smaller or larger than another, just as we can
+say that a scope is smaller or larger than another scope.
 
 Example Errors
 ==============
@@ -78,6 +105,12 @@ Example Errors
 The lifetime checker is designed to catch errors such as:
  * returning a reference to or borrow from a function-local variable
  * assigning a value with a shorter lifetime to something with a larger scope
+
+When the lifetime for a variable is smaller than its scope, that usually
+means that there is some point in the program where accessing that
+variable could lead to a memory error. There are some cases where the
+analysis indicates a memory error could occur, but a human programmer
+might know that it cannot for other reasons.
 
 Returning a Reference to a Local Variable
 +++++++++++++++++++++++++++++++++++++++++
@@ -95,7 +128,8 @@ Returning a Reference to a Local Variable
     return refTo(i); // returns `i` by reference
     // but `i` goes out of scope here
   }
-  returnsRefLocal();
+  ref r = returnsRefLocal();
+  var val = r; // accesses invalid memory
 
 ::
 
@@ -110,14 +144,15 @@ Returning a Borrow From a Local Owned Instance
 .. code-block:: chapel
 
   // returnsborrow.chpl
-  class SomeClass { }
+  class SomeClass { var field: int; }
   proc borrowLocal() {
     var obj = new owned SomeClass;
     return obj.borrow(); // returns borrow of `obj`
     // but `obj` goes out of scope (and `delete`s the instance) here
   }
 
-  borrowLocal();
+  var b = borrowLocal();
+  var y = b.field; // accesses deleted memory
 
 ::
 
