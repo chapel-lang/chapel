@@ -906,6 +906,7 @@ static Expr* handleUnstableClassType(SymExpr* se) {
           } else if (outerOuterCall &&
                      outerOuterCall->isPrimitive(PRIM_THROW)) {
             // throw new Error()
+            USR_WARN(outerOuterCall, "throw new SomeError is unstable");
             ok = true;
           } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
                      pCall == outerCall->get(1)) {
