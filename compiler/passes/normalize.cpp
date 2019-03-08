@@ -982,6 +982,7 @@ static void processSyntacticDistributions(CallExpr* call) {
  */
 static void processManagedNew(CallExpr* newCall) {
   SET_LINENO(newCall);
+  bool argListError = false;
   if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
     if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
       if (callManager->numActuals() == 1) {
@@ -1015,8 +1016,39 @@ static void processManagedNew(CallExpr* newCall) {
               newCall->replace(replace);
             }
           }
+        } else if (isSymExpr(callManager->get(1)) &&
+                   (callManager->isNamed("_owned") ||
+                    callManager->isNamed("_shared") ||
+                    callManager->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                    callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS))) {
+          SymExpr* se = toSymExpr(callManager->get(1));
+          if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+            argListError = true;
+          }
         }
       }
+    } else {
+      if (newCall->numActuals() == 1) {
+        argListError = true;
+      }
+    }
+  }
+
+  if (argListError) {
+    FnSymbol* parent = newCall->getFunction();
+
+    //
+    // Later in normalization valid AST like "('new' (call R))" will turn into
+    // "('new' R)" during fixPrimNew. If those expressions were run through
+    // normalization again, they would encounter this error.
+    //
+    // This conditional avoids known cases where those expressions are
+    // re-normalized.
+    //
+    if (parent->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false &&
+        parent->hasFlag(FLAG_NEW_WRAPPER) == false &&
+        parent->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+      USR_FATAL_CONT(newCall, "type in 'new' expression is missing its argument list");
     }
   }
 }

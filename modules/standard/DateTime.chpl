@@ -49,7 +49,7 @@ module DateTime {
   private const DI4Y   = daysBeforeYear(5);
 
   // This avoids needing to create new shared objects everywhere we need nil
-  private const nilTZ = new shared(nil: unmanaged TZInfo);
+  private const nilTZ : shared TZInfo = nil;
 
   /* Days in the week, starting with `Monday` = 0 */
   enum DayOfWeek {

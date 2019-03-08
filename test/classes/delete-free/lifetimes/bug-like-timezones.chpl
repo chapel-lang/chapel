@@ -7,7 +7,7 @@ class MyClass {
   var x:int;
 }
 
-private const nilTZ = new shared MyClass;
+private const nilTZ : shared MyClass;
 
 record R {
   var tz:shared MyClass;

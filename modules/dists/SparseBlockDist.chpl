@@ -299,7 +299,7 @@ class LocSparseBlockDom {
   type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
   var sparseDist = if _to_borrowed(sparseLayoutType) == DefaultDist then defaultDist
-                   else new dmap(new unmanaged sparseLayoutType); //unresolved call workaround
+                   else new dmap(new unmanaged sparseLayoutType()); //unresolved call workaround
   var mySparseBlock: sparse subdomain(parentDom) dmapped sparseDist;
 
   proc dsiAdd(ind: rank*idxType) {

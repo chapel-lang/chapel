@@ -21,7 +21,7 @@ proc f() {
   // CHECK: store double 3.14
   // CHECK-SAME: !tbaa ![[REALACC:[0-9]+]]
 
-  cvar = new unmanaged MyClass;
+  cvar = new unmanaged MyClass();
   return cvar;
   // Look for an access of the class pointer, and remember its TBAA access tag.
   // CHECK: store %chpl_MyClass_chpl{{[0-9]*}}_object*
