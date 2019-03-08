@@ -69,8 +69,8 @@ void Type::addSymbol(TypeSymbol* newSymbol) {
 }
 
 bool Type::inTree() {
-  if (symbol)
-    return symbol->inTree();
+  if (symbol && symbol->defPoint)
+    return symbol->defPoint->inTree();
   else
     return false;
 }
