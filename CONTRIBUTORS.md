@@ -24,6 +24,7 @@ Contributors to the current release
 * Nikhil Padmanabhan, [Yale University]
 * Elliot Ronaghan, [Cray Inc.]
 * Greg Titus, [Cray Inc.]
+* Anubhav Ujjawal, individual contributor
 * Thomas Van Doren, individual contributor / [Cray Inc.]
 * Tony Wallace, [Cray Inc.]
 
