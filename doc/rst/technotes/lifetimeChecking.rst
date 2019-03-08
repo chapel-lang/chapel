@@ -49,20 +49,24 @@ access the variable. For example:
     // to any code using this module.
   }
 
-A scope can be contained in another scope. For example, the scope of `x`
-contained is within the scope of `f` in the above example. In other
-words, anywhere that `x` can be accessed, `f` can also be accessed.
-In such a case we say that the scope of `x` is smaller than the scope of
-`g`.
+A scope can be contained in another scope. For example, the scope of ``x``
+contained is within the scope of ``f`` in the above example. In other
+words, anywhere that ``x`` can be accessed, ``f`` can also be accessed.
+In such a case we say that the scope of ``x`` is smaller than the scope of
+``g``.
 
 Lifetime
 ++++++++
 
 The lifetime of a variable indicates when that variable can be safely
-used. For a variable does not refer to something (a class instance or a
-reference), the lifetime is simply its lexical scope. However, a variable
-that refers to another variable gets its lifetime from the lifetime of
-the other variable.
+used. Variables that cannot refer to another value, such as numeric
+variables, have a lifetime equal to their lexical scope. Variables that
+can refer to other variables include ``borrowed`` class instances and
+``ref`` variables. These variables get their lifetime from the lifetime
+of the variable that they refer to.
+
+Note that ``owned`` and ``shared`` variables have lifetime equal to their
+scope.
 
 .. code-block:: chapel
 
@@ -126,7 +130,7 @@ Returning a Reference to a Local Variable
   {
     var i: int;
     return refTo(i); // returns `i` by reference
-    // but `i` goes out of scope here
+                     // but `i` goes out of scope here
   }
   ref r = returnsRefLocal();
   var val = r; // accesses invalid memory
@@ -159,7 +163,7 @@ Returning a Borrow From a Local Owned Instance
   returnsborrow.chpl:3: In function 'borrowLocal':
   returnsborrow.chpl:5: error: Scoped variable cannot be returned
   returnsborrow.chpl:4: note: consider scope of obj
- 
+
 Assigning a Borrow to something with Longer Scope
 +++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -167,7 +171,7 @@ Assigning a Borrow to something with Longer Scope
 
   // assignsborrow.chpl
   class SomeClass { }
-  
+
   {
     var bor: borrowed SomeClass;
     {
@@ -188,23 +192,23 @@ Lifetime Inference
 ==================
 
 The lifetime checker starts by inferring the lifetime of each variable.
-It considers the ways that the value is set:
+It considers the ways that the variable is set:
 
- * if it refers to an existing variable, its lifetime will be the
-   scope of that variable
- * if a borrow is set to point to another variable, its lifetime will
-   be the lifetime of the other variable if it is a borrow, or its scope,
-   if it is owned or shared.
- * if it is set by a function call, see below
+ * if the variable is a reference to another variable, its
+   its lifetime will be the scope of that variable
+ * if a borrow is assigned or initialized from another variable, then
+   its lifetime will be at most the lifetime of the other variable
+ * if the variable is set by a function call, the lifetime is inferred
+   according to rules described below
 
 Inference proceeds until the minimum inferred lifetime of each variable is
-established. 
+established.
 
 Inferred Lifetimes of Arguments
 +++++++++++++++++++++++++++++++
 
-For methods, the `this` argument is assumed to have longer lifetime than the
-actual arguments and only the `this` argument is assumed to have a lifetime
+For methods, the ``this`` argument is assumed to have longer lifetime than the
+actual arguments and only the ``this`` argument is assumed to have a lifetime
 that can be returned.
 
 For non-methods, all formals are considered to have a lifetime that can be
@@ -213,12 +217,12 @@ returned.
 Inferred Lifetime of Function Call Results
 ++++++++++++++++++++++++++++++++++++++++++
 
-Supposing that we have `x = f(a, b, c)`, the lifetime of `x` is inferred to be
-the minimum lifetime of the arguments `a`, `b`, `c` that are relevant to the
-lifetime of `x` and that could be returned.
+For ``x = f(a, b, c)``, the lifetime of ``x`` is inferred to be the
+minimum lifetime of the arguments ``a``, ``b``, ``c`` that have lifetimes
+that could be returned.
 
-For methods, such as `y = receiver.f(a, b, c)`, the lifetime will be inferred
-to be the lifetime of `receiver`.
+For a method call, such as ``y = receiver.f(a, b, c)``, the lifetime will
+be inferred to be the lifetime of ``receiver``.
 
 If these inferred lifetimes are not appropriate for a function, the lifetimes
 can be specified with a lifetime annotation.
@@ -226,7 +230,9 @@ can be specified with a lifetime annotation.
 Lifetime Annotations
 ====================
 
-Certain functions need to override the default lifetime inference rules. For
+Certain functions need to override the default lifetime inference rules.
+This can be accomplished by placing a lifetime clause after the return
+type. Lifetime clauses share some similarities with where clauses. For
 example:
 
 .. code-block:: chapel
@@ -236,8 +242,9 @@ example:
   var globalBorrow = globalOwned.borrow();
 
   // Default lifetime inference assumes that the
-  // returned lifetime == arg, but that's not the case
-  // here. So, the annotation indicates what's really going on.
+  // returned lifetime == arg, but that's not appropriate here.
+  // The lifetime annotation indicates that the returned value
+  // has the lifetime of globalBorrow.
   proc returnsGlobalBorrow(arg: borrowed C) lifetime return globalBorrow {
     return globalBorrow;
   }
@@ -249,14 +256,14 @@ structure.
 .. code-block:: chapel
 
   class MyClass { var x:int; }
-    
+
   record Collection {
     type elementType;
     var element: elementType;
   }
 
   // Without lifetime annotation, this function creates an error,
-  // because `this` is assumed to have longer scope than `arg`.
+  // because `this` is assumed to have larger lifetime than `arg`.
   proc Collection.addElement(arg: elementType) lifetime this < arg {
     this.element = arg;
   }
@@ -267,8 +274,8 @@ the above, the constraint is between ``this`` and ``arg`` rather than
 ``this.element`` and ``arg``. ``this.element`` will have its lifetime inferred
 to be the lifetime of ``this``, so these are equivalent.
 
-In some cases, it is more natural to write the lifetime annotation in terms of
-what assignments the function will make. For example:
+In some cases, it is more natural to write the lifetime annotation in
+terms of what assignments the function may make. For example:
 
 .. code-block:: chapel
 
@@ -280,7 +287,6 @@ what assignments the function will make. For example:
     rhs = tmp;
   }
 
-Here the lifetime annotation ``lifetime lhs=rhs, rhs=lhs`` matches the
-actual operation of the function, and the lifetime checker changes such
-assignment clauses into relationships among the arguments that would make
-that assignment legal.
+Here the lifetime checker ensures that the lifetimes of the actual
+arguments are suitable for performing the assignments between formals
+that are indicated in the lifetime clause ``lifetime lhs=rhs, rhs=lhs``.
