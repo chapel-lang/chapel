@@ -506,7 +506,7 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
     compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
 
-    isprgenv = flag == 'target' and target_compiler_is_prgenv()
+    isprgenv = flag == 'target' and target_compiler_is_prgenv(False)
 
     if isprgenv:
         cray_cpu = os.environ.get('CRAY_CPU_TARGET', 'none')
@@ -587,7 +587,7 @@ def verify_cpu(cpu, flag):
     check_cpu = False
     if flag == 'target':
         if comm_val == 'none':
-            if not target_compiler_is_prgenv():
+            if not target_compiler_is_prgenv(False):
                 if ('linux' in platform_val or
                      platform_val == 'darwin' or
                      platform_val.startswith('cygwin')):
@@ -659,7 +659,7 @@ def get(flag, map_to_compiler=False, get_lcd=False):
     verify_cpu(cpu, flag)
 
     compiler_val = chpl_compiler.get(flag)
-    isprgenv = flag == 'target' and target_compiler_is_prgenv()
+    isprgenv = flag == 'target' and target_compiler_is_prgenv(False)
     if map_to_compiler and not isprgenv:
         # Map cpu to compiler argument
         # Don't do this for PrgEnv compiles since the compiler driver
