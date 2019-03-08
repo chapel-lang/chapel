@@ -10,8 +10,10 @@
 /*
    .. _primers-C-interop-functions:
 
-   Symbol Availability (TODO: better name, prolly)
+   Symbol Availability
    -------------------
+
+   (TODO: better name, prolly)
 */
 
 //
@@ -66,12 +68,15 @@ export proc alsoCallsBaz() {
 extern var x: int(32);
 extern var y: uint(32) = 3;
 
-
+//
 // TODO: demonstrate "external name" syntax, too
+//
 // TODO: demonstrate including the code where the extern symbols are defined
 //       e.g. require statements or providing them on the compile line
+//
 // TODO: talk about types that are already available without extern definitions?
 //       e.g. c_int, etc.
+//
 
 /*
   .. _primers-C-interop-compiling:
@@ -83,19 +88,24 @@ extern var y: uint(32) = 3;
 // To generate a library from a Chapel code file, compile the Chapel file with
 // the ``--library`` flag.  E.g.
 //
-// .. code-block:: bash
-//    chpl --library interopWithC.chpl
+/*
+   .. code-block:: bash
 
+      chpl --library interopWithC.chpl
+*/
 //
-// - TODO:
+// TODO:
 // - calling Chapel from C
 // - passing arrays back and forth
 // - importing the module
 // - how to link to Chapel
 // - maybe calling C from Chapel?
-
+//
 // Need to copy the C client code to the docs directory, but then can write
 // stuff like:
-// .. literalinclude:: cClient.c
-//    :language: C
-//    :lines:
+//
+/*
+   .. literalinclude:: cClient.c
+      :language: C
+      :lines: 1-17
+*/
