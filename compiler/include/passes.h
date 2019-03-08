@@ -120,6 +120,9 @@ void fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller);
 void addDummyErrorArgumentToCall(CallExpr* call);
 bool isVirtualIterator(Symbol* iterator);
 
+// LoopExpr.cpp
+void removeDeadTypeStuff(BlockStmt* block);
+
 // normalize.cpp
 void normalize(FnSymbol* fn);
 void normalize(Expr* expr);
@@ -131,7 +134,8 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType);
 CallExpr* findDownEndCount(FnSymbol* fn);
 
 // resolution
-Expr*     resolveExpr(Expr* expr);
+Expr* resolveExpr(Expr* expr);
+void removeCopyFns(Type* t);
 
 // type.cpp
 void initForTaskIntents();

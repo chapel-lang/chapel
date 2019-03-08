@@ -1,2 +1,3 @@
 [domain(1,int(64),false)] int(64): 6 12 18
 [domain(1,int(64),false)] int(64): 0 0 0
+[domain(1,int(64),false)] 2*int(64): (0, 0) (0, 0) (0, 0)

@@ -7937,6 +7937,31 @@ static void handleRuntimeTypes()
 }
 
 //
+// If a symbol's type is not live, we can't use it.
+// Remove it if VarSymbol; remove containing fn if ArgSymbol.
+// Hopefully they are not used.
+//
+static void removeSymbolsWithRemovedTypes() {
+  std::vector<Symbol*> removedSyms; // for verification
+
+  for_alive_in_Vec(ArgSymbol, arg, gArgSymbols)
+    if (! arg->type->inTree())
+      if (FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol)) {
+        removedSyms.push_back(fn);
+        fn->defPoint->remove();
+      }
+
+  for_alive_in_Vec(VarSymbol, var, gVarSymbols)
+    if (! var->type->inTree()) {
+      removedSyms.push_back(var);
+      var->defPoint->remove();
+    }
+
+  for_vector(Symbol, sym, removedSyms)
+    INT_ASSERT(sym->firstSymExpr() == NULL);  // these better be unused
+}
+
+//
 // A few internal pointers may point to nodes not in tree.
 // Zero out such pointers whether or not their targets are live,
 // to ensure they are not looked at again.
@@ -8354,6 +8379,8 @@ static void pruneResolvedTree() {
 
   removeReturnTypeBlocks();
 
+  removeSymbolsWithRemovedTypes();
+
   expandInitFieldPrims();
 
   cleanupAfterRemoves();
@@ -8380,7 +8407,7 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
   }
 }
 
-static void removeCopyFns(Type* t) {
+void removeCopyFns(Type* t) {
   // If they exist, remove the autoCopy and autoDestroy functions
   // for type t, which is about to be removed itself.
   if (FnSymbol* autoDestroy = autoDestroyMap.get(t)) {
@@ -8809,17 +8836,13 @@ static void removeActualNames()
 
 static void removeTypeBlocks()
 {
-  forv_Vec(BlockStmt, block, gBlockStmts)
-  {
-    if (! block->parentSymbol)
-      continue;
-
+  for_alive_in_Vec(BlockStmt, block, gBlockStmts)
     // Remove type blocks--code that exists only to determine types
     if (block->blockTag & BLOCK_TYPE_ONLY)
     {
+      removeDeadTypeStuff(block);
       block->remove();
     }
-  }
 }
 
 //
