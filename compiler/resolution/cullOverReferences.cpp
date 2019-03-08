@@ -685,8 +685,9 @@ void cullOverReferences() {
       continue;
     }
 
-
-    if (arg->type->symbol->hasFlag(FLAG_TUPLE)) {
+    AggregateType* argAt = toAggregateType(arg->getValType());
+    if (argAt && argAt->symbol->hasFlag(FLAG_TUPLE) &&
+        containsReferenceFields(argAt)) {
       AggregateType* tupleType  = toAggregateType(arg->type);
       int            fieldIndex = 1;
 
@@ -753,14 +754,31 @@ void cullOverReferences() {
 
     DEBUG_SYMBOL(sym);
 
+    AggregateType* symAt = toAggregateType(sym->getValType());
+    bool symHasRefFields = symAt && containsReferenceFields(symAt);
+
     // If we already determined that a symbol is const, no need to
     // do additional work here.
-    if (sym->qualType().isConst() && !sym->type->symbol->hasFlag(FLAG_TUPLE))
+    if (sym->qualType().isConst() && !symHasRefFields)
       continue;
 
     // If it's a tuple, create the field qualifiers if needed
-    if (sym->type->symbol->hasFlag(FLAG_TUPLE))
+    if (symHasRefFields) {
       createFieldQualifiersIfNeeded(sym);
+
+      // If it has ref fields, and all of them are const, do no more here
+      bool allConst = (sym->fieldQualifiers[i] != QUAL_REF);
+      int i = 1;
+      for_fields(field, symAt) {
+        if (field->isRef()) {
+          if (sym->fieldQualifiers[i] == QUAL_REF)
+            allConst = false;
+        }
+        i++;
+      }
+      if (allConst)
+        continue;
+    }
 
     bool setter = false;
     bool revisit = false;
