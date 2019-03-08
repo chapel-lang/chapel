@@ -231,6 +231,8 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
 bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 
+bool isSubTypeOrInstantiation(Type* sub, Type* super);
+
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
 // tuples
