@@ -451,31 +451,19 @@ CHPL_ATOMICS
         ===========  =====================================================
         Value        Description
         ===========  =====================================================
-        cstdlib      implement Chapel atomics as a wrapper around C
-                     standard atomics (from C11)
-        intrinsics   implement atomics using target compiler intrinsics
-                     (which typically map down to hardware capabilities)
-        locks        implement atomics by using mutexes to protect normal
-                     operations
+        cstdlib      implement atomics with C standard atomics (from C11)
+        intrinsics   implement atomics with target compiler intrinsics
+        locks        implement atomics with mutexes
         ===========  =====================================================
 
-   If unset, CHPL_ATOMICS defaults to ``intrinsics`` for most configurations.
-   On some 32 bit platforms, or if the target compiler is ``pgi`` or
-   ``cray-prgenv-pgi`` it defaults to ``locks``.  In a future release,
-   ``cstdlib`` will become the default whenever possible.  At this
-   time, though, most C compilers either do not support standard
-   atomics or have bugs in their implementation.
-
-   .. note::
-     gcc 4.8.1 added support for 64 bit atomics on 32 bit platforms.  We
-     default to ``intrinsics`` for 32 bit platforms when using the target
-     compiler ``gnu`` with a recent enough version of gcc.  For older versions
-     or other target compilers we default to ``locks``
+   If ``CHPL_ATOMICS`` is not set, it defaults to ``cstdlib`` when the target
+   compiler is ``gnu``, ``clang``, ``allinea``, or ``clang-included``.  It
+   defaults to ``intrinsics`` when the target compiler is ``intel`` or
+   ``cray``.  It defaults to ``locks`` when the target compiler is ``pgi``.
 
    See the Chapel Language Specification for more information about atomic
    operations in Chapel or :ref:`readme-atomics` for more information about the
    runtime implementation.
-
 
 .. _readme-chplenv.CHPL_TIMERS:
 
