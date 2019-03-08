@@ -1,1 +1,1 @@
-declaredInClass-initializer.chpl:15: error: 'chpl' can't handle user initizers of 'enum' fields yet
+declaredInClass-initializer.chpl:15: error: 'chpl' can't handle user initializers of 'enum' fields for local enums yet

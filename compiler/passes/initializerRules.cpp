@@ -124,7 +124,7 @@ void preNormalizeFields(AggregateType* at) {
         }
       } else if (TypeSymbol* ts = toTypeSymbol(defExpr->sym)) {
         if (isEnumType(ts->type) && !at->wantsDefaultInitializer()) {
-          USR_FATAL(field, "'chpl' can't handle user initizers of 'enum' fields yet");
+          USR_FATAL(field, "'chpl' can't handle user initializers of 'enum' fields for local enums yet");
         }
       }
     }
