@@ -1,4 +1,5 @@
 throw-new-undecorated.chpl:1: In function 'main':
+throw-new-undecorated.chpl:2: warning: please use 'throw new owned Error' instead of 'throw new Error'
 throw-new-undecorated.chpl:2: warning: Throwing unmanaged error - please throw owned
 uncaught Error: 
   throw-new-undecorated.chpl:2: thrown here
