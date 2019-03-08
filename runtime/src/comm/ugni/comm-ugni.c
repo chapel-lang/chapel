@@ -5929,31 +5929,9 @@ void remote_get_buff_task_flush(void) {
 
 static
 inline
-void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
-                        size_t size, drpg_may_proxy_t may_proxy)
-{
-  mem_region_t*         local_mr;
-  mem_region_t*         remote_mr;
-
-  DBG_P_LP(DBGF_GETPUT, "DoRemBuffGet %p <- %d:%p (%#zx), proxy %c",
-           tgt_addr, (int) locale, src_addr, size, may_proxy ? 'y' : 'n');
-
-  //
-  // In order to do direct NIC gets the address must be registered and the
-  // addresses and size must be 4-byte aligned. do_remote_get handles cases if
-  // any of those aren't true, so just have it take care of things instead of
-  // trying to reimplement that logic in do_remote_get_V. If any of these
-  // aren't true, our performance is already going to suffer.
-  //
-  remote_mr = mreg_for_remote_addr(src_addr, locale);
-  local_mr = mreg_for_local_addr(tgt_addr);
-  if (local_mr == NULL || remote_mr == NULL ||
-      !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
-      !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
-      !IS_ALIGNED_32(size)) {
-    do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
-    return;
-  }
+void do_remote_get_buff_i(void* tgt_addr, c_nodeid_t locale,
+                          mem_region_t* remote_mr, void* src_addr,
+                          size_t size, mem_region_t* local_mr) {
 
   get_buff_thread_info_t* info = &get_buff_thread_info;
 
@@ -5980,6 +5958,37 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 
   // release lock for this thread
   spinlock_unlock(&info->lock);
+}
+
+static
+inline
+void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
+                        size_t size, drpg_may_proxy_t may_proxy)
+{
+  mem_region_t*         local_mr;
+  mem_region_t*         remote_mr;
+
+  DBG_P_LP(DBGF_GETPUT, "DoRemBuffGet %p <- %d:%p (%#zx), proxy %c",
+           tgt_addr, (int) locale, src_addr, size, may_proxy ? 'y' : 'n');
+
+  //
+  // In order to do direct NIC gets the address must be registered and the
+  // addresses and size must be 4-byte aligned. do_remote_get handles cases if
+  // any of those aren't true, so just have it take care of things instead of
+  // trying to reimplement that logic in do_remote_get_V. If any of these
+  // aren't true, our performance is already going to suffer.
+  //
+  remote_mr = mreg_for_remote_addr(src_addr, locale);
+  local_mr = mreg_for_local_addr(tgt_addr);
+  if (local_mr == NULL || remote_mr == NULL ||
+      !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
+      !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
+      !IS_ALIGNED_32(size)) {
+    do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
+    return;
+  } else {
+    do_remote_get_buff_i(tgt_addr, locale, remote_mr, src_addr, size, local_mr);
+  }
 }
 /*** END OF BUFFERED GET OPERATIONS ***/
 
