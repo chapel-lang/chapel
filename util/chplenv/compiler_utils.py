@@ -64,12 +64,13 @@ def compiler_is_prgenv(compiler_val):
 
 
 @memoize
-def target_compiler_is_prgenv():
+def target_compiler_is_prgenv(bypass_llvm=True):
     compiler_val = chpl_compiler.get('target')
 
     # But for --llvm, look at the original target compiler
-    if compiler_val == 'clang-included':
-        compiler_val = chpl_compiler.get('target', llvm_mode="orig")
+    if bypass_llvm:
+        if compiler_val == 'clang-included':
+            compiler_val = chpl_compiler.get('target', llvm_mode="orig")
 
     isprgenv = compiler_is_prgenv(compiler_val)
     return isprgenv
