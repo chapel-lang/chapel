@@ -160,9 +160,11 @@ type ``R`` looks like:
   }
 
 The first line of this ``init=`` may seem unnecessary, since ``this.type`` must
-already be known. The line ``this.T = other.T`` currently serves as an
-assertion, and future releases may remove the need for such field
-initializations within a generic ``init=``.
+already be known. The line ``this.T = other.T`` is currently used by the
+compiler to ensure that the types match. If the user attempts to initialize
+``this.T`` with a type different from ``this.type.T`` the compiler will issue
+an error. Future releases may allow this field initialization and type check to
+be omitted, and instead infer the type from ``this.type.T``.
 
 Field-Based Constraints
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -244,6 +246,10 @@ In this example snippet, ``this.type`` is used within the ``init=`` body in
 order to achieve the desired instantiation. Part of what was needed was
 available from the given value (i.e. the element type), but the rest was
 taken from ``this.type``.
+
+Note that only fully instantiated types can be initialized in this manner.
+Future releases may add support for fully or partially generic ``this.type``
+expressions.
 
 
 Initializing with a Generic Expression
