@@ -77,12 +77,12 @@ const parentDir = "..";
 const pathSep = "/";
 
 /*
-  Creates a normalized absolutized version of a path. On most platforms this is
-  equivalent to the code:
+  Creates a normalized absolutized version of a path. On most platforms, when
+  given a non-absolute path this function is equivalent to the following code:
 
-  .. code::
+  .. code-block:: Chapel
   
-    normPath(joinPath(here.cwd(), name)
+    return normPath(joinPath(here.cwd(), name));
   
   See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`
   for details.
@@ -110,15 +110,16 @@ proc absPath(name: string): string throws {
 }
 
 /*
-  Creates a normalized absolutized version of the path in this :type:`~IO.file`.
-  On most platforms this is equivalent to the code:
+  Creates a normalized absolutized version of the path in this
+  :type:`~IO.file`. On most platforms, when given a non-absolute path this
+  function is equivalent to the following code:
   
-  .. code::
+  .. code-block:: Chapel
   
-      normPath(joinPath(here.cwd(), file.path))
+      return normPath(joinPath(here.cwd(), file.path));
       
-  See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`
-  for details.
+  See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`,
+  :proc:`~IO.file.path` for details.
 
   .. warning::
 
