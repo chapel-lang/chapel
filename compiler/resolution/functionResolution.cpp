@@ -5874,9 +5874,14 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
         } else if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
           if (parentCall->isNamed("chpl__tounmanaged") || // TODO -- remove case
               parentCall->isNamed("chpl__delete") || // TODO -- remove case
-              parentCall->isNamed("chpl__buildDistValue") ||
-              parentCall->isNamed("chpl_fix_thrown_error")) {
+              parentCall->isNamed("chpl__buildDistValue")) {
             // OK
+          } else if (parentCall->isNamed("chpl_fix_thrown_error")) {
+            // OK, but warn for throw new SomeError()
+            USR_WARN(parentCall,
+                     "please use 'throw new owned %s' "
+                     "instead of 'throw new %s'",
+                     newType->symbol->name, newType->symbol->name);
           } else if (parentCall->isPrimitive(PRIM_NEW) &&
                      parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
             // OK e.g. new Owned(new MyClass())
