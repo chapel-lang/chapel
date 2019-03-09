@@ -7171,8 +7171,7 @@ void resolve() {
 ************************************** | *************************************/
 
 static void unmarkDefaultedGenerics() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->inTree() == true) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       for_formals(formal, fn) {
         AggregateType* formalAt   = toAggregateType(formal->type);
         bool typeHasGenericDefaults = false;
@@ -7192,7 +7191,6 @@ static void unmarkDefaultedGenerics() {
           insert_help(formal->typeExpr, NULL, formal);
         }
       }
-    }
   }
 }
 
@@ -7301,7 +7299,7 @@ static void resolveExports() {
 
 static void resolveEnumTypes() {
   // need to handle enumerated types better
-  forv_Vec(TypeSymbol, type, gTypeSymbols) {
+  for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
     if (EnumType* et = toEnumType(type->type)) {
       SET_LINENO(et);
 
@@ -7317,9 +7315,8 @@ static void resolveEnumTypes() {
 ************************************** | *************************************/
 
 static void insertRuntimeTypeTemps() {
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->inTree()                       &&
-        ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
         !ts->hasFlag(FLAG_GENERIC)) {
       SET_LINENO(ts);
       AggregateType* at = toAggregateType(ts->type);
@@ -7471,13 +7468,12 @@ static void resolveSerializers() {
     return;
   }
 
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->inTree()                                      &&
-        ts->hasFlag(FLAG_GENERIC)                == false &&
-        ts->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
-        isSingleType(ts->type)                   == false &&
-        isSyncType(ts->type)                     == false &&
-        ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (! ts->hasFlag(FLAG_GENERIC)                &&
+        ! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
+        ! isSingleType(ts->type)                   &&
+        ! isSyncType(ts->type)                     &&
+        ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isRecord(at) == true) {
           bool success = resolveSerializeDeserialize(at);
@@ -7493,11 +7489,10 @@ static void resolveSerializers() {
 }
 
 static void resolveDestructors() {
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->inTree()                                       &&
-        ts->hasFlag(FLAG_REF)                    == false  &&
-        ts->hasFlag(FLAG_GENERIC)                == false  &&
-        ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (! ts->hasFlag(FLAG_REF)                     &&
+        ! ts->hasFlag(FLAG_GENERIC)                 &&
+        ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (at->hasDestructor()   == false &&
             at->hasInitializers() == true  &&
@@ -7519,10 +7514,9 @@ static const char* autoCopyFnForType(AggregateType* at);
 static FnSymbol*   autoMemoryFunction(AggregateType* at, const char* fnName);
 
 static void resolveAutoCopies() {
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->inTree()                                       &&
-        ts->hasFlag(FLAG_GENERIC)                == false  &&
-        ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (! ts->hasFlag(FLAG_GENERIC)                 &&
+        ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isRecord(at) == true) {
           // If we attempt to resolve auto-copy and co. for an infinite record
@@ -7808,8 +7802,7 @@ static void insertReturnTemps() {
   // Note that we do not do this for --minimal-modules compilation
   // because we do not support sync/singles for minimal modules.
   //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->inTree()) {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
       if (call->list == NULL && isForallRecIterHelper(call))
         continue;
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
@@ -7871,7 +7864,6 @@ static void insertReturnTemps() {
           }
         }
       }
-    }
   }
 }
 
@@ -7934,6 +7926,36 @@ static void handleRuntimeTypes()
   replaceValuesWithRuntimeTypes();
   replaceReturnedValuesWithRuntimeTypes();
   insertRuntimeInitTemps();
+}
+
+//
+// If a symbol's type is not live, we can't use it.
+// Remove it if VarSymbol; remove containing fn if ArgSymbol.
+// Hopefully they are not used.
+//
+static void removeSymbolsWithRemovedTypes() {
+  std::vector<Symbol*> removedSyms; // for verification
+
+  for_alive_in_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (! arg->type->inTree()) {
+      if (FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol)) {
+        removedSyms.push_back(fn);
+        fn->defPoint->remove();
+      }
+    }
+  }
+
+  for_alive_in_Vec(VarSymbol, var, gVarSymbols) {
+    if (! var->type->inTree()) {
+      removedSyms.push_back(var);
+      var->defPoint->remove();
+    }
+  }
+
+  // Running the asserts after the above guards against potential false alarms
+  // when an earlier-removed Fn/VarSymbol refers to a later-removed one.
+  for_vector(Symbol, sym, removedSyms)
+    INT_ASSERT(sym->firstSymExpr() == NULL);  // these better be unused
 }
 
 //
@@ -8145,8 +8167,7 @@ static bool isVoidOrVoidTupleType(Type* type) {
 
 static void cleanupVoidVarsAndFields() {
   // Remove most uses of void variables and fields
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->inTree()) {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
      if (call->isPrimitive())
       switch (call->primitive->tag) {
       case PRIM_MOVE: {
@@ -8240,7 +8261,6 @@ static void cleanupVoidVarsAndFields() {
           call->remove();
         }
       }
-    }
   }
 
   // Remove void formal arguments from functions.
@@ -8268,7 +8288,7 @@ static void cleanupVoidVarsAndFields() {
   }
 
   // Set for loop index variables that are void to the global void value
-  forv_Vec(BlockStmt, block, gBlockStmts) {
+  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* loop = toForLoop(block)) {
       if (loop->indexGet() && loop->indexGet()->typeInfo() == dtVoid) {
         loop->indexGet()->setSymbol(gVoid);
@@ -8278,8 +8298,7 @@ static void cleanupVoidVarsAndFields() {
 
   // Now that uses of void have been cleaned up, remove the
   // DefExprs for void variables.
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->inTree()) {
+  for_alive_in_Vec(DefExpr, def, gDefExprs) {
       if (isVoidOrVoidTupleType(def->sym->type) ||
           def->sym->type == dtVoid->refType) {
         if (VarSymbol* var = toVarSymbol(def->sym)) {
@@ -8294,7 +8313,6 @@ static void cleanupVoidVarsAndFields() {
           }
         }
       }
-    }
   }
 
   adjustVoidShadowVariables();
@@ -8353,6 +8371,8 @@ static void pruneResolvedTree() {
   removeMootFields();
 
   removeReturnTypeBlocks();
+
+  removeSymbolsWithRemovedTypes();
 
   expandInitFieldPrims();
 
@@ -8415,12 +8435,11 @@ static void removeUnusedFunctions() {
     concreteWellKnownFunctionsSet.insert(fn);
   }
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (concreteWellKnownFunctionsSet.count(fn) == 0) {
-      if (fn->defPoint               != NULL &&
-          fn->defPoint->parentSymbol != NULL &&
-          fn->defPoint->parentSymbol != stringLiteralModule) {
-        if (fn->isResolved() == false || fn->retTag == RET_PARAM) {
+      if (fn->defPoint->parentSymbol != stringLiteralModule) {
+        if (! fn->isResolved() || fn->retTag == RET_PARAM)
+        {
           std::vector<DefExpr*> defExprs;
 
           collectDefExprs(fn, defExprs);
@@ -8462,10 +8481,9 @@ static void removeUnusedFunctions() {
 
 static void removeUnusedTypes() {
   // Remove unused aggregate types.
-  forv_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->inTree()                                  &&
-        type->hasFlag(FLAG_REF)                == false &&
-        type->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
+  for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
+    if (! type->hasFlag(FLAG_REF)                &&
+        ! type->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
       if (AggregateType* at = toAggregateType(type->type)) {
         if (isUnusedClass(at) == true) {
           at->symbol->defPoint->remove();
@@ -8479,8 +8497,8 @@ static void removeUnusedTypes() {
   }
 
   // Remove unused ref types.
-  forv_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->inTree() && type->hasFlag(FLAG_REF)) {
+  for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
+    if (type->hasFlag(FLAG_REF)) {
         // Get the value type of the ref type.
         if (AggregateType* at1 = toAggregateType(type->getValType())) {
           if (isUnusedClass(at1) == true) {
@@ -8600,19 +8618,6 @@ static void removeUnusedModuleVariables() {
 ************************************** | *************************************/
 
 static void removeRandomPrimitive(CallExpr* call) {
-  if (! call->primitive)
-    // TODO: This is weird.
-    // Calls which trigger this case appear as the init clause of a type
-    // variable.
-    // The parent module or function may be resolved, but apparently the type
-    // variable is resolved only if it is used.
-    // Generally speaking, we resolve a declaration only if it is used.
-    // But right now, we only apply this test to functions.
-    // The test should be extended to variable declarations as well.  That is,
-    // variables need only be resolved if they are actually used.
-    return;
-
-  // A primitive.
   switch (call->primitive->tag)
   {
     default: /* do nothing */ break;
@@ -8737,12 +8742,8 @@ static void removeParamArgs()
           formal->type == dtMethodToken)
       {
         // Remove the argument from the call site.
-        forv_Vec(CallExpr, call, *fn->calledBy)
+        for_alive_in_Vec(CallExpr, call, *fn->calledBy)
         {
-          // Don't bother with calls that are not in the tree.
-          if (! call->parentSymbol)
-            continue;
-
           // Performance note: AList::get(int) also performs a linear search.
           for_formals_actuals(cf, ca, call)
           {
@@ -8760,8 +8761,7 @@ static void removeParamArgs()
 }
 
 static void removeAggTypeFieldInfo() {
-  forv_Vec(AggregateType, at, gAggregateTypes) {
-    if (at->symbol->defPoint && at->symbol->defPoint->parentSymbol) {
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
       // Defined an initializer (so we left its init
       // and exprType information in the tree)
       for_fields(field, at) {
@@ -8773,50 +8773,56 @@ static void removeAggTypeFieldInfo() {
           field->defPoint->init->remove();
         }
       }
-    }
   }
 }
 
 static void removeRandomPrimitives()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
-  {
-    // Don't bother with calls that are not in the tree.
-    if (! call->parentSymbol)
-      continue;
-
-    // Ignore calls to actual functions.
-    if (call->isResolved())
-      continue;
-
-    // Only primitives remain.
-    removeRandomPrimitive(call);
-  }
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
+    if (call->isPrimitive())
+      removeRandomPrimitive(call);
 }
 
 static void removeActualNames()
 {
-  forv_Vec(NamedExpr, named, gNamedExprs)
+  for_alive_in_Vec(NamedExpr, named, gNamedExprs)
   {
-    if (! named->parentSymbol)
-      continue;
-    // Remove names of named actuals
     Expr* actual = named->actual;
     actual->remove();
     named->replace(actual);
   }
 }
 
+//
+// Remove the ref types and the autocopy/autodestroy functions
+// for the types that are about to be removed when removing 'block'.
+//
+// Todo: we probably want to do this for all types that have been
+// deleted, as a cleanup function at the end of resolve().
+//
+static void removeRefAndAutoCopyForDeadTypes(BlockStmt* block) {
+  for_alist(stmt, block->body) {
+    if (DefExpr* def = toDefExpr(stmt)) {
+      Symbol* sym = def->sym;
+      // Check whether this is the definition of a type.
+      if (sym->hasFlag(FLAG_TYPE_VARIABLE) && sym->type->symbol == sym)
+      {
+        if (Type* ref = sym->type->getRefType())
+          ref->symbol->defPoint->remove();
+
+        removeCopyFns(sym->type);
+      }
+    }
+  }
+}
+
 static void removeTypeBlocks()
 {
-  forv_Vec(BlockStmt, block, gBlockStmts)
-  {
-    if (! block->parentSymbol)
-      continue;
-
+  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
     // Remove type blocks--code that exists only to determine types
     if (block->blockTag & BLOCK_TYPE_ONLY)
     {
+      removeRefAndAutoCopyForDeadTypes(block);
       block->remove();
     }
   }
@@ -8867,8 +8873,7 @@ static void removeTypeBlocks()
 // actually type functions.
 //
 static void buildRuntimeTypeInitFns() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint && fn->defPoint->parentSymbol) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       // Look only at functions flagged as "runtime type init fn".
       if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN)) {
 
@@ -8886,7 +8891,6 @@ static void buildRuntimeTypeInitFns() {
         // Build chpl__convertRuntimeTypeToValue() instance.
         buildRuntimeTypeInitFn(fn, runtimeType);
       }
-    }
   }
 }
 
@@ -8958,8 +8962,7 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
 
 static void removeFormalTypeAndInitBlocks()
 {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint && fn->defPoint->parentSymbol) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       for_formals(formal, fn) {
         // Remove formal default values
         if (formal->defaultExpr)
@@ -8968,7 +8971,6 @@ static void removeFormalTypeAndInitBlocks()
         if (formal->typeExpr)
           formal->typeExpr->remove();
       }
-    }
   }
 }
 
@@ -9059,8 +9061,7 @@ static void replaceTypeArgsWithFormalTypeTemps()
 
 static void replaceValuesWithRuntimeTypes()
 {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint && fn->defPoint->parentSymbol) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       for_formals(formal, fn) {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             formal->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
@@ -9073,24 +9074,20 @@ static void replaceValuesWithRuntimeTypes()
           }
         }
       }
-    }
   }
 }
 
 static void removeWhereClauses()
 {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint && fn->defPoint->parentSymbol) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->where)
         fn->where->remove();
-    }
   }
 }
 
 static void replaceReturnedValuesWithRuntimeTypes()
 {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint && fn->defPoint->parentSymbol) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->retTag == RET_TYPE) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
@@ -9104,7 +9101,6 @@ static void replaceReturnedValuesWithRuntimeTypes()
           }
         }
       }
-    }
   }
 }
 
@@ -9625,10 +9621,8 @@ static void insertRuntimeInitTemps() {
 // Remove moot parts of AST for type a=b
 static void removeTypedefParts()
 {
-  forv_Vec(DefExpr, def, gDefExprs)
+  for_alive_in_Vec(DefExpr, def, gDefExprs)
   {
-    if (! def->inTree()) continue;
-
     if (def->init &&
         (def->sym->hasFlag(FLAG_TYPE_VARIABLE) ||
          def->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))) {
@@ -9647,8 +9641,7 @@ static void removeTypedefParts()
 
 static void removeMootFields() {
   // Remove type fields and parameter fields
-  forv_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->defPoint && type->defPoint->parentSymbol) {
+  for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
       if (AggregateType* ct = toAggregateType(type->type)) {
         for_fields(field, ct) {
           if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
@@ -9656,13 +9649,12 @@ static void removeMootFields() {
             field->defPoint->remove();
         }
       }
-    }
   }
 }
 
 static void removeReturnTypeBlocks() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->retExprType && fn->retExprType->parentSymbol) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->retExprType) {
       // First, move any defs in the return type block out
       // (e.g. an array return type creates forall-expr fns)
       for_alist(expr, fn->retExprType->body) {
@@ -9681,7 +9673,7 @@ static void removeReturnTypeBlocks() {
 
 static void expandInitFieldPrims()
 {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_INIT_FIELDS))
     {
       initializeClass(call, toSymExpr(call->get(1))->symbol());

@@ -979,6 +979,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       Type* newt = computeNonRefTuple(toAggregateType(type));
       retval = new SymExpr(newt->symbol);
       call->replace(retval);
+    } else {
+      // Check whether the type's def is within the .type block itself.
+      if (BlockStmt* blk = toBlockStmt(call->getStmtExpr()->parentExpr))
+        if (type->symbol->defPoint->parentExpr == blk)
+          USR_FATAL_CONT(call, ".type is not supported for this kind of expression");
     }
 
     break;
