@@ -2763,6 +2763,8 @@ fivec
 inov
 inptemp
 intented
+kmeansonepassreduction
+minchange
 orse
 povar
 ptemp
@@ -2936,6 +2938,7 @@ sbac
 
 FILEID: 101dbad0-1f18-11e6-a3a6-10ddb1d4c3d5
 bxor
+senable
 
 FILEID: f8a06e7e-1f18-11e6-a3a6-10ddb1d4c3d5
 arowi
@@ -4981,9 +4984,12 @@ bharshbarger
 biesack
 bigint
 bigints
+bigsubs
 billig
+binend
 binname
 binout
+binstart
 bitbucket
 bitcnt
 bitfield
@@ -4991,6 +4997,7 @@ bitfields
 bitmapped
 bitmasks
 bitset
+bitsinpart
 bitwise
 bjoern
 blackscholes
@@ -5036,7 +5043,9 @@ bucketize
 buettner
 bufcnt
 buffersize
+bufptr
 bufs
+bufstart
 buginese
 bugzilla
 buhid
@@ -5126,6 +5135,7 @@ chunking
 chunksize
 churchill
 cissell
+ciura
 clangexe
 clark
 classname
@@ -5457,8 +5467,10 @@ emlink
 emsgsize
 emultihop
 enametoolong
+endbit
 endblock
 endcounts
+endfast
 enetdown
 enetreset
 enetunreach
@@ -5523,6 +5535,7 @@ errno
 errnum
 errorbuffer
 errored
+errorfn
 errqueue
 errstr
 escholarship
@@ -5714,6 +5727,7 @@ graphtitle
 greek
 grep
 grepcomp
+grepdocs
 grepgoods
 grepmod
 greprt
@@ -5737,6 +5751,7 @@ hanunoo
 hardcode
 hargrove
 harshbarger
+hasendbit
 hasher
 hashtable
 haskell
@@ -5835,6 +5850,7 @@ infiniband
 infinitum
 initcopy
 initdone
+initequals
 initialise
 initializer
 initializers
@@ -6120,6 +6136,7 @@ localtemp
 localtime
 locid
 lockless
+locready
 locs
 logdir
 logfiles
@@ -6175,6 +6192,7 @@ manpage
 manpath
 mantevo
 mapreduce
+marcin
 marcos
 marenostrum
 markhill
@@ -6226,6 +6244,7 @@ memoize
 memreg
 mergeable
 mersenne
+metaop
 mfac
 mferguson
 mgmt
@@ -6303,6 +6322,7 @@ mutexes
 muxed
 mvapich
 myaccountid
+myadjust
 myanmar
 mycolor
 myers
@@ -6336,6 +6356,7 @@ nareas
 narratively
 natively
 navarro
+nbigsubs
 nbits
 nbodies
 nbody
@@ -6665,6 +6686,7 @@ quicksort
 quickstart
 qword
 rachel
+radixbits
 rafael
 raii
 railsgirlssummerofcode
@@ -6704,6 +6726,7 @@ readv
 readwrite
 realfmt
 reals
+realstart
 rearchitected
 reassignable
 rebase
@@ -6756,8 +6779,10 @@ resized
 resizes
 resolveable
 resolveiteration
+resready
 restructuredtext
 retaintree
+rethrown
 retopts
 rettype
 retval
@@ -6840,6 +6865,7 @@ seander
 seattle
 sebastien
 secretkey
+sedgewick
 seekable
 seekamp
 seekdata
@@ -6875,6 +6901,7 @@ shannon
 shapeful
 shavian
 shellarg
+shellsort
 shenker
 sherwood
 shetag
@@ -6988,6 +7015,7 @@ stacksize
 stacktrace
 stallman
 stanford
+startbit
 startdir
 stdchpl
 stderr
@@ -7019,6 +7047,7 @@ strs
 strstr
 structs
 subarray
+subbits
 subblock
 subcall
 subchunks
@@ -7103,6 +7132,7 @@ tagname
 tamil
 tanh
 tarball
+targetloc
 tarjan
 tasklayer
 taskpar
@@ -7211,6 +7241,8 @@ typesymbol
 tzakian
 tzinfo
 tzname
+ubin
+ubits
 ubuntu
 uchar
 uchars
@@ -7281,6 +7313,7 @@ urandomb
 urandomm
 uranus
 urbana
+urxvt
 useable
 usecs
 usenix
@@ -7348,6 +7381,7 @@ wellknown
 werror
 westen
 westmere
+whichpart
 whipkey
 whitworth
 wikipedia
