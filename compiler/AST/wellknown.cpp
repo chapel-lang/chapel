@@ -157,9 +157,13 @@ void gatherWellKnownTypes() {
       WellKnownType& wkt = sWellKnownTypes[i];
 
       if (*wkt.type_ == NULL) {
-        USR_FATAL_CONT("Type '%s' must be defined in the "
-                       "Chapel internal modules.",
-                       wkt.name);
+        if (wkt.type_ == &dtCFI_cdesc_t && !fLibraryFortran) {
+          // This should only be defined when --library-fortran is used
+        } else {
+          USR_FATAL_CONT("Type '%s' must be defined in the "
+                         "Chapel internal modules.",
+                         wkt.name);
+        }
       }
     }
 
