@@ -55,11 +55,20 @@ Removed Features
 * removed support for 'chpl-ipe'
 * deprecated support for string.uchars() and string.ulength()
   (use string.codePoints() an string.numCodePoints() instead)
+* deprecated `string.isEmptyString` for `string.isEmpty()`
+  (see https://chapel-lang.org/docs/master/builtins/String.html#String.string.isEmpty)
+* removed previously deprecated `isBLAS_MKL` flag from `BLAS` module
+* removed previously deprecated `matPlus` and `matMinus` from `LinearAlgebra`
 
 Standard Modules / Library
 --------------------------
 * improved UTF-8 string support
   (see https://chapel-lang.org/docs/1.19/builtins/String.html#activating-unicode-support)
+* added cast for `integral:bigint`
+  (see https://chapel-lang.org/docs/master/modules/standard/BigInteger.html#biginteger)
+* added `choice()` method to `Random` module for weighted sampling
+  (see https://chapel-lang.org/docs/master/modules/standard/Random.html#Random.RandomStreamInterface.choice)
+* added bounds checking to `getNext(min, max)` overload in `Random` module
 
 Package Modules
 ---------------
@@ -67,6 +76,10 @@ Package Modules
   (see https://chapel-lang.org/docs/1.19/modules/packages/UnorderedAtomics.html)
 * added a mechanism to perform unordered copies
   (see https://chapel-lang.org/docs/1.19/modules/packages/UnorderedCopy.html)
+* renamed `eigvals()` to `eig()` and made `eigvals()` support eigenvalues only
+  (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.eigvals)
+* stopped transitively using `BLAS` and `LAPACK` in the `LinearAlgebra` module
+* added checks to `LinearAlgebra` routines to ensure non-distributed arrays
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -79,6 +92,10 @@ Compiler Improvements
 
 New Tools / Tool Changes
 ------------------------
+* added support for external Spack installations in `mason external`
+  (https://chapel-lang.org/docs/1.19/tools/mason/mason.html#using-spack-dependencies)
+* made `mason search` warn about bad manifest filenames instead of halting
+
 
 Interoperability Improvements
 -----------------------------
@@ -113,13 +130,14 @@ Documentation
 -------------
 * documented that Chapel is now primarily tested using UTF-8
   (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html)
-
+* fixed typos in various sources of documentation
 
 Example Codes
 -------------
 
 Portability
 -----------
+* added `setchplenv` script support for pyenv users
 * ported Chapel to MacOS Mojave
 * ported the LLVM back-end to 32-bit x86
 * improved the LLVM back-end's ability to find gcc header files
@@ -150,6 +168,12 @@ Bug Fixes
 * fixed support for heterogeneous nodes with GASNet over the `aries` conduit
 * fixed support for `cstdlib` atomics for clang and llvm compilers
 * fixed a bug in which global extern consts were incorrectly localized
+* fixed bugs to permit `LinearAlgebra` routines to accept rank-change slices
+* made empty `Spawn.spawn()` calls throw errors instead of segfaulting
+* fixed a bug in which comparing rank-variant domains generated a compiler error
+* fixed a bug in which `mason doc` expected project dirs to match package names
+* fixed a bug in `MPI` module where using `COMM=ugni` gave a compiler error
+* fixed a bug in which `PATH` was not quoted in `chpldoc` & `chplvenv` builds
 
 Launchers
 ---------
@@ -190,6 +214,7 @@ Developer-oriented changes: Configuration changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* removed all instance of `domain._value` from `LinearAlgebra` module
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -213,6 +238,7 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
+* converted `CompilerDebugging.txt` to `CompilerDebugging.rst` format
 
 Developer-oriented changes: Module improvements
 -----------------------------------------------
@@ -223,6 +249,7 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* removed sub_test transient MPP error, which interfered with prediff filter
 
 Developer-oriented changes: Third-party improvements
 ----------------------------------------------------
@@ -305,6 +332,7 @@ New Features
   (see 'Variable Declarations' in the language spec's 'Variables' chapter)
 * added support for querying subtype relationships via `<`, `<=`, `>`, `>=`
   (see https://chapel-lang.org/docs/1.18/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
+
 
 Feature Improvements
 --------------------
