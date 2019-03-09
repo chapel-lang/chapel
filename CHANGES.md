@@ -1,6 +1,8 @@
 Release Changes List
 ====================
 
+
+
 version 1.19.0
 ==============
 
@@ -30,8 +32,12 @@ Feature Improvements
 * extended reshape() to support the reshaping of iterable expressions
   (e.g., 'reshape([i in 1..4] i, {1..2, 1..2})' now works)
 * added support for ranges of 'CodePointIndex' (useful for slicing strings)
-* arrays with inferred types defined using range expressions now preserve indices
+* inferred-type arrays defined using range expressions now preserve indices
   (e.g., `var A = [i in -2..2] i;` now results an array with domain {-2..2})
+* forall- and promoted expressions over ranges can now execute in parallel
+* added support for generic function return type constraints
+* added support for forall loops over zippered loop expressions
+* added support for forall loops over tuple expansion expressions
 
 Removed Features
 ----------------
@@ -61,12 +67,14 @@ Performance Optimizations/Improvements
 --------------------------------------
 * prototyped parallelized 1D scans for block- and default-distributed arrays
   (use `-senableParScan` to enable this prototype)
+* enabled parallelism for statement-level promotions
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
 
 Memory Improvements
 -------------------
+* optimized away some unnecessary memory allocations
 
 Compiler Flags
 --------------
@@ -87,6 +95,8 @@ Error Messages / Semantic Checks
 --------------------------------
 * squashed references to internal subroutines for some classes of errors
 * improved error messages for compile-time 'config's
+* improved const checking, for example when assigning to tuples
+* added an error for zippered for-loops that invoke parallel iterators
 
 Execution-time Checks
 ---------------------
@@ -95,6 +105,8 @@ Bug Fixes
 ---------
 * fixed bugs in writef()/readf()/string.format() for enums without int values
 * fixed some bugs/inconsistencies in methods and functions on ranges
+* fixed support for task-private array variables
+* fixed a bug in range.member(range)
 
 Compiler Performance
 --------------------
@@ -124,6 +136,15 @@ Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * made deserialization errors use cnames when compiling in --devel mode
 * refactored the parser to simplify the declaration of variables
+* dramatically improved the representation of forall intents within the IR
+* modernized the representation of reduce expressions
+* eliminated all remaining uses of chpl__tryToken
+* improved the creation of promotion iterators and made them more uniform
+* improved the handling of outer variables in for-/forall-expressions
+* fixed the scope resolution of LoopExprs
+* made some internal module params and type aliases available earlier
+* fixed issues with reduce task intents
+* removed dtSymbol
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
