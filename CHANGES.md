@@ -78,6 +78,8 @@ Standard Modules / Library
 * added `choice()` method to `Random` module for weighted sampling
   (see https://chapel-lang.org/docs/master/modules/standard/Random.html#Random.RandomStreamInterface.choice)
 * added bounds checking to `getNext(min, max)` overload in `Random` module
+* added message sizes to verbose communication diagnostics
+  (see https://chapel-lang.org/docs/1.19/modules/standard/CommDiagnostics.html)
 
 Package Modules
 ---------------
@@ -147,14 +149,22 @@ Example Codes
 
 Portability
 -----------
+* added an Open Fabrics Interfaces libfabric-based 'ofi' communication layer
+  (see https://chapel-lang.org/docs/1.19/platforms/libfabric.html)
 * added `setchplenv` script support for pyenv users
 * ported Chapel to MacOS Mojave
 * ported the LLVM back-end to 32-bit x86
 * improved the LLVM back-end's ability to find gcc header files
 * ensured Chapel supports LLVM 7
+* added support for urxvt terminal emulator with CHPL_COMM_USE_(G|LL)DB.
+  (see https://chapel-lang.org/docs/1.19/usingchapel/debugging.html)
 
 Cray-specific Changes
 ---------------------
+* improved comm=ugni fixed heap behavior near the registration limit
+  (see https://chapel-lang.org/docs/1.19/platforms/cray.html)
+* allowed specifying fixed heap size as a percentage of physical memory size
+  (see https://chapel-lang.org/docs/1.19/platforms/cray.html)
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -223,6 +233,7 @@ Testing System
 * removed our dependency on subprocess32
 * added Python 3 support to the testing infrastructure
 * fixed support for building our test virtualenv within an existing virtualenv
+* reorganized test output to contain first all stdout, then all stderr
 
 Developer-oriented changes: Configuration changes
 -------------------------------------------------
@@ -261,6 +272,10 @@ Developer-oriented changes: Module improvements
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * improved speed and ease of gathering performance statistics under `ugni`
+* moved strided bulk transfer from comm layers to shared, common code
+* moved communication diagnostics from comm layers to shared, common code
+* added tasking layer interface queries for fixed-thread-count implementations
+* restructured array memory allocation interfaces
 
 Developer-oriented changes: Testing System
 ------------------------------------------
