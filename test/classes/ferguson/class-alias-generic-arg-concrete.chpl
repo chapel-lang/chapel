@@ -8,6 +8,7 @@ proc doit(type C)
   var c = new unmanaged C(1);
   writeln(c);
   writeln(c.x);
+  delete c;
 }
 
 doit(unmanaged A(int));
