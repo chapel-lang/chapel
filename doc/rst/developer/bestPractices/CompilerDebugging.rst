@@ -170,7 +170,7 @@ TAGS
 
 BROWSE
   Created like TAGS above. Reflects the class hierarchy within the compiler,
-  ebrowses\'s ``ebrowse-tree``.
+  ebrowse\'s ``ebrowse-tree``.
   Presently there is little more than the ``BaseAST`` and ``Vec<>`` hierarchies.
 
 - ``grepcomp``
