@@ -2735,9 +2735,6 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
                                                 eltExpr->copy());
   ifBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArrayFromExt));
 
-  CallExpr* checkFormalType2 = new CallExpr(PRIM_IS_SUBTYPE,
-                                            dtCFI_cdesc_t->symbol,
-                                            new CallExpr(PRIM_TYPEOF, formal));
   BlockStmt* elseIfBody = new BlockStmt();
   CallExpr* makeChplArrayFromFort = new CallExpr("makeArrayFromFortranArray",
                                                  new SymExpr(formal),
@@ -2765,7 +2762,16 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
   CallExpr* makeChplArray = new CallExpr("makeArrayFromOpaque",
                                          new SymExpr(formal), instanceType);
   elseBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArray));
-  CondStmt* cond = new CondStmt(checkFormalType, ifBody, new CondStmt(checkFormalType2, elseIfBody, elseBody));
+  Stmt* elseStmt;
+  if (fLibraryFortran) {
+    CallExpr* checkFormalType2 = new CallExpr(PRIM_IS_SUBTYPE,
+                                              dtCFI_cdesc_t->symbol,
+                                              new CallExpr(PRIM_TYPEOF, formal));
+    elseStmt = new CondStmt(checkFormalType2, elseIfBody, elseBody);
+  } else {
+    elseStmt = elseBody;
+  }
+  CondStmt* cond = new CondStmt(checkFormalType, ifBody, elseStmt);
   return cond;
 }
 
