@@ -12,6 +12,7 @@ Highlights (see subsequent sections for further details)
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * made 'true' and 'false' reserved words in Chapel
+* []-loops now permit serial execution if parallelism isn't an option
 
 New Features
 ------------
@@ -29,6 +30,8 @@ Feature Improvements
 * extended reshape() to support the reshaping of iterable expressions
   (e.g., 'reshape([i in 1..4] i, {1..2, 1..2})' now works)
 * added support for ranges of 'CodePointIndex' (useful for slicing strings)
+* arrays with inferred types defined using range expressions now preserve indices
+  (e.g., `var A = [i in -2..2] i;` now results an array with domain {-2..2})
 
 Removed Features
 ----------------
