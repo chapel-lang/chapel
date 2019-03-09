@@ -18,6 +18,7 @@ Semantic Changes / Changes to Chapel Language
 
 New Features
 ------------
+* added automatic fences for unordered operations at task termination
 
 Feature Improvements
 --------------------
@@ -62,6 +63,10 @@ Standard Modules / Library
 
 Package Modules
 ---------------
+* added unordered versions of non-fetching atomic operations
+  (see https://chapel-lang.org/docs/1.19/modules/packages/UnorderedAtomics.html)
+* added a mechanism to perform unordered copies
+  (see https://chapel-lang.org/docs/1.19/modules/packages/UnorderedCopy.html)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -83,6 +88,8 @@ Interoperability Improvements
 
 Performance Optimizations/Improvements
 --------------------------------------
+* optimized iteration over Block-distributed arrays
+* optimized internal testAndSet locks
 * prototyped parallelized 1D scans for block- and default-distributed arrays
   (use `-senableParScan` to enable this prototype)
 * enabled parallelism for statement-level promotions
@@ -90,6 +97,10 @@ Performance Optimizations/Improvements
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
+* optimized small data transfers and fetching atomics under `ugni`
+* optimized remote task spawning under `ugni`
+* optimized oversubscribed communication under `ugni`
+* optimized unordered communication under `ugni`
 
 Memory Improvements
 -------------------
@@ -135,25 +146,44 @@ Bug Fixes
 * fixed a bug in range.member(range)
 * fixed some incorrect buffer sizes found using gcc 8.2 static analysis
 * fixed target-compiler optimization flags for non-x86 architectures
+* converted memcpy() calls that may overlap to use memmove()
+* fixed support for heterogeneous nodes with GASNet over the `aries` conduit
+* fixed support for `cstdlib` atomics for clang and llvm compilers
+* fixed a bug in which global extern consts were incorrectly localized
 
 Launchers
 ---------
 * improved propagation of environment variables for several launchersa
+* unified the implementation of all gasnetrun-based launchers
+* improved how processes are mapped to locales for gasnetrun-based launchers
+* improved portability and usability of slurm-gasnetrun_ibv launcher
+* added support for setting a node access type for slurm launchers
+  (see https://chapel-lang.org/docs/1.19/usingchapel/launcher.html#common-slurm-settings)
 
 Compiler Performance
 --------------------
 
 Packaging / Configuration Changes
 ---------------------------------
+* made `cstdlib` atomics the default for gcc, clang and llvm compilers
+  (see https://chapel-lang.org/docs//1.19/usingchapel/chplenv.html#chpl-atomics)
 
 Third-Party Software Changes
 ----------------------------
+* upgraded GASNet to GASNet-EX version 2018.9.0
+* improved GASNet build speeds
+* upgraded hwloc to version 1.11.11
+* upgraded qthreads to version 1.14
+* upgraded re2 to commit 0a6326b
 * updated the bundled version of LLVM to 7.0.1 and began storing it unpacked
   (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html
    and https://www.chapel-lang.org/docs/1.19/technotes/llvm.html)
 
 Testing System
 --------------
+* removed our dependency on subprocess32
+* added Python 3 support to the testing infrastructure
+* fixed support for building our test virtualenv within an existing virtualenv
 
 Developer-oriented changes: Configuration changes
 -------------------------------------------------
@@ -189,6 +219,7 @@ Developer-oriented changes: Module improvements
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* improved speed and ease of gathering performance statistics under `ugni`
 
 Developer-oriented changes: Testing System
 ------------------------------------------
