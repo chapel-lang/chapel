@@ -1,7 +1,11 @@
 Release Changes List
 ====================
 
-
+TODO: sort
+TODO: check for cross-references / examples
+TODO: check --library diffs
+TODO: check examples/ diffs
+TODO: spellcheck
 
 version 1.19.0
 ==============
@@ -17,6 +21,11 @@ Semantic Changes / Changes to Chapel Language
 * []-loops now permit serial execution if parallelism isn't an option
 * default initializers for generic types require formal names to match fields
   (https://chapel-lang.org/docs/1.19/technotes/initTypeAlias.html)
+
+Syntactic/Naming Changes
+------------------------
+* added support for underscores in integer and floating point literals
+  (see TODO)
 
 New Features
 ------------
@@ -56,6 +65,8 @@ Feature Improvements
    https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codePoints)
 * made default string access always return a string
   (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.this)
+* strings cast to integral or floating point types may now contain underscores
+* strings cast to integral types can now be in base 2, 8, or 16
 
 Removed Features
 ----------------
@@ -94,6 +105,8 @@ Package Modules
   (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.eigvals)
 * stopped transitively using `BLAS` and `LAPACK` in the `LinearAlgebra` module
 * added checks to `LinearAlgebra` routines to ensure non-distributed arrays
+* added `map`, `filter`, and `consume` for iterators
+  (see https://chapel-lang.org/docs/master/modules/packages/FunctionalOperations.html)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -111,6 +124,7 @@ New Tools / Tool Changes
 * made `mason search` warn about bad manifest filenames instead of halting
 * added `:throw:/:throws:` tag to `chpldoc` for documenting thrown errors
   (see https://chapel-lang.org/docs/master/tools/chpldoc/chpldoc.html#documenting-functions-that-throw)
+* improved `c2chapel` with respect to functions with pointer arguments
 
 Interoperability Improvements
 -----------------------------
@@ -122,6 +136,8 @@ Interoperability Improvements
   - added support for literal default arguments in routines exported to Python
   - added support for passing complex Chapel array types opaquely to Python
   - added support for c_ptr arguments using NumPy arrays or ctypes pointers
+* added initial support for Fortran interoperability including 1D array passing
+  (see TODO)
 * fixed some issues with `--library*` compilation using the LLVM back-end
   (see TODO)
 
@@ -146,6 +162,7 @@ Memory Improvements
 -------------------
 * optimized away some unnecessary memory allocations
 * reduced memory leaks due to sparse domains, reductions, and arrays-of-arrays
+* fixed a memory leak when popping the last element from an array
 
 Compiler Flags
 --------------
@@ -160,6 +177,8 @@ Documentation
 * added documentation of the `:throw:/:throws:` tag in `chpldoc`
   (see https://chapel-lang.org/docs/master/tools/chpldoc/chpldoc.html#documenting-functions-that-throw)
 * documented some throwing functions in the standard library documentation
+* added a primer for special methods on classes and records
+  (see https://chapel-lang.org/docs/master/primers/specialMethods.html)
 
 Example Codes
 -------------
@@ -173,7 +192,7 @@ Portability
 * ported the LLVM back-end to 32-bit x86
 * improved the LLVM back-end's ability to find gcc header files
 * ensured Chapel supports LLVM 7
-* added support for urxvt terminal emulator with CHPL_COMM_USE_(G|LL)DB.
+* added support for urxvt terminal emulator with CHPL_COMM_USE_[G|LL]DB.
   (see https://chapel-lang.org/docs/1.19/usingchapel/debugging.html)
 
 Cray-specific Changes and Bug Fixes
@@ -272,6 +291,7 @@ Developer-oriented changes: Makefile improvements
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added `--library-fortran[-name]` flags in support of Fortran interoperability
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
@@ -2375,6 +2395,9 @@ Domain Maps (Layouts and Distributions)
 * added support for Block-distributed sparse domains and arrays
   (see https://chapel-lang.org/docs/1.14/modules/dists/BlockDist.html)
 * extended Block distributions to support strided bounding boxes
+* added convenience functions to simplify creating Block/Cyclic domains/arrays
+  (see https://chapel-lang.org/docs/master/modules/dists/BlockDist.html
+   and https://chapel-lang.org/docs/master/modules/dists/CyclicDist.html)
 
 Performance Optimizations/Improvements
 --------------------------------------
@@ -3191,6 +3214,7 @@ Tool Changes
   - added support for --print-commands with chpldoc
 * chpl-ipe:
   - added a quit() primitive for clean exits from the environment
+* improved syntax highlighting for `vim`, `source-highlight`, and `highlight`
 
 Syntactic/Naming Changes
 ------------------------
