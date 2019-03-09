@@ -15,10 +15,17 @@ Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * made 'true' and 'false' reserved words in Chapel
 * []-loops now permit serial execution if parallelism isn't an option
+* default initializers for generic types require formal names to match fields
+  (https://chapel-lang.org/docs/1.19/technotes/initTypeAlias.html)
 
 New Features
 ------------
 * added automatic fences for unordered operations at task termination
+* added support for the "init=" method, a proposed change to copy initializers
+  (see https://chapel-lang.org/docs/1.19/technotes/initequals.html)
+* added support for initializing atomic variables from values
+* added support for using type aliases in `new` expressions
+  (see https://chapel-lang.org/docs/1.19/technotes/initTypeAlias.html)
 
 Feature Improvements
 --------------------
@@ -59,6 +66,8 @@ Removed Features
   (see https://chapel-lang.org/docs/master/builtins/String.html#String.string.isEmpty)
 * removed previously deprecated `isBLAS_MKL` flag from `BLAS` module
 * removed previously deprecated `matPlus` and `matMinus` from `LinearAlgebra`
+* deprecated the `List` module, renaming it `LinkedList`
+  (see https://chapel-lang.org/docs/master/modules/standard/LinkedLists.html)
 
 Standard Modules / Library
 --------------------------
@@ -122,6 +131,7 @@ Cray-specific Performance Optimizations/Improvements
 Memory Improvements
 -------------------
 * optimized away some unnecessary memory allocations
+* reduced memory leaks due to sparse domains, reductions, and arrays-of-arrays
 
 Compiler Flags
 --------------
@@ -152,6 +162,11 @@ Error Messages / Semantic Checks
 * improved error messages for compile-time 'config's
 * improved const checking, for example when assigning to tuples
 * added an error for zippered for-loops that invoke parallel iterators
+* added an error for new-expressions without argument lists
+* added an error for user-defined constructors
+* improved error messages for initializers
+* improved error messages for generic first-class functions
+
 
 Execution-time Checks
 ---------------------
@@ -332,7 +347,6 @@ New Features
   (see 'Variable Declarations' in the language spec's 'Variables' chapter)
 * added support for querying subtype relationships via `<`, `<=`, `>`, `>=`
   (see https://chapel-lang.org/docs/1.18/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
-
 
 Feature Improvements
 --------------------
