@@ -30,19 +30,17 @@
    }
 
    i = array.size;
-   var newIndex: int;
 
    // fill in the result array with the correct position of the numbers using the curoffsets array
    for i in array.domain {
-    
      var currentDigit = findPosition(place,array[i],numBuckets); 
-     newIndex = curOffsets[currentDigit];
+     var newIndex = curOffsets[currentDigit];
      result[newIndex+1] = array[i];
      curOffsets[currentDigit] +=  1;
      //i = i - 1;
    }
 
-	 return result;
+   return result;
   }
 
  // To find maximum element in an array

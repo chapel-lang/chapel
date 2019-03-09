@@ -4,6 +4,7 @@ use LayoutCS;
 use BlockDist;
 use CommDiagnostics;
 use Sort;
+use LinkedLists;
 
 config param enableRuntimeDebugging = true;
 config const debugAll : bool = false;
@@ -111,7 +112,7 @@ class Vector {
     this.size += values.size;
   }
 
-  proc push_back( values : list(eltType) ){
+  proc push_back( values : LinkedList(eltType) ){
     for value in values {
       this.push_back( value );
     }
@@ -162,7 +163,7 @@ class ParallelWorkQueue {
     this.lock.unlock();
   }
 
-  proc add( values : list(eltType) ){
+  proc add( values : LinkedList(eltType) ){
     this.lock.lock();
     this.queue.push_back( values );
     this.lock.unlock();
@@ -721,7 +722,7 @@ where D.rank == 2
 
   var rowSum : [rows] int;
   var rowCount : [rows] int;
-  var workQueue : list(D.idxType);
+  var workQueue : LinkedList(D.idxType);
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();

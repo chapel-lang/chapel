@@ -1276,6 +1276,10 @@ proc file.init(x: file) {
   }
 }
 
+proc file.init=(x: file) {
+  this.init(x);
+}
+
 pragma "no doc"
 proc =(ref ret:file, x:file) {
   // retain -- release
@@ -1968,6 +1972,10 @@ proc channel.init(x: channel) {
   on x.home {
     qio_channel_retain(x._channel_internal);
   }
+}
+
+proc channel.init=(x: this.type) {
+  this.init(x);
 }
 
 //
@@ -5478,7 +5486,10 @@ proc _toIntegral(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isAbstractEnumType(t) then
+      ret = (0, false);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
@@ -5521,7 +5532,10 @@ proc _toSigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isAbstractEnumType(t) then
+      ret = (0, false);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
@@ -5565,7 +5579,10 @@ proc _toUnsigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (uint, bool);
   try {
-    ret = (x:uint, true);
+    if isAbstractEnumType(t) then
+      ret = (0:uint, false);
+    else
+      ret = (x:uint, true);
   } catch {
     ret = (0:uint, false);
   }
@@ -5588,7 +5605,10 @@ proc _toReal(x:?t) where _isIoPrimitiveType(t) && !isRealType(t)
 {
   var ret: (real, bool);
   try {
-    ret = (x:real, true);
+    if isAbstractEnumType(t) then
+      ret = (0.0, false);
+    else
+      ret = (x:real, true);
   } catch {
     ret = (0.0, false);
   }
@@ -5610,7 +5630,10 @@ proc _toImag(x:?t) where _isIoPrimitiveType(t) && !isImagType(t)
 {
   var ret: (imag, bool);
   try {
-    ret = (x:imag, true);
+    if isAbstractEnumType(t) then
+      ret = (0.0i, false);
+    else
+      ret = (x:imag, true);
   } catch {
     ret = (0.0i, false);
   }
@@ -5633,7 +5656,10 @@ proc _toComplex(x:?t) where _isIoPrimitiveType(t) && !isComplexType(t)
 {
   var ret: (complex, bool);
   try {
-    ret = (x:complex, true);
+    if isAbstractEnumType(t) then
+      ret = (0.0+0.0i, false);
+    else
+      ret = (x:complex, true);
   } catch {
     ret = (0.0+0.0i, false);
   }
@@ -5677,7 +5703,10 @@ proc _toNumeric(x:?t) where _isIoPrimitiveType(t) && !isNumericType(t)
   // enums, bools get cast to int.
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isAbstractEnumType(t) then
+      ret = (0, false);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
@@ -5746,7 +5775,21 @@ private inline
 proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoPrimitiveType(t)
 {
   try {
-    lhs = rhs:t;
+    if isAbstractEnumType(t) {
+      if isStringType(t2) {
+        lhs = rhs:t;
+      } else {
+        return ERANGE;
+      }
+    } else if isEnumType(t) {
+      if (isIntType(t2) || isStringType(t2)) {
+        lhs = rhs:t;
+      } else {
+        lhs = rhs:int:t;
+      }
+    } else {
+      lhs = rhs:t;
+    }
   } catch {
     return ERANGE;
   }

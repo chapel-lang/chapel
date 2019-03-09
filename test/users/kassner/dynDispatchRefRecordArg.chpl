@@ -1,13 +1,13 @@
-use List;
+use LinkedLists;
 
 class Foo
 {
-  proc doStuff(ref myList : list(int)) {}
+  proc doStuff(ref myList : LinkedList(int)) {}
 }
 
 class Bar : Foo
 {
-  override proc doStuff(ref myList : list(int))
+  override proc doStuff(ref myList : LinkedList(int))
   {
     writeln("doStuff: myList.length = " + myList.length);
 
@@ -22,7 +22,7 @@ class Bar : Foo
 
 class MyClass
 {
-  var myList = new list(int);
+  var myList = new LinkedList(int);
 
   proc deinit()
   {

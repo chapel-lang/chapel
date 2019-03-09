@@ -96,7 +96,7 @@ static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
 
 /*
 If 'fn' is a leader iterator, it does not access its formals
-the way the correponding follower iterator does.
+the way the corresponding follower iterator does.
 If a formal has the "ref-maybe-const" intent, it may turn into
 "const-ref" for the leader even though it IS modified
 by the follower and so is racy.
@@ -206,7 +206,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
         }
 
         // A 'const' record should be able to be initialized
-        if (calledFn->name == astrInit) {
+        if (calledFn->isInitializer() || calledFn->isCopyInit()) {
           error = false;
         }
 

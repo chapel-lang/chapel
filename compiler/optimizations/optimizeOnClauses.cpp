@@ -140,10 +140,12 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_INVARIANT_START:
   case PRIM_NO_ALIAS_SET:
   case PRIM_COPIES_NO_ALIAS_SET:
+  case PRIM_OPTIMIZATION_INFO:
     return FAST_AND_LOCAL;
 
   case PRIM_MOVE:
   case PRIM_ASSIGN:
+  case PRIM_UNORDERED_ASSIGN:
   case PRIM_ADD_ASSIGN:
   case PRIM_SUBTRACT_ASSIGN:
   case PRIM_MULT_ASSIGN:
@@ -240,7 +242,6 @@ classifyPrimitive(CallExpr *call) {
     return FAST_NOT_LOCAL;
 
   case PRIM_CHPL_COMM_GET:
-  case PRIM_CHPL_COMM_GET_UNORDERED:
   case PRIM_CHPL_COMM_PUT:
   case PRIM_CHPL_COMM_ARRAY_GET:
   case PRIM_CHPL_COMM_ARRAY_PUT:
@@ -273,6 +274,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_IS_UNION_TYPE:
   case PRIM_IS_ATOMIC_TYPE:
   case PRIM_IS_EXTERN_TYPE:
+  case PRIM_IS_ABS_ENUM_TYPE:
   case PRIM_IS_TUPLE_TYPE:
   case PRIM_IS_STAR_TUPLE_TYPE:
   case PRIM_IS_SUBTYPE:

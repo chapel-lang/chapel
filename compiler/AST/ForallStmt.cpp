@@ -36,6 +36,7 @@ ForallStmt::ForallStmt(BlockStmt* body):
   fZippered(false),
   fFromForLoop(false),
   fFromReduce(false),
+  fOverTupleExpand(false),
   fAllowSerialIterator(false),
   fRequireSerialIterator(false),
   fVectorizationHazard(false),
@@ -66,6 +67,7 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   _this->fZippered    = fZippered;
   _this->fFromForLoop = fFromForLoop;
   _this->fFromReduce  = fFromReduce;
+  _this->fOverTupleExpand       = fOverTupleExpand;
   _this->fAllowSerialIterator   = fAllowSerialIterator;
   _this->fRequireSerialIterator = fRequireSerialIterator;
   _this->fVectorizationHazard   = fVectorizationHazard;
@@ -108,7 +110,9 @@ static void verifyList(AList& list, Expr* parent) {
 void ForallStmt::verify() {
   Expr::verify(E_ForallStmt);
 
-  INT_ASSERT(fIterVars.length == fIterExprs.length);
+  if (!fOverTupleExpand || resolved)
+    INT_ASSERT(fIterVars.length == fIterExprs.length);
+
   if (fZippered) INT_ASSERT(fIterVars.length > 0);
   else           INT_ASSERT(fIterVars.length == 1);
 
@@ -299,7 +303,7 @@ ForallStmt* isForallRecIterHelper(Expr* expr) {
 // Valid after addParIdxVarsAndRestruct().
 VarSymbol* parIdxVar(ForallStmt* fs) {
   INT_ASSERT(fs->inductionVariables().length == 1);
-  DefExpr* ivdef = toDefExpr(fs->inductionVariables().head);
+  DefExpr* ivdef = fs->firstInductionVarDef();
   VarSymbol* ivsym = toVarSymbol(ivdef->sym);
   INT_ASSERT(ivsym != NULL);
   return ivsym;
@@ -341,6 +345,33 @@ static void fsDestructureIterables(ForallStmt* fs, Expr* iterator) {
   }
 }
 
+// Is there a tuple expansion expression among fs's iterables?
+static bool fsContainsTupleExpandIterables(ForallStmt* fs) {
+  for_alist(it, fs->iteratedExpressions()) {
+    if (CallExpr* itCall = toCallExpr(it))
+      if (itCall->isPrimitive(PRIM_TUPLE_EXPAND))
+        return true;
+  }
+  return false;
+}
+
+static void checkZipWhenOverTupleExpand(ForallStmt* fs) {
+  if (fs->overTupleExpand() && !fs->zippered())
+    USR_FATAL_CONT(fs, "A forall loop over tuple expansion expression(s)"
+                       " must be zippered");
+}
+
+// How many iterables should we pretend that 'fs' has?
+// Return 0 for a forall over tuple expansion expression(s).
+// In this case, we do not know before resolution how many items the tuple
+// expansion(s) will produce. So, go with however many the user provided.
+static int numIterablesToDestructure(ForallStmt* fs) {
+  if (fs->overTupleExpand())
+    return 0;
+  else
+    return fs->numIteratedExprs();
+}
+
 // when there is already a Symbol
 static void createAndAddIndexVar(AList& fIterVars, Symbol* idxVar) {
   idxVar->addFlag(FLAG_INDEX_VAR);
@@ -356,7 +387,7 @@ static VarSymbol* createAndAddIndexVar(AList& fIterVars, const char* name) {
   return idxVar;
 }
 
-// compile-created, with FLAG_TEMP
+// compiler-created, with FLAG_TEMP
 static VarSymbol* createAndAddIndexVar(AList& fIterVars, int idxPosition) {
   VarSymbol* result = createAndAddIndexVar(fIterVars,
                                        astr("chpl_idx_", istr(idxPosition)));
@@ -384,6 +415,13 @@ static void fsDestructureWhenSingleIdxVar(ForallStmt* fs, AList& fIterVars,
   // i.e. zippered with a single index variable.
   // MPF suggests that we still create an index variable per iterable
   // then tuple them up into the index variable.
+
+  // Make an exception for this case:
+  if (fs->overTupleExpand()) {
+    createAndAddIndexVar(fs->inductionVariables(),
+                         indexExprToVarSymbol(index));
+    return;
+  }
 
   CallExpr* bt = new CallExpr("_build_tuple_always_allow_ref"); // to tuple them up
 
@@ -428,11 +466,25 @@ static void fsDestructureIndex(ForallStmt* fs, AList& fIterVars,
 }
 
 
+void fsCheckNumIdxVarsVsIterables(ForallStmt* fs, int numIdx, int numIter) {
+  if (numIdx != numIter) {
+    if (numIdx > numIter)
+      USR_FATAL(fs, "the number of index variables in the tuple (%d)"
+                " exceeds the number of zippered iterable expressions"
+                " (%d)", numIdx, numIter);
+    else
+      USR_FATAL(fs, "not enough index variables in the tuple:"
+                " %d variables vs. %d zippered iterable expressions\n"
+                "  To keep all iterable expressions, add index variable(s)"
+                " or '_' underscore(s) to the tuple.", numIdx, numIter);
+  }
+}
+
 // Fill fs->inductionVariables(): one DefExpr per "iterable".
 // If the user supplies a corresponding index variable, use that.
 // Otherwise create a compiler var and detuple/aggregate into it.
 static void fsDestructureIndices(ForallStmt* fs, Expr* indices) {
-  const int numIterables = fs->numIteratedExprs();
+  const int numIterables = numIterablesToDestructure(fs);
   AList& fIterVars = fs->inductionVariables();
 
   if (numIterables == 1) {
@@ -441,23 +493,14 @@ static void fsDestructureIndices(ForallStmt* fs, Expr* indices) {
     return;
   }
 
-  INT_ASSERT(numIterables > 1); // should not have 0 iterables
-
   if (CallExpr* indicesCall = toCallExpr(indices)) {
     INT_ASSERT(indicesCall->isNamed("_build_tuple")); // ensured by checkIndices()
 
-    if (indicesCall->numActuals() != numIterables) {
-      if (indicesCall->numActuals() > numIterables)
-        USR_FATAL(fs, "the number of index variables in the tuple (%d)"
-                  " exceeds the number of zippered iterable expressions"
-                  " (%d)", indicesCall->numActuals(), numIterables);
-      else
-        USR_FATAL(fs, "not enough index variables in the tuple:"
-                  " %d variables vs. %d zippered iterable expressions;"
-                  " to keep all iterable expressions, add index variable(s)"
-                  " or '_' underscore(s) to the tuple",
-                  indicesCall->numActuals(), numIterables);
-    }
+    if (numIterables == 0)
+      ; // If overTupleExpand(), we will check this later during resolution.
+    else
+      fsCheckNumIdxVarsVsIterables(fs, indicesCall->numActuals(), numIterables);
+
     int idxNum = 0;
     for_actuals(index, indicesCall)
       fsDestructureIndex(fs, fIterVars, index->remove(), ++idxNum);
@@ -475,8 +518,9 @@ static void fsDestructureIndices(ForallStmt* fs, Expr* indices) {
 
 static void fsVerifyNumIterables(ForallStmt* fs) {
   int numIterables = fs->numIteratedExprs();
-  INT_ASSERT(fs->inductionVariables().length == numIterables);
   INT_ASSERT(fs->iteratedExpressions().length == numIterables);
+  if (fs->overTupleExpand()) return; // the follow condition may not hold
+  INT_ASSERT(fs->inductionVariables().length == numIterables);
 }
 
 static void adjustReduceOpNames(ForallStmt* fs) {
@@ -506,6 +550,8 @@ ForallStmt* ForallStmt::buildHelper(Expr* indices, Expr* iterator,
   }
 
   fsDestructureIterables(fs, iterator);
+  fs->fOverTupleExpand = fsContainsTupleExpandIterables(fs);
+  checkZipWhenOverTupleExpand(fs);
   fsDestructureIndices(fs, indices);
   fsVerifyNumIterables(fs);
   adjustReduceOpNames(fs);
@@ -594,4 +640,45 @@ bool ForallStmt::hasVectorizationHazard() const {
 
 void ForallStmt::setHasVectorizationHazard(bool v) {
   fVectorizationHazard = v;
+}
+
+static void gatherFollowerLoopBodies(BlockStmt* block,
+                                     std::vector<BlockStmt*>& bodies) {
+  for_alist(stmt, block->body) {
+    if (ForLoop* forLoop = toForLoop(stmt)) {
+      if (SymExpr* indexSe = forLoop->indexGet())
+        if (indexSe->symbol()->hasFlag(FLAG_FOLLOWER_INDEX))
+          bodies.push_back(forLoop);
+    } else if (BlockStmt* inner = toBlockStmt(stmt)) {
+      if (inner->isRealBlockStmt())
+        gatherFollowerLoopBodies(inner, bodies);
+    }
+  }
+}
+
+std::vector<BlockStmt*> ForallStmt::loopBodies() const {
+  std::vector<BlockStmt*> bodies;
+
+  // First, check for follower loops with fast follower check.
+  for_alist(stmt, fLoopBody->body) {
+    if (CondStmt* cond = toCondStmt(stmt)) {
+      gatherFollowerLoopBodies(cond->thenStmt, bodies);
+      if (cond->elseStmt)
+        gatherFollowerLoopBodies(cond->elseStmt, bodies);
+    }
+  }
+  if (bodies.size() == 0) {
+    // No fast follower check. Try a fast follower loop.
+    gatherFollowerLoopBodies(fLoopBody, bodies);
+  }
+
+  // With the fast follower check, we might have 2 bodies,
+  // but it's probably an error if we find more than that.
+  INT_ASSERT(bodies.size() <= 2);
+
+  if (bodies.size() == 0) {
+    // No follower loops, must be standalone pattern, just use normal body
+    bodies.push_back(fLoopBody);
+  }
+  return bodies;
 }

@@ -3,7 +3,7 @@ enum Color {
 }
 
 proc main() {
-  var x : int = new Color;
+  var x : int = new Color();
 
   writeln(x);
 }

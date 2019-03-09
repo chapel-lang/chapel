@@ -532,6 +532,19 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_IS_ABS_ENUM_TYPE: {
+    EnumType* et = toEnumType(call->get(1)->typeInfo());
+    if (et && et->isAbstract()) {
+      retval = new SymExpr(gTrue);
+    } else {
+      retval = new SymExpr(gFalse);
+    }
+
+    call->replace(retval);
+
+    break;
+  }
+    
   case PRIM_IS_CLASS_TYPE: {
     Type* t = call->get(1)->typeInfo();
 
@@ -966,6 +979,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       Type* newt = computeNonRefTuple(toAggregateType(type));
       retval = new SymExpr(newt->symbol);
       call->replace(retval);
+    } else {
+      // Check whether the type's def is within the .type block itself.
+      if (BlockStmt* blk = toBlockStmt(call->getStmtExpr()->parentExpr))
+        if (type->symbol->defPoint->parentExpr == blk)
+          USR_FATAL_CONT(call, ".type is not supported for this kind of expression");
     }
 
     break;
@@ -1131,7 +1149,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_REDUCE: {
     // Need to do this ahead of resolveCall().
-    lowerPrimReduce(call, retval);
+    retval = lowerPrimReduce(call);
     break;
   }
 
@@ -1334,28 +1352,24 @@ static Expr* preFoldNamed(CallExpr* call) {
           bool fromString = (oldType == dtString || oldType == dtStringC);
           bool fromIntUint = is_int_type(oldType) ||
                              is_uint_type(oldType);
-          bool fromIntEtc = fromIntUint || is_bool_type(oldType);
+          bool fromRealEtc = is_real_type(oldType) ||
+                             is_imag_type(oldType) ||
+                             is_complex_type(oldType);
+          bool fromIntEtc = fromIntUint || fromRealEtc || is_bool_type(oldType);
 
           bool toEnum = is_enum_type(newType);
           bool toString = (newType == dtString || newType == dtStringC);
           bool toIntUint = is_int_type(newType) ||
                            is_uint_type(newType);
-          bool toIntEtc = toIntUint || is_bool_type(newType);
+          bool toRealEtc = is_real_type(newType) ||
+                           is_imag_type(newType) ||
+                           is_complex_type(newType);
+          bool toIntEtc = toIntUint || toRealEtc || is_bool_type(newType);
 
 
           // Handle casting between numeric types
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
-            VarSymbol* typeVar  = toVarSymbol(newType->defaultValue);
-            // Numeric types should have a default of the right type
-            INT_ASSERT(typeVar && typeVar->type == newType);
-
-            // handle numeric casts
-            // (or anything handled by coerce_immediate)
-            if (typeVar == NULL || typeVar->immediate == NULL) {
-              INT_FATAL("unexpected case in cast_fold");
-            }
-
-            Immediate coerce = *typeVar->immediate;
+            Immediate coerce = getDefaultImmediate(newType);
 
             coerce_immediate(imm, &coerce);
 

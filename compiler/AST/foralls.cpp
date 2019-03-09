@@ -21,10 +21,12 @@
 #include "AstVisitor.h"
 #include "DeferStmt.h"
 #include "driver.h"
-#include "ForLoop.h"
 #include "ForallStmt.h"
+#include "ForLoop.h"
 #include "iterator.h"
+#include "optimizations.h"
 #include "passes.h"
+#include "preFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stlUtil.h"
@@ -218,7 +220,7 @@ enum ParIterFlavor {
 /////////// helpers ///////////
 
 // Given an iterator or forwarder function, find the type that it yields.
-static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn) {
+QualifiedType fsIterYieldType(Expr* ref, FnSymbol* iterFn) {
   INT_ASSERT(iterFn->isResolved());
 
   if (iterFn->isIterator()) {
@@ -226,7 +228,7 @@ static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn) {
       return ii->getValue->getReturnQualType();
     } else {
       // We are in the midst of resolving a recursive iterator.
-      USR_FATAL_CONT(fs, "the recursion pattern seen in the first iterable"
+      USR_FATAL_CONT(ref, "the recursion pattern seen in the first iterable"
                          " in this forall loop is not supported");
       USR_PRINT(iterFn, "the corresponding iterator is here");
       USR_PRINT(iterFn, "try declaring its return type");
@@ -241,12 +243,15 @@ static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn) {
     INT_ASSERT(retType && retType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
     FnSymbol* iterator = retType->iteratorInfo->iterator;
     INT_ASSERT(iterator->isIterator()); // 'iterator' is from an IteratorInfo
-    return fsIterYieldType(fs, iterator);
+    return fsIterYieldType(ref, iterator);
   }
 }
 
-static bool isIteratorRecord(Symbol* sym) {
-  return sym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD);
+static inline bool isIteratorRecord(Type* type) {
+  return type->symbol->hasFlag(FLAG_ITERATOR_RECORD);
+}
+static inline bool isIteratorRecord(Symbol* sym) {
+  return isIteratorRecord(sym->type);
 }
 
 static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
@@ -273,6 +278,8 @@ buildFollowLoop(VarSymbol* iter,
   //destructureIndices(followBody, indices, new SymExpr(followIdx), false);
 
   followBlock->insertAtTail(new DefExpr(followIter));
+
+  followIdx->addFlag(FLAG_FOLLOWER_INDEX);
 
   if (fast) {
 
@@ -330,11 +337,13 @@ static bool isIITcall(SymExpr* se) {
 }
 
 // The respective temp may not be needed any longer. Remove it.
-static void removeOrigIterCall(SymExpr* origSE)
+static void removeOrigIterCallIfPossible(SymExpr* origSE)
 {
   INT_ASSERT(!origSE->inTree());
 
   Symbol* origSym = origSE->symbol();
+  if (! origSym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    return; // not the case we are looking at
   INT_ASSERT(origSym->hasFlag(FLAG_TEMP));
 
   // If the temp is used only to set its shape, remove it. BTW there may be
@@ -375,6 +384,15 @@ static void removeOrigIterCall(SymExpr* origSE)
   origSym->defPoint->remove();
 }
 
+// Now that the tuple expansion expressions have been expanded,
+// we can do what we couldn't during parsing.
+// The case numInductionVars==1 is special.
+static void checkWhenOverTupleExpand(ForallStmt* fs) {
+  if (fs->overTupleExpand() && fs->numInductionVars() > 1)
+    fsCheckNumIdxVarsVsIterables(fs, fs->numInductionVars(),
+                                     fs->numIteratedExprs());
+}
+
 // Replaces 'origSE' in the tree with the result.
 static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE,
                                         FnSymbol*& origTargetRef)
@@ -392,12 +410,11 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE,
     }
 
     CallExpr* origIterCall = toCallExpr(getDefOfTemp(origSE));
-    // What to do if we do not find it?
-    // For example, if the forall is over a formal that is an IR.
-    INT_ASSERT(origIterCall);
+    if (origIterCall == NULL || ! origIterCall->isResolved()) {
+      USR_FATAL(origSE, "a forall loop over this kind of iterable expression is not implemented");
+    }
 
     FnSymbol* origTarget = origIterCall->resolvedFunction();
-    INT_ASSERT(origTarget);
 
     const char* targetName = origTarget->name;
     const int forallExprNameLen = strlen(astr_forallexpr);
@@ -496,19 +513,18 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
   return retval;
 }
 
-/////////// handleZipperedSerial /////////// 
+/////////// handle serial cases /////////// 
 
 static FnSymbol* trivialLeader          = NULL;
 static Type*     trivialLeaderYieldType = NULL;
 
-static void hzsCheckParallelIterator(ForallStmt* fs, FnSymbol* origIterFn) {
-  if (isLeaderIterator(origIterFn) || isStandaloneIterator(origIterFn)) {
-    USR_FATAL(fs->iteratedExpressions().head, "Support for this combination of zippered iterators is not currently implemented");
-  }
-}
-
 // Return a _build_tuple of fs's index variables.
-static CallExpr* hzsMakeIndices(ForallStmt* fs) {
+static Expr* hzsMakeIndices(ForallStmt* fs) {
+  if (fs->numInductionVars() == 1) {
+    INT_ASSERT(fs->overTupleExpand()); 
+    return new SymExpr(fs->firstInductionVarDef()->sym);
+  }
+
   CallExpr* indices = new CallExpr("_build_tuple");
 
   for_alist(inddef, fs->inductionVariables())
@@ -525,13 +541,11 @@ static CallExpr* hzsMakeIndices(ForallStmt* fs) {
 
 // Return a PRIM_ZIP of fs's iterables.
 static CallExpr* hzsMakeIterators(ForallStmt* fs, FnSymbol* origIterFn,
-                                  SymExpr* origSE)
+                                  CallExpr* iterCall, SymExpr* origSE)
 {
-  // Looks like the first of the iterables is a copy of the def of origSE.
-  // So use origSE instead.
-  CallExpr* iter1 = toCallExpr(fs->firstIteratedExpr());
-  INT_ASSERT(iter1->resolvedFunction() == origIterFn);
-  iter1->replace(origSE); // relies on origSE not inTree()
+  // Revert the first iterable to the serial iterator, i.e.
+  // to what was there originally. Simply use origSE.
+  iterCall->replace(origSE); // relies on origSE not inTree()
 
   // Move all iterables to the zip call.
   CallExpr* iterators = new CallExpr(PRIM_ZIP);
@@ -544,10 +558,10 @@ static CallExpr* hzsMakeIterators(ForallStmt* fs, FnSymbol* origIterFn,
 
 // Wrap fs's loopBody in a zippered ForLoop over fs's iterables.
 static void hzsBuildZipperedForLoop(ForallStmt* fs, FnSymbol* origIterFn,
-                                    SymExpr* origSE)
+                                    CallExpr* iterCall, SymExpr* origSE)
 {
-  CallExpr* indices   = hzsMakeIndices(fs);
-  CallExpr* iterators = hzsMakeIterators(fs, origIterFn, origSE);
+  Expr*     indices   = hzsMakeIndices(fs);
+  CallExpr* iterators = hzsMakeIterators(fs, origIterFn, iterCall, origSE);
 
   BlockStmt* origLoopBody = fs->loopBody();
   BlockStmt* newLoopBody  = new BlockStmt();
@@ -613,44 +627,118 @@ So we give the ForallStmt a trivial leader, then have loopBody()
 be a regular ForLoop, zippered over these serial iterators.
 
 Retaining the ForallStmt itself means that forall intents, if any,
-will be hanled by existing code.
+will be handled by existing code.
 */
 static CallExpr* handleZipperedSerial(ForallStmt* fs, FnSymbol* origIterFn,
-                                      SymExpr* origSE)
+                                      CallExpr* iterCall, SymExpr* origSE)
 {
-  hzsCheckParallelIterator(fs, origIterFn);
+  if (origIterFn != NULL && isParallelIterator(origIterFn))
+    USR_FATAL(fs->iteratedExpressions().head, "Support for this combination of zippered iterators is not currently implemented");
 
-  hzsBuildZipperedForLoop(fs, origIterFn, origSE);
+  hzsBuildZipperedForLoop(fs, origIterFn, iterCall, origSE);
 
   CallExpr* trivialCall = hzsCallTrivialParIter(fs);
 
   return trivialCall;
 }
 
-/////////// final transformations /////////// 
+static CallExpr* setupFollowerCall(BlockStmt* holder, Symbol* followThis,
+                                   Symbol* iterSym) {
+  Symbol* iterSymAlt = iterSym;
+  CallExpr* followerCall = NULL;
 
-static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
-  if (gotSA) {
-    // No need to restructure anything. Leaving it as-is for simplicity.
-
-    VarSymbol* parIdx = parIdxVar(fs);
-
-    // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
-    parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-    parIdx->addFlag(FLAG_INDEX_VAR);
-
-    return;
+  // This happens for the []-statement in chpl__transferArray()
+  // when assigning from, say, a loop expression.
+  // The iterSym for the 2nd iterable is 'b', which is a 'const ref' formal.
+  // Its type is _ref(IR), which PRIM_TO_FOLLOWER does not handle.
+  if (iterSym->isRef() && isIteratorRecord(iterSym->getValType())) {
+    iterSymAlt = new VarSymbol(iterSym->name, iterSym->getValType());
+    if (iterSym->isConstant()) iterSymAlt->addFlag(FLAG_CONST);
   }
 
+  // These two cases are analogous to those in buildForallParIterCall().
+  // The forallexpr case is handled by preFold().
+  if (isIteratorRecord(iterSymAlt)) {
+    // Set up to match the PRIM_TO_FOLLOWER case in preFoldPrimOp().
+    CallExpr* primCall = new CallExpr(PRIM_TO_FOLLOWER, iterSymAlt, followThis);
+
+    holder->insertAtHead(primCall);
+    followerCall = toCallExpr(preFold(primCall));
+
+  } else {
+    // Not an iterator call, so add a call to these().
+    followerCall = new CallExpr("these", gMethodToken,
+                                iterSym, gFollowerTag, followThis);
+
+    holder->insertAtHead(followerCall);
+  }    
+
+  return followerCall;
+}
+
+bool fsGotFollower(Expr* anchor, Symbol* followThis, Symbol* iterSym) {
+  BlockStmt* holder = new BlockStmt();
+  anchor->insertAfter(holder);
+
+  CallExpr* followerCall = setupFollowerCall(holder, followThis, iterSym);
+  bool gotFollower = tryResolveCall(toCallExpr(followerCall));
+
+  holder->remove();
+  return gotFollower;
+}
+
+//
+// Does any of the iterables NOT have the corresponding follower iterator?
+//
+// Return false when all followers are required. If so, a missing follower
+// will cause an error later - when resolving _toFollower.
+//
+static bool optionalFollowersAreMissing(ForallStmt* fs, Symbol* followThis) {
+  if (fs->numIteratedExprs() <= 1)
+    return false; // Not missing. See also "if (firstIterable)" below.
+
+  if (! fs->allowSerialIterator())
+    return false; // Must be parallel. Followers are required.
+
+  bool retval = false;
+  Expr* anchor = new CallExpr(PRIM_NOOP);
+  fs->loopBody()->insertAtHead(anchor);
+
+  bool firstIterable = true;
+  for_alist(iterExpr, fs->iteratedExpressions()) {
+    if (firstIterable) {
+      firstIterable = false;
+      // Since the first iterable has a leader, its follower is required.
+    } else {
+      if (! fsGotFollower(anchor, followThis, symbolForActual(iterExpr))) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  anchor->remove();
+  return retval;
+}
+
+/////////// final transformations /////////// 
+
+// Create the induction variable of the parallel loop.
+static VarSymbol* createFollowThis(QualifiedType piType) {
+  VarSymbol* parIdx = newTemp("chpl_followThis", piType);
+  // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
+  parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  parIdx->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  return parIdx;
+}
+
+static void addParIdxVarsAndRestruct(ForallStmt* fs, VarSymbol* parIdx) {
   // Keep the user loop as its own BlockStmt.
   // Make it the last thing in the new fs->loopBody().
   BlockStmt* userLoopBody = fs->loopBody();
   BlockStmt* newLoopBody = new BlockStmt();
   userLoopBody->replace(newLoopBody);
   newLoopBody->insertAtTail(userLoopBody);
-
-  // The induction variable of the parallel loop.
-  VarSymbol* parIdx = newTemp("chpl_followThis");
 
   // If there is only one follower, we are tempted to use
   // the original forall's induction variable as the
@@ -691,10 +779,6 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
   // Cf. if gotSA, the original forall's induction variable remains that.
   indvars.insertAtHead(new DefExpr(parIdx));
 
-  // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
-  parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-  parIdx->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
   followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
   followIdx->addFlag(FLAG_INDEX_VAR);
   //followIdx->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -715,19 +799,19 @@ static void checkForNonIterator(IteratorGroup* igroup, ParIterFlavor flavor,
   }
 }
 
-static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
-                                             CallExpr* iterCall,
-                                             FnSymbol* origIterator,
-                                             bool gotSA)
+static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
 {
   // Set QualifiedType of the index variable.
-  QualifiedType iType = fsIterYieldType(pfs, iterCall->resolvedFunction());
-
+  QualifiedType iType = fsIterYieldType(pfs, iterFn);
   VarSymbol* idxVar = parIdxVar(pfs);
   if (idxVar->id == breakOnResolveID) gdbShouldBreakHere();
 
   idxVar->type = iType.type();
   idxVar->qual = iType.getQual();
+
+  // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
+  idxVar->addFlag(FLAG_INDEX_OF_INTEREST);
+  idxVar->addFlag(FLAG_INDEX_VAR);
 }
 
 static Expr* rebuildIterableCall(ForallStmt* pfs,
@@ -852,13 +936,13 @@ void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall);
 // Returns the next expression to resolve.
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 {
-  CallExpr* retval = NULL;
-
   if (pfs->id == breakOnResolveID) gdbShouldBreakHere();
 
   // We only get here for origSE==firstIteratedExpr() .
   // If at that time there are other elements in iterExprs(), we remove them.
   INT_ASSERT(origSE == pfs->firstIteratedExpr());
+
+  checkWhenOverTupleExpand(pfs);
 
   FnSymbol* origTarget = NULL; //for assertions
   CallExpr* iterCall = buildForallParIterCall(pfs, origSE, origTarget);
@@ -877,6 +961,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
   if (tryFailure) return NULL;
 
+  CallExpr* firstIterCall = iterCall;
   FnSymbol* origIterFn = iterCall->resolvedFunction();
   bool gotSA = (flavor != PIF_LEADER); // "got Single iterAtor"
 
@@ -897,36 +982,37 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
   if (flavor == PIF_SERIAL && pfs->numIteratedExprs() > 1) {
     // numIteratedExprs() is a good number to check, right?
-    INT_ASSERT(pfs->numIteratedExprs() == pfs->numInductionVars());
+    INT_ASSERT(pfs->numIteratedExprs() == pfs->numInductionVars()
+               || pfs->overTupleExpand());
 
-    retval = handleZipperedSerial(pfs, origIterFn, origSE);
+    firstIterCall = handleZipperedSerial(pfs, origIterFn, iterCall, origSE);
 
-    setupAndResolveShadowVars(pfs);
+  } else if (gotSA) {
+    resolveIdxVar(pfs, origIterFn);
+    removeOrigIterCallIfPossible(origSE);
 
   } else {
-    addParIdxVarsAndRestruct(pfs, gotSA);
+    INT_ASSERT(flavor == PIF_LEADER);
+    QualifiedType yType = fsIterYieldType(pfs, origIterFn);
+    VarSymbol* followThis = createFollowThis(yType);
 
-    resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
+    if (optionalFollowersAreMissing(pfs, followThis)) {
+      firstIterCall = handleZipperedSerial(pfs, NULL, iterCall, origSE);
 
-    setupAndResolveShadowVars(pfs);
-
-    if (gotSA) {
-      if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-        removeOrigIterCall(origSE);
-      }
     } else {
+      addParIdxVarsAndRestruct(pfs, followThis);
       buildLeaderLoopBody(pfs, rebuildIterableCall(pfs, iterCall, origSE));
     }
-
-    INT_ASSERT(iterCall == pfs->firstIteratedExpr());        // still here?
-    INT_ASSERT(iterCall == pfs->iteratedExpressions().tail); // only 1 elem
-
-    retval = iterCall;
-
-    setupRecIterFields(pfs, iterCall);
   }
 
-  return retval;
+  setupAndResolveShadowVars(pfs);
+  setupRecIterFields(pfs, firstIterCall);
+
+  // Verify 'firstIterCall' is the single iterable.
+  INT_ASSERT(firstIterCall == pfs->firstIteratedExpr());
+  INT_ASSERT(firstIterCall == pfs->iteratedExpressions().tail);
+
+  return firstIterCall;
 }
 
 
@@ -1126,13 +1212,26 @@ static Expr* lowerReduceOp(Expr* ref, SymExpr* opSE, SymExpr* dataSE,
   return new CallExpr(opSE, iitR);
 }
 
-// Within resolveBlockStmt / for_exprs_postorder framework,
-// we need to lower PRIM_REDUCE prior to the resolveCall()
-// that gets invoked from resolveExpr(). That way the
-// ForallStmt plus scaffolding that lowerPrimReduce() injects
-// can come after 'retval'. resolveCall() does not support that.
-
-void lowerPrimReduce(CallExpr* call, Expr*& retval) {
+//
+// lowerPrimReduce(call), where 'call' is PRIM_REDUCE, converts:
+//   move call_tmp, call
+// to:
+//   no-op      // the original move is removed
+//   ForallStmt                          // with a reduce-intent shadow var
+//     with (.... reduce chpl_redSVar)   // whose outer var is call_tmp
+//     { chpl_redSVar reduce= chpl_redIdx; }
+//
+// 'call' can also occurs on its own, ex. when the reduce expression
+// is the default initializer for a field or a formal argument.
+// If so, a new temp chpl_redResult plays the role of call_tmp above. Also,
+// we add SymExpr(chpl_redResult) after the ForallStmt (at the statement
+// level), which represents the result of the reduce expression.
+//
+// The return value is the no-op. This is where resolution will resume.
+// We ensure resolution of the ForallStmt within the resolveBlockStmt /
+// for_exprs_postorder framework by placing it after the no-op.
+//
+Expr* lowerPrimReduce(CallExpr* call) {
   if (call->id == breakOnResolveID) gdbShouldBreakHere();
 
   Expr*   callStmt = call->getStmtExpr();
@@ -1146,15 +1245,28 @@ void lowerPrimReduce(CallExpr* call, Expr*& retval) {
 
   Expr* opExpr = lowerReduceOp(callStmt, opSE, dataSE, zippered);
 
-  VarSymbol* result = newTemp("chpl_redResult");
-  callStmt->insertBefore(new DefExpr(result));
+  Symbol* result = NULL;
+  if (callStmt == call) {
+    result = newTemp("chpl_redResult");
+    callStmt->insertBefore(new DefExpr(result));
+  } else {
+    CallExpr* move = toCallExpr(callStmt);
+    INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+    INT_ASSERT(move->get(2) == call);
+    result = toSymExpr(move->get(1))->symbol();
+  }
 
   VarSymbol*       idx  = newTemp("chpl_redIdx");
   ShadowVarSymbol* svar = new ShadowVarSymbol(TFI_REDUCE, "chpl_redSVar",
                                               new SymExpr(result), opExpr);
   ForallStmt*      fs   = ForallStmt::fromReduceExpr(idx, dataSE, svar,
                                                      zippered, reqSerial);
-  callStmt->insertBefore(fs);
-  call->replace(new SymExpr(result));
-  retval = noop;
+  if (callStmt == call) {
+    callStmt->insertBefore(fs);
+    call->replace(new SymExpr(result));
+  } else {
+    callStmt->replace(fs);
+  }
+
+  return noop;
 }

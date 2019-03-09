@@ -240,6 +240,19 @@ module OwnedObject {
        that takes over ownership from `src`. `src` will
        refer to `nil` after this call.
      */
+    proc init=(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
+      // Use 'this.type.chpl_t' in case RHS is a subtype
+      this.chpl_t = this.type.chpl_t;
+      this.chpl_p = src.release();
+    }
+
+    pragma "no doc"
+    proc init=(src : _nilType) {
+      this.init(this.type.chpl_t);
+    }
+
+    // Copy-init implementation to allow for 'new _owned(foo)' in module code
+    pragma "no doc"
     proc init(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
       this.chpl_t = src.chpl_t;
       this.chpl_p = src.release();

@@ -316,9 +316,11 @@ Number of leaked allocations
 \index{records!arguments}
 \index{arguments!records}
 
-When records are copied into or out of a function's formal argument,
-the copy is performed consistently with the semantics described for
-record assignment (\rsec{Record_Assignment}).
+Record formal arguments with the \chpl{in} intent will be copy-initialized
+into the function's formal argument (\rsec{Copy_Initialization_of_Records}).
+
+Record formal arguments with \chpl{inout} or \chpl{out} intent will
+be updated by the record assignment function (\rsec{Record_Assignment}).
 
 \begin{chapelexample}{paramPassing.chpl}
 The program
@@ -433,14 +435,11 @@ provides a default assignment operator for each record type \chpl{R}
 having the signature:
 
 \begin{chapel}
-proc =(ref lhs:R, rhs) : void ;
+proc =(ref lhs:R, rhs:R) : void where lhs.type == rhs.type;
 \end{chapel}
 
 In it, the value of each field of the record on the right-hand side is assigned
-to the corresponding field of the record on the left-hand side. It is
-a type error if the left-hand side and the right-hand side do not have
-the same set of field names. It is also a type error if two fields with
-the same name do not have assignable types.
+to the corresponding field of the record on the left-hand side.
 
 The compiler-provided assignment operator may be overridden as described
 in \ref{Assignment_Statements}.
@@ -489,12 +488,17 @@ to \chpl{C.x} does not affect the \chpl{x} field in \chpl{A}.
 \index{== (record)@\chpl{==} (record)}
 \index{"!= (record)@\chpl{"\"!=} (record)}
 Default functions to overload \chpl{==} and \chpl{\!=} are defined for
-records if none are explicitly defined.
-The default implementation of \chpl{==} applies \chpl{==} to each
-field of the two argument records and reduces the result with
-the \chpl{&&} operator.  The default implementation of \chpl{\!=}
-applies \chpl{\!=} to each field of the two argument records and
-reduces the result with the \chpl{||} operator.
+records if none are explicitly defined. These functions have the
+following signatures for a record \chpl{R}:
+
+\begin{chapel}
+proc ==(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
+proc !=(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
+\end{chapel}
+
+
+Each of these compare the fields, one at a time, returning \chpl{false}
+if the property is not satisfied by the given pair of fields.
 
 \section{Differences between Classes and Records}
 \label{Class_and_Record_Differences}

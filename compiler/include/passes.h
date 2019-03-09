@@ -118,7 +118,7 @@ void lowerForallStmtsInline();
 void handleChplPropagateErrorCall(CallExpr* call);
 void fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller);
 void addDummyErrorArgumentToCall(CallExpr* call);
-bool isVirtualIterator(Symbol* iterator);
+bool isVirtualIterator(FnSymbol* iterFn);
 
 // normalize.cpp
 void normalize(FnSymbol* fn);

@@ -686,6 +686,7 @@ extern const char* astrSswap;
 extern const char* astr_cast;
 extern const char* astr_defaultOf;
 extern const char* astrInit;
+extern const char* astrInitEquals;
 extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrTag;
@@ -746,6 +747,8 @@ extern VarSymbol *gLocal;
 extern VarSymbol* gWarnUnstable;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
+extern VarSymbol *gInfinity;
+extern VarSymbol *gNan;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

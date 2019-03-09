@@ -28,8 +28,7 @@
 
       This module is currently missing the implementation for `expandUser
       <https://github.com/chapel-lang/chapel/issues/6008>`_, `normCase
-      <https://github.com/chapel-lang/chapel/issues/6013>`_, and `relPath
-      <https://github.com/chapel-lang/chapel/issues/6017>`_.  Once those are
+      <https://github.com/chapel-lang/chapel/issues/6013>`_, Once those are
       implemented, it will be considered complete.
 
    Operations which occur on the files or directories referred to by these paths
@@ -42,6 +41,8 @@
    :proc:`normPath`
    :proc:`realPath`
    :proc:`file.realPath`
+   :proc:`relPath`
+   :proc:`file.relPath`
 
    Path Manipulations
    ------------------
@@ -76,14 +77,21 @@ const parentDir = "..";
 const pathSep = "/";
 
 /*
-  Creates a normalized absolutized version of a path. On most platforms this is
-  equivalent to the call :code:`normPath(joinPath(here.cwd(), name)`.
+  Creates a normalized absolutized version of a path. On most platforms, when
+  given a non-absolute path this function is equivalent to the following code:
 
+  .. code-block:: Chapel
+  
+    normPath(joinPath(here.cwd(), name))
+  
+  See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`
+  for details.
+    
   .. warning::
 
     This function is unsafe for use in a parallel environment due to its
-    reliance on :proc:`locale.cwd()`. Another task on the current locale may
-    change the current working directory at any time.
+    reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
+    locale may change the current working directory at any time.
 
   :arg name: The path whose absolute path is desired.
   :type name: `string`
@@ -102,15 +110,22 @@ proc absPath(name: string): string throws {
 }
 
 /*
-  Creates a normalized absolutized version of the path in this :type:`~IO.file`.
-  On most platforms this is equivalent to the call
-  :code:`normPath(joinPath(here.cwd(), file.path))`.
+  Creates a normalized absolutized version of the path in this
+  :type:`~IO.file`. On most platforms, when given a non-absolute path this
+  function is equivalent to the following code:
+  
+  .. code-block:: Chapel
+  
+      normPath(joinPath(here.cwd(), file.path))
+      
+  See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`,
+  :proc:`~IO.file.path` for details.
 
   .. warning::
 
     This method is unsafe for use in a parallel environment due to its
-    reliance on :proc:`locale.cwd()`. Another task on the current locale
-    may change the current working directory at any time.
+    reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
+    locale may change the current working directory at any time.
 
   :return: A normalized, absolutized version of the path for this file.
   :rtype: `string`
@@ -148,8 +163,9 @@ proc basename(name: string): string {
    :return: The longest common path prefix.
    :rtype: `string`
 */
-
-proc commonPath(paths: string ...?n): string {
+// NOTE: Add in intent here to temporarily fix compiler memory leak related
+// to use of varargs.
+proc commonPath(in paths: string ...?n): string {
 
   var result: string = "";    // result string
   var inputLength = n;   // size of input array
@@ -290,7 +306,7 @@ proc commonPath(paths: []): string {
       writeln(dirname("/foo/bar/baz")); // Prints "/foo/bar"
       writeln(dirname("/foo/bar/")); // Also prints "/foo/bar"
 
-   :arg name: a string file name.  Note that this string does not have to be
+   :arg name: A string file name.  Note that this string does not have to be
               a valid file name, as the file itself will not be affected.
    :type name: `string`
 */
@@ -302,7 +318,7 @@ proc dirname(name: string): string {
    ``${<name>}`` into their values.  If ``<name>`` does not exist, they are left
    in place. Returns the path which includes these expansions.
 
-   :arg path: a string representation of a path, which may or may not include
+   :arg path: A string representation of a path, which may or may not include
               ``$<name>`` or ``${<name>}``.
    :type path: `string`
 
@@ -421,7 +437,7 @@ proc file.getParentName(out error:syserr): string {
 */
 
 proc isAbsPath(name: string): bool {
-  if name.isEmptyString() {
+  if name.isEmpty() {
     return false;
   }
   const len: int = name.length;
@@ -431,6 +447,16 @@ proc isAbsPath(name: string): bool {
   } else {
     return false;
   }
+}
+
+/* Build up path components as described in joinPath(). */
+private proc joinPathComponent(comp: string, ref result: string) {
+  if comp.startsWith('/') || result == "" then
+    result = comp;
+  else if result.endsWith('/') then
+    result += comp;
+  else
+    result += '/' + comp;
 }
 
 /* Join and return one or more paths, putting precedent on the last absolute
@@ -452,21 +478,27 @@ proc isAbsPath(name: string): bool {
             present.
    :rtype: `string`
 */
-proc joinPath(paths: string ...?n): string {
-  var result : string = paths(1); // result variable stores final answer
-  // loop to iterate over all the paths
-  for i in 2..n {
-    var temp : string = paths(i);
-    if temp.startsWith('/') {
-      result = temp;
-    }
-    else if result.endsWith('/') {
-      result = result + temp;
-    }
-    else {
-      result = result + "/" + temp;
-    }
-  }
+// NOTE: Add in intent here to temporarily fix compiler memory leak related
+// to use of varargs.
+proc joinPath(in paths: string ...?n): string {
+  var result: string;
+
+  for path in paths do
+    joinPathComponent(path, result);
+
+  return result;
+}
+
+/* This overload is private for now, needed for relPath. */
+private proc joinPath(paths: [] string): string {
+  if paths.isEmpty() then
+    return "";
+
+  var result: string;
+
+  for path in paths do
+    joinPathComponent(path, result);
+
   return result;
 }
 
@@ -495,11 +527,11 @@ private proc normalizeLeadingSlashCount(name: string): int {
     Unlike its Python counterpart, this function does not (currently) change
     slashes to backslashes on Windows.
 
-  :arg name: a potential path to collapse, possibly destroying the meaning of
+  :arg name: A potential path to collapse, possibly destroying the meaning of
              the path if symbolic links were included.
   :type name: `string`
 
-  :return: the collapsed version of `name`
+  :return: The collapsed version of `name`.
   :rtype: `string`
 */
 proc normPath(name: string): string {
@@ -608,6 +640,93 @@ proc file.realPath(out error: syserr): string {
     error = EINVAL;
   }
   return "";
+}
+
+/* Compute the common prefix length between two lists of path components. */
+private
+proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
+  const ref (a, b) = if a1.size < a2.size then (a1, a2) else (a2, a1);
+  var result = 0;
+
+  for i in 1..a.size do
+    if a[i] != b[i] then
+      return result;
+    else
+      result += 1;
+
+  return result;
+}
+
+/*
+  Returns a relative filepath to `name` either from the current directory or an
+  optional `start` directory. The filesystem is not accessed to verify the
+  existence of the named path or the specified starting location.
+
+  .. warning::
+
+    This method is unsafe for use in a parallel environment due to its
+    reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
+    locale may change the current working directory at any time.
+
+  :arg name: A path which the caller would like to access.
+  :type name: `string`
+
+  :arg start: The location from which access to name is desired. If no value
+    is provided, defaults to :const:`curDir`.
+  :type start: `string`
+
+  :return: The relative path to `name` from the current directory.
+  :rtype: `string`
+
+  :throws SystemError: Upon failure to get the current working directory.
+*/
+proc relPath(name: string, start:string=curDir): string throws {
+  const realstart = if start == "" then curDir else start;
+
+  // NOTE: Reliance on locale.cwd() can't be avoided.
+  const startComps = absPath(realstart).split(pathSep, -1, true);
+  const nameComps = absPath(name).split(pathSep, -1, true);
+
+  const prefixLen = commonPrefixLength(startComps, nameComps);
+
+  // Append up-levels until we reach the point where the paths diverge.
+  var outComps : [1..(startComps.size - prefixLen)] string = parentDir;
+
+  // Append the portion of name following the common prefix.
+  if !nameComps.isEmpty() then
+    outComps.push_back(nameComps[(prefixLen + 1)..nameComps.size]);
+
+  if outComps.isEmpty() then
+    return curDir;
+
+  return joinPath(outComps);
+}
+
+/*
+  Returns a relative filepath to the path in this :type:`~IO.file` either from
+  the current directory or an optional `start` directory. The filesystem is not
+  accessed to verify the existence of the named path or the specified starting
+  location.
+
+  .. warning::
+
+    This method is unsafe for use in a parallel environment due to its
+    reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
+    locale may change the current working directory at any time.
+
+  :arg start: The location from which access to the path in this
+    :type:`~IO.file` is desired. If no value is provided, defaults to
+    :const:`curDir`.
+  :type start: `string`
+
+  :return: The relative filepath to the path in this :type:`~IO.file`.
+  :rtype: `string`
+
+  :throws SystemError: Upon failure to get the current working directory.
+*/
+proc file.relPath(start:string=curDir): string throws {
+  // Have to prefix module name to avoid muddying name resolution.
+  return Path.relPath(this.path, start);
 }
 
 /* Split name into a tuple that is equivalent to (:proc:`dirname`,

@@ -122,10 +122,29 @@ static void nonLeaderParCheck()
   USR_STOP();
 }
 
-bool isVirtualIterator(Symbol* iterator) {
+bool isVirtualIterator(FnSymbol* iterFn) {
   bool retval = false;
+  Type* IRtype = NULL;
 
-  if (AggregateType* at = toAggregateType(iterator->type)) {
+  if (IteratorInfo* info = iterFn->iteratorInfo) {
+    // A proper iterator.
+    // Using info->iclass instead of ->irecord gives identical result.
+    IRtype = info->irecord;
+
+  } else {
+    // An iterator forwarder. Converted to return-by-ref.
+    // Use the former return type, now the type of the ret-arg formal.
+    INT_ASSERT(iterFn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
+    INT_ASSERT(iterFn->hasFlag(FLAG_FN_RETARG));
+    INT_ASSERT(iterFn->retType == dtVoid);
+    for_formals(formal, iterFn)
+      if (formal->hasFlag(FLAG_RETARG)) {
+        INT_ASSERT(formal->isRef());
+        IRtype = formal->getValType();
+      }
+  }
+  
+  if (AggregateType* at = toAggregateType(IRtype)) {
     Vec<AggregateType*>* children = &(at->dispatchChildren);
 
     if (children->n == 0) {
@@ -389,10 +408,7 @@ static void markVectorizableForallLoops()
               is_real_type(accumType)
               // TODO: is_complex_type
              ) {
-            const char* nom = "SumReduceScanOp";
-            size_t len = strlen(nom);
-
-            if (0 == memcmp(nom, opType->symbol->name, len))
+            if (startsWith(opType->symbol->name, "SumReduceScanOp"))
               ok = true;
           }
           if (ok == false)
@@ -2145,7 +2161,7 @@ expandForLoop(ForLoop* forLoop) {
     if (iterFn->iteratorInfo                          &&
         !iterator->type->symbol->hasFlag(FLAG_TUPLE)  &&
         canInlineIterator(iterFn)                     &&
-        !isVirtualIterator(iterator)) {
+        ! isVirtualIterator(iterFn)                   ) {
       converted = expandIteratorInline(forLoop);
     }
   }
@@ -2181,9 +2197,13 @@ expandForLoop(ForLoop* forLoop) {
       // after the call to the iterator function.
       // Scroll backwards to find the error handling block.
 
-      // TODO: finish this case
+      // TODO: finish this case, see GitHub #7134
       //       I think we need to use the ForLoop's break label
-      USR_FATAL("Throwing non-inlined iterators are not yet supported");
+
+      USR_FATAL_CONT(forLoop,
+        "throwing non-inlined iterators are not yet supported");
+      USR_PRINT(iterFn, "the invoked iterator is here");
+      USR_STOP();
     }
 
     SymExpr*     se1       = toSymExpr(forLoop->indexGet());

@@ -614,6 +614,9 @@ initPrimitive() {
 
   // dst, src. PRIM_ASSIGN with reference dst sets *dst
   prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
+  // like PRIM_ASSIGN but the operation can be put off until end of
+  // the enclosing task or forall.
+  prim_def(PRIM_UNORDERED_ASSIGN, "unordered=", returnInfoVoid, true, true);
   prim_def(PRIM_ADD_ASSIGN, "+=", returnInfoVoid, true);
   prim_def(PRIM_SUBTRACT_ASSIGN, "-=", returnInfoVoid, true);
   prim_def(PRIM_MULT_ASSIGN, "*=", returnInfoVoid, true);
@@ -746,7 +749,6 @@ initPrimitive() {
 
   // Direct calls to the Chapel comm layer
   prim_def(PRIM_CHPL_COMM_GET, "chpl_comm_get", returnInfoVoid, true, true);
-  prim_def(PRIM_CHPL_COMM_GET_UNORDERED, "chpl_comm_get_unordered", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT, "chpl_comm_put", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_ARRAY_GET, "chpl_comm_array_get", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_ARRAY_PUT, "chpl_comm_array_put", returnInfoVoid, true, true);
@@ -765,6 +767,10 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false);
   prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
+  // PRIM_ARRAY_SET / PRIM_ARRAY_SET_FIRST have these arguments
+  //   base pointer
+  //   index
+  //   value
   prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
 
@@ -897,6 +903,7 @@ initPrimitive() {
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_TYPE, "is extern type", returnInfoBool);
+  prim_def(PRIM_IS_ABS_ENUM_TYPE, "is abstract enum type", returnInfoBool);
 
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
 
@@ -957,6 +964,11 @@ initPrimitive() {
   // 1st argument is symbol to set alias set
   // 2nd argument is symbol to base it on
   prim_def(PRIM_COPIES_NO_ALIAS_SET, "copies no alias set", returnInfoUnknown, false, false);
+
+  // Argument is a symbol and we attach flags to that symbol to
+  // indicate optimization information.
+  // That symbol includes OPT_INFO_... flags.
+  prim_def(PRIM_OPTIMIZATION_INFO, "optimization info", returnInfoVoid, true, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

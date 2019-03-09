@@ -11,7 +11,10 @@
   ---------------
   Several important standard library functions throw errors so that developers
   can handle the errors as they see fit. This is especially useful for
-  recovering from errors in :mod:`IO`.
+  recovering from errors in :mod:`IO`. The ``try`` and ``catch`` constructs
+  enable handling of errors. Any errors caught by a ``catch`` block are
+  ``owned`` errors and can be rethrown. ``try!`` is available to halt if an
+  error is thrown but not handled.
  */
 
 use IO;
@@ -37,6 +40,7 @@ try {
   f = open(f1, iomode.r);
 } catch e: FileNotFoundError {
   // catch block can be directed to only handle certain errors
+  // the error caught will be `owned FileNotFoundError` in this case
   writeln("Warning: ", f1, " does not exist");
   try! {
     f = open(f2, iomode.r);
@@ -59,7 +63,7 @@ try {
   consuming errors. While there are built-in :class:`SysError.SystemError`
   types, developers can also create their own hierarchies.
 
-  Only `owned` instances that are subtypes of `Error` can be thrown.
+  Only ``owned`` instances that are subtypes of ``Error`` can be thrown.
  */
 
 class EmptyFilenameError : Error {
@@ -68,7 +72,7 @@ class EmptyFilenameError : Error {
 }
 
 proc checkFilename(f_name: string) throws {
-  if f_name.isEmptyString() then
+  if f_name.isEmpty() then
     throw new owned EmptyFilenameError();
 }
 

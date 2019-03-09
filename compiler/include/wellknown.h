@@ -66,5 +66,7 @@ extern FnSymbol *gChplUncaughtError;
 extern FnSymbol *gChplPropagateError;
 extern FnSymbol *gChplSaveTaskError;
 extern FnSymbol *gChplForallError;
+extern FnSymbol *gAtomicFenceFn;
+extern FnSymbol *gChplAfterForallFence;
 
 #endif

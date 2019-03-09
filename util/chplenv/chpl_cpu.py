@@ -659,7 +659,7 @@ def get(flag, map_to_compiler=False, get_lcd=False):
     verify_cpu(cpu, flag)
 
     compiler_val = chpl_compiler.get(flag)
-    isprgenv = flag == 'target' and target_compiler_is_prgenv()
+    isprgenv = flag == 'target' and target_compiler_is_prgenv(not map_to_compiler)
     if map_to_compiler and not isprgenv:
         # Map cpu to compiler argument
         # Don't do this for PrgEnv compiles since the compiler driver

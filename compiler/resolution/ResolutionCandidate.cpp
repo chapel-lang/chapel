@@ -511,7 +511,8 @@ static AggregateType* getActualType(ResolutionCandidate* rc, int idx) {
 static bool looksLikeCopyInit(ResolutionCandidate* rc) {
   bool retval = false;
 
-  if (rc->fn->isInitializer() && rc->formalIdxToActual.size() == 3) {
+  if ((rc->fn->isCopyInit() || rc->fn->isInitializer()) &&
+      rc->formalIdxToActual.size() == 3) {
     // First formal/actual is gMethodToken
     AggregateType* base  = getActualType(rc, 1);
     AggregateType* other = getActualType(rc, 2);
@@ -557,7 +558,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
 
       bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                formal->intent == INTENT_PARAM;
-      bool isInitThis        = fn->isInitializer() &&
+      bool isInitThis        = (fn->isInitializer() || fn->isCopyInit()) &&
                                formal->hasFlag(FLAG_ARG_THIS);
       bool isNewTypeArg      = strcmp(fn->name,"_new") == 0 &&
                                coindex == 0; // first formal/actual

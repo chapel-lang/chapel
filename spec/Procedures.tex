@@ -1378,7 +1378,9 @@ from $T_{F1}$, then $M_2$ will be preferred as follows:
 
 \item
 If $T_A$ or its scalar promotion type prefers conversion to $T_{F1}$
-over conversion to $T_{F2}$, then $M_1$ is weaker preferred.
+over conversion to $T_{F2}$, then $M_1$ is preferred. If $A$ is a
+\chpl{param} argument with a default size, then $M_1$ is weakest
+preferred. Otherwise, $M_1$ is weaker preferred.
 
 Type conversion preferences are as follows:
 \begin{itemize}
@@ -1415,7 +1417,9 @@ Type conversion preferences are as follows:
 
 \item
 If $T_A$ or its scalar promotion type prefers conversion to $T_{F2}$
-over conversion to $T_{F1}$, then $M_2$ is weaker preferred.
+over conversion to $T_{F1}$, then $M_2$ is preferred. If $A$ is a
+\chpl{param} argument with a default size, then $M_2$ is weakest
+preferred. Otherwise, $M_2$ is weaker preferred.
 
 \item
  If $T_{F1}$ is derived from $T_{F2}$, then $M_1$ is more specific.

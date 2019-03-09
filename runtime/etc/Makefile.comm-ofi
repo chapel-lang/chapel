@@ -16,7 +16,14 @@
 # limitations under the License.
 
 ifneq ($(LIBFABRIC_DIR),)
-GEN_LFLAGS += -L$(LIBFABRIC_DIR)/lib -Wl,-rpath,$(LIBFABRIC_DIR)/lib
+  ifneq ($(wildcard $(LIBFABRIC_DIR)/lib64),)
+    LIBFAB_LIB_DIR := $(LIBFABRIC_DIR)/lib64
+  else ifneq ($(wildcard $(LIBFABRIC_DIR)/lib),)
+    LIBFAB_LIB_DIR := $(LIBFABRIC_DIR)/lib
+  endif
+  ifneq ($(LIBFAB_LIB_DIR),)
+    GEN_LFLAGS += -L$(LIBFAB_LIB_DIR) -Wl,-rpath,$(LIBFAB_LIB_DIR)
+  endif
 endif
 LIBS += -lfabric -ldl
 
@@ -27,6 +34,19 @@ LIBS += -lfabric -ldl
 LD = $(CXX)
 
 ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
-GEN_LFLAGS += -L$(MPI_LIB) -Wl,-rpath,$(MPI_LIB)
-LIBS += -lmpi
+  MPI_LIB_NAME = mpi
+  ifneq ($(MPI_DIR),)
+    ifneq ($(wildcard $(MPI_DIR)/lib64),)
+      MPI_LIB_DIR := $(MPI_DIR)/lib64
+    else ifneq ($(wildcard $(MPI_DIR)/lib),)
+      MPI_LIB_DIR := $(MPI_DIR)/lib
+    endif
+    ifneq ($(MPI_LIB_DIR),)
+      GEN_LFLAGS += -L$(MPI_LIB_DIR) -Wl,-rpath,$(MPI_LIB_DIR)
+      ifneq ($(wildcard $(MPI_LIB_DIR)/libmpich.*),)
+        MPI_LIB_NAME = mpich
+      endif
+    endif
+  endif
+  LIBS += -l$(MPI_LIB_NAME)
 endif

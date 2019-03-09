@@ -183,8 +183,6 @@ static Expr* postFoldNormal(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool  isSubTypeOrInstantiation(Type* sub, Type* super);
-
 static void  insertValueTemp(Expr* insertPoint, Expr* actual);
 
 static Expr* postFoldPrimop(CallExpr* call) {
@@ -499,7 +497,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 }
 
 // This function implements PRIM_IS_SUBTYPE
-static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
+bool isSubTypeOrInstantiation(Type* sub, Type* super) {
 
   // Consider instantiation
   if (super->symbol->hasFlag(FLAG_GENERIC))

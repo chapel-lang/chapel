@@ -140,7 +140,7 @@ void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
 void setupAndResolveShadowVars(ForallStmt* fs);
 bool preserveShadowVar(Symbol* var);
 void adjustVoidShadowVariables();
-void lowerPrimReduce(CallExpr* call, Expr*& retval);
+Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
@@ -230,6 +230,8 @@ void lvalueCheck(CallExpr* call);
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
 bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
+
+bool isSubTypeOrInstantiation(Type* sub, Type* super);
 
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 

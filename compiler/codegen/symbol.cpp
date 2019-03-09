@@ -485,8 +485,58 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           INT_ASSERT(immediate->num_index == INT_SIZE_64);
           ret.c = "COMMID(" + int64_to_string(iconst) + ")";
         }
+      } else if (immediate->const_kind == NUM_KIND_REAL ||
+                 immediate->const_kind == NUM_KIND_IMAG) {
+        double value = immediate->real_value();
+        const char* castString = NULL;
+        switch (immediate->num_index) {
+        case FLOAT_SIZE_32:
+          castString = "REAL32(";
+          break;
+        case FLOAT_SIZE_64:
+          castString = "REAL64(";
+          break;
+        default:
+          INT_FATAL("Unexpected immediate->num_index");
+        }
+
+        ret.c = castString + real_to_string(value) + ")";
+      } else if (immediate->const_kind == NUM_KIND_COMPLEX) {
+
+        IF1_float_type flType = FLOAT_SIZE_32;
+        const char* chplComplexN = NULL;
+
+        switch(immediate->num_index) {
+          case COMPLEX_SIZE_64:
+            flType = FLOAT_SIZE_32;
+            chplComplexN = "_chpl_complex64";
+            break;
+          case COMPLEX_SIZE_128:
+            flType = FLOAT_SIZE_64;
+            chplComplexN = "_chpl_complex128";
+            break;
+          default:
+            INT_ASSERT("unsupported complex floating point width");
+        }
+
+        Immediate r_imm = getDefaultImmediate(dtReal[flType]);
+        Immediate i_imm = getDefaultImmediate(dtImag[flType]);
+
+        // get the real and imaginary parts
+        coerce_immediate(immediate, &r_imm);
+        coerce_immediate(immediate, &i_imm);
+
+        VarSymbol* r = new_ImmediateSymbol(&r_imm);
+        VarSymbol* i = new_ImmediateSymbol(&i_imm);
+
+        ret = codegenCallExpr(chplComplexN,
+                              new SymExpr(r),
+                              new SymExpr(i));
+
+        ret.chplType = typeInfo();
+
       } else {
-        ret.c = cname; // in C, all floating point literals are (double)
+        INT_FATAL("Unexpected immediate type");
       }
     } else {
       // not immediate

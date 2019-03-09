@@ -120,7 +120,7 @@ default. For example, :proc:`~string.length` returns the length in bytes and
 
 The string type currently supports code point units as well. In some cases these
 units are indicated by the method name, for example with
-:proc:`~string.ulength`. Other methods, including :proc:`~string.this`, support
+:proc:`~string.numCodePoints`. Other methods, including :proc:`~string.this`, support
 arguments of type :record:`codePointIndex` (instead of `int`) in order to
 request code point units.
 
@@ -341,6 +341,10 @@ module String {
       }
     }
 
+    proc init=(s: string) {
+      this.init(s);
+    }
+
     /*
       Initialize a new string from the `c_string` `cs`. If `isowned` is set to
       true, the backing buffer will be freed when the new record is destroyed.
@@ -355,6 +359,10 @@ module String {
       this.complete();
       const cs_len = length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
+    }
+
+    proc init=(cs: c_string) {
+      this.init(cs);
     }
 
     /*
@@ -417,7 +425,7 @@ module String {
     pragma "no doc"
     proc ref reinitString(buf: bufferType, s_len: int, size: int,
                           needToCopy:bool = true) {
-      if this.isEmptyString() && buf == nil then return;
+      if this.isEmpty() && buf == nil then return;
 
       // If the this.buff is longer than buf, then reuse the buffer if we are
       // allowed to (this.isowned == true)
@@ -426,7 +434,7 @@ module String {
           if !this.isowned || s_len+1 > this._size {
             // If the new string is too big for our current buffer or we dont
             // own our current buffer then we need a new one.
-            if this.isowned && !this.isEmptyString() then
+            if this.isowned && !this.isEmpty() then
               chpl_here_free(this.buff);
             // TODO: should I just allocate 'size' bytes?
             const allocSize = chpl_here_good_alloc_size(s_len+1);
@@ -439,7 +447,7 @@ module String {
           c_memmove(this.buff, buf, s_len);
           this.buff[s_len] = 0;
         } else {
-          if this.isowned && !this.isEmptyString() then
+          if this.isowned && !this.isEmpty() then
             chpl_here_free(this.buff);
           this.buff = buf;
           this._size = size;
@@ -447,7 +455,7 @@ module String {
       } else {
         // If s_len is 0, 'buf' may still have been allocated. Regardless, we
         // need to free the old buffer if 'this' is isowned.
-        if this.isowned && !this.isEmptyString() then chpl_here_free(this.buff);
+        if this.isowned && !this.isEmpty() then chpl_here_free(this.buff);
         this._size = 0;
 
         // If we need to copy, we can just set 'buff' to nil. Otherwise the
@@ -474,13 +482,21 @@ module String {
     inline proc size return len;
 
     /*
-      :returns: The number of Unicode codepoints in the string.
+      :returns: The number of codepoints in the string.
       */
-    proc ulength {
+    proc numCodePoints {
       var n = 0;
-      for codepoint in this.uchars() do
+      for codepoint in this.codePoints() do
         n += 1;
       return n;
+    }
+
+    /*
+      Deprecated, use :proc:`string.numCodePoints`.
+      */
+    inline proc ulength {
+      compilerWarning("ulength is deprecated - please use numCodePoints instead");
+      return this.numCodePoints;
     }
 
     /*
@@ -570,9 +586,20 @@ module String {
     }
 
     /*
+      Iterates over the string byte by byte.
+    */
+    iter bytes(): uint(8) {
+      var localThis: string = this.localize();
+
+      for i in 0..#localThis.len {
+        yield localThis.buff[i];
+      }
+    }
+
+    /*
       Iterates over the string Unicode character by Unicode character.
     */
-    iter uchars(): int(32) {
+    iter codePoints(): int(32) {
       var localThis: string = this.localize();
 
       var i = 0;
@@ -588,12 +615,21 @@ module String {
     }
 
     /*
+      Deprecated, use :proc:`string.codePoints`.
+    */
+    iter uchars(): int(32) {
+      compilerWarning("uchars is deprecated - please use codePoints instead");
+      for codepoint in this.codePoints() do
+        yield codepoint;
+    }
+
+    /*
       Iterates over the string Unicode character by Unicode character,
       and includes the byte index and byte length of each character.
       Skip characters that begin prior to the specified starting byte index.
     */
     pragma "no doc"
-    iter _ucharsIndexLen(start: int = 1) {
+    iter _cpIndexLen(start: int = 1) {
       var localThis: string = this.localize();
 
       var i = 0;
@@ -610,10 +646,41 @@ module String {
     }
 
     /*
+      :returns: The value of the `i` th byte as an integer.
+    */
+    proc byte(i: int): uint(8) {
+      var localThis: string = this.localize();
+
+      if boundsChecking && (i <= 0 || i > localThis.len)
+        then halt("index out of bounds of string: ", i);
+      return localThis.buff[i - 1];
+    }
+
+    /*
+      :returns: The value of the `i` th multibyte character as an integer.
+     */
+    proc codePoint(i: int): int(32) {
+      const idx = i: int;
+      if boundsChecking && idx <= 0 then
+        halt("index out of bounds of string: ", idx);
+
+      var j = 1;
+      for codepoint in this.codePoints() {
+        if j == idx then
+          return codepoint;
+        j += 1;
+      }
+      // We have reached the end of the string without finding our index.
+      if boundsChecking then
+        halt("index out of bounds of string: ", idx);
+      return 0: int(32);
+    }
+
+    /*
       Index into a string
 
       :returns: A string with the complete multibyte character starting at the
-                specified byte index from `1..string.length`
+                specified byte index from ``1..string.length``
      */
     proc this(i: int) : string {
       if boundsChecking && (i <= 0 || i > this.len)
@@ -653,23 +720,12 @@ module String {
       Index into a string
 
       :returns: A Unicode codepoint starting at the
-                specified codepoint index from `1..string.ulength`
+                specified codepoint index from ``1..string.numCodePoints``
      */
     proc this(cpi: codePointIndex) : string {
+      if this.isEmpty() then return "";
       const idx = cpi: int;
-      if boundsChecking && idx <= 0 then
-        halt("index out of bounds of string: ", idx);
-
-      var i = 1;
-      for codepoint in this.uchars() {
-        if i == idx then
-          return codePointToString(codepoint);
-        i += 1;
-      }
-      // We have reached the end of the string without finding our index.
-      if boundsChecking then
-        halt("index out of bounds of string: ", idx);
-      return "";
+      return codePointToString(this.codePoint(idx));
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
@@ -714,7 +770,7 @@ module String {
       var byte_low = this.len + 1;  // empty range if bounds outside string
       var byte_high = this.len;
       if cp_high > 0 {
-        for (c, i, nbytes) in this._ucharsIndexLen() {
+        for (c, i, nbytes) in this._cpIndexLen() {
           if cp_count == cp_low {
             byte_low = i;
             if !r.hasHighBound() then
@@ -740,17 +796,17 @@ module String {
 
     /*
       Slice a string. Halts if r is not completely inside the range
-      `1..string.length`.
+      ``1..string.length``.
 
       :arg r: range of the indices the new string should be made from
 
-      :returns: a new string that is a substring within `1..string.length`. If
+      :returns: a new string that is a substring within ``1..string.length``. If
                 the length of `r` is zero, an empty string is returned.
      */
     // TODO: I wasn't very good about caching variables locally in this one.
     proc this(r: range(?)) : string {
       var ret: string;
-      if this.isEmptyString() then return ret;
+      if this.isEmpty() then return ret;
 
       const r2 = this._getView(r);
       if r2.size <= 0 {
@@ -800,10 +856,18 @@ module String {
     }
 
     /*
+     Deprecated, use :proc:`string.isEmpty`.
+     */
+    inline proc isEmptyString() : bool {
+      compilerWarning("isEmptyString is deprecated - please use isEmpty instead");
+      return this.isEmpty();
+    }
+
+    /*
       :returns: * `true`  -- when the string is empty
                 * `false` -- otherwise
      */
-    inline proc isEmptyString() : bool {
+    inline proc isEmpty() : bool {
       return this.len == 0; // this should be enough of a check
     }
 
@@ -826,7 +890,7 @@ module String {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for needle in needles {
-          if needle.isEmptyString() {
+          if needle.isEmpty() {
             ret = true;
             break;
           }
@@ -946,7 +1010,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within `1..string.length`
+                   within ``1..string.length``
 
       :returns: the index of the first occurrence of `needle` within a
                 string, or 0 if the `needle` is not in the string.
@@ -960,7 +1024,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within `1..string.length`
+                   within ``1..string.length``
 
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or 0 if the `needle` is not in the string.
@@ -973,7 +1037,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within `1..string.length`
+                   within ``1..string.length``
 
       :returns: the number of times `needle` occurs in the string
      */
@@ -1024,7 +1088,7 @@ module String {
      */
     // TODO: specifying return type leads to un-inited string?
     iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /* : string */ {
-      if !(maxsplit == 0 && ignoreEmpty && this.isEmptyString()) {
+      if !(maxsplit == 0 && ignoreEmpty && this.isEmpty()) {
         const localThis: string = this.localize();
         const localSep: string = sep.localize();
 
@@ -1055,7 +1119,7 @@ module String {
             }
           }
 
-          if !(ignoreEmpty && chunk.isEmptyString()) {
+          if !(ignoreEmpty && chunk.isEmpty()) {
             // Putting the yield inside the if prevents us from being inlined
             // in the zippered case, but I don't think there is any way to avoid
             // that easily
@@ -1077,7 +1141,7 @@ module String {
     //       single yield statement, which makes it confusing to read
     // TODO: specifying return type leads to un-inited string?
     iter split(maxsplit: int = -1) /* : string */ {
-      if !this.isEmptyString() {
+      if !this.isEmpty() {
         const localThis: string = this.localize();
         var done : bool = false;
         var yieldChunk : bool = false;
@@ -1091,7 +1155,7 @@ module String {
         var inChunk : bool = false;
         var chunkStart : int;
 
-        for (c, i, nbytes) in localThis._ucharsIndexLen() {
+        for (c, i, nbytes) in localThis._cpIndexLen() {
           // emit whole string, unless all whitespace
           if noSplits {
             done = true;
@@ -1263,8 +1327,8 @@ module String {
                 characters in `chars` removed as appropriate.
     */
     proc strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
-      if this.isEmptyString() then return "";
-      if chars.isEmptyString() then return this;
+      if this.isEmpty() then return "";
+      if chars.isEmpty() then return this;
 
       const localThis: string = this.localize();
       const localChars: string = chars.localize();
@@ -1273,8 +1337,8 @@ module String {
       var end = localThis.len;
 
       if leading {
-        label outer for (thisChar, i, nbytes) in localThis._ucharsIndexLen() {
-          for removeChar in localChars.uchars() {
+        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen() {
+          for removeChar in localChars.codePoints() {
             if thisChar == removeChar {
               start = i + nbytes;
               continue outer;
@@ -1290,8 +1354,8 @@ module String {
         // are already past the end of the string, and then update the end
         // point as we are proven wrong.
         end = 0;
-        label outer for (thisChar, i, nbytes) in localThis._ucharsIndexLen(start) {
-          for removeChar in localChars.uchars() {
+        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen(start) {
+          for removeChar in localChars.codePoints() {
             if thisChar == removeChar {
               continue outer;
             }
@@ -1331,13 +1395,13 @@ module String {
                 * `false` -- otherwise
      */
     proc isUpper() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
 
       var result: bool;
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         var locale_result = false;
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if codepoint_isLower(codepoint) {
             locale_result = false;
             break;
@@ -1358,13 +1422,13 @@ module String {
                 * `false` -- otherwise
      */
     proc isLower() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
 
       var result: bool;
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         var locale_result = false;
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if codepoint_isUpper(codepoint) {
             locale_result = false;
             break;
@@ -1385,12 +1449,12 @@ module String {
                 * `false` -- otherwise
      */
     proc isSpace() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if !(codepoint_isWhitespace(codepoint)) {
             result = false;
             break;
@@ -1407,12 +1471,12 @@ module String {
                 * `false` -- otherwise
      */
     proc isAlpha() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if !codepoint_isAlpha(codepoint) {
             result = false;
             break;
@@ -1429,12 +1493,12 @@ module String {
                 * `false` -- otherwise
      */
     proc isDigit() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if !codepoint_isDigit(codepoint) {
             result = false;
             break;
@@ -1451,12 +1515,12 @@ module String {
                 * `false` -- otherwise
      */
     proc isAlnum() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if !(codepoint_isAlpha(codepoint) || codepoint_isDigit(codepoint)) {
             result = false;
             break;
@@ -1473,12 +1537,12 @@ module String {
                 * `false` -- otherwise
      */
     proc isPrintable() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if !codepoint_isPrintable(codepoint) {
             result = false;
             break;
@@ -1496,14 +1560,14 @@ module String {
                 * `false` -- otherwise
      */
     proc isTitle() : bool {
-      if this.isEmptyString() then return false;
+      if this.isEmpty() then return false;
       var result: bool = true;
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         param UN = 0, UPPER = 1, LOWER = 2;
         var last = UN;
-        for codepoint in this.uchars() {
+        for codepoint in this.codePoints() {
           if codepoint_isLower(codepoint) {
             if last == UPPER || last == LOWER {
               last = LOWER;
@@ -1541,7 +1605,7 @@ module String {
     */
     proc toLower() : string {
       var result: string = this;
-      if result.isEmptyString() then return result;
+      if result.isEmpty() then return result;
 
       var i = 0;
       while i < result.len {
@@ -1574,7 +1638,7 @@ module String {
     */
     proc toUpper() : string {
       var result: string = this;
-      if result.isEmptyString() then return result;
+      if result.isEmpty() then return result;
 
       var i = 0;
       while i < result.len {
@@ -1608,7 +1672,7 @@ module String {
      */
     proc toTitle() : string {
       var result: string = this;
-      if result.isEmptyString() then return result;
+      if result.isEmpty() then return result;
 
       param UN = 0, LETTER = 1;
       var last = UN;
@@ -1653,7 +1717,7 @@ module String {
     pragma "no doc"
     proc capitalize() : string {
       var result: string = this.toLower();
-      if result.isEmptyString() then return result;
+      if result.isEmpty() then return result;
 
       var codepoint: int(32);
       var nbytes: c_int;
@@ -2096,7 +2160,7 @@ module String {
      :returns: The byte value of the first character in `a` as an integer.
   */
   inline proc ascii(a: string) : uint(8) {
-    if a.isEmptyString() then return 0;
+    if a.isEmpty() then return 0;
 
     if _local || a.locale_id == chpl_nodeID {
       // the string must be local so we can index into buff

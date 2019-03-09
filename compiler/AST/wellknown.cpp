@@ -58,6 +58,8 @@ FnSymbol *gChplUncaughtError;
 FnSymbol *gChplPropagateError;
 FnSymbol *gChplSaveTaskError;
 FnSymbol *gChplForallError;
+FnSymbol *gAtomicFenceFn;
+FnSymbol *gChplAfterForallFence;
 
 /************************************* | **************************************
 *                                                                             *
@@ -304,6 +306,17 @@ static WellKnownFn sWellKnownFns[] = {
     FLAG_UNKNOWN
   },
 
+  {
+    "atomic_fence",
+    &gAtomicFenceFn,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_after_forall_fence",
+    &gChplAfterForallFence,
+    FLAG_UNKNOWN
+  },
 };
 
 void gatherWellKnownFns() {

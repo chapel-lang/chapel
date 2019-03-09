@@ -499,7 +499,7 @@ static void addCloneOfDeinitBlock(Expr* aFini, SymbolMap& map, ShadowVarSymbol* 
 /*
 Consider the following situation:
 
-* We are lowering a ForallStmt 'fs1' by inling its iterator,
+* We are lowering a ForallStmt 'fs1' by inlining its iterator,
   which invokes a task function. While inlining the task function...
 
 * For each of fs1's ShadowVarSymbol, we add its init block
@@ -1409,7 +1409,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
   FnSymbol* parIterFn = parIterCall->resolvedFunction();
 
-  if (isVirtualIterator(parIterFn->retType->symbol)) {
+  if (isVirtualIterator(parIterFn)) {
     USR_FATAL_CONT(fs, "virtual parallel iterators are not yet supported (see issue #6998)");
     return;
   }

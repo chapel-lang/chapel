@@ -20,11 +20,13 @@
 /*
   This module provides a simple singly linked list.
 
-  .. note::
+  .. warning::
 
-      This module is expected to change in the future.
+      This module has been deprecated - please use :mod:`LinkedLists` instead.
  */
 module List {
+
+compilerWarning("List module is deprecated - please use LinkedLists instead");
 
 pragma "no doc"
 class listNode {
@@ -74,8 +76,8 @@ record list {
   }
 
   pragma "no doc"
-  proc init(l : list(?t)) {
-    this.eltType = t;
+  proc init=(l : this.type) {
+    this.eltType = l.eltType;
     this.complete();
     for i in l do
       this.append(i);

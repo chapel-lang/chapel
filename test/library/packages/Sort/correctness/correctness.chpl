@@ -10,10 +10,15 @@ proc main() {
   // Comparators
   const absKey = new AbsKeyCmp(),
         absComp = new AbsCompCmp(),
-        absKeyComp = new AbsKeyCompCmp(),
         revAbsKey = new ReverseComparator(absKey),
         revAbsComp = new ReverseComparator(absComp),
         tupleKey = new TupleCmp();
+  const absKeyClass = new AbsKeyCmpClass(),
+        absCompClass = new AbsCompCmpClass(),
+        revAbsKeyClass = new ReverseComparator(absKeyClass),
+        revAbsCompClass = new ReverseComparator(absCompClass),
+        tupleKeyClass = new TupleCmpClass();
+
 
   // Arrays and Domains
   const largeD = {1..20}, // quickSort requires domain.size > 16
@@ -37,12 +42,16 @@ proc main() {
 
                 // Testing comparators
                 ([-1, 2, 3, -4], absKey),
+                ([-1, 2, 3, -4], absKeyClass),
                 ([-1, 2, 3, -4], absComp),
-                ([-1, 2, 3, -4], absKeyComp),
+                ([-1, 2, 3, -4], absCompClass),
                 ([ 3, 2, -1, -4], reverseComparator),
                 ([ -4, 3, 2, -1], revAbsKey),
+                ([ -4, 3, 2, -1], revAbsKeyClass),
                 ([ -4, 3, 2, -1], revAbsComp),
-                ([-4, -1, 2, 3], tupleKey)
+                ([ -4, 3, 2, -1], revAbsCompClass),
+                ([-4, -1, 2, 3], tupleKey),
+                ([-4, -1, 2, 3], tupleKeyClass)
               );
 
 
@@ -197,6 +206,11 @@ record AbsKeyCmp {
   proc key(a) { return abs(a); }
   proc name() { return 'AbsKeyCmp'; }
 }
+class AbsKeyCmpClass {
+  proc key(a) { return abs(a); }
+  proc name() { return 'AbsKeyCmpClass'; }
+}
+
 
 
 /* Compare Sort by absolute value */
@@ -204,19 +218,20 @@ record AbsCompCmp {
   proc compare(a, b) { return abs(a) - abs(b); }
   proc name() { return 'AbsCompCmp'; }
 }
-
-
-/* Key method should take priority over compare method */
-record AbsKeyCompCmp {
-  proc key(a) { return abs(a); }
-  proc compare(a, b) { return a - b; }
-  proc name() { return 'AbsKeyCompCmp'; }
+class AbsCompCmpClass {
+  proc compare(a, b) { return abs(a) - abs(b); }
+  proc name() { return 'AbsCompCmpClass'; }
 }
+
 
 
 /* Key method can return a non-numerical/string type, such as tuple */
 record TupleCmp {
   proc key(a) { return (a, a); }
   proc name() { return 'TupleCmp'; }
+}
+class TupleCmpClass {
+  proc key(a) { return (a, a); }
+  proc name() { return 'TupleCmpClass'; }
 }
 

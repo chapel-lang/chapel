@@ -1,0 +1,2 @@
+Makefile:42: lib/Makefile.commandLineLib: No such file or directory
+make: *** No rule to make target 'lib/Makefile.commandLineLib'.  Stop.

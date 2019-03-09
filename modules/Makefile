@@ -76,6 +76,7 @@ MODULES_TO_DOCUMENT = \
 	standard/GMP.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
+	standard/LinkedLists.chpl \
 	standard/List.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
@@ -95,7 +96,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
 	packages/BLAS.chpl \
 	packages/BufferedAtomics.chpl \
-	packages/BufferedGets.chpl \
 	packages/Buffers.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
@@ -116,14 +116,15 @@ PACKAGES_TO_DOCUMENT = \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
 	packages/Sort.chpl \
-	packages/UgniPerfStats.chpl \
 	packages/VisualDebug.chpl \
 	packages/ZMQ.chpl \
 	packages/Collection.chpl \
 	packages/DistributedBag.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
-	packages/TOML.chpl
+	packages/TOML.chpl \
+	packages/UnorderedAtomics.chpl \
+	packages/UnorderedCopy.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \

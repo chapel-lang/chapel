@@ -1,0 +1,2 @@
+wrongType.chpl:6: In function 'init=':
+wrongType.chpl:7: error: initializing field 'T' with type '2*int(64)', expecting 'int(64)'

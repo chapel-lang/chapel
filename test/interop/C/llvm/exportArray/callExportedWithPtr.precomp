@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling exportFuncWithPtr.chpl
+$3 --llvm --library --static exportFuncWithPtr.chpl

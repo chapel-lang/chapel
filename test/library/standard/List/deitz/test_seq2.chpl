@@ -1,6 +1,6 @@
-use List;
+use LinkedLists;
 
-var s : list(string) = makeList( "this", "is", "a", "sequence", "of", "strings" );
+var s : LinkedList(string) = makeList( "this", "is", "a", "sequence", "of", "strings" );
 
 writeln(s);
 

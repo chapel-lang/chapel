@@ -1,6 +1,0 @@
-error message: parenthesesless initializer call on class field
-
-This future is related to parentheseslessConstError.
-
-Different than parentheseslessConstError, this throws an internal bug when
-compiled with --verify. It still compiles fine without --verify.

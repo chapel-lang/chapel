@@ -1,3 +1,2 @@
 declaration.chpl:11: error: unresolved call 'Foo.init()'
 declaration.chpl:6: note: candidates are: Foo.init(xVal)
-declaration.chpl:3: note:                 Foo.init(other: Foo)
