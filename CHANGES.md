@@ -1,6 +1,147 @@
 Release Changes List
 ====================
 
+version 1.19.0
+==============
+
+Twenty-second public release of Chapel, March 21, 2019
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+* made 'true' and 'false' reserved words in Chapel
+
+New Features
+------------
+
+Feature Improvements
+--------------------
+* made scan expressions preserve the shape/domain of the input expression
+  (e.g., in `var B = + scan A;`, B will have A's shape and domain)
+* removed warnings for [op]= overloads whose LHS expressions weren't 'ref'
+  (e.g., 'proc +=(lhs: C, rhs: C) { ... }' no longer results in a warning
+* supported config disambiguation on the compiler command-line via module name
+  (e.g., '-sM.debug=true' can be used to set config 'debug' in module 'M')
+* added support for declaring homogeneous tuple types using `uint`s
+  (e.g., 'param d = 3: uint; var t: d*int;` now works)
+* extended reshape() to support the reshaping of iterable expressions
+  (e.g., 'reshape([i in 1..4] i, {1..2, 1..2})' now works)
+* added support for ranges of 'CodePointIndex' (useful for slicing strings)
+
+Removed Features
+----------------
+* removed support for 'chpl-ipe'
+
+Standard Modules / Library
+--------------------------
+
+Package Modules
+---------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+* added support for queries of remote subdomains to most standard domain maps
+  (see https://chapel-lang.org/docs/1.19/builtins/ChapelArray.html#ChapelArray.hasSingleLocalSubdomain)
+
+New Tools / Tool Changes
+------------------------
+
+Interoperability Improvements
+-----------------------------
+* added the ability to rename external variables and fields
+  (e.g., `extern "x" var c_x: c_int;` lets `x` in C be called `c_x` in Chapel)
+* added error messages when remote records are passed to external procedures
+
+Performance Optimizations/Improvements
+--------------------------------------
+* prototyped parallelized 1D scans for block- and default-distributed arrays
+  (use `-senableParScan` to enable this prototype)
+
+Cray-specific Performance Optimizations/Improvements
+----------------------------------------------------
+
+Memory Improvements
+-------------------
+
+Compiler Flags
+--------------
+
+Documentation
+-------------
+
+Example Codes
+-------------
+
+Portability
+-----------
+
+Cray-specific Changes
+---------------------
+
+Error Messages / Semantic Checks
+--------------------------------
+* squashed references to internal subroutines for some classes of errors
+* improved error messages for compile-time 'config's
+
+Execution-time Checks
+---------------------
+
+Bug Fixes
+---------
+* fixed bugs in writef()/readf()/string.format() for enums without int values
+* fixed some bugs/inconsistencies in methods and functions on ranges
+
+Compiler Performance
+--------------------
+
+Packaging / Configuration Changes
+---------------------------------
+
+Third-Party Software Changes
+----------------------------
+
+Testing System
+--------------
+
+Developer-oriented changes: Configuration changes
+-------------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+* made deserialization errors use cnames when compiling in --devel mode
+* refactored the parser to simplify the declaration of variables
+
+Developer-oriented changes: Documentation improvements
+------------------------------------------------------
+
+Developer-oriented changes: Module improvements
+-----------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+Developer-oriented changes: Third-party improvements
+----------------------------------------------------
+
+Developer-oriented changes: Tool improvements
+---------------------------------------------
+
+
+
 version 1.18.0
 ==============
 
