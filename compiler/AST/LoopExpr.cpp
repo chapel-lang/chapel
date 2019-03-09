@@ -169,30 +169,6 @@ GenRet LoopExpr::codegen() {
 }
 
 
-//
-// Remove the ref types and the autocopy functions for the types
-// that are about to be removed when removing 'block'.
-//
-// Todo: we probably want to do this for all types that have been
-// deleted, as a cleanup function at the end of resolve().
-//
-void removeDeadTypeStuff(BlockStmt* block) {
-  for_alist(stmt, block->body) {
-    if (DefExpr* def = toDefExpr(stmt)) {
-      Symbol* sym = def->sym;
-      // Check whether this is the definition of a type.
-      if (sym->hasFlag(FLAG_TYPE_VARIABLE) && sym->type->symbol == sym)
-      {
-        if (Type* ref = sym->type->getRefType())
-          ref->symbol->defPoint->remove();
-        removeCopyFns(sym->type);
-      }
-    }
-  }
-}
-
-
-
 static int loopexpr_uid = 1;
 
 static CallExpr* buildLoopExprFunctions(LoopExpr* faExpr);

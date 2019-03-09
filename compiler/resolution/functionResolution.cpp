@@ -7936,19 +7936,24 @@ static void handleRuntimeTypes()
 static void removeSymbolsWithRemovedTypes() {
   std::vector<Symbol*> removedSyms; // for verification
 
-  for_alive_in_Vec(ArgSymbol, arg, gArgSymbols)
-    if (! arg->type->inTree())
+  for_alive_in_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (! arg->type->inTree()) {
       if (FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol)) {
         removedSyms.push_back(fn);
         fn->defPoint->remove();
       }
+    }
+  }
 
-  for_alive_in_Vec(VarSymbol, var, gVarSymbols)
+  for_alive_in_Vec(VarSymbol, var, gVarSymbols) {
     if (! var->type->inTree()) {
       removedSyms.push_back(var);
       var->defPoint->remove();
     }
+  }
 
+  // Running the asserts after the above guards against potential false alarms
+  // when an earlier-removed Fn/VarSymbol refers to a later-removed one.
   for_vector(Symbol, sym, removedSyms)
     INT_ASSERT(sym->firstSymExpr() == NULL);  // these better be unused
 }
@@ -8395,7 +8400,7 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
   }
 }
 
-void removeCopyFns(Type* t) {
+static void removeCopyFns(Type* t) {
   // If they exist, remove the autoCopy and autoDestroy functions
   // for type t, which is about to be removed itself.
   if (FnSymbol* autoDestroy = autoDestroyMap.get(t)) {
@@ -8788,15 +8793,39 @@ static void removeActualNames()
   }
 }
 
+//
+// Remove the ref types and the autocopy/autodestroy functions
+// for the types that are about to be removed when removing 'block'.
+//
+// Todo: we probably want to do this for all types that have been
+// deleted, as a cleanup function at the end of resolve().
+//
+static void removeRefAndAutoCopyForDeadTypes(BlockStmt* block) {
+  for_alist(stmt, block->body) {
+    if (DefExpr* def = toDefExpr(stmt)) {
+      Symbol* sym = def->sym;
+      // Check whether this is the definition of a type.
+      if (sym->hasFlag(FLAG_TYPE_VARIABLE) && sym->type->symbol == sym)
+      {
+        if (Type* ref = sym->type->getRefType())
+          ref->symbol->defPoint->remove();
+
+        removeCopyFns(sym->type);
+      }
+    }
+  }
+}
+
 static void removeTypeBlocks()
 {
-  for_alive_in_Vec(BlockStmt, block, gBlockStmts)
+  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
     // Remove type blocks--code that exists only to determine types
     if (block->blockTag & BLOCK_TYPE_ONLY)
     {
-      removeDeadTypeStuff(block);
+      removeRefAndAutoCopyForDeadTypes(block);
       block->remove();
     }
+  }
 }
 
 //
