@@ -31,20 +31,34 @@ Feature Improvements
   (e.g., 'param d = 3: uint; var t: d*int;` now works)
 * extended reshape() to support the reshaping of iterable expressions
   (e.g., 'reshape([i in 1..4] i, {1..2, 1..2})' now works)
-* added support for ranges of 'CodePointIndex' (useful for slicing strings)
+* added support for ranges of codepoints and slicing of strings using them
+  (see https://chapel-lang.org/docs/1.19/builtins/String.html)
 * inferred-type arrays defined using range expressions now preserve indices
   (e.g., `var A = [i in -2..2] i;` now results an array with domain {-2..2})
 * forall- and promoted expressions over ranges can now execute in parallel
 * added support for generic function return type constraints
 * added support for forall loops over zippered loop expressions
 * added support for forall loops over tuple expansion expressions
+* added support for string slices using code
+* added string.byte[s]() to access and iterate over strings by byte
+  (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.byte and
+   https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.bytes)
+* added string.codePoint[s]() to access and iterate over strings by codepoint
+  (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codePoint and
+   https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codePoints)
+* made default string access always return a string
+  (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.this)
 
 Removed Features
 ----------------
 * removed support for 'chpl-ipe'
+* deprecated support for string.uchars() and string.ulength()
+  (use string.codePoints() an string.numCodePoints() instead)
 
 Standard Modules / Library
 --------------------------
+* improved UTF-8 string support
+  (see https://chapel-lang.org/docs/1.19/builtins/String.html#activating-unicode-support)
 
 Package Modules
 ---------------
@@ -53,6 +67,10 @@ Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 * added support for queries of remote subdomains to most standard domain maps
   (see https://chapel-lang.org/docs/1.19/builtins/ChapelArray.html#ChapelArray.hasSingleLocalSubdomain)
+
+Compiler Improvements
+---------------------
+* added support for static linking when using the LLVM back-end
 
 New Tools / Tool Changes
 ------------------------
@@ -68,6 +86,7 @@ Performance Optimizations/Improvements
 * prototyped parallelized 1D scans for block- and default-distributed arrays
   (use `-senableParScan` to enable this prototype)
 * enabled parallelism for statement-level promotions
+* improved target-compiler optimizations for non-x86 architectures
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
@@ -81,12 +100,19 @@ Compiler Flags
 
 Documentation
 -------------
+* documented that Chapel is now primarily tested using UTF-8
+  (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html)
+
 
 Example Codes
 -------------
 
 Portability
 -----------
+* ported Chapel to MacOS Mojave
+* ported the LLVM back-end to 32-bit x86
+* improved the LLVM back-end's ability to find gcc header files
+* ensured Chapel supports LLVM 7
 
 Cray-specific Changes
 ---------------------
@@ -107,6 +133,12 @@ Bug Fixes
 * fixed some bugs/inconsistencies in methods and functions on ranges
 * fixed support for task-private array variables
 * fixed a bug in range.member(range)
+* fixed some incorrect buffer sizes found using gcc 8.2 static analysis
+* fixed target-compiler optimization flags for non-x86 architectures
+
+Launchers
+---------
+* improved propagation of environment variables for several launchersa
 
 Compiler Performance
 --------------------
@@ -116,6 +148,9 @@ Packaging / Configuration Changes
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of LLVM to 7.0.1 and began storing it unpacked
+  (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html
+   and https://www.chapel-lang.org/docs/1.19/technotes/llvm.html)
 
 Testing System
 --------------
