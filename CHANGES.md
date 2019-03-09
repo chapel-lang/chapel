@@ -30,6 +30,7 @@ Highlights (see subsequent sections for further details)
   - added support for unordered copies and non-fetching atomics
   - added a `choice()` method to the `Random` module for weighted sampling
   - added `map()`, `filter()`, and `consume()` for iterators
+  - added convenience functions for creating Block or Cyclic domains and arrays
   - added a parallel radix sort method to the `Sort` module
 * performance improvements:
   - added a prototype optimization that introduces unordered communications
@@ -171,6 +172,9 @@ Standard Domain Maps (Layouts and Distributions)
   (see https://chapel-lang.org/docs/master/modules/dists/HashedDist.html)
 * added support for queries of remote subdomains to most standard domain maps
   (see https://chapel-lang.org/docs/1.19/builtins/ChapelArray.html#ChapelArray.hasSingleLocalSubdomain)
+* added convenience functions to simplify creating Block/Cyclic domains/arrays
+  (see https://chapel-lang.org/docs/master/modules/dists/BlockDist.html
+   and https://chapel-lang.org/docs/master/modules/dists/CyclicDist.html)
 
 New Tools / Tool Changes
 ------------------------
@@ -179,6 +183,7 @@ New Tools / Tool Changes
 * added `:throw:/:throws:` tag to `chpldoc` for documenting thrown errors
   (see https://chapel-lang.org/docs/master/tools/chpldoc/chpldoc.html#documenting-functions-that-throw)
 * improved `c2chapel` handling of functions with pointer arguments
+* improved syntax highlighting for `vim`, `source-highlight`, and `highlight`
 
 Interoperability Improvements
 -----------------------------
@@ -2514,9 +2519,6 @@ Domain Maps (Layouts and Distributions)
 * added support for Block-distributed sparse domains and arrays
   (see https://chapel-lang.org/docs/1.14/modules/dists/BlockDist.html)
 * extended Block distributions to support strided bounding boxes
-* added convenience functions to simplify creating Block/Cyclic domains/arrays
-  (see https://chapel-lang.org/docs/master/modules/dists/BlockDist.html
-   and https://chapel-lang.org/docs/master/modules/dists/CyclicDist.html)
 
 Performance Optimizations/Improvements
 --------------------------------------
@@ -3333,7 +3335,6 @@ Tool Changes
   - added support for --print-commands with chpldoc
 * chpl-ipe:
   - added a quit() primitive for clean exits from the environment
-* improved syntax highlighting for `vim`, `source-highlight`, and `highlight`
 
 Syntactic/Naming Changes
 ------------------------
