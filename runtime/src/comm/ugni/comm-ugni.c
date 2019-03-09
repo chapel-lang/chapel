@@ -5800,165 +5800,35 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
  * then initiate them with chained transactions for increased transaction rate.
  */
 
-// Per thread information about GET buffers
-typedef struct get_buff_thread_info_t {
-  int                            vi;
-  spinlock                       lock;
-  chpl_bool                      inited;
-  void*                          tgt_addr_v[MAX_CHAINED_GET_LEN];
-  c_nodeid_t                     locale_v[MAX_CHAINED_GET_LEN];
-  mem_region_t*                  remote_mr_v[MAX_CHAINED_GET_LEN];
-  void*                          src_addr_v[MAX_CHAINED_GET_LEN];
-  size_t                         size_v[MAX_CHAINED_GET_LEN];
-  mem_region_t*                  local_mr_v[MAX_CHAINED_GET_LEN];
-  struct get_buff_thread_info_t* next;
-} get_buff_thread_info_t;
+#define BUFFERED_OP_NAME get
+#define BUFFERED_OP_GET 1
+#define BUFFERED_OP_REMOTE_TERM remote_
+#define BUFFERED_OP_BUFFER_SIZE MAX_CHAINED_GET_LEN
 
-// Contains linked list of all thread private GET buffer infos (so we can flush
-// all of them) and a lock to protect access to the list
-typedef struct {
-  get_buff_thread_info_t* list;
-  rwlock                  lock;
-  pthread_key_t           destructor_key;
-} get_buff_global_info_t;
+#define BUFFERED_VARS_EPHEMERAL(MACRO) \
+ MACRO(tgt_addr)    \
+ MACRO(locale)      \
+ MACRO(remote_mr)   \
+ MACRO(src_addr)    \
+ MACRO(size)        \
+ MACRO(local_mr)
 
-static __thread get_buff_thread_info_t get_buff_thread_info;
+#define BUFFERED_VARS_TYPED_EPHEMERAL(MACRO, LAST_MACRO) \
+ MACRO     (void*         tgt_addr)      \
+ MACRO     (c_nodeid_t    locale)        \
+ MACRO     (mem_region_t* remote_mr)     \
+ MACRO     (void*         src_addr)      \
+ MACRO     (size_t        size)          \
+ LAST_MACRO(mem_region_t* local_mr)
 
-static get_buff_global_info_t get_buff_global_info;
+#include "buffered-impl.h"
 
-// Flush buffered GET operations for the specified thread and reset the
-// counter. Should be called with info lock acquired
-static
-inline
-void get_buff_thread_info_flush(get_buff_thread_info_t* info) {
-  if (info->vi > 0) {
-    do_remote_get_V(info->vi, info->tgt_addr_v, info->locale_v,
-                    info->remote_mr_v, info->src_addr_v, info->size_v,
-                    info->local_mr_v, may_proxy_true);
-    info->vi = 0;
-  }
-}
-
-static
-void get_buff_thread_info_init(get_buff_thread_info_t* info) {
-  rwlock_writer_lock(&get_buff_global_info.lock);
-  // need to recheck now that we have to lock
-  if (!info->inited) {
-    spinlock_init(&info->lock);
-    info->vi = 0;
-
-    // add thread to linked list
-    info->next = get_buff_global_info.list;
-    get_buff_global_info.list = info;
-
-    // dummy key binding needed so key destructor is called
-    pthread_setspecific(get_buff_global_info.destructor_key, info);
-
-    info->inited = true;
-  }
-  rwlock_unlock(&get_buff_global_info.lock);
-}
-
-static
-void get_buff_thread_info_destroy(void* p) {
-  get_buff_thread_info_t* info = &get_buff_thread_info;
-
-  // remove the thread from the linked list
-  rwlock_writer_lock(&get_buff_global_info.lock);
-  get_buff_thread_info_t* global_info = get_buff_global_info.list;
-  if (info == global_info) {
-    get_buff_global_info.list = info->next;
-  } else {
-    while (global_info != NULL) {
-      if (info == global_info->next) {
-        global_info->next = info->next;
-        break;
-      }
-      global_info = global_info->next;
-    }
-  }
-  rwlock_unlock(&get_buff_global_info.lock);
-
-  // flush any pending ops
-  spinlock_lock(&info->lock);
-  get_buff_thread_info_flush(info);
-  spinlock_unlock(&info->lock);
-  spinlock_destroy(&info->lock);
-}
-
-static
-void remote_get_buff_init(void) {
-  get_buff_global_info.list = NULL;
-  rwlock_init(&get_buff_global_info.lock);
-  pthread_key_create(&get_buff_global_info.destructor_key, get_buff_thread_info_destroy);
-}
-
-// Flush buffered GET operations for all threads
-static
-inline
-void remote_get_buff_flush(void) {
-  get_buff_thread_info_t* info;
-
-  rwlock_reader_lock(&get_buff_global_info.lock);
-  info = get_buff_global_info.list;
-  while (info != NULL) {
-    spinlock_lock(&info->lock);
-    get_buff_thread_info_flush(info);
-    spinlock_unlock(&info->lock);
-    info = info->next;
-  }
-  rwlock_unlock(&get_buff_global_info.lock);
-}
-
-static
-inline
-void remote_get_buff_task_flush(void) {
-  if (chpl_task_canMigrateThreads()) {
-    remote_get_buff_flush();
-  } else {
-    get_buff_thread_info_t* info = &get_buff_thread_info;
-    // Safe to check inited/vi outside the lock because no other thread can be
-    // modifying them, but concurrent flushing from other threads is possible.
-    if (info->inited && info->vi > 0) {
-      spinlock_lock(&info->lock);
-      get_buff_thread_info_flush(info);
-      spinlock_unlock(&info->lock);
-    }
-  }
-}
-
-static
-inline
-void do_remote_get_buff_i(void* tgt_addr, c_nodeid_t locale,
-                          mem_region_t* remote_mr, void* src_addr,
-                          size_t size, mem_region_t* local_mr) {
-
-  get_buff_thread_info_t* info = &get_buff_thread_info;
-
-  if (!info->inited) {
-    get_buff_thread_info_init(info);
-  }
-
-  // grab lock for this thread
-  spinlock_lock(&info->lock);
-
-  int vi = info->vi;
-  info->tgt_addr_v[vi] = tgt_addr;
-  info->locale_v[vi] = locale;
-  info->remote_mr_v[vi] = remote_mr;
-  info->src_addr_v[vi] = src_addr;
-  info->size_v[vi] = size;
-  info->local_mr_v[vi] = local_mr;
-  info->vi++;
-
-  // flush if buffers are full
-  if (info->vi == MAX_CHAINED_GET_LEN) {
-    get_buff_thread_info_flush(info);
-  }
-
-  // release lock for this thread
-  spinlock_unlock(&info->lock);
-}
+#undef BUFFERED_OP_NAME
+#undef BUFFERED_OP_GET
+#undef BUFFERED_OP_REMOTE_TERM
+#undef BUFFERED_OP_BUFFER_SIZE
+#undef BUFFERED_VARS_EPHEMERAL
+#undef BUFFERED_VARS_TYPED_EPHEMERAL
 
 static
 inline
