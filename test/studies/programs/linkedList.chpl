@@ -106,14 +106,18 @@ class List {
       return;
 
     if head.value == value {
+      const match = head;
       head = head.next;
+      delete match;
       return;
     }
 
     var current = head;
     while current.next != nil {
       if current.next.value == value {
+        const match = current.next;
         current.next = current.next.next;
+        delete match;
         return;
       }
       current = current.next;
