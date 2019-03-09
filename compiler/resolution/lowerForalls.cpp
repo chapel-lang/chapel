@@ -1409,7 +1409,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
   FnSymbol* parIterFn = parIterCall->resolvedFunction();
 
-  if (isVirtualIterator(parIterFn->retType->symbol)) {
+  if (isVirtualIterator(parIterFn)) {
     USR_FATAL_CONT(fs, "virtual parallel iterators are not yet supported (see issue #6998)");
     return;
   }

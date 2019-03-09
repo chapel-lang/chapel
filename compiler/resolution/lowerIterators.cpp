@@ -122,10 +122,29 @@ static void nonLeaderParCheck()
   USR_STOP();
 }
 
-bool isVirtualIterator(Symbol* iterator) {
+bool isVirtualIterator(FnSymbol* iterFn) {
   bool retval = false;
+  Type* IRtype = NULL;
 
-  if (AggregateType* at = toAggregateType(iterator->type)) {
+  if (IteratorInfo* info = iterFn->iteratorInfo) {
+    // A proper iterator.
+    // Using info->iclass instead of ->irecord gives identical result.
+    IRtype = info->irecord;
+
+  } else {
+    // An iterator forwarder. Converted to return-by-ref.
+    // Use the former return type, now the type of the ret-arg formal.
+    INT_ASSERT(iterFn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
+    INT_ASSERT(iterFn->hasFlag(FLAG_FN_RETARG));
+    INT_ASSERT(iterFn->retType == dtVoid);
+    for_formals(formal, iterFn)
+      if (formal->hasFlag(FLAG_RETARG)) {
+        INT_ASSERT(formal->isRef());
+        IRtype = formal->getValType();
+      }
+  }
+  
+  if (AggregateType* at = toAggregateType(IRtype)) {
     Vec<AggregateType*>* children = &(at->dispatchChildren);
 
     if (children->n == 0) {
@@ -2142,7 +2161,7 @@ expandForLoop(ForLoop* forLoop) {
     if (iterFn->iteratorInfo                          &&
         !iterator->type->symbol->hasFlag(FLAG_TUPLE)  &&
         canInlineIterator(iterFn)                     &&
-        !isVirtualIterator(iterator)) {
+        ! isVirtualIterator(iterFn)                   ) {
       converted = expandIteratorInline(forLoop);
     }
   }
