@@ -13,7 +13,6 @@ Contributors to the current release
 * Naman Chikara, individual contributor
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
-* Paul Hargrove, [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [Cray Inc.]
 * Jenna Hoole, [Cray Inc.]
 * David Iten, [Cray Inc.]
@@ -56,6 +55,7 @@ Contributors to previous releases
 * Samuel Figueroa[*](#footnote), [Cray Inc.]
 * Roald Frederickx, individual contributor
 * Alexey Gokhberg, [Unicorn Enterprises SA]
+* Paul Hargrove, [Lawrence Berkeley National Laboratory]
 * Akihiro Hayashi, [Rice University]
 * Hannah Hemmaplardh, [Cray Inc.] intern from [University of Washington]
 * Steven Hemmy, [Cray Inc.] intern from [University of Wisconsin]
