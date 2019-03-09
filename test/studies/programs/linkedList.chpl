@@ -131,8 +131,9 @@ class List {
   iter these() {
     var current = head;
     while current != nil {
+      const next = current.next;
       yield current.value;
-      current = current.next;
+      current = next;
     }
   }
   //
