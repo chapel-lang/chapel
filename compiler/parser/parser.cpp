@@ -269,6 +269,9 @@ static void parseInternalModules() {
     baseModule            = parseMod("ChapelBase",           true);
     standardModule        = parseMod("ChapelStandard",       true);
     printModuleInitModule = parseMod("PrintModuleInitOrder", true);
+    if (fLibraryFortran) {
+                            parseMod("ISO_Fortran_binding", true);
+    }
 
     parseDependentModules(true);
 

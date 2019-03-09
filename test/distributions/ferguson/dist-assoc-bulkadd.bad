@@ -18,4 +18,3 @@ $CHPL_HOME/modules/internal/ChapelDistribution.chpl:768: note:                 B
 $CHPL_HOME/modules/internal/ChapelDistribution.chpl:768: note:                 BaseArrOverRectangularDom.rank
 $CHPL_HOME/modules/internal/ChapelDistribution.chpl:816: note:                 BaseSparseArr.rank
 $CHPL_HOME/modules/internal/ChapelDistribution.chpl:816: note:                 BaseSparseArr.rank
-$CHPL_HOME/modules/internal/ISO_Fortran_binding.chpl:152: note:                 CFI_cdesc_t.rank
