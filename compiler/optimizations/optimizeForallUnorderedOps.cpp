@@ -127,7 +127,7 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
 
 
-// ---- mark optimizeable foralls during lifetime checking
+// ---- mark optimizable foralls during lifetime checking
 
 // This could definitely be implemented in a faster way.
 static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b) {
@@ -155,7 +155,7 @@ bool symbolOutlivesLoop(BlockStmt* loop, Symbol* sym,
 }
 
 static
-bool exprIsOptimizeable(BlockStmt* loop, Expr* lastStmt,
+bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
                         LifetimeInformation* lifetimeInfo) {
   if (CallExpr* call = toCallExpr(lastStmt)) {
     if (call->isNamed("=")) {
@@ -201,7 +201,7 @@ static bool forallNoTaskPrivate(ForallStmt* forall) {
   return true;
 }
 
-class MarkOptimizeableForallLastStmts : public AstVisitorTraverse {
+class MarkOptimizableForallLastStmts : public AstVisitorTraverse {
 
   public:
     LifetimeInformation* lifetimeInfo;
@@ -209,7 +209,7 @@ class MarkOptimizeableForallLastStmts : public AstVisitorTraverse {
     virtual bool enterForallStmt(ForallStmt* forall);
 };
 
-bool MarkOptimizeableForallLastStmts::enterForallStmt(ForallStmt* forall) {
+bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
 
   if (fNoOptimizeForallUnordered == false) {
     // If the optimization is enabled, do this
@@ -218,7 +218,7 @@ bool MarkOptimizeableForallLastStmts::enterForallStmt(ForallStmt* forall) {
       std::vector<Expr*> lastStmts;
       getLastStmts(block, lastStmts);
       for_vector(Expr, stmt, lastStmts) {
-        if (exprIsOptimizeable(block, stmt, lifetimeInfo)) {
+        if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
           SymExpr* lhs = NULL;
           SymExpr* rhs = NULL;
           if (CallExpr* call = toCallExpr(stmt)) {
@@ -254,7 +254,7 @@ void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
   // because even if the optimization is disabled, we want
   // to mark the ends of foralls with chpl_comm_unordered_task_fence.
 
-  MarkOptimizeableForallLastStmts mark;
+  MarkOptimizableForallLastStmts mark;
   mark.lifetimeInfo = lifetimeInfo;
   fn->accept(&mark);
 }
@@ -559,7 +559,7 @@ CallExpr* findMarkerNear(Expr* stmt) {
   return NULL;
 }
 
-static const char* optimizeableFunctionTable[] =
+static const char* optimizableFunctionTable[] =
  {
    "chpl_comm_atomic_add_", "chpl_comm_atomic_add_unordered_",
    "chpl_comm_atomic_sub_", "chpl_comm_atomic_sub_unordered_",
@@ -575,10 +575,10 @@ static const char* optimizeableFunctionTable[] =
    // These indicate to code using this table that the end is reached
    NULL, NULL };
 
-static bool isOptimizeableAtomicFunction(const char* cname) {
-  for (int i=0; optimizeableFunctionTable[i]; i+=2) {
-    const char* from = optimizeableFunctionTable[i];
-    const char* to = optimizeableFunctionTable[i+1];
+static bool isOptimizableAtomicFunction(const char* cname) {
+  for (int i=0; optimizableFunctionTable[i]; i+=2) {
+    const char* from = optimizableFunctionTable[i];
+    const char* to = optimizableFunctionTable[i+1];
     if (startsWith(cname, from)) {
       // Pass this test for the purpose of optimization testing
       // (we won't actually transform it later)
@@ -594,7 +594,7 @@ static bool isOptimizeableAtomicFunction(const char* cname) {
   return false;
 }
 
-static bool isOptimizeableAtomicStmt(Expr* stmt, BlockStmt* loop) {
+static bool isOptimizableAtomicStmt(Expr* stmt, BlockStmt* loop) {
   // If this were to change, we'd need conditionals below to check
   // that the call is not within a PRIM_MOVE, since we can't do the
   // optimization if the return value is used.
@@ -604,7 +604,7 @@ static bool isOptimizeableAtomicStmt(Expr* stmt, BlockStmt* loop) {
   if (CallExpr* call = toCallExpr(stmt)) {
     if (FnSymbol* fn = call->resolvedFunction()) {
       if (fn->hasFlag(FLAG_EXTERN)) {
-        if (isOptimizeableAtomicFunction(fn->cname)) {
+        if (isOptimizableAtomicFunction(fn->cname)) {
           if (startsWith(fn->cname, "chpl_comm_atomic_")) {
             refAtomic = toSymExpr(call->get(3))->symbol();
           } else {
@@ -629,12 +629,12 @@ static bool isOptimizeableAtomicStmt(Expr* stmt, BlockStmt* loop) {
 
 static const char* getUnorderedAtomicFunction(const char* cname) {
 
-  for (int i=0; optimizeableFunctionTable[i]; i+=2) {
-    if (startsWith(cname, optimizeableFunctionTable[i])) {
-      const char* newPrefix = optimizeableFunctionTable[i+1];
+  for (int i=0; optimizableFunctionTable[i]; i+=2) {
+    if (startsWith(cname, optimizableFunctionTable[i])) {
+      const char* newPrefix = optimizableFunctionTable[i+1];
       if (newPrefix == NULL)
         return NULL;
-      size_t len = strlen(optimizeableFunctionTable[i]);
+      size_t len = strlen(optimizableFunctionTable[i]);
       const char* suffix = cname + len;
       return astr(newPrefix, suffix);
     }
@@ -720,7 +720,7 @@ static bool hasAcceptableType(Symbol* sym) {
          is_enum_type(t);
 }
 
-static bool isOptimizeableAssignStmt(Expr* stmt, BlockStmt* loop) {
+static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
   Symbol* lhs = NULL;
   if (CallExpr* call = toCallExpr(stmt))
     if (call->isPrimitive(PRIM_ASSIGN))
@@ -846,9 +846,9 @@ void optimizeForallUnorderedOps() {
         std::vector<Expr*> lastStmts;
         getLastStmts(loop, lastStmts);
         for_vector(Expr, lastStmt, lastStmts) {
-          if (isOptimizeableAtomicStmt(lastStmt, loop))
+          if (isOptimizableAtomicStmt(lastStmt, loop))
             atomicsToOptimize.push_back(lastStmt);
-          else if (isOptimizeableAssignStmt(lastStmt, loop))
+          else if (isOptimizableAssignStmt(lastStmt, loop))
             assignsToOptimize.push_back(lastStmt);
         }
       }
