@@ -1,0 +1,8 @@
+feature request: Support reductions on arrays of atomics
+
+It seems that we should support reductions on arrays of atomics, yet
+today we don't.  Here, I focus on + reductions and atomic ints, but I
+think we should have a general solution for all cases.  The commented
+out code demonstrates overloads that will make this program work as
+intended if I uncomment it.  But I don't think I should have to write
+it and wouldn't expect most users to figure out how to do it.
