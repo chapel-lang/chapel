@@ -80,6 +80,9 @@ Standard Modules / Library
 * added bounds checking to `getNext(min, max)` overload in `Random` module
 * added message sizes to verbose communication diagnostics
   (see https://chapel-lang.org/docs/1.19/modules/standard/CommDiagnostics.html)
+* Add c_offsetof to get memory offset for fields in a record
+  (see https://chapel-lang.org/docs/master/builtins/CPtr.html?highlight=c_offsetof#CPtr.c_offsetof)
+
 
 Package Modules
 ---------------
@@ -106,13 +109,22 @@ New Tools / Tool Changes
 * added support for external Spack installations in `mason external`
   (https://chapel-lang.org/docs/1.19/tools/mason/mason.html#using-spack-dependencies)
 * made `mason search` warn about bad manifest filenames instead of halting
-
+* added `:throw:/:throws:` tag to `chpldoc` for documenting thrown errors
+  (see https://chapel-lang.org/docs/master/tools/chpldoc/chpldoc.html#documenting-functions-that-throw)
 
 Interoperability Improvements
 -----------------------------
 * added the ability to rename external variables and fields
   (e.g., `extern "x" var c_x: c_int;` lets `x` in C be called `c_x` in Chapel)
 * added error messages when remote records are passed to external procedures
+* Python interoperability improvements:
+  (see TODO)
+  - added support for literal default arguments in routines exported to Python
+  - added support for passing complex Chapel array types opaquely to Python
+  - added support for c_ptr arguments using NumPy arrays or ctypes pointers
+* fixed some issues with `--library*` compilation using the LLVM back-end
+  (see TODO)
+
 
 Performance Optimizations/Improvements
 --------------------------------------
@@ -143,6 +155,11 @@ Documentation
 * documented that Chapel is now primarily tested using UTF-8
   (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html)
 * fixed typos in various sources of documentation
+* documented CHPL_LIB_PIC
+  (see https://chapel-lang.org/docs/master/technotes/libraries.html#static-and-dynamic-libraries)
+* added documentation of the `:throw:/:throws:` tag in `chpldoc`
+  (see https://chapel-lang.org/docs/master/tools/chpldoc/chpldoc.html#documenting-functions-that-throw)
+* documented some throwing functions in the standard library documentation
 
 Example Codes
 -------------
@@ -159,12 +176,13 @@ Portability
 * added support for urxvt terminal emulator with CHPL_COMM_USE_(G|LL)DB.
   (see https://chapel-lang.org/docs/1.19/usingchapel/debugging.html)
 
-Cray-specific Changes
----------------------
+Cray-specific Changes and Bug Fixes
+-----------------------------------
 * improved comm=ugni fixed heap behavior near the registration limit
   (see https://chapel-lang.org/docs/1.19/platforms/cray.html)
 * allowed specifying fixed heap size as a percentage of physical memory size
   (see https://chapel-lang.org/docs/1.19/platforms/cray.html)
+* fixed Python interoperability when using `prgenv-*` compilers
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -176,6 +194,13 @@ Error Messages / Semantic Checks
 * added an error for user-defined constructors
 * improved error messages for initializers
 * improved error messages for generic first-class functions
+* improved errors for `param` loops over improper ranges
+* added an error when `use` statement filters include the module itself
+* improved errors when `use` statement filters refer to bad symbols
+* improved errors when exported routines return arrays without element types
+* improved errors when throwing from within `coforall`/`begin`/`on`/`cobegin`
+* improved errors when throwing something that is not a subclass of `Error`
+* improved errors relative to unsupported domain / partial domain queries
 
 
 Execution-time Checks
