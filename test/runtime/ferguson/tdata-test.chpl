@@ -10,6 +10,10 @@ record stuff {
   var oldS: bool;
   var e: _remoteEndCountType;
   var s: bool;
+
+  proc deinit() {
+    _endCountFree(e);
+  }
 }
 
 proc saveStuff() {
