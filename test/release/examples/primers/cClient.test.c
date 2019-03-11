@@ -10,6 +10,7 @@ int main(int argc, char* argv[]) {
 
   foo();
   alsoCallsBaz();
+  callUseMyType();
 
   // Shutdown the Chapel runtime and standard modules
   chpl_library_finalize();

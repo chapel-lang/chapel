@@ -117,7 +117,7 @@ proc bar() { // bar will not be available to outside code
 /*
    .. literalinclude:: cClient.c
       :language: C
-      :lines: 11-12
+      :lines: 11-13
 */
 
 //
@@ -128,7 +128,7 @@ proc bar() { // bar will not be available to outside code
 /*
    .. literalinclude:: cClient.c
       :language: C
-      :lines: 14-15
+      :lines: 15-16
 */
 
 //
@@ -136,15 +136,28 @@ proc bar() { // bar will not be available to outside code
 // program.
 //
 
+/*
+   .. _primers-C-interop-compiling-2:
+
+   Compiling C Code with the Chapel Library
+   ++++++++++++++++++++++++++++++++++++++++
+*/
+
 //
-// TODO: talk about LD_LIBRARY_PATH and compiling C code with the generated
-//       library (--library-makefile)
+// Compiling C code with the generated Chapel library file is generally complex,
+// but can be made simpler through the use of the ``--library-makefile`` flag
+// as described in :ref:`readme-libraries-linking`.
+//
+// An example of compiling a C program with a generated Chapel library using the
+// generated Makefile can be found in the `Makefile
+// <https://github.com/chapel-lang/chapel/blob/master/test/release/examples/primers/Makefile>`_
+// for the primers directory, to build this source file.
 //
 
 /*
    .. _primers-C-interop-using-C:
 
-   Using C code in Chapel
+   Using C Code in Chapel
    ----------------------
 */
 
@@ -172,9 +185,16 @@ export proc alsoCallsBaz() {
 //
 // Unlike ``export``, ``extern`` can also be applied to global variables,
 // struct definitions, or even typedefs.
-
+//
 extern var x: int(32);
 extern var y: uint(32) = 3;
+extern type myType = c_int;
+extern proc useMyType(arg: myType): int; // an extern function using the typedef
+
+export proc callUseMyType() {
+  var blah: myType = 17;
+  writeln(useMyType(blah));
+}
 
 //
 // TODO: structs, typedefs
@@ -192,11 +212,3 @@ extern var y: uint(32) = 3;
 // TODO:
 // - passing arrays back and forth
 // - finish using C from Chapel
-//
-// Need to write stuff like:
-//
-/*
-   .. literalinclude:: cClient.c
-      :language: C
-      :lines: 1-19
-*/
