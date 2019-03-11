@@ -402,6 +402,84 @@ the generated library - if compilation fails due to generating one or more of
 these files incorrectly, you may be able to modify the file and re-run the
 Cython command yourself.
 
+.. _readme-libraries.Fortran:
+
+Using Your Library in Fortran
+=============================
+
+Prerequisites
+-------------
+
+To make use of your library in Fortran, a Fortran compiler that implements
+the ISO_Fortran_binding.h header and interface defined by ISO/IEC TS 29113
+is required.
+
+Compiling Your Chapel Library
+-----------------------------
+
+To create a Fortran compatible module in addition to the normally generated
+library and header, add ``--library-fortran`` to the compilation. This will
+create a Fortran module containing declarations for each Chapel function
+declared with ``export``. This module can be used from Fortran in order to
+make the functions exported from Chapel available.  At present, the generated
+module only handles basic types for function arguments and return types, and
+the compiler will emit warnings for any types it is unable to handle properly.
+
+Initializing and Using Your Library From Fortran
+------------------------------------------------
+
+Once the library and Fortran interface module are generated, you can ``use``
+the interface module and make calls to the functions it declares.
+
+Similarly to using your library with C and Python, you will need to call a
+set up function to ensure the Chapel runtime and standard modules are
+initialize. Unlike C and Python, your library currently needs to define
+this function itself.  The following should work after replacing
+``MyModuleName`` with the name of the actual module:
+
+.. code-block:: Chapel
+
+    export proc chpl_library_init_ftn() {
+      // Make the runtime/library initialization function visible
+      extern proc chpl_library_init(argc: c_int, argv: c_ptr(c_ptr(c_char)));
+      var filename = c"fake";
+      // Initialize the internal runtime/library
+      chpl_library_init(1, c_ptrTo(filename): c_ptr(c_ptr(c_char)));;
+      // Initialize the main user module
+      chpl__init_MyModuleName();
+    }
+
+A simple Fortran example using a function ``myChapelFunction`` from the 
+``MyModuleName`` library is:
+
+.. code-block:: Fortran
+
+    program Example
+      ! use the interface module generated with --library-fortran
+      use MyModuleName
+      implicit none
+
+      integer(8) :: arg, ret
+      arg = 3
+
+      ! initialize the Chapel library using the function defined above
+      call chpl_library_init_ftn()
+
+      ! call a function from the Chapel library
+      ret = myChapelFunction(arg)
+
+      print *, ret
+    end program Example
+
+This would then be compiled with commands to first build the interface module,
+then to build the example program and link with the Chapel library and Chapel
+runtime libraries:
+
+.. code-block:: sh
+
+    ftn -c lib/MyModuleName.f90
+    ftn Example.f90 -Llib -lMyModuleName `$CHPL_HOME/util/config/compileline --libraries` -o Example
+
 Arrays
 ======
 
@@ -455,6 +533,15 @@ It is our intention to support as many Chapel array types as we can using
 ``chpl_external_array``.  Chapel arrays types that are currently supported using
 ``chpl_opaque_array`` may become supported by ``chpl_external_array`` instead
 in the future.
+
+Fortran arrays
+--------------
+
+A 1-D contiguous Fortran array can be passed to an exported Chapel function
+for an argument with the type ``[] t`` where ``t`` is a primitive type.  The
+Chapel compiler will automatically translate such an array into a Chapel array.
+This allows it to be used in all the ways any other Chapel array can be used,
+for example in parallel loops or reductions.
 
 Using Your Library in Chapel
 ============================
