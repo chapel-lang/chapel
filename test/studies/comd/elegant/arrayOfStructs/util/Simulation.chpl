@@ -56,8 +56,8 @@ Timers["total"].start();
 
 timestampMessage("Starting Initialization");
 
-const Pot : unmanaged BasePotential = if doeam then (new unmanaged PotentialEAM()):unmanaged BasePotential
-                            else (new unmanaged PotentialLJ()):unmanaged BasePotential;
+const Pot: owned BasePotential = if doeam then (new owned PotentialEAM()): owned BasePotential
+                                          else (new owned PotentialLJ()): owned BasePotential;
 
 const Species = new SpeciesData(Pot.name, Pot.atomicNo, Pot.mass);
 
