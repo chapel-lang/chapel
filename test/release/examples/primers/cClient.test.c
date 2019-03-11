@@ -1,3 +1,4 @@
+// Include the generated header file
 #include "lib/interopWithC.h"
 
 // C code to call exported functions from Chapel libraries.
