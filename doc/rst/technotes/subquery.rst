@@ -57,9 +57,6 @@ This function returns a single domain that represents the index set owned by
 the given locale, which defaults to ``here``. This returned domain cannot be
 used to modify the index set owned by the locale.
 
-For non-distributed arrays and domains, this function returns a copy of the
-entire domain.
-
 To support this function on a custom domain map, write a function named
 ``dsiLocalSubdomain``. For example:
 
