@@ -11,6 +11,7 @@ Contributors to the current release
 * Paul Cassella, [Cray Inc.]
 * [Brad Chamberlain], [Cray Inc.]
 * Naman Chikara, individual contributor
+* Krishna Kumar Dey, individual contributor
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
