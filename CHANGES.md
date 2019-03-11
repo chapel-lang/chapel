@@ -69,7 +69,7 @@ Semantic Changes / Changes to Chapel Language
 * made default string accesses always return a string
   (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.this)
 * default initializers for generic types require formal names to match fields
-  (https://chapel-lang.org/docs/1.19/technotes/initTypeAlias.html)
+  (see https://chapel-lang.org/docs/1.19/technotes/initTypeAlias.html)
 
 New Features
 ------------
@@ -144,7 +144,7 @@ Standard Modules / Library
 * added cast from integral types to `bigint`
   (see https://chapel-lang.org/docs/1.19/modules/standard/BigInteger.html#biginteger)
 * added `c_offsetof` to get memory offsets for fields in a record
-  (see https://chapel-lang.org/docs/1.19/builtins/CPtr.html?highlight=c_offsetof#CPtr.c_offsetof)
+  (see https://chapel-lang.org/docs/1.19/builtins/CPtr.html#CPtr.c_offsetof)
 
 Package Modules
 ---------------
@@ -183,7 +183,7 @@ New Tools / Tool Changes
 Interoperability Improvements
 -----------------------------
 * added a `c_array` type that behaves like a fixed-size C array
-  (see https://chapel-lang.org/docs/1.19/technotes/extern.html)
+  (see https://chapel-lang.org/docs/1.19/technotes/extern.html#c-array-t-n)
 * added the ability to rename external variables and fields
   (e.g., `extern "x" var c_x: c_int;` lets `x` in C be called `c_x` in Chapel)
 * added support for passing Chapel-unique array types opaquely to/from Python/C
@@ -239,7 +239,7 @@ Documentation
 * added documentation for `CHPL_LIB_PIC`
   (see https://chapel-lang.org/docs/1.19/technotes/libraries.html#static-and-dynamic-libraries)
 * documented that Chapel is now primarily tested using UTF-8
-  (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html)
+  (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html#character-set))
 * added documentation of the `:throw:/:throws:` tags in `chpldoc`
   (see https://chapel-lang.org/docs/1.19/tools/chpldoc/chpldoc.html#documenting-functions-that-throw)
 * documented some throwing functions in the standard library documentation
@@ -271,9 +271,9 @@ Portability
 Cray-specific Changes and Bug Fixes
 -----------------------------------
 * improved `ugni` fixed heap behavior near the registration limit
-  (see https://chapel-lang.org/docs/1.19/platforms/cray.html)
+  (see https://chapel-lang.org/docs/1.19/platforms/cray.html#ugni-communication-layer-and-the-heap)
 * allowed specifying fixed heap size as a percentage of physical memory size
-  (see https://chapel-lang.org/docs/1.19/platforms/cray.html)
+  (see https://chapel-lang.org/docs/1.19/platforms/cray.html#ugni-communication-layer-and-the-heap)
 * fixed Python interoperability when using `prgenv-*` compilers
 * fixed the LLVM back-end when using `prgenv-*` compilers
 * improved the use of the LLVM back-end with GASNet on Cray systems
@@ -370,7 +370,7 @@ Third-Party Software Changes
 * upgraded qthreads to version 1.14
 * upgraded re2 to commit 0a6326b
 * updated the bundled version of LLVM to 7.0.1 and began storing it unpacked
-  (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html
+  (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html#chpl-llvm
    and https://www.chapel-lang.org/docs/1.19/technotes/llvm.html)
 
 Launchers
