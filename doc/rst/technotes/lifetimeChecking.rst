@@ -199,11 +199,11 @@ Lifetime Inference
 The lifetime checker starts by inferring the lifetime of each variable.
 It considers the ways that the variable is set:
 
- * if the variable is a reference to another variable, its
+ * if the variable is a reference to another variable, then
    its lifetime will be the scope of that variable
  * if a borrow is assigned or initialized from another variable, then
    its lifetime will be at most the lifetime of the other variable
- * if the variable is set by a function call, the lifetime is inferred
+ * if the variable is set by a function call, then the lifetime is inferred
    according to rules described below
 
 Inference proceeds until the minimum inferred lifetime of each variable is
