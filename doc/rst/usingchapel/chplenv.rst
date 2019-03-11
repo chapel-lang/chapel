@@ -403,11 +403,10 @@ CHPL_COMM
    If unset, ``CHPL_COMM`` defaults to ``none`` in most cases.  On Cray XE
    and XC systems it defaults to ``ugni``.  On Cray CS systems it defaults
    to ``gasnet``.  See :ref:`readme-multilocale` for more information on
-   executing Chapel programs using multiple locales.
-   See :ref:`readme-libfabric` for more information about the ofi
-   communication layer.
-   See :ref:`readme-cray` for more information about Cray-specific runtime
-   layers.
+   executing Chapel programs using multiple locales.  See
+   :ref:`readme-libfabric` for more information about the ofi communication
+   layer.  See :ref:`readme-cray` for more information about Cray-specific
+   runtime layers.
 
 
 .. _readme-chplenv.CHPL_MEM:
@@ -429,11 +428,10 @@ CHPL_MEM
 
    .. note::
      Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
-     ofi with the gni provider)
-     register the heap to improve communication performance.  Registering the
-     heap requires special allocator support that not all allocators provide.
-     Currently only ``jemalloc`` is capable of supporting configurations that
-     require a registered heap.
+     ofi with the gni provider) register the heap to improve communication
+     performance.  Registering the heap requires special allocator support
+     that not all allocators provide.  Currently only ``jemalloc`` is capable
+     of supporting configurations that require a registered heap.
 
 
 .. _readme-chplenv.CHPL_LAUNCHER:
