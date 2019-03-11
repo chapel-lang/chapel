@@ -1,1 +1,1 @@
-bad_label.chpl:7: error: cannot label non-loop statement
+bad_label.chpl:7: error: can only label for-, while-do- and do-while-statements
