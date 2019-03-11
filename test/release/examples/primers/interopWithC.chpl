@@ -139,7 +139,6 @@ proc bar() { // bar will not be available to outside code
 //
 // TODO: talk about LD_LIBRARY_PATH and compiling C code with the generated
 //       library (--library-makefile)
-// TODO: talk about calling Chapel from C
 //
 
 /*
