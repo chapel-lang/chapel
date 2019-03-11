@@ -4,7 +4,15 @@
 Multilocale Chapel Execution
 ============================
 
-This document outlines the steps to get started with multi-locale Chapel.
+This document outlines the steps to get started with multilocale Chapel using
+GASNet-based communication.  This configuration is fully functional on every
+platform that supports multilocale Chapel.  However, there are also other
+communication configurations that work in specific situations.  On Cray
+XC/XE/XK systems, using native communication as described in :ref:`Using
+Chapel on Cray Systems <readme-cray>` will probably give the best performance.
+For instructions on using the preliminary OpenFabrics Interfaces
+libfabric-based ``ofi`` communication layer, see :ref:`readme-libfabric`.
+
 Steps 2-3 describe how to build a multilocale Chapel, and steps 4-6 cover
 compiling and running multilocale Chapel programs.
 
