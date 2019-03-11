@@ -639,7 +639,7 @@ buildLabelStmt(const char* name, Expr* stmt) {
         loop->userLabel = astr(name);
       }
     } else {
-      USR_FATAL(stmt, "cannot label non-loop statement");
+      USR_FATAL(stmt, "can label only for-, while-do- and do-while-statements");
     }
 
   } else {
