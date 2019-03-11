@@ -420,7 +420,7 @@ Compiling Your Chapel Library
 To create a Fortran compatible module in addition to the normally generated
 library and header, add ``--library-fortran`` to the compilation. This will
 create a Fortran module containing declarations for each Chapel function
-declared with ``export``. This module can be used from Fortran in order
+declared with ``export``. This module can be used from Fortran in order to
 make the functions exported from Chapel available.  At present, the generated
 module only handles basic types for function arguments and return types, and
 the compiler will emit warnings for any types it is unable to handle properly.
@@ -440,9 +440,12 @@ this function itself.  The following should work after replacing
 .. code-block:: Chapel
 
     export proc chpl_library_init_ftn() {
+      // Make the runtime/library initialization function visible
       extern proc chpl_library_init(argc: c_int, argv: c_ptr(c_ptr(c_char)));
       var filename = c"fake";
+      // Initialize the internal runtime/library
       chpl_library_init(1, c_ptrTo(filename): c_ptr(c_ptr(c_char)));;
+      // Initialize the main user module
       chpl__init_MyModuleName();
     }
 
@@ -452,13 +455,17 @@ A simple Fortran example using a function ``myChapelFunction`` from the
 .. code-block:: Fortran
 
     program Example
+      ! use the interface module generated with --library-fortran
       use MyModuleName
       implicit none
 
       integer(8) :: arg, ret
       arg = 3
 
+      ! initialize the Chapel library using the function defined above
       call chpl_library_init_ftn()
+
+      ! call a function from the Chapel library
       ret = myChapelFunction(arg)
 
       print *, ret
@@ -526,6 +533,15 @@ It is our intention to support as many Chapel array types as we can using
 ``chpl_external_array``.  Chapel arrays types that are currently supported using
 ``chpl_opaque_array`` may become supported by ``chpl_external_array`` instead
 in the future.
+
+Fortran arrays
+--------------
+
+A 1-D contiguous Fortran array can be passed to an exported Chapel function
+for an argument with the type ``[] t`` where ``t`` is a primitive type.  The
+Chapel compiler will automatically translate such an array into a Chapel array.
+This allows it to be used in all the ways any other Chapel array can be used,
+for example in parallel loops or reductions.
 
 Using Your Library in Chapel
 ============================

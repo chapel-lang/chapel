@@ -7,7 +7,11 @@ Fortran Interoperability
 ========================
 
 This README describes support for calling Chapel functions from Fortran code
-and vice-versa. The features described here are still a work in progress.
+and vice-versa.
+
+.. note::
+
+    The features described here are still a work in progress.
 
 Calling Fortran from Chapel
 ===========================
@@ -31,6 +35,6 @@ the Fortran runtime library.
 Calling Chapel from Fortran
 ===========================
 
-Chapel functions declared as 'export' can be called from Fortran by using
-the --library-fortran flag as described in
+Chapel functions declared as ``export`` can be called from Fortran by using
+the ``--library-fortran`` flag as described in
 :ref:`Using your Library in Fortran<readme-libraries.Fortran>`
