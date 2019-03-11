@@ -1,9 +1,5 @@
 Release Changes List
 ====================
-TODO: spellcheck
-TODO: other TODOs
-TODO: check links
-TODO: check for docs/master
 
 version 1.19.0
 ==============
@@ -69,7 +65,7 @@ Semantic Changes / Changes to Chapel Language
 * for records, compiler-generated `=`, `==`, `!=` now require matching types
   (see 'Record Assignment' and 'Default Comparison Operators' in the spec)
 * `[]`-loops now permit serial execution if parallelism isn't an option
-  (see TODO)
+  (see 'The Forall Statement' in the 'Data Parallelism' chapter of the spec))
 * default initializers for generic types require formal names to match fields
   (https://chapel-lang.org/docs/1.19/technotes/initTypeAlias.html)
 
@@ -78,7 +74,7 @@ New Features
 * added support for directly initializing atomic variables from values
   (e.g., `var x: atomic int = 10;`)
 * added lifetime annotations for expressing relative lifetimes between arguments
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.19/technotes/lifetimeChecking.html#lifetime-annotations)
 * certain dereferences of `nil` values are now caught by the compiler
   (see https://chapel-lang.org/docs/1.19/technotes/nilChecking.html)
 * added support for using type aliases in `new` expressions
@@ -90,7 +86,6 @@ New Features
 Feature Improvements
 --------------------
 * added support for compile-time operations on floating point `param` values
-  (see TODO)
 * added config disambiguation for `chpl` arguments via module names
   (e.g., `-sM.debug=true` can be used to set config `debug` in module `M`)
 * made scan expressions preserve the shape/domain of the input expression
@@ -113,9 +108,7 @@ Feature Improvements
   (e.g., `"1_000_000":int` is now supported)
 * string casts to integral types can now be in base 2, 8, or 16
   (e.g., `"0xabcd":int` is now supported)
-* added support for forall loops over zippered loop expressions
-* added support for forall loops over tuple expansion expressions
-* forall- and promoted expressions over ranges can now execute in parallel
+* array initializer expressions based on range expressions are now parallelized
 * added support for declaring homogeneous tuple types using `uint`s
   (e.g., `param d = 3: uint; var t: d*int;` is now supported)
 * added support for `where`-clauses to `extern` procedures
@@ -297,7 +290,6 @@ Compiler Flags
 * added a `--target-cpu` flag for setting `CHPL_TARGET_CPU`
 * added a `--[no-]optimize-forall-unordered-ops` flag (off by default)
 * removed the `--[no-]warn-constructors` flag
-* TODO: removed the `--target-arch` flag for no good reason (?)
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -350,6 +342,8 @@ Bug Fixes
 * fixed a bug in which I/O couldn't read integers starting with `+` like `+10`
 * iterating over tuples now yields `ref` or `const ref` elements
 * `on s` for `owned` or `shared` objects now runs where the object is allocated
+* fixed support for forall loops over zippered loop expressions
+* fixed support for forall loops over tuple expansion expressions
 * enabled tuples to contain `owned` objects
 * fixed a bug in range.member(range)
 * fixed some bugs/inconsistencies in methods and functions on ranges
