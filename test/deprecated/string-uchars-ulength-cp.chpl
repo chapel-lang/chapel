@@ -1,7 +1,13 @@
-// string.uchars(), string.ulength, and codePointToString are deprecated
-for i in "deprecate me".uchars() do
+// string.uchars(), string.ulength, codePointIndex, and codePointToString()
+// are deprecated
+
+var str = "deprecate me";
+
+for i in str.uchars() do
   writeln(i);
 
-writeln("deprecate me".ulength);
+writeln(str.ulength);
 
-writeln(codePointToString("deprecate me".codepoint(1)));
+writeln(str[1: codePointIndex]);
+
+writeln(codePointToString(str.codepoint(1)));

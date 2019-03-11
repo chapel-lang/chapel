@@ -242,7 +242,10 @@ module String {
   /*
    Deprecated, use `codepointIndex`.
   */
-  type codePointIndex = codepointIndex;
+  proc codePointIndex type {
+    compilerWarning("codePointIndex is deprecated - please use codepointIndex instead");
+    return codepointIndex;
+  }
 
   // Helper routines in support of being able to use ranges of codepointIndex
   pragma "no doc"

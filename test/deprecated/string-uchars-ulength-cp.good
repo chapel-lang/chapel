@@ -1,6 +1,7 @@
-string-uchars-ulength-cp.chpl:2: warning: uchars is deprecated - please use codepoints instead
-string-uchars-ulength-cp.chpl:5: warning: ulength is deprecated - please use numCodepoints instead
-string-uchars-ulength-cp.chpl:7: warning: codePointToString is deprecated - please use codepointToString instead
+string-uchars-ulength-cp.chpl:6: warning: uchars is deprecated - please use codepoints instead
+string-uchars-ulength-cp.chpl:9: warning: ulength is deprecated - please use numCodepoints instead
+string-uchars-ulength-cp.chpl:11: warning: codePointIndex is deprecated - please use codepointIndex instead
+string-uchars-ulength-cp.chpl:13: warning: codePointToString is deprecated - please use codepointToString instead
 100
 101
 112
@@ -14,4 +15,5 @@ string-uchars-ulength-cp.chpl:7: warning: codePointToString is deprecated - plea
 109
 101
 12
+d
 d
