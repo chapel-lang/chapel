@@ -66,6 +66,8 @@ Semantic Changes / Changes to Chapel Language
   (see 'Record Assignment' and 'Default Comparison Operators' in the spec)
 * `[]`-loops now permit serial execution if parallelism isn't an option
   (see 'The Forall Statement' in the 'Data Parallelism' chapter of the spec))
+* made default string accesses always return a string
+  (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.this)
 * default initializers for generic types require formal names to match fields
   (https://chapel-lang.org/docs/1.19/technotes/initTypeAlias.html)
 
@@ -81,6 +83,14 @@ New Features
   (see https://chapel-lang.org/docs/1.19/technotes/initTypeAlias.html)
 * added support for the `init=` method, a proposed change to copy initializers
   (see https://chapel-lang.org/docs/1.19/technotes/initequals.html)
+* added support for ranges of codepoints and slicing of strings using them
+  (see https://chapel-lang.org/docs/1.19/builtins/String.html)
+* added string.codePoint[s]() to access and iterate over strings by codepoint
+  (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codePoint
+   and https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codePoints)
+* added string.byte[s]() to access and iterate over strings by byte
+  (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.byte
+   and https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.bytes)
 * added automatic fences for unordered operations at task termination
 
 Feature Improvements
@@ -94,16 +104,6 @@ Feature Improvements
   (e.g., `var A = [i in -2..2] i;` now results an array with domain {-2..2})
 * extended `reshape()` to accept loop expressions
   (e.g., `reshape([i in 1..4] i, {1..2, 1..2})` now works)
-* made default string accesses always return a string
-  (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.this)
-* added support for ranges of codepoints and slicing of strings using them
-  (see https://chapel-lang.org/docs/1.19/builtins/String.html)
-* added string.codePoint[s]() to access and iterate over strings by codepoint
-  (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codePoint
-   and https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codePoints)
-* added string.byte[s]() to access and iterate over strings by byte
-  (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.byte
-   and https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.bytes)
 * string casts to integral or floating point types may now contain underscores
   (e.g., `"1_000_000":int` is now supported)
 * string casts to integral types can now be in base 2, 8, or 16
