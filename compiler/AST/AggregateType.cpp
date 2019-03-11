@@ -35,6 +35,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "../ifa/prim_data.h"
 
 AggregateType* dtObject = NULL;
 AggregateType* dtString = NULL;
@@ -837,7 +838,15 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
       }
 
     } else if (field->hasFlag(FLAG_PARAM) == true) {
-      if (at->substitutions.get(field) == sym) {
+      if (field->type != sym->type) {
+        Immediate result;
+        Immediate* lhs = getSymbolImmediate(at->substitutions.get(field));
+        Immediate* rhs = getSymbolImmediate(sym);
+        fold_constant(P_prim_equal, lhs, rhs, &result);
+        if (result.v_bool) {
+          retval = at;
+        }
+      } else if (at->substitutions.get(field) == sym) {
         retval = at;
         break;
       }
