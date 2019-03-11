@@ -9,11 +9,12 @@ the OpenFabrics Interfaces libfabric-based ``ofi`` communication layer.
 :ref:`readme-multilocale` gives general information about running Chapel
 in a multilocale configuration.
 
-The ofi communication layer is new as of the Chapel 1.19 release.  It is
-complete in terms of initial development and passes Chapel testing, but
-it is still something of an early-access configuration in the sense that
-users may need to supply supporting packages and performance may leave
-something to be desired.
+.. note::
+  The ofi communication layer is new as of the Chapel 1.19 release.  It is
+  complete in terms of initial development and passes Chapel testing, but
+  it is still something of an early-access configuration in the sense that
+  users may need to supply supporting packages and performance may leave
+  something to be desired.
 
 Building Chapel with the ofi Communication Layer
 ++++++++++++++++++++++++++++++++++++++++++++++++
@@ -79,11 +80,12 @@ Building Chapel with the ofi Communication Layer
    If your system does not have those installed already, you will need
    to download OpenMPI and possibly build it.
 
-   In the future we hope both to be able to support the MPICH MPI
-   package in addition to supporting the OpenMPI MPI package, and to use
-   the regular Chapel ``mpirun`` launcher with the ofi communication
-   layer, but for now OpenMPI and mpirun4ofi are the only options on
-   platforms other than Cray XC systems.
+   .. note::
+     In the future we hope both to be able to support the MPICH MPI
+     package in addition to supporting the OpenMPI MPI package, and to use
+     the regular Chapel ``mpirun`` launcher with the ofi communication
+     layer, but for now OpenMPI and mpirun4ofi are the only options on
+     platforms other than Cray XC systems.
 
    Note: On a Mac OS X system, OpenMPI can be obtained through Homebrew_
    with the following command.
@@ -227,8 +229,9 @@ hugepage modules, and the heap size.  Note, however, that anything there
 about a dynamically sized heap does not apply to the ofi communication
 layer and the libfabric gni provider.
 
-In the future we hope to be able to reduce the user impact of memory
-registration when using the ofi communication layer.
+.. note::
+  In the future we hope to be able to reduce the user impact of memory
+  registration when using the ofi communication layer.
 
 .. _mpirun4ofi-launcher:
 
