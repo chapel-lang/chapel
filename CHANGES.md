@@ -13,11 +13,11 @@ Highlights (see subsequent sections for further details)
   - improved initializers w.r.t. type aliases and copy initialization
   - improved strings with respect to accesses, iterators, and UTF-8 support
   - added support for lifetime annotations on functions to help with checking
-  - added support for compile-time nil-checking for certain cases
+  - added support for compile-time nil-checking to avoid potential errors
   - made `throw` and `catch` operate on `owned` errors
   - added shape / index preservation for scans and range expressions
   - added support for underscores in numeric literals and strings
-  - refined `forall` vs. `[]` / promotions to imply "must" vs. "may" parallelism
+  - defined `[]`/promotions as implying "may" parallelism vs. `forall`'s "must"
 * libraries and domain maps:
   - added support for distributed associative domains/arrays via `HashedDist`
   - added support for unordered copies and non-fetching atomics
@@ -29,7 +29,8 @@ Highlights (see subsequent sections for further details)
   - added a prototype optimization that makes use of unordered communications
   - added a prototype parallelization of 1D scans for block and default arrays
   - eliminated several remaining sources of memory leaks
-  - optimized oversubscription, data transfers, task spawns on Cray XC systems
+  - optimized remote task spawns on Cray systems using `ugni` communication
+  - optimized ordered, unordered, and oversubscribed communication for `ugni`
 * interoperability:
   - added a `c_array` type for interoperating with fixed-size C arrays
   - improved the previous prototype for interoperating with Python
@@ -53,10 +54,10 @@ Packaging / Configuration Changes
 Syntactic/Naming Changes
 ------------------------
 * made `true`, `false`, and numeric type names into reserved words in Chapel
-  (see the 'Keywords' section in the 'Lexical Structure' chapter of the spec))
+  (see the 'Keywords' section in the 'Lexical Structure' chapter of the spec)
 * added support for underscores in integer and floating point literals
   (e.g., `1_000_000` is now the same as `1000000`
-   see the 'Literals' section in the 'Lexical Structure' chapter of the spec))
+   see the 'Literals' section in the 'Lexical Structure' chapter of the spec)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -65,7 +66,7 @@ Semantic Changes / Changes to Chapel Language
 * for records, compiler-generated `=`, `==`, `!=` now require matching types
   (see 'Record Assignment' and 'Default Comparison Operators' in the spec)
 * `[]`-loops now permit serial execution if parallelism isn't an option
-  (see 'The Forall Statement' in the 'Data Parallelism' chapter of the spec))
+  (see 'The Forall Statement' in the 'Data Parallelism' chapter of the spec)
 * made default string accesses always return a string
   (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.this)
 * default initializers for generic types require formal names to match fields
@@ -85,10 +86,10 @@ New Features
   (see https://chapel-lang.org/docs/1.19/technotes/initequals.html)
 * added support for ranges of codepoints and slicing of strings using them
   (see https://chapel-lang.org/docs/1.19/builtins/String.html)
-* added string.codePoint[s]() to access and iterate over strings by codepoint
+* added `string.codePoint[s]()` to access and iterate over strings by codepoint
   (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codePoint
    and https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codePoints)
-* added string.byte[s]() to access and iterate over strings by byte
+* added `string.byte[s]()` to access and iterate over strings by byte
   (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.byte
    and https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.bytes)
 * added automatic fences for unordered operations at task termination
@@ -125,6 +126,8 @@ Deprecated and Removed Features
 * deprecated support for `string.ulength()` in favor of `string.numCodePoints()`
 * deprecated the `List` module, renaming it `LinkedList`
   (see https://chapel-lang.org/docs/1.19/modules/standard/LinkedLists.html)
+* deprecated the `BufferedAtomics` module, in favor of `UnorderedAtomics`
+  (see https://chapel-lang.org/docs/1.19/modules/packages/UnorderedAtomics.html)
 * removed previously deprecated behavior of `:` in where clauses
 * removed previously deprecated `matPlus()`, `matMinus()` from `LinearAlgebra`
 * removed previously deprecated `isBLAS_MKL` flag from `BLAS` module
@@ -241,7 +244,7 @@ Documentation
 * added documentation for `CHPL_LIB_PIC`
   (see https://chapel-lang.org/docs/1.19/technotes/libraries.html#static-and-dynamic-libraries)
 * documented that Chapel is now primarily tested using UTF-8
-  (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html#character-set))
+  (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html#character-set)
 * added documentation of the `:throw:/:throws:` tags in `chpldoc`
   (see https://chapel-lang.org/docs/1.19/tools/chpldoc/chpldoc.html#documenting-functions-that-throw)
 * documented some throwing functions in the standard library documentation
@@ -296,7 +299,7 @@ Compiler Flags
 Error Messages / Semantic Checks
 --------------------------------
 * removed warnings for [op]= overloads whose LHS expressions weren't `ref`
-  (e.g., `proc +=(lhs: C, rhs: C) { ... }` no longer results in a warning
+  (e.g., `proc +=(lhs: C, rhs: C) { ... }` no longer results in a warning)
 * added an error for new-expressions without argument lists
 * improved error messages for initializers
 * added an error for user-defined constructors
@@ -351,7 +354,7 @@ Bug Fixes
 * fixed some bugs/inconsistencies in methods and functions on ranges
 * fixed support for `cstdlib` atomics for clang and llvm compilers
 * fixed some issues with `--library*` compilation using the LLVM back-end
-  (see https://chapel-lang.org/docs/1.19/technotes/libraries.html#llvm))
+  (see https://chapel-lang.org/docs/1.19/technotes/libraries.html#llvm)
 * fixed `setchplenv` scripts for `pyenv` users
 * fixed a bug in which `PATH` was not quoted in `chpldoc` & `chplvenv` builds
 * fixed a problem where `setchplenv` added `' '` to MANPATH
@@ -371,7 +374,7 @@ Third-Party Software Changes
 * upgraded hwloc to version 1.11.11
 * upgraded qthreads to version 1.14
 * upgraded re2 to commit 0a6326b
-* updated the bundled version of LLVM to 7.0.1 and began storing it unpacked
+* upgraded LLVM to version 7.0.1 and began storing it in an unpacked manner
   (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html#chpl-llvm
    and https://www.chapel-lang.org/docs/1.19/technotes/llvm.html)
 
@@ -439,7 +442,7 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
-* converted `CompilerDebugging.txt` to `CompilerDebugging.rst` format
+* converted several `doc/rst/developer/bestPractices` files to ReStructuredText
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
@@ -454,7 +457,7 @@ Developer-oriented changes: Runtime improvements
 Developer-oriented changes: Testing System
 ------------------------------------------
 * fixed a problem with integer division in `sub_test`
-* removed sub_test transient MPP error, which interfered with prediff filter
+* removed `sub_test` transient MPP error, which interfered with prediff filter
 
 
 version 1.18.0
