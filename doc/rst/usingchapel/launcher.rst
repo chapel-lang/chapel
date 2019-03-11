@@ -51,6 +51,7 @@ amudprun             GASNet launcher for programs running over UDP
 aprun                Cray application launcher using aprun                
 gasnetrun_ibv        GASNet launcher for programs running over Infiniband 
 gasnetrun_mpi        GASNet launcher for programs using the MPI conduit   
+mpirun4ofi           provisional launcher for ``CHPL_COMM=ofi`` on non-Cray X* systems
 pbs-aprun            Cray application launcher using PBS (qsub) + aprun   
 pbs-gasnetrun_ibv    GASNet launcher using PBS (qsub) over Infiniband     
 slurm-gasnetrun_ibv  GASNet launcher using SLURM over Infiniband          
@@ -60,7 +61,11 @@ none                 do not use a launcher
 ===================  ====================================================
 
 A specific launcher can be explicitly requested by setting the
-``CHPL_LAUNCHER`` environment variable. If left unset, a default is picked as
+``CHPL_LAUNCHER`` environment variable.
+For the specific case of the ``mpirun4ofi`` launcher,
+please see :ref:`readme-libfabric`.
+
+``CHPL_LAUNCHER`` is left unset, a default is picked as
 follows:
 
 
@@ -117,7 +122,8 @@ To use native Slurm, set:
 On Cray systems, this will happen automatically if srun is found in your
 path, but not when both srun and aprun are found in your path. Native
 Slurm is the best option where it works, but at the time of this writing,
-there are problems with it when combined with UDP or InfiniBand conduits.
+there are problems with it when combined with ``CHPL_COMM=gasnet`` and the
+UDP or InfiniBand conduits.
 So, for these configurations please see:
 
   * :ref:`readme-infiniband` for information about using Slurm with
