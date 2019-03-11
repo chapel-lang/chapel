@@ -1510,7 +1510,7 @@ int main(int argc, char** argv)
     if( 0 == strcmp(codeset, "UTF-8") ) {
 #ifndef __CYGWIN__
       // Cygwin's native functions perform a different encoding for
-      // code points outside the Basic Multilingual Plane (16 bits).
+      // codepoints outside the Basic Multilingual Plane (16 bits).
       qio_glocale_utf8 = -1;
       test_utf8();
 #endif

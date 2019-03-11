@@ -2021,13 +2021,13 @@ proc ref channel.deinit() {
 
 /*
 
-Represents a Unicode code point. I/O routines (such as :proc:`channel.read`
+Represents a Unicode codepoint. I/O routines (such as :proc:`channel.read`
 and :proc:`channel.write`) can use arguments of this type in order to read or
-write a single Unicode code point.
+write a single Unicode codepoint.
 
  */
 record ioChar {
-  /* The code point value */
+  /* The codepoint value */
   var ch:int(32);
   pragma "no doc"
   proc writeThis(f) {
@@ -4990,7 +4990,7 @@ String and Bytes Conversions
    if needed - the periods, so the shortest truncated
    string is ``""...``  Generally, you won't be able to read
    these back in.
- * when reading - read exactly 17 Unicode code points
+ * when reading - read exactly 17 Unicode codepoints
 ``%|17s``
  * when writing - emit string but cause runtime error if length
    does not match
@@ -5228,7 +5228,7 @@ Going through each section for text conversions:
    precision indicates the maximum number of columns to print - and the result
    will be truncated if it does not fit. In readf for these textual string
    conversions, the precision indicates the maximum number of characters
-   (e.g. Unicode code points) to input.
+   (e.g. Unicode codepoints) to input.
 
    The precision is silently ignored for integral conversions
    (``%i``, ``%u``, etc) and for ``%//`` conversions.
