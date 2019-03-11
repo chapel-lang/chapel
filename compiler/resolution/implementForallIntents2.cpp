@@ -45,7 +45,7 @@ static void checkZipperedParallelIterators(ForLoop* loop, Type* iterType) {
     if (is_arithmetic_type(field->type)) continue; // skip 'size'
     FnSymbol* iter = getTheIteratorFn(field->type);
     if (isParallelIterator(iter))
-      USR_FATAL_CONT(loop, "A zipered for-loop over parallel iterator(s)"
+      USR_FATAL_CONT(loop, "A zippered for-loop over parallel iterator(s)"
                            " is currently not implemented");
   }
 }

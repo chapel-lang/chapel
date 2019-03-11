@@ -990,7 +990,7 @@ proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
   if Dom.rank != 1 then
     compilerError("shellSort() requires 1-D array");
   if Dom.stridable then
-    compilerError("shellSort() requires an array over a non-strideable domain");
+    compilerError("shellSort() requires an array over a non-stridable domain");
 
   // Based on Sedgewick's Shell Sort -- see
   // Analysis of Shellsort and Related Algorithms 1996
