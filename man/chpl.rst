@@ -658,9 +658,15 @@ OPTIONS
     'none' or 're2' if you've installed the re2 package in the third-party
     *directory*).
 
-**--target-cpu <architecture>**
+**--target-arch <architecture>**
 
-    Specify the architecture that the compiled executable will be
+    Specify the machine type or general architecture to use.
+    This flag corresponds with and overrides the $CHPL\_TARGET\_ARCH
+    environment variable (defaults to the result of `uname -m`).
+
+**--target-cpu <cpu>**
+
+    Specify the cpu model that the compiled executable will be
     specialized to when **--specialize** is enabled. This flag corresponds
     with and overrides the $CHPL\_TARGET\_CPU environment variable
     (defaults to a best guess based on $CHPL\_COMM, $CHPL\_TARGET\_COMPILER,

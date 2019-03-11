@@ -153,7 +153,8 @@ Compiler Configuration Options:
       --make <make utility>           Make utility for generated code
       --mem <mem-impl>                Specify the memory manager
       --regexp <regexp>               Specify whether to use regexp support
-      --target-cpu <architecture>     Target architecture to optimize for
+      --target-arch <architecture>    Target architecture / machine type
+      --target-cpu <cpu>              Target cpu model for --specialize
       --target-compiler <compiler>    Compiler for generated code
       --target-platform <platform>    Platform for cross-compilation
       --tasks <task-impl>             Specify tasking implementation
