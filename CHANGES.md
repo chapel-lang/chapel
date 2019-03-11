@@ -57,9 +57,10 @@ Packaging / Configuration Changes
 Syntactic/Naming Changes
 ------------------------
 * made `true`, `false`, and numeric type names into reserved words in Chapel
-  (see TODO)
+  (see the 'Keywords' section in the 'Lexical Structure' chapter of the spec))
 * added support for underscores in integer and floating point literals
-  (e.g., `1_000_000` is now the same as `1000000`; see TODO)
+  (e.g., `1_000_000` is now the same as `1000000`
+   see the 'Literals' section in the 'Lexical Structure' chapter of the spec))
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -111,7 +112,7 @@ Feature Improvements
 * string casts to integral or floating point types may now contain underscores
   (e.g., `"1_000_000":int` is now supported)
 * string casts to integral types can now be in base 2, 8, or 16
-  (e.g., `0xabcd`:int` is now supported)
+  (e.g., `"0xabcd":int` is now supported)
 * added support for forall loops over zippered loop expressions
 * added support for forall loops over tuple expansion expressions
 * forall- and promoted expressions over ranges can now execute in parallel
@@ -192,13 +193,14 @@ Interoperability Improvements
   (see https://chapel-lang.org/docs/1.19/technotes/extern.html)
 * added the ability to rename external variables and fields
   (e.g., `extern "x" var c_x: c_int;` lets `x` in C be called `c_x` in Chapel)
-* Python interoperability improvements:
-  (see TODO)
-  - added support for passing complex Chapel array types opaquely to/from Python
-  - added support for literal default arguments in routines exported to Python
-  - added support for c_ptr arguments using NumPy arrays or ctypes pointers
+* added support for passing Chapel-unique array types opaquely to/from Python/C
+  (see https://chapel-lang.org/docs/1.19/technotes/libraries.html#arrays)
+* added support for literal default arguments in routines exported to Python
+  (see https://chapel-lang.org/docs/1.19/technotes/libraries.html#argument-default-values)
+* added `c_ptr` Python interop arguments using NumPy arrays or ctypes pointers
+  (see https://chapel-lang.org/docs/1.19/technotes/libraries.html#c-ptr-arguments)
 * added initial support for Fortran interoperability including 1D array passing
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.19/technotes/fortranInterop.html)
 * enabled casts between `c_string` and `c_ptr(int(8))`/`c_ptr(uint(8))`
 * improved extern-block support for structs with fixed-size arrays
 
@@ -353,7 +355,7 @@ Bug Fixes
 * fixed some bugs/inconsistencies in methods and functions on ranges
 * fixed support for `cstdlib` atomics for clang and llvm compilers
 * fixed some issues with `--library*` compilation using the LLVM back-end
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.19/technotes/libraries.html#llvm))
 * fixed `setchplenv` scripts for `pyenv` users
 * fixed a bug in which `PATH` was not quoted in `chpldoc` & `chplvenv` builds
 * fixed a problem where `setchplenv` added `' '` to MANPATH
