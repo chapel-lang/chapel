@@ -37,14 +37,14 @@ Highlights (see subsequent sections for further details)
 * additional highlights:
   - dramatically improved the level of support for the LLVM back-end
   - added a new Open Fabrics Interfaces libfabric-based `ofi` runtime option
-  - made `cstdlib` the default when using gcc, clang, or llvm as the back-end
+  - made `cstdlib` atomics the default for the gcc, clang, and llvm back-ends
   - introduced variants of RA that use unordered atomics and oversubscription
   - added new primers for records, tuples, and special object methods
 
 Packaging / Configuration Changes
 ---------------------------------
 * `CHPL_TARGET_ARCH` now refers to machine types and `CHPL_TARGET_CPU` to cpus
-  (e.g., `export CHPL_TARGET_ARCH=x86_64`, `CHPL_TARGET_CPU=`sandybridge`
+  (e.g., `export CHPL_TARGET_ARCH=x86_64`, `CHPL_TARGET_CPU=sandybridge`
    see https://chapel-lang.org/docs/1.19/usingchapel/chplenv.html#chpl-target-arch
    and https://chapel-lang.org/docs/1.19/usingchapel/chplenv.html#chpl-target-cpu)
 * made `cstdlib` atomics the default for gcc, clang and llvm compilers
@@ -235,6 +235,8 @@ Documentation
    and https://chapel-lang.org/docs/1.19/primers/tuples.html)
 * added a technical note on `nil`-checking
   (see https://chapel-lang.org/docs/1.19/technotes/nilChecking.html)
+* added a technical note on lifetime checking
+  (see https://chapel-lang.org/docs/1.19/technotes/lifetimeChecking.html)
 * removed `examples/programs` from the release due to low perceived value
 * added documentation for `CHPL_LIB_PIC`
   (see https://chapel-lang.org/docs/1.19/technotes/libraries.html#static-and-dynamic-libraries)
