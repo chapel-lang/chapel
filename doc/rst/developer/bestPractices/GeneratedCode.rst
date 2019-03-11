@@ -1,4 +1,4 @@
-	=================================
+=================================
 All About Compiler-Generated Code
 =================================
 
@@ -7,13 +7,18 @@ Where is it? How to compile it?
 
 By default: in a temporary directory, deleted when the compiler exits (only the executable remains).
 
-:``--savec DIRECTORY``: makes it go to DIRECTORY and stay there.
+``--savec DIRECTORY``:
+
+  makes it go to DIRECTORY and stay there.
+
 
 To recompile: 
-   ``make -f DIRECTORY/Makefile``
+    
+  ``make -f DIRECTORY/Makefile``
 
+``--print-commands``: 
 
-:``--print-commands``: shows commands issued by the compiler
+  shows commands issued by the compiler
 
 
 Why are my identifiers renamed in the generated code?
@@ -22,7 +27,7 @@ Why are my identifiers renamed in the generated code?
 * Note that all user identifiers are munged by default in Chapel's
   generated code to prevent inadvertent conflicts with identifiers
   from other C libraries and headers against which Chapel is linked
-  (see the `chpl` man page for ``--[no-]munge-user-idents`` for more
+  (see the ``chpl`` man page for ``--[no-]munge-user-idents`` for more
   information).  This can have the downside of making the generated
   code not correspond with the Chapel source in a way that can make
   reading the code, as well as debugging and profiling it, slightly
@@ -42,8 +47,7 @@ How to benchmark/time it?
 -------------------------
 
 * in Chapel: you want to time only the important code,
-  excluding the startup time. See the ``language spec ->
-  Standard Modules -> Optional Modules -> Time``. 
+  excluding the startup time. See the `Time Module`_. 
 
  ::
 
@@ -58,6 +62,7 @@ How to benchmark/time it?
 
   writeln("time taken: " + mytimer.elapsed() + " seconds");
 
+.. _Time MOdule: https://chapel-lang.org/docs/modules/standard/Time.html
 
 * build your runtime optimized:
 
@@ -213,45 +218,45 @@ You might find it more convenient to debug and profile (``gprof``/``gcov``)
   compilation to different runtime/lib directories.)
 
 
-* Option B (unsupported, talk to Vass if needed) is to replace `DIR/Makefile`
+* Option B is to replace `DIR/Makefile`
   with the following (change ``a.out`` to your preferred executable name):
 
 .. code-block :: bash
 
 
-	ifneq ($(DB),)
-	EXTR_FLAGS += -g
-	EXTR_sfx += .db
-	endif
+  ifneq ($(DB),)
+  EXTR_FLAGS += -g
+  EXTR_sfx += .db
+  endif
 
-	ifneq ($(GP),)
-	EXTR_FLAGS += -pg
-	EXTR_sfx += .gp
-	endif
+  ifneq ($(GP),)
+  EXTR_FLAGS += -pg
+  EXTR_sfx += .gp
+  endif
 
-	ifneq ($(GC),)
-	EXTR_FLAGS += -fprofile-arcs -ftest-coverage
-	EXTR_sfx += .gc
-	endif
+  ifneq ($(GC),)
+  EXTR_FLAGS += -fprofile-arcs -ftest-coverage
+  EXTR_sfx += .gc
+  endif
 
-	ifneq ($(DB),)
-	# don't want OPT_CFLAGS
-	COMP_GEN_CFLAGS = $(EXTR_FLAGS) $(WARN_GEN_CFLAGS)               $(NO_IEEE_FLOAT_GEN_CFLAGS)
-	else
-	COMP_GEN_CFLAGS = $(EXTR_FLAGS) $(WARN_GEN_CFLAGS) $(OPT_CFLAGS) $(NO_IEEE_FLOAT_GEN_CFLAGS)
-	endif
+  ifneq ($(DB),)
+  # don't want OPT_CFLAGS
+  COMP_GEN_CFLAGS = $(EXTR_FLAGS) $(WARN_GEN_CFLAGS)               $(NO_IEEE_FLOAT_GEN_CFLAGS)
+  else
+  COMP_GEN_CFLAGS = $(EXTR_FLAGS) $(WARN_GEN_CFLAGS) $(OPT_CFLAGS) $(NO_IEEE_FLOAT_GEN_CFLAGS)
+  endif
 
-	COMP_GEN_LFLAGS = $(EXTR_FLAGS) 
-	BINNAME = a.out$(EXTR_sfx)
-	TMPDIRNAME := $(dir $(lastword $(MAKEFILE_LIST)))
-	TMPBINNAME = $(TMPDIRNAME)a.out.tmp
-	CHAPEL_ROOT = $(CHPL_HOME)
-	TAGS_COMMAND = -@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && test -f $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) && cd $(TMPDIRNAME) && cp $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) . && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h
+  COMP_GEN_LFLAGS = $(EXTR_FLAGS) 
+  BINNAME = a.out$(EXTR_sfx)
+  TMPDIRNAME := $(dir $(lastword $(MAKEFILE_LIST)))
+  TMPBINNAME = $(TMPDIRNAME)a.out.tmp
+  CHAPEL_ROOT = $(CHPL_HOME)
+  TAGS_COMMAND = -@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && test -f $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) && cd $(TMPDIRNAME) && cp $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) . && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h
 
-	CHPLSRC = $(TMPDIRNAME)_main.c 
-	LIBS =
+  CHPLSRC = $(TMPDIRNAME)_main.c 
+  LIBS =
 
-	include $(CHAPEL_ROOT)/runtime/etc/Makefile.include
+  include $(CHAPEL_ROOT)/runtime/etc/Makefile.include
 
 
 Do all compilations in DIR (e.g. the directory with the generated code).
@@ -288,12 +293,6 @@ but you get good control over what's going on.
 
 Be sure NOT to re-run the Chapel compiler.
 
-
-Tracing memory use
-------------------
-
-See:
-     ``$CHPL_HOME/doc/rst/usingchapel/executing.rst``
 
 
 Miscellanea
