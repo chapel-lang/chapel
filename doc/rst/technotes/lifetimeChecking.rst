@@ -59,14 +59,18 @@ Lifetime
 ++++++++
 
 The lifetime of a variable indicates when that variable can be safely
-used. Variables that cannot refer to another value, such as numeric
-variables, have a lifetime equal to their lexical scope. Variables that
-can refer to other variables include ``borrowed`` class instances and
-``ref`` variables. These variables get their lifetime from the lifetime
-of the variable that they refer to.
+used.
 
-Note that ``owned`` and ``shared`` variables have lifetime equal to their
-scope.
+ * Variables that cannot refer to another value, such as numeric
+   variables, have a lifetime equal to their lexical scope.
+ * Variables that can refer to other variables include ``borrowed`` class
+   instances and ``ref`` variables. These variables get their lifetime
+   from the lifetime of the variable that they refer to.
+ * ``owned`` and ``shared`` variables have lifetime equal to their scope.
+
+Note that ``owned`` and ``shared`` variables can be returned or assigned
+without impacting their lifetime. The lifetime checker just checks that a
+``borrow`` from such a variable does not outlive the variable itself.
 
 .. code-block:: chapel
 
@@ -107,6 +111,7 @@ Example Errors
 ==============
 
 The lifetime checker is designed to catch errors such as:
+
  * returning a reference to or borrow from a function-local variable
  * assigning a value with a shorter lifetime to something with a larger scope
 
@@ -231,9 +236,9 @@ Lifetime Annotations
 ====================
 
 Certain functions need to override the default lifetime inference rules.
-This can be accomplished by placing a lifetime clause after the return
-type. Lifetime clauses share some similarities with where clauses. For
-example:
+This can be accomplished by placing a ``lifetime`` clause after the
+return type. These ``lifetime`` clauses share some similarities with
+``where`` clauses. For example:
 
 .. code-block:: chapel
 
@@ -242,16 +247,20 @@ example:
   var globalBorrow = globalOwned.borrow();
 
   // Default lifetime inference assumes that the
-  // returned lifetime == arg, but that's not appropriate here.
+  // returned lifetime is the lifetime of arg,
+  // but that's not appropriate here.
+  //
   // The lifetime annotation indicates that the returned value
   // has the lifetime of globalBorrow.
-  proc returnsGlobalBorrow(arg: borrowed C) lifetime return globalBorrow {
+  proc returnsGlobalBorrow(arg: borrowed C)
+    lifetime return globalBorrow
+  {
     return globalBorrow;
   }
 
-Other functions need to assert a relationship between the lifetimes of their
-arguments. This pattern comes up with functions that append some data to a data
-structure.
+Other functions need to assert a relationship between the lifetimes of
+their arguments. This pattern comes up with functions that append some
+data to a data structure.
 
 .. code-block:: chapel
 
@@ -262,17 +271,26 @@ structure.
     var element: elementType;
   }
 
-  // Without lifetime annotation, this function creates an error,
-  // because `this` is assumed to have larger lifetime than `arg`.
-  proc Collection.addElement(arg: elementType) lifetime this < arg {
+  // Without lifetime annotation, the compiler will raise an error,
+  // because `this` is assumed to have larger lifetime than `arg`,
+  // and so the assignment will set something with a longer lifetime
+  // to something with a shorter lifetime.
+  //
+  // The lifetime clause `lifetime this < arg` avoids that error
+  // by informing the compiler that `this` (and by extension, `this.element`)
+  // need to have lifetime no longer than `arg`.
+  proc Collection.addElement(arg: elementType)
+    lifetime this < arg
+  {
     this.element = arg;
   }
 
-Note that the lifetime clause needs to be written in terms of formal arguments,
-including ``this`` for methods, and possible outer variables. In particular, in
-the above, the constraint is between ``this`` and ``arg`` rather than
-``this.element`` and ``arg``. ``this.element`` will have its lifetime inferred
-to be the lifetime of ``this``, so these are equivalent.
+Note that the lifetime clause needs to be written in terms of formal
+arguments, including ``this`` for methods, and possible outer variables.
+In particular, in the above, the constraint is between ``this`` and
+``arg`` rather than ``this.element`` and ``arg``. ``this.element`` will
+have its lifetime inferred to be the lifetime of ``this``, so these are
+equivalent.
 
 In some cases, it is more natural to write the lifetime annotation in
 terms of what assignments the function may make. For example:
@@ -280,7 +298,7 @@ terms of what assignments the function may make. For example:
 .. code-block:: chapel
 
   proc myswap(ref lhs: borrowed MyClass, ref rhs: borrowed MyClass)
-  lifetime lhs=rhs, rhs=lhs
+    lifetime lhs=rhs, rhs=lhs
   {
     var tmp = lhs;
     lhs = rhs;
