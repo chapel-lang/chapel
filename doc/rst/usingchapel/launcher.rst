@@ -61,12 +61,10 @@ none                 do not use a launcher
 ===================  ====================================================
 
 A specific launcher can be explicitly requested by setting the
-``CHPL_LAUNCHER`` environment variable.
-For the specific case of the ``mpirun4ofi`` launcher,
-please see :ref:`readme-libfabric`.
+``CHPL_LAUNCHER`` environment variable. For the specific case of the
+``mpirun4ofi`` launcher, please see :ref:`readme-libfabric`.
 
-``CHPL_LAUNCHER`` is left unset, a default is picked as
-follows:
+If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
 
 
 * if ``CHPL_PLATFORM`` is cray-xc, cray-xe, or cray-xk:
@@ -123,8 +121,7 @@ On Cray systems, this will happen automatically if srun is found in your
 path, but not when both srun and aprun are found in your path. Native
 Slurm is the best option where it works, but at the time of this writing,
 there are problems with it when combined with ``CHPL_COMM=gasnet`` and the
-UDP or InfiniBand conduits.
-So, for these configurations please see:
+UDP or InfiniBand conduits. So, for these configurations please see:
 
   * :ref:`readme-infiniband` for information about using Slurm with
     InfiniBand.
