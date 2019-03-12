@@ -443,10 +443,6 @@ Developer-oriented changes: Compiler improvements/changes
 * `inferConstRefs` now runs on both single-locale and multi-locale compilation
 * removed `reprivatizeIterators`
 
-Developer-oriented changes: Documentation improvements
-------------------------------------------------------
-* converted several `doc/rst/developer/bestPractices` files to ReStructuredText
-
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * restructured array memory allocation interfaces
