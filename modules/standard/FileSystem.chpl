@@ -263,11 +263,10 @@ proc chown(out error: syserr, name: string, uid: int, gid: int) {
 // When basename and joinPath are supported, enable dest to be a directory.
 
 /* Copies the contents and permissions of the file indicated by `src` into
-   the file or directory `dest`.
-   If `metadata` is set to `true`, will also copy the
-   metadata (uid, gid, time of last access and time of modification) of the
-   file to be copied. A partially copied file or directory may be present
-   in `dest` if there is an error in copying.
+   the file or directory `dest`. If `metadata` is set to `true`, will also
+   copy the metadata (uid, gid, time of last access and time of modification)
+   of the file to be copied. A partially copied file or directory may be
+   present in `dest` if there is an error in copying.
 
    .. note::
 

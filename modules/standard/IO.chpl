@@ -249,11 +249,11 @@ if there was an error. See:
  * :proc:`channel.write`
  * :proc:`channel.writeln`
  * :proc:`channel.writebits`
- * :proc:`channel.writef` (see also :ref:`about-io-formatted-io`)
+ * :proc:`FormattedIO.channel.writef` (see also :ref:`about-io-formatted-io`)
  * :proc:`channel.read`
  * :proc:`channel.readln`
  * :proc:`channel.readbits`
- * :proc:`channel.readf` (see also :ref:`about-io-formatted-io`)
+ * :proc:`FormattedIO.channel.readf` (see also :ref:`about-io-formatted-io`)
 
 In addition, there are several convenient synonyms for :proc:`channel.write` and
 :proc:`channel.read`:
@@ -325,8 +325,6 @@ Some of these subclasses commonly used within the I/O implementation include:
                                           part of the requested data
  * :class:`SysError.BadFormatError` - data read did not adhere to the
                                       requested format
- * :class:`SysError.FileNotFoundError` - the specified path does not correspond
-                                         to an existing file or directory
 
 Some of the legacy error codes used include:
 
@@ -613,8 +611,8 @@ proc stringStyleWithVariableLength() {
 
 /*
   Return the appropriate :record:`iostyle` ``str_style`` value
-  to indicate a string format where string data is preceded by a `lengthBytes`
-  of length. Only lengths of 1, 2, 4, or 8 are supported.
+  to indicate a string format where string data is preceded by a
+  `lengthBytes` of length. Only lengths of 1, 2, 4, or 8 are supported.
   When `lengthBytes` is 0, the returned value indicates variable-byte length.
 
   :throws SystemError: Thrown for an unsupported value of `lengthBytes`.
@@ -2183,6 +2181,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
 
 /*
    Acquire a channel's lock.
+
    :throws SystemError: Thrown if the lock could not be acquired.
  */
 inline proc channel.lock() throws {
@@ -2693,8 +2692,9 @@ proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true
 
 /* Iterate over all of the lines in a file.
 
-     :returns: an object which yields strings read from the file
-     :throws SystemError: Thrown if an ItemReader could not be returned.
+   :returns: an object which yields strings read from the file
+
+   :throws SystemError: Thrown if an ItemReader could not be returned.
  */
 proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) throws {
@@ -3582,7 +3582,8 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
   return err_args;
 }
 
-pragma "no doc" // documented in the style= version
+/* returns true if read successfully, false if we encountered EOF */
+// better documented in the style= version
 inline proc channel.read(ref args ...?k):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
@@ -6376,7 +6377,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
    :ref:`about-io-formatted-io`.
 
    :arg fmt: the format string
-   :arg args: 0 or more the arguments to write
+   :arg args: 0 or more arguments to write
    :returns: true
 
    :throws IllegalArgumentError: if an unsupported argument type is encountered.
@@ -6546,7 +6547,7 @@ proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
   return false;
 }
 
-pragma "no doc" // documented in varargs version
+// documented in varargs version
 proc channel.writef(fmtStr:string): bool throws {
   if !writing then compilerError("writef on read-only channel");
   var err:syserr = ENOERR;
