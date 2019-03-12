@@ -495,7 +495,7 @@ module Buffers {
      :arg skip_bytes: how many bytes at the front of b to skip
      :arg len_bytes: how many bytes to append to the buffer
 
-     :throws SystemError: When allocation of memory fails.
+     :throws SystemError: When memory allocation fails.
      :throws SystemError: When `skip_bytes` or `len_bytes` exceeds the bounds
         of this buffer.
      
@@ -531,7 +531,7 @@ module Buffers {
                 buffer to copy. Defaults to all of the buffer.
 
      :throws SystemError: When attempting to append this buffer to itself.
-     :throws SystemError: When allocation of memory fails.
+     :throws SystemError: When memory allocation fails.
      :throws SystemError: When `part` exceeds the bounds of this buffer.
    */
   proc buffer.append(buf:buffer, part:buffer_range = buf.all()) throws {
@@ -565,7 +565,7 @@ module Buffers {
      :arg skip_bytes: how many bytes at the front of b to skip
      :arg len_bytes: how many bytes to append to the buffer
 
-     :throws SystemError: When allocation of memory fails.
+     :throws SystemError: When memory allocation fails.
      :throws SystemError: When `skip_bytes` or `len_bytes` exceeds the bounds
         of this buffer.
   */
