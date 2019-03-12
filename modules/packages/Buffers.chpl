@@ -372,6 +372,10 @@ module Buffers {
 
      :arg range: the region of the buffer to copy, for example buffer.all()
      :returns: a newly initialized bytes object on the current locale
+
+     :throws SystemError: When memory allocation fails.
+     :throws SystemError: When copying fails due to lack of buffer space.
+     :throws SystemError: When `range` exceeds the bounds of this buffer.
    */
   proc buffer.flatten(range:buffer_range) throws {
     var ret: bytes  = new bytes();
@@ -490,6 +494,11 @@ module Buffers {
      :arg b: the :record:`bytes` object to append
      :arg skip_bytes: how many bytes at the front of b to skip
      :arg len_bytes: how many bytes to append to the buffer
+
+     :throws SystemError: When allocation of memory fails.
+     :throws SystemError: When `skip_bytes` or `len_bytes` exceeds the bounds
+        of this buffer.
+     
   */
   proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) throws {
     var err:syserr = ENOERR;
@@ -520,6 +529,10 @@ module Buffers {
      :arg buf: the :record:`buffer` object to append
      :arg part: a :record:`buffer_range` indicating which section of the
                 buffer to copy. Defaults to all of the buffer.
+
+     :throws SystemError: When attempting to append this buffer to itself.
+     :throws SystemError: When allocation of memory fails.
+     :throws SystemError: When `part` exceeds the bounds of this buffer.
    */
   proc buffer.append(buf:buffer, part:buffer_range = buf.all()) throws {
     var err:syserr = ENOERR;
@@ -551,6 +564,10 @@ module Buffers {
      :arg b: the :record:`bytes` object to prepend
      :arg skip_bytes: how many bytes at the front of b to skip
      :arg len_bytes: how many bytes to append to the buffer
+
+     :throws SystemError: When allocation of memory fails.
+     :throws SystemError: When `skip_bytes` or `len_bytes` exceeds the bounds
+        of this buffer.
   */
   proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) throws {
     var err:syserr = ENOERR;
@@ -656,6 +673,11 @@ module Buffers {
      :arg value: a basic type or `string`
      :returns: a buffer iterator storing the position immediately after
                the read value.
+
+     :throws SystemError: When memory allocation fails.
+     :throws SystemError: When the read size would exceed the bounds of this
+        buffer.
+     :throws SystemError: when `it` exceeds the bounds of this buffer.
   */
   proc buffer.copyout(it:buffer_iterator, out value: ?T):buffer_iterator throws where isNumericType(T) {
     var ret:buffer_iterator;
@@ -730,6 +752,11 @@ module Buffers {
      :arg value: a basic type or `string`
      :returns: a buffer iterator storing the position immediately after
                the written value.
+    
+     :throws SystemError: When memory allocation fails.
+     :throws SystemError: When the write size would exceed the bounds of this
+          buffer.
+     :throws SystemError: When `it` exceeds the bounds of this buffer.
   */
   proc buffer.copyin(it:buffer_iterator, value: ?T): buffer_iterator
                      throws where isNumericType(T) {
