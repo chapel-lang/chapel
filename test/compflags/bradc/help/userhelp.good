@@ -154,8 +154,8 @@ Compiler Configuration Options:
       --mem <mem-impl>                Specify the memory manager
       --regexp <regexp>               Specify whether to use regexp support
       --target-arch <architecture>    Target architecture / machine type
-      --target-cpu <cpu>              Target cpu model for --specialize
       --target-compiler <compiler>    Compiler for generated code
+      --target-cpu <cpu>              Target cpu model for specialization
       --target-platform <platform>    Platform for cross-compilation
       --tasks <task-impl>             Specify tasking implementation
       --timers <timer-impl>           Specify timer implementation
