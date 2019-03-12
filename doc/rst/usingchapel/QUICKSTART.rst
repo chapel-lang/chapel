@@ -16,7 +16,7 @@ enable more features, such as distributed memory execution.
 0) See :ref:`prereqs.rst <readme-prereqs>` for more information about system
    tools and packages you may need to have installed to build and run Chapel.
 
-1) If you don't already have Chapel 1.18, see
+1) If you don't already have Chapel 1.19, see
    https://chapel-lang.org/download.html .
 
 2) If you are using a source release, build Chapel in a *quickstart*
