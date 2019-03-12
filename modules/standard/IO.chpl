@@ -315,14 +315,18 @@ Error Handling
 Most I/O routines throw a :class:`SysError.SystemError`, and can be handled
 appropriately with ``try`` and ``catch``. For legacy reasons most I/O routines
 can also can accept an optional `error=` argument.
+In this documentation, `SystemError` may include both the
+:class:`SysError.SystemError` class proper and its subclasses.
 
-Some of these errors commonly used within the I/O implementation include:
+Some of these subclasses commonly used within the I/O implementation include:
 
- * :class:`SystemError.EOFError` - the end of file was reached
- * :class:`SystemError.UnexpectedEOFError` - a read or write only returned
-   part of the requested data
- * :class:`SystemError.BadFormatError` - data read did not adhere to the
-   requested format
+ * :class:`SysError.EOFError` - the end of file was reached
+ * :class:`SysError.UnexpectedEOFError` - a read or write only returned
+                                          part of the requested data
+ * :class:`SysError.BadFormatError` - data read did not adhere to the
+                                      requested format
+ * :class:`SysError.FileNotFoundError` - the specified path does not correspond
+                                         to an existing file or directory
 
 Some of the legacy error codes used include:
 
@@ -350,7 +354,6 @@ When a file (or channel) is closed, data written to that file will be written
 to disk eventually by the operating system. If an application needs to be sure
 that the data is immediately written to persistent storage, it should use
 :proc:`file.fsync` prior to closing the file.
-
 
 Correspondence to C I/O
 -----------------------
@@ -609,10 +612,12 @@ proc stringStyleWithVariableLength() {
 }
 
 /*
-  This method returns the appropriate :record:`iostyle` ``str_style`` value
-  to indicate a string format where string data is preceded by a ``lengthBytes``
-  of length. Only lengths of 1, 2, 4, or 8 are supported; if this method
-  is called with any other length, it will throw an error.
+  Return the appropriate :record:`iostyle` ``str_style`` value
+  to indicate a string format where string data is preceded by a `lengthBytes`
+  of length. Only lengths of 1, 2, 4, or 8 are supported.
+  When `lengthBytes` is 0, the returned value indicates variable-byte length.
+
+  :throws SystemError: Thrown for an unsupported value of `lengthBytes`.
  */
 proc stringStyleWithLength(lengthBytes:int) throws {
   var x = iostringstyle.lenVb_data;
@@ -1296,7 +1301,10 @@ proc =(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
-/* Throw an error if a file is invalid */
+/* Throw an error if `this` is not a valid representation of an OS file.
+
+   :throws SystemError: Indicates that `this` does not represent an OS file.
+*/
 proc file.check() throws {
   if is_c_nil(_file_internal) then
     throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
@@ -1373,9 +1381,10 @@ proc file._style:iostyle throws {
    goes out of scope and all channels using that file are closed. Programs
    may also explicitly close a file using this method.
 
-   A SystemError will be thrown if the file could not be closed.
    It is an error to perform any I/O operations on a file that has been closed.
    It is an error to close a file when it has channels that have not been closed.
+
+   :throws SystemError: Thrown if the file could not be closed.
  */
 proc file.close() throws {
   try check();
@@ -1410,7 +1419,8 @@ Data written to the file by a channel will be committed
 only if the channel has been closed or flushed.
 
 This function will typically call the ``fsync`` system call.
-A SystemError will be thrown if the file could not be synced.
+
+:throws SystemError: Thrown if the file could not be synced.
  */
 proc file.fsync() throws {
   try check();
@@ -1447,7 +1457,7 @@ and that this function may not work on all operating systems.
 The function :proc:`Path.file.realPath` is an alternative way
 to get the path to a file.
 
-A SystemError will be thrown if the path could not be retrieved.
+:throws SystemError: Thrown if the path could not be retrieved.
  */
 proc file.path : string throws {
   try check();
@@ -1503,10 +1513,10 @@ proc file.getPath(out error:syserr) : string {
 
 Get the current length of an open file. Note that the length can always
 change if other channels, tasks or programs are writing to the file.
-A SystemError will be thrown if the length could not be retrieved.
 
 :returns: the current file length
 
+:throws SystemError: Thrown if the length could not be retrieved.
 */
 proc file.length():int(64) throws {
   var err:syserr = ENOERR;
@@ -1543,8 +1553,6 @@ Open a file on a filesystem or stored at a particular URL. Note that once the
 file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
 to create a channel to actually perform I/O operations
 
-A SystemError will be thrown if the file could not be opened.
-
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
 :arg iomode: specify whether to open the file for reading or writing and
@@ -1564,6 +1572,8 @@ A SystemError will be thrown if the file could not be opened.
           ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
           ``smtps://``, ``imap://``, or ``imaps://``
 :returns: an open file to the requested resource.
+
+:throws SystemError: Thrown if the file could not be opened.
 */
 proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle = defaultIOStyle(), url:string=""): file throws {
@@ -1676,7 +1686,6 @@ the file is open, you will need to use a :proc:`file.reader` or
 :proc:`file.writer` to create a channel to actually perform I/O operations
 
 The system file descriptor will be closed when the Chapel file is closed.
-A SystemError will be thrown if the file descriptor could not be retrieved.
 
 .. note::
 
@@ -1698,6 +1707,9 @@ A SystemError will be thrown if the file descriptor could not be retrieved.
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
 :returns: an open :record:`file` using the specified file descriptor.
+
+:throws SystemError: Thrown if the file descriptor could not be retrieved.
+
  */
 proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1738,7 +1750,6 @@ proc openfd(fd: fd_t, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle
 Create a Chapel file that works with an open C file (ie a ``FILE*``).  Note
 that once the file is open, you will need to use a :proc:`file.reader` or
 :proc:`file.writer` to create a channel to actually perform I/O operations
-A SystemError will be thrown if the C file could not be retrieved.
 
 .. note::
 
@@ -1755,6 +1766,8 @@ A SystemError will be thrown if the C file could not be retrieved.
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
 :returns: an open :record:`file` that uses the underlying FILE* argument.
+
+:throws SystemError: Thrown if the C file could not be retrieved.
  */
 proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1802,7 +1815,6 @@ deleted upon closing.
 
 Temporary files are always opened with :type:`iomode` ``iomode.cwr``;
 that is, a new file is created that supports both writing and reading.
-A SystemError will be thrown if the temporary file could not be opened.
 
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
@@ -1811,6 +1823,8 @@ A SystemError will be thrown if the temporary file could not be opened.
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
 :returns: an open temporary file.
+
+:throws SystemError: Thrown if the temporary file could not be opened.
  */
 proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1848,13 +1862,13 @@ perform I/O operations.
 
 The resulting file supports both reading and writing.
 
-A SystemError will be thrown if the memory buffered file could not be opened.
-
 :arg style: optional argument to specify I/O style associated with this file.
             The provided style will be the default for any channels created for
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
 :returns: an open memory file.
+
+:throws SystemError: Thrown if the memory buffered file could not be opened.
  */
 proc openmem(style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -2169,7 +2183,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
 
 /*
    Acquire a channel's lock.
-   Throws a SystemError if the lock could not be acquired.
+   :throws SystemError: Thrown if the lock could not be acquired.
  */
 inline proc channel.lock() throws {
   var err:syserr = ENOERR;
@@ -2241,7 +2255,7 @@ proc channel.offset():int(64) {
    other data if it is stored in the channel's buffer, for example with
    :proc:`channel._mark` and :proc:`channel._revert`.
 
-   Throws a SystemError if the channel offset was not moved.
+   :throws SystemError: Throws if the channel offset was not moved.
  */
 proc channel.advance(amount:int(64)) throws {
   var err:syserr = ENOERR;
@@ -2268,7 +2282,10 @@ proc channel.advance(amount:int(64), ref error:syserr) {
 
 /*
    Reads until ``byte`` is found and then leave the channel offset
-   just after it. If that byte is never found, throws an EOFError.
+   just after it.
+
+   :throws EOFError: if the requested `byte` could not be found.
+   :throws SystemError: if another error occurred.
  */
 proc channel.advancePastByte(byte:uint(8)) throws {
   var err:syserr = ENOERR;
@@ -2466,8 +2483,6 @@ Open a file at a particular path or URL and return a reading channel for it.
 This function is equivalent to calling :proc:`open` and then
 :proc:`file.reader` on the resulting file.
 
-Throws a SystemError if a reading channel could not be returned.
-
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
 :arg kind: :type:`iokind` compile-time argument to determine the
@@ -2494,6 +2509,8 @@ Throws a SystemError if a reading channel could not be returned.
           ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
           ``smtps://``, ``imap://``, or ``imaps://``
 :returns: an open reading channel to the requested resource.
+
+:throws SystemError: Thrown if a reading channel could not be returned.
  */
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
@@ -2538,8 +2555,6 @@ Open a file at a particular path or URL and return a writing channel for it.
 This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 :proc:`file.writer` on the resulting file.
 
-Throws a SystemError if a writing channel could not be returned.
-
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
 :arg kind: :type:`iokind` compile-time argument to determine the
@@ -2566,6 +2581,8 @@ Throws a SystemError if a writing channel could not be returned.
           ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
           ``smtps://``, ``imap://``, or ``imaps://``
 :returns: an open writing channel to the requested resource.
+
+:throws SystemError: Thrown if a writing channel could not be returned.
 */
 proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
@@ -2615,8 +2632,6 @@ proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, pa
    the channel will produce the error ``EEOF`` (and return `false` in many
    cases such as :proc:`channel.read`) to indicate that the end was reached.
 
-   Throws a SystemError if a file reader channel could not be returned.
-
    :arg kind: :type:`iokind` compile-time argument to determine the
               corresponding parameter of the :record:`channel` type. Defaults
               to ``iokind.dynamic``, meaning that the associated
@@ -2638,6 +2653,8 @@ proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, pa
    :arg style: provide a :record:`iostyle` to use with this channel. The
                default value will be the :record:`iostyle` associated with
                this file.
+
+   :throws SystemError: Thrown if a file reader channel could not be returned.
  */
 // It is the responsibility of the caller to release the returned channel
 // if the error code is nonzero.
@@ -2676,9 +2693,8 @@ proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true
 
 /* Iterate over all of the lines in a file.
 
-   Throws a SystemError if an ItemReader could not be returned.
-
-   :returns: an object which yields strings read from the file
+     :returns: an object which yields strings read from the file
+     :throws SystemError: Thrown if an ItemReader could not be returned.
  */
 proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) throws {
@@ -2737,8 +2753,6 @@ proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0,
    all channels to a file are closed, that file will have a size equal to the
    last position written to by any channel.
 
-   Throws a SystemError if a file writer channel could not be returned.
-
    :arg kind: :type:`iokind` compile-time argument to determine the
               corresponding parameter of the :record:`channel` type. Defaults
               to ``iokind.dynamic``, meaning that the associated
@@ -2760,6 +2774,8 @@ proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0,
    :arg style: provide a :record:`iostyle` to use with this channel. The
                default value will be the :record:`iostyle` associated with
                this file.
+
+   :throws SystemError: Thrown if a file writer channel could not be returned.
  */
 // It is the responsibility of the caller to retain and release the returned
 // channel.
@@ -3387,7 +3403,8 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
   /*
      Write a sequence of bytes.
-     Throws a SystemError if the byte sequence could not be written.
+
+     :throws SystemError: Thrown if the byte sequence could not be written.
    */
   proc channel.writeBytes(x, len:ssize_t):bool throws {
     var err:syserr = ENOERR;
@@ -3565,8 +3582,7 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
   return err_args;
 }
 
-/* returns true if read successfully, false if we encountered EOF */
-// better documented in the style= version
+pragma "no doc" // documented in the style= version
 inline proc channel.read(ref args ...?k):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
@@ -3619,8 +3635,6 @@ inline proc channel.read(ref args ...?k, out error:syserr): bool {
    Read values from a channel. The input will be consumed atomically - the
    channel lock will be held while reading all of the passed values.
 
-   Throws a SystemError if the channel could not be read.
-
    :arg args: a list of arguments to read. Basic types are handled
               internally, but for other types this function will call
               value.readThis() with a ``Reader`` argument as described
@@ -3628,7 +3642,9 @@ inline proc channel.read(ref args ...?k, out error:syserr): bool {
    :arg style: optional argument to provide an :type:`iostyle` for this read.
                If this argument is not provided, use the current style
                associated with this channel.
-   :returns: `true` if the read succeeded, and `false` on error or end of file.
+   :returns: `true` if the read succeeded, and `false` on end of file.
+
+   :throws SystemError: Thrown if the channel could not be read.
  */
 proc channel.read(ref args ...?k, style:iostyle):bool throws {
   if writing then compilerError("read on write-only channel");
@@ -3748,10 +3764,10 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   Read a line into a Chapel string. Reads until a ``\n`` is reached.
   The ``\n`` is included in the resulting string.
 
-  Throws a SystemError if a string could not be read from the channel.
-
   :arg arg: a string to receive the line
-  :returns: `true` if a line was read without error, `false` on error or EOF
+  :returns: `true` if a line was read without error, `false` upon EOF
+
+  :throws SystemError: Thrown if a string could not be read from the channel.
 */
 proc channel.readline(ref arg:string):bool throws {
   if writing then compilerError("read on write-only channel");
@@ -3798,14 +3814,14 @@ proc channel.readline(ref arg:string, out error:syserr):bool {
 
 /* read a given number of bytes from a channel
 
-   Throws a SystemError if the bytes could not be read from the channel.
-
    :arg str_out: The string to be read into
    :arg len: Read up to len bytes from the channel, up until EOF
              (or some kind of I/O error). If the default value of -1
              is provided, read until EOF starting from the channel's
              current offset.
-   :returns: `true` if we read something, `false` on EOF or error
+   :returns: `true` if we read something, `false` upon EOF
+
+   :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   var err:syserr = ENOERR;
@@ -3878,12 +3894,12 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
 /*
    Read bits with binary I/O
 
-   Throws a SystemError if the bits could not be read from the channel.
-
    :arg v: where to store the read bits. This value will have its *nbits*
            least-significant bits set.
    :arg nbits: how many bits to read
-   :returns: `true` if the bits were read without error, `false` on error or EOF
+   :returns: `true` if the bits were read without error, `false` upon EOF
+
+   :throws SystemError: Thrown if the bits could not be read from the channel.
  */
 inline proc channel.readbits(out v:integral, nbits:integral):bool throws {
   if castChecking {
@@ -3922,11 +3938,12 @@ inline proc channel.readbits(out v:integral, nbits:integral, out error:syserr):b
 /*
    Write bits with binary I/O
 
-   Throws a SystemError if the bits could not be written to the channel.
-
    :arg v: a value containing *nbits* bits to write the least-significant bits
    :arg nbits: how many bits to write
    :returns: `true` if the bits were written without error, `false` on error
+
+   :throws IllegalArgumentError: Thrown if writing more bits than fit into `v`.
+   :throws SystemError: Thrown if the bits could not be written to the channel.
  */
 proc channel.writebits(v:integral, nbits:integral):bool throws {
   if castChecking {
@@ -3997,8 +4014,6 @@ proc channel.readln(ref args ...?k,
    newline is reached. The input will be consumed atomically - the
    channel lock will be held while reading all of the passed values.
 
-   Throws a SystemError if a line could not be read from the channel.
-
    :arg args: a list of arguments to read. This routine can be called
               with zero or more such arguments. Basic types are handled
               internally, but for other types this function will call
@@ -4007,7 +4022,9 @@ proc channel.readln(ref args ...?k,
    :arg style: optional argument to provide an :type:`iostyle` for this read.
                If this argument is not provided, use the current style
                associated with this channel.
-   :returns: `true` if the read succeeded, and `false` on error or end of file.
+   :returns: `true` if the read succeeded, and `false` upon end of file.
+
+   :throws SystemError: Thrown if a line could not be read from the channel.
  */
 proc channel.readln(ref args ...?k,
                     style:iostyle):bool throws {
@@ -4029,8 +4046,6 @@ proc channel.readln(ref args ...?k,
 /*
    Read a value of passed type.
 
-   Throws a SystemError if the type could not be read from the channel.
-
    .. note::
 
      It is difficult to handle errors or to handle reaching the end of
@@ -4047,6 +4062,8 @@ proc channel.readln(ref args ...?k,
 
    :arg t: the type to read
    :returns: the value read
+
+   :throws SystemError: Thrown if the type could not be read from the channel.
  */
 proc channel.read(type t) throws {
   var tmp:t;
@@ -4056,9 +4073,6 @@ proc channel.read(type t) throws {
 
 /*
    Read a value of passed type followed by a newline.
-   Halts if an error is encountered.
-
-   Throws a SystemError if the type could not be read from the channel.
 
    .. note::
 
@@ -4069,6 +4083,8 @@ proc channel.read(type t) throws {
 
    :arg t: the type to read
    :returns: the value read
+
+   :throws SystemError: Thrown if the type could not be read from the channel.
  */
 proc channel.readln(type t) throws {
   var tmp:t;
@@ -4080,10 +4096,10 @@ proc channel.readln(type t) throws {
    Read values of passed types followed by a newline
    and return a tuple containing the read values.
 
-   Throws a SystemError if the types could not be read from the channel.
-
    :arg t: more than one type to read
    :returns: a tuple of the read values
+
+   :throws SystemError: Thrown if the types could not be read from the channel.
  */
 proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
@@ -4096,10 +4112,10 @@ proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
 /*
    Read values of passed types and return a tuple containing the read values.
 
-   Throws a SystemError if the types could not be read from the channel.
-
    :arg t: more than one type to read
    :returns: a tuple of the read values
+
+   :throws SystemError: Thrown if the types could not be read from the channel.
  */
 proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
@@ -4150,8 +4166,6 @@ inline proc channel.write(const args ...?k, out error:syserr):bool {
    the channel lock will be held while writing all of the passed
    values.
 
-   Throws a SystemError if the values could not be written to the channel.
-
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
               value.writeThis() with the channel as an argument.
@@ -4159,6 +4173,8 @@ inline proc channel.write(const args ...?k, out error:syserr):bool {
                If this argument is not provided, use the current style
                associated with this channel.
    :returns: `true` if the write succeeded
+
+   :throws SystemError: Thrown if the values could not be written to the channel.
  */
 proc channel.write(const args ...?k, style:iostyle):bool throws {
   if !writing then compilerError("write on read-only channel");
@@ -4235,8 +4251,6 @@ proc channel.writeln(const args ...?k, out error:syserr):bool {
    produced atomically - the channel lock will be held while writing all of the
    passed values.
 
-   Throws a SystemError if the values could not be written to the channel.
-
    :arg args: a variable number of arguments to write. This method can be
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
@@ -4245,6 +4259,8 @@ proc channel.writeln(const args ...?k, out error:syserr):bool {
                If this argument is not provided, use the current style
                associated with this channel.
    :returns: `true` if the write succeeded
+
+   :throws SystemError: Thrown if the values could not be written to the channel.
  */
 proc channel.writeln(const args ...?k, style:iostyle):bool throws {
   return try this.write((...args), new ioNewline(), style=style);
@@ -4265,7 +4281,8 @@ proc channel.writeln(const args ...?k, style:iostyle, out error:syserr):bool {
   accessing this file concurrently.
   Unlike :proc:`file.fsync`, this does not commit the written data
   to the file's device.
-  Throws a SystemError if the flush fails.
+
+  :throws SystemError: Thrown if the flush fails.
 */
 proc channel.flush() throws {
   var err:syserr = ENOERR;
@@ -4316,7 +4333,7 @@ proc channel.atEOF(): bool throws {
   Close a channel. Implicitly performs the :proc:`channel.flush` operation
   (see :ref:`about-io-channel-synchronization`).
 
-  Throws a SystemError if the channel is not successfully closed.
+  :throws SystemError: Thrown if the channel is not successfully closed.
 */
 proc channel.close() throws {
   var err:syserr = ENOERR;
@@ -4538,9 +4555,9 @@ proc read(type t ...?numTypes) throws {
 /* Delete a file. This function is likely to be replaced
    by :proc:`FileSystem.remove`.
 
-   Throws a SystemError if the file is not successfully deleted.
-
    :arg path: the path to the file to remove
+
+   :throws SystemError: Thrown if the file is not successfully deleted.
  */
 // TODO -- change to FileSystem.remove
 proc unlink(path:string) throws {
@@ -4597,13 +4614,13 @@ proc file.fstype():int throws {
 
    Returns (0,0) if no such value exists.
 
-   Throws a SystemError if the chunk is not attained.
-
    :arg start: the file offset (starting from 0) where the region begins
    :arg end: the file offset just after the region
    :returns: a tuple of (chunkStart, chunkEnd) so that the bytes
              in chunkStart..chunkEnd-1 are stored in a manner that makes
              reading that chunk at a time most efficient
+
+   :throws SystemError: Thrown if the chunk is not attained.
  */
 proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) throws {
   var err:syserr = ENOERR;
@@ -6358,10 +6375,12 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
    Write arguments according to a format string. See
    :ref:`about-io-formatted-io`.
 
-   Throws a SystemError if the arguments could not be written.
-
    :arg fmt: the format string
-   :arg args: the arguments to write
+   :arg args: 0 or more the arguments to write
+   :returns: true
+
+   :throws IllegalArgumentError: if an unsupported argument type is encountered.
+   :throws SystemError: if the arguments could not be written.
  */
 proc channel.writef(fmtStr: string, const args ...?k): bool throws {
   if !writing then compilerError("writef on read-only channel");
@@ -6527,7 +6546,7 @@ proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
   return false;
 }
 
-// documented in varargs version
+pragma "no doc" // documented in varargs version
 proc channel.writef(fmtStr:string): bool throws {
   if !writing then compilerError("writef on read-only channel");
   var err:syserr = ENOERR;
@@ -6594,13 +6613,12 @@ proc channel.writef(fmtStr:string, out error:syserr):bool {
    Read arguments according to a format string. See
    :ref:`about-io-formatted-io`.
 
-   Throws a SystemError if the arguments could not be read.
-
    :arg fmt: the format string
    :arg args: the arguments to read
    :returns: true if all arguments were read according to the format string,
-             false on EOF. If the format did not match the input, a
-             SystemError is thrown with EFORMAT.
+             false on EOF or if the format did not match the input.
+
+   :throws SystemError: Thrown if the arguments could not be read.
  */
 proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
   if writing then compilerError("readf on write-only channel");
@@ -6944,7 +6962,7 @@ proc writef(fmt:string):bool {
     return stdout.writef(fmt);
   }
 }
-/* Call ``stdout.readf``; see :proc:`channel.readf`. */
+/* Call ``stdin.readf``; see :proc:`channel.readf`. */
 proc readf(fmt:string, ref args ...?k):bool throws {
   return try stdin.readf(fmt, (...args));
 }
@@ -6963,14 +6981,14 @@ proc readf(fmt:string):bool throws {
    The field skipped includes a field name and value but not a following
    separator. For example, for a JSON format channel, given the input:
 
-   Throws a SystemError if the field could not be skipped.
-
    ::
 
       "fieldName":"fieldValue", "otherField":3
 
    this function will skip to (but leave unread) the comma after
    the first field value.
+
+   :throws SystemError: Thrown if the field could not be skipped.
  */
 proc channel.skipField() throws {
   var err:syserr = ENOERR;
@@ -7005,11 +7023,11 @@ proc channel.skipField(out error:syserr) {
   Return a new string consisting of values formatted according to a
   format string.  See :ref:`about-io-formatted-io`.
 
-  Throws a SystemError if the string could not be formatted.
-
   :arg this: the format string
   :arg args: the arguments to format
   :returns: the resulting string
+
+  :throws SystemError: Thrown if the string could not be formatted.
  */
 proc string.format(args ...?k): string throws {
   try {
@@ -7169,11 +7187,11 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != r
     position to just after the match. Will not do anything
     if error is set.
 
-    Throws a SystemError if a match could not be extracted.
-
     :arg m: a :record:`Regexp.reMatch` storing a location that matched
     :arg arg: an argument to retrieve the match into. If it is not a string,
               the string match will be cast to arg.type.
+
+    :throws SystemError: Thrown if a match could not be extracted.
  */
 proc channel.extractMatch(m:reMatch, ref arg) throws {
   var err:syserr = ENOERR;

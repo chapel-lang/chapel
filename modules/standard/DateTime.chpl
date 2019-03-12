@@ -201,7 +201,9 @@ module DateTime {
 
   /* Return the number of days in month `month` during the year `year`.
      The number for a month can change from year to year due to leap years.
-     Throws an IllegalArgumentError month is out of range. */
+
+     :throws IllegalArgumentError: Thrown if `month` is out of range.
+*/
   proc daysInMonth(year: int, month: int) throws {
     if month < 1 || month > 12 then
       throw new owned IllegalArgumentError("month must be between 1 and 12");
