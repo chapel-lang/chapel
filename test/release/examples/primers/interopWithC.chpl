@@ -197,7 +197,20 @@ export proc callUseMyType() {
 }
 
 //
-// TODO: structs, typedefs
+// A C struct can be used in Chapel by declaring it as an ``extern record``.
+//
+
+extern record rec {
+  var a: int;
+}
+
+extern proc giveRec(): rec; // returns an instance of the struct
+
+
+//
+// TODO: structs
+//
+// TODO: structs with omitted fields?
 //
 // TODO: demonstrate "external name" syntax, too
 //
