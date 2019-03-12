@@ -28,14 +28,14 @@ enable more features, such as distributed memory execution.
 
       .. code-block:: bash
 
-         tar xzf chapel-1.18.0.tar.gz
+         tar xzf chapel-1.19.0.tar.gz
 
    b. Make sure that your shell is in the directory containing
       QUICKSTART.rst, for example:
 
       .. code-block:: bash
 
-         cd chapel-1.18.0
+         cd chapel-1.19.0
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than bash,
