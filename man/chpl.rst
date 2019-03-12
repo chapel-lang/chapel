@@ -664,14 +664,6 @@ OPTIONS
     This flag corresponds with and overrides the $CHPL\_TARGET\_ARCH
     environment variable (defaults to the result of `uname -m`).
 
-**--target-cpu <cpu>**
-
-    Specify the cpu model that the compiled executable will be
-    specialized to when **--specialize** is enabled. This flag corresponds
-    with and overrides the $CHPL\_TARGET\_CPU environment variable
-    (defaults to a best guess based on $CHPL\_COMM, $CHPL\_TARGET\_COMPILER,
-    and $CHPL\_TARGET\_PLATFORM).
-
 **--target-compiler <compiler>**
 
     Specify the compiler suite that should be used to build the generated C
@@ -679,6 +671,14 @@ OPTIONS
     with and overrides the $CHPL\_TARGET\_COMPILER environment variable
     (defaults to a best guess based on $CHPL\_HOST\_PLATFORM,
     $CHPL\_TARGET\_PLATFORM, and $CHPL\_HOST\_COMPILER).
+
+**--target-cpu <cpu>**
+
+    Specify the cpu model that the compiled executable will be
+    specialized to when **--specialize** is enabled. This flag corresponds
+    with and overrides the $CHPL\_TARGET\_CPU environment variable
+    (defaults to a best guess based on $CHPL\_COMM, $CHPL\_TARGET\_COMPILER,
+    and $CHPL\_TARGET\_PLATFORM).
 
 **--target-platform <platform>**
 
