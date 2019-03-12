@@ -2,6 +2,7 @@
 Chapel Examples: Patterns
 =========================
 
-This directory has a variety of sample programs demonstrating some
+This directory is designed to store sample programs that demonstrate
 common patterns written in Chapel.
 
+recordio.chpl  : uses formatted I/O to read/write records from/to files

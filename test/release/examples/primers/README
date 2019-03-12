@@ -28,6 +28,7 @@ demonstrate Chapel feature areas in detail.
      procedures.chpl             : Procedure examples
      randomNumbers.chpl          : Usage of the standard module Random
      ranges.chpl                 : Range types and operations on ranges
+     records.chpl                : Declarations and uses of records
      reductions.chpl             : Reduction examples
      replicated.chpl             : Replicated distribution
      slices.chpl                 : Array slicing and reindexing examples
@@ -36,6 +37,7 @@ demonstrate Chapel feature areas in detail.
      syncsingle.chpl             : Sync and single variables
      taskParallel.chpl           : Task parallel language concepts
      timers.chpl                 : Time standard module
+     tuples.chpl                 : Demonstrates the use of tuples in Chapel
      varargs.chpl                : Variable argument procedures
      variables.chpl              : Variables, constants, and parameters
      voidVariables.chpl          : Using void for variable and field types
