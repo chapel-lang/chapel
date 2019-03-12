@@ -124,7 +124,9 @@ Deprecated and Removed Features
 * deprecated `string.isEmptyString()` in favor of `string.isEmpty()`
   (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.isEmpty)
 * deprecated support for `string.uchars()` in favor of `string.codepoints()`
-* deprecated support for `string.ulength()` in favor of `string.numCodePoints()`
+* deprecated support for `string.ulength()` in favor of `string.numCodepoints()`
+* deprecated support for the `codePointIndex` type in favor of `codepointIndex`
+* deprecated support for `codePointToString()` in favor of `codepointToString()`
 * deprecated the `List` module, renaming it `LinkedList`
   (see https://chapel-lang.org/docs/1.19/modules/standard/LinkedLists.html)
 * deprecated the `BufferedAtomics` module, in favor of `UnorderedAtomics`
@@ -380,6 +382,7 @@ Third-Party Software Changes
 * upgraded LLVM to version 7.0.1 and began storing it in an unpacked manner
   (see https://www.chapel-lang.org/docs/1.19/usingchapel/chplenv.html#chpl-llvm
    and https://www.chapel-lang.org/docs/1.19/technotes/llvm.html)
+* upgraded fltk to version 1.3.5
 
 Launchers
 ---------
