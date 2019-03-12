@@ -23,6 +23,7 @@ Highlights (see subsequent sections for further details)
   - added support for unordered copies and non-fetching atomics
   - added a `choice()` method to the `Random` module for weighted sampling
   - added `map()`, `filter()`, and `consume()` for iterators
+  - added most of the remaining routines to the `Path` module
   - added convenience routines for creating Block or Cyclic domains and arrays
   - added a parallel radix sort method to the `Sort` module
 * performance improvements:
@@ -86,9 +87,9 @@ New Features
   (see https://chapel-lang.org/docs/1.19/technotes/initequals.html)
 * added support for ranges of codepoints and slicing of strings using them
   (see https://chapel-lang.org/docs/1.19/builtins/String.html)
-* added `string.codePoint[s]()` to access and iterate over strings by codepoint
-  (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codePoint
-   and https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codePoints)
+* added `string.codepoint[s]()` to access and iterate over strings by codepoint
+  (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codepoint
+   and https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.codepoints)
 * added `string.byte[s]()` to access and iterate over strings by byte
   (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.byte
    and https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.bytes)
@@ -122,7 +123,7 @@ Deprecated and Removed Features
 * deprecated `domain.member()` in favor of `domain.contains()`
 * deprecated `string.isEmptyString()` in favor of `string.isEmpty()`
   (see https://chapel-lang.org/docs/1.19/builtins/String.html#String.string.isEmpty)
-* deprecated support for `string.uchars()` in favor of `string.codePoints()`
+* deprecated support for `string.uchars()` in favor of `string.codepoints()`
 * deprecated support for `string.ulength()` in favor of `string.numCodePoints()`
 * deprecated the `List` module, renaming it `LinkedList`
   (see https://chapel-lang.org/docs/1.19/modules/standard/LinkedLists.html)
@@ -136,6 +137,8 @@ Standard Modules / Library
 --------------------------
 * improved UTF-8 string support
   (see https://chapel-lang.org/docs/1.19/builtins/String.html#activating-unicode-support)
+* added `Path` routines `[file].absPath()`, `[file].relPath()`, and `normPath()`
+  (see https://chapel-lang.org/docs/1.19/modules/standard/Path.html)
 * added `choice()` method to `Random` module for weighted sampling
   (see https://chapel-lang.org/docs/1.19/modules/standard/Random.html#Random.RandomStreamInterface.choice)
 * added `getNext(resultType, min, max)` method to the PCG Random Stream
