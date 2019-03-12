@@ -55,7 +55,6 @@ master_doc = 'index'
 # built documents.
 #
 # The short X.Y version.
-# version = '1.19'
 
 # We use a custom version variable (shortversion) instead, because setting
 # 'version' adds a redundant version number onto the top of the sidebar
