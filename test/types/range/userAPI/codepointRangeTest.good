@@ -3,7 +3,7 @@
 codepoint range
 ------------
 (_cpindex = 1)..(_cpindex = 10)
-idxType          = codePointIndex
+idxType          = codepointIndex
 stridable        = false
 boundedType      = bounded
 isRangeType()    = true
@@ -55,7 +55,7 @@ Copying...        = (_cpindex = 1)..(_cpindex = 10)
 strided codepoint range
 ------------
 (_cpindex = 1)..(_cpindex = 20) by 2
-idxType          = codePointIndex
+idxType          = codepointIndex
 stridable        = true
 boundedType      = bounded
 isRangeType()    = true
@@ -107,7 +107,7 @@ Copying...        = (_cpindex = 1)..(_cpindex = 20) by 2
 low bounded codepoint range
 ------------
 (_cpindex = 1)..
-idxType          = codePointIndex
+idxType          = codepointIndex
 stridable        = false
 boundedType      = boundedLow
 isRangeType()    = true
@@ -154,7 +154,7 @@ Copying...        = (_cpindex = 1)..
 high bounded codepoint range
 ------------
 ..(_cpindex = 10)
-idxType          = codePointIndex
+idxType          = codepointIndex
 stridable        = false
 boundedType      = boundedHigh
 isRangeType()    = true

@@ -111,18 +111,18 @@ For Unicode strings, and in particular UTF-8 strings, there are several possible
 units for offsets or lengths:
 
  * bytes
- * code points
+ * codepoints
  * graphemes
 
 Most methods on the Chapel string type currently work with byte units by
 default. For example, :proc:`~string.length` returns the length in bytes and
 `int` values passed into :proc:`~string.this` are offsets in byte units.
 
-The string type currently supports code point units as well. In some cases these
+The string type currently supports codepoint units as well. In some cases these
 units are indicated by the method name, for example with
-:proc:`~string.numCodePoints`. Other methods, including :proc:`~string.this`, support
-arguments of type :record:`codePointIndex` (instead of `int`) in order to
-request code point units.
+:proc:`~string.numCodepoints`. Other methods, including :proc:`~string.this`, support
+arguments of type :record:`codepointIndex` (instead of `int`) in order to
+request codepoint units.
 
 .. note::
 
@@ -218,62 +218,70 @@ module String {
   }
 
   /*
-     A value of type :record:`codePointIndex` can be passed to certain
+     A value of type :record:`codepointIndex` can be passed to certain
      `string` functions to indicate that the function should operate
-     with units of code points. See :proc:`~string.this`.
+     with units of codepoints. See :proc:`~string.this`.
 
-     To create or modify a :record:`codePointIndex`, cast it to or from an
+     To create or modify a :record:`codepointIndex`, cast it to or from an
      `int`. For example, For example, the following function returns a string
      containing only the second codepoint of the argument:
 
      .. code-block:: chapel
 
        proc getSecondCodepoint(arg:string) : int {
-         var offsetInCodepoints = 1:codePointIndex;
+         var offsetInCodepoints = 1:codepointIndex;
          return arg[offsetInCodepoints];
        }
 
    */
-  record codePointIndex {
+  record codepointIndex {
     pragma "no doc"
     var _cpindex  : int;
   }
 
-  // Helper routines in support of being able to use ranges of codePointIndex
+  /*
+   Deprecated, use `codepointIndex`.
+  */
+  proc codePointIndex type {
+    compilerWarning("codePointIndex is deprecated - please use codepointIndex instead");
+    return codepointIndex;
+  }
+
+  // Helper routines in support of being able to use ranges of codepointIndex
   pragma "no doc"
-  proc chpl_build_bounded_range(low: codePointIndex, high: codePointIndex)
-    return new range(codePointIndex, _low=low, _high=high);
+  proc chpl_build_bounded_range(low: codepointIndex, high: codepointIndex)
+    return new range(codepointIndex, _low=low, _high=high);
 
   pragma "no doc"
-  proc chpl_build_low_bounded_range(low: codePointIndex)
-    return new range(codePointIndex, BoundedRangeType.boundedLow, _low=low);
+  proc chpl_build_low_bounded_range(low: codepointIndex)
+    return new range(codepointIndex, BoundedRangeType.boundedLow, _low=low);
 
   pragma "no doc"
-  proc chpl_build_high_bounded_range(high: codePointIndex)
-    return new range(codePointIndex, BoundedRangeType.boundedHigh, _high=high);
+  proc chpl_build_high_bounded_range(high: codepointIndex)
+    return new range(codepointIndex, BoundedRangeType.boundedHigh, _high=high);
 
   pragma "no doc"
-  proc chpl__rangeStrideType(type idxType: codePointIndex) type
+  proc chpl__rangeStrideType(type idxType: codepointIndex) type
     return int;
 
   pragma "no doc"
-  proc chpl__rangeUnsignedType(type idxType: codePointIndex) type
+  proc chpl__rangeUnsignedType(type idxType: codepointIndex) type
     return uint;
 
   pragma "no doc"
-  inline proc chpl__idxToInt(i: codePointIndex)
+  inline proc chpl__idxToInt(i: codepointIndex)
     return i:int;
 
   pragma "no doc"
-  inline proc chpl__intToIdx(type idxType: codePointIndex, i: int)
-    return i: codePointIndex;
+  inline proc chpl__intToIdx(type idxType: codepointIndex, i: int)
+    return i: codepointIndex;
 
   pragma "no doc"
-  proc chpl__idxTypeToIntIdxType(type idxType: codePointIndex) type
+  proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type
     return int;
 
   pragma "no doc"
-  proc >(x: codePointIndex, y: codePointIndex)
+  proc >(x: codepointIndex, y: codepointIndex)
     return x: int > y: int;
   // End range helper support
 
@@ -484,19 +492,19 @@ module String {
     /*
       :returns: The number of codepoints in the string.
       */
-    proc numCodePoints {
+    proc numCodepoints {
       var n = 0;
-      for codepoint in this.codePoints() do
+      for cp in this.codepoints() do
         n += 1;
       return n;
     }
 
     /*
-      Deprecated, use :proc:`string.numCodePoints`.
+      Deprecated, use :proc:`string.numCodepoints`.
       */
     inline proc ulength {
-      compilerWarning("ulength is deprecated - please use numCodePoints instead");
-      return this.numCodePoints;
+      compilerWarning("ulength is deprecated - please use numCodepoints instead");
+      return this.numCodepoints;
     }
 
     /*
@@ -599,28 +607,28 @@ module String {
     /*
       Iterates over the string Unicode character by Unicode character.
     */
-    iter codePoints(): int(32) {
+    iter codepoints(): int(32) {
       var localThis: string = this.localize();
 
       var i = 0;
       while i < localThis.len {
-        var codepoint: int(32);
+        var cp: int(32);
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
-        yield codepoint;
+        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        yield cp;
         i += nbytes;
       }
     }
 
     /*
-      Deprecated, use :proc:`string.codePoints`.
+      Deprecated, use :proc:`string.codepoints`.
     */
     iter uchars(): int(32) {
-      compilerWarning("uchars is deprecated - please use codePoints instead");
-      for codepoint in this.codePoints() do
-        yield codepoint;
+      compilerWarning("uchars is deprecated - please use codepoints instead");
+      for cp in this.codepoints() do
+        yield cp;
     }
 
     /*
@@ -634,13 +642,13 @@ module String {
 
       var i = 0;
       while i < localThis.len {
-        var codepoint: int(32);
+        var cp: int(32);
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
+        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
         if i + 1 >= start then
-          yield (codepoint:int(32), i + 1, nbytes:int);
+          yield (cp:int(32), i + 1, nbytes:int);
         i += nbytes;
       }
     }
@@ -659,15 +667,15 @@ module String {
     /*
       :returns: The value of the `i` th multibyte character as an integer.
      */
-    proc codePoint(i: int): int(32) {
+    proc codepoint(i: int): int(32) {
       const idx = i: int;
       if boundsChecking && idx <= 0 then
         halt("index out of bounds of string: ", idx);
 
       var j = 1;
-      for codepoint in this.codePoints() {
+      for cp in this.codepoints() {
         if j == idx then
-          return codepoint;
+          return cp;
         j += 1;
       }
       // We have reached the end of the string without finding our index.
@@ -704,9 +712,9 @@ module String {
       } else {
         multibytes = this.buff + i - 1;
       }
-      var codepoint: int(32);
+      var cp: int(32);
       var nbytes: c_int;
-      qio_decode_char_buf(codepoint, nbytes, multibytes:c_string, maxbytes);
+      qio_decode_char_buf(cp, nbytes, multibytes:c_string, maxbytes);
       if !remoteThis {
         c_memcpy(ret.buff, multibytes, nbytes);
       }
@@ -720,19 +728,19 @@ module String {
       Index into a string
 
       :returns: A Unicode codepoint starting at the
-                specified codepoint index from ``1..string.numCodePoints``
+                specified codepoint index from ``1..string.numCodepoints``
      */
-    proc this(cpi: codePointIndex) : string {
+    proc this(cpi: codepointIndex) : string {
       if this.isEmpty() then return "";
       const idx = cpi: int;
-      return codePointToString(this.codePoint(idx));
+      return codepointToString(this.codepoint(idx));
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
     // range that can be used to iterate over a section of the string
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType != codePointIndex {
+    proc _getView(r:range(?)) where r.idxType != codepointIndex {
       //TODO: halt()s should use string.writef at some point.
       if boundsChecking {
         if r.hasLowBound() {
@@ -752,9 +760,9 @@ module String {
 
     // Checks to see if r is inside the bounds of this and returns a finite
     // range that can be used to iterate over a section of the string.
-    // Converts from codePointIndex range to byte index range in the process.
+    // Converts from codepointIndex range to byte index range in the process.
     pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == codePointIndex {
+    proc _getView(r:range(?)) where r.idxType == codepointIndex {
       if boundsChecking {
         if r.hasLowBound() {
           if r.low:int <= 0 then
@@ -1338,7 +1346,7 @@ module String {
 
       if leading {
         label outer for (thisChar, i, nbytes) in localThis._cpIndexLen() {
-          for removeChar in localChars.codePoints() {
+          for removeChar in localChars.codepoints() {
             if thisChar == removeChar {
               start = i + nbytes;
               continue outer;
@@ -1355,7 +1363,7 @@ module String {
         // point as we are proven wrong.
         end = 0;
         label outer for (thisChar, i, nbytes) in localThis._cpIndexLen(start) {
-          for removeChar in localChars.codePoints() {
+          for removeChar in localChars.codepoints() {
             if thisChar == removeChar {
               continue outer;
             }
@@ -1401,11 +1409,11 @@ module String {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         var locale_result = false;
-        for codepoint in this.codePoints() {
-          if codepoint_isLower(codepoint) {
+        for cp in this.codepoints() {
+          if codepoint_isLower(cp) {
             locale_result = false;
             break;
-          } else if !locale_result && codepoint_isUpper(codepoint) {
+          } else if !locale_result && codepoint_isUpper(cp) {
             locale_result = true;
           }
         }
@@ -1428,11 +1436,11 @@ module String {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         var locale_result = false;
-        for codepoint in this.codePoints() {
-          if codepoint_isUpper(codepoint) {
+        for cp in this.codepoints() {
+          if codepoint_isUpper(cp) {
             locale_result = false;
             break;
-          } else if !locale_result && codepoint_isLower(codepoint) {
+          } else if !locale_result && codepoint_isLower(cp) {
             locale_result = true;
           }
         }
@@ -1454,8 +1462,8 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.codePoints() {
-          if !(codepoint_isWhitespace(codepoint)) {
+        for cp in this.codepoints() {
+          if !(codepoint_isWhitespace(cp)) {
             result = false;
             break;
           }
@@ -1476,8 +1484,8 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.codePoints() {
-          if !codepoint_isAlpha(codepoint) {
+        for cp in this.codepoints() {
+          if !codepoint_isAlpha(cp) {
             result = false;
             break;
           }
@@ -1498,8 +1506,8 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.codePoints() {
-          if !codepoint_isDigit(codepoint) {
+        for cp in this.codepoints() {
+          if !codepoint_isDigit(cp) {
             result = false;
             break;
           }
@@ -1520,8 +1528,8 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.codePoints() {
-          if !(codepoint_isAlpha(codepoint) || codepoint_isDigit(codepoint)) {
+        for cp in this.codepoints() {
+          if !(codepoint_isAlpha(cp) || codepoint_isDigit(cp)) {
             result = false;
             break;
           }
@@ -1542,8 +1550,8 @@ module String {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for codepoint in this.codePoints() {
-          if !codepoint_isPrintable(codepoint) {
+        for cp in this.codepoints() {
+          if !codepoint_isPrintable(cp) {
             result = false;
             break;
           }
@@ -1567,8 +1575,8 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         param UN = 0, UPPER = 1, LOWER = 2;
         var last = UN;
-        for codepoint in this.codePoints() {
-          if codepoint_isLower(codepoint) {
+        for cp in this.codepoints() {
+          if codepoint_isLower(cp) {
             if last == UPPER || last == LOWER {
               last = LOWER;
             } else { // last == UN
@@ -1576,7 +1584,7 @@ module String {
               break;
             }
           }
-          else if codepoint_isUpper(codepoint) {
+          else if codepoint_isUpper(cp) {
             if last == UN {
               last = UPPER;
             } else { // last == UPPER || last == LOWER
@@ -1609,13 +1617,13 @@ module String {
 
       var i = 0;
       while i < result.len {
-        var codepoint: int(32);
+        var cp: int(32);
         var nbytes: c_int;
         var multibytes = (result.buff + i): c_string;
         var maxbytes = (result.len - i): ssize_t;
-        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
-        var lowCodepoint = codepoint_toLower(codepoint);
-        if lowCodepoint != codepoint {
+        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        var lowCodepoint = codepoint_toLower(cp);
+        if lowCodepoint != cp {
           // This assumes that the upper and lower case version of a
           // character take the same number of bytes.
           qio_encode_char_buf(result.buff + i, lowCodepoint);
@@ -1642,13 +1650,13 @@ module String {
 
       var i = 0;
       while i < result.len {
-        var codepoint: int(32);
+        var cp: int(32);
         var nbytes: c_int;
         var multibytes = (result.buff + i): c_string;
         var maxbytes = (result.len - i): ssize_t;
-        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
-        var upCodepoint = codepoint_toUpper(codepoint);
-        if upCodepoint != codepoint {
+        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        var upCodepoint = codepoint_toUpper(cp);
+        if upCodepoint != cp {
           // This assumes that the upper and lower case version of a
           // character take the same number of bytes.
           qio_encode_char_buf(result.buff + i, upCodepoint);
@@ -1678,23 +1686,23 @@ module String {
       var last = UN;
       var i = 0;
       while i < result.len {
-        var codepoint: int(32);
+        var cp: int(32);
         var nbytes: c_int;
         var multibytes = (result.buff + i): c_string;
         var maxbytes = (result.len - i): ssize_t;
-        qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
-        if codepoint_isAlpha(codepoint) {
+        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        if codepoint_isAlpha(cp) {
           if last == UN {
             last = LETTER;
-            var upCodepoint = codepoint_toUpper(codepoint);
-            if upCodepoint != codepoint {
+            var upCodepoint = codepoint_toUpper(cp);
+            if upCodepoint != cp {
               // This assumes that the upper and lower case version of a
               // character take the same number of bytes.
               qio_encode_char_buf(result.buff + i, upCodepoint);
             }
           } else { // last == LETTER
-            var lowCodepoint = codepoint_toLower(codepoint);
-            if lowCodepoint != codepoint {
+            var lowCodepoint = codepoint_toLower(cp);
+            if lowCodepoint != cp {
               // This assumes that the upper and lower case version of a
               // character take the same number of bytes.
               qio_encode_char_buf(result.buff + i, lowCodepoint);
@@ -1719,13 +1727,13 @@ module String {
       var result: string = this.toLower();
       if result.isEmpty() then return result;
 
-      var codepoint: int(32);
+      var cp: int(32);
       var nbytes: c_int;
       var multibytes = result.buff: c_string;
       var maxbytes = result.len: ssize_t;
-      qio_decode_char_buf(codepoint, nbytes, multibytes, maxbytes);
-      var upCodepoint = codepoint_toUpper(codepoint);
-      if upCodepoint != codepoint {
+      qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+      var upCodepoint = codepoint_toUpper(cp);
+      if upCodepoint != cp {
         // This assumes that the upper and lower case version of a
         // character take the same number of bytes.
         qio_encode_char_buf(result.buff, upCodepoint);
@@ -2186,7 +2194,7 @@ module String {
      :returns: A string storing the complete multibyte character sequence
                that corresponds to the codepoint value `i`.
   */
-  inline proc codePointToString(i: int(32)) {
+  inline proc codepointToString(i: int(32)) {
     const mblength = qio_nbytes_char(i): int;
     const mbsize = max(chpl_string_min_alloc_size,
                        chpl_here_good_alloc_size(mblength + 1));
@@ -2195,6 +2203,14 @@ module String {
     buffer[mblength] = 0;
     var s = new string(buffer, mblength, mbsize, isowned=true, needToCopy=false);
     return s;
+  }
+
+  /*
+    Deprecated, use :proc:`codepointToString`.
+  */
+  inline proc codePointToString(i: int(32)) {
+    compilerWarning("codePointToString is deprecated - please use codepointToString instead");
+    return codepointToString(i);
   }
 
 
@@ -2221,16 +2237,16 @@ module String {
     return ret;
   }
 
-  // Cast from codePointIndex to int
+  // Cast from codepointIndex to int
   pragma "no doc"
-  inline proc _cast(type t: int, cpi: codePointIndex) {
+  inline proc _cast(type t: int, cpi: codepointIndex) {
     return cpi._cpindex;
   }
 
-  // Cast from int to codePointIndex
+  // Cast from int to codepointIndex
   pragma "no doc"
-  inline proc _cast(type t: codePointIndex, i: int) {
-    var cpi: codePointIndex;
+  inline proc _cast(type t: codepointIndex, i: int) {
+    var cpi: codepointIndex;
     cpi._cpindex = i;
     return cpi;
   }

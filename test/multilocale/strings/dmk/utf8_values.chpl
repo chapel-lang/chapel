@@ -1,10 +1,10 @@
 var mystring1 = "événement";
 
 on Locales[numLocales-1] {
-  for (i, c) in zip(1.., mystring1.codePoints()) {
-    const str = codePointToString(c);
+  for (i, c) in zip(1.., mystring1.codepoints()) {
+    const str = codepointToString(c);
     write(c);
-    var c2 = mystring1.codePoint(i);
+    var c2 = mystring1.codepoint(i);
     if c2 != c then
       write("#", c2);
     on Locales[0] {

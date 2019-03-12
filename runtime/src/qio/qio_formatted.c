@@ -1130,7 +1130,7 @@ int _qio_chr_escape(int32_t chr, int32_t string_end, int string_format, char* tm
         WRITEC(tmpchr);
       } else if( !iswprint(chr) ) {
         // write it as \uXXXX 4 hex digits.
-        // If it is a code point >= 0x10000, it needs to be
+        // If it is a codepoint >= 0x10000, it needs to be
         // encoded as a surrogate pair in \u....
         if( chr < 0x10000 ) {
           WRITEC('\\');
@@ -4398,7 +4398,7 @@ qioerr qio_conv_parse(c_string fmt,
 
         // Note -- when scanning, a precision should adjust the string
         // format to not end at a whitespace.
-        // This mode scans a particular number of code points.
+        // This mode scans a particular number of codepoints.
         if( scanning && precision != WIDTH_NOT_SET ) {
           style_out->string_format = QIO_STRING_FORMAT_TOEOF;
         }

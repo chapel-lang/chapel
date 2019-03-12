@@ -1,4 +1,4 @@
 var str = "åbçdèfghíjklm";
 
-writeln("str[12:codePointIndex..13:codePointIndex] = ", str[12:codePointIndex..13:codePointIndex]);
-writeln("str[12:codePointIndex..16:codePointIndex] = ", str[12:codePointIndex..16:codePointIndex]);
+writeln("str[12:codepointIndex..13:codepointIndex] = ", str[12:codepointIndex..13:codepointIndex]);
+writeln("str[12:codepointIndex..16:codepointIndex] = ", str[12:codepointIndex..16:codepointIndex]);
