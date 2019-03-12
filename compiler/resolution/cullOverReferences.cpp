@@ -767,7 +767,7 @@ void cullOverReferences() {
       createFieldQualifiersIfNeeded(sym);
 
       // If it has ref fields, and all of them are const, do no more here
-      bool allConst = (sym->fieldQualifiers[i] != QUAL_REF);
+      bool allConst = (sym->fieldQualifiers[0] != QUAL_REF);
       int i = 1;
       for_fields(field, symAt) {
         if (field->isRef()) {
