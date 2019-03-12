@@ -677,7 +677,7 @@ module Buffers {
      :throws SystemError: When memory allocation fails.
      :throws SystemError: When the read size would exceed the bounds of this
         buffer.
-     :throws SystemError: when `it` exceeds the bounds of this buffer.
+     :throws SystemError: When `it` exceeds the bounds of this buffer.
   */
   proc buffer.copyout(it:buffer_iterator, out value: ?T):buffer_iterator throws where isNumericType(T) {
     var ret:buffer_iterator;
