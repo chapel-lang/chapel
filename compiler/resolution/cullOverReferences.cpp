@@ -1133,11 +1133,6 @@ void cullOverReferences() {
 
         // Check for case of creating a temporary from one tuple to
         // another tuple.
-          // PRIM_SET_MEMBER: base, field, value
-          // if the field is a ref, and the value is a ref, sets the ptr.
-          // if the field is a ref, and the value is a not ref, invalid AST
-          // if the field is not ref, and the value is a ref, derefs value first
-          // if neither are references, sets the field
         if (call->isPrimitive(PRIM_SET_MEMBER)) {
           SymExpr* base       = toSymExpr(call->get(1));
           Symbol*  baseSymbol = base->symbol();
