@@ -1390,6 +1390,7 @@ proc file.close() throws {
   var err:syserr = ENOERR;
   on this.home {
     err = qio_file_close(_file_internal);
+    _file_internal = QIO_FILE_PTR_NULL;
   }
   if err then try ioerror(err, "in file.close", this.tryGetPath());
 }
