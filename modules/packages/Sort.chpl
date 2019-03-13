@@ -1274,7 +1274,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
 
     // Fill buf with up to max_buf records from the end of this bin.
     while i < end {
-      buf[used_buf+1] = A[i];
+      buf[used_buf+1] <=> A[i];
       used_buf += 1;
       i += 1;
     }
@@ -1299,16 +1299,15 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       while used_buf > 0 && j <= used_buf {
         const (bin, _) = binForRecord(buf[j], criterion, startbit);
         // Swap buf[j] into its appropriate bin.
-        // Leave buf[j] with the next unsorted item.
-        // But offsets[bin] might in the region we already read.
-        if bin == curbin && offsets[curbin] >= bufstart {
-          A[offsets[bin]] = buf[j];
-          buf[j] = buf[used_buf];
-          used_buf -= 1;
-        } else {
-          A[offsets[bin]] <=> buf[j];
-        }
+        var offset = offsets[bin];
+        A[offset] <=> buf[j];
         offsets[bin] += 1;
+        // Leave buf[j] with the next unsorted item.
+        // But offsets[bin] might be in the region we already read.
+        if bin == curbin && offset >= bufstart {
+          buf[j] <=> buf[used_buf];
+          used_buf -= 1;
+        }
         j += 1;
       }
     }
