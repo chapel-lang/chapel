@@ -309,10 +309,10 @@ void init_ofiFabricDomain(void) {
 
   hints->domain_attr->threading = FI_THREAD_UNSPEC;
 
-  enum fi_progress prg = FI_PROGRESS_UNSPEC;
-  if (DBG_TEST_MASK(DBG_CFG)) {
-    const char* ev = chpl_env_rt_get("COMM_OFI_PROGRESS", "");
-    if (strcmp(ev, "") != 0) {
+  enum fi_progress prg = FI_PROGRESS_MANUAL;
+  {
+    const char* ev = chpl_env_rt_get("COMM_OFI_PROGRESS", NULL);
+    if (ev != NULL) {
       if (strcasecmp(ev, "auto") == 0)
         prg = FI_PROGRESS_AUTO;
       else if (strcasecmp(ev, "manual") == 0)
@@ -321,7 +321,7 @@ void init_ofiFabricDomain(void) {
         CHK_TRUE((strcasecmp(ev, "unspec") == 0));
     }
   }
-  hints->domain_attr->control_progress = FI_PROGRESS_UNSPEC; // don't need
+  hints->domain_attr->control_progress = prg; // shouldn't really matter to us
   hints->domain_attr->data_progress = prg;
 
   hints->domain_attr->av_type = FI_AV_TABLE;
