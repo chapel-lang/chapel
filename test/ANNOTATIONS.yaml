@@ -348,6 +348,9 @@ all:
   08/15/18:
     - text: Revert to stack-allocated rfDone indicators. (#10728)
       config: 16 node XC
+  09/16/18:
+    - text: chapcs rebooted
+      config: chapcs
   09/25/18:
     - text: Optimize blocking puts/gets and fetching network AMOs (#11176)
       config: 16 node XC
@@ -364,6 +367,9 @@ all:
       config: 16 node XC
   01/07/19:
     - Default to cstdlib atomics for gcc >= 5 (#11963)
+  01/18/19:
+    - text: Use acquire/release memory orders for buffered AMO/GET locks (#12089)
+      config: 16 node XC
   02/06/19:
     - text: Reduce contention on ugni's comm domains (#12240)
       config: 16 node XC
@@ -372,6 +378,11 @@ all:
       config: 16 node XC
   02/08/19:
     - replace PRIM_INIT with PRIM_DEFAULT_INIT_VAR (#12154)
+  03/02/19:
+    - Improve performance of cast from tuple to complex (#12429)
+  03/07/19:
+    - text: chapcs rebooted
+      config: chapcs
 
 
 AllCompTime:
@@ -414,6 +425,8 @@ arrayPerformance-2d:
 array-of-strings-read:
   04/14/16:
     - string changes to bounds checking, isUpper (#3718)
+  12/11/18:
+    - Turn off some range halts for --no-checks (#11780)
 
 arr-forall:
   03/24/15:
@@ -550,10 +563,14 @@ create-views:
     - text: Could not repro old numbers (later "fixed" by reboot)
       config: chapcs
   08/04/18:
-    - text: Machine rebooted
+    - text: chapcs rebooted
       config: chapcs
   11/10/18:
     - Improve timing and stability of the create-views performance test (#11609)
+
+cs-resize:
+  03/05/19:
+    - Add radix sort to Sort package module (#12452)
 
 dgemm.128:
   09/06/13:
@@ -1007,8 +1024,26 @@ memleaksfull:
     - Adding an exercise about finding duplicate files (#11358)
   10/25/18:
     - Fix reduction leak for identity() method (#11458)
-  1/28/19:
+  01/28/19:
     - Represent reduce expressions using ForallStmt (#12131)
+  02/01/19:
+    - TaskErrors now contains owned errors (#12225)
+  02/28/19:
+    - Add Path.absPath, file.absPath and associated tests (#12394)
+  03/05/19:
+    - Add relPath and file.relPath to the Path standard module (#12421)
+  03/07/19:
+    - Give in intent to varargs formals in joinPath, commonPath (#12512)
+    - Reduce memory leaks due to reduce expressions (#12500)
+  03/08/19:
+    - Delete nested task errors when folding them (#12516)
+    - Close a user-level leak in this test (#12527)
+  03/09/19:
+    - Close user leaks in linked list tests (#12531)
+  03/12/19:
+    - Close a memory leak in linkedlist test (#12551)
+    - Close leak in tdata-test (#12554)
+    - Close leaks in CoMD (#12552)
 
 meteor:
   12/18/13:
@@ -1211,6 +1246,12 @@ regexdna-submitted:
 regexdnaredux-submitted:
   <<: *regexdna-base
 
+remote-record-read-copy:
+  11/15/18:
+    - Invoke 'init' directly for init-var instead of chpl__initCopy (#11629)
+  03/07/19:
+    - Avoid init= for POD types (#12439)
+
 return-array-8: &return-array-base
   03/04/17:
     - remove unnecessary return from array-return tests (#5486)
@@ -1246,6 +1287,14 @@ revcomp:
 sad:
   05/03/16:
     - inconclusive due to noise
+
+scanPerf:
+  03/05/19:
+    - Support optionally parallel 1D scans on default rectangular (#12469)
+
+scanPerf.ml-time:
+  03/06/19:
+    - First good draft of parallel Block-distributed scan (#12481)
 
 search:
   04/20/17:
@@ -1335,6 +1384,8 @@ temporary-copies:
     - Likely cache effects
   04/20/17:
     - Update RE2 (#6024)
+  12/11/18:
+    - Turn off some range halts for --no-checks (#11780)
 
 twopt-paircount:
   06/22/17:
@@ -1343,6 +1394,8 @@ twopt-paircount:
 testSerialReductions:
   08/16/14:
     - result of Greg's commit to let the tasking layer determine parallelism
+  12/19/18:
+    - Merge ExternArr and friends into DefaultRectangular (#11893)
 
 thread-ring:
   03/19/15:
