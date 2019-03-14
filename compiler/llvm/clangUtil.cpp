@@ -1581,6 +1581,7 @@ void runClang(const char* just_parse_filename) {
   const char* clang_opt = "-O3";
   const char* clang_fast_float = "-ffast-math";
   const char* clang_ieee_float = "-fno-fast-math";
+  const char* clang_fpic = "-fPIC";
 
   std::vector<std::string> args;
   std::vector<std::string> clangCCArgs;
@@ -1679,6 +1680,8 @@ void runClang(const char* just_parse_filename) {
 
   if (ffloatOpt < 0) // --ieee-float
     args.push_back(clang_ieee_float); // -fno-fast-math
+
+  // Generate object files as PIC if appropriate.
 
   // Gather information from readargsfrom into clangArgs.
 

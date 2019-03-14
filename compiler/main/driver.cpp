@@ -1307,7 +1307,7 @@ static void setupChplGlobals(const char* argv0) {
     // Keep envMap updated
     envMap["CHPL_HOME"] = CHPL_HOME;
 
-~  }
+  }
 
   // tell printchplenv that we're doing an LLVM build
   if (llvmCodegen) {

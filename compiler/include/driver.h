@@ -168,6 +168,8 @@ enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
 
 extern int  fLinkStyle;
 
+extern bool fGeneratePIC;
+
 extern int  debugParserLevel;
 extern int  debugShortLoc;
 extern bool fLibraryCompile;
