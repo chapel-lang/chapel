@@ -21,6 +21,7 @@ RESOLUTION_SRCS =                                              \
                   caches.cpp                                   \
                   callDestructors.cpp                          \
                   callInfo.cpp                                 \
+                  cleanups.cpp                                 \
                   cullOverReferences.cpp                       \
                   expandVarArgs.cpp                            \
                   functionResolution.cpp                       \
