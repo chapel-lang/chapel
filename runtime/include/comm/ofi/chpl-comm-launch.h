@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#ifndef _chpl_comm_launch_h
+#define _chpl_comm_launch_h
+
 //
 // Launch assistance for the ofi communication layer.
 //
@@ -27,3 +30,5 @@
 //
 #define CHPL_COMM_PRELAUNCH() chpl_comm_preLaunch()
 void chpl_comm_preLaunch(void);
+
+#endif
