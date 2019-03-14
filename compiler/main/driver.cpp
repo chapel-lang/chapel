@@ -110,6 +110,9 @@ bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryPython = false;
 
+// We need to inform LLVM codegen about PIC being set.
+bool fGeneratePIC = false;
+
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool fVerify = false;
@@ -1278,6 +1281,7 @@ static void setChapelEnvs() {
   CHPL_LLVM            = envMap["CHPL_LLVM"];
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
   CHPL_UNWIND          = envMap["CHPL_UNWIND"];
+  CHPL_LIB_PIC         = envMap["CHPL_LIB_PIC"];
 
   CHPL_RUNTIME_SUBDIR  = envMap["CHPL_RUNTIME_SUBDIR"];
   CHPL_LAUNCHER_SUBDIR = envMap["CHPL_LAUNCHER_SUBDIR"];
@@ -1302,7 +1306,8 @@ static void setupChplGlobals(const char* argv0) {
 
     // Keep envMap updated
     envMap["CHPL_HOME"] = CHPL_HOME;
-  }
+
+~  }
 
   // tell printchplenv that we're doing an LLVM build
   if (llvmCodegen) {
@@ -1314,6 +1319,10 @@ static void setupChplGlobals(const char* argv0) {
 
   // Set global CHPL_vars with updated envMap values
   setChapelEnvs();
+}
+
+static void postSetGeneratePIC() {
+  fGeneratePIC = strcmp(CHPL_LIB_PIC, "pic") == 0;
 }
 
 static void postStackCheck() {
@@ -1408,6 +1417,8 @@ static void postprocess_args() {
   postLocal();
 
   postVectorize();
+
+  postSetGeneratePIC();
 
   postTaskTracking();
 
