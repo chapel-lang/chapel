@@ -9560,14 +9560,6 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
 
 // Generate a useful USR_FATAL for an unacceptable Generic
 static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type, Symbol* val) {
-  const char* label = "abstract";
-
-  if (AggregateType* at = toAggregateType(type)) {
-    if (at->typeConstructor != NULL) {
-      label = "not-fully-instantiated";
-    }
-  }
-
   USR_FATAL_CONT(call,
                  "Cannot default-initialize a variable with generic type");
   USR_PRINT(call, "'%s' has generic type '%s'", val->name, type->symbol->name);
