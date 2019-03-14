@@ -20,8 +20,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "arg.h"
-#include "chpllaunch.h"
 #include "chplcgfns.h"
+#include "chpl-env.h"
+#include "chpllaunch.h"
 #include "error.h"
 
 static char** chpl_launch_create_argv(const char *launch_cmd,
@@ -34,17 +35,32 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   static char _nlbuf[16];
   snprintf(_nlbuf, sizeof(_nlbuf), "%d", getArgNumLocales());
 
-  char* largv[] = { (char*) launch_cmd,
-                    (char*) "-np",
-                    (char*) _nlbuf,
-                    (char*) "-map-by",
-                    (char*) "ppr:1:node",
-                    (char*) "-map-by",
-                    (char*) "node:oversubscribe",
-                    (char*) "-bind-to",
-                    (char*) "none",
-                  };
-  const int largc = sizeof(largv) / sizeof(largv[0]);
+  char* largv[20];
+  int largc = 0;
+#define ADD_LARGV(s)                                                    \
+  do {                                                                  \
+    if (largc < sizeof(largv) / sizeof(largv[0])) {                     \
+      largv[largc++] = (char*) (s);                                     \
+    } else {                                                            \
+      chpl_internal_error("too many mpirun command line arguments");    \
+    }                                                                   \
+  } while (0)
+
+  ADD_LARGV(launch_cmd);
+  ADD_LARGV("-np");
+  ADD_LARGV(_nlbuf);
+  ADD_LARGV("-map-by");
+  ADD_LARGV("ppr:1:node");
+  ADD_LARGV("-map-by");
+  ADD_LARGV("node:oversubscribe");
+  ADD_LARGV("-bind-to");
+  ADD_LARGV("none");
+  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+    ADD_LARGV("-mca");
+    ADD_LARGV("mpi_yield_when_idle");
+    ADD_LARGV("1");
+  }
+
   return chpl_bundle_exec_args(argc, argv, largc, largv);
 }
 
