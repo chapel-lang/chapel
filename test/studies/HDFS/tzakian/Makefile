@@ -31,7 +31,7 @@ chadoop: hdfs.h chadoop.h chadoop.c chadoop.chpl
 	cp -r conf $(BUILD_DIR)
 	$(CHPL) $(CHPL_FLAGS) $^ -o $(BUILD_DIR)/$@
 
-iter: hdfs.h chadoop.h chadoop.c HDFSiterator.chpl
+iter: hdfs.h chadoop.h chadoop.c HDFS.chpl
 	$(CHPL) $(ITER_FLAGS) $^ -o $@
 
 wc: hdfs.h chadoop.h chadoop.c wc.chpl

@@ -1,4 +1,4 @@
-use HDFSiterator;
+use HDFS;
 
 //// ---------- Test/Example usage --------
 record Beer {

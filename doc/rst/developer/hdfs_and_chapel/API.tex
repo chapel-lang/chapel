@@ -11,7 +11,7 @@ provides the interface for the MapReduce API.
 \item A way to parse from the IO interface in Chapel to records in Chapel.
 ({\tt RecordParser.chpl})
 \item A MapReduce API that interfaces with the IO system and
-RecordParser in Chapel. ({\tt HDFSiterator.chpl})
+RecordParser in Chapel. ({\tt HDFS.chpl})
 \end{itemize}
 %
 \subsection{Runtime API}
@@ -432,7 +432,7 @@ it will read on and work on locales 0 and 1 while using those blocks).
 
 Many times what things might look like is:
 \begin{lstlisting}
-use HDFSiterator;
+use HDFS;
 
 record someRecord {
   var id1: real;

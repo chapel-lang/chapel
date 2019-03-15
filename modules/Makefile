@@ -105,7 +105,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Futures.chpl \
 	packages/HDF5.chpl \
 	packages/HDFS.chpl \
-	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \

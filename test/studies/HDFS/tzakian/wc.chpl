@@ -1,4 +1,4 @@
-use HDFSiterator, HDFStools, IO;
+use HDFS, HDFStools, IO;
 
 // The actual mappers
 

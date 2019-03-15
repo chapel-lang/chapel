@@ -1,4 +1,4 @@
-use HDFSiterator;
+use HDFS;
 
 record Beer {
   var name:  string;
