@@ -2345,9 +2345,11 @@ void codegen() {
     }
 
     codegen_makefile(&mainfile, NULL, false, userFileName);
-    if (fLibraryCompile && fLibraryMakefile) {
-      codegen_library_makefile();
-    }
+  }
+
+  // Users of "--llvm" might enjoy a Makefile too!
+  if (fLibraryCompile && fLibraryMakefile) {
+    codegen_library_makefile();
   }
 
   // Vectors to store different symbol names to be used while generating header
