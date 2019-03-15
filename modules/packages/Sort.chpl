@@ -1044,7 +1044,7 @@ record MSBRadixSortSettings {
 //
 // returns (bin, ubits)
 private inline
-proc binForRecordKeyPart(a, criterion, startbit:int, param usePivot, pivotBin:int, pivot)
+proc binForRecordKeyPart(a, criterion, startbit:int)
 {
   // We have keyPart(element, start):(section:int(8), part:int/uint)
   const testRet: criterion.keyPart(a, 1).type;
@@ -1072,92 +1072,34 @@ proc binForRecordKeyPart(a, criterion, startbit:int, param usePivot, pivotBin:in
   }
   param mask:uint = (1 << RADIX_BITS) - 1;
   const ubin = (ubits >> (bitsPerPart - bitsinpart - RADIX_BITS)) & mask;
-  const bin = (ubin:int) + 1; // add 1 for space for section -1 ending
 
-  //writeln("element bin ", bin, " pivotBin is ", pivotBin);
-  if section == 0 {
-    if usePivot==false {
-      return (bin, ubits);
-    } else {
-      if bin < pivotBin {
-        return (bin, ubits);
-      } else if usePivot && bin == pivotBin {
-        var cmp = chpl_compare(a, pivot, criterion);
-        var add = 0;
-        if cmp < 0 then add = 0;
-        else if cmp == 0 then add = 1;
-        else add = 2;
-
-        return (bin + add, ubits);
-      } else {
-        // bin > pivotBin
-        return (bin + 2, ubits);
-      }
-    }
-  } else if section < 0 {
+  if section == 0 then
+    return (ubin:int + 1, ubits);
+  else if section < 0 then
     return (0, ubits);
-  } else {
-    return ((1 << RADIX_BITS) + 1 + 2, ubits);
-  }
+  else
+    return ((1 << RADIX_BITS) + 1, ubits);
 }
 
 // Get the bin for a record with criterion.key or criterion.keyPart
 //
 // See binForRecordKeyPart for what the arguments / returns mean.
 private inline
-proc binForRecord(a, criterion, startbit:int, param usePivot, pivotBin:int, pivot)
+proc binForRecord(a, criterion, startbit:int)
 {
   use Reflection;
 
   if canResolveMethod(criterion, "keyPart", a, 1) {
-    return binForRecordKeyPart(a, criterion,
-                               startbit, usePivot, pivotBin, pivot);
+    return binForRecordKeyPart(a, criterion, startbit);
   } else if canResolveMethod(criterion, "key", a) {
     // Try to use the default comparator to get a keyPart.
-    return binForRecordKeyPart(criterion.key(a), defaultComparator,
-                               startbit, usePivot, pivotBin, pivot);
+    return binForRecordKeyPart(criterion.key(a),
+                               defaultComparator,
+                               startbit);
   } else {
     compilerError("Bad comparator for radix sort ", criterion.type:string,
                   " with eltType ", a.type:string);
   }
-}
-
-private
-proc median3Indexes(A:[], comparator, a, b, c) {
-  var lo = a;
-  var mid = b;
-  var hi = c;
-  // Now swap them around until the ordering is right
-  if chpl_compare(A[mid], A[lo], comparator) < 0 then
-    mid <=> lo;
-  if chpl_compare(A[hi], A[lo], comparator) < 0 then
-    hi <=> lo;
-  if chpl_compare(A[hi], A[mid], comparator) < 0 then
-    hi <=> mid;
-
-  return mid;
-}
-
-// for sorting A[lo..hi] (lo, hi are inclusive)
-private
-proc pseudoMedianIndex(lo:int, hi:int, A:[], comparator) {
-  // Use the median-of-median-of-3 method
-  var size = hi - lo;
-  var mid = lo + size/2;
-
-  // For small arrays, just use the middle element
-  if size < 7 then
-    return mid;
-
-  // For medium arrays, use median of several
-  if size < 40 then
-    return median3Indexes(A, comparator, lo, mid, hi);
-
-  // For big arrays, use median of medians
-  return median3Indexes(A, comparator,
-                        median3Indexes(A, comparator, lo,   lo+1,  lo+2),
-                        median3Indexes(A, comparator, mid,  mid+1, mid+2),
-                        median3Indexes(A, comparator, hi-2, hi-1,  hi));
 }
 
 private
@@ -1233,10 +1175,10 @@ proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
 
 pragma "no doc"
 proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
+
   msbRadixSort(start_n=Data.domain.low, end_n=Data.domain.high,
                Data, comparator,
                startbit=0,
-               usePivot=false,
                settings=new MSBRadixSortSettings());
 }
 
@@ -1244,7 +1186,6 @@ proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
 pragma "no doc"
 proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
                   startbit:int,
-                  param usePivot:bool,
                   settings /* MSBRadixSortSettings */)
 {
   param endbit = msbRadixSortParamLastStartBit(A, criterion);
@@ -1261,57 +1202,29 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
   if settings.progress then writeln("radix sort start=", start_n, " end=", end_n, " startbit=", startbit, " endbit=", endbit);
 
   const radixbits = RADIX_BITS;
-  // would normally be (1<<radixbits) e.g. 255, but we add 4 to that:
-  //  * 2 end bits
-  //  * 2 bits for comparing with pivot (to differentate < = > pivot)
-  const radix = (1 << radixbits) + 1 + 2;
+  const radix = (1 << radixbits) + 1;
 
-  // 0th bin is for records where we've consumed all the key (done section -1).
-  // bin radix is also (done section 1)
+  // 0th bin is for records where we've consumed all the key.
   var offsets:[0..radix] int;
   var end_offsets:[0..radix] int;
-  
-  var pivot: A[start_n].type;
-  var pivotBin = radix+1;
-  if usePivot {
-    pivot = A[pseudoMedianIndex(start_n, end_n, A, criterion)];
-    // Compute the pivot bin.
-    // (passing radix+1 -- ignores the pivot when computing its own bin)
-    pivotBin = binForRecord(pivot, criterion, startbit, false, radix+1, pivot)(1);
-  }
-
-  type ubitsType = binForRecord(A[start_n], criterion, startbit, false, pivotBin, pivot)(2).type;
-
+  type ubitsType = binForRecord(A[start_n], criterion, startbit)(2).type;
   var min_ubits: ubitsType = max(ubitsType);
   var max_ubits: ubitsType = 0;
   var min_bin = radix+1;
   var max_bin = 0;
   var any_ending = false;
-
-  var max_in_bin = 0;
-  //writef("startbit %i pivotBin %i\n", startbit, pivotBin);
-  //writef("pivot is %064bu\n", pivot);
-
   // Step 1: count.
   // TODO: make this parallel for large enough sizes
   for i in start_n..end_n {
-    const (bin, ubits) = binForRecord(A[i], criterion, startbit, usePivot, pivotBin, pivot);
+    const (bin, ubits) = binForRecord(A[i], criterion, startbit);
     if ubits < min_ubits then
       min_ubits = ubits;
     if ubits > max_ubits then
       max_ubits = ubits;
     if bin == 0 || bin == radix then
       any_ending = true;
-    //writef("pivot is %064bu\n", pivot);
-    //writef("ubits is %064bu\n", ubits);
-    //writef("bin %i\n", bin);
     offsets[bin] += 1;
-    if max_in_bin < offsets[bin] then
-      max_in_bin = offsets[bin];
   }
-
-  // Compute information for recursive calls
-  const subbits = startbit + radixbits;
 
   // If the data parts we gathered all have the same leading bits,
   // we might be able to skip ahead immediately to the next count step.
@@ -1320,17 +1233,9 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
     if dataStartBit > startbit {
       // Re-start count again immediately at the new start position.
       msbRadixSort(start_n, end_n, A, criterion,
-                   dataStartBit, usePivot, settings);
+                   dataStartBit, settings);
       return;
     }
-  }
-
-  // If the count showed too much skew, try again with a pivot
-  if usePivot==false &&
-     max_in_bin > (end_n - start_n)/2 &&
-     max_in_bin > settings.sortSwitch {
-    msbRadixSort(start_n, end_n, A, criterion, startbit, true, settings);
-    return;
   }
 
   if settings.progress then writeln("accumulate");
@@ -1378,7 +1283,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       // Now go through the records in buf
       // putting them in their right home.
       for param j in 1..max_buf {
-        const (bin, _) = binForRecord(buf[j], criterion, startbit, usePivot, pivotBin, pivot);
+        const (bin, _) = binForRecord(buf[j], criterion, startbit);
         // prefetch(A[offsets[bin]]) could be here but doesn't help
 
         // Swap buf[j] into its appropriate bin.
@@ -1392,7 +1297,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       // Put buf[j] into its right home
       var j = 1;
       while used_buf > 0 && j <= used_buf {
-        const (bin, _) = binForRecord(buf[j], criterion, startbit, usePivot, pivotBin, pivot);
+        const (bin, _) = binForRecord(buf[j], criterion, startbit);
         // Swap buf[j] into its appropriate bin.
         var offset = offsets[bin];
         A[offset] <=> buf[j];
@@ -1420,6 +1325,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
 
   // This is a parallel version
   if settings.alwaysSerial == false {
+    const subbits = startbit + radixbits;
     var nbigsubs = 0;
     var bigsubs:[0..radix] (int,int);
     const runningNow = here.runningTasks();
@@ -1436,7 +1342,8 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
         // do nothing
       } else if num < settings.minForTask || runningNow >= settings.maxTasks {
         // sort it in this thread
-        msbRadixSort(bin_start, bin_end, A, criterion, subbits, usePivot, settings);
+        msbRadixSort(bin_start, bin_end, A, criterion,
+                     subbits, settings);
       } else {
         // Add it to the list of things to do in parallel
         bigsubs[nbigsubs] = (bin_start, bin_end);
@@ -1445,7 +1352,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
     }
 
     forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) {
-      msbRadixSort(bin_start, bin_end, A, criterion, subbits, usePivot, settings);
+      msbRadixSort(bin_start, bin_end, A, criterion, subbits, settings);
     }
   } else {
     // The serial version
@@ -1458,7 +1365,8 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
         // do nothing
       } else {
         // sort it in this thread
-        msbRadixSort(bin_start, bin_end, A, criterion, subbits, usePivot, settings);
+        msbRadixSort(bin_start, bin_end, A, criterion,
+                     startbit + radixbits, settings);
       }
     }
   }
