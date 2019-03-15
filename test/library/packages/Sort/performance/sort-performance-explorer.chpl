@@ -16,7 +16,9 @@ config const parallel = true;
 config param reverse = false;
 config type eltType = int;
 
-var methods = ["default", "msbRadixSort", "quickSort", "mergeSort"];
+config const seed = SeedGenerator.oddCurrentTime;
+
+var methods = ["default", "msbRadixSort", "quickSort"];//, "mergeSort"];
 
 proc testsort(input, method, parallel, cmp) {
 
@@ -76,17 +78,17 @@ proc testsize(size:int) {
     // scheme 0 : all zeros
   } else if inputDataScheme == 1 {
     // scheme 1: random ints
-    fillRandom(array);
+    fillRandom(array, seed=seed);
   } else if inputDataScheme == 2 {
     // scheme 2: random ints, only top byte set
-    fillRandom(array);
+    fillRandom(array, seed=seed);
     for a in array {
       a >>= 56;
       a <<= 56;
     }
   } else if inputDataScheme == 3 {
     // scheme 3: random ints, only a middle byte set
-    fillRandom(array);
+    fillRandom(array, seed=seed);
     for a in array {
       a >>= 56;
       a <<= 56;
@@ -94,11 +96,20 @@ proc testsize(size:int) {
     }
   } else if inputDataScheme == 4 {
     // scheme 4: random ints, only bottom byte set
-    fillRandom(array);
+    fillRandom(array, seed=seed);
     for a in array {
       a &= 0xff;
     }
+  } else if inputDataScheme == 5 {
+    // scheme 5: heavily skewed distribution,
+    // values are (1 << (random % 64))
+    fillRandom(array, seed=seed);
+    for a in array {
+      var shift = mod(a, 64);
+      a = 1 << shift;
+    }
   }
+
 
   var inputStringsDomain = {1..0};
   var inputStrings:[inputStringsDomain] string;
