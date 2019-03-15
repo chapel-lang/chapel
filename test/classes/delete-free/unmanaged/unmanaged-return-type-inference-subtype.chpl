@@ -15,5 +15,6 @@ proc makeit() {
 proc test() {
   var x = makeit();
   writeln(x.type:string);
+  delete x;
 }
 test();
