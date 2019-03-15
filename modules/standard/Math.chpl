@@ -1290,6 +1290,20 @@ module Math {
     extern proc yn(n: c_int, x: real(64)): real(64);
     return yn(n.safeCast(c_int), x);
   }
+  
+  /* Returns 1 if the sign of `x` is negative, else returns 0. */
+  inline proc signbit(x : real(32)): int {
+    pragma "fn synchronization free"
+    extern proc signbit(x: real(32)): int(32);
+    return signbit(x);
+  }
+
+  /* Returns 1 if the sign of `x` is negative, else returns 0. */
+  inline proc signbit(x : real(64)): int {
+    pragma "fn synchronization free"
+    extern proc signbit(x: real(64)): int(32);
+    return signbit(x);
+  }
 
 } // end of module Math
 
