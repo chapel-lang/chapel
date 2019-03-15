@@ -1044,7 +1044,7 @@ record MSBRadixSortSettings {
 //
 // returns (bin, ubits)
 private inline
-proc binForRecordKeyPart(a, criterion, startbit:int)
+proc binForRecordKeyPart(a, criterion, startbit:int, usesplitter:bool, splitterbin, splitter)
 {
   // We have keyPart(element, start):(section:int(8), part:int/uint)
   const testRet: criterion.keyPart(a, 1).type;
@@ -1072,34 +1072,65 @@ proc binForRecordKeyPart(a, criterion, startbit:int)
   }
   param mask:uint = (1 << RADIX_BITS) - 1;
   const ubin = (ubits >> (bitsPerPart - bitsinpart - RADIX_BITS)) & mask;
+  const bin = (ubin:int) + 1; // add 1 for space for section -1 ending
+  const splitbits = (ubits >> RADIX_BITS) << RADIX_BITS; // TODO: half?
 
-  if section == 0 then
-    return (ubin:int + 1, ubits);
-  else if section < 0 then
+  writeln("computed bin ", bin, " splitterbin is ", splitterbin);
+  if section == 0 {
+    if usesplitter==false || bin < splitterbin {
+      return (bin, ubits);
+    } else if bin == splitterbin {
+      if splitbits < splitter then
+        return (bin + 0, ubits);
+      else if splitbits == splitter then
+        return (bin + 1, ubits);
+      else
+        return (bin + 2, ubits);
+    } else {
+      // bin > splitterbin
+      return (bin + 2, ubits);
+    }
+  } else if section < 0 {
     return (0, ubits);
-  else
-    return ((1 << RADIX_BITS) + 1, ubits);
+  } else {
+    return ((1 << RADIX_BITS) + 1 + 2, ubits);
+  }
 }
 
 // Get the bin for a record with criterion.key or criterion.keyPart
 //
 // See binForRecordKeyPart for what the arguments / returns mean.
 private inline
-proc binForRecord(a, criterion, startbit:int)
+proc binForRecord(a, criterion, startbit:int, param usesplitter, splitterbin, splitter)
 {
   use Reflection;
 
   if canResolveMethod(criterion, "keyPart", a, 1) {
-    return binForRecordKeyPart(a, criterion, startbit);
+    return binForRecordKeyPart(a, criterion,
+                               startbit, usesplitter, splitterbin, splitter);
   } else if canResolveMethod(criterion, "key", a) {
     // Try to use the default comparator to get a keyPart.
-    return binForRecordKeyPart(criterion.key(a),
-                               defaultComparator,
-                               startbit);
+    return binForRecordKeyPart(criterion.key(a), defaultComparator,
+                               startbit, usesplitter, splitterbin, splitter);
   } else {
     compilerError("Bad comparator for radix sort ", criterion.type:string,
                   " with eltType ", a.type:string);
   }
+}
+
+private inline
+proc splitterFromRecord(a, criterion, startbit:int)
+{
+  var (_, ubits) = binForRecord(a, criterion, startbit, false, 0:uint, 0:uint);
+  param bitsPerPart = numBits(ubits.type);
+  // Clear the bottom bits of it
+  const curhalf = ubits >> RADIX_BITS; // TODO: half?
+  return curhalf << RADIX_BITS;
+}
+
+// TODO
+proc setupSplitterBits {
+  // Take only the next radix bits? or next two? or?
 }
 
 private
@@ -1175,10 +1206,12 @@ proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
 
 pragma "no doc"
 proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
+  var splitter = splitterFromRecord(Data[Data.domain.low], comparator, 1);
 
   msbRadixSort(start_n=Data.domain.low, end_n=Data.domain.high,
                Data, comparator,
                startbit=0,
+               splitter=splitter,
                settings=new MSBRadixSortSettings());
 }
 
@@ -1186,6 +1219,7 @@ proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
 pragma "no doc"
 proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
                   startbit:int,
+                  splitter,
                   settings /* MSBRadixSortSettings */)
 {
   param endbit = msbRadixSortParamLastStartBit(A, criterion);
@@ -1202,29 +1236,68 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
   if settings.progress then writeln("radix sort start=", start_n, " end=", end_n, " startbit=", startbit, " endbit=", endbit);
 
   const radixbits = RADIX_BITS;
-  const radix = (1 << radixbits) + 1;
+  const radix = (1 << radixbits) + 1 + 2;
 
   // 0th bin is for records where we've consumed all the key.
   var offsets:[0..radix] int;
   var end_offsets:[0..radix] int;
-  type ubitsType = binForRecord(A[start_n], criterion, startbit)(2).type;
+  type ubitsType = binForRecord(A[start_n], criterion, startbit, true, 0, splitter)(2).type;
+  param bitsPerPart = numBits(ubitsType);
+  const whichpart = startbit / bitsPerPart;
+  const bitsinpart = startbit % bitsPerPart;
+  param mask:uint = (1 << RADIX_BITS) - 1;
+  // Compute the splitter bin
+  const splitterbin = ((splitter >> (bitsPerPart - bitsinpart - RADIX_BITS)) & mask):int + 1;
+
   var min_ubits: ubitsType = max(ubitsType);
   var max_ubits: ubitsType = 0;
   var min_bin = radix+1;
   var max_bin = 0;
   var any_ending = false;
+
+  var majhalf = splitter;
+  var majcount = 0;
+
+  writef("startbit %i splitterbin %i\n", startbit, splitterbin);
+  writef("split is %064bu\n", splitter);
+
   // Step 1: count.
   // TODO: make this parallel for large enough sizes
   for i in start_n..end_n {
-    const (bin, ubits) = binForRecord(A[i], criterion, startbit);
+    const (bin, ubits) = binForRecord(A[i], criterion, startbit, true, splitterbin, splitter);
     if ubits < min_ubits then
       min_ubits = ubits;
     if ubits > max_ubits then
       max_ubits = ubits;
     if bin == 0 || bin == radix then
       any_ending = true;
+    // majority vote algorithm
+    var curhalf = ubits >> RADIX_BITS; // TODO: half?
+    if majcount == 0 {
+      majhalf = curhalf;
+      majcount = 1;
+    } else if majhalf == curhalf {
+      majcount += 1;
+    } else {
+      majcount -= 1;
+    }
+    writef("ubits is %064bu\n", ubits);
+    writef("half  is %064bu\n", curhalf << RADIX_BITS);
+    writef("bin %i\n", bin);
     offsets[bin] += 1;
   }
+
+  writef("majhf is %064bu majcount is %i\n", majhalf << RADIX_BITS, majcount);
+
+
+  // Compute information for recursive calls
+  const subbits = startbit + radixbits;
+  const subsplitter = majhalf << RADIX_BITS;
+  writef("subs  is %064bu\n", subsplitter);
+  const subsplitterbin = (subsplitter >> (bitsPerPart - bitsinpart - RADIX_BITS - RADIX_BITS)) & mask;
+
+  //if startbit == 8 then
+    halt("Halting");
 
   // If the data parts we gathered all have the same leading bits,
   // we might be able to skip ahead immediately to the next count step.
@@ -1233,7 +1306,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
     if dataStartBit > startbit {
       // Re-start count again immediately at the new start position.
       msbRadixSort(start_n, end_n, A, criterion,
-                   dataStartBit, settings);
+                   dataStartBit, subsplitter, settings);
       return;
     }
   }
@@ -1283,7 +1356,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       // Now go through the records in buf
       // putting them in their right home.
       for param j in 1..max_buf {
-        const (bin, _) = binForRecord(buf[j], criterion, startbit);
+        const (bin, _) = binForRecord(buf[j], criterion, startbit, true, splitterbin, splitter);
         // prefetch(A[offsets[bin]]) could be here but doesn't help
 
         // Swap buf[j] into its appropriate bin.
@@ -1297,7 +1370,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       // Put buf[j] into its right home
       var j = 1;
       while used_buf > 0 && j <= used_buf {
-        const (bin, _) = binForRecord(buf[j], criterion, startbit);
+        const (bin, _) = binForRecord(buf[j], criterion, startbit, true, splitterbin, splitter);
         // Swap buf[j] into its appropriate bin.
         var offset = offsets[bin];
         A[offset] <=> buf[j];
@@ -1325,7 +1398,6 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
 
   // This is a parallel version
   if settings.alwaysSerial == false {
-    const subbits = startbit + radixbits;
     var nbigsubs = 0;
     var bigsubs:[0..radix] (int,int);
     const runningNow = here.runningTasks();
@@ -1342,8 +1414,13 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
         // do nothing
       } else if num < settings.minForTask || runningNow >= settings.maxTasks {
         // sort it in this thread
+        var cursplitter = subsplitter;
+        if subsplitterbin != bin {
+          // Compute new splitter
+          cursplitter = splitterFromRecord(A[bin_start], criterion, subbits);
+        }
         msbRadixSort(bin_start, bin_end, A, criterion,
-                     subbits, settings);
+                     subbits, cursplitter, settings);
       } else {
         // Add it to the list of things to do in parallel
         bigsubs[nbigsubs] = (bin_start, bin_end);
@@ -1352,7 +1429,13 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
     }
 
     forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) {
-      msbRadixSort(bin_start, bin_end, A, criterion, subbits, settings);
+      var cursplitter = subsplitter;
+      if subsplitterbin != bin {
+        // Compute new splitter
+        cursplitter = splitterFromRecord(A[bin_start], criterion, subbits);
+      }
+
+      msbRadixSort(bin_start, bin_end, A, criterion, subbits, cursplitter, settings);
     }
   } else {
     // The serial version
@@ -1365,8 +1448,14 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
         // do nothing
       } else {
         // sort it in this thread
+        var cursplitter = subsplitter;
+        if subsplitterbin != bin {
+          // Compute new splitter
+          cursplitter = splitterFromRecord(A[bin_start], criterion, subbits);
+        }
+
         msbRadixSort(bin_start, bin_end, A, criterion,
-                     startbit + radixbits, settings);
+                     subbits, cursplitter, settings);
       }
     }
   }
