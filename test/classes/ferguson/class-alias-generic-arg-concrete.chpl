@@ -5,7 +5,7 @@ class A {
 
 proc doit(type C)
 {
-  var c = new unmanaged C(1);
+  var c = new C(1);
   writeln(c);
   writeln(c.x);
   delete c;
