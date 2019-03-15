@@ -1306,7 +1306,6 @@ static void setupChplGlobals(const char* argv0) {
 
     // Keep envMap updated
     envMap["CHPL_HOME"] = CHPL_HOME;
-
   }
 
   // tell printchplenv that we're doing an LLVM build
@@ -1322,7 +1321,7 @@ static void setupChplGlobals(const char* argv0) {
 }
 
 static void postSetGeneratePIC() {
-  fGeneratePIC = strcmp(CHPL_LIB_PIC, "pic") == 0;
+  fGeneratePIC = (strcmp(CHPL_LIB_PIC, "pic") == 0);
 }
 
 static void postStackCheck() {
