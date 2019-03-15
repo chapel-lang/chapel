@@ -2771,6 +2771,12 @@ void makeBinaryLLVM(void) {
   }
 #endif
 
+  // Make sure that we are generating PIC when we need to be.
+  if (fGeneratePIC) {
+    INT_ASSERT(info->targetMachine->getRelocationModel()
+        == llvm::Reloc::Model::PIC_);
+  }
+
   // Emit the .o file for linking with clang
   // Setup and run LLVM passes to emit a .o file to outputOfile
   {
