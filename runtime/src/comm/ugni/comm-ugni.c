@@ -1547,9 +1547,8 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
                             gni_fma_cmd_type_t, void*, mem_region_t*);
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
-static void      nic_amo_buff_init(void);
-static void      nic_amo_nf_buff_flush(void);
-static void      nic_amo_nf_buff_task_flush(void);
+static void      nic_amo_nf_buff_task_flush(chpl_comm_taskPrvData_t*);
+static void      nic_amo_nf_buff_task_end(chpl_comm_taskPrvData_t*);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
 static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
@@ -1979,7 +1978,7 @@ int chpl_comm_numPollingTasks(void)
 
 void chpl_comm_task_end(void) {
   remote_get_buff_task_flush();
-  nic_amo_nf_buff_task_flush();
+  nic_amo_nf_buff_task_end(get_comm_taskPrvdata());
 }
 
 void chpl_comm_post_task_init(void)
@@ -2108,7 +2107,6 @@ void chpl_comm_post_task_init(void)
   nb_desc_init();
   rf_done_init();
   amo_res_init();
-  nic_amo_buff_init();
   remote_get_buff_init();
 
   //
@@ -7182,7 +7180,7 @@ DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double, NEGATE_U_OR_R)
 #undef DEFINE_CHPL_COMM_ATOMIC_SUB
 
 void chpl_comm_atomic_unordered_task_fence(void) {
-  nic_amo_nf_buff_task_flush();
+  nic_amo_nf_buff_task_flush(get_comm_taskPrvdata());
 }
 
 static
@@ -7237,37 +7235,20 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
  * increased transaction rate.
  */
 
-// Per thread information about non-fetching AMO buffers
-typedef struct amo_nf_buff_thread_info_t {
-  int                               vi;
-  spinlock                          lock;
-  chpl_bool                         inited;
-  uint64_t                          opnd1_v[MAX_CHAINED_AMO_LEN];
-  c_nodeid_t                        locale_v[MAX_CHAINED_AMO_LEN];
-  void*                             object_v[MAX_CHAINED_AMO_LEN];
-  size_t                            size_v[MAX_CHAINED_AMO_LEN];
-  gni_fma_cmd_type_t                cmd_v[MAX_CHAINED_AMO_LEN];
-  mem_region_t*                     remote_mr_v[MAX_CHAINED_AMO_LEN];
-  struct amo_nf_buff_thread_info_t* next;
-} amo_nf_buff_thread_info_t;
-
-// Contains linked list of all thread private AMO buffer infos (so we can flush
-// all of them) and a lock to protect access to the list
+// Per task information about non-fetching AMO buffers
 typedef struct {
-  amo_nf_buff_thread_info_t* list;
-  rwlock                     lock;
-  pthread_key_t              destructor_key;
-} amo_nf_buff_global_info_t;
+  int                vi;
+  uint64_t           opnd1_v[MAX_CHAINED_AMO_LEN];
+  c_nodeid_t         locale_v[MAX_CHAINED_AMO_LEN];
+  void*              object_v[MAX_CHAINED_AMO_LEN];
+  size_t             size_v[MAX_CHAINED_AMO_LEN];
+  gni_fma_cmd_type_t cmd_v[MAX_CHAINED_AMO_LEN];
+  mem_region_t*      remote_mr_v[MAX_CHAINED_AMO_LEN];
+} amo_nf_buff_task_info_t;
 
-static __thread amo_nf_buff_thread_info_t amo_nf_buff_thread_info;
-
-static amo_nf_buff_global_info_t amo_nf_buff_global_info;
-
-// Flush buffered atomic operations for the specified thread and reset the
-// counter. Should be called with info lock acquired
-static
-inline
-void amo_nf_buff_thread_info_flush(amo_nf_buff_thread_info_t* info) {
+// Flush buffered AMOs for the specified task info and reset the counter.
+static inline
+void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info) {
   if (info->vi > 0) {
     do_nic_amo_nf_V(info->vi, info->opnd1_v, info->locale_v, info->object_v,
                     info->size_v, info->cmd_v, info->remote_mr_v);
@@ -7275,115 +7256,48 @@ void amo_nf_buff_thread_info_flush(amo_nf_buff_thread_info_t* info) {
   }
 }
 
-static
-void amo_nf_buff_thread_info_init(amo_nf_buff_thread_info_t* info) {
-  rwlock_writer_lock(&amo_nf_buff_global_info.lock);
-  // need to recheck now that we have to lock
-  if (!info->inited) {
-
-    spinlock_init(&info->lock);
-    info->vi = 0;
-
-    // add thread to linked list
-    info->next = amo_nf_buff_global_info.list;
-    amo_nf_buff_global_info.list = info;
-
-    // dummy key binding needed so key destructor is called
-    pthread_setspecific(amo_nf_buff_global_info.destructor_key, info);
-
-    info->inited = true;
-  }
-  rwlock_unlock(&amo_nf_buff_global_info.lock);
-}
-
-static
-void amo_nf_buff_thread_info_destroy(void* p) {
-  amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
-
-  // remove the thread from the linked list
-  rwlock_writer_lock(&amo_nf_buff_global_info.lock);
-  amo_nf_buff_thread_info_t* global_info = amo_nf_buff_global_info.list;
-  if (info == global_info) {
-    amo_nf_buff_global_info.list = info->next;
-  } else {
-    while (global_info != NULL) {
-      if (info == global_info->next) {
-        global_info->next = info->next;
-        break;
-      }
-      global_info = global_info->next;
-    }
-  }
-  rwlock_unlock(&amo_nf_buff_global_info.lock);
-
-  // flush any pending ops
-  spinlock_lock(&info->lock);
-  amo_nf_buff_thread_info_flush(info);
-  spinlock_unlock(&info->lock);
-  spinlock_destroy(&info->lock);
-}
-
-static
-void nic_amo_buff_init(void) {
-  amo_nf_buff_global_info.list = NULL;
-  rwlock_init(&amo_nf_buff_global_info.lock);
-  pthread_key_create(&amo_nf_buff_global_info.destructor_key, amo_nf_buff_thread_info_destroy);
-}
-
-// Flush buffered atomic operations for all threads
-static
-inline
-void nic_amo_nf_buff_flush(void) {
-  amo_nf_buff_thread_info_t* info;
-
-  rwlock_reader_lock(&amo_nf_buff_global_info.lock);
-  info = amo_nf_buff_global_info.list;
-  while (info != NULL) {
-    spinlock_lock(&info->lock);
-    amo_nf_buff_thread_info_flush(info);
-    spinlock_unlock(&info->lock);
-    info = info->next;
-  }
-  rwlock_unlock(&amo_nf_buff_global_info.lock);
-}
-
-// Flush buffered atomic operations for this task
-static
-inline
-void nic_amo_nf_buff_task_flush(void) {
-  if (chpl_task_canMigrateThreads()) {
-    nic_amo_nf_buff_flush();
-  } else {
-    amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
-    // Safe to check inited/vi outside the lock because no other thread can be
-    // modifying them, but concurrent flushing from other threads is possible.
-    if (info->inited && info->vi > 0) {
-      spinlock_lock(&info->lock);
-      amo_nf_buff_thread_info_flush(info);
-      spinlock_unlock(&info->lock);
-    }
+// Flush buffered AMOs for this task
+static inline
+void nic_amo_nf_buff_task_flush(chpl_comm_taskPrvData_t* prvData) {
+  if (prvData == NULL) return;
+  amo_nf_buff_task_info_t* info = prvData->amo_nf_buff;
+  if (info != NULL && info->vi > 0) {
+    amo_nf_buff_task_info_flush(info);
   }
 }
 
-// Append to thread local buffers of operations and flush if full
-static
-inline
+// Flush buffered AMOs for this task and cleanup and task-local state
+static inline
+void nic_amo_nf_buff_task_end(chpl_comm_taskPrvData_t* prvData) {
+  if (prvData == NULL) return;
+  amo_nf_buff_task_info_t* info = prvData->amo_nf_buff;
+  if (info != NULL) {
+    amo_nf_buff_task_info_flush(info);
+    chpl_mem_free(info, 0, 0);
+    prvData->amo_nf_buff = NULL;
+  }
+}
+
+// Append to task local buffers of operations and flush if full
+static inline
 void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
                         void* object, size_t size,
                         gni_fma_cmd_type_t cmd,
                         mem_region_t* remote_mr)
 {
-  amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
-
-  if (!info->inited) {
-    amo_nf_buff_thread_info_init(info);
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) {
+    do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+    return;
   }
 
-  check_nic_amo(size, object, remote_mr);
-  PERFSTATS_INC(amo_cnt);
-
-  // grab lock for this thread
-  spinlock_lock(&info->lock);
+  amo_nf_buff_task_info_t* info = prvData->amo_nf_buff;
+  if (info == NULL) {
+    prvData->amo_nf_buff = chpl_mem_alloc(sizeof(amo_nf_buff_task_info_t),
+                                          CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+    info = prvData->amo_nf_buff;
+    info->vi = 0;
+  }
 
   int vi = info->vi;
   // append arguments to buffers
@@ -7398,11 +7312,9 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
 
   // flush if buffers are full
   if (info->vi == MAX_CHAINED_AMO_LEN) {
-    amo_nf_buff_thread_info_flush(info);
+    amo_nf_buff_task_info_flush(info);
   }
 
-  // release lock for this thread
-  spinlock_unlock(&info->lock);
 }
 /*** END OF NON-FETCHING BUFFERED ATOMIC OPERATIONS ***/
 
