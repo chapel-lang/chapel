@@ -2347,7 +2347,6 @@ void codegen() {
     codegen_makefile(&mainfile, NULL, false, userFileName);
   }
 
-  // Users of "--llvm" might enjoy a Makefile too!
   if (fLibraryCompile && fLibraryMakefile) {
     codegen_library_makefile();
   }
