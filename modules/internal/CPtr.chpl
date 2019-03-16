@@ -637,7 +637,7 @@ module CPtr {
 
     :arg s: the destination memory area to fill
     :arg c: the byte value to use
-    :arg n: the number of bytes of b to fill
+    :arg n: the number of bytes of s to fill
 
     :returns: s
    */
