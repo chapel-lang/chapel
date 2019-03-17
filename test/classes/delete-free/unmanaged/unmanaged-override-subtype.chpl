@@ -21,5 +21,7 @@ proc test() {
   var dom = new unmanaged MyDomain(1);
   var arr:unmanaged Array = new unmanaged MyArray(dom);
   var x = arr.foo();
+  delete arr;
+  delete dom;
 }
 test();
