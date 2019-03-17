@@ -35,7 +35,7 @@ class Z : A {
   var x : unmanaged Dummy(stridable);
 }
 
-var z = new unmanaged Z(1, int, false);
+var z = new owned Z(1, int, false);
 writeln("z = ", z);
 
 //
