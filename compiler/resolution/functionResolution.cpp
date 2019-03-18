@@ -2732,7 +2732,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         USR_FATAL_CONT(call,
                        "Cannot assign to %s from %s",
                        toString(info.actuals.v[0]->type),
-                        toString(info.actuals.v[1]->type));
+                       toString(info.actuals.v[1]->type));
       }
 
     } else if (info.name == astrThis) {
