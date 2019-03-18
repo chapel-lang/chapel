@@ -7,8 +7,8 @@ var octS = "0o777": uint;
 var decL = 999;
 var decS = "999": uint;
 
-var hexL = 0xFFF;
-var hexS = "0xFFF": uint;
+var hexL = 0xffffffffffffffff;
+var hexS = "0xffffffffffffffff":uint;
 
 assert(binL == binS);
 assert(octL == octS);
