@@ -264,8 +264,6 @@ data to a data structure.
 
 .. code-block:: chapel
 
-  class MyClass { var x:int; }
-
   record Collection {
     type elementType;
     var element: elementType;
