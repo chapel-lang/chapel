@@ -1304,10 +1304,8 @@ static void setupModule()
   }
 
   llvm::Reloc::Model relocModel = llvm::Reloc::Model::Static;
-  // TODO: we may need to use Reloc::PIC_ once we start
-  // interpreting, etc.
-  // Indeed we do!
-  if (fGeneratePIC) {
+  
+  if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
     relocModel = llvm::Reloc::Model::PIC_;
   }
 
@@ -2772,7 +2770,7 @@ void makeBinaryLLVM(void) {
 #endif
 
   // Make sure that we are generating PIC when we need to be.
-  if (fGeneratePIC) {
+  if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
     INT_ASSERT(info->targetMachine->getRelocationModel()
         == llvm::Reloc::Model::PIC_);
   }

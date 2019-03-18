@@ -110,9 +110,6 @@ bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryPython = false;
 
-// We need to inform LLVM codegen about PIC being set.
-bool fGeneratePIC = false;
-
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool fVerify = false;
@@ -1320,10 +1317,6 @@ static void setupChplGlobals(const char* argv0) {
   setChapelEnvs();
 }
 
-static void postSetGeneratePIC() {
-  fGeneratePIC = (strcmp(CHPL_LIB_PIC, "pic") == 0);
-}
-
 static void postStackCheck() {
   if (!fNoStackChecks && fUserSetStackChecks) {
     if (strcmp(CHPL_TASKS, "massivethreads") == 0) {
@@ -1416,8 +1409,6 @@ static void postprocess_args() {
   postLocal();
 
   postVectorize();
-
-  postSetGeneratePIC();
 
   postTaskTracking();
 
