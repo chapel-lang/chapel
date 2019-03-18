@@ -132,6 +132,7 @@ void codegen_library_makefile() {
     // "lib"
     name = executableFilename;
   }
+
   fileinfo makefile;
   openLibraryHelperFile(&makefile, "Makefile", name.c_str());
 
@@ -226,7 +227,16 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   if (requires != "") {
     fprintf(makefile.fptr, "%s", requires.c_str());
   }
-  fprintf(makefile.fptr, " %s\n", libraries.c_str());
+
+  // For the GNU linker workaround below.
+  if (libraries.back() == '\n') {
+    libraries.pop_back();
+  }
+
+  fprintf(makefile.fptr, " %s", libraries.c_str());
+
+  // GNU linker won't be able to see config symbols without this.
+  fprintf(makefile.fptr, " %s\n\n", libname.c_str());
 }
 
 const char* getLibraryExtension() {
