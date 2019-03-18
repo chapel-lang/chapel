@@ -15,7 +15,6 @@ TAGS
 tags
 *.DS_Store
 *.vagrant
-cscope.out
 
 
 # Top level ignores.
