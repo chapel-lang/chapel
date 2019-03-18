@@ -208,6 +208,7 @@ printplatform:
 # use: make print-X to print the value of the variable X
 #
 print-%: ; @echo "$*" is "$($*)"
+printQ-%: ; @echo "$($*)"
 
 
 # OBJ_SUBDIR is used in compiler/
