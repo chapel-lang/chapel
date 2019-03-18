@@ -18,7 +18,7 @@ imag(32) (m32)  isImag  isImagValue  isImagType  .
 imag(64) (m64)  isImag  isImagValue  isImagType  .
 complex(64) (z64)  isComplex  isComplexValue  isComplexType  .
 complex(128) (z128)  isComplex  isComplexValue  isComplexType  .
-string (str)  isString  isStringValue  isStringType  isRecord  isRecordValue  isRecordType  .
+string (str)  isString  isStringValue  isStringType  .
 EnumType (enm)  isEnum  isEnumValue  isEnumType  .
 HomTupType (homtup)  isTuple  isTupleValue  isTupleType  isHomogeneousTuple  isHomogeneousTupleValue  isHomogeneousTupleType  .
 HetTupType (hettup)  isTuple  isTupleValue  isTupleType  .
