@@ -228,9 +228,9 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     fprintf(makefile.fptr, "%s", requires.c_str());
   }
 
-  // For the GNU linker workaround below.
-  if (libraries.back() == '\n') {
-    libraries.pop_back();
+  // Erase trailing newline if needed for the workaround below.
+  if (libraries.size() > 0 && *libraries.rbegin() == '\n') {
+    libraries.erase(libraries.end() - 1);
   }
 
   fprintf(makefile.fptr, " %s", libraries.c_str());
