@@ -1,2 +1,2 @@
 tupleReal32.chpl:2: error: illegal lvalue in assignment
-tupleReal32.chpl:2: error: type mismatch in assignment from real(64) to real(32)
+tupleReal32.chpl:2: error: Cannot assign to real(32) from real(64)
