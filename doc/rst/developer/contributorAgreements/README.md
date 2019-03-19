@@ -22,5 +22,5 @@ Once completed, CLAs should be scanned as PDFs and mailed to:
 **chapel<!---deleteme-->_admin<!---deleteme-->@<!---deleteme-->cray.com**
 along with your GitHub ID.
 
-Once your CLA is received and processed, you should receive a GitHub invitation
-to the @chapel-lang/chapel-contributors team.
+Once your CLA is received and processed, you should receive a confirmation
+email and a GitHub invitation to the @chapel-lang/chapel-contributors team.
