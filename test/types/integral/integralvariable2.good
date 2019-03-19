@@ -1,2 +1,2 @@
 integralvariable2.chpl:1: error: Cannot default-initialize a variable with generic type
-integralvariable2.chpl:1: note: 'abstract' has generic type 'integral'
+integralvariable2.chpl:1: note: 'r' has generic type 'integral'

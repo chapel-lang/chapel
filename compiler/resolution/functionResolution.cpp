@@ -9217,7 +9217,7 @@ static void resolvePrimInitGenericRecordVar(CallExpr* call,
 
 static bool    primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
 
-static void    primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type);
+static void    primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type, Symbol* val);
 
 void resolvePrimInit(CallExpr* call) {
   Expr* valExpr = NULL;
@@ -9350,7 +9350,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // Generate a more specific USR_FATAL if resolution would fail
   } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
-    primInitHaltForUnacceptableGeneric(call, type);
+    primInitHaltForUnacceptableGeneric(call, type, val);
 
   // These types default to nil
   } else if (isClassLikeOrNil(type)) {
@@ -9559,18 +9559,10 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
 }
 
 // Generate a useful USR_FATAL for an unacceptable Generic
-static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type) {
-  const char* label = "abstract";
-
-  if (AggregateType* at = toAggregateType(type)) {
-    if (at->typeConstructor != NULL) {
-      label = "not-fully-instantiated";
-    }
-  }
-
+static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type, Symbol* val) {
   USR_FATAL_CONT(call,
                  "Cannot default-initialize a variable with generic type");
-  USR_PRINT(call, "'%s' has generic type '%s'", label, type->symbol->name);
+  USR_PRINT(call, "'%s' has generic type '%s'", val->name, type->symbol->name);
   USR_STOP();
 }
 
