@@ -2990,20 +2990,15 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
     // cast. Engin
     if(info->cfile) {
       return codegenNotEquals(value, codegenZero());
-    }
-    else {
+    } else {
 #ifdef HAVE_LLVM
+      GenRet notZero = codegenNotEquals(value, codegenZero());
+
+      // convert the i1 result into an i8 (or appropriate bool width)
       llvm::Type* castType = t->codegen().type;
-
-      llvm::IntegerType* castTypeInt =
-        llvm::dyn_cast<llvm::IntegerType>(castType);
-
-      llvm::IntegerType* valueTypeInt =
-        llvm::dyn_cast<llvm::IntegerType>(value.val->getType());
-
-      if(castTypeInt->getBitWidth() < valueTypeInt->getBitWidth()) {
-        return codegenNotEquals(value, codegenZero());
-      }
+      ret.val = convertValueToType(notZero.val, castType, !ret.isUnsigned);
+      INT_ASSERT(ret.val);
+      return ret;
 #endif
     }
   }
