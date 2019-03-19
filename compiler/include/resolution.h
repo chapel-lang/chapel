@@ -259,6 +259,14 @@ static inline bool isUnresolvedOrGenericReturnType(Type* retType) {
 
 SymExpr* findSourceOfYield(CallExpr* yield);
 
+void expandInitFieldPrims();
+
+void removeCopyFns(Type* t);
+
+bool isUnusedClass(Type* t);
+
+void pruneResolvedTree();
+
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);
 
 void resolvePromotionType(AggregateType* at);
