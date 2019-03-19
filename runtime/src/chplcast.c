@@ -51,7 +51,7 @@ static int scanningNCounts(void) {
 }
 
 static int illegalFirstUnsChar(char c) {
-  return ((c < '0' || c > '9') && (c != '+'));
+  return (c == '-');
 }
 
 /* Need to use this helper macro for PGI where doing otherwise causes
