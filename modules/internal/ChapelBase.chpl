@@ -2007,6 +2007,7 @@ module ChapelBase {
             isTupleType(t)  ||
             isSyncType(t)   ||
             isSingleType(t) ||
+            isStringType(t) ||
             isAtomicType(t) then
       return false;
 
