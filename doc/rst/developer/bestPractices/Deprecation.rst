@@ -12,11 +12,11 @@ This is the deprecation process:
 
 1. Provide a compiler warning (or error, if necessary) when a deprecated feature is used
 
-The deprecation message is typically implemented with the following format:
+The deprecation message uses the following format:
 
-..code-block:: chapel
+..code-block::
 
-    CompilerWarning("foo is deprecated - please use bar")
+    foo is deprecated - please use bar
 
 2. Update the deprecated feature documentation to state that it is deprecated
    and point to the preferred feature.
