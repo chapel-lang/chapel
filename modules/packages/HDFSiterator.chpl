@@ -20,6 +20,12 @@
 /*
    Iterators for distributed iteration over Hadoop Distributed Filesystem
 
+   .. warning::
+
+     This module is currently not working. See
+     `#12627 <https://github.com/chapel-lang/chapel/issues/12627>`_
+     to track progress.
+
    Iterators that can iterate over distributed data in an HDFS filesystem
    in a distributed manner. See :mod:`HDFS`.
  */

@@ -21,6 +21,14 @@
 
 Support for Hadoop Distributed Filesystem
 
+.. warning::
+
+  This module is currently not working. See
+  `#12627 <https://github.com/chapel-lang/chapel/issues/12627>`_
+  to track progress.
+
+
+
 This module implements support for the
 `Hadoop <http://hadoop.apache.org/>`_
 `Distributed Filesystem <http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html>`_ (HDFS).
