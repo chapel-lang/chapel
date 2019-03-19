@@ -230,7 +230,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
 
   if (!llvmCodegen) {
     fprintf(makefile.fptr, " %s\n", libraries.c_str());
-  } else { 
+  } else {
     // LLVM requires a bit more work to make the GNU linker happy.
     if (libraries.size() > 0 && *libraries.rbegin() == '\n') {
       libraries.erase(libraries.end() -1);
