@@ -10,7 +10,9 @@ Non-public interface features can be removed or modified without deprecation.
 
 This is the deprecation process:
 
-1. Provide a compiler warning (or error, if necessary) when a deprecated feature is used
+1. Provide a warning or error message when a deprecated feature is used. This
+   may be in the module code, compiler, or runtime, and can be emitted at
+   compile-time or runtime.
 
 The deprecation message uses the following format:
 
