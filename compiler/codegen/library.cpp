@@ -686,6 +686,12 @@ void codegen_make_python_module() {
   fullCythonCall += " CFLAGS=\"" + cFlags + requireIncludes + " " + includes;
   fullCythonCall += "\" LDFLAGS=\"-L. " + name + requireLibraries;
   fullCythonCall += " " + libraries;
+
+  // We might be using the GNU linker, in which case we need to do this.
+  if (llvmCodegen) {
+    fullCythonCall += " " + name;
+  }
+
   fullCythonCall +=  "\" " + cythonPortion;
 
   std::string chdirIn = "cd ";
