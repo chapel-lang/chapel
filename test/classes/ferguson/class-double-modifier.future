@@ -1,4 +1,4 @@
-bug: classes can be modified twice
+semantic: classes can be modified twice
 
 It seems counterintuitive to me that Chapel would permit two class
 modifiers to be applied to a class type, yet it seems that this is
@@ -9,3 +9,6 @@ in the .good file here.
 I imagine that a challenge in getting this right is that it's a
 case that would want to distinguish between `C` and `borrowed C`
 where we normally interpret the former as the latter.
+
+There's more discussion on this question on the PR that filed this
+future #12603.
