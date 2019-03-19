@@ -1,1 +1,1 @@
-opequals2.chpl:6: error: type mismatch in assignment from complex(128) to imag(64)
+opequals2.chpl:6: error: Cannot assign to imag(64) from complex(128)

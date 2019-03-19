@@ -1,1 +1,1 @@
-scalarArrMismatch.chpl:4: error: type mismatch in assignment from real(64) to real(32)
+scalarArrMismatch.chpl:4: error: Cannot assign to real(32) from real(64)
