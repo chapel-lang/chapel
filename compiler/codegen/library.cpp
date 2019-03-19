@@ -228,16 +228,21 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     fprintf(makefile.fptr, "%s", requires.c_str());
   }
 
-  // Erase trailing newline if needed for the workaround below.
+  if (!llvmCodegen) {
+    fprintf(makefile.fptr, " %s\n", libraries.c_str());
+    return;
+  }
+  
+  // LLVM requires a bit more work to make the GNU linker happy.
   if (libraries.size() > 0 && *libraries.rbegin() == '\n') {
-    libraries.erase(libraries.end() - 1);
+    libraries.erase(libraries.end() -1);
   }
 
-  fprintf(makefile.fptr, " %s", libraries.c_str());
-
-  // GNU linker won't be able to see config symbols without this.
-  fprintf(makefile.fptr, " %s\n\n", libname.c_str());
+  // Append the Chapel library as the last linker argument.
+  fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
 }
+
+
 
 const char* getLibraryExtension() {
   if (fLibraryCompile) {
