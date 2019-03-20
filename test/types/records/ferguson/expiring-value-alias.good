@@ -10,11 +10,11 @@ r3.x=5
 r4.x=3
 r5.x=3
 test2
-(c = {x = 100})
+100
 test3
-(c = {x = 100})
+100
 test4
-(c = {x = 100})
+100
 test5
 3
 test5ref
