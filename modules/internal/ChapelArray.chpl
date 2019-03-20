@@ -1095,7 +1095,7 @@ module ChapelArray {
     }*/
 
 
-    // TODO: we *SHOULD* be allowed to query param properties from a type....
+    // TODO: we *SHOULD* be allowed to query the type of '_instance' directly
     // This function may not use any run-time type information passed to it
     // in the form of the 'this' argument. Static/param information is OK.
     // TODO: only consider DR case for now
@@ -2329,10 +2329,69 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc this(d: domain) {
-      if d.rank == rank then
-        return this((...d.getIndices()));
-      else
+      if d.rank == rank {
+        if boundsChecking then
+          checkSlice(d);
+
+        proc appropriateType() param {
+          const newd = _dom((...d.dsiDims()));
+          writeln("Should never actually run this");
+          return newd.type == d.type;
+        }
+
+        // The following implements strategy 5a from issue #12272.
+        // If we could determine whether or not a domain was constant,
+        // it could be strategy 5b which is strictly better and better
+        // than what is on master today.
+        if appropriateType() && d.dist == this.domain.dist /* && d.isConst() */ then {
+          // This is incorrect or at least different than what we do
+          // today: We have to intersect d with the array's domain
+          // because we (currently) consider a slice to be a domain
+          // intersection followed by a subarray access to handle
+          // cases like slicing by [1..] or slicing a strided array by
+          // [1..n].  Or else we have to redefine what slicing by a
+          // domain means and only do the intersection for the range
+          // case...
+          return _newArray(setupArraySliceHelper(d, true));
+        } else {
+          pragma "no auto destroy"
+          const newd = _dom((...d.dsiDims()));
+          newd._value._free_when_no_arrs = true;
+          return _newArray(setupArraySliceHelper(newd, false));
+        }
+
+        proc setupArraySliceHelper(dom, param locking: bool) {
+        //
+        // If this is already a slice array view, we can short-circuit
+        // down to the underlying array.
+        //
+        const (arr, arrpid) = if (_value.isSliceArrayView())
+                              then (this._value.arr, this._value._ArrPid)
+                              else (this._value, this._pid);
+
+        var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
+                                                _DomPid=dom._pid,
+                                                dom=dom._instance,
+                                                _ArrPid=arrpid,
+                                                _ArrInstance=arr);
+
+        /*
+        writeln("About to add a new slice");
+        writeln(a.isSliceArrayView());
+        */
+        // lock only if we're sharing an existing domain
+        dom._value.add_arr(a, locking=locking);
+        return a;
+        }
+      } else
         compilerError("slicing an array with a domain of a different rank");
+    }
+
+    pragma "no doc"
+    proc checkSlice(d: domain) {
+      for param i in 1.._value.dom.rank do
+        if !_value.dom.dsiDim(i).boundsCheck(d.dsiDim(i)) then
+          halt("array slice out of bounds in dimension ", i, ": ", d.dsiDim(i));
     }
 
     pragma "no doc"
