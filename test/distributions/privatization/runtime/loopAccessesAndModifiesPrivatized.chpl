@@ -46,6 +46,7 @@ for (i, first) in zip(A, First) {
     }
 
     sum += c.i + one.i;
+
   }
 }
 
@@ -65,3 +66,5 @@ for i in A {
     clearPrivatized(i);
   }
 }
+
+delete valueOne;
