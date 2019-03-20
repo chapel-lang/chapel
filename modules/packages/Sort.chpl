@@ -1225,17 +1225,35 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
   var min_bin = radix+1;
   var max_bin = 0;
   var any_ending = false;
+
   // Step 1: count.
-  // TODO: make this parallel for large enough sizes
-  for i in start_n..end_n {
-    const (bin, ubits) = binForRecord(A[i], criterion, startbit);
-    if ubits < min_ubits then
-      min_ubits = ubits;
-    if ubits > max_ubits then
-      max_ubits = ubits;
-    if bin == 0 || bin == radix then
-      any_ending = true;
-    offsets[bin] += 1;
+  if settings.alwaysSerial == false {
+    forall i in start_n..end_n
+      with (+ reduce offsets,
+            min reduce min_ubits,
+            max reduce max_ubits,
+            || reduce any_ending) {
+      const (bin, ubits) = binForRecord(A[i], criterion, startbit);
+      if ubits < min_ubits then
+        min_ubits = ubits;
+      if ubits > max_ubits then
+        max_ubits = ubits;
+      if bin == 0 || bin == radix then
+        any_ending = true;
+      offsets[bin] += 1;
+    }
+  } else {
+    // The serial version
+    for i in start_n..end_n {
+      const (bin, ubits) = binForRecord(A[i], criterion, startbit);
+      if ubits < min_ubits then
+        min_ubits = ubits;
+      if ubits > max_ubits then
+        max_ubits = ubits;
+      if bin == 0 || bin == radix then
+        any_ending = true;
+      offsets[bin] += 1;
+    }
   }
 
   // If the data parts we gathered all have the same leading bits,
