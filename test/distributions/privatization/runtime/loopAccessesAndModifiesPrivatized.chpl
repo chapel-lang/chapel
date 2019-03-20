@@ -65,3 +65,5 @@ for i in A {
     clearPrivatized(i);
   }
 }
+
+delete valueOne;
