@@ -686,24 +686,10 @@ def set_up_environment():
     atexit.register(cleanup)
 
     # performance (linking flags to each other)
-    if args.performance or args.performance_description:
+    if args.performance or args.performance_description or args.perflabel != "perf":
         args.performance = True
         args.gen_graphs = True
         args.compopts = "--fast " + args.compopts
-        # Force static linking except where that won't work:
-        # - MacOS (darwin) targets
-        # - Cray systems when memkind will be linked in
-        # - any locale model other than 'flat' (because we'll need
-        #   libnuma which is only available as a .so)
-        # - massivethreads (because it depends on various .sos)
-        darwin = tgt_platform == 'darwin'
-        prgenv = compiler_utils.target_compiler_is_prgenv()
-        cray_memkind = prgenv and 'CRAY_MEMKIND' in os.environ
-        not_flat = chpl_locale_model.get() != 'flat'
-        massivethreads = chpl_tasks.get() == 'massivethreads'
-
-        if not(darwin or cray_memkind or not_flat or massivethreads):
-            args.compopts = "--static " + args.compopts
 
     if args.performance_configs:
         args.gen_graph_opts += " --configs " + args.performance_configs
