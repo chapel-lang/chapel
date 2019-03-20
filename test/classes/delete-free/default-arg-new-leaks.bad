@@ -1,0 +1,7 @@
+Default foo
+{x = 0}
+Supplied foo
+{x = 0}
+Deinitializing C
+Default bar
+{x = 0}
