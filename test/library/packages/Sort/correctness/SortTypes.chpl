@@ -58,8 +58,7 @@ proc checkSorts(arr, comparator) {
   var a = arr;
   sort(a, comparator);
   assert(isSorted(a, comparator));
-  if !isFloatOrTupleOfFloat(arr[1].type) &&
-     !isTupleOfString(arr[1].type) {
+  if !isTupleOfString(arr[1].type) {
     // check msbRadixSort
     if verbose then
       writeln("radix sort");
