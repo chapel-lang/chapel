@@ -8,8 +8,3 @@ CHPL_COMM == gasnet
 # this in the .good
 #
 COMPOPTS <= --baseline
-
-#
-# if we're testing memory leaks, skip this one since it's intended to leak
-#
-CHPL_MEM_LEAK_TESTING == true
