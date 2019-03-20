@@ -1176,21 +1176,24 @@ proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
 pragma "no doc"
 proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
 
+  var endbit:int;
+  endbit = msbRadixSortParamLastStartBit(Data, comparator);
+  if endbit < 0 then
+    endbit = max(int);
+
   msbRadixSort(start_n=Data.domain.low, end_n=Data.domain.high,
                Data, comparator,
-               startbit=0,
+               startbit=0, endbit=endbit,
                settings=new MSBRadixSortSettings());
 }
 
 // startbit counts from 0 and is a multiple of RADIX_BITS
 pragma "no doc"
 proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
-                  startbit:int,
+                  startbit:int, endbit:int,
                   settings /* MSBRadixSortSettings */)
 {
-  param endbit = msbRadixSortParamLastStartBit(A, criterion);
-  param hasendbit = endbit >= 0;
-  if hasendbit && startbit > endbit then
+  if startbit > endbit then
     return;
 
   if( end_n - start_n < settings.sortSwitch ) {
@@ -1233,7 +1236,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
     if dataStartBit > startbit {
       // Re-start count again immediately at the new start position.
       msbRadixSort(start_n, end_n, A, criterion,
-                   dataStartBit, settings);
+                   dataStartBit, endbit, settings);
       return;
     }
   }
@@ -1338,12 +1341,12 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       const bin_start = offsets[bin];
       const bin_end = if bin+1<=radix then offsets[bin+1]-1 else end_n;
       const num = 1 + bin_end - bin_start;
-      if num <= 1 || (hasendbit && startbit >= endbit) {
+      if num <= 1 || startbit >= endbit {
         // do nothing
       } else if num < settings.minForTask || runningNow >= settings.maxTasks {
         // sort it in this thread
         msbRadixSort(bin_start, bin_end, A, criterion,
-                     subbits, settings);
+                     subbits, endbit, settings);
       } else {
         // Add it to the list of things to do in parallel
         bigsubs[nbigsubs] = (bin_start, bin_end);
@@ -1352,7 +1355,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
     }
 
     forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) {
-      msbRadixSort(bin_start, bin_end, A, criterion, subbits, settings);
+      msbRadixSort(bin_start, bin_end, A, criterion, subbits, endbit, settings);
     }
   } else {
     // The serial version
@@ -1361,12 +1364,12 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       const bin_start = offsets[bin];
       const bin_end = if bin+1<=radix then offsets[bin+1]-1 else end_n;
       const num = 1 + bin_end - bin_start;
-      if num <= 1 || (hasendbit && startbit >= endbit) {
+      if num <= 1 || startbit >= endbit {
         // do nothing
       } else {
         // sort it in this thread
         msbRadixSort(bin_start, bin_end, A, criterion,
-                     startbit + radixbits, settings);
+                     startbit + radixbits, endbit, settings);
       }
     }
   }
