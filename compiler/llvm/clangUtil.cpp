@@ -2469,7 +2469,11 @@ void setupForGlobalToWide(void) {
 #if HAVE_LLVM_VER < 50
                           , NULL
 #endif
+#if HAVE_LLVM_VER < 80
                           );
+#else
+                          ).getCallee();
+#endif
   llvm::Function* fn = llvm::dyn_cast<llvm::Function>(fval);
 
   // Mark the function as external so that it will not be removed
@@ -2479,8 +2483,8 @@ void setupForGlobalToWide(void) {
      llvm::BasicBlock::Create(ginfo->module->getContext(), "entry", fn);
   ginfo->irBuilder->SetInsertPoint(block);
 
-  llvm::Constant* fns[] = {info->getFn, info->putFn,
-                           info->getPutFn, info->memsetFn, NULL};
+  llvm::Value* fns[] = {info->getFn, info->putFn,
+                        info->getPutFn, info->memsetFn, NULL};
 
   llvm::Value* ret = llvm::Constant::getNullValue(retType);
   llvm::Function::arg_iterator args = fn->arg_begin();
@@ -2489,7 +2493,7 @@ void setupForGlobalToWide(void) {
   ++args;
 
   for( int i = 0; fns[i]; i++ ) {
-    llvm::Constant* f = fns[i];
+    llvm::Value* f = fns[i];
     llvm::Value* ptr = ginfo->irBuilder->CreatePointerCast(f, retType);
     llvm::Value* id = llvm::ConstantInt::get(argType, i);
     llvm::Value* eq = ginfo->irBuilder->CreateICmpEQ(arg, id);
