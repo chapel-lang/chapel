@@ -1102,10 +1102,20 @@ proc binForRecord(a, criterion, startbit:int)
   }
 }
 
+// Returns the fixed number of bits in a value, if known.
+// Returns -1 otherwise.
 private
-proc fixedWidthType(type eltTy) param {
-  return isUintType(eltTy) || isIntType(eltTy) ||
-         isRealType(eltTy) || isImagType(eltTy);
+proc fixedWidth(type eltTy) param {
+  if (isUintType(eltTy) || isIntType(eltTy) ||
+      isRealType(eltTy) || isImagType(eltTy)) then
+    return numBits(eltTy);
+
+  if (isHomogeneousTuple(eltTy)) {
+    var tmp:eltTy;
+    return tmp.size * numBits(tmp(1).type);
+  }
+
+  return -1;
 }
 
 // Returns a compile-time known final startbit
@@ -1120,13 +1130,12 @@ proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
   // Compute end_bit if it's known
   // Default comparator on integers has fixed width
   const ref element = Data[Data.domain.low];
-  if comparator.type == DefaultComparator &&
-     fixedWidthType(element.type) {
-    return numBits(element.type) - RADIX_BITS;
+  if comparator.type == DefaultComparator && fixedWidth(element.type) > 0 {
+    return fixedWidth(element.type) - RADIX_BITS;
   } else if canResolveMethod(comparator, "key", element) {
     type keyType = comparator.key(element).type;
-    if fixedWidthType(keyType) then
-      return numBits(keyType) - RADIX_BITS;
+    if fixedWidth(keyType) > 0 then
+      return fixedWidth(keyType) - RADIX_BITS;
   }
 
   return -1;
