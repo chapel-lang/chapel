@@ -1,0 +1,8 @@
+class-double-modifier.chpl:8: error: modifier `unmanaged` can only be applied directly to a class type, not to `unmanaged A(int)`
+class-double-modifier.chpl:8: error: modifier `unmanaged` can only be applied directly to a class type, not to `owned A(int)`
+class-double-modifier.chpl:8: error: modifier `unmanaged` can only be applied directly to a class type, not to `shared A(int)`
+class-double-modifier.chpl:8: error: modifier `unmanaged` can only be applied directly to a class type, not to `borrowed A(int)`
+class-double-modifier.chpl:8: error: modifier `owned` can only be applied directly to a class type, not to `unmanaged A(int)`
+class-double-modifier.chpl:8: error: modifier `owned` can only be applied directly to a class type, not to `owned A(int)`
+class-double-modifier.chpl:8: error: modifier `owned` can only be applied directly to a class type, not to `shared A(int)`
+class-double-modifier.chpl:8: error: modifier `owned` can only be applied directly to a class type, not to `borrowed A(int)`
