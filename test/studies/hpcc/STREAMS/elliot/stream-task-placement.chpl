@@ -21,20 +21,33 @@ config const printParams = true,
              printArrays = false,
              printStats = true;
 
+enum TaskDisplacement {None, Half, Rand};
+config const taskDisplacement = TaskDisplacement.None;
+const tasks = here.maxTaskPar,
+      randTasks = (new RandomStream(int)).getNext(1, tasks);
+
 
 proc main() {
   printConfiguration();
 
-  const ProblemSpace: domain(1, int(64)) = {1..m};
-  var A, B, C: [ProblemSpace] elemType;
+  var A, B, C: [1..m] elemType;
 
   initVectors(B, C);
 
   var execTime: [1..numTrials] real;
 
+  select taskDisplacement {
+    when TaskDisplacement.Half do
+      coforall 1..tasks do coforall 1..tasks/2 {}
+    when TaskDisplacement.Rand do
+      coforall 1..tasks do coforall 1..randTasks {}
+  }
+
   for trial in 1..numTrials {
     const startTime = getCurrentTime();
-    [i in ProblemSpace] A(i) = B(i) + alpha * C(i);
+    forall (a, b, c) in zip(A, B, C) {
+      a = b + alpha * c;
+    }
     execTime(trial) = getCurrentTime() - startTime;
   }
 

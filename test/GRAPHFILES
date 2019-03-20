@@ -230,6 +230,7 @@ parallel/taskCompare/lydia/loopCompare.graph
 # suite: Task Spawning
 parallel/taskCompare/elliot/taskSpawn.graph
 parallel/taskCompare/elliot/serialTaskSpawn.graph
+studies/hpcc/STREAMS/elliot/stream-task-placement.graph
 # suite: Barrier
 performance/comm/barrier/empty-chpl-barrier.graph
 studies/hpcc/STREAMS/elliot/stream-spmd-barrier.graph
