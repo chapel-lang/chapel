@@ -1294,6 +1294,14 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       break;
     }
 
+    // TODO: I think it might be possible to make this sort stable
+    // by populating buf from the start of the data instead of from the end.
+    // buf would need to be populated with the first M elements that aren't
+    // already in the correct bin.
+
+    // TODO: I think it's possible to make this shuffle parallel
+    // by imagining each task has a max_buf and have them update
+    // atomic offsets.
     param max_buf = settings.DISTRIBUTE_BUFFER;
     var buf: max_buf*A.eltType;
     var used_buf = 0;
@@ -1492,13 +1500,14 @@ record DefaultComparator {
    */
   inline
   proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
-                                       (isInt(x(1)) || isUint(x(1))) {
-    type tt = x(1).type;
-
+                                       (isInt(x(1)) || isUint(x(1)) ||
+                                        isReal(x(1)) || isImag(x(1))) {
+    // Re-use the keyPart for imag, real
+    const (_,part) = this.keyPart(x(i), 1);
     if i > x.size then
-      return (-1, 0:tt);
-
-    return (0, x(i):tt);
+      return (-1, 0:part.type);
+    else
+      return (0, part);
   }
 
   /*
