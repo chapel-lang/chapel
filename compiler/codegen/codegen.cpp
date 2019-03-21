@@ -2453,10 +2453,10 @@ void makeBinary(void) {
                                makeflags,
                                getIntermediateDirName(), "/Makefile");
     mysystem(command, "compiling generated source");
+  }
 
-    if (fLibraryCompile && fLibraryPython) {
-      codegen_make_python_module();
-    }
+  if (fLibraryCompile && fLibraryPython) {
+    codegen_make_python_module();
   }
 }
 
