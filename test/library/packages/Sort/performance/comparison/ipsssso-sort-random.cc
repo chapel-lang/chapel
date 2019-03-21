@@ -6,6 +6,7 @@
 #include <ctime>
 #include <cinttypes>
 #include <cassert>
+#include <algorithm>
 #include "ips4o.hpp"
 
 int main() {
@@ -13,6 +14,9 @@ int main() {
   int err = 0;
   int n = 1024*1024*128;
   uint64_t* arr = (uint64_t*) malloc(n*sizeof(uint64_t));
+  uint64_t* arr2 = (uint64_t*) malloc(n*sizeof(uint64_t));
+  //uint32_t* arr = (uint32_t*) malloc(n*sizeof(uint32_t));
+  //uint32_t* arr2 = (uint32_t*) malloc(n*sizeof(uint32_t));
   struct timespec startts;
   struct timespec endts;
   double start, end;
@@ -24,6 +28,7 @@ int main() {
       key ^= rand();
     }
     arr[i] = key;
+    arr2[i] = key;
   }
 
   err = clock_gettime(CLOCK_REALTIME, &startts);
@@ -38,10 +43,12 @@ int main() {
   end += endts.tv_nsec / 1000000000.0;
 
   printf("Sorted %i elements in %f seconds\n", n, end-start);
-  printf("%f MiB/s\n", 8*n / (end-start) / 1024.0 / 1024.0);
+  printf("%f MiB/s\n", sizeof(*arr) *n / (end-start) / 1024.0 / 1024.0);
 
+  std::sort(arr2, arr2+n);
   for (int i = 0; i < n-1; i++) {
-    assert(arr[i] < arr[i+1]);
+    assert(arr[i] <= arr[i+1]);
+    assert(arr[i] == arr2[i]);
   }
   return 0;
 }
