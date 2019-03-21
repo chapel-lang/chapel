@@ -1304,8 +1304,10 @@ static void setupModule()
   }
 
   llvm::Reloc::Model relocModel = llvm::Reloc::Model::Static;
-  // TODO: we may need to use Reloc::PIC_ once we start
-  // interpreting, etc.
+  
+  if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
+    relocModel = llvm::Reloc::Model::PIC_;
+  }
 
   // Choose the code model
 #if HAVE_LLVM_VER >= 60
@@ -2770,6 +2772,12 @@ void makeBinaryLLVM(void) {
     completePrintLlvmIrStage(llvmStageNum::FULL);
   }
 #endif
+
+  // Make sure that we are generating PIC when we need to be.
+  if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
+    INT_ASSERT(info->targetMachine->getRelocationModel()
+        == llvm::Reloc::Model::PIC_);
+  }
 
   // Emit the .o file for linking with clang
   // Setup and run LLVM passes to emit a .o file to outputOfile
