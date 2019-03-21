@@ -132,6 +132,7 @@ void codegen_library_makefile() {
     // "lib"
     name = executableFilename;
   }
+
   fileinfo makefile;
   openLibraryHelperFile(&makefile, "Makefile", name.c_str());
 
@@ -226,7 +227,18 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   if (requires != "") {
     fprintf(makefile.fptr, "%s", requires.c_str());
   }
-  fprintf(makefile.fptr, " %s\n", libraries.c_str());
+
+  if (!llvmCodegen) {
+    fprintf(makefile.fptr, " %s\n", libraries.c_str());
+  } else {
+    // LLVM requires a bit more work to make the GNU linker happy.
+    if (libraries.size() > 0 && *libraries.rbegin() == '\n') {
+      libraries.erase(libraries.end() -1);
+    }
+
+    // Append the Chapel library as the last linker argument.
+    fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
+  }
 }
 
 const char* getLibraryExtension() {
