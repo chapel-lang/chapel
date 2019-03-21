@@ -114,13 +114,15 @@ use BitOps;
    for param i in 1..settingsTuple.size {
      var s = settingsTuple(i);
      var B = input;
-     msbRadixSort(start, end, B, comparator, 0, s);
+     msbRadixSort(start, end, B, comparator,
+                  0, max(int), s);
      if i == 1 then
        writef("radixSort  %ht\n", B);
      testSorted(B, comparator);
 
      var Br = input;
-     msbRadixSort(start, end, Br, new ReverseComparator(comparator), 0, s);
+     msbRadixSort(start, end, Br, new ReverseComparator(comparator),
+                  0, max(int), s);
      if i == 1 then
        writef("radixSort- %ht\n", Br);
      testReverseSorted(Br, comparator);
@@ -199,8 +201,8 @@ proc testSortsUnsigned(input) {
    var t: Timer;
    t.start();
 
-   msbRadixSort(1, size, array, new intCriterion(), 0, new
-       MSBRadixSortSettings());
+   msbRadixSort(1, size, array, new intCriterion(),
+                0, max(int), new MSBRadixSortSettings());
 
    t.stop();
  
