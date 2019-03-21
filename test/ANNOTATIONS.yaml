@@ -383,6 +383,8 @@ all:
   03/07/19:
     - text: chapcs rebooted
       config: chapcs
+  03/21/19:
+    - Stop throwing `--static` for performance testing (#12652)
 
 
 AllCompTime:
