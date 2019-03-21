@@ -55,7 +55,8 @@ class PlusReduceOp: ReduceScanOp {
   var sum: real;
   forall elm in A with (PlusReduceOp(int) reduce sum) {
     sum reduce= elm;   // bools are implicitly coerced to 'int' input type
-    writeln(sum);      // accumulation state: int
+    writeln(sum.type:string); // This varies from actual tech note
+    // writeln(sum);      // accumulation state: int
   }
   writeln(sum);        // result: real
 }
