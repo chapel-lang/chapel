@@ -440,7 +440,12 @@ the sorting algorithm.
     * tuples of ``int``
     * ``uint``
     * tuples of ``uint``
+    * ``real``
+    * tuples of ``real``
+    * ``imag``
+    * tuples of ``imag``
     * ``string``
+    * ``c_string``
 
 :arg Data: The array to be sorted
 :type Data: [] `eltType`
@@ -1464,6 +1469,18 @@ record DefaultComparator {
     return (section, x);
   }
 
+  /*
+   Default ``keyPart`` method for `real` values.
+   See also `The .keyPart method`_.
+
+   :arg x: the `real` of any width to sort
+   :arg i: the part number requested
+
+   :returns: ``(0, u)`` if ``i==0``, or ``(-1, u)`` otherwise,
+             where `u` is a `uint` storing the bits of the `real`
+             but with some tranformations applied to produce the
+             correct sort  order.
+   */
   inline
   proc keyPart(x: chpl_anyreal, i:int):(int(8), uint(numBits(x.type))) {
     var section:int(8) = if i > 1 then -1:int(8) else 0:int(8);
@@ -1484,19 +1501,30 @@ record DefaultComparator {
     }
     return (section, dst);
   }
+  /*
+   Default ``keyPart`` method for `imag` values.
+   See also `The .keyPart method`_.
+
+   This method works by calling keyPart with the corresponding `real` value.
+   */
+
   inline
   proc keyPart(x: chpl_anyimag, i:int):(int(8), uint(numBits(x.type))) {
     return keyPart(x:real(numBits(x.type)), i);
   }
 
   /*
-   Default ``keyPart`` method for tuples of integral values.
+   Default ``keyPart`` method for tuples of `int`, `uint`, `real`, or `imag`
+   values.
    See also `The .keyPart method`_.
 
-   :arg x: tuple of the `int` or `uint` (of any bit width) to sort
+   :arg x: homogeneous tuple of the numeric type (of any bit width) to sort
    :arg i: the part number requested
 
-   :returns: ``(0, x(i))`` if ``i <= x.size``, or ``(-1, 0)`` otherwise
+   :returns: For `int` and `uint`, returns
+             ``(0, x(i))`` if ``i <= x.size``, or ``(-1, 0)`` otherwise.
+             For `real` and `imag`, uses ``keyPart`` to find the `uint`
+             to provide the sorting order.
    */
   inline
   proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
@@ -1511,7 +1539,8 @@ record DefaultComparator {
   }
 
   /*
-   Default ``keyPart`` method for sorting strings. See also `The .keyPart method`_.
+   Default ``keyPart`` method for sorting strings.
+   See also `The .keyPart method`_.
 
    .. note::
      Currently assumes that the string is local.
@@ -1536,6 +1565,16 @@ record DefaultComparator {
     var part =    if i <= len then ptr[i-1] else  0:uint(8);
     return (section, part);
   }
+
+  /*
+   Default ``keyPart`` method for sorting `c_string`.
+   See also `The .keyPart method`_.
+
+   :arg x: the `c_string` to sort
+   :arg i: the part number requested
+
+   :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if byte ``i`` is ``0``
+   */
 
   inline
   proc keyPart(x:c_string, i:int):(int(8), uint(8)) {
