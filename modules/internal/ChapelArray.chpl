@@ -2328,39 +2328,11 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc this(d: domain) {
-      if d.rank == rank {
+    proc this(dom: domain) {
+      if dom.rank == rank {
         if boundsChecking then
-          checkSlice(d);
+          checkSlice(dom);
 
-        proc appropriateType() param {
-          const newd = _dom((...d.dsiDims()));
-          writeln("Should never actually run this");
-          return newd.type == d.type;
-        }
-
-        // The following implements strategy 5a from issue #12272.
-        // If we could determine whether or not a domain was constant,
-        // it could be strategy 5b which is strictly better and better
-        // than what is on master today.
-        if appropriateType() && d.dist == this.domain.dist /* && d.isConst() */ then {
-          // This is incorrect or at least different than what we do
-          // today: We have to intersect d with the array's domain
-          // because we (currently) consider a slice to be a domain
-          // intersection followed by a subarray access to handle
-          // cases like slicing by [1..] or slicing a strided array by
-          // [1..n].  Or else we have to redefine what slicing by a
-          // domain means and only do the intersection for the range
-          // case...
-          return _newArray(setupArraySliceHelper(d, true));
-        } else {
-          pragma "no auto destroy"
-          const newd = _dom((...d.dsiDims()));
-          newd._value._free_when_no_arrs = true;
-          return _newArray(setupArraySliceHelper(newd, false));
-        }
-
-        proc setupArraySliceHelper(dom, param locking: bool) {
         //
         // If this is already a slice array view, we can short-circuit
         // down to the underlying array.
@@ -2379,10 +2351,9 @@ module ChapelArray {
         writeln("About to add a new slice");
         writeln(a.isSliceArrayView());
         */
-        // lock only if we're sharing an existing domain
-        dom._value.add_arr(a, locking=locking);
-        return a;
-        }
+        // lock since we're referring to an existing domain
+        dom._value.add_arr(a, locking=true);
+        return _newArray(a);
       } else
         compilerError("slicing an array with a domain of a different rank");
     }
