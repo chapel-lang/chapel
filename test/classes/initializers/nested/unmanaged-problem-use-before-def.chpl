@@ -9,6 +9,10 @@ class Outer {
   proc init() {
     field = new unmanaged Inner(1);
   }
+
+  proc deinit() {
+    delete field;
+  }
 }
 
 var x = new owned Outer();
