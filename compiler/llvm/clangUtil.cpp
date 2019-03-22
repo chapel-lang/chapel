@@ -512,7 +512,7 @@ static void handleMacroTokens(const MacroInfo* inMacro,
     removeMacroOuterParens(inMacro, start, end);
   }
 
-  while (true) {
+  while (start != end) {
     if (start->getKind() == tok::minus) {
       // If the first symbol is now tok::minus, consume it and set negate
       ++start;
