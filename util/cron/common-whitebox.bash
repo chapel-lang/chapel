@@ -165,8 +165,8 @@ if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
 fi
 
 if [ "${COMP_TYPE}" != "HOST-TARGET-no-PrgEnv" ] ; then
-    log_info "Loading fftw module."
-    module load fftw
+    log_info "Loading cray-fftw module."
+    module load cray-fftw
 fi
 
 log_info "Current loaded modules:"
