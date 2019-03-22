@@ -24,3 +24,5 @@ writeln("f(u)");
 f(u);
 writeln("f(i)");
 f(i);
+
+delete u;
