@@ -2471,7 +2471,7 @@ void setupForGlobalToWide(void) {
 #if HAVE_LLVM_VER < 50
                           , NULL
 #endif
-#if HAVE_LLVM_VER < 80
+#if HAVE_LLVM_VER < 90
                           );
 #else
                           ).getCallee();
