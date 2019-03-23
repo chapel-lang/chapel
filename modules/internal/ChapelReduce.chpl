@@ -159,20 +159,20 @@ module ChapelReduce {
 
     // Rely on the default value of the desired type.
     // Todo: is this efficient when that is an array?
-    proc identity {
+    inline proc identity {
       var x: chpl__sumType(eltType); return x;
     }
-    proc accumulate(x) {
+    inline proc accumulate(x) {
       value += x;
     }
-    proc accumulateOntoState(ref state, x) {
+    inline proc accumulateOntoState(ref state, x) {
       state += x;
     }
-    proc combine(x) {
+    inline proc combine(x) {
       value += x.value;
     }
-    proc generate() return value;
-    proc clone() return new unmanaged SumReduceScanOp(eltType=eltType);
+    inline proc generate() return value;
+    inline proc clone() return new unmanaged SumReduceScanOp(eltType=eltType);
   }
 
   class ProductReduceScanOp: ReduceScanOp {
