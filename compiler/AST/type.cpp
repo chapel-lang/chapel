@@ -561,11 +561,6 @@ void initPrimitiveTypes() {
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
 
-  gTryToken = new VarSymbol("chpl__tryToken", dtBool);
-
-  gTryToken->addFlag(FLAG_CONST);
-  rootModule->block->insertAtTail(new DefExpr(gTryToken));
-
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
 
