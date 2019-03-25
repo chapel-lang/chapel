@@ -43,8 +43,6 @@ extern SymbolMap                        paramMap;
 
 extern Vec<CallExpr*>                   callStack;
 
-extern bool                             tryFailure;
-
 extern Vec<BlockStmt*>                  standardModuleSet;
 
 extern char                             arrayUnrefName[];

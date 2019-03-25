@@ -581,7 +581,7 @@ static void filterInitCandidate(CallInfo&                  info,
 *                                                                             *
 ************************************** | *************************************/
 
-static bool resolveInitializerBody(FnSymbol* fn);
+static void resolveInitializerBody(FnSymbol* fn);
 
 static void resolveInitializerMatch(FnSymbol* fn) {
   if (fn->isResolved() == false) {
@@ -599,29 +599,18 @@ static void resolveInitializerMatch(FnSymbol* fn) {
   }
 }
 
-static bool resolveInitializerBody(FnSymbol* fn) {
-  bool retval = false;
-
+static void resolveInitializerBody(FnSymbol* fn) {
   fn->addFlag(FLAG_RESOLVED);
 
   resolveBlockStmt(fn->body);
 
-  if (tryFailure == false) {
-    resolveReturnType(fn);
+  resolveReturnType(fn);
 
-    toAggregateType(fn->_this->type)->initializerResolved = true;
+  toAggregateType(fn->_this->type)->initializerResolved = true;
 
-    insertAndResolveCasts(fn);
+  insertAndResolveCasts(fn);
 
-    ensureInMethodList(fn);
-
-    retval = true;
-
-  } else {
-    fn->removeFlag(FLAG_RESOLVED);
-  }
-
-  return retval;
+  ensureInMethodList(fn);
 }
 
 /************************************* | **************************************

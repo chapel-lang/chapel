@@ -1,2 +1,0 @@
-testTryToken2.chpl:1: In function 'f1':
-testTryToken2.chpl:3: error: unresolved call 'fail()'

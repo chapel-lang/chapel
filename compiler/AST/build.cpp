@@ -652,9 +652,6 @@ buildLabelStmt(const char* name, Expr* stmt) {
 
 BlockStmt*
 buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
-  if (UnresolvedSymExpr* use = toUnresolvedSymExpr(condExpr))
-    if (!strcmp(use->unresolved, gTryToken->name))
-      return buildChapelStmt(new CondStmt(condExpr, thenExpr, elseExpr));
   return buildChapelStmt(new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
 }
 

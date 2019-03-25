@@ -105,7 +105,6 @@ char                               arrayUnrefName[] = "array_unref_ret_tmp";
 char                               primCoerceTmpName[] = "init_coerce_tmp";
 
 bool                               resolved                  = false;
-bool                               tryFailure                = false;
 int                                explainCallLine           = 0;
 
 SymbolMap                          paramMap;
@@ -127,8 +126,6 @@ Map<FnSymbol*,      FnSymbol*>     iteratorFollowerMap;
 //# Static Variables
 //#
 static ModuleSymbol*               explainCallModule;
-
-static Vec<CondStmt*>              tryStack;
 
 static Map<Type*,     Type*>       runtimeTypeMap;
 
@@ -2289,15 +2286,10 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
   if (numMatches == 0) {
     if (info.call->partialTag == false) {
       if (checkOnly == false) {
-        if (tryStack.n > 0) {
-          tryFailure = true;
-
-        } else if (candidates.n == 0) {
+        if (candidates.n == 0)
           printResolutionErrorUnresolved(info, mostApplicable);
-
-        } else {
+        else
           printResolutionErrorAmbiguous (info, candidates);
-        }
       }
     }
 
@@ -6299,30 +6291,19 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
 void resolveBlockStmt(BlockStmt* blockStmt) {
   for_exprs_postorder(expr, blockStmt) {
     expr = resolveExpr(expr);
-
-    if (tryFailure == true) {
-      if (expr != NULL) {
-        tryFailure = false;
-      } else {
-        break;
-      }
-    }
+    INT_ASSERT(expr != NULL);
   }
 }
 
 /************************************* | **************************************
 *                                                                             *
-* Resolves an expression and manages the callStack and tryStack.              *
+* resolveExpr(expr) resolves 'expr' and manages the callStack.                *
+* Returns either 'expr' or its substitute.                                    *
 *                                                                             *
-* On success, returns the call that was passed in.                            *
-*                                                                             *
-* On a try failure, returns either the expression preceding the elseStmt,     *
-* substituted for the body of the param condition (if that substitution       *
-* could be made), or NULL.                                                    *
-*                                                                             *
-* If null, then resolution of the current block should be aborted.            *
-* tryFailure is true in this case, so the search for a matching elseStmt      *
-* continue in the surrounding block or call.                                  *
+* The returned Expr is inTree() and has been resolved.                        *
+* Exception: if isParamResolved() succeeds and 'expr' is the SymExpr          *
+* of the final PRIM_RETURN, it returns 'expr' and it is !inTree().            *
+* In this case for_exprs_postorder() terminates.                              *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -6344,8 +6325,6 @@ static void        resolveExprTypeConstructor(SymExpr* symExpr);
 
 static bool        isStringLiteral(Symbol* sym);
 
-static Expr*       resolveExprHandleTryFailure(FnSymbol* fn);
-
 static void        resolveExprMaybeIssueError(CallExpr* call);
 
 Expr* resolveExpr(Expr* expr) {
@@ -6365,14 +6344,6 @@ Expr* resolveExpr(Expr* expr) {
 
   // This must be after isParamResolved
   } else if (BlockStmt* block = toBlockStmt(expr)) {
-    // Possibly pop try block and delete else
-    if (tryStack.n) {
-      if (tryStack.tail()->thenStmt == block) {
-        tryStack.tail()->replace(block->remove());
-        tryStack.pop();
-      }
-    }
-
     if (ForLoop* forLoop = toForLoop(block)) {
       retval = replaceForWithForallIfNeeded(forLoop);
     } else {
@@ -6388,12 +6359,7 @@ Expr* resolveExpr(Expr* expr) {
     if (ForallStmt* pfs = isForallIterExpr(se)) {
       CallExpr* call = resolveForallHeader(pfs, se);
 
-      if (tryFailure == false) {
-        retval = resolveExprPhase2(expr, fn, preFold(call));
-
-      } else {
-        retval = resolveExprHandleTryFailure(fn);
-      }
+      retval = resolveExprPhase2(expr, fn, preFold(call));
 
     } else {
       retval = resolveExprPhase2(expr, fn, expr);
@@ -6476,11 +6442,9 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
 
     callStack.add(call);
 
-    INT_ASSERT(tryFailure == false);
-
     resolveCall(call);
 
-    if (tryFailure == false && call->isResolved() == true) {
+    if (call->isResolved()) {
       if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
         expr = resolveExprResolveEachCall(cc);
 
@@ -6491,14 +6455,9 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
       resolveExprExpandGenerics(call);
     }
 
-    if (tryFailure == false) {
-      callStack.pop();
+    callStack.pop();
 
-      retval = foldTryCond(postFold(expr));
-
-    } else {
-      retval = resolveExprHandleTryFailure(fn);
-    }
+    retval = foldTryCond(postFold(expr));
 
   } else {
     retval = foldTryCond(postFold(expr));
@@ -6719,38 +6678,6 @@ static bool isStringLiteral(Symbol* sym) {
   return retval;
 }
 
-static Expr* resolveExprHandleTryFailure(FnSymbol* fn) {
-  Expr* retval = NULL;
-
-  if (tryStack.n > 0 && tryStack.tail()->parentSymbol == fn) {
-    // The code in the 'true' branch of a tryToken conditional has failed
-    // to resolve fully. Roll the callStack back to the function where
-    // the nearest tryToken conditional is and replace the entire
-    // conditional with the 'false' branch then continue resolution on
-    // it.  If the 'true' branch did fully resolve, we would replace the
-    // conditional with the 'true' branch instead.
-    BlockStmt* elseBlock  = tryStack.tail()->elseStmt;
-    Symbol*    elseParent = elseBlock->parentSymbol;
-
-    while (callStack.n                          >  0 &&
-           callStack.tail()->resolvedFunction() != elseParent) {
-      callStack.pop();
-    }
-
-    tryStack.tail()->replace(elseBlock->remove());
-    tryStack.pop();
-
-    if (elseBlock->prev == NULL) {
-      elseBlock->insertBefore(new CallExpr(PRIM_NOOP));
-    }
-
-    tryFailure = false;
-    retval     = elseBlock->prev;
-  }
-
-  return retval;
-}
-
 static void resolveExprMaybeIssueError(CallExpr* call) {
   //
   // Disable compiler warnings in internal modules that are triggered within
@@ -6848,21 +6775,10 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
 static Expr* foldTryCond(Expr* expr) {
   Expr* retval = expr;
 
-  if (CondStmt* cond = toCondStmt(expr->parentExpr)) {
-    if (cond->condExpr == expr) {
-      if (CallExpr* noop = cond->foldConstantCondition()) {
+  if (CondStmt* cond = toCondStmt(expr->parentExpr))
+    if (cond->condExpr == expr)
+      if (CallExpr* noop = cond->foldConstantCondition())
         retval = noop;
-
-      } else {
-        // push try block
-        if (SymExpr* se = toSymExpr(expr)) {
-          if (se->symbol() == gTryToken) {
-            tryStack.add(cond);
-          }
-        }
-      }
-    }
-  }
 
   return retval;
 }
