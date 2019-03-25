@@ -993,27 +993,31 @@ module ChapelDistribution {
     for e in lhs._arrs do {
       on e {
         var eCast = e:arrType;
-        if eCast == nil then
+        /*
           halt("internal error: ", t:string,
                " contains an bad array type ", arrType:string);
+        */
 
-        var inds = rhs.getIndices();
-        var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
+        if eCast != nil {
+          var inds = rhs.getIndices();
+          var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
 
-        // set tmp = inds with some error checking
-        for param i in 1..rank {
-          var from = inds(i);
-          tmp(i) =
-            from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));
+          // set tmp = inds with some error checking
+          for param i in 1..rank {
+            var from = inds(i);
+            tmp(i) =
+              from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));
+          }
+
+          eCast.dsiReallocate(tmp);
         }
-
-        eCast.dsiReallocate(tmp);
       }
     }
     lhs.dsiSetIndices(rhs.getIndices());
     for e in lhs._arrs do {
       var eCast = e:arrType;
-      on e do eCast.dsiPostReallocate();
+      if (eCast) then
+        on e do eCast.dsiPostReallocate();
     }
 
     if lhs.dsiSupportsPrivatization() {
