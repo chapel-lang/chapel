@@ -1388,8 +1388,6 @@ proc file._style:iostyle throws {
    :throws SystemError: Thrown if the file could not be closed.
  */
 proc file.close() throws {
-  try check();
-
   var err:syserr = ENOERR;
   on this.home {
     err = qio_file_close(_file_internal);
