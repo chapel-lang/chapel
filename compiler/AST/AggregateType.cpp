@@ -838,7 +838,15 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
       }
 
     } else if (field->hasFlag(FLAG_PARAM) == true) {
-      if (field->type != sym->type) {
+      Type* expected = NULL;
+      if (field->defPoint->exprType != NULL) {
+        expected = field->defPoint->exprType->typeInfo();
+      }
+      // Only check when the field has a type expression
+      //
+      // See param/ferguson/mismatched-param-type-error.chpl for an example
+      // where this check is necessary.
+      if (expected != NULL && expected != sym->type) {
         Immediate result;
         Immediate* lhs = getSymbolImmediate(at->substitutions.get(field));
         Immediate* rhs = getSymbolImmediate(sym);
