@@ -149,7 +149,7 @@ module ArrayViewSlice {
       chpl_serialReadWriteRectangular(f, arr, privDom);
     }
 
-    proc dsiDisplayRepresentation() {
+    override proc dsiDisplayRepresentation() {
       writeln("Slice view");
       writeln("----------");
       writeln("of domain:");
@@ -212,8 +212,11 @@ module ArrayViewSlice {
 
     inline proc checkBounds(i) {
       if boundsChecking then
-        if !privDom.dsiMember(i) then
+        if !privDom.dsiMember(i) then {
+          writeln("privDom = ");
+          privDom.dsiDisplayRepresentation();
           halt("array index out of bounds: ", i);
+        }
     }
 
 
