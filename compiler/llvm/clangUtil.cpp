@@ -462,11 +462,11 @@ static void handleMacroTokens(const MacroInfo* inMacro,
     return;
   }
 
-  for (MacroInfo::tokens_iterator cur = start;
-       cur != end;
-       ++cur) {
-    Token t = *cur;
-    if (debugPrint) {
+  if (debugPrint) {
+    for (MacroInfo::tokens_iterator cur = start;
+         cur != end;
+         ++cur) {
+      Token t = *cur;
       printf("Found token type %i\n", t.getKind());
     }
   }
@@ -512,11 +512,19 @@ static void handleMacroTokens(const MacroInfo* inMacro,
     removeMacroOuterParens(inMacro, start, end);
   }
 
-  // If the first symbol is now tok::minus, consume it and set negate
-  if (start->getKind() == tok::minus) {
-    ++start;
-    negate = true;
-    removeMacroOuterParens(inMacro, start, end);
+  while (start != end) {
+    if (start->getKind() == tok::minus) {
+      // If the first symbol is now tok::minus, consume it and set negate
+      ++start;
+      negate = !negate;
+      removeMacroOuterParens(inMacro, start, end);
+    } else if (start->getKind() == tok::plus) {
+      // If the first symbol is now tok::plus, consume it
+      ++start;
+      removeMacroOuterParens(inMacro, start, end);
+    } else {
+      break; // done processing unary + and -
+    }
   }
 
   if (isCast) {
