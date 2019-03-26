@@ -589,6 +589,8 @@ module ZMQ {
   /* Used to help with the various getX/setX functions */
   private extern proc zmq_getsockopt_int_helper(s: c_void_ptr, option: c_int,
                                                 ref res: c_int): c_int;
+  private extern proc zmq_getsockopt_string_helper(s: c_void_ptr, option: c_int,
+                                                   ref res: c_string): c_int;
 
   /*
     A ZeroMQ socket. See :ref:`more on using Sockets <using-sockets>`.
@@ -730,6 +732,31 @@ module ZMQ {
           halt("Error in Socket.setsockopt(): ", errmsg);
         }
       }
+    }
+
+    /*
+      Get the last endpoint for the specified socket; see
+      `zmq_getsockopt <http://api.zeromq.org/4-0:zmq-getsockopt>`_ under
+      ZMQ_LAST_ENDPOINT.
+
+      :returns: The last endpoint set, see the link above.
+      :rtype: string
+    */
+    proc getLastEndpoint(): string {
+      var ret: string;
+      on classRef.home {
+        var str: c_string;
+        var err = zmq_getsockopt_string_helper(classRef.socket,
+                                               ZMQ_LAST_ENDPOINT, str);
+        if err == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to throw an Error instead, see issue #12397 on
+          // Github
+          halt("Error in Socket.getLastEndpoint(): ", errmsg);
+        }
+        ret = new string(str, needToCopy=false);
+      }
+      return ret;
     }
 
     /*
