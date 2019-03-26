@@ -958,9 +958,6 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
   resolveCallAndCallee(iterCall, false);
 
-  // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
-  if (tryFailure) return NULL;
-
   CallExpr* firstIterCall = iterCall;
   FnSymbol* origIterFn = iterCall->resolvedFunction();
   bool gotSA = (flavor != PIF_LEADER); // "got Single iterAtor"

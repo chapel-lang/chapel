@@ -170,8 +170,6 @@ void ResolveScope::addBuiltIns() {
   extend(gFalse);
   extend(gTrue);
 
-  extend(gTryToken);
-
   extend(dtNil->symbol);
   extend(gNil);
 

@@ -7,7 +7,7 @@ module m1 {
 
   proc main() {
     const totalMem = + reduce physicalMemory3(Locales);
-    var myBuckets = new unmanaged Buckets();
+    var myBuckets = new Buckets();
   }
 
   proc physicalMemory3(arg:locale) return 0;

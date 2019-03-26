@@ -1,4 +1,4 @@
-// User requested feature, see github issue #5143, Part 2
+// User requested feature, see github issue #5143, Part 2c
 record A {
   type T;
   var a: T;

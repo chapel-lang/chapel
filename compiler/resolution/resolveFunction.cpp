@@ -489,32 +489,27 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       resolveBlockStmt(fn->body);
 
-      if (tryFailure == false) {
-        insertUnrefForArrayOrTupleReturn(fn);
+      insertUnrefForArrayOrTupleReturn(fn);
 
-        Type* yieldedType = NULL;
-        resolveReturnTypeAndYieldedType(fn, &yieldedType);
+      Type* yieldedType = NULL;
+      resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
-        insertAndResolveCasts(fn);
+      insertAndResolveCasts(fn);
 
-        if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
-          protoIteratorClass(fn, yieldedType);
+      if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
+        protoIteratorClass(fn, yieldedType);
 
-        } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-          resolveTypeConstructor(fn);
+      } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+        resolveTypeConstructor(fn);
 
-        }
+      }
 
-        if (fn->isMethod() == true && fn->_this != NULL) {
-          ensureInMethodList(fn);
-        }
+      if (fn->isMethod() == true && fn->_this != NULL) {
+        ensureInMethodList(fn);
+      }
 
-        if (forCall != NULL) {
-          resolveAlsoParallelIterators(fn, forCall);
-        }
-
-      } else {
-        fn->removeFlag(FLAG_RESOLVED);
+      if (forCall != NULL) {
+        resolveAlsoParallelIterators(fn, forCall);
       }
     }
   }

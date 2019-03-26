@@ -1,4 +1,0 @@
-feature request: generic inheritance with same field name
-
-I'm not sure what exactly it should look like, but you should be able to
-do something like this...
