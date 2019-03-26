@@ -22,7 +22,7 @@ project via the following steps:
   reading both is likely to be useful and any duplication is likely to
   only reinforce important points.
 
-* Download the official Chapel release from ``SourceForge`` and put
+* Download the official Chapel release from `GitHub <https://github.com/chapel-lang/chapel/releases>`_ and put
   yourself in the shoes of a Chapel user (alternatively, you can work
   from a trunk/ copy of the project where you found this README --
   there are minor differences in organization between the two and the
