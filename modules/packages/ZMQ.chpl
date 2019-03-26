@@ -259,7 +259,7 @@ References
 */
 module ZMQ {
 
-  require "zmq.h", "-lzmq";
+  require "zmq.h", "-lzmq", "zmq_helper.h";
 
   use Reflection;
   use ExplicitRefCount;
@@ -586,6 +586,10 @@ module ZMQ {
     }
   }
 
+  /* Used to help with the various getX/setX functions */
+  private extern proc zmq_getsockopt_int_helper(s: c_void_ptr, option: c_int,
+                                                ref res: c_int): c_int;
+
   /*
     A ZeroMQ socket. See :ref:`more on using Sockets <using-sockets>`.
     Note that this record contains private fields not listed below.
@@ -724,6 +728,52 @@ module ZMQ {
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
           halt("Error in Socket.setsockopt(): ", errmsg);
+        }
+      }
+    }
+
+    /*
+      Get the linger period for the specified socket; see
+      `zmq_getsockopt <http://api.zeromq.org/4-0:zmq-getsockopt>`_ under
+      ZMQ_LINGER.
+
+      :returns: The linger period for the socket, see the link above.
+      :rtype: c_int
+    */
+    proc getLinger(): c_int {
+      var copy: c_int;
+      on classRef.home {
+        var ret = zmq_getsockopt_int_helper(classRef.socket, ZMQ_LINGER,
+                                            copy);
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to throw an Error instead, see issue #12397 on
+          // Github
+          halt("Error in Socket.getLinger(): ", errmsg);
+        }
+      }
+      return copy;
+    }
+
+    /*
+      Set the linger period for the specified socket; see
+      `zmq_setsockopt <http://api.zeromq.org/4-0:zmq-setsockopt>`_ under
+      ZMQ_LINGER.
+
+      :arg value: The new linger period for the socket.
+      :type value: c_int
+    */
+    proc setLinger(value: c_int) {
+      on classRef.home {
+        var copy: c_int = value;
+        var ret = zmq_setsockopt(classRef.socket, ZMQ_LINGER,
+                                 c_ptrTo(copy): c_void_ptr,
+                                 numBytes(value.type)): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to throw an Error instead, see issue #12397 on
+          // Github
+          halt("Error in Socket.setLinger(): ", errmsg);
         }
       }
     }
