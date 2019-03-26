@@ -84,7 +84,7 @@ module Itertools {
     if times == 0 then
       halt("Infinite iteration not supported for parallel loops.");
     else
-      forall tid in 0..#numTasks {
+      coforall tid in 0..#numTasks {
         const working_iters = chunk(0..#times, numTasks, tid);
         yield(working_iters,);
       }
