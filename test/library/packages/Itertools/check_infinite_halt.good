@@ -1,0 +1,2 @@
+check_infinite_halt.chpl:8: error: halt reached - Infinite iteration not supported for parallel loops.
+
