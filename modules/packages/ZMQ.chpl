@@ -357,6 +357,10 @@ module ZMQ {
   private extern const ZMQ_IDENTITY: c_int;
 
   /*
+    .. warning::
+       :proc:`Socket.setsockopt()` and SUBSCRIBE have been deprecated.  Please
+       use :proc:`Socket.setSubscribe()` instead.
+
     The :proc:`Socket.setsockopt()` option value to specify the message filter
     for a :const:`SUB`-type :record:`Socket`.
    */
@@ -364,6 +368,10 @@ module ZMQ {
   private extern const ZMQ_SUBSCRIBE: c_int;
 
   /*
+    .. warning::
+       :proc:`Socket.setsockopt()` and UNSUBSCRIBE have been deprecated.  Please
+       use :proc:`Socket.setUnsubscribe()` instead.
+
     The :proc:`Socket.setsockopt()` option value to remote an existing message
     filter for a :const:`SUB`-type :record:`Socket`.
    */
@@ -380,6 +388,10 @@ module ZMQ {
   private extern const ZMQ_TYPE: c_int;
 
   /*
+    .. warning::
+       :proc:`Socket.setsockopt()` and LINGER have been deprecated.  Please use
+       :proc:`Socket.setLinger()` instead.
+
     The :proc:`Socket.setsockopt()` option value to specify the linger period
     for the associated :record:`Socket` object.
    */
@@ -699,6 +711,11 @@ module ZMQ {
     }
 
     /*
+      .. warning::
+         setsockopt(), :const:`LINGER`, :const:`SUBSCRIBE`, and
+         :const:`UNSUBSCRIBE` have been deprecated.  Please use
+         :proc:`Socket.setLinger()` instead.
+
       Set socket options;
       see `zmq_setsockopt <http://api.zeromq.org/4-0:zmq-setsockopt>`_
 
@@ -709,6 +726,8 @@ module ZMQ {
       :arg value: the socket option value
      */
     proc setsockopt(option: int, value: ?T) where isPODType(T) {
+      compilerWarning("setsockopt is deprecated - please use e.g. setLinger " +
+                      "instead");
       on classRef.home {
         var copy: T = value;
         var ret = zmq_setsockopt(classRef.socket, option:c_int,
@@ -723,6 +742,8 @@ module ZMQ {
 
     pragma "no doc"
     proc setsockopt(option: int, value: string) {
+      compilerWarning("setsockopt is deprecated - please use e.g. setLinger " +
+                      "instead");
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, option:c_int,
                                  value.c_str():c_void_ptr,
