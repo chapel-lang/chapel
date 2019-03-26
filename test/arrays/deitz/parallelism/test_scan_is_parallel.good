@@ -1,6 +1,0 @@
-1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0
-CHPL TEST PAR (test_scan_is_parallel.chpl:15): default arithmetic domain follower invoked on (0..9)
-CHPL TEST PAR (test_scan_is_parallel.chpl:15): default arithmetic domain follower invoked on (0..9)
-CHPL TEST PAR (test_scan_is_parallel.chpl:15): default arithmetic domain follower invoked on (10..19)
-CHPL TEST PAR (test_scan_is_parallel.chpl:15): default arithmetic domain follower invoked on (10..19)
-1.0 3.0 6.0 10.0 15.0 21.0 28.0 36.0 45.0 55.0 66.0 78.0 91.0 105.0 120.0 136.0 153.0 171.0 190.0 210.0
