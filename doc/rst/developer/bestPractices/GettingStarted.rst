@@ -13,8 +13,8 @@ project via the following steps:
   anymore), so this is the best time to identify things that could be
   clearer for new users.
 
-* The papers "The State of the Chapel Union" and "A Brief Overview of
-  Chapel" (available at https://chapel-lang.org/papers.html) are the
+* The papers **"The State of the Chapel Union"** and **"A Brief Overview of
+  Chapel"** (available at https://chapel-lang.org/papers.html) are the
   current best documents providing a broad overview of the history of
   the project, the motivation for the language, a high-level language
   overview, and the future.  The former is a bit more recent while the
@@ -22,22 +22,22 @@ project via the following steps:
   reading both is likely to be useful and any duplication is likely to
   only reinforce important points.
 
-* Download the official Chapel release from SourceForge and put
+* Download the official Chapel release from `GitHub <https://github.com/chapel-lang/chapel/releases>`_ and put
   yourself in the shoes of a Chapel user (alternatively, you can work
   from a trunk/ copy of the project where you found this README --
   there are minor differences in organization between the two and the
-  trunk subsumes everything in the release.  $CHPL_HOME/README.devel
+  trunk subsumes everything in the release.  ``$CHPL_HOME/README.devel``
   exists to help map between the two views).  
 
-  Start from the top-level QUICKSTART.rst to build the compiler, run it, and
-  execute the resulting binary.  Follow as many of the "What's next?"
+  Start from the top-level ``QUICKSTART.rst`` to build the compiler, run it, and
+  execute the resulting binary.  Follow as many of the **"What's next?"**
   steps as possible in order to explore the contents of the release
   and familiarize yourself with the language, compiler, documentation,
   and example programs as presented to the end-user.
 
-* To learn the language, your best bets are to read the "Brief
-  Overview of Chapel" paper mentioned above, read through the
-  release's primer examples (located in test/[release/]examples/primers), 
+* To learn the language, your best bets are to read the **"Brief
+  Overview of Chapel"** paper mentioned above, read through the
+  release's primer examples (located in ``test/[release/]examples/primers``), 
   look through tutorial slides from the Chapel webpage (located at:
   https://chapel-lang.org/tutorials.html), and/or other Chapel overview
   presentations (located at https://chapel-lang.org/presentations.html).
@@ -63,20 +63,23 @@ project via the following steps:
   <https://github.com/chapel-lang/chapel>`_ from GitHub. Get familiar with its
   organization, build and use the compiler. In most respects its directory
   structure is a superset of the official release, but in some cases there are
-  differences. Refer to the top-level README.devel to see what some of these
+  differences. Refer to the top-level ``README.devel`` to see what some of these
   differences are.
 
 * As a sub-step of the above, augment your shell environment:
-   - set CHPL_HOME to your preferred or current tree,
-   - incorporate the settings from $CHPL_HOME/util/setchplenv.bash
-     (or .csh) e.g. by source'ing it,
-   - add $CHPL_HOME/util and $CHPL_HOME/util/devel to your PATH,
-   - set CHPL_DEVELOPER to 'true' (see also CHPL_DEVELOPER.txt).
+   - set ``CHPL_HOME`` to your preferred or current tree,
+
+   - incorporate the settings from ``$CHPL_HOME/util/setchplenv.bash``
+     (or ``.csh``) e.g. by source'ing it,
+
+   - add ``$CHPL_HOME/util`` and ``$CHPL_HOME/util/devel`` to your PATH,
+
+   - set ``CHPL_DEVELOPER`` to **true** (see also ``CHPL_DEVELOPER.rst``).
 
 * Get acquainted with the testing system which is a crucial technology
   for the development team for test-first development, pre-commit
   sanity checks, and nightly correctness and performance regression
-  testing.  See TestSystem.rst in this directory for an introduction.
+  testing.  See ``TestSystem.rst`` in this directory for an introduction.
 
 * Get acquainted with the compiler architecture via the compiler
-  overview document in $CHPL_HOME/doc/rst/developer/compilerOverview/
+  overview document in ``$CHPL_HOME/doc/rst/developer/compilerOverview/``
