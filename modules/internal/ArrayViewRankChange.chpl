@@ -578,7 +578,7 @@ module ArrayViewRankChange {
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
 
-    proc dsiDisplayRepresentation() {
+    override proc dsiDisplayRepresentation() {
       writeln("Rank Change view");
       writeln("----------");
       writeln("of domain:");
