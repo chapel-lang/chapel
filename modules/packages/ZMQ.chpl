@@ -1023,8 +1023,8 @@ module ZMQ {
     A subclass of Error specifically for ZMQ-related errors.
 
     .. warning::
-       The design for this subclass is up in the air.  We may look into merging
-       it with :class:`~SysError.SystemError`, and/or extend it to have
+       The design for this subclass is subject to change.  We may look into
+       merging it with :class:`~SysError.SystemError`, and/or extend it to have
        subclasses for the various ZMQ-specific failures.
   */
   class ZMQError: Error {

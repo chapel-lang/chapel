@@ -30,8 +30,8 @@ int zmq_getsockopt_string_helper(void* s, int option, const char** res);
 int zmq_getsockopt_int_helper(void* s, int option, int* res);
 
 // Lydia NOTE 2019-02-26: the helper function implementations need to be defined
-// in this header file.  Otherwise, we expect any .c file to be built as part of
-// the runtime, but this theoretical .c file would need to #include zmq.h and
+// in a header file.  Otherwise, we would have to wrestle with how to build the
+// .c when this theoretical .c file would need to #include zmq.h and
 // we can't guarantee that will be present on a user's system.  So keep it in
 // this header, which is `require`d by the ZMQ module and thus will only be
 // included when ZMQ is present.
@@ -40,7 +40,7 @@ int zmq_getsockopt_int_helper(void* s, int option, int* res);
 // due to c_strings in Chapel being const char*.
 int zmq_getsockopt_string_helper(void* s, int option, const char** res) {
   size_t len = 256;
-  char* resbuf = (char *)qio_malloc(len*sizeof(char));
+  char* resbuf = (char *)chpl_calloc(len, sizeof(char));
   int err = zmq_getsockopt(s, option, resbuf, &len);
   *res = resbuf;
   return err;
