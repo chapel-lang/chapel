@@ -1,0 +1,2 @@
+cast-to-unmanaged-to-free.chpl:12: In function 'deinit':
+cast-to-unmanaged-to-free.chpl:13: error: illegal cast from C to unmanaged C
