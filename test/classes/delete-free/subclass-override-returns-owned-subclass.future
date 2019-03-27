@@ -1,0 +1,7 @@
+bug: inferred 'owned' override return types don't "get" subclassing
+
+This test shows that if I don't declare the return types of foo()
+(which returns unmanaged classes and subclasses), the compiler seems
+to figure things out OK.  But if I do the same for bar() which
+returns owned classes and subclasses, it does not.  If I declare the
+return types of the bar() methods to say that they return 'owned C'.
