@@ -286,19 +286,6 @@ void chpl_error(const char *message, int32_t lineno, int32_t filenameIdx) {
 }
 
 
-void chpl_error_vs(char *restrict str, size_t size,
-                   int32_t lineno, int32_t filenameIdx,
-                   const char *restrict format, ...) {
-  const char *restrict filename = (filenameIdx == 0)
-                                  ? NULL
-                                  : chpl_lookupFilename(filenameIdx);
-  va_list ap;
-  va_start(ap, format);
-  msg_explicit_vs(str, size, lineno, filename, "error", format, ap);
-  va_end(ap);
-}
-
-
 void chpl_internal_error(const char* message) {
   spinhaltIfAlreadyExiting();
   fflush(stdout);
