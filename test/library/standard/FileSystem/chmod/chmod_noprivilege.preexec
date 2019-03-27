@@ -1,0 +1,6 @@
+#!/bin/bash
+
+permission=`stat -c '%a' /`
+
+echo --original=0o$permission > chmod_noprivilege.execopts
+
