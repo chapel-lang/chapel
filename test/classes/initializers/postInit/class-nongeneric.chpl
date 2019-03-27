@@ -29,7 +29,7 @@ class MyCls {
 
 proc main() {
   // 1) A new expression at top level
-  new unmanaged MyCls(10);
+  new MyCls(10);
 
   writeln();
 
@@ -41,7 +41,7 @@ proc main() {
 
 
 // The initExpr is a block statement with the new expr.
-proc foo(x = new unmanaged MyCls(20)) {
+proc foo(x = new MyCls(20)) {
   writeln(x);
   writeln();
 }

@@ -145,7 +145,7 @@ def get_alloc_funcs():
 def get_exit_funcs():
     """Return a list of the possible C exit routines"""
     # TODO look for abort too (need to remove calls from the runtime first)
-    std = ['exit', '_exit']
+    std = ['exit']
     return std
 
 

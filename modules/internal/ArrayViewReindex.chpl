@@ -470,7 +470,7 @@ module ArrayViewReindex {
       chpl_serialReadWriteRectangular(f, this, privDom.updom);
     }
 
-    proc dsiDisplayRepresentation() {
+    override proc dsiDisplayRepresentation() {
       writeln("Reindex view");
       writeln("------------");
       writeln("of domain:");

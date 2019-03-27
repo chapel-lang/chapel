@@ -15,5 +15,5 @@ proc other() {
 }
 
 proc returnAFoo(x: int) {
-  return new unmanaged Foo(x);
+  return new owned Foo(x);
 }

@@ -482,7 +482,7 @@ override proc Stencil.dsiDestroyDist() {
   }
 }
 
-proc Stencil.dsiDisplayRepresentation() {
+override proc Stencil.dsiDisplayRepresentation() {
   writeln("boundingBox = ", boundingBox);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocales = ", for tl in targetLocales do tl.id);
@@ -626,7 +626,7 @@ proc StencilDom.init(param rank : int,
 
 override proc StencilDom.dsiMyDist() return dist;
 
-proc StencilDom.dsiDisplayRepresentation() {
+override proc StencilDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
@@ -993,7 +993,7 @@ proc StencilDom.dsiIndexOrder(i) {
 //
 proc LocStencilDom.contains(i) return myBlock.contains(i);
 
-proc StencilArr.dsiDisplayRepresentation() {
+override proc StencilArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
     if doRADOpt then

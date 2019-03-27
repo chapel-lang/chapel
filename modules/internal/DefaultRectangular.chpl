@@ -158,7 +158,7 @@ module DefaultRectangular {
       return dist;
     }
 
-    proc dsiDisplayRepresentation() {
+    override proc dsiDisplayRepresentation() {
       writeln("ranges = ", ranges);
     }
 
@@ -1039,7 +1039,7 @@ module DefaultRectangular {
       return chpl__idxTypeToIntIdxType(idxType);
     }
 
-    proc dsiDisplayRepresentation() {
+    override proc dsiDisplayRepresentation() {
       writeln("off=", off);
       writeln("blk=", blk);
       writeln("str=", str);
