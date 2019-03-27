@@ -15,10 +15,10 @@ class OverrideMe
     return new unmanaged C();
   }
 
-  iter manyC()
+  iter manyC(): owned C
   {
-    yield new unmanaged C();
-    yield new unmanaged C();
+    yield new owned C();
+    yield new owned C();
   }
 }
 
@@ -29,10 +29,10 @@ class OverridesIt : OverrideMe
     return new unmanaged SubC();
   }
 
-  override iter manyC()
+  override iter manyC(): owned C
   {
-    yield new unmanaged SubC();
-    yield new unmanaged SubC();
+    yield new owned SubC();
+    yield new owned SubC();
   }
 }
 
