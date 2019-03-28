@@ -19,10 +19,10 @@ record MyGenericRecord {
 proc errors() {
   var x = new MyClass(1);
   var y = new MyGenericClass(1);
-
   writeln("in errors");
   writeln(x);
   writeln(y);
+  delete x:unmanaged, y:unmanaged;
 }
 
 proc ok() {

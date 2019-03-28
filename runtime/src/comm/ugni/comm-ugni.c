@@ -2647,7 +2647,7 @@ void register_memory(void)
       gnr_mreg_map[node] = gdp->gnr_mreg;
       mem_regions_all_entries[node]->mreg_cnt = gdp->mreg_cnt;
       memcpy(&mem_regions_all_entries[node]->mregs, &gdp->mregs,
-             mem_regions_size);
+             gdata_mregs_size);
       mem_regions_all_my_entry_map[node] =
           (mem_region_table_t*)
           ((char*) gdp->mem_regions_all + chpl_nodeID * mem_regions_size);

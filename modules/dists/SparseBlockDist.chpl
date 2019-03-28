@@ -507,7 +507,7 @@ proc SparseBlockDom.dsiNewSpsSubDom(parentDomVal) {
   return new SparseBlockDom(rank, idxType, dist, parentDomVal);
 }
 
-proc SparseBlockDom.dsiDisplayRepresentation() {
+override proc SparseBlockDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].mySparseBlock = ", locDoms[tli].mySparseBlock);
@@ -595,7 +595,7 @@ proc SparseBlockDom.dsiIndexOrder(i) {
 //
 proc LocSparseBlockDom.contains(i) return mySparseBlock.contains(i);
 
-proc SparseBlockArr.dsiDisplayRepresentation() {
+override proc SparseBlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
   }

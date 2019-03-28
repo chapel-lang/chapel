@@ -330,7 +330,7 @@ proc Cyclic.getChunk(inds, locid) {
   //return inds((...distWhole));
 }
 
-proc Cyclic.dsiDisplayRepresentation() {
+override proc Cyclic.dsiDisplayRepresentation() {
   writeln("startIdx = ", startIdx);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocs = ", for tl in targetLocs do tl.id);
@@ -509,7 +509,7 @@ proc CyclicDom.dsiBuildArray(type eltType) {
   return arr;
 }
 
-proc CyclicDom.dsiDisplayRepresentation() {
+override proc CyclicDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
@@ -708,7 +708,7 @@ proc CyclicArr.dsiLocalSlice(ranges) {
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 
-proc CyclicArr.dsiDisplayRepresentation() {
+override proc CyclicArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
     writeln("locArr[", tli, "].locRAD = ", locArr[tli].locRAD.RAD);

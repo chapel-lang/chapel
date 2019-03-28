@@ -208,6 +208,7 @@ tags
 
 /test/library/packages/HDF5/ex_lite1.h5
 /test/library/packages/HDF5/ex_lite3.h5
+/test/library/packages/ZMQ/getLastEndpointHelper
 /test/library/standard/FileSystem/copyFile/*.out
 /test/library/standard/FileSystem/fsouza/chdir/destination
 /test/library/standard/FileSystem/fsouza/chown/file.txt
