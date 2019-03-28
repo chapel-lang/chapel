@@ -441,20 +441,15 @@ or built-in that can handle type identifiers.}
 
 To call a Chapel procedure from external code, the procedure name must be
 exported using the \chpl{export} keyword.  An exported procedure taking no
-arguments and returning void can be declared as:
+arguments and returning a 64-bit integer can be declared as:
 \begin{chapel}
-export proc foo();
+export proc foo(): int { ... }
 \end{chapel}
-If the procedure body is omitted, the procedure declaration is a prototype; the
-body of the procedure must be supplied elsewhere.  In a prototype, the return
-type must be declared; otherwise, it is assumed to be \chpl{void}.  If the body
-is supplied, the return type of the exported procedure is inferred from the
-type of its return expression(s).
 
 If the optional \sntx{external-name} is supplied, that is the name used in
 linking with external code.  For example, if we declare
 \begin{chapel}
-export "myModule_foo" proc foo();
+export "myModule_foo" proc foo(): int { ... }
 \end{chapel}
 \noindent
 then the name \chpl{foo} is used to refer to the procedure within chapel code,
@@ -463,8 +458,7 @@ as \chpl{myModule_foo();}.  If the external name is omitted, then its internal
 name is also used externally.
 
 When a procedure is exported, all of the types and functions on which it depends
-are also exported.  Iterators cannot be explicitly exported.  However, they are
-inlined in Chapel code which uses them, so they are exported in effect.
+are also exported.  Iterators cannot be explicitly exported.
 
 \subsection{Argument Passing}
 \label{Interop_Argument_Passing}
