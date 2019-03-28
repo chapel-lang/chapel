@@ -2583,10 +2583,28 @@ void checkAdjustedDataLayout() {
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
-static void makeLLVMLibrary(std::string moduleFilename, const char* tmpbinname,
-                            std::vector<std::string> dotOFiles);
-static void runLLVMLinking(std::string useLinkCXX, std::string options,
-                           std::string moduleFilename, std::string maino,
+static void makeLLVMStaticLibrary(std::string moduleFilename,
+                                  const char* tmpbinname,
+                                  std::vector<std::string> dotOFiles);
+static void makeLLVMDynamicLibrary(std::string useLinkCXX,
+                            std::string options,
+                            std::string moduleFilename,
+                            const char* tmpbinname,
+                            std::vector<std::string> dotOFiles,
+                            std::vector<std::string> clangLDArgs,
+                            bool sawSysroot);
+static std::string buildLLVMLinkCommand(std::string useLinkCXX,
+                                        std::string options,
+                                        std::string moduleFilename,
+                                        std::string maino,
+                                        const char* tmpbinname,
+                                        std::vector<std::string> dotOFiles,
+                                        std::vector<std::string> clangLDArgs,
+                                        bool sawSysroot);
+static void runLLVMLinking(std::string useLinkCXX,
+                           std::string options,
+                           std::string moduleFilename,
+                           std::string maino,
                            const char* tmpbinname,
                            std::vector<std::string> dotOFiles,
                            std::vector<std::string> clangLDArgs,
@@ -3022,7 +3040,19 @@ void makeBinaryLLVM(void) {
   INT_ASSERT(tmpbinname);
 
   if (fLibraryCompile) {
-    makeLLVMLibrary(moduleFilename, tmpbinname, dotOFiles);
+    // I'm not sure of what other link styles there might be, but...
+    switch (fLinkStyle) {
+    case LS_STATIC:
+      makeLLVMStaticLibrary(moduleFilename, tmpbinname, dotOFiles);
+      break;
+    case LS_DYNAMIC:
+      makeLLVMDynamicLibrary(useLinkCXX, options, moduleFilename, tmpbinname,
+                             dotOFiles, clangLDArgs, sawSysroot);
+      break;
+    default:
+      INT_FATAL("Unsupported library link mode");
+      break;
+    }
   } else {
     // Runs the LLVM link command
     runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
@@ -3056,19 +3086,54 @@ void makeBinaryLLVM(void) {
   }
 }
 
-static void makeLLVMLibrary(std::string moduleFilename, const char* tmpbinname,
-                            std::vector<std::string> dotOFiles) {
+static void makeLLVMStaticLibrary(std::string moduleFilename,
+                                  const char* tmpbinname,
+                                  std::vector<std::string> dotOFiles) {
+  
+  INT_ASSERT(fLibraryCompile && fLinkStyle == LS_STATIC);
+
   std::string commandBase = "ar -c -r -s"; // Stolen from Makefile.static
   std::string command = commandBase + " " + tmpbinname + " " +  moduleFilename;
-  for( size_t i = 0; i < dotOFiles.size(); i++ ) {
+  
+  for (size_t i = 0; i < dotOFiles.size(); i++) {
     command += " ";
     command += dotOFiles[i];
   }
-  if( printSystemCommands ) {
+  
+  if (printSystemCommands) {
     printf("%s\n", command.c_str());
-    fflush(stdout); fflush(stderr);
+    fflush(stdout);
+    fflush(stderr);
   }
-  mysystem(command.c_str(), "Make Library File - Linking");
+
+  mysystem(command.c_str(), "Make Static Library - Linking");
+}
+
+static void makeLLVMDynamicLibrary(std::string useLinkCXX,
+                                   std::string options,
+                                   std::string moduleFilename,
+                                   const char* tmpbinname,
+                                   std::vector<std::string> dotOFiles,
+                                   std::vector<std::string> clangLDArgs,
+                                   bool sawSysroot) {
+
+  INT_ASSERT(fLibraryCompile && fLinkStyle == LS_DYNAMIC);
+
+  // This isn't *strictly* necessary, but we do it anyway.
+  clangLDArgs.push_back("-dynamic");
+
+  // No main object file for this call, since we're building a library.
+  std::string command = buildLLVMLinkCommand(useLinkCXX, options,
+                                             moduleFilename, "", tmpbinname,
+                                             dotOFiles, clangLDArgs,
+                                             sawSysroot);
+  if (printSystemCommands) {
+    printf("%s\n", command.c_str());
+    fflush(stdout);
+    fflush(stderr);
+  }
+
+  mysystem(command.c_str(), "Make Dynamic Library - Linking");
 }
 
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
@@ -3132,30 +3197,36 @@ static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
   }
 }
 
-static void runLLVMLinking(std::string useLinkCXX, std::string options,
-                           std::string moduleFilename, std::string maino,
-                           const char* tmpbinname,
-                           std::vector<std::string> dotOFiles,
-                           std::vector<std::string> clangLDArgs,
-                           bool sawSysroot) {
+static std::string buildLLVMLinkCommand(std::string useLinkCXX,
+                                        std::string options,
+                                        std::string moduleFilename,
+                                        std::string maino,
+                                        const char* tmpbinname,
+                                        std::vector<std::string> dotOFiles,
+                                        std::vector<std::string> clangLDArgs,
+                                        bool sawSysroot) {
   // Run the linker. We always use a C++ compiler because some third-party
   // libraries are written in C++. Here we use clang++ or possibly a
   // linker override specified by the Makefiles (e.g. setting it to mpicxx)
   std::string command = useLinkCXX + " " + options + " " +
                         moduleFilename + " " + maino;
+  
   // For dynamic linking, leave it alone.  For static, append -static .
   // See $CHPL_HOME/make/compiler/Makefile.clang (and keep this in sync
   // with it).
-  if (fLinkStyle == LS_STATIC)
+  if (fLinkStyle == LS_STATIC) {
     command += " -static";
+  }
+
   command += " -o ";
   command += tmpbinname;
-  for( size_t i = 0; i < dotOFiles.size(); i++ ) {
+
+  for (size_t i = 0; i < dotOFiles.size(); i++) {
     command += " ";
     command += dotOFiles[i];
   }
 
-  for(size_t i = 0; i < clangLDArgs.size(); ++i) {
+  for (size_t i = 0; i < clangLDArgs.size(); ++i) {
     command += " ";
     command += clangLDArgs[i];
   }
@@ -3167,20 +3238,44 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
     command += " -L";
     command += dirName;
   }
+
   if (sawSysroot) {
     // Work around a bug in some versions of Clang that forget to
     // search /usr/local/lib if there is a -isysroot argument.
     command += " -L/usr/local/lib";
   }
+
   for_vector(const char, libName, libFiles) {
     command += " -l";
     command += libName;
+  } 
+
+  return command;
+}
+
+static void runLLVMLinking(std::string useLinkCXX, std::string options,
+                           std::string moduleFilename, std::string maino,
+                           const char* tmpbinname,
+                           std::vector<std::string> dotOFiles,
+                           std::vector<std::string> clangLDArgs,
+                           bool sawSysroot) {
+  
+  // This code is general enough to use elsewhere, thus the move.
+  std::string command = buildLLVMLinkCommand(useLinkCXX,
+                                             options,
+                                             moduleFilename,
+                                             maino,
+                                             tmpbinname,
+                                             dotOFiles,
+                                             clangLDArgs,
+                                             sawSysroot);
+  
+  if (printSystemCommands) {
+    printf("%s\n", command.c_str());
+    fflush(stdout);
+    fflush(stderr);
   }
 
-  if( printSystemCommands ) {
-    printf("%s\n", command.c_str());
-    fflush(stdout); fflush(stderr);
-  }
   mysystem(command.c_str(), "Make Binary - Linking");
 }
 
