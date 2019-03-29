@@ -2586,10 +2586,8 @@ void checkAdjustedDataLayout() {
 static void makeLLVMStaticLibrary(std::string moduleFilename,
                                   const char* tmpbinname,
                                   std::vector<std::string> dotOFiles);
-static void makeLLVMDynamicLibrary(std::string useLinkCXX,
-                            std::string options,
-                            std::string moduleFilename,
-                            const char* tmpbinname,
+static void makeLLVMDynamicLibrary(std::string useLinkCXX, std::string options,
+                            std::string moduleFilename, const char* tmpbinname,
                             std::vector<std::string> dotOFiles,
                             std::vector<std::string> clangLDArgs,
                             bool sawSysroot);
@@ -2601,14 +2599,13 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
                                         std::vector<std::string> dotOFiles,
                                         std::vector<std::string> clangLDArgs,
                                         bool sawSysroot);
-static void runLLVMLinking(std::string useLinkCXX,
-                           std::string options,
-                           std::string moduleFilename,
-                           std::string maino,
+static void runLLVMLinking(std::string useLinkCXX, std::string options,
+                           std::string moduleFilename, std::string maino,
                            const char* tmpbinname,
                            std::vector<std::string> dotOFiles,
                            std::vector<std::string> clangLDArgs,
                            bool sawSysroot);
+static std::string getLibraryOutputPath();
 static void moveGeneratedLibraryFile(const char* tmpbinname);
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
 
@@ -3045,6 +3042,8 @@ void makeBinaryLLVM(void) {
     case LS_STATIC:
       makeLLVMStaticLibrary(moduleFilename, tmpbinname, dotOFiles);
       break;
+    // Where would I determine this in the context of LLVM IR?
+    case LS_DEFAULT:
     case LS_DYNAMIC:
       makeLLVMDynamicLibrary(useLinkCXX, options, moduleFilename, tmpbinname,
                              dotOFiles, clangLDArgs, sawSysroot);
@@ -3058,7 +3057,7 @@ void makeBinaryLLVM(void) {
     runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
                    dotOFiles, clangLDArgs, sawSysroot);
   }
-
+  skip:
 
   // If we're not using a launcher, copy the program here
   if (0 == strcmp(CHPL_LAUNCHER, "none")) {
@@ -3117,10 +3116,27 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
                                    std::vector<std::string> clangLDArgs,
                                    bool sawSysroot) {
 
-  INT_ASSERT(fLibraryCompile && fLinkStyle == LS_DYNAMIC);
+  INT_ASSERT(fLibraryCompile);
+  // TODO: For now assume default is dynamic.
+  INT_ASSERT(fLinkStyle == LS_DYNAMIC || fLinkStyle == LS_DEFAULT);
 
-  // This isn't *strictly* necessary, but we do it anyway.
-  clangLDArgs.push_back("-dynamic");
+  // This is a clang++ flag, it will invoke the necessary linker args.
+  clangLDArgs.push_back("-shared");
+
+// TODO:
+// Right now, we check for __APPLE__ before adding Mac specific linker
+// commands. What we would like to do is additionally detect what linker we
+// are using (not all linkers may support the "-install_name" flag, for
+// example.  
+#if defined(__APPLE__) && defined(__MACH__)
+  {
+    // Apple's default LD will attempt to load a dynamic library made by
+    // Chapel via the path of the temporary copy (which was removed) unless
+    // we tell it to use the final output path.
+    std::string installName = "-Wl,-install_name," + getLibraryOutputPath();;
+    clangLDArgs.push_back(installName);
+  }
+#endif
 
   // No main object file for this call, since we're building a library.
   std::string command = buildLLVMLinkCommand(useLinkCXX, options,
@@ -3249,7 +3265,7 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
     command += " -l";
     command += libName;
   } 
-
+  
   return command;
 }
 
@@ -3279,21 +3295,29 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
   mysystem(command.c_str(), "Make Binary - Linking");
 }
 
-static void moveGeneratedLibraryFile(const char* tmpbinname) {
+static std::string getLibraryOutputPath() {
   // Need to reuse some of the stuff in codegen_makefile.  It doesn't save the
   // full filename that is used when in library mode, so we don't have an
   // alternative to making a modified version of executableFilename again
+  std::string result;
   const char* exeExt = getLibraryExtension();
+  const char* lib = "";
   const char* libraryPrefix = "";
   int libLength = strlen("lib");
   bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  
   if (!startsWithLib) {
-    libraryPrefix = "lib";
+    lib = "lib";
   }
-  const char* fullLibraryName = astr(libDir, "/", libraryPrefix,
-                                     executableFilename, exeExt);
+  
+  result += std::string(libDir) + "/" + lib +  executableFilename + exeExt;
 
-  moveResultFromTmp(fullLibraryName, tmpbinname);
+  return result;
+}
+
+static void moveGeneratedLibraryFile(const char* tmpbinname) {
+  std::string outputPath = getLibraryOutputPath();
+  moveResultFromTmp(outputPath.c_str(), tmpbinname);
 }
 
 #endif
