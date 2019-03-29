@@ -3052,7 +3052,7 @@ void makeBinaryLLVM(void) {
       break;
     }
   } else {
-    // Runs the LLVM link command
+    // Runs the LLVM link command for executables.
     runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
                    dotOFiles, clangLDArgs, sawSysroot);
   }
@@ -3088,7 +3088,8 @@ static void makeLLVMStaticLibrary(std::string moduleFilename,
                                   const char* tmpbinname,
                                   std::vector<std::string> dotOFiles) {
   
-  INT_ASSERT(fLibraryCompile && fLinkStyle == LS_STATIC);
+  INT_ASSERT(fLibraryCompile);
+  INT_ASSERT(fLinkStyle == LS_STATIC || fLinkStyle == LS_DEFAULT);
 
   std::string commandBase = "ar -c -r -s"; // Stolen from Makefile.static
   std::string command = commandBase + " " + tmpbinname + " " +  moduleFilename;
@@ -3115,23 +3116,20 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
                                    std::vector<std::string> clangLDArgs,
                                    bool sawSysroot) {
 
-  INT_ASSERT(fLibraryCompile);
-  // TODO: For now assume default is dynamic.
-  INT_ASSERT(fLinkStyle == LS_DYNAMIC || fLinkStyle == LS_DEFAULT);
+  INT_ASSERT(fLibraryCompile && fLinkStyle == LS_DYNAMIC);
 
-  // This is a clang++ flag, it will invoke the necessary linker args.
+  // This is a clang++ flag, make the linker shut up about a missing "main".
   clangLDArgs.push_back("-shared");
 
 // TODO:
-// Right now, we check for __APPLE__ before adding Mac specific linker
-// commands. What we would like to do is additionally detect what linker we
-// are using (not all linkers may support the "-install_name" flag, for
-// example.  
+// Right now, we check for __APPLE__ before adding Mac specific linker args.
+// What we would like to do is additionally detect what linker we are using
+// (not all linkers on Mac may support the "-install_name" flag, for example).
 #if defined(__APPLE__) && defined(__MACH__)
   {
-    // Apple's default LD will attempt to load a dynamic library made by
-    // Chapel via the path of the temporary copy (which was removed) unless
-    // we tell it to use the final output path.
+    // Apple's default LD will attempt to load a dynamic library via the path
+    // of the temporary copy (which was removed) unless we tell it to use the
+    // final output path instead.
     std::string installName = "-Wl,-install_name," + getLibraryOutputPath();
     clangLDArgs.push_back(installName);
   }
