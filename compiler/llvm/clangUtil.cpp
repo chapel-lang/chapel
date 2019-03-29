@@ -3037,13 +3037,12 @@ void makeBinaryLLVM(void) {
   INT_ASSERT(tmpbinname);
 
   if (fLibraryCompile) {
-    // I'm not sure of what other link styles there might be, but...
     switch (fLinkStyle) {
+    // The default library link style for Chapel is _static_.
+    case LS_DEFAULT:
     case LS_STATIC:
       makeLLVMStaticLibrary(moduleFilename, tmpbinname, dotOFiles);
       break;
-    // Where would I determine this in the context of LLVM IR?
-    case LS_DEFAULT:
     case LS_DYNAMIC:
       makeLLVMDynamicLibrary(useLinkCXX, options, moduleFilename, tmpbinname,
                              dotOFiles, clangLDArgs, sawSysroot);
@@ -3133,7 +3132,7 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
     // Apple's default LD will attempt to load a dynamic library made by
     // Chapel via the path of the temporary copy (which was removed) unless
     // we tell it to use the final output path.
-    std::string installName = "-Wl,-install_name," + getLibraryOutputPath();;
+    std::string installName = "-Wl,-install_name," + getLibraryOutputPath();
     clangLDArgs.push_back(installName);
   }
 #endif
