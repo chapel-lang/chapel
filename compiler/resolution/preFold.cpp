@@ -195,26 +195,8 @@ static FnSymbol* findForallexprFollower(FnSymbol* serialIter) {
             return fn;
   }
 
-  //
   // The loopexpr function does not define parallel iterators
   // when it implements a (serial) for-expression.
-  // We may still try to run a forall loop over it because of this code
-  // in chpl__transferArray (whose 'b' corresponds to our serialIter):
-  //
-  //     {...
-  //     } else if chpl__tryToken { // try to parallelize ....
-  //       forall (aa,bb) in zip(a,b) do
-  //         aa = bb;
-  //     } else {
-  //       for (aa,bb) in zip(a,b) do
-  //         aa = bb;
-  //     }
-  //
-  // So the "if chpl__tryToken" will take the 'else' branch.
-  // Ex. 1st line in studies/sudoku/deitz/sudoku.chpl
-  // Or the user may mistakenly run a forall loop over a for-expression.
-  // In either case, the resolution should fail. So, return NULL.
-  //
   return NULL;
 }
 
