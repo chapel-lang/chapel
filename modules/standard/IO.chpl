@@ -198,10 +198,10 @@ Some channel methods - in particular those beginning with the underscore -
 should only be called on locked channels.  With these methods, it is possible
 to get or set the channel style, or perform I/O "transactions" (see
 :proc:`channel.mark` and :proc:`channel._mark`). To use these methods,
-first lock the channel with
-channel.lock(), call the methods you need, and then unlock the channel with
-channel.unlock(). Note that in the future, we may move to alternative ways of
-calling these functions that guarantee that they are not called on a channel
+first lock the channel with :proc:`channel.lock`, call the methods you need,
+then unlock the channel with :proc:`channel.unlock`.
+Note that in the future, we may move to alternative ways of calling
+these functions that guarantee that they are not called on a channel
 without the appropriate locking.
 
 Besides data races that can occur if locking is not used in channels when it
@@ -2226,6 +2226,17 @@ inline proc channel.unlock() {
 
 /*
    Return the current offset of a channel.
+
+   .. warning::
+
+      If the channel can be used by multiple tasks, take care
+      when doing operations that rely on the channel's current offset.
+      To prevent race conditions, first lock the channel with
+      :proc:`channel.lock`, do the operations, then unlock it
+      with :proc:`channel.unlock`.
+      While holding the lock, use :proc:`channel._offset` instead.
+
+   :returns: the current offset of the channel
  */
 proc channel.offset():int(64) {
   var ret:int(64);
