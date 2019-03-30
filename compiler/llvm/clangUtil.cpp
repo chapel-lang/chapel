@@ -2583,6 +2583,8 @@ void checkAdjustedDataLayout() {
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
+static void checkPrintSystemCommand(const char* command);
+static void checkPrintSystemCommand(std::string &command);
 static void makeLLVMStaticLibrary(std::string moduleFilename,
                                   const char* tmpbinname,
                                   std::vector<std::string> dotOFiles);
@@ -3056,7 +3058,6 @@ void makeBinaryLLVM(void) {
     runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
                    dotOFiles, clangLDArgs, sawSysroot);
   }
-  skip:
 
   // If we're not using a launcher, copy the program here
   if (0 == strcmp(CHPL_LAUNCHER, "none")) {
@@ -3075,13 +3076,24 @@ void makeBinaryLLVM(void) {
                                makeflags,
                                getIntermediateDirName(), "/Makefile");
 
-    if( printSystemCommands ) {
-      printf("%s\n", makecmd);
-      fflush(stdout); fflush(stderr);
-    }
+    checkPrintSystemCommand(makecmd);
 
     mysystem(makecmd, "Make Binary - Building Launcher and Copying");
   }
+}
+
+static void checkPrintSystemCommand(const char* command) {
+  if (!printSystemCommands) {
+    return;
+  }
+
+  printf("%s\n", command);
+  fflush(stdout);
+  fflush(stderr);
+}
+
+static void checkPrintSystemCommand(std::string &command) {
+  checkPrintSystemCommand(command.c_str());
 }
 
 static void makeLLVMStaticLibrary(std::string moduleFilename,
@@ -3098,12 +3110,8 @@ static void makeLLVMStaticLibrary(std::string moduleFilename,
     command += " ";
     command += dotOFiles[i];
   }
-  
-  if (printSystemCommands) {
-    printf("%s\n", command.c_str());
-    fflush(stdout);
-    fflush(stderr);
-  }
+
+  checkPrintSystemCommand(command);  
 
   mysystem(command.c_str(), "Make Static Library - Linking");
 }
@@ -3121,12 +3129,13 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
   // This is a clang++ flag, make the linker shut up about a missing "main".
   clangLDArgs.push_back("-shared");
 
-// TODO:
-// Right now, we check for __APPLE__ before adding Mac specific linker args.
-// What we would like to do is additionally detect what linker we are using
-// (not all linkers on Mac may support the "-install_name" flag, for example).
 #if defined(__APPLE__) && defined(__MACH__)
   {
+    // TODO:
+    // Right now, we check for __APPLE__ before adding Mac specific linker
+    // args. What we would like to do is additionally detect what linker we
+    // are using (not all linkers may support "-install_name", for example).
+    //
     // Apple's default LD will attempt to load a dynamic library via the path
     // of the temporary copy (which was removed) unless we tell it to use the
     // final output path instead.
@@ -3140,11 +3149,8 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
                                              moduleFilename, "", tmpbinname,
                                              dotOFiles, clangLDArgs,
                                              sawSysroot);
-  if (printSystemCommands) {
-    printf("%s\n", command.c_str());
-    fflush(stdout);
-    fflush(stderr);
-  }
+
+  checkPrintSystemCommand(command);
 
   mysystem(command.c_str(), "Make Dynamic Library - Linking");
 }
@@ -3282,12 +3288,8 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                                              dotOFiles,
                                              clangLDArgs,
                                              sawSysroot);
-  
-  if (printSystemCommands) {
-    printf("%s\n", command.c_str());
-    fflush(stdout);
-    fflush(stderr);
-  }
+
+  checkPrintSystemCommand(command);  
 
   mysystem(command.c_str(), "Make Binary - Linking");
 }
@@ -3298,16 +3300,16 @@ static std::string getLibraryOutputPath() {
   // alternative to making a modified version of executableFilename again
   std::string result;
   const char* exeExt = getLibraryExtension();
-  const char* lib = "";
   const char* libraryPrefix = "";
   int libLength = strlen("lib");
   bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
   
   if (!startsWithLib) {
-    lib = "lib";
+    libraryPrefix = "lib";
   }
   
-  result += std::string(libDir) + "/" + lib +  executableFilename + exeExt;
+  result += std::string(libDir) + "/" + libraryPrefix + executableFilename;
+  result += std::string(exeExt);
 
   return result;
 }
