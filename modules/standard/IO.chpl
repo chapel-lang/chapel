@@ -198,10 +198,10 @@ Some channel methods - in particular those beginning with the underscore -
 should only be called on locked channels.  With these methods, it is possible
 to get or set the channel style, or perform I/O "transactions" (see
 :proc:`channel.mark` and :proc:`channel._mark`). To use these methods,
-first lock the channel with
-channel.lock(), call the methods you need, and then unlock the channel with
-channel.unlock(). Note that in the future, we may move to alternative ways of
-calling these functions that guarantee that they are not called on a channel
+first lock the channel with :proc:`channel.lock`, call the methods you need,
+then unlock the channel with :proc:`channel.unlock`.
+Note that in the future, we may move to alternative ways of calling
+these functions that guarantee that they are not called on a channel
 without the appropriate locking.
 
 Besides data races that can occur if locking is not used in channels when it
@@ -2225,11 +2225,16 @@ inline proc channel.unlock() {
 }
 
 /*
-   Return the current offset of a channel. Note that other operations
-   on the channel (e.g. by other tasks) might change the offset. If you
-   are doing another operation on the channel based upon the current offset,
-   you should use :proc:`channel.lock`, :proc:`channel._offset`, and
-   :proc:`channel.unlock` to prevent race conditions.
+   Return the current offset of a channel.
+
+   .. warning::
+
+      If the channel can be used by multiple tasks, take care
+      when doing operations that rely on the channel's current offset.
+      To prevent race conditions, first lock the channel with
+      :proc:`channel.lock`, do the operations, then unlock it
+      with :proc:`channel.unlock`.
+      While holding the lock, use :proc:`channel._offset` instead.
 
    :returns: the current offset of the channel
  */
@@ -2259,9 +2264,8 @@ proc channel.offset():int(64) {
 proc channel.advance(amount:int(64)) throws {
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     err = qio_channel_advance(false, _channel_internal, amount);
-    this.unlock();
   }
   if err then try this._ch_ioerror(err, "in advance");
 }
@@ -2289,9 +2293,8 @@ proc channel.advance(amount:int(64), ref error:syserr) {
 proc channel.advancePastByte(byte:uint(8)) throws {
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
-    this.unlock();
   }
   if err then try this._ch_ioerror(err, "in advanceToByte");
 }
@@ -3409,9 +3412,8 @@ inline proc channel.readwrite(ref x) where !this.writing {
   proc channel.writeBytes(x, len:ssize_t):bool throws {
     var err:syserr = ENOERR;
     on this.home {
-      try! this.lock();
+      try this.lock(); defer { this.unlock(); }
       err = qio_channel_write_amt(false, _channel_internal, x, len);
-      this.unlock();
     }
     if err then try this._ch_ioerror(err, "in channel.writeBytes()");
     return true;
@@ -3589,7 +3591,7 @@ inline proc channel.read(ref args ...?k):bool throws {
   const origLocale = this.getLocaleOfIoRequest();
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     for param i in 1..k {
       if !err {
         if args[i].locale == here {
@@ -3601,7 +3603,6 @@ inline proc channel.read(ref args ...?k):bool throws {
         }
       }
     }
-    this.unlock();
   }
 
   if !err {
@@ -3652,7 +3653,7 @@ proc channel.read(ref args ...?k, style:iostyle):bool throws {
   const origLocale = this.getLocaleOfIoRequest();
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     this._set_style(style);
     for param i in 1..k {
@@ -3661,7 +3662,6 @@ proc channel.read(ref args ...?k, style:iostyle):bool throws {
       }
     }
     this._set_style(save_style);
-    this.unlock();
   }
 
   if !err {
@@ -3715,7 +3715,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
 
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     param newLineChar = 0x0A;
     var got: int;
     var i = start;
@@ -3729,7 +3729,6 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
     }
     numRead = i - start;
     if i == start && got < 0 then err = (-got):syserr;
-    this.unlock();
   }
 
   if !err {
@@ -3776,7 +3775,7 @@ proc channel.readline(ref arg:string):bool throws {
 
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     var mystyle = save_style.text();
     mystyle.string_format = QIO_STRING_FORMAT_TOEND;
@@ -3784,7 +3783,6 @@ proc channel.readline(ref arg:string):bool throws {
     this._set_style(mystyle);
     err = _read_one_internal(_channel_internal, iokind.dynamic, arg, origLocale);
     this._set_style(save_style);
-    this.unlock();
   }
 
   if !err {
@@ -3839,7 +3837,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
       if ssize_t != int(64) then assert( len == uselen );
     }
 
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
 
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -3860,8 +3858,6 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
                                     lenread, uselen);
       this._set_style(save_style);
     }
-
-    this.unlock();
 
     str_out = new string(tx, length=lenread, needToCopy=false);
   }
@@ -4132,13 +4128,12 @@ inline proc channel.write(const args ...?k):bool throws {
   var err:syserr = ENOERR;
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     for param i in 1..k {
       if !err {
         err = _write_one_internal(_channel_internal, kind, args(i), origLocale);
       }
     }
-    this.unlock();
   }
   if err then try this._ch_ioerror(err, "in channel.write(" +
                                         _args_to_proto((...args), preArg="") +
@@ -4182,7 +4177,7 @@ proc channel.write(const args ...?k, style:iostyle):bool throws {
   const origLocale = this.getLocaleOfIoRequest();
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     this._set_style(style);
     for param i in 1..k {
@@ -4191,7 +4186,6 @@ proc channel.write(const args ...?k, style:iostyle):bool throws {
       }
     }
     this._set_style(save_style);
-    this.unlock();
   }
 
   if err then try this._ch_ioerror(err, "in channel.write(" +
@@ -6388,7 +6382,7 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
   const origLocale = this.getLocaleOfIoRequest();
   var err: syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6524,7 +6518,6 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
     }
 
     this._set_style(save_style);
-    this.unlock();
   }
 
   if err then try this._ch_ioerror(err, "in channel.writef(fmt:string)");
@@ -6552,7 +6545,7 @@ proc channel.writef(fmtStr:string): bool throws {
   if !writing then compilerError("writef on read-only channel");
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6586,7 +6579,6 @@ proc channel.writef(fmtStr:string): bool throws {
     }
 
     this._set_style(save_style);
-    this.unlock();
   }
 
   if err then try this._ch_ioerror(err, "in channel.writef(fmt:string, ...)");
@@ -6626,7 +6618,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
   const origLocale = this.getLocaleOfIoRequest();
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6847,7 +6839,6 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
       }
     }
     this._set_style(save_style);
-    this.unlock();
   }
 
   if !err {
@@ -6882,7 +6873,7 @@ proc channel.readf(fmtStr:string) throws {
   if writing then compilerError("readf on write-only channel");
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6921,7 +6912,6 @@ proc channel.readf(fmtStr:string) throws {
     }
 
     this._set_style(save_style);
-    this.unlock();
   }
 
   if !err {
@@ -6994,14 +6984,13 @@ proc readf(fmt:string):bool throws {
 proc channel.skipField() throws {
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var st = this.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
     if st == QIO_AGGREGATE_FORMAT_JSON {
       err = qio_channel_skip_json_field(false, _channel_internal);
     } else {
       err = ENOTSUP;
     }
-    this.unlock();
   }
   if err then try this._ch_ioerror(err, "in skipField");
 }
@@ -7197,9 +7186,8 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != r
 proc channel.extractMatch(m:reMatch, ref arg) throws {
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     _extractMatch(m, arg, err);
-    this.unlock();
   }
   if err {
     try this._ch_ioerror(err, "in channel.extractMatch(m:reMatch, ref " +
@@ -7301,7 +7289,7 @@ proc channel.search(re:regexp, ref captures ...?k): reMatch throws
   var m:reMatch;
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var nm = captures.size + 1;
     var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
     err = qio_channel_mark(false, _channel_internal);
@@ -7332,7 +7320,6 @@ proc channel.search(re:regexp, ref captures ...?k): reMatch throws
       }
     }
     _ddata_free(matches, nm);
-    this.unlock();
   }
 
   if err then try this._ch_ioerror(err, "in channel.search");
@@ -7510,7 +7497,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
 
   try! lock();
   on this.home do error = _mark();
-  // TODO should be try not try!
+  // TODO should be try not try!  ditto try! lock() above
   if error then try! this._ch_ioerror(error, "in channel.matches mark");
 
   while go && i < maxmatches {
@@ -7552,7 +7539,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
     i += 1;
   }
   _commit();
-  try! unlock();
+  unlock();
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = ENOERR;
   // TODO should be try not try!
