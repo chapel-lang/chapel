@@ -2583,8 +2583,8 @@ void checkAdjustedDataLayout() {
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
-static void checkPrintSystemCommand(const char* command);
-static void checkPrintSystemCommand(std::string &command);
+static void tryPrintSystemCommand(const char* command);
+static void tryPrintSystemCommand(std::string &command);
 static void makeLLVMStaticLibrary(std::string moduleFilename,
                                   const char* tmpbinname,
                                   std::vector<std::string> dotOFiles);
@@ -3076,13 +3076,13 @@ void makeBinaryLLVM(void) {
                                makeflags,
                                getIntermediateDirName(), "/Makefile");
 
-    checkPrintSystemCommand(makecmd);
+    tryPrintSystemCommand(makecmd);
 
     mysystem(makecmd, "Make Binary - Building Launcher and Copying");
   }
 }
 
-static void checkPrintSystemCommand(const char* command) {
+static void tryPrintSystemCommand(const char* command) {
   if (!printSystemCommands) {
     return;
   }
@@ -3092,8 +3092,8 @@ static void checkPrintSystemCommand(const char* command) {
   fflush(stderr);
 }
 
-static void checkPrintSystemCommand(std::string &command) {
-  checkPrintSystemCommand(command.c_str());
+static void tryPrintSystemCommand(std::string &command) {
+  tryPrintSystemCommand(command.c_str());
 }
 
 static void makeLLVMStaticLibrary(std::string moduleFilename,
@@ -3111,7 +3111,7 @@ static void makeLLVMStaticLibrary(std::string moduleFilename,
     command += dotOFiles[i];
   }
 
-  checkPrintSystemCommand(command);  
+  tryPrintSystemCommand(command);  
 
   mysystem(command.c_str(), "Make Static Library - Linking");
 }
@@ -3150,7 +3150,7 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
                                              dotOFiles, clangLDArgs,
                                              sawSysroot);
 
-  checkPrintSystemCommand(command);
+  tryPrintSystemCommand(command);
 
   mysystem(command.c_str(), "Make Dynamic Library - Linking");
 }
@@ -3289,7 +3289,7 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                                              clangLDArgs,
                                              sawSysroot);
 
-  checkPrintSystemCommand(command);  
+  tryPrintSystemCommand(command);  
 
   mysystem(command.c_str(), "Make Binary - Linking");
 }
