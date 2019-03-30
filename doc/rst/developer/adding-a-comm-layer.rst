@@ -16,7 +16,7 @@ third-party packages that may use C++ (like ``re2``).
 The following header files define the comm layer API and also serve as
 documentation for the core API:
 
-- *runtime/include/chpl-comm.h*
+- ``runtime/include/chpl-comm.h``
 - *runtime/include/chpl-comm-locales.h*
 
 The APIs should be should be implemented in ``runtime/comm/speedy``.  The
