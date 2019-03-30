@@ -1308,20 +1308,6 @@ proc file.check() throws {
     throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
 }
 
-// documented in throws version
-pragma "no doc"
-proc file.check(out error:syserr) {
-  compilerWarning("This version of file.check() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    this.check();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 pragma "no doc"
 proc ref file.deinit() {
   on this.home {
@@ -1394,20 +1380,6 @@ proc file.close() throws {
   if err then try ioerror(err, "in file.close", this.tryGetPath());
 }
 
-// documented in throws version
-pragma "no doc"
-proc file.close(out error:syserr) {
-  compilerWarning("This version of file.close() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    this.close();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /*
 
 Sync a file to disk.
@@ -1428,20 +1400,6 @@ proc file.fsync() throws {
     err = qio_file_sync(_file_internal);
   }
   if err then try ioerror(err, "in file.fsync", this.tryGetPath());
-}
-
-// documented in the throws version
-pragma "no doc"
-proc file.fsync(out error:syserr) {
-  compilerWarning("This version of file.fsync() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    this.fsync();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 
@@ -1490,21 +1448,6 @@ proc file.tryGetPath() : string {
   } catch {
     return "unknown";
   }
-}
-
-// documented in file.path
-pragma "no doc"
-proc file.getPath(out error:syserr) : string {
-  compilerWarning("file.getPath() is deprecated; " +
-                  "please switch to file.path or file.tryGetPath()");
-  try {
-    return this.path;
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return "unknown";
 }
 
 /*
@@ -1659,24 +1602,6 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
   return ret;
 }
 
-// documented in open() throws version
-pragma "no doc"
-proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle(), url:string=""):file {
-  compilerWarning("This version of open() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  var ret: file;
-  try {
-    ret = open(path, mode, hints, style, url);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
 /*
 
 Create a Chapel file that works with a system file descriptor  Note that once
@@ -1727,22 +1652,6 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   return ret;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc openfd(fd: fd_t, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-  compilerWarning("This version of openfd() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:file;
-  try {
-    ret = openfd(fd, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
 /*
 
 Create a Chapel file that works with an open C file (ie a ``FILE*``).  Note
@@ -1785,22 +1694,6 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
   return ret;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc openfp(fp: _file, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-  compilerWarning("This version of openfp() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:file;
-  try {
-    ret = openfp(fp, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
 /*
 
 Open a temporary file. Note that once the file is open, you will need to use a
@@ -1835,22 +1728,6 @@ proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file t
   return ret;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-  compilerWarning("This version of opentmp() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:file;
-  try {
-    var ret = opentmp(hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
 /*
 
 Open a file that is backed by a buffer in memory that will not persist when the
@@ -1876,23 +1753,6 @@ proc openmem(style:iostyle = defaultIOStyle()):file throws {
   // On return ret._file_internal.ref_cnt == 1.
   var err = qio_file_open_mem(ret._file_internal, QBUFFER_PTR_NULL, local_style);
   if err then try ioerror(err, "in openmem");
-  return ret;
-}
-
-
-// documented in the throws version
-pragma "no doc"
-proc openmem(out error:syserr, style:iostyle = defaultIOStyle()) {
-  compilerWarning("This version of openmem() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:file;
-  try {
-    ret = openmem(style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
   return ret;
 }
 
@@ -2198,21 +2058,6 @@ inline proc channel.lock() throws {
   if err then try this._ch_ioerror(err, "in lock");
 }
 
-
-// documented in throws version
-pragma "no doc"
-inline proc channel.lock(out error:syserr) {
-  compilerWarning("This version of channel.lock() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    this.lock();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /*
    Release a channel's lock.
  */
@@ -2270,19 +2115,6 @@ proc channel.advance(amount:int(64)) throws {
   if err then try this._ch_ioerror(err, "in advance");
 }
 
-// documented with the throws version
-pragma "no doc"
-proc channel.advance(amount:int(64), ref error:syserr) {
-  compilerWarning("'ref error: syserr' pattern has been deprecated, use 'throws' function instead");
-  try {
-    this.advance(amount);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /*
    Reads until ``byte`` is found and then leave the channel offset
    just after it.
@@ -2297,18 +2129,6 @@ proc channel.advancePastByte(byte:uint(8)) throws {
     err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
   }
   if err then try this._ch_ioerror(err, "in advanceToByte");
-}
-
-pragma "no doc"
-proc channel.advancePastByte(byte:uint(8), ref error:syserr) {
-  compilerWarning("'ref error: syserr' pattern has been deprecated, use 'throws' function instead");
-  try {
-    this.advancePastByte(byte);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /*
@@ -2534,23 +2354,6 @@ proc openreader(path:string="", param kind=iokind.dynamic, param locking=true,
   /*qio_file_release(fl._file_internal);*/
 }
 
-// documented in throws version
-pragma "no doc"
-proc openreader(out error: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
-    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-    url:string=""): channel(false, kind, locking) {
-  compilerWarning("This version of openreader() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return openreader(path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return new channel(writing=false, kind=kind, locking=locking);
-}
-
 /*
 
 Open a file at a particular path or URL and return a writing channel for it.
@@ -2600,24 +2403,6 @@ proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
   // and not having any handles attached to it, it will close the underlying file for the channel.
   /*qio_file_release(fl._file_internal);*/
 }
-
-// documented in throws version
-pragma "no doc"
-proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
-    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-    url:string=""): channel(true, kind, locking) {
-  compilerWarning("This version of openwriter() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return openwriter(path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return new channel(writing=true, kind=kind, locking=locking);
-}
-
 
 /*
    Create a :record:`channel` that supports reading from a file. See
@@ -2676,23 +2461,6 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
   return ret;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(false, kind, locking) {
-  compilerWarning("This version of file.reader() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return this.reader(kind, locking, start, end, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return new channel(writing=false, kind=kind, locking=locking);
-}
-
 /* Iterate over all of the lines in a file.
 
    :returns: an object which yields strings read from the file
@@ -2715,24 +2483,6 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
   }
   if err then try ioerror(err, "in file.lines", this.tryGetPath());
 
-  return ret;
-}
-
-// documented in the throws version
-pragma "no doc"
-proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                in local_style:iostyle = this._style) {
-  compilerWarning("This version of file.lines() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:ItemReader(string, iokind.dynamic, locking);
-  try {
-    ret = this.lines(locking, start, end, hints, local_style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
   return ret;
 }
 
@@ -2796,24 +2546,6 @@ proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 
   }
   if err then try ioerror(err, "in file.writer", this.tryGetPath());
 
-  return ret;
-}
-
-// documented in throws version
-pragma "no doc"
-proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(true,kind,locking) {
-  compilerWarning("This version of file.writer() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:channel(true, kind, locking);
-  try {
-    ret = this.writer(kind, locking, start, end, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
   return ret;
 }
 
@@ -3419,20 +3151,6 @@ inline proc channel.readwrite(ref x) where !this.writing {
     return true;
   }
 
-  pragma "no doc"
-  proc channel.writeBytes(x, len:ssize_t, out error:syserr):bool {
-    compilerWarning("This version of channel.writeBytes() is deprecated; " +
-                    "please switch to a throwing version");
-    try {
-      return this.writeBytes(x, len);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-    return false;
-  }
-
 /*
   Iterate over all of the lines ending in ``\n`` in a channel - the channel
   lock will be held while iterating over the lines.
@@ -3616,22 +3334,6 @@ inline proc channel.read(ref args ...?k):bool throws {
   return false;
 }
 
-// documented in the throws version
-pragma "no doc"
-inline proc channel.read(ref args ...?k, out error:syserr): bool {
-  compilerWarning("This version of channel.read() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.read((...args));
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /*
 
    Read values from a channel. The input will be consumed atomically - the
@@ -3672,24 +3374,6 @@ proc channel.read(ref args ...?k, style:iostyle):bool throws {
     try this._ch_ioerror(err, "in channel.read(" +
                               _args_to_proto((...args), preArg="ref ") +
                               "style:iostyle)");
-  }
-  return false;
-}
-
-// documented in the throws version
-pragma "no doc"
-proc channel.read(ref args ...?k,
-                  style:iostyle,
-                  out error:syserr):bool {
-  compilerWarning("This version of channel.read() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.read((...args), style=style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
   }
   return false;
 }
@@ -3741,25 +3425,6 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   return false;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
-                      amount = arg.domain.high - start + 1, out error:syserr) : bool
-                      where arg.rank == 1 && isRectangularArr(arg) {
-  compilerWarning("This version of channel.readline() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readline(arg, numRead, start, amount);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
-
 /*
   Read a line into a Chapel string. Reads until a ``\n`` is reached.
   The ``\n`` is included in the resulting string.
@@ -3791,22 +3456,6 @@ proc channel.readline(ref arg:string):bool throws {
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readline(ref arg:string)");
-  }
-  return false;
-}
-
-// documented in throws version
-pragma "no doc"
-proc channel.readline(ref arg:string, out error:syserr):bool {
-  compilerWarning("This version of channel.readline() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readline(arg);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
   }
   return false;
 }
@@ -3872,22 +3521,6 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   return false;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):bool {
-  compilerWarning("This version of channel.readstring() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readstring(str_out, len);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /*
    Read bits with binary I/O
 
@@ -3916,22 +3549,6 @@ inline proc channel.readbits(out v:integral, nbits:integral):bool throws {
   return ret;
 }
 
-// documented in the throws version
-pragma "no doc"
-inline proc channel.readbits(out v:integral, nbits:integral, out error:syserr):bool {
-  compilerWarning("This version of channel.readbits() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readbits(v, nbits);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /*
    Write bits with binary I/O
 
@@ -3956,22 +3573,6 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
   return try this.write(new ioBits(v:uint(64), nbits:int(8)));
 }
 
-// documented in the throws version
-pragma "no doc"
-inline proc channel.writebits(v:integral, nbits:integral, out error:syserr):bool {
-  compilerWarning("This version of channel.writebits() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.writebits(v, nbits);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 // documented in the style= error= version
 pragma "no doc"
 proc channel.readln():bool throws {
@@ -3981,28 +3582,9 @@ proc channel.readln():bool throws {
 
 // documented in the style= error= version
 pragma "no doc"
-proc channel.readln(out error:syserr):bool {
-  compilerWarning("This version of channel.readln() is deprecated; " +
-                  "please switch to a throwing version");
-  var nl = new ioNewline();
-  return this.read(nl, error=error);
-}
-
-// documented in the style= error= version
-pragma "no doc"
 proc channel.readln(ref args ...?k):bool throws {
   var nl = new ioNewline();
   return try this.read((...args), nl);
-}
-
-// documented in the style= error= version
-pragma "no doc"
-proc channel.readln(ref args ...?k,
-                    out error:syserr):bool {
-  compilerWarning("This version of channel.readln() is deprecated; " +
-                  "please switch to a throwing version");
-  var nl = new ioNewline();
-  return this.read((...args), nl, error=error);
 }
 
 /*
@@ -4027,17 +3609,6 @@ proc channel.readln(ref args ...?k,
                     style:iostyle):bool throws {
   var nl = new ioNewline();
   return try this.read((...args), nl, style=style);
-}
-
-// documented in the style= error= version
-pragma "no doc"
-proc channel.readln(ref args ...?k,
-                    style:iostyle,
-                    out error:syserr):bool {
-  compilerWarning("This version of channel.readln() is deprecated; " +
-                  "please switch to a throwing version");
-  var nl = new ioNewline();
-  return this.read((...args), nl, style=style, error=error);
 }
 
 /*
@@ -4141,22 +3712,6 @@ inline proc channel.write(const args ...?k):bool throws {
   return true;
 }
 
-// documented in style= error= version
-pragma "no doc"
-inline proc channel.write(const args ...?k, out error:syserr):bool {
-  compilerWarning("This version of channel.write() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.write((...args));
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /*
    Write values to a channel. The output will be produced atomically -
    the channel lock will be held while writing all of the passed
@@ -4196,32 +3751,8 @@ proc channel.write(const args ...?k, style:iostyle):bool throws {
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.write(const args ...?k, style:iostyle, out error:syserr):bool {
-  compilerWarning("This version of channel.write() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.write((...args), style=style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
-// documented in style= error= version
-pragma "no doc"
 proc channel.writeln():bool throws {
   return try this.write(new ioNewline());
-}
-
-// documented in style= error= version
-pragma "no doc"
-proc channel.writeln(out error:syserr):bool {
-  compilerWarning("This version of channel.writeln() is deprecated; " +
-                  "please switch to a throwing version");
-  return this.write(new ioNewline(), error=error);
 }
 
 // documented in style= error= version
@@ -4229,16 +3760,6 @@ pragma "no doc"
 proc channel.writeln(const args ...?k):bool throws {
   return try this.write((...args), new ioNewline());
 }
-
-// documented in style= error= version
-pragma "no doc"
-proc channel.writeln(const args ...?k, out error:syserr):bool {
-  compilerWarning("This version of channel.writeln() is deprecated; " +
-                  "please switch to a throwing version");
-  return this.write((...args), new ioNewline(), error=error);
-}
-
-
 
 /*
 
@@ -4259,14 +3780,6 @@ proc channel.writeln(const args ...?k, out error:syserr):bool {
  */
 proc channel.writeln(const args ...?k, style:iostyle):bool throws {
   return try this.write((...args), new ioNewline(), style=style);
-}
-
-// documented in style= error= version
-pragma "no doc"
-proc channel.writeln(const args ...?k, style:iostyle, out error:syserr):bool {
-  compilerWarning("This version of channel.writeln() is deprecated; " +
-                  "please switch to a throwing version");
-  return this.write((...args), new ioNewline(), style=style, error=error);
 }
 
 /*
@@ -4342,20 +3855,6 @@ proc channel.close() throws {
   if err then try this._ch_ioerror(err, "in channel.close");
 }
 
-pragma "no doc"
-proc channel.close(out error:syserr) {
-  compilerWarning("This version of channel.close() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    this.close();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /*
    Return `true` if a channel is currently closed.
  */
@@ -4377,20 +3876,6 @@ proc channel.readBytes(x, len:ssize_t) throws {
     throw new owned IllegalArgumentError("bad remote channel.readBytes");
   var err = qio_channel_read_amt(false, _channel_internal, x, len);
   if err then try this._ch_ioerror(err, "in channel.readBytes");
-}
-
-pragma "no doc"
-proc channel.readBytes(x, len:ssize_t, out error:syserr) {
-  compilerWarning("This version of channel.readBytes() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    this.readBytes(x, len);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /*
@@ -4422,12 +3907,6 @@ record ItemReader {
   /* read a single item, throwing on error */
   proc read(out arg:ItemType):bool throws {
     return ch.read(arg);
-  }
-  /* read a single item, returning an error */
-  proc read(out arg:ItemType, out error:syserr):bool {
-    compilerWarning("This version of ItemReader.read() is deprecated; " +
-                    "please switch to a throwing version");
-    return ch.read(arg, error=error);
   }
 
   /* iterate through all items of that type read from the channel */
@@ -4464,12 +3943,6 @@ record ItemWriter {
   /* write a single item, throwing on error */
   proc write(arg:ItemType):bool throws {
     return ch.write(arg);
-  }
-  /* write a single item, returning an error */
-  proc write(arg:ItemType, out error:syserr):bool {
-    compilerWarning("This version of ItemWriter.write() is deprecated; " +
-                    "please switch to a throwing version");
-    return ch.write(arg, error=error);
   }
 }
 
@@ -4559,20 +4032,6 @@ proc unlink(path:string) throws {
   extern proc sys_unlink(path:c_string):err_t;
   var err = sys_unlink(path.localize().c_str());
   if err then try ioerror(err:syserr, "in unlink", path);
-}
-
-// documented in the error= version
-pragma "no doc"
-proc unlink(path:string, out error:syserr) {
-  compilerWarning("This version of unlink() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    unlink(path);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /*
@@ -6525,22 +5984,6 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
 }
 
 // documented in varargs version
-pragma "no doc"
-proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
-  compilerWarning("This version of channel.writef() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.writef(fmtStr, (...args));
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
-// documented in varargs version
 proc channel.writef(fmtStr:string): bool throws {
   if !writing then compilerError("writef on read-only channel");
   var err:syserr = ENOERR;
@@ -6583,22 +6026,6 @@ proc channel.writef(fmtStr:string): bool throws {
 
   if err then try this._ch_ioerror(err, "in channel.writef(fmt:string, ...)");
   return true;
-}
-
-// documented in varargs version
-pragma "no doc"
-proc channel.writef(fmtStr:string, out error:syserr):bool {
-  compilerWarning("This version of channel.writef() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.writef(fmtStr);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
 }
 
 /*
@@ -6853,22 +6280,6 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
 
 // documented in varargs version
 pragma "no doc"
-proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
-  compilerWarning("This version of channel.readf() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readf(fmtStr, (...args));
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
-// documented in varargs version
-pragma "no doc"
 proc channel.readf(fmtStr:string) throws {
   if writing then compilerError("readf on write-only channel");
   var err:syserr = ENOERR;
@@ -6924,22 +6335,6 @@ proc channel.readf(fmtStr:string) throws {
   }
 }
 
-// documented in fmtStr, varargs version
-pragma "no doc"
-proc channel.readf(fmtStr:string, out error:syserr):bool {
-  compilerWarning("This version of channel.readf() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readf(fmtStr);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /* Call ``try! stdout.writef``; see :proc:`channel.writef`. */
 proc writef(fmt:string, const args ...?k):bool {
   try! {
@@ -6993,19 +6388,6 @@ proc channel.skipField() throws {
     }
   }
   if err then try this._ch_ioerror(err, "in skipField");
-}
-
-pragma "no doc"
-proc channel.skipField(out error:syserr) {
-  compilerWarning("This version of channel.skipField() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    this.skipField();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /*
@@ -7072,21 +6454,6 @@ private inline proc chpl_do_format(fmt:string, args ...?k): string throws {
   buf[offset] = 0;
 
   return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
-}
-
-// documented in the throws version
-pragma "no doc"
-proc string.format(args ...?k, out error:syserr):string {
-  compilerWarning("This version of string.format() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return this.format((...args));
-  } catch e: SystemError {
-    try ioerror(e.err, "in string.format");
-  } catch {
-    try ioerror(EINVAL:syserr, "in string.format");
-  }
-  return "";
 }
 
 
@@ -7325,22 +6692,6 @@ proc channel.search(re:regexp, ref captures ...?k): reMatch throws
   if err then try this._ch_ioerror(err, "in channel.search");
   return m;
 }
-
-// documented in the error= version
-pragma "no doc"
-proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch {
-  compilerWarning("'ref error: syserr' pattern has been deprecated, use 'throws' function instead");
-  var ret:reMatch;
-  try {
-    ret = this.search(re, (...captures));
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
 
 // documented in the capture group version
 pragma "no doc"
