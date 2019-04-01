@@ -129,14 +129,12 @@ bool fNoRemoteValueForwarding = false;
 bool fNoInferConstRefs = false;
 bool fNoRemoteSerialization = false;
 bool fNoRemoveCopyCalls = false;
-bool fNoOptimizeRangeIteration = false;
-bool fNoOptimizeLoopIterators = false;
+bool fNoInlineIterators = false;
 bool fNoVectorize = false; // adjusted in postVectorize
 static bool fYesVectorize = false;
 bool fForceVectorize = false;
 bool fNoGlobalConstOpt = false;
 bool fNoFastFollowers = false;
-bool fNoInlineIterators = false;
 bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
 bool fNoDivZeroChecks = false;
@@ -705,8 +703,6 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoInterproceduralAliasAnalysis = false;
   fNoInline = false;
   fNoInlineIterators = false;
-  fNoOptimizeRangeIteration = false;
-  fNoOptimizeLoopIterators = false;
   fNoLiveAnalysis = false;
   fNoInferConstRefs = false;
   fNoRemoteValueForwarding = false;
@@ -755,8 +751,6 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoInline = true;                   // --no-inline
   fNoInlineIterators = true;          // --no-inline-iterators
   fNoLiveAnalysis = true;             // --no-live-analysis
-  fNoOptimizeRangeIteration = true;   // --no-optimize-range-iteration
-  fNoOptimizeLoopIterators = true;    // --no-optimize-loop-iterators
   fNoVectorize = true;                // --no-vectorize
   fNoInferConstRefs = true;           // --no-infer-const-refs
   fNoRemoteValueForwarding = true;    // --no-remote-value-forwarding
@@ -900,8 +894,8 @@ static ArgumentDescription arg_desc[] = {
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoLoopInvariantCodeMotion, NULL, NULL},
  {"optimize-forall-unordered-ops", ' ', NULL, "Enable [disable] optimization of foralls to unordered operations", "n", &fNoOptimizeForallUnordered, "CHPL_DISABLE_OPTIMIZE_FORALL_UNORDERED_OPS", NULL},
- {"optimize-range-iteration", ' ', NULL, "Enable [disable] optimization of iteration over anonymous ranges", "n", &fNoOptimizeRangeIteration, "CHPL_DISABLE_OPTIMIZE_RANGE_ITERATION", NULL},
- {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
+ {"inline-iterators", ' ', NULL, "Enable [disable] optimization of iteration over anonymous ranges", "n", &fNoInlineIterators, "CHPL_DISABLE_OPTIMIZE_RANGE_ITERATION", NULL},
+ {"inline-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoInlineIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
  {"optimize-on-clauses", ' ', NULL, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", NULL},
  {"optimize-on-clause-limit", ' ', "<limit>", "Limit recursion depth of on clause optimization search", "I", &optimize_on_clause_limit, "CHPL_OPTIMIZE_ON_CLAUSE_LIMIT", NULL},
  {"privatization", ' ', NULL, "Enable [disable] privatization of distributed arrays and domains", "n", &fNoPrivatization, "CHPL_DISABLE_PRIVATIZATION", NULL},
