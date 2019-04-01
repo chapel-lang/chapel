@@ -1272,6 +1272,11 @@ module ChapelBase {
     return if x != nil then __primitive("dynamic_cast", t, casttmp) else __primitive("cast", t, nil);
   }
 
+  // this version handles borrow -> unmanaged
+  inline proc _cast(type t:unmanaged, x:borrowed) {
+    return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
+  }
+
   inline proc _cast(type t:_nilType, x:_nilType)
     return nil;
 
