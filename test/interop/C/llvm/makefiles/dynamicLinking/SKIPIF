@@ -1,0 +1,14 @@
+# There's no point in testing this if we don't have LLVM...
+CHPL_LLVM == none
+
+# Not sure why, because interop/C/llvm/makefiles has it.
+CHPL_COMM != none
+
+# Some (probably all, haven't doublechecked) linkers will refuse to create
+# shared libraries when there are _any_ text relocations present.
+# The reason being that if you have a text relocation, it means that your
+# shared library isn't fully position independent. If your SO isn't PIC, then
+# indepedent processes can't share a single copy of its text segment.
+# Not to mention that it makes dynamic linking more expensive in general.
+CHPL_LIB_PIC != pic
+
