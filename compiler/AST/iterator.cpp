@@ -526,7 +526,7 @@ void setIteratorRecordShape(CallExpr* call) {
 //
 CallExpr*
 isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
-  if (fNoOptimizeLoopIterators)
+  if (fNoInlineIterators)
     return NULL;
   BlockStmt* singleFor = NULL;
   CallExpr* singleYield = NULL;

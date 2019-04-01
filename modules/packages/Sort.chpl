@@ -1008,13 +1008,12 @@ proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
   for h in incs {
     hs = h + start;
     for is in hs..end {
-      v = Data[is];
+      v=Data[is];
       js = is;
       while js >= hs && chpl_compare(v,Data[js-h],comparator) < 0 {
-        Data[js] = Data[js - h];
+        Data[js] <=> Data[js - h];
         js -= h;
       }
-      Data[js] = v;
     }
   }
 }
