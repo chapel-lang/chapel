@@ -650,6 +650,14 @@ static void setupSpinWaiting(void) {
   const char *crayPlatform = "cray-x";
   if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
     chpl_qt_setenv("SPINCOUNT", "3000000", 0);
+  } else if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+    chpl_qt_setenv("SPINCOUNT", "300", 0);
+  }
+}
+
+static void setupAffinity(void) {
+  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+    chpl_qt_setenv("AFFINITY", "no", 0);
   }
 }
 
@@ -669,6 +677,7 @@ void chpl_task_init(void)
     setupTasklocalStorage();
     setupWorkStealing();
     setupSpinWaiting();
+    setupAffinity();
 
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
