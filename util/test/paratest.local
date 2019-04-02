@@ -71,7 +71,7 @@ def run_paratest(args):
     """
     nodepara = get_good_nodepara()
     para_env = ['-env', 'CHPL_TEST_LIMIT_RUNNING_EXECUTABLES=yes', '-env',
-                'QT_AFFINITY=no', '-env', 'QT_SPINCOUNT=300']
+                'CHPL_RT_OVERSUBSCRIBED=yes']
 
     paratest_path = os.path.join(os.path.dirname(__file__), 'paratest.server')
 
