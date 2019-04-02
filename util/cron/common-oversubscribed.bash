@@ -4,7 +4,7 @@
 # chapel programs run nicer side by side)
 
 tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
+export CHPL_RT_OVERSUBSCRIBED=yes
 if [ "${tasks}" == "qthreads" ] ; then
-    export QT_AFFINITY=no
     export CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION=1
 fi
