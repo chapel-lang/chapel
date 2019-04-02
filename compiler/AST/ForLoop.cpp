@@ -76,7 +76,7 @@
  */
 static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
 {
-  if (fNoOptimizeRangeIteration)
+  if (fNoOptimizeRangeIterators)
     return;
   if (CallExpr* call = toCallExpr(iteratorExpr))
   {
