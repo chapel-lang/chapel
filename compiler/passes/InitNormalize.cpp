@@ -943,26 +943,34 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
   DefExpr* field = NULL;
 
   if (node->symbol()->hasFlag(FLAG_ARG_THIS)) {
-    CallExpr* call = NULL;
-    Expr* cur = node;
-    while (call == NULL && cur->parentExpr != NULL) {
-      if (CallExpr* parent = toCallExpr(cur->parentExpr)) {
-        call = parent;
+    if (DefExpr* parentDef = toDefExpr(node->parentExpr)) {
+      if (parentDef->sym->hasFlag(FLAG_REF_VAR)) {
+        USR_FATAL_CONT(node, "cannot take a reference to \"this\" before this.complete()");
       } else {
-        cur = cur->parentExpr;
+        USR_FATAL_CONT(node, "cannot initialize a variable from \"this\" before this.complete()");
       }
-    }
-
-    if (call->isPrimitive() == false) {
-      if (state->isPhase0()) {
-        USR_FATAL_CONT(node, "cannot pass \"this\" to a function before calling super.init() or this.init()");
-      } else if (state->type()->isRecord()) {
-        USR_FATAL_CONT(node, "cannot pass a record to a function before this.complete()");
+    } else {
+      CallExpr* call = NULL;
+      Expr* cur = node;
+      while (call == NULL && cur->parentExpr != NULL) {
+        if (CallExpr* parent = toCallExpr(cur->parentExpr)) {
+          call = parent;
+        } else {
+          cur = cur->parentExpr;
+        }
       }
-    }
 
-    if (isClass(state->type())) {
-      node->setSymbol(state->getThisAsParent());
+      if (call && call->isPrimitive() == false) {
+        if (state->isPhase0()) {
+          USR_FATAL_CONT(node, "cannot pass \"this\" to a function before calling super.init() or this.init()");
+        } else if (state->type()->isRecord()) {
+          USR_FATAL_CONT(node, "cannot pass a record to a function before this.complete()");
+        }
+      }
+
+      if (isClass(state->type())) {
+        node->setSymbol(state->getThisAsParent());
+      }
     }
   } else if (DefExpr* local = state->type()->toLocalField(node)) {
     field = local;
