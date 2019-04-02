@@ -23,6 +23,7 @@
 #include "chplcgfns.h"
 #include "chpl-env.h"
 #include "chpllaunch.h"
+#include "chpl-mem.h"
 #include "error.h"
 
 static char** chpl_launch_create_argv(const char *launch_cmd,
@@ -35,15 +36,17 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   static char _nlbuf[16];
   snprintf(_nlbuf, sizeof(_nlbuf), "%d", getArgNumLocales());
 
-  char* largv[20];
+  char** largv = NULL;
+  int largv_size = 0;
   int largc = 0;
 #define ADD_LARGV(s)                                                    \
   do {                                                                  \
-    if (largc < sizeof(largv) / sizeof(largv[0])) {                     \
-      largv[largc++] = (char*) (s);                                     \
-    } else {                                                            \
-      chpl_internal_error("too many mpirun command line arguments");    \
+    if (largc >= largv_size) {                                          \
+      largv_size += 10;                                                 \
+      largv = chpl_mem_realloc(largv, largv_size * sizeof(*largv),      \
+                               CHPL_RT_MD_COMMAND_BUFFER, -1, 0);       \
     }                                                                   \
+    largv[largc++] = (char*) (s);                                       \
   } while (0)
 
   ADD_LARGV(launch_cmd);
