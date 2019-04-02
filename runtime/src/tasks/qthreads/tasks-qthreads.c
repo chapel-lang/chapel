@@ -648,10 +648,10 @@ static void setupWorkStealing(void) {
 
 static void setupSpinWaiting(void) {
   const char *crayPlatform = "cray-x";
-  if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
-    chpl_qt_setenv("SPINCOUNT", "3000000", 0);
-  } else if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
     chpl_qt_setenv("SPINCOUNT", "300", 0);
+  } else if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
+    chpl_qt_setenv("SPINCOUNT", "3000000", 0);
   }
 }
 
