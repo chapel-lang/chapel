@@ -1,8 +1,6 @@
 // Make sure we link appropriately from C.
 #include "lib/FooLibrary.h"
 
-extern void wisdom(void);
-
 void spoutWisdom(void) {
   wisdom();
 }
