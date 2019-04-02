@@ -210,9 +210,9 @@ OPTIONS
     Enable [disable] live variable analysis, which is currently only used to
     optimize iterators that are not inlined.
 
-**--[no-]optimize-range-iteration**
+**--[no-]optimize-range-iterators**
 
-    Enable [disable] anonymous range iteration optimizations. This allows the
+    Enable [disable] anonymous range iterators optimizations. This allows the
     compiler to avoid creating ranges when they are only used for iteration.
     By default this is enabled.
 
