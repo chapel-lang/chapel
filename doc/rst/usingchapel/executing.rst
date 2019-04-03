@@ -356,17 +356,26 @@ Oversubscription
 
 In multi-locale Chapel executions programs can run "oversubscribed",
 with more than one Chapel locale per system compute node.  Both the
-``gasnet`` and ``ofi`` communication layers support oversubscription.
-When running oversubscribed, performance may be improved by setting
-the following environment variable:
+``gasnet`` and ``ofi`` communication layers support this.  However,
+oversubscription can cause serious performance degradation due to
+resource contention, when multiple Chapel locales (program instances)
+all proceed as if the resources of the entire compute node are theirs
+to use.  As a result, on a single system node, a program will almost
+always run faster with just a single locale than it will with multiple
+locales.  Nevertheless, sometimes oversubscription is useful, such as
+for testing multilocale Chapel functionality when multiple system
+nodes are not actually available.
+
+As a partial workaround for the resource contention problem, setting
+the following environment variable often improves performance when
+running oversubscribed:
 
     .. code-block:: sh
 
         export CHPL_RT_OVERSUBSCRIBED=yes
 
-This indicates that oversubscription may occur, and will cause various
-software components from launchers to the runtime to adjust their
-behavior accordingly.
+This causes various software components, from launchers to the
+runtime, to be more considerate in how they use node resources.
 
 
 ----------------
