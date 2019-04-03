@@ -348,6 +348,27 @@ executable.
                    warnings that are printed by default.
 
 
+.. _oversubscribed-execution:
+
+----------------
+Oversubscription
+----------------
+
+In multi-locale Chapel executions programs can run "oversubscribed",
+with more than one Chapel locale per system compute node.  Both the
+``gasnet`` and ``ofi`` communication layers support oversubscription.
+When running oversubscribed, performance may be improved by setting
+the following environment variable:
+
+    .. code-block:: sh
+
+        export CHPL_RT_OVERSUBSCRIBED=yes
+
+This indicates that oversubscription may occur, and will cause various
+software components from launchers to the runtime to adjust their
+behavior accordingly.
+
+
 ----------------
 Launcher Support
 ----------------
