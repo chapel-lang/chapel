@@ -21,7 +21,7 @@
 #define _chpl_comm_launch_h
 
 //
-// Launch assistance for the uGNI communication interface.
+// Launch assistance for the ofi communication layer.
 //
 
 //
