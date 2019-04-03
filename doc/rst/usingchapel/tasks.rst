@@ -190,7 +190,7 @@ turned on like this:
   cd $CHPL_HOME/third-party/qthread
   make CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION=yes ... clean all
 
-You should also probably have ``CHPL_RT_OVERSUBSCRIBED=y`` set when
+You should also probably have ``CHPL_RT_OVERSUBSCRIBED=yes`` set when
 you execute with overloading (see :ref:`oversubscribed-execution`).
 
 
