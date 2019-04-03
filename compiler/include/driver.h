@@ -175,6 +175,10 @@ extern bool fLibraryCompile;
 extern bool fLibraryFortran;
 extern bool fLibraryMakefile;
 extern bool fLibraryPython;
+
+// TODO: Multi-Locale Interop prototype code!
+extern bool fMultiLocaleInterop;
+
 extern bool fUseNoinit;
 extern bool no_codegen;
 extern bool developer;

@@ -110,6 +110,15 @@ bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryPython = false;
 
+//
+// TODO: Multi-Locale Interop prototype code!
+//
+// It's most convenient for me to define and set a single flag just for MLI.
+// This way, I can control the conditions under which it's activated (which is
+// especially important when prototyping).
+//
+bool fMultiLocaleInterop = false;
+
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool fVerify = false;
@@ -1363,6 +1372,38 @@ static void postVectorize() {
   }
 }
 
+//
+// TODO: Multi-Locale Interop prototype code!
+//
+static void setMultiLocaleInterop() {
+  // We must be compiling a multi-locale library to be eligible for MLI.
+  if (!fLibraryCompile || !strcmp(CHPL_COMM, "none")) {
+    return;
+  }
+
+  if (strcmp(CHPL_COMM, "gasnet") != 0) {
+    USR_WARN("MLI wrappers are only supported on gasnet.");
+    return;
+  }
+
+  if (llvmCodegen) {
+    USR_WARN("MLI is unsupported when --llvm is ON.");
+    return;
+  }
+
+  if (fLibraryPython) {
+    USR_WARN("MLI is unsupported when --library-python is ON.");
+    return;
+  }
+
+  if (fLibraryFortran) {
+    USR_WARN("MLI is unsupported when --library-fortran is ON.");
+    return;
+  }
+
+  fMultiLocaleInterop = true;
+}
+
 static void setMaxCIndentLen() {
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
@@ -1411,6 +1452,8 @@ static void postprocess_args() {
   postStackCheck();
 
   postStaticLink();
+
+  setMultiLocaleInterop();
 
   setPrintCppLineno();
 

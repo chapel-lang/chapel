@@ -2252,11 +2252,30 @@ void codegen() {
 
   SET_LINENO(rootModule);
 
-  fileinfo hdrfile  = { NULL, NULL, NULL };
-  fileinfo mainfile = { NULL, NULL, NULL };
-  fileinfo defnfile = { NULL, NULL, NULL };
-  fileinfo strconfig = { NULL, NULL, NULL };
+  fileinfo hdrfile    = { NULL, NULL, NULL };
+  fileinfo mainfile   = { NULL, NULL, NULL };
+  fileinfo defnfile   = { NULL, NULL, NULL };
+  fileinfo strconfig  = { NULL, NULL, NULL };
 
+  //
+  // TODO: Multi-Locale Interop prototype code!
+  //
+  // Initialize this only when fMultiLocaleInterop is ON. This will point to a
+  // special file that is always named "chpl__mli_wrapper.c".
+  //
+  // When running code generation for modules, after emitting module code
+  // as normal, check to see if fMultiLocaleInterop is ON. If it is, then
+  // redirect "info->cfile" to point to this file, and call into
+  // "codegenMultiLocaleInteropWrappers()", which will emit the appropriate
+  // wrapper code (complete with marshalling and RPC) for all the exported
+  // functions in the current module.
+  // 
+  // The "chpl__mli_wrapper.c" file should be handled specially in the linking
+  // step later in "makeBinary()". Actually, hold that thought, and see my
+  // comments in "makeBinary()" for more information.
+  //
+  fileinfo interopwrapper = { NULL, NULL, NULL };
+  
   GenInfo* info     = gGenInfo;
 
   INT_ASSERT(info);
