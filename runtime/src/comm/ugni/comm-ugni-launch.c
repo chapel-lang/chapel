@@ -21,8 +21,6 @@
 // Launch assistance for the uGNI communication interface.
 //
 
-#define _POSIX_C_SOURCE 200112L  // for setenv(3) in <stdlib.h>
-
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
@@ -91,18 +89,14 @@ void maybe_set_jemalloc_lg_chunk(void) {
     }
   }
 
-  if (setenv(chpl_comm_ugni_jemalloc_conf_ev_name(), buf, 1) != 0)
-    chpl_internal_error("cannot setenv jemalloc conf env var");
+  chpl_env_set(chpl_comm_ugni_jemalloc_conf_ev_name(), buf, 1);
 }
 
 
 void chpl_comm_preLaunch(void) {
-  if (setenv("HUGETLB_VERBOSE", "0", 1) != 0)
-    chpl_error("cannot setenv HUGETLB_VERBOSE=0", 0, 0);
-
+  chpl_env_set("HUGETLB_VERBOSE", "0", 1);
   if (chpl_env_rt_get("MAX_HEAP_SIZE", NULL) == NULL) {
-    if (setenv("HUGETLB_NO_RESERVE", "yes", 0) != 0)
-      chpl_error("cannot setenv HUGETLB_NO_RESERVE=yes", 0, 0);
+    chpl_env_set("HUGETLB_NO_RESERVE", "yes", 0);
   }
 
   maybe_set_jemalloc_lg_chunk();

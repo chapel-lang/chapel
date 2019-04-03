@@ -21,8 +21,6 @@
 // Launch assistance for the uGNI communication interface.
 //
 
-#define _POSIX_C_SOURCE 200112L  // for setenv(3) in <stdlib.h>
-
 #include <assert.h>
 #include <stdlib.h>
 
@@ -39,8 +37,6 @@ void chpl_comm_preLaunch(void) {
     // we can't tell if that will be used, but setting it superfluously
     // won't hurt anything.
     //
-    if (setenv("FI_SOCKETS_PE_WAITTIME", "0", 0) != 0) {
-      chpl_error("cannot setenv FI_SOCKETS_PE_WAITTIME=0", 0, 0);
-    }
+    chpl_env_set("FI_SOCKETS_PE_WAITTIME", "0", 0);
   }
 }

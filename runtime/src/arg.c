@@ -22,6 +22,7 @@
 #include "arg.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
+#include "chpl-env.h"
 #include "chplexit.h"
 #include "chplio.h"
 #include "chpl-mem.h"
@@ -107,9 +108,7 @@ static void defineEnvVar(const char* currentArg,
   }
 
   *eqp = '\0';
-  if (setenv(currentArg, eqp + 1, 0) != 0) {
-    chpl_error("Cannot setenv() -E argument", lineno, filename);
-  }
+  chpl_env_set(currentArg, eqp + 1, 0);
   *eqp = '=';
 }
 

@@ -26,9 +26,6 @@
  * limitations under the License.
  */
 
-// For SVID definitions (setenv)
-#define _SVID_SOURCE
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -391,8 +388,8 @@ static void chpl_qt_setenv(const char* var, const char* val,
             printf("QTHREADS: Overriding the value of %s and %s "
                    "with %s\n", qt_env, qthread_env, val);
         }
-        (void) setenv(qt_env, val, 1);
-        (void) setenv(qthread_env, val, 1);
+        chpl_env_set(qt_env, val, 1);
+        chpl_env_set(qthread_env, val, 1);
     } else if (verbosity >= 2) {
         char* set_env = NULL;
         char* set_val = NULL;

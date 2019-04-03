@@ -56,10 +56,6 @@ static configVarType* ambiguousConfigVar = &_ambiguousConfigVar;
 
 static configVarType* lookupConfigVar(const char* moduleName, 
                                       const char* varName);
-static void handleDeprecatedConfig(const char* varName,
-                                   const char* value,
-                                   const char* envVarName);
-static void checkDeprecatedConfig(const char* varName, const char* value);
 
 
 static void parseModVarName(char* modVarName, const char** moduleName, 
@@ -260,34 +256,6 @@ static configVarType* lookupConfigVar(const char* moduleName,
 }
 
 
-static void handleDeprecatedConfig(const char* varName,
-                                   const char* value,
-                                   const char* envVarName) {
-  if (getenv(envVarName) == NULL) {
-    chpl_msg(0,
-             "warning: The config variable \"%s\" is deprecated.  Please use\n"
-             "         the environment variable \"%s\" instead.\n",
-             varName, envVarName);
-    if (value != NULL)
-      setenv(envVarName, value, 0);
-  }
-  else
-    chpl_msg(0,
-             "warning: The config variable \"%s\" is deprecated, and is\n"
-             "         overridden by the environment variable \"%s\".\n",
-             varName, envVarName);
-}
-
-
-static void checkDeprecatedConfig(const char* varName,
-                                  const char* value) {
-  if (strcmp(varName, "callStackSize") == 0)
-    handleDeprecatedConfig(varName, value, "CHPL_RT_CALL_STACK_SIZE");
-  else if (strcmp(varName, "numThreadsPerLocale") == 0)
-    handleDeprecatedConfig(varName, value, "CHPL_RT_NUM_THREADS_PER_LOCALE");
-}
-
-
 void initSetValue(const char* varName, const char* value, 
                   const char* moduleName, 
                   int32_t lineno, int32_t filename) {
@@ -430,7 +398,6 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
     }
   } else {
     char* value = equalsSign + 1;
-    checkDeprecatedConfig(varName, equalsSign ? value : equalsSign);
     if (equalsSign && *value) {
       initSetValue(varName, value, moduleName, lineno, filename);
     } else if (!strcmp(configVar->defaultValue, "bool")) {
@@ -487,7 +454,6 @@ void parseConfigFile(const char* configFilename,
                                     CHPL_FILE_IDX_SAVED_FILENAME);
         } else {
           char* value = equalsSign + 1;
-          checkDeprecatedConfig(varName, equalsSign ? value : equalsSign);
           if (equalsSign && *value) {
             initSetValue(varName, value, moduleName, 0,
                          CHPL_FILE_IDX_SAVED_FILENAME);
