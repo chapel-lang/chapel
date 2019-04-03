@@ -1567,10 +1567,14 @@ module ChapelArray {
           compilerError("isSubset not supported on this domain type");
       }
       if super.type != this.type then
-        compilerError("isSubset called with different associative domain types");
+        if isRectangularDom(this) {
+          if super.dims().size != this.dims().size then
+            compilerError("isSubset called with different rectangular domain types");
+        } else
+          compilerError("isSubset called with different associative domain types");
 
       if isRectangularDom(this) then
-        return && reduce forall i in 1..this.dims().size do
+        return && reduce for i in 1..this.dims().size do
           super.dims()[i].contains(this.dims()[i]);
 
       return && reduce forall i in this do super.contains(i);
@@ -1588,10 +1592,14 @@ module ChapelArray {
           compilerError("isSuper not supported on the domain type ", this.type);
       }
       if sub.type != this.type then
-        compilerError("isSuper called with different associative domain types");
+        if isRectangularDom(this) {
+          if sub.dims().size != this.dims().size then
+            compilerError("isSuper called with different rectangular domain types");
+        } else
+          compilerError("isSuper called with different associative domain types");
 
       if isRectangularDom(this) then
-        return && reduce forall i in 1..this.dims().size do
+        return && reduce for i in 1..this.dims().size do
           this.dims()[i].contains(sub.dims()[i]);
 
       return && reduce forall i in sub do this.contains(i);

@@ -1,3 +1,4 @@
-var d : domain(1) = 1..10;
+var a = {1..5, 10..14};
+var b = {2..6};
 
-d.isSubset({1,2,3,4,5});
+b.isSubset(a);
