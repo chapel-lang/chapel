@@ -21,7 +21,6 @@
 #include <string.h>
 #include "chpl-env.h"
 #include "chpllaunch.h"
-#include "error.h"
 
 
 // Simple launcher that just sets GASNET_PSHM_NODES and launchers the _real

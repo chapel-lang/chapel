@@ -23,7 +23,6 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdlib.h>
 
 #include "chplrt.h"
 #include "chpl-comm-launch.h"

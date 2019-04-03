@@ -21,13 +21,9 @@
 // Launch assistance for the uGNI communication interface.
 //
 
-#include <assert.h>
-#include <stdlib.h>
-
 #include "chplrt.h"
 #include "chpl-comm-launch.h"
 #include "chpl-env.h"
-#include "error.h"
 
 
 void chpl_comm_preLaunch(void) {
