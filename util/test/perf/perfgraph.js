@@ -250,10 +250,11 @@ function getNextDivs(afterDiv) {
     return button;
   }
 
-  var logToggle        = addButtonHelper('log');
-  var annToggle        = addButtonHelper('annotations');
-  var screenshotToggle = addButtonHelper('screenshot');
-  var resetY           = addButtonHelper('reset y zoom');
+  var logToggle           = addButtonHelper('log');
+  var annToggle           = addButtonHelper('annotations');
+  var screenshotToggle    = addButtonHelper('screenshot');
+  var screenshotNoLToggle = addButtonHelper('screenshot (no legend)');
+  var resetY              = addButtonHelper('reset y zoom');
 
   // We prefer this button to be last.
   var closeGraphToggle = addButtonHelper('close');
@@ -265,6 +266,7 @@ function getNextDivs(afterDiv) {
     logToggle: logToggle,
     annToggle: annToggle,
     screenshotToggle: screenshotToggle,
+    screenshotNoLToggle: screenshotNoLToggle,
     closeGraphToggle: closeGraphToggle,
     resetY: resetY,
     gspacer: gspacer,
@@ -368,7 +370,8 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
 
     setupLogToggle(g, graphInfo, graphDivs.logToggle);
     setupAnnToggle(g, graphInfo, graphDivs.annToggle);
-    setupScreenshotToggle(g, graphInfo, graphDivs.screenshotToggle);
+    setupScreenshotToggle(g, graphInfo, graphDivs.screenshotToggle, true);
+    setupScreenshotToggle(g, graphInfo, graphDivs.screenshotNoLToggle, false);
     setupCloseGraphToggle(g, graphInfo, graphDivs.closeGraphToggle);
     setupResetYZoom(g, graphInfo, graphDivs.resetY);
 
@@ -557,11 +560,11 @@ function setupAnnToggle(g, graphInfo, annToggle) {
 
 
 // Setup the screenshot button
-function setupScreenshotToggle(g, graphInfo, screenshotToggle) {
+function setupScreenshotToggle(g, graphInfo, screenshotToggle, showLegend) {
   screenshotToggle.style.visibility = 'visible';
 
   screenshotToggle.onclick = function() {
-    captureScreenshot(g, graphInfo);
+    captureScreenshot(g, graphInfo, showLegend);
   }
 }
 
@@ -611,8 +614,9 @@ function setupResetYZoom(g, graphInfo, resetY) {
 
 // Function to capture a screenshot of a graph and open the image in a new
 // window.
-function captureScreenshot(g, graphInfo) {
+function captureScreenshot(g, graphInfo, showLegend) {
   var div = g.divs.gLDiv;
+  if (showLegend === false) { div = g.divs.div; }
 
   html2canvas(div, {scale:pixelRatio}).then(function(canvas) {
     var size = "width=" + div.clientWidth + " height=" + div.clientHeight;
