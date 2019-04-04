@@ -26,3 +26,10 @@ assert(rect_all.isSuper(rect_all));
   assert(rect_all.isSuper(rect_sub));
   assert(!rect_sub.isSuper(rect_all));
 }
+
+{
+  var rect_sub = {1..n by 2 align 1};
+  assert(rect_sub.isSubset(rect_all));
+  assert(rect_all.isSuper(rect_sub));
+  assert(!rect_sub.isSuper(rect_all));
+}

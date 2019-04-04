@@ -1568,8 +1568,10 @@ module ChapelArray {
       }
       if super.type != this.type then
         if isRectangularDom(this) {
-          if super.dims().size != this.dims().size then
-            compilerError("isSubset called with different rectangular domain types");
+          if super.rank != this.rank then
+            compilerError("rank mismatch in _domain.isSubset()");
+          else if super.low.type != this.low.type then
+            compilerError("isSubset called with different index types");
         } else
           compilerError("isSubset called with different associative domain types");
 
@@ -1598,8 +1600,10 @@ module ChapelArray {
       }
       if sub.type != this.type then
         if isRectangularDom(this) {
-          if sub.dims().size != this.dims().size then
-            compilerError("isSuper called with different rectangular domain types");
+          if sub.rank != this.rank then
+            compilerError("rank mismatch in _domain.isSuper()");
+          else if sub.low.type != this.low.type then
+            compilerError("isSuper called with different index types");
         } else
           compilerError("isSuper called with different associative domain types");
 
