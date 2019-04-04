@@ -305,6 +305,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
         axisLabelFormatter: customAxisLabelFormatter
       }
     },
+    pixelRatio: pixelRatio,
     includeZero: true,
     connectSeparatedPoints: true,
     showRoller: false,
@@ -1363,6 +1364,7 @@ function displaySelectedGraphs() {
 
   // Disable filtering until the jsons are done
   disableFilterBox(true);
+  var genStart = Date.now();
 
   // generate the dygraph(s) for the currently selected graphs
   for (var i = 0; i < allGraphs.length; i++) {
@@ -1373,9 +1375,10 @@ function displaySelectedGraphs() {
   }
 
   $.when.apply($, jsons).done(function() {
-      console.log("done generating graphs");
-      doFilter();
-      disableFilterBox(false);
+    var elapsed = Date.now() - genStart;
+    console.log("done generating graphs: " + elapsed + " ms");
+    doFilter();
+    disableFilterBox(false);
   });
 
   // update the url for the displayed graphs
