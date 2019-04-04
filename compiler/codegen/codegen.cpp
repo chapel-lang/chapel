@@ -41,6 +41,11 @@
 #include "view.h"
 #include "virtualDispatch.h"
 
+//
+// TODO: Multi-Locale Interop prototype code!
+//
+#include "mli.h"
+
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
 #include "llvm/IR/Module.h"
@@ -2274,7 +2279,7 @@ void codegen() {
   // step later in "makeBinary()". Actually, hold that thought, and see my
   // comments in "makeBinary()" for more information.
   //
-  fileinfo interopwrapper = { NULL, NULL, NULL };
+  fileinfo mliwrapper = { NULL, NULL, NULL };
   
   GenInfo* info     = gGenInfo;
 
@@ -2329,6 +2334,16 @@ void codegen() {
     openCFile(&mainfile, "_main",        "c");
     openCFile(&defnfile, "chpl__defn",    "c");
     openCFile(&strconfig,  "chpl_str_config", "c");
+
+    //
+    // TODO: Multi-Locale Interop prototype code!
+    //
+    // Initialize this only when fMultiLocaleInterop is ON. This will point to
+    // a special file that is always named "chpl__mli_wrapper.c".
+    //
+    if (fMultiLocaleInterop) {
+      openCFile(&mliwrapper, "chpl__mli_wrappers", "c");
+    }
 
     zlineToFileIfNeeded(rootModule, mainfile.fptr);
     fprintf(mainfile.fptr, "#include \"chpl_str_config.c\"\n");
@@ -2422,6 +2437,23 @@ void codegen() {
       if(fIncrementalCompilation && (currentModule->modTag == MOD_USER))
         fprintf(modulefile.fptr, "#include \"chpl__header.h\"\n");
       currentModule->codegenDef();
+
+      //
+      // TODO: Multi-Locale Interop prototype code!
+      //
+      // When running code generation for modules, after emitting module code
+      // as normal, check to see if fMultiLocaleInterop is ON. If it is, then
+      // redirect "info->cfile" to point to this file, and call into
+      // "codegenMultiLocaleInteropWrappers()", which will emit the appropriate
+      // wrapper code (complete with marshalling and RPC) for all the exported
+      // functions in the current module.
+      //
+      if (fMultiLocaleInterop) {
+        info->cfile = mliwrapper.fptr;
+        codegenMLIWrappers(currentModule);
+        info->cfile = modulefile.fptr;
+      }
+
       closeCFile(&modulefile);
 
       if(!(fIncrementalCompilation && (currentModule->modTag == MOD_USER)))

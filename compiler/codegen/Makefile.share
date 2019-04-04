@@ -29,7 +29,8 @@ CODEGEN_SRCS =                                          \
                library.cpp                              \
                stmt.cpp                                 \
                symbol.cpp                               \
-               type.cpp
+               type.cpp                                 \
+               mli.cpp
 
 
 SVN_SRCS = $(CODEGEN_SRCS)
