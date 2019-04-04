@@ -91,8 +91,15 @@ proc findLatest(packageDir) {
   for fi in listdir(packageDir, files=true, dirs=false) {
     if fi.endsWith(suffix) {
       const end = fi.length - suffix.length;
-      const ver = new VersionInfo(fi[1..end]);
-      if ver > ret then ret = ver;
+      var ver: VersionInfo;
+      try {
+        ver = fi[1..end]:VersionInfo;
+        if ver > ret then ret = ver;
+      } catch {
+        const packageName = basename(packageDir);
+        const warning = 'Package with invalid version string encountered ' + '- skipping %s (%s)'.format(packageName, fi[1..end]);
+        writeln(warning);
+      }
     }
     else {
       var warningStr = "File without '.toml' extension encountered - skipping ";

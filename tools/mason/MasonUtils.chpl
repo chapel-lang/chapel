@@ -218,12 +218,6 @@ record VersionInfo {
   }
 
   proc init(str:string) {
-    const s : [1..3] string = str.split(".");
-    assert(s.size == 3);
-
-    major = s[1]:int;
-    minor = s[2]:int;
-    bug   = s[3]:int;
   }
 
   proc str() {
@@ -239,6 +233,19 @@ record VersionInfo {
     }
     return 0;
   }
+}
+
+inline proc _cast(type t:VersionInfo, str:string) throws {
+    const s : [1..3] string = str.split(".");
+    if s.size != 3 {
+      throw new owned IllegalArgumentError('Invalid version string: %s'.format(str));
+    }
+
+    const major = s[1]:int,
+          minor = s[2]:int,
+          bug   = s[3]:int;
+
+    return new VersionInfo(major, minor, bug);
 }
 
 proc >=(a:VersionInfo, b:VersionInfo) : bool {
