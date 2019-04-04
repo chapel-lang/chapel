@@ -302,7 +302,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
     },
     includeZero: true,
     connectSeparatedPoints: true,
-    showRoller: true,
+    showRoller: false,
     legend: 'always',
     customBars: graphInfo.displayrange,
     highlightSeriesOpts: {
@@ -628,13 +628,11 @@ function captureScreenshot(g, graphInfo) {
   var label = graphInfo.ylabel;
 
   var restoreOpts = {
-    showRoller: true,
     ylabel: label,
     valueRange: g.yAxisRange(0),
   };
 
   var tempOpts = {
-    showRoller: false,
     ylabel: '',
     valueRange: g.yAxisRange(0),
   };
