@@ -217,14 +217,19 @@ function getNextDivs(afterDiv) {
   container.className = 'graphContainer';
   graphPane.insertBefore(container, beforeDiv);
 
+
   // create the graph/legend divs and spacers
+  var gLDiv = document.createElement('div');
+  gLDiv.className = 'graphContainer';
+  container.appendChild(gLDiv);
+
   var div = document.createElement('div');
   div.className = 'perfGraph';
-  container.appendChild(div);
+  gLDiv.appendChild(div);
 
   var ldiv = document.createElement('div');
   ldiv.className = 'perfLegend';
-  container.appendChild(ldiv);
+  gLDiv.appendChild(ldiv);
 
   var gspacer = document.createElement('div');
   gspacer.className = 'gspacer';
@@ -251,6 +256,7 @@ function getNextDivs(afterDiv) {
   return {
     div: div,
     ldiv: ldiv,
+    gLDiv: gLDiv,
     logToggle: logToggle,
     annToggle: annToggle,
     screenshotToggle: screenshotToggle,
