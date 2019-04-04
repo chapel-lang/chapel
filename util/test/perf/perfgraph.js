@@ -126,6 +126,11 @@ var lastFilterVal = "";
 
 var filterBox = $("[name='filterBox']")[0];
 
+// Pixel ratio/scaling factor. dygraphs/html2canvas use the device's pixelRatio
+// by default, but this results in grainy screenshots on devices with a low
+// ratio (e.g. non-retina screens), so make it at least 2.
+var devicePixelRatio = window.devicePixelRatio || 1;
+var pixelRatio = Math.max(devicePixelRatio, 2);
 
 // redirect ctrl+f to the filter box
 $(document).keydown(function(e) {
@@ -605,78 +610,13 @@ function setupResetYZoom(g, graphInfo, resetY) {
 
 // Function to capture a screenshot of a graph and open the image in a new
 // window.
-//
-// TODO: A nicer alternative would be to open a new window, and have that
-// window create and render the screenshot and also have boxes to change the
-// size of the rendered image. Right now it just defaults to making an image
-// that is the same size as the actual graph.
-//
-// TODO: right now our graph and legend are in 2 separate divs so this is a
-// little clunky because it renders each div separately and then combines them
-// into a single canvas. It would be cleaner to have a div that wraps the graph
-// and legend and just render that one.
 function captureScreenshot(g, graphInfo) {
+  var div = g.divs.gLDiv;
 
-  // 100 padding
-  var gWidth = g.divs.div.clientWidth + g.divs.ldiv.clientWidth + 100;
-  var gHeight = g.divs.div.clientHeight;
-
-  var captureCanvas = document.createElement('canvas');
-  captureCanvas.width = gWidth;
-  captureCanvas.height = gHeight;
-  var ctx = captureCanvas.getContext('2d');
-  var label = graphInfo.ylabel;
-
-  var restoreOpts = {
-    ylabel: label,
-    valueRange: g.yAxisRange(0),
-  };
-
-  var tempOpts = {
-    ylabel: '',
-    valueRange: g.yAxisRange(0),
-  };
-
-  // html2canvas doesn't render transformed ccs3 text (like our ylabel.) We
-  // make the label inivisible and we also hide the roll button box since
-  // theres no point in capturing it in a screenshot
-  g.updateOptions(tempOpts);
-
-  // generate the graph
-  html2canvas(g.divs.div, {
-    // once the graph is rendered
-    onrendered: function(graphCanvas) {
-      // genenerate the legend
-       html2canvas(g.divs.ldiv, {
-        // once the legend is rendered
-        onrendered: function(legendCanvas) {
-          // draw the graph and legend canvas on a combined canvas.
-          ctx.drawImage(graphCanvas, 0, 0);
-          ctx.drawImage(legendCanvas, g.divs.div.clientWidth, 0);
-
-          // get the graphs ylabel font properties
-          var fontSize = g.getOption('axisLabelFontSize');
-          ctx.font = '16px Arial';
-
-          // rotate the canvas and draw the title
-          ctx.translate(0, gHeight/2);
-          ctx.rotate(-0.5*Math.PI);
-          ctx.textAlign = 'center';
-          ctx.fillText(label, 0, fontSize);
-
-          // open the screenshot in a new window
-          //
-          // BHARSH 2017-10-09: recent browser versions no longer allow 'window.open'
-          // with a data URL due to security concerns.
-          //
-          var screenWin = window.open();
-          screenWin.document.write("<img src='" + captureCanvas.toDataURL() + "'/>");
-
-          // restore the roll box and ylabel
-          g.updateOptions(restoreOpts);
-        }
-      });
-    }
+  html2canvas(div, {scale:pixelRatio}).then(function(canvas) {
+    var size = "width=" + div.clientWidth + " height=" + div.clientHeight;
+    var img = canvas.toDataURL();
+    window.open().document.write('<img src="' + img + '" ' + size + ' />');
   });
 }
 
