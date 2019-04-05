@@ -919,33 +919,15 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iter
   }
 }
 
+proc BlockCyclicArr.dsiSerialRead(f) {
+  chpl_serialReadWriteRectangular(f, this);
+}
+
 //
 // output array
 //
 proc BlockCyclicArr.dsiSerialWrite(f) {
-  if dom.dsiNumIndices == 0 then return;
-  var i : rank*idxType;
-  for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim).low;
-  label next while true {
-    f <~> dsiAccess(i);
-    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
-      f <~> " ";
-      i(rank) += dom.dsiDim(rank).stride:idxType;
-    } else {
-      for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
-          i(dim) += dom.dsiDim(dim).stride:idxType;
-          for dim2 in dim+1..rank {
-            f <~> "\n";
-            i(dim2) = dom.dsiDim(dim2).low;
-          }
-          continue next;
-        }
-      }
-      break;
-    }
-  }
+  chpl_serialReadWriteRectangular(f, this);
 }
 
 proc BlockCyclicArr.dsiTargetLocales() {
