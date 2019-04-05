@@ -4734,7 +4734,8 @@ Going through each section for text conversions:
 [conversion type]
    ``t``
     means *type-based* or *thing* - uses writeThis/readThis but ignores
-    width and precision
+    width. Precision will impact any floating point values output
+    in this conversion.
    ``n``
     means type-based number, allowing width and precision
    ``i``
