@@ -133,6 +133,16 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.al
 
 
 /*
+   Bound for index to be returned on successful binarySearch
+   LOWER: binarySearch returns the first occurence of the value
+   UPPER: binarySearch returns the last occurence of the value
+   ANY: binarySearch returns any index at which the value occurs
+*/
+enum Bound {
+  LOWER, UPPER, ANY
+}
+
+/*
    Searches through the pre-sorted array `Data` looking for the value `val`
    using a sequential binary search.  If provided, only the indices `lo`
    through `hi` will be considered, otherwise the whole array will be
@@ -157,7 +167,7 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.al
    :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.alignedLow, in hi=Dom.alignedHigh) {
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.alignedLow, in hi=Dom.alignedHigh, bound : Bound = Bound.ANY) {
   chpl_check_comparator(comparator, Data.eltType);
 
   const stride = if Dom.stridable then abs(Dom.stride) else 1;
@@ -168,8 +178,25 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
                 else if size % 2 then lo + ((size - 1)/2) * stride
                 else lo + (size/2 - 1) * stride;
 
-    if chpl_compare(Data[mid], val, comparator=comparator) == 0 then
-        return (true, mid);
+    if chpl_compare(Data[mid], val, comparator=comparator) == 0 {
+      select bound {
+        when Bound.LOWER {
+          if ((lo != mid) && (Data[mid-stride] == Data[mid])) then
+            hi = mid - stride;
+          else
+            return (true, mid);
+        }
+        when Bound.UPPER {
+          if ((hi != mid) && (Data[mid+stride] == Data[mid])) then
+            lo = mid + stride;
+          else
+            return (true, mid);
+        }
+        when Bound.ANY {
+          return (true, mid);
+        }
+      }
+    }
     else if chpl_compare(val, Data[mid], comparator=comparator) > 0 then
       lo = mid + stride;
     else
@@ -181,14 +208,31 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
 
 pragma "no doc"
 /* Non-stridable binarySearch */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.alignedLow, in hi=Dom.alignedHigh)
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.alignedLow, in hi=Dom.alignedHigh, bound : Bound = Bound.ANY)
   where !Dom.stridable {
   chpl_check_comparator(comparator, Data.eltType);
 
   while (lo <= hi) {
     const mid = (hi - lo)/2 + lo;
-    if chpl_compare(Data[mid], val, comparator=comparator) == 0 then
-        return (true, mid);
+    if chpl_compare(Data[mid], val, comparator=comparator) == 0 {
+        select bound {
+          when Bound.LOWER {
+            if ((lo != mid) && (Data[mid-1] == Data[mid])) then
+              hi = mid - 1;
+            else
+              return (true, mid);
+          }
+          when Bound.UPPER {
+            if ((hi != mid) && (Data[mid+1] == Data[mid])) then
+              lo = mid + 1;
+            else
+              return (true, mid);
+          }
+          when Bound.ANY {
+            return (true, mid);
+          }
+        }
+    }
     else if chpl_compare(val, Data[mid], comparator=comparator) > 0 then
       lo = mid + 1;
     else
@@ -200,7 +244,7 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
 
 pragma "no doc"
 /* Error message for multi-dimension arrays */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.alignedLow, in hi=Dom.alignedHigh)
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.alignedLow, in hi=Dom.alignedHigh, bound : Bound = Bound.ANY)
   where Dom.rank != 1 {
     compilerError("binarySearch() requires 1-D array");
 }
