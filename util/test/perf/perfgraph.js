@@ -126,11 +126,6 @@ var lastFilterVal = "";
 
 var filterBox = $("[name='filterBox']")[0];
 
-// Pixel ratio/scaling factor. dygraphs/html2canvas use the device's pixelRatio
-// by default, but this results in grainy screenshots on devices with a low
-// ratio (e.g. non-retina screens), so make it at least 2.
-var devicePixelRatio = window.devicePixelRatio || 1;
-var pixelRatio = Math.max(devicePixelRatio, 2);
 
 // redirect ctrl+f to the filter box
 $(document).keydown(function(e) {
@@ -307,7 +302,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
         axisLabelFormatter: customAxisLabelFormatter
       }
     },
-    pixelRatio: pixelRatio,
+    pixelRatio: getPixelRatio(),
     includeZero: true,
     connectSeparatedPoints: true,
     showRoller: false,
@@ -618,7 +613,7 @@ function captureScreenshot(g, graphInfo, showLegend) {
   var div = g.divs.gLDiv;
   if (showLegend === false) { div = g.divs.div; }
 
-  html2canvas(div, {scale:pixelRatio}).then(function(canvas) {
+  html2canvas(div, {scale:getPixelRatio()}).then(function(canvas) {
     var size = "width=" + div.clientWidth + " height=" + div.clientHeight;
     var img = canvas.toDataURL();
     window.open().document.write('<img src="' + img + '" ' + size + ' />');
@@ -1265,6 +1260,21 @@ function setURLFromGraphs(suite) {
 }
 
 
+// Pixel ratio/scaling factor. dygraphs/html2canvas use the device's pixelRatio
+// by default, but this results in grainy screenshots on devices with a low
+// ratio (e.g. non-retina screens), so make it at least 2 allowing the user to
+// override with URL hacking.
+function getPixelRatio() {
+  var devicePixelRatio = window.devicePixelRatio || 1;
+  var pixelRatio = Math.max(devicePixelRatio, 2);
+  var pixelRatioUrl = getOption(OptionsEnum.PIXEL_RATIO);
+  if (pixelRatioUrl) {
+    pixelRatio = pixelRatioUrl;
+  }
+  return pixelRatio;
+}
+
+
 // reset the date range
 function clearDates() {
   // clear the query string
@@ -1486,7 +1496,8 @@ OptionsEnum = {
   ENDDATE        : 'enddate',
   CONFIGURATIONS : 'configs',
   GRAPHS         : 'graphs',
-  SUITE          : 'suite'
+  SUITE          : 'suite',
+  PIXEL_RATIO    : 'pixelRatio'
 }
 
 
