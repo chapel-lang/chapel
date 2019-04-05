@@ -20,8 +20,10 @@
 #ifndef CHPL_COMPILER_INCLUDE_MLI_H
 #define CHPL_COMPILER_INCLUDE_MLI_H
 
-class ModuleSymbol;
+extern const char* out_mli_type_marshalling;
+extern const char* out_mli_client_bundle;
+extern const char* out_mli_server_bundle;
 
-void codegenMLIWrappers(ModuleSymbol* md);
+void codegenMultiLocaleInteropWrappers(void);
 
 #endif
