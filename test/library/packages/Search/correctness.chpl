@@ -16,14 +16,15 @@ proc main() {
         absA = [-1, 2, 3, -4],
         revA = [ 3, 2, -1, -4],
      revAbsA = [ -4, 3, 2, -1],
+        dupA = [-4, 2, 2, 3],
         strA = ['Brad', 'anthony', 'ben', 'david'],
     strideA : [strideD] int = [-4, -1, 2, 3],
+    strideB : [strideD] int = [-4, 2, 2, 3],
     revStrideA : [revStrideD] int = [-4, -1, 2, 3];
 
   // Comparators
   const absKey = new AbsKeyCmp(),
         absComp = new AbsCompCmp();
-
 
   // search
   result = search(A, 2);
@@ -37,6 +38,14 @@ proc main() {
   result = binarySearch(A, 2);
   checkSearch(result, (true, 3), A, 'binarySearch');
 
+  // binarySearch lowerbound in case of duplicates
+  result = binarySearch(dupA, 2, bound = Bound.LOWER);
+  checkSearch(result, (true, 2), dupA, 'binarySearch');
+
+  // binarySearch upperbound in case of duplicates
+  result = binarySearch(dupA, 2, bound = Bound.UPPER);
+  checkSearch(result, (true, 3), dupA, 'binarySearch');
+
   // eltType = string
   result = search(strA, 'ben');
   checkSearch(result, (true, 3), strA, 'search');
@@ -47,6 +56,12 @@ proc main() {
 
   result = binarySearch(strideA, 2);
   checkSearch(result, (true, 30), strideA, 'binarySearch');
+
+  result = binarySearch(strideB, 2, bound = Bound.LOWER);
+  checkSearch(result, (true, 20), strideB, 'binarySearch');
+
+  result = binarySearch(strideB, 2, bound = Bound.UPPER);
+  checkSearch(result, (true, 30), strideB, 'binarySearch');
 
   result = linearSearch(revStrideA, 2);
   checkSearch(result, (true, 30), revStrideA, 'linearSearch');
