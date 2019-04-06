@@ -2227,6 +2227,12 @@ static void setupDefaultFilenames() {
     strncpy(pythonModulename, executableFilename, sizeof(pythonModulename)-1);
     pythonModulename[sizeof(pythonModulename)-1] = '\0';
   }
+
+  // If executableFilename exceeds NAME_MAX - 6, executableFilename.tmp.o
+  // will exceed NAME_MAX
+  if (strlen(executableFilename) > NAME_MAX - 6) {
+    USR_FATAL("File name too long");
+  }
 }
 
 
