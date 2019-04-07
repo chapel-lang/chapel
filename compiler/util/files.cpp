@@ -271,7 +271,7 @@ const char* genIntermediateFilename(const char* filename) {
   return astr(intDirName, slash, filename);
 }
 
-static const char* stripdirectories(const char* filename) {
+const char* stripdirectories(const char* filename) {
   const char* filenamebase = strrchr(filename, '/');
 
   if (filenamebase == NULL) {

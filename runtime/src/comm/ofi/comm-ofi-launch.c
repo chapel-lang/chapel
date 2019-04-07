@@ -17,18 +17,22 @@
  * limitations under the License.
  */
 
-#ifndef _chpl_comm_launch_h
-#define _chpl_comm_launch_h
-
 //
 // Launch assistance for the uGNI communication interface.
 //
 
-//
-// This is an optional comm layer function for the launcher to call
-// right before launching the user program.
-//
-#define CHPL_COMM_PRELAUNCH() chpl_comm_preLaunch()
-void chpl_comm_preLaunch(void);
+#include "chplrt.h"
+#include "chpl-comm-launch.h"
+#include "chpl-env.h"
 
-#endif
+
+void chpl_comm_preLaunch(void) {
+  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+    //
+    // This only applies to the sockets provider.  Here in the launcher
+    // we can't tell if that will be used, but setting it superfluously
+    // won't hurt anything.
+    //
+    chpl_env_set("FI_SOCKETS_PE_WAITTIME", "0", 0);
+  }
+}

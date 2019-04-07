@@ -217,14 +217,19 @@ function getNextDivs(afterDiv) {
   container.className = 'graphContainer';
   graphPane.insertBefore(container, beforeDiv);
 
+
   // create the graph/legend divs and spacers
+  var gLDiv = document.createElement('div');
+  gLDiv.className = 'graphContainer';
+  container.appendChild(gLDiv);
+
   var div = document.createElement('div');
   div.className = 'perfGraph';
-  container.appendChild(div);
+  gLDiv.appendChild(div);
 
   var ldiv = document.createElement('div');
   ldiv.className = 'perfLegend';
-  container.appendChild(ldiv);
+  gLDiv.appendChild(ldiv);
 
   var gspacer = document.createElement('div');
   gspacer.className = 'gspacer';
@@ -240,10 +245,11 @@ function getNextDivs(afterDiv) {
     return button;
   }
 
-  var logToggle        = addButtonHelper('log');
-  var annToggle        = addButtonHelper('annotations');
-  var screenshotToggle = addButtonHelper('screenshot');
-  var resetY           = addButtonHelper('reset y zoom');
+  var logToggle           = addButtonHelper('log');
+  var annToggle           = addButtonHelper('annotations');
+  var screenshotToggle    = addButtonHelper('screenshot');
+  var screenshotNoLToggle = addButtonHelper('screenshot (no legend)');
+  var resetY              = addButtonHelper('reset y zoom');
 
   // We prefer this button to be last.
   var closeGraphToggle = addButtonHelper('close');
@@ -251,9 +257,11 @@ function getNextDivs(afterDiv) {
   return {
     div: div,
     ldiv: ldiv,
+    gLDiv: gLDiv,
     logToggle: logToggle,
     annToggle: annToggle,
     screenshotToggle: screenshotToggle,
+    screenshotNoLToggle: screenshotNoLToggle,
     closeGraphToggle: closeGraphToggle,
     resetY: resetY,
     gspacer: gspacer,
@@ -294,9 +302,10 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
         axisLabelFormatter: customAxisLabelFormatter
       }
     },
+    pixelRatio: getPixelRatio(),
     includeZero: true,
     connectSeparatedPoints: true,
-    showRoller: true,
+    showRoller: false,
     legend: 'always',
     customBars: graphInfo.displayrange,
     highlightSeriesOpts: {
@@ -356,7 +365,8 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
 
     setupLogToggle(g, graphInfo, graphDivs.logToggle);
     setupAnnToggle(g, graphInfo, graphDivs.annToggle);
-    setupScreenshotToggle(g, graphInfo, graphDivs.screenshotToggle);
+    setupScreenshotToggle(g, graphInfo, graphDivs.screenshotToggle, true);
+    setupScreenshotToggle(g, graphInfo, graphDivs.screenshotNoLToggle, false);
     setupCloseGraphToggle(g, graphInfo, graphDivs.closeGraphToggle);
     setupResetYZoom(g, graphInfo, graphDivs.resetY);
 
@@ -545,11 +555,11 @@ function setupAnnToggle(g, graphInfo, annToggle) {
 
 
 // Setup the screenshot button
-function setupScreenshotToggle(g, graphInfo, screenshotToggle) {
+function setupScreenshotToggle(g, graphInfo, screenshotToggle, showLegend) {
   screenshotToggle.style.visibility = 'visible';
 
   screenshotToggle.onclick = function() {
-    captureScreenshot(g, graphInfo);
+    captureScreenshot(g, graphInfo, showLegend);
   }
 }
 
@@ -599,80 +609,14 @@ function setupResetYZoom(g, graphInfo, resetY) {
 
 // Function to capture a screenshot of a graph and open the image in a new
 // window.
-//
-// TODO: A nicer alternative would be to open a new window, and have that
-// window create and render the screenshot and also have boxes to change the
-// size of the rendered image. Right now it just defaults to making an image
-// that is the same size as the actual graph.
-//
-// TODO: right now our graph and legend are in 2 separate divs so this is a
-// little clunky because it renders each div separately and then combines them
-// into a single canvas. It would be cleaner to have a div that wraps the graph
-// and legend and just render that one.
-function captureScreenshot(g, graphInfo) {
+function captureScreenshot(g, graphInfo, showLegend) {
+  var div = g.divs.gLDiv;
+  if (showLegend === false) { div = g.divs.div; }
 
-  // 100 padding
-  var gWidth = g.divs.div.clientWidth + g.divs.ldiv.clientWidth + 100;
-  var gHeight = g.divs.div.clientHeight;
-
-  var captureCanvas = document.createElement('canvas');
-  captureCanvas.width = gWidth;
-  captureCanvas.height = gHeight;
-  var ctx = captureCanvas.getContext('2d');
-  var label = graphInfo.ylabel;
-
-  var restoreOpts = {
-    showRoller: true,
-    ylabel: label,
-    valueRange: g.yAxisRange(0),
-  };
-
-  var tempOpts = {
-    showRoller: false,
-    ylabel: '',
-    valueRange: g.yAxisRange(0),
-  };
-
-  // html2canvas doesn't render transformed ccs3 text (like our ylabel.) We
-  // make the label inivisible and we also hide the roll button box since
-  // theres no point in capturing it in a screenshot
-  g.updateOptions(tempOpts);
-
-  // generate the graph
-  html2canvas(g.divs.div, {
-    // once the graph is rendered
-    onrendered: function(graphCanvas) {
-      // genenerate the legend
-       html2canvas(g.divs.ldiv, {
-        // once the legend is rendered
-        onrendered: function(legendCanvas) {
-          // draw the graph and legend canvas on a combined canvas.
-          ctx.drawImage(graphCanvas, 0, 0);
-          ctx.drawImage(legendCanvas, g.divs.div.clientWidth, 0);
-
-          // get the graphs ylabel font properties
-          var fontSize = g.getOption('axisLabelFontSize');
-          ctx.font = '16px Arial';
-
-          // rotate the canvas and draw the title
-          ctx.translate(0, gHeight/2);
-          ctx.rotate(-0.5*Math.PI);
-          ctx.textAlign = 'center';
-          ctx.fillText(label, 0, fontSize);
-
-          // open the screenshot in a new window
-          //
-          // BHARSH 2017-10-09: recent browser versions no longer allow 'window.open'
-          // with a data URL due to security concerns.
-          //
-          var screenWin = window.open();
-          screenWin.document.write("<img src='" + captureCanvas.toDataURL() + "'/>");
-
-          // restore the roll box and ylabel
-          g.updateOptions(restoreOpts);
-        }
-      });
-    }
+  html2canvas(div, {scale:getPixelRatio()}).then(function(canvas) {
+    var size = "width=" + div.clientWidth + " height=" + div.clientHeight;
+    var img = canvas.toDataURL();
+    window.open().document.write('<img src="' + img + '" ' + size + ' />');
   });
 }
 
@@ -1316,6 +1260,21 @@ function setURLFromGraphs(suite) {
 }
 
 
+// Pixel ratio/scaling factor. dygraphs/html2canvas use the device's pixelRatio
+// by default, but this results in grainy screenshots on devices with a low
+// ratio (e.g. non-retina screens), so make it at least 2 allowing the user to
+// override with URL hacking.
+function getPixelRatio() {
+  var devicePixelRatio = window.devicePixelRatio || 1;
+  var pixelRatio = Math.max(devicePixelRatio, 2);
+  var pixelRatioUrl = getOption(OptionsEnum.PIXEL_RATIO);
+  if (pixelRatioUrl) {
+    pixelRatio = pixelRatioUrl;
+  }
+  return pixelRatio;
+}
+
+
 // reset the date range
 function clearDates() {
   // clear the query string
@@ -1419,6 +1378,7 @@ function displaySelectedGraphs() {
 
   // Disable filtering until the jsons are done
   disableFilterBox(true);
+  var genStart = Date.now();
 
   // generate the dygraph(s) for the currently selected graphs
   for (var i = 0; i < allGraphs.length; i++) {
@@ -1429,9 +1389,10 @@ function displaySelectedGraphs() {
   }
 
   $.when.apply($, jsons).done(function() {
-      console.log("done generating graphs");
-      doFilter();
-      disableFilterBox(false);
+    var elapsed = Date.now() - genStart;
+    console.log("done generating graphs: " + elapsed + " ms");
+    doFilter();
+    disableFilterBox(false);
   });
 
   // update the url for the displayed graphs
@@ -1535,7 +1496,8 @@ OptionsEnum = {
   ENDDATE        : 'enddate',
   CONFIGURATIONS : 'configs',
   GRAPHS         : 'graphs',
-  SUITE          : 'suite'
+  SUITE          : 'suite',
+  PIXEL_RATIO    : 'pixelRatio'
 }
 
 
