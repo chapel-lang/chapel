@@ -2,5 +2,11 @@
 
 permission=`stat -c '%a' /`
 
-echo --original=0o$permission > chmod_noprivilege.execopts
+platform=`python -c 'import platform; print(platform.system())'`
+cygwin=`echo $platform | cut -d '_' -f 1`
 
+if [ "$cygwin" == "CYGWIN" ]; then
+	echo "--original=0o$permission # chmod_noprivilege.cygwin.good" > chmod_noprivilege.execopts
+else	
+	echo "--original=0o$permission # chmod_noprivilege.good" > chmod_noprivilege.execopts
+fi
