@@ -32,3 +32,6 @@
 --permissions 2496 # chmod.rwsu.good
 --permissions 0o2070 # chmod.rwsg.good
 --permissions 1080 # chmod.rwsg.good
+--permissions 0o0777 # chmod.rwxugo.good
+--permissions 511 # chmod.rwxugo.good
+
