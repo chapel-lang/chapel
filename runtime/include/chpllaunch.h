@@ -28,6 +28,7 @@
 int chpl_run_utility1K(const char *command, char *const argv[],
                        char *outbuf, int outbuflen);
 int chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen);
+void chpl_launcher_record_env_var(const char*, const char *);
 char **chpl_bundle_exec_args(int argc, char *const argv[],
                              int largc, char *const largv[]);
 int chpl_launch_using_fork_exec(const char* command, char * const argv1[],

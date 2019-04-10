@@ -228,6 +228,35 @@ chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen) {
   return retVal;
 }
 
+
+//
+// Record environment variables set by the launcher itself.  This is
+// called back from the runtime chpl_env_set() function.
+//
+static char* evList = NULL;
+static int evListSize = 0;
+
+void chpl_launcher_record_env_var(const char* evName, const char *evVal) {
+  size_t evNameLen = strlen(evName);
+  size_t evValLen = strlen(evVal);
+  size_t evListSizeWas = evListSize;
+  evListSize = (evListSizeWas // existing list
+                              // spacing ' ' overwrites previous '\0'
+                + evNameLen   // evName
+                + 1           // '='
+                + evValLen    // evVal
+                + 1           // '\0'
+               );
+  evList = chpl_mem_realloc(evList, evListSize,
+                            CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  if (evListSizeWas == 0) {
+    sprintf(evList, "%s=%s", evName, evVal);
+  } else {
+    sprintf(evList + evListSizeWas - 1, " %s=%s", evName, evVal);
+  }
+}
+
+
 //
 // This function returns a NULL terminated argv list as required by
 // chpl_launch_using_exec(), i.e., execve(3).
@@ -277,6 +306,9 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
 int chpl_launch_using_exec(const char* command, char * const argv1[], const char* argv0) {
   if (verbosity > 1) {
     char * const *arg;
+    if (evListSize > 0) {
+      printf("%s ", evList);
+    }
     printf("%s ", command);
     fflush(stdout);
     for (arg = argv1+1; *arg; arg++) {
@@ -324,6 +356,9 @@ int chpl_launch_using_fork_exec(const char* command, char * const argv1[], const
 
 int chpl_launch_using_system(char* command, char* argv0) {
   if (verbosity > 1) {
+    if (evListSize > 0) {
+      printf("%s ", evList);
+    }
     printf("%s\n", command);
   }
   chpl_launch_sanity_checks(argv0);
