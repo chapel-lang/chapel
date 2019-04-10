@@ -399,8 +399,8 @@ tag.
 Example 3
 ---------
 
-The program chplvis3.chpl computes the solution of a Laplace equation using
-the Jacobi method. This version uses dmapped domains
+The program ``chplvis3.chpl`` computes the solution of a Laplace equation
+using the Jacobi method.  This version uses dmapped domains
 and VisualDebug.  Only parts of the code are shown to illustrate
 other ``chplvis`` features.  First, config variables are handy here so one
 can create different directories of chplvis data on different runs.
@@ -505,8 +505,8 @@ computing the *max* while not increasing the *computation* time by much.
 Example 4
 ---------
 
-To help show another feature of the "`Concurrency View`_", chplvis4.chpl was
-written to create a *begin* task on all locales and have those tasks
+To help show another feature of the "`Concurrency View`_", ``chplvis4.chpl``
+was written to create a *begin* task on all locales and have those tasks
 live across calls to the :mod:`VisualDebug` module.  The code is:
 
 .. literalinclude:: examples/primers/chplvis/chplvis4.chpl
