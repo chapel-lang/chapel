@@ -1,1 +1,1 @@
-aprun  -q -cc none -dN -n1 -N1 -j0 ./testVerboseFlag_real --verbose -nl 1 EXECOPTS
+HUGETLB_VERBOSE=0 HUGETLB_NO_RESERVE=yes CHPL_JE_MALLOC_CONF=purge:decay,lg_chunk:24 aprun  -cc none -dN -n1 -N1 -j0 ./testVerboseFlag_real --verbose -nl 1
