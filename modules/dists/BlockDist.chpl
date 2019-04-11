@@ -1375,7 +1375,9 @@ proc BlockDom.numRemoteElems(viewDom, rlo, rid) {
 }
 
 private proc canDoAnyToBlock(Dest, destDom, Src, srcDom) param : bool {
-  if Dest.rank != Src.rank then return false;
+  if Src.doiCanBulkTransferRankChange() == false &&
+     Dest.rank != Src.rank then return false;
+
   use Reflection;
 
   // Does 'Src' support bulk transfers *to* a DefaultRectangular?
@@ -1384,7 +1386,7 @@ private proc canDoAnyToBlock(Dest, destDom, Src, srcDom) param : bool {
     return false;
   }
 
-  return useBulkTransferDist;
+  return true;
 }
 
 // Block = this
@@ -1433,43 +1435,23 @@ private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
 
 // Overload for any transfer *to* Block, if the RHS supports transfers to a
 // DefaultRectangular
-//
-// TODO: avoid spawning so many coforall-ons
-//   - clean up some of this range creation logic
 proc BlockArr.doiBulkTransferFromAny(destDom, Src, srcDom) : bool
 where canDoAnyToBlock(this, destDom, Src, srcDom) {
 
   if debugBlockDistBulkTransfer then
     writeln("In BlockDist.doiBulkTransferFromAny");
 
-  const Dest = this;
-  type el    = Dest.idxType;
+  coforall j in dom.dist.activeTargetLocales(srcDom) {
+    on dom.dist.targetLocales(j) {
+      const Dest = if _privatized then chpl_getPrivatizedCopy(this.type, pid) else this;
 
-  coforall i in Dest.dom.dist.targetLocDom {
-    on Dest.dom.dist.targetLocales(i) {
-      const regionDest = Dest.dom.locDoms(i).myBlock[destDom];
-      const regionSrc  = Src.dom.locDoms(i).myBlock[srcDom];
-      if regionDest.numIndices > 0 {
-        const ini = bulkCommConvertCoordinate(regionDest.first, destDom, srcDom);
-        const end = bulkCommConvertCoordinate(regionDest.last, destDom, srcDom);
-        const sb  = chpl__tuplify(regionSrc.stride);
+      const inters   = Dest.dom.locDoms(j).myBlock[destDom];
+      const srcChunk = bulkCommTranslateDomain(inters, destDom, srcDom);
 
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        r2 = regionDest.dims();
-         //In the case that the number of elements in dimension t for r1 and r2
-         //were different, we need to calculate the correct stride in r1
-        for param t in 1..rank {
-            r1[t] = (ini[t]:el..end[t]:el by sb[t]);
-            if r1[t].length != r2[t].length then
-              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
-        }
+      if debugBlockDistBulkTransfer then
+        writeln("Dest.locArr[", j, "][", inters, "] = Src[", srcDom, "]");
 
-        if debugBlockDistBulkTransfer then
-          writeln("A.locArr[i][", regionDest, "] = B[", (...r1), "]");
-
-        // TODO: handle possibility that this function returns false
-        chpl__bulkTransferArray(Dest.locArr[i].myElems._value, regionDest, Src, {(...r1)});
-      }
+      chpl__bulkTransferArray(Dest.locArr[j].myElems._value, inters, Src, srcChunk);
     }
   }
 
