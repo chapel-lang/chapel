@@ -53,15 +53,6 @@ use LayoutCS;
 config param debugBlockDist = false;
 config param debugBlockDistBulkTransfer = false;
 
-// This flag is used to enable bulk transfer when aliased arrays are
-// involved.  Currently, aliased arrays are not eligible for the
-// optimization due to a bug in bulk transfer for rank changed arrays
-// in which the last (right-most) dimension is collapsed.  Disabling
-// the optimization for all aliased arrays is very conservative, so
-// we provide this flag to allow the user to override the decision,
-// with the caveat that it will likely not work for the above case.
-config const disableAliasedBulkTransfer = true;
-
 config param sanityCheckDistribution = false;
 
 //
@@ -128,7 +119,6 @@ config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
 //   talk about RAD - here or in DefaultRectangular?
 //   supports RAD opt, Bulk Transfer optimization, localSubdomain
 //   disableBlockLazyRAD
-//   disableAliasedBulkTransfer
 //
 /*
 This Block distribution partitions indices into blocks
@@ -508,7 +498,8 @@ proc Block.dsiAssign(other: this.type) {
 // box and target locale set.
 //
 proc Block.dsiEqualDMaps(that: Block(?)) {
-  return (this.boundingBox == that.boundingBox &&
+  return (this.rank == that.rank &&
+          this.boundingBox == that.boundingBox &&
           this.targetLocales.equals(that.targetLocales));
 }
 
@@ -635,6 +626,16 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
                              targetLocDom.dim(i).length:idxType) /
                             boundingBox.dim(i).length):int));
   return if rank == 1 then result(1) else result;
+}
+
+iter Block.activeTargetLocales(const space : domain = boundingBox) {
+  const low = chpl__tuplify(targetLocsIdx(space.low));
+  const high = chpl__tuplify(targetLocsIdx(space.high));
+  var dims : rank*range(low(1).type);
+  for param i in 1..rank {
+    dims(i) = low(i)..high(i);
+  }
+  for i in {(...dims)} do yield i;
 }
 
 proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
@@ -1308,111 +1309,6 @@ proc BlockArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-private proc _canDoSimpleBlockTransfer(A, aView, B, bView) {
-  if debugBlockDistBulkTransfer then
-    writeln("In BlockDist._canDoSimpleBlockTransfer");
-
-  if A.rank != B.rank then
-    compilerError("_canDoSimpleBlockTransfer expecting equal ranks: ", A.rank:string, " vs ", B.rank:string);
-
-  if A.sparseLayoutType != DefaultDist ||
-     B.sparseLayoutType != DefaultDist {
-    return false;
-  } else if aView.stridable || bView.stridable {
-    for param i in 1..A.rank {
-      if aView.dim(i).stride != 1 ||
-         bView.dim(i).stride != 1 then return false;
-    }
-  }
-
-  return useBulkTransferDist;
-}
-
-// Block = this
-proc BlockArr.doiBulkTransferToKnown(srcDom, destClass:BlockArr, destDom) : bool
-where useBulkTransferDist {
-  if _canDoSimpleBlockTransfer(destClass, destDom, this, srcDom) {
-    _doSimpleBlockTransfer(destClass, destDom, this, srcDom);
-    return true;
-  } else {
-    return false;
-  }
-}
-
-// this = Block
-proc BlockArr.doiBulkTransferFromKnown(destDom, srcClass:BlockArr, srcDom) : bool
-where useBulkTransferDist {
-  if _canDoSimpleBlockTransfer(this, destDom, srcClass, srcDom) {
-    _doSimpleBlockTransfer(this, destDom, srcClass, srcDom);
-    return true;
-  } else {
-    return false;
-  }
-}
-
-private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
-  if debugBlockDistBulkTransfer then
-    writeln("In BlockDist._doSimpleBlockTransfer");
-
-  if debugBlockDistBulkTransfer then resetCommDiagnostics();
-
-  param rank = Dest.rank;
-
-  const equalDoms = (Dest.dom.whole == Src.dom.whole) &&
-                    (srcDom == destDom) &&
-                    (Dest.dom.dist.dsiEqualDMaps(Src.dom.dist));
-
-  // Use zippered iteration to piggyback data movement with the remote
-  // fork.  This avoids remote gets for each access to Dest.locArr[i] and
-  // Src.locArr[i]
-  coforall (i, destLocArr, srcLocArr, destLocDom, srcLocDom) in zip(Dest.dom.dist.targetLocDom,
-                                                                  Dest.locArr,
-                                                                  Src.locArr,
-                                                                  Dest.dom.locDoms,
-                                                                  Src.dom.locDoms) {
-    on Dest.dom.dist.targetLocales(i) {
-      if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
-
-      const viewBlock = destLocDom.myBlock[destDom];
-
-      if equalDoms {
-        const theirView = srcLocDom.myBlock[srcDom];
-        destLocArr.myElems[viewBlock] = srcLocArr.myElems[theirView];
-      } else if Dest.rank == 1 {
-        var start = viewBlock.low;
-
-        for (rid, rlo, size) in ConsecutiveChunks(destDom, Src.dom, srcDom, viewBlock.size, start) {
-          destLocArr.myElems[start..#size] = Src.locArr[rid].myElems[rlo..#size];
-          start += size;
-        }
-      } else {
-        const orig = viewBlock.low(rank);
-
-        for coord in dropDims(viewBlock, viewBlock.rank) {
-          var lo = if rank == 2 then (coord, orig) else ((...coord), orig);
-
-          for (rid, rlo, size) in ConsecutiveChunksD(destDom, Src.dom, srcDom, viewBlock.dim(rank).length, lo) {
-            var LSlice, RSlice : rank*range(idxType = Dest.dom.idxType);
-
-            for param i in 1..rank-1 {
-              LSlice(i) = if rank == 2 then coord..coord else coord(i)..coord(i);
-              RSlice(i) = rlo(i)..rlo(i);
-            }
-            LSlice(rank) = lo(rank)..#size;
-            RSlice(rank) = rlo(rank)..#size;
-
-            destLocArr.myElems[(...LSlice)] = Src.locArr[rid].myElems[(...RSlice)];
-
-            lo(rank) += size;
-          }
-        }
-      }
-
-      if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
-    }
-  }
-  if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
-}
 
 proc BlockArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
@@ -1536,6 +1432,50 @@ private proc canDoAnyToBlock(Dest, destDom, Src, srcDom) param : bool {
   return useBulkTransferDist;
 }
 
+// Block = this
+proc BlockArr.doiBulkTransferToKnown(srcDom, destClass:BlockArr, destDom) : bool
+where this.sparseLayoutType == unmanaged DefaultDist &&
+      destClass.sparseLayoutType == unmanaged DefaultDist {
+  _doSimpleBlockTransfer(destClass, destDom, this, srcDom);
+}
+
+// this = Block
+proc BlockArr.doiBulkTransferFromKnown(destDom, srcClass:BlockArr, srcDom) : bool
+where this.sparseLayoutType == unmanaged DefaultDist &&
+      srcClass.sparseLayoutType == unmanaged DefaultDist {
+  _doSimpleBlockTransfer(this, destDom, srcClass, srcDom);
+}
+
+private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
+  if debugBlockDistBulkTransfer then
+    writeln("In BlockDist._doSimpleBlockTransfer");
+
+  coforall i in Dest.dom.dist.activeTargetLocales(destDom) {
+    on Dest.dom.dist.targetLocales[i] {
+      // Relies on the fact that we privatize across all locales in the
+      // program, not just the targetLocales of Dest/Src.
+      const dst = if _privatization then chpl_getPrivatizedCopy(Dest.type, Dest.pid) else Dest;
+      const src = if _privatization then chpl_getPrivatizedCopy(Src.type, Src.pid) else Src;
+
+      // Compute the local portion of the destination domain, and find the
+      // corresponding indices in the source's domain.
+      const localDestBlock = dst.dom.locDoms[i].myBlock[destDom];
+      const corSrcBlock    = bulkCommTranslateDomain(localDestBlock, destDom, srcDom);
+
+      // The corresponding indices in the source's domain do not necessarily
+      // all live on the same locale. This loop finds the chunks that live on a
+      // single locale, translates those back to the destination's domain, and
+      // performs the transfer.
+      for srcLoc in src.dom.dist.activeTargetLocales(corSrcBlock) {
+        const localSrcChunk  = corSrcBlock[src.dom.locDoms[srcLoc].myBlock];
+        const localDestChunk = bulkCommTranslateDomain(localSrcChunk, corSrcBlock, localDestBlock);
+        chpl__bulkTransferArray(dst.locArr[i].myElems._value, localDestChunk,
+                                src.locArr[srcLoc].myElems._value, localSrcChunk);
+      }
+    }
+  }
+}
+
 // Overload for any transfer *to* Block, if the RHS supports transfers to a
 // DefaultRectangular
 //
@@ -1582,38 +1522,23 @@ where canDoAnyToBlock(this, destDom, Src, srcDom) {
 }
 
 // For assignments of the form: DefaultRectangular = Block
-proc BlockArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom) : bool
-where useBulkTransferDist {
+proc BlockArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom) : bool {
 
   if debugBlockDistBulkTransfer then
     writeln("In BlockDist.doiBulkTransferToKnown(DefaultRectangular)");
 
-  const Src = this;
-  type el   = Src.idxType;
-
-  coforall j in Src.dom.dist.targetLocDom {
-    on Src.dom.dist.targetLocales(j) {
+  coforall j in dom.dist.activeTargetLocales(srcDom) {
+    on dom.dist.targetLocales(j) {
+      const Src = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
       const inters = Src.dom.locDoms(j).myBlock[srcDom];
-      if inters.numIndices > 0 {
-        const ini = bulkCommConvertCoordinate(inters.first, srcDom, destDom);
-        const end = bulkCommConvertCoordinate(inters.last, srcDom, destDom);
-        const sa  = chpl__tuplify(destDom.stride);
 
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        for param t in 1..rank
-        {
-          r2[t] = (chpl__tuplify(inters.first)[t]
-                   ..chpl__tuplify(inters.last)[t]
-                   by chpl__tuplify(inters.stride)[t]);
-          r1[t] = (ini[t]:el..end[t]:el by sa[t]);
-        }
+      const destChunk = bulkCommTranslateDomain(inters, srcDom, destDom);
 
-        if debugBlockDistBulkTransfer then
-          writeln("A[",r1,"] = B[",r2,"]");
+      if debugBlockDistBulkTransfer then
+        writeln("A[",destChunk,"] = B[",inters,"]");
 
-        const elemActual = Src.locArr[j].myElems._value;
-        chpl__bulkTransferArray(Dest, {(...r1)}, elemActual, {(...r2)});
-      }
+      const elemActual = Src.locArr[j].myElems._value;
+      chpl__bulkTransferArray(Dest, destChunk, elemActual, inters);
     }
   }
 
@@ -1621,41 +1546,31 @@ where useBulkTransferDist {
 }
 
 // For assignments of the form: Block = DefaultRectangular
-proc BlockArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDom) : bool
-where useBulkTransferDist {
+proc BlockArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDom) : bool {
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransferFromKnown(DefaultRectangular)");
 
-  const Dest = this;
-  type el    = Dest.idxType;
-
-  coforall j in Dest.dom.dist.targetLocDom {
-    on Dest.dom.dist.targetLocales(j) {
+  coforall j in dom.dist.activeTargetLocales(destDom) {
+    on dom.dist.targetLocales(j) {
+      // Grab privatized copy of 'this' to avoid extra GETs
+      const Dest = chpl_getPrivatizedCopy(this.type, pid);
       const inters = Dest.dom.locDoms(j).myBlock[destDom];
-      if inters.numIndices > 0 {
-        const ini = bulkCommConvertCoordinate(inters.first, destDom, srcDom);
-        const end = bulkCommConvertCoordinate(inters.last, destDom, srcDom);
-        const sb  = chpl__tuplify(srcDom.stride);
+      assert(inters.size > 0);
 
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        for param t in 1..rank {
-          r2[t] = (chpl__tuplify(inters.first)[t]
-                   ..chpl__tuplify(inters.last)[t]
-                   by chpl__tuplify(inters.stride)[t]);
-          r1[t] = (ini[t]:el..end[t]:el by sb[t]);
-        }
+      const srcChunk = bulkCommTranslateDomain(inters, destDom, srcDom);
 
-        if debugBlockDistBulkTransfer then
-          writeln("A[",r2,"] = B[",r1,"]");
+      if debugBlockDistBulkTransfer then
+        writeln("A[",inters,"] = B[",srcChunk,"]");
 
-        const elemActual = Dest.locArr[j].myElems._value;
-        chpl__bulkTransferArray(elemActual, {(...r2)}, Src, {(...r1)});
-      }
+      const elemActual = Dest.locArr[j].myElems._value;
+      chpl__bulkTransferArray(elemActual, inters, Src, srcChunk);
     }
   }
 
   return true;
 }
+
+proc BlockArr.doiCanBulkTransferRankChange() param return true;
 
 config param debugBlockScan = false;
 

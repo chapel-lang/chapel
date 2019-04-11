@@ -471,6 +471,85 @@ proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
   }
 }
 
+// Compute the active dimensions of this assignment. For example, LeftDims
+// could be (1..1, 1..10) and RightDims (1..10, 1..1). This indicates that
+// a rank change occurred and that the inferredRank should be '1', the
+// LeftActives = (2,), the RightActives = (1,)
+proc bulkCommComputeActiveDims(LeftDims, RightDims) {
+  param LeftRank  = LeftDims.size;
+  param RightRank = RightDims.size;
+  param minRank   = min(LeftRank, RightRank);
+
+  var inferredRank = 0;
+
+  // Tuple used instead of an array because returning an array would
+  // recursively invoke array assignment (and therefore bulk-transfer).
+  var LeftActives, RightActives : minRank * int;
+
+  var li = 1, ri = 1;
+  proc advance() {
+    // Advance to positions in each domain where the sizes are equal.
+    while LeftDims(li).size == 1 && LeftDims(li).size != RightDims(ri).size do li += 1;
+    while RightDims(ri).size == 1 && RightDims(ri).size != LeftDims(li).size do ri += 1;
+
+    assert(LeftDims(li).size == RightDims(ri).size);
+  }
+
+  do {
+    advance();
+    inferredRank += 1;
+
+    LeftActives(inferredRank)  = li;
+    RightActives(inferredRank) = ri;
+
+    li += 1;
+    ri += 1;
+  } while li <= LeftRank && ri <= RightRank;
+
+  return (LeftActives, RightActives, inferredRank);
+}
+
+// Translates the indices of 'srcSlice' from the context of 'srcDom' to the
+// context of 'targetDom'.
+//
+// The rank of 'srcDom' may differ from that of 'targetDom' if a rank change is
+// involved.
+//
+// Note: Assumes that the total number of indices is the same in both 'srcDom'
+// and 'targetDom'
+proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : domain) {
+  if srcSlice.rank != srcDom.rank then
+    compilerError("bulkCommTranslateDomain: source slice and source domain must have identical rank");
+
+  const (SrcActives, TargetActives, inferredRank) = bulkCommComputeActiveDims(srcDom.dims(), targetDom.dims());
+
+  // Consider assignment between two rank changes:
+  //   var A, B : [1..10, 1..10] int;
+  //   A[1, ..] = B[.., 1];
+  //
+  // Here 'srcDom' will be {1..1, 1..10} and 'targetDom' will be {1..10, 1..1}.
+  // 'bulkCommComputeActiveDims' will tell us which dimensions of 'srcDom' need
+  // to be translated in to specific dimensions of 'targetDom'. In this case,
+  // we need to translate from srcDom's second dimension into targetDom's first
+  // dimension.
+  //
+  // The remaining dimensions in 'targetDom' are left untouched in the
+  // assumption they were 'squashed' by the rank change.
+  //
+  var rngs = targetDom.dims();
+
+  for i in 1..inferredRank {
+    const SD = SrcActives(i);
+    const TD = TargetActives(i);
+    const low  = targetDom.dim(TD).orderToIndex(srcDom.dim(SD).indexOrder(srcSlice.first(SD)));
+    const high = targetDom.dim(TD).orderToIndex(srcDom.dim(SD).indexOrder(srcSlice.last(SD)));
+    rngs(TD) = if targetDom.stridable then low..high by targetDom.dim(TD).stride
+               else low..high;
+  }
+
+  return {(...rngs)};
+}
+
 //
 // bulkCommConvertCoordinate() converts
 //   point 'ind' within 'bView'
@@ -486,25 +565,26 @@ proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
 // TODO: If we wanted to be more general, the domain args could turn into
 //       tuples of ranges
 //
-proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
+proc bulkCommConvertCoordinate(ind, sourceDom:domain, targetDom:domain)
 {
-  if bView.rank != aView.rank {
-    compilerError("Invalid arguments passed to bulkCommConvertCoordinate - domain ranks must match: bView.rank = ", bView.rank:string, ", aView.rank = ", aView.rank:string);
+  if sourceDom.rank != targetDom.rank {
+    compilerError("Invalid arguments passed to bulkCommConvertCoordinate - domain ranks must match: sourceDom.rank = ", sourceDom.rank:string, ", targetDom.rank = ", targetDom.rank:string);
+  } else {
+    param rank = targetDom.rank;
+    const b = chpl__tuplify(ind);
+    //if b.size != rank {
+    //  param plural = if b.size == 1 then " element" else " elements";
+    //  compilerError("Invalid arguments passed to bulkCommConvertCoordinate - expecting index with ", rank:string, " elements, got ", b.size:string, plural);
+    //}
+    type idxType = targetDom.idxType;
+    const AD = targetDom.dims();
+    const BD = sourceDom.dims();
+    var result: rank * idxType;
+    for param i in 1..rank {
+      const ar = AD(i), br = BD(i);
+      if boundsChecking then assert(br.contains(b(i)));
+      result(i) = ar.orderToIndex(br.indexOrder(b(i)));
+    }
+    return result;
   }
-  param rank = aView.rank;
-  const b = chpl__tuplify(ind);
-  if b.size != rank {
-    param plural = if b.size == 1 then " element" else " elements";
-    compilerError("Invalid arguments passed to bulkCommConvertCoordinate - expecting index with ", rank:string, " elements, got ", b.size:string, plural);
-  }
-  type idxType = aView.idxType;
-  const AD = aView.dims();
-  const BD = bView.dims();
-  var result: rank * idxType;
-  for param i in 1..rank {
-    const ar = AD(i), br = BD(i);
-    if boundsChecking then assert(br.contains(b(i)));
-    result(i) = ar.orderToIndex(br.indexOrder(b(i)));
-  }
-  return result;
 }
