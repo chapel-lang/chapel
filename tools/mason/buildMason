@@ -16,14 +16,10 @@ if command -v module > /dev/null 2>&1 ; then
   fi
 fi
 
-
-set -x
 $chplBinDir/chpl mason.chpl
-set +x
-
 EXIT_STATUS=$?
 
-if [ ${EXIT_STATUS} = 0 ] ; then
+if [ ${EXIT_STATUS} != 0 ] ; then
   echo
   echo "Error building mason. Check that you have built a runtime configuration that supports:
   CHPL_COMM=none
