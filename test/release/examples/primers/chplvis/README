@@ -1,6 +1,11 @@
-These programs, chplvis1.chpl through chplvis4.chpl, are part of the chplvis
-primer.  It is best to read that primer instead of reading these file.
-Use these files to try out chplvis while reading the primer.
+These programs are part of the chplvis primer.  It is best to read
+that primer instead of reading this file.  Use these files to try out
+chplvis while reading the primer.
+
+     chplvis1.chpl               : basic chplvis capabilities
+     chplvis2.chpl               : visualizing subregions of a program
+     chplvis3.chpl               : controlling chplvis during execution
+     chplvis4.chpl               : visualizing task concurrency
 
 If these programs are modified, the corresponding chplvis.rst file
 must be updated to match.  chplvis.rst is located in
