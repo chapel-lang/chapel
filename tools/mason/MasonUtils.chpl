@@ -26,6 +26,7 @@ use TOML;
 use Path;
 use MasonEnv;
 
+
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
