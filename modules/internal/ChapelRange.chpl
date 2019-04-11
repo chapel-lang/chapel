@@ -2445,20 +2445,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //
   // Return the number in the range 0 <= result < b that is congruent to a (mod b)
   //
-  proc chpl__mod(dividend:integral, in modulus:integral)
+  proc chpl__mod(dividend:integral, modulus:integral)
   {
-    type dType = dividend.type;
-    modulus = abs(modulus);
-    // modulus is positive, so this cast is OK unless it is very large
-    // and the dividend is signed.
-    var m = modulus : dType;
-    if dType != modulus.type {
-      if m : modulus.type != modulus then
-        HaltWrappers.safeCastCheckHalt("Modulus too large.");
-    }
+    const m = abs(modulus).safeCast(dividend.type);
 
     var tmp = dividend % m;
-    if isIntType(dividend.type) then
+    if isInt(dividend) then
       if tmp < 0 then tmp += m;
 
     return tmp;
@@ -2474,17 +2466,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //
   proc chpl__diffMod(minuend : integral,
                      subtrahend : integral,
-                     in modulus : integral) : minuend.type
+                     modulus : integral) : minuend.type
     where minuend.type == subtrahend.type
   {
-    type minType = minuend.type;
-
-    modulus = abs(modulus);
-    var m = modulus : minType;
-    if minType != modulus.type {
-      if m : modulus.type != modulus then
-        HaltWrappers.safeCastCheckHalt("Modulus too large.");
-    }
+    const m = abs(modulus).safeCast(minuend.type);
 
     var minMod = chpl__mod(minuend, m);
     var subMod = chpl__mod(subtrahend, m);
@@ -2496,7 +2481,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   proc chpl__diffMod(minuend : integral,
                      subtrahend : integral,
-                     in modulus : integral)
+                     modulus : integral)
   {
     compilerError("chpl__diffMod -- Operand types must match.");
   }
