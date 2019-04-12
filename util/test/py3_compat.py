@@ -1,10 +1,13 @@
 """
 Python 2/3 compatibility shim. We use subprocess.Popen.communicate() all over.
 Instead of updating every call site to do the right thing with regard to byte
-to str conversions for 3 compatibility, we have opted to add this wrapper. Not
-all things we run will produce utf-8 (i.e. catfiles for thing like mandelbrot
-will return binary data) so we allow the conversion to utf-8 to silently fail
-and we handle any issues at the call sites.
+to str conversions, we have opted to use this wrapper which assumes our
+input/output to subprocesses will always be utf-8 strings. There are some cases
+where that's not true (e.g. catfiles for Mandelbrot are binary), so we allow
+the conversion to silently fail and we handle any issues at the call site.
+
+This is probably one of the worst ways to get python 2 and 3 compatibility, but
+it is pretty straightforward. A better solution might be to use six or future.
 """
 
 import subprocess
