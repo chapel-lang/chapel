@@ -64,7 +64,7 @@ proc masonSearch(origArgs : [] string) {
             writeln("[DEBUG] found hidden package: ", name);
           }
         }  else {
-          const ver = findLatest(searchDir + dir); // TODO: Only search within chplversion
+          const ver = findLatest(searchDir + dir);
           const versionZero = new VersionInfo(0, 0, 0);
 
           if ver != versionZero then
@@ -96,7 +96,7 @@ proc findLatest(packageDir: string): VersionInfo {
     if !manifest.endsWith(suffix) {
       var warningStr = "File without '.toml' extension encountered - skipping ";
       warningStr += packageName + " " + manifest;
-      warning(warningStr);
+      stderr.writeln(warningStr);
       continue;
     }
 
@@ -107,6 +107,7 @@ proc findLatest(packageDir: string): VersionInfo {
     const manifestToml = parseToml(manifestReader);
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
+    delete brick;
     if chplVersion < low || chplVersion > high then continue;
 
     // Check that Chapel version is supported

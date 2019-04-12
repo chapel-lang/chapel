@@ -155,6 +155,11 @@ private const maxVersion = new VersionInfo(max(int), max(int), max(int));
 proc parseChplVersion(brick:borrowed Toml): (VersionInfo, VersionInfo) {
   use Regexp;
 
+  if brick == nil {
+    stderr.writeln("Error: Unable to parse manifest file");
+    exit(1);
+  }
+
   // Assert some expected fields are not nil
   if brick['name'] == nil || brick['version'] == nil{
     stderr.writeln("Error: Unable to parse manifest file");
@@ -232,7 +237,6 @@ proc verifyChapelVersion(brick:borrowed Toml) {
 
   var ret = false;
 
-  // TODO: broken?
   (low, hi) = parseChplVersion(brick);
   ret = low <= current && current <= hi;
 
