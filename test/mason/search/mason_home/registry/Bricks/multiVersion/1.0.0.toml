@@ -1,7 +1,8 @@
 [brick]
-name = "badeFileName"
+name = "multiVersion"
 version = "1.0.0"
 chplVersion = "1.19.0"
 source = "nil"
 
 [dependencies]
+
