@@ -1,1 +1,1 @@
--smaxDims=4 -suseBulkTransferStride --inline-iterators-yield-limit 4
+-smaxDims=4 -suseBulkTransferStride --inline-iterators-yield-limit 4 -M ../common

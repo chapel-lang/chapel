@@ -1,1 +1,1 @@
--sdebugBulkTransfer -sdebugDefaultDistBulkTransfer -suseBulkTransferStride
+-sdebugBulkTransfer -sdebugDefaultDistBulkTransfer -suseBulkTransferStride -M ../common
