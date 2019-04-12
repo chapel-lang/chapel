@@ -150,8 +150,6 @@ proc updateRegistry(tf: string, args : [] string) {
   }
 }
 
-private const maxVersion = new VersionInfo(max(int), max(int), max(int));
-
 proc parseChplVersion(brick:borrowed Toml): (VersionInfo, VersionInfo) {
   use Regexp;
 
@@ -213,7 +211,7 @@ proc parseChplVersion(brick:borrowed Toml): (VersionInfo, VersionInfo) {
     low = parseString(versions[1]);
 
     if (versions.size == 1) {
-      hi = new VersionInfo(low.major, max(int), max(int));
+      hi = new VersionInfo(max(int), max(int), max(int));
     } else {
       hi = parseString(versions[2]);
     }
@@ -246,7 +244,7 @@ proc verifyChapelVersion(brick:borrowed Toml) {
 proc prettyVersionRange(low, hi) {
   if low == hi then
     return low.str();
-  else if hi == maxVersion then
+  else if hi.containsMax() then
     return low.str() + " or later";
   else
     return low.str() + ".." + hi.str();

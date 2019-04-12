@@ -253,6 +253,10 @@ record VersionInfo {
         halt('Out of bounds access of VersionInfo');
     }
   }
+
+  proc containsMax() {
+    return this.major == max(int) || this.minor == max(int) || this.bug == max(int);
+  }
 }
 
 proc >=(a:VersionInfo, b:VersionInfo) : bool {
