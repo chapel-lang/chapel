@@ -539,10 +539,12 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   var rngs = targetDom.dims();
 
   for i in 1..inferredRank {
-    const SD = SrcActives(i);
-    const TD = TargetActives(i);
-    const low  = targetDom.dim(TD).orderToIndex(srcDom.dim(SD).indexOrder(srcSlice.first(SD)));
-    const high = targetDom.dim(TD).orderToIndex(srcDom.dim(SD).indexOrder(srcSlice.last(SD)));
+    const SD    = SrcActives(i);
+    const TD    = TargetActives(i);
+    const first = chpl__tuplify(srcSlice.first)(SD);
+    const last  = chpl__tuplify(srcSlice.last)(SD);
+    const low   = targetDom.dim(TD).orderToIndex(srcDom.dim(SD).indexOrder(first));
+    const high  = targetDom.dim(TD).orderToIndex(srcDom.dim(SD).indexOrder(last));
     rngs(TD) = if targetDom.stridable then low..high by targetDom.dim(TD).stride
                else low..high;
   }

@@ -628,14 +628,34 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
   return if rank == 1 then result(1) else result;
 }
 
+// TODO: This will not trigger the bounded-coforall optimization
 iter Block.activeTargetLocales(const space : domain = boundingBox) {
-  const low = chpl__tuplify(targetLocsIdx(space.low));
-  const high = chpl__tuplify(targetLocsIdx(space.high));
+  const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
+  const low = chpl__tuplify(targetLocsIdx(locSpace.first));
+  const high = chpl__tuplify(targetLocsIdx(locSpace.last));
   var dims : rank*range(low(1).type);
   for param i in 1..rank {
     dims(i) = low(i)..high(i);
   }
-  for i in {(...dims)} do yield i;
+
+  // In case 'locSpace' is a strided domain we need to check that the locales
+  // in 'dims' actually contain indices in 'locSpace'.
+  //
+  // Note that we cannot use a simple stride here because it is not guaranteed
+  // that each locale contains the same number of indices. For example, the
+  // domain {1..10} over four locales will split like:
+  //   L0: -max(int)..3
+  //   L1: 4..5
+  //   L2: 6..8
+  //   L3: 9..max(int)
+  //
+  // The subset {1..10 by 4} will involve locales 0, 1, and 3.
+  for i in {(...dims)} {
+    const chunk = chpl__computeBlock(i, targetLocDom, boundingBox);
+    // TODO: Want 'contains' for a domain. Slicing is a workaround.
+    if locSpace[(...chunk)].size > 0 then
+      yield i;
+  }
 }
 
 proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
@@ -1394,6 +1414,7 @@ proc BlockArr.doiBulkTransferToKnown(srcDom, destClass:BlockArr, destDom) : bool
 where this.sparseLayoutType == unmanaged DefaultDist &&
       destClass.sparseLayoutType == unmanaged DefaultDist {
   _doSimpleBlockTransfer(destClass, destDom, this, srcDom);
+  return true;
 }
 
 // this = Block
@@ -1401,11 +1422,12 @@ proc BlockArr.doiBulkTransferFromKnown(destDom, srcClass:BlockArr, srcDom) : boo
 where this.sparseLayoutType == unmanaged DefaultDist &&
       srcClass.sparseLayoutType == unmanaged DefaultDist {
   _doSimpleBlockTransfer(this, destDom, srcClass, srcDom);
+  return true;
 }
 
 private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
   if debugBlockDistBulkTransfer then
-    writeln("In BlockDist._doSimpleBlockTransfer");
+    writeln("In Block=Block Bulk Transfer: Dest[", destDom, "] = Src[", srcDom, "]");
 
   coforall i in Dest.dom.dist.activeTargetLocales(destDom) {
     on Dest.dom.dist.targetLocales[i] {
@@ -1417,7 +1439,10 @@ private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
       // Compute the local portion of the destination domain, and find the
       // corresponding indices in the source's domain.
       const localDestBlock = dst.dom.locDoms[i].myBlock[destDom];
+      assert(localDestBlock.size > 0);
       const corSrcBlock    = bulkCommTranslateDomain(localDestBlock, destDom, srcDom);
+      if debugBlockDistBulkTransfer then
+        writeln("  Dest[",localDestBlock,"] = Src[", corSrcBlock,"]");
 
       // The corresponding indices in the source's domain do not necessarily
       // all live on the same locale. This loop finds the chunks that live on a
@@ -1443,7 +1468,7 @@ where canDoAnyToBlock(this, destDom, Src, srcDom) {
 
   coforall j in dom.dist.activeTargetLocales(srcDom) {
     on dom.dist.targetLocales(j) {
-      const Dest = if _privatized then chpl_getPrivatizedCopy(this.type, pid) else this;
+      const Dest = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
 
       const inters   = Dest.dom.locDoms(j).myBlock[destDom];
       const srcChunk = bulkCommTranslateDomain(inters, destDom, srcDom);
