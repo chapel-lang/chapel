@@ -1010,7 +1010,7 @@ module TomlReader {
                                        equals));
 
       for token in pattern.split(line) {
-        var strippedToken = token.strip(" ");
+        var strippedToken = token.strip(" \t");
         if strippedToken.length != 0 {
           if debugTomlReader {
             writeln('Tokenized: ', '(', strippedToken, ')');
