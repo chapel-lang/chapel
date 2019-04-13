@@ -1,2 +1,3 @@
-check_infinite_halt.chpl:8: error: halt reached - Infinite iteration not supported for parallel loops.
-
+uncaught IllegalArgumentError: Infinite iteration not supported for parallel loops.
+  Itertools.chpl:6: thrown here
+  Itertools.chpl:6: uncaught here

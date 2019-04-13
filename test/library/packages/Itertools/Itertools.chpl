@@ -38,11 +38,13 @@ module Itertools {
 
     :yields: Object in the range ``1..times``
 
+    :throws: ``IllegalArgumentError`` on parallel infinite iteration (see below)
+
 
     If the argument ``times`` has the value 0, it will return
     the object an infinite number of times.
 
-    This iterator can be called in serial and zippered contexts.
+    This iterator can be called in serial and parallel zippered contexts.
 
     .. note::
       This iterator is not suitable for parallel infinite iteration i.e.
@@ -54,20 +56,21 @@ module Itertools {
 
   iter repeat (arg, times = 0) {
     if times == 0 then
-      for count in 1.. do yield arg;
+      for 1.. do yield arg;
     else
-      for count in 1..#times do yield arg;     
+      for 1..#times do yield arg;
   }
 
   // Standalone parallel iterator
 
   pragma "no doc"
-  iter repeat (param tag: iterKind, arg, times = 0)
+  iter repeat (param tag: iterKind, arg, times = 0) throws
       where tag == iterKind.standalone {
     if times == 0 then
-      halt("Infinite iteration not supported for parallel loops.");
+      throw new owned IllegalArgumentError(
+          "Infinite iteration not supported for parallel loops.");
     else
-      forall count in 1..#times do yield arg;
+      forall 1..#times do yield arg;
   }
 
   use RangeChunk;
@@ -75,14 +78,15 @@ module Itertools {
   // Parallel iterator - Leader
 
   pragma "no doc"
-  iter repeat (param tag: iterKind, arg, times = 0)
+  iter repeat (param tag: iterKind, arg, times = 0) throws
       where tag == iterKind.leader {
 
     const numTasks = if dataParTasksPerLocale > 0 then dataParTasksPerLocale
                                                   else here.maxTaskPar;
 
     if times == 0 then
-      halt("Infinite iteration not supported for parallel loops.");
+      throw new owned IllegalArgumentError(
+          "Infinite iteration not supported for parallel loops.");
     else
       coforall tid in 0..#numTasks {
         const working_iters = chunk(0..#times, numTasks, tid);
@@ -91,12 +95,12 @@ module Itertools {
   }
 
   // Parallel iterator - Follower
-  
+
   pragma "no doc"
   iter repeat (param tag: iterKind, arg, times = 0, followThis)
       where tag == iterKind.follower && followThis.size == 1 {
     const working_iters = followThis(1);
 
-    for idx in working_iters do yield arg;
+    for working_iters do yield arg;
   }
 } // end module

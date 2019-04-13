@@ -22,4 +22,3 @@ writeln();
 //  Testing with a range
 
 for element in repeat(test_case_3, 4) do writeln(element);
-
