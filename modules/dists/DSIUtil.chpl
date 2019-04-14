@@ -536,17 +536,18 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   // The remaining dimensions in 'targetDom' are left untouched in the
   // assumption they were 'squashed' by the rank change.
   //
-  var rngs = targetDom.dims();
+  // If the given slice is stridable but its context is not, then the result
+  // will need to be stridable as well. For example:
+  // {1..20 by 4} in {1..20} to {101..120} = {101..120 by 4}
+  param needsStridable = targetDom.stridable || srcSlice.stridable;
+  var rngs : targetDom.rank*range(targetDom.idxType, stridable=needsStridable);
+  rngs = targetDom.dims();
 
   for i in 1..inferredRank {
     const SD    = SrcActives(i);
     const TD    = TargetActives(i);
-    const first = chpl__tuplify(srcSlice.first)(SD);
-    const last  = chpl__tuplify(srcSlice.last)(SD);
-    const low   = targetDom.dim(TD).orderToIndex(srcDom.dim(SD).indexOrder(first));
-    const high  = targetDom.dim(TD).orderToIndex(srcDom.dim(SD).indexOrder(last));
-    rngs(TD) = if targetDom.stridable then low..high by targetDom.dim(TD).stride
-               else low..high;
+    const dense = densify(srcSlice.dim(SD), srcDom.dim(SD));
+    rngs(TD)    = unDensify(dense, targetDom.dim(TD));
   }
 
   return {(...rngs)};
