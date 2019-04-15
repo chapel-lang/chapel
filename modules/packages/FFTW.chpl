@@ -95,69 +95,7 @@
 //   significant?
 //
 
-// Wrapper for multithreaded FFTW version 3.
 
-/*
-  Multi-threaded FFT computations via FFTW (version 3)
-
-  This module defines Chapel wrappers around key FFTW routines
-  supporting multithreaded execution.  It builds directly on the
-  :mod:`FFTW` module, inheriting all of its functionality, so refer to
-  that module for documentation on the transforms themselves.
-
-  To use this module:
-
-  1. Ensure that FFTW (version 3) is installed on your system with
-     multi-threaded support enabled and that the header and library
-     files (e.g., fftw3.h, libfftw3.*) are either installed in a
-     standard system location or that your C compiler's environment
-     variables are set up to find them (alternatively, the Chapel
-     compiler's ``-I`` and ``-L`` flags can be used to specify these
-     locations).
-
-  2. Add ``use MT;`` to your Chapel code.
-
-  3. Compile and run your Chapel program as usual.
-
-
-  The steps to making multi-threaded FFTW calls are:
-
-  0. By default, the module will initialize itself to use
-     ``here.maxTaskPar`` threads per locale when calling
-     :proc:`plan_dft* <FFTW.plan_dft>` routines.  This
-     auto-initialization can be disabled by setting
-     :param:`autoInitMT` to `false` at compile-time and calling
-     :proc:`init_MT` and :proc:`plan_with_nthreads` manually.  At
-     any time during program execution, the number of threads to be
-     used by FFTW can be changed by calling :proc:`plan_with_nthreads`
-     with a new value.
-  
-  1. Create, ...
-
-  2. execute, ...
-
-  3. ...and destroy plans as in single-threaded uses of :mod:`FFTW`.
-
-  4. Call :proc:`cleanup_threads` to release the memory used by FFTW's
-     threads and :proc:`~FFTW.cleanup` as in single-threaded uses of
-     :mod:`FFTW`.
-
-  Note that where the main :mod:`FFTW` module is a single-locale
-  module, this one is multi-locale in that, once it is initialized,
-  any locale can create and execute plans, though those plans will
-  only be valid on that locale.  Calls to :proc:`init_MT`,
-  :proc:`plan_with_nthreads` and :proc:`cleanup_threads` will take
-  those actions across all locales.
-*/
-
-//
-// TODO: Should this module be a sub-module of FFTW?  I'm thinking
-// so, but unfortunately this didn't occur to me in time for
-// version 1.11's code freeze.  The main thing to worry about is
-// whether 'use's of external dependences will be too aggressively
-// resolved such that the MT library is linked in whenever vanilla
-// FFTW is 'use'd.  That seems like it would be easy to fix, though.
-//
 
 
 module FFTW {
@@ -648,6 +586,69 @@ module FFTW {
     
     extern proc fftw_plan_with_nthreads(n : c_int);
   }
+  // Wrapper for multithreaded FFTW version 3.
+
+/*
+  Multi-threaded FFT computations via FFTW (version 3)
+
+  This module defines Chapel wrappers around key FFTW routines
+  supporting multithreaded execution.  It builds directly on the
+  :mod:`FFTW` module, inheriting all of its functionality, so refer to
+  that module for documentation on the transforms themselves.
+
+  To use this module:
+
+  1. Ensure that FFTW (version 3) is installed on your system with
+     multi-threaded support enabled and that the header and library
+     files (e.g., fftw3.h, libfftw3.*) are either installed in a
+     standard system location or that your C compiler's environment
+     variables are set up to find them (alternatively, the Chapel
+     compiler's ``-I`` and ``-L`` flags can be used to specify these
+     locations).
+
+  2. Add ``use MT;`` to your Chapel code.
+
+  3. Compile and run your Chapel program as usual.
+
+
+  The steps to making multi-threaded FFTW calls are:
+
+  0. By default, the module will initialize itself to use
+     ``here.maxTaskPar`` threads per locale when calling
+     :proc:`plan_dft* <FFTW.plan_dft>` routines.  This
+     auto-initialization can be disabled by setting
+     :param:`autoInitMT` to `false` at compile-time and calling
+     :proc:`init_MT` and :proc:`plan_with_nthreads` manually.  At
+     any time during program execution, the number of threads to be
+     used by FFTW can be changed by calling :proc:`plan_with_nthreads`
+     with a new value.
+  
+  1. Create, ...
+
+  2. execute, ...
+
+  3. ...and destroy plans as in single-threaded uses of :mod:`FFTW`.
+
+  4. Call :proc:`cleanup_threads` to release the memory used by FFTW's
+     threads and :proc:`~FFTW.cleanup` as in single-threaded uses of
+     :mod:`FFTW`.
+
+  Note that where the main :mod:`FFTW` module is a single-locale
+  module, this one is multi-locale in that, once it is initialized,
+  any locale can create and execute plans, though those plans will
+  only be valid on that locale.  Calls to :proc:`init_MT`,
+  :proc:`plan_with_nthreads` and :proc:`cleanup_threads` will take
+  those actions across all locales.
+*/
+
+//
+// TODO: Should this module be a sub-module of FFTW?  I'm thinking
+// so, but unfortunately this didn't occur to me in time for
+// version 1.11's code freeze.  The main thing to worry about is
+// whether 'use's of external dependences will be too aggressively
+// resolved such that the MT library is linked in whenever vanilla
+// FFTW is 'use'd.  That seems like it would be easy to fix, though.
+//
   module MT {
   use FFTW;
   require "-lfftw3_threads", "-lpthread";
