@@ -47,6 +47,7 @@ class MLIContext {
 private:
 
   std::vector<FnSymbol*> exps;
+  std::vector<FnSymbol*> throws;
   std::map<Type*, int64_t> tmap;
   fileinfo fiMarshalling;
   fileinfo fiClientBundle;
@@ -79,6 +80,11 @@ private:
 
 };
 
+//
+// This is the main entrypoint for MLI code generation, call this if the
+//  necessary conditions are met in codegen().
+// --
+//
 void codegenMultiLocaleInteropWrappers(void) {
   Vec<ModuleSymbol*> &mds = allModules;
 
@@ -129,13 +135,17 @@ void MLIContext::emit(ModuleSymbol* md) {
   for_vector(FnSymbol, fn, fns) {
     this->emit(fn);
     this->exps.push_back(fn);
+    // We might like to generate bridge code for exceptions later.
+    if (fn->throwsError()) { this->throws.push_back(fn); }
   }
 
   return;
 }
 
 void MLIContext::emit(FnSymbol* fn) {
-  if (not fn->hasFlag(FLAG_EXPORT)) { return; }
+  if (not fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
+    return;
+  }
  
   this->emitClientWrapper(fn);
   this->emitServerWrapper(fn);
@@ -154,9 +164,12 @@ const std::map<Type*, int64_t>& MLIContext::getTypeMap(void) {
 void MLIContext::emitClientPrelude(void) {
   std::string out;
 
-  out += "// TODO: Include generated CHPL header?\n";
-  out += "// TODO: Include ZMQ header!\n";
+  out += "// Contains all compiler generated and runtime visible types!\n";
+  out += "#include \"chpl__header.h\"\n";
+  out += "// Generated marshalling routines using ZMQ are here.\n";
   out += "#include \"chpl_mli_marshalling.c\"\n";
+  out += "// NOTE: We currently use Makefile magic to make this visible!\n";
+  out += "#include \"mli_client_runtime.c\"\n";
   out += "\n";
 
   this->setOutputAndWrite(&this->fiClientBundle, out);
@@ -167,10 +180,12 @@ void MLIContext::emitClientPrelude(void) {
 void MLIContext::emitServerPrelude(void) {
   std::string out;
 
-  out += "// TODO: Include generated _main.c file!\n";
-  out += "// TODO: Include ZMQ header!\n";
-  out += "// TODO: Override regularly generated chpl_gen_main!\n";
+  out += "// Generated marshalling routines using ZMQ are here.\n";
   out += "#include \"chpl_mli_marshalling.c\"\n";
+  out += "// NOTE: We currently use Makefile magic to make this visible!\n";
+  out += "#include \"mli_server_runtime.c\"\n";
+  out += "// Server wraps around the normally generated bundle.\n";
+  out += "#include \"_main.c\"\n";
   out += "\n";
 
   this->setOutputAndWrite(&this->fiServerBundle, out);
@@ -187,7 +202,7 @@ void MLIContext::emitServerPrelude(void) {
 // Marshalling routines are generated according to a simple algorithm which
 // is reminiscent of how cycles are detected when verifying the members
 // of value types (I'd think? Well, we shall soon find out).
-//
+// --
 //
 void
 MLIContext::emitMarshallingRoutines(const std::map<Type*, int64_t>& tmap) {
@@ -218,6 +233,7 @@ MLIContext::emitMarshallingRoutines(const std::map<Type*, int64_t>& tmap) {
 //
 // We will need a function which enables the user to remotely shut down the
 // server.
+// --
 //
 void MLIContext::emitServerMain(const std::vector<FnSymbol*>& fns) {
   std::string out;
@@ -225,28 +241,7 @@ void MLIContext::emitServerMain(const std::vector<FnSymbol*>& fns) {
   // The dispatch switch is in a separate function for now.
   out += this->genServerDispatchSwitch(fns);
   out += "\n";
-
-  // Heaaaappps of ugly, manually written code.
-  out += "int chpl_mli_smain(int argc, char** argv) {\n";
-  out += "\t// Server initialization code should go here.\n";
-  out += "\n";
-  out += "\tint64_t function_id = -1;\n";
-  out += "\tint err = 0;\n";
-  out += "\n";
-  out += "\twhile (1) {\n";
-  out += "\t\t// Server listen action should go here.\n";
-  out += "\t\t// IE: \"function_id = read_int64_from_zmq(zmq);\"\n";
-  out += "\t\terr = chpl_mli_sdispatch(function_id, zmq);\n";
-  out += "\t\tif (err) {\n";
-  out += "\t\t\t// TODO: Respond to errors.\n";
-  out += "\t\t\tchpl_halt(\"Error in dispatch loop!\");\n";
-  out += "\t\t}\n";
-  out += "\t}\n";
-  out += "\n";
-  out += "\n";
-  out += "\treturn 0;\n";
-  out += "}\n";
-
+  
   this->setOutputAndWrite(&this->fiServerBundle, out);
 
   return;
@@ -357,12 +352,13 @@ void MLIContext::emitServerWrapper(FnSymbol* fn) {
   out += "// ";
   out += toString(fn);
   out += "\n";
-  out += "void chpl_mli_swrapper_";
+  out += "int64_t chpl_mli_swrapper_";
   out += std::to_string((int64_t) fn->id);
-  out += "(ZMQPlaceholder* zmq) ";
+  out += "(void* arg, void* res) ";
   out += "{\n";
   out += "\t// Empty server wrapper body, inbound RPC code here.\n";
   // TODO: Inbound RPC code generated here.
+  out += "\treturn 0;\n";
   out += "}\n";
   out += "\n";
 
@@ -387,24 +383,29 @@ std::string
 MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
   std::string out;
 
-  out += "int chpl_mli_sdispatch";
-  out += "(int64_t function_id, ZMQPlaceholder* zmq) {\n";
-  out += "\tswitch (function_id) {\n";
+  out += "int64_t chpl_mli_sdispatch";
+  out += "(int64_t function, void* arg, void* res) {\n";
+  out += "\tint err = 0;\n";
+  out += "\n";
+  out += "\tswitch (function) {\n";
 
   for_vector(FnSymbol, fn, fns) {
-    if (not fn->hasFlag(FLAG_EXPORT)) { continue; }
+    if (not fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
+      continue;
+    }
+
     const std::string ids = std::to_string((int64_t) fn->id);
     out += "\tcase ";
     out += ids;
     out += ": ";
-    out += "chpl_mli_swrapper_";
+    out += "err = chpl_mli_swrapper_";
     out += ids;
-    out += "(zmq); break;\n";
+    out += "(arg, res); break;\n";
   }
 
-  out += "\tdefault: return -1; break;\n";
+  out += "\tdefault: return CHPL_MLI_ERROR_NOFUNC; break;\n";
   out += "\t}\n";
-  out += "\treturn 0;\n";
+  out += "\treturn err;\n";
   out += "}\n";
 
   return out;

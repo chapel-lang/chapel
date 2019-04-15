@@ -692,6 +692,202 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
   }
 }
 
+std::string genMakefileEnvCache(void) {
+  std::string result;
+  std::map<std::string, const char*>::iterator env;
+
+  for (env = envMap.begin(); env != envMap.end(); ++env) {
+    const std::string& key = env->first;
+    const char* oldPrefix = "CHPL_";
+    const char* newPrefix = "CHPL_MAKE_";
+    INT_ASSERT(key.substr(0, strlen(oldPrefix)) == oldPrefix);
+    std::string keySuffix = key.substr(strlen(oldPrefix), std::string::npos);
+    std::string chpl_make_key = newPrefix + keySuffix;
+    result += chpl_make_key + "=" + std::string(env->second) + "|";
+  }
+
+  return result;
+}
+
+//
+// TODO: Multi-Locale Interop prototype code!
+//
+// For a clean slate, branch here when generating a Makefile under MLI. We
+// can integrate these changes into the main function later.
+//
+void codegen_makefile_mli(fileinfo* mli_client, fileinfo* mli_server,
+                          const char** tmpclientname,
+                          const char** tmpservername, bool skip_compile_link,
+                          const std::vector<const char*>& splitFiles) {
+  const char* tmpDirName = intDirName;
+  const char* strippedExeFilename = stripdirectories(executableFilename);
+  const char* exeExt = getLibraryExtension();
+  const char* tmpclient = "";
+  const char* tmpserver = "";
+ 
+  std::string makeallvars;
+  fileinfo makefile;
+
+  openCFile(&makefile, "Makefile");
+
+  // Capture different compiler prefixes.
+  fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n", CHPL_HOME);
+  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_LIB = %s\n", CHPL_RUNTIME_LIB);
+  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n", CHPL_RUNTIME_INCL);
+  fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n", CHPL_THIRD_PARTY);
+  fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
+ 
+  // Generate a cache of environment variables for the Makefile.
+  makeallvars = genMakefileEnvCache();
+  fprintf(makefile.fptr, "\nexport CHPL_MAKE_CHPLENV_CACHE := %s\n\n",
+          makeallvars.c_str());
+
+  ensureLibDirExists();
+  fprintf(makefile.fptr, "CLIENTNAME = %s/", libDir);
+
+  bool startsWithLib = !strncmp(executableFilename, "lib", 3);
+  if (not startsWithLib) {
+    fprintf(makefile.fptr, "lib");
+  }
+
+  fprintf(makefile.fptr, "%s%s\n", executableFilename, exeExt);
+
+  // Do this to appease "cp" if source and destination are the same file.
+  if (startsWithLib) {
+    tmpclient = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
+  } else {
+    tmpclient = astr(tmpDirName, "/lib", strippedExeFilename, ".tmp", exeExt);
+  }
+
+  // Omit (?) file extensions for the "hidden" server executable!
+  fprintf(makefile.fptr, "SERVERNAME = %sServer\n", executableFilename);
+  tmpserver = astr(tmpDirName, "/", strippedExeFilename, "Server", ".tmp");
+
+  // Write out the temporary filenames to the caller if necessary.
+  if (tmpservername) { *tmpservername = tmpserver; }
+  if (tmpclientname) { *tmpclientname = tmpclient; }
+
+  fprintf(makefile.fptr, "TMPCLIENTNAME = %s\n", tmpclient);
+  fprintf(makefile.fptr, "TMPSERVERNAME = %s\n\n", tmpserver);
+
+  // Bunch of C compiler flags.
+  fprintf(makefile.fptr, "COMP_GEN_WARN = %i\n", ccwarnings);
+  fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i\n", debugCCode);
+  fprintf(makefile.fptr, "COMP_GEN_OPT = %i\n", optimizeCCode);
+  fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode);
+  fprintf(makefile.fptr, "COMP_GEN_FLOAT_OPT = %i\n\n", ffloatOpt);
+
+  // Compiler flags for client and server.
+  const char* clientcflags = fLinkStyle == LS_DYNAMIC
+      ? "$(SHARED_LIB_CFLAGS)" : "";
+
+  fprintf(makefile.fptr, "COMP_GEN_USER_CLIENT_CFLAGS = %s\n", clientcflags);
+  fprintf(makefile.fptr, "COMP_GEN_USER_SERVER_CFLAGS =");
+  for_vector(const char, dirName, incDirs) {
+    fprintf(makefile.fptr, " -I%s", dirName);
+  }
+
+  fprintf(makefile.fptr, " %s\n\n", ccflags.c_str());
+ 
+  // Linker flags for client and server.
+  const char* clientlflags = fLinkStyle == LS_DYNAMIC
+      ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
+  const char* serverlflags = fLinkStyle == LS_DYNAMIC
+      ? "$(GEN_DYNAMIC_FLAG)" : "$(GEN_STATIC_FLAG)";
+
+  //
+  // TODO: This is giving me problems on Darwin due to it being unable to
+  // link static libraries. The linker is unable to find "crt0.o".
+  //
+  // SEE:
+  // https://stackoverflow.com/questions/844819/how-to-static-link-on-os-x
+  //
+  // I've noticed that the Makefiles generated for multi-locale executables
+  // do not output anything for these flags (at least on Darwin). For now,
+  // omit them, and later make sure we properly mimic the other Makefile
+  // codegen routine.
+  //
+  if (false) {
+    fprintf(makefile.fptr, "COMP_GEN_CLIENT_LFLAGS = %s", clientlflags);
+    fprintf(makefile.fptr, " %s\n", ldflags.c_str());
+    fprintf(makefile.fptr, "COMP_GEN_SERVER_LFLAGS = %s", serverlflags);
+    fprintf(makefile.fptr, " %s\n\n", ldflags.c_str());
+  } else {
+    fprintf(makefile.fptr, "COMP_GEN_CLIENT_LFLAGS =\n");
+    fprintf(makefile.fptr, "COMP_GEN_SERVER_LFLAGS =\n");
+  }
+
+  // Giant block of text here for the TAGS command (developer convenience).
+  fprintf(makefile.fptr, "TAGS_COMMAND = ");
+  if (developer && saveCDir[0] && !printCppLineno) {
+    fprintf(makefile.fptr,
+            "-@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && "
+            "test -f $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
+            "cd %s && "
+            "cp $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) . && "
+            "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) "
+              "$(CHPL_TAGS_APPEND_FLAG) *.c *.h",
+            saveCDir);
+  }
+
+  fprintf(makefile.fptr, "\n\n");
+
+  // Only one source file for client (for now).
+  fprintf(makefile.fptr, "CHPL_CLIENT_SRC = \\\n");
+  fprintf(makefile.fptr, "\t%s \n", mli_client->pathname);
+
+  // The server bundle includes "_main.c", bypassing the need to include it.
+  fprintf(makefile.fptr, "CHPL_SERVER_SRC = \\\n");
+  fprintf(makefile.fptr, "\t%s \n", mli_server->pathname);
+
+  // Only makes sense to link passthrough objects with the server.
+  fprintf(makefile.fptr, "CHPL_SERVER_OBJ = \\\n");
+  for (size_t i = 0; i < splitFiles.size(); i++) {
+    fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
+  }
+
+  // TODO: No idea what these calls do yet.
+  genCFiles(makefile.fptr);
+  genObjFiles(makefile.fptr);
+
+  // These should be given to the server (not the client stub).
+  fprintf(makefile.fptr, "\nLIBS =");
+  for_vector(const char, dirName, libDirs) {
+    fprintf(makefile.fptr, " -L%s", dirName);
+  }
+
+  for_vector(const char, libName, libFiles) {
+    fprintf(makefile.fptr, " -l%s", libName);
+  }
+
+  if (fLinkStyle==LS_STATIC) { fprintf(makefile.fptr, " $(LIBMVEC)"); }
+
+  fprintf(makefile.fptr, "\n\n\n");
+
+  // Grab one of the MLI specific Makefiles.
+  switch (fLinkStyle) {
+  case LS_DEFAULT:
+  case LS_STATIC:
+    fprintf(makefile.fptr,
+        "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-static\n");
+    break;
+  case LS_DYNAMIC:
+    INT_FATAL("Dynamic linking is not supported for MLI (yet).");
+    break;
+  default:
+    INT_FATAL("Unsupported link style.");
+    break;
+  }
+
+  fprintf(makefile.fptr, "\n\n");
+
+  // TODO: No clue what this does yet.
+  genCFileBuildRules(makefile.fptr);
+
+  closeCFile(&makefile, false);
+
+  return;
+}
 
 void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_compile_link, const std::vector<const char*>& splitFiles) {
   fileinfo makefile;
@@ -701,7 +897,6 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   const char* exeExt = "";
   const char* tmpbin = "";
   std::string chplmakeallvars = "\0";
-
 
   fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
   fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_LIB = %s\n\n", CHPL_RUNTIME_LIB);

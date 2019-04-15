@@ -2262,6 +2262,10 @@ void codegen() {
   fileinfo defnfile   = { NULL, NULL, NULL };
   fileinfo strconfig  = { NULL, NULL, NULL };
 
+  // TODO: MLI only, We open these temporarily just to get their path.
+  fileinfo mli_client = { NULL, NULL, NULL };
+  fileinfo mli_server = { NULL, NULL, NULL };
+
   GenInfo* info     = gGenInfo;
 
   INT_ASSERT(info);
@@ -2316,6 +2320,12 @@ void codegen() {
     openCFile(&defnfile, "chpl__defn",    "c");
     openCFile(&strconfig,  "chpl_str_config", "c");
 
+    // Open these just to get their paths.
+    if (fMultiLocaleInterop) {
+      openCFile(&mli_client, "chpl_mli_client_bundle", "c");
+      openCFile(&mli_server, "chpl_mli_server_bundle", "c");
+    }
+
     zlineToFileIfNeeded(rootModule, mainfile.fptr);
     fprintf(mainfile.fptr, "#include \"chpl_str_config.c\"\n");
     fprintf(mainfile.fptr, "#include \"chpl__header.h\"\n");
@@ -2340,8 +2350,15 @@ void codegen() {
         }
       }
     }
-
-    codegen_makefile(&mainfile, NULL, false, userFileName);
+    if (fMultiLocaleInterop) {
+      codegen_makefile_mli(&mli_client, &mli_server, NULL, NULL, false,
+                           userFileName);
+      // Just passing these in for their pathnames, so close after.
+      closeCFile(&mli_client, false);
+      closeCFile(&mli_server, false);
+    } else {
+      codegen_makefile(&mainfile, NULL, false, userFileName);
+    }
   }
 
   if (fLibraryCompile && fLibraryMakefile) {
