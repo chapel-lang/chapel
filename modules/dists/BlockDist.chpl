@@ -53,6 +53,10 @@ use LayoutCS;
 config param debugBlockDist = false;
 config param debugBlockDistBulkTransfer = false;
 
+// TODO: This is no longer used, deprecate with warning because it is used
+// in miniMD's release Makefile and compopts.
+config const disableAliasedBulkTransfer = true;
+
 config param sanityCheckDistribution = false;
 
 //
@@ -1429,12 +1433,16 @@ private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
   if debugBlockDistBulkTransfer then
     writeln("In Block=Block Bulk Transfer: Dest[", destDom, "] = Src[", srcDom, "]");
 
+  // Cache to avoid GETs
+  const DestPID = Dest.pid;
+  const SrcPID = Src.pid;
+
   coforall i in Dest.dom.dist.activeTargetLocales(destDom) {
     on Dest.dom.dist.targetLocales[i] {
       // Relies on the fact that we privatize across all locales in the
       // program, not just the targetLocales of Dest/Src.
-      const dst = if _privatization then chpl_getPrivatizedCopy(Dest.type, Dest.pid) else Dest;
-      const src = if _privatization then chpl_getPrivatizedCopy(Src.type, Src.pid) else Src;
+      const dst = if _privatization then chpl_getPrivatizedCopy(Dest.type, DestPID) else Dest;
+      const src = if _privatization then chpl_getPrivatizedCopy(Src.type, SrcPID) else Src;
 
       // Compute the local portion of the destination domain, and find the
       // corresponding indices in the source's domain.
@@ -1466,7 +1474,7 @@ where canDoAnyToBlock(this, destDom, Src, srcDom) {
   if debugBlockDistBulkTransfer then
     writeln("In BlockDist.doiBulkTransferFromAny");
 
-  coforall j in dom.dist.activeTargetLocales(srcDom) {
+  coforall j in dom.dist.activeTargetLocales(destDom) {
     on dom.dist.targetLocales(j) {
       const Dest = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
 
