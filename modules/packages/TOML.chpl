@@ -173,6 +173,9 @@ module TomlParser {
             else if kv.match(token) {
               parseAssign();
             }
+            else if token == "\n" {
+              getToken(source);
+            }
             else {
               throw new owned TomlError("Line "+ debugCounter +": Unexpected Token -> " + getToken(source));
             }
@@ -986,6 +989,8 @@ module TomlReader {
 
     proc splitLine(line) {
       var linetokens: [1..0] string;
+      var nonEmptyChar: bool = false;
+
       const doubleQuotes = '(".*?")',           // ""
             singleQuotes = "('.*?')",           // ''
             bracketContents = "(\\[\\w+\\])",   // [_]
@@ -1005,13 +1010,22 @@ module TomlReader {
                                        equals));
 
       for token in pattern.split(line) {
-        var strippedToken = token.strip();
-        if strippedToken.length != 0  {
+        var strippedToken = token.strip(" \t");
+        if strippedToken.length != 0 {
           if debugTomlReader {
             writeln('Tokenized: ', '(', strippedToken, ')');
           }
-          linetokens.push_back(strippedToken);}
+
+          nonEmptyChar = true;
+          linetokens.push_back(strippedToken);
+        }
       }
+
+      // If no non-empty-chars => token is a blank line
+      if(nonEmptyChar == false){
+        linetokens.push_back("\n");
+      }
+
       if !linetokens.isEmpty() {
         var tokens = new unmanaged Tokens(linetokens);
         tokenlist.push_back(tokens);
