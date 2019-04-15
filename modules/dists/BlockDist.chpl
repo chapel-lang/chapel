@@ -1497,7 +1497,7 @@ proc BlockArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom
       const destChunk = bulkCommTranslateDomain(inters, srcDom, destDom);
 
       if debugBlockDistBulkTransfer then
-        writeln("A[",destChunk,"] = B[",inters,"]");
+        writeln("  A[",destChunk,"] = B[",inters,"]");
 
       const elemActual = Src.locArr[j].myElems._value;
       chpl__bulkTransferArray(Dest, destChunk, elemActual, inters);
@@ -1522,7 +1522,7 @@ proc BlockArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDo
       const srcChunk = bulkCommTranslateDomain(inters, destDom, srcDom);
 
       if debugBlockDistBulkTransfer then
-        writeln("A[",inters,"] = B[",srcChunk,"]");
+        writeln("  A[",inters,"] = B[",srcChunk,"]");
 
       const elemActual = Dest.locArr[j].myElems._value;
       chpl__bulkTransferArray(elemActual, inters, Src, srcChunk);
