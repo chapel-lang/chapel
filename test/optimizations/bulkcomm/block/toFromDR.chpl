@@ -19,6 +19,17 @@ proc buildDenseStride(MakeDense : domain, MakeStride : domain, stride : int) {
   return (retDense, retStride);
 }
 
+proc buildRankChange(Dom : domain, param first : bool) {
+  var r : (Dom.rank-1) * Dom.dim(1).type;
+  if first {
+    for param i in 2..Dom.rank do r(i-1) = Dom.dim(i);
+    return (Dom.dim(1), (...r));
+  } else {
+    for param i in 1..Dom.rank-1 do r(i) = Dom.dim(i);
+    return ((...r), Dom.dim(Dom.rank));
+  }
+}
+
 proc testCore(DestDom : domain, SrcDom  : domain, param destBlock : bool) {
   const AD = if destBlock then DestDom dmapped Block(DestDom) else DestDom;
   const BD = if !destBlock then SrcDom dmapped Block(SrcDom) else SrcDom;
@@ -60,6 +71,13 @@ proc testCore(DestDom : domain, SrcDom  : domain, param destBlock : bool) {
     var HalfDest = DestDom.expand((DestDom.shape / -4) * DestDom.stride);
     var HalfSrc  = SrcDom.expand((SrcDom.shape / -4) * SrcDom.stride);
     stridedAssign(A, HalfDest, B, HalfSrc);
+  }
+
+  if DestDom.rank > 1 {
+    printDebug("      Rank Change (Dest last, Src first)");
+    const DestSlice = buildRankChange(DestDom, false);
+    const SrcSlice = buildRankChange(SrcDom, true);
+    stridedAssign(A, DestSlice, B, SrcSlice);
   }
 }
 
