@@ -209,6 +209,9 @@ tags
 /test/library/packages/HDF5/ex_lite1.h5
 /test/library/packages/HDF5/ex_lite3.h5
 /test/library/packages/ZMQ/getLastEndpointHelper
+/test/library/standard/FileSystem/chmod/dir
+/test/library/standard/FileSystem/chmod/file
+/test/library/standard/FileSystem/chmod/chmod_noprivilege.good
 /test/library/standard/FileSystem/copyFile/*.out
 /test/library/standard/FileSystem/fsouza/chdir/destination
 /test/library/standard/FileSystem/fsouza/chown/file.txt
@@ -216,8 +219,6 @@ tags
 /test/library/standard/FileSystem/fsouza/isdir/my_file
 /test/library/standard/FileSystem/fsouza/isfile/my_dir
 /test/library/standard/FileSystem/fsouza/isfile/my_file
-/test/library/standard/FileSystem/lydia/chmod/dir
-/test/library/standard/FileSystem/lydia/chmod/file
 /test/library/standard/FileSystem/lydia/copy/bar.txt
 /test/library/standard/FileSystem/lydia/copyFile/bar.txt
 /test/library/standard/FileSystem/lydia/copyTree/complexDest

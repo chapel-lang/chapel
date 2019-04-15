@@ -1,0 +1,10 @@
+#!/bin/bash
+
+platform=`python -c 'import platform; print(platform.system())'`
+cygwin=`echo $platform | cut -d '_' -f 1`
+
+if [ "$cygwin" == "CYGWIN" ]; then
+	cp chmod_noprivilege.cygwin.good chmod_noprivilege.good
+else	
+	cp chmod_noprivilege.default.good chmod_noprivilege.good
+fi
