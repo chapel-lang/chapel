@@ -43,19 +43,17 @@ if printTiming {
 
 
 proc searchOnLocale(A, findVal, eurekaIdx) {
-  // Compute the number of tasks on this locale; generally, this is nCPUs.
-  const nTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
-                                             else dataParTasksPerLocale;
-
-  // Split our locale's indices into nTasks chunks, nearly equal in size.
-  // Note that if !A.hasSingleLocalSubdomain(), this would need to be
-  // more fancy.
+  // This subdomain covers the part of the array stored on our locale.
   const localDom = A.localSubdomain();
-  const (numChunks, _) = _computeChunkStuff(maxTasks = nTasks,
-                                            ignoreRunning = true,
-                                            minSize = 1, localDom.dims());
 
-  // Search this locale's part of the array, in parallel across the CPUs.
+  // Compute the number of chunks to search in parallel on this locale.
+  // This is the lesser of the number of indices and and number of CPUs.
+  const numChunks = min(localDom.dim(1).length,
+                        if dataParTasksPerLocale == 0
+                        then here.maxTaskPar
+                        else dataParTasksPerLocale);
+
+  // Search this locale's part of the array.
   var endCount: atomic int = numChunks;
   coforall chunk in 0..#numChunks {
     begin {
@@ -70,11 +68,16 @@ proc searchOnLocale(A, findVal, eurekaIdx) {
 proc searchOnCpu(A, chunk, numChunks, findVal, eurekaIdx) {
   // Compute this task's part of the indices.
   const indices = A.domain.dim(1);
-  const (lo,hi) = _computeBlock(indices.length,
-                                numChunks, chunk,
-                                indices._high,
-                                indices._low,
-                                indices._low);
+  proc intCeilXDivByY(x, y) return 1 + (x - 1)/y;
+  const lo = indices.low
+             + (if chunk == 0
+                then 0
+                else intCeilXDivByY(indices.length * chunk, numChunks));
+  const hi = if chunk == numChunks - 1
+             then indices.high
+             else (indices.low
+                   + intCeilXDivByY(indices.length * (chunk + 1), numChunks)
+                   - 1);
 
   // Search this locale's part of the array, in serial.
   for i in lo..hi {
