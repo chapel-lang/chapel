@@ -1,4 +1,4 @@
---toml tomls/UEOF.toml # tomls/UEOF.good
+--toml tomls/badTable.toml # tomls/badTable.good
 --toml tomls/badValue.toml # tomls/badValue.good
 --toml tomls/unexpectedChar.toml # tomls/unexpectedChar.good
 --toml tomls/parseloopUnexpectedChar.toml # tomls/parseloopUnexpectedChar.good
