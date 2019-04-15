@@ -1523,7 +1523,7 @@ proc BlockArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDo
   coforall j in dom.dist.activeTargetLocales(destDom) {
     on dom.dist.targetLocales(j) {
       // Grab privatized copy of 'this' to avoid extra GETs
-      const Dest = chpl_getPrivatizedCopy(this.type, pid);
+      const Dest = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
       const inters = Dest.dom.locDoms(j).myBlock[destDom];
       assert(inters.size > 0);
 
