@@ -38,7 +38,8 @@ module LCALSConfiguration {
   // Loop Subset B: "Basic" Loops.
   config const runB_init3     = true;
   config const runB_muladdsub = true;
-  config const runB_ifQuad    = true;
+  // Unstable, see https://github.com/chapel-lang/chapel/issues/11336
+  config const runB_ifQuad    = false;
   config const runB_trapInt   = true;
 
   // Loop Subset C: Loops from older Livermore Loops in "C" suite.
