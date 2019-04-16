@@ -20,16 +20,23 @@ proc doit2(type C)
   writeln(c.type:string);
 }
 
-proc doit3(type C)
+proc doit3(type C) {
+  var c = new shared C(3);
+  writeln(c);
+  writeln(c.x);
+  writeln(c.type:string);
+}
+  
+proc doit4(type C)
 {
-  var c = new C(3);
+  var c = new C(4);
   writeln(c);
   writeln(c.x);
   writeln(c.type:string);
   if (isUnmanagedClassType(C)) then
     delete c;
 }
-  
+
 doit(unmanaged A(int));
 doit(owned A(int));
 doit(shared A(int));
@@ -47,3 +54,9 @@ doit3(owned A(int));
 doit3(shared A(int));
 doit3(borrowed A(int));
 doit3(A(int));
+
+doit4(unmanaged A(int));
+doit4(owned A(int));
+doit4(shared A(int));
+doit4(borrowed A(int));
+doit4(A(int));
