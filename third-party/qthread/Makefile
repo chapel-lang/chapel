@@ -85,11 +85,6 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   endif
 endif
 
-# enable oversubscription for testing
-ifneq (, $(CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION))
-CHPL_QTHREAD_CFG_OPTIONS += --enable-oversubscription
-endif
-
 # enable guard pages for stack overflow detection, unless directed not to
 HAVE_GUARD_PAGES = 0
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_GUARD_PAGES)))
