@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
+#include <assert.h>
 #include <zmq.h>
 
 // Error codes must all be less than zero unless we change the protocol!
@@ -33,14 +34,25 @@ struct chpl_mli_context {
 };
 
 static
-char* chpl_mli_concat(char* buffer, size_t count, ...) {
-  char* bufptr = buffer;
+char* chpl_mli_concat(size_t count, ...) {
+  char* result = NULL;
+  char* bufptr = NULL;
   va_list argp;
-  int i = 0;
-  int length = 0;
+  size_t i = 0;
+  size_t length = 0;
 
-  length = strlen(buffer);
   va_start(argp, count);
+
+  for (i = 0; i < count; i++) {
+    const char* chunk = va_arg(argp, const char*);
+    length += strlen(chunk);
+  }
+
+  result = malloc(length + 1);
+  if (result == NULL) { return NULL; }
+
+  va_start(argp, count);
+  bufptr = result;
 
   for (i = 0; i < count; i++) {
     const char* chunk = va_arg(argp, const char*);
@@ -48,10 +60,47 @@ char* chpl_mli_concat(char* buffer, size_t count, ...) {
     bufptr += strlen(chunk);
   }
 
-  buffer[length] = 0;
+  result[length] = 0;
   va_end(argp);
 
-  return buffer;  
+  return result;  
+}
+
+//
+// In this interface only the server should bind!
+//
+static
+void chpl_mli_bind(void* socket, const char* ip, const char* port) {
+  const char* real_ip = ip;
+  char* buffer = NULL;
+  char* bufptr = NULL;
+  size_t len = 0;
+  int err = 0;
+
+  //
+  // The ZMQ API is non-orthagonal in this way, so in our interface we opt to
+  // substitute "localhost" for "*" (indicating any device) automatically.
+  // Note that IP addresses are not otherwise sanitized (ZMQ will do that for
+  // us, but we don't return errors yet).
+  //
+  if (!strcmp(ip, "localhost")) {
+    real_ip = "*";
+  }
+
+  buffer = chpl_mli_concat(4, "tcp://", real_ip, ":", port);
+
+  // TODO: Handle malloc error here?
+  if (buffer == NULL) {
+    ;;;
+  }
+
+  // TODO: Can this error out at all?
+  err = zmq_bind(socket, buffer);
+  assert(err == 0);
+
+  free(buffer);
+
+  return;
 }
 
 static
@@ -59,18 +108,13 @@ void chpl_mli_connect(void* socket, const char* ip, const char* port) {
   char* buffer = NULL;
   char* bufptr = NULL;
   size_t len = 0;
+  int err = 0;
 
-  len = strlen("tcp://") + strlen(ip) + strlen(":") + strlen(port);
-  buffer = malloc(len);
-
-  if (buffer == NULL) {
-    // TODO: Respond to memory error how?
-  }
-
-  buffer = chpl_mli_concat(buffer, 4, "tcp://", ip, ":", port);
-  
+  buffer = chpl_mli_concat(4, "tcp://", ip, ":", port);
+ 
   // TODO: Can this error out at all?
-  zmq_connect(socket, buffer);
+  err = zmq_connect(socket, buffer);
+  assert(err == 0);
 
   free(buffer);
 

@@ -43,9 +43,19 @@ const char* out_mli_marshalling = "chpl_mli_marshalling";
 const char* out_mli_client_bundle = "chpl_mli_client_bundle";
 const char* out_mli_server_bundle = "chpl_mli_server_bundle";
 
+// Correspond to global ZMQ socket names in client/server runtimes.
+static const char* client_main = "chpl_client.main";
+static const char* client_arg = "chpl_client.arg";
+static const char* client_res = "chpl_client.res";
+static const char* server_main = "chpl_server.main";
+static const char* server_arg = "chpl_server.arg";
+static const char* server_res = "chpl_server.res";
+
 class MLIContext {
 private:
 
+  bool injectDebugPrintlines;
+  bool separateHeaders;
   std::vector<FnSymbol*> exps;
   std::vector<FnSymbol*> throws;
   std::map<Type*, int64_t> tmap;
@@ -56,7 +66,7 @@ private:
 
 public:
 
-  MLIContext(bool separateHeaders=false, bool separateCompilation=false);
+  MLIContext(bool injectDebugPrintlines=false, bool separateHeaders=false);
   ~MLIContext();
 
   void emit(ModuleSymbol* md);
@@ -76,7 +86,18 @@ private:
   int64_t assignUniqueTypeID(Type* tp);
   void emitClientWrapper(FnSymbol* fn);
   void emitServerWrapper(FnSymbol* fn);
+
+private:
+
   std::string genServerDispatchSwitch(const std::vector<FnSymbol*>& fns);
+  std::string genFuncToSetServerGlobals(void);
+  std::string genClientCallPrologue(FnSymbol* fn);
+  std::string genClientCallEpilogue(FnSymbol *fn);
+  std::string genDebugPrintCall(FnSymbol* fn, const char* pfx="");
+  std::string genFunctionNumericID(FnSymbol* fn);
+  std::string genServerWrapperCall(FnSymbol* fn);
+  std::string genClientsideRPC(FnSymbol* fn);
+  std::string genServersideRPC(FnSymbol* fn);
 
 };
 
@@ -88,7 +109,8 @@ private:
 void codegenMultiLocaleInteropWrappers(void) {
   Vec<ModuleSymbol*> &mds = allModules;
 
-  MLIContext mli;
+  // Insert all kinds of debug printlines into generated code for now.
+  MLIContext mli(true);
 
   mli.emitClientPrelude();
   mli.emitServerPrelude();
@@ -107,7 +129,11 @@ void codegenMultiLocaleInteropWrappers(void) {
   return;
 }
 
-MLIContext::MLIContext(bool separateHeaders, bool separateCompilation) {
+MLIContext::MLIContext(bool injectDebugPrintlines, bool separateHeaders) {
+
+  // Yes, I know this isn't the most optimal way to initialize these!
+  this->injectDebugPrintlines = injectDebugPrintlines;
+  this->separateHeaders = separateHeaders;
 
   openCFile(&this->fiMarshalling, out_mli_marshalling, "c");
   openCFile(&this->fiClientBundle, out_mli_client_bundle, "c");
@@ -164,6 +190,10 @@ const std::map<Type*, int64_t>& MLIContext::getTypeMap(void) {
 void MLIContext::emitClientPrelude(void) {
   std::string out;
 
+  // Big ol' chunk of includes about sums this function up.
+  out += "// Fairly ubiquitous in C, I'd say...\n";
+  out += "#include <stdlib.h>\n";
+  out += "#include <stdio.h>\n";
   out += "// Contains all compiler generated and runtime visible types!\n";
   out += "#include \"chpl__header.h\"\n";
   out += "// Generated marshalling routines using ZMQ are here.\n";
@@ -177,15 +207,34 @@ void MLIContext::emitClientPrelude(void) {
   return;
 }
 
+std::string MLIContext::genFuncToSetServerGlobals(void) {
+  std::string out;
+
+  out += "void chpl_mli_server_set_conf(void) {\n";
+  out += "\tchpl_server_conf.debug = ";
+  out += this->injectDebugPrintlines ? "1" : "0";
+  out += ";\n";
+  out += "}\n";
+  
+  return out;
+}
+
 void MLIContext::emitServerPrelude(void) {
   std::string out;
 
+  out += "// Fairly ubiquitous in C, I'd say...\n";
+  out += "#include <stdlib.h>\n";
+  out += "#include <stdio.h>\n";
   out += "// Generated marshalling routines using ZMQ are here.\n";
   out += "#include \"chpl_mli_marshalling.c\"\n";
   out += "// NOTE: We currently use Makefile magic to make this visible!\n";
   out += "#include \"mli_server_runtime.c\"\n";
   out += "// Server wraps around the normally generated bundle.\n";
   out += "#include \"_main.c\"\n";
+  out += "\n";
+  
+  // The server will call this function to set globals appropriately.
+  out += this->genFuncToSetServerGlobals();
   out += "\n";
 
   this->setOutputAndWrite(&this->fiServerBundle, out);
@@ -280,6 +329,40 @@ int64_t MLIContext::assignUniqueTypeID(Type* tp) {
 }
 
 //
+// Assumes scope level is 1 (and generates 1 tab).
+//
+std::string MLIContext::genClientCallPrologue(FnSymbol* fn) {
+  std::string out;
+
+  out += "\tint64_t id = ";
+  out += this->genFunctionNumericID(fn);
+  out += ";\n";
+
+  if (this->injectDebugPrintlines) {
+    out += "\t";
+    out += this->genDebugPrintCall(fn, "[Client]");
+    out += "\n";
+  }
+    
+  out += "\tchpl_mli_push(chpl_client.main, &id, sizeof(id), 0);\n";
+  
+  return out;
+}
+
+//
+// Assumes scope level is 1 (and generates 1 tab).
+//
+std::string MLIContext::genClientCallEpilogue(FnSymbol* fn) {
+  std::string out;
+
+  out += "\tint64_t st = 0;\n";
+  out += "\tchpl_mli_pull(chpl_client.main, &st, sizeof(st), 0);\n";
+  out += "\tif (st) { ;;; } // TODO: Handle server errors.\n";
+
+  return out;
+}
+
+//
 // TODO
 //
 // Client wrappers need access to the outbound ZMQ port. We can expose this
@@ -306,16 +389,20 @@ int64_t MLIContext::assignUniqueTypeID(Type* tp) {
 void MLIContext::emitClientWrapper(FnSymbol* fn) {
   std::string out;
 
+  this->setOutput(&this->fiClientBundle);
+  fn->codegenHeaderC();
+
   out += " ";
   out += "{\n";
-  out += "  ";
-  out += "// Empty client wrapper body, outbound RPC code here.\n";
-  // TODO: Outbound RPC code generated here.
+  out += this->genClientCallPrologue(fn);
+  out += "\n";
+  //
+  // TODO: Clientside RPC here!
+  //
+  out += this->genClientCallEpilogue(fn);
   out += "}\n";
   out += "\n";
 
-  this->setOutput(&this->fiClientBundle);
-  fn->codegenHeaderC();
   this->write(out);
   
   return;
@@ -354,10 +441,14 @@ void MLIContext::emitServerWrapper(FnSymbol* fn) {
   out += "\n";
   out += "int64_t chpl_mli_swrapper_";
   out += std::to_string((int64_t) fn->id);
-  out += "(void* arg, void* res) ";
+  out += "(void) ";
   out += "{\n";
-  out += "\t// Empty server wrapper body, inbound RPC code here.\n";
+  
+  //
   // TODO: Inbound RPC code generated here.
+  //
+  out += this->genServersideRPC(fn);
+  
   out += "\treturn 0;\n";
   out += "}\n";
   out += "\n";
@@ -367,6 +458,41 @@ void MLIContext::emitServerWrapper(FnSymbol* fn) {
   return;
 }
 
+std::string MLIContext::genDebugPrintCall(FnSymbol* fn, const char* pfx) {
+  std::string out;
+
+  out += "printf(\"";
+
+  if (pfx && pfx != "") {
+    out += pfx;
+    out += " ";
+  }
+
+  out += "Calling: %%s\\n\", \"";
+  out += toString(fn);
+  out += "\");";
+
+  return out;
+}
+
+std::string MLIContext::genFunctionNumericID(FnSymbol* fn) {
+  return std::to_string((int64_t) fn->id);
+}
+
+//
+// The arg socket (subscribe to) is: "chpl_server.arg"
+// The res socket (publish to) is: "chpl_server.res"
+//
+std::string MLIContext::genServerWrapperCall(FnSymbol* fn) {
+  std::string out;
+
+  out += "chpl_mli_swrapper_";
+  out += genFunctionNumericID(fn);
+  out += "();";
+
+  return out;
+}
+  
 //
 // TODO
 //
@@ -384,7 +510,7 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
   std::string out;
 
   out += "int64_t chpl_mli_sdispatch";
-  out += "(int64_t function, void* arg, void* res) {\n";
+  out += "(int64_t function) {\n";
   out += "\tint err = 0;\n";
   out += "\n";
   out += "\tswitch (function) {\n";
@@ -394,20 +520,45 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
       continue;
     }
 
-    const std::string ids = std::to_string((int64_t) fn->id);
     out += "\tcase ";
-    out += ids;
+    out += genFunctionNumericID(fn);
     out += ": ";
-    out += "err = chpl_mli_swrapper_";
-    out += ids;
-    out += "(arg, res); break;\n";
+
+    if (this->injectDebugPrintlines) {
+      out += "{\n";
+      out += "\t\t";
+      out += this->genDebugPrintCall(fn, "[MLI-Server]");
+      out += "\n";
+      out += "\t\terr = ";
+      out += genServerWrapperCall(fn);
+      out += "\n";
+      out += "\t} break;\n";
+    } else {
+      out += "err = ";
+      out += genServerWrapperCall(fn);
+      out += " break;\n";
+    }
   }
 
   out += "\tdefault: return CHPL_MLI_ERROR_NOFUNC; break;\n";
   out += "\t}\n";
+  out += "\n";
   out += "\treturn err;\n";
   out += "}\n";
 
   return out;
+}
+
+std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
+
+
+}
+
+//
+//
+//
+std::string MLIContext::genServersideRPC(FnSymbol* fn) {
+
+
 }
 

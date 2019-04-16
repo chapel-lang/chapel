@@ -1,4 +1,5 @@
 # General ignores.
+cscope.out
 a.out
 a.out_real
 *.bak

@@ -64,6 +64,17 @@ void chpl_mli_server_spawn(const char* ip, const char* port) {
 void chpl_library_init(int argc, char** argv) {
   static int initialized = 0;
 
+  printf("%s\n", "Initializing client...");
+
+  // Just hardcode these values for now.
+  const char* ip = "localhost";
+  const char* mainport = "5555";
+  const char* argport = "5556";
+  const char* resport = "5557";
+
+  (void) argc;
+  (void) argv;
+
   if (initialized) { return; }
   initialized = 1;
 
@@ -73,10 +84,10 @@ void chpl_library_init(int argc, char** argv) {
   // TODO: Spawn the server.
   chpl_mli_server_spawn(NULL, "5555");
 
-  // Just hardcode these values for now.
-  chpl_mli_connect(chpl_client.main, "localhost", "5555");
-  chpl_mli_connect(chpl_client.arg, "localhost", "5555");
-  chpl_mli_connect(chpl_client.res, "localhost", "5555");
+  // TODO: Maybe move the open connections to init?
+  chpl_mli_connect(chpl_client.main, ip, mainport);
+  chpl_mli_connect(chpl_client.arg, ip, argport);
+  chpl_mli_connect(chpl_client.res, ip, resport);
 
   return;
 }
@@ -96,8 +107,9 @@ void chpl_library_finalize(void) {
   //
   // TODO: Tell the server to close.
   //
-
+  
   // TODO: It would be a good idea to set LINGER to 0 as well.
+  // TODO: Maybe move the close connections to deinit?
   chpl_mli_close(chpl_client.main);
   chpl_mli_close(chpl_client.arg);
   chpl_mli_close(chpl_client.res);
