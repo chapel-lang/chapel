@@ -614,6 +614,7 @@ used to recursively hold tables and respective values
       this.re = root.re;
       this.dom = root.dom;
       for idx in root.dom do this.arr[idx] = new unmanaged Toml(root.arr[idx]);
+      this.ld = root.ld;
       this.dt = root.dt;
       this.s = root.s;
       this.D = root.D;
