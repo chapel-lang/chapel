@@ -433,7 +433,7 @@ pragma "no doc"
    fieldReal,
    fieldString,
    fieldEmpty,
-   fieldDate };
+   fieldDateTime };
  use fieldtag;
 
  pragma "no doc"
@@ -481,7 +481,7 @@ pragma "no doc"
    if t == nil {
      t = new unmanaged Toml(dt);
    } else {
-     t.tag = fieldDate;
+     t.tag = fieldDateTime;
      t.dt = dt;
    }
  }
@@ -548,7 +548,7 @@ used to recursively hold tables and respective values
     // Datetime
     proc init(dt: datetime) {
       this.dt = dt;
-      this.tag = fieldDate;
+      this.tag = fieldDateTime;
     }
 
     // Int
@@ -757,7 +757,7 @@ used to recursively hold tables and respective values
           when fieldEmpty {
             throw new owned TomlError("Keys must have a value");
           }
-          when fieldDate {
+          when fieldDateTime {
             f.write(key, ' = ', toString(value));
           }
           otherwise {
@@ -810,7 +810,7 @@ used to recursively hold tables and respective values
           when fieldEmpty {
             throw new owned TomlError("Keys must have a value");
           }
-          when fieldDate {
+          when fieldDateTime {
             f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           otherwise {
@@ -848,7 +848,7 @@ used to recursively hold tables and respective values
         when fieldReal do return val.re:string;
         when fieldString do return ('"' + val.s + '"');
         when fieldEmpty do return ""; // empty
-        when fieldDate do return val.dt.isoformat();
+        when fieldDateTime do return val.dt.isoformat();
         otherwise {
           throw new owned TomlError("Error in printing " + val.s);
           return val.s;
@@ -886,7 +886,7 @@ used to recursively hold tables and respective values
         when fieldReal do return 'float';
         when fieldString do return 'string';
         when fieldEmpty do return 'empty';
-        when fieldDate do return 'datetime';
+        when fieldDateTime do return 'datetime';
         when fieldToml do return 'toml';
         otherwise {
           throw new owned TomlError("Unknown type");
