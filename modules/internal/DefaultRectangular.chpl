@@ -2185,7 +2185,7 @@ module DefaultRectangular {
     var res: [dom] resType;
 
     // Take first pass, computing per-task partial scans, stored in 'state'
-    var (numTasks, rngs, state, _) = this.chpl__preScan(op, res);
+    var (numTasks, rngs, state, _) = this.chpl__preScan(op, res, dom);
 
     // Take second pass updating result based on the scanned 'state'
     this.chpl__postScan(op, res, numTasks, rngs, state);
@@ -2200,9 +2200,9 @@ module DefaultRectangular {
   // task, and the scanned results of each task's scan.  This is
   // broken out into a helper function in order to be made use of by
   // distributed array scans.
-  proc DefaultRectangularArr.chpl__preScan(op, res: [?resDom] ?resType) {
+  proc DefaultRectangularArr.chpl__preScan(op, res: [] ?resType, dom) {
     // Compute who owns what
-    const rng = resDom.dim(1);
+    const rng = dom.dim(1);
     const numTasks = if __primitive("task_get_serial") then
                       1 else _computeNumChunks(rng.size);
     const rngs = RangeChunk.chunks(rng, numTasks);
