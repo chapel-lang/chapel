@@ -178,20 +178,10 @@ or ``CHPL_COMM=ofi`` one can run multiple Chapel locales on a single
 system node, say for doing multilocale functional correctness testing
 with limited system resources.  (See :ref:`readme-multilocale` for more
 details.)  When this is done qthreads' optimization for performance can
-actually greatly reduce performance, due to resource starvation among
-the multiple Chapel processes.  If you need qthreads to share system
-resources more cooperatively with other processes, you can build it to
-optimize its behavior to favor load balancing over performance.  To do
-this, build qthreads with ``CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION``
-turned on like this:
-
-.. code-block:: sh
-
-  cd $CHPL_HOME/third-party/qthread
-  make CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION=yes ... clean all
-
-You should also probably have ``CHPL_RT_OVERSUBSCRIBED=yes`` set when
-you execute with overloading (see :ref:`oversubscribed-execution`).
+greatly reduce performance, due to resource starvation among multiple
+Chapel processes.  If you need qthreads to share system resources more
+cooperatively with other processes set ``CHPL_RT_OVERSUBSCRIBED=yes`` at
+execution time (see :ref:`oversubscribed-execution`).
 
 
 Hwloc
