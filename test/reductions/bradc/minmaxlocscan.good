@@ -1,5 +1,5 @@
-minmaxlocscan.chpl:11: warning: scan has been serialized (see issue #5760)
-minmaxlocscan.chpl:14: warning: scan has been serialized (see issue #5760)
+minmaxlocscan.chpl:11: warning: scan has been serialized (see issue #12482)
+minmaxlocscan.chpl:14: warning: scan has been serialized (see issue #12482)
 Res = (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1))
 (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1))
 (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1)) (1.1, (1, 1))

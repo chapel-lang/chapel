@@ -31,7 +31,7 @@ module ChapelReduce {
   }
 
   proc chpl__scanIteratorZip(op, data) {
-    compilerWarning("scan has been serialized (see issue #5760)");
+    compilerWarning("scan has been serialized (see issue #12482)");
     var arr = for d in zip((...data)) do chpl__accumgen(op, d);
 
     delete op;
@@ -44,7 +44,7 @@ module ChapelReduce {
     if (enableParScan && supportsPar) {
       return data._scan(op);
     } else {
-      compilerWarning("scan has been serialized (see issue #5760)");
+      compilerWarning("scan has been serialized (see issue #12482)");
       if (supportsPar) {
         compilerWarning("(recompile with -senableParScan to enable a prototype parallel implementation)");
       }
