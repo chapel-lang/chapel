@@ -55,7 +55,8 @@ module LCALSConfiguration {
   config const runC_firstSum     = true;
   config const runC_firstDiff    = true;
   config const runC_pic2D        = true;
-  config const runC_pic1D        = true;
+  // Array OOB, see https://github.com/chapel-lang/chapel/issues/12806
+  config const runC_pic1D        = false;
   config const runC_hydro2D      = true;
   config const runC_genLinRecur  = true;
   config const runC_discOrd      = true;

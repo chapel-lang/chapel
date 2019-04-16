@@ -19,7 +19,6 @@ raw_diff_predict_short
 raw_first_sum_short
 raw_first_diff_short
 raw_pic_2d_short
-raw_pic_1d_short
 raw_hydro_2d_short
 raw_gen_lin_recur_short
 raw_disc_ord_short
@@ -48,7 +47,6 @@ raw_diff_predict_medium
 raw_first_sum_medium
 raw_first_diff_medium
 raw_pic_2d_medium
-raw_pic_1d_medium
 raw_hydro_2d_medium
 raw_gen_lin_recur_medium
 raw_disc_ord_medium
@@ -77,7 +75,6 @@ raw_diff_predict_long
 raw_first_sum_long
 raw_first_diff_long
 raw_pic_2d_long
-raw_pic_1d_long
 raw_hydro_2d_long
 raw_gen_lin_recur_long
 raw_disc_ord_long
