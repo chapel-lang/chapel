@@ -26,13 +26,44 @@ const foundD: domain(1) dmapped Block(boundingBox={0..#numLocales})
 var found: [foundD] atomic int;
 [f in found] f.write(-1); // alas, can't (yet) write this as an initial value
 
-// Search the array, in parallel across the locales.
 const startTime = getCurrentTime();
+
+// Do a parallel search across the locales.
 coforall loc in Locales {
   on loc {
-    searchOnLocale(vals, findVal, found);
-  }
+    // Figure out the part of the array stored on this locale.
+    const (lo, hi) = computeChunk(vals.domain.dim(1), here.id, numLocales);
+    const dimOnLoc = vals.domain.dim(1)(lo..hi);
+
+    // Split the on-locale work coarsely enough that every task/CPU has some.
+    const numChunks = min(dimOnLoc.length,
+                          if dataParTasksPerLocale == 0
+                          then here.maxTaskPar
+                          else dataParTasksPerLocale);
+
+    // Do a parallel search across the CPUs on this locale.
+    coforall chunk in 0..#numChunks {
+      // Do a serial search over this task's (CPU's) portion of the array.
+      const (lo, hi) = computeChunk(dimOnLoc, chunk, numChunks);
+      for i in lo..hi {
+        // If we find the value, tell everyone and quit looking.
+        if vals[i] == findVal {
+          if found[here.id].compareExchange(-1, i, memory_order_release) {
+            // The cmpxchg on found[here.id] here is a superfluous no-op.
+            [f in found] { f.compareExchange(-1, i, memory_order_release); }
+          }
+          break;
+        }
+
+        // Check now and then; if someone else found it, quit early.
+        if i % (2**17) == 0 && found[here.id].read() >= 0 {
+          break;
+        }
+      } // for i in lo..hi
+    } // coforall across CPUs
+  } // coforall across Locales
 }
+
 const execTime = getCurrentTime() - startTime;
 
 // Did we find the value?  Report.
@@ -46,59 +77,17 @@ if printTiming {
 }
 
 
-// Do a parallel search over this locale's portion of the array.
-proc searchOnLocale(A, findVal, found) {
-  // Figure out the part of the array stored on this locale.
-  const (hereLo, hereHi) = computeChunk(vals.domain.dim(1), here.id,
-                                        numLocales);
-  const hereDim = vals.domain.dim(1)(hereLo..hereHi);
-
-  // Split the work coarsely enough that every CPU has some.
-  const numChunks = min(hereDim.length,
-                        if dataParTasksPerLocale == 0 then
-                          here.maxTaskPar
-                        else
-                          dataParTasksPerLocale);
-  coforall chunk in 0..#numChunks {
-    searchOnCpu(A, hereDim, chunk, numChunks, findVal, found);
-  }
-}
-
-
-// Do a serial search over this task's portion of the array.
-proc searchOnCpu(A, dim, chunk, numChunks, findVal, found) {
-  const (lo, hi) = computeChunk(dim, chunk, numChunks);
-  for i in lo..hi {
-    // If we find the value, tell everyone and quit looking.
-    if A[i] == findVal {
-      if found[here.id].compareExchange(-1, i, memory_order_release) {
-        // The cmpxchg on our own found[] element here is a superfluous no-op.
-        [f in found] { f.compareExchange(-1, i, memory_order_release); }
-      }
-      break;
-    }
-
-    // Check now and then; if someone else found it, quit early.
-    if i % (2**17) == 0 && found[here.id].read() >= 0 {
-      break;
-    }
-  }
-}
-
-
-// These are helper routines for chunking index ranges.
+// Helper routine for chunking index ranges.
 inline proc computeChunk(dim, chunk, numChunks) {
-  const lo = if chunk == 0 then
-               dim.low
-             else
-               dim.low + intCeilXDivByY(dim.length * chunk, numChunks);
-  const hi = if chunk == numChunks - 1 then
-               dim.high
-             else
-               dim.low + intCeilXDivByY(dim.length * (chunk+1), numChunks) - 1;
+  inline proc intCeilXDivByY(x, y) return 1 + (x - 1) / y;
+  const
+    lo = if chunk == 0
+         then dim.low
+         else dim.low + intCeilXDivByY(dim.length * chunk, numChunks);
+  const
+    hi = if chunk == numChunks - 1
+         then dim.high
+         else dim.low + intCeilXDivByY(dim.length * (chunk+1), numChunks) - 1;
   return (lo, hi);
 }
 
-inline proc intCeilXDivByY(x, y) {
-  return 1 + (x - 1) / y;
-}
