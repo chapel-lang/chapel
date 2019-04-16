@@ -1,16 +1,45 @@
 {x = 1}
 1
+unmanaged A(int(64))
 {x = 1}
 1
+unmanaged A(int(64))
 {x = 1}
 1
+unmanaged A(int(64))
 {x = 1}
 1
+unmanaged A(int(64))
+{x = 1}
+1
+unmanaged A(int(64))
 {x = 2}
 2
+_owned(A(int(64)))
 {x = 2}
 2
+_owned(A(int(64)))
 {x = 2}
 2
+_owned(A(int(64)))
 {x = 2}
 2
+_owned(A(int(64)))
+{x = 2}
+2
+_owned(A(int(64)))
+{x = 3}
+3
+unmanaged A(int(64))
+{x = 3}
+3
+_owned(A(int(64)))
+{x = 3}
+3
+_shared(A(int(64)))
+{x = 3}
+3
+A(int(64))
+{x = 3}
+3
+A(int(64))
