@@ -216,7 +216,7 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
   return false;
 }
 
-bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) const {
+bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
   bool retval = false;
 
   DefExpr* def = field->defPoint;
@@ -239,10 +239,17 @@ bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) const {
         INT_ASSERT(!var->type->symbol->hasFlag(FLAG_GENERIC));
 
         retval = true;
-      } else if (def->init == NULL &&
-                 def->exprType != NULL &&
-                 isFieldTypeExprGeneric(def->exprType)) {
-        retval = true;
+      } else if (def->init == NULL && def->exprType != NULL &&
+                 !mIsGenericWithDefaults) {
+
+        // Temporarily mark the aggregate type as generic with defaults
+        // in order to avoid infinite recursion.
+        bool wasGenericWithDefaults = mIsGenericWithDefaults;
+        mIsGenericWithDefaults = true;
+        if (isFieldTypeExprGeneric(def->exprType)) {
+          retval = true;
+        }
+        mIsGenericWithDefaults = wasGenericWithDefaults;
       }
 
     }

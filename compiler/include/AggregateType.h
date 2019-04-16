@@ -156,7 +156,7 @@ public:
   // Returns true if a field is considered generic
   // (i.e. it needs a type constructor argument)
   bool                        fieldIsGeneric(Symbol* field,
-                                             bool &hasDefault)           const;
+                                             bool &hasDefault);
 
 
   Type*                       cArrayElementType()                        const;
