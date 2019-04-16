@@ -1,3 +1,9 @@
+// This is a pattern for doing parallel eureka, basically:
+//   coforall across per-locale array chunks {
+//     coforall across per-CPU array chunks {
+//       search the appropriate chunk; broadcast 'Eureka!' if we find it
+//     }
+//   }
 use BlockDist, Time;
 
 // Print timing info?
@@ -22,16 +28,11 @@ var found: [foundD] atomic int;
 
 // Search the array, in parallel across the locales.
 const startTime = getCurrentTime();
-var endCount: atomic int = numLocales;
 coforall loc in Locales {
   on loc {
-    begin {
-      searchOnLocale(vals, findVal, found);
-      endCount.sub(1, memory_order_release);
-    }
+    searchOnLocale(vals, findVal, found);
   }
 }
-endCount.waitFor(0);
 const execTime = getCurrentTime() - startTime;
 
 // Did we find the value?  Report.
