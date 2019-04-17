@@ -16,6 +16,12 @@ module LCALSConfiguration {
   config const num_suite_passes = 1;
 
   //
+  // Verification (or quick verification with only a few loop samples)
+  //
+  config const verify_checksums = true;
+  config const verify_checksums_abbreviated = false;
+
+  //
   // Loop lengths
   //
   config const run_shortLoops  = true;

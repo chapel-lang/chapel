@@ -1,3 +1,3 @@
-# This code takes too much time with bounds/nil checks enabled. Don't print
-# timing or checksum output, or else we'd have to filter it out in testing
---no-bounds-checks --no-nil-checks -soutputFormat=OutputStyle.MINIMAL
+# Run the abbreviated number of trials and don't print timing or
+# checksum output, or else we'd have to filter it out in testing
+-sverify_checksums_abbreviated=true -soutputFormat=OutputStyle.MINIMAL
