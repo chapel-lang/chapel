@@ -57,6 +57,8 @@ config param debugBlockDistBulkTransfer = false;
 // in miniMD's release Makefile and compopts.
 config const disableAliasedBulkTransfer = true;
 
+config param disableBlockDistBulkTransfer = false;
+
 config param sanityCheckDistribution = false;
 
 //
@@ -1410,13 +1412,14 @@ private proc canDoAnyToBlock(Dest, destDom, Src, srcDom) param : bool {
     return false;
   }
 
-  return true;
+  return !disableBlockDistBulkTransfer;
 }
 
 // Block = this
 proc BlockArr.doiBulkTransferToKnown(srcDom, destClass:BlockArr, destDom) : bool
 where this.sparseLayoutType == unmanaged DefaultDist &&
-      destClass.sparseLayoutType == unmanaged DefaultDist {
+      destClass.sparseLayoutType == unmanaged DefaultDist &&
+      !disableBlockDistBulkTransfer {
   _doSimpleBlockTransfer(destClass, destDom, this, srcDom);
   return true;
 }
@@ -1424,7 +1427,8 @@ where this.sparseLayoutType == unmanaged DefaultDist &&
 // this = Block
 proc BlockArr.doiBulkTransferFromKnown(destDom, srcClass:BlockArr, srcDom) : bool
 where this.sparseLayoutType == unmanaged DefaultDist &&
-      srcClass.sparseLayoutType == unmanaged DefaultDist {
+      srcClass.sparseLayoutType == unmanaged DefaultDist &&
+      !disableBlockDistBulkTransfer {
   _doSimpleBlockTransfer(this, destDom, srcClass, srcDom);
   return true;
 }
@@ -1492,7 +1496,8 @@ where canDoAnyToBlock(this, destDom, Src, srcDom) {
 }
 
 // For assignments of the form: DefaultRectangular = Block
-proc BlockArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom) : bool {
+proc BlockArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom) : bool
+where !disableBlockDistBulkTransfer {
 
   if debugBlockDistBulkTransfer then
     writeln("In BlockDist.doiBulkTransferToKnown(DefaultRectangular)");
@@ -1516,7 +1521,8 @@ proc BlockArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom
 }
 
 // For assignments of the form: Block = DefaultRectangular
-proc BlockArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDom) : bool {
+proc BlockArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDom) : bool
+where !disableBlockDistBulkTransfer {
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransferFromKnown(DefaultRectangular)");
 
