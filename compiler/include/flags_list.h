@@ -248,7 +248,6 @@ symbolFlag( FLAG_NO_IMPLICIT_COPY , ypr, "no implicit copy" , "function does not
 symbolFlag( FLAG_NO_INSTANTIATION_LIMIT , ypr, "no instantiation limit", "The instantiation limit is not checked for this function" )
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
-symbolFlag( FLAG_NO_PROTOTYPE , ypr, "no prototype" , "do not generate a prototype this symbol" )
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)
 symbolFlag( FLAG_NO_RVF, npr, "do not RVF", ncm)
 symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
