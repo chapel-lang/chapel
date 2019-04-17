@@ -1328,7 +1328,9 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
   
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
   chpl_comm_diags_verbose_rdmaStrd("get", srcnode, ln, fn);
-  chpl_comm_diags_incr(get);
+  if (chpl_nodeID != srcnode) {
+    chpl_comm_diags_incr(get);
+  }
 
   // TODO -- handle strided get for non-registered memory
   gasnet_gets_bulk(dstaddr, dststr, srcnode, srcaddr, srcstr, cnt, strlvls); 
@@ -1371,7 +1373,9 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
   chpl_comm_diags_verbose_rdmaStrd("put", dstnode, ln, fn);
-  chpl_comm_diags_incr(put);
+  if (chpl_nodeID != dstnode) {
+    chpl_comm_diags_incr(put);
+  }
 
   // TODO -- handle strided put for non-registered memory
   gasnet_puts_bulk(dstnode, dstaddr, dststr, srcaddr, srcstr, cnt, strlvls); 
