@@ -12,13 +12,17 @@ config const printTiming = false;
 // This is the problem size.
 config const n = 1_000_000;
 
+// This is the value to search for.
+config const findVal = n - 1;
+
+// Every this-many iterations we check to see if findVal has been found.
+// For best performance this must be a compile-time power of 2.
+config param eurekaInterval = 2**17;
+
 // This is the array of values to search in.
 const valsD: domain(1) dmapped Block(boundingBox={0..#n}) = {0..#n};
 var vals: [valsD] int;
 [i in valsD] { vals[i] = i; }
-
-// This is the value to search for.
-config const findVal = n - 1;
 
 // If we do find findVal, this is where we'll record its index.
 const foundD: domain(1) dmapped Block(boundingBox={0..#numLocales})
@@ -53,7 +57,7 @@ coforall loc in Locales {
         }
 
         // Check now and then; if someone else found it, quit early.
-        if i % (2**17) == 0 && found[here.id].read() >= 0 {
+        if i % eurekaInterval == 0 && found[here.id].read() >= 0 {
           break;
         }
       } // for i in rangeOnCpu
