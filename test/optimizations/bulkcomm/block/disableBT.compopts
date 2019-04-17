@@ -1,1 +1,1 @@
--sdisableBlockDistBulkTransfer
+-sdisableBlockDistBulkTransfer -suseBulkTransferDist
