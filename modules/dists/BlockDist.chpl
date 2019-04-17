@@ -1689,7 +1689,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       const ref myLocDom = myLocArr.domain;
 
       // Compute the local pre-scan on our local array
-      var (numTasks, rngs, state, tot) = myLocArr._value.chpl__preScan(myop, res);
+      var (numTasks, rngs, state, tot) = myLocArr._value.chpl__preScan(myop, res, myLocDom[dom]);
       if debugBlockScan then
         writeln(locid, ": ", (numTasks, rngs, state, tot));
 
