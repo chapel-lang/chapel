@@ -17,8 +17,12 @@ if [ "${COMPILER}" == "pgi" ] ; then
   export QT_AFFINITY=yes
 fi
 
+if [ "${COMPILER}" == "cray" ] ; then
+  oversub=6
+fi
+
 # Run the tests!
-nightly_args="${nightly_args} -cron $(get_nightly_paratest_args)"
+nightly_args="${nightly_args} -cron $(get_nightly_paratest_args $oversub)"
 log_info "Calling nightly with args: ${nightly_args}"
 $CWD/nightly ${nightly_args}
 log_info "Finished running nightly."
