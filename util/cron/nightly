@@ -748,7 +748,7 @@ if ($runtests == 0) {
         print "Executing $testcommand\n";
         $status = mysystem($testcommand, "running standard tests", 0, 0);
         print "Moving the log and summary files\n";
-        mysystem("cd $testdir && cp -v $rawlog $permlog && rm $rawlog && cp -v $rawsummary $permsum && rm $rawsummary", "moving the log files", 0, 0);
+        mysystem("cd $testdir && cp -v $rawlog $permlog && rm $rawlog && cp -v $rawsummary $permsum && rm $rawsummary", "moving the log files", 1, 1);
         $rawlog = $permlog;
         $rawsummary = $permsum;
     } else {

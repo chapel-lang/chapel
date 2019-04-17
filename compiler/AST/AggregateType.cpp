@@ -468,15 +468,21 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
       Expr* firstexpr = bs->body.first();
       INT_ASSERT(firstexpr);
 
-      UnresolvedSymExpr* sym  = toUnresolvedSymExpr(firstexpr);
-      const char*        name = sym->unresolved;
-
-      // ... then report it to the user
-      USR_FATAL_CONT(fn->_this,
+      if (UnresolvedSymExpr* sym  = toUnresolvedSymExpr(firstexpr))
+        // ... then report it to the user
+        USR_FATAL_CONT(fn->_this,
                      "Type binding clauses ('%s.' in this case) are not "
                      "supported in declarations within a class, record "
                      "or union",
-                     name);
+                     sym->unresolved);
+      else
+        // got more than just a name
+        USR_FATAL_CONT(fn->_this,
+                     "Type binding clauses (in this case, the parenthesized "
+                "expression preceding the dot before function name) are not "
+                     "supported in declarations within a class, record "
+                     "or union");
+
     } else {
       ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", this);
 

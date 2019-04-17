@@ -1,8 +1,60 @@
-class-double-modifier.chpl:8: error: modifier `unmanaged` can only be applied directly to a class type, not to `unmanaged A(int)`
-class-double-modifier.chpl:8: error: modifier `unmanaged` can only be applied directly to a class type, not to `owned A(int)`
-class-double-modifier.chpl:8: error: modifier `unmanaged` can only be applied directly to a class type, not to `shared A(int)`
-class-double-modifier.chpl:8: error: modifier `unmanaged` can only be applied directly to a class type, not to `borrowed A(int)`
-class-double-modifier.chpl:8: error: modifier `owned` can only be applied directly to a class type, not to `unmanaged A(int)`
-class-double-modifier.chpl:8: error: modifier `owned` can only be applied directly to a class type, not to `owned A(int)`
-class-double-modifier.chpl:8: error: modifier `owned` can only be applied directly to a class type, not to `shared A(int)`
-class-double-modifier.chpl:8: error: modifier `owned` can only be applied directly to a class type, not to `borrowed A(int)`
+{x = 1}
+1
+unmanaged A(int(64))
+{x = 1}
+1
+unmanaged A(int(64))
+{x = 1}
+1
+unmanaged A(int(64))
+{x = 1}
+1
+unmanaged A(int(64))
+{x = 1}
+1
+unmanaged A(int(64))
+{x = 2}
+2
+_owned(A(int(64)))
+{x = 2}
+2
+_owned(A(int(64)))
+{x = 2}
+2
+_owned(A(int(64)))
+{x = 2}
+2
+_owned(A(int(64)))
+{x = 2}
+2
+_owned(A(int(64)))
+{x = 3}
+3
+_shared(A(int(64)))
+{x = 3}
+3
+_shared(A(int(64)))
+{x = 3}
+3
+_shared(A(int(64)))
+{x = 3}
+3
+_shared(A(int(64)))
+{x = 3}
+3
+_shared(A(int(64)))
+{x = 4}
+4
+unmanaged A(int(64))
+{x = 4}
+4
+_owned(A(int(64)))
+{x = 4}
+4
+_shared(A(int(64)))
+{x = 4}
+4
+A(int(64))
+{x = 4}
+4
+A(int(64))
