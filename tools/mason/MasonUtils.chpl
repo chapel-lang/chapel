@@ -287,6 +287,10 @@ proc getChapelVersionInfo(): VersionInfo {
 
   if chplVersionInfo(1) == -1 {
     try {
+      if !isCmd('chpl') {
+        throw new owned MasonError('chpl command not found');
+      }
+
       var ret : VersionInfo;
 
       var process = spawn(["chpl", "--version"], stdout=PIPE);
@@ -330,6 +334,13 @@ proc getChapelVersionStr() {
     chplVersion = version(1) + "." + version(2) + "." + version(3);
   }
   return chplVersion;
+}
+
+/* Determine if a string can be called as a command */
+proc isCmd(cmd: string): bool throws {
+  var sub = spawn(['command', '-v', cmd], stdout=PIPE, stderr=PIPE);
+  sub.wait();
+  return sub.exit_status == 0;
 }
 
 proc gitC(newDir, command, quiet=false) {
