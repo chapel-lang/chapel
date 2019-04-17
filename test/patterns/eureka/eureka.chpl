@@ -26,7 +26,8 @@ const foundD: domain(1) dmapped Block(boundingBox={0..#numLocales})
 var found: [foundD] atomic int;
 [f in found] f.write(-1); // alas, can't (yet) write this as an initial value
 
-const startTime = getCurrentTime();
+var T: Timer;
+T.start();
 
 // Do a parallel search across the locales.
 coforall loc in Locales {
@@ -60,7 +61,7 @@ coforall loc in Locales {
   } // coforall across Locales
 }
 
-const execTime = getCurrentTime() - startTime;
+T.stop();
 
 // Did we find the value?  Report.
 if found[0].read() < 0 {
@@ -70,5 +71,5 @@ if found[0].read() < 0 {
 }
 
 if printTiming {
-  writeln('time: ', execTime, 's');
+  writeln('time: ', T.elapsed(), 's');
 }
