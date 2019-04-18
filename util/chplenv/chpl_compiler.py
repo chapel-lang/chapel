@@ -15,6 +15,7 @@ from utils import error, memoize
 # In practice, this will cause our Makefiles to use defaults like CC
 # and CXX to compile things, for better or worse.
 #
+@memoize
 def validate(compiler_val):
     chpl_home = chpl_home_utils.get_chpl_home()
     if not os.path.isfile(chpl_home + "/make/Makefile." + compiler_val):
