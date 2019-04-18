@@ -1,3 +1,11 @@
+/*
+Acknowledgement:
+The distribution methods in this application were heavily influenced and
+informed by previous work done by Louis Jenkins on the DistributedBag and
+DistributedQueue modules, and his personal assistance was influential in
+improving the performance of the distributions used here.
+*/
+
 use Random;
 use Time;
 use LayoutCS;
