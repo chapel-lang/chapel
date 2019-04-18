@@ -781,7 +781,17 @@ Type* MLIContext::getTypeFromFormal(FnSymbol* fn, int i) {
 //
 std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
   std::string gen;
+  std::map<int, std::string> formalTempNames;
+  bool hasVoidReturnType = fn->retType == dtVoid;
+  bool hasFormals = fn->numFormals() != 0;
 
+  // If we are void void, then there's nothing left to do.
+  if (hasVoidReturnType and not hasFormals) {
+    gen += this->genComment("Routine is void/void!");
+    return gen;
+  }
+
+   
   return gen;
 }
 
@@ -802,7 +812,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   bool hasFormals = fn->numFormals() != 0;
 
   // Emit void/void calls immediately.
-  if (hasVoidReturnType && not hasFormals) {
+  if (hasVoidReturnType and not hasFormals) {
     gen += "\t";
     gen += fn->cname;
     gen += "();\n";
