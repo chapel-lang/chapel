@@ -5,8 +5,21 @@ import sys
 
 from distutils.spawn import find_executable
 
-import chpl_platform, overrides
+import chpl_platform, overrides, chpl_home_utils
 from utils import error, memoize
+
+
+#
+# If we can't find a file $CHPL_HOME/make/Makefile.<compiler_val>,
+# that suggests that this is a compiler that we're not familiar with.
+# In practice, this will cause our Makefiles to use defaults like CC
+# and CXX to compile things, for better or worse.
+#
+def validate(compiler_val):
+    chpl_home = chpl_home_utils.get_chpl_home()
+    if not os.path.isfile(chpl_home + "/make/Makefile." + compiler_val):
+        sys.stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler_val))
+
 
 
 @memoize
@@ -39,6 +52,7 @@ def get(flag='host', llvm_mode='default'):
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if compiler_val:
+        validate(compiler_val)
         return compiler_val
 
     platform_val = chpl_platform.get(flag)
@@ -74,6 +88,8 @@ def get(flag='host', llvm_mode='default'):
                 compiler_val = 'gnu'
         else:
             compiler_val = 'gnu'
+
+    validate(compiler_val)
     return compiler_val
 
 
