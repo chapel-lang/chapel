@@ -104,10 +104,9 @@ proc findLatest(packageDir: string): VersionInfo {
     const chplVersion = getChapelVersionInfo();
 
     const manifestReader = openreader(packageDir + '/' + manifest);
-    const manifestToml = parseToml(manifestReader);
+    const manifestToml = new owned(parseToml(manifestReader));
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
-    delete brick;
     if chplVersion < low || chplVersion > high then continue;
 
     // Check that Chapel version is supported
