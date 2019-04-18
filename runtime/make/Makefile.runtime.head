@@ -39,6 +39,7 @@ CHPL_MAKE_HOST_TARGET = --target
 endif
 include $(RUNTIME_ROOT)/../make/Makefile.base
 
+RANLIB ?= ranlib
 
 LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER
 LAUNCHER_INCLS = \
