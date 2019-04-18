@@ -53,13 +53,18 @@ const char* gen_mli_marshalling = "chpl_mli_marshalling";
 const char* gen_mli_client_bundle = "chpl_mli_client_bundle";
 const char* gen_mli_server_bundle = "chpl_mli_server_bundle";
 
-
 static const char* client_main = "chpl_client.main";
 static const char* client_arg = "chpl_client.arg";
 static const char* client_res = "chpl_client.res";
 static const char* server_main = "chpl_server.main";
 static const char* server_arg = "chpl_server.arg";
 static const char* server_res = "chpl_server.res";
+
+static const char* marshal_push_prefix = "chpl_mli_push_type_";
+static const char* marshal_pull_prefix = "chpl_mli_pull_type_";
+
+static const char* socket_push_name = "chpl_mli_push";
+static const char* socket_pull_name = "chpl_mli_pull";
 
 
 class MLIContext {
@@ -86,7 +91,7 @@ const std::vector<FnSymbol*>& getExports(void);
 const std::map<Type*, int64_t>& getTypeMap(void);
 void emitClientPrelude(void);
 void emitServerPrelude(void);
-void emitMarshallingRoutines(void);
+void emitMarshalRoutines(void);
 void emitServerDispatchRoutine(void);
 
 private:
@@ -106,11 +111,12 @@ Type* getTypeFromFormal(FnSymbol* fn, int i);
 private:
 
 std::string genComment(const char* msg);
-std::string genComment(std::string& msg);
+std::string genNote(const char* msg);
+std::string genTodo(const char* msg);
 std::string genHeaderInc(const char* header, bool system=false);
-std::string genMarshallingRoutine(Type* t, bool out);
-std::string genMarshallingPack(Type* t);
-std::string genMarshallingUnpack(Type* t);
+std::string genMarshalRoutine(Type* t, bool out);
+std::string genMarshalPushRoutine(Type* t);
+std::string genMarshalPullRoutine(Type* t);
 std::string genServerDispatchSwitch(const std::vector<FnSymbol*>& fns);
 std::string genFuncToSetServerGlobals(void);
 std::string genClientCallPrologue(FnSymbol* fn);
@@ -121,12 +127,12 @@ std::string genServerWrapperCall(FnSymbol* fn);
 std::string genClientsideRPC(FnSymbol* fn);
 std::string genServersideRPC(FnSymbol* fn);
 std::string genMarshalCall(const char* s, const char* v, Type* t, bool out);
-std::string genPackCall(const char* s, const char* v, Type* t);
-std::string genUnpackCall(const char* s, const char* v, Type* t);
+std::string genMarshalPushCall(const char* s, const char* v, Type* t);
+std::string genMarshalPullCall(const char* s, const char* v, Type* t);
 std::string genTypeName(Type* t);
 std::string genSocketCall(const char* s, const char* v, bool out);
-std::string genPushCall(const char* s, const char* v);
-std::string genPullCall(const char* s, const char* v);
+std::string genSocketPushCall(const char* s, const char* v);
+std::string genSocketPullCall(const char* s, const char* v);
 std::string genAddressOf(const char* var);
 std::string genAddressOf(std::string& var);
 std::string genSizeof(const char* var);
@@ -153,9 +159,8 @@ void codegenMultiLocaleInteropWrappers(void) {
     mli.emit(md);
   }
 
-  mli.emitMarshallingRoutines();
+  mli.emitMarshalRoutines();
   mli.emitServerDispatchRoutine();
-  mli.emitHeaderForExportedTypes();
 
   return;
 }
@@ -228,9 +233,8 @@ const std::map<Type*, int64_t>& MLIContext::getTypeMap(void) {
 void MLIContext::emitClientPrelude(void) {
   std::string gen;
 
-  gen += this->genHeaderInc("chpl_mli_exported_types.c");
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
-  gen += this->genComment("We use Makefile magic to make this visible!");
+  gen += this->genNote("We use Makefile magic to make this visible!");
   gen += this->genHeaderInc("mli_client_runtime.c");
   gen += "\n";
 
@@ -264,6 +268,28 @@ std::string MLIContext::genComment(const char* msg) {
 }
 
 
+std::string MLIContext::genNote(const char* msg) {
+  std::string gen;
+
+  gen += "// NOTE: ";
+  gen += msg;
+  gen += "\n";
+
+  return gen;
+}
+
+
+std::string MLIContext::genTodo(const char* msg) {
+  std::string gen;
+
+  gen += "// TODO: ";
+  gen += msg;
+  gen += "\n";
+
+  return gen;
+}
+
+
 std::string MLIContext::genFuncToSetServerGlobals(void) {
   std::string gen;
 
@@ -281,7 +307,7 @@ void MLIContext::emitServerPrelude(void) {
   std::string gen;
 
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
-  gen += this->genComment("We use Makefile magic to make this visible!");
+  gen += this->genNote("We use Makefile magic to make this visible!");
   gen += this->genHeaderInc("mli_server_runtime.c");
   gen += this->genHeaderInc("_main.c");
   gen += "\n";
@@ -306,18 +332,22 @@ void MLIContext::emitServerPrelude(void) {
 // of value types (I'd think? Well, we shall soon find gen).
 // --
 //
-void MLIContext::emitMarshallingRoutines(void) {
+void MLIContext::emitMarshalRoutines(void) {
   std::map<Type*, int64_t>::iterator i;
   std::string gen;
 
+  // Bunch of stuff included in generated header as bridge code.
   gen += this->genHeaderInc("stdlib.h", true);
   gen += this->genHeaderInc("stdio.h", true);
   gen += this->genHeaderInc("zmq.h", true);
+  gen += this->genHeaderInc("chpl__header.h");
+  gen += this->genNote("We use Makefile magic to make this visible!");
+  gen += this->genHeaderInc("mli_common_code.c");
   gen += "\n";
 
   for (i = this->typeMap.begin(); i != this->typeMap.end(); ++i) {
-    gen += this->genMarshallingPack(i->first);
-    gen += this->genMarshallingUnpack(i->first);
+    gen += this->genMarshalPushRoutine(i->first);
+    gen += this->genMarshalPullRoutine(i->first);
   }
 
   this->setOutputAndWrite(&this->fiMarshalling, gen);
@@ -326,18 +356,19 @@ void MLIContext::emitMarshallingRoutines(void) {
 }
 
 
-std::string MLIContext::genMarshallingRoutine(Type* t, bool out) {
+std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   int64_t id = this->assignUniqueTypeID(t);
   std::string gen;
 
-  // Generate the prototype for this routine.
+  // Push returns nothing, while pull returns the type being read in.
   if (out) {
-    gen += "void chpl_mli_pack_";
+    gen += "void ";
   } else {
     gen += this->genTypeName(t);
-    gen += " chpl_mli_unpack_";
+    gen += " ";
   }
 
+  gen += out ? marshal_push_prefix : marshal_pull_prefix;
   gen += std::to_string(id);
   gen += "(void* skt";
 
@@ -379,6 +410,11 @@ std::string MLIContext::genMarshallingRoutine(Type* t, bool out) {
     USR_FATAL("MLI does not support code generation for type", t);
   }
 
+  // If we are unpacking, return our temporary.
+  if (not out) {
+    gen += "\treturn result;\n";
+  }
+  
   gen += "}\n\n";
 
   return gen;
@@ -388,16 +424,16 @@ std::string MLIContext::genMarshallingRoutine(Type* t, bool out) {
 //
 // TODO: If these mirror, we can create a single bridge routine.
 //
-std::string MLIContext::genMarshallingPack(Type* t) {
-  return this->genMarshallingRoutine(t, true);
+std::string MLIContext::genMarshalPushRoutine(Type* t) {
+  return this->genMarshalRoutine(t, true);
 }
 
 
 //
 // TODO: If these mirror, we can create a single bridge routine.
 //
-std::string MLIContext::genMarshallingUnpack(Type* t) {
-  return this->genMarshallingRoutine(t, false);
+std::string MLIContext::genMarshalPullRoutine(Type* t) {
+  return this->genMarshalRoutine(t, false);
 }
 
 
@@ -472,6 +508,9 @@ std::string MLIContext::genClientCallPrologue(FnSymbol* fn) {
   gen += this->genFuncNumericID(fn);
   gen += ";\n";
 
+  // Stores the server return value.
+  gen += "\tint64_t st = 0;\n";
+
   if (this->injectDebugPrintlines) {
     gen += "\t";
     gen += this->genDebugPrintCall(fn, "[Client]");
@@ -479,7 +518,7 @@ std::string MLIContext::genClientCallPrologue(FnSymbol* fn) {
   }
 
   gen += "\t";
-  gen += this->genPushCall(client_main, "id");
+  gen += this->genSocketPushCall(client_main, "id");
   gen += ";\n";    
   
   return gen;
@@ -492,11 +531,12 @@ std::string MLIContext::genClientCallPrologue(FnSymbol* fn) {
 std::string MLIContext::genClientCallEpilogue(FnSymbol* fn) {
   std::string gen;
 
-  gen += "\tint64_t st = 0;\n";
-  gen += this->genPullCall(client_main, "st");
+  // Server return value "st" already declared in prologue.
+  gen += "\t";
+  gen += this->genSocketPullCall(client_main, "st");
   gen += ";\n";
   gen += "\t";
-  gen += this->genComment("TODO: Handle server errors.");
+  gen += this->genTodo("Handle server errors.");
   gen += "\tif (st) { ;;; }\n";
 
   return gen;
@@ -797,7 +837,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
     // Emit a unpack call to initialize each temporary.
     gen += tmp;
     gen += " = ";
-    gen += this->genUnpackCall(server_arg, tmp.c_str(), t);
+    gen += this->genMarshalPullCall(server_arg, tmp.c_str(), t);
     gen += ";\n";
   }
 
@@ -826,7 +866,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   // If there is a result, issue a pack call for it.
   if (not hasVoidReturnType) {
     gen += '\t';
-    gen += this->genPackCall(server_res, "result", fn->retType);
+    gen += this->genMarshalPushCall(server_res, "result", fn->retType);
     gen += ";\n";
   }
 
@@ -839,7 +879,7 @@ std::string MLIContext::genMarshalCall(const char* s, const char* v, Type* t,
   std::string gen;
   int64_t id = this->assignUniqueTypeID(t);
 
-  gen += out ? "chpl_mli_pack_" : "chpl_mli_unpack";
+  gen += out ? marshal_push_prefix : marshal_pull_prefix;
   gen += std::to_string(id);
   gen += "(";
   gen += s;
@@ -858,7 +898,7 @@ std::string MLIContext::genMarshalCall(const char* s, const char* v, Type* t,
 // TODO: These calls pass value types (cheaper to pass pointer).
 //
 std::string
-MLIContext::genPackCall(const char* s, const char* v, Type* t) {
+MLIContext::genMarshalPushCall(const char* s, const char* v, Type* t) {
   return this->genMarshalCall(s, v, t, true);
 }
 
@@ -867,7 +907,7 @@ MLIContext::genPackCall(const char* s, const char* v, Type* t) {
 // TODO: These calls pass value types (cheaper to pass pointer).
 //
 std::string
-MLIContext::genUnpackCall(const char* s, const char* v, Type* t) {
+MLIContext::genMarshalPullCall(const char* s, const char* v, Type* t) {
   (void) v;
   return this->genMarshalCall(s, v, t, false);
 }
@@ -882,7 +922,7 @@ std::string
 MLIContext::genSocketCall(const char* s, const char* v, bool out) {
   std::string gen;
 
-  gen += out ? "chpl_mli_push" : "chpl_mli_pull";
+  gen += out ? socket_push_name : socket_pull_name;
   gen += "(";
   gen += s;
   gen += ", ";
@@ -895,12 +935,12 @@ MLIContext::genSocketCall(const char* s, const char* v, bool out) {
 }
 
 
-std::string MLIContext::genPushCall(const char* s, const char* v) {
+std::string MLIContext::genSocketPushCall(const char* s, const char* v) {
   return this->genSocketCall(s, v, true);
 }
 
 
-std::string MLIContext::genPullCall(const char* s, const char* v) {
+std::string MLIContext::genSocketPullCall(const char* s, const char* v) {
   return this->genSocketCall(s, v, false);
 }
 

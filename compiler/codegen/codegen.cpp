@@ -1619,6 +1619,10 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   FILE* hdrfile = info->cfile;
 
   if( hdrfile) {
+    // Insert include guard to help MLI builds avoid multiple inclusion.
+    fprintf(hdrfile, "#ifndef CHPL_GEN_HEADER_INCLUDE_GUARD\n");
+    fprintf(hdrfile, "#define CHPL_GEN_HEADER_INCLUDE_GUARD\n");
+
     // This is done in runClang for LLVM version.
     fprintf(hdrfile, "\n#define CHPL_GEN_CODE\n\n");
 
@@ -2434,6 +2438,7 @@ void codegen() {
 
     //
     // TODO: Multi-Locale Interop prototype code!
+    //
     if (fMultiLocaleInterop) {
       codegenMultiLocaleInteropWrappers();
     }
@@ -2446,6 +2451,11 @@ void codegen() {
 
     info->cfile = hdrfile.fptr;
     codegen_header_addons();
+
+    //
+    // Emit an #endif to close the header's include guard.
+    //
+    fprintf(hdrfile.fptr, "\n#endif\n");
 
     closeCFile(&hdrfile);
     fprintf(mainfile.fptr, "/* last line not #include to avoid gcc bug */\n");
