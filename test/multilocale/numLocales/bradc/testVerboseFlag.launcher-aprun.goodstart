@@ -1,1 +1,1 @@
-aprun  -q -cc none -dN -n1 -N1 -j0 ./testVerboseFlag_real --verbose -nl 1 EXECOPTS
+EVARS=vals aprun  -cc none -dN -n1 -N1 -j0 ./testVerboseFlag_real --verbose -nl 1 EXECOPTS
