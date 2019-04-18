@@ -1,0 +1,2 @@
+error message: bad cast of enum to real reports failure to cast to int
+#10385
