@@ -94,7 +94,13 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 // Helper function to avoid unnecessary repetition when getting information
 // from compileline
 static std::string getCompilelineOption(std::string option) {
-  std::string fullCommand = "$CHPL_HOME/util/config/compileline --" + option;
+  std::string fullCommand = "";
+  for (std::map<std::string, const char*>::iterator env=envMap.begin();
+       env!=envMap.end(); ++env) {
+    fullCommand += std::string(env->first) + "=\"" + std::string(env->second) +
+      "\" ";
+  }
+  fullCommand += "$CHPL_HOME/util/config/compileline --" + option;
   fullCommand += "> cmd.out.tmp";
   runCommand(fullCommand);
 
