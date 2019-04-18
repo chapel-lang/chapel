@@ -1108,6 +1108,8 @@ miniMD:
     - Use zero-arg initializer in BaseDom (#9250)
   04/24/18:
     - Update miniMD problem size (#9296)
+  04/18/19:
+    - Enable bulk-transfer for BlockDist by default (#12797)
 
 miniMD.ml-time:
   09/14/17:
