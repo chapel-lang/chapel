@@ -4,6 +4,7 @@
 # Produce the output file our test will compare itself against.
 
 
+from __future__ import print_function
 import sys
 import os.path
 
@@ -46,8 +47,8 @@ class ChplFileWrapper(object):
 
 # Perform a single test, validating the input.
 def test(chplfile, start=""):
-    print 'filepath=', chplfile.path(), 'start=', start
-    print chplfile.relpath(start)
+    print('filepath=', chplfile.path(), 'start=', start)
+    print(chplfile.relpath(start))
 
 
 # Perform tests using a given input path.
@@ -56,17 +57,17 @@ def do_tests(somepath):
     try:
         f = ChplFileWrapper(somepath, 'r')
     except Exception as e:
-        print 'Failed to open file!'
+        print('Failed to open file!')
         return
 
     # Print path used to open file.
-    print somepath
+    print(somepath)
 
     # Print the abspath of the path used to open.
-    print os.path.abspath(somepath)
+    print(os.path.abspath(somepath))
 
     # Print the path contained in this file.
-    print f.path()
+    print(f.path())
 
     # No start.
     test(f)
