@@ -129,7 +129,7 @@ void chpl_mli_smain(void) {
     }
 
     // We should always reply so that the client does not block.
-    chpl_mli_sdebugf("Responding with: %lld\n", ack);
+    chpl_mli_sdebugf("Responding with error: %s\n", chpl_mli_errstr(ack));
     err = chpl_mli_push(chpl_server.main, &ack, sizeof(ack), 0);
 
     // TODO: Handle socket errors on outbound push.

@@ -1,5 +1,5 @@
-#ifndef CHPL_RUNTIME_ETC_MLI_MLI_COMMON_C_
-#define CHPL_RUNTIME_ETC_MLI_MLI_COMMON_C_
+#ifndef CHPL_RUNTIME_ETC_MLI_MLI_COMMON_CODE_C_
+#define CHPL_RUNTIME_ETC_MLI_MLI_COMMON_CODE_C_
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,6 +20,23 @@ enum chpl_mli_errors {
   CHPL_MLI_ERROR_EXCEPT     = -5
 
 };
+
+const char* chpl_mli_errstr(enum chpl_mli_errors e) {
+  static const char* mli_errors_[] = {
+    "CHPL_MLI_ERROR_NONE",
+    "CHPL_MLI_ERROR_SHUTDOWN",
+    "CHPL_MLI_ERROR_UNKNOWN",
+    "CHPL_MLI_ERROR_NOFUNC",
+    "CHPL_MLI_ERROR_SOCKET",
+    "CHPL_MLI_ERROR_EXCEPT"
+  };
+
+  if (e > CHPL_MLI_ERROR_NONE || e < CHPL_MLI_ERROR_EXCEPT) {
+    return "INVALID_ERROR_CODE";
+  }
+
+  return mli_errors_[e];
+}
 
 //
 // Both the client and server will be using this to perform RPC.

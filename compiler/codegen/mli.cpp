@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+
 #include <cstring>
 #include "library.h"
 #include "ModuleSymbol.h"
@@ -27,6 +28,8 @@
 #include "expr.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include <map>
+
 
 //
 // TODO: Multi-Locale Interop prototype code!
@@ -34,16 +37,23 @@
 // I decided to make a separate source file just to handle generation of the
 // MLI wrapper code (this includes RPC and marshalling).
 //
+// TODO: Sooooo, it looks like all the formatting I've done may not matter
+// at all, because files can be auto "beautified" on close. So after we
+// get things working, we'll want to do another pass and remove any
+// formatting characters we've generated, since the "beautify" function can
+// do that for us.
+// 
 // --
 // --
 // --
 //
 
-const char* out_mli_marshalling = "chpl_mli_marshalling";
-const char* out_mli_client_bundle = "chpl_mli_client_bundle";
-const char* out_mli_server_bundle = "chpl_mli_server_bundle";
 
-// Correspond to global ZMQ socket names in client/server runtimes.
+const char* gen_mli_marshalling = "chpl_mli_marshalling";
+const char* gen_mli_client_bundle = "chpl_mli_client_bundle";
+const char* gen_mli_server_bundle = "chpl_mli_server_bundle";
+
+
 static const char* client_main = "chpl_client.main";
 static const char* client_arg = "chpl_client.arg";
 static const char* client_res = "chpl_client.res";
@@ -51,55 +61,79 @@ static const char* server_main = "chpl_server.main";
 static const char* server_arg = "chpl_server.arg";
 static const char* server_res = "chpl_server.res";
 
+
 class MLIContext {
 private:
 
-  bool injectDebugPrintlines;
-  bool separateHeaders;
-  std::vector<FnSymbol*> exps;
-  std::vector<FnSymbol*> throws;
-  std::map<Type*, int64_t> tmap;
-  fileinfo fiMarshalling;
-  fileinfo fiClientBundle;
-  fileinfo fiServerBundle;
-  GenInfo* info;
+bool injectDebugPrintlines;
+bool separateHeaders;
+std::vector<FnSymbol*> exps;
+std::vector<FnSymbol*> throws;
+std::map<Type*, int64_t> typeMap;
+fileinfo fiMarshalling;
+fileinfo fiClientBundle;
+fileinfo fiServerBundle;
+GenInfo* info;
 
 public:
 
-  MLIContext(bool injectDebugPrintlines=false, bool separateHeaders=false);
-  ~MLIContext();
+MLIContext(bool injectDebugPrintlines=false, bool separateHeaders=false);
+~MLIContext();
 
-  void emit(ModuleSymbol* md);
-  void emit(FnSymbol* fn);
-  const std::vector<FnSymbol*>& getExports(void);
-  const std::map<Type*, int64_t>& getTypeMap(void);
-  void emitClientPrelude(void);
-  void emitServerPrelude(void);
-  void emitMarshallingRoutines(const std::map<Type*, int64_t>& tmap);
-  void emitServerMain(const std::vector<FnSymbol*>& fns);
-
-private:
-
-  void setOutput(fileinfo* fi);
-  void setOutputAndWrite(fileinfo* fi, const std::string& out);
-  void write(const std::string& code);
-  int64_t assignUniqueTypeID(Type* tp);
-  void emitClientWrapper(FnSymbol* fn);
-  void emitServerWrapper(FnSymbol* fn);
+void emit(ModuleSymbol* md);
+void emit(FnSymbol* fn);
+const std::vector<FnSymbol*>& getExports(void);
+const std::map<Type*, int64_t>& getTypeMap(void);
+void emitClientPrelude(void);
+void emitServerPrelude(void);
+void emitMarshallingRoutines(void);
+void emitServerDispatchRoutine(void);
 
 private:
 
-  std::string genServerDispatchSwitch(const std::vector<FnSymbol*>& fns);
-  std::string genFuncToSetServerGlobals(void);
-  std::string genClientCallPrologue(FnSymbol* fn);
-  std::string genClientCallEpilogue(FnSymbol *fn);
-  std::string genDebugPrintCall(FnSymbol* fn, const char* pfx="");
-  std::string genFunctionNumericID(FnSymbol* fn);
-  std::string genServerWrapperCall(FnSymbol* fn);
-  std::string genClientsideRPC(FnSymbol* fn);
-  std::string genServersideRPC(FnSymbol* fn);
+void setOutput(fileinfo* fi);
+void setOutputAndWrite(fileinfo* fi, const std::string& gen);
+void write(const std::string& code);
+int64_t assignUniqueTypeID(Type* t);
+void emitClientWrapper(FnSymbol* fn);
+void emitServerWrapper(FnSymbol* fn);
+bool structContainsOnlyPrimitiveScalars(Type* t);
+bool isSupportedType(Type* t);
+void verifyPrototype(FnSymbol* fn);
+Type* getTypeFromFormal(ArgSymbol* as);
+Type* getTypeFromFormal(FnSymbol* fn, int i);
+ 
+private:
+
+std::string genComment(const char* msg);
+std::string genComment(std::string& msg);
+std::string genHeaderInc(const char* header, bool system=false);
+std::string genMarshallingRoutine(Type* t, bool out);
+std::string genMarshallingPack(Type* t);
+std::string genMarshallingUnpack(Type* t);
+std::string genServerDispatchSwitch(const std::vector<FnSymbol*>& fns);
+std::string genFuncToSetServerGlobals(void);
+std::string genClientCallPrologue(FnSymbol* fn);
+std::string genClientCallEpilogue(FnSymbol *fn);
+std::string genDebugPrintCall(FnSymbol* fn, const char* pfx="");
+std::string genFuncNumericID(FnSymbol* fn);
+std::string genServerWrapperCall(FnSymbol* fn);
+std::string genClientsideRPC(FnSymbol* fn);
+std::string genServersideRPC(FnSymbol* fn);
+std::string genMarshalCall(const char* s, const char* v, Type* t, bool out);
+std::string genPackCall(const char* s, const char* v, Type* t);
+std::string genUnpackCall(const char* s, const char* v, Type* t);
+std::string genTypeName(Type* t);
+std::string genSocketCall(const char* s, const char* v, bool out);
+std::string genPushCall(const char* s, const char* v);
+std::string genPullCall(const char* s, const char* v);
+std::string genAddressOf(const char* var);
+std::string genAddressOf(std::string& var);
+std::string genSizeof(const char* var);
+std::string genSizeof(std::string& var);
 
 };
+
 
 //
 // This is the main entrypoint for MLI code generation, call this if the
@@ -119,15 +153,13 @@ void codegenMultiLocaleInteropWrappers(void) {
     mli.emit(md);
   }
 
-  // These pieces have to be called manually after we're done.
-  const std::vector<FnSymbol*>& exps = mli.getExports();
-  const std::map<Type*, int64_t>& tmap = mli.getTypeMap();
-
-  mli.emitMarshallingRoutines(tmap);
-  mli.emitServerMain(exps);
+  mli.emitMarshallingRoutines();
+  mli.emitServerDispatchRoutine();
+  mli.emitHeaderForExportedTypes();
 
   return;
 }
+
 
 MLIContext::MLIContext(bool injectDebugPrintlines, bool separateHeaders) {
 
@@ -135,13 +167,14 @@ MLIContext::MLIContext(bool injectDebugPrintlines, bool separateHeaders) {
   this->injectDebugPrintlines = injectDebugPrintlines;
   this->separateHeaders = separateHeaders;
 
-  openCFile(&this->fiMarshalling, out_mli_marshalling, "c");
-  openCFile(&this->fiClientBundle, out_mli_client_bundle, "c");
-  openCFile(&this->fiServerBundle, out_mli_server_bundle, "c");
+  openCFile(&this->fiMarshalling, gen_mli_marshalling, "c");
+  openCFile(&this->fiClientBundle, gen_mli_client_bundle, "c");
+  openCFile(&this->fiServerBundle, gen_mli_server_bundle, "c");
   this->info = gGenInfo;
 
   return;
 }
+
 
 MLIContext::~MLIContext() {
 
@@ -152,6 +185,7 @@ MLIContext::~MLIContext() {
 
   return;
 }
+
 
 void MLIContext::emit(ModuleSymbol* md) {
   if (md->modTag == MOD_INTERNAL) { return; }
@@ -168,6 +202,7 @@ void MLIContext::emit(ModuleSymbol* md) {
   return;
 }
 
+
 void MLIContext::emit(FnSymbol* fn) {
   if (not fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
     return;
@@ -179,65 +214,83 @@ void MLIContext::emit(FnSymbol* fn) {
   return;
 }
 
+
 const std::vector<FnSymbol*>& MLIContext::getExports(void) {
   return this->exps;
 }
 
+
 const std::map<Type*, int64_t>& MLIContext::getTypeMap(void) {
-  return this->tmap;
+  return this->typeMap;
 }
+
 
 void MLIContext::emitClientPrelude(void) {
-  std::string out;
+  std::string gen;
 
-  // Big ol' chunk of includes about sums this function up.
-  out += "// Fairly ubiquitous in C, I'd say...\n";
-  out += "#include <stdlib.h>\n";
-  out += "#include <stdio.h>\n";
-  out += "// Contains all compiler generated and runtime visible types!\n";
-  out += "#include \"chpl__header.h\"\n";
-  out += "// Generated marshalling routines using ZMQ are here.\n";
-  out += "#include \"chpl_mli_marshalling.c\"\n";
-  out += "// NOTE: We currently use Makefile magic to make this visible!\n";
-  out += "#include \"mli_client_runtime.c\"\n";
-  out += "\n";
+  gen += this->genHeaderInc("chpl_mli_exported_types.c");
+  gen += this->genHeaderInc("chpl_mli_marshalling.c");
+  gen += this->genComment("We use Makefile magic to make this visible!");
+  gen += this->genHeaderInc("mli_client_runtime.c");
+  gen += "\n";
 
-  this->setOutputAndWrite(&this->fiClientBundle, out);
+  this->setOutputAndWrite(&this->fiClientBundle, gen);
 
   return;
 }
+
+
+std::string MLIContext::genHeaderInc(const char* header, bool system) {
+  std::string gen;
+
+  gen += "#include ";
+  gen += system ? "<" : "\"";
+  gen += header;
+  gen += system ? ">" : "\"";
+  gen += "\n";
+
+  return gen;
+}
+
+
+std::string MLIContext::genComment(const char* msg) {
+  std::string gen;
+
+  gen += "// ";
+  gen += msg;
+  gen += "\n";
+
+  return gen;
+}
+
 
 std::string MLIContext::genFuncToSetServerGlobals(void) {
-  std::string out;
+  std::string gen;
 
-  out += "void chpl_mli_server_set_conf(void) {\n";
-  out += "\tchpl_server_conf.debug = ";
-  out += this->injectDebugPrintlines ? "1" : "0";
-  out += ";\n";
-  out += "}\n";
+  gen += "void chpl_mli_server_set_conf(void) {\n";
+  gen += "\tchpl_server_conf.debug = ";
+  gen += this->injectDebugPrintlines ? "1" : "0";
+  gen += ";\n";
+  gen += "}\n";
   
-  return out;
+  return gen;
 }
+
 
 void MLIContext::emitServerPrelude(void) {
-  std::string out;
+  std::string gen;
 
-  out += "// Fairly ubiquitous in C, I'd say...\n";
-  out += "#include <stdlib.h>\n";
-  out += "#include <stdio.h>\n";
-  out += "// Generated marshalling routines using ZMQ are here.\n";
-  out += "#include \"chpl_mli_marshalling.c\"\n";
-  out += "// NOTE: We currently use Makefile magic to make this visible!\n";
-  out += "#include \"mli_server_runtime.c\"\n";
-  out += "// Server wraps around the normally generated bundle.\n";
-  out += "#include \"_main.c\"\n";
-  out += "\n";
+  gen += this->genHeaderInc("chpl_mli_marshalling.c");
+  gen += this->genComment("We use Makefile magic to make this visible!");
+  gen += this->genHeaderInc("mli_server_runtime.c");
+  gen += this->genHeaderInc("_main.c");
+  gen += "\n";
   
   // The server will call this function to set globals appropriately.
-  out += this->genFuncToSetServerGlobals();
-  out += "\n";
+  gen += this->genFuncToSetServerGlobals();
+  gen += "\n";
 
-  this->setOutputAndWrite(&this->fiServerBundle, out);
+  this->setOutputAndWrite(&this->fiServerBundle, gen);
 
   return;
 }
@@ -245,71 +298,139 @@ void MLIContext::emitServerPrelude(void) {
 //
 // TODO
 //
-// Generate marshalling routines for every key value pair in this map. For
+// Generate marshalling rgenines for every key value pair in this map. For
 // safety, assert that every value (int64 value) is unique?
 //
-// Marshalling routines are generated according to a simple algorithm which
+// Marshalling rgenines are generated according to a simple algorithm which
 // is reminiscent of how cycles are detected when verifying the members
-// of value types (I'd think? Well, we shall soon find out).
+// of value types (I'd think? Well, we shall soon find gen).
 // --
 //
-void
-MLIContext::emitMarshallingRoutines(const std::map<Type*, int64_t>& tmap) {
+void MLIContext::emitMarshallingRoutines(void) {
+  std::map<Type*, int64_t>::iterator i;
+  std::string gen;
+
+  gen += this->genHeaderInc("stdlib.h", true);
+  gen += this->genHeaderInc("stdio.h", true);
+  gen += this->genHeaderInc("zmq.h", true);
+  gen += "\n";
+
+  for (i = this->typeMap.begin(); i != this->typeMap.end(); ++i) {
+    gen += this->genMarshallingPack(i->first);
+    gen += this->genMarshallingUnpack(i->first);
+  }
+
+  this->setOutputAndWrite(&this->fiMarshalling, gen);
+
   return;
 }
 
+
+std::string MLIContext::genMarshallingRoutine(Type* t, bool out) {
+  int64_t id = this->assignUniqueTypeID(t);
+  std::string gen;
+
+  // Generate the prototype for this routine.
+  if (out) {
+    gen += "void chpl_mli_pack_";
+  } else {
+    gen += this->genTypeName(t);
+    gen += " chpl_mli_unpack_";
+  }
+
+  gen += std::to_string(id);
+  gen += "(void* skt";
+
+  if (out) {
+    gen += ", ";
+    gen += this->genTypeName(t);
+    gen += " var";
+  }
+
+  gen += ") {\n";
+
+  // If we are unpacking, declare a temporary for the return value.
+  if (not out) {
+    gen += "\t";
+    gen += this->genTypeName(t);
+    gen += " result;\n";
+  }
+
+  //
+  // TODO
+  //
+  // Handle translation of different type classes here. Note that right now
+  // about the only things we can translate are primitive scalars, pointers,
+  // and cstrings (eventually).
+  //
+  // For right now, we'll focus only on emitting code for primitive scalars.
+  // --
+  //
+  if (isPrimitiveScalar(t)) {
+    
+    // On pack, target buffer is input parameter. On unpack, the temporary.
+    const char* target = out ? "var" : "result";
+    
+    gen += "\t";
+    gen += this->genSocketCall("skt", target, out);
+    gen += ";\n";
+    
+  } else {
+    USR_FATAL("MLI does not support code generation for type", t);
+  }
+
+  gen += "}\n\n";
+
+  return gen;
+}
+
+
 //
-// TODO
+// TODO: If these mirror, we can create a single bridge routine.
 //
-// The server main consists of some initialization code, followed by a listen
-// loop on the inbound socket port.
+std::string MLIContext::genMarshallingPack(Type* t) {
+  return this->genMarshallingRoutine(t, true);
+}
+
+
 //
-// Within the listen loop, the server waits for an int64 to be read off the
-// wire. This int64 contains the unique number of a given function that is
-// assigned at code generation.
+// TODO: If these mirror, we can create a single bridge routine.
 //
-// After receiving the ID of the function to call, the server passes the ID
-// to a giant switch.
-//
-// Each exported function has a case in this switch. The body of the case is
-// a call to the server wrapper for that function.
-//
-// The wrapper to call can be found by "chpl_mli_swrapper_" + str(ID).
-// The wrapper takes the inbound ZMQ port as an argument.
-//
-// The process of implementing the inbound RPC protocol is invisible to the
-// main function, it is nothing more than a glorified switch.
-//
-// We will need a function which enables the user to remotely shut down the
-// server.
-// --
-//
-void MLIContext::emitServerMain(const std::vector<FnSymbol*>& fns) {
-  std::string out;
+std::string MLIContext::genMarshallingUnpack(Type* t) {
+  return this->genMarshallingRoutine(t, false);
+}
+
+
+void MLIContext::emitServerDispatchRoutine(void) {
+  std::string gen;
 
   // The dispatch switch is in a separate function for now.
-  out += this->genServerDispatchSwitch(fns);
-  out += "\n";
+  gen += this->genServerDispatchSwitch(this->exps);
+  gen += "\n";
   
-  this->setOutputAndWrite(&this->fiServerBundle, out);
+  this->setOutputAndWrite(&this->fiServerBundle, gen);
 
   return;
 }
+
 
 void MLIContext::setOutput(fileinfo* fi) {
   this->info->cfile = fi->fptr;
   return;
 }
 
-void MLIContext::setOutputAndWrite(fileinfo* fi, const std::string& out) {
+
+void MLIContext::setOutputAndWrite(fileinfo* fi, const std::string& gen) {
   this->setOutput(fi);
-  this->write(out);
+  this->write(gen);
 }
 
-void MLIContext::write(const std::string& out) {
-  fprintf(this->info->cfile, out.c_str());
+
+void MLIContext::write(const std::string& gen) {
+  fprintf(this->info->cfile, gen.c_str());
   return;
 }
+
 
 //
 // TODO
@@ -320,93 +441,115 @@ void MLIContext::write(const std::string& out) {
 // Use it to lazily stash IDs.
 //
 // The map built from repeated calls to this function can be used to
-// generate marshalling routines for all types in the map.
+// generate marshalling rgenines for all types in the map.
 //
+// We can (as I understand it) cound on Type* being unique across the entire
+// symbol table (IE, you'll never two different Type that both end up
+// describing the same concrete type.
 // --
 //
-int64_t MLIContext::assignUniqueTypeID(Type* tp) {
-  return 0;
+int64_t MLIContext::assignUniqueTypeID(Type* t) {
+  // Prepare a new ID based on the map size (will never overflow).
+  int64_t result = (int64_t) this->typeMap.size();
+
+  if (this->typeMap.find(t) != this->typeMap.end()) {
+    result = this->typeMap[t];
+  } else {
+    this->typeMap[t] = result;
+  }
+
+  return result;
 }
+
 
 //
 // Assumes scope level is 1 (and generates 1 tab).
 //
 std::string MLIContext::genClientCallPrologue(FnSymbol* fn) {
-  std::string out;
+  std::string gen;
 
-  out += "\tint64_t id = ";
-  out += this->genFunctionNumericID(fn);
-  out += ";\n";
+  gen += "\tint64_t id = ";
+  gen += this->genFuncNumericID(fn);
+  gen += ";\n";
 
   if (this->injectDebugPrintlines) {
-    out += "\t";
-    out += this->genDebugPrintCall(fn, "[Client]");
-    out += "\n";
+    gen += "\t";
+    gen += this->genDebugPrintCall(fn, "[Client]");
+    gen += "\n";
   }
-    
-  out += "\tchpl_mli_push(chpl_client.main, &id, sizeof(id), 0);\n";
+
+  gen += "\t";
+  gen += this->genPushCall(client_main, "id");
+  gen += ";\n";    
   
-  return out;
+  return gen;
 }
+
 
 //
 // Assumes scope level is 1 (and generates 1 tab).
 //
 std::string MLIContext::genClientCallEpilogue(FnSymbol* fn) {
-  std::string out;
+  std::string gen;
 
-  out += "\tint64_t st = 0;\n";
-  out += "\tchpl_mli_pull(chpl_client.main, &st, sizeof(st), 0);\n";
-  out += "\tif (st) { ;;; } // TODO: Handle server errors.\n";
+  gen += "\tint64_t st = 0;\n";
+  gen += this->genPullCall(client_main, "st");
+  gen += ";\n";
+  gen += "\t";
+  gen += this->genComment("TODO: Handle server errors.");
+  gen += "\tif (st) { ;;; }\n";
 
-  return out;
+  return gen;
 }
+
 
 //
 // TODO
 //
-// Client wrappers need access to the outbound ZMQ port. We can expose this
+// Client wrappers need access to the genbound ZMQ port. We can expose this
 // in the marshalling header or just roll it into the top of the client
 // library wrapper.
 //
-// The outbound ZMQ connection needs to be initialized by calling an init
+// The genbound ZMQ connection needs to be initialized by calling an init
 // function. The connection also needs to be closed so that the server can
 // be killed off. Is this a separate function from library init, or not?
 //
-// Client wrappers implement the outbound half of the RPC protocol, which is
+// Client wrappers implement the genbound half of the RPC protocol, which is
 // as follows:
 //
 //  0. Allocate space for the return type on the stack.
 //  1. Push this function's unique ID onto the wire.
 //  2. For each formal, emit a call to the appropriate marshalling pack
-//      routine. These are generated lazily for each new type as requested.
+//      rgenine. These are generated lazily for each new type as requested.
 //      Outside of primitive types, these are implemented in terms of each
 //      other, so the only thing that need be known is the name (to emit
 //      the call).
-//  3. Call the appropriate unpack routine for the return type.
+//  3. Call the appropriate unpack rgenine for the return type.
 //  4. Return.
 //
 void MLIContext::emitClientWrapper(FnSymbol* fn) {
-  std::string out;
+  std::string gen;
 
   this->setOutput(&this->fiClientBundle);
   fn->codegenHeaderC();
 
-  out += " ";
-  out += "{\n";
-  out += this->genClientCallPrologue(fn);
-  out += "\n";
-  //
-  // TODO: Clientside RPC here!
-  //
-  out += this->genClientCallEpilogue(fn);
-  out += "}\n";
-  out += "\n";
+  gen += " ";
+  gen += "{\n";
+  gen += this->genClientCallPrologue(fn);
+  gen += "\n";
 
-  this->write(out);
+  gen += this->genClientsideRPC(fn);
+  gen += "\n";
+
+  gen += this->genClientCallEpilogue(fn);
+  gen += "}\n";
+  gen += "\n";
+
+  this->write(gen);
   
   return;
 }
+
 
 //
 // TODO
@@ -428,75 +571,71 @@ void MLIContext::emitClientWrapper(FnSymbol* fn) {
 //  2. Pass the unpacked parameters to the actual implementation of the
 //      function hosted by the server.
 //  3. The result of the call is stored in the temporary allocated earlier.
-//  4. Emit a call to the appropriate marshalling pack routine for the
+//  4. Emit a call to the appropriate marshalling pack rgenine for the
 //      return type.
 //  5. Return.
 //
 void MLIContext::emitServerWrapper(FnSymbol* fn) {
-  std::string out;
+  std::string gen;
 
   // Big long, silly block of manual code generation.
-  out += "// ";
-  out += toString(fn);
-  out += "\n";
-  out += "int64_t chpl_mli_swrapper_";
-  out += std::to_string((int64_t) fn->id);
-  out += "(void) ";
-  out += "{\n";
+  gen += this->genComment(toString(fn));
+  gen += "int64_t chpl_mli_swrapper_";
+  gen += this->genFuncNumericID(fn);
+  gen += "(void) ";
+  gen += "{\n";
   
-  //
-  // TODO: Inbound RPC code generated here.
-  //
-  out += this->genServersideRPC(fn);
-  
-  out += "\treturn 0;\n";
-  out += "}\n";
-  out += "\n";
+  gen += this->genServersideRPC(fn);
+  gen += "\n";
 
-  this->setOutputAndWrite(&this->fiServerBundle, out);
+  gen += "\treturn 0;\n";
+  gen += "}\n";
+  gen += "\n";
+
+  this->setOutputAndWrite(&this->fiServerBundle, gen);
  
   return;
 }
 
-std::string MLIContext::genDebugPrintCall(FnSymbol* fn, const char* pfx) {
-  std::string out;
 
-  out += "printf(\"";
+std::string MLIContext::genDebugPrintCall(FnSymbol* fn, const char* pfx) {
+  std::string gen;
+
+  gen += "printf(\"";
 
   if (pfx && pfx != "") {
-    out += pfx;
-    out += " ";
+    gen += pfx;
+    gen += " ";
   }
 
-  out += "Calling: %%s\\n\", \"";
-  out += toString(fn);
-  out += "\");";
+  gen += "Calling: %%s\\n\", \"";
+  gen += toString(fn);
+  gen += "\");";
 
-  return out;
+  return gen;
 }
 
-std::string MLIContext::genFunctionNumericID(FnSymbol* fn) {
+
+std::string MLIContext::genFuncNumericID(FnSymbol* fn) {
   return std::to_string((int64_t) fn->id);
 }
 
-//
-// The arg socket (subscribe to) is: "chpl_server.arg"
-// The res socket (publish to) is: "chpl_server.res"
-//
+
 std::string MLIContext::genServerWrapperCall(FnSymbol* fn) {
-  std::string out;
+  std::string gen;
 
-  out += "chpl_mli_swrapper_";
-  out += genFunctionNumericID(fn);
-  out += "();";
+  gen += "chpl_mli_swrapper_";
+  gen += this->genFuncNumericID(fn);
+  gen += "();";
 
-  return out;
+  return gen;
 }
+
   
 //
 // TODO
 //
-// This is about as simple as it gets, just a switch on the unique ID read
+// This is abgen as simple as it gets, just a switch on the unique ID read
 // from the inbound ZMQ port.
 //
 // The serverside wrapper to call is implicit in the function ID. The naming
@@ -507,58 +646,292 @@ std::string MLIContext::genServerWrapperCall(FnSymbol* fn) {
 //
 std::string
 MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
-  std::string out;
+  std::string gen;
 
-  out += "int64_t chpl_mli_sdispatch";
-  out += "(int64_t function) {\n";
-  out += "\tint err = 0;\n";
-  out += "\n";
-  out += "\tswitch (function) {\n";
+  gen += "int64_t chpl_mli_sdispatch";
+  gen += "(int64_t function) {\n";
+  gen += "\tint err = 0;\n";
+  gen += "\n";
+  gen += "\tswitch (function) {\n";
 
   for_vector(FnSymbol, fn, fns) {
     if (not fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
       continue;
     }
 
-    out += "\tcase ";
-    out += genFunctionNumericID(fn);
-    out += ": ";
+    gen += "\tcase ";
+    gen += this->genFuncNumericID(fn);
+    gen += ": ";
 
     if (this->injectDebugPrintlines) {
-      out += "{\n";
-      out += "\t\t";
-      out += this->genDebugPrintCall(fn, "[MLI-Server]");
-      out += "\n";
-      out += "\t\terr = ";
-      out += genServerWrapperCall(fn);
-      out += "\n";
-      out += "\t} break;\n";
+      gen += "{\n";
+      gen += "\t\t";
+      gen += this->genDebugPrintCall(fn, "[MLI-Server]");
+      gen += "\n";
+      gen += "\t\terr = ";
+      gen += this->genServerWrapperCall(fn);
+      gen += "\n";
+      gen += "\t} break;\n";
     } else {
-      out += "err = ";
-      out += genServerWrapperCall(fn);
-      out += " break;\n";
+      gen += "err = ";
+      gen += this->genServerWrapperCall(fn);
+      gen += " break;\n";
     }
   }
 
-  out += "\tdefault: return CHPL_MLI_ERROR_NOFUNC; break;\n";
-  out += "\t}\n";
-  out += "\n";
-  out += "\treturn err;\n";
-  out += "}\n";
+  gen += "\tdefault: return CHPL_MLI_ERROR_NOFUNC; break;\n";
+  gen += "\t}\n";
+  gen += "\n";
+  gen += "\treturn err;\n";
+  gen += "}\n";
 
-  return out;
+  return gen;
 }
 
+
+bool MLIContext::structContainsOnlyPrimitiveScalars(Type *t) {
+  return false;
+}
+
+
+//
+// TODO: This filter will change as we support more and more type classes.
+//
+bool MLIContext::isSupportedType(Type* t) {
+  return isPrimitiveScalar(t);
+}
+
+
+void MLIContext::verifyPrototype(FnSymbol* fn) {
+
+  if (fn->retType != dtVoid && not isSupportedType(fn->retType)) {
+    USR_FATAL("MLI does not support code generation for type", fn->retType);
+  }
+
+  // Loop through all formals and error gen if a type is unsupported.
+  for (int i = 1; i <= fn->numFormals(); i++) {
+    ArgSymbol* as = fn->getFormal(i);
+    if (isSupportedType(as->type)) { continue; }
+    USR_FATAL("MLI does not support code generation for type", as->type);
+  }
+
+  return;
+}
+
+
+Type* MLIContext::getTypeFromFormal(ArgSymbol* as) {
+  if (as == NULL) { return NULL; }
+  return as->type;
+}
+
+
+Type* MLIContext::getTypeFromFormal(FnSymbol* fn, int i) {
+  return getTypeFromFormal(fn->getFormal(i));
+}
+
+
+//
+// TODO
+//
+// NOTE - This assumes scope level is 1 (and generates 1 tab). Only matters
+// from a formatting POV. Whiiiiich doesn't actually matter, because we can
+// just use "beautify" on close.
+//
+// 
+//
 std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
+  std::string gen;
 
-
+  return gen;
 }
 
+
+//
+// TODO
+//
+// NOTE - This assumes scope level is 1 (and generates 1 tab). Only matters
+// from a formatting POV. Whiiiiich doesn't actually matter, because we can
+// just use "beautify" on close.
 //
 //
 //
 std::string MLIContext::genServersideRPC(FnSymbol* fn) {
+  std::string gen;
+  std::map<int, std::string> formalTempNames;
+  bool hasVoidReturnType = fn->retType == dtVoid;
+  bool hasFormals = fn->numFormals() != 0;
+
+  // Emit void/void calls immediately.
+  if (hasVoidReturnType && not hasFormals) {
+    gen += "\t";
+    gen += fn->cname;
+    gen += "();\n";
+    return gen;
+  }
+
+  // We cannot readily support marshalling every type Chapel offers (yet).
+  verifyPrototype(fn);
+
+  // Declare a temporary for the return value, if necessary.
+  if (not hasVoidReturnType) {
+    gen += "\t";
+    gen += this->genTypeName(fn->retType);
+    gen += " result;\n";
+  }
+
+  // Declare temporaries, issue unpack call for each formal.
+  for (int i = 1; i <= fn->numFormals(); i++) {
+    std::string tmp;
+
+    Type* t = getTypeFromFormal(fn, i);
+
+    gen += "\t";
+    gen += this->genTypeName(t);
+    gen += " ";
+
+    // Map temp names to formal indices (shifted down one).
+    tmp += "tmp_";
+    tmp += std::to_string(i - 1);
+    formalTempNames[i] = tmp;
+
+    // Emit a unpack call to initialize each temporary.
+    gen += tmp;
+    gen += " = ";
+    gen += this->genUnpackCall(server_arg, tmp.c_str(), t);
+    gen += ";\n";
+  }
+
+  gen += '\t';
+
+  // Only generate LHS target if necessary.
+  if (not hasVoidReturnType) {
+    gen += "result = ";
+  }
+
+  // Make the unwrapped call.
+  gen += fn->cname;
+  gen += "(";
+
+  // Pass in temporaries as arguments to call.
+  if (hasFormals) {
+    for (int i = 1; i <= fn->numFormals() - 1; i++) {
+      gen += formalTempNames.at(i);
+      gen += ", ";
+    }
+    gen += formalTempNames.at(fn->numFormals());
+  }
+
+  gen += ");\n";
+
+  // If there is a result, issue a pack call for it.
+  if (not hasVoidReturnType) {
+    gen += '\t';
+    gen += this->genPackCall(server_res, "result", fn->retType);
+    gen += ";\n";
+  }
+
+  return gen;
+}
 
 
+std::string MLIContext::genMarshalCall(const char* s, const char* v, Type* t,
+                                       bool out) {
+  std::string gen;
+  int64_t id = this->assignUniqueTypeID(t);
+
+  gen += out ? "chpl_mli_pack_" : "chpl_mli_unpack";
+  gen += std::to_string(id);
+  gen += "(";
+  gen += s;
+  
+  if (out) {
+    gen += ", ";
+    gen += v;
+  }
+
+  gen += ")";
+
+  return gen;
+}
+
+//
+// TODO: These calls pass value types (cheaper to pass pointer).
+//
+std::string
+MLIContext::genPackCall(const char* s, const char* v, Type* t) {
+  return this->genMarshalCall(s, v, t, true);
+}
+
+
+//
+// TODO: These calls pass value types (cheaper to pass pointer).
+//
+std::string
+MLIContext::genUnpackCall(const char* s, const char* v, Type* t) {
+  (void) v;
+  return this->genMarshalCall(s, v, t, false);
+}
+
+
+std::string MLIContext::genTypeName(Type* t) {
+  return t->codegen().c;
+}
+
+
+std::string
+MLIContext::genSocketCall(const char* s, const char* v, bool out) {
+  std::string gen;
+
+  gen += out ? "chpl_mli_push" : "chpl_mli_pull";
+  gen += "(";
+  gen += s;
+  gen += ", ";
+  gen += this->genAddressOf(v);
+  gen += ", ";
+  gen += this->genSizeof(v);
+  gen += ", 0)";
+
+  return gen;
+}
+
+
+std::string MLIContext::genPushCall(const char* s, const char* v) {
+  return this->genSocketCall(s, v, true);
+}
+
+
+std::string MLIContext::genPullCall(const char* s, const char* v) {
+  return this->genSocketCall(s, v, false);
+}
+
+
+std::string MLIContext::genAddressOf(const char* var) {
+  std::string gen;
+
+  gen += "&";
+  gen += var;
+
+  return gen;
+}
+
+
+std::string MLIContext::genAddressOf(std::string& var) {
+  return this->genAddressOf(var.c_str());
+}
+
+
+std::string MLIContext::genSizeof(const char* var) {
+  std::string gen;
+
+  gen += "sizeof(";
+  gen += var;
+  gen += ")";
+
+  return gen;
+}
+
+
+std::string MLIContext::genSizeof(std::string& var) {
+  return this->genAddressOf(var.c_str());
 }
 

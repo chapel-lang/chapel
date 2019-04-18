@@ -64,8 +64,6 @@ void chpl_mli_server_spawn(const char* ip, const char* port) {
 void chpl_library_init(int argc, char** argv) {
   static int initialized = 0;
 
-  printf("%s\n", "Initializing client...");
-
   // Just hardcode these values for now.
   const char* ip = "localhost";
   const char* mainport = "5555";
