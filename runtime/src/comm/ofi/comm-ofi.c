@@ -2720,6 +2720,8 @@ static inline void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
                "chpl_comm_atomic_write_%s(%p, %d, %p, %d, %s)",         \
                #fnType, desired, (int) node, object,                    \
                ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_diags_verbose_amo("amo write", node, ln, fn);             \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, desired, NULL, NULL,                            \
           FI_ATOMIC_WRITE, ofiType, sizeof(Type));                      \
   }
@@ -2743,6 +2745,8 @@ DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, double)
                "chpl_comm_atomic_read_%s(%p, %d, %p, %d, %s)",          \
                #fnType, result, (int) node, object,                     \
                ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_diags_verbose_amo("amo read", node, ln, fn);              \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, NULL, NULL, result,                             \
           FI_ATOMIC_READ, ofiType, sizeof(Type));                       \
   }
@@ -2763,6 +2767,8 @@ DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, double)
                "chpl_comm_atomic_xchg_%s(%p, %d, %p, %p, %d, %s)",      \
                #fnType, desired, (int) node, object, result,            \
                ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_diags_verbose_amo("amo xchg", node, ln, fn);              \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, desired, NULL, result,                          \
           FI_ATOMIC_WRITE, ofiType, sizeof(Type));                      \
   }
@@ -2785,6 +2791,8 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, double)
                "%d, %s)",                                               \
                #fnType, expected, desired, (int) node, object, result,  \
                ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_diags_verbose_amo("amo cmpxchg", node, ln, fn);           \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, expected, desired, result,                      \
           FI_CSWAP, ofiType, sizeof(Type));                             \
   }
@@ -2805,6 +2813,8 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
                "chpl_comm_atomic_%s_%s(<%s>, %d, %p, %d, %s)",          \
                #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
                object, ln, chpl_lookupFilename(fn));                    \
+    chpl_comm_diags_verbose_amo("amo " #fnOp, node, ln, fn);            \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, operand, NULL, NULL,                            \
           ofiOp, ofiType, sizeof(Type));                                \
   }                                                                     \
@@ -2828,6 +2838,8 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
                "%d, %s)",                                               \
                #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
                object, result, ln, chpl_lookupFilename(fn));            \
+    chpl_comm_diags_verbose_amo("amo fetch_" #fnOp, node, ln, fn);      \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, operand, NULL, result,                          \
           ofiOp, ofiType, sizeof(Type));                                \
   }
@@ -2864,6 +2876,8 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                ln, chpl_lookupFilename(fn));                            \
     Type myOpnd = negate(*(Type*) operand);                             \
+    chpl_comm_diags_verbose_amo("amo sub", node, ln, fn);               \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, &myOpnd, NULL, NULL,                            \
           FI_SUM, ofiType, sizeof(Type));                               \
   }                                                                     \
@@ -2889,6 +2903,8 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                result, ln, chpl_lookupFilename(fn));                    \
     Type myOpnd = negate(*(Type*) operand);                             \
+    chpl_comm_diags_verbose_amo("amo fetch_sub", node, ln, fn);         \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, &myOpnd, NULL, result,                          \
           FI_SUM, ofiType, sizeof(Type));                               \
   }

@@ -507,6 +507,7 @@ void chpl_comm_task_end(void);
   MACRO(test_nb) \
   MACRO(wait_nb) \
   MACRO(try_nb) \
+  MACRO(amo) \
   MACRO(execute_on) \
   MACRO(execute_on_fast) \
   MACRO(execute_on_nb)

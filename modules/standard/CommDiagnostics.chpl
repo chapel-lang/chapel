@@ -167,6 +167,18 @@
  */
 module CommDiagnostics
 {
+  /*
+    If this is `false`, a written `commDiagnostics` value does not
+    include "unstable" fields even when they are non-zero.  Unstable
+    fields are those expected to have unpredictable values for multiple
+    executions of the same code sequence.  Setting this to `true` causes
+    such fields, if non-zero, to be included when a `commDiagnostics`
+    value is written.  At present the only unstable field is the `amo`
+    counter, whose instability is due to the use of atomic reads in spin
+    loops that wait for parallelism and on-statements to complete.
+   */
+  config param commDiagsPrintUnstable = false;
+
   /* Aggregated communication operation counts.  This record type is
      defined in the same way by both the underlying comm layer(s) and
      this module, because we don't have a good way to inherit types back
@@ -203,6 +215,10 @@ module CommDiagnostics
      */
     var try_nb: uint(64);
     /*
+      AMOs
+     */
+    var amo: uint(64);
+    /*
       blocking remote executions, in which initiator waits for completion
      */
     var execute_on: uint(64);
@@ -224,8 +240,11 @@ module CommDiagnostics
       for param i in 1..numFields(chpl_commDiagnostics) {
         const val = getField(this, i);
         if val != 0 {
-          if first then first = false; else c <~> ", ";
-          c <~> getFieldName(chpl_commDiagnostics, i) <~> " = " <~> val;
+          if getFieldName(chpl_commDiagnostics, i) != 'amo' ||
+             commDiagsPrintUnstable {
+            if first then first = false; else c <~> ", ";
+            c <~> getFieldName(chpl_commDiagnostics, i) <~> " = " <~> val;
+          }
         }
       }
       if first then c <~> "<no communication>";
@@ -346,7 +365,6 @@ module CommDiagnostics
     chpl_getCommDiagnosticsHere(cd);
     return cd;
   }
-
 
   /*
     If this is set, on-the-fly reporting of communication operations

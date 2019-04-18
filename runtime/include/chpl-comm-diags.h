@@ -101,6 +101,12 @@ void chpl_comm_diags_verbose_printf(const char* format, ...) {
                                  chpl_lookupFilename(fn), ln, op,       \
                                  (int) node)
 
+#define chpl_comm_diags_verbose_amo(op, node, ln, fn)                   \
+  chpl_comm_diags_verbose_printf("%s:%d: remote %s, "                   \
+                                 "node %d",                             \
+                                 chpl_lookupFilename(fn), ln, op,       \
+                                 (int) node)
+
 #define chpl_comm_diags_verbose_executeOn(kind, node)                   \
   chpl_comm_diags_verbose_printf("remote %-*sexecuteOn, node %d",       \
                                  ((int) strlen(kind)                    \
