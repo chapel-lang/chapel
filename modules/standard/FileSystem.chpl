@@ -1205,11 +1205,11 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
     }
     closedir(dir);
   } else {
-    /* perror() is asks the C stdlib to print out a message specific to
-       the current value of errno */
+    /* perror() is used here because it asks the C stdlib to print out a
+       message specific to the current value of errno */
     extern proc perror(s: c_string);
 
-    // stderr.writef() would be cleaner, but it throws
+    // stderr.writef would be cleaner than this try/catch block, but it throws
     var errorMsg: string;
     try {
       errorMsg = "error in listdir() with argument '%s'".format(path);
