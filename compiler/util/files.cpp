@@ -650,7 +650,7 @@ static void genCFileBuildRules(FILE* makefile) {
       const char* objFilename = objectFileForCFile(inputFilename);
       fprintf(makefile, "%s: %s FORCE\n", objFilename, inputFilename);
       fprintf(makefile,
-                   "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $<\n");
+              "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR) $<\n");
       fprintf(makefile, "\n");
     }
   }
