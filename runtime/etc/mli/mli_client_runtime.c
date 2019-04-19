@@ -14,9 +14,9 @@ void chpl_mli_client_init(struct chpl_mli_context* client) {
 
   client->context = zmq_ctx_new();
   client->main    = zmq_socket(client->context, ZMQ_REQ);
-  client->arg     = zmq_socket(client->context, ZMQ_PUB);
-  client->res     = zmq_socket(client->context, ZMQ_SUB);
-  
+  client->arg     = zmq_socket(client->context, ZMQ_REQ);
+  client->res     = zmq_socket(client->context, ZMQ_REP);
+
   return;
 }
 

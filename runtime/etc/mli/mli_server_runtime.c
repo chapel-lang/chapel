@@ -36,9 +36,9 @@ void chpl_mli_server_init(struct chpl_mli_context* server) {
 
   server->context = zmq_ctx_new();
   server->main    = zmq_socket(server->context, ZMQ_REP);
-  server->arg     = zmq_socket(server->context, ZMQ_SUB);
-  server->res     = zmq_socket(server->context, ZMQ_PUB);
-    
+  server->arg     = zmq_socket(server->context, ZMQ_REP);
+  server->res     = zmq_socket(server->context, ZMQ_REQ);
+
   return;
 }
 
@@ -124,6 +124,9 @@ void chpl_mli_smain(void) {
       execute = 0;
       ack = CHPL_MLI_ERROR_SHUTDOWN;
     } else {
+      // TODO: Don't just send a null frame as ack?
+      chpl_mli_push(chpl_server.main, "", 0, 0);
+
       chpl_mli_sdebugf("Dispatch on id: %lld\n", function);
       ack = chpl_mli_sdispatch(function);
     }

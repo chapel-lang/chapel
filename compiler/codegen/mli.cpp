@@ -60,8 +60,8 @@ static const char* server_main = "chpl_server.main";
 static const char* server_arg = "chpl_server.arg";
 static const char* server_res = "chpl_server.res";
 
-static const char* marshal_push_prefix = "chpl_mli_push_type_";
-static const char* marshal_pull_prefix = "chpl_mli_pull_type_";
+static const char* marshal_push_prefix = "chpl_mli_mtpush_";
+static const char* marshal_pull_prefix = "chpl_mli_mtpull_";
 
 static const char* socket_push_name = "chpl_mli_push";
 static const char* socket_pull_name = "chpl_mli_pull";
@@ -122,6 +122,7 @@ std::string genFuncToSetServerGlobals(void);
 std::string genClientCallPrologue(FnSymbol* fn);
 std::string genClientCallEpilogue(FnSymbol *fn);
 std::string genDebugPrintCall(FnSymbol* fn, const char* pfx="");
+std::string genDebugPrintCall(const char* msg, const char* pfx="");
 std::string genFuncNumericID(FnSymbol* fn);
 std::string genServerWrapperCall(FnSymbol* fn);
 std::string genClientsideRPC(FnSymbol* fn);
@@ -212,7 +213,8 @@ void MLIContext::emit(FnSymbol* fn) {
   if (not fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
     return;
   }
- 
+
+  this->verifyPrototype(fn); 
   this->emitClientWrapper(fn);
   this->emitServerWrapper(fn);
 
@@ -346,6 +348,11 @@ void MLIContext::emitMarshalRoutines(void) {
   gen += "\n";
 
   for (i = this->typeMap.begin(); i != this->typeMap.end(); ++i) {
+    if (this->injectDebugPrintlines) {
+      std::string tpn = this->genTypeName(i->first);
+      gen += this->genComment(tpn.c_str());
+    }
+
     gen += this->genMarshalPushRoutine(i->first);
     gen += this->genMarshalPullRoutine(i->first);
   }
@@ -380,11 +387,26 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
 
   gen += ") {\n";
 
+  // Declare a variable to catch socket errors.
+  gen += "\tint skt_err = 0;\n";
+
   // If we are unpacking, declare a temporary for the return value.
   if (not out) {
     gen += "\t";
     gen += this->genTypeName(t);
     gen += " result;\n";
+  }
+
+  if (this->injectDebugPrintlines) {
+    std::string msg;
+
+    msg += out ? "Pushing type:" : "Pulling type:";
+    msg += " ";
+    msg += this->genTypeName(t);
+
+    gen += "\t";
+    gen += this->genDebugPrintCall(msg.c_str(), "[RPC]");
+    gen += ";\n";
   }
 
   //
@@ -402,13 +424,26 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
     // On pack, target buffer is input parameter. On unpack, the temporary.
     const char* target = out ? "var" : "result";
     
-    gen += "\t";
+    gen += "\tskt_err = ";
     gen += this->genSocketCall("skt", target, out);
     gen += ";\n";
+
+    if (this->injectDebugPrintlines) {
+      gen += "\tif (skt_err < 0) {\n";
+      gen += "\t\t";
+      gen += this->genDebugPrintCall("Socket error!", "[RPC]");
+      gen += ";\n";
+      gen += "\t}\n";
+    }
     
   } else {
     USR_FATAL("MLI does not support code generation for type", t);
   }
+
+  // Generate a null frame in the opposite direction for the ACK.
+  gen += "\t";
+  gen += this->genSocketCall("skt", NULL, not out);
+  gen += ";\n";
 
   // If we are unpacking, return our temporary.
   if (not out) {
@@ -514,12 +549,23 @@ std::string MLIContext::genClientCallPrologue(FnSymbol* fn) {
   if (this->injectDebugPrintlines) {
     gen += "\t";
     gen += this->genDebugPrintCall(fn, "[Client]");
-    gen += "\n";
+    gen += ";\n";
   }
 
+  // Send out request.
   gen += "\t";
   gen += this->genSocketPushCall(client_main, "id");
-  gen += ";\n";    
+  gen += ";\n";
+
+  // Read out server confirmation.
+  gen += "\t";
+  gen += this->genSocketPullCall(client_main, "id");
+  gen += ";\n"; 
+ 
+  // Server return value "st" already declared in prologue.
+  gen += "\t";
+  gen += this->genTodo("Handle server errors.");
+  gen += "\tif (st) { ;;; }\n"; 
   
   return gen;
 }
@@ -530,15 +576,6 @@ std::string MLIContext::genClientCallPrologue(FnSymbol* fn) {
 //
 std::string MLIContext::genClientCallEpilogue(FnSymbol* fn) {
   std::string gen;
-
-  // Server return value "st" already declared in prologue.
-  gen += "\t";
-  gen += this->genSocketPullCall(client_main, "st");
-  gen += ";\n";
-  gen += "\t";
-  gen += this->genTodo("Handle server errors.");
-  gen += "\tif (st) { ;;; }\n";
-
   return gen;
 }
 
@@ -639,6 +676,16 @@ void MLIContext::emitServerWrapper(FnSymbol* fn) {
 
 
 std::string MLIContext::genDebugPrintCall(FnSymbol* fn, const char* pfx) {
+  std::string msg;
+
+  msg += "Calling: ";
+  msg += toString(fn);
+
+  return this->genDebugPrintCall(msg.c_str(), pfx);
+}
+
+
+std::string MLIContext::genDebugPrintCall(const char* msg, const char* pfx) {
   std::string gen;
 
   gen += "printf(\"";
@@ -648,9 +695,9 @@ std::string MLIContext::genDebugPrintCall(FnSymbol* fn, const char* pfx) {
     gen += " ";
   }
 
-  gen += "Calling: %%s\\n\", \"";
-  gen += toString(fn);
-  gen += "\");";
+  gen += "%%s\\n\", \"";
+  gen += msg;
+  gen += "\")";
 
   return gen;
 }
@@ -707,7 +754,7 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
       gen += "{\n";
       gen += "\t\t";
       gen += this->genDebugPrintCall(fn, "[MLI-Server]");
-      gen += "\n";
+      gen += ";\n";
       gen += "\t\terr = ";
       gen += this->genServerWrapperCall(fn);
       gen += "\n";
@@ -785,13 +832,38 @@ std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
   bool hasVoidReturnType = fn->retType == dtVoid;
   bool hasFormals = fn->numFormals() != 0;
 
-  // If we are void void, then there's nothing left to do.
+  // If we are void/void, then there's nothing left to do.
   if (hasVoidReturnType and not hasFormals) {
+    gen += "\t";
     gen += this->genComment("Routine is void/void!");
     return gen;
   }
 
-   
+  // Declare a temporary for the return value, if necessary.
+  if (not hasVoidReturnType) {
+    gen += "\t";
+    gen += this->genTypeName(fn->retType);
+    gen += " result;\n";
+  }
+
+  // Issue pack call for each formal.
+  for (int i = 1; i <= fn->numFormals(); i++) {
+    ArgSymbol* as = fn->getFormal(i);
+    Type* t = getTypeFromFormal(as);
+
+    gen += "\t";
+    gen += this->genMarshalPushCall(client_arg, as->name, t);
+    gen += ";\n"; 
+  }
+
+  // Pull and return result if applicable.
+  if (not hasVoidReturnType) {
+    gen += "\tresult = ";
+    gen += this->genMarshalPullCall(client_res, "result", fn->retType);
+    gen += ";\n";
+    gen += "\treturn result;\n";
+  }
+ 
   return gen;
 }
 
@@ -819,9 +891,6 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
     return gen;
   }
 
-  // We cannot readily support marshalling every type Chapel offers (yet).
-  verifyPrototype(fn);
-
   // Declare a temporary for the return value, if necessary.
   if (not hasVoidReturnType) {
     gen += "\t";
@@ -833,7 +902,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   for (int i = 1; i <= fn->numFormals(); i++) {
     std::string tmp;
 
-    Type* t = getTypeFromFormal(fn, i);
+    Type* t = this->getTypeFromFormal(fn, i);
 
     gen += "\t";
     gen += this->genTypeName(t);
@@ -936,9 +1005,9 @@ MLIContext::genSocketCall(const char* s, const char* v, bool out) {
   gen += "(";
   gen += s;
   gen += ", ";
-  gen += this->genAddressOf(v);
+  gen += v ? this->genAddressOf(v) : "\"\"";
   gen += ", ";
-  gen += this->genSizeof(v);
+  gen += v ? this->genSizeof(v) : "0";
   gen += ", 0)";
 
   return gen;
