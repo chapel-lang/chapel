@@ -81,8 +81,10 @@ module Itertools {
   iter repeat (param tag: iterKind, arg, times = 0) throws
       where tag == iterKind.leader {
 
-    const numTasks = if dataParTasksPerLocale > 0 then dataParTasksPerLocale
+    var numTasks = if dataParTasksPerLocale > 0 then dataParTasksPerLocale
                                                   else here.maxTaskPar;
+
+    if numTasks > times then numTasks = times;
 
     if times == 0 then
       throw new owned IllegalArgumentError(
