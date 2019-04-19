@@ -1,4 +1,7 @@
 
+var errorIfMismatch = false;
+var debugDefault = false;
+
 proc checkShape(A : [?ad], B : [?bd]) {
   for param i in 1..ad.rank {
     if ad.dim(i).length != bd.dim(i).length then return false;
@@ -6,15 +9,15 @@ proc checkShape(A : [?ad], B : [?bd]) {
   return true;
 }
 
-proc stridedAssign(A : [], B : []) {
-  stridedAssign(A, A.domain, B, B.domain);
+proc stridedAssign(A : [], B : [], debug=debugDefault) {
+  stridedAssign(A, A.domain, B, B.domain, debug=debug);
 }
 
 // returns:
 // -1 if the assignment result in incorrect data
 // 0 if the assignment did not occur (say, for arrays whose size did not match)
 // 1 if the assignment was successfull
-proc stridedAssign(A : [], sa, B : [], sb, debug=false) {
+proc stridedAssign(A : [], sa, B : [], sb, debug=debugDefault) {
   ref left = if isDomain(sa) then A[sa] else A[(...sa)];
   ref right = if isDomain(sb) then B[sb] else B[(...sb)];
   const ldom = left.domain;
@@ -64,6 +67,9 @@ proc stridedAssign(A : [], sa, B : [], sb, debug=false) {
     }
     right = 3;
   } else ret = 0;
+
+  if ret == 0 && errorIfMismatch then
+    writeln("FAILURE: domains cannot be used to assign: ", left.domain, " vs. ", right.domain);
 
   return ret;
 }

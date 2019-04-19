@@ -23,6 +23,10 @@
 #include "chpltypes.h"
 #include "error.h"
 
+#ifdef LAUNCHER
+#include "chpllaunch.h"
+#endif
+
 #include <ctype.h>
 #include <inttypes.h>
 #include <stdint.h>
@@ -172,6 +176,11 @@ size_t chpl_env_str_to_size(const char* evName, const char* evVal,
 
 
 void chpl_env_set(const char* evName, const char* evVal, int overwrite) {
+#ifdef LAUNCHER
+  if (overwrite || getenv(evName) == NULL) {
+    chpl_launcher_record_env_var(evName, evVal);
+  }
+#endif
   if (setenv(evName, evVal, overwrite) != 0) {
     char buf[200];
     snprintf(buf, sizeof(buf), "cannot setenv %s=\"%s\"", evName, evVal);

@@ -1875,7 +1875,6 @@ module DefaultRectangular {
     if len == 0 then return;
 
     if debugBulkTransfer {
-      pragma "no prototype"
       pragma "fn synchronization free"
       extern proc sizeof(type x): int;
       const elemSize =sizeof(B.eltType);
@@ -1945,43 +1944,6 @@ module DefaultRectangular {
     }
   }
 
-  // Compute the active dimensions of this assignment. For example, LeftDims
-  // could be (1..1, 1..10) and RightDims (1..10, 1..1). This indicates that
-  // a rank change occurred and that the inferredRank should be '1', the
-  // LeftActives = (2,), the RightActives = (1,)
-  private proc computeActiveDims(LeftDims, RightDims) {
-    param LeftRank  = LeftDims.size;
-    param RightRank = RightDims.size;
-    param minRank   = min(LeftRank, RightRank);
-
-    var inferredRank = 0;
-
-    // Tuple used instead of an array because returning an array would
-    // recursively invoke array assignment (and therefore bulk-transfer).
-    var LeftActives, RightActives : minRank * int;
-
-    var li = 1, ri = 1;
-    proc advance() {
-      // Advance to positions in each domain where the sizes are equal.
-      while LeftDims(li).size == 1 && LeftDims(li).size != RightDims(ri).size do li += 1;
-      while RightDims(ri).size == 1 && RightDims(ri).size != LeftDims(li).size do ri += 1;
-
-      assert(LeftDims(li).size == RightDims(ri).size);
-    }
-
-    do {
-      advance();
-      inferredRank += 1;
-
-      LeftActives(inferredRank)  = li;
-      RightActives(inferredRank) = ri;
-
-      li += 1;
-      ri += 1;
-    } while li <= LeftRank && ri <= RightRank;
-
-    return (LeftActives, RightActives, inferredRank);
-  }
 
   private proc complexTransferCore(LHS, LViewDom, RHS, RViewDom) {
     param minRank = min(LHS.rank, RHS.rank);
@@ -1996,7 +1958,7 @@ module DefaultRectangular {
     const LeftDims  = LViewDom.dims();
     const RightDims = RViewDom.dims();
 
-    const (LeftActives, RightActives, inferredRank) = computeActiveDims(LeftDims, RightDims);
+    const (LeftActives, RightActives, inferredRank) = bulkCommComputeActiveDims(LeftDims, RightDims);
 
     var DimSizes : [1..0] LeftDims(1).size.type;
     for i in 1..inferredRank {
@@ -2185,7 +2147,7 @@ module DefaultRectangular {
     var res: [dom] resType;
 
     // Take first pass, computing per-task partial scans, stored in 'state'
-    var (numTasks, rngs, state, _) = this.chpl__preScan(op, res);
+    var (numTasks, rngs, state, _) = this.chpl__preScan(op, res, dom);
 
     // Take second pass updating result based on the scanned 'state'
     this.chpl__postScan(op, res, numTasks, rngs, state);
@@ -2200,9 +2162,9 @@ module DefaultRectangular {
   // task, and the scanned results of each task's scan.  This is
   // broken out into a helper function in order to be made use of by
   // distributed array scans.
-  proc DefaultRectangularArr.chpl__preScan(op, res: [] ?resType) {
+  proc DefaultRectangularArr.chpl__preScan(op, res: [] ?resType, dom) {
     // Compute who owns what
-    const rng = dom.dsiDim(1);
+    const rng = dom.dim(1);
     const numTasks = if __primitive("task_get_serial") then
                       1 else _computeNumChunks(rng.size);
     const rngs = RangeChunk.chunks(rng, numTasks);

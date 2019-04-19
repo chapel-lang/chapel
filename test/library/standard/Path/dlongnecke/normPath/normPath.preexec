@@ -3,12 +3,8 @@
 # Python (2.7) code with proper output for os.path.normpath(). Use this to
 # generate the output for "testcases_normPath.good".
 
-# NOTE: I had to revert this script back to Python 2.7 because a remote
-# testing machine did not support Python 3. It is assumed that the
-# implementation of os.path.normpath() has not changed much between Python 2.7
-# and Python 3.7 (I referenced the latter for my implementation).
 
-
+from __future__ import print_function
 import os.path
 import sys
 
@@ -32,7 +28,7 @@ pathSep2 = '//'
 
 
 def collapse(path):
-    print path, 'becomes', os.path.normpath(path)
+    print(path, 'becomes', os.path.normpath(path))
 
 
 # Redirect STDOUT to the "testcase_normPath.good" file.

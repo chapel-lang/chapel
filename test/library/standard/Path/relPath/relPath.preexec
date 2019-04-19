@@ -4,6 +4,7 @@
 # Produce the output file our test will compare itself against.
 
 
+from __future__ import print_function
 import sys
 import os.path
 
@@ -16,8 +17,8 @@ pathSep2 = '//'
 
 
 def test(name, start=""):
-    print 'name=', name, 'start=', start
-    print os.path.relpath(name, start)
+    print('name=', name, 'start=', start)
+    print(os.path.relpath(name, start))
 
 
 # Redirect STDOUT to the output file.
