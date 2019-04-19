@@ -3278,6 +3278,7 @@ memkind
 nomail
 parentlocid
 pshm
+senable
 spack
 stdinredirect
 structors
@@ -3629,6 +3630,7 @@ chplgmp
 kace
 paircount
 regexdnaredux
+tdata
 threadring
 timecomp
 twopt
@@ -4243,6 +4245,7 @@ FILEID: aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5
 adrerr
 allgathers
 blockhere
+bufi
 cmps
 cmpval
 cqmode
@@ -4724,6 +4727,7 @@ libhdrfile
 libname
 linkershared
 lname
+rbegin
 sinterface
 smodule
 
@@ -4845,6 +4849,16 @@ rmaps
 FILEID: 77dd4c52-3b13-11e9-b712-843835579daa
 urse
 
+FILEID: e8ed417a-624d-11e9-b712-843835579daa
+assignsborrow
+myswap
+returnsborrow
+returnsref
+
+FILEID: 076e82b2-624e-11e9-b712-843835579daa
+intsize
+resbuf
+
 NATURAL:
 aarch
 abcd
@@ -4895,6 +4909,7 @@ angeles
 anonymize
 ansi
 antialias
+anubhav
 anybool
 anyimag
 anyreal
@@ -4970,6 +4985,7 @@ battaglino
 bdver
 behaviour
 benchmarksgame
+bendre
 bengali
 benharsh
 benhavns
@@ -4983,6 +4999,7 @@ bharshbarg
 bharshbarger
 biesack
 bigint
+biginteger
 bigints
 bigsubs
 billig
@@ -5110,6 +5127,7 @@ checksum
 checksumming
 checksums
 cherokee
+chikara
 chiki
 childnum
 childstate
@@ -5128,6 +5146,7 @@ chplrt
 chplsrc
 chpltags
 chpltypes
+chplvenv
 chplvis
 chudnovsky
 chunked
@@ -5156,6 +5175,7 @@ cmpabs
 cmpxchg
 cmsg
 cname
+cnames
 cnselect
 cntrl
 cobegin
@@ -5166,6 +5186,7 @@ codegenned
 codegenning
 codegens
 codepoint
+codepoints
 codesign
 coforall
 coforalls
@@ -5248,6 +5269,7 @@ darwin
 datafile
 dataflow
 datagram
+datagrams
 dataparallel
 dataset
 datastart
@@ -5787,6 +5809,7 @@ holewinski
 holt
 homebrew
 hongwei
+hoole
 hoplimit
 hopopts
 hornung
@@ -5833,6 +5856,7 @@ immediates
 immmediately
 implementors
 inbox
+incls
 includedir
 incrementer
 incrs
@@ -5969,6 +5993,7 @@ jedi
 jeff
 jemalloc
 jenkins
+jenna
 jeremy
 jessica
 jiminez
@@ -6145,6 +6170,7 @@ logtmp
 loisel
 london
 longlong
+longnecker
 lookahead
 lookups
 lopez
@@ -6153,6 +6179,7 @@ lossy
 louis
 lowell
 lowlevel
+lpath
 lrint
 lseek
 lstat
@@ -6276,6 +6303,7 @@ modelled
 modname
 modulefile
 modulesymbol
+mojave
 moler
 monday
 mongolian
@@ -6346,6 +6374,7 @@ mytype
 myuint
 nagri
 nakashima
+naman
 namedexpr
 namespaced
 namespaces
@@ -6619,6 +6648,7 @@ preemptively
 preexec
 prefixscan
 preformatted
+prelaunch
 preorder
 prepended
 prepending
@@ -6673,6 +6703,7 @@ pvar
 pwritev
 pychapel
 pydoc
+pyenv
 pygments
 pythonpath
 qian
@@ -6871,6 +6902,7 @@ seekamp
 seekdata
 seekfunction
 segfault
+segfaulting
 segfaults
 segsize
 segv
@@ -6912,6 +6944,7 @@ showplus
 showpoint
 showpointzero
 sidelnik
+sidhant
 siek
 sigabrt
 sigaddset
@@ -7076,6 +7109,7 @@ subquery
 subrange
 subranges
 subrecords
+subregions
 subscripting
 subsequence
 substrings
@@ -7251,6 +7285,7 @@ ugni
 uintptr
 uints
 uiui
+ujjawal
 ulength
 ulong
 ulonglong
@@ -7363,6 +7398,7 @@ vyukov
 wailes
 waitall
 waitpid
+waittime
 walkdirs
 wallace
 wallclock
