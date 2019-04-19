@@ -1205,8 +1205,19 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
     }
     closedir(dir);
   } else {
+    /* perror() is asks the C stdlib to print out a message specific to
+       the current value of errno */
     extern proc perror(s: c_string);
-    perror("error in listdir(): ");
+
+    // stderr.writef() would be cleaner, but it throws
+    var errorMsg: string;
+    try {
+      errorMsg = "error in listdir() with argument '%s'".format(path);
+    } catch e {
+      // Generic error message in case format fails
+      perror("Error in listdir(): ");
+    }
+    perror(errorMsg.c_str());
   }
 }
 
