@@ -5,7 +5,7 @@ import sys
 
 from distutils.spawn import find_executable
 
-import chpl_platform, overrides, chpl_home_utils
+import chpl_platform, overrides
 from utils import error, memoize
 
 
@@ -17,6 +17,7 @@ from utils import error, memoize
 #
 @memoize
 def validate(compiler_val):
+    import chpl_home_utils
     chpl_home = chpl_home_utils.get_chpl_home()
     comp_makefile = os.path.join(chpl_home, 'make', 'compiler', 'Makefile.{0}'.format(compiler_val))
     if not os.path.isfile(comp_makefile):
