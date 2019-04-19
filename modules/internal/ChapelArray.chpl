@@ -1558,10 +1558,8 @@ module ChapelArray {
     /* Return true if this domain is a subset of ``super``. Otherwise
        returns false. */
     proc isSubset(super : domain) {
-      if !isAssociativeDom(this) {
-        if isRectangularDom(this) then
-          compilerError("isSubset not supported on rectangular domains");
-        else if isOpaqueDom(this) then
+      if !(isAssociativeDom(this) || isRectangularDom(this)) {
+        if isOpaqueDom(this) then
           compilerError("isSubset not supported on opaque domains");
         else if isSparseDom(this) then
           compilerError("isSubset not supported on sparse domains");
@@ -1569,7 +1567,22 @@ module ChapelArray {
           compilerError("isSubset not supported on this domain type");
       }
       if super.type != this.type then
-        compilerError("isSubset called with different associative domain types");
+        if isRectangularDom(this) {
+          if super.rank != this.rank then
+            compilerError("rank mismatch in domain.isSubset()");
+          else if super.low.type != this.low.type then
+            compilerError("isSubset called with different index types");
+        } else
+          compilerError("isSubset called with different associative domain types");
+
+      if isRectangularDom(this) {
+        var contains = true;
+        for i in 1..this.dims().size {
+          contains &&= super.dims()[i].contains(this.dims()[i]);
+          if contains == false then break;
+        }
+        return contains;
+      }
 
       return && reduce forall i in this do super.contains(i);
     }
@@ -1577,10 +1590,8 @@ module ChapelArray {
     /* Return true if this domain is a superset of ``sub``. Otherwise
        returns false. */
     proc isSuper(sub : domain) {
-      if !isAssociativeDom(this) {
-        if isRectangularDom(this) then
-          compilerError("isSuper not supported on rectangular domains");
-        else if isOpaqueDom(this) then
+      if !(isAssociativeDom(this) || isRectangularDom(this)) {
+        if isOpaqueDom(this) then
           compilerError("isSuper not supported on opaque domains");
         else if isSparseDom(this) then
           compilerError("isSuper not supported on sparse domains");
@@ -1588,7 +1599,22 @@ module ChapelArray {
           compilerError("isSuper not supported on the domain type ", this.type);
       }
       if sub.type != this.type then
-        compilerError("isSuper called with different associative domain types");
+        if isRectangularDom(this) {
+          if sub.rank != this.rank then
+            compilerError("rank mismatch in domain.isSuper()");
+          else if sub.low.type != this.low.type then
+            compilerError("isSuper called with different index types");
+        } else
+          compilerError("isSuper called with different associative domain types");
+
+      if isRectangularDom(this) {
+        var contains = true;
+        for i in 1..this.dims().size {
+          contains &&= this.dims()[i].contains(sub.dims()[i]);
+          if contains == false then break;
+        }
+        return contains;
+      }
 
       return && reduce forall i in sub do this.contains(i);
     }
