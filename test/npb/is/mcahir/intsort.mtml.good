@@ -1,7 +1,3 @@
-intsort.mtml.chpl:215: In function 'rank_keys':
-intsort.mtml.chpl:307: warning: scan has been serialized (see issue #5760)
-intsort.mtml.chpl:215: In function 'rank_keys':
-intsort.mtml.chpl:307: warning: (recompile with -senableParScan to enable a prototype parallel implementation)
 NAS Parallel Benchmarks 2.4 -- IS Benchmark
  Size:                           65536  (class S)
  Iterations:                        10

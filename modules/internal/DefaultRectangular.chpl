@@ -2176,7 +2176,17 @@ module DefaultRectangular {
     var state: [1..numTasks] resType;
 
     // Take first pass over data doing per-chunk scans
-    coforall tid in 1..numTasks {
+
+    // optimize for the single-task case
+    if numTasks == 1 {
+      preScanChunk(1);
+    } else {
+      coforall tid in 1..numTasks {
+        preScanChunk(tid);
+      }
+    }
+
+    proc preScanChunk(tid) {
       const current: resType;
       const myop = op.clone();
       for i in rngs[tid] {
@@ -2211,12 +2221,22 @@ module DefaultRectangular {
   // tasks.  This is broken out into a helper function in order to be
   // made use of by distributed array scans.
   proc DefaultRectangularArr.chpl__postScan(op, res, numTasks, rngs, state) {
-    coforall tid in 1..numTasks {
+    // optimize for the single-task case
+    if numTasks == 1 {
+      postScanChunk(1);
+    } else {
+      coforall tid in 1..numTasks {
+        postScanChunk(tid);
+      }
+    }
+
+    proc postScanChunk(tid) {
       const myadjust = state[tid];
       for i in rngs[tid] {
         op.accumulateOntoState(res[i], myadjust);
       }
     }
+    
     if debugDRScan then
       writeln("res = ", res);
   }
