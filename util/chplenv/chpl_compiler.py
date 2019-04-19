@@ -18,7 +18,8 @@ from utils import error, memoize
 @memoize
 def validate(compiler_val):
     chpl_home = chpl_home_utils.get_chpl_home()
-    if not os.path.isfile(chpl_home + "/make/compiler/Makefile." + compiler_val):
+    comp_makefile = os.path.join(chpl_home, 'make', 'compiler', 'Makefile.{0}'.format(compiler_val))
+    if not os.path.isfile(comp_makefile):
         sys.stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler_val))
 
 
