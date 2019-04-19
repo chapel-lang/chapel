@@ -3,6 +3,7 @@
 
 class C {
   proc C.cc() {}
+  proc (shared C).scc() {}
 }
 
 var c = new C();
@@ -10,10 +11,11 @@ writeln(c);
 
 record R {
   proc R.rr() {}
+  proc type R.trr() {}
 }
 
 var r: R;
-writeln(c);
+writeln(r);
 
 union U {
   var i:int; var r:real;

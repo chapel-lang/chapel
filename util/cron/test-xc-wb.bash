@@ -7,19 +7,22 @@ source $CWD/functions.bash
 source $CWD/common-whitebox.bash
 source $CWD/common-localnode-paratest.bash
 
-# Whitebox testing runs multiple paratests concurrently (-nodepara 2 for up to
-# 4 configs.) We limit the number of running executables, but we use a file as
-# a lock to do that, which is racey. Limit the amount of spinwaiting we do and
-# turn off affinity since they'll be a lot compiles and maybe 2 executables
-# running concurrently. Note that we don't disable affinity for pgi because
-# its lack of atomics combined with no affinity has led to timeouts.
-export QT_SPINCOUNT=300
-if [ "${COMPILER}" != "pgi" ] ; then
-  export QT_AFFINITY=no
+# Whitebox testing runs multiple paratests concurrently. We limit the number of
+# running executables, but some configs run on shared machines and we don't
+# want to interfere with others too much so run in an "oversubscribed" manner.
+# Note that we don't disable affinity under PGI since we've seen that disabling
+# affinity combined with its lack of atomics has led to timeouts.
+source $CWD/common-oversubscribed.bash
+if [ "${COMPILER}" == "pgi" ] ; then
+  export QT_AFFINITY=yes
+fi
+
+if [ "${COMPILER}" == "cray" ] ; then
+  oversub=6
 fi
 
 # Run the tests!
-nightly_args="${nightly_args} -cron $(get_nightly_paratest_args)"
+nightly_args="${nightly_args} -cron $(get_nightly_paratest_args $oversub)"
 log_info "Calling nightly with args: ${nightly_args}"
 $CWD/nightly ${nightly_args}
 log_info "Finished running nightly."

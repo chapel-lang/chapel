@@ -15,7 +15,7 @@ DO_PRINT_TIMING_STATISTICS=
 MORE_CHPL_FLAGS=
 
 OPT = --fast
-CHPL_FLAGS = $(OPT) --no-warnings -M SSCA2_Modules \
+CHPL_FLAGS = $(OPT) -M SSCA2_Modules \
              SSCA2_Modules/SSCA2_kernels.chpl \
              SSCA2_Modules/analyze_torus_graphs_stencil_rep_v1.chpl
 

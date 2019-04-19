@@ -1,1 +1,1 @@
--suseBulkTransferStride
+-suseBulkTransferStride -M ../common

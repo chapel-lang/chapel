@@ -1,2 +1,7 @@
 bug: function-scoped enum can't be initialized with global param
 #7681
+
+The error in the .bad file corresponds to this in
+ensureEnumTypeResolved():
+
+test/types/enum/scope-param-offset-concrete.chpl:4: internal error: Unable to resolve enumerator type expression [resolution/functionResolution.cpp:6183]

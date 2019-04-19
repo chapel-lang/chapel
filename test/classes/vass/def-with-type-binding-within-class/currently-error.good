@@ -1,3 +1,5 @@
 currently-error.chpl:5: error: Type binding clauses ('C.' in this case) are not supported in declarations within a class, record or union
-currently-error.chpl:12: error: Type binding clauses ('R.' in this case) are not supported in declarations within a class, record or union
-currently-error.chpl:20: error: Type binding clauses ('U.' in this case) are not supported in declarations within a class, record or union
+currently-error.chpl:6: error: Type binding clauses (in this case, the parenthesized expression preceding the dot before function name) are not supported in declarations within a class, record or union
+currently-error.chpl:13: error: Type binding clauses ('R.' in this case) are not supported in declarations within a class, record or union
+currently-error.chpl:14: error: Type binding clauses ('R.' in this case) are not supported in declarations within a class, record or union
+currently-error.chpl:22: error: Type binding clauses ('U.' in this case) are not supported in declarations within a class, record or union
