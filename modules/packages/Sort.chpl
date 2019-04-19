@@ -1478,8 +1478,8 @@ record DefaultComparator {
 
    :returns: ``(0, u)`` if ``i==0``, or ``(-1, u)`` otherwise,
              where `u` is a `uint` storing the bits of the `real`
-             but with some tranformations applied to produce the
-             correct sort  order.
+             but with some transformations applied to produce the
+             correct sort order.
    */
   inline
   proc keyPart(x: chpl_anyreal, i:int):(int(8), uint(numBits(x.type))) {
