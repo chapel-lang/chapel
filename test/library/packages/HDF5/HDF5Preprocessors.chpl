@@ -4,7 +4,7 @@ module HDF5Preprocessors {
   class AddNPreprocessor: HDF5Preprocessor {
     const n: int;
 
-    proc preprocess(A: []) {
+    override proc preprocess(A: []) {
       forall a in A {
         a += n;
       }
@@ -14,7 +14,7 @@ module HDF5Preprocessors {
   class ScriptPreprocessor: HDF5Preprocessor {
     const script: string;
 
-    proc preprocess(A: []) {
+    override proc preprocess(A: []) {
       use FileSystem, Path, Spawn;
 
       try! {
