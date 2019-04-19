@@ -1,0 +1,2 @@
+helperFiles/helperMod.chpl:1: error: opening foo.c: No such file or directory
+Note: This source location is a guess.
