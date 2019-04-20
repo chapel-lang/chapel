@@ -843,7 +843,9 @@ used to recursively hold tables and respective values
           when fieldEmpty {
             throw new owned TomlError("Keys must have a value");
           }
-          // TODO: writef for fieldDate
+          when fieldDate {
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+          }
           when fieldDateTime {
             f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
