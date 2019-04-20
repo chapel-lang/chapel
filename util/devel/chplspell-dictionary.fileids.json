@@ -357,6 +357,9 @@
   "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/libraries.rst"
   ],
+  "e8ed417a-624d-11e9-b712-843835579daa": [
+    "doc/rst/technotes/lifetimeChecking.rst"
+  ],
   "cd80a742-ad6d-11e7-a204-10ddb1d4c3d5": [
     "doc/rst/technotes/reduceIntents.rst"
   ],
@@ -530,6 +533,9 @@
   ],
   "24a5f32a-792f-11e6-807a-843835579daa": [
     "modules/packages/ZMQ.chpl"
+  ],
+  "076e82b2-624e-11e9-b712-843835579daa": [
+    "modules/packages/ZMQHelper/zmq_helper.h"
   ],
   "c0254978-0c13-11e7-980e-10ddb1d4c3d5": [
     "modules/standard/DateTime.chpl"
