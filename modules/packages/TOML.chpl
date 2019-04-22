@@ -144,6 +144,7 @@ module TomlParser {
       kv = compile('|'.join(doubleQuotes, singleQuotes, digit, keys)),
       dt = compile('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$'),
       realNum = compile("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
+      ld = compile('^\\d{4}-\\d{2}-\\d{2}$'),
       ints = compile("(\\d+|\\+\\d+|\\-\\d+)"),
       inBrackets = compile("(\\[.*?\\])"),
       corner = compile("(\\[.+\\])"),
@@ -359,6 +360,16 @@ module TomlParser {
           Datetime = date;
           return Datetime;
         }
+        // Date
+        else if ld.match(val) {
+          var raw = getToken(source).split("-");
+          var d = new date(raw[1]: int,
+                           raw[2]: int,
+                           raw[3]: int);
+          var Date: unmanaged Toml;
+          Date = d;
+          return Date;
+        }
         // Real
         else if realNum.match(val) {
          var token = getToken(source);
@@ -433,7 +444,8 @@ pragma "no doc"
    fieldReal,
    fieldString,
    fieldEmpty,
-   fieldDate };
+   fieldDate,
+   fieldDateTime };
  use fieldtag;
 
  pragma "no doc"
@@ -477,11 +489,21 @@ pragma "no doc"
  }
 
  pragma "no doc"
+ proc =(ref t: unmanaged Toml, ld: date) {
+   if t == nil {
+     t = new unmanaged Toml(ld);
+   } else {
+     t.tag = fieldDate;
+     t.ld = ld;
+   }
+ }
+
+ pragma "no doc"
  proc =(ref t: unmanaged Toml, dt: datetime) {
    if t == nil {
      t = new unmanaged Toml(dt);
    } else {
-     t.tag = fieldDate;
+     t.tag = fieldDateTime;
      t.dt = dt;
    }
  }
@@ -520,6 +542,7 @@ used to recursively hold tables and respective values
       boo: bool,
       re: real,
       s: string,
+      ld: date,
       dt: datetime,
       dom: domain(1),
       arr: [dom] unmanaged Toml,
@@ -545,10 +568,16 @@ used to recursively hold tables and respective values
       this.tag = fieldToml;
     }
 
+    // Date
+    proc init(ld: date) {
+        this.ld = ld;
+        this.tag = fieldDate;
+    }
+
     // Datetime
     proc init(dt: datetime) {
       this.dt = dt;
-      this.tag = fieldDate;
+      this.tag = fieldDateTime;
     }
 
     // Int
@@ -585,6 +614,7 @@ used to recursively hold tables and respective values
       this.re = root.re;
       this.dom = root.dom;
       for idx in root.dom do this.arr[idx] = new unmanaged Toml(root.arr[idx]);
+      this.ld = root.ld;
       this.dt = root.dt;
       this.s = root.s;
       this.D = root.D;
@@ -760,6 +790,9 @@ used to recursively hold tables and respective values
           when fieldDate {
             f.write(key, ' = ', toString(value));
           }
+          when fieldDateTime {
+            f.write(key, ' = ', toString(value));
+          }
           otherwise {
             throw new owned TomlError("Not yet supported");
           }
@@ -813,6 +846,9 @@ used to recursively hold tables and respective values
           when fieldDate {
             f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
+          when fieldDateTime {
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+          }
           otherwise {
             throw new owned TomlError("Not yet supported");
           }
@@ -848,7 +884,8 @@ used to recursively hold tables and respective values
         when fieldReal do return val.re:string;
         when fieldString do return ('"' + val.s + '"');
         when fieldEmpty do return ""; // empty
-        when fieldDate do return val.dt.isoformat();
+        when fieldDate do return val.ld.isoformat();
+        when fieldDateTime do return val.dt.isoformat();
         otherwise {
           throw new owned TomlError("Error in printing " + val.s);
           return val.s;
@@ -886,7 +923,8 @@ used to recursively hold tables and respective values
         when fieldReal do return 'float';
         when fieldString do return 'string';
         when fieldEmpty do return 'empty';
-        when fieldDate do return 'datetime';
+        when fieldDate do return 'date';
+        when fieldDateTime do return 'datetime';
         when fieldToml do return 'toml';
         otherwise {
           throw new owned TomlError("Unknown type");
