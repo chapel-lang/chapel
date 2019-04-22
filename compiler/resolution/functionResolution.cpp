@@ -1356,6 +1356,7 @@ static Immediate* getImmediate(Symbol* actual) {
 }
 
 typedef enum {
+  NUMERIC_TYPE_NON_NUMERIC,
   NUMERIC_TYPE_BOOL,
   NUMERIC_TYPE_ENUM,
   NUMERIC_TYPE_INT_UINT,
@@ -1373,8 +1374,8 @@ static numeric_type_t classifyNumericType(Type* t)
   if (is_real_type(t)) return NUMERIC_TYPE_REAL;
   if (is_imag_type(t)) return NUMERIC_TYPE_IMAG;
   if (is_complex_type(t)) return NUMERIC_TYPE_COMPLEX;
-  INT_FATAL("Unhandled type in classifyNumericType");
-  return NUMERIC_TYPE_BOOL;
+
+  return NUMERIC_TYPE_NON_NUMERIC;
 }
 
 
