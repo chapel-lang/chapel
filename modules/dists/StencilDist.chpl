@@ -1218,15 +1218,10 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     if arrSection.locale.id != here.id then
       arrSection = myLocArr;
 
-    //
-    // Slicing arrSection.myElems will require reference counts to be updated.
-    // If myElems is an array of arrays, the inner array's domain or dist may
-    // live on a different locale and require communication for reference
-    // counting. Simply put: don't slice inside a local block.
-    //
-    ref chunk = arrSection.myElems(myFollowThisDom);
     local {
-      for i in chunk do yield i;
+      const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type;
+      ref myElems = narrowArrSection.myElems;
+      for i in myFollowThisDom do yield myElems[i];
     }
   } else {
     //
