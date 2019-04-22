@@ -3994,6 +3994,13 @@ module ChapelArray {
     chpl__transferArray(a, b);
   }
 
+  inline proc =(a: [], b: range(?)) {
+    if a.rank == 1 then
+      chpl__transferArray(a, b);
+    else
+      compilerError("cannot from ranges to multidimensional arrays");
+  }
+
   inline proc =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
     chpl__transferArray(a, b);
   }
