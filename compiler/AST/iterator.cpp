@@ -1169,17 +1169,17 @@ buildAdvance(FnSymbol* fn,
 
   // insert jump table at head of advance
   i = 2;
-  Symbol* tmp = newTemp(dtBool);
   Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_DEFAULT]);
 
   forv_Vec(LabelSymbol, label, labels) {
     GotoStmt* igs = new GotoStmt(GOTO_ITER_RESUME, label);
     label->iterResumeGoto = igs;
+    Symbol* tmp = newTemp(dtBool);
     advanceBody->insertAtHead(new CondStmt(new SymExpr(tmp), igs));
     advanceBody->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_EQUAL, more, new_IntSymbol(i++))));
+    advanceBody->insertAtHead(new DefExpr(tmp));
   }
   advanceBody->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->iclass->getField("more"))));
-  advanceBody->insertAtHead(new DefExpr(tmp));
   advanceBody->insertAtHead(new DefExpr(more));
   advanceBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 

@@ -437,6 +437,8 @@ bool isDenormalizable(Symbol* sym,
                   isFloatComparisonPrimitive(ce))) {
               use = se;
             }
+          } else if (isConditionalInCondStmt(se)) {
+            use = se;
           }
         }
         if(use) {

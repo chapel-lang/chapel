@@ -733,6 +733,15 @@ Expr* CondStmt::getNextExpr(Expr* expr) {
   return retval;
 }
 
+// If 'expr' is the condExpr in a CondStmt, return that CondStmt.
+// Otherwise, return NULL.
+CondStmt* isConditionalInCondStmt(Expr* expr) {
+  if (CondStmt* parent = toCondStmt(expr->parentExpr))
+    if (expr == parent->condExpr)
+      return parent;
+  return NULL;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
