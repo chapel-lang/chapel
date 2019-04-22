@@ -23,12 +23,12 @@ enum chpl_mli_errors {
 
 const char* chpl_mli_errstr(enum chpl_mli_errors e) {
   static const char* mli_errors_[] = {
-    "CHPL_MLI_ERROR_NONE",
-    "CHPL_MLI_ERROR_SHUTDOWN",
-    "CHPL_MLI_ERROR_UNKNOWN",
-    "CHPL_MLI_ERROR_NOFUNC",
-    "CHPL_MLI_ERROR_SOCKET",
-    "CHPL_MLI_ERROR_EXCEPT"
+    "NONE",
+    "SHUTDOWN",
+    "UNKNOWN",
+    "NOFUNC",
+    "SOCKET",
+    "EXCEPT"
   };
 
   if (e > CHPL_MLI_ERROR_NONE || e < CHPL_MLI_ERROR_EXCEPT) {

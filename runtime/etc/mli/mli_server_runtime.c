@@ -61,7 +61,7 @@ void chpl_mli_server_deinit(struct chpl_mli_context* server) {
 #define chpl_mli_sdebugf(fmt, ...)              \
   do {                                          \
     if (!chpl_server_conf.debug) { break; }     \
-      printf("%s ", "[MLI-Server]");            \
+      printf("%s ", "[Server]");                \
       printf(fmt, __VA_ARGS__);                 \
   } while (0)
 
@@ -75,7 +75,7 @@ void chpl_mli_server_deinit(struct chpl_mli_context* server) {
 // --
 //
 void chpl_mli_smain(void) {
-  int64_t function = -1;
+  int64_t id = -1;
   int64_t ack = 0;
   int execute = 1;
   int err = 0;
@@ -99,16 +99,20 @@ void chpl_mli_smain(void) {
   chpl_mli_bind(chpl_server.arg, ip, argport);
   chpl_mli_bind(chpl_server.res, ip, resport);
 
+  chpl_mli_sdebugf("%s\n", "Starting server for multi-locale library!");
   chpl_mli_sdebugf("Main port on: %s, %s\n", ip, mainport);
   chpl_mli_sdebugf("Arg port on: %s, %s\n", ip, argport);
   chpl_mli_sdebugf("Res port on: %s, %s\n", ip, resport);
 
   while (execute) {
+
+    chpl_mli_sdebugf("%s\n", "Listening...");
+    
     // Every transaction starts by reading an int64 off the wire.
     err = chpl_mli_pull(
               chpl_server.main,
-              &function,
-              sizeof(function),
+              &id,
+              sizeof(id),
               0);
 
     // TODO: Handle socket errors on inbound read.
@@ -118,25 +122,28 @@ void chpl_mli_smain(void) {
       ack = CHPL_MLI_ERROR_SOCKET;
     }
 
-    // TODO: For now, just terminate execution of the server upon error.
-    if (execute && function < 0) {
-      chpl_mli_sdebugf("Shutdown, code: %lld\n", function);
-      execute = 0;
-      ack = CHPL_MLI_ERROR_SHUTDOWN;
+    if (id < 0) {
+      chpl_mli_sdebugf("Client sent error: %s\n", chpl_mli_errstr(id));
     } else {
-      // TODO: Don't just send a null frame as ack?
-      chpl_mli_push(chpl_server.main, "", 0, 0);
-
-      chpl_mli_sdebugf("Dispatch on id: %lld\n", function);
-      ack = chpl_mli_sdispatch(function);
+      chpl_mli_sdebugf("Received request for ID: %lld\n", id);
     }
-
-    // We should always reply so that the client does not block.
-    chpl_mli_sdebugf("Responding with error: %s\n", chpl_mli_errstr(ack));
-    err = chpl_mli_push(chpl_server.main, &ack, sizeof(ack), 0);
+ 
+    // TODO: How to restructure the loop to reply with something meaningful?
+    chpl_mli_sdebugf("Responding with error: %s\n", chpl_mli_errstr(0));
+    err = chpl_mli_push(chpl_server.main, "", 0, 0);
 
     // TODO: Handle socket errors on outbound push.
     if (err < 0) { chpl_mli_sdebugf("Socket error on write: %d\n", err); }
+
+    // TODO: For now, just terminate execution of the server upon error.
+    if (execute && id < 0) {
+      chpl_mli_sdebugf("Shutdown, code: %lld\n", id);
+      execute = 0;
+      ack = CHPL_MLI_ERROR_SHUTDOWN;
+      continue;
+    }
+    
+    ack = chpl_mli_sdispatch(id);
   }
 
   seconds = (double) (clock() - before) / (double) CLOCKS_PER_SEC;
