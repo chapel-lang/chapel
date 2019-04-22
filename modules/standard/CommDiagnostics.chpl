@@ -179,6 +179,10 @@ module CommDiagnostics
    */
   config param commDiagsPrintUnstable = false;
 
+  /* The runtime needs this, to get the value of the flag. */
+  pragma "no doc"
+  export proc chpl_getCommDiagsPrintUnstable() return commDiagsPrintUnstable;
+
   /* Aggregated communication operation counts.  This record type is
      defined in the same way by both the underlying comm layer(s) and
      this module, because we don't have a good way to inherit types back

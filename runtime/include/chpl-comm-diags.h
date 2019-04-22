@@ -76,11 +76,16 @@ int chpl_comm_diags_is_enabled(void) {
 }
 
 static inline
-void chpl_comm_diags_verbose_printf(const char*, ...)
-  __attribute__((format(printf, 1, 2)));
+void chpl_comm_diags_verbose_printf(chpl_bool, const char*, ...)
+  __attribute__((format(printf, 2, 3)));
 static inline
-void chpl_comm_diags_verbose_printf(const char* format, ...) {
-  if (chpl_verbose_comm && chpl_comm_diags_is_enabled()) {
+void chpl_comm_diags_verbose_printf(chpl_bool is_unstable,
+                                    const char* format, ...) {
+  // This is in the CommDiagnostics module.
+  extern chpl_bool chpl_getCommDiagsPrintUnstable(void);
+  if (chpl_verbose_comm
+      && chpl_comm_diags_is_enabled()
+      && (!is_unstable || chpl_getCommDiagsPrintUnstable())) {
     char myFmt[100];
     snprintf(myFmt, sizeof(myFmt), "%d: %s\n", chpl_nodeID, format);
     va_list ap;
@@ -91,24 +96,26 @@ void chpl_comm_diags_verbose_printf(const char* format, ...) {
 }
 
 #define chpl_comm_diags_verbose_rdma(op, node, size, ln, fn)            \
-  chpl_comm_diags_verbose_printf("%s:%d: remote %s, "                   \
-                                 "node %d, %zu bytes",                  \
+  chpl_comm_diags_verbose_printf(false,                                 \
+                                 "%s:%d: remote %s, node %d, %zu bytes",\
                                  chpl_lookupFilename(fn), ln, op,       \
                                  (int) node, size)
 
 #define chpl_comm_diags_verbose_rdmaStrd(op, node, ln, fn)              \
-  chpl_comm_diags_verbose_printf("%s:%d: remote strided %s, node %d",   \
+  chpl_comm_diags_verbose_printf(false,                                 \
+                                 "%s:%d: remote strided %s, node %d",   \
                                  chpl_lookupFilename(fn), ln, op,       \
                                  (int) node)
 
 #define chpl_comm_diags_verbose_amo(op, node, ln, fn)                   \
-  chpl_comm_diags_verbose_printf("%s:%d: remote %s, "                   \
-                                 "node %d",                             \
+  chpl_comm_diags_verbose_printf(true,                                  \
+                                 "%s:%d: remote %s, node %d",           \
                                  chpl_lookupFilename(fn), ln, op,       \
                                  (int) node)
 
 #define chpl_comm_diags_verbose_executeOn(kind, node)                   \
-  chpl_comm_diags_verbose_printf("remote %-*sexecuteOn, node %d",       \
+  chpl_comm_diags_verbose_printf(false,                                 \
+                                 "remote %-*sexecuteOn, node %d",       \
                                  ((int) strlen(kind)                    \
                                   + ((strlen(kind) == 0) ? 0 : 1)),     \
                                  kind, (int) node)
