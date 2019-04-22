@@ -1141,31 +1141,7 @@ proc BlockArr.dsiSerialRead(f) {
 // output array
 //
 proc BlockArr.dsiSerialWrite(f) {
-  type strType = chpl__signedType(idxType);
-  var binary = f.binary();
-  if dom.dsiNumIndices == 0 then return;
-  var i : rank*idxType;
-  for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim).low;
-  label next while true {
-    f <~> dsiAccess(i);
-    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:strType) {
-      if ! binary then f <~> " ";
-      i(rank) += dom.dsiDim(rank).stride:strType;
-    } else {
-      for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:strType) {
-          i(dim) += dom.dsiDim(dim).stride:strType;
-          for dim2 in dim+1..rank {
-            f <~> "\n";
-            i(dim2) = dom.dsiDim(dim2).low;
-          }
-          continue next;
-        }
-      }
-      break;
-    }
-  }
+  chpl_serialReadWriteRectangular(f, this);
 }
 
 pragma "no copy return"
