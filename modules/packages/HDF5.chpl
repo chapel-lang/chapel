@@ -3375,7 +3375,7 @@ module HDF5 {
     /* This module defines some wrappers for HDF5 functions that issue #9324
        makes difficult/impossible to use otherwise. The workaround wrappers are
        named the same thing as the original HDF5 name, but with a `_WAR` suffix.
-       Since this uses an `extern` block, LLVM is required. */
+     */
     pragma "no doc"
     module HDF5_WAR {
       require "HDF5Helper/hdf5_helper.h";
