@@ -43,6 +43,9 @@
 #include <inttypes.h>
 
 
+int chpl_verbose_mem;
+
+
 static void
 printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
                int32_t lineno, int32_t filename);
