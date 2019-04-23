@@ -132,6 +132,8 @@ std::string genMarshalCall(const char* s, const char* v, Type* t, bool out);
 std::string genMarshalPushCall(const char* s, const char* v, Type* t);
 std::string genMarshalPullCall(const char* s, const char* v, Type* t);
 std::string genTypeName(Type* t);
+std::string genSocketCall(const char* s, const char* v, const char* l,
+                          bool out);
 std::string genSocketCall(const char* s, const char* v, bool out);
 std::string genSocketPushCall(const char* s, const char* v);
 std::string genSocketPullCall(const char* s, const char* v);
@@ -411,8 +413,18 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   
   } else if (t == dtStringC) {
 
-    if (out) {
+    gen += this->genTodo("Support for c_string type not implemented yet!");
+    gen += "assert(0);\n";
 
+    if (out) {
+      // Start by pushing the length of this string across the wire.
+      gen += "bytes = strlen(obj);\n";
+      gen += this->genSocketCall("skt", "bytes", out);
+      gen += this->genSocketCall("skt", NULL, not out);
+
+      // Next push this string across the wire.
+
+      gen += this->genSocketCall("skt", "bytes", out, "ZMQ_SENDMORE");    
 
     } else {
 
@@ -836,9 +848,13 @@ std::string MLIContext::genTypeName(Type* t) {
   return t->codegen().c;
 }
 
-
+//
+//
+//
+//
 std::string
-MLIContext::genSocketCall(const char* s, const char* v, bool out) {
+MLIContext::genSocketCall(const char* s, const char* v, const char* l,
+                          bool out) {
   std::string gen;
 
   gen += out ? socket_push_name : socket_pull_name;
@@ -847,10 +863,18 @@ MLIContext::genSocketCall(const char* s, const char* v, bool out) {
   gen += ", ";
   gen += v ? this->genAddressOf(v) : "\"\"";
   gen += ", ";
-  gen += v ? this->genSizeof(v) : "0";
+  gen += l ? l : (v ? this->genSizeof(v) : "0");
   gen += ", 0);\n";
 
   return gen;
+
+
+}
+
+
+std::string
+MLIContext::genSocketCall(const char* s, const char* v, bool out) {
+  return this->genSocketCall(s, v, out, 0);
 }
 
 
