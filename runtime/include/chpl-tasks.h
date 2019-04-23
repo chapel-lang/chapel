@@ -219,6 +219,17 @@ void chpl_task_setSubloc(c_sublocid_t);
 c_sublocid_t chpl_task_getRequestedSubloc(void);
 #endif
 
+// For tasking layers that support task affinity/placement, this
+// resets any automatic placement order
+#ifndef CHPL_TASK_IMPL_RESET_SPAWN_ORDER
+#define CHPL_TASK_IMPL_RESET_SPAWN_ORDER()
+#endif
+static inline
+void chpl_task_reset_spawn_order(void) {
+  CHPL_TASK_IMPL_RESET_SPAWN_ORDER();
+}
+
+
 //
 // Get ID.
 //
