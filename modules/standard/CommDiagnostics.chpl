@@ -269,13 +269,13 @@ module CommDiagnostics
 
   private extern proc chpl_stopVerboseCommHere();
 
-  private extern proc chpl_gen_startCommDiagnostics();
+  private extern proc chpl_startCommDiagnostics();
 
-  private extern proc chpl_gen_stopCommDiagnostics();
+  private extern proc chpl_stopCommDiagnostics();
 
-  private extern proc chpl_gen_startCommDiagnosticsHere();
+  private extern proc chpl_startCommDiagnosticsHere();
 
-  private extern proc chpl_gen_stopCommDiagnosticsHere();
+  private extern proc chpl_stopCommDiagnosticsHere();
 
   private extern proc chpl_resetCommDiagnosticsHere();
 
@@ -305,28 +305,28 @@ module CommDiagnostics
     Start counting communication operations across the whole program.
    */
   proc startCommDiagnostics() {
-    chpl_gen_startCommDiagnostics();
+    chpl_startCommDiagnostics();
   }
 
   /*
     Stop counting communication operations across the whole program.
    */
   proc stopCommDiagnostics() {
-    chpl_gen_stopCommDiagnostics();
+    chpl_stopCommDiagnostics();
   }
 
   /*
     Start counting communication operations initiated on this locale.
    */
   proc startCommDiagnosticsHere() {
-    chpl_gen_startCommDiagnosticsHere();
+    chpl_startCommDiagnosticsHere();
   }
 
   /*
     Stop counting communication operations initiated on this locale.
    */
   proc stopCommDiagnosticsHere() {
-    chpl_gen_stopCommDiagnosticsHere();
+    chpl_stopCommDiagnosticsHere();
   }
 
   /*
