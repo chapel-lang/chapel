@@ -1,2 +1,2 @@
-C {}
+_owned(C) {}
 C.deinit

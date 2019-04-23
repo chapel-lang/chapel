@@ -4,7 +4,7 @@ in MyClass.init 3
 in MyClass.init 4
 in MyClass.init 5
 in MyClass.init 6
-MyClass
+_owned(MyClass)
 MyClass
 MyClass
 MyClass
