@@ -145,6 +145,7 @@ module TomlParser {
       dt = compile('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$'),
       realNum = compile("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
       ld = compile('^\\d{4}-\\d{2}-\\d{2}$'),
+      ti = compile('^\\d{2}:\\d{2}:\\d{2}$'),
       ints = compile("(\\d+|\\+\\d+|\\-\\d+)"),
       inBrackets = compile("(\\[.*?\\])"),
       corner = compile("(\\[.+\\])"),
@@ -370,6 +371,16 @@ module TomlParser {
           Date = d;
           return Date;
         }
+        // Time
+        else if ti.match(val) {
+          var raw = getToken(source).split(":");
+          var t = new time(raw[1]: int,
+                           raw[2]: int,
+                           raw[3]: int);
+          var Time: unmanaged Toml;
+          Time = t;
+          return Time;
+        }
         // Real
         else if realNum.match(val) {
          var token = getToken(source);
@@ -445,6 +456,7 @@ pragma "no doc"
    fieldString,
    fieldEmpty,
    fieldDate,
+   fieldTime,
    fieldDateTime };
  use fieldtag;
 
@@ -499,6 +511,16 @@ pragma "no doc"
  }
 
  pragma "no doc"
+ proc =(ref t: unmanaged Toml, ti: time) {
+   if t == nil {
+     t = new unmanaged Toml(ti);
+   } else {
+     t.tag = fieldTime;
+     t.ti = ti;
+   }
+ }
+
+ pragma "no doc"
  proc =(ref t: unmanaged Toml, dt: datetime) {
    if t == nil {
      t = new unmanaged Toml(dt);
@@ -543,6 +565,7 @@ used to recursively hold tables and respective values
       re: real,
       s: string,
       ld: date,
+      ti: time,
       dt: datetime,
       dom: domain(1),
       arr: [dom] unmanaged Toml,
@@ -570,8 +593,14 @@ used to recursively hold tables and respective values
 
     // Date
     proc init(ld: date) {
-        this.ld = ld;
-        this.tag = fieldDate;
+      this.ld = ld;
+      this.tag = fieldDate;
+    }
+
+    // Time
+    proc init(ti: time) {
+       this.ti = ti;
+       this.tag = fieldTime; 
     }
 
     // Datetime
@@ -615,6 +644,7 @@ used to recursively hold tables and respective values
       this.dom = root.dom;
       for idx in root.dom do this.arr[idx] = new unmanaged Toml(root.arr[idx]);
       this.ld = root.ld;
+      this.ti = root.ti;
       this.dt = root.dt;
       this.s = root.s;
       this.D = root.D;
@@ -790,6 +820,9 @@ used to recursively hold tables and respective values
           when fieldDate {
             f.write(key, ' = ', toString(value));
           }
+          when fieldTime {
+            f.write(key, ' = ', toString(value));
+          }
           when fieldDateTime {
             f.write(key, ' = ', toString(value));
           }
@@ -846,6 +879,9 @@ used to recursively hold tables and respective values
           when fieldDate {
             f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
+          when fieldTime {
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+          }
           when fieldDateTime {
             f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
@@ -885,6 +921,7 @@ used to recursively hold tables and respective values
         when fieldString do return ('"' + val.s + '"');
         when fieldEmpty do return ""; // empty
         when fieldDate do return val.ld.isoformat();
+        when fieldTime do return val.ti.isoformat();
         when fieldDateTime do return val.dt.isoformat();
         otherwise {
           throw new owned TomlError("Error in printing " + val.s);
@@ -924,6 +961,7 @@ used to recursively hold tables and respective values
         when fieldString do return 'string';
         when fieldEmpty do return 'empty';
         when fieldDate do return 'date';
+        when fieldTime do return 'time';
         when fieldDateTime do return 'datetime';
         when fieldToml do return 'toml';
         otherwise {
