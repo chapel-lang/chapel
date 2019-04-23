@@ -984,11 +984,9 @@ module ChapelBase {
   //
 
   inline proc chpl_rt_reset_task_spawn() {
-    if CHPL_TASKS == 'qthreads' {
-      pragma "fn synchronization free"
-      extern proc qthread_chpl_reset_spawn_order();
-      qthread_chpl_reset_spawn_order();
-    }
+    pragma "fn synchronization free"
+    extern proc chpl_task_reset_spawn_order();
+    chpl_task_reset_spawn_order();
   }
 
   proc chpl_resetTaskSpawn(numTasks) {
