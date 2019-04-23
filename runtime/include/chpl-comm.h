@@ -523,13 +523,9 @@ void chpl_startVerboseCommHere(void);
 void chpl_stopVerboseCommHere(void);
 
 void chpl_startCommDiagnostics(void); // this one implemented by comm layers
-void chpl_gen_startCommDiagnostics(void); // this one implemented in chpl-comm.c
 void chpl_stopCommDiagnostics(void);
-void chpl_gen_stopCommDiagnostics(void);
 void chpl_startCommDiagnosticsHere(void);
-void chpl_gen_startCommDiagnosticsHere(void);
 void chpl_stopCommDiagnosticsHere(void);
-void chpl_gen_stopCommDiagnosticsHere(void);
 void chpl_resetCommDiagnosticsHere(void);
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
 

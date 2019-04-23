@@ -25,7 +25,6 @@
 #include "chpl-comm.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"
-#include "chpl-mem-consistency.h"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -38,46 +37,6 @@ int32_t chpl_numNodes = -1;
 int chpl_verbose_comm;
 int chpl_comm_diagnostics;
 int chpl_verbose_mem;
-
-void chpl_startCommDiagnostics(void); // this one implemented by comm layers
-void chpl_gen_startCommDiagnostics(void); // this one implemented in chpl-comm.c
-void chpl_stopCommDiagnostics(void);
-void chpl_gen_stopCommDiagnostics(void);
-void chpl_startCommDiagnosticsHere(void);
-void chpl_gen_startCommDiagnosticsHere(void);
-void chpl_stopCommDiagnosticsHere(void);
-void chpl_gen_stopCommDiagnosticsHere(void);
-void chpl_resetCommDiagnosticsHere(void);
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
-
-void chpl_gen_startCommDiagnostics(void) {
-  // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
-  // And then start the comm diagnostics as usual.
-  chpl_startCommDiagnostics();
-}
-
-void chpl_gen_stopCommDiagnostics(void) {
-  // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
-  // And then stop the comm diagnostics as usual.
-  chpl_stopCommDiagnostics();
-}
-
-void chpl_gen_startCommDiagnosticsHere(void) {
-  // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
-  // And then start the comm diagnostics as usual.
-  chpl_startCommDiagnosticsHere();
-}
-
-void chpl_gen_stopCommDiagnosticsHere(void) {
-  // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
-  // And then stop the comm diagnostics as usual.
-  chpl_stopCommDiagnosticsHere();
-}
-
 
 static pthread_once_t maxHeapSize_once = PTHREAD_ONCE_INIT;
 static size_t maxHeapSize;

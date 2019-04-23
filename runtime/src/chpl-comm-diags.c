@@ -26,6 +26,7 @@
 
 #include "chpl-comm.h"
 #include "chpl-comm-diags.h"
+#include "chpl-mem-consistency.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -61,6 +62,9 @@ void chpl_stopVerboseCommHere() {
 
 
 void chpl_startCommDiagnostics() {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 1;
   chpl_comm_diags_disable();
   chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
@@ -70,6 +74,9 @@ void chpl_startCommDiagnostics() {
 
 
 void chpl_stopCommDiagnostics() {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 0;
   chpl_comm_diags_disable();
   chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
@@ -79,11 +86,17 @@ void chpl_stopCommDiagnostics() {
 
 
 void chpl_startCommDiagnosticsHere() {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 1;
 }
 
 
 void chpl_stopCommDiagnosticsHere() {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 0;
 }
 
