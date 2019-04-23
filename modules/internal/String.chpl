@@ -743,12 +743,12 @@ module String {
     proc _getView(r:range(?)) where r.idxType != codepointIndex {
       //TODO: halt()s should use string.writef at some point.
       if boundsChecking {
-        if r.hasLowBound() {
+        if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low <= 0 then
             halt("range out of bounds of string");
             //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
         }
-        if r.hasHighBound() {
+        if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
           if (r.high < 0) || (r.high:int > this.len) then
             halt("range out of bounds of string");
             //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
@@ -764,7 +764,7 @@ module String {
     pragma "no doc"
     proc _getView(r:range(?)) where r.idxType == codepointIndex {
       if boundsChecking {
-        if r.hasLowBound() {
+        if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low:int <= 0 then
             halt("range out of bounds of string");
         }
@@ -792,7 +792,7 @@ module String {
         }
       }
       if boundsChecking {
-        if r.hasHighBound() {
+        if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
           if (r.high:int < 0) || (r.high:int > cp_count) then
             halt("range out of bounds of string");
         }
