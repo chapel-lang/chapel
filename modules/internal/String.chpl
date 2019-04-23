@@ -660,7 +660,7 @@ module String {
       var localThis: string = this.localize();
 
       if boundsChecking && (i <= 0 || i > localThis.len)
-        then halt("index out of bounds of string: ", i);
+        then HaltWrappers.boundsCheckHalt("index out of bounds of string: ", i);
       return localThis.buff[i - 1];
     }
 
@@ -670,7 +670,7 @@ module String {
     proc codepoint(i: int): int(32) {
       const idx = i: int;
       if boundsChecking && idx <= 0 then
-        halt("index out of bounds of string: ", idx);
+        HaltWrappers.boundsCheckHalt("index out of bounds of string: ", idx);
 
       var j = 1;
       for cp in this.codepoints() {
@@ -680,7 +680,7 @@ module String {
       }
       // We have reached the end of the string without finding our index.
       if boundsChecking then
-        halt("index out of bounds of string: ", idx);
+        HaltWrappers.boundsCheckHalt("index out of bounds of string: ", idx);
       return 0: int(32);
     }
 
@@ -692,7 +692,7 @@ module String {
      */
     proc this(i: int) : string {
       if boundsChecking && (i <= 0 || i > this.len)
-        then halt("index out of bounds of string: ", i);
+        then HaltWrappers.boundsCheckHalt("index out of bounds of string: ", i);
 
       var ret: string;
       var maxbytes = (this.len - (i - 1)): ssize_t;
@@ -741,17 +741,14 @@ module String {
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
     proc _getView(r:range(?)) where r.idxType != codepointIndex {
-      //TODO: halt()s should use string.writef at some point.
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low <= 0 then
-            halt("range out of bounds of string");
-            //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+            HaltWrappers.boundsCheckHalt("range out of bounds of string");
         }
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
           if (r.high < 0) || (r.high:int > this.len) then
-            halt("range out of bounds of string");
-            //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+            HaltWrappers.boundsCheckHalt("range out of bounds of string");
         }
       }
       const ret = r[1:r.idxType..#(this.len:r.idxType)];
@@ -766,7 +763,7 @@ module String {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low:int <= 0 then
-            halt("range out of bounds of string");
+            HaltWrappers.boundsCheckHalt("range out of bounds of string");
         }
       }
       // Loop to find whether the low and high codepoint indices
@@ -794,7 +791,7 @@ module String {
       if boundsChecking {
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
           if (r.high:int < 0) || (r.high:int > cp_count) then
-            halt("range out of bounds of string");
+            HaltWrappers.boundsCheckHalt("range out of bounds of string");
         }
       }
       const r1 = byte_low..byte_high;
