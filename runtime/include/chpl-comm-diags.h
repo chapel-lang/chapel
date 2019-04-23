@@ -26,6 +26,9 @@
 #include "chpl-atomics.h"
 #include "chpl-comm.h"
 
+extern int chpl_verbose_comm;     // set via startVerboseComm
+extern int chpl_comm_diagnostics; // set via startCommDiagnostics
+
 typedef struct _chpl_atomic_commDiagnostics {
 #define _COMM_DIAGS_DECL_ATOMIC(cdv) atomic_uint_least64_t cdv;
   CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_DECL_ATOMIC)

@@ -34,9 +34,6 @@
 int32_t chpl_nodeID = -1;
 int32_t chpl_numNodes = -1;
 
-int chpl_verbose_comm;
-int chpl_comm_diagnostics;
-int chpl_verbose_mem;
 
 static pthread_once_t maxHeapSize_once = PTHREAD_ONCE_INIT;
 static size_t maxHeapSize;

@@ -43,10 +43,6 @@ extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
 // (hopefully) unique to the running image, and never changed again.
 extern int32_t chpl_numNodes; // number of nodes
 
-extern int chpl_verbose_comm;     // set via startVerboseComm
-extern int chpl_comm_diagnostics; // set via startCommDiagnostics
-extern int chpl_verbose_mem;      // set via startVerboseMem
-
 size_t chpl_comm_getenvMaxHeapSize(void);
 
 
