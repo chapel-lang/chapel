@@ -825,6 +825,12 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
   return retval;
 }
 
+//
+// This method tries to find a pre-existing AggregateType instance that
+// represents the resulting instantiation of binding 'sym' to the current
+// generic field. This way there is only ever one instance of AggregateType for
+// a particular instantiation.
+//
 AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
   AggregateType* retval = NULL;
 
@@ -842,10 +848,19 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
       if (field->defPoint->exprType != NULL) {
         expected = field->defPoint->exprType->typeInfo();
       }
-      // Only check when the field has a type expression
+
+      //
+      // The types of 'sym' and 'field' might by different if the user
+      // specified a literal that will eventually be coerced into the correct
+      // field type.  For example '42' is an 'int(64)' but could be coerced to
+      // a 'uint(64)'. In such cases we should compare the values of 'sym'
+      // and the current instantiation's field.
+      //
+      // Note: only check when the field has a type expression
       //
       // See param/ferguson/mismatched-param-type-error.chpl for an example
       // where this check is necessary.
+      //
       if (expected != NULL && expected != sym->type) {
         Immediate result;
         Immediate* lhs = getSymbolImmediate(at->substitutions.get(field));
