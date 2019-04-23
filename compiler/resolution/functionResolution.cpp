@@ -5002,8 +5002,10 @@ static void resolveInitVar(CallExpr* call) {
         call->setUnresolvedFunction(astrInitEquals);
 
         resolveCall(call);
+      } else {
+        USR_WARN(call, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
+        USR_PRINT(call->resolvedFunction(), "this initializer was resolved as the copy-initializer.");
       }
-      // else: warning about old-style 'init' vs. init= would go here
 
       if (at->hasPostInitializer() == true) {
         call->insertAfter(new CallExpr("postinit", gMethodToken, dst));
