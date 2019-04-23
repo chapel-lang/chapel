@@ -799,7 +799,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     for_formals(formal, iterator) {
       if (formal->name  == astrTag && formal->type == gFollowerTag->type) {
-        INT_ASSERT("tag already present in PRIM_TO_FOLLOWER");
+        INT_FATAL("tag already present in PRIM_TO_FOLLOWER");
         // Could remove it, but would have to figure out what's
         // happening with followThis and fast too.
       }
