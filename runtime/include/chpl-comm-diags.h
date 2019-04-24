@@ -34,6 +34,8 @@
 extern int chpl_verbose_comm;     // set via startVerboseComm
 extern int chpl_comm_diagnostics; // set via startCommDiagnostics
 
+extern chpl_bool chpl_comm_diags_print_unstable;
+
 #define CHPL_COMM_DIAGS_VARS_ALL(MACRO) \
   MACRO(get) \
   MACRO(get_nb) \
@@ -53,14 +55,14 @@ typedef struct _chpl_commDiagnostics {
 #undef _COMM_DIAGS_DECL
 } chpl_commDiagnostics;
 
-void chpl_comm_startVerbose(void);
+void chpl_comm_startVerbose(chpl_bool);
 void chpl_comm_stopVerbose(void);
-void chpl_comm_startVerboseHere(void);
+void chpl_comm_startVerboseHere(chpl_bool);
 void chpl_comm_stopVerboseHere(void);
 
-void chpl_comm_startDiagnostics(void);
+void chpl_comm_startDiagnostics(chpl_bool);
 void chpl_comm_stopDiagnostics(void);
-void chpl_comm_startDiagnosticsHere(void);
+void chpl_comm_startDiagnosticsHere(chpl_bool);
 void chpl_comm_stopDiagnosticsHere(void);
 void chpl_comm_resetDiagnosticsHere(void);
 void chpl_comm_getDiagnosticsHere(chpl_commDiagnostics *cd);
@@ -129,7 +131,7 @@ void chpl_comm_diags_verbose_printf(chpl_bool is_unstable,
   extern chpl_bool chpl_getCommDiagsPrintUnstable(void);
   if (chpl_verbose_comm
       && chpl_comm_diags_is_enabled()
-      && (!is_unstable || chpl_getCommDiagsPrintUnstable())) {
+      && (!is_unstable || chpl_comm_diags_print_unstable)) {
     char myFmt[100];
     snprintf(myFmt, sizeof(myFmt), "%d: %s\n", chpl_nodeID, format);
     va_list ap;

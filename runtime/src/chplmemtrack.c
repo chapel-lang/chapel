@@ -733,12 +733,12 @@ void chpl_track_realloc_post(void* moreMemAlloc,
 
 void chpl_startVerboseMem() {
   chpl_verbose_mem = 1;
-  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_verbose_mem_idx);
+  chpl_comm_bcast_rt_private(chpl_verbose_mem);
 }
 
 void chpl_stopVerboseMem() {
   chpl_verbose_mem = 0;
-  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_verbose_mem_idx);
+  chpl_comm_bcast_rt_private(chpl_verbose_mem);
 }
 
 void chpl_startVerboseMemHere() {

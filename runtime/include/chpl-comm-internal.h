@@ -37,6 +37,7 @@ extern size_t chpl_rt_priv_bcast_lens[];
 #define CHPL_RT_PRV_BCAST_TAB_ENTRIES(MACRO) \
   MACRO(chpl_verbose_comm)                   \
   MACRO(chpl_comm_diagnostics)               \
+  MACRO(chpl_comm_diags_print_unstable)      \
   MACRO(chpl_verbose_mem)
 
 #define _RT_PRV_BCAST_M(sym)  chpl_rt_prv_tab_ ## sym ## _idx,
@@ -54,8 +55,11 @@ void chpl_comm_init_prv_bcast_tab(void);
 //
 // Broadcast one of our runtime-specific variables.
 //
+#define chpl_comm_bcast_rt_private(var) \
+  chpl_comm_really_bcast_rt_private(chpl_rt_prv_tab_ ## var ## _idx)
+
 static inline
-void chpl_comm_bcast_rt_private(int id) {
+void chpl_comm_really_bcast_rt_private(int id) {
   chpl_comm_broadcast_private(chpl_private_broadcast_table_len + id,
                               chpl_rt_priv_bcast_lens[id],
                               -1);
