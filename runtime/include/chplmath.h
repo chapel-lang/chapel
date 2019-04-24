@@ -34,8 +34,8 @@ static inline int chpl_macro_double_isfinite(double x) { return isfinite(x); }
 static inline int chpl_macro_float_isfinite(float x) { return isfinite(x); }
 static inline int chpl_macro_double_isnan(double x) { return isnan(x); }
 static inline int chpl_macro_float_isnan(float x) { return isnan(x); }
-static inline bool chpl_macro_double_signbit(double x) { return signbit(x)!=0?true:false; }
-static inline bool chpl_macro_float_signbit(float x) { return signbit(x)!=0?true:false; }
+static inline int chpl_macro_double_signbit(double x) { return signbit(x); }
+static inline int chpl_macro_float_signbit(float x) { return signbit(x); }
 
 // 32-bit Bessel functions aren't available on all platforms. For cases where
 // we know they're available use them since they should be faster, but in other
