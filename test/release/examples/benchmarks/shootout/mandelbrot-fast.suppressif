@@ -1,0 +1,4 @@
+# Starting with #12867 (denormalize the conditional in CondStmts),
+# the output differs when compiling with classic CCE. We are unclear
+# whether this is due to a bug or to numeric instability.
+CHPL_TARGET_COMPILER==cray-prgenv-cray
