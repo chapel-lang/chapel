@@ -212,7 +212,7 @@ class Hashed : BaseDist {
 
 
   // debugging print
-  proc dsiDisplayRepresentation() {
+  override proc dsiDisplayRepresentation() {
     writeln("targetLocDom = ", targetLocDom);
     writeln("targetLocales = ", for tl in targetLocales do tl.id);
     //for tli in targetLocDom do
@@ -839,7 +839,7 @@ class UserMapAssocArr: AbsBaseArr {
     }
   }
 
-  proc dsiDisplayRepresentation() {
+  override proc dsiDisplayRepresentation() {
 
     writeln("dsiDisplayRepresentation TODO");
   }

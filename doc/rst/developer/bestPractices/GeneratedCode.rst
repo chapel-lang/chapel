@@ -62,7 +62,7 @@ How to benchmark/time it?
 
   writeln("time taken: " + mytimer.elapsed() + " seconds");
 
-.. _Time MOdule: https://chapel-lang.org/docs/modules/standard/Time.html
+.. _Time Module: https://chapel-lang.org/docs/modules/standard/Time.html
 
 * build your runtime optimized:
 

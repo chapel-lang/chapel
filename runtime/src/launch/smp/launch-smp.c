@@ -19,20 +19,16 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "chpl-env.h"
 #include "chpllaunch.h"
-#include "error.h"
 
 
 // Simple launcher that just sets GASNET_PSHM_NODES and launchers the _real
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  char numlocalesval[12]; // big enough for int32_t
   char baseCommand[4096];
 
-  snprintf(numlocalesval, sizeof(numlocalesval), "%d", (int)numLocales);
-  if (setenv("GASNET_PSHM_NODES", numlocalesval, 1) != 0) {
-    chpl_error("Cannot setenv(\"GASNET_PSHM_NODES\")", 0, 0);
-  }
+  chpl_env_set_uint("GASNET_PSHM_NODES", numLocales, 1);
 
   chpl_compute_real_binary_name(argv[0]);
   snprintf(baseCommand, sizeof(baseCommand), "%s", chpl_get_real_binary_name());

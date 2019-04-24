@@ -1313,8 +1313,6 @@ static void addArgCoercion(FnSymbol*  fn,
     resolveCallAndCallee(castCall, true);
 
     if (FnSymbol* castTarget = castCall->resolvedFunction()) {
-      // Perhaps equivalently, we could check "if (tryToken)",
-      // except tryToken is not visible in this file.
       if (!castTarget->hasFlag(FLAG_RESOLVED)) {
         // This happens e.g. when castTarget itself has an error.
         // Todo: in this case, we should report the error at the point

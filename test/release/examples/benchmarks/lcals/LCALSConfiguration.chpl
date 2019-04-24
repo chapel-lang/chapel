@@ -16,6 +16,12 @@ module LCALSConfiguration {
   config const num_suite_passes = 1;
 
   //
+  // Verification (or quick verification with only a few loop samples)
+  //
+  config const verify_checksums = true;
+  config const verify_checksums_abbreviated = false;
+
+  //
   // Loop lengths
   //
   config const run_shortLoops  = true;
@@ -38,7 +44,8 @@ module LCALSConfiguration {
   // Loop Subset B: "Basic" Loops.
   config const runB_init3     = true;
   config const runB_muladdsub = true;
-  config const runB_ifQuad    = true;
+  // Unstable, see https://github.com/chapel-lang/chapel/issues/11336
+  config const runB_ifQuad    = false;
   config const runB_trapInt   = true;
 
   // Loop Subset C: Loops from older Livermore Loops in "C" suite.
@@ -54,7 +61,8 @@ module LCALSConfiguration {
   config const runC_firstSum     = true;
   config const runC_firstDiff    = true;
   config const runC_pic2D        = true;
-  config const runC_pic1D        = true;
+  // Array OOB, see https://github.com/chapel-lang/chapel/issues/12806
+  config const runC_pic1D        = false;
   config const runC_hydro2D      = true;
   config const runC_genLinRecur  = true;
   config const runC_discOrd      = true;

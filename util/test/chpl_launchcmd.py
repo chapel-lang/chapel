@@ -32,6 +32,7 @@ import datetime
 import logging
 import os
 import os.path
+import py3_compat
 import re
 import select
 import shlex
@@ -162,7 +163,7 @@ class AbstractJob(object):
             if n_cpus is not None:
                 return n_cpus
             logging.debug('Checking for number of cpus to reserve.')
-            cnselect_proc = subprocess.Popen(
+            cnselect_proc = py3_compat.Popen(
                 ['cnselect', '-Lnumcores'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT)
@@ -438,7 +439,7 @@ class AbstractJob(object):
         srun_version = ''
 
         def get_output(cmd):
-            proc = subprocess.Popen(
+            proc = py3_compat.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT
@@ -500,7 +501,7 @@ class AbstractJob(object):
                 self.walltime, output_file))
 
         logging.debug('Opening {0} subprocess.'.format(self.submit_bin))
-        submit_proc = subprocess.Popen(
+        submit_proc = py3_compat.Popen(
             self._qsub_command(output_file, error_file),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -690,7 +691,7 @@ class AbstractJob(object):
         logging.debug('qstat command to run: {0}'.format(qstat_command))
 
         logging.debug('Opening qstat subprocess.')
-        qstat_proc = subprocess.Popen(
+        qstat_proc = py3_compat.Popen(
             qstat_command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -963,7 +964,7 @@ class SlurmJob(AbstractJob):
         logging.debug('squeue command to run: {0}'.format(squeue_command))
 
         logging.debug('Opening squeue subprocess.')
-        squeue_proc = subprocess.Popen(
+        squeue_proc = py3_compat.Popen(
             squeue_command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -1050,7 +1051,7 @@ class SlurmJob(AbstractJob):
         logging.debug('Command to submit job: {0}'.format(cmd))
 
         logging.debug('Opening job subprocess')
-        submit_proc = subprocess.Popen(
+        submit_proc = py3_compat.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,

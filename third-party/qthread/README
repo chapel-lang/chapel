@@ -22,6 +22,9 @@ as follows:
   from us using schedulers that don't support work stealing (nemesis)
   or running with work stealing disabled (distrib w/ QT_STEAL_RATIO=0)
 
+* We added a simple mechanism to reset the automatic task spawning
+  order for better affinity between consecutive parallel loops.
+
 * We deleted the register keyword from the code because it is
   deprecated in C++, causing warnings (that get turned into errors
   with the compiler switch -Werror) when qthread.h is included from

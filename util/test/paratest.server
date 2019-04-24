@@ -440,22 +440,27 @@ sub find_subdirs {
 	push @founddirs, $targetdir;
 	print "$targetdir\n" if $debug;
     }
-    
     foreach $filen (@cdir) {
-	if (-d "$targetdir/$filen") {                 # if dir
-        # .skipif does double duty here.  
-        # When attached to a directory name, skips it and all descendents if the condition is true.
-        my $skipfilen = "$targetdir/$filen.skipif";
-        if (-e "$skipfilen") {
-            my $skip;
-            print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
-            $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
-            next if $skip > '0' or $skip =~ m/true/i;
-        }
-	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
-            if (! -l "$targetdir/$filen") {
-                push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
+        if (-d "$targetdir/$filen") {                 # if dir
+            # .skipif does double duty here
+            # When attached to a directory name, skips it and all descendents if the condition is true.
+            my $skipfilen = "$targetdir/$filen.skipif";
+            if (-e "$skipfilen") {
+                my $skip;
+                print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
+                $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
+                next if $skip > '0' or $skip =~ m/true/i;
             }
+            # .notest does double duty here as well
+            # When attached to a directory name, skips it and all descendents
+            my $notestfilen = "$targetdir/$filen.notest";
+            if (-e "$notestfilen") {
+                next;
+            }
+            if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
+                if (! -l "$targetdir/$filen") {
+                    push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
+                }
         }
     }
     return @founddirs;

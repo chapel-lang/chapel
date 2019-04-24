@@ -5,6 +5,7 @@
 # test code will mirror the ones found here.
 
 
+from __future__ import print_function
 import sys
 import os.path
 
@@ -20,7 +21,7 @@ pathSep3 = '///'
 
 
 def absolutize(name):
-    print name, 'becomes', os.path.abspath(name)
+    print(name, 'becomes', os.path.abspath(name))
 
 
 # Redirect STDOUT to the "absPath.good" file.

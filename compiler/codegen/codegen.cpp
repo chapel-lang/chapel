@@ -2145,15 +2145,7 @@ static void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
     const char* mainModFilename = mainMod->astloc.filename;
-
-    // find the last slash in the filename's path, if there is one
-    const char* lastSlash = strrchr(mainModFilename, '/');
-    const char* filename = NULL;
-    if (lastSlash == NULL) {
-      filename = mainModFilename;
-    } else {
-      filename = lastSlash + 1;
-    }
+    const char* filename = stripdirectories(mainModFilename);
 
     // "Executable" name should be given a "lib" prefix in library compilation,
     // and just the main module name in normal compilation.
@@ -2345,9 +2337,10 @@ void codegen() {
     }
 
     codegen_makefile(&mainfile, NULL, false, userFileName);
-    if (fLibraryCompile && fLibraryMakefile) {
-      codegen_library_makefile();
-    }
+  }
+
+  if (fLibraryCompile && fLibraryMakefile) {
+    codegen_library_makefile();
   }
 
   // Vectors to store different symbol names to be used while generating header
@@ -2452,10 +2445,10 @@ void makeBinary(void) {
                                makeflags,
                                getIntermediateDirName(), "/Makefile");
     mysystem(command, "compiling generated source");
+  }
 
-    if (fLibraryCompile && fLibraryPython) {
-      codegen_make_python_module();
-    }
+  if (fLibraryCompile && fLibraryPython) {
+    codegen_make_python_module();
   }
 }
 

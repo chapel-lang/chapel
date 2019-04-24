@@ -482,7 +482,7 @@ override proc Stencil.dsiDestroyDist() {
   }
 }
 
-proc Stencil.dsiDisplayRepresentation() {
+override proc Stencil.dsiDisplayRepresentation() {
   writeln("boundingBox = ", boundingBox);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocales = ", for tl in targetLocales do tl.id);
@@ -626,7 +626,7 @@ proc StencilDom.init(param rank : int,
 
 override proc StencilDom.dsiMyDist() return dist;
 
-proc StencilDom.dsiDisplayRepresentation() {
+override proc StencilDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
@@ -993,7 +993,7 @@ proc StencilDom.dsiIndexOrder(i) {
 //
 proc LocStencilDom.contains(i) return myBlock.contains(i);
 
-proc StencilArr.dsiDisplayRepresentation() {
+override proc StencilArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
     if doRADOpt then
@@ -1218,15 +1218,10 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     if arrSection.locale.id != here.id then
       arrSection = myLocArr;
 
-    //
-    // Slicing arrSection.myElems will require reference counts to be updated.
-    // If myElems is an array of arrays, the inner array's domain or dist may
-    // live on a different locale and require communication for reference
-    // counting. Simply put: don't slice inside a local block.
-    //
-    ref chunk = arrSection.myElems(myFollowThisDom);
     local {
-      for i in chunk do yield i;
+      const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type;
+      ref myElems = narrowArrSection.myElems;
+      for i in myFollowThisDom do yield myElems[i];
     }
   } else {
     //
@@ -2015,3 +2010,49 @@ where useBulkTransferDist {
 
   return true;
 }
+
+//Brad's utility function. It drops from Domain D the dimensions
+//indicated by the subsequent parameters dims.
+proc dropDims(D: domain, dims...) {
+  var r = D.dims();
+  var r2: (D.rank-dims.size)*r(1).type;
+  var j = 1;
+  for i in 1..D.rank do
+    for k in 1..dims.size do
+      if dims(k) != i {
+        r2(j) = r(i);
+        j+=1;
+      }
+  var DResult = {(...r2)};
+  return DResult;
+}
+
+iter ConsecutiveChunks(LView, RDomClass, RView, len, in start) {
+  var elemsToGet = len;
+  const offset   = RView.low - LView.low;
+  var rlo        = start + offset;
+  var rid        = RDomClass.dist.targetLocsIdx(rlo);
+  while elemsToGet > 0 {
+    const size = min(RDomClass.numRemoteElems(RView, rlo, rid), elemsToGet);
+    yield (rid, rlo, size);
+    rid += 1;
+    rlo += size;
+    elemsToGet -= size;
+  }
+}
+
+iter ConsecutiveChunksD(LView, RDomClass, RView, len, in start) {
+  param rank     = LView.rank;
+  var elemsToGet = len;
+  const offset   = RView.low - LView.low;
+  var rlo        = start + offset;
+  var rid        = RDomClass.dist.targetLocsIdx(rlo);
+  while elemsToGet > 0 {
+    const size = min(RDomClass.numRemoteElems(RView, rlo(rank):int, rid(rank):int), elemsToGet);
+    yield (rid, rlo, size);
+    rid(rank) +=1;
+    rlo(rank) += size;
+    elemsToGet -= size;
+  }
+}
+

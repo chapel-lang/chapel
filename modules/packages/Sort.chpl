@@ -440,7 +440,12 @@ the sorting algorithm.
     * tuples of ``int``
     * ``uint``
     * tuples of ``uint``
+    * ``real``
+    * tuples of ``real``
+    * ``imag``
+    * tuples of ``imag``
     * ``string``
+    * ``c_string``
 
 :arg Data: The array to be sorted
 :type Data: [] `eltType`
@@ -655,10 +660,10 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
       data is sorted.
 
  */
-proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
   chpl_check_comparator(comparator, eltType);
-  const low = Dom.low,
-        high = Dom.high,
+  const low = lo,
+        high = hi,
         stride = abs(Dom.stride);
 
   for i in low..high by stride {
@@ -770,54 +775,58 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
  */
 proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
   chpl_check_comparator(comparator, eltType);
-  _MergeSort(Data, minlen, comparator);
+  _MergeSort(Data, Dom.low, Dom.high, minlen, comparator);
 }
 
-private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultComparator)
+private proc _MergeSort(Data: [?Dom], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator)
   where Dom.rank == 1 {
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
-  if hi-lo < minlen {
-    insertionSort(Data, comparator);
+  if (hi-lo < minlen) {
+    insertionSort(Data, comparator=comparator, lo, hi);
     return;
   }
   const mid = (hi-lo)/2+lo;
-  var A1 = Data[lo..mid];
-  var A2 = Data[mid+1..hi];
-  cobegin {
-    { _MergeSort(A1, minlen, comparator); }
-    { _MergeSort(A2, minlen, comparator); }
+  if(here.runningTasks() < here.numPUs(logical=true)) {
+    cobegin {
+      { _MergeSort(Data, lo, mid, minlen, comparator); }
+      { _MergeSort(Data, mid+1, hi, minlen, comparator); }
+    }
+  } else {
+    _MergeSort(Data, lo, mid, minlen, comparator);
+    _MergeSort(Data, mid+1, hi, minlen, comparator);
   }
-
-  // TODO -- This iterator causes unnecessary overhead - we can do without it
-  for (a, _a) in zip(Data[lo..hi], _MergeIterator(A1, A2, comparator=comparator)) do a = _a;
+  _Merge(Data, lo, mid, hi, comparator);
 }
 
-
-private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=defaultComparator) {
-  var a1 = A1.domain.dim(1).low;
-  const a1hi = A1.domain.dim(1).high;
-  var a2 = A2.domain.dim(1).low;
-  const a2hi = A2.domain.dim(1).high;
-  while ((a1 <= a1hi) && (a2 <= a2hi)) {
-    while (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
-      yield A1(a1);
+private proc _Merge(Data: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+  var a1max = mid;
+  var A1 = Data[lo..(a1max)];
+  var a2max = hi;
+  var A2 = Data[mid..(a2max)];
+  var a1 = lo;
+  var a2 = mid + 1;
+  var i = lo;
+  while ((a1 <= a1max) && (a2 <= a2max)) {
+    if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
+      Data[i] = A1[a1];
       a1 += 1;
-      if a1 > a1hi then break;
-    }
-    if a1 > a1hi then break;
-    while (chpl_compare(A2(a2), A1(a1), comparator) <= 0) {
-      yield A2(a2);
+      i += 1;
+    } else {
+      Data[i] = A2[a2];
       a2 += 1;
-      if a2 > a2hi then break;
+      i += 1;
     }
   }
-  if a1 == a1hi then yield A1(a1);
-  else if a2 == a2hi then yield A2(a2);
-  if a1 < a1hi then for a in A1[a1..a1hi] do yield a;
-  else if a2 < a2hi then for a in A2[a2..a2hi] do yield a;
+  while (a1 <= a1max) {
+    Data[i] = A1[a1];
+    a1 += 1;
+    i += 1;
+  }
+  while (a2 <= a2max) {
+    Data[i] = A2[a2];
+    a2 += 1;
+    i += 1;
+  }
 }
-
 
 pragma "no doc"
 /* Error message for multi-dimension arrays */
@@ -1102,6 +1111,22 @@ proc binForRecord(a, criterion, startbit:int)
   }
 }
 
+// Returns the fixed number of bits in a value, if known.
+// Returns -1 otherwise.
+private
+proc fixedWidth(type eltTy) param {
+  if (isUintType(eltTy) || isIntType(eltTy) ||
+      isRealType(eltTy) || isImagType(eltTy)) then
+    return numBits(eltTy);
+
+  if (isHomogeneousTuple(eltTy)) {
+    var tmp:eltTy;
+    return tmp.size * numBits(tmp(1).type);
+  }
+
+  return -1;
+}
+
 // Returns a compile-time known final startbit
 // e.g. for uint(64), returns 56 (since that's 64-8 and the
 // last sort pass will sort on the last 8 bits).
@@ -1112,15 +1137,14 @@ proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
   use Reflection;
 
   // Compute end_bit if it's known
+  // Default comparator on integers has fixed width
   const ref element = Data[Data.domain.low];
-  if comparator.type == DefaultComparator &&
-     (isUint(element) || isInt(element)) {
-    // Default comparator on integers has fixed width
-    return numBits(element.type) - RADIX_BITS;
+  if comparator.type == DefaultComparator && fixedWidth(element.type) > 0 {
+    return fixedWidth(element.type) - RADIX_BITS;
   } else if canResolveMethod(comparator, "key", element) {
     type keyType = comparator.key(element).type;
-    if isUintType(keyType) || isIntType(keyType) then
-      return numBits(keyType) - RADIX_BITS;
+    if fixedWidth(keyType) > 0 then
+      return fixedWidth(keyType) - RADIX_BITS;
   }
 
   return -1;
@@ -1170,21 +1194,24 @@ proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
 pragma "no doc"
 proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
 
+  var endbit:int;
+  endbit = msbRadixSortParamLastStartBit(Data, comparator);
+  if endbit < 0 then
+    endbit = max(int);
+
   msbRadixSort(start_n=Data.domain.low, end_n=Data.domain.high,
                Data, comparator,
-               startbit=0,
+               startbit=0, endbit=endbit,
                settings=new MSBRadixSortSettings());
 }
 
 // startbit counts from 0 and is a multiple of RADIX_BITS
 pragma "no doc"
 proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
-                  startbit:int,
+                  startbit:int, endbit:int,
                   settings /* MSBRadixSortSettings */)
 {
-  param endbit = msbRadixSortParamLastStartBit(A, criterion);
-  param hasendbit = endbit >= 0;
-  if hasendbit && startbit > endbit then
+  if startbit > endbit then
     return;
 
   if( end_n - start_n < settings.sortSwitch ) {
@@ -1207,17 +1234,35 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
   var min_bin = radix+1;
   var max_bin = 0;
   var any_ending = false;
+
   // Step 1: count.
-  // TODO: make this parallel for large enough sizes
-  for i in start_n..end_n {
-    const (bin, ubits) = binForRecord(A[i], criterion, startbit);
-    if ubits < min_ubits then
-      min_ubits = ubits;
-    if ubits > max_ubits then
-      max_ubits = ubits;
-    if bin == 0 || bin == radix then
-      any_ending = true;
-    offsets[bin] += 1;
+  if settings.alwaysSerial == false {
+    forall i in start_n..end_n
+      with (+ reduce offsets,
+            min reduce min_ubits,
+            max reduce max_ubits,
+            || reduce any_ending) {
+      const (bin, ubits) = binForRecord(A[i], criterion, startbit);
+      if ubits < min_ubits then
+        min_ubits = ubits;
+      if ubits > max_ubits then
+        max_ubits = ubits;
+      if bin == 0 || bin == radix then
+        any_ending = true;
+      offsets[bin] += 1;
+    }
+  } else {
+    // The serial version
+    for i in start_n..end_n {
+      const (bin, ubits) = binForRecord(A[i], criterion, startbit);
+      if ubits < min_ubits then
+        min_ubits = ubits;
+      if ubits > max_ubits then
+        max_ubits = ubits;
+      if bin == 0 || bin == radix then
+        any_ending = true;
+      offsets[bin] += 1;
+    }
   }
 
   // If the data parts we gathered all have the same leading bits,
@@ -1227,7 +1272,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
     if dataStartBit > startbit {
       // Re-start count again immediately at the new start position.
       msbRadixSort(start_n, end_n, A, criterion,
-                   dataStartBit, settings);
+                   dataStartBit, endbit, settings);
       return;
     }
   }
@@ -1258,6 +1303,14 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       break;
     }
 
+    // TODO: I think it might be possible to make this sort stable
+    // by populating buf from the start of the data instead of from the end.
+    // buf would need to be populated with the first M elements that aren't
+    // already in the correct bin.
+
+    // TODO: I think it's possible to make this shuffle parallel
+    // by imagining each task has a max_buf and have them update
+    // atomic offsets.
     param max_buf = settings.DISTRIBUTE_BUFFER;
     var buf: max_buf*A.eltType;
     var used_buf = 0;
@@ -1268,7 +1321,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
 
     // Fill buf with up to max_buf records from the end of this bin.
     while i < end {
-      buf[used_buf+1] = A[i];
+      buf[used_buf+1] <=> A[i];
       used_buf += 1;
       i += 1;
     }
@@ -1293,16 +1346,15 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       while used_buf > 0 && j <= used_buf {
         const (bin, _) = binForRecord(buf[j], criterion, startbit);
         // Swap buf[j] into its appropriate bin.
-        // Leave buf[j] with the next unsorted item.
-        // But offsets[bin] might in the region we already read.
-        if bin == curbin && offsets[curbin] >= bufstart {
-          A[offsets[bin]] = buf[j];
-          buf[j] = buf[used_buf];
-          used_buf -= 1;
-        } else {
-          A[offsets[bin]] <=> buf[j];
-        }
+        var offset = offsets[bin];
+        A[offset] <=> buf[j];
         offsets[bin] += 1;
+        // Leave buf[j] with the next unsorted item.
+        // But offsets[bin] might be in the region we already read.
+        if bin == curbin && offset >= bufstart {
+          buf[j] <=> buf[used_buf];
+          used_buf -= 1;
+        }
         j += 1;
       }
     }
@@ -1333,12 +1385,12 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       const bin_start = offsets[bin];
       const bin_end = if bin+1<=radix then offsets[bin+1]-1 else end_n;
       const num = 1 + bin_end - bin_start;
-      if num <= 1 || (hasendbit && startbit >= endbit) {
+      if num <= 1 || startbit >= endbit {
         // do nothing
       } else if num < settings.minForTask || runningNow >= settings.maxTasks {
         // sort it in this thread
         msbRadixSort(bin_start, bin_end, A, criterion,
-                     subbits, settings);
+                     subbits, endbit, settings);
       } else {
         // Add it to the list of things to do in parallel
         bigsubs[nbigsubs] = (bin_start, bin_end);
@@ -1347,7 +1399,7 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
     }
 
     forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) {
-      msbRadixSort(bin_start, bin_end, A, criterion, subbits, settings);
+      msbRadixSort(bin_start, bin_end, A, criterion, subbits, endbit, settings);
     }
   } else {
     // The serial version
@@ -1356,12 +1408,12 @@ proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
       const bin_start = offsets[bin];
       const bin_end = if bin+1<=radix then offsets[bin+1]-1 else end_n;
       const num = 1 + bin_end - bin_start;
-      if num <= 1 || (hasendbit && startbit >= endbit) {
+      if num <= 1 || startbit >= endbit {
         // do nothing
       } else {
         // sort it in this thread
         msbRadixSort(bin_start, bin_end, A, criterion,
-                     startbit + radixbits, settings);
+                     startbit + radixbits, endbit, settings);
       }
     }
   }
@@ -1422,27 +1474,77 @@ record DefaultComparator {
   }
 
   /*
-   Default ``keyPart`` method for tuples of integral values.
+   Default ``keyPart`` method for `real` values.
    See also `The .keyPart method`_.
 
-   :arg x: tuple of the `int` or `uint` (of any bit width) to sort
+   :arg x: the `real` of any width to sort
    :arg i: the part number requested
 
-   :returns: ``(0, x(i))`` if ``i <= x.size``, or ``(-1, 0)`` otherwise
+   :returns: ``(0, u)`` if ``i==0``, or ``(-1, u)`` otherwise,
+             where `u` is a `uint` storing the bits of the `real`
+             but with some transformations applied to produce the
+             correct sort order.
    */
   inline
-  proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
-                                       (isInt(x(1)) || isUint(x(1))) {
-    type tt = x(1).type;
+  proc keyPart(x: chpl_anyreal, i:int):(int(8), uint(numBits(x.type))) {
+    var section:int(8) = if i > 1 then -1:int(8) else 0:int(8);
 
-    if i > x.size then
-      return (-1, 0:tt);
+    param nbits = numBits(x.type);
+    // Convert the real bits to a uint
+    var src = x;
+    var dst: uint(nbits);
+    c_memcpy(c_ptrTo(dst), c_ptrTo(src), c_sizeof(src.type));
 
-    return (0, x(i):tt);
+    if (dst >> (nbits-1)) == 1 {
+      // negative bit is set, flip all bits
+      dst = ~dst;
+    } else {
+      const one: uint(nbits) = 1;
+      // negative bit is not set, flip only top bit
+      dst = dst ^ (one << (nbits-1));
+    }
+    return (section, dst);
+  }
+  /*
+   Default ``keyPart`` method for `imag` values.
+   See also `The .keyPart method`_.
+
+   This method works by calling keyPart with the corresponding `real` value.
+   */
+
+  inline
+  proc keyPart(x: chpl_anyimag, i:int):(int(8), uint(numBits(x.type))) {
+    return keyPart(x:real(numBits(x.type)), i);
   }
 
   /*
-   Default ``keyPart`` method for sorting strings. See also `The .keyPart method`_.
+   Default ``keyPart`` method for tuples of `int`, `uint`, `real`, or `imag`
+   values.
+   See also `The .keyPart method`_.
+
+   :arg x: homogeneous tuple of the numeric type (of any bit width) to sort
+   :arg i: the part number requested
+
+   :returns: For `int` and `uint`, returns
+             ``(0, x(i))`` if ``i <= x.size``, or ``(-1, 0)`` otherwise.
+             For `real` and `imag`, uses ``keyPart`` to find the `uint`
+             to provide the sorting order.
+   */
+  inline
+  proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
+                                       (isInt(x(1)) || isUint(x(1)) ||
+                                        isReal(x(1)) || isImag(x(1))) {
+    // Re-use the keyPart for imag, real
+    const (_,part) = this.keyPart(x(i), 1);
+    if i > x.size then
+      return (-1, 0:part.type);
+    else
+      return (0, part);
+  }
+
+  /*
+   Default ``keyPart`` method for sorting strings.
+   See also `The .keyPart method`_.
 
    .. note::
      Currently assumes that the string is local.
@@ -1465,6 +1567,25 @@ record DefaultComparator {
     var len = x.length;
     var section = if i <= len then 0:int(8) else -1:int(8);
     var part =    if i <= len then ptr[i-1] else  0:uint(8);
+    return (section, part);
+  }
+
+  /*
+   Default ``keyPart`` method for sorting `c_string`.
+   See also `The .keyPart method`_.
+
+   :arg x: the `c_string` to sort
+   :arg i: the part number requested
+
+   :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if byte ``i`` is ``0``
+   */
+
+  inline
+  proc keyPart(x:c_string, i:int):(int(8), uint(8)) {
+    var ptr = x:c_ptr(uint(8));
+    var byte = ptr[i-1];
+    var section = if byte != 0 then 0:int(8) else -1:int(8);
+    var part = byte;
     return (section, part);
   }
 }

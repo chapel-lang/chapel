@@ -21,7 +21,7 @@ use TOML;
 use FileSystem;
 use MasonUtils;
 use MasonEnv;
-use MasonSystem; 
+use MasonSystem;
 use MasonExternal;
 
 
@@ -52,7 +52,7 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
-    
+
 
     updateRegistry(tf, args);
     const openFile = openreader(tomlPath);
@@ -150,12 +150,21 @@ proc updateRegistry(tf: string, args : [] string) {
   }
 }
 
-private const maxVersion = new VersionInfo(max(int), max(int), max(int));
-
-proc parseChplVersion(brick:borrowed Toml) {
+proc parseChplVersion(brick:borrowed Toml): (VersionInfo, VersionInfo) {
   use Regexp;
 
-  if brick.pathExists("chplVersion") == false {
+  if brick == nil {
+    stderr.writeln("Error: Unable to parse manifest file");
+    exit(1);
+  }
+
+  // Assert some expected fields are not nil
+  if brick['name'] == nil || brick['version'] == nil{
+    stderr.writeln("Error: Unable to parse manifest file");
+    exit(1);
+  }
+
+  if brick['chplVersion'] == nil {
     const name = brick["name"].s + "-" + brick["version"].s;
     stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);
@@ -182,7 +191,7 @@ proc parseChplVersion(brick:borrowed Toml) {
       throw new owned MasonError("Unbounded chplVersion ranges are not allowed." + formatMessage);
     }
 
-    proc parseString(ver:string) throws {
+    proc parseString(ver:string): VersionInfo throws {
       var ret : VersionInfo;
 
       // Finds 'x.x' or 'x.x.x' where x is a positive number
@@ -202,7 +211,7 @@ proc parseChplVersion(brick:borrowed Toml) {
     low = parseString(versions[1]);
 
     if (versions.size == 1) {
-      hi = maxVersion;
+      hi = new VersionInfo(max(int), max(int), max(int));
     } else {
       hi = parseString(versions[2]);
     }
@@ -235,7 +244,7 @@ proc verifyChapelVersion(brick:borrowed Toml) {
 proc prettyVersionRange(low, hi) {
   if low == hi then
     return low.str();
-  else if hi == maxVersion then
+  else if hi.containsMax() then
     return low.str() + " or later";
   else
     return low.str() + ".." + hi.str();

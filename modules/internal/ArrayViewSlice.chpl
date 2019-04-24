@@ -149,7 +149,7 @@ module ArrayViewSlice {
       chpl_serialReadWriteRectangular(f, arr, privDom);
     }
 
-    proc dsiDisplayRepresentation() {
+    override proc dsiDisplayRepresentation() {
       writeln("Slice view");
       writeln("----------");
       writeln("of domain:");

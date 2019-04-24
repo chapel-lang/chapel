@@ -126,13 +126,14 @@ case $COMPILER in
         ;;
 esac
 
-if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
-    libsci_module=$(module list -t 2>&1 | grep libsci)
-    if [ -n "${libsci_module}" ] ; then
-        log_info "Unloading cray-libsci module: ${libsci_module}"
-        module unload $libsci_module
-    fi
-fi
+log_info "Unloading cray-libsci module"
+module unload cray-libsci
+
+log_info "Unloading cray-mpich module"
+module unload cray-mpich
+
+log_info "Unloading atp module"
+module unload atp
 
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 
@@ -165,8 +166,8 @@ if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
 fi
 
 if [ "${COMP_TYPE}" != "HOST-TARGET-no-PrgEnv" ] ; then
-    log_info "Loading fftw module."
-    module load fftw
+    log_info "Loading cray-fftw module."
+    module load cray-fftw
 fi
 
 log_info "Current loaded modules:"

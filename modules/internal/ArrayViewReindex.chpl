@@ -376,7 +376,7 @@ module ArrayViewReindex {
 
     forwarding arr except these,
                       doiBulkTransferFromKnown, doiBulkTransferToKnown,
-                      doiBulkTransferFromAny,  doiBulkTransferToAny;
+                      doiBulkTransferFromAny,  doiBulkTransferToAny, doiScan;
 
     proc downdom {
       // TODO: This routine may get a remote domain if this is a view
@@ -470,7 +470,7 @@ module ArrayViewReindex {
       chpl_serialReadWriteRectangular(f, this, privDom.updom);
     }
 
-    proc dsiDisplayRepresentation() {
+    override proc dsiDisplayRepresentation() {
       writeln("Reindex view");
       writeln("------------");
       writeln("of domain:");

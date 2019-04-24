@@ -383,6 +383,8 @@ all:
   03/07/19:
     - text: chapcs rebooted
       config: chapcs
+  03/21/19:
+    - Stop throwing `--static` for performance testing (#12652)
 
 
 AllCompTime:
@@ -607,6 +609,10 @@ ep.ml-time:
 empty-chpl-barrier.ml-time:
   08/02/18:
     - Optimize the atomic barrier implementation for network atomics (#10633)
+
+exchange:
+  04/18/19:
+    - Enable bulk-transfer for BlockDist by default (#12797)
 
 fannkuch-redux:
   07/22/14:
@@ -1044,6 +1050,10 @@ memleaksfull:
     - Close a memory leak in linkedlist test (#12551)
     - Close leak in tdata-test (#12554)
     - Close leaks in CoMD (#12552)
+  04/16/19:
+    - Add VectorList collection (#12791)
+  04/17/19:
+    - Fix bugs in mason search and buildMason (#12785)
 
 meteor:
   12/18/13:
@@ -1098,6 +1108,8 @@ miniMD:
     - Use zero-arg initializer in BaseDom (#9250)
   04/24/18:
     - Update miniMD problem size (#9296)
+  04/18/19:
+    - Enable bulk-transfer for BlockDist by default (#12797)
 
 miniMD.ml-time:
   09/14/17:

@@ -8,6 +8,7 @@
 # Python functionality.
 
 
+from __future__ import print_function
 import sys
 import os.path
 
@@ -27,11 +28,11 @@ def do_tests(somepath):
     try:
         f = open(somepath, 'r')
     except Exception as e:
-        print 'Failed to open file!'
+        print('Failed to open file!')
         return
 
     # Print path used to open file.
-    print somepath
+    print(somepath)
 
     # NOTE: The semantics of this are different between Python/Chapel.
     # In Python, this prints the path used to OPEN the file.
@@ -40,10 +41,10 @@ def do_tests(somepath):
     # print file.name
 
     # Print the abspath of the path used to open.
-    print os.path.abspath(somepath)
+    print(os.path.abspath(somepath))
 
     # Get expected output for our test file.
-    print absolutize_file(f)
+    print(absolutize_file(f))
     f.close()
 
 

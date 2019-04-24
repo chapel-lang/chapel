@@ -25,7 +25,6 @@ writeln("Parent(int)");
 var p = new Parent(int, 1);
 p.parent_method();
 p.overridden_method();
-delete p;
 
 writeln("Child(int)");
 var c = new Child(1, int, 2);
@@ -34,7 +33,7 @@ c.overridden_method();
 c.child_method();
 
 writeln("Dynamic Child(int)");
-var pc:Parent = c;
+var pc:Parent = c.borrow();
 pc.parent_method();
 pc.overridden_method();
-delete pc;
+

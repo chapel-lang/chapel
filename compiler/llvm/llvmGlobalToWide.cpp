@@ -1229,7 +1229,7 @@ namespace {
                                            , NULL
 #endif
                                           );
-#if HAVE_LLVM_VER < 80
+#if HAVE_LLVM_VER < 90
         Type* getFnTy = getFn->getType();
         info->getFn = getFn;
 #else
@@ -1245,7 +1245,7 @@ namespace {
                                            , NULL
 #endif
                                           );
-#if HAVE_LLVM_VER < 80
+#if HAVE_LLVM_VER < 90
         Type* putFnTy = putFn->getType();
         info->putFn = putFn;
 #else
@@ -1263,7 +1263,7 @@ namespace {
 #endif
                                              );
 
-#if HAVE_LLVM_VER < 80
+#if HAVE_LLVM_VER < 90
         Type* getPutFnTy = getPutFn->getType();
         info->getPutFn = getPutFn;
 #else
@@ -1281,7 +1281,7 @@ namespace {
 #endif
                                              );
 
-#if HAVE_LLVM_VER < 80
+#if HAVE_LLVM_VER < 90
         Type* memsetFnTy = memsetFn->getType();
         info->memsetFn = memsetFn;
 #else

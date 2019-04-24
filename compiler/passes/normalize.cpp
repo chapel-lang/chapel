@@ -2226,6 +2226,12 @@ static void normRefVar(DefExpr* defExpr) {
     if (ArgSymbol* arg = toArgSymbol(symbol)) {
       if (arg->intent == INTENT_BLANK && arg->type == dtUnknown) {
         error = false;
+      } else if (arg->hasFlag(FLAG_ARG_THIS) &&
+                 arg->intent == INTENT_BLANK &&
+                 (arg->getFunction()->isInitializer() || arg->getFunction()->isCopyInit())) {
+        // InitNormalize.cpp will handle the case of initializing a ref-var
+        // from 'this' inside an initializer.
+        error = false;
       }
     }
 
@@ -3302,7 +3308,7 @@ static void expandQueryForActual(FnSymbol*  fn,
                        new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
                                     subtype, query->copy()));
     } else {
-      INT_ASSERT("case not handled");
+      INT_FATAL("case not handled");
     }
   } else if (subcall && doesCallContainGenericActual(subcall)) {
     Expr* subtype = NULL;

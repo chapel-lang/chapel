@@ -259,7 +259,7 @@ References
 */
 module ZMQ {
 
-  require "zmq.h", "-lzmq";
+  require "zmq.h", "-lzmq", "ZMQHelper/zmq_helper.h";
 
   use Reflection;
   use ExplicitRefCount;
@@ -586,6 +586,12 @@ module ZMQ {
     }
   }
 
+  /* Used to help with the various getX/setX functions */
+  private extern proc zmq_getsockopt_int_helper(s: c_void_ptr, option: c_int,
+                                                ref res: c_int): c_int;
+  private extern proc zmq_getsockopt_string_helper(s: c_void_ptr, option: c_int,
+                                                   ref res: c_string): c_int;
+
   /*
     A ZeroMQ socket. See :ref:`more on using Sockets <using-sockets>`.
     Note that this record contains private fields not listed below.
@@ -724,6 +730,84 @@ module ZMQ {
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
           halt("Error in Socket.setsockopt(): ", errmsg);
+        }
+      }
+    }
+
+    /*
+      Get the last endpoint for the specified socket; see
+      `zmq_getsockopt <http://api.zeromq.org/4-0:zmq-getsockopt>`_ under
+      ZMQ_LAST_ENDPOINT.
+
+      :returns: The last endpoint set, see the link above.
+      :rtype: string
+
+      :throws ZMQError: Thrown when an error occurs getting the last endpoint.
+    */
+    proc getLastEndpoint(): string throws {
+      var ret: string;
+      on classRef.home {
+        var str: c_string;
+        var err = zmq_getsockopt_string_helper(classRef.socket,
+                                               ZMQ_LAST_ENDPOINT, str);
+        if err == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to use a factory method for a ZMQError subclass,
+          // see #12397
+          throw new owned ZMQError("Error in Socket.getLastEndpoint(): " +
+                                   errmsg);
+        }
+        ret = new string(str, needToCopy=false);
+      }
+      return ret;
+    }
+
+    /*
+      Get the linger period for the specified socket; see
+      `zmq_getsockopt <http://api.zeromq.org/4-0:zmq-getsockopt>`_ under
+      ZMQ_LINGER.
+
+      :returns: The linger period for the socket, see the link above.
+      :rtype: c_int
+
+      :throws ZMQError: Thrown when an error occurs getting the linger.
+    */
+    proc getLinger(): c_int throws {
+      var copy: c_int;
+      on classRef.home {
+        var ret = zmq_getsockopt_int_helper(classRef.socket, ZMQ_LINGER,
+                                            copy);
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to use a factory method for a ZMQError subclass,
+          // see #12397
+          throw new owned ZMQError("Error in Socket.getLinger(): " + errmsg);
+        }
+      }
+      return copy;
+    }
+
+    /*
+      Set the linger period for the specified socket; see
+      `zmq_setsockopt <http://api.zeromq.org/4-0:zmq-setsockopt>`_ under
+      ZMQ_LINGER.
+
+      :arg value: The new linger period for the socket.
+      :type value: c_int
+
+      :throws ZMQError: Thrown when an error occurs setting the linger.
+    */
+    proc setLinger(value: c_int) throws {
+      on classRef.home {
+        var copy: c_int = value;
+        var ret = zmq_setsockopt(classRef.socket, ZMQ_LINGER,
+                                 c_ptrTo(copy): c_void_ptr,
+                                 numBytes(value.type)): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to use a factory method for a ZMQError subclass,
+          // see #12397
+          throw new owned ZMQError("Error in Socket.setLinger(): " + errmsg);
         }
       }
     }
@@ -933,6 +1017,30 @@ module ZMQ {
     if lhs.classRef != nil then
       lhs.release();
     lhs.acquire(rhs.classRef);
+  }
+
+  /*
+    A subclass of Error specifically for ZMQ-related errors.
+
+    .. warning::
+       The design for this subclass is subject to change.  We may look into
+       merging it with :class:`~SysError.SystemError`, and/or extend it to have
+       subclasses for the various ZMQ-specific failures.
+  */
+  class ZMQError: Error {
+    var strerror: string;
+
+    proc init(strerror: string) {
+      this.strerror = strerror;
+    }
+
+    /*
+      Provides a formatted string output for :class:`ZMQError` using the value
+      that was provided at its creation
+    */
+    override proc message() {
+      return strerror;
+    }
   }
 
 } // module ZMQ

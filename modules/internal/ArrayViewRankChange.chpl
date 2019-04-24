@@ -485,7 +485,7 @@ module ArrayViewRankChange {
     // Forward all unhandled methods to underlying privatized array
     forwarding arr except these,
                       doiBulkTransferFromKnown, doiBulkTransferToKnown,
-                      doiBulkTransferFromAny,  doiBulkTransferToAny;
+                      doiBulkTransferFromAny,  doiBulkTransferToAny, doiScan;
 
 
     //
@@ -578,7 +578,7 @@ module ArrayViewRankChange {
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
 
-    proc dsiDisplayRepresentation() {
+    override proc dsiDisplayRepresentation() {
       writeln("Rank Change view");
       writeln("----------");
       writeln("of domain:");

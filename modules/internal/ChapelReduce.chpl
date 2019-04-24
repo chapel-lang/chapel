@@ -23,6 +23,8 @@ module ChapelReduce {
   use ChapelStandard;
 
   config param enableParScan = false;
+  if enableParScan then
+    compilerWarning("'enableParScan' has been deprecated (it is now always enabled)");
 
   proc chpl__scanStateResTypesMatch(op) param {
     type resType = op.generate().type;
@@ -31,7 +33,7 @@ module ChapelReduce {
   }
 
   proc chpl__scanIteratorZip(op, data) {
-    compilerWarning("scan has been serialized (see issue #5760)");
+    compilerWarning("scan has been serialized (see issue #12482)");
     var arr = for d in zip((...data)) do chpl__accumgen(op, d);
 
     delete op;
@@ -41,13 +43,10 @@ module ChapelReduce {
   proc chpl__scanIterator(op, data) {
     use Reflection;
     param supportsPar = isArray(data) && canResolveMethod(data, "_scan", op);
-    if (enableParScan && supportsPar) {
+    if (supportsPar) {
       return data._scan(op);
     } else {
-      compilerWarning("scan has been serialized (see issue #5760)");
-      if (supportsPar) {
-        compilerWarning("(recompile with -senableParScan to enable a prototype parallel implementation)");
-      }
+      compilerWarning("scan has been serialized (see issue #12482)");
       var arr = for d in data do chpl__accumgen(op, d);
 
       delete op;
@@ -159,20 +158,20 @@ module ChapelReduce {
 
     // Rely on the default value of the desired type.
     // Todo: is this efficient when that is an array?
-    proc identity {
+    inline proc identity {
       var x: chpl__sumType(eltType); return x;
     }
-    proc accumulate(x) {
+    inline proc accumulate(x) {
       value += x;
     }
-    proc accumulateOntoState(ref state, x) {
+    inline proc accumulateOntoState(ref state, x) {
       state += x;
     }
-    proc combine(x) {
+    inline proc combine(x) {
       value += x.value;
     }
-    proc generate() return value;
-    proc clone() return new unmanaged SumReduceScanOp(eltType=eltType);
+    inline proc generate() return value;
+    inline proc clone() return new unmanaged SumReduceScanOp(eltType=eltType);
   }
 
   class ProductReduceScanOp: ReduceScanOp {

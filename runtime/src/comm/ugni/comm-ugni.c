@@ -622,6 +622,7 @@ static mem_region_t* gnr_mreg_map;
 // fault-in failures, and reporting out-of-memory in response.
 //
 static struct sigaction previous_SIGBUS_sigact;
+static atomic_bool SIGBUS_gate;
 
 struct mregs_supp {
   chpl_mem_descInt_t desc;
@@ -2646,7 +2647,7 @@ void register_memory(void)
       gnr_mreg_map[node] = gdp->gnr_mreg;
       mem_regions_all_entries[node]->mreg_cnt = gdp->mreg_cnt;
       memcpy(&mem_regions_all_entries[node]->mregs, &gdp->mregs,
-             mem_regions_size);
+             gdata_mregs_size);
       mem_regions_all_my_entry_map[node] =
           (mem_region_table_t*)
           ((char*) gdp->mem_regions_all + chpl_nodeID * mem_regions_size);
@@ -3202,6 +3203,7 @@ void set_hugepage_info(void)
 
     if ((ev = getenv("HUGETLB_NO_RESERVE")) != NULL
         && strcasecmp(ev, "yes") == 0) {
+      atomic_init_bool(&SIGBUS_gate, false);
       install_SIGBUS_handler();
     }
   }
@@ -3215,6 +3217,10 @@ void set_hugepage_info(void)
 }
 
 
+//
+// This may be called from the SIGBUS handler itself (see below), so
+// its error handling has to be primitive (no *printf() calls, e.g.).
+//
 static
 void install_SIGBUS_handler(void)
 {
@@ -3222,11 +3228,17 @@ void install_SIGBUS_handler(void)
 
   act.sa_flags = SA_RESTART | SA_SIGINFO;
   if (sigemptyset(&act.sa_mask) != 0) {
-    CHPL_INTERNAL_ERROR("sigemptyset() failed");
+    static const char* msg = "internal error: sigemptyset() failed\n";
+    int msgLen = strlen(msg);
+    write(2, msg, msgLen);
+    _exit(1);
   }
   act.sa_sigaction = SIGBUS_handler;
   if (sigaction(SIGBUS, &act, &previous_SIGBUS_sigact) != 0) {
-    CHPL_INTERNAL_ERROR("sigaction(SIGBUS) failed");
+    static const char* msg = "internal error: sigaction(SIGBUS) failed\n";
+    int msgLen = strlen(msg);
+    write(2, msg, msgLen);
+    _exit(1);
   }
 }
 
@@ -3264,15 +3276,100 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
       ;
 
     if (mr_i >= 0) {
-      char buf[1024];
-      chpl_error_vs(buf, sizeof(buf),
-                    mr_mregs_supplement[mr_i].ln, mr_mregs_supplement[mr_i].fn,
-                    "Out of memory allocating \"%s\"",
-                    chpl_mem_descString(mr_mregs_supplement[mr_i].desc));
-      write(fileno(stderr), buf, strlen(buf));
-      exit_without_cleanup = true;
-      chpl_atomic_thread_fence(memory_order_release);
-      chpl_exit_any(1);
+      //
+      // This does indeed appear to be due to faulting in pages as a
+      // side effect of initialization.
+      //
+
+      //
+      // Only say this once per node.
+      //
+      while (atomic_exchange_explicit_bool(&SIGBUS_gate, true,
+                                           memory_order_acquire)) {
+        sleep(1); // listed as safe in a handler (sched_yield() isn't)
+      }
+
+      //
+      // Produce the best message we can, under the circumstances.
+      //
+      static char buf[1000];
+      int bufi;
+
+      static const char* msg1 = "error: Out of memory allocating \"";
+      int msg1Len = strlen(msg1);
+      const char* mds = chpl_mem_descString(mr_mregs_supplement[mr_i].desc);
+      int mdsLen = strlen(mds);
+      static const char* msg2 = "\"";
+      int msg2Len = strlen(msg2);
+
+      bufi = sizeof(buf);
+      buf[--bufi] = '\n';
+
+      if (msg1Len + mdsLen + msg2Len > bufi) {
+        static const char* msg = "error: Out of memory allocating from heap";
+        int msgLen = strlen(msg);
+        memcpy(&buf[bufi -= msgLen], msg, msgLen);
+      } else {
+        //
+        // We build the message backwards, because that makes building
+        // the string for the line number much simpler.
+        //
+        memcpy(&buf[bufi -= msg2Len], msg2, msg2Len);
+        memcpy(&buf[bufi -= mdsLen], mds, mdsLen);
+        memcpy(&buf[bufi -= msg1Len], msg1, msg1Len);
+
+        //
+        // Only try to provide a line number if there is one and it
+        // will fit in the buffer.
+        //
+        chpl_bool didLine = false;
+        if (bufi > 22 // type safety: enough for uint64 (ln is only int32)
+            && mr_mregs_supplement[mr_i].ln > 0) {
+          int ln = mr_mregs_supplement[mr_i].ln;
+          buf[--bufi] = ' ';
+          buf[--bufi] = ':';
+          for ( ; ln > 0; ln /= 10) {
+            buf[--bufi] = "0123456789"[ln % 10];
+          }
+          didLine = true;
+        }
+
+        //
+        // Only try to provide a source file if we can give at least some
+        // of it, and without using snprintf() in chpl_lookupFilename()).
+        //
+        if (bufi > 10
+            && mr_mregs_supplement[mr_i].fn >= 0
+            && mr_mregs_supplement[mr_i].fn < chpl_filenameTableSize) {
+          if (!didLine)
+            buf[--bufi] = ' ';
+          buf[--bufi] = ':';
+
+          //
+          // Stop copying fname either when we're done or need to leave
+          // room for "..." in place of chars that won't fit.
+          //
+          const char* fn = chpl_lookupFilename(mr_mregs_supplement[mr_i].fn);
+          int fnLen = strlen(fn);
+          int fni;
+          for (fni = fnLen; fni > 0 && (fni <= 3 || bufi > 3); ) {
+            buf[--bufi] = fn[--fni];
+          }
+
+          if (fni != 0) {
+            buf[--bufi] = '.';
+            buf[--bufi] = '.';
+            buf[--bufi] = '.';
+          }
+        }
+      }
+
+      write(2, &buf[bufi], sizeof(buf) - bufi);
+
+      //
+      // It's not safe to do anything else but quit now.
+      //
+      _exit(1);
     }
   }
 
@@ -3284,7 +3381,12 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
   // handler again.
   //
   if (sigaction(SIGBUS, &previous_SIGBUS_sigact, NULL) != 0) {
-    CHPL_INTERNAL_ERROR("sigaction(SIGBUS) to reinstall old handler failed");
+    static const char* msg
+                       = "internal error: "
+                         "sigaction(SIGBUS) to reinstall old handler failed\n";
+    int msgLen = strlen(msg);
+    write(2, msg, msgLen);
+    _exit(1);
   }
 
   {
@@ -3295,7 +3397,10 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
         || pthread_sigmask(SIG_UNBLOCK, &sigbus_set, NULL) != 0
         || raise(SIGBUS) != 0
         || pthread_sigmask(SIG_BLOCK, &sigbus_set, NULL) != 0) {
-      CHPL_INTERNAL_ERROR("cannot re-raise SIGBUS");
+      static const char* msg = "internal error: cannot re-raise SIGBUS\n";
+      int msgLen = strlen(msg);
+      write(2, msg, msgLen);
+      _exit(1);
     }
   }
 

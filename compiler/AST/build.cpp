@@ -652,9 +652,6 @@ buildLabelStmt(const char* name, Expr* stmt) {
 
 BlockStmt*
 buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
-  if (UnresolvedSymExpr* use = toUnresolvedSymExpr(condExpr))
-    if (!strcmp(use->unresolved, gTryToken->name))
-      return buildChapelStmt(new CondStmt(condExpr, thenExpr, elseExpr));
   return buildChapelStmt(new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
 }
 
@@ -992,6 +989,7 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
 
   BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(iterator), taskBlk, true, zippered);
   if (bounded) {
+    if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
     block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr(".", iterator,  new_CStringSymbol("size"))));
     block->insertAtHead(new DefExpr(numTasks));

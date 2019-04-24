@@ -16,6 +16,7 @@
 # limitations under the License.
 
 COMM_LAUNCHER_SRCS = \
+        comm-ofi-launch.c \
         comm-ofi-locales.c \
 
 COMM_SRCS = \

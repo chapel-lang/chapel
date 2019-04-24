@@ -1,3 +1,13 @@
+ifeq ($(MAKECMDGOALS),envOverrides)
+include lib/Makefile.checkEnvOverrides
+envOverrides: envOverrides.c lib/libcheckEnvOverrides.a
+	@$(CHPL_COMPILER) $(CHPL_CFLAGS) -o envOverrides envOverrides.c $(CHPL_LDFLAGS)
+	@./envOverrides
+else
+envOverrides:
+	@echo "weird"
+endif
+
 ifeq ($(MAKECMDGOALS),mytest)
 include lib/Makefile.getMakefile
 mytest: mytest.c lib/libgetMakefile.a

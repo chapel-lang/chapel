@@ -1,0 +1,2 @@
+subclass-override-returns-owned-subclass.chpl:19: error: conflicting return type specified for 'D.bar(): _owned(C)'
+subclass-override-returns-owned-subclass.chpl:29: error:   overridden by 'SubD.bar(): _owned(SubC)'
