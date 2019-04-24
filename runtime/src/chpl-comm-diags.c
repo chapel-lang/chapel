@@ -26,6 +26,7 @@
 
 #include "chpl-comm.h"
 #include "chpl-comm-diags.h"
+#include "chpl-comm-internal.h"
 #include "chpl-mem-consistency.h"
 
 #include <stdint.h>
@@ -40,8 +41,7 @@ int chpl_comm_diagnostics;
 void chpl_comm_startVerbose() {
   chpl_verbose_comm = 1;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_verbose_comm_idx);
   chpl_comm_diags_enable();
 }
 
@@ -49,8 +49,7 @@ void chpl_comm_startVerbose() {
 void chpl_comm_stopVerbose() {
   chpl_verbose_comm = 0;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_verbose_comm_idx);
   chpl_comm_diags_enable();
 }
 
@@ -71,8 +70,7 @@ void chpl_comm_startDiagnostics() {
 
   chpl_comm_diagnostics = 1;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_comm_diagnostics_idx);
   chpl_comm_diags_enable();
 }
 
@@ -83,8 +81,7 @@ void chpl_comm_stopDiagnostics() {
 
   chpl_comm_diagnostics = 0;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_comm_diagnostics_idx);
   chpl_comm_diags_enable();
 }
 

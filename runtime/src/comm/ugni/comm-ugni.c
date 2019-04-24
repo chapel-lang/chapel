@@ -56,6 +56,7 @@
 #include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
+#include "chpl-comm-internal.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
 #include "chplexit.h"
@@ -1952,9 +1953,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 
 void chpl_comm_post_mem_init(void)
 {
-  //
-  // Empty.
-  //
+  chpl_comm_init_prv_bcast_tab();
 }
 
 
@@ -3832,8 +3831,8 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid)
   //
   for (i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      do_remote_put(chpl_private_broadcast_table[id], i,
-                    chpl_private_broadcast_table[id], size,
+      do_remote_put(chpl_rt_priv_bcast_tab[id], i,
+                    chpl_rt_priv_bcast_tab[id], size,
                     NULL, may_proxy_true);
     }
   }

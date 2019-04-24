@@ -29,6 +29,7 @@
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-comm-diags.h"
+#include "chpl-comm-internal.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
 #include "chplexit.h"
@@ -254,7 +255,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 }
 
 
-void chpl_comm_post_mem_init(void) { }
+void chpl_comm_post_mem_init(void) {
+  chpl_comm_init_prv_bcast_tab();
+}
 
 
 //
@@ -882,13 +885,13 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   // These are needed by chpl_comm_broadcast_private(), below.
   //
   void** pbtMap;
-  size_t pbtSize = chpl_private_broadcast_table_len
-                   * sizeof(chpl_private_broadcast_table[0]);
+  size_t pbtSize = chpl_rt_priv_bcast_tab_len
+                   * sizeof(chpl_rt_priv_bcast_tab[0]);
   CHPL_CALLOC(pbtMap, chpl_numNodes * pbtSize);
-  chpl_comm_ofi_oob_allgather(chpl_private_broadcast_table, pbtMap, pbtSize);
+  chpl_comm_ofi_oob_allgather(chpl_rt_priv_bcast_tab, pbtMap, pbtSize);
   CHPL_CALLOC(chplPrivBcastTabMap, chpl_numNodes);
   for (int i = 0; i < chpl_numNodes; i++) {
-    chplPrivBcastTabMap[i] = &pbtMap[i * chpl_private_broadcast_table_len];
+    chplPrivBcastTabMap[i] = &pbtMap[i * chpl_rt_priv_bcast_tab_len];
   }
 }
 
@@ -896,7 +899,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
   for (int i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      (void) ofi_put(chpl_private_broadcast_table[id], i,
+      (void) ofi_put(chpl_rt_priv_bcast_tab[id], i,
                      chplPrivBcastTabMap[i][id], size);
     }
   }
