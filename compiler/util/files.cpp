@@ -274,13 +274,12 @@ const char* genIntermediateFilename(const char* filename) {
 const char* getDirectory(const char* filename) {
   const char* filenamebase = strrchr(filename, '/');
   if (filenamebase == NULL) {
-    return astr("./");
+    return astr(".");
   } else {
     char dir[FILENAME_MAX];
     const int len = filenamebase - filename;
     strncpy(dir, filename, len);
-    dir[len] = '/';
-    dir[len+1] = '\0';
+    dir[len] = '\0';
     return astr(dir);
   }
 }
@@ -495,19 +494,24 @@ static const char* addCurrentDirToSourceFile(const char* filename,
 
   // Do nothing if the current module's directory is "./"
   const char* modDir = getDirectory(modFilename);
-  if (strcmp(modDir, "./") == 0) {
+  if (strcmp(modDir, ".") == 0) {
     return filename;
   }
 
   // If the file is a .c or .o...
   if (isCSource(filename) || isObjFile(filename)) {
     // ...and it isn't already an absolute path, add the module directory
-    return astr(modDir, filename);
+    return astr(modDir, "/", filename);
   }
 
   // If the file is a .h, add the module's directory to the -I path
-  // TODO: remove duplicates if addIncInfo() doesn't already...
   if (isCHeader(filename)) {
+    for_vector(const char, dir, incDirs) {
+      if (dir == modDir) {
+        // we've already added this -I directory, so don't do it again
+        return filename;
+      }
+    }
     addIncInfo(modDir);
     return filename;
   }
