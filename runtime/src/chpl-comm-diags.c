@@ -37,7 +37,7 @@ int chpl_verbose_comm;
 int chpl_comm_diagnostics;
 
 
-void chpl_startVerboseComm() {
+void chpl_comm_startVerbose() {
   chpl_verbose_comm = 1;
   chpl_comm_diags_disable();
   chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
@@ -46,7 +46,7 @@ void chpl_startVerboseComm() {
 }
 
 
-void chpl_stopVerboseComm() {
+void chpl_comm_stopVerbose() {
   chpl_verbose_comm = 0;
   chpl_comm_diags_disable();
   chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
@@ -55,17 +55,17 @@ void chpl_stopVerboseComm() {
 }
 
 
-void chpl_startVerboseCommHere() {
+void chpl_comm_startVerboseHere() {
   chpl_verbose_comm = 1;
 }
 
 
-void chpl_stopVerboseCommHere() {
+void chpl_comm_stopVerboseHere() {
   chpl_verbose_comm = 0;
 }
 
 
-void chpl_startCommDiagnostics() {
+void chpl_comm_startDiagnostics() {
   // Make sure that there are no pending communication operations.
   chpl_rmem_consist_release(0, 0);
 
@@ -77,7 +77,7 @@ void chpl_startCommDiagnostics() {
 }
 
 
-void chpl_stopCommDiagnostics() {
+void chpl_comm_stopDiagnostics() {
   // Make sure that there are no pending communication operations.
   chpl_rmem_consist_release(0, 0);
 
@@ -89,7 +89,7 @@ void chpl_stopCommDiagnostics() {
 }
 
 
-void chpl_startCommDiagnosticsHere() {
+void chpl_comm_startDiagnosticsHere() {
   // Make sure that there are no pending communication operations.
   chpl_rmem_consist_release(0, 0);
 
@@ -97,7 +97,7 @@ void chpl_startCommDiagnosticsHere() {
 }
 
 
-void chpl_stopCommDiagnosticsHere() {
+void chpl_comm_stopDiagnosticsHere() {
   // Make sure that there are no pending communication operations.
   chpl_rmem_consist_release(0, 0);
 
@@ -105,11 +105,11 @@ void chpl_stopCommDiagnosticsHere() {
 }
 
 
-void chpl_resetCommDiagnosticsHere() {
+void chpl_comm_resetDiagnosticsHere() {
   chpl_comm_diags_reset();
 }
 
 
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+void chpl_comm_getDiagnosticsHere(chpl_commDiagnostics *cd) {
   chpl_comm_diags_copy(cd);
 }
