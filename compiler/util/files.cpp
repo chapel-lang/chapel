@@ -274,7 +274,7 @@ const char* genIntermediateFilename(const char* filename) {
 const char* getDirectory(const char* filename) {
   const char* filenamebase = strrchr(filename, '/');
   if (filenamebase == NULL) {
-    return astr(".");
+    return astr("./");
   } else {
     char dir[FILENAME_MAX];
     const int len = filenamebase - filename;
