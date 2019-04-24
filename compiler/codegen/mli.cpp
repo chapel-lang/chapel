@@ -30,7 +30,6 @@
 #include "stringutil.h"
 #include <map>
 
-
 //
 // TODO:
 //
@@ -50,24 +49,19 @@
 // --
 //
 
-
 const char* gen_mli_marshalling = "chpl_mli_marshalling";
 const char* gen_mli_client_bundle = "chpl_mli_client_bundle";
 const char* gen_mli_server_bundle = "chpl_mli_server_bundle";
-
 static const char* client_main = "chpl_client.main";
 static const char* client_arg = "chpl_client.arg";
 static const char* client_res = "chpl_client.res";
 static const char* server_main = "chpl_server.main";
 static const char* server_arg = "chpl_server.arg";
 static const char* server_res = "chpl_server.res";
-
 static const char* marshal_push_prefix = "chpl_mli_mtpush_";
 static const char* marshal_pull_prefix = "chpl_mli_mtpull_";
-
 static const char* socket_push_name = "chpl_mli_push";
 static const char* socket_pull_name = "chpl_mli_pull";
-
 static const char* scope_begin = "{\n";
 static const char* scope_end = "}\n";
 
@@ -146,7 +140,6 @@ std::string genNewDecl(Type* t, const char* n);
 
 };
 
-
 //
 // This is the main entrypoint for MLI code generation, call this if the
 // necessary conditions are met in codegen().
@@ -170,7 +163,6 @@ void codegenMultiLocaleInteropWrappers(void) {
   return;
 }
 
-
 MLIContext::MLIContext(bool injectDebugPrintlines, bool separateHeaders) {
 
   // Yes, I know this isn't the most optimal way to initialize these!
@@ -185,7 +177,6 @@ MLIContext::MLIContext(bool injectDebugPrintlines, bool separateHeaders) {
   return;
 }
 
-
 MLIContext::~MLIContext() {
 
   // Now, turn beautify ON!
@@ -195,7 +186,6 @@ MLIContext::~MLIContext() {
 
   return;
 }
-
 
 void MLIContext::emit(ModuleSymbol* md) {
   if (md->modTag == MOD_INTERNAL) { return; }
@@ -212,7 +202,6 @@ void MLIContext::emit(ModuleSymbol* md) {
   return;
 }
 
-
 void MLIContext::emit(FnSymbol* fn) {
   if (not fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
     return;
@@ -224,7 +213,6 @@ void MLIContext::emit(FnSymbol* fn) {
 
   return;
 }
-
 
 void MLIContext::emitClientPrelude(void) {
   std::string gen;
@@ -239,7 +227,6 @@ void MLIContext::emitClientPrelude(void) {
   return;
 }
 
-
 std::string MLIContext::genHeaderInc(const char* header, bool system) {
   std::string gen;
 
@@ -251,7 +238,6 @@ std::string MLIContext::genHeaderInc(const char* header, bool system) {
 
   return gen;
 }
-
 
 std::string MLIContext::genComment(const char* msg, const char* pfx) {
   std::string gen;
@@ -265,16 +251,13 @@ std::string MLIContext::genComment(const char* msg, const char* pfx) {
   return gen;
 }
 
-
 std::string MLIContext::genNote(const char* msg) {
   return this->genComment(msg, "NOTE");
 }
 
-
 std::string MLIContext::genTodo(const char* msg) {
   return this->genComment(msg, "TODO");
 }
-
 
 std::string MLIContext::genFuncToSetServerGlobals(void) {
   std::string gen;
@@ -288,7 +271,6 @@ std::string MLIContext::genFuncToSetServerGlobals(void) {
   
   return gen;
 }
-
 
 void MLIContext::emitServerPrelude(void) {
   std::string gen;
@@ -307,7 +289,6 @@ void MLIContext::emitServerPrelude(void) {
 
   return;
 }
-
 
 void MLIContext::emitMarshalRoutines(void) {
   std::map<Type*, int64_t>::iterator i;
@@ -336,7 +317,6 @@ void MLIContext::emitMarshalRoutines(void) {
 
   return;
 }
-
 
 std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   int64_t id = this->assignUniqueTypeID(t);
@@ -447,16 +427,13 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   return gen;
 }
 
-
 std::string MLIContext::genMarshalPushRoutine(Type* t) {
   return this->genMarshalRoutine(t, true);
 }
 
-
 std::string MLIContext::genMarshalPullRoutine(Type* t) {
   return this->genMarshalRoutine(t, false);
 }
-
 
 void MLIContext::emitServerDispatchRoutine(void) {
   std::string gen;
@@ -470,24 +447,20 @@ void MLIContext::emitServerDispatchRoutine(void) {
   return;
 }
 
-
 void MLIContext::setOutput(fileinfo* fi) {
   this->info->cfile = fi->fptr;
   return;
 }
-
 
 void MLIContext::setOutputAndWrite(fileinfo* fi, const std::string& gen) {
   this->setOutput(fi);
   this->write(gen);
 }
 
-
 void MLIContext::write(const std::string& gen) {
   fprintf(this->info->cfile, gen.c_str());
   return;
 }
-
 
 //
 // We can (as I understand it) cound on Type* being unique across the entire
@@ -507,7 +480,6 @@ int64_t MLIContext::assignUniqueTypeID(Type* t) {
   return result;
 }
 
-
 void MLIContext::emitClientWrapper(FnSymbol* fn) {
   std::string gen;
 
@@ -523,7 +495,6 @@ void MLIContext::emitClientWrapper(FnSymbol* fn) {
   
   return;
 }
-
 
 void MLIContext::emitServerWrapper(FnSymbol* fn) {
   std::string gen;
@@ -546,7 +517,6 @@ void MLIContext::emitServerWrapper(FnSymbol* fn) {
   return;
 }
 
-
 std::string MLIContext::genDebugPrintCall(FnSymbol* fn, const char* pfx) {
   std::string msg;
 
@@ -555,7 +525,6 @@ std::string MLIContext::genDebugPrintCall(FnSymbol* fn, const char* pfx) {
 
   return this->genDebugPrintCall(msg.c_str(), pfx);
 }
-
 
 std::string MLIContext::genDebugPrintCall(const char* msg, const char* pfx) {
   std::string gen;
@@ -574,11 +543,9 @@ std::string MLIContext::genDebugPrintCall(const char* msg, const char* pfx) {
   return gen;
 }
 
-
 std::string MLIContext::genFuncNumericID(FnSymbol* fn) {
   return std::to_string((int64_t) fn->id);
 }
-
 
 std::string MLIContext::genServerWrapperCall(FnSymbol* fn) {
   std::string gen;
@@ -589,7 +556,6 @@ std::string MLIContext::genServerWrapperCall(FnSymbol* fn) {
 
   return gen;
 }
-
   
 std::string
 MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
@@ -631,14 +597,12 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
   return gen;
 }
 
-
 //
 // TODO: This is unused right now (no struct type support yet).
 //
 bool MLIContext::structContainsOnlyPrimitiveScalars(Type *t) {
   return false;
 }
-
 
 //
 // TODO: This filter will change as we support more and more type classes.
@@ -649,7 +613,6 @@ bool MLIContext::isSupportedType(Type* t) {
     (t == dtStringC)
   );
 }
-
 
 void MLIContext::verifyPrototype(FnSymbol* fn) {
 
@@ -667,17 +630,14 @@ void MLIContext::verifyPrototype(FnSymbol* fn) {
   return;
 }
 
-
 Type* MLIContext::getTypeFromFormal(ArgSymbol* as) {
   if (as == NULL) { return NULL; }
   return as->type;
 }
 
-
 Type* MLIContext::getTypeFromFormal(FnSymbol* fn, int i) {
   return getTypeFromFormal(fn->getFormal(i));
 }
-
 
 std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
   bool hasVoidReturnType = fn->retType == dtVoid;
@@ -735,7 +695,6 @@ std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
  
   return gen;
 }
-
 
 std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   std::map<int, std::string> formalTempNames;
@@ -804,7 +763,6 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   return gen;
 }
 
-
 std::string MLIContext::genMarshalCall(const char* s, const char* v, Type* t,
                                        bool out) {
   std::string gen;
@@ -833,7 +791,6 @@ MLIContext::genMarshalPushCall(const char* s, const char* v, Type* t) {
   return this->genMarshalCall(s, v, t, true);
 }
 
-
 //
 // TODO: These calls pass value types (cheaper to pass pointer).
 //
@@ -843,15 +800,10 @@ MLIContext::genMarshalPullCall(const char* s, const char* v, Type* t) {
   return this->genMarshalCall(s, v, t, false);
 }
 
-
 std::string MLIContext::genTypeName(Type* t) {
   return t->codegen().c;
 }
 
-//
-//
-//
-//
 std::string
 MLIContext::genSocketCall(const char* s, const char* v, const char* l,
                           bool out) {
@@ -867,16 +819,12 @@ MLIContext::genSocketCall(const char* s, const char* v, const char* l,
   gen += ", 0);\n";
 
   return gen;
-
-
 }
-
 
 std::string
 MLIContext::genSocketCall(const char* s, const char* v, bool out) {
   return this->genSocketCall(s, v, out, 0);
 }
-
 
 std::string MLIContext::genSocketPushCall(const char* s, const char* v) {
   return this->genSocketCall(s, v, true);
@@ -887,7 +835,6 @@ std::string MLIContext::genSocketPullCall(const char* s, const char* v) {
   return this->genSocketCall(s, v, false);
 }
 
-
 std::string MLIContext::genAddressOf(const char* var) {
   std::string gen;
 
@@ -897,11 +844,9 @@ std::string MLIContext::genAddressOf(const char* var) {
   return gen;
 }
 
-
 std::string MLIContext::genAddressOf(std::string& var) {
   return this->genAddressOf(var.c_str());
 }
-
 
 std::string MLIContext::genSizeof(const char* var) {
   std::string gen;
@@ -913,16 +858,13 @@ std::string MLIContext::genSizeof(const char* var) {
   return gen;
 }
 
-
 std::string MLIContext::genSizeof(std::string& var) {
   return this->genAddressOf(var.c_str());
 }
 
-
 bool MLIContext::typeRequiresAllocation(Type* t) {
   return (t == dtStringC);
 }
-
 
 std::string MLIContext::genNewDecl(const char* t, const char* v) {
   std::string gen;
@@ -934,7 +876,6 @@ std::string MLIContext::genNewDecl(const char* t, const char* v) {
 
   return gen;
 }
-
 
 std::string MLIContext::genNewDecl(Type* t, const char* v) {
   std::string gen = this->genTypeName(t);
