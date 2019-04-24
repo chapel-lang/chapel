@@ -491,41 +491,6 @@ void chpl_comm_make_progress(void);
 // like say flushing task private buffers.
 void chpl_comm_task_end(void);
 
-//
-// Comm diagnostics stuff
-//
-
-#define CHPL_COMM_DIAGS_VARS_ALL(MACRO) \
-  MACRO(get) \
-  MACRO(get_nb) \
-  MACRO(put) \
-  MACRO(put_nb) \
-  MACRO(test_nb) \
-  MACRO(wait_nb) \
-  MACRO(try_nb) \
-  MACRO(amo) \
-  MACRO(execute_on) \
-  MACRO(execute_on_fast) \
-  MACRO(execute_on_nb)
-
-typedef struct _chpl_commDiagnostics {
-#define _COMM_DIAGS_DECL(cdv) uint64_t cdv;
-  CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_DECL)
-#undef _COMM_DIAGS_DECL
-} chpl_commDiagnostics;
-
-void chpl_startVerboseComm(void);
-void chpl_stopVerboseComm(void);
-void chpl_startVerboseCommHere(void);
-void chpl_stopVerboseCommHere(void);
-
-void chpl_startCommDiagnostics(void); // this one implemented by comm layers
-void chpl_stopCommDiagnostics(void);
-void chpl_startCommDiagnosticsHere(void);
-void chpl_stopCommDiagnosticsHere(void);
-void chpl_resetCommDiagnosticsHere(void);
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
-
 void* chpl_get_global_serialize_table(int64_t idx);
 
 #else // LAUNCHER

@@ -261,72 +261,72 @@ module CommDiagnostics
    */
   type commDiagnostics = chpl_commDiagnostics;
 
-  private extern proc chpl_startVerboseComm();
+  private extern proc chpl_comm_startVerbose();
 
-  private extern proc chpl_stopVerboseComm();
+  private extern proc chpl_comm_stopVerbose();
 
-  private extern proc chpl_startVerboseCommHere();
+  private extern proc chpl_comm_startVerboseHere();
 
-  private extern proc chpl_stopVerboseCommHere();
+  private extern proc chpl_comm_stopVerboseHere();
 
-  private extern proc chpl_startCommDiagnostics();
+  private extern proc chpl_comm_startDiagnostics();
 
-  private extern proc chpl_stopCommDiagnostics();
+  private extern proc chpl_comm_stopDiagnostics();
 
-  private extern proc chpl_startCommDiagnosticsHere();
+  private extern proc chpl_comm_startDiagnosticsHere();
 
-  private extern proc chpl_stopCommDiagnosticsHere();
+  private extern proc chpl_comm_stopDiagnosticsHere();
 
-  private extern proc chpl_resetCommDiagnosticsHere();
+  private extern proc chpl_comm_resetDiagnosticsHere();
 
-  private extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
+  private extern proc chpl_comm_getDiagnosticsHere(out cd: commDiagnostics);
 
   /*
     Start on-the-fly reporting of communication initiated on any locale.
    */
-  proc startVerboseComm() { chpl_startVerboseComm(); }
+  proc startVerboseComm() { chpl_comm_startVerbose(); }
 
   /*
     Stop on-the-fly reporting of communication initiated on any locale.
    */
-  proc stopVerboseComm() { chpl_stopVerboseComm(); }
+  proc stopVerboseComm() { chpl_comm_stopVerbose(); }
 
   /*
     Start on-the-fly reporting of communication initiated on this locale.
    */
-  proc startVerboseCommHere() { chpl_startVerboseCommHere(); }
+  proc startVerboseCommHere() { chpl_comm_startVerboseHere(); }
 
   /*
     Stop on-the-fly reporting of communication initiated on this locale.
    */
-  proc stopVerboseCommHere() { chpl_stopVerboseCommHere(); }
+  proc stopVerboseCommHere() { chpl_comm_stopVerboseHere(); }
 
   /*
     Start counting communication operations across the whole program.
    */
   proc startCommDiagnostics() {
-    chpl_startCommDiagnostics();
+    chpl_comm_startDiagnostics();
   }
 
   /*
     Stop counting communication operations across the whole program.
    */
   proc stopCommDiagnostics() {
-    chpl_stopCommDiagnostics();
+    chpl_comm_stopDiagnostics();
   }
 
   /*
     Start counting communication operations initiated on this locale.
    */
   proc startCommDiagnosticsHere() {
-    chpl_startCommDiagnosticsHere();
+    chpl_comm_startDiagnosticsHere();
   }
 
   /*
     Stop counting communication operations initiated on this locale.
    */
   proc stopCommDiagnosticsHere() {
-    chpl_stopCommDiagnosticsHere();
+    chpl_comm_stopDiagnosticsHere();
   }
 
   /*
@@ -341,7 +341,7 @@ module CommDiagnostics
     Reset aggregate communication counts on the calling locale.
    */
   inline proc resetCommDiagnosticsHere() {
-    chpl_resetCommDiagnosticsHere();
+    chpl_comm_resetDiagnosticsHere();
   }
 
   /*
@@ -366,7 +366,7 @@ module CommDiagnostics
    */
   proc getCommDiagnosticsHere() {
     var cd: commDiagnostics;
-    chpl_getCommDiagnosticsHere(cd);
+    chpl_comm_getDiagnosticsHere(cd);
     return cd;
   }
 
