@@ -48,8 +48,13 @@ class FileLock():
         try:
             os.makedirs(lock_dir)
         except OSError as e:
-            if e.errno != os.errno.EEXIST:
-                raise
+            if "errno" in os.__dict__: # Python 2
+                if e.errno != os.errno.EEXIST:
+                    raise
+            else: # Python 3
+              if not isinstance(e, FileExistsError):
+                  raise
+
         self.lock_file = os.path.join(lock_dir, lock_name)
         self.lock = filelock.FileLock(self.lock_file)
 
