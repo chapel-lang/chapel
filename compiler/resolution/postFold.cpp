@@ -475,7 +475,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     const char* str = NULL;
 
     if (get_string(arg, &str)) {
-      processStringInRequireStmt(str, false);
+      processStringInRequireStmt(str, false, call->astloc.filename);
 
     } else {
       USR_FATAL(call, "'require' statements require string arguments");

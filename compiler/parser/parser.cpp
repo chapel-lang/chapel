@@ -502,6 +502,7 @@ static ModuleSymbol* parseFile(const char* path,
                                bool        namedOnCommandLine) {
   ModuleSymbol* retval = NULL;
 
+
   if (FILE* fp = openInputFile(path)) {
     gFilenameLookup.push_back(path);
 
