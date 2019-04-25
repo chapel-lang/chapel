@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-
+#include "mli.h"
 #include <cstring>
 #include "library.h"
 #include "ModuleSymbol.h"
@@ -29,25 +29,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include <map>
-
-//
-// TODO:
-//
-// -- Change socket/marshal push/pull "call" generators to return statements.
-// -- Change "genDebugPrintCall" to return a statement.
-// ^^ These will allow us to clean up many newlines.
-// -- Remove explict push/pull generators and replace with calls to general.
-// ^^ This will reduce code size some more at the cost of legibility.
-// -- Remove unnecessary overloads.
-// -- Add support for the c_string type.
-//
-// CHANGELOG (4/19/2019):
-//
-// -- Remove all tabs from generated code.
-// -- Switch (beautify) to ON.
-// --
-// --
-//
+#include <sstream>
 
 const char* gen_mli_marshalling = "chpl_mli_marshalling";
 const char* gen_mli_client_bundle = "chpl_mli_client_bundle";
@@ -145,6 +127,16 @@ std::string genNewDecl(Type* t, const char* n);
 };
 
 //
+// Generic helper method replacing C++11 std::to_string() method.
+//
+template <typename T>
+std::string str(T value) {
+  std::ostringstream tmp;
+  tmp << value;
+  return tmp.str();
+}
+
+//
 // This is the main entrypoint for MLI code generation, call this if the
 // necessary conditions are met in codegen().
 //
@@ -228,7 +220,7 @@ void MLIContext::emitClientPrelude(void) {
   std::string gen;
 
   // TODO: Trying to work around the Travis malloc complaint.
-  gen += "#define CHPL_MLI_IS_CLIENT_\n";
+  gen += "#define CHPL_MLI_IS_CLIENT_DEFINED\n";
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genNote("We use Makefile magic to make this visible!");
   gen += this->genHeaderInc("mli_client_runtime.c");
@@ -256,7 +248,7 @@ std::string MLIContext::genComment(const char* msg, const char* pfx) {
 
   gen += "// ";
   gen += pfx;
-  gen += pfx != "" ? ": " : "";
+  gen += strcmp(pfx, "") ? ": " : "";
   gen += msg;
   gen += "\n";
 
@@ -288,7 +280,7 @@ void MLIContext::emitServerPrelude(void) {
   std::string gen;
 
   // TODO: Trying to work around the Travis malloc complaint.
-  gen += "#define CHPL_MLI_IS_SERVER_\n";
+  gen += "#define CHPL_MLI_IS_SERVER_DEFINED\n";
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genNote("We use Makefile magic to make this visible!");
   gen += this->genHeaderInc("mli_server_runtime.c");
@@ -399,7 +391,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
 
   // Select appropriate prefix for function name based on direction.
   gen += out ? marshal_push_prefix : marshal_pull_prefix;
-  gen += std::to_string(id);
+  gen += str(id);
   gen += "(void* skt";
 
   // Push routines expect the type as a parameter (named "obj").
@@ -572,7 +564,7 @@ std::string MLIContext::genDebugPrintCall(const char* msg, const char* pfx) {
 }
 
 std::string MLIContext::genFuncNumericID(FnSymbol* fn) {
-  return std::to_string((int64_t) fn->id);
+  return str((int64_t) fn->id);
 }
 
 std::string MLIContext::genServerWrapperCall(FnSymbol* fn) {
@@ -754,7 +746,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
 
     // Map temp names to formal indices (shifted down one).
     tmp += "tmp_";
-    tmp += std::to_string(i - 1);
+    tmp += str(i - 1);
     formalTempNames[i] = tmp;
 
     // Emit a unpack call to initialize each temporary.
@@ -797,7 +789,7 @@ std::string MLIContext::genMarshalCall(const char* s, const char* v, Type* t,
   int64_t id = this->assignUniqueTypeID(t);
 
   gen += out ? marshal_push_prefix : marshal_pull_prefix;
-  gen += std::to_string(id);
+  gen += str(id);
   gen += "(";
   gen += s;
   

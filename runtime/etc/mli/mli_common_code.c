@@ -29,16 +29,16 @@
 #include <zmq.h>
 
 //
-// Hopeful workaround to prevent Travis from complaining. We may just have to
-// force the client to also use the Chapel runtime as well, for better or
-// for worse.
+// Perhaps _this_ will make Travis happy?
 //
-#ifdef CHPL_MLI_IS_CLIENT_
+#ifdef CHPL_MLI_IS_SERVER_DEFINED
+# include "chpl-mem.h"
 # define mli_malloc(bytes) chpl_malloc(bytes)
 # define mli_free(ptr) chpl_free(ptr)
-#elif defined(CHPL_MLI_IS_SERVER_)
-# define mli_malloc(bytes) malloc(bytes)
-# define mli_free(ptr) free(ptr)
+#elif defined(CHPL_MLI_IS_CLIENT_DEFINED)
+# include "chpl-mem-sys.h"
+# define mli_malloc(bytes) sys_malloc(bytes)
+# define mli_free(ptr) sys_free(ptr)
 # else
 # error The mli_malloc/free macros were defined in a inappropriate place.
 # endif
