@@ -998,6 +998,7 @@ inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   return nonLocalAccess(idx);
 }
 
+pragma "fn unordered safe"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if myLocArr {
