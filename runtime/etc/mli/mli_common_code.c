@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef CHPL_RUNTIME_ETC_MLI_MLI_COMMON_CODE_C_
 #define CHPL_RUNTIME_ETC_MLI_MLI_COMMON_CODE_C_
 
@@ -8,6 +27,22 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <zmq.h>
+
+//
+// Hopeful workaround to prevent Travis from complaining. We may just have to
+// force the client to also use the Chapel runtime as well, for better or
+// for worse.
+//
+#ifdef CHPL_MLI_IS_CLIENT_
+# define mli_malloc(bytes) chpl_malloc(bytes)
+# define mli_free(ptr) chpl_free(ptr)
+#elif defined(CHPL_MLI_IS_SERVER_)
+# define mli_malloc(bytes) malloc(bytes)
+# define mli_free(ptr) free(ptr)
+# else
+# error The mli_malloc/free macros were defined in a inappropriate place.
+# endif
+
 
 // Error codes must all be less than zero unless we change the protocol!
 enum chpl_mli_errors {
@@ -65,7 +100,7 @@ char* chpl_mli_concat(size_t count, ...) {
     length += strlen(chunk);
   }
 
-  result = malloc(length + 1);
+  result = mli_malloc(length + 1);
   if (result == NULL) { return NULL; }
 
   va_start(argp, count);
@@ -108,14 +143,14 @@ void chpl_mli_bind(void* socket, const char* ip, const char* port) {
 
   // TODO: Handle malloc error here?
   if (buffer == NULL) {
-    ;;;
+    assert("Internal malloc failed, should not reach (yet)." == 0);
   }
 
-  // TODO: Can this error out at all?
+  // TODO: Remove this assert / make this more robust.
   err = zmq_bind(socket, buffer);
   assert(err == 0);
 
-  free(buffer);
+  mli_free(buffer);
 
   return;
 }
@@ -128,12 +163,12 @@ void chpl_mli_connect(void* socket, const char* ip, const char* port) {
   int err = 0;
 
   buffer = chpl_mli_concat(4, "tcp://", ip, ":", port);
- 
-  // TODO: Can this error out at all?
+
+  // TODO: Remove this assert / make this more robust. 
   err = zmq_connect(socket, buffer);
   assert(err == 0);
 
-  free(buffer);
+  mli_free(buffer);
 
   return;  
 }

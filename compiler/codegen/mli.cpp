@@ -227,6 +227,8 @@ void MLIContext::emit(FnSymbol* fn) {
 void MLIContext::emitClientPrelude(void) {
   std::string gen;
 
+  // TODO: Trying to work around the Travis malloc complaint.
+  gen += "#define CHPL_MLI_IS_CLIENT_\n";
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genNote("We use Makefile magic to make this visible!");
   gen += this->genHeaderInc("mli_client_runtime.c");
@@ -285,6 +287,8 @@ std::string MLIContext::genFuncToSetServerGlobals(void) {
 void MLIContext::emitServerPrelude(void) {
   std::string gen;
 
+  // TODO: Trying to work around the Travis malloc complaint.
+  gen += "#define CHPL_MLI_IS_SERVER_\n";
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genNote("We use Makefile magic to make this visible!");
   gen += this->genHeaderInc("mli_server_runtime.c");
