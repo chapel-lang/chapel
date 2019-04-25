@@ -37,7 +37,6 @@ const char* gen_mli_server_bundle = "chpl_mli_server_bundle";
 static const char* client_main = "chpl_client.main";
 static const char* client_arg = "chpl_client.arg";
 static const char* client_res = "chpl_client.res";
-static const char* server_main = "chpl_server.main";
 static const char* server_arg = "chpl_server.arg";
 static const char* server_res = "chpl_server.res";
 static const char* marshal_push_prefix = "chpl_mli_mtpush_";
@@ -551,7 +550,7 @@ std::string MLIContext::genDebugPrintCall(const char* msg, const char* pfx) {
 
   gen += "printf(\"";
 
-  if (pfx && pfx != "") {
+  if (pfx && strcmp(pfx, "")) {
     gen += pfx;
     gen += " ";
   }
