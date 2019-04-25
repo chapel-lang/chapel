@@ -6,7 +6,7 @@ config const n = 5;
 config const lo = 2, b = 3;
 
 const Dbase = {1..n, 1..n};
-const Dsub = {lo..#b, lo..#b};
+const DsubLoc = {lo..#b, lo..#b};
 
 // array element type
 
@@ -16,7 +16,7 @@ config type elt = int;
 
 const repllocales = Locales;  // in case this changes
 var ReplBlockDist = new dmap(new Replicated());
-var DRepl: domain(2) dmapped ReplBlockDist = Dsub;
+var DRepl: domain(2) dmapped ReplBlockDist = DsubLoc;
 var ARepl: [DRepl] elt;
 
 proc show() {
@@ -34,7 +34,7 @@ proc reset() {
   // explicitly go to each locale
   coforall loc in repllocales do on loc do
     // explicitly index into each element
-    for ix in Dsub do ARepl[ix] = 100 + here.id;
+    for ix in DsubLoc do ARepl[ix] = 100 + here.id;
 }
 
 /*
@@ -59,6 +59,7 @@ proc trydist(mydmap, teston: locale, dmname) {
 on teston {
 
   var D: domain(2) dmapped mydmap = Dbase;
+  const Dsub = D[DsubLoc];
   var A: [D] elt;
   proc resetA() { A = [(i,j) in D] i*10 + j; }
   proc showA() { write(/*"A=\n",*/ A, "\n"); }
@@ -83,6 +84,12 @@ on teston {
   ARepl = A[Dsub];
   show();
 
+  // slicing using a local / DR domain
+  start("ARepl = A[DsubLoc];");
+  reset();
+  ARepl = A[DsubLoc];
+  show();
+
   // equivalent to the assignment
   start("forall (a,b) in zip(ARepl, A[Dsub]) do a = b;");
   reset();
@@ -100,7 +107,15 @@ on teston {
 
 */
 
-  // --- iterate over Dsub => only the current locale's replicant is visited --
+  // --- iterate over DsubLoc => only the current locale's replicant is visited --
+
+  // in a forall
+  start("forall ix in DsubLoc do ARepl[ix] = A[ix];");
+  reset();
+  forall ix in DsubLoc do ARepl[ix] = A[ix];
+  show();
+
+  // --- iterate over Dsub => each locale's personal replicant is visited
 
   // in a forall
   start("forall ix in Dsub do ARepl[ix] = A[ix];");
@@ -121,6 +136,13 @@ on teston {
   reset();
   resetA();
   A[Dsub] = ARepl;
+  showA();
+  resetA();
+
+  start("A[DsubLoc] = ARepl;");
+  reset();
+  resetA();
+  A[DsubLoc] = ARepl;
   showA();
   resetA();
 
