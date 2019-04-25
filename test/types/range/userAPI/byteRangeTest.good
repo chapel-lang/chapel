@@ -1,0 +1,196 @@
+./rangeAPItest.chpl:3: In function 'testRangeAPI':
+./rangeAPItest.chpl:43: warning: invoking 'offset' on an unstrided range has no effect.
+byte index range
+------------
+(_bindex = 1)..(_bindex = 10)
+idxType          = byteIndex
+stridable        = false
+boundedType      = bounded
+isRangeType()    = true
+isBoundedRange() = true
+hasLowBound()    = true
+hasHighBound()   = true
+stride           = 1
+alignment        = (_bindex = 1)
+aligned          = true
+first            = (_bindex = 1)
+last             = (_bindex = 10)
+low              = (_bindex = 1)
+high             = (_bindex = 10)
+alignedLow       = (_bindex = 1)
+alignedHigh      = (_bindex = 10)
+isEmpty()        = false
+size             = 10
+length           = 10
+hasFirst()       = true
+hasLast()        = true
+isNat.Algned()   = true
+isAmbiguous      = false
+contains((_bindex = 4)) = true
+contains((_bindex = 3)..(_bindex = 6)) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck((_bindex = 4)) = true
+boundsCheck((_bindex = 3)..(_bindex = 6)) = true
+indexOrder((_bindex = 4)) = 3
+orderToIndex(3)  = (_bindex = 4)
+expand(2)        = (_bindex = -1)..(_bindex = 12)
+offset(1)        = (_bindex = 1)..(_bindex = 10)
+translate(2)     = (_bindex = 3)..(_bindex = 12)
+translate(-2)    = (_bindex = -1)..(_bindex = 8)
+exterior(2)      = (_bindex = 11)..(_bindex = 12)
+exterior(-2)     = (_bindex = -1)..(_bindex = 0)
+interior(2)      = (_bindex = 9)..(_bindex = 10)
+interior(-2)     = (_bindex = 1)..(_bindex = 2)
+serial iteration = 
+(_bindex = 1) (_bindex = 2) (_bindex = 3) (_bindex = 4) (_bindex = 5) (_bindex = 6) (_bindex = 7) (_bindex = 8) (_bindex = 9) (_bindex = 10) 
+r#2               = (_bindex = 1)..(_bindex = 2)
+r#-2              = (_bindex = 9)..(_bindex = 10)
+r == subr         = false
+r != subr         = true
+r[subr]           = (_bindex = 3)..(_bindex = 6)
+r[subr] == subr[r]= true
+Copying...        = (_bindex = 1)..(_bindex = 10)
+
+strided byte index range
+------------
+(_bindex = 1)..(_bindex = 20) by 2
+idxType          = byteIndex
+stridable        = true
+boundedType      = bounded
+isRangeType()    = true
+isBoundedRange() = true
+hasLowBound()    = true
+hasHighBound()   = true
+stride           = 2
+alignment        = (_bindex = 1)
+aligned          = true
+first            = (_bindex = 1)
+last             = (_bindex = 19)
+low              = (_bindex = 1)
+high             = (_bindex = 20)
+alignedLow       = (_bindex = 1)
+alignedHigh      = (_bindex = 19)
+isEmpty()        = false
+size             = 10
+length           = 10
+hasFirst()       = true
+hasLast()        = true
+isNat.Algned()   = true
+isAmbiguous      = false
+contains((_bindex = 7)) = true
+contains((_bindex = 5)..(_bindex = 13) by 2) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck((_bindex = 7)) = true
+boundsCheck((_bindex = 5)..(_bindex = 13) by 2) = true
+indexOrder((_bindex = 7)) = 3
+orderToIndex(3)  = (_bindex = 7)
+expand(2)        = (_bindex = -1)..(_bindex = 22) by 2
+offset(1)        = (_bindex = 1)..(_bindex = 20) by 2 align (_bindex = 0)
+translate(2)     = (_bindex = 3)..(_bindex = 22) by 2
+translate(-2)    = (_bindex = -1)..(_bindex = 18) by 2
+exterior(2)      = (_bindex = 21)..(_bindex = 22) by 2
+exterior(-2)     = (_bindex = -1)..(_bindex = 0) by 2
+interior(2)      = (_bindex = 19)..(_bindex = 20) by 2
+interior(-2)     = (_bindex = 1)..(_bindex = 2) by 2
+serial iteration = 
+(_bindex = 1) (_bindex = 3) (_bindex = 5) (_bindex = 7) (_bindex = 9) (_bindex = 11) (_bindex = 13) (_bindex = 15) (_bindex = 17) (_bindex = 19) 
+r#2               = (_bindex = 1)..(_bindex = 4) by 2
+r#-2              = (_bindex = 17)..(_bindex = 20) by 2
+r == subr         = false
+r != subr         = true
+r[subr]           = (_bindex = 5)..(_bindex = 13) by 2
+r[subr] == subr[r]= true
+Copying...        = (_bindex = 1)..(_bindex = 20) by 2
+
+low bounded byte index range
+------------
+(_bindex = 1)..
+idxType          = byteIndex
+stridable        = false
+boundedType      = boundedLow
+isRangeType()    = true
+isBoundedRange() = false
+hasLowBound()    = true
+hasHighBound()   = false
+stride           = 1
+alignment        = (_bindex = 1)
+aligned          = true
+first            = (_bindex = 1)
+last             = (_bindex = 0)
+low              = (_bindex = 1)
+high             = (_bindex = 0)
+alignedLow       = (_bindex = 1)
+alignedHigh      = (_bindex = 0)
+isEmpty()        = false
+hasFirst()       = true
+hasLast()        = false
+isNat.Algned()   = true
+isAmbiguous      = false
+contains((_bindex = 4)) = true
+contains((_bindex = 3)..(_bindex = 6)) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck((_bindex = 4)) = true
+boundsCheck((_bindex = 3)..(_bindex = 6)) = true
+indexOrder((_bindex = 4)) = 3
+orderToIndex(3)  = (_bindex = 4)
+translate(2)     = (_bindex = 3)..
+translate(-2)    = (_bindex = -1)..
+serial iteration = 
+(_bindex = 1) 
+(_bindex = 2) 
+(_bindex = 3) 
+...
+
+r#2               = (_bindex = 1)..(_bindex = 2)
+r == subr         = false
+r != subr         = true
+r[subr]           = (_bindex = 3)..(_bindex = 6)
+r[subr] == subr[r]= true
+Copying...        = (_bindex = 1)..
+
+high bounded byte index range
+------------
+..(_bindex = 10)
+idxType          = byteIndex
+stridable        = false
+boundedType      = boundedHigh
+isRangeType()    = true
+isBoundedRange() = false
+hasLowBound()    = false
+hasHighBound()   = true
+stride           = 1
+alignment        = (_bindex = 0)
+aligned          = false
+first            = (_bindex = 1)
+last             = (_bindex = 10)
+low              = (_bindex = 1)
+high             = (_bindex = 10)
+alignedLow       = (_bindex = 1)
+alignedHigh      = (_bindex = 10)
+isEmpty()        = false
+hasFirst()       = false
+hasLast()        = true
+isNat.Algned()   = false
+isAmbiguous      = false
+contains((_bindex = 4)) = true
+contains((_bindex = 3)..(_bindex = 6)) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck((_bindex = 4)) = true
+boundsCheck((_bindex = 3)..(_bindex = 6)) = true
+indexOrder((_bindex = 4)) = -1
+translate(2)     = ..(_bindex = 12)
+translate(-2)    = ..(_bindex = 8)
+serial iteration = 
+<can't be done>
+
+r#-2              = (_bindex = 9)..(_bindex = 10)
+r == subr         = false
+r != subr         = true
+r[subr]           = (_bindex = 3)..(_bindex = 6)
+r[subr] == subr[r]= true
+Copying...        = ..(_bindex = 10)
+

@@ -120,9 +120,9 @@ default. For example, :proc:`~string.length` returns the length in bytes and
 
 The string type currently supports codepoint units as well. In some cases these
 units are indicated by the method name, for example with
-:proc:`~string.numCodepoints`. Other methods, including :proc:`~string.this`, support
-arguments of type :record:`codepointIndex` (instead of `int`) in order to
-request codepoint units.
+:proc:`~string.numCodepoints`. Other methods, including :proc:`~string.this`,
+support arguments of type :record:`codepointIndex` to request codepoint units,
+or :record:`byteIndex` to request byte units.
 
 .. note::
 
@@ -218,18 +218,40 @@ module String {
   }
 
   /*
+     A value of type :record:`byteIndex` can be passed to certain
+     `string` functions to indicate that the function should operate
+     with units of bytes. See :proc:`~string.this`.
+
+     To create or modify a :record:`byteIndex`, cast it to or from an
+     `int`. For example, the following function returns a string
+     containing only the second byte of the argument:
+
+     .. code-block:: chapel
+
+       proc getSecondByte(arg:string) : int {
+         var offsetInBytes = 2:byteIndex;
+         return arg[offsetInBytes];
+       }
+
+   */
+  record byteIndex {
+    pragma "no doc"
+    var _bindex  : int;
+  }
+
+  /*
      A value of type :record:`codepointIndex` can be passed to certain
      `string` functions to indicate that the function should operate
      with units of codepoints. See :proc:`~string.this`.
 
      To create or modify a :record:`codepointIndex`, cast it to or from an
-     `int`. For example, For example, the following function returns a string
+     `int`. For example, the following function returns a string
      containing only the second codepoint of the argument:
 
      .. code-block:: chapel
 
        proc getSecondCodepoint(arg:string) : int {
-         var offsetInCodepoints = 1:codepointIndex;
+         var offsetInCodepoints = 2:codepointIndex;
          return arg[offsetInCodepoints];
        }
 
@@ -247,43 +269,89 @@ module String {
     return codepointIndex;
   }
 
-  // Helper routines in support of being able to use ranges of codepointIndex
+  // Helper routines in support of being able to use ranges of indices
   pragma "no doc"
-  proc chpl_build_bounded_range(low: codepointIndex, high: codepointIndex)
-    return new range(codepointIndex, _low=low, _high=high);
+  proc chpl_build_bounded_range(low: ?t, high: t)
+    where t == byteIndex || t == codepointIndex
+    return new range(t, _low=low, _high=high);
 
   pragma "no doc"
-  proc chpl_build_low_bounded_range(low: codepointIndex)
-    return new range(codepointIndex, BoundedRangeType.boundedLow, _low=low);
+  proc chpl_build_low_bounded_range(low: ?t)
+    where t == byteIndex || t == codepointIndex
+    return new range(t, BoundedRangeType.boundedLow, _low=low);
 
   pragma "no doc"
-  proc chpl_build_high_bounded_range(high: codepointIndex)
-    return new range(codepointIndex, BoundedRangeType.boundedHigh, _high=high);
+  proc chpl_build_high_bounded_range(high: ?t)
+    where t == byteIndex || t == codepointIndex
+    return new range(t, BoundedRangeType.boundedHigh, _high=high);
+
+  pragma "no doc"
+  proc chpl__rangeStrideType(type idxType: byteIndex) type
+    return int;
 
   pragma "no doc"
   proc chpl__rangeStrideType(type idxType: codepointIndex) type
     return int;
 
   pragma "no doc"
+  proc chpl__rangeUnsignedType(type idxType: byteIndex) type
+    return uint;
+
+  pragma "no doc"
   proc chpl__rangeUnsignedType(type idxType: codepointIndex) type
     return uint;
 
   pragma "no doc"
-  inline proc chpl__idxToInt(i: codepointIndex)
+  inline proc chpl__idxToInt(i: ?t)
+    where t == byteIndex || t == codepointIndex
     return i:int;
+
+  pragma "no doc"
+  inline proc chpl__intToIdx(type idxType: byteIndex, i: int)
+    return i: byteIndex;
 
   pragma "no doc"
   inline proc chpl__intToIdx(type idxType: codepointIndex, i: int)
     return i: codepointIndex;
 
   pragma "no doc"
+  proc chpl__idxTypeToIntIdxType(type idxType: byteIndex) type
+    return int;
+
+  pragma "no doc"
   proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type
     return int;
 
   pragma "no doc"
-  proc >(x: codepointIndex, y: codepointIndex)
+  proc >(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
     return x: int > y: int;
   // End range helper support
+
+  // Index arithmetic support
+  // index + int or int + index --> index
+  pragma "no doc"
+  proc +(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return (x: int + y): t;
+
+  pragma "no doc"
+  proc +(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return (x + y: int): t;
+
+  // index - int --> index
+  pragma "no doc"
+  proc -(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return (x: int - y): t;
+
+  // index - index --> int
+  pragma "no doc"
+  proc -(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return x: int - y: int;
+  // End index arithmetic support
 
   //
   // String Implementation
@@ -690,7 +758,8 @@ module String {
       :returns: A string with the complete multibyte character starting at the
                 specified byte index from ``1..string.length``
      */
-    proc this(i: int) : string {
+    proc this(bi: byteIndex) : string {
+      var i = bi: int;
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of string: ", i);
 
@@ -736,6 +805,16 @@ module String {
       return codepointToString(this.codepoint(idx));
     }
 
+    /*
+      Index into a string
+
+      :returns: A string with the complete multibyte character starting at the
+                specified byte index from ``1..string.length``
+     */
+    inline proc this(i: int) : string {
+      return this[i: byteIndex];
+    }
+
     // Checks to see if r is inside the bounds of this and returns a finite
     // range that can be used to iterate over a section of the string
     // TODO: move into the public interface in some form? better name if so?
@@ -743,23 +822,34 @@ module String {
     proc _getView(r:range(?)) where r.idxType != codepointIndex {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.low <= 0 then
+          if r.low:int <= 0 then
             halt("range out of bounds of string");
         }
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.high < 0) || (r.high:int > this.len) then
+          if (r.high:int < 0) || (r.high:int > this.len) then
             halt("range out of bounds of string");
         }
       }
-      const ret = r[1:r.idxType..#(this.len:r.idxType)];
+      const r1 = r[1:r.idxType..#(this.len)];
+      const ret = r1.low:int..r1.high:int
+	by if r1.stridable then r1.stride else 1;
       return ret;
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
     // range that can be used to iterate over a section of the string.
     // Converts from codepointIndex range to byte index range in the process.
+    //
+    // Slicing by stridable codepoint ranges is unsupported because it
+    // creates an irregular sequence of bytes.  We could add support in the
+    // future by refactoring the callers of _getView() to add a slow path,
+    // or by storing an array of indices marking the beginning of each
+    // codepoint alongside the string.
     pragma "no doc"
     proc _getView(r:range(?)) where r.idxType == codepointIndex {
+      if r.stridable {
+	halt("slicing strings by stridable codepoint ranges is not supported at this time");
+      }
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low:int <= 0 then
@@ -2232,6 +2322,20 @@ module String {
     ret.isowned = true;
 
     return ret;
+  }
+
+  // Cast from byteIndex to int
+  pragma "no doc"
+  inline proc _cast(type t: int, cpi: byteIndex) {
+    return cpi._bindex;
+  }
+
+  // Cast from int to byteIndex
+  pragma "no doc"
+  inline proc _cast(type t: byteIndex, i: int) {
+    var cpi: byteIndex;
+    cpi._bindex = i;
+    return cpi;
   }
 
   // Cast from codepointIndex to int
