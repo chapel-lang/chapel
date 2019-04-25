@@ -477,7 +477,7 @@ void MLIContext::setOutputAndWrite(fileinfo* fi, const std::string& gen) {
 }
 
 void MLIContext::write(const std::string& gen) {
-  fprintf(this->info->cfile, gen.c_str());
+  fprintf(this->info->cfile, "%s", gen.c_str());
   return;
 }
 
