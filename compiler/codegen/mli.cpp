@@ -31,6 +31,7 @@
 #include <map>
 #include <sstream>
 
+// Test comment to force rebuild. Again!
 const char* gen_mli_marshalling = "chpl_mli_marshalling";
 const char* gen_mli_client_bundle = "chpl_mli_client_bundle";
 const char* gen_mli_server_bundle = "chpl_mli_server_bundle";

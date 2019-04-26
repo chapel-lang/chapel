@@ -614,7 +614,7 @@ static void build_chpl_entry_points() {
     // goal here is that the compiler should not generate any code for the
     // server listen loop (since it is extern), only call it.
     // 
-    FnSymbol* chpl_mli_smain = nullptr;
+    FnSymbol* chpl_mli_smain = NULL;
     
     chpl_mli_smain = new FnSymbol("chpl_mli_smain");
     chpl_mli_smain->retType = dtVoid;
