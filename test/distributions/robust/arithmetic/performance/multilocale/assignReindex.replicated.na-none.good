@@ -1,2 +1,2 @@
-(put = 24, execute_on = 18, execute_on_nb = 18) (get = 124, put = 2, execute_on = 17, execute_on_fast = 6) (get = 124, put = 2, execute_on = 8, execute_on_fast = 6) (get = 124, put = 2, execute_on = 8, execute_on_fast = 6)
+(put = 12, execute_on = 12, execute_on_nb = 9) (get = 62, put = 1, execute_on = 10, execute_on_fast = 3) (get = 62, put = 1, execute_on = 4, execute_on_fast = 3) (get = 62, put = 1, execute_on = 4, execute_on_fast = 3)
 (<no communication>) (<no communication>) (<no communication>) (<no communication>)
