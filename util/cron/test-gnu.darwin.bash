@@ -9,4 +9,4 @@ source $CWD/common-darwin.bash
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gnu.darwin"
 
 export CHPL_HOST_COMPILER=gnu
-$CWD/nightly -cron -examples
+$CWD/nightly -cron -hellos
