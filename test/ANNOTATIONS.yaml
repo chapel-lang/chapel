@@ -385,6 +385,8 @@ all:
       config: chapcs
   03/21/19:
     - Stop throwing `--static` for performance testing (#12652)
+  04/24/19:
+    - Improve task placement for local bounded coforalls (#12868)
 
 
 AllCompTime:
@@ -788,6 +790,8 @@ jacobi:
     - Allow underscores in the number when casting from string to integral (#11880)
   01/22/19:
     - Catch blocks catch owned, test code throws owned (#12090)
+  04/23/19:
+    - Denormalize the test in CondStmts (#12867)
 
 knucleotide:
   10/17/15:
@@ -1481,6 +1485,8 @@ timeVectorArray:
     - Add a new dsiReallocate that is aware of allocated size (#10793)
   09/07/18:
     - Fix performance regression in pop_front/pop_back from PR 10793 (#11017)
+  04/23/19:
+    - Denormalize the test in CondStmts (#12867)
 
 views-forall-iter:
   10/12/17:
