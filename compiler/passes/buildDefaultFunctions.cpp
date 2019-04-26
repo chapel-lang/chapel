@@ -610,9 +610,7 @@ static void build_chpl_entry_points() {
     //
     // We need to make the compiler aware of the presence of the server listen
     // loop, always called "chpl_mli_smain", and we need to call it instead
-    // of calling init. I'm still learning my way around the AST, but the
-    // goal here is that the compiler should not generate any code for the
-    // server listen loop (since it is extern), only call it.
+    // of calling module init (or main).
     // 
     FnSymbol* chpl_mli_smain = NULL;
     

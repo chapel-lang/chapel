@@ -109,14 +109,6 @@ bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryPython = false;
-
-//
-// TODO: Multi-Locale Interop prototype code!
-//
-// It's most convenient for me to define and set a single flag just for MLI.
-// This way, I can control the conditions under which it's activated (which is
-// especially important when prototyping).
-//
 bool fMultiLocaleInterop = false;
 
 bool no_codegen = false;

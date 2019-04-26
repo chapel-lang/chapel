@@ -40,10 +40,6 @@
 #include "symbol.h"
 #include "view.h"
 #include "virtualDispatch.h"
-
-//
-// TODO: Multi-Locale Interop prototype code!
-//
 #include "mli.h"
 
 #ifdef HAVE_LLVM
@@ -2266,7 +2262,6 @@ void codegen() {
   fileinfo defnfile   = { NULL, NULL, NULL };
   fileinfo strconfig  = { NULL, NULL, NULL };
 
-  // TODO: MLI only, We open these temporarily just to get their path.
   fileinfo mli_client = { NULL, NULL, NULL };
   fileinfo mli_server = { NULL, NULL, NULL };
 
@@ -2436,9 +2431,6 @@ void codegen() {
         fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
     }
 
-    //
-    // TODO: Multi-Locale Interop prototype code!
-    //
     if (fMultiLocaleInterop) {
       codegenMultiLocaleInteropWrappers();
     }
@@ -2453,7 +2445,8 @@ void codegen() {
     codegen_header_addons();
 
     //
-    // Emit an #endif to close the header's include guard.
+    // Emit an #endif to close the header's include guard. Corresponds to
+    // #ifndef on compiler/codegen/codegen.cpp:1619.
     //
     fprintf(hdrfile.fptr, "\n#endif\n");
 

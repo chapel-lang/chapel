@@ -18,7 +18,6 @@
  */
 
 #include "mli.h"
-#include <cstring>
 #include "library.h"
 #include "ModuleSymbol.h"
 #include "FnSymbol.h"
@@ -28,10 +27,10 @@
 #include "expr.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include <cstring>
 #include <map>
 #include <sstream>
 
-// Test comment to force rebuild. Again!
 const char* gen_mli_marshalling = "chpl_mli_marshalling";
 const char* gen_mli_client_bundle = "chpl_mli_client_bundle";
 const char* gen_mli_server_bundle = "chpl_mli_server_bundle";
@@ -48,6 +47,18 @@ static const char* scope_begin = "{\n";
 static const char* scope_end = "}\n";
 
 class MLIContext {
+public:
+
+MLIContext(bool injectDebugPrintlines=false);
+~MLIContext();
+
+void emit(ModuleSymbol* md);
+void emit(FnSymbol* fn);
+void emitClientPrelude(void);
+void emitServerPrelude(void);
+void emitMarshalRoutines(void);
+void emitServerDispatchRoutine(void);
+
 private:
 
 bool injectDebugPrintlines;
@@ -60,20 +71,6 @@ fileinfo fiClientBundle;
 fileinfo fiServerBundle;
 GenInfo* info;
 
-public:
-
-MLIContext(bool injectDebugPrintlines=false, bool separateHeaders=false);
-~MLIContext();
-
-void emit(ModuleSymbol* md);
-void emit(FnSymbol* fn);
-void emitClientPrelude(void);
-void emitServerPrelude(void);
-void emitMarshalRoutines(void);
-void emitServerDispatchRoutine(void);
-
-private:
-
 bool shouldEmit(ModuleSymbol* md);
 bool shouldEmit(FnSymbol* fn);
 void setOutput(fileinfo* fi);
@@ -82,17 +79,13 @@ void write(const std::string& code);
 int64_t assignUniqueTypeID(Type* t);
 void emitClientWrapper(FnSymbol* fn);
 void emitServerWrapper(FnSymbol* fn);
-bool structContainsOnlyPrimitiveScalars(Type* t);
 bool isSupportedType(Type* t);
 void verifyPrototype(FnSymbol* fn);
 Type* getTypeFromFormal(ArgSymbol* as);
 Type* getTypeFromFormal(FnSymbol* fn, int i);
 bool typeRequiresAllocation(Type* t);
 
-private:
-
 std::string genMarshalBodyPrimitiveScalar(Type* t, bool out);
-std::string genMarshalBodyStringC(Type* t, bool out);
 std::string genComment(const char* msg, const char* pfx="");
 std::string genNote(const char* msg);
 std::string genTodo(const char* msg);
@@ -161,7 +154,6 @@ void codegenMultiLocaleInteropWrappers(void) {
 
 MLIContext::MLIContext(bool injectDebugPrintlines, bool separateHeaders) {
 
-  // Yes, I know this isn't the most optimal way to initialize these!
   this->injectDebugPrintlines = injectDebugPrintlines;
   this->separateHeaders = separateHeaders;
 
@@ -175,7 +167,6 @@ MLIContext::MLIContext(bool injectDebugPrintlines, bool separateHeaders) {
 
 MLIContext::~MLIContext() {
 
-  // Now, turn beautify ON!
   closeCFile(&this->fiMarshalling, true);
   closeCFile(&this->fiClientBundle, true);
   closeCFile(&this->fiServerBundle, true);
@@ -219,7 +210,10 @@ void MLIContext::emit(FnSymbol* fn) {
 void MLIContext::emitClientPrelude(void) {
   std::string gen;
 
-  // TODO: Trying to work around the Travis malloc complaint.
+  //
+  // Some MLI runtime functions have different implementations depending on
+  // whether the server or the client is calling them.
+  //
   gen += "#define CHPL_MLI_IS_CLIENT_DEFINED\n";
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genNote("We use Makefile magic to make this visible!");
@@ -279,7 +273,10 @@ std::string MLIContext::genFuncToSetServerGlobals(void) {
 void MLIContext::emitServerPrelude(void) {
   std::string gen;
 
-  // TODO: Trying to work around the Travis malloc complaint.
+  //
+  // Some MLI runtime functions have different implementations depending on
+  // whether the server or the client is calling them.
+  //
   gen += "#define CHPL_MLI_IS_SERVER_DEFINED\n";
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genNote("We use Makefile magic to make this visible!");
@@ -300,7 +297,6 @@ void MLIContext::emitMarshalRoutines(void) {
   std::map<Type*, int64_t>::iterator i;
   std::string gen;
 
-  // Bunch of stuff included in generated header as bridge code.
   gen += this->genHeaderInc("stdlib.h", true);
   gen += this->genHeaderInc("stdio.h", true);
   gen += this->genHeaderInc("zmq.h", true);
@@ -324,9 +320,6 @@ void MLIContext::emitMarshalRoutines(void) {
   return;
 }
 
-//
-//
-//
 std::string MLIContext::genMarshalBodyPrimitiveScalar(Type* t, bool out) {
   std::string gen;
 
@@ -339,40 +332,6 @@ std::string MLIContext::genMarshalBodyPrimitiveScalar(Type* t, bool out) {
 
   // Generate a null frame in the opposite direction for the ACK.
   gen += this->genSocketCall("skt", NULL, not out);
-
-  return gen;
-}
-
-//
-//
-//
-std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
-  const char* target = out ? "obj" : "result";
-  std::string gen;
-
-  // Read the string length before pushing.
-  if (out) { gen += "bytes = strlen(obj);\n"; }
-
-  // Push/pull string length along with null frame for ACK.
-  gen += this->genSocketCall("skt", "bytes", out);
-  gen += this->genSocketCall("skt", NULL, not out);
-
-  if (out) {
-    // Next push this string across the wire.
-    gen += this->genSocketCall("skt", "obj", "bytes", out);
-  } else {
-    // Allocate buffer for string (include NULL terminator).
-    gen += "result = malloc(bytes + 1);\n";
-    gen += this->genTodo("Assert should shutdown server or return NULL.");
-    gen += "assert(result);\n";
-  }
-
-  // Move the string to/from the buffer.
-  gen += this->genSocketCall("skt", target, "bytes", out);
-  gen += this->genSocketCall("skt", NULL, not out);
-
-  // Null terminate if receiving.
-  if (not out) { gen += "result[bytes] = 0;\n"; }
 
   return gen;
 }
@@ -429,7 +388,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
 
   //
   // Handle translation of different type classes here. Note that right now
-  // the only things we can translate are primitive scalars and cstrings.
+  // the only things we can translate are primitive scalars.
   //
   if (isPrimitiveScalar(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, out);
@@ -483,7 +442,7 @@ void MLIContext::write(const std::string& gen) {
 }
 
 //
-// We can (as I understand it) cound on Type* being unique across the entire
+// We can (as I understand it) count on Type* being unique across the entire
 // symbol table (IE, you'll never encounter two different Type objects that
 // both end up describing the same concrete type).
 //
@@ -589,9 +548,7 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
   gen += scope_begin;
 
   for_vector(FnSymbol, fn, fns) {
-    if (not fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
-      continue;
-    }
+    INT_ASSERT(this->shouldEmit(fn));
 
     gen += "case ";
     gen += this->genFuncNumericID(fn);
@@ -618,17 +575,7 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
 }
 
 //
-// TODO: This is unused right now (no struct type support yet).
-//
-bool MLIContext::structContainsOnlyPrimitiveScalars(Type *t) {
-  return false;
-}
-
-//
-// TODO: This filter will change as we support more and more type classes.
-//  - [ ] dtStringC
-//  - [ ] Chapel `string` type
-//  - [ ] ???
+// This filter will change as we support more and more type classes.
 //
 bool MLIContext::isSupportedType(Type* t) {
   return (isPrimitiveScalar(t));
@@ -640,18 +587,18 @@ void MLIContext::verifyPrototype(FnSymbol* fn) {
     USR_FATAL("MLI does not support code generation for type", fn->retType);
   }
 
-  // Loop through all formals and error gen if a type is unsupported.
   for (int i = 1; i <= fn->numFormals(); i++) {
     ArgSymbol* as = fn->getFormal(i);
-    if (isSupportedType(as->type)) { continue; }
-    USR_FATAL("MLI does not support code generation for type", as->type);
+    if (not this->isSupportedType(as->type)) {
+      USR_FATAL("MLI does not support code generation for type", as->type);
+    }
   }
 
   return;
 }
 
 Type* MLIContext::getTypeFromFormal(ArgSymbol* as) {
-  if (as == NULL) { return NULL; }
+  INT_ASSERT(as);
   return as->type;
 }
 
@@ -687,10 +634,9 @@ std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
   // Pull server confirmation.
   gen += this->genSocketPullCall(client_main, "st");
 
+  //
   // TODO: Handle server errors.
-  gen += this->genTodo("Handle server errors.");
-  gen += "if (st) { ;;; }\n";
-
+  //
 
   // If we are void/void, then there's nothing left to do.
   if (hasVoidReturnType and not hasFormals) {
@@ -816,7 +762,6 @@ MLIContext::genMarshalPushCall(const char* s, const char* v, Type* t) {
 //
 std::string
 MLIContext::genMarshalPullCall(const char* s, const char* v, Type* t) {
-  (void) v;
   return this->genMarshalCall(s, v, t, false);
 }
 
