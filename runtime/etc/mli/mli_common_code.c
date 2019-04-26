@@ -29,22 +29,25 @@
 #include <zmq.h>
 
 //
-// Perhaps _this_ will make Travis happy?
+// If this code is being run on the server, mli_malloc() is a wrapper for
+// chpl_malloc(). If this code is being run on the client, then it is a
+// wrapper for the system allocator.
 //
-#ifdef CHPL_MLI_IS_SERVER_DEFINED
+#ifdef CHPL_MLI_IS_SERVER
 # include "chpl-mem.h"
 # define mli_malloc(bytes) chpl_malloc(bytes)
 # define mli_free(ptr) chpl_free(ptr)
-#elif defined(CHPL_MLI_IS_CLIENT_DEFINED)
+#elif defined(CHPL_MLI_IS_CLIENT)
 # include "chpl-mem-sys.h"
 # define mli_malloc(bytes) sys_malloc(bytes)
 # define mli_free(ptr) sys_free(ptr)
-# else
-# error The mli_malloc/free macros were defined in a inappropriate place.
-# endif
+#else
+# error The mli_malloc/free macros were defined outside of client/server.
+#endif
 
-
+//
 // Error codes must all be less than zero unless we change the protocol!
+//
 enum chpl_mli_errors {
 
   CHPL_MLI_ERROR_NONE       = +0,
@@ -74,7 +77,7 @@ const char* chpl_mli_errstr(enum chpl_mli_errors e) {
 }
 
 //
-// Both the client and server will be using this to perform RPC.
+// Both the client and server will be using this to communicate.
 //
 struct chpl_mli_context {
 
@@ -139,12 +142,10 @@ void chpl_mli_bind(void* socket, const char* ip, const char* port) {
     real_ip = "*";
   }
 
+  // TODO: Remove this assert / proper response to allocation failure during
+  // socket setup.
   buffer = chpl_mli_concat(4, "tcp://", real_ip, ":", port);
-
-  // TODO: Handle malloc error here?
-  if (buffer == NULL) {
-    assert("Internal malloc failed, should not reach (yet)." == 0);
-  }
+  assert(buffer != NULL);
 
   // TODO: Remove this assert / make this more robust.
   err = zmq_bind(socket, buffer);

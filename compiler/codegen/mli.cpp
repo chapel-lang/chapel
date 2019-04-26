@@ -49,7 +49,7 @@ static const char* scope_end = "}\n";
 class MLIContext {
 public:
 
-MLIContext(bool injectDebugPrintlines=false);
+MLIContext(bool debugPrintlines=false);
 ~MLIContext();
 
 void emit(ModuleSymbol* md);
@@ -61,7 +61,7 @@ void emitServerDispatchRoutine(void);
 
 private:
 
-bool injectDebugPrintlines;
+bool debugPrintlines;
 bool separateHeaders;
 std::vector<FnSymbol*> exps;
 std::vector<FnSymbol*> throws;
@@ -89,6 +89,7 @@ std::string genMarshalBodyPrimitiveScalar(Type* t, bool out);
 std::string genComment(const char* msg, const char* pfx="");
 std::string genNote(const char* msg);
 std::string genTodo(const char* msg);
+std::string genDefine(const char* val);
 std::string genHeaderInc(const char* header, bool system=false);
 std::string genMarshalRoutine(Type* t, bool out);
 std::string genMarshalPushRoutine(Type* t);
@@ -152,9 +153,9 @@ void codegenMultiLocaleInteropWrappers(void) {
   return;
 }
 
-MLIContext::MLIContext(bool injectDebugPrintlines) {
+MLIContext::MLIContext(bool debugPrintlines) {
 
-  this->injectDebugPrintlines = injectDebugPrintlines;
+  this->debugPrintlines = debugPrintlines;
   this->separateHeaders = separateHeaders;
 
   openCFile(&this->fiMarshalling, gen_mli_marshalling, "c");
@@ -210,11 +211,15 @@ void MLIContext::emit(FnSymbol* fn) {
 void MLIContext::emitClientPrelude(void) {
   std::string gen;
 
+  if (this->debugPrintlines) {
+    gen += this->genDefine("CHPL_MLI_DEBUG_PRINT");
+  }
+
   //
   // Some MLI runtime functions have different implementations depending on
   // whether the server or the client is calling them.
   //
-  gen += "#define CHPL_MLI_IS_CLIENT_DEFINED\n";
+  gen += this->genDefine("CHPL_MLI_IS_CLIENT");
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genNote("We use Makefile magic to make this visible!");
   gen += this->genHeaderInc("mli_client_runtime.c");
@@ -257,13 +262,23 @@ std::string MLIContext::genTodo(const char* msg) {
   return this->genComment(msg, "TODO");
 }
 
+std::string MLIContext::genDefine(const char* val) {
+  std::string gen;
+
+  gen += "#define ";
+  gen += val;
+  gen += "\n";
+
+  return gen;
+}
+
 std::string MLIContext::genFuncToSetServerGlobals(void) {
   std::string gen;
 
   gen += "void chpl_mli_server_set_conf(void)";
   gen += scope_begin;
   gen += "chpl_server_conf.debug=";
-  gen += this->injectDebugPrintlines ? "1" : "0";
+  gen += this->debugPrintlines ? "1" : "0";
   gen += ";\n";
   gen += scope_end;
   
@@ -273,11 +288,15 @@ std::string MLIContext::genFuncToSetServerGlobals(void) {
 void MLIContext::emitServerPrelude(void) {
   std::string gen;
 
+  if (this->debugPrintlines) {
+    gen += this->genDefine("CHPL_MLI_DEBUG_PRINT");
+  }
+
   //
   // Some MLI runtime functions have different implementations depending on
   // whether the server or the client is calling them.
   //
-  gen += "#define CHPL_MLI_IS_SERVER_DEFINED\n";
+  gen += this->genDefine("CHPL_MLI_IS_SERVER");
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genNote("We use Makefile magic to make this visible!");
   gen += this->genHeaderInc("mli_server_runtime.c");
@@ -297,6 +316,10 @@ void MLIContext::emitMarshalRoutines(void) {
   std::map<Type*, int64_t>::iterator i;
   std::string gen;
 
+  if (this->debugPrintlines) {
+    gen += this->genDefine("CHPL_MLI_DEBUG_PRINT");
+  }
+
   gen += this->genHeaderInc("stdlib.h", true);
   gen += this->genHeaderInc("stdio.h", true);
   gen += this->genHeaderInc("zmq.h", true);
@@ -306,7 +329,7 @@ void MLIContext::emitMarshalRoutines(void) {
   gen += "\n";
 
   for (i = this->typeMap.begin(); i != this->typeMap.end(); ++i) {
-    if (this->injectDebugPrintlines) {
+    if (this->debugPrintlines) {
       std::string tpn = this->genTypeName(i->first);
       gen += this->genComment(tpn.c_str());
     }
@@ -377,7 +400,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   }
 
   // Insert a debug message if appropriate.
-  if (this->injectDebugPrintlines) {
+  if (this->debugPrintlines) {
     std::string msg;
 
     msg += out ? "Pushing type: " : "Pulling type: ";
@@ -554,7 +577,7 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
 
     gen += scope_begin;
     
-    if (this->injectDebugPrintlines) {
+    if (this->debugPrintlines) {
       gen += this->genDebugPrintCall(fn, "[Server]");
     }
     
@@ -622,7 +645,7 @@ std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
     gen += this->genNewDecl(fn->retType, "result");
   }
 
-  if (this->injectDebugPrintlines) {
+  if (this->debugPrintlines) {
     gen += this->genDebugPrintCall(fn, "[Client]");
   }
 
