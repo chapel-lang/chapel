@@ -326,6 +326,16 @@ module String {
   proc >(x: ?t, y: t)
     where t == byteIndex || t == codepointIndex
     return x: int > y: int;
+
+  pragma "no doc"
+  proc >(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return x: int > y;
+
+  pragma "no doc"
+  proc >(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x > y: int;
   // End range helper support
 
   // Index arithmetic support
@@ -351,6 +361,87 @@ module String {
   proc -(x: ?t, y: t)
     where t == byteIndex || t == codepointIndex
     return x: int - y: int;
+
+  // other relationals
+  pragma "no doc"
+  proc <(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return x: int > y: int;
+
+  pragma "no doc"
+  proc <(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return x: int > y;
+
+  pragma "no doc"
+  proc <(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x > y: int;
+
+  pragma "no doc"
+  proc >=(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return x: int > y: int;
+
+  pragma "no doc"
+  proc >=(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return x: int > y;
+
+  pragma "no doc"
+  proc >=(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x > y: int;
+
+  pragma "no doc"
+  proc <=(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return x: int > y: int;
+
+  pragma "no doc"
+  proc <=(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return x: int > y;
+
+  pragma "no doc"
+  proc <=(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x > y: int;
+
+  pragma "no doc"
+  proc ==(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return (x:int) == (y:int);
+
+  pragma "no doc"
+  proc ==(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return (x:int) == y;
+
+  pragma "no doc"
+  proc ==(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x == (y:int);
+
+  pragma "no doc"
+  proc !=(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return (x:int) != (y:int);
+
+  pragma "no doc"
+  proc !=(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return (x:int) != y;
+
+  pragma "no doc"
+  proc !=(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x != (y:int);
+
+  pragma "no doc"
+  proc !(x: ?t)
+    where t == byteIndex || t == codepointIndex
+    return !(x:int);
   // End index arithmetic support
 
   //
@@ -1111,8 +1202,8 @@ module String {
                 string, or 0 if the `needle` is not in the string.
      */
     // TODO: better name than region?
-    proc find(needle: string, region: range(?) = 1..) : int {
-      return _search_helper(needle, region, count=false);
+    proc find(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
+      return _search_helper(needle, region, count=false): byteIndex;
     }
 
     /*
@@ -1124,8 +1215,8 @@ module String {
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or 0 if the `needle` is not in the string.
      */
-    proc rfind(needle: string, region: range(?) = 1..) : int {
-      return _search_helper(needle, region, count=false, fromLeft=false);
+    proc rfind(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
+      return _search_helper(needle, region, count=false, fromLeft=false): byteIndex;
     }
 
     /*
@@ -1154,7 +1245,7 @@ module String {
     proc replace(needle: string, replacement: string, count: int = -1) : string {
       var result: string = this;
       var found: int = 0;
-      var startIdx: int = 1;
+      var startIdx: byteIndex = 1: byteIndex;
       const localNeedle: string = needle.localize();
       const localReplacement: string = replacement.localize();
 
@@ -1192,11 +1283,11 @@ module String {
         var splitAll: bool = maxsplit <= 0;
         var splitCount: int = 0;
 
-        var start: int = 1;
+        var start: byteIndex = 1: byteIndex;
         var done: bool = false;
         while !done  {
           var chunk: string;
-          var end: int;
+          var end: byteIndex;
 
           if (maxsplit == 0) {
             chunk = localThis;

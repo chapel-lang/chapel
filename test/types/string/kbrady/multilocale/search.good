@@ -5,116 +5,116 @@ d: çççççççççççççççççççççççççççç
 
 x.___("Hello")
 count: 1
-find: 1
-rfind: 1
+find: (_bindex = 1)
+rfind: (_bindex = 1)
 
 x.___("Hello", 2..)
 count: 0
-find: 0
-rfind: 0
+find: (_bindex = 0)
+rfind: (_bindex = 0)
 
 x.___("hello")
 count: 2
-find: 8
-rfind: 15
+find: (_bindex = 8)
+rfind: (_bindex = 15)
 
 x.___("hello", 14..)
 count: 1
-find: 15
-rfind: 15
+find: (_bindex = 15)
+rfind: (_bindex = 15)
 
 y.___("Allô")
 count: 1
-find: 1
-rfind: 1
+find: (_bindex = 1)
+rfind: (_bindex = 1)
 
 y.___("Allô", 2..)
 count: 0
-find: 0
-rfind: 0
+find: (_bindex = 0)
+rfind: (_bindex = 0)
 
 y.___("allô")
 count: 2
-find: 8
-rfind: 15
+find: (_bindex = 8)
+rfind: (_bindex = 15)
 
 y.___("allô", 14..)
 count: 1
-find: 15
-rfind: 15
+find: (_bindex = 15)
+rfind: (_bindex = 15)
 
 c.___("c")
 count: 28
-find: 1
-rfind: 28
+find: (_bindex = 1)
+rfind: (_bindex = 28)
 
 c.___("c", ..9)
 count: 9
-find: 1
-rfind: 9
+find: (_bindex = 1)
+rfind: (_bindex = 9)
 
 c.___("C")
 count: 0
-find: 0
-rfind: 0
+find: (_bindex = 0)
+rfind: (_bindex = 0)
 
 c.___("C", 5..9)
 count: 0
-find: 0
-rfind: 0
+find: (_bindex = 0)
+rfind: (_bindex = 0)
 
 d.___("ç")
 count: 28
-find: 1
-rfind: 55
+find: (_bindex = 1)
+rfind: (_bindex = 55)
 
 d.___("ç", ..18)
 count: 9
-find: 1
-rfind: 17
+find: (_bindex = 1)
+rfind: (_bindex = 17)
 
 d.___("Ç")
 count: 0
-find: 0
-rfind: 0
+find: (_bindex = 0)
+rfind: (_bindex = 0)
 
 d.___("Ç", 9..18)
 count: 0
-find: 0
-rfind: 0
+find: (_bindex = 0)
+rfind: (_bindex = 0)
 
 x.___("")
 count: 20
-find: 0
-rfind: 20
+find: (_bindex = 0)
+rfind: (_bindex = 20)
 
 x.___("", 9..15)
 count: 8
-find: 0
-rfind: 8
+find: (_bindex = 0)
+rfind: (_bindex = 8)
 
 "".___(x)
 count: 0
-find: 0
-rfind: 0
+find: (_bindex = 0)
+rfind: (_bindex = 0)
 
 y.___("")
 count: 20
-find: 0
-rfind: 20
+find: (_bindex = 0)
+rfind: (_bindex = 20)
 
 y.___("", 9..15)
 count: 8
-find: 0
-rfind: 8
+find: (_bindex = 0)
+rfind: (_bindex = 8)
 
 "".___(y)
 count: 0
-find: 0
-rfind: 0
+find: (_bindex = 0)
+rfind: (_bindex = 0)
 
 "".___("")
 count: 1
-find: 0
-rfind: 0
+find: (_bindex = 0)
+rfind: (_bindex = 0)
 

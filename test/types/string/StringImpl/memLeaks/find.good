@@ -1,22 +1,22 @@
 === find local
-0
-0
-0
-0
-1
-1
-5
-5
-11
-11
-21
-21
-24
-24
-28
-28
+(_bindex = 0)
+(_bindex = 0)
+(_bindex = 0)
+(_bindex = 0)
+(_bindex = 1)
+(_bindex = 1)
+(_bindex = 5)
+(_bindex = 5)
+(_bindex = 11)
+(_bindex = 11)
+(_bindex = 21)
+(_bindex = 21)
+(_bindex = 24)
+(_bindex = 24)
+(_bindex = 28)
+(_bindex = 28)
 === find remote
-6
-6
-0
-18
+(_bindex = 6)
+(_bindex = 6)
+(_bindex = 0)
+(_bindex = 18)
