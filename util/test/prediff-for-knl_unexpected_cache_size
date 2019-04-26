@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # This script is for the use with 'start_test' as the system-wide prediff
-# when running KNL tests on purie.
+# when running KNL tests. Most KNL systems also experience Jira 203 so
+# filter those out too.
 # To use (assuming bash):
 #
 #  CHPL_SYSTEM_PREDIFF=$CHPL_HOME/util/test/prediff-for-knl_unexpected_cache_size \
@@ -10,3 +11,6 @@
 outfile=$2
 sed -e '/Unexpected KNL MCDRAM cache size/d' $outfile >$outfile.tmp
 mv -f $outfile.tmp $outfile
+
+CWD=$(cd $(dirname $0) ; pwd)
+"$CWD/prediff-for-Jira-203" "$@"
