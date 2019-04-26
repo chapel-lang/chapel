@@ -330,7 +330,7 @@ proc dirname(name: string): string {
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
-   var ind: int = 1;
+   var ind: byteIndex = 1: byteIndex;
    var pathlen: int = path_p.length;
    while (ind <= pathlen) {
      var c: string = path_p(ind);
@@ -344,7 +344,7 @@ proc dirname(name: string): string {
          ind = path_p.find("}");
          if (ind == 0) {
            res += "${" +path_p;
-           ind = pathlen;
+           ind = pathlen: byteIndex;
          } else {
            var env_var: string = path_p(..(ind-1));
            var value: string;
@@ -758,11 +758,11 @@ proc file.relPath(start:string=curDir): string throws {
    :type name: `string`
 */
  proc splitPath(name: string): (string, string) {
-   var rLoc, lLoc, prev: int = name.rfind(pathSep);
+   var rLoc, lLoc, prev: byteIndex = name.rfind(pathSep);
    if (prev != 0) {
      do {
        prev = lLoc;
-       lLoc = name.rfind(pathSep, 1..prev-1);
+       lLoc = name.rfind(pathSep, 1:byteIndex..prev-1);
      } while (lLoc + 1 == prev && lLoc > 1);
 
      if (prev == 1) {

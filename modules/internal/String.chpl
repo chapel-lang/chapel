@@ -366,47 +366,47 @@ module String {
   pragma "no doc"
   proc <(x: ?t, y: t)
     where t == byteIndex || t == codepointIndex
-    return x: int > y: int;
+    return x: int < y: int;
 
   pragma "no doc"
   proc <(x: ?t, y: int)
     where t == byteIndex || t == codepointIndex
-    return x: int > y;
+    return x: int < y;
 
   pragma "no doc"
   proc <(x: int, y: ?t)
     where t == byteIndex || t == codepointIndex
-    return x > y: int;
+    return x < y: int;
 
   pragma "no doc"
   proc >=(x: ?t, y: t)
     where t == byteIndex || t == codepointIndex
-    return x: int > y: int;
+    return x: int >= y: int;
 
   pragma "no doc"
   proc >=(x: ?t, y: int)
     where t == byteIndex || t == codepointIndex
-    return x: int > y;
+    return x: int >= y;
 
   pragma "no doc"
   proc >=(x: int, y: ?t)
     where t == byteIndex || t == codepointIndex
-    return x > y: int;
+    return x >= y: int;
 
   pragma "no doc"
   proc <=(x: ?t, y: t)
     where t == byteIndex || t == codepointIndex
-    return x: int > y: int;
+    return x: int <= y: int;
 
   pragma "no doc"
   proc <=(x: ?t, y: int)
     where t == byteIndex || t == codepointIndex
-    return x: int > y;
+    return x: int <= y;
 
   pragma "no doc"
   proc <=(x: int, y: ?t)
     where t == byteIndex || t == codepointIndex
-    return x > y: int;
+    return x <= y: int;
 
   pragma "no doc"
   proc ==(x: ?t, y: t)
@@ -921,9 +921,9 @@ module String {
             halt("range out of bounds of string");
         }
       }
-      const r1 = r[1:r.idxType..#(this.len)];
+      const r1 = r[1:r.idxType..this.len:r.idxType];
       const ret = r1.low:int..r1.high:int
-	by if r1.stridable then r1.stride else 1;
+        by if r1.stridable then r1.stride else 1;
       return ret;
     }
 
@@ -939,7 +939,8 @@ module String {
     pragma "no doc"
     proc _getView(r:range(?)) where r.idxType == codepointIndex {
       if r.stridable {
-	halt("slicing strings by stridable codepoint ranges is not supported at this time");
+        HaltWrappers.unimplementedFeatureHalt("string slicing",
+                                              "stridable codepoint ranges");
       }
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {

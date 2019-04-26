@@ -47,7 +47,7 @@ proc stride(N) {
 proc gatherTimings(const ref A) {
   var t = new Timer();
   print('Time taken to sort ', 2**M, ' bytes (', A.size, ' ', T:string, 's)');
-  if sorts.find('q')
+  if sorts.find('q') != 0
   {
     var B = A;
     t.start();
@@ -59,7 +59,7 @@ proc gatherTimings(const ref A) {
       print('quickSort (seconds): ', t.elapsed());
     t.clear();
   }
-  if sorts.find('h')
+  if sorts.find('h') != 0
   {
     var B = A;
     t.start();
@@ -71,7 +71,7 @@ proc gatherTimings(const ref A) {
       print('heapSort (seconds): ', t.elapsed());
     t.clear();
   }
-  if sorts.find('i')
+  if sorts.find('i') != 0
   {
     var B = A;
     t.start();
@@ -83,7 +83,7 @@ proc gatherTimings(const ref A) {
       print('insertionSort (seconds): ', t.elapsed());
     t.clear();
   }
-  if sorts.find('r')
+  if sorts.find('r') != 0
   {
     var B = A;
     t.start();
@@ -95,7 +95,7 @@ proc gatherTimings(const ref A) {
       print('binaryInsertionSort (seconds): ', t.elapsed());
     t.clear();
   }
-  if sorts.find('m')
+  if sorts.find('m') != 0
   {
     var B = A;
     t.start();
@@ -107,7 +107,7 @@ proc gatherTimings(const ref A) {
       print('mergeSort (seconds): ', t.elapsed());
     t.clear();
   }
-  if sorts.find('s')
+  if sorts.find('s') != 0
   {
     var B = A;
     t.start();
@@ -119,7 +119,7 @@ proc gatherTimings(const ref A) {
       print('selectionSort (seconds): ', t.elapsed());
     t.clear();
   }
-  if sorts.find('b')
+  if sorts.find('b') != 0
   {
     var B = A;
     t.start();
