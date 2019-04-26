@@ -3317,7 +3317,7 @@ static void expandQueryForActual(FnSymbol*  fn,
                        new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
                                     subtype, query->copy()));
     } else {
-      INT_ASSERT("case not handled");
+      INT_FATAL("case not handled");
     }
   } else if (subcall && doesCallContainGenericActual(subcall)) {
     Expr* subtype = NULL;

@@ -601,29 +601,6 @@ proc LocStencil.init(param rank: int,
   myChunk = {(...inds)};
 }
 
-//
-// TODO: Remove this and go back to default initializer once task-resetting is
-// implemented.
-//
-// This initializer is introduced to work around a task-resetting performance
-// issue. In the default initializer, locDoms is first initialized then
-// assigned to in parallel. This offsets the tasks just enough to slightly hurt
-// performance.
-//
-proc StencilDom.init(param rank : int,
-                     type idxType,
-                     param stridable : bool,
-                     param ignoreFluff : bool,
-                     dist : unmanaged Stencil(rank, idxType, ignoreFluff),
-                     fluff : rank*idxType,
-                     periodic : bool = false) {
-  super.init(rank, idxType, stridable);
-  this.ignoreFluff = ignoreFluff;
-  this.dist = dist;
-  this.fluff = fluff;
-  this.periodic = periodic;
-}
-
 override proc StencilDom.dsiMyDist() return dist;
 
 override proc StencilDom.dsiDisplayRepresentation() {

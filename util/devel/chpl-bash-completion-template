@@ -21,10 +21,12 @@ _chpl ()
   case "$cur" in
     -*)
       # developer options
-      local devel_opts="OPTS_DEVEL"
+      local devel_opts="\
+OPTS_DEVEL"
 
       # non-developer options
-      local nodevel_opts="OPTS_NODEVEL"
+      local nodevel_opts="\
+OPTS_NODEVEL"
 
       # Look for --devel or --no-devel on the command line.
       # It overrides the CHPL_DEVELOPER environment variable.

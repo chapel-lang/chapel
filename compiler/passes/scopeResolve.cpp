@@ -741,7 +741,7 @@ static void resolveUnresolvedSymExprs() {
   // might do that within resolveModuleCall, so we try resolving unresolved
   // symbols a second time as the extern C block support might have added some.
   //
-  // TODO: have the externCresolve call resolveUnresolved directly
+  // TODO: have the externCResolve call resolveUnresolved directly
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     // Only try resolving symbols that are new after last attempt.
     if (i >= maxResolved) {
