@@ -372,7 +372,7 @@ static bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& ini
 
 static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
 
-  if (sym == gVoid)
+  if (sym == gNothing)
     return false;
 
   if (sym->defPoint->parentSymbol == fn)

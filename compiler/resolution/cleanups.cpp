@@ -728,9 +728,9 @@ static void cleanupVoidVarsAndFields() {
           // Change functions that return void to use the global
           // void value instead of a local void.
           if (SymExpr* ret = toSymExpr(call->get(1))) {
-            if (ret->symbol() != gVoid) {
+            if (ret->symbol() != gVoidValue) {
               SET_LINENO(call);
-              call->replace(new CallExpr(PRIM_RETURN, gVoid));
+              call->replace(new CallExpr(PRIM_RETURN, gVoidValue));
             }
           }
         }
@@ -742,9 +742,9 @@ static void cleanupVoidVarsAndFields() {
           // Change iterators that yield void to use the global
           // void value instead of a local void.
           if (SymExpr* ret = toSymExpr(call->get(1))) {
-            if (ret->symbol() != gVoid) {
+            if (ret->symbol() != gVoidValue) {
               SET_LINENO(call);
-              call->replace(new CallExpr(PRIM_YIELD, gVoid));
+              call->replace(new CallExpr(PRIM_YIELD, gVoidValue));
             }
           }
         }
@@ -806,7 +806,7 @@ static void cleanupVoidVarsAndFields() {
   for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* loop = toForLoop(block)) {
       if (loop->indexGet() && loop->indexGet()->typeInfo() == dtVoid) {
-        loop->indexGet()->setSymbol(gVoid);
+        loop->indexGet()->setSymbol(gVoidValue);
       }
     }
   }
@@ -822,7 +822,7 @@ static void cleanupVoidVarsAndFields() {
           if (! def->parentSymbol->hasFlag(FLAG_REF) &&
               ! isForallIterVarDef(def)              &&
               ! preserveShadowVar(var)               ) {
-            if (var != gVoid) {
+            if (var != gVoidValue) {
               def->remove();
             }
           }
@@ -833,12 +833,13 @@ static void cleanupVoidVarsAndFields() {
   adjustVoidShadowVariables();
 
   // Problem case introduced by postFoldNormal where a statement-level call
-  // returning void can be replaced by a '_void' SymExpr. Such SymExprs will
+  // returning void can be replaced by a 'voidValue' SymExpr. Such SymExprs will
   // be left in the tree if optimizations are disabled, and can cause codegen
   // failures later on (at least under LLVM).
   //
-  // Solution: Remove SymExprs to _void if the expr is at the statement level.
-  for_SymbolSymExprs(se, gVoid) {
+  // Solution: Remove SymExprs to voidValue if the expr is at the
+  // statement level.
+  for_SymbolSymExprs(se, gVoidValue) {
     if (se == se->getStmtExpr()) {
       se->remove();
     }

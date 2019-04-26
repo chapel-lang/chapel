@@ -34,7 +34,7 @@ returnInfoUnknown(CallExpr* call) {
 
 static QualifiedType
 returnInfoVoid(CallExpr* call) {
-  return QualifiedType(dtVoid, QUAL_VAL);
+  return QualifiedType(dtNothing, QUAL_VAL);
 }
 
 static QualifiedType

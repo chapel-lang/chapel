@@ -245,13 +245,13 @@ module ChapelIteratorSupport {
     if chpl_iteratorHasShape(arg) then
       return arg._shape_;
     else {
-      const myvoid = _void; // workaround for #9152
+      const myvoid = voidValue; // workaround for #9152
       return myvoid;
     }
   }
   inline proc chpl_computeIteratorShape(arg) {
     // none of the above cases
-    return _void;
+    return voidValue;
   }
 
   proc chpl_iteratorHasShape(ir: _iteratorRecord) param {
@@ -283,7 +283,7 @@ module ChapelIteratorSupport {
     if hasField(ir, "_shape_") then
       return __primitive("static field type", ir, "_shape_");
     else
-      return void;
+      return voidValue;
   }
 
   proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {

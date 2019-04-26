@@ -481,7 +481,7 @@ static FnSymbol* chpl_gen_main_exists() {
           INT_FATAL(fn, "function is not normalized");
         }
 
-        mainReturnsSomething = (sym->symbol() != gVoid);
+        mainReturnsSomething = (sym->symbol() != gNothing);
 
         ModuleSymbol* fnMod = fn->getModule();
 
@@ -540,7 +540,7 @@ static void build_chpl_entry_points() {
     SET_LINENO(mainModule);
 
     chplUserMain          = new FnSymbol("main");
-    chplUserMain->retType = dtVoid;
+    chplUserMain->retType = dtNothing;
 
     mainModule->block->insertAtTail(new DefExpr(chplUserMain));
 
@@ -806,9 +806,9 @@ static void build_enum_first_function(EnumType* et) {
   if (defExpr)
     fn->insertAtTail(new CallExpr(PRIM_RETURN, defExpr->sym));
   else
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, dtVoid));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
   // If there are one or more enumerators for this type, return the first one
-  // listed.  Otherwise return void.
+  // listed.  Otherwise return nothing.
 
   DefExpr* fnDef = new DefExpr(fn);
   // needs to go in the base module because when called from _defaultOf(et),
@@ -1140,7 +1140,7 @@ static void build_record_assignment_function(AggregateType* ct) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
 
-  fn->retType = dtVoid;
+  fn->retType = dtNothing;
   fn->where = new BlockStmt(new CallExpr("==",
                                          new CallExpr(PRIM_TYPEOF, arg1),
                                          new CallExpr(PRIM_TYPEOF, arg2)));
@@ -1462,7 +1462,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     fn->insertFormalAtTail(fn->_this);
     fn->insertFormalAtTail(fileArg);
 
-    fn->retType = dtVoid;
+    fn->retType = dtNothing;
 
     if (hasReadWriteThis == true) {
       Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
@@ -1515,7 +1515,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     fn->insertFormalAtTail(fn->_this);
     fn->insertFormalAtTail(fileArg);
 
-    fn->retType = dtVoid;
+    fn->retType = dtNothing;
 
     if (hasReadWriteThis == true) {
       Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
@@ -1605,9 +1605,9 @@ void buildDefaultDestructor(AggregateType* ct) {
 
     fn->insertFormalAtTail(fn->_this);
 
-    fn->retType = dtVoid;
+    fn->retType = dtNothing;
 
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
 
     ct->symbol->defPoint->insertBefore(new DefExpr(fn));
 

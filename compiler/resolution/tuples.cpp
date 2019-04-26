@@ -309,8 +309,8 @@ FnSymbol* makeDestructTuple(TypeSymbol* newTypeSymbol,
   dtor->addFlag(FLAG_DESTRUCTOR);
 
   dtor->retTag = RET_VALUE;
-  dtor->retType = dtVoid;
-  CallExpr* ret = new CallExpr(PRIM_RETURN, gVoid);
+  dtor->retType = dtNothing;
+  CallExpr* ret = new CallExpr(PRIM_RETURN, gNothing);
   dtor->insertAtTail(ret);
   dtor->substitutions.copy(newType->substitutions);
 

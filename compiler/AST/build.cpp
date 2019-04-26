@@ -1731,7 +1731,7 @@ buildFunctionDecl(FnSymbol*   fn,
   if (optRetType)
     fn->retExprType = new BlockStmt(optRetType, BLOCK_TYPE);
   else if (fn->hasFlag(FLAG_EXTERN))
-    fn->retType     = dtVoid;
+    fn->retType     = dtNothing;
 
   if (optThrowsError)
   {

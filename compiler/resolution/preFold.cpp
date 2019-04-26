@@ -1862,7 +1862,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     }
   }
 
-  if (captured_fn->retType == dtVoid) {
+  if (captured_fn->retType == dtNothing) {
     thisMethod->insertAtTail(innerCall);
 
   } else {
@@ -2285,7 +2285,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
     }
   }
 
-  if (retType != dtVoid) {
+  if (retType != dtNothing) {
     VarSymbol *tmp = newTemp("_return_tmp_", retType);
 
     parent_method->insertAtTail(new DefExpr(tmp));

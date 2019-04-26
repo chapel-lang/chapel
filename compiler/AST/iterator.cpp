@@ -939,7 +939,7 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
   }
 
-  zip1body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  zip1body->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
 
   ii->zip1->body->replace(zip1body);
 }
@@ -989,7 +989,7 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
       zip2body->insertAtTail(expr->copy(&map));
   }
 
-  zip2body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  zip2body->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
 
   ii->zip2->body->replace(zip2body);
 }
@@ -1057,7 +1057,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
   }
 
-  zip3body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  zip3body->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
 
   ii->zip3->body->replace(zip3body);
 }
@@ -1113,7 +1113,7 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     }
   }
 
-  zip4body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  zip4body->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
 
   ii->zip4->body->replace(zip4body);
 }
@@ -1181,7 +1181,7 @@ buildAdvance(FnSymbol* fn,
   }
   advanceBody->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->iclass->getField("more"))));
   advanceBody->insertAtHead(new DefExpr(more));
-  advanceBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  advanceBody->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
 
   ii->advance->body->replace(advanceBody);
 }
@@ -1271,7 +1271,7 @@ buildGetValue(IteratorInfo* ii, BlockStmt* singleLoop) {
                                                          my_this, ii->iclass->getField("value"))));
     getValueBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   } else {
-    getValueBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    getValueBody->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
   }
 
   ii->getValue->body->replace(getValueBody);
@@ -1308,7 +1308,7 @@ buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
       INT_FATAL(singleLoop, "Unhandled singleLoop type");
   }
 
-  initBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  initBody->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
 
   ii->init->body->replace(initBody);
 }
@@ -1343,7 +1343,7 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
       INT_FATAL(singleLoop, "Unhandled singleLoop case.");
   }
 
-  incrBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  incrBody->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
 
   ii->incr->body->replace(incrBody);
 }
@@ -1664,7 +1664,7 @@ rebuildIterator(IteratorInfo* ii,
         retArg = formal;
     }
     fn->insertAtTail(new CallExpr(PRIM_ASSIGN, retArg, iterator));
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
   } else {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
   }

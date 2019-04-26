@@ -1876,14 +1876,14 @@ static FnSymbol* heapAllocateGlobalsHead()
   FnSymbol* heapAllocateGlobals = new FnSymbol("chpl__heapAllocateGlobals");
   heapAllocateGlobals->addFlag(FLAG_EXPORT);
   heapAllocateGlobals->addFlag(FLAG_LOCAL_ARGS);
-  heapAllocateGlobals->retType = dtVoid;
+  heapAllocateGlobals->retType = dtNothing;
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
 
   // Abbreviated version if we are not using wide references.
   // heapAllocateGlobalsTail() is only called if requireWideReferences() returns
   // true.
   if (!requireWideReferences())
-    heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
   return heapAllocateGlobals;
 }
 
@@ -1915,7 +1915,7 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
     heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
   }
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
   numGlobalsOnHeap = i;
 }
 

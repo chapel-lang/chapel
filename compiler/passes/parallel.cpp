@@ -837,7 +837,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     i++;
   }
 
-  wrap_fn->retType = dtVoid;
+  wrap_fn->retType = dtNothing;
   wrap_fn->insertAtTail(call_orig);     // add new call
 
   // Destroy any fields that we should be destroying.
@@ -870,7 +870,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     wrap_fn->insertAtTail(new CallExpr(PRIM_FINISH_RMEM_FENCE));
   }
 
-  wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
 
   // 'fn' has already been flattened and hoisted to the top level.
   // We leave 'fn' in the module where it was placed originally,

@@ -484,12 +484,12 @@ void ReturnByRef::updateReturnStatement(FnSymbol* fn)
 
   SET_LINENO(returnPrim);
 
-  returnPrim->replace(new CallExpr(PRIM_RETURN, gVoid));
+  returnPrim->replace(new CallExpr(PRIM_RETURN, gNothing));
 }
 
 void ReturnByRef::updateReturnType(FnSymbol* fn)
 {
-  fn->retType = dtVoid;
+  fn->retType = dtNothing;
 }
 
 ReturnByRef::ReturnByRef(FnSymbol* fn)

@@ -3723,7 +3723,7 @@ DEFINE_PRIM(PRIM_CLASS_NAME_BY_ID) {
 }
 
 DEFINE_PRIM(PRIM_RETURN) {
-    if (call->typeInfo() == dtVoid) {
+    if (call->typeInfo() == dtNothing) {
 
       if (gGenInfo->cfile) {
         ret.c = "return";

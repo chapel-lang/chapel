@@ -23,13 +23,13 @@
    Note that when compiling with --cache-remote, the compiler
    will add fences to methods in atomic types with order arguments e.g.::
 
-     proc sub (... order:memory_order = memory_order_seq_cst):void {
+     proc sub (... order:memory_order = memory_order_seq_cst):nothing {
        on this do atomic_fetch_sub_explicit_...(_v, value, order);
      }
 
    becomes::
 
-     proc sub (... order:memory_order = memory_order_seq_cst):void {
+     proc sub (... order:memory_order = memory_order_seq_cst):nothing {
        chpl_rmem_consist_maybe_release(order);
        on this do atomic_fetch_sub_explicit_...(_v, value, order);
        chpl_rmem_consist_maybe_acquire(order);
@@ -180,7 +180,7 @@ module Atomics {
     proc init_helper(value:bool) {
       pragma "fn synchronization free"
       extern externFunc("init", bool, explicit=false)
-        proc atomic_init(ref obj:externT(bool), value:bool): void;
+        proc atomic_init(ref obj:externT(bool), value:bool): nothing;
 
       atomic_init(_v, value);
     }
@@ -208,7 +208,7 @@ module Atomics {
     proc deinit() {
       pragma "fn synchronization free"
       extern externFunc("destroy", bool, explicit=false)
-        proc atomic_destroy(ref obj:externT(bool)): void;
+        proc atomic_destroy(ref obj:externT(bool)): nothing;
 
       on this do atomic_destroy(_v);
     }
@@ -228,9 +228,9 @@ module Atomics {
     /*
        Stores `value` as the new value.
     */
-    inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
+    inline proc write(value:bool, order:memory_order = memory_order_seq_cst): nothing {
       extern externFunc("store", bool)
-        proc atomic_store(ref obj:externT(bool), value:bool, order:memory_order): void;
+        proc atomic_store(ref obj:externT(bool), value:bool, order:memory_order): nothing;
 
       on this do atomic_store(_v, value, order);
     }
@@ -289,7 +289,7 @@ module Atomics {
     /*
        Stores `false` as the new value.
     */
-    inline proc clear(order:memory_order = memory_order_seq_cst): void {
+    inline proc clear(order:memory_order = memory_order_seq_cst): nothing {
       this.write(false, order);
     }
 
@@ -299,7 +299,7 @@ module Atomics {
        Waits until the stored value is equal to `value`. The implementation may
        yield the running task while waiting.
     */
-    inline proc const waitFor(value:bool, order:memory_order = memory_order_seq_cst): void {
+    inline proc const waitFor(value:bool, order:memory_order = memory_order_seq_cst): nothing {
       on this {
         while (this.read(order=memory_order_relaxed) != value) {
           chpl_task_yield();
@@ -318,7 +318,7 @@ module Atomics {
     /*
        Stores `value` as the new value using memory_order_relaxed.
     */
-    inline proc poke(value:bool): void {
+    inline proc poke(value:bool): nothing {
       this.write(value, order=memory_order_relaxed);
     }
 
@@ -341,7 +341,7 @@ module Atomics {
     proc init_helper(value:T) {
       pragma "fn synchronization free"
       extern externFunc("init", T, explicit=false)
-        proc atomic_init(ref obj:externT(T), value:T): void;
+        proc atomic_init(ref obj:externT(T), value:T): nothing;
 
       atomic_init(_v, value);
     }
@@ -372,7 +372,7 @@ module Atomics {
     proc deinit() {
       pragma "fn synchronization free"
       extern externFunc("destroy", T, explicit=false)
-        proc atomic_destroy(ref obj:externT(T)): void;
+        proc atomic_destroy(ref obj:externT(T)): nothing;
 
       on this do atomic_destroy(_v);
     }
@@ -392,9 +392,9 @@ module Atomics {
     /*
        Stores `value` as the new value.
     */
-    inline proc write(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc write(value:T, order:memory_order = memory_order_seq_cst): nothing {
       extern externFunc("store", T)
-        proc atomic_store(ref obj:externT(T), value:T, order:memory_order): void;
+        proc atomic_store(ref obj:externT(T), value:T, order:memory_order): nothing;
 
       on this do atomic_store(_v, value, order);
     }
@@ -462,7 +462,7 @@ module Atomics {
        Adds `value` to the original value and stores the result. Defined for
        integer and real atomic types.
     */
-    inline proc add(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc add(value:T, order:memory_order = memory_order_seq_cst): nothing {
       extern externFunc("fetch_add", T)
         proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -488,7 +488,7 @@ module Atomics {
        Subtracts `value` from the original value and stores the result. Defined
        for integer and real atomic types.
     */
-    inline proc sub(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc sub(value:T, order:memory_order = memory_order_seq_cst): nothing {
       extern externFunc("fetch_sub", T)
         proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -519,7 +519,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc or(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc or(value:T, order:memory_order = memory_order_seq_cst): nothing {
       if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
       extern externFunc("fetch_or", T)
         proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -551,7 +551,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc and(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc and(value:T, order:memory_order = memory_order_seq_cst): nothing {
       if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
       extern externFunc("fetch_and", T)
         proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -583,7 +583,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc xor(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc xor(value:T, order:memory_order = memory_order_seq_cst): nothing {
       if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
       extern externFunc("fetch_xor", T)
         proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -595,7 +595,7 @@ module Atomics {
        Waits until the stored value is equal to `value`. The implementation may
        yield the running task while waiting.
     */
-    inline proc const waitFor(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc const waitFor(value:T, order:memory_order = memory_order_seq_cst): nothing {
       on this {
         while (this.read(order=memory_order_relaxed) != value) {
           chpl_task_yield();
@@ -614,7 +614,7 @@ module Atomics {
     /*
        Stores `value` as the new value using memory_order_relaxed.
     */
-    inline proc poke(value:T): void {
+    inline proc poke(value:T): nothing {
       this.write(value, order=memory_order_relaxed);
     }
 

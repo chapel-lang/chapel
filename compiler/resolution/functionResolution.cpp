@@ -5271,7 +5271,7 @@ static Type* moveDetermineRhsType(CallExpr* call) {
     }
   }
 
-  if (retval == dtVoid) {
+  if (retval == dtNothing) {
     if (CallExpr* rhsCall = toCallExpr(rhs)) {
       if (FnSymbol* rhsFn = rhsCall->resolvedFunction()) {
         if (rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE) == true) {
@@ -7274,7 +7274,7 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
     resolveFunction(serializeFn);
     Type* retType = serializeFn->retType->getValType();
 
-    if (retType == dtVoid) {
+    if (retType == dtNothing) {
       USR_FATAL(serializeFn, "chpl__serialize cannot return void");
     }
 
@@ -7300,7 +7300,7 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
         resolveFunction(deserializeFn);
 
         Type* retType = deserializeFn->retType->getValType();
-        if (retType == dtVoid) {
+        if (retType == dtNothing) {
           USR_FATAL(deserializeFn, "chpl__deserialize cannot return void");
         } else if (retType != at) {
           const char* rt = (developer == false) ? retType->symbol->name
@@ -7706,7 +7706,7 @@ static void insertReturnTemps() {
       if (call->list == NULL && isForallRecIterHelper(call))
         continue;
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
-        if (fn->retType != dtVoid && fn->retTag != RET_TYPE) {
+        if (fn->retType != dtNothing && fn->retTag != RET_TYPE) {
           ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
           Expr*            contextCallOrCall; // insert before, remove it
 

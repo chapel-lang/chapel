@@ -2038,7 +2038,7 @@ void FnSymbol::codegenFortran(int indent) {
     FILE* outfile = info->cfile;
     if (fGenIDS)
       fprintf(outfile, "%*s! %d\n", indent, "", this->id);
-    const char* subOrProc = retType != dtVoid ? "function" : "subroutine";
+    const char* subOrProc = retType != dtNothing ? "function" : "subroutine";
     fprintf(outfile, "%*s%s %s(", indent, "", subOrProc, this->cname);
     bool first = true;
 
@@ -2069,7 +2069,7 @@ void FnSymbol::codegenFortran(int indent) {
         foundUnsignedInt = true;
       }
     }
-    if (retType != dtVoid) {
+    if (retType != dtNothing) {
       uniqueKindNames.insert(getFortranKindName(retType, this));
       if (is_uint_type(retType)) {
         foundUnsignedInt = true;
@@ -2121,7 +2121,7 @@ void FnSymbol::codegenFortran(int indent) {
     }
 
     // print type declaration for the return type
-    if (retType != dtVoid) {
+    if (retType != dtNothing) {
       fprintf(outfile, "%*s%s(kind=%s) :: %s\n", indent, "", getFortranTypeName(retType, this).c_str(), getFortranKindName(retType, this).c_str(), this->cname);
     }
     indent -= 2;
@@ -2218,7 +2218,7 @@ GenRet FnSymbol::codegenPYXType() {
   std::string funcCall = "\t";
   // Return statement, if applicable
   std::string returnStmt = "";
-  if (retType != dtVoid) {
+  if (retType != dtNothing) {
     if (retType == dtExternalArray &&
         exportedArrayElementType[this] != NULL) {
       funcCall += "cdef chpl_external_array ret_arr = ";

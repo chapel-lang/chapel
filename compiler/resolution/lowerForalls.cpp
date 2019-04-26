@@ -413,7 +413,7 @@ static Symbol* removeParIterReturn(BlockStmt* cloneBody, Symbol* retsym) {
 static void removeVoidReturn(BlockStmt* cloneBody) {
   CallExpr* retexpr = toCallExpr(cloneBody->body.tail);
   INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
-  INT_ASSERT(toSymExpr(retexpr->get(1))->symbol() == gVoid);
+  INT_ASSERT(toSymExpr(retexpr->get(1))->symbol() == gNothing);
 
   retexpr->remove();
 }
@@ -1238,7 +1238,7 @@ static Symbol* inlineRetArgFunction(CallExpr* defCall, FnSymbol* defFn,
   // Expect the last statement to be "return void".
   CallExpr* retexpr = toCallExpr(defBody->body.tail);
   INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
-  INT_ASSERT(toSymExpr(retexpr->get(1))->symbol() == gVoid);
+  INT_ASSERT(toSymExpr(retexpr->get(1))->symbol() == gNothing);
 
   // Expect the last statement before 'return' to assign into the retarg.
   CallExpr* prev      = toCallExpr(retexpr->prev);

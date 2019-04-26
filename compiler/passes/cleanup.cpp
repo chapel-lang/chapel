@@ -218,7 +218,7 @@ static void insertVoidReturnSymbols(CallExpr* call) {
   if (call->numActuals() == 0) {
     FnSymbol* fn = call->getFunction();
     INT_ASSERT(fn);
-    call->insertAtTail(gVoid);
+    call->insertAtTail(gNothing);
     fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
   }
 }

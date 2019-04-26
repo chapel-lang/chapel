@@ -114,14 +114,14 @@ bool preserveShadowVar(Symbol* var) {
 }
 
 // If an outer var is void, it was probably pruned.
-// Replace it with _void.
+// Replace it with voidVal.
 void adjustVoidShadowVariables() {
   forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
     if (svar->inTree())
       if (Symbol* ovar = svar->outerVarSym())
         if (ovar->type == dtVoid) {
           SET_LINENO(svar);
-          svar->outerVarSE->replace(new SymExpr(gVoid));
+          svar->outerVarSE->replace(new SymExpr(gVoidValue));
         }
 }
 

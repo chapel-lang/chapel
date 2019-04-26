@@ -330,7 +330,7 @@ checkFunction(FnSymbol* fn) {
           numVoidReturns++;
         } else {
           SymExpr* sym = toSymExpr(call->get(1));
-          if (sym && sym->symbol() == gVoid)
+          if (sym && sym->symbol() == gNothing)
             numVoidReturns++;
           else {
             if (isIterator)

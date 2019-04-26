@@ -94,10 +94,10 @@ module LocaleModelHelpMem {
 
   pragma "locale model free"
   pragma "always propagate line file info"
-  proc chpl_here_free(ptr:c_void_ptr): void {
+  proc chpl_here_free(ptr:c_void_ptr): nothing {
     pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+      extern proc chpl_mem_free(ptr:c_void_ptr) : nothing;
     chpl_mem_free(ptr);
   }
 }

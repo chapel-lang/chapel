@@ -75,7 +75,7 @@ static ArgSymbol* tiMarkRef       = NULL;
 void initForTaskIntents() {
   FnSymbol* tiMarkHost = NULL;
 
-  markPruned      = gVoid;
+  markPruned      = gNothing;
   markUnspecified = gNil;
 
   tiMarkBlank     = new ArgSymbol(INTENT_BLANK,
@@ -111,7 +111,7 @@ void initForTaskIntents() {
   tiMarkHost->insertFormalAtTail(tiMarkConstRef);
   tiMarkHost->insertFormalAtTail(tiMarkRef);
 
-  tiMarkHost->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  tiMarkHost->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
 
   rootModule->block->insertAtTail(new DefExpr(tiMarkHost));
 }
@@ -931,8 +931,8 @@ void createTaskFunctions(void) {
             fn->addFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE);
         }
 
-        fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-        fn->retType = dtVoid;
+        fn->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
+        fn->retType = dtNothing;
 
         if (needsCapture(fn)) { // note: does not apply to blocking on stmts.
 

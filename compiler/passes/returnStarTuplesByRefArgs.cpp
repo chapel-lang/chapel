@@ -51,11 +51,11 @@ void returnStarTuplesByRefArgs() {
       //
       ArgSymbol* arg = new ArgSymbol(INTENT_REF, "_ret", ret->getValType());
       fn->insertFormalAtTail(arg);
-      fn->retType = dtVoid;
+      fn->retType = dtNothing;
       fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE, arg, ret));
       CallExpr* call = toCallExpr(fn->body->body.tail);
       INT_ASSERT(call && call->isPrimitive(PRIM_RETURN));
-      call->get(1)->replace(new SymExpr(gVoid));
+      call->get(1)->replace(new SymExpr(gNothing));
 
       //
       // update call sites to new interface
