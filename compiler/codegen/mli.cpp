@@ -49,74 +49,74 @@ static const char* scope_end = "}\n";
 class MLIContext {
 public:
 
-MLIContext(bool debugPrintlines=false);
-~MLIContext();
+  MLIContext(bool debugPrintlines=false);
+  ~MLIContext();
 
-void emit(ModuleSymbol* md);
-void emit(FnSymbol* fn);
-void emitClientPrelude(void);
-void emitServerPrelude(void);
-void emitMarshalRoutines(void);
-void emitServerDispatchRoutine(void);
+  void emit(ModuleSymbol* md);
+  void emit(FnSymbol* fn);
+  void emitClientPrelude(void);
+  void emitServerPrelude(void);
+  void emitMarshalRoutines(void);
+  void emitServerDispatchRoutine(void);
 
 private:
 
-bool debugPrintlines;
-bool separateHeaders;
-std::vector<FnSymbol*> exps;
-std::vector<FnSymbol*> throws;
-std::map<Type*, int64_t> typeMap;
-fileinfo fiMarshalling;
-fileinfo fiClientBundle;
-fileinfo fiServerBundle;
-GenInfo* info;
+  bool debugPrintlines;
+  bool separateHeaders;
+  std::vector<FnSymbol*> exps;
+  std::vector<FnSymbol*> throws;
+  std::map<Type*, int64_t> typeMap;
+  fileinfo fiMarshalling;
+  fileinfo fiClientBundle;
+  fileinfo fiServerBundle;
+  GenInfo* info;
 
-bool shouldEmit(ModuleSymbol* md);
-bool shouldEmit(FnSymbol* fn);
-void setOutput(fileinfo* fi);
-void setOutputAndWrite(fileinfo* fi, const std::string& gen);
-void write(const std::string& code);
-int64_t assignUniqueTypeID(Type* t);
-void emitClientWrapper(FnSymbol* fn);
-void emitServerWrapper(FnSymbol* fn);
-bool isSupportedType(Type* t);
-void verifyPrototype(FnSymbol* fn);
-Type* getTypeFromFormal(ArgSymbol* as);
-Type* getTypeFromFormal(FnSymbol* fn, int i);
-bool typeRequiresAllocation(Type* t);
+  bool shouldEmit(ModuleSymbol* md);
+  bool shouldEmit(FnSymbol* fn);
+  void setOutput(fileinfo* fi);
+  void setOutputAndWrite(fileinfo* fi, const std::string& gen);
+  void write(const std::string& code);
+  int64_t assignUniqueTypeID(Type* t);
+  void emitClientWrapper(FnSymbol* fn);
+  void emitServerWrapper(FnSymbol* fn);
+  bool isSupportedType(Type* t);
+  void verifyPrototype(FnSymbol* fn);
+  Type* getTypeFromFormal(ArgSymbol* as);
+  Type* getTypeFromFormal(FnSymbol* fn, int i);
+  bool typeRequiresAllocation(Type* t);
 
-std::string genMarshalBodyPrimitiveScalar(Type* t, bool out);
-std::string genComment(const char* msg, const char* pfx="");
-std::string genNote(const char* msg);
-std::string genTodo(const char* msg);
-std::string genDefine(const char* val);
-std::string genHeaderInc(const char* header, bool system=false);
-std::string genMarshalRoutine(Type* t, bool out);
-std::string genMarshalPushRoutine(Type* t);
-std::string genMarshalPullRoutine(Type* t);
-std::string genServerDispatchSwitch(const std::vector<FnSymbol*>& fns);
-std::string genFuncToSetServerGlobals(void);
-std::string genDebugPrintCall(FnSymbol* fn, const char* pfx="");
-std::string genDebugPrintCall(const char* msg, const char* pfx="");
-std::string genFuncNumericID(FnSymbol* fn);
-std::string genServerWrapperCall(FnSymbol* fn);
-std::string genClientsideRPC(FnSymbol* fn);
-std::string genServersideRPC(FnSymbol* fn);
-std::string genMarshalCall(const char* s, const char* v, Type* t, bool out);
-std::string genMarshalPushCall(const char* s, const char* v, Type* t);
-std::string genMarshalPullCall(const char* s, const char* v, Type* t);
-std::string genTypeName(Type* t);
-std::string genSocketCall(const char* s, const char* v, const char* l,
-                          bool out);
-std::string genSocketCall(const char* s, const char* v, bool out);
-std::string genSocketPushCall(const char* s, const char* v);
-std::string genSocketPullCall(const char* s, const char* v);
-std::string genAddressOf(const char* var);
-std::string genAddressOf(std::string& var);
-std::string genSizeof(const char* var);
-std::string genSizeof(std::string& var);
-std::string genNewDecl(const char* t, const char* n);
-std::string genNewDecl(Type* t, const char* n);
+  std::string genMarshalBodyPrimitiveScalar(Type* t, bool out);
+  std::string genComment(const char* msg, const char* pfx="");
+  std::string genNote(const char* msg);
+  std::string genTodo(const char* msg);
+  std::string genDefine(const char* val);
+  std::string genHeaderInc(const char* header, bool system=false);
+  std::string genMarshalRoutine(Type* t, bool out);
+  std::string genMarshalPushRoutine(Type* t);
+  std::string genMarshalPullRoutine(Type* t);
+  std::string genServerDispatchSwitch(const std::vector<FnSymbol*>& fns);
+  std::string genDebugPrintCall(FnSymbol* fn, const char* pfx="");
+  std::string genDebugPrintCall(const char* msg, const char* pfx="");
+  std::string genFuncNumericID(FnSymbol* fn);
+  std::string genServerWrapperCall(FnSymbol* fn);
+  std::string genClientsideRPC(FnSymbol* fn);
+  std::string genServersideRPC(FnSymbol* fn);
+  std::string genMarshalCall(const char* skt, const char* var, Type* t,
+                             bool out);
+  std::string genMarshalPushCall(const char* skt, const char* var, Type* t);
+  std::string genMarshalPullCall(const char* skt, const char* var, Type* t);
+  std::string genTypeName(Type* t);
+  std::string genSocketCall(const char* skt, const char* var, const char* len,
+                            bool out);
+  std::string genSocketCall(const char* skt, const char* var, bool out);
+  std::string genSocketPushCall(const char* skt, const char* var);
+  std::string genSocketPullCall(const char* skt, const char* var);
+  std::string genAddressOf(const char* var);
+  std::string genAddressOf(std::string& var);
+  std::string genSizeof(const char* var);
+  std::string genSizeof(std::string& var);
+  std::string genNewDecl(const char* t, const char* n);
+  std::string genNewDecl(Type* t, const char* n);
 
 };
 
@@ -272,19 +272,6 @@ std::string MLIContext::genDefine(const char* val) {
   return gen;
 }
 
-std::string MLIContext::genFuncToSetServerGlobals(void) {
-  std::string gen;
-
-  gen += "void chpl_mli_server_set_conf(void)";
-  gen += scope_begin;
-  gen += "chpl_server_conf.debug=";
-  gen += this->debugPrintlines ? "1" : "0";
-  gen += ";\n";
-  gen += scope_end;
-  
-  return gen;
-}
-
 void MLIContext::emitServerPrelude(void) {
   std::string gen;
 
@@ -303,10 +290,6 @@ void MLIContext::emitServerPrelude(void) {
   gen += this->genHeaderInc("_main.c");
   gen += "\n";
   
-  // The server will call this function to set globals appropriately.
-  gen += this->genFuncToSetServerGlobals();
-  gen += "\n";
-
   this->setOutputAndWrite(&this->fiServerBundle, gen);
 
   return;
@@ -536,7 +519,7 @@ std::string MLIContext::genDebugPrintCall(const char* msg, const char* pfx) {
     gen += " ";
   }
 
-  gen += "%%s\\n\", \"";
+  gen += "%s\\n\", \"";
   gen += msg;
   gen += "\");\n";
 
@@ -704,19 +687,17 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
 
   // Declare temporaries, issue unpack call for each formal.
   for (int i = 1; i <= fn->numFormals(); i++) {
-    std::string tmp;
-
     Type* t = this->getTypeFromFormal(fn, i);
-
-    gen += this->genTypeName(t);
-    gen += " ";
+    std::string tmp;
 
     // Map temp names to formal indices (shifted down one).
     tmp += "tmp_";
-    tmp += str(i - 1);
+    tmp += fn->getFormal(i)->name;
     formalTempNames[i] = tmp;
 
-    // Emit a unpack call to initialize each temporary.
+    // Declare each temporary and initialize with a pack call.
+    gen += this->genTypeName(t);
+    gen += " ";
     gen += tmp;
     gen += "=";
     gen += this->genMarshalPullCall(server_arg, tmp.c_str(), t);
@@ -750,19 +731,19 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   return gen;
 }
 
-std::string MLIContext::genMarshalCall(const char* s, const char* v, Type* t,
-                                       bool out) {
+std::string MLIContext::genMarshalCall(const char* skt, const char* var,
+                                       Type* t, bool out) {
   std::string gen;
   int64_t id = this->assignUniqueTypeID(t);
 
   gen += out ? marshal_push_prefix : marshal_pull_prefix;
   gen += str(id);
   gen += "(";
-  gen += s;
+  gen += skt;
   
   if (out) {
     gen += ",";
-    gen += v;
+    gen += var;
   }
 
   gen += ");\n";
@@ -774,16 +755,16 @@ std::string MLIContext::genMarshalCall(const char* s, const char* v, Type* t,
 // TODO: These calls pass value types (cheaper to pass pointer).
 //
 std::string
-MLIContext::genMarshalPushCall(const char* s, const char* v, Type* t) {
-  return this->genMarshalCall(s, v, t, true);
+MLIContext::genMarshalPushCall(const char* skt, const char* var, Type* t) {
+  return this->genMarshalCall(skt, var, t, true);
 }
 
 //
 // TODO: These calls pass value types (cheaper to pass pointer).
 //
 std::string
-MLIContext::genMarshalPullCall(const char* s, const char* v, Type* t) {
-  return this->genMarshalCall(s, v, t, false);
+MLIContext::genMarshalPullCall(const char* skt, const char* var, Type* t) {
+  return this->genMarshalCall(skt, var, t, false);
 }
 
 std::string MLIContext::genTypeName(Type* t) {
@@ -791,34 +772,34 @@ std::string MLIContext::genTypeName(Type* t) {
 }
 
 std::string
-MLIContext::genSocketCall(const char* s, const char* v, const char* l,
+MLIContext::genSocketCall(const char* skt, const char* var, const char* len,
                           bool out) {
   std::string gen;
 
   gen += out ? socket_push_name : socket_pull_name;
   gen += "(";
-  gen += s;
+  gen += skt;
   gen += ", ";
-  gen += v ? this->genAddressOf(v) : "\"\"";
+  gen += var ? this->genAddressOf(var) : "\"\"";
   gen += ", ";
-  gen += l ? l : (v ? this->genSizeof(v) : "0");
+  gen += len ? len : (var ? this->genSizeof(var) : "0");
   gen += ", 0);\n";
 
   return gen;
 }
 
 std::string
-MLIContext::genSocketCall(const char* s, const char* v, bool out) {
-  return this->genSocketCall(s, v, NULL, out);
+MLIContext::genSocketCall(const char* skt, const char* var, bool out) {
+  return this->genSocketCall(skt, var, NULL, out);
 }
 
-std::string MLIContext::genSocketPushCall(const char* s, const char* v) {
-  return this->genSocketCall(s, v, true);
+std::string MLIContext::genSocketPushCall(const char* skt, const char* var) {
+  return this->genSocketCall(skt, var, true);
 }
 
 
-std::string MLIContext::genSocketPullCall(const char* s, const char* v) {
-  return this->genSocketCall(s, v, false);
+std::string MLIContext::genSocketPullCall(const char* skt, const char* var) {
+  return this->genSocketCall(skt, var, false);
 }
 
 std::string MLIContext::genAddressOf(const char* var) {
