@@ -692,6 +692,7 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
   }
 }
 
+std::string genMakefileEnvCache(void);
 std::string genMakefileEnvCache(void) {
   std::string result;
   std::map<std::string, const char*>::iterator env;

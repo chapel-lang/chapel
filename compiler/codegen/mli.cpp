@@ -152,7 +152,7 @@ void codegenMultiLocaleInteropWrappers(void) {
   return;
 }
 
-MLIContext::MLIContext(bool injectDebugPrintlines, bool separateHeaders) {
+MLIContext::MLIContext(bool injectDebugPrintlines) {
 
   this->injectDebugPrintlines = injectDebugPrintlines;
   this->separateHeaders = separateHeaders;
@@ -392,8 +392,6 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   //
   if (isPrimitiveScalar(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, out);
-  } else if (t == dtStringC) {
-    gen += this->genMarshalBodyStringC(t, out);
   } else {
     USR_FATAL("MLI does not support code generation for type", t);
   }
