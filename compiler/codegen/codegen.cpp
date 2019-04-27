@@ -2262,9 +2262,6 @@ void codegen() {
   fileinfo defnfile   = { NULL, NULL, NULL };
   fileinfo strconfig  = { NULL, NULL, NULL };
 
-  fileinfo mli_client = { NULL, NULL, NULL };
-  fileinfo mli_server = { NULL, NULL, NULL };
-
   GenInfo* info     = gGenInfo;
 
   INT_ASSERT(info);
