@@ -32,8 +32,8 @@
 #include <sstream>
 
 const char* gen_mli_marshalling = "chpl_mli_marshalling";
-const char* gen_mli_client_bundle = "chpl_mli_client_bundle";
-const char* gen_mli_server_bundle = "chpl_mli_server_bundle";
+const char* gen_mli_client = "chpl_mli_client";
+const char* gen_mli_server = "chpl_mli_server";
 static const char* client_main = "chpl_client.main";
 static const char* client_arg = "chpl_client.arg";
 static const char* client_res = "chpl_client.res";
@@ -159,8 +159,8 @@ MLIContext::MLIContext(bool debugPrintlines) {
   this->separateHeaders = separateHeaders;
 
   openCFile(&this->fiMarshalling, gen_mli_marshalling, "c");
-  openCFile(&this->fiClientBundle, gen_mli_client_bundle, "c");
-  openCFile(&this->fiServerBundle, gen_mli_server_bundle, "c");
+  openCFile(&this->fiClientBundle, gen_mli_client, "c");
+  openCFile(&this->fiServerBundle, gen_mli_server, "c");
   this->info = gGenInfo;
 
   return;
