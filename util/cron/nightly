@@ -87,7 +87,6 @@ while (@ARGV) {
     } elsif ($flag eq "-examples") {
         $examples = 1;
     } elsif ($flag eq "-multilocale") {
-        $examples = 1;
         $multilocale = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
@@ -199,7 +198,7 @@ if ($printusage == 1) {
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
     print "\t-llvm                          : run tests using --llvm\n";
     print "\t-memleaks <log>                : run memleaks tests\n";
-    print "\t-multilocale                   : run multilocale suite only\n";
+    print "\t-multilocale                   : run multilocale tests only\n";
     print "\t-no-buildcheck                 : do not run `make check` before running tests\n";
     print "\t-no-futures                    : do not run future tests\n";
     print "\t-no-local                      : run tests using --no-local\n";
@@ -575,6 +574,9 @@ if (exists($ENV{'CHPL_NIGHTLY_TEST_DIRS'})) {
     $testdirs .= " $env_test_dirs";
 }
 
+if ($multilocale == 1) {
+    $testflags = "$testflags -multilocale-only";
+}
 
 #
 # don't bother making the spec tests if we're only testing hello, world programs;
@@ -585,9 +587,6 @@ if ($examples == 1) {
     print "Making spectests\n";
     mysystem("cd $chplhomedir && $make spectests", "making spec tests", 0, 1);
     $testdirs .= " release/examples";
-    if ($multilocale == 1) {
-        $testdirs .= " multilocale distributions";
-    }
     if ($parnodefile ne "") {
         mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE",
                  "making directory file", 1, 1);
