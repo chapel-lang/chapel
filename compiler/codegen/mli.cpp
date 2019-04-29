@@ -394,7 +394,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   if (isPrimitiveScalar(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, out);
   } else {
-    USR_FATAL("MLI does not support code generation for type", t);
+    USR_FATAL("Multi-locale libraries do not support type", t);
   }
 
   // If we are unpacking, return our temporary.
@@ -582,13 +582,13 @@ bool MLIContext::isSupportedType(Type* t) {
 void MLIContext::verifyPrototype(FnSymbol* fn) {
 
   if (fn->retType != dtVoid && not isSupportedType(fn->retType)) {
-    USR_FATAL("MLI does not support code generation for type", fn->retType);
+    USR_FATAL("Multi-locale libraries do not support type", fn->retType);
   }
 
   for (int i = 1; i <= fn->numFormals(); i++) {
     ArgSymbol* as = fn->getFormal(i);
     if (not this->isSupportedType(as->type)) {
-      USR_FATAL("MLI does not support code generation for type", as->type);
+      USR_FATAL("Multi-locale libraries do not support type", as->type);
     }
   }
 
@@ -631,10 +631,6 @@ std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
 
   // Pull server confirmation.
   gen += this->genSocketPullCall(client_main, "st");
-
-  //
-  // TODO: Handle server errors.
-  //
 
   // If we are void/void, then there's nothing left to do.
   if (hasVoidReturnType and not hasFormals) {

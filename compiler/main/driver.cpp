@@ -1364,9 +1364,6 @@ static void postVectorize() {
   }
 }
 
-//
-// TODO: Multi-Locale Interop prototype code!
-//
 static void setMultiLocaleInterop() {
   // We must be compiling a multi-locale library to be eligible for MLI.
   if (!fLibraryCompile || !strcmp(CHPL_COMM, "none")) {
@@ -1374,22 +1371,22 @@ static void setMultiLocaleInterop() {
   }
 
   if (strcmp(CHPL_COMM, "gasnet") != 0) {
-    USR_WARN("MLI wrappers are only supported on gasnet.");
+    USR_FATAL("Multi-locale libraries are only supported on gasnet");
     return;
   }
 
   if (llvmCodegen) {
-    USR_WARN("MLI is unsupported when --llvm is ON.");
+    USR_FATAL("Multi-locale libraries do not support --llvm");
     return;
   }
 
   if (fLibraryPython) {
-    USR_WARN("MLI is unsupported when --library-python is ON.");
+    USR_FATAL("Multi-locale libraries do not support --library-python");
     return;
   }
 
   if (fLibraryFortran) {
-    USR_WARN("MLI is unsupported when --library-fortran is ON.");
+    USR_FATAL("Multi-locale libraries do not support --library-fortran");
     return;
   }
 
