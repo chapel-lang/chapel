@@ -2428,11 +2428,8 @@ void codegen() {
     info->cfile = hdrfile.fptr;
     codegen_header_addons();
 
-    //
-    // Emit an #endif to close the header's include guard. Corresponds to
-    // #ifndef on compiler/codegen/codegen.cpp:1619.
-    //
-    fprintf(hdrfile.fptr, "\n#endif\n");
+    fprintf(hdrfile.fptr, "\n#endif");
+    fprintf(hdrfile.fptr, " /* END CHPL_GEN_HEADER_INCLUDE_GUARD */\n"); 
 
     closeCFile(&hdrfile);
     fprintf(mainfile.fptr, "/* last line not #include to avoid gcc bug */\n");
