@@ -99,6 +99,10 @@ var own: owned C = new owned C(1, 10);
 // The instance referred to by 'own' is deleted when it is no longer in scope.
 // Only one `owned C` can refer to a given instance at a time but the
 // ownership can be transferred to another variable.
+var own2 = new C(1, 10);
+assert(own.type == own2.type);
+// The example above shows that the default behavior makes 'new C' equivalent
+// to 'new owned C'.
 
 var share: shared C = new shared C(1, 10);
 // The instance referred to by 'share' is reference counted -- that is,
@@ -119,8 +123,10 @@ var b1 = own.borrow();
 //  * use the borrow after the instance is deleted (for example if
 //    own is assigned to)
 
-// A class type without a decorator, such as ``C``, is the same
-// as ``borrowed C``. The ``this`` argument of a method is a borrow as well.
+// In most cases, a class type without a decorator, such as ``C``,
+// is the same as ``borrowed C``. The ``this`` argument of a method
+// is a borrow as well. The current exception is that ``new C`` is interpreted
+// as ``new owned C`` rather than ``new borrowed C``.
 
 // The compiler automatically adds conversion from ``owned``, ``shared``,
 // or ``unmanaged`` in the process of resolving a function call,
