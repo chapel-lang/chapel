@@ -20,6 +20,7 @@
 #include "lifetime.h"
 
 #include "AstVisitorTraverse.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForallStmt.h"
@@ -29,7 +30,6 @@
 #include "resolution.h"
 #include "stlUtil.h"
 #include "symbol.h"
-#include "UnmanagedClassType.h"
 #include "view.h"
 #include "wellknown.h"
 

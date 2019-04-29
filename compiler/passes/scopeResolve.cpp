@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "CatchStmt.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "clangUtil.h"
 #include "driver.h"
@@ -36,7 +37,6 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TryStmt.h"
-#include "UnmanagedClassType.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 

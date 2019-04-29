@@ -20,6 +20,7 @@
 #include "preFold.h"
 
 #include "astutil.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "ForallStmt.h"
 #include "iterator.h"
@@ -32,7 +33,6 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "typeSpecifier.h"
-#include "UnmanagedClassType.h"
 #include "visibleFunctions.h"
 
 #ifndef __STDC_FORMAT_MACROS

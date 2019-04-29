@@ -26,6 +26,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "errorHandling.h"
 #include "ForallStmt.h"
@@ -37,7 +38,6 @@
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
-#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 #include <cctype>

@@ -24,12 +24,12 @@
 *                                                                             *
 ************************************** | *************************************/
 
+#include "DecoratedClassType.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
 #include "passes.h"
 #include "resolution.h"
-#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 static void clearDefaultInitFns(FnSymbol* unusedFn) {

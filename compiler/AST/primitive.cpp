@@ -19,9 +19,9 @@
 
 #include "primitive.h"
 
+#include "DecoratedClassType.h"
 #include "expr.h"
 #include "iterator.h"
-#include "UnmanagedClassType.h"
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"

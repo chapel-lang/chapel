@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "UnmanagedClassType.h"
+#include "DecoratedClassType.h"
 
 #include "AstVisitor.h"
 #include "symbol.h"

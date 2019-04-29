@@ -26,6 +26,7 @@
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "build.h"
+#include "DecoratedClassType.h"
 #include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
@@ -37,7 +38,6 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "UnmanagedClassType.h"
 #include "vec.h"
 
 #include <cmath>

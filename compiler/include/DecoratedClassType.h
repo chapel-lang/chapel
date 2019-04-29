@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _MANAGED_CLASS_TYPE_H_
-#define _MANAGED_CLASS_TYPE_H_
+#ifndef _DECORATED_CLASS_TYPE_H_
+#define _DECORATED_CLASS_TYPE_H_
 
 #include "AggregateType.h"
 

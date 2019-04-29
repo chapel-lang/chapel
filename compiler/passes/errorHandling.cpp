@@ -21,6 +21,7 @@
 
 #include "AstVisitorTraverse.h"
 #include "CatchStmt.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
@@ -29,7 +30,6 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
-#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 #include <stack>
