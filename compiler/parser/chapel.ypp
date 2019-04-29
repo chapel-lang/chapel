@@ -376,7 +376,7 @@
 %left TSHIFTLEFT TSHIFTRIGHT
 %right TUPLUS TUMINUS
 %left TSTAR TDIVIDE TMOD
-%right TBNOT TBANG
+%right TBNOT TBANG TQUESTION
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
@@ -1692,6 +1692,8 @@ type_level_expr:
     { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS, $2); }
 | TSHARED expr
     { $$ = new CallExpr( "_shared", $2); }
+| ident_expr TQUESTION
+    { $$ = new CallExpr( "_nilable", $1); }
 ;
 
 for_expr:
@@ -1991,6 +1993,7 @@ unary_op_expr:
 | TMINUSMINUS expr %prec TUMINUS  { $$ = buildPreDecIncWarning($2, '-'); }
 | TPLUSPLUS expr %prec TUPLUS     { $$ = buildPreDecIncWarning($2, '+'); }
 | TBANG expr                      { $$ = new CallExpr("!", $2); }
+| expr TBANG                      { $$ = new CallExpr("postfix!", $1); }
 | TBNOT expr                      { $$ = new CallExpr("~", $2); }
 ;
 
