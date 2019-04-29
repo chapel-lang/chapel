@@ -78,8 +78,6 @@ static void          processImportExprs();
 
 static void          resolveGotoLabels();
 
-static void          adjustMethodThisForDefaultUnmanaged(FnSymbol* fn);
-
 static bool          isStableClassType(Type* t);
 static Expr*         handleUnstableClassType(SymExpr* se);
 
@@ -154,9 +152,6 @@ void scopeResolve() {
     } else if (fn->_this) {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
-
-    // Adjust class type methods for unmanaged/borrowed
-    adjustMethodThisForDefaultUnmanaged(fn);
   }
 
   resolveGotoLabels();
@@ -656,37 +651,6 @@ static void resolveGotoLabels() {
   }
 }
 
-static void adjustMethodThisForDefaultUnmanaged(FnSymbol* fn) {
-
-  if (fDefaultUnmanaged && fn->_this && isClass(fn->_this->type)) {
-    ArgSymbol* _this = toArgSymbol(fn->_this);
-    Type* t = _this->type;
-    bool ok = isStableClassType(t);
-
-    if (fn->getModule()->modTag == MOD_USER && !ok) {
-      SET_LINENO(fn->_this);
-
-      // Make sure fn->_this->typeExpr exists
-      if (!_this->typeExpr) {
-        _this->typeExpr = new BlockStmt(new SymExpr(t->symbol));
-        parent_insert_help(_this, _this->typeExpr);
-      }
-      // Now adjust _this->typeExpr (whether we just created it or not)
-      Expr* stmt = toArgSymbol(fn->_this)->typeExpr->body.only();
-
-      if (SymExpr* se = toSymExpr(stmt)) {
-        Expr* result = se;
-        if (fWarnUnstable || fDefaultUnmanaged)
-          result = handleUnstableClassType(se);
-        // Amend _this->type
-        fn->_this->type = result->typeInfo();
-      } else {
-        INT_ASSERT(0);
-      }
-    }
-  }
-}
-
 
 /************************************* | *************************************/
 
@@ -911,16 +875,14 @@ static Expr* handleUnstableClassType(SymExpr* se) {
           } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
                      pCall == outerCall->get(1)) {
             // 'new SomeClass()'
-            // let ok be set as it was above unless changing default
-            if (fDefaultUnmanaged) ok = false;
+            // let ok be set as it was above
           } else if (outerCall && callSpecifiesClassKind(outerCall) &&
                      pCall->baseExpr == se) {
             // ':borrowed MyGenericClass(int)'
             ok = true;
           } else if (pCall->baseExpr == se) {
             // ':MyGenericClass(int)'
-            // let ok be set as it was above unless changing default
-            if (fDefaultUnmanaged) ok = false;
+            // let ok be set as it was above
           }
           if (pCall->isNamed(".") &&
               pCall->get(1) == se) {
@@ -938,8 +900,7 @@ static Expr* handleUnstableClassType(SymExpr* se) {
         } else if (inCall && !inCall->isPrimitive(PRIM_NEW)) {
           // typefunction(SomeClass)
           // typefunction(SomeGenericClass(int))
-          if (!fDefaultUnmanaged)
-            ok = true;
+          ok = true;
         }
 
         // Types in extern function procs are assumed to
@@ -958,27 +919,15 @@ static Expr* handleUnstableClassType(SymExpr* se) {
 
         // Don't worry about this arguments if we're only warning
         // (do worry about it if we're changing the default)
-        if (!fDefaultUnmanaged) {
-          if (ArgSymbol* arg = toArgSymbol(se->parentSymbol)) {
-            if (arg->hasFlag(FLAG_ARG_THIS)) {
-              // this default intent is currently 'borrowed' always
-              // and there's not yet a way to adjust it.
-              ok = true;
-            }
-          }
+        if (ArgSymbol* arg = toArgSymbol(se->parentSymbol)) {
+          if (arg->hasFlag(FLAG_ARG_THIS))
+            // this default intent is currently 'borrowed' always
+            // and there's not yet a way to adjust it.
+            ok = true;
         }
 
         if (!ok) {
-          if (fDefaultUnmanaged) {
-            // Change the se to _to_unmanaged(se)
-            // but take care to leave the original se in the tree
-            // (for the sake of the calling code in resolveUnresolvedSymExpr)
-            CallExpr* call = new CallExpr(PRIM_TO_UNMANAGED_CLASS);
-            se->replace(call);
-            call->insertAtTail(se);
-            return call;
-
-          } else if (fWarnUnstable) {
+          if (fWarnUnstable) {
             // error
             USR_WARN(se, "undecorated class type %s is unstable", ts->name);
             if (inDef && se == inDef->exprType)
@@ -1045,7 +994,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
     usymExpr->replace(symExpr);
 
-    if (fWarnUnstable || fDefaultUnmanaged)
+    if (fWarnUnstable)
       handleUnstableClassType(symExpr);
 
     updateMethod(usymExpr, sym, symExpr);

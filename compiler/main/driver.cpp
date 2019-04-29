@@ -159,8 +159,6 @@ bool fLLVMWideOpt = false;
 
 bool fWarnConstLoops = true;
 bool fWarnUnstable = false;
-bool fDefaultUnmanaged = false;
-bool fLegacyNew = false;
 
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
@@ -1040,8 +1038,6 @@ static ArgumentDescription arg_desc[] = {
  {"report-optimized-forall-unordered-ops", ' ', NULL, "Show which statements in foralls have been converted to unordered operations", "F", &fReportOptimizeForallUnordered, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
- {"default-unmanaged", ' ', NULL, "Enable [disable] class type defaulting to unmanaged", "N", &fDefaultUnmanaged, "CHPL_DEFAULT_UNMANAGED", NULL},
- {"legacy-new", ' ', NULL, "Enable [disable] 'new SomeClass' legacy behavior", "N", &fLegacyNew, "CHPL_LEGACY_NEW", NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
  DRIVER_ARG_BREAKFLAGS_COMMON,
