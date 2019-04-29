@@ -221,13 +221,8 @@ void MLIContext::emitClientPrelude(void) {
     gen += this->genDefine("CHPL_MLI_DEBUG_PRINT");
   }
 
-  //
-  // Some MLI runtime functions have different implementations depending on
-  // whether the server or the client is calling them.
-  //
   gen += this->genDefine("CHPL_MLI_IS_CLIENT");
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
-  gen += this->genNote("We use Makefile magic to make this visible!");
   gen += this->genHeaderInc("mli_client_runtime.c");
   gen += "\n";
 
@@ -285,13 +280,8 @@ void MLIContext::emitServerPrelude(void) {
     gen += this->genDefine("CHPL_MLI_DEBUG_PRINT");
   }
 
-  //
-  // Some MLI runtime functions have different implementations depending on
-  // whether the server or the client is calling them.
-  //
   gen += this->genDefine("CHPL_MLI_IS_SERVER");
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
-  gen += this->genNote("We use Makefile magic to make this visible!");
   gen += this->genHeaderInc("mli_server_runtime.c");
   gen += this->genHeaderInc("_main.c");
   gen += "\n";
@@ -313,7 +303,6 @@ void MLIContext::emitMarshalRoutines(void) {
   gen += this->genHeaderInc("stdio.h", true);
   gen += this->genHeaderInc("zmq.h", true);
   gen += this->genHeaderInc("chpl__header.h");
-  gen += this->genNote("We use Makefile magic to make this visible!");
   gen += this->genHeaderInc("mli_common_code.c");
   gen += "\n";
 
@@ -488,7 +477,6 @@ void MLIContext::emitClientWrapper(FnSymbol* fn) {
 void MLIContext::emitServerWrapper(FnSymbol* fn) {
   std::string gen;
 
-  // Big long, silly block of manual code generation.
   gen += this->genComment(toString(fn));
   gen += "int64_t chpl_mli_swrapper_";
   gen += this->genFuncNumericID(fn);

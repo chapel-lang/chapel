@@ -36,7 +36,9 @@
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
 #
-# This is common code included wholesale in each MLI compile (for now).
+# This is common code included wholesale in each MLI compile (for now). With-
+# out knowledge of these source files, compilation of code generated for
+# multi-locale libraries will fail.
 #
 CHPL_MLI_INCLUDES = $(CHPL_MAKE_HOME)/runtime/etc/mli
 
