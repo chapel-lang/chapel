@@ -932,7 +932,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   std::string incpath = "include $(CHPL_MAKE_HOME)/runtime/etc/";
   if (fMultiLocaleInterop) {
     if (fLinkStyle == LS_DYNAMIC) {
-      INT_FATAL("Dynamic linking is not supported for MLI.");
+      USR_FATAL("Multi-locale libraries do not support dynamic linking");
     } else {
       incpath += "Makefile.mli-static";
     }
