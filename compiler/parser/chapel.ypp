@@ -333,7 +333,7 @@
 %token TALIAS TAND TASSIGN TASSIGNBAND TASSIGNBOR TASSIGNBXOR TASSIGNDIVIDE
 %token TASSIGNEXP TASSIGNLAND TASSIGNLOR TASSIGNMINUS TASSIGNMOD
 %token TASSIGNMULTIPLY TASSIGNPLUS TASSIGNREDUCE TASSIGNSL TASSIGNSR
-%token TBAND TBNOT TBOR TBXOR
+%token TBANG TBAND TBNOT TBOR TBXOR
 %token TCOLON TCOMMA
 %token TDIVIDE TDOT TDOTDOT TDOTDOTDOT
 %token TEQUAL TEXP TGREATER
@@ -343,7 +343,7 @@
 %token TLESS
 %token TLESSEQUAL
 %token TMINUS TMOD
-%token TNOT TNOTEQUAL
+%token TNOTEQUAL
 %token TOR
 %token TPLUS
 %token TQUESTION
@@ -376,7 +376,7 @@
 %left TSHIFTLEFT TSHIFTRIGHT
 %right TUPLUS TUMINUS
 %left TSTAR TDIVIDE TMOD
-%right TBNOT TNOT
+%right TBNOT TBANG
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
@@ -1227,7 +1227,7 @@ fn_ident:
 | TSHIFTRIGHT    { $$ = ">>"; }
 | TMOD           { $$ = "%"; }
 | TEXP           { $$ = "**"; }
-| TNOT           { $$ = "!"; }
+| TBANG          { $$ = "!"; }
 | TBY            { $$ = "chpl_by"; }
 | THASH          { $$ = "#"; }
 | TALIGN         { $$ = "chpl_align"; }
@@ -1990,7 +1990,7 @@ unary_op_expr:
 | TMINUS expr %prec TUMINUS       { $$ = new CallExpr("-", $2); }
 | TMINUSMINUS expr %prec TUMINUS  { $$ = buildPreDecIncWarning($2, '-'); }
 | TPLUSPLUS expr %prec TUPLUS     { $$ = buildPreDecIncWarning($2, '+'); }
-| TNOT expr                       { $$ = new CallExpr("!", $2); }
+| TBANG expr                      { $$ = new CallExpr("!", $2); }
 | TBNOT expr                      { $$ = new CallExpr("~", $2); }
 ;
 

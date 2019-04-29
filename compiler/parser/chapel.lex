@@ -243,7 +243,7 @@ zip              return processToken(yyscanner, TZIP);
 
 "&&"             return processToken(yyscanner, TAND);
 "||"             return processToken(yyscanner, TOR);
-"!"              return processToken(yyscanner, TNOT);
+"!"              return processToken(yyscanner, TBANG);
 
 "&"              return processToken(yyscanner, TBAND);
 "|"              return processToken(yyscanner, TBOR);
