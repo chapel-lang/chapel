@@ -88,7 +88,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     print "[gen_release] Confirm final Git source version used.\n";
     SystemOrDie("cd $rootdir && git status && git log -1");
 
-    if ($version eq "") {
+    if ($version eq "" or $version eq "developer") {
       print "[gen_release] Create BUILD_VERSION file.\n";
       SystemOrDie("cd $rootdir/compiler && make main/BUILD_VERSION");
     }
@@ -96,7 +96,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     print "[gen_release] Creating build workspace with git archive...\n";
     SystemOrDie("cd $rootdir && git archive --format=tar HEAD | (cd $archive_dir && tar -xf -)");
 
-    if ($version eq "") {
+    if ($version eq "" or $version eq "developer") {
       print "[gen_release] Copying BUILD_VERSION file.\n";
       SystemOrDie("cp $rootdir/compiler/main/BUILD_VERSION $archive_dir/compiler/main/BUILD_VERSION");
     }
