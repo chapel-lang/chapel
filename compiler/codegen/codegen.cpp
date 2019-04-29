@@ -32,6 +32,7 @@
 #include "llvmDebug.h"
 #include "llvmUtil.h"
 #include "LayeredValueTable.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -40,7 +41,6 @@
 #include "symbol.h"
 #include "view.h"
 #include "virtualDispatch.h"
-#include "mli.h"
 
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers

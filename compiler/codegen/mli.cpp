@@ -18,6 +18,7 @@
  */
 
 #include "mli.h"
+
 #include "library.h"
 #include "ModuleSymbol.h"
 #include "FnSymbol.h"
@@ -27,6 +28,7 @@
 #include "expr.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+
 #include <cstring>
 #include <map>
 #include <sstream>
@@ -137,8 +139,12 @@ std::string str(T value) {
 void codegenMultiLocaleInteropWrappers(void) {
   Vec<ModuleSymbol*> &mds = allModules;
 
-  // Insert all kinds of debug printlines into generated code for now.
-  MLIContext mli(true);
+  //
+  // TODO: Add a flag to the frontend to allow users to turn debug printlines
+  // on or off (if off, no debug messages will be inserted into the generated
+  // code.
+  //
+  MLIContext mli(false);
 
   mli.emitClientPrelude();
   mli.emitServerPrelude();
