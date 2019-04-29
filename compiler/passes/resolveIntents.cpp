@@ -43,6 +43,7 @@ static IntentTag constIntentForType(Type* t) {
       t == dtCVoidPtr ||
       t == dtCFnPtr ||
       t == dtVoid ||
+      t == dtNothing ||
       t->symbol->hasFlag(FLAG_RANGE) ||
       isManagedPtrType(t) ||
       // MPF: This rule seems odd to me
@@ -116,6 +117,7 @@ IntentTag blankIntentForType(Type* t) {
              t == dtTaskID                           ||
              t == dtFile                             ||
              t == dtNil                              ||
+             t == dtNothing                          ||
              t == dtOpaque                           ||
              t == dtVoid                             ||
              t->symbol->hasFlag(FLAG_DOMAIN)         ||

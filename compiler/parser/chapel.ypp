@@ -315,7 +315,7 @@
 %token TIF TIMAG TIN TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
-%token TNEW TNIL TNOINIT TNOTHING
+%token TNEW TNIL TNOINIT
 %token TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
 %token TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
@@ -1528,7 +1528,6 @@ opt_ret_type:
 | TCOLON type_level_expr  { $$ = $2; }
 | TCOLON ret_array_type   { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = new UnresolvedSymExpr($2); }
-| TCOLON TNOTHING         { $$ = new SymExpr(gNothing); }
 | error                   { $$ = NULL; }
 ;
 

@@ -838,7 +838,7 @@ void VarSymbol::codegenDef() {
   // generated for extern or void types
   if (this->hasFlag(FLAG_EXTERN))
     return;
-  if (type == dtVoid)
+  if (type == dtVoid || type == dtNothing)
     return;
 
   // Check sizes for c_array

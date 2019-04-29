@@ -165,7 +165,6 @@ module           return processToken(yyscanner, TMODULE);
 new              return processToken(yyscanner, TNEW);
 nil              return processToken(yyscanner, TNIL);
 noinit           return processToken(yyscanner, TNOINIT);
-nothing          return processToken(yyscanner, TNOTHING);
 on               return processToken(yyscanner, TON);
 only             return processToken(yyscanner, TONLY);
 otherwise        return processToken(yyscanner, TOTHERWISE);
