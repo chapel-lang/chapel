@@ -1,9 +1,17 @@
 use util;
 use BlockDist;
+use StencilDist;
 
 config const n = 60;
 
 config const debug = false;
+
+config param distType = DistType.block;
+
+enum DistType {
+  block,
+  stencil
+}
 
 proc printDebug(msg: string...) {
   if debug then writeln((...msg));
@@ -30,10 +38,18 @@ proc buildRankChange(Dom : domain, param first : bool) {
   }
 }
 
+proc makeFluff(param rank : int, val : int) {
+  var ret : rank*int;
+  for i in 1..rank do ret(i) = val;
+  return ret;
+}
+
 proc testCore(DestDom : domain, DestLocales : [],
               SrcDom  : domain, SrcLocales  : []) {
-  const AD = DestDom dmapped Block(DestDom, DestLocales);
-  const BD = SrcDom dmapped Block(SrcDom, SrcLocales);
+  const AD = if distType == DistType.block then DestDom dmapped Block(DestDom, DestLocales)
+             else DestDom dmapped Stencil(DestDom, DestLocales, fluff=makeFluff(DestDom.rank, 1));
+  const BD = if distType == DistType.block then SrcDom dmapped Block(SrcDom, SrcLocales)
+             else SrcDom dmapped Stencil(SrcDom, SrcLocales, fluff=makeFluff(SrcDom.rank, 1));
 
   var A : [AD] int;
   var B : [BD] int;
