@@ -1372,22 +1372,18 @@ static void setMultiLocaleInterop() {
 
   if (strcmp(CHPL_COMM, "gasnet") != 0) {
     USR_FATAL("Multi-locale libraries are only supported on gasnet");
-    return;
   }
 
   if (llvmCodegen) {
     USR_FATAL("Multi-locale libraries do not support --llvm");
-    return;
   }
 
   if (fLibraryPython) {
     USR_FATAL("Multi-locale libraries do not support --library-python");
-    return;
   }
 
   if (fLibraryFortran) {
     USR_FATAL("Multi-locale libraries do not support --library-fortran");
-    return;
   }
 
   fMultiLocaleInterop = true;

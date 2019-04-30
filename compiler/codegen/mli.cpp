@@ -142,7 +142,7 @@ void codegenMultiLocaleInteropWrappers(void) {
   //
   // TODO: Add a flag to the frontend to allow users to turn debug printlines
   // on or off (if off, no debug messages will be inserted into the generated
-  // code.
+  // code).
   //
   MLIContext mli(false);
 
