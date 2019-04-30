@@ -680,11 +680,15 @@ module ChapelDistribution {
       return nil;
     }
 
+    // takes 'rmFromList' which indicates whether the array should
+    // be removed from the domain's list or just decremented from
+    // its count of other arrays.
+    //
     // returns (arr, dom)
     // arr is this if it should be deleted, or nil.
     // dom is a domain that should be removed, or nil.
     pragma "dont disable remote value forwarding"
-    proc remove(param isSlice: bool) {
+    proc remove(param rmFromList: bool) {
       var ret_arr = this; // this array is always deleted
       var ret_dom:unmanaged BaseDom = nil;
       var rm_dom = false;
@@ -692,7 +696,7 @@ module ChapelDistribution {
       var dom = dsiGetBaseDom();
       // Remove the array from the domain
       // and find out if the domain should be removed.
-      rm_dom = dom.remove_arr(_to_unmanaged(this), !isSlice);
+      rm_dom = dom.remove_arr(_to_unmanaged(this), rmFromList);
 
       if rm_dom then
         ret_dom = dom;
@@ -963,8 +967,7 @@ module ChapelDistribution {
     delete dom;
   }
 
-  proc _delete_arr(arr: unmanaged BaseArr, param privatized:bool,
-                   param keepInList = true) {
+  proc _delete_arr(arr: unmanaged BaseArr, param privatized:bool) {
     // array implementation can destroy data or other members
     arr.dsiDestroyArr();
 

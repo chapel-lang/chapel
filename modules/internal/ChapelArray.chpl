@@ -1095,7 +1095,7 @@ module ChapelArray {
     }*/
 
 
-    // TODO: we *SHOULD* be allowed to query the type of '_instance' directly
+    // TODO: we *SHOULD* be allowed to query param properties from a type....
     // This function may not use any run-time type information passed to it
     // in the form of the 'this' argument. Static/param information is OK.
     // TODO: only consider DR case for now
@@ -2354,36 +2354,33 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc this(dom: domain) {
-      if dom.rank == rank {
-        if boundsChecking then
-          checkSlice(dom);
+    proc this(d: domain) {
+      if d.rank != rank then
+        compilerError("slicing an array with a domain of a different rank");
 
-        //
-        // If this is already a slice array view, we can short-circuit
-        // down to the underlying array.
-        //
-        const (arr, arrpid) = if (_value.isSliceArrayView())
+      if boundsChecking then
+        checkSlice(d);
+
+      //
+      // If this is already a slice array view, we can short-circuit
+      // down to the underlying array.
+      //
+      const (arr, arrpid) = if (_value.isSliceArrayView())
                               then (this._value.arr, this._value._ArrPid)
                               else (this._value, this._pid);
 
-        var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
-                                                _DomPid=dom._pid,
-                                                dom=dom._instance,
-                                                _ArrPid=arrpid,
-                                                _ArrInstance=arr);
+      var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
+                                              _DomPid=d._pid,
+                                              dom=d._instance,
+                                              _ArrPid=arrpid,
+                                              _ArrInstance=arr);
 
-        /*
-        writeln("About to add a new slice");
-        writeln(a.isSliceArrayView());
-        */
-        // lock since we're referring to an existing domain; but don't
-        // put it in the list since we'll never do an array reallocate
-        // for a slice view
-        dom._value.add_arr(a, locking=true, addToList=false);
-        return _newArray(a);
-      } else
-        compilerError("slicing an array with a domain of a different rank");
+      // lock since we're referring to an existing domain; but don't
+      // add this array to the domain's list of arrays since resizing
+      // a slice's domain shouldn't generate a reallocate call for the
+      // underlying array
+      d._value.add_arr(a, locking=true, addToList=false);
+      return _newArray(a);
     }
 
     pragma "no doc"
@@ -2426,6 +2423,9 @@ module ChapelArray {
                                     _ArrInstance=arr);
 
       // this doesn't need to lock since we just created the domain d
+      // don't add this array to the domain's list of arrays since
+      // resizing a slice's domain shouldn't generate a reallocate
+      // call for the underlying array
       d._value.add_arr(a, locking=false, addToList=false);
       return _newArray(a);
     }
@@ -3336,7 +3336,8 @@ module ChapelArray {
   inline proc _do_destroy_arr(_unowned: bool, _instance) {
     if ! _unowned {
       on _instance {
-        var (arrToFree, domToRemove) = _instance.remove(_instance.isSliceArrayView());
+        param arrIsInList = !_instance.isSliceArrayView();
+        var (arrToFree, domToRemove) = _instance.remove(arrIsInList);
         var domToFree:unmanaged BaseDom = nil;
         var distToRemove:unmanaged BaseDist = nil;
         var distToFree:unmanaged BaseDist = nil;
