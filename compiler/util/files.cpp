@@ -713,16 +713,12 @@ std::string genMakefileEnvCache(void) {
 void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
                       bool skip_compile_link,
                       const std::vector<const char*>& splitFiles) {
-  const char* mli_client = astr(intDirName, "/", "chpl_mli_client.c");
-  const char* mli_server = astr(intDirName, "/", "chpl_mli_server.c");
   const char* tmpDirName = intDirName;
   const char* strippedExeFilename = stripdirectories(executableFilename);
   const char* exeExt = getLibraryExtension();
   const char* tmpserver = "";
   const char* tmpbin = "";
-  const char* clientcflags = fLinkStyle == LS_DYNAMIC
-      ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
-  bool startsWithLib = false;
+  bool startsWithLib = !strncmp(executableFilename, "lib", 3);
   std::string makeallvars;
   fileinfo makefile;
 
@@ -750,14 +746,11 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   if (fLibraryCompile) {
 
-    // Compute the actual value of startsWithLib now.
-    startsWithLib = !strncmp(executableFilename, "lib", 3);
-    ensureLibDirExists();
-
     //
     // In --library compilation, put the generated library in the library
     // directory.
     //
+    ensureLibDirExists();
     fprintf(makefile.fptr, "BINNAME = %s/", libDir);
     if (!startsWithLib) { fprintf(makefile.fptr, "lib"); }
     fprintf(makefile.fptr, "%s%s\n\n", executableFilename, exeExt);
@@ -819,6 +812,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Compiler flags for each deliverable.
   if (fMultiLocaleInterop) {
+
+    const char* clientcflags = fLinkStyle == LS_DYNAMIC
+      ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
+
     fprintf(makefile.fptr, "COMP_GEN_CLIENT_CFLAGS = %s %s %s\n",
             clientcflags,
             includedirs.c_str(),
@@ -866,15 +863,21 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     }
   // Take this block if we are NOT multi-locale interop.
   } else {
-    const char* lflags = "";
-    bool dyn = (fLinkStyle == LS_DYNAMIC);
+
+    const char* lmode = "";
     if (!fLibraryCompile) {
-      lflags = dyn ? "$(GEN_DYNAMIC_FLAG)" : "$(GEN_STATIC_FLAG)";
+      // Important that _no_ RHS is produced when link style is default!
+      if (fLinkStyle == LS_DYNAMIC) {
+        lmode = "$(GEN_DYNAMIC_FLAG)";
+      } else if (fLinkStyle == LS_STATIC) {
+        lmode = "$(GEN_STATIC_FLAG)";
+      }
     } else {
-      lflags = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
+      bool dyn = (fLinkStyle == LS_DYNAMIC);
+      lmode = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
     }
 
-    fprintf(makefile.fptr, "COMP_GEN_LFLAGS =%s", lflags);
+    fprintf(makefile.fptr, "COMP_GEN_LFLAGS =%s", lmode);
     fprintf(makefile.fptr, " %s\n", ldflags.c_str());
   }
 
@@ -892,7 +895,11 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   }
   fprintf(makefile.fptr, "\n\n");
 
+  // List source files needed to compile this deliverable.
   if (fMultiLocaleInterop) {
+
+    const char* mli_client = astr(intDirName, "/", "chpl_mli_client.c");
+    const char* mli_server = astr(intDirName, "/", "chpl_mli_server.c");
 
     // Only one source file for client (for now).
     fprintf(makefile.fptr, "CHPLSRC = \\\n");
@@ -907,6 +914,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
   }
 
+  // List object files needed to compile this deliverable.
   fprintf(makefile.fptr, "CHPLUSEROBJ = \\\n");
   for (size_t i = 0; i < splitFiles.size(); i++) {
     fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
@@ -916,6 +924,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   genCFiles(makefile.fptr);
   genObjFiles(makefile.fptr);
   
+  // List libraries/locations needed to compile this deliverable.
   fprintf(makefile.fptr, "\nLIBS =");
   for_vector(const char, dirName, libDirs) {
     fprintf(makefile.fptr, " -L%s", dirName);
