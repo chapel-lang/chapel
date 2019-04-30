@@ -1,0 +1,1 @@
+helperFiles/helperMod.chpl --main-module requireInDiffDir2

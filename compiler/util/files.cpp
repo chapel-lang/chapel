@@ -271,6 +271,19 @@ const char* genIntermediateFilename(const char* filename) {
   return astr(intDirName, slash, filename);
 }
 
+const char* getDirectory(const char* filename) {
+  const char* filenamebase = strrchr(filename, '/');
+  if (filenamebase == NULL) {
+    return astr(".");
+  } else {
+    char dir[FILENAME_MAX];
+    const int len = filenamebase - filename;
+    strncpy(dir, filename, len);
+    dir[len] = '\0';
+    return astr(dir);
+  }
+}
+
 const char* stripdirectories(const char* filename) {
   const char* filenamebase = strrchr(filename, '/');
 
@@ -467,8 +480,49 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     USR_FATAL("Command line contains no .chpl source files");
 }
 
-void addSourceFile(const char* filename) {
-  const char* filenamearr[1] = {filename};
+static const char* addCurrentDirToSourceFile(const char* filename,
+                                             const char* modFilename) {
+  // Do nothing if modFilename is NULL
+  if (modFilename == NULL) {
+    return filename;
+  }
+
+  // Do nothing if the filename is already absolute
+  if (filename[0] == '/') {
+    return filename;
+  }
+
+  // Do nothing if the current module's directory is "./"
+  const char* modDir = getDirectory(modFilename);
+  if (strcmp(modDir, ".") == 0) {
+    return filename;
+  }
+
+  // If the file is a .c or .o...
+  if (isCSource(filename) || isObjFile(filename)) {
+    // ...and it isn't already an absolute path, add the module directory
+    return astr(modDir, "/", filename);
+  }
+
+  // If the file is a .h, add the module's directory to the -I path
+  if (isCHeader(filename)) {
+    for_vector(const char, dir, incDirs) {
+      if (dir == modDir) {
+        // we've already added this -I directory, so don't do it again
+        return filename;
+      }
+    }
+    addIncInfo(modDir);
+    return filename;
+  }
+
+  // otherwise, leave it as-is
+  return filename;
+}
+
+void addSourceFile(const char* filename, const char* modFilename) {
+  const char* filenamearr[1] = { addCurrentDirToSourceFile(filename,
+                                                           modFilename)};
   addSourceFiles(1, filenamearr);
 }
 
