@@ -1048,10 +1048,7 @@ void init_fixedHeap(void) {
     return;
 
   //
-  // On XE systems you have to use hugepages, and on XC systems you
-  // really ought to.
-  //
-  // TODO: differentiate and do the right thing for XE.
+  // On XC systems you really ought to use hugepages.
   //
   size_t page_size;
   chpl_bool have_hugepages;
@@ -1068,11 +1065,10 @@ void init_fixedHeap(void) {
   }
 
   if ((size = chpl_comm_getenvMaxHeapSize()) == 0) {
-    size = (size_t) 16 << 30;  // TODO: different for XE?
+    size = (size_t) 16 << 30;
   }
 
   size = ALIGN_UP(size, page_size);
-
 
   //
   // The heap is supposed to be of fixed size and on hugepages.  Set
@@ -1085,41 +1081,12 @@ void init_fixedHeap(void) {
   //
   // Considering the data size we'll register, compute the maximum
   // heap size that will allow all registrations to fit in the NIC
-  // TLB.  Except on Gemini only, aim for only 95% of what will fit
-  // because there we'll get an error if we go over.
+  // TLB.
   //
-#if 0 // TODO: assume Aries; allows deeper testing
-  if (nic_type == GNI_DEVICE_GEMINI) {
-    const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
-    nic_max_mem = nic_max_pages * page_size;
-    nic_mem_map_limit = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
-  } else {
-#endif
-    const size_t nic_TLB_cache_pages = 512; // not publicly defined
-    nic_max_mem = nic_TLB_cache_pages * page_size;
-    nic_mem_map_limit = nic_max_mem;
-#if 0 // TODO: assume Aries; allows deeper testing
-  }
-#endif
-
-#if 0 // TODO: assume Aries; allows deeper testing
-  {
-    uint64_t  addr;
-    uint64_t  len;
-    size_t    data_size;
-
-    data_size = 0;
-    while (get_next_rw_memory_range(&addr, &len, NULL, 0))
-      data_size += ALIGN_UP(len, page_size);
-
-    if (data_size >= nic_mem_map_limit)
-      max_heap_size = 0;
-    else
-      max_heap_size = nic_mem_map_limit - data_size;
-  }
-#else
+  const size_t nic_TLB_cache_pages = 512; // not publicly defined
+  nic_max_mem = nic_TLB_cache_pages * page_size;
+  nic_mem_map_limit = nic_max_mem;
   max_heap_size = nic_mem_map_limit;
-#endif
 
   //
   // As a hedge against silliness, first reduce any request so that it's
@@ -1131,31 +1098,6 @@ void init_fixedHeap(void) {
   const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
   if (size > size_phys)
     size = size_phys;
-
-#if 0 // TODO: assume Aries; allows deeper testing
-  //
-  // On Gemini-based systems, if necessary reduce the heap size until
-  // we can fit all the registered pages in the NIC TLB.  Otherwise,
-  // we'll get GNI_RC_ERROR_RESOURCE when we try to register memory.
-  // Warn about doing this.
-  //
-  if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
-    if (chpl_nodeID == 0) {
-      char buf1[20], buf2[20], buf3[20], msg[200];
-      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
-      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
-      chpl_snprintf_KMG_f(buf3, sizeof(buf3), max_heap_size);
-      (void) snprintf(msg, sizeof(msg),
-                      "Gemini TLB can cover %s with %s pages; heap "
-                      "reduced to %s to fit",
-                      buf1, buf2, buf3);
-      chpl_warning(msg, 0, 0);
-    }
-
-    if (nic_type == GNI_DEVICE_GEMINI)
-      size = max_heap_size;
-  }
-#endif
 
   //
   // Work our way down from the starting size in (roughly) 5% steps
@@ -1185,11 +1127,11 @@ void init_fixedHeap(void) {
              have_hugepages ? "huge" : "regular ", start, size);
 
   //
-  // On Aries-based systems, warn if the size is larger than what will
-  // fit in the TLB cache.  But since that may reduce performance but
-  // won't affect function, don't reduce the size to fit.
+  // Warn if the size is larger than what will fit in the TLB cache.
+  // But since that may reduce performance but won't affect function,
+  // don't reduce the size to fit.
   //
-  if (/*nic_type == GNI_DEVICE_ARIES &&*/ size > max_heap_size) { // TODO: assume Aries; allows deeper testing
+  if (size > max_heap_size) {
     if (chpl_nodeID == 0) {
       char buf1[20], buf2[20], buf3[20], msg[200];
       chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
