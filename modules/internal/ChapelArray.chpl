@@ -3336,7 +3336,7 @@ module ChapelArray {
   inline proc _do_destroy_arr(_unowned: bool, _instance) {
     if ! _unowned {
       on _instance {
-        var (arrToFree, domToRemove) = _instance.remove();
+        var (arrToFree, domToRemove) = _instance.remove(_instance.isSliceArrayView());
         var domToFree:unmanaged BaseDom = nil;
         var distToRemove:unmanaged BaseDist = nil;
         var distToFree:unmanaged BaseDist = nil;

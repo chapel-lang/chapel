@@ -684,7 +684,7 @@ module ChapelDistribution {
     // arr is this if it should be deleted, or nil.
     // dom is a domain that should be removed, or nil.
     pragma "dont disable remote value forwarding"
-    proc remove() {
+    proc remove(param isSlice: bool) {
       var ret_arr = this; // this array is always deleted
       var ret_dom:unmanaged BaseDom = nil;
       var rm_dom = false;
@@ -692,7 +692,7 @@ module ChapelDistribution {
       var dom = dsiGetBaseDom();
       // Remove the array from the domain
       // and find out if the domain should be removed.
-      rm_dom = dom.remove_arr(_to_unmanaged(this), this.isSliceArrayView());
+      rm_dom = dom.remove_arr(_to_unmanaged(this), !isSlice);
 
       if rm_dom then
         ret_dom = dom;
