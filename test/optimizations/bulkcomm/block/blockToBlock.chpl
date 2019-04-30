@@ -31,10 +31,10 @@ proc buildRankChange(Dom : domain, param first : bool) {
   var r : (Dom.rank-1) * Dom.dim(1).type;
   if first {
     for param i in 2..Dom.rank do r(i-1) = Dom.dim(i);
-    return (Dom.dim(1), (...r));
+    return (Dom.dim(1).first, (...r));
   } else {
     for param i in 1..Dom.rank-1 do r(i) = Dom.dim(i);
-    return ((...r), Dom.dim(Dom.rank));
+    return ((...r), Dom.dim(Dom.rank).first);
   }
 }
 
@@ -101,10 +101,11 @@ proc testCore(DestDom : domain, DestLocales : [],
 proc testDim(param rank : int, DestLocales : [], SrcLocales : []) {
   printDebug("  ----- rank=", rank:string, " -----");
   var denseRanges : rank*range;
-  for i in 1..rank do denseRanges(i) = 1..n;
+  const len = if rank <= 2 then n else n/3;
+  for i in 1..rank do denseRanges(i) = 1..len;
 
   var stridedRanges : rank*range(stridable=true);
-  for i in 1..rank do stridedRanges(i) = 1.. by (i + 1) # n;
+  for i in 1..rank do stridedRanges(i) = 1.. by (i + 1) # len;
 
   const Dense = {(...denseRanges)};
   const Strided = {(...stridedRanges)};
