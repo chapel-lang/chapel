@@ -85,7 +85,7 @@ void chpl_comm_ofi_oob_barrier(void) {
 }
 
 
-void chpl_comm_ofi_oob_allgather(void* const in, void* out, size_t len) {
+void chpl_comm_ofi_oob_allgather(const void* in, void* out, size_t len) {
   if (chpl_numNodes == 1) {
     chpl_memcpy(out, in, len);
   } else {
