@@ -1103,11 +1103,13 @@ module Random {
       pragma "no doc"
       var PCGRandomStreamPrivate_lock$: if parSafe then sync bool else void;
       pragma "no doc"
+      pragma "dont disable remote value forwarding"
       inline proc _lock() {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
       }
       pragma "no doc"
+      pragma "dont disable remote value forwarding"
       inline proc _unlock() {
         if parSafe then
           PCGRandomStreamPrivate_lock$;
@@ -2506,11 +2508,13 @@ module Random {
       pragma "no doc"
       var NPBRandomStreamPrivate_lock$: if parSafe then sync bool else void;
       pragma "no doc"
+      pragma "dont disable remote value forwarding"
       inline proc _lock() {
         if parSafe then
           NPBRandomStreamPrivate_lock$ = true;
       }
       pragma "no doc"
+      pragma "dont disable remote value forwarding"
       inline proc _unlock() {
         if parSafe then
           NPBRandomStreamPrivate_lock$;

@@ -972,6 +972,7 @@ module DefaultRectangular {
                                               stridable);
     var RADLocks: [targetLocDom] chpl__processorAtomicType(bool); // only accessed locally
 
+    pragma "dont disable remote value forwarding"
     proc init(type eltType, param rank: int, type idxType,
               param stridable: bool, newTargetLocDom: domain(rank)) {
       this.eltType = eltType;
