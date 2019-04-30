@@ -2377,8 +2377,10 @@ module ChapelArray {
         writeln("About to add a new slice");
         writeln(a.isSliceArrayView());
         */
-        // lock since we're referring to an existing domain
-        dom._value.add_arr(a, locking=true);
+        // lock since we're referring to an existing domain; but don't
+        // put it in the list since we'll never do an array reallocate
+        // for a slice view
+        dom._value.add_arr(a, locking=true, addToList=false);
         return _newArray(a);
       } else
         compilerError("slicing an array with a domain of a different rank");
@@ -2424,7 +2426,7 @@ module ChapelArray {
                                     _ArrInstance=arr);
 
       // this doesn't need to lock since we just created the domain d
-      d._value.add_arr(a, locking=false);
+      d._value.add_arr(a, locking=false, addToList=false);
       return _newArray(a);
     }
 
