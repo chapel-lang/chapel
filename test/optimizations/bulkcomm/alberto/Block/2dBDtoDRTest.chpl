@@ -16,8 +16,8 @@ writeln(" DR defining in ",{1..n,1..n});
 writeln(" BD defining in ",{1..n,1..n});
 writeln();
 
-H = 1..;
-C =500..;
+H = [(i,j) in H.domain] (i-1)*n + j;
+C = [(i,j) in Dom1] (i-1)*n + j + 499;
 //H is BD
 //C is DR
 
