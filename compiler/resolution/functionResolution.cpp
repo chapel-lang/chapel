@@ -5003,8 +5003,7 @@ static void resolveInitVar(CallExpr* call) {
 
         resolveCall(call);
       } else {
-        USR_WARN(call, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
-        USR_PRINT(call->resolvedFunction(), "this initializer was resolved as the copy-initializer.");
+        USR_WARN(call->resolvedFunction(), "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
       }
 
       if (at->hasPostInitializer() == true) {
