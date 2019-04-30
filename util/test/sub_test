@@ -736,10 +736,10 @@ timeoutsuffix  = PerfSfx('timeout')   # .timeout  or .perftimeout  or ...
 
 # Get global timeout
 if os.getenv('CHPL_TEST_VGRND_COMP')=='on' or os.getenv('CHPL_TEST_VGRND_EXE')=='on':
-    globalTimeout=1000
+    defaultTimeout=1000
 else:
-    globalTimeout=300
-globalTimeout = int(os.getenv('CHPL_TEST_TIMEOUT', globalTimeout))
+    defaultTimeout=300
+globalTimeout = int(os.getenv('CHPL_TEST_TIMEOUT', defaultTimeout))
 
 # get a threshold for which to report long running tests
 if os.getenv("CHPL_TEST_EXEC_TIME_WARN_LIMIT"):
@@ -754,10 +754,11 @@ else:
     execTimeSkipTrials = 0
 
 # directory level timeout
+directoryTimeout = globalTimeout
 if os.access('./TIMEOUT',os.R_OK):
-    directoryTimeout = ReadIntegerValue('./TIMEOUT', localdir)
-else:
-    directoryTimeout = globalTimeout
+    fileTimeout = ReadIntegerValue('./TIMEOUT', localdir)
+    if fileTimeout < defaultTimeout or fileTimeout > globalTimeout:
+        directoryTimeout = fileTimeout
 # sys.stdout.write('globalTimeout=%d\n'%(globalTimeout))
 
 # Check for global PERFTIMEEXEC option
@@ -1186,8 +1187,10 @@ for testname in testsrc:
                 break
 
         elif (suffix==timeoutsuffix and os.access(f, os.R_OK)):
-            timeout=ReadIntegerValue(f, localdir)
-            sys.stdout.write('[Overriding default timeout with %d]\n'%(timeout))
+            fileTimeout = ReadIntegerValue(f, localdir)
+            if fileTimeout < defaultTimeout or fileTimeout > globalTimeout:
+                timeout = fileTimeout
+                sys.stdout.write('[Overriding default timeout with %d]\n'%(timeout))
         elif (perftest and suffix==PerfSfx('timeexec') and os.access(f, os.R_OK)): #e.g. .perftimeexec
             timer = GetTimer(f)
 

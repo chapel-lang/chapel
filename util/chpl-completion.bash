@@ -47,7 +47,6 @@ _chpl ()
 --debug \
 --debug-short-loc \
 --default-dist \
---default-unmanaged \
 --denormalize \
 --devel \
 --div-by-zero-checks \
@@ -91,7 +90,6 @@ _chpl ()
 --interprocedural-alias-analysis \
 --launcher \
 --ldflags \
---legacy-new \
 --lib-linkage \
 --lib-search-path \
 --library \
@@ -147,7 +145,6 @@ _chpl ()
 --no-dead-code-elimination \
 --no-debug \
 --no-debug-short-loc \
---no-default-unmanaged \
 --no-denormalize \
 --no-devel \
 --no-div-by-zero-checks \
@@ -169,7 +166,6 @@ _chpl ()
 --no-inline \
 --no-inline-iterators \
 --no-interprocedural-alias-analysis \
---no-legacy-new \
 --no-lifetime-checking \
 --no-live-analysis \
 --no-llvm \

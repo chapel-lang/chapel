@@ -391,7 +391,8 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
 // (i.e., function resolution time) then we add the string to our list
 // of library information or to our list of source files.
 //
-bool processStringInRequireStmt(const char* str, bool parseTime) {
+bool processStringInRequireStmt(const char* str, bool parseTime,
+                                const char* modFilename) {
   if (strncmp(str, "-l", 2) == 0) {
     if (!parseTime) {
       addLibFile(str+2); // skip past '-l'
@@ -400,7 +401,7 @@ bool processStringInRequireStmt(const char* str, bool parseTime) {
   } else {
     if (isChplSource(str)) {
       if (parseTime) {
-        addSourceFile(str);
+        addSourceFile(str, NULL);
         return true;
       } else {
         USR_FATAL("'require' cannot handle non-literal '.chpl' files");
@@ -408,7 +409,7 @@ bool processStringInRequireStmt(const char* str, bool parseTime) {
       }
     } else {
       if (!parseTime) {
-        addSourceFile(str);
+        addSourceFile(str, modFilename);
         return true;
       }
     }
@@ -527,7 +528,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
     // if this is a string literal, process it if we should
     //
     if (const char* str = toImmediateString(useArg)) {
-      if (processStringInRequireStmt(str, true)) {
+      if (processStringInRequireStmt(str, true, yyfilename)) {
         continue;
       }
     }

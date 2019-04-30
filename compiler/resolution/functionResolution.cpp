@@ -5761,9 +5761,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         } else if (isUnmanagedClassType(type)) {
           manager = dtUnmanaged;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
-          if (fLegacyNew == false && fDefaultUnmanaged == false) {
-            manager = dtBorrowed;
-          }
+          manager = dtBorrowed;
         }
       }
 
