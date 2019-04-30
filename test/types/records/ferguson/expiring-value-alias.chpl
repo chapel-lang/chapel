@@ -31,8 +31,8 @@ proc R.init(aliasing:unmanaged C) {
   this.isowned = false;
 }
 
-proc R.init(other:R) {
-  if debug then writeln("  R.init(R) from ", getNum(other.c));
+proc R.init=(other:R) {
+  if debug then writeln("  R.init=(R) from ", getNum(other.c));
   this.c = new unmanaged C(other.c.x);
   this.isowned = true;
 }

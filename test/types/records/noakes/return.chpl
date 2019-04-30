@@ -28,7 +28,7 @@ record Rec
       writeln("Constructing Rec       id:  ", id);
   }
 
-  proc init(other: Rec) {
+  proc init=(other: Rec) {
     sID          = sID + 1;
     sAllocated   = sAllocated + 1;
 

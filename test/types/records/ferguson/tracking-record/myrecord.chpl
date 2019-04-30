@@ -29,8 +29,8 @@ proc R.init(x : int = 0, c : unmanaged C = nil) {
   this.setup(x, true);
 }
 
-proc R.init(other:R) {
-  if debug then writeln("in R.init(", other, ")");
+proc R.init=(other:R) {
+  if debug then writeln("in R.init=(", other, ")");
   this.complete();
   this.setup(other.x, true);
 }

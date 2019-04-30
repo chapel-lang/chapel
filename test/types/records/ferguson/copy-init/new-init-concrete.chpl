@@ -8,9 +8,9 @@ proc R.init(x:int)
   this.x = x;
 }
 
-proc R.init(from:R)
+proc R.init=(from:R)
 {
-  writeln("In R.init");
+  writeln("In R.init=");
   this.x = from.x;
 }
 
@@ -21,9 +21,6 @@ proc run() {
   writeln("copy-initializing");
   var copy1 = r;
   writeln("copy1 ", copy1);
-  writeln("explicitly copy-initializing");
-  var copy2 = new R(r);
-  writeln("copy2 ", copy2);
   writeln("r ", r);
 }
 
