@@ -438,8 +438,8 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     return actualType;
   }
 
-  if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
-    AggregateType* actualC = actualMt->getCanonicalClass();
+  if (DecoratedClassType* actualDt = toDecoratedClassType(actualType)) {
+    AggregateType* actualC = actualDt->getCanonicalClass();
     if (canInstantiate(actualC, formalType))
       return actualC;
   }

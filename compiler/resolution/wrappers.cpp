@@ -1129,16 +1129,21 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
 }
 
 static bool isUnmanagedClass(Type* t) {
-  if (isUnmanagedClassType(t))
-    return true;
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (dt->isUnmanaged())
+      return true;
 
   return false;
 }
 static bool isBorrowClass(Type* t) {
-  if (isUnmanagedClassType(t))
-    return false;
-  else if (isClass(t))
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    if (dt->isUnmanaged())
+      return false;
+    else
+      return true;
+  } else if (isClass(t)) {
     return true;
+  }
 
   return false;
 }

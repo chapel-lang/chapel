@@ -969,7 +969,7 @@ bool isClassOrNil(Type* t) {
 }
 
 bool isClassLike(Type* t) {
-  return isClass(t) || isUnmanagedClassType(t);
+  return isClass(t) || isDecoratedClassType(t);
 }
 
 bool isClassLikeOrNil(Type* t) {

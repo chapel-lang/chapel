@@ -643,18 +643,27 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtUnmanaged && isUnmanagedClassType(actualType))
-    return true;
+  if (formalType == dtUnmanaged)
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isUnmanaged())
+        return true;
 
   // handle unmanaged GenericClass(int) -> unmanaged GenericClass
-  if (isUnmanagedClassType(formalType) && isUnmanagedClassType(actualType) &&
-      canInstantiate(canonicalClassType(actualType),
-                     canonicalClassType(formalType)))
-    return true;
+  if (isDecoratedClassType(formalType) && isDecoratedClassType(actualType))
+    if (classesWithSameKind(formalType, actualType))
+      if (canInstantiate(canonicalClassType(actualType),
+                         canonicalClassType(formalType)))
+        return true;
 
-  if (formalType == dtBorrowed && isClass(actualType) &&
-     (actualType == dtObject || !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
-    return true;
+  if (formalType == dtBorrowed) {
+    if (isClass(actualType) &&
+        (actualType == dtObject ||
+         !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
+      return true;
+    else if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isBorrowed())
+        return true;
+  }
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
 
@@ -1027,10 +1036,10 @@ bool canCoerce(Type*     actualType,
   }
 
   // Handle coercions from unmanaged -> borrow
-  if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
+  if (DecoratedClassType* actualDt = toDecoratedClassType(actualType)) {
     if (AggregateType* formalC = toAggregateType(formalType)) {
       if (isClass(formalC)) {
-        AggregateType* actualC = actualMt->getCanonicalClass();
+        AggregateType* actualC = actualDt->getCanonicalClass();
         if (canDispatch(actualC, NULL, formalC, fn, promotes, paramNarrows))
           return true;
       }
@@ -1140,16 +1149,17 @@ bool doCanDispatch(Type*     actualType,
 
   } else {
     AggregateType* at = toAggregateType(actualType);
-    bool isunmanaged = false;
-    if (UnmanagedClassType* mt = toUnmanagedClassType(actualType)) {
-      isunmanaged = true;
-      at = mt->getCanonicalClass();
+    ClassTypeDecorator decorator = CLASS_TYPE_UNDECORATED;
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType)) {
+      decorator = dt->getDecorator();
+      at = dt->getCanonicalClass();
     }
 
     if (at) {
       forv_Vec(AggregateType, parent, at->dispatchParents) {
         Type* useParent = parent;
-        if (isunmanaged) useParent = parent->getUnmanagedClass();
+        if (decorator != CLASS_TYPE_UNDECORATED)
+          useParent = parent->getDecoratedClass(decorator);
         if (useParent == formalType ||
             doCanDispatch(useParent,
                           NULL,
@@ -5784,8 +5794,11 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       if (manager == NULL) {
         if (isManagedPtrType(type)) {
           manager = type;
-        } else if (isUnmanagedClassType(type)) {
-          manager = dtUnmanaged;
+        } else if (DecoratedClassType* dt = toDecoratedClassType(type)) {
+          if (dt->isUnmanaged())
+            manager = dtUnmanaged;
+          else
+            manager = dtOwned;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
           manager = dtOwned;
         }
@@ -5819,7 +5832,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
 
         // Use the canonical class to simplify the rest of initializer
         // resolution
-        if (UnmanagedClassType* mt = toUnmanagedClassType(type)) {
+        if (DecoratedClassType* mt = toDecoratedClassType(type)) {
           at = mt->getCanonicalClass();
         // For records, just ignore the manager
         // e.g. to support 'new owned MyRecord'
@@ -5913,7 +5926,9 @@ static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager
 
     if (manager == dtOwned || isSubTypeOrInstantiation(newType, dtOwned))
       owned = true;
-    else if (manager == dtUnmanaged || isUnmanagedClassType(newType))
+    else if (manager == dtUnmanaged ||
+            (isDecoratedClassType(newType) &&
+             toDecoratedClassType(newType)->isUnmanaged()))
       unmanaged = true;
     else if (manager == NULL)
       undecorated = true;
@@ -5977,8 +5992,9 @@ static bool isManagedPointerInit(SymExpr* typeExpr) {
   if (isManagedPtrType(singleArgumentType))
     return true;
 
-  if (isUnmanagedClassType(singleArgumentType))
-    return true;
+  if (DecoratedClassType* dt = toDecoratedClassType(singleArgumentType))
+    if (dt->isUnmanaged())
+      return true;
 
   return false;
 }
@@ -6095,10 +6111,10 @@ static Type* resolveGenericActual(SymExpr* se) {
 static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
-  bool unmanaged = false;
-  if (UnmanagedClassType* ut = toUnmanagedClassType(type)) {
-    type = ut->getCanonicalClass();
-    unmanaged = true;
+  ClassTypeDecorator decorator = CLASS_TYPE_UNDECORATED;
+  if (DecoratedClassType* dt = toDecoratedClassType(type)) {
+    type = dt->getCanonicalClass();
+    decorator = dt->getDecorator();
   }
 
   if (AggregateType* at = toAggregateType(type)) {
@@ -6111,10 +6127,10 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
 
       Type* retType = cc->typeInfo();
 
-      if (unmanaged) {
+      if (decorator != CLASS_TYPE_UNDECORATED) {
         AggregateType* gotAt = toAggregateType(retType);
         INT_ASSERT(gotAt);
-        retType = gotAt->getUnmanagedClass();
+        retType = gotAt->getDecoratedClass(decorator);
       }
 
       cc->replace(new SymExpr(retType->symbol));
@@ -6666,8 +6682,8 @@ static void resolveExprTypeConstructor(SymExpr* symExpr) {
   Type* t = symExpr->typeInfo();
   AggregateType* at = toAggregateType(t);
 
-  if (UnmanagedClassType * ut = toUnmanagedClassType(t))
-    at = ut->getCanonicalClass();
+  if (DecoratedClassType * dt = toDecoratedClassType(t))
+    at = dt->getCanonicalClass();
 
   if (at != NULL && at->typeConstructor) {
     if (at->symbol->hasFlag(FLAG_GENERIC)         == false  &&

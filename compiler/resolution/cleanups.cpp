@@ -427,11 +427,14 @@ bool isUnusedClass(Type* t) {
   //  unmanaged class types can have borrow/canonical class type used
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      if (UnmanagedClassType* mt = at->getUnmanagedClass())
-        retval &= do_isUnusedClass(mt);
+      for (int i = 0; i < NUM_DECORATED_CLASS_TYPES; i++) {
+        ClassTypeDecorator decorator = (ClassTypeDecorator)i;
+        if (DecoratedClassType* dt = at->getDecoratedClass(decorator))
+          retval &= do_isUnusedClass(dt);
+      }
     }
-  } else if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
-    retval &= do_isUnusedClass(mt->getCanonicalClass());
+  } else if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    retval &= do_isUnusedClass(dt->getCanonicalClass());
   }
 
   return retval;
@@ -446,9 +449,9 @@ static void removeUnusedTypes() {
         if (isUnusedClass(at) == true) {
           at->symbol->defPoint->remove();
         }
-      } else if(UnmanagedClassType* mt = toUnmanagedClassType(type->type)) {
-        if (isUnusedClass(mt->getCanonicalClass()) == true) {
-          mt->symbol->defPoint->remove();
+      } else if(DecoratedClassType* dt = toDecoratedClassType(type->type)) {
+        if (isUnusedClass(dt->getCanonicalClass()) == true) {
+          dt->symbol->defPoint->remove();
         }
       }
     }
@@ -463,9 +466,9 @@ static void removeUnusedTypes() {
             // If the value type is unused, its ref type can also be removed.
             type->defPoint->remove();
           }
-        } else if(UnmanagedClassType* mt =
-                  toUnmanagedClassType(type->getValType())) {
-          if (isUnusedClass(mt->getCanonicalClass())) {
+        } else if(DecoratedClassType* dt =
+                  toDecoratedClassType(type->getValType())) {
+          if (isUnusedClass(dt->getCanonicalClass())) {
             type->defPoint->remove();
           }
         }

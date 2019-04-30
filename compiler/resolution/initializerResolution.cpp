@@ -173,7 +173,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
   VarSymbol* result = newTemp();
   Expr* resultExpr = NULL;
   if (isClass(type)) {
-    UnmanagedClassType* uct = type->getUnmanagedClass();
+    DecoratedClassType* uct = type->getDecoratedClass(CLASS_TYPE_UNMANAGED);
     resultExpr = new CallExpr(PRIM_CAST, uct->symbol, initTemp);
   } else {
     resultExpr = new SymExpr(initTemp);

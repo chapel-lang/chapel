@@ -506,7 +506,7 @@ static bool isSubType(Type* sub, Type* super) {
   if (sub == super) {
     retval = true;
 
-  } else if (isAggregateType(sub) || isUnmanagedClassType(sub)) {
+  } else if (isAggregateType(sub) || isDecoratedClassType(sub)) {
     AggregateType* subAt = toAggregateType(sub);
     Type* useSuper = super;
     if (classesWithSameKind(sub, super)) {

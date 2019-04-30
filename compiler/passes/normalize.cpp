@@ -3406,7 +3406,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
       // This can't be applied generally in scopeResolve b/c
       // of the way type constructors are currently normalized.
 
-      Type* unm = at->getUnmanagedClass();
+      Type* unm = at->getDecoratedClass(CLASS_TYPE_UNMANAGED);
       subCall->baseExpr->replace(new SymExpr(unm->symbol));
       call->replace(subCall->remove());
       call = subCall;

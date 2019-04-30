@@ -2364,10 +2364,10 @@ static bool typeHasInfiniteBorrowLifetime(Type* type) {
   if (isSubClass(type, dtLocale))
     return true;
 
-  if (isUnmanagedClassType(type)) {
-    // unmanaged class instances have infinite lifetime
-    return true;
-  }
+  if (DecoratedClassType* dt = toDecoratedClassType(type))
+    if (dt->isUnmanaged())
+      // unmanaged class instances have infinite lifetime
+      return true;
 
   return false;
 }

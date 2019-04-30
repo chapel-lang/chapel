@@ -28,29 +28,57 @@
 * In particular this type is important for unmanaged.                         *
 * Each refers to the AggregateType for the actual class. Because we want      *
 * the AggregateType for each class to store the dispatch parents and other    *
-* important fields, and since each can have multiple UnmanagedClassType variants,*
-* the UnmanagedClassType is not an AggregateType but rather a Type that         *
+* important fields, and since each can have multiple DecoratedClassType variants,*
+* the DecoratedClassType is not an AggregateType but rather a Type that         *
 * points to the canonical class type (i.e. the AggregateType).                *
 *                                                                             *
 ************************************** | *************************************/
 
-class UnmanagedClassType : public Type {
+
+const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className);
+
+class DecoratedClassType : public Type {
 
 public:
-                          UnmanagedClassType(AggregateType* cls);
-                          ~UnmanagedClassType();
+                          DecoratedClassType(AggregateType* cls,
+                                             ClassTypeDecorator d);
+                          ~DecoratedClassType();
 
   void                    accept(AstVisitor* visitor);
   void                    replaceChild(BaseAST* oldAst, BaseAST* newAst);
   void                    verify();
   GenRet                  codegen();
-  DECLARE_COPY(UnmanagedClassType);
+  DECLARE_COPY(DecoratedClassType);
 
   AggregateType*          getCanonicalClass();
+
+  bool                    isNilable() const {
+    return (decorator & CLASS_TYPE_NILABLE_MASK);
+  }
+  bool                    isUndecorated() const {
+    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_UNDECORATED;
+  }
+  bool                    isUnmanaged() const {
+    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_UNMANAGED;
+  }
+  bool                    isBorrowed() const {
+    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_BORROWED;
+  }
+  /*bool                    isOwned() const {
+    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_OWNED;
+  }
+  bool                    isShared() const {
+    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_SHARED;
+  }*/
+
+  ClassTypeDecorator      getDecorator() const {
+    return decorator;
+  }
 
 private:
   // canonicalClass points to the AggregateType for the class
   AggregateType*              canonicalClass;
+  ClassTypeDecorator          decorator;
 };
 
 bool classesWithSameKind(Type* a, Type* b);

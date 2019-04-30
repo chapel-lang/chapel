@@ -385,8 +385,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
     Type* thrownType = thrownError->typeInfo();
-    if (UnmanagedClassType* ut = toUnmanagedClassType(thrownType))
-      thrownType = ut->getCanonicalClass();
+    if (DecoratedClassType* dt = toDecoratedClassType(thrownType))
+      thrownType = dt->getCanonicalClass();
 
     // normalizeThrows should give us this invariant earlier
     INT_ASSERT(thrownType == dtError);

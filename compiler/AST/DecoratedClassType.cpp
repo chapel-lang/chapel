@@ -20,46 +20,77 @@
 #include "DecoratedClassType.h"
 
 #include "AstVisitor.h"
+#include "stringutil.h"
 #include "symbol.h"
 #include "expr.h"
 #include "iterator.h"
 
-UnmanagedClassType::UnmanagedClassType(AggregateType* cls)
-  : Type(E_UnmanagedClassType, NULL) {
+const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
+  switch (d) {
+    case CLASS_TYPE_UNDECORATED:
+      return astr(className);
+    case CLASS_TYPE_UNDECORATED_NILABLE:
+      return astr(className, "?");
+    case CLASS_TYPE_UNMANAGED:
+      return astr("unmanaged ", className);
+    case CLASS_TYPE_UNMANAGED_NILABLE:
+      return astr("unmanaged ", className, "?");
+    case CLASS_TYPE_BORROWED:
+      return astr("borrowed ", className);
+    case CLASS_TYPE_BORROWED_NILABLE:
+      return astr("borrowed ", className, "?");
+    /*case CLASS_TYPE_OWNED:
+      return astr("owned ", className);
+    case CLASS_TYPE_OWNED_NILABLE:
+      return astr("owned ", className, "?");
+    case CLASS_TYPE_SHARED:
+      return astr("shared ", className);
+    case CLASS_TYPE_SHARED_NILABLE:
+      return astr("shared ", className, "?");*/
+
+    // no default for help from compilation errors
+  }
+  INT_FATAL("Case not handled");
+  return NULL;
+}
+
+DecoratedClassType::DecoratedClassType(AggregateType* cls, ClassTypeDecorator d)
+  : Type(E_DecoratedClassType, NULL) {
 
   canonicalClass = cls;
+  decorator = d;
 }
 
 
-UnmanagedClassType::~UnmanagedClassType() {
+DecoratedClassType::~DecoratedClassType() {
 }
 
-void UnmanagedClassType::accept(AstVisitor* visitor) {
-  if (visitor->enterUnmanagedClassType(this)) {
-    visitor->exitUnmanagedClassType(this);
+void DecoratedClassType::accept(AstVisitor* visitor) {
+  if (visitor->enterDecoratedClassType(this)) {
+    visitor->exitDecoratedClassType(this);
   }
 }
 
-void UnmanagedClassType::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
+void DecoratedClassType::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
   if (oldAst == canonicalClass) {
     canonicalClass = toAggregateType(newAst);
   }
 }
 
-void UnmanagedClassType::verify() {
+void DecoratedClassType::verify() {
   INT_ASSERT(canonicalClass);
   INT_ASSERT(isClass(canonicalClass));
-  INT_ASSERT(canonicalClass->getUnmanagedClass() == this);
+  INT_ASSERT(canonicalClass->getDecoratedClass(decorator) == this);
 }
 
-GenRet UnmanagedClassType::codegen() {
-  INT_FATAL("UnmanagedClassType should not exist by codegen");
+GenRet DecoratedClassType::codegen() {
+  INT_FATAL("DecoratedClassType should not exist by codegen");
   GenRet ret;
   return ret;
 }
 
-UnmanagedClassType* UnmanagedClassType::copyInner(SymbolMap* map) {
-  UnmanagedClassType* copy = new UnmanagedClassType(canonicalClass);
+DecoratedClassType* DecoratedClassType::copyInner(SymbolMap* map) {
+  DecoratedClassType* copy = new DecoratedClassType(canonicalClass, decorator);
   return copy;
 }
 
@@ -69,7 +100,7 @@ UnmanagedClassType* UnmanagedClassType::copyInner(SymbolMap* map) {
  representation, which is used for most purposes within the compiler.
 
  */
-AggregateType* UnmanagedClassType::getCanonicalClass() {
+AggregateType* DecoratedClassType::getCanonicalClass() {
   INT_ASSERT(this->canonicalClass);
   return this->canonicalClass;
 }
@@ -80,14 +111,14 @@ bool classesWithSameKind(Type* a, Type* b) {
   if (!isClassLike(a) || !isClassLike(b)) return false;
 
   // AggregateType would mean borrow
-  bool aBorrow = true;
-  bool bBorrow = true;
-  if (isUnmanagedClassType(a))
-    aBorrow = false;
-  if (isUnmanagedClassType(b))
-    bBorrow = false;
+  ClassTypeDecorator aDecorator = CLASS_TYPE_UNDECORATED;
+  ClassTypeDecorator bDecorator = CLASS_TYPE_UNDECORATED;
+  if (DecoratedClassType* ad = toDecoratedClassType(a))
+    aDecorator = ad->getDecorator();
+  if (DecoratedClassType* bd = toDecoratedClassType(b))
+    bDecorator = bd->getDecorator();
 
-  return aBorrow == bBorrow;
+  return aDecorator == bDecorator;
 }
 
 Type* canonicalClassType(Type* a) {
@@ -95,7 +126,7 @@ Type* canonicalClassType(Type* a) {
     if (isClass(at))
         return at;
 
-  if (UnmanagedClassType* mt = toUnmanagedClassType(a))
+  if (DecoratedClassType* mt = toDecoratedClassType(a))
     return mt->getCanonicalClass();
 
   return a;
@@ -183,7 +214,7 @@ void convertClassTypesToCanonical() {
   // At this point the TypeSymbols for the unmanaged types should
   // be removed from the tree. Using these would be an error.
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (isUnmanagedClassType(ts->type)) {
+    if (isDecoratedClassType(ts->type)) {
       if (ts->inTree())
         ts->defPoint->remove();
       if (ts->type->refType && ts->type->refType->symbol->inTree())

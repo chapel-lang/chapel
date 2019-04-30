@@ -2198,7 +2198,7 @@ static void resolveUnmanagedBorrows() {
           AggregateType* at = toAggregateType(ts->type);
           if (at && isClass(at)) {
             if (unmanaged) {
-              UnmanagedClassType* unm = at->getUnmanagedClass();
+              DecoratedClassType* unm = at->getDecoratedClass(CLASS_TYPE_UNMANAGED);
               useTS = unm->symbol;
             }
           } else {

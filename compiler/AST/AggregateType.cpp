@@ -45,7 +45,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
   aggregateTag        = initTag;
-  unmanagedClass      = NULL;
+  memset(decoratedClasses, 0, sizeof(decoratedClasses));
 
   typeConstructor     = NULL;
   hasUserDefinedInit  = false;
@@ -2152,35 +2152,30 @@ Symbol* AggregateType::getSubstitution(const char* name) {
   return retval;
 }
 
-UnmanagedClassType* AggregateType::getUnmanagedClass() {
+DecoratedClassType* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
   if (aggregateTag == AGGREGATE_CLASS) {
 
-    if (!unmanagedClass)
-      generateUnmanagedClassTypes();
+    if (!decoratedClasses[d]) {
+      SET_LINENO(this->symbol->defPoint);
+      // Generate decorated class type
+      DecoratedClassType* dec = new DecoratedClassType(this, d);
+      decoratedClasses[d] = dec;
+      const char* astrName = decoratedTypeAstr(d, symbol->name);
+      TypeSymbol* tsDec = new TypeSymbol(astrName, dec);
+      // The dec type isn't really an object, shouldn't have its own fields
+      tsDec->addFlag(FLAG_NO_OBJECT);
+      // Propagate generic-ness to the decorated type
+      if (this->isGeneric() || this->symbol->hasFlag(FLAG_GENERIC))
+        tsDec->addFlag(FLAG_GENERIC);
+      // The generated code should just use the canonical class name
+      tsDec->cname = symbol->cname;
+      DefExpr* defDec = new DefExpr(tsDec);
+      symbol->defPoint->insertAfter(defDec);
+    }
 
-    return unmanagedClass;
+    return decoratedClasses[d];
   }
   return NULL;
-}
-
-void AggregateType::generateUnmanagedClassTypes() {
-  AggregateType* at = this;
-  if (aggregateTag == AGGREGATE_CLASS && at->unmanagedClass == NULL) {
-    SET_LINENO(at->symbol->defPoint);
-    // Generate unmanaged class type
-    UnmanagedClassType* unmanaged = new UnmanagedClassType(at);
-    at->unmanagedClass = unmanaged;
-    TypeSymbol* tsUnmanaged = new TypeSymbol(astr("unmanaged ", at->symbol->name), unmanaged);
-    // The unmanaged type isn't really an object, shouldn't have its own fields
-    tsUnmanaged->addFlag(FLAG_NO_OBJECT);
-    // Propagate generic-ness to the unmanaged type
-    if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
-      tsUnmanaged->addFlag(FLAG_GENERIC);
-    // The generated code should just use the canonical class name
-    tsUnmanaged->cname = at->symbol->cname;
-    DefExpr* defUnmanaged = new DefExpr(tsUnmanaged);
-    at->symbol->defPoint->insertAfter(defUnmanaged);
-  }
 }
 
 Type* AggregateType::cArrayElementType() const {

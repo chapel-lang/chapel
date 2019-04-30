@@ -33,7 +33,7 @@ static IntentTag constIntentForType(Type* t) {
       is_complex_type(t) ||
       is_enum_type(t) ||
       isClass(t) ||
-      isUnmanagedClassType(t) ||
+      isDecoratedClassType(t) ||
       isUnion(t) ||
       t == dtOpaque ||
       t == dtTaskID ||
@@ -109,7 +109,7 @@ IntentTag blankIntentForType(Type* t) {
              t == dtCVoidPtr                         ||
              t == dtCFnPtr                           ||
              isClass(t)                              ||
-             isUnmanagedClassType(t)                 ||
+             isDecoratedClassType(t)                 ||
              isRecord(t)                             ||
              // Note: isRecord(t) includes range (FLAG_RANGE)
              isUnion(t)                              ||
