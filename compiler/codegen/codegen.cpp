@@ -32,6 +32,7 @@
 #include "llvmDebug.h"
 #include "llvmUtil.h"
 #include "LayeredValueTable.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -1614,6 +1615,10 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   FILE* hdrfile = info->cfile;
 
   if( hdrfile) {
+    // Insert include guard to help MLI builds avoid multiple inclusion.
+    fprintf(hdrfile, "#ifndef CHPL_GEN_HEADER_INCLUDE_GUARD\n");
+    fprintf(hdrfile, "#define CHPL_GEN_HEADER_INCLUDE_GUARD\n");
+
     // This is done in runClang for LLVM version.
     fprintf(hdrfile, "\n#define CHPL_GEN_CODE\n\n");
 
@@ -2252,10 +2257,10 @@ void codegen() {
 
   SET_LINENO(rootModule);
 
-  fileinfo hdrfile  = { NULL, NULL, NULL };
-  fileinfo mainfile = { NULL, NULL, NULL };
-  fileinfo defnfile = { NULL, NULL, NULL };
-  fileinfo strconfig = { NULL, NULL, NULL };
+  fileinfo hdrfile    = { NULL, NULL, NULL };
+  fileinfo mainfile   = { NULL, NULL, NULL };
+  fileinfo defnfile   = { NULL, NULL, NULL };
+  fileinfo strconfig  = { NULL, NULL, NULL };
 
   GenInfo* info     = gGenInfo;
 
@@ -2335,7 +2340,7 @@ void codegen() {
         }
       }
     }
-
+    
     codegen_makefile(&mainfile, NULL, false, userFileName);
   }
 
@@ -2403,10 +2408,15 @@ void codegen() {
       if(fIncrementalCompilation && (currentModule->modTag == MOD_USER))
         fprintf(modulefile.fptr, "#include \"chpl__header.h\"\n");
       currentModule->codegenDef();
+
       closeCFile(&modulefile);
 
       if(!(fIncrementalCompilation && (currentModule->modTag == MOD_USER)))
         fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
+    }
+
+    if (fMultiLocaleInterop) {
+      codegenMultiLocaleInteropWrappers();
     }
 
     fprintf(strconfig.fptr, "#include \"chpl-string.h\"\n");
@@ -2417,6 +2427,9 @@ void codegen() {
 
     info->cfile = hdrfile.fptr;
     codegen_header_addons();
+
+    fprintf(hdrfile.fptr, "\n#endif");
+    fprintf(hdrfile.fptr, " /* END CHPL_GEN_HEADER_INCLUDE_GUARD */\n"); 
 
     closeCFile(&hdrfile);
     fprintf(mainfile.fptr, "/* last line not #include to avoid gcc bug */\n");

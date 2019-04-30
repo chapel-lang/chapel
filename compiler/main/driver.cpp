@@ -109,6 +109,7 @@ bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryPython = false;
+bool fMultiLocaleInterop = false;
 
 bool no_codegen = false;
 int  debugParserLevel = 0;
@@ -1363,6 +1364,31 @@ static void postVectorize() {
   }
 }
 
+static void setMultiLocaleInterop() {
+  // We must be compiling a multi-locale library to be eligible for MLI.
+  if (!fLibraryCompile || !strcmp(CHPL_COMM, "none")) {
+    return;
+  }
+
+  if (strcmp(CHPL_COMM, "gasnet") != 0) {
+    USR_FATAL("Multi-locale libraries are only supported on gasnet");
+  }
+
+  if (llvmCodegen) {
+    USR_FATAL("Multi-locale libraries do not support --llvm");
+  }
+
+  if (fLibraryPython) {
+    USR_FATAL("Multi-locale libraries do not support --library-python");
+  }
+
+  if (fLibraryFortran) {
+    USR_FATAL("Multi-locale libraries do not support --library-fortran");
+  }
+
+  fMultiLocaleInterop = true;
+}
+
 static void setMaxCIndentLen() {
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
@@ -1411,6 +1437,8 @@ static void postprocess_args() {
   postStackCheck();
 
   postStaticLink();
+
+  setMultiLocaleInterop();
 
   setPrintCppLineno();
 
