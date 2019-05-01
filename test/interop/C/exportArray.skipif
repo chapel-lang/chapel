@@ -1,2 +1,0 @@
-# These tests do not play well with multi-locale libraries yet.
-CHPL_COMM != none
