@@ -413,7 +413,7 @@ static Symbol* removeParIterReturn(BlockStmt* cloneBody, Symbol* retsym) {
 static void removeVoidReturn(BlockStmt* cloneBody) {
   CallExpr* retexpr = toCallExpr(cloneBody->body.tail);
   INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
-  INT_ASSERT(toSymExpr(retexpr->get(1))->symbol() == gNothing);
+  INT_ASSERT(toSymExpr(retexpr->get(1))->symbol() == gVoid);
 
   retexpr->remove();
 }
@@ -466,7 +466,7 @@ static VarSymbol* createCurrTPV(ShadowVarSymbol* TPV) {
 static void addDefAndMap(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar,
                          VarSymbol* currVar)
 {
-  if (currVar->type == dtVoid) {
+  if (currVar->type == dtNothing) {
     INT_ASSERT(currVar->firstSymExpr() == NULL);
     return;
   }
@@ -1238,7 +1238,7 @@ static Symbol* inlineRetArgFunction(CallExpr* defCall, FnSymbol* defFn,
   // Expect the last statement to be "return void".
   CallExpr* retexpr = toCallExpr(defBody->body.tail);
   INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
-  INT_ASSERT(toSymExpr(retexpr->get(1))->symbol() == gNothing);
+  INT_ASSERT(toSymExpr(retexpr->get(1))->symbol() == gVoid);
 
   // Expect the last statement before 'return' to assign into the retarg.
   CallExpr* prev      = toCallExpr(retexpr->prev);

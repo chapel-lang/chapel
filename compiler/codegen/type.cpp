@@ -266,7 +266,7 @@ void AggregateType::codegenDef() {
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* llBaseType;
-      if( base->typeInfo() == dtVoid ) {
+      if( base->typeInfo() == dtNothing ) {
         llBaseType = llvm::IntegerType::getInt8Ty(info->module->getContext());
       } else {
         llBaseType = base->codegen().type;
@@ -283,7 +283,7 @@ void AggregateType::codegenDef() {
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* llBaseType;
-      if( base->typeInfo() == dtVoid ) {
+      if( base->typeInfo() == dtNothing ) {
         llBaseType = llvm::IntegerType::getInt8Ty(info->module->getContext());
       } else {
         llBaseType = base->codegen().type;

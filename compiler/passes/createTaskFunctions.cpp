@@ -75,32 +75,32 @@ static ArgSymbol* tiMarkRef       = NULL;
 void initForTaskIntents() {
   FnSymbol* tiMarkHost = NULL;
 
-  markPruned      = gNothing;
+  markPruned      = gVoid;
   markUnspecified = gNil;
 
   tiMarkBlank     = new ArgSymbol(INTENT_BLANK,
                                   "tiMarkBlank",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkIn        = new ArgSymbol(INTENT_IN,
                                   "tiMarkIn",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstDflt = new ArgSymbol(INTENT_CONST,
                                   "tiMarkConstDflt",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstIn   = new ArgSymbol(INTENT_CONST_IN,
                                   "tiMarkConstIn",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstRef  = new ArgSymbol(INTENT_CONST_REF,
                                   "tiMarkConstRef",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkRef       = new ArgSymbol(INTENT_REF,
                                   "tiMarkRef",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkHost = new FnSymbol("tiMarkHost");
 
@@ -111,7 +111,7 @@ void initForTaskIntents() {
   tiMarkHost->insertFormalAtTail(tiMarkConstRef);
   tiMarkHost->insertFormalAtTail(tiMarkRef);
 
-  tiMarkHost->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
+  tiMarkHost->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   rootModule->block->insertAtTail(new DefExpr(tiMarkHost));
 }
@@ -931,8 +931,8 @@ void createTaskFunctions(void) {
             fn->addFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE);
         }
 
-        fn->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
-        fn->retType = dtNothing;
+        fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+        fn->retType = dtVoid;
 
         if (needsCapture(fn)) { // note: does not apply to blocking on stmts.
 

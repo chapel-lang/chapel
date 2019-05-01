@@ -117,7 +117,7 @@ static void addInitGuards(void) {
   // We need a function to drop the initializers into.
   SET_LINENO(baseModule);
   FnSymbol* preInitFn = new FnSymbol(astr("chpl__init_preInit"));
-  preInitFn->retType = dtNothing;
+  preInitFn->retType = dtVoid;
   preInitFn->addFlag(FLAG_EXPORT);
   preInitFn->addFlag(FLAG_LOCAL_ARGS);
   preInitFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);

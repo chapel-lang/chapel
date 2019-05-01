@@ -659,7 +659,7 @@ static bool isVoidOrVoidTupleType(Type* type) {
   if (type == NULL) {
     return false;
   }
-  if (type == dtVoid) {
+  if (type == dtNothing) {
     return true;
   }
   if (type->symbol->hasFlag(FLAG_REF)) {
@@ -673,7 +673,7 @@ static bool isVoidOrVoidTupleType(Type* type) {
   }
   if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
     Symbol* field = type->getField("x1", false);
-    if (field == NULL || field->type == dtVoid) {
+    if (field == NULL || field->type == dtNothing) {
       return true;
     }
   }
@@ -687,7 +687,7 @@ static void cleanupVoidVarsAndFields() {
       switch (call->primitive->tag) {
       case PRIM_MOVE: {
         if (isVoidOrVoidTupleType(call->get(2)->typeInfo()) ||
-            call->get(2)->typeInfo() == dtVoid->refType) {
+            call->get(2)->typeInfo() == dtNothing->refType) {
           INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
           // Remove moves where the rhs has type void. If the rhs is a
           // call to something other than a few primitives, still make
@@ -724,13 +724,13 @@ static void cleanupVoidVarsAndFields() {
       }
       case PRIM_RETURN: {
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
-            call->get(1)->typeInfo() == dtVoid->refType) {
+            call->get(1)->typeInfo() == dtNothing->refType) {
           // Change functions that return void to use the global
           // void value instead of a local void.
           if (SymExpr* ret = toSymExpr(call->get(1))) {
-            if (ret->symbol() != gVoidValue) {
+            if (ret->symbol() != gNone) {
               SET_LINENO(call);
-              call->replace(new CallExpr(PRIM_RETURN, gVoidValue));
+              call->replace(new CallExpr(PRIM_RETURN, gNone));
             }
           }
         }
@@ -738,13 +738,13 @@ static void cleanupVoidVarsAndFields() {
       }
       case PRIM_YIELD: {
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
-            call->get(1)->typeInfo() == dtVoid->refType) {
+            call->get(1)->typeInfo() == dtNothing->refType) {
           // Change iterators that yield void to use the global
           // void value instead of a local void.
           if (SymExpr* ret = toSymExpr(call->get(1))) {
-            if (ret->symbol() != gVoidValue) {
+            if (ret->symbol() != gNone) {
               SET_LINENO(call);
-              call->replace(new CallExpr(PRIM_YIELD, gVoidValue));
+              call->replace(new CallExpr(PRIM_YIELD, gNone));
             }
           }
         }
@@ -790,9 +790,9 @@ static void cleanupVoidVarsAndFields() {
           formal->defPoint->remove();
         }
       }
-      if (fn->retType == dtVoid->refType ||
+      if (fn->retType == dtNothing->refType ||
           isVoidOrVoidTupleType(fn->retType)) {
-        fn->retType = dtVoid;
+        fn->retType = dtNothing;
       }
     }
     if (fn->_this) {
@@ -805,8 +805,8 @@ static void cleanupVoidVarsAndFields() {
   // Set for loop index variables that are void to the global void value
   for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* loop = toForLoop(block)) {
-      if (loop->indexGet() && loop->indexGet()->typeInfo() == dtVoid) {
-        loop->indexGet()->setSymbol(gVoidValue);
+      if (loop->indexGet() && loop->indexGet()->typeInfo() == dtNothing) {
+        loop->indexGet()->setSymbol(gNone);
       }
     }
   }
@@ -815,14 +815,14 @@ static void cleanupVoidVarsAndFields() {
   // DefExprs for void variables.
   for_alive_in_Vec(DefExpr, def, gDefExprs) {
       if (isVoidOrVoidTupleType(def->sym->type) ||
-          def->sym->type == dtVoid->refType) {
+          def->sym->type == dtNothing->refType) {
         if (VarSymbol* var = toVarSymbol(def->sym)) {
           // Avoid removing the "_val" field from refs
           // and forall statements' induction/shadow variables.
           if (! def->parentSymbol->hasFlag(FLAG_REF) &&
               ! isForallIterVarDef(def)              &&
               ! preserveShadowVar(var)               ) {
-            if (var != gVoidValue) {
+            if (var != gNone) {
               def->remove();
             }
           }
@@ -839,7 +839,7 @@ static void cleanupVoidVarsAndFields() {
   //
   // Solution: Remove SymExprs to voidValue if the expr is at the
   // statement level.
-  for_SymbolSymExprs(se, gVoidValue) {
+  for_SymbolSymExprs(se, gNone) {
     if (se == se->getStmtExpr()) {
       se->remove();
     }

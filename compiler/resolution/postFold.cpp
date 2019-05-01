@@ -141,8 +141,8 @@ static Expr* postFoldNormal(CallExpr* call) {
 
       call->replace(retval);
 
-    } else if (ret == gNothing) {
-      retval = new SymExpr(gNothing);
+    } else if (ret == gVoid) {
+      retval = new SymExpr(gVoid);
 
       call->replace(retval);
     }
@@ -554,7 +554,7 @@ static Expr* postFoldMove(CallExpr* call) {
     } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
       FnSymbol* fn = rhs->resolvedFunction();
 
-      if (fn != NULL && fn->name == astrSequals && fn->retType == dtNothing) {
+      if (fn != NULL && fn->name == astrSequals && fn->retType == dtVoid) {
         call->replace(rhs->remove());
 
         retval = rhs;

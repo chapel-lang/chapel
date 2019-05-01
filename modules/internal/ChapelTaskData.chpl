@@ -77,7 +77,7 @@ module ChapelTaskData {
     return ret;
   }
 
-  proc chpl_task_data_setSerial(tls:c_ptr(chpl_task_ChapelData_t), makeSerial: bool) : nothing {
+  proc chpl_task_data_setSerial(tls:c_ptr(chpl_task_ChapelData_t), makeSerial: bool) : void {
     var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_serial;
     var v:uint(8) = 0;
@@ -113,7 +113,7 @@ module ChapelTaskData {
     return chpl_task_data_getDynamicEndCount(chpl_task_getChapelData());
   }
 
-  export proc chpl_task_setSerial(makeSerial: bool) : nothing {
+  export proc chpl_task_setSerial(makeSerial: bool) : void {
     chpl_task_data_setSerial(chpl_task_getChapelData(), makeSerial);
   }
   export proc chpl_task_getSerial() : bool {

@@ -119,7 +119,7 @@ static void replaceSimpleAssignment(FnSymbol* fn)
   SymExpr* rhs = new SymExpr(fn->getFormal(2));
   BlockStmt* block = new BlockStmt();
   block->insertAtTail(new CallExpr(PRIM_ASSIGN, lhs, rhs));
-  block->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
+  block->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   fn->body->replace(block);
 }
 

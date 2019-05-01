@@ -493,7 +493,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
     // use cached instantiation if possible
     if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
-      if (cached != (FnSymbol*) gNothing) {
+      if (cached != (FnSymbol*) gVoid) {
         checkInfiniteWhereInstantiation(cached);
 
         retval = cached;

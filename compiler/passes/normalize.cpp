@@ -279,7 +279,7 @@ static void insertModuleInit() {
     SET_LINENO(mod);
 
     mod->initFn          = new FnSymbol(astr("chpl__init_", mod->name));
-    mod->initFn->retType = dtNothing;
+    mod->initFn->retType = dtVoid;
 
     mod->initFn->addFlag(FLAG_MODULE_INIT);
     mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
@@ -746,7 +746,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
         Type* type = var->typeInfo();
 
         // All variables of type 'void' are treated as defined.
-        if (type == dtVoid) {
+        if (type == dtNothing) {
           retval = var;
 
         // records with initializers are defined
@@ -1193,7 +1193,7 @@ static void normalizeReturns(FnSymbol* fn) {
   bool retExprIsNothing = false;
   if (fn->retExprType) {
     if (SymExpr* retExpr = toSymExpr(fn->retExprType->body.only())) {
-      if (retExpr->symbol() == gNothing) {
+      if (retExpr->symbol() == gVoid) {
         retExprIsNothing = true;
       }
     }
@@ -1202,7 +1202,7 @@ static void normalizeReturns(FnSymbol* fn) {
   // Add a void return if needed.
   if (isIterator == false && rets.size() == 0 &&
       (fn->retExprType == NULL || retExprIsNothing)) {
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
   }
 
@@ -1219,7 +1219,7 @@ static void normalizeReturns(FnSymbol* fn) {
     if (fn->retExprType != NULL && fn->retTag != RET_REF) {
       if (SymExpr* lastRTE = toSymExpr(fn->retExprType->body.tail)) {
         if (TypeSymbol* retSym = toTypeSymbol(lastRTE->symbol())) {
-          if (retSym->type == dtNothing) {
+          if (retSym->type == dtVoid) {
             USR_FATAL_CONT(fn,
                            "an iterator's return type cannot be 'nothing'; "
                            "if specified, it must be the type of the "
@@ -1236,7 +1236,7 @@ static void normalizeReturns(FnSymbol* fn) {
   // (Note iterators always need an RVV so resolution knows to resolve the
   //  return/yield type)
   if (isIterator == false && numVoidReturns != 0) {
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   } else {
     // Handle declared return type.
@@ -1363,7 +1363,7 @@ static bool isVoidReturn(CallExpr* call) {
 
   if (call->isPrimitive(PRIM_RETURN)) {
     if (SymExpr* arg = toSymExpr(call->get(1))) {
-      retval = arg->symbol() == gNothing;
+      retval = arg->symbol() == gVoid;
     }
   }
 
@@ -2504,7 +2504,7 @@ static void makeExportWrapper(FnSymbol* fn) {
     fn->defPoint->insertBefore(new DefExpr(newFn));
 
     if ((fn->retExprType != NULL &&
-         fn->retExprType->body.tail->typeInfo() != dtNothing) ||
+         fn->retExprType->body.tail->typeInfo() != dtVoid) ||
         hasNonVoidReturnStmt(fn)) {
       newFn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN,
                                                       new CallExpr(fn->name))));

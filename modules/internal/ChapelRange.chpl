@@ -1614,9 +1614,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                      _low = r.chpl_intToIdx(lo),
                      _high = r.chpl_intToIdx(hi),
                      _stride = if r.stridable then (r.stride: strType)
-                                            else voidValue,
-                     _alignment = if r.stridable then r.alignment else voidValue,
-                     _aligned = if r.stridable then r.aligned else voidValue);
+                                            else none,
+                     _alignment = if r.stridable then r.alignment else none,
+                     _aligned = if r.stridable then r.aligned else none);
   }
 
   proc #(r:range(?i), count:chpl__rangeStrideType(i)) {

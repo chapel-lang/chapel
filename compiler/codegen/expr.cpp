@@ -3521,7 +3521,7 @@ GenRet CallExpr::codegen() {
         if (parentCall->isPrimitive(PRIM_MOVE))
           returnedValueUsed = true;
 
-      if (returnedValueUsed && this->typeInfo() != dtVoid) {
+      if (returnedValueUsed && this->typeInfo() != dtNothing) {
         GenRet ty = this->typeInfo();
 
         INT_ASSERT(ty.type);
@@ -3723,7 +3723,7 @@ DEFINE_PRIM(PRIM_CLASS_NAME_BY_ID) {
 }
 
 DEFINE_PRIM(PRIM_RETURN) {
-    if (call->typeInfo() == dtNothing || call->typeInfo() == dtVoid) {
+    if (call->typeInfo() == dtVoid || call->typeInfo() == dtNothing) {
 
       if (gGenInfo->cfile) {
         ret.c = "return";
@@ -5225,7 +5225,7 @@ GenRet CallExpr::codegenPrimMove() {
   const bool RHSRef = get(2)->isRef() || get(2)->isWideRef();
 
   GenRet specRet;
-  if (get(1)->typeInfo() == dtVoid) {
+  if (get(1)->typeInfo() == dtNothing) {
     ret = get(2)->codegen();
 
   // Is the RHS a primop with special case handling?

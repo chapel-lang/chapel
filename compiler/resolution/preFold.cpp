@@ -1862,7 +1862,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     }
   }
 
-  if (captured_fn->retType == dtNothing) {
+  if (captured_fn->retType == dtVoid) {
     thisMethod->insertAtTail(innerCall);
 
   } else {
@@ -2250,7 +2250,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
       DefExpr* dExp = toDefExpr(formalExpr);
       ArgSymbol* fArg = toArgSymbol(dExp->sym);
 
-      if (fArg->type != dtVoid) {
+      if (fArg->type != dtNothing) {
         ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK,
                                              fArg->name,
                                              fArg->type);
@@ -2272,7 +2272,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
       if (i != (alength-1)) {
         SymExpr* sExpr = toSymExpr(actualExpr);
 
-        if (sExpr->symbol()->type != dtVoid) {
+        if (sExpr->symbol()->type != dtNothing) {
           ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK,
                                                name_buffer,
                                                sExpr->symbol()->type);
@@ -2285,7 +2285,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
     }
   }
 
-  if (retType != dtNothing) {
+  if (retType != dtVoid) {
     VarSymbol *tmp = newTemp("_return_tmp_", retType);
 
     parent_method->insertAtTail(new DefExpr(tmp));

@@ -701,7 +701,7 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
   if (this->hasFlag(FLAG_EXTERN) && !this->hasFlag(FLAG_GENERATE_SIGNATURE))
     return;
 
-  if (type == dtVoid)
+  if (type == dtNothing)
     return;
 
   AggregateType* ct = toAggregateType(type);
@@ -777,7 +777,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
     codegenDefC(/*global=*/true, isHeader);
   } else {
 #ifdef HAVE_LLVM
-    if(type == dtVoid || !isHeader) {
+    if(type == dtNothing || !isHeader) {
       return;
     }
 
@@ -838,7 +838,7 @@ void VarSymbol::codegenDef() {
   // generated for extern or void types
   if (this->hasFlag(FLAG_EXTERN))
     return;
-  if (type == dtVoid || type == dtNothing)
+  if (type == dtNothing || type == dtVoid)
     return;
 
   // Check sizes for c_array
@@ -1275,7 +1275,7 @@ void TypeSymbol::codegenMetadata() {
 #ifdef HAVE_LLVM
   // Don't do anything if we've already visited this type,
   // or the type is void so we don't need metadata.
-  if (llvmTbaaTypeDescriptor || type == dtVoid) return;
+  if (llvmTbaaTypeDescriptor || type == dtNothing) return;
 
   GenInfo* info = gGenInfo;
   INT_ASSERT(info->tbaaRootNode);
@@ -1514,7 +1514,7 @@ void TypeSymbol::codegenAggMetadata() {
     ConstCopyOps.push_back(CLASS_ID_TYPE->symbol->llvmConstTbaaAccessTag);
   } else {
     for_fields(field, ct) {
-      if (field->type == dtVoid)
+      if (field->type == dtNothing)
         continue;
 
       llvm::Type *fieldType = NULL;
@@ -2038,7 +2038,7 @@ void FnSymbol::codegenFortran(int indent) {
     FILE* outfile = info->cfile;
     if (fGenIDS)
       fprintf(outfile, "%*s! %d\n", indent, "", this->id);
-    const char* subOrProc = retType != dtNothing ? "function" : "subroutine";
+    const char* subOrProc = retType != dtVoid ? "function" : "subroutine";
     fprintf(outfile, "%*s%s %s(", indent, "", subOrProc, this->cname);
     bool first = true;
 
@@ -2069,7 +2069,7 @@ void FnSymbol::codegenFortran(int indent) {
         foundUnsignedInt = true;
       }
     }
-    if (retType != dtNothing) {
+    if (retType != dtVoid) {
       uniqueKindNames.insert(getFortranKindName(retType, this));
       if (is_uint_type(retType)) {
         foundUnsignedInt = true;
@@ -2121,7 +2121,7 @@ void FnSymbol::codegenFortran(int indent) {
     }
 
     // print type declaration for the return type
-    if (retType != dtNothing) {
+    if (retType != dtVoid) {
       fprintf(outfile, "%*s%s(kind=%s) :: %s\n", indent, "", getFortranTypeName(retType, this).c_str(), getFortranKindName(retType, this).c_str(), this->cname);
     }
     indent -= 2;
@@ -2218,7 +2218,7 @@ GenRet FnSymbol::codegenPYXType() {
   std::string funcCall = "\t";
   // Return statement, if applicable
   std::string returnStmt = "";
-  if (retType != dtNothing) {
+  if (retType != dtVoid) {
     if (retType == dtExternalArray &&
         exportedArrayElementType[this] != NULL) {
       funcCall += "cdef chpl_external_array ret_arr = ";

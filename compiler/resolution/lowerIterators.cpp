@@ -136,7 +136,7 @@ bool isVirtualIterator(FnSymbol* iterFn) {
     // Use the former return type, now the type of the ret-arg formal.
     INT_ASSERT(iterFn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
     INT_ASSERT(iterFn->hasFlag(FLAG_FN_RETARG));
-    INT_ASSERT(iterFn->retType == dtNothing);
+    INT_ASSERT(iterFn->retType == dtVoid);
     for_formals(formal, iterFn)
       if (formal->hasFlag(FLAG_RETARG)) {
         INT_ASSERT(formal->isRef());
@@ -857,8 +857,8 @@ createArgBundleFreeFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
     argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_CONST_IN, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
     argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_CONST_IN, "loopBodyFnArgs", argBundleType));
     argBundleFreeFn->insertAtTail(callChplHereFree(argBundleFreeFn->getFormal(2)));
-    argBundleFreeFn->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
-    argBundleFreeFn->retType = dtNothing;
+    argBundleFreeFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    argBundleFreeFn->retType = dtVoid;
     ct->symbol->defPoint->insertBefore(new DefExpr(argBundleFreeFn));
   }
 
@@ -1150,8 +1150,8 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   }
   loopBodyFnCall->remove();
   loopBodyFnWrapper->insertAtTail(loopBodyFnWrapperCall);
-  loopBodyFnWrapper->retType = dtNothing;
-  loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
+  loopBodyFnWrapper->retType = dtVoid;
+  loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   ensureArgBundleType(ct);
   createArgBundleCopyFn(ct, loopBodyFnWrapper);
   createArgBundleFreeFn(ct, loopBodyFnWrapper);
@@ -1357,8 +1357,8 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
 
   convertYieldsAndReturns(calls, index, loopBodyFnIDArg, loopBodyFnArgArgs);
 
-  iteratorFn->retType = dtNothing;
-  iteratorFn->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
+  iteratorFn->retType = dtVoid;
+  iteratorFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   iteratorFn->removeFlag(FLAG_INLINE_ITERATOR);
   iteratorFn->removeFlag(FLAG_ITERATOR_FN);
 
@@ -1405,7 +1405,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap[loopBodyFnWrapper]));
 
   // replace function in iteratorFnCall with iterator function once that is created
-  CallExpr*  loopBodyFnCall = new CallExpr(loopBodyFn, gVoidValue);
+  CallExpr*  loopBodyFnCall = new CallExpr(loopBodyFn, gNone);
 
   // use and remove loopBodyFnCall later
   // We expect this call to cause the loop body function to be converted like a
@@ -1424,8 +1424,8 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   loopBodyFn->insertAtHead(index->defPoint->remove());
 
   // Return nothing.
-  loopBodyFn->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
-  loopBodyFn->retType = dtNothing;
+  loopBodyFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  loopBodyFn->retType = dtVoid;
 
   // Move the loop body function out to the module level.
   flattenNestedFunction(loopBodyFn);
@@ -2334,7 +2334,7 @@ expandForLoop(ForLoop* forLoop) {
     // to getValue is inserted.  Check the order in the generated code to see
     // if this is the case.  Avoid moving the global void value when it is
     // the loop index.
-    if (index != gVoidValue)
+    if (index != gNone)
       forLoop->insertAtHead(index->defPoint->remove());
 
     // Ensure that the test clause for completely unbounded loops contains
@@ -2628,7 +2628,7 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
       }
     }
   }
-  block->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
+  block->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   fn->body->replace(block);
 }
 

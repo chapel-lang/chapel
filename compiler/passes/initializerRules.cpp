@@ -249,7 +249,7 @@ static bool isReturnVoid(FnSymbol* fn) {
       if (calls[i]->isPrimitive(PRIM_RETURN)) {
         SymExpr* value = toSymExpr(calls[i]->get(1));
 
-        if (value == NULL || value->symbol()->type != dtNothing) {
+        if (value == NULL || value->symbol()->type != dtVoid) {
           USR_FATAL(calls[i], "initializers cannot return a value");
           retval = false;
         }
@@ -257,7 +257,7 @@ static bool isReturnVoid(FnSymbol* fn) {
     }
   }
 
-  fn->retType = dtNothing;
+  fn->retType = dtVoid;
 
   return retval;
 }

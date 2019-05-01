@@ -119,9 +119,9 @@ void adjustVoidShadowVariables() {
   forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
     if (svar->inTree())
       if (Symbol* ovar = svar->outerVarSym())
-        if (ovar->type == dtVoid) {
+        if (ovar->type == dtNothing) {
           SET_LINENO(svar);
-          svar->outerVarSE->replace(new SymExpr(gVoidValue));
+          svar->outerVarSE->replace(new SymExpr(gNone));
         }
 }
 

@@ -210,7 +210,7 @@ static void inlineCall(CallExpr* call) {
       stmt->insertBefore(copy->remove());
 
     // The function does not return a value.  Remove the calling statement.
-    } else if (fn->retType == dtNothing) {
+    } else if (fn->retType == dtVoid) {
       stmt->remove();
 
     // Replace the call with the return value

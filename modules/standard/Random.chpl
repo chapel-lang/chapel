@@ -535,7 +535,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > arr.size || size.size > arr.size``
      */
-    proc choice(arr: [], size:?sizeType=voidValue, replace=true, prob:?probType=voidValue) throws
+    proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none) throws
     {
       compilerError("RandomStreamInterface.choice called");
     }
@@ -971,7 +971,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > arr.size || size.size > arr.size``
      */
-      proc choice(arr: [], size:?sizeType=voidValue, replace=true, prob:?probType=voidValue)
+      proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         return _choice(this, arr, size=size, replace=replace, prob=prob);
@@ -2455,7 +2455,7 @@ module Random {
       }
 
       pragma "no doc"
-      proc choice(arr: [], size:?sizeType=voidValue, replace=true, prob:?probType=voidValue)
+      proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");

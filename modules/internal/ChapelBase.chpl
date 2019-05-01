@@ -794,7 +794,7 @@ module ChapelBase {
     }
   }
 
-  proc init_elts(x, s, type t) : nothing {
+  proc init_elts(x, s, type t) : void {
     var initMethod = chpl_getArrayInitMethod();
 
     // for uints, check that s > 0, so the `s-1` below doesn't overflow
@@ -1093,7 +1093,7 @@ module ChapelBase {
   }
 
   pragma "task complete impl fn"
-  extern proc chpl_comm_task_end(): nothing;
+  extern proc chpl_comm_task_end(): void;
 
   pragma "task complete impl fn"
   proc chpl_after_forall_fence() {

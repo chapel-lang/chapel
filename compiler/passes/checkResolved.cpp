@@ -74,7 +74,7 @@ checkResolved() {
         USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
       }
     }
-    if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtNothing)
+    if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtVoid)
       USR_FATAL(fn, "The return value of an assignment operator must be 'nothing'.");
   }
 
@@ -113,7 +113,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
   if (isSymExpr(expr))
     return 0;
 
-  if (ret == gVoidValue)
+  if (ret == gNone)
     return 1;
 
   if (CallExpr* call = toCallExpr(expr))
@@ -385,7 +385,7 @@ checkReturnPaths(FnSymbol* fn) {
   if (fn->isIterator() ||
       !strcmp(fn->name, "=") || // TODO: Remove this to enforce new signature.
       !strcmp(fn->name, "chpl__buildArrayRuntimeType") ||
-      fn->retType == dtNothing ||
+      fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
       fn->hasFlag(FLAG_INIT_TUPLE) ||

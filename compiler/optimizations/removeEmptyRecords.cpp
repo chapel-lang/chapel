@@ -95,8 +95,8 @@ removeEmptyRecords() {
     if (emptyRecordTypeSet.count(fn->retType) != 0) {
       CallExpr* ret = toCallExpr(fn->body->body.last());
       INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
-      ret->get(1)->replace(new SymExpr(gNothing));
-      fn->retType = dtNothing;
+      ret->get(1)->replace(new SymExpr(gVoid));
+      fn->retType = dtVoid;
       forv_Vec(CallExpr, call, *fn->calledBy) {
         if (CallExpr* move = toCallExpr(call->parentExpr)) {
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));

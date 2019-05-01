@@ -273,9 +273,9 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
    * finalizeCopy method will replace their corresponding nodes from the body
    * appropriately.
    */
-  if (this->getReturnSymbol() == gNothing) {
+  if (this->getReturnSymbol() == gVoid) {
     // Case 1: Function returns nothing.
-    newFn->retSymbol = gNothing;
+    newFn->retSymbol = gVoid;
 
   } else if (this->getReturnSymbol() == this->_this) {
     // Case 2: Function returns _this.
@@ -385,10 +385,10 @@ void FnSymbol::finalizeCopy() {
     }
 
     /*
-     * Cases where the return symbol is gNothing or this->_this don't require
+     * Cases where the return symbol is gVoid or this->_this don't require
      * any additional actions.
      */
-    if (this->retSymbol != gNothing && this->retSymbol != this->_this) {
+    if (this->retSymbol != gVoid && this->retSymbol != this->_this) {
       Symbol* replacementRet = map->get(partialCopySource->getReturnSymbol());
 
       if (replacementRet != this->retSymbol) {
@@ -1081,7 +1081,7 @@ bool FnSymbol::retExprDefinesNonVoid() const {
     retval = true;
 
   } else if (SymExpr* expr = toSymExpr(retExprType->body.get(1))) {
-    retval = expr->symbol()->type != dtNothing;
+    retval = expr->symbol()->type != dtVoid;
 
   } else {
     retval = true;

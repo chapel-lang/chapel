@@ -790,6 +790,9 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   if (yieldedType == dtUnknown) {
     USR_FATAL(fn, "unable to resolve yielded type");
   }
+  if (yieldedType == dtVoid) {
+    printf("found nothing iterator\n");
+  }
 
   SET_LINENO(fn);
 
@@ -900,15 +903,15 @@ static IteratorInfo*  makeIteratorInfo(AggregateType* iClass,
   ii->irecord     = iRecord;
   ii->getIterator = getIterator;
 
-  ii->advance     = makeIteratorMethod(ii, "advance",  dtNothing);
-  ii->zip1        = makeIteratorMethod(ii, "zip1",     dtNothing);
-  ii->zip2        = makeIteratorMethod(ii, "zip2",     dtNothing);
-  ii->zip3        = makeIteratorMethod(ii, "zip3",     dtNothing);
-  ii->zip4        = makeIteratorMethod(ii, "zip4",     dtNothing);
+  ii->advance     = makeIteratorMethod(ii, "advance",  dtVoid);
+  ii->zip1        = makeIteratorMethod(ii, "zip1",     dtVoid);
+  ii->zip2        = makeIteratorMethod(ii, "zip2",     dtVoid);
+  ii->zip3        = makeIteratorMethod(ii, "zip3",     dtVoid);
+  ii->zip4        = makeIteratorMethod(ii, "zip4",     dtVoid);
   ii->hasMore     = makeIteratorMethod(ii, "hasMore",  defaultInt);
   ii->getValue    = makeIteratorMethod(ii, "getValue", yieldedType);
-  ii->init        = makeIteratorMethod(ii, "init",     dtNothing);
-  ii->incr        = makeIteratorMethod(ii, "incr",     dtNothing);
+  ii->init        = makeIteratorMethod(ii, "init",     dtVoid);
+  ii->incr        = makeIteratorMethod(ii, "incr",     dtVoid);
 
   ii->yieldedType = yieldedType;
   ii->iteratorRetTag = fn->retTag;
@@ -1142,7 +1145,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
   Symbol* ret     = fn->getReturnSymbol();
   Type*   retType = ret->type;
 
-  if (isIterator == true) {
+  if (isIterator) {
     // For iterators, the return symbol / return type is void
     // or the iterator record. Here we want to compute the yielded
     // type.
@@ -1212,6 +1215,12 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
     if (!fn->iteratorInfo) {
       if (retTypes.n == 0) {
+        // This feels like it should be:
+        // retType = dtVoid;
+        //
+        // but that leads to compiler generated assignments of 'void' to
+        // variables, which isn't allowed.  If we fib and claim that it
+        // returns 'nothing', those assignments get removed and all is well.
         retType = dtNothing;
       }
     }

@@ -47,8 +47,8 @@ Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
-Symbol *gNothing = NULL;
-Symbol *gVoidValue = NULL;
+Symbol *gVoid = NULL;
+Symbol *gNone = NULL;
 Symbol *gFile = NULL;
 Symbol *gStringC = NULL;
 Symbol *gStringCopy = NULL;
@@ -1543,8 +1543,8 @@ void createInitStringLiterals() {
   // exported function that will be called in the runtime
   initStringLiterals->addFlag(FLAG_EXPORT);
   initStringLiterals->addFlag(FLAG_LOCAL_ARGS);
-  initStringLiterals->retType = dtNothing;
-  initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gNothing));
+  initStringLiterals->retType = dtVoid;
+  initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
 }
 
