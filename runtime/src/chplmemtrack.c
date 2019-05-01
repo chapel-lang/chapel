@@ -26,6 +26,7 @@
 #include "chpl-tasks.h"
 #include "chpltypes.h"
 #include "chpl-comm.h"
+#include "chpl-comm-internal.h"
 #include "chplcgfns.h"
 #include "chpl-linefile-support.h"
 #include "config.h"
@@ -41,6 +42,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+
+
+int chpl_verbose_mem;
 
 
 static void
@@ -729,14 +733,12 @@ void chpl_track_realloc_post(void* moreMemAlloc,
 
 void chpl_startVerboseMem() {
   chpl_verbose_mem = 1;
-  chpl_comm_broadcast_private(2 /* &chpl_verbose_mem */, sizeof(int),
-                              -1 /* typeIndex: broke for hetero */);
+  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_verbose_mem_idx);
 }
 
 void chpl_stopVerboseMem() {
   chpl_verbose_mem = 0;
-  chpl_comm_broadcast_private(2 /* &chpl_verbose_mem */, sizeof(int),
-                              -1 /* typeIndex: broke for hetero */);
+  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_verbose_mem_idx);
 }
 
 void chpl_startVerboseMemHere() {

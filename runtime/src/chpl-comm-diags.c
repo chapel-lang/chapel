@@ -26,73 +26,87 @@
 
 #include "chpl-comm.h"
 #include "chpl-comm-diags.h"
+#include "chpl-comm-internal.h"
+#include "chpl-mem-consistency.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 
-void chpl_startVerboseComm() {
+int chpl_verbose_comm;
+int chpl_comm_diagnostics;
+
+
+void chpl_comm_startVerbose() {
   chpl_verbose_comm = 1;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_verbose_comm_idx);
   chpl_comm_diags_enable();
 }
 
 
-void chpl_stopVerboseComm() {
+void chpl_comm_stopVerbose() {
   chpl_verbose_comm = 0;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_verbose_comm_idx);
   chpl_comm_diags_enable();
 }
 
 
-void chpl_startVerboseCommHere() {
+void chpl_comm_startVerboseHere() {
   chpl_verbose_comm = 1;
 }
 
 
-void chpl_stopVerboseCommHere() {
+void chpl_comm_stopVerboseHere() {
   chpl_verbose_comm = 0;
 }
 
 
-void chpl_startCommDiagnostics() {
+void chpl_comm_startDiagnostics() {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 1;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_comm_diagnostics_idx);
   chpl_comm_diags_enable();
 }
 
 
-void chpl_stopCommDiagnostics() {
+void chpl_comm_stopDiagnostics() {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 0;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_comm_diagnostics_idx);
   chpl_comm_diags_enable();
 }
 
 
-void chpl_startCommDiagnosticsHere() {
+void chpl_comm_startDiagnosticsHere() {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 1;
 }
 
 
-void chpl_stopCommDiagnosticsHere() {
+void chpl_comm_stopDiagnosticsHere() {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 0;
 }
 
 
-void chpl_resetCommDiagnosticsHere() {
+void chpl_comm_resetDiagnosticsHere() {
   chpl_comm_diags_reset();
 }
 
 
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+void chpl_comm_getDiagnosticsHere(chpl_commDiagnostics *cd) {
   chpl_comm_diags_copy(cd);
 }

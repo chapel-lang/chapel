@@ -26,6 +26,49 @@
 #include "chpl-atomics.h"
 #include "chpl-comm.h"
 
+////////////////////
+//
+// Public
+//
+
+extern int chpl_verbose_comm;     // set via startVerboseComm
+extern int chpl_comm_diagnostics; // set via startCommDiagnostics
+
+#define CHPL_COMM_DIAGS_VARS_ALL(MACRO) \
+  MACRO(get) \
+  MACRO(get_nb) \
+  MACRO(put) \
+  MACRO(put_nb) \
+  MACRO(test_nb) \
+  MACRO(wait_nb) \
+  MACRO(try_nb) \
+  MACRO(execute_on) \
+  MACRO(execute_on_fast) \
+  MACRO(execute_on_nb)
+
+typedef struct _chpl_commDiagnostics {
+#define _COMM_DIAGS_DECL(cdv) uint64_t cdv;
+  CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_DECL)
+#undef _COMM_DIAGS_DECL
+} chpl_commDiagnostics;
+
+void chpl_comm_startVerbose(void);
+void chpl_comm_stopVerbose(void);
+void chpl_comm_startVerboseHere(void);
+void chpl_comm_stopVerboseHere(void);
+
+void chpl_comm_startDiagnostics(void);
+void chpl_comm_stopDiagnostics(void);
+void chpl_comm_startDiagnosticsHere(void);
+void chpl_comm_stopDiagnosticsHere(void);
+void chpl_comm_resetDiagnosticsHere(void);
+void chpl_comm_getDiagnosticsHere(chpl_commDiagnostics *cd);
+
+
+////////////////////
+//
+// Private
+//
 typedef struct _chpl_atomic_commDiagnostics {
 #define _COMM_DIAGS_DECL_ATOMIC(cdv) atomic_uint_least64_t cdv;
   CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_DECL_ATOMIC)
