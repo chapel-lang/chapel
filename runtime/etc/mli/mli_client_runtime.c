@@ -34,6 +34,7 @@ void chpl_mli_client_init(struct chpl_mli_context* client) {
   if (client->context) { return; }
 
   client->context = zmq_ctx_new();
+  client->setup_sock = zmq_socket(client->context, ZMQ_PULL);
   client->main    = zmq_socket(client->context, ZMQ_REQ);
   client->arg     = zmq_socket(client->context, ZMQ_REQ);
   client->res     = zmq_socket(client->context, ZMQ_REP);
@@ -61,6 +62,7 @@ void chpl_library_init(int argc, char** argv) {
 
   // Just hardcode these values for now.
   const char* ip = "localhost";
+  const char* setupPort = "5554"; // ephemeral, ZMQ will determine free port
   const char* mainport = "5555";
   const char* argport = "5556";
   const char* resport = "5557";
@@ -73,6 +75,33 @@ void chpl_library_init(int argc, char** argv) {
 
   // Set up the clientside ZMQ sockets.
   chpl_mli_client_init(&chpl_client);
+
+  chpl_mli_bind(chpl_client.setup_sock, ip, setupPort);
+
+  // Determine port used by ZMQ for setup_sock.
+  size_t lenPort = 256;
+  char* portRes = (char *)calloc(lenPort, sizeof(char));
+  int portErr = zmq_getsockopt(chpl_client.setup_sock, ZMQ_LAST_ENDPOINT,
+                               portRes, &lenPort);
+  printf("connected at %s\n", portRes);
+  char *traveler = strchr(portRes, ':');
+  traveler = strchr(traveler + 1, ':');
+  traveler++;
+  printf("everything after second : %s\n", traveler);
+
+  size_t lenHostname = 256;
+  char* hostRes = (char *)calloc(lenHostname, sizeof(char));
+  err_t hostErr = gethostname(hostRes, lenHostname);
+  printf("connected on host %s\n", hostRes);
+  char* fullConnection = (char *)calloc(lenHostname + lenPort, sizeof(char));
+  strcpy(fullConnection, "tcp://");
+  strcat(fullConnection, hostRes);
+  strcat(fullConnection, ":");
+  strcat(fullConnection, traveler);
+  printf("modified string is %s\n", fullConnection);
+  free(fullConnection);
+  free(hostRes);
+  free(portRes); // Keep this until after we send it to the server
 
   // TODO: Maybe move the open connections to init?
   chpl_mli_connect(chpl_client.main, ip, mainport);
@@ -97,6 +126,7 @@ void chpl_library_finalize(void) {
   
   // TODO: It would be a good idea to set LINGER to 0 as well.
   // TODO: Maybe move the close connections to deinit?
+  chpl_mli_close(chpl_client.setup_sock);
   chpl_mli_close(chpl_client.main);
   chpl_mli_close(chpl_client.arg);
   chpl_mli_close(chpl_client.res);

@@ -82,6 +82,7 @@ const char* chpl_mli_errstr(enum chpl_mli_errors e) {
 struct chpl_mli_context {
 
   void* context;
+  void* setup_sock;
   void* main;
   void* arg;
   void* res;
