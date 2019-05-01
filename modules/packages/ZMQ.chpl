@@ -259,7 +259,7 @@ References
 */
 module ZMQ {
 
-  require "zmq.h", "-lzmq", "ZMQHelper/zmq_helper.h";
+  require "zmq.h", "-lzmq", "ZMQHelper/zmq_helper.h", "ZMQHelper/zmq_helper.c";
 
   use Reflection;
   use ExplicitRefCount;
