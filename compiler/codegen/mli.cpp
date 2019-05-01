@@ -88,6 +88,7 @@ private:
   bool typeRequiresAllocation(Type* t);
 
   std::string genMarshalBodyPrimitiveScalar(Type* t, bool out);
+  std::string genMarshalBodyStringC(Type* t, bool out);
   std::string genComment(const char* msg, const char* pfx="");
   std::string genNote(const char* msg);
   std::string genTodo(const char* msg);
@@ -351,6 +352,74 @@ std::string MLIContext::genMarshalBodyPrimitiveScalar(Type* t, bool out) {
   return gen;
 }
 
+//
+// TODO: I'd like to generalize this method to become something akin to
+// "genMarshalVariableWidthBuffer", of which a string is nothing more than a
+// specific instance of.
+// This will help us later down the line when we have to support other types
+// that push variable width buffers (arrays).
+//
+std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
+  std::string gen;
+
+  // Declare a variable to check allocation errors on ACK.
+  gen += this->genNewDecl("int64_t", "mem_err");
+
+  if (out) {
+
+    // Compute and push length of string.
+    gen += "bytes = strlen(obj);\n";
+    gen += this->genSocketCall("skt", "bytes", out);
+
+    // Read possible allocation error in on ACK.
+    gen += this->genSocketCall("skt", "mem_err", not out);
+
+    // If error, perform shutdown.
+    gen += "if (mem_err) { chpl_mli_terminate(); }\n";
+
+    // Push the string itself over the wire, using length.
+    gen += this->genSocketCall("skt", "obj", "bytes", out);
+
+    // Generate a null frame in the opposite direction for the ACK.
+    gen += this->genSocketCall("skt", NULL, not out);
+
+  } else {
+
+    // Declare a non-const buffer pointer.
+    gen += this->genNewDecl("char*", "buffer");
+
+    // Pull length of string.
+    gen += this->genSocketCall("skt", "bytes", out);
+
+    // Attempt to allocate.
+    gen += "buffer = mli_malloc(bytes + 1);\n";
+
+    // Set ACK value (non-zero if memory allocation failed).
+    gen += "mem_err = (buffer == NULL);\n";
+
+    // Write possible allocation error out on ACK.
+    gen += this->genSocketCall("skt", "mem_err", not out);
+
+    // If error, perform shutdown.
+    gen += "if (mem_err) { chpl_mli_terminate(); }\n";
+
+    // Pull the string itself over the wire, using length.
+    gen += this->genSocketCall("skt", "buffer", "bytes", out);
+
+    // Generate a null frame in the opposite direction for the ACK.
+    gen += this->genSocketCall("skt", NULL, not out);
+
+    // Null terminate allocated buffer.
+    gen += "buffer[bytes] = 0;\n";
+
+    // Assign buffer to result via cast.
+    gen += "result = (const char*) buffer;\n";
+  
+  }
+
+  return gen;
+}
+
 std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   int64_t id = this->assignUniqueTypeID(t);
   std::string gen;
@@ -407,6 +476,8 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   //
   if (isPrimitiveScalar(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, out);
+  } else if (t == dtStringC) {
+    gen += this->genMarshalBodyStringC(t, out);
   } else {
     USR_FATAL("Multi-locale libraries do not support type", t);
   }
@@ -590,7 +661,10 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
 // This filter will change as we support more and more type classes.
 //
 bool MLIContext::isSupportedType(Type* t) {
-  return (isPrimitiveScalar(t));
+  return (
+      isPrimitiveScalar(t) ||
+      t == dtStringC
+  );
 }
 
 void MLIContext::verifyPrototype(FnSymbol* fn) {
