@@ -64,7 +64,6 @@ public:
 private:
 
   bool debugPrintlines;
-  bool separateHeaders;
   std::vector<FnSymbol*> exps;
   std::vector<FnSymbol*> throws;
   std::map<Type*, int64_t> typeMap;
@@ -162,7 +161,6 @@ void codegenMultiLocaleInteropWrappers(void) {
 MLIContext::MLIContext(bool debugPrintlines) {
 
   this->debugPrintlines = debugPrintlines;
-  this->separateHeaders = separateHeaders;
 
   openCFile(&this->fiMarshalling, gen_mli_marshalling, "c");
   openCFile(&this->fiClientBundle, gen_mli_client, "c");
