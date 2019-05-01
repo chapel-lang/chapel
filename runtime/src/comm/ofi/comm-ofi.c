@@ -778,8 +778,15 @@ void init_ofiForMem(void) {
 }
 
 
+static int isAtomicValid(enum fi_datatype);
+
 static
 void init_ofiForRma(void) {
+  //
+  // We need to make an initial call to isAtomicValid() to let it
+  // initialize its internals.  The datatype here doesn't matter.
+  //
+  (void) isAtomicValid(FI_INT32);
 }
 
 
@@ -2918,6 +2925,72 @@ void chpl_comm_atomic_unordered_task_fence(void) {
 // internal AMO utilities
 //
 
+static
+int computeAtomicValid(enum fi_datatype ofiType) {
+  struct fid_ep* ep = tciTab[0].txCtx; // assume same answer for all endpoints
+  size_t count;                        // ignored
+
+#define my_valid(typ, op) \
+  (fi_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
+#define my_fetch_valid(typ, op) \
+  (fi_fetch_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
+#define my_compare_valid(typ, op) \
+  (fi_compare_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
+
+  // For integral types, all operations matter.
+  if (ofiType == FI_INT32
+      || ofiType == FI_UINT32
+      || ofiType == FI_INT64
+      || ofiType == FI_UINT64) {
+    return (   my_valid(ofiType, FI_SUM)
+            && my_valid(ofiType, FI_BOR)
+            && my_valid(ofiType, FI_BAND)
+            && my_valid(ofiType, FI_BXOR)
+            && my_valid(ofiType, FI_ATOMIC_WRITE)
+            && my_fetch_valid(ofiType, FI_SUM)
+            && my_fetch_valid(ofiType, FI_BOR)
+            && my_fetch_valid(ofiType, FI_BAND)
+            && my_fetch_valid(ofiType, FI_BXOR)
+            && my_fetch_valid(ofiType, FI_ATOMIC_READ)
+            && my_fetch_valid(ofiType, FI_ATOMIC_WRITE)
+            && my_compare_valid(ofiType, FI_CSWAP));
+  }
+
+  //
+  // For real types, only sum, read, write, and cswap matter.
+  //
+  return (   my_valid(ofiType, FI_SUM)
+          && my_valid(ofiType, FI_ATOMIC_WRITE)
+          && my_fetch_valid(ofiType, FI_SUM)
+          && my_fetch_valid(ofiType, FI_ATOMIC_READ)
+          && my_fetch_valid(ofiType, FI_ATOMIC_WRITE)
+          && my_compare_valid(ofiType, FI_CSWAP));
+
+#undef my_valid
+#undef my_fetch_valid
+#undef my_compare_valid
+}
+
+
+static
+int isAtomicValid(enum fi_datatype ofiType) {
+  static chpl_bool inited = false;
+  static int validByType[FI_DATATYPE_LAST];
+
+  if (!inited) {
+    validByType[FI_INT32]  = computeAtomicValid(FI_INT32);
+    validByType[FI_UINT32] = computeAtomicValid(FI_UINT32);
+    validByType[FI_INT32]  = computeAtomicValid(FI_INT64);
+    validByType[FI_UINT64] = computeAtomicValid(FI_UINT64);
+    validByType[FI_FLOAT]  = computeAtomicValid(FI_FLOAT);
+    validByType[FI_DOUBLE] = computeAtomicValid(FI_DOUBLE);
+    inited = true;
+  }
+
+  return validByType[ofiType];
+}
+
+
 static inline
 void doAMO(c_nodeid_t node, void* object,
            const void* operand1, const void* operand2, void* result,
@@ -2928,49 +3001,29 @@ void doAMO(c_nodeid_t node, void* object,
   }
 
   uint64_t mrKey;
-  if (mrGetKey(&mrKey, node, object, size) == 0) {
-    struct perTxCtxInfo_t* tcip = NULL;
+  if (isAtomicValid(ofiType)
+      && mrGetKey(&mrKey, node, object, size) == 0) {
+    //
+    // The type is supported for network atomics and the object address
+    // is remotely accessible.  Do the AMO natively.
+    //
+    struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
-
-    int ofiCanDo;
-    size_t count;
-    if (ofiOp == FI_CSWAP) {
-      ofiCanDo = fi_compare_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count);
-    } else {
-      CHK_TRUE(operand2 == NULL);
-      if (result == NULL) {
-        ofiCanDo = fi_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count);
-      } else {
-        ofiCanDo = fi_fetch_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count);
-      }
-    }
-    
-    if (ofiCanDo == 0 && count > 0) {
-      //
-      // The object address is remotely-accessible and the atomic op
-      // and type are supported in the network.  Do the AMO natively.
-      //
-      ofi_amo(tcip, node, object, mrKey, operand1, operand2, result,
-              ofiOp, ofiType, size);
-      tciFree(tcip);
-      return;
-    }
-
+    ofi_amo(tcip, node, object, mrKey, operand1, operand2, result,
+            ofiOp, ofiType, size);
     tciFree(tcip);
+  } else {
+    //
+    // We can't do the AMO on the network, so do it on the CPU.  If the
+    // object is on this node do it directly; otherwise, use an AM.
+    //
+    if (node == chpl_nodeID) {
+      doCpuAMO(object, operand1, operand2, result, ofiOp, ofiType, size);
+    } else {
+      amRequestAMO(node, object, operand1, operand2, result,
+                   ofiOp, ofiType, size);
+    }
   }
-
-  //
-  // We can't do the AMO on the network, so we're going to do it on
-  // the CPU.  If the object is on our own node do that directly;
-  // otherwise, send an AM to do it.
-  //
-  if (node == chpl_nodeID) {
-    doCpuAMO(object, operand1, operand2, result, ofiOp, ofiType, size);
-    return;
-  }
-
-  amRequestAMO(node, object, operand1, operand2, result,
-               ofiOp, ofiType, size);
 }
 
 
