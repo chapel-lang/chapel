@@ -43,7 +43,7 @@ proc addLocale() {
   // explicitly go to each locale
   coforall loc in repllocales do on loc do
     // explicitly index into each element
-    for ix in Dsub do ARepl[ix] += here.id;
+    for ix in DsubLoc do ARepl[ix] += here.id;
 }
 */
 
@@ -75,10 +75,7 @@ on teston {
 
   // Convention: for each test, reset ARepl before; if needed, resetA after.
 
-  // --- iterate over DRepl => each locale's replicant gets iterated over ---
-
   // assignment
-  // => each locale's replicant gets a copy of A (here and below)
   start("ARepl = A[Dsub];");
   reset();
   ARepl = A[Dsub];
@@ -96,16 +93,11 @@ on teston {
   forall (a,b) in zip(ARepl, A[Dsub]) do a = b;
   show();
 
-/* Given the current implementation and the semantics of zippered 'for',
-   this fails with "zippered iterations have non-equal lengths":
-
   // sequential loop
   start("for (a,b) in zip(ARepl, A[Dsub]) do a = b;");
   reset();
   for (a,b) in zip(ARepl, A[Dsub]) do a = b;
   show();
-
-*/
 
   // --- iterate over DsubLoc => only the current locale's replicant is visited --
 
@@ -115,7 +107,7 @@ on teston {
   forall ix in DsubLoc do ARepl[ix] = A[ix];
   show();
 
-  // --- iterate over Dsub => each locale's personal replicant is visited
+  // --- iterate over Dsub => each locale's replicant is visited
 
   // in a forall
   start("forall ix in Dsub do ARepl[ix] = A[ix];");
@@ -152,16 +144,16 @@ on teston {
   forall (b,a) in zip(A[Dsub],ARepl) do a = b;
   show();
 
-/* Given the current implementation and the semantics of zippered 'for',
-   this fails with "zippered iterations have non-equal lengths":
-
   // sequential loop
   start("for (b,a) in zip(A[Dsub],ARepl) do a = b;");
   reset();
   for (b,a) in zip(A[Dsub],ARepl) do a = b;
   show();
 
-*/
+  start("for (b,a) in zip(A[DsubLoc],ARepl) do a = b;");
+  reset();
+  for (b,a) in zip(A[DsubLoc],ARepl) do a = b;
+  show();
 
   // --- explicitly iterating over DRepl, in a for (forall would lead to races)
 
