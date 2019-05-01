@@ -27,19 +27,19 @@
 
 const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
   switch (d) {
-    case CLASS_TYPE_UNDECORATED:
-      return astr(className);
-    case CLASS_TYPE_UNDECORATED_NILABLE:
-      return astr(className, "?");
-    case CLASS_TYPE_UNMANAGED:
-      return astr("unmanaged ", className);
-    case CLASS_TYPE_UNMANAGED_NILABLE:
-      return astr("unmanaged ", className, "?");
     case CLASS_TYPE_BORROWED:
       return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NILABLE:
       return astr("borrowed ", className, "?");
-    /*case CLASS_TYPE_OWNED:
+    case CLASS_TYPE_UNMANAGED:
+      return astr("unmanaged ", className);
+    case CLASS_TYPE_UNMANAGED_NILABLE:
+      return astr("unmanaged ", className, "?");
+    /*case CLASS_TYPE_UNDECORATED:
+      return astr(className);
+    case CLASS_TYPE_UNDECORATED_NILABLE:
+      return astr(className, "?");
+    case CLASS_TYPE_OWNED:
       return astr("owned ", className);
     case CLASS_TYPE_OWNED_NILABLE:
       return astr("owned ", className, "?");
@@ -111,8 +111,8 @@ bool classesWithSameKind(Type* a, Type* b) {
   if (!isClassLike(a) || !isClassLike(b)) return false;
 
   // AggregateType would mean borrow
-  ClassTypeDecorator aDecorator = CLASS_TYPE_UNDECORATED;
-  ClassTypeDecorator bDecorator = CLASS_TYPE_UNDECORATED;
+  ClassTypeDecorator aDecorator = CLASS_TYPE_BORROWED;
+  ClassTypeDecorator bDecorator = CLASS_TYPE_BORROWED;
   if (DecoratedClassType* ad = toDecoratedClassType(a))
     aDecorator = ad->getDecorator();
   if (DecoratedClassType* bd = toDecoratedClassType(b))

@@ -55,16 +55,16 @@ public:
   bool                    isNilable() const {
     return (decorator & CLASS_TYPE_NILABLE_MASK);
   }
-  bool                    isUndecorated() const {
-    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_UNDECORATED;
+  bool                    isBorrowed() const {
+    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_BORROWED;
   }
   bool                    isUnmanaged() const {
     return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_UNMANAGED;
   }
-  bool                    isBorrowed() const {
-    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_BORROWED;
+  /*bool                    isUndecorated() const {
+    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_UNDECORATED;
   }
-  /*bool                    isOwned() const {
+  bool                    isOwned() const {
     return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_OWNED;
   }
   bool                    isShared() const {

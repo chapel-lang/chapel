@@ -6111,7 +6111,7 @@ static Type* resolveGenericActual(SymExpr* se) {
 static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_UNDECORATED;
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
   if (DecoratedClassType* dt = toDecoratedClassType(type)) {
     type = dt->getCanonicalClass();
     decorator = dt->getDecorator();
@@ -6127,7 +6127,7 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
 
       Type* retType = cc->typeInfo();
 
-      if (decorator != CLASS_TYPE_UNDECORATED) {
+      if (decorator != CLASS_TYPE_BORROWED) {
         AggregateType* gotAt = toAggregateType(retType);
         INT_ASSERT(gotAt);
         retType = gotAt->getDecoratedClass(decorator);

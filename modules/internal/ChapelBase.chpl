@@ -613,6 +613,9 @@ module ChapelBase {
   inline proc >>(param a: int(?w), param b: integral) param return __primitive(">>", a, b);
   inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
 
+  inline proc postfix!(x: borrowed)
+    return __primitive("to non nilable class", x);
+
   //
   // These functions are used to implement the semantics of
   // reading a sync/single var when the variable is not actually

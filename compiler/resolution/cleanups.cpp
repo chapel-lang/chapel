@@ -429,7 +429,7 @@ bool isUnusedClass(Type* t) {
     if (isClass(at)) {
       for (int i = 0; i < NUM_DECORATED_CLASS_TYPES; i++) {
         ClassTypeDecorator decorator = (ClassTypeDecorator)i;
-        if (DecoratedClassType* dt = at->getDecoratedClass(decorator))
+        if (Type* dt = at->getDecoratedClass(decorator))
           retval &= do_isUnusedClass(dt);
       }
     }

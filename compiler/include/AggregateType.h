@@ -37,20 +37,32 @@ enum AggregateTag {
 typedef enum {
   // When updating, make sure that these numbers work with the masks below
   // (last bit is nilable or not)
-  CLASS_TYPE_UNDECORATED = 0,
-  CLASS_TYPE_UNDECORATED_NILABLE = 1,
+  CLASS_TYPE_BORROWED = 0,
+  CLASS_TYPE_BORROWED_NILABLE = 1,
   CLASS_TYPE_UNMANAGED = 2,
   CLASS_TYPE_UNMANAGED_NILABLE = 3,
-  CLASS_TYPE_BORROWED = 4,
-  CLASS_TYPE_BORROWED_NILABLE = 5,
-  /*CLASS_TYPE_OWNED = 6,
+  /*
+  CLASS_TYPE_UNDECORATED = 4,
+  CLASS_TYPE_UNDECORATED_NILABLE = 5,
+  CLASS_TYPE_OWNED = 6,
   CLASS_TYPE_OWNED_NILABLE = 7,
   CLASS_TYPE_SHARED = 8,
-  CLASS_TYPE_SHARED_NILABLE = 9,*/
+  CLASS_TYPE_SHARED_NILABLE = 9,
+  */
 } ClassTypeDecorator;
-#define NUM_DECORATED_CLASS_TYPES (6)
+#define NUM_DECORATED_CLASS_TYPES (4)
 #define CLASS_TYPE_MANAGEMENT_MASK (0xfe)
 #define CLASS_TYPE_NILABLE_MASK (0x01)
+static inline ClassTypeDecorator addNilableToDecorator(ClassTypeDecorator d) {
+  int tmp = d;
+  tmp |= CLASS_TYPE_NILABLE_MASK;
+  return (ClassTypeDecorator) tmp;
+}
+static inline ClassTypeDecorator removeNilableFromDecorator(ClassTypeDecorator d) {
+  int tmp = d;
+  tmp &= CLASS_TYPE_MANAGEMENT_MASK;
+  return (ClassTypeDecorator) tmp;
+}
 
 class AggregateType : public Type {
 public:
@@ -166,7 +178,7 @@ public:
 
   Symbol*                     getSubstitution(const char* name);
 
-  DecoratedClassType*         getDecoratedClass(ClassTypeDecorator d);
+  Type*                       getDecoratedClass(ClassTypeDecorator d);
 
   // Returns true if a field is considered generic
   // (i.e. it needs a type constructor argument)

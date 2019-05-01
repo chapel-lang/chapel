@@ -545,7 +545,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_TO_UNMANAGED_CLASS:
-  case PRIM_TO_BORROWED_CLASS: {
+  case PRIM_TO_BORROWED_CLASS:
+  case PRIM_TO_NILABLE_CLASS:
+  case PRIM_TO_NON_NILABLE_CLASS: {
     Type* totype = call->typeInfo();
 
     if (isTypeExpr(call->get(1))) {

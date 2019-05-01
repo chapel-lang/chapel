@@ -411,7 +411,7 @@ static QualifiedType
 returnInfoError(CallExpr* call) {
   AggregateType* at = toAggregateType(dtError);
   INT_ASSERT(isClass(at));
-  DecoratedClassType* unmanaged =
+  Type* unmanaged =
     at->getDecoratedClass(CLASS_TYPE_UNMANAGED); // TODO: nilable
   INT_ASSERT(unmanaged);
   return QualifiedType(unmanaged, QUAL_VAL);
@@ -448,14 +448,17 @@ returnInfoIteratorRecordFieldValueByFormal(CallExpr* call) {
 static QualifiedType
 returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
+
   ClassTypeDecorator decorator = CLASS_TYPE_UNMANAGED;
   if (DecoratedClassType* dt = toDecoratedClassType(t)) {
     t = dt->getCanonicalClass();
+    if (dt->isNilable())
+      decorator = CLASS_TYPE_UNMANAGED_NILABLE;
   }
+
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      if (DecoratedClassType* unmanaged = at->getDecoratedClass(decorator))
-        t = unmanaged;
+      t = at->getDecoratedClass(decorator);
     }
   }
   return QualifiedType(t, QUAL_VAL);
@@ -465,11 +468,63 @@ static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
   if (DecoratedClassType* dt = toDecoratedClassType(t)) {
     t = dt->getCanonicalClass();
-    // TODO: Should this return a decorated class type with borrowed?
+    if (dt->isNilable())
+      decorator = CLASS_TYPE_BORROWED_NILABLE;
   }
+
+  if (decorator != CLASS_TYPE_BORROWED) { // leave borrow = canonical
+    if (AggregateType* at = toAggregateType(t)) {
+      if (isClass(at)) {
+        t = at->getDecoratedClass(decorator);
+      }
+    }
+  }
+
   // Canonical class type is borrow type
+  return QualifiedType(t, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoToNilable(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NILABLE;
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    decorator = dt->getDecorator();
+    decorator = addNilableToDecorator(decorator);
+  }
+
+  if (AggregateType* at = toAggregateType(t)) {
+    if (isClass(at)) {
+      t = at->getDecoratedClass(decorator);
+    }
+  }
+
+  return QualifiedType(t, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoToNonNilable(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    decorator = dt->getDecorator();
+    decorator = removeNilableFromDecorator(decorator);
+  }
+
+  if (AggregateType* at = toAggregateType(t)) {
+    if (isClass(at)) {
+      if (decorator != CLASS_TYPE_BORROWED) // leave borrowed == canonical
+        t = at->getDecoratedClass(decorator);
+    }
+  }
+
   return QualifiedType(t, QUAL_VAL);
 }
 
@@ -943,6 +998,9 @@ initPrimitive() {
   prim_def(PRIM_TO_UNMANAGED_CLASS, "to unmanaged class", returnInfoToUnmanaged, false, false);
   // borrowed class type currently == canonical class type
   prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
+  // Returns the nilable class type
+  prim_def(PRIM_TO_NILABLE_CLASS, "to nilable class", returnInfoToNilable, false, false);
+  prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);

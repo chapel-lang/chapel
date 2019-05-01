@@ -2152,8 +2152,12 @@ Symbol* AggregateType::getSubstitution(const char* name) {
   return retval;
 }
 
-DecoratedClassType* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
+Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
   if (aggregateTag == AGGREGATE_CLASS) {
+
+    // borrowed == canonical class type
+    if (d == CLASS_TYPE_BORROWED)
+      return this;
 
     if (!decoratedClasses[d]) {
       SET_LINENO(this->symbol->defPoint);

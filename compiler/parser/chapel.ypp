@@ -1234,6 +1234,7 @@ fn_ident:
 | TSWAP          { $$ = "<=>"; }
 | TIO            { $$ = "<~>"; }
 | TINITEQUALS    { $$ = "init="; }
+| ident_def TBANG { $$ = astr($1, "!"); }
 ;
 
 assignop_ident:
@@ -1693,7 +1694,7 @@ type_level_expr:
 | TSHARED expr
     { $$ = new CallExpr( "_shared", $2); }
 | ident_expr TQUESTION
-    { $$ = new CallExpr( "_nilable", $1); }
+    { $$ = new CallExpr( PRIM_TO_NILABLE_CLASS, $1); }
 ;
 
 for_expr:
