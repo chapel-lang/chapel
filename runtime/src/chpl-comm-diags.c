@@ -34,8 +34,8 @@
 #include <stdlib.h>
 
 
-int chpl_verbose_comm;
-int chpl_comm_diagnostics;
+int chpl_verbose_comm = 0;
+int chpl_comm_diagnostics = 0;
 
 
 void chpl_comm_startVerbose() {
