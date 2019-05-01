@@ -1,2 +1,4 @@
 CHPL_TARGET_PLATFORM == darwin
 CHPL_LLVM != none
+# This doesn't play well with multi-locale libraries quite yet.
+CHPL_COMM != none
