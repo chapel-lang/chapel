@@ -2125,6 +2125,12 @@ for testname in testsrc:
                                     extra_msg = '(possible JIRA 274) '
                                     break
 
+                            err_strings = ['could not checkout FLEXlm license']
+                            for s in err_strings:
+                                if re.search(s, output, re.IGNORECASE) != None:
+                                    extra_msg = '(possible JIRA 357) '
+                                    break
+
                             err_strings = ['Clock skew detected']
                             for s in err_strings:
                                 # NOTE: checking pre_exec (compiler) output
