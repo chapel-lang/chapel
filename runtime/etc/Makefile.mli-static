@@ -42,16 +42,17 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 #
 CHPL_MLI_INCLUDES = $(CHPL_MAKE_HOME)/runtime/etc/mli
 
-#
-# You MUST SET THIS or compilation will fail!
-#
+checkZMQ:
+  #
+  # You MUST SET THIS or compilation will fail!
+  #
 ifndef CHPL_ZMQ_LOC
 	$(error CHPL_ZMQ_LOC must be set to the location of the ZeroMQ library)
 endif
 
 CHPL_LINK_TRAILING = $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
 
-all: $(TMPBINNAME) $(TMPSERVERNAME)
+all: checkZMQ $(TMPBINNAME) $(TMPSERVERNAME)
 
 # TODO: Should I roll a static copy of libzmq into the client archive?
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
@@ -72,7 +73,7 @@ endif
 ifneq ($(CHPL_MAKE_LAUNCHER),none)
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) TMPBINNAME=$(TMPSERVERNAME) BINNAME=$(SERVERNAME) TMPDIRNAME=$(TMPDIRNAME) CHPL_MAKE_RUNTIME_LIB=$(CHPL_MAKE_RUNTIME_LIB) CHPL_MAKE_RUNTIME_INCL=$(CHPL_MAKE_RUNTIME_INCL) CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY)
 else
-	$(error CHPL_MAKE_LAUNCHER cannot be "none" in a MLI build)
+	$(error CHPL_MAKE_LAUNCHER cannot be "none" in a multilocale library build)
 endif
 ifneq ($(TMPSERVERNAME),$(SERVERNAME))
 	rm -f $(SERVERNAME)
