@@ -78,30 +78,10 @@ void chpl_library_init(int argc, char** argv) {
 
   chpl_mli_bind(chpl_client.setup_sock, ip, setupPort);
 
-  // Determine port used by ZMQ for setup_sock.
-  size_t lenPort = 256;
-  char* portRes = (char *)calloc(lenPort, sizeof(char));
-  int portErr = zmq_getsockopt(chpl_client.setup_sock, ZMQ_LAST_ENDPOINT,
-                               portRes, &lenPort);
-  printf("connected at %s\n", portRes);
-  char *traveler = strchr(portRes, ':');
-  traveler = strchr(traveler + 1, ':');
-  traveler++;
-  printf("everything after second : %s\n", traveler);
+  char* setup_sock_conn = chpl_mli_connection_info(chpl_client.setup_sock);
+  printf("setup socket used %s\n", setup_sock_conn);
+  free(setup_sock_conn);
 
-  size_t lenHostname = 256;
-  char* hostRes = (char *)calloc(lenHostname, sizeof(char));
-  err_t hostErr = gethostname(hostRes, lenHostname);
-  printf("connected on host %s\n", hostRes);
-  char* fullConnection = (char *)calloc(lenHostname + lenPort, sizeof(char));
-  strcpy(fullConnection, "tcp://");
-  strcat(fullConnection, hostRes);
-  strcat(fullConnection, ":");
-  strcat(fullConnection, traveler);
-  printf("modified string is %s\n", fullConnection);
-  free(fullConnection);
-  free(hostRes);
-  free(portRes); // Keep this until after we send it to the server
 
   // TODO: Maybe move the open connections to init?
   chpl_mli_connect(chpl_client.main, ip, mainport);

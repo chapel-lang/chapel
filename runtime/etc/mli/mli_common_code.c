@@ -191,6 +191,36 @@ int chpl_mli_pull(void* socket, void* buffer, size_t bytes, int flags) {
   return zmq_recv(socket, buffer, bytes, flags);
 }
 
+// Determine connection information for that socket.
+static
+char * chpl_mli_connection_info(void* socket) {
+  // Determine port used by ZMQ for socket.
+  size_t lenPort = 256;
+  char* portRes = (char *)calloc(lenPort, sizeof(char));
+  int portErr = zmq_getsockopt(socket, ZMQ_LAST_ENDPOINT,
+                               portRes, &lenPort);
+
+  // Get to port portion of the last endpoint.
+  char *traveler = strchr(portRes, ':');
+  traveler = strchr(traveler + 1, ':');
+  traveler++;
+
+  // Determine hostname of where we are currently running
+  size_t lenHostname = 256;
+  char* hostRes = (char *)calloc(lenHostname, sizeof(char));
+  err_t hostErr = gethostname(hostRes, lenHostname);
+
+  // Recreate the connection using the hostname instead of 0.0.0.0
+  char* fullConnection = (char *)calloc(lenHostname + lenPort, sizeof(char));
+  strcpy(fullConnection, "tcp://");
+  strcat(fullConnection, hostRes);
+  strcat(fullConnection, ":");
+  strcat(fullConnection, traveler);
+
+  free(hostRes);
+  free(portRes);
+  return fullConnection;
+}
 
 
 
