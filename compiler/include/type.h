@@ -441,9 +441,10 @@ bool isLegalParamType(Type*);
 int  get_width(Type*);
 int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
-bool isClass(Type* t);
+bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
 bool isClassOrNil(Type* t);
-bool isClassLike(Type* t); // includes UnmanagedClassType & ClassType
+bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUnion(Type* t);

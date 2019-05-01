@@ -639,7 +639,7 @@ static void checkNoRecordDeletes() {
   forv_Vec(CallExpr, call, gCallExprs)
     if (FnSymbol* fn = call->resolvedFunction())
       if(fn->hasFlag(FLAG_DESTRUCTOR))
-        if (!isClass(call->get(1)->typeInfo()->getValType()))
+        if (!isClassLike(call->get(1)->typeInfo()->getValType()))
           INT_FATAL(call, "delete not on a class");
 }
 
@@ -747,7 +747,7 @@ checkFormalActualBaseTypesMatch()
             // Exact match, so OK.
             continue;
 
-          if (isClassLike(formal->type))
+          if (isClassLikeOrPtr(formal->type))
             // dtNil can be converted to any class type, so OK.
             continue;
 

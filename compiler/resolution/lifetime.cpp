@@ -1157,7 +1157,7 @@ LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
       // Use the referent part of the actual's lifetime
       argLifetime.referent = temp.referent;
     }
-    if (returnsRef && isClassLike(actualSym->getValType())) {
+    if (returnsRef && isClassLikeOrPtr(actualSym->getValType())) {
       // returning a ref to a class field should make the
       // lifetime of the ref == the lifetime of the borrow
       argLifetime.referent = temp.borrowed;

@@ -531,9 +531,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     Type* t = call->get(1)->typeInfo();
 
     if (isClassLike(t) &&
-        !t->symbol->hasFlag(FLAG_EXTERN) &&
-        !t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-        !t->symbol->hasFlag(FLAG_DATA_CLASS)) {
+        !t->symbol->hasFlag(FLAG_EXTERN)) {
       retval = new SymExpr(gTrue);
     } else {
       retval = new SymExpr(gFalse);
@@ -1067,7 +1065,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     //
     SymExpr* se = toSymExpr(call->get(1));
 
-    if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) && !isClassLike(type)) {
+    if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
+        !(isClassLikeOrPtr(type) || isReferenceType(type))) {
       USR_WARN(se, "accessing the locale of a local expression");
     }
 

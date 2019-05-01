@@ -969,7 +969,15 @@ bool isClassOrNil(Type* t) {
 }
 
 bool isClassLike(Type* t) {
-  return isClass(t) || isDecoratedClassType(t);
+  return isDecoratedClassType(t) ||
+         (isClass(t) && !(t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
+                          t->symbol->hasFlag(FLAG_DATA_CLASS) ||
+                          t->symbol->hasFlag(FLAG_REF)));
+}
+
+bool isClassLikeOrPtr(Type* t) {
+  return isClassLike(t) || (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
+                            t->symbol->hasFlag(FLAG_DATA_CLASS));
 }
 
 bool isClassLikeOrNil(Type* t) {
@@ -1243,7 +1251,7 @@ bool needsCapture(Type* t) {
       is_complex_type(t) ||
       is_enum_type(t) ||
       t == dtStringC ||
-      isClassLike(t) ||
+      isClassLikeOrPtr(t) ||
       isRecord(t) ||
       isUnion(t) ||
       t == dtTaskID || // false?

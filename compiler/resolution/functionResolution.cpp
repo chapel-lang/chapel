@@ -5406,7 +5406,7 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
     USR_FATAL(call, "unable to resolve type");
 
   } else if (rhsType == dtNil) {
-    bool lhsIsPointer = isClassLike(lhsType) ||
+    bool lhsIsPointer = isClassLikeOrPtr(lhsType) ||
                         lhsType == dtCVoidPtr ||
                         lhsType == dtCFnPtr ||
                         lhsType == dtFile;
@@ -8463,7 +8463,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     primInitHaltForUnacceptableGeneric(call, type, val);
 
   // These types default to nil
-  } else if (isClassLikeOrNil(type)) {
+  } else if (isClassLikeOrPtr(type) || type == dtNil) {
     // note: error for bad param initialization checked for in resolving move
 
     Expr* nilExpr = NULL;
