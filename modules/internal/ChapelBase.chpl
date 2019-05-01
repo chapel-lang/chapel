@@ -2097,11 +2097,6 @@ module ChapelBase {
     return ret;
   }
 
-  // cast from unmanaged to borrow
-  inline proc _cast(type t:borrowed, x:_unmanaged) where isSubtype(_to_borrowed(x.type),t) {
-    return __primitive("cast", t, x);
-  }
-
   pragma "no borrow convert"
   inline proc _removed_cast(in x) {
     return x;

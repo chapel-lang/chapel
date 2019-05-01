@@ -979,6 +979,30 @@ bool canCoerceTuples(Type*     actualType,
 }
 
 
+static inline
+bool canCoerceDecorators(ClassTypeDecorator actual,
+                         ClassTypeDecorator formal) {
+  switch (formal) {
+    case CLASS_TYPE_BORROWED:
+      // Can't coerce away nilable
+      return actual==CLASS_TYPE_BORROWED || actual==CLASS_TYPE_UNMANAGED;
+    case CLASS_TYPE_BORROWED_NILABLE:
+      // Everything can coerce to a nilable borrowed
+      return true;
+    case CLASS_TYPE_UNMANAGED:
+      // Can't coerce away nilable
+      // Can't coerce borrowed to unmanaged
+      return actual==CLASS_TYPE_UNMANAGED;
+    case CLASS_TYPE_UNMANAGED_NILABLE:
+      // Can't coerce borrowed to unmanaged
+      return actual==CLASS_TYPE_UNMANAGED ||
+             actual==CLASS_TYPE_UNMANAGED_NILABLE;
+
+    // no default for compiler warnings to know when to update it
+  }
+
+  return false;
+}
 
 //
 // returns true iff dispatching the actualType to the formalType
@@ -1014,13 +1038,10 @@ bool canCoerce(Type*     actualType,
 
     Type* formalBaseType = NULL;
     AggregateType* formalOwnedShared = toAggregateType(formalType);
-    bool formalIsClass = false;
     if (isManagedPtrType(formalType)) {
       formalBaseType = getManagedPtrBorrowType(formalType);
       while (formalOwnedShared && formalOwnedShared->instantiatedFrom != NULL)
         formalOwnedShared = formalOwnedShared->instantiatedFrom;
-    } else if (AggregateType* formalAt = toAggregateType(formalType)) {
-      formalIsClass = formalAt->isClass();
     }
 
     if (isManagedPtrType(formalType) &&
@@ -1028,21 +1049,10 @@ bool canCoerce(Type*     actualType,
       // e.g. Owned(Child) coerces to Owned(Parent)
       return canDispatch(actualBaseType, NULL, formalBaseType, fn,
                          promotes, paramNarrows);
-    } else if (formalIsClass) {
+    } else if (isClassLike(formalType)) {
       // e.g. Owned(SomeClass) to SomeClass (borrow type)
       return canDispatch(actualBaseType, NULL, formalType, fn,
                          promotes, paramNarrows);
-    }
-  }
-
-  // Handle coercions from unmanaged -> borrow
-  if (DecoratedClassType* actualDt = toDecoratedClassType(actualType)) {
-    if (AggregateType* formalC = toAggregateType(formalType)) {
-      if (isClass(formalC)) {
-        AggregateType* actualC = actualDt->getCanonicalClass();
-        if (canDispatch(actualC, NULL, formalC, fn, promotes, paramNarrows))
-          return true;
-      }
     }
   }
 
@@ -1079,6 +1089,40 @@ bool canCoerce(Type*     actualType,
       return true;
   }
 
+  // Check for class subtyping
+  // Class subtyping needs coercions in order to generate C code.
+  if (isClassLike(actualType) && isClassLike(formalType)) {
+    AggregateType* actualC = toAggregateType(actualType);
+    ClassTypeDecorator actualDecorator = CLASS_TYPE_BORROWED;
+    if (DecoratedClassType* actualDt = toDecoratedClassType(actualType)) {
+      actualC = actualDt->getCanonicalClass();
+      actualDecorator = actualDt->getDecorator();
+    }
+    AggregateType* formalC = toAggregateType(formalType);
+    ClassTypeDecorator formalDecorator = CLASS_TYPE_BORROWED;
+    if (DecoratedClassType* formalDt = toDecoratedClassType(formalType)) {
+      formalC = formalDt->getCanonicalClass();
+      formalDecorator = formalDt->getDecorator();
+    }
+
+    // Check that the decorators allow coercion
+    if (canCoerceDecorators(actualDecorator, formalDecorator)) {
+      // are the decorated class types the same?
+      if (actualC == formalC)
+        return true;
+
+      // are we passing a subclass?
+      AggregateType* actualParent = actualC;
+      while (true) {
+        if (actualParent == formalC)
+          return true;
+        if (actualParent == dtObject)
+          break;
+        actualParent = actualParent->dispatchParents.only();
+      }
+    }
+  }
+
   return false;
 }
 
@@ -1103,98 +1147,54 @@ bool doCanDispatch(Type*     actualType,
                    bool*     promotes,
                    bool*     paramNarrows,
                    bool      paramCoerce) {
-  bool retval = false;
+  if (actualType == formalType)
+    return true;
 
-  if (actualType == formalType) {
-    retval = true;
+  if (isGenericInstantiation(actualType, formalType))
+    return true;
 
-  } else if (isGenericInstantiation(actualType, formalType) == true) {
-    retval = true;
+  if (actualType == dtNil && isClassLikeOrPtr(formalType))
+    return true;
 
-  // The following check against FLAG_REF ensures that 'nil' can't be
-  // passed to a by-ref argument (for example, an atomic type).  I
-  // found that without this, calls like autocopy(nil) became
-  // ambiguous when given the choice between the completely generic
-  // autocopy(x) and the autocopy(x: atomic int) (represented as
-  // autocopy(x: ref(atomic int)) internally).
-  //
-  } else if (actualType == dtNil &&
-             isClass(canonicalClassType(formalType)) &&
-             !formalType->symbol->hasFlag(FLAG_REF)) {
-    retval = true;
+  if (actualType->refType == formalType &&
+      // This is a workaround for type problems with tuples
+      // in implement forall intents...
+      !(fn &&
+        fn->hasFlag(FLAG_BUILD_TUPLE) &&
+        fn->hasFlag(FLAG_ALLOW_REF)))
+    return true;
 
-  } else if (actualType->refType == formalType &&
-             // This is a workaround for type problems with tuples
-             // in implement forall intents...
-             !(fn                            != NULL &&
-               fn->hasFlag(FLAG_BUILD_TUPLE) == true &&
-               fn->hasFlag(FLAG_ALLOW_REF)   == true)) {
-    retval = true;
+  if (paramCoerce == false &&
+      canCoerce(actualType, actualSym,
+                formalType,
+                fn, promotes, paramNarrows))
+    return true;
 
-  } else if (paramCoerce == false &&
-             canCoerce(actualType,
-                       actualSym,
-                       formalType,
-                       fn,
-                       promotes,
-                       paramNarrows) == true) {
-    retval = true;
+  if (paramCoerce == true  &&
+      canParamCoerce(actualType, actualSym,
+                     formalType,
+                     paramNarrows))
+    return true;
 
-  } else if (paramCoerce == true  &&
-             canParamCoerce(actualType,
-                            actualSym,
-                            formalType,
-                            paramNarrows) == true) {
-    retval = true;
-
-  } else {
-    AggregateType* at = toAggregateType(actualType);
-    ClassTypeDecorator decorator = CLASS_TYPE_UNDECORATED;
-    if (DecoratedClassType* dt = toDecoratedClassType(actualType)) {
-      decorator = dt->getDecorator();
-      at = dt->getCanonicalClass();
-    }
-
-    if (at) {
-      forv_Vec(AggregateType, parent, at->dispatchParents) {
-        Type* useParent = parent;
-        if (decorator != CLASS_TYPE_UNDECORATED)
-          useParent = parent->getDecoratedClass(decorator);
-        if (useParent == formalType ||
-            doCanDispatch(useParent,
-                          NULL,
-                          formalType,
-                          fn,
-                          promotes,
-                          paramNarrows,
-                          paramCoerce) == true) {
-          retval = true;
-          break;
-        }
-      }
-    }
-
-    if (retval == false) {
-      if (fn                              != NULL        &&
-          fn->name                        != astrSequals &&
-          strcmp(fn->name, "these")       != 0           &&
-          fn->retTag                      != RET_TYPE    &&
-          fn->retTag                      != RET_PARAM   &&
-          actualType->scalarPromotionType != NULL        &&
-          doCanDispatch(actualType->scalarPromotionType,
-                        NULL,
-                        formalType,
-                        fn,
-                        promotes,
-                        paramNarrows,
-                        false) == true) {
-        *promotes = true;
-        retval    = true;
-      }
-    }
+  // check if promotion is possible
+  if (fn                              != NULL        &&
+      fn->name                        != astrSequals &&
+      strcmp(fn->name, "these")       != 0           &&
+      fn->retTag                      != RET_TYPE    &&
+      fn->retTag                      != RET_PARAM   &&
+      actualType->scalarPromotionType != NULL        &&
+      doCanDispatch(actualType->scalarPromotionType,
+                    NULL,
+                    formalType,
+                    fn,
+                    promotes,
+                    paramNarrows,
+                    false)) {
+    *promotes = true;
+    return true;
   }
 
-  return retval;
+  return false;
 }
 
 bool canDispatch(Type*     actualType,
