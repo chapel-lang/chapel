@@ -1,2 +1,0 @@
-# Multi-locale libraries don't support arrays yet!
-CHPL_COMM != none
