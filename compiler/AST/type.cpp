@@ -131,6 +131,7 @@ const char* toString(Type* type) {
   if (type != NULL) {
     Type* vt = type->getValType();
 
+    bool isBorrow = false;
     if (AggregateType* at = toAggregateType(vt)) {
       const char* drDomName = "DefaultRectangularDom";
       const int   drDomNameLen = strlen(drDomName);
@@ -159,11 +160,27 @@ const char* toString(Type* type) {
           if (implType != dtUnknown)
             retval = toString(implType);
         }
+      } else if (isManagedPtrType(vt)) {
+        Type* borrowType = getManagedPtrBorrowType(vt);
+        const char* borrowed = "borrowed ";
+        const char* borrowName = toString(borrowType);
+        if (startsWith(borrowName, borrowed))
+          borrowName = borrowName + strlen(borrowed);
+        if (startsWith(vt->symbol->name, "_owned("))
+          retval = astr("owned ", borrowName);
+        else if (startsWith(vt->symbol->name, "_shared("))
+          retval = astr("shared ", borrowName);
+      } else if (isClassLike(at) && isClass(at)) {
+        isBorrow = true;
       }
     }
 
-    if (retval == NULL)
-      retval = vt->symbol->name;
+    if (retval == NULL) {
+      if (isBorrow && !startsWith(vt->symbol->name, "borrowed "))
+        retval = astr("borrowed ", vt->symbol->name);
+      else
+        retval = vt->symbol->name;
+    }
 
   } else {
     retval = "null type";
