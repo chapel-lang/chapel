@@ -31,8 +31,8 @@
 // Public
 //
 
-extern int chpl_verbose_comm;     // set via startVerboseComm
-extern int chpl_comm_diagnostics; // set via startCommDiagnostics
+int chpl_verbose_comm;     // set via startVerboseComm
+int chpl_comm_diagnostics; // set via startCommDiagnostics
 
 #define CHPL_COMM_DIAGS_VARS_ALL(MACRO) \
   MACRO(get) \
