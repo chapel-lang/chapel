@@ -2078,3 +2078,13 @@ VarSymbol* newTempConst(QualifiedType qt) {
   result->addFlag(FLAG_CONST);
   return result;
 }
+
+const char* toString(ArgSymbol* arg) {
+  if (arg->intent == INTENT_BLANK) {
+    return astr(arg->name, ": ", toString(arg->getValType()));
+  } else {
+    return astr(arg->intentDescrString(), " ",
+                arg->name, ": ",
+                toString(arg->getValType()));
+  }
+}
