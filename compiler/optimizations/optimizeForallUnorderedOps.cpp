@@ -369,7 +369,8 @@ static bool isTaskFunOrWrapper(FnSymbol* fn) {
 static MayBlockState mayBlock(FnSymbol* fn) {
   MayBlockState& state = fnMayBlock[fn];
   if (state == STATE_UNKNOWN) {
-    if (fn->hasFlag(FLAG_FN_SYNCHRONIZATION_FREE)) {
+    if (fn->hasFlag(FLAG_FN_SYNCHRONIZATION_FREE) ||
+        fn->hasFlag(FLAG_FN_UNORDERED_SAFE)) {
       state = STATE_COMPUTED;
     } else if (fn->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
       // No need for such a function to impede optimization
