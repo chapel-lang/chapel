@@ -28,6 +28,7 @@
 
 struct chpl_mli_context chpl_client;
 
+extern const char* mli_servername;
 
 static
 void chpl_mli_client_init(struct chpl_mli_context* client) {
@@ -80,6 +81,7 @@ void chpl_library_init(int argc, char** argv) {
 
   char* setup_sock_conn = chpl_mli_connection_info(chpl_client.setup_sock);
   printf("setup socket used %s\n", setup_sock_conn);
+  printf("server name is: %s\n", mli_servername);
   free(setup_sock_conn);
 
 
