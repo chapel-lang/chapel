@@ -2355,10 +2355,39 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc this(d: domain) {
-      if d.rank == rank then
-        return this((...d.getIndices()));
-      else
+      if d.rank != rank then
         compilerError("slicing an array with a domain of a different rank");
+
+      if boundsChecking then
+        checkSlice(d);
+
+      //
+      // If this is already a slice array view, we can short-circuit
+      // down to the underlying array.
+      //
+      const (arr, arrpid) = if (_value.isSliceArrayView())
+                              then (this._value.arr, this._value._ArrPid)
+                              else (this._value, this._pid);
+
+      var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
+                                              _DomPid=d._pid,
+                                              dom=d._instance,
+                                              _ArrPid=arrpid,
+                                              _ArrInstance=arr);
+
+      // lock since we're referring to an existing domain; but don't
+      // add this array to the domain's list of arrays since resizing
+      // a slice's domain shouldn't generate a reallocate call for the
+      // underlying array
+      d._value.add_arr(a, locking=true, addToList=false);
+      return _newArray(a);
+    }
+
+    pragma "no doc"
+    proc checkSlice(d: domain) {
+      for param i in 1.._value.dom.rank do
+        if !_value.dom.dsiDim(i).boundsCheck(d.dsiDim(i)) then
+          halt("array slice out of bounds in dimension ", i, ": ", d.dsiDim(i));
     }
 
     pragma "no doc"
@@ -2394,7 +2423,10 @@ module ChapelArray {
                                     _ArrInstance=arr);
 
       // this doesn't need to lock since we just created the domain d
-      d._value.add_arr(a, locking=false);
+      // don't add this array to the domain's list of arrays since
+      // resizing a slice's domain shouldn't generate a reallocate
+      // call for the underlying array
+      d._value.add_arr(a, locking=false, addToList=false);
       return _newArray(a);
     }
 
@@ -3304,7 +3336,8 @@ module ChapelArray {
   inline proc _do_destroy_arr(_unowned: bool, _instance) {
     if ! _unowned {
       on _instance {
-        var (arrToFree, domToRemove) = _instance.remove();
+        param arrIsInList = !_instance.isSliceArrayView();
+        var (arrToFree, domToRemove) = _instance.remove(arrIsInList);
         var domToFree:unmanaged BaseDom = nil;
         var distToRemove:unmanaged BaseDist = nil;
         var distToFree:unmanaged BaseDist = nil;
