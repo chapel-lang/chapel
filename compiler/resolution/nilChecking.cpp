@@ -207,7 +207,7 @@ static bool isCheckedClassMethodCall(CallExpr* call) {
       // Note that .borrow is available on borrows and unmanaged.
       retval = false;
 
-    } else if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
+    } else if (AggregateType* ct = toAggregateType(fn->_this->getValType())) {
       if (fn->numFormals()             >  0 &&
           fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
         if (isClassLike(ct)) {
