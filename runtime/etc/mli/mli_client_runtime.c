@@ -29,6 +29,7 @@
 struct chpl_mli_context chpl_client;
 
 extern const char* mli_servername;
+FILE* server_pipe;
 
 static
 void chpl_mli_client_init(struct chpl_mli_context* client) {
@@ -54,6 +55,14 @@ void chpl_mli_client_deinit(struct chpl_mli_context* client) {
   return;
 }
 
+static void spawn_server() {
+  char command[256] = "./";
+  strcat(command, mli_servername);
+  strcat(command, " -nl 1");
+
+  printf("executing %s as a subprocess\n", command);
+  server_pipe = popen(command, "r");
+}
 
 //
 // TODO: In multi-locale libraries, argc/argv formals are currently ignored.
@@ -82,6 +91,10 @@ void chpl_library_init(int argc, char** argv) {
   char* setup_sock_conn = chpl_mli_connection_info(chpl_client.setup_sock);
   printf("setup socket used %s\n", setup_sock_conn);
   printf("server name is: %s\n", mli_servername);
+
+  // TODO: pass in argv/argc, connection information
+  spawn_server();
+
   free(setup_sock_conn);
 
 
@@ -105,7 +118,17 @@ void chpl_library_finalize(void) {
     int64_t shutdown = -1;
     chpl_mli_push(chpl_client.main, &shutdown, sizeof(shutdown), 0);     
   }
-  
+
+  char server_output[256];
+  while(!feof(server_pipe)) {
+    if (fgets(server_output, 256, server_pipe) != NULL) {
+      printf("%s", server_output);
+    }
+  }
+  if (pclose(server_pipe)) {
+    printf("Failed to shut down server\n");
+  }
+
   // TODO: It would be a good idea to set LINGER to 0 as well.
   // TODO: Maybe move the close connections to deinit?
   chpl_mli_close(chpl_client.setup_sock);
