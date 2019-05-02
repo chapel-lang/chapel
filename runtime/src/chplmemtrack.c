@@ -44,9 +44,6 @@
 #include <inttypes.h>
 
 
-int chpl_verbose_mem;
-
-
 static void
 printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
                int32_t lineno, int32_t filename);
@@ -64,8 +61,6 @@ extern void chpl_memTracking_returnConfigVals(chpl_bool* memTrack,
                                               size_t* memThreshold,
                                               c_string* memLog,
                                               c_string* memLeaksLog);
-
-chpl_bool chpl_memTrack = false;
 
 typedef struct memTableEntry_struct { /* table entry */
   size_t number;
@@ -159,15 +154,14 @@ void chpl_setMemFlags(void) {
                                     &memLog,
                                     &memLeaksLog);
 
-  if (local_memTrack
-      || memStats
-      || memLeaksByType
-      || (memLeaksByDesc && strcmp(memLeaksByDesc, ""))
-      || memLeaks
-      || memMax > 0
-      || memLeaksLog != NULL) {
-    chpl_memTrack = true;
-  }
+  chpl_memTrack = (local_memTrack
+                   || memStats
+                   || memLeaksByType
+                   || (memLeaksByDesc && strcmp(memLeaksByDesc, ""))
+                   || memLeaks
+                   || memMax > 0
+                   || memLeaksLog != NULL);
+  
 
   if (!memLog) {
     memLogFile = stdout;
@@ -733,12 +727,12 @@ void chpl_track_realloc_post(void* moreMemAlloc,
 
 void chpl_startVerboseMem() {
   chpl_verbose_mem = 1;
-  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_verbose_mem_idx);
+  chpl_comm_bcast_rt_private(chpl_verbose_mem);
 }
 
 void chpl_stopVerboseMem() {
   chpl_verbose_mem = 0;
-  chpl_comm_bcast_rt_private(chpl_rt_prv_tab_chpl_verbose_mem_idx);
+  chpl_comm_bcast_rt_private(chpl_verbose_mem);
 }
 
 void chpl_startVerboseMemHere() {
