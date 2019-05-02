@@ -18,22 +18,47 @@ config const showtime = false;
 
 var timer:Timer;
 
-var sub = spawn(["bash", "10.bash"], stdout=PIPE);
+var sub = spawn(["bash", "waiting.bash"], stdout=PIPE);
 
 timer.start();
 
+config const wait = 6;
+config const debug = false;
+
 var line:string;
 var i = 0;
+var signaled = false;
+var signalFile = "";
+var lastline = "";
 while sub.stdout.readline(line) {
-  write("Got line: ", line);
+  line = line.strip();
 
-  // We want to make sure we're not just buffering everything
-  // up and reading it at once.
+  if line != lastline && line != "Waiting" {
+    writeln(line);
+  }
 
-  // Make sure no more than i+5 seconds have elapsed.
-  var elapsed = timer.elapsed();
-  if showtime then writeln(elapsed, " seconds");
-  assert(elapsed <= i+5);
+  if debug {
+    var elapsed = timer.elapsed();
+    writeln(elapsed, " line: ", line);
+  }
+
+  if signalFile == "" {
+    signalFile = line;
+  }
+
+  if i >= wait && !signaled {
+    if debug {
+      writeln("writing to ", signalFile);
+    }
+    signaled = true;
+    var f = open(signalFile, iomode.cw);
+    var ch = f.writer();
+    ch.writeln();
+    ch.close();
+    f.close();
+  }
+
+  lastline = line;
   i += 1;
 }
 
