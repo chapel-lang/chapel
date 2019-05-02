@@ -1215,13 +1215,17 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
     if (!fn->iteratorInfo) {
       if (retTypes.n == 0) {
-        // This feels like it should be:
-        // retType = dtVoid;
-        //
-        // but that leads to compiler generated assignments of 'void' to
-        // variables, which isn't allowed.  If we fib and claim that it
-        // returns 'nothing', those assignments get removed and all is well.
-        retType = dtNothing;
+        if (isIterator) {
+          // This feels like it should be:
+          // retType = dtVoid;
+          //
+          // but that leads to compiler generated assignments of 'void' to
+          // variables, which isn't allowed.  If we fib and claim that it
+          // returns 'nothing', those assignments get removed and all is well.
+          retType = dtNothing;
+        } else {
+          retType = dtVoid;
+        }
       }
     }
 
