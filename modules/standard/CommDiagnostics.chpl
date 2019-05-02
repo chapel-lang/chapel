@@ -243,7 +243,7 @@ module CommDiagnostics
         if val != 0 {
           if commDiagsPrintUnstable || name != 'amo' {
             if first then first = false; else c <~> ", ";
-            c <~> getFieldName(chpl_commDiagnostics, i) <~> " = " <~> val;
+            c <~> name <~> " = " <~> val;
           }
         }
       }
