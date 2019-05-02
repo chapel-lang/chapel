@@ -1411,14 +1411,18 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
         SymExpr* se = toSymExpr(call->get(1));
         INT_ASSERT(se);
         SET_LINENO(call);
-        fprintf(hdrfile, "%s\n&%s",
-                ((i == 0) ? "" : ","), se->symbol()->cname);
+        fprintf(hdrfile, "%s&%s",
+                ((i == 0) ? "" : ",\n"), se->symbol()->cname);
         // To preserve operand order, this should be insertAtTail.
         // The change must also be made below (for LLVM) and in the signature
         // of chpl_comm_broadcast_private().
         call->insertAtHead(new_IntSymbol(i));
         i++;
       }
+    }
+    if (i == 0) {
+      // Quiet PGI warning about empty initializer
+      fprintf(hdrfile, "NULL");
     }
     fprintf(hdrfile, "\n};\n");
     genGlobalInt("chpl_private_broadcast_table_len", i, false);
