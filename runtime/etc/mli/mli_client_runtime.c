@@ -90,7 +90,6 @@ void chpl_library_init(int argc, char** argv) {
 
   char* setup_sock_conn = chpl_mli_connection_info(chpl_client.setup_sock);
   printf("setup socket used %s\n", setup_sock_conn);
-  printf("server name is: %s\n", mli_servername);
 
   // TODO: pass in argv/argc, connection information
   spawn_server();
@@ -120,6 +119,8 @@ void chpl_library_finalize(void) {
   }
 
   char server_output[256];
+  // TODO: intersperse server output with function calls instead of all at
+  // the end
   while(!feof(server_pipe)) {
     if (fgets(server_output, 256, server_pipe) != NULL) {
       printf("%s", server_output);
