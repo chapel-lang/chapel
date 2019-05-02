@@ -28,13 +28,30 @@
 #include "chpl-comm-diags.h"
 #include "chpl-comm-internal.h"
 #include "chpl-mem-consistency.h"
+#include "error.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 
-void chpl_comm_startVerbose() {
+static pthread_once_t bcastPrintUnstable_once = PTHREAD_ONCE_INIT;
+
+
+static
+void broadcast_print_unstable(void) {
+  chpl_comm_diags_disable();
+  chpl_comm_bcast_rt_private(chpl_comm_diags_print_unstable);
+  chpl_comm_diags_enable();
+}
+
+
+void chpl_comm_startVerbose(chpl_bool print_unstable) {
+    chpl_comm_diags_print_unstable = (print_unstable == true);
+  if (pthread_once(&bcastPrintUnstable_once, broadcast_print_unstable) != 0) {
+    chpl_internal_error("pthread_once(&bcastPrintUnstable_once) failed");
+  }
+
   chpl_verbose_comm = 1;
   chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_verbose_comm);
@@ -50,7 +67,8 @@ void chpl_comm_stopVerbose() {
 }
 
 
-void chpl_comm_startVerboseHere() {
+void chpl_comm_startVerboseHere(chpl_bool print_unstable) {
+  chpl_comm_diags_print_unstable = (print_unstable == true);
   chpl_verbose_comm = 1;
 }
 
@@ -60,7 +78,12 @@ void chpl_comm_stopVerboseHere() {
 }
 
 
-void chpl_comm_startDiagnostics() {
+void chpl_comm_startDiagnostics(chpl_bool print_unstable) {
+  chpl_comm_diags_print_unstable = (print_unstable == true);
+  if (pthread_once(&bcastPrintUnstable_once, broadcast_print_unstable) != 0) {
+    chpl_internal_error("pthread_once(&bcastPrintUnstable_once) failed");
+  }
+
   // Make sure that there are no pending communication operations.
   chpl_rmem_consist_release(0, 0);
 
@@ -82,7 +105,9 @@ void chpl_comm_stopDiagnostics() {
 }
 
 
-void chpl_comm_startDiagnosticsHere() {
+void chpl_comm_startDiagnosticsHere(chpl_bool print_unstable) {
+  chpl_comm_diags_print_unstable = (print_unstable == true);
+
   // Make sure that there are no pending communication operations.
   chpl_rmem_consist_release(0, 0);
 

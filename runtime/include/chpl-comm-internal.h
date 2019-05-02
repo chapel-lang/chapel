@@ -37,6 +37,7 @@ extern size_t chpl_rt_priv_bcast_lens[];
 #define CHPL_RT_PRV_BCAST_TAB_ENTRIES(MACRO) \
   MACRO(chpl_verbose_comm)                   \
   MACRO(chpl_comm_diagnostics)               \
+  MACRO(chpl_comm_diags_print_unstable)      \
   MACRO(chpl_verbose_mem)
 
 #define _RT_PRV_BCAST_M(sym)  chpl_rt_prv_tab_ ## sym ## _idx,

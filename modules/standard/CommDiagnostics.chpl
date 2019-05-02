@@ -167,6 +167,18 @@
  */
 module CommDiagnostics
 {
+  /*
+    If this is `false`, a written `commDiagnostics` value does not
+    include "unstable" fields even when they are non-zero.  Unstable
+    fields are those expected to have unpredictable values for multiple
+    executions of the same code sequence.  Setting this to `true` causes
+    such fields, if non-zero, to be included when a `commDiagnostics`
+    value is written.  At present the only unstable field is the `amo`
+    counter, whose instability is due to the use of atomic reads in spin
+    loops that wait for parallelism and on-statements to complete.
+   */
+  config param commDiagsPrintUnstable = false;
+
   /* Aggregated communication operation counts.  This record type is
      defined in the same way by both the underlying comm layer(s) and
      this module, because we don't have a good way to inherit types back
@@ -203,6 +215,10 @@ module CommDiagnostics
      */
     var try_nb: uint(64);
     /*
+      AMOs
+     */
+    var amo: uint(64);
+    /*
       blocking remote executions, in which initiator waits for completion
      */
     var execute_on: uint(64);
@@ -222,10 +238,13 @@ module CommDiagnostics
       var first = true;
       c <~> "(";
       for param i in 1..numFields(chpl_commDiagnostics) {
+        param name = getFieldName(this.type, i);
         const val = getField(this, i);
         if val != 0 {
-          if first then first = false; else c <~> ", ";
-          c <~> getFieldName(chpl_commDiagnostics, i) <~> " = " <~> val;
+          if commDiagsPrintUnstable || name != 'amo' {
+            if first then first = false; else c <~> ", ";
+            c <~> getFieldName(chpl_commDiagnostics, i) <~> " = " <~> val;
+          }
         }
       }
       if first then c <~> "<no communication>";
@@ -238,19 +257,19 @@ module CommDiagnostics
    */
   type commDiagnostics = chpl_commDiagnostics;
 
-  private extern proc chpl_comm_startVerbose();
+  private extern proc chpl_comm_startVerbose(print_unstable: bool);
 
   private extern proc chpl_comm_stopVerbose();
 
-  private extern proc chpl_comm_startVerboseHere();
+  private extern proc chpl_comm_startVerboseHere(print_unstable: bool);
 
   private extern proc chpl_comm_stopVerboseHere();
 
-  private extern proc chpl_comm_startDiagnostics();
+  private extern proc chpl_comm_startDiagnostics(print_unstable: bool);
 
   private extern proc chpl_comm_stopDiagnostics();
 
-  private extern proc chpl_comm_startDiagnosticsHere();
+  private extern proc chpl_comm_startDiagnosticsHere(print_unstable: bool);
 
   private extern proc chpl_comm_stopDiagnosticsHere();
 
@@ -261,7 +280,9 @@ module CommDiagnostics
   /*
     Start on-the-fly reporting of communication initiated on any locale.
    */
-  proc startVerboseComm() { chpl_comm_startVerbose(); }
+  proc startVerboseComm() {
+    chpl_comm_startVerbose(commDiagsPrintUnstable);
+  }
 
   /*
     Stop on-the-fly reporting of communication initiated on any locale.
@@ -271,7 +292,9 @@ module CommDiagnostics
   /*
     Start on-the-fly reporting of communication initiated on this locale.
    */
-  proc startVerboseCommHere() { chpl_comm_startVerboseHere(); }
+  proc startVerboseCommHere() {
+    chpl_comm_startVerboseHere(commDiagsPrintUnstable);
+  }
 
   /*
     Stop on-the-fly reporting of communication initiated on this locale.
@@ -282,7 +305,7 @@ module CommDiagnostics
     Start counting communication operations across the whole program.
    */
   proc startCommDiagnostics() {
-    chpl_comm_startDiagnostics();
+    chpl_comm_startDiagnostics(commDiagsPrintUnstable);
   }
 
   /*
@@ -296,7 +319,7 @@ module CommDiagnostics
     Start counting communication operations initiated on this locale.
    */
   proc startCommDiagnosticsHere() {
-    chpl_comm_startDiagnosticsHere();
+    chpl_comm_startDiagnosticsHere(commDiagsPrintUnstable);
   }
 
   /*
