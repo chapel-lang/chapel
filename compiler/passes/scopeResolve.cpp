@@ -2219,7 +2219,6 @@ static void resolveUnmanagedBorrows() {
           }
 
           // Compute the decorated class type
-          TypeSymbol* useTS = NULL;
           if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
             int tmp = decorator & CLASS_TYPE_NILABLE_MASK;
             tmp |= CLASS_TYPE_UNMANAGED;
@@ -2237,13 +2236,14 @@ static void resolveUnmanagedBorrows() {
             decorator = (ClassTypeDecorator) tmp;
           }
 
-          {
+          if (at) {
             Type* dt = at->getDecoratedClass(decorator);
-            useTS = dt->symbol;
+            if (dt) {
+              TypeSymbol* useTS = dt->symbol;
+              // replace the call with a new symexpr pointing to ts
+              call->replace(new SymExpr(useTS));
+            }
           }
-
-          // replace the call with a new symexpr pointing to ts
-          call->replace(new SymExpr(useTS));
         }
       }
       // It's tempting to give type constructor calls the same
