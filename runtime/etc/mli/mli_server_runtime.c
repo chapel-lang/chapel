@@ -65,6 +65,12 @@ void chpl_mli_server_deinit(struct chpl_mli_context* server) {
   return;
 }
 
+void chpl_mli_terminate(enum chpl_mli_errors e) {
+  const char* errstr = chpl_mli_errstr(e);
+  chpl_mli_sdebugf("Terminated abruptly with error: %s\n", errstr);
+  mli_terminate();
+}
+
 //
 // TODO
 // 

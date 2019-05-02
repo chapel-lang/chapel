@@ -98,8 +98,8 @@ private:
   std::string genMarshalPushRoutine(Type* t);
   std::string genMarshalPullRoutine(Type* t);
   std::string genServerDispatchSwitch(const std::vector<FnSymbol*>& fns);
-  std::string genDebugPrintCall(FnSymbol* fn, const char* pfx="");
-  std::string genDebugPrintCall(const char* msg, const char* pfx="");
+  std::string genDebugPrintCall(FnSymbol* fn);
+  std::string genDebugPrintCall(const char* msg);
   std::string genFuncNumericID(FnSymbol* fn);
   std::string genServerWrapperCall(FnSymbol* fn);
   std::string genClientsideRPC(FnSymbol* fn);
@@ -109,6 +109,8 @@ private:
   std::string genMarshalPushCall(const char* skt, const char* var, Type* t);
   std::string genMarshalPullCall(const char* skt, const char* var, Type* t);
   std::string genTypeName(Type* t);
+  std::string genSocketCallBuffer(const char* skt, const char* var,
+                                  const char* len, bool out);
   std::string genSocketCall(const char* skt, const char* var, const char* len,
                             bool out);
   std::string genSocketCall(const char* skt, const char* var, bool out);
@@ -237,8 +239,8 @@ void MLIContext::emitClientPrelude(void) {
 
   gen += this->genDefine("CHPL_MLI_IS_CLIENT");
   gen += this->genHeaderInc(astr(gen_mli_client, ".h"));
-  gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genHeaderInc("mli_client_runtime.c");
+  gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += "\n";
 
   this->setOutputAndWrite(&this->fiClientBundle, gen);
@@ -296,8 +298,8 @@ void MLIContext::emitServerPrelude(void) {
   }
 
   gen += this->genDefine("CHPL_MLI_IS_SERVER");
-  gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genHeaderInc("mli_server_runtime.c");
+  gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genHeaderInc("_main.c");
   gen += "\n";
   
@@ -360,61 +362,42 @@ std::string MLIContext::genMarshalBodyPrimitiveScalar(Type* t, bool out) {
 // that push variable width buffers (arrays).
 //
 std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
+  const char* target = out ? "obj" : "buffer";
   std::string gen;
 
-  // Declare a variable to check allocation errors on ACK.
-  gen += this->genNewDecl("int64_t", "mem_err");
-
   if (out) {
-
     // Compute and push length of string.
     gen += "bytes = strlen(obj);\n";
-    gen += this->genSocketCall("skt", "bytes", out);
+  }
 
-    // Read possible allocation error in on ACK.
-    gen += this->genSocketCall("skt", "mem_err", not out);
+  gen += this->genSocketCall("skt", "bytes", out);
 
-    // If error, perform shutdown.
-    gen += "if (mem_err) { chpl_mli_terminate(); }\n";
-
-    // Push the string itself over the wire, using length.
-    gen += this->genSocketCall("skt", "obj", "bytes", out);
-
-    // Generate a null frame in the opposite direction for the ACK.
-    gen += this->genSocketCall("skt", NULL, not out);
-
-  } else {
-
-    // Declare a non-const buffer pointer.
-    gen += this->genNewDecl("char*", "buffer");
-
-    // Pull length of string.
-    gen += this->genSocketCall("skt", "bytes", out);
-
-    // Attempt to allocate.
+  if (not out) {
+    // Attempt to allocate buffer.
     gen += "buffer = mli_malloc(bytes + 1);\n";
 
     // Set ACK value (non-zero if memory allocation failed).
     gen += "mem_err = (buffer == NULL);\n";
+  }
 
-    // Write possible allocation error out on ACK.
-    gen += this->genSocketCall("skt", "mem_err", not out);
+  // Push/pull possible allocation error on ACK.
+  gen += this->genSocketCall("skt", "mem_err", not out);
 
-    // If error, perform shutdown.
-    gen += "if (mem_err) { chpl_mli_terminate(); }\n";
+  // If error, terminate client/server.
+  gen += "if (mem_err) chpl_mli_terminate(CHPL_MLI_ERROR_MEMORY);\n";
 
-    // Pull the string itself over the wire, using length.
-    gen += this->genSocketCall("skt", "buffer", "bytes", out);
+  // Move the string over the wire, using length.
+  gen += this->genSocketCallBuffer("skt", target, "bytes", out);
 
-    // Generate a null frame in the opposite direction for the ACK.
-    gen += this->genSocketCall("skt", NULL, not out);
+  // Generate a null frame in the opposite direction for the ACK.
+  gen += this->genSocketCall("skt", NULL, not out);
 
-    // Null terminate allocated buffer.
-    gen += "buffer[bytes] = 0;\n";
+  if (not out) {
+    // Null terminate the string we just received.
+    gen += "((char*) buffer)[bytes] = 0;\n";
 
-    // Assign buffer to result via cast.
-    gen += "result = (const char*) buffer;\n";
-  
+    // Cast buffer to const char.
+    gen += "result = ((const char*) buffer);\n";
   }
 
   return gen;
@@ -455,9 +438,11 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
     gen += this->genNewDecl(t, "result");
   }
 
-  // If allocating, declare a temporary for amount.
+  // If allocating, declare temporaries for bytecount, buffer, and error.
   if (this->typeRequiresAllocation(t)) {
     gen += this->genNewDecl("uint64_t", "bytes");
+    gen += this->genNewDecl("void*", "buffer");
+    gen += this->genNewDecl("int64_t", "mem_err");
   }
 
   // Insert a debug message if appropriate.
@@ -467,7 +452,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
     msg += out ? "Pushing type: " : "Pulling type: ";
     msg += this->genTypeName(t);
 
-    gen += this->genDebugPrintCall(msg.c_str(), "[RPC]");
+    gen += this->genDebugPrintCall(msg.c_str());
   }
 
   //
@@ -579,26 +564,19 @@ void MLIContext::emitServerWrapper(FnSymbol* fn) {
   return;
 }
 
-std::string MLIContext::genDebugPrintCall(FnSymbol* fn, const char* pfx) {
+std::string MLIContext::genDebugPrintCall(FnSymbol* fn) {
   std::string msg;
 
   msg += "Calling: ";
   msg += toString(fn);
 
-  return this->genDebugPrintCall(msg.c_str(), pfx);
+  return this->genDebugPrintCall(msg.c_str());
 }
 
-std::string MLIContext::genDebugPrintCall(const char* msg, const char* pfx) {
+std::string MLIContext::genDebugPrintCall(const char* msg) {
   std::string gen;
 
-  gen += "printf(\"";
-
-  if (pfx && strcmp(pfx, "")) {
-    gen += pfx;
-    gen += " ";
-  }
-
-  gen += "%s\\n\", \"";
+  gen += "printf(\"%s %s\\n\", chpl_mli_pfx, \"";
   gen += msg;
   gen += "\");\n";
 
@@ -640,7 +618,7 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
     gen += scope_begin;
     
     if (this->debugPrintlines) {
-      gen += this->genDebugPrintCall(fn, "[Server]");
+      gen += this->genDebugPrintCall(fn);
     }
     
     gen += "err = ";
@@ -711,7 +689,7 @@ std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
   }
 
   if (this->debugPrintlines) {
-    gen += this->genDebugPrintCall(fn, "[Client]");
+    gen += this->genDebugPrintCall(fn);
   }
 
   // Push function to call.
@@ -740,7 +718,7 @@ std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
     gen += this->genMarshalPullCall(client_res, "result", fn->retType);
     gen += "return result;\n";
   }
- 
+
   return gen;
 }
 
@@ -806,6 +784,30 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
     gen += this->genMarshalPushCall(server_res, "result", fn->retType);
   }
 
+  //
+  // TODO: Generalize this later. Ideally, any type that requires dynamic
+  // allocation should have functions generated for it which perform these
+  // steps automatically as well, but since we're only supporting c_string
+  // for now, we do this manually.
+  //
+  // Note that we only do this for the server, _after_ making the unrwapped
+  // call. This is because values received by the server are considered to
+  // be read only. On the client, it is the _user's_ responsibility to ensure
+  // that any allocated data is freed.
+  //
+  for (int i = 1; i <= fn->numFormals(); i++) {
+    Type* t = this->getTypeFromFormal(fn, i);
+    if (not this->typeRequiresAllocation(t)) { continue; }
+    if (t == dtStringC) {
+      gen += "mli_free(";
+      gen += "((void*) ";
+      gen += formalTempNames[i];
+      gen += "));\n";
+    } else {
+      INT_FATAL("Unsupported type expects deallocation");
+    }
+  }
+
   return gen;
 }
 
@@ -847,6 +849,30 @@ MLIContext::genMarshalPullCall(const char* skt, const char* var, Type* t) {
 
 std::string MLIContext::genTypeName(Type* t) {
   return t->codegen().c;
+}
+
+//
+// Bit of duplication, but "genSocketCall()" sadly assumes a value type, which
+// means it doesn't work very well with buffers.
+//
+std::string
+MLIContext::genSocketCallBuffer(const char* skt, const char* var,
+                                const char* len, bool out) {
+  std::string gen;
+
+  gen += out ? socket_push_name : socket_pull_name;
+  gen += "(";
+  gen += skt;
+  gen += ", ";
+  // To get rid of _discards qualifiers_ warnings (yes, a hack).
+  gen += "((void*) ";
+  gen += var;
+  gen += ")";
+  gen += ", ";
+  gen += len;
+  gen += ", 0);\n";
+
+  return gen;
 }
 
 std::string

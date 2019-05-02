@@ -46,6 +46,31 @@
 #endif
 
 //
+// If this code is being run on the server, mli_terminate is a wrapper for
+// chpl_error(NULL, 0, 0). If this code is being run on the client, then it
+// is a wrapper for exit(1)
+//
+#ifdef CHPL_MLI_IS_SERVER
+# include "error.h"
+# define mli_terminate() chpl_error(NULL, 0, 0)
+#elif defined(CHPL_MLI_IS_CLIENT)
+# define mli_terminate() exit(1)
+#else
+# error The mli_terminate macro was defined outside of client/server.
+#endif
+
+//
+// Print prefix, used to indicate whether client or server is printing.
+//
+#ifdef CHPL_MLI_IS_SERVER
+# define chpl_mli_pfx "[Server]"
+#elif defined(CHPL_MLI_IS_CLIENT)
+# define chpl_mli_pfx "[Client]"
+#else
+# error The chpl_mli_pfx macro was defined outside of client/server.
+#endif
+
+//
 // Error codes must all be less than zero unless we change the protocol!
 //
 enum chpl_mli_errors {
@@ -55,7 +80,8 @@ enum chpl_mli_errors {
   CHPL_MLI_ERROR_UNKNOWN    = -2,
   CHPL_MLI_ERROR_NOFUNC     = -3,
   CHPL_MLI_ERROR_SOCKET     = -4,
-  CHPL_MLI_ERROR_EXCEPT     = -5
+  CHPL_MLI_ERROR_EXCEPT     = -5,
+  CHPL_MLI_ERROR_MEMORY     = -6
 
 };
 
@@ -221,8 +247,5 @@ char * chpl_mli_connection_info(void* socket) {
   mli_free(portRes);
   return fullConnection;
 }
-
-
-
 
 #endif
