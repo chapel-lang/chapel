@@ -43,6 +43,8 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+int chpl_verbose_mem = 0;
+int chpl_memTrack = 0;
 
 static void
 printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
