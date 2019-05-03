@@ -55,12 +55,14 @@ void chpl_mli_client_deinit(struct chpl_mli_context* client) {
   return;
 }
 
-static void spawn_server() {
-  char command[256] = "./";
+static void chpl_mli_spawn_server() {
+  char command[FILENAME_MAX+9] = "./";
   strcat(command, mli_servername);
   strcat(command, " -nl 1");
 
+  #ifdef CHPL_MLI_DEBUG_PRINT
   printf("executing %s as a subprocess\n", command);
+  #endif
   server_pipe = popen(command, "r");
 }
 
@@ -89,10 +91,12 @@ void chpl_library_init(int argc, char** argv) {
   chpl_mli_bind(chpl_client.setup_sock, ip, setupPort);
 
   char* setup_sock_conn = chpl_mli_connection_info(chpl_client.setup_sock);
+  #ifdef CHPL_MLI_DEBUG_PRINT
   printf("setup socket used %s\n", setup_sock_conn);
+  #endif
 
   // TODO: pass in argv/argc, connection information
-  spawn_server();
+  chpl_mli_spawn_server();
 
   mli_free(setup_sock_conn);
 
