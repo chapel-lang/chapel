@@ -11,6 +11,7 @@ Initializing Modules:
     ChapelBase
     MemConsistency
     Atomics
+    NetworkAtomics
     ChapelThreads
     ChapelTuple
     ChapelRange
@@ -24,6 +25,7 @@ Initializing Modules:
         ChapelArray
          Sort
         ExternalArray
+        RangeChunk
        ChapelNumLocales
        Sys
         SysBasic
@@ -31,7 +33,7 @@ Initializing Modules:
      LocaleModelHelpMem
     LocalesArray
     ChapelDistribution
-     List
+     LinkedLists
     ChapelIO
      IO
       SysError
@@ -47,6 +49,5 @@ Initializing Modules:
     ChapelTaskData
     Assert
     AlignedTSupport
-    RangeChunk
    printModuleInitOrder
     moduleInitTest

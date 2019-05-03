@@ -585,6 +585,7 @@ module ChapelLocale {
   pragma "no doc"
   const dummyLocale = new unmanaged DummyLocale();
 
+  pragma "fn synchronization free"
   pragma "no doc"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
 
@@ -667,7 +668,8 @@ module ChapelLocale {
     on this do queuedTasks = chpl_task_getNumQueuedTasks();
     return queuedTasks;
   }
-  
+
+  pragma "fn synchronization free"
   pragma "no doc"
   proc locale.runningTasks() {
     return this.runningTaskCnt();

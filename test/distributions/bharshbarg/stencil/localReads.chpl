@@ -32,11 +32,26 @@ proc main() {
 
   test(A);
 
-  const sub = Space.localSubdomain();
+  // test reads outside of the slicing domain which only works if that
+  // slicing domain is a Stencil domain.  So the following slices
+  // create one by slicing the Stencil domain with the restricted
+  // index set.
+
+  const sub = Space[Space.localSubdomain()];
   test(A[sub]);
 
-  const mid = {n/4..#n/2, n/4..#n/2};
+  const mid = Space[{n/4..#n/2, n/4..#n/2}];
   test(A[mid]);
 
   writeln("Success");
+
+  // The following demonstrate the OOB errors that occur if simply
+  // slicing with a default rectangular (DR) domain and then trying to
+  // read the slice out of bounds.
+
+  const subDR = Space.localSubdomain();
+  test(A[subDR]);
+
+  const midDR = {n/4..#n/2, n/4..#n/2};
+  test(A[midDR]);
 }

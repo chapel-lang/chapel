@@ -11,10 +11,9 @@ This document contains a mixture of tips for git beginners and specific
 Chapel workflow recommendations.
 
 Below are instructions for setting up a github account, developing a
-feature,and submitting pull requests.
+feature, and submitting pull requests.
 
-**Note:** A `contributor license agreement`_ must be signed before any
-contributing pull requests can be merged.
+.. note:: A `contributor license agreement`_ must be signed before any contributing pull requests can be merged.
 
 Developer Workflow
 ------------------
@@ -327,8 +326,8 @@ Configure your local git
     git remote add upstream https://github.com/chapel-lang/chapel.git
     # Make sure it works, get up-to-date without modifying your files
     git fetch upstream
-    # Change remote for upstream push to "no_push" 
-    git remote set-url --push upstream no_push 
+    # Change remote for upstream push to "no_push"
+    git remote set-url --push upstream no_push
     # Optionally add remotes for commonly viewed branches
     git remote add <branch_owner_username> https://github.com/<branch_owner_username>/chapel.git
 

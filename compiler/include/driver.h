@@ -74,6 +74,8 @@ extern int  scalar_replace_limit;
 extern int  inline_iter_yield_limit;
 extern int  tuple_copy_limit;
 
+extern bool fNoOptimizeForallUnordered;
+extern bool fReportOptimizeForallUnordered;
 
 extern bool report_inlining;
 
@@ -115,6 +117,7 @@ extern const char* CHPL_REGEXP;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
 extern const char* CHPL_UNWIND;
+extern const char* CHPL_LIB_PIC;
 extern const char* CHPL_RUNTIME_SUBDIR;
 extern const char* CHPL_LAUNCHER_SUBDIR;
 extern const char* CHPL_LLVM_UNIQ_CFG_PATH;
@@ -172,6 +175,9 @@ extern bool fLibraryCompile;
 extern bool fLibraryFortran;
 extern bool fLibraryMakefile;
 extern bool fLibraryPython;
+
+extern bool fMultiLocaleInterop;
+
 extern bool fUseNoinit;
 extern bool no_codegen;
 extern bool developer;
@@ -189,10 +195,9 @@ extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 extern bool fWarnUnstable;
-extern bool fDefaultUnmanaged;
-extern bool fLegacyNew;
 
 extern bool fReportAliases;
+extern bool fReportBlocking;
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportInlinedIterators;
 extern bool fReportVectorizedLoops;

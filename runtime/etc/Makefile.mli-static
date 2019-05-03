@@ -1,0 +1,83 @@
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Makefile.mli-static
+#
+
+#
+# TODO
+#
+# There's a slightly more complicated build process going on here, because we
+# have 3 deliverables (for now):
+#
+#   - A client facing library file (static or shared)
+#   - A multi-locale launcher
+#   - A multi-locale executable
+#
+# We build the server as if it's a multi-locale executable, and then build the
+# client as if it's a (static, for this file) library.
+#
+
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
+
+#
+# This is common code included wholesale in each MLI compile (for now). With-
+# out knowledge of these source files, compilation of code generated for
+# multi-locale libraries will fail.
+#
+CHPL_MLI_INCLUDES = $(CHPL_MAKE_HOME)/runtime/etc/mli
+
+checkZMQ:
+  #
+  # You MUST SET THIS or compilation will fail!
+  #
+ifndef CHPL_ZMQ_LOC
+	$(error CHPL_ZMQ_LOC must be set to the location of the ZeroMQ library)
+endif
+
+CHPL_LINK_TRAILING = $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
+
+all: checkZMQ $(TMPBINNAME) $(TMPSERVERNAME)
+
+# TODO: Should I roll a static copy of libzmq into the client archive?
+$(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
+	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CLIENT_CFLAGS) -c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC) -I$(CHPL_MLI_INCLUDES) -I$(CHPL_ZMQ_LOC)/include
+	$(AR) -c -r -s $(TMPBINNAME) $(TMPBINNAME).o $(CHPL_CL_OBJS) $(CHPL_ZMQ_LOC)/lib/libzmq.a
+ifneq ($(TMPBINNAME),$(BINNAME))
+	cp $(TMPBINNAME) $(BINNAME)
+	rm $(TMPBINNAME)
+endif
+
+$(TMPSERVERNAME): $(CHPL_CL_OBJS) checkRtLibDir FORCE
+	$(TAGS_COMMAND)
+ifneq ($(SKIP_COMPILE_LINK),skip)
+	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_SERVER_CFLAGS) -c -o $(TMPSERVERNAME).o $(CHPL_RT_INC_DIR) $(CHPLSERVERSRC) -I$(CHPL_MLI_INCLUDES)
+	$(foreach srcFile, $(CHPLUSEROBJ),$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_SERVER_CFLAGS) -c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c ;)
+	$(LD) $(GEN_LFLAGS) $(COMP_GEN_SERVER_LFLAGS) -o $(TMPSERVERNAME) -L$(CHPL_RT_LIB_DIR) $(TMPSERVERNAME).o $(CHPLUSEROBJ) $(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) -lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS) -L$(CHPL_ZMQ_LOC)/lib -lzmq
+endif
+ifneq ($(CHPL_MAKE_LAUNCHER),none)
+	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) TMPBINNAME=$(TMPSERVERNAME) BINNAME=$(SERVERNAME) TMPDIRNAME=$(TMPDIRNAME) CHPL_MAKE_RUNTIME_LIB=$(CHPL_MAKE_RUNTIME_LIB) CHPL_MAKE_RUNTIME_INCL=$(CHPL_MAKE_RUNTIME_INCL) CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY)
+else
+	$(error CHPL_MAKE_LAUNCHER cannot be "none" in a multilocale library build)
+endif
+ifneq ($(TMPSERVERNAME),$(SERVERNAME))
+	rm -f $(SERVERNAME)
+	mv $(TMPSERVERNAME) $(SERVERNAME)
+endif
+
+FORCE:

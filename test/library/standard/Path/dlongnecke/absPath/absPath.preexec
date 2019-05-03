@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+
+# Produces the "absPath.good" file containing expected output for the Chapel
+# Path.absPath function. Nothing sophisticated yet, the calls in the Chapel
+# test code will mirror the ones found here.
+
+
+from __future__ import print_function
+import sys
+import os.path
+
+
+# Assortment of test strings.
+wellFormed0 = 'foo'
+
+curDir = '.'
+parentDir = '..'
+pathSep = '/'
+pathSep2 = '//'
+pathSep3 = '///'
+
+
+def absolutize(name):
+    print(name, 'becomes', os.path.abspath(name))
+
+
+# Redirect STDOUT to the "absPath.good" file.
+stdout = sys.stdout
+sys.stdout = open('absPath.good', 'w')
+
+
+# Single parent dir yields path up one level from cwd.
+absolutize(parentDir)
+
+# Single current dir yields cwd.
+absolutize(curDir)
+
+# Well formed relative path without leading slash yields cwd/path.
+absolutize(wellFormed0)
+
+# Path with 1 leading slash yields absolute path, 1 leading slash.
+absolutize(pathSep + wellFormed0)
+
+# Path with 2 leading slashes yields absolute path, 2 leading slashes.
+absolutize(pathSep2 + wellFormed0)
+
+# Path with 3 leading slashes yields absolute path, 1 leading slash.
+absolutize(pathSep3 + wellFormed0)
+
+# Should just print the current working directory (does nothing).
+absolutize(os.getcwd())

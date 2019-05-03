@@ -16,6 +16,7 @@ TARGETS = \
 	fileIO \
 	genericClasses \
 	iterators \
+	learnChapelInYMinutes \
 	locales \
 	modules \
 	opaque-domains \
@@ -23,13 +24,16 @@ TARGETS = \
 	procedures \
 	randomNumbers \
 	ranges \
+	records \
 	reductions \
 	replicated \
 	slices \
 	sparse \
+	specialMethods \
 	syncsingle \
 	taskParallel \
 	timers \
+	tuples \
 	varargs \
 	variables \
 	voidVariables \

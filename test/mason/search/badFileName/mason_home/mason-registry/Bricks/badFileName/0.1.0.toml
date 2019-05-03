@@ -1,0 +1,7 @@
+[brick]
+name = "badFileName"
+version = "0.1.0"
+chplVersion = "1.19.0"
+source = "nil"
+
+[dependencies]

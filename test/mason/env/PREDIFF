@@ -3,6 +3,6 @@
 outfile=$2
 temp=$outfile.temp
 
-cat $outfile | sed "s@${PWD}@\$PWD@" > $temp
+cat $outfile | sed "s|${PWD}|\$PWD|" > $temp
 
 mv $temp $outfile

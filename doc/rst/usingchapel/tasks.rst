@@ -163,6 +163,8 @@ is set to anything larger than the number of cores, so it usually isn't
 necessary to set ``QT_WORKER_UNIT``.
 
 
+.. _overloading-with-qthreads:
+
 Overloading system nodes
 ========================
 
@@ -172,20 +174,14 @@ its process is not competing with anything else for system resources
 its internal behavior to favor performance over load balancing.  This
 works out well for Chapel programs, because normally Chapel runs with
 one process (locale) per system node.  However, with ``CHPL_COMM=gasnet``
-one can run multiple Chapel locales on a single system node, say for
-doing multilocale functional correctness testing with limited system
-resources.  (See :ref:`readme-multilocale` for more details.)  When this is
-done qthreads' optimization for performance can actually greatly reduce
-performance, due to resource starvation among the multiple Chapel
-processes.  If you need qthreads to share system resources more
-cooperatively with other processes, you can build it to optimize its
-behavior to favor load balancing over performance.  To do this, build
-qthreads with ``CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION`` turned on like this:
-
-.. code-block:: sh
-
-  cd $CHPL_HOME/third-party/qthread
-  make CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION=yes ... clean all
+or ``CHPL_COMM=ofi`` one can run multiple Chapel locales on a single
+system node, say for doing multilocale functional correctness testing
+with limited system resources.  (See :ref:`readme-multilocale` for more
+details.)  When this is done qthreads' optimization for performance can
+greatly reduce performance, due to resource starvation among multiple
+Chapel processes.  If you need qthreads to share system resources more
+cooperatively with other processes set ``CHPL_RT_OVERSUBSCRIBED=yes`` at
+execution time (see :ref:`oversubscribed-execution`).
 
 
 Hwloc

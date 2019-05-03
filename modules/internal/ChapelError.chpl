@@ -89,7 +89,7 @@ module ChapelError {
     }
 
     override proc message() {
-      if formal.isEmptyString() then
+      if formal.isEmpty() then
         return info;
       else
         return "illegal argument '" + formal + "': " + info;
@@ -207,6 +207,7 @@ module ChapelError {
               idx += 1;
             }
           }
+          delete asTaskErr;
         }
         cur = curnext;
       }
@@ -360,9 +361,8 @@ module ChapelError {
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
-  // TODO -- deprecate this version
   proc chpl_fix_thrown_error(err: borrowed Error): unmanaged Error {
-    compilerWarning("Throwing borrowed error - please throw owned", 1);
+    compilerError("Throwing borrowed error - please throw owned", 1);
 
     return chpl_do_fix_thrown_error(_to_unmanaged(err));
   }
@@ -394,7 +394,9 @@ module ChapelError {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_fix_thrown_error(err: unmanaged Error): unmanaged Error {
-    compilerWarning("Throwing unmanaged error - please throw owned", 1);
+    // TODO: This should be an error in the future,
+    // for now the compiler already adds a warning in this case.
+    //compilerWarning("Throwing unmanaged error - please throw owned", 1);
 
     return chpl_do_fix_thrown_error(err);
   }
@@ -490,7 +492,7 @@ module ChapelError {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_enum_cast_error(casted: string, enumName: string) throws {
-    if casted.isEmptyString() then
+    if casted.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + enumName);
     else
       throw new owned IllegalArgumentError("bad cast from string '" + casted + "' to " + enumName);

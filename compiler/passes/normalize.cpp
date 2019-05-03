@@ -50,7 +50,7 @@ static void        insertModuleInit();
 static FnSymbol*   toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
 static void        handleModuleDeinitFn(ModuleSymbol* mod);
 static void        transformLogicalShortCircuit();
-static void        handleReduceAssign();
+static void        checkReduceAssign();
 
 static bool        isArrayFormal(ArgSymbol* arg);
 
@@ -101,30 +101,6 @@ static void        normalizeVariableDefinition(DefExpr* defExpr);
 
 static void        normRefVar(DefExpr* defExpr);
 
-static void        init_untyped_var(VarSymbol* var,
-                                    Expr*      init,
-                                    Expr*      insert,
-                                    VarSymbol* constTemp);
-
-static void        init_typed_var(VarSymbol* var,
-                                  Expr*      type,
-                                  Expr*      insert,
-                                  VarSymbol* constTemp);
-
-static void        init_typed_var(VarSymbol* var,
-                                  Expr*      type,
-                                  Expr*      init,
-                                  Expr*      insert,
-                                  VarSymbol* constTemp);
-
-static void        init_noinit_var(VarSymbol* var,
-                                   Expr*      type,
-                                   Expr*      init,
-                                   Expr*      insert,
-                                   VarSymbol* constTemp);
-
-static bool        moduleHonorsNoinit(Symbol* var, Expr* init);
-
 static void        updateVariableAutoDestroy(DefExpr* defExpr);
 
 static TypeSymbol* expandTypeAlias(SymExpr* se);
@@ -142,7 +118,7 @@ void normalize() {
 
   transformLogicalShortCircuit();
 
-  handleReduceAssign();
+  checkReduceAssign();
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (isClassWithInitializers(at)  == true ||
@@ -179,7 +155,7 @@ void normalize() {
         }
         USR_FATAL_CONT(fn, "Type '%s' defines a constructor here", ct->symbol->name);
 
-      } else if (fn->isInitializer() == true) {
+      } else if (fn->isInitializer() || fn->isCopyInit()) {
         updateInitMethod(fn);
       }
     }
@@ -199,9 +175,7 @@ void normalize() {
     // state (empty) if they are used but not assigned to anything.
     forv_Vec(SymExpr, se, gSymExprs) {
       if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
-        if (se == se->getStmtExpr() &&
-            // avoid exprs under ForallIntents
-            (isDirectlyUnderBlockStmt(se) || !isBlockStmt(se->parentExpr))) {
+        if (se == se->getStmtExpr()) {
           // Don't add these calls for the return type, since
           // _statementLevelSymbol would do nothing in that case
           // anyway, and it contributes to order-of-resolution issues for
@@ -448,16 +422,14 @@ static void transformLogicalShortCircuit() {
 }
 
 //
-// handleReduceAssign(): check+process the reduce= calls
+// checkReduceAssign(): check correctness of the reduce= calls
 //
-static void handleReduceAssign() {
+static void checkReduceAssign() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_REDUCE_ASSIGN) == true) {
+    if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
       INT_ASSERT(call->numActuals() == 2); // comes from the parser
 
       SET_LINENO(call);
-
-      int rOpIdx;
 
       // l.h.s. must be a single variable
       if (SymExpr* lhsSE = toSymExpr(call->get(1))) {
@@ -469,8 +441,8 @@ static void handleReduceAssign() {
                          "The reduce= operator must occur within "
                          "a forall statement.");
 
-        } else if ((rOpIdx = enclosingFS->reduceIntentIdx(lhsVar)) >= 0) {
-          call->insertAtHead(new_IntSymbol(rOpIdx, INT_SIZE_64));
+        } else if (enclosingFS->isReduceIntent(lhsVar)) {
+          // Great.
 
         } else {
           USR_FATAL(lhsSE,
@@ -737,7 +709,8 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE)      ||
           call->isPrimitive(PRIM_ASSIGN)    ||
-          call->isPrimitive(PRIM_INIT_VAR) ) {
+          call->isPrimitive(PRIM_INIT_VAR)  ||
+          call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
         if (call->get(1) == se) {
           retval = se->symbol();
           checkSelfDef(call, se->symbol());
@@ -798,20 +771,10 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 static std::set<VarSymbol*> globalTemps;
 
 static void moveGlobalDeclarationsToModuleScope() {
-  bool move = false;
 
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
-      // If the last iteration set "move" to true, move this block to the end
-      // of the module (see below).
-      if (move == true) {
-        INT_ASSERT(isBlockStmt(expr));
-
-        mod->block->insertAtTail(expr->remove());
-
-        move = false;
-
-      } else if (DefExpr* def = toDefExpr(expr)) {
+      if (DefExpr* def = toDefExpr(expr)) {
         // Non-temporary variable declarations are moved out to module scope.
         if (VarSymbol* vs = toVarSymbol(def->sym)) {
           // All var symbols are moved out to module scope,
@@ -819,19 +782,6 @@ static void moveGlobalDeclarationsToModuleScope() {
           // can find them)
           if (vs->hasFlag(FLAG_END_COUNT))
             continue;
-
-          // If the var declaration is an extern, we want to move its
-          // initializer block with it.
-          if (vs->hasFlag(FLAG_EXTERN) == true) {
-            if (BlockStmt* block = toBlockStmt(def->next)) {
-              // This block should have been marked as BLOCK_EXTERN_TYPE
-              // in other parts of normalization.
-              INT_ASSERT( (block->blockTag & BLOCK_TYPE_ONLY) != 0);
-
-              // Set the flag, so we move it out to module scope.
-              move = true;
-            }
-          }
 
           // move the DefExpr
           mod->block->insertAtTail(def->remove());
@@ -1032,6 +982,7 @@ static void processSyntacticDistributions(CallExpr* call) {
  */
 static void processManagedNew(CallExpr* newCall) {
   SET_LINENO(newCall);
+  bool argListError = false;
   if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
     if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
       if (callManager->numActuals() == 1) {
@@ -1065,8 +1016,39 @@ static void processManagedNew(CallExpr* newCall) {
               newCall->replace(replace);
             }
           }
+        } else if (isSymExpr(callManager->get(1)) &&
+                   (callManager->isNamed("_owned") ||
+                    callManager->isNamed("_shared") ||
+                    callManager->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                    callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS))) {
+          SymExpr* se = toSymExpr(callManager->get(1));
+          if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+            argListError = true;
+          }
         }
       }
+    } else {
+      if (newCall->numActuals() == 1) {
+        argListError = true;
+      }
+    }
+  }
+
+  if (argListError) {
+    FnSymbol* parent = newCall->getFunction();
+
+    //
+    // Later in normalization valid AST like "('new' (call R))" will turn into
+    // "('new' R)" during fixPrimNew. If those expressions were run through
+    // normalization again, they would encounter this error.
+    //
+    // This conditional avoids known cases where those expressions are
+    // re-normalized.
+    //
+    if (parent->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false &&
+        parent->hasFlag(FLAG_NEW_WRAPPER) == false &&
+        parent->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+      USR_FATAL_CONT(newCall, "type in 'new' expression is missing its argument list");
     }
   }
 }
@@ -1998,7 +1980,18 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
   INT_ASSERT(type == NULL);
   INT_ASSERT(init != NULL);
 
-  defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init->copy()));
+  CallExpr* move = new CallExpr(PRIM_MOVE, var, init->copy());
+
+  if (var->hasFlag(FLAG_EXTERN)) {
+    // Put initialization for extern type aliases in a type block
+    // to enable early resolution of these types.
+    BlockStmt* block = new BlockStmt(BLOCK_EXTERN_TYPE);
+    block->insertAtTail(move);
+    defExpr->insertAfter(block);
+  } else {
+    defExpr->insertAfter(move);
+  }
+
 }
 
 /************************************* | **************************************
@@ -2072,10 +2065,11 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
     }
 
     if (type == NULL) {
-      init_untyped_var(var, init, insert, varTmp);
+      insert->insertAfter(new CallExpr(PRIM_INIT_VAR, varTmp, init->remove()));
 
     } else if (init == NULL) {
-      init_typed_var(var, type, insert, varTmp);
+      insert->insertAfter(new CallExpr(PRIM_DEFAULT_INIT_VAR,
+                                       varTmp, type->remove()));
 
     } else if (var->hasFlag(FLAG_PARAM) == true) {
       CallExpr* cast = createCast(init->remove(), type->remove());
@@ -2083,10 +2077,13 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
       insert->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
 
     } else if (init->isNoInitExpr() == true) {
-      init_noinit_var(var, type, init, insert, varTmp);
+      USR_FATAL("noinit is not currently supported for config vars");
 
     } else {
-      init_typed_var(var, type, init, insert, varTmp);
+      insert->insertAfter(new CallExpr(PRIM_INIT_VAR,
+                                       varTmp, init->remove(), type->remove()));
+
+
     }
   }
 }
@@ -2131,120 +2128,6 @@ static Symbol* varModuleName(VarSymbol* var) {
   bool          isInternal = module->modTag == MOD_INTERNAL;
 
   return new_CStringSymbol(isInternal ? "Built-in" : module->name);
-}
-
-static void init_untyped_var(VarSymbol* var,
-                             Expr*      init,
-                             Expr*      insert,
-                             VarSymbol* constTemp) {
-  init = init->remove();
-
-  if (var->hasFlag(FLAG_NO_COPY)) {
-    insert->insertAfter(new CallExpr(PRIM_MOVE, var, init));
-
-  } else {
-    // See Note 4.
-    //
-    // initialize untyped variable with initialization expression
-    //
-    // sjd: this new specialization of PRIM_NEW addresses the test
-    //         test/classes/diten/test_destructor.chpl
-    //      in which we call an explicit record destructor and avoid
-    //      calling the default constructor.  However, if written with
-    //      an explicit type, this would happen.  The record in this
-    //      test is an issue since its destructor deletes field c, but
-    //      the default constructor does not 'new' it.  Thus if we
-    //      pass the record to a function and it is copied, we have an
-    //      issue since we will do a double free.
-    //
-    CallExpr* initCall = toCallExpr(init);
-    Expr*     rhs      = NULL;
-
-    if (initCall && initCall->isPrimitive(PRIM_NEW)) {
-      rhs = init;
-    } else {
-      rhs = new CallExpr("chpl__initCopy", init);
-    }
-
-    insert->insertAfter(new CallExpr(PRIM_MOVE, constTemp, rhs));
-  }
-}
-
-static void init_typed_var(VarSymbol* var,
-                           Expr*      type,
-                           Expr*      insert,
-                           VarSymbol* constTemp) {
-  VarSymbol* typeTemp = newTemp("type_tmp");
-  DefExpr*   typeDefn = new DefExpr(typeTemp);
-  CallExpr*  initCall = new CallExpr(PRIM_INIT, type->remove());
-  CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
-
-  //
-  // Noakes 2016/02/02
-  // The code for resolving the type of an extern variable
-  //
-  //   functionResolution.cpp : resolveExternVarSymbols()
-  //
-  // expects to find the init code inside a block stmt.
-  //
-  // However the remaining cases do not need it.
-  //
-  if (var->hasFlag(FLAG_EXTERN) == true) {
-    INT_ASSERT(var->hasFlag(FLAG_PARAM) == false);
-
-    BlockStmt* block = new BlockStmt(BLOCK_EXTERN_TYPE);
-
-    block->insertAtTail(typeDefn);
-    block->insertAtTail(initMove);
-    block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-
-    insert->insertAfter(block);
-
-  } else {
-    if (var->hasFlag(FLAG_PARAM) == true) {
-      typeTemp->addFlag(FLAG_PARAM);
-    }
-
-    insert->insertAfter(typeDefn);
-    typeDefn->insertAfter(initMove);
-    initMove->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-  }
-}
-
-static void init_typed_var(VarSymbol* var,
-                           Expr*      type,
-                           Expr*      init,
-                           Expr*      insert,
-                           VarSymbol* constTemp) {
-  VarSymbol* typeTemp = newTemp("type_tmp");
-  DefExpr*   typeDefn = new DefExpr(typeTemp);
-  CallExpr*  initCall = new CallExpr(PRIM_INIT, type->remove());
-  CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
-  CallExpr*  assign   = new CallExpr("=",       typeTemp,  init->remove());
-  CallExpr*  varMove  = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
-
-  insert->insertAfter(typeDefn);
-  typeDefn->insertAfter(initMove);
-  initMove->insertAfter(assign);
-  assign->insertAfter(varMove);
-}
-
-static void init_noinit_var(VarSymbol* var,
-                            Expr*      type,
-                            Expr*      init,
-                            Expr*      insert,
-                            VarSymbol* constTemp) {
-  init->remove();
-
-  if (fUseNoinit == true || moduleHonorsNoinit(var, init) == true) {
-    CallExpr* noinitCall = new CallExpr(PRIM_NO_INIT, type->remove());
-
-    insert->insertAfter(new CallExpr(PRIM_MOVE, var, noinitCall));
-
-  } else {
-    // Ignore no-init expression and fall back on default init
-    init_typed_var(var, type, insert, constTemp);
-  }
 }
 
 /************************************* | **************************************
@@ -2343,6 +2226,12 @@ static void normRefVar(DefExpr* defExpr) {
     if (ArgSymbol* arg = toArgSymbol(symbol)) {
       if (arg->intent == INTENT_BLANK && arg->type == dtUnknown) {
         error = false;
+      } else if (arg->hasFlag(FLAG_ARG_THIS) &&
+                 arg->intent == INTENT_BLANK &&
+                 (arg->getFunction()->isInitializer() || arg->getFunction()->isCopyInit())) {
+        // InitNormalize.cpp will handle the case of initializing a ref-var
+        // from 'this' inside an initializer.
+        error = false;
       }
     }
 
@@ -2388,41 +2277,19 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   typeExpr = defExpr->exprType->remove();
 
-  // Noakes 2016/02/02
-  // The code for resolving the type of an extern variable
-  //
-  //   functionResolution.cpp : resolveExternVarSymbols()
-  //
-  // expects to find the init code inside a block stmt.
-  if (var->hasFlag(FLAG_EXTERN) == true) {
-    BlockStmt* block    = new BlockStmt(BLOCK_EXTERN_TYPE);
+  CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, var, typeExpr);
 
-    VarSymbol* typeTemp = newTemp("type_tmp");
-    DefExpr*   typeDefn = new DefExpr(typeTemp);
-    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
-    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
+  if (var->hasFlag(FLAG_EXTERN)) {
+    // Put initialization for extern vars in a type block since
+    // Chapel should take no action to actually initialize
+    // (extern code does that) and since
+    // resolution needs to resolve extern vars early.
 
-    block->insertAtTail(typeDefn);
-    block->insertAtTail(initMove);
-    block->insertAtTail(new CallExpr(PRIM_MOVE, var, typeTemp));
-
+    BlockStmt* block = new BlockStmt(BLOCK_EXTERN_TYPE);
+    block->insertAtTail(init);
     defExpr->insertAfter(block);
-
   } else {
-    // The type of 'var' should usually be 'unknown' so that resolution will
-    // correctly infer the type from PRIM_INIT
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_INIT, typeExpr)));
-
-    // TODO: For a snippet like 'catch e : T', the error handling
-    // implementation expects this block to set the type of 'e'. We should
-    // really be evaluating 'T' during resolution.
-    Expr* parent = defExpr->parentExpr;
-    Expr* gparent = parent ? parent->parentExpr : NULL;
-    if (isCatchStmt(gparent)) {
-      if (Type* type = typeForTypeSpecifier(typeExpr, false)) {
-        var->type = type;
-      }
-    }
+    defExpr->insertAfter(init);
   }
 }
 
@@ -2440,47 +2307,11 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
   defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr, typeExpr));
 }
 
-// Internal and Standard modules always honor no-init
-//
-// As a minimum, the complex type appears to rely on this
-static bool moduleHonorsNoinit(Symbol* var, Expr* init) {
-  bool isNoinit = init->isNoInitExpr();
-  bool retval   = false;
-
-  if (isNoinit == true && fUseNoinit == false) {
-    Symbol* moduleSource = var;
-
-    while (isModuleSymbol(moduleSource)  == false &&
-           moduleSource                  != NULL &&
-           moduleSource->defPoint        != NULL) {
-      moduleSource = moduleSource->defPoint->parentSymbol;
-    }
-
-    if (ModuleSymbol* mod = toModuleSymbol(moduleSource)) {
-      if (moduleSource->defPoint != NULL) {
-        retval = mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD;
-      }
-    }
-  }
-
-  return retval;
-}
-
 static void normVarNoinit(DefExpr* defExpr) {
-  Symbol* var  = defExpr->sym;
-  Expr*   init = defExpr->init;
-
-  init->remove();
-
-  if (fUseNoinit == true || moduleHonorsNoinit(var, init) == true) {
-    Expr*     type   = defExpr->exprType;
-    CallExpr* noinit = new CallExpr(PRIM_NO_INIT, type->remove());
-
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, noinit));
-  } else {
-    // Ignore no-init expression and fall back on default init
-    normVarTypeWoutInit(defExpr);
-  }
+  if (fUseNoinit)
+    USR_WARN(defExpr, "noinit is currently ignored");
+  defExpr->init->remove();
+  normVarTypeWoutInit(defExpr);
 }
 
 //
@@ -2847,7 +2678,14 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
         // chpl_external_array might be able to, so try to make a
         // chpl_external_array with it.  If that doesn't work, the user must be
         // more explicit with their domain.
-        formal->typeExpr->replace(new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+        if (!fLibraryFortran) {
+          formal->typeExpr->replace(
+            new BlockStmt(new SymExpr(dtExternalArray->symbol)));
+        } else {
+          formal->typeExpr->replace(
+            new BlockStmt(new SymExpr(dtCFI_cdesc_t->symbol)));
+          formal->intent = INTENT_REF;
+        }
       } else {
         // Create a representation of the array argument that is accessible
         // outside of Chapel, depending on the type of the array.  If the array
@@ -2869,8 +2707,7 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
 
       // Transform the outside representation into a Chapel array, and send that
       // in the call to the original function.
-      CondStmt* cond = makeCondToTransformArr(formal, chplArr, eltExpr,
-                                              call);
+      CondStmt* cond = makeCondToTransformArr(formal, chplArr, eltExpr, call);
 
       retCall->insertBefore(cond);
 
@@ -2883,12 +2720,16 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
 }
 
 // Create an if statement based on the formal type to transform
-// chpl_external_array or chpl_opaque_array into a normal Chapel array
+// chpl_external_array, CFI_cdesc_t, or chpl_opaque_array into a normal
+// Chapel array
 static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
                                         Expr* eltExpr, Expr* oldCall) {
   // if (formal.type is dtExternalArray) then
-  //    formalname_arr = makeArrayFromExternArray(formal, eltExpr)
-  //    else formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
+  //   formalname_arr = makeArrayFromExternArray(formal, eltExpr)
+  // else if (formal.type is dtCFI_cdesc_t) then
+  //   formalname_arr = makeArrayFromFortranArray(formal, eltExpr)
+  // else
+  //   formalname_arr = makeArrayFromOpaque(formal, oldTypeExpr)
   CallExpr* checkFormalType = new CallExpr(PRIM_IS_SUBTYPE,
                                            dtExternalArray->symbol,
                                            new CallExpr(PRIM_TYPEOF, formal));
@@ -2899,6 +2740,13 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
                                                 new SymExpr(formal),
                                                 eltExpr->copy());
   ifBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArrayFromExt));
+
+  BlockStmt* elseIfBody = new BlockStmt();
+  CallExpr* makeChplArrayFromFort = new CallExpr("makeArrayFromFortranArray",
+                                                 new SymExpr(formal),
+                                                 eltExpr->copy());
+
+  elseIfBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArrayFromFort));
 
   // Handle chpl_opaque_array
   BlockStmt* elseBody = new BlockStmt();
@@ -2920,7 +2768,16 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
   CallExpr* makeChplArray = new CallExpr("makeArrayFromOpaque",
                                          new SymExpr(formal), instanceType);
   elseBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArray));
-  CondStmt* cond = new CondStmt(checkFormalType, ifBody, elseBody);
+  Stmt* elseStmt;
+  if (fLibraryFortran) {
+    CallExpr* checkFormalType2 = new CallExpr(PRIM_IS_SUBTYPE,
+                                              dtCFI_cdesc_t->symbol,
+                                              new CallExpr(PRIM_TYPEOF, formal));
+    elseStmt = new CondStmt(checkFormalType2, elseIfBody, elseBody);
+  } else {
+    elseStmt = elseBody;
+  }
+  CondStmt* cond = new CondStmt(checkFormalType, ifBody, elseStmt);
   return cond;
 }
 
@@ -2935,6 +2792,15 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   std::vector<SymExpr*> symExprs;
 
+  // Our AST and transformations are not set up to handle multiple query
+  // expressions inside of an array's domain.  Give the user an error for now.
+  if (!isDefExpr(domExpr)) {
+    std::vector<DefExpr*> defExprs;
+    collectDefExprs(domExpr, defExprs);
+    for_vector(DefExpr, def, defExprs) {
+      USR_FATAL_CONT(def, "cannot query part of a domain");
+    }
+  }
   //
   // Only fix array formals with 'in' intent if there was:
   // - a type query, or
@@ -3442,7 +3308,7 @@ static void expandQueryForActual(FnSymbol*  fn,
                        new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
                                     subtype, query->copy()));
     } else {
-      INT_ASSERT("case not handled");
+      INT_FATAL("case not handled");
     }
   } else if (subcall && doesCallContainGenericActual(subcall)) {
     Expr* subtype = NULL;

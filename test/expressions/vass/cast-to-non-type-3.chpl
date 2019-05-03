@@ -1,3 +1,3 @@
 // Should issue just one error for "illegal cast to non-type"
-
-var i = 3.14 : 10;
+var pi = 3.14;
+var i = pi : 10;

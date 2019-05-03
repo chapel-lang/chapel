@@ -110,7 +110,7 @@ symbolFlag( FLAG_DEFAULT_INTENT_IS_REF, ypr, "default intent is ref", "The defau
 // (ie. it is a ref if it is modified in the function body)
 symbolFlag( FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr, "default intent is ref if modified", "The default intent for this type is ref if modified const ref otherwise")
 
-symbolFlag( FLAG_DEFAULT_COPY_INIT, npr, "default copy initializer", ncm )
+symbolFlag( FLAG_COPY_INIT, npr, "copy initializer", ncm )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )
@@ -137,6 +137,7 @@ symbolFlag( FLAG_FAST_ON_SAFE_EXTERN, ypr, "fast-on safe extern function", "exte
 symbolFlag( FLAG_FIELD_ACCESSOR , npr, "field accessor" , "field setter/getter function, user-declared or compiler-generated" )
 symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function invocation" , "proxy for first-class function invocation" )
 symbolFlag( FLAG_FN_RETARG, npr, "fn returns via _retArg", ncm )
+symbolFlag( FLAG_FOLLOWER_INDEX, npr, "follower index", "a variable representing a follower loop index" )
 symbolFlag( FLAG_FORMAL_TEMP,     npr, "formal temp", "a formal temp to back an in, out, or inout argument" )
 symbolFlag( FLAG_FORWARDING_FN , npr, "forwarding function" , ncm )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
@@ -247,7 +248,6 @@ symbolFlag( FLAG_NO_IMPLICIT_COPY , ypr, "no implicit copy" , "function does not
 symbolFlag( FLAG_NO_INSTANTIATION_LIMIT , ypr, "no instantiation limit", "The instantiation limit is not checked for this function" )
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
-symbolFlag( FLAG_NO_PROTOTYPE , ypr, "no prototype" , "do not generate a prototype this symbol" )
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)
 symbolFlag( FLAG_NO_RVF, npr, "do not RVF", ncm)
 symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
@@ -328,6 +328,7 @@ symbolFlag( FLAG_RESOLVED , npr, "resolved" , "this function has been resolved" 
 symbolFlag( FLAG_RETARG, npr, "symbol is a _retArg", ncm )
 symbolFlag( FLAG_RETURNS_ALIASING_ARRAY, ypr, "fn returns aliasing array", "array alias/slice/reindex/rank change function" )
 symbolFlag( FLAG_FN_RETURNS_ITERATOR, ypr, "fn returns iterator", "proc that can return an iterator instead of promoting it to an array")
+symbolFlag( FLAG_FN_UNORDERED_SAFE, ypr, "fn unordered safe", "function does not inhibit unordered optimization")
 symbolFlag( FLAG_FN_SYNCHRONIZATION_FREE, ypr, "fn synchronization free", "function does not include any task synchronization")
 symbolFlag( FLAG_RETURNS_INFINITE_LIFETIME, ypr, "fn returns infinite lifetime", "function returns a pointer with infinite lifetime for lifetime analysis" )
 symbolFlag( FLAG_RETURN_SCOPE, npr, "return scope", "indicates an argument that can be returned without error in lifetime checking")
@@ -349,6 +350,9 @@ symbolFlag( FLAG_SUPPRESS_LVALUE_ERRORS , ypr, "suppress lvalue error" , "do not
 symbolFlag( FLAG_SYNC , ypr, "sync" , ncm )
 symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
 symbolFlag( FLAG_TASK_FN_FROM_ITERATOR_FN , npr, "task fn from iterator fn" , ncm )
+symbolFlag( FLAG_TASK_SPAWN_IMPL_FN , ypr, "task spawn impl fn" , ncm )
+symbolFlag( FLAG_TASK_COMPLETE_IMPL_FN , ypr, "task complete impl fn" , ncm )
+symbolFlag( FLAG_TASK_JOIN_IMPL_FN , ypr, "task join impl fn" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TUPLE_CAST_FN , ypr, "tuple cast fn" , ncm )
@@ -371,6 +375,13 @@ symbolFlag( FLAG_WRAPPER , npr, "wrapper" , "wrapper function" )
 symbolFlag( FLAG_WRAPPER_NEEDS_START_FENCE , npr, "wrapper needs start fence" , "add PRIM_START_RMEM_FENCE to the start of the wrapper function" )
 symbolFlag( FLAG_WRAPPER_NEEDS_FINISH_FENCE , npr, "wrapper needs finish fence" , "add PRIM_FINISH_RMEM_FENCE to the end of the wrapper function" )
 symbolFlag( FLAG_WRAP_WRITTEN_FORMAL , npr, "wrap written formal" , "formal argument for wrapper for out/inout intent" )
+
+
+// These flags are for use with PRIM_OPTIMIZATION_INFO
+symbolFlag( OPT_INFO_LHS_OUTLIVES_FORALL , npr, "lhs outlives forall" , "lhs or destination outlives forall" )
+symbolFlag( OPT_INFO_RHS_OUTLIVES_FORALL , npr, "rhs outlives forall" , "rhs or sourceoutlives forall" )
+symbolFlag( OPT_INFO_FLAG_NO_TASK_PRIVATE , npr, "forall no task private" , "forall does not use task private storage" )
+symbolFlag( OPT_INFO_FLAG_NO_BLOCKING , npr, "forall not blocking" , "forall does not have blocking synchronization" )
 
 #undef ypr
 #undef npr

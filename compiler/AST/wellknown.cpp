@@ -27,6 +27,7 @@
 AggregateType* dtArray;
 AggregateType* dtBaseArr;
 AggregateType* dtBaseDom;
+AggregateType* dtCFI_cdesc_t;
 AggregateType* dtDist;
 AggregateType* dtError;
 AggregateType* dtExternalArray;
@@ -57,6 +58,8 @@ FnSymbol *gChplUncaughtError;
 FnSymbol *gChplPropagateError;
 FnSymbol *gChplSaveTaskError;
 FnSymbol *gChplForallError;
+FnSymbol *gAtomicFenceFn;
+FnSymbol *gChplAfterForallFence;
 
 /************************************* | **************************************
 *                                                                             *
@@ -90,7 +93,7 @@ void gatherIteratorTags() {
 }
 
 // This structure and the following array provide a list of types that must be
-// defined in module code.  At this point, they are all classes.
+// defined in module code.
 struct WellKnownType
 {
   const char*     name;
@@ -104,6 +107,7 @@ static WellKnownType sWellKnownTypes[] = {
   { "BaseArr",               &dtBaseArr,          true  },
   { "BaseDom",               &dtBaseDom,          true  },
   { "BaseDist",              &dtDist,             true  },
+  { "CFI_cdesc_t",           &dtCFI_cdesc_t,      false },
   { "chpl_external_array",   &dtExternalArray,    false },
   { "chpl_localeID_t",       &dtLocaleID,         false },
   { "chpl_main_argument",    &dtMainArgument,     false },
@@ -153,9 +157,13 @@ void gatherWellKnownTypes() {
       WellKnownType& wkt = sWellKnownTypes[i];
 
       if (*wkt.type_ == NULL) {
-        USR_FATAL_CONT("Type '%s' must be defined in the "
-                       "Chapel internal modules.",
-                       wkt.name);
+        if (wkt.type_ == &dtCFI_cdesc_t && !fLibraryFortran) {
+          // This should only be defined when --library-fortran is used
+        } else {
+          USR_FATAL_CONT("Type '%s' must be defined in the "
+                         "Chapel internal modules.",
+                         wkt.name);
+        }
       }
     }
 
@@ -302,6 +310,17 @@ static WellKnownFn sWellKnownFns[] = {
     FLAG_UNKNOWN
   },
 
+  {
+    "atomic_fence",
+    &gAtomicFenceFn,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_after_forall_fence",
+    &gChplAfterForallFence,
+    FLAG_UNKNOWN
+  },
 };
 
 void gatherWellKnownFns() {

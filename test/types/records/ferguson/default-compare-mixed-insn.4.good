@@ -1,2 +1,2 @@
 default-compare-mixed-insn.chpl:8: In function 'main':
-default-compare-mixed-insn.chpl:22: error: type mismatch in assignment from R(int(64)) to R(int(32))
+default-compare-mixed-insn.chpl:22: error: Cannot assign to R(int(32)) from R(int(64))

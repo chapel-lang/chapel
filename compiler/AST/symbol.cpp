@@ -51,7 +51,6 @@ Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
 Symbol *gStringC = NULL;
 Symbol *gStringCopy = NULL;
-Symbol *gCVoidPtr = NULL;
 Symbol *gOpaque = NULL;
 Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;
@@ -60,7 +59,6 @@ Symbol *gSingleVarAuxFields = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
-VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol *gCastChecking = NULL;
 VarSymbol *gDivZeroChecking = NULL;
@@ -69,6 +67,8 @@ VarSymbol* gLocal = NULL;
 VarSymbol* gWarnUnstable = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
+VarSymbol *gInfinity = NULL;
+VarSymbol *gNan = NULL;
 
 void verifyInTree(BaseAST* ast, const char* msg) {
   if (ast != NULL && ast->inTree() == false) {
@@ -1986,6 +1986,7 @@ const char* astrSswap = NULL;
 const char* astr_cast = NULL;
 const char* astr_defaultOf = NULL;
 const char* astrInit = NULL;
+const char* astrInitEquals = NULL;
 const char* astrNew = NULL;
 const char* astrDeinit = NULL;
 const char* astrTag = NULL;
@@ -2008,6 +2009,7 @@ void initAstrConsts() {
   astr_cast   = astr("_cast");
   astr_defaultOf = astr("_defaultOf");
   astrInit    = astr("init");
+  astrInitEquals = astr("init=");
   astrNew     = astr("_new");
   astrDeinit  = astr("deinit");
   astrTag     = astr("tag");

@@ -249,9 +249,6 @@ void CForLoop::verify()
 
   if (byrefVars                 != 0)
     INT_FATAL(this, "CForLoop::verify. byrefVars is not NULL");
-
-  if (forallIntents             != 0)
-    INT_FATAL(this, "CForLoop::verify. forallIntents is not NULL");
 }
 
 void CForLoop::accept(AstVisitor* visitor)

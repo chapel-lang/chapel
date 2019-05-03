@@ -3,7 +3,7 @@
 set -e
 
 REGISTRY=https://github.com/chapel-lang/mason-registry
-MASON_HOME=$PWD/.mason
+MASON_HOME=$PWD/mason_home
 
 # Make fake MASON_HOME
 mkdir -p $MASON_HOME

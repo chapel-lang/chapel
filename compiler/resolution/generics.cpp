@@ -590,7 +590,13 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
       if (FnSymbol* initFn = findCopyInit(ct)) {
         Symbol*   thisTmp  = newTemp(ct);
         DefExpr*  def      = new DefExpr(thisTmp);
-        CallExpr* initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+        CallExpr* initCall = NULL;
+
+        if (initFn->name == astrInit) {
+          initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+        } else {
+          initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+        }
 
         newFn->insertBeforeEpilogue(def);
 

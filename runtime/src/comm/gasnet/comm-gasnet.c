@@ -27,6 +27,8 @@
 #include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
+#include "chpl-comm-internal.h"
+#include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
@@ -46,7 +48,6 @@
 #include <signal.h>
 #include <sched.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <time.h>
@@ -504,7 +505,7 @@ static void AM_signal_long(gasnet_token_t token, void *buf, size_t nbytes,
 
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_t* pbp = buf;
-  chpl_memcpy(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
+  chpl_memcpy(chpl_rt_priv_bcast_tab[pbp->id], pbp->data, pbp->size);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -513,7 +514,7 @@ static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_large_t* pblp = buf;
-  chpl_memcpy((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
+  chpl_memcpy((char*)chpl_rt_priv_bcast_tab[pblp->id]+pblp->offset, pblp->data, pblp->size);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -747,12 +748,7 @@ static void polling(void* x) {
 }
 
 static void set_max_segsize_env_var(size_t size) {
-  char segsizeval[22]; // big enough for an unsigned 64-bit quantity
-
-  snprintf(segsizeval, sizeof(segsizeval), "%zd", size);
-  if (setenv("GASNET_MAX_SEGSIZE", segsizeval, 1) != 0) {
-    chpl_error("Cannot setenv(\"GASNET_MAX_SEGSIZE\")", 0, 0);
-  }
+  chpl_env_set_uint("GASNET_MAX_SEGSIZE", size, 1);
 }
 
 static void set_max_segsize() {
@@ -768,29 +764,15 @@ static void set_max_segsize() {
 
 static void set_num_comm_domains() {
 #if defined(GASNET_CONDUIT_GEMINI) || defined(GASNET_CONDUIT_ARIES)
-  char num_cpus_val[22]; // big enough for an unsigned 64-bit quantity
-  int num_cpus;
-
-  num_cpus = chpl_topo_getNumCPUsPhysical(true) + 1;
-
-  snprintf(num_cpus_val, sizeof(num_cpus_val), "%d", num_cpus);
-  if (setenv("GASNET_DOMAIN_COUNT", num_cpus_val, 0) != 0) {
-    chpl_error("Cannot setenv(\"GASNET_DOMAIN_COUNT\")", 0, 0);
-  }
-
-  if (setenv("GASNET_AM_DOMAIN_POLL_MASK", "3", 0) != 0) {
-    chpl_error("Cannot setenv(\"GASNET_AM_DOMAIN_POLL_MASK\")", 0, 0);
-  }
+  const int num_cpus = chpl_topo_getNumCPUsPhysical(true) + 1;
+  chpl_env_set_uint("GASNET_DOMAIN_COUNT", num_cpus, 0);
+  chpl_env_set("GASNET_AM_DOMAIN_POLL_MASK", "3", 0);
 
   // GASNET_DOMAIN_COUNT increases the shutdown time. Work around this for now.
   // See https://github.com/chapel-lang/chapel/issues/7251 and
   // https://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3621
-  if (setenv("GASNET_EXITTIMEOUT_FACTOR", "0.5", 0) != 0) {
-    chpl_error("Cannot setenv(\"GASNET_EXITTIMEOUT_FACTOR\")", 0, 0);
-  }
-  if (setenv("GASNET_EXITTIMEOUT_MIN", "10.0", 0) != 0) {
-    chpl_error("Cannot setenv(\"GASNET_EXITTIMEOUT_MIN\")", 0, 0);
-  }
+  chpl_env_set("GASNET_EXITTIMEOUT_FACTOR", "0.5", 0);
+  chpl_env_set("GASNET_EXITTIMEOUT_MIN", "10.0", 0);
 #endif
 }
 
@@ -879,7 +861,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
 }
 
-void chpl_comm_post_mem_init(void) { }
+void chpl_comm_post_mem_init(void) {
+  chpl_comm_init_prv_bcast_tab();
+}
 
 int chpl_comm_numPollingTasks(void) {
   return 1;
@@ -951,7 +935,7 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
                                           0, 0);
   if (payloadSize <= gasnet_AMMaxMedium()) {
     priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRV_BCAST_DATA, 0, 0);
-    chpl_memcpy(pbp->data, chpl_private_broadcast_table[id], size);
+    chpl_memcpy(pbp->data, chpl_rt_priv_bcast_tab[id], size);
     pbp->id = id;
     pbp->size = size;
     for (node = 0; node < chpl_numNodes; node++) {
@@ -978,7 +962,7 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
         thissize = maxsize;
       pblp->offset = offset;
       pblp->size = thissize;
-      chpl_memcpy(pblp->data, (char*)chpl_private_broadcast_table[id]+offset, thissize);
+      chpl_memcpy(pblp->data, (char*)chpl_rt_priv_bcast_tab[id]+offset, thissize);
       for (node = 0; node < chpl_numNodes; node++) {
         if (node != chpl_nodeID) {
           pblp->ack = &done[node];
@@ -1347,7 +1331,9 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
   
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
   chpl_comm_diags_verbose_rdmaStrd("get", srcnode, ln, fn);
-  chpl_comm_diags_incr(get);
+  if (chpl_nodeID != srcnode) {
+    chpl_comm_diags_incr(get);
+  }
 
   // TODO -- handle strided get for non-registered memory
   gasnet_gets_bulk(dstaddr, dststr, srcnode, srcaddr, srcstr, cnt, strlvls); 
@@ -1390,7 +1376,9 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
   chpl_comm_diags_verbose_rdmaStrd("put", dstnode, ln, fn);
-  chpl_comm_diags_incr(put);
+  if (chpl_nodeID != dstnode) {
+    chpl_comm_diags_incr(put);
+  }
 
   // TODO -- handle strided put for non-registered memory
   gasnet_puts_bulk(dstnode, dstaddr, dststr, srcaddr, srcstr, cnt, strlvls); 

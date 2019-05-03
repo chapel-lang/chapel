@@ -21,12 +21,12 @@ RESOLUTION_SRCS =                                              \
                   caches.cpp                                   \
                   callDestructors.cpp                          \
                   callInfo.cpp                                 \
+                  cleanups.cpp                                 \
                   cullOverReferences.cpp                       \
                   expandVarArgs.cpp                            \
                   functionResolution.cpp                       \
                   generics.cpp                                 \
                   implementForallIntents.cpp                   \
-                  implementForallIntents2.cpp                  \
                   initializerResolution.cpp                    \
                   lateConstCheck.cpp                           \
                   lifetime.cpp                                 \

@@ -280,8 +280,8 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
 
   // Adjust compiler-generated record copy-init to take in RHS by ref
   // if it contains a record field marked with FLAG_COPY_MUTATES.
-  } else if (fn->hasFlag(FLAG_DEFAULT_COPY_INIT) &&
-             formal == fn->getFormal(3) &&
+  } else if (fn->hasFlag(FLAG_COPY_INIT) &&
+             fn->hasFlag(FLAG_COMPILER_GENERATED) &&
              recordContainingCopyMutatesField(formal->getValType())) {
     retval = true;
     *needRefIntent = true;
@@ -489,32 +489,27 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       resolveBlockStmt(fn->body);
 
-      if (tryFailure == false) {
-        insertUnrefForArrayOrTupleReturn(fn);
+      insertUnrefForArrayOrTupleReturn(fn);
 
-        Type* yieldedType = NULL;
-        resolveReturnTypeAndYieldedType(fn, &yieldedType);
+      Type* yieldedType = NULL;
+      resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
-        insertAndResolveCasts(fn);
+      insertAndResolveCasts(fn);
 
-        if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
-          protoIteratorClass(fn, yieldedType);
+      if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
+        protoIteratorClass(fn, yieldedType);
 
-        } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-          resolveTypeConstructor(fn);
+      } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+        resolveTypeConstructor(fn);
 
-        }
+      }
 
-        if (fn->isMethod() == true && fn->_this != NULL) {
-          ensureInMethodList(fn);
-        }
+      if (fn->isMethod() == true && fn->_this != NULL) {
+        ensureInMethodList(fn);
+      }
 
-        if (forCall != NULL) {
-          resolveAlsoParallelIterators(fn, forCall);
-        }
-
-      } else {
-        fn->removeFlag(FLAG_RESOLVED);
+      if (forCall != NULL) {
+        resolveAlsoParallelIterators(fn, forCall);
       }
     }
   }
@@ -561,13 +556,10 @@ static void markIterator(FnSymbol* fn) {
   }
 
   //
-  // Mark leader and standalone parallel iterators for inlining.
-  // Also stash a pristine copy of the iterator (required by forall intents)
+  // Mark parallel iterators for inlining.
   //
-  if (isLeaderIterator(fn)     == true ||
-      isStandaloneIterator(fn) == true) {
+  if (isParallelIterator(fn)) {
     fn->addFlag(FLAG_INLINE_ITERATOR);
-    stashPristineCopyOfLeaderIter(fn, true);
   }
 }
 
@@ -607,6 +599,21 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
   }
 
   return retval;
+}
+
+// leader or standalone
+bool isParallelIterator(FnSymbol* fn) {
+  if (!fn->isIterator())
+    return false;
+
+  for_formals(formal, fn) {
+    if (formal->type == gLeaderTag->type          &&
+        (paramMap.get(formal) == gLeaderTag    ||
+         paramMap.get(formal) == gStandaloneTag )  )
+      return true;
+  }
+
+  return false;
 }
 
 /************************************* | **************************************
@@ -1478,9 +1485,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
 
           typeTmp->addFlag(FLAG_MAYBE_TYPE);
 
-          fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                        tmp,
-                                        new CallExpr(PRIM_INIT, typeTmp)));
+          fn->insertAtHead(new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp, typeTmp));
 
           fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                         typeTmp,
@@ -1785,10 +1790,10 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 // In the future, it would be nice if this could no-init
                 // a LHS array and then move records into it from the RHS.
-                CallExpr* init     = new CallExpr(PRIM_INIT, fromType);
-                CallExpr* moveInit = new CallExpr(PRIM_MOVE, to, init);
 
-                call->insertBefore(moveInit);
+                CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR,
+                                              to, fromType);
+                call->insertBefore(init);
 
                 // Since the initialization pattern normally does not
                 // require adding an auto-destroy for a call-expr-temp,
@@ -1803,7 +1808,6 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // Resolve each of the new CallExprs They need to be resolved
                 // separately since resolveExpr does not recurse.
                 resolveExpr(init);
-                resolveExpr(moveInit);
                 resolveExpr(assign);
 
                 // Enable error messages assignment between local

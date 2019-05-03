@@ -1,1 +1,1 @@
-ra-uint-test1.chpl:5: error: type mismatch in assignment from int(64) to uint(64)
+ra-uint-test1.chpl:5: error: Cannot assign to uint(64) from int(64)

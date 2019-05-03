@@ -1,1 +1,1 @@
-badSubsetCall.chpl:3: error: isSubset not supported on rectangular domains
+badSubsetCall.chpl:4: error: rank mismatch in domain.isSubset()

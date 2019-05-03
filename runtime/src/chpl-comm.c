@@ -23,9 +23,10 @@
 //
 #include "chplrt.h"
 #include "chpl-comm.h"
+#include "chpl-comm-diags.h"
+#include "chpl-comm-internal.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"
-#include "chpl-mem-consistency.h"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -35,47 +36,39 @@
 int32_t chpl_nodeID = -1;
 int32_t chpl_numNodes = -1;
 
-int chpl_verbose_comm;
-int chpl_comm_diagnostics;
-int chpl_verbose_mem;
 
-void chpl_startCommDiagnostics(void); // this one implemented by comm layers
-void chpl_gen_startCommDiagnostics(void); // this one implemented in chpl-comm.c
-void chpl_stopCommDiagnostics(void);
-void chpl_gen_stopCommDiagnostics(void);
-void chpl_startCommDiagnosticsHere(void);
-void chpl_gen_startCommDiagnosticsHere(void);
-void chpl_stopCommDiagnosticsHere(void);
-void chpl_gen_stopCommDiagnosticsHere(void);
-void chpl_resetCommDiagnosticsHere(void);
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
+void** chpl_rt_priv_bcast_tab;
+int chpl_rt_priv_bcast_tab_len;
 
-void chpl_gen_startCommDiagnostics(void) {
-  // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
-  // And then start the comm diagnostics as usual.
-  chpl_startCommDiagnostics();
-}
+#define _RT_PRV_BCAST_M(sym) sizeof(sym),
+size_t chpl_rt_priv_bcast_lens[chpl_rt_prv_tab_num_idxs] =
+         { CHPL_RT_PRV_BCAST_TAB_ENTRIES(_RT_PRV_BCAST_M) };
+#undef _RT_PRV_BCAST_M
 
-void chpl_gen_stopCommDiagnostics(void) {
-  // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
-  // And then stop the comm diagnostics as usual.
-  chpl_stopCommDiagnostics();
-}
+void chpl_comm_init_prv_bcast_tab(void) {
+  //
+  // Make a copy of chpl_private_broadcast_table[], but with some more of
+  // our own entries following the compiler-emitted ones.
+  //
+  chpl_rt_priv_bcast_tab_len = chpl_private_broadcast_table_len
+                               + chpl_rt_prv_tab_num_idxs;
+  chpl_rt_priv_bcast_tab =
+    chpl_mem_allocMany(chpl_rt_priv_bcast_tab_len,
+                       sizeof(chpl_rt_priv_bcast_tab[0]),
+                       CHPL_RT_MD_COMM_UTIL, 0, 0);
 
-void chpl_gen_startCommDiagnosticsHere(void) {
-  // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
-  // And then start the comm diagnostics as usual.
-  chpl_startCommDiagnosticsHere();
-}
+  // Duplicate the compiler-emitted entries.
+  memcpy(chpl_rt_priv_bcast_tab,
+         chpl_private_broadcast_table,
+         chpl_private_broadcast_table_len
+         * sizeof(chpl_private_broadcast_table[0]));
 
-void chpl_gen_stopCommDiagnosticsHere(void) {
-  // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
-  // And then stop the comm diagnostics as usual.
-  chpl_stopCommDiagnosticsHere();
+  // Fill in our entries that follow those.
+#define _RT_PRV_BCAST_M(sym)                                            \
+  chpl_rt_priv_bcast_tab[chpl_private_broadcast_table_len               \
+                         + chpl_rt_prv_tab_ ## sym ## _idx] = &sym;
+  CHPL_RT_PRV_BCAST_TAB_ENTRIES(_RT_PRV_BCAST_M)
+#undef _RT_PRV_BCAST_M
 }
 
 

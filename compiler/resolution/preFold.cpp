@@ -195,33 +195,17 @@ static FnSymbol* findForallexprFollower(FnSymbol* serialIter) {
             return fn;
   }
 
-  //
   // The loopexpr function does not define parallel iterators
   // when it implements a (serial) for-expression.
-  // We may still try to run a forall loop over it because of this code
-  // in chpl__transferArray (whose 'b' corresponds to our serialIter):
-  //
-  //     {...
-  //     } else if chpl__tryToken { // try to parallelize ....
-  //       forall (aa,bb) in zip(a,b) do
-  //         aa = bb;
-  //     } else {
-  //       for (aa,bb) in zip(a,b) do
-  //         aa = bb;
-  //     }
-  //
-  // So the "if chpl__tryToken" will take the 'else' branch.
-  // Ex. 1st line in studies/sudoku/deitz/sudoku.chpl
-  // Or the user may mistakenly run a forall loop over a for-expression.
-  // In either case, the resolution should fail. So, return NULL.
-  //
   return NULL;
 }
 
 static Expr* preFoldPrimOp(CallExpr* call) {
   Expr* retval = NULL;
 
-  if (call->isPrimitive(PRIM_ADDR_OF)) {
+  switch (call->primitive->tag) {
+
+  case PRIM_ADDR_OF: {
     // remove set ref if already a reference
     if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
         isTupleContainingOnlyReferences(call->get(1)->typeInfo())) {
@@ -229,14 +213,19 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
       call->replace(retval);
     }
+    break;
+  }
 
-  } else if (call->isPrimitive(PRIM_BLOCK_PARAM_LOOP)) {
+  case PRIM_BLOCK_PARAM_LOOP: {
     ParamForLoop* paramLoop = toParamForLoop(call->parentExpr);
 
     retval = paramLoop->foldForResolve();
 
-  } else if (call->isPrimitive(PRIM_CALL_RESOLVES) ||
-             call->isPrimitive(PRIM_METHOD_CALL_RESOLVES)) {
+    break;
+  }
+
+  case PRIM_CALL_RESOLVES:
+  case PRIM_METHOD_CALL_RESOLVES: {
     Expr* fnName   = NULL;
     Expr* callThis = NULL;
     int   firstArg = 0;
@@ -308,30 +297,34 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
+    break;
+  } // PRIM_CALL_RESOLVES, PRIM_METHOD_CALL_RESOLVES
 
-  } else if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) ||
-             call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)) {
+  case PRIM_CAPTURE_FN_FOR_CHPL:
+  case PRIM_CAPTURE_FN_FOR_C: {
     retval = createFunctionAsValue(call);
-
     call->replace(retval);
+    break;
+  }
 
-  } else if (call->isPrimitive(PRIM_CREATE_FN_TYPE)) {
+  case PRIM_CREATE_FN_TYPE: {
     AggregateType* parent = createOrFindFunTypeFromAnnotation(call->argList,
                                                               call);
-
     retval = new SymExpr(parent->symbol);
-
     call->replace(retval);
+    break;
+  }
 
-  } else if (call->isPrimitive(PRIM_DEREF)) {
+  case PRIM_DEREF: {
     // remove deref if arg is already a value
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       retval = call->get(1)->remove();
-
       call->replace(retval);
     }
+    break;
+  }
 
-  } else if (call->isPrimitive(PRIM_FIELD_BY_NUM)) {
+  case PRIM_FIELD_BY_NUM: {
     // if call->get(1) is a reference type, dereference it
     Type*          t          = canonicalClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
@@ -365,7 +358,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_FIELD_NAME_TO_NUM)) {
+    break;
+  }
+
+  case PRIM_FIELD_NAME_TO_NUM: {
     Type*          t          = canonicalClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
 
@@ -392,7 +388,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_FIELD_NUM_TO_NAME)) {
+    break;
+  }
+
+  case PRIM_FIELD_NUM_TO_NAME: {
     Type*          t          = canonicalClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
 
@@ -429,7 +428,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_GET_COMPILER_VAR)) {
+    break;
+  }
+
+  case PRIM_GET_COMPILER_VAR: {
     // Resolving Primitive PRIM_GET_COMPILER_VAR
     SymExpr*    se1     = toSymExpr(call->get(1));
     Immediate*  chplEnv = toVarSymbol(se1->symbol())->immediate;
@@ -454,7 +456,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                 "primitive string does not match any environment variable");
     }
 
-  } else if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
+    break;
+  }
+
+  case PRIM_GET_SVEC_MEMBER: {
     // Convert these to PRIM_GET_SVEC_MEMBER_VALUE if the
     // field in question is a reference.
     // An alternative to this transformation here would be
@@ -482,13 +487,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       }
     }
 
-  } else if (call->isPrimitive(PRIM_INIT)) {
-    if (Expr* expr = resolvePrimInit(call)) {
-      // call was replaced by expr.
-      retval = expr;
-    }
+    break;
+  }
 
-  } else if (call->isPrimitive(PRIM_IS_ATOMIC_TYPE)) {
+  case PRIM_IS_ATOMIC_TYPE: {
     if (isAtomicType(call->get(1)->typeInfo())) {
       retval = new SymExpr(gTrue);
     } else {
@@ -496,7 +498,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     call->replace(retval);
-  } else if (call->isPrimitive(PRIM_IS_EXTERN_TYPE)) {
+
+    break;
+  }
+
+  case PRIM_IS_EXTERN_TYPE: {
     if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_EXTERN)) {
       retval = new SymExpr(gTrue);
     } else {
@@ -504,7 +510,24 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     call->replace(retval);
-  } else if (call->isPrimitive(PRIM_IS_CLASS_TYPE)) {
+
+    break;
+  }
+
+  case PRIM_IS_ABS_ENUM_TYPE: {
+    EnumType* et = toEnumType(call->get(1)->typeInfo());
+    if (et && et->isAbstract()) {
+      retval = new SymExpr(gTrue);
+    } else {
+      retval = new SymExpr(gFalse);
+    }
+
+    call->replace(retval);
+
+    break;
+  }
+    
+  case PRIM_IS_CLASS_TYPE: {
     Type* t = call->get(1)->typeInfo();
 
     if (isClassLike(t) &&
@@ -518,8 +541,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-             call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+    break;
+  }
+
+  case PRIM_TO_UNMANAGED_CLASS:
+  case PRIM_TO_BORROWED_CLASS: {
     Type* totype = call->typeInfo();
 
     if (isTypeExpr(call->get(1))) {
@@ -530,7 +556,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_IS_POD)) {
+    break;
+  }
+
+  case PRIM_IS_POD: {
     Type* t = call->get(1)->typeInfo();
 
     // call propagateNotPOD to set FLAG_POD/FLAG_NOT_POD
@@ -544,7 +573,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_NEEDS_AUTO_DESTROY)) {
+    break;
+  }
+
+  case PRIM_NEEDS_AUTO_DESTROY: {
     Type* t = call->get(1)->typeInfo();
 
     // call propagateNotPOD to set FLAG_POD/FLAG_NOT_POD
@@ -560,7 +592,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_IS_REF_ITER_TYPE)) {
+    break;
+  }
+
+  case PRIM_IS_REF_ITER_TYPE: {
     if (isRefIterType(call->get(1)->typeInfo())) {
       retval = new SymExpr(gTrue);
     } else {
@@ -569,7 +604,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_IS_STAR_TUPLE_TYPE)) {
+    break;
+  }
+
+  case PRIM_IS_STAR_TUPLE_TYPE: {
     Type* tupleType = call->get(1)->typeInfo();
 
     // If the type isn't a tuple, it definitely isn't a homogeneous tuple!
@@ -582,7 +620,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_IS_TUPLE_TYPE)) {
+    break;
+  }
+
+  case PRIM_IS_TUPLE_TYPE: {
     Type* tupleType = call->get(1)->typeInfo();
 
     if (tupleType->symbol->hasFlag(FLAG_TUPLE)) {
@@ -593,7 +634,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_IS_RECORD_TYPE) == true) {
+    break;
+  }
+
+  case PRIM_IS_RECORD_TYPE: {
     AggregateType* at = toAggregateType(call->get(1)->typeInfo());
 
     if (isRecord(at) == true) {
@@ -605,7 +649,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_IS_UNION_TYPE)) {
+    break;
+  }
+
+  case PRIM_IS_UNION_TYPE: {
     AggregateType* classType = toAggregateType(call->get(1)->typeInfo());
 
     if (isUnion(classType) == true) {
@@ -616,7 +663,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_LOGICAL_FOLDER)) {
+    break;
+  }
+
+  case PRIM_LOGICAL_FOLDER: {
     SymExpr*   sym1 = toSymExpr(call->get(1));
     VarSymbol* lhs  = NULL;
 
@@ -703,85 +753,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_NO_INIT)) {
-    // Lydia note: fUseNoinit does not control this section.  This was
-    // necessary because with the definition of type defaults in the module
-    // code, return temporary variables would cause an infinite loop by
-    // trying to default initialize within the default initialization
-    // definition.  (It is safe for these temporaries to skip default
-    // initialization, as they will always be assigned a value before they
-    // are returned.)  Thus noinit must remain attached to these temporaries,
-    // even if --no-use-noinit is thrown.  This is an implementation detail
-    // that the user does not need to care about.
+    break;
+  }
 
-    // fUseNoinit controls the insertion of PRIM_NO_INIT statements in the
-    // normalize pass.
-    SymExpr* se = toSymExpr(call->get(1));
-
-    INT_ASSERT(se);
-
-    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-      USR_FATAL(call, "invalid type specification");
-    }
-
-    Type* type = call->get(1)->getValType();
-
-    if (isAggregateType(type) == true      ||
-        type                  == dtStringC) {
-
-      bool containsNotPOD = propagateNotPOD(type);
-
-      if (containsNotPOD == true) {
-        // These types deal with their uninitialized fields differently than
-        // normal records/classes.  They may require special case
-        // implementations, but were capable of being isolated from the new
-        // cases that do work.
-        bool nowarn = false;
-
-        // In the case of temporary variables that use noinit (at this point
-        // only return variables), it is not useful to warn the user we are
-        // still default initializing the values as they weren't the ones to
-        // tell us to use noinit in the first place.  So squash the warning
-        // in this case.
-        if (call->parentExpr) {
-          CallExpr* parent = toCallExpr(call->parentExpr);
-
-          if (parent && parent->isPrimitive(PRIM_MOVE)) {
-            // Should always be true, but just in case...
-            if (SymExpr* holdsDest = toSymExpr(parent->get(1))) {
-              Symbol* dest   = holdsDest->symbol();
-
-              // TODO: Surely there's a better way to test for this pattern
-              bool    okName = strcmp(dest->name, "ret")          == 0 ||
-                               strcmp(dest->name, primCoerceTmpName) == 0 ||
-                               strcmp(dest->name, arrayUnrefName) == 0;
-
-              if (dest->hasFlag(FLAG_TEMP) && okName) {
-                nowarn = true;
-              }
-            }
-          }
-        }
-
-        if (nowarn == false) {
-          USR_WARN(call,
-                   "type %s does not currently support noinit, "
-                   "using default initialization",
-                   type->symbol->name);
-        }
-
-        retval = new CallExpr(PRIM_INIT, call->get(1)->remove());
-
-        call->replace(retval);
-        inits.add(toCallExpr(retval));
-
-      } else {
-        retval = call;
-        inits.add(call);
-      }
-    }
-
-  } else if (call->isPrimitive(PRIM_NUM_FIELDS)) {
+  case PRIM_NUM_FIELDS: {
     Type*          t          = canonicalClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
     int            fieldCount = 0;
@@ -796,7 +771,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_HAS_LEADER)) {
+    break;
+  }
+
+  case PRIM_HAS_LEADER: {
     FnSymbol* iterator   = getTheIteratorFn(call->get(1)->typeInfo());
     Symbol* result = gFalse;
     if (IteratorGroup* igroup = iterator->iteratorGroup)
@@ -806,7 +784,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = new SymExpr(result);
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_TO_FOLLOWER)) {
+    break;
+  }
+
+  case PRIM_TO_FOLLOWER: {
     FnSymbol* iterator     = getTheIteratorFn(call->get(1)->typeInfo());
     CallExpr* followerCall = NULL;
 
@@ -818,7 +799,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     for_formals(formal, iterator) {
       if (formal->name  == astrTag && formal->type == gFollowerTag->type) {
-        INT_ASSERT("tag already present in PRIM_TO_FOLLOWER");
+        INT_FATAL("tag already present in PRIM_TO_FOLLOWER");
         // Could remove it, but would have to figure out what's
         // happening with followThis and fast too.
       }
@@ -846,7 +827,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     retval = followerCall;
 
-  } else if (call->isPrimitive(PRIM_TO_LEADER)) {
+    break;
+  }
+
+  case PRIM_TO_LEADER: {
     FnSymbol* iterator   = getTheIteratorFn(call->get(1)->typeInfo());
     CallExpr* leaderCall = new CallExpr(iterator->name);
 
@@ -869,7 +853,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     retval = leaderCall;
 
-  } else if (call->isPrimitive(PRIM_TO_STANDALONE)) {
+    break;
+  }
+
+  case PRIM_TO_STANDALONE: {
     FnSymbol* iterator       = getTheIteratorFn(call->get(1)->typeInfo());
     CallExpr* standaloneCall = new CallExpr(iterator->name);
 
@@ -893,7 +880,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     retval = standaloneCall;
 
-  } else if (call->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE)) {
+    break;
+  }
+
+  case PRIM_ITERATOR_RECORD_SET_SHAPE: {
     Symbol* ir = toSymExpr(call->get(1))->symbol();
     if (ir->hasFlag(FLAG_TYPE_VARIABLE)) {
       // This is a type. Do not do shape.
@@ -915,7 +905,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       call->replace(retval);
     }
 
-  } else if (call->isPrimitive(PRIM_TYPE_TO_STRING)) {
+    break;
+  }
+
+  case PRIM_TYPE_TO_STRING: {
     SymExpr* se = toSymExpr(call->get(1));
 
     INT_ASSERT(se && se->symbol()->hasFlag(FLAG_TYPE_VARIABLE));
@@ -927,7 +920,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_TYPEOF)) {
+    break;
+  }
+
+  case PRIM_TYPEOF: {
     SymExpr* se = toSymExpr(call->get(1));
     Type* type = se->getValType();
 
@@ -965,11 +961,19 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       Type* newt = computeNonRefTuple(toAggregateType(type));
       retval = new SymExpr(newt->symbol);
       call->replace(retval);
+    } else {
+      // Check whether the type's def is within the .type block itself.
+      if (BlockStmt* blk = toBlockStmt(call->getStmtExpr()->parentExpr))
+        if (type->symbol->defPoint->parentExpr == blk)
+          USR_FATAL_CONT(call, ".type is not supported for this kind of expression");
     }
 
-  } else if (call->isPrimitive(PRIM_STATIC_TYPEOF) ||
-             call->isPrimitive(PRIM_STATIC_FIELD_TYPE) ||
-             call->isPrimitive(PRIM_SCALAR_PROMOTION_TYPE)) {
+    break;
+  }
+
+  case PRIM_STATIC_TYPEOF:
+  case PRIM_STATIC_FIELD_TYPE:
+  case PRIM_SCALAR_PROMOTION_TYPE: {
 
     // Replace the type query call with a SymExpr of the type symbol
     // call->typeInfo() will request the type from the primitive
@@ -977,7 +981,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = new SymExpr(type->symbol);
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_QUERY)) {
+    break;
+  }
+
+  case PRIM_QUERY: {
     Symbol* field = determineQueriedField(call);
 
     if (field &&
@@ -1026,11 +1033,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                 "invalid query -- queried field must be a type or parameter");
     }
 
-  } else if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
+    break;
+  }
+
+  case PRIM_REDUCE_ASSIGN: {
     // Convert this 'call' into a call to accumulateOntoState().
-    INT_ASSERT(call->numActuals() == 3);
-    Expr*         rhs       = call->get(3)->remove();
-    Expr*         lhs       = call->get(2)->remove();
+    INT_ASSERT(call->numActuals() == 2);
+    Expr*         rhs       = call->get(2)->remove();
+    Expr*         lhs       = call->get(1)->remove();
     ShadowVarSymbol*   svar = toShadowVarSymbol(toSymExpr(lhs)->symbol());
     Symbol*       globalOp  = svar->ReduceOpForAccumState();
 
@@ -1042,8 +1052,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                       gMethodToken, globalOp, lhs, rhs);
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-             call->isPrimitive(PRIM_WIDE_GET_NODE)) {
+    break;
+  }
+
+  case PRIM_WIDE_GET_LOCALE:
+  case PRIM_WIDE_GET_NODE: {
     Type* type = call->get(1)->getValType();
 
     //
@@ -1089,7 +1102,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       call->insertAtTail(tmp);
     }
 
-  } else if (call->isPrimitive(PRIM_SIZEOF_BUNDLE) == true) {
+    break;
+  }
+
+  case PRIM_SIZEOF_BUNDLE: {
     // Fix up arg to sizeof_bundle(), as we may not have known the
     // type earlier
     SymExpr* sizeSym  = toSymExpr(call->get(1));
@@ -1098,7 +1114,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = new CallExpr(PRIM_SIZEOF_BUNDLE, sizeType->symbol);
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_SIZEOF_DDATA_ELEMENT) == true) {
+    break;
+  }
+
+  case PRIM_SIZEOF_DDATA_ELEMENT: {
     // Fix up arg to sizeof_ddata_element(), as we may not have known
     // the type earlier
     SymExpr* sizeSym  = toSymExpr(call->get(1));
@@ -1107,10 +1126,19 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = new CallExpr(PRIM_SIZEOF_DDATA_ELEMENT, sizeType->symbol);
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_REDUCE)) {
-    // Need to do this ahead of resolveCall().
-    lowerPrimReduce(call, retval);
+    break;
   }
+
+  case PRIM_REDUCE: {
+    // Need to do this ahead of resolveCall().
+    retval = lowerPrimReduce(call);
+    break;
+  }
+
+  default:
+    break;
+
+  } // switch (call->primitive->tag)
 
   return retval;
 }
@@ -1306,26 +1334,24 @@ static Expr* preFoldNamed(CallExpr* call) {
           bool fromString = (oldType == dtString || oldType == dtStringC);
           bool fromIntUint = is_int_type(oldType) ||
                              is_uint_type(oldType);
-          bool fromIntEtc = fromIntUint || is_bool_type(oldType);
+          bool fromRealEtc = is_real_type(oldType) ||
+                             is_imag_type(oldType) ||
+                             is_complex_type(oldType);
+          bool fromIntEtc = fromIntUint || fromRealEtc || is_bool_type(oldType);
 
           bool toEnum = is_enum_type(newType);
           bool toString = (newType == dtString || newType == dtStringC);
           bool toIntUint = is_int_type(newType) ||
                            is_uint_type(newType);
-          bool toIntEtc = toIntUint || is_bool_type(newType);
+          bool toRealEtc = is_real_type(newType) ||
+                           is_imag_type(newType) ||
+                           is_complex_type(newType);
+          bool toIntEtc = toIntUint || toRealEtc || is_bool_type(newType);
 
 
           // Handle casting between numeric types
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
-            VarSymbol* typeVar  = toVarSymbol(newType->defaultValue);
-
-            // handle numeric casts
-            // (or anything handled by coerce_immediate)
-            if (typeVar == NULL || typeVar->immediate == NULL) {
-              INT_FATAL("unexpected case in cast_fold");
-            }
-
-            Immediate coerce = *typeVar->immediate;
+            Immediate coerce = getDefaultImmediate(newType);
 
             coerce_immediate(imm, &coerce);
 

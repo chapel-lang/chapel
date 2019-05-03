@@ -1,5 +1,5 @@
 proc main() {
-  var x : int = new int;
+  var x : int = new int(64);
 
   writeln(x);
 }

@@ -1,0 +1,73 @@
+
+ser serial
+iter1ser
+[ IND in iter1ser() ]
+[ IND in iter1ser() ]
+followers: 0 0
+
+SA standalone
+iter1SA standalone
+[ IND in iter1SA() ]
+[ IND in iter1SA() ]
+followers: 0 0
+
+LF leader+follower
+iter1LF leader
+[ IND in iter1LF() ]
+[ IND in iter1LF() ]
+followers: 2 0
+
+par standalone
+iter1par standalone
+[ IND in iter1par() ]
+[ IND in iter1par() ]
+followers: 0 0
+
+LF leader+followers
+iter1LF leader
+[ IND in zip(iter1LF(), iter2LF()) ]
+[ IND in zip(iter1LF(), iter2LF()) ]
+followers: 2 2
+
+par leader+followers
+iter1par leader
+[ IND in zip(iter1par(), iter2par()) ]
+[ IND in zip(iter1par(), iter2par()) ]
+followers: 2 2
+
+ser serial
+class1ser
+[ IND in inst1ser ]
+[ IND in inst1ser ]
+followers: 0 0
+
+SA standalone
+class1SA standalone
+[ IND in inst1SA ]
+[ IND in inst1SA ]
+followers: 0 0
+
+LF leader+follower
+class1LF leader
+[ IND in inst1LF ]
+[ IND in inst1LF ]
+followers: 2 0
+
+par standalone
+class1par standalone
+[ IND in inst1par ]
+[ IND in inst1par ]
+followers: 0 0
+
+LF leader+followers
+class1LF leader
+[ IND in zip(inst1LF, inst2LF) ]
+[ IND in zip(inst1LF, inst2LF) ]
+followers: 2 2
+
+par leader+followers
+class1par leader
+[ IND in zip(inst1par, inst2par) ]
+[ IND in zip(inst1par, inst2par) ]
+followers: 2 2
+

@@ -330,7 +330,7 @@ proc Cyclic.getChunk(inds, locid) {
   //return inds((...distWhole));
 }
 
-proc Cyclic.dsiDisplayRepresentation() {
+override proc Cyclic.dsiDisplayRepresentation() {
   writeln("startIdx = ", startIdx);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocs = ", for tl in targetLocs do tl.id);
@@ -509,7 +509,7 @@ proc CyclicDom.dsiBuildArray(type eltType) {
   return arr;
 }
 
-proc CyclicDom.dsiDisplayRepresentation() {
+override proc CyclicDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
@@ -708,7 +708,7 @@ proc CyclicArr.dsiLocalSlice(ranges) {
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 
-proc CyclicArr.dsiDisplayRepresentation() {
+override proc CyclicArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
     writeln("locArr[", tli, "].locRAD = ", locArr[tli].locRAD.RAD);
@@ -922,34 +922,12 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   }
 }
 
+proc CyclicArr.dsiSerialRead(f) {
+  chpl_serialReadWriteRectangular(f, this);
+}
+
 proc CyclicArr.dsiSerialWrite(f) {
-  if verboseCyclicDistWriters {
-    writeln(this.type:string);
-    writeln("------");
-  }
-  if dom.dsiNumIndices == 0 then return;
-  var i : rank*idxType;
-  for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim).low;
-  label next while true {
-    f.write(dsiAccess(i));
-    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
-      f.write(" ");
-      i(rank) += dom.dsiDim(rank).stride:idxType;
-    } else {
-      for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
-          i(dim) += dom.dsiDim(dim).stride:idxType;
-          for dim2 in dim+1..rank {
-            f.writeln();
-            i(dim2) = dom.dsiDim(dim2).low;
-          }
-          continue next;
-        }
-      }
-      break;
-    }
-  }
+  chpl_serialReadWriteRectangular(f, this);
 }
 
 override proc CyclicArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {

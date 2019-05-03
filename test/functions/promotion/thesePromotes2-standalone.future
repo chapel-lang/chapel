@@ -1,0 +1,6 @@
+feature request: 'these' should enable promotion
+#5114
+
+In this test:
+* chpl__promotionType() should not be needed for promotion.
+* Promotion should invoke the standalone iterator, not the serial iterator.

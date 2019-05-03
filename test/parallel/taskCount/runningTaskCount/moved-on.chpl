@@ -13,7 +13,7 @@ proc main() {
       mytask();
 
       // wait for 2nd task to migrate (if it'll actually migrate)
-      if numLocales > 1 then while (here.runningTasks() != 2) { }
+      if numLocales > 1 then while (here.runningTasks() != 2) { chpl_task_yield(); }
       writeln("\n", here.runningTasks());
       on Locales[1%numLocales] do mySpin$ = true;
       barrier.barrier();

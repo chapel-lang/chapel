@@ -183,8 +183,6 @@ static Expr* postFoldNormal(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool  isSubTypeOrInstantiation(Type* sub, Type* super);
-
 static void  insertValueTemp(Expr* insertPoint, Expr* actual);
 
 static Expr* postFoldPrimop(CallExpr* call) {
@@ -477,7 +475,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     const char* str = NULL;
 
     if (get_string(arg, &str)) {
-      processStringInRequireStmt(str, false);
+      processStringInRequireStmt(str, false, call->astloc.filename);
 
     } else {
       USR_FATAL(call, "'require' statements require string arguments");
@@ -499,7 +497,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 }
 
 // This function implements PRIM_IS_SUBTYPE
-static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
+bool isSubTypeOrInstantiation(Type* sub, Type* super) {
 
   // Consider instantiation
   if (super->symbol->hasFlag(FLAG_GENERIC))
@@ -587,6 +585,9 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
     } else if (SymExpr* rhs = toSymExpr(call->get(2))) {
       Symbol* rhsSym = rhs->symbol();
 
+      while (paramMap.get(rhsSym) != NULL) {
+        rhsSym = paramMap.get(rhsSym);
+      }
       if (rhsSym->isImmediate() == true ||
           isEnumSymbol(rhsSym)  == true) {
         paramMap.put(lhsSym, rhsSym);
@@ -685,14 +686,6 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
         lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true  ||
         lhsSym->type->symbol->hasFlag(FLAG_ARRAY)              == true) {
       lhsSym->removeFlag(FLAG_EXPR_TEMP);
-    }
-
-    if (rhs->isPrimitive(PRIM_NO_INIT) == true) {
-      // If the lhs is a primitive, then we can remove this value.
-      // Otherwise retain this statement through resolveRecordInitializers.
-      if (isAggregateType(rhs->get(1)->getValType()) == false) {
-        call->convertToNoop();
-      }
     }
 
   } else {

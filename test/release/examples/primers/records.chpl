@@ -76,7 +76,7 @@ record Point {
   }
 
   // This is a copy initializer
-  proc init(from: Point) {
+  proc init=(from: Point) {
     writeln("Point copy-init");
     this.x = from.x;
     this.y = from.y;

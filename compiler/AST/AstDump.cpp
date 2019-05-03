@@ -404,6 +404,8 @@ bool AstDump::enterBlockStmt(BlockStmt* node) {
     write("scopeless");
   if ((node->blockTag & BLOCK_TYPE_ONLY))
     write("type");
+  if ((node->blockTag & BLOCK_EXTERN))
+    write("extern");
 
   ++mIndent;
 
@@ -415,18 +417,6 @@ void AstDump::exitBlockStmt(BlockStmt* node) {
   newline();
   write(false, "}", true);
   printBlockID(node);
-}
-
-void AstDump::visitForallIntents(ForallIntents* clause) {
-  newline();
-  write("with (");
-  for (int i = 0; i < clause->numVars(); i++) {
-    if (i > 0) write(false, ",", true);
-    if (clause->isReduce(i)) clause->riSpecs[i]->accept(this);
-    write(forallIntentTagDescription(clause->fIntents[i]));
-    clause->fiVars[i]->accept(this);
-  }
-  write(false, ")", true);
 }
 
 

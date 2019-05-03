@@ -331,22 +331,19 @@ module ChapelTuple {
   //
   // tuple casts to complex(64) and complex(128)
   //
+  // TODO: These could instead use 'noinit' and manually assign the fields.
+  //
+  // Note: statically inlining the _chpl_complex runtime functions is necessary
+  // for good performance
+  //
   inline proc _cast(type t, x: (?,?)) where t == complex(64) {
-    var c: complex(64) = noinit;
-    // There is no point allowing this to default initialize, we're just going
-    // to overwrite it anyways
-    c.re = x(1):real(32);
-    c.im = x(2):real(32);
-    return c;
+    extern proc _chpl_complex64(re:real(32),im:real(32)) : complex(64);
+    return _chpl_complex64(x(1):real(32),x(2):real(32));
   }
 
   inline proc _cast(type t, x: (?,?)) where t == complex(128) {
-    var c: complex(128) = noinit;
-    // There is no point allowing this to default initialize, we're just going
-    // to overwrite it anyways
-    c.re = x(1):real(64);
-    c.im = x(2):real(64);
-    return c;
+    extern proc _chpl_complex128(re:real(64),im:real(64)):complex(128);
+    return _chpl_complex128(x(1):real(64),x(2):real(64));
   }
 
   //

@@ -20,9 +20,16 @@ sure that your program has been compiled using the chpl compiler's
 ``-g`` flag.  With ``CHPL_COMM=gasnet`` when using the ``amudprun``
 launcher, you can launch ``gdb`` by setting the environment variable
 ``CHPL_COMM_USE_GDB`` when running the program.  This will open up a
-separate xterm for each locale, running the designated debugger.  On the
-Mac OS X (darwin) platform, you can launch ``lldb`` instead, by setting
-the ``CHPL_COMM_USE_LLDB`` environment variable.
+separate terminal emulator window for each locale,
+each running the designated debugger on that locale's program instance.
+On the Mac OS X (darwin) platform, you can launch ``lldb`` instead,
+by setting the ``CHPL_COMM_USE_LLDB`` environment variable.
+
+The default terminal emulator program is ``xterm``,
+but by setting the environment variable ``CHPL_COMM_DBG_TERM=urxvt``
+you can force use of ``urxvt`` instead.
+Whichever terminal emulator is used must be in your ``PATH``
+on the compute node or an error will result.
 
 The utility of this feature depends greatly on your familiarity with
 the Chapel generated code.  However, if your program is crashing or

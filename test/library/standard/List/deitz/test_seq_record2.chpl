@@ -1,11 +1,11 @@
-use List;
+use LinkedLists;
 
 record R {
   var x : int;
   var y : int;
 }
 
-var s : list(R);
+var s : LinkedList(R);
 
 s.append(new R(1, 2));
 

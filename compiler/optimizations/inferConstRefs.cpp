@@ -467,7 +467,7 @@ static bool passedToInitOrRetarg(SymExpr* use,
   if (form->hasFlag(FLAG_RETARG))
     return true;
 
-  if (calledFn->isInitializer()  &&
+  if ((calledFn->isInitializer() || calledFn->isCopyInit())  &&
       form->hasFlag(FLAG_ARG_THIS))
     return true;
 

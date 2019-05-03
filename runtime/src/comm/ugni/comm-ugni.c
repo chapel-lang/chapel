@@ -56,6 +56,7 @@
 #include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
+#include "chpl-comm-internal.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
 #include "chplexit.h"
@@ -273,8 +274,7 @@ static uint64_t debug_stats_flag = 0;
         MACRO(acq_cd_rb_cnt)                                            \
         MACRO(acq_cd_rb_na_cnt)                                         \
         MACRO(acq_cd_rb_cq_cnt)                                         \
-        MACRO(acq_cd_rb_frf_1_cnt)                                      \
-        MACRO(acq_cd_rb_frf_2_cnt)                                      \
+        MACRO(acq_cd_rb_frf_cnt)                                        \
         MACRO(reacq_cd_cnt)                                             \
         MACRO(wait_rfork_cnt)                                           \
         MACRO(wait_glb_cq_ev_cnt)                                       \
@@ -623,6 +623,7 @@ static mem_region_t* gnr_mreg_map;
 // fault-in failures, and reporting out-of-memory in response.
 //
 static struct sigaction previous_SIGBUS_sigact;
+static atomic_bool SIGBUS_gate;
 
 struct mregs_supp {
   chpl_mem_descInt_t desc;
@@ -708,14 +709,31 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 #define CQ_CNT_DEC(cd)        \
         (void) atomic_fetch_sub_uint_least32_t(&(cd)->cq_cnt_curr, 1)
 
+// We create an array of comm domains and try to spread our threads to
+// different indices. For tasking layers with a fixed number of threads
+// this results in each thread acquiring an affinity for a comm domain,
+// eliminating contention across comm domains (assuming we can create as
+// many comm domains as there are threads.) We cacheline align/pad the
+// comm_dom_t struct to avoid false sharing between threads accessing
+// different comm domains (this is extremely important for performance)
+//
+// Because there are configurations where there aren't a fixed number of
+// threads and machines where there would be more threads than comm
+// domains we put `busy` on its own cacheline to avoid contention
+// between a thread operating on an acquired CD and another thread
+// that's trying to acquire it. We also try to limit cache thrashing on
+// `busy` by acquiring the lock with a test-and-test-and-set op, but the
+// effectiveness of that depends on which atomic layer is used (cstdlib
+// is the only one with cheap atomic reads.)
+
 typedef struct {
   atomic_bool        busy CACHE_LINE_ALIGN;
+  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
   chpl_bool          firmly_bound;
   gni_nic_handle_t   nih;
   gni_ep_handle_t*   remote_eps;
   gni_cq_handle_t    cqh;
   cq_cnt_t           cq_cnt_max;
-  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
 #ifdef DEBUG_STATS
   uint64_t           acqs;
   uint64_t           acqs_looks;
@@ -734,14 +752,15 @@ static uint32_t     comm_dom_cnt_max;
 
 static comm_dom_t*  comm_doms;
 
-static __thread int comm_dom_free_idx;
+static atomic_int_least32_t global_init_cdi;
+static __thread int comm_dom_free_idx = -1;
 static __thread comm_dom_t* cd = NULL;
 static __thread int cd_idx = -1;
 
 #define INIT_CD_BUSY(cd)      atomic_init_bool(&(cd)->busy, false)
-#define CHECK_CD_BUSY(cd)     atomic_load_bool(&(cd)->busy)
-#define ACQUIRE_CD_MAYBE(cd)  (atomic_exchange_bool(&(cd)->busy, true) == false)
-#define RELEASE_CD(cd)        atomic_store_bool(&(cd)->busy, false)
+#define CHECK_CD_BUSY(cd)     atomic_load_explicit_bool(&(cd)->busy, memory_order_acquire)
+#define ACQUIRE_CD_MAYBE(cd)  (!atomic_exchange_explicit_bool(&(cd)->busy, true, memory_order_acquire))
+#define RELEASE_CD(cd)        atomic_store_explicit_bool(&(cd)->busy, false, memory_order_release)
 
 
 //
@@ -760,6 +779,9 @@ static __thread int cd_idx = -1;
 // for now follow gasnet-aries and use the higher default of 4K
 #define DEFAULT_RDMA_THRESHOLD 4096
 static size_t rdma_threshold = DEFAULT_RDMA_THRESHOLD;
+
+// Largest size to use unordered transactions for
+#define MAX_UNORDERED_TRANS_SZ 1024
 
 #define ALIGN_32_DN(x)    ALIGN_DN((x), sizeof(int32_t))
 #define ALIGN_32_UP(x)    ALIGN_UP((x), sizeof(int32_t))
@@ -1931,9 +1953,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 
 void chpl_comm_post_mem_init(void)
 {
-  //
-  // Empty.
-  //
+  chpl_comm_init_prv_bcast_tab();
 }
 
 
@@ -2090,14 +2110,15 @@ void chpl_comm_post_task_init(void)
   // handles, endpoints, and completion queues.
   //
   comm_doms =
-    (comm_dom_t*) chpl_mem_memalign(sizeof(comm_dom_t),
+    (comm_dom_t*) chpl_mem_memalign(CACHE_LINE_SIZE,
                                     comm_dom_cnt * sizeof(comm_dom_t),
                                     CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
 
   for (int i = 0; i < comm_dom_cnt; i++)
     gni_setup_per_comm_dom(i);
 
-  comm_dom_free_idx = 0;
+  atomic_init_int_least32_t(&global_init_cdi, 0);
+
 
   //
   // Register memory.
@@ -2625,7 +2646,7 @@ void register_memory(void)
       gnr_mreg_map[node] = gdp->gnr_mreg;
       mem_regions_all_entries[node]->mreg_cnt = gdp->mreg_cnt;
       memcpy(&mem_regions_all_entries[node]->mregs, &gdp->mregs,
-             mem_regions_size);
+             gdata_mregs_size);
       mem_regions_all_my_entry_map[node] =
           (mem_region_table_t*)
           ((char*) gdp->mem_regions_all + chpl_nodeID * mem_regions_size);
@@ -3181,6 +3202,7 @@ void set_hugepage_info(void)
 
     if ((ev = getenv("HUGETLB_NO_RESERVE")) != NULL
         && strcasecmp(ev, "yes") == 0) {
+      atomic_init_bool(&SIGBUS_gate, false);
       install_SIGBUS_handler();
     }
   }
@@ -3194,6 +3216,10 @@ void set_hugepage_info(void)
 }
 
 
+//
+// This may be called from the SIGBUS handler itself (see below), so
+// its error handling has to be primitive (no *printf() calls, e.g.).
+//
 static
 void install_SIGBUS_handler(void)
 {
@@ -3201,11 +3227,17 @@ void install_SIGBUS_handler(void)
 
   act.sa_flags = SA_RESTART | SA_SIGINFO;
   if (sigemptyset(&act.sa_mask) != 0) {
-    CHPL_INTERNAL_ERROR("sigemptyset() failed");
+    static const char* msg = "internal error: sigemptyset() failed\n";
+    int msgLen = strlen(msg);
+    write(2, msg, msgLen);
+    _exit(1);
   }
   act.sa_sigaction = SIGBUS_handler;
   if (sigaction(SIGBUS, &act, &previous_SIGBUS_sigact) != 0) {
-    CHPL_INTERNAL_ERROR("sigaction(SIGBUS) failed");
+    static const char* msg = "internal error: sigaction(SIGBUS) failed\n";
+    int msgLen = strlen(msg);
+    write(2, msg, msgLen);
+    _exit(1);
   }
 }
 
@@ -3243,15 +3275,100 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
       ;
 
     if (mr_i >= 0) {
-      char buf[1024];
-      chpl_error_vs(buf, sizeof(buf),
-                    mr_mregs_supplement[mr_i].ln, mr_mregs_supplement[mr_i].fn,
-                    "Out of memory allocating \"%s\"",
-                    chpl_mem_descString(mr_mregs_supplement[mr_i].desc));
-      write(fileno(stderr), buf, strlen(buf));
-      exit_without_cleanup = true;
-      chpl_atomic_thread_fence(memory_order_release);
-      chpl_exit_any(1);
+      //
+      // This does indeed appear to be due to faulting in pages as a
+      // side effect of initialization.
+      //
+
+      //
+      // Only say this once per node.
+      //
+      while (atomic_exchange_explicit_bool(&SIGBUS_gate, true,
+                                           memory_order_acquire)) {
+        sleep(1); // listed as safe in a handler (sched_yield() isn't)
+      }
+
+      //
+      // Produce the best message we can, under the circumstances.
+      //
+      static char buf[1000];
+      int bufi;
+
+      static const char* msg1 = "error: Out of memory allocating \"";
+      int msg1Len = strlen(msg1);
+      const char* mds = chpl_mem_descString(mr_mregs_supplement[mr_i].desc);
+      int mdsLen = strlen(mds);
+      static const char* msg2 = "\"";
+      int msg2Len = strlen(msg2);
+
+      bufi = sizeof(buf);
+      buf[--bufi] = '\n';
+
+      if (msg1Len + mdsLen + msg2Len > bufi) {
+        static const char* msg = "error: Out of memory allocating from heap";
+        int msgLen = strlen(msg);
+        memcpy(&buf[bufi -= msgLen], msg, msgLen);
+      } else {
+        //
+        // We build the message backwards, because that makes building
+        // the string for the line number much simpler.
+        //
+        memcpy(&buf[bufi -= msg2Len], msg2, msg2Len);
+        memcpy(&buf[bufi -= mdsLen], mds, mdsLen);
+        memcpy(&buf[bufi -= msg1Len], msg1, msg1Len);
+
+        //
+        // Only try to provide a line number if there is one and it
+        // will fit in the buffer.
+        //
+        chpl_bool didLine = false;
+        if (bufi > 22 // type safety: enough for uint64 (ln is only int32)
+            && mr_mregs_supplement[mr_i].ln > 0) {
+          int ln = mr_mregs_supplement[mr_i].ln;
+          buf[--bufi] = ' ';
+          buf[--bufi] = ':';
+          for ( ; ln > 0; ln /= 10) {
+            buf[--bufi] = "0123456789"[ln % 10];
+          }
+          didLine = true;
+        }
+
+        //
+        // Only try to provide a source file if we can give at least some
+        // of it, and without using snprintf() in chpl_lookupFilename()).
+        //
+        if (bufi > 10
+            && mr_mregs_supplement[mr_i].fn >= 0
+            && mr_mregs_supplement[mr_i].fn < chpl_filenameTableSize) {
+          if (!didLine)
+            buf[--bufi] = ' ';
+          buf[--bufi] = ':';
+
+          //
+          // Stop copying fname either when we're done or need to leave
+          // room for "..." in place of chars that won't fit.
+          //
+          const char* fn = chpl_lookupFilename(mr_mregs_supplement[mr_i].fn);
+          int fnLen = strlen(fn);
+          int fni;
+          for (fni = fnLen; fni > 0 && (fni <= 3 || bufi > 3); ) {
+            buf[--bufi] = fn[--fni];
+          }
+
+          if (fni != 0) {
+            buf[--bufi] = '.';
+            buf[--bufi] = '.';
+            buf[--bufi] = '.';
+          }
+        }
+      }
+
+      write(2, &buf[bufi], sizeof(buf) - bufi);
+
+      //
+      // It's not safe to do anything else but quit now.
+      //
+      _exit(1);
     }
   }
 
@@ -3263,7 +3380,12 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
   // handler again.
   //
   if (sigaction(SIGBUS, &previous_SIGBUS_sigact, NULL) != 0) {
-    CHPL_INTERNAL_ERROR("sigaction(SIGBUS) to reinstall old handler failed");
+    static const char* msg
+                       = "internal error: "
+                         "sigaction(SIGBUS) to reinstall old handler failed\n";
+    int msgLen = strlen(msg);
+    write(2, msg, msgLen);
+    _exit(1);
   }
 
   {
@@ -3274,7 +3396,10 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
         || pthread_sigmask(SIG_UNBLOCK, &sigbus_set, NULL) != 0
         || raise(SIGBUS) != 0
         || pthread_sigmask(SIG_BLOCK, &sigbus_set, NULL) != 0) {
-      CHPL_INTERNAL_ERROR("cannot re-raise SIGBUS");
+      static const char* msg = "internal error: cannot re-raise SIGBUS\n";
+      int msgLen = strlen(msg);
+      write(2, msg, msgLen);
+      _exit(1);
     }
   }
 
@@ -3706,8 +3831,8 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid)
   //
   for (i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      do_remote_put(chpl_private_broadcast_table[id], i,
-                    chpl_private_broadcast_table[id], size,
+      do_remote_put(chpl_rt_priv_bcast_tab[id], i,
+                    chpl_rt_priv_bcast_tab[id], size,
                     NULL, may_proxy_true);
     }
   }
@@ -5556,6 +5681,46 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
 }
 
 
+void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
+                                c_nodeid_t src_locale, void* src_addr,
+                                size_t size, int32_t typeIndex,
+                                int32_t commID, int ln, int32_t fn)
+{
+  assert(dst_addr != NULL);
+  assert(src_addr != NULL);
+
+  if (size == 0)
+    return;
+
+  if (dst_locale == chpl_nodeID && src_locale == chpl_nodeID) {
+    memmove(dst_addr, src_addr, size);
+    return;
+  }
+
+  if (dst_locale == chpl_nodeID) {
+    chpl_comm_get_unordered(dst_addr, src_locale, src_addr, size, typeIndex, commID, ln, fn);
+  } else if (src_locale == chpl_nodeID) {
+    // TODO want chpl_comm_put_unordered
+    chpl_comm_put(src_addr, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
+  } else {
+    // TODO use unordered ops in this case? Would have to ensure we always
+    // flush GET buffer before the PUT buffer
+    if (size <= MAX_UNORDERED_TRANS_SZ) {
+      char buf[MAX_UNORDERED_TRANS_SZ];
+      chpl_comm_get(buf, src_locale, src_addr, size, typeIndex, commID, ln, fn);
+      chpl_comm_put(buf, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
+    } else {
+      // Note, we do not expect this case to trigger, but if it does we may
+      // want to do on-stmt to src locale and then transfer
+      char* buf = chpl_mem_alloc(size, CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+      chpl_comm_get(buf, src_locale, src_addr, size, typeIndex, commID, ln, fn);
+      chpl_comm_put(buf, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
+      chpl_mem_free(buf, 0, 0);
+    }
+  }
+}
+
+
 void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
                              size_t size, int32_t typeIndex, int32_t commID,
                              int ln, int32_t fn)
@@ -6456,6 +6621,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
         void chpl_comm_atomic_write_##_f(void* val,                     \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6468,6 +6634,8 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo write", loc, ln, fn);        \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6518,6 +6686,7 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
         void chpl_comm_atomic_read_##_f(void* res,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6531,6 +6700,8 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo read", loc, ln, fn);         \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6571,6 +6742,7 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
                                         int32_t loc,                    \
                                         void* obj,                      \
                                         void* res,                      \
+                                        memory_order order,             \
                                         int ln, int32_t fn)             \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6584,6 +6756,8 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo xchg", loc, ln, fn);         \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6631,6 +6805,7 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
                                            int32_t loc,                 \
                                            void* obj,                   \
                                            chpl_bool32* res,            \
+                                           memory_order order,          \
                                            int ln, int32_t fn)          \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6647,6 +6822,8 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo cmpxchg", loc, ln, fn);      \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6686,6 +6863,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
         void chpl_comm_atomic_##_o##_##_f(void* opnd,                   \
                                           int32_t loc,                  \
                                           void* obj,                    \
+                                          memory_order order,           \
                                           int ln, int32_t fn)           \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6700,6 +6878,8 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo " #_o, loc, ln, fn);         \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6731,6 +6911,8 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo unord_" #_o, loc, ln, fn);   \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6749,6 +6931,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
                                                 int32_t loc,            \
                                                 void* obj,              \
                                                 void* res,              \
+                                                memory_order order,     \
                                                 int ln, int32_t fn)     \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6764,6 +6947,8 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo fetch_" #_o, loc, ln, fn);   \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6818,6 +7003,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
         void chpl_comm_atomic_add_##_f(void* opnd,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6831,6 +7017,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo add", loc, ln, fn);          \
+          chpl_comm_diags_incr(amo);                                    \
           if (sizeof(_t) == sizeof(int_least32_t)                       \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
@@ -6862,6 +7050,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo unord_add", loc, ln, fn);    \
+          chpl_comm_diags_incr(amo);                                    \
           if (sizeof(_t) == sizeof(int_least32_t)                       \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
@@ -6881,6 +7071,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                                              int32_t loc,               \
                                              void* obj,                 \
                                              void* res,                 \
+                                             memory_order order,        \
                                              int ln, int32_t fn)        \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6894,6 +7085,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo fetch_add", loc, ln, fn);    \
+          chpl_comm_diags_incr(amo);                                    \
           if (sizeof(_t) == sizeof(int_least32_t)                       \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
@@ -6925,6 +7118,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
         void chpl_comm_atomic_sub_##_f(void* opnd,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
@@ -6934,7 +7128,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          chpl_comm_atomic_add_##_f(&nopnd, loc, obj, ln, fn);          \
+          chpl_comm_atomic_add_##_f(&nopnd, loc, obj, order, ln, fn);   \
         }                                                               \
                                                                         \
          /*==============================*/                             \
@@ -6958,6 +7152,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                                              int32_t loc,               \
                                              void* obj,                 \
                                              void* res,                 \
+                                             memory_order order,        \
                                              int ln, int32_t fn)        \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
@@ -6967,7 +7162,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                    "(%p, %d, %p, %p)",                                  \
                    opnd, (int) loc, obj, res);                          \
                                                                         \
-          chpl_comm_atomic_fetch_add_##_f(&nopnd, loc, obj, res,        \
+          chpl_comm_atomic_fetch_add_##_f(&nopnd, loc, obj, res, order, \
                                           ln, fn);                      \
         }
 
@@ -7876,7 +8071,7 @@ void do_fork_post(c_nodeid_t locale,
 }
 
 
-static
+static inline
 void acquire_comm_dom(void)
 {
   int want_cdi;
@@ -7895,8 +8090,11 @@ void acquire_comm_dom(void)
     cd->acqs++;
     cd->acqs_looks++;
 #endif
-
     return;
+  }
+
+  if (comm_dom_free_idx == -1) {
+    comm_dom_free_idx = atomic_fetch_add_int_least32_t(&global_init_cdi, 1) % comm_dom_cnt;
   }
 
   assert(cd == NULL);
@@ -7915,24 +8113,16 @@ void acquire_comm_dom(void)
 #ifdef DEBUG_STATS
     acq_looks++;
 #endif
-    if (!CHECK_CD_BUSY(want_cd)) {
+    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
-        if (ACQUIRE_CD_MAYBE(want_cd)) {
-          if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max)
-            break;
-          else {
-            PERFSTATS_INC(acq_cd_cq_cnt);
-            RELEASE_CD(want_cd);
-          }
-        }
-        else
-          PERFSTATS_INC(acq_cd_na_cnt);
-      }
-      else
+        break;
+      } else {
         PERFSTATS_INC(acq_cd_cq_cnt);
-    }
-    else
+        RELEASE_CD(want_cd);
+      }
+    } else {
       PERFSTATS_INC(acq_cd_na_cnt);
+    }
 
     want_cdi++;
     want_cd++;
@@ -7946,11 +8136,6 @@ void acquire_comm_dom(void)
       local_yield();
     }
   } while (1);
-
-  if (want_cdi < comm_dom_cnt - 1)
-    comm_dom_free_idx = want_cdi + 1;
-  else
-    comm_dom_free_idx = 0;
 
   cd = want_cd;
   cd_idx = want_cdi;
@@ -7974,6 +8159,10 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
   uint64_t acq_looks = 0;
 #endif
 
+  if (comm_dom_free_idx == -1) {
+    comm_dom_free_idx = atomic_fetch_add_int_least32_t(&global_init_cdi, 1) % comm_dom_cnt;
+  }
+
   assert(cd == NULL);
 
   //
@@ -7991,45 +8180,23 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
     acq_looks++;
 #endif
 
-    if (!CHECK_CD_BUSY(want_cd)) {
+    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
         for (rbi = 0; rbi < FORK_REQ_BUFS_PER_CD; rbi++) {
           if (*SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi, rbi)) {
-            if (ACQUIRE_CD_MAYBE(want_cd)) {
-              //
-              // We found a CD that was available, had room left in its
-              // completion queue, and had a free fork request buffer.  We
-              // have successfully acquired it.  If it still has room in
-              // its CQ and that fork request buffer or a subsequent one
-              // is still free then it's ours.  Otherwise, release it and
-              // keep looking.
-              //
-              if (CQ_CNT_LOAD(want_cd) >= want_cd->cq_cnt_max) {
-                PERFSTATS_INC(acq_cd_rb_cq_cnt);
-                RELEASE_CD(want_cd);
-              }
-              else {
-                do {
-                  if (*SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi,
-                                                    rbi))
-                    goto found_CD;
-                } while (++rbi < FORK_REQ_BUFS_PER_CD);
-                PERFSTATS_INC(acq_cd_rb_frf_1_cnt);
-                RELEASE_CD(want_cd);
-              }
-            }
-            else
-              PERFSTATS_INC(acq_cd_rb_na_cnt);
+            goto found_CD;
+          } else {
+            PERFSTATS_INC(acq_cd_rb_frf_cnt);
           }
-          else
-            PERFSTATS_INC(acq_cd_rb_frf_2_cnt);
         }
-      }
-      else
+        RELEASE_CD(want_cd);
+      } else {
+        RELEASE_CD(want_cd);
         PERFSTATS_INC(acq_cd_rb_cq_cnt);
-    }
-    else
+      }
+    } else {
       PERFSTATS_INC(acq_cd_rb_na_cnt);
+    }
 
     want_cdi++;
     want_cd++;
@@ -8045,10 +8212,6 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
   } while (1);
 
  found_CD:
-  if (want_cdi < comm_dom_cnt - 1)
-    comm_dom_free_idx = want_cdi + 1;
-  else
-    comm_dom_free_idx = 0;
 
   *SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi, rbi) = false;
 
@@ -8370,6 +8533,8 @@ void chpl_comm_statsReport(chpl_bool sum_over_locales)
   }
   else
     _psv_print(chpl_nodeID, &chpl_comm_pstats);
+#else
+  chpl_warning("ugni was not built with support for perfstats reporting", 0, 0);
 #endif
 }
 
@@ -8401,6 +8566,7 @@ static void _psv_print(int li, chpl_comm_pstats_t* ps)
   else
     printf("comm perfstats on locale %d (%.*s)\n", li,
            (int) buf_cnt - 2, buf);
+  fflush(stdout);
 
 #undef _PSV_PRINT
 }

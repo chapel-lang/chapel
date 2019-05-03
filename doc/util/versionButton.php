@@ -15,13 +15,13 @@
   background-color: #2f95d8;
 }
 
-/* Orange */
+/* Red */
 .oldVersion {
-  background-color: #f49542;
+  background-color: #ff0000;
   color: white;
 }
 .oldVersion:hover, .oldVersion:focus {
-  background-color: #d68137;
+  background-color: #ff0000;
 }
 
 /* Yellow */
@@ -87,9 +87,9 @@ if (pagePath == "") {
   pagePath = "index.html";
 }
 function dropSetup() {
-  var currentRelease = "1.18"; // what does the public have?
-  var stagedRelease = "1.19";  // is there a release staged but not yet public?
-  var nextRelease = "1.19";    // what's the next release? (on docs/master)
+  var currentRelease = "1.19"; // what does the public have?
+  var stagedRelease = "1.20";  // is there a release staged but not yet public?
+  var nextRelease = "1.20";    // what's the next release? (on docs/master)
   var button = document.getElementById("versionButton");
   // Uses unicode down-pointing triangle
   var arrow = " &#9660;";

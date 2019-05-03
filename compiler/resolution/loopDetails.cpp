@@ -107,7 +107,7 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
 static Symbol* findPrecedingChplIter(Expr* ref)
 {
   Symbol* chpl_iter = NULL;
-  Expr* e = ref;
+  Expr* e = ref->prev;
   while (e) {
     if (DefExpr* d = toDefExpr(e)) {
       Symbol* var = d->sym;
@@ -115,6 +115,10 @@ static Symbol* findPrecedingChplIter(Expr* ref)
         chpl_iter = var;
         break;
       }
+    } else if (isForallStmt(e)) {
+      // This ForallStmt has its own set of variables.
+      // Don't look at those.
+      break;
     }
     e = e->prev;
   }

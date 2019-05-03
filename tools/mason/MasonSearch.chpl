@@ -65,7 +65,10 @@ proc masonSearch(origArgs : [] string) {
           }
         }  else {
           const ver = findLatest(searchDir + dir);
-          results.push_back(name + " (" + ver.str() + ")");
+          const versionZero = new VersionInfo(0, 0, 0);
+
+          if ver != versionZero then
+            results.push_back(name + " (" + ver.str() + ")");
         }
       }
     }
@@ -82,18 +85,35 @@ proc isHidden(name : string) : bool {
   return name.startsWith("_");
 }
 
-proc findLatest(packageDir) {
+/* Search TOML files within a package directory to find the latest package
+   version number that is supported with current Chapel version */
+proc findLatest(packageDir: string): VersionInfo {
   var ret = new VersionInfo(0, 0, 0);
   const suffix = ".toml";
+  const packageName = basename(packageDir);
+  for manifest in listdir(packageDir, files=true, dirs=false) {
+    // Check that it is a valid TOML file
+    if !manifest.endsWith(suffix) {
+      var warningStr = "File without '.toml' extension encountered - skipping ";
+      warningStr += packageName + " " + manifest;
+      stderr.writeln(warningStr);
+      continue;
+    }
 
-  for fi in listdir(packageDir, files=true, dirs=false) {
-    assert(fi.endsWith(suffix));
-    const end = fi.length - suffix.length;
-    const ver = new VersionInfo(fi[1..end]);
+    // Skip packages that are out of version bounds
+    const chplVersion = getChapelVersionInfo();
 
+    const manifestReader = openreader(packageDir + '/' + manifest);
+    const manifestToml = new owned(parseToml(manifestReader));
+    const brick = manifestToml['brick'];
+    var (low, high) = parseChplVersion(brick);
+    if chplVersion < low || chplVersion > high then continue;
+
+    // Check that Chapel version is supported
+    const end = manifest.length - suffix.length;
+    const ver = new VersionInfo(manifest[1..end]);
     if ver > ret then ret = ver;
   }
-
   return ret;
 }
 

@@ -6,7 +6,6 @@ raw_couple_short
 raw_fir_short
 raw_init3_short
 raw_muladdsub_short
-raw_if_quad_short
 raw_trap_int_short
 raw_hydro_1d_short
 raw_iccg_short
@@ -20,7 +19,6 @@ raw_diff_predict_short
 raw_first_sum_short
 raw_first_diff_short
 raw_pic_2d_short
-raw_pic_1d_short
 raw_hydro_2d_short
 raw_gen_lin_recur_short
 raw_disc_ord_short
@@ -36,7 +34,6 @@ raw_couple_medium
 raw_fir_medium
 raw_init3_medium
 raw_muladdsub_medium
-raw_if_quad_medium
 raw_trap_int_medium
 raw_hydro_1d_medium
 raw_iccg_medium
@@ -50,7 +47,6 @@ raw_diff_predict_medium
 raw_first_sum_medium
 raw_first_diff_medium
 raw_pic_2d_medium
-raw_pic_1d_medium
 raw_hydro_2d_medium
 raw_gen_lin_recur_medium
 raw_disc_ord_medium
@@ -66,7 +62,6 @@ raw_couple_long
 raw_fir_long
 raw_init3_long
 raw_muladdsub_long
-raw_if_quad_long
 raw_trap_int_long
 raw_hydro_1d_long
 raw_iccg_long
@@ -80,7 +75,6 @@ raw_diff_predict_long
 raw_first_sum_long
 raw_first_diff_long
 raw_pic_2d_long
-raw_pic_1d_long
 raw_hydro_2d_long
 raw_gen_lin_recur_long
 raw_disc_ord_long
@@ -112,9 +106,6 @@ raw_omp_init3_short
 raw_omp_muladdsub_long
 raw_omp_muladdsub_medium
 raw_omp_muladdsub_short
-raw_omp_if_quad_long
-raw_omp_if_quad_medium
-raw_omp_if_quad_short
 raw_omp_trap_int_long
 raw_omp_trap_int_medium
 raw_omp_trap_int_short

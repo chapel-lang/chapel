@@ -1545,10 +1545,8 @@ module ChapelArray {
     /* Return true if this domain is a subset of ``super``. Otherwise
        returns false. */
     proc isSubset(super : domain) {
-      if !isAssociativeDom(this) {
-        if isRectangularDom(this) then
-          compilerError("isSubset not supported on rectangular domains");
-        else if isOpaqueDom(this) then
+      if !(isAssociativeDom(this) || isRectangularDom(this)) {
+        if isOpaqueDom(this) then
           compilerError("isSubset not supported on opaque domains");
         else if isSparseDom(this) then
           compilerError("isSubset not supported on sparse domains");
@@ -1556,7 +1554,22 @@ module ChapelArray {
           compilerError("isSubset not supported on this domain type");
       }
       if super.type != this.type then
-        compilerError("isSubset called with different associative domain types");
+        if isRectangularDom(this) {
+          if super.rank != this.rank then
+            compilerError("rank mismatch in domain.isSubset()");
+          else if super.low.type != this.low.type then
+            compilerError("isSubset called with different index types");
+        } else
+          compilerError("isSubset called with different associative domain types");
+
+      if isRectangularDom(this) {
+        var contains = true;
+        for i in 1..this.dims().size {
+          contains &&= super.dims()[i].contains(this.dims()[i]);
+          if contains == false then break;
+        }
+        return contains;
+      }
 
       return && reduce forall i in this do super.contains(i);
     }
@@ -1564,10 +1577,8 @@ module ChapelArray {
     /* Return true if this domain is a superset of ``sub``. Otherwise
        returns false. */
     proc isSuper(sub : domain) {
-      if !isAssociativeDom(this) {
-        if isRectangularDom(this) then
-          compilerError("isSuper not supported on rectangular domains");
-        else if isOpaqueDom(this) then
+      if !(isAssociativeDom(this) || isRectangularDom(this)) {
+        if isOpaqueDom(this) then
           compilerError("isSuper not supported on opaque domains");
         else if isSparseDom(this) then
           compilerError("isSuper not supported on sparse domains");
@@ -1575,7 +1586,22 @@ module ChapelArray {
           compilerError("isSuper not supported on the domain type ", this.type);
       }
       if sub.type != this.type then
-        compilerError("isSuper called with different associative domain types");
+        if isRectangularDom(this) {
+          if sub.rank != this.rank then
+            compilerError("rank mismatch in domain.isSuper()");
+          else if sub.low.type != this.low.type then
+            compilerError("isSuper called with different index types");
+        } else
+          compilerError("isSuper called with different associative domain types");
+
+      if isRectangularDom(this) {
+        var contains = true;
+        for i in 1..this.dims().size {
+          contains &&= this.dims()[i].contains(sub.dims()[i]);
+          if contains == false then break;
+        }
+        return contains;
+      }
 
       return && reduce forall i in sub do this.contains(i);
     }
@@ -2169,7 +2195,6 @@ module ChapelArray {
     pragma "alias scope from this"
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
-    var _externally_managed: bool = false;
 
     proc chpl__rvfMe() param {
       return _instance.chpl__rvfMe();
@@ -2210,7 +2235,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc deinit() {
-      _do_destroy_arr(_unowned, _externally_managed, _instance);
+      _do_destroy_arr(_unowned, _instance);
     }
 
     /* The type of elements contained in the array */
@@ -2342,62 +2367,32 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc this(d: domain) {
-      if d.rank == rank {
-        if boundsChecking then
-          checkSlice(d);
+      if d.rank != rank then
+        compilerError("slicing an array with a domain of a different rank");
 
-        proc appropriateType() param {
-          const newd = _dom((...d.dsiDims()));
-          writeln("Should never actually run this");
-          return newd.type == d.type;
-        }
-        
-        // The following implements strategy 5a from issue #12272.
-        // If we could determine whether or not a domain was constant,
-        // it could be strategy 5b which is strictly better and better
-        // than what is on master today.
-        if appropriateType() && d.dist == this.domain.dist /* && d.isConst() */ then {
-          // This is incorrect or at least different than what we do
-          // today: We have to intersect d with the array's domain
-          // because we (currently) consider a slice to be a domain
-          // intersection followed by a subarray access to handle
-          // cases like slicing by [1..] or slicing a strided array by
-          // [1..n].  Or else we have to redefine what slicing by a
-          // domain means and only do the intersection for the range
-          // case...
-          return _newArray(setupArraySliceHelper(d, true));
-        } else {
-          pragma "no auto destroy"
-          const newd = _dom((...d.dsiDims()));
-          newd._value._free_when_no_arrs = true;
-          return _newArray(setupArraySliceHelper(newd, false));
-        }
+      if boundsChecking then
+        checkSlice(d);
 
-        proc setupArraySliceHelper(dom, param locking: bool) {
-        //
-        // If this is already a slice array view, we can short-circuit
-        // down to the underlying array.
-        //
-        const (arr, arrpid) = if (_value.isSliceArrayView())
+      //
+      // If this is already a slice array view, we can short-circuit
+      // down to the underlying array.
+      //
+      const (arr, arrpid) = if (_value.isSliceArrayView())
                               then (this._value.arr, this._value._ArrPid)
                               else (this._value, this._pid);
 
-        var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
-                                                _DomPid=dom._pid,
-                                                dom=dom._instance,
-                                                _ArrPid=arrpid,
-                                                _ArrInstance=arr);
+      var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
+                                              _DomPid=d._pid,
+                                              dom=d._instance,
+                                              _ArrPid=arrpid,
+                                              _ArrInstance=arr);
 
-        /*
-        writeln("About to add a new slice");
-        writeln(a.isSliceArrayView());
-        */
-        // lock only if we're sharing an existing domain
-        dom._value.add_arr(a, locking=locking);
-        return a;
-        }
-      } else
-        compilerError("slicing an array with a domain of a different rank");
+      // lock since we're referring to an existing domain; but don't
+      // add this array to the domain's list of arrays since resizing
+      // a slice's domain shouldn't generate a reallocate call for the
+      // underlying array
+      d._value.add_arr(a, locking=true, addToList=false);
+      return _newArray(a);
     }
 
     pragma "no doc"
@@ -2419,43 +2414,32 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc this(ranges...rank) where chpl__isTupleOfRanges(ranges) {
-      if (!chpl__anyUnbounded(ranges)) {
-        // if all the ranges are bounded, then we're good to go
-        return this({(...ranges)});
-      } else {
-        // otherwise, we need to make them bounded before making a domain
-        // from them
-        // TODO: If we could create domains with unbounded ranges (which
-        // I think we should support), then we wouldn't need this
-        // complexity.
-        param stridable = chpl__anyStridable(ranges);
-        var branges: rank*range(idxType = ranges(1).idxType, 
-                                stridable = stridable);
-        for param r in 1..rank {
-          select (ranges[r].boundedType) {
-          when BoundedRangeType.bounded do
-            branges[r] = ranges[r];
-          when BoundedRangeType.boundedLow do
-            if (stridable) then
-              branges[r] = ranges[r].low..this.domain.dim(r).high by ranges[r].stride;
-            else
-              branges[r] = ranges[r].low..this.domain.dim(r).high;
-          
-          when BoundedRangeType.boundedHigh do
-            if stridable then
-              branges[r] = this.domain.dim(r).low..ranges[r].high by ranges[r].stride;
-            else
-              branges[r] = this.domain.dim(r).low..ranges[r].high;
+      if boundsChecking then
+        checkSlice((... ranges));
 
-          when BoundedRangeType.boundedNone do
-            if stridable then
-              branges[r] = this.domain.dim(r).low..this.domain.dim(r).high by ranges[r].stride;
-            else
-              branges[r] = this.domain.dim(r).low..this.domain.dim(r).high;
-          }
-        }
-        return this({(...branges)});
-      }
+      pragma "no auto destroy" var d = _dom((...ranges));
+      d._value._free_when_no_arrs = true;
+
+      //
+      // If this is already a slice array view, we can short-circuit
+      // down to the underlying array.
+      //
+      const (arr, arrpid) = if (_value.isSliceArrayView())
+                              then (this._value.arr, this._value._ArrPid)
+                              else (this._value, this._pid);
+
+      var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
+                                    _DomPid=d._pid,
+                                    dom=d._instance,
+                                    _ArrPid=arrpid,
+                                    _ArrInstance=arr);
+
+      // this doesn't need to lock since we just created the domain d
+      // don't add this array to the domain's list of arrays since
+      // resizing a slice's domain shouldn't generate a reallocate
+      // call for the underlying array
+      d._value.add_arr(a, locking=false, addToList=false);
+      return _newArray(a);
     }
 
     // array rank change
@@ -3351,16 +3335,21 @@ module ChapelArray {
       return this.domain.shape;
     }
 
+    pragma "no doc"
+    proc _scan(op) where Reflection.canResolveMethod(_value, "doiScan", op, this.domain) {
+      return _value.doiScan(op, this.domain);
+    }
+
   }  // record _array
 
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
   // being a method on _array so that it could be called on unwrapped
   // _instance fields
-  inline proc _do_destroy_arr(_unowned: bool, _externally_managed: bool,
-                              _instance) {
-    if ! _unowned && ! _externally_managed {
+  inline proc _do_destroy_arr(_unowned: bool, _instance) {
+    if ! _unowned {
       on _instance {
-        var (arrToFree, domToRemove) = _instance.remove();
+        param arrIsInList = !_instance.isSliceArrayView();
+        var (arrToFree, domToRemove) = _instance.remove(arrIsInList);
         var domToFree:unmanaged BaseDom = nil;
         var distToRemove:unmanaged BaseDist = nil;
         var distToFree:unmanaged BaseDist = nil;
@@ -4040,11 +4029,8 @@ module ChapelArray {
     } else if chpl__serializeAssignment(a, b) {
       for (aa,bb) in zip(a,b) do
         aa = bb;
-    } else if chpl__tryToken { // try to parallelize using leader and follower iterators
-      forall (aa,bb) in zip(a,b) do
-        aa = bb;
     } else {
-      for (aa,bb) in zip(a,b) do
+      [ (aa,bb) in zip(a,b) ]
         aa = bb;
     }
   }
@@ -4059,6 +4045,13 @@ module ChapelArray {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
     chpl__transferArray(a, b);
+  }
+
+  inline proc =(a: [], b: range(?)) {
+    if a.rank == 1 then
+      chpl__transferArray(a, b);
+    else
+      compilerError("cannot from ranges to multidimensional arrays");
   }
 
   inline proc =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {

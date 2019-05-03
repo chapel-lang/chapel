@@ -20,5 +20,5 @@ RUNTIME_INCLS += -I$(LIBFABRIC_DIR)/include
 endif
 
 ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
-RUNTIME_INCLS += -I$(MPI_INCLUDE)
+RUNTIME_INCLS += -I$(MPI_DIR)/include
 endif

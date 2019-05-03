@@ -1,9 +1,0 @@
-(_cpindex = 1)..(_cpindex = 3)
-range(codePointIndex,bounded,false)
-(_cpindex = 1)
-(_cpindex = 2)
-(_cpindex = 3)
-(_cpindex = 1)..(_cpindex = 4) by 2
-range(codePointIndex,bounded,true)
-(_cpindex = 1)
-(_cpindex = 3)

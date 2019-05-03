@@ -132,6 +132,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         substrates=aries,mpi,none
         locale_models=flat,knl
         auxfs=none,lustre
+        libpics=none,pic
 
         log_info "Start build_configs $dry_run $verbose # no make target"
 
@@ -142,6 +143,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
             --substrate=$substrates \
             --locale-model=$locale_models \
             --auxfs=$auxfs \
+            --lib-pic=$libpics \
             -- notcompiler
 
         # NOTE: don't rebuild compiler above (or else problems with switching GCC versions)
@@ -266,7 +268,22 @@ else
     log_debug "with config=$BUILD_CONFIGS_CALLBACK"
 
     # Exit immediately to skip (avoid building) unwanted Chapel configs
-
+    
+    if [ "$CHPL_LIB_PIC" == pic ]; then
+      # skip Chapel make for any communication and launcher that are not none
+      # because pic support is for python interoperability which
+      # only runs on the login node at the moment.
+      if [ "$CHPL_COMM" != none ]; then
+        log_info "Skip Chapel make for libpic=$CHPL_LIB_PIC, comm=$CHPL_COMM"
+        exit 0
+      fi
+      if [ "$CHPL_LAUNCHER" != none ]; then
+        log_info "Skip Chapel make for libpic=$CHPL_LIB_PIC, launcher=$CHPL_LAUNCHER"
+        exit 0
+      fi
+    fi
+    
+    
     if [ "$CHPL_COMM" == ugni ]; then
         if [ "$CHPL_LAUNCHER" == none ]; then
 
@@ -318,9 +335,12 @@ else
     fi
 
     # Please keep the gen versions in compiler_versions.bash the same as these!
-    gen_version_gcc=6.1.0
+    gen_version_gcc=7.3.0
     gen_version_intel=16.0.3.210
     gen_version_cce=8.6.3
+    if [ "$CHPL_LOCALE_MODEL" == knl ]; then
+        gen_version_cce=8.7.3
+    fi
 
     target_cpu_module=craype-sandybridge
 

@@ -269,6 +269,9 @@ static void parseInternalModules() {
     baseModule            = parseMod("ChapelBase",           true);
     standardModule        = parseMod("ChapelStandard",       true);
     printModuleInitModule = parseMod("PrintModuleInitOrder", true);
+    if (fLibraryFortran) {
+                            parseMod("ISO_Fortran_binding", true);
+    }
 
     parseDependentModules(true);
 
@@ -498,6 +501,7 @@ static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
                                bool        namedOnCommandLine) {
   ModuleSymbol* retval = NULL;
+
 
   if (FILE* fp = openInputFile(path)) {
     gFilenameLookup.push_back(path);

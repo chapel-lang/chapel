@@ -35,6 +35,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "../ifa/prim_data.h"
 
 AggregateType* dtObject = NULL;
 AggregateType* dtString = NULL;
@@ -216,7 +217,7 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
   return false;
 }
 
-bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) const {
+bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
   bool retval = false;
 
   DefExpr* def = field->defPoint;
@@ -239,10 +240,17 @@ bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) const {
         INT_ASSERT(!var->type->symbol->hasFlag(FLAG_GENERIC));
 
         retval = true;
-      } else if (def->init == NULL &&
-                 def->exprType != NULL &&
-                 isFieldTypeExprGeneric(def->exprType)) {
-        retval = true;
+      } else if (def->init == NULL && def->exprType != NULL &&
+                 !mIsGenericWithDefaults) {
+
+        // Temporarily mark the aggregate type as generic with defaults
+        // in order to avoid infinite recursion.
+        bool wasGenericWithDefaults = mIsGenericWithDefaults;
+        mIsGenericWithDefaults = true;
+        if (isFieldTypeExprGeneric(def->exprType)) {
+          retval = true;
+        }
+        mIsGenericWithDefaults = wasGenericWithDefaults;
       }
 
     }
@@ -468,15 +476,21 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
       Expr* firstexpr = bs->body.first();
       INT_ASSERT(firstexpr);
 
-      UnresolvedSymExpr* sym  = toUnresolvedSymExpr(firstexpr);
-      const char*        name = sym->unresolved;
-
-      // ... then report it to the user
-      USR_FATAL_CONT(fn->_this,
+      if (UnresolvedSymExpr* sym  = toUnresolvedSymExpr(firstexpr))
+        // ... then report it to the user
+        USR_FATAL_CONT(fn->_this,
                      "Type binding clauses ('%s.' in this case) are not "
                      "supported in declarations within a class, record "
                      "or union",
-                     name);
+                     sym->unresolved);
+      else
+        // got more than just a name
+        USR_FATAL_CONT(fn->_this,
+                     "Type binding clauses (in this case, the parenthesized "
+                "expression preceding the dot before function name) are not "
+                     "supported in declarations within a class, record "
+                     "or union");
+
     } else {
       ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", this);
 
@@ -557,6 +571,23 @@ bool AggregateType::hasPostInitializer() const {
 
   } else {
     retval = instantiatedFrom->hasPostInitializer();
+  }
+
+  return retval;
+}
+
+bool AggregateType::hasUserDefinedInitEquals() const {
+  bool retval = false;
+
+  if (instantiatedFrom == NULL) {
+    for (int i = 0; i < methods.n && retval == false; i++) {
+      FnSymbol* method = methods.v[i];
+      if (method->isCopyInit() && method->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+        retval = true;
+      }
+    }
+  } else {
+    retval = instantiatedFrom->hasUserDefinedInitEquals();
   }
 
   return retval;
@@ -794,6 +825,12 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
   return retval;
 }
 
+//
+// This method tries to find a pre-existing AggregateType instance that
+// represents the resulting instantiation of binding 'sym' to the current
+// generic field. This way there is only ever one instance of AggregateType for
+// a particular instantiation.
+//
 AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
   AggregateType* retval = NULL;
 
@@ -807,7 +844,32 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
       }
 
     } else if (field->hasFlag(FLAG_PARAM) == true) {
-      if (at->substitutions.get(field) == sym) {
+      Type* expected = NULL;
+      if (field->defPoint->exprType != NULL) {
+        expected = field->defPoint->exprType->typeInfo();
+      }
+
+      //
+      // The types of 'sym' and 'field' might by different if the user
+      // specified a literal that will eventually be coerced into the correct
+      // field type.  For example '42' is an 'int(64)' but could be coerced to
+      // a 'uint(64)'. In such cases we should compare the values of 'sym'
+      // and the current instantiation's field.
+      //
+      // Note: only check when the field has a type expression
+      //
+      // See param/ferguson/mismatched-param-type-error.chpl for an example
+      // where this check is necessary.
+      //
+      if (expected != NULL && expected != sym->type) {
+        Immediate result;
+        Immediate* lhs = getSymbolImmediate(at->substitutions.get(field));
+        Immediate* rhs = getSymbolImmediate(sym);
+        fold_constant(P_prim_equal, lhs, rhs, &result);
+        if (result.v_bool) {
+          retval = at;
+        }
+      } else if (at->substitutions.get(field) == sym) {
         retval = at;
         break;
       }
@@ -836,6 +898,24 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
   retval->substitutions.copy(substitutions);
 
   if (field->hasFlag(FLAG_PARAM) == true) {
+    Type* fieldType = NULL;
+    if (field->defPoint->exprType) {
+      fieldType = field->defPoint->exprType->typeInfo();
+    }
+
+    // Sometimes 'sym' might be a different type from the field. For example,
+    // the literal '42' is an int(64), and the field might be a uint(64). In
+    // such cases, we need to coerce to a new symbol that will be placed in
+    // the substitutions map.
+    if (fieldType != NULL  &&
+        fieldType != dtUnknown &&
+        fieldType != sym->getValType()) {
+      Immediate coerce = getDefaultImmediate(fieldType);
+      Immediate* from = toVarSymbol(sym)->immediate;
+      coerce_immediate(from, &coerce);
+      sym = new_ImmediateSymbol(&coerce);
+    }
+
     retval->substitutions.put(field, sym);
     retval->symbol->renameInstantiatedSingle(sym);
 
@@ -1323,6 +1403,11 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
           typeConstrSetField(fn, field, call);
 
         } else if (Expr* init = field->defPoint->init) {
+          // It might be appealing to change this to PRIM_INIT_FIELD -
+          // but that causes problems for fields with loop init expressions.
+          // The field should end up with array type rather than iterator
+          // record type.
+
           CallExpr* call = new CallExpr("chpl__initCopy", init->copy());
 
           typeConstrSetField(fn, field, call);
@@ -1660,43 +1745,49 @@ void AggregateType::buildCopyInitializer() {
   if (isRecordWithInitializers(this) == true) {
     SET_LINENO(this);
 
-    FnSymbol*  fn    = new FnSymbol("init");
+    bool isGeneric = false;
+    // If this type is generic, then the 'other' formal needs to be generic as
+    // well
+    // TODO: Why can't we use 'fieldIsGeneric' here?
+    for_fields(fieldDefExpr, this) {
+      if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+        if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
+          if (field->hasFlag(FLAG_PARAM) || field->isType() ||
+              (field->defPoint->init == NULL && field->defPoint->exprType == NULL)) {
+            isGeneric = true;
+          }
+        }
+      }
+    }
+
+    FnSymbol*  fn    = new FnSymbol(astrInitEquals);
 
     DefExpr*   def   = new DefExpr(fn);
 
     ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",   dtMethodToken);
     ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this",  this);
-    ArgSymbol* other = new ArgSymbol(INTENT_BLANK, "other", this);
+
+    ArgSymbol* ThisType = NULL;
+    ArgSymbol* other = NULL;
+    if (isGeneric) {
+      other = new ArgSymbol(INTENT_BLANK, "other", dtUnknown, new CallExpr(PRIM_TYPEOF, new SymExpr(_this)));
+      other->addFlag(FLAG_MARKED_GENERIC);
+    } else {
+      other = new ArgSymbol(INTENT_BLANK, "other", this);
+    }
 
     fn->cname = fn->name;
     fn->_this = _this;
 
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_DEFAULT_COPY_INIT);
+    fn->addFlag(FLAG_COPY_INIT);
 
     _this->addFlag(FLAG_ARG_THIS);
 
-    // Detect if the type has at least one generic field,
-    // so we should mark the "other" arg as generic.
-    for_fields(fieldDefExpr, this) {
-      if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-        if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
-          if (field->hasFlag(FLAG_PARAM) ||
-              field->isType() == true    ||
-              (field->defPoint->init     == NULL &&
-               field->defPoint->exprType == NULL)) {
-
-            if (other->hasFlag(FLAG_MARKED_GENERIC) == false) {
-              other->addFlag(FLAG_MARKED_GENERIC);
-            }
-          }
-        }
-      }
-    }
-
     fn->insertFormalAtTail(_mt);
     fn->insertFormalAtTail(_this);
+    if (ThisType != NULL) fn->insertFormalAtTail(ThisType);
     fn->insertFormalAtTail(other);
 
     if (symbol->hasFlag(FLAG_EXTERN)) {

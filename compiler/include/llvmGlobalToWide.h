@@ -119,7 +119,7 @@ struct GlobalPointerInfo {
 
 typedef llvm::DenseMap<llvm::Type*, GlobalPointerInfo> globalTypes_t;
 typedef std::vector<llvm::WeakVH> specialFunctions_t;
-typedef llvm::TrackingVH<llvm::Constant> runtime_fn_t;
+typedef llvm::TrackingVH<llvm::Value> runtime_fn_t;
 
 struct GlobalToWideInfo {
   unsigned globalSpace;

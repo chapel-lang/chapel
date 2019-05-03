@@ -59,8 +59,6 @@ typedef _Bool chpl_bool;
 typedef bool chpl_bool;
 #endif
 
-#define c_nil NULL
-static inline chpl_bool is_c_nil(void* x) { return (chpl_bool)(x==c_nil); }
 static inline void* c_pointer_return(void* x) { return x; }
 
 typedef enum {
@@ -176,6 +174,9 @@ typedef void* chpl_opaque;
 #define UINT32( i) ((uint32_t)(UINT32_C(i)))
 #define UINT64( i) ((uint64_t)(UINT64_C(i)))
 
+#define REAL32(i) ((float)(i))
+#define REAL64(i) ((double)(i))
+
 #define COMMID( i)  ((int64_t)(INT64_C(i)))
 
 
@@ -251,8 +252,12 @@ typedef struct chpl_main_argument_s {
 } chpl_main_argument;
 
 #ifndef __cplusplus
-_complex128 _chpl_complex128(_real64 re, _real64 im);
-_complex64 _chpl_complex64(_real32 re, _real32 im);
+static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
+  return re + im*_Complex_I;
+}
+static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
+  return re + im*_Complex_I;
+}
 
 static inline _real64* complex128GetRealRef(_complex128* cplx) {
   return ((_real64*)cplx) + 0;

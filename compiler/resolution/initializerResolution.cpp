@@ -336,15 +336,6 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
     } else if (isManagedPtrType(manager) == false) {
       Expr* new_temp_rhs = newCall;
 
-      // Needed for: test/compflags/ferguson/default-unmanaged.chpl
-      if (isClass(at) && manager == NULL && fLegacyNew == true && fDefaultUnmanaged == false) {
-        VarSymbol* borrowTemp = newTemp("borrowTemp");
-        block->insertAtTail(new DefExpr(borrowTemp));
-        block->insertAtTail(new CallExpr(PRIM_MOVE, borrowTemp, new CallExpr(PRIM_TO_BORROWED_CLASS, new_temp_rhs)));
-        normalize(block);
-        new_temp_rhs = new SymExpr(borrowTemp);
-      }
-
       CallExpr* newMove = new CallExpr(PRIM_MOVE, new_temp, new_temp_rhs);
       block->insertAtTail(newMove);
       newExpr->replace(new SymExpr(new_temp));
@@ -581,7 +572,7 @@ static void filterInitCandidate(CallInfo&                  info,
 *                                                                             *
 ************************************** | *************************************/
 
-static bool resolveInitializerBody(FnSymbol* fn);
+static void resolveInitializerBody(FnSymbol* fn);
 
 static void resolveInitializerMatch(FnSymbol* fn) {
   if (fn->isResolved() == false) {
@@ -599,29 +590,18 @@ static void resolveInitializerMatch(FnSymbol* fn) {
   }
 }
 
-static bool resolveInitializerBody(FnSymbol* fn) {
-  bool retval = false;
-
+static void resolveInitializerBody(FnSymbol* fn) {
   fn->addFlag(FLAG_RESOLVED);
 
   resolveBlockStmt(fn->body);
 
-  if (tryFailure == false) {
-    resolveReturnType(fn);
+  resolveReturnType(fn);
 
-    toAggregateType(fn->_this->type)->initializerResolved = true;
+  toAggregateType(fn->_this->type)->initializerResolved = true;
 
-    insertAndResolveCasts(fn);
+  insertAndResolveCasts(fn);
 
-    ensureInMethodList(fn);
-
-    retval = true;
-
-  } else {
-    fn->removeFlag(FLAG_RESOLVED);
-  }
-
-  return retval;
+  ensureInMethodList(fn);
 }
 
 /************************************* | **************************************

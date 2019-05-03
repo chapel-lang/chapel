@@ -1,7 +1,7 @@
 module unitTest {
   use main;
 
-  proc substringLocalCodePoint(type t, useExpr=false) {
+  proc substringLocalCodepoint(type t, useExpr=false) {
     writeln("=== local substring codepoint");
 
     proc substringHelp(i) {
@@ -18,7 +18,7 @@ module unitTest {
       checkMemLeaks(m0);
     }
 
-    var idx = 3:codePointIndex;
+    var idx = 3:codepointIndex;
     substringHelp(idx);
 
     var slice = ..idx;
@@ -31,7 +31,7 @@ module unitTest {
     substringHelp(slice3);
   }
 
-  proc substringRemoteCodePoint(type t, useExpr=false) {
+  proc substringRemoteCodepoint(type t, useExpr=false) {
     writeln("=== remote substring codepoint");
 
     proc substringHelp(i) {
@@ -59,7 +59,7 @@ module unitTest {
       checkMemLeaks(m0);
     }
 
-    var idx = 3:codePointIndex;
+    var idx = 3:codepointIndex;
     substringHelp(idx);
 
     var slice = ..idx;
@@ -73,8 +73,8 @@ module unitTest {
   }
 
   proc doIt(type t) {
-    substringLocalCodePoint(t); substringLocalCodePoint(t, true);
-    substringRemoteCodePoint(t); substringRemoteCodePoint(t, true);
+    substringLocalCodepoint(t); substringLocalCodepoint(t, true);
+    substringRemoteCodepoint(t); substringRemoteCodepoint(t, true);
   }
 
 }

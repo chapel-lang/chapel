@@ -47,8 +47,6 @@ static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
 static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
-static void changeCastInWhere(FnSymbol* fn);
-
 static void fixupVoidReturnFn(FnSymbol* fn);
 
 void cleanup() {
@@ -109,7 +107,6 @@ static void cleanup(ModuleSymbol* module) {
           applyAtomicTypeToPrimaryMethod(ts, fn);
         }
 
-        changeCastInWhere(fn);
         fixupVoidReturnFn(fn);
       }
     } else if (CatchStmt* catchStmt = toCatchStmt(ast)) {
@@ -347,38 +344,5 @@ static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
 static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
   if (ts->hasFlag(FLAG_ATOMIC_TYPE)) {
     fn->addFlag(FLAG_ATOMIC_TYPE);
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void changeCastInWhere(FnSymbol* fn) {
-  if (fn->where != NULL) {
-    std::vector<BaseAST*> asts;
-
-    collect_asts(fn->where, asts);
-
-    for_vector(BaseAST, ast, asts) {
-      if (CallExpr* call = toCallExpr(ast)) {
-        if (call->isCast() == true) {
-          Expr* to   = call->castTo();
-          Expr* from = call->castFrom();
-
-          to->remove();
-          from->remove();
-
-          // Note, this deprecation warning along with the rest of
-          // changeCastInWhere should be removed after 1.18.
-          USR_WARN(call, "Special handling for : in where clauses has "
-                         "been deprecated. Please use isSubtype instead.");
-
-          call->replace(new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES, to, from));
-        }
-      }
-    }
   }
 }

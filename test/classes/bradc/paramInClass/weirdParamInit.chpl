@@ -6,7 +6,7 @@ class D {
   param y: int;
 }
 
-var c = new unmanaged C(2);
+var c = new C(2);
 
 param x = c.x;
 

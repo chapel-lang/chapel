@@ -96,6 +96,10 @@ of the others. Hence there is no notion of best match, only a first match.
 If no type filter is present on a catch clause, or if no variable is
 present at all, then it is a catchall clause which matches all errors.
 
+Within a catch clause, for example ``catch e:SomeError``,
+``e`` is a variable representing the caught error. ``e`` will have type
+``owned SomeError``.
+
 .. code-block:: chapel
 
   proc catchingErrors() throws {

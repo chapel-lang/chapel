@@ -1,1 +1,1 @@
-test_clone_class1b.chpl:12: error: type mismatch in assignment from real(64) to int(64)
+test_clone_class1b.chpl:12: error: Cannot assign to int(64) from real(64)

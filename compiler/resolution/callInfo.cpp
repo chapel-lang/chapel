@@ -85,7 +85,9 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
       // The _this actual to an initializer may be generic
-      if (strcmp(name, "init") == 0 && i == 2) {
+      bool isInit = strcmp(name, "init") == 0 ||
+                    strcmp(name, astrInitEquals) == 0;
+      if (isInit && i == 2) {
         actuals.add(sym);
 
       } else {

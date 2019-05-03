@@ -212,7 +212,7 @@ class Hashed : BaseDist {
 
 
   // debugging print
-  proc dsiDisplayRepresentation() {
+  override proc dsiDisplayRepresentation() {
     writeln("targetLocDom = ", targetLocDom);
     writeln("targetLocales = ", for tl in targetLocales do tl.id);
     //for tli in targetLocDom do
@@ -647,7 +647,7 @@ class LocUserMapAssocDom {
 //
 // the global array class
 //
-class UserMapAssocArr: BaseArr {
+class UserMapAssocArr: AbsBaseArr {
   // GENERICS:
 
   //
@@ -655,11 +655,6 @@ class UserMapAssocArr: BaseArr {
   //
   type idxType;
   type mapperType;
-
-  //
-  // the array's element type
-  //
-  type eltType;
 
   // LINKAGE:
 
@@ -844,7 +839,7 @@ class UserMapAssocArr: BaseArr {
     }
   }
 
-  proc dsiDisplayRepresentation() {
+  override proc dsiDisplayRepresentation() {
 
     writeln("dsiDisplayRepresentation TODO");
   }

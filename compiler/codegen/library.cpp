@@ -94,7 +94,13 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 // Helper function to avoid unnecessary repetition when getting information
 // from compileline
 static std::string getCompilelineOption(std::string option) {
-  std::string fullCommand = "$CHPL_HOME/util/config/compileline --" + option;
+  std::string fullCommand = "";
+  for (std::map<std::string, const char*>::iterator env=envMap.begin();
+       env!=envMap.end(); ++env) {
+    fullCommand += std::string(env->first) + "=\"" + std::string(env->second) +
+      "\" ";
+  }
+  fullCommand += "$CHPL_HOME/util/config/compileline --" + option;
   fullCommand += "> cmd.out.tmp";
   runCommand(fullCommand);
 
@@ -132,6 +138,7 @@ void codegen_library_makefile() {
     // "lib"
     name = executableFilename;
   }
+
   fileinfo makefile;
   openLibraryHelperFile(&makefile, "Makefile", name.c_str());
 
@@ -226,7 +233,18 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   if (requires != "") {
     fprintf(makefile.fptr, "%s", requires.c_str());
   }
-  fprintf(makefile.fptr, " %s\n", libraries.c_str());
+
+  if (!llvmCodegen) {
+    fprintf(makefile.fptr, " %s\n", libraries.c_str());
+  } else {
+    // LLVM requires a bit more work to make the GNU linker happy.
+    if (libraries.size() > 0 && *libraries.rbegin() == '\n') {
+      libraries.erase(libraries.end() -1);
+    }
+
+    // Append the Chapel library as the last linker argument.
+    fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
+  }
 }
 
 const char* getLibraryExtension() {
@@ -686,6 +704,12 @@ void codegen_make_python_module() {
   fullCythonCall += " CFLAGS=\"" + cFlags + requireIncludes + " " + includes;
   fullCythonCall += "\" LDFLAGS=\"-L. " + name + requireLibraries;
   fullCythonCall += " " + libraries;
+
+  // We might be using the GNU linker, in which case we need to do this.
+  if (llvmCodegen) {
+    fullCythonCall += " " + name;
+  }
+
   fullCythonCall +=  "\" " + cythonPortion;
 
   std::string chdirIn = "cd ";

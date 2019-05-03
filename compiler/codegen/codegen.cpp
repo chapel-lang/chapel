@@ -20,6 +20,7 @@
 #include "codegen.h"
 
 #include "astutil.h"
+#include "chplmath.h"
 #include "clangBuiltinsWrappedSet.h"
 #include "clangUtil.h"
 #include "config.h"
@@ -31,6 +32,7 @@
 #include "llvmDebug.h"
 #include "llvmUtil.h"
 #include "LayeredValueTable.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -55,6 +57,7 @@
 
 #include <algorithm>
 #include <cctype>
+
 #include <cstring>
 #include <cstdio>
 #include <vector>
@@ -1402,16 +1405,14 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   //
   if( hdrfile ) {
     fprintf(hdrfile, "\nvoid* const chpl_private_broadcast_table[] = {\n");
-    fprintf(hdrfile, "&chpl_verbose_comm");
-    fprintf(hdrfile, ",\n&chpl_comm_diagnostics");
-    fprintf(hdrfile, ",\n&chpl_verbose_mem");
-    int i = 3;
+    int i = 0;
     forv_Vec(CallExpr, call, gCallExprs) {
       if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
         SymExpr* se = toSymExpr(call->get(1));
         INT_ASSERT(se);
         SET_LINENO(call);
-        fprintf(hdrfile, ",\n&%s", se->symbol()->cname);
+        fprintf(hdrfile, "%s&%s",
+                ((i == 0) ? "" : ",\n"), se->symbol()->cname);
         // To preserve operand order, this should be insertAtTail.
         // The change must also be made below (for LLVM) and in the signature
         // of chpl_comm_broadcast_private().
@@ -1419,7 +1420,12 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
         i++;
       }
     }
+    if (i == 0) {
+      // Quiet PGI warning about empty initializer
+      fprintf(hdrfile, "NULL");
+    }
     fprintf(hdrfile, "\n};\n");
+    genGlobalInt("chpl_private_broadcast_table_len", i, false);
   }
 }
 
@@ -1611,6 +1617,10 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   FILE* hdrfile = info->cfile;
 
   if( hdrfile) {
+    // Insert include guard to help MLI builds avoid multiple inclusion.
+    fprintf(hdrfile, "#ifndef CHPL_GEN_HEADER_INCLUDE_GUARD\n");
+    fprintf(hdrfile, "#define CHPL_GEN_HEADER_INCLUDE_GUARD\n");
+
     // This is done in runClang for LLVM version.
     fprintf(hdrfile, "\n#define CHPL_GEN_CODE\n\n");
 
@@ -1819,20 +1829,8 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
       llvm::IntegerType::getInt8PtrTy(info->module->getContext());
 
     std::vector<llvm::Constant *> private_broadcastTable;
-    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
-          info->irBuilder->CreatePointerCast(
-            info->lvt->getValue("chpl_verbose_comm").val,
-            private_broadcastTableEntryType)));
-    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
-          info->irBuilder->CreatePointerCast(
-            info->lvt->getValue("chpl_comm_diagnostics").val,
-            private_broadcastTableEntryType)));
-    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
-          info->irBuilder->CreatePointerCast(
-            info->lvt->getValue("chpl_verbose_mem").val,
-            private_broadcastTableEntryType)));
 
-    int broadcastID = 3;
+    int broadcastID = 0;
     forv_Vec(CallExpr, call, gCallExprs) {
       if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
         SymExpr* se = toSymExpr(call->get(1));
@@ -1864,6 +1862,8 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
           private_broadcastTableType, private_broadcastTable));
     info->lvt->addGlobalValue("chpl_private_broadcast_table",
                               private_broadcastTableGVar, GEN_PTR, true);
+    genGlobalInt("chpl_private_broadcast_table_len",
+                 private_broadcastTable.size(), false);
 #endif
   }
 
@@ -2140,15 +2140,7 @@ static void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
     const char* mainModFilename = mainMod->astloc.filename;
-
-    // find the last slash in the filename's path, if there is one
-    const char* lastSlash = strrchr(mainModFilename, '/');
-    const char* filename = NULL;
-    if (lastSlash == NULL) {
-      filename = mainModFilename;
-    } else {
-      filename = lastSlash + 1;
-    }
+    const char* filename = stripdirectories(mainModFilename);
 
     // "Executable" name should be given a "lib" prefix in library compilation,
     // and just the main module name in normal compilation.
@@ -2255,10 +2247,10 @@ void codegen() {
 
   SET_LINENO(rootModule);
 
-  fileinfo hdrfile  = { NULL, NULL, NULL };
-  fileinfo mainfile = { NULL, NULL, NULL };
-  fileinfo defnfile = { NULL, NULL, NULL };
-  fileinfo strconfig = { NULL, NULL, NULL };
+  fileinfo hdrfile    = { NULL, NULL, NULL };
+  fileinfo mainfile   = { NULL, NULL, NULL };
+  fileinfo defnfile   = { NULL, NULL, NULL };
+  fileinfo strconfig  = { NULL, NULL, NULL };
 
   GenInfo* info     = gGenInfo;
 
@@ -2338,11 +2330,12 @@ void codegen() {
         }
       }
     }
-
+    
     codegen_makefile(&mainfile, NULL, false, userFileName);
-    if (fLibraryCompile && fLibraryMakefile) {
-      codegen_library_makefile();
-    }
+  }
+
+  if (fLibraryCompile && fLibraryMakefile) {
+    codegen_library_makefile();
   }
 
   // Vectors to store different symbol names to be used while generating header
@@ -2405,10 +2398,15 @@ void codegen() {
       if(fIncrementalCompilation && (currentModule->modTag == MOD_USER))
         fprintf(modulefile.fptr, "#include \"chpl__header.h\"\n");
       currentModule->codegenDef();
+
       closeCFile(&modulefile);
 
       if(!(fIncrementalCompilation && (currentModule->modTag == MOD_USER)))
         fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
+    }
+
+    if (fMultiLocaleInterop) {
+      codegenMultiLocaleInteropWrappers();
     }
 
     fprintf(strconfig.fptr, "#include \"chpl-string.h\"\n");
@@ -2419,6 +2417,9 @@ void codegen() {
 
     info->cfile = hdrfile.fptr;
     codegen_header_addons();
+
+    fprintf(hdrfile.fptr, "\n#endif");
+    fprintf(hdrfile.fptr, " /* END CHPL_GEN_HEADER_INCLUDE_GUARD */\n"); 
 
     closeCFile(&hdrfile);
     fprintf(mainfile.fptr, "/* last line not #include to avoid gcc bug */\n");
@@ -2447,10 +2448,10 @@ void makeBinary(void) {
                                makeflags,
                                getIntermediateDirName(), "/Makefile");
     mysystem(command, "compiling generated source");
+  }
 
-    if (fLibraryCompile && fLibraryPython) {
-      codegen_make_python_module();
-    }
+  if (fLibraryCompile && fLibraryPython) {
+    codegen_make_python_module();
   }
 }
 
@@ -2477,25 +2478,39 @@ GenInfo::GenInfo()
 
 std::string numToString(int64_t num)
 {
-  char name[32];
-  sprintf(name, "%" PRId64, num);
-  return std::string(name);
+  return int64_to_string(num);
 }
 std::string int64_to_string(int64_t i)
 {
   char buf[32];
-  sprintf(buf, "%" PRId64, i);
+  snprintf(buf, sizeof(buf), "%" PRId64, i);
   std::string ret(buf);
   return ret;
 }
 std::string uint64_to_string(uint64_t i)
 {
   char buf[32];
-  sprintf(buf, "%" PRIu64, i);
+  snprintf(buf, sizeof(buf), "%" PRIu64, i);
   std::string ret(buf);
   return ret;
 }
+std::string real_to_string(double num)
+{
+  char buf[32];
 
+  if (chpl_isfinite(num)) {
+    if (chpl_signbit(num)) snprintf(buf, sizeof(buf), "-%a" , -num);
+    else                   snprintf(buf, sizeof(buf), "%a" , num);
+  } else if (chpl_isinf(num)) {
+    if (chpl_signbit(num)) strncpy(buf, "-INFINITY", sizeof(buf));
+    else                   strncpy(buf, "INFINITY", sizeof(buf));
+  } else {
+    if (chpl_signbit(num)) strncpy(buf, "-NAN", sizeof(buf));
+    else                   strncpy(buf, "NAN", sizeof(buf));
+  }
+  std::string ret(buf);
+  return ret;
+}
 void genComment(const char* comment, bool push) {
   GenInfo* info = gGenInfo;
   if( info->cfile ) {

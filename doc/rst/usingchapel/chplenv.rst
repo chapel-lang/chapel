@@ -35,7 +35,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.18.0
+        export CHPL_HOME=~/chapel-1.19.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -281,7 +281,7 @@ CHPL_TARGET_CPU
           will occur.
 
         * If :ref:`readme-chplenv.CHPL_COMM` is set, no attempt to set a useful value will be
-          made, ``CHPL_TARGET_CPU`` will be ``unknown``.
+          made and ``CHPL_TARGET_CPU`` will be ``unknown``.
 
         * If :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` is ``darwin``, ``linux*``, or
           ``cygwin*`` ``CHPL_TARGET_CPU`` will be ``native``, passing the
@@ -396,14 +396,17 @@ CHPL_COMM
         ======= ============================================
         none    only supports single-locale execution
         gasnet  use the GASNet-based communication layer
+        ofi     use the (preliminary) libfabric-based communication layer
         ugni    Cray-specific native communication layer
         ======= ============================================
 
    If unset, ``CHPL_COMM`` defaults to ``none`` in most cases.  On Cray XE
    and XC systems it defaults to ``ugni``.  On Cray CS systems it defaults
    to ``gasnet``.  See :ref:`readme-multilocale` for more information on
-   executing Chapel programs using multiple locales.  See :ref:`readme-cray`
-   for more information about Cray-specific runtime layers.
+   executing Chapel programs using multiple locales.  See
+   :ref:`readme-libfabric` for more information about the ofi communication
+   layer.  See :ref:`readme-cray` for more information about Cray-specific
+   runtime layers.
 
 
 .. _readme-chplenv.CHPL_MEM:
@@ -424,11 +427,11 @@ CHPL_MEM
    If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
    .. note::
-     Certain ``CHPL_COMM`` settings (e.g. ugni and gasnet segment fast/large)
-     register the heap to improve communication performance.  Registering the
-     heap requires special allocator support that not all allocators provide.
-     Currently only ``jemalloc`` is capable of supporting configurations that
-     require a registered heap.
+     Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
+     ofi with the gni provider) register the heap to improve communication
+     performance.  Registering the heap requires special allocator support
+     that not all allocators provide.  Currently only ``jemalloc`` is capable
+     of supporting configurations that require a registered heap.
 
 
 .. _readme-chplenv.CHPL_LAUNCHER:
@@ -451,31 +454,19 @@ CHPL_ATOMICS
         ===========  =====================================================
         Value        Description
         ===========  =====================================================
-        cstdlib      implement Chapel atomics as a wrapper around C
-                     standard atomics (from C11)
-        intrinsics   implement atomics using target compiler intrinsics
-                     (which typically map down to hardware capabilities)
-        locks        implement atomics by using mutexes to protect normal
-                     operations
+        cstdlib      implement atomics with C standard atomics (from C11)
+        intrinsics   implement atomics with target compiler intrinsics
+        locks        implement atomics with mutexes
         ===========  =====================================================
 
-   If unset, CHPL_ATOMICS defaults to ``intrinsics`` for most configurations.
-   On some 32 bit platforms, or if the target compiler is ``pgi`` or
-   ``cray-prgenv-pgi`` it defaults to ``locks``.  In a future release,
-   ``cstdlib`` will become the default whenever possible.  At this
-   time, though, most C compilers either do not support standard
-   atomics or have bugs in their implementation.
-
-   .. note::
-     gcc 4.8.1 added support for 64 bit atomics on 32 bit platforms.  We
-     default to ``intrinsics`` for 32 bit platforms when using the target
-     compiler ``gnu`` with a recent enough version of gcc.  For older versions
-     or other target compilers we default to ``locks``
+   If ``CHPL_ATOMICS`` is not set, it defaults to ``cstdlib`` when the target
+   compiler is ``gnu``, ``clang``, ``allinea``, or ``clang-included``.  It
+   defaults to ``intrinsics`` when the target compiler is ``intel`` or
+   ``cray``.  It defaults to ``locks`` when the target compiler is ``pgi``.
 
    See the Chapel Language Specification for more information about atomic
    operations in Chapel or :ref:`readme-atomics` for more information about the
    runtime implementation.
-
 
 .. _readme-chplenv.CHPL_TIMERS:
 
@@ -715,6 +706,21 @@ CHPL_LIB_PIC
        ===== ================================
 
    If unset, ``CHPL_LIB_PIC`` defaults to ``none``
+
+Character Set
+-------------
+   We have the most experience running Chapel with the Unicode
+   character set and the traditional C collating sequence using the
+   following settings.
+
+   .. code-block:: sh
+
+       LANG=en_US.UTF-8
+       LC_COLLATE=C
+       LC_ALL=""
+
+   .. note::
+       Other settings might be recommended in the future.
 
 Compiler Command Line Option Defaults
 -------------------------------------

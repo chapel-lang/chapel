@@ -34,7 +34,9 @@ extern "C" {
 
 
 // Memory tracking activated?
-extern chpl_bool chpl_memTrack;
+int chpl_memTrack;
+
+int chpl_verbose_mem;      // set via startVerboseMem
 
 ///// These entry points support the memory tracking functions provided by
 //    MemTracking.chpl, and may also be called directly from user code (or from

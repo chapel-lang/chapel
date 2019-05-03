@@ -170,8 +170,6 @@ void ResolveScope::addBuiltIns() {
   extend(gFalse);
   extend(gTrue);
 
-  extend(gTryToken);
-
   extend(dtNil->symbol);
   extend(gNil);
 
@@ -211,10 +209,8 @@ void ResolveScope::addBuiltIns() {
 
   extend(dtCVoidPtr->symbol);
   extend(dtCFnPtr->symbol);
-  extend(gCVoidPtr);
 
   extend(dtFile->symbol);
-  extend(gFile);
 
   extend(dtOpaque->symbol);
   extend(gOpaque);
@@ -259,6 +255,9 @@ void ResolveScope::addBuiltIns() {
   extend(gLocal);
   extend(gWarnUnstable);
   extend(gNodeID);
+
+  extend(gInfinity);
+  extend(gNan);
 }
 
 /************************************* | **************************************

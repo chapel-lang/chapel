@@ -63,7 +63,8 @@ BlockStmt* buildErrorStandin();
 
 BlockStmt* buildUseStmt(CallExpr* modules);
 BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except);
-bool processStringInRequireStmt(const char* str, bool parseTime);
+bool processStringInRequireStmt(const char* str, bool parseTime,
+                                const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
@@ -96,12 +97,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
 BlockStmt* buildDeleteStmt(CallExpr* exprlist);
-BlockStmt* buildForallLoopStmt(Expr* indices,
-                               Expr* iterator,
-                               ForallIntents* forall_intents,
-                               BlockStmt* body,
-                               bool zippered = false,
-                               VarSymbol* useThisGlobalOp = NULL);
 Expr* buildForLoopExpr(Expr* indices,
                        Expr* iterator,
                        Expr* expr,

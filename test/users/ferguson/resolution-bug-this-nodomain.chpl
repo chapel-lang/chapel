@@ -8,7 +8,7 @@ class NotDomainString {
 }
 
 proc build_not_domain(type t) {
-  var x = new unmanaged NotDomainString(t,true);
+  var x = new owned NotDomainString(t,true);
   return x;
 }
 
@@ -20,7 +20,7 @@ class RR {
 }
 
 class CC {
-  proc this(idx: int):unmanaged RR { return new unmanaged RR(); }
+  proc this(idx: int):owned RR { return new owned RR(); }
 }
 
-proc f(arg:unmanaged CC):unmanaged RR return arg;
+proc f(arg: CC): RR return arg;

@@ -198,10 +198,10 @@ Some channel methods - in particular those beginning with the underscore -
 should only be called on locked channels.  With these methods, it is possible
 to get or set the channel style, or perform I/O "transactions" (see
 :proc:`channel.mark` and :proc:`channel._mark`). To use these methods,
-first lock the channel with
-channel.lock(), call the methods you need, and then unlock the channel with
-channel.unlock(). Note that in the future, we may move to alternative ways of
-calling these functions that guarantee that they are not called on a channel
+first lock the channel with :proc:`channel.lock`, call the methods you need,
+then unlock the channel with :proc:`channel.unlock`.
+Note that in the future, we may move to alternative ways of calling
+these functions that guarantee that they are not called on a channel
 without the appropriate locking.
 
 Besides data races that can occur if locking is not used in channels when it
@@ -249,11 +249,11 @@ if there was an error. See:
  * :proc:`channel.write`
  * :proc:`channel.writeln`
  * :proc:`channel.writebits`
- * :proc:`channel.writef` (see also :ref:`about-io-formatted-io`)
+ * :proc:`FormattedIO.channel.writef` (see also :ref:`about-io-formatted-io`)
  * :proc:`channel.read`
  * :proc:`channel.readln`
  * :proc:`channel.readbits`
- * :proc:`channel.readf` (see also :ref:`about-io-formatted-io`)
+ * :proc:`FormattedIO.channel.readf` (see also :ref:`about-io-formatted-io`)
 
 In addition, there are several convenient synonyms for :proc:`channel.write` and
 :proc:`channel.read`:
@@ -315,14 +315,16 @@ Error Handling
 Most I/O routines throw a :class:`SysError.SystemError`, and can be handled
 appropriately with ``try`` and ``catch``. For legacy reasons most I/O routines
 can also can accept an optional `error=` argument.
+In this documentation, `SystemError` may include both the
+:class:`SysError.SystemError` class proper and its subclasses.
 
-Some of these errors commonly used within the I/O implementation include:
+Some of these subclasses commonly used within the I/O implementation include:
 
- * :class:`SystemError.EOFError` - the end of file was reached
- * :class:`SystemError.UnexpectedEOFError` - a read or write only returned
-   part of the requested data
- * :class:`SystemError.BadFormatError` - data read did not adhere to the
-   requested format
+ * :class:`SysError.EOFError` - the end of file was reached
+ * :class:`SysError.UnexpectedEOFError` - a read or write only returned
+                                          part of the requested data
+ * :class:`SysError.BadFormatError` - data read did not adhere to the
+                                      requested format
 
 Some of the legacy error codes used include:
 
@@ -350,7 +352,6 @@ When a file (or channel) is closed, data written to that file will be written
 to disk eventually by the operating system. If an application needs to be sure
 that the data is immediately written to persistent storage, it should use
 :proc:`file.fsync` prior to closing the file.
-
 
 Correspondence to C I/O
 -----------------------
@@ -609,10 +610,12 @@ proc stringStyleWithVariableLength() {
 }
 
 /*
-  This method returns the appropriate :record:`iostyle` ``str_style`` value
-  to indicate a string format where string data is preceded by a ``lengthBytes``
-  of length. Only lengths of 1, 2, 4, or 8 are supported; if this method
-  is called with any other length, it will throw an error.
+  Return the appropriate :record:`iostyle` ``str_style`` value
+  to indicate a string format where string data is preceded by a
+  `lengthBytes` of length. Only lengths of 1, 2, 4, or 8 are supported.
+  When `lengthBytes` is 0, the returned value indicates variable-byte length.
+
+  :throws SystemError: Thrown for an unsupported value of `lengthBytes`.
  */
 proc stringStyleWithLength(lengthBytes:int) throws {
   var x = iostringstyle.lenVb_data;
@@ -861,7 +864,6 @@ private extern proc qio_style_init_default(ref s: iostyle);
 private extern proc qio_file_retain(f:qio_file_ptr_t);
 private extern proc qio_file_release(f:qio_file_ptr_t);
 
-pragma "no prototype" // FIXME
 private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, const ref style:iostyle, usefilestar:c_int):syserr;
 private extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyle):syserr;
 private extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyle):syserr;
@@ -880,6 +882,7 @@ extern proc qio_file_close(f:qio_file_ptr_t):syserr;
 
 private extern proc qio_file_lock(f:qio_file_ptr_t):syserr;
 private extern proc qio_file_unlock(f:qio_file_ptr_t);
+private extern proc qio_file_isopen(f:qio_file_ptr_t):bool;
 
 /* The general way to make sure data is written without error */
 private extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
@@ -888,10 +891,8 @@ private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64
 private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 private extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
-pragma "no prototype" // FIXME
 private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
 
-pragma "no prototype" // FIXME
 private extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, ref path:c_string, ref offset:int(64)):syserr;
 
 private extern proc qio_channel_retain(ch:qio_channel_ptr_t);
@@ -952,13 +953,9 @@ private extern proc qio_locales_for_region(fl:qio_file_ptr_t,
 private extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):syserr;
 private extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
 
-pragma "no prototype" // FIXME
 private extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_file_path_for_fp(fp:_file, ref path:c_string):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):syserr;
 
 // we don't use qio_channel_read_int/write_int since the code there is pretty
@@ -1006,16 +1003,13 @@ private extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, s
 private extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:ssize_t):syserr;
 
 private extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t, issigned:c_int):syserr;
 
 private extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):syserr;
 
 // These are the same as scan/print float but they assume an 'i' afterwards.
 private extern proc qio_channel_scan_imag(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_channel_print_imag(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):syserr;
 
 
@@ -1276,6 +1270,10 @@ proc file.init(x: file) {
   }
 }
 
+proc file.init=(x: file) {
+  this.init(x);
+}
+
 pragma "no doc"
 proc =(ref ret:file, x:file) {
   // retain -- release
@@ -1292,24 +1290,15 @@ proc =(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
-/* Throw an error if a file is invalid */
+/* Throw an error if `this` is not a valid representation of an OS file.
+
+   :throws SystemError: Indicates that `this` does not represent an OS file.
+*/
 proc file.check() throws {
   if is_c_nil(_file_internal) then
     throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
-}
-
-// documented in throws version
-pragma "no doc"
-proc file.check(out error:syserr) {
-  compilerWarning("This version of file.check() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    this.check();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
+  if !qio_file_isopen(_file_internal) then
+    throw SystemError.fromSyserr(EBADF, "Operation attempted on closed file");
 }
 
 pragma "no doc"
@@ -1369,32 +1358,20 @@ proc file._style:iostyle throws {
    goes out of scope and all channels using that file are closed. Programs
    may also explicitly close a file using this method.
 
-   A SystemError will be thrown if the file could not be closed.
    It is an error to perform any I/O operations on a file that has been closed.
    It is an error to close a file when it has channels that have not been closed.
+
+   :throws SystemError: Thrown if the file could not be closed.
  */
 proc file.close() throws {
-  try check();
+  if is_c_nil(_file_internal) then
+    throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
 
   var err:syserr = ENOERR;
   on this.home {
     err = qio_file_close(_file_internal);
   }
   if err then try ioerror(err, "in file.close", this.tryGetPath());
-}
-
-// documented in throws version
-pragma "no doc"
-proc file.close(out error:syserr) {
-  compilerWarning("This version of file.close() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    this.close();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /*
@@ -1406,7 +1383,8 @@ Data written to the file by a channel will be committed
 only if the channel has been closed or flushed.
 
 This function will typically call the ``fsync`` system call.
-A SystemError will be thrown if the file could not be synced.
+
+:throws SystemError: Thrown if the file could not be synced.
  */
 proc file.fsync() throws {
   try check();
@@ -1416,20 +1394,6 @@ proc file.fsync() throws {
     err = qio_file_sync(_file_internal);
   }
   if err then try ioerror(err, "in file.fsync", this.tryGetPath());
-}
-
-// documented in the throws version
-pragma "no doc"
-proc file.fsync(out error:syserr) {
-  compilerWarning("This version of file.fsync() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    this.fsync();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 
@@ -1443,7 +1407,7 @@ and that this function may not work on all operating systems.
 The function :proc:`Path.file.realPath` is an alternative way
 to get the path to a file.
 
-A SystemError will be thrown if the path could not be retrieved.
+:throws SystemError: Thrown if the path could not be retrieved.
  */
 proc file.path : string throws {
   try check();
@@ -1480,29 +1444,14 @@ proc file.tryGetPath() : string {
   }
 }
 
-// documented in file.path
-pragma "no doc"
-proc file.getPath(out error:syserr) : string {
-  compilerWarning("file.getPath() is deprecated; " +
-                  "please switch to file.path or file.tryGetPath()");
-  try {
-    return this.path;
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return "unknown";
-}
-
 /*
 
 Get the current length of an open file. Note that the length can always
 change if other channels, tasks or programs are writing to the file.
-A SystemError will be thrown if the length could not be retrieved.
 
 :returns: the current file length
 
+:throws SystemError: Thrown if the length could not be retrieved.
 */
 proc file.length():int(64) throws {
   var err:syserr = ENOERR;
@@ -1539,8 +1488,6 @@ Open a file on a filesystem or stored at a particular URL. Note that once the
 file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
 to create a channel to actually perform I/O operations
 
-A SystemError will be thrown if the file could not be opened.
-
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
 :arg iomode: specify whether to open the file for reading or writing and
@@ -1560,6 +1507,8 @@ A SystemError will be thrown if the file could not be opened.
           ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
           ``smtps://``, ``imap://``, or ``imaps://``
 :returns: an open file to the requested resource.
+
+:throws SystemError: Thrown if the file could not be opened.
 */
 proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle = defaultIOStyle(), url:string=""): file throws {
@@ -1647,24 +1596,6 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
   return ret;
 }
 
-// documented in open() throws version
-pragma "no doc"
-proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle(), url:string=""):file {
-  compilerWarning("This version of open() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  var ret: file;
-  try {
-    ret = open(path, mode, hints, style, url);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
 /*
 
 Create a Chapel file that works with a system file descriptor  Note that once
@@ -1672,7 +1603,6 @@ the file is open, you will need to use a :proc:`file.reader` or
 :proc:`file.writer` to create a channel to actually perform I/O operations
 
 The system file descriptor will be closed when the Chapel file is closed.
-A SystemError will be thrown if the file descriptor could not be retrieved.
 
 .. note::
 
@@ -1694,6 +1624,9 @@ A SystemError will be thrown if the file descriptor could not be retrieved.
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
 :returns: an open :record:`file` using the specified file descriptor.
+
+:throws SystemError: Thrown if the file descriptor could not be retrieved.
+
  */
 proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1713,28 +1646,11 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   return ret;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc openfd(fd: fd_t, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-  compilerWarning("This version of openfd() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:file;
-  try {
-    ret = openfd(fd, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
 /*
 
 Create a Chapel file that works with an open C file (ie a ``FILE*``).  Note
 that once the file is open, you will need to use a :proc:`file.reader` or
 :proc:`file.writer` to create a channel to actually perform I/O operations
-A SystemError will be thrown if the C file could not be retrieved.
 
 .. note::
 
@@ -1751,6 +1667,8 @@ A SystemError will be thrown if the C file could not be retrieved.
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
 :returns: an open :record:`file` that uses the underlying FILE* argument.
+
+:throws SystemError: Thrown if the C file could not be retrieved.
  */
 proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1770,22 +1688,6 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
   return ret;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc openfp(fp: _file, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-  compilerWarning("This version of openfp() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:file;
-  try {
-    ret = openfp(fp, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
 /*
 
 Open a temporary file. Note that once the file is open, you will need to use a
@@ -1798,7 +1700,6 @@ deleted upon closing.
 
 Temporary files are always opened with :type:`iomode` ``iomode.cwr``;
 that is, a new file is created that supports both writing and reading.
-A SystemError will be thrown if the temporary file could not be opened.
 
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
@@ -1807,6 +1708,8 @@ A SystemError will be thrown if the temporary file could not be opened.
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
 :returns: an open temporary file.
+
+:throws SystemError: Thrown if the temporary file could not be opened.
  */
 proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1819,22 +1722,6 @@ proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file t
   return ret;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-  compilerWarning("This version of opentmp() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:file;
-  try {
-    var ret = opentmp(hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
 /*
 
 Open a file that is backed by a buffer in memory that will not persist when the
@@ -1844,13 +1731,13 @@ perform I/O operations.
 
 The resulting file supports both reading and writing.
 
-A SystemError will be thrown if the memory buffered file could not be opened.
-
 :arg style: optional argument to specify I/O style associated with this file.
             The provided style will be the default for any channels created for
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
 :returns: an open memory file.
+
+:throws SystemError: Thrown if the memory buffered file could not be opened.
  */
 proc openmem(style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1860,23 +1747,6 @@ proc openmem(style:iostyle = defaultIOStyle()):file throws {
   // On return ret._file_internal.ref_cnt == 1.
   var err = qio_file_open_mem(ret._file_internal, QBUFFER_PTR_NULL, local_style);
   if err then try ioerror(err, "in openmem");
-  return ret;
-}
-
-
-// documented in the throws version
-pragma "no doc"
-proc openmem(out error:syserr, style:iostyle = defaultIOStyle()) {
-  compilerWarning("This version of openmem() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:file;
-  try {
-    ret = openmem(style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
   return ret;
 }
 
@@ -1970,6 +1840,10 @@ proc channel.init(x: channel) {
   }
 }
 
+proc channel.init=(x: this.type) {
+  this.init(x);
+}
+
 //
 // Note that this is effectively the initializer that the compiler
 // would typically provide and that, by providing the next initializer
@@ -2013,13 +1887,13 @@ proc ref channel.deinit() {
 
 /*
 
-Represents a Unicode code point. I/O routines (such as :proc:`channel.read`
+Represents a Unicode codepoint. I/O routines (such as :proc:`channel.read`
 and :proc:`channel.write`) can use arguments of this type in order to read or
-write a single Unicode code point.
+write a single Unicode codepoint.
 
  */
 record ioChar {
-  /* The code point value */
+  /* The codepoint value */
   var ch:int(32);
   pragma "no doc"
   proc writeThis(f) {
@@ -2161,7 +2035,8 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
 
 /*
    Acquire a channel's lock.
-   Throws a SystemError if the lock could not be acquired.
+
+   :throws SystemError: Thrown if the lock could not be acquired.
  */
 inline proc channel.lock() throws {
   var err:syserr = ENOERR;
@@ -2177,21 +2052,6 @@ inline proc channel.lock() throws {
   if err then try this._ch_ioerror(err, "in lock");
 }
 
-
-// documented in throws version
-pragma "no doc"
-inline proc channel.lock(out error:syserr) {
-  compilerWarning("This version of channel.lock() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    this.lock();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /*
    Release a channel's lock.
  */
@@ -2204,11 +2064,16 @@ inline proc channel.unlock() {
 }
 
 /*
-   Return the current offset of a channel. Note that other operations
-   on the channel (e.g. by other tasks) might change the offset. If you
-   are doing another operation on the channel based upon the current offset,
-   you should use :proc:`channel.lock`, :proc:`channel._offset`, and
-   :proc:`channel.unlock` to prevent race conditions.
+   Return the current offset of a channel.
+
+   .. warning::
+
+      If the channel can be used by multiple tasks, take care
+      when doing operations that rely on the channel's current offset.
+      To prevent race conditions, first lock the channel with
+      :proc:`channel.lock`, do the operations, then unlock it
+      with :proc:`channel.unlock`.
+      While holding the lock, use :proc:`channel._offset` instead.
 
    :returns: the current offset of the channel
  */
@@ -2233,55 +2098,31 @@ proc channel.offset():int(64) {
    other data if it is stored in the channel's buffer, for example with
    :proc:`channel._mark` and :proc:`channel._revert`.
 
-   Throws a SystemError if the channel offset was not moved.
+   :throws SystemError: Throws if the channel offset was not moved.
  */
 proc channel.advance(amount:int(64)) throws {
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     err = qio_channel_advance(false, _channel_internal, amount);
-    this.unlock();
   }
   if err then try this._ch_ioerror(err, "in advance");
 }
 
-// documented with the throws version
-pragma "no doc"
-proc channel.advance(amount:int(64), ref error:syserr) {
-  compilerWarning("'ref error: syserr' pattern has been deprecated, use 'throws' function instead");
-  try {
-    this.advance(amount);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /*
    Reads until ``byte`` is found and then leave the channel offset
-   just after it. If that byte is never found, throws an EOFError.
+   just after it.
+
+   :throws EOFError: if the requested `byte` could not be found.
+   :throws SystemError: if another error occurred.
  */
 proc channel.advancePastByte(byte:uint(8)) throws {
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
-    this.unlock();
   }
   if err then try this._ch_ioerror(err, "in advanceToByte");
-}
-
-pragma "no doc"
-proc channel.advancePastByte(byte:uint(8), ref error:syserr) {
-  compilerWarning("'ref error: syserr' pattern has been deprecated, use 'throws' function instead");
-  try {
-    this.advancePastByte(byte);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /*
@@ -2458,8 +2299,6 @@ Open a file at a particular path or URL and return a reading channel for it.
 This function is equivalent to calling :proc:`open` and then
 :proc:`file.reader` on the resulting file.
 
-Throws a SystemError if a reading channel could not be returned.
-
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
 :arg kind: :type:`iokind` compile-time argument to determine the
@@ -2486,6 +2325,8 @@ Throws a SystemError if a reading channel could not be returned.
           ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
           ``smtps://``, ``imap://``, or ``imaps://``
 :returns: an open reading channel to the requested resource.
+
+:throws SystemError: Thrown if a reading channel could not be returned.
  */
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
@@ -2507,30 +2348,11 @@ proc openreader(path:string="", param kind=iokind.dynamic, param locking=true,
   /*qio_file_release(fl._file_internal);*/
 }
 
-// documented in throws version
-pragma "no doc"
-proc openreader(out error: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
-    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-    url:string=""): channel(false, kind, locking) {
-  compilerWarning("This version of openreader() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return openreader(path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return new channel(writing=false, kind=kind, locking=locking);
-}
-
 /*
 
 Open a file at a particular path or URL and return a writing channel for it.
 This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 :proc:`file.writer` on the resulting file.
-
-Throws a SystemError if a writing channel could not be returned.
 
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
@@ -2558,6 +2380,8 @@ Throws a SystemError if a writing channel could not be returned.
           ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
           ``smtps://``, ``imap://``, or ``imaps://``
 :returns: an open writing channel to the requested resource.
+
+:throws SystemError: Thrown if a writing channel could not be returned.
 */
 proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
@@ -2574,24 +2398,6 @@ proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
   /*qio_file_release(fl._file_internal);*/
 }
 
-// documented in throws version
-pragma "no doc"
-proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
-    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-    url:string=""): channel(true, kind, locking) {
-  compilerWarning("This version of openwriter() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return openwriter(path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return new channel(writing=true, kind=kind, locking=locking);
-}
-
-
 /*
    Create a :record:`channel` that supports reading from a file. See
    :ref:`about-io-overview`.
@@ -2606,8 +2412,6 @@ proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, pa
    that file.  Reading beyond the end of the file or beyond the end offset of
    the channel will produce the error ``EEOF`` (and return `false` in many
    cases such as :proc:`channel.read`) to indicate that the end was reached.
-
-   Throws a SystemError if a file reader channel could not be returned.
 
    :arg kind: :type:`iokind` compile-time argument to determine the
               corresponding parameter of the :record:`channel` type. Defaults
@@ -2630,6 +2434,8 @@ proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, pa
    :arg style: provide a :record:`iostyle` to use with this channel. The
                default value will be the :record:`iostyle` associated with
                this file.
+
+   :throws SystemError: Thrown if a file reader channel could not be returned.
  */
 // It is the responsibility of the caller to release the returned channel
 // if the error code is nonzero.
@@ -2649,28 +2455,11 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
   return ret;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(false, kind, locking) {
-  compilerWarning("This version of file.reader() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return this.reader(kind, locking, start, end, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return new channel(writing=false, kind=kind, locking=locking);
-}
-
 /* Iterate over all of the lines in a file.
 
-   Throws a SystemError if an ItemReader could not be returned.
-
    :returns: an object which yields strings read from the file
+
+   :throws SystemError: Thrown if an ItemReader could not be returned.
  */
 proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) throws {
@@ -2688,24 +2477,6 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
   }
   if err then try ioerror(err, "in file.lines", this.tryGetPath());
 
-  return ret;
-}
-
-// documented in the throws version
-pragma "no doc"
-proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                in local_style:iostyle = this._style) {
-  compilerWarning("This version of file.lines() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:ItemReader(string, iokind.dynamic, locking);
-  try {
-    ret = this.lines(locking, start, end, hints, local_style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
   return ret;
 }
 
@@ -2729,8 +2500,6 @@ proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0,
    all channels to a file are closed, that file will have a size equal to the
    last position written to by any channel.
 
-   Throws a SystemError if a file writer channel could not be returned.
-
    :arg kind: :type:`iokind` compile-time argument to determine the
               corresponding parameter of the :record:`channel` type. Defaults
               to ``iokind.dynamic``, meaning that the associated
@@ -2752,6 +2521,8 @@ proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0,
    :arg style: provide a :record:`iostyle` to use with this channel. The
                default value will be the :record:`iostyle` associated with
                this file.
+
+   :throws SystemError: Thrown if a file writer channel could not be returned.
  */
 // It is the responsibility of the caller to retain and release the returned
 // channel.
@@ -2769,24 +2540,6 @@ proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 
   }
   if err then try ioerror(err, "in file.writer", this.tryGetPath());
 
-  return ret;
-}
-
-// documented in throws version
-pragma "no doc"
-proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(true,kind,locking) {
-  compilerWarning("This version of file.writer() is deprecated; " +
-                  "please switch to a throwing version");
-  var ret:channel(true, kind, locking);
-  try {
-    ret = this.writer(kind, locking, start, end, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
   return ret;
 }
 
@@ -3379,31 +3132,17 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
   /*
      Write a sequence of bytes.
-     Throws a SystemError if the byte sequence could not be written.
+
+     :throws SystemError: Thrown if the byte sequence could not be written.
    */
   proc channel.writeBytes(x, len:ssize_t):bool throws {
     var err:syserr = ENOERR;
     on this.home {
-      try! this.lock();
+      try this.lock(); defer { this.unlock(); }
       err = qio_channel_write_amt(false, _channel_internal, x, len);
-      this.unlock();
     }
     if err then try this._ch_ioerror(err, "in channel.writeBytes()");
     return true;
-  }
-
-  pragma "no doc"
-  proc channel.writeBytes(x, len:ssize_t, out error:syserr):bool {
-    compilerWarning("This version of channel.writeBytes() is deprecated; " +
-                    "please switch to a throwing version");
-    try {
-      return this.writeBytes(x, len);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-    return false;
   }
 
 /*
@@ -3564,7 +3303,7 @@ inline proc channel.read(ref args ...?k):bool throws {
   const origLocale = this.getLocaleOfIoRequest();
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     for param i in 1..k {
       if !err {
         if args[i].locale == here {
@@ -3576,7 +3315,6 @@ inline proc channel.read(ref args ...?k):bool throws {
         }
       }
     }
-    this.unlock();
   }
 
   if !err {
@@ -3590,28 +3328,10 @@ inline proc channel.read(ref args ...?k):bool throws {
   return false;
 }
 
-// documented in the throws version
-pragma "no doc"
-inline proc channel.read(ref args ...?k, out error:syserr): bool {
-  compilerWarning("This version of channel.read() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.read((...args));
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /*
 
    Read values from a channel. The input will be consumed atomically - the
    channel lock will be held while reading all of the passed values.
-
-   Throws a SystemError if the channel could not be read.
 
    :arg args: a list of arguments to read. Basic types are handled
               internally, but for other types this function will call
@@ -3620,14 +3340,16 @@ inline proc channel.read(ref args ...?k, out error:syserr): bool {
    :arg style: optional argument to provide an :type:`iostyle` for this read.
                If this argument is not provided, use the current style
                associated with this channel.
-   :returns: `true` if the read succeeded, and `false` on error or end of file.
+   :returns: `true` if the read succeeded, and `false` on end of file.
+
+   :throws SystemError: Thrown if the channel could not be read.
  */
 proc channel.read(ref args ...?k, style:iostyle):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     this._set_style(style);
     for param i in 1..k {
@@ -3636,7 +3358,6 @@ proc channel.read(ref args ...?k, style:iostyle):bool throws {
       }
     }
     this._set_style(save_style);
-    this.unlock();
   }
 
   if !err {
@@ -3647,24 +3368,6 @@ proc channel.read(ref args ...?k, style:iostyle):bool throws {
     try this._ch_ioerror(err, "in channel.read(" +
                               _args_to_proto((...args), preArg="ref ") +
                               "style:iostyle)");
-  }
-  return false;
-}
-
-// documented in the throws version
-pragma "no doc"
-proc channel.read(ref args ...?k,
-                  style:iostyle,
-                  out error:syserr):bool {
-  compilerWarning("This version of channel.read() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.read((...args), style=style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
   }
   return false;
 }
@@ -3690,7 +3393,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
 
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     param newLineChar = 0x0A;
     var got: int;
     var i = start;
@@ -3704,7 +3407,6 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
     }
     numRead = i - start;
     if i == start && got < 0 then err = (-got):syserr;
-    this.unlock();
   }
 
   if !err {
@@ -3717,33 +3419,14 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   return false;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
-                      amount = arg.domain.high - start + 1, out error:syserr) : bool
-                      where arg.rank == 1 && isRectangularArr(arg) {
-  compilerWarning("This version of channel.readline() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readline(arg, numRead, start, amount);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
-
 /*
   Read a line into a Chapel string. Reads until a ``\n`` is reached.
   The ``\n`` is included in the resulting string.
 
-  Throws a SystemError if a string could not be read from the channel.
-
   :arg arg: a string to receive the line
-  :returns: `true` if a line was read without error, `false` on error or EOF
+  :returns: `true` if a line was read without error, `false` upon EOF
+
+  :throws SystemError: Thrown if a string could not be read from the channel.
 */
 proc channel.readline(ref arg:string):bool throws {
   if writing then compilerError("read on write-only channel");
@@ -3751,7 +3434,7 @@ proc channel.readline(ref arg:string):bool throws {
 
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     var mystyle = save_style.text();
     mystyle.string_format = QIO_STRING_FORMAT_TOEND;
@@ -3759,7 +3442,6 @@ proc channel.readline(ref arg:string):bool throws {
     this._set_style(mystyle);
     err = _read_one_internal(_channel_internal, iokind.dynamic, arg, origLocale);
     this._set_style(save_style);
-    this.unlock();
   }
 
   if !err {
@@ -3772,32 +3454,16 @@ proc channel.readline(ref arg:string):bool throws {
   return false;
 }
 
-// documented in throws version
-pragma "no doc"
-proc channel.readline(ref arg:string, out error:syserr):bool {
-  compilerWarning("This version of channel.readline() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readline(arg);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /* read a given number of bytes from a channel
-
-   Throws a SystemError if the bytes could not be read from the channel.
 
    :arg str_out: The string to be read into
    :arg len: Read up to len bytes from the channel, up until EOF
              (or some kind of I/O error). If the default value of -1
              is provided, read until EOF starting from the channel's
              current offset.
-   :returns: `true` if we read something, `false` on EOF or error
+   :returns: `true` if we read something, `false` upon EOF
+
+   :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   var err:syserr = ENOERR;
@@ -3814,7 +3480,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
       if ssize_t != int(64) then assert( len == uselen );
     }
 
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
 
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -3836,8 +3502,6 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
       this._set_style(save_style);
     }
 
-    this.unlock();
-
     str_out = new string(tx, length=lenread, needToCopy=false);
   }
 
@@ -3851,31 +3515,15 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   return false;
 }
 
-// documented in the throws version
-pragma "no doc"
-proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):bool {
-  compilerWarning("This version of channel.readstring() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readstring(str_out, len);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /*
    Read bits with binary I/O
-
-   Throws a SystemError if the bits could not be read from the channel.
 
    :arg v: where to store the read bits. This value will have its *nbits*
            least-significant bits set.
    :arg nbits: how many bits to read
-   :returns: `true` if the bits were read without error, `false` on error or EOF
+   :returns: `true` if the bits were read without error, `false` upon EOF
+
+   :throws SystemError: Thrown if the bits could not be read from the channel.
  */
 inline proc channel.readbits(out v:integral, nbits:integral):bool throws {
   if castChecking {
@@ -3895,30 +3543,15 @@ inline proc channel.readbits(out v:integral, nbits:integral):bool throws {
   return ret;
 }
 
-// documented in the throws version
-pragma "no doc"
-inline proc channel.readbits(out v:integral, nbits:integral, out error:syserr):bool {
-  compilerWarning("This version of channel.readbits() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readbits(v, nbits);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /*
    Write bits with binary I/O
-
-   Throws a SystemError if the bits could not be written to the channel.
 
    :arg v: a value containing *nbits* bits to write the least-significant bits
    :arg nbits: how many bits to write
    :returns: `true` if the bits were written without error, `false` on error
+
+   :throws IllegalArgumentError: Thrown if writing more bits than fit into `v`.
+   :throws SystemError: Thrown if the bits could not be written to the channel.
  */
 proc channel.writebits(v:integral, nbits:integral):bool throws {
   if castChecking {
@@ -3934,22 +3567,6 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
   return try this.write(new ioBits(v:uint(64), nbits:int(8)));
 }
 
-// documented in the throws version
-pragma "no doc"
-inline proc channel.writebits(v:integral, nbits:integral, out error:syserr):bool {
-  compilerWarning("This version of channel.writebits() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.writebits(v, nbits);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 // documented in the style= error= version
 pragma "no doc"
 proc channel.readln():bool throws {
@@ -3959,28 +3576,9 @@ proc channel.readln():bool throws {
 
 // documented in the style= error= version
 pragma "no doc"
-proc channel.readln(out error:syserr):bool {
-  compilerWarning("This version of channel.readln() is deprecated; " +
-                  "please switch to a throwing version");
-  var nl = new ioNewline();
-  return this.read(nl, error=error);
-}
-
-// documented in the style= error= version
-pragma "no doc"
 proc channel.readln(ref args ...?k):bool throws {
   var nl = new ioNewline();
   return try this.read((...args), nl);
-}
-
-// documented in the style= error= version
-pragma "no doc"
-proc channel.readln(ref args ...?k,
-                    out error:syserr):bool {
-  compilerWarning("This version of channel.readln() is deprecated; " +
-                  "please switch to a throwing version");
-  var nl = new ioNewline();
-  return this.read((...args), nl, error=error);
 }
 
 /*
@@ -3988,8 +3586,6 @@ proc channel.readln(ref args ...?k,
    Read values from a channel and then consume any bytes until
    newline is reached. The input will be consumed atomically - the
    channel lock will be held while reading all of the passed values.
-
-   Throws a SystemError if a line could not be read from the channel.
 
    :arg args: a list of arguments to read. This routine can be called
               with zero or more such arguments. Basic types are handled
@@ -3999,7 +3595,9 @@ proc channel.readln(ref args ...?k,
    :arg style: optional argument to provide an :type:`iostyle` for this read.
                If this argument is not provided, use the current style
                associated with this channel.
-   :returns: `true` if the read succeeded, and `false` on error or end of file.
+   :returns: `true` if the read succeeded, and `false` upon end of file.
+
+   :throws SystemError: Thrown if a line could not be read from the channel.
  */
 proc channel.readln(ref args ...?k,
                     style:iostyle):bool throws {
@@ -4007,21 +3605,8 @@ proc channel.readln(ref args ...?k,
   return try this.read((...args), nl, style=style);
 }
 
-// documented in the style= error= version
-pragma "no doc"
-proc channel.readln(ref args ...?k,
-                    style:iostyle,
-                    out error:syserr):bool {
-  compilerWarning("This version of channel.readln() is deprecated; " +
-                  "please switch to a throwing version");
-  var nl = new ioNewline();
-  return this.read((...args), nl, style=style, error=error);
-}
-
 /*
    Read a value of passed type.
-
-   Throws a SystemError if the type could not be read from the channel.
 
    .. note::
 
@@ -4039,6 +3624,8 @@ proc channel.readln(ref args ...?k,
 
    :arg t: the type to read
    :returns: the value read
+
+   :throws SystemError: Thrown if the type could not be read from the channel.
  */
 proc channel.read(type t) throws {
   var tmp:t;
@@ -4048,9 +3635,6 @@ proc channel.read(type t) throws {
 
 /*
    Read a value of passed type followed by a newline.
-   Halts if an error is encountered.
-
-   Throws a SystemError if the type could not be read from the channel.
 
    .. note::
 
@@ -4061,6 +3645,8 @@ proc channel.read(type t) throws {
 
    :arg t: the type to read
    :returns: the value read
+
+   :throws SystemError: Thrown if the type could not be read from the channel.
  */
 proc channel.readln(type t) throws {
   var tmp:t;
@@ -4072,10 +3658,10 @@ proc channel.readln(type t) throws {
    Read values of passed types followed by a newline
    and return a tuple containing the read values.
 
-   Throws a SystemError if the types could not be read from the channel.
-
    :arg t: more than one type to read
    :returns: a tuple of the read values
+
+   :throws SystemError: Thrown if the types could not be read from the channel.
  */
 proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
@@ -4088,10 +3674,10 @@ proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
 /*
    Read values of passed types and return a tuple containing the read values.
 
-   Throws a SystemError if the types could not be read from the channel.
-
    :arg t: more than one type to read
    :returns: a tuple of the read values
+
+   :throws SystemError: Thrown if the types could not be read from the channel.
  */
 proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
@@ -4107,13 +3693,12 @@ inline proc channel.write(const args ...?k):bool throws {
   var err:syserr = ENOERR;
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     for param i in 1..k {
       if !err {
         err = _write_one_internal(_channel_internal, kind, args(i), origLocale);
       }
     }
-    this.unlock();
   }
   if err then try this._ch_ioerror(err, "in channel.write(" +
                                         _args_to_proto((...args), preArg="") +
@@ -4121,28 +3706,10 @@ inline proc channel.write(const args ...?k):bool throws {
   return true;
 }
 
-// documented in style= error= version
-pragma "no doc"
-inline proc channel.write(const args ...?k, out error:syserr):bool {
-  compilerWarning("This version of channel.write() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.write((...args));
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /*
    Write values to a channel. The output will be produced atomically -
    the channel lock will be held while writing all of the passed
    values.
-
-   Throws a SystemError if the values could not be written to the channel.
 
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
@@ -4151,13 +3718,15 @@ inline proc channel.write(const args ...?k, out error:syserr):bool {
                If this argument is not provided, use the current style
                associated with this channel.
    :returns: `true` if the write succeeded
+
+   :throws SystemError: Thrown if the values could not be written to the channel.
  */
 proc channel.write(const args ...?k, style:iostyle):bool throws {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     this._set_style(style);
     for param i in 1..k {
@@ -4166,7 +3735,6 @@ proc channel.write(const args ...?k, style:iostyle):bool throws {
       }
     }
     this._set_style(save_style);
-    this.unlock();
   }
 
   if err then try this._ch_ioerror(err, "in channel.write(" +
@@ -4177,32 +3745,8 @@ proc channel.write(const args ...?k, style:iostyle):bool throws {
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.write(const args ...?k, style:iostyle, out error:syserr):bool {
-  compilerWarning("This version of channel.write() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.write((...args), style=style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
-// documented in style= error= version
-pragma "no doc"
 proc channel.writeln():bool throws {
   return try this.write(new ioNewline());
-}
-
-// documented in style= error= version
-pragma "no doc"
-proc channel.writeln(out error:syserr):bool {
-  compilerWarning("This version of channel.writeln() is deprecated; " +
-                  "please switch to a throwing version");
-  return this.write(new ioNewline(), error=error);
 }
 
 // documented in style= error= version
@@ -4211,23 +3755,11 @@ proc channel.writeln(const args ...?k):bool throws {
   return try this.write((...args), new ioNewline());
 }
 
-// documented in style= error= version
-pragma "no doc"
-proc channel.writeln(const args ...?k, out error:syserr):bool {
-  compilerWarning("This version of channel.writeln() is deprecated; " +
-                  "please switch to a throwing version");
-  return this.write((...args), new ioNewline(), error=error);
-}
-
-
-
 /*
 
    Write values to a channel followed by a newline.  The output will be
    produced atomically - the channel lock will be held while writing all of the
    passed values.
-
-   Throws a SystemError if the values could not be written to the channel.
 
    :arg args: a variable number of arguments to write. This method can be
               called with zero or more arguments. Basic types are handled
@@ -4237,17 +3769,11 @@ proc channel.writeln(const args ...?k, out error:syserr):bool {
                If this argument is not provided, use the current style
                associated with this channel.
    :returns: `true` if the write succeeded
+
+   :throws SystemError: Thrown if the values could not be written to the channel.
  */
 proc channel.writeln(const args ...?k, style:iostyle):bool throws {
   return try this.write((...args), new ioNewline(), style=style);
-}
-
-// documented in style= error= version
-pragma "no doc"
-proc channel.writeln(const args ...?k, style:iostyle, out error:syserr):bool {
-  compilerWarning("This version of channel.writeln() is deprecated; " +
-                  "please switch to a throwing version");
-  return this.write((...args), new ioNewline(), style=style, error=error);
 }
 
 /*
@@ -4257,7 +3783,8 @@ proc channel.writeln(const args ...?k, style:iostyle, out error:syserr):bool {
   accessing this file concurrently.
   Unlike :proc:`file.fsync`, this does not commit the written data
   to the file's device.
-  Throws a SystemError if the flush fails.
+
+  :throws SystemError: Thrown if the flush fails.
 */
 proc channel.flush() throws {
   var err:syserr = ENOERR;
@@ -4308,7 +3835,7 @@ proc channel.atEOF(): bool throws {
   Close a channel. Implicitly performs the :proc:`channel.flush` operation
   (see :ref:`about-io-channel-synchronization`).
 
-  Throws a SystemError if the channel is not successfully closed.
+  :throws SystemError: Thrown if the channel is not successfully closed.
 */
 proc channel.close() throws {
   var err:syserr = ENOERR;
@@ -4320,20 +3847,6 @@ proc channel.close() throws {
     err = qio_channel_close(locking, _channel_internal);
   }
   if err then try this._ch_ioerror(err, "in channel.close");
-}
-
-pragma "no doc"
-proc channel.close(out error:syserr) {
-  compilerWarning("This version of channel.close() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    this.close();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /*
@@ -4357,20 +3870,6 @@ proc channel.readBytes(x, len:ssize_t) throws {
     throw new owned IllegalArgumentError("bad remote channel.readBytes");
   var err = qio_channel_read_amt(false, _channel_internal, x, len);
   if err then try this._ch_ioerror(err, "in channel.readBytes");
-}
-
-pragma "no doc"
-proc channel.readBytes(x, len:ssize_t, out error:syserr) {
-  compilerWarning("This version of channel.readBytes() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    this.readBytes(x, len);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /*
@@ -4402,12 +3901,6 @@ record ItemReader {
   /* read a single item, throwing on error */
   proc read(out arg:ItemType):bool throws {
     return ch.read(arg);
-  }
-  /* read a single item, returning an error */
-  proc read(out arg:ItemType, out error:syserr):bool {
-    compilerWarning("This version of ItemReader.read() is deprecated; " +
-                    "please switch to a throwing version");
-    return ch.read(arg, error=error);
   }
 
   /* iterate through all items of that type read from the channel */
@@ -4444,12 +3937,6 @@ record ItemWriter {
   /* write a single item, throwing on error */
   proc write(arg:ItemType):bool throws {
     return ch.write(arg);
-  }
-  /* write a single item, returning an error */
-  proc write(arg:ItemType, out error:syserr):bool {
-    compilerWarning("This version of ItemWriter.write() is deprecated; " +
-                    "please switch to a throwing version");
-    return ch.write(arg, error=error);
   }
 }
 
@@ -4530,29 +4017,15 @@ proc read(type t ...?numTypes) throws {
 /* Delete a file. This function is likely to be replaced
    by :proc:`FileSystem.remove`.
 
-   Throws a SystemError if the file is not successfully deleted.
-
    :arg path: the path to the file to remove
+
+   :throws SystemError: Thrown if the file is not successfully deleted.
  */
 // TODO -- change to FileSystem.remove
 proc unlink(path:string) throws {
   extern proc sys_unlink(path:c_string):err_t;
   var err = sys_unlink(path.localize().c_str());
   if err then try ioerror(err:syserr, "in unlink", path);
-}
-
-// documented in the error= version
-pragma "no doc"
-proc unlink(path:string, out error:syserr) {
-  compilerWarning("This version of unlink() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    unlink(path);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /*
@@ -4589,13 +4062,13 @@ proc file.fstype():int throws {
 
    Returns (0,0) if no such value exists.
 
-   Throws a SystemError if the chunk is not attained.
-
    :arg start: the file offset (starting from 0) where the region begins
    :arg end: the file offset just after the region
    :returns: a tuple of (chunkStart, chunkEnd) so that the bytes
              in chunkStart..chunkEnd-1 are stored in a manner that makes
              reading that chunk at a time most efficient
+
+   :throws SystemError: Thrown if the chunk is not attained.
  */
 proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) throws {
   var err:syserr = ENOERR;
@@ -4982,7 +4455,7 @@ String and Bytes Conversions
    if needed - the periods, so the shortest truncated
    string is ``""...``  Generally, you won't be able to read
    these back in.
- * when reading - read exactly 17 Unicode code points
+ * when reading - read exactly 17 Unicode codepoints
 ``%|17s``
  * when writing - emit string but cause runtime error if length
    does not match
@@ -5220,7 +4693,7 @@ Going through each section for text conversions:
    precision indicates the maximum number of columns to print - and the result
    will be truncated if it does not fit. In readf for these textual string
    conversions, the precision indicates the maximum number of characters
-   (e.g. Unicode code points) to input.
+   (e.g. Unicode codepoints) to input.
 
    The precision is silently ignored for integral conversions
    (``%i``, ``%u``, etc) and for ``%//`` conversions.
@@ -5255,7 +4728,8 @@ Going through each section for text conversions:
 [conversion type]
    ``t``
     means *type-based* or *thing* - uses writeThis/readThis but ignores
-    width and precision
+    width. Precision will impact any floating point values output
+    in this conversion.
    ``n``
     means type-based number, allowing width and precision
    ``i``
@@ -5478,7 +4952,10 @@ proc _toIntegral(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isAbstractEnumType(t) then
+      ret = (0, false);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
@@ -5521,7 +4998,10 @@ proc _toSigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isAbstractEnumType(t) then
+      ret = (0, false);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
@@ -5565,7 +5045,10 @@ proc _toUnsigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (uint, bool);
   try {
-    ret = (x:uint, true);
+    if isAbstractEnumType(t) then
+      ret = (0:uint, false);
+    else
+      ret = (x:uint, true);
   } catch {
     ret = (0:uint, false);
   }
@@ -5588,7 +5071,10 @@ proc _toReal(x:?t) where _isIoPrimitiveType(t) && !isRealType(t)
 {
   var ret: (real, bool);
   try {
-    ret = (x:real, true);
+    if isAbstractEnumType(t) then
+      ret = (0.0, false);
+    else
+      ret = (x:real, true);
   } catch {
     ret = (0.0, false);
   }
@@ -5610,7 +5096,10 @@ proc _toImag(x:?t) where _isIoPrimitiveType(t) && !isImagType(t)
 {
   var ret: (imag, bool);
   try {
-    ret = (x:imag, true);
+    if isAbstractEnumType(t) then
+      ret = (0.0i, false);
+    else
+      ret = (x:imag, true);
   } catch {
     ret = (0.0i, false);
   }
@@ -5633,7 +5122,10 @@ proc _toComplex(x:?t) where _isIoPrimitiveType(t) && !isComplexType(t)
 {
   var ret: (complex, bool);
   try {
-    ret = (x:complex, true);
+    if isAbstractEnumType(t) then
+      ret = (0.0+0.0i, false);
+    else
+      ret = (x:complex, true);
   } catch {
     ret = (0.0+0.0i, false);
   }
@@ -5677,7 +5169,10 @@ proc _toNumeric(x:?t) where _isIoPrimitiveType(t) && !isNumericType(t)
   // enums, bools get cast to int.
   var ret: (int, bool);
   try {
-    ret = (x:int, true);
+    if isAbstractEnumType(t) then
+      ret = (0, false);
+    else
+      ret = (x:int, true);
   } catch {
     ret = (0, false);
   }
@@ -5746,7 +5241,21 @@ private inline
 proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoPrimitiveType(t)
 {
   try {
-    lhs = rhs:t;
+    if isAbstractEnumType(t) {
+      if isStringType(t2) {
+        lhs = rhs:t;
+      } else {
+        return ERANGE;
+      }
+    } else if isEnumType(t) {
+      if (isIntType(t2) || isStringType(t2)) {
+        lhs = rhs:t;
+      } else {
+        lhs = rhs:int:t;
+      }
+    } else {
+      lhs = rhs:t;
+    }
   } catch {
     return ERANGE;
   }
@@ -6315,17 +5824,19 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
    Write arguments according to a format string. See
    :ref:`about-io-formatted-io`.
 
-   Throws a SystemError if the arguments could not be written.
-
    :arg fmt: the format string
-   :arg args: the arguments to write
+   :arg args: 0 or more arguments to write
+   :returns: true
+
+   :throws IllegalArgumentError: if an unsupported argument type is encountered.
+   :throws SystemError: if the arguments could not be written.
  */
 proc channel.writef(fmtStr: string, const args ...?k): bool throws {
   if !writing then compilerError("writef on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var err: syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6461,7 +5972,6 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
     }
 
     this._set_style(save_style);
-    this.unlock();
   }
 
   if err then try this._ch_ioerror(err, "in channel.writef(fmt:string)");
@@ -6469,27 +5979,11 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
 }
 
 // documented in varargs version
-pragma "no doc"
-proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
-  compilerWarning("This version of channel.writef() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.writef(fmtStr, (...args));
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
-// documented in varargs version
 proc channel.writef(fmtStr:string): bool throws {
   if !writing then compilerError("writef on read-only channel");
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6523,27 +6017,10 @@ proc channel.writef(fmtStr:string): bool throws {
     }
 
     this._set_style(save_style);
-    this.unlock();
   }
 
   if err then try this._ch_ioerror(err, "in channel.writef(fmt:string, ...)");
   return true;
-}
-
-// documented in varargs version
-pragma "no doc"
-proc channel.writef(fmtStr:string, out error:syserr):bool {
-  compilerWarning("This version of channel.writef() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.writef(fmtStr);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
 }
 
 /*
@@ -6551,20 +6028,19 @@ proc channel.writef(fmtStr:string, out error:syserr):bool {
    Read arguments according to a format string. See
    :ref:`about-io-formatted-io`.
 
-   Throws a SystemError if the arguments could not be read.
-
    :arg fmt: the format string
    :arg args: the arguments to read
    :returns: true if all arguments were read according to the format string,
-             false on EOF. If the format did not match the input, a
-             SystemError is thrown with EFORMAT.
+             false on EOF or if the format did not match the input.
+
+   :throws SystemError: Thrown if the arguments could not be read.
  */
 proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
   if writing then compilerError("readf on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6785,7 +6261,6 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
       }
     }
     this._set_style(save_style);
-    this.unlock();
   }
 
   if !err {
@@ -6800,27 +6275,11 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
 
 // documented in varargs version
 pragma "no doc"
-proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
-  compilerWarning("This version of channel.readf() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readf(fmtStr, (...args));
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
-// documented in varargs version
-pragma "no doc"
 proc channel.readf(fmtStr:string) throws {
   if writing then compilerError("readf on write-only channel");
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6859,7 +6318,6 @@ proc channel.readf(fmtStr:string) throws {
     }
 
     this._set_style(save_style);
-    this.unlock();
   }
 
   if !err {
@@ -6870,22 +6328,6 @@ proc channel.readf(fmtStr:string) throws {
     try this._ch_ioerror(err, "in channel.readf(fmt:string)");
     return false;
   }
-}
-
-// documented in fmtStr, varargs version
-pragma "no doc"
-proc channel.readf(fmtStr:string, out error:syserr):bool {
-  compilerWarning("This version of channel.readf() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  try {
-    return this.readf(fmtStr);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
 }
 
 /* Call ``try! stdout.writef``; see :proc:`channel.writef`. */
@@ -6901,7 +6343,7 @@ proc writef(fmt:string):bool {
     return stdout.writef(fmt);
   }
 }
-/* Call ``stdout.readf``; see :proc:`channel.readf`. */
+/* Call ``stdin.readf``; see :proc:`channel.readf`. */
 proc readf(fmt:string, ref args ...?k):bool throws {
   return try stdin.readf(fmt, (...args));
 }
@@ -6920,41 +6362,27 @@ proc readf(fmt:string):bool throws {
    The field skipped includes a field name and value but not a following
    separator. For example, for a JSON format channel, given the input:
 
-   Throws a SystemError if the field could not be skipped.
-
    ::
 
       "fieldName":"fieldValue", "otherField":3
 
    this function will skip to (but leave unread) the comma after
    the first field value.
+
+   :throws SystemError: Thrown if the field could not be skipped.
  */
 proc channel.skipField() throws {
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var st = this.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
     if st == QIO_AGGREGATE_FORMAT_JSON {
       err = qio_channel_skip_json_field(false, _channel_internal);
     } else {
       err = ENOTSUP;
     }
-    this.unlock();
   }
   if err then try this._ch_ioerror(err, "in skipField");
-}
-
-pragma "no doc"
-proc channel.skipField(out error:syserr) {
-  compilerWarning("This version of channel.skipField() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    this.skipField();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /*
@@ -6962,11 +6390,11 @@ proc channel.skipField(out error:syserr) {
   Return a new string consisting of values formatted according to a
   format string.  See :ref:`about-io-formatted-io`.
 
-  Throws a SystemError if the string could not be formatted.
-
   :arg this: the format string
   :arg args: the arguments to format
   :returns: the resulting string
+
+  :throws SystemError: Thrown if the string could not be formatted.
  */
 proc string.format(args ...?k): string throws {
   try {
@@ -7021,21 +6449,6 @@ private inline proc chpl_do_format(fmt:string, args ...?k): string throws {
   buf[offset] = 0;
 
   return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
-}
-
-// documented in the throws version
-pragma "no doc"
-proc string.format(args ...?k, out error:syserr):string {
-  compilerWarning("This version of string.format() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return this.format((...args));
-  } catch e: SystemError {
-    try ioerror(e.err, "in string.format");
-  } catch {
-    try ioerror(EINVAL:syserr, "in string.format");
-  }
-  return "";
 }
 
 
@@ -7126,18 +6539,17 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != r
     position to just after the match. Will not do anything
     if error is set.
 
-    Throws a SystemError if a match could not be extracted.
-
     :arg m: a :record:`Regexp.reMatch` storing a location that matched
     :arg arg: an argument to retrieve the match into. If it is not a string,
               the string match will be cast to arg.type.
+
+    :throws SystemError: Thrown if a match could not be extracted.
  */
 proc channel.extractMatch(m:reMatch, ref arg) throws {
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     _extractMatch(m, arg, err);
-    this.unlock();
   }
   if err {
     try this._ch_ioerror(err, "in channel.extractMatch(m:reMatch, ref " +
@@ -7239,7 +6651,7 @@ proc channel.search(re:regexp, ref captures ...?k): reMatch throws
   var m:reMatch;
   var err:syserr = ENOERR;
   on this.home {
-    try! this.lock();
+    try this.lock(); defer { this.unlock(); }
     var nm = captures.size + 1;
     var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
     err = qio_channel_mark(false, _channel_internal);
@@ -7270,28 +6682,11 @@ proc channel.search(re:regexp, ref captures ...?k): reMatch throws
       }
     }
     _ddata_free(matches, nm);
-    this.unlock();
   }
 
   if err then try this._ch_ioerror(err, "in channel.search");
   return m;
 }
-
-// documented in the error= version
-pragma "no doc"
-proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch {
-  compilerWarning("'ref error: syserr' pattern has been deprecated, use 'throws' function instead");
-  var ret:reMatch;
-  try {
-    ret = this.search(re, (...captures));
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
 
 // documented in the capture group version
 pragma "no doc"
@@ -7448,7 +6843,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
 
   try! lock();
   on this.home do error = _mark();
-  // TODO should be try not try!
+  // TODO should be try not try!  ditto try! lock() above
   if error then try! this._ch_ioerror(error, "in channel.matches mark");
 
   while go && i < maxmatches {
@@ -7490,7 +6885,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
     i += 1;
   }
   _commit();
-  try! unlock();
+  unlock();
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = ENOERR;
   // TODO should be try not try!

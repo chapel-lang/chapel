@@ -60,6 +60,11 @@ else ifeq ($(CHPL_MAKE_COMM), ofi)
 # dynamic libraries will be required at execution time, so default to
 # dynamic linking to avoid these warnings.
 RUNTIME_LFLAGS += -dynamic
+else ifeq ($(CHPL_MAKE_COMM), ugni)
+ifneq ($(UGNI_PERFSTATS),)
+# Want to use vDSO for faster timers
+RUNTIME_LFLAGS += -dynamic
+endif
 endif
 
 # Don't throw e.g. -march with a PrgEnv compiler since the PrgEnv environment

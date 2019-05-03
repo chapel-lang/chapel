@@ -981,7 +981,6 @@ static void addKnownWides() {
     }
     else if (call->isPrimitive(PRIM_HEAP_REGISTER_GLOBAL_VAR) ||
              call->isPrimitive(PRIM_CHPL_COMM_ARRAY_GET) ||
-             call->isPrimitive(PRIM_CHPL_COMM_GET_UNORDERED) ||
              call->isPrimitive(PRIM_CHPL_COMM_GET)) { // TODO: Is this necessary?
       for_actuals(actual, call) {
         if (SymExpr* se = toSymExpr(actual)) {
@@ -2417,12 +2416,33 @@ insertWideReferences(void) {
   buildWideRefMap();
 
   //
-  // change arrays of classes into arrays of wide classes
+  // 1) change arrays of classes into arrays of wide classes
+  // 2) apply 'local field' pragmas to arrays in classes
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->hasFlag(FLAG_DATA_CLASS)) {
       if (Type* nt = wideClassMap.get(getDataClassType(ts)->type)) {
         setDataClassType(ts, nt->symbol);
+      }
+
+    // Do not apply to records, for now, because IWR cannot identify RVF'd
+    // records. If the 'local field' flag was applied to an array inside an
+    // RVF'd record, then IWR could incorrectly localize the array field when
+    // accessed because it thinks the record is local.
+    } else if (isClass(ts->type)) {
+      AggregateType* at = toAggregateType(ts->type);
+
+      const char* prefix = "_class_locals";
+      bool isArgBundle = strncmp(at->symbol->name, prefix, strlen(prefix)) == 0;
+      if (isArgBundle == false &&
+          at->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
+          at->symbol->hasFlag(FLAG_REF) == false) {
+        for_fields(field, at) {
+          if (field->typeInfo()->symbol->hasFlag(FLAG_ARRAY) &&
+              field->isRef() == false) {
+            field->addFlag(FLAG_LOCAL_FIELD);
+          }
+        }
       }
     }
   }

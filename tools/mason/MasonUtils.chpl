@@ -26,6 +26,7 @@ use TOML;
 use Path;
 use MasonEnv;
 
+
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
@@ -126,7 +127,7 @@ proc SPACK_ROOT : string {
   const envHome = getEnv("SPACK_ROOT");
   const default = MASON_HOME + "/spack";
 
-  const spackRoot = if !envHome.isEmptyString() then envHome else default;
+  const spackRoot = if !envHome.isEmpty() then envHome else default;
 
   return spackRoot;
 }
@@ -239,6 +240,23 @@ record VersionInfo {
     }
     return 0;
   }
+
+  proc this(i: int): int {
+    select i {
+      when 1 do
+        return this.major;
+      when 2 do
+        return this.minor;
+      when 3 do
+        return this.bug;
+      otherwise
+        halt('Out of bounds access of VersionInfo');
+    }
+  }
+
+  proc containsMax() {
+    return this.major == max(int) || this.minor == max(int) || this.bug == max(int);
+  }
 }
 
 proc >=(a:VersionInfo, b:VersionInfo) : bool {
@@ -254,21 +272,30 @@ proc >(a:VersionInfo, b:VersionInfo) : bool {
   return a.cmp(b) > 0;
 }
 
+proc <(a:VersionInfo, b:VersionInfo) : bool {
+  return a.cmp(b) < 0;
+}
 
-private var chplVersionInfo = (-1, -1, -1, false);
+
+private var chplVersionInfo = new VersionInfo(-1, -1, -1);
 /*
    Returns a tuple containing information about the `chpl --version`:
    (major, minor, bugFix, isMaster)
 */
-proc getChapelVersionInfo() {
+proc getChapelVersionInfo(): VersionInfo {
   use Regexp;
 
   if chplVersionInfo(1) == -1 {
     try {
-      var ret : (int, int, int, bool);
+
+      var ret : VersionInfo;
 
       var process = spawn(["chpl", "--version"], stdout=PIPE);
       process.wait();
+      if process.exit_status != 0 {
+        throw new owned MasonError("Failed to run 'chpl --version'");
+      }
+
 
       var output : string;
       for line in process.stdout.lines() {
@@ -280,18 +307,17 @@ proc getChapelVersionInfo() {
       var release = compile(semverPattern);
 
       var semver, sha : string;
+      var isMaster: bool;
       if master.search(output, semver, sha) {
-        ret(4) = true;
+        isMaster = true;
       } else if release.search(output, semver) {
-        ret(4) = false;
+        isMaster = false;
       } else {
         throw new owned MasonError("Failed to match output of 'chpl --version':\n" + output);
       }
 
       const split = semver.split(".");
-      for param i in 1..3 do ret(i) = split(i):int;
-
-      chplVersionInfo = ret;
+      chplVersionInfo = new VersionInfo(split[1]:int, split[2]:int, split[3]:int);
     } catch e : Error {
       stderr.writeln("Error while getting Chapel version:");
       stderr.writeln(e.message());

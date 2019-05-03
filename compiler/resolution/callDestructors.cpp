@@ -634,7 +634,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
             INT_ASSERT(dstSe);
 
             // check that the initCopy is copying the variable we just set
-            if (copiedSe->symbol() == useLhs) {
+            if (copiedSe->symbol() == useLhs &&
+                useLhs->hasFlag(FLAG_TEMP)) {
               ArgSymbol* formalArg  = rhsFn->getFormal(1);
               Type*      formalType = formalArg->type;
               Type*      actualType = copiedSe->symbol()->getValType();
@@ -687,9 +688,12 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
       //   copyExpr->replace(new CallExpr(unaliasFn, refVar));
       VarSymbol* unaliasTemp = newTemp("unaliasTemp", unaliasFn->retType);
       CallExpr*  unaliasCall = new CallExpr(unaliasFn, tmpVar);
+      Expr* anchor = copyExpr->getStmtExpr();
 
-      callExpr->insertBefore(new DefExpr(unaliasTemp));
-      callExpr->insertAfter(new CallExpr(PRIM_MOVE, unaliasTemp, unaliasCall));
+      // The call needs to be inserted before it is needed but
+      // after any error handling conditional that might be after callExpr.
+      anchor->insertBefore(new DefExpr(unaliasTemp));
+      anchor->insertBefore(new CallExpr(PRIM_MOVE, unaliasTemp, unaliasCall));
 
       copyExpr->replace(new SymExpr(unaliasTemp));
     } else {

@@ -3,6 +3,7 @@ running chpl executables """
 
 import getpass
 import os
+import errno
 import tempfile
 
 try:
@@ -44,7 +45,14 @@ class FileLock():
 
     def __init__(self):
         lock_name = '{0}-chpl_program_executing'.format(getpass.getuser())
-        self.lock_file = os.path.join(tempfile.gettempdir(), lock_name)
+        lock_dir = os.getenv('CHPL_TEST_LIMIT_RUNNING_EXECUTABLES_DIR', tempfile.gettempdir())
+        try:
+            os.makedirs(lock_dir)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
+        self.lock_file = os.path.join(lock_dir, lock_name)
         self.lock = filelock.FileLock(self.lock_file)
 
     def __enter__(self):

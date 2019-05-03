@@ -37,6 +37,7 @@ config const DEBUG:        bool = false; // shows progress and summary info
 config param printLoopTimings: bool = false; // prints timing info
 config param printArrays:  bool = false; // prints out arrays (can be long)
 config const printTime    = false;	 // turn off for test verification
+config const printNumLocales = true;     // print the number of locales
 
 // Standard modules
 use Time, Random, BlockDist, BlockCycDist;
@@ -143,7 +144,8 @@ proc main () {
   writef ("NAS Parallel Benchmarks 2.4 -- IS Benchmark\n" );
   writef (" Size:                       %{#########}  (class %t)\n", nkeys, probClass);
   writef (" Iterations:                 %{#########}\n",maxIterations);
-  writef (" Number of locales:          %{#########}\n",numLocales);
+  if printNumLocales then
+    writef (" Number of locales:          %{#########}\n",numLocales);
   writef (" Number of tasks per locale: %{#########}\n",dataParTasksPerLocale);
   writef (" \n");
 

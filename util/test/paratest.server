@@ -440,22 +440,27 @@ sub find_subdirs {
 	push @founddirs, $targetdir;
 	print "$targetdir\n" if $debug;
     }
-    
     foreach $filen (@cdir) {
-	if (-d "$targetdir/$filen") {                 # if dir
-        # .skipif does double duty here.  
-        # When attached to a directory name, skips it and all descendents if the condition is true.
-        my $skipfilen = "$targetdir/$filen.skipif";
-        if (-e "$skipfilen") {
-            my $skip;
-            print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
-            $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
-            next if $skip > '0' or $skip =~ m/true/i;
-        }
-	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
-            if (! -l "$targetdir/$filen") {
-                push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
+        if (-d "$targetdir/$filen") {                 # if dir
+            # .skipif does double duty here
+            # When attached to a directory name, skips it and all descendents if the condition is true.
+            my $skipfilen = "$targetdir/$filen.skipif";
+            if (-e "$skipfilen") {
+                my $skip;
+                print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
+                $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
+                next if $skip > '0' or $skip =~ m/true/i;
             }
+            # .notest does double duty here as well
+            # When attached to a directory name, skips it and all descendents
+            my $notestfilen = "$targetdir/$filen.notest";
+            if (-e "$notestfilen") {
+                next;
+            }
+            if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
+                if (! -l "$targetdir/$filen") {
+                    push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
+                }
         }
     }
     return @founddirs;
@@ -498,7 +503,7 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-env s] [-execopts s] [-filedist] [-futures] [-futures-only] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
+    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-env s] [-execopts s] [-filedist] [-futures] [-futures-only] [-logfile l] [-memleaks f] [-multilocale-only] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
     print "    -dirs     d: d is a space separated list of directories to recursively search for directories to test\n";
@@ -509,6 +514,7 @@ sub print_help {
     print "    -futures-only : only run .future tests, not regular ones.\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
     print "    -memleaks f: pass -memleaks to start_test; aggregate all output.\n";
+    print "    -multilocale-only: pass -multilocale-only to start_test if comm!=none\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
     print "    -nodepara m: Run m paratest.client tasks on each node.\n";
     print "    -valgrind[exe]  : pass -valgrind or -valgrindexe to start_test.\n";
@@ -627,6 +633,12 @@ sub main {
             } else {
                 print "missing -memleaks arg\n";
                 exit (8);
+            }
+        } elsif (/^-multilocale-only$/) {
+            $comm = `$ENV{CHPL_HOME}/util/chplenv/chpl_comm.py`; chomp $comm;
+            if ($comm ne "none") {
+              $ENV{'CHPL_TEST_MULTILOCALE_ONLY'} = "true";
+              $extra_env = "$extra_env CHPL_TEST_MULTILOCALE_ONLY=true";
             }
         } elsif (/^-valgrind$/) {
             $valgrind = 1;

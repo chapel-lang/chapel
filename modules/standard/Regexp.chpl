@@ -579,7 +579,7 @@ record regexp {
   proc init() {
   }
 
-  proc init(x: regexp) {
+  proc init=(x: regexp) {
     this.home = x.home;
     this._regexp = x._regexp;
     this.complete();
@@ -1096,9 +1096,10 @@ proc string.match(pattern: regexp):reMatch
   return pattern.match(this);
 }
 
-/* Match the receiving string to a regular expression already compiled
-   by calling :proc:`regexp.match`. Only return matches where the match
-   encompasses the entire string.
+/* Match the receiving string to a regular expression already compiled by
+   calling :proc:`regexp.match`. Note that function only returns a match if
+   the start of the string matches the pattern. Use :proc:`string.search`
+   to search for the pattern at any offset.
 
    :arg pattern: the compiled regular expression to match
    :arg captures: (optional) what to capture from the regular expression. These

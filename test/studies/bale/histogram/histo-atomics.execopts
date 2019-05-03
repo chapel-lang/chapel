@@ -1,2 +1,2 @@
---N=2000 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --useBufferedAtomics=false
---N=2000 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --useBufferedAtomics=true
+--N=2000 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --dataParTasksPerLocale=2 --useUnorderedAtomics=false
+--N=2000 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --dataParTasksPerLocale=2 --useUnorderedAtomics=true

@@ -124,7 +124,6 @@ enum ForallIntentTag {
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
 // for task intents and forall intents
-ArgSymbol* tiMarkForIntent(IntentTag intent);
 ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent);
 
 // parser support
@@ -687,6 +686,7 @@ extern const char* astrSswap;
 extern const char* astr_cast;
 extern const char* astr_defaultOf;
 extern const char* astrInit;
+extern const char* astrInitEquals;
 extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrTag;
@@ -711,8 +711,6 @@ bool isOuterVarOfShadowVar(Expr* expr);
 Expr* getDefOfTemp(SymExpr* origSE);
 
 // Parser support.
-class ForallIntents;
-void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);
 void addForallIntent(CallExpr* fi, ShadowVarSymbol* svar);
 void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar);
 
@@ -735,14 +733,11 @@ extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
 extern Symbol *gVoid;
 extern Symbol *gStringC;
-extern Symbol *gCVoidPtr;
-extern Symbol *gFile;
 extern Symbol *gOpaque;
 extern Symbol *gTimer;
 extern Symbol *gTaskID;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
-extern VarSymbol *gTryToken; // try token for conditional function resolution
 extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gCastChecking;
 extern VarSymbol *gDivZeroChecking;
@@ -751,6 +746,8 @@ extern VarSymbol *gLocal;
 extern VarSymbol* gWarnUnstable;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
+extern VarSymbol *gInfinity;
+extern VarSymbol *gNan;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

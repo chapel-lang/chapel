@@ -35,7 +35,6 @@
 #define TO_STR(x) #x
 
 #define baseSBATCHFilename ".chpl-slurm-sbatch-"
-#define baseExpectFilename ".chpl-expect-"
 
 #define CHPL_WALLTIME_FLAG "--walltime"
 #define CHPL_PARTITION_FLAG "--partition"
@@ -46,7 +45,6 @@ static char* walltime = NULL;
 static char* partition = NULL;
 static char* exclude = NULL;
 char slurmFilename[FILENAME_MAX];
-char expectFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
 #define procsPerNode 1  
@@ -54,8 +52,6 @@ char expectFilename[FILENAME_MAX];
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
 
 typedef enum {
-  slurmpro,
-  uma,
   slurm,
   unknown
 } sbatchVersion;
@@ -76,11 +72,7 @@ static sbatchVersion determineSlurmVersion(void) {
     chpl_error("Error trying to determine slurm version", 0, 0);
   }
 
-  if (strstr(version, "SBATCHPro")) {
-    return slurmpro;
-  } else if (strstr(version, "wrapper sbatch SBATCH UMA 1.0")) {
-    return uma;
-  } else if (strstr(version, "slurm")) {
+  if (strstr(version, "slurm")) {
     return slurm;
   } else {
     return unknown;
@@ -103,7 +95,6 @@ static int getNumCoresPerLocale(void) {
 static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch, 
                                  int32_t numLocales,
                                  int32_t numCoresPerLocale) {
-  //char* queue = getenv("CHPL_LAUNCHER_QUEUE");
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
 
   // command line walltime takes precedence over env var
@@ -121,10 +112,6 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
-  /*
-  if (queue)
-    fprintf(slurmFile, "#SBATCH -q %s\n", queue);
-    */
   if (walltime) 
     fprintf(slurmFile, "#SBATCH --time=%s\n", walltime);
   if (partition)
@@ -132,16 +119,6 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   if (exclude)
     fprintf(slurmFile, "#SBATCH --exclude=%s\n", exclude);
   switch (sbatch) {
-/* Only slurm has been tested
-  case slurmpro:
-  case unknown:
-    fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
-//    fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", procsPerNode);
-    if (numCoresPerLocale)
-      fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", numCoresPerLocale);
-
-      break;
-      */
   case slurm:
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
     fprintf(slurmFile, "#SBATCH --ntasks-per-node=1\n");
@@ -158,14 +135,17 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   }
 }
 
-static void propagate_environment(FILE *f)
+static int propagate_environment(char* buf)
 {
+  int len = 0;
+
   // Indiscriminately propagate all environment variables.
   // We could do this more selectively, but we would be likely
   // to leave out something important.
   char *enviro_keys = chpl_get_enviro_keys(',');
   if (enviro_keys)
-    fprintf(f, " -E %s", enviro_keys);
+    len += sprintf(buf, " -E '%s'", enviro_keys);
+
 
   // If any of the relevant character set environment variables
   // are set, replicate the state of all of them.  This needs to
@@ -181,11 +161,12 @@ static void propagate_environment(FILE *f)
   char *lc_all = getenv("LC_ALL");
   char *lc_collate = getenv("LC_COLLATE");
   if (lang || lc_all || lc_collate) {
-    fprintf(f, " env");
-    fprintf(f, " LANG=%s", lang ? lang : "");
-    fprintf(f, " LC_ALL=%s", lc_all ? lc_all : "");
-    fprintf(f, " LC_COLLATE=%s", lc_collate ? lc_collate : "");
+    len += sprintf(buf+len, " env");
+    len += sprintf(buf+len, " LANG=%s", lang ? lang : "");
+    len += sprintf(buf+len, " LC_ALL=%s", lc_all ? lc_all : "");
+    len += sprintf(buf+len, " LC_COLLATE=%s", lc_collate ? lc_collate : "");
   }
+  return len;
 }
 
 static char* chpl_launch_create_command(int argc, char* argv[], 
@@ -193,11 +174,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   int i;
   int size;
   char baseCommand[2*FILENAME_MAX];
+  char envProp[2*FILENAME_MAX];
   char* command;
-  FILE* slurmFile, *expectFile;
+  FILE* slurmFile;
   char* projectString = getenv(launcherAccountEnvvar);
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
+  char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
   char* basenamePtr = strrchr(argv[0], '/');
   char* nodeAccessEnv = NULL;
   pid_t mypid;
@@ -245,7 +228,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
     mypid = getpid();
   }
-  sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
   sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
@@ -253,75 +235,62 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(slurmFile, "#!/bin/sh\n\n");
     fprintf(slurmFile, "#SBATCH -J Chpl-%.10s\n", basenamePtr);
     genNumLocalesOptions(slurmFile, determineSlurmVersion(), numLocales, getNumCoresPerLocale());
+
     if (projectString && strlen(projectString) > 0)
       fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
-    if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
-//    fprintf(slurmFile, "#SBATCH -joe\n");  
-    if (outputfn!=NULL) 
+
+    if (outputfn != NULL)
       fprintf(slurmFile, "#SBATCH -o %s\n", outputfn);
     else
       fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
-//    fprintf(slurmFile, "cd $SBATCH_O_WORKDIR\n");
-      fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d -N %d",
-              CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
-      propagate_environment(slurmFile);
-      fprintf(slurmFile, " %s ", chpl_get_real_binary_name());
-      for (i=1; i<argc; i++) {
-        fprintf(slurmFile, " '%s'", argv[i]);
-      }
-      fprintf(slurmFile, "\n");
-    }
-  fclose(slurmFile);
-  chmod( slurmFilename, 0755);
-  }
-  if (getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL) {
-  expectFile = fopen(expectFilename, "w");
-  if (verbosity < 2) {
-//    fprintf(expectFile, "log_user 0\n");
-  }
-  fprintf(expectFile, "set timeout -1\n");
-//  fprintf(expectFile, "chmod +x %s\n",slurmFilename);
-  fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
 
-//  fprintf(expectFile, "spawn sbatch ");
-  fprintf(expectFile, "spawn -noecho salloc --quiet ");
-  fprintf(expectFile, "-J %.10s ",basenamePtr); // pass 
-  fprintf(expectFile, "-N %d ",numLocales); 
-  fprintf(expectFile, "--ntasks-per-node=1 ");
-  if (nodeAccessStr != NULL)
-    fprintf(expectFile, "--%s ", nodeAccessStr);
-  if (walltime)
-    fprintf(expectFile, "--time=%s ",walltime);
-  if(partition)
-    fprintf(expectFile, "--partition=%s ",partition);
-  if(exclude)
-    fprintf(expectFile, "--exclude=%s ",exclude);
-  if (constraint) {
-    fprintf(expectFile, " -C %s", constraint);
-  }
-//  fprintf(expectFile, "-I %s ", slurmFilename);
-  fprintf(expectFile, " %s/%s/gasnetrun_ibv -n %d -N %d",
-          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
-  propagate_environment(expectFile);
-  fprintf(expectFile, " %s ", chpl_get_real_binary_name());
-  for (i=1; i<argc; i++) {
-    fprintf(expectFile, " %s", argv[i]);
-  }
-//  fprintf(expectFile, "\\n\"\n");
-  fprintf(expectFile, "\n\n");
-//  fprintf(expectFile, "expect -re $prompt\n");
-//  fprintf(expectFile, "send \"cd \\$SBATCH_O_WORKDIR\\n\"\n");
-//  fprintf(expectFile, "expect -re $prompt\n");
-//  fprintf(expectFile, "sleep 10\n");
-//  fprintf(expectFile, "interact -o -re $prompt {return}\n");
-//  fprintf(expectFile, "send_user \"\\n\"\n");
-//  fprintf(expectFile, "send \"exit\\n\"\n");
-  fprintf(expectFile, "interact -o -re $prompt {return}\n");
-  fclose(expectFile);
-  sprintf(baseCommand, "expect %s", expectFilename);
-  } else {
-//    sprintf(baseCommand, "sbatch %s\n", slurmFilename);
+    if (errorfn != NULL)
+      fprintf(slurmFile, "#SBATCH -e %s\n", errorfn);
+
+    fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d -N %d",
+            CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
+
+    propagate_environment(envProp);
+    fprintf(slurmFile, "%s", envProp);
+
+    fprintf(slurmFile, " %s ", chpl_get_real_binary_name());
+
+    for (i=1; i<argc; i++) {
+      fprintf(slurmFile, " '%s'", argv[i]);
+    }
+    fprintf(slurmFile, "\n");
+
+    fclose(slurmFile);
+    chmod(slurmFilename, 0755);
+
     sprintf(baseCommand, "sbatch %s\n", slurmFilename);
+  } else {
+    char iCom[2*FILENAME_MAX-10];
+    int len = 0;
+
+    len += sprintf(iCom+len, "--quiet ");
+    len += sprintf(iCom+len, "-J %.10s ", basenamePtr);
+    len += sprintf(iCom+len, "-N %d ", numLocales);
+    len += sprintf(iCom+len, "--ntasks-per-node=1 ");
+    if (nodeAccessStr != NULL)
+      len += sprintf(iCom+len, "--%s ", nodeAccessStr);
+    if (walltime)
+      len += sprintf(iCom+len, "--time=%s ", walltime);
+    if(partition)
+      len += sprintf(iCom+len, "--partition=%s ", partition);
+    if(exclude)
+      len += sprintf(iCom+len, "--exclude=%s ", exclude);
+    if (constraint)
+      len += sprintf(iCom+len, " -C %s", constraint);
+    len += sprintf(iCom+len, " %s/%s/gasnetrun_ibv -n %d -N %d",
+                   CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
+    len += propagate_environment(iCom+len);
+    len += sprintf(iCom+len, " %s ", chpl_get_real_binary_name());
+    for (i=1; i<argc; i++) {
+      len += sprintf(iCom+len, " %s", argv[i]);
+    }
+
+    sprintf(baseCommand, "salloc %s", iCom);
   }
 
   size = strlen(baseCommand) + 1;
@@ -339,13 +308,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
 static void chpl_launch_cleanup(void) {
   if (!debug) {
-    char command[2*FILENAME_MAX];
-    if (getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL) {
-      sprintf(command, "rm %s", expectFilename);
-      system(command);
-    } else {
-      sprintf(command, "rm %s", slurmFilename);
-      system(command);
+    if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
+      unlink(slurmFilename);
     }
   }
 }

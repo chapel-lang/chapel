@@ -5,16 +5,16 @@ Querying a Local Subdomain
 ==========================
 
 While writing a distributed program, one might need to know the index set that
-a certain locale owns in a given distributed array. This README describes the
-initial support for this functionality.
+a certain locale owns in a given distributed array, domain, or distribution.
+This README describes the initial support for this functionality.
 
 For code examples using these features, see the
-``$CHPL_HOME/examples/primers/distributions.chpl`` primer.
+:ref:`distributions.chpl <primers-distributions>` primer.
 
 .. contents::
 
-Functions Supported on All Array Types
-======================================
+Functions Supported on Array and Domain Types
+=============================================
 
 hasSingleLocalSubdomain
 -----------------------
@@ -22,67 +22,73 @@ hasSingleLocalSubdomain
 .. code-block:: chapel
 
   proc array.hasSingleLocalSubdomain() : bool;
+  proc domain.hasSingleLocalSubdomain() : bool;
 
 This is a param function which returns a boolean. If true, then the index set
-owned by a locale can be represented by a single domain.
+owned by a locale can be represented by a single domain. For example:
 
-============= =======================
-Distribution  hasSingleLocalSubdomain
-============= =======================
+============= =========================
+Distribution  hasSingleLocalSubdomain()
+============= =========================
 Block         true
 Cyclic        true
 BlockCyclic   false
 Replicated    true
-============= =======================
+============= =========================
 
-This function always returns ``true`` for non-distributed arrays.
+This function always returns ``true`` for non-distributed arrays and domains.
 
-To support this function on a custom distributed array type, write a param
-function named 'dsiHasSingleLocalSubdomain'.
+To support this function on a custom domain map, write a param function named
+``dsiHasSingleLocalSubdomain``.
 
 localSubdomain
 --------------
 
 .. code-block:: chapel
 
-  proc array.localSubdomain() : domain;
+  proc array.localSubdomain(loc: locale = here) : domain;
+  proc domain.localSubdomain(loc: locale = here) : domain;
 
-This function only operates on arrays whose 'hasSingleLocalSubdomain()' result
-is true. Otherwise, a compiler error is thrown.
+This function only operates on arrays and domains whose
+``hasSingleLocalSubdomain()`` result is ``true``. Otherwise, a compile-time
+error is issued.
 
-This function returns a single domain that represents the index set owned
-by the current locale. This returned domain cannot be used to modify the index
-set owned by the locale.
+This function returns a single domain that represents the index set owned by
+the given locale, which defaults to ``here``. This returned domain cannot be
+used to modify the index set owned by the locale.
 
-For non-distributed arrays, this function returns a copy of that array's
-domain.
+To support this function on a custom domain map, write a function named
+``dsiLocalSubdomain``. For example:
 
-To support this function on a custom distributed array type, write a function
-named 'dsiLocalSubdomain'.
+.. code-block:: chapel
+
+  proc BlockArr.dsiLocalSubdomain(loc: locale) : domain;
 
 localSubdomains
 ---------------
 
 .. code-block:: chapel
 
-  iter array.localSubdomains() : domain;
+  iter array.localSubdomains(loc: locale = here) : domain;
+  iter domain.localSubdomains(loc: locale = here) : domain;
 
 This iterator yields the subdomain(s) that represent the index set owned by the
-current locale.
+given locale, which defaults to ``here``
 
 If the locale's index set can be represented by a single domain, then the
 result of ``localSubdomain`` is yielded.
 
 Currently, this is a serial iterator.
 
-To support this iterator on a custom distributed array type, write an iterator
-named 'dsiLocalSubdomains'.
+To support this iterator on a custom domain map, write an iterator named
+``dsiLocalSubdomains``. For example:
 
-Functions Supported on Distributed Arrays
-=========================================
+.. code-block:: chapel
 
-Any functions in this section are only supported on distributed array types.
-Calling them on a non-distributed array will result in a compiler error.
+  iter BlockCyclicArr.dsiLocalSubdomains(loc: locale) : domain;
+
+Functions Supported on Arrays, Domains, and Distributions
+=========================================================
 
 targetLocales
 -------------
@@ -90,12 +96,10 @@ targetLocales
 .. code-block:: chapel
 
   proc array.targetLocales() : [] locale;
+  proc domain.targetLocales() : [] locale;
+  proc distribution.targetLocales() : [] locale;
+
 
 This function returns an array of locales that the distribution uses as the
 locale grid.
 
-Future Work
-===========
-
-While these functions are currently supported on arrays, future work involves
-support for domains and domain maps.

@@ -22,60 +22,34 @@ sleep 1
 
 CLONEARGS="--branch $BRANCH --single-branch --depth=1"
 
-if [ -d llvm ]
+if [ -d llvm-project ]
 then
 
 echo Updating LLVM
-cd llvm
-#git stash save
-git pull
-#git stash pop
-# --rebase
-echo Updating CLANG
-cd tools/clang
+cd llvm-project
 git pull --rebase
-cd ../..
-echo Updating POLLY
-cd tools/polly
-git pull --rebase
-cd ../..
 echo Updating RV
-if [ -d tools/rv ]
+if [ -d llvm/tools/rv ]
 then
-cd tools/rv
+cd llvm/tools/rv
 git pull --rebase
-cd ../..
+cd ../../..
 fi
-echo Updating compiler-rt
-cd projects/compiler-rt
-git pull --rebase
-cd ../..
+
 cd ..
 
 else
 
-echo Checking out LLVM $BRANCH
-git clone $CLONEARGS https://git.llvm.org/git/llvm.git llvm
-echo Checking out CLANG $BRANCH
-git clone $CLONEARGS https://git.llvm.org/git/clang.git llvm/tools/clang
-echo Checking out POLLY $BRANCH
-git clone $CLONEARGS https://git.llvm.org/git/polly.git llvm/tools/polly
+echo Checking out LLVM monorepo $BRANCH
+git clone https://github.com/llvm/llvm-project.git llvm-project
+
 if [ "$ENABLE_RV" -ne 0 ]
 then
 echo Checking out RV $BRANCH
-git clone $CLONEARGS https://github.com/cdl-saarland/rv llvm/tools/rv
-cd llvm/tools/rv
+git clone $CLONEARGS https://github.com/cdl-saarland/rv llvm-project/llvm/tools/rv
+cd llvm-project/llvm/tools/rv
 git submodule update --init
-cd ../../..
+cd ../../../..
 fi
-echo Checking out compiler-rt $BRANCH
-git clone $CLONEARGS https://git.llvm.org/git/compiler-rt.git llvm/projects/compiler-rt
-
-# Apply any Chapel patches to LLVM here.
-# As of LLVM 8.0, there aren't any.
-#echo Applying Chapel patches to LLVM
-#patch -p0 < llvm-6.0.0-BasicAliasAnalysis-patch.txt
-#patch -p0 < llvm-6.0.0-ValueTracking-patch.txt
-
 
 fi

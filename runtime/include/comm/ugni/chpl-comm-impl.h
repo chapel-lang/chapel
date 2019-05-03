@@ -65,6 +65,11 @@ void chpl_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
                              size_t size, int32_t typeIndex, int32_t commID,
                              int ln, int32_t fn);
 
+void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
+                                c_nodeid_t src_locale, void* src_addr,
+                                size_t size, int32_t typeIndex,
+                                int32_t commID, int ln, int32_t fn);
+
 void chpl_comm_get_unordered_fence(void);
 void chpl_comm_get_unordered_task_fence(void);
 

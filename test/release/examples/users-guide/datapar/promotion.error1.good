@@ -1,0 +1,1 @@
+promotion.chpl:106: error: Racy promotion of scalar argument for the formal 'x'

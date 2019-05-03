@@ -170,7 +170,7 @@ loop_start:
         locked.u.w = addr->u.w; // I locked it, so I can read it
 #else                           /* if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_TILEPRO) */
         {
-            register syncvar_t tmp;
+            syncvar_t tmp;
 loop_start:
             tmp = *addr;
             do {

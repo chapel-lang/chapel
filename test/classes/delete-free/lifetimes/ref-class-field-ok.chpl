@@ -27,10 +27,13 @@ proc test() {
   ref rc = getC(cc);
 
   rx = 2;
-  rc = new unmanaged MyClass(3);
+  var tc = new unmanaged MyClass(3);
+  rc = tc;
 
   writeln(c);
   writeln(cc);
+
+  delete tc, cc, c;
 }
 
 test();

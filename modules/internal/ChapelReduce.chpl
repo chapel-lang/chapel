@@ -22,20 +22,43 @@
 module ChapelReduce {
   use ChapelStandard;
 
-  iter chpl__scanIteratorZip(op, data) {
-    for e in zip((...data)) {
-      op.accumulate(e);
-      yield op.generate();
-    }
-    delete op;
+  config param enableParScan = false;
+  if enableParScan then
+    compilerWarning("'enableParScan' has been deprecated (it is now always enabled)");
+
+  proc chpl__scanStateResTypesMatch(op) param {
+    type resType = op.generate().type;
+    type stateType = op.identity.type;
+    return (resType == stateType);
   }
 
-  iter chpl__scanIterator(op, data) {
-    for e in data {
-      op.accumulate(e);
-      yield op.generate();
-    }
+  proc chpl__scanIteratorZip(op, data) {
+    compilerWarning("scan has been serialized (see issue #12482)");
+    var arr = for d in zip((...data)) do chpl__accumgen(op, d);
+
     delete op;
+    return arr;
+  }
+
+  proc chpl__scanIterator(op, data) {
+    use Reflection;
+    param supportsPar = isArray(data) && canResolveMethod(data, "_scan", op);
+    if (supportsPar) {
+      return data._scan(op);
+    } else {
+      compilerWarning("scan has been serialized (see issue #12482)");
+      var arr = for d in data do chpl__accumgen(op, d);
+
+      delete op;
+      return arr;
+    }
+  }
+
+  // helper routine to run the accumulate + generate steps of a scan
+  // in an expression context.
+  proc chpl__accumgen(op, d) {
+    op.accumulate(d);
+    return op.generate();
   }
 
   proc chpl__reduceCombine(globalOp, localOp) {
@@ -135,20 +158,20 @@ module ChapelReduce {
 
     // Rely on the default value of the desired type.
     // Todo: is this efficient when that is an array?
-    proc identity {
+    inline proc identity {
       var x: chpl__sumType(eltType); return x;
     }
-    proc accumulate(x) {
+    inline proc accumulate(x) {
       value += x;
     }
-    proc accumulateOntoState(ref state, x) {
+    inline proc accumulateOntoState(ref state, x) {
       state += x;
     }
-    proc combine(x) {
+    inline proc combine(x) {
       value += x.value;
     }
-    proc generate() return value;
-    proc clone() return new unmanaged SumReduceScanOp(eltType=eltType);
+    inline proc generate() return value;
+    inline proc clone() return new unmanaged SumReduceScanOp(eltType=eltType);
   }
 
   class ProductReduceScanOp: ReduceScanOp {

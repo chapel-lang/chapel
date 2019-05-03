@@ -1,14 +1,5 @@
-inline proc _defaultOf(type t:complex) {
-  writeln("I default initialized!");
-  var ret:t = noinit;
-  param floatwidth = numBits(t)/2;
-  ret.re = 0.0:real(floatwidth);
-  ret.im = 0.0:real(floatwidth);
-  return ret;
-}
-
-var blah: complex = noinit; // Should not print out the message
+var blah: complex = noinit;
 blah = 3.4 + 5i;
 writeln(blah);
-var blah2: complex;         // Should print out the message
+var blah2: complex;
 writeln(blah2);

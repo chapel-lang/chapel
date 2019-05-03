@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling exportFuncWith1Not1Arr.chpl
+$3 --llvm --library --static exportFuncWith1Not1Arr.chpl

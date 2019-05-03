@@ -37,17 +37,11 @@ struct Serializers {
 };
 
 
-extern bool                             beforeLoweringForallStmts;
-
 extern int                              explainCallLine;
 
 extern SymbolMap                        paramMap;
 
 extern Vec<CallExpr*>                   callStack;
-
-extern bool                             tryFailure;
-
-extern Vec<CallExpr*>                   inits;
 
 extern Vec<BlockStmt*>                  standardModuleSet;
 
@@ -60,13 +54,11 @@ extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
 
 extern std::map<Type*,     Serializers> serializeMap;
 
-extern std::map<CallExpr*, CallExpr*>   eflopiMap;
-
 
 
 bool       propagateNotPOD(Type* t);
 
-Expr*      resolvePrimInit(CallExpr* call);
+void       resolvePrimInit(CallExpr* call);
 
 bool       isTupleContainingOnlyReferences(Type* t);
 
@@ -133,20 +125,20 @@ FnSymbol* findCopyInit(AggregateType* ct);
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(Type* icType);
 
-// forall intents
-CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
-void implementForallIntents1(DefExpr* defChplIter);
-void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
-void implementForallIntents2wrapper(CallExpr* call, CallExpr* origToLeaderCall);
-void setupAndResolveShadowVars(ForallStmt* fs);
-void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignoreIsResolved);
-
-// reduce intents
-void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2);
-void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2);
+// task intents
+extern Symbol* markPruned;
 bool isReduceOp(Type* type);
 
-void lowerPrimReduce(CallExpr* call, Expr*& retval);
+// forall intents
+CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
+void  resolveForallStmts2();
+Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
+void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
+                     ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
+void setupAndResolveShadowVars(ForallStmt* fs);
+bool preserveShadowVar(Symbol* var);
+void adjustVoidShadowVariables();
+Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
@@ -237,6 +229,8 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
 bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 
+bool isSubTypeOrInstantiation(Type* sub, Type* super);
+
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
 // tuples
@@ -262,6 +256,14 @@ static inline bool isUnresolvedOrGenericReturnType(Type* retType) {
 }
 
 SymExpr* findSourceOfYield(CallExpr* yield);
+
+void expandInitFieldPrims();
+
+void removeCopyFns(Type* t);
+
+bool isUnusedClass(Type* t);
+
+void pruneResolvedTree();
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);
 

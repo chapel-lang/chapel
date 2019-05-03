@@ -44,12 +44,6 @@
 #include <map>
 #include <set>
 
-#ifdef HAVE_LLVM
-// TODO: Remove uses of old-style collectors from LLVM-specific code.
-#include "oldCollectors.h"
-#include "llvm/ADT/SmallSet.h"
-#endif
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -84,14 +78,15 @@ static void          processImportExprs();
 
 static void          resolveGotoLabels();
 
-static void          adjustMethodThisForDefaultUnmanaged(FnSymbol* fn);
-
 static bool          isStableClassType(Type* t);
 static Expr*         handleUnstableClassType(SymExpr* se);
 
 static void          resolveUnresolvedSymExprs();
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
+
+static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
+                                              Symbol* toSymbol);
 
 static void          setupShadowVars();
 
@@ -157,9 +152,6 @@ void scopeResolve() {
     } else if (fn->_this) {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
-
-    // Adjust class type methods for unmanaged/borrowed
-    adjustMethodThisForDefaultUnmanaged(fn);
   }
 
   resolveGotoLabels();
@@ -659,37 +651,6 @@ static void resolveGotoLabels() {
   }
 }
 
-static void adjustMethodThisForDefaultUnmanaged(FnSymbol* fn) {
-
-  if (fDefaultUnmanaged && fn->_this && isClass(fn->_this->type)) {
-    ArgSymbol* _this = toArgSymbol(fn->_this);
-    Type* t = _this->type;
-    bool ok = isStableClassType(t);
-
-    if (fn->getModule()->modTag == MOD_USER && !ok) {
-      SET_LINENO(fn->_this);
-
-      // Make sure fn->_this->typeExpr exists
-      if (!_this->typeExpr) {
-        _this->typeExpr = new BlockStmt(new SymExpr(t->symbol));
-        parent_insert_help(_this, _this->typeExpr);
-      }
-      // Now adjust _this->typeExpr (whether we just created it or not)
-      Expr* stmt = toArgSymbol(fn->_this)->typeExpr->body.only();
-
-      if (SymExpr* se = toSymExpr(stmt)) {
-        Expr* result = se;
-        if (fWarnUnstable || fDefaultUnmanaged)
-          result = handleUnstableClassType(se);
-        // Amend _this->type
-        fn->_this->type = result->typeInfo();
-      } else {
-        INT_ASSERT(0);
-      }
-    }
-  }
-}
-
 
 /************************************* | *************************************/
 
@@ -720,10 +681,6 @@ static bool isMethodNameLocal(const char* name, Type* type);
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE);
 
-#ifdef HAVE_LLVM
-static bool tryCResolve(ModuleSymbol* module, const char* name);
-#endif
-
 static void resolveUnresolvedSymExprs() {
   //
   // Translate M.x where M is a ModuleSymbol into just x where x is
@@ -747,14 +704,8 @@ static void resolveUnresolvedSymExprs() {
   // Note that the extern C resolution might add new UnresolvedSymExprs, and it
   // might do that within resolveModuleCall, so we try resolving unresolved
   // symbols a second time as the extern C block support might have added some.
-  // Alternatives include:
-  //  - have the extern C wrapper-builder directly call resolveUnresolved
-  //      (but that complicates the way scopeResolve works now)
-  //  - import all C symbols at an earlier point
-  //      (but that might add lots of unused garbage to the Chapel AST
-  //       for e.g. #include <stdio.h>; and it might cause the C-to-Chapel
-  //       translator to need to handle more platform/compiler-specific stuff,
-  //       and it might lead to extra naming conflicts).
+  //
+  // TODO: have the externCResolve call resolveUnresolved directly
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     // Only try resolving symbols that are new after last attempt.
     if (i >= maxResolved) {
@@ -919,20 +870,19 @@ static Expr* handleUnstableClassType(SymExpr* se) {
           } else if (outerOuterCall &&
                      outerOuterCall->isPrimitive(PRIM_THROW)) {
             // throw new Error()
+            USR_WARN(outerOuterCall, "throw new SomeError is unstable");
             ok = true;
           } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
                      pCall == outerCall->get(1)) {
             // 'new SomeClass()'
-            // let ok be set as it was above unless changing default
-            if (fDefaultUnmanaged) ok = false;
+            // let ok be set as it was above
           } else if (outerCall && callSpecifiesClassKind(outerCall) &&
                      pCall->baseExpr == se) {
             // ':borrowed MyGenericClass(int)'
             ok = true;
           } else if (pCall->baseExpr == se) {
             // ':MyGenericClass(int)'
-            // let ok be set as it was above unless changing default
-            if (fDefaultUnmanaged) ok = false;
+            // let ok be set as it was above
           }
           if (pCall->isNamed(".") &&
               pCall->get(1) == se) {
@@ -950,8 +900,7 @@ static Expr* handleUnstableClassType(SymExpr* se) {
         } else if (inCall && !inCall->isPrimitive(PRIM_NEW)) {
           // typefunction(SomeClass)
           // typefunction(SomeGenericClass(int))
-          if (!fDefaultUnmanaged)
-            ok = true;
+          ok = true;
         }
 
         // Types in extern function procs are assumed to
@@ -970,27 +919,15 @@ static Expr* handleUnstableClassType(SymExpr* se) {
 
         // Don't worry about this arguments if we're only warning
         // (do worry about it if we're changing the default)
-        if (!fDefaultUnmanaged) {
-          if (ArgSymbol* arg = toArgSymbol(se->parentSymbol)) {
-            if (arg->hasFlag(FLAG_ARG_THIS)) {
-              // this default intent is currently 'borrowed' always
-              // and there's not yet a way to adjust it.
-              ok = true;
-            }
-          }
+        if (ArgSymbol* arg = toArgSymbol(se->parentSymbol)) {
+          if (arg->hasFlag(FLAG_ARG_THIS))
+            // this default intent is currently 'borrowed' always
+            // and there's not yet a way to adjust it.
+            ok = true;
         }
 
         if (!ok) {
-          if (fDefaultUnmanaged) {
-            // Change the se to _to_unmanaged(se)
-            // but take care to leave the original se in the tree
-            // (for the sake of the calling code in resolveUnresolvedSymExpr)
-            CallExpr* call = new CallExpr(PRIM_TO_UNMANAGED_CLASS);
-            se->replace(call);
-            call->insertAtTail(se);
-            return call;
-
-          } else if (fWarnUnstable) {
+          if (fWarnUnstable) {
             // error
             USR_WARN(se, "undecorated class type %s is unstable", ts->name);
             if (inDef && se == inDef->exprType)
@@ -1018,74 +955,82 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
   SET_LINENO(usymExpr);
 
   const char* name = usymExpr->unresolved;
+  int nSymbols = 0;
 
-  if (name == astrSdot || !usymExpr->inTree()) {
+  if (name == astrSdot || !usymExpr->inTree())
+    return;
 
-  } else if (Symbol* sym = lookup(name, usymExpr)) {
-    FnSymbol* fn = toFnSymbol(sym);
+  Symbol* sym = lookupAndCount(name, usymExpr, nSymbols);
+  if (sym != NULL) {
+    resolveUnresolvedSymExpr(usymExpr, sym);
+  } else {
+    updateMethod(usymExpr);
 
-    if (fn == NULL) {
-      // This deprecation should be removed in 1.19
-      if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-        if (0 == strcmp(name, "Owned"))
-          USR_WARN(usymExpr, "Owned is deprecated, use owned instead");
-        if (0 == strcmp(name, "Shared"))
-          USR_WARN(usymExpr, "Shared is deprecated, use shared instead");
-      }
+#ifdef HAVE_LLVM
+    if (nSymbols == 0 && gExternBlockStmts.size() > 0) {
+      Symbol* got = tryCResolve(usymExpr, name);
+      if (got != NULL)
+        resolveUnresolvedSymExpr(usymExpr, got);
+    }
+#endif
+  }
+}
 
-      SymExpr* symExpr = new SymExpr(sym);
+static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
+                                     Symbol* sym) {
+  const char* name = usymExpr->unresolved;
+  FnSymbol* fn = toFnSymbol(sym);
 
-      usymExpr->replace(symExpr);
+  if (fn == NULL) {
+    // This deprecation should be removed in 1.19
+    if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (0 == strcmp(name, "Owned"))
+        USR_WARN(usymExpr, "Owned is deprecated, use owned instead");
+      if (0 == strcmp(name, "Shared"))
+        USR_WARN(usymExpr, "Shared is deprecated, use shared instead");
+    }
 
-      if (fWarnUnstable || fDefaultUnmanaged)
-        handleUnstableClassType(symExpr);
+    SymExpr* symExpr = new SymExpr(sym);
 
-      updateMethod(usymExpr, sym, symExpr);
+    usymExpr->replace(symExpr);
 
-    // sjd: stopgap to avoid shadowing variables or functions by methods
-    } else if (fn->isMethod() == true) {
-      updateMethod(usymExpr);
+    if (fWarnUnstable)
+      handleUnstableClassType(symExpr);
 
-    // handle function call without parentheses
-    } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
-      checkIdInsideWithClause(usymExpr, usymExpr);
-      usymExpr->replace(new CallExpr(fn));
+    updateMethod(usymExpr, sym, symExpr);
 
-    } else if (Expr* parent = usymExpr->parentExpr) {
-      CallExpr* call = toCallExpr(parent);
+  // sjd: stopgap to avoid shadowing variables or functions by methods
+  } else if (fn->isMethod() == true) {
+    updateMethod(usymExpr);
 
-      if (call == NULL || call->baseExpr != usymExpr) {
-        CallExpr* primFn = NULL;
+  // handle function call without parentheses
+  } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
+    checkIdInsideWithClause(usymExpr, usymExpr);
+    usymExpr->replace(new CallExpr(fn));
 
-        // Wrap the FN in the appropriate way
-        if (call != NULL && call->isNamed("c_ptrTo") == true) {
-          primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_C);
-        } else {
-          primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL);
-        }
+  } else if (Expr* parent = usymExpr->parentExpr) {
+    CallExpr* call = toCallExpr(parent);
 
-        usymExpr->replace(primFn);
+    if (call == NULL || call->baseExpr != usymExpr) {
+      CallExpr* primFn = NULL;
 
-        primFn->insertAtTail(usymExpr);
-
+      // Wrap the FN in the appropriate way
+      if (call != NULL && call->isNamed("c_ptrTo") == true) {
+        primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_C);
       } else {
-        updateMethod(usymExpr, sym);
+        primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL);
       }
+
+      usymExpr->replace(primFn);
+
+      primFn->insertAtTail(usymExpr);
 
     } else {
       updateMethod(usymExpr, sym);
     }
 
   } else {
-    updateMethod(usymExpr);
-
-#ifdef HAVE_LLVM
-    if (gExternBlockStmts.size() > 0 &&
-        tryCResolve(usymExpr->getModule(), name) == true) {
-      // Try resolution again since the symbol should exist now
-      resolveUnresolvedSymExpr(usymExpr);
-    }
-#endif
+    updateMethod(usymExpr, sym);
   }
 }
 
@@ -1457,7 +1402,17 @@ static void resolveModuleCall(CallExpr* call) {
 
         currModule->moduleUseAdd(mod);
 
-        if (Symbol* sym  = scope->lookupNameLocally(mbrName)) {
+        // First, try regular scope resolution
+        Symbol* sym = scope->lookupNameLocally(mbrName);
+
+        // Failing that, try looking in an extern block.
+#ifdef HAVE_LLVM
+        if (sym == NULL && gExternBlockStmts.size() > 0) {
+          sym = tryCResolveLocally(mod, mbrName);
+        }
+#endif
+
+        if (sym != NULL) {
           if (sym->isVisible(call) == true) {
             if (FnSymbol* fn = toFnSymbol(sym)) {
               if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
@@ -1489,11 +1444,6 @@ static void resolveModuleCall(CallExpr* call) {
                       mbrName,
                       mod->name);
           }
-
-#ifdef HAVE_LLVM
-        } else if (tryCResolve(currModule, mbrName) == true) {
-          resolveModuleCall(call);
-#endif
 
         } else {
           USR_FATAL_CONT(call,
@@ -1528,90 +1478,6 @@ static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym) {
 
   return NULL;
 }
-
-#ifdef HAVE_LLVM
-static bool tryCResolve(ModuleSymbol*                     module,
-                        const char*                       name,
-                        llvm::SmallSet<ModuleSymbol*, 24> visited);
-
-static bool tryCResolve(ModuleSymbol* module, const char* name) {
-  bool retval = false;
-
-  if (externC == true) {
-    llvm::SmallSet<ModuleSymbol*, 24> visited;
-
-    retval = tryCResolve(module, name, visited);
-  }
-
-  return retval;
-}
-
-static bool tryCResolve(ModuleSymbol*                     module,
-                        const char*                       name,
-                        llvm::SmallSet<ModuleSymbol*, 24> visited) {
-
-  if (module == NULL) {
-    return false;
-
-  } else if (visited.insert(module).second) {
-    // visited.insert(module)) {
-    // we added it to the set, so continue.
-
-  } else {
-    // It was already in the set.
-    return false;
-  }
-
-  // Is it resolveable in this module?
-  if (module->extern_info != NULL) {
-    // Try resolving it
-    Vec<Expr*> c_exprs;
-
-    // Try to create an extern declaration for name,
-    //  if it exists in the module's extern blocks.
-    // The resulting Chapel extern declarations are put into
-    //  c_exprs and will need to be resolved.
-    convertDeclToChpl(module, name, c_exprs);
-
-    if (c_exprs.count()) {
-      forv_Vec(Expr*, c_expr, c_exprs) {
-        std::vector<DefExpr*> v;
-
-        collectDefExprs(c_expr, v);
-
-        for_vector(DefExpr, def, v) {
-          addToSymbolTable(def);
-        }
-
-        if (DefExpr* de = toDefExpr(c_expr)) {
-          if (TypeSymbol* ts = toTypeSymbol(de->sym)) {
-            if (AggregateType* ct = toAggregateType(ts->type)) {
-              SET_LINENO(ct->symbol);
-              // If this is a class DefExpr,
-              //  make sure its initializer gets created.
-              ct->buildTypeConstructor();
-            }
-          }
-        }
-      }
-
-      //any new UnresolvedSymExprs will be called in another for loop
-      // in scopeResolve.
-      return true;
-    }
-  }
-
-  // Otherwise, try the modules used by this module.
-  forv_Vec(ModuleSymbol, usedMod, module->modUseList) {
-    if (tryCResolve(usedMod, name, visited) == true) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-#endif
 
 /************************************* | **************************************
 *                                                                             *
@@ -1718,11 +1584,16 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym)
 
 // Given a name and a calling context, determine the symbol referred to
 // by that name in the context of that call
-Symbol* lookup(const char* name, BaseAST* context) {
+Symbol* lookupAndCount(const char*           name,
+                       BaseAST*              context,
+                       int&                  nSymbolsFound) {
+
   std::vector<Symbol*> symbols;
   Symbol*              retval = NULL;
 
   lookup(name, context, symbols);
+
+  nSymbolsFound = symbols.size();
 
   if (symbols.size() == 0) {
     retval = NULL;
@@ -1748,6 +1619,11 @@ Symbol* lookup(const char* name, BaseAST* context) {
   }
 
   return retval;
+}
+
+Symbol* lookup(const char* name, BaseAST* context) {
+  int nSymbolsFound = 0;
+  return lookupAndCount(name, context, nSymbolsFound);
 }
 
 void lookup(const char*           name,
@@ -1784,9 +1660,9 @@ static void lookup(const char*           name,
     }
 
     if (scope->getModule()->block == scope) {
-      if (getScope(scope) != NULL) {
-        lookup(name, context, getScope(scope), visited, symbols);
-      }
+      BaseAST* outerScope = getScope(scope);
+      if (outerScope != NULL)
+        lookup(name, context, outerScope, visited, symbols);
 
     } else {
       // Otherwise, look in the next scope up.

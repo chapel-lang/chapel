@@ -11,5 +11,7 @@ proc test() {
   var ff = new unmanaged Forwarder(new unmanaged MyClass());
 
   ff.method();
+  delete ff.x;
+  delete ff;
 }
 test();

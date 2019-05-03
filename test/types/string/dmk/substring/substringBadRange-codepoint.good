@@ -1,2 +1,2 @@
-str[12:codePointIndex..13:codePointIndex] = lm
+str[12:codepointIndex..13:codepointIndex] = lm
 substringBadRange-codepoint.chpl:4: error: halt reached - range out of bounds of string

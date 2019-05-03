@@ -5,7 +5,7 @@ CHPL_FLAGS = --fast -M ..
 
 TARGETS = \
 	stream-promoted \
-	ra-buff-atomics \
+	ra-unordered-atomics \
 	ra-cleanloop \
 
 REALS = $(TARGETS:%=%_real)
@@ -20,7 +20,7 @@ clean: FORCE
 stream-promoted: stream-promoted.chpl ../HPCCProblemSize.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
-ra-buff-atomics: ra-buff-atomics.chpl ../HPCCProblemSize.chpl ../RARandomStream.chpl
+ra-unordered-atomics: ra-unordered-atomics.chpl ../HPCCProblemSize.chpl ../RARandomStream.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 ra-cleanloop: ra-cleanloop.chpl ../HPCCProblemSize.chpl ../RARandomStream.chpl

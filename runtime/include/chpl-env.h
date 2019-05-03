@@ -63,4 +63,7 @@ size_t chpl_env_rt_get_size(const char* ev, size_t dflt) {
   return chpl_env_str_to_size(ev, chpl_env_rt_get(ev, NULL), dflt);
 }
 
+void chpl_env_set(const char*, const char*, int);
+void chpl_env_set_uint(const char*, uint64_t, int);
+
 #endif

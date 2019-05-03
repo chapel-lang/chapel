@@ -111,6 +111,7 @@ module ChapelSyncvar {
     var  wrapped : getSyncClassType(valType) = nil;
     var  isOwned : bool                      = true;
 
+    pragma "dont disable remote value forwarding"
     proc init(type valType) {
       ensureFEType(valType);
       this.valType = valType;
@@ -128,12 +129,21 @@ module ChapelSyncvar {
     //
     // ``a`` needs to be a ``valType``, not a sync.
     //
+    pragma "dont disable remote value forwarding"
     proc init(const other : _syncvar) {
       this.valType = other.valType;
       this.wrapped = other.wrapped;
       this.isOwned = false;
     }
 
+    pragma "dont disable remote value forwarding"
+    proc init=(const other : this.valType) {
+      this.init(other.type);
+      // TODO: initialize the sync class impl with 'other'
+      this.writeEF(other);
+    }
+
+    pragma "dont disable remote value forwarding"
     proc deinit() {
       if isOwned == true then
         delete _to_unmanaged(wrapped);
@@ -355,12 +365,14 @@ module ChapelSyncvar {
     var  value   : valType;
     var  syncAux : chpl_sync_aux_t;      // Locking, signaling, ...
 
+    pragma "dont disable remote value forwarding"
     proc init(type valType) {
       this.valType = valType;
       this.complete();
       chpl_sync_initAux(syncAux);
     }
 
+    pragma "dont disable remote value forwarding"
     proc deinit() {
       chpl_sync_destroyAux(syncAux);
     }
@@ -494,12 +506,14 @@ module ChapelSyncvar {
 
     var  alignedValue : aligned_t;
 
+    pragma "dont disable remote value forwarding"
     proc init(type valType) {
       this.valType = valType;
       this.complete();
       qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
     }
 
+    pragma "dont disable remote value forwarding"
     proc deinit() {
       // There's no explicit destroy function, but qthreads reclaims memory
       // for full variables that have no pending operations
@@ -641,12 +655,20 @@ module ChapelSyncvar {
     //
     // ``a`` needs to be a ``valType``, not a single.
     //
+    pragma "dont disable remote value forwarding"
     proc init(const other : _singlevar) {
       this.valType = other.valType;
       wrapped = other.wrapped;
       isOwned = false;
     }
 
+    pragma "dont disable remote value forwarding"
+    proc init=(const other : this.type.valType) {
+      this.init(other.type);
+      this.writeEF(other);
+    }
+
+    pragma "dont disable remote value forwarding"
     proc deinit() {
       if isOwned == true then
         delete _to_unmanaged(wrapped);

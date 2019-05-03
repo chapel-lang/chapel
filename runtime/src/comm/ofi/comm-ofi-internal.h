@@ -196,7 +196,8 @@ struct gather_info {
 void chpl_comm_ofi_oob_init(void);
 void chpl_comm_ofi_oob_fini(void);
 void chpl_comm_ofi_oob_barrier(void);
-void chpl_comm_ofi_oob_allgather(void*, void*, size_t);
+void chpl_comm_ofi_oob_allgather(const void*, void*, size_t);
+void chpl_comm_ofi_oob_bcast(void*, size_t);
 
 
 //

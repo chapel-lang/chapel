@@ -348,8 +348,8 @@ Expr* InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
 
   VarSymbol* tmp      = newTemp("tmp", type);
   DefExpr*   tmpDefn  = new DefExpr(tmp);
-  CallExpr*  tmpExpr  = new CallExpr(PRIM_INIT, field->exprType->copy());
-  CallExpr*  tmpInit  = new CallExpr(PRIM_MOVE, tmp, tmpExpr);
+  CallExpr*  tmpInit  = new CallExpr(PRIM_DEFAULT_INIT_VAR,
+                                     tmp, field->exprType->copy());
 
   tmp->addFlag(FLAG_PARAM);
 
@@ -361,7 +361,7 @@ Expr* InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
   insertBefore->insertBefore(tmpInit);
   insertBefore->insertBefore(fieldSet);
 
-  return tmpExpr;
+  return tmpInit;
 }
 
 /************************************* | **************************************
@@ -490,14 +490,15 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 
 Expr* InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
                                            DefExpr* field) const {
+
   SET_LINENO(insertBefore);
 
   Type* type = field->sym->type;
 
   VarSymbol* tmp      = newTemp("tmp", type);
   DefExpr*   tmpDefn  = new DefExpr(tmp);
-  CallExpr*  tmpExpr  = new CallExpr(PRIM_INIT, field->exprType->copy());
-  CallExpr*  tmpInit  = new CallExpr(PRIM_MOVE, tmp, tmpExpr);
+  CallExpr*  tmpInit  = new CallExpr(PRIM_DEFAULT_INIT_VAR,
+                                     tmp, field->exprType->copy());
 
   Symbol*    _this    = mFn->_this;
   Symbol*    name     = new_CStringSymbol(field->sym->name);
@@ -507,7 +508,7 @@ Expr* InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
   insertBefore->insertBefore(tmpInit);
   insertBefore->insertBefore(fieldSet);
 
-  return tmpExpr;
+  return tmpInit;
 }
 
 /************************************* | **************************************
@@ -942,26 +943,34 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
   DefExpr* field = NULL;
 
   if (node->symbol()->hasFlag(FLAG_ARG_THIS)) {
-    CallExpr* call = NULL;
-    Expr* cur = node;
-    while (call == NULL && cur->parentExpr != NULL) {
-      if (CallExpr* parent = toCallExpr(cur->parentExpr)) {
-        call = parent;
+    if (DefExpr* parentDef = toDefExpr(node->parentExpr)) {
+      if (parentDef->sym->hasFlag(FLAG_REF_VAR)) {
+        USR_FATAL_CONT(node, "cannot take a reference to \"this\" before this.complete()");
       } else {
-        cur = cur->parentExpr;
+        USR_FATAL_CONT(node, "cannot initialize a variable from \"this\" before this.complete()");
       }
-    }
-
-    if (call->isPrimitive() == false) {
-      if (state->isPhase0()) {
-        USR_FATAL_CONT(node, "cannot pass \"this\" to a function before calling super.init() or this.init()");
-      } else if (state->type()->isRecord()) {
-        USR_FATAL_CONT(node, "cannot pass a record to a function before this.complete()");
+    } else {
+      CallExpr* call = NULL;
+      Expr* cur = node;
+      while (call == NULL && cur->parentExpr != NULL) {
+        if (CallExpr* parent = toCallExpr(cur->parentExpr)) {
+          call = parent;
+        } else {
+          cur = cur->parentExpr;
+        }
       }
-    }
 
-    if (isClass(state->type())) {
-      node->setSymbol(state->getThisAsParent());
+      if (call && call->isPrimitive() == false) {
+        if (state->isPhase0()) {
+          USR_FATAL_CONT(node, "cannot pass \"this\" to a function before calling super.init() or this.init()");
+        } else if (state->type()->isRecord()) {
+          USR_FATAL_CONT(node, "cannot pass a record to a function before this.complete()");
+        }
+      }
+
+      if (isClass(state->type())) {
+        node->setSymbol(state->getThisAsParent());
+      }
     }
   } else if (DefExpr* local = state->type()->toLocalField(node)) {
     field = local;

@@ -180,6 +180,12 @@ OPTIONS
     moved. This is currently a rather conservative pass in the sense that it
     may not identify all code that is truly invariant.
 
+**--[no-]optimize-forall-unordered-ops**
+
+    Enable [disable] optimization of the last statement in forall statements
+    to use unordered communication. This optimization works with runtime
+    support for unordered operations with CHPL_COMM=ugni.
+
 **--[no-]ignore-local-classes**
 
     Disable [enable] local classes
@@ -652,13 +658,11 @@ OPTIONS
     'none' or 're2' if you've installed the re2 package in the third-party
     *directory*).
 
-**--target-cpu <architecture>**
+**--target-arch <architecture>**
 
-    Specify the architecture that the compiled executable will be
-    specialized to when **--specialize** is enabled. This flag corresponds
-    with and overrides the $CHPL\_TARGET\_CPU environment variable
-    (defaults to a best guess based on $CHPL\_COMM, $CHPL\_TARGET\_COMPILER,
-    and $CHPL\_TARGET\_PLATFORM).
+    Specify the machine type or general architecture to use.
+    This flag corresponds with and overrides the $CHPL\_TARGET\_ARCH
+    environment variable (defaults to the result of `uname -m`).
 
 **--target-compiler <compiler>**
 
@@ -667,6 +671,14 @@ OPTIONS
     with and overrides the $CHPL\_TARGET\_COMPILER environment variable
     (defaults to a best guess based on $CHPL\_HOST\_PLATFORM,
     $CHPL\_TARGET\_PLATFORM, and $CHPL\_HOST\_COMPILER).
+
+**--target-cpu <cpu>**
+
+    Specify the cpu model that the compiled executable will be
+    specialized to when **--specialize** is enabled. This flag corresponds
+    with and overrides the $CHPL\_TARGET\_CPU environment variable
+    (defaults to a best guess based on $CHPL\_COMM, $CHPL\_TARGET\_COMPILER,
+    and $CHPL\_TARGET\_PLATFORM).
 
 **--target-platform <platform>**
 

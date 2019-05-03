@@ -1,2 +1,2 @@
 class MyClass { var field:int; }
-var x = new MyClass(1);
+var x = new unmanaged MyClass(1);

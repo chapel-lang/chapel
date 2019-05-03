@@ -60,7 +60,7 @@ class SystemError : Error {
     var errstr              = sys_strerror_syserr_str(err, strerror_err);
     var err_msg             = new string(errstr, isowned=true, needToCopy=false);
 
-    if !details.isEmptyString() then
+    if !details.isEmpty() then
       err_msg += " (" + details + ")";
 
     return err_msg;
@@ -391,8 +391,8 @@ private proc quote_string(s:string, len:ssize_t) {
 
    :arg error: the error code
    :arg msg: extra information to include in the thrown error
-   :arg path: a path to include in the thrown error
-   :arg offset: an offset to include in the thrown error
+   :arg path: optionally, a path to include in the thrown error
+   :arg offset: optionally, an offset to include in the thrown error
 
    :throws SystemError: A subtype is thrown when the error argument indicates an
                         error occurred
@@ -407,7 +407,7 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
   }
 }
 
-// documented in the offset version
+pragma "no doc" // documented in the offset version
 proc ioerror(error:syserr, msg:string, path:string) throws
 {
   if error {
@@ -417,7 +417,7 @@ proc ioerror(error:syserr, msg:string, path:string) throws
   }
 }
 
-// documented in the offset version
+pragma "no doc" // documented in the offset version
 proc ioerror(error:syserr, msg:string) throws
 {
   if error then throw SystemError.fromSyserr(error, msg);

@@ -320,6 +320,7 @@ static bool ignoreOverrides(FnSymbol* fn) {
     fn->name == astrDeinit ||
     // ignore errors with init
     fn->isInitializer() ||
+    fn->isCopyInit() ||
     // ignore errors with postinit
     fn->isPostInitializer();
 }

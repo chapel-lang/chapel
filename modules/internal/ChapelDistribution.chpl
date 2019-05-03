@@ -19,7 +19,7 @@
 
 module ChapelDistribution {
 
-  use List;
+  use LinkedLists;
 
   extern proc chpl_task_yield();
 
@@ -31,7 +31,7 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _doms: list(unmanaged BaseDom); // domains declared over this distribution
+    var _doms: LinkedList(unmanaged BaseDom); // domains declared over this distribution
     var _domsLock: chpl__processorAtomicType(bool); // lock for concurrent access
     var _free_when_no_doms: bool; // true when original _distribution is destroyed
     var pid:int = nullPid; // privatized ID, if privatization is supported
@@ -174,7 +174,7 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _arrs: list(unmanaged BaseArr);  // arrays declared over this domain
+    var _arrs: LinkedList(unmanaged BaseArr);  // arrays declared over this domain
     var _arrs_containing_dom: int; // number of arrays using this domain
                                    // as var A: [D] [1..2] real
                                    // is using {1..2}
@@ -237,13 +237,19 @@ module ChapelDistribution {
     }
 
     // returns true if the domain should be removed
-    inline proc remove_arr(x:unmanaged BaseArr): bool {
+    // 'rmFromList' indicates whether this is an array that we've been
+    // storing in the _arrs linked list or not (just counting it).
+    // Currently, only slices using existing domains avoid the list.
+    inline proc remove_arr(x:unmanaged BaseArr, param rmFromList=true): bool {
       var count = -1;
       on this {
         var cnt = -1;
         local {
           _lock_arrs();
-          _arrs.remove(x);
+          if rmFromList then
+            _arrs.remove(x);
+          else
+            _arrs_containing_dom -=1;
           cnt = _arrs.size;
           cnt += _arrs_containing_dom;
           // add one for the main domain record
@@ -256,20 +262,19 @@ module ChapelDistribution {
       return (count==0);
     }
 
-    inline proc add_arr(x:unmanaged BaseArr, param locking=true) {
-      /*
-      extern proc printf(x...);
-      printf("In add_arr\n");
-      if x.isSliceArrayView() {
-        printf("Is slice\n");
-      } else {
-        printf("Is not slice\n");
-      }
-      */
+    // addToList indicates whether this array should be added to the
+    // '_arrs' linked list, or just counted.  At present, slice views
+    // are not added to the linked list because they don't need to be
+    // resized when their domain is re-assigned).
+    inline proc add_arr(x:unmanaged BaseArr, param locking=true,
+                        param addToList = true) {
       on this {
         if locking then
           _lock_arrs();
-        _arrs.append(x);
+        if addToList then
+          _arrs.append(x);
+        else
+          _arrs_containing_dom += 1;
         if locking then
           _unlock_arrs();
       }
@@ -683,11 +688,15 @@ module ChapelDistribution {
       return nil;
     }
 
+    // takes 'rmFromList' which indicates whether the array should
+    // be removed from the domain's list or just decremented from
+    // its count of other arrays.
+    //
     // returns (arr, dom)
     // arr is this if it should be deleted, or nil.
     // dom is a domain that should be removed, or nil.
     pragma "dont disable remote value forwarding"
-    proc remove() {
+    proc remove(param rmFromList: bool) {
       var ret_arr = this; // this array is always deleted
       var ret_dom:unmanaged BaseDom = nil;
       var rm_dom = false;
@@ -695,7 +704,7 @@ module ChapelDistribution {
       var dom = dsiGetBaseDom();
       // Remove the array from the domain
       // and find out if the domain should be removed.
-      rm_dom = dom.remove_arr(_to_unmanaged(this));
+      rm_dom = dom.remove_arr(_to_unmanaged(this), rmFromList);
 
       if rm_dom then
         ret_dom = dom;
@@ -771,6 +780,28 @@ module ChapelDistribution {
     proc isDefaultRectangular() param return false;
 
     proc doiCanBulkTransferRankChange() param return false;
+
+    proc decEltCountsIfNeeded() {
+      // degenerate so it can be overridden
+    }
+  }
+
+  /* This subclass is created to allow eltType to be defined in one place
+     instead of every subclass of BaseArr.  It can't be put on BaseArr due to
+     BaseDom relying on BaseArr not being generic (it creates a list of BaseArrs
+     that it refers to and lists can't contain multiple instantiations of a
+     generic).
+   */
+  pragma "base array"
+  class AbsBaseArr: BaseArr {
+    type eltType;
+
+    override proc decEltCountsIfNeeded() {
+      if _decEltRefCounts {
+        // unlink domain referred to by eltType
+        chpl_decRefCountsForDomainsInArrayEltTypes(_to_unmanaged(this), eltType);
+      }
+    }
   }
 
   /* BaseArrOverRectangularDom has this signature so that dsiReallocate
@@ -823,6 +854,13 @@ module ChapelDistribution {
     proc deinit() {
       // this is a bug workaround
     }
+
+    override proc decEltCountsIfNeeded() {
+      if _decEltRefCounts {
+        // unlink domain referred to by eltType
+        chpl_decRefCountsForDomainsInArrayEltTypes(_to_unmanaged(this), eltType);
+      }
+    }
   }
 
   /*
@@ -830,8 +868,7 @@ module ChapelDistribution {
    * implementing sparse array classes.
    */
   pragma "base array"
-  class BaseSparseArr: BaseArr {
-    type eltType;
+  class BaseSparseArr: AbsBaseArr {
     param rank : int;
     type idxType;
 
@@ -937,21 +974,17 @@ module ChapelDistribution {
 
     delete dom;
   }
-  // arr is a subclass of :BaseArr but is generic so
-  // that arr.eltType is meaningful.
-  proc _delete_arr(arr, param privatized:bool) {
+
+  proc _delete_arr(arr: unmanaged BaseArr, param privatized:bool) {
     // array implementation can destroy data or other members
     arr.dsiDestroyArr();
 
-    if arr._decEltRefCounts {
-      // unlink domain referred to by arr.eltType
-      // not necessary for aliases/slices because the original
-      // array will take care of it.
-      // This needs to be done after the array elements are destroyed
-      // (by dsiDestroyArray above) because the array elements might
-      // refer to this inner domain.
-      chpl_decRefCountsForDomainsInArrayEltTypes(arr, arr.eltType);
-    }
+    // not necessary for aliases/slices because the original
+    // array will take care of it.
+    // This needs to be done after the array elements are destroyed
+    // (by dsiDestroyArray above) because the array elements might
+    // refer to this inner domain.
+    arr.decEltCountsIfNeeded();
 
     if privatized {
       _freePrivatizedClass(arr.pid, arr);
@@ -960,27 +993,6 @@ module ChapelDistribution {
     // runs the array destructor
     delete arr;
   }
-
-  // Copy of the other _delete_arr, for use when the original type
-  // of arr is not known to Chapel code (which happens when cleaning
-  // up chpl_opaque_arrays).
-  proc _delete_arr(arr, param privatized: bool) where
-    (!isProperSubtype(arr.type, unmanaged BaseArr)) {
-    // array implementation can destroy data or other members
-    arr.dsiDestroyArr();
-
-    if arr._decEltRefCounts {
-      writeln("warning: clean up of this array type might leak memory");
-    }
-
-    if privatized {
-      _freePrivatizedClass(arr.pid, arr);
-    }
-
-    // runs the array destructor
-    delete arr;
-  }
-
 
   // These are used in ChapelLocale.chpl. They are here to
   // prevent an order-of-resolution issue.
