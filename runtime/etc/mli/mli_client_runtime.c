@@ -72,7 +72,7 @@ void chpl_library_init(int argc, char** argv) {
 
   // Just hardcode these values for now.
   const char* ip = "localhost";
-  const char* setupPort = "5554"; // ephemeral, ZMQ will determine free port
+  const char* setupPort = "5554";
   const char* mainport = "5555";
   const char* argport = "5556";
   const char* resport = "5557";
