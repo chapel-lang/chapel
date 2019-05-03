@@ -121,7 +121,9 @@ private:
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
-const char* toString(Type* type);
+// If showBorrow is true, an un-decorated default class type
+// 'C' will show as 'borrowed C'
+const char* toString(Type* type, bool decorateAllClasses=true);
 
 /************************************* | **************************************
 *                                                                             *

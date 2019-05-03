@@ -125,7 +125,7 @@ void Type::setDestructor(FnSymbol* fn) {
   destructor = fn;
 }
 
-const char* toString(Type* type) {
+const char* toString(Type* type, bool decorateAllClasses) {
   const char* retval = NULL;
 
   if (type != NULL) {
@@ -145,7 +145,8 @@ const char* toString(Type* type) {
           Type* eltType    = eltTypeField->type;
 
           if (domainType != dtUnknown && eltType != dtUnknown)
-            retval = astr("[", toString(domainType), "] ", toString(eltType));
+            retval = astr("[", toString(domainType,false), "] ",
+                          toString(eltType));
         }
 
       } else if (strncmp(at->symbol->name, drDomName, drDomNameLen) == 0) {
@@ -158,19 +159,19 @@ const char* toString(Type* type) {
           Type* implType = canonicalClassType(instanceField->type);
 
           if (implType != dtUnknown)
-            retval = toString(implType);
+            retval = toString(implType, false);
         }
       } else if (isManagedPtrType(vt)) {
         Type* borrowType = getManagedPtrBorrowType(vt);
         const char* borrowed = "borrowed ";
-        const char* borrowName = toString(borrowType);
+        const char* borrowName = toString(borrowType, false);
         if (startsWith(borrowName, borrowed))
           borrowName = borrowName + strlen(borrowed);
         if (startsWith(vt->symbol->name, "_owned("))
           retval = astr("owned ", borrowName);
         else if (startsWith(vt->symbol->name, "_shared("))
           retval = astr("shared ", borrowName);
-      } else if (isClassLike(at) && isClass(at)) {
+      } else if (isClassLike(at) && isClass(at) && decorateAllClasses) {
         isBorrow = true;
       }
     }

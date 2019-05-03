@@ -1007,7 +1007,7 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 }
 
 void fixTypeNames(AggregateType* at) {
-  const char* typeName = toString(at);
+  const char* typeName = toString(at, false);
 
   if (at->symbol->name != typeName)
     at->symbol->name = typeName;
