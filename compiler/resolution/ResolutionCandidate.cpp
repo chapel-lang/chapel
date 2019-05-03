@@ -761,9 +761,9 @@ classifyTypeMismatch(Type* actualType, Type* formalType) {
 ************************************** | *************************************/
 
 void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
-  ResolutionCandidate* c = new ResolutionCandidate(fn);
+  ResolutionCandidate c(fn);
 
-  c->isApplicable(info);
+  c.isApplicable(info);
 
   USR_PRINT(fn, "this candidate did not match: %s", toString(fn));
 
@@ -772,21 +772,26 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
   int failingActualUserIndex = 0; // user index, e.g. skips method token
   int failingActualRealIndex = 0; // works for CallInfo.actuals
   ArgSymbol* failingFormal = NULL;
+  bool callIsMethod = false;
+  bool fnIsMethod = false;
 
   int userIndex = 1;
   for (int i = 0; i < info.actuals.n; i++) {
     Symbol* actual = info.actuals.v[i];
     Symbol* prevActual = (i>0)?(info.actuals.v[i-1]):(NULL);
 
-    if (actual == c->failingArgument) {
-      failingActual = c->failingArgument;
+    if (actual == c.failingArgument) {
+      failingActual = c.failingArgument;
       if (prevActual && prevActual->type == dtMethodToken)
         failingActualIsReceiver = true;
       else
         failingActualUserIndex = userIndex;
       failingActualRealIndex = i;
-      failingFormal = c->actualIdxToFormal[i];
+      failingFormal = c.actualIdxToFormal[i];
     }
+
+    if (actual->type == dtMethodToken)
+      callIsMethod = true;
 
     // Don't count method token or this when reporting user errors
     if (!(actual->type == dtMethodToken ||
@@ -798,11 +803,14 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
   userIndex = 1;
   ArgSymbol* prevFormal = NULL;
   for_formals(formal, fn) {
-    if (formal == c->failingArgument) {
+    if (formal == c.failingArgument) {
       failingFormal = formal;
       // This only happens when no actual exists for this formal,
       // so no point in trying to find one.
     }
+
+    if (formal->type == dtMethodToken)
+      fnIsMethod = true;
 
     if (!(formal->type == dtMethodToken ||
           (prevFormal != NULL && prevFormal->type == dtMethodToken)))
@@ -823,14 +831,25 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
     failingActualDesc = astr("call actual argument #",
                              istr(failingActualUserIndex));
 
-  switch (c->reason) {
+  if (fnIsMethod && !callIsMethod) {
+    USR_PRINT(call, "because call is not written as a method call");
+    USR_PRINT(fn, "but candidate function is a method");
+    return;
+  }
+  if (callIsMethod && !fnIsMethod) {
+    USR_PRINT(call, "because call is written as a method call");
+    USR_PRINT(fn, "but candidate function is not a method");
+    return;
+  }
+
+  switch (c.reason) {
     case RESOLUTION_CANDIDATE_TYPE_RELATED:
     case RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY:
     case RESOLUTION_CANDIDATE_UNRELATED_TYPE:
       USR_PRINT(call, "because %s with type %s",
-                      failingActualDesc,
-                      toString(failingActual->getValType()));
-      USR_PRINT(failingFormal, "is passed to formal %s",
+                    failingActualDesc,
+                    toString(failingActual->getValType()));
+      USR_PRINT(failingFormal, "is passed to formal '%s'",
                                toString(failingFormal));
       break;
     case RESOLUTION_CANDIDATE_WHERE_FAILED:
@@ -838,17 +857,17 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       break;
     case RESOLUTION_CANDIDATE_NOT_PARAM:
       USR_PRINT(call, "because non-param %s", failingActualDesc);
-      USR_PRINT(failingFormal, "is passed to param formal %s",
+      USR_PRINT(failingFormal, "is passed to param formal '%s'",
                                toString(failingFormal));
       break;
     case RESOLUTION_CANDIDATE_NOT_TYPE:
       if (failingFormal->hasFlag(FLAG_TYPE_VARIABLE)) {
         USR_PRINT(call, "because non-type %s", failingActualDesc);
-        USR_PRINT(failingFormal, "is passed to type formal %s",
+        USR_PRINT(failingFormal, "is passed to formal '%s'",
                                  toString(failingFormal));
       } else {
         USR_PRINT(call, "because type %s", failingActualDesc);
-        USR_PRINT(fn, "is passed to non-type formal %s",
+        USR_PRINT(fn, "is passed to non-type formal '%s'",
                       toString(failingFormal));
       }
       break;
@@ -860,12 +879,11 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       break;
     case RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS:
       USR_PRINT(call, "because call does not supply enough arguments");
-      USR_PRINT(failingFormal, "it is missing a value for formal %s",
+      USR_PRINT(failingFormal, "it is missing a value for formal '%s'",
                                toString(failingFormal));
       break;
     case RESOLUTION_CANDIDATE_NO_NAMED_ARGUMENT:
       {
-        gdbShouldBreakHere();
         const char* name = info.actualNames.v[failingActualRealIndex];
 
         if (name != NULL) {
@@ -880,8 +898,6 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       break;
     // No default -> compiler warning
   }
-
-  delete c;
 }
 
 void explainGatherCandidate(const CallInfo&            info,

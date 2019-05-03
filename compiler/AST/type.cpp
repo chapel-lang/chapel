@@ -131,7 +131,6 @@ const char* toString(Type* type, bool decorateAllClasses) {
   if (type != NULL) {
     Type* vt = type->getValType();
 
-    bool isBorrow = false;
     if (AggregateType* at = toAggregateType(vt)) {
       const char* drDomName = "DefaultRectangularDom";
       const int   drDomNameLen = strlen(drDomName);
@@ -166,27 +165,40 @@ const char* toString(Type* type, bool decorateAllClasses) {
       } else if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         if (developer == false)
           retval = "iterator";
+      // TODO: add a case to handle sync, single, atomic
       } else if (isManagedPtrType(vt)) {
         Type* borrowType = getManagedPtrBorrowType(vt);
         const char* borrowed = "borrowed ";
         const char* borrowName = toString(borrowType, false);
-        if (startsWith(borrowName, borrowed))
+        if (startsWith(borrowName, borrowed)) {
           borrowName = borrowName + strlen(borrowed);
+          INT_FATAL("Remove me");
+        }
         if (startsWith(vt->symbol->name, "_owned("))
           retval = astr("owned ", borrowName);
+        else if (0 == strcmp(vt->symbol->name, "_owned"))
+          retval = astr("owned");
         else if (startsWith(vt->symbol->name, "_shared("))
           retval = astr("shared ", borrowName);
-      } else if (isClassLike(at) && isClass(at) && decorateAllClasses) {
-        isBorrow = true;
+        else if (0 == strcmp(vt->symbol->name, "_shared"))
+          retval = astr("shared");
+
+      } else if (isClassLike(at) && isClass(at)) {
+        // It's an un-decorated class type
+        const char* borrowed = "borrowed ";
+        const char* useName = vt->symbol->name;
+        if (startsWith(useName, borrowed))
+          useName = useName + strlen(borrowed);
+
+        if (decorateAllClasses)
+          useName = astr("borrowed ", useName);
+
+        retval = useName;
       }
     }
 
-    if (retval == NULL) {
-      if (isBorrow && !startsWith(vt->symbol->name, "borrowed "))
-        retval = astr("borrowed ", vt->symbol->name);
-      else
-        retval = vt->symbol->name;
-    }
+    if (retval == NULL)
+      retval = vt->symbol->name;
 
   } else {
     retval = "null type";
