@@ -196,7 +196,7 @@ static
 char * chpl_mli_connection_info(void* socket) {
   // Determine port used by ZMQ for socket.
   size_t lenPort = 256;
-  char* portRes = (char *)calloc(lenPort, sizeof(char));
+  char* portRes = (char *)mli_malloc(lenPort);
   int portErr = zmq_getsockopt(socket, ZMQ_LAST_ENDPOINT,
                                portRes, &lenPort);
 
@@ -207,18 +207,18 @@ char * chpl_mli_connection_info(void* socket) {
 
   // Determine hostname of where we are currently running
   size_t lenHostname = 256;
-  char* hostRes = (char *)calloc(lenHostname, sizeof(char));
+  char* hostRes = (char *)mli_malloc(lenHostname);
   err_t hostErr = gethostname(hostRes, lenHostname);
 
   // Recreate the connection using the hostname instead of 0.0.0.0
-  char* fullConnection = (char *)calloc(lenHostname + lenPort, sizeof(char));
+  char* fullConnection = (char *)mli_malloc(lenHostname + lenPort);
   strcpy(fullConnection, "tcp://");
   strcat(fullConnection, hostRes);
   strcat(fullConnection, ":");
   strcat(fullConnection, traveler);
 
-  free(hostRes);
-  free(portRes);
+  mli_free(hostRes);
+  mli_free(portRes);
   return fullConnection;
 }
 

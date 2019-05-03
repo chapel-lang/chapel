@@ -94,7 +94,7 @@ void chpl_library_init(int argc, char** argv) {
   // TODO: pass in argv/argc, connection information
   spawn_server();
 
-  free(setup_sock_conn);
+  mli_free(setup_sock_conn);
 
 
   // TODO: Maybe move the open connections to init?
