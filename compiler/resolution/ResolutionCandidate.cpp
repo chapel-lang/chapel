@@ -737,18 +737,18 @@ classifyTypeMismatch(Type* actualType, Type* formalType) {
   if (canonicalClassType(actualType) == canonicalClassType(formalType))
     return RESOLUTION_CANDIDATE_TYPE_RELATED;
 
-  if (is_bool_type   (actualType) == is_bool_type   (formalType) ||
-      is_int_type    (actualType) == is_int_type    (formalType) ||
-      is_uint_type   (actualType) == is_uint_type   (formalType) ||
-      is_real_type   (actualType) == is_real_type   (formalType) ||
-      is_imag_type   (actualType) == is_imag_type   (formalType) ||
-      is_complex_type(actualType) == is_complex_type(formalType))
+  if ((is_bool_type   (actualType) && is_bool_type   (formalType)) ||
+      (is_int_type    (actualType) && is_int_type    (formalType)) ||
+      (is_uint_type   (actualType) && is_uint_type   (formalType)) ||
+      (is_real_type   (actualType) && is_real_type   (formalType)) ||
+      (is_imag_type   (actualType) && is_imag_type   (formalType)) ||
+      (is_complex_type(actualType) && is_complex_type(formalType)))
     return RESOLUTION_CANDIDATE_TYPE_RELATED;
 
-  if (isNumericType(actualType) == isNumericType(formalType))
+  if (isNumericType(actualType) && isNumericType(formalType))
     return RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY;
 
-  if (isClassLikeOrManaged(actualType) == isClassLikeOrManaged(formalType))
+  if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType))
     return RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY;
 
   return RESOLUTION_CANDIDATE_UNRELATED_TYPE;
