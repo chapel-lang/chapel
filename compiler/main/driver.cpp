@@ -110,6 +110,7 @@ bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryPython = false;
 bool fMultiLocaleInterop = false;
+bool fMultiLocaleLibraryDebug = false;
 
 bool no_codegen = false;
 int  debugParserLevel = 0;
@@ -1065,6 +1066,7 @@ static ArgumentDescription arg_desc[] = {
  {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", fortranModulename, NULL, setFortranAndLibmode},
  {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
  {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
+ {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "n", &fMultiLocaleLibraryDebug, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},

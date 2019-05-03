@@ -143,7 +143,7 @@ void codegenMultiLocaleInteropWrappers(void) {
   // on or off (if off, no debug messages will be inserted into the generated
   // code).
   //
-  MLIContext mli(false);
+  MLIContext mli(fMultiLocaleLibraryDebug);
 
   mli.emitClientPrelude();
   mli.emitServerPrelude();
