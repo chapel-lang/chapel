@@ -98,6 +98,7 @@ void expandExternArrayCalls() {
       SET_LINENO(fn);
       fn->defPoint->insertAfter(new DefExpr(fcopy));
       fn->addFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG);
+      fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
       fcopy->removeFlag(FLAG_EXTERN);
       fcopy->addFlag(FLAG_INLINE);
 

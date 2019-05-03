@@ -1221,7 +1221,7 @@ static void normalizeReturns(FnSymbol* fn) {
         if (TypeSymbol* retSym = toTypeSymbol(lastRTE->symbol())) {
           if (retSym->type == dtVoid) {
             USR_FATAL_CONT(fn,
-                           "an iterator's return type cannot be 'nothing'; "
+                           "an iterator's return type cannot be 'void'; "
                            "if specified, it must be the type of the "
                            "expressions the iterator yields");
           }

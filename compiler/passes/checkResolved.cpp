@@ -75,7 +75,7 @@ checkResolved() {
       }
     }
     if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtVoid)
-      USR_FATAL(fn, "The return value of an assignment operator must be 'nothing'.");
+      USR_FATAL(fn, "The return value of an assignment operator must be 'void'.");
   }
 
   forv_Vec(TypeSymbol, type, gTypeSymbols) {

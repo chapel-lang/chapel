@@ -955,7 +955,6 @@ static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
 // TODO: apply to _ddata as well?
 static std::string
 transformTypeForPointer(Type* type) {
-  std::string typeName = type->codegen().c;
   if (type->symbol->hasFlag(FLAG_REF)) {
     Type* referenced = type->getValType();
     return referenced->codegen().c + " *";
@@ -964,6 +963,7 @@ transformTypeForPointer(Type* type) {
     Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
     return pointedTo->codegen().c + " *";
   }
+  std::string typeName = type->codegen().c;
   return typeName;
 }
 
@@ -1596,7 +1596,11 @@ GenRet TypeSymbol::codegen() {
     INT_FATAL("attempting to code generate a managed class type");
 
   if( info->cfile ) {
-    ret.c = cname;
+    if (this == dtNothing->symbol) {
+      ret.c = dtVoid->codegen().c;
+    } else {
+      ret.c = cname;
+    }
   } else {
 #ifdef HAVE_LLVM
     if( ! llvmType ) {

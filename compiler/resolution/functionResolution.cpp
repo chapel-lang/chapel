@@ -5275,13 +5275,15 @@ static Type* moveDetermineRhsType(CallExpr* call) {
   if (retval == dtVoid) {
     if (CallExpr* rhsCall = toCallExpr(rhs)) {
       if (FnSymbol* rhsFn = rhsCall->resolvedFunction()) {
-        const char* rhsName = rhsFn->name;
-        if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
-          rhsName = unwrapFnName(rhsFn);
-        USR_FATAL(userCall(call),
-                  "illegal use of function that does not "
-                  "return a value: '%s'",
-                  rhsName);
+        if (!rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE)) {
+          const char* rhsName = rhsFn->name;
+          if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
+            rhsName = unwrapFnName(rhsFn);
+          USR_FATAL(userCall(call),
+                    "illegal use of function that does not "
+                    "return a value: '%s'",
+                    rhsName);
+        }
       }
     }
   }
