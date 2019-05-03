@@ -26,73 +26,111 @@
 
 #include "chpl-comm.h"
 #include "chpl-comm-diags.h"
+#include "chpl-comm-internal.h"
+#include "chpl-mem-consistency.h"
+#include "error.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+int chpl_verbose_comm = 0;
+int chpl_comm_diagnostics = 0;
+int chpl_comm_diags_print_unstable = 0;
 
-void chpl_startVerboseComm() {
+static pthread_once_t bcastPrintUnstable_once = PTHREAD_ONCE_INIT;
+
+
+static
+void broadcast_print_unstable(void) {
+  chpl_comm_diags_disable();
+  chpl_comm_bcast_rt_private(chpl_comm_diags_print_unstable);
+  chpl_comm_diags_enable();
+}
+
+
+void chpl_comm_startVerbose(chpl_bool print_unstable) {
+    chpl_comm_diags_print_unstable = (print_unstable == true);
+  if (pthread_once(&bcastPrintUnstable_once, broadcast_print_unstable) != 0) {
+    chpl_internal_error("pthread_once(&bcastPrintUnstable_once) failed");
+  }
+
   chpl_verbose_comm = 1;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_verbose_comm);
   chpl_comm_diags_enable();
 }
 
 
-void chpl_stopVerboseComm() {
+void chpl_comm_stopVerbose() {
   chpl_verbose_comm = 0;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_verbose_comm);
   chpl_comm_diags_enable();
 }
 
 
-void chpl_startVerboseCommHere() {
+void chpl_comm_startVerboseHere(chpl_bool print_unstable) {
+  chpl_comm_diags_print_unstable = (print_unstable == true);
   chpl_verbose_comm = 1;
 }
 
 
-void chpl_stopVerboseCommHere() {
+void chpl_comm_stopVerboseHere() {
   chpl_verbose_comm = 0;
 }
 
 
-void chpl_startCommDiagnostics() {
+void chpl_comm_startDiagnostics(chpl_bool print_unstable) {
+  chpl_comm_diags_print_unstable = (print_unstable == true);
+  if (pthread_once(&bcastPrintUnstable_once, broadcast_print_unstable) != 0) {
+    chpl_internal_error("pthread_once(&bcastPrintUnstable_once) failed");
+  }
+
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 1;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_comm_diagnostics);
   chpl_comm_diags_enable();
 }
 
 
-void chpl_stopCommDiagnostics() {
+void chpl_comm_stopDiagnostics() {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 0;
   chpl_comm_diags_disable();
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
-                              -1 /*typeIndex: unused*/);
+  chpl_comm_bcast_rt_private(chpl_comm_diagnostics);
   chpl_comm_diags_enable();
 }
 
 
-void chpl_startCommDiagnosticsHere() {
+void chpl_comm_startDiagnosticsHere(chpl_bool print_unstable) {
+  chpl_comm_diags_print_unstable = (print_unstable == true);
+
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 1;
 }
 
 
-void chpl_stopCommDiagnosticsHere() {
+void chpl_comm_stopDiagnosticsHere() {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+
   chpl_comm_diagnostics = 0;
 }
 
 
-void chpl_resetCommDiagnosticsHere() {
+void chpl_comm_resetDiagnosticsHere() {
   chpl_comm_diags_reset();
 }
 
 
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+void chpl_comm_getDiagnosticsHere(chpl_commDiagnostics *cd) {
   chpl_comm_diags_copy(cd);
 }

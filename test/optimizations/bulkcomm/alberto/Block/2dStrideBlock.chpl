@@ -32,8 +32,8 @@ proc main(){
   if printOutput {
     writeln();
   }
-  var DomA = {1..3,2..7};
-  var DomB = {3..5,5..10};
+  var DomA = Dom1[1..3,2..7];
+  var DomB = Dom2[3..5,5..10];
 
   if printOutput {
     writeln("A of DomA Distribution: ");
@@ -68,8 +68,8 @@ proc main(){
   for (a,i) in zip(A,{1..n*n}) do a=i;
   for (b,i) in zip(B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = {1..3,1..3};
-  DomB = {2..4,12..14};
+  DomA = Dom1[1..3,1..3];
+  DomB = Dom2[2..4,12..14];
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -103,8 +103,8 @@ proc main(){
   for (a,i) in zip(A,{1..n*n}) do a=i;
   for (b,i) in zip(B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = {1..3,5..7};
-  DomB = {6..8,1..3};
+  DomA = Dom1[1..3,5..7];
+  DomB = Dom2[6..8,1..3];
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -138,8 +138,8 @@ proc main(){
   for (a,i) in zip(A,{1..n*n}) do a=i;
   for (b,i) in zip(B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = {1..3,4..6};
-  DomB = {6..8,3..5};
+  DomA = Dom1[1..3,4..6];
+  DomB = Dom2[6..8,3..5];
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -173,8 +173,8 @@ proc main(){
   for (a,i) in zip(A,{1..n*n}) do a=i;
   for (b,i) in zip(B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = {4..5,4..5};
-    DomB = {5..6,4..5};
+  DomA = Dom1[4..5,4..5];
+    DomB = Dom2[5..6,4..5];
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -208,8 +208,8 @@ proc main(){
   for (a,i) in zip(A,{1..n*n}) do a=i;
   for (b,i) in zip(B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = {1..n-1,1..n-1};
-  DomB = {2..n,2..n};
+  DomA = Dom1[1..n-1,1..n-1];
+  DomB = Dom2[2..n,2..n];
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -243,8 +243,8 @@ proc main(){
   for (a,i) in zip(A,{1..n*n}) do a=i;
   for (b,i) in zip(B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = {1..n,1..n};
-  DomB = {1..n,1..n};
+  DomA = Dom1[1..n,1..n];
+  DomB = Dom2[1..n,1..n];
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);

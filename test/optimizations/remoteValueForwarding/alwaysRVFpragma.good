@@ -1,23 +1,23 @@
 Initially
 ---------
-(x = 42, y = {loc = LOCALE0})
-(x = 23, y = {loc = LOCALE0})
+(x = 42, loc = 0)
+(x = 23, loc = 0)
 
-From locale LOCALE1
+From locale 1
 ------
-(x = 42, y = {loc = LOCALE0})
-LOCALE1
-LOCALE1
-(x = 23, y = {loc = LOCALE0})
-LOCALE0
-LOCALE0
+(x = 42, loc = 0)
+1
+1
+(x = 23, loc = 0)
+0
+0
 
 Writing
 -------
-(x = 43, y = {loc = LOCALE1})
-(x = 24, y = {loc = LOCALE1})
+(x = 43, loc = 1)
+(x = 24, loc = 1)
 
 Back home
 ---------
-(x = 42, y = {loc = LOCALE0})
-(x = 24, y = {loc = LOCALE1})
+(x = 42, loc = 0)
+(x = 24, loc = 1)

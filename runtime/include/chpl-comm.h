@@ -43,10 +43,6 @@ extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
 // (hopefully) unique to the running image, and never changed again.
 extern int32_t chpl_numNodes; // number of nodes
 
-extern int chpl_verbose_comm;     // set via startVerboseComm
-extern int chpl_comm_diagnostics; // set via startCommDiagnostics
-extern int chpl_verbose_mem;      // set via startVerboseMem
-
 size_t chpl_comm_getenvMaxHeapSize(void);
 
 
@@ -494,44 +490,6 @@ void chpl_comm_make_progress(void);
 // This is a hook that's called when a task is ending. It allows for things
 // like say flushing task private buffers.
 void chpl_comm_task_end(void);
-
-//
-// Comm diagnostics stuff
-//
-
-#define CHPL_COMM_DIAGS_VARS_ALL(MACRO) \
-  MACRO(get) \
-  MACRO(get_nb) \
-  MACRO(put) \
-  MACRO(put_nb) \
-  MACRO(test_nb) \
-  MACRO(wait_nb) \
-  MACRO(try_nb) \
-  MACRO(execute_on) \
-  MACRO(execute_on_fast) \
-  MACRO(execute_on_nb)
-
-typedef struct _chpl_commDiagnostics {
-#define _COMM_DIAGS_DECL(cdv) uint64_t cdv;
-  CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_DECL)
-#undef _COMM_DIAGS_DECL
-} chpl_commDiagnostics;
-
-void chpl_startVerboseComm(void);
-void chpl_stopVerboseComm(void);
-void chpl_startVerboseCommHere(void);
-void chpl_stopVerboseCommHere(void);
-
-void chpl_startCommDiagnostics(void); // this one implemented by comm layers
-void chpl_gen_startCommDiagnostics(void); // this one implemented in chpl-comm.c
-void chpl_stopCommDiagnostics(void);
-void chpl_gen_stopCommDiagnostics(void);
-void chpl_startCommDiagnosticsHere(void);
-void chpl_gen_startCommDiagnosticsHere(void);
-void chpl_stopCommDiagnosticsHere(void);
-void chpl_gen_stopCommDiagnosticsHere(void);
-void chpl_resetCommDiagnosticsHere(void);
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
 
 void* chpl_get_global_serialize_table(int64_t idx);
 
