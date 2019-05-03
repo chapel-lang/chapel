@@ -1,2 +1,3 @@
 whereClauseNoFn3.chpl:1: In function 'foo':
 whereClauseNoFn3.chpl:1: error: unresolved call 'bar()'
+whereClauseNoFn3.chpl:1: note: because no functions named bar found in scope

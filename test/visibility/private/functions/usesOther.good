@@ -1,1 +1,2 @@
 usesOther.chpl:3: error: unresolved call 'foo(2)'
+usesOther.chpl:3: note: because no functions named foo found in scope

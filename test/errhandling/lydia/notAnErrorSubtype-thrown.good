@@ -1,2 +1,2 @@
 notAnErrorSubtype-thrown.chpl:5: In function 'main':
-notAnErrorSubtype-thrown.chpl:7: error: Cannot throw an instance of type 'Foo', not a subtype of Error
+notAnErrorSubtype-thrown.chpl:7: error: Cannot throw an instance of type 'borrowed Foo', not a subtype of Error

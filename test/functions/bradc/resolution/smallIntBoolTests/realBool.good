@@ -1,11 +1,7 @@
 realBool.chpl:24: error: unresolved call 'foo(1.1, 1)'
-realBool.chpl:9: note: candidates are: foo(x: int(8), y: int(8))
-realBool.chpl:9: note:                 foo(x: int(16), y: int(16))
+realBool.chpl:9: note: this candidate did not match: foo(x: int(8), y: int(8))
+realBool.chpl:24: note: because call actual argument #1 with type real(64)
+realBool.chpl:9: note: is passed to formal 'x: int(8)'
+realBool.chpl:9: note: candidates are: foo(x: int(16), y: int(16))
 realBool.chpl:9: note:                 foo(x: int(32), y: int(32))
-realBool.chpl:9: note:                 foo(x: int(64), y: int(64))
-realBool.chpl:14: note:                 foo(x: uint(8), y: uint(8))
-realBool.chpl:14: note:                 foo(x: uint(16), y: uint(16))
-realBool.chpl:14: note:                 foo(x: uint(32), y: uint(32))
-realBool.chpl:14: note:                 foo(x: uint(64), y: uint(64))
-realBool.chpl:19: note:                 foo(x: real(32), y: real(32))
-realBool.chpl:19: note:                 foo(x: real(64), y: real(64))
+note: and 7 other candidates, use --print-all-candidates to see them

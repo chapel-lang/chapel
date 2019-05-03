@@ -1,2 +1,3 @@
 returnClassDiffModule.chpl:12: In function 'main':
 returnClassDiffModule.chpl:14: error: unresolved call 'unmanaged C.foo()'
+returnClassDiffModule.chpl:14: note: because no functions named foo found in scope

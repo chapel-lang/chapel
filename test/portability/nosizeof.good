@@ -1,1 +1,2 @@
 nosizeof.chpl:18: error: unresolved call 'sizeof(int(64))'
+nosizeof.chpl:18: note: because no functions named sizeof found in scope

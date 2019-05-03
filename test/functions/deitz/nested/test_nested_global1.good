@@ -1,1 +1,2 @@
-test_nested_global1.chpl:17: error: unresolved call 'bar(C)'
+test_nested_global1.chpl:17: error: unresolved call 'bar(borrowed C)'
+test_nested_global1.chpl:17: note: because no functions named bar found in scope

@@ -1,2 +1,4 @@
 inheritedInitWrongName.chpl:20: error: unresolved call 'D.init(x=3, "hi", 4.6)'
-inheritedInitWrongName.chpl:15: note: candidates are: D.init(a, b, c)
+inheritedInitWrongName.chpl:15: note: this candidate did not match: D.init(a, b, c)
+inheritedInitWrongName.chpl:20: note: because call uses named argument x
+inheritedInitWrongName.chpl:15: note: but function contains no formal named x
