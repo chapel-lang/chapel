@@ -68,3 +68,32 @@ get_clang_sysroot_args() {
   expandInstallationPaths(ret);
   return ret;
 }
+
+void makeVersionModule(const ArgumentDescription *arg, const char* str) {
+  bool preRelease = strcmp(BUILD_VERSION, "0") != 0;
+
+  printf("module ChplVersion {\n");
+  printf("  param CHPL_VERSION: string = \"%d.%s.%s",
+         MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
+  if (preRelease) {
+    printf(" pre-release (%s)", BUILD_VERSION);
+  }
+  printf("\";\n");
+  printf("  param CHPL_VERSION_MAJOR: int = %d;\n", MAJOR_VERSION);
+  printf("  param CHPL_VERSION_MINOR: int = %s;\n", MINOR_VERSION);
+  printf("  param CHPL_VERSION_UPDATE: int = %s;\n", UPDATE_VERSION);
+  printf("  param CHPL_VERSION_OFFICIAL: bool = ");
+  if (preRelease) {
+    printf("false");
+  } else {
+    printf("true");
+  }
+  printf(";\n");
+  printf("  param CHPL_VERSION_SHA: string = \"");
+  if (preRelease) {
+    printf("%s", BUILD_VERSION);
+  }
+  printf("\";\n");
+  printf("}\n");
+  clean_exit(0);
+}

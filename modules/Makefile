@@ -35,13 +35,15 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_ARCH)-$(CHPL_MAKE_COMPILER)
 SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
+VERSION_MODULE_DOC=standard/ChplVersion.chpl
+VERSION_MODULE=$(SYS_MODULES_DIR)/ChplVersion.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC=${CHPL_MAKE_HOME}/doc/rst
 
 default: all
 
-all: $(SYS_CTYPES_MODULE)
+all: $(SYS_CTYPES_MODULE) $(VERSION_MODULE)
 	$(TAGS_COMMAND)
 
 clean: FORCE
@@ -63,6 +65,9 @@ $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
 	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
+
+$(VERSION_MODULE): $(CHPL) FORCE
+	chpl --make-version-module > $(VERSION_MODULE)
 
 MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \

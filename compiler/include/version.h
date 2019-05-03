@@ -21,10 +21,12 @@
 #define _VERSION_H_
 
 #include <string>
+#include "arg.h"
 
 void get_version(char * buf);
 void get_major_minor_version(char * buf);
 const char* get_configured_prefix();
+void makeVersionModule(const ArgumentDescription *arg, const char* str);
 
 std::string get_clang_cc();
 std::string get_clang_cxx();
