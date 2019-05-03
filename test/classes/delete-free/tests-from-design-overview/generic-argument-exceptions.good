@@ -1,10 +1,10 @@
 test1
-_owned(MyClass)
+owned MyClass
 in MyClass.init
-_owned(MyClass)
+owned MyClass
 in MyClass.deinit
 test2
 in MyClass.init
-Container(_owned(MyClass))
-_owned(MyClass)
+Container(owned MyClass)
+owned MyClass
 in MyClass.deinit

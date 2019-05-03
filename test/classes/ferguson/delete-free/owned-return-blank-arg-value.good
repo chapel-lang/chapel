@@ -2,11 +2,11 @@ in foo
  x={x = 1}
 after returnByValue
  x={x = 1}
- y={x = 1} y type C
+ y={x = 1} y type borrowed C
 Destroying C x=1
 in bar
  x={x = 1}
 after returnByValue
  x=nil
- y={x = 1} y type _owned(C)
+ y={x = 1} y type owned C
 Destroying C x=1

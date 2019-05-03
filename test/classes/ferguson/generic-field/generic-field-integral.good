@@ -1,2 +1,2 @@
-GenericClass(int(64)) {f = 1}
-GenericClass(int(64)) {f = 2}
+borrowed GenericClass(int(64)) {f = 1}
+borrowed GenericClass(int(64)) {f = 2}
