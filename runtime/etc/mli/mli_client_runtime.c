@@ -26,20 +26,6 @@
 #include <unistd.h>
 
 
-//
-// Print a debug message, or do nothing if debug messages are turned off.
-//
-#ifdef CHPL_MLI_DEBUG_PRINT
-# define chpl_mli_cdebugf(fmt, ...)               \
-  do {                                            \
-      printf("%s ", "[Client]");                  \
-      printf(fmt, __VA_ARGS__);                   \
-  } while (0)
-#else
-# define chpl_mli_cdebugf(fmt, ...)
-#endif
-
-
 struct chpl_mli_context chpl_client;
 
 extern const char* mli_servername;
@@ -82,7 +68,7 @@ static void chpl_mli_spawn_server() {
 
 void chpl_mli_terminate(enum chpl_mli_errors e) {
   const char* errstr = chpl_mli_errstr(e);
-  chpl_mli_cdebugf("Terminated abruptly with error: %s\n", errstr);
+  chpl_mli_debugf("Terminated abruptly with error: %s\n", errstr);
   mli_terminate();
 }
 

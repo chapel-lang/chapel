@@ -576,7 +576,7 @@ std::string MLIContext::genDebugPrintCall(FnSymbol* fn) {
 std::string MLIContext::genDebugPrintCall(const char* msg) {
   std::string gen;
 
-  gen += "printf(\"%s %s\\n\", chpl_mli_pfx, \"";
+  gen += "chpl_mli_debugf(\"%s\\n\", \"";
   gen += msg;
   gen += "\");\n";
 

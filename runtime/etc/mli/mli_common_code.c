@@ -71,6 +71,22 @@
 #endif
 
 //
+// Print a debug message, or do nothing if debug messages are turned off.
+//
+#ifdef CHPL_MLI_DEBUG_PRINT
+# ifndef chpl_mli_pfx
+#   error The chpl_mli_pfx macro must be defined.
+# endif
+# define chpl_mli_debugf(fmt, ...)                \
+  do {                                            \
+      printf("%s ", chpl_mli_pfx);                \
+      printf(fmt, __VA_ARGS__);                   \
+  } while (0)
+#else
+# define chpl_mli_debugf(fmt, ...)
+#endif
+
+//
 // Error codes must all be less than zero unless we change the protocol!
 //
 enum chpl_mli_errors {
