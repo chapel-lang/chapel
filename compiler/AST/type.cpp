@@ -160,7 +160,12 @@ const char* toString(Type* type, bool decorateAllClasses) {
 
           if (implType != dtUnknown)
             retval = toString(implType, false);
+          else if (at->symbol->hasFlag(FLAG_ARRAY))
+            retval = astr("[]");
         }
+      } else if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+        if (developer == false)
+          retval = "iterator";
       } else if (isManagedPtrType(vt)) {
         Type* borrowType = getManagedPtrBorrowType(vt);
         const char* borrowed = "borrowed ";
