@@ -29,16 +29,43 @@
 #include <zmq.h>
 
 //
+// Grab headers for shims used by the client and server.
+//
+// The Chapel runtime is sanitized during Travis testing, and any calls to
+// LIBC functions are reported as errors. Sadly, our code gets sanitized too,
+// even though it _technically_ isn't part of the runtime itself. That's the
+// reason why any of these shims exist in the first place.
+//
+// We really don't want to call "chpl_exit_any()" in the client - we'd prefer
+// the LIBC "exit()" function. Fortunately, the LAUNCHER already accounts for
+// this. So we "gain access" to "exit()" by pretending to be the launcher.
+// This defines "chpl_exit_any()" as a macro representing "exit()".
+//
+#ifdef CHPL_MLI_IS_SERVER
+# include "chpl-mem.h"
+# include "error.h"
+#elif defined(CHPL_MLI_IS_CLIENT)
+# ifndef LAUNCHER
+#   define CHPL_MLI_LAUNCHER_IS_DEFINED
+#   define LAUNCHER
+# endif
+# include "chpl-mem-sys.h"
+# include "chplexit.h"
+# ifdef CHPL_MLI_LAUNCHER_IS_DEFINED
+#   undef CHPL_MLI_LAUNCHER_IS_DEFINED
+#   undef LAUNCHER
+# endif
+#endif
+
+//
 // If this code is being run on the server, mli_malloc() is a wrapper for
 // chpl_malloc(). If this code is being run on the client, then it is a
 // wrapper for the system allocator.
 //
 #ifdef CHPL_MLI_IS_SERVER
-# include "chpl-mem.h"
 # define mli_malloc(bytes) chpl_malloc(bytes)
 # define mli_free(ptr) chpl_free(ptr)
 #elif defined(CHPL_MLI_IS_CLIENT)
-# include "chpl-mem-sys.h"
 # define mli_malloc(bytes) sys_malloc(bytes)
 # define mli_free(ptr) sys_free(ptr)
 #else
@@ -46,15 +73,12 @@
 #endif
 
 //
-// If this code is being run on the server, mli_terminate is a wrapper for
-// chpl_error(NULL, 0, 0). If this code is being run on the client, then it
-// is a wrapper for exit(1)
+// Terminate all the locales properly if the server, else just "exit()".
 //
 #ifdef CHPL_MLI_IS_SERVER
-# include "error.h"
-# define mli_terminate() chpl_error(NULL, 0, 0)
+# define mli_terminate() chpl_error("", 0, 0)
 #elif defined(CHPL_MLI_IS_CLIENT)
-# define mli_terminate() exit(1)
+# define mli_terminate() chpl_exit_any(1)
 #else
 # error The mli_terminate macro was defined outside of client/server.
 #endif
