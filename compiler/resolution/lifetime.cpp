@@ -2478,7 +2478,7 @@ static bool isOrRefersBorrowedClass(Type* type) {
 static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   type = type->getValType();
 
-  if (!(isRecord(type) || isClassLike(type)))
+  if (!(isRecord(type) || isClassLikeOrPtr(type)))
     return false;
 
   bool isRecordContainingFieldsSubjectToAnalysis = false;
@@ -2495,7 +2495,7 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   //  - a pointer type
   //  - a record containing refs/class pointers
   //    (or an iterator record)
-  if (!(isClassLike(type) ||
+  if (!(isClassLikeOrPtr(type) ||
         isRecordContainingFieldsSubjectToAnalysis))
     return false;
 
