@@ -632,7 +632,7 @@ class SomeClass { }
 defaultGeneric(new owned SomeClass());
 \end{chapel}
 \begin{chapeloutput}
-SomeClass
+borrowed SomeClass
 \end{chapeloutput}
 Here, the program will output the type \chpl{borrowed SomeClass} rather
 than \chpl{owned SomeClass}. It would output \chpl{owned SomeClass} if
