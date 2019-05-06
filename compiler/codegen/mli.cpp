@@ -355,7 +355,7 @@ std::string MLIContext::genMarshalBodyPrimitiveScalar(Type* t, bool out) {
 }
 
 //
-// TODO: I'd like to generalize this method to become something akin to
+// TODO: Generalize this method to become something akin to
 // "genMarshalVariableWidthBuffer", of which a string is nothing more than a
 // specific instance of.
 // This will help us later down the line when we have to support other types
@@ -394,7 +394,7 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
 
   if (not out) {
     // Null terminate the string we just received.
-    gen += "((char*) buffer)[bytes] = 0;\n";
+    gen += "((char*) buffer)[bytes] = '\\0';\n";
 
     // Cast buffer to const char.
     gen += "result = ((const char*) buffer);\n";
