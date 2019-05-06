@@ -19,8 +19,7 @@
 
 /*
   This module serves as a toolkit of common serial and parallel
-  iterators. This is currently being worked upon, and contains
-  only the ``repeat`` and ``cycle`` iterator tools as of now.
+  iterators, and is currently being worked upon.
 */
 
 module Itertools {
