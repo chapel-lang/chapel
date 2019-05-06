@@ -5,7 +5,7 @@ release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
-release/examples/benchmarks/hpcc/variants/ra-unordered-atomics.ml-perf.graph
+release/examples/benchmarks/hpcc/variants/ra-atomics-variations.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-perf.graph
 release/examples/benchmarks/hpcc/stream.ml-perf.graph
@@ -23,7 +23,7 @@ release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
-release/examples/benchmarks/hpcc/variants/ra-unordered-atomics.ml-perf.graph
+release/examples/benchmarks/hpcc/variants/ra-atomics-variations.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-perf.graph
 release/examples/benchmarks/hpcc/stream.ml-perf.graph
@@ -40,7 +40,7 @@ release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
-release/examples/benchmarks/hpcc/variants/ra-unordered-atomics.ml-perf.graph
+release/examples/benchmarks/hpcc/variants/ra-atomics-variations.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-perf.graph
 release/examples/benchmarks/hpcc/stream.ml-perf.graph
