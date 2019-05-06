@@ -1,2 +1,4 @@
 arrayField-compInit.chpl:14: error: unresolved call 'C.init([BlockDom(1,int(64),false,unmanaged DefaultDist)] real(64))'
-arrayField-compInit.chpl:3: note: candidates are: C.init(X: [domain(1,int(64),false)] real(64))
+arrayField-compInit.chpl:3: note: this candidate did not match: C.init(X: [domain(1,int(64),false)] real(64))
+arrayField-compInit.chpl:14: note: because call actual argument #1 with type [BlockDom(1,int(64),false,unmanaged DefaultDist)] real(64)
+arrayField-compInit.chpl:4: note: is passed to formal 'in X: [domain(1,int(64),false)] real(64)'
