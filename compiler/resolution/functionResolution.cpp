@@ -139,6 +139,9 @@ static std::map<FnSymbol*, const char*> outerCompilerErrorMap;
 
 static CapturedValueMap            capturedValues;
 
+// Used to ensure we only issue the warning once per instantiation
+static std::set<FnSymbol*> oldStyleInitCopyFns;
+
 
 //#
 //# Static Function Declarations
@@ -5003,7 +5006,11 @@ static void resolveInitVar(CallExpr* call) {
 
         resolveCall(call);
       } else {
-        USR_WARN(call->resolvedFunction(), "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
+        FnSymbol* fn = call->resolvedFunction();
+        if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
+          oldStyleInitCopyFns.insert(fn);
+          USR_WARN(fn, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
+        }
       }
 
       if (at->hasPostInitializer() == true) {
