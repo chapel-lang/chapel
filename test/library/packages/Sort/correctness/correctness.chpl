@@ -15,8 +15,8 @@ proc main() {
         tupleKey = new TupleCmp();
   const absKeyClass = new AbsKeyCmpClass(),
         absCompClass = new AbsCompCmpClass(),
-        revAbsKeyClass = new ReverseComparator(absKeyClass),
-        revAbsCompClass = new ReverseComparator(absCompClass),
+        revAbsKeyClass = new ReverseComparator(absKeyClass.borrow()),
+        revAbsCompClass = new ReverseComparator(absCompClass.borrow()),
         tupleKeyClass = new TupleCmpClass();
 
 
@@ -42,16 +42,16 @@ proc main() {
 
                 // Testing comparators
                 ([-1, 2, 3, -4], absKey),
-                ([-1, 2, 3, -4], absKeyClass),
+                ([-1, 2, 3, -4], absKeyClass.borrow()),
                 ([-1, 2, 3, -4], absComp),
-                ([-1, 2, 3, -4], absCompClass),
+                ([-1, 2, 3, -4], absCompClass.borrow()),
                 ([ 3, 2, -1, -4], reverseComparator),
                 ([ -4, 3, 2, -1], revAbsKey),
                 ([ -4, 3, 2, -1], revAbsKeyClass),
                 ([ -4, 3, 2, -1], revAbsComp),
                 ([ -4, 3, 2, -1], revAbsCompClass),
                 ([-4, -1, 2, 3], tupleKey),
-                ([-4, -1, 2, 3], tupleKeyClass)
+                ([-4, -1, 2, 3], tupleKeyClass.borrow())
               );
 
 

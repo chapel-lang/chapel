@@ -1,3 +1,4 @@
+Section 1
 {x = 1}
 1
 unmanaged A(int(64))
@@ -13,6 +14,7 @@ unmanaged A(int(64))
 {x = 1}
 1
 unmanaged A(int(64))
+Section 2
 {x = 2}
 2
 _owned(A(int(64)))
@@ -28,6 +30,7 @@ _owned(A(int(64)))
 {x = 2}
 2
 _owned(A(int(64)))
+Section 3
 {x = 3}
 3
 _shared(A(int(64)))
@@ -43,6 +46,7 @@ _shared(A(int(64)))
 {x = 3}
 3
 _shared(A(int(64)))
+Section 4
 {x = 4}
 4
 unmanaged A(int(64))
@@ -54,7 +58,7 @@ _owned(A(int(64)))
 _shared(A(int(64)))
 {x = 4}
 4
-A(int(64))
+_owned(A(int(64)))
 {x = 4}
 4
-A(int(64))
+_owned(A(int(64)))
