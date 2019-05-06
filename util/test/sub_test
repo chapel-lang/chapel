@@ -140,6 +140,7 @@ import fnmatch, time
 import re
 import shlex
 import datetime
+import errno
 
 localdir = ''
 sub_test_start_time = time.time()
@@ -1680,13 +1681,13 @@ for testname in testsrc:
             # make the compiler performance directories if they don't exist 
             timePasses = True
             if not os.path.isdir(compperfdir) and not os.path.isfile(compperfdir):
-                os.makedirs(compperfdir)
+                py3_compat.makedirs(compperfdir, exist_ok=True)
             if not os.access(compperfdir, os.R_OK|os.X_OK):
                 sys.stdout.write('[Error creating compiler performance test directory %s]\n'%(compperfdir))
                 timePasses = False
 
             if not os.path.isdir(tempDatFilesDir) and not os.path.isfile(tempDatFilesDir):
-                os.makedirs(tempDatFilesDir)
+                py3_compat.makedirs(tempDatFilesDir, exist_ok=True)
             if not os.access(compperfdir, os.R_OK|os.X_OK):
                 sys.stdout.write('[Error creating compiler performance temp dat file test directory %s]\n'%(tempDatFilesDir))
                 timePasses = False
@@ -2164,7 +2165,7 @@ for testname in testsrc:
 
                 if perftest:
                     if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
-                        os.makedirs(perfdir)
+                        py3_compat.makedirs(perfdir, exist_ok=True)
                     if not os.access(perfdir, os.R_OK|os.X_OK):
                         sys.stdout.write('[Error creating performance test directory %s]\n'%(perfdir))
                         break # on to next compopts
