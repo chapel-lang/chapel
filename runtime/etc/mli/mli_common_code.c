@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <unistd.h>
 #include <zmq.h>
 
 //
@@ -274,7 +275,7 @@ char * chpl_mli_connection_info(void* socket) {
   // Determine hostname of where we are currently running
   size_t lenHostname = 256;
   char* hostRes = (char *)mli_malloc(lenHostname);
-  err_t hostErr = gethostname(hostRes, lenHostname);
+  int hostErr = gethostname(hostRes, lenHostname);
 
   // Recreate the connection using the hostname instead of 0.0.0.0
   char* fullConnection = (char *)mli_malloc(lenHostname + lenPort);
