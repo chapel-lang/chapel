@@ -1,6 +1,7 @@
 use Time;
 
-config const remoteTasksCreatedPerTask = 2000;
+config const remoteTasksCreatedPerTask = if CHPL_COMM == 'ugni' then 100000
+                                                                else 2000;
 config const numTasksCreating = here.maxTaskPar;
 config const printTimings = false;
 

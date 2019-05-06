@@ -1842,6 +1842,12 @@ static inline void rwlock_unlock(rwlock* l) {
   pthread_rwlock_unlock(l);
 }
 
+static inline
+chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
+  chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
+  if (task_prvData != NULL) return &task_prvData->comm_data;
+  return NULL;
+}
 
 //
 // Chapel interface starts here
@@ -8302,6 +8308,16 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
   int cdi;
   atomic_bool post_done;
   uint64_t iters = 0;
+
+  // Avoid yielding for tasks with limited comm. Avoids artificially increasing
+  // the lifetime of short-lived tasks.
+  if (do_yield) {
+    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+    if (prvData != NULL && prvData->num_fma < 100) {
+      prvData->num_fma++;
+      do_yield = false;
+    }
+  }
 
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
