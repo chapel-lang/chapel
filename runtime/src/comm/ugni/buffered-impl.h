@@ -86,6 +86,9 @@ void BUFFERED_THREAD_INFO_FLUSH(BUFFERED_THREAD_STRUCT_TYPE* info) {
     do_remote_get_V(info->vi, info->tgt_addr_v, info->locale_v,
                     info->remote_mr_v, info->src_addr_v, info->size_v,
                     info->local_mr_v, may_proxy_true);
+#elif BUFFERED_OP_AMO_NF == 1
+    do_nic_amo_nf_V(info->vi, info->opnd1_v, info->locale_v, info->object_v,
+                    info->size_v, info->cmd_v, info->remote_mr_v);
 #endif
     info->vi = 0;
   }
