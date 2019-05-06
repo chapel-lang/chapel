@@ -145,7 +145,7 @@ module TomlParser {
       dt = compile('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$'),
       realNum = compile("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
       ld = compile('^\\d{4}-\\d{2}-\\d{2}$'),
-      ti = compile('^\\d{2}:\\d{2}:\\d{2}$'),
+      ti = compile('^\\d{2}:\\d{2}:\\d{2}(.\\d{6})?$'),
       ints = compile("(\\d+|\\+\\d+|\\-\\d+)"),
       inBrackets = compile("(\\[.*?\\])"),
       corner = compile("(\\[.+\\])"),
@@ -374,9 +374,18 @@ module TomlParser {
         // Time
         else if ti.match(val) {
           var raw = getToken(source).split(":");
-          var t = new time(raw[1]: int,
-                           raw[2]: int,
-                           raw[3]: int);
+          var sec = raw[3].split(".");
+          var t: time;
+          if sec.size == 1 {
+            t = new time(raw[1]: int,
+                         raw[2]: int,
+                         raw[3]: int);
+          } else {
+            t = new time(raw[1]: int,
+                         raw[2]: int,
+                         sec[1]: int,
+                         sec[2]: int);
+          }
           var Time: unmanaged Toml;
           Time = t;
           return Time;
