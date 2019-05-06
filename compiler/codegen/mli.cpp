@@ -790,7 +790,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   // steps automatically as well, but since we're only supporting c_string
   // for now, we do this manually.
   //
-  // Note that we only do this for the server, _after_ making the unrwapped
+  // Note that we only do this for the server, _after_ making the unwrapped
   // call. This is because values received by the server are considered to
   // be read only. On the client, it is the _user's_ responsibility to ensure
   // that any allocated data is freed.
@@ -864,7 +864,7 @@ MLIContext::genSocketCallBuffer(const char* skt, const char* var,
   gen += "(";
   gen += skt;
   gen += ", ";
-  // To get rid of _discards qualifiers_ warnings (yes, a hack).
+  // To get rid of _discards qualifiers_ warnings.
   gen += "((void*) ";
   gen += var;
   gen += ")";

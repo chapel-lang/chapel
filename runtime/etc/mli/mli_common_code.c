@@ -43,19 +43,19 @@
 // This defines "chpl_exit_any()" as a macro representing "exit()".
 //
 #ifdef CHPL_MLI_IS_SERVER
-# include "chpl-mem.h"
-# include "error.h"
+#   include "chpl-mem.h"
+#   include "error.h"
 #elif defined(CHPL_MLI_IS_CLIENT)
-# ifndef LAUNCHER
-#   define CHPL_MLI_LAUNCHER_IS_DEFINED
-#   define LAUNCHER
+#   ifndef LAUNCHER
+#     define CHPL_MLI_LAUNCHER_IS_DEFINED
+#     define LAUNCHER
 # endif
-# include "chpl-mem-sys.h"
-# include "chplexit.h"
-# ifdef CHPL_MLI_LAUNCHER_IS_DEFINED
-#   undef CHPL_MLI_LAUNCHER_IS_DEFINED
-#   undef LAUNCHER
-# endif
+#   include "chpl-mem-sys.h"
+#   include "chplexit.h"
+#   ifdef CHPL_MLI_LAUNCHER_IS_DEFINED
+#     undef CHPL_MLI_LAUNCHER_IS_DEFINED
+#     undef LAUNCHER
+#   endif
 #endif
 
 //
@@ -64,51 +64,51 @@
 // wrapper for the system allocator.
 //
 #ifdef CHPL_MLI_IS_SERVER
-# define mli_malloc(bytes) chpl_malloc(bytes)
-# define mli_free(ptr) chpl_free(ptr)
+#   define mli_malloc(bytes) chpl_malloc(bytes)
+#   define mli_free(ptr) chpl_free(ptr)
 #elif defined(CHPL_MLI_IS_CLIENT)
-# define mli_malloc(bytes) sys_malloc(bytes)
-# define mli_free(ptr) sys_free(ptr)
+#   define mli_malloc(bytes) sys_malloc(bytes)
+#   define mli_free(ptr) sys_free(ptr)
 #else
-# error The mli_malloc/free macros were defined outside of client/server.
+#   error The mli_malloc/free macros were defined outside of client/server.
 #endif
 
 //
 // Terminate all the locales properly if the server, else just "exit()".
 //
 #ifdef CHPL_MLI_IS_SERVER
-# define mli_terminate() chpl_error("", 0, 0)
+#   define mli_terminate() chpl_error("", 0, 0)
 #elif defined(CHPL_MLI_IS_CLIENT)
-# define mli_terminate() chpl_exit_any(1)
+#   define mli_terminate() chpl_exit_any(1)
 #else
-# error The mli_terminate macro was defined outside of client/server.
+#   error The mli_terminate macro was defined outside of client/server.
 #endif
 
 //
 // Print prefix, used to indicate whether client or server is printing.
 //
 #ifdef CHPL_MLI_IS_SERVER
-# define chpl_mli_pfx "[Server]"
+#   define chpl_mli_pfx "[Server]"
 #elif defined(CHPL_MLI_IS_CLIENT)
-# define chpl_mli_pfx "[Client]"
+#   define chpl_mli_pfx "[Client]"
 #else
-# error The chpl_mli_pfx macro was defined outside of client/server.
+#   error The chpl_mli_pfx macro was defined outside of client/server.
 #endif
 
 //
 // Print a debug message, or do nothing if debug messages are turned off.
 //
 #ifdef CHPL_MLI_DEBUG_PRINT
-# ifndef chpl_mli_pfx
-#   error The chpl_mli_pfx macro must be defined.
-# endif
-# define chpl_mli_debugf(fmt, ...)                \
+#   ifndef chpl_mli_pfx
+#     error The chpl_mli_pfx macro must be defined.
+#   endif
+#   define chpl_mli_debugf(fmt, ...)              \
   do {                                            \
       printf("%s ", chpl_mli_pfx);                \
       printf(fmt, __VA_ARGS__);                   \
   } while (0)
 #else
-# define chpl_mli_debugf(fmt, ...)
+#   define chpl_mli_debugf(fmt, ...)
 #endif
 
 //
