@@ -59,6 +59,7 @@ char executableFilename[FILENAME_MAX + 1] = "";
 char libmodeHeadername[FILENAME_MAX + 1]  = "";
 char fortranModulename[FILENAME_MAX + 1]  = "";
 char pythonModulename[FILENAME_MAX + 1]   = "";
+char mli_servername[FILENAME_MAX + 1]     = "";
 char saveCDir[FILENAME_MAX + 1]           = "";
 
 std::string ccflags;
@@ -773,7 +774,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // Multi-locale libraries must also keep track of a server executable.
   //
   if (fMultiLocaleInterop) {
-    fprintf(makefile.fptr, "SERVERNAME = %s_server\n", executableFilename);
+    fprintf(makefile.fptr, "SERVERNAME = %s\n", mli_servername);
     tmpserver = astr(tmpDirName, "/", strippedExeFilename, "_server",
                      ".tmp");
   }

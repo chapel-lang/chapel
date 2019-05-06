@@ -56,6 +56,7 @@ public:
 
   void emit(ModuleSymbol* md);
   void emit(FnSymbol* fn);
+  void emitClientHFile(void);
   void emitClientPrelude(void);
   void emitServerPrelude(void);
   void emitMarshalRoutines(void);
@@ -145,6 +146,8 @@ void codegenMultiLocaleInteropWrappers(void) {
   //
   MLIContext mli(false);
 
+  mli.emitClientHFile();
+
   mli.emitClientPrelude();
   mli.emitServerPrelude();
 
@@ -212,6 +215,18 @@ void MLIContext::emit(FnSymbol* fn) {
   return;
 }
 
+void MLIContext::emitClientHFile(void) {
+  // define header file
+  fileinfo clientHFile;
+  openCFile(&clientHFile, gen_mli_client, "h");
+  FILE* outfile = clientHFile.fptr;
+
+  if (outfile) {
+    fprintf(outfile, "const char* mli_servername = \"%s\";\n", mli_servername);
+  }
+  closeCFile(&clientHFile, true);
+}
+
 void MLIContext::emitClientPrelude(void) {
   std::string gen;
 
@@ -220,6 +235,7 @@ void MLIContext::emitClientPrelude(void) {
   }
 
   gen += this->genDefine("CHPL_MLI_IS_CLIENT");
+  gen += this->genHeaderInc(astr(gen_mli_client, ".h"));
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genHeaderInc("mli_client_runtime.c");
   gen += "\n";

@@ -47,6 +47,7 @@ void chpl_mli_server_init(struct chpl_mli_context* server) {
   if (server->context) { return; }
 
   server->context = zmq_ctx_new();
+  server->setup_sock = zmq_socket(server->context, ZMQ_PUSH);
   server->main    = zmq_socket(server->context, ZMQ_REP);
   server->arg     = zmq_socket(server->context, ZMQ_REP);
   server->res     = zmq_socket(server->context, ZMQ_REQ);
@@ -85,12 +86,14 @@ void chpl_mli_smain(void) {
   // We should be able to eliminate the use of one port as well.
   // 
   const char* ip = "localhost";
+  const char* setupPort = "5554";
   const char* mainport = "5555";
   const char* argport = "5556";
   const char* resport = "5557";
 
   chpl_mli_server_init(&chpl_server);
 
+  chpl_mli_connect(chpl_server.setup_sock, ip, setupPort);
   chpl_mli_bind(chpl_server.main, ip, mainport);
   chpl_mli_bind(chpl_server.arg, ip, argport);
   chpl_mli_bind(chpl_server.res, ip, resport);
