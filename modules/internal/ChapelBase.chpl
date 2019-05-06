@@ -100,11 +100,11 @@ module ChapelBase {
   }
 
   inline proc =(ref a: nothing, b: ?t) where t != nothing {
-    compilerError("a void variable cannot be assigned");
+    compilerError("a nothing variable cannot be assigned");
   }
 
   inline proc =(ref a: ?t, b: nothing) where t != nothing {
-    compilerError("cannot assign void to a variable of non-void type");
+    compilerError("cannot assign none to a variable of non-nothing type");
   }
 
   // This needs to be param so calls to it are removed after they are resolved

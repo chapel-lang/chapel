@@ -5275,7 +5275,11 @@ static Type* moveDetermineRhsType(CallExpr* call) {
   if (retval == dtVoid) {
     if (CallExpr* rhsCall = toCallExpr(rhs)) {
       if (FnSymbol* rhsFn = rhsCall->resolvedFunction()) {
-        if (!rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE)) {
+        // `expandExternArrayCalls` can add void assignments when
+        // the extern function has an explicit void return type.
+        // Let those through by looking for two flags it adds.
+        if (!(rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE) &&
+              rhsFn->hasFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG))) {
           const char* rhsName = rhsFn->name;
           if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
             rhsName = unwrapFnName(rhsFn);
