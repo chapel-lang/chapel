@@ -578,6 +578,10 @@ void initPrimitiveTypes() {
 
   dtValue = createInternalType("value", "_chpl_value");
 
+  gIteratorBreakToken = new VarSymbol("_iteratorBreakToken", dtBool);
+  gIteratorBreakToken->addFlag(FLAG_CONST);
+  rootModule->block->insertAtTail(new DefExpr(gIteratorBreakToken));
+
   INIT_PRIM_BOOL("bool(1)", 1);
   INIT_PRIM_BOOL("bool(8)", 8);
   INIT_PRIM_BOOL("bool(16)", 16);

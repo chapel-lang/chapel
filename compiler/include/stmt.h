@@ -300,6 +300,7 @@ public:
 extern Vec<LabelSymbol*>         removedIterResumeLabels;
 extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 
+const char*  gotoTagToString(GotoTag gotoTag);
 CondStmt*    isConditionalInCondStmt(Expr* expr);
 
 // Probably belongs in Expr; doesn't really mean Stmt, but rather

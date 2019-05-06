@@ -1475,6 +1475,33 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
                             TaskFnCopyMap& taskFnCopies,
                             bool&          addErrorArgToCall);
 
+static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody) {
+  bool isOrderIndependent = forLoop->isOrderIndependent();
+  bool hasVectorHazard = forLoop->hasVectorizationHazard();
+
+  // if the loop being expanded was order independent, all of the yielding
+  // loops in the body are also order independent. Note that this must occur
+  // after the ibody replaces the forLoop since findEnclosingLoop() requires
+  // that its argument be in the AST. It must occur before yields are
+  // replaced in the functions below though.
+  if (isOrderIndependent || hasVectorHazard) {
+    std::vector<CallExpr*> callExprs;
+
+    collectCallExprs(ibody, callExprs);
+
+    for_vector(CallExpr, call, callExprs) {
+      if (call->isPrimitive(PRIM_YIELD)) {
+        if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
+          if (loop->isCoforallLoop() == false) {
+            loop->orderIndependentSet(isOrderIndependent);
+            loop->setHasVectorizationHazard(hasVectorHazard);
+          }
+        }
+      }
+    }
+  }
+}
+
 /// \param call A for loop block primitive.
 static bool
 // Returns true if the given ForLoop was handled (converted and removed from
@@ -1525,44 +1552,21 @@ expandIteratorInline(ForLoop* forLoop) {
 
     Symbol*       index = forLoop->indexGet()->symbol();
     BlockStmt*    ibody = iterator->body->copy();
-    std::vector<SymExpr*> symExprs;
 
-    bool isOrderIndependent = forLoop->isOrderIndependent();
-    bool hasVectorHazard = forLoop->hasVectorizationHazard();
-    if (preserveInlinedLineNumbers == false) {
+    if (! preserveInlinedLineNumbers)
       reset_ast_loc(ibody, forLoop);
-    }
 
     // and the entire for loop block is replaced by the iterator body.
     forLoop->replace(ibody);
 
-    // if the loop being expanded was order independent, all of the yielding
-    // loops in the body are also order independent. Note that this must occur
-    // after the ibody replaces the forLoop since findEnclosingLoop() requires
-    // that its argument be in the AST. It must occur before yields are
-    // replaced in the functions below though.
-    if (isOrderIndependent || hasVectorHazard) {
-      std::vector<CallExpr*> callExprs;
-
-      collectCallExprs(ibody, callExprs);
-
-      for_vector(CallExpr, call, callExprs) {
-        if (call->isPrimitive(PRIM_YIELD)) {
-          if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
-            if (loop->isCoforallLoop() == false) {
-              loop->orderIndependentSet(isOrderIndependent);
-              loop->setHasVectorizationHazard(hasVectorHazard);
-            }
-          }
-        }
-      }
-    }
+    markLoopProperties(forLoop, ibody);
 
     // Replace yield statements in the inlined iterator body with copies
     // of the body of the For Loop that invoked the iterator, substituting
     // the yielded index for the iterator formal.
     expandBodyForIteratorInline(forLoop, ibody, index);
 
+    std::vector<SymExpr*> symExprs;
     collectSymExprs(ibody, symExprs);
     replaceIteratorFormals(iterator, ic, symExprs);
 
@@ -1836,6 +1840,236 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
   }
 }
 
+//
+// Handle IBB - Iterator Break Block.
+// IBB contains the defer actions to be taken when break-ing
+// out of the enclosing loop.
+//
+/*
+The two key pieces of the implementation are:
+
+* callDestructors determines what the defer actions are for each yield
+  in an iterator and puts them together into an IBB.
+
+ - createIteratorBreakBlocks(), at the start of callDestructors, adds this
+   if-statement right after each 'yield':
+
+     if _iteratorBreakToken { return; }
+
+ - where _iteratorBreakToken, stored in gIteratorBreakToken,
+   is a Symbol used to identify such conditionals.
+
+ - callDestructors, then, thinks that the 'return' is a real thing
+   and adds whatever cleanup/defer actions are appropriate at that point.
+   "IBB" is the resulting then-clause of this if-statement.
+
+ - Thanks to @mppf for this trick. No modifications needed in callDestructors!
+
+* lowerIterators places these IBBs at the points in ForLoop bodies
+  where the control goes out of the body. Then it removes the
+  "if _iteratorBreakToken" statements from the tree.
+
+** When inlining an iterator:
+
+ - Background: expandBodyForIteratorInline() replaces a ForLoop
+   with the body of its iterator, then replaces each 'yield'
+   of the iterator with the body of the ForLoop. For each yield...
+
+ - addIteratorBreakBlocksInline() adds the IBB for that yield
+   before each GotoStmt in ForLoop's body that goes outside the ForLoop.
+   This handles 'break', 'return', 'throw'.
+
+ - If the ForLoop is inside another iterator and contains its own yields,
+   addIteratorBreakBlocksInline() also merges the IBBs of the two iterators.
+
+** When lowering the parallel loop of a ForallStmt, the same implementation
+   is used as when lowering a ForLoop by inlining.
+   The follower loop does not need special handling because it is already
+   represented as a ForLoop by the end of resolution.
+
+** When using zip functions i.e. not inlining:
+
+ - Background: the ForLoop is lowered into a CForLoop, which invokes methods
+   on the iterator's _iteratorClass "IC", very roughly:
+
+     for (IC->init(); IC->hasMore(); IC->advance()) { ForLoop body; }
+
+   The iterator's state, i.e. its formals and local variables,
+   are stored in its _iteratorClass "IC", so they persist
+   between invocations of IC methods.
+   Additionally, the field IC.more starts at 1, then indicates, using
+   integers >1, which yield was executed more recently. advance()
+   uses a sequence of "if (IC->more == NN) goto _jump_NN;" to resume
+   where it left off from the previous yield.
+
+ - buildJumpTables() also adds, for each NN:
+     if (IC->more == -NN) goto _jump_break_NN;
+
+ - addIteratorBreakBlocksJumptable() extends the body of advance()
+   so to look like this:
+
+     ... iterator code before the yield ...
+     ... compute the value to yield ...
+     IC->more = NN;
+     goto end;
+     _jump_break_NN:
+     ... IBB for this yield ...
+     goto end;
+     _jump_NN:
+     ... iterator code after the yield ...
+
+Care needs to be taken:
+
+* When iterator A itself iterates over iterator B, an IBB in A must perform
+  the defer actions in iterator B **before** :
+ - deinitializing B's _iteratorClass that A is using, when applicable,
+
+ - before other defer actions of A, ideally.
+*/
+
+// Return an appropriate IBB insertion point for an outbound goto 'gt'.
+// 'loopRef' is the forLoop or its copy for lowering, whichever is inTree().
+// 'IC' is the forLoop's _iteratorClass, or NULL if lowering a ForallStmt.
+//
+static Expr* ibbInsertPoint(Expr* loopRef, Symbol* IC, GotoStmt* gt) {
+  DefExpr* gtTarget = toSymExpr(gt->label)->symbol()->defPoint;
+  // Sanity: the goto's target is in the forLoop's function.
+  INT_ASSERT(gtTarget->parentSymbol == loopRef->parentSymbol);
+
+  // When lowering a ForallStmt, there is no IC.
+  // Insert the IBB right before the goto.
+  if (!IC) {
+    return gt;
+  }
+  
+  // If we are breaking out from this loop, the IC is freed
+  // at the break target. Insert the IBB right before the goto.
+  // Cf. if gt is a GOTO_RETURN, the IC is freed at the goto.
+  if (gt->gotoTag == GOTO_BREAK                   &&
+      gtTarget->parentExpr == loopRef->parentExpr ) {
+    return gt;
+  }
+
+  // The insertion point is the _freeIterator of IC.
+  // We want to give the iterator an opportunity to clean up
+  // **before** freeing its iterator class.
+  for (Expr* stmt = gt->prev; stmt; stmt = stmt->prev)
+    if (CallExpr* call = toCallExpr(stmt))
+      if (call->isNamed("_freeIterator"))
+        if (toSymExpr(call->get(1))->symbol() == IC)
+          // Insert the IBB right before freeing the IC.
+          return stmt;
+
+  INT_FATAL(gt, "did not find the insertion point");
+  return NULL;
+}
+
+// Insert the IBB 'breakBlock' right before each goto that exits 'loopBody'.
+// 'loopRef' and 'IC' are passed through to ibbInsertPoint().
+static void addIteratorBreakBlocks(Expr* loopRef, Symbol* IC,
+                                   BlockStmt* loopBody, BlockStmt* breakBlock)
+{
+  INT_ASSERT(!loopBody->inTree()); // caller responsibility
+  std::vector<GotoStmt*> exits;
+  std::vector<CondStmt*> IBBs;
+
+  // We judge outbound-ness by checking whether the goto's target is inTree().
+  // Given that 'loopBody' is not inTree(), a target that IS inTree()
+  // is surely outside of 'loopBody'.
+  collectTreeBoundGotosAndIBBs(loopBody, exits, IBBs);
+
+  for_vector(GotoStmt, gt, exits) {
+    BlockStmt* bbcopy = breakBlock->copy();
+    ibbInsertPoint(loopRef, IC, gt)->insertBefore(bbcopy);
+    bbcopy->flattenAndRemove(); // otherwise later ibbInsertPoint may fail
+  }
+
+  for_vector(CondStmt, cs, IBBs) {
+    // Run IBB for the invoked iterator before IBB for the invoking iterator.
+    BlockStmt* bbcopy = breakBlock->copy();
+    cs->thenStmt->insertAtHead(bbcopy);
+    bbcopy->flattenAndRemove(); // might not be necessary
+  }
+}
+
+//
+// Call addIteratorBreakBlocks(). The breakBlock is the block
+// that createIteratorBreakBlocks() inserted for this yield
+// and callDestructors filled with the appropriate defer actions.
+//
+void addIteratorBreakBlocksInline(Expr* loopRef, Symbol* IC,
+                                  BlockStmt* loopBody, CallExpr* yield,
+                                  std::vector<Expr*>* delayedRemoval)
+{
+  BlockStmt* breakBlock = getBreakBlockForYield(delayedRemoval, yield);
+
+  // Remove the last goto in the breakBlock. The corresponding goto
+  // in 'loopBody' will branch to the exit instead.
+  toGotoStmt(breakBlock->body.tail)->remove();
+
+  addIteratorBreakBlocks(loopRef, IC, loopBody, breakBlock);
+}
+
+//
+// Call addIteratorBreakBlocks(). The break block does this:
+//   ic.more = -ic.more; ic.advance();
+//
+// In the zippered case, do the above for each zippered 'ic'.
+//
+// The _jump_break_N label inserted by buildJumpTables() into ic.advance()
+// is dispatched to when ic.more contains the negative value -N.
+//
+static void addIteratorBreakBlocksJumptable(Expr* loopRef, Symbol* IC,
+                                            BlockStmt* loopBody,
+                                            Vec<Symbol*> iterators) {
+  // foreach ic in iterators:
+  //   def moreRef : ref(int)
+  //   move moreRef, .(ic, more)
+  //   def moreVal : int
+  //   assign moreVal, moreRef
+  //   def moreValM : int
+  //   move moreValM, - moreVal
+  //   assign moreRef, moreValM
+  //   call advance(ic)
+
+  BlockStmt* breakBlk  = new BlockStmt();
+  Type*      moreType  = icMoreFieldType();
+  Type*   moreTypeRef  = moreType->getRefType();
+  Symbol* moreFieldReq = new_IntSymbol(icMoreFieldCode, INT_SIZE_64);
+  int idx = 0;
+
+  forv_Vec(Symbol, ic, iterators) {
+    idx++;
+    const char* idxs    = istr(idx);
+    VarSymbol* moreRef  = newTemp(astr("moreRef", idxs), moreTypeRef);
+    VarSymbol* moreVal  = newTempConst(astr("moreVal", idxs), moreType);
+    VarSymbol* moreValM = newTempConst(astr("moreValNeg", idxs), moreType);
+    FnSymbol*  advanceF = toAggregateType(ic->type)->iteratorInfo->advance;
+
+    breakBlk->insertAtTail(new DefExpr(moreRef));
+    breakBlk->insertAtTail("'move'(%S,'.'(%S,%S))", moreRef, ic, moreFieldReq);
+    breakBlk->insertAtTail(new DefExpr(moreVal));
+    breakBlk->insertAtTail("'='(%S,%S)", moreVal, moreRef);
+    breakBlk->insertAtTail(new DefExpr(moreValM));
+    breakBlk->insertAtTail("'move'(%S,'u-'(%S))", moreValM, moreVal);
+    breakBlk->insertAtTail("'='(%S,%S)", moreRef, moreValM);
+    breakBlk->insertAtTail(new CallExpr(advanceF, ic));
+  }
+
+  addIteratorBreakBlocks(loopRef, IC, loopBody, breakBlk);
+
+  // Future work: implement the bulk of the breakBlk contents to a function
+  // in ChapelIteratorSupport.chpl. Bonus: in that function, also do
+  // "if boundsChecking then assert ic.more != 0".
+  // Things to work out:
+  // * Store that function in another field of iteratorInfo so we can get
+  //   to it here.
+  // * Prevent that function from being pruned at resolution.
+  // * How to access ic.advance? ic.more?
+  // * How to handle zippering? or handle just one ic at a time?
+}
+
+
 static void
 expandBodyForIteratorInline(ForLoop*       forLoop,
                             BlockStmt*     ibody,
@@ -1852,7 +2086,6 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
       if (call->isPrimitive(PRIM_YIELD)) {
         Symbol*    yieldedIndex  = newTemp("_yieldedIndex", index->type);
         Symbol*    yieldedSymbol = toSymExpr(call->get(1))->symbol();
-        BlockStmt* bodyCopy      = NULL;
         bool       inserted      = false;
 
         if (forLoop->isCoforallLoop()) {
@@ -1862,11 +2095,12 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         }
 
         SymbolMap  map;
-
         map.put(index, yieldedIndex);
 
-        bodyCopy = forLoop->copyBody(&map);
-
+        BlockStmt* bodyCopy = forLoop->copyBody(&map);
+        addIteratorBreakBlocksInline(ibody, forLoop->iteratorGet()->symbol(),
+                                     bodyCopy, call, NULL);
+        
         if (int count = countEnclosingLocalBlocks(call, ibody)) {
           for (int i = 0; i < count; i++) {
             bodyCopy = new BlockStmt(bodyCopy);
@@ -2353,6 +2587,9 @@ expandForLoop(ForLoop* forLoop) {
     // scope to another if done in mid-transformation.
     CForLoop* cforLoop = CForLoop::buildWithBodyFrom(forLoop);
 
+    addIteratorBreakBlocksJumptable(forLoop, iterator,
+                                    (BlockStmt*)cforLoop, iterators);
+
     // Even for zippered iterators we only have one conditional test for the
     // loop. This takes that conditional and puts it into the test segment of
     // the c for loop.  Code in the initBlock and incrBlock clauses are each a
@@ -2401,7 +2638,8 @@ static void fixNumericalGetMemberPrims()
       AggregateType* ct = toAggregateType(call->get(1)->getValType());
       int64_t num;
       if (get_int(call->get(2), &num)) {
-        Symbol* field = ct->getField(num+1); // add 1 for super
+        Symbol* field = (num == icMoreFieldCode) ?
+          ct->getField("more") : ct->getField(num+1); // add 1 for super
         SET_LINENO(call);
         call->get(2)->replace(new SymExpr(field));
         CallExpr* parent = toCallExpr(call->parentExpr);
@@ -2661,6 +2899,23 @@ static void cleanupTemporaryVectors() {
   loopBodyFnArgsSuppliedMap.clear();
 }
 
+// These are most likely due to iterators getting inlined.
+// Todo: instead execute the thenStmt block upon 'break' from
+// the corresponding forLoops.
+static void cleanupIteratorBreakToken() {
+  for_alive_in_Vec(CondStmt, cond, gCondStmts)
+    if (SymExpr* se = toSymExpr(cond->condExpr))
+      if (se->symbol() == gIteratorBreakToken) {
+        FnSymbol* parent = toFnSymbol(cond->parentSymbol);
+        // Proper IBB handling in recursive iterators is TODO.
+        if (! strncmp(parent->name, "_rec_iter_", 10)        ||
+            ! strncmp(parent->name, "rec_iter_task_fn_", 17) )
+          cond->remove();
+        else
+          INT_FATAL(cond, "should not remain in the tree");
+      }
+}
+
 
 // 'depth' is a heuristic to avoid the risk of unbounded recursion.
 // Ex. what if 'parentSym' is a recursive function?
@@ -2754,8 +3009,8 @@ void lowerIterators() {
 
   lowerForallStmtsInline();
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->inTree() && fn->isIterator()) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isIterator()) {
       fn->collapseBlocks();
 
       removeUnnecessaryGotos(fn);
@@ -2765,7 +3020,6 @@ void lowerIterators() {
       // be added to the iterator class
       if (!fNoCopyPropagation)
         localCopyPropagation(fn);
-
 #endif
     }
   }
@@ -2777,37 +3031,29 @@ void lowerIterators() {
   // this problem.
   inlineIterators();
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->inTree() && fn->isIterator()) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isIterator()) {
       fn->collapseBlocks();
       removeUnnecessaryGotos(fn);
     }
   }
 
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (isAlive(block) == true && block->isForLoop() == true) {
-      if (ForLoop* loop = toForLoop(block)) {
-        expandForLoop(loop);
-      }
-    }
+  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
+    if (ForLoop* loop = toForLoop(block))
+      expandForLoop(loop);
   }
 
-  if (fVerify)
-  {
-    forv_Vec(BlockStmt, block, gBlockStmts)
-    {
-      if (isAlive(block) && block->isForLoop())
-      {
+  if (fVerify) {
+    for_alive_in_Vec(BlockStmt, block, gBlockStmts)
+      if (block->isForLoop())
         // All forLoops should have been removed from the tree by now.
         INT_FATAL(block, "Unexpected forLoop in tree.");
-      }
-    }
   }
 
   fragmentLocalBlocks();
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->inTree() && fn->isIterator()) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isIterator()) {
       // This collapseBlocks call is required for lowerIterator to inline
       // advance() into zip[1-4]
       fn->collapseBlocks();
@@ -2826,6 +3072,7 @@ void lowerIterators() {
   reconstructIRautoCopyAutoDestroy();
 
   cleanupTemporaryVectors();
+  cleanupIteratorBreakToken();
 
   iteratorsLowered = true;
 }

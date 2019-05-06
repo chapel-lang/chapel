@@ -26,6 +26,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
+#include "iterator.h"
 #include "expr.h"
 #include "LoopExpr.h"
 #include "UnmanagedClassType.h"
@@ -105,6 +106,28 @@ void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
   if (GotoStmt* gotoStmt = toGotoStmt(ast))
     gotoStmts.push_back(gotoStmt);
 }
+
+// This is a specialized helper for lowerIterators.
+// Collects the gotos whose target is inTree() into 'GOTOs' and
+// the iterator break blocks into 'IBBs'.
+void collectTreeBoundGotosAndIBBs(BaseAST* ast, std::vector<GotoStmt*>& GOTOs,
+                                  std::vector<CondStmt*>& IBBs) {
+  if (CondStmt* condStmt = isIBBCondStmt(ast)) {
+    IBBs.push_back(condStmt);
+    // Do not descend into the IBB to avoid its "goto return".
+    // We do not expect it to contain nested IBBs.
+    return;
+  }
+
+  AST_CHILDREN_CALL(ast, collectTreeBoundGotosAndIBBs, GOTOs, IBBs);
+
+  // Include only the gotos whose target is inTree().
+  if (GotoStmt* gt = toGotoStmt(ast))
+    if (SymExpr* labelSE = toSymExpr(gt->label))
+      if (labelSE->symbol()->inTree())
+        GOTOs.push_back(gt);
+}
+
 
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
