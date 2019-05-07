@@ -1255,8 +1255,6 @@ proc Block.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-proc BlockDom.dsiSupportsPrivatization() param return true;
-
 proc BlockDom.chpl__serialize() {
   return pid;
 }
@@ -1269,14 +1267,7 @@ proc type BlockDom.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(unmanaged BlockDom(rank=this.rank, idxType=this.idxType, stridable=this.stridable, sparseLayoutType=this.sparseLayoutType), data);
 }
 
-proc BlockArr.chpl__serialize() {
-  return pid;
-}
-
-proc type BlockArr.chpl__deserialize(data) {
-  //  compilerWarning("In BlockArr.deserialize(), " + data.type:string);
-  return chpl_getPrivatizedCopy(unmanaged BlockArr(rank=this.rank, idxType=this.idxType, stridable=this.stridable, eltType=this.eltType, sparseLayoutType=this.sparseLayoutType), data);
-}
+proc BlockDom.dsiSupportsPrivatization() param return true;
 
 record BlockDomPrvData {
   var distpid;
@@ -1304,6 +1295,15 @@ proc BlockDom.dsiReprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
     locDoms(i) = other.locDoms(i);
   whole = {(...reprivatizeData)};
+}
+
+proc BlockArr.chpl__serialize() {
+  return pid;
+}
+
+proc type BlockArr.chpl__deserialize(data) {
+  //  compilerWarning("In BlockArr.deserialize(), " + data.type:string);
+  return chpl_getPrivatizedCopy(unmanaged BlockArr(rank=this.rank, idxType=this.idxType, stridable=this.stridable, eltType=this.eltType, sparseLayoutType=this.sparseLayoutType), data);
 }
 
 proc BlockArr.dsiSupportsPrivatization() param return true;

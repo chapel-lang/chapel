@@ -650,6 +650,18 @@ iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.foll
     yield i;
 }
 
+proc CyclicDom.chpl__serialize() {
+  return pid;
+}
+
+// TODO: What happens when we try to deserialize on a locale that doesn't
+// own a copy of the privatized class?  (can that happen?)  Could this
+// be a way to lazily privatize by also making the originating locale part
+// of the 'data'?
+proc type CyclicDom.chpl__deserialize(data) {
+  return chpl_getPrivatizedCopy(unmanaged CyclicDom(rank=this.rank, idxType=this.idxType, stridable=this.stridable), data);
+}
+
 proc CyclicDom.dsiSupportsPrivatization() param return true;
 
 proc CyclicDom.dsiGetPrivatizeData() return 0;
@@ -764,6 +776,15 @@ override proc CyclicArr.dsiDestroyArr() {
       delete locArr(localeIdx);
     }
   }
+}
+
+proc CyclicArr.chpl__serialize() {
+  return pid;
+}
+
+proc type CyclicArr.chpl__deserialize(data) {
+  //  compilerWarning("In CyclicArr.deserialize(), " + data.type:string);
+  return chpl_getPrivatizedCopy(unmanaged CyclicArr(rank=this.rank, idxType=this.idxType, stridable=this.stridable, eltType=this.eltType), data);
 }
 
 proc CyclicArr.dsiSupportsPrivatization() param return true;
