@@ -60,11 +60,16 @@ static void chpl_mli_spawn_server() {
   strcat(command, mli_servername);
   strcat(command, " -nl 1");
 
-  #ifdef CHPL_MLI_DEBUG_PRINT
-  printf("executing %s as a subprocess\n", command);
-  #endif
+  chpl_mli_debugf("executing %s as a subprocess\n", command);
   server_pipe = popen(command, "r");
 }
+
+void chpl_mli_terminate(enum chpl_mli_errors e) {
+  const char* errstr = chpl_mli_errstr(e);
+  chpl_mli_debugf("Terminated abruptly with error: %s\n", errstr);
+  mli_terminate();
+}
+
 
 //
 // TODO: In multi-locale libraries, argc/argv formals are currently ignored.
@@ -91,9 +96,7 @@ void chpl_library_init(int argc, char** argv) {
   chpl_mli_bind(chpl_client.setup_sock, ip, setupPort);
 
   char* setup_sock_conn = chpl_mli_connection_info(chpl_client.setup_sock);
-  #ifdef CHPL_MLI_DEBUG_PRINT
-  printf("setup socket used %s\n", setup_sock_conn);
-  #endif
+  chpl_mli_debugf("setup socket used %s\n", setup_sock_conn);
 
   // TODO: pass in argv/argc, connection information
   chpl_mli_spawn_server();
@@ -117,7 +120,7 @@ void chpl_library_finalize(void) {
   finalized = 1;
 
   // TODO: Shut down the server and handle errors.
-  if (false) {
+  if (0) {
     int64_t shutdown = -1;
     chpl_mli_push(chpl_client.main, &shutdown, sizeof(shutdown), 0);     
   }
@@ -131,7 +134,7 @@ void chpl_library_finalize(void) {
     }
   }
   if (pclose(server_pipe)) {
-    printf("Failed to shut down server\n");
+    chpl_mli_debugf("Failed to shut down server\n");
   }
 
   // TODO: It would be a good idea to set LINGER to 0 as well.
