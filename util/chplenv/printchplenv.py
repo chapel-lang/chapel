@@ -91,7 +91,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_REGEXP', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_LLVM', COMPILER, 'llvm'),
+    ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME, 'lib_pic'),
     ChapelEnv('CHPL_RUNTIME_SUBDIR', INTERNAL),

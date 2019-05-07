@@ -22,4 +22,5 @@ writeln("CHPL_ATOMICS: intrinsics +");
 writeln("CHPL_GMP: none +");
 writeln("CHPL_HWLOC: hwloc +");
 writeln("CHPL_REGEXP: re2 +");
+writeln("CHPL_LLVM: none +");
 writeln("CHPL_AUX_FILESYS: none +");
