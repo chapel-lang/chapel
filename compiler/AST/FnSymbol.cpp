@@ -274,7 +274,7 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
    * appropriately.
    */
   if (this->getReturnSymbol() == gVoid) {
-    // Case 1: Function returns nothing.
+    // Case 1: Function returns void.
     newFn->retSymbol = gVoid;
 
   } else if (this->getReturnSymbol() == this->_this) {
