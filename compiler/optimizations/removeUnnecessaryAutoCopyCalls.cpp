@@ -35,7 +35,7 @@ static void removePODinitDestroy()
     if (fn->hasFlag(FLAG_INIT_COPY_FN) || fn->hasFlag(FLAG_AUTO_COPY_FN))
     {
       if (fn->retType == dtNothing)
-        // initCopy(void) and autoCopy(void) will have had their void
+        // initCopy(none) and autoCopy(none) will have had their nothing
         // argument removed
         continue;
 
