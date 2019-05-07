@@ -110,40 +110,39 @@ void chpl_mli_smain(void) {
     // TODO: Handle socket errors on inbound read.
     if (err < 0) {
       chpl_mli_debugf("Socket error on read: %d\n", err);
-      execute = 0;
       ack = CHPL_MLI_ERROR_SOCKET;
     }
 
     if (id < 0) {
       chpl_mli_debugf("Client sent error: %s\n", chpl_mli_errstr(id));
+      ack = CHPL_MLI_ERROR_SHUTDOWN;
+      execute = 0;
     } else {
       chpl_mli_debugf("Received request for ID: %lld\n", id);
+      ack = CHPL_MLI_ERROR_NONE;
     }
  
-    // TODO: How to restructure the loop to reply with something meaningful?
     chpl_mli_debugf("Responding with error: %s\n", chpl_mli_errstr(0));
-    err = chpl_mli_push(chpl_server.main, "", 0, 0);
+    err = chpl_mli_push(chpl_server.main, &ack, sizeof(ack), 0);
 
-    // TODO: Handle socket errors on outbound push.
     if (err < 0) { chpl_mli_debugf("Socket error on write: %d\n", err); }
 
-    // For now, treat negative values of ID as shutdown code.
-    if (execute && id < 0) {
-      chpl_mli_debugf("Shutdown, code: %lld\n", id);
-      execute = 0;
-      ack = CHPL_MLI_ERROR_SHUTDOWN;
-    }
-   
-    if (execute && id >= 0) {
-      ack = chpl_mli_sdispatch(id);
-    }
+    // TODO: This ack value is currently just overwritten...
+    if (execute && id > 0) { ack = chpl_mli_sdispatch(id); }
   }
+
+  chpl_mli_debugf("Shutdown, code: %s\n", chpl_mli_errstr(id));
 
   seconds = (double) (clock() - before) / (double) CLOCKS_PER_SEC;
 
+  chpl_mli_close(chpl_server.setup_sock);
+  chpl_mli_close(chpl_server.main);
+  chpl_mli_close(chpl_server.arg);
+  chpl_mli_close(chpl_server.res);
+
   chpl_mli_server_deinit(&chpl_server);
 
-  chpl_mli_debugf("Graceful shutdown, time elapsed: %gs\n", seconds);
+  chpl_mli_debugf("Total time elapsed: %gs\n", seconds);
 
   return;
 }

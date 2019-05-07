@@ -119,10 +119,13 @@ void chpl_library_finalize(void) {
   if (finalized) { return; }
   finalized = 1;
 
-  // TODO: Shut down the server and handle errors.
-  if (0) {
-    int64_t shutdown = -1;
-    chpl_mli_push(chpl_client.main, &shutdown, sizeof(shutdown), 0);     
+  {
+    int64_t shutdown = CHPL_MLI_ERROR_SHUTDOWN;
+    chpl_mli_push(chpl_client.main, &shutdown, sizeof(shutdown), 0);
+    chpl_mli_pull(chpl_client.main, &shutdown, sizeof(shutdown), 0);
+
+    // Can server ever respond with a different error?
+    if (shutdown != CHPL_MLI_ERROR_SHUTDOWN) { ;;; }
   }
 
   char server_output[256];
