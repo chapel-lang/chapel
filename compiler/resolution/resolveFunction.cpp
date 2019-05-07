@@ -790,9 +790,6 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   if (yieldedType == dtUnknown) {
     USR_FATAL(fn, "unable to resolve yielded type");
   }
-  if (yieldedType == dtVoid) {
-    printf("found nothing iterator\n");
-  }
 
   SET_LINENO(fn);
 

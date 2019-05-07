@@ -1190,18 +1190,18 @@ static void normalizeReturns(FnSymbol* fn) {
     }
   }
 
-  bool retExprIsNothing = false;
+  bool retExprIsVoid = false;
   if (fn->retExprType) {
     if (SymExpr* retExpr = toSymExpr(fn->retExprType->body.only())) {
       if (retExpr->symbol() == gVoid) {
-        retExprIsNothing = true;
+        retExprIsVoid = true;
       }
     }
   }
 
   // Add a void return if needed.
   if (isIterator == false && rets.size() == 0 &&
-      (fn->retExprType == NULL || retExprIsNothing)) {
+      (fn->retExprType == NULL || retExprIsVoid)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
   }

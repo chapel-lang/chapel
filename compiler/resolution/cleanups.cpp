@@ -833,11 +833,11 @@ static void cleanupVoidVarsAndFields() {
   adjustVoidShadowVariables();
 
   // Problem case introduced by postFoldNormal where a statement-level call
-  // returning void can be replaced by a 'voidValue' SymExpr. Such SymExprs will
+  // returning void can be replaced by a 'none' SymExpr. Such SymExprs will
   // be left in the tree if optimizations are disabled, and can cause codegen
   // failures later on (at least under LLVM).
   //
-  // Solution: Remove SymExprs to voidValue if the expr is at the
+  // Solution: Remove SymExprs to none if the expr is at the
   // statement level.
   for_SymbolSymExprs(se, gNone) {
     if (se == se->getStmtExpr()) {

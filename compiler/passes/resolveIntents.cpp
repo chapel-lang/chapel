@@ -117,9 +117,9 @@ IntentTag blankIntentForType(Type* t) {
              t == dtTaskID                           ||
              t == dtFile                             ||
              t == dtNil                              ||
-             t == dtVoid                          ||
+             t == dtVoid                             ||
              t == dtOpaque                           ||
-             t == dtNothing                             ||
+             t == dtNothing                          ||
              t->symbol->hasFlag(FLAG_DOMAIN)         ||
              t->symbol->hasFlag(FLAG_DISTRIBUTION)   ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
