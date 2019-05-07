@@ -5,7 +5,7 @@ record R {
     this.x = x;
   }
 
-  proc init(ref src: R) {
+  proc init=(ref src: R) {
     this.x = src.x;
     this.complete();
     src.x = 0;

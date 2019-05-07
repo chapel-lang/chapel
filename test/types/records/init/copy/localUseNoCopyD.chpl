@@ -6,7 +6,7 @@ module Bar {
   }
   proc R.init(){
   }
-  proc R.init(other:R){
+  proc R.init=(other:R){
     x = other.x;
     y = other.y;
     z = other.z;

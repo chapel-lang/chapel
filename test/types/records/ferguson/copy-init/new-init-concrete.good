@@ -1,9 +1,6 @@
 Creating r
 r (x = 1)
 copy-initializing
-In R.init
+In R.init=
 copy1 (x = 1)
-explicitly copy-initializing
-In R.init
-copy2 (x = 1)
 r (x = 1)

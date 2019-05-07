@@ -198,7 +198,7 @@ module CPtr {
       return size;
     }
 
-    proc init(other: c_array) {
+    proc init=(other: c_array) {
       this.eltType = other.eltType;
       this.size = other.size;
       this.complete();

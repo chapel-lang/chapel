@@ -2,7 +2,7 @@ record Foo {
   proc init() {
   }
 
-  proc init(other: Foo) {
+  proc init=(other: Foo) {
   }
 }
 proc quux(x: Foo) return x;

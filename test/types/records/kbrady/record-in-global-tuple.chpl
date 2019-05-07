@@ -7,7 +7,7 @@ module bar {
       x[1] = y;
     }
 
-    proc init(other: BadBaz) {
+    proc init=(other: BadBaz) {
       this.complete();
       x[1] = other.x[1];
     }

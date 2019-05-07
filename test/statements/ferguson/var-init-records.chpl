@@ -7,7 +7,7 @@ record R {
     writeln("R int init ", arg);
     this.x = arg;
   }
-  proc init(arg:R) {
+  proc init=(arg:R) {
     writeln("R copy init from ", arg.x);
     this.x = arg.x;
   }

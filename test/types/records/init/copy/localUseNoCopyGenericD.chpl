@@ -4,7 +4,7 @@ module Bar {
   record R {
     var x,y,z;
   }
-  proc R.init(other:R){
+  proc R.init=(other:R){
     x = other.x;
     y = other.y;
     z = other.z;

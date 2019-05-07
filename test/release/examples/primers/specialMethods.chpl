@@ -42,9 +42,10 @@ record R {
 
 // An initializer named ``init`` is called when creating an instance of the
 // class or record, for example with the ``new`` keyword. An initializer
-// accepting zero arguments is called a *default initializer*.  An initializer
-// that takes another instance of the same class or record is called a
-// *copy initializer*.
+// accepting zero arguments is called a *default initializer*.
+
+// A method named ``init=`` is called a *copy initializer* and accepts a
+// single argument.
 
 // If a method named ``postinit`` that accepts zero arguments exists for a
 // class or record type, it will automatically be called after the

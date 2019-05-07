@@ -32,7 +32,7 @@ record Handle
 
   proc init(val: real) { _impl = new unmanaged Impl(1, val); }
 
-  proc init(other: Handle) {
+  proc init=(other: Handle) {
     if other._impl == nil then halt("Illegal copy of uninitialized Handle.");
     _impl = other._impl;
     _impl.retain();

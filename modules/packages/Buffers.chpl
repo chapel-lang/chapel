@@ -154,7 +154,7 @@ module Buffers {
 
 
   pragma "no doc"
-  proc bytes.init(x: bytes) {
+  proc bytes.init=(x: bytes) {
     this.home = here;
     if x.home == here {
       qbytes_retain(x._bytes_internal);
@@ -322,7 +322,7 @@ module Buffers {
     if error then try! ioerror(error, "in buffer initializer");
   }
   pragma "no doc"
-  proc buffer.init(x: buffer) {
+  proc buffer.init=(x: buffer) {
     if x.home == here {
       qbuffer_retain(x._buf_internal);
       this.home = here;

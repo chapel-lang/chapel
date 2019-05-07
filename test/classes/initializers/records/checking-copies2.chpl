@@ -11,7 +11,7 @@ record R {
     y = true;
   }
 
-  proc init(other:R) {
+  proc init=(other:R) {
     this.x = other.x;
     this.y = other.y;
   }

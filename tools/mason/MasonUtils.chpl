@@ -206,7 +206,7 @@ record VersionInfo {
     bug = 0;
   }
 
-  proc init(other:VersionInfo) {
+  proc init=(other:VersionInfo) {
     this.major = other.major;
     this.minor = other.minor;
     this.bug   = other.bug;

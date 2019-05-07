@@ -139,6 +139,9 @@ static std::map<FnSymbol*, const char*> outerCompilerErrorMap;
 
 static CapturedValueMap            capturedValues;
 
+// Used to ensure we only issue the warning once per instantiation
+static std::set<FnSymbol*> oldStyleInitCopyFns;
+
 
 //#
 //# Static Function Declarations
@@ -5002,8 +5005,13 @@ static void resolveInitVar(CallExpr* call) {
         call->setUnresolvedFunction(astrInitEquals);
 
         resolveCall(call);
+      } else {
+        FnSymbol* fn = call->resolvedFunction();
+        if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
+          oldStyleInitCopyFns.insert(fn);
+          USR_WARN(fn, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
+        }
       }
-      // else: warning about old-style 'init' vs. init= would go here
 
       if (at->hasPostInitializer() == true) {
         call->insertAfter(new CallExpr("postinit", gMethodToken, dst));
@@ -5042,6 +5050,12 @@ FnSymbol* findCopyInit(AggregateType* at) {
     call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
 
     ret = resolveUninsertedCall(at, call, false);
+  } else {
+    FnSymbol* fn = ret;
+    if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
+      oldStyleInitCopyFns.insert(fn);
+      USR_WARN(fn, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
+    }
   }
 
   // ret's instantiationPoint points to the dummy BlockStmt created by

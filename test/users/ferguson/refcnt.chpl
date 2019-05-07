@@ -31,8 +31,8 @@ record R {
 proc R.init() {
 }
 
-proc R.init(x: R) {
-  writeln("In R.init(R) ", x.refcnt);
+proc R.init=(x: R) {
+  writeln("In R.init=(R) ", x.refcnt);
   this.refcnt = x.refcnt;
   this.complete();
   this.retain();
