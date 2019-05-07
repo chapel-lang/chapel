@@ -609,7 +609,7 @@ module ZMQ {
     }
 
     pragma "no doc"
-    proc init(s: Socket) {
+    proc init=(s: Socket) {
       this.complete();
       this.acquire(s.classRef);
     }

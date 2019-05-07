@@ -14,7 +14,7 @@ proc R.deinit() {
   delete this.ptr;
 }
 
-proc R.init(from:R) {
+proc R.init=(from:R) {
   this.ptr = new unmanaged Impl(from.ptr.x);
 }
 

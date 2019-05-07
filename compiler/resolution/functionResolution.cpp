@@ -5050,6 +5050,12 @@ FnSymbol* findCopyInit(AggregateType* at) {
     call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
 
     ret = resolveUninsertedCall(at, call, false);
+  } else {
+    FnSymbol* fn = ret;
+    if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
+      oldStyleInitCopyFns.insert(fn);
+      USR_WARN(fn, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
+    }
   }
 
   // ret's instantiationPoint points to the dummy BlockStmt created by

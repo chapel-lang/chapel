@@ -1,6 +1,6 @@
 record MyRecord {
   var a;
-  proc init(other:MyRecord) {
+  proc init=(other:MyRecord) {
     this.a = other.a;
   }
   proc init(arg) {
