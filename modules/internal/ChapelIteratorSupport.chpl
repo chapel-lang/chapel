@@ -165,7 +165,7 @@ module ChapelIteratorSupport {
     type shapeType = chpl_iteratorShapeStaticTypeOrVoid(irType);
 
     proc standinType() type {
-      if shapeType == void {
+      if shapeType == nothing {
         // shapeless case
         return domain(1);
 
