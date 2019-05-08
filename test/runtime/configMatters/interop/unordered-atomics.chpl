@@ -14,6 +14,7 @@ config const numTrials = 10;
 var a: atomic int;
 proc addIt(p: c_void_ptr): c_void_ptr {
   a.unorderedAdd(1);
+  unorderedAtomicTaskFence();
   return c_nil;
 }
 
@@ -31,6 +32,5 @@ proc threadsAddIt(nthreads) {
 coforall loc in Locales do on loc do
   for 1..numTrials do
     threadsAddIt(numThreadsPerLocale);
-unorderedAtomicFence();
 
 assert(a.read() == numLocales * numTrials * numThreadsPerLocale);
