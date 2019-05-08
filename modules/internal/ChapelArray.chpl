@@ -926,6 +926,15 @@ module ChapelArray {
                        // in which case, the record destructor should
                        // not attempt to delete the _instance.
 
+    // Note: This does not handle the case where the desired type of 'this'
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : _distribution) {
+      var value = other._value.dsiClone();
+      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
+      this._instance = value;
+    }
+
     inline proc _value {
       if _isPrivatized(_instance) {
         return chpl_getPrivatizedCopy(_instance.type, _pid);
@@ -1051,6 +1060,22 @@ module ChapelArray {
 
     proc chpl__promotionType() type {
       return index(rank, _value.idxType);
+    }
+
+    // Note: This does not handle the case where the type of 'this' does not
+    // handle the type of 'other'. That case is currently managed by the
+    // compiler and various helper functions involving runtime types.
+    proc init=(const ref other : domain) {
+      pragma "no auto destroy"
+      var temp : other.type;
+      this._pid = temp._pid;
+      this._instance = temp._instance;
+      this._unowned = temp._unowned;
+      this.complete();
+
+      // No need to lock this domain since it's not exposed anywhere yet.
+      // No need to handle arrays over this domain either for the same reason.
+      _instance.dsiAssignDomain(other, lhsPrivate=true);
     }
 
     inline proc _value {
@@ -4149,31 +4174,6 @@ module ChapelArray {
   pragma "no doc"
   iter linearize(Xs) {
     for x in Xs do yield x;
-  }
-
-  pragma "init copy fn"
-  proc chpl__initCopy(a: _distribution) {
-    pragma "no copy" var b = a.clone();
-    return b;
-    // You'd think we could just write
-    //   return a.clone();
-    // but that makes an infinite loop.
-  }
-
-  pragma "init copy fn"
-  proc chpl__initCopy(const ref a: domain) {
-    var b: a.type;
-
-    // No need to lock b since it's not exposed anywhere yet
-    // No need to handle arrays over b either for the same reason.
-    b._instance.dsiAssignDomain(a, lhsPrivate=true);
-
-    return b;
-  }
-
-  pragma "auto copy fn" proc chpl__autoCopy(const ref x: domain) {
-    pragma "no copy" var b = chpl__initCopy(x);
-    return b;
   }
 
   // This implementation of arrays and domains can create aliases
