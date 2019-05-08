@@ -18,14 +18,9 @@ CHPL_JEMALLOC_CFG_OPTIONS += --prefix=$(JEMALLOC_INSTALL_DIR) \
 			     --with-jemalloc-prefix=$(CHPL_JEMALLOC_PREFIX) \
 			     --with-private-namespace=chpl_
 
-# Can't build under CCE with high levels of interprocedural analysis on. We get
-# runtime errors with -hipa3 (the default) or higher so limit to -hipa2.
+# Can't build under CCE with interprocedural analysis or we get runtime errors
 ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
-ifeq ($(OPTIMIZE), 1)
-CFLAGS += -hipa2
-else
 CFLAGS += -hipa0
-endif
 endif
 
 
