@@ -11,7 +11,7 @@ inline proc iniDstValue() { return 0; }
 inline proc iniSrcValue() { return 1; }
 
 proc printThem(ref dst, ref src) {
-  if unordered then unorderedCopyFence();
+  if unordered then unorderedCopyTaskFence();
   write("dst=" + dst + ", src=" + src + " -- ");
 }
 
