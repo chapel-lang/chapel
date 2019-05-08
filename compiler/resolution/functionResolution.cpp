@@ -4515,18 +4515,24 @@ static void resolveTupleExpand(CallExpr* call) {
   if (size == 0)
     INT_FATAL(call, "Invalid tuple expand primitive");
 
+  if (parent != NULL && parent->primitive != NULL) {
+    if (!parent->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE)) {
+      USR_FATAL(parent, "illegal tuple expansion context");
+    }
+  }
+
   if (parent != NULL && parent->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE))
     size = 1; // use the first component of the tuple for the shape
 
   stmt->insertBefore(noop);
 
   for (int i = 1; i <= size; i++) {
-    VarSymbol* tmp = newTemp("_tuple_expand_tmp_");
+    VarSymbol* tmp = newTemp(astr("_tuple_expand_tmp_", istr(i)));
     CallExpr*  e   = NULL;
 
     tmp->addFlag(FLAG_MAYBE_TYPE);
 
-    if (sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    if (sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
       tmp->addFlag(FLAG_TYPE_VARIABLE);
     }
 
@@ -4857,7 +4863,12 @@ static void resolveInitVar(CallExpr* call) {
 
   Type* targetType = NULL;
   bool addedCoerce = false;
-  if (call->numActuals() >= 3) {
+
+  if (call->numActuals() > 3) {
+    INT_FATAL(call, "unexpected number of actuals in variable init call");
+  }
+
+  if (call->numActuals() == 3) {
     SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
     targetType = targetTypeExpr->typeInfo();
 
