@@ -845,24 +845,6 @@ static void setPythonAndLibmode(const ArgumentDescription* desc,
   fLibraryPython = true;
 }
 
-static void setMLDebugAndLibmode(const ArgumentDescription* desc,
-                                 const char* unused) {
-  bool trigger = false;
-
-  setLibmode(desc, unused);
-
-  trigger = !strcmp(CHPL_COMM, "none") ? true : false;
-
-  if (trigger) {
-    std::string warning;
-    warning += "The current session is not eligible for ";
-    warning += "multi-locale library support. ";
-    warning += "Ignoring flag, but enabling library compilation.";
-    USR_WARN(warning.c_str());
-    fMultiLocaleLibraryDebug = false;
-  }
-}
-
 /*
 Flag types:
 
@@ -1084,7 +1066,7 @@ static ArgumentDescription arg_desc[] = {
  {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", fortranModulename, NULL, setFortranAndLibmode},
  {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
  {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
- {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, setMLDebugAndLibmode},
+ {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
@@ -1443,6 +1425,22 @@ static void checkIncrementalAndOptimized() {
               " using -O optimizations directly.");
 }
 
+static void setMLDebugAndLibmode(void) {
+
+  fLibraryCompile = true;
+
+  if (!strcmp(CHPL_COMM, "none")) {
+    fMultiLocaleLibraryDebug = false;
+
+    const char* warning =
+        "Compiling a single locale library because CHPL_COMM is none.";
+
+    USR_WARN(warning);
+  }
+
+  return;
+}
+
 static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
@@ -1459,6 +1457,8 @@ static void postprocess_args() {
   postStaticLink();
 
   setMultiLocaleInterop();
+
+  setMLDebugAndLibmode();
 
   setPrintCppLineno();
 
