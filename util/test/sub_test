@@ -2128,7 +2128,8 @@ for testname in testsrc:
 
                             err_strings = ['could not checkout FLEXlm license']
                             for s in err_strings:
-                                if re.search(s, output, re.IGNORECASE) != None:
+                                # NOTE: checking pre_exec (compiler) output
+                                if re.search(s, pre_exec_output, re.IGNORECASE) != None:
                                     extra_msg = '(possible JIRA 357) '
                                     break
 
