@@ -17,7 +17,10 @@
  * limitations under the License.
  */
 
-#include "mli_common_code.c"
+#ifndef CHPL_RUNTIME_ETC_SRC_MLI_SERVER_RUNTIME_C_
+#define CHPL_RUNTIME_ETC_SRC_MLI_SERVER_RUNTIME_C_
+
+#include "mli/common_code.c"
 #include <time.h>
 
 //
@@ -58,14 +61,6 @@ void chpl_mli_terminate(enum chpl_mli_errors e) {
   mli_terminate();
 }
 
-//
-// TODO
-// 
-// Server takes no arguments for now to make dropping into it easier. Later,
-// we may want to pass it argc/argv, which will make things a bit more
-// complicated with regards to AST transformations. But for now, don't pass
-// it anything.
-//
 void chpl_mli_smain(void) {
   int64_t id = -1;
   int64_t ack = 0;
@@ -92,6 +87,7 @@ void chpl_mli_smain(void) {
   chpl_mli_bind(chpl_server.res, ip, resport);
 
   chpl_mli_debugf("%s\n", "Starting server for multi-locale library!");
+  chpl_mli_debugf("Setup port on: %s, %s\n", ip, setupPort);
   chpl_mli_debugf("Main port on: %s, %s\n", ip, mainport);
   chpl_mli_debugf("Arg port on: %s, %s\n", ip, argport);
   chpl_mli_debugf("Res port on: %s, %s\n", ip, resport);
@@ -114,7 +110,7 @@ void chpl_mli_smain(void) {
     }
 
     if (id < 0) {
-      chpl_mli_debugf("Client sent error: %s\n", chpl_mli_errstr(id));
+      chpl_mli_debugf("Client sent code: %s\n", chpl_mli_errstr(id));
       ack = CHPL_MLI_CODE_SHUTDOWN;
       execute = 0;
     } else {
@@ -122,7 +118,7 @@ void chpl_mli_smain(void) {
       ack = CHPL_MLI_CODE_NONE;
     }
  
-    chpl_mli_debugf("Responding with error: %s\n", chpl_mli_errstr(0));
+    chpl_mli_debugf("Responding with code: %s\n", chpl_mli_errstr(0));
     err = chpl_mli_push(chpl_server.main, &ack, sizeof(ack), 0);
 
     if (err < 0) { chpl_mli_debugf("Socket error on write: %d\n", err); }
@@ -147,3 +143,4 @@ void chpl_mli_smain(void) {
   return;
 }
 
+#endif

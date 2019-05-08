@@ -59,7 +59,6 @@ char executableFilename[FILENAME_MAX + 1] = "";
 char libmodeHeadername[FILENAME_MAX + 1]  = "";
 char fortranModulename[FILENAME_MAX + 1]  = "";
 char pythonModulename[FILENAME_MAX + 1]   = "";
-char mli_servername[FILENAME_MAX + 1]     = "";
 char saveCDir[FILENAME_MAX + 1]           = "";
 
 std::string ccflags;
@@ -717,6 +716,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   const char* tmpDirName = intDirName;
   const char* strippedExeFilename = stripdirectories(executableFilename);
   const char* exeExt = getLibraryExtension();
+  const char* server = "";
   const char* tmpserver = "";
   const char* tmpbin = "";
   bool startsWithLib = !strncmp(executableFilename, "lib", 3);
@@ -745,16 +745,28 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     fprintf(makefile.fptr, "SKIP_COMPILE_LINK = skip\n");
   }
 
+  //
+  // In --library compilation, put the generated library in the library
+  // directory.
+  //
   if (fLibraryCompile) {
 
-    //
-    // In --library compilation, put the generated library in the library
-    // directory.
-    //
     ensureLibDirExists();
     fprintf(makefile.fptr, "BINNAME = %s/", libDir);
     if (!startsWithLib) { fprintf(makefile.fptr, "lib"); }
     fprintf(makefile.fptr, "%s%s\n\n", executableFilename, exeExt);
+
+    //
+    // Now that the client and launcher are merged, the server name becomes
+    // the name of the library without any extension. We munge the server
+    // name with a trailing underscore just to guarantee that it's different
+    // from the file name.
+    //
+    if (fMultiLocaleInterop) {
+      server = astr(executableFilename, "_server");
+      fprintf(makefile.fptr, "SERVERNAME = %s\n\n", server);
+    }
+
   } else {
     fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
   }
@@ -766,17 +778,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   if (fLibraryCompile) {
     const char* pfx = startsWithLib ? "/" : "/lib";
     tmpbin = astr(tmpDirName, pfx, strippedExeFilename, ".tmp", exeExt);
+
+    if (fMultiLocaleInterop) {
+      tmpserver = astr(tmpDirName, "/", strippedExeFilename, "_server");
+    }
   } else {
     tmpbin = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
-  }
-
-  //
-  // Multi-locale libraries must also keep track of a server executable.
-  //
-  if (fMultiLocaleInterop) {
-    fprintf(makefile.fptr, "SERVERNAME = %s\n", mli_servername);
-    tmpserver = astr(tmpDirName, "/", strippedExeFilename, "_server",
-                     ".tmp");
   }
 
   // Write out the temporary filename to the caller if necessary.
@@ -804,6 +811,11 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode);
   fprintf(makefile.fptr, "COMP_GEN_FLOAT_OPT = %i\n", ffloatOpt);
 
+  if (fMultiLocaleInterop) {
+    const char* loc = "$(CHPL_MAKE_HOME)/runtime/etc/src";
+    fprintf(makefile.fptr, "COMP_GEN_MLI_EXTRA_INCLUDES = -I%s\n", loc);
+  }
+  
   // Build a string out of include directories, for convenience.
   std::string includedirs;
   for_vector(const char, dirName, incDirs) {
