@@ -55,6 +55,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/uio.h> /* for struct iovec */
 #include <time.h>
 
@@ -147,6 +148,8 @@ static struct fi_msg ofi_msg_reqs;
 // Forward decls
 //
 
+static void emit_delayedFixedHeapMsgs(void);
+
 static inline struct perTxCtxInfo_t* tciAlloc(chpl_bool);
 static inline void tciFree(struct perTxCtxInfo_t*);
 static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
@@ -188,6 +191,55 @@ static void time_init(void);
 #define OFI_CHK(expr) OFI_CHK_VAL(expr, FI_SUCCESS)
 
 #define PTHREAD_CHK(expr) CHK_EQ_TYPED(expr, 0, int, "d")
+
+
+////////////////////////////////////////
+//
+// Network type
+//
+
+static pthread_once_t networkOnce = PTHREAD_ONCE_INIT;
+
+typedef enum {
+  networkUnknown,
+  networkAries,
+  networkVerbs,
+} network_t ;
+
+static network_t network = networkUnknown;
+
+
+static
+void init_network(void) {
+  //
+  // This file will contain a "NETWORK=ari" line on a Cray XC.
+  //
+  FILE* f;
+  if ((f = fopen("/etc/opt/cray/release/cle-release", "r")) == NULL) {
+    return;
+  }
+
+  char buf[100];
+  int networkIsAries = 0;
+  while (fgets(buf, sizeof(buf), f) != NULL && !networkIsAries) {
+    networkIsAries = (strcmp(buf, "NETWORK=ari\n") == 0);
+  }
+
+  (void) fclose(f);
+
+  if (!networkIsAries) {
+    return;
+  }
+
+  network = networkAries;
+}
+
+
+static
+network_t getNetworkType(void) {
+  PTHREAD_CHK(pthread_once(&networkOnce, init_network));
+  return network;
+}
 
 
 ////////////////////////////////////////
@@ -427,6 +479,13 @@ void init_ofiFabricDomain(void) {
       }
     }
   }
+
+  //
+  // If we're using the gni provider on a Cray XC system and there were
+  // questionable settings associated with the fixed heap, say something
+  // about that now.
+  //
+  emit_delayedFixedHeapMsgs();
 }
 
 
@@ -1025,6 +1084,8 @@ static void*  fixedHeapStart;
 static pthread_once_t hugepageOnce = PTHREAD_ONCE_INIT;
 static size_t hugepageSize;
 
+static size_t nic_mem_map_limit;
+
 static void init_fixedHeap(void);
 
 static size_t get_hugepageSize(void);
@@ -1041,14 +1102,15 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 static
 void init_fixedHeap(void) {
   //
-  // We only need a fixed heap if we're multinode and using the
-  // gni provider.
+  // We only need a fixed heap if we're multinode on a Cray XC system.
   //
-  if (chpl_numNodes <= 1 || strcmp(getProviderName(), "gni") != 0)
+  if (chpl_numNodes <= 1 || getNetworkType() != networkAries) {
     return;
+  }
 
   //
-  // On XC systems you really ought to use hugepages.
+  // On XC systems you really ought to use hugepages.  If called for,
+  // a message will be emitted later.
   //
   size_t page_size;
   chpl_bool have_hugepages;
@@ -1056,8 +1118,6 @@ void init_fixedHeap(void) {
   void* start;
 
   if ((page_size = get_hugepageSize()) == 0) {
-    chpl_warning_explicit("not using hugepages may reduce performance",
-                          __LINE__, __FILE__);
     page_size = chpl_getSysPageSize();
     have_hugepages = false;
   } else {
@@ -1074,9 +1134,6 @@ void init_fixedHeap(void) {
   // The heap is supposed to be of fixed size and on hugepages.  Set
   // it up.
   //
-  size_t nic_mem_map_limit;
-  size_t nic_max_mem;
-  size_t max_heap_size;
 
   //
   // Considering the data size we'll register, compute the maximum
@@ -1084,9 +1141,7 @@ void init_fixedHeap(void) {
   // TLB.
   //
   const size_t nic_TLB_cache_pages = 512; // not publicly defined
-  nic_max_mem = nic_TLB_cache_pages * page_size;
-  nic_mem_map_limit = nic_max_mem;
-  max_heap_size = nic_mem_map_limit;
+  nic_mem_map_limit = nic_TLB_cache_pages * page_size;
 
   //
   // As a hedge against silliness, first reduce any request so that it's
@@ -1126,15 +1181,42 @@ void init_fixedHeap(void) {
   DBG_PRINTF(DBG_MR, "fixed heap on %spages, start=%p size=%#zx\n",
              have_hugepages ? "huge" : "regular ", start, size);
 
+  fixedHeapSize  = size;
+  fixedHeapStart = start;
+}
+
+
+static
+void emit_delayedFixedHeapMsgs(void) {
+  //
+  // We only need a fixed heap if we're multinode on a Cray XC system
+  // and using the gni provider.
+  //
+  if (chpl_numNodes <= 1
+      || getNetworkType() != networkAries
+      || strcmp(ofi_info->fabric_attr->prov_name, "gni") != 0) {
+    return;
+  }
+
+  //
+  // On XC systems you really ought to use hugepages.
+  //
+  void* start;
+  size_t size;
+  chpl_comm_impl_regMemHeapInfo(&start, &size);
+  if (hugepageSize == 0) {
+    chpl_warning_explicit("not using hugepages may reduce performance",
+                          __LINE__, __FILE__);
+  }
+
   //
   // Warn if the size is larger than what will fit in the TLB cache.
-  // But since that may reduce performance but won't affect function,
-  // don't reduce the size to fit.
   //
-  if (size > max_heap_size) {
+  if (size > nic_mem_map_limit) {
     if (chpl_nodeID == 0) {
+      size_t page_size = chpl_comm_impl_regMemHeapPageSize();
       char buf1[20], buf2[20], buf3[20], msg[200];
-      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_mem_map_limit);
       chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
       chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
       (void) snprintf(msg, sizeof(msg),
@@ -1145,9 +1227,6 @@ void init_fixedHeap(void) {
       chpl_warning(msg, 0, 0);
     }
   }
-
-  fixedHeapSize  = size;
-  fixedHeapStart = start;
 }
 
 
