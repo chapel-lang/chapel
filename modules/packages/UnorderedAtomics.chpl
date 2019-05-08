@@ -162,15 +162,16 @@ module UnorderedAtomics {
   }
 
   /*
-     Fence any pending unordered atomics. Note that this is a global fence
-     across all locales.
+     .. warning::
+       This function has been deprecated - please use
+       :proc:`unorderedAtomicTaskFence()` instead. Note that this function has
+       been deprecated without a full release of support because the previous
+       global fence semantics imposed expensive implementation requirements and
+       is not expected to be needed now that operations are implicitly fenced at
+       task/forall termination.
    */
   inline proc unorderedAtomicFence(): void {
-    if CHPL_NETWORK_ATOMICS != "none" {
-      extern proc chpl_comm_atomic_unordered_fence();
-      coforall loc in Locales do on loc {
-        chpl_comm_atomic_unordered_fence();
-      }
-    }
+    compilerError("unorderedAtomicFence() is no longer supported - please use unorderedAtomicTaskFence() instead");
+    unorderedAtomicTaskFence();
   }
 }

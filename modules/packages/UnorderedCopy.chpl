@@ -104,15 +104,16 @@ module UnorderedCopy {
   }
 
   /*
-     Fence any pending unordered copies. Note that this is a global fence
-     across all locales.
-   */
+   .. warning::
+     This function has been deprecated - please use
+     :proc:`unorderedCopyTaskFence()` instead. Note that this function has
+     been deprecated without a full release of support because the previous
+     global fence semantics imposed expensive implementation requirements and
+     is not expected to be needed now that operations are implicitly fenced at
+     task/forall termination.
+  */
   inline proc unorderedCopyFence(): void {
-    if CHPL_COMM == 'ugni' {
-      extern proc chpl_comm_get_unordered_fence();
-      coforall loc in Locales do on loc {
-        chpl_comm_get_unordered_fence();
-      }
-    }
+    compilerError("unorderedCopyFence() is no longer supported - please use unorderedCopyTaskFence() instead");
+    unorderedCopyTaskFence();
   }
 }

@@ -2930,11 +2930,6 @@ DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double, NEGATE_U_OR_R)
 
-
-void chpl_comm_atomic_unordered_fence(void) {
-  return;
-}
-
 void chpl_comm_atomic_unordered_task_fence(void) {
   return;
 }
