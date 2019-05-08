@@ -256,11 +256,7 @@ static const char* getProviderName(void);
 
 static
 void setProviderName(void) {
-  //
-  // For now, allow specifying the provider via env var.
-  //
-  CHK_TRUE((provName = chpl_env_rt_get("COMM_OFI_PROVIDER", "sockets"))
-           != NULL);
+  provName = chpl_env_rt_get("COMM_OFI_PROVIDER", NULL);
 }
 
 
@@ -353,10 +349,13 @@ void init_ofiFabricDomain(void) {
 
   hints->caps = FI_MSG | FI_SEND | FI_RECV | FI_MULTI_RECV
                 | FI_RMA | FI_READ | FI_WRITE
-                | FI_ATOMICS
                 | FI_REMOTE_READ | FI_REMOTE_WRITE;
+  if (getNetworkType() == networkAries) {
+      hints->caps |= FI_ATOMICS; // oddly, we don't get this without asking
+  }
 
-  hints->mode = 0; // TODO: may need ~0 here and handle modes for good gni perf
+  // The gni provider needs local MR.
+  hints->mode = (getNetworkType() == networkAries) ? FI_LOCAL_MR : 0;
 
   hints->addr_format = FI_FORMAT_UNSPEC;
 
@@ -380,15 +379,19 @@ void init_ofiFabricDomain(void) {
   hints->domain_attr->data_progress = prg;
 
   hints->domain_attr->av_type = FI_AV_TABLE;
-  hints->domain_attr->mr_mode = ((strcmp(provider, "gni") == 0)
+  hints->domain_attr->mr_mode = ((getNetworkType() == networkAries)
                                  ? FI_MR_BASIC
-                                 : FI_MR_SCALABLE);
+                                 : FI_MR_UNSPEC);
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
+  //
   // fi_freeinfo(hints) will free() hints->fabric_attr->prov_name; this
   // is documented, though poorly.  So, get that space from malloc().
-  CHK_SYS_CALLOC(hints->fabric_attr->prov_name, strlen(provider) + 1);
-  strcpy(hints->fabric_attr->prov_name, provider);
+  //
+  if (provider != NULL) {
+    CHK_SYS_CALLOC(hints->fabric_attr->prov_name, strlen(provider) + 1);
+    strcpy(hints->fabric_attr->prov_name, provider);
+  }
 
   //
   // Try to find a provider that can do what we want.  If more than one
@@ -397,8 +400,41 @@ void init_ofiFabricDomain(void) {
   // node 0; the other nodes should all have the same result and there's
   // no point in repeating everything numNodes times.
   //
+  if (DBG_TEST_MASK(DBG_CFGFAB) && chpl_nodeID == 0) {
+    DBG_PRINTF(DBG_CFGFAB, "==================== hints:");
+    DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(hints, FI_TYPE_INFO));
+  }
+
   int ret;
-  ret = fi_getinfo(FI_VERSION(1,5), NULL, NULL, 0, hints, &ofi_info);
+  ret = fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
+                   NULL, NULL, 0, hints, &ofi_info);
+
+  //
+  // STOPGAP: For now, do not accept TCP-based providers.  When we try
+  //          use them we get FI_ENOCQ on the first transmit context.
+  //          I don't know why.  For the time being, just skip those.
+  //          There's no harm for now; we've never used tcp providers.
+  //
+  if (ret == FI_SUCCESS) {
+    struct fi_info* info;
+    for (info = ofi_info; info != NULL; info = info->next) {
+      const char* pn = info->fabric_attr->prov_name;
+      if (strstr(pn, "tcp") == NULL)
+        break;
+      if (DBG_TEST_MASK(DBG_CFGFAB) && chpl_nodeID == 0) {
+        if (info == ofi_info) {
+          DBG_PRINTF(DBG_CFGFAB,
+                     "==================== skipping \"tcp\" provider(s):");
+        }
+        DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(info, FI_TYPE_INFO));
+        DBG_PRINTF(DBG_CFGFAB, "----------");
+      }
+    }
+    if ((ofi_info = info) == NULL) {
+      ret = -FI_ENODATA;
+    }
+  }
+
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
       if (DBG_TEST_MASK(DBG_CFGFAB | DBG_CFGFABSALL)) {
@@ -410,7 +446,8 @@ void init_ofiFabricDomain(void) {
                    "None matched hints; available with prov_name \"%s\" are:",
                    (provider == NULL) ? "<any>" : provider);
         struct fi_info* info = NULL;
-        OFI_CHK(fi_getinfo(FI_VERSION(1,5), NULL, NULL, 0, NULL, &info));
+        OFI_CHK(fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
+                           NULL, NULL, 0, NULL, &info));
         for ( ; info != NULL; info = info->next) {
           const char* pn = info->fabric_attr->prov_name;
           if (provider == NULL
@@ -626,13 +663,13 @@ void init_ofiEpNumCtxs(void) {
   // have its own, plus at least one more.
   //
   const struct fi_domain_attr* dom_attr = ofi_info->domain_attr;
-  int numWorkerTxCtxs;
+  int maxWorkerTxCtxs;
   if (useScalableTxEp)
-    numWorkerTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
+    maxWorkerTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
   else
-    numWorkerTxCtxs = dom_attr->ep_cnt - numAmHandlers;
+    maxWorkerTxCtxs = dom_attr->ep_cnt - numAmHandlers;
 
-  CHK_TRUE(numWorkerTxCtxs > 0);
+  CHK_TRUE(maxWorkerTxCtxs > 0);
 
   //
   // If the user manually limited the communication concurrency, take
@@ -640,8 +677,8 @@ void init_ofiEpNumCtxs(void) {
   //
   const int commConcurrency = chpl_env_rt_get_int("COMM_CONCURRENCY", 0);
   if (commConcurrency > 0) {
-    if (numWorkerTxCtxs > commConcurrency) {
-      numWorkerTxCtxs = commConcurrency;
+    if (maxWorkerTxCtxs > commConcurrency) {
+      maxWorkerTxCtxs = commConcurrency;
     }
   } else if (commConcurrency < 0) {
     chpl_warning("CHPL_RT_COMM_CONCURRENCY < 0, ignored", 0, 0);
@@ -657,9 +694,9 @@ void init_ofiEpNumCtxs(void) {
     // for the duration of the run.
     //
     CHK_TRUE(fixedNumThreads == chpl_task_getMaxPar()); // sanity
-    if (numWorkerTxCtxs > fixedNumThreads + 1)
-      numWorkerTxCtxs = fixedNumThreads + 1;
-    tciTabFixedAssignments = (numWorkerTxCtxs == fixedNumThreads + 1);
+    if (maxWorkerTxCtxs > fixedNumThreads + 1)
+      maxWorkerTxCtxs = fixedNumThreads + 1;
+    tciTabFixedAssignments = (maxWorkerTxCtxs == fixedNumThreads + 1);
   } else {
     //
     // The tasking layer doesn't have a fixed number of threads, but
@@ -667,8 +704,8 @@ void init_ofiEpNumCtxs(void) {
     // shouldn't need more worker tx contexts than whatever that is.
     //
     const int taskMaxPar = chpl_task_getMaxPar();
-    if (numWorkerTxCtxs > taskMaxPar)
-      numWorkerTxCtxs = taskMaxPar;
+    if (maxWorkerTxCtxs > taskMaxPar)
+      maxWorkerTxCtxs = taskMaxPar;
 
     tciTabFixedAssignments = false;
   }
@@ -676,7 +713,7 @@ void init_ofiEpNumCtxs(void) {
   //
   // Now we know how many transmit contexts we'll have.
   //
-  numTxCtxs = numWorkerTxCtxs + numAmHandlers;
+  numTxCtxs = maxWorkerTxCtxs + numAmHandlers;
   if (useScalableTxEp) {
     ofi_info->ep_attr->tx_ctx_cnt = numTxCtxs;
   }
@@ -2099,16 +2136,22 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
       {
         struct perTxCtxInfo_t* tcip;
         CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
-        do {
-          const int count = fi_cntr_read(tcip->txCntr);
-          if (count == 0) {
-            sched_yield();
-            chpl_comm_make_progress();
-          } else {
-            DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
-            tcip->numTxsOut -= count;
+        if (tcip->txCQ != NULL) {
+          if (tcip->numTxsOut > 1) {
+            waitForTxCQ(tcip, 1, 0);
           }
-        } while (tcip->numTxsOut > 0);
+        } else {
+          do {
+            const int count = fi_cntr_read(tcip->txCntr);
+            if (count == 0) {
+              sched_yield();
+              chpl_comm_make_progress();
+            } else {
+              DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
+              tcip->numTxsOut -= count;
+            }
+          } while (tcip->numTxsOut > 0);
+        }
         tciFree(tcip);
       }
     }
