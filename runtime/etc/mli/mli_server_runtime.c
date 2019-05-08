@@ -110,16 +110,16 @@ void chpl_mli_smain(void) {
     // TODO: Handle socket errors on inbound read.
     if (err < 0) {
       chpl_mli_debugf("Socket error on read: %d\n", err);
-      ack = CHPL_MLI_ERROR_SOCKET;
+      ack = CHPL_MLI_CODE_ESOCKET;
     }
 
     if (id < 0) {
       chpl_mli_debugf("Client sent error: %s\n", chpl_mli_errstr(id));
-      ack = CHPL_MLI_ERROR_SHUTDOWN;
+      ack = CHPL_MLI_CODE_SHUTDOWN;
       execute = 0;
     } else {
       chpl_mli_debugf("Received request for ID: %lld\n", id);
-      ack = CHPL_MLI_ERROR_NONE;
+      ack = CHPL_MLI_CODE_NONE;
     }
  
     chpl_mli_debugf("Responding with error: %s\n", chpl_mli_errstr(0));

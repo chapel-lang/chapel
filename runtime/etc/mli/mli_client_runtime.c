@@ -120,12 +120,12 @@ void chpl_library_finalize(void) {
   finalized = 1;
 
   {
-    int64_t shutdown = CHPL_MLI_ERROR_SHUTDOWN;
+    int64_t shutdown = CHPL_MLI_CODE_SHUTDOWN;
     chpl_mli_push(chpl_client.main, &shutdown, sizeof(shutdown), 0);
     chpl_mli_pull(chpl_client.main, &shutdown, sizeof(shutdown), 0);
 
     // Can server ever respond with a different error?
-    if (shutdown != CHPL_MLI_ERROR_SHUTDOWN) { ;;; }
+    if (shutdown != CHPL_MLI_CODE_SHUTDOWN) { ;;; }
   }
 
   char server_output[256];
