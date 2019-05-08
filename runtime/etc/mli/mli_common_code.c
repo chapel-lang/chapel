@@ -226,19 +226,12 @@ void chpl_mli_bind(void* socket, const char* ip, const char* port) {
 }
 
 static
-void chpl_mli_connect(void* socket, const char* ip, const char* port) {
-  char* buffer = NULL;
-  char* bufptr = NULL;
-  size_t len = 0;
+void chpl_mli_connect(void* socket, const char* conn) {
   int err = 0;
 
-  buffer = chpl_mli_concat(4, "tcp://", ip, ":", port);
-
   // TODO: Remove this assert / make this more robust. 
-  err = zmq_connect(socket, buffer);
+  err = zmq_connect(socket, conn);
   assert(err == 0);
-
-  mli_free(buffer);
 
   return;  
 }

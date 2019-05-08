@@ -52,6 +52,15 @@ void chpl_mli_server_deinit(struct chpl_mli_context* server) {
   return;
 }
 
+static
+void chpl_mli_push_connection(char* connection) {
+  int len = strlen(connection);
+  chpl_mli_debugf("Pushing expected size %d\n", len);
+  chpl_mli_push(chpl_server.setup_sock, &len, sizeof(len), 0);
+  chpl_mli_debugf("Pushing string itself: %s\n", connection);
+  chpl_mli_push(chpl_server.setup_sock, &connection, len, 0);
+}
+
 void chpl_mli_terminate(enum chpl_mli_errors e) {
   const char* errstr = chpl_mli_errstr(e);
   chpl_mli_debugf("Terminated abruptly with error: %s\n", errstr);
@@ -74,27 +83,32 @@ void chpl_mli_smain(void) {
   clock_t before = clock();
   double seconds = 0;
 
-  //
-  // TODO: With proper server setup, these ports should no longer be fixed.
-  // We should be able to eliminate the use of one port as well.
-  // 
   const char* ip = "localhost";
-  const char* setupPort = "5554";
-  const char* mainport = "5555";
-  const char* argport = "5556";
-  const char* resport = "5557";
+  const char* setupConn = "tcp://C02SY01RGTFM:5554"; // TODO: get from arguments
 
   chpl_mli_server_init(&chpl_server);
 
-  chpl_mli_connect(chpl_server.setup_sock, ip, setupPort);
-  chpl_mli_bind(chpl_server.main, ip, mainport);
-  chpl_mli_bind(chpl_server.arg, ip, argport);
-  chpl_mli_bind(chpl_server.res, ip, resport);
-
   chpl_mli_debugf("%s\n", "Starting server for multi-locale library!");
-  chpl_mli_debugf("Main port on: %s, %s\n", ip, mainport);
-  chpl_mli_debugf("Arg port on: %s, %s\n", ip, argport);
-  chpl_mli_debugf("Res port on: %s, %s\n", ip, resport);
+
+  chpl_mli_connect(chpl_server.setup_sock, setupConn);
+
+  chpl_mli_bind(chpl_server.main, ip, "*");
+  char* main_conn = chpl_mli_connection_info(chpl_server.main);
+  chpl_mli_debugf("Main port on: %s\n", main_conn);
+
+  chpl_mli_bind(chpl_server.arg, ip, "*");
+  char* arg_conn = chpl_mli_connection_info(chpl_server.arg);
+  chpl_mli_debugf("Arg port on: %s\n", arg_conn);
+
+  chpl_mli_bind(chpl_server.res, ip, "*");
+  char* res_conn = chpl_mli_connection_info(chpl_server.res);
+  chpl_mli_debugf("Res port on: %s\n", res_conn);
+
+  // Send main, arg, res connection info to the client
+  chpl_mli_debugf("%s\n", "Sending connection information to the client");
+  chpl_mli_push_connection(main_conn);
+  chpl_mli_push_connection(arg_conn);
+  chpl_mli_push_connection(res_conn);
 
   while (execute) {
 

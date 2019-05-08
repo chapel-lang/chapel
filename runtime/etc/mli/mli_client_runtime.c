@@ -64,6 +64,19 @@ static void chpl_mli_spawn_server() {
   server_pipe = popen(command, "r");
 }
 
+static
+char * chpl_mli_pull_connection() {
+  int len;
+  chpl_mli_debugf("Getting %s\n", "expected size");
+  chpl_mli_pull(chpl_client.setup_sock, &len, sizeof(len), 0);
+  chpl_mli_debugf("Expected size is %d\n", len);
+  char* conn = mli_malloc(len);
+  chpl_mli_debugf("Getting %s\n", "string itself");
+  chpl_mli_pull(chpl_client.setup_sock, &conn, len, 0);
+  chpl_mli_debugf("String itself is %s\n", conn);
+  return conn;
+}
+
 void chpl_mli_terminate(enum chpl_mli_errors e) {
   const char* errstr = chpl_mli_errstr(e);
   chpl_mli_debugf("Terminated abruptly with error: %s\n", errstr);
@@ -80,9 +93,6 @@ void chpl_library_init(int argc, char** argv) {
   // Just hardcode these values for now.
   const char* ip = "localhost";
   const char* setupPort = "5554";
-  const char* mainport = "5555";
-  const char* argport = "5556";
-  const char* resport = "5557";
 
   (void) argc;
   (void) argv;
@@ -101,13 +111,19 @@ void chpl_library_init(int argc, char** argv) {
   // TODO: pass in argv/argc, connection information
   chpl_mli_spawn_server();
 
+  chpl_mli_debugf("cleaning up connection %s\n", "info");
   mli_free(setup_sock_conn);
 
+  const char* mainConn = chpl_mli_pull_connection();
+  chpl_mli_debugf("connection info for main %s\n", mainConn);
+  const char* argConn = chpl_mli_pull_connection();
+  chpl_mli_debugf("connection info for arg %s\n", argConn);
+  const char* resConn = chpl_mli_pull_connection();
+  chpl_mli_debugf("connection info for res %s\n", resConn);
 
-  // TODO: Maybe move the open connections to init?
-  chpl_mli_connect(chpl_client.main, ip, mainport);
-  chpl_mli_connect(chpl_client.arg, ip, argport);
-  chpl_mli_connect(chpl_client.res, ip, resport);
+  chpl_mli_connect(chpl_client.main, mainConn);
+  chpl_mli_connect(chpl_client.arg, argConn);
+  chpl_mli_connect(chpl_client.res, resConn);
 
   return;
 }
