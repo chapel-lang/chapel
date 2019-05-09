@@ -79,7 +79,10 @@ module ArrayViewSlice {
 
 
     proc chpl__rvfMe() param {
-      if (dom.dsiSupportsPrivatization() && arr.dsiSupportsPrivatization()) {
+      use Reflection;
+      if (dom.dsiSupportsPrivatization() && arr.dsiSupportsPrivatization() &&
+          canResolveMethod(dom, "chpl__serialize") && 
+          canResolveMethod(arr, "chpl__serialize")) {
         //        compilerWarning("In ArrayViewSliceArr.rvfMe, returning true for type = " + this.type:string);
         return true;
       } else {
