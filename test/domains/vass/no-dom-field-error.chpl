@@ -18,8 +18,8 @@ class GlobalArray : BaseArr {}
 
 proc GlobalDistribution.init() {}
 
-proc GlobalDistribution.dsiClone(): GlobalDistribution {
-  return new GlobalDistribution();
+proc GlobalDistribution.dsiClone(): unmanaged GlobalDistribution {
+  return new unmanaged GlobalDistribution();
 }
 
 proc GlobalDistribution.dsiNewArithmeticDom(param rank: int,
