@@ -4516,7 +4516,8 @@ static void resolveTupleExpand(CallExpr* call) {
     INT_FATAL(call, "Invalid tuple expand primitive");
 
   if (parent != NULL && parent->primitive != NULL) {
-    if (!parent->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE)) {
+    if (!parent->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE) &&
+        !parent->isPrimitive(PRIM_NEW)) {
       USR_FATAL(parent, "illegal tuple expansion context");
     }
   }
