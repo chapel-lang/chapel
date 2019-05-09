@@ -1230,6 +1230,8 @@ void emit_delayedFixedHeapMsgs(void) {
 
   //
   // Warn if the size is larger than what will fit in the TLB cache.
+  // While that may reduce performance it won't affect function, though,
+  // so don't do anything dramatic like reducing the size to fit.
   //
   if (size > nic_mem_map_limit) {
     if (chpl_nodeID == 0) {
