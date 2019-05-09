@@ -410,12 +410,13 @@ void init_ofiFabricDomain(void) {
                    NULL, NULL, 0, hints, &ofi_info);
 
   //
-  // STOPGAP: For now, do not accept TCP-based providers.  When we try
-  //          use them we get FI_ENOCQ on the first transmit context.
-  //          I don't know why.  For the time being, just skip those.
-  //          There's no harm for now; we've never used tcp providers.
+  // STOPGAP: For now, do not accept TCP-based providers unless those
+  //          are specified explicitly.  When we try use them we get
+  //          FI_ENOCQ on the first transmit context.  I don't know why.
+  //          For the time being, just skip those.  There's no harm for
+  //          now; we've never used tcp providers in the past anyway.
   //
-  if (ret == FI_SUCCESS) {
+  if (ret == FI_SUCCESS && provider == NULL) {
     struct fi_info* info;
     for (info = ofi_info; info != NULL; info = info->next) {
       const char* pn = info->fabric_attr->prov_name;
