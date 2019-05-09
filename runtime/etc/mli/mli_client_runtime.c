@@ -115,16 +115,21 @@ void chpl_library_init(int argc, char** argv) {
   chpl_mli_debugf("cleaning up connection %s\n", "info");
   mli_free(setup_sock_conn);
 
-  const char* mainConn = chpl_mli_pull_connection();
+  char* mainConn = chpl_mli_pull_connection();
   chpl_mli_debugf("connection info for main %s\n", mainConn);
-  const char* argConn = chpl_mli_pull_connection();
+  char* argConn = chpl_mli_pull_connection();
   chpl_mli_debugf("connection info for arg %s\n", argConn);
-  const char* resConn = chpl_mli_pull_connection();
+  char* resConn = chpl_mli_pull_connection();
   chpl_mli_debugf("connection info for res %s\n", resConn);
 
   chpl_mli_connect(chpl_client.main, mainConn);
   chpl_mli_connect(chpl_client.arg, argConn);
   chpl_mli_connect(chpl_client.res, resConn);
+
+  chpl_mli_debugf("clean up %s\n", "client port strings");
+  mli_free(mainConn);
+  mli_free(argConn);
+  mli_free(resConn);
 
   return;
 }

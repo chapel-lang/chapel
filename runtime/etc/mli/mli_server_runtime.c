@@ -110,6 +110,11 @@ void chpl_mli_smain(void) {
   chpl_mli_push_connection(arg_conn);
   chpl_mli_push_connection(res_conn);
 
+  chpl_mli_debugf("%s\n", "Clean up obtained connection strings");
+  mli_free(main_conn);
+  mli_free(arg_conn);
+  mli_free(res_conn);
+
   while (execute) {
 
     chpl_mli_debugf("%s\n", "Listening...");
