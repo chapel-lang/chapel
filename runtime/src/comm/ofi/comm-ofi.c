@@ -210,27 +210,9 @@ static network_t network = networkUnknown;
 
 static
 void init_network(void) {
-  //
-  // This file will contain a "NETWORK=ari" line on a Cray XC.
-  //
-  FILE* f;
-  if ((f = fopen("/etc/opt/cray/release/cle-release", "r")) == NULL) {
-    return;
+  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0) {
+    network = networkAries;
   }
-
-  char buf[100];
-  int networkIsAries = 0;
-  while (fgets(buf, sizeof(buf), f) != NULL && !networkIsAries) {
-    networkIsAries = (strcmp(buf, "NETWORK=ari\n") == 0);
-  }
-
-  (void) fclose(f);
-
-  if (!networkIsAries) {
-    return;
-  }
-
-  network = networkAries;
 }
 
 
