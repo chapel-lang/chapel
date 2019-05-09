@@ -192,13 +192,8 @@ module ArrayViewRankChange {
       var upDomRec = {(...inds)};
       upDom = upDomRec._value;
 
-      var ranges: downrank*range(idxType, BoundedRangeType.bounded, stridable);
-      var downDomClass = dist.downDist.dsiNewRectangularDom(rank=downrank,
-                                                           idxType,
-                                                           stridable=stridable,
-                                                           ranges);
       pragma "no auto destroy"
-      var downDomLoc = _newDomain(downDomClass);
+      var downDomLoc = new _domain(_getDistribution(dist.downDist), downrank, idxType, stridable);
       downDomLoc = chpl_rankChangeConvertDom(inds, inds.size, collapsedDim, idx);
       downDomLoc._value._free_when_no_arrs = true;
       downDomPid = downDomLoc._pid;

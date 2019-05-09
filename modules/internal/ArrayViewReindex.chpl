@@ -162,12 +162,8 @@ module ArrayViewReindex {
         _delete_dom(updom, false);
       updom = updomRec._value;
 
-      var ranges : rank*range(idxType, BoundedRangeType.bounded, dist.downdomInst.stridable);
-      var downdomclass = dist.downDist.dsiNewRectangularDom(rank=rank,
-                                                         idxType=idxType,
-                                                         stridable=dist.downdomInst.stridable, ranges);
       pragma "no auto destroy"
-      var downdomLoc = _newDomain(downdomclass);
+      var downdomLoc = new _domain(_getDistribution(dist.downDist), rank, idxType, dist.downdomInst.stridable);
       downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
       downdomLoc._value._free_when_no_arrs = true;
 

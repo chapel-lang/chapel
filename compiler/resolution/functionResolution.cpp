@@ -5166,6 +5166,12 @@ static void resolveInitVar(CallExpr* call) {
     targetType = srcType;
   }
 
+  // 'var x = new _domain(...)' should not bother going through chpl__initCopy
+  // logic so that the result of the 'new' is MOVE'd and not copy-initialized,
+  // which is handled in the 'init=' branch.
+  bool isDomainWithoutNew = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN) &&
+                            src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == false;
+
   if (dst->hasFlag(FLAG_NO_COPY) ||
       isPrimitiveScalar(targetType) ||
       isEnumType(targetType) ||
@@ -5184,7 +5190,8 @@ static void resolveInitVar(CallExpr* call) {
              isParamString ||
              isSyncType(srcType->getValType()) ||
              isSingleType(srcType->getValType()) ||
-             (isRecordWrappedType(targetType->getValType()) && targetType->getValType()->symbol->hasFlag(FLAG_DISTRIBUTION) == false) ||
+             targetType->getValType()->symbol->hasFlag(FLAG_ARRAY) ||
+             isDomainWithoutNew ||
              srcType->getValType()->symbol->hasFlag(FLAG_TUPLE) ||
              srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // These cases require an initCopy to implement special initialization

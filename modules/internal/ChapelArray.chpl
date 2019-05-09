@@ -342,16 +342,6 @@ module ChapelArray {
   // It would have implications for alias analysis
   // of arrays.
 
-  proc _newDomain(value) {
-    if _to_unmanaged(value.type) != value.type then
-      compilerError("Domain on borrow created");
-
-    if _isPrivatized(value) then
-      return new _domain(_newPrivatizedClass(value), value);
-    else
-      return new _domain(nullPid, value);
-  }
-
   proc _getDomain(value) {
     if _to_unmanaged(value.type) != value.type then
       compilerError("Domain on borrow created");
@@ -385,17 +375,17 @@ module ChapelArray {
   proc chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
                                    type idxType = int,
                                    param stridable: bool = false)
-    return _newDomain(d.newRectangularDom(rank, idxType, stridable));
+    return new _domain(d, rank, idxType, stridable);
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
                                     param parSafe: bool = true)
-    return _newDomain(d.newAssociativeDom(idxType, parSafe));
+    return new _domain(d, idxType, parSafe);
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:_OpaqueIndex,
                                     param parSafe: bool = true)
-    return _newDomain(d.newOpaqueDom(idxType, parSafe));
+    return new _domain(d, idxType, parSafe);
 
   // This function has no 'runtime type init fn' pragma since the idxType of
   // opaque domains is _OpaqueIndex, not opaque.  This function is
@@ -406,7 +396,7 @@ module ChapelArray {
 
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain)
-    return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
+    return new _domain(d, dom);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where isSubtype(dom._value.type, BaseRectangularDom)
@@ -1065,16 +1055,70 @@ module ChapelArray {
       return index(rank, _value.idxType);
     }
 
-    // Note: This does not handle the case where the type of 'this' does not
+    proc init(_pid: int, _instance, _unowned: bool) {
+      this._pid = _pid;
+      this._instance = _instance;
+      this._unowned = _unowned;
+    }
+
+    proc init(value) {
+      if _to_unmanaged(value.type) != value.type then
+        compilerError("Domain on borrow created");
+
+      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
+      this._instance = value;
+    }
+
+    proc init(d: _distribution,
+              param rank : int,
+              type idxType = int,
+              param stridable: bool = false) {
+      this.init(d.newRectangularDom(rank, idxType, stridable));
+    }
+
+    proc init(d: _distribution,
+              param rank : int,
+              type idxType = int,
+              param stridable: bool = false,
+              ranges: rank*range(idxType, BoundedRangeType.bounded,stridable)) {
+      this.init(d.newRectangularDom(rank, idxType, stridable, ranges));
+    }
+
+    proc init(d: _distribution,
+              type idxType,
+              param parSafe: bool = true) {
+      this.init(d.newAssociativeDom(idxType, parSafe));
+    }
+
+    proc init(d: _distribution,
+              type idxType:_OpaqueIndex,
+              param parSafe: bool = true) {
+      this.init(d.newOpaqueDom(idxType, parSafe));
+    }
+
+    proc init(d: _distribution,
+              dom: domain) {
+      this.init(d.newSparseDom(dom.rank, dom._value.idxType, dom));
+    }
+
+    // Note: init= does not handle the case where the type of 'this' does not
     // handle the type of 'other'. That case is currently managed by the
     // compiler and various helper functions involving runtime types.
+    proc init=(const ref other : domain) where isRectangularDom(other) {
+      this.init(other.dist, other.rank, other.idxType, other.stridable, other.dims());
+    }
+
     proc init=(const ref other : domain) {
-      pragma "no auto destroy"
-      var temp : other.type;
-      this._pid = temp._pid;
-      this._instance = temp._instance;
-      this._unowned = temp._unowned;
-      this.complete();
+      if isAssociativeDom(other) {
+        this.init(other.dist, other.idxType, other.parSafe);
+      } else if isOpaqueDom(other) {
+        this.init(other.dist, _OpaqueIndex, other.parSafe);
+      } else if isSparseDom(other) {
+        this.init(other.dist, other.parentDom);
+      } else {
+        compilerError("Cannot initialize '", this.type:string, "' from '", other.type:string, "'");
+        this.init(nil);
+      }
 
       // No need to lock this domain since it's not exposed anywhere yet.
       // No need to handle arrays over this domain either for the same reason.
@@ -1104,7 +1148,7 @@ module ChapelArray {
     pragma "no doc"
     proc type chpl__deserialize(data) {
       type valueType = __primitive("static field type", this, "_instance");
-      return _newDomain(_to_borrowed(valueType).chpl__deserialize(data));
+      return new _domain(_to_borrowed(valueType).chpl__deserialize(data));
     }
 
     proc _do_destroy () {
@@ -1238,7 +1282,7 @@ module ChapelArray {
       for param i in 1..rank {
         r(i) = _value.dsiDim(i)(ranges(i));
       }
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, r));
+      return new _domain(dist, rank, _value.idxType, stridable, r);
     }
 
     // domain rank change
@@ -1290,11 +1334,11 @@ module ChapelArray {
       //rcdist._free_when_no_doms = true;
 
       const rcdistRec = new _distribution(rcdist);
-      const rcdomclass = rcdistRec.newRectangularDom(rank = uprank,
-                                                     idxType = upranges(1).idxType,
-                                                     stridable = upranges(1).stridable, upranges);
 
-      return _newDomain(rcdomclass);
+      return new _domain(rcdistRec, uprank,
+                                    upranges(1).idxType,
+                                    upranges(1).stridable,
+                                    upranges);
     }
 
     // error case for all-int access
@@ -1649,7 +1693,7 @@ module ChapelArray {
         }
       }
 
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
     /* Return a new domain that is the current domain expanded by
@@ -1659,7 +1703,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).expand(off);
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
     pragma "no doc"
@@ -1686,7 +1730,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).exterior(off(i));
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
     /* Return a new domain that is the exterior portion of the
@@ -1730,7 +1774,7 @@ module ChapelArray {
         }
         ranges(i) = _value.dsiDim(i).interior(off(i));
       }
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
     /* Return a new domain that is the interior portion of the
@@ -1775,7 +1819,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = _value.dsiDim(i).translate(off(i));
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
      }
 
     /* Return a new domain that is the current domain translated by
@@ -1800,7 +1844,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).chpl__unTranslate(off(i));
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
     pragma "no doc"
@@ -2691,13 +2735,8 @@ module ChapelArray {
                                               downdomInst = dom);
       const redistRec = new _distribution(redist);
       // redist._free_when_no_doms = true;
-      const redomclass = redistRec.newRectangularDom(rank=rank,
-        // 'updom' serves as a common denominator of newDims's ranges
-                                                     idxType=updom.idxType,
-                                                     stridable=updom.stridable,
-                                                     updom.dims());
 
-      pragma "no auto destroy" const newDom = _newDomain(redomclass);
+      pragma "no auto destroy" const newDom = new _domain(redistRec, rank, updom.idxType, updom.stridable, updom.dims());
       newDom._value._free_when_no_arrs = true;
 
       // TODO: With additional effort, we could collapse reindexings of
@@ -4109,7 +4148,7 @@ module ChapelArray {
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
-    return _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, true, r));
+    return new _domain(a.dist, a.rank, a._value.idxType, true, r);
   }
 
   /*
@@ -4126,7 +4165,7 @@ module ChapelArray {
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) align t(i);
-    return _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, a.stridable, r));
+    return new _domain(a.dist, a.rank, a._value.idxType, a.stridable, r);
   }
 
   //
@@ -4290,7 +4329,7 @@ module ChapelArray {
   proc chpl__initCopy(ir: _iteratorRecord)
     where chpl_iteratorHasDomainShape(ir)
   {
-    var shape = _newDomain(ir._shape_);
+    var shape = new _domain(ir._shape_);
 
     // Important: ir._shape_ points to a domain class for a domain
     // that is owned by the forall-expression or the leader in the
