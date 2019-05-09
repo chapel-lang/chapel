@@ -8,8 +8,10 @@ sync  {
     while (!resized.read()) { chpl_task_yield(); }
     A[11] = 1;
     writeln(A.domain);
+    resized.write(false);
   }
   D = {11..20};
   resized.write(true);
+  while (resized.read()) { chpl_task_yield(); }
   writeln(A);
 }
