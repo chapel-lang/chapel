@@ -1425,7 +1425,9 @@ static void checkIncrementalAndOptimized() {
               " using -O optimizations directly.");
 }
 
-static void setMLDebugAndLibmode(void) {
+static void checkMLDebugAndLibmode(void) {
+
+  if (!fMultiLocaleLibraryDebug) { return; }
 
   fLibraryCompile = true;
 
@@ -1458,7 +1460,7 @@ static void postprocess_args() {
 
   setMultiLocaleInterop();
 
-  setMLDebugAndLibmode();
+  checkMLDebugAndLibmode();
 
   setPrintCppLineno();
 
