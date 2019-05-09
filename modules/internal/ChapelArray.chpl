@@ -362,13 +362,6 @@ module ChapelArray {
       return new _domain(nullPid, value, _unowned=true);
   }
 
-  proc _newDistribution(value) {
-    if _isPrivatized(value) then
-      return new _distribution(_newPrivatizedClass(value), value);
-    else
-      return new _distribution(nullPid, value);
-  }
-
   proc _getDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(value.pid, value, _unowned=true);
@@ -896,7 +889,7 @@ module ChapelArray {
 
   proc chpl__buildDistType(type t) type where isSubtype(t, BaseDist) {
     var x: t;
-    var y = _newDistribution(_to_unmanaged(x));
+    var y = new _distribution(x);
     return y.type;
   }
 
@@ -905,7 +898,7 @@ module ChapelArray {
   }
 
   proc chpl__buildDistValue(x) where isSubtype(x.type, BaseDist) {
-    return _newDistribution(_to_unmanaged(x));
+    return new _distribution(x);
   }
 
   proc chpl__buildDistValue(x) {
@@ -926,13 +919,23 @@ module ChapelArray {
                        // in which case, the record destructor should
                        // not attempt to delete the _instance.
 
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this._pid      = _pid;
+      this._instance = _instance;
+      this._unowned  = _unowned;
+    }
+
+    proc init(value) {
+      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
+      this._instance = _to_unmanaged(value);
+    }
+
     // Note: This does not handle the case where the desired type of 'this'
     // does not match the type of 'other'. That case is handled by the compiler
     // via coercions.
     proc init=(const ref other : _distribution) {
       var value = other._value.dsiClone();
-      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
-      this._instance = value;
+      this.init(value);
     }
 
     inline proc _value {
@@ -965,7 +968,7 @@ module ChapelArray {
     }
 
     proc clone() {
-      return _newDistribution(_value.dsiClone());
+      return new _distribution(_value.dsiClone());
     }
 
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
@@ -1286,7 +1289,7 @@ module ChapelArray {
       // TODO: Should this be set?
       //rcdist._free_when_no_doms = true;
 
-      const rcdistRec = _newDistribution(rcdist);
+      const rcdistRec = new _distribution(rcdist);
       const rcdomclass = rcdistRec.newRectangularDom(rank = uprank,
                                                      idxType = upranges(1).idxType,
                                                      stridable = upranges(1).stridable, upranges);
@@ -2686,7 +2689,7 @@ module ChapelArray {
                                               updom = updom._value,
                                               downdomPid = dompid,
                                               downdomInst = dom);
-      const redistRec = _newDistribution(redist);
+      const redistRec = new _distribution(redist);
       // redist._free_when_no_doms = true;
       const redomclass = redistRec.newRectangularDom(rank=rank,
         // 'updom' serves as a common denominator of newDims's ranges
