@@ -54,11 +54,11 @@ void chpl_mli_server_deinit(struct chpl_mli_context* server) {
 
 static
 void chpl_mli_push_connection(char* connection) {
-  int len = strlen(connection);
+  int len = strlen(connection) + 1;
   chpl_mli_debugf("Pushing expected size %d\n", len);
   chpl_mli_push(chpl_server.setup_sock, &len, sizeof(len), 0);
   chpl_mli_debugf("Pushing string itself: %s\n", connection);
-  chpl_mli_push(chpl_server.setup_sock, &connection, len, 0);
+  chpl_mli_push(chpl_server.setup_sock, (void*)connection, len, 0);
 }
 
 void chpl_mli_terminate(enum chpl_mli_errors e) {

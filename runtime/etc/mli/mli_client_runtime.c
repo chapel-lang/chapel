@@ -72,7 +72,8 @@ char * chpl_mli_pull_connection() {
   chpl_mli_debugf("Expected size is %d\n", len);
   char* conn = mli_malloc(len);
   chpl_mli_debugf("Getting %s\n", "string itself");
-  chpl_mli_pull(chpl_client.setup_sock, &conn, len, 0);
+  chpl_mli_pull(chpl_client.setup_sock, (void*)conn, len, 0);
+  conn[len] = '\0';
   chpl_mli_debugf("String itself is %s\n", conn);
   return conn;
 }
