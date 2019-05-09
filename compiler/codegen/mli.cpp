@@ -384,7 +384,7 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
   gen += this->genSocketCall("skt", "mem_err", not out);
 
   // If error, terminate client/server.
-  gen += "if (mem_err) chpl_mli_terminate(CHPL_MLI_ERROR_MEMORY);\n";
+  gen += "if (mem_err) chpl_mli_terminate(CHPL_MLI_CODE_EMEMORY);\n";
 
   // Move the string over the wire, using length.
   gen += this->genSocketCallBuffer("skt", target, "bytes", out);
@@ -627,7 +627,7 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
     gen += "break;\n";
   }
 
-  gen += "default: return CHPL_MLI_ERROR_NOFUNC; break;\n";
+  gen += "default: return CHPL_MLI_CODE_ENOFUNC; break;\n";
   gen += scope_end;
   gen += "return err;\n";
   gen += scope_end;

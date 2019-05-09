@@ -116,13 +116,13 @@
 //
 enum chpl_mli_errors {
 
-  CHPL_MLI_ERROR_NONE       = +0,
-  CHPL_MLI_ERROR_SHUTDOWN   = -1,
-  CHPL_MLI_ERROR_UNKNOWN    = -2,
-  CHPL_MLI_ERROR_NOFUNC     = -3,
-  CHPL_MLI_ERROR_SOCKET     = -4,
-  CHPL_MLI_ERROR_EXCEPT     = -5,
-  CHPL_MLI_ERROR_MEMORY     = -6
+  CHPL_MLI_CODE_NONE      = +0,
+  CHPL_MLI_CODE_SHUTDOWN  = -1,
+  CHPL_MLI_CODE_EUNKNOWN  = -2,
+  CHPL_MLI_CODE_ENOFUNC   = -3,
+  CHPL_MLI_CODE_ESOCKET   = -4,
+  CHPL_MLI_CODE_EEXCEPT   = -5,
+  CHPL_MLI_CODE_EMEMORY   = -6
 
 };
 
@@ -130,13 +130,14 @@ const char* chpl_mli_errstr(enum chpl_mli_errors e) {
   static const char* mli_errors_[] = {
     "NONE",
     "SHUTDOWN",
-    "UNKNOWN",
-    "NOFUNC",
-    "SOCKET",
-    "EXCEPT"
+    "EUNKNOWN",
+    "ENOFUNC",
+    "ESOCKET",
+    "EEXCEPT",
+    "EMEMORY"
   };
 
-  if (e > CHPL_MLI_ERROR_NONE || e < CHPL_MLI_ERROR_EXCEPT) {
+  if (e > CHPL_MLI_CODE_NONE || e < CHPL_MLI_CODE_EMEMORY) {
     return "INVALID_ERROR_CODE";
   }
 
