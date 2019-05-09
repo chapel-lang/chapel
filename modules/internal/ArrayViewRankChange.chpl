@@ -485,7 +485,9 @@ module ArrayViewRankChange {
     // Forward all unhandled methods to underlying privatized array
     forwarding arr except these,
                       doiBulkTransferFromKnown, doiBulkTransferToKnown,
-                      doiBulkTransferFromAny,  doiBulkTransferToAny, doiScan;
+                      doiBulkTransferFromAny,  doiBulkTransferToAny, doiScan,
+                      chpl__serialize, chpl__deserialize;
+
 
 
     //
