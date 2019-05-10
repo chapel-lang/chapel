@@ -147,6 +147,8 @@ static struct fi_msg ofi_msg_reqs;
 // Forward decls
 //
 
+static void emit_delayedFixedHeapMsgs(void);
+
 static inline struct perTxCtxInfo_t* tciAlloc(chpl_bool);
 static inline void tciFree(struct perTxCtxInfo_t*);
 static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
@@ -192,6 +194,37 @@ static void time_init(void);
 
 ////////////////////////////////////////
 //
+// Network type
+//
+
+static pthread_once_t networkOnce = PTHREAD_ONCE_INIT;
+
+typedef enum {
+  networkUnknown,
+  networkAries,
+  networkVerbs,
+} network_t ;
+
+static network_t network = networkUnknown;
+
+
+static
+void init_network(void) {
+  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0) {
+    network = networkAries;
+  }
+}
+
+
+static
+network_t getNetworkType(void) {
+  PTHREAD_CHK(pthread_once(&networkOnce, init_network));
+  return network;
+}
+
+
+////////////////////////////////////////
+//
 // Provider name
 //
 
@@ -204,11 +237,7 @@ static const char* getProviderName(void);
 
 static
 void setProviderName(void) {
-  //
-  // For now, allow specifying the provider via env var.
-  //
-  CHK_TRUE((provName = chpl_env_rt_get("COMM_OFI_PROVIDER", "sockets"))
-           != NULL);
+  provName = chpl_env_rt_get("COMM_OFI_PROVIDER", NULL);
 }
 
 
@@ -301,10 +330,13 @@ void init_ofiFabricDomain(void) {
 
   hints->caps = FI_MSG | FI_SEND | FI_RECV | FI_MULTI_RECV
                 | FI_RMA | FI_READ | FI_WRITE
-                | FI_ATOMICS
                 | FI_REMOTE_READ | FI_REMOTE_WRITE;
+  if (getNetworkType() == networkAries) {
+      hints->caps |= FI_ATOMICS; // oddly, we don't get this without asking
+  }
 
-  hints->mode = 0; // TODO: may need ~0 here and handle modes for good gni perf
+  // The gni provider needs local MR.
+  hints->mode = (getNetworkType() == networkAries) ? FI_LOCAL_MR : 0;
 
   hints->addr_format = FI_FORMAT_UNSPEC;
 
@@ -328,15 +360,19 @@ void init_ofiFabricDomain(void) {
   hints->domain_attr->data_progress = prg;
 
   hints->domain_attr->av_type = FI_AV_TABLE;
-  hints->domain_attr->mr_mode = ((strcmp(provider, "gni") == 0)
+  hints->domain_attr->mr_mode = ((getNetworkType() == networkAries)
                                  ? FI_MR_BASIC
-                                 : FI_MR_SCALABLE);
+                                 : FI_MR_UNSPEC);
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
+  //
   // fi_freeinfo(hints) will free() hints->fabric_attr->prov_name; this
   // is documented, though poorly.  So, get that space from malloc().
-  CHK_SYS_CALLOC(hints->fabric_attr->prov_name, strlen(provider) + 1);
-  strcpy(hints->fabric_attr->prov_name, provider);
+  //
+  if (provider != NULL) {
+    CHK_SYS_CALLOC(hints->fabric_attr->prov_name, strlen(provider) + 1);
+    strcpy(hints->fabric_attr->prov_name, provider);
+  }
 
   //
   // Try to find a provider that can do what we want.  If more than one
@@ -345,8 +381,42 @@ void init_ofiFabricDomain(void) {
   // node 0; the other nodes should all have the same result and there's
   // no point in repeating everything numNodes times.
   //
+  if (DBG_TEST_MASK(DBG_CFGFAB) && chpl_nodeID == 0) {
+    DBG_PRINTF(DBG_CFGFAB, "==================== hints:");
+    DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(hints, FI_TYPE_INFO));
+  }
+
   int ret;
-  ret = fi_getinfo(FI_VERSION(1,5), NULL, NULL, 0, hints, &ofi_info);
+  ret = fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
+                   NULL, NULL, 0, hints, &ofi_info);
+
+  //
+  // STOPGAP: For now, do not accept TCP-based providers unless those
+  //          are specified explicitly.  When we try use them we get
+  //          FI_ENOCQ on the first transmit context.  I don't know why.
+  //          For the time being, just skip those.  There's no harm for
+  //          now; we've never used tcp providers in the past anyway.
+  //
+  if (ret == FI_SUCCESS && provider == NULL) {
+    struct fi_info* info;
+    for (info = ofi_info; info != NULL; info = info->next) {
+      const char* pn = info->fabric_attr->prov_name;
+      if (strstr(pn, "tcp") == NULL)
+        break;
+      if (DBG_TEST_MASK(DBG_CFGFAB) && chpl_nodeID == 0) {
+        if (info == ofi_info) {
+          DBG_PRINTF(DBG_CFGFAB,
+                     "==================== skipping \"tcp\" provider(s):");
+        }
+        DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(info, FI_TYPE_INFO));
+        DBG_PRINTF(DBG_CFGFAB, "----------");
+      }
+    }
+    if ((ofi_info = info) == NULL) {
+      ret = -FI_ENODATA;
+    }
+  }
+
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
       if (DBG_TEST_MASK(DBG_CFGFAB | DBG_CFGFABSALL)) {
@@ -358,7 +428,8 @@ void init_ofiFabricDomain(void) {
                    "None matched hints; available with prov_name \"%s\" are:",
                    (provider == NULL) ? "<any>" : provider);
         struct fi_info* info = NULL;
-        OFI_CHK(fi_getinfo(FI_VERSION(1,5), NULL, NULL, 0, NULL, &info));
+        OFI_CHK(fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
+                           NULL, NULL, 0, NULL, &info));
         for ( ; info != NULL; info = info->next) {
           const char* pn = info->fabric_attr->prov_name;
           if (provider == NULL
@@ -427,6 +498,13 @@ void init_ofiFabricDomain(void) {
       }
     }
   }
+
+  //
+  // If we're using the gni provider on a Cray XC system and there were
+  // questionable settings associated with the fixed heap, say something
+  // about that now.
+  //
+  emit_delayedFixedHeapMsgs();
 }
 
 
@@ -567,13 +645,13 @@ void init_ofiEpNumCtxs(void) {
   // have its own, plus at least one more.
   //
   const struct fi_domain_attr* dom_attr = ofi_info->domain_attr;
-  int numWorkerTxCtxs;
+  int maxWorkerTxCtxs;
   if (useScalableTxEp)
-    numWorkerTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
+    maxWorkerTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
   else
-    numWorkerTxCtxs = dom_attr->ep_cnt - numAmHandlers;
+    maxWorkerTxCtxs = dom_attr->ep_cnt - numAmHandlers;
 
-  CHK_TRUE(numWorkerTxCtxs > 0);
+  CHK_TRUE(maxWorkerTxCtxs > 0);
 
   //
   // If the user manually limited the communication concurrency, take
@@ -581,8 +659,8 @@ void init_ofiEpNumCtxs(void) {
   //
   const int commConcurrency = chpl_env_rt_get_int("COMM_CONCURRENCY", 0);
   if (commConcurrency > 0) {
-    if (numWorkerTxCtxs > commConcurrency) {
-      numWorkerTxCtxs = commConcurrency;
+    if (maxWorkerTxCtxs > commConcurrency) {
+      maxWorkerTxCtxs = commConcurrency;
     }
   } else if (commConcurrency < 0) {
     chpl_warning("CHPL_RT_COMM_CONCURRENCY < 0, ignored", 0, 0);
@@ -598,9 +676,9 @@ void init_ofiEpNumCtxs(void) {
     // for the duration of the run.
     //
     CHK_TRUE(fixedNumThreads == chpl_task_getMaxPar()); // sanity
-    if (numWorkerTxCtxs > fixedNumThreads + 1)
-      numWorkerTxCtxs = fixedNumThreads + 1;
-    tciTabFixedAssignments = (numWorkerTxCtxs == fixedNumThreads + 1);
+    if (maxWorkerTxCtxs > fixedNumThreads + 1)
+      maxWorkerTxCtxs = fixedNumThreads + 1;
+    tciTabFixedAssignments = (maxWorkerTxCtxs == fixedNumThreads + 1);
   } else {
     //
     // The tasking layer doesn't have a fixed number of threads, but
@@ -608,8 +686,8 @@ void init_ofiEpNumCtxs(void) {
     // shouldn't need more worker tx contexts than whatever that is.
     //
     const int taskMaxPar = chpl_task_getMaxPar();
-    if (numWorkerTxCtxs > taskMaxPar)
-      numWorkerTxCtxs = taskMaxPar;
+    if (maxWorkerTxCtxs > taskMaxPar)
+      maxWorkerTxCtxs = taskMaxPar;
 
     tciTabFixedAssignments = false;
   }
@@ -617,7 +695,7 @@ void init_ofiEpNumCtxs(void) {
   //
   // Now we know how many transmit contexts we'll have.
   //
-  numTxCtxs = numWorkerTxCtxs + numAmHandlers;
+  numTxCtxs = maxWorkerTxCtxs + numAmHandlers;
   if (useScalableTxEp) {
     ofi_info->ep_attr->tx_ctx_cnt = numTxCtxs;
   }
@@ -1025,6 +1103,8 @@ static void*  fixedHeapStart;
 static pthread_once_t hugepageOnce = PTHREAD_ONCE_INIT;
 static size_t hugepageSize;
 
+static size_t nic_mem_map_limit;
+
 static void init_fixedHeap(void);
 
 static size_t get_hugepageSize(void);
@@ -1041,17 +1121,15 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 static
 void init_fixedHeap(void) {
   //
-  // We only need a fixed heap if we're multinode and using the
-  // gni provider.
+  // We only need a fixed heap if we're multinode on a Cray XC system.
   //
-  if (chpl_numNodes <= 1 || strcmp(getProviderName(), "gni") != 0)
+  if (chpl_numNodes <= 1 || getNetworkType() != networkAries) {
     return;
+  }
 
   //
-  // On XE systems you have to use hugepages, and on XC systems you
-  // really ought to.
-  //
-  // TODO: differentiate and do the right thing for XE.
+  // On XC systems you really ought to use hugepages.  If called for,
+  // a message will be emitted later.
   //
   size_t page_size;
   chpl_bool have_hugepages;
@@ -1059,8 +1137,6 @@ void init_fixedHeap(void) {
   void* start;
 
   if ((page_size = get_hugepageSize()) == 0) {
-    chpl_warning_explicit("not using hugepages may reduce performance",
-                          __LINE__, __FILE__);
     page_size = chpl_getSysPageSize();
     have_hugepages = false;
   } else {
@@ -1068,58 +1144,23 @@ void init_fixedHeap(void) {
   }
 
   if ((size = chpl_comm_getenvMaxHeapSize()) == 0) {
-    size = (size_t) 16 << 30;  // TODO: different for XE?
+    size = (size_t) 16 << 30;
   }
 
   size = ALIGN_UP(size, page_size);
-
 
   //
   // The heap is supposed to be of fixed size and on hugepages.  Set
   // it up.
   //
-  size_t nic_mem_map_limit;
-  size_t nic_max_mem;
-  size_t max_heap_size;
 
   //
   // Considering the data size we'll register, compute the maximum
   // heap size that will allow all registrations to fit in the NIC
-  // TLB.  Except on Gemini only, aim for only 95% of what will fit
-  // because there we'll get an error if we go over.
+  // TLB.
   //
-#if 0 // TODO: assume Aries; allows deeper testing
-  if (nic_type == GNI_DEVICE_GEMINI) {
-    const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
-    nic_max_mem = nic_max_pages * page_size;
-    nic_mem_map_limit = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
-  } else {
-#endif
-    const size_t nic_TLB_cache_pages = 512; // not publicly defined
-    nic_max_mem = nic_TLB_cache_pages * page_size;
-    nic_mem_map_limit = nic_max_mem;
-#if 0 // TODO: assume Aries; allows deeper testing
-  }
-#endif
-
-#if 0 // TODO: assume Aries; allows deeper testing
-  {
-    uint64_t  addr;
-    uint64_t  len;
-    size_t    data_size;
-
-    data_size = 0;
-    while (get_next_rw_memory_range(&addr, &len, NULL, 0))
-      data_size += ALIGN_UP(len, page_size);
-
-    if (data_size >= nic_mem_map_limit)
-      max_heap_size = 0;
-    else
-      max_heap_size = nic_mem_map_limit - data_size;
-  }
-#else
-  max_heap_size = nic_mem_map_limit;
-#endif
+  const size_t nic_TLB_cache_pages = 512; // not publicly defined
+  nic_mem_map_limit = nic_TLB_cache_pages * page_size;
 
   //
   // As a hedge against silliness, first reduce any request so that it's
@@ -1131,31 +1172,6 @@ void init_fixedHeap(void) {
   const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
   if (size > size_phys)
     size = size_phys;
-
-#if 0 // TODO: assume Aries; allows deeper testing
-  //
-  // On Gemini-based systems, if necessary reduce the heap size until
-  // we can fit all the registered pages in the NIC TLB.  Otherwise,
-  // we'll get GNI_RC_ERROR_RESOURCE when we try to register memory.
-  // Warn about doing this.
-  //
-  if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
-    if (chpl_nodeID == 0) {
-      char buf1[20], buf2[20], buf3[20], msg[200];
-      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
-      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
-      chpl_snprintf_KMG_f(buf3, sizeof(buf3), max_heap_size);
-      (void) snprintf(msg, sizeof(msg),
-                      "Gemini TLB can cover %s with %s pages; heap "
-                      "reduced to %s to fit",
-                      buf1, buf2, buf3);
-      chpl_warning(msg, 0, 0);
-    }
-
-    if (nic_type == GNI_DEVICE_GEMINI)
-      size = max_heap_size;
-  }
-#endif
 
   //
   // Work our way down from the starting size in (roughly) 5% steps
@@ -1184,15 +1200,44 @@ void init_fixedHeap(void) {
   DBG_PRINTF(DBG_MR, "fixed heap on %spages, start=%p size=%#zx\n",
              have_hugepages ? "huge" : "regular ", start, size);
 
+  fixedHeapSize  = size;
+  fixedHeapStart = start;
+}
+
+
+static
+void emit_delayedFixedHeapMsgs(void) {
   //
-  // On Aries-based systems, warn if the size is larger than what will
-  // fit in the TLB cache.  But since that may reduce performance but
-  // won't affect function, don't reduce the size to fit.
+  // We only need a fixed heap if we're multinode on a Cray XC system
+  // and using the gni provider.
   //
-  if (/*nic_type == GNI_DEVICE_ARIES &&*/ size > max_heap_size) { // TODO: assume Aries; allows deeper testing
+  if (chpl_numNodes <= 1
+      || getNetworkType() != networkAries
+      || strcmp(ofi_info->fabric_attr->prov_name, "gni") != 0) {
+    return;
+  }
+
+  //
+  // On XC systems you really ought to use hugepages.
+  //
+  void* start;
+  size_t size;
+  chpl_comm_impl_regMemHeapInfo(&start, &size);
+  if (hugepageSize == 0) {
+    chpl_warning_explicit("not using hugepages may reduce performance",
+                          __LINE__, __FILE__);
+  }
+
+  //
+  // Warn if the size is larger than what will fit in the TLB cache.
+  // While that may reduce performance it won't affect function, though,
+  // so don't do anything dramatic like reducing the size to fit.
+  //
+  if (size > nic_mem_map_limit) {
     if (chpl_nodeID == 0) {
+      size_t page_size = chpl_comm_impl_regMemHeapPageSize();
       char buf1[20], buf2[20], buf3[20], msg[200];
-      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_mem_map_limit);
       chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
       chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
       (void) snprintf(msg, sizeof(msg),
@@ -1203,9 +1248,6 @@ void init_fixedHeap(void) {
       chpl_warning(msg, 0, 0);
     }
   }
-
-  fixedHeapSize  = size;
-  fixedHeapStart = start;
 }
 
 
@@ -2078,16 +2120,22 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
       {
         struct perTxCtxInfo_t* tcip;
         CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
-        do {
-          const int count = fi_cntr_read(tcip->txCntr);
-          if (count == 0) {
-            sched_yield();
-            chpl_comm_make_progress();
-          } else {
-            DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
-            tcip->numTxsOut -= count;
+        if (tcip->txCQ != NULL) {
+          if (tcip->numTxsOut > 1) {
+            waitForTxCQ(tcip, 1, 0);
           }
-        } while (tcip->numTxsOut > 0);
+        } else {
+          do {
+            const int count = fi_cntr_read(tcip->txCntr);
+            if (count == 0) {
+              sched_yield();
+              chpl_comm_make_progress();
+            } else {
+              DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
+              tcip->numTxsOut -= count;
+            }
+          } while (tcip->numTxsOut > 0);
+        }
         tciFree(tcip);
       }
     }
@@ -2929,11 +2977,6 @@ DEFN_IFACE_AMO_SUB(uint32, FI_UINT32, uint32_t, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double, NEGATE_U_OR_R)
-
-
-void chpl_comm_atomic_unordered_fence(void) {
-  return;
-}
 
 void chpl_comm_atomic_unordered_task_fence(void) {
   return;

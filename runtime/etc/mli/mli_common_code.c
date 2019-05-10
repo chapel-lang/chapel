@@ -26,7 +26,37 @@
 #include <string.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <unistd.h>
 #include <zmq.h>
+
+//
+// Grab headers for shims used by the client and server.
+//
+// The Chapel runtime is sanitized during Travis testing, and any calls to
+// LIBC functions are reported as errors. Sadly, our code gets sanitized too,
+// even though it _technically_ isn't part of the runtime itself. That's the
+// reason why any of these shims exist in the first place.
+//
+// We really don't want to call "chpl_exit_any()" in the client - we'd prefer
+// the LIBC "exit()" function. Fortunately, the LAUNCHER already accounts for
+// this. So we "gain access" to "exit()" by pretending to be the launcher.
+// This defines "chpl_exit_any()" as a macro representing "exit()".
+//
+#ifdef CHPL_MLI_IS_SERVER
+#   include "chpl-mem.h"
+#   include "error.h"
+#elif defined(CHPL_MLI_IS_CLIENT)
+#   ifndef LAUNCHER
+#     define CHPL_MLI_LAUNCHER_IS_DEFINED
+#     define LAUNCHER
+# endif
+#   include "chpl-mem-sys.h"
+#   include "chplexit.h"
+#   ifdef CHPL_MLI_LAUNCHER_IS_DEFINED
+#     undef CHPL_MLI_LAUNCHER_IS_DEFINED
+#     undef LAUNCHER
+#   endif
+#endif
 
 //
 // If this code is being run on the server, mli_malloc() is a wrapper for
@@ -34,15 +64,51 @@
 // wrapper for the system allocator.
 //
 #ifdef CHPL_MLI_IS_SERVER
-# include "chpl-mem.h"
-# define mli_malloc(bytes) chpl_malloc(bytes)
-# define mli_free(ptr) chpl_free(ptr)
+#   define mli_malloc(bytes) chpl_malloc(bytes)
+#   define mli_free(ptr) chpl_free(ptr)
 #elif defined(CHPL_MLI_IS_CLIENT)
-# include "chpl-mem-sys.h"
-# define mli_malloc(bytes) sys_malloc(bytes)
-# define mli_free(ptr) sys_free(ptr)
+#   define mli_malloc(bytes) sys_malloc(bytes)
+#   define mli_free(ptr) sys_free(ptr)
 #else
-# error The mli_malloc/free macros were defined outside of client/server.
+#   error The mli_malloc/free macros were defined outside of client/server.
+#endif
+
+//
+// Terminate all the locales properly if the server, else just "exit()".
+//
+#ifdef CHPL_MLI_IS_SERVER
+#   define mli_terminate() chpl_error("", 0, 0)
+#elif defined(CHPL_MLI_IS_CLIENT)
+#   define mli_terminate() chpl_exit_any(1)
+#else
+#   error The mli_terminate macro was defined outside of client/server.
+#endif
+
+//
+// Print prefix, used to indicate whether client or server is printing.
+//
+#ifdef CHPL_MLI_IS_SERVER
+#   define chpl_mli_pfx "[Server]"
+#elif defined(CHPL_MLI_IS_CLIENT)
+#   define chpl_mli_pfx "[Client]"
+#else
+#   error The chpl_mli_pfx macro was defined outside of client/server.
+#endif
+
+//
+// Print a debug message, or do nothing if debug messages are turned off.
+//
+#ifdef CHPL_MLI_DEBUG_PRINT
+#   ifndef chpl_mli_pfx
+#     error The chpl_mli_pfx macro must be defined.
+#   endif
+#   define chpl_mli_debugf(fmt, ...)              \
+  do {                                            \
+      printf("%s ", chpl_mli_pfx);                \
+      printf(fmt, __VA_ARGS__);                   \
+  } while (0)
+#else
+#   define chpl_mli_debugf(fmt, ...)
 #endif
 
 //
@@ -50,12 +116,13 @@
 //
 enum chpl_mli_errors {
 
-  CHPL_MLI_ERROR_NONE       = +0,
-  CHPL_MLI_ERROR_SHUTDOWN   = -1,
-  CHPL_MLI_ERROR_UNKNOWN    = -2,
-  CHPL_MLI_ERROR_NOFUNC     = -3,
-  CHPL_MLI_ERROR_SOCKET     = -4,
-  CHPL_MLI_ERROR_EXCEPT     = -5
+  CHPL_MLI_CODE_NONE      = +0,
+  CHPL_MLI_CODE_SHUTDOWN  = -1,
+  CHPL_MLI_CODE_EUNKNOWN  = -2,
+  CHPL_MLI_CODE_ENOFUNC   = -3,
+  CHPL_MLI_CODE_ESOCKET   = -4,
+  CHPL_MLI_CODE_EEXCEPT   = -5,
+  CHPL_MLI_CODE_EMEMORY   = -6
 
 };
 
@@ -63,13 +130,14 @@ const char* chpl_mli_errstr(enum chpl_mli_errors e) {
   static const char* mli_errors_[] = {
     "NONE",
     "SHUTDOWN",
-    "UNKNOWN",
-    "NOFUNC",
-    "SOCKET",
-    "EXCEPT"
+    "EUNKNOWN",
+    "ENOFUNC",
+    "ESOCKET",
+    "EEXCEPT",
+    "EMEMORY"
   };
 
-  if (e > CHPL_MLI_ERROR_NONE || e < CHPL_MLI_ERROR_EXCEPT) {
+  if (e > CHPL_MLI_CODE_NONE || e < CHPL_MLI_CODE_EMEMORY) {
     return "INVALID_ERROR_CODE";
   }
 
@@ -82,6 +150,7 @@ const char* chpl_mli_errstr(enum chpl_mli_errors e) {
 struct chpl_mli_context {
 
   void* context;
+  void* setup_sock;
   void* main;
   void* arg;
   void* res;
@@ -190,8 +259,35 @@ int chpl_mli_pull(void* socket, void* buffer, size_t bytes, int flags) {
   return zmq_recv(socket, buffer, bytes, flags);
 }
 
+// Determine connection information for that socket.
+static
+char * chpl_mli_connection_info(void* socket) {
+  // Determine port used by ZMQ for socket.
+  size_t lenPort = 256;
+  char* portRes = (char *)mli_malloc(lenPort);
+  int portErr = zmq_getsockopt(socket, ZMQ_LAST_ENDPOINT,
+                               portRes, &lenPort);
 
+  // Get to port portion of the last endpoint.
+  char *traveler = strchr(portRes, ':');
+  traveler = strchr(traveler + 1, ':');
+  traveler++;
 
+  // Determine hostname of where we are currently running
+  size_t lenHostname = 256;
+  char* hostRes = (char *)mli_malloc(lenHostname);
+  int hostErr = gethostname(hostRes, lenHostname);
 
+  // Recreate the connection using the hostname instead of 0.0.0.0
+  char* fullConnection = (char *)mli_malloc(lenHostname + lenPort);
+  strcpy(fullConnection, "tcp://");
+  strcat(fullConnection, hostRes);
+  strcat(fullConnection, ":");
+  strcat(fullConnection, traveler);
+
+  mli_free(hostRes);
+  mli_free(portRes);
+  return fullConnection;
+}
 
 #endif

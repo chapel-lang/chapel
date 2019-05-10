@@ -176,7 +176,7 @@ bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
 bool fIncrementalCompilation = false;
-bool fNoOptimizeForallUnordered = true;
+bool fNoOptimizeForallUnordered = false;
 
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
@@ -719,6 +719,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fIgnoreLocalClasses = false;
   fNoOptimizeOnClauses = false;
   //fReplaceArrayAccessesWithRefTemps = true; // don't tie this to --fast yet
+  fNoOptimizeForallUnordered = false;
   optimizeCCode = true;
   specializeCCode = true;
   turnOffChecks(desc, unused);

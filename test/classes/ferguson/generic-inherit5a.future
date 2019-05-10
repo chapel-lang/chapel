@@ -1,0 +1,2 @@
+bug: Problem with virtual dispatch and coercion from owned
+#12884 
