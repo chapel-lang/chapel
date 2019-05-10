@@ -533,6 +533,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     if (isClassLike(t) &&
         !t->symbol->hasFlag(FLAG_EXTERN)) {
       retval = new SymExpr(gTrue);
+    } else if (isManagedPtrType(t)) {
+      retval = new SymExpr(gTrue);
     } else {
       retval = new SymExpr(gFalse);
     }
