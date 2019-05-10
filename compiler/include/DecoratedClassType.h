@@ -61,15 +61,6 @@ public:
   bool                    isUnmanaged() const {
     return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_UNMANAGED;
   }
-  /*bool                    isUndecorated() const {
-    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_UNDECORATED;
-  }
-  bool                    isOwned() const {
-    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_OWNED;
-  }
-  bool                    isShared() const {
-    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_SHARED;
-  }*/
 
   ClassTypeDecorator      getDecorator() const {
     return decorator;

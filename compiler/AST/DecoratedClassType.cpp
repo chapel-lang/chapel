@@ -35,18 +35,6 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NILABLE:
       return astr("unmanaged ", className, "?");
-    /*case CLASS_TYPE_UNDECORATED:
-      return astr(className);
-    case CLASS_TYPE_UNDECORATED_NILABLE:
-      return astr(className, "?");
-    case CLASS_TYPE_OWNED:
-      return astr("owned ", className);
-    case CLASS_TYPE_OWNED_NILABLE:
-      return astr("owned ", className, "?");
-    case CLASS_TYPE_SHARED:
-      return astr("shared ", className);
-    case CLASS_TYPE_SHARED_NILABLE:
-      return astr("shared ", className, "?");*/
 
     // no default for help from compilation errors
   }
