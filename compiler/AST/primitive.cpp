@@ -475,13 +475,8 @@ returnInfoToBorrowed(CallExpr* call) {
       decorator = CLASS_TYPE_BORROWED_NILABLE;
   }
 
-  if (decorator != CLASS_TYPE_BORROWED) { // leave borrow = canonical
-    if (AggregateType* at = toAggregateType(t)) {
-      if (isClass(at)) {
-        t = at->getDecoratedClass(decorator);
-      }
-    }
-  }
+  if (AggregateType* at = toAggregateType(t))
+    t = at->getDecoratedClass(decorator);
 
   // Canonical class type is borrow type
   return QualifiedType(t, QUAL_VAL);

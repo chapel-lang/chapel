@@ -54,7 +54,6 @@ typedef enum {
   // Formal is type but actual is not or vice versa
   RESOLUTION_CANDIDATE_NOT_TYPE,
 
-
   // Too many arguments
   RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS,
 

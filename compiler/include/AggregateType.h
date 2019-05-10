@@ -53,6 +53,7 @@ typedef enum {
 #define NUM_DECORATED_CLASS_TYPES (4)
 #define CLASS_TYPE_MANAGEMENT_MASK (0xfe)
 #define CLASS_TYPE_NILABLE_MASK (0x01)
+
 static inline ClassTypeDecorator addNilableToDecorator(ClassTypeDecorator d) {
   int tmp = d;
   tmp |= CLASS_TYPE_NILABLE_MASK;
