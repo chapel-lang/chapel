@@ -1264,7 +1264,12 @@ proc BlockDom.chpl__serialize() {
 // be a way to lazily privatize by also making the originating locale part
 // of the 'data'?
 proc type BlockDom.chpl__deserialize(data) {
-  return chpl_getPrivatizedCopy(unmanaged BlockDom(rank=this.rank, idxType=this.idxType, stridable=this.stridable, sparseLayoutType=this.sparseLayoutType), data);
+  return chpl_getPrivatizedCopy(
+           unmanaged BlockDom(rank=this.rank,
+                              idxType=this.idxType,
+                              stridable=this.stridable,
+                              sparseLayoutType=this.sparseLayoutType),
+           data);
 }
 
 proc BlockDom.dsiSupportsPrivatization() param return true;
@@ -1302,8 +1307,13 @@ proc BlockArr.chpl__serialize() {
 }
 
 proc type BlockArr.chpl__deserialize(data) {
-  //  compilerWarning("In BlockArr.deserialize(), " + data.type:string);
-  return chpl_getPrivatizedCopy(unmanaged BlockArr(rank=this.rank, idxType=this.idxType, stridable=this.stridable, eltType=this.eltType, sparseLayoutType=this.sparseLayoutType), data);
+  return chpl_getPrivatizedCopy(
+           unmanaged BlockArr(rank=this.rank,
+                              idxType=this.idxType,
+                              stridable=this.stridable,
+                              eltType=this.eltType,
+                              sparseLayoutType=this.sparseLayoutType),
+           data);
 }
 
 proc BlockArr.dsiSupportsPrivatization() param return true;

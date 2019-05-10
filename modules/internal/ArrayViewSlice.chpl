@@ -83,10 +83,8 @@ module ArrayViewSlice {
       if (dom.dsiSupportsPrivatization() && arr.dsiSupportsPrivatization() &&
           canResolveMethod(dom, "chpl__serialize") && 
           canResolveMethod(arr, "chpl__serialize")) {
-        //        compilerWarning("In ArrayViewSliceArr.rvfMe, returning true for type = " + this.type:string);
         return true;
       } else {
-        //        compilerWarning("In ArrayViewSliceArr.rvfMe, returning false for type = " + this.type:string);
         return false;
       }
     }
@@ -269,19 +267,6 @@ module ArrayViewSlice {
     proc dsiSupportsPrivatization() param
       return false;
 
-
-    // TODO: We should be able to remove these calls now
-    proc dsiGetPrivatizeData() {
-      return (_DomPid, dom, _ArrPid, _ArrInstance);
-    }
-
-    proc dsiPrivatize(privatizeData) {
-      return new unmanaged ArrayViewSliceArr(eltType=this.eltType,
-                                   _DomPid=privatizeData(1),
-                                   dom=privatizeData(2),
-                                   _ArrPid=privatizeData(3),
-                                   _ArrInstance=privatizeData(4));
-    }
 
     //
     // utility functions used to set up the index cache

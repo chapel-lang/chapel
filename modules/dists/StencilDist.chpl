@@ -1719,7 +1719,12 @@ proc StencilDom.chpl__serialize() {
 // be a way to lazily privatize by also making the originating locale part
 // of the 'data'?
 proc type StencilDom.chpl__deserialize(data) {
-  return chpl_getPrivatizedCopy(unmanaged StencilDom(rank=this.rank, idxType=this.idxType, stridable=this.stridable, ignoreFluff=this.ignoreFluff), data);
+  return chpl_getPrivatizedCopy(
+           unmanaged StencilDom(rank=this.rank,
+                                idxType=this.idxType,
+                                stridable=this.stridable,
+                                ignoreFluff=this.ignoreFluff),
+           data);
 }
 
 proc StencilArr.chpl__serialize() {
@@ -1727,8 +1732,13 @@ proc StencilArr.chpl__serialize() {
 }
 
 proc type StencilArr.chpl__deserialize(data) {
-  //  compilerWarning("In StencilArr.deserialize(), " + data.type:string);
-  return chpl_getPrivatizedCopy(unmanaged StencilArr(rank=this.rank, idxType=this.idxType, stridable=this.stridable, eltType=this.eltType, ignoreFluff=this.ignoreFluff), data);
+  return chpl_getPrivatizedCopy(
+           unmanaged StencilArr(rank=this.rank,
+                                idxType=this.idxType,
+                                stridable=this.stridable,
+                                eltType=this.eltType,
+                                ignoreFluff=this.ignoreFluff),
+           data);
 }
 
 proc StencilArr.dsiSupportsPrivatization() param return true;
