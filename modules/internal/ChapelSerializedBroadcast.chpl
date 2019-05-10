@@ -30,6 +30,24 @@ module ChapelSerializedBroadcast {
 
   proc chpl__broadcastGlobal(ref localeZeroGlobal : ?T, id : int)
   where chpl__enableSerializedGlobals {
+    //
+    // BLC: I can't explain the need for the following conditional, but if I
+    // don't place it here, when the compiler tries to resolve this
+    // call for a Block-distributed array as part of resolveBroadcasters(), 
+    // the 'data' value below ends up being a 2*int(64) which causes an
+    // error when trying to resolve the deserialize() routine since it
+    // only expects an int(64) for Block-distributed arrays.  But it's
+    // also a bit weird that it generates an error at all given that
+    // (a) resolveBroadcasters() ought to be doing speculative resolution
+    // that doesn't generate problems for the user if it fails (I think?)
+    // and (b) the chpl__serialize() overload on the _array type ought to
+    // have a 'false' where clause for Block-distributed arrays.
+    // That said, bypassing arrays in this case ought to be OK because
+    // I don't think we should be broadcasting global arrays anyway?
+    // (and definitely not block-distributed ones).  I put the halt()
+    // in here out of a sense of wanting to know if/when we actually
+    // try to use this code path.
+    //
     if isArray(localeZeroGlobal) {
       halt("internal error: can't broadcast module-scope arrays yet");
     } else {
