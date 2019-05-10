@@ -64,7 +64,7 @@ proc _doSort(param st, I) where st==SortType.SELECTION {
 }
 
 proc _doSort(param st, I) where st==SortType.QUICK {
-  quickSort(I);
+  QuickSort.quickSort(I);
 }
 
 proc _doSort(param st, I) where st==SortType.HEAP {

@@ -397,9 +397,9 @@ proc sortAtomsInCell() {
 
   // TODO: seems like we need some kind of "fluff and all" iter
   forall box in Boxes {
-    quickSort(box.atoms[1..box.count], comparator=c);
+    sort(box.atoms[1..box.count], comparator=c);
   }
   forall (box, _) in Boxes.boundaries() {
-    quickSort(box.atoms[1..box.count], comparator=c);
+    sort(box.atoms[1..box.count], comparator=c);
   }
 }
