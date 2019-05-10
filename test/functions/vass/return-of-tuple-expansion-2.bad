@@ -1,1 +1,2 @@
-1
+return-of-tuple-expansion-2.chpl:2: In function 't2':
+return-of-tuple-expansion-2.chpl:4: error: illegal tuple expansion context
