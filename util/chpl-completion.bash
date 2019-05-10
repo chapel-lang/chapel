@@ -98,6 +98,7 @@ _chpl ()
 --library-fortran-name \
 --library-header \
 --library-makefile \
+--library-ml-debug \
 --library-python \
 --library-python-name \
 --license \
@@ -166,6 +167,7 @@ _chpl ()
 --no-inline \
 --no-inline-iterators \
 --no-interprocedural-alias-analysis \
+--no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \
 --no-llvm \

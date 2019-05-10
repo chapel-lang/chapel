@@ -142,12 +142,7 @@ std::string str(T value) {
 void codegenMultiLocaleInteropWrappers(void) {
   Vec<ModuleSymbol*> &mds = allModules;
 
-  //
-  // TODO: Add a flag to the frontend to allow users to turn debug printlines
-  // on or off (if off, no debug messages will be inserted into the generated
-  // code).
-  //
-  MLIContext mli(false);
+  MLIContext mli(fMultiLocaleLibraryDebug);
 
   mli.emitClientHFile();
 
