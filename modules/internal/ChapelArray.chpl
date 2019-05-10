@@ -2213,7 +2213,7 @@ module ChapelArray {
     pragma "no copy return"
     proc type chpl__deserialize(data) {
       var arrinst = _to_borrowed(this.chpl__typeOfInstance()).chpl__deserialize(data);
-      return new _array(nullPid, arrinst);
+      return new _array(nullPid, arrinst, _unowned=true);
     }
 
     proc chpl__promotionType() type {
