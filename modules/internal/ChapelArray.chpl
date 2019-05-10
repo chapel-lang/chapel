@@ -1034,18 +1034,6 @@ module ChapelArray {
   }
 
 
-  pragma "no doc"
-  record _serialized_domain {
-    param rank;
-    type idxType;
-    param stridable;
-    var dims;
-    param isDefaultRectangular;
-    /* The following will be needed when extending beyond DefaultRectangular
-    var dist;
-    var privdata;*/
-  }
-
   //
   // Domain wrapper record.
   //
@@ -1081,19 +1069,6 @@ module ChapelArray {
 
       return this._value.chpl__serialize();
     }
-
-    /* Here is a draft at what chpl__serialize might look like to
-       support non-DefaultRectangular domains.
-    pragma "no doc"
-    proc chpl__serialize()
-      where (_to_borrowed(this._value.type) : BaseRectangularDom) &&
-             !this._value.isDefaultRectangular() &&
-             this._value.dsiSupportsPrivatization {
-
-        return new _serialized_domain(rank, idxType, stridable, dims(),
-                                      false, dist, _value.dsiGetPrivatizeData());
-    }*/
-
 
     // TODO: we *SHOULD* be allowed to query the type of '_instance' directly
     // This function may not use any run-time type information passed to it
