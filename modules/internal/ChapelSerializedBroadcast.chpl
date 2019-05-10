@@ -30,25 +30,23 @@ module ChapelSerializedBroadcast {
 
   proc chpl__broadcastGlobal(ref localeZeroGlobal : ?T, id : int)
   where chpl__enableSerializedGlobals {
-    if (!(isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal))) {
-    const data = localeZeroGlobal.chpl__serialize();
-    //    compilerWarning("in broadcast global: ", localeZeroGlobal.type:string, " data.type = ", data.type:string);
-    if (isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal)) {
-      compilerError("trying to broadcast slice");
-    }
-    const root = here.id;
-    coforall loc in Locales do on loc {
-      if here.id != root {
-        pragma "no copy"
-        pragma "no auto destroy"
-        var temp = localeZeroGlobal.type.chpl__deserialize(data);
+    if isArray(localeZeroGlobal) {
+      halt("internal error: can't broadcast module-scope arrays yet");
+    } else {
+      const data = localeZeroGlobal.chpl__serialize();
+      const root = here.id;
+      coforall loc in Locales do on loc {
+        if here.id != root {
+          pragma "no copy"
+          pragma "no auto destroy"
+          var temp = localeZeroGlobal.type.chpl__deserialize(data);
 
-        const destVoidPtr = chpl_get_global_serialize_table(id);
-        const dest = destVoidPtr:c_ptr(localeZeroGlobal.type);
+          const destVoidPtr = chpl_get_global_serialize_table(id);
+          const dest = destVoidPtr:c_ptr(localeZeroGlobal.type);
 
-        __primitive("=", dest.deref(), temp);
+          __primitive("=", dest.deref(), temp);
+        }
       }
-    }
     }
   }
 
