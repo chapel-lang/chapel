@@ -429,7 +429,7 @@ void     initPrimitiveTypes();
 void     initChplProgram(DefExpr* objectDef);
 void     initCompilerGlobals();
 
-bool is_void_type(Type*);
+bool is_nothing_type(Type*);
 bool is_bool_type(Type*);
 bool is_int_type(Type*);
 bool is_uint_type(Type*);

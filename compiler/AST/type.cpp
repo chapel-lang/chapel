@@ -575,7 +575,7 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
   gUnknown->addFlag(FLAG_TYPE_VARIABLE);
 
-  CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "internal_void");
+  CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
   CREATE_DEFAULT_SYMBOL (dtNothing, gNone, "none");
 
   dtValue = createInternalType("value", "_chpl_value");
@@ -808,7 +808,7 @@ void initCompilerGlobals() {
   initForTaskIntents();
 }
 
-bool is_void_type(Type* t) {
+bool is_nothing_type(Type* t) {
   return t == dtNothing;
 }
 
