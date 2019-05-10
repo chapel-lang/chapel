@@ -78,6 +78,12 @@ module ArrayViewSlice {
                       doiBulkTransferFromAny,  doiBulkTransferToAny;
 
 
+    //
+    // A helper routine to encode logic about when slices should be RVF'd.
+    // Currently we RVF slices whose domains and arrays are privatized
+    // (since doing so involves RVFing their PIDs) and that support the
+    // chpl__serialize() routine (and, we assume, chpl__deserialize())
+    //
     proc chpl__rvfMe() param {
       use Reflection;
       if (dom.dsiSupportsPrivatization() && arr.dsiSupportsPrivatization() &&
@@ -89,11 +95,20 @@ module ArrayViewSlice {
       }
     }
 
+    //
+    // Serialize a slice (when chpl__rvfMe() says to) by serializing its
+    // domain and array
+    //
     proc chpl__serialize() where chpl__rvfMe() {
       return (_to_borrowed(dom).chpl__serialize(),
               _to_borrowed(arr).chpl__serialize());
     }
 
+    //
+    // Deserialize a slice by deserializing its domain / array components
+    // and then returning a new ArrayViewSliceArr() instance referring
+    // to them.
+    //
     proc type chpl__deserialize(data) {
       type domType = __primitive("static field type", this, "dom");
       type arrType = __primitive("static field type", this, "_ArrInstance");

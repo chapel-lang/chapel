@@ -2186,7 +2186,7 @@ module ChapelArray {
   pragma "default intent is ref if modified"
   // this has always been true, but hard-coded into the compiler; here
   // we put it into the module code to remove a special-case and force
-  // the serialize routines to fire, when there where-clause permits.
+  // the serialize routines to fire, when their where-clause permits.
   pragma "always RVF"
   /* The array type */
   record _array {
@@ -3704,14 +3704,6 @@ module ChapelArray {
   proc chpl__anyStridable(ranges) param {
     for param i in 1..ranges.size do
       if ranges(i).stridable then
-        return true;
-    return false;
-  }
-
-  // computes || reduction over boundedness of ranges
-  proc chpl__anyUnbounded(ranges) param {
-    for param i in 1..ranges.size do
-      if ranges(i).boundedType != BoundedRangeType.bounded then
         return true;
     return false;
   }
