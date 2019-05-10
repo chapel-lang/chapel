@@ -5752,10 +5752,6 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
   do_remote_get_buff(addr, locale, raddr, size, may_proxy_true);
 }
 
-void chpl_comm_get_unordered_fence(void) {
-  remote_get_buff_flush();
-}
-
 void chpl_comm_get_unordered_task_fence(void) {
   remote_get_buff_task_flush();
 }
@@ -7178,10 +7174,6 @@ DEFINE_CHPL_COMM_ATOMIC_SUB(real32, float, NEGATE_U_OR_R)
 DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double, NEGATE_U_OR_R)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_SUB
-
-void chpl_comm_atomic_unordered_fence(void) {
-  nic_amo_nf_buff_flush();
-}
 
 void chpl_comm_atomic_unordered_task_fence(void) {
   nic_amo_nf_buff_task_flush();
