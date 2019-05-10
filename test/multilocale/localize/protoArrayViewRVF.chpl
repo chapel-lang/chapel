@@ -61,80 +61,36 @@ proc main() {
   increment(B);
 
 
-  /*
-  writeln();
-  writeln("Creating C (a custom slice)");
-  writeln("---------------------------");
+  inline proc startTrial() {
+    resetCommDiagnostics();
+    startCommDiagnostics();
+  }
 
-  startTrial();
-  ref C = A.mySlice(DInner);
-  stopTrial();
+  inline proc stopTrial() {
+    stopCommDiagnostics();
+    // retrieve the counts and report the results
+    writeln(getCommDiagnostics());
+    if printArray then
+      writeln("\nA is:\n", A);
+  }
 
+  proc increment(X, D) {
+    writeln("Incrementing in routine by access");
+    writeln("---------------------------------");
 
-  writeln();
-  writeln("Incrementing C");
-  writeln("--------------");
+    startTrial();
+    forall ij in D do
+      X[ij] += 0.1;
+    stopTrial();
+  }
 
-  startTrial();
-  forall ij in DInner do
-    C[ij] += 0.1;
-  stopTrial();
+  proc increment(X) {
+    writeln("Incrementing in routine by iteration");
+    writeln("------------------------------------");
 
-
-  writeln();
-  writeln("Incrementing C via iteration");
-  writeln("----------------------------");
-
-  startTrial();
-  forall c in C do
-    c += 0.1;
-  stopTrial();
-
-
-  writeln();
-  writeln("Incrementing C via routine:");
-  increment(C, DInner);
-
-
-  writeln();
-  writeln("Incrementing C via routine:");
- increment(C);
-  */
-
-inline proc startTrial() {
-  resetCommDiagnostics();
-  startCommDiagnostics();
+    startTrial();
+    forall x in X do
+      x += 0.1;
+    stopTrial();
+  }
 }
-
-inline proc stopTrial() {
-  stopCommDiagnostics();
-  // retrieve the counts and report the results
-  writeln(getCommDiagnostics());
-  if printArray then
-    writeln("\nA is:\n", A);
-}
-
-proc increment(X, D) {
-  writeln("Incrementing in routine by access");
-  writeln("---------------------------------");
-
-  startTrial();
-  forall ij in D do
-    X[ij] += 0.1;
-  stopTrial();
-}
-
-
-proc increment(X) {
-  writeln("Incrementing in routine by iteration");
-  writeln("------------------------------------");
-
-  startTrial();
-  forall x in X do
-    x += 0.1;
-  stopTrial();
-}
-
-
-}
-
