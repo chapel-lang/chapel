@@ -469,14 +469,18 @@ returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
   ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+
   if (DecoratedClassType* dt = toDecoratedClassType(t)) {
     t = dt->getCanonicalClass();
     if (dt->isNilable())
       decorator = CLASS_TYPE_BORROWED_NILABLE;
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
   }
 
   if (AggregateType* at = toAggregateType(t))
-    t = at->getDecoratedClass(decorator);
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
 
   // Canonical class type is borrow type
   return QualifiedType(t, QUAL_VAL);
@@ -491,13 +495,15 @@ returnInfoToNilable(CallExpr* call) {
     t = dt->getCanonicalClass();
     decorator = dt->getDecorator();
     decorator = addNilableToDecorator(decorator);
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
   }
 
-  if (AggregateType* at = toAggregateType(t)) {
-    if (isClass(at)) {
+
+
+  if (AggregateType* at = toAggregateType(t))
+    if (isClass(at))
       t = at->getDecoratedClass(decorator);
-    }
-  }
 
   return QualifiedType(t, QUAL_VAL);
 }
@@ -511,14 +517,13 @@ returnInfoToNonNilable(CallExpr* call) {
     t = dt->getCanonicalClass();
     decorator = dt->getDecorator();
     decorator = removeNilableFromDecorator(decorator);
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
   }
 
-  if (AggregateType* at = toAggregateType(t)) {
-    if (isClass(at)) {
-      if (decorator != CLASS_TYPE_BORROWED) // leave borrowed == canonical
-        t = at->getDecoratedClass(decorator);
-    }
-  }
+  if (AggregateType* at = toAggregateType(t))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
 
   return QualifiedType(t, QUAL_VAL);
 }
