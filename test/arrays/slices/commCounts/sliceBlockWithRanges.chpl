@@ -7,7 +7,7 @@ config const printArray = true;
 proc main() {
   const D = {1..10, 1..10} dmapped Block({1..10, 1..10});
   var A: [D] real;
-  const DInner = D[3..8, 3..8];
+  const DInner = {3..8, 3..8};
 
   forall a in A do
     a = here.id;
@@ -16,7 +16,7 @@ proc main() {
 
   writeln();
   writeln("Incrementing A[Dinner] via routine:");
-  increment(A[DInner], DInner);
+  increment(A[3..8, 3..8], DInner);
 
   writeln();
   writeln("Incrementing A[Dinner] via routine:");
@@ -28,7 +28,7 @@ proc main() {
   writeln("---------------------------");
 
   startTrial();
-  ref B = A[DInner];
+  ref B = A[3..8, 3..8];
   stopTrial();
 
 
@@ -37,7 +37,7 @@ proc main() {
   writeln("-------------------------");
 
   startTrial();
-  forall ij in DInner do
+  forall ij in B.domain do
     B[ij] += 0.1;
   stopTrial();
 
@@ -54,7 +54,7 @@ proc main() {
 
   writeln();
   writeln("Incrementing B via routine:");
-  increment(B, DInner);
+  increment(B, B.domain);
 
   writeln();
   writeln("Incrementing B via routine:");
