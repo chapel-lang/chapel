@@ -14,7 +14,7 @@ A is:
 Incrementing A[Dinner] via routine:
 Incrementing in routine by access
 ---------------------------------
-(<no communication>)
+(execute_on_nb = 3) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -31,7 +31,7 @@ A is:
 Incrementing A[Dinner] via routine:
 Incrementing in routine by iteration
 ------------------------------------
-(<no communication>)
+(execute_on_nb = 3) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -47,7 +47,7 @@ A is:
 
 Creating B (a normal slice)
 ---------------------------
-(<no communication>)
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -63,7 +63,7 @@ A is:
 
 Incrementing B via access
 -------------------------
-(<no communication>)
+(execute_on_nb = 3) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -79,7 +79,7 @@ A is:
 
 Incrementing B via iteration
 ----------------------------
-(<no communication>)
+(execute_on_nb = 3) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -96,7 +96,7 @@ A is:
 Incrementing B via routine:
 Incrementing in routine by access
 ---------------------------------
-(<no communication>)
+(execute_on_nb = 3) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -113,7 +113,7 @@ A is:
 Incrementing B via routine:
 Incrementing in routine by iteration
 ------------------------------------
-(<no communication>)
+(execute_on_nb = 3) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
