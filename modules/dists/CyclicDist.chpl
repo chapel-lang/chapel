@@ -424,14 +424,16 @@ proc Cyclic.dsiIndexToLocale(i: rank*idxType) {
     return lower.last..upper.last by numlocs;
   }
 
-  proc chpl__computeCyclic(locid, targetLocBox, startIdx) {
+proc chpl__computeCyclic(type idxType, locid, targetLocBox, startIdx) {
+    type strType = chpl__signedType(idxType);
     param rank = targetLocBox.rank;
-    type idxType = chpl__tuplify(startIdx)(1).type;
     var inds: rank*range(idxType, stridable=true);
     for param i in 1..rank {
-      const lo = chpl__tuplify(startIdx)(i);
-      const numlocs = targetLocBox.dim(i).length;
-      const myloc = chpl__tuplify(locid)(i);
+      // NOTE: Not bothering to check to see if these can fit into idxType
+      const lo = chpl__tuplify(startIdx)(i): idxType;
+      const myloc = chpl__tuplify(locid)(i): idxType;
+      // NOTE: Not checking for overflow here when casting to strType
+      const numlocs = targetLocBox.dim(i).length: strType;
       inds(i) = chpl__computeCyclicDim(idxType, lo, myloc, numlocs);
     }
     return inds;
@@ -458,14 +460,7 @@ class LocCyclic {
 
     var inds: rank*range(idxType, stridable=true);
 
-    type strType = chpl__signedType(idxType);
-    // NOTE: Not checking for overflow here when casting to strType
-    for param i in 1..rank {
-      const lower = min(idxType)..(startIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length:strType;
-      const upper = (startIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length:strType;
-      const lo = lower.last, hi = upper.last;
-      inds(i) = lo..hi by dist.targetLocDom.dim(i).length:strType;
-    }
+    inds = chpl__computeCyclic(idxType, locid, dist.targetLocDom, startIdx);
     myChunk = {(...inds)};
   }
 }
@@ -1172,7 +1167,7 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
 proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    return whole[(...(chpl__computeCyclic(locid, dist.targetLocDom, dist.startIdx)))];
+    return whole[(...(chpl__computeCyclic(this.idxType, locid, dist.targetLocDom, dist.startIdx)))];
   } else {
     var d: domain(rank, idxType, stridable=true);
     return d;
