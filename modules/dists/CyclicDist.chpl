@@ -418,6 +418,25 @@ proc Cyclic.dsiIndexToLocale(i: rank*idxType) {
 }
 
 
+  proc chpl__computeCyclicDim(type idxType, lo, myloc, numlocs) {
+    const lower = min(idxType)..(lo+myloc) by -numlocs;
+    const upper = lo+myloc..max(idxType) by numlocs;
+    return lower.last..upper.last by numlocs;
+  }
+
+  proc chpl__computeCyclic(locid, targetLocBox, startIdx) {
+    param rank = targetLocBox.rank;
+    type idxType = chpl__tuplify(startIdx)(1).type;
+    var inds: rank*range(idxType, stridable=true);
+    for param i in 1..rank {
+      const lo = chpl__tuplify(startIdx)(i);
+      const numlocs = targetLocBox.dim(i).length;
+      const myloc = chpl__tuplify(locid)(i);
+      inds(i) = chpl__computeCyclicDim(idxType, lo, myloc, numlocs);
+    }
+    return inds;
+  }
+
 class LocCyclic {
   param rank: int;
   type idxType;
@@ -1153,7 +1172,7 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
 proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    return dist.getChunk(whole, locid);
+    return whole[(...(chpl__computeCyclic(locid, dist.targetLocDom, dist.startIdx)))];
   } else {
     var d: domain(rank, idxType, stridable=true);
     return d;
