@@ -309,25 +309,8 @@ proc Cyclic.chpl__locToLocIdx(loc: locale) {
 }
 
 proc Cyclic.getChunk(inds, locid) {
-  var sliceBy: rank*range(idxType=idxType, stridable=true);
-  var locidtup: rank*idxType;
-  // NOTE: Not bothering to check to see if these can fit into idxType
-  if rank == 1 then
-    locidtup(1) = locid:idxType;
-  else
-    for param i in 1..rank do locidtup(i) = locid(i):idxType;
-  for param i in 1..rank {
-    var distStride = targetLocDom.dim(i).length:chpl__signedType(idxType);
-    var offset = chpl__diffMod(startIdx(i) + locidtup(i), inds.dim(i).low, distStride);
-    sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
-    // remove alignment
-    sliceBy(i).alignHigh();
-  }
-  return inds((...sliceBy));
-  //
-  // WANT:
-  //var distWhole = locDist(locid).myChunk.getIndices();
-  //return inds((...distWhole));
+  const chunk = locDist(locid).myChunk((...inds.getIndices()));
+  return chunk;
 }
 
 override proc Cyclic.dsiDisplayRepresentation() {
