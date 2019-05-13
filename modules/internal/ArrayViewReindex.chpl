@@ -162,8 +162,26 @@ module ArrayViewReindex {
         _delete_dom(updom, false);
       updom = updomRec._value;
 
+      // TODO: BHARSH 2019-05-13:
+      // I would rather do something like this:
+      //   new _domain(_getDistribution(dist.downDist), rank, idxType, dist.downdomInst.stridable);
+      //
+      // But that results in memory leaks. The difference is that by using a
+      // proper '_distribution' the resulting domain class is linked to that
+      // distribution. We currently (incorrectly) invoke '_delete_dom' directly
+      // instead of handling the case where the distribution needs to be
+      // updated as well.
+      //
+      // In short, before we can use the desired pattern, we need to replace
+      // the uses of '_delete_dom' with something like the contents of
+      // _domain._do_destroy().
+      var ranges : rank*range(idxType, BoundedRangeType.bounded, dist.downdomInst.stridable);
+      var downdomclass = dist.downDist.dsiNewRectangularDom(rank=rank,
+                                                           idxType=idxType,
+                                                           stridable=dist.downdomInst.stridable,
+                                                           ranges);
       pragma "no auto destroy"
-      var downdomLoc = new _domain(_getDistribution(dist.downDist), rank, idxType, dist.downdomInst.stridable);
+      var downdomLoc = new _domain(downdomclass);
       downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
       downdomLoc._value._free_when_no_arrs = true;
 

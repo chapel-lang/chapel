@@ -192,8 +192,16 @@ module ArrayViewRankChange {
       var upDomRec = {(...inds)};
       upDom = upDomRec._value;
 
+      // TODO: BHARSH 2019-05-13:
+      // Would rather use '_getDistribution' and passing args to "new _domain",
+      // see similar comment in ArrayViewReindex for more information.
+      var ranges : downrank*range(idxType, BoundedRangeType.bounded, stridable);
+      var downDomClass = dist.downDist.dsiNewRectangularDom(rank=downrank,
+                                                           idxType,
+                                                           stridable=stridable,
+                                                           ranges);
       pragma "no auto destroy"
-      var downDomLoc = new _domain(_getDistribution(dist.downDist), downrank, idxType, stridable);
+      var downDomLoc = new _domain(downDomClass);
       downDomLoc = chpl_rankChangeConvertDom(inds, inds.size, collapsedDim, idx);
       downDomLoc._value._free_when_no_arrs = true;
       downDomPid = downDomLoc._pid;
