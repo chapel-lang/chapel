@@ -122,7 +122,7 @@ module ChapelBase {
   inline proc ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
   inline proc ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
   inline proc ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
-  inline proc ==(a: borrowed?, b: borrowed?) return __primitive("ptr_eq", a, b);
+  inline proc ==(a: borrowed object?, b: borrowed object?) return __primitive("ptr_eq", a, b);
   inline proc ==(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("==", a, b);
   }
@@ -138,7 +138,7 @@ module ChapelBase {
   inline proc !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
   inline proc !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
   inline proc !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
-  inline proc !=(a: borrowed?, b: borrowed?) return __primitive("ptr_neq", a, b);
+  inline proc !=(a: borrowed object?, b: borrowed object?) return __primitive("ptr_neq", a, b);
   inline proc !=(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("!=", a, b);
   }
@@ -908,10 +908,6 @@ module ChapelBase {
     __primitive("=", a, b);
   }
 
-  inline proc _cast(type t:_ddata, x:_nilType) {
-    return __primitive("cast", t, x);
-  }
-
   // Removing the 'eltType' arg results in errors for --baseline
   inline proc _ddata_shift(type eltType, data: _ddata(eltType), shift: integral) {
     var ret: _ddata(eltType);
@@ -1272,31 +1268,6 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyreal, x:enumerated)
     return x: int: real;
 
-  inline proc _cast(type t:borrowed?, x:_to_nonnil(t))
-    return __primitive("cast", t, x);
-
-  inline proc _cast(type t:borrowed, x:t)
-    return __primitive("cast", t, x);
-
-  inline proc _cast(type t:unmanaged, x:_to_borrowed(t))
-    return __primitive("cast", t, x);
-
-  inline proc _cast(type t:unmanaged?, x:_to_borrowed(t))
-    return __primitive("cast", t, x);
-
-  inline proc _cast(type t:borrowed, pragma "nil from arg" x:_nilType)
-    return __primitive("cast", t, x);
-
-  inline proc _cast(type t:unmanaged, pragma "nil from arg" x:_nilType)
-    return __primitive("cast", t, x);
-
-  inline proc _cast(type t:borrowed?, pragma "nil from arg" x:_nilType)
-    return __primitive("cast", t, x);
-
-  inline proc _cast(type t:unmanaged?, pragma "nil from arg" x:_nilType)
-    return __primitive("cast", t, x);
-
-
   // dynamic cast handles class casting based upon runtime class type
   // this also might be called a downcast
   inline proc _cast(type t:borrowed, x:borrowed) where isSubtype(t,x.type) && (x.type != t)
@@ -1313,9 +1284,6 @@ module ChapelBase {
     // then cast the borrow
     return if x != nil then __primitive("dynamic_cast", t, casttmp) else __primitive("cast", t, nil);
   }
-
-  inline proc _cast(type t:_nilType, x:_nilType)
-    return nil;
 
   //
   // casts to complex

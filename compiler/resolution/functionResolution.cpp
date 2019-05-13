@@ -2079,6 +2079,7 @@ void resolveDestructor(AggregateType* at) {
 ************************************** | *************************************/
 
 static bool resolveTypeComparisonCall(CallExpr* call);
+static bool resolveBuiltinCastCall(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -2127,9 +2128,13 @@ void resolveCall(CallExpr* call) {
 
   } else {
 
-    if (resolveTypeComparisonCall(call) == false) {
-      resolveNormalCall(call);
-    }
+    if (resolveTypeComparisonCall(call))
+      return;
+
+    if (resolveBuiltinCastCall(call))
+      return;
+
+    resolveNormalCall(call);
   }
 }
 
@@ -2175,6 +2180,41 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
           }
 
           return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+static bool resolveBuiltinCastCall(CallExpr* call)
+{
+  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
+    if (urse->unresolved == astr_cast) {
+      if (call->numActuals() == 2) {
+        SymExpr* targetTypeSe = toSymExpr(call->get(1));
+        SymExpr* valueSe = toSymExpr(call->get(2));
+
+        if (targetTypeSe && valueSe &&
+            targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+          Type* targetType = targetTypeSe->symbol()->type;
+          Type* valueType = valueSe->symbol()->type;
+
+          if (!isRecord(targetType) && !isRecord(valueType)) {
+            bool promotes = false;
+            bool paramNarrows = false;
+            bool paramCoerce = false;
+            bool coerce = doCanDispatch(valueType, valueSe->symbol(),
+                                        targetType, call->getFunction(),
+                                        &promotes, &paramNarrows, paramCoerce);
+
+            if (coerce && !promotes) {
+              call->baseExpr->remove();
+              call->primitive = primitives[PRIM_CAST];
+              return true;
+            }
+          }
         }
       }
     }
