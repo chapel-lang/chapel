@@ -646,7 +646,12 @@ bool canInstantiate(Type* actualType, Type* formalType) {
 
   if (formalType == dtUnmanaged)
     if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isUnmanaged())
+      if (dt->isUnmanaged() && !dt->isNilable())
+        return true;
+
+  if (formalType == dtUnmanagedNilable)
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isUnmanaged() && dt->isNilable())
         return true;
 
   // handle unmanaged GenericClass(int) -> unmanaged GenericClass
@@ -662,9 +667,16 @@ bool canInstantiate(Type* actualType, Type* formalType) {
          !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
       return true;
     else if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isBorrowed())
+      if (dt->isBorrowed() && !dt->isNilable())
         return true;
   }
+
+  if (formalType == dtBorrowedNilable) {
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isBorrowed() && dt->isNilable())
+        return true;
+  }
+
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
 

@@ -122,7 +122,7 @@ module ChapelBase {
   inline proc ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
   inline proc ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
   inline proc ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
-  inline proc ==(a: borrowed object, b: borrowed object) return __primitive("ptr_eq", a, b);
+  inline proc ==(a: borrowed?, b: borrowed?) return __primitive("ptr_eq", a, b);
   inline proc ==(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("==", a, b);
   }
@@ -138,7 +138,7 @@ module ChapelBase {
   inline proc !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
   inline proc !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
   inline proc !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
-  inline proc !=(a: borrowed object, b: borrowed object) return __primitive("ptr_neq", a, b);
+  inline proc !=(a: borrowed?, b: borrowed?) return __primitive("ptr_neq", a, b);
   inline proc !=(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("!=", a, b);
   }
@@ -327,7 +327,7 @@ module ChapelBase {
   inline proc +(param a: imag(?w), param b: real(w)) param return __primitive("+", a, b);
   inline proc +(param a: real(?w), param b: complex(w*2)) param return
   __primitive("+", a, b);*/
- 
+
   inline proc -(param a: int(?w), param b: int(w)) param return __primitive("-", a, b);
   inline proc -(param a: uint(?w), param b: uint(w)) param return __primitive("-", a, b);
   inline proc -(param a: real(?w), param b: real(w)) param return __primitive("-", a, b);
@@ -337,7 +337,7 @@ module ChapelBase {
   inline proc -(param a: imag(?w), param b: real(w)) param return __primitive("-", a, b);
   inline proc -(param a: real(?w), param b: complex(w*2)) param return
   __primitive("-", a, b);*/
- 
+
   //
   // * and / on primitive types
   //
@@ -1272,10 +1272,16 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyreal, x:enumerated)
     return x: int: real;
 
+  inline proc _cast(type t:borrowed?, x:_to_nonnil(t))
+    return __primitive("cast", t, x);
+
   inline proc _cast(type t:borrowed, x:t)
     return __primitive("cast", t, x);
 
   inline proc _cast(type t:unmanaged, x:_to_borrowed(t))
+    return __primitive("cast", t, x);
+
+  inline proc _cast(type t:unmanaged?, x:_to_borrowed(t))
     return __primitive("cast", t, x);
 
   inline proc _cast(type t:borrowed, pragma "nil from arg" x:_nilType)
@@ -1283,6 +1289,13 @@ module ChapelBase {
 
   inline proc _cast(type t:unmanaged, pragma "nil from arg" x:_nilType)
     return __primitive("cast", t, x);
+
+  inline proc _cast(type t:borrowed?, pragma "nil from arg" x:_nilType)
+    return __primitive("cast", t, x);
+
+  inline proc _cast(type t:unmanaged?, pragma "nil from arg" x:_nilType)
+    return __primitive("cast", t, x);
+
 
   // dynamic cast handles class casting based upon runtime class type
   // this also might be called a downcast
@@ -2024,8 +2037,10 @@ module ChapelBase {
 
   proc isClassType(type t) param return __primitive("is class type", t);
 
-  proc isBorrowedOrUnmanagedClassType(type t:_unmanaged) param return true;
-  proc isBorrowedOrUnmanagedClassType(type t:_borrowed) param return true;
+  proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param return true;
+  proc isBorrowedOrUnmanagedClassType(type t:borrowed) param return true;
+  proc isBorrowedOrUnmanagedClassType(type t:unmanaged?) param return true;
+  proc isBorrowedOrUnmanagedClassType(type t:borrowed?) param return true;
   proc isBorrowedOrUnmanagedClassType(type t) param return false;
 
   proc isRecordType(type t) param {
@@ -2112,6 +2127,15 @@ module ChapelBase {
     var ret = __primitive("to borrowed class", arg);
     return ret;
   }
+  proc _to_nonnil(type t) type {
+    type rt = __primitive("to non nilable class", t);
+    return rt;
+  }
+  inline proc _to_nonnil(arg) {
+    var ret = __primitive("to non nilable class", arg);
+    return ret;
+  }
+
 
   pragma "no borrow convert"
   inline proc _removed_cast(in x) {
