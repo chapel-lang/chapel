@@ -88,14 +88,17 @@ module ChapelBase {
   inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
   inline proc =(ref a:enumerated, b:enumerated) where (a.type == b.type) {__primitive("=", a, b); }
 
-  inline proc =(ref a, b: a.type) where isClassType(a.type)
-  { __primitive("=", a, b); }
+  inline proc =(ref a, b: a.type) where isBorrowedOrUnmanagedClassType(a.type)
+  {
+    __primitive("=", a, b);
+  }
 
   pragma "compiler generated"
   pragma "last resort" // so user-supplied assignment will override this one.
     // The CG pragma is needed because this function interferes with
     // assignments defined for sync and single class types.
-  inline proc =(ref a, b:_nilType) where isClassType(a.type) {
+  inline proc =(ref a, b:_nilType) where isBorrowedOrUnmanagedClassType(a.type)
+  {
     __primitive("=", a, nil);
   }
 
@@ -1522,7 +1525,7 @@ module ChapelBase {
   // implements 'delete' statement
   pragma "no borrow convert"
   inline proc chpl__delete(arg)
-    where isClassType(arg.type) {
+    where isBorrowedOrUnmanagedClassType(arg.type) {
 
     if chpl_isDdata(arg.type) then
       compilerError("cannot delete data class");
@@ -2020,6 +2023,10 @@ module ChapelBase {
 
 
   proc isClassType(type t) param return __primitive("is class type", t);
+
+  proc isBorrowedOrUnmanagedClassType(type t:_unmanaged) param return true;
+  proc isBorrowedOrUnmanagedClassType(type t:_borrowed) param return true;
+  proc isBorrowedOrUnmanagedClassType(type t) param return false;
 
   proc isRecordType(type t) param {
     if __primitive("is record type", t) == false then
