@@ -175,7 +175,7 @@ in memory.
 module BLAS {
 
   /* Available BLAS implementations for ``blasImpl`` */
-  enum BlasImpl {blas, mkl, none};
+  enum BlasImpl {blas, mkl, off};
   use BlasImpl;
 
   /* Specifies which header filename to include, based on the BLAS
@@ -186,7 +186,7 @@ module BLAS {
 
       - ``blas`` includes ``cblas.h`` (default)
       - ``mkl`` includes ``mkl_cblas.h``
-      - ``none`` includes nothing
+      - ``off`` includes nothing
 
   */
   config param blasImpl = BlasImpl.blas;
@@ -203,7 +203,7 @@ module BLAS {
 
   pragma "no doc"
   param header = if blasHeader == '' then
-                   if blasImpl == BlasImpl.none then ''
+                   if blasImpl == BlasImpl.off then ''
                    else if blasImpl == BlasImpl.mkl then 'mkl_cblas.h'
                    else 'cblas.h'
                  else blasHeader;

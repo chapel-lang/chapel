@@ -120,7 +120,7 @@ We anticipate the following additions:
 module LAPACK {
 
   /* Available LAPACK implementations for ``lapackImpl`` */
-  enum LapackImpl {lapack, mkl, none};
+  enum LapackImpl {lapack, mkl, off};
   use LapackImpl;
 
   /*
@@ -132,7 +132,7 @@ module LAPACK {
 
      - ``LapackImpl.lapack`` includes ``lapacke.h`` (default)
      - ``LapackImpl.mkl`` includes ``mkl_lapacke.h``
-     - ``LapackImpl.none`` includes nothing
+     - ``LapackImpl.off`` includes nothing
 
     .. warning::
 
@@ -156,7 +156,7 @@ module LAPACK {
 
   pragma "no doc"
   param header = if lapackHeader == '' then
-                   if lapackImpl == LapackImpl.none then ''
+                   if lapackImpl == LapackImpl.off then ''
                    else if lapackImpl == LapackImpl.mkl  then 'mkl_lapacke.h'
                    else 'lapacke.h'
                  else lapackHeader;
