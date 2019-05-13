@@ -56,6 +56,7 @@
 #include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
+#include "chpl-comm-internal.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
 #include "chplexit.h"
@@ -1952,9 +1953,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 
 void chpl_comm_post_mem_init(void)
 {
-  //
-  // Empty.
-  //
+  chpl_comm_init_prv_bcast_tab();
 }
 
 
@@ -3832,8 +3831,8 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid)
   //
   for (i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      do_remote_put(chpl_private_broadcast_table[id], i,
-                    chpl_private_broadcast_table[id], size,
+      do_remote_put(chpl_rt_priv_bcast_tab[id], i,
+                    chpl_rt_priv_bcast_tab[id], size,
                     NULL, may_proxy_true);
     }
   }
@@ -5753,10 +5752,6 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
   do_remote_get_buff(addr, locale, raddr, size, may_proxy_true);
 }
 
-void chpl_comm_get_unordered_fence(void) {
-  remote_get_buff_flush();
-}
-
 void chpl_comm_get_unordered_task_fence(void) {
   remote_get_buff_task_flush();
 }
@@ -6635,6 +6630,8 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo write", loc, ln, fn);        \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6699,6 +6696,8 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo read", loc, ln, fn);         \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6753,6 +6752,8 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo xchg", loc, ln, fn);         \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6817,6 +6818,8 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo cmpxchg", loc, ln, fn);      \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6871,6 +6874,8 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo " #_o, loc, ln, fn);         \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6902,6 +6907,8 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo unord_" #_o, loc, ln, fn);   \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6936,6 +6943,8 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo fetch_" #_o, loc, ln, fn);   \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -7004,6 +7013,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo add", loc, ln, fn);          \
+          chpl_comm_diags_incr(amo);                                    \
           if (sizeof(_t) == sizeof(int_least32_t)                       \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
@@ -7035,6 +7046,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo unord_add", loc, ln, fn);    \
+          chpl_comm_diags_incr(amo);                                    \
           if (sizeof(_t) == sizeof(int_least32_t)                       \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
@@ -7068,6 +7081,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo fetch_add", loc, ln, fn);    \
+          chpl_comm_diags_incr(amo);                                    \
           if (sizeof(_t) == sizeof(int_least32_t)                       \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
@@ -7159,10 +7174,6 @@ DEFINE_CHPL_COMM_ATOMIC_SUB(real32, float, NEGATE_U_OR_R)
 DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double, NEGATE_U_OR_R)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_SUB
-
-void chpl_comm_atomic_unordered_fence(void) {
-  nic_amo_nf_buff_flush();
-}
 
 void chpl_comm_atomic_unordered_task_fence(void) {
   nic_amo_nf_buff_task_flush();

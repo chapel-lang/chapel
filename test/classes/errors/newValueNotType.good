@@ -1,0 +1,2 @@
+newValueNotType.chpl:7: error: invalid use of 'new'
+newValueNotType.chpl:10: error: invalid use of 'new'

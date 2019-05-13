@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
@@ -31,7 +32,6 @@
 #include "iterator.h"
 #include "LoopExpr.h"
 #include "LoopStmt.h"
-#include "UnmanagedClassType.h"
 #include "ParamForLoop.h"
 #include "passes.h"
 #include "postFold.h"
@@ -1007,7 +1007,7 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 }
 
 void fixTypeNames(AggregateType* at) {
-  const char* typeName = toString(at);
+  const char* typeName = toString(at, false);
 
   if (at->symbol->name != typeName)
     at->symbol->name = typeName;

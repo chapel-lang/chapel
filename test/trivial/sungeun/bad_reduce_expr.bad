@@ -1,1 +1,1 @@
-bad_reduce_expr.chpl:6: error: iterator or promoted expression _ir_chpl_promo3_== used in if or while condition
+bad_reduce_expr.chpl:6: error: iterator or promoted expression iterator used in if or while condition

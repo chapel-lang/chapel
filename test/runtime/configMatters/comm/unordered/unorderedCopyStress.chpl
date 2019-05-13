@@ -25,7 +25,7 @@ inline proc assign(ref dst, ref src) {
                       else dst = src;
 
   if useUnorderedCopy && concurrentFencing then
-    unorderedCopyFence();
+    unorderedCopyTaskFence();
 }
 
 var t: Timer;

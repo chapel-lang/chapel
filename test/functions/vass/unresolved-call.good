@@ -1,1 +1,2 @@
 unresolved-call.chpl:4: error: unresolved call 'unresolvd(int(64))'
+unresolved-call.chpl:4: note: because no functions named unresolvd found in scope

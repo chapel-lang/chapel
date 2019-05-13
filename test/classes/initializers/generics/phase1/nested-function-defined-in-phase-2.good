@@ -1,2 +1,2 @@
 I'm in the nested function!
-Foo(13)
+borrowed Foo(13)

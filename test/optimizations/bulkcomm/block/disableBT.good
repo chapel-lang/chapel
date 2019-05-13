@@ -1,4 +1,4 @@
-Block=Block: false
-Block=DefaultRectangular: false
-DefaultRectangular=Block: false
-Block=Cyclic: false
+Dist=Dist: false
+Dist=DefaultRectangular: false
+DefaultRectangular=Dist: false
+Dist=Cyclic: false

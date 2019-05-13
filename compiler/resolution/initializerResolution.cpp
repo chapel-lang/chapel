@@ -22,6 +22,7 @@
 #include "AggregateType.h"
 #include "caches.h"
 #include "callInfo.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
@@ -33,7 +34,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "UnmanagedClassType.h"
 #include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
@@ -173,7 +173,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
   VarSymbol* result = newTemp();
   Expr* resultExpr = NULL;
   if (isClass(type)) {
-    UnmanagedClassType* uct = type->getUnmanagedClass();
+    Type* uct = type->getDecoratedClass(CLASS_TYPE_UNMANAGED);
     resultExpr = new CallExpr(PRIM_CAST, uct->symbol, initTemp);
   } else {
     resultExpr = new SymExpr(initTemp);
@@ -335,15 +335,6 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 
     } else if (isManagedPtrType(manager) == false) {
       Expr* new_temp_rhs = newCall;
-
-      // Needed for: test/compflags/ferguson/default-unmanaged.chpl
-      if (isClass(at) && manager == NULL && fLegacyNew == true && fDefaultUnmanaged == false) {
-        VarSymbol* borrowTemp = newTemp("borrowTemp");
-        block->insertAtTail(new DefExpr(borrowTemp));
-        block->insertAtTail(new CallExpr(PRIM_MOVE, borrowTemp, new CallExpr(PRIM_TO_BORROWED_CLASS, new_temp_rhs)));
-        normalize(block);
-        new_temp_rhs = new SymExpr(borrowTemp);
-      }
 
       CallExpr* newMove = new CallExpr(PRIM_MOVE, new_temp, new_temp_rhs);
       block->insertAtTail(newMove);

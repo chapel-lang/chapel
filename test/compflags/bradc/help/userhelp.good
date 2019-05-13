@@ -129,6 +129,8 @@ Miscellaneous Options:
       --[no-]explain-verbose          Enable [disable] tracing of
                                       disambiguation with 'explain' options
       --instantiate-max <max>         Limit number of instantiations
+      --[no-]print-all-candidates     [Don't] print all candidates for a
+                                      resolution failure
       --[no-]print-callgraph          [Don't] print a representation of the
                                       callgraph for the program
       --[no-]print-callstack-on-error [Don't] print the Chapel call stack

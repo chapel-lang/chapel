@@ -17,13 +17,13 @@
  * limitations under the License.
  */
 
+#include "DecoratedClassType.h"
 #include "ForallStmt.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveIntents.h"
 #include "stringutil.h"
 #include "stmt.h"
-#include "UnmanagedClassType.h"
 
 
 /////////////////////////////////////////////////////////////////////////////

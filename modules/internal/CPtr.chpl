@@ -198,7 +198,7 @@ module CPtr {
       return size;
     }
 
-    proc init(other: c_array) {
+    proc init=(other: c_array) {
       this.eltType = other.eltType;
       this.size = other.size;
       this.complete();
@@ -424,10 +424,19 @@ module CPtr {
   pragma "no doc"
   inline proc -(a: c_ptr, b: integral) return __primitive("-", a, b);
 
+  pragma "no doc"
+  inline proc -(a: c_ptr(?t), b: c_ptr(t)):c_ptrdiff {
+    return c_pointer_diff(a, b, c_sizeof(a.eltType):c_ptrdiff);
+  }
 
   pragma "no doc"
   pragma "fn synchronization free"
   extern proc c_pointer_return(ref x:?t):c_ptr(t);
+  pragma "no doc"
+  pragma "fn synchronization free"
+  extern proc c_pointer_diff(a:c_void_ptr, b:c_void_ptr,
+                             eltSize:c_ptrdiff):c_ptrdiff;
+
 
 
   /*

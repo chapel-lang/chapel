@@ -27,7 +27,25 @@ LOCALE0:
 32 33 34
 42 43 44
 
+---  ARepl = A[DsubLoc];
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
 ---  forall (a,b) in zip(ARepl, A[Dsub]) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  for (a,b) in zip(ARepl, A[Dsub]) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  forall ix in DsubLoc do ARepl[ix] = A[ix];
 LOCALE0:
 22 23 24
 32 33 34
@@ -52,7 +70,26 @@ LOCALE0:
 41 100 100 100 45
 51 52 53 54 55
 
+---  A[DsubLoc] = ARepl;
+11 12 13 14 15
+21 100 100 100 25
+31 100 100 100 35
+41 100 100 100 45
+51 52 53 54 55
+
 ---  forall (b,a) in zip(A[Dsub],ARepl) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  for (b,a) in zip(A[Dsub],ARepl) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  for (b,a) in zip(A[DsubLoc],ARepl) do a = b;
 LOCALE0:
 22 23 24
 32 33 34
@@ -86,7 +123,25 @@ LOCALE0:
 32 33 34
 42 43 44
 
+---  ARepl = A[DsubLoc];
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
 ---  forall (a,b) in zip(ARepl, A[Dsub]) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  for (a,b) in zip(ARepl, A[Dsub]) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  forall ix in DsubLoc do ARepl[ix] = A[ix];
 LOCALE0:
 22 23 24
 32 33 34
@@ -111,7 +166,26 @@ LOCALE0:
 41 100 100 100 45
 51 52 53 54 55
 
+---  A[DsubLoc] = ARepl;
+11 12 13 14 15
+21 100 100 100 25
+31 100 100 100 35
+41 100 100 100 45
+51 52 53 54 55
+
 ---  forall (b,a) in zip(A[Dsub],ARepl) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  for (b,a) in zip(A[Dsub],ARepl) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  for (b,a) in zip(A[DsubLoc],ARepl) do a = b;
 LOCALE0:
 22 23 24
 32 33 34
@@ -145,7 +219,25 @@ LOCALE0:
 32 33 34
 42 43 44
 
+---  ARepl = A[DsubLoc];
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
 ---  forall (a,b) in zip(ARepl, A[Dsub]) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  for (a,b) in zip(ARepl, A[Dsub]) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  forall ix in DsubLoc do ARepl[ix] = A[ix];
 LOCALE0:
 22 23 24
 32 33 34
@@ -170,7 +262,26 @@ LOCALE0:
 41 100 100 100 45
 51 52 53 54 55
 
+---  A[DsubLoc] = ARepl;
+11 12 13 14 15
+21 100 100 100 25
+31 100 100 100 35
+41 100 100 100 45
+51 52 53 54 55
+
 ---  forall (b,a) in zip(A[Dsub],ARepl) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  for (b,a) in zip(A[Dsub],ARepl) do a = b;
+LOCALE0:
+22 23 24
+32 33 34
+42 43 44
+
+---  for (b,a) in zip(A[DsubLoc],ARepl) do a = b;
 LOCALE0:
 22 23 24
 32 33 34

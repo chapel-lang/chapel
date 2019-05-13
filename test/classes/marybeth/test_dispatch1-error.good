@@ -1,1 +1,1 @@
-test_dispatch1-error.chpl:27: error: Cannot assign to pumps from shoe
+test_dispatch1-error.chpl:27: error: Cannot assign to borrowed pumps from borrowed shoe

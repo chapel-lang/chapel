@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "CatchStmt.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "clangUtil.h"
 #include "driver.h"
@@ -36,7 +37,6 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TryStmt.h"
-#include "UnmanagedClassType.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -77,8 +77,6 @@ static void          scopeResolveExpr(Expr* expr, ResolveScope* scope);
 static void          processImportExprs();
 
 static void          resolveGotoLabels();
-
-static void          adjustMethodThisForDefaultUnmanaged(FnSymbol* fn);
 
 static bool          isStableClassType(Type* t);
 static Expr*         handleUnstableClassType(SymExpr* se);
@@ -154,9 +152,6 @@ void scopeResolve() {
     } else if (fn->_this) {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
-
-    // Adjust class type methods for unmanaged/borrowed
-    adjustMethodThisForDefaultUnmanaged(fn);
   }
 
   resolveGotoLabels();
@@ -656,37 +651,6 @@ static void resolveGotoLabels() {
   }
 }
 
-static void adjustMethodThisForDefaultUnmanaged(FnSymbol* fn) {
-
-  if (fDefaultUnmanaged && fn->_this && isClass(fn->_this->type)) {
-    ArgSymbol* _this = toArgSymbol(fn->_this);
-    Type* t = _this->type;
-    bool ok = isStableClassType(t);
-
-    if (fn->getModule()->modTag == MOD_USER && !ok) {
-      SET_LINENO(fn->_this);
-
-      // Make sure fn->_this->typeExpr exists
-      if (!_this->typeExpr) {
-        _this->typeExpr = new BlockStmt(new SymExpr(t->symbol));
-        parent_insert_help(_this, _this->typeExpr);
-      }
-      // Now adjust _this->typeExpr (whether we just created it or not)
-      Expr* stmt = toArgSymbol(fn->_this)->typeExpr->body.only();
-
-      if (SymExpr* se = toSymExpr(stmt)) {
-        Expr* result = se;
-        if (fWarnUnstable || fDefaultUnmanaged)
-          result = handleUnstableClassType(se);
-        // Amend _this->type
-        fn->_this->type = result->typeInfo();
-      } else {
-        INT_ASSERT(0);
-      }
-    }
-  }
-}
-
 
 /************************************* | *************************************/
 
@@ -911,16 +875,14 @@ static Expr* handleUnstableClassType(SymExpr* se) {
           } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
                      pCall == outerCall->get(1)) {
             // 'new SomeClass()'
-            // let ok be set as it was above unless changing default
-            if (fDefaultUnmanaged) ok = false;
+            // let ok be set as it was above
           } else if (outerCall && callSpecifiesClassKind(outerCall) &&
                      pCall->baseExpr == se) {
             // ':borrowed MyGenericClass(int)'
             ok = true;
           } else if (pCall->baseExpr == se) {
             // ':MyGenericClass(int)'
-            // let ok be set as it was above unless changing default
-            if (fDefaultUnmanaged) ok = false;
+            // let ok be set as it was above
           }
           if (pCall->isNamed(".") &&
               pCall->get(1) == se) {
@@ -938,8 +900,7 @@ static Expr* handleUnstableClassType(SymExpr* se) {
         } else if (inCall && !inCall->isPrimitive(PRIM_NEW)) {
           // typefunction(SomeClass)
           // typefunction(SomeGenericClass(int))
-          if (!fDefaultUnmanaged)
-            ok = true;
+          ok = true;
         }
 
         // Types in extern function procs are assumed to
@@ -958,27 +919,15 @@ static Expr* handleUnstableClassType(SymExpr* se) {
 
         // Don't worry about this arguments if we're only warning
         // (do worry about it if we're changing the default)
-        if (!fDefaultUnmanaged) {
-          if (ArgSymbol* arg = toArgSymbol(se->parentSymbol)) {
-            if (arg->hasFlag(FLAG_ARG_THIS)) {
-              // this default intent is currently 'borrowed' always
-              // and there's not yet a way to adjust it.
-              ok = true;
-            }
-          }
+        if (ArgSymbol* arg = toArgSymbol(se->parentSymbol)) {
+          if (arg->hasFlag(FLAG_ARG_THIS))
+            // this default intent is currently 'borrowed' always
+            // and there's not yet a way to adjust it.
+            ok = true;
         }
 
         if (!ok) {
-          if (fDefaultUnmanaged) {
-            // Change the se to _to_unmanaged(se)
-            // but take care to leave the original se in the tree
-            // (for the sake of the calling code in resolveUnresolvedSymExpr)
-            CallExpr* call = new CallExpr(PRIM_TO_UNMANAGED_CLASS);
-            se->replace(call);
-            call->insertAtTail(se);
-            return call;
-
-          } else if (fWarnUnstable) {
+          if (fWarnUnstable) {
             // error
             USR_WARN(se, "undecorated class type %s is unstable", ts->name);
             if (inDef && se == inDef->exprType)
@@ -1045,7 +994,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
     usymExpr->replace(symExpr);
 
-    if (fWarnUnstable || fDefaultUnmanaged)
+    if (fWarnUnstable)
       handleUnstableClassType(symExpr);
 
     updateMethod(usymExpr, sym, symExpr);
@@ -2238,34 +2187,63 @@ static void resolveUnmanagedBorrows() {
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-        call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+        call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+        call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+        call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
       SET_LINENO(call);
 
-      bool unmanaged = call->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-          TypeSymbol* useTS = ts;
-
           AggregateType* at = toAggregateType(ts->type);
-          if (at && isClass(at)) {
-            if (unmanaged) {
-              UnmanagedClassType* unm = at->getUnmanagedClass();
-              useTS = unm->symbol;
-            }
+
+          ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+          if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
+            at = dt->getCanonicalClass();
+            decorator = dt->getDecorator();
+          } else if (at && isClass(at)) {
+            decorator = CLASS_TYPE_BORROWED;
           } else {
             const char* type = NULL;
             if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
               type = "unmanaged";
             else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS))
               type = "borrowed";
+            else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS))
+              type = "?";
+            else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS))
+              type = "nonnil";
 
             USR_FATAL_CONT(call, "%s can only apply to class types "
                                  "(%s is not a class type)",
                                  type, ts->name);
           }
 
-          // replace the call with a new symexpr pointing to ts
-          call->replace(new SymExpr(useTS));
+          // Compute the decorated class type
+          if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+            int tmp = decorator & CLASS_TYPE_NILABLE_MASK;
+            tmp |= CLASS_TYPE_UNMANAGED;
+            decorator = (ClassTypeDecorator) tmp;
+          } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+            int tmp = decorator & CLASS_TYPE_NILABLE_MASK;
+            tmp |= CLASS_TYPE_BORROWED;
+            decorator = (ClassTypeDecorator) tmp;
+          } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+            int tmp = decorator & CLASS_TYPE_MANAGEMENT_MASK;
+            tmp |= CLASS_TYPE_NILABLE_MASK;
+            decorator = (ClassTypeDecorator) tmp;
+          } else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
+            int tmp = decorator & CLASS_TYPE_MANAGEMENT_MASK;
+            decorator = (ClassTypeDecorator) tmp;
+          }
+
+          if (at) {
+            Type* dt = at->getDecoratedClass(decorator);
+            if (dt) {
+              TypeSymbol* useTS = dt->symbol;
+              // replace the call with a new symexpr pointing to ts
+              call->replace(new SymExpr(useTS));
+            }
+          }
         }
       }
       // It's tempting to give type constructor calls the same

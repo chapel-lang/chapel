@@ -72,7 +72,7 @@ proc testAtomicT(a, ref i, ref b, type basetype) {
 
 proc testUnorderedAtomicT(a, ref i, ref b, type basetype) {
   use UnorderedAtomics;
-  inline proc fence() { unorderedAtomicFence(); }
+  inline proc fence() { unorderedAtomicTaskFence(); }
   param isInt = isIntegral(basetype);
 
   writeln("Testing 'atomic " + basetype:string + "':");

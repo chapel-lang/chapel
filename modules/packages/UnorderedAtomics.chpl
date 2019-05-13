@@ -27,8 +27,8 @@
    :proc:`~Atomics.add()`, :proc:`~Atomics.sub()`, :proc:`~Atomics.or()`,
    :proc:`~Atomics.and()`, and :proc:`~Atomics.xor()` are provided. The results
    of these functions are not visible until task or forall termination or an
-   explicit :proc:`unorderedAtomicFence()`, but they can provide a significant
-   speedup for bulk atomic operations that do not require ordering:
+   explicit :proc:`unorderedAtomicTaskFence()`, but they can provide a
+   significant speedup for bulk atomic operations that do not require ordering:
 
    .. code-block:: chapel
 
@@ -53,14 +53,14 @@
    It's important to be aware that unordered atomic operations are not
    consistent with regular atomic operations and updates may not be visible
    until the task or forall that issued them terminates or they are explicitly
-   fenced with :proc:`unorderedAtomicFence()`.
+   fenced with :proc:`unorderedAtomicTaskFence()`.
 
    .. code-block:: chapel
 
      var a: atomic int;
      a.unorderedAdd(1);
      writeln(a);        // can print 0 or 1
-     unorderedAtomicFence();
+     unorderedAtomicTaskFence();
      writeln(a);        // prints 1
 
    Generally speaking they are useful for when you have a large batch of atomic
@@ -152,15 +152,26 @@ module UnorderedAtomics {
   }
 
   /*
-     Fence any pending unordered atomics. Note that this is a global fence
-     across all locales.
+     Fence any pending unordered atomics issued by the current task.
+   */
+  inline proc unorderedAtomicTaskFence(): void {
+    if CHPL_NETWORK_ATOMICS != "none" {
+      extern proc chpl_comm_atomic_unordered_task_fence();
+      chpl_comm_atomic_unordered_task_fence();
+    }
+  }
+
+  /*
+     .. warning::
+       This function has been deprecated - please use
+       :proc:`unorderedAtomicTaskFence()` instead. Note that this function has
+       been deprecated without a full release of support because the previous
+       global fence semantics imposed expensive implementation requirements and
+       is not expected to be needed now that operations are implicitly fenced at
+       task/forall termination.
    */
   inline proc unorderedAtomicFence(): void {
-    if CHPL_NETWORK_ATOMICS != "none" {
-      extern proc chpl_comm_atomic_unordered_fence();
-      coforall loc in Locales do on loc {
-        chpl_comm_atomic_unordered_fence();
-      }
-    }
+    compilerError("unorderedAtomicFence() is no longer supported - please use unorderedAtomicTaskFence() instead");
+    unorderedAtomicTaskFence();
   }
 }

@@ -4,12 +4,12 @@ in MyClass.init 3
 in MyClass.init 4
 in MyClass.init 5
 in MyClass.init 6
-MyClass
-MyClass
-MyClass
-MyClass
-MyClass
-MyClass
+owned MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
 in MyClass.deinit 6
 in MyClass.deinit 5
 in MyClass.deinit 4

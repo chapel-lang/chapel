@@ -1291,6 +1291,22 @@ module Math {
     return yn(n.safeCast(c_int), x);
   }
 
+  /* Returns true if the sign of `x` is negative, else returns false. It detects
+     the sign bit of zeroes, infinities, and NANs */
+  inline proc signbit(x : real(32)): bool {
+    pragma "fn synchronization free"
+    extern proc chpl_macro_float_signbit(x: real(32)): c_int;
+    return chpl_macro_float_signbit(x): bool;
+  }
+
+  /* Returns true if the sign of `x` is negative, else returns false. It detects
+     the sign bit of zeroes, infinities, and NANs */
+  inline proc signbit(x : real(64)): bool {
+    pragma "fn synchronization free"
+    extern proc chpl_macro_double_signbit(x: real(64)): c_int;
+    return chpl_macro_double_signbit(x): bool;
+  }
+
 } // end of module Math
 
 // TODO: Consolidate overloaded signatures, to simplify the documentation.

@@ -1,8 +1,8 @@
-_owned(D)
+owned D
 In D.p(1)
-_shared(D)
+shared D
 In D.p(2)
-_owned(D)
+owned D
 In D.t(3)
-_shared(D)
+shared D
 In D.t(4)

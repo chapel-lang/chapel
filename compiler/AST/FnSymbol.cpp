@@ -1120,7 +1120,7 @@ const char* toString(FnSymbol* fn) {
 
       } else if (fn->isMethod()) {
         INT_ASSERT(fn->_this);
-        retval = astr(toString(fn->_this->type), ".", fn->name);
+        retval = astr(toString(fn->_this->type, false), ".", fn->name);
 
       } else if (fn->hasFlag(FLAG_MODULE_INIT) == true) {
         INT_ASSERT(strncmp("chpl__init_", fn->name, 11) == 0);

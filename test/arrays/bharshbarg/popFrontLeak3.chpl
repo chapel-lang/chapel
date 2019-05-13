@@ -11,7 +11,7 @@ record R {
     writeln("init: ", x);
     this.c = new unmanaged C(x);
   }
-  proc init(other:R) {
+  proc init=(other:R) {
     writeln("copy: ", other.c.x, " --> ", other.c.x + 1);
     this.c = new unmanaged C(other.c.x + 1);
   }

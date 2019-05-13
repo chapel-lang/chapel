@@ -121,7 +121,9 @@ private:
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
-const char* toString(Type* type);
+// If decorateAllClasses is true, an un-decorated default class type
+// 'C' will show as 'borrowed C'
+const char* toString(Type* type, bool decorateAllClasses=true);
 
 /************************************* | **************************************
 *                                                                             *
@@ -442,9 +444,10 @@ bool isLegalParamType(Type*);
 int  get_width(Type*);
 int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
-bool isClass(Type* t);
+bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
 bool isClassOrNil(Type* t);
-bool isClassLike(Type* t); // includes UnmanagedClassType & ClassType
+bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUnion(Type* t);

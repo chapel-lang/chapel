@@ -1815,7 +1815,7 @@ return processToken(yyscanner, TOR);
 case 123:
 YY_RULE_SETUP
 #line 249 "chapel.lex"
-return processToken(yyscanner, TNOT);
+return processToken(yyscanner, TBANG);
 	YY_BREAK
 case 124:
 YY_RULE_SETUP

@@ -1,3 +1,1 @@
-tuple-expansion-with-parens-1.chpl:3: warning: 2*int(64)
-tuple-expansion-with-parens-1.chpl:4: warning: int(64)
-1
+tuple-expansion-with-parens-1.chpl:2: error: illegal tuple expansion context

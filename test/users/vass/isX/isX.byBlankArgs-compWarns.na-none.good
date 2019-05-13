@@ -254,7 +254,7 @@ isTuple
 isTupleValue
 isTupleType
 
-ClassType
+borrowed ClassType
 isClass
 isClassValue
 isClassType

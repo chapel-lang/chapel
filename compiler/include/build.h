@@ -63,7 +63,8 @@ BlockStmt* buildErrorStandin();
 
 BlockStmt* buildUseStmt(CallExpr* modules);
 BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except);
-bool processStringInRequireStmt(const char* str, bool parseTime);
+bool processStringInRequireStmt(const char* str, bool parseTime,
+                                const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);

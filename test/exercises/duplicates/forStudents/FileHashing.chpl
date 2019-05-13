@@ -23,7 +23,7 @@ module FileHashing {
       // compiler adds initialization of hash to 0s
     }
     /* How to initialize a SHA256Hash from another SHA256Hash */
-    proc init(from: SHA256Hash) {
+    proc init=(from: SHA256Hash) {
       this.hash = from.hash;
     }
     /* How to initialize a SHA256Hash from a hash tuple */

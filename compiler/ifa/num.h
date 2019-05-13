@@ -317,16 +317,16 @@ IFA_EXTERN const char *num_kind_string[4][8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
 inline Immediate& Immediate::operator=(const Immediate& imm) {
-  memcpy(this, &imm, sizeof(imm));
+  memcpy((void*)this, &imm, sizeof(imm));
   return *this;
 }
 
 inline Immediate::Immediate(const Immediate& imm) {
-  memcpy(this, &imm, sizeof(imm));
+  memcpy((void*)this, &imm, sizeof(imm));
 }
 
 inline Immediate::Immediate() {
-  memset(this, 0, sizeof(*this));
+  memset((void*)this, 0, sizeof(*this));
 }
 
 inline unsigned int
