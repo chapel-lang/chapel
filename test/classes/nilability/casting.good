@@ -1,0 +1,8 @@
+cp:Child
+borrowed Child {}
+cp:Child?
+borrowed Child? {}
+p:Child
+ClassCastError: runtime types not compatible
+p:Child?
+borrowed Child? nil

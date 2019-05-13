@@ -662,7 +662,8 @@ module ChapelBase {
   //   incorrectness; it is used to give better error messages for
   //   promotion of && and ||
   //
-  inline proc _cond_test(x: borrowed object) return x != nil;
+
+  inline proc _cond_test(x: borrowed object?) return x != nil;
   inline proc _cond_test(x: bool) return x;
   inline proc _cond_test(x: integral) return x != 0:x.type;
 
@@ -1285,25 +1286,54 @@ module ChapelBase {
     if x == nil {
       throw new owned NilDereferenceError();
     }
-    return __primitive("to non nilable class", x);
+    return _to_nonnil(x);
   }
 
   // dynamic cast handles class casting based upon runtime class type
   // this also might be called a downcast
-  inline proc _cast(type t:borrowed, x:borrowed) where isSubtype(t,x.type) && (x.type != t)
-    return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
+  // this version handles casting to borrowed
+  inline proc _cast(type t:borrowed, x:borrowed) throws
+    where isSubtype(t,x.type) && (x.type != t)
+  {
+    var tmp:_to_nilable(t) = __primitive("dynamic_cast", t, x);
+    if tmp == nil {
+      throw new owned ClassCastError();
+    }
 
-  // this version handles unmanaged -> unmanaged
-  inline proc _cast(type t:unmanaged, x:borrowed) where isSubtype(t,x.type) && (x.type != t)
-    return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
-
-  // this version handles unmanaged -> borrow
-  inline proc _cast(type t:borrowed, x:unmanaged) where isSubtype(t,_to_borrowed(x.type)) && (_to_borrowed(x.type) != t) {
-    // first convert to borrow
-    var casttmp = __primitive("to borrowed class", x);
-    // then cast the borrow
-    return if x != nil then __primitive("dynamic_cast", t, casttmp) else __primitive("cast", t, nil);
+    return _to_nonnil(tmp);
   }
+
+  inline proc _cast(type t:borrowed?, x:borrowed?)
+    where isSubtype(t,x.type) && (x.type != t)
+  {
+    if x == nil {
+      return nil;
+    }
+    return __primitive("dynamic_cast", t, x);
+  }
+
+
+  // this version handles casting to unmanaged
+  inline proc _cast(type t:unmanaged, x:borrowed) throws
+    where isSubtype(_to_borrowed(t),x.type) && (x.type != _to_borrowed(t))
+  {
+    var tmp:_to_nilable(t) = __primitive("dynamic_cast", t, x);
+    if tmp == nil {
+      throw new owned ClassCastError();
+    }
+
+    return _to_nonnil(tmp);
+  }
+
+  inline proc _cast(type t:unmanaged?, x:borrowed?)
+    where isSubtype(_to_borrowed(t),x.type) && (x.type != _to_borrowed(t))
+  {
+    if x == nil {
+      return nil;
+    }
+    return __primitive("dynamic_cast", t, x);
+  }
+
 
   //
   // casts to complex
@@ -2121,6 +2151,14 @@ module ChapelBase {
   }
   inline proc _to_nonnil(arg) {
     var ret = __primitive("to non nilable class", arg);
+    return ret;
+  }
+  proc _to_nilable(type t) type {
+    type rt = __primitive("to nilable class", t);
+    return rt;
+  }
+  inline proc _to_nilable(arg) {
+    var ret = __primitive("to nilable class", arg);
     return ret;
   }
 

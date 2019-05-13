@@ -433,7 +433,7 @@ module ChapelLocale {
     iter chpl_initOnLocales() {
       if numLocales > 1 then
         halt("The locales must be initialized in parallel");
-      for locIdx in (origRootLocale:borrowed RootLocale).getDefaultLocaleSpace() {
+      for locIdx in (origRootLocale:borrowed RootLocale?)!.getDefaultLocaleSpace() {
         yield locIdx;
         rootLocale = origRootLocale;
         rootLocaleInitialized = true;
@@ -532,7 +532,7 @@ module ChapelLocale {
       halt("Cannot run a program compiled with --local in more than 1 locale");
 
     origRootLocale = new unmanaged RootLocale();
-    (origRootLocale:borrowed RootLocale).setup();
+    (origRootLocale:borrowed RootLocale?)!.setup();
   }
 
   // This function sets up a private copy of rootLocale by replicating
@@ -552,7 +552,7 @@ module ChapelLocale {
       // as they require additional tasks.  We know we don't need them
       // so tell the compiler to not insert them.
       pragma "no copy" pragma "no auto destroy"
-      const ref origLocales = (origRootLocale:borrowed RootLocale).getDefaultLocaleArray();
+      const ref origLocales = (origRootLocale:borrowed RootLocale?)!.getDefaultLocaleArray();
       var origRL = origLocales._value.theData;
       var newRL = newRootLocale.getDefaultLocaleArray()._value.theData;
       // We must directly implement a bulk copy here, as the mechanisms
@@ -570,7 +570,7 @@ module ChapelLocale {
       // We mimic a private Locales array alias by using the move
       // primitive.
       pragma "no auto destroy"
-      const ref tmp = (rootLocale:borrowed RootLocale).getDefaultLocaleArray();
+      const ref tmp = (rootLocale:borrowed RootLocale?)!.getDefaultLocaleArray();
       __primitive("move", Locales, tmp);
     }
     rootLocaleInitialized = true;
@@ -620,7 +620,7 @@ module ChapelLocale {
   pragma "fn returns infinite lifetime"
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
     if rootLocale then
-      return (rootLocale:borrowed AbstractRootLocale).localeIDtoLocale(id);
+      return (rootLocale:borrowed AbstractRootLocale?)!.localeIDtoLocale(id);
     else
       // For code prior to rootLocale initialization
       return dummyLocale;

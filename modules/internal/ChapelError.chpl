@@ -79,6 +79,13 @@ module ChapelError {
     }
   }
 
+  class ClassCastError : Error {
+    pragma "no doc"
+    override proc message() {
+      return "runtime types not compatible";
+    }
+  }
+
   class IllegalArgumentError : Error {
     var formal: string;
     var info: string;
@@ -179,11 +186,11 @@ module ChapelError {
       cur = head;
       while cur != nil {
         var curnext = cur._next;
-        var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
+        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
         if asTaskErr == nil {
           n += 1;
         } else {
-          for e in asTaskErr {
+          for e in asTaskErr! {
             if e != nil then
               n += 1;
           }
@@ -203,12 +210,12 @@ module ChapelError {
       while cur != nil {
         var curnext = cur._next;
         cur._next = nil; // remove from any lists
-        var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
+        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
         if asTaskErr == nil {
           errorsArray[idx].retain(cur);
           idx += 1;
         } else {
-          for e in asTaskErr {
+          for e in asTaskErr! {
             if e != nil {
               errorsArray[idx] = e;
               idx += 1;
@@ -487,7 +494,7 @@ module ChapelError {
   //  how many tasks were run in that loop).
   pragma "no doc"
   proc chpl_forall_error(err: unmanaged Error) : unmanaged Error {
-    if err:unmanaged TaskErrors then
+    if err:unmanaged TaskErrors? then
       return err;
     // If err wasn't a taskError, wrap it in one
     return new unmanaged TaskErrors(err);
