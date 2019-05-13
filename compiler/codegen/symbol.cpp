@@ -1679,7 +1679,7 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
 
     //Void type handled here since LLVM complains about a
     //void type defined in a module
-    if( 0 == strcmp("void", retType->symbol->name) ) {
+    if (retType == dtVoid || retType == dtNothing) {
       returnType = llvm::Type::getVoidTy(info->module->getContext());
     } else {
       returnType = retType->codegen().type;
