@@ -1524,11 +1524,11 @@ module ChapelBase {
     if arg.type == _nilType then
       compilerError("should not delete 'nil'");
 
-    if !isSubtype(arg.type, _unmanaged) then
+    if !isSubtype(arg.type, unmanaged?) then
       compilerError("'delete' can only be applied to unmanaged classes");
 
     if (arg != nil) {
-      arg.deinit();
+      arg!.deinit();
 
       on arg do
         chpl_here_free(__primitive("_wide_get_addr", arg));
