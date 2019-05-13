@@ -1278,6 +1278,16 @@ module ChapelBase {
     return __primitive("to non nilable class", x);
   }
 
+  // casting away nilability, no class downcast
+  inline proc _cast(type t:unmanaged, x:borrowed?) throws
+    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
+  {
+    if x == nil {
+      throw new owned NilDereferenceError();
+    }
+    return __primitive("to non nilable class", x);
+  }
+
   // dynamic cast handles class casting based upon runtime class type
   // this also might be called a downcast
   inline proc _cast(type t:borrowed, x:borrowed) where isSubtype(t,x.type) && (x.type != t)

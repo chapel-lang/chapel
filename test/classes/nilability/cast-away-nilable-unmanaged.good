@@ -1,0 +1,7 @@
+{x = 1}
+{x = 1}
+{x = 1}
+{x = 1}
+uncaught NilDereferenceError: nil dereference
+  cast-away-nilable-unmanaged.chpl:18: thrown here
+  cast-away-nilable-unmanaged.chpl:18: uncaught here
