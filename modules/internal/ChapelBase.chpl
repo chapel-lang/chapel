@@ -1275,7 +1275,7 @@ module ChapelBase {
   inline proc _cast(type t:borrowed, x:t)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:unmanaged, x:t)
+  inline proc _cast(type t:unmanaged, x:_to_borrowed(t))
     return __primitive("cast", t, x);
 
   inline proc _cast(type t:borrowed, pragma "nil from arg" x:_nilType)
@@ -1290,7 +1290,7 @@ module ChapelBase {
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
 
   // this version handles unmanaged -> unmanaged
-  inline proc _cast(type t:unmanaged, x:_unmanaged) where isSubtype(t,x.type) && (x.type != t)
+  inline proc _cast(type t:unmanaged, x:borrowed) where isSubtype(t,x.type) && (x.type != t)
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
 
   // this version handles unmanaged -> borrow
