@@ -466,6 +466,13 @@ void init_ofiFabricDomain(void) {
 
   fi_freeinfo(hints);
 
+  if (verbosity >= 2) {
+    if (chpl_nodeID == 0) {
+      printf("COMM=ofi: using \"%s\" provider\n",
+             ofi_info->fabric_attr->prov_name);
+    }
+  }
+
   //
   // Create the fabric domain and associated fabric access domain.
   //
