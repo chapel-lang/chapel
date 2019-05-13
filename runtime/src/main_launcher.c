@@ -338,6 +338,8 @@ void get_debugger_wrapper(int* argc, char*** argv) {
     ADD_LARGV("--");
   }
 
+#undef ADD_LARGV
+
   *argc = largc;
   *argv = largv;
 }
