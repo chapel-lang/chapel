@@ -798,4 +798,6 @@ void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage
 void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
 
+const char* toString(ArgSymbol* arg);
+
 #endif

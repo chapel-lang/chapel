@@ -613,6 +613,18 @@ module ChapelBase {
   inline proc >>(param a: int(?w), param b: integral) param return __primitive(">>", a, b);
   inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
 
+  pragma "no borrow convert"
+  inline proc postfix!(x) {
+    if isOwnedClassType(x.type) then
+      compilerError("postfix ! cannot currently apply to owned");
+    if isSharedClassType(x.type) then
+      compilerError("postfix ! cannot currently apply to shared");
+    if !isClassType(x.type) then
+      compilerError("postfix ! can only apply to classes");
+
+    return __primitive("to non nilable class", x);
+  }
+
   //
   // These functions are used to implement the semantics of
   // reading a sync/single var when the variable is not actually
@@ -2092,11 +2104,6 @@ module ChapelBase {
   inline proc _to_borrowed(arg) {
     var ret = __primitive("to borrowed class", arg);
     return ret;
-  }
-
-  // cast from unmanaged to borrow
-  inline proc _cast(type t:borrowed, x:_unmanaged) where isSubtype(_to_borrowed(x.type),t) {
-    return __primitive("cast", t, x);
   }
 
   pragma "no borrow convert"

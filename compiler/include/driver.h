@@ -134,6 +134,7 @@ extern char fExplainInstantiation[256];
 /// resolution.
 extern bool fExplainVerbose;
 extern bool fParseOnly;
+extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
 extern bool fPrintIDonError;

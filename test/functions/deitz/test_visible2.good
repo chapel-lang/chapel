@@ -1,1 +1,2 @@
-test_visible2.chpl:15: error: unresolved call 'bar(C)'
+test_visible2.chpl:15: error: unresolved call 'bar(borrowed C)'
+test_visible2.chpl:15: note: because no functions named bar found in scope

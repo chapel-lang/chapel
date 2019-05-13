@@ -1,1 +1,2 @@
 Command-line arg (c):1: error: unresolved enumerated type symbol or call 'type color.orange'
+Command-line arg (c):1: note: because no functions named orange found in scope

@@ -191,6 +191,7 @@ _chpl ()
 --no-parse-only \
 --no-permit-unhandled-module-errors \
 --no-preserve-inlined-line-numbers \
+--no-print-all-candidates \
 --no-print-callgraph \
 --no-print-callstack-on-error \
 --no-print-code-size \
@@ -236,6 +237,7 @@ _chpl ()
 --parser-debug \
 --permit-unhandled-module-errors \
 --preserve-inlined-line-numbers \
+--print-all-candidates \
 --print-callgraph \
 --print-callstack-on-error \
 --print-chpl-home \
@@ -408,6 +410,7 @@ _chpl ()
 --no-optimize-on-clauses \
 --no-optimize-range-iteration \
 --no-permit-unhandled-module-errors \
+--no-print-all-candidates \
 --no-print-callgraph \
 --no-print-callstack-on-error \
 --no-print-code-size \
@@ -436,6 +439,7 @@ _chpl ()
 --optimize-range-iteration \
 --output \
 --permit-unhandled-module-errors \
+--print-all-candidates \
 --print-callgraph \
 --print-callstack-on-error \
 --print-code-size \

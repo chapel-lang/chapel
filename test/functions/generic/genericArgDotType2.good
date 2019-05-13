@@ -1,4 +1,8 @@
 genericArgDotType2.chpl:8: error: unresolved call 'foo(color, size)'
-genericArgDotType2.chpl:4: note: candidates are: foo(x, y: x.type )
+genericArgDotType2.chpl:4: note: this candidate did not match: foo(x, y: x.type )
+genericArgDotType2.chpl:8: note: because call actual argument #2 with type size
+genericArgDotType2.chpl:4: note: is passed to formal 'y: color'
 genericArgDotType2.chpl:17: error: unresolved call 'bar(int(8), int(64))'
-genericArgDotType2.chpl:10: note: candidates are: bar(x, y: x.type )
+genericArgDotType2.chpl:10: note: this candidate did not match: bar(x, y: x.type )
+genericArgDotType2.chpl:17: note: because call actual argument #2 with type int(64)
+genericArgDotType2.chpl:10: note: is passed to formal 'y: int(8)'

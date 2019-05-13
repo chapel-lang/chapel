@@ -1,2 +1,4 @@
 integer_method3.chpl:8: error: unresolved call 'uint(64).print()'
-integer_method3.chpl:1: note: candidates are: int.print()
+integer_method3.chpl:1: note: this candidate did not match: int.print()
+integer_method3.chpl:8: note: because method call receiver with type uint(64)
+integer_method3.chpl:1: note: is passed to formal 'this: int(64)'

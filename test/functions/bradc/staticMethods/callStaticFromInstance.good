@@ -1,2 +1,4 @@
 callStaticFromInstance.chpl:6: error: unresolved call 'int(64).foo()'
-callStaticFromInstance.chpl:1: note: candidates are: type int.foo()
+callStaticFromInstance.chpl:1: note: this candidate did not match: type int.foo()
+callStaticFromInstance.chpl:6: note: because non-type method call receiver
+callStaticFromInstance.chpl:1: note: is passed to formal 'this: int(64)'

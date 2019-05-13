@@ -20,11 +20,11 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "resolution.h"
 #include "stmt.h"
 #include "stlUtil.h"
-#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.

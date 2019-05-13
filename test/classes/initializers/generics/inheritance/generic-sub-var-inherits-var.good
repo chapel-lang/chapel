@@ -1,2 +1,2 @@
-Child(int(64),int(64))
+borrowed Child(int(64),int(64))
 {gen = -11, x = 11, gen2 = -10, y = 10}

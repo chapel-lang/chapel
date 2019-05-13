@@ -22,15 +22,18 @@
 #include "astutil.h"
 #include "caches.h"
 #include "callInfo.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
-#include "UnmanagedClassType.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+
+static ResolutionCandidateFailureReason
+classifyTypeMismatch(Type* actualType, Type* formalType);
 
 /************************************* | **************************************
 *                                                                             *
@@ -40,6 +43,8 @@
 
 ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
   fn = function;
+  failingArgument = NULL;
+  reason = RESOLUTION_CANDIDATE_MATCH;
 }
 
 /************************************* | **************************************
@@ -65,19 +70,19 @@ bool ResolutionCandidate::isApplicable(CallInfo& info) {
 }
 
 bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
-  bool retval = false;
 
   fn = expandIfVarArgs(fn, info);
-
-  if (fn != NULL) {
-    resolveTypedefedArgTypes();
-
-    if (computeAlignment(info) == true) {
-      retval = checkResolveFormalsWhereClauses(info);
-    }
+  if (fn == NULL) {
+    reason = RESOLUTION_CANDIDATE_OTHER;
+    return false;
   }
 
-  return retval;
+  resolveTypedefedArgTypes();
+
+  if (computeAlignment(info) == false)
+    return false;
+
+  return checkResolveFormalsWhereClauses(info);
 }
 
 void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
@@ -140,28 +145,37 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
 }
 
 bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
-  bool retval = false;
 
   fn = expandIfVarArgs(fn, info);
-
-  if (fn                     != NULL &&
-      computeAlignment(info) == true &&
-     checkGenericFormals()   == true) {
-    // Compute the param/type substitutions for generic arguments.
-    if (computeSubstitutions() > 0) {
-      /*
-       * Instantiate enough of the generic to get through the rest of the
-       * filtering and disambiguation processes.
-       */
-      fn = instantiateSignature(fn, substitutions, info.call);
-
-      if (fn != NULL) {
-        retval = isApplicable(info);
-      }
-    }
+  if (fn == NULL) {
+    reason = RESOLUTION_CANDIDATE_OTHER;
+    return false;
   }
 
-  return retval;
+  if (computeAlignment(info) == false)
+    return false;
+
+  if (checkGenericFormals() == false)
+    return false;
+
+  // Compute the param/type substitutions for generic arguments.
+  if (computeSubstitutions() <= 0) {
+    reason = RESOLUTION_CANDIDATE_OTHER;
+    return false;
+  }
+
+  /*
+   * Instantiate enough of the generic to get through the rest of the
+   * filtering and disambiguation processes.
+   */
+  fn = instantiateSignature(fn, substitutions, info.call);
+
+  if (fn == NULL) {
+    reason = RESOLUTION_CANDIDATE_OTHER;
+    return false;
+  }
+
+  return isApplicable(info);
 }
 
 /************************************* | **************************************
@@ -201,6 +215,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 
       // Fail if no matching formal is found.
       if (match == false) {
+        failingArgument = info.actuals.v[i];
+        reason = RESOLUTION_CANDIDATE_NO_NAMED_ARGUMENT;
         return false;
       }
     }
@@ -237,9 +253,13 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
       // Fail if there are too many unnamed actuals.
       if (match == false) {
         if (fn->hasFlag(FLAG_GENERIC) == false) {
+          failingArgument = info.actuals.v[i];
+          reason = RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS;
           return false;
         } else if (fn->hasFlag(FLAG_INIT_TUPLE) == false &&
                    isTupleTypeConstructor(fn)   == false) {
+          failingArgument = info.actuals.v[i];
+          reason = RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS;
           return false;
         }
       }
@@ -250,6 +270,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   // or have a default value.
   while (formal) {
     if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL) {
+      failingArgument = formal;
+      reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
       return false;
     }
 
@@ -438,8 +460,8 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     return actualType;
   }
 
-  if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
-    AggregateType* actualC = actualMt->getCanonicalClass();
+  if (DecoratedClassType* actualDt = toDecoratedClassType(actualType)) {
+    AggregateType* actualC = actualDt->getCanonicalClass();
     if (canInstantiate(actualC, formalType))
       return actualC;
   }
@@ -568,8 +590,13 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
       if (isInitCopy && isString(actual) && formal->getValType() == dtStringC) {
         // Do not allow an initCopy of a string to find the c_string initCopy,
         // which is considered first because it is not compiler generated.
+        failingArgument = actual;
+        reason = RESOLUTION_CANDIDATE_OTHER;
         return false;
+
       } else if (actualIsTypeAlias != formalIsTypeAlias) {
+        failingArgument = actual;
+        reason = RESOLUTION_CANDIDATE_NOT_TYPE;
         return false;
 
       } else if (formalIsTypeAlias &&
@@ -577,6 +604,9 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
                                    formal->getValType()) &&
                  actual->getValType() != formal->getValType()) {
         // coercions should not be allowed for type variables
+        failingArgument = actual;
+        reason = classifyTypeMismatch(actual->getValType(),
+                                      formal->getValType());
         return false;
 
       } else if (canDispatch(actual->type,
@@ -586,7 +616,10 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
                              &promotes,
                              NULL,
                              formalIsParam) == false) {
+        failingArgument = actual;
+        reason = classifyTypeMismatch(actual->type, formal->type);
         return false;
+
       } else if (isInitThis || isNewTypeArg) {
         AggregateType* ft = toAggregateType(formal->getValType());
         AggregateType* at = toAggregateType(actual->getValType());
@@ -596,15 +629,25 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
         // Types may only mismatch if the formal's type is an instantiation of
         // the actual's type.
         if (ft != at && ft->isInstantiatedFrom(at) == false) {
+          failingArgument = actual;
+          reason = RESOLUTION_CANDIDATE_OTHER;
           return false;
         }
       } else if (promotes && isCopyInit) {
+        failingArgument = actual;
+        reason = RESOLUTION_CANDIDATE_OTHER;
         return false;
       }
     }
   }
 
-  return evaluateWhereClause(fn);
+  if (evaluateWhereClause(fn) == false) {
+    failingArgument = NULL;
+    reason = RESOLUTION_CANDIDATE_WHERE_FAILED;
+    return false;
+  }
+
+  return true;
 }
 
 /************************************* | **************************************
@@ -622,25 +665,39 @@ bool ResolutionCandidate::checkGenericFormals() {
         bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
         bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
 
+        bool formalIsParam = formal->intent == INTENT_PARAM;
+
         if (actualIsTypeAlias != formalIsTypeAlias) {
+          failingArgument = actual;
+          reason = RESOLUTION_CANDIDATE_NOT_TYPE;
+          return false;
+
+        } else if (formalIsParam && !actual->isParameter()) {
+          failingArgument = actual;
+          reason = RESOLUTION_CANDIDATE_NOT_PARAM;
           return false;
 
         } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
           Type* t = getInstantiationType(actual->type, formal->type);
-          if (t == NULL)
+          if (t == NULL) {
+            failingArgument = actual;
+            reason = classifyTypeMismatch(actual->type, formal->type);
             return false;
+          }
 
         } else {
           bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                formal->intent == INTENT_PARAM;
 
           if (canDispatch(actual->type,
-                           actual,
-                           formal->type,
-                           fn,
-                           NULL,
-                           NULL,
-                           formalIsParam) == false) {
+                          actual,
+                          formal->type,
+                          fn,
+                          NULL,
+                          NULL,
+                          formalIsParam) == false) {
+            failingArgument = actual;
+            reason = classifyTypeMismatch(actual->type, formal->type);
             return false;
           }
         }
@@ -653,11 +710,195 @@ bool ResolutionCandidate::checkGenericFormals() {
   return true;
 }
 
+static bool isNumericType(Type* t) {
+  return is_bool_type(t) ||
+         is_int_type(t) ||
+         is_uint_type(t) ||
+         is_real_type(t) ||
+         is_imag_type(t) ||
+         is_complex_type(t);
+}
+
+static bool isClassLikeOrManaged(Type* t) {
+  return isClassLikeOrPtr(t) || isManagedPtrType(t);
+}
+
+static ResolutionCandidateFailureReason
+classifyTypeMismatch(Type* actualType, Type* formalType) {
+  if (actualType == formalType)
+    return RESOLUTION_CANDIDATE_MATCH;
+
+  // From this point, don't consider references
+  actualType = actualType->getValType();
+  formalType = formalType->getValType();
+  if (actualType == formalType)
+    return RESOLUTION_CANDIDATE_TYPE_RELATED;
+
+  if (canonicalClassType(actualType) == canonicalClassType(formalType))
+    return RESOLUTION_CANDIDATE_TYPE_RELATED;
+
+  if ((is_bool_type   (actualType) && is_bool_type   (formalType)) ||
+      (is_int_type    (actualType) && is_int_type    (formalType)) ||
+      (is_uint_type   (actualType) && is_uint_type   (formalType)) ||
+      (is_real_type   (actualType) && is_real_type   (formalType)) ||
+      (is_imag_type   (actualType) && is_imag_type   (formalType)) ||
+      (is_complex_type(actualType) && is_complex_type(formalType)))
+    return RESOLUTION_CANDIDATE_TYPE_RELATED;
+
+  if (isNumericType(actualType) && isNumericType(formalType))
+    return RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY;
+
+  if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType))
+    return RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY;
+
+  return RESOLUTION_CANDIDATE_UNRELATED_TYPE;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+
+void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
+  ResolutionCandidate c(fn);
+
+  c.isApplicable(info);
+
+  USR_PRINT(fn, "this candidate did not match: %s", toString(fn));
+
+  Symbol* failingActual = NULL;
+  bool failingActualIsReceiver = false;
+  int failingActualUserIndex = 0; // user index, e.g. skips method token
+  int failingActualRealIndex = 0; // works for CallInfo.actuals
+  ArgSymbol* failingFormal = NULL;
+  bool callIsMethod = false;
+  bool fnIsMethod = false;
+
+  int userIndex = 1;
+  for (int i = 0; i < info.actuals.n; i++) {
+    Symbol* actual = info.actuals.v[i];
+    Symbol* prevActual = (i>0)?(info.actuals.v[i-1]):(NULL);
+
+    if (actual == c.failingArgument) {
+      failingActual = c.failingArgument;
+      if (prevActual && prevActual->type == dtMethodToken)
+        failingActualIsReceiver = true;
+      else
+        failingActualUserIndex = userIndex;
+      failingActualRealIndex = i;
+      failingFormal = c.actualIdxToFormal[i];
+    }
+
+    if (actual->type == dtMethodToken)
+      callIsMethod = true;
+
+    // Don't count method token or this when reporting user errors
+    if (!(actual->type == dtMethodToken ||
+          (prevActual && prevActual->type == dtMethodToken)))
+      userIndex++;
+  }
+  int userActualsCount = userIndex-1;
+
+  userIndex = 1;
+  ArgSymbol* prevFormal = NULL;
+  for_formals(formal, fn) {
+    if (formal == c.failingArgument) {
+      failingFormal = formal;
+      // This only happens when no actual exists for this formal,
+      // so no point in trying to find one.
+    }
+
+    if (formal->type == dtMethodToken)
+      fnIsMethod = true;
+
+    if (!(formal->type == dtMethodToken ||
+          (prevFormal != NULL && prevFormal->type == dtMethodToken)))
+      userIndex++;
+
+    prevFormal = formal;
+  }
+  int userFormalsCount = userIndex-1;
+
+
+  CallExpr* call = info.call;
+
+  const char* failingActualDesc = NULL;
+
+  if (failingActualIsReceiver)
+    failingActualDesc = astr("method call receiver");
+  else
+    failingActualDesc = astr("call actual argument #",
+                             istr(failingActualUserIndex));
+
+  if (fnIsMethod && !callIsMethod) {
+    USR_PRINT(call, "because call is not written as a method call");
+    USR_PRINT(fn, "but candidate function is a method");
+    return;
+  }
+  if (callIsMethod && !fnIsMethod) {
+    USR_PRINT(call, "because call is written as a method call");
+    USR_PRINT(fn, "but candidate function is not a method");
+    return;
+  }
+
+  switch (c.reason) {
+    case RESOLUTION_CANDIDATE_TYPE_RELATED:
+    case RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY:
+    case RESOLUTION_CANDIDATE_UNRELATED_TYPE:
+      USR_PRINT(call, "because %s with type %s",
+                    failingActualDesc,
+                    toString(failingActual->getValType()));
+      USR_PRINT(failingFormal, "is passed to formal '%s'",
+                               toString(failingFormal));
+      break;
+    case RESOLUTION_CANDIDATE_WHERE_FAILED:
+      USR_PRINT(fn, "because where clause evaluated to false");
+      break;
+    case RESOLUTION_CANDIDATE_NOT_PARAM:
+      USR_PRINT(call, "because non-param %s", failingActualDesc);
+      USR_PRINT(failingFormal, "is passed to param formal '%s'",
+                               toString(failingFormal));
+      break;
+    case RESOLUTION_CANDIDATE_NOT_TYPE:
+      if (failingFormal->hasFlag(FLAG_TYPE_VARIABLE)) {
+        USR_PRINT(call, "because non-type %s", failingActualDesc);
+        USR_PRINT(failingFormal, "is passed to formal '%s'",
+                                 toString(failingFormal));
+      } else {
+        USR_PRINT(call, "because type %s", failingActualDesc);
+        USR_PRINT(fn, "is passed to non-type formal '%s'",
+                      toString(failingFormal));
+      }
+      break;
+    case RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS:
+      USR_PRINT(call, "because call includes %i arguments",
+                      userActualsCount);
+      USR_PRINT(fn, "but function can only accept %i arguments",
+                    userFormalsCount);
+      break;
+    case RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS:
+      USR_PRINT(call, "because call does not supply enough arguments");
+      USR_PRINT(failingFormal, "it is missing a value for formal '%s'",
+                               toString(failingFormal));
+      break;
+    case RESOLUTION_CANDIDATE_NO_NAMED_ARGUMENT:
+      {
+        const char* name = info.actualNames.v[failingActualRealIndex];
+
+        if (name != NULL) {
+          USR_PRINT(call, "because call uses named argument %s", name);
+          USR_PRINT(fn, "but function contains no formal named %s", name);
+        }
+      }
+      break;
+    case RESOLUTION_CANDIDATE_OTHER:
+    case RESOLUTION_CANDIDATE_MATCH:
+      // Print nothing else
+      break;
+    // No default -> compiler warning
+  }
+}
 
 void explainGatherCandidate(const CallInfo&            info,
                             Vec<ResolutionCandidate*>& candidates) {
@@ -681,5 +922,10 @@ void explainGatherCandidate(const CallInfo&            info,
       }
     }
   }
+}
+
+bool failedCandidateIsBetterMatch(ResolutionCandidate* a,
+                                  ResolutionCandidate* b) {
+  return a->reason < b->reason;
 }
 

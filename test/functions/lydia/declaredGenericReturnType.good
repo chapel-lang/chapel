@@ -1,5 +1,5 @@
 declaredGenericReturnType.chpl:13: warning: Rec(int(64))
 declaredGenericReturnType.chpl:14: warning: Rec(real(64))
-declaredGenericReturnType.chpl:58: warning: Gen(real(64))
+declaredGenericReturnType.chpl:58: warning: borrowed Gen(real(64))
 declaredGenericReturnType.chpl:69: warning: unmanaged Gen(int(64))
 declaredGenericReturnType.chpl:70: warning: unmanaged Gen(real(64))

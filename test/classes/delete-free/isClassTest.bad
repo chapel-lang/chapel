@@ -1,4 +1,4 @@
-C
+borrowed C
 true
 true
 true
@@ -10,19 +10,19 @@ true
 true
 true
 
-C
+borrowed C
 true
 true
 true
 true
 
-_owned(C)
+owned C
 false
 false
 true
 true
 
-_shared(C)
+shared C
 false
 false
 true

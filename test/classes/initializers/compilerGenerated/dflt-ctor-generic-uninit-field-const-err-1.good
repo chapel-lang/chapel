@@ -1,2 +1,4 @@
 dflt-ctor-generic-uninit-field-const-err-1.chpl:7: error: unresolved call 'A.init()'
-dflt-ctor-generic-uninit-field-const-err-1.chpl:3: note: candidates are: A.init(c)
+dflt-ctor-generic-uninit-field-const-err-1.chpl:3: note: this candidate did not match: A.init(c)
+dflt-ctor-generic-uninit-field-const-err-1.chpl:7: note: because call does not supply enough arguments
+dflt-ctor-generic-uninit-field-const-err-1.chpl:4: note: it is missing a value for formal 'in c'

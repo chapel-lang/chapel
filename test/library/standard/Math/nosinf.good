@@ -1,1 +1,2 @@
 nosinf.chpl:6: error: unresolved call 'sinf(real(32))'
+nosinf.chpl:6: note: because no functions named sinf found in scope

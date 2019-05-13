@@ -1,2 +1,4 @@
-theseShouldPromote3.chpl:46: error: unresolved call 'foo(C)'
-theseShouldPromote3.chpl:41: note: candidates are: foo(x: int)
+theseShouldPromote3.chpl:46: error: unresolved call 'foo(borrowed C)'
+theseShouldPromote3.chpl:41: note: this candidate did not match: foo(x: int)
+theseShouldPromote3.chpl:46: note: because call actual argument #1 with type borrowed C
+theseShouldPromote3.chpl:41: note: is passed to formal 'x: int(64)'
