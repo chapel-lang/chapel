@@ -72,6 +72,13 @@ module ChapelError {
     }
   }
 
+  class NilDereferenceError : Error {
+    pragma "no doc"
+    override proc message() {
+      return "nil dereference";
+    }
+  }
+
   class IllegalArgumentError : Error {
     var formal: string;
     var info: string;

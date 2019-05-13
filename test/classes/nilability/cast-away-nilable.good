@@ -1,0 +1,5 @@
+{x = 2}
+{x = 2}
+uncaught NilDereferenceError: nil dereference
+  cast-away-nilable.chpl:11: thrown here
+  cast-away-nilable.chpl:11: uncaught here
