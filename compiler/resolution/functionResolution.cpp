@@ -2190,32 +2190,77 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
 
 static bool resolveBuiltinCastCall(CallExpr* call)
 {
-  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
-    if (urse->unresolved == astr_cast) {
-      if (call->numActuals() == 2) {
-        SymExpr* targetTypeSe = toSymExpr(call->get(1));
-        SymExpr* valueSe = toSymExpr(call->get(2));
+  UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
+  if (urse == NULL)
+    return false;
 
-        if (targetTypeSe && valueSe &&
-            targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-          Type* targetType = targetTypeSe->symbol()->type;
-          Type* valueType = valueSe->symbol()->type;
+  if (urse->unresolved != astr_cast || call->numActuals() != 2)
+    return false;
 
-          if (!isRecord(targetType) && !isRecord(valueType)) {
-            bool promotes = false;
-            bool paramNarrows = false;
-            bool paramCoerce = false;
-            bool coerce = doCanDispatch(valueType, valueSe->symbol(),
-                                        targetType, call->getFunction(),
-                                        &promotes, &paramNarrows, paramCoerce);
+  SymExpr* targetTypeSe = toSymExpr(call->get(1));
+  SymExpr* valueSe = toSymExpr(call->get(2));
 
-            if (coerce && !promotes) {
-              call->baseExpr->remove();
-              call->primitive = primitives[PRIM_CAST];
-              return true;
-            }
-          }
+  if (targetTypeSe && valueSe &&
+      targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+    Type* targetType = targetTypeSe->symbol()->type;
+    Type* valueType = valueSe->symbol()->type;
+
+    bool promotes = false;
+    bool paramNarrows = false;
+    bool paramCoerce = false;
+    // If it's a trivial cast, replace it
+    // Trivial casts are those handled by C/LLVM already,
+    // e.g. casting pointer or numeric types.
+    // Record casts aren't ever trivial. Promoted casts aren't either.
+    if (!isRecord(targetType) && !isRecord(valueType) &&
+        canDispatch(valueType, valueSe->symbol(),
+                    targetType, call->getFunction(),
+                    &promotes, &paramNarrows, paramCoerce) &&
+        !promotes) {
+      call->baseExpr->remove();
+      call->primitive = primitives[PRIM_CAST];
+      return true;
+    }
+
+    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+      // This case is here just because in the event
+      // that targetType is generic, we won't (currently)
+      // be able to resolve a call to a _cast with a generic actual.
+      if (targetType == dtBorrowed ||
+          targetType == dtBorrowedNilable ||
+          targetType == dtUnmanaged ||
+          targetType == dtUnmanagedNilable) {
+
+        if (isClassLike(valueType)) {
+          AggregateType* at = toAggregateType(canonicalClassType(valueType));
+
+          Type* t = NULL;
+
+          if (targetType == dtBorrowed)
+            t = at->getDecoratedClass(CLASS_TYPE_BORROWED);
+          else if (targetType == dtBorrowedNilable)
+            t = at->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
+          else if (targetType == dtUnmanaged)
+            t = at->getDecoratedClass(CLASS_TYPE_UNMANAGED);
+          else if (targetType == dtUnmanagedNilable)
+            t = at->getDecoratedClass(CLASS_TYPE_UNMANAGED_NILABLE);
+          else
+            INT_FATAL("case not handled");
+
+          // Replace the target type with the instantiated one.
+          targetTypeSe->setSymbol(t->symbol);
+          // Try again with that
+          return resolveBuiltinCastCall(call);
         }
+      }
+
+      if (canInstantiate(valueType, targetType)) {
+        // Replace the target type with the instantiated one.
+        Type* t = getInstantiationType(valueType, targetType);
+        INT_ASSERT(t);
+        targetTypeSe->setSymbol(t->symbol);
+        // Try again with that
+        return resolveBuiltinCastCall(call);
       }
     }
   }
