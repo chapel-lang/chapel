@@ -1573,18 +1573,10 @@ VarSymbol *new_StringSymbol(const char *str) {
   // also need to disable parts of normalize from running on literals inserted
   // at parse time.
 
-  VarSymbol* cptrTemp = newTemp("call_tmp");
-  cptrTemp->addFlag(FLAG_TYPE_VARIABLE);
-  CallExpr *cptrCall = new CallExpr(PRIM_MOVE,
-      cptrTemp,
-      new CallExpr("_type_construct_c_ptr", new SymExpr(dtUInt[INT_SIZE_8]->symbol)));
+  VarSymbol* cstrTemp = newTemp("call_tmp");
+  CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp, new_CStringSymbol(str));
 
-  VarSymbol* castTemp = newTemp("call_tmp");
-  CallExpr *castCall = new CallExpr(PRIM_MOVE,
-      castTemp,
-      createCast(new_CStringSymbol(str), cptrTemp));
-
-  int strLength = unescapeString(str, castCall).length();
+  int strLength = unescapeString(str, cstrMove).length();
 
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
@@ -1598,9 +1590,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr *initCall = new CallExpr(PRIM_NEW,
       new SymExpr(dtString->symbol),
-      castTemp,
-      new_IntSymbol(strLength),   // length
-      new_IntSymbol(strLength ? strLength+1 : 0)); // size, empty string needs 0
+      cstrTemp,
+      new_IntSymbol(strLength));
   initCall->insertAtTail(gFalse); // owned = false
   initCall->insertAtTail(gFalse); // needToCopy = false
 
@@ -1613,10 +1604,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   Expr* insertPt = initStringLiteralsEpilogue->defPoint;
 
-  insertPt->insertBefore(new DefExpr(cptrTemp));
-  insertPt->insertBefore(cptrCall);
-  insertPt->insertBefore(new DefExpr(castTemp));
-  insertPt->insertBefore(castCall);
+  insertPt->insertBefore(new DefExpr(cstrTemp));
+  insertPt->insertBefore(cstrMove);
   insertPt->insertBefore(moveCall);
 
   s->immediate = new Immediate;
