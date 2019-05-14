@@ -163,6 +163,7 @@ module ChapelBase {
   inline proc ==(param a: real(?w), param b: real(w)) param return __primitive("==", a, b);
   inline proc ==(param a: imag(?w), param b: imag(w)) param return __primitive("==", a, b);
   inline proc ==(param a: complex(?w), param b: complex(w)) param return __primitive("==", a, b);
+  inline proc ==(a: nothing, b: nothing) param return true;
 
   inline proc !=(param a: bool, param b: bool) param return __primitive("!=", a, b);
   inline proc !=(param a: int(?w), param b: int(w)) param return __primitive("!=", a, b);
@@ -173,6 +174,7 @@ module ChapelBase {
   inline proc !=(param a: real(?w), param b: real(w)) param return __primitive("!=", a, b);
   inline proc !=(param a: imag(?w), param b: imag(w)) param return __primitive("!=", a, b);
   inline proc !=(param a: complex(?w), param b: complex(w)) param return __primitive("!=", a, b);
+  inline proc !=(a: nothing, b: nothing) param return false;
 
   //
   // ordered comparison on primitive types
