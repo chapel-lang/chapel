@@ -552,7 +552,7 @@ iter sorted(x, comparator:?rec=defaultComparator) {
 /*
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
 
-   .. note:: This method is deprecated.
+   .. note:: This function is deprecated - please use :proc:`sort`.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -561,14 +561,14 @@ iter sorted(x, comparator:?rec=defaultComparator) {
 
  */
 proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("bubbleSort is deperecated");
+  compilerWarning("bubbleSort is deprecated - please use sort");
   BubbleSort.bubbleSort(Data, comparator);
 }
 
 /*
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
 
-   .. note:: This method is deprecated.
+   .. note:: This function is deprecated - please use :proc:`sort`.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -577,7 +577,7 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 
  */
 proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("heapSort is deprecated");
+  compilerWarning("heapSort is deprecated - please use sort");
   HeapSort.heapSort(Data, comparator);
 }
 
@@ -585,7 +585,7 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
    Sort the 1D array `Data` in-place using a sequential insertion sort
    algorithm.
 
-   .. note:: This method is deprecated.
+   .. note:: This function is deprecated - please use :proc:`sort`.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -594,7 +594,7 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 
  */
 proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
-  compilerWarning("insertionSort is deprecated");
+  compilerWarning("insertionSort is deprecated - please use sort");
   InsertionSort.insertionSort(Data, comparator, lo, hi);
 }
 
@@ -603,7 +603,7 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:
   insertion sort algorithm.
   Should be used when there is a high cost of comparison.
 
-  .. note:: This method is deprecated.
+  .. note:: This function is deprecated - please use :proc:`sort`.
 
   :arg Data: The array to be sorted
   :type Data: [] `eltType`
@@ -612,14 +612,14 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:
 
  */
 proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("binaryInsertionSort is deprecated");
+  compilerWarning("binaryInsertionSort is deprecated - please use sort");
   BinaryInsertionSort.binaryInsertionSort(Data, comparator);
 }
 
 /*
   Sort the 1D array `Data` using a parallel merge sort algorithm.
 
-  .. note:: This method is deprecated.
+  .. note:: This function is deprecated - please use :proc:`sort`.
 
   :arg Data: The array to be sorted
   :type Data: [] `eltType`
@@ -629,14 +629,14 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
     data is sorted.
  */
 proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-  compilerWarning("mergeSort is deprecated");
+  compilerWarning("mergeSort is deprecated - please use sort");
   MergeSort.mergeSort(Data, minlen, comparator);
 }
 
 /*
   Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
 
-  .. note:: This method is deprecated.
+  .. note:: This function is deprecated - please use :proc:`sort`.
 
   :arg Data: The array to be sorted
   :type Data: [] `eltType`
@@ -647,7 +647,7 @@ proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
  */
 proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-  compilerWarning("quickSort is deprecated");
+  compilerWarning("quickSort is deprecated - please use sort");
   QuickSort.quickSort(Data, minlen, comparator);
 }
 
@@ -655,7 +655,7 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
   Sort the 1D array `Data` in-place using a sequential selection sort
   algorithm.
 
-  .. note:: This method is deprecated.
+  .. note:: This function is deprecated - please use :proc:`sort`.
 
   :arg Data: The array to be sorted
   :type Data: [] `eltType`
@@ -664,7 +664,7 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
 
  */
 proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("selectionSort is deprecated");
+  compilerWarning("selectionSort is deprecated - please use sort");
   SelectionSort.selectionSort(Data, comparator);
 }
 
@@ -673,8 +673,6 @@ module BubbleSort {
 
   /*
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
-
-   .. note:: This method is deprecated.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
