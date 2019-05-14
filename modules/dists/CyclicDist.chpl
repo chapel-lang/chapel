@@ -582,56 +582,55 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
   const wholeLow = whole.low;
+  const wholeStride = whole.stride;
+
+  // If this is the only task running on this locale, we don't want to
+  // count it when we try to determine how many tasks to use.  Here we
+  // check if we are the only one running, and if so, use
+  // ignoreRunning=true for this locale only.  Obviously there's a bit
+  // of a race condition if some other task starts after we check, but
+  // in that case there is no correct answer anyways.
+  //
+  // Note that this code assumes that any locale will only be in the
+  // targetLocales array once.  If this is not the case, then the
+  // tasks on this locale will *all* ignoreRunning, which may have
+  // performance implications.
+  const hereId = here.id;
+  const hereIgnoreRunning = if here.runningTasks() == 1 then true
+                            else ignoreRunning;
   coforall locDom in locDoms do on locDom {
-    const (numTasks, parDim) = _computeChunkStuff(maxTasks, ignoreRunning,
-                                                  minSize,
-                                                  locDom.myBlock.dims());
+    const myIgnoreRunning = if here.id == hereId then hereIgnoreRunning
+      else ignoreRunning;
 
-    var result: rank*range(idxType=idxType, stridable=true);
-    // Use the internal function for untranslate to avoid having to do
-    // extra work to negate the offset
-    var zeroedLocalPart = whole((...locDom.myBlock.getIndices())).chpl__unTranslate(wholeLow);
-    for param i in 1..rank {
-      var dim = zeroedLocalPart.dim(i);
+    // Forward to defaultRectangular to iterate over the indices we own locally
+    for followThis in locDom.myBlock.these(iterKind.leader, maxTasks,
+                                           myIgnoreRunning, minSize) do {
+
+      // translate the 0-based indices yielded back to our indexing scheme
+      const newFollowThis = chpl__followThisToOrig(idxType, followThis, locDom.myBlock);
+
+      // translate the local indices back to 0-based global indices
+      // note that we need to go back and forth in order to distinguish
+      // between global strides and those that are due to the cyclic
+      // distribution (at least, I couldn't figure out a way to not go
+      // back and forth without breaking tests)
+      const zeroShift = {(...newFollowThis)}.chpl__unTranslate(wholeLow);
+      var result: rank*range(idxType=idxType, stridable=true);
       type strType = chpl__signedType(idxType);
-      // NOTE: unsigned idxType with negative stride will not work
-      const wholestride = whole.dim(i).stride:strType;
-      if dim.last >= dim.first then
+      for param i in 1..rank {
+        const wholestride = chpl__tuplify(wholeStride)(i);
+        const ref dim = zeroShift.dim(i);
         result(i) = (dim.first / wholestride:idxType)..(dim.last / wholestride:idxType) by (dim.stride:strType / wholestride);
-      else
-        // _computeChunkStuff should have produced no tasks for this
-        // If this ain't going to happen, could force numTasks=0 here instead.
-        assert(numTasks == 0);
-    }
-    if numTasks == 1 {
-      if debugCyclicDist then
-        writeln(here.id, ": leader whole: ", whole,
-                         " result: ", result,
-                         " myblock: ", locDom.myBlock);
-      yield result;
-    } else {
-
-      coforall taskid in 0..#numTasks {
-        var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
-        const low = result(parDim).first, high = result(parDim).high;
-        const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
-                                      high, low, low);
-        // similar to BlockDist
-        assert(lo <= hi);
-        splitRanges(parDim) = result(parDim)(lo..hi);
-        if debugCyclicDist then
-          writeln(here.id, ": leader whole: ", whole,
-                           " result: ", result,
-                           " splitRanges: ", splitRanges);
-        // remove alignment
-        splitRanges(parDim) = splitRanges(parDim).first..splitRanges(parDim).last by splitRanges(parDim).stride;
-        yield splitRanges;
       }
+      yield result;
     }
   }
 }
 
-iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
+// Utility routine to convert 0-based indices back to the indexing scheme
+// of 'whole'
+private proc chpl__followThisToOrig(type idxType, followThis, whole) {
+  param rank = followThis.size;
   var t: rank*range(idxType, stridable=true);
   if debugCyclicDist then
     writeln(here.id, ": follower whole is: ", whole,
@@ -641,6 +640,11 @@ iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.foll
     const wholestride = whole.dim(i).stride:chpl__signedType(idxType);
     t(i) = ((followThis(i).low*wholestride:idxType)..(followThis(i).high*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).alignedLow;
   }
+  return t;
+}
+
+iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
+  const t = chpl__followThisToOrig(idxType, followThis, whole);
   if debugCyclicDist then
     writeln(here.id, ": follower maps to: ", t);
   for i in {(...t)} do
