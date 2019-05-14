@@ -2213,15 +2213,24 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     bool promotes = false;
     bool paramNarrows = false;
     bool paramCoerce = false;
-    // If it's a trivial cast, replace it
-    // Trivial casts are those handled by C/LLVM already,
+    // If it's a trivial cast, replace it with PRIM_CAST.
+    // Trivial casts are those casts that:
+    //   * are already handled by C/LLVM
+    //   * implement coercions in Chapel's type system
     // e.g. casting pointer or numeric types.
-    // Record casts aren't ever trivial. Promoted casts aren't either.
+    //
+    // The following are exceptions:
+    //  * casts invoving records (e.g. owned to borrowed)
+    //  * casts involving complex (e.g. imag to complex)
+    //  * promoted casts
+
     if (!isRecord(targetType) && !isRecord(valueType) &&
+        !is_complex_type(targetType) && !is_complex_type(valueType) &&
         canDispatch(valueType, valueSe->symbol(),
                     targetType, call->getFunction(),
                     &promotes, &paramNarrows, paramCoerce) &&
         !promotes) {
+
       call->baseExpr->remove();
       call->primitive = primitives[PRIM_CAST];
       return true;
