@@ -2306,6 +2306,9 @@ static bool resolveBuiltinCastCall(CallExpr* call)
         }
       }
 
+      // This could compute the target type for generics.
+      // If it does, be careful with generics with defaults.
+      /*
       if (canInstantiate(valueType, targetType)) {
         // Replace the target type with the instantiated one.
         Type* t = getInstantiationType(valueType, targetType);
@@ -2313,7 +2316,7 @@ static bool resolveBuiltinCastCall(CallExpr* call)
         targetTypeSe->setSymbol(t->symbol);
         // Try again with that
         return resolveBuiltinCastCall(call);
-      }
+      }*/
     }
   }
 
