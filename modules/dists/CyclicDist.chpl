@@ -585,6 +585,7 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
   const wholeLow = whole.low;
+  const wholeStride = whole.stride;
 
   // If this is the only task running on this locale, we don't want to
   // count it when we try to determine how many tasks to use.  Here we
@@ -606,9 +607,9 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
       else ignoreRunning;
     // Use the internal function for untranslate to avoid having to do
     // extra work to negate the offset
-    type strType = chpl__signedType(idxType);
-    const tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
-    var locOffset: rank*idxType;
+    //    type strType = chpl__signedType(idxType);
+    //    var locOffset: rank*idxType;
+    /*
     for param i in 1..tmpBlock.rank {
       const stride = tmpBlock.dim(i).stride;
       if stride < 0 && strType != idxType then
@@ -616,13 +617,92 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
         // (since locOffset is unsigned in that case)
       locOffset(i) = tmpBlock.dim(i).first / stride:idxType;
     }
+*/
     // Forward to defaultRectangular
-    for followThis in tmpBlock.these(iterKind.leader, maxTasks,
-                                     myIgnoreRunning, minSize, locOffset) do {
-      yield chpl__followThisToOrig(idxType, followThis, tmpBlock);
+    //    writeln(here.id, ": following ", locDom.myBlock);
+    for followThis in locDom.myBlock.these(iterKind.leader, maxTasks,
+                                           myIgnoreRunning, minSize /*, locOffset*/) do {
+      //      const stride = tmpBlock.stride;
+      //      writeln(here.id, ": stride is ", stride);
+      //      writeln(here.id, ": followThis = ", followThis);
+      const newFollowThis = chpl__followThisToOrig(idxType, followThis, locDom.myBlock);
+      //      const newFollowThis = followThis;
+      /*
+      const newFollowThis = if (rank == 1) then ((followThis(1).low*stride..followThis(1).high*stride by stride)+tmpBlock.low,)
+        else if (rank == 2) then ((followThis(1).low*stride(1)..followThis(1).high*stride(1) by stride(1))+tmpBlock.low(1),
+              (followThis(2).low*stride(2)..followThis(2).high*stride(2) by stride(2))+tmpBlock.low(2)) else
+                                   ((followThis(1).low*stride(1)..followThis(1).high*stride(1) by stride(1))+tmpBlock.low(1),
+                                    (followThis(2).low*stride(2)..followThis(2).high*stride(2) by stride(2))+tmpBlock.low(2),
+                                    (followThis(3).low*stride(3)..followThis(3).high*stride(3) by stride(3))+tmpBlock.low(3),
+                                    (followThis(4).low*stride(4)..followThis(4).high*stride(4) by stride(4))+tmpBlock.low(4));
+      */
+      //      writeln(here.id, ": newFollowThis = ", newFollowThis);
+
+      const zeroShift = {(...newFollowThis)}.chpl__unTranslate(wholeLow);
+      var result: rank*range(idxType=idxType, stridable=true);
+      type strType = chpl__signedType(idxType);
+      for param i in 1..rank {
+        const wholestride = chpl__tuplify(wholeStride)(i);
+        const ref dim = zeroShift.dim(i);
+        result(i) = (dim.first / wholestride:idxType)..(dim.last / wholestride:idxType) by (dim.stride:strType / wholestride);
+      }
+      
+      
+      //      writeln(here.id, ": yielding ", result);
+      yield result;
+      //      yield followThis;
     }
   }
   return;
+  /*
+  coforall locDom in locDoms do on locDom {
+    const (numTasks, parDim) = _computeChunkStuff(maxTasks, ignoreRunning,
+                                                  minSize,
+                                                  locDom.myBlock.dims());
+
+    var result: rank*range(idxType=idxType, stridable=true);
+    // Use the internal function for untranslate to avoid having to do
+    // extra work to negate the offset
+    var zeroedLocalPart = whole((...locDom.myBlock.getIndices())).chpl__unTranslate(wholeLow);
+    for param i in 1..rank {
+      var dim = zeroedLocalPart.dim(i);
+      type strType = chpl__signedType(idxType);
+      // NOTE: unsigned idxType with negative stride will not work
+      const wholestride = whole.dim(i).stride:strType;
+      if dim.last >= dim.first then
+        result(i) = (dim.first / wholestride:idxType)..(dim.last / wholestride:idxType) by (dim.stride:strType / wholestride);
+      else
+        // _computeChunkStuff should have produced no tasks for this
+        // If this ain't going to happen, could force numTasks=0 here instead.
+        assert(numTasks == 0);
+    }
+    if numTasks == 1 {
+      if debugCyclicDist then
+        writeln(here.id, ": leader whole: ", whole,
+                         " result: ", result,
+                         " myblock: ", locDom.myBlock);
+      yield result;
+    } else {
+
+      coforall taskid in 0..#numTasks {
+        var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
+        const low = result(parDim).first, high = result(parDim).high;
+        const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
+                                      high, low, low);
+        // similar to BlockDist
+        assert(lo <= hi);
+        splitRanges(parDim) = result(parDim)(lo..hi);
+        if debugCyclicDist then
+          writeln(here.id, ": leader whole: ", whole,
+                           " result: ", result,
+                           " splitRanges: ", splitRanges);
+        // remove alignment
+        splitRanges(parDim) = splitRanges(parDim).first..splitRanges(parDim).last by splitRanges(parDim).stride;
+        yield splitRanges;
+      }
+    }
+  }
+  */
 }
 
 private proc chpl__followThisToOrig(type idxType, followThis, whole) {
