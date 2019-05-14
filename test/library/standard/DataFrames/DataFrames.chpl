@@ -517,7 +517,7 @@ module DataFrames {
     proc this(filterSeries: ?T) : owned Series where isSubtype(T, Series) {
       var castFilter = filterSeries: TypedSeries(bool)?;
       if idx then
-        return idx.filter(this, castFilter);
+        return idx.filter(this, castFilter!);
 
       // TODO: needs Series with Index(int) to remove items not in range
       var filter_data: [ords] eltType;
