@@ -309,25 +309,8 @@ proc Cyclic.chpl__locToLocIdx(loc: locale) {
 }
 
 proc Cyclic.getChunk(inds, locid) {
-  var sliceBy: rank*range(idxType=idxType, stridable=true);
-  var locidtup: rank*idxType;
-  // NOTE: Not bothering to check to see if these can fit into idxType
-  if rank == 1 then
-    locidtup(1) = locid:idxType;
-  else
-    for param i in 1..rank do locidtup(i) = locid(i):idxType;
-  for param i in 1..rank {
-    var distStride = targetLocDom.dim(i).length:chpl__signedType(idxType);
-    var offset = chpl__diffMod(startIdx(i) + locidtup(i), inds.dim(i).low, distStride);
-    sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
-    // remove alignment
-    sliceBy(i).alignHigh();
-  }
-  return inds((...sliceBy));
-  //
-  // WANT:
-  //var distWhole = locDist(locid).myChunk.getIndices();
-  //return inds((...distWhole));
+  const chunk = locDist(locid).myChunk((...inds.getIndices()));
+  return chunk;
 }
 
 override proc Cyclic.dsiDisplayRepresentation() {
@@ -435,6 +418,27 @@ proc Cyclic.dsiIndexToLocale(i: rank*idxType) {
 }
 
 
+  proc chpl__computeCyclicDim(type idxType, lo, myloc, numlocs) {
+    const lower = min(idxType)..(lo+myloc) by -numlocs;
+    const upper = lo+myloc..max(idxType) by numlocs;
+    return lower.last..upper.last by numlocs;
+  }
+
+proc chpl__computeCyclic(type idxType, locid, targetLocBox, startIdx) {
+    type strType = chpl__signedType(idxType);
+    param rank = targetLocBox.rank;
+    var inds: rank*range(idxType, stridable=true);
+    for param i in 1..rank {
+      // NOTE: Not bothering to check to see if these can fit into idxType
+      const lo = chpl__tuplify(startIdx)(i): idxType;
+      const myloc = chpl__tuplify(locid)(i): idxType;
+      // NOTE: Not checking for overflow here when casting to strType
+      const numlocs = targetLocBox.dim(i).length: strType;
+      inds(i) = chpl__computeCyclicDim(idxType, lo, myloc, numlocs);
+    }
+    return inds;
+  }
+
 class LocCyclic {
   param rank: int;
   type idxType;
@@ -456,14 +460,7 @@ class LocCyclic {
 
     var inds: rank*range(idxType, stridable=true);
 
-    type strType = chpl__signedType(idxType);
-    // NOTE: Not checking for overflow here when casting to strType
-    for param i in 1..rank {
-      const lower = min(idxType)..(startIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length:strType;
-      const upper = (startIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length:strType;
-      const lo = lower.last, hi = upper.last;
-      inds(i) = lo..hi by dist.targetLocDom.dim(i).length:strType;
-    }
+    inds = chpl__computeCyclic(idxType, locid, dist.targetLocDom, startIdx);
     myChunk = {(...inds)};
   }
 }
@@ -1170,7 +1167,7 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
 proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    return dist.getChunk(whole, locid);
+    return whole[(...(chpl__computeCyclic(this.idxType, locid, dist.targetLocDom, dist.startIdx)))];
   } else {
     var d: domain(rank, idxType, stridable=true);
     return d;
