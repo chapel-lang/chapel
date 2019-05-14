@@ -825,6 +825,10 @@ void initCompilerGlobals() {
   gCastChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gCastChecking, !fNoCastChecks);
 
+  gNilChecking = new VarSymbol("chpl_checkNilDereferences", dtBool);
+  gNilChecking->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gNilChecking, !fNoNilChecks);
+
   gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
   gDivZeroChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gDivZeroChecking, !fNoDivZeroChecks);
