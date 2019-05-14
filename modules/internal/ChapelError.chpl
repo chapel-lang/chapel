@@ -337,9 +337,9 @@ module ChapelError {
      */
     iter filter(type t) where isSubtype(_to_borrowed(t), borrowed Error) {
       for e in these() {
-        var tmp = _to_unmanaged(e):_to_unmanaged(t);
+        var tmp = _to_unmanaged(e):_to_nilable(_to_unmanaged(t));
         if tmp then
-          yield tmp;
+          yield _to_nonnil(tmp);
       }
     }
     pragma "no doc"
