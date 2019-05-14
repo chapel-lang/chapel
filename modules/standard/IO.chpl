@@ -882,6 +882,7 @@ extern proc qio_file_close(f:qio_file_ptr_t):syserr;
 
 private extern proc qio_file_lock(f:qio_file_ptr_t):syserr;
 private extern proc qio_file_unlock(f:qio_file_ptr_t);
+private extern proc qio_file_isopen(f:qio_file_ptr_t):bool;
 
 /* The general way to make sure data is written without error */
 private extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
@@ -1296,6 +1297,8 @@ proc =(ref ret:file, x:file) {
 proc file.check() throws {
   if is_c_nil(_file_internal) then
     throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
+  if !qio_file_isopen(_file_internal) then
+    throw SystemError.fromSyserr(EBADF, "Operation attempted on closed file");
 }
 
 pragma "no doc"
@@ -1361,7 +1364,8 @@ proc file._style:iostyle throws {
    :throws SystemError: Thrown if the file could not be closed.
  */
 proc file.close() throws {
-  try check();
+  if is_c_nil(_file_internal) then
+    throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
 
   var err:syserr = ENOERR;
   on this.home {

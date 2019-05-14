@@ -1,2 +1,2 @@
 error-return-parentclass.chpl:14: In function 'f':
-error-return-parentclass.chpl:15: error: cannot return 'Parent' when the declared return type is 'Child'
+error-return-parentclass.chpl:15: error: cannot return 'borrowed Parent' when the declared return type is 'borrowed Child'

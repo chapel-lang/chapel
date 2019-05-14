@@ -32,6 +32,7 @@
 #include "llvmDebug.h"
 #include "llvmUtil.h"
 #include "LayeredValueTable.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -1404,22 +1405,24 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   //
   if( hdrfile ) {
     fprintf(hdrfile, "\nvoid* const chpl_private_broadcast_table[] = {\n");
-    fprintf(hdrfile, "&chpl_verbose_comm");
-    fprintf(hdrfile, ",\n&chpl_comm_diagnostics");
-    fprintf(hdrfile, ",\n&chpl_verbose_mem");
-    int i = 3;
+    int i = 0;
     forv_Vec(CallExpr, call, gCallExprs) {
       if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
         SymExpr* se = toSymExpr(call->get(1));
         INT_ASSERT(se);
         SET_LINENO(call);
-        fprintf(hdrfile, ",\n&%s", se->symbol()->cname);
+        fprintf(hdrfile, "%s&%s",
+                ((i == 0) ? "" : ",\n"), se->symbol()->cname);
         // To preserve operand order, this should be insertAtTail.
         // The change must also be made below (for LLVM) and in the signature
         // of chpl_comm_broadcast_private().
         call->insertAtHead(new_IntSymbol(i));
         i++;
       }
+    }
+    if (i == 0) {
+      // Quiet PGI warning about empty initializer
+      fprintf(hdrfile, "NULL");
     }
     fprintf(hdrfile, "\n};\n");
     genGlobalInt("chpl_private_broadcast_table_len", i, false);
@@ -1614,6 +1617,10 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   FILE* hdrfile = info->cfile;
 
   if( hdrfile) {
+    // Insert include guard to help MLI builds avoid multiple inclusion.
+    fprintf(hdrfile, "#ifndef CHPL_GEN_HEADER_INCLUDE_GUARD\n");
+    fprintf(hdrfile, "#define CHPL_GEN_HEADER_INCLUDE_GUARD\n");
+
     // This is done in runClang for LLVM version.
     fprintf(hdrfile, "\n#define CHPL_GEN_CODE\n\n");
 
@@ -1716,7 +1723,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
       }
     }
     forv_Vec(TypeSymbol, typeSymbol, types) {
-      if (!isUnmanagedClassType(typeSymbol->type))
+      if (!isDecoratedClassType(typeSymbol->type))
         typeSymbol->codegenMetadata();
     }
     // Aggregate annotations for class objects must wait until all other
@@ -1822,20 +1829,8 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
       llvm::IntegerType::getInt8PtrTy(info->module->getContext());
 
     std::vector<llvm::Constant *> private_broadcastTable;
-    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
-          info->irBuilder->CreatePointerCast(
-            info->lvt->getValue("chpl_verbose_comm").val,
-            private_broadcastTableEntryType)));
-    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
-          info->irBuilder->CreatePointerCast(
-            info->lvt->getValue("chpl_comm_diagnostics").val,
-            private_broadcastTableEntryType)));
-    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
-          info->irBuilder->CreatePointerCast(
-            info->lvt->getValue("chpl_verbose_mem").val,
-            private_broadcastTableEntryType)));
 
-    int broadcastID = 3;
+    int broadcastID = 0;
     forv_Vec(CallExpr, call, gCallExprs) {
       if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
         SymExpr* se = toSymExpr(call->get(1));
@@ -2219,6 +2214,12 @@ static void setupDefaultFilenames() {
     strncpy(pythonModulename, executableFilename, sizeof(pythonModulename)-1);
     pythonModulename[sizeof(pythonModulename)-1] = '\0';
   }
+
+  if (fMultiLocaleInterop) {
+    strncpy(mli_servername, executableFilename, sizeof(mli_servername)-1);
+    mli_servername[sizeof(mli_servername)-1] = '\0';
+    strcat(mli_servername, "_server");
+  }
 }
 
 
@@ -2252,10 +2253,10 @@ void codegen() {
 
   SET_LINENO(rootModule);
 
-  fileinfo hdrfile  = { NULL, NULL, NULL };
-  fileinfo mainfile = { NULL, NULL, NULL };
-  fileinfo defnfile = { NULL, NULL, NULL };
-  fileinfo strconfig = { NULL, NULL, NULL };
+  fileinfo hdrfile    = { NULL, NULL, NULL };
+  fileinfo mainfile   = { NULL, NULL, NULL };
+  fileinfo defnfile   = { NULL, NULL, NULL };
+  fileinfo strconfig  = { NULL, NULL, NULL };
 
   GenInfo* info     = gGenInfo;
 
@@ -2335,7 +2336,7 @@ void codegen() {
         }
       }
     }
-
+    
     codegen_makefile(&mainfile, NULL, false, userFileName);
   }
 
@@ -2403,10 +2404,15 @@ void codegen() {
       if(fIncrementalCompilation && (currentModule->modTag == MOD_USER))
         fprintf(modulefile.fptr, "#include \"chpl__header.h\"\n");
       currentModule->codegenDef();
+
       closeCFile(&modulefile);
 
       if(!(fIncrementalCompilation && (currentModule->modTag == MOD_USER)))
         fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
+    }
+
+    if (fMultiLocaleInterop) {
+      codegenMultiLocaleInteropWrappers();
     }
 
     fprintf(strconfig.fptr, "#include \"chpl-string.h\"\n");
@@ -2417,6 +2423,9 @@ void codegen() {
 
     info->cfile = hdrfile.fptr;
     codegen_header_addons();
+
+    fprintf(hdrfile.fptr, "\n#endif");
+    fprintf(hdrfile.fptr, " /* END CHPL_GEN_HEADER_INCLUDE_GUARD */\n"); 
 
     closeCFile(&hdrfile);
     fprintf(mainfile.fptr, "/* last line not #include to avoid gcc bug */\n");

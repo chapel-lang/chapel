@@ -30,6 +30,7 @@ extern char executableFilename[FILENAME_MAX+1];
 extern char libmodeHeadername[FILENAME_MAX+1];
 extern char fortranModulename[FILENAME_MAX+1];
 extern char pythonModulename[FILENAME_MAX+1];
+extern char mli_servername[FILENAME_MAX+1];
 extern char saveCDir[FILENAME_MAX+1];
 extern std::string ccflags;
 extern std::string ldflags;
@@ -44,6 +45,11 @@ struct fileinfo {
   const char* pathname;
 };
 
+void codegen_makefile_mli(fileinfo* mli_client, fileinfo* mli_server,
+                          const char** tmpclientname,
+                          const char** tmpservername, bool skip_compile_link,
+                          const std::vector<const char*>& splitFiles);
+
 void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL, bool skip_compile_link=false, const std::vector<const char *>& splitFiles = std::vector<const char*>());
 
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
@@ -54,6 +60,7 @@ void deleteTmpDir();
 const char* objectFileForCFile(const char* cfile);
 
 const char* genIntermediateFilename(const char* filename);
+const char* getDirectory(const char* filename);
 const char* stripdirectories(const char* filename);
 
 void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);
@@ -78,7 +85,7 @@ bool isCHeader(const char* filename);
 bool isCSource(const char* filename);
 bool isObjFile(const char* filename);
 void addSourceFiles(int numFilenames, const char* filename[]);
-void addSourceFile(const char* filename);
+void addSourceFile(const char* filename, const char* modFilename);
 const char* nthFilename(int i);
 void addLibPath(const char* filename);
 void addLibFile(const char* filename);

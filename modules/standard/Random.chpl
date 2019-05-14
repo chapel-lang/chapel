@@ -224,7 +224,7 @@ module Random {
     }
 
     // Check types of optional void args
-    if !isVoidType(probType) {
+    if !isNothingType(probType) {
       if !isArrayType(probType) then
         compilerError('choice() prob must be an array');
       if !(isIntegralType(prob.eltType) || isRealType(prob.eltType)) then
@@ -237,7 +237,7 @@ module Random {
         throw new owned IllegalArgumentError('choice() array arguments must have same domain');
       }
     }
-    if !isVoidType(sizeType) {
+    if !isNothingType(sizeType) {
       if isIntegralType(sizeType) {
         if size <= 0 then
         throw new owned IllegalArgumentError('choice() size must be greater than 0');
@@ -246,7 +246,7 @@ module Random {
       }
     }
 
-    if isVoidType(probType) {
+    if isNothingType(probType) {
       return _choiceUniform(stream, arr, size, replace);
     } else {
       return _choiceProbabilities(stream, arr, size, replace, prob);
@@ -259,7 +259,7 @@ module Random {
   {
     ref A = arr.reindex(1..arr.size);
 
-    if isVoidType(sizeType) {
+    if isNothingType(sizeType) {
       // Return 1 sample
       var randIdx = stream.getNext(resultType=int, 1, A.size);
       return A[randIdx];
@@ -329,7 +329,7 @@ module Random {
     cumulativeArr /= total;
 
     // Begin sampling
-    if isVoidType(sizeType) {
+    if isNothingType(sizeType) {
       // Return 1 sample
       var randNum = stream.getNext(resultType=real);
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
@@ -535,7 +535,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > arr.size || size.size > arr.size``
      */
-    proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void) throws
+    proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none) throws
     {
       compilerError("RandomStreamInterface.choice called");
     }
@@ -834,11 +834,9 @@ module Random {
         :returns: The next value in the random stream as type `resultType`.
        */
       proc getNext(type resultType=eltType): resultType {
-        if parSafe then
-          PCGRandomStreamPrivate_lock$ = true;
+        _lock();
         const result = PCGRandomStreamPrivate_getNext_noLock(resultType);
-        if parSafe then
-          PCGRandomStreamPrivate_lock$;
+        _unlock();
         return result;
       }
       /*
@@ -858,15 +856,12 @@ module Random {
 
        */
       proc getNext(min: eltType, max:eltType): eltType {
-        if parSafe then
-          PCGRandomStreamPrivate_lock$ = true;
-
+        _lock();
         if boundsChecking && min > max then
           HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max +  "]");
 
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType,min,max);
-        if parSafe then
-          PCGRandomStreamPrivate_lock$;
+        _unlock();
         return result;
       }
 
@@ -875,15 +870,12 @@ module Random {
        */
       proc getNext(type resultType,
                    min: resultType, max:resultType): resultType {
-        if parSafe then
-          PCGRandomStreamPrivate_lock$ = true;
-
+        _lock();
         if boundsChecking && min > max then
           HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max + "]");
 
         const result = PCGRandomStreamPrivate_getNext_noLock(resultType,min,max);
-        if parSafe then
-          PCGRandomStreamPrivate_lock$;
+        _unlock();
         return result;
       }
 
@@ -898,11 +890,9 @@ module Random {
       proc skipToNth(n: integral) throws {
         if n <= 0 then
           throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
-        if parSafe then
-          PCGRandomStreamPrivate_lock$ = true;
+        _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
-        if parSafe then
-          PCGRandomStreamPrivate_lock$;
+        _unlock();
       }
 
       /*
@@ -919,12 +909,10 @@ module Random {
       proc getNth(n: integral): eltType throws {
         if (n <= 0) then
           throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n);
-        if parSafe then
-          PCGRandomStreamPrivate_lock$ = true;
+        _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType);
-        if parSafe then
-          PCGRandomStreamPrivate_lock$;
+        _unlock();
         return result;
       }
 
@@ -971,7 +959,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > arr.size || size.size > arr.size``
      */
-      proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
+      proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         return _choice(this, arr, size=size, replace=replace, prob=prob);
@@ -987,8 +975,7 @@ module Random {
               high = D.high,
               stride = D.stride;
 
-        if parSafe then
-          PCGRandomStreamPrivate_lock$ = true;
+        _lock();
 
         // Fisher-Yates shuffle
         for i in 0..#D.size by -1 {
@@ -1017,8 +1004,7 @@ module Random {
 
         PCGRandomStreamPrivate_count += high - low;
 
-        if parSafe then
-          PCGRandomStreamPrivate_lock$;
+        _unlock();
       }
 
       /* Produce a random permutation, storing it in a 1-D array.
@@ -1034,8 +1020,7 @@ module Random {
         //if arr.domain.dim(1).stridable then
         //  compilerError("Permutation requires non-stridable 1-D array");
 
-        if parSafe then
-          PCGRandomStreamPrivate_lock$ = true;
+        _lock();
 
         for i in low..high {
           var j = randlc_bounded(arr.domain.idxType,
@@ -1048,8 +1033,7 @@ module Random {
 
         PCGRandomStreamPrivate_count += high-low;
 
-        if parSafe then
-          PCGRandomStreamPrivate_lock$;
+        _unlock();
       }
 
 
@@ -1076,13 +1060,11 @@ module Random {
        */
       pragma "fn returns iterator"
       proc iterate(D: domain, type resultType=eltType) {
-        if parSafe then
-          PCGRandomStreamPrivate_lock$ = true;
+        _lock();
         const start = PCGRandomStreamPrivate_count;
         PCGRandomStreamPrivate_count += D.numIndices.safeCast(int(64));
         PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count);
-        if parSafe then
-          PCGRandomStreamPrivate_lock$;
+        _unlock();
         return PCGRandomPrivate_iterate(resultType, D, seed, start);
       }
 
@@ -1119,7 +1101,19 @@ module Random {
 
 
       pragma "no doc"
-      var PCGRandomStreamPrivate_lock$: sync bool;
+      var PCGRandomStreamPrivate_lock$: if parSafe then sync bool else nothing;
+      pragma "no doc"
+      pragma "dont disable remote value forwarding"
+      inline proc _lock() {
+        if parSafe then
+          PCGRandomStreamPrivate_lock$ = true;
+      }
+      pragma "no doc"
+      pragma "dont disable remote value forwarding"
+      inline proc _unlock() {
+        if parSafe then
+          PCGRandomStreamPrivate_lock$;
+      }
       // up to 4 RNGs
       pragma "no doc"
       var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
@@ -2384,11 +2378,9 @@ module Random {
         :returns: The next value in the random stream as type :type:`eltType`.
        */
       proc getNext(): eltType {
-        if parSafe then
-          NPBRandomStreamPrivate_lock$ = true;
+        _lock();
         const result = NPBRandomStreamPrivate_getNext_noLock();
-        if parSafe then
-          NPBRandomStreamPrivate_lock$;
+        _unlock();
         return result;
       }
 
@@ -2403,11 +2395,9 @@ module Random {
       proc skipToNth(n: integral) throws {
         if n <= 0 then
           throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
-        if parSafe then
-          NPBRandomStreamPrivate_lock$ = true;
+        _lock();
         NPBRandomStreamPrivate_skipToNth_noLock(n);
-        if parSafe then
-          NPBRandomStreamPrivate_lock$;
+        _unlock();
       }
 
       /*
@@ -2424,12 +2414,10 @@ module Random {
       proc getNth(n: integral): eltType throws {
         if (n <= 0) then
           throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n);
-        if parSafe then
-          NPBRandomStreamPrivate_lock$ = true;
+        _lock(); 
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         const result = NPBRandomStreamPrivate_getNext_noLock();
-        if parSafe then
-          NPBRandomStreamPrivate_lock$;
+        _unlock();
         return result;
       }
 
@@ -2455,7 +2443,7 @@ module Random {
       }
 
       pragma "no doc"
-      proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
+      proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");
@@ -2478,13 +2466,11 @@ module Random {
        */
       pragma "fn returns iterator"
       proc iterate(D: domain, type resultType=real) {
-        if parSafe then
-          NPBRandomStreamPrivate_lock$ = true;
+        _lock();
         const start = NPBRandomStreamPrivate_count;
         NPBRandomStreamPrivate_count += D.numIndices.safeCast(int(64));
         NPBRandomStreamPrivate_skipToNth_noLock(NPBRandomStreamPrivate_count);
-        if parSafe then
-          NPBRandomStreamPrivate_lock$;
+        _unlock();
         return NPBRandomPrivate_iterate(resultType, D, seed, start);
       }
 
@@ -2520,7 +2506,19 @@ module Random {
       //
 
       pragma "no doc"
-      var NPBRandomStreamPrivate_lock$: sync bool;
+      var NPBRandomStreamPrivate_lock$: if parSafe then sync bool else nothing;
+      pragma "no doc"
+      pragma "dont disable remote value forwarding"
+      inline proc _lock() {
+        if parSafe then
+          NPBRandomStreamPrivate_lock$ = true;
+      }
+      pragma "no doc"
+      pragma "dont disable remote value forwarding"
+      inline proc _unlock() {
+        if parSafe then
+          NPBRandomStreamPrivate_lock$;
+      }
       pragma "no doc"
       var NPBRandomStreamPrivate_cursor: real = seed;
       pragma "no doc"

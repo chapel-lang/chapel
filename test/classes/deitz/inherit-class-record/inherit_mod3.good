@@ -1,4 +1,6 @@
 inherit_mod3.chpl:11: In function 'foo':
 inherit_mod3.chpl:12: error: unresolved call 'C.x'
-inherit_mod3.chpl:4: note: candidates are: D1.x
-inherit_mod3.chpl:8: note:                 D2.x
+inherit_mod3.chpl:4: note: this candidate did not match: D1.x
+inherit_mod3.chpl:12: note: because method call receiver with type borrowed C
+inherit_mod3.chpl:4: note: is passed to formal 'this: borrowed D1'
+inherit_mod3.chpl:8: note: candidates are: D2.x

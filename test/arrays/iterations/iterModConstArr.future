@@ -1,0 +1,6 @@
+bug: iterating over a const array yields non-const refs
+
+This test shows that when we iterate over a const array, the loop
+yields non-const references to the elements, permitting the array to
+be modified.  This ought to be illegal, similar to how a const array's
+accessors don't permit the array elements to be modified.

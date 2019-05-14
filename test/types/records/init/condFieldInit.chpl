@@ -1,6 +1,6 @@
 record R {
   param stridable: bool = false;
-  var str = if stridable then 1 else _void;
+  var str = if stridable then 1 else none;
 
   proc init(param stridable) {
     this.stridable = stridable;

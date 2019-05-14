@@ -22,12 +22,17 @@ proc stridedAssign(A : [], sa, B : [], sb, debug=debugDefault) {
   ref right = if isDomain(sb) then B[sb] else B[(...sb)];
   const ldom = left.domain;
 
+  // If 'ldom' is a Stencil-distributed domain, it can return 'true' for
+  // indices in the fluff region, but that's not really what we want in this
+  // particular case. Instead, use a DR domain.
+  const memberDom = {(...ldom.dims())};
+
   var ret = 1;
 
   proc isMember(idx) {
     if isTuple(idx) {
       if isDomain(sa) {
-        return ldom.contains(idx);
+        return memberDom.contains(idx);
       } else {
         var ret = true;
         for param i in 1..sa.size {
@@ -37,7 +42,7 @@ proc stridedAssign(A : [], sa, B : [], sb, debug=debugDefault) {
         return ret;
       }
     } else {
-      return ldom.contains(idx);
+      return memberDom.contains(idx);
     }
   }
 

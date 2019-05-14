@@ -480,8 +480,7 @@ writeln(B);
 \end{chapelnoprint}
 is equivalent to
 \begin{chapel}
-forall (a,b) in zip(A,B) do
-  a = b;
+[(a,b) in zip(A,B)] a = b;
 \end{chapel}
 \begin{chapelpost}
 writeln(A);
@@ -498,8 +497,11 @@ writeln(B);
 2 2 2
 \end{chapeloutput}
 If the zipper iteration is illegal, then the assignment is illegal.
-Notice that the assignment is implemented with the semantics of
-a \chpl{forall} loop.
+This means, for example, that a range cannot be assigned to a
+multidimensional rectangular array because the two expressions don't
+match in shape and can't be zipped together.  Notice that the
+assignment is implemented using parallelism when possible, and
+serially otherwise.
 \end{chapelexample}
 
 Arrays can be assigned tuples of values of their element type if the

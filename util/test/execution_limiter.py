@@ -4,6 +4,7 @@ running chpl executables """
 import getpass
 import os
 import tempfile
+import py3_compat
 
 try:
     import activate_chpl_test_venv
@@ -45,11 +46,8 @@ class FileLock():
     def __init__(self):
         lock_name = '{0}-chpl_program_executing'.format(getpass.getuser())
         lock_dir = os.getenv('CHPL_TEST_LIMIT_RUNNING_EXECUTABLES_DIR', tempfile.gettempdir())
-        try:
-            os.makedirs(lock_dir)
-        except OSError as e:
-            if e.errno != os.errno.EEXIST:
-                raise
+        py3_compat.makedirs(lock_dir, exist_ok=True)
+
         self.lock_file = os.path.join(lock_dir, lock_name)
         self.lock = filelock.FileLock(self.lock_file)
 

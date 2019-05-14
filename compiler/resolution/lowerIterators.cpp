@@ -1405,7 +1405,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap[loopBodyFnWrapper]));
 
   // replace function in iteratorFnCall with iterator function once that is created
-  CallExpr*  loopBodyFnCall = new CallExpr(loopBodyFn, gVoid);
+  CallExpr*  loopBodyFnCall = new CallExpr(loopBodyFn, gNone);
 
   // use and remove loopBodyFnCall later
   // We expect this call to cause the loop body function to be converted like a
@@ -1423,7 +1423,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   loopBodyFn->insertAtHead(new CallExpr(PRIM_MOVE, index, indexArg));
   loopBodyFn->insertAtHead(index->defPoint->remove());
 
-  // Return nothing (void).
+  // Return nothing.
   loopBodyFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   loopBodyFn->retType = dtVoid;
 
@@ -2334,7 +2334,7 @@ expandForLoop(ForLoop* forLoop) {
     // to getValue is inserted.  Check the order in the generated code to see
     // if this is the case.  Avoid moving the global void value when it is
     // the loop index.
-    if (index != gVoid)
+    if (index != gNone)
       forLoop->insertAtHead(index->defPoint->remove());
 
     // Ensure that the test clause for completely unbounded loops contains

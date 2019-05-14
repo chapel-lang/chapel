@@ -1,2 +1,4 @@
 defaultFnValCreatesGeneric.chpl:10: error: unresolved call 'foo(1.0)'
-defaultFnValCreatesGeneric.chpl:5: note: candidates are: foo(x = bar())
+defaultFnValCreatesGeneric.chpl:5: note: this candidate did not match: foo(x = bar())
+defaultFnValCreatesGeneric.chpl:10: note: because call actual argument #1 with type real(64)
+defaultFnValCreatesGeneric.chpl:5: note: is passed to formal 'x: int(64)'

@@ -1,2 +1,3 @@
 enum-functions-bad.chpl:1: In function 'main':
 enum-functions-bad.chpl:4: error: unresolved enumerated type symbol or call 'type digit.ten'
+enum-functions-bad.chpl:4: note: because no functions named ten found in scope

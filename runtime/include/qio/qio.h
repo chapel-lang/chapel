@@ -633,6 +633,12 @@ void qio_file_get_style(qio_file_t* f, qio_style_t* style)
   *style = f->style;
 }
 
+static inline
+bool qio_file_isopen(qio_file_t* f) 
+{
+  return !(f->closed);
+}
+
 // Return the current length of a file.
 // Calls stat for a file descriptor
 // Calls fflush on a FILE* first.

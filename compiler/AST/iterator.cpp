@@ -819,8 +819,8 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
 
         } else {
           // Update ic.value.
-          // Unless it's yielding something of type dtVoid.
-          if (ySym->type != dtVoid) {
+          // Unless it's yielding something of type dtNothing.
+          if (ySym->type != dtNothing) {
             SymExpr* upd = new SymExpr(ySym);
             pc->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, valField, upd));
             if (ySym->defPoint->parentSymbol == fn) {
@@ -1262,7 +1262,7 @@ buildGetValue(IteratorInfo* ii, BlockStmt* singleLoop) {
   {
     INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
   }
-  else if (ii->getValue->retType != dtVoid)
+  else if (ii->getValue->retType != dtNothing)
   {
     VarSymbol* tmp = newTemp(ii->getValue->retType);
     getValueBody->insertAtTail(new DefExpr(tmp));

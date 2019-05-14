@@ -1,25 +1,25 @@
 forall blank owned
-MyClass
-MyClass
-MyClass
-MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
 forall blank shared
-MyClass
-MyClass
-MyClass
-MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
 forall const owned
-MyClass
-MyClass
-MyClass
-MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
 forall const ref owned
-_owned(MyClass)
-_owned(MyClass)
-_owned(MyClass)
-_owned(MyClass)
+owned MyClass
+owned MyClass
+owned MyClass
+owned MyClass
 forall ref owned
-_owned(MyClass)
-_owned(MyClass)
-_owned(MyClass)
-_owned(MyClass)
+owned MyClass
+owned MyClass
+owned MyClass
+owned MyClass

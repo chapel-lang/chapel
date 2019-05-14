@@ -37,24 +37,28 @@ proc doit4(type C)
     delete c;
 }
 
+writeln("Section 1");
 doit(unmanaged A(int));
 doit(owned A(int));
 doit(shared A(int));
 doit(borrowed A(int));
 doit(A(int));
 
+writeln("Section 2");
 doit2(unmanaged A(int));
 doit2(owned A(int));
 doit2(shared A(int));
 doit2(borrowed A(int));
 doit2(A(int));
 
+writeln("Section 3");
 doit3(unmanaged A(int));
 doit3(owned A(int));
 doit3(shared A(int));
 doit3(borrowed A(int));
 doit3(A(int));
 
+writeln("Section 4");
 doit4(unmanaged A(int));
 doit4(owned A(int));
 doit4(shared A(int));

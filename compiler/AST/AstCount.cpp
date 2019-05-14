@@ -58,12 +58,12 @@ foreach_ast(count_members);
   return sum;
 }
 
-bool AstCount::enterUnmanagedClassType(UnmanagedClassType* node) {
-  numUnmanagedClassType++;
+bool AstCount::enterDecoratedClassType(DecoratedClassType* node) {
+  numDecoratedClassType++;
   return true;
 }
 
-void AstCount::exitUnmanagedClassType(UnmanagedClassType* node) {
+void AstCount::exitDecoratedClassType(DecoratedClassType* node) {
 }
 
 

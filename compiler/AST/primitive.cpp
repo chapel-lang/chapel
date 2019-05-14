@@ -19,9 +19,9 @@
 
 #include "primitive.h"
 
+#include "DecoratedClassType.h"
 #include "expr.h"
 #include "iterator.h"
-#include "UnmanagedClassType.h"
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
@@ -411,7 +411,8 @@ static QualifiedType
 returnInfoError(CallExpr* call) {
   AggregateType* at = toAggregateType(dtError);
   INT_ASSERT(isClass(at));
-  UnmanagedClassType* unmanaged = at->getUnmanagedClass();
+  Type* unmanaged =
+    at->getDecoratedClass(CLASS_TYPE_UNMANAGED); // TODO: nilable
   INT_ASSERT(unmanaged);
   return QualifiedType(unmanaged, QUAL_VAL);
 }
@@ -447,13 +448,17 @@ returnInfoIteratorRecordFieldValueByFormal(CallExpr* call) {
 static QualifiedType
 returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
-  if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
-    t = mt->getCanonicalClass();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_UNMANAGED;
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    if (dt->isNilable())
+      decorator = CLASS_TYPE_UNMANAGED_NILABLE;
   }
+
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      if (UnmanagedClassType* unmanaged = at->getUnmanagedClass())
-        t = unmanaged;
+      t = at->getDecoratedClass(decorator);
     }
   }
   return QualifiedType(t, QUAL_VAL);
@@ -463,10 +468,63 @@ static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
-    t = mt->getCanonicalClass();
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    if (dt->isNilable())
+      decorator = CLASS_TYPE_BORROWED_NILABLE;
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
   }
+
+  if (AggregateType* at = toAggregateType(t))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
+
   // Canonical class type is borrow type
+  return QualifiedType(t, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoToNilable(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NILABLE;
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    decorator = dt->getDecorator();
+    decorator = addNilableToDecorator(decorator);
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
+  }
+
+
+
+  if (AggregateType* at = toAggregateType(t))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
+
+  return QualifiedType(t, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoToNonNilable(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    decorator = dt->getDecorator();
+    decorator = removeNilableFromDecorator(decorator);
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
+  }
+
+  if (AggregateType* at = toAggregateType(t))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
+
   return QualifiedType(t, QUAL_VAL);
 }
 
@@ -936,8 +994,13 @@ initPrimitive() {
   // used before error handling is lowered to represent the current error
   prim_def(PRIM_CURRENT_ERROR, "current error", returnInfoError, false, false);
 
+  // These return the (non-nil) class variant
   prim_def(PRIM_TO_UNMANAGED_CLASS, "to unmanaged class", returnInfoToUnmanaged, false, false);
+  // borrowed class type currently == canonical class type
   prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
+  // Returns the nilable class type
+  prim_def(PRIM_TO_NILABLE_CLASS, "to nilable class", returnInfoToNilable, false, false);
+  prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);

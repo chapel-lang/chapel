@@ -701,7 +701,7 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
   if (this->hasFlag(FLAG_EXTERN) && !this->hasFlag(FLAG_GENERATE_SIGNATURE))
     return;
 
-  if (type == dtVoid)
+  if (type == dtNothing || type == dtVoid)
     return;
 
   AggregateType* ct = toAggregateType(type);
@@ -777,7 +777,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
     codegenDefC(/*global=*/true, isHeader);
   } else {
 #ifdef HAVE_LLVM
-    if(type == dtVoid || !isHeader) {
+    if(type == dtNothing || !isHeader) {
       return;
     }
 
@@ -838,7 +838,7 @@ void VarSymbol::codegenDef() {
   // generated for extern or void types
   if (this->hasFlag(FLAG_EXTERN))
     return;
-  if (type == dtVoid)
+  if (type == dtNothing || type == dtVoid)
     return;
 
   // Check sizes for c_array
@@ -955,7 +955,6 @@ static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
 // TODO: apply to _ddata as well?
 static std::string
 transformTypeForPointer(Type* type) {
-  std::string typeName = type->codegen().c;
   if (type->symbol->hasFlag(FLAG_REF)) {
     Type* referenced = type->getValType();
     return referenced->codegen().c + " *";
@@ -964,6 +963,7 @@ transformTypeForPointer(Type* type) {
     Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
     return pointedTo->codegen().c + " *";
   }
+  std::string typeName = type->codegen().c;
   return typeName;
 }
 
@@ -1275,7 +1275,7 @@ void TypeSymbol::codegenMetadata() {
 #ifdef HAVE_LLVM
   // Don't do anything if we've already visited this type,
   // or the type is void so we don't need metadata.
-  if (llvmTbaaTypeDescriptor || type == dtVoid) return;
+  if (llvmTbaaTypeDescriptor || type == dtNothing) return;
 
   GenInfo* info = gGenInfo;
   INT_ASSERT(info->tbaaRootNode);
@@ -1514,7 +1514,7 @@ void TypeSymbol::codegenAggMetadata() {
     ConstCopyOps.push_back(CLASS_ID_TYPE->symbol->llvmConstTbaaAccessTag);
   } else {
     for_fields(field, ct) {
-      if (field->type == dtVoid)
+      if (field->type == dtNothing)
         continue;
 
       llvm::Type *fieldType = NULL;
@@ -1592,11 +1592,15 @@ GenRet TypeSymbol::codegen() {
 
   // Should not be code generating non-canonical class pointers
   // (these are replaced with canonical ones after resolution)
-  if (isUnmanagedClassType(type))
+  if (isDecoratedClassType(type))
     INT_FATAL("attempting to code generate a managed class type");
 
   if( info->cfile ) {
-    ret.c = cname;
+    if (this == dtNothing->symbol) {
+      ret.c = dtVoid->codegen().c;
+    } else {
+      ret.c = cname;
+    }
   } else {
 #ifdef HAVE_LLVM
     if( ! llvmType ) {
@@ -1675,7 +1679,7 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
 
     //Void type handled here since LLVM complains about a
     //void type defined in a module
-    if( 0 == strcmp("void", retType->symbol->name) ) {
+    if (retType == dtVoid || retType == dtNothing) {
       returnType = llvm::Type::getVoidTy(info->module->getContext());
     } else {
       returnType = retType->codegen().type;

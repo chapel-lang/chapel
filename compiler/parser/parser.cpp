@@ -308,7 +308,7 @@ static void parseCommandLineFiles() {
   }
 
   while ((inputFileName = nthFilename(fileNum++))) {
-    if (isChplSource(inputFileName) == true) {
+    if (isChplSource(inputFileName)) {
       parseFile(inputFileName, MOD_USER, true);
     }
   }
@@ -501,6 +501,7 @@ static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
                                bool        namedOnCommandLine) {
   ModuleSymbol* retval = NULL;
+
 
   if (FILE* fp = openInputFile(path)) {
     gFilenameLookup.push_back(path);

@@ -600,7 +600,7 @@ module DataFrames {
 
     override
     proc add(rhs : Series): owned Series {
-      return rhs.uni(this, new SeriesAdd(eltType));
+      return rhs.uni(this, new borrowed SeriesAdd(eltType));
     }
 
     override
@@ -611,7 +611,7 @@ module DataFrames {
 
     override
     proc subtr(rhs): owned Series {
-      return rhs.uni(this, new SeriesSubtr(eltType));
+      return rhs.uni(this, new borrowed SeriesSubtr(eltType));
     }
 
     override
@@ -622,7 +622,7 @@ module DataFrames {
 
     override
     proc mult(rhs): owned Series {
-      return rhs.uni(this, new SeriesMult(eltType));
+      return rhs.uni(this, new borrowed SeriesMult(eltType));
     }
 
     override
@@ -633,27 +633,27 @@ module DataFrames {
 
     override
     proc lt_scalar(n): owned Series {
-      return this.map(new SeriesLessThan(n));
+      return this.map(new borrowed SeriesLessThan(n));
     }
 
     override
     proc gt_scalar(n): owned Series {
-      return this.map(new SeriesGreaterThan(n));
+      return this.map(new borrowed SeriesGreaterThan(n));
     }
 
     override
     proc eq_scalar(n): owned Series {
-      return this.map(new SeriesEqualTo(n));
+      return this.map(new borrowed SeriesEqualTo(n));
     }
 
     override
     proc lteq_scalar(n): owned Series {
-      return this.map(new SeriesLessThanEqualTo(n));
+      return this.map(new borrowed SeriesLessThanEqualTo(n));
     }
 
     override
     proc gteq_scalar(n): owned Series {
-      return this.map(new SeriesGreaterThanEqualTo(n));
+      return this.map(new borrowed SeriesGreaterThanEqualTo(n));
     }
 
     /*

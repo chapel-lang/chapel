@@ -29,6 +29,7 @@
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-comm-diags.h"
+#include "chpl-comm-internal.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
 #include "chplexit.h"
@@ -146,6 +147,8 @@ static struct fi_msg ofi_msg_reqs;
 // Forward decls
 //
 
+static void emit_delayedFixedHeapMsgs(void);
+
 static inline struct perTxCtxInfo_t* tciAlloc(chpl_bool);
 static inline void tciFree(struct perTxCtxInfo_t*);
 static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
@@ -191,6 +194,37 @@ static void time_init(void);
 
 ////////////////////////////////////////
 //
+// Network type
+//
+
+static pthread_once_t networkOnce = PTHREAD_ONCE_INIT;
+
+typedef enum {
+  networkUnknown,
+  networkAries,
+  networkVerbs,
+} network_t ;
+
+static network_t network = networkUnknown;
+
+
+static
+void init_network(void) {
+  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0) {
+    network = networkAries;
+  }
+}
+
+
+static
+network_t getNetworkType(void) {
+  PTHREAD_CHK(pthread_once(&networkOnce, init_network));
+  return network;
+}
+
+
+////////////////////////////////////////
+//
 // Provider name
 //
 
@@ -203,11 +237,7 @@ static const char* getProviderName(void);
 
 static
 void setProviderName(void) {
-  //
-  // For now, allow specifying the provider via env var.
-  //
-  CHK_TRUE((provName = chpl_env_rt_get("COMM_OFI_PROVIDER", "sockets"))
-           != NULL);
+  provName = chpl_env_rt_get("COMM_OFI_PROVIDER", NULL);
 }
 
 
@@ -254,7 +284,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 }
 
 
-void chpl_comm_post_mem_init(void) { }
+void chpl_comm_post_mem_init(void) {
+  chpl_comm_init_prv_bcast_tab();
+}
 
 
 //
@@ -298,10 +330,13 @@ void init_ofiFabricDomain(void) {
 
   hints->caps = FI_MSG | FI_SEND | FI_RECV | FI_MULTI_RECV
                 | FI_RMA | FI_READ | FI_WRITE
-                | FI_ATOMICS
                 | FI_REMOTE_READ | FI_REMOTE_WRITE;
+  if (getNetworkType() == networkAries) {
+      hints->caps |= FI_ATOMICS; // oddly, we don't get this without asking
+  }
 
-  hints->mode = 0; // TODO: may need ~0 here and handle modes for good gni perf
+  // The gni provider needs local MR.
+  hints->mode = (getNetworkType() == networkAries) ? FI_LOCAL_MR : 0;
 
   hints->addr_format = FI_FORMAT_UNSPEC;
 
@@ -325,15 +360,19 @@ void init_ofiFabricDomain(void) {
   hints->domain_attr->data_progress = prg;
 
   hints->domain_attr->av_type = FI_AV_TABLE;
-  hints->domain_attr->mr_mode = ((strcmp(provider, "gni") == 0)
+  hints->domain_attr->mr_mode = ((getNetworkType() == networkAries)
                                  ? FI_MR_BASIC
-                                 : FI_MR_SCALABLE);
+                                 : FI_MR_UNSPEC);
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
+  //
   // fi_freeinfo(hints) will free() hints->fabric_attr->prov_name; this
   // is documented, though poorly.  So, get that space from malloc().
-  CHK_SYS_CALLOC(hints->fabric_attr->prov_name, strlen(provider) + 1);
-  strcpy(hints->fabric_attr->prov_name, provider);
+  //
+  if (provider != NULL) {
+    CHK_SYS_CALLOC(hints->fabric_attr->prov_name, strlen(provider) + 1);
+    strcpy(hints->fabric_attr->prov_name, provider);
+  }
 
   //
   // Try to find a provider that can do what we want.  If more than one
@@ -342,8 +381,42 @@ void init_ofiFabricDomain(void) {
   // node 0; the other nodes should all have the same result and there's
   // no point in repeating everything numNodes times.
   //
+  if (DBG_TEST_MASK(DBG_CFGFAB) && chpl_nodeID == 0) {
+    DBG_PRINTF(DBG_CFGFAB, "==================== hints:");
+    DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(hints, FI_TYPE_INFO));
+  }
+
   int ret;
-  ret = fi_getinfo(FI_VERSION(1,5), NULL, NULL, 0, hints, &ofi_info);
+  ret = fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
+                   NULL, NULL, 0, hints, &ofi_info);
+
+  //
+  // STOPGAP: For now, do not accept TCP-based providers unless those
+  //          are specified explicitly.  When we try use them we get
+  //          FI_ENOCQ on the first transmit context.  I don't know why.
+  //          For the time being, just skip those.  There's no harm for
+  //          now; we've never used tcp providers in the past anyway.
+  //
+  if (ret == FI_SUCCESS && provider == NULL) {
+    struct fi_info* info;
+    for (info = ofi_info; info != NULL; info = info->next) {
+      const char* pn = info->fabric_attr->prov_name;
+      if (strstr(pn, "tcp") == NULL)
+        break;
+      if (DBG_TEST_MASK(DBG_CFGFAB) && chpl_nodeID == 0) {
+        if (info == ofi_info) {
+          DBG_PRINTF(DBG_CFGFAB,
+                     "==================== skipping \"tcp\" provider(s):");
+        }
+        DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(info, FI_TYPE_INFO));
+        DBG_PRINTF(DBG_CFGFAB, "----------");
+      }
+    }
+    if ((ofi_info = info) == NULL) {
+      ret = -FI_ENODATA;
+    }
+  }
+
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
       if (DBG_TEST_MASK(DBG_CFGFAB | DBG_CFGFABSALL)) {
@@ -355,7 +428,8 @@ void init_ofiFabricDomain(void) {
                    "None matched hints; available with prov_name \"%s\" are:",
                    (provider == NULL) ? "<any>" : provider);
         struct fi_info* info = NULL;
-        OFI_CHK(fi_getinfo(FI_VERSION(1,5), NULL, NULL, 0, NULL, &info));
+        OFI_CHK(fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
+                           NULL, NULL, 0, NULL, &info));
         for ( ; info != NULL; info = info->next) {
           const char* pn = info->fabric_attr->prov_name;
           if (provider == NULL
@@ -392,6 +466,13 @@ void init_ofiFabricDomain(void) {
 
   fi_freeinfo(hints);
 
+  if (verbosity >= 2) {
+    if (chpl_nodeID == 0) {
+      printf("COMM=ofi: using \"%s\" provider\n",
+             ofi_info->fabric_attr->prov_name);
+    }
+  }
+
   //
   // Create the fabric domain and associated fabric access domain.
   //
@@ -424,6 +505,13 @@ void init_ofiFabricDomain(void) {
       }
     }
   }
+
+  //
+  // If we're using the gni provider on a Cray XC system and there were
+  // questionable settings associated with the fixed heap, say something
+  // about that now.
+  //
+  emit_delayedFixedHeapMsgs();
 }
 
 
@@ -564,13 +652,13 @@ void init_ofiEpNumCtxs(void) {
   // have its own, plus at least one more.
   //
   const struct fi_domain_attr* dom_attr = ofi_info->domain_attr;
-  int numWorkerTxCtxs;
+  int maxWorkerTxCtxs;
   if (useScalableTxEp)
-    numWorkerTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
+    maxWorkerTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
   else
-    numWorkerTxCtxs = dom_attr->ep_cnt - numAmHandlers;
+    maxWorkerTxCtxs = dom_attr->ep_cnt - numAmHandlers;
 
-  CHK_TRUE(numWorkerTxCtxs > 0);
+  CHK_TRUE(maxWorkerTxCtxs > 0);
 
   //
   // If the user manually limited the communication concurrency, take
@@ -578,8 +666,8 @@ void init_ofiEpNumCtxs(void) {
   //
   const int commConcurrency = chpl_env_rt_get_int("COMM_CONCURRENCY", 0);
   if (commConcurrency > 0) {
-    if (numWorkerTxCtxs > commConcurrency) {
-      numWorkerTxCtxs = commConcurrency;
+    if (maxWorkerTxCtxs > commConcurrency) {
+      maxWorkerTxCtxs = commConcurrency;
     }
   } else if (commConcurrency < 0) {
     chpl_warning("CHPL_RT_COMM_CONCURRENCY < 0, ignored", 0, 0);
@@ -595,9 +683,9 @@ void init_ofiEpNumCtxs(void) {
     // for the duration of the run.
     //
     CHK_TRUE(fixedNumThreads == chpl_task_getMaxPar()); // sanity
-    if (numWorkerTxCtxs > fixedNumThreads + 1)
-      numWorkerTxCtxs = fixedNumThreads + 1;
-    tciTabFixedAssignments = (numWorkerTxCtxs == fixedNumThreads + 1);
+    if (maxWorkerTxCtxs > fixedNumThreads + 1)
+      maxWorkerTxCtxs = fixedNumThreads + 1;
+    tciTabFixedAssignments = (maxWorkerTxCtxs == fixedNumThreads + 1);
   } else {
     //
     // The tasking layer doesn't have a fixed number of threads, but
@@ -605,8 +693,8 @@ void init_ofiEpNumCtxs(void) {
     // shouldn't need more worker tx contexts than whatever that is.
     //
     const int taskMaxPar = chpl_task_getMaxPar();
-    if (numWorkerTxCtxs > taskMaxPar)
-      numWorkerTxCtxs = taskMaxPar;
+    if (maxWorkerTxCtxs > taskMaxPar)
+      maxWorkerTxCtxs = taskMaxPar;
 
     tciTabFixedAssignments = false;
   }
@@ -614,7 +702,7 @@ void init_ofiEpNumCtxs(void) {
   //
   // Now we know how many transmit contexts we'll have.
   //
-  numTxCtxs = numWorkerTxCtxs + numAmHandlers;
+  numTxCtxs = maxWorkerTxCtxs + numAmHandlers;
   if (useScalableTxEp) {
     ofi_info->ep_attr->tx_ctx_cnt = numTxCtxs;
   }
@@ -778,8 +866,15 @@ void init_ofiForMem(void) {
 }
 
 
+static int isAtomicValid(enum fi_datatype);
+
 static
 void init_ofiForRma(void) {
+  //
+  // We need to make an initial call to isAtomicValid() to let it
+  // initialize its internals.  The datatype here doesn't matter.
+  //
+  (void) isAtomicValid(FI_INT32);
 }
 
 
@@ -882,13 +977,13 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   // These are needed by chpl_comm_broadcast_private(), below.
   //
   void** pbtMap;
-  size_t pbtSize = chpl_private_broadcast_table_len
-                   * sizeof(chpl_private_broadcast_table[0]);
+  size_t pbtSize = chpl_rt_priv_bcast_tab_len
+                   * sizeof(chpl_rt_priv_bcast_tab[0]);
   CHPL_CALLOC(pbtMap, chpl_numNodes * pbtSize);
-  chpl_comm_ofi_oob_allgather(chpl_private_broadcast_table, pbtMap, pbtSize);
+  chpl_comm_ofi_oob_allgather(chpl_rt_priv_bcast_tab, pbtMap, pbtSize);
   CHPL_CALLOC(chplPrivBcastTabMap, chpl_numNodes);
   for (int i = 0; i < chpl_numNodes; i++) {
-    chplPrivBcastTabMap[i] = &pbtMap[i * chpl_private_broadcast_table_len];
+    chplPrivBcastTabMap[i] = &pbtMap[i * chpl_rt_priv_bcast_tab_len];
   }
 }
 
@@ -896,7 +991,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
   for (int i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      (void) ofi_put(chpl_private_broadcast_table[id], i,
+      (void) ofi_put(chpl_rt_priv_bcast_tab[id], i,
                      chplPrivBcastTabMap[i][id], size);
     }
   }
@@ -1015,6 +1110,8 @@ static void*  fixedHeapStart;
 static pthread_once_t hugepageOnce = PTHREAD_ONCE_INIT;
 static size_t hugepageSize;
 
+static size_t nic_mem_map_limit;
+
 static void init_fixedHeap(void);
 
 static size_t get_hugepageSize(void);
@@ -1031,17 +1128,15 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 static
 void init_fixedHeap(void) {
   //
-  // We only need a fixed heap if we're multinode and using the
-  // gni provider.
+  // We only need a fixed heap if we're multinode on a Cray XC system.
   //
-  if (chpl_numNodes <= 1 || strcmp(getProviderName(), "gni") != 0)
+  if (chpl_numNodes <= 1 || getNetworkType() != networkAries) {
     return;
+  }
 
   //
-  // On XE systems you have to use hugepages, and on XC systems you
-  // really ought to.
-  //
-  // TODO: differentiate and do the right thing for XE.
+  // On XC systems you really ought to use hugepages.  If called for,
+  // a message will be emitted later.
   //
   size_t page_size;
   chpl_bool have_hugepages;
@@ -1049,8 +1144,6 @@ void init_fixedHeap(void) {
   void* start;
 
   if ((page_size = get_hugepageSize()) == 0) {
-    chpl_warning_explicit("not using hugepages may reduce performance",
-                          __LINE__, __FILE__);
     page_size = chpl_getSysPageSize();
     have_hugepages = false;
   } else {
@@ -1058,58 +1151,23 @@ void init_fixedHeap(void) {
   }
 
   if ((size = chpl_comm_getenvMaxHeapSize()) == 0) {
-    size = (size_t) 16 << 30;  // TODO: different for XE?
+    size = (size_t) 16 << 30;
   }
 
   size = ALIGN_UP(size, page_size);
-
 
   //
   // The heap is supposed to be of fixed size and on hugepages.  Set
   // it up.
   //
-  size_t nic_mem_map_limit;
-  size_t nic_max_mem;
-  size_t max_heap_size;
 
   //
   // Considering the data size we'll register, compute the maximum
   // heap size that will allow all registrations to fit in the NIC
-  // TLB.  Except on Gemini only, aim for only 95% of what will fit
-  // because there we'll get an error if we go over.
+  // TLB.
   //
-#if 0 // TODO: assume Aries; allows deeper testing
-  if (nic_type == GNI_DEVICE_GEMINI) {
-    const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
-    nic_max_mem = nic_max_pages * page_size;
-    nic_mem_map_limit = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
-  } else {
-#endif
-    const size_t nic_TLB_cache_pages = 512; // not publicly defined
-    nic_max_mem = nic_TLB_cache_pages * page_size;
-    nic_mem_map_limit = nic_max_mem;
-#if 0 // TODO: assume Aries; allows deeper testing
-  }
-#endif
-
-#if 0 // TODO: assume Aries; allows deeper testing
-  {
-    uint64_t  addr;
-    uint64_t  len;
-    size_t    data_size;
-
-    data_size = 0;
-    while (get_next_rw_memory_range(&addr, &len, NULL, 0))
-      data_size += ALIGN_UP(len, page_size);
-
-    if (data_size >= nic_mem_map_limit)
-      max_heap_size = 0;
-    else
-      max_heap_size = nic_mem_map_limit - data_size;
-  }
-#else
-  max_heap_size = nic_mem_map_limit;
-#endif
+  const size_t nic_TLB_cache_pages = 512; // not publicly defined
+  nic_mem_map_limit = nic_TLB_cache_pages * page_size;
 
   //
   // As a hedge against silliness, first reduce any request so that it's
@@ -1121,31 +1179,6 @@ void init_fixedHeap(void) {
   const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
   if (size > size_phys)
     size = size_phys;
-
-#if 0 // TODO: assume Aries; allows deeper testing
-  //
-  // On Gemini-based systems, if necessary reduce the heap size until
-  // we can fit all the registered pages in the NIC TLB.  Otherwise,
-  // we'll get GNI_RC_ERROR_RESOURCE when we try to register memory.
-  // Warn about doing this.
-  //
-  if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
-    if (chpl_nodeID == 0) {
-      char buf1[20], buf2[20], buf3[20], msg[200];
-      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
-      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
-      chpl_snprintf_KMG_f(buf3, sizeof(buf3), max_heap_size);
-      (void) snprintf(msg, sizeof(msg),
-                      "Gemini TLB can cover %s with %s pages; heap "
-                      "reduced to %s to fit",
-                      buf1, buf2, buf3);
-      chpl_warning(msg, 0, 0);
-    }
-
-    if (nic_type == GNI_DEVICE_GEMINI)
-      size = max_heap_size;
-  }
-#endif
 
   //
   // Work our way down from the starting size in (roughly) 5% steps
@@ -1174,15 +1207,44 @@ void init_fixedHeap(void) {
   DBG_PRINTF(DBG_MR, "fixed heap on %spages, start=%p size=%#zx\n",
              have_hugepages ? "huge" : "regular ", start, size);
 
+  fixedHeapSize  = size;
+  fixedHeapStart = start;
+}
+
+
+static
+void emit_delayedFixedHeapMsgs(void) {
   //
-  // On Aries-based systems, warn if the size is larger than what will
-  // fit in the TLB cache.  But since that may reduce performance but
-  // won't affect function, don't reduce the size to fit.
+  // We only need a fixed heap if we're multinode on a Cray XC system
+  // and using the gni provider.
   //
-  if (/*nic_type == GNI_DEVICE_ARIES &&*/ size > max_heap_size) { // TODO: assume Aries; allows deeper testing
+  if (chpl_numNodes <= 1
+      || getNetworkType() != networkAries
+      || strcmp(ofi_info->fabric_attr->prov_name, "gni") != 0) {
+    return;
+  }
+
+  //
+  // On XC systems you really ought to use hugepages.
+  //
+  void* start;
+  size_t size;
+  chpl_comm_impl_regMemHeapInfo(&start, &size);
+  if (hugepageSize == 0) {
+    chpl_warning_explicit("not using hugepages may reduce performance",
+                          __LINE__, __FILE__);
+  }
+
+  //
+  // Warn if the size is larger than what will fit in the TLB cache.
+  // While that may reduce performance it won't affect function, though,
+  // so don't do anything dramatic like reducing the size to fit.
+  //
+  if (size > nic_mem_map_limit) {
     if (chpl_nodeID == 0) {
+      size_t page_size = chpl_comm_impl_regMemHeapPageSize();
       char buf1[20], buf2[20], buf3[20], msg[200];
-      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
+      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_mem_map_limit);
       chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
       chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
       (void) snprintf(msg, sizeof(msg),
@@ -1193,9 +1255,6 @@ void init_fixedHeap(void) {
       chpl_warning(msg, 0, 0);
     }
   }
-
-  fixedHeapSize  = size;
-  fixedHeapStart = start;
 }
 
 
@@ -2068,16 +2127,22 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
       {
         struct perTxCtxInfo_t* tcip;
         CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
-        do {
-          const int count = fi_cntr_read(tcip->txCntr);
-          if (count == 0) {
-            sched_yield();
-            chpl_comm_make_progress();
-          } else {
-            DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
-            tcip->numTxsOut -= count;
+        if (tcip->txCQ != NULL) {
+          if (tcip->numTxsOut > 1) {
+            waitForTxCQ(tcip, 1, 0);
           }
-        } while (tcip->numTxsOut > 0);
+        } else {
+          do {
+            const int count = fi_cntr_read(tcip->txCntr);
+            if (count == 0) {
+              sched_yield();
+              chpl_comm_make_progress();
+            } else {
+              DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
+              tcip->numTxsOut -= count;
+            }
+          } while (tcip->numTxsOut > 0);
+        }
         tciFree(tcip);
       }
     }
@@ -2720,6 +2785,8 @@ static inline void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
                "chpl_comm_atomic_write_%s(%p, %d, %p, %d, %s)",         \
                #fnType, desired, (int) node, object,                    \
                ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_diags_verbose_amo("amo write", node, ln, fn);             \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, desired, NULL, NULL,                            \
           FI_ATOMIC_WRITE, ofiType, sizeof(Type));                      \
   }
@@ -2743,6 +2810,8 @@ DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, double)
                "chpl_comm_atomic_read_%s(%p, %d, %p, %d, %s)",          \
                #fnType, result, (int) node, object,                     \
                ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_diags_verbose_amo("amo read", node, ln, fn);              \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, NULL, NULL, result,                             \
           FI_ATOMIC_READ, ofiType, sizeof(Type));                       \
   }
@@ -2763,6 +2832,8 @@ DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, double)
                "chpl_comm_atomic_xchg_%s(%p, %d, %p, %p, %d, %s)",      \
                #fnType, desired, (int) node, object, result,            \
                ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_diags_verbose_amo("amo xchg", node, ln, fn);              \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, desired, NULL, result,                          \
           FI_ATOMIC_WRITE, ofiType, sizeof(Type));                      \
   }
@@ -2785,6 +2856,8 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, double)
                "%d, %s)",                                               \
                #fnType, expected, desired, (int) node, object, result,  \
                ln, chpl_lookupFilename(fn));                            \
+    chpl_comm_diags_verbose_amo("amo cmpxchg", node, ln, fn);           \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, expected, desired, result,                      \
           FI_CSWAP, ofiType, sizeof(Type));                             \
   }
@@ -2805,6 +2878,8 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
                "chpl_comm_atomic_%s_%s(<%s>, %d, %p, %d, %s)",          \
                #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
                object, ln, chpl_lookupFilename(fn));                    \
+    chpl_comm_diags_verbose_amo("amo " #fnOp, node, ln, fn);            \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, operand, NULL, NULL,                            \
           ofiOp, ofiType, sizeof(Type));                                \
   }                                                                     \
@@ -2828,6 +2903,8 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
                "%d, %s)",                                               \
                #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
                object, result, ln, chpl_lookupFilename(fn));            \
+    chpl_comm_diags_verbose_amo("amo fetch_" #fnOp, node, ln, fn);      \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, operand, NULL, result,                          \
           ofiOp, ofiType, sizeof(Type));                                \
   }
@@ -2864,6 +2941,8 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                ln, chpl_lookupFilename(fn));                            \
     Type myOpnd = negate(*(Type*) operand);                             \
+    chpl_comm_diags_verbose_amo("amo sub", node, ln, fn);               \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, &myOpnd, NULL, NULL,                            \
           FI_SUM, ofiType, sizeof(Type));                               \
   }                                                                     \
@@ -2889,6 +2968,8 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                result, ln, chpl_lookupFilename(fn));                    \
     Type myOpnd = negate(*(Type*) operand);                             \
+    chpl_comm_diags_verbose_amo("amo fetch_sub", node, ln, fn);         \
+    chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, &myOpnd, NULL, result,                          \
           FI_SUM, ofiType, sizeof(Type));                               \
   }
@@ -2904,11 +2985,6 @@ DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double, NEGATE_U_OR_R)
 
-
-void chpl_comm_atomic_unordered_fence(void) {
-  return;
-}
-
 void chpl_comm_atomic_unordered_task_fence(void) {
   return;
 }
@@ -2917,6 +2993,72 @@ void chpl_comm_atomic_unordered_task_fence(void) {
 //
 // internal AMO utilities
 //
+
+static
+int computeAtomicValid(enum fi_datatype ofiType) {
+  struct fid_ep* ep = tciTab[0].txCtx; // assume same answer for all endpoints
+  size_t count;                        // ignored
+
+#define my_valid(typ, op) \
+  (fi_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
+#define my_fetch_valid(typ, op) \
+  (fi_fetch_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
+#define my_compare_valid(typ, op) \
+  (fi_compare_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
+
+  // For integral types, all operations matter.
+  if (ofiType == FI_INT32
+      || ofiType == FI_UINT32
+      || ofiType == FI_INT64
+      || ofiType == FI_UINT64) {
+    return (   my_valid(ofiType, FI_SUM)
+            && my_valid(ofiType, FI_BOR)
+            && my_valid(ofiType, FI_BAND)
+            && my_valid(ofiType, FI_BXOR)
+            && my_valid(ofiType, FI_ATOMIC_WRITE)
+            && my_fetch_valid(ofiType, FI_SUM)
+            && my_fetch_valid(ofiType, FI_BOR)
+            && my_fetch_valid(ofiType, FI_BAND)
+            && my_fetch_valid(ofiType, FI_BXOR)
+            && my_fetch_valid(ofiType, FI_ATOMIC_READ)
+            && my_fetch_valid(ofiType, FI_ATOMIC_WRITE)
+            && my_compare_valid(ofiType, FI_CSWAP));
+  }
+
+  //
+  // For real types, only sum, read, write, and cswap matter.
+  //
+  return (   my_valid(ofiType, FI_SUM)
+          && my_valid(ofiType, FI_ATOMIC_WRITE)
+          && my_fetch_valid(ofiType, FI_SUM)
+          && my_fetch_valid(ofiType, FI_ATOMIC_READ)
+          && my_fetch_valid(ofiType, FI_ATOMIC_WRITE)
+          && my_compare_valid(ofiType, FI_CSWAP));
+
+#undef my_valid
+#undef my_fetch_valid
+#undef my_compare_valid
+}
+
+
+static
+int isAtomicValid(enum fi_datatype ofiType) {
+  static chpl_bool inited = false;
+  static int validByType[FI_DATATYPE_LAST];
+
+  if (!inited) {
+    validByType[FI_INT32]  = computeAtomicValid(FI_INT32);
+    validByType[FI_UINT32] = computeAtomicValid(FI_UINT32);
+    validByType[FI_INT32]  = computeAtomicValid(FI_INT64);
+    validByType[FI_UINT64] = computeAtomicValid(FI_UINT64);
+    validByType[FI_FLOAT]  = computeAtomicValid(FI_FLOAT);
+    validByType[FI_DOUBLE] = computeAtomicValid(FI_DOUBLE);
+    inited = true;
+  }
+
+  return validByType[ofiType];
+}
+
 
 static inline
 void doAMO(c_nodeid_t node, void* object,
@@ -2928,49 +3070,29 @@ void doAMO(c_nodeid_t node, void* object,
   }
 
   uint64_t mrKey;
-  if (mrGetKey(&mrKey, node, object, size) == 0) {
-    struct perTxCtxInfo_t* tcip = NULL;
+  if (isAtomicValid(ofiType)
+      && mrGetKey(&mrKey, node, object, size) == 0) {
+    //
+    // The type is supported for network atomics and the object address
+    // is remotely accessible.  Do the AMO natively.
+    //
+    struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
-
-    int ofiCanDo;
-    size_t count;
-    if (ofiOp == FI_CSWAP) {
-      ofiCanDo = fi_compare_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count);
-    } else {
-      CHK_TRUE(operand2 == NULL);
-      if (result == NULL) {
-        ofiCanDo = fi_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count);
-      } else {
-        ofiCanDo = fi_fetch_atomicvalid(tcip->txCtx, ofiType, ofiOp, &count);
-      }
-    }
-    
-    if (ofiCanDo == 0 && count > 0) {
-      //
-      // The object address is remotely-accessible and the atomic op
-      // and type are supported in the network.  Do the AMO natively.
-      //
-      ofi_amo(tcip, node, object, mrKey, operand1, operand2, result,
-              ofiOp, ofiType, size);
-      tciFree(tcip);
-      return;
-    }
-
+    ofi_amo(tcip, node, object, mrKey, operand1, operand2, result,
+            ofiOp, ofiType, size);
     tciFree(tcip);
+  } else {
+    //
+    // We can't do the AMO on the network, so do it on the CPU.  If the
+    // object is on this node do it directly; otherwise, use an AM.
+    //
+    if (node == chpl_nodeID) {
+      doCpuAMO(object, operand1, operand2, result, ofiOp, ofiType, size);
+    } else {
+      amRequestAMO(node, object, operand1, operand2, result,
+                   ofiOp, ofiType, size);
+    }
   }
-
-  //
-  // We can't do the AMO on the network, so we're going to do it on
-  // the CPU.  If the object is on our own node do that directly;
-  // otherwise, send an AM to do it.
-  //
-  if (node == chpl_nodeID) {
-    doCpuAMO(object, operand1, operand2, result, ofiOp, ofiType, size);
-    return;
-  }
-
-  amRequestAMO(node, object, operand1, operand2, result,
-               ofiOp, ofiType, size);
 }
 
 

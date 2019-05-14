@@ -12,6 +12,8 @@ it is pretty straightforward. A better solution might be to use six or future.
 
 import subprocess
 import sys
+import os
+import errno
 
 def instance_or_none(val, val_type):
     return val is None or isinstance(val, val_type)
@@ -67,3 +69,15 @@ class Py3CompatPopen(object):
 def Popen(*args, **kwargs):
     p = subprocess.Popen(*args, **kwargs)
     return Py3CompatPopen(p)
+
+def makedirs(path, mode=0o777, exist_ok=False):
+    if sys.version_info[0] >= 3:
+        os.makedirs(path, mode, exist_ok)
+    else:
+        try:
+            os.makedirs(path, mode)
+        except OSError as e:
+            if exist_ok and e.errno == errno.EEXIST:
+                pass # Ignore directory already existing error
+            else:
+                raise

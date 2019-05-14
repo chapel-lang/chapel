@@ -261,12 +261,14 @@ void AggregateType::codegenDef() {
     TypeSymbol* base = getField(1)->type->symbol;
     const char* baseType = base->cname;
     if( outfile ) {
-      fprintf(outfile, "typedef %s *%s;\n", baseType, symbol->cname);
+      if (base->typeInfo() != dtNothing) {
+        fprintf(outfile, "typedef %s *%s;\n", baseType, symbol->cname);
+      }
       return;
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* llBaseType;
-      if( base->typeInfo() == dtVoid ) {
+      if( base->typeInfo() == dtNothing ) {
         llBaseType = llvm::IntegerType::getInt8Ty(info->module->getContext());
       } else {
         llBaseType = base->codegen().type;
@@ -283,7 +285,7 @@ void AggregateType::codegenDef() {
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* llBaseType;
-      if( base->typeInfo() == dtVoid ) {
+      if( base->typeInfo() == dtNothing ) {
         llBaseType = llvm::IntegerType::getInt8Ty(info->module->getContext());
       } else {
         llBaseType = base->codegen().type;

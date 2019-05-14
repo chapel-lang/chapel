@@ -258,6 +258,94 @@ void chpl_launcher_record_env_var(const char* evName, const char *evVal) {
 
 
 //
+// If the user wants us to run each program instance in its own
+// debugger window, this returns the argc/argv fragment that
+// supports that.
+//
+// Note: the user may have to go to some effort in support of making
+//       this work, particularly to allow a system-launched xterm
+//       running in the target program environment to open its window
+//       in the launch environment.
+//
+static
+void get_debugger_wrapper(int* argc, char*** argv) {
+  *argc = 0;
+  *argv = NULL;
+
+  const int use_gdb = (getenv("CHPL_COMM_USE_GDB") != NULL);
+  const int use_lldb = (getenv("CHPL_COMM_USE_LLDB2") != NULL);
+  if (!use_gdb && !use_lldb) {
+    return;
+  }
+
+  //
+  // Determine the terminal emulator to use.
+  //
+  const char* dbg_term = getenv("CHPL_COMM_DBG_TERM");
+  if (dbg_term == NULL) {
+    dbg_term = "xterm";
+  } else if (strcmp(dbg_term, "xterm") != 0 &&
+             strcmp(dbg_term, "urxvt") != 0) {
+    //
+    // We're currently limiting to xterm and urxvt because of lack of
+    // testing/interest. Most other terminal emulators seem to support the
+    // -e flag, but there are some (like tilda) that uses different flags
+    // (-c for tilda). Ideally, there should be a lookup table for those
+    // flags if there is interest in adding support for more terminal
+    // emulators.
+    //
+    chpl_warning("CHPL_COMM_DBG_TERM can only be set to xterm or urxvt; "
+                 "using xterm",
+                 0, 0);
+    dbg_term = "xterm";
+  }
+
+  // hopefully big enough; PATH_MAX is problematic, but what's better?  
+  const size_t term_path_size = PATH_MAX;
+  char *term_path = chpl_mem_alloc(term_path_size,
+                                   CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+
+  static char cmd[16] = "";
+  snprintf(cmd, sizeof(cmd), "which %s", dbg_term);
+  if (chpl_run_cmdstr(cmd, term_path, term_path_size) <= 0) {
+    static char err_msg[128] = "";
+    snprintf(err_msg, sizeof(err_msg), 
+             "CHPL_COMM_USE_(G|LL)DB ignored because no %s", dbg_term);
+    chpl_warning(err_msg, 0, 0);
+    return;
+  }
+
+  char** largv = NULL;
+  int largv_size = 0;
+  int largc = 0;
+#define ADD_LARGV(s)                                                    \
+  do {                                                                  \
+    if (largc >= largv_size) {                                          \
+      largv_size += 10;                                                 \
+      largv = chpl_mem_realloc(largv, largv_size * sizeof(*largv),      \
+                               CHPL_RT_MD_COMMAND_BUFFER, -1, 0);       \
+    }                                                                   \
+    largv[largc++] = (char*) (s);                                       \
+  } while (0)
+
+  ADD_LARGV(term_path);
+  ADD_LARGV("-e");
+  if (use_gdb) {
+    ADD_LARGV("gdb");
+    ADD_LARGV("--args");
+  } else {
+    ADD_LARGV("lldb");
+    ADD_LARGV("--");
+  }
+
+#undef ADD_LARGV
+
+  *argc = largc;
+  *argv = largv;
+}
+
+
+//
 // This function returns a NULL terminated argv list as required by
 // chpl_launch_using_exec(), i.e., execve(3).
 //
@@ -266,7 +354,13 @@ void chpl_launcher_record_env_var(const char* evName, const char *evVal) {
 //
 char** chpl_bundle_exec_args(int argc, char *const argv[],
                               int largc, char *const largv[]) {
-  int len = argc+largc+2;
+  int dbg_argc = 0;
+  char** dbg_argv = NULL;
+  if (argc > 0) {
+    get_debugger_wrapper(&dbg_argc, &dbg_argv);
+  }
+
+  int len = argc + dbg_argc + largc + 2;
   int newargc = 0;
   char **newargv = chpl_mem_allocMany(len, sizeof(char*),
                                       CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
@@ -282,13 +376,20 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
     memcpy(newargv, largv, largc*sizeof(char *));
     newargc = largc;
   }
+
   if (argc > 0) {
     // if there is a wrapper, add it after the launcher args
     if (strcmp(chpl_get_real_binary_wrapper(), "") != 0) {
       newargv[newargc++] = (char *) chpl_get_real_binary_wrapper();
     }
 
-    // add the _real binary (after launchers args or wrapper)
+    // add any debugger wrapper
+    if (dbg_argc > 0) {
+      memcpy(&newargv[newargc], dbg_argv, dbg_argc * sizeof(newargv[0]));
+      newargc += dbg_argc;
+    }
+
+    // add the _real binary (after launchers args and/or wrappers)
     chpl_compute_real_binary_name(argv[0]);
     newargv[newargc++] = (char *) chpl_get_real_binary_name();
     if (argc > 1) {

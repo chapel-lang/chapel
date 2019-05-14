@@ -34,8 +34,8 @@ writeln("Example 2: B after B[3..8]=A[2..7]: ",B);
 
 
 const CDom : domain(2) dmapped RDist=R;
-var C : [CDom] int= 1..;
-var D : [CDom] int=500..;
+var C : [CDom] int=[(i,j) in CDom] (i-1)*n + j;
+var D : [CDom] int=[(i,j) in CDom] (i-1)*n + j + 499;
 C[1..n by 20,1..n]=D[1..n by 20,1..n];
 
 writeln("C: ", C);

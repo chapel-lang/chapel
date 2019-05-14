@@ -732,6 +732,7 @@ extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
 extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
 extern Symbol *gVoid;
+extern Symbol *gNone;
 extern Symbol *gStringC;
 extern Symbol *gOpaque;
 extern Symbol *gTimer;
@@ -797,5 +798,7 @@ void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage
 
 void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
+
+const char* toString(ArgSymbol* arg);
 
 #endif

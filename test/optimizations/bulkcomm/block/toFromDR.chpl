@@ -1,9 +1,17 @@
 use util;
 use BlockDist;
+use StencilDist;
 
 config const n = 60;
 
 config const debug = false;
+
+config param distType = DistType.block;
+
+enum DistType {
+  block,
+  stencil
+}
 
 proc printDebug(msg: string...) {
   if debug then writeln((...msg));
@@ -30,9 +38,26 @@ proc buildRankChange(Dom : domain, param first : bool) {
   }
 }
 
-proc testCore(DestDom : domain, SrcDom  : domain, param destBlock : bool) {
-  const AD = if destBlock then DestDom dmapped Block(DestDom) else DestDom;
-  const BD = if !destBlock then SrcDom dmapped Block(SrcDom) else SrcDom;
+proc makeFluff(param rank : int, val : int) {
+  var ret : rank*int;
+  for i in 1..rank do ret(i) = val;
+  return ret;
+}
+
+proc selectDomain(param useDist : bool, Dom : domain) {
+  if useDist {
+    if distType == DistType.block then
+      return Dom dmapped Block(Dom);
+    else if distType == DistType.stencil then
+      return Dom dmapped Stencil(Dom, fluff=makeFluff(Dom.rank, 1));
+  } else {
+    return Dom;
+  }
+}
+
+proc testCore(DestDom : domain, SrcDom  : domain, param useDist : bool) {
+  const AD = selectDomain(useDist, DestDom);
+  const BD = selectDomain(!useDist, SrcDom);
 
   var A : [AD] int;
   var B : [BD] int;
@@ -81,7 +106,7 @@ proc testCore(DestDom : domain, SrcDom  : domain, param destBlock : bool) {
   }
 }
 
-proc testDim(param rank : int, param destBlock : bool) {
+proc testDim(param rank : int, param useDist : bool) {
   printDebug("  ----- rank=", rank:string, " -----");
   var denseRanges : rank*range;
   for i in 1..rank do denseRanges(i) = 1..n;
@@ -93,18 +118,18 @@ proc testDim(param rank : int, param destBlock : bool) {
   const Strided = {(...stridedRanges)};
 
   printDebug("    ##### Dense <-- Dense #####");
-  testCore(Dense, Dense, destBlock);
+  testCore(Dense, Dense, useDist);
 
   printDebug("    ##### Dense <-- Strided #####");
-  testCore(Dense, Strided, destBlock);
+  testCore(Dense, Strided, useDist);
   printDebug("    ##### Strided <-- Dense #####");
-  testCore(Strided, Dense, destBlock);
+  testCore(Strided, Dense, useDist);
 }
 
-proc testDists(param destBlock : bool) {
-  testDim(1, destBlock);
-  testDim(2, destBlock);
-  testDim(3, destBlock);
+proc testDists(param useDist : bool) {
+  testDim(1, useDist);
+  testDim(2, useDist);
+  testDim(3, useDist);
 }
 
 proc main() {

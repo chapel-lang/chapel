@@ -22,12 +22,12 @@
 #include "AstVisitorTraverse.h"
 #include "bb.h"
 #include "bitVec.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "ForallStmt.h"
 #include "loopDetails.h"
-#include "UnmanagedClassType.h"
 #include "stlUtil.h"
 #include "symbol.h"
 #include "view.h"
@@ -207,7 +207,7 @@ static bool isCheckedClassMethodCall(CallExpr* call) {
       // Note that .borrow is available on borrows and unmanaged.
       retval = false;
 
-    } else if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
+    } else if (AggregateType* ct = toAggregateType(fn->_this->getValType())) {
       if (fn->numFormals()             >  0 &&
           fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
         if (isClassLike(ct)) {

@@ -23,10 +23,10 @@ proc R.init(x:int) {
   this.ptr = new unmanaged Instance(x);
 }
 
-proc R.init(from: R) {
+proc R.init=(from: R) {
   this.x = from.x + 1;
   this.ptr = new unmanaged Instance(this.x);
-  writeln("    R.init(R)"); // ie copy-init
+  writeln("    R.init=(R)"); // ie copy-init
 }
 
 proc R.deinit() {

@@ -1,2 +1,3 @@
 undefinedfn2.chpl:1: In function 'main':
 undefinedfn2.chpl:3: error: unresolved call 'foo(int(64))'
+undefinedfn2.chpl:3: note: because no functions named foo found in scope

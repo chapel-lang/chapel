@@ -113,6 +113,9 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
   if (isSymExpr(expr))
     return 0;
 
+  if (ret == gNone)
+    return 1;
+
   if (CallExpr* call = toCallExpr(expr))
   {
     if (call->isResolved() &&
@@ -164,8 +167,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
     return 0;
   }
 
-  if (CondStmt* cond = toCondStmt(expr))
-  {
+  if (CondStmt* cond = toCondStmt(expr)) {
     return std::min(isDefinedAllPaths(cond->thenStmt, ret, refs),
                     isDefinedAllPaths(cond->elseStmt, ret, refs));
   }
@@ -193,18 +195,16 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
   if (BlockStmt* block = toBlockStmt(expr))
   {
     // NOAKES 2014/11/25 Transitional.  Ensure we don't call blockInfoGet()
-    if (block->isWhileDoStmt()  == true ||
-        block->isForLoop()      == true ||
-        block->isCForLoop()     == true ||
-        block->isParamForLoop() == true)
+    if (block->isWhileDoStmt() ||
+        block->isForLoop()     ||
+        block->isCForLoop()    ||
+        block->isParamForLoop())
     {
       return 0;
     }
-
-    else if (block->isDoWhileStmt() == true ||
-             block->blockInfoGet()  == NULL ||
-             block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
-    {
+    else if (block->isDoWhileStmt()        ||
+             block->blockInfoGet() == NULL ||
+             block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
       int result = 0;
 
       for_alist(e, block->body)
@@ -212,7 +212,6 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 
       return result;
     }
-
     else
     {
       return 0;

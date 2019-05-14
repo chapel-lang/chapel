@@ -48,11 +48,11 @@ static child type could end up calling something in the parent.
 #include "astutil.h"
 #include "baseAST.h"
 #include "callInfo.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "iterator.h"
-#include "UnmanagedClassType.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stmt.h"
@@ -506,7 +506,7 @@ static bool isSubType(Type* sub, Type* super) {
   if (sub == super) {
     retval = true;
 
-  } else if (isAggregateType(sub) || isUnmanagedClassType(sub)) {
+  } else if (isAggregateType(sub) || isDecoratedClassType(sub)) {
     AggregateType* subAt = toAggregateType(sub);
     Type* useSuper = super;
     if (classesWithSameKind(sub, super)) {

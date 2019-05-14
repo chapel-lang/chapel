@@ -33,7 +33,7 @@ static IntentTag constIntentForType(Type* t) {
       is_complex_type(t) ||
       is_enum_type(t) ||
       isClass(t) ||
-      isUnmanagedClassType(t) ||
+      isDecoratedClassType(t) ||
       isUnion(t) ||
       t == dtOpaque ||
       t == dtTaskID ||
@@ -42,6 +42,7 @@ static IntentTag constIntentForType(Type* t) {
       t == dtStringC ||
       t == dtCVoidPtr ||
       t == dtCFnPtr ||
+      t == dtNothing ||
       t == dtVoid ||
       t->symbol->hasFlag(FLAG_RANGE) ||
       isManagedPtrType(t) ||
@@ -109,15 +110,16 @@ IntentTag blankIntentForType(Type* t) {
              t == dtCVoidPtr                         ||
              t == dtCFnPtr                           ||
              isClass(t)                              ||
-             isUnmanagedClassType(t)                 ||
+             isDecoratedClassType(t)                 ||
              isRecord(t)                             ||
              // Note: isRecord(t) includes range (FLAG_RANGE)
              isUnion(t)                              ||
              t == dtTaskID                           ||
              t == dtFile                             ||
              t == dtNil                              ||
-             t == dtOpaque                           ||
              t == dtVoid                             ||
+             t == dtOpaque                           ||
+             t == dtNothing                          ||
              t->symbol->hasFlag(FLAG_DOMAIN)         ||
              t->symbol->hasFlag(FLAG_DISTRIBUTION)   ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
@@ -246,7 +248,7 @@ void resolveArgIntent(ArgSymbol* arg) {
   if (!resolved) {
     if (arg->type == dtMethodToken ||
         arg->type == dtTypeDefaultToken ||
-        arg->type == dtVoid ||
+        arg->type == dtNothing ||
         arg->type == dtUnknown ||
         arg->hasFlag(FLAG_TYPE_VARIABLE) ||
         arg->hasFlag(FLAG_PARAM)) {

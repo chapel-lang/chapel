@@ -21,8 +21,8 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "DecoratedClassType.h"
 #include "expr.h"
-#include "UnmanagedClassType.h"
 #include "preFold.h"
 #include "resolution.h"
 #include "stringutil.h"
@@ -128,7 +128,7 @@ static Expr* postFoldNormal(CallExpr* call) {
   FnSymbol* fn     = call->resolvedFunction();
   Expr*     retval = call;
 
-  if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM) == true) {
+  if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
     VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
 
     if (ret != NULL && ret->immediate != NULL) {
@@ -142,8 +142,7 @@ static Expr* postFoldNormal(CallExpr* call) {
       call->replace(retval);
 
     } else if (ret == gVoid) {
-      retval = new SymExpr(gVoid);
-
+      retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
     }
   }
@@ -475,7 +474,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     const char* str = NULL;
 
     if (get_string(arg, &str)) {
-      processStringInRequireStmt(str, false);
+      processStringInRequireStmt(str, false, call->astloc.filename);
 
     } else {
       USR_FATAL(call, "'require' statements require string arguments");

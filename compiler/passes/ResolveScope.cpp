@@ -164,6 +164,7 @@ ResolveScope::ResolveScope(BaseAST*            ast,
 ************************************** | *************************************/
 
 void ResolveScope::addBuiltIns() {
+  extend(dtNothing->symbol);
   extend(dtVoid->symbol);
   extend(dtStringC->symbol);
 
@@ -179,6 +180,7 @@ void ResolveScope::addBuiltIns() {
   extend(dtValue->symbol);
 
   extend(gUnknown);
+  extend(gNone);
   extend(gVoid);
 
   extend(dtBools[BOOL_SIZE_SYS]->symbol);

@@ -24,9 +24,9 @@
 
    This module provides an unordered version of copy/assign for ``numeric``
    types. The results from this function are not visible until task or forall
-   termination or an explicit :proc:`unorderedCopyFence()`, but it can provide
-   a significant speedup for bulk assignment operations that do not require
-   ordering of operations:
+   termination or an explicit :proc:`unorderedCopyTaskFence()`, but it can
+   provide a significant speedup for bulk assignment operations that do not
+   require ordering of operations:
 
    .. code-block:: chapel
 
@@ -48,7 +48,7 @@
 
    It's important to be aware that unordered operations are not consistent with
    regular operations and updates may not be visible until the task or forall
-   that issued them terminates or an explicit :proc:`unorderedCopyFence()`.
+   that issued them terminates or an explicit :proc:`unorderedCopyTaskFence()`.
 
    .. code-block:: chapel
 
@@ -57,7 +57,7 @@
        var b = 1;
        unorderedCopy(b, a);
        writeln(b);        // can print 0 or 1
-       unorderedCopyFence();
+       unorderedCopyTaskFence();
        writeln(b);        // must print 0
      }
 
@@ -94,15 +94,26 @@ module UnorderedCopy {
   }
 
   /*
-     Fence any pending unordered copies. Note that this is a global fence
-     across all locales.
+     Fence any pending unordered copies issued by the current task.
    */
-  inline proc unorderedCopyFence(): void {
+  inline proc unorderedCopyTaskFence(): void {
     if CHPL_COMM == 'ugni' {
-      extern proc chpl_comm_get_unordered_fence();
-      coforall loc in Locales do on loc {
-        chpl_comm_get_unordered_fence();
-      }
+      extern proc chpl_comm_get_unordered_task_fence();
+      chpl_comm_get_unordered_task_fence();
     }
+  }
+
+  /*
+   .. warning::
+     This function has been deprecated - please use
+     :proc:`unorderedCopyTaskFence()` instead. Note that this function has
+     been deprecated without a full release of support because the previous
+     global fence semantics imposed expensive implementation requirements and
+     is not expected to be needed now that operations are implicitly fenced at
+     task/forall termination.
+  */
+  inline proc unorderedCopyFence(): void {
+    compilerError("unorderedCopyFence() is no longer supported - please use unorderedCopyTaskFence() instead");
+    unorderedCopyTaskFence();
   }
 }

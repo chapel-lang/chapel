@@ -181,7 +181,7 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
   size_t nameLen = strlen(name);
   char* parent = (char* ) chpl_mem_allocMany(nameLen + 4, sizeof(char), CHPL_RT_MD_OS_LAYER_TMP_DATA, 0, 0);
   char* safeNameCopy = (char* ) chpl_mem_allocMany(nameLen + 1, sizeof(char), CHPL_RT_MD_OS_LAYER_TMP_DATA, 0, 0);
-  strncpy(safeNameCopy, name, nameLen + 1);
+  strcpy(safeNameCopy, name);
   // Need to copy name so that we can use it in the case of links
 
   err = chpl_fs_is_link(&exitStatus, name);
@@ -214,14 +214,14 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
       // name includes a path longer than just the current symlink.
       // Thus, we should copy up to (but not including) the basename of the
       // path.
-      strncpy(parent, curTok, strlen(curTok) + 1);
+      strcpy(parent, curTok);
       curTok = nextTok;
       nextTok = strtok(NULL, "/");
       while (nextTok != NULL) {
         // While we haven't found the end of the path (in nextTok)
-        strncat(parent, "/", 1);
+        strcat(parent, "/");
         // Restore the lost path separator.
-        strncat(parent, curTok, strlen(curTok) + 1);
+        strcat(parent, curTok);
         // Add the current token to the parent list
         curTok = nextTok;
         // And prepare to check if the next token is the last in the path
@@ -230,12 +230,12 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
     } else {
       // name was merely the current symlink rather than a longer path.
       // That means its parent is "." or the current directory.
-      strncpy(parent, ".", 2);
+      strcpy(parent, ".");
     }
   } else {
     // We are not referring to a link, so concatenating "/.." is fine.
-    strncpy(parent, name, nameLen + 1);
-    strncat(parent, "/..", 3);
+    strcpy(parent, name);
+    strcat(parent, "/..");
     // TODO: Using "/" is not necessarily portable, look into this
   }
 

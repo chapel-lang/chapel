@@ -1,2 +1,4 @@
-queryClassArgGenerics-bad.chpl:15: error: unresolved call 'foo(C(int(64),2), C(int(64),3))'
-queryClassArgGenerics-bad.chpl:6: note: candidates are: foo(x: borrowed C(t = ?tt, r = ?rr), y: borrowed C(tt, rr))
+queryClassArgGenerics-bad.chpl:15: error: unresolved call 'foo(borrowed C(int(64),2), borrowed C(int(64),3))'
+queryClassArgGenerics-bad.chpl:6: note: this candidate did not match: foo(x: borrowed C(t = ?tt, r = ?rr), y: borrowed C(tt, rr))
+queryClassArgGenerics-bad.chpl:15: note: because call actual argument #2 with type borrowed C(int(64),3)
+queryClassArgGenerics-bad.chpl:7: note: is passed to formal 'y: borrowed C(int(64),2)'

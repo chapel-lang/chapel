@@ -10,10 +10,10 @@ record R {
     writeln("R.init()");
   }
 
-  proc init(other:R) {
+  proc init=(other:R) {
     resource += 1;
     this.x = 1;
-    writeln("R.init(R): ", x);
+    writeln("R.init=(R): ", x);
   }
 
   proc deinit() {

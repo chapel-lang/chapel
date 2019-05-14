@@ -25,6 +25,7 @@ AST_SRCS =                                          \
            CatchStmt.cpp                            \
            CallExpr.cpp                             \
            checkAST.cpp                             \
+           DecoratedClassType.cpp                   \
            DeferStmt.cpp                            \
            dominator.cpp                            \
            expr.cpp                                 \
@@ -42,7 +43,6 @@ AST_SRCS =                                          \
            symbol.cpp                               \
            TryStmt.cpp                              \
            type.cpp                                 \
-           UnmanagedClassType.cpp                   \
            UseStmt.cpp                              \
            view.cpp                                 \
            wellknown.cpp                            \

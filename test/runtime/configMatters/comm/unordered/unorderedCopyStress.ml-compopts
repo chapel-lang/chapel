@@ -1,3 +1,3 @@
--suseUnorderedCopy=false                      # ordered-many-to-many
--suseUnorderedCopy=false -soversubscription=4 # ordered-oversub-many-to-many
--soversubscription=true                       # unordered-many-to-many
+-suseUnorderedCopy=false --no-optimize-forall-unordered-ops                      # ordered-many-to-many
+-suseUnorderedCopy=false --no-optimize-forall-unordered-ops -soversubscription=4 # ordered-oversub-many-to-many
+-suseUnorderedCopy=true  --no-optimize-forall-unordered-ops                      # unordered-many-to-many

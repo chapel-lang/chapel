@@ -1,1 +1,2 @@
 checkUsePathBadFunctionAccess.chpl:3: error: unresolved call 'f2()'
+checkUsePathBadFunctionAccess.chpl:3: note: because no functions named f2 found in scope
