@@ -1,4 +1,4 @@
 T = '(1, 2.0, 3)'
 T.type = (int(64),real(64),string)
 F = ''
-F.type = void
+F.type = nothing
