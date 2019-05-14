@@ -214,7 +214,7 @@ module ChapelIO {
     proc isIoField(x, param i) param {
       if isType(__primitive("field by num", x, i)) ||
          isParam(__primitive("field by num", x, i)) ||
-         __primitive("field by num", x, i).type == void {
+         __primitive("field by num", x, i).type == nothing {
         // I/O should ignore type or param fields
         return false;
       } else {
@@ -728,7 +728,7 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  proc void.writeThis(f) {
+  proc nothing.writeThis(f) {
   }
 
   //

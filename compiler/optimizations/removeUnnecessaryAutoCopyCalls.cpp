@@ -34,8 +34,8 @@ static void removePODinitDestroy()
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_INIT_COPY_FN) || fn->hasFlag(FLAG_AUTO_COPY_FN))
     {
-      if (fn->retType == dtVoid)
-        // initCopy(void) and autoCopy(void) will have had their void
+      if (fn->retType == dtNothing)
+        // initCopy(none) and autoCopy(none) will have had their nothing
         // argument removed
         continue;
 

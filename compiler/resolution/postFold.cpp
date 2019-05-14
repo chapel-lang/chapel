@@ -128,7 +128,7 @@ static Expr* postFoldNormal(CallExpr* call) {
   FnSymbol* fn     = call->resolvedFunction();
   Expr*     retval = call;
 
-  if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM) == true) {
+  if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
     VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
 
     if (ret != NULL && ret->immediate != NULL) {
@@ -142,8 +142,7 @@ static Expr* postFoldNormal(CallExpr* call) {
       call->replace(retval);
 
     } else if (ret == gVoid) {
-      retval = new SymExpr(gVoid);
-
+      retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
     }
   }

@@ -931,7 +931,7 @@ static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types)
         isAggregateType(def->sym->type)  ==  true &&
         isTypeSymbol(def->sym)           == false &&
         !types.set_in(def->sym->type->symbol))
-      def->sym->type = dtVoid;
+      def->sym->type = dtNothing;
   }
 }
 
@@ -944,7 +944,7 @@ static void removeVoidMoves()
       continue;
 
     SymExpr* se = toSymExpr(call->get(1));
-    if (se->symbol()->type != dtVoid)
+    if (se->symbol()->type != dtNothing)
       continue;
 
     // the RHS of the move could be a function with side effects.

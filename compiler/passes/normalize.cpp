@@ -746,7 +746,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
         Type* type = var->typeInfo();
 
         // All variables of type 'void' are treated as defined.
-        if (type == dtVoid) {
+        if (type == dtNothing) {
           retval = var;
 
         // records with initializers are defined
@@ -1167,13 +1167,12 @@ static void normalizeReturns(FnSymbol* fn) {
   collectMyCallExprs(fn, calls, fn);
 
   for_vector(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_RETURN) == true &&
-        isInLifetimeClause(call) == false) {
+    if (call->isPrimitive(PRIM_RETURN) && !isInLifetimeClause(call)) {
       rets.push_back(call);
 
       theRet = call;
 
-      if (isVoidReturn(call) == true) {
+      if (isVoidReturn(call)) {
         numVoidReturns++;
       }
     }
@@ -1191,8 +1190,18 @@ static void normalizeReturns(FnSymbol* fn) {
     }
   }
 
+  bool retExprIsVoid = false;
+  if (fn->retExprType) {
+    if (SymExpr* retExpr = toSymExpr(fn->retExprType->body.only())) {
+      if (retExpr->symbol() == gVoid) {
+        retExprIsVoid = true;
+      }
+    }
+  }
+
   // Add a void return if needed.
-  if (isIterator == false && rets.size() == 0 && fn->retExprType == NULL) {
+  if (isIterator == false && rets.size() == 0 &&
+      (fn->retExprType == NULL || retExprIsVoid)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
   }
@@ -1352,9 +1361,9 @@ static void normalizeYields(FnSymbol* fn) {
 static bool isVoidReturn(CallExpr* call) {
   bool retval = false;
 
-  if (call->isPrimitive(PRIM_RETURN) == true) {
+  if (call->isPrimitive(PRIM_RETURN)) {
     if (SymExpr* arg = toSymExpr(call->get(1))) {
-      retval = (arg->symbol() == gVoid) ? true : false;
+      retval = arg->symbol() == gVoid;
     }
   }
 

@@ -70,13 +70,13 @@ proc runTests(stream) {
     writeln('error: domain reference not maintained');
 }
 
-proc testArray(stream, arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void, trials=10000) throws {
+proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probType=none, trials=10000) throws {
   var countsDom: domain(arr.eltType);
   var counts: [countsDom] int;
 
   // Collect statistics
-  if isVoidType(probType) {
-    if isVoidType(sizeType) {
+  if isNothingType(probType) {
+    if isNothingType(sizeType) {
       for 1..trials {
         var c = stream.choice(arr, replace=replace);
         counts[c] += 1;
@@ -88,7 +88,7 @@ proc testArray(stream, arr: [], size:?sizeType=_void, replace=true, prob:?probTy
       }
     }
   } else {
-    if isVoidType(sizeType) {
+    if isNothingType(sizeType) {
       for 1..trials {
         var c = stream.choice(arr, prob=prob, replace=replace);
         counts[c] += 1;
@@ -114,14 +114,14 @@ proc testArray(stream, arr: [], size:?sizeType=_void, replace=true, prob:?probTy
   else if isIntegralType(sizeType) then m = size;
 
 
-  var actualRatios = if isVoidType(sizeType) then counts / trials:real
+  var actualRatios = if isNothingType(sizeType) then counts / trials:real
                      else counts / (trials*m): real;
 
 
 
   var ones: [arr.domain] real = 1;
 
-  var probabilities = if isVoidType(prob.type) then ones else prob;
+  var probabilities = if isNothingType(prob.type) then ones else prob;
 
   // Get expected ratios
   var uniqueValues: domain(arr.eltType);
@@ -145,8 +145,8 @@ proc testArray(stream, arr: [], size:?sizeType=_void, replace=true, prob:?probTy
       writeln('Failed with args:');
       write('choice(');
       write('[', arr, '], ');
-      if !isVoidType(prob.type) then write('prob = ', prob, ', ');
-      if !isVoidType(size.type) then writeln('size = ', size, ', ');
+      if !isNothingType(prob.type) then write('prob = ', prob, ', ');
+      if !isNothingType(size.type) then writeln('size = ', size, ', ');
       writeln('replace = ', replace, ');');
       for value in actualRatios.domain {
         writeln('value   expected   actual');

@@ -1,7 +1,7 @@
-enum NodeType { value, branch, none };
+enum NodeType { value, branch, noNode };
 
 class Node {
-  proc nodeType() : NodeType { return NodeType.none; }
+  proc nodeType() : NodeType { return NodeType.noNode; }
 }
 
 class ValueNode : Node {

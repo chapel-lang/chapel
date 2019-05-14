@@ -394,6 +394,7 @@ TYPE_EXTERN Type*             dtNumeric;
 TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;
 TYPE_EXTERN PrimitiveType*    dtVoid;
+TYPE_EXTERN PrimitiveType*    dtNothing;
 TYPE_EXTERN PrimitiveType*    dtValue;
 TYPE_EXTERN PrimitiveType*    dtBorrowed;
 TYPE_EXTERN PrimitiveType*    dtUnmanaged;
@@ -430,7 +431,7 @@ void     initPrimitiveTypes();
 void     initChplProgram(DefExpr* objectDef);
 void     initCompilerGlobals();
 
-bool is_void_type(Type*);
+bool is_nothing_type(Type*);
 bool is_bool_type(Type*);
 bool is_int_type(Type*);
 bool is_uint_type(Type*);
