@@ -2241,6 +2241,8 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     if (isManagedPtrType(valueType) && !isManagedPtrType(targetType) &&
         isClassLike(targetType)) {
 
+      SET_LINENO(call);
+
       VarSymbol* tmp = newTempConst("cast_tmp");
       CallExpr* c = new CallExpr("borrow", gMethodToken, valueSe->symbol());
       CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
