@@ -617,6 +617,7 @@ module ChapelBase {
   inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
 
   pragma "no borrow convert"
+  pragma "always propagate line file info"
   inline proc postfix!(x) {
     if isOwnedClassType(x.type) then
       compilerError("postfix ! cannot currently apply to owned");
@@ -625,7 +626,16 @@ module ChapelBase {
     if !isClassType(x.type) then
       compilerError("postfix ! can only apply to classes");
 
-    return __primitive("to non nilable class", x);
+    // Check only if --nil-checks is enabled
+    if chpl_checkNilDereferences {
+      // Add check for nilable types only.
+      if _to_nilable(x.type) == x.type {
+        if x == nil {
+          HaltWrappers.nilCheckHalt("argument to ! is nil");
+        }
+      }
+    }
+    return _to_nonnil(x);
   }
 
   //
@@ -1269,14 +1279,27 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyreal, x:enumerated)
     return x: int: real;
 
+  // casting to unmanaged?, no class downcast
+  inline proc _cast(type t:unmanaged?, x:borrowed?)
+    where isSubtype(_to_unmanaged(x.type),t)
+  {
+    return __primitive("cast", t, x);
+  }
+  // casting to unmanaged, no class downcast
+  inline proc _cast(type t:unmanaged, x:borrowed)
+    where isSubtype(_to_unmanaged(x.type),t)
+  {
+    return __primitive("cast", t, x);
+  }
+
   // casting away nilability, no class downcast
   inline proc _cast(type t:borrowed, x:borrowed?) throws
     where isSubtype(_to_nonnil(x.type),t)
   {
     if x == nil {
-      throw new owned NilDereferenceError();
+      throw new owned NilClassError();
     }
-    return __primitive("to non nilable class", x);
+    return __primitive("cast", t, x);
   }
 
   // casting away nilability, no class downcast
@@ -1284,54 +1307,65 @@ module ChapelBase {
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     if x == nil {
-      throw new owned NilDereferenceError();
+      throw new owned NilClassError();
     }
-    return _to_nonnil(x);
+    return __primitive("cast", t, x);
   }
 
   // dynamic cast handles class casting based upon runtime class type
   // this also might be called a downcast
-  // this version handles casting to borrowed
-  inline proc _cast(type t:borrowed, x:borrowed) throws
-    where isSubtype(t,x.type) && (x.type != t)
+  // this version handles casting to non-nil borrowed
+  inline proc _cast(type t:borrowed, x:borrowed?) throws
+    where isSubtype(t,_to_nonnil(x.type)) && (_to_nonnil(x.type) != t)
   {
-    var tmp:_to_nilable(t) = __primitive("dynamic_cast", t, x);
+    if x == nil {
+      throw new owned NilClassError();
+    }
+    var tmp = __primitive("dynamic_cast", t, x);
     if tmp == nil {
       throw new owned ClassCastError();
     }
 
-    return _to_nonnil(tmp);
+    return _to_nonnil(_to_borrowed(tmp));
   }
 
+  // this version handles casting to nilable borrowed
   inline proc _cast(type t:borrowed?, x:borrowed?)
     where isSubtype(t,x.type) && (x.type != t)
   {
     if x == nil {
       return nil;
     }
-    return __primitive("dynamic_cast", t, x);
+    var tmp = __primitive("dynamic_cast", t, x);
+    return _to_nilable(_to_borrowed(tmp));
   }
 
 
-  // this version handles casting to unmanaged
-  inline proc _cast(type t:unmanaged, x:borrowed) throws
-    where isSubtype(_to_borrowed(t),x.type) && (x.type != _to_borrowed(t))
+  // this version handles casting to non-nil unmanaged
+  inline proc _cast(type t:unmanaged, x:borrowed?) throws
+    where isSubtype(t,_to_nonnil(_to_unmanaged(x.type))) &&
+          (_to_nonnil(_to_unmanaged(x.type)) != t)
   {
-    var tmp:_to_nilable(t) = __primitive("dynamic_cast", t, x);
+    if x == nil {
+      throw new owned NilClassError();
+    }
+    var tmp = __primitive("dynamic_cast", t, x);
     if tmp == nil {
       throw new owned ClassCastError();
     }
 
-    return _to_nonnil(tmp);
+    return _to_nonnil(_to_unmanaged(tmp));
   }
 
+  // this version handles casting to nilable unmanaged
   inline proc _cast(type t:unmanaged?, x:borrowed?)
-    where isSubtype(_to_borrowed(t),x.type) && (x.type != _to_borrowed(t))
+    where isSubtype(t,_to_unmanaged(x.type)) && (_to_unmanaged(x.type) != t)
   {
     if x == nil {
       return nil;
     }
-    return __primitive("dynamic_cast", t, x);
+    var tmp = __primitive("dynamic_cast", t, x);
+    return _to_nilable(_to_unmanaged(tmp));
   }
 
 

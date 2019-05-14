@@ -72,17 +72,17 @@ module ChapelError {
     }
   }
 
-  class NilDereferenceError : Error {
+  class NilClassError : Error {
     pragma "no doc"
     override proc message() {
-      return "nil dereference";
+      return "cannot convert nil class to non nilable type";
     }
   }
 
   class ClassCastError : Error {
     pragma "no doc"
     override proc message() {
-      return "runtime types not compatible";
+      return "cannot cast class to type - runtime types not compatible";
     }
   }
 
