@@ -62,24 +62,24 @@ module DataFrames {
     }
 
     iter these(type idxType) {
-      var _typed = this: TypedIndex(idxType);
+      var _typed = this: TypedIndex(idxType)?;
       if _typed == nil then halt("Unable to cast Index to type " + idxType:string);
 
-      for i in _typed do yield i;
+      for i in _typed! do yield i;
     }
 
     iter items(type idxType) {
-      var _typed = this: TypedIndex(idxType);
+      var _typed = this: TypedIndex(idxType)?;
       if _typed == nil then halt("Unable to cast Index to type " + idxType:string);
 
-      for i in _typed.items() do yield i;
+      for i in _typed!.items() do yield i;
     }
 
     proc this(lab : ?idxType) ref : int {
-      var _typed = this: TypedIndex(idxType);
+      var _typed = this: TypedIndex(idxType)?;
       if _typed == nil then halt("Unable to cast Index to type " + idxType:string);
 
-      return _typed[lab];
+      return (_typed!)[lab];
     }
   }
 
@@ -283,10 +283,10 @@ module DataFrames {
 
     pragma "no doc"
     proc reindex(type eltType, idx : shared Index) {
-      var _typed = this: TypedSeries(eltType);
+      var _typed = this: TypedSeries(eltType)?;
       if _typed == nil then halt("Unable to cast generic index with type ", eltType:string);
 
-      _typed.reindex(idx);
+      _typed!.reindex(idx);
     }
 
     pragma "no doc"
@@ -515,13 +515,13 @@ module DataFrames {
 
     // TODO: filterSeries needs to be Owned
     proc this(filterSeries: ?T) : owned Series where isSubtype(T, Series) {
-      var castFilter = filterSeries: TypedSeries(bool);
+      var castFilter = filterSeries: TypedSeries(bool)?;
       if idx then
         return idx.filter(this, castFilter);
 
       // TODO: needs Series with Index(int) to remove items not in range
       var filter_data: [ords] eltType;
-      for (i, b) in castFilter.items() {
+      for (i, b) in castFilter!.items() {
         if b && i <= data.size then
           filter_data[i] = this.at(i);
       }
