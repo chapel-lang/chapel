@@ -2202,8 +2202,8 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 
   if (targetTypeSe && valueSe &&
       targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-    Type* targetType = targetTypeSe->symbol()->type;
-    Type* valueType = valueSe->symbol()->type;
+    Type* targetType = targetTypeSe->symbol()->getValType();
+    Type* valueType = valueSe->symbol()->getValType();
 
     bool promotes = false;
     bool paramNarrows = false;
