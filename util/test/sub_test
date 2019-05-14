@@ -229,8 +229,8 @@ def trim_output(output):
 
 
 # return True if f has .chpl extension
-def IsChplTest(f):
-    if re.match(r'^.+\.(chpl|test\.c)$', f):
+def hasTestableExtension(f):
+    if f.endswith('.chpl') or f.endswith('.test.c') or f.endswith('.ml-test.c'):
         return True
     else:
         return False
@@ -1026,7 +1026,7 @@ dirlist.sort()
 
 onetestsrc = os.getenv('CHPL_ONETEST')
 if onetestsrc==None:
-    testsrc=filter(IsChplTest, dirlist)
+    testsrc=filter(hasTestableExtension, dirlist)
 else:
     testsrc=list()
     testsrc.append(onetestsrc)
@@ -1040,7 +1040,7 @@ for testname in testsrc:
 
     # print testname
     sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
-    test_filename = re.match(r'^(.*)\.(?:chpl|test\.c)$', testname).group(1)
+    test_filename = re.match(r'^(.*)\.(?:chpl|test\.c|ml-test\.c)$', testname).group(1)
     execname = test_filename
     if uniquifyTests:
         execname += '.{0}'.format(os.getpid())
@@ -1444,7 +1444,7 @@ for testname in testsrc:
             args += envCompopts + shlex.split(compopts)
         args += [testname]
 
-        if is_c_test:
+        if is_c_test or is_ml_c_test:
             # we need to drop envCompopts for C tests as those are options
             # for `chpl` so don't include them here
             args = ['-o', test_filename]+shlex.split(compopts)+[testname]
