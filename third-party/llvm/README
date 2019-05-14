@@ -8,7 +8,8 @@ convenience and was obtained from
 https://www.llvm.org/
 
 Two Chapel-related changes were made to this copy of the code.
-The LLVM test subdirectories were deleted.
+The LLVM test subdirectories were deleted, and the CMakeLists.txt file
+was edited not to require the deleted tests.
 
 Any Chapel issues that seem to be related to LLVM should be directed
 to the Chapel team at https://chapel-lang.org/bugs.html.
