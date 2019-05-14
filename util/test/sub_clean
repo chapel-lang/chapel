@@ -11,6 +11,8 @@ def getExecname(f):
         return f[:len(f)-5]
     elif ((f.count('.') > 1) and (len(f) >= 8) and (len(f)-f.find('.test.c')==7)):
         return f[:len(f)-7]
+    elif ((f.count('.') > 1) and (len(f) >= 11) and (len(f)-f.find('.ml-test.c')==10)):
+        return f[:len(f)-10]
     return None
 
 # read a cleanfiles file (with comments)
@@ -94,6 +96,7 @@ for f in clean:
     if os.path.isdir(f):
         print('Cleaning directory: '+f)
         dirlist = glob.glob(f+'/*.chpl')+glob.glob(f+'/*.test.c')
+        dirlist += glob.glob(f+'/*.ml-test.c')
         dirlist.sort()
         for file in dirlist:
             cleanChapelTest(file)

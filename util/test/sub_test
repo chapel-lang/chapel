@@ -1051,6 +1051,13 @@ for testname in testsrc:
     else:
       is_c_test = False
 
+    # the previous regex will not match multilocale C tests, so this check is
+    # mutually exclusive
+    if re.match(r'^.+\.ml-test\.c$', testname):
+        is_ml_c_test = True
+    else:
+        is_ml_c_test = False
+
     # If the test name ends with .doc.chpl or the compiler was set to chpldoc
     # (i.e. is_chpldoc=True), run this test with chpldoc options.
     if testname.endswith('.doc.chpl') or is_chpldoc:
@@ -1272,6 +1279,11 @@ for testname in testsrc:
     # c tests don't have a way to launch themselves
     if is_c_test and chpllauncher != 'none':
         sys.stdout.write('[Skipping c test: %s/%s]\n'%(localdir,test_filename))
+        continue
+
+    # .ml-test.c tests should only run when we are in a multilocale setting
+    if is_ml_c_test and chplcomm == 'none':
+        sys.stdout.write('[Skipping multilocale-only c test: %s/%s]\n'%(localdir,test_filename))
         continue
 
     # Set numlocales
