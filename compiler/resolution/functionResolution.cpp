@@ -240,6 +240,11 @@ void resolveCallAndCallee(CallExpr* call, bool allowUnresolved) {
 
   if (FnSymbol* callee = call->resolvedFunction()) {
     resolveFnForCall(callee, call);
+  } else if (call->isPrimitive() &&
+             !call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+    // OK, don't worry about resolving called functions for primitives
+    // (This comes up in particular for PRIM_CAST in the event
+    //  resolveBuiltinCastCall lowered a _cast to the primitive).
   } else if (!allowUnresolved) {
     INT_ASSERT(false);
   }
@@ -2222,6 +2227,27 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       return true;
     }
 
+    // Handle casting from managed type to its borrow type
+    // (or variants thereof)
+    if (isManagedPtrType(valueType) && !isManagedPtrType(targetType) &&
+        isClassLike(targetType)) {
+
+      VarSymbol* tmp = newTempConst("cast_tmp");
+      CallExpr* c = new CallExpr("borrow", gMethodToken, valueSe->symbol());
+      CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+      call->getStmtExpr()->insertBefore(m);
+      resolveCallAndCallee(c);
+      resolveCall(m);
+
+      // Now update the cast call we have to cast
+      // the result of the borrow
+      valueSe->setSymbol(tmp);
+      // Try again with that
+      return resolveBuiltinCastCall(call);
+    }
+
+    // Handle some generic casts
     if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
       // This case is here just because in the event
       // that targetType is generic, we won't (currently)
@@ -2249,8 +2275,25 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 
           // Replace the target type with the instantiated one.
           targetTypeSe->setSymbol(t->symbol);
-          // Try again with that
-          return resolveBuiltinCastCall(call);
+
+          if (isTypeExpr(valueSe)) {
+            // Casts of type expressions e.g. t:unmanaged
+            // are useful but don't really work as calls to _cast.
+            // Change them to noop to work around other parts of resolution.
+            call->primitive = primitives[PRIM_NOOP];
+            call->baseExpr->remove();
+            if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+              if (parentCall->isPrimitive(PRIM_MOVE) ||
+                  parentCall->isPrimitive(PRIM_ASSIGN)) {
+                call->replace(new SymExpr(t->symbol));
+                parentCall->getStmtExpr()->insertBefore(call);
+              }
+            }
+            return true;
+          } else {
+            // Try again with proper type
+            return resolveBuiltinCastCall(call);
+          }
         }
       }
 
