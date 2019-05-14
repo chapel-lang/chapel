@@ -89,11 +89,15 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
       if (ret) return ret;
     }
     if (CondStmt* cond = toCondStmt(e)) {
-      // Look in the else block to find the non-fast-follower
-      // in case it is decided at run-time whether fast
-      // followers can be used.
-      ret = findFollowerForLoop(cond->elseStmt);
-      if (ret) return ret;
+      // Ignore error handling blocks
+      CallExpr* call = toCallExpr(cond->condExpr);
+      if (call == NULL || !call->isPrimitive(PRIM_CHECK_ERROR)) {
+        // Look in the else block to find the non-fast-follower
+        // in case it is decided at run-time whether fast
+        // followers can be used.
+        ret = findFollowerForLoop(cond->elseStmt);
+        if (ret) return ret;
+      }
     }
     e = e->next;
   }
