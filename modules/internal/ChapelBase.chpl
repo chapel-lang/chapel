@@ -102,16 +102,16 @@ module ChapelBase {
     __primitive("=", a, nil);
   }
 
-  inline proc =(ref a: void, b: ?t) where t != void {
-    compilerError("a void variable cannot be assigned");
+  inline proc =(ref a: nothing, b: ?t) where t != nothing {
+    compilerError("a nothing variable cannot be assigned");
   }
 
-  inline proc =(ref a: ?t, b: void) where t != void {
-    compilerError("cannot assign void to a variable of non-void type");
+  inline proc =(ref a: ?t, b: nothing) where t != nothing {
+    compilerError("cannot assign none to a variable of non-nothing type");
   }
 
   // This needs to be param so calls to it are removed after they are resolved
-  inline proc =(ref a: void, b: void) param { }
+  inline proc =(ref a: nothing, b: nothing) param { }
 
   //
   // equality comparison on primitive types

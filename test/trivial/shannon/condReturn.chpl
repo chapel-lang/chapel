@@ -12,6 +12,7 @@ proc foo(x: int ...?numargs) {
     return buildC();
   } else {
     halt("not enough args");
+    return none;
   }
 }
 

@@ -77,7 +77,7 @@ proc parallelAllToAllSpawn(param argBundleSize=0, numDupes=1) {
 // Core coforall+on spawn
 inline proc coforallOnSpawn(param argBundleSize, numDupes, trials) {
   param tupSize = divceil(argBundleSize, numBytes(int));
-  var argBundle: if argBundleSize > 0 then tupSize*int else void;
+  var argBundle: if argBundleSize > 0 then tupSize*int else nothing;
   for 1..trials {
     coforall loc in duplicateLocales(numDupes) with (in argBundle) do on loc {
       if argBundleSize > 0 && printArgBundle then writeln(argBundle);

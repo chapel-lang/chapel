@@ -48,6 +48,7 @@ Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
 Symbol *gVoid = NULL;
+Symbol *gNone = NULL;
 Symbol *gFile = NULL;
 Symbol *gStringC = NULL;
 Symbol *gStringCopy = NULL;

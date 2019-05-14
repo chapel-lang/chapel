@@ -1,1 +1,1 @@
-void-variable-use-2.chpl:2: error: a void variable cannot be assigned
+void-variable-use-2.chpl:2: error: a nothing variable cannot be assigned

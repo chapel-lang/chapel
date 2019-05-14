@@ -267,7 +267,7 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
   /*
    * Because we are not copying the function's body we need to make the return
    * symbol available through other means.  To do this we first have to find
-   * where the symbol is defined.  It may either be void, the _this symbol, a
+   * where the symbol is defined.  It may either be nothing, the _this symbol, a
    * formal symbol, or a symbol defined in the function's body.  In the last
    * case a new symbol and definition point have to be generated; the
    * finalizeCopy method will replace their corresponding nodes from the body
@@ -385,8 +385,8 @@ void FnSymbol::finalizeCopy() {
     }
 
     /*
-     * Cases where the return symbol is gVoid or this->_this don't require any
-     * additional actions.
+     * Cases where the return symbol is gVoid or this->_this don't require
+     * any additional actions.
      */
     if (this->retSymbol != gVoid && this->retSymbol != this->_this) {
       Symbol* replacementRet = map->get(partialCopySource->getReturnSymbol());
@@ -1081,7 +1081,7 @@ bool FnSymbol::retExprDefinesNonVoid() const {
     retval = true;
 
   } else if (SymExpr* expr = toSymExpr(retExprType->body.get(1))) {
-    retval = expr->symbol()->type != dtVoid ? true : false;
+    retval = expr->symbol()->type != dtVoid;
 
   } else {
     retval = true;

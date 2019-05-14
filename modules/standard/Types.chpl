@@ -60,8 +60,8 @@ as defined by the language specification.
 */
 pragma "no instantiation limit"
 proc isPrimitiveType(type t) param return
-  isVoidType(t) || isBoolType(t) || isIntType(t) || isUintType(t) ||
-  isRealType(t) || isImagType(t) || isComplexType(t) || isStringType(t);
+  isNothingType(t) || isVoidType(t) || isBoolType(t) ||
+  isNumericType(t) || isStringType(t);
 
 /*
 Returns `true` if the type `t` is one the following types, of any width:
@@ -86,6 +86,10 @@ Returns `true` if the type `t` is one the following types, of any width:
 pragma "no instantiation limit"
 proc isFloatType(type t) param return
   isRealType(t) || isImagType(t);
+
+/* Returns `true` if the type `t` is the `nothing` type. */
+pragma "no instantiation limit"
+proc isNothingType(type t) param return t == nothing;
 
 /* Returns `true` if the type `t` is the `void` type. */
 pragma "no instantiation limit"

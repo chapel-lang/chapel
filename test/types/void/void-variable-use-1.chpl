@@ -1,2 +1,2 @@
-var x: void;
+var x: nothing;
 writeln(x);

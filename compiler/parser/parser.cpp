@@ -308,7 +308,7 @@ static void parseCommandLineFiles() {
   }
 
   while ((inputFileName = nthFilename(fileNum++))) {
-    if (isChplSource(inputFileName) == true) {
+    if (isChplSource(inputFileName)) {
       parseFile(inputFileName, MOD_USER, true);
     }
   }
