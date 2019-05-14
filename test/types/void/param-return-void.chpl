@@ -3,7 +3,7 @@ proc helper(param cond : bool) {
   if cond {
     return (1, 2.0, "3");
   } else {
-    return _void;
+    return none;
   }
 }
 
