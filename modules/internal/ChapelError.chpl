@@ -72,6 +72,20 @@ module ChapelError {
     }
   }
 
+  class NilClassError : Error {
+    pragma "no doc"
+    override proc message() {
+      return "cannot convert nil class to non nilable type";
+    }
+  }
+
+  class ClassCastError : Error {
+    pragma "no doc"
+    override proc message() {
+      return "cannot cast class to type - runtime types not compatible";
+    }
+  }
+
   class IllegalArgumentError : Error {
     var formal: string;
     var info: string;
@@ -172,11 +186,11 @@ module ChapelError {
       cur = head;
       while cur != nil {
         var curnext = cur._next;
-        var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
+        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
         if asTaskErr == nil {
           n += 1;
         } else {
-          for e in asTaskErr {
+          for e in asTaskErr! {
             if e != nil then
               n += 1;
           }
@@ -196,12 +210,12 @@ module ChapelError {
       while cur != nil {
         var curnext = cur._next;
         cur._next = nil; // remove from any lists
-        var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
+        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
         if asTaskErr == nil {
           errorsArray[idx].retain(cur);
           idx += 1;
         } else {
-          for e in asTaskErr {
+          for e in asTaskErr! {
             if e != nil {
               errorsArray[idx] = e;
               idx += 1;
@@ -323,9 +337,9 @@ module ChapelError {
      */
     iter filter(type t) where isSubtype(_to_borrowed(t), borrowed Error) {
       for e in these() {
-        var tmp = _to_unmanaged(e):_to_unmanaged(t);
+        var tmp = _to_unmanaged(e):_to_nilable(_to_unmanaged(t));
         if tmp then
-          yield tmp;
+          yield _to_nonnil(tmp);
       }
     }
     pragma "no doc"
@@ -480,7 +494,7 @@ module ChapelError {
   //  how many tasks were run in that loop).
   pragma "no doc"
   proc chpl_forall_error(err: unmanaged Error) : unmanaged Error {
-    if err:unmanaged TaskErrors then
+    if err:unmanaged TaskErrors? then
       return err;
     // If err wasn't a taskError, wrap it in one
     return new unmanaged TaskErrors(err);

@@ -43,14 +43,14 @@ module Structure {
   proc test(lhs:?t) where isSubtype(unmanaged t, unmanaged ListerParent) {
     type subType = lhs.getListedType();
     for e in lhs.lst {
-      var eCast = e:unmanaged subType;
+      var eCast = e:unmanaged subType?;
       if eCast == nil then
         halt("X");
 
       writeln("foo");
-      (e:subType).foo( (100..100,) );
+      (e:subType?)!.foo( (100..100,) );
       writeln("bar");
-      eCast.bar();
+      eCast!.bar();
       writeln("baz");
       e.baz();
     }

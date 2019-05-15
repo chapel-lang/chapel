@@ -240,6 +240,11 @@ void resolveCallAndCallee(CallExpr* call, bool allowUnresolved) {
 
   if (FnSymbol* callee = call->resolvedFunction()) {
     resolveFnForCall(callee, call);
+  } else if (call->isPrimitive() &&
+             !call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+    // OK, don't worry about resolving called functions for primitives
+    // (This comes up in particular for PRIM_CAST in the event
+    //  resolveBuiltinCastCall lowered a _cast to the primitive).
   } else if (!allowUnresolved) {
     INT_ASSERT(false);
   }
@@ -646,7 +651,12 @@ bool canInstantiate(Type* actualType, Type* formalType) {
 
   if (formalType == dtUnmanaged)
     if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isUnmanaged())
+      if (dt->isUnmanaged() && !dt->isNilable())
+        return true;
+
+  if (formalType == dtUnmanagedNilable)
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isUnmanaged() && dt->isNilable())
         return true;
 
   // handle unmanaged GenericClass(int) -> unmanaged GenericClass
@@ -662,9 +672,16 @@ bool canInstantiate(Type* actualType, Type* formalType) {
          !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
       return true;
     else if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isBorrowed())
+      if (dt->isBorrowed() && !dt->isNilable())
         return true;
   }
+
+  if (formalType == dtBorrowedNilable) {
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isBorrowed() && dt->isNilable())
+        return true;
+  }
+
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
 
@@ -2067,6 +2084,7 @@ void resolveDestructor(AggregateType* at) {
 ************************************** | *************************************/
 
 static bool resolveTypeComparisonCall(CallExpr* call);
+static bool resolveBuiltinCastCall(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -2115,9 +2133,13 @@ void resolveCall(CallExpr* call) {
 
   } else {
 
-    if (resolveTypeComparisonCall(call) == false) {
-      resolveNormalCall(call);
-    }
+    if (resolveTypeComparisonCall(call))
+      return;
+
+    if (resolveBuiltinCastCall(call))
+      return;
+
+    resolveNormalCall(call);
   }
 }
 
@@ -2165,6 +2187,138 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
           return true;
         }
       }
+    }
+  }
+
+  return false;
+}
+
+static bool resolveBuiltinCastCall(CallExpr* call)
+{
+  UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
+  if (urse == NULL)
+    return false;
+
+  if (urse->unresolved != astr_cast || call->numActuals() != 2)
+    return false;
+
+  SymExpr* targetTypeSe = toSymExpr(call->get(1));
+  SymExpr* valueSe = toSymExpr(call->get(2));
+
+  if (targetTypeSe && valueSe &&
+      targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+    Type* targetType = targetTypeSe->symbol()->getValType();
+    Type* valueType = valueSe->symbol()->getValType();
+
+    bool promotes = false;
+    bool paramNarrows = false;
+    bool paramCoerce = false;
+    // If it's a trivial cast, replace it with PRIM_CAST.
+    // Trivial casts are those casts that:
+    //   * are already handled by C/LLVM
+    //   * implement coercions in Chapel's type system
+    // e.g. casting pointer or numeric types.
+    //
+    // The following are exceptions:
+    //  * casts invoving records (e.g. owned to borrowed)
+    //  * casts involving complex (e.g. imag to complex)
+    //  * promoted casts
+
+    if (!isRecord(targetType) && !isRecord(valueType) &&
+        !is_complex_type(targetType) && !is_complex_type(valueType) &&
+        canDispatch(valueType, valueSe->symbol(),
+                    targetType, call->getFunction(),
+                    &promotes, &paramNarrows, paramCoerce) &&
+        !promotes) {
+
+      call->baseExpr->remove();
+      call->primitive = primitives[PRIM_CAST];
+      return true;
+    }
+
+    // Handle casting from managed type to its borrow type
+    // (or variants thereof)
+    if (isManagedPtrType(valueType) && !isManagedPtrType(targetType) &&
+        isClassLike(targetType)) {
+
+      SET_LINENO(call);
+
+      VarSymbol* tmp = newTempConst("cast_tmp");
+      CallExpr* c = new CallExpr("borrow", gMethodToken, valueSe->symbol());
+      CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+      call->getStmtExpr()->insertBefore(m);
+      resolveCallAndCallee(c);
+      resolveCall(m);
+
+      // Now update the cast call we have to cast
+      // the result of the borrow
+      valueSe->setSymbol(tmp);
+      // Try again with that
+      return resolveBuiltinCastCall(call);
+    }
+
+    // Handle some generic casts
+    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+      // This case is here just because in the event
+      // that targetType is generic, we won't (currently)
+      // be able to resolve a call to a _cast with a generic actual.
+      if (targetType == dtBorrowed ||
+          targetType == dtBorrowedNilable ||
+          targetType == dtUnmanaged ||
+          targetType == dtUnmanagedNilable) {
+
+        if (isClassLike(valueType)) {
+          AggregateType* at = toAggregateType(canonicalClassType(valueType));
+
+          Type* t = NULL;
+
+          if (targetType == dtBorrowed)
+            t = at->getDecoratedClass(CLASS_TYPE_BORROWED);
+          else if (targetType == dtBorrowedNilable)
+            t = at->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
+          else if (targetType == dtUnmanaged)
+            t = at->getDecoratedClass(CLASS_TYPE_UNMANAGED);
+          else if (targetType == dtUnmanagedNilable)
+            t = at->getDecoratedClass(CLASS_TYPE_UNMANAGED_NILABLE);
+          else
+            INT_FATAL("case not handled");
+
+          // Replace the target type with the instantiated one.
+          targetTypeSe->setSymbol(t->symbol);
+
+          if (isTypeExpr(valueSe)) {
+            // Casts of type expressions e.g. t:unmanaged
+            // are useful but don't really work as calls to _cast.
+            // Change them to noop to work around other parts of resolution.
+            call->primitive = primitives[PRIM_NOOP];
+            call->baseExpr->remove();
+            if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+              if (parentCall->isPrimitive(PRIM_MOVE) ||
+                  parentCall->isPrimitive(PRIM_ASSIGN)) {
+                call->replace(new SymExpr(t->symbol));
+                parentCall->getStmtExpr()->insertBefore(call);
+              }
+            }
+            return true;
+          } else {
+            // Try again with proper type
+            return resolveBuiltinCastCall(call);
+          }
+        }
+      }
+
+      // This could compute the target type for generics.
+      // If it does, be careful with generics with defaults.
+      /*
+      if (canInstantiate(valueType, targetType)) {
+        // Replace the target type with the instantiated one.
+        Type* t = getInstantiationType(valueType, targetType);
+        INT_ASSERT(t);
+        targetTypeSe->setSymbol(t->symbol);
+        // Try again with that
+        return resolveBuiltinCastCall(call);
+      }*/
     }
   }
 

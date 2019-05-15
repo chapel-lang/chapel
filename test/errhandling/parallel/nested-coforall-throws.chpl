@@ -5,10 +5,10 @@ config const option = 2;
 proc printErrors(errors: borrowed TaskErrors, depth:int)
 {
   for e in errors { 
-    var g = e:borrowed TaskErrors;
+    var g = e:borrowed TaskErrors?;
     if g {
       writeln(" "*depth, "TaskErrors");
-      printErrors(g, depth + 1);
+      printErrors(g!, depth + 1);
     } else
       writeln(" "*depth, "err:", e.message());
   }
