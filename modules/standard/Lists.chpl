@@ -202,7 +202,9 @@ module Lists {
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc pop(i: int=this._size - 1): this._etype throws { return nil; }
+    proc pop(i: int=this._size - 1): this._etype throws {
+      return nil;
+    }
 
     /*
       Clear the contents of this List.
@@ -261,12 +263,19 @@ module Lists {
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc this(i: int) ref throws { return nil; }
+    proc this(i: int) ref throws {
+      return nil;
+    }
 
     /*
       Produce a serial iterator over the elements of this List.
+
+      :yields: A reference to one of the elements contained in this List.
+      :y
     */
-    iter these() ref { yield _size; }
+    iter these() ref {
+      yield _size;
+    }
 
     /*
       Write the contents of this List to a given channel.
@@ -282,7 +291,9 @@ module Lists {
       :return: The contents of this List, in a form suitable for printing.
       :rtype: `string`
     */
-    proc toString(): string {}
+    proc toString(): string {
+      return "";
+    }
 
     /*
       Return the number of elements in this List.
@@ -290,7 +301,9 @@ module Lists {
       :return: The number of elements in this List.
       :rtype: `int`
     */
-    proc size { return _size; }
+    proc size {
+      return _size;
+    }
 
     /*
       Returns `true` if this List contains zero elements.
@@ -298,13 +311,35 @@ module Lists {
       :return: `true` if this List is empty.
       :rtype: `bool`
     */
-    proc isEmpty(): bool { return true; }
+    proc isEmpty(): bool {
+      return true;
+    }
 
+    /*
+      Returns a new DefaultRectangular array containing the elements of this
+      List.
+
+      :return: A new DefaultRectangular array.
+    */
+    proc toArray(): this._etype[] {
+      return nil;
+    }
   }
 
   proc =(a: List(?t), b: List(t)) {}
 
-  proc ==(a: List(?t), b: List(t)): bool { return true; }
+  /*
+    Returns `true` if the contents of two Lists are the same.
+
+    :arg a: A List to compare.
+    :arg b: A List to compare.
+
+    :return: `true` if the contents of two Lists are the same.
+    :rtype: `bool`
+  */
+  proc ==(a: List(?t), b: List(t)): bool {
+    return true;
+  }
 
   /*
     An important question here: do we want the semantics of addition to mirror
@@ -316,7 +351,14 @@ module Lists {
 
     Given Python semantics, `+` would be a shorthand for concatenating two
     Lists together, returning a new List as a result.
+
+    :arg a: A List to add.
+    :arg b: A List to add.
+
+    :return: A new List whose elements are the concatenation of two Lists.
   */
   proc +(a: List(?t), b: List(t)): List(t) { return nil; }
 
-}
+
+} // End module Lists!
+
