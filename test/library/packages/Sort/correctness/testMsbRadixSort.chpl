@@ -1,5 +1,6 @@
 use BitOps;
  use Sort;
+ use MSBRadixSort;
  use Random;
  use Time;
 
@@ -102,27 +103,28 @@ use BitOps;
    writef("Sorting    %ht\n", input);
 
    var A = input;
-   shellSort(A, comparator);
+   ShellSort.shellSort(A, comparator);
    writef("shellSort  %ht\n", A);
    testSorted(A, comparator);
 
    var Ar = input;
-   shellSort(Ar, new ReverseComparator(comparator));
+   ShellSort.shellSort(Ar, new ReverseComparator(comparator));
    writef("shellSort- %ht\n", Ar);
    testReverseSorted(Ar, comparator);
 
    for param i in 1..settingsTuple.size {
      var s = settingsTuple(i);
      var B = input;
-     msbRadixSort(start, end, B, comparator,
-                  0, max(int), s);
+     MSBRadixSort.msbRadixSort(start, end, B, comparator,
+                               0, max(int), s);
      if i == 1 then
        writef("radixSort  %ht\n", B);
      testSorted(B, comparator);
 
      var Br = input;
-     msbRadixSort(start, end, Br, new ReverseComparator(comparator),
-                  0, max(int), s);
+     MSBRadixSort.msbRadixSort(start, end, Br,
+                               new ReverseComparator(comparator),
+                               0, max(int), s);
      if i == 1 then
        writef("radixSort- %ht\n", Br);
      testReverseSorted(Br, comparator);
@@ -201,8 +203,8 @@ proc testSortsUnsigned(input) {
    var t: Timer;
    t.start();
 
-   msbRadixSort(1, size, array, new intCriterion(),
-                0, max(int), new MSBRadixSortSettings());
+   MSBRadixSort.msbRadixSort(1, size, array, new intCriterion(),
+                             0, max(int), new MSBRadixSortSettings());
 
    t.stop();
  

@@ -20,10 +20,10 @@ for i in D {
     DomStringType += s;
   }
 }
-quickSort(ArithIntRef);
-quickSort(ArithUintRef);
-quickSort(ArithRealRef);
-if doString then quickSort(ArithStringRef);
+sort(ArithIntRef);
+sort(ArithUintRef);
+sort(ArithRealRef);
+if doString then sort(ArithStringRef);
 if debug then writeln(DomIntType);
 if debug then writeln(ArithIntRef);
 if debug then writeln(DomUintType);
@@ -58,7 +58,7 @@ proc testSerial(Dom, D, Arr, ArrRef) {
   }
   if debug then writeln(Arr);
   var success = true;
-  quickSort(Arr);
+  sort(Arr);
   for i in D {
     if Arr(i) != ArrRef(i) {
       success = false;
@@ -83,7 +83,7 @@ proc testParallel(Dom, D, Arr, ArrRef) {
   }
   if debug then writeln(Arr);
   var success = true;
-  quickSort(Arr);
+  sort(Arr);
   for i in D {
     if Arr(i) != ArrRef(i) {
       success = false;

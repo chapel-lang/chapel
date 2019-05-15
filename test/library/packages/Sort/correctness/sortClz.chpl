@@ -2,7 +2,7 @@ use Sort;
 use BitOps;
 
 proc test(x) {
-  var count = msbRadixSortClz(x);
+  var count = RadixSortHelp.radixSortClz(x);
   writef("%s %xu %i\n", x.type:string, x, count);
   assert(count == clz(x));
 }

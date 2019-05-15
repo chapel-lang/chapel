@@ -28,7 +28,7 @@ module Graph500_main
 
     /* Quartiles */
     
-    //quickSort (data);
+    //sort (data);
     res[0] = data[0];
     t = (n+1) / 4.0;
     k = t:int;
@@ -144,7 +144,7 @@ module Graph500_main
         }
       } while (0);
     }
-    quickSort(tm);
+    sort(tm);
 
 
     forall k in 0..nbfs-1 do

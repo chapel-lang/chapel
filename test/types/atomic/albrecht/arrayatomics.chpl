@@ -24,13 +24,13 @@ coforall i in D {
 // Get remaining value in a
 outputs[n+1] = a.read();
 
-quickSort(outputs);
+sort(outputs);
 
 for i in D {
   diffs[i] = outputs[i+1] - outputs[i];
 }
 
-quickSort(diffs);
+sort(diffs);
 
 // 1 2 3 4 5
 writeln(diffs);
@@ -50,13 +50,13 @@ outputs[D] = a.fetchAdd(inputs);
 // Get remaining value in a
 outputs[n+1] = a.read();
 
-quickSort(outputs);
+sort(outputs);
 
 for i in D {
   diffs[i] = outputs[i+1] - outputs[i];
 }
 
-quickSort(diffs);
+sort(diffs);
 
 // 1 2 3 4 5
 writeln(diffs);
