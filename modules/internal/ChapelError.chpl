@@ -31,7 +31,7 @@ module ChapelError {
   /* :class:`Error` is the base class for errors */
   class Error {
     pragma "no doc"
-    var _next: unmanaged Error = nil; // managed by lock in record TaskErrorsRecord
+    var _next: unmanaged Error? = nil; // managed by lock in record TaskErrorsRecord
 
     // These fields save the line/file where the error was thrown.
     pragma "no doc"
@@ -118,7 +118,7 @@ module ChapelError {
   // to be parallel-safe.
   pragma "no doc"
   record chpl_TaskErrors {
-    var _head: unmanaged Error;
+    var _head: unmanaged Error? = nil;
     var _errorsLock: chpl__processorAtomicType(bool);
     // this atomic controls:
     //  - _head
@@ -175,17 +175,17 @@ module ChapelError {
 
     pragma "no doc"
     proc init(ref group:chpl_TaskErrors) {
-      var head: unmanaged Error = group._head;
+      var head: unmanaged Error? = group._head;
       group._head = nil;
       this.complete();
 
-      var cur: unmanaged Error;
+      var cur: unmanaged Error?;
 
       // Count the number of errors, including from nested errors
       var n = 0;
       cur = head;
       while cur != nil {
-        var curnext = cur._next;
+        var curnext = cur!._next;
         var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
         if asTaskErr == nil {
           n += 1;
@@ -208,11 +208,11 @@ module ChapelError {
       var idx = 0;
       cur = head;
       while cur != nil {
-        var curnext = cur._next;
-        cur._next = nil; // remove from any lists
+        var curnext = cur!._next;
+        cur!._next = nil; // remove from any lists
         var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
         if asTaskErr == nil {
-          errorsArray[idx].retain(cur);
+          errorsArray[idx].retain(cur!);
           idx += 1;
         } else {
           for e in asTaskErr! {
@@ -291,8 +291,8 @@ module ChapelError {
 
       var minMsg:string;
       var maxMsg:string;
-      var first:borrowed Error;
-      var last:borrowed Error;
+      var first:borrowed Error?;
+      var last:borrowed Error?;
 
       for e in these() {
         if minMsg == "" || e.message() < minMsg then
@@ -323,10 +323,10 @@ module ChapelError {
 
       var ret = n + " errors: ";
 
-      if first != last then
-        ret += chpl_describe_error(first) + " ... " + chpl_describe_error(last);
-      else
-        ret += chpl_describe_error(first);
+      if first != nil && last != nil && first != last then
+        ret += chpl_describe_error(first!) + " ... " + chpl_describe_error(last!);
+      else if first != nil then
+        ret += chpl_describe_error(first!);
 
       return ret;
     }

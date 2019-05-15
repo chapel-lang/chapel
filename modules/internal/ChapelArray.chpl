@@ -3853,8 +3853,13 @@ module ChapelArray {
 
   // This must be a param function
   proc chpl__supportedDataTypeForBulkTransfer(type t) param {
-    var x:t;
-    return chpl__supportedDataTypeForBulkTransfer(x);
+    // These types cannot be default initialized
+    if isSubtype(t, borrowed) || isSubtype(t, unmanaged) {
+      return false;
+    } else {
+      var x:t;
+      return chpl__supportedDataTypeForBulkTransfer(x);
+    }
   }
   proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;

@@ -1789,7 +1789,7 @@ record channel {
    */
   param locking:bool;
   pragma "no doc"
-  var home:locale;
+  var home:locale = here;
   pragma "no doc"
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
@@ -1801,7 +1801,7 @@ record channel {
   // we are working on a channel created for running writeThis/readThis.
   // Therefore further locking by the same task is not necessary.
   pragma "no doc"
-  var _readWriteThisFromLocale:locale;
+  var _readWriteThisFromLocale:locale?;
 }
 
 pragma "no doc"
@@ -2807,7 +2807,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
-                                       loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
+                                       loc:locale?):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
@@ -2845,7 +2845,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         x:?t,
-                                        loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
+                                        loc:locale?):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);

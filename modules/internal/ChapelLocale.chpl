@@ -112,7 +112,7 @@ module ChapelLocale {
     // Every locale has a parent, except for the root locale.
     // The parent of the root locale is nil (by definition).
     pragma "no doc"
-    const parent : locale;
+    const parent : locale?;
 
     pragma "no doc" var nPUsLogAcc: int;     // HW threads, accessible
     pragma "no doc" var nPUsLogAll: int;     // HW threads, all

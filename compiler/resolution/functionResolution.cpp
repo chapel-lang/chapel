@@ -8720,6 +8720,25 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     resolveExpr(moveDefault);
     call->convertToNoop();
 
+    // Create an error when default initializing a non-nilable class type.
+    if (isNonNilableClassType(type) && !fLegacyNilableClasses) {
+      const char* descr = val->name;
+      if (VarSymbol* v = toVarSymbol(val))
+        descr = toString(v);
+      // Work around current problems in array initialization
+      bool ignore = val->hasFlag(FLAG_NO_AUTO_DESTROY);
+      if (ignore == false) {
+        USR_FATAL_CONT(call, "Cannot default-initialize %s", descr);
+        USR_PRINT("non-nil class types do not support default initialization");
+        AggregateType* at = toAggregateType(canonicalClassType(type));
+        INT_ASSERT(at);
+        ClassTypeDecorator d = classTypeDecorator(type);
+        Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+        USR_PRINT("Consider using the type %s instead",
+                  toString(suggestedType));
+      }
+    }
+
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)
   } else if (type->defaultValue != NULL) {
