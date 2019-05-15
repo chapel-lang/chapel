@@ -169,7 +169,7 @@ module Lists {
 
       :arg other: An array, the elements of which are appended to this List.
     */
-    proc extend(other: this._etype[?d]) {}
+    proc extend(other: [?d] this._etype) {}
 
     /*
       Insert an element at a given position in this List, shifting all elements
@@ -321,7 +321,7 @@ module Lists {
 
       :return: A new DefaultRectangular array.
     */
-    proc toArray(): this._etype[] {
+    proc toArray(): [] this._etype {
       return nil;
     }
   }
