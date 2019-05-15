@@ -271,7 +271,6 @@ module Lists {
       Produce a serial iterator over the elements of this List.
 
       :yields: A reference to one of the elements contained in this List.
-      :y
     */
     iter these() ref {
       yield _size;
