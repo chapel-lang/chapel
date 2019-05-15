@@ -141,7 +141,8 @@ module Lists {
     proc init=(other: List) {
       this._etype = other._etype;
     }
-  
+
+    pragma "no doc"
     proc deinit() {}
 
     /*
