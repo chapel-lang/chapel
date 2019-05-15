@@ -1,6 +1,5 @@
-
 proc main() {
-  var tmp : void;
-  var other : void;
+  var tmp: nothing;
+  var other: nothing;
   tmp = other;
 }

@@ -60,6 +60,9 @@ typedef bool chpl_bool;
 #endif
 
 static inline void* c_pointer_return(void* x) { return x; }
+static inline ptrdiff_t c_pointer_diff(void* a, void* b, ptrdiff_t eltSize) {
+  return (((unsigned char*)a) - ((unsigned char*)b))/eltSize;
+}
 
 typedef enum {
   CHPL_TYPE_chpl_bool,

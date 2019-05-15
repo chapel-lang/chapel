@@ -1,1 +1,2 @@
 forceNamedArgs.chpl:14: error: unresolved call 'momentum2(1.2, 2.3)'
+forceNamedArgs.chpl:14: note: because no functions named momentum2 found in scope

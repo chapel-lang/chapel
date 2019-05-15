@@ -1,4 +1,4 @@
-MyClass
+borrowed MyClass
 {x = 1, y = 2}
-MyClass
+borrowed MyClass
 {x = 3, y = 4}

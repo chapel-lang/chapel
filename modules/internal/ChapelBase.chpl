@@ -88,27 +88,30 @@ module ChapelBase {
   inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
   inline proc =(ref a:enumerated, b:enumerated) where (a.type == b.type) {__primitive("=", a, b); }
 
-  inline proc =(ref a, b: a.type) where isClassType(a.type)
-  { __primitive("=", a, b); }
+  inline proc =(ref a, b: a.type) where isBorrowedOrUnmanagedClassType(a.type)
+  {
+    __primitive("=", a, b);
+  }
 
   pragma "compiler generated"
   pragma "last resort" // so user-supplied assignment will override this one.
     // The CG pragma is needed because this function interferes with
     // assignments defined for sync and single class types.
-  inline proc =(ref a, b:_nilType) where isClassType(a.type) {
+  inline proc =(ref a, b:_nilType) where isBorrowedOrUnmanagedClassType(a.type)
+  {
     __primitive("=", a, nil);
   }
 
-  inline proc =(ref a: void, b: ?t) where t != void {
-    compilerError("a void variable cannot be assigned");
+  inline proc =(ref a: nothing, b: ?t) where t != nothing {
+    compilerError("a nothing variable cannot be assigned");
   }
 
-  inline proc =(ref a: ?t, b: void) where t != void {
-    compilerError("cannot assign void to a variable of non-void type");
+  inline proc =(ref a: ?t, b: nothing) where t != nothing {
+    compilerError("cannot assign none to a variable of non-nothing type");
   }
 
   // This needs to be param so calls to it are removed after they are resolved
-  inline proc =(ref a: void, b: void) param { }
+  inline proc =(ref a: nothing, b: nothing) param { }
 
   //
   // equality comparison on primitive types
@@ -612,6 +615,18 @@ module ChapelBase {
 
   inline proc >>(param a: int(?w), param b: integral) param return __primitive(">>", a, b);
   inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
+
+  pragma "no borrow convert"
+  inline proc postfix!(x) {
+    if isOwnedClassType(x.type) then
+      compilerError("postfix ! cannot currently apply to owned");
+    if isSharedClassType(x.type) then
+      compilerError("postfix ! cannot currently apply to shared");
+    if !isClassType(x.type) then
+      compilerError("postfix ! can only apply to classes");
+
+    return __primitive("to non nilable class", x);
+  }
 
   //
   // These functions are used to implement the semantics of
@@ -1260,7 +1275,7 @@ module ChapelBase {
   inline proc _cast(type t:borrowed, x:t)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:unmanaged, x:t)
+  inline proc _cast(type t:unmanaged, x:_to_borrowed(t))
     return __primitive("cast", t, x);
 
   inline proc _cast(type t:borrowed, pragma "nil from arg" x:_nilType)
@@ -1275,7 +1290,7 @@ module ChapelBase {
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
 
   // this version handles unmanaged -> unmanaged
-  inline proc _cast(type t:unmanaged, x:_unmanaged) where isSubtype(t,x.type) && (x.type != t)
+  inline proc _cast(type t:unmanaged, x:borrowed) where isSubtype(t,x.type) && (x.type != t)
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
 
   // this version handles unmanaged -> borrow
@@ -1510,7 +1525,7 @@ module ChapelBase {
   // implements 'delete' statement
   pragma "no borrow convert"
   inline proc chpl__delete(arg)
-    where isClassType(arg.type) {
+    where isBorrowedOrUnmanagedClassType(arg.type) {
 
     if chpl_isDdata(arg.type) then
       compilerError("cannot delete data class");
@@ -2009,6 +2024,10 @@ module ChapelBase {
 
   proc isClassType(type t) param return __primitive("is class type", t);
 
+  proc isBorrowedOrUnmanagedClassType(type t:_unmanaged) param return true;
+  proc isBorrowedOrUnmanagedClassType(type t:_borrowed) param return true;
+  proc isBorrowedOrUnmanagedClassType(type t) param return false;
+
   proc isRecordType(type t) param {
     if __primitive("is record type", t) == false then
       return false;
@@ -2092,11 +2111,6 @@ module ChapelBase {
   inline proc _to_borrowed(arg) {
     var ret = __primitive("to borrowed class", arg);
     return ret;
-  }
-
-  // cast from unmanaged to borrow
-  inline proc _cast(type t:borrowed, x:_unmanaged) where isSubtype(_to_borrowed(x.type),t) {
-    return __primitive("cast", t, x);
   }
 
   pragma "no borrow convert"

@@ -1,4 +1,4 @@
- t is: C(int(64))
+ t is: borrowed C(int(64))
 et is: int(64)
- t is: C(real(64))
+ t is: borrowed C(real(64))
 et is: real(64)

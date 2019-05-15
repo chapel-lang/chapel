@@ -1723,7 +1723,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
       }
     }
     forv_Vec(TypeSymbol, typeSymbol, types) {
-      if (!isUnmanagedClassType(typeSymbol->type))
+      if (!isDecoratedClassType(typeSymbol->type))
         typeSymbol->codegenMetadata();
     }
     // Aggregate annotations for class objects must wait until all other

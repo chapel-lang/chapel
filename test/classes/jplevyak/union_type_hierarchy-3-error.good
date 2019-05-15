@@ -1,2 +1,4 @@
 union_type_hierarchy-3-error.chpl:16: error: unresolved call 'f(D)'
-union_type_hierarchy-3-error.chpl:10: note: candidates are: f(a: C)
+union_type_hierarchy-3-error.chpl:10: note: this candidate did not match: f(a: C)
+union_type_hierarchy-3-error.chpl:16: note: because call actual argument #1 with type D
+union_type_hierarchy-3-error.chpl:10: note: is passed to formal 'a: C'

@@ -20,6 +20,7 @@
 #include "preFold.h"
 
 #include "astutil.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "ForallStmt.h"
 #include "iterator.h"
@@ -32,7 +33,6 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "typeSpecifier.h"
-#include "UnmanagedClassType.h"
 #include "visibleFunctions.h"
 
 #ifndef __STDC_FORMAT_MACROS
@@ -531,9 +531,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     Type* t = call->get(1)->typeInfo();
 
     if (isClassLike(t) &&
-        !t->symbol->hasFlag(FLAG_EXTERN) &&
-        !t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-        !t->symbol->hasFlag(FLAG_DATA_CLASS)) {
+        !t->symbol->hasFlag(FLAG_EXTERN)) {
+      retval = new SymExpr(gTrue);
+    } else if (isManagedPtrType(t)) {
       retval = new SymExpr(gTrue);
     } else {
       retval = new SymExpr(gFalse);
@@ -545,7 +545,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_TO_UNMANAGED_CLASS:
-  case PRIM_TO_BORROWED_CLASS: {
+  case PRIM_TO_BORROWED_CLASS:
+  case PRIM_TO_NILABLE_CLASS:
+  case PRIM_TO_NON_NILABLE_CLASS: {
     Type* totype = call->typeInfo();
 
     if (isTypeExpr(call->get(1))) {
@@ -1065,7 +1067,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     //
     SymExpr* se = toSymExpr(call->get(1));
 
-    if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) && !isClassLike(type)) {
+    if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
+        !(isClassLikeOrPtr(type) || isReferenceType(type))) {
       USR_WARN(se, "accessing the locale of a local expression");
     }
 
@@ -2250,7 +2253,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
       DefExpr* dExp = toDefExpr(formalExpr);
       ArgSymbol* fArg = toArgSymbol(dExp->sym);
 
-      if (fArg->type != dtVoid) {
+      if (fArg->type != dtNothing) {
         ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK,
                                              fArg->name,
                                              fArg->type);
@@ -2272,7 +2275,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
       if (i != (alength-1)) {
         SymExpr* sExpr = toSymExpr(actualExpr);
 
-        if (sExpr->symbol()->type != dtVoid) {
+        if (sExpr->symbol()->type != dtNothing) {
           ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK,
                                                name_buffer,
                                                sExpr->symbol()->type);

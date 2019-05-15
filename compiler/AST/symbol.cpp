@@ -48,6 +48,7 @@ Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
 Symbol *gVoid = NULL;
+Symbol *gNone = NULL;
 Symbol *gFile = NULL;
 Symbol *gStringC = NULL;
 Symbol *gStringCopy = NULL;
@@ -2077,4 +2078,26 @@ VarSymbol* newTempConst(QualifiedType qt) {
   VarSymbol* result = newTemp(qt);
   result->addFlag(FLAG_CONST);
   return result;
+}
+
+const char* toString(ArgSymbol* arg) {
+  const char* intent = "";
+  switch (arg->intent) {
+    case INTENT_BLANK:           intent = "";           break;
+    case INTENT_IN:              intent = "in ";        break;
+    case INTENT_INOUT:           intent = "inout ";     break;
+    case INTENT_OUT:             intent = "out ";       break;
+    case INTENT_CONST:           intent = "const ";     break;
+    case INTENT_CONST_IN:        intent = "const in ";  break;
+    case INTENT_CONST_REF:       intent = "const ref "; break;
+    case INTENT_REF_MAYBE_CONST: intent = "";           break;
+    case INTENT_REF:             intent = "ref ";       break;
+    case INTENT_PARAM:           intent = "param ";     break;
+    case INTENT_TYPE:            intent = "type ";      break;
+  }
+
+  if (arg->getValType() == dtAny || arg->getValType() == dtUnknown)
+    return astr(intent, arg->name);
+  else
+    return astr(intent, arg->name, ": ", toString(arg->getValType()));
 }

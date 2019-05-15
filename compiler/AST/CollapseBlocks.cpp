@@ -208,12 +208,12 @@ void CollapseBlocks::exitAggrType(AggregateType* node)
 
 }
 
-bool CollapseBlocks::enterUnmanagedClassType(UnmanagedClassType* node)
+bool CollapseBlocks::enterDecoratedClassType(DecoratedClassType* node)
 {
   return false;
 }
 
-void CollapseBlocks::exitUnmanagedClassType(UnmanagedClassType* node)
+void CollapseBlocks::exitDecoratedClassType(DecoratedClassType* node)
 {
 
 }

@@ -309,25 +309,8 @@ proc Cyclic.chpl__locToLocIdx(loc: locale) {
 }
 
 proc Cyclic.getChunk(inds, locid) {
-  var sliceBy: rank*range(idxType=idxType, stridable=true);
-  var locidtup: rank*idxType;
-  // NOTE: Not bothering to check to see if these can fit into idxType
-  if rank == 1 then
-    locidtup(1) = locid:idxType;
-  else
-    for param i in 1..rank do locidtup(i) = locid(i):idxType;
-  for param i in 1..rank {
-    var distStride = targetLocDom.dim(i).length:chpl__signedType(idxType);
-    var offset = chpl__diffMod(startIdx(i) + locidtup(i), inds.dim(i).low, distStride);
-    sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
-    // remove alignment
-    sliceBy(i).alignHigh();
-  }
-  return inds((...sliceBy));
-  //
-  // WANT:
-  //var distWhole = locDist(locid).myChunk.getIndices();
-  //return inds((...distWhole));
+  const chunk = locDist(locid).myChunk((...inds.getIndices()));
+  return chunk;
 }
 
 override proc Cyclic.dsiDisplayRepresentation() {
@@ -435,6 +418,27 @@ proc Cyclic.dsiIndexToLocale(i: rank*idxType) {
 }
 
 
+  proc chpl__computeCyclicDim(type idxType, lo, myloc, numlocs) {
+    const lower = min(idxType)..(lo+myloc) by -numlocs;
+    const upper = lo+myloc..max(idxType) by numlocs;
+    return lower.last..upper.last by numlocs;
+  }
+
+proc chpl__computeCyclic(type idxType, locid, targetLocBox, startIdx) {
+    type strType = chpl__signedType(idxType);
+    param rank = targetLocBox.rank;
+    var inds: rank*range(idxType, stridable=true);
+    for param i in 1..rank {
+      // NOTE: Not bothering to check to see if these can fit into idxType
+      const lo = chpl__tuplify(startIdx)(i): idxType;
+      const myloc = chpl__tuplify(locid)(i): idxType;
+      // NOTE: Not checking for overflow here when casting to strType
+      const numlocs = targetLocBox.dim(i).length: strType;
+      inds(i) = chpl__computeCyclicDim(idxType, lo, myloc, numlocs);
+    }
+    return inds;
+  }
+
 class LocCyclic {
   param rank: int;
   type idxType;
@@ -456,14 +460,7 @@ class LocCyclic {
 
     var inds: rank*range(idxType, stridable=true);
 
-    type strType = chpl__signedType(idxType);
-    // NOTE: Not checking for overflow here when casting to strType
-    for param i in 1..rank {
-      const lower = min(idxType)..(startIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length:strType;
-      const upper = (startIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length:strType;
-      const lo = lower.last, hi = upper.last;
-      inds(i) = lo..hi by dist.targetLocDom.dim(i).length:strType;
-    }
+    inds = chpl__computeCyclic(idxType, locid, dist.targetLocDom, startIdx);
     myChunk = {(...inds)};
   }
 }
@@ -585,56 +582,55 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
   const wholeLow = whole.low;
+  const wholeStride = whole.stride;
+
+  // If this is the only task running on this locale, we don't want to
+  // count it when we try to determine how many tasks to use.  Here we
+  // check if we are the only one running, and if so, use
+  // ignoreRunning=true for this locale only.  Obviously there's a bit
+  // of a race condition if some other task starts after we check, but
+  // in that case there is no correct answer anyways.
+  //
+  // Note that this code assumes that any locale will only be in the
+  // targetLocales array once.  If this is not the case, then the
+  // tasks on this locale will *all* ignoreRunning, which may have
+  // performance implications.
+  const hereId = here.id;
+  const hereIgnoreRunning = if here.runningTasks() == 1 then true
+                            else ignoreRunning;
   coforall locDom in locDoms do on locDom {
-    const (numTasks, parDim) = _computeChunkStuff(maxTasks, ignoreRunning,
-                                                  minSize,
-                                                  locDom.myBlock.dims());
+    const myIgnoreRunning = if here.id == hereId then hereIgnoreRunning
+      else ignoreRunning;
 
-    var result: rank*range(idxType=idxType, stridable=true);
-    // Use the internal function for untranslate to avoid having to do
-    // extra work to negate the offset
-    var zeroedLocalPart = whole((...locDom.myBlock.getIndices())).chpl__unTranslate(wholeLow);
-    for param i in 1..rank {
-      var dim = zeroedLocalPart.dim(i);
+    // Forward to defaultRectangular to iterate over the indices we own locally
+    for followThis in locDom.myBlock.these(iterKind.leader, maxTasks,
+                                           myIgnoreRunning, minSize) do {
+
+      // translate the 0-based indices yielded back to our indexing scheme
+      const newFollowThis = chpl__followThisToOrig(idxType, followThis, locDom.myBlock);
+
+      // translate the local indices back to 0-based global indices
+      // note that we need to go back and forth in order to distinguish
+      // between global strides and those that are due to the cyclic
+      // distribution (at least, I couldn't figure out a way to not go
+      // back and forth without breaking tests)
+      const zeroShift = {(...newFollowThis)}.chpl__unTranslate(wholeLow);
+      var result: rank*range(idxType=idxType, stridable=true);
       type strType = chpl__signedType(idxType);
-      // NOTE: unsigned idxType with negative stride will not work
-      const wholestride = whole.dim(i).stride:strType;
-      if dim.last >= dim.first then
+      for param i in 1..rank {
+        const wholestride = chpl__tuplify(wholeStride)(i);
+        const ref dim = zeroShift.dim(i);
         result(i) = (dim.first / wholestride:idxType)..(dim.last / wholestride:idxType) by (dim.stride:strType / wholestride);
-      else
-        // _computeChunkStuff should have produced no tasks for this
-        // If this ain't going to happen, could force numTasks=0 here instead.
-        assert(numTasks == 0);
-    }
-    if numTasks == 1 {
-      if debugCyclicDist then
-        writeln(here.id, ": leader whole: ", whole,
-                         " result: ", result,
-                         " myblock: ", locDom.myBlock);
-      yield result;
-    } else {
-
-      coforall taskid in 0..#numTasks {
-        var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
-        const low = result(parDim).first, high = result(parDim).high;
-        const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
-                                      high, low, low);
-        // similar to BlockDist
-        assert(lo <= hi);
-        splitRanges(parDim) = result(parDim)(lo..hi);
-        if debugCyclicDist then
-          writeln(here.id, ": leader whole: ", whole,
-                           " result: ", result,
-                           " splitRanges: ", splitRanges);
-        // remove alignment
-        splitRanges(parDim) = splitRanges(parDim).first..splitRanges(parDim).last by splitRanges(parDim).stride;
-        yield splitRanges;
       }
+      yield result;
     }
   }
 }
 
-iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
+// Utility routine to convert 0-based indices back to the indexing scheme
+// of 'whole'
+private proc chpl__followThisToOrig(type idxType, followThis, whole) {
+  param rank = followThis.size;
   var t: rank*range(idxType, stridable=true);
   if debugCyclicDist then
     writeln(here.id, ": follower whole is: ", whole,
@@ -644,6 +640,11 @@ iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.foll
     const wholestride = whole.dim(i).stride:chpl__signedType(idxType);
     t(i) = ((followThis(i).low*wholestride:idxType)..(followThis(i).high*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).alignedLow;
   }
+  return t;
+}
+
+iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
+  const t = chpl__followThisToOrig(idxType, followThis, whole);
   if debugCyclicDist then
     writeln(here.id, ": follower maps to: ", t);
   for i in {(...t)} do
@@ -1197,7 +1198,7 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
 proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    return dist.getChunk(whole, locid);
+    return whole[(...(chpl__computeCyclic(this.idxType, locid, dist.targetLocDom, dist.startIdx)))];
   } else {
     var d: domain(rank, idxType, stridable=true);
     return d;

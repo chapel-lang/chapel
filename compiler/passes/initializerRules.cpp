@@ -245,8 +245,8 @@ static bool isReturnVoid(FnSymbol* fn) {
 
     collectMyCallExprs(fn->body, calls, fn);
 
-    for (size_t i = 0; i < calls.size() && retval == true; i++) {
-      if (calls[i]->isPrimitive(PRIM_RETURN) == true) {
+    for (size_t i = 0; i < calls.size() && retval; i++) {
+      if (calls[i]->isPrimitive(PRIM_RETURN)) {
         SymExpr* value = toSymExpr(calls[i]->get(1));
 
         if (value == NULL || value->symbol()->type != dtVoid) {

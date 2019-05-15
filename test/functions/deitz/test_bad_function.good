@@ -1,2 +1,4 @@
 test_bad_function.chpl:5: error: unresolved call 'foo(2.0)'
-test_bad_function.chpl:1: note: candidates are: foo(i: int)
+test_bad_function.chpl:1: note: this candidate did not match: foo(i: int)
+test_bad_function.chpl:5: note: because call actual argument #1 with type real(64)
+test_bad_function.chpl:1: note: is passed to formal 'i: int(64)'

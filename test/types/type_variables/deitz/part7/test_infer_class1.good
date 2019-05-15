@@ -1,2 +1,4 @@
 test_infer_class1.chpl:6: error: unresolved call 'C.init(f=1)'
-test_infer_class1.chpl:1: note: candidates are: C.init(type t, f: t)
+test_infer_class1.chpl:1: note: this candidate did not match: C.init(type t, f: t)
+test_infer_class1.chpl:6: note: because call does not supply enough arguments
+test_infer_class1.chpl:2: note: it is missing a value for formal 't'

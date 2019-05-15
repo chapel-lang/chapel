@@ -26,6 +26,7 @@
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "build.h"
+#include "DecoratedClassType.h"
 #include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
@@ -37,7 +38,6 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "UnmanagedClassType.h"
 #include "vec.h"
 
 #include <cmath>
@@ -125,7 +125,7 @@ void Type::setDestructor(FnSymbol* fn) {
   destructor = fn;
 }
 
-const char* toString(Type* type) {
+const char* toString(Type* type, bool decorateAllClasses) {
   const char* retval = NULL;
 
   if (type != NULL) {
@@ -144,7 +144,8 @@ const char* toString(Type* type) {
           Type* eltType    = eltTypeField->type;
 
           if (domainType != dtUnknown && eltType != dtUnknown)
-            retval = astr("[", toString(domainType), "] ", toString(eltType));
+            retval = astr("[", toString(domainType,false), "] ",
+                          toString(eltType));
         }
 
       } else if (strncmp(at->symbol->name, drDomName, drDomNameLen) == 0) {
@@ -157,8 +158,42 @@ const char* toString(Type* type) {
           Type* implType = canonicalClassType(instanceField->type);
 
           if (implType != dtUnknown)
-            retval = toString(implType);
+            retval = toString(implType, false);
+          else if (at->symbol->hasFlag(FLAG_ARRAY))
+            retval = astr("[]");
         }
+      } else if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+        if (developer == false)
+          retval = "iterator";
+      // TODO: add a case to handle sync, single, atomic
+      } else if (isManagedPtrType(vt)) {
+        Type* borrowType = getManagedPtrBorrowType(vt);
+        const char* borrowed = "borrowed ";
+        const char* borrowName = toString(borrowType, false);
+        if (startsWith(borrowName, borrowed)) {
+          borrowName = borrowName + strlen(borrowed);
+          INT_FATAL("Remove me");
+        }
+        if (startsWith(vt->symbol->name, "_owned("))
+          retval = astr("owned ", borrowName);
+        else if (0 == strcmp(vt->symbol->name, "_owned"))
+          retval = astr("owned");
+        else if (startsWith(vt->symbol->name, "_shared("))
+          retval = astr("shared ", borrowName);
+        else if (0 == strcmp(vt->symbol->name, "_shared"))
+          retval = astr("shared");
+
+      } else if (isClassLike(at) && isClass(at)) {
+        // It's an un-decorated class type
+        const char* borrowed = "borrowed ";
+        const char* useName = vt->symbol->name;
+        if (startsWith(useName, borrowed))
+          useName = useName + strlen(borrowed);
+
+        if (decorateAllClasses)
+          useName = astr("borrowed ", useName);
+
+        retval = useName;
       }
     }
 
@@ -526,7 +561,8 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 // This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
-  dtVoid                               = createInternalType ("void",     "void");
+  dtVoid                               = createInternalType("void", "void");
+  dtNothing                            = createInternalType ("nothing",  "nothing");
 
   dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool",     "chpl_bool");
   dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
@@ -579,6 +615,7 @@ void initPrimitiveTypes() {
   gUnknown->addFlag(FLAG_TYPE_VARIABLE);
 
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
+  CREATE_DEFAULT_SYMBOL (dtNothing, gNone, "none");
 
   dtValue = createInternalType("value", "_chpl_value");
 
@@ -810,8 +847,8 @@ void initCompilerGlobals() {
   initForTaskIntents();
 }
 
-bool is_void_type(Type* t) {
-  return t == dtVoid;
+bool is_nothing_type(Type* t) {
+  return t == dtNothing;
 }
 
 bool is_bool_type(Type* t) {
@@ -973,7 +1010,15 @@ bool isClassOrNil(Type* t) {
 }
 
 bool isClassLike(Type* t) {
-  return isClass(t) || isUnmanagedClassType(t);
+  return isDecoratedClassType(t) ||
+         (isClass(t) && !(t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
+                          t->symbol->hasFlag(FLAG_DATA_CLASS) ||
+                          t->symbol->hasFlag(FLAG_REF)));
+}
+
+bool isClassLikeOrPtr(Type* t) {
+  return isClassLike(t) || (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
+                            t->symbol->hasFlag(FLAG_DATA_CLASS));
 }
 
 bool isClassLikeOrNil(Type* t) {
@@ -1247,7 +1292,7 @@ bool needsCapture(Type* t) {
       is_complex_type(t) ||
       is_enum_type(t) ||
       t == dtStringC ||
-      isClassLike(t) ||
+      isClassLikeOrPtr(t) ||
       isRecord(t) ||
       isUnion(t) ||
       t == dtTaskID || // false?

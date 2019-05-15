@@ -5,45 +5,45 @@ LOCALE2 LOCALE3
 From locale 0
   locale 0 owns: {1..11 by 2, 1..11 by 2}
   locale 0 owns: {1..11 by 2, 1..11 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 1
   locale 0 owns: {1..11 by 2, 1..11 by 2}
   locale 0 owns: {1..11 by 2, 1..11 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 2
   locale 0 owns: {1..11 by 2, 1..11 by 2}
   locale 0 owns: {1..11 by 2, 1..11 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 3
   locale 0 owns: {1..11 by 2, 1..11 by 2}
   locale 0 owns: {1..11 by 2, 1..11 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
 (<no communication>)
 
 
@@ -51,45 +51,45 @@ Testing array A (declared over D):
 From locale 0
   locale 0 owns: {1..11 by 2, 1..11 by 2}
   locale 0 owns: {1..11 by 2, 1..11 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 1
   locale 0 owns: {1..11 by 2, 1..11 by 2}
   locale 0 owns: {1..11 by 2, 1..11 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 2
   locale 0 owns: {1..11 by 2, 1..11 by 2}
   locale 0 owns: {1..11 by 2, 1..11 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 3
   locale 0 owns: {1..11 by 2, 1..11 by 2}
   locale 0 owns: {1..11 by 2, 1..11 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
-  locale 3 owns: {2..10 by 2, 2..10 by 2}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 3 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
 (<no communication>)
 
 Testing domain D: {1..11, 1..11}
@@ -97,45 +97,45 @@ Mapped to locales:
 LOCALE1 LOCALE3
 LOCALE0 LOCALE2
 From locale 0
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
 (<no communication>)
 
 From locale 1
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
 (<no communication>)
 
 From locale 2
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
 (<no communication>)
 
 From locale 3
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
 (<no communication>)
@@ -143,45 +143,45 @@ From locale 3
 
 Testing array A (declared over D):
 From locale 0
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
 (<no communication>)
 
 From locale 1
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
 (<no communication>)
 
 From locale 2
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
 (<no communication>)
 
 From locale 3
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 0 owns: {2..10 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 1 owns: {1..11 by 2, 2..10 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
-  locale 2 owns: {2..10 by 2, 1..11 by 2}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 0 owns: {1..11 by 2 align 0, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {1..11 by 2, 1..11 by 2 align 0}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
+  locale 2 owns: {1..11 by 2 align 0, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
   locale 3 owns: {1..11 by 2, 1..11 by 2}
 (<no communication>)
@@ -191,93 +191,93 @@ Mapped to locales:
 LOCALE1 LOCALE3
 LOCALE0 LOCALE2
 From locale 0
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
 (<no communication>)
 
 From locale 1
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
 (<no communication>)
 
 From locale 2
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
 (<no communication>)
 
 From locale 3
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
 (<no communication>)
 
 
 Testing array A (declared over D):
 From locale 0
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
 (<no communication>)
 
 From locale 1
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
 (<no communication>)
 
 From locale 2
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
 (<no communication>)
 
 From locale 3
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 0 owns: {2..2 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 1 owns: {3..3 by 2, 2..10 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 2 owns: {2..2 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
-  locale 3 owns: {3..3 by 2, 1..11 by 2}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 0 owns: {2..3 by 2, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 1 owns: {2..3 by 2 align 1, 1..11 by 2 align 0}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 2 owns: {2..3 by 2, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
+  locale 3 owns: {2..3 by 2 align 1, 1..11 by 2}
 (<no communication>)
 
 Testing domain D: {1..11, 1..11}
@@ -290,8 +290,8 @@ From locale 0
   locale 1 owns: {1..11, 1..11 by 2}
   locale 2 owns: {1..0, 1..0}
   locale 2 owns: {1..0, 1..0}
-  locale 3 owns: {1..11, 2..10 by 2}
-  locale 3 owns: {1..11, 2..10 by 2}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 1
@@ -301,8 +301,8 @@ From locale 1
   locale 1 owns: {1..11, 1..11 by 2}
   locale 2 owns: {1..0, 1..0}
   locale 2 owns: {1..0, 1..0}
-  locale 3 owns: {1..11, 2..10 by 2}
-  locale 3 owns: {1..11, 2..10 by 2}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 2
@@ -312,8 +312,8 @@ From locale 2
   locale 1 owns: {1..11, 1..11 by 2}
   locale 2 owns: {1..0, 1..0}
   locale 2 owns: {1..0, 1..0}
-  locale 3 owns: {1..11, 2..10 by 2}
-  locale 3 owns: {1..11, 2..10 by 2}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 3
@@ -323,8 +323,8 @@ From locale 3
   locale 1 owns: {1..11, 1..11 by 2}
   locale 2 owns: {1..0, 1..0}
   locale 2 owns: {1..0, 1..0}
-  locale 3 owns: {1..11, 2..10 by 2}
-  locale 3 owns: {1..11, 2..10 by 2}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
 (<no communication>)
 
 
@@ -336,8 +336,8 @@ From locale 0
   locale 1 owns: {1..11, 1..11 by 2}
   locale 2 owns: {1..0, 1..0}
   locale 2 owns: {1..0, 1..0}
-  locale 3 owns: {1..11, 2..10 by 2}
-  locale 3 owns: {1..11, 2..10 by 2}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 1
@@ -347,8 +347,8 @@ From locale 1
   locale 1 owns: {1..11, 1..11 by 2}
   locale 2 owns: {1..0, 1..0}
   locale 2 owns: {1..0, 1..0}
-  locale 3 owns: {1..11, 2..10 by 2}
-  locale 3 owns: {1..11, 2..10 by 2}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 2
@@ -358,8 +358,8 @@ From locale 2
   locale 1 owns: {1..11, 1..11 by 2}
   locale 2 owns: {1..0, 1..0}
   locale 2 owns: {1..0, 1..0}
-  locale 3 owns: {1..11, 2..10 by 2}
-  locale 3 owns: {1..11, 2..10 by 2}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
 (<no communication>)
 
 From locale 3
@@ -369,7 +369,7 @@ From locale 3
   locale 1 owns: {1..11, 1..11 by 2}
   locale 2 owns: {1..0, 1..0}
   locale 2 owns: {1..0, 1..0}
-  locale 3 owns: {1..11, 2..10 by 2}
-  locale 3 owns: {1..11, 2..10 by 2}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
+  locale 3 owns: {1..11, 1..11 by 2 align 0}
 (<no communication>)
 

@@ -1,2 +1,4 @@
 arrArgBlank-promote.chpl:8: error: unresolved call 'writeArr(promoted expression)'
-arrArgBlank-promote.chpl:1: note: candidates are: writeArr(X: [] real)
+arrArgBlank-promote.chpl:1: note: this candidate did not match: writeArr(X: [] real)
+arrArgBlank-promote.chpl:8: note: because call actual argument #1 with type iterator
+arrArgBlank-promote.chpl:1: note: is passed to formal 'X: []'

@@ -1,2 +1,2 @@
 I'm in the nested function!
-_shared(Foo(13))
+shared Foo(13)

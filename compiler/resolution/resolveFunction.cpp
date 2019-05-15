@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
@@ -31,7 +32,6 @@
 #include "iterator.h"
 #include "LoopExpr.h"
 #include "LoopStmt.h"
-#include "UnmanagedClassType.h"
 #include "ParamForLoop.h"
 #include "passes.h"
 #include "postFold.h"
@@ -1007,7 +1007,7 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 }
 
 void fixTypeNames(AggregateType* at) {
-  const char* typeName = toString(at);
+  const char* typeName = toString(at, false);
 
   if (at->symbol->name != typeName)
     at->symbol->name = typeName;
@@ -1142,7 +1142,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
   Symbol* ret     = fn->getReturnSymbol();
   Type*   retType = ret->type;
 
-  if (isIterator == true) {
+  if (isIterator) {
     // For iterators, the return symbol / return type is void
     // or the iterator record. Here we want to compute the yielded
     // type.
@@ -1212,7 +1212,17 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
     if (!fn->iteratorInfo) {
       if (retTypes.n == 0) {
-        retType = dtVoid;
+        if (isIterator) {
+          // This feels like it should be:
+          // retType = dtVoid;
+          //
+          // but that leads to compiler generated assignments of 'void' to
+          // variables, which isn't allowed.  If we fib and claim that it
+          // returns 'nothing', those assignments get removed and all is well.
+          retType = dtNothing;
+        } else {
+          retType = dtVoid;
+        }
       }
     }
 

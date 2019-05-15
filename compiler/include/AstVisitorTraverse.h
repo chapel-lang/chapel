@@ -45,8 +45,8 @@ public:
   virtual bool   enterAggrType       (AggregateType*     node);
   virtual void   exitAggrType        (AggregateType*     node);
 
-  virtual bool   enterUnmanagedClassType(UnmanagedClassType* node);
-  virtual void   exitUnmanagedClassType (UnmanagedClassType* node);
+  virtual bool   enterDecoratedClassType(DecoratedClassType* node);
+  virtual void   exitDecoratedClassType (DecoratedClassType* node);
 
   virtual bool   enterEnumType       (EnumType*          node);
   virtual void   exitEnumType        (EnumType*          node);

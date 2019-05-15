@@ -1,2 +1,7 @@
+<<<<<<< HEAD
 (execute_on = 12, execute_on_nb = 6) (get = 244, put = 1, execute_on = 6) (get = 244, put = 1) (get = 244, put = 1)
 (execute_on_nb = 3) (get = 137) (get = 137) (get = 227)
+=======
+(execute_on = 14, execute_on_nb = 6) (get = 166, put = 1, execute_on = 7) (get = 166, put = 1) (get = 166, put = 1)
+(execute_on_nb = 3) (get = 96) (get = 96) (get = 168)
+>>>>>>> e003bb5fead33514c433cfea9380202f763ef6ae

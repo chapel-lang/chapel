@@ -315,14 +315,14 @@
 %token TIF TIMAG TIN TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
-%token TNEW TNIL TNOINIT
+%token TNEW TNIL TNOINIT TNONE TNOTHING
 %token TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
 %token TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSTRING TSUBDOMAIN TSYNC
 %token TTHEN TTHIS TTHROW TTHROWS TTRUE TTRY TTRYBANG TTYPE
 %token TUINT TUNDERSCORE TUNION TUNMANAGED TUSE
-%token TVAR
+%token TVAR TVOID
 %token TWHEN TWHERE TWHILE TWITH
 %token TYIELD
 %token TZIP
@@ -333,7 +333,7 @@
 %token TALIAS TAND TASSIGN TASSIGNBAND TASSIGNBOR TASSIGNBXOR TASSIGNDIVIDE
 %token TASSIGNEXP TASSIGNLAND TASSIGNLOR TASSIGNMINUS TASSIGNMOD
 %token TASSIGNMULTIPLY TASSIGNPLUS TASSIGNREDUCE TASSIGNSL TASSIGNSR
-%token TBAND TBNOT TBOR TBXOR
+%token TBANG TBAND TBNOT TBOR TBXOR
 %token TCOLON TCOMMA
 %token TDIVIDE TDOT TDOTDOT TDOTDOTDOT
 %token TEQUAL TEXP TGREATER
@@ -343,7 +343,7 @@
 %token TLESS
 %token TLESSEQUAL
 %token TMINUS TMOD
-%token TNOT TNOTEQUAL
+%token TNOTEQUAL
 %token TOR
 %token TPLUS
 %token TQUESTION
@@ -376,7 +376,7 @@
 %left TSHIFTLEFT TSHIFTRIGHT
 %right TUPLUS TUMINUS
 %left TSTAR TDIVIDE TMOD
-%right TBNOT TNOT
+%right TBNOT TBANG TQUESTION
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
@@ -725,6 +725,8 @@ internal_type_ident_def:
 | TDOMAIN    { $$ = "domain"; }
 | TINDEX     { $$ = "index"; }
 | TLOCALE    { $$ = "locale"; }
+| TNOTHING   { $$ = "nothing"; }
+| TVOID      { $$ = "void"; }
 ;
 
 scalar_type:
@@ -736,6 +738,8 @@ scalar_type:
 | TCOMPLEX { $$ = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol); }
 | TSTRING  { $$ = new SymExpr(dtString->symbol); }
 | TLOCALE  { $$ = new SymExpr(dtLocale->symbol); }
+| TNOTHING { $$ = new SymExpr(dtNothing->symbol); }
+| TVOID    { $$ = new SymExpr(dtVoid->symbol); }
 ;
 
 reserved_type_ident_use:
@@ -1227,13 +1231,14 @@ fn_ident:
 | TSHIFTRIGHT    { $$ = ">>"; }
 | TMOD           { $$ = "%"; }
 | TEXP           { $$ = "**"; }
-| TNOT           { $$ = "!"; }
+| TBANG          { $$ = "!"; }
 | TBY            { $$ = "chpl_by"; }
 | THASH          { $$ = "#"; }
 | TALIGN         { $$ = "chpl_align"; }
 | TSWAP          { $$ = "<=>"; }
 | TIO            { $$ = "<~>"; }
 | TINITEQUALS    { $$ = "init="; }
+| ident_def TBANG { $$ = astr($1, "!"); }
 ;
 
 assignop_ident:
@@ -1692,6 +1697,8 @@ type_level_expr:
     { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS, $2); }
 | TSHARED expr
     { $$ = new CallExpr( "_shared", $2); }
+| ident_expr TQUESTION
+    { $$ = new CallExpr( PRIM_TO_NILABLE_CLASS, $1); }
 ;
 
 for_expr:
@@ -1939,6 +1946,7 @@ literal_expr:
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
 | CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
+| TNONE                 { $$ = new SymExpr(gNone); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 | TLCBR expr_ls TCOMMA TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 | TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
@@ -1990,7 +1998,8 @@ unary_op_expr:
 | TMINUS expr %prec TUMINUS       { $$ = new CallExpr("-", $2); }
 | TMINUSMINUS expr %prec TUMINUS  { $$ = buildPreDecIncWarning($2, '-'); }
 | TPLUSPLUS expr %prec TUPLUS     { $$ = buildPreDecIncWarning($2, '+'); }
-| TNOT expr                       { $$ = new CallExpr("!", $2); }
+| TBANG expr                      { $$ = new CallExpr("!", $2); }
+| expr TBANG                      { $$ = new CallExpr("postfix!", $1); }
 | TBNOT expr                      { $$ = new CallExpr("~", $2); }
 ;
 

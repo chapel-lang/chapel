@@ -188,6 +188,16 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-array-bounds
 endif
 
 #
+# Avoid errors about insufficient initializer lifetimes because they
+# occur in LLVM headers.  We would like to know when this occurs,
+# though, so don't turn off the warning; just don't let it abort the
+# build.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=init-list-lifetime
+endif
+
+#
 # 2016/03/28: Help to protect the Chapel compiler from a partially
 # characterized GCC optimizer regression when the compiler is being
 # compiled with gcc 5.X.

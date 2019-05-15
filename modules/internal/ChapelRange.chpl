@@ -208,9 +208,9 @@ module ChapelRange {
 
     var _low       : chpl__idxTypeToIntIdxType(idxType);  // lower bound
     var _high      : chpl__idxTypeToIntIdxType(idxType);  // upper bound
-    var _stride    : if stridable then chpl__rangeStrideType(idxType) else void; // signed stride
-    var _alignment : if stridable then chpl__idxTypeToIntIdxType(idxType) else void; // alignment
-    var _aligned   : if stridable then bool else void;
+    var _stride    : if stridable then chpl__rangeStrideType(idxType) else nothing; // signed stride
+    var _alignment : if stridable then chpl__idxTypeToIntIdxType(idxType) else nothing; // alignment
+    var _aligned   : if stridable then bool else nothing;
 
     proc strType type  return chpl__rangeStrideType(idxType);
 
@@ -260,9 +260,9 @@ module ChapelRange {
       assert(_stride == 1);
   }
 
-  private proc _isAnyVoid(args...) param : bool {
+  private proc _isAnyNothing(args...) param : bool {
     for param i in 1..args.size {
-      if isVoidType(args(i).type) then return true;
+      if isNothingType(args(i).type) then return true;
     }
     return false;
   }
@@ -276,7 +276,7 @@ module ChapelRange {
                   _stride,
                   _alignment,
                   _aligned)
-    where _isAnyVoid(_stride, _alignment, _aligned) {
+    where _isAnyNothing(_stride, _alignment, _aligned) {
 
     this.idxType     = idxType;
     this.boundedType = boundedType;
@@ -1613,10 +1613,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                      stridable = r.stridable,
                      _low = r.chpl_intToIdx(lo),
                      _high = r.chpl_intToIdx(hi),
-                     _stride = if r.stridable then (r.stride: strType)
-                                            else _void,
-                     _alignment = if r.stridable then r.alignment else _void,
-                     _aligned = if r.stridable then r.aligned else _void);
+                     _stride = if r.stridable then r.stride: strType else none,
+                     _alignment = if r.stridable then r.alignment else none,
+                     _aligned = if r.stridable then r.aligned else none);
   }
 
   proc #(r:range(?i), count:chpl__rangeStrideType(i)) {

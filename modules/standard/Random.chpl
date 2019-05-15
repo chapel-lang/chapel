@@ -224,7 +224,7 @@ module Random {
     }
 
     // Check types of optional void args
-    if !isVoidType(probType) {
+    if !isNothingType(probType) {
       if !isArrayType(probType) then
         compilerError('choice() prob must be an array');
       if !(isIntegralType(prob.eltType) || isRealType(prob.eltType)) then
@@ -237,7 +237,7 @@ module Random {
         throw new owned IllegalArgumentError('choice() array arguments must have same domain');
       }
     }
-    if !isVoidType(sizeType) {
+    if !isNothingType(sizeType) {
       if isIntegralType(sizeType) {
         if size <= 0 then
         throw new owned IllegalArgumentError('choice() size must be greater than 0');
@@ -246,7 +246,7 @@ module Random {
       }
     }
 
-    if isVoidType(probType) {
+    if isNothingType(probType) {
       return _choiceUniform(stream, arr, size, replace);
     } else {
       return _choiceProbabilities(stream, arr, size, replace, prob);
@@ -259,7 +259,7 @@ module Random {
   {
     ref A = arr.reindex(1..arr.size);
 
-    if isVoidType(sizeType) {
+    if isNothingType(sizeType) {
       // Return 1 sample
       var randIdx = stream.getNext(resultType=int, 1, A.size);
       return A[randIdx];
@@ -329,7 +329,7 @@ module Random {
     cumulativeArr /= total;
 
     // Begin sampling
-    if isVoidType(sizeType) {
+    if isNothingType(sizeType) {
       // Return 1 sample
       var randNum = stream.getNext(resultType=real);
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
@@ -535,7 +535,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > arr.size || size.size > arr.size``
      */
-    proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void) throws
+    proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none) throws
     {
       compilerError("RandomStreamInterface.choice called");
     }
@@ -959,7 +959,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > arr.size || size.size > arr.size``
      */
-      proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
+      proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         return _choice(this, arr, size=size, replace=replace, prob=prob);
@@ -1101,7 +1101,7 @@ module Random {
 
 
       pragma "no doc"
-      var PCGRandomStreamPrivate_lock$: if parSafe then sync bool else void;
+      var PCGRandomStreamPrivate_lock$: if parSafe then sync bool else nothing;
       pragma "no doc"
       pragma "dont disable remote value forwarding"
       inline proc _lock() {
@@ -2443,7 +2443,7 @@ module Random {
       }
 
       pragma "no doc"
-      proc choice(arr: [], size:?sizeType=_void, replace=true, prob:?probType=_void)
+      proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");
@@ -2506,7 +2506,7 @@ module Random {
       //
 
       pragma "no doc"
-      var NPBRandomStreamPrivate_lock$: if parSafe then sync bool else void;
+      var NPBRandomStreamPrivate_lock$: if parSafe then sync bool else nothing;
       pragma "no doc"
       pragma "dont disable remote value forwarding"
       inline proc _lock() {
