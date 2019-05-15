@@ -25,16 +25,16 @@
   This module contains the implementation of a list datatype, intended to
   replace the use of arrays to perform "vector-like" operations.
 
-  A list is a lightweight container intended to mimic Python's list datatype,
+  A List is a lightweight container intended to mimic Python's list datatype,
   with fast O(log n)/O(1) (whatever we end up on) indexing  and an API close
   in spirit to its Python counterpart.
 
   The highly parallel nature of Chapel means that great care should be taken
-  when performing operations which may trigger a move of list elements.
-  Inserts and removals into the middle of a list are example operations which
+  when performing operations which may trigger a move of List elements.
+  Inserts and removals into the middle of a List are example operations which
   may trigger a move, thus invalidating all references to elements of the
-  list held by tasks before the move. Appending an element to the end of a
-  list will never cause a move.
+  List held by tasks before the move. Appending an element to the end of a
+  List will never cause a move.
 
   The following operations may trigger a move:
     - insert
@@ -48,20 +48,41 @@
   (End word smithing module text).
 
   I know that @mppf in particular is very interested in limiting the number of
-  operations that move/displace list elements.
+  operations that move/displace List elements.
 
   This pertains to the general issue of invalidating references to (and also
-  iterators over) list elements.
+  iterators over) List elements.
 
   There is also the separate, more general issue of parallel safety. I'd
   happily appreciate any/all recommendations for the "Chapeltastic" way of
   making this List type parallel safe.
 
+  ---
+
+  I believe it is the intention of this new List datatype to replace all
+  "array-as-vec" operations on arrays. That means the following procedures
+  would no longer be supported (deprecated?, or removed?) on arrays:
+
+    - proc push_back(in val: this.eltType)
+    - proc push_back(vals: [])
+    - proc pop_back()
+    - proc push_front(in val: this.eltType)
+    - proc push_front(vals: [])
+    - proc pop_front()
+    - proc insert(pos: this.idxType, in val: this.eltType)
+    - proc insert(pos: this.idxType, vals: [])
+    - proc remove(pos: this.idxType)
+    - proc remove(pos: this.idxType, count: this.idxType)
+    - proc remove(pos: range(this.idxType, stridable = false))
+    - proc clear()
+
+  All of the methods given above change an array's domain (exactly what we
+  are trying to avoid, and the impetus for the List type).
 
 */
-module ProtoLists {
+module Lists {
 
-  // Building blocks used as backing store for lists.
+  // Building blocks used to store "chunks" of List elements.
   pragma "no doc"
   class ListBlock {
     type _etype;
@@ -81,8 +102,8 @@ module ProtoLists {
       - sort
       - pop
 
-    A move will invalidate any references to list elements held by tasks, as
-    well as iterators to list elements produced by tasks before the move
+    A move will invalidate any references to List elements held by tasks, as
+    well as iterators to List elements produced by tasks before the move
     occurred.
   */
   class List {
@@ -97,17 +118,20 @@ module ProtoLists {
     // would give us constant speed indexing at the cost of more complicated
     // indexing logic.
     //
+    // For now, I can start with Vass's logic and then switch over to a O(1)
+    // indexing scheme when everything else is working.
+    //
     pragma "no doc"
     var _head, _tail: unmanaged ListBlock(_etype) = nil;
-
 
     /*
       Initializes a new List containing elements of the given type.
 
       :arg etype: The type of the elements of this List.
     */
-    proc init(type etype) { _etype = etype; }
-
+    proc init(type etype) {
+      _etype = etype;
+    }
 
     /*
       Initializes a new List as a copy of another List object.
@@ -118,22 +142,19 @@ module ProtoLists {
       this._etype = other._etype;
     }
   
-
     proc deinit() {}
 
-
     /*
-      Add an element to the end of this list.
+      Add an element to the end of this List.
 
       .. note::
 
-        Appending an element to a list will never invalidate references to
-        (or iterators over) the elements of the list.
+        Appending an element to a List will never invalidate references to
+        elements in the List.
 
       :arg x: An element to append.
     */
     proc append(x: this._etype) {}
-
 
     /*
       Extend this List by appending all the elements from another List.
@@ -142,14 +163,12 @@ module ProtoLists {
     */
     proc extend(other: List(this._etype)) {}
 
-
     /*
       Extend this List by appending all the elements from an array.
 
       :arg other: An array, the elements of which are appended to this List.
     */
     proc extend(other: this._etype[?d]) {}
-
 
     /*
       Insert an element at a given position in this List, shifting all elements
@@ -163,9 +182,8 @@ module ProtoLists {
     */
     proc insert(i: int, x: this._etype) throws {}
 
-
     /*
-      Remove the first item from the list whose value is equal to _x_.
+      Remove the first item from this List whose value is equal to _x_.
 
       :arg x: The element to remove.
 
@@ -173,20 +191,18 @@ module ProtoLists {
     */
     proc remove(x: this._etype) throws {}
 
-
     /*
       Remove the item at the given position in this List, and return it. If no
       index is specified, remove and return the last item in this List.
 
       :arg i: The index of the element to remove. Defaults to the last item
-        in this list.
+        in this List, or `a.remove(a.size - 1)`.
       
       :return: The item removed.
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc pop(i: int=this._size): this._etype throws { return nil; }
-
+    proc pop(i: int=this._size - 1): this._etype throws { return nil; }
 
     /*
       Clear the contents of this List.
@@ -194,8 +210,8 @@ module ProtoLists {
     proc clear() {}
 
     /*
-      Return a zero-based index in the list of the first item whose value is
-      equal to _x_.
+      Return a zero-based index into this List of the first item whose value
+      is equal to _x_.
 
       :arg x: An element to search for.
 
@@ -208,7 +224,7 @@ module ProtoLists {
     }
 
     /*
-      Return the number of times _x_ appears in the list.
+      Return the number of times _x_ appears in this List.
 
       :arg x: An element to count.
 
@@ -230,14 +246,13 @@ module ProtoLists {
     */
     proc sort(key: this._etype=nil, reverse: bool=false) {}
 
-
     /*
-      Reverse the elements of this list in place.
+      Reverse the elements of this List in place.
     */
     proc reverse() {}
 
     /*
-      Index this list via subscript. Returns a reference to the element at a
+      Index this List via subscript. Returns a reference to the element at a
       given index in this List.
 
       :arg i: The index of the element to access.
@@ -248,12 +263,10 @@ module ProtoLists {
     */
     proc this(i: int) ref throws { return nil; }
 
-
     /*
       Produce a serial iterator over the elements of this List.
     */
     iter these() ref { yield _size; }
-
 
     /*
       Write the contents of this List to a given channel.
@@ -261,7 +274,6 @@ module ProtoLists {
       :arg ch: A channel to write to.
     */
     proc writeThis(ch: channel) {}
-
 
     /*
       Convert the contents of this List to string form. Could be replaced by
@@ -272,7 +284,6 @@ module ProtoLists {
     */
     proc toString(): string {}
 
-
     /*
       Return the number of elements in this List.
 
@@ -282,21 +293,30 @@ module ProtoLists {
     proc size { return _size; }
 
     /*
-      Returns `true` if this list contains zero elements.
+      Returns `true` if this List contains zero elements.
 
-      :return: `true` if this list is empty.
+      :return: `true` if this List is empty.
       :rtype: `bool`
     */
     proc isEmpty(): bool { return true; }
 
-
   }
-
 
   proc =(a: List(?t), b: List(t)) {}
 
   proc ==(a: List(?t), b: List(t)): bool { return true; }
 
+  /*
+    An important question here: do we want the semantics of addition to mirror
+    Chapel arrays, or Python lists?
+
+    Given Chapel semantics, `+` would be a "vectorlike" operation, performing
+    scalar addition against all elements of this List, returning a new List
+    as a result.
+
+    Given Python semantics, `+` would be a shorthand for concatenating two
+    Lists together, returning a new List as a result.
+  */
   proc +(a: List(?t), b: List(t)): List(t) { return nil; }
 
 }
