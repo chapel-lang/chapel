@@ -1061,7 +1061,7 @@ module ChapelArray {
       }
     }
 
-    forwarding _value except chpl__serialize, chpl__deserialize, chpl__rvfMe;
+    forwarding _value except chpl__serialize, chpl__deserialize;
 
     pragma "no doc"
     proc chpl__serialize()
@@ -2171,11 +2171,7 @@ module ChapelArray {
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
 
-    proc chpl__rvfMe() param {
-      return _instance.chpl__rvfMe();
-    }
-
-    proc chpl__serialize() where chpl__rvfMe() {
+    proc chpl__serialize() where _instance.chpl__rvfMe() {
       return _instance.chpl__serialize();
     }
 
@@ -2206,7 +2202,7 @@ module ChapelArray {
 
     forwarding _value except doiBulkTransferFromKnown, doiBulkTransferToKnown,
                              doiBulkTransferFromAny,  doiBulkTransferToAny,
-                             chpl__serialize, chpl__deserialize, chpl__rvfMe;
+                             chpl__serialize, chpl__deserialize;
 
     pragma "no doc"
     proc deinit() {
