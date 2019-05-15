@@ -109,15 +109,47 @@ bool classesWithSameKind(Type* a, Type* b) {
   return aDecorator == bDecorator;
 }
 
-Type* canonicalClassType(Type* a) {
-  if (AggregateType* at = toAggregateType(a))
+Type* canonicalClassType(Type* t) {
+  if (AggregateType* at = toAggregateType(t))
     if (isClass(at))
         return at;
 
-  if (DecoratedClassType* mt = toDecoratedClassType(a))
+  if (DecoratedClassType* mt = toDecoratedClassType(t))
     return mt->getCanonicalClass();
 
-  return a;
+  return t;
+}
+
+ClassTypeDecorator classTypeDecorator(Type* t) {
+  if (!isClassLike(t))
+    INT_FATAL("classTypeDecorator called on non-class");
+
+  if (isAggregateType(t))
+    return CLASS_TYPE_BORROWED; // default meaning of AggregateType class
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    return dt->getDecorator();
+
+  if (t == dtBorrowed)
+    return CLASS_TYPE_BORROWED;
+  if (t == dtBorrowedNilable)
+    return CLASS_TYPE_BORROWED_NILABLE;
+  if (t == dtUnmanaged)
+    return CLASS_TYPE_UNMANAGED;
+  if (t == dtUnmanagedNilable)
+    return CLASS_TYPE_UNMANAGED_NILABLE;
+
+  INT_FATAL("case not handled");
+  return CLASS_TYPE_BORROWED;
+}
+
+bool isNonNilableClassType(Type* t) {
+  if (!isClassLike(t))
+    return false;
+
+  ClassTypeDecorator decorator = classTypeDecorator(t);
+  bool nilable = (decorator & CLASS_TYPE_NILABLE_MASK);
+  return !nilable;
 }
 
 static Type* convertToCanonical(Type* a) {

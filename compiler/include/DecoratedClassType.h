@@ -73,7 +73,10 @@ private:
 };
 
 bool classesWithSameKind(Type* a, Type* b);
-Type* canonicalClassType(Type* a);
+Type* canonicalClassType(Type* t);
+
+ClassTypeDecorator classTypeDecorator(Type* t);
+bool isNonNilableClassType(Type* t);
 
 void convertClassTypesToCanonical();
 

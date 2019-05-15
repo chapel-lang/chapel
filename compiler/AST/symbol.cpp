@@ -2091,3 +2091,92 @@ const char* toString(ArgSymbol* arg) {
   else
     return astr(intent, arg->name, ": ", toString(arg->getValType()));
 }
+
+const char* toString(VarSymbol* var) {
+  // If it's a compiler temporary, find an assignment
+  //  * from a user variable or field
+  //  * to a user variable or field
+
+  if (!var->hasFlag(FLAG_TEMP))
+    return astr(var->name, ": ", toString(var->getValType()));
+
+  Symbol* sym = var;
+  // Compiler temporaries should have a single definition
+  while (sym->hasFlag(FLAG_TEMP)) {
+    SymExpr* singleDef = sym->getSingleDef();
+    if (singleDef != NULL) {
+      if (CallExpr* c = toCallExpr(singleDef->parentExpr)) {
+        if (c->isPrimitive(PRIM_MOVE) ||
+            c->isPrimitive(PRIM_ASSIGN)) {
+          SymExpr* dstSe = toSymExpr(c->get(1));
+          SymExpr* srcSe = toSymExpr(c->get(2));
+          if (dstSe && srcSe && dstSe->symbol() == sym) {
+            sym = singleDef->symbol();
+            continue;
+          }
+        }
+      }
+    }
+
+    // Give up
+    sym = NULL;
+    break;
+  }
+
+  const char* name;
+  if (sym != NULL) {
+    name = sym->name;
+  } else {
+    // Look for something using the temporary
+    // e.g. field initialization
+
+    sym = var;
+    while (sym->hasFlag(FLAG_TEMP)) {
+      Expr* cur = NULL;
+      name = NULL;
+      for (cur = sym->defPoint; cur; cur = cur->next) {
+        if (CallExpr* c = toCallExpr(cur)) {
+          if (c->isPrimitive(PRIM_MOVE) ||
+              c->isPrimitive(PRIM_ASSIGN)) {
+            SymExpr* dstSe = toSymExpr(c->get(1));
+            SymExpr* srcSe = toSymExpr(c->get(2));
+            if (dstSe && srcSe && srcSe->symbol() == sym) {
+              sym = dstSe->symbol();
+              name = sym->name;
+              break;
+            }
+          }
+          if (c->isPrimitive(PRIM_SET_MEMBER) ||
+              c->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+            SymExpr* fieldSe = toSymExpr(c->get(2));
+            SymExpr* valueSe = toSymExpr(c->get(3));
+            if (fieldSe && valueSe && valueSe->symbol() == sym) {
+              sym = fieldSe->symbol();
+              name = NULL;
+              // Field access might be by name
+              if (VarSymbol* v = toVarSymbol(sym))
+                if (v->immediate)
+                  if (v->immediate->const_kind == CONST_KIND_STRING)
+                    name = astr("field ", v->immediate->v_string);
+
+              if (name == NULL)
+                name = astr("field ", sym->name);
+
+              break;
+            }
+          }
+        }
+      }
+      // Stop looking if the above code didn't find anything
+      if (name == NULL)
+        break;
+    }
+  }
+
+  if (ArgSymbol* arg = toArgSymbol(sym))
+    return toString(arg);
+  else if (name != NULL)
+    return astr(name, ": ", toString(var->getValType()));
+
+  return astr("<temporary>");
+}

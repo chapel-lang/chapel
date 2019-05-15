@@ -801,5 +801,6 @@ void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
 
 const char* toString(ArgSymbol* arg);
+const char* toString(VarSymbol* var);
 
 #endif
