@@ -8650,6 +8650,7 @@ static void resolvePrimInit(CallExpr* call,
     resolvePrimInit(call, val, type);
   } else {
     // TODO: this is dead code
+    INT_FATAL("dead code");
 
     // Reduce it to variable initialization
     //   - create temporary variable
