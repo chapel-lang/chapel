@@ -2290,18 +2290,8 @@ static bool resolveBuiltinCastCall(CallExpr* call)
         if (isClassLike(valueType)) {
           AggregateType* at = toAggregateType(canonicalClassType(valueType));
 
-          Type* t = NULL;
-
-          if (targetType == dtBorrowed)
-            t = at->getDecoratedClass(CLASS_TYPE_BORROWED);
-          else if (targetType == dtBorrowedNilable)
-            t = at->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
-          else if (targetType == dtUnmanaged)
-            t = at->getDecoratedClass(CLASS_TYPE_UNMANAGED);
-          else if (targetType == dtUnmanagedNilable)
-            t = at->getDecoratedClass(CLASS_TYPE_UNMANAGED_NILABLE);
-          else
-            INT_FATAL("case not handled");
+          ClassTypeDecorator d = classTypeDecorator(targetType);
+          Type* t = at->getDecoratedClass(d);
 
           // Replace the target type with the instantiated one.
           targetTypeSe->setSymbol(t->symbol);
@@ -2329,15 +2319,6 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 
       // This could compute the target type for generics.
       // If it does, be careful with generics with defaults.
-      /*
-      if (canInstantiate(valueType, targetType)) {
-        // Replace the target type with the instantiated one.
-        Type* t = getInstantiationType(valueType, targetType);
-        INT_ASSERT(t);
-        targetTypeSe->setSymbol(t->symbol);
-        // Try again with that
-        return resolveBuiltinCastCall(call);
-      }*/
     }
   }
 
