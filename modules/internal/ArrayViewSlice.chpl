@@ -75,7 +75,8 @@ module ArrayViewSlice {
 
     forwarding arr except these,
                       doiBulkTransferFromKnown, doiBulkTransferToKnown,
-                      doiBulkTransferFromAny,  doiBulkTransferToAny;
+                      doiBulkTransferFromAny,  doiBulkTransferToAny,
+                      chpl__serialize, chpl__deserialize;
 
 
     //
