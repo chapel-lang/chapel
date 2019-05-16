@@ -25,6 +25,8 @@
 module ArrayViewSlice {
   use ChapelStandard;
 
+  config param chpl_debugSerializeSlice = false;
+
   private proc buildIndexCacheHelper(arr, dom) {
     param isRankChangeReindex = arr.isRankChangeArrayView() ||
                                 arr.isReindexArrayView() ||
@@ -101,6 +103,11 @@ module ArrayViewSlice {
     // domain and array
     //
     proc chpl__serialize() where chpl__rvfMe() {
+      if chpl_debugSerializeSlice {
+        // use printf to avoid messing up tests checking comm counts
+        extern proc printf(x...);
+        printf("%d serializing a slice\n", here.id:c_int);
+      }
       return (_to_borrowed(dom).chpl__serialize(),
               _to_borrowed(arr).chpl__serialize());
     }
