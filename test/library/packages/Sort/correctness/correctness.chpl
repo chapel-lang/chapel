@@ -23,9 +23,11 @@ proc main() {
   // Arrays and Domains
   const largeD = {1..20}, // quickSort requires domain.size > 16
         strideD = {2..8 by 2},
+        strideAlignD = {2..9 by 2 align 3},
       strideRevD = {2..8 by -2};
   var largeA: [largeD] int,
       strideA: [strideD] int = [-3, -1, 4, 5],
+      strideAlignA: [strideAlignD] int = [-3, -1, 4, 5],
       strideRevA: [strideRevD] int = [-3, -1, 4, 5];
     [i in largeD] largeA[i] = i;
 
@@ -38,6 +40,7 @@ proc main() {
                 // Testing D.idxType / D.dims()
                 (largeA, defaultComparator),
                 (strideA, defaultComparator),
+                (strideAlignA, defaultComparator),
                 (strideRevA, defaultComparator),
 
                 // Testing comparators

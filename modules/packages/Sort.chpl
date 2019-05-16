@@ -492,7 +492,7 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   const stride = if Dom.stridable then abs(Dom.stride) else 1;
   var sorted = true;
   forall (element, i) in zip(Data, Dom) with (&& reduce sorted) {
-    if i > Dom.low {
+    if i > Dom.first {
       sorted &&= (chpl_compare(Data[i-stride], element, comparator) <= 0);
     }
   }
