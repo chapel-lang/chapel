@@ -221,7 +221,7 @@ module Lists {
         the element taken while it was contained in this List.
 
       :arg i: The index of the element to remove. Defaults to the last item
-        in this List, or `a.remove(a.size - 1)`.
+        in this List.
 
       :return: The item removed.
 
@@ -256,7 +256,7 @@ module Lists {
     }
 
     /*
-      Return the number of times _x_ appears in this List.
+      Return the number of times a given element is found in this List.
 
       :arg x: An element to count.
 
@@ -314,7 +314,7 @@ module Lists {
     }
 
     /*
-      Write the contents of this List to a given channel.
+      Write the contents of this List to a channel.
 
       :arg ch: A channel to write to.
     */
@@ -331,8 +331,8 @@ module Lists {
     }
 
     /*
-      Returns a new DefaultRectangular array containing the elements of this
-      List.
+      Returns a new DefaultRectangular array containing a copy of each of the
+      elements contained in this List.
 
       :return: A new DefaultRectangular array.
     */
