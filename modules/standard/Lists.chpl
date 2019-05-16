@@ -184,7 +184,7 @@ module Lists {
       Insert an element at a given position in this List, shifting all elements
       following that index one to the right.
 
-      .. warn::
+      .. warning::
       
         Inserting an element into this List may invalidate existing references
         to the elements contained in this List.
@@ -200,7 +200,7 @@ module Lists {
       Remove the first item from this List whose value is equal to x, shifting
       all elements following the removed item one to the left.
 
-      .. warn::
+      .. warning::
 
         Removing an element from this List may invalidate existing references
         to the elements contained in this List.
@@ -215,7 +215,7 @@ module Lists {
       Remove the item at the given position in this List, and return it. If no
       index is specified, remove and return the last item in this List.
 
-      .. warn::
+      .. warning::
 
         Popping an element from this List will invalidate any reference to
         the element taken while it was contained in this List.
@@ -234,7 +234,7 @@ module Lists {
     /*
       Clear the contents of this List.
 
-      .. warn::
+      .. warning::
 
         Clearing the contents of this List will invalidate all existing
         references to the elements contained in this List.
@@ -270,7 +270,7 @@ module Lists {
     /*
        Sort the elements of this List in place using their default sort order.
 
-       .. warn::
+       .. warning::
 
         Sorting the contents of this List may invalidate existing references
         to the elements contained in this List.
@@ -280,7 +280,7 @@ module Lists {
     /*
       Sort the items of this List in place using a comparator.
 
-      .. warn::
+      .. warning::
 
         Sorting the elements of this List may invalidate existing references
         to the elements contained in this List.
