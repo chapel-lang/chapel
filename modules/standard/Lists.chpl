@@ -101,7 +101,7 @@ module Lists {
     from another List object inherits the parallel safety mode of that list
     unless otherwise specified.
   */
-  class List {
+  record List {
 
     /* The number of elements contained in this List. */
     var size = 0;
