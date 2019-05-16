@@ -70,7 +70,7 @@ void chpl_mli_terminate(enum chpl_mli_errors e) {
   mli_terminate();
 }
 
-void chpl_mli_smain(void) {
+void chpl_mli_smain(char* setupConn) {
   int64_t id = -1;
   int64_t ack = 0;
   int execute = 1;
@@ -79,7 +79,6 @@ void chpl_mli_smain(void) {
   double seconds = 0;
 
   const char* ip = "localhost";
-  const char* setupConn = "tcp://C02SY01RGTFM:5554"; // TODO: get from arguments
 
   chpl_mli_server_init(&chpl_server);
 

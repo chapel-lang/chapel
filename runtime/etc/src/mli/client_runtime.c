@@ -95,7 +95,6 @@ void chpl_library_init(int argc, char** argv) {
 
   // Just hardcode these values for now.
   const char* ip = "localhost";
-  const char* setupPort = "5554";
 
   if (initialized) { return; }
   initialized = 1;
@@ -103,12 +102,24 @@ void chpl_library_init(int argc, char** argv) {
   // Set up the clientside ZMQ sockets.
   chpl_mli_client_init(&chpl_client);
 
-  chpl_mli_bind(chpl_client.setup_sock, ip, setupPort);
+  chpl_mli_bind(chpl_client.setup_sock, ip, "*");
 
   char* setup_sock_conn = chpl_mli_connection_info(chpl_client.setup_sock);
   chpl_mli_debugf("Setup socket used: %s\n", setup_sock_conn);
 
-  chpl_mli_client_launch(argc, argv);
+  // Send the setup socket as the last argument when launching the server.
+  int argcPlusSock = argc + 2;
+  char** argvPlusSock = mli_malloc(argcPlusSock * sizeof(char*));
+  for (int i = 0; i < argc; i++) {
+    chpl_mli_debugf("passing along arg %d: %s\n", i, argv[i]);
+    argvPlusSock[i] = argv[i];
+  }
+  argvPlusSock[argc] = "--mli-socketLoc";
+  argvPlusSock[argc + 1] = setup_sock_conn;
+  chpl_mli_debugf("spawning server with %d args\n", argcPlusSock);
+  chpl_mli_client_launch(argcPlusSock, argvPlusSock);
+  chpl_mli_debugf("clean up extended %s\n", "argv");
+  mli_free(argvPlusSock);
 
   chpl_mli_debugf("cleaning up connection %s\n", "info");
   mli_free(setup_sock_conn);
