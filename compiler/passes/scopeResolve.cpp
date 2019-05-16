@@ -2202,6 +2202,14 @@ static void resolveUnmanagedBorrows() {
             decorator = dt->getDecorator();
           } else if (at && isClass(at)) {
             decorator = CLASS_TYPE_BORROWED;
+          } else if (ts == dtUnmanaged->symbol) {
+            decorator = CLASS_TYPE_UNMANAGED;
+          } else if (ts == dtBorrowed->symbol) {
+            decorator = CLASS_TYPE_BORROWED;
+          } else if (ts == dtUnmanagedNilable->symbol) {
+            decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+          } else if (ts == dtBorrowedNilable->symbol) {
+            decorator = CLASS_TYPE_BORROWED_NILABLE;
           } else {
             const char* type = NULL;
             if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
@@ -2239,10 +2247,29 @@ static void resolveUnmanagedBorrows() {
           if (at) {
             Type* dt = at->getDecoratedClass(decorator);
             if (dt) {
-              TypeSymbol* useTS = dt->symbol;
               // replace the call with a new symexpr pointing to ts
-              call->replace(new SymExpr(useTS));
+              call->replace(new SymExpr(dt->symbol));
             }
+          } else {
+            // e.g. for borrowed?
+            Type* dt = NULL;
+            switch (decorator) {
+              case CLASS_TYPE_BORROWED:
+                dt = dtBorrowed;
+                break;
+              case CLASS_TYPE_BORROWED_NILABLE:
+                dt = dtBorrowedNilable;
+                break;
+              case CLASS_TYPE_UNMANAGED:
+                dt = dtUnmanaged;
+                break;
+              case CLASS_TYPE_UNMANAGED_NILABLE:
+                dt = dtUnmanagedNilable;
+                break;
+              // no default intentionally
+            }
+            INT_ASSERT(dt);
+            call->replace(new SymExpr(dt->symbol));
           }
         }
       }

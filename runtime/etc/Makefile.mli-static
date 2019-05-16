@@ -19,65 +19,101 @@
 # Makefile.mli-static
 #
 
-#
-# TODO
-#
-# There's a slightly more complicated build process going on here, because we
-# have 3 deliverables (for now):
-#
-#   - A client facing library file (static or shared)
-#   - A multi-locale launcher
-#   - A multi-locale executable
-#
-# We build the server as if it's a multi-locale executable, and then build the
-# client as if it's a (static, for this file) library.
-#
-
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
-#
-# This is common code included wholesale in each MLI compile (for now). With-
-# out knowledge of these source files, compilation of code generated for
-# multi-locale libraries will fail.
-#
-CHPL_MLI_INCLUDES = $(CHPL_MAKE_HOME)/runtime/etc/mli
+CHPL_LINK_TRAILING = $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
+CHPL_MLI_INCS = -I$(CHPL_ZMQ_LOC)/include
+CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+CHPL_MLI_LIBS = $(CHPL_ZMQ_LOC)/lib/libzmq.a $(CHPL_LN_LIB_DIR)/lib/libchpllaunch.a
+CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+
+.PHONY: checkZMQ buildServer buildClient
+
+all: checkZMQ buildServer buildClient
 
 checkZMQ:
-  #
-  # You MUST SET THIS or compilation will fail!
-  #
 ifndef CHPL_ZMQ_LOC
-	$(error CHPL_ZMQ_LOC must be set to the location of the ZeroMQ library)
+  $(error CHPL_ZMQ_LOC must be set to the location of the ZeroMQ library)
 endif
 
-CHPL_LINK_TRAILING = $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
+buildServer: $(TMPSERVERNAME)
 
-all: checkZMQ $(TMPBINNAME) $(TMPSERVERNAME)
+buildClient: $(TMPBINNAME)
 
-# TODO: Should I roll a static copy of libzmq into the client archive?
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CLIENT_CFLAGS) -c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC) -I$(CHPL_MLI_INCLUDES) -I$(CHPL_ZMQ_LOC)/include
-	$(AR) -c -r -s $(TMPBINNAME) $(TMPBINNAME).o $(CHPL_CL_OBJS) $(CHPL_ZMQ_LOC)/lib/libzmq.a
+#
+# Invoke the launcher script, but don't actually link up the launcher binary.
+# Do this by setting CHPL_MAKE_IS_MLI=1.
+#
+	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all \
+		CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
+		TMPBINNAME=$(TMPSERVERNAME) \
+		BINNAME=$(SERVERNAME) \
+		TMPDIRNAME=$(TMPDIRNAME) \
+		CHPL_MAKE_RUNTIME_LIB=$(CHPL_MAKE_RUNTIME_LIB) \
+		CHPL_MAKE_RUNTIME_INCL=$(CHPL_MAKE_RUNTIME_INCL) \
+		CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY) \
+		CHPL_MAKE_IS_MLI=1
+#
+# Compile the client bundle.
+#
+	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CLIENT_CFLAGS) \
+		-c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC) $(CHPL_MLI_INCS) \
+		$(COMP_GEN_MLI_EXTRA_INCLUDES)
+#
+# Throw the client object file and launcher object file into an archive.
+#
+	$(AR) -c -r -s $(TMPBINNAME)-tmp $(TMPBINNAME).o \
+		$(CHPL_CL_OBJS) \
+		$(TMPSERVERNAME)_launcher.o
+#
+# Merge the client library, launcher library, and ZMQ library together via use
+# of libtool. This makes the assumption that static library files for both
+# external libraries exist.
+#
+	libtool -static -o $(TMPBINNAME) -no_warning_for_no_symbols \
+		$(CHPL_ZMQ_LOC)/lib/libzmq.a \
+		$(CHPL_LN_LIB_DIR)/libchpllaunch.a \
+		$(TMPBINNAME)-tmp
+#
+# Last minute munging in case of output file name collisions.
+#
 ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
 endif
 
+#
+# Compile the server executable.
+#
 $(TMPSERVERNAME): $(CHPL_CL_OBJS) checkRtLibDir FORCE
 	$(TAGS_COMMAND)
 ifneq ($(SKIP_COMPILE_LINK),skip)
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_SERVER_CFLAGS) -c -o $(TMPSERVERNAME).o $(CHPL_RT_INC_DIR) $(CHPLSERVERSRC) -I$(CHPL_MLI_INCLUDES)
-	$(foreach srcFile, $(CHPLUSEROBJ),$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_SERVER_CFLAGS) -c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c ;)
-	$(LD) $(GEN_LFLAGS) $(COMP_GEN_SERVER_LFLAGS) -o $(TMPSERVERNAME) -L$(CHPL_RT_LIB_DIR) $(TMPSERVERNAME).o $(CHPLUSEROBJ) $(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) -lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS) -L$(CHPL_ZMQ_LOC)/lib -lzmq
-endif
-ifneq ($(CHPL_MAKE_LAUNCHER),none)
-	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) TMPBINNAME=$(TMPSERVERNAME) BINNAME=$(SERVERNAME) TMPDIRNAME=$(TMPDIRNAME) CHPL_MAKE_RUNTIME_LIB=$(CHPL_MAKE_RUNTIME_LIB) CHPL_MAKE_RUNTIME_INCL=$(CHPL_MAKE_RUNTIME_INCL) CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY)
-else
-	$(error CHPL_MAKE_LAUNCHER cannot be "none" in a multilocale library build)
-endif
-ifneq ($(TMPSERVERNAME),$(SERVERNAME))
-	rm -f $(SERVERNAME)
-	mv $(TMPSERVERNAME) $(SERVERNAME)
+#
+# Compile the server bundle.
+#
+	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_SERVER_CFLAGS) \
+		-c -o $(TMPSERVERNAME).o \
+		$(CHPL_RT_INC_DIR) $(CHPLSERVERSRC) $(CHPL_MLI_INCS) \
+		$(COMP_GEN_MLI_EXTRA_INCLUDES)
+#
+# Compile loose source files in CHPLUSEROBJ.
+#
+	$(foreach srcFile, $(CHPLUSEROBJ), \
+		$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_SERVER_CFLAGS) \
+			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
+	;)
+#
+# Link the Chapel runtime and the ZMQ library together into a multi-locale
+# executable.
+#
+	$(LD) $(GEN_LFLAGS) $(COMP_GEN_SERVER_LFLAGS) -o $(TMPSERVERNAME) \
+		-L$(CHPL_RT_LIB_DIR) $(TMPSERVERNAME).o $(CHPLUSEROBJ) \
+		$(CHPL_RT_LIB_DIR)/main_mli.o \
+		$(CHPL_CL_OBJS) \
+		-lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
+		$(CHPL_MAKE_BASE_LFLAGS) \
+		-L$(CHPL_ZMQ_LOC)/lib -lzmq
 endif
 
 FORCE:

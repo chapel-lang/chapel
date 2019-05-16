@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_RUNTIME_ETC_MLI_MLI_COMMON_CODE_C_
-#define CHPL_RUNTIME_ETC_MLI_MLI_COMMON_CODE_C_
+#ifndef CHPL_RUNTIME_ETC_SRC_MLI_COMMON_CODE_C_
+#define CHPL_RUNTIME_ETC_SRC_MLI_COMMON_CODE_C_
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -141,7 +141,8 @@ const char* chpl_mli_errstr(enum chpl_mli_errors e) {
     return "INVALID_ERROR_CODE";
   }
 
-  return mli_errors_[e];
+  // Remember to negate the error code!
+  return mli_errors_[-e];
 }
 
 //

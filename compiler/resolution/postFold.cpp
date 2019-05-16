@@ -319,7 +319,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     }
 
   } else if (call->isPrimitive(PRIM_CAST) == true) {
-    Type* t= call->get(1)->typeInfo();
+    Type* t = call->get(1)->typeInfo();
 
     if (t == dtUnknown) {
       INT_FATAL(call, "Unable to resolve type");

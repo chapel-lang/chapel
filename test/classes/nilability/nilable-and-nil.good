@@ -1,0 +1,8 @@
+borrowed MyClass?
+nil
+nil
+{x = 2}
+unmanaged MyClass?
+nil
+nil
+{x = 2}

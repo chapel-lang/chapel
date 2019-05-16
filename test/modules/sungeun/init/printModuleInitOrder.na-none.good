@@ -23,6 +23,16 @@ Initializing Modules:
         DSIUtil
         ChapelArray
          Sort
+          MSBRadixSort
+           RadixSortHelp
+           ShellSort
+          QuickSort
+           InsertionSort
+          BubbleSort
+          HeapSort
+          BinaryInsertionSort
+          MergeSort
+          SelectionSort
         ExternalArray
         RangeChunk
        ChapelNumLocales

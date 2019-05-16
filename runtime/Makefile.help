@@ -76,7 +76,7 @@ RUNTIME_OBJS = \
 	$(COMMON_OBJS) \
 	$(TASKS_OBJS) \
 	$(THREADS_OBJS) \
-        $(TIMERS_OBJS) \
+	$(TIMERS_OBJS) \
 	$(COMM_OBJS) \
 	$(MEM_COMMON_OBJS) \
 	$(QIO_OBJS) \
@@ -88,7 +88,8 @@ RUNTIME_OBJS = \
 LAUNCH_LIB_OBJS = \
 	$(COMMON_LAUNCHER_OBJS) \
 	$(COMM_LAUNCHER_OBJS) \
-	$(LAUNCHER_OBJS)
+	$(LAUNCHER_OBJS) \
+	$(ONLY_LAUNCHER_OBJS)
 
 RUNTIME_DIR = ../$(LIB_RT_DIR)
 RUNTIME_LIB = $(RUNTIME_DIR)/libchpl.a
@@ -103,13 +104,13 @@ LAUNCHER_DIR_TIMESTAMP = $(LAUNCHER_DIR)/.timestamp
 RUNTIME_TARGETS = \
 	$(RUNTIME_LIB) \
 	$(RUNTIME_DIR)/main.o \
+	$(RUNTIME_DIR)/main_mli.o \
 	$(RUNTIME_MALLOC_LIB) \
 
 ifneq ($(CHPL_MAKE_LAUNCHER),none)
 LAUNCHER_TARGETS = \
 	$(LAUNCHER_LIB) \
-	$(LAUNCHER_DIR)/main_launcher.o \
-
+	$(LAUNCHER_DIR)/main_launcher.o
 endif
 
 ifeq ($(MAKE_LAUNCHER),0)
@@ -159,6 +160,9 @@ $(RUNTIME_OVERRIDE_LD): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 $(RUNTIME_DIR)/main.o: $(RUNTIME_OBJDIR)/src/main.o
 	cp $< $@
 
+$(RUNTIME_DIR)/main_mli.o: $(RUNTIME_OBJDIR)/src/main_mli.o
+	cp $< $@
+
 $(RUNTIME_MALLOC_LIB): $(RUNTIME_MALLOC_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	@rm -f $@
 	$(AR) -rc $@ $(RUNTIME_MALLOC_OBJS)
@@ -176,7 +180,6 @@ $(LAUNCHER_LIB): $(LAUNCH_LIB_OBJS) $(LAUNCHER_DIR_TIMESTAMP)
 
 $(LAUNCHER_DIR)/main_launcher.o: $(LAUNCHER_OBJDIR)/src/main_launcher.o
 	cp $< $@
-
 
 #
 # include standard footer for runtime

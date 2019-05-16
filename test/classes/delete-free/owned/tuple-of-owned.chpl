@@ -1,3 +1,5 @@
+module mymodule {
+
 class C {
   var i: int;
 }
@@ -86,3 +88,4 @@ proc test5() {
   acceptst5( (a, b) ); // should be nil by here
 }
 test5();
+}

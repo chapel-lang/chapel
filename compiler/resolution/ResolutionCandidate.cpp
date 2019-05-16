@@ -460,16 +460,66 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     return actualType;
   }
 
+  if (AggregateType* at = toAggregateType(actualType)) {
+    if (at->isClass() && isClassLike(at)) {
+      // non-nilable borrowed can coerce to nilable borrowed
+      Type* actualNilableBorrowed =
+        at->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
+      if (canInstantiate(actualNilableBorrowed, formalType))
+        return actualNilableBorrowed;
+    }
+  }
+
   if (DecoratedClassType* actualDt = toDecoratedClassType(actualType)) {
+    ClassTypeDecorator actualDecorator = actualDt->getDecorator();
     AggregateType* actualC = actualDt->getCanonicalClass();
-    if (canInstantiate(actualC, formalType))
-      return actualC;
+
+    // No coercions for nilable borrowed
+
+    // nilable unmanaged can coerce to nilable borrowed
+    if (actualDecorator == CLASS_TYPE_UNMANAGED_NILABLE) {
+      Type* actualNilableBorrowed =
+        actualC->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
+      if (canInstantiate(actualNilableBorrowed, formalType))
+        return actualNilableBorrowed;
+    }
+
+    // non-nilable unmanaged can coerce to borrowed,borrowed?,unmanaged?
+    if (actualDecorator == CLASS_TYPE_UNMANAGED) {
+      Type* actualNilableBorrowed =
+        actualC->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
+      if (canInstantiate(actualNilableBorrowed, formalType))
+        return actualNilableBorrowed;
+      Type* actualBorrowed =
+        actualC->getDecoratedClass(CLASS_TYPE_BORROWED);
+      if (canInstantiate(actualBorrowed, formalType))
+        return actualBorrowed;
+      Type* actualNilableUnmanaged =
+        actualC->getDecoratedClass(CLASS_TYPE_UNMANAGED_NILABLE);
+      if (canInstantiate(actualNilableUnmanaged, formalType))
+        return actualNilableUnmanaged;
+    }
   }
 
   if (isManagedPtrType(actualType)) {
     Type* actualBaseType = getManagedPtrBorrowType(actualType);
+    // non-nilable owned can coerce to non-nilable borrowed
     if (canInstantiate(actualBaseType, formalType))
       return actualBaseType;
+    // non-nilable owned can coerce to nilable borrowed
+    if (AggregateType* at = toAggregateType(actualBaseType)) {
+      Type* actualNilableBorrowed =
+        at->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
+      if (canInstantiate(actualNilableBorrowed, formalType))
+        return actualBaseType;
+    }
+
+    // TODO: handle owned -> owned? and shared -> shared?
+  }
+
+  if (actualType == dtNil) {
+    if (formalType == dtBorrowedNilable || formalType == dtUnmanagedNilable)
+      return actualType;
   }
 
   if (isSyncType(actualType) || isSingleType(actualType)) {
@@ -720,7 +770,9 @@ static bool isNumericType(Type* t) {
 }
 
 static bool isClassLikeOrManaged(Type* t) {
-  return isClassLikeOrPtr(t) || isManagedPtrType(t);
+  return isClassLikeOrPtr(t) || isManagedPtrType(t) ||
+         t == dtBorrowed || t == dtBorrowedNilable ||
+         t == dtUnmanaged || t == dtUnmanagedNilable;
 }
 
 static ResolutionCandidateFailureReason

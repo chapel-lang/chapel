@@ -317,16 +317,13 @@ static bool isDeadStringLiteral(VarSymbol* string) {
 }
 
 //
-// Noakes 2017/03/04, updated 2018/05
+// Noakes 2017/03/04, updated 2019/05
 //
 // The current pattern to initialize a string literal,
 // a VarSymbol _str_literal_NNN, is approximately
 //
-//   def  call_tmp : c_ptr;
-//   move call_tmp, cast(c_ptr(uint(8)), c"literal string");
-//
 //   def  new_temp  : string;
-//   call init(new_temp, call_tmp, ...);
+//   call init(new_temp, c"literal string", ...);
 //
 //   move _str_literal_NNN, new_temp;  // this is 'defn' - the single def
 //
@@ -334,24 +331,18 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
   SymExpr*   defn  = toVarSymbol(defExpr->sym)->getSingleDef();
 
   // Step backwards from 'defn'
-  Expr* stmt5 = defn->getStmtExpr();
-  Expr* stmt4 = stmt5->prev;
-  Expr* stmt3 = stmt4->prev;
-  Expr* stmt2 = stmt3->prev;
-  Expr* stmt1 = stmt2->prev;
+  Expr* move    = defn->getStmtExpr();
+  Expr* init    = move->prev;
+  Expr* defTemp = init->prev;
 
   // Simple sanity checks
-  INT_ASSERT(isDefExpr (stmt1));   // def  call_tmp
-  INT_ASSERT(isCallExpr(stmt2));   // move call_tmp, cast(...)
-  INT_ASSERT(isDefExpr (stmt3));   // def  new_temp
-  INT_ASSERT(isCallExpr(stmt4));   // call init(...)
-  INT_ASSERT(isCallExpr(stmt5));   // move _str_literal_NNN, new_temp
+  INT_ASSERT(isDefExpr (defTemp));
+  INT_ASSERT(isCallExpr(init));
+  INT_ASSERT(isCallExpr(move));
 
-  stmt5->remove();
-  stmt4->remove();
-  stmt3->remove();
-  stmt2->remove();
-  stmt1->remove();
+  move->remove();
+  init->remove();
+  defTemp->remove();
 
   defExpr->remove();
 }

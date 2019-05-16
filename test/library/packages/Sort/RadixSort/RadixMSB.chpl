@@ -17,7 +17,7 @@
 
      // comparison sorting for <=100 elements
      if(array.size<=100) {
-       insertionSort(array[startIndex..endIndex]);
+       InsertionSort.insertionSort(array[startIndex..endIndex]);
        return;
      }
      

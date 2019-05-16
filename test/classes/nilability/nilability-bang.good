@@ -1,0 +1,8 @@
+cb!
+borrowed Child {p = 1, c = 2}
+cbq!
+borrowed Child {p = 1, c = 2}
+cu!
+unmanaged Child {p = 1, c = 2}
+cuq!
+unmanaged Child {p = 1, c = 2}

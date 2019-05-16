@@ -50,25 +50,25 @@ proc doSort(param st: SortType, trials: int) {
 
 // complete support for first-class function would be nice here
 proc _doSort(param st, I) where st==SortType.BUBBLE {
-  bubbleSort(I);
+  BubbleSort.bubbleSort(I);
 }
 proc _doSort(param st, I) where st==SortType.INSERTION {
-  insertionSort(I);
+  InsertionSort.insertionSort(I);
 }
 proc _doSort(param st, I) where st==SortType.MERGE {
-  mergeSort(I);
+  MergeSort.mergeSort(I);
 }
 
 proc _doSort(param st, I) where st==SortType.SELECTION {
-  selectionSort(I);
+  SelectionSort.selectionSort(I);
 }
 
 proc _doSort(param st, I) where st==SortType.QUICK {
-  quickSort(I);
+  QuickSort.quickSort(I);
 }
 
 proc _doSort(param st, I) where st==SortType.HEAP {
-  heapSort(I);
+  HeapSort.heapSort(I);
 }
 
 proc resetArr(A: [?D]) {
