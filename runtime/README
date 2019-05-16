@@ -58,6 +58,6 @@ layer.
 
 - Any additional source or header files related to the functionality
   described in the second word should have the same prefix, e.g.,
-  chpl-comm-heap-macros.h or comm-gasnet-locales.c
+  chpl-comm-task-decls.h or comm-gasnet-locales.c
 
 

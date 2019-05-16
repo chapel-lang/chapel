@@ -167,30 +167,6 @@ void chpl_check_local(c_nodeid_t node, int32_t ln, int32_t file, const char* err
 }
 
 static inline
-void chpl_heap_register_global_var(int i, wide_ptr_t *ptr_to_wide_ptr)
-{
-  chpl_globals_registry[i] = ptr_to_wide_ptr;
-  CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, *ptr_to_wide_ptr);
-}
-
-#ifdef DEBUG_COMM_INIT
-#define CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals) \
-  for (int i = 0; i < numGlobals; i++) \
-    printf("[%d] chpl_globals_registry[%d] = %p\n", chpl_nodeID, i, *((void **)chpl_globals_registry[i]));
-#else
-#define CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals) ;
-#endif
-
-static inline
-void chpl_gen_comm_broadcast_global_vars(int numGlobals)
-{
-  chpl_comm_barrier("barrier before broadcasting globals"); 
-  chpl_comm_broadcast_global_vars(numGlobals);
-  CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals);
-  chpl_comm_barrier("barrier after broadcasting globals");
-}
-
-static inline
 void chpl_check_nil(void* ptr, int32_t lineno, int32_t filename)
 {
   if (ptr == nil)
