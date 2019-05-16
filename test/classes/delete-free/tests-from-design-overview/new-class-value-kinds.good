@@ -1,17 +1,17 @@
 test1
 unmanaged MyClass
-_owned(MyClass)
-_shared(MyClass)
-MyClass
+owned MyClass
+shared MyClass
+borrowed MyClass
 in MyClass.deinit
 in MyClass.deinit
 in MyClass.deinit
 in MyClass.deinit
 test2
 unmanaged MyClass
-_owned(MyClass)
-_shared(MyClass)
-MyClass
+owned MyClass
+shared MyClass
+borrowed MyClass
 in MyClass.deinit
 in MyClass.deinit
 in MyClass.deinit

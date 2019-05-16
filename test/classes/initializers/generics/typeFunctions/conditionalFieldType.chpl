@@ -3,7 +3,7 @@ proc helper(param cond : bool, type t) type {
   if cond {
     return t;
   } else {
-    return void;
+    return nothing;
   }
 }
 

@@ -531,6 +531,12 @@ OPTIONS
     instantiated. This flag raises that maximum in the event that a legal
     instantiation is being pruned too aggressively.
 
+**--[no-]print-all-candidates**
+
+    By default, function resolution errors show only a few candidates.
+    Use this flag to see all of the candidates for a call that could
+    not be resolved.
+
 **--[no-]print-callgraph**
 
     Print a textual call graph representing the program being compiled. The

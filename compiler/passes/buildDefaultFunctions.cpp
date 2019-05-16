@@ -604,26 +604,7 @@ static void build_chpl_entry_points() {
 
   // We have to initialize the main module explicitly.
   // It will initialize all the modules it uses, recursively.
-  if (!fMultiLocaleInterop) {
-    chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
-  } else {
-    //
-    // We need to make the compiler aware of the presence of the server listen
-    // loop, always called "chpl_mli_smain", and we need to call it instead
-    // of calling module init (or main).
-    // 
-    FnSymbol* chpl_mli_smain = NULL;
-    
-    chpl_mli_smain = new FnSymbol("chpl_mli_smain");
-    chpl_mli_smain->retType = dtVoid;
-    chpl_mli_smain->addFlag(FLAG_EXTERN);
-
-    // TODO: The only thing we want the compiler to generate is the decl.
-    mainModule->block->insertAtTail(new DefExpr(chpl_mli_smain));
-
-    chpl_gen_main->insertAtTail(new CallExpr("chpl_mli_smain"));
-    normalize(chpl_mli_smain);
-  }
+  chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
 
   bool main_ret_set = false;
 
@@ -825,9 +806,9 @@ static void build_enum_first_function(EnumType* et) {
   if (defExpr)
     fn->insertAtTail(new CallExpr(PRIM_RETURN, defExpr->sym));
   else
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, dtVoid));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   // If there are one or more enumerators for this type, return the first one
-  // listed.  Otherwise return void.
+  // listed.  Otherwise return nothing.
 
   DefExpr* fnDef = new DefExpr(fn);
   // needs to go in the base module because when called from _defaultOf(et),

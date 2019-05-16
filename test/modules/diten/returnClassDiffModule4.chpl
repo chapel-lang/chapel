@@ -20,6 +20,6 @@ module M2 {
   }
   proc baz(obj:object) {
     use M1;
-    return (obj:C).foo();
+    return (obj:C?)!.foo();
   }
 }

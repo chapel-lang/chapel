@@ -26,7 +26,7 @@ for i in D {
   Aref(i) = off;
   AD += off;
 }
-if verify then quickSort(Aref);
+if verify then sort(Aref);
 
 //
 // SERIAL
@@ -43,7 +43,7 @@ if verify then quickSort(Aref);
   var success = true;
 
   if verify {
-    quickSort(A);
+    sort(A);
     for i in D {
       if A(i) != Aref(i) {
         success = false;
@@ -71,7 +71,7 @@ if verify then quickSort(Aref);
   var success = true;
 
   if verify {
-    quickSort(A);
+    sort(A);
     for i in D {
       if A(i) != Aref(i) {
         success = false;

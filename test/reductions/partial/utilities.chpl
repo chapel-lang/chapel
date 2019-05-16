@@ -112,8 +112,8 @@ class PartRedOp: ReduceScanOp {
   const perElemOp;
   var value: eltType = perElemOp.identity;
 
-  // User-accessible AS will contain no data, i.e. void.
-  proc identity() { return _void; }
+  // User-accessible AS will contain no data, i.e. none.
+  proc identity() { return none; }
   proc initialAccumulate(x) {
 /* We just created the array that's the outer var.
    So no need to do anything like:
@@ -127,10 +127,10 @@ class PartRedOp: ReduceScanOp {
   proc accumulate(x) {
     // This should be invoked just before deleting the AS.
     // Nothing to do.
-    compilerAssert(x.type == void);
+    compilerAssert(x.type == nothing);
   }
   proc accumulateOntoState(ref state, x) {
-    compilerAssert(state.type == void);
+    compilerAssert(state.type == nothing);
     compilerAssert(isTuple(x) && x.size == 2);
     // Accumulate onto the built-in AS instead.
     perElemOp.accumulateOntoState(value[x(1)], x(2));

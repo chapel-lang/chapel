@@ -21,6 +21,7 @@
 
 #include "AstVisitorTraverse.h"
 #include "CatchStmt.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
@@ -29,7 +30,6 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
-#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 #include <stack>
@@ -385,8 +385,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
     Type* thrownType = thrownError->typeInfo();
-    if (UnmanagedClassType* ut = toUnmanagedClassType(thrownType))
-      thrownType = ut->getCanonicalClass();
+    if (DecoratedClassType* dt = toDecoratedClassType(thrownType))
+      thrownType = dt->getCanonicalClass();
 
     // normalizeThrows should give us this invariant earlier
     INT_ASSERT(thrownType == dtError);

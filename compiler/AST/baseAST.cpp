@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "CForLoop.h"
 #include "CatchStmt.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
@@ -30,7 +31,6 @@
 #include "IfExpr.h"
 #include "log.h"
 #include "LoopExpr.h"
-#include "UnmanagedClassType.h"
 #include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -110,8 +110,8 @@ void printStatistics(const char* pass) {
     kContextCallExpr + kLoopExpr + kNamedExpr + kIfExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
-  int nType = nPrimitiveType+nEnumType+nAggregateType+nUnmanagedClassType;
-  int kType = kPrimitiveType+kEnumType+kAggregateType+kUnmanagedClassType;
+  int nType = nPrimitiveType+nEnumType+nAggregateType+nDecoratedClassType;
+  int kType = kPrimitiveType+kEnumType+kAggregateType+kDecoratedClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -570,8 +570,8 @@ const char* BaseAST::astTagAsString() const {
       retval = "AggregateType";
       break;
     
-    case E_UnmanagedClassType:
-      retval = "UnmanagedClassType";
+    case E_DecoratedClassType:
+      retval = "DecoratedClassType";
       break;
   }
 

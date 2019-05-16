@@ -1,1 +1,2 @@
 weirdMessage.chpl:1: error: unresolved call 'a(1, 1)'
+weirdMessage.chpl:1: note: because no functions named a found in scope

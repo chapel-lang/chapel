@@ -20,6 +20,6 @@ module M2 {
   }
   proc baz(o: object) {
     use M1;
-    writeln((o:C).foo());
+    writeln((o:C?)!.foo());
   }
 }

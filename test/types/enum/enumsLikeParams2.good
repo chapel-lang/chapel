@@ -1,9 +1,15 @@
 enumsLikeParams2.chpl:11: error: unresolved call 'foo(color)'
-enumsLikeParams2.chpl:3: note: candidates are: foo(x: int(64))
-enumsLikeParams2.chpl:7: note:                 foo(param x: int(64))
+enumsLikeParams2.chpl:3: note: this candidate did not match: foo(x: int(64))
+enumsLikeParams2.chpl:11: note: because call actual argument #1 with type color
+enumsLikeParams2.chpl:3: note: is passed to formal 'x: int(64)'
+enumsLikeParams2.chpl:7: note: candidates are: foo(param x: int(64))
 enumsLikeParams2.chpl:14: error: unresolved call 'foo(color)'
-enumsLikeParams2.chpl:3: note: candidates are: foo(x: int(64))
-enumsLikeParams2.chpl:7: note:                 foo(param x: int(64))
+enumsLikeParams2.chpl:3: note: this candidate did not match: foo(x: int(64))
+enumsLikeParams2.chpl:14: note: because call actual argument #1 with type color
+enumsLikeParams2.chpl:3: note: is passed to formal 'x: int(64)'
+enumsLikeParams2.chpl:7: note: candidates are: foo(param x: int(64))
 enumsLikeParams2.chpl:17: error: unresolved call 'foo(color)'
-enumsLikeParams2.chpl:3: note: candidates are: foo(x: int(64))
-enumsLikeParams2.chpl:7: note:                 foo(param x: int(64))
+enumsLikeParams2.chpl:3: note: this candidate did not match: foo(x: int(64))
+enumsLikeParams2.chpl:17: note: because call actual argument #1 with type color
+enumsLikeParams2.chpl:3: note: is passed to formal 'x: int(64)'
+enumsLikeParams2.chpl:7: note: candidates are: foo(param x: int(64))

@@ -1,18 +1,18 @@
-iter yieldTenVoids() {
-  writeln("In yieldTenVoids");
+iter yieldTenNones() {
+  writeln("In yieldTenNones");
   for i in 1..10 do
-    yield _void;
+    yield none;
 }
 
-iter yieldAVoid() {
-  writeln("In yieldAVoid");
-  yield _void;
+iter yieldANone() {
+  writeln("In yieldANone");
+  yield none;
 }
 
 proc main {
-  for v in yieldTenVoids() do
-    writeln("Got a void!");    // should print this message ten times
+  for v in yieldTenNones() do
+    writeln("Got a none!");    // should print this message ten times
 
-  for v in yieldAVoid() do
-    writeln("Got a void!");    // should print this message one time
+  for v in yieldANone() do
+    writeln("Got a none!");    // should print this message one time
 }

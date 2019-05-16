@@ -1,2 +1,4 @@
 privatizedArrayErrorMessage.chpl:12: error: unresolved call 'foo([BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64))'
-privatizedArrayErrorMessage.chpl:3: note: candidates are: foo(A: borrowed C)
+privatizedArrayErrorMessage.chpl:3: note: this candidate did not match: foo(A: borrowed C)
+privatizedArrayErrorMessage.chpl:12: note: because call actual argument #1 with type [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64)
+privatizedArrayErrorMessage.chpl:3: note: is passed to formal 'A: borrowed C'

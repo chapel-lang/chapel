@@ -1,3 +1,5 @@
 refIntents.chpl:6: In function 'main':
 refIntents.chpl:33: error: unresolved call 'swap([domain(1,int(64),false)] int(64), [domain(1,int(64),false)] int(64))'
-refIntents.chpl:1: note: candidates are: swap(ref l: ?t, ref r: t)
+refIntents.chpl:1: note: this candidate did not match: swap(ref l: ?t, ref r: t)
+refIntents.chpl:33: note: because call actual argument #2 with type [domain(1,int(64),false)] int(64)
+refIntents.chpl:1: note: is passed to formal 'ref r: [domain(1,int(64),false)] int(64)'

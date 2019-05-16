@@ -1723,7 +1723,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
       }
     }
     forv_Vec(TypeSymbol, typeSymbol, types) {
-      if (!isUnmanagedClassType(typeSymbol->type))
+      if (!isDecoratedClassType(typeSymbol->type))
         typeSymbol->codegenMetadata();
     }
     // Aggregate annotations for class objects must wait until all other
@@ -2213,12 +2213,6 @@ static void setupDefaultFilenames() {
   if (fLibraryCompile && fLibraryPython && pythonModulename[0] == '\0') {
     strncpy(pythonModulename, executableFilename, sizeof(pythonModulename)-1);
     pythonModulename[sizeof(pythonModulename)-1] = '\0';
-  }
-
-  if (fMultiLocaleInterop) {
-    strncpy(mli_servername, executableFilename, sizeof(mli_servername)-1);
-    mli_servername[sizeof(mli_servername)-1] = '\0';
-    strcat(mli_servername, "_server");
   }
 }
 

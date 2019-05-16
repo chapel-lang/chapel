@@ -9,11 +9,11 @@ proc checkSorts(arr) {
   assert(isSorted(a));
   // check msbRadixSort
   var b = arr;
-  msbRadixSort(b);
+  MSBRadixSort.msbRadixSort(b);
   assert(isSorted(b));
   // check quickSort
   var c = arr;
-  quickSort(c);
+  QuickSort.quickSort(c);
   assert(isSorted(c));
 }
 

@@ -30,21 +30,21 @@ proc testsort(input, method, parallel, cmp) {
     }
   } else if method == "msbRadixSort" {
     if parallel == false {
-      serial { msbRadixSort(input, cmp); }
+      serial { MSBRadixSort.msbRadixSort(input, cmp); }
     } else {
-      msbRadixSort(input, cmp);
+      MSBRadixSort.msbRadixSort(input, cmp);
     }
   } else if method == "quickSort" {
     if parallel == false {
-      serial { quickSort(input, comparator=cmp); }
+      serial { QuickSort.quickSort(input, comparator=cmp); }
     } else {
-      quickSort(input, comparator=cmp);
+      QuickSort.quickSort(input, comparator=cmp);
     }
   } else if method == "mergeSort" {
     if parallel == false {
-      serial { mergeSort(input); }
+      serial { MergeSort.mergeSort(input); }
     } else {
-      mergeSort(input);
+      MergeSort.mergeSort(input);
     }
   }
 }

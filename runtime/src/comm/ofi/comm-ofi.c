@@ -466,6 +466,13 @@ void init_ofiFabricDomain(void) {
 
   fi_freeinfo(hints);
 
+  if (verbosity >= 2) {
+    if (chpl_nodeID == 0) {
+      printf("COMM=ofi: using \"%s\" provider\n",
+             ofi_info->fabric_attr->prov_name);
+    }
+  }
+
   //
   // Create the fabric domain and associated fabric access domain.
   //
@@ -2977,11 +2984,6 @@ DEFN_IFACE_AMO_SUB(uint32, FI_UINT32, uint32_t, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double, NEGATE_U_OR_R)
-
-
-void chpl_comm_atomic_unordered_fence(void) {
-  return;
-}
 
 void chpl_comm_atomic_unordered_task_fence(void) {
   return;

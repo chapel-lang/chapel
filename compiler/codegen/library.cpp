@@ -230,6 +230,16 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s",
           libDir,
           libname.c_str());
+
+  //
+  // The ZMQ library has to be linked against the C++ stdlib. Rather than
+  // package libc++ up as part of our multi-locale library client when
+  // packaging it up, we'll let library-makefile do it for us.
+  //
+  if (fMultiLocaleInterop) {
+    fprintf(makefile.fptr, " %s", "-lc++");
+  }
+
   if (requires != "") {
     fprintf(makefile.fptr, "%s", requires.c_str());
   }

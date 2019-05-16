@@ -1,5 +1,5 @@
 class c {
-  var v: void;
+  var v: nothing;
 }
 
 var foo = new unmanaged c();

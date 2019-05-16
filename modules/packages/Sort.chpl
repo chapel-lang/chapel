@@ -461,9 +461,9 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
     return;
 
   if radixSortOk(Data, comparator) {
-    msbRadixSort(Data, comparator=comparator);
+    MSBRadixSort.msbRadixSort(Data, comparator=comparator);
   } else {
-    quickSort(Data, comparator=comparator);
+    QuickSort.quickSort(Data, comparator=comparator);
   }
 }
 
@@ -488,12 +488,15 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
  */
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   chpl_check_comparator(comparator, eltType);
-  const stride = if Dom.stridable then abs(Dom.stride) else 1;
 
-  for i in Dom.low..Dom.high-stride by stride do
-    if chpl_compare(Data[i+stride], Data[i], comparator) < 0 then
-      return false;
-  return true;
+  const stride = if Dom.stridable then abs(Dom.stride) else 1;
+  var sorted = true;
+  forall (element, i) in zip(Data, Dom) with (&& reduce sorted) {
+    if i > Dom.low {
+      sorted &&= (chpl_compare(Data[i-stride], element, comparator) <= 0);
+    }
+  }
+  return sorted;
 }
 
 
@@ -546,11 +549,10 @@ iter sorted(x, comparator:?rec=defaultComparator) {
     yield i;
 }
 
-
-/* Sort Functions */
-
 /*
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
+
+   .. note:: This function is deprecated - please use :proc:`sort`.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -559,35 +561,14 @@ iter sorted(x, comparator:?rec=defaultComparator) {
 
  */
 proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  chpl_check_comparator(comparator, eltType);
-  const low = Dom.low,
-        high = Dom.high,
-        stride = abs(Dom.stride);
-
-  var swapped = true;
-
-  while (swapped) {
-    swapped = false;
-    for i in low..high-stride by stride {
-      if chpl_compare(Data(i), Data(i+stride), comparator) > 0 {
-        Data(i) <=> Data(i+stride);
-        swapped = true;
-      }
-    }
-  }
+  compilerWarning("bubbleSort is deprecated - please use sort");
+  BubbleSort.bubbleSort(Data, comparator);
 }
-
-
-pragma "no doc"
-/* Error message for multi-dimension arrays */
-proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 {
-    compilerError("bubbleSort() requires 1-D array");
-}
-
 
 /*
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
+
+   .. note:: This function is deprecated - please use :proc:`sort`.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -596,63 +577,15 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 
  */
 proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  chpl_check_comparator(comparator, eltType);
-  const low = Dom.low,
-        high = Dom.high,
-        size = Dom.size,
-        stride = abs(Dom.stride);
-
-  // Heapify
-  var start = if high == low then high
-              else if size % 2 then low + ((size - 1)/2) * stride
-              else low + (size/2 - 1) * stride;
-
-  while (start >= low) {
-    SiftDown(start, high, comparator);
-    start = start - stride;
-  }
-
-  // Sort, moving max element to end and re-heapifying the rest
-  var end = high;
-  while (end > low) {
-    Data(end) <=> Data(low);
-    end = end - stride;
-    SiftDown(low, end, comparator);
-  }
-
-  proc SiftDown(start, end, comparator:?rec=defaultComparator) {
-    var root = start;
-    while ((2*root - low + stride) <= end) {
-      const child = 2*root - low + stride;
-      var swap = root;
-
-      if chpl_compare(Data(swap), Data(child), comparator) < 0 then
-        swap = child;
-
-      if (child + stride <= end) && (chpl_compare(Data(swap), Data(child + stride), comparator) < 0) then
-        swap = child + stride;
-
-      if swap != root {
-        Data(root) <=> Data(swap);
-        root = swap;
-      } else {
-        return;
-      }
-    }
-  }
+  compilerWarning("heapSort is deprecated - please use sort");
+  HeapSort.heapSort(Data, comparator);
 }
-
-
-pragma "no doc"
-/* Error message for multi-dimension arrays */
-proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 {
-    compilerError("heapSort() requires 1-D array");
-}
-
 
 /*
-   Sort the 1D array `Data` in-place using a sequential insertion sort algorithm.
+   Sort the 1D array `Data` in-place using a sequential insertion sort
+   algorithm.
+
+   .. note:: This function is deprecated - please use :proc:`sort`.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -661,303 +594,187 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 
  */
 proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
-  chpl_check_comparator(comparator, eltType);
-  const low = lo,
-        high = hi,
-        stride = abs(Dom.stride);
-
-  for i in low..high by stride {
-    var ithVal = Data[i];
-    var inserted = false;
-    for j in low..i-stride by -stride {
-      if chpl_compare(ithVal, Data[j], comparator) < 0 {
-        Data[j+stride] = Data[j];
-      } else {
-        Data[j+stride] = ithVal;
-        inserted = true;
-        break;
-      }
-    }
-    if (!inserted) {
-      Data[low] = ithVal;
-    }
-  }
+  compilerWarning("insertionSort is deprecated - please use sort");
+  InsertionSort.insertionSort(Data, comparator, lo, hi);
 }
-
-
-pragma "no doc"
-/* Error message for multi-dimension arrays */
-proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 {
-    compilerError("insertionSort() requires 1-D array");
-}
-
 
 /*
-   Sort the 1D array `Data` in-place using a sequential, stable binary insertion sort algorithm.
-   Should be used when there is a high cost of comparison.
+  Sort the 1D array `Data` in-place using a sequential, stable binary
+  insertion sort algorithm.
+  Should be used when there is a high cost of comparison.
 
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
+  .. note:: This function is deprecated - please use :proc:`sort`.
+
+  :arg Data: The array to be sorted
+  :type Data: [] `eltType`
+  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+     data is sorted.
 
  */
 proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  chpl_check_comparator(comparator, eltType);
-  const low = Dom.low,
-        high = Dom.high,
-        stride = abs(Dom.stride);
-
-  for i in low..high by stride {
-    var valToInsert = Data[i],
-        lo = low,
-        hi = i - stride;
-
-    var (found, loc) = _binarySearchForLastOccurrence(Data, valToInsert, comparator, lo, hi);
-    loc = if found then loc + stride else loc;              // insert after last occurrence if exists; else insert after expected location
-
-    for j in loc..i-stride by -stride {
-      // backward swap until loc
-      Data[j + stride] = Data[j];
-    }
-
-    Data[loc] = valToInsert;
-  }
+  compilerWarning("binaryInsertionSort is deprecated - please use sort");
+  BinaryInsertionSort.binaryInsertionSort(Data, comparator);
 }
 
 /*
-  Binary searches for the index of the last occurrence of `val` in the 1D array `Data` based on a comparator.
-  If `val` is not in `Data`, the index that it should be inserted at is returned.
-  Does not check for a valid comparator.
-*/
-private proc _binarySearchForLastOccurrence(Data: [?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
-  const stride = if Dom.stridable then abs(Dom.stride) else 1;
+  Sort the 1D array `Data` using a parallel merge sort algorithm.
 
-  var loc = -1;                                        // index of the last occurrence of val in Data
+  .. note:: This function is deprecated - please use :proc:`sort`.
 
-  while (lo <= hi) {
-    const size = (hi - lo) / stride,
-          mid = lo + (size/2) * stride;
-
-    if chpl_compare(val, Data[mid], comparator) == 0 {
-        loc = mid;                                    // index of last occurrence of val in 1..mid
-        lo = loc + stride;
-    }
-    else if chpl_compare(val, Data[mid], comparator) > 0 then
-      lo = mid + stride;
-    else
-      hi = mid - stride;
-  }
-
-  if loc == -1 then return (false, lo);              // returns index where val should be
-  return (true, loc);                                // returns index of the last occurrence of val
-}
-
-pragma "no doc"
-/* Error message for multi-dimension arrays */
-proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 {
-    compilerError("binaryInsertionSort() requires 1-D array");
-}
-
-
-/*
-   Sort the 1D array `Data` using a parallel merge sort algorithm.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
-   :type minlen: `integral`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
-
+  :arg Data: The array to be sorted
+  :type Data: [] `eltType`
+  :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
+  :type minlen: `integral`
+  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+    data is sorted.
  */
 proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-  chpl_check_comparator(comparator, eltType);
-  _MergeSort(Data, Dom.low, Dom.high, minlen, comparator);
+  compilerWarning("mergeSort is deprecated - please use sort");
+  MergeSort.mergeSort(Data, minlen, comparator);
 }
-
-private proc _MergeSort(Data: [?Dom], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator)
-  where Dom.rank == 1 {
-  if (hi-lo < minlen) {
-    insertionSort(Data, comparator=comparator, lo, hi);
-    return;
-  }
-  const mid = (hi-lo)/2+lo;
-  if(here.runningTasks() < here.numPUs(logical=true)) {
-    cobegin {
-      { _MergeSort(Data, lo, mid, minlen, comparator); }
-      { _MergeSort(Data, mid+1, hi, minlen, comparator); }
-    }
-  } else {
-    _MergeSort(Data, lo, mid, minlen, comparator);
-    _MergeSort(Data, mid+1, hi, minlen, comparator);
-  }
-  _Merge(Data, lo, mid, hi, comparator);
-}
-
-private proc _Merge(Data: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
-  var a1max = mid;
-  var A1 = Data[lo..(a1max)];
-  var a2max = hi;
-  var A2 = Data[mid..(a2max)];
-  var a1 = lo;
-  var a2 = mid + 1;
-  var i = lo;
-  while ((a1 <= a1max) && (a2 <= a2max)) {
-    if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
-      Data[i] = A1[a1];
-      a1 += 1;
-      i += 1;
-    } else {
-      Data[i] = A2[a2];
-      a2 += 1;
-      i += 1;
-    }
-  }
-  while (a1 <= a1max) {
-    Data[i] = A1[a1];
-    a1 += 1;
-    i += 1;
-  }
-  while (a2 <= a2max) {
-    Data[i] = A2[a2];
-    a2 += 1;
-    i += 1;
-  }
-}
-
-pragma "no doc"
-/* Error message for multi-dimension arrays */
-proc mergeSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 {
-    compilerError("mergeSort() requires 1-D array");
-}
-
 
 /*
-   Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
+  Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
 
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
-   :type minlen: `integral`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
+  .. note:: This function is deprecated - please use :proc:`sort`.
+
+  :arg Data: The array to be sorted
+  :type Data: [] `eltType`
+  :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
+  :type minlen: `integral`
+  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+    data is sorted.
 
  */
 proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-  chpl_check_comparator(comparator, eltType);
-  // grab obvious indices
-  const stride = abs(Dom.stride),
-        lo = Dom.low,
-        hi = Dom.high,
-        size = Dom.size,
-        mid = if hi == lo then hi
-              else if size % 2 then lo + ((size - 1)/2) * stride
-              else lo + (size/2 - 1) * stride;
-
-  // base case -- use insertion sort
-  if (hi - lo < minlen) {
-    insertionSort(Data, comparator=comparator);
-    return;
-  }
-
-  // find pivot using median-of-3 method
-  if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
-    Data(mid) <=> Data(lo);
-  if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
-    Data(hi) <=> Data(lo);
-  if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
-    Data(hi) <=> Data(mid);
-
-  const pivotVal = Data(mid);
-  Data(mid) = Data(hi-stride);
-  Data(hi-stride) = pivotVal;
-  // end median-of-3 partitioning
-
-  var loptr = lo,
-      hiptr = hi-stride;
-  while (loptr < hiptr) {
-    do { loptr += stride; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
-    do { hiptr -= stride; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
-    if (loptr < hiptr) {
-      Data(loptr) <=> Data(hiptr);
-    }
-  }
-
-  Data(hi-stride) = Data(loptr);
-  Data(loptr) = pivotVal;
-
-  // TODO -- Get this cobegin working and tested
-  //  cobegin {
-    quickSort(Data[..loptr-stride], minlen, comparator);  // could use unbounded ranges here
-    quickSort(Data[loptr+stride..], minlen, comparator);
-  //  }
+  compilerWarning("quickSort is deprecated - please use sort");
+  QuickSort.quickSort(Data, minlen, comparator);
 }
-
-pragma "no doc"
-/* Non-stridable quickSort */
-proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
-  where !Dom.stridable {
-  chpl_check_comparator(comparator, eltType);
-
-  // grab obvious indices
-  const lo = Dom.low,
-        hi = Dom.high,
-        mid = lo + (hi-lo+1)/2;
-
-  // base case -- use insertion sort
-  if (hi - lo < minlen) {
-    insertionSort(Data, comparator=comparator);
-    return;
-  }
-
-  // find pivot using median-of-3 method
-  if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
-    Data(mid) <=> Data(lo);
-  if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
-    Data(hi) <=> Data(lo);
-  if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
-    Data(hi) <=> Data(mid);
-
-  const pivotVal = Data(mid);
-  Data(mid) = Data(hi-1);
-  Data(hi-1) = pivotVal;
-  // end median-of-3 partitioning
-
-  var loptr = lo,
-      hiptr = hi-1;
-  while (loptr < hiptr) {
-    do { loptr += 1; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
-    do { hiptr -= 1; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
-    if (loptr < hiptr) {
-      Data(loptr) <=> Data(hiptr);
-    }
-  }
-
-  Data(hi-1) = Data(loptr);
-  Data(loptr) = pivotVal;
-
-  // TODO -- Get this cobegin working and tested
-  //  cobegin {
-    quickSort(Data[..loptr-1], minlen, comparator);  // could use unbounded ranges here
-    quickSort(Data[loptr+1..], minlen, comparator);
-  //  }
-}
-
-
-pragma "no doc"
-/* Error message for multi-dimension arrays */
-proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 {
-    compilerError("quickSort() requires 1-D array");
-}
-
 
 /*
-   Sort the 1D array `Data` in-place using a sequential selection sort
+  Sort the 1D array `Data` in-place using a sequential selection sort
+  algorithm.
+
+  .. note:: This function is deprecated - please use :proc:`sort`.
+
+  :arg Data: The array to be sorted
+  :type Data: [] `eltType`
+  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+     data is sorted.
+
+ */
+proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  compilerWarning("selectionSort is deprecated - please use sort");
+  SelectionSort.selectionSort(Data, comparator);
+}
+
+pragma "no doc"
+module BubbleSort {
+
+  /*
+   Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+   */
+  proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+    chpl_check_comparator(comparator, eltType);
+
+    if Dom.rank != 1 {
+      compilerError("bubbleSort() requires 1-D array");
+    }
+
+    const low = Dom.low,
+          high = Dom.high,
+          stride = abs(Dom.stride);
+
+    var swapped = true;
+
+    while (swapped) {
+      swapped = false;
+      for i in low..high-stride by stride {
+        if chpl_compare(Data(i), Data(i+stride), comparator) > 0 {
+          Data(i) <=> Data(i+stride);
+          swapped = true;
+        }
+      }
+    }
+  }
+}
+
+pragma "no doc"
+module HeapSort {
+  /*
+
+   Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+   */
+  proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+    chpl_check_comparator(comparator, eltType);
+
+    if Dom.rank != 1 {
+      compilerError("heapSort() requires 1-D array");
+    }
+
+    const low = Dom.low,
+          high = Dom.high,
+          size = Dom.size,
+          stride = abs(Dom.stride);
+
+    // Heapify
+    var start = if high == low then high
+                else if size % 2 then low + ((size - 1)/2) * stride
+                else low + (size/2 - 1) * stride;
+
+    while (start >= low) {
+      SiftDown(start, high, comparator);
+      start = start - stride;
+    }
+
+    // Sort, moving max element to end and re-heapifying the rest
+    var end = high;
+    while (end > low) {
+      Data(end) <=> Data(low);
+      end = end - stride;
+      SiftDown(low, end, comparator);
+    }
+
+    proc SiftDown(start, end, comparator:?rec=defaultComparator) {
+      var root = start;
+      while ((2*root - low + stride) <= end) {
+        const child = 2*root - low + stride;
+        var swap = root;
+
+        if chpl_compare(Data(swap), Data(child), comparator) < 0 then
+          swap = child;
+
+        if (child + stride <= end) && (chpl_compare(Data(swap), Data(child + stride), comparator) < 0) then
+          swap = child + stride;
+
+        if swap != root {
+          Data(root) <=> Data(swap);
+          root = swap;
+        } else {
+          return;
+        }
+      }
+    }
+  }
+}
+
+pragma "no doc"
+module InsertionSort {
+
+  /*
+   Sort the 1D array `Data` in-place using a sequential insertion sort
    algorithm.
 
    :arg Data: The array to be sorted
@@ -965,477 +782,786 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
       data is sorted.
 
- */
-proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  const low = Dom.low,
-        high = Dom.high,
-        stride = abs(Dom.stride);
+   */
+  proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
+    chpl_check_comparator(comparator, eltType);
 
-  for i in low..high-stride by stride {
-    var jMin = i;
-    // TODO -- should be a minloc reduction, when they can support comparators
-    for j in i..high by stride {
-      if chpl_compare(Data[j], Data[jMin], comparator) < 0 then
-        jMin = j;
+    if Dom.rank != 1 {
+      compilerError("insertionSort() requires 1-D array");
     }
-    Data(i) <=> Data(jMin);
-  }
-}
 
+    const low = lo,
+          high = hi,
+          stride = abs(Dom.stride);
 
-pragma "no doc"
-/* Error message for multi-dimension arrays */
-proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 {
-    compilerError("selectionSort() requires 1-D array");
-}
-
-pragma "no doc"
-proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
-               start=Dom.low, end=Dom.high)
-{
-  chpl_check_comparator(comparator, eltType);
-
-  if Dom.rank != 1 then
-    compilerError("shellSort() requires 1-D array");
-  if Dom.stridable then
-    compilerError("shellSort() requires an array over a non-stridable domain");
-
-  // Based on Sedgewick's Shell Sort -- see
-  // Analysis of Shellsort and Related Algorithms 1996
-  // and see Marcin Ciura - Best Increments for the Average Case of Shellsort
-  // for the choice of these increments.
-  var n = 1 + end - start;
-  var js,hs:int;
-  var v,tmp:Data.eltType;
-  const incs = (701, 301, 132, 57, 23, 10, 4, 1);
-  for h in incs {
-    hs = h + start;
-    for is in hs..end {
-      v = Data[is];
-      js = is;
-      while js >= hs && chpl_compare(v,Data[js-h],comparator) < 0 {
-        Data[js] = Data[js - h];
-        js -= h;
+    for i in low..high by stride {
+      var ithVal = Data[i];
+      var inserted = false;
+      for j in low..i-stride by -stride {
+        if chpl_compare(ithVal, Data[j], comparator) < 0 {
+          Data[j+stride] = Data[j];
+        } else {
+          Data[j+stride] = ithVal;
+          inserted = true;
+          break;
+        }
       }
-      Data[js] = v;
+      if (!inserted) {
+        Data[low] = ithVal;
+      }
     }
   }
 }
 
-// This is the number of bits to sort at a time in the radix sorter.
-// The code assumes that all integer types are a multiple of it.
-// That would need to change if it were to increase.
-//
-// At the same time, using a value less than 8 will probably perform poorly.
-private param RADIX_BITS = 8;
-
-// This structure tracks configuration for the radix sorter.
 pragma "no doc"
-record MSBRadixSortSettings {
-  param DISTRIBUTE_BUFFER = 5; // Number of temps during shuffle step
-  const sortSwitch = 256; // when sorting <= this many elements, use shell sort
-  const minForTask = 256; // when sorting >= this many elements, go parallel
-  param CHECK_SORTS = false; // do costly extra checks that data is sorted
-  param progress = false; // print progress
-  const alwaysSerial = false; // never create tasks
-  const maxTasks = here.numPUs(logical=true); // maximum number of tasks to make
-}
+module BinaryInsertionSort {
+  /*
+    Sort the 1D array `Data` in-place using a sequential, stable binary
+    insertion sort algorithm.
+    Should be used when there is a high cost of comparison.
 
-// Get the bin for a record by calling criterion.keyPart
-//
-// startbit is starting from 0
-// bin 0 is for the end was reached (sort before)
-// bins 1..256 are for data with next part 0..255.
-// bin 256 is for the end was reached (sort after)
-//
-// ubits are the result of keyPart normalized to a uint.
-//
-// returns (bin, ubits)
-private inline
-proc binForRecordKeyPart(a, criterion, startbit:int)
-{
-  // We have keyPart(element, start):(section:int(8), part:int/uint)
-  const testRet: criterion.keyPart(a, 1).type;
-  const testPart = testRet(2);
-  param bitsPerPart = numBits(testPart.type);
-  param bitsPerPartModRadixBits = bitsPerPart % RADIX_BITS;
-  if bitsPerPartModRadixBits != 0 then
-    compilerError("part size must be a multiple of radix bits");
-    // or else the implementation below would have to handle crossing parts
+    :arg Data: The array to be sorted
+    :type Data: [] `eltType`
+    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+       data is sorted.
+   */
+  proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+    chpl_check_comparator(comparator, eltType);
 
-  // startbit must be a multiple of RADIX_BITS because the radix
-  // sort operates RADIX_BITS at a time.
-
-  // startbit might be partway through a part (e.g. 16 bits into a uint(64))
-  const whichpart = startbit / bitsPerPart;
-  const bitsinpart = startbit % bitsPerPart;
-
-  const (section, part) = criterion.keyPart(a, 1+whichpart);
-  var ubits = part:uint(bitsPerPart);
-  // If the number is signed, invert the top bit, so that
-  // the negative numbers sort below the positive numbers
-  if isInt(part) {
-    const one:ubits.type = 1;
-    ubits = ubits ^ (one << (bitsPerPart - 1));
-  }
-  param mask:uint = (1 << RADIX_BITS) - 1;
-  const ubin = (ubits >> (bitsPerPart - bitsinpart - RADIX_BITS)) & mask;
-
-  if section == 0 then
-    return (ubin:int + 1, ubits);
-  else if section < 0 then
-    return (0, ubits);
-  else
-    return ((1 << RADIX_BITS) + 1, ubits);
-}
-
-// Get the bin for a record with criterion.key or criterion.keyPart
-//
-// See binForRecordKeyPart for what the arguments / returns mean.
-private inline
-proc binForRecord(a, criterion, startbit:int)
-{
-  use Reflection;
-
-  if canResolveMethod(criterion, "keyPart", a, 1) {
-    return binForRecordKeyPart(a, criterion, startbit);
-  } else if canResolveMethod(criterion, "key", a) {
-    // Try to use the default comparator to get a keyPart.
-    return binForRecordKeyPart(criterion.key(a),
-                               defaultComparator,
-                               startbit);
-  } else {
-    compilerError("Bad comparator for radix sort ", criterion.type:string,
-                  " with eltType ", a.type:string);
-  }
-}
-
-// Returns the fixed number of bits in a value, if known.
-// Returns -1 otherwise.
-private
-proc fixedWidth(type eltTy) param {
-  if (isUintType(eltTy) || isIntType(eltTy) ||
-      isRealType(eltTy) || isImagType(eltTy)) then
-    return numBits(eltTy);
-
-  if (isHomogeneousTuple(eltTy)) {
-    var tmp:eltTy;
-    return tmp.size * numBits(tmp(1).type);
-  }
-
-  return -1;
-}
-
-// Returns a compile-time known final startbit
-// e.g. for uint(64), returns 56 (since that's 64-8 and the
-// last sort pass will sort on the last 8 bits).
-//
-// Returns -1 if no such ending is known at compile-time.
-private
-proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
-  use Reflection;
-
-  // Compute end_bit if it's known
-  // Default comparator on integers has fixed width
-  const ref element = Data[Data.domain.low];
-  if comparator.type == DefaultComparator && fixedWidth(element.type) > 0 {
-    return fixedWidth(element.type) - RADIX_BITS;
-  } else if canResolveMethod(comparator, "key", element) {
-    type keyType = comparator.key(element).type;
-    if fixedWidth(keyType) > 0 then
-      return fixedWidth(keyType) - RADIX_BITS;
-  }
-
-  return -1;
-}
-
-pragma "no doc"
-proc msbRadixSortClz(val) {
-  // This could use BitOps.clz but that adds new
-  // module dependencies that confuse testing.
-  // Since it's not performance critical, here we
-  // have a version using a while loop.
-  param nBits = numBits(val.type);
-  if val == 0 {
-    return nBits;
-  }
-
-  var cur = val;
-  var one = 1:val.type;
-  var hi = one << (nBits - 1);
-  var n = 0;
-  while (cur & hi) == 0 {
-    n += 1;
-    cur <<= 1;
-  }
-  return n;
-}
-
-// Compute the startbit location that could be used based on the
-// min/max of values returned by keyPart.
-private
-proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
-  var xor = min_ubits ^ max_ubits;
-
-  // Clear the top bits in xor if they are after bitsinpart
-  param bitsPerPart = numBits(min_ubits.type);
-  const bitsinpart = startbit % bitsPerPart;
-  xor <<= bitsinpart;
-  xor >>= bitsinpart;
-
-  var new_start = msbRadixSortClz(xor);
-  var new_digit = new_start / RADIX_BITS;
-  var new_start_bit_rounded = new_digit * RADIX_BITS;
-
-  return new_start_bit_rounded:int;
-}
-
-pragma "no doc"
-proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
-
-  var endbit:int;
-  endbit = msbRadixSortParamLastStartBit(Data, comparator);
-  if endbit < 0 then
-    endbit = max(int);
-
-  msbRadixSort(start_n=Data.domain.low, end_n=Data.domain.high,
-               Data, comparator,
-               startbit=0, endbit=endbit,
-               settings=new MSBRadixSortSettings());
-}
-
-// startbit counts from 0 and is a multiple of RADIX_BITS
-pragma "no doc"
-proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
-                  startbit:int, endbit:int,
-                  settings /* MSBRadixSortSettings */)
-{
-  if startbit > endbit then
-    return;
-
-  if( end_n - start_n < settings.sortSwitch ) {
-    shellSort(A, criterion, start=start_n, end=end_n);
-    if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
-    return;
-  }
-
-  if settings.progress then writeln("radix sort start=", start_n, " end=", end_n, " startbit=", startbit, " endbit=", endbit);
-
-  const radixbits = RADIX_BITS;
-  const radix = (1 << radixbits) + 1;
-
-  // 0th bin is for records where we've consumed all the key.
-  var offsets:[0..radix] int;
-  var end_offsets:[0..radix] int;
-  type ubitsType = binForRecord(A[start_n], criterion, startbit)(2).type;
-  var min_ubits: ubitsType = max(ubitsType);
-  var max_ubits: ubitsType = 0;
-  var min_bin = radix+1;
-  var max_bin = 0;
-  var any_ending = false;
-
-  // Step 1: count.
-  if settings.alwaysSerial == false {
-    forall i in start_n..end_n
-      with (+ reduce offsets,
-            min reduce min_ubits,
-            max reduce max_ubits,
-            || reduce any_ending) {
-      const (bin, ubits) = binForRecord(A[i], criterion, startbit);
-      if ubits < min_ubits then
-        min_ubits = ubits;
-      if ubits > max_ubits then
-        max_ubits = ubits;
-      if bin == 0 || bin == radix then
-        any_ending = true;
-      offsets[bin] += 1;
+    if Dom.rank != 1 {
+      compilerError("binaryInsertionSort() requires 1-D array");
     }
-  } else {
-    // The serial version
-    for i in start_n..end_n {
-      const (bin, ubits) = binForRecord(A[i], criterion, startbit);
-      if ubits < min_ubits then
-        min_ubits = ubits;
-      if ubits > max_ubits then
-        max_ubits = ubits;
-      if bin == 0 || bin == radix then
-        any_ending = true;
-      offsets[bin] += 1;
+
+    const low = Dom.low,
+          high = Dom.high,
+          stride = abs(Dom.stride);
+
+    for i in low..high by stride {
+      var valToInsert = Data[i],
+          lo = low,
+          hi = i - stride;
+
+      var (found, loc) = _binarySearchForLastOccurrence(Data, valToInsert, comparator, lo, hi);
+      loc = if found then loc + stride else loc;              // insert after last occurrence if exists; else insert after expected location
+
+      for j in loc..i-stride by -stride {
+        // backward swap until loc
+        Data[j + stride] = Data[j];
+      }
+
+      Data[loc] = valToInsert;
     }
   }
 
-  // If the data parts we gathered all have the same leading bits,
-  // we might be able to skip ahead immediately to the next count step.
-  if any_ending == false {
-    var dataStartBit = findDataStartBit(startbit, min_ubits, max_ubits);
-    if dataStartBit > startbit {
-      // Re-start count again immediately at the new start position.
-      msbRadixSort(start_n, end_n, A, criterion,
-                   dataStartBit, endbit, settings);
+  /*
+    Binary searches for the index of the last occurrence of `val` in the 1D array `Data` based on a comparator.
+    If `val` is not in `Data`, the index that it should be inserted at is returned.
+    Does not check for a valid comparator.
+  */
+  private proc _binarySearchForLastOccurrence(Data: [?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
+    const stride = if Dom.stridable then abs(Dom.stride) else 1;
+
+    var loc = -1;                                        // index of the last occurrence of val in Data
+
+    while (lo <= hi) {
+      const size = (hi - lo) / stride,
+            mid = lo + (size/2) * stride;
+
+      if chpl_compare(val, Data[mid], comparator) == 0 {
+          loc = mid;                                    // index of last occurrence of val in 1..mid
+          lo = loc + stride;
+      }
+      else if chpl_compare(val, Data[mid], comparator) > 0 then
+        lo = mid + stride;
+      else
+        hi = mid - stride;
+    }
+
+    if loc == -1 then return (false, lo);              // returns index where val should be
+    return (true, loc);                                // returns index of the last occurrence of val
+  }
+}
+
+pragma "no doc"
+module MergeSort {
+  /*
+    Sort the 1D array `Data` using a parallel merge sort algorithm.
+
+    :arg Data: The array to be sorted
+    :type Data: [] `eltType`
+    :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
+    :type minlen: `integral`
+    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+       data is sorted.
+
+   */
+  proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
+    chpl_check_comparator(comparator, eltType);
+
+    if Dom.rank != 1 {
+      compilerError("mergeSort() requires 1-D array");
+    }
+
+    _MergeSort(Data, Dom.low, Dom.high, minlen, comparator);
+  }
+
+  private proc _MergeSort(Data: [?Dom], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator)
+    where Dom.rank == 1 {
+    if (hi-lo < minlen) {
+      InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
       return;
     }
+    const mid = (hi-lo)/2+lo;
+    if(here.runningTasks() < here.numPUs(logical=true)) {
+      cobegin {
+        { _MergeSort(Data, lo, mid, minlen, comparator); }
+        { _MergeSort(Data, mid+1, hi, minlen, comparator); }
+      }
+    } else {
+      _MergeSort(Data, lo, mid, minlen, comparator);
+      _MergeSort(Data, mid+1, hi, minlen, comparator);
+    }
+    _Merge(Data, lo, mid, hi, comparator);
   }
 
-  if settings.progress then writeln("accumulate");
-
-  // Step 2: accumulate
-  var sum = 0;
-  for (off,end) in zip(offsets,end_offsets) {
-    var binstart = sum;
-    sum += off;
-    var binend = sum;
-    off = start_n + binstart;
-    end = start_n + binend;
-  }
-
-  var curbin = 0;
-
-  if settings.progress then writeln("shuffle");
-
-  // Step 3: shuffle
-  while true {
-    // Find the next bin that isn't totally in place.
-    while curbin <= radix && offsets[curbin] == end_offsets[curbin] {
-      curbin += 1;
+  private proc _Merge(Data: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+    var a1max = mid;
+    var A1 = Data[lo..(a1max)];
+    var a2max = hi;
+    var A2 = Data[mid..(a2max)];
+    var a1 = lo;
+    var a2 = mid + 1;
+    var i = lo;
+    while ((a1 <= a1max) && (a2 <= a2max)) {
+      if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
+        Data[i] = A1[a1];
+        a1 += 1;
+        i += 1;
+      } else {
+        Data[i] = A2[a2];
+        a2 += 1;
+        i += 1;
+      }
     }
-    if curbin > radix {
-      break;
-    }
-
-    // TODO: I think it might be possible to make this sort stable
-    // by populating buf from the start of the data instead of from the end.
-    // buf would need to be populated with the first M elements that aren't
-    // already in the correct bin.
-
-    // TODO: I think it's possible to make this shuffle parallel
-    // by imagining each task has a max_buf and have them update
-    // atomic offsets.
-    param max_buf = settings.DISTRIBUTE_BUFFER;
-    var buf: max_buf*A.eltType;
-    var used_buf = 0;
-    var end = end_offsets[curbin];
-    var endfast = max(offsets[curbin], end_offsets[curbin]-2*max_buf);
-    var bufstart = max(offsets[curbin], end_offsets[curbin]-max_buf);
-    var i = bufstart;
-
-    // Fill buf with up to max_buf records from the end of this bin.
-    while i < end {
-      buf[used_buf+1] <=> A[i];
-      used_buf += 1;
+    while (a1 <= a1max) {
+      Data[i] = A1[a1];
+      a1 += 1;
       i += 1;
     }
+    while (a2 <= a2max) {
+      Data[i] = A2[a2];
+      a2 += 1;
+      i += 1;
+    }
+  }
+}
 
-    while offsets[curbin] < endfast {
-      // Now go through the records in buf
-      // putting them in their right home.
-      for param j in 1..max_buf {
-        const (bin, _) = binForRecord(buf[j], criterion, startbit);
-        // prefetch(A[offsets[bin]]) could be here but doesn't help
+pragma "no doc"
+module QuickSort {
+  /*
+    Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
 
-        // Swap buf[j] into its appropriate bin.
-        // Leave buf[j] with the next unsorted item.
-        A[offsets[bin]] <=> buf[j];
-        offsets[bin] += 1;
+    :arg Data: The array to be sorted
+    :type Data: [] `eltType`
+    :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
+    :type minlen: `integral`
+    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+   */
+  proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
+    chpl_check_comparator(comparator, eltType);
+    if Dom.rank != 1 {
+      compilerError("quickSort() requires 1-D array");
+    }
+
+    // grab obvious indices
+    const stride = abs(Dom.stride),
+          lo = Dom.low,
+          hi = Dom.high,
+          size = Dom.size,
+          mid = if hi == lo then hi
+                else if size % 2 then lo + ((size - 1)/2) * stride
+                else lo + (size/2 - 1) * stride;
+
+    // base case -- use insertion sort
+    if (hi - lo < minlen) {
+      InsertionSort.insertionSort(Data, comparator=comparator);
+      return;
+    }
+
+    // find pivot using median-of-3 method
+    if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
+      Data(mid) <=> Data(lo);
+    if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
+      Data(hi) <=> Data(lo);
+    if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
+      Data(hi) <=> Data(mid);
+
+    const pivotVal = Data(mid);
+    Data(mid) = Data(hi-stride);
+    Data(hi-stride) = pivotVal;
+    // end median-of-3 partitioning
+
+    var loptr = lo,
+        hiptr = hi-stride;
+    while (loptr < hiptr) {
+      do { loptr += stride; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
+      do { hiptr -= stride; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
+      if (loptr < hiptr) {
+        Data(loptr) <=> Data(hiptr);
       }
     }
-    // Now, handle elements in bufstart...end_offsets[cur_bin]
-    while offsets[curbin] < end {
-      // Put buf[j] into its right home
-      var j = 1;
-      while used_buf > 0 && j <= used_buf {
-        const (bin, _) = binForRecord(buf[j], criterion, startbit);
-        // Swap buf[j] into its appropriate bin.
-        var offset = offsets[bin];
-        A[offset] <=> buf[j];
-        offsets[bin] += 1;
-        // Leave buf[j] with the next unsorted item.
-        // But offsets[bin] might be in the region we already read.
-        if bin == curbin && offset >= bufstart {
-          buf[j] <=> buf[used_buf];
-          used_buf -= 1;
+
+    Data(hi-stride) = Data(loptr);
+    Data(loptr) = pivotVal;
+
+    // TODO -- Get this cobegin working and tested
+    //  cobegin {
+      quickSort(Data[..loptr-stride], minlen, comparator);  // could use unbounded ranges here
+      quickSort(Data[loptr+stride..], minlen, comparator);
+    //  }
+  }
+
+  /* Non-stridable quickSort */
+  proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
+    where !Dom.stridable {
+
+    chpl_check_comparator(comparator, eltType);
+
+    if Dom.rank != 1 {
+      compilerError("quickSort() requires 1-D array");
+    }
+
+    // grab obvious indices
+    const lo = Dom.low,
+          hi = Dom.high,
+          mid = lo + (hi-lo+1)/2;
+
+    // base case -- use insertion sort
+    if (hi - lo < minlen) {
+      InsertionSort.insertionSort(Data, comparator=comparator);
+      return;
+    }
+
+    // find pivot using median-of-3 method
+    if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
+      Data(mid) <=> Data(lo);
+    if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
+      Data(hi) <=> Data(lo);
+    if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
+      Data(hi) <=> Data(mid);
+
+    const pivotVal = Data(mid);
+    Data(mid) = Data(hi-1);
+    Data(hi-1) = pivotVal;
+    // end median-of-3 partitioning
+
+    var loptr = lo,
+        hiptr = hi-1;
+    while (loptr < hiptr) {
+      do { loptr += 1; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
+      do { hiptr -= 1; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
+      if (loptr < hiptr) {
+        Data(loptr) <=> Data(hiptr);
+      }
+    }
+
+    Data(hi-1) = Data(loptr);
+    Data(loptr) = pivotVal;
+
+    // TODO -- Get this cobegin working and tested
+    //  cobegin {
+      quickSort(Data[..loptr-1], minlen, comparator);  // could use unbounded ranges here
+      quickSort(Data[loptr+1..], minlen, comparator);
+    //  }
+  }
+}
+
+pragma "no doc"
+module SelectionSort {
+  /*
+    Sort the 1D array `Data` in-place using a sequential selection sort
+    algorithm.
+
+    :arg Data: The array to be sorted
+    :type Data: [] `eltType`
+    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+       data is sorted.
+
+   */
+  proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+
+    if Dom.rank != 1 {
+      compilerError("selectionSort() requires 1-D array");
+    }
+
+    const low = Dom.low,
+          high = Dom.high,
+          stride = abs(Dom.stride);
+
+    for i in low..high-stride by stride {
+      var jMin = i;
+      // TODO -- should be a minloc reduction, when they can support comparators
+      for j in i..high by stride {
+        if chpl_compare(Data[j], Data[jMin], comparator) < 0 then
+          jMin = j;
+      }
+      Data(i) <=> Data(jMin);
+    }
+  }
+}
+
+pragma "no doc"
+module ShellSort {
+  proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
+                 start=Dom.low, end=Dom.high)
+  {
+    chpl_check_comparator(comparator, eltType);
+
+    if Dom.rank != 1 then
+      compilerError("shellSort() requires 1-D array");
+    if Dom.stridable then
+      compilerError("shellSort() requires an array over a non-stridable domain");
+
+    // Based on Sedgewick's Shell Sort -- see
+    // Analysis of Shellsort and Related Algorithms 1996
+    // and see Marcin Ciura - Best Increments for the Average Case of Shellsort
+    // for the choice of these increments.
+    var n = 1 + end - start;
+    var js,hs:int;
+    var v,tmp:Data.eltType;
+    const incs = (701, 301, 132, 57, 23, 10, 4, 1);
+    for h in incs {
+      hs = h + start;
+      for is in hs..end {
+        v = Data[is];
+        js = is;
+        while js >= hs && chpl_compare(v,Data[js-h],comparator) < 0 {
+          Data[js] = Data[js - h];
+          js -= h;
         }
-        j += 1;
+        Data[js] = v;
       }
-    }
-  }
-
-  if settings.progress then writeln("sort sub-problems");
-
-  // Step 4: sort sub-problems.
-  // Note that shuffle changed the offsets to be == end_offset..
-  // put offsets back.
-  offsets[0] = start_n;
-  for i in 1..radix {
-    offsets[i] = end_offsets[i-1];
-  }
-
-  // This is a parallel version
-  if settings.alwaysSerial == false {
-    const subbits = startbit + radixbits;
-    var nbigsubs = 0;
-    var bigsubs:[0..radix] (int,int);
-    const runningNow = here.runningTasks();
-
-    // Never recursively sort the first or last bins
-    // (these store the end)
-
-    for bin in 1..radix-1 {
-      // Does the bin contain more than one record?
-      const bin_start = offsets[bin];
-      const bin_end = if bin+1<=radix then offsets[bin+1]-1 else end_n;
-      const num = 1 + bin_end - bin_start;
-      if num <= 1 || startbit >= endbit {
-        // do nothing
-      } else if num < settings.minForTask || runningNow >= settings.maxTasks {
-        // sort it in this thread
-        msbRadixSort(bin_start, bin_end, A, criterion,
-                     subbits, endbit, settings);
-      } else {
-        // Add it to the list of things to do in parallel
-        bigsubs[nbigsubs] = (bin_start, bin_end);
-        nbigsubs += 1;
-      }
-    }
-
-    forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) {
-      msbRadixSort(bin_start, bin_end, A, criterion, subbits, endbit, settings);
-    }
-  } else {
-    // The serial version
-    for bin in 1..radix-1 {
-      // Does the bin contain more than one record?
-      const bin_start = offsets[bin];
-      const bin_end = if bin+1<=radix then offsets[bin+1]-1 else end_n;
-      const num = 1 + bin_end - bin_start;
-      if num <= 1 || startbit >= endbit {
-        // do nothing
-      } else {
-        // sort it in this thread
-        msbRadixSort(bin_start, bin_end, A, criterion,
-                     startbit + radixbits, endbit, settings);
-      }
-    }
-  }
-
-  if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
-}
-
-// Check that the elements from start_n..end_n in A are sorted by criterion
-private
-proc checkSorted(start_n:int, end_n:int, A:[], criterion, startbit = 0)
-{
-  for i in start_n+1..end_n {
-    var cmp = chpl_compare(A[i-1], A[i], criterion);
-    if cmp > 0 {
-      writeln("Error: not sorted properly at i=", i, " A[i-1]=", A[i-1], " A[i]=", A[i], " in start=", start_n, " end=", end_n);
-      writeln(A);
-
-      // Halt. Note, this is only intended to be called by unit testing.
-      halt("failed checkSorted");
     }
   }
 }
+
+pragma "no doc"
+module RadixSortHelp {
+
+  // This is the number of bits to sort at a time in the radix sorter.
+  // The code assumes that all integer types are a multiple of it.
+  // That would need to change if it were to increase.
+  //
+  // At the same time, using a value less than 8 will probably perform poorly.
+  param RADIX_BITS = 8;
+
+  // Get the bin for a record by calling criterion.keyPart
+  //
+  // startbit is starting from 0
+  // bin 0 is for the end was reached (sort before)
+  // bins 1..256 are for data with next part 0..255.
+  // bin 256 is for the end was reached (sort after)
+  //
+  // ubits are the result of keyPart normalized to a uint.
+  //
+  // returns (bin, ubits)
+  inline
+  proc binForRecordKeyPart(a, criterion, startbit:int)
+  {
+    // We have keyPart(element, start):(section:int(8), part:int/uint)
+    const testRet: criterion.keyPart(a, 1).type;
+    const testPart = testRet(2);
+    param bitsPerPart = numBits(testPart.type);
+    param bitsPerPartModRadixBits = bitsPerPart % RADIX_BITS;
+    if bitsPerPartModRadixBits != 0 then
+      compilerError("part size must be a multiple of radix bits");
+      // or else the implementation below would have to handle crossing parts
+
+    // startbit must be a multiple of RADIX_BITS because the radix
+    // sort operates RADIX_BITS at a time.
+
+    // startbit might be partway through a part (e.g. 16 bits into a uint(64))
+    const whichpart = startbit / bitsPerPart;
+    const bitsinpart = startbit % bitsPerPart;
+
+    const (section, part) = criterion.keyPart(a, 1+whichpart);
+    var ubits = part:uint(bitsPerPart);
+    // If the number is signed, invert the top bit, so that
+    // the negative numbers sort below the positive numbers
+    if isInt(part) {
+      const one:ubits.type = 1;
+      ubits = ubits ^ (one << (bitsPerPart - 1));
+    }
+    param mask:uint = (1 << RADIX_BITS) - 1;
+    const ubin = (ubits >> (bitsPerPart - bitsinpart - RADIX_BITS)) & mask;
+
+    if section == 0 then
+      return (ubin:int + 1, ubits);
+    else if section < 0 then
+      return (0, ubits);
+    else
+      return ((1 << RADIX_BITS) + 1, ubits);
+  }
+
+  // Get the bin for a record with criterion.key or criterion.keyPart
+  //
+  // See binForRecordKeyPart for what the arguments / returns mean.
+  inline
+  proc binForRecord(a, criterion, startbit:int)
+  {
+    use Reflection;
+
+    if canResolveMethod(criterion, "keyPart", a, 1) {
+      return binForRecordKeyPart(a, criterion, startbit);
+    } else if canResolveMethod(criterion, "key", a) {
+      // Try to use the default comparator to get a keyPart.
+      return binForRecordKeyPart(criterion.key(a),
+                                 defaultComparator,
+                                 startbit);
+    } else {
+      compilerError("Bad comparator for radix sort ", criterion.type:string,
+                    " with eltType ", a.type:string);
+    }
+  }
+
+  // Returns the fixed number of bits in a value, if known.
+  // Returns -1 otherwise.
+  proc fixedWidth(type eltTy) param {
+    if (isUintType(eltTy) || isIntType(eltTy) ||
+        isRealType(eltTy) || isImagType(eltTy)) then
+      return numBits(eltTy);
+
+    if (isHomogeneousTuple(eltTy)) {
+      var tmp:eltTy;
+      return tmp.size * numBits(tmp(1).type);
+    }
+
+    return -1;
+  }
+
+  // Returns a compile-time known final startbit
+  // e.g. for uint(64), returns 56 (since that's 64-8 and the
+  // last sort pass will sort on the last 8 bits).
+  //
+  // Returns -1 if no such ending is known at compile-time.
+  proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
+    use Reflection;
+
+    // Compute end_bit if it's known
+    // Default comparator on integers has fixed width
+    const ref element = Data[Data.domain.low];
+    if comparator.type == DefaultComparator && fixedWidth(element.type) > 0 {
+      return fixedWidth(element.type) - RADIX_BITS;
+    } else if canResolveMethod(comparator, "key", element) {
+      type keyType = comparator.key(element).type;
+      if fixedWidth(keyType) > 0 then
+        return fixedWidth(keyType) - RADIX_BITS;
+    }
+
+    return -1;
+  }
+
+  proc radixSortClz(val) {
+    // This could use BitOps.clz but that adds new
+    // module dependencies that confuse testing.
+    // Since it's not performance critical, here we
+    // have a version using a while loop.
+    param nBits = numBits(val.type);
+    if val == 0 {
+      return nBits;
+    }
+
+    var cur = val;
+    var one = 1:val.type;
+    var hi = one << (nBits - 1);
+    var n = 0;
+    while (cur & hi) == 0 {
+      n += 1;
+      cur <<= 1;
+    }
+    return n;
+  }
+
+  // Compute the startbit location that could be used based on the
+  // min/max of values returned by keyPart.
+  proc findDataStartBit(startbit:int, min_ubits, max_ubits):int {
+    var xor = min_ubits ^ max_ubits;
+
+    // Clear the top bits in xor if they are after bitsinpart
+    param bitsPerPart = numBits(min_ubits.type);
+    const bitsinpart = startbit % bitsPerPart;
+    xor <<= bitsinpart;
+    xor >>= bitsinpart;
+
+    var new_start = radixSortClz(xor);
+    var new_digit = new_start / RADIX_BITS;
+    var new_start_bit_rounded = new_digit * RADIX_BITS;
+
+    return new_start_bit_rounded:int;
+  }
+  // Check that the elements from start_n..end_n in A are sorted by criterion
+  proc checkSorted(start_n:int, end_n:int, A:[], criterion, startbit = 0)
+  {
+    for i in start_n+1..end_n {
+      var cmp = chpl_compare(A[i-1], A[i], criterion);
+      if cmp > 0 {
+        writeln("Error: not sorted properly at i=", i, " A[i-1]=", A[i-1], " A[i]=", A[i], " in start=", start_n, " end=", end_n);
+        writeln(A);
+
+        // Halt. Note, this is only intended to be called by unit testing.
+        halt("failed checkSorted");
+      }
+    }
+  }
+}
+
+pragma "no doc"
+module MSBRadixSort {
+
+  use RadixSortHelp;
+
+  // This structure tracks configuration for the radix sorter.
+  record MSBRadixSortSettings {
+    param DISTRIBUTE_BUFFER = 5; // Number of temps during shuffle step
+    const sortSwitch = 256; // when sorting <= this many elements, use shell sort
+    const minForTask = 256; // when sorting >= this many elements, go parallel
+    param CHECK_SORTS = false; // do costly extra checks that data is sorted
+    param progress = false; // print progress
+    const alwaysSerial = false; // never create tasks
+    const maxTasks = here.numPUs(logical=true); // maximum number of tasks to make
+  }
+
+  proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
+
+    var endbit:int;
+    endbit = msbRadixSortParamLastStartBit(Data, comparator);
+    if endbit < 0 then
+      endbit = max(int);
+
+    msbRadixSort(start_n=Data.domain.low, end_n=Data.domain.high,
+                 Data, comparator,
+                 startbit=0, endbit=endbit,
+                 settings=new MSBRadixSortSettings());
+  }
+
+  // startbit counts from 0 and is a multiple of RADIX_BITS
+  proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
+                    startbit:int, endbit:int,
+                    settings /* MSBRadixSortSettings */)
+  {
+    if startbit > endbit then
+      return;
+
+    if( end_n - start_n < settings.sortSwitch ) {
+      ShellSort.shellSort(A, criterion, start=start_n, end=end_n);
+      if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
+      return;
+    }
+
+    if settings.progress then writeln("radix sort start=", start_n, " end=", end_n, " startbit=", startbit, " endbit=", endbit);
+
+    const radixbits = RADIX_BITS;
+    const radix = (1 << radixbits) + 1;
+
+    // 0th bin is for records where we've consumed all the key.
+    var offsets:[0..radix] int;
+    var end_offsets:[0..radix] int;
+    type ubitsType = binForRecord(A[start_n], criterion, startbit)(2).type;
+    var min_ubits: ubitsType = max(ubitsType);
+    var max_ubits: ubitsType = 0;
+    var min_bin = radix+1;
+    var max_bin = 0;
+    var any_ending = false;
+
+    // Step 1: count.
+    if settings.alwaysSerial == false {
+      forall i in start_n..end_n
+        with (+ reduce offsets,
+              min reduce min_ubits,
+              max reduce max_ubits,
+              || reduce any_ending) {
+        const (bin, ubits) = binForRecord(A[i], criterion, startbit);
+        if ubits < min_ubits then
+          min_ubits = ubits;
+        if ubits > max_ubits then
+          max_ubits = ubits;
+        if bin == 0 || bin == radix then
+          any_ending = true;
+        offsets[bin] += 1;
+      }
+    } else {
+      // The serial version
+      for i in start_n..end_n {
+        const (bin, ubits) = binForRecord(A[i], criterion, startbit);
+        if ubits < min_ubits then
+          min_ubits = ubits;
+        if ubits > max_ubits then
+          max_ubits = ubits;
+        if bin == 0 || bin == radix then
+          any_ending = true;
+        offsets[bin] += 1;
+      }
+    }
+
+    // If the data parts we gathered all have the same leading bits,
+    // we might be able to skip ahead immediately to the next count step.
+    if any_ending == false {
+      var dataStartBit = findDataStartBit(startbit, min_ubits, max_ubits);
+      if dataStartBit > startbit {
+        // Re-start count again immediately at the new start position.
+        msbRadixSort(start_n, end_n, A, criterion,
+                     dataStartBit, endbit, settings);
+        return;
+      }
+    }
+
+    if settings.progress then writeln("accumulate");
+
+    // Step 2: accumulate
+    var sum = 0;
+    for (off,end) in zip(offsets,end_offsets) {
+      var binstart = sum;
+      sum += off;
+      var binend = sum;
+      off = start_n + binstart;
+      end = start_n + binend;
+    }
+
+    var curbin = 0;
+
+    if settings.progress then writeln("shuffle");
+
+    // Step 3: shuffle
+    while true {
+      // Find the next bin that isn't totally in place.
+      while curbin <= radix && offsets[curbin] == end_offsets[curbin] {
+        curbin += 1;
+      }
+      if curbin > radix {
+        break;
+      }
+
+      // TODO: I think it might be possible to make this sort stable
+      // by populating buf from the start of the data instead of from the end.
+      // buf would need to be populated with the first M elements that aren't
+      // already in the correct bin.
+
+      // TODO: I think it's possible to make this shuffle parallel
+      // by imagining each task has a max_buf and have them update
+      // atomic offsets.
+      param max_buf = settings.DISTRIBUTE_BUFFER;
+      var buf: max_buf*A.eltType;
+      var used_buf = 0;
+      var end = end_offsets[curbin];
+      var endfast = max(offsets[curbin], end_offsets[curbin]-2*max_buf);
+      var bufstart = max(offsets[curbin], end_offsets[curbin]-max_buf);
+      var i = bufstart;
+
+      // Fill buf with up to max_buf records from the end of this bin.
+      while i < end {
+        buf[used_buf+1] <=> A[i];
+        used_buf += 1;
+        i += 1;
+      }
+
+      while offsets[curbin] < endfast {
+        // Now go through the records in buf
+        // putting them in their right home.
+        for param j in 1..max_buf {
+          const (bin, _) = binForRecord(buf[j], criterion, startbit);
+          // prefetch(A[offsets[bin]]) could be here but doesn't help
+
+          // Swap buf[j] into its appropriate bin.
+          // Leave buf[j] with the next unsorted item.
+          A[offsets[bin]] <=> buf[j];
+          offsets[bin] += 1;
+        }
+      }
+      // Now, handle elements in bufstart...end_offsets[cur_bin]
+      while offsets[curbin] < end {
+        // Put buf[j] into its right home
+        var j = 1;
+        while used_buf > 0 && j <= used_buf {
+          const (bin, _) = binForRecord(buf[j], criterion, startbit);
+          // Swap buf[j] into its appropriate bin.
+          var offset = offsets[bin];
+          A[offset] <=> buf[j];
+          offsets[bin] += 1;
+          // Leave buf[j] with the next unsorted item.
+          // But offsets[bin] might be in the region we already read.
+          if bin == curbin && offset >= bufstart {
+            buf[j] <=> buf[used_buf];
+            used_buf -= 1;
+          }
+          j += 1;
+        }
+      }
+    }
+
+    if settings.progress then writeln("sort sub-problems");
+
+    // Step 4: sort sub-problems.
+    // Note that shuffle changed the offsets to be == end_offset..
+    // put offsets back.
+    offsets[0] = start_n;
+    for i in 1..radix {
+      offsets[i] = end_offsets[i-1];
+    }
+
+    // This is a parallel version
+    if settings.alwaysSerial == false {
+      const subbits = startbit + radixbits;
+      var nbigsubs = 0;
+      var bigsubs:[0..radix] (int,int);
+      const runningNow = here.runningTasks();
+
+      // Never recursively sort the first or last bins
+      // (these store the end)
+
+      for bin in 1..radix-1 {
+        // Does the bin contain more than one record?
+        const bin_start = offsets[bin];
+        const bin_end = if bin+1<=radix then offsets[bin+1]-1 else end_n;
+        const num = 1 + bin_end - bin_start;
+        if num <= 1 || startbit >= endbit {
+          // do nothing
+        } else if num < settings.minForTask || runningNow >= settings.maxTasks {
+          // sort it in this thread
+          msbRadixSort(bin_start, bin_end, A, criterion,
+                       subbits, endbit, settings);
+        } else {
+          // Add it to the list of things to do in parallel
+          bigsubs[nbigsubs] = (bin_start, bin_end);
+          nbigsubs += 1;
+        }
+      }
+
+      forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) {
+        msbRadixSort(bin_start, bin_end, A, criterion, subbits, endbit, settings);
+      }
+    } else {
+      // The serial version
+      for bin in 1..radix-1 {
+        // Does the bin contain more than one record?
+        const bin_start = offsets[bin];
+        const bin_end = if bin+1<=radix then offsets[bin+1]-1 else end_n;
+        const num = 1 + bin_end - bin_start;
+        if num <= 1 || startbit >= endbit {
+          // do nothing
+        } else {
+          // sort it in this thread
+          msbRadixSort(bin_start, bin_end, A, criterion,
+                       startbit + radixbits, endbit, settings);
+        }
+      }
+    }
+
+    if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
+  }
+}
+
 
 /* Comparators */
 

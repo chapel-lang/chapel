@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "CatchStmt.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "clangUtil.h"
 #include "driver.h"
@@ -36,7 +37,6 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TryStmt.h"
-#include "UnmanagedClassType.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -2187,34 +2187,90 @@ static void resolveUnmanagedBorrows() {
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-        call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+        call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+        call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+        call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
       SET_LINENO(call);
 
-      bool unmanaged = call->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-          TypeSymbol* useTS = ts;
-
           AggregateType* at = toAggregateType(ts->type);
-          if (at && isClass(at)) {
-            if (unmanaged) {
-              UnmanagedClassType* unm = at->getUnmanagedClass();
-              useTS = unm->symbol;
-            }
+
+          ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+          if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
+            at = dt->getCanonicalClass();
+            decorator = dt->getDecorator();
+          } else if (at && isClass(at)) {
+            decorator = CLASS_TYPE_BORROWED;
+          } else if (ts == dtUnmanaged->symbol) {
+            decorator = CLASS_TYPE_UNMANAGED;
+          } else if (ts == dtBorrowed->symbol) {
+            decorator = CLASS_TYPE_BORROWED;
+          } else if (ts == dtUnmanagedNilable->symbol) {
+            decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+          } else if (ts == dtBorrowedNilable->symbol) {
+            decorator = CLASS_TYPE_BORROWED_NILABLE;
           } else {
             const char* type = NULL;
             if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
               type = "unmanaged";
             else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS))
               type = "borrowed";
+            else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS))
+              type = "?";
+            else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS))
+              type = "nonnil";
 
             USR_FATAL_CONT(call, "%s can only apply to class types "
                                  "(%s is not a class type)",
                                  type, ts->name);
           }
 
-          // replace the call with a new symexpr pointing to ts
-          call->replace(new SymExpr(useTS));
+          // Compute the decorated class type
+          if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+            int tmp = decorator & CLASS_TYPE_NILABLE_MASK;
+            tmp |= CLASS_TYPE_UNMANAGED;
+            decorator = (ClassTypeDecorator) tmp;
+          } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+            int tmp = decorator & CLASS_TYPE_NILABLE_MASK;
+            tmp |= CLASS_TYPE_BORROWED;
+            decorator = (ClassTypeDecorator) tmp;
+          } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+            int tmp = decorator & CLASS_TYPE_MANAGEMENT_MASK;
+            tmp |= CLASS_TYPE_NILABLE_MASK;
+            decorator = (ClassTypeDecorator) tmp;
+          } else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
+            int tmp = decorator & CLASS_TYPE_MANAGEMENT_MASK;
+            decorator = (ClassTypeDecorator) tmp;
+          }
+
+          if (at) {
+            Type* dt = at->getDecoratedClass(decorator);
+            if (dt) {
+              // replace the call with a new symexpr pointing to ts
+              call->replace(new SymExpr(dt->symbol));
+            }
+          } else {
+            // e.g. for borrowed?
+            Type* dt = NULL;
+            switch (decorator) {
+              case CLASS_TYPE_BORROWED:
+                dt = dtBorrowed;
+                break;
+              case CLASS_TYPE_BORROWED_NILABLE:
+                dt = dtBorrowedNilable;
+                break;
+              case CLASS_TYPE_UNMANAGED:
+                dt = dtUnmanaged;
+                break;
+              case CLASS_TYPE_UNMANAGED_NILABLE:
+                dt = dtUnmanagedNilable;
+                break;
+              // no default intentionally
+            }
+            INT_ASSERT(dt);
+            call->replace(new SymExpr(dt->symbol));
+          }
         }
       }
       // It's tempting to give type constructor calls the same

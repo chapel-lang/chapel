@@ -466,7 +466,7 @@ static VarSymbol* createCurrTPV(ShadowVarSymbol* TPV) {
 static void addDefAndMap(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar,
                          VarSymbol* currVar)
 {
-  if (currVar->type == dtVoid) {
+  if (currVar->type == dtNothing) {
     INT_ASSERT(currVar->firstSymExpr() == NULL);
     return;
   }

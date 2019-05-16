@@ -1,2 +1,2 @@
-Child(11,true)
+borrowed Child(11,true)
 {x = 15, y = 10}

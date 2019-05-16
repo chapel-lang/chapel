@@ -1,2 +1,3 @@
 tupleTypeAccess.chpl:16: In function 'accept':
 tupleTypeAccess.chpl:18: error: unresolved call '(GoodStudent,ExcellentStudent)(1)'
+tupleTypeAccess.chpl:18: note: because no functions named (GoodStudent,ExcellentStudent) found in scope

@@ -46,12 +46,12 @@
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
-#include "UnmanagedClassType.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -1031,39 +1031,31 @@ static bool needToAddCoercion(Type*      actualType,
                               ArgSymbol* formal,
                               FnSymbol*  fn) {
   Type* formalType = formal->type;
-  bool  retval     = false;
 
-  if (actualType == formalType) {
-    retval = false;
+  if (actualType == formalType)
+    return false;
 
   // If we have an actual of ref(formalType) and
   // a REF or CONST REF argument intent, no coercion is necessary.
-  } else if (actualType == formalType->getRefType() &&
-             (getIntent(formal) & INTENT_FLAG_REF) != 0) {
-    retval = false;
+  if (actualType == formalType->getRefType() &&
+      (getIntent(formal) & INTENT_FLAG_REF) != 0)
+    return false;
 
   // New in-intents don't require coercion from ref to value
   // since it'll be handled by the initCopy call.
-  } else if (actualType == formalType->getRefType() &&
-             shouldAddFormalTempAtCallSite(formal, fn)) {
-    retval = false;
+  if (actualType == formalType->getRefType() &&
+      shouldAddFormalTempAtCallSite(formal, fn))
+    return false;
 
   // If actual and formal are type symbols, no coercion is necessary
-  } else if (actualSym->hasFlag(FLAG_TYPE_VARIABLE) &&
-             formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-    retval = false;
+  if (actualSym->hasFlag(FLAG_TYPE_VARIABLE) &&
+      formal->hasFlag(FLAG_TYPE_VARIABLE))
+    return false;
 
-  } else if (canCoerce(actualType, actualSym, formalType, fn) == true) {
-    retval =  true;
+  if (canCoerce(actualType, actualSym, formalType, fn))
+    return true;
 
-  } else if (isDispatchParent(actualType, formalType->getValType()) == true) {
-    retval =  true;
-
-  } else {
-    retval = false;
-  }
-
-  return retval;
+  return false;
 }
 
 static IntentTag getIntent(ArgSymbol* formal) {
@@ -1129,16 +1121,21 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
 }
 
 static bool isUnmanagedClass(Type* t) {
-  if (isUnmanagedClassType(t))
-    return true;
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (dt->isUnmanaged())
+      return true;
 
   return false;
 }
 static bool isBorrowClass(Type* t) {
-  if (isUnmanagedClassType(t))
-    return false;
-  else if (isClass(t))
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    if (dt->isUnmanaged())
+      return false;
+    else
+      return true;
+  } else if (isClass(t)) {
     return true;
+  }
 
   return false;
 }
