@@ -37,6 +37,7 @@ typedef struct {
   chpl_cache_taskPrvData_t cache_data;
   uint8_t num_fma;
   void* amo_nf_buff;
+  void* get_buff;
 } chpl_comm_taskPrvData_t;
 
 //
