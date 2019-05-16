@@ -22,42 +22,40 @@
 
   ---
 
-  This module contains the implementation of a list datatype, intended to
-  replace the use of arrays to perform "vector-like" operations.
+  This module contains the implementation of the List type.
 
-  A List is a lightweight container intended to mimic Python's list datatype,
-  with fast O(log n)/O(1) (whatever we end up on) indexing  and an API close
-  in spirit to its Python counterpart.
+  A List is a lightweight container similar to an array that is suitable for
+  building up and iterating over a collection of elements in a structured
+  manner.
 
   The highly parallel nature of Chapel means that great care should be taken
-  when performing operations which may trigger a move of List elements.
-  Inserts and removals into the middle of a List are example operations which
-  may trigger a move, thus invalidating all references to elements of the
-  List held by tasks before the move. Appending an element to the end of a
-  List will never cause a move.
+  when performing operations that may invalidate references to List elements.
+  Inserts and removals into the middle of a List are example operations that
+  may invalidate references. Appending an element to the end of a List will
+  never invalidate references to elements contained in the List.
 
-  The following operations may trigger a move:
-    - insert
-    - remove
-    - reverse
-    - sort
-    - pop
+  The following operations may invalidate references to elements contained in
+  a List:
 
-  ---
+      - insert
+      - remove
+      - reverse
+      - sort
+      - pop
 
-  (End word smithing module text).
+  Additionally, all references to List elements are invalidated when the List
+  is deinitialized.
 
-  I know that @mppf in particular is very interested in limiting the number of
-  operations that move/displace List elements.
+  (Paragraph about parallel safety).
 
-  This pertains to the general issue of invalidating references to (and also
-  iterators over) List elements.
-
-  There is also the separate, more general issue of parallel safety. I'd
-  happily appreciate any/all recommendations for the "Chapeltastic" way of
-  making this List type parallel safe.
+  Inserts and removals into a List are O(n) worst case and should be performed
+  with care. For fast O(1) appending to either end consider the use of the
+  Deque type instead. For O(1) inserts and removals during iteration, consider
+  the use of the LinkedList type.
 
   ---
+
+  (This text will NOT appear in final module description).
 
   I believe it is the intention of this new List datatype to replace all
   "array-as-vec" operations on arrays. That means the following procedures
@@ -90,28 +88,29 @@ module Lists {
   }
 
   /*
-    A container intended to replace the use of arrays to perform "vector-like"
-    operations.
+    A List is a lightweight container suitable for building up and iterating
+    over a collection of elements in a structured manner. It is intended to
+    replace the use of arrays to perform "vector-like" operations. Unlike a
+    stack, the List type also supports inserts or removals into the middle of
+    the List. The List type is close in spirit to its Python counterpart, with
+    fast O(log n) (and O(1) eventually) indexing.
 
-    Is not currently parallel safe.
-
-    The following operations may trigger a move:
-      - insert
-      - remove
-      - reverse
-      - sort
-      - pop
-
-    A move will invalidate any references to List elements held by tasks, as
-    well as iterators to List elements produced by tasks before the move
-    occurred.
+    The List type is parallel safe by default. For situations in which such
+    overhead is undesirable, parallel safety can be disabled by setting
+    `parSafe = false` in the List constructor. A List object constructed
+    from another List object inherits the parallel safety mode of that list
+    unless otherwise specified.
   */
   class List {
 
-    pragma "no doc"
-    var _size = 0;
-    pragma "no doc"
-    var _etype;
+    /* The number of elements contained in this List. */
+    var size = 0;
+
+    /* The type of the elements contained in this List. */
+    type eltType;
+
+    /* If `true`, this List will use parallel safe operations. */
+    param parSafe = true;
 
     //
     // Michael suggested that we move from a LL of blocks to an array, which
@@ -122,99 +121,129 @@ module Lists {
     // indexing scheme when everything else is working.
     //
     pragma "no doc"
-    var _head, _tail: unmanaged ListBlock(_etype) = nil;
+    var _head, _tail: unmanaged ListBlock(eltType) = nil;
 
     /*
-      Initializes a new List containing elements of the given type.
+      Initializes an empty List containing elements of the given type.
 
-      :arg etype: The type of the elements of this List.
+      :arg eltType: The type of the elements of this List.
+      :arg parSafe: If `true`, this List will use parallel safe operations.
+        Is `true` by default.
     */
-    proc init(type etype) {
-      _etype = etype;
+    proc init(type eltType, param parSafe=true) {
+      this.eltType = eltType;
     }
 
     /*
-      Initializes a new List as a copy of another List object.
+      Initializes a List containing elements that are copy initialized from
+      the elements in the old List.
 
       :arg other: The List object to initialize from.
+      :arg parSafe: If `true`, this List will use parallel safe operations.
+        Inherits the value from the other List by default.
     */
-    proc init=(other: List) {
-      this._etype = other._etype;
+    proc init=(other: List, param parSafe=other.parSafe) {
+      this.eltType = other.eltType;
     }
 
     pragma "no doc"
     proc deinit() {}
 
+    // This may not be necessary, so don't fixate too much on it.
+    pragma "no doc"
+    proc _cast(type t: string, x: List): string {
+      return "";
+    }
+
     /*
       Add an element to the end of this List.
 
-      .. note::
-
-        Appending an element to a List will never invalidate references to
-        elements in the List.
-
       :arg x: An element to append.
     */
-    proc append(x: this._etype) {}
+    proc append(in x: eltType) {}
 
     /*
-      Extend this List by appending all the elements from another List.
+      Extend this List by appending a copy of each element contained in
+      another List.
 
-      :arg other: A List, the elements of which are appended to this List.
+      :arg other: A List containing elements of the same type as those
+        contained in this List.
     */
-    proc extend(other: List(this._etype)) {}
+    proc extend(other: List(eltType)) {}
 
     /*
-      Extend this List by appending all the elements from an array.
+      Extend this List by appending a copy of each element contained in an
+      array.
 
-      :arg other: An array, the elements of which are appended to this List.
+      :arg other: An array containing elements of the same type as those
+        contained in this List.
     */
-    proc extend(other: [?d] this._etype) {}
+    proc extend(other: [?d] eltType) {}
 
     /*
       Insert an element at a given position in this List, shifting all elements
-      following that index one to the right. Note that `a.insert(a.size, x)`
-      is equivalent to `a.append(x)`.
+      following that index one to the right.
+
+      .. warn::
+      
+        Inserting an element into this List may invalidate existing references
+        to the elements contained in this List.
 
       :arg i: The index of the element at which to insert.
       :arg x: The element to insert.
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc insert(i: int, x: this._etype) throws {}
+    proc insert(i: int, in x: eltType) throws {}
 
     /*
-      Remove the first item from this List whose value is equal to _x_.
+      Remove the first item from this List whose value is equal to x, shifting
+      all elements following the removed item one to the left.
+
+      .. warn::
+
+        Removing an element from this List may invalidate existing references
+        to the elements contained in this List.
 
       :arg x: The element to remove.
 
       :throws IllegalArgumentError: If there is no such item.
     */
-    proc remove(x: this._etype) throws {}
+    proc remove(x: eltType) throws {}
 
     /*
       Remove the item at the given position in this List, and return it. If no
       index is specified, remove and return the last item in this List.
 
+      .. warn::
+
+        Popping an element from this List will invalidate any reference to
+        the element taken while it was contained in this List.
+
       :arg i: The index of the element to remove. Defaults to the last item
         in this List, or `a.remove(a.size - 1)`.
-      
+
       :return: The item removed.
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc pop(i: int=this._size - 1): this._etype throws {
+    proc pop(i: int=size - 1): eltType throws {
       return nil;
     }
 
     /*
       Clear the contents of this List.
+
+      .. warn::
+
+        Clearing the contents of this List will invalidate all existing
+        references to the elements contained in this List.
     */
     proc clear() {}
 
     /*
       Return a zero-based index into this List of the first item whose value
-      is equal to _x_.
+      is equal to x.
 
       :arg x: An element to search for.
 
@@ -222,7 +251,7 @@ module Lists {
 
       :throws IllegalArgumentError: If the given element cannot be found.
     */
-    proc indexOf(x: _etype, start: int=0, end: int=_size): int throws {
+    proc indexOf(x: eltType, start: int=0, end: int=size): int throws {
       return 0; 
     }
 
@@ -234,25 +263,32 @@ module Lists {
       :return: The number of times a given element is found in this List.
       :rtype: `int`
     */
-    proc count(x: this._etype): int {
+    proc count(x: eltType): int {
       return 0;
     }
 
     /*
-      Sort the items of this List in place. The parameters of this method are
-      holdovers from Python. This method could more closely integrate with
-      Chapel sorting APIs.
+       Sort the elements of this List in place using their default sort order.
 
-      :arg key: Unused in current API.
-      :arg reverse: True if this List should be sorted in reverse order.
+       .. warn::
 
+        Sorting the contents of this List may invalidate existing references
+        to the elements contained in this List.
     */
-    proc sort(key: this._etype=nil, reverse: bool=false) {}
+    proc sort() {}
 
     /*
-      Reverse the elements of this List in place.
+      Sort the items of this List in place using a comparator.
+
+      .. warn::
+
+        Sorting the elements of this List may invalidate existing references
+        to the elements contained in this List.
+
+      :arg comparator: A comparator object used to sort this List.
+
     */
-    proc reverse() {}
+    proc sort(comparator) {}
 
     /*
       Index this List via subscript. Returns a reference to the element at a
@@ -274,7 +310,7 @@ module Lists {
       :yields: A reference to one of the elements contained in this List.
     */
     iter these() ref {
-      yield _size;
+      yield size;
     }
 
     /*
@@ -283,27 +319,6 @@ module Lists {
       :arg ch: A channel to write to.
     */
     proc writeThis(ch: channel) {}
-
-    /*
-      Convert the contents of this List to string form. Could be replaced by
-      an overload of the cast operation?
-
-      :return: The contents of this List, in a form suitable for printing.
-      :rtype: `string`
-    */
-    proc toString(): string {
-      return "";
-    }
-
-    /*
-      Return the number of elements in this List.
-
-      :return: The number of elements in this List.
-      :rtype: `int`
-    */
-    proc size {
-      return _size;
-    }
 
     /*
       Returns `true` if this List contains zero elements.
@@ -321,11 +336,21 @@ module Lists {
 
       :return: A new DefaultRectangular array.
     */
-    proc toArray(): [] this._etype {
+    proc toArray(): [] eltType {
       return nil;
     }
-  }
 
+  } // End class List!
+
+  /*
+    (This is a question for debate, not an actual docstring).
+
+    Should the List type support a deep copy on assignment (IE, an overload of
+    the `=` operator along with making it a record)?
+
+    IE, when I assign L2 to L1, the contents of L1 are now a copy of the
+    elements contained in L2.
+  */
   proc =(a: List(?t), b: List(t)) {}
 
   /*
@@ -340,25 +365,6 @@ module Lists {
   proc ==(a: List(?t), b: List(t)): bool {
     return true;
   }
-
-  /*
-    An important question here: do we want the semantics of addition to mirror
-    Chapel arrays, or Python lists?
-
-    Given Chapel semantics, `+` would be a "vectorlike" operation, performing
-    scalar addition against all elements of this List, returning a new List
-    as a result.
-
-    Given Python semantics, `+` would be a shorthand for concatenating two
-    Lists together, returning a new List as a result.
-
-    :arg a: A List to add.
-    :arg b: A List to add.
-
-    :return: A new List whose elements are the concatenation of two Lists.
-  */
-  proc +(a: List(?t), b: List(t)): List(t) { return nil; }
-
 
 } // End module Lists!
 
