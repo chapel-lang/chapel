@@ -77,6 +77,7 @@ Type* canonicalClassType(Type* t);
 
 ClassTypeDecorator classTypeDecorator(Type* t);
 bool isNonNilableClassType(Type* t);
+bool isNilableClassType(Type* t);
 
 void convertClassTypesToCanonical();
 

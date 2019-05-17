@@ -152,6 +152,15 @@ bool isNonNilableClassType(Type* t) {
   return !nilable;
 }
 
+bool isNilableClassType(Type* t) {
+  if (!isClassLike(t))
+    return false;
+
+  ClassTypeDecorator decorator = classTypeDecorator(t);
+  bool nilable = (decorator & CLASS_TYPE_NILABLE_MASK);
+  return nilable;
+}
+
 static Type* convertToCanonical(Type* a) {
 
   if (isReferenceType(a)) {
