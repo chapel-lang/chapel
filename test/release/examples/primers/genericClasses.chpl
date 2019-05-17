@@ -50,9 +50,9 @@ writeln("uf = ", uf, ", uf2 = ", uf2);
 // For fields that have no types, specify a type for that field,
 // instead of a value.
 //
-var taf3: borrowed TypeAliasField(real);
-var pf3: borrowed ParamField(3);
-var uf3: UntypedField(complex);
+var taf3: borrowed TypeAliasField(real)?;
+var pf3: borrowed ParamField(3)?;
+var uf3: UntypedField(complex)?;
 
 taf3 = taf;
 pf3 = pf;
