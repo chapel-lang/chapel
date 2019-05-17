@@ -98,8 +98,8 @@ module ChapelReduce {
       // will not execute at run time. Otherwise we could get in trouble,
       // as "static typeof" produces uninitialized _RuntimeTypeInfo values.
       type arrInstType = __primitive("static field type", eltType, "_instance");
-      var instanceObj: arrInstType;
-      type instanceEltType = __primitive("static typeof", instanceObj.eltType);
+      var instanceObj: arrInstType?;
+      type instanceEltType = __primitive("static typeof", instanceObj!.eltType);
       return chpl_sumTypeIsSame(instanceEltType);
 
     } else {

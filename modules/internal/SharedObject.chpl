@@ -410,6 +410,22 @@ module SharedObject {
     return tmp;
   }
 
+  pragma "no doc"
+  pragma "always propagate line file info"
+  inline proc postfix!(x:shared) {
+    // Check only if --nil-checks is enabled
+    if chpl_checkNilDereferences {
+      // Add check for nilable types only.
+      if _to_nilable(x.chpl_t) == x.chpl_t {
+        if x.chpl_p == nil {
+          HaltWrappers.nilCheckHalt("argument to ! is nil");
+        }
+      }
+    }
+    return _to_nonnil(x.chpl_p);
+  }
+
+
   /* This type allows code using the pre-1.18 `Shared` record
      to continue to compile. It will be removed in a future release.
    */
