@@ -5846,6 +5846,21 @@ void remote_get_buff_task_end(chpl_comm_taskPrvData_t* prvData) {
   }
 }
 
+// Return a pointer to this tasks GET buffer, initialize if needed
+static inline
+get_buff_task_info_t* acquire_remote_get_buff(void) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return NULL;
+
+  get_buff_task_info_t* info = prvData->get_buff;
+  if (info == NULL) {
+    prvData->get_buff = chpl_mem_alloc(sizeof(get_buff_task_info_t),
+                                       CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+    info = prvData->get_buff;
+    info->vi = 0;
+  }
+  return info;
+}
 
 static inline
 void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
@@ -5853,7 +5868,7 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 {
   mem_region_t*         local_mr;
   mem_region_t*         remote_mr;
-  chpl_comm_taskPrvData_t* prvData;
+  get_buff_task_info_t* info;
 
   DBG_P_LP(DBGF_GETPUT, "DoRemBuffGet %p <- %d:%p (%#zx), proxy %c",
            tgt_addr, (int) locale, src_addr, size, may_proxy ? 'y' : 'n');
@@ -5867,23 +5882,14 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   //
   remote_mr = mreg_for_remote_addr(src_addr, locale);
   local_mr = mreg_for_local_addr(tgt_addr);
-  prvData = get_comm_taskPrvdata();
-  if (local_mr == NULL || remote_mr == NULL || prvData == NULL ||
+  info = acquire_remote_get_buff();
+  if (local_mr == NULL || remote_mr == NULL || info == NULL ||
       !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
       !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
       !IS_ALIGNED_32(size)) {
     do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
     return;
   }
-
-  get_buff_task_info_t* info = prvData->get_buff;
-  if (info == NULL) {
-    prvData->get_buff = chpl_mem_alloc(sizeof(get_buff_task_info_t),
-                                       CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
-    info = prvData->get_buff;
-    info->vi = 0;
-  }
-  
  
   int vi = info->vi;
   info->tgt_addr_v[vi] = tgt_addr;
@@ -7196,18 +7202,11 @@ void nic_amo_nf_buff_task_end(chpl_comm_taskPrvData_t* prvData) {
   }
 }
 
-// Append to task local buffers of operations and flush if full
+// Return a pointer to this tasks AMO buffer, initialize if needed
 static inline
-void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
-                        void* object, size_t size,
-                        gni_fma_cmd_type_t cmd,
-                        mem_region_t* remote_mr)
-{
+amo_nf_buff_task_info_t* acquire_nic_amo_nf_buff(void) {
   chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-  if (prvData == NULL) {
-    do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
-    return;
-  }
+  if (prvData == NULL) return NULL;
 
   amo_nf_buff_task_info_t* info = prvData->amo_nf_buff;
   if (info == NULL) {
@@ -7215,6 +7214,21 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
                                           CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
     info = prvData->amo_nf_buff;
     info->vi = 0;
+  }
+  return info;
+}
+
+// Append to task local buffers of operations and flush if full
+static inline
+void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
+                        void* object, size_t size,
+                        gni_fma_cmd_type_t cmd,
+                        mem_region_t* remote_mr)
+{
+  amo_nf_buff_task_info_t* info = acquire_nic_amo_nf_buff();
+  if (info == NULL) {
+    do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+    return;
   }
 
   int vi = info->vi;
