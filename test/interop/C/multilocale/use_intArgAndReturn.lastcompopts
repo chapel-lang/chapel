@@ -1,1 +1,1 @@
--Llib/ -lintArgAndReturn `$CHPL_HOME/util/config/compileline --libraries` -lzmq
+-Llib/ -lintArgAndReturn -lc++ `$CHPL_HOME/util/config/compileline --libraries` -lzmq
