@@ -35,8 +35,12 @@ forall (b,a) in zip(B,AS) do
 stopTrial(B, "use slice as follower (module-scope)");
 
 startTrial();
-foo(B, A);
-stopTrial(B, "promotion (module-scope)");
+foo(AS);
+stopTrial(B, "1-arg promotion (module-scope)");
+
+startTrial();
+bar(B, AS);
+stopTrial(B, "2-arg promotion (module-scope)");
 
 proc main() {
   const bigDom4D = Dom4D.expand((1,1,1,1));
@@ -72,9 +76,12 @@ proc main() {
   stopTrial(B, "use slice as follower (local-scope)");
 
   startTrial();
-  foo(B, A);
-  stopTrial(B, "promotion (local-scope)");
-  
+  foo(AS);
+  stopTrial(B, "1-arg promotion (local-scope)");
+
+  startTrial();
+  bar(B, AS);
+  stopTrial(B, "2-arg promotion (local-scope)");
 }
 
 proc startTrial() {
@@ -92,6 +99,9 @@ proc stopTrial(B, str, skipVerify=true) {
   B = (0,0,0,0);
 }  
 
-proc foo(ref b: B.eltType, a: A.eltType) {
+proc foo(a: A.eltType) {
+}
+
+proc bar(ref b: B.eltType, a: A.eltType) {
   b = a;
 }
