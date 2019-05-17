@@ -191,7 +191,7 @@ module OwnedObject {
     pragma "owned"
     var chpl_p:_to_nilable(chpl_t);  // contained pointer (class type)
 
-    forwarding chpl_p;
+    forwarding borrow();
 
     /*
        Default-initialize a :record:`owned` to store type `chpl_t`
@@ -331,7 +331,11 @@ module OwnedObject {
      */
     pragma "nil from this"
     proc /*const*/ borrow() {
-      return chpl_p;
+      if _to_nilable(chpl_t) == chpl_t {
+        return chpl_p;
+      } else {
+        return chpl_p!;
+      }
     }
   }
 

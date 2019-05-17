@@ -141,13 +141,13 @@ module SharedObject {
 
     pragma "no doc"
     pragma "owned"
-    var chpl_p:chpl_t;   // contained pointer (class type)
+    var chpl_p:_to_nilable(chpl_t);   // contained pointer (class type)
 
-    forwarding chpl_p;
+    forwarding borrow();
 
     pragma "no doc"
     pragma "owned"
-    var chpl_pn:unmanaged ReferenceCount; // reference counter
+    var chpl_pn:unmanaged ReferenceCount?; // reference counter
 
     /*
        Default-initialize a :record:`shared`.
@@ -164,7 +164,7 @@ module SharedObject {
 
     pragma "no doc"
     proc init(p : borrowed) {
-      compilerWarning("initializing shared from a borrow is deprecated");
+      compilerError("initializing shared from a borrow is deprecated");
       this.init(_to_unmanaged(p));
     }
 
@@ -196,6 +196,18 @@ module SharedObject {
       // enable_shared_from_this to record a weak pointer back to the
       // shared pointer. That would need to be handled in a Phase 2
       // since it would refer to `this` as a whole here.
+    }
+
+    proc init(pragma "nil from arg" p : unmanaged?) {
+      this.chpl_t = _to_borrowed(p.type);
+      var rc:unmanaged ReferenceCount = nil;
+      if p != nil then
+        rc = new unmanaged ReferenceCount();
+
+      this.chpl_p = _to_borrowed(p);
+      this.chpl_pn = rc;
+
+      this.complete();
     }
 
     proc init(p: ?T)
@@ -255,7 +267,7 @@ module SharedObject {
       this.complete();
 
       if this.chpl_pn != nil then
-        this.chpl_pn.retain();
+        this.chpl_pn!.retain();
     }
 
     proc init=(src : _nilType) {
@@ -296,7 +308,7 @@ module SharedObject {
     proc ref clear() {
       if isClass(chpl_p) { // otherwise, let error happen on init call
         if chpl_p != nil && chpl_pn != nil {
-          var count = chpl_pn.release();
+          var count = chpl_pn!.release();
           if count == 0 {
             delete _to_unmanaged(chpl_p);
             delete chpl_pn;
@@ -319,7 +331,11 @@ module SharedObject {
      */
     pragma "nil from this"
     proc /*const*/ borrow() {
-      return chpl_p;
+      if _to_nilable(chpl_t) == chpl_t {
+        return chpl_p;
+      } else {
+        return chpl_p!;
+      }
     }
 
     // = should call retain-release
@@ -336,7 +352,7 @@ module SharedObject {
   proc =(ref lhs:_shared, rhs: _shared) {
     // retain-release
     if rhs.chpl_pn != nil then
-      rhs.chpl_pn.retain();
+      rhs.chpl_pn!.retain();
     lhs.clear();
     lhs.chpl_p = rhs.chpl_p;
     lhs.chpl_pn = rhs.chpl_pn;
