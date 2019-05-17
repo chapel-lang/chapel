@@ -153,14 +153,15 @@ void init_done_obj(done_t* done, int target) {
 }
 
 static inline
-void wait_done_obj(done_t* done)
+void wait_done_obj(done_t* done, chpl_bool do_yield)
 {
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
   GASNET_BLOCKUNTIL(done->flag);
 #else
   while (!done->flag) {
     (void) gasnet_AMPoll();
-    chpl_task_yield();
+    if (do_yield)
+      chpl_task_yield();
   }
 #endif
 }
@@ -1163,7 +1164,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                                             Arg1(raddr_chunk)));
 
         // Wait for the PUT to complete.
-        wait_done_obj(&done);
+        wait_done_obj(&done, false);
       }
     }
   }
@@ -1273,7 +1274,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                                             &info, sizeof(info)));
 
         // Wait for the PUT to complete.
-        wait_done_obj(&done);
+        wait_done_obj(&done, false);
 
         // Now copy from local_buf back to addr if necessary.
         if( local_buf ) {
@@ -1494,7 +1495,7 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
   }
 
   if (blocking)
-    wait_done_obj(&done);
+    wait_done_obj(&done, !fast);
 }
 
 ////GASNET - introduce locale-int size
