@@ -120,7 +120,7 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
   if (depth) {
     var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
     if (sort) then
-      sort(subdirs);
+      QuickSort.quickSort(subdirs);
     for subdir in subdirs {
       const fullpath = path + "/" + subdir;
       for subdir in walkdirs(fullpath, topdown, depth-1, hidden, 
