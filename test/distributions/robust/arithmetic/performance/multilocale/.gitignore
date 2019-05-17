@@ -7,3 +7,4 @@ assignSlice.good
 reduce.good
 reduceAlias.good
 reduceSlice.good
+sliceOps.good
