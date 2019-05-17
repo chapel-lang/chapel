@@ -1,5 +1,7 @@
 bug: extern function with array argument that returns non-trivial void fails
 
+Issue #13046
+
 An extern function with an array argument gets called through a wrapper that
 turns the array argument into a simple pointer for the underlying function.
 The wrapper returns the result of the call to the extern function.  If the
