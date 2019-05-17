@@ -8706,9 +8706,11 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
       const char* descr = val->name;
       if (VarSymbol* v = toVarSymbol(val))
         descr = toString(v);
-      // Work around current problems in array initialization
-      bool ignore = val->hasFlag(FLAG_NO_AUTO_DESTROY);
-      if (ignore == false) {
+
+      // Work around current problems in array / assoc array types
+      bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
+                    call->getModule()->hasFlag(FLAG_UNSAFE);
+      if (unsafe == false) {
         USR_FATAL_CONT(call, "Cannot default-initialize %s", descr);
         USR_PRINT("non-nil class types do not support default initialization");
         AggregateType* at = toAggregateType(canonicalClassType(type));
