@@ -114,7 +114,7 @@ void chpl_library_init(int argc, char** argv) {
     chpl_mli_debugf("passing along arg %d: %s\n", i, argv[i]);
     argvPlusSock[i] = argv[i];
   }
-  argvPlusSock[argc] = "--mli-socketLoc";
+  argvPlusSock[argc] = "--chpl-mli-socket-loc";
   argvPlusSock[argc + 1] = setup_sock_conn;
   chpl_mli_debugf("spawning server with %d args\n", argcPlusSock);
   chpl_mli_client_launch(argcPlusSock, argvPlusSock);

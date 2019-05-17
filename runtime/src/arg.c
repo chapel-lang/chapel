@@ -350,10 +350,10 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
             verbosity = 0;
             break;
           }
-          if (strcmp(flag, "mli-socketLoc") == 0) {
+          if (strcmp(flag, "chpl-mli-socket-loc") == 0) {
             i++;
             // We reached information about the socket in a multilocale library
-            // run, don't do anything further.
+            // run, don't do anything further with that information here.
             break;
           }
           if (argLength < 3) {
