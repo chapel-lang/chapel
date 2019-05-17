@@ -557,7 +557,8 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 // This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
-  dtVoid                               = createInternalType ("void",     "void");
+  dtVoid                               = createInternalType("void", "void");
+  dtNothing                            = createInternalType ("nothing",  "nothing");
 
   dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool",     "chpl_bool");
   dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
@@ -610,6 +611,7 @@ void initPrimitiveTypes() {
   gUnknown->addFlag(FLAG_TYPE_VARIABLE);
 
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
+  CREATE_DEFAULT_SYMBOL (dtNothing, gNone, "none");
 
   dtValue = createInternalType("value", "_chpl_value");
 
@@ -721,8 +723,14 @@ void initPrimitiveTypes() {
   dtBorrowed = createInternalType("_borrowed", "_borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
 
+  dtBorrowedNilable = createInternalType("_borrowedNilable", "_borrowedNilable");
+  dtBorrowedNilable->symbol->addFlag(FLAG_GENERIC);
+
   dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
+
+  dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
+  dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
 
   dtMethodToken = createInternalType ("_MT", "_MT");
   dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
@@ -817,6 +825,10 @@ void initCompilerGlobals() {
   gCastChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gCastChecking, !fNoCastChecks);
 
+  gNilChecking = new VarSymbol("chpl_checkNilDereferences", dtBool);
+  gNilChecking->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gNilChecking, !fNoNilChecks);
+
   gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
   gDivZeroChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gDivZeroChecking, !fNoDivZeroChecks);
@@ -841,8 +853,8 @@ void initCompilerGlobals() {
   initForTaskIntents();
 }
 
-bool is_void_type(Type* t) {
-  return t == dtVoid;
+bool is_nothing_type(Type* t) {
+  return t == dtNothing;
 }
 
 bool is_bool_type(Type* t) {
@@ -1005,6 +1017,10 @@ bool isClassOrNil(Type* t) {
 
 bool isClassLike(Type* t) {
   return isDecoratedClassType(t) ||
+         t == dtBorrowed ||
+         t == dtBorrowedNilable ||
+         t == dtUnmanaged ||
+         t == dtUnmanagedNilable ||
          (isClass(t) && !(t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                           t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                           t->symbol->hasFlag(FLAG_REF)));

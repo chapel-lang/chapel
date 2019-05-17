@@ -1,2 +1,2 @@
-var v: void;
+var v: nothing;
 v = 1;

@@ -30,7 +30,6 @@ extern char executableFilename[FILENAME_MAX+1];
 extern char libmodeHeadername[FILENAME_MAX+1];
 extern char fortranModulename[FILENAME_MAX+1];
 extern char pythonModulename[FILENAME_MAX+1];
-extern char mli_servername[FILENAME_MAX+1];
 extern char saveCDir[FILENAME_MAX+1];
 extern std::string ccflags;
 extern std::string ldflags;
@@ -44,11 +43,6 @@ struct fileinfo {
   const char* filename;
   const char* pathname;
 };
-
-void codegen_makefile_mli(fileinfo* mli_client, fileinfo* mli_server,
-                          const char** tmpclientname,
-                          const char** tmpservername, bool skip_compile_link,
-                          const std::vector<const char*>& splitFiles);
 
 void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL, bool skip_compile_link=false, const std::vector<const char *>& splitFiles = std::vector<const char*>());
 

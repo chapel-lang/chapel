@@ -164,6 +164,7 @@ ResolveScope::ResolveScope(BaseAST*            ast,
 ************************************** | *************************************/
 
 void ResolveScope::addBuiltIns() {
+  extend(dtNothing->symbol);
   extend(dtVoid->symbol);
   extend(dtStringC->symbol);
 
@@ -179,6 +180,7 @@ void ResolveScope::addBuiltIns() {
   extend(dtValue->symbol);
 
   extend(gUnknown);
+  extend(gNone);
   extend(gVoid);
 
   extend(dtBools[BOOL_SIZE_SYS]->symbol);
@@ -237,7 +239,9 @@ void ResolveScope::addBuiltIns() {
   extend(dtIteratorRecord->symbol);
   extend(dtIteratorClass->symbol);
   extend(dtBorrowed->symbol);
+  extend(dtBorrowedNilable->symbol);
   extend(dtUnmanaged->symbol);
+  extend(dtUnmanagedNilable->symbol);
 
   extend(dtMethodToken->symbol);
   extend(gMethodToken);
@@ -250,6 +254,7 @@ void ResolveScope::addBuiltIns() {
 
   extend(gBoundsChecking);
   extend(gCastChecking);
+  extend(gNilChecking);
   extend(gDivZeroChecking);
   extend(gPrivatization);
   extend(gLocal);

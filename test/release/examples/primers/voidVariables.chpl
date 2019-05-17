@@ -8,12 +8,12 @@
 
 // This variable will be removed by the compiler. It is an error to assign a
 // non-void value to it, or to use it where a non-void value is expected.
-var voidVar: void;
+var voidVar: nothing;
 
 // The value ``_void`` is the value version of the ``void`` type. It is
 // expected that the name ``_void`` is not a permanent choice and will be
 // changed in the future.
-var voidVar2 = _void;
+var voidVar2 = none;
 
 // The following (commented out) statements are compile time errors::
 /*
@@ -37,7 +37,7 @@ config param useMultiplier = false;
 // If useMultiplier is ``false``, the ``multiplier`` variable will be removed
 // by the compiler.  Since all uses of ``multiplier`` are guarded by the
 // ``useMultiplier`` param, they will also be removed.
-const multiplier = if useMultiplier then 3.5 else _void;
+const multiplier = if useMultiplier then 3.5 else none;
 var value = 1.0;
 
 if useMultiplier {
@@ -53,11 +53,11 @@ writeln(value);
 // two different platforms.
 record voidRecord {
   param useImpl2: bool = false;
-  var impl1Var1 = if useImpl2 then _void else 1;
-  var impl1Var2 = if useImpl2 then _void else 2.0;
+  var impl1Var1 = if useImpl2 then none else 1;
+  var impl1Var2 = if useImpl2 then none else 2.0;
 
-  var impl2Var1 = if useImpl2 then 3.0 else _void;
-  var impl2Var2 = if useImpl2 then "4.0" else _void;
+  var impl2Var1 = if useImpl2 then 3.0 else none;
+  var impl2Var2 = if useImpl2 then "4.0" else none;
 
   proc myProc() {
     if useImpl2 {

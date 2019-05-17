@@ -63,7 +63,7 @@ proc checkSorts(arr, comparator) {
     if verbose then
       writeln("radix sort");
     var b = arr;
-    msbRadixSort(b, comparator);
+    MSBRadixSort.msbRadixSort(b, comparator);
     assert(isSorted(b, comparator));
     assert(a.equals(b));
   }
@@ -71,7 +71,7 @@ proc checkSorts(arr, comparator) {
   if verbose then
     writeln("quick sort");
   var c = arr;
-  quickSort(c, comparator=comparator);
+  QuickSort.quickSort(c, comparator=comparator);
   assert(isSorted(c, comparator));
   assert(a.equals(c));
 }

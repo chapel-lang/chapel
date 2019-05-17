@@ -80,27 +80,27 @@ void initForTaskIntents() {
 
   tiMarkBlank     = new ArgSymbol(INTENT_BLANK,
                                   "tiMarkBlank",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkIn        = new ArgSymbol(INTENT_IN,
                                   "tiMarkIn",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstDflt = new ArgSymbol(INTENT_CONST,
                                   "tiMarkConstDflt",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstIn   = new ArgSymbol(INTENT_CONST_IN,
                                   "tiMarkConstIn",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstRef  = new ArgSymbol(INTENT_CONST_REF,
                                   "tiMarkConstRef",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkRef       = new ArgSymbol(INTENT_REF,
                                   "tiMarkRef",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkHost = new FnSymbol("tiMarkHost");
 

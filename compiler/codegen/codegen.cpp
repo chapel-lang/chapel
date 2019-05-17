@@ -2214,12 +2214,6 @@ static void setupDefaultFilenames() {
     strncpy(pythonModulename, executableFilename, sizeof(pythonModulename)-1);
     pythonModulename[sizeof(pythonModulename)-1] = '\0';
   }
-
-  if (fMultiLocaleInterop) {
-    strncpy(mli_servername, executableFilename, sizeof(mli_servername)-1);
-    mli_servername[sizeof(mli_servername)-1] = '\0';
-    strcat(mli_servername, "_server");
-  }
 }
 
 

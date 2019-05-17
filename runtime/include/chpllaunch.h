@@ -44,6 +44,7 @@ int chpl_get_charset_env_args(char *argv[]);
 void chpl_compute_real_binary_name(const char* argv0);
 const char* chpl_get_real_binary_wrapper(void);
 const char* chpl_get_real_binary_name(void);
+int chpl_launcher_main(int argc, char* argv[]);
 
 //
 // Defined in launch_<CHPL_LAUNCHER>.c

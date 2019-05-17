@@ -387,6 +387,9 @@ all:
     - Stop throwing `--static` for performance testing (#12652)
   04/24/19:
     - Improve task placement for local bounded coforalls (#12868)
+  05/06/19:
+    - text: Enable the unordered compiler optimization by default (#12952)
+      config: 16 node XC
 
 
 AllCompTime:
@@ -571,6 +574,8 @@ create-views:
       config: chapcs
   11/10/18:
     - Improve timing and stability of the create-views performance test (#11609)
+  05/03/19:
+    - Govern slice expressions by slicing domain (#12931)
 
 cs-resize:
   03/05/19:
@@ -670,6 +675,10 @@ fastaredux:
     - Disable enum->int casts for enums without values (#10114)
   07/14/18:
     - Optimize enum->int casts for concrete types (#10308)
+
+fft:
+  05/15/19:
+    - Optimize all gets out of each Cyclic forall loop / leverage DR iterators (#13020)
 
 fft-timecomp:
   <<: *timecomp-base
@@ -1140,6 +1149,8 @@ nbody:
     - Use zero-arg initializer in BaseDom (#9250)
   08/31/18:
     - Refactor PRIM_NEW resolution to enable promotion (#10919)
+  05/03/19:
+    - Govern slice expressions by slicing domain (#12931)
 
 no-op:
   02/24/17:
@@ -1160,6 +1171,8 @@ pidigits: &pidigits-base
     - rearranged pidigits; release versions now use bigints (#4655) (#4656)
   05/01/18:
     - Move chplgmp.c out of runtime (#8944)
+  05/14/19:
+    - Fix build issue where GCC's GMP was used instead of Chapel's
 pidigits-submitted:
   <<: *pidigits-base
 
@@ -1511,6 +1524,10 @@ distAdaptativeWSv2:
     - Bring in upstream fixes for qthreads sleep interception bug (#5446)
   03/04/17:
     - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+getNextPerf:
+  05/16/19:
+    - Improve the speed of parallel safe random streams (#13013)
 
 guided:
   02/28/17:
