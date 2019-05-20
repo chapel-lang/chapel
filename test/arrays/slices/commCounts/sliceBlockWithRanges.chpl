@@ -1,27 +1,14 @@
 use BlockDist;
 use CommDiagnostics;
-//use myArrayStuff;
 
 config const printArray = true;
 
 proc main() {
   const D = {1..10, 1..10} dmapped Block({1..10, 1..10});
   var A: [D] real;
-  const DInner = {3..8, 3..8};
 
   forall a in A do
     a = here.id;
-
-  writeln("\nA is:\n", A);
-
-  writeln();
-  writeln("Incrementing A[Dinner] via routine:");
-  increment(A[3..8, 3..8], DInner);
-
-  writeln();
-  writeln("Incrementing A[Dinner] via routine:");
-  increment(A[DInner]);
-
 
   writeln();
   writeln("Creating B (a normal slice)");
