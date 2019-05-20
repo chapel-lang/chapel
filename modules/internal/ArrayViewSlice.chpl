@@ -25,7 +25,8 @@
 module ArrayViewSlice {
   use ChapelStandard;
 
-  config param chpl_debugSerializeSlice = false;
+  config param chpl_debugSerializeSlice = false,
+               chpl_serializeSlices = false;
 
   private proc buildIndexCacheHelper(arr, dom) {
     param isRankChangeReindex = arr.isRankChangeArrayView() ||
@@ -89,8 +90,11 @@ module ArrayViewSlice {
     //
     proc chpl__rvfMe() param {
       use Reflection;
+
+      if chpl_serializeSlices == false then
+        return false;
       if (dom.dsiSupportsPrivatization() && arr.dsiSupportsPrivatization() &&
-          canResolveMethod(dom, "chpl__serialize") && 
+          canResolveMethod(dom, "chpl__serialize") &&
           canResolveMethod(arr, "chpl__serialize")) {
         return true;
       } else {
@@ -287,11 +291,27 @@ module ArrayViewSlice {
     // privatization
     //
 
-    // We don't want to privatize array slices proactively anymore,
-    // but lazily through remote value forwarding
+    // If we're serializing slices then we don't want to privatize
+    // them proactively anymore.  If we're not serializing them, then we:
+    // Don't want to privatize a DefaultRectangular, so pass the query on to
+    // the wrapped array
     proc dsiSupportsPrivatization() param
-      return false;
+    {
+      if chpl_serializeSlices then return false;
+      return _ArrInstance.dsiSupportsPrivatization();
+    }
 
+    proc dsiGetPrivatizeData() {
+      return (_DomPid, dom, _ArrPid, _ArrInstance);
+    }
+
+    proc dsiPrivatize(privatizeData) {
+      return new unmanaged ArrayViewSliceArr(eltType=this.eltType,
+                                   _DomPid=privatizeData(1),
+                                   dom=privatizeData(2),
+                                   _ArrPid=privatizeData(3),
+                                   _ArrInstance=privatizeData(4));
+    }
 
     //
     // utility functions used to set up the index cache
