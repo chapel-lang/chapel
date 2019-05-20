@@ -43,7 +43,7 @@ module ChapelSerializedBroadcast {
     // being serialized rather than querying it from localeZeroGlobal
     // since it knows the precise type.
     //
-    if chpl__isArrayView(localeZeroGlobal) {
+    if isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal) {
       halt("internal error: can't broadcast module-scope arrays yet");
     } else {
       const data = localeZeroGlobal.chpl__serialize();
