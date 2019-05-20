@@ -1,0 +1,14 @@
+#! /usr/bin/env bash
+#
+# With network atomics (using the plain .good file) the first segment of
+# the output for 'atomic remote test basic' has 2 gets and 1 execute_on
+# for one of the tasks and 1 get and 2 execute_ons for the others.  But,
+# which task differs can vary.  So, sort that first section in order to
+# match.  (For configurations that use comm-none.good or na-none.good
+# all the tasks produce the same output, so this is just a long no-op.)
+#
+(   sed -n '0,/atomic remote test basic/ p' < $2 \
+ && sed -n '/atomic remote test basic/,/atomic remote test split phase/ p' \
+    < $2 | sed -e '1 d' -e '$ d'| sort \
+ && sed -n '/atomic remote test split phase/,$ p' < $2) \
+> $2.tmp && mv $2.tmp $2
