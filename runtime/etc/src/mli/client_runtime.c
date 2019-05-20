@@ -102,7 +102,7 @@ void chpl_library_init(int argc, char** argv) {
   // Set up the clientside ZMQ sockets.
   chpl_mli_client_init(&chpl_client);
 
-  chpl_mli_bind(chpl_client.setup_sock, ip, "*");
+  chpl_mli_bind(chpl_client.setup_sock);
 
   char* setup_sock_conn = chpl_mli_connection_info(chpl_client.setup_sock);
   chpl_mli_debugf("Setup socket used: %s\n", setup_sock_conn);

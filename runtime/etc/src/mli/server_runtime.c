@@ -86,15 +86,15 @@ void chpl_mli_smain(char* setupConn) {
 
   chpl_mli_connect(chpl_server.setup_sock, setupConn);
 
-  chpl_mli_bind(chpl_server.main, ip, "*");
+  chpl_mli_bind(chpl_server.main);
   char* main_conn = chpl_mli_connection_info(chpl_server.main);
   chpl_mli_debugf("Main port on: %s\n", main_conn);
 
-  chpl_mli_bind(chpl_server.arg, ip, "*");
+  chpl_mli_bind(chpl_server.arg);
   char* arg_conn = chpl_mli_connection_info(chpl_server.arg);
   chpl_mli_debugf("Arg port on: %s\n", arg_conn);
 
-  chpl_mli_bind(chpl_server.res, ip, "*");
+  chpl_mli_bind(chpl_server.res);
   char* res_conn = chpl_mli_connection_info(chpl_server.res);
   chpl_mli_debugf("Res port on: %s\n", res_conn);
 

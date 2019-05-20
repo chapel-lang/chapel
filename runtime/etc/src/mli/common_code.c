@@ -192,36 +192,17 @@ char* chpl_mli_concat(size_t count, ...) {
 }
 
 //
-// In this interface only the server should bind!
+// Bind the socket, always to an ephemeral port and ip address (connect
+// is what needs an explicit port/ip address)
 //
 static
-void chpl_mli_bind(void* socket, const char* ip, const char* port) {
-  const char* real_ip = ip;
-  char* buffer = NULL;
-  char* bufptr = NULL;
-  size_t len = 0;
+void chpl_mli_bind(void* socket) {
+  const char* real_ip = "tcp://*:*";
   int err = 0;
 
-  //
-  // The ZMQ API is non-orthagonal in this way, so in our interface we opt to
-  // substitute "localhost" for "*" (indicating any device) automatically.
-  // Note that IP addresses are not otherwise sanitized (ZMQ will do that for
-  // us, but we don't return errors yet).
-  //
-  if (!strcmp(ip, "localhost")) {
-    real_ip = "*";
-  }
-
-  // TODO: Remove this assert / proper response to allocation failure during
-  // socket setup.
-  buffer = chpl_mli_concat(4, "tcp://", real_ip, ":", port);
-  assert(buffer != NULL);
-
   // TODO: Remove this assert / make this more robust.
-  err = zmq_bind(socket, buffer);
+  err = zmq_bind(socket, real_ip);
   assert(err == 0);
-
-  mli_free(buffer);
 
   return;
 }
