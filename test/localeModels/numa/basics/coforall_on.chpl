@@ -1,5 +1,5 @@
 inline proc writestuff(newLine=true) {
-  writeln((here, here:LocaleModel, here:NumaDomain));
+  writeln((here, here:LocaleModel?, here:NumaDomain?));
   if newLine then writeln();
 }
 
