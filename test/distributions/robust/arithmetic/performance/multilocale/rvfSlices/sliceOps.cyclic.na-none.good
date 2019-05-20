@@ -3,7 +3,7 @@ create slice (module-scope):
 use slice via assignment (module-scope):
 (execute_on_nb = 3) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1)
 use slice via random access (module-scope):
-(execute_on_nb = 3) (get = 54, execute_on_fast = 1) (get = 54, execute_on_fast = 1) (get = 108, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 972, execute_on_fast = 1) (get = 972, execute_on_fast = 1) (get = 972, execute_on_fast = 1)
 0 serializing a slice
 0 serializing a slice
 0 serializing a slice
@@ -11,13 +11,13 @@ use slice via random access (module-scope):
 use slice as standalone (module-scope):
 (execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
 use slice as leader (module-scope):
-(execute_on_nb = 3) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1)
 use slice as follower (module-scope):
-(execute_on_nb = 3) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1)
 1-arg promotion (module-scope):
-(execute_on_nb = 3) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1)
 2-arg promotion (module-scope):
-(execute_on_nb = 3) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1)
 create slice (local-scope):
 (<no communication>) (<no communication>) (<no communication>) (<no communication>)
 use slice via assignment (local-scope):
@@ -35,10 +35,10 @@ use slice via random access (local-scope):
 use slice as standalone (local-scope):
 (execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
 use slice as leader (local-scope):
-(execute_on_nb = 3) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1)
 use slice as follower (local-scope):
-(execute_on_nb = 3) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1)
 1-arg promotion (local-scope):
-(execute_on_nb = 3) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1)
 2-arg promotion (local-scope):
-(execute_on_nb = 3) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1)
