@@ -1161,14 +1161,13 @@ module String {
               // Count the number of codepoints in the view
               var nCodepoints = 0;
               var nextIdx = 0;
-              var localThis = this.localize();
               for i in view {
                 if i > nextIdx {
                   nCodepoints += 1;
                   var cp: int(32);
                   var nbytes: c_int;
-                  var multibytes = (localThis.buff + i-1): c_string;
-                  var maxbytes = (localThis.len - (i-1)): ssize_t;
+                  var multibytes = (this.buff + i-1): c_string;
+                  var maxbytes = (this.len - (i-1)): ssize_t;
                   qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
                   nextIdx = i-1 + nbytes;
                 }
