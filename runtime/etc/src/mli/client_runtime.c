@@ -108,37 +108,37 @@ void chpl_library_init(int argc, char** argv) {
   chpl_mli_debugf("Setup socket used: %s\n", setup_sock_conn);
 
   // Send the setup socket as the last argument when launching the server.
-  int argcPlusSock = argc + 2;
-  char** argvPlusSock = mli_malloc(argcPlusSock * sizeof(char*));
+  int argc_plus_sock = argc + 2;
+  char** argv_plus_sock = mli_malloc(argc_plus_sock * sizeof(char*));
   for (int i = 0; i < argc; i++) {
     chpl_mli_debugf("passing along arg %d: %s\n", i, argv[i]);
-    argvPlusSock[i] = argv[i];
+    argv_plus_sock[i] = argv[i];
   }
-  argvPlusSock[argc] = "--chpl-mli-socket-loc";
-  argvPlusSock[argc + 1] = setup_sock_conn;
-  chpl_mli_debugf("spawning server with %d args\n", argcPlusSock);
-  chpl_mli_client_launch(argcPlusSock, argvPlusSock);
+  argv_plus_sock[argc] = "--chpl-mli-socket-loc";
+  argv_plus_sock[argc + 1] = setup_sock_conn;
+  chpl_mli_debugf("spawning server with %d args\n", argc_plus_sock);
+  chpl_mli_client_launch(argc_plus_sock, argv_plus_sock);
   chpl_mli_debugf("clean up extended %s\n", "argv");
-  mli_free(argvPlusSock);
+  mli_free(argv_plus_sock);
 
   chpl_mli_debugf("cleaning up connection %s\n", "info");
   mli_free(setup_sock_conn);
 
-  char* mainConn = chpl_mli_pull_connection();
-  chpl_mli_debugf("connection info for main %s\n", mainConn);
-  char* argConn = chpl_mli_pull_connection();
-  chpl_mli_debugf("connection info for arg %s\n", argConn);
-  char* resConn = chpl_mli_pull_connection();
-  chpl_mli_debugf("connection info for res %s\n", resConn);
+  char* main_conn = chpl_mli_pull_connection();
+  chpl_mli_debugf("connection info for main %s\n", main_conn);
+  char* arg_conn = chpl_mli_pull_connection();
+  chpl_mli_debugf("connection info for arg %s\n", arg_conn);
+  char* res_conn = chpl_mli_pull_connection();
+  chpl_mli_debugf("connection info for res %s\n", res_conn);
 
-  chpl_mli_connect(chpl_client.main, mainConn);
-  chpl_mli_connect(chpl_client.arg, argConn);
-  chpl_mli_connect(chpl_client.res, resConn);
+  chpl_mli_connect(chpl_client.main, main_conn);
+  chpl_mli_connect(chpl_client.arg, arg_conn);
+  chpl_mli_connect(chpl_client.res, res_conn);
 
   chpl_mli_debugf("clean up %s\n", "client port strings");
-  mli_free(mainConn);
-  mli_free(argConn);
-  mli_free(resConn);
+  mli_free(main_conn);
+  mli_free(arg_conn);
+  mli_free(res_conn);
 
   return;
 }

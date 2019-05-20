@@ -24,7 +24,7 @@
 #include "config.h"
 
 // Declare the server listen loop (to be linked in later).
-void chpl_mli_smain(char* setupConn);
+void chpl_mli_smain(char* setup_conn);
 
 int main(int argc, char** argv) {
   // No need to pass in the connection information, which will be the last

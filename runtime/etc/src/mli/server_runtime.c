@@ -70,7 +70,7 @@ void chpl_mli_terminate(enum chpl_mli_errors e) {
   mli_terminate();
 }
 
-void chpl_mli_smain(char* setupConn) {
+void chpl_mli_smain(char* setup_conn) {
   int64_t id = -1;
   int64_t ack = 0;
   int execute = 1;
@@ -84,7 +84,7 @@ void chpl_mli_smain(char* setupConn) {
 
   chpl_mli_debugf("%s\n", "Starting server for multi-locale library!");
 
-  chpl_mli_connect(chpl_server.setup_sock, setupConn);
+  chpl_mli_connect(chpl_server.setup_sock, setup_conn);
 
   chpl_mli_bind(chpl_server.main);
   char* main_conn = chpl_mli_connection_info(chpl_server.main);
