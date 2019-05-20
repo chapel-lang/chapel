@@ -1805,41 +1805,6 @@ static void dbg_catf(FILE* out_f, const char* in_fname, const char* match)
 
 
 
-// Simple wrapper for spinlock with more relaxed orderings and proper yielding
-// for locks. Should only be used when contention is expected to be very low.
-typedef atomic_bool spinlock;
-static inline void spinlock_init(spinlock* s) {
-  atomic_init_bool(s, false);
-}
-static inline void spinlock_lock(spinlock* s) {
-  while (atomic_exchange_explicit_bool(s, true, memory_order_acquire)) {
-    local_yield();
-  }
-}
-static inline void spinlock_unlock(spinlock* s) {
-  atomic_store_explicit_bool(s, false, memory_order_release);
-}
-static inline void spinlock_destroy(spinlock* s) {
-  atomic_destroy_bool(s);
-}
-
-
-// Simple wrapper for a pthread reader/writer lock with proper yielding for
-// locks. Use the non-blocking calls and yield instead of blocking the thread.
-typedef pthread_rwlock_t rwlock;
-static inline void rwlock_init(rwlock* l) {
-  pthread_rwlock_init(l, NULL);
-}
-static inline void rwlock_writer_lock(rwlock* l) {
-  while (pthread_rwlock_trywrlock(l) == EBUSY) { local_yield(); }
-}
-static inline void rwlock_reader_lock(rwlock* l) {
-  while (pthread_rwlock_tryrdlock(l) == EBUSY) { local_yield(); }
-}
-static inline void rwlock_unlock(rwlock* l) {
-  pthread_rwlock_unlock(l);
-}
-
 static inline
 chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
   chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
