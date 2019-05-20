@@ -4803,7 +4803,7 @@ DEFINE_PRIM(PRIM_STACK_ALLOCATE_CLASS) {
     ret = codegenCast(at, codegenAddrOf(tmp));
 }
 
-DEFINE_PRIM(PRIM_HEAP_REGISTER_GLOBAL_VAR) {
+DEFINE_PRIM(PRIM_REGISTER_GLOBAL_VAR) {
     GenRet idx          = codegenValue(call->get(1));
     GenRet var          = call->get(2);
     GenRet ptr_wide_ptr = codegenAddrOf(var);
@@ -4830,12 +4830,12 @@ DEFINE_PRIM(PRIM_HEAP_REGISTER_GLOBAL_VAR) {
     }
 #endif
 
-    codegenCall("chpl_heap_register_global_var",
+    codegenCall("chpl_comm_register_global_var",
                 idx,
                 codegenCast("ptr_wide_ptr_t", ptr_wide_ptr));
 }
-DEFINE_PRIM(PRIM_HEAP_BROADCAST_GLOBAL_VARS) {
-    codegenCall("chpl_gen_comm_broadcast_global_vars", call->get(1));
+DEFINE_PRIM(PRIM_BROADCAST_GLOBAL_VARS) {
+    codegenCall("chpl_comm_broadcast_global_vars", call->get(1));
 }
 DEFINE_PRIM(PRIM_PRIVATE_BROADCAST) {
     codegenCall("chpl_comm_broadcast_private",

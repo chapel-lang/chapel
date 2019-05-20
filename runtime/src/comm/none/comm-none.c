@@ -20,6 +20,7 @@
 #include "chplrt.h"
 
 #include "chpl-comm.h"
+#include "chpl-comm-internal.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chplexit.h"
 #include "error.h"
@@ -132,7 +133,7 @@ void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single node\n");
 }
 
-void chpl_comm_broadcast_global_vars(int numGlobals) { }
+wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) { return NULL; }
 
 void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) { }
 
