@@ -114,19 +114,22 @@ units for offsets or lengths:
  * codepoints
  * graphemes
 
-Most methods on the Chapel string type currently work with byte units by
-default. For example, :proc:`~string.length` returns the length in bytes and
-`int` values passed into :proc:`~string.this` are offsets in byte units.
+Most methods on the Chapel string type currently work with codepoint units by
+default. For example, :proc:`~string.length` returns the length in codepoints
+and `int` values passed into :proc:`~string.this` are offsets in codepoint
+units.
 
-The string type currently supports codepoint units as well. In some cases these
-units are indicated by the method name, for example with
-:proc:`~string.numCodepoints`. Other methods, including :proc:`~string.this`,
-support arguments of type :record:`codepointIndex` to request codepoint units,
+The string type currently supports byte units as well. Most methods,
+including :proc:`~string.this`, support arguments of type
+:record:`codepointIndex` to request codepoint units,
 or :record:`byteIndex` to request byte units.
+
+For speed of indexing with their result values, :proc:`~string.find()`
+and :proc:`~string.rfind()` return a :record:`byteIndex`.
 
 .. note::
 
-  Support for graphemes units is not implemented at this time.
+  Support for grapheme units is not implemented at this time.
 
  */
 module String {
@@ -903,14 +906,14 @@ module String {
                 specified byte index from ``1..string.length``
      */
     inline proc this(i: int) : string {
-      return this[i: byteIndex];
+      return this[i: codepointIndex];
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
     // range that can be used to iterate over a section of the string
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType != codepointIndex {
+    proc _getView(r:range(?)) where r.idxType == byteIndex {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low:int <= 0 then
@@ -922,9 +925,13 @@ module String {
         }
       }
       const r1 = r[1:r.idxType..this.len:r.idxType];
-      const ret = r1.low:int..r1.high:int
-        by if r1.stridable then r1.stride else 1;
-      return ret;
+      if r1.stridable {
+        const ret = r1.low:int..r1.high:int by r1.stride;
+        return ret;
+      } else {
+        const ret = r1.low:int..r1.high:int;
+        return ret;
+      }
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
@@ -937,7 +944,7 @@ module String {
     // or by storing an array of indices marking the beginning of each
     // codepoint alongside the string.
     pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == codepointIndex {
+    proc _getView(r:range(?)) where r.idxType != byteIndex {
       if r.stridable {
         HaltWrappers.unimplementedFeatureHalt("string slicing",
                                               "stridable codepoint ranges");
@@ -1143,8 +1150,32 @@ module String {
 
         // Edge cases
         if count {
-          if nLen == 0 then
-            localRet = thisLen+1;
+          if nLen == 0 { // Empty needle
+            const isByteIndexed =
+              if region.hasLowBound() then region.low.type == byteIndex else
+              if region.hasHighBound() then region.high.type == byteIndex
+              else false;
+            if isByteIndexed {
+              localRet = thisLen+1;
+            } else {
+              // Count the number of codepoints in the view
+              var nCodepoints = 0;
+              var nextIdx = 0;
+              var localThis = this.localize();
+              for i in view {
+                if i > nextIdx {
+                  nCodepoints += 1;
+                  var cp: int(32);
+                  var nbytes: c_int;
+                  var multibytes = (localThis.buff + i-1): c_string;
+                  var maxbytes = (localThis.len - (i-1)): ssize_t;
+                  qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+                  nextIdx = i-1 + nbytes;
+                }
+              }
+              localRet = nCodepoints+1;
+            }
+          }
         } else { // find
           if nLen == 0 { // Empty needle
             if fromLeft {

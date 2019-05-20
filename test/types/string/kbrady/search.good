@@ -69,9 +69,9 @@ find: (_bindex = 1)
 rfind: (_bindex = 55)
 
 d.___("ç", ..18)
-count: 9
+count: 18
 find: (_bindex = 1)
-rfind: (_bindex = 17)
+rfind: (_bindex = 35)
 
 d.___("Ç")
 count: 0
@@ -99,14 +99,14 @@ find: (_bindex = 0)
 rfind: (_bindex = 0)
 
 y.___("")
-count: 20
+count: 17
 find: (_bindex = 0)
 rfind: (_bindex = 20)
 
 y.___("", 9..15)
 count: 8
 find: (_bindex = 0)
-rfind: (_bindex = 8)
+rfind: (_bindex = 9)
 
 "".___(y)
 count: 0
