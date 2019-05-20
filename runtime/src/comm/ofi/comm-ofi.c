@@ -272,6 +272,8 @@ static void init_ofiForAms(void);
 
 static void init_bar(void);
 
+static void init_broadcast_private(void);
+
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_comm_ofi_abort_on_error =
@@ -286,6 +288,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
 void chpl_comm_post_mem_init(void) {
   chpl_comm_init_prv_bcast_tab();
+  init_broadcast_private();
 }
 
 
@@ -949,32 +952,32 @@ void chpl_comm_rollcall(void) {
 // Chapel global and private variable support
 //
 
+wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
+  //
+  // Gather the global variables' wide pointers on node 0 into a
+  // buffer, and broadcast the address of that buffer to the other
+  // nodes.
+  //
+  wide_ptr_t* buf;
+  if (chpl_nodeID == 0) {
+    CHPL_CALLOC(buf, chpl_numGlobalsOnHeap);
+    for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
+      buf[i] = *chpl_globals_registry[i];
+    }
+  }
+  chpl_comm_ofi_oob_bcast(&buf, sizeof(buf));
+  return buf;
+}
+
+
 static void*** chplPrivBcastTabMap;
 
-
-void chpl_comm_broadcast_global_vars(int numGlobals) {
+static
+void init_broadcast_private(void) {
   //
-  // Broadcast the wide addresses of the registered globals from
-  // node 0 to the other nodes.
   //
-  wide_ptr_t* glbWideAddrs;
-  CHPL_CALLOC(glbWideAddrs, chpl_numGlobalsOnHeap);
-  if (chpl_nodeID == 0) {
-    for (int i = 0; i < numGlobals; i++) {
-      glbWideAddrs[i] = *chpl_globals_registry[i];
-    }
-  }
-  chpl_comm_ofi_oob_bcast(glbWideAddrs, numGlobals * sizeof(glbWideAddrs[0]));
-  if (chpl_nodeID != 0) {
-    for (int i = 0; i < numGlobals; i++) {
-      *chpl_globals_registry[i] = glbWideAddrs[i];
-    }
-  }
-  CHPL_FREE(glbWideAddrs);
-
-  //
-  // While here, also share the nodes' private broadcast tables around.
-  // These are needed by chpl_comm_broadcast_private(), below.
+  // Share the nodes' private broadcast tables around.  These are
+  // needed by chpl_comm_broadcast_private(), below.
   //
   void** pbtMap;
   size_t pbtSize = chpl_rt_priv_bcast_tab_len

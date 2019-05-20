@@ -3772,18 +3772,22 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
 }
 
 
-void chpl_comm_broadcast_global_vars(int numGlobals)
-{
-  int i;
-
-  DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_broadcast_global_vars(%d)",
-           numGlobals);
-
-  if (chpl_nodeID != 0) {
-    for (i = 0; i < numGlobals; i++)
-      do_remote_get(chpl_globals_registry[i], 0, chpl_globals_registry[i],
-                    sizeof(wide_ptr_t), may_proxy_true);
+wide_ptr_t* chpl_comm_broadcast_global_vars_helper() {
+  //
+  // Gather the global variables' wide pointers on node 0 into a
+  // buffer, and broadcast the address of that buffer to the other
+  // nodes.
+  //
+  wide_ptr_t* buf;
+  if (chpl_nodeID == 0) {
+    buf = (wide_ptr_t*) chpl_mem_allocMany(chpl_numGlobalsOnHeap, sizeof(*buf),
+                                           CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+    for (int i = 0; i < glb_addrs_len; i++) {
+      buf[i] = *chpl_globals_registry[i];
+    }
   }
+  PMI_Bcast(&buf, sizeof(buf));
+  return buf;
 }
 
 
