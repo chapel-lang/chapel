@@ -1034,18 +1034,6 @@ module ChapelArray {
   }
 
 
-  pragma "no doc"
-  record _serialized_domain {
-    param rank;
-    type idxType;
-    param stridable;
-    var dims;
-    param isDefaultRectangular;
-    /* The following will be needed when extending beyond DefaultRectangular
-    var dist;
-    var privdata;*/
-  }
-
   //
   // Domain wrapper record.
   //
@@ -1073,48 +1061,22 @@ module ChapelArray {
       }
     }
 
-    forwarding _value;
+    forwarding _value except chpl__serialize, chpl__deserialize;
 
     pragma "no doc"
     proc chpl__serialize()
       where this._value.isDefaultRectangular() {
 
-      return new _serialized_domain(rank, idxType, stridable, dims(), true);
+      return this._value.chpl__serialize();
     }
 
-    /* Here is a draft at what chpl__serialize might look like to
-       support non-DefaultRectangular domains.
-    pragma "no doc"
-    proc chpl__serialize()
-      where (_to_borrowed(this._value.type) : BaseRectangularDom) &&
-             !this._value.isDefaultRectangular() &&
-             this._value.dsiSupportsPrivatization {
-
-        return new _serialized_domain(rank, idxType, stridable, dims(),
-                                      false, dist, _value.dsiGetPrivatizeData());
-    }*/
-
-
-    // TODO: we *SHOULD* be allowed to query param properties from a type....
+    // TODO: we *SHOULD* be allowed to query the type of '_instance' directly
     // This function may not use any run-time type information passed to it
     // in the form of the 'this' argument. Static/param information is OK.
-    // TODO: only consider DR case for now
     pragma "no doc"
     proc type chpl__deserialize(data) {
-      if data.isDefaultRectangular then
-        // DefaultRectangular
-        return _newDomain(defaultDist.newRectangularDom(data.rank,
-                                                        data.idxType,
-                                                        data.stridable,
-                                                        data.dims));
-      else
-        compilerError("chpl__deserialized called for not-DefaultRectangular");
-        /* Here is a sketch
-        return _newDomain(data.dist.newRectangularDom(data.rank,
-                                                      data.idxType,
-                                                      data.stridable,
-                                                      data.dims,
-                                                      data.privdata)); */
+      type valueType = __primitive("static field type", this, "_instance");
+      return _newDomain(_to_borrowed(valueType).chpl__deserialize(data));
     }
 
     proc _do_destroy () {
@@ -2197,6 +2159,10 @@ module ChapelArray {
   pragma "has runtime type"
   pragma "ignore noinit"
   pragma "default intent is ref if modified"
+  // this has always been true, but hard-coded into the compiler; here
+  // we put it into the module code to remove a special-case and force
+  // the serialize routines to fire, when their where-clause permits.
+  pragma "always RVF"
   /* The array type */
   record _array {
     var _pid:int;  // only used when privatized
@@ -2204,6 +2170,17 @@ module ChapelArray {
     pragma "alias scope from this"
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
+
+    proc chpl__serialize() where _instance.chpl__rvfMe() {
+      return _instance.chpl__serialize();
+    }
+
+    pragma "no doc"
+    pragma "no copy return"
+    proc type chpl__deserialize(data) {
+      var arrinst = _to_borrowed(__primitive("static field type", this, "_instance")).chpl__deserialize(data);
+      return new _array(nullPid, arrinst, _unowned=true);
+    }
 
     proc chpl__promotionType() type {
       return _value.eltType;
@@ -2219,7 +2196,8 @@ module ChapelArray {
     }
 
     forwarding _value except doiBulkTransferFromKnown, doiBulkTransferToKnown,
-                             doiBulkTransferFromAny,  doiBulkTransferToAny;
+                             doiBulkTransferFromAny,  doiBulkTransferToAny,
+                             chpl__serialize, chpl__deserialize;
 
     pragma "no doc"
     proc deinit() {
