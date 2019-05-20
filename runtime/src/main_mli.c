@@ -17,14 +17,32 @@
  * limitations under the License.
  */
 
-#ifndef _comm_heap_macros_h_
-#define _comm_heap_macros_h_
+#include "chplrt.h"
+#include "chpl_rt_utils_static.h"
+#include "chpl-init.h"
+#include "chplexit.h"
+#include "config.h"
 
+// Declare the server listen loop (to be linked in later).
+void chpl_mli_smain(void);
 
-void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide);
+int main(int argc, char** argv) {
 
-#define CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, wide) \
-  chpl_comm_gasnet_help_register_global_var(i, wide);
+  chpl_library_init(argc, argv);
 
-#endif
+  // TODO: Snip off the values we need from argc/argv?
+  // TODO: Handshake here, or later?
+  // TODO: Pass argc/argv into listen loop?
 
+  // Drop down into the server listen loop.
+  chpl_mli_smain();
+
+  //
+  // This will be called when the server exits the listen loop, which will
+  // only happen when the client calls its version of finalize.
+  //
+  chpl_library_finalize();
+
+  // Should never reach here.
+  return 0;
+}

@@ -723,8 +723,14 @@ void initPrimitiveTypes() {
   dtBorrowed = createInternalType("_borrowed", "_borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
 
+  dtBorrowedNilable = createInternalType("_borrowedNilable", "_borrowedNilable");
+  dtBorrowedNilable->symbol->addFlag(FLAG_GENERIC);
+
   dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
+
+  dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
+  dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
 
   dtMethodToken = createInternalType ("_MT", "_MT");
   dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
@@ -818,6 +824,10 @@ void initCompilerGlobals() {
   gCastChecking = new VarSymbol("castChecking", dtBool);
   gCastChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gCastChecking, !fNoCastChecks);
+
+  gNilChecking = new VarSymbol("chpl_checkNilDereferences", dtBool);
+  gNilChecking->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gNilChecking, !fNoNilChecks);
 
   gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
   gDivZeroChecking->addFlag(FLAG_PARAM);
@@ -1007,6 +1017,10 @@ bool isClassOrNil(Type* t) {
 
 bool isClassLike(Type* t) {
   return isDecoratedClassType(t) ||
+         t == dtBorrowed ||
+         t == dtBorrowedNilable ||
+         t == dtUnmanaged ||
+         t == dtUnmanagedNilable ||
          (isClass(t) && !(t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                           t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                           t->symbol->hasFlag(FLAG_REF)));

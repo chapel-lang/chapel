@@ -153,14 +153,15 @@ void init_done_obj(done_t* done, int target) {
 }
 
 static inline
-void wait_done_obj(done_t* done)
+void wait_done_obj(done_t* done, chpl_bool do_yield)
 {
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
   GASNET_BLOCKUNTIL(done->flag);
 #else
   while (!done->flag) {
     (void) gasnet_AMPoll();
-    chpl_task_yield();
+    if (do_yield)
+      chpl_task_yield();
   }
 #endif
 }
@@ -912,14 +913,23 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 #endif
 }
 
-void chpl_comm_broadcast_global_vars(int numGlobals) {
-  int i;
-  if (chpl_nodeID != 0) {
-    for (i = 0; i < numGlobals; i++) {
-      chpl_comm_get(chpl_globals_registry[i], 0,
-                    &((wide_ptr_t*)seginfo_table[0].addr)[i],
-                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, CHPL_COMM_UNKNOWN_ID, 0, 0);
+wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
+  //
+  // Gather the global variables' wide pointers on node 0 into the
+  // buffer at the front of our communicable segment.  We don't have
+  // to communicate that because everyone already knows where it is.
+  // We do need to delay returning on the non-0 nodes until after
+  // node 0 has filled in that buffer, however.
+  //
+  if (chpl_nodeID == 0) {
+    for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
+      ((wide_ptr_t*) seginfo_table[0].addr)[i] = *chpl_globals_registry[i];
     }
+    chpl_comm_barrier("fill node 0 globals buf");
+    return NULL; // so common code won't try to free it!
+  } else {
+    chpl_comm_barrier("fill node 0 globals buf");
+    return (wide_ptr_t*) seginfo_table[0].addr;
   }
 }
 
@@ -1163,7 +1173,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                                             Arg1(raddr_chunk)));
 
         // Wait for the PUT to complete.
-        wait_done_obj(&done);
+        wait_done_obj(&done, false);
       }
     }
   }
@@ -1273,7 +1283,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                                             &info, sizeof(info)));
 
         // Wait for the PUT to complete.
-        wait_done_obj(&done);
+        wait_done_obj(&done, false);
 
         // Now copy from local_buf back to addr if necessary.
         if( local_buf ) {
@@ -1494,7 +1504,7 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
   }
 
   if (blocking)
-    wait_done_obj(&done);
+    wait_done_obj(&done, !fast);
 }
 
 ////GASNET - introduce locale-int size
@@ -1575,9 +1585,3 @@ void chpl_comm_make_progress(void)
 }
 
 void chpl_comm_task_end(void) { }
-
-void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide_addr) {
-  if (chpl_nodeID == 0) {
-    ((wide_ptr_t*)seginfo_table[0].addr)[i] = wide_addr;
-  }
-}

@@ -1101,18 +1101,17 @@ module Random {
 
 
       pragma "no doc"
-      var PCGRandomStreamPrivate_lock$: if parSafe then sync bool else nothing;
+      var _l: if parSafe then atomic bool else nothing;
       pragma "no doc"
-      pragma "dont disable remote value forwarding"
       inline proc _lock() {
         if parSafe then
-          PCGRandomStreamPrivate_lock$ = true;
+          while _l.read() || _l.testAndSet(memory_order_acquire) do
+            chpl_task_yield();
       }
       pragma "no doc"
-      pragma "dont disable remote value forwarding"
       inline proc _unlock() {
         if parSafe then
-          PCGRandomStreamPrivate_lock$;
+          _l.clear(memory_order_release);
       }
       // up to 4 RNGs
       pragma "no doc"
@@ -2506,18 +2505,17 @@ module Random {
       //
 
       pragma "no doc"
-      var NPBRandomStreamPrivate_lock$: if parSafe then sync bool else nothing;
+      var _l: if parSafe then atomic bool else nothing;
       pragma "no doc"
-      pragma "dont disable remote value forwarding"
       inline proc _lock() {
         if parSafe then
-          NPBRandomStreamPrivate_lock$ = true;
+          while _l.read() || _l.testAndSet(memory_order_acquire) do
+            chpl_task_yield();
       }
       pragma "no doc"
-      pragma "dont disable remote value forwarding"
       inline proc _unlock() {
         if parSafe then
-          NPBRandomStreamPrivate_lock$;
+          _l.clear(memory_order_release);
       }
       pragma "no doc"
       var NPBRandomStreamPrivate_cursor: real = seed;

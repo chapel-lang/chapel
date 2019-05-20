@@ -383,7 +383,7 @@ module SharedObject {
   // supported in the compiler via a call to borrow() and
   // sometimes uses this cast.
   pragma "no doc"
-  inline proc _cast(type t, pragma "nil from arg" const ref x:_shared) where isSubtype(t,x.chpl_t) {
+  inline proc _cast(type t:borrowed, pragma "nil from arg" const ref x:_shared) where isSubtype(t,x.chpl_t) {
     return x.borrow();
   }
 

@@ -1,0 +1,5 @@
+perfkeys: Ordered rate(mOps/sec):, Unordered rate(mOps/sec):
+files: one-locale-serial-amo-perf.dat, one-locale-serial-amo-perf.dat
+graphkeys: ordered, unordered
+graphtitle: Serial 1 Locale Remote AMO Performance
+ylabel: Performance (10**6 ops/sec)

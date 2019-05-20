@@ -51,7 +51,7 @@ proc gatherTimings(const ref A) {
   {
     var B = A;
     t.start();
-    quickSort(B);
+    QuickSort.quickSort(B);
     t.stop();
     if !isSorted(B) then
       writeln('quickSort failed to sort data');
@@ -63,7 +63,7 @@ proc gatherTimings(const ref A) {
   {
     var B = A;
     t.start();
-    heapSort(B);
+    HeapSort.heapSort(B);
     t.stop();
     if !isSorted(B) then
       writeln('heapSort failed to sort data');
@@ -75,7 +75,7 @@ proc gatherTimings(const ref A) {
   {
     var B = A;
     t.start();
-    insertionSort(B);
+    InsertionSort.insertionSort(B);
     t.stop();
     if !isSorted(B) then
       writeln('insertionSort failed to sort data');
@@ -87,7 +87,7 @@ proc gatherTimings(const ref A) {
   {
     var B = A;
     t.start();
-    binaryInsertionSort(B);
+    BinaryInsertionSort.binaryInsertionSort(B);
     t.stop();
     if !isSorted(B) then
       writeln('binaryInsertionSort failed to sort data');
@@ -99,7 +99,7 @@ proc gatherTimings(const ref A) {
   {
     var B = A;
     t.start();
-    mergeSort(B);
+    MergeSort.mergeSort(B);
     t.stop();
     if !isSorted(B) then
       writeln('mergeSort failed to sort data');
@@ -111,7 +111,7 @@ proc gatherTimings(const ref A) {
   {
     var B = A;
     t.start();
-    selectionSort(B);
+    SelectionSort.selectionSort(B);
     t.stop();
     if !isSorted(B) then
       writeln('selectionSort failed to sort data');
@@ -123,7 +123,7 @@ proc gatherTimings(const ref A) {
   {
     var B = A;
     t.start();
-    bubbleSort(B);
+    BubbleSort.bubbleSort(B);
     t.stop();
     if !isSorted(B) then
       writeln('bubbleSort failed to sort data');

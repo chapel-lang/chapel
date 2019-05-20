@@ -1010,10 +1010,12 @@ module ChapelDistribution {
 
     for e in lhs._arrs do {
       on e {
-        var eCast = e:arrType;
-        if eCast == nil then
+        var eCastQ = e:arrType?;
+        if eCastQ == nil then
           halt("internal error: ", t:string,
                " contains an bad array type ", arrType:string);
+
+        var eCast = eCastQ!;
 
         var inds = rhs.getIndices();
         var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
@@ -1030,7 +1032,8 @@ module ChapelDistribution {
     }
     lhs.dsiSetIndices(rhs.getIndices());
     for e in lhs._arrs do {
-      var eCast = e:arrType;
+      var eCastQ = e:arrType?;
+      var eCast = eCastQ!;
       on e do eCast.dsiPostReallocate();
     }
 

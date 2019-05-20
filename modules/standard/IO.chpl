@@ -2922,16 +2922,21 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // to stop writing if there was an error.
   qio_channel_clear_error(_channel_internal);
 
-  if (isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t)) && x == nil {
-    // future - write class IDs, have serialization format
-    var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-    var iolit:ioLiteral;
-    if st == QIO_AGGREGATE_FORMAT_JSON {
-      iolit = new ioLiteral("null");
+  if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
+    if x == nil {
+      // future - write class IDs, have serialization format
+      var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      var iolit:ioLiteral;
+      if st == QIO_AGGREGATE_FORMAT_JSON {
+        iolit = new ioLiteral("null");
+      } else {
+        iolit = new ioLiteral("nil");
+      }
+      _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
     } else {
-      iolit = new ioLiteral("nil");
+      var notNilX = _to_nonnil(x);
+      notNilX.writeThis(writer);
     }
-    _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
   } else {
     x.writeThis(writer);
   }

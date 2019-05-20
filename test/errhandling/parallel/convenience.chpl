@@ -32,7 +32,7 @@ proc test() {
     }
     writeln("iterating everything else:");
     for error in errors {
-      var e = error:borrowed MyError;
+      var e = error:borrowed MyError?;
       if e == nil then
         writeln(error);
     }

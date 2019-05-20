@@ -376,11 +376,12 @@
 %left TSHIFTLEFT TSHIFTRIGHT
 %right TUPLUS TUMINUS
 %left TSTAR TDIVIDE TMOD
-%right TBNOT TBANG TQUESTION
+%right TBNOT TBANG
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
 %left TBORROWED TOWNED TUNMANAGED TSHARED
+%right TQUESTION
 %right TNEW
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
@@ -457,7 +458,7 @@
 %type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> bool_literal literal_expr
-%type <pexpr> stmt_level_expr type_level_expr scalar_type
+%type <pexpr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
 %type <pexpr> lifetime_components_expr
 %type <pexpr> lifetime_expr lifetime_ident
 %type <lifetimeAndWhere> opt_lifetime_where
@@ -748,10 +749,10 @@ reserved_type_ident_use:
      different names. */
   TSYNC      { $$ = "_syncvar"; }
 | TSINGLE    { $$ = "_singlevar"; }
-| TOWNED     { $$ = "_owned"; }
+/*| TOWNED     { $$ = "_owned"; }
 | TSHARED    { $$ = "_shared"; }
 | TBORROWED  { $$ = "_borrowed"; }
-| TUNMANAGED { $$ = "_unmanaged"; }
+| TUNMANAGED { $$ = "_unmanaged"; }*/
 | TDOMAIN    { $$ = "_domain"; }
 | TINDEX     { $$ = "_index"; }
 ;
@@ -1670,6 +1671,13 @@ ident_expr:
    As such, array type expressions are individually defined for formal array
    parameters and variables. */
 type_level_expr:
+  sub_type_level_expr %prec TNOELSE
+    { $$ = $1; }
+| sub_type_level_expr TQUESTION %prec TQUESTION
+    { $$ = new CallExpr( PRIM_TO_NILABLE_CLASS, $1); }
+;
+
+sub_type_level_expr:
   nil_expr
 | lhs_expr                  // var b: a.type || (?,?) || foo()
 | cond_expr                 // type b = if b then uint else int
@@ -1689,16 +1697,23 @@ type_level_expr:
     { $$ = new CallExpr("chpl__atomicType", $2); }
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
-| TBORROWED expr
-    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, $2); }
+
+| TOWNED
+    { $$ = new UnresolvedSymExpr("_owned"); }
 | TOWNED expr
     { $$ = new CallExpr( "_owned", $2); }
+| TUNMANAGED
+    { $$ = new UnresolvedSymExpr("_unmanaged"); }
 | TUNMANAGED expr
     { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS, $2); }
+| TSHARED
+    { $$ = new UnresolvedSymExpr("_shared"); }
 | TSHARED expr
     { $$ = new CallExpr( "_shared", $2); }
-| ident_expr TQUESTION
-    { $$ = new CallExpr( PRIM_TO_NILABLE_CLASS, $1); }
+| TBORROWED
+    { $$ = new UnresolvedSymExpr("_borrowed"); }
+| TBORROWED expr
+    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, $2); }
 ;
 
 for_expr:
@@ -1868,10 +1883,6 @@ expr:
     { $$ = new CallExpr(PRIM_TUPLE_EXPAND, $3); }
 | expr TCOLON expr
     { $$ = createCast($1, $3); }
-| expr TCOLON TBORROWED
-    { $$ = new CallExpr("_to_borrowed", $1); }
-| expr TCOLON TUNMANAGED
-    { $$ = new CallExpr("_to_unmanaged", $1); }
 | expr TDOTDOT expr
     { $$ = new CallExpr("chpl_build_bounded_range", $1, $3); }
 | expr TDOTDOT

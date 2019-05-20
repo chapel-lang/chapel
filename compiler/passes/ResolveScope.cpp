@@ -239,7 +239,9 @@ void ResolveScope::addBuiltIns() {
   extend(dtIteratorRecord->symbol);
   extend(dtIteratorClass->symbol);
   extend(dtBorrowed->symbol);
+  extend(dtBorrowedNilable->symbol);
   extend(dtUnmanaged->symbol);
+  extend(dtUnmanagedNilable->symbol);
 
   extend(dtMethodToken->symbol);
   extend(gMethodToken);
@@ -252,6 +254,7 @@ void ResolveScope::addBuiltIns() {
 
   extend(gBoundsChecking);
   extend(gCastChecking);
+  extend(gNilChecking);
   extend(gDivZeroChecking);
   extend(gPrivatization);
   extend(gLocal);
