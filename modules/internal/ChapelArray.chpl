@@ -2175,15 +2175,10 @@ module ChapelArray {
       return _instance.chpl__serialize();
     }
 
-    proc type chpl__typeOfInstance() type {
-      var x: this;
-      return x._instance.type;
-    }
-
     pragma "no doc"
     pragma "no copy return"
     proc type chpl__deserialize(data) {
-      var arrinst = _to_borrowed(this.chpl__typeOfInstance()).chpl__deserialize(data);
+      var arrinst = _to_borrowed(__primitive("static field type", this, "_instance")).chpl__deserialize(data);
       return new _array(nullPid, arrinst, _unowned=true);
     }
 
