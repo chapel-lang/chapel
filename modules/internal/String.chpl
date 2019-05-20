@@ -796,7 +796,7 @@ module String {
       Skip characters that begin prior to the specified starting byte index.
     */
     pragma "no doc"
-    iter _cpIndexLen(start: int = 1) {
+    iter _cpIndexLen(start = 1:byteIndex) {
       var localThis: string = this.localize();
 
       var i = 0;
@@ -807,7 +807,7 @@ module String {
         var maxbytes = (localThis.len - i): ssize_t;
         qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
         if i + 1 >= start then
-          yield (cp:int(32), i + 1, nbytes:int);
+          yield (cp:int(32), (i + 1):byteIndex, nbytes:int);
         i += nbytes;
       }
     }
@@ -959,12 +959,12 @@ module String {
       if cp_high > 0 {
         for (c, i, nbytes) in this._cpIndexLen() {
           if cp_count == cp_low {
-            byte_low = i;
+            byte_low = i:int;
             if !r.hasHighBound() then
               break;
           }
           if cp_count == cp_high {
-            byte_high = i + nbytes-1;
+            byte_high = i:int + nbytes-1;
             break;
           }
           cp_count += 1;
@@ -1337,10 +1337,10 @@ module String {
         const noSplits : bool = maxsplit == 0;
         const limitSplits : bool = maxsplit > 0;
         var splitCount: int = 0;
-        const iEnd = localThis.len - 1;
+        const iEnd = (localThis.len - 1):byteIndex;
 
         var inChunk : bool = false;
-        var chunkStart : int;
+        var chunkStart : byteIndex;
 
         for (c, i, nbytes) in localThis._cpIndexLen() {
           // emit whole string, unless all whitespace
@@ -1520,8 +1520,8 @@ module String {
       const localThis: string = this.localize();
       const localChars: string = chars.localize();
 
-      var start = 1;
-      var end = localThis.len;
+      var start = 1:byteIndex;
+      var end = localThis.len:byteIndex;
 
       if leading {
         label outer for (thisChar, i, nbytes) in localThis._cpIndexLen() {
@@ -1540,7 +1540,7 @@ module String {
         // is not initially known, it is faster to work forward, assuming we
         // are already past the end of the string, and then update the end
         // point as we are proven wrong.
-        end = 0;
+        end = 0:byteIndex;
         label outer for (thisChar, i, nbytes) in localThis._cpIndexLen(start) {
           for removeChar in localChars.codepoints() {
             if thisChar == removeChar {
