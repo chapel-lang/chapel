@@ -3877,7 +3877,7 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper() {
   if (chpl_nodeID == 0) {
     buf = (wide_ptr_t*) chpl_mem_allocMany(chpl_numGlobalsOnHeap, sizeof(*buf),
                                            CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
-    for (int i = 0; i < glb_addrs_len; i++) {
+    for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
       buf[i] = *chpl_globals_registry[i];
     }
   }
@@ -8309,11 +8309,6 @@ void local_yield(void)
 #else
   sched_yield();
 #endif
-}
-
-
-void chpl_comm_ugni_help_register_global_var(int i, wide_ptr_t wide)
-{
 }
 
 
