@@ -3,7 +3,7 @@ class C {
 }
 
 class D {
-  var y: unmanaged C;
+  var y: unmanaged C?;
 }
 
 proc foo(c: borrowed C) {

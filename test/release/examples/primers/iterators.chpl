@@ -122,18 +122,22 @@ postorder
 //
 class Tree {
   var data: string;
-  var left, right: owned Tree;
+  var left, right: owned Tree?;
 }
 
 iter postorder(tree: borrowed Tree): borrowed Tree {
   if tree != nil {
-    // Call the iterator recursively on the left subtree and expand.
-    for child in postorder(tree.left) do
-      yield child;
+    if tree.left {
+      // Call the iterator recursively on the left subtree and expand.
+      for child in postorder(tree.left) do
+        yield child;
+    }
 
-    // Call the iterator recursively on the right subtree and expand.
-    for child in postorder(tree.right) do
-      yield child;
+    if tree.right {
+      // Call the iterator recursively on the right subtree and expand.
+      for child in postorder(tree.right) do
+        yield child;
+    }
 
     // Finally, yield the node itself.
     yield tree;

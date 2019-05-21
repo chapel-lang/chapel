@@ -3,7 +3,7 @@ class C {
 }
 
 record R {
-  var c : unmanaged C;
+  var c : unmanaged C?;
   proc init() {
     writeln("default init");
   }
