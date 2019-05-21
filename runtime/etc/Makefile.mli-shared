@@ -66,10 +66,13 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		$(COMP_GEN_MLI_EXTRA_INCLUDES)
 #
 # Invoke the linker directly rather than package everything into an archive.
+# Again, the codegen_makefile function is responsible for inserting the
+# "shared library" flag here.
 #
 	$(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -o $(TMPBINNAME) \
 		$(TMBINNAME).o $(TMPSERVERNAME)_launcher.o \
 		$(CHPL_CL_OBJS) $(LIBS) \
+		$(CHPL_GEN_CLIENT_LFLAGS) \
 		-L$(CHPL_RT_LIB_DIR) -lchpl -lm -lchpllaunch \
     -L$(CHPL_ZMQ_LOC)/lib -lzmq
 #
@@ -98,15 +101,16 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 	;)
 #
 # Link the Chapel runtime and the ZMQ library together into a multi-locale
-# executable.
+# executable. TODO: What's the difference here between $(CHPLUSEROBJ) and
+# $(CHPL_CL_OBJS)?
 #
 	$(LD) $(GEN_LFLAGS) $(COMP_GEN_SERVER_LFLAGS) -o $(TMPSERVERNAME) \
-		-L$(CHPL_RT_LIB_DIR) $(TMPSERVERNAME).o $(CHPLUSEROBJ) \
-		$(CHPL_RT_LIB_DIR)/main_mli.o \
-		$(CHPL_CL_OBJS) \
-		-lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
-		$(CHPL_MAKE_BASE_LFLAGS) \
-		-L$(CHPL_ZMQ_LOC)/lib -lzmq
+		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
+		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main_mli.o \
+    -L$(CHPL_RT_LIB_DIR) -lchpl -lm \
+		-L$(CHPL_ZMQ_LOC)/lib -lzmq \
+		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
+		$(CHPL_MAKE_BASE_LFLAGS)
 endif
 
 FORCE:

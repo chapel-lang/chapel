@@ -720,6 +720,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   const char* tmpserver = "";
   const char* tmpbin = "";
   bool startsWithLib = !strncmp(executableFilename, "lib", 3);
+  bool dyn = (fLinkStyle == LS_DYNAMIC);
   std::string makeallvars;
   fileinfo makefile;
 
@@ -846,51 +847,38 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Linker flags for each deliverable.
   if (fMultiLocaleInterop) {
-    bool dyn = (fLinkStyle == LS_DYNAMIC);
+
     const char* clientlflags = "";
     const char* serverlflags = "";
 
     clientlflags = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
     serverlflags = dyn ? "$(GEN_DYNAMIC_FLAG)" : "$(GEN_STATIC_FLAG)";
 
-    //
-    // TODO: This is giving me problems on Darwin due to it being unable to
-    // link static libraries. The linker is unable to find "crt0.o".
-    //
-    // SEE:
-    // https://stackoverflow.com/questions/844819/how-to-static-link-on-os-x
-    //
-    // I've noticed that the Makefiles generated for multi-locale executables
-    // do not output anything for these flags (at least on Darwin). For now,
-    // omit them, and later make sure we properly mimic the other Makefile
-    // codegen routine.
-    //
-    if (false) {
-      fprintf(makefile.fptr, "COMP_GEN_CLIENT_LFLAGS = %s", clientlflags);
-      fprintf(makefile.fptr, " %s\n", ldflags.c_str());
-      fprintf(makefile.fptr, "COMP_GEN_SERVER_LFLAGS = %s", serverlflags);
-      fprintf(makefile.fptr, " %s\n\n", ldflags.c_str());
-    } else {
-      fprintf(makefile.fptr, "COMP_GEN_CLIENT_LFLAGS =\n");
-      fprintf(makefile.fptr, "COMP_GEN_SERVER_LFLAGS =\n");
-    }
+    fprintf(makefile.fptr, "COMP_GEN_CLIENT_LFLAGS = %s", clientlflags);
+    fprintf(makefile.fptr, " %s\n", ldflags.c_str());
+    fprintf(makefile.fptr, "COMP_GEN_SERVER_LFLAGS = %s", serverlflags);
+    fprintf(makefile.fptr, " %s\n\n", ldflags.c_str());
+
   // Take this block if we are NOT multi-locale interop.
   } else {
 
     const char* lmode = "";
+
     if (!fLibraryCompile) {
-      // Important that _no_ RHS is produced when link style is default!
+      //
+      // Important that _no_ RHS is produced when link style is default! Tests
+      // will _fail_ that rely on this assumption if we do otherwise.
+      //
       if (fLinkStyle == LS_DYNAMIC) {
         lmode = "$(GEN_DYNAMIC_FLAG)";
       } else if (fLinkStyle == LS_STATIC) {
         lmode = "$(GEN_STATIC_FLAG)";
       }
     } else {
-      bool dyn = (fLinkStyle == LS_DYNAMIC);
       lmode = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
     }
 
-    fprintf(makefile.fptr, "COMP_GEN_LFLAGS =%s", lmode);
+    fprintf(makefile.fptr, "COMP_GEN_LFLAGS = %s", lmode);
     fprintf(makefile.fptr, " %s\n", ldflags.c_str());
   }
 
@@ -906,6 +894,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
               "$(CHPL_TAGS_APPEND_FLAG) *.c *.h",
             saveCDir);
   }
+
   fprintf(makefile.fptr, "\n\n");
 
   // List source files needed to compile this deliverable.
@@ -953,22 +942,13 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // Figure out the appropriate base Makefile to include.
   std::string incpath = "include $(CHPL_MAKE_HOME)/runtime/etc/";
   if (fMultiLocaleInterop) {
-    if (fLinkStyle == LS_DYNAMIC) {
-      USR_FATAL("Multi-locale libraries do not support dynamic linking");
-    } else {
-      incpath += "Makefile.mli-static";
-    }
+    incpath += dyn ? "Makefile.mli-shared" : "Makefile.mli-static";
   } else if (fLibraryCompile) {
-    if (fLinkStyle == LS_DYNAMIC) {
-      incpath += "Makefile.shared";
-    } else {
-      incpath += "Makefile.static";
-    }
+    incpath += dyn ? "Makefile.shared" : "Makefile.static";
   } else {
     incpath += "Makefile.exe";
   }
 
-  INT_ASSERT(incpath.size());
   fprintf(makefile.fptr, "%s\n\n", incpath.c_str());
 
   genCFileBuildRules(makefile.fptr);

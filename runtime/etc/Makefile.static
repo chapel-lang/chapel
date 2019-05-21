@@ -24,6 +24,7 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 all: $(TMPBINNAME)
 
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
+	@echo "Wtf why are we over here for OSX?"
 	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC)
 	$(AR) -c -r -s $(TMPBINNAME) $(TMPBINNAME).o $(CHPL_CL_OBJS)
 ifneq ($(TMPBINNAME),$(BINNAME))
