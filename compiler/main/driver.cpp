@@ -1383,10 +1383,6 @@ static void setMultiLocaleInterop() {
     USR_FATAL("Multi-locale libraries do not support --llvm");
   }
 
-  if (fLibraryPython) {
-    USR_FATAL("Multi-locale libraries do not support --library-python");
-  }
-
   if (fLibraryFortran) {
     USR_FATAL("Multi-locale libraries do not support --library-fortran");
   }
