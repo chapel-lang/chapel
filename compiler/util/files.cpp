@@ -827,11 +827,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // Compiler flags for each deliverable.
   if (fMultiLocaleInterop) {
 
-    const char* clientcflags = fLinkStyle == LS_DYNAMIC
-      ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
+    const char* shared = dyn ? "$(SHARED_LIB_CFLAGS)" : "";
 
     fprintf(makefile.fptr, "COMP_GEN_CLIENT_CFLAGS = %s %s %s\n",
-            clientcflags,
+            shared,
             includedirs.c_str(),
             ccflags.c_str());
     fprintf(makefile.fptr, "COMP_GEN_SERVER_CFLAGS = %s %s\n",

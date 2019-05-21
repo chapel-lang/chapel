@@ -21,14 +21,34 @@
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
+UNAME = $(shell uname)
+
 all: $(TMPBINNAME)
 
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC)
-	$(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -o $(TMPBINNAME) -L$(CHPL_RT_LIB_DIR) $(TMPBINNAME).o $(CHPL_CL_OBJS) -lchpl $(LIBS) -lm
+	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+		-c -o $(TMPBINNAME).o \
+		$(CHPLSRC) \
+		$(CHPL_RT_INC_DIR)
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+		-o $(TMPBINNAME) $(TMPBINNAME).o \
+		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
+		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
+		-L$(CHPL_RT_LIB_DIR) \
+		-lchpl -lm
 ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
+endif
+#
+# On Darwin, we need to adjust the "install_name" of the final shared library
+# file so that it points to $(BINNAME) and not $(TMPBINNAME).
+#
+# TODO: Consider moving this into the compiler? Might be less duplication
+# across all the Makefiles.
+#
+ifeq ($(UNAME),Darwin)
+	install_name_tool $(BINNAME) -id "$(BINNAME)"
 endif
 	$(TAGS_COMMAND)
 

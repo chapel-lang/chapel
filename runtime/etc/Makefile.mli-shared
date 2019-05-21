@@ -27,6 +27,12 @@ CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 CHPL_MLI_LIBS = $(CHPL_ZMQ_LOC)/lib/libzmq.a $(CHPL_LN_LIB_DIR)/lib/libchpllaunch.a
 CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 
+#
+# Additional actions may have to be taken depending on platform. For example,
+# on Darwin we will need to alter the "install_name" of the file.
+#
+UNAME = $(shell uname)
+
 .PHONY: checkZMQ buildServer buildClient runTagsCommand
 
 all: checkZMQ buildServer buildClient runTagsCommand FORCE
@@ -62,25 +68,41 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 # only thing that changes here are the flags inserted by codegen_makefile.
 #
 	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CLIENT_CFLAGS) \
-		-c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC) $(CHPL_MLI_INCS) \
-		$(COMP_GEN_MLI_EXTRA_INCLUDES)
+		-c -o $(TMPBINNAME).o \
+		$(CHPLSRC) \
+		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
+		$(CHPL_RT_INC_DIR) \
+		$(CHPL_MLI_INCS)
 #
 # Invoke the linker directly rather than package everything into an archive.
 # Again, the codegen_makefile function is responsible for inserting the
 # "shared library" flag here.
 #
-	$(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -o $(TMPBINNAME) \
-		$(TMBINNAME).o $(TMPSERVERNAME)_launcher.o \
-		$(CHPL_CL_OBJS) $(LIBS) \
-		$(CHPL_GEN_CLIENT_LFLAGS) \
-		-L$(CHPL_RT_LIB_DIR) -lchpl -lm -lchpllaunch \
-    -L$(CHPL_ZMQ_LOC)/lib -lzmq
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_CLIENT_LFLAGS) \
+		-o $(TMPBINNAME) \
+		$(TMPBINNAME).o $(TMPSERVERNAME)_launcher.o \
+		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
+		-L$(CHPL_LN_LIB_DIR) \
+		-lm -lchpllaunch \
+		$(LAUNCH_LIBS) \
+    -L$(CHPL_ZMQ_LOC)/lib \
+		-lzmq
 #
 # Last minute munging in case of output file name collisions.
 #
 ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
+endif
+#
+# On Darwin, we need to adjust the "install_name" of the final shared library
+# file so that it points to $(BINNAME) and not $(TMPBINNAME).
+#
+# TODO: Consider moving this into the compiler? Might be less duplication
+# across all the Makefiles.
+#
+ifeq ($(UNAME),Darwin)
+	install_name_tool $(BINNAME) -id "$(BINNAME)"
 endif
 
 $(TMPSERVERNAME): $(CHPL_CL_OBJS) checkRtLibDir FORCE
@@ -89,8 +111,10 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 # Compile the server bundle.
 #
 	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_SERVER_CFLAGS) \
-		-c -o $(TMPSERVERNAME).o $(CHPLSERVERSRC) \
-		$(CHPL_RT_INC_DIR) $(CHPL_MLI_INCS) \
+		-c -o $(TMPSERVERNAME).o \
+		$(CHPLSERVERSRC) \
+		$(CHPL_RT_INC_DIR) \
+		$(CHPL_MLI_INCS) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES)
 #
 # Compile loose source files in CHPLUSEROBJ.
@@ -101,16 +125,24 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 	;)
 #
 # Link the Chapel runtime and the ZMQ library together into a multi-locale
-# executable. TODO: What's the difference here between $(CHPLUSEROBJ) and
-# $(CHPL_CL_OBJS)?
+# executable.
 #
-	$(LD) $(GEN_LFLAGS) $(COMP_GEN_SERVER_LFLAGS) -o $(TMPSERVERNAME) \
-		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
+# Just a quick note to self:
+#
+#   - $(LIBS) contains gasnet stuff (gasnet link errors otherwise).
+#   - $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) is everything, including libchpl.
+#   ^ With the exception of gasnet!
+#
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_SERVER_LFLAGS) \
+		-o $(TMPSERVERNAME) \
 		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main_mli.o \
-    -L$(CHPL_RT_LIB_DIR) -lchpl -lm \
-		-L$(CHPL_ZMQ_LOC)/lib -lzmq \
-		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
-		$(CHPL_MAKE_BASE_LFLAGS)
+		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
+    $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
+		$(LIBS) \
+    -L$(CHPL_RT_LIB_DIR) \
+		-lchpl -lm \
+		-L$(CHPL_ZMQ_LOC)/lib \
+		-lzmq
 endif
 
 FORCE:
