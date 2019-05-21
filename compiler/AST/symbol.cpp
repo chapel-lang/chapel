@@ -2097,12 +2097,12 @@ const char* toString(VarSymbol* var) {
   //  * from a user variable or field
   //  * to a user variable or field
 
-  if (!var->hasFlag(FLAG_TEMP))
+  if (var->hasFlag(FLAG_USER_VARIABLE_NAME) || !var->hasFlag(FLAG_TEMP))
     return astr(var->name, ": ", toString(var->getValType()));
 
   Symbol* sym = var;
   // Compiler temporaries should have a single definition
-  while (sym->hasFlag(FLAG_TEMP)) {
+  while (sym->hasFlag(FLAG_TEMP) && !sym->hasFlag(FLAG_USER_VARIABLE_NAME)) {
     SymExpr* singleDef = sym->getSingleDef();
     if (singleDef != NULL) {
       if (CallExpr* c = toCallExpr(singleDef->parentExpr)) {
@@ -2131,7 +2131,7 @@ const char* toString(VarSymbol* var) {
     // e.g. field initialization
 
     sym = var;
-    while (sym->hasFlag(FLAG_TEMP)) {
+    while (sym->hasFlag(FLAG_TEMP) && !sym->hasFlag(FLAG_USER_VARIABLE_NAME)) {
       Expr* cur = NULL;
       name = NULL;
       for (cur = sym->defPoint; cur; cur = cur->next) {
