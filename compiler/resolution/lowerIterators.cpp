@@ -2033,21 +2033,21 @@ static void addIteratorBreakBlocksJumptable(Expr* loopRef, Symbol* IC,
   //   call advance(ic)
 
   BlockStmt* breakBlk  = new BlockStmt();
-  Type*      moreType  = icMoreFieldType();
-  Type*   moreTypeRef  = moreType->getRefType();
-  Symbol* moreFieldReq = new_IntSymbol(icMoreFieldCode, INT_SIZE_64);
   int idx = 0;
 
   forv_Vec(Symbol, ic, iterators) {
     idx++;
     const char* idxs    = istr(idx);
+    Symbol* moreField   = ic->type->getField("more");
+    Type*   moreType    = moreField->type;
+    Type*   moreTypeRef = moreType->getRefType();
     VarSymbol* moreRef  = newTemp(astr("moreRef", idxs), moreTypeRef);
     VarSymbol* moreVal  = newTempConst(astr("moreVal", idxs), moreType);
     VarSymbol* moreValM = newTempConst(astr("moreValNeg", idxs), moreType);
     FnSymbol*  advanceF = toAggregateType(ic->type)->iteratorInfo->advance;
 
     breakBlk->insertAtTail(new DefExpr(moreRef));
-    breakBlk->insertAtTail("'move'(%S,'.'(%S,%S))", moreRef, ic, moreFieldReq);
+    breakBlk->insertAtTail("'move'(%S,'.'(%S,%S))", moreRef, ic, moreField);
     breakBlk->insertAtTail(new DefExpr(moreVal));
     breakBlk->insertAtTail("'='(%S,%S)", moreVal, moreRef);
     breakBlk->insertAtTail(new DefExpr(moreValM));
@@ -2638,8 +2638,7 @@ static void fixNumericalGetMemberPrims()
       AggregateType* ct = toAggregateType(call->get(1)->getValType());
       int64_t num;
       if (get_int(call->get(2), &num)) {
-        Symbol* field = (num == icMoreFieldCode) ?
-          ct->getField("more") : ct->getField(num+1); // add 1 for super
+        Symbol* field = ct->getField(num+2); // skip fields: super, more
         SET_LINENO(call);
         call->get(2)->replace(new SymExpr(field));
         CallExpr* parent = toCallExpr(call->parentExpr);
@@ -2711,7 +2710,7 @@ static void cleanupLeaderFollowerIteratorCalls()
               !strcmp(call->parentSymbol->name, "_toStandalone")) {
             ArgSymbol* iterator = toFnSymbol(call->parentSymbol)->getFormal(1);
             Type* iteratorType = iterator->getValType();
-            int i = 2; // first field is super
+            int i = 3; // skip fields: super, more
             for_actuals(actual, call) {
               SymExpr* se = toSymExpr(actual);
               if (isArgSymbol(se->symbol()) &&

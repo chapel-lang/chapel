@@ -1113,18 +1113,11 @@ Symbol* AggregateType::getField(const char* name, bool fatal) const {
     nextP->clear();
   }
 
-  if (fatal == true) {
-    const char* className = "<no name>";
-
-    if (this->symbol) { // this is always true?
-      className = this->symbol->name;
-    }
-
+  if (fatal) {
     // TODO: report as a user error in certain cases
     INT_FATAL(this,
               "no field '%s' in class '%s' in getField()",
-              name,
-              className);
+              name, this->symbol->name);
   }
 
   return NULL;

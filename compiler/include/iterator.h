@@ -73,13 +73,11 @@ void showIteratorGroup(BaseAST* ast);
 void showIteratorGroup(int id);
 
 CallExpr* isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts);
-Type*      icMoreFieldType();
-extern int icMoreFieldCode;
-CondStmt*  isIBBCondStmt(BaseAST* ast);
-void       createIteratorBreakBlocks();
-void       addIteratorBreakBlocksInline(Expr* loopRef, Symbol* IC,
-                                        BlockStmt* loopBody, CallExpr* yield,
-                                        std::vector<Expr*>* delayedRemoval);
+CondStmt* isIBBCondStmt(BaseAST* ast);
+void      createIteratorBreakBlocks();
+void      addIteratorBreakBlocksInline(Expr* loopRef, Symbol* IC,
+                                       BlockStmt* loopBody, CallExpr* yield,
+                                       std::vector<Expr*>* delayedRemoval);
 BlockStmt* getBreakBlockForYield(std::vector<Expr*>* delayedRemoval,
                                  CallExpr* yield);
 

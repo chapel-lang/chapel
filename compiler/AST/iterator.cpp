@@ -358,15 +358,6 @@ void showIteratorGroup(int id) {
 // Helpers
 //
 
-// The type of the "more" field of an _iteratorClass.
-// Consider adding "more" and "value" fields right away
-// upon creating an _iteratorClass type, for easy reference.
-Type* icMoreFieldType() { return dtInt[INT_SIZE_DEFAULT]; }
-
-// Helps deal with a peculiar intra-pass state where we want to access
-// ic.more field and we do not have it yet.
-int icMoreFieldCode = -7; // make it distinct
-
 static void skipIBBinAlist(Expr*& _alist_next) {
   INT_ASSERT(isIBBCondStmt(_alist_next));
   // If I had a C++-style iterator, I would just say "it++;".
@@ -1987,8 +1978,6 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
       }
     }
   }
-
-  ii->iclass->fields.insertAtTail(new DefExpr(new VarSymbol("more", icMoreFieldType())));
 
   if (!valField) {
     valField = createICField(i, NULL, yieldedType, true, fn);

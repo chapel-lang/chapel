@@ -370,14 +370,8 @@ returnInfoGetMemberRef(CallExpr* call) {
         // Handle a peculiar intra-pass state where we attempt to get the
         // type of an iterator class field when what we really want is the
         // type of the corresponding formal of the iterator function.
-       if (i == icMoreFieldCode) {
-        // Using a dummy var to handle this uniformly with the other cases.
-        // Todo: ct->getField("more"), if it already available.
-        field = new VarSymbol("moreFieldTypeHelp", icMoreFieldType());
-       } else {
         FnSymbol* fn = getTheIteratorFn(ct);
         field = fn->getFormal(i);
-       }
       } else {
         field = ct->getField(i);
       }
