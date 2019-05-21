@@ -205,6 +205,24 @@ static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 
+static bool useLegacyNilability(Expr* at);
+
+static bool useLegacyNilability(Expr* at) {
+  if (fLegacyNilableClasses) return true;
+
+  if (at != NULL) {
+    FnSymbol* fn = at->getFunction();
+    ModuleSymbol* mod = at->getModule();
+
+    if (fn && fn->hasFlag(FLAG_UNSAFE))
+      return true;
+
+    if (mod && mod->hasFlag(FLAG_UNSAFE))
+      return true;
+  }
+
+  return false;
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -1171,7 +1189,9 @@ bool doCanDispatch(Type*     actualType,
   if (isGenericInstantiation(actualType, formalType))
     return true;
 
-  if (actualType == dtNil && isClassLikeOrPtr(formalType))
+  if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
+      (!isNonNilableClassType(formalType) ||
+       useLegacyNilability(actualSym->defPoint)))
     return true;
 
   if (actualType->refType == formalType &&
@@ -8770,7 +8790,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     call->convertToNoop();
 
     // Create an error when default initializing a non-nilable class type.
-    if (isNonNilableClassType(type) && !fLegacyNilableClasses) {
+    if (isNonNilableClassType(type) && !useLegacyNilability(call)) {
       // Work around current problems in array / assoc array types
       bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
                     call->getModule()->hasFlag(FLAG_UNSAFE);
