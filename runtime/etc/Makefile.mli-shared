@@ -21,16 +21,8 @@
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
-CHPL_LINK_TRAILING = $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
 CHPL_MLI_INCS = -I$(CHPL_ZMQ_LOC)/include
 CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
-CHPL_MLI_LIBS = $(CHPL_ZMQ_LOC)/lib/libzmq.a $(CHPL_LN_LIB_DIR)/lib/libchpllaunch.a
-CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
-
-#
-# Additional actions may have to be taken depending on platform. For example,
-# on Darwin we will need to alter the "install_name" of the file.
-#
 UNAME = $(shell uname)
 
 .PHONY: checkZMQ buildServer buildClient runTagsCommand
@@ -137,9 +129,9 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 		-o $(TMPSERVERNAME) \
 		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main_mli.o \
 		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
-    $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
+		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
 		$(LIBS) \
-    -L$(CHPL_RT_LIB_DIR) \
+		-L$(CHPL_RT_LIB_DIR) \
 		-lchpl -lm \
 		-L$(CHPL_ZMQ_LOC)/lib \
 		-lzmq
