@@ -979,7 +979,7 @@ override proc BlockArr.dsiDestroyArr() {
 }
 
 inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
-  return myLocArr.this(i);
+  return myLocArr!.this(i);
 }
 
 //

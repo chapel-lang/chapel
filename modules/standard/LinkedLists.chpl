@@ -67,7 +67,7 @@ record LinkedList {
   var length: int;
 
   pragma "no doc"
-  proc init(type eltType, first : unmanaged listNode(eltType) = nil, last : unmanaged listNode(eltType) = nil) {
+  proc init(type eltType, first : unmanaged listNode(eltType)? = nil, last : unmanaged listNode(eltType)? = nil) {
     this.eltType = eltType;
     this.first = first;
     this.last = last;
