@@ -206,6 +206,7 @@ static void printUnusedFunctions();
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 
 static bool useLegacyNilability(Expr* at);
+static bool useLegacyNilability(Symbol* at);
 
 static bool useLegacyNilability(Expr* at) {
   if (fLegacyNilableClasses) return true;
@@ -220,6 +221,12 @@ static bool useLegacyNilability(Expr* at) {
     if (mod && mod->hasFlag(FLAG_UNSAFE))
       return true;
   }
+
+  return false;
+}
+static bool useLegacyNilability(Symbol* at) {
+  if (at)
+    return useLegacyNilability(at->defPoint);
 
   return false;
 }
@@ -1190,8 +1197,7 @@ bool doCanDispatch(Type*     actualType,
     return true;
 
   if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
-      (!isNonNilableClassType(formalType) ||
-       useLegacyNilability(actualSym->defPoint)))
+      (!isNonNilableClassType(formalType) || useLegacyNilability(actualSym)))
     return true;
 
   if (actualType->refType == formalType &&
