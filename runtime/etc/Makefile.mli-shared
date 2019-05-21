@@ -77,7 +77,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		-L$(CHPL_LN_LIB_DIR) \
 		-lm -lchpllaunch \
 		$(LAUNCH_LIBS) \
-    -L$(CHPL_ZMQ_LOC)/lib \
+		-L$(CHPL_ZMQ_LOC)/lib \
 		-lzmq
 #
 # Last minute munging in case of output file name collisions.
