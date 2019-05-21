@@ -52,6 +52,20 @@ void chpl_mli_client_deinit(struct chpl_mli_context* client) {
   return;
 }
 
+static
+char * chpl_mli_pull_connection() {
+  int len;
+  chpl_mli_debugf("Getting %s\n", "expected size");
+  chpl_mli_pull(chpl_client.setup_sock, &len, sizeof(len), 0);
+  chpl_mli_debugf("Expected size is %d\n", len);
+  char* conn = mli_malloc(len);
+  chpl_mli_debugf("Getting %s\n", "string itself");
+  chpl_mli_pull(chpl_client.setup_sock, (void*)conn, len, 0);
+  conn[len] = '\0';
+  chpl_mli_debugf("String itself is %s\n", conn);
+  return conn;
+}
+
 void chpl_mli_terminate(enum chpl_mli_errors e) {
   const char* errstr = chpl_mli_errstr(e);
   chpl_mli_debugf("Terminated abruptly with error: %s\n", errstr);
@@ -81,10 +95,6 @@ void chpl_library_init(int argc, char** argv) {
 
   // Just hardcode these values for now.
   const char* ip = "localhost";
-  const char* setupPort = "5554";
-  const char* mainport = "5555";
-  const char* argport = "5556";
-  const char* resport = "5557";
 
   if (initialized) { return; }
   initialized = 1;
@@ -92,19 +102,43 @@ void chpl_library_init(int argc, char** argv) {
   // Set up the clientside ZMQ sockets.
   chpl_mli_client_init(&chpl_client);
 
-  chpl_mli_bind(chpl_client.setup_sock, ip, setupPort);
+  chpl_mli_bind(chpl_client.setup_sock);
 
   char* setup_sock_conn = chpl_mli_connection_info(chpl_client.setup_sock);
   chpl_mli_debugf("Setup socket used: %s\n", setup_sock_conn);
 
-  chpl_mli_client_launch(argc, argv);
+  // Send the setup socket as the last argument when launching the server.
+  int argc_plus_sock = argc + 2;
+  char** argv_plus_sock = mli_malloc(argc_plus_sock * sizeof(char*));
+  for (int i = 0; i < argc; i++) {
+    chpl_mli_debugf("Passing along arg %d: %s\n", i, argv[i]);
+    argv_plus_sock[i] = argv[i];
+  }
+  argv_plus_sock[argc] = "--chpl-mli-socket-loc";
+  argv_plus_sock[argc + 1] = setup_sock_conn;
+  chpl_mli_debugf("Spawning server with %d args\n", argc_plus_sock);
+  chpl_mli_client_launch(argc_plus_sock, argv_plus_sock);
+  chpl_mli_debugf("Clean up extended %s\n", "argv");
+  mli_free(argv_plus_sock);
 
+  chpl_mli_debugf("Cleaning up connection %s\n", "info");
   mli_free(setup_sock_conn);
 
-  // TODO: Maybe move the open connections to init?
-  chpl_mli_connect(chpl_client.main, ip, mainport);
-  chpl_mli_connect(chpl_client.arg, ip, argport);
-  chpl_mli_connect(chpl_client.res, ip, resport);
+  char* main_conn = chpl_mli_pull_connection();
+  chpl_mli_debugf("Connection info for main %s\n", main_conn);
+  char* arg_conn = chpl_mli_pull_connection();
+  chpl_mli_debugf("Connection info for arg %s\n", arg_conn);
+  char* res_conn = chpl_mli_pull_connection();
+  chpl_mli_debugf("Connection info for res %s\n", res_conn);
+
+  chpl_mli_connect(chpl_client.main, main_conn);
+  chpl_mli_connect(chpl_client.arg, arg_conn);
+  chpl_mli_connect(chpl_client.res, res_conn);
+
+  chpl_mli_debugf("Clean up %s\n", "client port strings");
+  mli_free(main_conn);
+  mli_free(arg_conn);
+  mli_free(res_conn);
 
   return;
 }
