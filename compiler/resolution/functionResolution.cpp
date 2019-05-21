@@ -2403,7 +2403,7 @@ static bool resolveBuiltinAssignCall(CallExpr* call)
     }
 
     if (isNonNilableClassType(lhsType)) {
-      if (rhsType == dtNil) {
+      if (rhsType == dtNil && !useLegacyNilability(call)) {
         USR_FATAL_CONT(call, "Cannot assign to non-nilable class type %s "
                              "from nil",
                              toString(lhsType));
