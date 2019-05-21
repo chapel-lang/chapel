@@ -182,7 +182,7 @@ module SharedObject {
       // Boost version default-initializes px and pn
       // and then swaps in different values.
 
-      var rc:unmanaged ReferenceCount = nil;
+      var rc:unmanaged ReferenceCount? = nil;
 
       if p != nil then
         rc = new unmanaged ReferenceCount();
