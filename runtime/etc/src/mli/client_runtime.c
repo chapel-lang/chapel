@@ -21,11 +21,9 @@
 #define CHPL_RUNTIME_ETC_SRC_MLI_CLIENT_RUNTIME_C_
 
 #include "mli/common_code.c"
+#include "chpllaunch.h"
 #include <sys/types.h>
 #include <unistd.h>
-
-// We'll declare this rather than include "chpllaunch.h" directly.
-int chpl_launcher_main(int argc, char* argv[]);
 
 struct chpl_mli_context chpl_client;
 
@@ -78,13 +76,20 @@ void chpl_mli_terminate(enum chpl_mli_errors e) {
 // process with the launcher's.
 //
 int chpl_mli_client_launch(int argc, char** argv) {
-  pid_t pid = fork();
+  int32_t execNumLocales;
+  pid_t pid;
+
+  if (chpl_launch_prep(argc, argv, &execNumLocales)) {
+    return -1;
+  }
+
+  pid = fork();
 
   if (pid) {
     // TODO: Should parent wait here, or in `chpl_library_finalize`?
     if (pid == -1) { return - 1; }
   } else {
-    chpl_launcher_main(argc, argv);
+    chpl_launch(argc, argv, execNumLocales);
   }
 
   return 0;
