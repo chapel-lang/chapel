@@ -188,8 +188,8 @@ record LinkedList {
      if boundsChecking && length < 1 {
        HaltWrappers.boundsCheckHalt("pop_front on empty list");
      }
-     var oldfirst = first;
-     var newfirst = first.next;
+     var oldfirst = first!;
+     var newfirst = first!.next;
      var ret = oldfirst.data;
      first = newfirst;
      if last == oldfirst then last = newfirst;
