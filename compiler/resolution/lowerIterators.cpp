@@ -1842,90 +1842,10 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
 
 //
 // Handle IBB - Iterator Break Block.
-// IBB contains the defer actions to be taken when break-ing
-// out of the enclosing loop.
 //
-/*
-The two key pieces of the implementation are:
-
-* callDestructors determines what the defer actions are for each yield
-  in an iterator and puts them together into an IBB.
-
- - createIteratorBreakBlocks(), at the start of callDestructors, adds this
-   if-statement right after each 'yield':
-
-     if _iteratorBreakToken { return; }
-
- - where _iteratorBreakToken, stored in gIteratorBreakToken,
-   is a Symbol used to identify such conditionals.
-
- - callDestructors, then, thinks that the 'return' is a real thing
-   and adds whatever cleanup/defer actions are appropriate at that point.
-   "IBB" is the resulting then-clause of this if-statement.
-
- - Thanks to @mppf for this trick. No modifications needed in callDestructors!
-
-* lowerIterators places these IBBs at the points in ForLoop bodies
-  where the control goes out of the body. Then it removes the
-  "if _iteratorBreakToken" statements from the tree.
-
-** When inlining an iterator:
-
- - Background: expandBodyForIteratorInline() replaces a ForLoop
-   with the body of its iterator, then replaces each 'yield'
-   of the iterator with the body of the ForLoop. For each yield...
-
- - addIteratorBreakBlocksInline() adds the IBB for that yield
-   before each GotoStmt in ForLoop's body that goes outside the ForLoop.
-   This handles 'break', 'return', 'throw'.
-
- - If the ForLoop is inside another iterator and contains its own yields,
-   addIteratorBreakBlocksInline() also merges the IBBs of the two iterators.
-
-** When lowering the parallel loop of a ForallStmt, the same implementation
-   is used as when lowering a ForLoop by inlining.
-   The follower loop does not need special handling because it is already
-   represented as a ForLoop by the end of resolution.
-
-** When using zip functions i.e. not inlining:
-
- - Background: the ForLoop is lowered into a CForLoop, which invokes methods
-   on the iterator's _iteratorClass "IC", very roughly:
-
-     for (IC->init(); IC->hasMore(); IC->advance()) { ForLoop body; }
-
-   The iterator's state, i.e. its formals and local variables,
-   are stored in its _iteratorClass "IC", so they persist
-   between invocations of IC methods.
-   Additionally, the field IC.more starts at 1, then indicates, using
-   integers >1, which yield was executed more recently. advance()
-   uses a sequence of "if (IC->more == NN) goto _jump_NN;" to resume
-   where it left off from the previous yield.
-
- - buildJumpTables() also adds, for each NN:
-     if (IC->more == -NN) goto _jump_break_NN;
-
- - addIteratorBreakBlocksJumptable() extends the body of advance()
-   so to look like this:
-
-     ... iterator code before the yield ...
-     ... compute the value to yield ...
-     IC->more = NN;
-     goto end;
-     _jump_break_NN:
-     ... IBB for this yield ...
-     goto end;
-     _jump_NN:
-     ... iterator code after the yield ...
-
-Care needs to be taken:
-
-* When iterator A itself iterates over iterator B, an IBB in A must perform
-  the defer actions in iterator B **before** :
- - deinitializing B's _iteratorClass that A is using, when applicable,
-
- - before other defer actions of A, ideally.
-*/
+// An IBB contains the defer actions to be taken when breaking
+// out of the enclosing loop. See also the PR message for #12963.
+//
 
 // Return an appropriate IBB insertion point for an outbound goto 'gt'.
 // 'loopRef' is the forLoop or its copy for lowering, whichever is inTree().
@@ -1976,7 +1896,7 @@ static void addIteratorBreakBlocks(Expr* loopRef, Symbol* IC,
   // We judge outbound-ness by checking whether the goto's target is inTree().
   // Given that 'loopBody' is not inTree(), a target that IS inTree()
   // is surely outside of 'loopBody'.
-  collectTreeBoundGotosAndIBBs(loopBody, exits, IBBs);
+  collectTreeBoundGotosAndIteratorBreakBlocks(loopBody, exits, IBBs);
 
   for_vector(GotoStmt, gt, exits) {
     BlockStmt* bbcopy = breakBlock->copy();
@@ -2001,8 +1921,8 @@ void addIteratorBreakBlocksInline(Expr* loopRef, Symbol* IC,
                                   BlockStmt* loopBody, CallExpr* yield,
                                   std::vector<Expr*>* delayedRemoval)
 {
-  BlockStmt* breakBlock = getBreakBlockForYield(delayedRemoval, yield);
-
+  BlockStmt* breakBlock = getAndRemoveIteratorBreakBlockForYield(delayedRemoval,
+                                                                 yield);
   // Remove the last goto in the breakBlock. The corresponding goto
   // in 'loopBody' will branch to the exit instead.
   toGotoStmt(breakBlock->body.tail)->remove();

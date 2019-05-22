@@ -78,8 +78,8 @@ void      createIteratorBreakBlocks();
 void      addIteratorBreakBlocksInline(Expr* loopRef, Symbol* IC,
                                        BlockStmt* loopBody, CallExpr* yield,
                                        std::vector<Expr*>* delayedRemoval);
-BlockStmt* getBreakBlockForYield(std::vector<Expr*>* delayedRemoval,
-                                 CallExpr* yield);
+BlockStmt* getAndRemoveIteratorBreakBlockForYield(std::vector<Expr*>* delayedRm,
+                                                  CallExpr* yield);
 
 void lowerIterator(FnSymbol* fn);
 

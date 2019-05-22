@@ -834,6 +834,7 @@ static AggregateType* makeIteratorClass(FnSymbol* fn, Type* yieldedType) {
 
   VarSymbol* moreField = new VarSymbol("more", dtInt[INT_SIZE_DEFAULT]);
   retval->fields.insertAtTail(new DefExpr(moreField));
+  // Creating "value" field here is trickier, see the PR message for #12963.
 
   return retval;
 }

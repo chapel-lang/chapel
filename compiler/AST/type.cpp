@@ -580,6 +580,7 @@ void initPrimitiveTypes() {
 
   gIteratorBreakToken = new VarSymbol("_iteratorBreakToken", dtBool);
   gIteratorBreakToken->addFlag(FLAG_CONST);
+  gIteratorBreakToken->addFlag(FLAG_NO_CODEGEN);
   rootModule->block->insertAtTail(new DefExpr(gIteratorBreakToken));
 
   INIT_PRIM_BOOL("bool(1)", 1);

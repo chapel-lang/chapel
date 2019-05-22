@@ -110,8 +110,9 @@ void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
 // This is a specialized helper for lowerIterators.
 // Collects the gotos whose target is inTree() into 'GOTOs' and
 // the iterator break blocks into 'IBBs'.
-void collectTreeBoundGotosAndIBBs(BaseAST* ast, std::vector<GotoStmt*>& GOTOs,
-                                  std::vector<CondStmt*>& IBBs) {
+void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
+                                                 std::vector<GotoStmt*>& GOTOs,
+                                                 std::vector<CondStmt*>& IBBs) {
   if (CondStmt* condStmt = isIBBCondStmt(ast)) {
     IBBs.push_back(condStmt);
     // Do not descend into the IBB to avoid its "goto return".
@@ -119,8 +120,8 @@ void collectTreeBoundGotosAndIBBs(BaseAST* ast, std::vector<GotoStmt*>& GOTOs,
     return;
   }
 
-  AST_CHILDREN_CALL(ast, collectTreeBoundGotosAndIBBs, GOTOs, IBBs);
-
+  AST_CHILDREN_CALL(ast, collectTreeBoundGotosAndIteratorBreakBlocks, GOTOs,
+                                                                      IBBs);
   // Include only the gotos whose target is inTree().
   if (GotoStmt* gt = toGotoStmt(ast))
     if (SymExpr* labelSE = toSymExpr(gt->label))

@@ -373,6 +373,16 @@ CondStmt* isIBBCondStmt(BaseAST* ast) {
   return NULL;
 }
 
+// If this is in an IBB, return its CondStmt. Otherwise return NULL.
+static CondStmt* isInIBBCondStmt(Expr* expr) {
+  for (Expr* parent = expr->parentExpr; parent;
+       expr = parent, parent = parent->parentExpr)
+    if (CondStmt* IBB = isIBBCondStmt(parent))
+      if (expr == IBB->thenStmt)
+        return IBB;
+  return NULL;
+}
+
 
 // Return the PRIM_YIELD CallExpr* or NULL.
 static inline CallExpr* asYieldExpr(BaseAST* e) {
@@ -620,10 +630,10 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
     // If the iterator  contains a goto statement, it is not considered to be a
     // single loop iterator.
     else if (GotoStmt* gt = toGotoStmt(ast)) {
-      // The exiting goto in an IBB does not affect our judgment.
-      BlockStmt* pblock = toBlockStmt(gt->parentExpr);
-      if (pblock && isIBBCondStmt(pblock->parentExpr))
-        INT_ASSERT(gt->next == NULL); // sanity check that gt exits its IBB
+      if (isInIBBCondStmt(gt))
+        ; // Gotos in an IBB do not affect our judgment.
+          // Should we restrict this case to allow a goto only if it is
+          // the last goto in the IBB conditional's then-branch?
       else
         return NULL;
     }
@@ -1148,10 +1158,11 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
 //
 // Handle IBB - Iterator Break Block.
-// An IBB contains the defer actions to be taken when break-ing
-// out of the enclosing loop.
 //
-// createIteratorBreakBlocks() adds an "if" after each "yield"
+// An IBB contains the defer actions to be taken when breaking
+// out of the enclosing loop. It is constructed like this:
+//
+// (a) createIteratorBreakBlocks() adds a conditional after each "yield",
 // so they look like this:
 //
 //   yield ...;
@@ -1159,8 +1170,10 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 //     return;
 //   }
 //
-// This causes callDestructors to add, before the 'return',
+// (b) This "return" causes callDestructors to insert, before the "return",
 // the defer actions that are appropriate at this point in the iterator.
+//
+// See also isIBBCondStmt() and the PR message for #12963.
 //
 void createIteratorBreakBlocks() {
   for_alive_in_Vec(CallExpr, yield, gCallExprs)
@@ -1174,20 +1187,23 @@ void createIteratorBreakBlocks() {
       }
 }
 
-// This extracts from the tree the block being returned.
-BlockStmt* getBreakBlockForYield(std::vector<Expr*>* delayedRemoval,
-                                 CallExpr* yield) {
+// Find and return the IBB for the given yield stmt.
+// Remove the enclosing conditional from the tree if delayedRm==NULL,
+// otherwise add it to delayedRm.
+BlockStmt* getAndRemoveIteratorBreakBlockForYield(std::vector<Expr*>* delayedRm,
+                                                  CallExpr* yield)
+{
   // Right now the CondStmt follows a yield immediately.
   // If this changes, trace the 'next' pointers until found.
   CondStmt* IBBcond = isIBBCondStmt(yield->next);
   BlockStmt* result = IBBcond->thenStmt;
 
-  if (delayedRemoval) {
+  if (delayedRm) {
     // This happens when lowering a ForallStmt. A few callers up from here
     // there is a for_alist in visitor code. It would exit right after IBBcond
     // if we remove IBBcond here, so the remaining alist stmts would not
     // get processed.
-    delayedRemoval->push_back(IBBcond);
+    delayedRm->push_back(IBBcond);
     result->remove();
   } else {
     IBBcond->remove();
@@ -1201,7 +1217,7 @@ static void handleYieldInAdvance(Vec<LabelSymbol*>& labels,
                                  IteratorInfo* ii, Symbol* ic, Symbol* end,
                                  CallExpr* call, int idx)
 {
-  BlockStmt* breakBlock = getBreakBlockForYield(NULL, call);
+  BlockStmt* breakBlock = getAndRemoveIteratorBreakBlockForYield(NULL, call);
 
   call->insertBefore(new CallExpr(PRIM_SET_MEMBER,
                                   ic, ii->iclass->getField("more"),
