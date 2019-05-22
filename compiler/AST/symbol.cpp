@@ -2124,7 +2124,7 @@ const char* toString(VarSymbol* var) {
     break;
   }
 
-  const char* name;
+  const char* name = NULL;
   if (sym != NULL) {
     name = sym->name;
   } else {
