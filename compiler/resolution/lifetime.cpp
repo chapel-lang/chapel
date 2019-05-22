@@ -1656,7 +1656,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
                                                            usedAsRef,
                                                            usedAsBorrow);
 
-      if (lhs->isRef() && rhsExpr->isRef()) {
+      if (lhs->isRef() && rhsExpr->isRef() && call->isPrimitive(PRIM_MOVE)) {
         // When setting the reference, set its intrinsic lifetime.
         if (!lp.referent.unknown || !lp.borrowed.unknown) {
           if (lhs->id == debugLifetimesForId)
@@ -1667,7 +1667,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
         }
       }
 
-      if (!(lhs->isRef() && rhsExpr->isRef()))
+      if (!(lhs->isRef() && rhsExpr->isRef() && call->isPrimitive(PRIM_MOVE)))
         // lhs can't have ref lifetime if it isn't a ref
         lp.referent = unknownLifetime();
 
@@ -1681,7 +1681,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
       // Additionally, if LHS is a reference to a known aggregate,
       // update that thing's borrow lifetime.
-      if (lhs->isRef() && usedAsBorrow) {
+      if (lhs->isRef() && usedAsBorrow && call->isPrimitive(PRIM_MOVE)) {
         LifetimePair & intrinsic = lifetimes->intrinsicLifetime[lhs];
         if (!intrinsic.referent.unknown && intrinsic.referent.fromSymbolScope) {
           LifetimePair p = lp;
