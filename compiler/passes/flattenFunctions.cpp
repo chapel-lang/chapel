@@ -80,29 +80,22 @@ static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
 //
 static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
-  bool retval;
-
   if (!parent)
     parent = fn->defPoint->parentSymbol;
 
+  // always RVF user variables whose types have "always RVF" pragma
+  if (sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
+      sym->getModule()->modTag == MOD_USER)
+    return true;
+
   if (!isFnSymbol(parent))
-    retval = false;
+    return false;
 
   else if (sym->defPoint->parentSymbol == parent)
-    retval = true;
+    return true;
 
   else
-    retval = isOuterVar(sym, fn, parent->defPoint->parentSymbol);
-
-  // RVF user variables whose types have "always RVF" pragma
-  if (retval == false) {
-    if (sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
-        sym->getModule()->modTag == MOD_USER) {
-      retval = true;
-    }
-  }
-
-  return retval;
+    return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
 }
 
 
