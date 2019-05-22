@@ -4028,7 +4028,7 @@ DEFINE_PRIM(PRIM_ASSIGN) {
 
   if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false &&
       rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == true)
-    INT_FATAL("Cannot assign to narrow class from wide class");
+    rg = codegenRaddr(rg);
 
   if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == true &&
       rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false)
