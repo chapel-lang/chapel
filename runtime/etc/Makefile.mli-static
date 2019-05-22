@@ -37,9 +37,9 @@ buildUserObj:
 #
 # Compile loose source files in CHPLUSEROBJ.
 #
-  $(foreach srcFile, $(CHPLUSEROBJ), \
-    $(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
-      -c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
+	$(foreach srcFile, $(CHPLUSEROBJ), \
+		$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
   ;)
 
 buildServer: $(TMPSERVERNAME)
@@ -116,17 +116,17 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 #   - $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) is every third party library.
 #   ^ With the exception of gasnet!
 #
-  $(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-    $(GEN_STATIC_FLAG) \
-    -o $(TMPSERVERNAME) \
-    $(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main_mli.o \
-    $(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
-    $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
-    $(LIBS) \
-    -L$(CHPL_RT_LIB_DIR) \
-    -lchpl -lm \
-    -L$(CHPL_ZMQ_LOC)/lib \
-    -lzmq
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+		$(GEN_STATIC_FLAG) \
+		-o $(TMPSERVERNAME) \
+		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main_mli.o \
+		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
+		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
+		$(LIBS) \
+		-L$(CHPL_RT_LIB_DIR) \
+		-lchpl -lm \
+		-L$(CHPL_ZMQ_LOC)/lib \
+		-lzmq
 endif
 
 FORCE:

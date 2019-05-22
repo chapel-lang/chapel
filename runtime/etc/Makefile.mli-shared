@@ -38,10 +38,10 @@ buildUserObj:
 #
 # Compile loose C source files in CHPLUSEROBJ.
 #
-  $(foreach srcFile, $(CHPLUSEROBJ), \
-    $(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
-      -c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
-  ;)
+	$(foreach srcFile, $(CHPLUSEROBJ), \
+		$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
+	;)
 
 buildServer: $(TMPSERVERNAME)
 
