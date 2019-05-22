@@ -139,9 +139,11 @@ module SharedObject {
     pragma "no doc"
     type chpl_t;         // contained type (class type)
 
+    // contained pointer (class type)
+    // uses primitive as a workaround for compiler issues
     pragma "no doc"
     pragma "owned"
-    var chpl_p:_to_nilable(chpl_t);   // contained pointer (class type)
+    var chpl_p:__primitive("to nilable class", chpl_t);
 
     forwarding borrow();
 
