@@ -274,6 +274,11 @@ module SharedObject {
 
     proc init=(src : _nilType) {
       this.init(this.type.chpl_t);
+
+      if _to_nilable(chpl_t) != chpl_t && !chpl_legacyNilClasses {
+        compilerError("Assigning non-nilable shared to nil");
+      }
+
     }
 
     /*
@@ -335,6 +340,8 @@ module SharedObject {
     proc /*const*/ borrow() {
       if _to_nilable(chpl_t) == chpl_t {
         return chpl_p;
+      } else if chpl_legacyNilClasses {
+        return _to_nonnil(chpl_p);
       } else {
         return chpl_p!;
       }
@@ -373,6 +380,9 @@ module SharedObject {
 
   pragma "no doc"
   proc =(ref lhs:shared, rhs:_nilType) {
+    if _to_nilable(lhs.chpl_t) != lhs.chpl_t && !chpl_legacyNilClasses {
+      compilerError("Assigning non-nilable shared to nil");
+    }
     lhs.clear();
   }
 
@@ -413,7 +423,7 @@ module SharedObject {
   inline proc _cast(type t:_shared, pragma "nil from arg" in x:_shared)
   where isSubtype(x.chpl_t,t.chpl_t) {
     var ret:t; // default-init the Shared type to return
-    ret.chpl_p = x.chpl_p:t.chpl_t; // cast the class type
+    ret.chpl_p = x.chpl_p:_to_nilable(t.chpl_t); // cast the class type
     ret.chpl_pn = x.chpl_pn;
     // steal the reference count increment we did for 'in' intent
     x.chpl_p = nil;

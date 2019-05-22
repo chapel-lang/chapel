@@ -258,10 +258,11 @@ module OwnedObject {
 
     pragma "no doc"
     proc init=(src : _nilType) {
-      if _to_nilable(chpl_t) != chpl_t {
+      this.init(this.type.chpl_t);
+
+      if _to_nilable(chpl_t) != chpl_t && !chpl_legacyNilClasses {
         compilerError("Assigning non-nilable owned to nil");
       }
-      this.init(this.type.chpl_t);
     }
 
     // Copy-init implementation to allow for 'new _owned(foo)' in module code
@@ -320,7 +321,14 @@ module OwnedObject {
     proc ref release() {
       var oldPtr = chpl_p;
       chpl_p = nil;
-      return _to_unmanaged(oldPtr);
+
+      if _to_nilable(chpl_t) == chpl_t {
+        return _to_unmanaged(oldPtr);
+      } else if chpl_legacyNilClasses {
+        return _to_unmanaged(_to_nonnil(oldPtr));
+      } else {
+        return _to_unmanaged(oldPtr!);
+      }
     }
 
     /*
@@ -335,6 +343,8 @@ module OwnedObject {
     proc /*const*/ borrow() {
       if _to_nilable(chpl_t) == chpl_t {
         return chpl_p;
+      } else if chpl_legacyNilClasses {
+        return _to_nonnil(chpl_p);
       } else {
         return chpl_p!;
       }
@@ -366,6 +376,9 @@ module OwnedObject {
 
   pragma "no doc"
   proc =(ref lhs:_owned, rhs:_nilType) {
+    if _to_nilable(lhs.chpl_t) != lhs.chpl_t && !chpl_legacyNilClasses {
+      compilerError("Assigning non-nilable owned to nil");
+    }
     lhs.clear();
   }
   /*
