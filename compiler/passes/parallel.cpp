@@ -986,150 +986,6 @@ buildHeapType(Type* type) {
 }
 
 
-static void
-freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
-  Vec<FnSymbol*> fnsContainingTaskll;
-
-  // start with functions created by begin statements
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_BEGIN))
-      fnsContainingTaskll.add(fn);
-  }
-  // add any functions that call the functions added so far
-  forv_Vec(FnSymbol, fn, fnsContainingTaskll) {
-    forv_Vec(CallExpr, call, *fn->calledBy) {
-      if (call->parentSymbol) {
-        FnSymbol* caller = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(caller);
-        fnsContainingTaskll.add_exclusive(caller);
-      }
-    }
-  }
-
-  Vec<Symbol*> symSet;
-  std::vector<BaseAST*> asts;
-  collect_asts(rootModule, asts);
-  for_vector(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (def->parentSymbol) {
-        if (isLcnSymbol(def->sym)) {
-          symSet.set_add(def->sym);
-        }
-      }
-    }
-  }
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(symSet, defMap, useMap);
-
-  forv_Vec(Symbol, var, heapAllocatedVars) {
-    // find out if a variable that was put on the heap could be passed in as an
-    // argument to a function created by a begin statement; if not, free the
-    // heap memory just allocated at the end of the block
-    Vec<SymExpr*>* defs = defMap.get(var);
-    if (defs == NULL) {
-      INT_FATAL(var, "Symbol is never defined.");
-    }
-    if (defs->n == 1) {
-      bool freeVar = true;
-      Vec<Symbol*> varsToTrack;
-      varsToTrack.add(var);
-      forv_Vec(Symbol, v, varsToTrack) {
-        if (useMap.get(v)) {
-          forv_Vec(SymExpr, se, *useMap.get(v)) {
-            if (CallExpr* call = toCallExpr(se->parentExpr)) {
-              if (call->isPrimitive(PRIM_ADDR_OF) ||
-                  call->isPrimitive(PRIM_SET_REFERENCE) ||
-                  call->isPrimitive(PRIM_GET_MEMBER) ||
-                  call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                  call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                  // TODO - should this handle PRIM_GET_SVEC_MEMBER_VALUE?
-                  call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-                  call->isPrimitive(PRIM_WIDE_GET_NODE)) {
-                // Treat the use of these primitives as a use of their arguments.
-                call = toCallExpr(call->parentExpr);
-              }
-              if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-                Symbol* toAdd = toSymExpr(call->get(1))->symbol();
-                // BHARSH TODO: we really want something like a set that we can
-                // modify while iterating over it.
-                if (!varsToTrack.in(toAdd)) {
-                  varsToTrack.add(toAdd);
-                }
-              }
-              else if (fnsContainingTaskll.in(call->resolvedFunction())) {
-                freeVar = false;
-                break;
-              }
-            }
-          }
-          if (!freeVar) break;
-        }
-      }
-      if (freeVar) {
-        CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
-        INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-        Expr* innermostBlock = NULL;
-        // find the innermost block that contains all uses of var
-        INT_ASSERT(useMap.get(var));
-        forv_Vec(SymExpr, se, *useMap.get(var)) {
-          bool useInInnermostBlock = false;
-          BlockStmt* curInnermostBlock = toBlockStmt(se->parentExpr);
-          INT_ASSERT(!curInnermostBlock); // assumed to be NULL at this point
-          for (Expr* block = se->parentExpr->parentExpr;
-               block && !useInInnermostBlock;
-               block = block->parentExpr) {
-            if (!curInnermostBlock)
-              curInnermostBlock = toBlockStmt(block);
-            if (!innermostBlock) {
-              innermostBlock = toBlockStmt(block);
-              if (innermostBlock)
-                useInInnermostBlock = true;
-            } else if (block == innermostBlock)
-              useInInnermostBlock = true;
-          }
-          if (!useInInnermostBlock) {
-            // the current use is not contained within innermostBlock,
-            // so find out if the innermost block that contains the current use
-            // also contains innermostBlock
-            Expr* block = innermostBlock;
-            while (block && block != curInnermostBlock)
-              block = block->parentExpr;
-            if (block)
-              innermostBlock = curInnermostBlock;
-            else {
-              // the innermost block that contains the current use is disjoint
-              // from the innermost block that contains previously encountered use(s)
-              INT_ASSERT(innermostBlock && !block);
-              while ((innermostBlock = innermostBlock->parentExpr)) {
-                for (block = curInnermostBlock->parentExpr; block && block != innermostBlock;
-                     block = block->parentExpr)
-                  /* do nothing */;
-                if (block) break;
-              }
-              if (!innermostBlock)
-                INT_FATAL(move, "cannot find a block that contains all uses of var\n");
-            }
-          }
-        }
-        FnSymbol* fn = toFnSymbol(move->parentSymbol);
-        SET_LINENO(var);
-        if (fn && innermostBlock == fn->body)
-          fn->insertIntoEpilogue(callChplHereFree(move->get(1)->copy()));
-        else {
-          BlockStmt* block = toBlockStmt(innermostBlock);
-          INT_ASSERT(block);
-          block->insertAtTailBeforeFlow(callChplHereFree(move->get(1)->copy()));
-        }
-      }
-    }
-    // else ...
-    // TODO: After the new constructor story is implemented, every declaration
-    // should have exactly one definition associated with it, so the
-    // (defs-> == 1) test above can be replaced by an assertion.
-  }
-}
-
 //
 // In the following, through makeHeapAllocations():
 //   varSet, varVec - symbols that themselves need to be heap-allocated
@@ -1217,8 +1073,6 @@ makeHeapAllocations() {
 
   findHeapVarsAndRefs(defMap, varSet, varVec);
 
-  Vec<Symbol*> heapAllocatedVars;
-
   forv_Vec(Symbol, var, varVec) {
     // MPF: I'm disabling the below assert because PR #5692
     // can create call_tmp variables that are refs. Since these
@@ -1249,39 +1103,7 @@ makeHeapAllocations() {
 
     SET_LINENO(var);
 
-    if (ArgSymbol* arg = toArgSymbol(var)) {
-      VarSymbol* tmp = newTemp(var->type);
-      varSet.set_add(tmp);
-      varVec.add(tmp);
-      SymExpr* firstDef = new SymExpr(tmp);
-      arg->getFunction()->insertAtHead(new CallExpr(PRIM_MOVE, firstDef, arg));
-      addDef(defMap, firstDef);
-      arg->getFunction()->insertAtHead(new DefExpr(tmp));
-      for_defs(def, defMap, arg) {
-        def->setSymbol(tmp);
-        addDef(defMap, def);
-      }
-      for_uses(use, useMap, arg) {
-        use->setSymbol(tmp);
-        addUse(useMap, use);
-      }
-      continue;
-    }
     AggregateType* heapType = buildHeapType(var->type);
-
-    //
-    // allocate local variables on the heap; global variables are put
-    // on the heap during program startup
-    //
-    if (!isModuleSymbol(var->defPoint->parentSymbol) &&
-        ((useMap.get(var) && useMap.get(var)->n > 0) ||
-         (defMap.get(var) && defMap.get(var)->n > 0))) {
-      SET_LINENO(var->defPoint);
-      insertChplHereAlloc(var->defPoint->getStmtExpr(),
-                          true /*insertAfter*/,var, heapType,
-                          newMemDesc("local heap-converted data"));
-      heapAllocatedVars.add(var);
-    }
 
     for_defs(def, defMap, var) {
       if (CallExpr* call = toCallExpr(def->parentExpr)) {
@@ -1391,8 +1213,6 @@ makeHeapAllocations() {
     var->type = heapType;
     var->qual = QUAL_VAL;
   }
-
-  freeHeapAllocatedVars(heapAllocatedVars);
 }
 
 
