@@ -215,8 +215,10 @@ static bool shouldSerialize(ArgSymbol* arg) {
   Type* argType = arg->getValType();
 
   if (hasSerializer == false) {
+    //    printf("Doesn't have serializer\n");
     retval = false;
   } else if (argType->symbol->hasFlag(FLAG_ARRAY)) {
+    //    printf("Is an array\n");
     retval = hasSerializer;
   } else if (isRecordWrappedType(argType)) {
     // OK to serialize if the record-wrapped type's underlying class is not
@@ -252,8 +254,10 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       for_formals(arg, fn) {
         if (canForwardValue(defMap, useMap, syncSet, fn, arg)) {
           if (shouldSerialize(arg)) {
+            //            printf("Serializing\n");
             insertSerialization(fn, arg);
           } else {
+            //            printf("Not serializing\n");
             defaultForwarding(useMap, fn, arg);
           }
         }
@@ -269,9 +273,14 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             ArgSymbol*                    arg) {
   bool retval = false;
 
+  if (arg->getModule()->modTag == MOD_USER) {
+    //    printf("Considering %s:%s:%d for %s (%s:%d)\n", arg->name, arg->astloc.filename, arg->astloc.lineno, fn->name, fn->astloc.filename, fn->astloc.lineno);
+  }
   if (arg->hasFlag(FLAG_NO_RVF)) {
+    //    printf("Returning false\n");
     retval = false;
   } else if (arg->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
+    //    printf("Returning true\n");
     retval = true;
 
   // Forward array values and references to array values.

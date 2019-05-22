@@ -80,17 +80,42 @@ static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
 //
 static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
+  bool retval;
+  
   if (!parent)
     parent = fn->defPoint->parentSymbol;
 
+  //  printf("Considering isOuterVar(%s) for %s (%s:%d)\n", sym->name, fn->name, fn->astloc.filename, fn->astloc.lineno);
+  
+  /*
+  if (sym->type->symbol->hasFlag(FLAG_ALWAYS_RVF) && sym->getModule()->modTag == MOD_USER) {
+    printf("now forwarding %s\n", sym->name);
+    return true;
+  }
+  */
+  
   if (!isFnSymbol(parent))
-    return false;
+    retval = false;
 
   else if (sym->defPoint->parentSymbol == parent)
-    return true;
+    retval = true;
 
   else
-    return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
+    retval = isOuterVar(sym, fn, parent->defPoint->parentSymbol);
+
+  if (retval == false) {
+    //    printf("flag check: %d %d\n", sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF),
+    //           sym->getModule()->modTag == MOD_USER);
+    if (sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
+        sym->getModule()->modTag == MOD_USER) {
+      //      printf("now forwarding %s (%s:%d) to %s (%s:%d)\n", sym->name, sym->astloc.filename,
+      //             sym->astloc.lineno, fn->name, fn->astloc.filename, fn->astloc.lineno);
+      retval = true;
+    }
+  }
+
+//  printf("returning %d\n", retval);
+  return retval;
 }
 
 
@@ -105,7 +130,9 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   for_vector(SymExpr, symExpr, SEs) {
       Symbol* sym = symExpr->symbol();
 
+      //      printf("Considering %s in findOuterVars\n", sym->name);
       if (isLcnSymbol(sym) && isOuterVar(sym, fn)) {
+        //        printf("Adding a use for it\n");
         uses->put(sym,gNil);
       }
   }
@@ -228,6 +255,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
       // something like _ref_int, but the intent would be INTENT_CONST_IN and
       // RVF would fire in some situations.
       //
+      //      printf("In flatten, considering %s\n", sym->name);
       if (passByRef(sym)) {
         // The task function can take in its argument by REF_MAYBE_CONST
         // no matter the type. This enables e.g. a task function processing
@@ -247,6 +275,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
         intent = concreteIntent(temp, type);
       }
 
+      //      printf("In flatten, adding %s\n", sym->name);
       SET_LINENO(sym);
       ArgSymbol* arg = new ArgSymbol(intent, sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
@@ -452,6 +481,7 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   // updated with the outer var functions when the formals are updated
   // (in nested functions that call one another)
   forv_Vec(FnSymbol, fn, nestedFunctions) {
+    //    printf("flatten considering fn %s:%s:%d\n", fn->name, fn->astloc.filename, fn->astloc.lineno);
     SymbolMap* uses = args_map.get(fn);
 
     forv_Vec(CallExpr, call, *fn->calledBy) {
@@ -460,6 +490,7 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
       if (FnSymbol* parent = toFnSymbol(call->parentSymbol))
         outerCall = outerFunctionSet.set_in(parent);
 
+      //      printf("calling addVarsToActuals for it\n");
       addVarsToActuals(call, uses, outerCall);
     }
   }

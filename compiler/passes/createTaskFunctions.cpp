@@ -545,8 +545,8 @@ static void pruneOuterVars(Symbol* parent, SymbolMap& uses) {
           e->value = markPruned;
         else if (e->value != tiMarkIn        &&
                  sym->hasFlag(FLAG_CONST)    &&
-                 !sym->hasFlag(FLAG_REF_VAR) &&
-                 isGlobal(sym))
+                 !sym->hasFlag(FLAG_REF_VAR) /*&&
+                                               isGlobal(sym)*/)
           // Do not handle global constants, unless they are passed by 'in'.
           // (We rely on the fact that 'in' intent must be specified
           // explicitly, it cannot be the default intent.)
