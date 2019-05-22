@@ -825,61 +825,36 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   }
 
   // Compiler flags for each deliverable.
-  if (fMultiLocaleInterop) {
-
-    const char* shared = dyn ? "$(SHARED_LIB_CFLAGS)" : "";
-
-    fprintf(makefile.fptr, "COMP_GEN_CLIENT_CFLAGS = %s %s %s\n",
-            shared,
-            includedirs.c_str(),
-            ccflags.c_str());
-    fprintf(makefile.fptr, "COMP_GEN_SERVER_CFLAGS = %s %s\n",
+  if (fLibraryCompile && !fMultiLocaleInterop && dyn) {
+    fprintf(makefile.fptr, "COMP_GEN_CFLAGS = %s %s %s\n",
+            "$(SHARED_LIB_CFLAGS)",
             includedirs.c_str(),
             ccflags.c_str());
   } else {
-    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = ");
-    if (fLibraryCompile && (fLinkStyle==LS_DYNAMIC)) {
-      fprintf(makefile.fptr, "$(SHARED_LIB_CFLAGS)");
-    }
-    fprintf(makefile.fptr, "%s %s\n", includedirs.c_str(), ccflags.c_str());
+    fprintf(makefile.fptr, "COMP_GEN_CFLAGS = %s %s\n",
+            includedirs.c_str(),
+            ccflags.c_str());
   }
 
   // Linker flags for each deliverable.
-  if (fMultiLocaleInterop) {
-
-    const char* clientlflags = "";
-    const char* serverlflags = "";
-
-    clientlflags = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
-    serverlflags = dyn ? "$(GEN_DYNAMIC_FLAG)" : "$(GEN_STATIC_FLAG)";
-
-    fprintf(makefile.fptr, "COMP_GEN_CLIENT_LFLAGS = %s", clientlflags);
-    fprintf(makefile.fptr, " %s\n", ldflags.c_str());
-    fprintf(makefile.fptr, "COMP_GEN_SERVER_LFLAGS = %s", serverlflags);
-    fprintf(makefile.fptr, " %s\n\n", ldflags.c_str());
-
-  // Take this block if we are NOT multi-locale interop.
-  } else {
-
-    const char* lmode = "";
-
-    if (!fLibraryCompile) {
-      //
-      // Important that _no_ RHS is produced when link style is default! Tests
-      // will _fail_ that rely on this assumption if we do otherwise.
-      //
-      if (fLinkStyle == LS_DYNAMIC) {
-        lmode = "$(GEN_DYNAMIC_FLAG)";
-      } else if (fLinkStyle == LS_STATIC) {
-        lmode = "$(GEN_STATIC_FLAG)";
-      }
-    } else {
-      lmode = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
+  const char* lmode = "";
+  if (!fLibraryCompile) {
+    //
+    // Important that _no_ RHS is produced when the link style is default!
+    // Tests will _fail_ that rely on this assumption if we do otherwise.
+    //
+    switch (fLinkStyle) {
+    case LS_DYNAMIC:
+      lmode = "$(GEN_DYNAMIC_FLAG)"; break;
+    case LS_STATIC:
+      lmode = "$(GEN_STATIC_FLAG)"; break;
     }
-
-    fprintf(makefile.fptr, "COMP_GEN_LFLAGS = %s", lmode);
-    fprintf(makefile.fptr, " %s\n", ldflags.c_str());
+  } else if (fLibraryCompile && !fMultiLocaleInterop) {
+    lmode = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
   }
+
+  fprintf(makefile.fptr, "COMP_GEN_LFLAGS = %s %s\n",
+          lmode, ldflags.c_str());
 
   // Block of code for generating TAGS command, developer convenience.
   fprintf(makefile.fptr, "TAGS_COMMAND = ");

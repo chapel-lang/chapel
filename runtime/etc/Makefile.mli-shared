@@ -16,7 +16,7 @@
 # limitations under the License.
 
 #
-# Makefile.mli-static
+# Makefile.mli-shared
 #
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
@@ -25,14 +25,23 @@ CHPL_MLI_INCS = -I$(CHPL_ZMQ_LOC)/include
 CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 UNAME = $(shell uname)
 
-.PHONY: checkZMQ buildServer buildClient runTagsCommand
+.PHONY: checkZMQ buildUserObj buildServer buildClient runTagsCommand
 
-all: checkZMQ buildServer buildClient runTagsCommand FORCE
+all: checkZMQ buildUserObj buildServer buildClient runTagsCommand FORCE
 
 checkZMQ:
 ifndef CHPL_ZMQ_LOC
   $(error CHPL_ZMQ_LOC must be set to the location of the ZeroMQ library)
 endif
+
+buildUserObj:
+#
+# Compile loose C source files in CHPLUSEROBJ.
+#
+  $(foreach srcFile, $(CHPLUSEROBJ), \
+    $(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+      -c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
+  ;)
 
 buildServer: $(TMPSERVERNAME)
 
@@ -56,21 +65,20 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY) \
 		CHPL_MAKE_IS_MLI=1
 #
-# Compile the client bundle. Exactly the same as for static compilation, the
-# only thing that changes here are the flags inserted by codegen_makefile.
+# Compile the client bundle. Note the use of $(SHARED_LIB_CFLAGS) here.
 #
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CLIENT_CFLAGS) \
+	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+		$(SHARED_LIB_CFLAGS) \
 		-c -o $(TMPBINNAME).o \
 		$(CHPLSRC) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
 		$(CHPL_RT_INC_DIR) \
 		$(CHPL_MLI_INCS)
 #
-# Invoke the linker directly rather than package everything into an archive.
-# Again, the codegen_makefile function is responsible for inserting the
-# "shared library" flag here.
+# Invoke the linker to produce a shared library.
 #
-	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_CLIENT_LFLAGS) \
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+		$(LIB_DYNAMIC_FLAG) \
 		-o $(TMPBINNAME) \
 		$(TMPBINNAME).o $(TMPSERVERNAME)_launcher.o \
 		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
@@ -88,10 +96,9 @@ ifneq ($(TMPBINNAME),$(BINNAME))
 endif
 #
 # On Darwin, we need to adjust the "install_name" of the final shared library
-# file so that it points to $(BINNAME) and not $(TMPBINNAME).
-#
-# TODO: Consider moving this into the compiler? Might be less duplication
-# across all the Makefiles.
+# file so that it points to $(BINNAME) and not $(TMPBINNAME). If we don't,
+# `dyld` will emit an error of the form "library not loaded because image
+# was not found".
 #
 ifeq ($(UNAME),Darwin)
 	install_name_tool $(BINNAME) -id "$(BINNAME)"
@@ -102,30 +109,23 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 #
 # Compile the server bundle.
 #
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_SERVER_CFLAGS) \
+	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
 		-c -o $(TMPSERVERNAME).o \
 		$(CHPLSERVERSRC) \
 		$(CHPL_RT_INC_DIR) \
 		$(CHPL_MLI_INCS) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES)
 #
-# Compile loose source files in CHPLUSEROBJ.
-#
-	$(foreach srcFile, $(CHPLUSEROBJ), \
-		$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_SERVER_CFLAGS) \
-			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
-	;)
-#
 # Link the Chapel runtime and the ZMQ library together into a multi-locale
 # executable.
 #
-# Just a quick note to self:
-#
-#   - $(LIBS) contains gasnet stuff (gasnet link errors otherwise).
-#   - $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) is everything, including libchpl.
+#   - $(LIBS) contains gasnet libraries when CHPL_COMM=gasnet, and nothing
+#     otherwise.
+#   - $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) is every third party library.
 #   ^ With the exception of gasnet!
 #
-	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_SERVER_LFLAGS) \
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+		$(GEN_DYNAMIC_FLAG) \
 		-o $(TMPSERVERNAME) \
 		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main_mli.o \
 		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \

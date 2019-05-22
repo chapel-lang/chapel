@@ -42,10 +42,9 @@ ifneq ($(TMPBINNAME),$(BINNAME))
 endif
 #
 # On Darwin, we need to adjust the "install_name" of the final shared library
-# file so that it points to $(BINNAME) and not $(TMPBINNAME).
-#
-# TODO: Consider moving this into the compiler? Might be less duplication
-# across all the Makefiles.
+# file so that it points to $(BINNAME) and not $(TMPBINNAME). If we don't,
+# `dyld` will emit an error of the form "library not loaded because image
+# was not found".
 #
 ifeq ($(UNAME),Darwin)
 	install_name_tool $(BINNAME) -id "$(BINNAME)"
