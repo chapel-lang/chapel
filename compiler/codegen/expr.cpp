@@ -4034,7 +4034,10 @@ DEFINE_PRIM(PRIM_ASSIGN) {
       rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false)
     rg = codegenWideHere(rg);
 
-  INT_ASSERT(lg.chplType);
+  if (!lg.chplType)
+    lg.chplType = lhsTypeSym->type;
+  if (!rg.chplType)
+    rg.chplType = rhsTypeSym->type;
 
   codegenAssign(lg, rg);
 }
