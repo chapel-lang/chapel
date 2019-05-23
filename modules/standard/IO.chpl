@@ -1518,7 +1518,7 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
     var host_start = path.find("//") + 2;
     var colon = path.find(":", host_start..);
     var slash = path.find("/", host_start..);
-    var host_end, port_start, port_end, path_start = 0: byteIndex;
+    var host_end, port_start, port_end, path_start: byteIndex = 0;
 
     if colon > 0 {
       host_end = colon - 1;
@@ -1527,14 +1527,14 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
         port_end = slash - 1;
         path_start = slash + 1;
       } else {
-        port_end = path.length: byteIndex;
+        port_end = path.length;
       }
     } else {
       if slash > 0 {
         host_end = slash - 1;
         path_start = slash + 1;
       } else {
-        host_end = path.length: byteIndex;
+        host_end = path.length;
       }
     }
 

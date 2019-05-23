@@ -1,9 +1,9 @@
-(_bindex = 1)..(_bindex = 3)
+1..3
 range(byteIndex,bounded,false)
-(_bindex = 1)
-(_bindex = 2)
-(_bindex = 3)
-(_bindex = 1)..(_bindex = 4) by 2
+1
+2
+3
+1..4 by 2
 range(byteIndex,bounded,true)
-(_bindex = 1)
-(_bindex = 3)
+1
+3

@@ -330,7 +330,7 @@ proc dirname(name: string): string {
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
-   var ind: byteIndex = 1: byteIndex;
+   var ind: byteIndex = 1;
    var pathlen: int = path_p.length;
    while (ind <= pathlen) {
      var c: string = path_p(ind);
@@ -344,7 +344,7 @@ proc dirname(name: string): string {
          ind = path_p.find("}");
          if (ind == 0) {
            res += "${" +path_p;
-           ind = pathlen: byteIndex;
+           ind = pathlen;
          } else {
            var env_var: string = path_p(..(ind-1));
            var value: string;

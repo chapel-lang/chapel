@@ -1,6 +1,6 @@
-ba1 (_bindex = 2)
-ba2 (_bindex = 3)
-bis (_bindex = 0)
+ba1 2
+ba2 3
+bis 0
 bbs 1
 beq false
 bne true

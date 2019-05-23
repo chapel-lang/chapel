@@ -240,6 +240,14 @@ module String {
   record byteIndex {
     pragma "no doc"
     var _bindex  : int;
+
+    proc init() {}
+    proc init(i: int) { _bindex = i; }
+    proc init=(i: int) { _bindex = i; }
+
+    proc writeThis(f) {
+      f <~> _bindex;
+    }
   }
 
   /*
@@ -262,6 +270,14 @@ module String {
   record codepointIndex {
     pragma "no doc"
     var _cpindex  : int;
+
+    proc init() {}
+    proc init(i: int) { _cpindex = i; }
+    proc init=(i: int) { _cpindex = i; }
+
+    proc writeThis(f) {
+      f <~> _cpindex;
+    }
   }
 
   /*
@@ -946,8 +962,7 @@ module String {
     pragma "no doc"
     proc _getView(r:range(?)) where r.idxType != byteIndex {
       if r.stridable {
-        HaltWrappers.unimplementedFeatureHalt("string slicing",
-                                              "stridable codepoint ranges");
+        compilerError("string slicing doesn't support stridable codepoint ranges");
       }
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
@@ -1276,7 +1291,7 @@ module String {
     proc replace(needle: string, replacement: string, count: int = -1) : string {
       var result: string = this;
       var found: int = 0;
-      var startIdx: byteIndex = 1: byteIndex;
+      var startIdx: byteIndex = 1;
       const localNeedle: string = needle.localize();
       const localReplacement: string = replacement.localize();
 
@@ -1314,7 +1329,7 @@ module String {
         var splitAll: bool = maxsplit <= 0;
         var splitCount: int = 0;
 
-        var start: byteIndex = 1: byteIndex;
+        var start: byteIndex = 1;
         var done: bool = false;
         while !done  {
           var chunk: string;
@@ -1367,7 +1382,7 @@ module String {
         const noSplits : bool = maxsplit == 0;
         const limitSplits : bool = maxsplit > 0;
         var splitCount: int = 0;
-        const iEnd = (localThis.len - 1):byteIndex;
+        const iEnd: byteIndex = localThis.len - 1;
 
         var inChunk : bool = false;
         var chunkStart : byteIndex;
@@ -1550,8 +1565,8 @@ module String {
       const localThis: string = this.localize();
       const localChars: string = chars.localize();
 
-      var start = 1:byteIndex;
-      var end = localThis.len:byteIndex;
+      var start: byteIndex = 1;
+      var end: byteIndex = localThis.len;
 
       if leading {
         label outer for (thisChar, i, nbytes) in localThis._cpIndexLen() {
@@ -1570,7 +1585,7 @@ module String {
         // is not initially known, it is faster to work forward, assuming we
         // are already past the end of the string, and then update the end
         // point as we are proven wrong.
-        end = 0:byteIndex;
+        end = 0;
         label outer for (thisChar, i, nbytes) in localThis._cpIndexLen(start) {
           for removeChar in localChars.codepoints() {
             if thisChar == removeChar {
@@ -1956,6 +1971,20 @@ module String {
   //
   // Assignment functions
   //
+  /*
+     Copies the int `rhs` into the byteIndex `lhs`.
+  */
+  proc =(ref lhs: byteIndex, rhs: int) {
+    lhs._bindex = rhs: int;
+  }
+
+  /*
+     Copies the int `rhs` into the codepointIndex `lhs`.
+  */
+  proc =(ref lhs: codepointIndex, rhs: int) {
+    lhs._cpindex = rhs: int;
+  }
+
   /*
      Copies the string `rhs` into the string `lhs`.
   */
