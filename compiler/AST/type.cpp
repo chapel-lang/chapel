@@ -172,7 +172,6 @@ const char* toString(Type* type, bool decorateAllClasses) {
         const char* borrowName = toString(borrowType, false);
         if (startsWith(borrowName, borrowed)) {
           borrowName = borrowName + strlen(borrowed);
-          INT_FATAL("Remove me");
         }
         if (startsWith(vt->symbol->name, "_owned("))
           retval = astr("owned ", borrowName);
