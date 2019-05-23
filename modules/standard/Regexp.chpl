@@ -671,9 +671,9 @@ record regexp {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
       if t == stringPart {
-	got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       } else {
-	got = qio_regexp_match(_regexp, text.localize().c_str(), text.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.localize().c_str(), text.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
       // Now try to coerce the read strings into the captures.
       _handle_captures(text, matches, nmatches, captures);
@@ -703,9 +703,9 @@ record regexp {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
       if t == stringPart {
-	got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       } else {
-	got = qio_regexp_match(_regexp, text.localize().c_str(), text.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.localize().c_str(), text.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
@@ -783,9 +783,9 @@ record regexp {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
       if t == stringPart {
-	got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
       } else {
-	got = qio_regexp_match(_regexp, text.localize().c_str(), text.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.localize().c_str(), text.length, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
       }
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);

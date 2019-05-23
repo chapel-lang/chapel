@@ -1194,14 +1194,12 @@ module String {
         // Edge cases
         if count {
           if nLen == 0 { // Empty needle
-            const isByteIndexed =
-              if region.hasLowBound() then region.low.type == byteIndex else
-              if region.hasHighBound() then region.high.type == byteIndex
-              else false;
-            if isByteIndexed {
+            if ((region.hasLowBound() && region.low.type == byteIndex) ||
+                (region.hasHighBound() && region.high.type == byteIndex)) {
+              // Byte indexed, so count the number of bytes in the view + 1
               localRet = thisLen+1;
             } else {
-              // Count the number of codepoints in the view
+              // Count the number of codepoints in the view + 1
               var nCodepoints = 0;
               var nextIdx = 0;
               for i in view {
