@@ -241,7 +241,10 @@ module String {
     pragma "no doc"
     var _bindex  : int;
 
-    proc init() {}
+    pragma "no doc"
+    proc init() {
+      // Let compiler insert defaults
+    }
     proc init(i: int) { _bindex = i; }
     proc init=(i: int) { _bindex = i; }
 
@@ -271,7 +274,10 @@ module String {
     pragma "no doc"
     var _cpindex  : int;
 
-    proc init() {}
+    pragma "no doc"
+    proc init() {
+      // Let compiler insert defaults
+    }
     proc init(i: int) { _cpindex = i; }
     proc init=(i: int) { _cpindex = i; }
 
