@@ -1052,6 +1052,55 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
   return false;
 }
 
+static
+Type* actualTypeAfterNilabilityRemoval(Type* actualType,
+                                       Symbol* actualSym,
+                                       Type* formalType,
+                                       ArgSymbol* formalSym) {
+  if (actualType->id == 921491)
+    gdbShouldBreakHere();
+
+  // Currently only applies to this arguments (method receivers)
+  if (formalSym && actualSym && actualSym->defPoint &&
+      formalSym->hasFlag(FLAG_ARG_THIS)) {
+
+    // Currently only applies to implicit/prototype modules
+    ModuleSymbol* mod = actualSym->defPoint->getModule();
+    if (mod->hasFlag(FLAG_IMPLICIT_MODULE) ||
+        mod->hasFlag(FLAG_PROTOTYPE_MODULE)) {
+
+      // Check that it's a class type (or managed type)
+      // and the only issue is nilability.
+
+      Type* actualCt = actualType;
+      if (isManagedPtrType(actualCt))
+        actualCt = getManagedPtrBorrowType(actualCt);
+
+      if (isClassLike(actualCt) && isClassLike(formalType)) {
+        ClassTypeDecorator actualDecorator = classTypeDecorator(actualCt);
+        ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
+
+        if (actualDecorator != formalDecorator &&
+            !canCoerceDecorators(actualDecorator, formalDecorator)) {
+          actualDecorator = removeNilableFromDecorator(actualDecorator);
+          if (canCoerceDecorators(actualDecorator, formalDecorator)) {
+            // OK, get the non-nilable actual and try to dispatch.
+            actualCt = canonicalClassType(actualCt);
+            if (AggregateType* at = toAggregateType(actualCt)) {
+              actualCt = at->getDecoratedClass(formalDecorator);
+
+              if (actualCt != actualType)
+                return actualCt;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
 //
 // returns true iff dispatching the actualType to the formalType
 // results in a coercion.
@@ -1078,6 +1127,14 @@ bool canCoerce(Type*     actualType,
     // propagate promotes / paramNarrows
     return canDispatch(baseType, NULL, formalType, formalSym, fn);
   }
+
+  // Handle nilability removal coercion
+  if (Type* at = actualTypeAfterNilabilityRemoval(actualType, actualSym,
+                                                  formalType, formalSym))
+    if (at != actualType)
+      if (canDispatch(at, actualSym, formalType, formalSym, fn,
+                      promotes, paramNarrows))
+        return true;
 
   if (isManagedPtrType(actualType)) {
     Type* actualBaseType = getManagedPtrBorrowType(actualType);
