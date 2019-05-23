@@ -1087,10 +1087,10 @@ void resolveIfExprType(CondStmt* stmt) {
     } else {
       bool promote = false;
 
-      if (canDispatch(elseType, elseSym, thenType, fn, &promote) &&
+      if (canDispatch(elseType, elseSym, thenType, NULL, fn, &promote) &&
           promote == false) {
         retType = thenType;
-      } else if (canDispatch(thenType, thenSym, elseType, fn, &promote) &&
+      } else if (canDispatch(thenType, thenSym, elseType, NULL, fn, &promote) &&
                  promote == false) {
         retType = elseType;
       }
@@ -1196,6 +1196,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
             if (canDispatch(retTypes.v[j],
                             retSymbols.v[j],
                             retTypes.v[i],
+                            NULL,
                             fn,
                             &requireScalarPromotion) == false) {
               best = false;

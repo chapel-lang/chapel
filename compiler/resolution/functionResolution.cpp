@@ -967,6 +967,7 @@ static
 bool canCoerceTuples(Type*     actualType,
                      Symbol*   actualSym,
                      Type*     formalType,
+                     ArgSymbol* formalSym,
                      FnSymbol* fn) {
 
   actualType = actualType->getValType();
@@ -1005,7 +1006,7 @@ bool canCoerceTuples(Type*     actualType,
       // Can we coerce without promotion?
       // If the types are the same, yes
       if (atFieldType != ftFieldType) {
-        ok = canDispatch(atFieldType, actualSym, ftFieldType, fn,
+        ok = canDispatch(atFieldType, actualSym, ftFieldType, formalSym, fn,
                          &prom, NULL, false);
 
         // If we couldn't coerce or the coercion would promote, no
@@ -1063,6 +1064,7 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
                Type*     formalType,
+               ArgSymbol* formalSym,
                FnSymbol* fn,
                bool*     promotes,
                bool*     paramNarrows) {
@@ -1077,7 +1079,7 @@ bool canCoerce(Type*     actualType,
 
     // sync can't store an array or a param, so no need to
     // propagate promotes / paramNarrows
-    return canDispatch(baseType, NULL, formalType, fn);
+    return canDispatch(baseType, NULL, formalType, formalSym, fn);
   }
 
   if (isManagedPtrType(actualType)) {
@@ -1097,30 +1099,31 @@ bool canCoerce(Type*     actualType,
     if (isManagedPtrType(formalType) &&
         actualOwnedShared == formalOwnedShared) {
       // e.g. Owned(Child) coerces to Owned(Parent)
-      return canDispatch(actualBaseType, NULL, formalBaseType, fn,
+      return canDispatch(actualBaseType, NULL, formalBaseType, formalSym, fn,
                          promotes, paramNarrows);
     } else if (isClassLike(formalType)) {
       // e.g. Owned(SomeClass) to SomeClass (borrow type)
-      return canDispatch(actualBaseType, NULL, formalType, fn,
+      return canDispatch(actualBaseType, NULL, formalType, formalSym, fn,
                          promotes, paramNarrows);
     }
   }
 
   // Handle coercions nil -> owned/shared
   if (actualType == dtNil && isManagedPtrType(formalType)) {
-    return true;
+    Type* formalBorrowType = getManagedPtrBorrowType(formalType);
+    if (isNilableClassType(formalBorrowType) || useLegacyNilability(actualSym))
+      return true;
   }
 
-  if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
+  if (canCoerceTuples(actualType, actualSym, formalType, formalSym, fn)) {
     return true;
   }
 
   if (actualType->symbol->hasFlag(FLAG_REF))
     // ref can't store a param, so no need to propagate paramNarrows
-    return canDispatch(actualType->getValType(),
-                       NULL,
+    return canDispatch(actualType->getValType(), NULL,
                        // MPF: Should this be formalType->getValType() ?
-                       formalType,
+                       formalType, formalSym,
                        fn,
                        promotes);
 
@@ -1189,10 +1192,12 @@ bool canCoerce(Type*     actualType,
 static bool isGenericInstantiation(Type*     actualType,
                                    Type*     formalType);
 
+
 static
 bool doCanDispatch(Type*     actualType,
                    Symbol*   actualSym,
                    Type*     formalType,
+                   ArgSymbol* formalSym,
                    FnSymbol* fn,
                    bool*     promotes,
                    bool*     paramNarrows,
@@ -1217,7 +1222,7 @@ bool doCanDispatch(Type*     actualType,
 
   if (paramCoerce == false &&
       canCoerce(actualType, actualSym,
-                formalType,
+                formalType, formalSym,
                 fn, promotes, paramNarrows))
     return true;
 
@@ -1234,9 +1239,8 @@ bool doCanDispatch(Type*     actualType,
       fn->retTag                      != RET_TYPE    &&
       fn->retTag                      != RET_PARAM   &&
       actualType->scalarPromotionType != NULL        &&
-      doCanDispatch(actualType->scalarPromotionType,
-                    NULL,
-                    formalType,
+      doCanDispatch(actualType->scalarPromotionType, NULL,
+                    formalType, formalSym,
                     fn,
                     promotes,
                     paramNarrows,
@@ -1251,15 +1255,15 @@ bool doCanDispatch(Type*     actualType,
 bool canDispatch(Type*     actualType,
                  Symbol*   actualSym,
                  Type*     formalType,
+                 ArgSymbol* formalSym,
                  FnSymbol* fn,
                  bool*     promotes,
                  bool*     paramNarrows,
                  bool      paramCoerce) {
   bool tmpPromotes     = false;
   bool tmpParamNarrows = false;
-  bool retval          = doCanDispatch(actualType,
-                                       actualSym,
-                                       formalType,
+  bool retval          = doCanDispatch(actualType, actualSym,
+                                       formalType, formalSym,
                                        fn,
                                        &tmpPromotes,
                                        &tmpParamNarrows,
@@ -1302,7 +1306,7 @@ static bool isGenericInstantiation(Type*     actualType,
 
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
-  if (canDispatch(actualType, NULL, formalType, fn))
+  if (canDispatch(actualType, NULL, formalType, NULL, fn))
     return true;
   if (canInstantiate(actualType, formalType)) {
     return true;
@@ -2264,7 +2268,7 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     if (!isRecord(targetType) && !isRecord(valueType) &&
         !is_complex_type(targetType) && !is_complex_type(valueType) &&
         canDispatch(valueType, valueSe->symbol(),
-                    targetType, call->getFunction(),
+                    targetType, NULL, call->getFunction(),
                     &promotes, &paramNarrows, paramCoerce) &&
         !promotes) {
 
@@ -2378,7 +2382,7 @@ static bool resolveBuiltinAssignCall(CallExpr* call)
   if ((isClassLikeOrPtr(lhsType) || lhsType == dtNil) &&
       (isClassLikeOrPtr(rhsType) || rhsType == dtNil) &&
       !isTypeExpr(call->get(1)) && !isTypeExpr(call->get(2)) &&
-      canDispatch(rhsType, NULL, lhsType, call->getFunction())) {
+      canDispatch(rhsType, NULL, lhsType, NULL, call->getFunction())) {
 
     // Do const checking
     lvalueCheckActual(call, call->get(1), INTENT_REF, NULL);
@@ -4180,7 +4184,9 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN(" (default)");
   EXPLAIN("\n");
 
-  canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes, &formal1Narrows);
+  canDispatch(actualType, actual,
+             f1Type, formal1, fn1,
+             &formal1Promotes, &formal1Narrows);
 
   DS.fn1Promotes |= formal1Promotes;
 
@@ -4201,7 +4207,9 @@ static void testArgMapping(FnSymbol*                    fn1,
     }
   }
 
-  canDispatch(actualType, actual, f2Type, fn1, &formal2Promotes, &formal2Narrows);
+  canDispatch(actualType, actual,
+              f2Type, formal1, fn1,
+              &formal2Promotes, &formal2Narrows);
 
   DS.fn2Promotes |= formal2Promotes;
 
@@ -5020,7 +5028,7 @@ static void handleSetMemberTypeMismatch(Type*     t,
     Symbol*   actual = rhs->symbol();
     FnSymbol* fn     = toFnSymbol(call->parentSymbol);
 
-    if (canCoerceTuples(t, actual, fs->type, fn) == true) {
+    if (canCoerceTuples(t, actual, fs->type, NULL, fn) == true) {
       // Add a PRIM_MOVE so that insertCasts will take care of it later.
       VarSymbol* tmp = newTemp("coerce_elt", fs->type);
 
