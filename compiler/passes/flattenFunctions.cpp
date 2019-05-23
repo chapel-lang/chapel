@@ -84,7 +84,8 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
     parent = fn->defPoint->parentSymbol;
 
   // always RVF user variables whose types have "always RVF" pragma
-  if (sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
+  if (fn->hasFlag(FLAG_ON) &&
+      sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
       sym->getModule()->modTag == MOD_USER)
     return true;
 
