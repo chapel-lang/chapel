@@ -206,9 +206,6 @@ static void printUnusedFunctions();
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal);
 
-static bool useLegacyNilability(Expr* at);
-static bool useLegacyNilability(Symbol* at);
-
 static bool useLegacyNilability(Expr* at) {
   if (fLegacyNilableClasses) return true;
 
