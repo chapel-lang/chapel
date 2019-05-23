@@ -446,6 +446,9 @@ module OwnedObject {
   // cast from nil to owned
   pragma "no doc"
   inline proc _cast(type t:_owned, pragma "nil from arg" x:_nilType) {
+    if _to_nilable(t.chpl_t) != t.chpl_t && !chpl_legacyNilClasses then
+      compilerError("Illegal cast from nil to non-nilable owned type");
+
     var tmp:t;
     return tmp;
   }
