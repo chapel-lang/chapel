@@ -675,7 +675,7 @@ int chpl_launch_prep(int* c_argc, char** c_argv[],
   // the number of locales.
   //
   int32_t execNumLocales = *c_execNumLocales;
-  char* argv[] = *c_argv;
+  char** argv = *c_argv;
   int argc = *c_argc;
 
   // Set up main argument parsing.
