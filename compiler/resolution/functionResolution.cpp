@@ -5166,6 +5166,12 @@ static void resolveInitVar(CallExpr* call) {
     targetType = srcType;
   }
 
+  // 'var x = new _domain(...)' should not bother going through chpl__initCopy
+  // logic so that the result of the 'new' is MOVE'd and not copy-initialized,
+  // which is handled in the 'init=' branch.
+  bool isDomainWithoutNew = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN) &&
+                            src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == false;
+
   if (dst->hasFlag(FLAG_NO_COPY) ||
       isPrimitiveScalar(targetType) ||
       isEnumType(targetType) ||
@@ -5184,11 +5190,17 @@ static void resolveInitVar(CallExpr* call) {
              isParamString ||
              isSyncType(srcType->getValType()) ||
              isSingleType(srcType->getValType()) ||
-             isRecordWrappedType(targetType->getValType()) ||
+             targetType->getValType()->symbol->hasFlag(FLAG_ARRAY) ||
+             isDomainWithoutNew ||
              srcType->getValType()->symbol->hasFlag(FLAG_TUPLE) ||
              srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // These cases require an initCopy to implement special initialization
     // semantics (e.g. reading a sync for variable initialization).
+    //
+    // For example, even though domains can leverage 'init=' for basic
+    // copy-initialization, the compiler only currently knows about calls to
+    // "chpl__initCopy" and how to turn them into something else when necessary
+    // (e.g. chpl__unalias).
 
     CallExpr* initCopy = new CallExpr("chpl__initCopy", srcExpr->remove());
     call->insertAtTail(initCopy);

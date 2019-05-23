@@ -342,16 +342,6 @@ module ChapelArray {
   // It would have implications for alias analysis
   // of arrays.
 
-  proc _newDomain(value) {
-    if _to_unmanaged(value.type) != value.type then
-      compilerError("Domain on borrow created");
-
-    if _isPrivatized(value) then
-      return new _domain(_newPrivatizedClass(value), value);
-    else
-      return new _domain(nullPid, value);
-  }
-
   proc _getDomain(value) {
     if _to_unmanaged(value.type) != value.type then
       compilerError("Domain on borrow created");
@@ -360,13 +350,6 @@ module ChapelArray {
       return new _domain(value.pid, value, _unowned=true);
     else
       return new _domain(nullPid, value, _unowned=true);
-  }
-
-  proc _newDistribution(value) {
-    if _isPrivatized(value) then
-      return new _distribution(_newPrivatizedClass(value), value);
-    else
-      return new _distribution(nullPid, value);
   }
 
   proc _getDistribution(value) {
@@ -392,17 +375,17 @@ module ChapelArray {
   proc chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
                                    type idxType = int,
                                    param stridable: bool = false)
-    return _newDomain(d.newRectangularDom(rank, idxType, stridable));
+    return new _domain(d, rank, idxType, stridable);
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
                                     param parSafe: bool = true)
-    return _newDomain(d.newAssociativeDom(idxType, parSafe));
+    return new _domain(d, idxType, parSafe);
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:_OpaqueIndex,
                                     param parSafe: bool = true)
-    return _newDomain(d.newOpaqueDom(idxType, parSafe));
+    return new _domain(d, idxType, parSafe);
 
   // This function has no 'runtime type init fn' pragma since the idxType of
   // opaque domains is _OpaqueIndex, not opaque.  This function is
@@ -413,7 +396,7 @@ module ChapelArray {
 
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain)
-    return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
+    return new _domain(d, dom);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where isSubtype(dom._value.type, BaseRectangularDom)
@@ -896,7 +879,7 @@ module ChapelArray {
 
   proc chpl__buildDistType(type t) type where isSubtype(t, BaseDist) {
     var x: t;
-    var y = _newDistribution(_to_unmanaged(x));
+    var y = new _distribution(x);
     return y.type;
   }
 
@@ -905,7 +888,7 @@ module ChapelArray {
   }
 
   proc chpl__buildDistValue(x) where isSubtype(x.type, BaseDist) {
-    return _newDistribution(_to_unmanaged(x));
+    return new _distribution(x);
   }
 
   proc chpl__buildDistValue(x) {
@@ -925,6 +908,25 @@ module ChapelArray {
     var _unowned:bool; // 'true' for the result of 'getDistribution',
                        // in which case, the record destructor should
                        // not attempt to delete the _instance.
+
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this._pid      = _pid;
+      this._instance = _instance;
+      this._unowned  = _unowned;
+    }
+
+    proc init(value) {
+      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
+      this._instance = _to_unmanaged(value);
+    }
+
+    // Note: This does not handle the case where the desired type of 'this'
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : _distribution) {
+      var value = other._value.dsiClone();
+      this.init(value);
+    }
 
     inline proc _value {
       if _isPrivatized(_instance) {
@@ -956,7 +958,7 @@ module ChapelArray {
     }
 
     proc clone() {
-      return _newDistribution(_value.dsiClone());
+      return new _distribution(_value.dsiClone());
     }
 
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
@@ -1053,6 +1055,76 @@ module ChapelArray {
       return index(rank, _value.idxType);
     }
 
+    proc init(_pid: int, _instance, _unowned: bool) {
+      this._pid = _pid;
+      this._instance = _instance;
+      this._unowned = _unowned;
+    }
+
+    proc init(value) {
+      if _to_unmanaged(value.type) != value.type then
+        compilerError("Domain on borrow created");
+
+      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
+      this._instance = value;
+    }
+
+    proc init(d: _distribution,
+              param rank : int,
+              type idxType = int,
+              param stridable: bool = false) {
+      this.init(d.newRectangularDom(rank, idxType, stridable));
+    }
+
+    proc init(d: _distribution,
+              param rank : int,
+              type idxType = int,
+              param stridable: bool = false,
+              ranges: rank*range(idxType, BoundedRangeType.bounded,stridable)) {
+      this.init(d.newRectangularDom(rank, idxType, stridable, ranges));
+    }
+
+    proc init(d: _distribution,
+              type idxType,
+              param parSafe: bool = true) {
+      this.init(d.newAssociativeDom(idxType, parSafe));
+    }
+
+    proc init(d: _distribution,
+              type idxType:_OpaqueIndex,
+              param parSafe: bool = true) {
+      this.init(d.newOpaqueDom(idxType, parSafe));
+    }
+
+    proc init(d: _distribution,
+              dom: domain) {
+      this.init(d.newSparseDom(dom.rank, dom._value.idxType, dom));
+    }
+
+    // Note: init= does not handle the case where the type of 'this' does not
+    // handle the type of 'other'. That case is currently managed by the
+    // compiler and various helper functions involving runtime types.
+    proc init=(const ref other : domain) where isRectangularDom(other) {
+      this.init(other.dist, other.rank, other.idxType, other.stridable, other.dims());
+    }
+
+    proc init=(const ref other : domain) {
+      if isAssociativeDom(other) {
+        this.init(other.dist, other.idxType, other.parSafe);
+      } else if isOpaqueDom(other) {
+        this.init(other.dist, _OpaqueIndex, other.parSafe);
+      } else if isSparseDom(other) {
+        this.init(other.dist, other.parentDom);
+      } else {
+        compilerError("Cannot initialize '", this.type:string, "' from '", other.type:string, "'");
+        this.init(nil);
+      }
+
+      // No need to lock this domain since it's not exposed anywhere yet.
+      // No need to handle arrays over this domain either for the same reason.
+      _instance.dsiAssignDomain(other, lhsPrivate=true);
+    }
+
     inline proc _value {
       if _isPrivatized(_instance) {
         return chpl_getPrivatizedCopy(_instance.type, _pid);
@@ -1076,7 +1148,7 @@ module ChapelArray {
     pragma "no doc"
     proc type chpl__deserialize(data) {
       type valueType = __primitive("static field type", this, "_instance");
-      return _newDomain(_to_borrowed(valueType).chpl__deserialize(data));
+      return new _domain(_to_borrowed(valueType).chpl__deserialize(data));
     }
 
     proc _do_destroy () {
@@ -1210,7 +1282,7 @@ module ChapelArray {
       for param i in 1..rank {
         r(i) = _value.dsiDim(i)(ranges(i));
       }
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, r));
+      return new _domain(dist, rank, _value.idxType, stridable, r);
     }
 
     // domain rank change
@@ -1261,12 +1333,12 @@ module ChapelArray {
       // TODO: Should this be set?
       //rcdist._free_when_no_doms = true;
 
-      const rcdistRec = _newDistribution(rcdist);
-      const rcdomclass = rcdistRec.newRectangularDom(rank = uprank,
-                                                     idxType = upranges(1).idxType,
-                                                     stridable = upranges(1).stridable, upranges);
+      const rcdistRec = new _distribution(rcdist);
 
-      return _newDomain(rcdomclass);
+      return new _domain(rcdistRec, uprank,
+                                    upranges(1).idxType,
+                                    upranges(1).stridable,
+                                    upranges);
     }
 
     // error case for all-int access
@@ -1621,7 +1693,7 @@ module ChapelArray {
         }
       }
 
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
     /* Return a new domain that is the current domain expanded by
@@ -1631,7 +1703,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).expand(off);
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
     pragma "no doc"
@@ -1658,7 +1730,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).exterior(off(i));
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
     /* Return a new domain that is the exterior portion of the
@@ -1702,7 +1774,7 @@ module ChapelArray {
         }
         ranges(i) = _value.dsiDim(i).interior(off(i));
       }
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
     /* Return a new domain that is the interior portion of the
@@ -1747,7 +1819,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = _value.dsiDim(i).translate(off(i));
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
      }
 
     /* Return a new domain that is the current domain translated by
@@ -1772,7 +1844,7 @@ module ChapelArray {
       var ranges = dims();
       for i in 1..rank do
         ranges(i) = dim(i).chpl__unTranslate(off(i));
-      return _newDomain(dist.newRectangularDom(rank, _value.idxType, stridable, ranges));
+      return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
     pragma "no doc"
@@ -2661,15 +2733,10 @@ module ChapelArray {
                                               updom = updom._value,
                                               downdomPid = dompid,
                                               downdomInst = dom);
-      const redistRec = _newDistribution(redist);
+      const redistRec = new _distribution(redist);
       // redist._free_when_no_doms = true;
-      const redomclass = redistRec.newRectangularDom(rank=rank,
-        // 'updom' serves as a common denominator of newDims's ranges
-                                                     idxType=updom.idxType,
-                                                     stridable=updom.stridable,
-                                                     updom.dims());
 
-      pragma "no auto destroy" const newDom = _newDomain(redomclass);
+      pragma "no auto destroy" const newDom = new _domain(redistRec, rank, updom.idxType, updom.stridable, updom.dims());
       newDom._value._free_when_no_arrs = true;
 
       // TODO: With additional effort, we could collapse reindexings of
@@ -4081,7 +4148,7 @@ module ChapelArray {
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
-    return _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, true, r));
+    return new _domain(a.dist, a.rank, a._value.idxType, true, r);
   }
 
   /*
@@ -4098,7 +4165,7 @@ module ChapelArray {
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) align t(i);
-    return _newDomain(a.dist.newRectangularDom(a.rank, a._value.idxType, a.stridable, r));
+    return new _domain(a.dist, a.rank, a._value.idxType, a.stridable, r);
   }
 
   //
@@ -4149,31 +4216,6 @@ module ChapelArray {
   pragma "no doc"
   iter linearize(Xs) {
     for x in Xs do yield x;
-  }
-
-  pragma "init copy fn"
-  proc chpl__initCopy(a: _distribution) {
-    pragma "no copy" var b = a.clone();
-    return b;
-    // You'd think we could just write
-    //   return a.clone();
-    // but that makes an infinite loop.
-  }
-
-  pragma "init copy fn"
-  proc chpl__initCopy(const ref a: domain) {
-    var b: a.type;
-
-    // No need to lock b since it's not exposed anywhere yet
-    // No need to handle arrays over b either for the same reason.
-    b._instance.dsiAssignDomain(a, lhsPrivate=true);
-
-    return b;
-  }
-
-  pragma "auto copy fn" proc chpl__autoCopy(const ref x: domain) {
-    pragma "no copy" var b = chpl__initCopy(x);
-    return b;
   }
 
   // This implementation of arrays and domains can create aliases
@@ -4287,7 +4329,7 @@ module ChapelArray {
   proc chpl__initCopy(ir: _iteratorRecord)
     where chpl_iteratorHasDomainShape(ir)
   {
-    var shape = _newDomain(ir._shape_);
+    var shape = new _domain(ir._shape_);
 
     // Important: ir._shape_ points to a domain class for a domain
     // that is owned by the forall-expression or the leader in the

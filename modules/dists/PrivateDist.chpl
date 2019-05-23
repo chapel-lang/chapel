@@ -116,6 +116,12 @@ class PrivateDom: BaseRectangularDom {
   proc dsiStride return 0;
   proc dsiSetIndices(x: domain) { halt("cannot reassign private domain"); }
   proc dsiGetIndices() { return {0..numLocales-1}; }
+  proc dsiDim(d : int) {
+    return dsiLow..dsiHigh;
+  }
+  proc dsiDims() {
+    return (dsiLow..dsiHigh,);
+  }
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     halt("cannot reassign private domain");
