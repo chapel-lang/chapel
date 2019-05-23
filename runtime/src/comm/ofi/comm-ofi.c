@@ -1432,7 +1432,7 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize}};
+       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -1463,7 +1463,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize}};
+       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -1487,7 +1487,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize}};
+       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
