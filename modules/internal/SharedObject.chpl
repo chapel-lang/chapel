@@ -145,8 +145,8 @@ module SharedObject {
     pragma "owned"
     var chpl_p:__primitive("to nilable class", chpl_t);
 
-    // The compiler allows coercion to the borrow type.
-    //forwarding borrow();
+    // Note that compiler also allows coercion to the borrow type.
+    forwarding borrow();
 
     pragma "no doc"
     pragma "owned"

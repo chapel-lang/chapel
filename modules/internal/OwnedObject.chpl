@@ -193,8 +193,8 @@ module OwnedObject {
     pragma "owned"
     var chpl_p:__primitive("to nilable class", chpl_t);
 
-    // The compiler allows coercion to the borrow type.
-    //forwarding borrow();
+    // Note that the compiler also allows coercion to the borrow type.
+    forwarding borrow();
 
     /*
        Default-initialize a :record:`owned` to store type `chpl_t`
