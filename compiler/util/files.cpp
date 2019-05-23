@@ -826,12 +826,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Compiler flags for each deliverable.
   if (fLibraryCompile && !fMultiLocaleInterop && dyn) {
-    fprintf(makefile.fptr, "COMP_GEN_CFLAGS = %s %s %s\n",
+    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s %s\n",
             "$(SHARED_LIB_CFLAGS)",
             includedirs.c_str(),
             ccflags.c_str());
   } else {
-    fprintf(makefile.fptr, "COMP_GEN_CFLAGS = %s %s\n",
+    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s\n",
             includedirs.c_str(),
             ccflags.c_str());
   }
