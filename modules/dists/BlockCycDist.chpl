@@ -658,6 +658,22 @@ proc BlockCyclicDom.enumerateBlocks() {
   }
 }
 
+proc BlockCyclicDom.chpl__serialize() {
+  return pid;
+}
+
+// TODO: What happens when we try to deserialize on a locale that doesn't
+// own a copy of the privatized class?  (can that happen?)  Could this
+// be a way to lazily privatize by also making the originating locale part
+// of the 'data'?
+proc type BlockCyclicDom.chpl__deserialize(data) {
+  return chpl_getPrivatizedCopy(
+           unmanaged BlockCyclicDom(rank=this.rank,
+                                    idxType=this.idxType,
+                                    stridable=this.stridable),
+           data);
+}
+
 proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
 
 proc BlockCyclicDom.dsiGetPrivatizeData() return 0;
@@ -831,6 +847,19 @@ override proc BlockCyclicArr.dsiDestroyArr() {
       delete locArr(localeIdx);
     }
   }
+}
+
+proc BlockCyclicArr.chpl__serialize() {
+  return pid;
+}
+
+proc type BlockCyclicArr.chpl__deserialize(data) {
+  return chpl_getPrivatizedCopy(
+           unmanaged BlockCyclicArr(rank=this.rank,
+                                    idxType=this.idxType,
+                                    stridable=this.stridable,
+                                    eltType=this.eltType),
+           data);
 }
 
 proc BlockCyclicArr.dsiSupportsPrivatization() param return true;

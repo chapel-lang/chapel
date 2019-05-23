@@ -24,18 +24,19 @@
 #include "config.h"
 
 // Declare the server listen loop (to be linked in later).
-void chpl_mli_smain(void);
+void chpl_mli_smain(char* setup_conn);
 
 int main(int argc, char** argv) {
+  // No need to pass in the connection information, which will be the last
+  // two arguments (one for indicating its presence, one for its value).
+  chpl_library_init(argc - 2, argv);
 
-  chpl_library_init(argc, argv);
-
-  // TODO: Snip off the values we need from argc/argv?
-  // TODO: Handshake here, or later?
   // TODO: Pass argc/argv into listen loop?
 
-  // Drop down into the server listen loop.
-  chpl_mli_smain();
+  // Drop down into the server listen loop, passing in the last argument, which
+  // will be the socket connection information for communicating where the
+  // server will be listening.
+  chpl_mli_smain(argv[argc-1]);
 
   //
   // This will be called when the server exits the listen loop, which will

@@ -272,6 +272,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
   int printAbout = 0;
   int origargc = *argc;
   int stop_parsing = 0;
+  int saw_socket_conn = 0;
 
   //
   // Handle the pre-parse for '-E' arguments separately.
@@ -348,6 +349,28 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
           }
           if (strcmp(flag, "quiet") == 0) {
             verbosity = 0;
+            break;
+          }
+          if (strcmp(flag, "chpl-mli-socket-loc") == 0) {
+            if (saw_socket_conn) {
+              chpl_error("multiple uses of --chpl-mli-socket-loc, this flag is "
+                         "intended for internal use only", lineno, filename);
+            }
+            i++;
+            if (i >= *argc) {
+              chpl_error("--chpl-mli-socket-loc developer flag is missing"
+                         "<connection> argument",
+                         lineno, filename);
+            }
+            currentArg = argv[i];
+            if (strncmp(currentArg, "tcp://", 6) != 0) {
+              chpl_error("unexpected start of <connection> for "
+                         "--chpl-mli-socket-loc developer flag, this flag is "
+                         "intended for internal use only", lineno, filename);
+            }
+            saw_socket_conn = 1;
+            // We reached information about the socket in a multilocale library
+            // run, don't do anything further with that information here.
             break;
           }
           if (argLength < 3) {

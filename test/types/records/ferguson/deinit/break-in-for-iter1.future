@@ -1,3 +1,0 @@
-bug: iterator locals not deinitialized if caller breaks
-
-see issue #6540

@@ -158,6 +158,27 @@ module DefaultRectangular {
       return dist;
     }
 
+    pragma "no doc"
+    record _serialized_domain {
+      param rank;
+      type idxType;
+      param stridable;
+      var dims;
+      param isDefaultRectangular;
+    }
+
+    proc chpl__serialize() {
+      return new _serialized_domain(rank, idxType, stridable, dsiDims(), true);
+    }
+
+    proc type chpl__deserialize(data) {
+      return defaultDist.newRectangularDom(data.rank,
+                                           data.idxType,
+                                           data.stridable,
+                                           data.dims);
+
+    }
+
     override proc dsiDisplayRepresentation() {
       writeln("ranges = ", ranges);
     }

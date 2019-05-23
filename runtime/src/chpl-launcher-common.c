@@ -668,7 +668,7 @@ const char* chpl_get_real_binary_name(void) {
   return &chpl_real_binary_name[0];
 }
 
-int chpl_launcher_main(int argc, char* argv[]) {
+int chpl_launch_prep(int argc, char* argv[], int32_t* outExecNumLocales) {
   //
   // This is a user invocation, so parse the arguments to determine
   // the number of locales.
@@ -706,9 +706,22 @@ int chpl_launcher_main(int argc, char* argv[]) {
   //
   CHPL_COMM_PRELAUNCH();
 
+  *outExecNumLocales = execNumLocales;
+
+  return 0;
+}
+
+
+int chpl_launcher_main(int argc, char* argv[]) {
+  int32_t execNumLocales;
+
+  if (chpl_launch_prep(argc, argv, &execNumLocales)) {
+    return -1;
+  }
+
   //
-  // Launch the program
-  // This may not return (e.g., if calling chpl_launch_using_exec())
+  // Launch the program.
+  // This may not return (e.g., if calling chpl_launch_using_exec()).
   //
   return chpl_launch(argc, argv, execNumLocales);
 }

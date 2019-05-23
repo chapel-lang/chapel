@@ -1532,8 +1532,6 @@ static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
                                  mem_region_t**, drpg_may_proxy_t);
 static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
-static void      remote_get_buff_task_flush(chpl_comm_taskPrvData_t*);
-static void      remote_get_buff_task_end(chpl_comm_taskPrvData_t*);
 static void      do_remote_get_buff(void*, c_nodeid_t, void*, size_t,
                                     drpg_may_proxy_t);
 static void      do_remote_get_V(int, void**, c_nodeid_t*, mem_region_t**,
@@ -1546,8 +1544,6 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
                             gni_fma_cmd_type_t, void*, mem_region_t*);
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
-static void      nic_amo_nf_buff_task_flush(chpl_comm_taskPrvData_t*);
-static void      nic_amo_nf_buff_task_end(chpl_comm_taskPrvData_t*);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
 static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
@@ -1805,12 +1801,115 @@ static void dbg_catf(FILE* out_f, const char* in_fname, const char* match)
 
 
 
+//
+// Common code for task local buffering
+//
+
 static inline
 chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
   chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
   if (task_prvData != NULL) return &task_prvData->comm_data;
   return NULL;
 }
+
+enum BuffType {
+  amo_nf_buff = 1 << 0,
+  get_buff    = 1 << 1
+};
+
+// Per task information about non-fetching AMO buffers
+typedef struct {
+  int                vi;
+  uint64_t           opnd1_v[MAX_CHAINED_AMO_LEN];
+  c_nodeid_t         locale_v[MAX_CHAINED_AMO_LEN];
+  void*              object_v[MAX_CHAINED_AMO_LEN];
+  size_t             size_v[MAX_CHAINED_AMO_LEN];
+  gni_fma_cmd_type_t cmd_v[MAX_CHAINED_AMO_LEN];
+  mem_region_t*      remote_mr_v[MAX_CHAINED_AMO_LEN];
+} amo_nf_buff_task_info_t;
+
+// Per task information about GET buffers
+typedef struct {
+  int           vi;
+  void*         tgt_addr_v[MAX_CHAINED_GET_LEN];
+  c_nodeid_t    locale_v[MAX_CHAINED_GET_LEN];
+  mem_region_t* remote_mr_v[MAX_CHAINED_GET_LEN];
+  void*         src_addr_v[MAX_CHAINED_GET_LEN];
+  size_t        size_v[MAX_CHAINED_GET_LEN];
+  mem_region_t* local_mr_v[MAX_CHAINED_GET_LEN];
+} get_buff_task_info_t;
+
+// Acquire a task local buffer, initializing if needed
+static inline
+void* task_local_buff_acquire(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return NULL;
+
+#define DEFINE_INIT(TYPE, TLS_NAME)                                           \
+  if (t == TLS_NAME) {                                                        \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info == NULL) {                                                       \
+      prvData->TLS_NAME = chpl_mem_alloc(sizeof(TYPE),                        \
+                                         CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0); \
+      info = prvData->TLS_NAME;                                               \
+      info->vi = 0;                                                           \
+    }                                                                         \
+    return info;                                                              \
+  }
+
+  DEFINE_INIT(amo_nf_buff_task_info_t, amo_nf_buff);
+  DEFINE_INIT(get_buff_task_info_t, get_buff);
+
+#undef DEFINE_INIT
+  return NULL;
+}
+
+static void get_buff_task_info_flush(get_buff_task_info_t* info);
+static void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info);
+
+// Flush one or more task local buffers
+static inline
+void task_local_buff_flush(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return;
+
+#define DEFINE_FLUSH(TYPE, TLS_NAME, FLUSH_NAME)                              \
+  if (t & TLS_NAME) {                                                         \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info != NULL && info->vi > 0) {                                       \
+      FLUSH_NAME(info);                                                       \
+    }                                                                         \
+  }
+
+  DEFINE_FLUSH(amo_nf_buff_task_info_t, amo_nf_buff, amo_nf_buff_task_info_flush);
+  DEFINE_FLUSH(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
+
+#undef DEFINE_FLUSH
+}
+
+// Flush and destroy one or more task local buffers
+static inline
+void task_local_buff_end(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return;
+
+#define DEFINE_END(TYPE, TLS_NAME, FLUSH_NAME)                                \
+  if (t & TLS_NAME) {                                                         \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info != NULL && info->vi > 0) {                                       \
+      FLUSH_NAME(info);                                                       \
+      chpl_mem_free(info, 0, 0);                                              \
+      prvData->TLS_NAME = NULL;                                               \
+    }                                                                         \
+  }
+
+  DEFINE_END(amo_nf_buff_task_info_t, amo_nf_buff, amo_nf_buff_task_info_flush);
+  DEFINE_END(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
+
+#undef END
+}
+
+
 
 //
 // Chapel interface starts here
@@ -1941,11 +2040,7 @@ int chpl_comm_numPollingTasks(void)
 }
 
 void chpl_comm_task_end(void) {
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-  if (prvData == NULL) return;
-
-  remote_get_buff_task_end(prvData);
-  nic_amo_nf_buff_task_end(prvData);
+  task_local_buff_end(get_buff | amo_nf_buff);
 }
 
 void chpl_comm_post_task_init(void)
@@ -3782,7 +3877,7 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper() {
   if (chpl_nodeID == 0) {
     buf = (wide_ptr_t*) chpl_mem_allocMany(chpl_numGlobalsOnHeap, sizeof(*buf),
                                            CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
-    for (int i = 0; i < glb_addrs_len; i++) {
+    for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
       buf[i] = *chpl_globals_registry[i];
     }
   }
@@ -5727,7 +5822,7 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
 }
 
 void chpl_comm_get_unordered_task_fence(void) {
-  remote_get_buff_task_flush(get_comm_taskPrvdata());
+  task_local_buff_flush(get_buff);
 }
 
 
@@ -5770,18 +5865,6 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
  * then initiate them with chained transactions for increased transaction rate.
  */
 
-// Per task information about GET buffers
-typedef struct {
-  int           vi;
-  void*         tgt_addr_v[MAX_CHAINED_GET_LEN];
-  c_nodeid_t    locale_v[MAX_CHAINED_GET_LEN];
-  mem_region_t* remote_mr_v[MAX_CHAINED_GET_LEN];
-  void*         src_addr_v[MAX_CHAINED_GET_LEN];
-  size_t        size_v[MAX_CHAINED_GET_LEN];
-  mem_region_t* local_mr_v[MAX_CHAINED_GET_LEN];
-} get_buff_task_info_t;
-
-
 // Flush buffered GETs for the specified task info and reset the counter.
 static inline
 void get_buff_task_info_flush(get_buff_task_info_t* info) {
@@ -5791,44 +5874,6 @@ void get_buff_task_info_flush(get_buff_task_info_t* info) {
                     info->local_mr_v, may_proxy_true);
     info->vi = 0;
   }
-}
-
-// Flush buffered GETs for this task
-static inline
-void remote_get_buff_task_flush(chpl_comm_taskPrvData_t* prvData) {
-  if (prvData == NULL) return;
-  get_buff_task_info_t* info = prvData->get_buff;
-  if (info != NULL && info->vi > 0) {
-    get_buff_task_info_flush(info);
-  }
-}
-
-// Flush buffered AMOs for this task and cleanup and task-local state
-static inline
-void remote_get_buff_task_end(chpl_comm_taskPrvData_t* prvData) {
-  if (prvData == NULL) return;
-  get_buff_task_info_t* info = prvData->get_buff;
-  if (info != NULL) {
-    get_buff_task_info_flush(info);
-    chpl_mem_free(info, 0, 0);
-    prvData->get_buff = NULL;
-  }
-}
-
-// Return a pointer to this tasks GET buffer, initialize if needed
-static inline
-get_buff_task_info_t* acquire_remote_get_buff(void) {
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-  if (prvData == NULL) return NULL;
-
-  get_buff_task_info_t* info = prvData->get_buff;
-  if (info == NULL) {
-    prvData->get_buff = chpl_mem_alloc(sizeof(get_buff_task_info_t),
-                                       CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
-    info = prvData->get_buff;
-    info->vi = 0;
-  }
-  return info;
 }
 
 static inline
@@ -5851,7 +5896,7 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   //
   remote_mr = mreg_for_remote_addr(src_addr, locale);
   local_mr = mreg_for_local_addr(tgt_addr);
-  info = acquire_remote_get_buff();
+  info = task_local_buff_acquire(get_buff);
   if (local_mr == NULL || remote_mr == NULL || info == NULL ||
       !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
       !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
@@ -7073,7 +7118,7 @@ DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double, NEGATE_U_OR_R)
 #undef DEFINE_CHPL_COMM_ATOMIC_SUB
 
 void chpl_comm_atomic_unordered_task_fence(void) {
-  nic_amo_nf_buff_task_flush(get_comm_taskPrvdata());
+  task_local_buff_flush(amo_nf_buff);
 }
 
 static
@@ -7128,17 +7173,6 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
  * increased transaction rate.
  */
 
-// Per task information about non-fetching AMO buffers
-typedef struct {
-  int                vi;
-  uint64_t           opnd1_v[MAX_CHAINED_AMO_LEN];
-  c_nodeid_t         locale_v[MAX_CHAINED_AMO_LEN];
-  void*              object_v[MAX_CHAINED_AMO_LEN];
-  size_t             size_v[MAX_CHAINED_AMO_LEN];
-  gni_fma_cmd_type_t cmd_v[MAX_CHAINED_AMO_LEN];
-  mem_region_t*      remote_mr_v[MAX_CHAINED_AMO_LEN];
-} amo_nf_buff_task_info_t;
-
 // Flush buffered AMOs for the specified task info and reset the counter.
 static inline
 void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info) {
@@ -7149,44 +7183,6 @@ void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info) {
   }
 }
 
-// Flush buffered AMOs for this task
-static inline
-void nic_amo_nf_buff_task_flush(chpl_comm_taskPrvData_t* prvData) {
-  if (prvData == NULL) return;
-  amo_nf_buff_task_info_t* info = prvData->amo_nf_buff;
-  if (info != NULL && info->vi > 0) {
-    amo_nf_buff_task_info_flush(info);
-  }
-}
-
-// Flush buffered AMOs for this task and cleanup and task-local state
-static inline
-void nic_amo_nf_buff_task_end(chpl_comm_taskPrvData_t* prvData) {
-  if (prvData == NULL) return;
-  amo_nf_buff_task_info_t* info = prvData->amo_nf_buff;
-  if (info != NULL) {
-    amo_nf_buff_task_info_flush(info);
-    chpl_mem_free(info, 0, 0);
-    prvData->amo_nf_buff = NULL;
-  }
-}
-
-// Return a pointer to this tasks AMO buffer, initialize if needed
-static inline
-amo_nf_buff_task_info_t* acquire_nic_amo_nf_buff(void) {
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-  if (prvData == NULL) return NULL;
-
-  amo_nf_buff_task_info_t* info = prvData->amo_nf_buff;
-  if (info == NULL) {
-    prvData->amo_nf_buff = chpl_mem_alloc(sizeof(amo_nf_buff_task_info_t),
-                                          CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
-    info = prvData->amo_nf_buff;
-    info->vi = 0;
-  }
-  return info;
-}
-
 // Append to task local buffers of operations and flush if full
 static inline
 void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
@@ -7194,7 +7190,7 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
                         gni_fma_cmd_type_t cmd,
                         mem_region_t* remote_mr)
 {
-  amo_nf_buff_task_info_t* info = acquire_nic_amo_nf_buff();
+  amo_nf_buff_task_info_t* info = task_local_buff_acquire(amo_nf_buff);
   if (info == NULL) {
     do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
     return;
@@ -8313,11 +8309,6 @@ void local_yield(void)
 #else
   sched_yield();
 #endif
-}
-
-
-void chpl_comm_ugni_help_register_global_var(int i, wide_ptr_t wide)
-{
 }
 
 
