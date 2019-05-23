@@ -668,12 +668,15 @@ const char* chpl_get_real_binary_name(void) {
   return &chpl_real_binary_name[0];
 }
 
-int chpl_launch_prep(int argc, char* argv[], int32_t* outExecNumLocales) {
+int chpl_launch_prep(int* c_argc, char** c_argv[], 
+                     int32_t* c_execNumLocales) {
   //
   // This is a user invocation, so parse the arguments to determine
   // the number of locales.
   //
-  int32_t execNumLocales;
+  int32_t execNumLocales = *c_execNumLocales;
+  char* argv[] = *c_argv;
+  int argc = *c_argc;
 
   // Set up main argument parsing.
   chpl_gen_main_arg.argv = chpl_mem_allocMany(argc, sizeof(char*),
@@ -706,16 +709,18 @@ int chpl_launch_prep(int argc, char* argv[], int32_t* outExecNumLocales) {
   //
   CHPL_COMM_PRELAUNCH();
 
-  *outExecNumLocales = execNumLocales;
+  *c_execNumLocales = execNumLocales;
+  *c_argv = argv;
+  *c_argc = argc;
 
   return 0;
 }
 
 
 int chpl_launcher_main(int argc, char* argv[]) {
-  int32_t execNumLocales;
+  int32_t execNumLocales = 0;
 
-  if (chpl_launch_prep(argc, argv, &execNumLocales)) {
+  if (chpl_launch_prep(&argc, &argv, &execNumLocales)) {
     return -1;
   }
 
