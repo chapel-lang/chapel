@@ -199,7 +199,8 @@ module ChapelArray {
   config param debugArrayAsVec = false;
 
   proc _isPrivatized(value) param
-    return !_local && ((_privatization && value.dsiSupportsPrivatization()) || value.dsiRequiresPrivatization());
+    return !_local && ((_privatization && value!.dsiSupportsPrivatization()) ||
+                       value!.dsiRequiresPrivatization());
     // Note - _local=true means --local / single locale
     // _privatization is controlled by --[no-]privatization
     // privatization required, not optional, for PrivateDist
@@ -759,11 +760,13 @@ module ChapelArray {
   //
   // Support for index types
   //
+  pragma "unsafe"
   proc chpl__buildIndexType(param rank: int, type idxType) type where rank == 1 {
     var x: idxType;
     return x.type;
   }
 
+  pragma "unsafe"
   proc chpl__buildIndexType(param rank: int, type idxType) type where rank > 1 {
     var x: rank*idxType;
     return x.type;
@@ -947,7 +950,7 @@ module ChapelArray {
           // that should be freed.
           var distToFree = _instance.remove();
           if distToFree != nil {
-            _delete_dist(distToFree, _isPrivatized(_instance));
+            _delete_dist(distToFree!, _isPrivatized(_instance));
           }
         }
       }
@@ -1160,14 +1163,14 @@ module ChapelArray {
           // the distribution and possibly get the distribution to free.
           const inst = _instance;
           var (domToFree, distToRemove) = inst.remove();
-          var distToFree:unmanaged BaseDist = nil;
+          var distToFree:unmanaged BaseDist? = nil;
           if distToRemove != nil {
-            distToFree = distToRemove.remove();
+            distToFree = distToRemove!.remove();
           }
           if domToFree != nil then
             _delete_dom(inst, _isPrivatized(inst));
           if distToFree != nil then
-            _delete_dist(distToFree, _isPrivatized(inst.dist));
+            _delete_dist(distToFree!, _isPrivatized(inst.dist));
         }
       }
     }
@@ -3383,9 +3386,9 @@ module ChapelArray {
       on _instance {
         param arrIsInList = !_instance.isSliceArrayView();
         var (arrToFree, domToRemove) = _instance.remove(arrIsInList);
-        var domToFree:unmanaged BaseDom = nil;
-        var distToRemove:unmanaged BaseDist = nil;
-        var distToFree:unmanaged BaseDist = nil;
+        var domToFree:unmanaged BaseDom? = nil;
+        var distToRemove:unmanaged BaseDist? = nil;
+        var distToFree:unmanaged BaseDist? = nil;
         // The dead code to access the fields of _instance are left in the
         // generated code with --baseline on. This means that these
         // statements cannot come after the _delete_arr call.
@@ -3394,18 +3397,18 @@ module ChapelArray {
         const instanceDom = domToRemove;
         if domToRemove != nil {
           // remove that domain
-          (domToFree, distToRemove) = domToRemove.remove();
+          (domToFree, distToRemove) = domToRemove!.remove();
         }
         param distIsPrivatized = _isPrivatized(distToRemove);
         if distToRemove != nil {
-          distToFree = distToRemove.remove();
+          distToFree = distToRemove!.remove();
         }
         if arrToFree != nil then
           _delete_arr(_instance, _isPrivatized(_instance));
         if domToFree != nil then
-          _delete_dom(instanceDom, domIsPrivatized);
+          _delete_dom(instanceDom!, domIsPrivatized);
         if distToFree != nil then
-          _delete_dist(distToFree, distIsPrivatized);
+          _delete_dist(distToFree!, distIsPrivatized);
       }
     }
   }
@@ -3920,8 +3923,13 @@ module ChapelArray {
 
   // This must be a param function
   proc chpl__supportedDataTypeForBulkTransfer(type t) param {
-    var x:t;
-    return chpl__supportedDataTypeForBulkTransfer(x);
+    // These types cannot be default initialized
+    if isSubtype(t, borrowed) || isSubtype(t, unmanaged) {
+      return false;
+    } else {
+      var x:t;
+      return chpl__supportedDataTypeForBulkTransfer(x);
+    }
   }
   proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;

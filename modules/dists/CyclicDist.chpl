@@ -710,7 +710,7 @@ class CyclicArr: BaseRectangularArr {
   var dom: unmanaged CyclicDom(rank, idxType, stridable);
 
   var locArr: [dom.dist.targetLocDom] unmanaged LocCyclicArr(eltType, rank, idxType);
-  var myLocArr: unmanaged LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType);
+  var myLocArr: unmanaged LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType)?;
   const SENTINEL = max(rank*idxType);
 }
 
@@ -829,8 +829,8 @@ inline proc _remoteAccessData.getDataIndex(
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   local {
-    if myLocArr != nil && myLocArr.locDom.contains(i) then
-      return myLocArr.this(i);
+    if myLocArr != nil && myLocArr!.locDom.contains(i) then
+      return myLocArr!.this(i);
   }
   if doRADOpt && !stridable {
     if myLocArr {
@@ -839,31 +839,31 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
           halt("array index out of bounds: ", i);
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableCyclicLazyRAD {
-        if myLocArr.locRAD == nil {
-          myLocArr.lockLocRAD();
-          if myLocArr.locRAD == nil {
+        if myLocArr!.locRAD == nil {
+          myLocArr!.lockLocRAD();
+          if myLocArr!.locRAD == nil {
             var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType,
                 stridable=true, dom.dist.targetLocDom);
-            myLocArr.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
+            myLocArr!.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
-            myLocArr.locRAD = tempLocRAD;
+            myLocArr!.locRAD = tempLocRAD;
           }
-          myLocArr.unlockLocRAD();
+          myLocArr!.unlockLocRAD();
         }
-        if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr.locRAD.lockRAD(rlocIdx);
-          if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-            myLocArr.locRAD.RAD(rlocIdx) =
+        if myLocArr!.locRAD!.RAD(rlocIdx).blk == SENTINEL {
+          myLocArr!.locRAD!.lockRAD(rlocIdx);
+          if myLocArr!.locRAD!.RAD(rlocIdx).blk == SENTINEL {
+            myLocArr!.locRAD!.RAD(rlocIdx) =
               locArr(rlocIdx).myElems._value.dsiGetRAD();
           }
-          myLocArr.locRAD.unlockRAD(rlocIdx);
+          myLocArr!.locRAD!.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
-      pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
+      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr!.locRAD;
+      pragma "no copy" pragma "no auto destroy" var radata = myLocRAD!.RAD;
       if radata(rlocIdx).data != nil {
-        const startIdx = myLocArr.locCyclicRAD.startIdx;
-        const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
+        const startIdx = myLocArr!.locCyclicRAD!.startIdx;
+        const dimLength = myLocArr!.locCyclicRAD!.targetLocDomDimLength;
         type strType = chpl__signedType(idxType);
         var str: rank*strType;
         for param i in 1..rank {
@@ -938,8 +938,8 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   } else {
     proc accessHelper(i) ref {
       if myLocArr then local {
-        if myLocArr.locDom.contains(i) then
-          return myLocArr.this(i);
+        if myLocArr!.locDom.contains(i) then
+          return myLocArr!.this(i);
       }
       return dsiAccess(i);
     }
@@ -980,8 +980,8 @@ class LocCyclicArr {
 
   const locDom: unmanaged LocCyclicDom(rank, idxType);
 
-  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable=true); // non-nil if doRADOpt=true
-  var locCyclicRAD: unmanaged LocCyclicRADCache(rank, idxType); // see below for why
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable=true)?; // non-nil if doRADOpt=true
+  var locCyclicRAD: unmanaged LocCyclicRADCache(rank, idxType)?; // see below for why
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
 
@@ -1187,7 +1187,7 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
     // quick solution if we have a local array
     if myLocArr != nil then
-      return myLocArr.locDom.myBlock;
+      return myLocArr!.locDom.myBlock;
     // if not, we must not own anything
     var d: domain(rank, idxType, stridable=true);
     return d;

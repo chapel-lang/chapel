@@ -30,7 +30,7 @@ pragma "no doc"
 class listNode {
   type eltType;
   var data: eltType;
-  var next: unmanaged listNode(eltType);
+  var next: unmanaged listNode(eltType)?;
 }
 
 
@@ -57,17 +57,17 @@ record LinkedList {
   type eltType;
   pragma "no doc"
   pragma "owned"
-  var first: unmanaged listNode(eltType);
+  var first: unmanaged listNode(eltType)?;
   pragma "no doc"
   pragma "owned"
-  var last: unmanaged listNode(eltType);
+  var last: unmanaged listNode(eltType)?;
   /*
     The number of nodes in the list.
    */
   var length: int;
 
   pragma "no doc"
-  proc init(type eltType, first : unmanaged listNode(eltType) = nil, last : unmanaged listNode(eltType) = nil) {
+  proc init(type eltType, first : unmanaged listNode(eltType)? = nil, last : unmanaged listNode(eltType)? = nil) {
     this.eltType = eltType;
     this.first = first;
     this.last = last;
@@ -96,8 +96,8 @@ record LinkedList {
   iter these() {
     var tmp = first;
     while tmp != nil {
-      yield tmp.data;
-      tmp = tmp.next;
+      yield tmp!.data;
+      tmp = tmp!.next;
     }
   }
 
@@ -106,8 +106,8 @@ record LinkedList {
    */
   proc ref append(e : eltType) {
     if last {
-      last.next = new unmanaged listNode(eltType, e);
-      last = last.next;
+      last!.next = new unmanaged listNode(eltType, e);
+      last = last!.next;
     } else {
       first = new unmanaged listNode(eltType, e);
       last = first;
@@ -164,15 +164,15 @@ record LinkedList {
   proc ref remove(x: eltType) {
     var tmp = first,
         prev: first.type = nil;
-    while tmp != nil && tmp.data != x {
+    while tmp != nil && tmp!.data != x {
       prev = tmp;
-      tmp = tmp.next;
+      tmp = tmp!.next;
     }
     if tmp != nil {
       if prev != nil then
-        prev.next = tmp.next;
+        prev!.next = tmp!.next;
       if first == tmp then
-        first = tmp.next;
+        first = tmp!.next;
       if last == tmp then
         last = prev;
       delete tmp;
@@ -188,8 +188,8 @@ record LinkedList {
      if boundsChecking && length < 1 {
        HaltWrappers.boundsCheckHalt("pop_front on empty list");
      }
-     var oldfirst = first;
-     var newfirst = first.next;
+     var oldfirst = first!;
+     var newfirst = first!.next;
      var ret = oldfirst.data;
      first = newfirst;
      if last == oldfirst then last = newfirst;
@@ -204,7 +204,7 @@ record LinkedList {
   proc destroy() {
     var current = first;
     while (current != nil) {
-      var next = current.next;
+      var next = current!.next;
       delete current;
       current = next;
     }

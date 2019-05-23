@@ -133,7 +133,7 @@ module ArrayViewRankChange {
   //
  class ArrayViewRankChangeDom: BaseRectangularDom {
     // the lower-dimensional index set that we represent upwards
-    var upDom: unmanaged DefaultRectangularDom(rank, idxType, stridable);
+    var upDomInst: unmanaged DefaultRectangularDom(rank, idxType, stridable)?;
     forwarding upDom except these;
 
     // the collapsed dimensions and indices in those dimensions
@@ -158,17 +158,21 @@ module ArrayViewRankChange {
     // BHARSH INIT TODO: use 'downrank' instead of 'collapsedDim.size'
     //
     var downDomPid:int;
-    var downDomInst: downDomType(collapsedDim.size, idxType, stridable, distInst);
+    var downDomInst: downDomType(collapsedDim.size, idxType, stridable, distInst)?;
 
     proc downrank param {
       return collapsedDim.size;
     }
 
+    inline proc upDom {
+      return upDomInst!;
+    }
+
     inline proc downDom {
-      if _isPrivatized(downDomInst) then
-        return chpl_getPrivatizedCopy(downDomInst.type, downDomPid);
+      if _isPrivatized(downDomInst!) then
+        return chpl_getPrivatizedCopy(downDomInst!.type, downDomPid);
       else
-        return downDomInst;
+        return downDomInst!;
     }
 
     proc dsiBuildArray(type eltType) {
@@ -190,7 +194,7 @@ module ArrayViewRankChange {
 
       pragma "no auto destroy"
       var upDomRec = {(...inds)};
-      upDom = upDomRec._value;
+      upDomInst = upDomRec._value;
 
       // TODO: BHARSH 2019-05-13:
       // Would rather use '_getDistribution' and passing args to "new _domain",
@@ -372,26 +376,26 @@ module ArrayViewRankChange {
     }
 
     override proc dsiDestroyDom() {
-      if upDom != nil then
-        _delete_dom(upDom, false);
+      if upDomInst != nil then
+        _delete_dom(upDomInst!, false);
       if downDomInst != nil then
-        _delete_dom(downDomInst, _isPrivatized(downDomInst));
+        _delete_dom(downDomInst!, _isPrivatized(downDomInst!));
     }
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
     proc dsiSupportsPrivatization() param
-      return downDomInst.dsiSupportsPrivatization();
+      return downDomInst!.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
-      return (upDom, collapsedDim, idx, distPid, distInst, downDomPid, downDomInst);
+      return (upDomInst, collapsedDim, idx, distPid, distInst, downDomPid, downDomInst);
     }
 
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewRankChangeDom(rank = this.rank,
                                         idxType = this.idxType,
                                         stridable = this.stridable,
-                                        upDom = privatizeData(1),
+                                        upDomInst = privatizeData(1),
                                         collapsedDim = privatizeData(2),
                                         idx = privatizeData(3),
                                         distPid = privatizeData(4),
@@ -401,11 +405,11 @@ module ArrayViewRankChange {
     }
 
     proc dsiGetReprivatizeData() {
-      return (upDom, downDomPid, downDomInst);
+      return (upDomInst, downDomPid, downDomInst);
     }
 
     proc dsiReprivatize(other, reprivatizeData) {
-      upDom = reprivatizeData(1);
+      upDomInst = reprivatizeData(1);
       //      collapsedDim = other.collapsedDim;
       //      idx = other.idx;
       //      distPid = other.distPid;

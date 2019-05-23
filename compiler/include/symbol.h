@@ -742,6 +742,7 @@ extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gCastChecking;
 extern VarSymbol *gNilChecking;
+extern VarSymbol *gLegacyNilClasses;
 extern VarSymbol *gDivZeroChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
@@ -802,5 +803,6 @@ void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
 
 const char* toString(ArgSymbol* arg);
+const char* toString(VarSymbol* var);
 
 #endif

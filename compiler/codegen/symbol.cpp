@@ -992,6 +992,8 @@ GenRet ArgSymbol::codegen() {
   FILE* outfile = info->cfile;
   GenRet ret;
 
+  ret.chplType = this->type;
+
   if( outfile ) {
     QualifiedType qt = qualType();
     ret.c = '&';

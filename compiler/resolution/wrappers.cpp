@@ -555,8 +555,11 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   // argument expression so that we can query its type while setting
   // up the return intent for the function. (The return value variable
   // gets special treatment and would be harder to use in this way).
-  VarSymbol* temp   = newTemp("temp");
+  //
+  // Use the name of the formal for better error messages.
+  VarSymbol* temp   = newTemp(formal->name);
 
+  temp->addFlag(FLAG_USER_VARIABLE_NAME);
   // Suppress lvalue errors, which are easily encountered with default
   // wrappers for initializers.
   temp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);

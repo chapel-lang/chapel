@@ -618,26 +618,34 @@ module ChapelBase {
   inline proc >>(param a: int(?w), param b: integral) param return __primitive(">>", a, b);
   inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
 
-  pragma "no borrow convert"
-  pragma "always propagate line file info"
-  inline proc postfix!(x) {
-    if isOwnedClassType(x.type) then
-      compilerError("postfix ! cannot currently apply to owned");
-    if isSharedClassType(x.type) then
-      compilerError("postfix ! cannot currently apply to shared");
-    if !isClassType(x.type) then
-      compilerError("postfix ! can only apply to classes");
+  inline proc postfix!(x:unmanaged) return x;
+  inline proc postfix!(x:borrowed) return x;
 
+  pragma "always propagate line file info"
+  private inline proc checkNotNil(x:borrowed?) {
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
-      if _to_nilable(x.type) == x.type {
-        if x == nil {
-          HaltWrappers.nilCheckHalt("argument to ! is nil");
-        }
+      if x == nil {
+        HaltWrappers.nilCheckHalt("argument to ! is nil");
       }
     }
+  }
+
+  pragma "always propagate line file info"
+  inline proc postfix!(x:unmanaged?) {
+    checkNotNil(x);
     return _to_nonnil(x);
+  }
+  pragma "always propagate line file info"
+  inline proc postfix!(x:borrowed?) {
+    checkNotNil(x);
+    return _to_nonnil(x);
+  }
+
+  pragma "last resort"
+  proc postfix!(x) {
+    compilerError("postfix ! can only apply to classes");
   }
 
   //
@@ -822,6 +830,7 @@ module ChapelBase {
     }
   }
 
+  pragma "unsafe" // work around problems storting non-nilable classes
   proc init_elts(x, s, type t) : void {
     var initMethod = chpl_getArrayInitMethod();
 
@@ -1130,7 +1139,7 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   pragma "task complete impl fn"
   pragma "down end count fn"
-  proc _downEndCount(e: _EndCount, err: unmanaged Error) {
+  proc _downEndCount(e: _EndCount, err: unmanaged Error?) {
     chpl_save_task_error(e, err);
     chpl_comm_task_end();
     // inform anybody waiting that we're done
@@ -1442,6 +1451,7 @@ module ChapelBase {
   pragma "no copy return"
   pragma "no borrow convert"
   pragma "suppress lvalue error"
+  pragma "unsafe"
   inline proc _createFieldDefault(type t, init) {
     pragma "no auto destroy" var x: t;
     x = init;
@@ -1451,6 +1461,7 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   pragma "no borrow convert"
   pragma "no copy return"
+  pragma "unsafe"
   inline proc _createFieldDefault(type t, param init) {
     pragma "no auto destroy" var x: t;
     x = init;
@@ -1460,6 +1471,7 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   pragma "no borrow convert"
   pragma "no copy return"
+  pragma "unsafe"
   inline proc _createFieldDefault(type t, init: _nilType) {
     pragma "no auto destroy" var x: t;
     return x;
@@ -2150,10 +2162,10 @@ module ChapelBase {
   class chpl_ModuleDeinit {
     const moduleName: c_string;          // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function
-    const prevModule: unmanaged chpl_ModuleDeinit; // singly-linked list / LIFO queue
+    const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) {ch.writef("chpl_ModuleDeinit(%s)",moduleName:string);}
   }
-  var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit;
+  var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;
 
   // The compiler does not emit _defaultOf for numeric and class types
   // directly. If _defaultOf is required, use variable initialization

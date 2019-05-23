@@ -46,7 +46,7 @@ proc bulkPartialReduce(arr, param onlyDim) {
   var ResultArr: [PartialDom] arr.eltType;
 
   var locResDom = dist.targetLocDom dmapped _getDistribution(dist);
-  var locRes: [locResDom] ResultArr._value.myLocArr.myElems.type;
+  var locRes: [locResDom] ResultArr._value.myLocArr!.myElems.type;
 
   coforall l2 in
       dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {

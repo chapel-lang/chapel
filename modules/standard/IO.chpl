@@ -1789,7 +1789,7 @@ record channel {
    */
   param locking:bool;
   pragma "no doc"
-  var home:locale;
+  var home:locale = here;
   pragma "no doc"
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
@@ -1801,7 +1801,7 @@ record channel {
   // we are working on a channel created for running writeThis/readThis.
   // Therefore further locking by the same task is not necessary.
   pragma "no doc"
-  var _readWriteThisFromLocale:locale;
+  var _readWriteThisFromLocale:locale?;
 }
 
 pragma "no doc"
@@ -1853,7 +1853,7 @@ proc channel.init=(x: this.type) {
 pragma "no doc"
 proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
                   home: locale, _channel_internal:qio_channel_ptr_t,
-                  _readWriteThisFromLocale: locale) {
+                  _readWriteThisFromLocale: locale?) {
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
@@ -2807,7 +2807,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
-                                       loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
+                                       loc:locale?):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
@@ -2845,7 +2845,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         x:?t,
-                                        loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
+                                        loc:locale?):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
@@ -2876,7 +2876,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
-                                       loc:locale):syserr {
+                                       loc:locale?):syserr {
 
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
@@ -2907,7 +2907,7 @@ pragma "suppress lvalue error"
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
-                                        loc:locale):syserr {
+                                        loc:locale?):syserr {
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)

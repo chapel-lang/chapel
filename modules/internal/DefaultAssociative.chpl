@@ -19,6 +19,7 @@
 
 // DefaultAssociative.chpl
 //
+pragma "unsafe" // workaround for trying to default-initialize nil objects
 module DefaultAssociative {
 
   use DSIUtil;
