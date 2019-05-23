@@ -1421,7 +1421,8 @@ void chpl_comm_task_end(void) { }
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t argSize) {
+                          chpl_comm_on_bundle_t *arg, size_t argSize,
+                          int ln, int32_t fn) {
   DBG_PRINTF(DBG_INTERFACE,
              "chpl_comm_execute_on(%d, %d, %d, %p, %zd)",
              (int) node, (int) subloc, (int) fid, arg, argSize);
@@ -1435,7 +1436,7 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("", node);
+  chpl_comm_diags_verbose_executeOn("", node, ln, fn);
   chpl_comm_diags_incr(execute_on);
 
   amRequestExecOn(node, subloc, fid, arg, argSize, false, true);
@@ -1451,7 +1452,8 @@ static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
 
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t argSize) {
+                             chpl_comm_on_bundle_t *arg, size_t argSize,
+                             int ln, int32_t fn) {
   DBG_PRINTF(DBG_INTERFACE,
              "chpl_comm_execute_on_nb(%d, %d, %d, %p, %zd)",
              (int) node, (int) subloc, (int) fid, arg, argSize);
@@ -1465,7 +1467,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("non-blocking", node);
+  chpl_comm_diags_verbose_executeOn("non-blocking", node, ln, fn);
   chpl_comm_diags_incr(execute_on_nb);
 
   amRequestExecOn(node, subloc, fid, arg, argSize, false, false);
@@ -1474,7 +1476,8 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
 
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t *arg, size_t argSize) {
+                               chpl_comm_on_bundle_t *arg, size_t argSize,
+                               int ln, int32_t fn) {
   DBG_PRINTF(DBG_INTERFACE,
              "chpl_comm_execute_on_fast(%d, %d, %d, %p, %zd)",
              (int) node, (int) subloc, (int) fid, arg, argSize);
@@ -1488,7 +1491,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("fast", node);
+  chpl_comm_diags_verbose_executeOn("fast", node, ln, fn);
   chpl_comm_diags_incr(execute_on_fast);
 
   amRequestExecOn(node, subloc, fid, arg, argSize, true, true);
