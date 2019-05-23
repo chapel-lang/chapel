@@ -1,4 +1,4 @@
-module mymod {
+prototype module mymod {
   class MyClass { var x: int; }
   proc MyClass.mymethod() { writeln("hi", x); }
 
@@ -6,7 +6,7 @@ module mymod {
     var x: owned MyClass? = new owned MyClass(1);
 
     var b = x.borrow();
-    compilerWarning(b.type:string);
+    b.mymethod();
 
     x.mymethod();
   }

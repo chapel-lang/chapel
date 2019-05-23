@@ -7,8 +7,7 @@ module mymod {
 
     var b = x.borrow();
     compilerWarning(b.type:string);
-
-    x.mymethod();
+    b.mymethod();
   }
 
   test();
