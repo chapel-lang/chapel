@@ -24,6 +24,8 @@
 
 module Itertools {
 
+  use RangeChunk;
+
   /*
     Returns an object over and over again, a specified
     number of times.
@@ -72,8 +74,6 @@ module Itertools {
       forall 1..#times do yield arg;
   }
 
-  use RangeChunk;
-
   // Parallel iterator - Leader
 
   pragma "no doc"
@@ -90,8 +90,8 @@ module Itertools {
           "Infinite iteration not supported for parallel loops.");
     else
       coforall tid in 0..#numTasks {
-        const working_iters = chunk(0..#times, numTasks, tid);
-        yield(working_iters,);
+        const workingIters = chunk(0..#times, numTasks, tid);
+        yield(workingIters,);
       }
   }
 
@@ -100,9 +100,9 @@ module Itertools {
   pragma "no doc"
   iter repeat (param tag: iterKind, arg, times = 0, followThis)
       where tag == iterKind.follower && followThis.size == 1 {
-    const working_iters = followThis(1);
+    const workingIters = followThis(1);
 
-    for working_iters do yield arg;
+    for workingIters do yield arg;
   }
 
 
@@ -148,8 +148,6 @@ module Itertools {
           yield element;
   }
 
-  use RangeChunk;
-
   // Parallel iterator - Leader
 
   pragma "no doc"
@@ -166,8 +164,8 @@ module Itertools {
           "infinite iteration not supported for parallel loops");
     else
       coforall tid in 0..#numTasks {
-        const working_iters = chunk(0..#times, numTasks, tid);
-        yield(working_iters,);
+        const workingIters = chunk(0..#times, numTasks, tid);
+        yield(workingIters,);
       }
   }
 
@@ -177,9 +175,9 @@ module Itertools {
   iter cycle(param tag: iterKind, arg, times = 0, followThis)
       where tag == iterKind.follower && followThis.size == 1 {
 
-    const working_iters = followThis(1);
+    const workingIters = followThis(1);
 
-    for working_iters do
+    for workingIters do
       for element in arg do
         yield element;
   }
