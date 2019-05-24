@@ -1045,6 +1045,14 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
       // Can't coerce borrowed to unmanaged
       return actual==CLASS_TYPE_UNMANAGED ||
              actual==CLASS_TYPE_UNMANAGED_NILABLE;
+    case CLASS_TYPE_MANAGED:
+      // Can't coerce away nilable
+      // Can't coerce borrowed to managed
+      return actual==CLASS_TYPE_MANAGED;
+    case CLASS_TYPE_MANAGED_NILABLE:
+      // Can't coerce borrowed to managed
+      return actual==CLASS_TYPE_MANAGED ||
+             actual==CLASS_TYPE_MANAGED_NILABLE;
 
     // no default for compiler warnings to know when to update it
   }

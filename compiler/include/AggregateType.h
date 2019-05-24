@@ -41,6 +41,8 @@ typedef enum {
   CLASS_TYPE_BORROWED_NILABLE = 1,
   CLASS_TYPE_UNMANAGED = 2,
   CLASS_TYPE_UNMANAGED_NILABLE = 3,
+  CLASS_TYPE_MANAGED = 4,           // owned/shared etc indicated by type
+  CLASS_TYPE_MANAGED_NILABLE = 5,
 } ClassTypeDecorator;
 #define NUM_DECORATED_CLASS_TYPES (4)
 #define CLASS_TYPE_MANAGEMENT_MASK (0xfe)

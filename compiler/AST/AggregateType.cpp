@@ -2146,33 +2146,49 @@ Symbol* AggregateType::getSubstitution(const char* name) {
 }
 
 Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
-  if (aggregateTag == AGGREGATE_CLASS) {
 
-    // borrowed == canonical class type
-    if (d == CLASS_TYPE_BORROWED)
-      return this;
+  bool managed = isManagedPtrType(this);
 
-    if (!decoratedClasses[d]) {
-      SET_LINENO(this->symbol->defPoint);
-      // Generate decorated class type
-      DecoratedClassType* dec = new DecoratedClassType(this, d);
-      decoratedClasses[d] = dec;
-      const char* astrName = decoratedTypeAstr(d, symbol->name);
-      TypeSymbol* tsDec = new TypeSymbol(astrName, dec);
-      // The dec type isn't really an object, shouldn't have its own fields
-      tsDec->addFlag(FLAG_NO_OBJECT);
-      // Propagate generic-ness to the decorated type
-      if (this->isGeneric() || this->symbol->hasFlag(FLAG_GENERIC))
-        tsDec->addFlag(FLAG_GENERIC);
-      // The generated code should just use the canonical class name
-      tsDec->cname = symbol->cname;
-      DefExpr* defDec = new DefExpr(tsDec);
-      symbol->defPoint->insertAfter(defDec);
-    }
+  if (aggregateTag != AGGREGATE_CLASS && !managed)
+    INT_FATAL("Bad call to getDecoratedClass");
 
-    return decoratedClasses[d];
+  AggregateType* at = this;
+
+  if (managed && d != CLASS_TYPE_MANAGED && d != CLASS_TYPE_MANAGED_NILABLE) {
+    // Get the class type underneath
+    Type* bt = getManagedPtrBorrowType(this);
+    if (bt && bt != dtUnknown && isAggregateType(bt))
+      at = toAggregateType(bt);
   }
-  return NULL;
+
+  // borrowed == canonical class type
+  if (d == CLASS_TYPE_BORROWED) {
+    if (aggregateTag == AGGREGATE_CLASS)
+      return this;
+    else
+      INT_FATAL("Can't get borrowed owned/shared");
+  }
+
+  // Otherwise, gather the appropriate class type.
+  if (!at->decoratedClasses[d]) {
+    SET_LINENO(at->symbol->defPoint);
+    // Generate decorated class type
+    DecoratedClassType* dec = new DecoratedClassType(at, d);
+    at->decoratedClasses[d] = dec;
+    const char* astrName = decoratedTypeAstr(d, at->symbol->name);
+    TypeSymbol* tsDec = new TypeSymbol(astrName, dec);
+    // The dec type isn't really an object, shouldn't have its own fields
+    tsDec->addFlag(FLAG_NO_OBJECT);
+    // Propagate generic-ness to the decorated type
+    if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
+      tsDec->addFlag(FLAG_GENERIC);
+    // The generated code should just use the canonical class name
+    tsDec->cname = at->symbol->cname;
+    DefExpr* defDec = new DefExpr(tsDec);
+    symbol->defPoint->insertAfter(defDec);
+  }
+
+  return at->decoratedClasses[d];
 }
 
 Type* AggregateType::cArrayElementType() const {

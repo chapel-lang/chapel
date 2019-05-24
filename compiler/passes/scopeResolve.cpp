@@ -2199,6 +2199,9 @@ static void resolveUnmanagedBorrows() {
           ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
           if (isClassLike(ts->type)) {
             decorator = classTypeDecorator(ts->type);
+          } else if (isManagedPtrType(ts->type) &&
+                     call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+            decorator = CLASS_TYPE_MANAGED;
           } else {
             const char* type = NULL;
             if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
@@ -2255,6 +2258,11 @@ static void resolveUnmanagedBorrows() {
               case CLASS_TYPE_UNMANAGED_NILABLE:
                 dt = dtUnmanagedNilable;
                 break;
+              case CLASS_TYPE_MANAGED:
+              case CLASS_TYPE_MANAGED_NILABLE:
+                INT_FATAL("case not handled");
+                break;
+
               // no default intentionally
             }
             INT_ASSERT(dt);

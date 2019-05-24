@@ -35,6 +35,10 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NILABLE:
       return astr("unmanaged ", className, "?");
+    case CLASS_TYPE_MANAGED:
+      return astr("managed ", className);
+    case CLASS_TYPE_MANAGED_NILABLE:
+      return astr("managed ", className, "?");
 
     // no default for help from compilation errors
   }
