@@ -668,12 +668,13 @@ const char* chpl_get_real_binary_name(void) {
   return &chpl_real_binary_name[0];
 }
 
-int chpl_launch_prep(int argc, char* argv[], int32_t* outExecNumLocales) {
+int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales) {
   //
   // This is a user invocation, so parse the arguments to determine
   // the number of locales.
   //
   int32_t execNumLocales;
+  int argc = *c_argc;
 
   // Set up main argument parsing.
   chpl_gen_main_arg.argv = chpl_mem_allocMany(argc, sizeof(char*),
@@ -706,7 +707,8 @@ int chpl_launch_prep(int argc, char* argv[], int32_t* outExecNumLocales) {
   //
   CHPL_COMM_PRELAUNCH();
 
-  *outExecNumLocales = execNumLocales;
+  *c_execNumLocales = execNumLocales;
+  *c_argc = argc;
 
   return 0;
 }
@@ -715,7 +717,12 @@ int chpl_launch_prep(int argc, char* argv[], int32_t* outExecNumLocales) {
 int chpl_launcher_main(int argc, char* argv[]) {
   int32_t execNumLocales;
 
-  if (chpl_launch_prep(argc, argv, &execNumLocales)) {
+  //
+  // The chpl_launch_prep function calls parseArgs, which modifies argc, so
+  // so we need to make sure those changes are visible before calling
+  // chpl_launch.
+  //
+  if (chpl_launch_prep(&argc, argv, &execNumLocales)) {
     return -1;
   }
 
