@@ -1057,8 +1057,6 @@ Type* actualTypeAfterNilabilityRemoval(Type* actualType,
                                        Symbol* actualSym,
                                        Type* formalType,
                                        ArgSymbol* formalSym) {
-  if (actualType->id == 921491)
-    gdbShouldBreakHere();
 
   // Currently only applies to this arguments (method receivers)
   if (formalSym && actualSym && actualSym->defPoint &&
