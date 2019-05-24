@@ -2194,22 +2194,11 @@ static void resolveUnmanagedBorrows() {
 
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-          AggregateType* at = toAggregateType(ts->type);
+          AggregateType* at = toAggregateType(canonicalClassType(ts->type));
 
           ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
-          if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
-            at = dt->getCanonicalClass();
-            decorator = dt->getDecorator();
-          } else if (at && isClass(at)) {
-            decorator = CLASS_TYPE_BORROWED;
-          } else if (ts == dtUnmanaged->symbol) {
-            decorator = CLASS_TYPE_UNMANAGED;
-          } else if (ts == dtBorrowed->symbol) {
-            decorator = CLASS_TYPE_BORROWED;
-          } else if (ts == dtUnmanagedNilable->symbol) {
-            decorator = CLASS_TYPE_UNMANAGED_NILABLE;
-          } else if (ts == dtBorrowedNilable->symbol) {
-            decorator = CLASS_TYPE_BORROWED_NILABLE;
+          if (isClassLike(ts->type)) {
+            decorator = classTypeDecorator(ts->type);
           } else {
             const char* type = NULL;
             if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))

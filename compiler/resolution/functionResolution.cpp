@@ -204,7 +204,33 @@ static void printCallGraph(FnSymbol* startPoint = NULL,
 static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
+static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal);
 
+static bool useLegacyNilability(Expr* at);
+static bool useLegacyNilability(Symbol* at);
+
+static bool useLegacyNilability(Expr* at) {
+  if (fLegacyNilableClasses) return true;
+
+  if (at != NULL) {
+    FnSymbol* fn = at->getFunction();
+    ModuleSymbol* mod = at->getModule();
+
+    if (fn && fn->hasFlag(FLAG_UNSAFE))
+      return true;
+
+    if (mod && mod->hasFlag(FLAG_UNSAFE))
+      return true;
+  }
+
+  return false;
+}
+static bool useLegacyNilability(Symbol* at) {
+  if (at)
+    return useLegacyNilability(at->defPoint);
+
+  return false;
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -481,7 +507,9 @@ static bool fits_in_uint(int width, Immediate* imm) {
 // I.e. for an out/inout/ref formal.
 static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
-  Symbol* calledFn = formal->defPoint->parentSymbol;
+  Symbol* calledFn = NULL;
+  if (formal)
+    calledFn = formal->defPoint->parentSymbol;
 
   if (SymExpr* se = toSymExpr(actual)) {
     Symbol* sym = se->symbol();
@@ -494,18 +522,22 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
       actualConst = true;
 
     bool actualExprTmp = sym->hasFlag(FLAG_EXPR_TEMP);
-    TypeSymbol* formalTS = formal->getValType()->symbol;
-    bool formalCopyMutates = formalTS->hasFlag(FLAG_COPY_MUTATES);
+    TypeSymbol* formalTS = NULL;
+    bool formalCopyMutates = false;
+    if (formal) {
+      formalTS = formal->getValType()->symbol;
+      formalCopyMutates = formalTS->hasFlag(FLAG_COPY_MUTATES);
+    }
     bool isInitCoerceTmp = (0 == strcmp(sym->name, primCoerceTmpName));
 
     if ((actualExprTmp && !formalCopyMutates && !isInitCoerceTmp) ||
-        (actualConst && !formal->hasFlag(FLAG_ARG_THIS)) ||
+        (actualConst && !(formal && formal->hasFlag(FLAG_ARG_THIS))) ||
         se->symbol()->isParameter()) {
       // But ignore for now errors with this argument
       // to functions marked with FLAG_REF_TO_CONST_WHEN_CONST_THIS.
       // These will be checked for later, along with ref-pairs.
-      if (! (formal->hasFlag(FLAG_ARG_THIS) &&
-             calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
+      if (! (formal && formal->hasFlag(FLAG_ARG_THIS) &&
+             calledFn && calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
 
         return false;
     }
@@ -1171,7 +1203,8 @@ bool doCanDispatch(Type*     actualType,
   if (isGenericInstantiation(actualType, formalType))
     return true;
 
-  if (actualType == dtNil && isClassLikeOrPtr(formalType))
+  if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
+      (!isNonNilableClassType(formalType) || useLegacyNilability(actualSym)))
     return true;
 
   if (actualType->refType == formalType &&
@@ -2085,6 +2118,7 @@ void resolveDestructor(AggregateType* at) {
 
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
+static bool resolveBuiltinAssignCall(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -2137,6 +2171,9 @@ void resolveCall(CallExpr* call) {
       return;
 
     if (resolveBuiltinCastCall(call))
+      return;
+
+    if (resolveBuiltinAssignCall(call))
       return;
 
     resolveNormalCall(call);
@@ -2233,6 +2270,25 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 
       call->baseExpr->remove();
       call->primitive = primitives[PRIM_CAST];
+
+      if (valueSe->symbol()->isRef()) {
+        if (targetTypeSe->symbol()->isRef())
+          INT_FATAL("casting from reference to reference not handled");
+
+        SET_LINENO(call);
+
+        // Dereference before casting
+        VarSymbol* tmp = newTempConst("cast_tmp");
+        CallExpr* c = new CallExpr(PRIM_DEREF, valueSe->symbol());
+        CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        call->getStmtExpr()->insertBefore(m);
+        resolveCall(m);
+
+        // Now update the cast call we have to cast the result of deref
+        valueSe->setSymbol(tmp);
+      }
+
       return true;
     }
 
@@ -2271,18 +2327,8 @@ static bool resolveBuiltinCastCall(CallExpr* call)
         if (isClassLike(valueType)) {
           AggregateType* at = toAggregateType(canonicalClassType(valueType));
 
-          Type* t = NULL;
-
-          if (targetType == dtBorrowed)
-            t = at->getDecoratedClass(CLASS_TYPE_BORROWED);
-          else if (targetType == dtBorrowedNilable)
-            t = at->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
-          else if (targetType == dtUnmanaged)
-            t = at->getDecoratedClass(CLASS_TYPE_UNMANAGED);
-          else if (targetType == dtUnmanagedNilable)
-            t = at->getDecoratedClass(CLASS_TYPE_UNMANAGED_NILABLE);
-          else
-            INT_FATAL("case not handled");
+          ClassTypeDecorator d = classTypeDecorator(targetType);
+          Type* t = at->getDecoratedClass(d);
 
           // Replace the target type with the instantiated one.
           targetTypeSe->setSymbol(t->symbol);
@@ -2310,21 +2356,88 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 
       // This could compute the target type for generics.
       // If it does, be careful with generics with defaults.
-      /*
-      if (canInstantiate(valueType, targetType)) {
-        // Replace the target type with the instantiated one.
-        Type* t = getInstantiationType(valueType, targetType);
-        INT_ASSERT(t);
-        targetTypeSe->setSymbol(t->symbol);
-        // Try again with that
-        return resolveBuiltinCastCall(call);
-      }*/
     }
   }
 
   return false;
 }
 
+
+static bool resolveBuiltinAssignCall(CallExpr* call)
+{
+  UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
+  if (urse == NULL)
+    return false;
+
+  if (urse->unresolved != astrSequals || call->numActuals() != 2)
+    return false;
+
+  Type* lhsType = call->get(1)->getValType();
+  Type* rhsType = call->get(2)->getValType();
+
+  if ((isClassLikeOrPtr(lhsType) || lhsType == dtNil) &&
+      (isClassLikeOrPtr(rhsType) || rhsType == dtNil) &&
+      !isTypeExpr(call->get(1)) && !isTypeExpr(call->get(2)) &&
+      canDispatch(rhsType, NULL, lhsType, call->getFunction())) {
+
+    // Do const checking
+    lvalueCheckActual(call, call->get(1), INTENT_REF, NULL);
+
+    // Replace the = call with a primitive assign
+    call->baseExpr->remove();
+    call->primitive = primitives[PRIM_ASSIGN];
+
+    if (lhsType != rhsType) {
+      SET_LINENO(call);
+
+      // Try casting the rhs to the LHS type
+
+      SymExpr* rhsSe = toSymExpr(call->get(2));
+      INT_ASSERT(rhsSe);
+
+      // Dereference before casting
+      VarSymbol* tmp = newTempConst("cast_tmp");
+      CallExpr* c = new CallExpr("_cast", lhsType->symbol, rhsSe->symbol());
+      CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+      call->getStmtExpr()->insertBefore(m);
+      resolveCallAndCallee(c, /* allowUnresolved*/ true);
+      resolveCall(m);
+
+      // Now update the PRIM_ASSIGN to use the result of the cast
+      rhsSe->setSymbol(tmp);
+
+      if (c->resolvedFunction() == NULL && !call->isPrimitive()) {
+        // Error for failure
+        USR_FATAL_CONT(call, "Cannot assign to %s from %s",
+                             toString(lhsType), toString(rhsType));
+        return true;
+      }
+    }
+
+    // Report errors for assigning not-nil to nil
+    if (lhsType == dtNil) {
+      USR_FATAL_CONT(call, "Cannot assign to nil");
+      return true;
+    }
+
+    if (isNonNilableClassType(lhsType)) {
+      if (rhsType == dtNil && !useLegacyNilability(call)) {
+        USR_FATAL_CONT(call, "Cannot assign to non-nilable class type %s "
+                             "from nil",
+                             toString(lhsType));
+      } else if (isNilableClassType(rhsType)) {
+        USR_FATAL_CONT(call, "Cannot assign to non-nilable class type %s "
+                             "from nilable class type %s",
+                             toString(lhsType), toString(rhsType));
+      }
+    }
+
+    return true;
+  }
+
+  return false;
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -4545,127 +4658,144 @@ static Expr* parentToMarker(BlockStmt* parent, CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
+
 void lvalueCheck(CallExpr* call) {
   // Check to ensure the actual supplied to an OUT, INOUT or REF argument
   // is an lvalue.
   for_formals_actuals(formal, actual, call) {
-    bool errorMsg = false;
-    switch (formal->intent) {
-     case INTENT_BLANK:
-     case INTENT_CONST:
-     case INTENT_PARAM:
-     case INTENT_TYPE:
-     case INTENT_REF_MAYBE_CONST:
-      // not checking them here
-      break;
+    lvalueCheckActual(call, actual, formal->intent, formal);
+  }
+}
 
-     case INTENT_IN:
-     case INTENT_CONST_IN:
-      // generally, not checking them here
-      // but, FLAG_COPY_MUTATES makes INTENT_IN actually modify actual
-      if (formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
-        if (!isLegalLvalueActualArg(formal, actual))
-          errorMsg = true;
-      break;
+static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal) {
+  bool errorMsg = false;
+  switch (intent) {
+   case INTENT_BLANK:
+   case INTENT_CONST:
+   case INTENT_PARAM:
+   case INTENT_TYPE:
+   case INTENT_REF_MAYBE_CONST:
+    // not checking them here
+    break;
 
-     case INTENT_INOUT:
-     case INTENT_OUT:
-     case INTENT_REF:
+   case INTENT_IN:
+   case INTENT_CONST_IN:
+    // generally, not checking them here
+    // but, FLAG_COPY_MUTATES makes INTENT_IN actually modify actual
+    if (formal && formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
       if (!isLegalLvalueActualArg(formal, actual))
         errorMsg = true;
-      break;
+    break;
 
-     case INTENT_CONST_REF:
-      if (!isLegalConstRefActualArg(formal, actual))
-        errorMsg = true;
-      break;
+   case INTENT_INOUT:
+   case INTENT_OUT:
+   case INTENT_REF:
+    if (!isLegalLvalueActualArg(formal, actual))
+      errorMsg = true;
+    break;
 
-     default:
-      // all intents should be covered above
-      INT_ASSERT(false);
-      break;
+   case INTENT_CONST_REF:
+    if (!isLegalConstRefActualArg(formal, actual))
+      errorMsg = true;
+    break;
+
+   default:
+    // all intents should be covered above
+    INT_ASSERT(false);
+    break;
+  }
+
+  FnSymbol* nonTaskFnParent = NULL;
+
+  if (errorMsg &&
+      // sets nonTaskFnParent
+      checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)) {
+    errorMsg = false;
+
+    nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
+  }
+
+  if (errorMsg == true) {
+    if (nonTaskFnParent &&
+        nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+      // we are asked to ignore errors here
+      return;
     }
 
-    FnSymbol* nonTaskFnParent = NULL;
-
-    if (errorMsg &&
-        // sets nonTaskFnParent
-        checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)) {
-      errorMsg = false;
-
-      nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
-    }
-
-    if (errorMsg == true) {
-      if (nonTaskFnParent &&
-          nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
-        // we are asked to ignore errors here
+    if (SymExpr* se = toSymExpr(actual)) {
+      if (se->symbol()->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+        // Ignore lvalue errors default argument expressions
         return;
       }
+    }
 
-      if (SymExpr* se = toSymExpr(actual)) {
-        if (se->symbol()->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
-          // Ignore lvalue errors default argument expressions
-          return;
-        }
-      }
+    FnSymbol* calleeFn = call->resolvedFunction();
 
-      FnSymbol* calleeFn = call->resolvedFunction();
-
+    if (formal) {
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
+    }
 
-      Symbol* actSym = isSymExpr(actual) ? toSymExpr(actual)->symbol() : NULL;
-      bool isInitParam = actSym->hasFlag(FLAG_PARAM) && (calleeFn->isInitializer() || calleeFn->isCopyInit());
+    Symbol* actSym = isSymExpr(actual) ? toSymExpr(actual)->symbol() : NULL;
+    bool isInit = calleeFn && (calleeFn->isInitializer() ||
+                               calleeFn->isCopyInit());
+    bool isInitParam = actSym->hasFlag(FLAG_PARAM) && isInit;
 
-      if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {
-        // This assert is FYI. Perhaps can remove it if it fails.
-        INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n - 1] == call);
+    bool isAssign = false;
+    if (calleeFn && calleeFn->hasFlag(FLAG_ASSIGNOP))
+      isAssign = true;
 
-        FnSymbol*   fnParent   = toFnSymbol(call->parentSymbol);
-        const char* recordName = defaultRecordAssignmentTo(fnParent);
+    if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr))
+      if (urse->unresolved == astrSequals)
+        isAssign = true;
 
-        if (recordName && callStack.n >= 2) {
-          // blame on the caller of the caller, if available
-          USR_FATAL_CONT(callStack.v[callStack.n - 2],
-                         "cannot assign to a record of the type %s using "
-                         "the default assignment operator because it has "
-                         "'const' field(s)",
-                         recordName);
-        } else {
-          USR_FATAL_CONT(actual, "illegal lvalue in assignment");
-        }
+    if (isAssign) {
+      // This assert is FYI. Perhaps can remove it if it fails.
+      INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n - 1] == call);
 
-      } else if (isInitParam == false) {
-        ModuleSymbol* mod          = calleeFn->getModule();
-        char          cn1          = calleeFn->name[0];
-        const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
+      FnSymbol*   fnParent   = toFnSymbol(call->parentSymbol);
+      const char* recordName = defaultRecordAssignmentTo(fnParent);
 
-        // Should this be the same condition as in insertLineNumber() ?
-        if (developer || mod->modTag == MOD_USER) {
-          USR_FATAL_CONT(actual,
-                         "non-lvalue actual is passed to %s formal '%s' "
-                         "of %s%s",
-                         formal->intentDescrString(),
-                         formal->name,
-                         calleeFn->name,
-                         calleeParens);
-
-        } else {
-          USR_FATAL_CONT(actual,
-                         "non-lvalue actual is passed to a %s formal of "
-                         "%s%s",
-                         formal->intentDescrString(),
-                         calleeFn->name,
-                         calleeParens);
-        }
+      if (recordName && callStack.n >= 2) {
+        // blame on the caller of the caller, if available
+        USR_FATAL_CONT(callStack.v[callStack.n - 2],
+                       "cannot assign to a record of the type %s using "
+                       "the default assignment operator because it has "
+                       "'const' field(s)",
+                       recordName);
+      } else {
+        USR_FATAL_CONT(actual, "illegal lvalue in assignment");
       }
 
-      if (SymExpr* aSE = toSymExpr(actual)) {
-        Symbol* aVar = aSE->symbol();
+    } else if (isInitParam == false) {
+      ModuleSymbol* mod          = calleeFn->getModule();
+      char          cn1          = calleeFn->name[0];
+      const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
 
-        if (aVar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
-          printTaskOrForallConstErrorNote(aVar);
-        }
+      // Should this be the same condition as in insertLineNumber() ?
+      if (developer || mod->modTag == MOD_USER) {
+        USR_FATAL_CONT(actual,
+                       "non-lvalue actual is passed to %s formal '%s' "
+                       "of %s%s",
+                       formal->intentDescrString(),
+                       formal->name,
+                       calleeFn->name,
+                       calleeParens);
+
+      } else {
+        USR_FATAL_CONT(actual,
+                       "non-lvalue actual is passed to a %s formal of "
+                       "%s%s",
+                       formal->intentDescrString(),
+                       calleeFn->name,
+                       calleeParens);
+      }
+    }
+
+    if (SymExpr* aSE = toSymExpr(actual)) {
+      Symbol* aVar = aSE->symbol();
+
+      if (aVar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+        printTaskOrForallConstErrorNote(aVar);
       }
     }
   }
@@ -5147,6 +5277,12 @@ static void resolveInitVar(CallExpr* call) {
     targetType = srcType;
   }
 
+  // 'var x = new _domain(...)' should not bother going through chpl__initCopy
+  // logic so that the result of the 'new' is MOVE'd and not copy-initialized,
+  // which is handled in the 'init=' branch.
+  bool isDomainWithoutNew = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN) &&
+                            src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == false;
+
   if (dst->hasFlag(FLAG_NO_COPY) ||
       isPrimitiveScalar(targetType) ||
       isEnumType(targetType) ||
@@ -5165,11 +5301,17 @@ static void resolveInitVar(CallExpr* call) {
              isParamString ||
              isSyncType(srcType->getValType()) ||
              isSingleType(srcType->getValType()) ||
-             isRecordWrappedType(targetType->getValType()) ||
+             targetType->getValType()->symbol->hasFlag(FLAG_ARRAY) ||
+             isDomainWithoutNew ||
              srcType->getValType()->symbol->hasFlag(FLAG_TUPLE) ||
              srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // These cases require an initCopy to implement special initialization
     // semantics (e.g. reading a sync for variable initialization).
+    //
+    // For example, even though domains can leverage 'init=' for basic
+    // copy-initialization, the compiler only currently knows about calls to
+    // "chpl__initCopy" and how to turn them into something else when necessary
+    // (e.g. chpl__unalias).
 
     CallExpr* initCopy = new CallExpr("chpl__initCopy", srcExpr->remove());
     call->insertAtTail(initCopy);
@@ -8631,6 +8773,7 @@ static void resolvePrimInit(CallExpr* call,
     resolvePrimInit(call, val, type);
   } else {
     // TODO: this is dead code
+    INT_FATAL("dead code");
 
     // Reduce it to variable initialization
     //   - create temporary variable
@@ -8699,6 +8842,29 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     if (typeSe) resolveExprTypeConstructor(typeSe);
     resolveExpr(moveDefault);
     call->convertToNoop();
+
+    // Create an error when default initializing a non-nilable class type.
+    if (isNonNilableClassType(type) && !useLegacyNilability(call)) {
+      // Work around current problems in array / assoc array types
+      bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
+                    call->getModule()->hasFlag(FLAG_UNSAFE);
+
+      if (unsafe == false) {
+
+        const char* descr = val->name;
+        if (VarSymbol* v = toVarSymbol(val))
+          descr = toString(v);
+
+        USR_FATAL_CONT(call, "Cannot default-initialize %s", descr);
+        USR_PRINT("non-nil class types do not support default initialization");
+        AggregateType* at = toAggregateType(canonicalClassType(type));
+        INT_ASSERT(at);
+        ClassTypeDecorator d = classTypeDecorator(type);
+        Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+        USR_PRINT("Consider using the type %s instead",
+                  toString(suggestedType));
+      }
+    }
 
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)

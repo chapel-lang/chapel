@@ -150,7 +150,7 @@ module ChapelUtil {
       printf(c"Deinitializing Modules:\n");
     var prev = chpl_moduleDeinitFuns;
     while prev {
-      const curr = prev;
+      const curr = prev!;
       if printModuleDeinitOrder then
         printf(c"  %s\n", curr.moduleName);
       chpl_execute_module_deinit(curr.deinitFun);

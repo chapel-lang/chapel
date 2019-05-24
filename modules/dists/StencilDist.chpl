@@ -1425,8 +1425,8 @@ proc StencilArr.noFluffView() {
   var tempDist = new unmanaged Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity, ignoreFluff=true);
-  pragma "no auto destroy" var newDist = _newDistribution(tempDist);
-  pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable, dom.whole.dims()));
+  pragma "no auto destroy" var newDist = new _distribution(tempDist);
+  pragma "no auto destroy" var tempDom = new _domain(newDist, rank, idxType, dom.stridable, dom.whole.dims());
   newDist._value._free_when_no_doms = true;
 
   var newDom = tempDom._value;
@@ -1708,6 +1708,37 @@ proc StencilDom.dsiReprivatize(other, reprivatizeData) {
     }
     wholeFluff = whole.expand(absFluff);
   }
+}
+
+proc StencilDom.chpl__serialize() {
+  return pid;
+}
+
+// TODO: What happens when we try to deserialize on a locale that doesn't
+// own a copy of the privatized class?  (can that happen?)  Could this
+// be a way to lazily privatize by also making the originating locale part
+// of the 'data'?
+proc type StencilDom.chpl__deserialize(data) {
+  return chpl_getPrivatizedCopy(
+           unmanaged StencilDom(rank=this.rank,
+                                idxType=this.idxType,
+                                stridable=this.stridable,
+                                ignoreFluff=this.ignoreFluff),
+           data);
+}
+
+proc StencilArr.chpl__serialize() {
+  return pid;
+}
+
+proc type StencilArr.chpl__deserialize(data) {
+  return chpl_getPrivatizedCopy(
+           unmanaged StencilArr(rank=this.rank,
+                                idxType=this.idxType,
+                                stridable=this.stridable,
+                                eltType=this.eltType,
+                                ignoreFluff=this.ignoreFluff),
+           data);
 }
 
 proc StencilArr.dsiSupportsPrivatization() param return true;

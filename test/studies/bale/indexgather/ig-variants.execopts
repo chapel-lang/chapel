@@ -1,0 +1,1 @@
+--N=20 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --dataParTasksPerLocale=2

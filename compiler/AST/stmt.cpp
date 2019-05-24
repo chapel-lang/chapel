@@ -748,6 +748,22 @@ CondStmt* isConditionalInCondStmt(Expr* expr) {
 *                                                                             *
 ************************************** | *************************************/
 
+const char* gotoTagToString(GotoTag gotoTag) {
+  switch (gotoTag) {
+    case GOTO_NORMAL:         return "normal";
+    case GOTO_BREAK:          return "break";
+    case GOTO_CONTINUE:       return "continue";
+    case GOTO_RETURN:         return "return";
+    case GOTO_GETITER_END:    return "getiter-end";
+    case GOTO_ITER_RESUME:    return "iter-resume";
+    case GOTO_ITER_END:       return "iter-end";
+    case GOTO_ERROR_HANDLING: return "error-handling";
+    case GOTO_BREAK_ERROR_HANDLING: return "break-error-handling";
+  }
+  INT_FATAL("invalid gotoTag %d", (int)gotoTag);
+  return NULL;
+}
+
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
   Stmt(E_GotoStmt),
   gotoTag(init_gotoTag),

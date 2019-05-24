@@ -3,7 +3,7 @@ class C {
 }
 
 class D {
-  var y: unmanaged C;
+  var y: unmanaged C?;
 }
 
 proc foo(c: borrowed C) {
@@ -11,7 +11,7 @@ proc foo(c: borrowed C) {
 }
 
 proc foo(d: borrowed D) {
-  foo(d.y);
+  foo(d.y!);
 }
 
 proc main() {
@@ -19,7 +19,7 @@ proc main() {
   foo(myC);
   var myD = new unmanaged D();
   myD.y = new unmanaged C();
-  myD.y.x = 2;
+  myD.y!.x = 2;
   foo(myD);
   delete myC;
   delete myD.y;

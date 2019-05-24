@@ -199,6 +199,10 @@ const char* toString(Type* type, bool decorateAllClasses) {
 
     if (retval == NULL)
       retval = vt->symbol->name;
+    /* This can be helpful when debugging (and perhaps we should enable it
+       by default?): */
+//    if (developer)
+//      retval = vt->symbol->cname;
 
   } else {
     retval = "null type";
@@ -615,6 +619,11 @@ void initPrimitiveTypes() {
 
   dtValue = createInternalType("value", "_chpl_value");
 
+  gIteratorBreakToken = new VarSymbol("_iteratorBreakToken", dtBool);
+  gIteratorBreakToken->addFlag(FLAG_CONST);
+  gIteratorBreakToken->addFlag(FLAG_NO_CODEGEN);
+  rootModule->block->insertAtTail(new DefExpr(gIteratorBreakToken));
+
   INIT_PRIM_BOOL("bool(1)", 1);
   INIT_PRIM_BOOL("bool(8)", 8);
   INIT_PRIM_BOOL("bool(16)", 16);
@@ -828,6 +837,10 @@ void initCompilerGlobals() {
   gNilChecking = new VarSymbol("chpl_checkNilDereferences", dtBool);
   gNilChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gNilChecking, !fNoNilChecks);
+
+  gLegacyNilClasses = new VarSymbol("chpl_legacyNilClasses", dtBool);
+  gLegacyNilClasses->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gLegacyNilClasses, fLegacyNilableClasses);
 
   gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
   gDivZeroChecking->addFlag(FLAG_PARAM);

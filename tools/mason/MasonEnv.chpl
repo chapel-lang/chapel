@@ -155,7 +155,9 @@ private proc getRegNameFromLoc(location: string): string {
     exit(1);
   }
   if strippedLoc.endsWith(".git") {
-    return strippedLoc[lastSlashPos+1..strippedLoc.length-4];
+    // TODO: this should use a method to get the byte length
+    var beforeGit = (strippedLoc.length-4):byteIndex;
+    return strippedLoc[lastSlashPos+1..beforeGit];
   } else {
     return strippedLoc[lastSlashPos+1..];
   }

@@ -199,7 +199,7 @@ module VectorLists {
     const high = followRange.alignedHigh;
 
     for (s,LE) in links() {
-      if s > high then continue; //switch to 'break' when #7897 is resolved
+      if s > high then break; //done
       if s + LE.size <= low then continue;
       for idx in followRange[s..#LE.size] - s do
         yield LE.elemAt(idx);

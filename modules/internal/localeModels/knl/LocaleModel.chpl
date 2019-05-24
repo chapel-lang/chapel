@@ -526,8 +526,8 @@ module LocaleModel {
       const node = chpl_nodeFromLocaleID(id);
       const subloc = chpl_sublocFromLocaleID(id);
       if subloc == numaDomainForAny(
-                    (myLocales[node:int]:LocaleModel).numSublocales) then
-        return ((myLocales[node:int]:LocaleModel).hbm):locale;
+                    (myLocales[node:int]:LocaleModel?)!.numSublocales) then
+        return ((myLocales[node:int]:LocaleModel?)!.hbm):locale;
       else if chpl_isActualSublocID(subloc) then
         return (myLocales[node:int].getChild(subloc:int)):locale;
       else

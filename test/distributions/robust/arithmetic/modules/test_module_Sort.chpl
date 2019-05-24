@@ -68,27 +68,27 @@ writeln("Sort reindexed array");
 proc doSort(D: domain, A: [D], st: SortType) {
   select st {
     when SortType.BUBBLE {
-      bubbleSort(A);
+      BubbleSort.bubbleSort(A);
       if !isSorted(A) then writeln('bubbleSort failed');
     }
     when SortType.INSERTION {
-      insertionSort(A);
+      InsertionSort.insertionSort(A);
       if !isSorted(A) then writeln('insertionSort failed');
     }
     when SortType.MERGE {
-      mergeSort(A);
+      MergeSort.mergeSort(A);
       if !isSorted(A) then writeln('mergeSort failed');
     }
     when SortType.SELECTION {
-      selectionSort(A);
+      SelectionSort.selectionSort(A);
       if !isSorted(A) then writeln('selectionSort failed');
     }
     when SortType.QUICK {
-      quickSort(A);
+      QuickSort.quickSort(A);
       if !isSorted(A) then writeln('quickSort failed');
     }
     when SortType.HEAP {
-      heapSort(A);
+      HeapSort.heapSort(A);
       if !isSorted(A) then writeln('heapSort failed');
     }
   }
@@ -137,7 +137,7 @@ BubbleSort.bubbleSort(rc3DR1D);
 if !isSorted(rc3DR1D) then writeln('bubbleSort failed');
 
 rng.fillRandom(rc3DR1D);
-insertionSort(rc3DR1D);
+InsertionSort.insertionSort(rc3DR1D);
 if !isSorted(rc3DR1D) then writeln('insertionSort failed');
 
 rng.fillRandom(rc3DR1D);
