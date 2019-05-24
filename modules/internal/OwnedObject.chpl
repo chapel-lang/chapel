@@ -467,10 +467,4 @@ module OwnedObject {
     }
     return _to_nonnil(x.chpl_p);
   }
-
-
-  /* This type allows code using the pre-1.18 `Owned` record
-     to continue to compile. It will be removed in a future release.
-   */
-  type Owned = _owned;
 }

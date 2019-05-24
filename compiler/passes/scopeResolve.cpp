@@ -978,19 +978,19 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
 
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                      Symbol* sym) {
-  const char* name = usymExpr->unresolved;
   FnSymbol* fn = toFnSymbol(sym);
 
   if (fn == NULL) {
-    // This deprecation should be removed in 1.19
-    if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-      if (0 == strcmp(name, "Owned"))
-        USR_WARN(usymExpr, "Owned is deprecated, use owned instead");
-      if (0 == strcmp(name, "Shared"))
-        USR_WARN(usymExpr, "Shared is deprecated, use shared instead");
-    }
+    SymExpr* symExpr = NULL;
 
-    SymExpr* symExpr = new SymExpr(sym);
+    if (sym->hasFlag(FLAG_MANAGED_POINTER)) {
+      /*AggregateType* at = toAggregateType(sym->type);
+      Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
+      symExpr = new SymExpr(t->symbol);*/
+      symExpr = new SymExpr(sym);
+    } else {
+      symExpr = new SymExpr(sym);
+    }
 
     usymExpr->replace(symExpr);
 
