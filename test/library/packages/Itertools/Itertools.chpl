@@ -165,21 +165,39 @@ module Itertools {
     else
       coforall tid in 0..#numTasks {
         const workingIters = chunk(0..#times, numTasks, tid);
-        yield(workingIters,);
+        workingIters.translate(-workingIters.low);
+        yield(0..#(workingIters.high * arg.size),);
       }
   }
 
-  // Parallel iterator - Follower
+  // Parallel iterator - Follower (for Arrays and Strings)
+
+  pragma "no doc"
+  iter cycle(param tag: iterKind, arg, times = 0, followThis)
+      where tag == iterKind.follower && followThis.size == 1
+          && (isString(arg) || isArray(arg) || isTuple(arg)) {
+
+    const workingIters = followThis(1);
+
+    for idx in workingIters do
+      yield arg[(idx % arg.size) + 1];
+  }
+
+  // Parallel iterator - Follower (for non-indexable iterables)
 
   pragma "no doc"
   iter cycle(param tag: iterKind, arg, times = 0, followThis)
       where tag == iterKind.follower && followThis.size == 1 {
 
+    var tempObject: [1..#arg.size] arg.low.type;
+
+    for (idx, element) in zip(1..#arg.size, arg) do
+      tempObject[idx] = element;
+
     const workingIters = followThis(1);
 
-    for workingIters do
-      for element in arg do
-        yield element;
+    for idx in workingIters do
+      yield tempObject[(idx % arg.size) + 1];
   }
 
 } // end module
