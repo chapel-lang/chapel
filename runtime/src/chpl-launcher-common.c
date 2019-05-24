@@ -713,8 +713,8 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales) {
   return 0;
 }
 
-int chpl_launcher_main_old(int argc, char* argv);
-int chpl_launcher_main_old(int argc, char* argv) {
+int chpl_launcher_main_old(int argc, char* argv[]);
+int chpl_launcher_main_old(int argc, char* argv[]) {
 
   //
   // This is a user invocation, so parse the arguments to determine
