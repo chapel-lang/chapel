@@ -16,13 +16,14 @@
 # limitations under the License.
 
 #
-# Makefile.mli-static
+# Makefile.mli-shared
 #
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
 CHPL_MLI_INCS = -I$(CHPL_ZMQ_LOC)/include
 CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+UNAME = $(shell uname)
 
 .PHONY: checkZMQ buildUserObj buildServer buildClient runTagsCommand
 
@@ -35,12 +36,12 @@ endif
 
 buildUserObj:
 #
-# Compile loose source files in CHPLUSEROBJ.
+# Compile loose C source files in CHPLUSEROBJ.
 #
 	$(foreach srcFile, $(CHPLUSEROBJ), \
 		$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
 			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
-  ;)
+	;)
 
 buildServer: $(TMPSERVERNAME)
 
@@ -64,36 +65,43 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY) \
 		CHPL_MAKE_IS_MLI=1
 #
-# Compile the client bundle.
+# Compile the client bundle. Note the use of $(SHARED_LIB_CFLAGS) here.
 #
 	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+		$(SHARED_LIB_CFLAGS) \
 		-c -o $(TMPBINNAME).o \
 		$(CHPLSRC) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
 		$(CHPL_RT_INC_DIR) \
 		$(CHPL_MLI_INCS)
 #
-# Throw the client object file and launcher object file into an archive.
+# Invoke the linker to produce a shared library.
 #
-	$(AR) -c -r -s $(TMPBINNAME)-tmp \
-		$(TMPBINNAME).o \
-		$(CHPL_CL_OBJS) \
-		$(TMPSERVERNAME)_launcher.o
-#
-# Merge the client library, launcher library, and ZMQ library together via use
-# of libtool. This makes the assumption that static library files for both
-# external libraries exist.
-#
-	libtool -static -o $(TMPBINNAME) -no_warning_for_no_symbols \
-		$(CHPL_ZMQ_LOC)/lib/libzmq.a \
-		$(CHPL_LN_LIB_DIR)/libchpllaunch.a \
-		$(TMPBINNAME)-tmp
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+		$(LIB_DYNAMIC_FLAG) \
+		-o $(TMPBINNAME) \
+		$(TMPBINNAME).o $(TMPSERVERNAME)_launcher.o \
+		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
+		-L$(CHPL_LN_LIB_DIR) \
+		-lm -lchpllaunch \
+		$(LAUNCH_LIBS) \
+		-L$(CHPL_ZMQ_LOC)/lib \
+		-lzmq
 #
 # Last minute munging in case of output file name collisions.
 #
 ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
+endif
+#
+# On Darwin, we need to adjust the "install_name" of the final shared library
+# file so that it points to $(BINNAME) and not $(TMPBINNAME). If we don't,
+# `dyld` will emit an error of the form "library not loaded because image
+# was not found".
+#
+ifeq ($(UNAME),Darwin)
+	install_name_tool $(BINNAME) -id "$(BINNAME)"
 endif
 
 $(TMPSERVERNAME): $(CHPL_CL_OBJS) checkRtLibDir FORCE
@@ -117,7 +125,7 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 #   ^ With the exception of gasnet!
 #
 	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-		$(GEN_STATIC_FLAG) \
+		$(GEN_DYNAMIC_FLAG) \
 		-o $(TMPSERVERNAME) \
 		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main_mli.o \
 		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
