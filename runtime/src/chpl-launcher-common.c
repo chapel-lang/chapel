@@ -713,9 +713,53 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales) {
   return 0;
 }
 
+int chpl_launcher_main_old(int argc, char* argv);
+int chpl_launcher_main_old(int argc, char* argv) {
+
+  //
+  // This is a user invocation, so parse the arguments to determine
+  // the number of locales.
+  //
+  int32_t execNumLocales;
+
+  // Set up main argument parsing.
+  chpl_gen_main_arg.argv = chpl_mem_allocMany(argc, sizeof(char*),
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  chpl_gen_main_arg.argv[0] = argv[0];
+  chpl_gen_main_arg.argc = 1;
+  chpl_gen_main_arg.return_value = 0;
+
+  CreateConfigVarTable();
+  parseArgs(true, parse_normally, &argc, argv);
+
+  execNumLocales = getArgNumLocales();
+
+  //
+  // If the user did not specify a number of locales let the
+  // comm layer decide how many to use (or flag an error)
+  //
+  if (execNumLocales == 0) {
+    execNumLocales = chpl_comm_default_num_locales();
+  }
+  //
+  // Before proceeding, allow the comm layer to verify that the
+  // number of locales is reasonable
+  //
+  chpl_comm_verify_num_locales(execNumLocales);
+
+  //
+  // Let the comm layer do any last-minute pre-launch activities it
+  // needs to.
+  //
+  CHPL_COMM_PRELAUNCH();
+
+  return chpl_launch(argc, argv, execNumLocales);
+}
 
 int chpl_launcher_main(int argc, char* argv[]) {
   int32_t execNumLocales;
+
+  return chpl_launcher_main_old(argc, argv);
 
   if (chpl_launch_prep(&argc, argv, &execNumLocales)) {
     return -1;
