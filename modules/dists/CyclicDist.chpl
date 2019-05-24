@@ -754,7 +754,7 @@ proc CyclicArr.setupRADOpt() {
           myLocArr.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
           for l in dom.dist.targetLocDom {
             if l != localeIdx {
-              myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
+              myLocArr.locRAD!.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
             }
           }
         }
