@@ -74,6 +74,7 @@ module Lists {
 
     proc deinit() {
       // In Vass's code, not sure how well known chpl__autoDestroy is?
+      // TODO: Is _ddata 0 indexed?
       for i in 0..capacity do
         chpl__autoDestroy(elements[i]);
       _ddata_free(elements, capacity);
@@ -175,11 +176,38 @@ module Lists {
     }
 
     pragma "no doc"
-    inline proc _bounds_check(i: int) throws {
-      if (i < 0 || i >= size) then
+    inline proc _bounds_check_release_on_throw(i: int) throws {
+      if (i < 1 || i > size) then {
+        _cs_leave();
         throw new owned
           IllegalArgumentError("List index out of bounds: ", i);
+      }
     }
+
+    // This should use moves and so should not fire any destructors.
+    pragma "no doc"
+    proc _collapse_left_unsafe(i: int) {}
+
+    // This should use moves and should not fire any destructors.
+    pragma "no doc"
+    proc _shift_right_unsafe(i: int) {}
+
+    //
+    // Right now, Chapel ranges typically start from 1 and are inclusive on
+    // either side of the range (as opposed to ranges in Python, which are
+    // only open on the left).
+    // So make sure to keep this in mind when working with _ddata (which
+    // might be 0 based, not sure).
+    //
+    pragma "no doc"
+    proc _get_ref_unsafe(i: int) {}
+
+    //
+    // Performs move emplacing an element into this List. Assumes that the
+    // element _can be cannibalized_ (IE, it is already a copy).
+    //
+    pragma "no doc"
+    proc _emplace_unsafe(i: int, x: eltType) {}
 
     pragma "no doc"
     proc _append_unsafe(in x: eltType) {
@@ -195,9 +223,7 @@ module Lists {
         _tail = _tail.next;
       }
 
-      // Need to use a move here on the _ddata, somehow.
-      _tail[_tail.size] = x;
-      _tail.size += 1;
+      _emplace_unsafe(i, x);
       size += 1;
     }
 
@@ -259,14 +285,11 @@ module Lists {
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
     proc insert(i: int, in x: eltType) throws {
-      // TODO: Need to make this a _move_, somehow.
-      this[i] = x;
-    }
-
-    pragma "no doc"
-    proc _collapse_left(i: int) {
-
-
+      _cs_enter();
+      try _bounds_check_release_on_throw(i);
+      _shift_right_unsafe(i);
+      _emplace_unsafe(i, x);
+      _cs_leave();
     }
 
     /*
@@ -283,13 +306,23 @@ module Lists {
       :throws IllegalArgumentError: If there is no such item.
     */
     proc remove(x: eltType) throws {
+      _cs_enter();
+
       //
       // TODO: Using this operator over entire list gives us O(n log n) perf,
-      // which is ga, but will be fine when this becomes O(1).
+      // which is suboptimal, but will reduce to O(n) when this becomes O(1).
       //
-      for i in 0..size do
-        if this[i] == x then
-          _collapse_left(i);
+      for i in 1..size do
+        if x == _get_ref_unsafe(i) then {
+          _collapse_left_unsafe(i);
+          _cs_leave();
+          return;
+        }
+
+      _cs_leave();
+
+      throw new owned
+        IllegalArgumentError("No such element in List: ", x);
     }
 
     /*
@@ -309,7 +342,13 @@ module Lists {
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
     proc pop(i: int=size - 1): eltType throws {
-      return nil;
+      _cs_enter();
+      try _bounds_check_release_on_throw(i);
+      // TODO: Is this fine, or do I need to make this into a move?
+      var result: eltType = _get_ref_unsafe(i);
+      _collapse_left_unsafe(i);
+      _cs_leave();
+      return result;
     }
 
     /*
@@ -320,19 +359,47 @@ module Lists {
         Clearing the contents of this List will invalidate all existing
         references to the elements contained in this List.
     */
-    proc clear() {}
+    proc clear() {
+      _cs_enter();
+      //
+      // TODO: Manually iterate through all _ddata, fire off each element's
+      // destructor, and then release the _ddata itself. Set _head and _tail
+      // to nil, and size to 0.
+      //
+      _cs_leave();
+    }
 
     /*
       Return a zero-based index into this List of the first item whose value
       is equal to x.
 
       :arg x: An element to search for.
+      :arg start: The start index to start searching from.
+      :arg end: The end index to stop searching at.
+
       :return: The index of the element to search for.
 
       :throws IllegalArgumentError: If the given element cannot be found.
     */
     proc indexOf(x: eltType, start: int=0, end: int=size): int throws {
-      return 0; 
+      _cs_enter();
+
+      try _bounds_check_release_on_throw(start);
+      try _bounds_check_release_on_throw(end);
+
+      for i in start..end do
+        if x == _get_ref_unsafe(i) then {
+          _cs_leave();
+          return i;
+        }
+
+      _cs_leave();
+
+      throw new owned
+        IllegalArgumentError("No such element in List: ", x);
+
+      // Should never reach here.
+      return -1;
     }
 
     /*
@@ -344,6 +411,12 @@ module Lists {
       :rtype: `int`
     */
     proc count(x: eltType): int {
+      _cs_enter();
+      var result: int = 0;
+
+      for i in 1..size do:
+
+      _cs_leave();
       return 0;
     }
 
@@ -380,9 +453,11 @@ module Lists {
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
     proc this(i: int) ref throws {
-      try _bounds_check(i);
-      
-      return nil;
+      _cs_enter();
+      try _bounds_check_release_on_throw(i);
+      var result = _get_ref_unsafe(i);
+      _cs_leave();
+      return result;
     }
 
     /*
