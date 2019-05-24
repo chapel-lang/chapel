@@ -444,7 +444,7 @@ module SharedObject {
 
   pragma "no doc"
   pragma "always propagate line file info"
-  inline proc postfix!(x:shared) {
+  inline proc postfix!(x:_shared) {
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
