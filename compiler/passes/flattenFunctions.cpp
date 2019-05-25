@@ -92,8 +92,8 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
         // the type should always be RVF'd
         sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)
         ) {
-      printf("Treating %s specially w.r.t. %s (%s:%d)\n", sym->name, fn->name,
-             fn->astloc.filename, fn->astloc.lineno);
+      //      printf("Treating %s specially w.r.t. %s (%s:%d)\n", sym->name, fn->name,
+      //             fn->astloc.filename, fn->astloc.lineno);
       return true;
     }
   }
@@ -264,7 +264,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
         intent = concreteIntent(temp, type);
       }
 
-      printf("Adding formal %s to fn %s (%d)\n", sym->name, fn->name, fn->astloc.lineno);
+      //      printf("Adding formal %s to fn %s (%d)\n", sym->name, fn->name, fn->astloc.lineno);
       SET_LINENO(sym);
       ArgSymbol* arg = new ArgSymbol(intent, sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
@@ -452,7 +452,7 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
               outerFunctionSet.set_add(parent);
 
               nestedFunctionSet.set_add(parent);
-              printf("C: adding fn %s\n", parent->name);
+              //              printf("C: adding fn %s\n", parent->name);
               nestedFunctions.add(parent);
 
               form_Map(SymbolMapElem, use, *uses) {
