@@ -25,8 +25,8 @@
 module ArrayViewSlice {
   use ChapelStandard;
 
-  config param chpl_debugSerializeSlice = false,
-               chpl_serializeSlices = false;
+  config param chpl_debugSerializeSlice = true,
+               chpl_serializeSlices = true;
 
   private proc buildIndexCacheHelper(arr, dom) {
     param isRankChangeReindex = arr.isRankChangeArrayView() ||

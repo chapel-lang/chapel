@@ -88,7 +88,7 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
     // the symbol is at module scope
     if (isModuleSymbol(sym->defPoint->parentSymbol) &&
         // the function is an on-clause
-        fn->hasFlag(FLAG_ON) &&
+        //        fn->hasFlag(FLAG_ON) &&
         // the type should always be RVF'd
         sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)
         ) {
@@ -439,7 +439,8 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
           if (!nestedFunctionSet.set_in(parent)) {
             form_Map(SymbolMapElem, use, *uses) {
               if (use->key->defPoint->parentSymbol != parent &&
-                  !isModuleSymbol(use->key->defPoint->parentSymbol) &&
+                  //                  !isModuleSymbol(use->key->defPoint->parentSymbol) &&
+                  !parent->hasFlag(FLAG_MODULE_INIT) &&
                   !isOuterVar(use->key, parent)) {
                 outerCall = true;
               }
