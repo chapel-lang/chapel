@@ -1259,10 +1259,8 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
         // replicate address of global arrays, domains, and distributions
         Expr* initialization = def->sym->getInitialization();
 
-        //        INT_ASSERT(initialization);
-        //        if (initialization) {
-          insertBroadcast(initialization, def->sym);
-          //        }
+        INT_ASSERT(initialization);
+        insertBroadcast(initialization, def->sym);
 
       } else {
         // put other global constants and all global variables on the heap
