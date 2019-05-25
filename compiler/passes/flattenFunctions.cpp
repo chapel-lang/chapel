@@ -429,10 +429,7 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
           if (!nestedFunctionSet.set_in(parent)) {
             form_Map(SymbolMapElem, use, *uses) {
               if (use->key->defPoint->parentSymbol != parent &&
-                  !isOuterVar(use->key, parent) /*&&
-                  // Don't propagate to the module's entry point:
-                  !parent->hasFlag(FLAG_MODULE_INIT) &&
-                  parent!=chpl_gen_main*/) {
+                  !isOuterVar(use->key, parent)) {
                 outerCall = true;
               }
             }
