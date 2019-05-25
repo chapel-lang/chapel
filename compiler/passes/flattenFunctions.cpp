@@ -33,6 +33,7 @@ void flattenFunctions() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (isFnSymbol(fn->defPoint->parentSymbol)) {
+      //      printf("A: adding fn %s\n", fn->name);
       nestedFunctions.add(fn);
     }
   }
@@ -46,6 +47,7 @@ void flattenNestedFunction(FnSymbol* nestedFunction) {
   if (isFnSymbol(nestedFunction->defPoint->parentSymbol)) {
     Vec<FnSymbol*> nestedFunctions;
 
+    //    printf("B: adding fn %s\n", nestedFunction->name);
     nestedFunctions.add(nestedFunction);
 
     flattenNestedFunctions(nestedFunctions);
@@ -80,14 +82,21 @@ static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
 //
 static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
-  if (!parent)
+  if (!parent) {
     parent = fn->defPoint->parentSymbol;
 
-  // always RVF user variables whose types have "always RVF" pragma
-  if (fn->hasFlag(FLAG_ON) &&
-      sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
-      sym->getModule()->modTag == MOD_USER)
-    return true;
+    // the symbol is at module scope
+    if (isModuleSymbol(sym->defPoint->parentSymbol) &&
+        // the function is an on-clause
+        fn->hasFlag(FLAG_ON) &&
+        // the type should always be RVF'd
+        sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)
+        ) {
+      printf("Treating %s specially w.r.t. %s (%s:%d)\n", sym->name, fn->name,
+             fn->astloc.filename, fn->astloc.lineno);
+      return true;
+    }
+  }
 
   if (!isFnSymbol(parent))
     return false;
@@ -212,6 +221,8 @@ passByRef(Symbol* sym) {
 
 static void
 addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
+  if (fn->hasFlag(FLAG_MODULE_INIT)) return;
+
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       Type* type = sym->type;
@@ -253,6 +264,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
         intent = concreteIntent(temp, type);
       }
 
+      printf("Adding formal %s to fn %s (%d)\n", sym->name, fn->name, fn->astloc.lineno);
       SET_LINENO(sym);
       ArgSymbol* arg = new ArgSymbol(intent, sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
@@ -273,6 +285,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
 static void
 replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   if (vars->n == 0) return;
+  if (fn->hasFlag(FLAG_MODULE_INIT)) return;
 
   std::vector<SymExpr*> symExprs;
 
@@ -426,6 +439,7 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
           if (!nestedFunctionSet.set_in(parent)) {
             form_Map(SymbolMapElem, use, *uses) {
               if (use->key->defPoint->parentSymbol != parent &&
+                  !isModuleSymbol(use->key->defPoint->parentSymbol) &&
                   !isOuterVar(use->key, parent)) {
                 outerCall = true;
               }
@@ -435,9 +449,10 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
               SymbolMap* usesCopy = new SymbolMap();
 
               outerFunctionSet.set_add(parent);
-              nestedFunctionSet.set_add(parent);
-              nestedFunctions.add(parent);
 
+              nestedFunctionSet.set_add(parent);
+              printf("C: adding fn %s\n", parent->name);
+              nestedFunctions.add(parent);
 
               form_Map(SymbolMapElem, use, *uses) {
                 usesCopy->put(use->key, gNil);
