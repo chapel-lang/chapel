@@ -78,7 +78,7 @@ module UnorderedCopy {
   /*
      Unordered copy. Only supported for numeric types.
    */
-  inline proc unorderedCopy(ref dst:numeric, ref src:numeric): void {
+  inline proc unorderedCopy(ref dst:numeric, const ref src:numeric): void {
     if dst.type != src.type {
       compilerError("unorderedCopy is only supported between identical numeric types");
     }
@@ -88,6 +88,12 @@ module UnorderedCopy {
     } else {
       __primitive("=", dst, src);
     }
+  }
+
+  pragma "no doc"
+  inline proc unorderedCopy(ref dst:numeric, param src:numeric): void {
+    const refSrc = src;
+    unorderedCopy(dst, refSrc);
   }
 
   /*
