@@ -116,8 +116,8 @@ proc neitherLocalAssign() {
   var dst = iniDstValue(), src = iniSrcValue();
   on Locales[getLocaleID(curLocale=false)] {
     assign(dst, src);
+    printThem(dst, src);
   }
-  printThem(dst, src);
   writeln("neitherLocalAssign()");
 }
 
