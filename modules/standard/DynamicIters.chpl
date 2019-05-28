@@ -29,20 +29,6 @@
 module DynamicIters {
 
 /*
-   An atomic test-and-set lock.
-*/
-pragma "no doc"
-record vlock {
-  var l: chpl__processorAtomicType(bool);
-  proc lock() {
-    on this do while l.testAndSet(memory_order_acquire) do chpl_task_yield();
-  }
-  proc unlock() {
-    l.clear(memory_order_release);
-  }
-}
-
-/*
    Toggle debugging output.
 */
 config param debugDynamicIters:bool=false;
@@ -287,12 +273,11 @@ where tag == iterKind.leader
   }
 
   else {
-    var undone : atomic bool;
-    undone.write(true);
+    var undone: atomic bool = true;
     const factor=nTasks;
-    var lock : vlock;
+    var lock: chpl_LocalSpinlock;
 
-    coforall tid in 0..#nTasks with (ref remain, ref undone, ref lock) do {
+    coforall tid in 0..#nTasks with (ref remain) do {
       while undone.read() do {
         // There is local work in remain(tid)
         const current:rType=adaptSplit(remain, factor, undone, lock);
@@ -496,7 +481,7 @@ where tag == iterKind.leader
     const SpaceThreads:domain(1)=0..#nTasks;
     var localWork:[SpaceThreads] rType; // The remaining range to split on each Thread
     var moreLocalWork:[SpaceThreads] bool=true; // bool var to signal there is still work on each local range
-    var locks:[SpaceThreads] vlock; // sync var to control the splitting on each Thread
+    var locks: [SpaceThreads] chpl_LocalSpinlock;
     const factor:int=2;
 
     const factorSteal:int=2;
@@ -711,7 +696,7 @@ private proc defaultNumTasks(nTasks:int)
   return dnTasks;
 }
 
-private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft, ref lock : vlock, splitTail:bool=false)
+private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft, lock:chpl_LocalSpinlock, splitTail:bool=false)
 {
   type rType=rangeToSplit.type;
   type lenType=rangeToSplit.length.type;
