@@ -2191,7 +2191,6 @@ static void resolveUnmanagedBorrows() {
         call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
         call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
         call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
-      SET_LINENO(call);
 
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
@@ -2238,6 +2237,7 @@ static void resolveUnmanagedBorrows() {
             Type* dt = at->getDecoratedClass(decorator);
             if (dt) {
               // replace the call with a new symexpr pointing to ts
+              SET_LINENO(call);
               call->replace(new SymExpr(dt->symbol));
             }
           } else {
@@ -2271,6 +2271,7 @@ static void resolveUnmanagedBorrows() {
               // no default intentionally
             }
             INT_ASSERT(dt);
+            SET_LINENO(call);
             call->replace(new SymExpr(dt->symbol));
           }
         }
@@ -2280,6 +2281,30 @@ static void resolveUnmanagedBorrows() {
       // see normalizeCallToTypeConstructor which changes
       // them to _type_construct_C e.g. and such a function won't
       // exist for the unmanaged type.
+    }
+
+    // fix e.g. unmanaged!
+    if (call->isNamedAstr(astrPostfixBang)) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+          Type* replace = NULL;
+
+          if (ts == dtBorrowed->symbol ||
+              ts == dtBorrowedNonNilable->symbol ||
+              ts == dtBorrowedNilable->symbol)
+            replace = dtBorrowedNonNilable;
+
+          if (ts == dtUnmanaged->symbol ||
+              ts == dtUnmanagedNonNilable->symbol ||
+              ts == dtUnmanagedNilable->symbol)
+            replace = dtUnmanagedNonNilable;
+
+          if (replace) {
+            SET_LINENO(call);
+            call->replace(new SymExpr(replace->symbol));
+          }
+        }
+      }
     }
   }
 }

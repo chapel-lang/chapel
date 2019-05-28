@@ -697,6 +697,7 @@ extern const char* astr_chpl_manager;
 extern const char* astr_forallexpr;
 extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;
+extern const char* astrPostfixBang;
 
 void initAstrConsts();
 

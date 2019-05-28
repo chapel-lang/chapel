@@ -685,7 +685,7 @@ bool canInstantiate(Type* actualType, Type* formalType) {
 
   if (formalType == dtUnmanagedNonNilable)
     if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isUnmanaged() && dt->isNonNilable())
+      if (dt->isUnmanaged() && !dt->isNilable())
         return true;
 
   if (formalType == dtUnmanagedNilable)
@@ -711,8 +711,13 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   }
 
   if (formalType == dtBorrowedNonNilable) {
+    if (isClass(actualType) &&
+        (actualType == dtObject ||
+         !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
+      return true;
+
     if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isBorrowed() && dt->isNonNilable())
+      if (dt->isBorrowed() && !dt->isNilable())
         return true;
   }
 
@@ -2197,6 +2202,7 @@ void resolveDestructor(AggregateType* at) {
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
 static bool resolveBuiltinAssignCall(CallExpr* call);
+//static bool resolveBuiltinPostfixBangCall(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -2253,6 +2259,9 @@ void resolveCall(CallExpr* call) {
 
     if (resolveBuiltinAssignCall(call))
       return;
+
+    //if (resolveBuiltinPostfixBangCall(call))
+    //  return;
 
     resolveNormalCall(call);
   }
@@ -2553,6 +2562,23 @@ static bool resolveBuiltinAssignCall(CallExpr* call)
 
   return false;
 }
+
+/*
+static bool resolveBuiltinPostfixBangCall(CallExpr* call) {
+
+  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
+    if (urse->unresolved == astrPostfixBang) {
+      SymExpr* se = toSymExpr(call->get(1));
+      if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+        call->baseExpr->remove();
+        call->primitive = primitives[PRIM_TO_NON_NILABLE_CLASS];
+        return true;
+      }
+    }
+  }
+
+  return false;
+}*/
 
 /************************************* | **************************************
 *                                                                             *
