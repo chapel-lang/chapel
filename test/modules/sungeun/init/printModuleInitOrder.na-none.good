@@ -11,6 +11,7 @@ Initializing Modules:
     ChapelBase
     MemConsistency
     Atomics
+    ChapelLocks
     ChapelThreads
     ChapelTuple
     ChapelRange

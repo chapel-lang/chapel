@@ -840,7 +840,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableCyclicLazyRAD {
         if myLocArr!.locRAD == nil {
-          myLocArr!.lockLocRAD();
+          myLocArr!.locRADLock.lock();
           if myLocArr!.locRAD == nil {
             var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType,
                 stridable=true, dom.dist.targetLocDom);
@@ -848,7 +848,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr!.locRAD = tempLocRAD;
           }
-          myLocArr!.unlockLocRAD();
+          myLocArr!.locRADLock.unlock();
         }
         if myLocArr!.locRAD!.RAD(rlocIdx).blk == SENTINEL {
           myLocArr!.locRAD!.lockRAD(rlocIdx);
@@ -983,18 +983,7 @@ class LocCyclicArr {
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable=true)?; // non-nil if doRADOpt=true
   var locCyclicRAD: unmanaged LocCyclicRADCache(rank, idxType)?; // see below for why
   var myElems: [locDom.myBlock] eltType;
-  var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
-
-  // These functions will always be called on this.locale, and so we do
-  // not have an on statement around the while loop below (to avoid
-  // the repeated on's from calling testAndSet()).
-  inline proc lockLocRAD() {
-    while locRADLock.testAndSet(memory_order_acquire) do chpl_task_yield();
-  }
-
-  inline proc unlockLocRAD() {
-    locRADLock.clear(memory_order_release);
-  }
+  var locRADLock: chpl_LocalSpinlock;
 
   proc deinit() {
     if locRAD != nil then

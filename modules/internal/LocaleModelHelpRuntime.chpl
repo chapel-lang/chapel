@@ -131,6 +131,7 @@ module LocaleModelHelpRuntime {
                                       ref tlist: c_void_ptr, tlist_node_id: int,
                                       is_begin: bool);
   extern proc chpl_task_executeTasksInList(ref tlist: c_void_ptr);
+  extern proc chpl_task_yield();
 
   //
   // add a task to a list of tasks being built for a begin statement
