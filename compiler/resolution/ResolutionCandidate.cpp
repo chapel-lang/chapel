@@ -485,15 +485,18 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     }
 
     // non-nilable unmanaged can coerce to borrowed,borrowed?,unmanaged?
-    if (actualDecorator == CLASS_TYPE_UNMANAGED) {
+    if (actualDecorator == CLASS_TYPE_UNMANAGED ||
+        actualDecorator == CLASS_TYPE_UNMANAGED_NONNIL) {
+      Type* actualBorrowed =
+        actualC->getDecoratedClass(CLASS_TYPE_BORROWED_NONNIL);
+      if (canInstantiate(actualBorrowed, formalType))
+        return actualBorrowed;
+
       Type* actualNilableBorrowed =
         actualC->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
       if (canInstantiate(actualNilableBorrowed, formalType))
         return actualNilableBorrowed;
-      Type* actualBorrowed =
-        actualC->getDecoratedClass(CLASS_TYPE_BORROWED);
-      if (canInstantiate(actualBorrowed, formalType))
-        return actualBorrowed;
+
       Type* actualNilableUnmanaged =
         actualC->getDecoratedClass(CLASS_TYPE_UNMANAGED_NILABLE);
       if (canInstantiate(actualNilableUnmanaged, formalType))
