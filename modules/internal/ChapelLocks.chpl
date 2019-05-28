@@ -32,7 +32,7 @@ module ChapelLocks {
 
     inline proc lock() {
       on this do
-        while l.testAndSet(memory_order_acquire) do
+        while l.read() || l.testAndSet(memory_order_acquire) do
           chpl_task_yield();
     }
 
