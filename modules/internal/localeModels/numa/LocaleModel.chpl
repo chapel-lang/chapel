@@ -83,8 +83,15 @@ module LocaleModel {
       halt("No children to iterate over.");
       yield -1;
     }
-    proc addChild(loc:locale) { halt("Cannot add children to this locale type."); }
-    override proc getChild(idx:int) : locale { return nil; }
+    proc addChild(loc:locale) {
+      halt("Cannot add children to this locale type.");
+    }
+    pragma "unsafe"
+    override proc getChild(idx:int) : locale {
+      halt("Cannot getChild with this locale type");
+      var ret: locale; // default-initialize
+      return ret;
+    }
 
     iter getChildren() : locale {
       halt("No children to iterate over.");

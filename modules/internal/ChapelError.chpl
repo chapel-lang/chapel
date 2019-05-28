@@ -119,30 +119,18 @@ module ChapelError {
   pragma "no doc"
   record chpl_TaskErrors {
     var _head: unmanaged Error? = nil;
-    var _errorsLock: chpl__processorAtomicType(bool);
-    // this atomic controls:
-    //  - _head
-    //  - all list elements ->_next
+    var _errorsLock: chpl_LocalSpinlock;
 
-    inline proc _lockErrors() {
-      // WARNING: If you are calling this function directly from
-      // a remote locale, you should consider wrapping the call in
-      // an on clause to avoid excessive remote forks due to the
-      // testAndSet()
-      while (_errorsLock.testAndSet(memory_order_acquire)) do chpl_task_yield();
-    }
-    inline proc _unlockErrors() {
-      _errorsLock.clear(memory_order_release);
-    }
     proc append(err: unmanaged Error) {
       on this {
-        _lockErrors();
+        _errorsLock.lock();
         var tmp = _head;
         err._next = tmp;
         _head = err;
-        _unlockErrors();
+        _errorsLock.unlock();
       }
     }
+
     proc empty() {
       return _head == nil;
     }
