@@ -506,7 +506,7 @@ bool isSubTypeOrInstantiation(Type* sub, Type* super) {
   bool dispatch = false;
 
   if (sub && super)
-    dispatch = canDispatch(sub, NULL, super, NULL, &promotes);
+    dispatch = canDispatch(sub, NULL, super, NULL, NULL, &promotes);
 
   return dispatch && !promotes;
 }

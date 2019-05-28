@@ -193,6 +193,7 @@ module OwnedObject {
     pragma "owned"
     var chpl_p:__primitive("to nilable class", chpl_t);
 
+    // Note that the compiler also allows coercion to the borrow type.
     forwarding borrow();
 
     /*

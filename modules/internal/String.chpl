@@ -789,11 +789,10 @@ module String {
         d
      */
     iter these() : string {
-      for i in 1..this.len {
+      for cp in this.codepoints() do
         // This is pretty painful from a performance perspective right now,
         // allocates w/ every yield
-        yield this[i];
-      }
+        yield codepointToString(cp);
     }
 
     /*
