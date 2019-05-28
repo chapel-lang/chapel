@@ -434,21 +434,6 @@ module OwnedObject {
       return new _owned(castPtr!);
     }
   }
-  pragma "no doc"
-  inline proc _cast(type t:_owned?, pragma "nil from arg" in x:_owned)
-  where isSubtype(x.chpl_t,t.chpl_t) {
-    // the :t.chpl_t cast in the next line is what actually changes the
-    // returned value to have type t; otherwise it'd have type _owned(x.type).
-    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
-    x.chpl_p = nil;
-    if _to_nilable(t.chpl_t) == t.chpl_t {
-      // t stores a nilable type
-      return new _owned(castPtr);
-    } else {
-      // t stores a non-nilable type
-      return new _owned(castPtr!);
-    }
-  }
 
 
   // cast from nil to owned

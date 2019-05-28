@@ -727,6 +727,14 @@ bool canInstantiate(Type* actualType, Type* formalType) {
         return true;
   }
 
+  // e.g. passing owned MyClass? into owned?
+  if (DecoratedClassType* formalDt = toDecoratedClassType(formalType))
+    if (AggregateType* formalAt = formalDt->getCanonicalClass())
+      if (isManagedPtrType(formalAt) && formalAt->instantiatedFrom == NULL)
+        if (AggregateType* atActual = toAggregateType(actualType))
+          if (formalAt == atActual->instantiatedFrom)
+            if (classesWithSameKind(formalType, actualType))
+              return true;
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
 

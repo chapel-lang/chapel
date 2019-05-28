@@ -2293,11 +2293,14 @@ static void resolveUnmanagedBorrows() {
               ts == dtBorrowedNonNilable->symbol ||
               ts == dtBorrowedNilable->symbol)
             replace = dtBorrowedNonNilable;
-
-          if (ts == dtUnmanaged->symbol ||
-              ts == dtUnmanagedNonNilable->symbol ||
-              ts == dtUnmanagedNilable->symbol)
+          else if (ts == dtUnmanaged->symbol ||
+                   ts == dtUnmanagedNonNilable->symbol ||
+                   ts == dtUnmanagedNilable->symbol)
             replace = dtUnmanagedNonNilable;
+          else if (isManagedPtrType(ts->type)) {
+            AggregateType* at = toAggregateType(ts->type);
+            replace = at->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
+          }
 
           if (replace) {
             SET_LINENO(call);

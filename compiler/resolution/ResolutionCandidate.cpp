@@ -460,6 +460,7 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     return actualType;
   }
 
+  // TODO: use canCoerceDecorators
   if (AggregateType* at = toAggregateType(actualType)) {
     if (at->isClass() && isClassLike(at)) {
       // non-nilable borrowed can coerce to nilable borrowed
@@ -509,6 +510,7 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     // non-nilable owned can coerce to non-nilable borrowed
     if (canInstantiate(actualBaseType, formalType))
       return actualBaseType;
+
     // non-nilable owned can coerce to nilable borrowed
     if (AggregateType* at = toAggregateType(actualBaseType)) {
       Type* actualNilableBorrowed =
@@ -517,7 +519,18 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
         return actualBaseType;
     }
 
-    // TODO: handle owned -> owned? and shared -> shared?
+    // non-nilable owned can coerce to owned?
+    if (DecoratedClassType* formalDt = toDecoratedClassType(formalType))
+      if (AggregateType* formalAt = formalDt->getCanonicalClass())
+        if (isManagedPtrType(formalAt) && formalAt->instantiatedFrom == NULL)
+          if (AggregateType* atActual = toAggregateType(actualType))
+            if (formalAt == atActual->instantiatedFrom)
+              if (formalDt->getDecorator() == CLASS_TYPE_MANAGED_NILABLE ||
+                  formalDt->getDecorator() == CLASS_TYPE_MANAGED_NONNIL)
+                return actualType;
+                // TODO: convert owned MyClass -> owned MyClass?
+                //  ... this can be stored as the decorated version
+                //      in the owned AggregateType.
   }
 
   if (actualType == dtNil) {
