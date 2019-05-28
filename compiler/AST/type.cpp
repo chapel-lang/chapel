@@ -172,7 +172,6 @@ const char* toString(Type* type, bool decorateAllClasses) {
         const char* borrowName = toString(borrowType, false);
         if (startsWith(borrowName, borrowed)) {
           borrowName = borrowName + strlen(borrowed);
-          INT_FATAL("Remove me");
         }
         if (startsWith(vt->symbol->name, "_owned("))
           retval = astr("owned ", borrowName);
@@ -1123,16 +1122,27 @@ bool isManagedPtrType(const Type* t) {
   return t && t->symbol->hasFlag(FLAG_MANAGED_POINTER);
 }
 
-Type* getManagedPtrBorrowType(const Type* t) {
-  INT_ASSERT(isManagedPtrType(t));
+Type* getManagedPtrBorrowType(const Type* managedPtrType) {
+  INT_ASSERT(isManagedPtrType(managedPtrType));
 
-  const AggregateType* at = toConstAggregateType(t);
+  const AggregateType* at = toConstAggregateType(managedPtrType);
 
   INT_ASSERT(at);
 
-  Type* ret = at->getField("chpl_t")->type;
-  Type* borrow = canonicalClassType(ret);
-  return borrow;
+  Type* borrowType = at->getField("chpl_t")->type;
+
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+
+  if (isNilableClassType(borrowType))
+    decorator = CLASS_TYPE_BORROWED_NILABLE;
+
+  borrowType = canonicalClassType(borrowType);
+
+  if (AggregateType* at = toAggregateType(borrowType))
+    if (isClass(at))
+      borrowType = at->getDecoratedClass(decorator);
+
+  return borrowType;
 }
 
 bool isSyncType(const Type* t) {
