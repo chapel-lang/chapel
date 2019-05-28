@@ -23,7 +23,7 @@ proc main(args: [] string) {
       input.mark();
 
       // Scan forward until we get to '\n' (end of description)
-      input.advancePastByte("\n".byte(1));
+      input.advancePastByte("\n".byte());
       const seqOffset = input.offset();
 
       // Scan forward until we get to '>' (end of sequence) or EOF
@@ -32,7 +32,7 @@ proc main(args: [] string) {
       // look for the next description, returning '(eof, its offset)'
       proc findNextDesc() throws {
         try {
-          input.advancePastByte(">".byte(1));
+          input.advancePastByte(">".byte());
         } catch (e:EOFError) {
           return (true, len-1);
         }
@@ -71,7 +71,7 @@ proc process(seq: [?inds]) {
   }
 
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while seq[cursor] == "\n".byte(1);
+    do { cursor += dir; } while seq[cursor] == "\n".byte();
   }
 }
 

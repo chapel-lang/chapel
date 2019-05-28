@@ -38,7 +38,7 @@ proc main(args: [] string) {
 
   // Make everything uppercase
   forall d in data do
-    d -= ("a".byte(1) - "A".byte(1));
+    d -= ("a".byte() - "A".byte());
 
   writeFreqs(data, 1);
   writeFreqs(data, 2);
@@ -156,8 +156,8 @@ proc string.toBytes() {
 
 
 inline proc startsWithThree(data) {
-  return data[1] == ">".byte(1) &&
-         data[2] == "T".byte(1) &&
-         data[3] == "H".byte(1);
+  return data[1] == ">".byte() &&
+         data[2] == "T".byte() &&
+         data[3] == "H".byte();
 }
 

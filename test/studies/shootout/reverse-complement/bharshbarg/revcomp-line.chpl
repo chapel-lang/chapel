@@ -107,13 +107,13 @@ proc main(args: [] string) {
     data._value.dsiPostReallocate();
   }
 
-  input.readUntil("\n".byte(1), data);
+  input.readUntil("\n".byte(), data);
 
   sync {     // wait for all process() tasks to complete before continuing
     var lineStart = data.size + 1;
     var sectionStart = lineStart;
-    while input.readUntil("\n".byte(1), data) > 0 {
-      if data[lineStart] == ">".byte(1) {
+    while input.readUntil("\n".byte(), data) > 0 {
+      if data[lineStart] == ">".byte() {
         begin process(data, sectionStart, lineStart-2);
         sectionStart = data.size+1;
       }
@@ -129,7 +129,7 @@ proc main(args: [] string) {
 
 proc process(data, in start, in end) {
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while data[cursor] == "\n".byte(1);
+    do { cursor += dir; } while data[cursor] == "\n".byte();
   }
   while start <= end {
     ref d1 = data[start], d2 = data[end];

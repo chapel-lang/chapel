@@ -7,10 +7,10 @@
 
 // Used to encode a string into a uint
 var tonum : [0..127] int;
-tonum["A".byte(1)] = 0;
-tonum["C".byte(1)] = 1;
-tonum["T".byte(1)] = 2;
-tonum["G".byte(1)] = 3;
+tonum["A".byte()] = 0;
+tonum["C".byte()] = 1;
+tonum["T".byte()] = 2;
+tonum["G".byte()] = 3;
 
 // Used to decode a uint back into a string
 var tochar : [0..3] string;

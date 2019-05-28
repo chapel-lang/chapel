@@ -21,7 +21,7 @@ proc main(args: [] string) {
     var numRead: int;
 
     while stdinNoLock.readline(data, numRead, idx) {
-      if data[idx] == ">".byte(1) {       // is this the start of a section?
+      if data[idx] == ">".byte() {       // is this the start of a section?
 
         // spawn a task to process the previous sequence, if there was one
         if start then
@@ -54,7 +54,7 @@ proc process(data, start, end) {
     for m in (start+extra)..(end-1) by columns {
       for i in 1..off-1 by -1 do
         data[m+i+1] = data[m+i];
-      data[m+1] = "\n".byte(1);
+      data[m+1] = "\n".byte();
     }
 
   // replace the data items with their table entries

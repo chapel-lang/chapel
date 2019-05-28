@@ -13,14 +13,14 @@ config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newLine = "\n".byte(1);
+param newLine = "\n".byte();
 
 enum Ntide {
-  A = "A".byte(1), C = "C".byte(1), G = "G".byte(1), T = "T".byte(1),
-  a = "a".byte(1), c = "c".byte(1), g = "g".byte(1), t = "t".byte(1),
-  B = "B".byte(1), D = "D".byte(1), H = "H".byte(1), K = "K".byte(1),
-  M = "M".byte(1), N = "N".byte(1), R = "R".byte(1), S = "S".byte(1),
-  V = "V".byte(1), W = "W".byte(1), Y = "Y".byte(1)
+  A = "A".byte(), C = "C".byte(), G = "G".byte(), T = "T".byte(),
+  a = "a".byte(), c = "c".byte(), g = "g".byte(), t = "t".byte(),
+  B = "B".byte(), D = "D".byte(), H = "H".byte(), K = "K".byte(),
+  M = "M".byte(), N = "N".byte(), R = "R".byte(), S = "S".byte(),
+  V = "V".byte(), W = "W".byte(), Y = "Y".byte()
 }
 use Ntide;
 
