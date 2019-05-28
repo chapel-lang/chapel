@@ -85,8 +85,6 @@ module Lists {
     }
 
     proc deinit() {
-      for i in 0..#capacity do
-        chpl__autoDestroy(data[i]);
       c_free(data:c_void_ptr);
     }
 
@@ -133,6 +131,12 @@ module Lists {
     //
     pragma "no doc"
     var _head, _tail: unmanaged ListBlock(eltType) = nil;
+
+    //
+    // This is the sum of the capacities of all currently allocated ListBlock.
+    //
+    pragma "no doc"
+    var _maxCapacity: int = 0;
 
     /*
       Initializes an empty List containing elements of the given type.
@@ -239,6 +243,22 @@ module Lists {
     }
 
     //
+    // Shift elements after index one to the right, inclusive.
+    //
+    pragma "no doc"
+    proc _expand(idx: int) {
+      assert(_withinBounds(idx));
+      
+      _maybeAcquireMem(1);
+
+      for i in size..idx do {
+        ref rhs = _getRef(i);
+        ref lhs = _getRef(i + 1);
+        _move(lhs, rhs);
+      }
+    }
+
+    //
     // Shift elements after index one to the left, exclusive.
     //
     pragma "no doc"
@@ -250,54 +270,72 @@ module Lists {
         ref lhs = _getRef(i - 1);
         _move(lhs, rhs);
       }
+
+      _maybeReleaseMem(1);
     }
 
     //
-    // Shift elements after index one to the right, inclusive.
+    // Potentially reserve memory at the end of this array.
     //
     pragma "no doc"
-    proc _expand(idx: int) {
-      assert(_withinBounds(idx));
-
-      for i in size..idx do {
-        ref rhs = _getRef(i);
-        ref lhs = _getRef(i + 1);
-        _move(lhs, rhs);
-      }
-    }
-
-    //
-    // Resize until we are at or exceed a certain capacity.
-    //
-    pragma "no doc"
-    proc _maybeResize(in amount: int=1) {
+    proc _maybeAcquireMem(in amount: int) {
       // Edge case for when this List is empty.
       if _head == nil then {
         assert(_tail == nil);
         _head = new unmanaged ListBlock(eltType, _initialCapacity);
+        _maxCapacity = _initialCapacity;
         _tail = _head;
       }
 
       // Create a new chunk if we need to.
-      while (_tail.size + amount) >= _tail.capacity do {
+      while (size + amount) >= _maxCapacity do {
         assert(_tail.next == nil);
         const blocksize = _tail.capacity * _growthFactor;
         _tail.next = new unmanaged ListBlock(eltType, blocksize);
         _tail = _tail.next;
         amount -= blocksize;
+        _maxCapacity += blocksize;
       }
+    }
+
+    //
+    // Potentially release memory at the end of this array.
+    //
+    pragma "no doc"
+    proc _maybeReleaseMem(in amount: int=1) {
+      if _head == nil || _head == _tail {
+        assert(_tail == nil);
+        return;
+      }
+
+      const threshold = _maxCapacity - _tail.capacity;
+      if size >= threshold then
+        return;
+
+      var node = _head;
+      while node.next != _tail do
+        node = node.next;
+
+      _maxCapacity = threshold;
+      delete node.next;
+      node.next = nil;
+      _tail = node;
     }
 
     //
     // Assumes that a copy of the input element has already been made at some
     // previous boundary, IE giving append's parameter the "in" intent.
+    // We also make sure to increment the element size before performing the
+    // move so that the assert in _getRef() doesn't fire (even though the
+    // memory isn't properly initialized until after the move).
     //
     pragma "no doc"
-    proc _append(ref rhs: eltType) {
-      _maybeResize();
-      ref lhs = _getRef(size + 1);
-      _move(lhs, rhs);
+    proc _append(ref x: eltType) {
+      _maybeAcquireMem(1);
       size += 1;
+      ref rhs = x;
+      ref lhs = _getRef(size);
+      _move(lhs, rhs);
     }
 
     /*
@@ -313,8 +351,30 @@ module Lists {
 
     pragma "no doc"
     inline proc _extendGeneric(collection) {
+
+      //
+      // TODO: This could be faster if we resized once and then performed
+      // repeated moves, rather than calling _append().
+      //
       for x in collection do
         _append(x);
+    }
+
+    pragma "no doc"
+    inline proc _extendGenericAlter(collection) {
+      const csize = collection.size;
+      const oldsize = size;
+      
+      _maybeAcquireMem(csize);
+      size += csize;
+      
+      for i in 1..csize do {
+        pragma "no auto destroy"
+        var cpy = collection[i];
+        ref rhs = cpy;
+        ref lhs = _getRef(oldsize + i);
+        _move(lhs, rhs);
+      }
     }
 
     /*
@@ -360,7 +420,6 @@ module Lists {
     proc insert(i: int, pragma "no auto destroy" in x: eltType) throws {
       _enter();
       try _boundsCheckReleaseOnThrow(i);
-      _maybeResize();
       _expand(i);
       ref lhs = _getRef(i);
       ref rhs = x;
@@ -443,6 +502,13 @@ module Lists {
     proc clear() {
       _enter();
 
+      // Manually call destructors on each currently allocated element.
+      for i in 1..size do {
+        ref item = this[i];
+        chpl__autoDestroy(item);
+      }
+
+      // Free all currently allocated blocks.
       while _head != nil do {
         var block = _head;
         _head = _head.next;
@@ -595,7 +661,7 @@ module Lists {
       try! {
         ch.write("[");
 
-        for i in 1..size do
+        for i in 1..(size - 1) do
           ch.write(_getRef(i), ", ");
 
         if size > 0 then
