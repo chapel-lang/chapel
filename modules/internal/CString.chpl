@@ -207,7 +207,15 @@ module CString {
   //
   // primitive c_string functions and methods
   //
-  inline proc ascii(a: c_string) return __primitive("ascii", a);
+
+  /*
+   Deprecated, no replacement needed.
+  */
+  inline proc ascii(a: c_string) {
+    compilerWarning("calling ascii() on a c_string is deprecated");
+    return __primitive("ascii", a);
+  }
+
   inline proc c_string.length return __primitive("string_length", this);
   inline proc c_string.size return this.length;
 

@@ -24,7 +24,7 @@ inline proc hash(data : string) {
   var e : uint = 0;
   for d in data {
     e <<= 2;
-    e |= tonum[ascii(d)];
+    e |= tonum[d.byte(1)];
   }
   return e;
 }

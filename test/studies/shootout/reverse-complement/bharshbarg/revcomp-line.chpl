@@ -107,13 +107,13 @@ proc main(args: [] string) {
     data._value.dsiPostReallocate();
   }
 
-  input.readUntil(ascii("\n"), data);
+  input.readUntil("\n".byte(1), data);
 
   sync {     // wait for all process() tasks to complete before continuing
     var lineStart = data.size + 1;
     var sectionStart = lineStart;
-    while input.readUntil(ascii("\n"), data) > 0 {
-      if data[lineStart] == ascii(">") {
+    while input.readUntil("\n".byte(1), data) > 0 {
+      if data[lineStart] == ">".byte(1) {
         begin process(data, sectionStart, lineStart-2);
         sectionStart = data.size+1;
       }
@@ -129,7 +129,7 @@ proc main(args: [] string) {
 
 proc process(data, in start, in end) {
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while data[cursor] == ascii("\n");
+    do { cursor += dir; } while data[cursor] == "\n".byte(1);
   }
   while start <= end {
     ref d1 = data[start], d2 = data[end];
@@ -143,9 +143,9 @@ proc initTable(pairs) {
   var table: [1..128] uint(8);
 
   for i in 1..pairs.length by 2 {
-    table[ascii(pairs[i])] = ascii(pairs[i+1]);
+    table[pairs.byte(i)] = pairs.byte(i+1);
     if pairs[i] != "\n" then
-      table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]);
+      table[pairs[i].toLower().byte(1)] = pairs.byte(i+1);
   }
 
   return table;

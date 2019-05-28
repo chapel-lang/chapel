@@ -859,12 +859,19 @@ module String {
       :returns: The value of the `i` th byte as an integer.
     */
     proc byte(i: int): uint(8) {
+      if this.isEmpty() && i == 1 then return 0;
       var localThis: string = this.localize();
 
       if boundsChecking && (i <= 0 || i > localThis.len)
         then halt("index out of bounds of string: ", i);
       return localThis.buff[i - 1];
     }
+
+    //pragma "no doc"
+    //inline proc param byte(param i: int) param : uint(8) {
+    //  if this.isEmpty() && i == 1 then return 0;
+    //  return this.buff[i - 1];
+    //}
 
     /*
       :returns: The value of the `i` th multibyte character as an integer.
@@ -2225,7 +2232,10 @@ module String {
     return __primitive("string_concat", x:string, s);
 
   pragma "no doc"
-  inline proc ascii(param a: string) param return __primitive("ascii", a);
+  inline proc ascii(param a: string) param {
+    compilerWarning("ascii is deprecated - please use string.byte instead");
+    return __primitive("ascii", a);
+  }
 
   pragma "no doc"
   inline proc param string.length param
@@ -2431,6 +2441,7 @@ module String {
      :returns: The byte value of the first character in `a` as an integer.
   */
   inline proc ascii(a: string) : uint(8) {
+    compilerWarning("ascii is deprecated - please use string.byte instead");
     if a.isEmpty() then return 0;
 
     if _local || a.locale_id == chpl_nodeID {
@@ -2446,6 +2457,7 @@ module String {
      :returns: A string with the single character with the ASCII value `i`.
   */
   inline proc asciiToString(i: uint(8)) {
+    compilerWarning("asciiToString is deprecated - please use codepointToString instead");
     var buffer = chpl_here_alloc(2, offset_STR_COPY_DATA): bufferType;
     buffer[0] = i;
     buffer[1] = 0;

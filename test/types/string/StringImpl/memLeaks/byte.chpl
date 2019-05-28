@@ -3,15 +3,15 @@ module unitTest {
 
   inline proc f(s, useExpr=false) {
     if useExpr {
-      writeMe(ascii(s));
+      writeMe(s.byte(1));
     } else {
-      const aStr = ascii(s);
+      const aStr = s.byte(1);
       writeMe(aStr);
     }
   }
 
-  proc asciiLocal(type t, useExpr=false) {
-    writeln("=== ascii local");
+  proc byteLocal(type t, useExpr=false) {
+    writeln("=== byte local");
     const m0 = allMemoryUsed();
     {
       const s0:t = "s";
@@ -21,8 +21,8 @@ module unitTest {
     checkMemLeaks(m0);
   }
 
-  proc asciiRemote(type t, useExpr=false) {
-    writeln("=== ascii remote");
+  proc byteRemote(type t, useExpr=false) {
+    writeln("=== byte remote");
     const m0 = allMemoryUsed();
     {
       const s0:t = "s";
@@ -35,8 +35,8 @@ module unitTest {
   }
 
   proc doIt(type t) {
-    asciiLocal(t); asciiLocal(t, useExpr=true);
-    asciiRemote(t); asciiRemote(t, useExpr=true);
+    byteLocal(t); byteLocal(t, useExpr=true);
+    byteRemote(t); byteRemote(t, useExpr=true);
   }
 
 }

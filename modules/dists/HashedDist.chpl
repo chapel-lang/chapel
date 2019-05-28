@@ -68,7 +68,7 @@ declares a custom mapper:
     proc this(ind:string, targetLocs: [?D] locale) : D.idxType {
       const numlocs = targetLocs.domain.size;
       // use the first digit of the string to choose the destination locale
-      var byte: int = ascii(ind);
+      var byte: int = ind.byte(1);
       return byte % numlocs;
     }
   }

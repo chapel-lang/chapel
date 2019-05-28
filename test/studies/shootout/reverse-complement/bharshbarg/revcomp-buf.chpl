@@ -113,12 +113,12 @@ proc main(args: [] string) {
 
   sync {     // wait for all process() tasks to complete before continuing
     while true {
-      input.readUntil(ascii("\n"), data);
+      input.readUntil("\n".byte(1), data);
       const start = data.size + 1;
-      input.readUntil(ascii(">"), data);
+      input.readUntil(">".byte(1), data);
       const last = data.size;
 
-      if data[last] == ascii(">") {
+      if data[last] == ">".byte(1) {
         // '-2' to skip over '\n>'
         begin process(data, start, last-2);
       } else {
@@ -137,7 +137,7 @@ proc main(args: [] string) {
 
 proc process(data, in start, in end) {
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while data[cursor] == ascii("\n");
+    do { cursor += dir; } while data[cursor] == "\n".byte(1);
   }
   while start <= end {
     ref d1 = data[start], d2 = data[end];
@@ -151,9 +151,9 @@ proc initTable(pairs) {
   var table: [1..128] uint(8);
 
   for i in 1..pairs.length by 2 {
-    table[ascii(pairs[i])] = ascii(pairs[i+1]);
+    table[pairs.byte(i)] = pairs.byte(i+1);
     if pairs[i] != "\n" then
-      table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]);
+      table[pairs[i].toLower().byte(1)] = pairs.byte(i+1);
   }
 
   return table;
