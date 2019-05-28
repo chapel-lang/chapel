@@ -53,6 +53,9 @@ module Lists {
   pragma "no doc"
   config const _initialCapacity = 32;
 
+  pragma "no doc"
+  config const _growthFactor = 2;
+
   //
   // Building blocks used to store "chunks" of List elements. Inspired by
   // @vasslitvinov's VectorList implementation. Use this until we adopt a
@@ -60,6 +63,7 @@ module Lists {
   //
   pragma "no doc"
   class ListBlock {
+
     type _etype;
     const capacity: int;
     var size = 0;
@@ -67,17 +71,23 @@ module Lists {
     var next: unmanaged ListBlock(_etype) = nil;
 
     proc init(type _etype, capacity: int) {
+      assert(capacity > 0);
       this._etype = _etype;
       this.capacity = capacity;
-      this.data = _ddata_allocate(_etype, capacity);
+      this.size = 0;
+      //
+      // Use `c_calloc` to avoid calling initializers. TODO: Is use of calloc
+      // safe in a multi-locale context? Michael said that the cast to
+      // _ddata will convert the c_ptr to a wide pointer.
+      //
+      this.data = c_calloc(_etype, capacity):_ddata(_etype);
+      this.next = nil;
     }
 
     proc deinit() {
-      // In Vass's code, not sure how well known chpl__autoDestroy is?
-      // TODO: Is _ddata 0 indexed?
-      for i in 0..capacity do
-        chpl__autoDestroy(elements[i]);
-      _ddata_free(elements, capacity);
+      for i in 0..#capacity do
+        chpl__autoDestroy(data[i]);
+      c_free(data:c_void_ptr);
     }
 
     inline proc this(i: int) ref {
@@ -108,7 +118,7 @@ module Lists {
     type eltType;
 
     /* If `true`, this List will use parallel safe operations. */
-    param parSafe = true;
+    param parSafe;
 
     pragma "no doc"
     const _lock$: nothing = none;
@@ -144,86 +154,149 @@ module Lists {
       :arg parSafe: If `true`, this List will use parallel safe operations.
         Inherits the value from the other List by default.
     */
-    proc init=(other: List, param parSafe=other.parSafe) {
-      this.eltType = other.eltType;
-      this.parSafe = false;
-      this.complete();
-      this = other;
+    proc init=(other: List(?t), param parSafe=other.parSafe) {
+      this.eltType = t;
       this.parSafe = other.parSafe;
+      this.complete();
+      this.extend(other);
     }
 
     pragma "no doc"
-    proc deinit() {}
+    inline proc deinit() {
+      clear();
+      assert(_head == nil && _tail == nil);
+      assert(size == 0);
+    }
 
     // This may not be necessary, so don't fixate too much on it.
     pragma "no doc"
     proc _cast(type t: string, x: List): string {
-      return "";
+      return "List cast not implemented yet!";
     }
 
     pragma "no doc"
-    inline proc _cs_enter() {
+    inline proc _destroy(ref item: eltType) {
+      chpl__autoDestroy(item);
+    }
+
+    pragma "no doc"
+    proc _move(ref lhs: ?t, ref rhs: t) {
+      __primitive("=", lhs, rhs);
+    }
+
+    //
+    // Right now, Chapel ranges typically start from one and are inclusive on
+    // either side of the range (as opposed to ranges in Python, which are
+    // only open on the left).
+    // So make sure to keep this in mind when working with _ddata (which uses
+    // zero based indexing).
+    //
+    pragma "no doc"
+    proc _getRef(in idx: int) ref {
+      assert(_withinBounds(idx));
+
+      var start = _head;
+
+      while idx > start.capacity do {
+        idx -= start.capacity;
+        start = start.next;
+      }
+
+      return start.data[idx - 1];
+    }
+
+    pragma "no doc"
+    inline proc _enter() {
       // TODO: Lock call goes here.
       if parSafe then
         return;
     }
 
     pragma "no doc"
-    inline proc _cs_leave() {
+    inline proc _leave() {
       // TODO: Unlock call goes here.
       if parSafe then
         return;
     }
 
     pragma "no doc"
-    inline proc _bounds_check_release_on_throw(i: int) throws {
-      if (i < 1 || i > size) then {
-        _cs_leave();
+    inline proc _withinBounds(i: int): bool {
+      return (i >= 1 && i <= size);
+    }
+
+    //
+    // This call assumes that a lock (acquired by `_cs_enter`) is already
+    // held (if parSafe==true), and releases it before throwing an error if
+    // a bounds check fails.
+    //
+    pragma "no doc"
+    inline proc _boundsCheckReleaseOnThrow(i: int) throws {
+      if !_withinBounds(i) then {
+        _leave();
         throw new owned
           IllegalArgumentError("List index out of bounds: ", i);
       }
     }
 
-    // This should use moves and so should not fire any destructors.
-    pragma "no doc"
-    proc _collapse_left_unsafe(i: int) {}
-
-    // This should use moves and should not fire any destructors.
-    pragma "no doc"
-    proc _shift_right_unsafe(i: int) {}
-
     //
-    // Right now, Chapel ranges typically start from 1 and are inclusive on
-    // either side of the range (as opposed to ranges in Python, which are
-    // only open on the left).
-    // So make sure to keep this in mind when working with _ddata (which
-    // might be 0 based, not sure).
+    // Shift elements after index one to the left, exclusive.
     //
     pragma "no doc"
-    proc _get_ref_unsafe(i: int) {}
+    proc _collapse(idx: int) {
+      assert(_withinBounds(idx));
+
+      for i in 2..idx do {
+        ref rhs = _getRef(i);
+        ref lhs = _getRef(i - 1);
+        _move(lhs, rhs);
+      }
+    }
 
     //
-    // Performs move emplacing an element into this List. Assumes that the
-    // element _can be cannibalized_ (IE, it is already a copy).
+    // Shift elements after index one to the right, inclusive.
     //
     pragma "no doc"
-    proc _emplace_unsafe(i: int, x: eltType) {}
+    proc _expand(idx: int) {
+      assert(_withinBounds(idx));
 
+      for i in size..idx do {
+        ref rhs = _getRef(i);
+        ref lhs = _getRef(i + 1);
+        _move(lhs, rhs);
+      }
+    }
+
+    //
+    // Resize until we are at or exceed a certain capacity.
+    //
     pragma "no doc"
-    proc _append_unsafe(in x: eltType) {
+    proc _maybeResize(in amount: int=1) {
+      // Edge case for when this List is empty.
       if _head == nil then {
+        assert(_tail == nil);
         _head = new unmanaged ListBlock(eltType, _initialCapacity);
         _tail = _head;
       }
 
       // Create a new chunk if we need to.
-      if _tail.size >= _tail.capacity then {
+      while (_tail.size + amount) >= _tail.capacity do {
         assert(_tail.next == nil);
-        _tail.next = new unmanaged ListBlock(eltType, _tail.capacity * 2);
+        const blocksize = _tail.capacity * _growthFactor;
+        _tail.next = new unmanaged ListBlock(eltType, blocksize);
         _tail = _tail.next;
+        amount -= blocksize;
       }
+    }
 
-      _emplace_unsafe(i, x);
+    //
+    // Assumes that a copy of the input element has already been made at some
+    // previous boundary, IE giving append's parameter the "in" intent.
+    //
+    pragma "no doc"
+    proc _append(ref rhs: eltType) {
+      _maybeResize();
+      ref lhs = _getRef(size + 1);
+      _move(lhs, rhs);
       size += 1;
     }
 
@@ -232,20 +305,16 @@ module Lists {
 
       :arg x: An element to append.
     */
-    proc append(in x: eltType) {
-      _cs_enter();
-      _append_unsafe(x);
-      _cs_leave();
+    proc append(pragma "no auto destroy" in x: eltType) {
+      _enter();
+      _append(x);
+      _leave();
     }
 
     pragma "no doc"
-    inline proc _extend_generic(collection) {
-      _cs_enter();
-
+    inline proc _extendGeneric(collection) {
       for x in collection do
-        _append_unsafe(x);
-
-      _cs_leave();
+        _append(x);
     }
 
     /*
@@ -255,8 +324,10 @@ module Lists {
       :arg other: A List containing elements of the same type as those
         contained in this List.
     */
-    proc extend(other: List(eltType)) {
-      _extend_generic(other);
+    proc extend(other: List(?t)) where t == eltType {
+      _enter();
+      _extendGeneric(other);
+      _leave();
     }
 
     /*
@@ -266,8 +337,10 @@ module Lists {
       :arg other: An array containing elements of the same type as those
         contained in this List.
     */
-    proc extend(other: [?d] eltType) {
-      _extend_generic(other);
+    proc extend(other: [?d] ?t) where t == eltType {
+      _enter();
+      _extendGeneric(other);
+      _leave();
     }
 
     /*
@@ -284,12 +357,16 @@ module Lists {
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc insert(i: int, in x: eltType) throws {
-      _cs_enter();
-      try _bounds_check_release_on_throw(i);
-      _shift_right_unsafe(i);
-      _emplace_unsafe(i, x);
-      _cs_leave();
+    proc insert(i: int, pragma "no auto destroy" in x: eltType) throws {
+      _enter();
+      try _boundsCheckReleaseOnThrow(i);
+      _maybeResize();
+      _expand(i);
+      ref lhs = _getRef(i);
+      ref rhs = x;
+      _move(lhs, rhs);
+      size += 1;
+      _leave();
     }
 
     /*
@@ -306,20 +383,23 @@ module Lists {
       :throws IllegalArgumentError: If there is no such item.
     */
     proc remove(x: eltType) throws {
-      _cs_enter();
+      _enter();
 
       //
       // TODO: Using this operator over entire list gives us O(n log n) perf,
       // which is suboptimal, but will reduce to O(n) when this becomes O(1).
       //
-      for i in 1..size do
-        if x == _get_ref_unsafe(i) then {
-          _collapse_left_unsafe(i);
-          _cs_leave();
-          return;
-        }
+      for i in 1..size do {
+          ref item = _getRef(i);
+          if x == item then {
+            _destroy(item);
+            _collapse(i);
+            _leave();
+            return;
+          }
+      }
 
-      _cs_leave();
+      _leave();
 
       throw new owned
         IllegalArgumentError("No such element in List: ", x);
@@ -341,13 +421,14 @@ module Lists {
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc pop(i: int=size - 1): eltType throws {
-      _cs_enter();
-      try _bounds_check_release_on_throw(i);
-      // TODO: Is this fine, or do I need to make this into a move?
-      var result: eltType = _get_ref_unsafe(i);
-      _collapse_left_unsafe(i);
-      _cs_leave();
+    proc pop(i: int=size): eltType throws {
+      _enter();
+      try _boundsCheckReleaseOnThrow(i);
+      // TODO: Is this fine, or do I need to disable initializers here?
+      // TODO: Do I need to invoke a destructor here?
+      var result = _getRef(i);
+      _collapse(i);
+      _leave();
       return result;
     }
 
@@ -360,13 +441,19 @@ module Lists {
         references to the elements contained in this List.
     */
     proc clear() {
-      _cs_enter();
-      //
-      // TODO: Manually iterate through all _ddata, fire off each element's
-      // destructor, and then release the _ddata itself. Set _head and _tail
-      // to nil, and size to 0.
-      //
-      _cs_leave();
+      _enter();
+
+      while _head != nil do {
+        var block = _head;
+        _head = _head.next;
+        delete block;
+      }
+
+      _head = nil;
+      _tail = nil;
+      size = 0;
+
+      _leave();
     }
 
     /*
@@ -382,18 +469,18 @@ module Lists {
       :throws IllegalArgumentError: If the given element cannot be found.
     */
     proc indexOf(x: eltType, start: int=0, end: int=size): int throws {
-      _cs_enter();
+      _enter();
 
-      try _bounds_check_release_on_throw(start);
-      try _bounds_check_release_on_throw(end);
+      try _boundsCheckReleaseOnThrow(start);
+      try _boundsCheckReleaseOnThrow(end);
 
       for i in start..end do
-        if x == _get_ref_unsafe(i) then {
-          _cs_leave();
+        if x == _getRef(i) then {
+          _leave();
           return i;
         }
 
-      _cs_leave();
+      _leave();
 
       throw new owned
         IllegalArgumentError("No such element in List: ", x);
@@ -411,13 +498,17 @@ module Lists {
       :rtype: `int`
     */
     proc count(x: eltType): int {
-      _cs_enter();
-      var result: int = 0;
+      _enter();
 
-      for i in 1..size do:
+      var result = 0;
 
-      _cs_leave();
-      return 0;
+      for i in 1..size do {
+        if x == _getRef(i) then
+          result += 1;
+      }
+
+      _leave();
+      return result;
     }
 
     /*
@@ -428,7 +519,9 @@ module Lists {
         Sorting the contents of this List may invalidate existing references
         to the elements contained in this List.
     */
-    proc sort() {}
+    proc sort() {
+      // TODO: Need to look in the Sort module to see the API.
+    }
 
     /*
       Sort the items of this List in place using a comparator.
@@ -440,7 +533,9 @@ module Lists {
 
       :arg comparator: A comparator object used to sort this List.
     */
-    proc sort(comparator) {}
+    proc sort(comparator) {
+      // TODO: Need to look in the Sort module to see the API. 
+    }
 
     /*
       Index this List via subscript. Returns a reference to the element at a
@@ -453,10 +548,10 @@ module Lists {
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
     proc this(i: int) ref throws {
-      _cs_enter();
-      try _bounds_check_release_on_throw(i);
-      var result = _get_ref_unsafe(i);
-      _cs_leave();
+      _enter();
+      try _boundsCheckReleaseOnThrow(i);
+      ref result = _getRef(i);
+      _leave();
       return result;
     }
 
@@ -466,24 +561,50 @@ module Lists {
       :yields: A reference to one of the elements contained in this List.
     */
     iter these() ref {
-      yield size;
+
+      //
+      // TODO: I'm not even sure of what the best way to WRITE a threadsafe
+      // iterator is, _let alone_ whether it should even be threadsafe
+      // (I mean, is there even a point when reference/iterator invalidation
+      // is still a thing?
+      //
+      for i in 1..size do {
+        _enter();
+        ref result = _getRef(i);
+        _leave();
+        yield result;
+      }
     }
 
     /*
       Write the contents of this List to a channel.
 
       :arg ch: A channel to write to.
+
+      :throws SystemError: When a write to the channel fails.
     */
     proc writeThis(ch: channel) {
-      ch.write("[");
+      _enter();
 
-      for i in 0..(size - 1) {
-        ch.write(this[i];
-        ch.write(",");
+      // 
+      // TODO TODO TODO TODO
+      // I must be missing something about the writeThis operator, because how
+      // are we supposed to _properly_ implement this now that "write" can
+      // throw?
+      //
+      try! {
+        ch.write("[");
+
+        for i in 1..size do
+          ch.write(_getRef(i), ", ");
+
+        if size > 0 then
+          ch.write(_getRef(size));
+
+        ch.write("]");
       }
 
-      ch.write(this[size - 1]);
-      ch.write("]");
+      _leave();
     }
 
     /*
@@ -493,7 +614,10 @@ module Lists {
       :rtype: `bool`
     */
     inline proc isEmpty(): bool {
-      return (size == 0);
+      _enter();
+      var result = (size == 0);
+      _leave();
+      return result;
     }
 
     /*
@@ -503,7 +627,20 @@ module Lists {
       :return: A new DefaultRectangular array.
     */
     proc toArray(): [] eltType {
-      return nil;
+      _enter();
+
+      //
+      // TODO: How to allocate memory for array when we may not be able to
+      // default initialize?
+      //
+      var result: [1..size] eltType;
+
+      for i in 1..size do
+        result[i] = this[i];
+
+      _leave();
+
+      return result;
     }
 
   } // End class List!
@@ -516,9 +653,14 @@ module Lists {
 
       Assigning another List to this List will invalidate any references to
       elements previously contained in this List.
-      
+
+    :arg lhs: The List object to assign to.
+    :arg rhs: The List object to assign from. 
   */
-  proc =(a: List(?t), b: List(t)) {}
+  proc =(lhs: List(?t), rhs: List(t)) {
+    lhs.clear();
+    lhs.extend(rhs);
+  }
 
   /*
     Returns `true` if the contents of two Lists are the same.
@@ -530,7 +672,15 @@ module Lists {
     :rtype: `bool`
   */
   proc ==(a: List(?t), b: List(t)): bool {
+    if a.size != b.size then
+      return false;
+
+    for i in 1..(a.size) do
+      if a[i] != b[i] then
+        return false;
+
     return true;
   }
 
 } // End module Lists!
+
