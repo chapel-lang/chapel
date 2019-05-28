@@ -79,7 +79,7 @@ int chpl_mli_client_launch(int argc, char** argv) {
   int32_t execNumLocales;
   pid_t pid;
 
-  if (chpl_launch_prep(argc, argv, &execNumLocales)) {
+  if (chpl_launch_prep(&argc, argv, &execNumLocales)) {
     return -1;
   }
 

@@ -499,8 +499,6 @@ returnInfoToNilable(CallExpr* call) {
     t = getManagedPtrBorrowType(t);
   }
 
-
-
   if (AggregateType* at = toAggregateType(t))
     if (isClass(at))
       t = at->getDecoratedClass(decorator);

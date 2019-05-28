@@ -1510,8 +1510,9 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in chpl_comm_on_bundle_t redundant? active message can determine this.
 void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                     chpl_fn_int_t fid,
-                     chpl_comm_on_bundle_t *arg, size_t arg_size) {
+                           chpl_fn_int_t fid,
+                           chpl_comm_on_bundle_t *arg, size_t arg_size,
+                           int ln, int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);
     chpl_ftable_call(fid, arg);
@@ -1520,11 +1521,11 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_executeOn("", node);
+    chpl_comm_diags_verbose_executeOn("", node, ln, fn);
     chpl_comm_diags_incr(execute_on);
 
     execute_on_common(node, subloc, fid, arg, arg_size,
@@ -1533,8 +1534,9 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
 }
 
 void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                        chpl_fn_int_t fid,
-                        chpl_comm_on_bundle_t *arg, size_t arg_size) {
+                              chpl_fn_int_t fid,
+                              chpl_comm_on_bundle_t *arg, size_t arg_size,
+                              int ln, int32_t fn) {
 
   if (chpl_nodeID == node) {
     assert(0); // locale model code should prevent this...
@@ -1543,11 +1545,11 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_executeOn("non-blocking", node);
+    chpl_comm_diags_verbose_executeOn("non-blocking", node, ln, fn);
     chpl_comm_diags_incr(execute_on_nb);
   
     execute_on_common(node, subloc, fid, arg, arg_size,
@@ -1557,8 +1559,9 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
 
 // GASNET - should only be called for "small" functions
 void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t arg_size) {
+                                chpl_fn_int_t fid,
+                                chpl_comm_on_bundle_t *arg, size_t arg_size,
+                                int ln, int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);
     chpl_ftable_call(fid, arg);
@@ -1567,11 +1570,11 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_executeOn("fast", node);
+    chpl_comm_diags_verbose_executeOn("fast", node, ln, fn);
     chpl_comm_diags_incr(execute_on_fast);
 
     execute_on_common(node, subloc, fid, arg, arg_size,

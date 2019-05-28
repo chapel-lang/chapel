@@ -105,11 +105,8 @@ struct perTxCtxInfo_t {
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
   struct fid_cntr* txCntr;
-  int numAmReqsTxed;
-  int numAmReqsRxed;
-  int numReadsTxed;
-  int numWritesTxed;
   int numTxsOut;
+  uint64_t txCount;
 };
 
 static int tciTabLen;
@@ -156,7 +153,8 @@ static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
 static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                                 void*, size_t);
 static void waitForAmoComplete(struct perTxCtxInfo_t*);
-static void waitForTxCQ(struct perTxCtxInfo_t*, size_t, uint64_t);
+static void waitForTxCQ(struct perTxCtxInfo_t*, int, uint64_t);
+static void waitForTxCntr(struct perTxCtxInfo_t*, int);
 static inline ssize_t readCQ(struct fid_cq*, void*, size_t);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
@@ -1423,7 +1421,8 @@ void chpl_comm_task_end(void) { }
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t argSize) {
+                          chpl_comm_on_bundle_t *arg, size_t argSize,
+                          int ln, int32_t fn) {
   DBG_PRINTF(DBG_INTERFACE,
              "chpl_comm_execute_on(%d, %d, %d, %p, %zd)",
              (int) node, (int) subloc, (int) fid, arg, argSize);
@@ -1433,11 +1432,11 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize}};
+       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("", node);
+  chpl_comm_diags_verbose_executeOn("", node, ln, fn);
   chpl_comm_diags_incr(execute_on);
 
   amRequestExecOn(node, subloc, fid, arg, argSize, false, true);
@@ -1453,7 +1452,8 @@ static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
 
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t argSize) {
+                             chpl_comm_on_bundle_t *arg, size_t argSize,
+                             int ln, int32_t fn) {
   DBG_PRINTF(DBG_INTERFACE,
              "chpl_comm_execute_on_nb(%d, %d, %d, %p, %zd)",
              (int) node, (int) subloc, (int) fid, arg, argSize);
@@ -1463,11 +1463,11 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize}};
+       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("non-blocking", node);
+  chpl_comm_diags_verbose_executeOn("non-blocking", node, ln, fn);
   chpl_comm_diags_incr(execute_on_nb);
 
   amRequestExecOn(node, subloc, fid, arg, argSize, false, false);
@@ -1476,7 +1476,8 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
 
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t *arg, size_t argSize) {
+                               chpl_comm_on_bundle_t *arg, size_t argSize,
+                               int ln, int32_t fn) {
   DBG_PRINTF(DBG_INTERFACE,
              "chpl_comm_execute_on_fast(%d, %d, %d, %p, %zd)",
              (int) node, (int) subloc, (int) fid, arg, argSize);
@@ -1486,11 +1487,11 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize}};
+       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("fast", node);
+  chpl_comm_diags_verbose_executeOn("fast", node, ln, fn);
   chpl_comm_diags_incr(execute_on_fast);
 
   amRequestExecOn(node, subloc, fid, arg, argSize, true, true);
@@ -1670,7 +1671,6 @@ void amRequestCommon(c_nodeid_t node,
              am_op2name(myArg->comm.b.op), argSize, pDone);
   OFI_CHK(fi_send(tcip->txCtx, myArg, argSize, mrDesc, rxMsgAddr(tcip, node),
                   NULL));
-  tcip->numAmReqsTxed++;
   tcip->numTxsOut++;
 
   if (myArg != arg) {
@@ -1720,7 +1720,7 @@ static void amHandleExecOnLrg(chpl_comm_on_bundle_t*);
 static void amWrapExecOnLrgBody(void*);
 static void amWrapGet(void*);
 static void amWrapPut(void*);
-static void amHandleAMO(chpl_comm_on_bundle_t*);
+static void amHandleAMO(struct perTxCtxInfo_t*, chpl_comm_on_bundle_t*);
 static inline void amSendDone(struct chpl_comm_bundleData_base_t*,
                               chpl_comm_amDone_t*);
 
@@ -1784,21 +1784,15 @@ void amHandler(void* argNil) {
   PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
 
   //
-  // Process AM requests.
+  // Process AM requests and watch transmit responses arrive.
   //
   while (!atomic_load_bool(&amHandlersExit)) {
     processRxAmReq(tcip);
 
     if (tcip->txCQ != NULL) {
-      if (tcip->numTxsOut > 1) {
-        waitForTxCQ(tcip, 1, 0);
-      }
+      waitForTxCQ(tcip, 0, 0);
     } else {
-      const int count = fi_cntr_read(tcip->txCntr);
-      if (count > 0) {
-        DBG_PRINTF(DBG_ACK, "tx ack counter %d", count);
-        tcip->numTxsOut -= count;
-      }
+      waitForTxCntr(tcip, 0);
     }
 
     //
@@ -1853,7 +1847,6 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
                  (char*) req - (char*) ofi_msg_reqs.msg_iov->iov_base,
                  req->comm.b.node, req->comm.b.seq,
                  am_op2name(req->comm.b.op), cqes[i].len);
-      tcip->numAmReqsRxed++;
 
 #if defined(CHPL_COMM_DEBUG) && defined(DEBUG_CRC_MSGS)
       if (DBG_TEST_MASK(DBG_AM)) {
@@ -1907,7 +1900,7 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         break;
 
       case am_opAMO:
-        amHandleAMO(req);
+        amHandleAMO(tcip, req);
         break;
 
       default:
@@ -2068,7 +2061,7 @@ void amWrapPut(void* p) {
 
 
 static
-void amHandleAMO(chpl_comm_on_bundle_t* req) {
+void amHandleAMO(struct perTxCtxInfo_t* tcip, chpl_comm_on_bundle_t* req) {
   struct chpl_comm_bundleData_AMO_t* amo = &req->comm.amo;
   if (amo->ofiOp == FI_CSWAP) {
     DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
@@ -2127,26 +2120,12 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
       //          there is surely a better way, perhaps a queue of
       //          outbound writes or some such.
       //
-      {
-        struct perTxCtxInfo_t* tcip;
-        CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
+      if (tcip->numTxsOut > 0) {
         if (tcip->txCQ != NULL) {
-          if (tcip->numTxsOut > 1) {
-            waitForTxCQ(tcip, 1, 0);
-          }
+          waitForTxCQ(tcip, tcip->numTxsOut, 0);
         } else {
-          do {
-            const int count = fi_cntr_read(tcip->txCntr);
-            if (count == 0) {
-              sched_yield();
-              chpl_comm_make_progress();
-            } else {
-              DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
-              tcip->numTxsOut -= count;
-            }
-          } while (tcip->numTxsOut > 0);
+          waitForTxCntr(tcip, tcip->numTxsOut);
         }
-        tciFree(tcip);
       }
     }
   }
@@ -2462,9 +2441,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     if (tcip->txCQ != NULL) {
       waitForTxCQ(tcip, 1, FI_WRITE);
     } else {
-      const int count = fi_cntr_read(tcip->txCntr);
-      DBG_PRINTF(DBG_ACK, "tx ack counter %d after PUT", count);
-      tcip->numTxsOut -= count;
+      waitForTxCntr(tcip, 0);
     }
 
     tciFree(tcip);
@@ -2628,7 +2605,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
                ofiOp, ofiType, size);
   } else {
     DBG_PRINTF(DBG_AMO,
-               "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, res %p <%s>, "
+               "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, res %p is %s, "
                "op %d, typ %d, sz %zd",
                (int) node, object,
                DBG_VAL(myOpnd1, ofiType), DBG_VAL(myOpnd2, ofiType), result,
@@ -2657,38 +2634,25 @@ void waitForAmoComplete(struct perTxCtxInfo_t* tcip) {
   if (tcip->txCQ != NULL) {
     waitForTxCQ(tcip, 1, FI_ATOMIC);
   } else {
-    //
-    // The counter cannot tell us about completion ordering, so we have
-    // to wait for it go all the way to zero in order to be assured that
-    // the AMO is done.
-    //
-    do {
-      const int count = fi_cntr_read(tcip->txCntr);
-      if (count == 0) {
-        sched_yield();
-        chpl_comm_make_progress();
-      } else {
-        DBG_PRINTF(DBG_ACK, "tx ack counter %d after AMO result", count);
-        tcip->numTxsOut -= count;
-      }
-    } while (tcip->numTxsOut > 0);
+    waitForTxCntr(tcip, tcip->numTxsOut);
   }
 }
 
 
 static
-void waitForTxCQ(struct perTxCtxInfo_t* tcip, size_t numOut,
+void waitForTxCQ(struct perTxCtxInfo_t* tcip, int maxToConsume,
                  uint64_t xpctFlags) {
-  while (numOut > 0) {
-    struct fi_cq_msg_entry cqes[numOut];
-    const ssize_t numEvents = readCQ(tcip->txCQ, cqes, numOut);
+  const int readCount = (maxToConsume == 0) ? 1 : maxToConsume;
+  do {
+    struct fi_cq_msg_entry cqes[readCount];
+    const ssize_t numEvents = readCQ(tcip->txCQ, cqes, readCount);
     CHK_TRUE(numEvents >= 0 || numEvents == -FI_EAGAIN);
 
     if (numEvents == -EAGAIN) {
       sched_yield();
       chpl_comm_make_progress();
     } else {
-      numOut -= numEvents;
+      maxToConsume -= numEvents;
       tcip->numTxsOut -= numEvents;
       for (int i = 0; i < numEvents; i++) {
         DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64 ", xpct %#" PRIx64,
@@ -2697,7 +2661,29 @@ void waitForTxCQ(struct perTxCtxInfo_t* tcip, size_t numOut,
           CHK_TRUE((cqes[i].flags & xpctFlags) == xpctFlags);
       }
     }
-  }
+  } while (maxToConsume > 0);
+}
+
+
+static
+void waitForTxCntr(struct perTxCtxInfo_t* tcip, int maxToConsume) {
+  do {
+    const uint64_t count = fi_cntr_read(tcip->txCntr);
+    const int countDiff = count - tcip->txCount;
+    if (countDiff == 0) {
+      sched_yield();
+      chpl_comm_make_progress();
+    } else if (countDiff > 0) {
+      CHK_TRUE(countDiff <= tcip->numTxsOut);
+      tcip->numTxsOut -= countDiff;
+      maxToConsume -= countDiff;
+      tcip->txCount = count;
+      DBG_PRINTF(DBG_ACK, "Cntr ack tx, consumed %d", countDiff);
+    } else {
+      INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", txCount %" PRIu64,
+                       count, tcip->txCount);
+    }
+  } while (maxToConsume > 0);
 }
 
 

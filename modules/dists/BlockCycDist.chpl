@@ -826,7 +826,7 @@ class BlockCyclicArr: BaseRectangularArr {
   //
   // optimized reference to a local LocBlockCyclicArr instance (or nil)
   //
-  var myLocArr: unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable);
+  var myLocArr: unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable)?;
 }
 
 override proc BlockCyclicArr.dsiGetBaseDom() return dom;
@@ -883,8 +883,8 @@ proc BlockCyclicArr.dsiPrivatize(privatizeData) {
 //
 proc BlockCyclicArr.dsiAccess(i: idxType) ref where rank == 1 {
   if myLocArr then /* TODO: reenable */ /* local */ {
-    if myLocArr.indexDom.myStarts.contains(i) then  // TODO: This could be beefed up; true for indices other than starts
-      return myLocArr.this(i);
+    if myLocArr!.indexDom.myStarts.contains(i) then  // TODO: This could be beefed up; true for indices other than starts
+      return myLocArr!.this(i);
   }
   //  var loci = dom.dist.idxToLocaleInd(i);
   //  compilerError(loci.type:string);
@@ -996,7 +996,7 @@ iter BlockCyclicArr.dsiLocalSubdomains(loc: locale) {
   if loc != here then
     unimplementedFeatureHalt("BlockCyclic", "remote subdomain queries");
 
-  for i in do_dsiLocalSubdomains(myLocArr.indexDom) do
+  for i in do_dsiLocalSubdomains(myLocArr!.indexDom) do
     yield i;
 }
 iter BlockCyclicDom.dsiLocalSubdomains(loc: locale) {

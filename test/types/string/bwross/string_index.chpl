@@ -29,6 +29,6 @@ writeln(s[3]);
 writeln();
 
 // all together now!
-writeln(s[1..s.find(" ")],
+writeln(s[1:byteIndex..s.find(" ")],
         "beautifu", s[3],
         s[s.find(" ")..]);

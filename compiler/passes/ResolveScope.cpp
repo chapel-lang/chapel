@@ -255,6 +255,7 @@ void ResolveScope::addBuiltIns() {
   extend(gBoundsChecking);
   extend(gCastChecking);
   extend(gNilChecking);
+  extend(gLegacyNilClasses);
   extend(gDivZeroChecking);
   extend(gPrivatization);
   extend(gLocal);

@@ -69,9 +69,9 @@ find: 1
 rfind: 55
 
 d.___("ç", ..18)
-count: 9
+count: 18
 find: 1
-rfind: 17
+rfind: 35
 
 d.___("Ç")
 count: 0
@@ -99,14 +99,14 @@ find: 0
 rfind: 0
 
 y.___("")
-count: 20
+count: 17
 find: 0
 rfind: 20
 
 y.___("", 9..15)
 count: 8
 find: 0
-rfind: 8
+rfind: 9
 
 "".___(y)
 count: 0

@@ -457,7 +457,8 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
 //
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t arg_size);
+                          chpl_comm_on_bundle_t *arg, size_t arg_size,
+                          int ln, int32_t fn);
 
 //
 // non-blocking execute_on
@@ -465,15 +466,17 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
 //
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t arg_size);
+                             chpl_comm_on_bundle_t *arg, size_t arg_size,
+                             int ln, int32_t fn);
 
 //
 // fast execute_on (i.e., run in handler)
 // arg can be reused immediately after this call completes.
 //
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                         chpl_fn_int_t fid,
-                         chpl_comm_on_bundle_t *arg, size_t arg_size);
+                               chpl_fn_int_t fid,
+                               chpl_comm_on_bundle_t *arg, size_t arg_size,
+                               int ln, int32_t fn);
 
 
 //

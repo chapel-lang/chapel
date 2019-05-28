@@ -61,7 +61,7 @@ proc calculate(data : string, size : int) {
       // Assigning to an index in an associative array will create an
       // index/element pair if one does not already exist.
       //
-      privArr[hash(data[i..#size])] += 1;
+      privArr[hash(data[i:byteIndex..#size])] += 1;
     }
 
     lock$;                                  // read to acquire lock
