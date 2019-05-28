@@ -25,14 +25,9 @@ CHPL_LINK_TRAILING = $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
 CHPL_MLI_INCS = -I$(CHPL_ZMQ_LOC)/include
 CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 
-.PHONY: checkZMQ buildServer buildClient
+.PHONY: buildServer buildClient
 
-all: checkZMQ buildServer buildClient
-
-checkZMQ:
-ifndef CHPL_ZMQ_LOC
-  $(error CHPL_ZMQ_LOC must be set to the location of the ZeroMQ library)
-endif
+all: buildServer buildClient
 
 buildServer: $(TMPSERVERNAME)
 
@@ -55,9 +50,15 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 #
 # Compile the client bundle.
 #
+ifdef CHPL_ZMQ_LOC
 	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CLIENT_CFLAGS) \
 		-c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC) $(CHPL_MLI_INCS) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES)
+else
+	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CLIENT_CFLAGS) \
+		-c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC) \
+		$(COMP_GEN_MLI_EXTRA_INCLUDES)
+endif
 #
 # Throw the client object file and launcher object file into an archive.
 #
@@ -69,10 +70,16 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 # of libtool. This makes the assumption that static library files for both
 # external libraries exist.
 #
+ifdef CHPL_ZMQ_LOC
 	libtool -static -o $(TMPBINNAME) -no_warning_for_no_symbols \
 		$(CHPL_ZMQ_LOC)/lib/libzmq.a \
 		$(CHPL_LN_LIB_DIR)/libchpllaunch.a \
 		$(TMPBINNAME)-tmp
+else
+	libtool -static -o $(TMPBINNAME) -no_warning_for_no_symbols \
+		-lzmq $(CHPL_LN_LIB_DIR)/libchpllaunch.a \
+		$(TMPBINNAME)-tmp
+endif
 #
 # Last minute munging in case of output file name collisions.
 #
@@ -90,10 +97,17 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 #
 # Compile the server bundle.
 #
+ifdef CHPL_ZMQ_LOC
 	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_SERVER_CFLAGS) \
 		-c -o $(TMPSERVERNAME).o \
 		$(CHPL_RT_INC_DIR) $(CHPLSERVERSRC) $(CHPL_MLI_INCS) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES)
+else
+	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_SERVER_CFLAGS) \
+		-c -o $(TMPSERVERNAME).o \
+		$(CHPL_RT_INC_DIR) $(CHPLSERVERSRC) \
+		$(COMP_GEN_MLI_EXTRA_INCLUDES)
+endif
 #
 # Compile loose source files in CHPLUSEROBJ.
 #
@@ -105,6 +119,7 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 # Link the Chapel runtime and the ZMQ library together into a multi-locale
 # executable.
 #
+ifdef CHPL_ZMQ_LOC
 	$(LD) $(GEN_LFLAGS) $(COMP_GEN_SERVER_LFLAGS) -o $(TMPSERVERNAME) \
 		-L$(CHPL_RT_LIB_DIR) $(TMPSERVERNAME).o $(CHPLUSEROBJ) \
 		$(CHPL_RT_LIB_DIR)/main_mli.o \
@@ -112,6 +127,15 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 		-lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
 		$(CHPL_MAKE_BASE_LFLAGS) \
 		-L$(CHPL_ZMQ_LOC)/lib -lzmq
+else
+	$(LD) $(GEN_LFLAGS) $(COMP_GEN_SERVER_LFLAGS) -o $(TMPSERVERNAME) \
+		-L$(CHPL_RT_LIB_DIR) $(TMPSERVERNAME).o $(CHPLUSEROBJ) \
+		$(CHPL_RT_LIB_DIR)/main_mli.o \
+		$(CHPL_CL_OBJS) \
+		-lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
+		$(CHPL_MAKE_BASE_LFLAGS) \
+		-lzmq
+endif
 endif
 
 FORCE:
