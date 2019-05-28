@@ -858,7 +858,7 @@ module String {
     /*
       :returns: The value of the `i` th byte as an integer.
     */
-    proc byte(i: int): uint(8) {
+    proc byte(i: int = 1): uint(8) {
       if this.isEmpty() && i == 1 then return 0;
       var localThis: string = this.localize();
 
@@ -868,11 +868,7 @@ module String {
     }
 
     pragma "no doc"
-    inline proc param byte(param i: int) param : uint(8) {
-      if i != 1 {
-	compilerWarning("string.byte(arg other than 1) is not a param");
-	return 0;
-      }
+    inline proc param byte() param : uint(8) {
       return __primitive("ascii", this);
     }
 

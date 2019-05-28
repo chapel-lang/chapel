@@ -99,7 +99,7 @@ const toChar: [0..3] string = ["A", "C", "T", "G"];
 var toNum: [0..127] int;
 
 forall i in toChar.domain do
-  toNum[toChar.byte(i)] = i;
+  toNum[toChar[i].byte(1)] = i;
 
 
 inline proc decode(in data, param nclSize) {
