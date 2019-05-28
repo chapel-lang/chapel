@@ -680,7 +680,12 @@ bool canInstantiate(Type* actualType, Type* formalType) {
 
   if (formalType == dtUnmanaged)
     if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isUnmanaged() && !dt->isNilable())
+      if (dt->isUnmanaged())
+        return true;
+
+  if (formalType == dtUnmanagedNonNilable)
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isUnmanaged() && dt->isNonNilable())
         return true;
 
   if (formalType == dtUnmanagedNilable)
@@ -701,7 +706,13 @@ bool canInstantiate(Type* actualType, Type* formalType) {
          !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
       return true;
     else if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isBorrowed() && !dt->isNilable())
+      if (dt->isBorrowed())
+        return true;
+  }
+
+  if (formalType == dtBorrowedNonNilable) {
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isBorrowed() && dt->isNonNilable())
         return true;
   }
 
@@ -1032,12 +1043,14 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
                          ClassTypeDecorator formal) {
   switch (formal) {
     case CLASS_TYPE_BORROWED:
+    case CLASS_TYPE_BORROWED_NONNIL:
       // Can't coerce away nilable
       return actual==CLASS_TYPE_BORROWED || actual==CLASS_TYPE_UNMANAGED;
     case CLASS_TYPE_BORROWED_NILABLE:
       // Everything can coerce to a nilable borrowed
       return true;
     case CLASS_TYPE_UNMANAGED:
+    case CLASS_TYPE_UNMANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to unmanaged
       return actual==CLASS_TYPE_UNMANAGED;
@@ -1046,6 +1059,7 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
       return actual==CLASS_TYPE_UNMANAGED ||
              actual==CLASS_TYPE_UNMANAGED_NILABLE;
     case CLASS_TYPE_MANAGED:
+    case CLASS_TYPE_MANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to managed
       return actual==CLASS_TYPE_MANAGED;
@@ -2384,8 +2398,10 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       // that targetType is generic, we won't (currently)
       // be able to resolve a call to a _cast with a generic actual.
       if (targetType == dtBorrowed ||
+          targetType == dtBorrowedNonNilable ||
           targetType == dtBorrowedNilable ||
           targetType == dtUnmanaged ||
+          targetType == dtUnmanagedNonNilable ||
           targetType == dtUnmanagedNilable) {
 
         if (isClassLike(valueType)) {
@@ -2420,6 +2436,41 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 
       // This could compute the target type for generics.
       // If it does, be careful with generics with defaults.
+    }
+
+    // Handle explicit casting among class type flavors
+    // (e.g. borrowed ChildClass? -> unmanaged ParentClass?
+    if (isClassLike(valueType) && isClassLike(targetType)) {
+      Type* canonicalValueType = canonicalClassType(valueType);
+      Type* canonicalTargetType = canonicalClassType(targetType);
+      if (canDispatch(canonicalValueType, valueSe->symbol(),
+                      canonicalTargetType, NULL, call->getFunction(),
+                      &promotes, &paramNarrows, paramCoerce) &&
+          !promotes) {
+
+        call->baseExpr->remove();
+        call->primitive = primitives[PRIM_CAST];
+
+        if (valueSe->symbol()->isRef()) {
+          if (targetTypeSe->symbol()->isRef())
+            INT_FATAL("casting from reference to reference not handled");
+
+          SET_LINENO(call);
+
+          // Dereference before casting
+          VarSymbol* tmp = newTempConst("cast_tmp");
+          CallExpr* c = new CallExpr(PRIM_DEREF, valueSe->symbol());
+          CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          call->getStmtExpr()->insertBefore(m);
+          resolveCall(m);
+
+          // Now update the cast call we have to cast the result of deref
+          valueSe->setSymbol(tmp);
+        }
+
+        return true;
+      }
     }
   }
 
@@ -6206,7 +6257,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
   for_actuals(expr, newExpr) {
     if (NamedExpr* ne = toNamedExpr(expr)) {
       if (ne->name == astr_chpl_manager) {
-        manager = ne->actual->typeInfo();
+        manager = canonicalClassType(ne->actual->typeInfo());
         expr->remove();
       }
     }

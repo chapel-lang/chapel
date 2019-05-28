@@ -20,6 +20,7 @@
 #ifndef _AGGREGATE_TYPE_H_
 #define _AGGREGATE_TYPE_H_
 
+#include "DecoratedClasses.h"
 #include "type.h"
 
 /************************************* | **************************************
@@ -33,31 +34,6 @@ enum AggregateTag {
   AGGREGATE_RECORD,
   AGGREGATE_UNION
 };
-
-typedef enum {
-  // When updating, make sure that these numbers work with the masks below
-  // (last bit is nilable or not)
-  CLASS_TYPE_BORROWED = 0,
-  CLASS_TYPE_BORROWED_NILABLE = 1,
-  CLASS_TYPE_UNMANAGED = 2,
-  CLASS_TYPE_UNMANAGED_NILABLE = 3,
-  CLASS_TYPE_MANAGED = 4,           // owned/shared etc indicated by type
-  CLASS_TYPE_MANAGED_NILABLE = 5,
-} ClassTypeDecorator;
-#define NUM_DECORATED_CLASS_TYPES (4)
-#define CLASS_TYPE_MANAGEMENT_MASK (0xfe)
-#define CLASS_TYPE_NILABLE_MASK (0x01)
-
-static inline ClassTypeDecorator addNilableToDecorator(ClassTypeDecorator d) {
-  int tmp = d;
-  tmp |= CLASS_TYPE_NILABLE_MASK;
-  return (ClassTypeDecorator) tmp;
-}
-static inline ClassTypeDecorator removeNilableFromDecorator(ClassTypeDecorator d) {
-  int tmp = d;
-  tmp &= CLASS_TYPE_MANAGEMENT_MASK;
-  return (ClassTypeDecorator) tmp;
-}
 
 class AggregateType : public Type {
 public:
@@ -193,7 +169,7 @@ public:
   // These fields support differentiating between unmanaged class
   // pointers and borrows. At the present time, borrows are represented
   // by plain AggregateType and unmanaged class pointers use this special type.
-  DecoratedClassType*         decoratedClasses[NUM_DECORATED_CLASS_TYPES];
+  DecoratedClassType*         decoratedClasses[NUM_PACKED_DECORATED_TYPES];
 
   FnSymbol*                   typeConstructor;
 

@@ -29,16 +29,22 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
   switch (d) {
     case CLASS_TYPE_BORROWED:
       return astr("borrowed ", className);
+    case CLASS_TYPE_BORROWED_NONNIL:
+      return astr("borrowed ", className, "!");
     case CLASS_TYPE_BORROWED_NILABLE:
       return astr("borrowed ", className, "?");
     case CLASS_TYPE_UNMANAGED:
       return astr("unmanaged ", className);
+    case CLASS_TYPE_UNMANAGED_NONNIL:
+      return astr("unmanaged ", className, "!");
     case CLASS_TYPE_UNMANAGED_NILABLE:
       return astr("unmanaged ", className, "?");
     case CLASS_TYPE_MANAGED:
-      return astr("managed ", className);
+      return astr(className);
+    case CLASS_TYPE_MANAGED_NONNIL:
+      return astr(className, "!");
     case CLASS_TYPE_MANAGED_NILABLE:
-      return astr("managed ", className, "?");
+      return astr(className, "?");
 
     // no default for help from compilation errors
   }
@@ -71,7 +77,6 @@ void DecoratedClassType::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
 
 void DecoratedClassType::verify() {
   INT_ASSERT(canonicalClass);
-  INT_ASSERT(isClass(canonicalClass));
   INT_ASSERT(canonicalClass->getDecoratedClass(decorator) == this);
 }
 
@@ -92,7 +97,7 @@ DecoratedClassType* DecoratedClassType::copyInner(SymbolMap* map) {
  representation, which is used for most purposes within the compiler.
 
  */
-AggregateType* DecoratedClassType::getCanonicalClass() {
+AggregateType* DecoratedClassType::getCanonicalClass() const {
   INT_ASSERT(this->canonicalClass);
   return this->canonicalClass;
 }
@@ -124,9 +129,65 @@ Type* canonicalClassType(Type* t) {
   return t;
 }
 
+Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
+
+  if (isClassLike(t) && isClass(t)) {
+    AggregateType* at = toAggregateType(t);
+    return at->getDecoratedClass(d);
+  } else if (isManagedPtrType(t)) {
+    Type* bt = getManagedPtrBorrowType(t);
+    if (bt && bt != dtUnknown)
+      if (AggregateType* a = toAggregateType(bt))
+        return a->getDecoratedClass(d);
+  }
+
+  // Otherwise, it is e.g. generic dtOwned / generic dtBorrowed
+  switch (d) {
+    case CLASS_TYPE_BORROWED:
+      return dtBorrowed;
+    case CLASS_TYPE_BORROWED_NONNIL:
+      return dtBorrowedNonNilable;
+    case CLASS_TYPE_BORROWED_NILABLE:
+      return dtBorrowedNilable;
+    case CLASS_TYPE_UNMANAGED:
+      return dtUnmanaged;
+    case CLASS_TYPE_UNMANAGED_NONNIL:
+      return dtUnmanagedNonNilable;
+    case CLASS_TYPE_UNMANAGED_NILABLE:
+      return dtUnmanagedNilable;
+    case CLASS_TYPE_MANAGED:
+    case CLASS_TYPE_MANAGED_NONNIL:
+    case CLASS_TYPE_MANAGED_NILABLE:
+      INT_FATAL("should be handled above");
+    // intentionally no default
+  }
+
+  return NULL;
+}
+
+
 ClassTypeDecorator classTypeDecorator(Type* t) {
   if (!isClassLike(t))
     INT_FATAL("classTypeDecorator called on non-class");
+
+  if (isManagedPtrType(t) && !isDecoratedClassType(t)) {
+    Type* bt = getManagedPtrBorrowType(t);
+    if (bt && bt != dtUnknown) {
+      if (isAggregateType(bt)) {
+        return CLASS_TYPE_MANAGED_NONNIL;
+      } else if (DecoratedClassType* dt = toDecoratedClassType(bt)) {
+        ClassTypeDecorator dec = dt->getDecorator();
+        if (isDecoratorNonNilable(dec))
+          return CLASS_TYPE_MANAGED_NONNIL;
+        else if (isDecoratorNilable(dec))
+          return CLASS_TYPE_MANAGED_NILABLE;
+        else
+          return CLASS_TYPE_MANAGED;
+      }
+    } else {
+      return CLASS_TYPE_MANAGED;
+    }
+  }
 
   if (isAggregateType(t))
     return CLASS_TYPE_BORROWED; // default meaning of AggregateType class
@@ -136,10 +197,14 @@ ClassTypeDecorator classTypeDecorator(Type* t) {
 
   if (t == dtBorrowed)
     return CLASS_TYPE_BORROWED;
+  if (t == dtBorrowedNonNilable)
+    return CLASS_TYPE_BORROWED_NONNIL;
   if (t == dtBorrowedNilable)
     return CLASS_TYPE_BORROWED_NILABLE;
   if (t == dtUnmanaged)
     return CLASS_TYPE_UNMANAGED;
+  if (t == dtUnmanagedNonNilable)
+    return CLASS_TYPE_UNMANAGED_NONNIL;
   if (t == dtUnmanagedNilable)
     return CLASS_TYPE_UNMANAGED_NILABLE;
 
@@ -152,8 +217,7 @@ bool isNonNilableClassType(Type* t) {
     return false;
 
   ClassTypeDecorator decorator = classTypeDecorator(t);
-  bool nilable = (decorator & CLASS_TYPE_NILABLE_MASK);
-  return !nilable;
+  return isDecoratorNonNilable(decorator);
 }
 
 bool isNilableClassType(Type* t) {
@@ -161,8 +225,7 @@ bool isNilableClassType(Type* t) {
     return false;
 
   ClassTypeDecorator decorator = classTypeDecorator(t);
-  bool nilable = (decorator & CLASS_TYPE_NILABLE_MASK);
-  return nilable;
+  return isDecoratorNilable(decorator);
 }
 
 static Type* convertToCanonical(Type* a) {

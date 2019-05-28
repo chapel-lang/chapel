@@ -983,11 +983,12 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
   if (fn == NULL) {
     SymExpr* symExpr = NULL;
 
-    if (sym->hasFlag(FLAG_MANAGED_POINTER)) {
-      /*AggregateType* at = toAggregateType(sym->type);
+    if (sym->hasFlag(FLAG_MANAGED_POINTER) && isTypeSymbol(sym)) {
+      AggregateType* at = toAggregateType(sym->type);
+      INT_ASSERT(at);
       Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
-      symExpr = new SymExpr(t->symbol);*/
-      symExpr = new SymExpr(sym);
+      INT_ASSERT(t);
+      symExpr = new SymExpr(t->symbol);
     } else {
       symExpr = new SymExpr(sym);
     }
@@ -2220,20 +2221,17 @@ static void resolveUnmanagedBorrows() {
 
           // Compute the decorated class type
           if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILABLE_MASK;
+            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
             tmp |= CLASS_TYPE_UNMANAGED;
             decorator = (ClassTypeDecorator) tmp;
           } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILABLE_MASK;
+            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
             tmp |= CLASS_TYPE_BORROWED;
             decorator = (ClassTypeDecorator) tmp;
           } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_MANAGEMENT_MASK;
-            tmp |= CLASS_TYPE_NILABLE_MASK;
-            decorator = (ClassTypeDecorator) tmp;
+            decorator = addNilableToDecorator(decorator);
           } else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_MANAGEMENT_MASK;
-            decorator = (ClassTypeDecorator) tmp;
+            decorator = addNonNilToDecorator(decorator);
           }
 
           if (at) {
@@ -2249,6 +2247,9 @@ static void resolveUnmanagedBorrows() {
               case CLASS_TYPE_BORROWED:
                 dt = dtBorrowed;
                 break;
+              case CLASS_TYPE_BORROWED_NONNIL:
+                dt = dtBorrowedNonNilable;
+                break;
               case CLASS_TYPE_BORROWED_NILABLE:
                 dt = dtBorrowedNilable;
                 break;
@@ -2258,7 +2259,11 @@ static void resolveUnmanagedBorrows() {
               case CLASS_TYPE_UNMANAGED_NILABLE:
                 dt = dtUnmanagedNilable;
                 break;
+              case CLASS_TYPE_UNMANAGED_NONNIL:
+                dt = dtUnmanagedNonNilable;
+                break;
               case CLASS_TYPE_MANAGED:
+              case CLASS_TYPE_MANAGED_NONNIL:
               case CLASS_TYPE_MANAGED_NILABLE:
                 INT_FATAL("case not handled");
                 break;

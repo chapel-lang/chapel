@@ -730,11 +730,17 @@ void initPrimitiveTypes() {
   dtBorrowed = createInternalType("_borrowed", "_borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
 
+  dtBorrowedNonNilable = createInternalType("_borrowedNonNilable", "_borrowedNonNilable");
+  dtBorrowedNonNilable->symbol->addFlag(FLAG_GENERIC);
+
   dtBorrowedNilable = createInternalType("_borrowedNilable", "_borrowedNilable");
   dtBorrowedNilable->symbol->addFlag(FLAG_GENERIC);
 
   dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
+
+  dtUnmanagedNonNilable = createInternalType("_unmanagedNonNilable", "_unmanagedNonNilable");
+  dtUnmanagedNonNilable->symbol->addFlag(FLAG_GENERIC);
 
   dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
   dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
@@ -1111,11 +1117,17 @@ static bool isDerivedType(Type* type, Flag flag)
 }
 
 bool isManagedPtrType(const Type* t) {
+  if (const DecoratedClassType* dt = toConstDecoratedClassType(t))
+    t = dt->getCanonicalClass();
+
   return t && t->symbol->hasFlag(FLAG_MANAGED_POINTER);
 }
 
 Type* getManagedPtrBorrowType(const Type* managedPtrType) {
   INT_ASSERT(isManagedPtrType(managedPtrType));
+
+  if (const DecoratedClassType* dt = toConstDecoratedClassType(managedPtrType))
+    managedPtrType = dt->getCanonicalClass();
 
   const AggregateType* at = toConstAggregateType(managedPtrType);
 

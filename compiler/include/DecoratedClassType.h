@@ -20,7 +20,8 @@
 #ifndef _DECORATED_CLASS_TYPE_H_
 #define _DECORATED_CLASS_TYPE_H_
 
-#include "AggregateType.h"
+#include "DecoratedClasses.h"
+#include "type.h"
 
 /************************************* | **************************************
 *                                                                             *
@@ -50,11 +51,15 @@ public:
   GenRet                  codegen();
   DECLARE_COPY(DecoratedClassType);
 
-  AggregateType*          getCanonicalClass();
+  AggregateType*          getCanonicalClass() const;
 
   bool                    isNilable() const {
-    return (decorator & CLASS_TYPE_NILABLE_MASK);
+    return isDecoratorNilable(decorator);
   }
+  bool                    isNonNilable() const {
+    return isDecoratorNonNilable(decorator);
+  }
+
   bool                    isBorrowed() const {
     return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_BORROWED;
   }
@@ -68,6 +73,8 @@ public:
 
 private:
   // canonicalClass points to the AggregateType for the class
+  // or to dtOwned/dtShared/etc
+  // (dtBorrowed and dtUnmanaged are handled elsewhere)
   AggregateType*              canonicalClass;
   ClassTypeDecorator          decorator;
 };
@@ -75,6 +82,7 @@ private:
 bool classesWithSameKind(Type* a, Type* b);
 Type* canonicalClassType(Type* t);
 
+Type* getDecoratedClass(Type* t, ClassTypeDecorator d);
 ClassTypeDecorator classTypeDecorator(Type* t);
 bool isNonNilableClassType(Type* t);
 bool isNilableClassType(Type* t);

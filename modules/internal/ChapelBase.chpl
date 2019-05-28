@@ -617,9 +617,6 @@ module ChapelBase {
   inline proc >>(param a: int(?w), param b: integral) param return __primitive(">>", a, b);
   inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
 
-  inline proc postfix!(x:unmanaged) return x;
-  inline proc postfix!(x:borrowed) return x;
-
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed?) {
     // Check only if --nil-checks is enabled
@@ -631,14 +628,27 @@ module ChapelBase {
     }
   }
 
+  inline proc postfix!(type t:unmanaged) type {
+    return _to_nonnil(t);
+  }
+  inline proc postfix!(type t:borrowed) type {
+    return _to_nonnil(t);
+  }
+
   pragma "always propagate line file info"
-  inline proc postfix!(x:unmanaged?) {
-    checkNotNil(x);
+  inline proc postfix!(x:unmanaged) {
+    // skip the check for nilable types
+    if _to_nonnil(x.type) != x.type {
+      checkNotNil(x);
+    }
     return _to_nonnil(x);
   }
   pragma "always propagate line file info"
-  inline proc postfix!(x:borrowed?) {
-    checkNotNil(x);
+  inline proc postfix!(x:borrowed) {
+    // skip the check for nilable types
+    if _to_nonnil(x.type) != x.type {
+      checkNotNil(x);
+    }
     return _to_nonnil(x);
   }
 
@@ -1602,14 +1612,19 @@ module ChapelBase {
 
   // implements 'delete' statement
   pragma "no borrow convert"
-  inline proc chpl__delete(arg)
-    where isBorrowedOrUnmanagedClassType(arg.type) {
+  inline proc chpl__delete(arg) {
 
     if chpl_isDdata(arg.type) then
       compilerError("cannot delete data class");
-
     if arg.type == _nilType then
       compilerError("should not delete 'nil'");
+    if isSubtype(arg.type, _owned) then
+      compilerError("'delete' is not allowed on an owned class type");
+    if isSubtype(arg.type, _shared) then
+      compilerError("'delete' is not allowed on a shared class type");
+    if isRecord(arg) then
+      // special case for records as a more likely occurrence
+      compilerError("'delete' is not allowed on records");
 
     if !isSubtype(arg.type, unmanaged?) then
       compilerError("'delete' can only be applied to unmanaged classes");
@@ -1625,21 +1640,6 @@ module ChapelBase {
   proc chpl__delete(arr: []) {
     forall a in arr do
       chpl__delete(a);
-  }
-
-  // report an error when 'delete' is inappropriate
-  pragma "no borrow convert"
-  proc chpl__delete(arg) {
-    if isSubtype(arg.type, _owned) then
-      compilerError("'delete' is not allowed on an owned class type");
-    else if isSubtype(arg.type, _shared) then
-      compilerError("'delete' is not allowed on a shared class type");
-    else if isRecord(arg) then
-      // special case for records as a more likely occurrence
-      compilerError("'delete' is not allowed on records");
-    else
-      compilerError("'delete' is not allowed on non-class type ",
-                    arg.type:string);
   }
 
   // delete two or more things
@@ -2104,8 +2104,6 @@ module ChapelBase {
 
   proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param return true;
   proc isBorrowedOrUnmanagedClassType(type t:borrowed) param return true;
-  proc isBorrowedOrUnmanagedClassType(type t:unmanaged?) param return true;
-  proc isBorrowedOrUnmanagedClassType(type t:borrowed?) param return true;
   proc isBorrowedOrUnmanagedClassType(type t) param return false;
 
   proc isRecordType(type t) param {

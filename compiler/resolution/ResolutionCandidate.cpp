@@ -518,7 +518,10 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
   }
 
   if (actualType == dtNil) {
-    if (formalType == dtBorrowedNilable || formalType == dtUnmanagedNilable)
+    if (formalType == dtBorrowedNilable ||
+        formalType == dtBorrowed ||
+        formalType == dtUnmanagedNilable ||
+        formalType == dtUnmanaged)
       return actualType;
   }
 
@@ -773,8 +776,12 @@ static bool isNumericType(Type* t) {
 
 static bool isClassLikeOrManaged(Type* t) {
   return isClassLikeOrPtr(t) || isManagedPtrType(t) ||
-         t == dtBorrowed || t == dtBorrowedNilable ||
-         t == dtUnmanaged || t == dtUnmanagedNilable;
+         t == dtBorrowed ||
+         t == dtBorrowedNonNilable ||
+         t == dtBorrowedNilable ||
+         t == dtUnmanaged ||
+         t == dtUnmanagedNonNilable ||
+         t == dtUnmanagedNilable;
 }
 
 static ResolutionCandidateFailureReason
