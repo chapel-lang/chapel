@@ -867,11 +867,14 @@ module String {
       return localThis.buff[i - 1];
     }
 
-    //pragma "no doc"
-    //inline proc param byte(param i: int) param : uint(8) {
-    //  if this.isEmpty() && i == 1 then return 0;
-    //  return this.buff[i - 1];
-    //}
+    pragma "no doc"
+    inline proc param byte(param i: int) param : uint(8) {
+      if i != 1 {
+	compilerWarning("string.byte(arg other than 1) is not a param");
+	return 0;
+      }
+      return __primitive("ascii", this);
+    }
 
     /*
       :returns: The value of the `i` th multibyte character as an integer.
