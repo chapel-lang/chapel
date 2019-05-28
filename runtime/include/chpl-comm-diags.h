@@ -156,9 +156,10 @@ void chpl_comm_diags_verbose_printf(chpl_bool is_unstable,
                                  chpl_lookupFilename(fn), ln, op,       \
                                  (int) node)
 
-#define chpl_comm_diags_verbose_executeOn(kind, node)                   \
+#define chpl_comm_diags_verbose_executeOn(kind, node, ln, fn)           \
   chpl_comm_diags_verbose_printf(false,                                 \
-                                 "remote %-*sexecuteOn, node %d",       \
+                                 "%s:%d: remote %-*sexecuteOn, node %d", \
+                                 chpl_lookupFilename(fn), ln,           \
                                  ((int) strlen(kind)                    \
                                   + ((strlen(kind) == 0) ? 0 : 1)),     \
                                  kind, (int) node)
