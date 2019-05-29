@@ -116,8 +116,20 @@ module Lists {
     /* If `true`, this List will use parallel safe operations. */
     param parSafe;
 
+    //
+    // We can change the lock type later. Use a spinlock for now, even if it
+    // is suboptimal in cases where long critical sections have high
+    // contention (IE, lots of tasks trying to insert into the middle of this
+    // List, or any operation that is O(n).
+    //
     pragma "no doc"
-    const _lock$: nothing = none;
+    type lockType = ChapelLocks.chpl_LocalSpinlock;
+
+    //
+    // Little piece of wizardry @ronawho introduced me to in #13104.
+    //
+    pragma "no doc"
+    var _lock$: if parSafe then lockType else nothing;
 
     //
     // Michael suggested that we move from a LL of blocks to an array, which
@@ -143,7 +155,7 @@ module Lists {
       :arg parSafe: If `true`, this List will use parallel safe operations.
         Is `true` by default.
     */
-    proc init(type eltType, param parSafe=true) {
+    proc init(type eltType, param parSafe=false) {
       this.eltType = eltType;
       this.parSafe = parSafe;
     }
@@ -170,10 +182,12 @@ module Lists {
       assert(size == 0);
     }
 
+    //
     // This may not be necessary, so don't fixate too much on it.
+    //
     pragma "no doc"
     proc _cast(type t: string, x: List): string {
-      return "List cast not implemented yet!";
+      assert("List cast not implemented yet!" == "");
     }
 
     pragma "no doc"
@@ -203,23 +217,21 @@ module Lists {
       }
 
       // If this assertion fires, then we've abused _getRef() in some way.
-      assert(start != nil && idx <= start.capacity);
+      assert(start != nil && idx <= start.capacity && idx > 0);
 
       return start[idx - 1];
     }
 
     pragma "no doc"
     inline proc _enter() {
-      // TODO: Lock call goes here.
       if parSafe then
-        return;
+        _lock$.lock();
     }
 
     pragma "no doc"
     inline proc _leave() {
-      // TODO: Unlock call goes here.
       if parSafe then
-        return;
+        _lock$.unlock();
     }
 
     pragma "no doc"
@@ -236,8 +248,7 @@ module Lists {
     inline proc _boundsCheckReleaseOnThrow(i: int) throws {
       if !_withinBounds(i) then {
         _leave();
-        // const msg = "List index out of bounds: " + (i:string);
-        const msg = "List index out of bounds!";
+        const msg = "List index out of bounds: " + i:string;
         throw new owned
           IllegalArgumentError(msg);
       }
