@@ -51,7 +51,7 @@
 module Lists {
 
   pragma "no doc"
-  config const _initialCapacity = 32;
+  config const _initialCapacity = 8;
 
   pragma "no doc"
   config const _growthFactor = 2;
@@ -197,14 +197,15 @@ module Lists {
     //
     pragma "no doc"
     proc _getRef(in idx: int) ref {
-      assert(_withinBounds(idx));
-
       var start = _head;
 
-      while idx > start.capacity do {
+      while start != nil && idx > start.capacity do {
         idx -= start.capacity;
         start = start.next;
       }
+
+      // If this assertion fires, then we've abused _getRef() in some way.
+      assert(start != nil && idx <= start.capacity);
 
       return start.data[idx - 1];
     }
@@ -237,8 +238,10 @@ module Lists {
     inline proc _boundsCheckReleaseOnThrow(i: int) throws {
       if !_withinBounds(i) then {
         _leave();
+        // const msg = "List index out of bounds: " + (i:string);
+        const msg = "List index out of bounds!";
         throw new owned
-          IllegalArgumentError("List index out of bounds: ", i);
+          IllegalArgumentError(msg);
       }
     }
 
@@ -304,7 +307,6 @@ module Lists {
     pragma "no doc"
     proc _maybeReleaseMem(in amount: int=1) {
       if _head == nil || _head == _tail {
-        assert(_tail == nil);
         return;
       }
 
@@ -325,17 +327,14 @@ module Lists {
     //
     // Assumes that a copy of the input element has already been made at some
     // previous boundary, IE giving append's parameter the "in" intent.
-    // We also make sure to increment the element size before performing the
-    // move so that the assert in _getRef() doesn't fire (even though the
-    // memory isn't properly initialized until after the move).
     //
     pragma "no doc"
     proc _append(ref x: eltType) {
       _maybeAcquireMem(1);
-      size += 1;
       ref rhs = x;
-      ref lhs = _getRef(size);
+      ref lhs = _getRef(size + 1);
       _move(lhs, rhs);
+      size += 1;
     }
 
     /*
@@ -362,19 +361,19 @@ module Lists {
 
     pragma "no doc"
     inline proc _extendGenericAlter(collection) {
-      const csize = collection.size;
-      const oldsize = size;
+      const oldSize = size;
       
-      _maybeAcquireMem(csize);
-      size += csize;
+      _maybeAcquireMem(collection.size);
       
-      for i in 1..csize do {
+      for i in 1..collection.size do {
         pragma "no auto destroy"
         var cpy = collection[i];
         ref rhs = cpy;
-        ref lhs = _getRef(oldsize + i);
+        ref lhs = _getRef(oldSize + i);
         _move(lhs, rhs);
       }
+
+      size += collection.size;
     }
 
     /*
@@ -461,7 +460,7 @@ module Lists {
       _leave();
 
       throw new owned
-        IllegalArgumentError("No such element in List: ", x);
+        IllegalArgumentError("No such element in List: " + x:string);
     }
 
     /*
@@ -504,7 +503,7 @@ module Lists {
 
       // Manually call destructors on each currently allocated element.
       for i in 1..size do {
-        ref item = this[i];
+        ref item = _getRef(i);
         chpl__autoDestroy(item);
       }
 
@@ -549,7 +548,7 @@ module Lists {
       _leave();
 
       throw new owned
-        IllegalArgumentError("No such element in List: ", x);
+        IllegalArgumentError("No such element in List: " + x:string);
 
       // Should never reach here.
       return -1;

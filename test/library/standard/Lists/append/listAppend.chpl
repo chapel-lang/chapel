@@ -1,7 +1,7 @@
 use Lists;
 
 config type listType = int;
-config const stop = 64;
+config const stop = 16;
 
 var lst = new List(listType, false);
 
