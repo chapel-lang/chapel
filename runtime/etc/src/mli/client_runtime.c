@@ -26,6 +26,13 @@
 #include <unistd.h>
 
 struct chpl_mli_context chpl_client;
+static
+void chpl_mli_client_init(struct chpl_mli_context* client);
+void chpl_mli_client_deinit(struct chpl_mli_context* client);
+void chpl_mli_terminate(enum chpl_mli_errors e);
+int chpl_mli_client_launch(int argc, char** argv);
+void chpl_library_init(int argc, char** argv);
+void chpl_library_finalize(void);
 
 static
 void chpl_mli_client_init(struct chpl_mli_context* client) {
@@ -119,7 +126,8 @@ void chpl_library_init(int argc, char** argv) {
     chpl_mli_debugf("Passing along arg %d: %s\n", i, argv[i]);
     argv_plus_sock[i] = argv[i];
   }
-  argv_plus_sock[argc] = "--chpl-mli-socket-loc";
+  char socketFlag[22] = "--chpl-mli-socket-loc";
+  argv_plus_sock[argc] = socketFlag;
   argv_plus_sock[argc + 1] = setup_sock_conn;
   chpl_mli_debugf("Spawning server with %d args\n", argc_plus_sock);
   chpl_mli_client_launch(argc_plus_sock, argv_plus_sock);

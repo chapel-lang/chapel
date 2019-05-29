@@ -126,6 +126,8 @@ enum chpl_mli_errors {
 
 };
 
+const char* chpl_mli_errstr(enum chpl_mli_errors e);
+
 const char* chpl_mli_errstr(enum chpl_mli_errors e) {
   static const char* mli_errors_[] = {
     "NONE",
