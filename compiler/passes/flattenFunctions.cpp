@@ -83,26 +83,26 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
   if (!parent) {
     parent = fn->defPoint->parentSymbol;
 
-    // If the symbol is at module scope (and not an internal module)
-    // and the type should always be RVF'd then we should RVF it.
-    // (Otherwise, symbols at module scope tend not to be RVF'd... but
-    // maybe they should be?)
+    // If the symbol is at module scope and the type should always be
+    // RVF'd and the symbol doesn't have the "locale private" flag
+    // applied to it then we should RVF it, so add it to the
+    // function's argument list so that it can be considered in the
+    // remoteValueForwarding pass (Otherwise, symbols at module scope
+    // tend not to be RVF'd... but maybe they should be?  A
+    // disadvantage to doing so is that they have to be added as
+    // arguments in the flattenFunctions pass to be considered, but if
+    // they're not going to be RVF'd, this is unnecessary...  And if
+    // they're const, they'll be broadcast proactively at module
+    // initialization time).)
     //
-    // Why not internal modules?  Because when I did, we RVF'd the
-    // `Locales` array which caused extra communications to take place
-    // and generally seems confusing.  Alternatively, we could "never
-    // RVF" the Locales array, but we don't have such a pragma today
-    // and tend not to have distributed arrays in the internal modules
-    // anyway.
+    // Why skip "locale private" variables?  Because these variables
+    // already have special handling to localize them, and RVFing them
+    // causes the `Locales` to be RVF'd which caused extra
+    // communications to take place (and generally seems confusing).
     //
-    ModuleSymbol* mod = toModuleSymbol(sym->defPoint->parentSymbol);
-    if (mod && mod->modTag != MOD_INTERNAL &&
-        sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
-      /*
-      printf("Returning true for %s (%s:%d) and fn %s (%s:%d)\n",
-             sym->name, sym->astloc.filename, sym->astloc.lineno,
-             fn->name, fn->astloc.filename, fn->astloc.lineno);
-      */
+    if (isModuleSymbol(sym->defPoint->parentSymbol) &&
+        sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
+        !sym->hasFlag(FLAG_LOCALE_PRIVATE)) {
       return true;
     }
   }
