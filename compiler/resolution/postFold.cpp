@@ -378,7 +378,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
   } else if (call->isPrimitive("ascii") == true) {
     SymExpr* se = toSymExpr(call->get(1));
-    SymExpr* ie = toSymExpr(call->get(2));
+    SymExpr* ie = toSymExpr(call->get(2));  // optional index into the string
 
     INT_ASSERT(se);
 
@@ -394,11 +394,20 @@ static Expr* postFoldPrimop(CallExpr* call) {
         success = get_int(ie, &val);
         if (success) {
           idx = static_cast<size_t>(val) - 1;
-          if (idx > 0) {
-            size_t length = unescapeString(str, se).length();
-            if (idx >= length)
+
+          // When there is no index expression, only the zeroth
+          // element of the buffer is accessed.  It is always
+          // accessed, even when the string is empty.  In that case,
+          // the string terminator, a null byte, is returned.
+          //
+          // Here we duplicate that behavior when there is an index
+          // expression, for backwards compatibility.  It is exercised
+          // in some of the tests.
+          //
+          // If the string is nonempty, we don't allow indexing past
+          // the end.
+          if (idx > 0 && idx >= unescaped.length())
               success = false;
-          }
         }
       }
 

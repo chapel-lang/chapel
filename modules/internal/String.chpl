@@ -859,7 +859,12 @@ module String {
       :returns: The value of the `i` th byte as an integer.
     */
     proc byte(i: int): uint(8) {
-      if this.isEmpty() && i == 1 then return 0;
+      // Align with a corner case of the former ascii() function:
+      // If the string is empty, indexing into the first byte is
+      // allowed and returns a null byte (the string terminator).
+      // This is exercised in some of the tests.
+      if this.isEmpty() && i == 1 then return 0:uint(8);
+
       var localThis: string = this.localize();
 
       if boundsChecking && (i <= 0 || i > localThis.len)
@@ -888,7 +893,7 @@ module String {
     }
 
     /*
-      Return the codepoint starting at the ith byte in the string
+      Return the codepoint starting at the `i` th byte in the string
 
       :returns: A string with the complete multibyte character starting at the
                 specified byte index from ``1..string.length``
@@ -929,7 +934,7 @@ module String {
     }
 
     /*
-      Return the ith codepoint in the string
+      Return the `i` th codepoint in the string
 
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
@@ -941,7 +946,7 @@ module String {
     }
 
     /*
-      Return the ith codepoint in the string
+      Return the `i` th codepoint in the string
 
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
