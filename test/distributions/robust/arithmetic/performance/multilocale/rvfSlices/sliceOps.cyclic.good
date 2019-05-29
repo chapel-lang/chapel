@@ -2,8 +2,12 @@ create slice (module-scope):
 (<no communication>) (<no communication>) (<no communication>) (<no communication>)
 use slice via assignment (module-scope):
 (execute_on_nb = 3) (get = 6) (get = 6) (get = 6)
+0 serializing a slice
+0 serializing a slice
+0 serializing a slice
+0 serializing a slice
 use slice via random access (module-scope):
-(execute_on_nb = 3) (get = 972) (get = 972) (get = 972)
+(execute_on_nb = 3) (<no communication>) (<no communication>) (<no communication>)
 0 serializing a slice
 0 serializing a slice
 0 serializing a slice
