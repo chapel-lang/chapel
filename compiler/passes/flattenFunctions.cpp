@@ -83,11 +83,26 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
   if (!parent) {
     parent = fn->defPoint->parentSymbol;
 
-    // if the symbol is at module scope and the type should always be
-    // RVF'd then we should RVF it (otherwise, symbols at module scope
-    // tend not to be RVF'd...  but maybe they should be?)
-    if (isModuleSymbol(sym->defPoint->parentSymbol) &&
+    // If the symbol is at module scope (and not an internal module)
+    // and the type should always be RVF'd then we should RVF it.
+    // (Otherwise, symbols at module scope tend not to be RVF'd... but
+    // maybe they should be?)
+    //
+    // Why not internal modules?  Because when I did, we RVF'd the
+    // `Locales` array which caused extra communications to take place
+    // and generally seems confusing.  Alternatively, we could "never
+    // RVF" the Locales array, but we don't have such a pragma today
+    // and tend not to have distributed arrays in the internal modules
+    // anyway.
+    //
+    ModuleSymbol* mod = toModuleSymbol(sym->defPoint->parentSymbol);
+    if (mod && mod->modTag != MOD_INTERNAL &&
         sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
+      /*
+      printf("Returning true for %s (%s:%d) and fn %s (%s:%d)\n",
+             sym->name, sym->astloc.filename, sym->astloc.lineno,
+             fn->name, fn->astloc.filename, fn->astloc.lineno);
+      */
       return true;
     }
   }
