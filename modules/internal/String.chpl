@@ -858,18 +858,13 @@ module String {
     /*
       :returns: The value of the `i` th byte as an integer.
     */
-    proc byte(i: int = 1): uint(8) {
+    proc byte(i: int): uint(8) {
       if this.isEmpty() && i == 1 then return 0;
       var localThis: string = this.localize();
 
       if boundsChecking && (i <= 0 || i > localThis.len)
         then halt("index out of bounds of string: ", i);
       return localThis.buff[i - 1];
-    }
-
-    pragma "no doc"
-    inline proc param byte() param : uint(8) {
-      return __primitive("ascii", this);
     }
 
     /*
@@ -2234,6 +2229,11 @@ module String {
   inline proc ascii(param a: string) param {
     compilerWarning("ascii is deprecated - please use string.byte instead");
     return __primitive("ascii", a);
+  }
+
+  pragma "no doc"
+  inline proc param string.byte(param i: int) param : uint(8) {
+    return __primitive("ascii", this, i);
   }
 
   pragma "no doc"

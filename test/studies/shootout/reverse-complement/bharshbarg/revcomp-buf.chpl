@@ -113,12 +113,12 @@ proc main(args: [] string) {
 
   sync {     // wait for all process() tasks to complete before continuing
     while true {
-      input.readUntil("\n".byte(), data);
+      input.readUntil("\n".byte(1), data);
       const start = data.size + 1;
-      input.readUntil(">".byte(), data);
+      input.readUntil(">".byte(1), data);
       const last = data.size;
 
-      if data[last] == ">".byte() {
+      if data[last] == ">".byte(1) {
         // '-2' to skip over '\n>'
         begin process(data, start, last-2);
       } else {
@@ -137,7 +137,7 @@ proc main(args: [] string) {
 
 proc process(data, in start, in end) {
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while data[cursor] == "\n".byte();
+    do { cursor += dir; } while data[cursor] == "\n".byte(1);
   }
   while start <= end {
     ref d1 = data[start], d2 = data[end];

@@ -378,16 +378,35 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
   } else if (call->isPrimitive("ascii") == true) {
     SymExpr* se = toSymExpr(call->get(1));
+    SymExpr* ie = toSymExpr(call->get(2));
 
     INT_ASSERT(se);
 
-    if (se->symbol()->isParameter() == true) {
+    if (se->symbol()->isParameter() == true &&
+        (!ie || ie->symbol()->isParameter() == true)) {
       const char*       str       = get_string(se);
       const std::string unescaped = unescapeString(str, se);
+      size_t            idx       = 0;
+      bool              success   = true;
 
-      retval = new SymExpr(new_UIntSymbol((int)unescaped[0], INT_SIZE_8));
+      if (ie) {
+	int64_t val;
+	success = get_int(ie, &val);
+	if (success) {
+	  idx = static_cast<size_t>(val) - 1;
+	  if (idx > 0) {
+	    size_t length = unescapeString(str, se).length();
+	    if (idx >= length)
+	      success = false;
+	  }
+	}
+      }
 
-      call->replace(retval);
+      if (success) {
+        retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
+
+        call->replace(retval);
+      }
     }
 
   } else if (call->isPrimitive("string_contains") == true) {

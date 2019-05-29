@@ -26,12 +26,12 @@ proc main(args: [] string) {
       input.mark();
 
       // Scan forward until we get to the \n (end of description)
-      input.advancePastByte("\n".byte());
+      input.advancePastByte("\n".byte(1));
       seqOffset = input.offset();
 
       try {
         // Scan forward until we get to the > (end of sequence)
-        input.advancePastByte(">".byte());
+        input.advancePastByte(">".byte(1));
         nextDescOffset = input.offset();
       } catch e:EOFError {
         eof = true;
@@ -65,7 +65,7 @@ proc main(args: [] string) {
 proc process(data, in start, in end) {
 
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while data[cursor] == "\n".byte();
+    do { cursor += dir; } while data[cursor] == "\n".byte(1);
   }
   while start <= end {
     ref d1 = data[start], d2 = data[end];
