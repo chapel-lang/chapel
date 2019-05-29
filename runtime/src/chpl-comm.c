@@ -23,10 +23,14 @@
 //
 #include "chplrt.h"
 #include "chpl-comm.h"
+#include "chpl-comm-compiler-macros.h"
 #include "chpl-comm-diags.h"
 #include "chpl-comm-internal.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"
+
+// Don't get warning macros for chpl_comm_get etc.
+#include "chpl-comm-no-warning-macros.h"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -35,6 +39,56 @@
 
 int32_t chpl_nodeID = -1;
 int32_t chpl_numNodes = -1;
+
+
+//
+// Global variable broadcast support.
+//
+void chpl_comm_register_global_var(int i, wide_ptr_t *ptr_to_wide_ptr) {
+  chpl_globals_registry[i] = ptr_to_wide_ptr;
+}
+
+
+void chpl_comm_broadcast_global_vars(int numGlobals) {
+  //
+  // On node 0: gather up the global variables' wide pointers into a
+  //            buffer; return that buffer if it needs deallocating
+  //            after the communication, otherwise NULL.
+  // On other nodes: retrieve the node 0 local address of that buffer.
+  //
+  wide_ptr_t* buf_on_0;
+  buf_on_0 = chpl_comm_broadcast_global_vars_helper();
+
+  //
+  // On node 0: barrier to ensure the other nodes have the global vars;
+  //            free the buffer if needed.
+  // On other nodes: GET the buffer of wide pointers; scatter it into
+  //                 our copies of the global vars; barrier to indicate
+  //                 we're done.  Node 0 could actually free the buffer
+  //                 as soon as we GET it, but we also have to prevent
+  //                 node 0 from running any Chapel code until all the
+  //                 other nodes have recorded the wide pointers.  So,
+  //                 we delay our barrier to achieve both goals.
+  //
+  if (chpl_nodeID == 0) {
+    chpl_comm_barrier("broadcast global vars");
+    if (buf_on_0 != NULL) {
+      chpl_mem_free(buf_on_0, 0, 0);
+    }
+  } else {
+    wide_ptr_t* buf;
+    size_t size = chpl_numGlobalsOnHeap * sizeof(*buf);
+    buf = (wide_ptr_t*)
+          chpl_mem_alloc(size, CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+    chpl_comm_get(buf, 0, buf_on_0, size,
+                  -1, CHPL_COMM_UNKNOWN_ID, 0, -1);
+    for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
+      *chpl_globals_registry[i] = buf[i];
+    }
+    chpl_comm_barrier("broadcast global vars");
+    chpl_mem_free(buf, 0, 0);
+  }
+}
 
 
 void** chpl_rt_priv_bcast_tab;

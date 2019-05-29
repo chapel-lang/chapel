@@ -78,11 +78,8 @@ module UnorderedCopy {
   /*
      Unordered copy. Only supported for numeric types.
    */
-  inline proc unorderedCopy(ref dst, ref src): void {
-    // TODO currently this requires identical types, which prevents things like
-    // `var a = 0.0, b = 1; unorderedCopy(a, b);`, whereas `a = b;` works with
-    // coercions. Allow arbitrary types and use `canResolve("=", dst, src)`?
-    if !isNumericType(dst.type) || dst.type != src.type {
+  inline proc unorderedCopy(ref dst:numeric, ref src:numeric): void {
+    if dst.type != src.type {
       compilerError("unorderedCopy is only supported between identical numeric types");
     }
 

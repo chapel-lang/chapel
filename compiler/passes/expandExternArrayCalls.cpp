@@ -29,7 +29,7 @@
 #include <set>
 
 static bool checkIsArray(ArgSymbol* formal, UnresolvedSymExpr* &eltType);
-
+static bool retExprTypeIsVoid(BlockStmt* retExprType);
 // The goal of this pass is to convert any extern proc declarations that
 // contain an array argument to take a c_ptr instead and provide a wrapping
 // function that can handle being passed a Chapel array.
@@ -128,7 +128,8 @@ void expandExternArrayCalls() {
         }
         current_formal++;
       }
-      if (fn->retType == dtVoid) {
+      bool retIsVoid = retExprTypeIsVoid(fn->retExprType);
+      if (fn->retType == dtVoid || retIsVoid) {
         fcopy->body->replace(new BlockStmt(externCall));
       } else {
         fcopy->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, externCall)));
@@ -152,6 +153,17 @@ bool checkIsArray(ArgSymbol* formal, UnresolvedSymExpr* &eltType) {
         if (typeAsCall->numActuals() > 1) {
           eltType = toUnresolvedSymExpr(typeAsCall->get(2));
         }
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool retExprTypeIsVoid(BlockStmt* retExprType) {
+  if (retExprType != NULL && retExprType->body.length == 1) {
+    if (SymExpr* se = toSymExpr(retExprType->body.only())) {
+      if (se->symbol()->type == dtVoid) {
         return true;
       }
     }

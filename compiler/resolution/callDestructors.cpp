@@ -1223,6 +1223,8 @@ void callDestructors() {
 
   adjustCoforallIndexVariables();
 
+  createIteratorBreakBlocks();
+
   fixupDestructors();
 
   insertDestructorCalls();

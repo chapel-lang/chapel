@@ -3994,44 +3994,52 @@ DEFINE_PRIM(PRIM_XOR) {
 }
 
 DEFINE_PRIM(PRIM_ASSIGN) {
-    Expr*       lhs        = call->get(1);
-    Expr*       rhs        = call->get(2);
-    TypeSymbol* lhsTypeSym = lhs->typeInfo()->symbol;
-    TypeSymbol* rhsTypeSym = rhs->typeInfo()->symbol;
+  Expr*       lhs        = call->get(1);
+  Expr*       rhs        = call->get(2);
+  TypeSymbol* lhsTypeSym = lhs->typeInfo()->symbol;
+  TypeSymbol* rhsTypeSym = rhs->typeInfo()->symbol;
 
-    // PRIM_ASSIGN differs from PRIM_MOVE in that PRIM_ASSIGN always copies
-    // objects.  PRIM_MOVE can be used to copy a pointer (i.e. reference)
-    // into another pointer, but if you try this with PRIM_ASSIGN, instead
-    // it will overwrite what the LHS points to with what the RHS points to.
+  // PRIM_ASSIGN differs from PRIM_MOVE in that PRIM_ASSIGN always copies
+  // objects.  PRIM_MOVE can be used to copy a pointer (i.e. reference)
+  // into another pointer, but if you try this with PRIM_ASSIGN, instead
+  // it will overwrite what the LHS points to with what the RHS points to.
 
-    // TODO:  Works but may be slow.
-    // (See the implementation of PRIM_MOVE above for several peephole
-    // optimizations depending on specifics of the RHS expression.)
+  // TODO:  Works but may be slow.
+  // (See the implementation of PRIM_MOVE above for several peephole
+  // optimizations depending on specifics of the RHS expression.)
 
-    // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
-    if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) &&
-        rhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
-      codegenAssign(lhs, rhs);
+  // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
+  GenRet lg;
+  GenRet rg;
 
-    } else if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == true &&
-               rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false) {
-      INT_ASSERT(isClassOrNil(rhsTypeSym->type));
-      codegenAssign(lhs, codegenWideHere(rhs));
+  if (lhs->isRefOrWideRef()) {
+    lg = codegenDeref(lhs);
+    lhsTypeSym = lhsTypeSym->getValType()->symbol;
+  } else {
+    lg = lhs->codegen();
+  }
 
-    } else if (call->get(1)->isRefOrWideRef() ||
-               lhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
-      if (call->get(2)->isRefOrWideRef())
-        codegenAssign(codegenDeref(lhs), codegenDeref(rhs));
-      else
-        codegenAssign(codegenDeref(lhs), rhs);
+  if (rhs->isRefOrWideRef()) {
+    rg = codegenDeref(rhs);
+    rhsTypeSym = rhsTypeSym->getValType()->symbol;
+  } else {
+    rg = rhs->codegen();
+  }
 
-    } else {
-      GenRet rg = rhs;
-      if (rhs->isRefOrWideRef()) {
-        rg = codegenDeref(rg);
-      }
-      codegenAssign(lhs, rg);
-    }
+  if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false &&
+      rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == true)
+    rg = codegenRaddr(rg);
+
+  if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == true &&
+      rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false)
+    rg = codegenWideHere(rg);
+
+  if (!lg.chplType)
+    lg.chplType = lhsTypeSym->type;
+  if (!rg.chplType)
+    rg.chplType = rhsTypeSym->type;
+
+  codegenAssign(lg, rg);
 }
 
 static bool commUnorderedOpsAvailable(Type* elementType) {
@@ -4803,7 +4811,7 @@ DEFINE_PRIM(PRIM_STACK_ALLOCATE_CLASS) {
     ret = codegenCast(at, codegenAddrOf(tmp));
 }
 
-DEFINE_PRIM(PRIM_HEAP_REGISTER_GLOBAL_VAR) {
+DEFINE_PRIM(PRIM_REGISTER_GLOBAL_VAR) {
     GenRet idx          = codegenValue(call->get(1));
     GenRet var          = call->get(2);
     GenRet ptr_wide_ptr = codegenAddrOf(var);
@@ -4830,12 +4838,12 @@ DEFINE_PRIM(PRIM_HEAP_REGISTER_GLOBAL_VAR) {
     }
 #endif
 
-    codegenCall("chpl_heap_register_global_var",
+    codegenCall("chpl_comm_register_global_var",
                 idx,
                 codegenCast("ptr_wide_ptr_t", ptr_wide_ptr));
 }
-DEFINE_PRIM(PRIM_HEAP_BROADCAST_GLOBAL_VARS) {
-    codegenCall("chpl_gen_comm_broadcast_global_vars", call->get(1));
+DEFINE_PRIM(PRIM_BROADCAST_GLOBAL_VARS) {
+    codegenCall("chpl_comm_broadcast_global_vars", call->get(1));
 }
 DEFINE_PRIM(PRIM_PRIVATE_BROADCAST) {
     codegenCall("chpl_comm_broadcast_private",

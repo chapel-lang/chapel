@@ -499,8 +499,6 @@ returnInfoToNilable(CallExpr* call) {
     t = getManagedPtrBorrowType(t);
   }
 
-
-
   if (AggregateType* at = toAggregateType(t))
     if (isClass(at))
       t = at->getDecoratedClass(decorator);
@@ -899,8 +897,8 @@ initPrimitive() {
   // specify a particular localeID for an on clause.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
-  prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);
-  prim_def(PRIM_HEAP_BROADCAST_GLOBAL_VARS, "_heap_broadcast_global_vars", returnInfoVoid, true, true);
+  prim_def(PRIM_REGISTER_GLOBAL_VAR, "_register_global_var", returnInfoVoid, true, true);
+  prim_def(PRIM_BROADCAST_GLOBAL_VARS, "_broadcast_global_vars", returnInfoVoid, true, true);
   // ('_private_broadcast' sym)
   // Later, a structure index is inserted ahead
   // of the symbol, so it ends up as

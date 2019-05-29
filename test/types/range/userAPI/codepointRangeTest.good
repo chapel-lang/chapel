@@ -2,7 +2,7 @@
 ./rangeAPItest.chpl:43: warning: invoking 'offset' on an unstrided range has no effect.
 codepoint range
 ------------
-(_cpindex = 1)..(_cpindex = 10)
+1..10
 idxType          = codepointIndex
 stridable        = false
 boundedType      = bounded
@@ -11,14 +11,14 @@ isBoundedRange() = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
-alignment        = (_cpindex = 1)
+alignment        = 1
 aligned          = true
-first            = (_cpindex = 1)
-last             = (_cpindex = 10)
-low              = (_cpindex = 1)
-high             = (_cpindex = 10)
-alignedLow       = (_cpindex = 1)
-alignedHigh      = (_cpindex = 10)
+first            = 1
+last             = 10
+low              = 1
+high             = 10
+alignedLow       = 1
+alignedHigh      = 10
 isEmpty()        = false
 size             = 10
 length           = 10
@@ -26,35 +26,35 @@ hasFirst()       = true
 hasLast()        = true
 isNat.Algned()   = true
 isAmbiguous      = false
-contains((_cpindex = 4)) = true
-contains((_cpindex = 3)..(_cpindex = 6)) = true
+contains(4) = true
+contains(3..6) = true
 ident(self)      = true
 ident(other)     = false
-boundsCheck((_cpindex = 4)) = true
-boundsCheck((_cpindex = 3)..(_cpindex = 6)) = true
-indexOrder((_cpindex = 4)) = 3
-orderToIndex(3)  = (_cpindex = 4)
-expand(2)        = (_cpindex = -1)..(_cpindex = 12)
-offset(1)        = (_cpindex = 1)..(_cpindex = 10)
-translate(2)     = (_cpindex = 3)..(_cpindex = 12)
-translate(-2)    = (_cpindex = -1)..(_cpindex = 8)
-exterior(2)      = (_cpindex = 11)..(_cpindex = 12)
-exterior(-2)     = (_cpindex = -1)..(_cpindex = 0)
-interior(2)      = (_cpindex = 9)..(_cpindex = 10)
-interior(-2)     = (_cpindex = 1)..(_cpindex = 2)
+boundsCheck(4) = true
+boundsCheck(3..6) = true
+indexOrder(4) = 3
+orderToIndex(3)  = 4
+expand(2)        = -1..12
+offset(1)        = 1..10
+translate(2)     = 3..12
+translate(-2)    = -1..8
+exterior(2)      = 11..12
+exterior(-2)     = -1..0
+interior(2)      = 9..10
+interior(-2)     = 1..2
 serial iteration = 
-(_cpindex = 1) (_cpindex = 2) (_cpindex = 3) (_cpindex = 4) (_cpindex = 5) (_cpindex = 6) (_cpindex = 7) (_cpindex = 8) (_cpindex = 9) (_cpindex = 10) 
-r#2               = (_cpindex = 1)..(_cpindex = 2)
-r#-2              = (_cpindex = 9)..(_cpindex = 10)
+1 2 3 4 5 6 7 8 9 10 
+r#2               = 1..2
+r#-2              = 9..10
 r == subr         = false
 r != subr         = true
-r[subr]           = (_cpindex = 3)..(_cpindex = 6)
+r[subr]           = 3..6
 r[subr] == subr[r]= true
-Copying...        = (_cpindex = 1)..(_cpindex = 10)
+Copying...        = 1..10
 
 strided codepoint range
 ------------
-(_cpindex = 1)..(_cpindex = 20) by 2
+1..20 by 2
 idxType          = codepointIndex
 stridable        = true
 boundedType      = bounded
@@ -63,14 +63,14 @@ isBoundedRange() = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 2
-alignment        = (_cpindex = 1)
+alignment        = 1
 aligned          = true
-first            = (_cpindex = 1)
-last             = (_cpindex = 19)
-low              = (_cpindex = 1)
-high             = (_cpindex = 20)
-alignedLow       = (_cpindex = 1)
-alignedHigh      = (_cpindex = 19)
+first            = 1
+last             = 19
+low              = 1
+high             = 20
+alignedLow       = 1
+alignedHigh      = 19
 isEmpty()        = false
 size             = 10
 length           = 10
@@ -78,35 +78,35 @@ hasFirst()       = true
 hasLast()        = true
 isNat.Algned()   = true
 isAmbiguous      = false
-contains((_cpindex = 7)) = true
-contains((_cpindex = 5)..(_cpindex = 13) by 2) = true
+contains(7) = true
+contains(5..13 by 2) = true
 ident(self)      = true
 ident(other)     = false
-boundsCheck((_cpindex = 7)) = true
-boundsCheck((_cpindex = 5)..(_cpindex = 13) by 2) = true
-indexOrder((_cpindex = 7)) = 3
-orderToIndex(3)  = (_cpindex = 7)
-expand(2)        = (_cpindex = -1)..(_cpindex = 22) by 2
-offset(1)        = (_cpindex = 1)..(_cpindex = 20) by 2 align (_cpindex = 0)
-translate(2)     = (_cpindex = 3)..(_cpindex = 22) by 2
-translate(-2)    = (_cpindex = -1)..(_cpindex = 18) by 2
-exterior(2)      = (_cpindex = 21)..(_cpindex = 22) by 2
-exterior(-2)     = (_cpindex = -1)..(_cpindex = 0) by 2
-interior(2)      = (_cpindex = 19)..(_cpindex = 20) by 2
-interior(-2)     = (_cpindex = 1)..(_cpindex = 2) by 2
+boundsCheck(7) = true
+boundsCheck(5..13 by 2) = true
+indexOrder(7) = 3
+orderToIndex(3)  = 7
+expand(2)        = -1..22 by 2
+offset(1)        = 1..20 by 2 align 0
+translate(2)     = 3..22 by 2
+translate(-2)    = -1..18 by 2
+exterior(2)      = 21..22 by 2
+exterior(-2)     = -1..0 by 2
+interior(2)      = 19..20 by 2
+interior(-2)     = 1..2 by 2
 serial iteration = 
-(_cpindex = 1) (_cpindex = 3) (_cpindex = 5) (_cpindex = 7) (_cpindex = 9) (_cpindex = 11) (_cpindex = 13) (_cpindex = 15) (_cpindex = 17) (_cpindex = 19) 
-r#2               = (_cpindex = 1)..(_cpindex = 4) by 2
-r#-2              = (_cpindex = 17)..(_cpindex = 20) by 2
+1 3 5 7 9 11 13 15 17 19 
+r#2               = 1..4 by 2
+r#-2              = 17..20 by 2
 r == subr         = false
 r != subr         = true
-r[subr]           = (_cpindex = 5)..(_cpindex = 13) by 2
+r[subr]           = 5..13 by 2
 r[subr] == subr[r]= true
-Copying...        = (_cpindex = 1)..(_cpindex = 20) by 2
+Copying...        = 1..20 by 2
 
 low bounded codepoint range
 ------------
-(_cpindex = 1)..
+1..
 idxType          = codepointIndex
 stridable        = false
 boundedType      = boundedLow
@@ -115,45 +115,45 @@ isBoundedRange() = false
 hasLowBound()    = true
 hasHighBound()   = false
 stride           = 1
-alignment        = (_cpindex = 1)
+alignment        = 1
 aligned          = true
-first            = (_cpindex = 1)
-last             = (_cpindex = 0)
-low              = (_cpindex = 1)
-high             = (_cpindex = 0)
-alignedLow       = (_cpindex = 1)
-alignedHigh      = (_cpindex = 0)
+first            = 1
+last             = 0
+low              = 1
+high             = 0
+alignedLow       = 1
+alignedHigh      = 0
 isEmpty()        = false
 hasFirst()       = true
 hasLast()        = false
 isNat.Algned()   = true
 isAmbiguous      = false
-contains((_cpindex = 4)) = true
-contains((_cpindex = 3)..(_cpindex = 6)) = true
+contains(4) = true
+contains(3..6) = true
 ident(self)      = true
 ident(other)     = false
-boundsCheck((_cpindex = 4)) = true
-boundsCheck((_cpindex = 3)..(_cpindex = 6)) = true
-indexOrder((_cpindex = 4)) = 3
-orderToIndex(3)  = (_cpindex = 4)
-translate(2)     = (_cpindex = 3)..
-translate(-2)    = (_cpindex = -1)..
+boundsCheck(4) = true
+boundsCheck(3..6) = true
+indexOrder(4) = 3
+orderToIndex(3)  = 4
+translate(2)     = 3..
+translate(-2)    = -1..
 serial iteration = 
-(_cpindex = 1) 
-(_cpindex = 2) 
-(_cpindex = 3) 
+1 
+2 
+3 
 ...
 
-r#2               = (_cpindex = 1)..(_cpindex = 2)
+r#2               = 1..2
 r == subr         = false
 r != subr         = true
-r[subr]           = (_cpindex = 3)..(_cpindex = 6)
+r[subr]           = 3..6
 r[subr] == subr[r]= true
-Copying...        = (_cpindex = 1)..
+Copying...        = 1..
 
 high bounded codepoint range
 ------------
-..(_cpindex = 10)
+..10
 idxType          = codepointIndex
 stridable        = false
 boundedType      = boundedHigh
@@ -162,35 +162,35 @@ isBoundedRange() = false
 hasLowBound()    = false
 hasHighBound()   = true
 stride           = 1
-alignment        = (_cpindex = 0)
+alignment        = 0
 aligned          = false
-first            = (_cpindex = 1)
-last             = (_cpindex = 10)
-low              = (_cpindex = 1)
-high             = (_cpindex = 10)
-alignedLow       = (_cpindex = 1)
-alignedHigh      = (_cpindex = 10)
+first            = 1
+last             = 10
+low              = 1
+high             = 10
+alignedLow       = 1
+alignedHigh      = 10
 isEmpty()        = false
 hasFirst()       = false
 hasLast()        = true
 isNat.Algned()   = false
 isAmbiguous      = false
-contains((_cpindex = 4)) = true
-contains((_cpindex = 3)..(_cpindex = 6)) = true
+contains(4) = true
+contains(3..6) = true
 ident(self)      = true
 ident(other)     = false
-boundsCheck((_cpindex = 4)) = true
-boundsCheck((_cpindex = 3)..(_cpindex = 6)) = true
-indexOrder((_cpindex = 4)) = -1
-translate(2)     = ..(_cpindex = 12)
-translate(-2)    = ..(_cpindex = 8)
+boundsCheck(4) = true
+boundsCheck(3..6) = true
+indexOrder(4) = -1
+translate(2)     = ..12
+translate(-2)    = ..8
 serial iteration = 
 <can't be done>
 
-r#-2              = (_cpindex = 9)..(_cpindex = 10)
+r#-2              = 9..10
 r == subr         = false
 r != subr         = true
-r[subr]           = (_cpindex = 3)..(_cpindex = 6)
+r[subr]           = 3..6
 r[subr] == subr[r]= true
-Copying...        = ..(_cpindex = 10)
+Copying...        = ..10
 

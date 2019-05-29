@@ -3,7 +3,7 @@ class C {
 }
 
 record R {
-  var c : unmanaged C;
+  var c : unmanaged C?;
   proc init() {
     writeln("default init");
   }
@@ -12,12 +12,12 @@ record R {
     this.c = new unmanaged C(x);
   }
   proc init=(other:R) {
-    writeln("copy: ", other.c.x, " --> ", other.c.x + 1);
-    this.c = new unmanaged C(other.c.x + 1);
+    writeln("copy: ", other.c!.x, " --> ", other.c!.x + 1);
+    this.c = new unmanaged C(other.c!.x + 1);
   }
   proc deinit() {
     if c != nil {
-      writeln("deinit: ", c.x);
+      writeln("deinit: ", c!.x);
       delete c;
     }
   }
@@ -27,7 +27,7 @@ record R {
 proc =(ref A : R, B : R) {
   if A.c != nil then delete A.c;
   if B.c != nil {
-    A.c = new unmanaged C(B.c.x + 1);
+    A.c = new unmanaged C(B.c!.x + 1);
     writeln("Assignment from R(", B.c, "), resulting in R(", A.c, ")");
   } else {
     A.c = nil;

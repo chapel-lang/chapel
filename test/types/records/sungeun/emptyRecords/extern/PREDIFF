@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-head -2 $2 > $2.tmp && mv $2.tmp $2
+sed -e '/^\$CHPL_HOME\/modules\//d' < $2 | \
+head -1 > $2.tmp && mv $2.tmp $2

@@ -23,7 +23,7 @@ else:
     # get the distribution from the -sdistType=... option, if present
     dist = 'block'
     searchstring='distType=DistType.'
-    s = string.rfind(compopts, searchstring)
+    s = compopts.rfind(searchstring)
 
     if s != -1:
         opt = compopts[s+len(searchstring):len(compopts)]
@@ -40,5 +40,5 @@ if not os.path.isfile(goodfn):
         if not os.path.isfile(goodfn):
             goodfn=testname+'.default.good'
 
-print "cp", goodfn, targetfn
+print('cp {0} {1}'.format(goodfn, targetfn))
 shutil.copy(goodfn, targetfn)

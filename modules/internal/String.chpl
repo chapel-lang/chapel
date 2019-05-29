@@ -114,19 +114,21 @@ units for offsets or lengths:
  * codepoints
  * graphemes
 
-Most methods on the Chapel string type currently work with byte units by
-default. For example, :proc:`~string.length` returns the length in bytes and
-`int` values passed into :proc:`~string.this` are offsets in byte units.
+Most methods on the Chapel string type currently work with codepoint units by
+default. For example, :proc:`~string.length` returns the length in codepoints
+and `int` values passed into :proc:`~string.this` are offsets in codepoint
+units.
 
-The string type currently supports codepoint units as well. In some cases these
-units are indicated by the method name, for example with
-:proc:`~string.numCodepoints`. Other methods, including :proc:`~string.this`, support
-arguments of type :record:`codepointIndex` (instead of `int`) in order to
-request codepoint units.
+It is possible to indicate byte or codepoint units for indexing in the
+string methods by using arguments of type :record:`byteIndex` or
+:record:`codepointIndex` respectively.
+
+For speed of indexing with their result values, :proc:`~string.find()`
+and :proc:`~string.rfind()` return a :record:`byteIndex`.
 
 .. note::
 
-  Support for graphemes units is not implemented at this time.
+  Support for grapheme units is not implemented at this time.
 
  */
 module String {
@@ -218,18 +220,63 @@ module String {
   }
 
   /*
+     A value of type :record:`byteIndex` can be passed to certain
+     `string` functions to indicate that the function should operate
+     with units of bytes. See :proc:`~string.this`.
+
+     An `int` can be added to a :record:`byteIndex`, producing
+     another :record:`byteIndex`.  One :record:`byteIndex`
+     can be subtracted from another, producing an `int` distance
+     between them.  A :record:`byteIndex` can also be compared
+     with another :record:`byteIndex` or with an `int` .
+
+     To create or modify a :record:`byteIndex`, cast or assign it from an
+     `int`. For example, the following function returns a string
+     containing only the second byte of the argument:
+
+     .. code-block:: chapel
+
+       proc getSecondByte(arg:string) : int {
+         var offsetInBytes = 2:byteIndex;
+         return arg[offsetInBytes];
+       }
+
+   */
+  record byteIndex {
+    pragma "no doc"
+    var _bindex  : int;
+
+    pragma "no doc"
+    proc init() {
+      // Let compiler insert defaults
+    }
+    proc init(i: int) { _bindex = i; }
+    proc init=(i: int) { _bindex = i; }
+
+    proc writeThis(f) {
+      f <~> _bindex;
+    }
+  }
+
+  /*
      A value of type :record:`codepointIndex` can be passed to certain
      `string` functions to indicate that the function should operate
      with units of codepoints. See :proc:`~string.this`.
 
-     To create or modify a :record:`codepointIndex`, cast it to or from an
-     `int`. For example, For example, the following function returns a string
+     An `int` can be added to a :record:`codepointIndex`, producing
+     another :record:`codepointIndex`.  One :record:`codepointIndex`
+     can be subtracted from another, producing an `int` distance
+     between them.  A :record:`codepointIndex` can also be compared
+     with another :record:`codepointIndex` or with an `int` .
+
+     To create or modify a :record:`codepointIndex`, cast or assign it from an
+     `int`. For example, the following function returns a string
      containing only the second codepoint of the argument:
 
      .. code-block:: chapel
 
        proc getSecondCodepoint(arg:string) : int {
-         var offsetInCodepoints = 1:codepointIndex;
+         var offsetInCodepoints = 2:codepointIndex;
          return arg[offsetInCodepoints];
        }
 
@@ -237,6 +284,17 @@ module String {
   record codepointIndex {
     pragma "no doc"
     var _cpindex  : int;
+
+    pragma "no doc"
+    proc init() {
+      // Let compiler insert defaults
+    }
+    proc init(i: int) { _cpindex = i; }
+    proc init=(i: int) { _cpindex = i; }
+
+    proc writeThis(f) {
+      f <~> _cpindex;
+    }
   }
 
   /*
@@ -247,43 +305,188 @@ module String {
     return codepointIndex;
   }
 
-  // Helper routines in support of being able to use ranges of codepointIndex
+  // Helper routines in support of being able to use ranges of indices
   pragma "no doc"
-  proc chpl_build_bounded_range(low: codepointIndex, high: codepointIndex)
-    return new range(codepointIndex, _low=low, _high=high);
+  proc chpl_build_bounded_range(low: ?t, high: t)
+    where t == byteIndex || t == codepointIndex
+    return new range(t, _low=low, _high=high);
 
   pragma "no doc"
-  proc chpl_build_low_bounded_range(low: codepointIndex)
-    return new range(codepointIndex, BoundedRangeType.boundedLow, _low=low);
+  proc chpl_build_low_bounded_range(low: ?t)
+    where t == byteIndex || t == codepointIndex
+    return new range(t, BoundedRangeType.boundedLow, _low=low);
 
   pragma "no doc"
-  proc chpl_build_high_bounded_range(high: codepointIndex)
-    return new range(codepointIndex, BoundedRangeType.boundedHigh, _high=high);
+  proc chpl_build_high_bounded_range(high: ?t)
+    where t == byteIndex || t == codepointIndex
+    return new range(t, BoundedRangeType.boundedHigh, _high=high);
+
+  pragma "no doc"
+  proc chpl__rangeStrideType(type idxType: byteIndex) type
+    return int;
 
   pragma "no doc"
   proc chpl__rangeStrideType(type idxType: codepointIndex) type
     return int;
 
   pragma "no doc"
+  proc chpl__rangeUnsignedType(type idxType: byteIndex) type
+    return uint;
+
+  pragma "no doc"
   proc chpl__rangeUnsignedType(type idxType: codepointIndex) type
     return uint;
 
   pragma "no doc"
-  inline proc chpl__idxToInt(i: codepointIndex)
+  inline proc chpl__idxToInt(i: ?t)
+    where t == byteIndex || t == codepointIndex
     return i:int;
+
+  pragma "no doc"
+  inline proc chpl__intToIdx(type idxType: byteIndex, i: int)
+    return i: byteIndex;
 
   pragma "no doc"
   inline proc chpl__intToIdx(type idxType: codepointIndex, i: int)
     return i: codepointIndex;
 
   pragma "no doc"
+  proc chpl__idxTypeToIntIdxType(type idxType: byteIndex) type
+    return int;
+
+  pragma "no doc"
   proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type
     return int;
 
   pragma "no doc"
-  proc >(x: codepointIndex, y: codepointIndex)
+  inline proc >(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
     return x: int > y: int;
+
+  pragma "no doc"
+  inline proc >(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return x: int > y;
+
+  pragma "no doc"
+  inline proc >(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x > y: int;
   // End range helper support
+
+  // Index arithmetic support
+  // index + int or int + index --> index
+  pragma "no doc"
+  inline proc +(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return (x: int + y): t;
+
+  pragma "no doc"
+  inline proc +(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return (x + y: int): t;
+
+  // index - int --> index
+  pragma "no doc"
+  inline proc -(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return (x: int - y): t;
+
+  // index - index --> int
+  pragma "no doc"
+  inline proc -(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return x: int - y: int;
+
+  // other relationals
+  pragma "no doc"
+  inline proc <(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return x: int < y: int;
+
+  pragma "no doc"
+  inline proc <(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return x: int < y;
+
+  pragma "no doc"
+  inline proc <(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x < y: int;
+
+  pragma "no doc"
+  inline proc >=(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return x: int >= y: int;
+
+  pragma "no doc"
+  inline proc >=(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return x: int >= y;
+
+  pragma "no doc"
+  inline proc >=(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x >= y: int;
+
+  pragma "no doc"
+  inline proc <=(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return x: int <= y: int;
+
+  pragma "no doc"
+  inline proc <=(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return x: int <= y;
+
+  pragma "no doc"
+  inline proc <=(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x <= y: int;
+
+  pragma "no doc"
+  inline proc ==(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return (x:int) == (y:int);
+
+  pragma "no doc"
+  inline proc ==(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return (x:int) == y;
+
+  pragma "no doc"
+  inline proc ==(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x == (y:int);
+
+  pragma "no doc"
+  inline proc !=(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return (x:int) != (y:int);
+
+  pragma "no doc"
+  inline proc !=(x: ?t, y: int)
+    where t == byteIndex || t == codepointIndex
+    return (x:int) != y;
+
+  pragma "no doc"
+  inline proc !=(x: int, y: ?t)
+    where t == byteIndex || t == codepointIndex
+    return x != (y:int);
+
+  pragma "no doc"
+  inline proc !(x: ?t)
+    where t == byteIndex || t == codepointIndex
+    return !(x:int);
+
+  pragma "no doc"
+  inline proc _cond_test(x: byteIndex)
+    return x != 0;
+
+  pragma "no doc"
+  inline proc _cond_test(x: codepointIndex)
+    return x != 0;
+  // End index arithmetic support
 
   //
   // String Implementation
@@ -586,11 +789,10 @@ module String {
         d
      */
     iter these() : string {
-      for i in 1..this.len {
+      for cp in this.codepoints() do
         // This is pretty painful from a performance perspective right now,
         // allocates w/ every yield
-        yield this[i];
-      }
+        yield codepointToString(cp);
     }
 
     /*
@@ -637,7 +839,7 @@ module String {
       Skip characters that begin prior to the specified starting byte index.
     */
     pragma "no doc"
-    iter _cpIndexLen(start: int = 1) {
+    iter _cpIndexLen(start = 1:byteIndex) {
       var localThis: string = this.localize();
 
       var i = 0;
@@ -648,7 +850,7 @@ module String {
         var maxbytes = (localThis.len - i): ssize_t;
         qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
         if i + 1 >= start then
-          yield (cp:int(32), i + 1, nbytes:int);
+          yield (cp:int(32), (i + 1):byteIndex, nbytes:int);
         i += nbytes;
       }
     }
@@ -685,17 +887,18 @@ module String {
     }
 
     /*
-      Index into a string
+      Return the codepoint starting at the ith byte in the string
 
       :returns: A string with the complete multibyte character starting at the
                 specified byte index from ``1..string.length``
      */
-    proc this(i: int) : string {
-      if boundsChecking && (i <= 0 || i > this.len)
-        then halt("index out of bounds of string: ", i);
+    proc this(i: byteIndex) : string {
+      var idx = i: int;
+      if boundsChecking && (idx <= 0 || idx > this.len)
+        then halt("index out of bounds of string: ", idx);
 
       var ret: string;
-      var maxbytes = (this.len - (i - 1)): ssize_t;
+      var maxbytes = (this.len - (idx - 1)): ssize_t;
       if maxbytes < 0 || maxbytes > 4 then
         maxbytes = 4;
       const newSize = chpl_here_good_alloc_size(maxbytes + 1);
@@ -707,10 +910,10 @@ module String {
       const remoteThis = _local == false && this.locale_id != chpl_nodeID;
       var multibytes: bufferType;
       if remoteThis {
-        chpl_string_comm_get(ret.buff, this.locale_id, this.buff + i - 1, maxbytes);
+        chpl_string_comm_get(ret.buff, this.locale_id, this.buff + idx - 1, maxbytes);
         multibytes = ret.buff;
       } else {
-        multibytes = this.buff + i - 1;
+        multibytes = this.buff + idx - 1;
       }
       var cp: int(32);
       var nbytes: c_int;
@@ -725,41 +928,69 @@ module String {
     }
 
     /*
-      Index into a string
+      Return the ith codepoint in the string
 
-      :returns: A Unicode codepoint starting at the
+      :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
      */
-    proc this(cpi: codepointIndex) : string {
+    proc this(i: codepointIndex) : string {
       if this.isEmpty() then return "";
-      const idx = cpi: int;
+      const idx = i: int;
       return codepointToString(this.codepoint(idx));
+    }
+
+    /*
+      Return the ith codepoint in the string
+
+      :returns: A string with the complete multibyte character starting at the
+                specified codepoint index from ``1..string.numCodepoints``
+     */
+    inline proc this(i: int) : string {
+      return this[i: codepointIndex];
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
     // range that can be used to iterate over a section of the string
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType != codepointIndex {
+    proc _getView(r:range(?)) where r.idxType == byteIndex {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.low <= 0 then
+          if r.low:int <= 0 then
             halt("range out of bounds of string");
         }
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.high < 0) || (r.high:int > this.len) then
+          if (r.high:int < 0) || (r.high:int > this.len) then
             halt("range out of bounds of string");
         }
       }
-      const ret = r[1:r.idxType..#(this.len:r.idxType)];
-      return ret;
+      const r1 = r[1:r.idxType..this.len:r.idxType];
+      if r1.stridable {
+        const ret = r1.low:int..r1.high:int by r1.stride;
+        return ret;
+      } else {
+        const ret = r1.low:int..r1.high:int;
+        return ret;
+      }
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
     // range that can be used to iterate over a section of the string.
     // Converts from codepointIndex range to byte index range in the process.
+    //
+    // This function handles ranges of codepointIndex or of numeric types,
+    // both of which signify postions in the string measured in codepoints.
+    //
+    // Slicing by stridable codepoint ranges is unsupported because it
+    // creates an irregular sequence of bytes.  We could add support in the
+    // future by refactoring the callers of _getView() to add a slow path,
+    // or by storing an array of indices marking the beginning of each
+    // codepoint alongside the string.
     pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == codepointIndex {
+    proc _getView(r:range(?)) where r.idxType != byteIndex {
+      if r.stridable {
+        compilerError("string slicing doesn't support stridable codepoint ranges");
+      }
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low:int <= 0 then
@@ -777,12 +1008,12 @@ module String {
       if cp_high > 0 {
         for (c, i, nbytes) in this._cpIndexLen() {
           if cp_count == cp_low {
-            byte_low = i;
+            byte_low = i:int;
             if !r.hasHighBound() then
               break;
           }
           if cp_count == cp_high {
-            byte_high = i + nbytes-1;
+            byte_high = i:int + nbytes-1;
             break;
           }
           cp_count += 1;
@@ -961,8 +1192,29 @@ module String {
 
         // Edge cases
         if count {
-          if nLen == 0 then
-            localRet = thisLen+1;
+          if nLen == 0 { // Empty needle
+            if ((region.hasLowBound() && region.low.type == byteIndex) ||
+                (region.hasHighBound() && region.high.type == byteIndex)) {
+              // Byte indexed, so count the number of bytes in the view + 1
+              localRet = thisLen+1;
+            } else {
+              // Count the number of codepoints in the view + 1
+              var nCodepoints = 0;
+              var nextIdx = 0;
+              for i in view {
+                if i > nextIdx {
+                  nCodepoints += 1;
+                  var cp: int(32);
+                  var nbytes: c_int;
+                  var multibytes = (this.buff + i-1): c_string;
+                  var maxbytes = (this.len - (i-1)): ssize_t;
+                  qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+                  nextIdx = i-1 + nbytes;
+                }
+              }
+              localRet = nCodepoints+1;
+            }
+          }
         } else { // find
           if nLen == 0 { // Empty needle
             if fromLeft {
@@ -1021,8 +1273,8 @@ module String {
                 string, or 0 if the `needle` is not in the string.
      */
     // TODO: better name than region?
-    proc find(needle: string, region: range(?) = 1..) : int {
-      return _search_helper(needle, region, count=false);
+    proc find(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
+      return _search_helper(needle, region, count=false): byteIndex;
     }
 
     /*
@@ -1034,8 +1286,8 @@ module String {
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or 0 if the `needle` is not in the string.
      */
-    proc rfind(needle: string, region: range(?) = 1..) : int {
-      return _search_helper(needle, region, count=false, fromLeft=false);
+    proc rfind(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
+      return _search_helper(needle, region, count=false, fromLeft=false): byteIndex;
     }
 
     /*
@@ -1064,7 +1316,7 @@ module String {
     proc replace(needle: string, replacement: string, count: int = -1) : string {
       var result: string = this;
       var found: int = 0;
-      var startIdx: int = 1;
+      var startIdx: byteIndex = 1;
       const localNeedle: string = needle.localize();
       const localReplacement: string = replacement.localize();
 
@@ -1102,11 +1354,11 @@ module String {
         var splitAll: bool = maxsplit <= 0;
         var splitCount: int = 0;
 
-        var start: int = 1;
+        var start: byteIndex = 1;
         var done: bool = false;
         while !done  {
           var chunk: string;
-          var end: int;
+          var end: byteIndex;
 
           if (maxsplit == 0) {
             chunk = localThis;
@@ -1155,10 +1407,10 @@ module String {
         const noSplits : bool = maxsplit == 0;
         const limitSplits : bool = maxsplit > 0;
         var splitCount: int = 0;
-        const iEnd = localThis.len - 1;
+        const iEnd: byteIndex = localThis.len - 1;
 
         var inChunk : bool = false;
-        var chunkStart : int;
+        var chunkStart : byteIndex;
 
         for (c, i, nbytes) in localThis._cpIndexLen() {
           // emit whole string, unless all whitespace
@@ -1338,8 +1590,8 @@ module String {
       const localThis: string = this.localize();
       const localChars: string = chars.localize();
 
-      var start = 1;
-      var end = localThis.len;
+      var start: byteIndex = 1;
+      var end: byteIndex = localThis.len;
 
       if leading {
         label outer for (thisChar, i, nbytes) in localThis._cpIndexLen() {
@@ -1744,6 +1996,20 @@ module String {
   //
   // Assignment functions
   //
+  /*
+     Copies the int `rhs` into the byteIndex `lhs`.
+  */
+  proc =(ref lhs: byteIndex, rhs: int) {
+    lhs._bindex = rhs: int;
+  }
+
+  /*
+     Copies the int `rhs` into the codepointIndex `lhs`.
+  */
+  proc =(ref lhs: codepointIndex, rhs: int) {
+    lhs._cpindex = rhs: int;
+  }
+
   /*
      Copies the string `rhs` into the string `lhs`.
   */
@@ -2232,6 +2498,20 @@ module String {
     ret.isowned = true;
 
     return ret;
+  }
+
+  // Cast from byteIndex to int
+  pragma "no doc"
+  inline proc _cast(type t: int, cpi: byteIndex) {
+    return cpi._bindex;
+  }
+
+  // Cast from int to byteIndex
+  pragma "no doc"
+  inline proc _cast(type t: byteIndex, i: int) {
+    var cpi: byteIndex;
+    cpi._bindex = i;
+    return cpi;
   }
 
   // Cast from codepointIndex to int

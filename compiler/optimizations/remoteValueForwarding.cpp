@@ -212,10 +212,13 @@ static void insertSerialization(FnSymbol*  fn,
 static bool shouldSerialize(ArgSymbol* arg) {
   bool retval = false;
   bool hasSerializer = serializeMap.find(arg->getValType()) != serializeMap.end();
+  Type* argType = arg->getValType();
 
   if (hasSerializer == false) {
     retval = false;
-  } else if (isRecordWrappedType(arg->getValType())) {
+  } else if (argType->symbol->hasFlag(FLAG_ARRAY)) {
+    retval = hasSerializer;
+  } else if (isRecordWrappedType(argType)) {
     // OK to serialize if the record-wrapped type's underlying class is not
     // modified.
     //

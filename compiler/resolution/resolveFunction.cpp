@@ -766,7 +766,7 @@ static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
 *                                                                             *
 ************************************** | *************************************/
 
-static AggregateType* makeIteratorClass (FnSymbol* fn);
+static AggregateType* makeIteratorClass(FnSymbol* fn, Type* yieldedType);
 
 static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType);
 
@@ -793,7 +793,7 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
 
   SET_LINENO(fn);
 
-  AggregateType* iClass  = makeIteratorClass(fn);
+  AggregateType* iClass  = makeIteratorClass(fn, yieldedType);
   AggregateType* iRecord = makeIteratorRecord(fn, yieldedType);
   FnSymbol*      getIter = makeGetIterator(iClass, iRecord);
   IteratorInfo*  ii      = makeIteratorInfo(iClass, iRecord, getIter,
@@ -822,7 +822,7 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   resolveFunction(getIter);
 }
 
-static AggregateType* makeIteratorClass(FnSymbol* fn) {
+static AggregateType* makeIteratorClass(FnSymbol* fn, Type* yieldedType) {
   AggregateType* retval    = new AggregateType(AGGREGATE_CLASS);
   const char*    className = iteratorClassName(fn);
   TypeSymbol*    sym       = new TypeSymbol(astr("_ic_", className), retval);
@@ -831,6 +831,10 @@ static AggregateType* makeIteratorClass(FnSymbol* fn) {
   sym->addFlag(FLAG_POD);
 
   retval->addRootType();
+
+  VarSymbol* moreField = new VarSymbol("more", dtInt[INT_SIZE_DEFAULT]);
+  retval->fields.insertAtTail(new DefExpr(moreField));
+  // Creating "value" field here is trickier, see the PR message for #12963.
 
   return retval;
 }
@@ -1083,10 +1087,10 @@ void resolveIfExprType(CondStmt* stmt) {
     } else {
       bool promote = false;
 
-      if (canDispatch(elseType, elseSym, thenType, fn, &promote) &&
+      if (canDispatch(elseType, elseSym, thenType, NULL, fn, &promote) &&
           promote == false) {
         retType = thenType;
-      } else if (canDispatch(thenType, thenSym, elseType, fn, &promote) &&
+      } else if (canDispatch(thenType, thenSym, elseType, NULL, fn, &promote) &&
                  promote == false) {
         retType = elseType;
       }
@@ -1192,6 +1196,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
             if (canDispatch(retTypes.v[j],
                             retSymbols.v[j],
                             retTypes.v[i],
+                            NULL,
                             fn,
                             &requireScalarPromotion) == false) {
               best = false;

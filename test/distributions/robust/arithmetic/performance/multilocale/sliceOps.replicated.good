@@ -10,7 +10,9 @@ use slice as leader (module-scope):
 (<no communication>) (<no communication>) (<no communication>) (<no communication>)
 use slice as follower (module-scope):
 (<no communication>) (<no communication>) (<no communication>) (<no communication>)
-promotion (module-scope):
+1-arg promotion (module-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+2-arg promotion (module-scope):
 (<no communication>) (<no communication>) (<no communication>) (<no communication>)
 create slice (local-scope):
 (execute_on = 2) (execute_on = 1) (<no communication>) (<no communication>)
@@ -24,5 +26,7 @@ use slice as leader (local-scope):
 (<no communication>) (<no communication>) (<no communication>) (<no communication>)
 use slice as follower (local-scope):
 (<no communication>) (<no communication>) (<no communication>) (<no communication>)
-promotion (local-scope):
+1-arg promotion (local-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+2-arg promotion (local-scope):
 (<no communication>) (<no communication>) (<no communication>) (<no communication>)

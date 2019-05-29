@@ -1532,9 +1532,6 @@ static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
                                  mem_region_t**, drpg_may_proxy_t);
 static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
-static void      remote_get_buff_init(void);
-static void      remote_get_buff_flush(void);
-static void      remote_get_buff_task_flush(void);
 static void      do_remote_get_buff(void*, c_nodeid_t, void*, size_t,
                                     drpg_may_proxy_t);
 static void      do_remote_get_V(int, void**, c_nodeid_t*, mem_region_t**,
@@ -1547,9 +1544,6 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
                             gni_fma_cmd_type_t, void*, mem_region_t*);
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
-static void      nic_amo_buff_init(void);
-static void      nic_amo_nf_buff_flush(void);
-static void      nic_amo_nf_buff_task_flush(void);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
 static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
@@ -1807,40 +1801,9 @@ static void dbg_catf(FILE* out_f, const char* in_fname, const char* match)
 
 
 
-// Simple wrapper for spinlock with more relaxed orderings and proper yielding
-// for locks. Should only be used when contention is expected to be very low.
-typedef atomic_bool spinlock;
-static inline void spinlock_init(spinlock* s) {
-  atomic_init_bool(s, false);
-}
-static inline void spinlock_lock(spinlock* s) {
-  while (atomic_exchange_explicit_bool(s, true, memory_order_acquire)) {
-    local_yield();
-  }
-}
-static inline void spinlock_unlock(spinlock* s) {
-  atomic_store_explicit_bool(s, false, memory_order_release);
-}
-static inline void spinlock_destroy(spinlock* s) {
-  atomic_destroy_bool(s);
-}
-
-
-// Simple wrapper for a pthread reader/writer lock with proper yielding for
-// locks. Use the non-blocking calls and yield instead of blocking the thread.
-typedef pthread_rwlock_t rwlock;
-static inline void rwlock_init(rwlock* l) {
-  pthread_rwlock_init(l, NULL);
-}
-static inline void rwlock_writer_lock(rwlock* l) {
-  while (pthread_rwlock_trywrlock(l) == EBUSY) { local_yield(); }
-}
-static inline void rwlock_reader_lock(rwlock* l) {
-  while (pthread_rwlock_tryrdlock(l) == EBUSY) { local_yield(); }
-}
-static inline void rwlock_unlock(rwlock* l) {
-  pthread_rwlock_unlock(l);
-}
+//
+// Common code for task local buffering
+//
 
 static inline
 chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
@@ -1848,6 +1811,105 @@ chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
   if (task_prvData != NULL) return &task_prvData->comm_data;
   return NULL;
 }
+
+enum BuffType {
+  amo_nf_buff = 1 << 0,
+  get_buff    = 1 << 1
+};
+
+// Per task information about non-fetching AMO buffers
+typedef struct {
+  int                vi;
+  uint64_t           opnd1_v[MAX_CHAINED_AMO_LEN];
+  c_nodeid_t         locale_v[MAX_CHAINED_AMO_LEN];
+  void*              object_v[MAX_CHAINED_AMO_LEN];
+  size_t             size_v[MAX_CHAINED_AMO_LEN];
+  gni_fma_cmd_type_t cmd_v[MAX_CHAINED_AMO_LEN];
+  mem_region_t*      remote_mr_v[MAX_CHAINED_AMO_LEN];
+} amo_nf_buff_task_info_t;
+
+// Per task information about GET buffers
+typedef struct {
+  int           vi;
+  void*         tgt_addr_v[MAX_CHAINED_GET_LEN];
+  c_nodeid_t    locale_v[MAX_CHAINED_GET_LEN];
+  mem_region_t* remote_mr_v[MAX_CHAINED_GET_LEN];
+  void*         src_addr_v[MAX_CHAINED_GET_LEN];
+  size_t        size_v[MAX_CHAINED_GET_LEN];
+  mem_region_t* local_mr_v[MAX_CHAINED_GET_LEN];
+} get_buff_task_info_t;
+
+// Acquire a task local buffer, initializing if needed
+static inline
+void* task_local_buff_acquire(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return NULL;
+
+#define DEFINE_INIT(TYPE, TLS_NAME)                                           \
+  if (t == TLS_NAME) {                                                        \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info == NULL) {                                                       \
+      prvData->TLS_NAME = chpl_mem_alloc(sizeof(TYPE),                        \
+                                         CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0); \
+      info = prvData->TLS_NAME;                                               \
+      info->vi = 0;                                                           \
+    }                                                                         \
+    return info;                                                              \
+  }
+
+  DEFINE_INIT(amo_nf_buff_task_info_t, amo_nf_buff);
+  DEFINE_INIT(get_buff_task_info_t, get_buff);
+
+#undef DEFINE_INIT
+  return NULL;
+}
+
+static void get_buff_task_info_flush(get_buff_task_info_t* info);
+static void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info);
+
+// Flush one or more task local buffers
+static inline
+void task_local_buff_flush(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return;
+
+#define DEFINE_FLUSH(TYPE, TLS_NAME, FLUSH_NAME)                              \
+  if (t & TLS_NAME) {                                                         \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info != NULL && info->vi > 0) {                                       \
+      FLUSH_NAME(info);                                                       \
+    }                                                                         \
+  }
+
+  DEFINE_FLUSH(amo_nf_buff_task_info_t, amo_nf_buff, amo_nf_buff_task_info_flush);
+  DEFINE_FLUSH(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
+
+#undef DEFINE_FLUSH
+}
+
+// Flush and destroy one or more task local buffers
+static inline
+void task_local_buff_end(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return;
+
+#define DEFINE_END(TYPE, TLS_NAME, FLUSH_NAME)                                \
+  if (t & TLS_NAME) {                                                         \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info != NULL && info->vi > 0) {                                       \
+      FLUSH_NAME(info);                                                       \
+      chpl_mem_free(info, 0, 0);                                              \
+      prvData->TLS_NAME = NULL;                                               \
+    }                                                                         \
+  }
+
+  DEFINE_END(amo_nf_buff_task_info_t, amo_nf_buff, amo_nf_buff_task_info_flush);
+  DEFINE_END(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
+
+#undef END
+}
+
+
 
 //
 // Chapel interface starts here
@@ -1978,8 +2040,7 @@ int chpl_comm_numPollingTasks(void)
 }
 
 void chpl_comm_task_end(void) {
-  remote_get_buff_task_flush();
-  nic_amo_nf_buff_task_flush();
+  task_local_buff_end(get_buff | amo_nf_buff);
 }
 
 void chpl_comm_post_task_init(void)
@@ -2108,8 +2169,6 @@ void chpl_comm_post_task_init(void)
   nb_desc_init();
   rf_done_init();
   amo_res_init();
-  nic_amo_buff_init();
-  remote_get_buff_init();
 
   //
   // Create all the communication domains, including their GNI NIC
@@ -3808,18 +3867,22 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
 }
 
 
-void chpl_comm_broadcast_global_vars(int numGlobals)
-{
-  int i;
-
-  DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_broadcast_global_vars(%d)",
-           numGlobals);
-
-  if (chpl_nodeID != 0) {
-    for (i = 0; i < numGlobals; i++)
-      do_remote_get(chpl_globals_registry[i], 0, chpl_globals_registry[i],
-                    sizeof(wide_ptr_t), may_proxy_true);
+wide_ptr_t* chpl_comm_broadcast_global_vars_helper() {
+  //
+  // Gather the global variables' wide pointers on node 0 into a
+  // buffer, and broadcast the address of that buffer to the other
+  // nodes.
+  //
+  wide_ptr_t* buf;
+  if (chpl_nodeID == 0) {
+    buf = (wide_ptr_t*) chpl_mem_allocMany(chpl_numGlobalsOnHeap, sizeof(*buf),
+                                           CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+    for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
+      buf[i] = *chpl_globals_registry[i];
+    }
   }
+  PMI_Bcast(&buf, sizeof(buf));
+  return buf;
 }
 
 
@@ -5759,7 +5822,7 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
 }
 
 void chpl_comm_get_unordered_task_fence(void) {
-  remote_get_buff_task_flush();
+  task_local_buff_flush(get_buff);
 }
 
 
@@ -5802,37 +5865,9 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
  * then initiate them with chained transactions for increased transaction rate.
  */
 
-// Per thread information about GET buffers
-typedef struct get_buff_thread_info_t {
-  int                            vi;
-  spinlock                       lock;
-  chpl_bool                      inited;
-  void*                          tgt_addr_v[MAX_CHAINED_GET_LEN];
-  c_nodeid_t                     locale_v[MAX_CHAINED_GET_LEN];
-  mem_region_t*                  remote_mr_v[MAX_CHAINED_GET_LEN];
-  void*                          src_addr_v[MAX_CHAINED_GET_LEN];
-  size_t                         size_v[MAX_CHAINED_GET_LEN];
-  mem_region_t*                  local_mr_v[MAX_CHAINED_GET_LEN];
-  struct get_buff_thread_info_t* next;
-} get_buff_thread_info_t;
-
-// Contains linked list of all thread private GET buffer infos (so we can flush
-// all of them) and a lock to protect access to the list
-typedef struct {
-  get_buff_thread_info_t* list;
-  rwlock                  lock;
-  pthread_key_t           destructor_key;
-} get_buff_global_info_t;
-
-static __thread get_buff_thread_info_t get_buff_thread_info;
-
-static get_buff_global_info_t get_buff_global_info;
-
-// Flush buffered GET operations for the specified thread and reset the
-// counter. Should be called with info lock acquired
-static
-inline
-void get_buff_thread_info_flush(get_buff_thread_info_t* info) {
+// Flush buffered GETs for the specified task info and reset the counter.
+static inline
+void get_buff_task_info_flush(get_buff_task_info_t* info) {
   if (info->vi > 0) {
     do_remote_get_V(info->vi, info->tgt_addr_v, info->locale_v,
                     info->remote_mr_v, info->src_addr_v, info->size_v,
@@ -5841,101 +5876,13 @@ void get_buff_thread_info_flush(get_buff_thread_info_t* info) {
   }
 }
 
-static
-void get_buff_thread_info_init(get_buff_thread_info_t* info) {
-  rwlock_writer_lock(&get_buff_global_info.lock);
-  // need to recheck now that we have to lock
-  if (!info->inited) {
-    spinlock_init(&info->lock);
-    info->vi = 0;
-
-    // add thread to linked list
-    info->next = get_buff_global_info.list;
-    get_buff_global_info.list = info;
-
-    // dummy key binding needed so key destructor is called
-    pthread_setspecific(get_buff_global_info.destructor_key, info);
-
-    info->inited = true;
-  }
-  rwlock_unlock(&get_buff_global_info.lock);
-}
-
-static
-void get_buff_thread_info_destroy(void* p) {
-  get_buff_thread_info_t* info = &get_buff_thread_info;
-
-  // remove the thread from the linked list
-  rwlock_writer_lock(&get_buff_global_info.lock);
-  get_buff_thread_info_t* global_info = get_buff_global_info.list;
-  if (info == global_info) {
-    get_buff_global_info.list = info->next;
-  } else {
-    while (global_info != NULL) {
-      if (info == global_info->next) {
-        global_info->next = info->next;
-        break;
-      }
-      global_info = global_info->next;
-    }
-  }
-  rwlock_unlock(&get_buff_global_info.lock);
-
-  // flush any pending ops
-  spinlock_lock(&info->lock);
-  get_buff_thread_info_flush(info);
-  spinlock_unlock(&info->lock);
-  spinlock_destroy(&info->lock);
-}
-
-static
-void remote_get_buff_init(void) {
-  get_buff_global_info.list = NULL;
-  rwlock_init(&get_buff_global_info.lock);
-  pthread_key_create(&get_buff_global_info.destructor_key, get_buff_thread_info_destroy);
-}
-
-// Flush buffered GET operations for all threads
-static
-inline
-void remote_get_buff_flush(void) {
-  get_buff_thread_info_t* info;
-
-  rwlock_reader_lock(&get_buff_global_info.lock);
-  info = get_buff_global_info.list;
-  while (info != NULL) {
-    spinlock_lock(&info->lock);
-    get_buff_thread_info_flush(info);
-    spinlock_unlock(&info->lock);
-    info = info->next;
-  }
-  rwlock_unlock(&get_buff_global_info.lock);
-}
-
-static
-inline
-void remote_get_buff_task_flush(void) {
-  if (chpl_task_canMigrateThreads()) {
-    remote_get_buff_flush();
-  } else {
-    get_buff_thread_info_t* info = &get_buff_thread_info;
-    // Safe to check inited/vi outside the lock because no other thread can be
-    // modifying them, but concurrent flushing from other threads is possible.
-    if (info->inited && info->vi > 0) {
-      spinlock_lock(&info->lock);
-      get_buff_thread_info_flush(info);
-      spinlock_unlock(&info->lock);
-    }
-  }
-}
-
-static
-inline
+static inline
 void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
                         size_t size, drpg_may_proxy_t may_proxy)
 {
   mem_region_t*         local_mr;
   mem_region_t*         remote_mr;
+  get_buff_task_info_t* info;
 
   DBG_P_LP(DBGF_GETPUT, "DoRemBuffGet %p <- %d:%p (%#zx), proxy %c",
            tgt_addr, (int) locale, src_addr, size, may_proxy ? 'y' : 'n');
@@ -5949,23 +5896,15 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   //
   remote_mr = mreg_for_remote_addr(src_addr, locale);
   local_mr = mreg_for_local_addr(tgt_addr);
-  if (local_mr == NULL || remote_mr == NULL ||
+  info = task_local_buff_acquire(get_buff);
+  if (local_mr == NULL || remote_mr == NULL || info == NULL ||
       !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
       !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
       !IS_ALIGNED_32(size)) {
     do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
     return;
   }
-
-  get_buff_thread_info_t* info = &get_buff_thread_info;
-
-  if (!info->inited) {
-    get_buff_thread_info_init(info);
-  }
-
-  // grab lock for this thread
-  spinlock_lock(&info->lock);
-
+ 
   int vi = info->vi;
   info->tgt_addr_v[vi] = tgt_addr;
   info->locale_v[vi] = locale;
@@ -5977,11 +5916,8 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 
   // flush if buffers are full
   if (info->vi == MAX_CHAINED_GET_LEN) {
-    get_buff_thread_info_flush(info);
+    get_buff_task_info_flush(info);
   }
-
-  // release lock for this thread
-  spinlock_unlock(&info->lock);
 }
 /*** END OF BUFFERED GET OPERATIONS ***/
 
@@ -7182,7 +7118,7 @@ DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double, NEGATE_U_OR_R)
 #undef DEFINE_CHPL_COMM_ATOMIC_SUB
 
 void chpl_comm_atomic_unordered_task_fence(void) {
-  nic_amo_nf_buff_task_flush();
+  task_local_buff_flush(amo_nf_buff);
 }
 
 static
@@ -7237,37 +7173,9 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
  * increased transaction rate.
  */
 
-// Per thread information about non-fetching AMO buffers
-typedef struct amo_nf_buff_thread_info_t {
-  int                               vi;
-  spinlock                          lock;
-  chpl_bool                         inited;
-  uint64_t                          opnd1_v[MAX_CHAINED_AMO_LEN];
-  c_nodeid_t                        locale_v[MAX_CHAINED_AMO_LEN];
-  void*                             object_v[MAX_CHAINED_AMO_LEN];
-  size_t                            size_v[MAX_CHAINED_AMO_LEN];
-  gni_fma_cmd_type_t                cmd_v[MAX_CHAINED_AMO_LEN];
-  mem_region_t*                     remote_mr_v[MAX_CHAINED_AMO_LEN];
-  struct amo_nf_buff_thread_info_t* next;
-} amo_nf_buff_thread_info_t;
-
-// Contains linked list of all thread private AMO buffer infos (so we can flush
-// all of them) and a lock to protect access to the list
-typedef struct {
-  amo_nf_buff_thread_info_t* list;
-  rwlock                     lock;
-  pthread_key_t              destructor_key;
-} amo_nf_buff_global_info_t;
-
-static __thread amo_nf_buff_thread_info_t amo_nf_buff_thread_info;
-
-static amo_nf_buff_global_info_t amo_nf_buff_global_info;
-
-// Flush buffered atomic operations for the specified thread and reset the
-// counter. Should be called with info lock acquired
-static
-inline
-void amo_nf_buff_thread_info_flush(amo_nf_buff_thread_info_t* info) {
+// Flush buffered AMOs for the specified task info and reset the counter.
+static inline
+void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info) {
   if (info->vi > 0) {
     do_nic_amo_nf_V(info->vi, info->opnd1_v, info->locale_v, info->object_v,
                     info->size_v, info->cmd_v, info->remote_mr_v);
@@ -7275,115 +7183,18 @@ void amo_nf_buff_thread_info_flush(amo_nf_buff_thread_info_t* info) {
   }
 }
 
-static
-void amo_nf_buff_thread_info_init(amo_nf_buff_thread_info_t* info) {
-  rwlock_writer_lock(&amo_nf_buff_global_info.lock);
-  // need to recheck now that we have to lock
-  if (!info->inited) {
-
-    spinlock_init(&info->lock);
-    info->vi = 0;
-
-    // add thread to linked list
-    info->next = amo_nf_buff_global_info.list;
-    amo_nf_buff_global_info.list = info;
-
-    // dummy key binding needed so key destructor is called
-    pthread_setspecific(amo_nf_buff_global_info.destructor_key, info);
-
-    info->inited = true;
-  }
-  rwlock_unlock(&amo_nf_buff_global_info.lock);
-}
-
-static
-void amo_nf_buff_thread_info_destroy(void* p) {
-  amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
-
-  // remove the thread from the linked list
-  rwlock_writer_lock(&amo_nf_buff_global_info.lock);
-  amo_nf_buff_thread_info_t* global_info = amo_nf_buff_global_info.list;
-  if (info == global_info) {
-    amo_nf_buff_global_info.list = info->next;
-  } else {
-    while (global_info != NULL) {
-      if (info == global_info->next) {
-        global_info->next = info->next;
-        break;
-      }
-      global_info = global_info->next;
-    }
-  }
-  rwlock_unlock(&amo_nf_buff_global_info.lock);
-
-  // flush any pending ops
-  spinlock_lock(&info->lock);
-  amo_nf_buff_thread_info_flush(info);
-  spinlock_unlock(&info->lock);
-  spinlock_destroy(&info->lock);
-}
-
-static
-void nic_amo_buff_init(void) {
-  amo_nf_buff_global_info.list = NULL;
-  rwlock_init(&amo_nf_buff_global_info.lock);
-  pthread_key_create(&amo_nf_buff_global_info.destructor_key, amo_nf_buff_thread_info_destroy);
-}
-
-// Flush buffered atomic operations for all threads
-static
-inline
-void nic_amo_nf_buff_flush(void) {
-  amo_nf_buff_thread_info_t* info;
-
-  rwlock_reader_lock(&amo_nf_buff_global_info.lock);
-  info = amo_nf_buff_global_info.list;
-  while (info != NULL) {
-    spinlock_lock(&info->lock);
-    amo_nf_buff_thread_info_flush(info);
-    spinlock_unlock(&info->lock);
-    info = info->next;
-  }
-  rwlock_unlock(&amo_nf_buff_global_info.lock);
-}
-
-// Flush buffered atomic operations for this task
-static
-inline
-void nic_amo_nf_buff_task_flush(void) {
-  if (chpl_task_canMigrateThreads()) {
-    nic_amo_nf_buff_flush();
-  } else {
-    amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
-    // Safe to check inited/vi outside the lock because no other thread can be
-    // modifying them, but concurrent flushing from other threads is possible.
-    if (info->inited && info->vi > 0) {
-      spinlock_lock(&info->lock);
-      amo_nf_buff_thread_info_flush(info);
-      spinlock_unlock(&info->lock);
-    }
-  }
-}
-
-// Append to thread local buffers of operations and flush if full
-static
-inline
+// Append to task local buffers of operations and flush if full
+static inline
 void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
                         void* object, size_t size,
                         gni_fma_cmd_type_t cmd,
                         mem_region_t* remote_mr)
 {
-  amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
-
-  if (!info->inited) {
-    amo_nf_buff_thread_info_init(info);
+  amo_nf_buff_task_info_t* info = task_local_buff_acquire(amo_nf_buff);
+  if (info == NULL) {
+    do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+    return;
   }
-
-  check_nic_amo(size, object, remote_mr);
-  PERFSTATS_INC(amo_cnt);
-
-  // grab lock for this thread
-  spinlock_lock(&info->lock);
 
   int vi = info->vi;
   // append arguments to buffers
@@ -7398,11 +7209,9 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
 
   // flush if buffers are full
   if (info->vi == MAX_CHAINED_AMO_LEN) {
-    amo_nf_buff_thread_info_flush(info);
+    amo_nf_buff_task_info_flush(info);
   }
 
-  // release lock for this thread
-  spinlock_unlock(&info->lock);
 }
 /*** END OF NON-FETCHING BUFFERED ATOMIC OPERATIONS ***/
 
@@ -7563,7 +7372,8 @@ void amo_add_real64_cpu_cmpxchg(void* result, void* object, void* operand)
 
 void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t* arg, size_t arg_size)
+                          chpl_comm_on_bundle_t* arg, size_t arg_size,
+                          int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on(%d:%d, ftable[%d](%p, %zd))",
@@ -7575,11 +7385,11 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("", locale);
+  chpl_comm_diags_verbose_executeOn("", locale, ln, fn);
   chpl_comm_diags_incr(execute_on);
 
   PERFSTATS_INC(fork_call_cnt);
@@ -7589,7 +7399,8 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
 
 void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t* arg, size_t arg_size)
+                             chpl_comm_on_bundle_t* arg, size_t arg_size,
+                             int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_nb(%d:%d, ftable[%d](%p, %zd))",
@@ -7601,11 +7412,11 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("non-blocking", locale);
+  chpl_comm_diags_verbose_executeOn("non-blocking", locale, ln, fn);
   chpl_comm_diags_incr(execute_on_nb);
 
   PERFSTATS_INC(fork_call_nb_cnt);
@@ -7615,7 +7426,8 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
 
 void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t* arg, size_t arg_size)
+                               chpl_comm_on_bundle_t* arg, size_t arg_size,
+                               int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_fast(%d:%d, ftable[%d](%p, %zd))",
@@ -7627,11 +7439,11 @@ void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("fast", locale);
+  chpl_comm_diags_verbose_executeOn("fast", locale, ln, fn);
   chpl_comm_diags_incr(execute_on_fast);
 
   //
@@ -8500,11 +8312,6 @@ void local_yield(void)
 #else
   sched_yield();
 #endif
-}
-
-
-void chpl_comm_ugni_help_register_global_var(int i, wide_ptr_t wide)
-{
 }
 
 

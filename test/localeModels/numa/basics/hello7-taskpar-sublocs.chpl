@@ -65,8 +65,8 @@ coforall loc in Locales {
         // - '.name' queries its name (similar to UNIX `hostname`)
         // - 'numLocales' refers to the number of locales (as specified by -nl)
         //
-        message += "locale " + here.parent.id + " of " + numLocales;
-        if (printLocaleName) then message += " named " + here.parent.name;
+        message += "locale " + here.parent!.id + " of " + numLocales;
+        if (printLocaleName) then message += " named " + here.parent!.name;
 
         //
         // Terminate the message

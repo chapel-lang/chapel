@@ -170,6 +170,12 @@ proc AtomicT.max(other: int) {
     curMax = this.read();
 }
 
+proc RAtomicT.max(other: int) {
+  var curMax = this.read();
+  while curMax < other && !this.compareExchange(curMax, other) do
+    curMax = this.read();
+}
+
 
 /*
 ** Print out search parameters

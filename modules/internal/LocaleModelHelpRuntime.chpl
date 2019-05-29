@@ -100,10 +100,13 @@ module LocaleModelHelpRuntime {
   //
   // runtime interface
   //
+  pragma "insert line file info"
   extern proc chpl_comm_execute_on(loc_id: int, subloc_id: int, fn: int,
                                    args: chpl_comm_on_bundle_p, arg_size: size_t);
+  pragma "insert line file info"
   extern proc chpl_comm_execute_on_fast(loc_id: int, subloc_id: int, fn: int,
                                         args: chpl_comm_on_bundle_p, args_size: size_t);
+  pragma "insert line file info"
   extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int, fn: int,
                                       args: chpl_comm_on_bundle_p, args_size: size_t);
   pragma "insert line file info"
@@ -128,6 +131,7 @@ module LocaleModelHelpRuntime {
                                       ref tlist: c_void_ptr, tlist_node_id: int,
                                       is_begin: bool);
   extern proc chpl_task_executeTasksInList(ref tlist: c_void_ptr);
+  extern proc chpl_task_yield();
 
   //
   // add a task to a list of tasks being built for a begin statement

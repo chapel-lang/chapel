@@ -158,6 +158,27 @@ module DefaultRectangular {
       return dist;
     }
 
+    pragma "no doc"
+    record _serialized_domain {
+      param rank;
+      type idxType;
+      param stridable;
+      var dims;
+      param isDefaultRectangular;
+    }
+
+    proc chpl__serialize() {
+      return new _serialized_domain(rank, idxType, stridable, dsiDims(), true);
+    }
+
+    proc type chpl__deserialize(data) {
+      return defaultDist.newRectangularDom(data.rank,
+                                           data.idxType,
+                                           data.stridable,
+                                           data.dims);
+
+    }
+
     override proc dsiDisplayRepresentation() {
       writeln("ranges = ", ranges);
     }
@@ -970,7 +991,7 @@ module DefaultRectangular {
     var targetLocDom: domain(rank);
     var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType,
                                               stridable);
-    var RADLocks: [targetLocDom] chpl__processorAtomicType(bool); // only accessed locally
+    var RADLocks: [targetLocDom] chpl_LocalSpinlock;
 
     pragma "dont disable remote value forwarding"
     proc init(type eltType, param rank: int, type idxType,
@@ -983,14 +1004,12 @@ module DefaultRectangular {
       targetLocDom=newTargetLocDom;
     }
 
-    // These functions must always be called locally, because the lock
-    // is a (local) processor one.
     inline proc lockRAD(rlocIdx) {
-      while RADLocks(rlocIdx).testAndSet(memory_order_acquire) do chpl_task_yield();
+      RADLocks[rlocIdx].lock();
     }
 
     inline proc unlockRAD(rlocIdx) {
-      RADLocks(rlocIdx).clear(memory_order_release);
+      RADLocks[rlocIdx].unlock();
     }
   }
 

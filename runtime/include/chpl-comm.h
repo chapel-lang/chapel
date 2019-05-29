@@ -26,7 +26,6 @@
 #include "chplsys.h"
 #include "chpltypes.h"
 #include "chpl-comm-impl.h"
-#include "chpl-comm-heap-macros.h"
 #include "chpl-tasks.h"
 #include "chpl-comm-task-decls.h"
 #include "chpl-comm-locales.h"
@@ -51,16 +50,13 @@ size_t chpl_comm_getenvMaxHeapSize(void);
 //
 extern void chpl__heapAllocateGlobals(void);
 
-extern const int chpl_numGlobalsOnHeap;
-
 //
 // chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
-// storing ptr_wide_ptr_t, that is, pointers to wide pointers. All
-// registered globals are wide pointers.  Locales other than 0 need to
-// set their registered globals to the wide pointers received from
-// Locale 0, which is why these have type ptr_wide_ptr_t.  This is
-// done in chpl_comm_broadcast_global_vars() below.
+// storing ptr_wide_ptr_t, that is, local addresses of wide pointers.
+// It is filled in and used by chpl_comm_register_global_var() and
+// chpl_comm_broadcast_global_vars(), respectively, declared below.
 //
+extern const int chpl_numGlobalsOnHeap;
 extern ptr_wide_ptr_t chpl_globals_registry[];
 
 extern void* const chpl_private_broadcast_table[];
@@ -300,17 +296,27 @@ chpl_bool chpl_comm_regMemFree(void* p, size_t size) {
 }
 
 //
-// This routine is used by the Chapel runtime to broadcast the
+// These routines are used by the Chapel runtime to broadcast the
 // locations of module-level ("global") variables to all locales
 // so that all locales can put/get the value of a global variable
 // directly, knowing where it lives remotely.
 //
-// Logically, this routine implements a collective broadcast of
-// the chpl_globals_registry[] array which is an array of 'numGlobals'
-// wide_ptr_t values.  Note that in a one-sided implementation, the
-// implementation should not assume that chpl_globals_registry[] lives
-// at the same address on every compute node.
-// 
+// The named symbol for a global var is a wide pointer referring to
+// that global's heap-allocated space on node 0.  At program start,
+// all of these wide pointers must be communicated from node 0 to
+// all the other nodes.  To achieve this, the compiler-emitted code
+// first calls chpl_comm_register_global_var() on every node for
+// each global (passing a global var index which starts at 0 and
+// increments each time, and the address of the global's named
+// symbol), then finally calls chpl_comm_broadcast_global_vars().
+// The implementation of these two could either broadcast the wide
+// pointer values one by one in the 'register' calls and then do
+// nothing in the 'broadcast' call, or batch up the wide pointers
+// in the 'register' calls and actually do a broadcast in the
+// 'broadcast' call.  Currently we do the latter in order to
+// reduce startup overhead.
+//
+void chpl_comm_register_global_var(int i, wide_ptr_t* ptr_to_wide_ptr);
 void chpl_comm_broadcast_global_vars(int numGlobals);
 
 //
@@ -451,7 +457,8 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
 //
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t arg_size);
+                          chpl_comm_on_bundle_t *arg, size_t arg_size,
+                          int ln, int32_t fn);
 
 //
 // non-blocking execute_on
@@ -459,15 +466,17 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
 //
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t arg_size);
+                             chpl_comm_on_bundle_t *arg, size_t arg_size,
+                             int ln, int32_t fn);
 
 //
 // fast execute_on (i.e., run in handler)
 // arg can be reused immediately after this call completes.
 //
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                         chpl_fn_int_t fid,
-                         chpl_comm_on_bundle_t *arg, size_t arg_size);
+                               chpl_fn_int_t fid,
+                               chpl_comm_on_bundle_t *arg, size_t arg_size,
+                               int ln, int32_t fn);
 
 
 //
