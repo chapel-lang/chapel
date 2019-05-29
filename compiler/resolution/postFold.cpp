@@ -390,16 +390,16 @@ static Expr* postFoldPrimop(CallExpr* call) {
       bool              success   = true;
 
       if (ie) {
-	int64_t val;
-	success = get_int(ie, &val);
-	if (success) {
-	  idx = static_cast<size_t>(val) - 1;
-	  if (idx > 0) {
-	    size_t length = unescapeString(str, se).length();
-	    if (idx >= length)
-	      success = false;
-	  }
-	}
+        int64_t val;
+        success = get_int(ie, &val);
+        if (success) {
+          idx = static_cast<size_t>(val) - 1;
+          if (idx > 0) {
+            size_t length = unescapeString(str, se).length();
+            if (idx >= length)
+              success = false;
+          }
+        }
       }
 
       if (success) {
