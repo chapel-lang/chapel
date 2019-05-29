@@ -65,31 +65,29 @@ module Lists {
   class ListBlock {
 
     type _etype;
+    var _data: _ddata(_etype);
     const capacity: int;
-    var size = 0;
-    var data: _ddata(_etype);
     var next: unmanaged ListBlock(_etype) = nil;
 
     proc init(type _etype, capacity: int) {
       assert(capacity > 0);
       this._etype = _etype;
-      this.capacity = capacity;
-      this.size = 0;
       //
       // Use `c_calloc` to avoid calling initializers. TODO: Is use of calloc
       // safe in a multi-locale context? Michael said that the cast to
       // _ddata will convert the c_ptr to a wide pointer.
       //
-      this.data = c_calloc(_etype, capacity):_ddata(_etype);
+      this._data = c_calloc(_etype, capacity):_ddata(_etype);
+      this.capacity = capacity;
       this.next = nil;
     }
 
     proc deinit() {
-      c_free(data:c_void_ptr);
+      c_free(_data:c_void_ptr);
     }
 
     inline proc this(i: int) ref {
-      return data[i];
+      return _data[i];
     }
   }
 
@@ -207,7 +205,7 @@ module Lists {
       // If this assertion fires, then we've abused _getRef() in some way.
       assert(start != nil && idx <= start.capacity);
 
-      return start.data[idx - 1];
+      return start[idx - 1];
     }
 
     pragma "no doc"
