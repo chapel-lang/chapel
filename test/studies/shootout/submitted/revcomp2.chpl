@@ -79,8 +79,8 @@ proc initTable(pairs) {
 
   for i in 1..pairs.length by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
-    if pairs[i] != "\n" then
-      table[pairs[i].toLower().byte(1)] = pairs.byte(i+1);
+    if pairs[i:byteIndex] != "\n" then
+      table[pairs[i:byteIndex].toLower().byte(1)] = pairs.byte(i+1);
   }
 
   return table;

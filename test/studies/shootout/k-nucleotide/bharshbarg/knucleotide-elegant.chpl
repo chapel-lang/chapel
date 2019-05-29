@@ -43,7 +43,7 @@ proc calculate(data : string, size : int) {
 
   const high = data.length - size + 1;
   forall i in 1..high {
-    const key = hash(data[i..#size]);
+    const key = hash(data[i:byteIndex..#size]);
     freqDom.add(key);
     freqs[key].add(1);
   }
@@ -74,7 +74,7 @@ proc write_frequencies(data : string, size : int) {
 proc write_count(data : string, pattern : string) {
   const size = pattern.length;
   var freqs = calculate(data, size);
-  const d = hash(pattern[1..size]);
+  const d = hash(pattern[1:byteIndex..#size]);
   writeln(freqs[d], "\t", decode(d, size));
 }
 
