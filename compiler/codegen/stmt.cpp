@@ -104,28 +104,12 @@ void codegenLifetimeStart(llvm::Type *valType, llvm::Value *addr)
 
   int64_t sizeInBytes = -1;
   if (valType->isSized())
-    sizeInBytes = dataLayout.getTypeSizeInBits(valType)/8;
+    sizeInBytes = dataLayout.getTypeStoreSize(valType);
 
   llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
       llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
 
   info->irBuilder->CreateLifetimeStart(addr, size);
-}
-
-static
-void codegenLifetimeEnd(llvm::Type *valType, llvm::Value *addr)
-{
-  GenInfo *info = gGenInfo;
-  const llvm::DataLayout& dataLayout = info->module->getDataLayout();
-
-  int64_t sizeInBytes = -1;
-  if (valType->isSized())
-    sizeInBytes = dataLayout.getTypeSizeInBits(valType)/8;
-
-  llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
-      llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
-
-  info->irBuilder->CreateLifetimeEnd(addr, size);
 }
 #endif
 
@@ -176,26 +160,20 @@ GenRet BlockStmt::codegen() {
 
     info->lvt->addLayer();
 
-    // body.codegen("");
-    std::vector<std::pair<llvm::Type*, llvm::Value*> > defExprVector;
     for_alist(node, this->body) {
       // for LLVM, code generation will place
       // statements into the function with
       // the IRBuilder.
       node->codegen();
       if (DefExpr* def = toDefExpr(node)) {
-        GenRet cgRet = def->sym->codegen();
-        if (cgRet.val && cgRet.val->getType()) {
-          defExprVector.push_back(std::make_pair(cgRet.val->getType(), cgRet.val));
-          codegenLifetimeStart(cgRet.val->getType(), cgRet.val);
+        if (def->sym->type != dtVoid && def->sym->type != dtNothing) {
+          llvm::Value* declared = def->sym->codegen().val;
+          if (declared && declared->getType()) {
+            codegenLifetimeStart(declared->getType(), declared);
+          }
         }
       }
     }
-
-    // for (int i = 0; i < defExprVector.size(); ++i) {
-    //   if (defExprVector[i].first && defExprVector[i].second)
-    //   codegenLifetimeEnd(defExprVector[i].first, defExprVector[i].second);
-    // }
 
     info->lvt->removeLayer();
 
