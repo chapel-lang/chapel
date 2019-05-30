@@ -98,7 +98,7 @@ module Lists {
   // We can change the lock type later. Use a spinlock for now, even if it
   // is suboptimal in cases where long critical sections have high
   // contention (IE, lots of tasks trying to insert into the middle of this
-  // List, or any operation that is O(n).
+  // List, or any operation that is O(n)).
   //
   pragma "no doc"
   type lockType = ChapelLocks.chpl_LocalSpinlock;
@@ -201,10 +201,10 @@ module Lists {
     //
     // This may not be necessary, so don't fixate too much on it.
     //
-    pragma "no doc"
-    proc _cast(type t: string, x: List): string {
-      assert("List cast not implemented yet!" == "");
-    }
+    //pragma "no doc"
+    //proc _cast(type t: string, x: List): string {
+     // assert("List cast not implemented yet!" == "");
+    //}
 
     pragma "no doc"
     inline proc _destroy(ref item: eltType) {
@@ -256,7 +256,7 @@ module Lists {
     }
 
     //
-    // This call assumes that a lock (acquired by `_cs_enter`) is already
+    // This call assumes that a lock (acquired by `_enter`) is already
     // held (if parSafe==true), and releases it before throwing an error if
     // a bounds check fails.
     //
@@ -271,7 +271,8 @@ module Lists {
     }
 
     //
-    // Shift elements after index one to the right, inclusive.
+    // Shift elements including and after index one to the right in memory,
+    // possibly resizing.
     //
     pragma "no doc"
     proc _expand(idx: int) {
@@ -279,7 +280,7 @@ module Lists {
       
       _maybeAcquireMem(1);
 
-      for i in _size..idx do {
+      for i in idx.._size by -1 do {
         ref src = _getRef(i);
         ref dst = _getRef(i + 1);
         _move(src, dst);
@@ -287,15 +288,19 @@ module Lists {
     }
 
     //
-    // Shift elements after index one to the left, exclusive.
+    // Shift all elements after index "idx" one to the left in memory,
+    // possibly resizing.
     //
     pragma "no doc"
     proc _collapse(idx: int) {
       assert(_withinBounds(idx));
 
-      for i in 2..idx do {
-        ref src = _getRef(i);
-        ref dst = _getRef(i - 1);
+      if idx == _size then
+        return;
+
+      for i in idx.._size do {
+        ref src = _getRef(i + 1);
+        ref dst = _getRef(i);
         _move(src, dst);
       }
 
@@ -477,6 +482,7 @@ module Lists {
           if x == item then {
             _destroy(item);
             _collapse(i);
+            _size -= 1;
             _leave();
             return;
           }
