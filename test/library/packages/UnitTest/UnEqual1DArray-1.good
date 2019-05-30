@@ -1,0 +1,5 @@
+./UnitTest.chpl:149: error: Arrays differ: [1, 7, 6, 5, 8] != [1, 7, 6]
+First Array contains 2 additionl elements.
+First extra element is at index 4
+5
+

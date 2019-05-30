@@ -94,16 +94,16 @@ module UnitTest {
       if seq_type_name == "Array" {
         tmpString += "[";
         for i in 1..seq1.size {
-          if i != seq1.size then tmpString+= i+", ";
-          else tmpString += i+"] != [";
+          if i != seq1.size then tmpString+= seq1[i]+", ";
+          else tmpString += seq1[i]+"] != [";
         }
         for i in 1..seq2.size {
-          if i != seq2.size then tmpString+= i+", ";
-          else tmpString += i+"]";
+          if i != seq2.size then tmpString+= seq2[i]+", ";
+          else tmpString += seq2[i]+"]";
         }
       }
       else if seq_type_name == "String" {
-        tmpString += "'"+seq1+"' != '"+seq2+"'" ;
+        tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq1)+"'" ;
       }
       else {
         tmpString += stringify(seq1)+" != "+stringify(seq2);
