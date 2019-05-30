@@ -35,18 +35,21 @@
 
       - insert
       - remove
-      - reverse
       - sort
       - pop
+      - clear
 
   Additionally, all references to List elements are invalidated when the List
   is deinitialized.
 
-  (Paragraph about parallel safety).
+  List objects are not parallel safe by default, but can be made parallel safe
+  by setting the param formal `parSafe` to true in any List constructor. When
+  constructed from another List, a List object will inherit the parallel
+  safety mode of its originating List.
 
   Inserts and removals into a List are O(n) worst case and should be performed
-  with care. For fast O(1) appending to either end consider the use of the
-  Deque type instead.
+  with care. Access into a List object is currently O(log n), but is expected
+  to reduce to O(1) in the future.
 */
 module Lists {
 
@@ -91,6 +94,15 @@ module Lists {
     }
   }
 
+  //
+  // We can change the lock type later. Use a spinlock for now, even if it
+  // is suboptimal in cases where long critical sections have high
+  // contention (IE, lots of tasks trying to insert into the middle of this
+  // List, or any operation that is O(n).
+  //
+  pragma "no doc"
+  type lockType = ChapelLocks.chpl_LocalSpinlock;
+
   /*
     A List is a lightweight container suitable for building up and iterating
     over a collection of elements in a structured manner. It is intended to
@@ -107,13 +119,13 @@ module Lists {
   */
   record List {
 
-    /* The number of elements contained in this List. */
-    var size = 0;
+    pragma "no doc"
+    var _size = 0;
 
     /* The type of the elements contained in this List. */
     type eltType;
 
-    /* If `true`, this List will use parallel safe operations. */
+    /* If `true`, this List will perform parallel safe operations. */
     param parSafe;
 
     //
@@ -122,14 +134,16 @@ module Lists {
     // contention (IE, lots of tasks trying to insert into the middle of this
     // List, or any operation that is O(n).
     //
-    pragma "no doc"
-    type lockType = ChapelLocks.chpl_LocalSpinlock;
+    // pragma "no doc"
+    // type lockType = ChapelLocks.chpl_LocalSpinlock;
 
     //
-    // Little piece of wizardry @ronawho introduced me to in #13104.
+    // I wanted to do the little piece of wizardry @ronawho used to make the
+    // _lock$ variable reduce to "nothing" when parSafe is false, but I was
+    // getting strange compiler errors. See #13104 for the idea.
     //
     pragma "no doc"
-    var _lock$: if parSafe then lockType else nothing;
+    var _lock$ = if parSafe then new lockType() else none;
 
     //
     // Michael suggested that we move from a LL of blocks to an array, which
@@ -178,8 +192,10 @@ module Lists {
     pragma "no doc"
     inline proc deinit() {
       clear();
+      _enter();
       assert(_head == nil && _tail == nil);
-      assert(size == 0);
+      assert(_size == 0);
+      _leave();
     }
 
     //
@@ -196,8 +212,8 @@ module Lists {
     }
 
     pragma "no doc"
-    proc _move(ref lhs: ?t, ref rhs: t) {
-      __primitive("=", lhs, rhs);
+    proc _move(ref src: ?t, ref dst: t) {
+      __primitive("=", dst, src);
     }
 
     //
@@ -236,7 +252,7 @@ module Lists {
 
     pragma "no doc"
     inline proc _withinBounds(i: int): bool {
-      return (i >= 1 && i <= size);
+      return (i >= 1 && i <= _size);
     }
 
     //
@@ -245,7 +261,7 @@ module Lists {
     // a bounds check fails.
     //
     pragma "no doc"
-    inline proc _boundsCheckReleaseOnThrow(i: int) throws {
+    inline proc _boundsCheckLeaveOnThrow(i: int) throws {
       if !_withinBounds(i) then {
         _leave();
         const msg = "List index out of bounds: " + i:string;
@@ -263,10 +279,10 @@ module Lists {
       
       _maybeAcquireMem(1);
 
-      for i in size..idx do {
-        ref rhs = _getRef(i);
-        ref lhs = _getRef(i + 1);
-        _move(lhs, rhs);
+      for i in _size..idx do {
+        ref src = _getRef(i);
+        ref dst = _getRef(i + 1);
+        _move(src, dst);
       }
     }
 
@@ -278,9 +294,9 @@ module Lists {
       assert(_withinBounds(idx));
 
       for i in 2..idx do {
-        ref rhs = _getRef(i);
-        ref lhs = _getRef(i - 1);
-        _move(lhs, rhs);
+        ref src = _getRef(i);
+        ref dst = _getRef(i - 1);
+        _move(src, dst);
       }
 
       _maybeReleaseMem(1);
@@ -300,7 +316,7 @@ module Lists {
       }
 
       // Create a new chunk if we need to.
-      while (size + amount) >= _maxCapacity do {
+      while (_size + amount) >= _maxCapacity do {
         assert(_tail.next == nil);
         const blocksize = _tail.capacity * _growthFactor;
         _tail.next = new unmanaged ListBlock(eltType, blocksize);
@@ -318,16 +334,20 @@ module Lists {
       if _head == nil || _head == _tail {
         return;
       }
+      
+      assert(amount >= 0 && amount <= _size);
+      const nsize = _size - amount;
 
       const threshold = _maxCapacity - _tail.capacity;
-      if size >= threshold then
+      if nsize >= threshold then
         return;
+
+      _maxCapacity = threshold;
 
       var node = _head;
       while node.next != _tail do
         node = node.next;
 
-      _maxCapacity = threshold;
       delete node.next;
       node.next = nil;
       _tail = node;
@@ -340,10 +360,10 @@ module Lists {
     pragma "no doc"
     proc _append(ref x: eltType) {
       _maybeAcquireMem(1);
-      ref rhs = x;
-      ref lhs = _getRef(size + 1);
-      _move(lhs, rhs);
-      size += 1;
+      ref src = x;
+      ref dst = _getRef(_size + 1);
+      _move(src, dst);
+      _size += 1;
     }
 
     /*
@@ -370,19 +390,19 @@ module Lists {
 
     pragma "no doc"
     inline proc _extendGenericAlter(collection) {
-      const oldSize = size;
+      const oldSize = _size;
       
       _maybeAcquireMem(collection.size);
       
       for i in 1..collection.size do {
         pragma "no auto destroy"
         var cpy = collection[i];
-        ref rhs = cpy;
-        ref lhs = _getRef(oldSize + i);
-        _move(lhs, rhs);
+        ref src = cpy;
+        ref dst = _getRef(oldSize + i);
+        _move(src, dst);
       }
 
-      size += collection.size;
+      _size += collection.size;
     }
 
     /*
@@ -427,12 +447,12 @@ module Lists {
     */
     proc insert(i: int, pragma "no auto destroy" in x: eltType) throws {
       _enter();
-      try _boundsCheckReleaseOnThrow(i);
+      try _boundsCheckLeaveOnThrow(i);
       _expand(i);
-      ref lhs = _getRef(i);
-      ref rhs = x;
-      _move(lhs, rhs);
-      size += 1;
+      ref src = x;
+      ref dst = _getRef(i);
+      _move(src, dst);
+      _size += 1;
       _leave();
     }
 
@@ -452,11 +472,7 @@ module Lists {
     proc remove(x: eltType) throws {
       _enter();
 
-      //
-      // TODO: Using this operator over entire list gives us O(n log n) perf,
-      // which is suboptimal, but will reduce to O(n) when this becomes O(1).
-      //
-      for i in 1..size do {
+      for i in 1.._size do {
           ref item = _getRef(i);
           if x == item then {
             _destroy(item);
@@ -468,8 +484,9 @@ module Lists {
 
       _leave();
 
+      const msg = "No such element in List: " + x:string;
       throw new owned
-        IllegalArgumentError("No such element in List: " + x:string);
+        IllegalArgumentError(msg);
     }
 
     /*
@@ -490,7 +507,7 @@ module Lists {
     */
     proc pop(i: int=size): eltType throws {
       _enter();
-      try _boundsCheckReleaseOnThrow(i);
+      try _boundsCheckLeaveOnThrow(i);
       // TODO: Is this fine, or do I need to disable initializers here?
       // TODO: Do I need to invoke a destructor here?
       var result = _getRef(i);
@@ -511,7 +528,7 @@ module Lists {
       _enter();
 
       // Manually call destructors on each currently allocated element.
-      for i in 1..size do {
+      for i in 1.._size do {
         ref item = _getRef(i);
         chpl__autoDestroy(item);
       }
@@ -525,7 +542,7 @@ module Lists {
 
       _head = nil;
       _tail = nil;
-      size = 0;
+      _size = 0;
 
       _leave();
     }
@@ -545,8 +562,8 @@ module Lists {
     proc indexOf(x: eltType, start: int=0, end: int=size): int throws {
       _enter();
 
-      try _boundsCheckReleaseOnThrow(start);
-      try _boundsCheckReleaseOnThrow(end);
+      try _boundsCheckLeaveOnThrow(start);
+      try _boundsCheckLeaveOnThrow(end);
 
       for i in start..end do
         if x == _getRef(i) then {
@@ -556,8 +573,9 @@ module Lists {
 
       _leave();
 
+      const msg = "No such element in List: " + x:string;
       throw new owned
-        IllegalArgumentError("No such element in List: " + x:string);
+        IllegalArgumentError(msg);
 
       // Should never reach here.
       return -1;
@@ -576,7 +594,7 @@ module Lists {
 
       var result = 0;
 
-      for i in 1..size do {
+      for i in 1.._size do {
         if x == _getRef(i) then
           result += 1;
       }
@@ -623,7 +641,7 @@ module Lists {
     */
     proc this(i: int) ref throws {
       _enter();
-      try _boundsCheckReleaseOnThrow(i);
+      try _boundsCheckLeaveOnThrow(i);
       ref result = _getRef(i);
       _leave();
       return result;
@@ -642,7 +660,7 @@ module Lists {
       // (I mean, is there even a point when reference/iterator invalidation
       // is still a thing?
       //
-      for i in 1..size do {
+      for i in 1.._size do {
         _enter();
         ref result = _getRef(i);
         _leave();
@@ -660,22 +678,25 @@ module Lists {
     proc writeThis(ch: channel) {
       _enter();
 
-      // 
-      // TODO TODO TODO TODO
-      // I must be missing something about the writeThis operator, because how
-      // are we supposed to _properly_ implement this now that "write" can
-      // throw?
       //
-      try! {
+      // TODO TODO TODO TODO
+      //
+      // Presently, if I try to let these calls throw, then they will trigger
+      // an error in modules/standard/IO.chpl along the lines of "error: call
+      // to throwing function writeThis without throws, try, or try!
+      //
+      try {
         ch.write("[");
 
-        for i in 1..(size - 1) do
+        for i in 1..(_size - 1) do
           ch.write(_getRef(i), ", ");
 
-        if size > 0 then
-          ch.write(_getRef(size));
+        if _size > 0 then
+          ch.write(_getRef(_size));
 
         ch.write("]");
+      } catch e {
+        _leave();
       }
 
       _leave();
@@ -689,7 +710,17 @@ module Lists {
     */
     inline proc isEmpty(): bool {
       _enter();
-      var result = (size == 0);
+      var result = (_size == 0);
+      _leave();
+      return result;
+    }
+
+    /*
+      The current number of elements contained in this List.
+    */
+    inline proc size {
+      _enter();
+      var result = _size;
       _leave();
       return result;
     }
@@ -707,9 +738,9 @@ module Lists {
       // TODO: How to allocate memory for array when we may not be able to
       // default initialize?
       //
-      var result: [1..size] eltType;
+      var result: [1.._size] eltType;
 
-      for i in 1..size do
+      for i in 1.._size do
         result[i] = this[i];
 
       _leave();

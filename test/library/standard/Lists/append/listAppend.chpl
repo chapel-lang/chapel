@@ -1,9 +1,11 @@
 use Lists;
 
 config type listType = int;
+config param listLock = true;
+
 config const stop = 16;
 
-var lst = new List(listType, false);
+var lst = new List(listType, listLock);
 
 for i in 1..stop do {
   var x = i:listType;
