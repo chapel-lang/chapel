@@ -2977,11 +2977,6 @@ static bool isParameterizedPrimitive(CallExpr* typeSpecifier) {
     if (typeSpecifier->numActuals()      ==    1 &&
         isDefExpr(typeSpecifier->get(1)) == true) {
       Symbol* callFnSym = callFnSymExpr->symbol();
-      /*
-      DefExpr* de = toDefExpr(typeSpecifier->get(1));
-      printf("de: %s\n", de->sym->name);
-      printf("callFnSym: %s\n", callFnSymExpr->symbol()->name);
-      */
 
       if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol ||
           callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol    ||
