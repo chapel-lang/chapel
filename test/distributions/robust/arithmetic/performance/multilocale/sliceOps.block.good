@@ -3,7 +3,7 @@ create slice (module-scope):
 use slice via assignment (module-scope):
 (execute_on_nb = 3) (<no communication>) (<no communication>) (<no communication>)
 use slice via random access (module-scope):
-(execute_on_nb = 3) (get = 648) (get = 648) (get = 648)
+(execute_on_nb = 3) (<no communication>) (<no communication>) (<no communication>)
 use slice as standalone (module-scope):
 (execute_on_nb = 3) (<no communication>) (<no communication>) (<no communication>)
 use slice as leader (module-scope):

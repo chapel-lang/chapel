@@ -7372,7 +7372,8 @@ void amo_add_real64_cpu_cmpxchg(void* result, void* object, void* operand)
 
 void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t* arg, size_t arg_size)
+                          chpl_comm_on_bundle_t* arg, size_t arg_size,
+                          int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on(%d:%d, ftable[%d](%p, %zd))",
@@ -7384,11 +7385,11 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("", locale);
+  chpl_comm_diags_verbose_executeOn("", locale, ln, fn);
   chpl_comm_diags_incr(execute_on);
 
   PERFSTATS_INC(fork_call_cnt);
@@ -7398,7 +7399,8 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
 
 void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t* arg, size_t arg_size)
+                             chpl_comm_on_bundle_t* arg, size_t arg_size,
+                             int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_nb(%d:%d, ftable[%d](%p, %zd))",
@@ -7410,11 +7412,11 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("non-blocking", locale);
+  chpl_comm_diags_verbose_executeOn("non-blocking", locale, ln, fn);
   chpl_comm_diags_incr(execute_on_nb);
 
   PERFSTATS_INC(fork_call_nb_cnt);
@@ -7424,7 +7426,8 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
 
 void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t* arg, size_t arg_size)
+                               chpl_comm_on_bundle_t* arg, size_t arg_size,
+                               int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_fast(%d:%d, ftable[%d](%p, %zd))",
@@ -7436,11 +7439,11 @@ void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("fast", locale);
+  chpl_comm_diags_verbose_executeOn("fast", locale, ln, fn);
   chpl_comm_diags_incr(execute_on_fast);
 
   //

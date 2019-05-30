@@ -443,7 +443,7 @@ void cb_comm_get_strd (const chpl_comm_cb_info_t *info) {
   }
 }
 
-// Record>  fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
+// Record>  fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId lineNumber fileName
 
 void cb_comm_executeOn (const chpl_comm_cb_info_t *info) {
 
@@ -455,14 +455,15 @@ void cb_comm_executeOn (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "fork: %lld.%06ld %d %d %d %d %#lx %zd %s \n",
+                  "fork: %lld.%06ld %d %d %d %d %#lx %zd %s %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, cm->subloc, cm->fid, (unsigned long) cm->arg,
-                  cm->arg_size, TID_STRING(buff, executeOnTask));
+                  cm->arg_size, TID_STRING(buff, executeOnTask),
+                  cm->lineno, cm->filename);
   }
 }
 
-// Record>  fork_nb: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
+// Record>  fork_nb: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId lineNumber fileName
 
 
 void  cb_comm_executeOn_nb (const chpl_comm_cb_info_t *info) {
@@ -472,14 +473,15 @@ void  cb_comm_executeOn_nb (const chpl_comm_cb_info_t *info) {
     char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
-    chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d %#lx %zd %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d %#lx %zd %s %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, cm->subloc, cm->fid, (unsigned long) cm->arg, 
-                  cm->arg_size, TID_STRING(buff, executeOnTask));
+                  cm->arg_size, TID_STRING(buff, executeOnTask),
+                  cm->lineno, cm->filename);
   }
 }
 
-// Record>  f_fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
+// Record>  f_fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId lineNumber fileName
 
 void cb_comm_executeOn_fast (const chpl_comm_cb_info_t *info) {
   if (chpl_vdebug) {
@@ -489,10 +491,11 @@ void cb_comm_executeOn_fast (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "f_executeOn: %lld.%06ld %d %d %d %d %#lx %zd %s\n",
+                  "f_fork: %lld.%06ld %d %d %d %d %#lx %zd %s %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, cm->subloc, cm->fid, (unsigned long)cm->arg, 
-                  cm->arg_size, TID_STRING(buff, executeOnTask));
+                  cm->arg_size, TID_STRING(buff, executeOnTask),
+                  cm->lineno, cm->filename);
   }
 }
 

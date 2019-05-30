@@ -397,6 +397,8 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   }
 
   gen += ")";
+  // Give us a prototype for the routine, and then start the actual routine.
+  gen += ";\n" + gen;
   gen += scope_begin;
 
   // Always declare a variable to catch socket errors.
@@ -515,11 +517,18 @@ void MLIContext::emitClientWrapper(FnSymbol* fn) {
 
 void MLIContext::emitServerWrapper(FnSymbol* fn) {
   std::string gen;
+  std::string prototype;
 
   gen += this->genComment(toString(fn));
-  gen += "int64_t chpl_mli_swrapper_";
-  gen += this->genFuncNumericID(fn);
-  gen += "(void)";
+  prototype += "int64_t chpl_mli_swrapper_";
+  prototype += this->genFuncNumericID(fn);
+  prototype += "(void)";
+
+  // Generate a prototype for the function
+  gen += prototype + ";\n";
+
+  // Start the function
+  gen += prototype;
   gen += scope_begin;
 
   gen += this->genServersideRPC(fn);
@@ -853,7 +862,7 @@ MLIContext::genSocketCall(const char* skt, const char* var, const char* len,
   gen += "(";
   gen += skt;
   gen += ", ";
-  gen += var ? this->genAddressOf(var) : "\"\"";
+  gen += var ? this->genAddressOf(var) : "((void*)\"\")";
   gen += ", ";
   gen += len ? len : (var ? this->genSizeof(var) : "0");
   gen += ", 0);\n";

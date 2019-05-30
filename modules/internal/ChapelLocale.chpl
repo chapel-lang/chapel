@@ -101,7 +101,7 @@ module ChapelLocale {
     proc init() { }
 
     pragma "no doc"
-    proc init(parent: locale) {
+    proc init(parent: locale?) {
       this.parent = parent;
     }
 
@@ -112,7 +112,7 @@ module ChapelLocale {
     // Every locale has a parent, except for the root locale.
     // The parent of the root locale is nil (by definition).
     pragma "no doc"
-    const parent : locale;
+    const parent : locale?;
 
     pragma "no doc" var nPUsLogAcc: int;     // HW threads, accessible
     pragma "no doc" var nPUsLogAll: int;     // HW threads, all
@@ -378,7 +378,7 @@ module ChapelLocale {
   // initialized until LocaleModel is initialized.  To disable this
   // replication, set replicateRootLocale to false.
   pragma "no doc"
-  pragma "locale private" var rootLocale : locale = nil;
+  pragma "locale private" var rootLocale : locale? = nil;
   pragma "no doc"
   pragma "locale private" var rootLocaleInitialized = false;
 
@@ -397,13 +397,13 @@ module ChapelLocale {
   // module.
   //
   pragma "no doc"
-  var origRootLocale : locale = nil;
+  var origRootLocale : locale? = nil;
 
   pragma "no doc"
   class AbstractRootLocale : locale {
     proc init() { }
 
-    proc init(parent_loc : locale) {
+    proc init(parent_loc : locale?) {
       super.init(parent_loc);
     }
 

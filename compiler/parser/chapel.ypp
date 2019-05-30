@@ -1917,8 +1917,9 @@ lhs_expr:
  *        opt_actual_ls, and every production it relies on, would need to be
  *        reworked to not permit the empty production. */
 fun_expr:
-  lhs_expr
-| lambda_decl_expr
+  lhs_expr           { $$ = $1; }
+| expr TBANG         { $$ = new CallExpr("postfix!", $1); }
+| lambda_decl_expr   { $$ = $1; }
 ;
 
 call_expr:

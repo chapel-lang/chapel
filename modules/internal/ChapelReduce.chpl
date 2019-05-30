@@ -63,9 +63,9 @@ module ChapelReduce {
 
   proc chpl__reduceCombine(globalOp, localOp) {
     on globalOp {
-      globalOp.lock();
+      globalOp.l.lock();
       globalOp.combine(localOp);
-      globalOp.unlock();
+      globalOp.l.unlock();
     }
   }
 
@@ -98,8 +98,8 @@ module ChapelReduce {
       // will not execute at run time. Otherwise we could get in trouble,
       // as "static typeof" produces uninitialized _RuntimeTypeInfo values.
       type arrInstType = __primitive("static field type", eltType, "_instance");
-      var instanceObj: arrInstType;
-      type instanceEltType = __primitive("static typeof", instanceObj.eltType);
+      var instanceObj: arrInstType?;
+      type instanceEltType = __primitive("static typeof", instanceObj!.eltType);
       return chpl_sumTypeIsSame(instanceEltType);
 
     } else {
@@ -134,22 +134,7 @@ module ChapelReduce {
 
   pragma "ReduceScanOp"
   class ReduceScanOp {
-    var l: chpl__processorAtomicType(bool); // only accessed locally
-
-    proc lock() {
-      var lockAttempts = 0,
-          maxLockAttempts = (2**10-1);
-      while l.testAndSet(memory_order_acquire) {
-        lockAttempts += 1;
-        if (lockAttempts & maxLockAttempts) == 0 {
-          maxLockAttempts >>= 1;
-          chpl_task_yield();
-        }
-      }
-    }
-    proc unlock() {
-      l.clear(memory_order_release);
-    }
+    var l: chpl_LocalSpinlock;
   }
 
   class SumReduceScanOp: ReduceScanOp {

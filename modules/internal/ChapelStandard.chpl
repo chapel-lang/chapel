@@ -37,6 +37,7 @@ module ChapelStandard {
   use NetworkAtomics;
   use NetworkAtomicTypes;
   use AtomicsCommon;
+  use ChapelLocks;
   use ChapelIteratorSupport;
   use ChapelThreads;
   use ChapelThreadsInternal;

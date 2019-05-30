@@ -354,22 +354,11 @@ class LocStencilArr {
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   pragma "local field"
   var myElems: [locDom.myFluff] eltType;
-  var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
+  var locRADLock: chpl_LocalSpinlock;
 
   // TODO: use void type when packed update is disabled
   var recvBufs, sendBufs : [locDom.NeighDom] [locDom.bufDom] eltType;
   var sendRecvFlag : [locDom.NeighDom] atomic bool;
-
-  // These functions will always be called on this.locale, and so we do
-  // not have an on statement around the while loop below (to avoid
-  // the repeated on's from calling testAndSet()).
-  inline proc lockLocRAD() {
-    while locRADLock.testAndSet(memory_order_acquire) do chpl_task_yield();
-  }
-
-  inline proc unlockLocRAD() {
-    locRADLock.clear(memory_order_release);
-  }
 
   proc deinit() {
     if locRAD != nil then
@@ -1101,13 +1090,13 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableStencilLazyRAD {
         if myLocArr.locRAD == nil {
-          myLocArr.lockLocRAD();
+          myLocArr.locRADLock.lock();
           if myLocArr.locRAD == nil {
             var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr.locRAD = tempLocRAD;
           }
-          myLocArr.unlockLocRAD();
+          myLocArr.locRADLock.unlock();
         }
         if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
           myLocArr.locRAD.lockRAD(rlocIdx);
@@ -1425,8 +1414,8 @@ proc StencilArr.noFluffView() {
   var tempDist = new unmanaged Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity, ignoreFluff=true);
-  pragma "no auto destroy" var newDist = _newDistribution(tempDist);
-  pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable, dom.whole.dims()));
+  pragma "no auto destroy" var newDist = new _distribution(tempDist);
+  pragma "no auto destroy" var tempDom = new _domain(newDist, rank, idxType, dom.stridable, dom.whole.dims());
   newDist._value._free_when_no_doms = true;
 
   var newDom = tempDom._value;

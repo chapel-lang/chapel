@@ -162,6 +162,8 @@ typedef struct {
       chpl_fn_int_t fid;        //  Function ID
       void *arg;                //  Function arg pointer
       size_t arg_size;          //  Function arg size
+      int lineno;               // source line of communication
+      int32_t filename;         // source file of communication
     } executeOn;
 
   } iu;

@@ -105,7 +105,7 @@ module ArrayViewReindex {
   //
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
-    var updom: unmanaged DefaultRectangularDom(rank, idxType, stridable);
+    var updomInst: unmanaged DefaultRectangularDom(rank, idxType, stridable)?;
     forwarding updom except these;
 
     // the old original index set that we're equivalent to
@@ -124,6 +124,10 @@ module ArrayViewReindex {
         return distInst;
     }
     
+    inline proc updom {
+      return updomInst!;
+    }
+
     //
     // TODO: If we put this expression into the variable declaration
     // above, we get a memory leak.  File a future against this?
@@ -158,16 +162,30 @@ module ArrayViewReindex {
       var updomRec = {(...inds)};
 
       // Free the old updom
-      if updom != nil then
-        _delete_dom(updom, false);
-      updom = updomRec._value;
+      if updomInst != nil then
+        _delete_dom(updomInst!, false);
+      updomInst = updomRec._value;
 
+      // TODO: BHARSH 2019-05-13:
+      // I would rather do something like this:
+      //   new _domain(_getDistribution(dist.downDist), rank, idxType, dist.downdomInst.stridable);
+      //
+      // But that results in memory leaks. The difference is that by using a
+      // proper '_distribution' the resulting domain class is linked to that
+      // distribution. We currently (incorrectly) invoke '_delete_dom' directly
+      // instead of handling the case where the distribution needs to be
+      // updated as well.
+      //
+      // In short, before we can use the desired pattern, we need to replace
+      // the uses of '_delete_dom' with something like the contents of
+      // _domain._do_destroy().
       var ranges : rank*range(idxType, BoundedRangeType.bounded, dist.downdomInst.stridable);
       var downdomclass = dist.downDist.dsiNewRectangularDom(rank=rank,
-                                                         idxType=idxType,
-                                                         stridable=dist.downdomInst.stridable, ranges);
+                                                           idxType=idxType,
+                                                           stridable=dist.downdomInst.stridable,
+                                                           ranges);
       pragma "no auto destroy"
-      var downdomLoc = _newDomain(downdomclass);
+      var downdomLoc = new _domain(downdomclass);
       downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
       downdomLoc._value._free_when_no_arrs = true;
 
@@ -278,7 +296,7 @@ module ArrayViewReindex {
     }
 
     override proc dsiDestroyDom() {
-      _delete_dom(updom, false);
+      _delete_dom(updomInst!, false);
       _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
 
@@ -288,14 +306,14 @@ module ArrayViewReindex {
       return downdomInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
-      return (updom, downdomPid, downdomInst, distPid, distInst);
+      return (updomInst, downdomPid, downdomInst, distPid, distInst);
     }
 
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewReindexDom(rank = this.rank,
                                      idxType = this.idxType,
                                      stridable = this.stridable,
-                                     updom = privatizeData(1),
+                                     updomInst = privatizeData(1),
                                      downdomPid = privatizeData(2),
                                      downdomInst = privatizeData(3),
                                      distPid = privatizeData(4),
@@ -304,11 +322,11 @@ module ArrayViewReindex {
     }
 
     proc dsiGetReprivatizeData() {
-      return (updom, downdomPid, downdomInst);
+      return (updomInst, downdomPid, downdomInst);
     }
 
     proc dsiReprivatize(other, reprivatizeData) {
-      updom = reprivatizeData(1);
+      updomInst = reprivatizeData(1);
       //      collapsedDim = other.collapsedDim;
       //      idx = other.idx;
       //      distPid = other.distPid;
@@ -679,27 +697,27 @@ module ArrayViewReindex {
   }
 
 
-    //
-    // Helper routines to convert incoming new/reindex
-    // indices/domains back into the original index set.
-    //
+  //
+  // Helper routines to convert incoming new/reindex
+  // indices/domains back into the original index set.
+  //
 
   inline proc chpl_reindexConvertIdxDim(i, updom, downdom, dim: int) {
     return downdom.dsiDim(dim).orderToIndex(updom.dsiDim(dim).indexOrder(i));
   }
 
-    inline proc chpl_reindexConvertIdx(i: integral, updom, downdom) {
-      compilerAssert(downdom.rank == 1, downdom.rank:string);
-      return chpl_reindexConvertIdxDim(i, updom, downdom, 1);
-    }
+  inline proc chpl_reindexConvertIdx(i: integral, updom, downdom) {
+    compilerAssert(downdom.rank == 1, downdom.rank:string);
+    return chpl_reindexConvertIdxDim(i, updom, downdom, 1);
+  }
 
-    inline proc chpl_reindexConvertIdx(i, updom, downdom) {
-      var ind: downdom.rank*downdom.idxType;
-      for param d in 1..downdom.rank {
-        ind(d) = chpl_reindexConvertIdxDim(i(d), updom, downdom, d);
-      }
-      return ind;
+  inline proc chpl_reindexConvertIdx(i, updom, downdom) {
+    var ind: downdom.rank*downdom.idxType;
+    for param d in 1..downdom.rank {
+      ind(d) = chpl_reindexConvertIdxDim(i(d), updom, downdom, d);
     }
+    return ind;
+  }
 
 
   inline proc chpl_reindexConvertDom(dims, updom, downdom) {

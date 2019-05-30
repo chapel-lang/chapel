@@ -46,6 +46,7 @@ extern bool fNoLiveAnalysis;
 extern bool fNoFormalDomainChecks;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
+extern bool fLegacyNilableClasses;
 extern bool fNoStackChecks;
 extern bool fNoCastChecks;
 extern bool fNoDivZeroChecks;
