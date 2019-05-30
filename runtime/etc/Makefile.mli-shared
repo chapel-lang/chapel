@@ -24,7 +24,7 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 ifdef CHPL_ZMQ_HOME
 CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
 CHPL_ZMQ_LIB_HOME = $(CHPL_ZMQ_HOME)/lib
-CHPL_ZMQ_DASH_L = -L$(CHPL_ZMQ_LIB_HOME)
+CHPL_ZMQ_LIB_SEARCH_PATH = -L$(CHPL_ZMQ_LIB_HOME)
 endif
 CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 UNAME = $(shell uname)
@@ -85,7 +85,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		-L$(CHPL_LN_LIB_DIR) \
 		-lm -lchpllaunch \
 		$(LAUNCH_LIBS) \
-		$(CHPL_ZMQ_DASH_L) \
+		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
 		-lzmq
 
 #
@@ -135,7 +135,7 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 		$(LIBS) \
 		-L$(CHPL_RT_LIB_DIR) \
 		-lchpl -lm \
-		$(CHPL_ZMQ_DASH_L) \
+		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
 		-lzmq
 endif
 

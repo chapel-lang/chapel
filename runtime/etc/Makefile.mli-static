@@ -25,7 +25,7 @@ ifdef CHPL_ZMQ_HOME
 CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
 CHPL_ZMQ_LIB_HOME = $(CHPL_ZMQ_HOME)/lib
 CHPL_ZMQ_LIB = $(CHPL_ZMQ_LIB_HOME)/libzmq.a
-CHPL_ZMQ_DASH_L = -L$(CHPL_ZMQ_LIB_HOME)
+CHPL_ZMQ_LIB_SEARCH_PATH = -L$(CHPL_ZMQ_LIB_HOME)
 else
 CHPL_ZMQ_LIB = -lzmq
 endif
@@ -130,7 +130,7 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 		$(LIBS) \
 		-L$(CHPL_RT_LIB_DIR) \
 		-lchpl -lm \
-		$CHPL_ZMQ_DASH_L \
+		$CHPL_ZMQ_LIB_SEARCH_PATH \
 		-lzmq
 endif
 
