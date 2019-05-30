@@ -208,9 +208,9 @@ module CString {
   // primitive c_string functions and methods
   //
 
-  /*
-   Deprecated, no replacement needed.
-  */
+  //
+  // Deprecated, no replacement needed.
+  //
   inline proc ascii(a: c_string) {
     compilerWarning("calling ascii() on a c_string is deprecated");
     return __primitive("ascii", a);

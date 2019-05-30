@@ -377,45 +377,44 @@ static Expr* postFoldPrimop(CallExpr* call) {
     }
 
   } else if (call->isPrimitive("ascii") == true) {
+    // This primitive is used from two places in the module code.
+    //
+    // One place is in CString, which calls it with exactly one
+    // argument.  That argument may or may not be a param.  If it is
+    // not, the code here will do nothing with it, and it will become
+    // a call to the runtime routine ascii().
+    //
+    // The above usage is deprecated, but the deprecation is handled
+    // elsewhere.
+    //
+    // The other place is in String, which calls it with either one or
+    // two arguments, which are always params.  The one-argument version
+    // is deprecated, but the deprecation is handled elsewhere.
     SymExpr* se = toSymExpr(call->get(1));
-    SymExpr* ie = toSymExpr(call->get(2));  // optional index into the string
 
     INT_ASSERT(se);
 
-    if (se->symbol()->isParameter() == true &&
-        (!ie || ie->symbol()->isParameter() == true)) {
+    if (se->symbol()->isParameter() == true) {
       const char*       str       = get_string(se);
       const std::string unescaped = unescapeString(str, se);
       size_t            idx       = 0;
-      bool              success   = true;
 
-      if (ie) {
+      if (call->numActuals() > 1) {
+        SymExpr* ie = toSymExpr(call->get(2));
         int64_t val;
-        success = get_int(ie, &val);
-        if (success) {
-          idx = static_cast<size_t>(val) - 1;
 
-          // When there is no index expression, only the zeroth
-          // element of the buffer is accessed.  It is always
-          // accessed, even when the string is empty.  In that case,
-          // the string terminator, a null byte, is returned.
-          //
-          // Here we duplicate that behavior when there is an index
-          // expression, for backwards compatibility.  It is exercised
-          // in some of the tests.
-          //
-          // If the string is nonempty, we don't allow indexing past
-          // the end.
-          if (idx > 0 && idx >= unescaped.length())
-              success = false;
-        }
+        INT_ASSERT(ie && ie->symbol()->isParameter() && get_int(ie, &val));
+
+        idx = static_cast<size_t>(val) - 1;
       }
 
-      if (success) {
-        retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
-
-        call->replace(retval);
+      if (idx >= unescaped.length()) {
+        USR_FATAL(call, "index out of bounds of string: %zd", idx + 1);
       }
+
+      retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
+
+      call->replace(retval);
     }
 
   } else if (call->isPrimitive("string_contains") == true) {

@@ -15,7 +15,7 @@ module unitTest {
     const m0 = allMemoryUsed();
     {
       const s0:t = "s";
-      const s1:t = "";
+      const s1:t = "t";
       f(s0); f(s1);
     }
     checkMemLeaks(m0);
@@ -26,7 +26,7 @@ module unitTest {
     const m0 = allMemoryUsed();
     {
       const s0:t = "s";
-      const s1:t = "";
+      const s1:t = "t";
       on Locales[numLocales-1] {
         f(s0); f(s1);
       }
