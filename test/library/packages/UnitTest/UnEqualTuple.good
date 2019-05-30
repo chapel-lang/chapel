@@ -1,0 +1,1 @@
+./UnitTest.chpl:193: error: assert failed - (1, 2, 3) and (1, 2) are not of same type
