@@ -401,7 +401,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
       if (call->numActuals() > 1) {
         SymExpr* ie = toSymExpr(call->get(2));
-        int64_t val;
+        int64_t val = 0;
 
         INT_ASSERT(ie && ie->symbol()->isParameter() && get_int(ie, &val));
 
