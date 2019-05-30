@@ -1,5 +1,5 @@
-ascii.chpl:5: warning: ascii is deprecated - please use string.byte instead
-ascii.chpl:7: warning: ascii is deprecated - please use string.byte instead
+ascii.chpl:9: warning: ascii is deprecated - please use string.byte instead
+ascii.chpl:11: warning: ascii is deprecated - please use string.byte instead
 === ascii local
 115
 116
