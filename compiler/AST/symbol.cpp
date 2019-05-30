@@ -1642,7 +1642,7 @@ VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   default:
     INT_FATAL( "unknown BOOL_SIZE");
 
-  case BOOL_SIZE_1  :
+    //  case BOOL_SIZE_1  :
   case BOOL_SIZE_SYS:
   case BOOL_SIZE_8  :
   case BOOL_SIZE_16 :

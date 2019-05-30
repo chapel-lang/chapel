@@ -2932,7 +2932,7 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
 
 static bool isParameterizedPrimitive(CallExpr* typeSpecifier);
 
-static void cloneParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal);
+static void cloneParameterizedPrimitive(FnSymbol* fn, CallExpr* typeSpecifier);
 
 static void cloneParameterizedPrimitive(FnSymbol* fn,
                                         DefExpr*  def,
@@ -2960,7 +2960,7 @@ static void replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn) {
     if (BlockStmt* typeExpr = formal->typeExpr) {
       if (CallExpr* typeSpecifier = toCallExpr(typeExpr->body.tail)) {
         if (isParameterizedPrimitive(typeSpecifier) == true) {
-          cloneParameterizedPrimitive(fn, formal);
+          cloneParameterizedPrimitive(fn, typeSpecifier);
 
           break;
         }
@@ -2969,7 +2969,7 @@ static void replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn) {
   }
 }
 
-// e.g. x : int(?w)
+// e.g. x : int(?w) or int(?)
 static bool isParameterizedPrimitive(CallExpr* typeSpecifier) {
   bool retval = false;
 
@@ -2977,6 +2977,11 @@ static bool isParameterizedPrimitive(CallExpr* typeSpecifier) {
     if (typeSpecifier->numActuals()      ==    1 &&
         isDefExpr(typeSpecifier->get(1)) == true) {
       Symbol* callFnSym = callFnSymExpr->symbol();
+      /*
+      DefExpr* de = toDefExpr(typeSpecifier->get(1));
+      printf("de: %s\n", de->sym->name);
+      printf("callFnSym: %s\n", callFnSymExpr->symbol()->name);
+      */
 
       if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol ||
           callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol    ||
@@ -2992,15 +2997,28 @@ static bool isParameterizedPrimitive(CallExpr* typeSpecifier) {
   return retval;
 }
 
+// return true if a type specifier has the form `bool(?)` and false if
+// it's `bool(?w)`
+//
+static bool typeSpecifierUnnamedQuery(CallExpr* typeSpecifier) {
+  if (typeSpecifier->numActuals()      ==    1) {
+    if (DefExpr* de = toDefExpr(typeSpecifier->get(1))) {
+      return strncmp("chpl__query", de->sym->name, strlen("chpl__query")) == 0;
+    }
+  }
+  return false;
+}
+
+
 // 'formal' is certain to be a parameterized primitive e.g int(?w)
-static void cloneParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal) {
-  BlockStmt* typeExpr      = formal->typeExpr;
-  CallExpr*  typeSpecifier = toCallExpr(typeExpr->body.tail);
+static void cloneParameterizedPrimitive(FnSymbol* fn, CallExpr* typeSpecifier) {
   Symbol*    callFnSym     = toSymExpr(typeSpecifier->baseExpr)->symbol();
   DefExpr*   def           = toDefExpr(typeSpecifier->get(1));
 
   if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol) {
-    for (int i = BOOL_SIZE_8; i < BOOL_SIZE_NUM; i++) {
+    int start = typeSpecifierUnnamedQuery(typeSpecifier) ? BOOL_SIZE_SYS
+                                                         : BOOL_SIZE_8;
+    for (int i = start; i < BOOL_SIZE_NUM; i++) {
       cloneParameterizedPrimitive(fn, def, get_width(dtBools[i]));
     }
 

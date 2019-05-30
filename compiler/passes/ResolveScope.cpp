@@ -184,7 +184,7 @@ void ResolveScope::addBuiltIns() {
   extend(gVoid);
 
   extend(dtBools[BOOL_SIZE_SYS]->symbol);
-  extend(dtBools[BOOL_SIZE_1]->symbol);
+  //  extend(dtBools[BOOL_SIZE_1]->symbol);
   extend(dtBools[BOOL_SIZE_8]->symbol);
   extend(dtBools[BOOL_SIZE_16]->symbol);
   extend(dtBools[BOOL_SIZE_32]->symbol);
