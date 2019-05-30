@@ -1,3 +1,7 @@
+//
+// When ascii() is removed, remember to rename __primitive("ascii") as well.
+//
+
 module unitTest {
 
   inline proc f(s, useExpr=false) {
