@@ -377,6 +377,19 @@ static Expr* postFoldPrimop(CallExpr* call) {
     }
 
   } else if (call->isPrimitive("ascii") == true) {
+    // This primitive is used from two places in the module code.
+    //
+    // One place is in CString, which calls it with exactly one
+    // argument.  That argument may or may not be a param.  If it is
+    // not, the code here will do nothing with it, and it will become
+    // a call to the runtime routine ascii().
+    //
+    // The above usage is deprecated, but the deprecation is handled
+    // elsewhere.
+    //
+    // The other place is in String, which calls it with either one or
+    // two arguments, which are always params.  The one-argument version
+    // is deprecated, but the deprecation is handled elsewhere.
     SymExpr* se = toSymExpr(call->get(1));
 
     INT_ASSERT(se);
@@ -384,8 +397,22 @@ static Expr* postFoldPrimop(CallExpr* call) {
     if (se->symbol()->isParameter() == true) {
       const char*       str       = get_string(se);
       const std::string unescaped = unescapeString(str, se);
+      size_t            idx       = 0;
 
-      retval = new SymExpr(new_UIntSymbol((int)unescaped[0], INT_SIZE_8));
+      if (call->numActuals() > 1) {
+        SymExpr* ie = toSymExpr(call->get(2));
+        int64_t val = 0;
+
+        INT_ASSERT(ie && ie->symbol()->isParameter() && get_int(ie, &val));
+
+        idx = static_cast<size_t>(val) - 1;
+      }
+
+      if (idx >= unescaped.length()) {
+        USR_FATAL(call, "index out of bounds of string: %zd", idx + 1);
+      }
+
+      retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
 
       call->replace(retval);
     }

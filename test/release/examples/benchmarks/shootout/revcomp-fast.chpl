@@ -23,7 +23,7 @@ proc main(args: [] string) {
       input.mark();
 
       // Scan forward until we get to '\n' (end of description)
-      input.advancePastByte(ascii("\n"));
+      input.advancePastByte("\n".byte(1));
       const seqOffset = input.offset();
 
       // Scan forward until we get to '>' (end of sequence) or EOF
@@ -32,7 +32,7 @@ proc main(args: [] string) {
       // look for the next description, returning '(eof, its offset)'
       proc findNextDesc() throws {
         try {
-          input.advancePastByte(ascii(">"));
+          input.advancePastByte(">".byte(1));
         } catch (e:EOFError) {
           return (true, len-1);
         }
@@ -71,7 +71,7 @@ proc process(seq: [?inds]) {
   }
 
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while seq[cursor] == ascii("\n");
+    do { cursor += dir; } while seq[cursor] == "\n".byte(1);
   }
 }
 
@@ -79,9 +79,9 @@ proc initTable(pairs) {
   var table: [1..128] uint(8);
 
   for i in 1..pairs.length by 2 {
-    table[ascii(pairs[i])] = ascii(pairs[i+1]);
-    if pairs[i] != "\n" then
-      table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]);
+    table[pairs.byte(i)] = pairs.byte(i+1);
+    if pairs.byte(i) != "\n".byte(1) then
+      table[pairs[i:byteIndex].toLower().byte(1)] = pairs.byte(i+1);
   }
 
   return table;

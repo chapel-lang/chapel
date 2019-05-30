@@ -887,7 +887,7 @@ module String {
     }
 
     /*
-      Return the codepoint starting at the ith byte in the string
+      Return the codepoint starting at the `i` th byte in the string
 
       :returns: A string with the complete multibyte character starting at the
                 specified byte index from ``1..string.length``
@@ -928,7 +928,7 @@ module String {
     }
 
     /*
-      Return the ith codepoint in the string
+      Return the `i` th codepoint in the string
 
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
@@ -940,7 +940,7 @@ module String {
     }
 
     /*
-      Return the ith codepoint in the string
+      Return the `i` th codepoint in the string
 
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
@@ -2225,7 +2225,15 @@ module String {
     return __primitive("string_concat", x:string, s);
 
   pragma "no doc"
-  inline proc ascii(param a: string) param return __primitive("ascii", a);
+  inline proc ascii(param a: string) param {
+    compilerWarning("ascii is deprecated - please use string.byte instead");
+    return __primitive("ascii", a);
+  }
+
+  pragma "no doc"
+  inline proc param string.byte(param i: int) param : uint(8) {
+    return __primitive("ascii", this, i);
+  }
 
   pragma "no doc"
   inline proc param string.length param
@@ -2431,6 +2439,7 @@ module String {
      :returns: The byte value of the first character in `a` as an integer.
   */
   inline proc ascii(a: string) : uint(8) {
+    compilerWarning("ascii is deprecated - please use string.byte instead");
     if a.isEmpty() then return 0;
 
     if _local || a.locale_id == chpl_nodeID {
@@ -2446,6 +2455,7 @@ module String {
      :returns: A string with the single character with the ASCII value `i`.
   */
   inline proc asciiToString(i: uint(8)) {
+    compilerWarning("asciiToString is deprecated - please use codepointToString instead");
     var buffer = chpl_here_alloc(2, offset_STR_COPY_DATA): bufferType;
     buffer[0] = i;
     buffer[1] = 0;

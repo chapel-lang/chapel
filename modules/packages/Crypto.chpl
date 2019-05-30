@@ -130,7 +130,7 @@ module Crypto {
       }
       this.buffDomain = {1..this._len};
       for i in this.buffDomain do {
-        this.buff[i] = ascii(s[i]);
+        this.buff[i] = s.byte(i);
       }
     }
 
