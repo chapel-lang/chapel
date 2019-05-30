@@ -1,4 +1,4 @@
-./UnitTest.chpl:149: error: Strings differ: 'unequalstring' != 'unequalstring'
+./UnitTest.chpl:128: error: Strings differ: 'unequalstring' is not equal to 'unequalString'
 First differing element at index 8:
 's'
 'S'

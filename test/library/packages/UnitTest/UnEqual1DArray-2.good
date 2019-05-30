@@ -1,9 +1,9 @@
-./UnitTest.chpl:149: error: Arrays differ: [1, 7, 8, 5, 8] != [1, 7, 6, 4]
+./UnitTest.chpl:128: error: Arrays differ: '[1, 7, 8, 5, 8]' is not equal to '[1, 7, 6, 4]'
 First differing element at index 3:
-8
-6
+'8'
+'6'
 
 First Array contains 1 additionl elements.
 First extra element is at index 5
-8
+'8'
 

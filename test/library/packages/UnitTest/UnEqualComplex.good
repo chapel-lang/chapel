@@ -1,1 +1,1 @@
-./UnitTest.chpl:226: error: assert failed - 5.0 + 6.0i is not equal 7.0i
+./UnitTest.chpl:205: error: assert failed - '5.0 + 6.0i' is not equal to '7.0i'

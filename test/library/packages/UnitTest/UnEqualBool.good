@@ -1,1 +1,1 @@
-./UnitTest.chpl:226: error: assert failed - true is not equal false
+./UnitTest.chpl:205: error: assert failed - 'true' is not equal to 'false'

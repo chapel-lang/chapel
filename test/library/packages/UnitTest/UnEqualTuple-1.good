@@ -1,5 +1,5 @@
-./UnitTest.chpl:149: error: tuple(3*int(64))s differ: (1, 2, 3) != (1, 2, 5)
+./UnitTest.chpl:128: error: tuple(3*int(64))s differ: '(1, 2, 3)' is not equal to '(1, 2, 5)'
 First differing element at index 3:
-3
-5
+'3'
+'5'
 

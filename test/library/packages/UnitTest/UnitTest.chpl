@@ -92,57 +92,36 @@ module UnitTest {
       }
       tmpString = seq_type_name+"s differ: ";
       if seq_type_name == "Array" {
-        tmpString += "[";
+        tmpString += "'[";
         for i in 1..seq1.size {
           if i != seq1.size then tmpString+= seq1[i]+", ";
-          else tmpString += seq1[i]+"] != [";
+          else tmpString += seq1[i]+"]' is not equal to '[";
         }
         for i in 1..seq2.size {
           if i != seq2.size then tmpString+= seq2[i]+", ";
-          else tmpString += seq2[i]+"]";
+          else tmpString += seq2[i]+"]'";
         }
       }
-      else if seq_type_name == "String" {
-        tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq1)+"'" ;
-      }
       else {
-        tmpString += stringify(seq1)+" != "+stringify(seq2);
+        tmpString += "'"+stringify(seq1)+"' is not equal to '"+stringify(seq2)+"'" ;
       }
       for i in 1..min(len1,len2) {
         var item1 = seq1[i];
         var item2 = seq2[i];
         if item1 != item2 {
-          tmpString += "\nFirst differing element at index "+i +":\n";
-          if seq_type_name == "String" {
-            tmpString += "'"+item1+"'\n'"+item2+"'\n";
-          }
-          else {
-            tmpString += item1+"\n"+item2+"\n";
-          }
+          tmpString += "\nFirst differing element at index "+i +":\n'"+item1+"'\n'"+item2+"'\n";
           break;
         }
       }
       if len1 > len2 {
         var size_diff = len1 - len2;
         tmpString += "\nFirst "+seq_type_name+" contains "+ size_diff +" additionl elements.\n";
-        tmpString += "First extra element is at index "+(len2+1)+"\n";
-        if seq_type_name == "String" {
-          tmpString += "'"+seq1[len2+1]+"'\n";
-        }
-        else {
-          tmpString += seq1[len2+1]+"\n";
-        }
+        tmpString += "First extra element is at index "+(len2+1)+"\n'"+seq1[len2+1]+"'\n";
       }
       else if len1 < len2 {
         var size_diff = len2 - len1;
         tmpString += "\nSecond "+seq_type_name+" contains "+ size_diff +" additionl elements.\n";
-        tmpString += "First extra element is at index "+(len1+1)+"\n";
-        if seq_type_name == "String" {
-          tmpString += "'"+seq2[len1+1]+"'\n";
-        }
-        else {
-          tmpString += seq2[len1+1]+"\n";
-        }
+        tmpString += "First extra element is at index "+(len1+1)+"\n'"+seq2[len1+1]+"'\n";
       }
     }
   
@@ -164,13 +143,13 @@ module UnitTest {
       }
       else {
         if !array1.equals(array2) {
-          var tmpString = "assert failed - \n" + stringify(array1) +"\nis not equal\n"+stringify(array2);
+          var tmpString = "assert failed - \n'" + stringify(array1) +"'\nis not equal to\n'"+stringify(array2)+"'";
           __primitive("chpl_error", tmpString.c_str());
         }
       }
     }
     else {
-      var tmpString = "assert failed - \n" + stringify(array1) +"\nand\n"+stringify(array2) + "\nare not of same type";
+      var tmpString = "assert failed - \n'" + stringify(array1) +"'\nand\n'"+stringify(array2) + "'\nare not of same type";
       __primitive("chpl_error",tmpString.c_str());
     }
   }
@@ -189,7 +168,7 @@ module UnitTest {
       assertSequenceEqual(tuple1,tuple2,"tuple("+firstType:string+")");
     }
     else {
-      var tmpString = "assert failed - " + stringify(tuple1) +" and "+stringify(tuple2) + " are not of same type";
+      var tmpString = "assert failed - '" + stringify(tuple1) +"' and '"+stringify(tuple2) + "' are not of same type";
       __primitive("chpl_error",tmpString.c_str());
     }
   }
@@ -222,12 +201,12 @@ module UnitTest {
   proc __baseAssertEqual(first, second) {
     if canResolve("!=",first,second) {
       if (first != second) {
-        var tmpString = "assert failed - " + stringify(first) +" is not equal "+stringify(second);
+        var tmpString = "assert failed - '" + stringify(first) +"' is not equal to '"+stringify(second)+"'";
         __primitive("chpl_error", tmpString.c_str());
       }
     }
     else {
-      var tmpString = "assert failed - " + stringify(first) +" and "+stringify(second) + " are not of same type";
+      var tmpString = "assert failed - '" + stringify(first) +"' and '"+stringify(second) + "' are not of same type";
       __primitive("chpl_error",tmpString.c_str());
     }
   }
@@ -245,7 +224,7 @@ module UnitTest {
   proc assertNotEqual(first, second) {
     if first.type == second.type {
       if all(first == second) {
-        var tmpString = "assert failed - \n" + stringify(first) +"\nequals \n"+stringify(second);
+        var tmpString = "assert failed - \n'" + stringify(first) +"'\nis equal to \n'"+stringify(second)+"'";
         __primitive("chpl_error", tmpString.c_str());
       }
     }
