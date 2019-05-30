@@ -241,7 +241,6 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
   switch(i->const_kind) {
     case NUM_KIND_BOOL:
       switch(i->num_index) {
-        //        case BOOL_SIZE_1:
         case BOOL_SIZE_SYS:
         case BOOL_SIZE_8:
           ret = llvm::ConstantInt::get(
@@ -408,7 +407,6 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         std::string bstring = (immediate->bool_value())?"true":"false";
         const char* castString = "(";
         switch (immediate->num_index) {
-          //        case BOOL_SIZE_1:
         case BOOL_SIZE_SYS:
         case BOOL_SIZE_8:
           castString = "UINT8(";

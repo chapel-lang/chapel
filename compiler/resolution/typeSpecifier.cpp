@@ -45,7 +45,7 @@ Type* typeForTypeSpecifier(Expr* expr, bool fatalOK) {
                     int size = typeSize(var);
 
                     switch (size) {
-                    case 1:
+                    case 0:
                       retval = dtBools[BOOL_SIZE_SYS];
                       break;
 
