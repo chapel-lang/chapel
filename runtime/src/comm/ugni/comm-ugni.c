@@ -5851,7 +5851,7 @@ void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
   do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
 }
 
-void chpl_comm_get_unordered_task_fence(void) {
+void chpl_comm_getput_unordered_task_fence(void) {
   task_local_buff_flush(get_buff);
 }
 
