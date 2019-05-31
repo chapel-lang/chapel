@@ -1567,8 +1567,8 @@ module String {
             }
             offset += sLen;
           }
-          joined.buff[offset] = 0;
         }
+        joined.buff[offset] = 0;
         return joined;
       }
     }
