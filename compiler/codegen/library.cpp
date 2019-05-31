@@ -319,6 +319,45 @@ static void setupPythonTypeMap() {
 
 }
 
+// If there is a known .pxd file translation for this type, use that.
+// Otherwise, use the normal cname
+std::string getPythonTypeName(Type* type, PythonFileType pxd) {
+  std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
+  if (pxd == C_PXD && tNames.first != "") {
+    return tNames.first;
+  } else if (pxd == PYTHON_PYX && tNames.second != "") {
+    return tNames.second;
+  } else if (pxd == C_PYX && (tNames.second != "" || tNames.first != "")) {
+    std::string res = tNames.second;
+    if (strncmp(res.c_str(), "numpy", strlen("numpy")) == 0) {
+      res += "_t";
+    } else {
+      res = getPythonTypeName(type, C_PXD);
+    }
+    return res;
+  } else {
+    if (type->symbol->hasFlag(FLAG_REF)) {
+      Type* referenced = type->getValType();
+      std::string base = getPythonTypeName(referenced, pxd);
+      if (pxd == C_PYX) {
+        return "";
+      } else {
+        return base + " *";
+      }
+    } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+      Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
+      std::string base = getPythonTypeName(pointedTo, pxd);
+      if (pxd == C_PYX) {
+        return "";
+      } else {
+        return base + " *";
+      }
+    } else {
+      return type->codegen().c;
+    }
+  }
+}
+
 static void setupFortranTypeMap() {
   fortranKindNames[dtInt[INT_SIZE_8]->symbol] = "c_int8_t";
   fortranKindNames[dtInt[INT_SIZE_16]->symbol] = "c_int16_t";
