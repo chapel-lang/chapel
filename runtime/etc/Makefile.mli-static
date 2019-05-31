@@ -145,7 +145,7 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 		$(LIBS) \
 		-L$(CHPL_RT_LIB_DIR) \
 		-lchpl -lm \
-		$CHPL_ZMQ_LIB_SEARCH_PATH \
+		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
 		-lzmq
 endif
 
