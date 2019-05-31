@@ -947,11 +947,6 @@ bool isLegalParamType(Type* t) {
 }
 
 int get_width(Type *t) {
-  if (t == dtBools[BOOL_SIZE_SYS]) {
-    return 0;
-    // BLC: This is a lie, but one I'm hoping we can get away with
-    // based on how this function is used
-  }
   if (t == dtBools[BOOL_SIZE_8] ||
       t == dtInt[INT_SIZE_8] ||
       t == dtUInt[INT_SIZE_8])

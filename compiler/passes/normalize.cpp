@@ -3011,10 +3011,14 @@ static void cloneParameterizedPrimitive(FnSymbol* fn, CallExpr* typeSpecifier) {
   DefExpr*   def           = toDefExpr(typeSpecifier->get(1));
 
   if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol) {
+    // If 'bool(?)', instantiate for 'bool', and all 'bool(w)'
+    // If 'bool(?w)', skip 'bool' instantiation since 'w' is unknown
     int start = typeSpecifierUnnamedQuery(typeSpecifier) ? BOOL_SIZE_SYS
                                                          : BOOL_SIZE_8;
     for (int i = start; i < BOOL_SIZE_NUM; i++) {
-      cloneParameterizedPrimitive(fn, def, get_width(dtBools[i]));
+      cloneParameterizedPrimitive(fn, def, ((i == BOOL_SIZE_SYS) ?
+                                            BOOL_SYS_WIDTH :
+                                            get_width(dtBools[i])));
     }
 
   } else if (callFnSym == dtInt [INT_SIZE_DEFAULT]->symbol ||
