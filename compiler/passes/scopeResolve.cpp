@@ -2194,7 +2194,7 @@ static void resolveUnmanagedBorrows() {
 
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-          AggregateType* at = toAggregateType(canonicalClassType(ts->type));
+          AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type));
 
           ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
           if (isClassLike(ts->type)) {

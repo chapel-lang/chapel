@@ -998,7 +998,7 @@ static void processManagedNew(CallExpr* newCall) {
             bool isshared = false;
             if (SymExpr* se = toSymExpr(callManager->baseExpr)) {
               if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-                Type* ct = canonicalClassType(ts->type);
+                Type* ct = canonicalDecoratedClassType(ts->type);
                 if (ct == dtOwned)
                   isowned = true;
                 else if (ct == dtShared)
@@ -1641,7 +1641,7 @@ static void normalizeCallToTypeConstructor(CallExpr* call) {
       if (TypeSymbol* ts = expandTypeAlias(se)) {
         AggregateType* at = toAggregateType(ts->type);
         if (isDecoratedClassType(ts->type)) {
-          at = toAggregateType(canonicalClassType(ts->type));
+          at = toAggregateType(canonicalDecoratedClassType(ts->type));
         }
 
         if (at) {
@@ -3198,7 +3198,7 @@ static bool isGenericActual(Expr* expr) {
     return true;
   if (SymExpr* se = toSymExpr(expr))
     if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
-      if (AggregateType* at = toAggregateType(canonicalClassType(ts->type)))
+      if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type)))
         if (at->isGeneric() && !at->isGenericWithDefaults())
           return true;
 
@@ -3438,7 +3438,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     } else {
       // For nested calls in PRIM_TO_UNMANAGED_CLASS, where the
       // called type is a class or an unmanaged class.
-      Type* t = canonicalClassType(theType);
+      Type* t = canonicalDecoratedClassType(theType);
       AggregateType* at = toAggregateType(t);
       INT_ASSERT(at);
 

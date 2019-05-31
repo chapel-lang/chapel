@@ -140,7 +140,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
         Symbol* eltTypeField = at->getField("eltType", false);
 
         if (domField && eltTypeField) {
-          Type* domainType = canonicalClassType(domField->type);
+          Type* domainType = canonicalDecoratedClassType(domField->type);
           Type* eltType    = eltTypeField->type;
 
           if (domainType != dtUnknown && eltType != dtUnknown)
@@ -155,7 +155,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
         Symbol* instanceField = at->getField("_instance", false);
 
         if (instanceField) {
-          Type* implType = canonicalClassType(instanceField->type);
+          Type* implType = canonicalDecoratedClassType(instanceField->type);
 
           if (implType != dtUnknown)
             retval = toString(implType, false);
@@ -1140,7 +1140,7 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
   if (isNilableClassType(borrowType))
     decorator = CLASS_TYPE_BORROWED_NILABLE;
 
-  borrowType = canonicalClassType(borrowType);
+  borrowType = canonicalDecoratedClassType(borrowType);
 
   if (AggregateType* at = toAggregateType(borrowType))
     if (isClass(at))

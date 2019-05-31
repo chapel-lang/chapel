@@ -696,8 +696,8 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   // handle unmanaged GenericClass(int) -> unmanaged GenericClass
   if (isDecoratedClassType(formalType) && isDecoratedClassType(actualType))
     if (classesWithSameKind(formalType, actualType))
-      if (canInstantiate(canonicalClassType(actualType),
-                         canonicalClassType(formalType)))
+      if (canInstantiate(canonicalDecoratedClassType(actualType),
+                         canonicalDecoratedClassType(formalType)))
         return true;
 
   if (formalType == dtBorrowed) {
@@ -1118,7 +1118,7 @@ Type* actualTypeAfterNilabilityRemoval(Type* actualType,
           actualDecorator = removeNilableFromDecorator(actualDecorator);
           if (canCoerceDecorators(actualDecorator, formalDecorator)) {
             // OK, get the non-nilable actual and try to dispatch.
-            actualCt = canonicalClassType(actualCt);
+            actualCt = canonicalDecoratedClassType(actualCt);
             if (AggregateType* at = toAggregateType(actualCt)) {
               actualCt = at->getDecoratedClass(formalDecorator);
 
@@ -2142,7 +2142,7 @@ static void markArraysOfBorrows(AggregateType* at) {
     Symbol* instanceField = at->getField("_instance", false);
 
     if (instanceField) {
-      Type* implType = canonicalClassType(instanceField->type);
+      Type* implType = canonicalDecoratedClassType(instanceField->type);
 
       if (implType != dtUnknown)
         if (AggregateType* implAt = toAggregateType(implType))
@@ -2422,7 +2422,7 @@ static bool resolveBuiltinCastCall(CallExpr* call)
           targetType == dtUnmanagedNilable) {
 
         if (isClassLike(valueType)) {
-          AggregateType* at = toAggregateType(canonicalClassType(valueType));
+          AggregateType* at = toAggregateType(canonicalDecoratedClassType(valueType));
 
           ClassTypeDecorator d = classTypeDecorator(targetType);
           Type* t = at->getDecoratedClass(d);
@@ -2704,7 +2704,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
   if (candidates.n                  == 0 &&
       info.call->numActuals()       >= 1 &&
       info.call->get(1)->typeInfo() == dtMethodToken) {
-    Type* receiverType = canonicalClassType(info.call->get(2)->getValType());
+    Type* receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
     if (typeUsesForwarding(receiverType)) {
       FnSymbol* fn = resolveForwardedCall(info, checkOnly);
       if (fn) {
@@ -3438,8 +3438,8 @@ void trimVisibleCandidates(CallInfo&       info,
       }
 
       if (actual != NULL && formal != NULL) {
-        Type* at = canonicalClassType(actual->getValType());
-        Type* ft = canonicalClassType(formal->getValType());
+        Type* at = canonicalDecoratedClassType(actual->getValType());
+        Type* ft = canonicalDecoratedClassType(formal->getValType());
 
         AggregateType* actualType = toAggregateType(at)->getRootInstantiation();
         AggregateType* formalType = toAggregateType(ft)->getRootInstantiation();
@@ -3689,7 +3689,7 @@ static void detectForwardingCycle(CallExpr* call) {
     } else {
       // If firstDef has same type as def, cycle is found.
       if (firstDef->sym->type == def->sym->type) {
-        Type* t = canonicalClassType(firstDef->sym->getValType());
+        Type* t = canonicalDecoratedClassType(firstDef->sym->getValType());
         TypeSymbol* ts = t->symbol;
         USR_FATAL_CONT(def, "forwarding cycle detected");
         USR_PRINT(ts, "for the type %s", ts->name);
@@ -3708,7 +3708,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
   const char* inFnName = call->getFunction()->name;
   Expr* receiver = call->get(2);
   Type* t = receiver->getValType();
-  AggregateType* at = toAggregateType(canonicalClassType(t));
+  AggregateType* at = toAggregateType(canonicalDecoratedClassType(t));
 
   FnSymbol* bestFn = NULL;
   CallExpr* bestCall = NULL;
@@ -6181,8 +6181,8 @@ bool isDispatchParent(Type* t, Type* pt) {
   // If one is managed and the other is not, it's not
   // a dispatch parent.
   if (classesWithSameKind(t, pt)) {
-    t = canonicalClassType(t);
-    pt = canonicalClassType(pt);
+    t = canonicalDecoratedClassType(t);
+    pt = canonicalDecoratedClassType(pt);
   }
 
   if (AggregateType* at = toAggregateType(t)) {
@@ -6291,7 +6291,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
   for_actuals(expr, newExpr) {
     if (NamedExpr* ne = toNamedExpr(expr)) {
       if (ne->name == astr_chpl_manager) {
-        manager = canonicalClassType(ne->actual->typeInfo());
+        manager = canonicalDecoratedClassType(ne->actual->typeInfo());
         expr->remove();
       }
     }
@@ -6429,7 +6429,7 @@ static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager
   // This function implements a warning that should be removed in 1.20
   // in favor of e.g. calling compilerError in chpl_fix_thrown_error.
   INT_ASSERT(newExpr->parentSymbol);
-  Type* cType = canonicalClassType(newType);
+  Type* cType = canonicalDecoratedClassType(newType);
 
   if (isClass(cType) && isSubTypeOrInstantiation(cType, dtError)) {
 
@@ -9010,7 +9010,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
         USR_FATAL_CONT(call, "Cannot default-initialize %s", descr);
         USR_PRINT("non-nil class types do not support default initialization");
-        AggregateType* at = toAggregateType(canonicalClassType(type));
+        AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
         INT_ASSERT(at);
         ClassTypeDecorator d = classTypeDecorator(type);
         Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
@@ -9187,7 +9187,7 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
 
   // If it is generic then try to resolve the default type constructor
   // for better error reporting.
-  if (AggregateType* at = toAggregateType(canonicalClassType(type))) {
+  if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(type))) {
     if (FnSymbol* typeCons = at->typeConstructor) {
       SET_LINENO(call);
 

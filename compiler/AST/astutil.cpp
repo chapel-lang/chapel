@@ -713,7 +713,7 @@ bool isTypeExpr(Expr* expr) {
     } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true ||
                call->isPrimitive(PRIM_GET_MEMBER)       == true) {
       SymExpr*       left = toSymExpr(call->get(1));
-      Type*          t    = canonicalClassType(left->getValType());
+      Type*          t    = canonicalDecoratedClassType(left->getValType());
       AggregateType* ct   = toAggregateType(t);
 
       INT_ASSERT(ct != NULL);

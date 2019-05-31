@@ -118,7 +118,7 @@ bool classesWithSameKind(Type* a, Type* b) {
   return aDecorator == bDecorator;
 }
 
-Type* canonicalClassType(Type* t) {
+Type* canonicalDecoratedClassType(Type* t) {
   if (AggregateType* at = toAggregateType(t))
     if (isClass(at))
         return at;
@@ -233,13 +233,13 @@ static Type* convertToCanonical(Type* a) {
   if (isReferenceType(a)) {
     // Convert ref(unmanaged) to ref(canonical)
     Type* elt = a->getValType();
-    Type* newElt = canonicalClassType(elt);
+    Type* newElt = canonicalDecoratedClassType(elt);
     INT_ASSERT(newElt->refType);
     return newElt->refType;
   }
 
   // convert unmanaged to canonical
-  return canonicalClassType(a);
+  return canonicalDecoratedClassType(a);
 }
 
 
