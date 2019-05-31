@@ -287,7 +287,7 @@ module DefaultRectangular {
                        else tasksPerLocale;
       if debugDefaultDist {
         chpl_debug_writeln("    numTasks=", numTasks, " (", ignoreRunning,
-                "), minIndicesPerTask=", minIndicesPerTask);
+                           "), minIndicesPerTask=", minIndicesPerTask);
       }
       const (numChunks, parDim) = if __primitive("task_get_serial") then
                                   (1, -1) else
@@ -297,7 +297,7 @@ module DefaultRectangular {
                                                      ranges);
       if debugDefaultDist {
         chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                " ranges(", parDim, ").length=", ranges(parDim).length);
+                           " ranges(", parDim, ").length=", ranges(parDim).length);
       }
 
       if debugDataPar {
@@ -313,53 +313,22 @@ module DefaultRectangular {
           yield i;
         }
       } else {
-        var locBlock: rank*range(intIdxType);
-        for param i in 1..rank {
-          locBlock(i) = offset(i)..#(ranges(i).length);
-        }
+
         if debugDefaultDist {
-          chpl_debug_writeln("*** DI: locBlock = ", locBlock);
+          chpl_debug_writeln("*** DI: ranges = ", ranges);
         }
         coforall chunk in 0..#numChunks {
-          var followMe: rank*range(intIdxType) = locBlock;
-          const (lo,hi) = _computeBlock(locBlock(parDim).length,
+          var myChunk = ranges;
+          const (lo,hi) = _computeBlock(ranges(parDim).length,
                                         numChunks, chunk,
-                                        locBlock(parDim)._high,
-                                        locBlock(parDim)._low,
-                                        locBlock(parDim)._low);
-          followMe(parDim) = lo..hi;
+                                        ranges(parDim)._high,
+                                        ranges(parDim)._low,
+                                        ranges(parDim)._low);
+          myChunk(parDim) = lo..hi;
           if debugDefaultDist {
-            chpl_debug_writeln("*** DI[", chunk, "]: followMe = ", followMe);
+            chpl_debug_writeln("*** DI[", chunk, "]: myChunk = ", myChunk);
           }
-          var block: rank*range(idxType=intIdxType, stridable=stridable);
-          if stridable {
-            type strType = chpl__signedType(intIdxType);
-            for param i in 1..rank {
-              // Note that a range.stride is signed, even if the range is not
-              const rStride = ranges(i).stride;
-              const rSignedStride = rStride:strType;
-              if rStride > 0 {
-                // Since stride is positive, the following line results
-                // in a positive number, so casting it to e.g. uint is OK
-                const riStride = rStride:intIdxType;
-                const low = ranges(i).alignedLowAsInt + followMe(i).low*riStride,
-                      high = ranges(i).alignedLowAsInt + followMe(i).high*riStride,
-                      stride = rSignedStride;
-                block(i) = low..high by stride;
-              } else {
-                // Stride is negative, so the following number is positive.
-                const riStride = (-rStride):intIdxType;
-                const low = ranges(i).alignedHighAsInt - followMe(i).high*riStride,
-                      high = ranges(i).alignedHighAsInt - followMe(i).low*riStride,
-                      stride = rSignedStride;
-                block(i) = low..high by stride;
-              }
-            }
-          } else {
-            for  param i in 1..rank do
-              block(i) = ranges(i)._low+followMe(i).low:intIdxType..ranges(i)._low+followMe(i).high:intIdxType;
-          }
-          for i in these_help(1, block) {
+          for i in these_help(1, myChunk) {
             yield chpl_intToIdx(i);
           }
         }
