@@ -374,27 +374,14 @@ module TomlParser {
         // Time
         else if ti.match(val) {
           var raw = getToken(source).split(":");
-          var sec = raw[3].split(".");
+          var sec = '%.6dr'.format(raw[3]: real).split('.');
           var t: time;
-          if sec.size == 1 {
-            t = new time(raw[1]: int,
-                         raw[2]: int,
-                         raw[3]: int);
-          } else {
-            sec[2] = if sec[2].length > 6 then
-                sec[2][1..6] + "." + sec[2][7..(sec[2].length)] else sec[2];
 
-            var m_sec = round(sec[2]: real): int;
+          t = new time(raw[1]: int,
+                       raw[2]: int,
+                       sec[1]: int,
+                       sec[2]: int);
 
-            // handling case
-            // sec[2] = 999999.9
-            m_sec = if m_sec > 999999 then 999999 else m_sec;
-
-            t = new time(raw[1]: int,
-                         raw[2]: int,
-                         sec[1]: int,
-                         m_sec);
-          }
           var Time: unmanaged Toml;
           Time = t;
           return Time;
