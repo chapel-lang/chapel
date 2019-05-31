@@ -2225,7 +2225,6 @@ void resolveDestructor(AggregateType* at) {
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
 static bool resolveBuiltinAssignCall(CallExpr* call);
-//static bool resolveBuiltinPostfixBangCall(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -2282,9 +2281,6 @@ void resolveCall(CallExpr* call) {
 
     if (resolveBuiltinAssignCall(call))
       return;
-
-    //if (resolveBuiltinPostfixBangCall(call))
-    //  return;
 
     resolveNormalCall(call);
   }
@@ -2469,41 +2465,6 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       // This could compute the target type for generics.
       // If it does, be careful with generics with defaults.
     }
-
-    // Handle explicit casting among class type flavors
-    // (e.g. borrowed ChildClass? -> unmanaged ParentClass?
-/*    if (isClassLike(valueType) && isClassLike(targetType)) {
-      Type* canonicalValueType = canonicalClassType(valueType);
-      Type* canonicalTargetType = canonicalClassType(targetType);
-      if (canDispatch(canonicalValueType, valueSe->symbol(),
-                      canonicalTargetType, NULL, call->getFunction(),
-                      &promotes, &paramNarrows, paramCoerce) &&
-          !promotes) {
-
-        call->baseExpr->remove();
-        call->primitive = primitives[PRIM_CAST];
-
-        if (valueSe->symbol()->isRef()) {
-          if (targetTypeSe->symbol()->isRef())
-            INT_FATAL("casting from reference to reference not handled");
-
-          SET_LINENO(call);
-
-          // Dereference before casting
-          VarSymbol* tmp = newTempConst("cast_tmp");
-          CallExpr* c = new CallExpr(PRIM_DEREF, valueSe->symbol());
-          CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
-          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          call->getStmtExpr()->insertBefore(m);
-          resolveCall(m);
-
-          // Now update the cast call we have to cast the result of deref
-          valueSe->setSymbol(tmp);
-        }
-
-        return true;
-      }
-    }*/
   }
 
   return false;
@@ -2585,23 +2546,6 @@ static bool resolveBuiltinAssignCall(CallExpr* call)
 
   return false;
 }
-
-/*
-static bool resolveBuiltinPostfixBangCall(CallExpr* call) {
-
-  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
-    if (urse->unresolved == astrPostfixBang) {
-      SymExpr* se = toSymExpr(call->get(1));
-      if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-        call->baseExpr->remove();
-        call->primitive = primitives[PRIM_TO_NON_NILABLE_CLASS];
-        return true;
-      }
-    }
-  }
-
-  return false;
-}*/
 
 /************************************* | **************************************
 *                                                                             *

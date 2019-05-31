@@ -990,10 +990,8 @@ static void processManagedNew(CallExpr* newCall) {
         if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
           if (!callClass->isPrimitive() &&
               !isUnresolvedSymExpr(callClass->baseExpr)) {
-            bool isunmanaged = //callManager->isNamed("_to_unmanaged") ||
-                               callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
-            bool isborrowed = //callManager->isNamed("_to_borrowed") ||
-                              callManager->isPrimitive(PRIM_TO_BORROWED_CLASS);
+            bool isunmanaged = callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
+            bool isborrowed = callManager->isPrimitive(PRIM_TO_BORROWED_CLASS);
             bool isowned = false;
             bool isshared = false;
             if (SymExpr* se = toSymExpr(callManager->baseExpr)) {
