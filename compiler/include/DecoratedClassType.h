@@ -81,7 +81,7 @@ private:
 
 bool classesWithSameKind(Type* a, Type* b);
 Type* canonicalDecoratedClassType(Type* t);
-Type* canonicalClassType2(Type* t);
+Type* canonicalClassType(Type* t);
 
 Type* getDecoratedClass(Type* t, ClassTypeDecorator d);
 ClassTypeDecorator classTypeDecorator(Type* t);

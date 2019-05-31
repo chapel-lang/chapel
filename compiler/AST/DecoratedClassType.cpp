@@ -127,7 +127,7 @@ Type* canonicalDecoratedClassType(Type* t) {
   return t;
 }
 
-Type* canonicalClassType2(Type* t) {
+Type* canonicalClassType(Type* t) {
 
   if (t == dtBorrowed ||
       t == dtBorrowedNonNilable ||

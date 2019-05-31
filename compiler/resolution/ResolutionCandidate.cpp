@@ -468,10 +468,10 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
   // should instantiate with MyClass?
 
   if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType)) {
-    Type* canonicalActual = canonicalClassType2(actualType);
+    Type* canonicalActual = canonicalClassType(actualType);
     ClassTypeDecorator actualDecorator = classTypeDecorator(actualType);
 
-    Type* canonicalFormal = canonicalClassType2(formalType);
+    Type* canonicalFormal = canonicalClassType(formalType);
     ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
 
     if (canCoerceDecorators(actualDecorator, formalDecorator)) {
@@ -778,7 +778,7 @@ classifyTypeMismatch(Type* actualType, Type* formalType) {
   if (actualType == formalType)
     return RESOLUTION_CANDIDATE_TYPE_RELATED;
 
-  if (canonicalClassType2(actualType) == canonicalClassType2(formalType))
+  if (canonicalClassType(actualType) == canonicalClassType(formalType))
     return RESOLUTION_CANDIDATE_TYPE_RELATED;
 
   if ((is_bool_type   (actualType) && is_bool_type   (formalType)) ||
