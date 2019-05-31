@@ -1461,9 +1461,9 @@ static void postprocess_args() {
 
   postStackCheck();
 
-  postStaticLink();
-
   setMultiLocaleInterop();
+
+  postStaticLink();
 
   checkMLDebugAndLibmode();
 
