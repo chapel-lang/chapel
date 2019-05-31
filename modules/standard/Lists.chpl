@@ -59,10 +59,12 @@ module Lists {
   pragma "no doc"
   config const _growthFactor = 2;
 
+  pragma "no doc"
+  config const _initialBlockCapacity = 16;
+
   //
-  // Building blocks used to store "chunks" of List elements. Inspired by
-  // @vasslitvinov's VectorList implementation. Use this until we adopt a
-  // O(1) indexing scheme recommended by @mppf.
+  // Basically just a wrapper around _ddata at this point, with one based
+  // indexing to avoid logical errors.
   //
   pragma "no doc"
   class ListBlock {
@@ -70,7 +72,6 @@ module Lists {
     type _etype;
     var _data: _ddata(_etype);
     const capacity: int;
-    var next: unmanaged ListBlock(_etype) = nil;
 
     proc init(type _etype, capacity: int) {
       assert(capacity > 0);
@@ -82,7 +83,6 @@ module Lists {
       //
       this._data = c_calloc(_etype, capacity):_ddata(_etype);
       this.capacity = capacity;
-      this.next = nil;
     }
 
     proc deinit() {
@@ -90,7 +90,8 @@ module Lists {
     }
 
     inline proc this(i: int) ref {
-      return _data[i];
+      assert(i >= 1 && i <= capacity);
+      return _data[i - 1];
     }
   }
 
@@ -129,38 +130,22 @@ module Lists {
     param parSafe;
 
     //
-    // We can change the lock type later. Use a spinlock for now, even if it
-    // is suboptimal in cases where long critical sections have high
-    // contention (IE, lots of tasks trying to insert into the middle of this
-    // List, or any operation that is O(n).
-    //
-    // pragma "no doc"
-    // type lockType = ChapelLocks.chpl_LocalSpinlock;
-
-    //
-    // I wanted to do the little piece of wizardry @ronawho used to make the
-    // _lock$ variable reduce to "nothing" when parSafe is false, but I was
-    // getting strange compiler errors. See #13104 for the idea.
+    // Little piece of wizardry I learned from @ronawho in #13104.
     //
     pragma "no doc"
     var _lock$ = if parSafe then new lockType() else none;
 
     //
-    // Michael suggested that we move from a LL of blocks to an array, which
-    // would give us constant speed indexing at the cost of more complicated
-    // indexing logic.
-    //
-    // For now, I can start with Vass's logic and then switch over to a O(1)
-    // indexing scheme when everything else is working.
+    // Functionally an array of arrays.
     //
     pragma "no doc"
-    var _head, _tail: unmanaged ListBlock(eltType) = nil;
+    var _blocks: unmanaged ListBlock(unmanaged ListBlock(eltType)) = nil;
 
     //
     // This is the sum of the capacities of all currently allocated ListBlock.
     //
     pragma "no doc"
-    var _maxCapacity: int = 0;
+    var _totalCapacity = 0;
 
     /*
       Initializes an empty List containing elements of the given type.
@@ -192,19 +177,7 @@ module Lists {
     pragma "no doc"
     inline proc deinit() {
       clear();
-      _enter();
-      assert(_head == nil && _tail == nil);
-      assert(_size == 0);
-      _leave();
     }
-
-    //
-    // This may not be necessary, so don't fixate too much on it.
-    //
-    //pragma "no doc"
-    //proc _cast(type t: string, x: List): string {
-     // assert("List cast not implemented yet!" == "");
-    //}
 
     pragma "no doc"
     inline proc _destroy(ref item: eltType) {
@@ -216,26 +189,28 @@ module Lists {
       __primitive("=", dst, src);
     }
 
-    //
-    // Right now, Chapel ranges typically start from one and are inclusive on
-    // either side of the range (as opposed to ranges in Python, which are
-    // only open on the left).
-    // So make sure to keep this in mind when working with _ddata (which uses
-    // zero based indexing).
-    //
+    pragma "no doc"
+    inline proc _getItemIdx(idx: int): int {
+      const pos = idx + _initialCapacity;
+      const result = pos ^ (1 << floor(log2(pos)));
+      return result;
+    }
+
+    pragma "no doc"
+    inline proc _getBlockIdx(idx: int): int {
+      const pos = idx + _initialCapacity;
+      const result = floor(log2(pos)) - floor(log2(_initialCapacity));
+      assert(result >= 1 && result <= _blocks.capacity);
+      return result;
+    }
+
     pragma "no doc"
     proc _getRef(in idx: int) ref {
-      var start = _head;
-
-      while start != nil && idx > start.capacity do {
-        idx -= start.capacity;
-        start = start.next;
-      }
-
-      // If this assertion fires, then we've abused _getRef() in some way.
-      assert(start != nil && idx <= start.capacity && idx > 0);
-
-      return start[idx - 1];
+      assert(idx >= 1 && idx <= _totalCapacity);
+      const blockIdx = _getBlockIdx(idx);
+      const itemIdx = _getItemIdx(idx);
+      ref result = _blocks[blockIdx][itemIdx];
+      return result;
     }
 
     pragma "no doc"
@@ -251,8 +226,8 @@ module Lists {
     }
 
     pragma "no doc"
-    inline proc _withinBounds(i: int): bool {
-      return (i >= 1 && i <= _size);
+    inline proc _withinBounds(idx: int): bool {
+      return (idx >= 1 && idx <= _size);
     }
 
     //
@@ -270,6 +245,75 @@ module Lists {
       }
     }
 
+    pragma "no doc"
+    proc _makeBlockArray(size: int) {
+      var result = new unmanaged ListBlock(ListBlock(eltType), size);
+      return result;
+    }
+
+    //
+    // A call to this assumes that if no free blocks remain, then all free
+    // blocks have been filled and we need to resize the blocks array.
+    //
+    pragma "no doc"
+    proc _maybeResizeBlockArray() {
+
+      const lastBlockIdx = _getBlockIdx(_size);
+      if lastBlockIdx < _blocks.capacity then
+        return;
+
+      var _nblocks = _makeBlockArray(_blocks.capacity * 2);
+      for i in 1.._blocks.capacity do
+        _nblocks[i] = _blocks[i];
+      delete _blocks;
+      _blocks = _nblocks;
+    }
+
+    pragma "no doc"
+    proc _maybeAcquireMem(amount: int) {
+      const remaining = _totalCapacity - _size;
+      if remaining > amount then
+        return;
+
+      // Should only be in this state after init or a clear.
+      if _blocks == nil then {
+        assert(_totalCapacity == 0);
+        assert(_size == 0);
+        _blocks = _makeBlockArray(_initialBlockCapacity);
+        _blocks[1] = new unmanaged ListBlock(eltType, _initialCapacity);
+        _totalCapacity += _initialCapacity;
+      }
+
+      var lastBlockIdx = _getBlockIdx(_size);
+      var req = amount - remaining;
+
+      while req > 0 do {
+        _maybeResizeBlockArray();
+
+        ref oblock = _blocks[lastBlockIdx];
+        lastBlockIdx += 1;
+        ref nblock = _blocks[lastBlockIdx];
+        assert(nblock == nil);
+        assert(oblock != nil);
+
+        nblock = new unmanaged ListBlock(eltType, oblock.capacity * 2);
+        _totalCapacity += nblock.capacity;
+        req -= nblock.capacity;
+      }
+    }
+
+    pragma "no doc"
+    proc _maybeReleaseMem(in amount: int) {
+      if _blocks == nil || _totalCapacity == 0 then
+        return;
+
+      //
+      // TODO: Worry about writing this _after_ we get the test functions to
+      // work once again.
+      //
+      
+    }
+
     //
     // Shift elements including and after index one to the right in memory,
     // possibly resizing.
@@ -277,7 +321,7 @@ module Lists {
     pragma "no doc"
     proc _expand(idx: int) {
       assert(_withinBounds(idx));
-      
+
       _maybeAcquireMem(1);
 
       for i in idx.._size by -1 do {
@@ -305,57 +349,6 @@ module Lists {
       }
 
       _maybeReleaseMem(1);
-    }
-
-    //
-    // Potentially reserve memory at the end of this array.
-    //
-    pragma "no doc"
-    proc _maybeAcquireMem(in amount: int) {
-      // Edge case for when this List is empty.
-      if _head == nil then {
-        assert(_tail == nil);
-        _head = new unmanaged ListBlock(eltType, _initialCapacity);
-        _maxCapacity = _initialCapacity;
-        _tail = _head;
-      }
-
-      // Create a new chunk if we need to.
-      while (_size + amount) >= _maxCapacity do {
-        assert(_tail.next == nil);
-        const blocksize = _tail.capacity * _growthFactor;
-        _tail.next = new unmanaged ListBlock(eltType, blocksize);
-        _tail = _tail.next;
-        amount -= blocksize;
-        _maxCapacity += blocksize;
-      }
-    }
-
-    //
-    // Potentially release memory at the end of this array.
-    //
-    pragma "no doc"
-    proc _maybeReleaseMem(in amount: int=1) {
-      if _head == nil || _head == _tail {
-        return;
-      }
-      
-      assert(amount >= 0 && amount <= _size);
-      const nsize = _size - amount;
-
-      const threshold = _maxCapacity - _tail.capacity;
-      if nsize >= threshold then
-        return;
-
-      _maxCapacity = threshold;
-
-      var node = _head;
-      while node.next != _tail do
-        node = node.next;
-
-      delete node.next;
-      node.next = nil;
-      _tail = node;
     }
 
     //
@@ -536,18 +529,21 @@ module Lists {
       // Manually call destructors on each currently allocated element.
       for i in 1.._size do {
         ref item = _getRef(i);
-        chpl__autoDestroy(item);
+        _destroy(item);
       }
 
-      // Free all currently allocated blocks.
-      while _head != nil do {
-        var block = _head;
-        _head = _head.next;
+      for i in 1.._blocks.capacity do {
+        ref block = _blocks[i];
+        if block == nil then
+          continue;
+        _totalCapacity -= block.capacity;
         delete block;
+        block = nil;
       }
 
-      _head = nil;
-      _tail = nil;
+      assert(_totalCapacity == 0);
+      delete _blocks;
+      _blocks = nil;
       _size = 0;
 
       _leave();
@@ -689,7 +685,8 @@ module Lists {
       //
       // Presently, if I try to let these calls throw, then they will trigger
       // an error in modules/standard/IO.chpl along the lines of "error: call
-      // to throwing function writeThis without throws, try, or try!
+      // to throwing function writeThis without throws, try, or try!", so
+      // I am not sure what the most idiomatic way to write this is.
       //
       try {
         ch.write("[");
