@@ -532,9 +532,23 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
 
   // Initialize the runtime.  chpl_setup should get called prior to using
   // any of the exported functions
-  fprintf(outfile, "def chpl_setup():\n");
-  fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);
-  fprintf(outfile, "\tchpl_library_init(1, args)\n");
+  if (fMultiLocaleInterop) {
+    // Multilocale libraries need to take in the number of locales to use.
+    // TODO: don't hardcode the type of numLocales in any way
+    std::string numLocalesType = getPythonTypeName(dtInt[INT_SIZE_64],
+                                                   C_PYX);
+    fprintf(outfile, "def chpl_setup(%s numLocales):\n",
+            numLocalesType.c_str());
+    fprintf(outfile,
+            "\tcdef char** args = ['%s', '-nl', str(numLocales).encode()]\n",
+            libmodeHeadername);
+    // TODO: is there a way to get the number of indices from args?
+    fprintf(outfile, "\tchpl_library_init(3, args)\n");
+  } else {
+    fprintf(outfile, "def chpl_setup():\n");
+    fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);
+    fprintf(outfile, "\tchpl_library_init(1, args)\n");
+  }
 
   // Initialize the included modules (continuation of chpl_setup definition)
   for_vector(FnSymbol, fn, moduleInits) {

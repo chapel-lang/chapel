@@ -1,6 +1,6 @@
 import testing
 
-testing.chpl_setup()
+testing.chpl_setup(1)
 testing.foo()
 x = 3
 y = testing.takesAndReturns(x)

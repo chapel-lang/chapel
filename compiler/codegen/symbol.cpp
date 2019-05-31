@@ -1071,7 +1071,7 @@ static std::string getFortranKindName(Type* type, Symbol* sym) {
 
 // If there is a known .pxd file translation for this type, use that.
 // Otherwise, use the normal cname
-static std::string getPythonTypeName(Type* type, PythonFileType pxd) {
+std::string getPythonTypeName(Type* type, PythonFileType pxd) {
   std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
   if (pxd == C_PXD && tNames.first != "") {
     return tNames.first;
