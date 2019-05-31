@@ -1,1 +1,1 @@
-./UnitTest.chpl:210: error: assert failed - '(1, 2)' and '1 2' are not of same type
+./UnitTest.chpl:220: error: assert failed - '(1, 2)' and '1 2' are not of same type

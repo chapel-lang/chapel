@@ -1,4 +1,4 @@
-./UnitTest.chpl:128: error: Arrays differ: '[1, 5, 7]' is not equal to '[1, 7, 6]'
+./UnitTest.chpl:138: error: Arrays differ: '[1, 5, 7]' != '[1, 7, 6]'
 First differing element at index 2:
 '5'
 '7'

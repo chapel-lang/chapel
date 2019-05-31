@@ -28,6 +28,7 @@ module UnitTest {
       __primitive("chpl_error", c"assert failed");
   }
   
+  /*Function to call the respective method based on the type of argument*/
   private
   proc checkAssertEquality(first, second) {
     type firstType = first.type;
@@ -55,14 +56,23 @@ module UnitTest {
       __baseAssertEqual(first, second);
     }
   }
-  
+
+  /*
+    Check that a boolean array is true.  If any element is false, returns 'false'
+    else return 'true'.
+
+    :arg it: the iterator to the array
+    :type it: `iterator`
+  */
   private
-  proc all(it : _iteratorRecord) {
+  proc all(it: _iteratorRecord) {
     for b in it do if b == false then return false;
     return true;
   }
+  /* Method overloading for the above function. Return the argument itself
+  */
   private
-  proc all(check : bool) {
+  proc all(check: bool) {
     return check;
   }
 
@@ -74,9 +84,9 @@ module UnitTest {
   */
   private
   proc assertSequenceEqual(seq1, seq2, seq_type_name) {
-    var tmpString:string;
-    var len1:int = seq1.size;
-    var len2:int = seq2.size;
+    var tmpString: string;
+    var len1: int = seq1.size;
+    var len2: int = seq2.size;
     if len1 == 0 && len2 == 0 then return;
     if len1 == 0 {
       tmpString = "First "+seq_type_name+" has no length.";
@@ -95,7 +105,7 @@ module UnitTest {
         tmpString += "'[";
         for i in 1..seq1.size {
           if i != seq1.size then tmpString+= seq1[i]+", ";
-          else tmpString += seq1[i]+"]' is not equal to '[";
+          else tmpString += seq1[i]+"]' != '[";
         }
         for i in 1..seq2.size {
           if i != seq2.size then tmpString+= seq2[i]+", ";
@@ -103,7 +113,7 @@ module UnitTest {
         }
       }
       else {
-        tmpString += "'"+stringify(seq1)+"' is not equal to '"+stringify(seq2)+"'" ;
+        tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
       }
       for i in 1..min(len1,len2) {
         var item1 = seq1[i];
@@ -143,7 +153,7 @@ module UnitTest {
       }
       else {
         if !array1.equals(array2) {
-          var tmpString = "assert failed - \n'" + stringify(array1) +"'\nis not equal to\n'"+stringify(array2)+"'";
+          var tmpString = "assert failed - \n'" + stringify(array1) +"'\n!=\n'"+stringify(array2)+"'";
           __primitive("chpl_error", tmpString.c_str());
         }
       }
@@ -165,7 +175,7 @@ module UnitTest {
     type firstType = tuple1.type;
     type secondType = tuple2.type;
     if firstType == secondType {
-      assertSequenceEqual(tuple1,tuple2,"tuple("+firstType:string+")");
+      assertSequenceEqual(tuple1,tuple2,"tuple("+firstType: string+")");
     }
     else {
       var tmpString = "assert failed - '" + stringify(tuple1) +"' and '"+stringify(tuple2) + "' are not of same type";
@@ -201,7 +211,7 @@ module UnitTest {
   proc __baseAssertEqual(first, second) {
     if canResolve("!=",first,second) {
       if (first != second) {
-        var tmpString = "assert failed - '" + stringify(first) +"' is not equal to '"+stringify(second)+"'";
+        var tmpString = "assert failed - '" + stringify(first) +"' != '"+stringify(second)+"'";
         __primitive("chpl_error", tmpString.c_str());
       }
     }
@@ -224,7 +234,7 @@ module UnitTest {
   proc assertNotEqual(first, second) {
     if first.type == second.type {
       if all(first == second) {
-        var tmpString = "assert failed - \n'" + stringify(first) +"'\nis equal to \n'"+stringify(second)+"'";
+        var tmpString = "assert failed - \n'" + stringify(first) +"'\n== \n'"+stringify(second)+"'";
         __primitive("chpl_error", tmpString.c_str());
       }
     }

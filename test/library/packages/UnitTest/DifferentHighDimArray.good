@@ -1,4 +1,4 @@
-./UnitTest.chpl:153: error: assert failed - 
+./UnitTest.chpl:163: error: assert failed - 
 '0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0
