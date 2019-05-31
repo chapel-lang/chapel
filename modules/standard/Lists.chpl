@@ -768,7 +768,7 @@ module Lists {
     :arg lhs: The List object to assign to.
     :arg rhs: The List object to assign from. 
   */
-  proc =(lhs: List(?t), rhs: List(t)) {
+  proc =(ref lhs: List(?t, ?), const ref rhs: List(t, ?)) {
     lhs.clear();
     lhs.extend(rhs);
   }
