@@ -5769,8 +5769,7 @@ void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
   if (dst_locale == chpl_nodeID) {
     chpl_comm_get_unordered(dst_addr, src_locale, src_addr, size, typeIndex, commID, ln, fn);
   } else if (src_locale == chpl_nodeID) {
-    // TODO want chpl_comm_put_unordered
-    chpl_comm_put(src_addr, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
+    chpl_comm_put_unordered(src_addr, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
   } else {
     // TODO use unordered ops in this case? Would have to ensure we always
     // flush GET buffer before the PUT buffer
@@ -5788,7 +5787,6 @@ void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
     }
   }
 }
-
 
 void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
                              size_t size, int32_t typeIndex, int32_t commID,
@@ -5821,7 +5819,39 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
   do_remote_get_buff(addr, locale, raddr, size, may_proxy_true);
 }
 
-void chpl_comm_get_unordered_task_fence(void) {
+void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
+                             size_t size, int32_t typeIndex,
+                             int32_t commID, int ln, int32_t fn)
+
+{
+  DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_unordered(%p, %d, %p, %zd)",
+           addr, (int) locale, raddr, size);
+
+  assert(addr != NULL);
+  assert(raddr != NULL);
+  if (size == 0)
+    return;
+
+  if (locale == chpl_nodeID) {
+    memmove(raddr, addr, size);
+    return;
+  }
+
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_put, chpl_nodeID, locale,
+         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_rdma("unordered put", locale, size, ln, fn);
+  chpl_comm_diags_incr(put);
+
+  do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
+}
+
+void chpl_comm_getput_unordered_task_fence(void) {
   task_local_buff_flush(get_buff);
 }
 

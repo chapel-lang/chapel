@@ -4076,6 +4076,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
   GenRet dst = lhsExpr;
   bool dstRef = lhsExpr->typeInfo()->symbol->hasFlag(FLAG_REF);
   GenRet src = rhsExpr;
+  bool srcRef = rhsExpr->typeInfo()->symbol->hasFlag(FLAG_REF);
   GenRet ln = call->get(3);
   GenRet fn = call->get(4);
   TypeSymbol* dt = lhsExpr->typeInfo()->getValType()->symbol;
@@ -4101,8 +4102,24 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 genCommID(gGenInfo),
                 ln, fn);
   } else if (lhsWide && !rhsWide) {
-    // Handle it like a normal assign
-    FORWARD_PRIM(PRIM_ASSIGN);
+    // do an unordered PUT
+    // chpl_comm_put_unordered(void *src,
+    //   c_nodeid_t dst_locale, void* dst_raddr,
+    //   size_t size, int32_t typeIndex, int32_t commID,
+    //   int ln, int32_t fn);
+
+    src = codegenValuePtr(src);
+    if (srcRef)
+      src = codegenDeref(src);
+
+    codegenCall("chpl_comm_put_unordered",
+                codegenCastToVoidStar(codegenAddrOf(src)),
+                codegenRnode(dst),
+                codegenRaddr(dst),
+                size,
+                genTypeStructureIndex(dt),
+                genCommID(gGenInfo),
+                ln, fn);
   } else {
     // do an unordered GETPUT
     // chpl_comm_getput_unordered(
