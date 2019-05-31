@@ -1653,7 +1653,9 @@ module ChapelBase {
     if isRecord(arg) then
       // special case for records as a more likely occurrence
       compilerError("'delete' is not allowed on records");
-
+    if !isSubtype(arg.type, borrowed?) then
+      compilerError("'delete' is not allowed on non-class type ",
+                    arg.type:string);
     if !isSubtype(arg.type, unmanaged?) then
       compilerError("'delete' can only be applied to unmanaged classes");
 

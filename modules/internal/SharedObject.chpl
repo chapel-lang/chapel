@@ -167,7 +167,7 @@ module SharedObject {
 
     pragma "no doc"
     proc init(p : borrowed) {
-      compilerError("initializing shared from a borrow is deprecated");
+      compilerError("cannoti initialize shared from a borrow");
       this.init(_to_unmanaged(p));
     }
 
@@ -434,7 +434,7 @@ module SharedObject {
   inline proc _cast(type t:shared?, pragma "nil from arg" in x:shared!)
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
-    return new _shared(true, _to_nilable(x.chpl_t), x);
+    return new _shared(true, _to_nilable(t.chpl_t), x);
   }
 
   // cast to shared?, no class downcast
@@ -442,7 +442,7 @@ module SharedObject {
   inline proc _cast(type t:shared?, pragma "nil from arg" in x:shared?)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
-    return new _shared(true, x.chpl_t, x);
+    return new _shared(true, t.chpl_t, x);
   }
 
   // cast to shared!, no class downcast, no casting away nilability
@@ -450,7 +450,7 @@ module SharedObject {
   inline proc _cast(type t:shared!, pragma "nil from arg" in x:shared!)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
-    return new _shared(true, x.chpl_t, x);
+    return new _shared(true, t.chpl_t, x);
   }
 
   // cast to shared!, no class downcast, casting away nilability
@@ -462,7 +462,7 @@ module SharedObject {
       throw new owned NilClassError();
     }
 
-    return new _shared(true, _to_nonnil(x.chpl_t), x);
+    return new _shared(true, _to_nonnil(t.chpl_t), x);
   }
 
   // cast from nil to shared

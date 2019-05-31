@@ -211,7 +211,7 @@ module OwnedObject {
 
     pragma "no doc"
     proc init(p:borrowed) {
-      compilerError("initializing owned from a borrow is deprecated");
+      compilerError("cannot initialize owned from a borrow");
       this.init(_to_unmanaged(p));
     }
 

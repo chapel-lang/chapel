@@ -2216,6 +2216,7 @@ static void resolveUnmanagedBorrows() {
             USR_FATAL_CONT(call, "%s can only apply to class types "
                                  "(%s is not a class type)",
                                  type, ts->name);
+            at = NULL;
           }
 
           // Compute the decorated class type

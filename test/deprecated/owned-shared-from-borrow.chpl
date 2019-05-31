@@ -9,20 +9,20 @@
 // shared initializer from pointer should accept only unmanaged,
 // and not borrow.
 
-// Owned synonym for owned should be removed.
+//
 
-// Shared synonym for shared should be removed.
+//
 
 class MyClass { }
 
 proc testOwned() {
   var mine = new owned MyClass();
-  var other = new Owned(mine.borrow());
+
 }
 testOwned();
 
 proc testShared() {
   var mine = new shared MyClass();
-  var other = new Shared(mine.borrow());
+
 }
 testShared();

@@ -117,16 +117,16 @@ owned Parent? nil
 
 casts to shared Parent
 cs:shared Parent
-shared Child {p = 1, c = 2}
+shared Parent {p = 1, c = 2}
 csq:shared Parent
-shared Child {p = 1, c = 2}
+shared Parent {p = 1, c = 2}
 nsq:shared Parent
 NilClassError: cannot convert nil class to non nilable type
 
 casts to shared Parent?
 cs:shared Parent?
-shared Child? {p = 1, c = 2}
+shared Parent? {p = 1, c = 2}
 csq:shared Parent?
-shared Child? {p = 1, c = 2}
+shared Parent? {p = 1, c = 2}
 nsq:shared Parent?
-shared Child? nil
+shared Parent? nil
