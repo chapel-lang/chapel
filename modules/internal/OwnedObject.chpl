@@ -174,6 +174,7 @@ supplied. For example:
 
  */
 module OwnedObject {
+  use ChapelStandard;
 
   /*
      :record:`owned` manages the deletion of a class instance assuming
@@ -415,26 +416,52 @@ module OwnedObject {
     f <~> this.chpl_p;
   }
 
-  // This cast supports coercion from _owned(SubClass) to _owned(ParentClass)
-  // (i.e. when class SubClass : ParentClass ).
-  // It only works in a value context (i.e. when the result of the
-  // coercion is a value, not a reference).
+  // cast to owned?, no class downcast
   pragma "no doc"
-  inline proc _cast(type t:_owned, pragma "nil from arg" in x:_owned)
-  where isSubtype(x.chpl_t,t.chpl_t) {
-    // the :t.chpl_t cast in the next line is what actually changes the
-    // returned value to have type t; otherwise it'd have type _owned(x.type).
+  inline proc _cast(type t:owned?, pragma "nil from arg" in x:owned!)
+    where isSubtype(x.chpl_t,t.chpl_t)
+  {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
-    if _to_nilable(t.chpl_t) == t.chpl_t {
-      // t stores a nilable type
-      return new _owned(castPtr);
-    } else {
-      // t stores a non-nilable type
-      return new _owned(castPtr!);
-    }
+    // t stores a nilable type
+    return new _owned(castPtr);
   }
 
+  // cast to owned?, no class downcast
+  pragma "no doc"
+  inline proc _cast(type t:owned?, pragma "nil from arg" in x:owned?)
+    where isSubtype(x.chpl_t,t.chpl_t)
+  {
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    x.chpl_p = nil;
+    // t stores a nilable type
+    return new _owned(castPtr);
+  }
+
+  // cast to owned!, no class downcast, no casting away nilability
+  pragma "no doc"
+  inline proc _cast(type t:owned!, pragma "nil from arg" in x:owned!)
+    where isSubtype(x.chpl_t,t.chpl_t)
+  {
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    x.chpl_p = nil;
+    // t stores a non-nilable type
+    return new _owned(castPtr!);
+  }
+
+  // cast to owned!, no class downcast, casting away nilability
+  pragma "no doc"
+  inline proc _cast(type t:owned!, pragma "nil from arg" in x:owned?) throws
+    where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
+  {
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    if castPtr == nil {
+      throw new owned NilClassError();
+    }
+    x.chpl_p = nil;
+    // t stores a non-nilable type
+    return new _owned(castPtr!);
+  }
 
   // cast from nil to owned
   pragma "no doc"

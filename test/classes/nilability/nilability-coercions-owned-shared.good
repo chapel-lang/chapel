@@ -5,7 +5,7 @@ cq.borrow():borrowed Child?
 c:borrowed Child?
 borrowed Child? {p = 1, c = 2}
 borrowed Child? {p = 1, c = 2}
-borrowed Child {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
 c:borrowed Child
 borrowed Child {p = 1, c = 2}
 borrowed Child {p = 1, c = 2}

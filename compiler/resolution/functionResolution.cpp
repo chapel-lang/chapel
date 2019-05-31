@@ -1051,35 +1051,56 @@ bool canCoerceTuples(Type*     actualType,
 }
 
 
-static inline
+/* CLASS_TYPE_BORROWED e.g. can represent any nilability,
+   but this function assumes that an actual with type CLASS_TYPE_BORROWED
+   is actually the same as CLASS_TYPE_BORROWED_NOTNIL.
+ */
 bool canCoerceDecorators(ClassTypeDecorator actual,
                          ClassTypeDecorator formal) {
+
+  // Normalize actuals to remove generic-ness
+  if (actual == CLASS_TYPE_BORROWED)
+    actual = CLASS_TYPE_BORROWED_NONNIL;
+  if (actual == CLASS_TYPE_UNMANAGED)
+    actual = CLASS_TYPE_UNMANAGED_NONNIL;
+  if (actual == CLASS_TYPE_MANAGED)
+    actual = CLASS_TYPE_MANAGED_NONNIL;
+
   switch (formal) {
     case CLASS_TYPE_BORROWED:
+      // borrowed but generic nilability
+      return true;
     case CLASS_TYPE_BORROWED_NONNIL:
       // Can't coerce away nilable
-      return actual==CLASS_TYPE_BORROWED || actual==CLASS_TYPE_UNMANAGED;
+      return actual == CLASS_TYPE_BORROWED_NONNIL ||
+             actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             actual == CLASS_TYPE_MANAGED_NONNIL;
     case CLASS_TYPE_BORROWED_NILABLE:
       // Everything can coerce to a nilable borrowed
       return true;
     case CLASS_TYPE_UNMANAGED:
+      // unmanaged but generic nilability
+      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             actual == CLASS_TYPE_UNMANAGED_NILABLE;
     case CLASS_TYPE_UNMANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to unmanaged
-      return actual==CLASS_TYPE_UNMANAGED;
+      return actual == CLASS_TYPE_UNMANAGED_NONNIL;
     case CLASS_TYPE_UNMANAGED_NILABLE:
       // Can't coerce borrowed to unmanaged
-      return actual==CLASS_TYPE_UNMANAGED ||
-             actual==CLASS_TYPE_UNMANAGED_NILABLE;
+      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             actual == CLASS_TYPE_UNMANAGED_NILABLE;
     case CLASS_TYPE_MANAGED:
+      return actual == CLASS_TYPE_MANAGED_NONNIL ||
+             actual == CLASS_TYPE_MANAGED_NILABLE;
     case CLASS_TYPE_MANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to managed
-      return actual==CLASS_TYPE_MANAGED;
+      return actual == CLASS_TYPE_MANAGED_NONNIL;
     case CLASS_TYPE_MANAGED_NILABLE:
       // Can't coerce borrowed to managed
-      return actual==CLASS_TYPE_MANAGED ||
-             actual==CLASS_TYPE_MANAGED_NILABLE;
+      return actual == CLASS_TYPE_MANAGED_NONNIL ||
+             actual == CLASS_TYPE_MANAGED_NILABLE;
 
     // no default for compiler warnings to know when to update it
   }
@@ -1232,18 +1253,12 @@ bool canCoerce(Type*     actualType,
   // Check for class subtyping
   // Class subtyping needs coercions in order to generate C code.
   if (isClassLike(actualType) && isClassLike(formalType)) {
-    AggregateType* actualC = toAggregateType(actualType);
-    ClassTypeDecorator actualDecorator = CLASS_TYPE_BORROWED;
-    if (DecoratedClassType* actualDt = toDecoratedClassType(actualType)) {
-      actualC = actualDt->getCanonicalClass();
-      actualDecorator = actualDt->getDecorator();
-    }
-    AggregateType* formalC = toAggregateType(formalType);
-    ClassTypeDecorator formalDecorator = CLASS_TYPE_BORROWED;
-    if (DecoratedClassType* formalDt = toDecoratedClassType(formalType)) {
-      formalC = formalDt->getCanonicalClass();
-      formalDecorator = formalDt->getDecorator();
-    }
+    AggregateType* actualC =
+      toAggregateType(canonicalDecoratedClassType(actualType));
+    ClassTypeDecorator actualDecorator = classTypeDecorator(actualType);
+    AggregateType* formalC =
+      toAggregateType(canonicalDecoratedClassType(formalType));
+    ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
 
     // Check that the decorators allow coercion
     if (canCoerceDecorators(actualDecorator, formalDecorator)) {
@@ -2457,7 +2472,7 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 
     // Handle explicit casting among class type flavors
     // (e.g. borrowed ChildClass? -> unmanaged ParentClass?
-    if (isClassLike(valueType) && isClassLike(targetType)) {
+/*    if (isClassLike(valueType) && isClassLike(targetType)) {
       Type* canonicalValueType = canonicalClassType(valueType);
       Type* canonicalTargetType = canonicalClassType(targetType);
       if (canDispatch(canonicalValueType, valueSe->symbol(),
@@ -2488,7 +2503,7 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 
         return true;
       }
-    }
+    }*/
   }
 
   return false;
@@ -6625,7 +6640,7 @@ static Type* resolveGenericActual(SymExpr* se) {
 static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
   if (DecoratedClassType* dt = toDecoratedClassType(type)) {
     type = dt->getCanonicalClass();
     decorator = dt->getDecorator();
@@ -6641,7 +6656,8 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
 
       Type* retType = cc->typeInfo();
 
-      if (decorator != CLASS_TYPE_BORROWED) {
+      if (decorator != CLASS_TYPE_BORROWED &&
+          decorator != CLASS_TYPE_BORROWED_NONNIL) {
         AggregateType* gotAt = toAggregateType(retType);
         INT_ASSERT(gotAt);
         retType = gotAt->getDecoratedClass(decorator);

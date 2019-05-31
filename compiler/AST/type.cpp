@@ -182,17 +182,19 @@ const char* toString(Type* type, bool decorateAllClasses) {
         else if (0 == strcmp(vt->symbol->name, "_shared"))
           retval = astr("shared");
 
-      } else if (isClassLike(at) && isClass(at)) {
-        // It's an un-decorated class type
-        const char* borrowed = "borrowed ";
-        const char* useName = vt->symbol->name;
-        if (startsWith(useName, borrowed))
-          useName = useName + strlen(borrowed);
+      } else if (isClassLike(at)) {
+        if (isClass(at)) {
+          // It's an un-decorated class type
+          const char* borrowed = "borrowed ";
+          const char* useName = vt->symbol->name;
+          if (startsWith(useName, borrowed))
+            useName = useName + strlen(borrowed);
 
-        if (decorateAllClasses)
-          useName = astr("borrowed ", useName);
+          if (decorateAllClasses)
+            useName = astr("borrowed ", useName);
 
-        retval = useName;
+          retval = useName;
+        }
       }
     }
 
@@ -1028,12 +1030,18 @@ bool isClassOrNil(Type* t) {
 bool isClassLike(Type* t) {
   return isDecoratedClassType(t) ||
          t == dtBorrowed ||
+         t == dtBorrowedNonNilable ||
          t == dtBorrowedNilable ||
          t == dtUnmanaged ||
          t == dtUnmanagedNilable ||
+         t == dtUnmanagedNonNilable ||
          (isClass(t) && !(t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                           t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                           t->symbol->hasFlag(FLAG_REF)));
+}
+
+bool isClassLikeOrManaged(Type* t) {
+  return isClassLike(t) || isManagedPtrType(t);
 }
 
 bool isClassLikeOrPtr(Type* t) {
@@ -1135,7 +1143,7 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
 
   Type* borrowType = at->getField("chpl_t")->type;
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
 
   if (isNilableClassType(borrowType))
     decorator = CLASS_TYPE_BORROWED_NILABLE;

@@ -30,13 +30,13 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
     case CLASS_TYPE_BORROWED:
       return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NONNIL:
-      return astr("borrowed ", className, "!");
+      return astr("borrowed ", className); //, "!");
     case CLASS_TYPE_BORROWED_NILABLE:
       return astr("borrowed ", className, "?");
     case CLASS_TYPE_UNMANAGED:
       return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NONNIL:
-      return astr("unmanaged ", className, "!");
+      return astr("unmanaged ", className); //, "!");
     case CLASS_TYPE_UNMANAGED_NILABLE:
       return astr("unmanaged ", className, "?");
     case CLASS_TYPE_MANAGED:
@@ -105,15 +105,13 @@ AggregateType* DecoratedClassType::getCanonicalClass() const {
 bool classesWithSameKind(Type* a, Type* b) {
   if (!a || !b) return false;
 
+  // TODO: handle managed pointers
   if (!isClassLike(a) || !isClassLike(b)) return false;
 
-  // AggregateType would mean borrow
-  ClassTypeDecorator aDecorator = CLASS_TYPE_BORROWED;
-  ClassTypeDecorator bDecorator = CLASS_TYPE_BORROWED;
-  if (DecoratedClassType* ad = toDecoratedClassType(a))
-    aDecorator = ad->getDecorator();
-  if (DecoratedClassType* bd = toDecoratedClassType(b))
-    bDecorator = bd->getDecorator();
+
+  // AggregateType would mean nonnil borrow
+  ClassTypeDecorator aDecorator = classTypeDecorator(a);
+  ClassTypeDecorator bDecorator = classTypeDecorator(b);
 
   return aDecorator == bDecorator;
 }
@@ -129,16 +127,50 @@ Type* canonicalDecoratedClassType(Type* t) {
   return t;
 }
 
+Type* canonicalClassType2(Type* t) {
+
+  if (t == dtBorrowed ||
+      t == dtBorrowedNonNilable ||
+      t == dtBorrowedNilable ||
+      t == dtUnmanaged ||
+      t == dtUnmanagedNonNilable ||
+      t == dtUnmanagedNilable)
+    return dtBorrowed;
+
+  if (isManagedPtrType(t)) {
+    Type* b = getManagedPtrBorrowType(t);
+    if (b && b != dtUnknown)
+      return canonicalDecoratedClassType(b);
+  }
+
+  return canonicalDecoratedClassType(t);
+}
+
 Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
 
   if (isClassLike(t) && isClass(t)) {
     AggregateType* at = toAggregateType(t);
     return at->getDecoratedClass(d);
   } else if (isManagedPtrType(t)) {
-    Type* bt = getManagedPtrBorrowType(t);
-    if (bt && bt != dtUnknown)
-      if (AggregateType* a = toAggregateType(bt))
+    if (d != CLASS_TYPE_MANAGED &&
+        d != CLASS_TYPE_MANAGED_NONNIL &&
+        d != CLASS_TYPE_MANAGED_NILABLE) {
+      Type* bt = getManagedPtrBorrowType(t);
+      if (bt && bt != dtUnknown) {
+        AggregateType* a = toAggregateType(bt);
+        INT_ASSERT(a);
         return a->getDecoratedClass(d);
+      }
+    }
+
+    // Otherwise, use the generic owned/shared with the appropriate decorator
+    AggregateType* a = toAggregateType(t);
+    INT_ASSERT(a);
+    while (a->instantiatedFrom)
+      a = a->instantiatedFrom;
+    INT_ASSERT(a && isManagedPtrType(a));
+
+    return a->getDecoratedClass(d);
   }
 
   // Otherwise, it is e.g. generic dtOwned / generic dtBorrowed
@@ -167,7 +199,7 @@ Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
 
 
 ClassTypeDecorator classTypeDecorator(Type* t) {
-  if (!isClassLike(t))
+  if (!isClassLikeOrManaged(t))
     INT_FATAL("classTypeDecorator called on non-class");
 
   if (isManagedPtrType(t) && !isDecoratedClassType(t)) {
@@ -190,10 +222,17 @@ ClassTypeDecorator classTypeDecorator(Type* t) {
   }
 
   if (isAggregateType(t))
-    return CLASS_TYPE_BORROWED; // default meaning of AggregateType class
+    return CLASS_TYPE_BORROWED_NONNIL; // default meaning of AggregateType class
 
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    return dt->getDecorator();
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    ClassTypeDecorator d = dt->getDecorator();
+    if (d == CLASS_TYPE_BORROWED)
+      return CLASS_TYPE_BORROWED_NONNIL;
+    else if (d == CLASS_TYPE_UNMANAGED)
+      return CLASS_TYPE_UNMANAGED_NONNIL;
+    else
+      return d;
+  }
 
   if (t == dtBorrowed)
     return CLASS_TYPE_BORROWED;
@@ -213,15 +252,17 @@ ClassTypeDecorator classTypeDecorator(Type* t) {
 }
 
 bool isNonNilableClassType(Type* t) {
-  if (!isClassLike(t))
+  if (!isClassLike(t) && !isManagedPtrType(t))
     return false;
 
   ClassTypeDecorator decorator = classTypeDecorator(t);
-  return isDecoratorNonNilable(decorator);
+  return isDecoratorNonNilable(decorator) ||
+         decorator == CLASS_TYPE_BORROWED ||
+         decorator == CLASS_TYPE_UNMANAGED;
 }
 
 bool isNilableClassType(Type* t) {
-  if (!isClassLike(t))
+  if (!isClassLike(t) && !isManagedPtrType(t))
     return false;
 
   ClassTypeDecorator decorator = classTypeDecorator(t);

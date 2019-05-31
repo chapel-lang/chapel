@@ -460,77 +460,50 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     return actualType;
   }
 
-  // TODO: use canCoerceDecorators
-  if (AggregateType* at = toAggregateType(actualType)) {
-    if (at->isClass() && isClassLike(at)) {
-      // non-nilable borrowed can coerce to nilable borrowed
-      Type* actualNilableBorrowed =
-        at->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
-      if (canInstantiate(actualNilableBorrowed, formalType))
-        return actualNilableBorrowed;
-    }
-  }
+  // The formal is generic but the actual might require a coercion
+  // on the way to it. In that event, instantiate the formal type
+  // using the type that the actual will coerce to.
 
-  if (DecoratedClassType* actualDt = toDecoratedClassType(actualType)) {
-    ClassTypeDecorator actualDecorator = actualDt->getDecorator();
-    AggregateType* actualC = actualDt->getCanonicalClass();
+  // E.g. a MyClass actual passed to an x:borrowed? formal
+  // should instantiate with MyClass?
 
-    // No coercions for nilable borrowed
+  if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType)) {
+    Type* canonicalActual = canonicalClassType2(actualType);
+    ClassTypeDecorator actualDecorator = classTypeDecorator(actualType);
 
-    // nilable unmanaged can coerce to nilable borrowed
-    if (actualDecorator == CLASS_TYPE_UNMANAGED_NILABLE) {
-      Type* actualNilableBorrowed =
-        actualC->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
-      if (canInstantiate(actualNilableBorrowed, formalType))
-        return actualNilableBorrowed;
-    }
+    Type* canonicalFormal = canonicalClassType2(formalType);
+    ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
 
-    // non-nilable unmanaged can coerce to borrowed,borrowed?,unmanaged?
-    if (actualDecorator == CLASS_TYPE_UNMANAGED ||
-        actualDecorator == CLASS_TYPE_UNMANAGED_NONNIL) {
-      Type* actualBorrowed =
-        actualC->getDecoratedClass(CLASS_TYPE_BORROWED_NONNIL);
-      if (canInstantiate(actualBorrowed, formalType))
-        return actualBorrowed;
+    if (canCoerceDecorators(actualDecorator, formalDecorator)) {
+      // Can the canonical formal type instantiate with the canonical actual?
 
-      Type* actualNilableBorrowed =
-        actualC->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
-      if (canInstantiate(actualNilableBorrowed, formalType))
-        return actualNilableBorrowed;
+      // Adjust the formalDecorator to use when instantiating
+      // according to the actual decorator, when formalDecorator is generic.
+      if (isDecoratorUnknownNilability(formalDecorator)) {
+        if (isDecoratorNilable(actualDecorator))
+          formalDecorator = addNilableToDecorator(formalDecorator);
+        else
+          formalDecorator = addNonNilToDecorator(formalDecorator);
+      }
 
-      Type* actualNilableUnmanaged =
-        actualC->getDecoratedClass(CLASS_TYPE_UNMANAGED_NILABLE);
-      if (canInstantiate(actualNilableUnmanaged, formalType))
-        return actualNilableUnmanaged;
-    }
-  }
-
-  if (isManagedPtrType(actualType)) {
-    Type* actualBaseType = getManagedPtrBorrowType(actualType);
-    // non-nilable owned can coerce to non-nilable borrowed
-    if (canInstantiate(actualBaseType, formalType))
-      return actualBaseType;
-
-    // non-nilable owned can coerce to nilable borrowed
-    if (AggregateType* at = toAggregateType(actualBaseType)) {
-      Type* actualNilableBorrowed =
-        at->getDecoratedClass(CLASS_TYPE_BORROWED_NILABLE);
-      if (canInstantiate(actualNilableBorrowed, formalType))
-        return actualBaseType;
-    }
-
-    // non-nilable owned can coerce to owned?
-    if (DecoratedClassType* formalDt = toDecoratedClassType(formalType))
-      if (AggregateType* formalAt = formalDt->getCanonicalClass())
-        if (isManagedPtrType(formalAt) && formalAt->instantiatedFrom == NULL)
-          if (AggregateType* atActual = toAggregateType(actualType))
-            if (formalAt == atActual->instantiatedFrom)
-              if (formalDt->getDecorator() == CLASS_TYPE_MANAGED_NILABLE ||
-                  formalDt->getDecorator() == CLASS_TYPE_MANAGED_NONNIL)
+      // handle e.g. owned MyClass actual -> owned! formal
+      if (AggregateType* formalAt = toAggregateType(canonicalFormal))
+	if (isManagedPtrType(formalAt) && formalAt->instantiatedFrom == NULL)
+	  if (AggregateType* atActual = toAggregateType(actualType))
+	    if (formalAt == atActual->instantiatedFrom)
+	      if (actualDecorator == formalDecorator)
                 return actualType;
-                // TODO: convert owned MyClass -> owned MyClass?
-                //  ... this can be stored as the decorated version
-                //      in the owned AggregateType.
+              // TODO: handle coercions for e.g. owned MyClass -> x:owned?
+              // - this will require creating owned MyClass?
+
+      // handle e.g. unmanaged MyClass actual -> borrowed MyClass? formal
+      if (canInstantiate(canonicalActual, canonicalFormal)) {
+        // Then compute the instantiation type as the actual
+        // with the formal's decorator.
+        // This should return e.g. _owned? in certain cases.
+        return getDecoratedClass(canonicalActual, formalDecorator);
+      }
+    }
   }
 
   if (actualType == dtNil) {
@@ -790,14 +763,8 @@ static bool isNumericType(Type* t) {
          is_complex_type(t);
 }
 
-static bool isClassLikeOrManaged(Type* t) {
-  return isClassLikeOrPtr(t) || isManagedPtrType(t) ||
-         t == dtBorrowed ||
-         t == dtBorrowedNonNilable ||
-         t == dtBorrowedNilable ||
-         t == dtUnmanaged ||
-         t == dtUnmanagedNonNilable ||
-         t == dtUnmanagedNilable;
+static bool isClassLikeOrPtrOrManaged(Type* t) {
+  return isClassLikeOrPtr(t) || isClassLikeOrManaged(t);
 }
 
 static ResolutionCandidateFailureReason
@@ -811,7 +778,7 @@ classifyTypeMismatch(Type* actualType, Type* formalType) {
   if (actualType == formalType)
     return RESOLUTION_CANDIDATE_TYPE_RELATED;
 
-  if (canonicalClassType(actualType) == canonicalClassType(formalType))
+  if (canonicalClassType2(actualType) == canonicalClassType2(formalType))
     return RESOLUTION_CANDIDATE_TYPE_RELATED;
 
   if ((is_bool_type   (actualType) && is_bool_type   (formalType)) ||
@@ -825,7 +792,8 @@ classifyTypeMismatch(Type* actualType, Type* formalType) {
   if (isNumericType(actualType) && isNumericType(formalType))
     return RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY;
 
-  if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType))
+  if (isClassLikeOrPtrOrManaged(actualType) &&
+      isClassLikeOrPtrOrManaged(formalType))
     return RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY;
 
   return RESOLUTION_CANDIDATE_UNRELATED_TYPE;
