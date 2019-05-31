@@ -38,6 +38,7 @@ typedef struct {
   uint8_t num_fma;
   void* amo_nf_buff;
   void* get_buff;
+  void* put_buff;
 } chpl_comm_taskPrvData_t;
 
 //
