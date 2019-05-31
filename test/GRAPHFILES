@@ -195,6 +195,7 @@ arrays/diten/time_array_vs_ref_forall.graph
 arrays/diten/time_array_vs_ref_multidim.graph
 performance/bharshbarg/forall-dom-range.graph
 performance/bharshbarg/arr-forall.graph
+performance/arrays/arrOpEquals.graph
 arrays/lydia/time_access.graph
 performance/bradc/parOpEquals.graph
 performance/sungeun/copy_to_local.graph

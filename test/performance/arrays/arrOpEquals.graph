@@ -1,0 +1,5 @@
+perfkeys: 1D op= time:, 2D op= time:
+files: arrOpEquals.dat, arrOpEquals.dat
+graphkeys: 1D op=, 2D op=
+graphtitle: Array op=
+ylabel: Time (seconds)
