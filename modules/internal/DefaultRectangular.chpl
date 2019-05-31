@@ -324,7 +324,11 @@ module DefaultRectangular {
                                         ranges(parDim)._high,
                                         ranges(parDim)._low,
                                         ranges(parDim)._low);
-          myChunk(parDim) = lo..hi;
+          if (myChunk(parDim).stridable) then
+            myChunk(parDim) = lo..hi by myChunk(parDim).stride align myChunk(parDim).alignment;
+          else {
+            myChunk(parDim) = lo..hi;
+          }
           if debugDefaultDist {
             chpl_debug_writeln("*** DI[", chunk, "]: myChunk = ", myChunk);
           }
