@@ -99,7 +99,7 @@ GenRet UseStmt::codegen() {
 static
 void codegenLifetimeStart(llvm::Type *valType, llvm::Value *addr)
 {
-/*  GenInfo *info = gGenInfo;
+  GenInfo *info = gGenInfo;
   const llvm::DataLayout& dataLayout = info->module->getDataLayout();
 
   int64_t sizeInBytes = -1;
@@ -109,7 +109,15 @@ void codegenLifetimeStart(llvm::Type *valType, llvm::Value *addr)
   llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
       llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
 
-  info->irBuilder->CreateLifetimeStart(addr, size);*/
+  llvm::outs() << "\ncodegenLifetimeStart valType: ";
+  valType->print(llvm::outs());
+  llvm::outs() << "\naddr: ";
+  addr->print(llvm::outs());
+  llvm::outs() << "\nsize: ";
+  size->print(llvm::outs());
+  llvm::outs() << "\n";
+
+  info->irBuilder->CreateLifetimeStart(addr, size);
 }
 #endif
 
@@ -170,10 +178,11 @@ GenRet BlockStmt::codegen() {
       node->codegen();
       if (DefExpr* def = toDefExpr(node)) {
         Symbol* var = def->sym;
-        if (var->type != dtVoid && var->type != dtNothing) {
+        if (var->type && var->type != dtVoid && var->type != dtNothing) {
           llvm::Value* declared = var->codegen().val;
-          if (declared && declared->getType()) {
-            codegenLifetimeStart(declared->getType(), declared);
+          llvm::Type* type = var->type->codegen().type;
+          if (declared && type) {
+            codegenLifetimeStart(type, declared);
 
             info->currentStackVariables.back().insert(var);
             if (0 == strcmp(def->getFunction()->name, "test"))
