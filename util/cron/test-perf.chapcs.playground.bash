@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance automatically fencing unordered ops at task completion
-GITHUB_USER=ronawho
-GITHUB_BRANCH=fence-unordered-ops-task-end
-SHORT_NAME=fence-unordered-ops
-START_DATE=01/27/19
+# Test performance of a simplified DR standalone iterator
+GITHUB_USER=bradcray
+GITHUB_BRANCH=simplify-default-standalone
+SHORT_NAME=simplify-default-standalone
+START_DATE=06/01/19
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
