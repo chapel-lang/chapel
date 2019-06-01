@@ -333,7 +333,7 @@ module DefaultRectangular {
             chpl_debug_writeln("*** DI[", chunk, "]: myChunk = ", myChunk);
           }
           for i in these_help(1, myChunk) {
-            yield chpl_intToIdx(i);
+            yield i;
           }
         }
       }
