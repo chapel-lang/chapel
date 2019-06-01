@@ -11,7 +11,7 @@ module UnitTest {
   pragma "always propagate line file info"
   proc assertTrue(test: bool) {
     if !test then
-      __primitive("chpl_error", c"assert failed");
+      __primitive("chpl_error", c"assertTrue failed. Given expression is False");
   }
 
   /*
@@ -25,10 +25,10 @@ module UnitTest {
   pragma "always propagate line file info"
   proc assertFalse(test: bool) {
     if test then
-      __primitive("chpl_error", c"assert failed");
+      __primitive("chpl_error", c"assertFalse failed. Given expression is True");
   }
   
-  /*Function to call the respective method based on the type of argument*/
+  /*Function to call the respective method for equality checking based on the type of argument*/
   private
   proc checkAssertEquality(first, second) {
     type firstType = first.type;
@@ -227,13 +227,32 @@ module UnitTest {
   proc assertEqual(first, second){
     checkAssertEquality(first, second);
   }
-
+  /* Function that checks whether two arguments are unequal or not*/
+  private
+  proc checkAssertUnEquality(first,second) {
+    type firstType = first.type;
+    type secondType = second.type;
+    if isTupleType(firstType) && isTupleType(secondType) {
+      if firstType == secondType {
+        if first == second then return false;
+      }
+    }
+    else if isArrayType(firstType) && isArrayType(secondType) {
+      if (firstType == secondType) && (first.size == second.size) {
+        if first.equals(second) then return false;
+      }
+    }
+    else {
+      if first == second then return false;
+    }
+    return true;
+  }
   /*
     Fail if the two objects are equal as determined by the '==' operator and type.
   */
   proc assertNotEqual(first, second) {
-    if first.type == second.type {
-      if all(first == second) {
+    if canResolve("!=",first, second) {
+      if !checkAssertUnEquality(first,second) {
         var tmpString = "assert failed - \n'" + stringify(first) +"'\n== \n'"+stringify(second)+"'";
         __primitive("chpl_error", tmpString.c_str());
       }

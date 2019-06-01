@@ -1,0 +1,4 @@
+./UnitTest.chpl:257: error: assert failed - 
+'1..6'
+== 
+'1..6'

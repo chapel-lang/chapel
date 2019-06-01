@@ -1,0 +1,4 @@
+./UnitTest.chpl:257: error: assert failed - 
+'equal string'
+== 
+'equal string'
