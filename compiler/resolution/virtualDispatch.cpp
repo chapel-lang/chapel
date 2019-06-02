@@ -311,7 +311,9 @@ static bool checkOverrides(FnSymbol* fn) {
   return ((fOverrideChecking && (!fn->isCompilerGenerated() || developer)) ||
           // (2) the function is in the modules/ hierarchy
           //     (which we manage and want to keep clean)
-          (parentMod && parentMod->modTag != MOD_USER));
+          (parentMod && parentMod->modTag != MOD_USER)) &&
+          // No override checking for type methods.
+         fn->thisTag != INTENT_TYPE;
 }
 
 static bool ignoreOverrides(FnSymbol* fn) {

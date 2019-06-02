@@ -78,6 +78,8 @@ static void          processImportExprs();
 
 static void          resolveGotoLabels();
 
+static void          adjustTypeMethodsOnClasses();
+
 static bool          isStableClassType(Type* t);
 static Expr*         handleUnstableClassType(SymExpr* se);
 
@@ -124,7 +126,10 @@ void scopeResolve() {
   // resolve type of this for methods
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->_this != NULL && fn->_this->type == dtUnknown) {
+
+    if (fn->_this == NULL) continue; // not a method
+
+    if (fn->_this->type == dtUnknown) {
       Expr* stmt = toArgSymbol(fn->_this)->typeExpr->body.only();
 
       if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(stmt)) {
@@ -149,7 +154,7 @@ void scopeResolve() {
         AggregateType::setCreationStyle(sym->symbol()->type->symbol, fn);
       }
 
-    } else if (fn->_this) {
+    } else {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
   }
@@ -159,6 +164,8 @@ void scopeResolve() {
   resolveUnresolvedSymExprs();
 
   resolveEnumeratedTypes();
+
+  adjustTypeMethodsOnClasses();
 
   setupShadowVars();
 
@@ -1512,11 +1519,53 @@ static void resolveEnumeratedTypes() {
   }
 }
 
+
 /************************************* | **************************************
 *                                                                             *
-* delete the module uses cache                                                *
 *                                                                             *
 ************************************** | *************************************/
+
+//
+// Convert each "proc type C.myProc() ..." to, roughtly:
+// "proc type any.myProc() where isSubtype(this.type, C) ..."
+//
+static void adjustTypeMethodsOnClasses() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->thisTag != INTENT_TYPE) continue; // handle only type methods
+
+    ArgSymbol* thisArg = toArgSymbol(fn->_this);
+    Type*      thisType = thisArg->type;
+    if (! isClass(thisType)) continue; // handle only classes
+
+    if (BlockStmt* typeBlock = thisArg->typeExpr) {
+      // Remove the type block, ensuring that its information is preserved.
+      SymExpr* typeSE = toSymExpr(typeBlock->body.only());
+      INT_ASSERT(thisType->symbol == typeSE->symbol());
+      typeBlock->remove();
+    }
+
+    // Update the type of 'this'.
+    thisArg->type = dtAny;
+
+    // The desired where-expression. Clean up this.type for isSubtype().
+    SET_LINENO(thisArg);
+    Expr* isSubtype = new_Expr(
+     "'is_subtype'(%S,'to borrowed class'('to non nilable class'(%S)))",
+     thisType->symbol, thisArg);
+
+    if (BlockStmt* where = fn->where) {
+      // If a where-clause already exists, augment it.
+      Expr* userWhere = where->body.last()->remove();
+      where->insertAtTail(new CallExpr("&&", isSubtype, userWhere));
+
+    } else {
+      fn->where = new BlockStmt(isSubtype);
+      insert_help(fn->where, NULL, fn);
+      fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
+    }
+  }
+}
+
 
 void destroyModuleUsesCaches() {
   std::map<BlockStmt*, Vec<UseStmt*>*>::iterator use;
@@ -1528,10 +1577,6 @@ void destroyModuleUsesCaches() {
   moduleUsesCache.clear();
 }
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
 
 static void renameDefaultType(Type* type, const char* newname);
 
@@ -1550,6 +1595,7 @@ static void renameDefaultType(Type* type, const char* newname) {
 
   type->symbol->name = astr(newname);
 }
+
 
 /************************************* | **************************************
 *                                                                             *
