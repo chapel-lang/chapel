@@ -171,7 +171,7 @@ proc main() {
 
     /* Add constant to solution to force refresh of neighbor data */
     if debug then diagnostics('input += 1');
-    forall i in input do i += 1.0;
+    input += 1.0;
 
     if iteration >= 1 {
       subTimer.stop();
