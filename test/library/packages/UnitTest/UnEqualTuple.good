@@ -1,1 +1,3 @@
-./UnitTest.chpl:182: error: assert failed - '(1, 2, 3)' and '(1, 2)' are not of same type
+uncaught AssertionError: assert failed - '(1, 2, 3)' and '(1, 2)' are not of same type
+  ./UnitTest.chpl:194: thrown here
+  UnEqualTuple.chpl:4: uncaught here

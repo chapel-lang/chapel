@@ -1,5 +1,17 @@
 module UnitTest {
   use Reflection;
+  /*Assertion Error class. Raised when assert Function Failed*/
+  class AssertionError: Error {
+    var details: string;
+
+    proc init(details: string = "") {
+      this.details = details;  
+    }
+
+    override proc message() {
+      return this.details;
+    }
+  }
   /*
     Assert that a boolean condition is true.  If it is false, prints
     'assert failed' and halts the program.
@@ -9,9 +21,9 @@ module UnitTest {
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc assertTrue(test: bool) {
+  proc assertTrue(test: bool) throws {
     if !test then
-      __primitive("chpl_error", c"assertTrue failed. Given expression is False");
+      throw new owned AssertionError("assertTrue failed. Given expression is False");
   }
 
   /*
@@ -23,14 +35,14 @@ module UnitTest {
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc assertFalse(test: bool) {
+  proc assertFalse(test: bool) throws {
     if test then
-      __primitive("chpl_error", c"assertFalse failed. Given expression is True");
+      throw new owned AssertionError("assertFalse failed. Given expression is True");
   }
   
   /*Function to call the respective method for equality checking based on the type of argument*/
   private
-  proc checkAssertEquality(first, second) {
+  proc checkAssertEquality(first, second) throws {
     type firstType = first.type;
     type secondType = second.type;
 
@@ -83,7 +95,7 @@ module UnitTest {
       seq_type_name: The name of datatype of the sequences
   */
   private
-  proc assertSequenceEqual(seq1, seq2, seq_type_name) {
+  proc assertSequenceEqual(seq1, seq2, seq_type_name) throws {
     var tmpString: string;
     var len1: int = seq1.size;
     var len2: int = seq2.size;
@@ -135,7 +147,7 @@ module UnitTest {
       }
     }
   
-    __primitive("chpl_error", tmpString.c_str());
+    throw new owned AssertionError(tmpString);
   }
 
   /*An array-specific equality assertion.
@@ -144,7 +156,7 @@ module UnitTest {
     array2: The second array to compare.
   */
   private
-  proc assertArrayEqual(array1, array2) {
+  proc assertArrayEqual(array1, array2) throws {
     type firstType = array1.type;
     type secondType = array2.type;
     if firstType == secondType {
@@ -154,13 +166,13 @@ module UnitTest {
       else {
         if !array1.equals(array2) {
           var tmpString = "assert failed - \n'" + stringify(array1) +"'\n!=\n'"+stringify(array2)+"'";
-          __primitive("chpl_error", tmpString.c_str());
+          throw new owned AssertionError(tmpString);
         }
       }
     }
     else {
       var tmpString = "assert failed - \n'" + stringify(array1) +"'\nand\n'"+stringify(array2) + "'\nare not of same type";
-      __primitive("chpl_error",tmpString.c_str());
+      throw new owned AssertionError(tmpString);
     }
   }
 
@@ -171,7 +183,7 @@ module UnitTest {
     tuple2: The second tuple to compare.
   */
   private
-  proc assertTupleEqual(tuple1, tuple2) {
+  proc assertTupleEqual(tuple1, tuple2) throws {
     type firstType = tuple1.type;
     type secondType = tuple2.type;
     if firstType == secondType {
@@ -179,7 +191,7 @@ module UnitTest {
     }
     else {
       var tmpString = "assert failed - '" + stringify(tuple1) +"' and '"+stringify(tuple2) + "' are not of same type";
-      __primitive("chpl_error",tmpString.c_str());
+      throw new owned AssertionError(tmpString);
     }
   }
 
@@ -190,7 +202,7 @@ module UnitTest {
     range2: The second range to compare.
   */
   private
-  proc assertRangeEqual(range1, range2) {
+  proc assertRangeEqual(range1, range2) throws {
     __baseAssertEqual(range1,range2);
   }
   
@@ -201,35 +213,35 @@ module UnitTest {
     string2: The second string to compare.
   */
   private
-  proc assertStringEqual(string1, string2) {
+  proc assertStringEqual(string1, string2) throws {
     assertSequenceEqual(string1,string2,"String");
   }
 
 
   /*The default assertEqual implementation, not type specific.*/
   private
-  proc __baseAssertEqual(first, second) {
+  proc __baseAssertEqual(first, second) throws {
     if canResolve("!=",first,second) {
       if (first != second) {
         var tmpString = "assert failed - '" + stringify(first) +"' != '"+stringify(second)+"'";
-        __primitive("chpl_error", tmpString.c_str());
+        throw new owned AssertionError(tmpString);
       }
     }
     else {
       var tmpString = "assert failed - '" + stringify(first) +"' and '"+stringify(second) + "' are not of same type";
-      __primitive("chpl_error",tmpString.c_str());
+      throw new owned AssertionError(tmpString);
     }
   }
   
   /*
     Fail if the two objects are unequal as determined by the '==' operator.
   */
-  proc assertEqual(first, second){
+  proc assertEqual(first, second) throws {
     checkAssertEquality(first, second);
   }
   /* Function that checks whether two arguments are unequal or not*/
   private
-  proc checkAssertUnEquality(first,second) {
+  proc checkAssertUnEquality(first,second) throws {
     type firstType = first.type;
     type secondType = second.type;
     if isTupleType(firstType) && isTupleType(secondType) {
@@ -250,11 +262,11 @@ module UnitTest {
   /*
     Fail if the two objects are equal as determined by the '==' operator and type.
   */
-  proc assertNotEqual(first, second) {
+  proc assertNotEqual(first, second) throws {
     if canResolve("!=",first, second) {
       if !checkAssertUnEquality(first,second) {
         var tmpString = "assert failed - \n'" + stringify(first) +"'\n== \n'"+stringify(second)+"'";
-        __primitive("chpl_error", tmpString.c_str());
+        throw new owned AssertionError(tmpString);
       }
     }
   }

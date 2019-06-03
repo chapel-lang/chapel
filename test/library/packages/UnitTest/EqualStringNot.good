@@ -1,4 +1,6 @@
-./UnitTest.chpl:257: error: assert failed - 
+uncaught AssertionError: assert failed - 
 'equal string'
 == 
 'equal string'
+  ./UnitTest.chpl:269: thrown here
+  EqualStringNot.chpl:4: uncaught here

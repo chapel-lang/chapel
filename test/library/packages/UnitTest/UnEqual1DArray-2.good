@@ -1,4 +1,4 @@
-./UnitTest.chpl:138: error: Arrays differ: '[1, 7, 8, 5, 8]' != '[1, 7, 6, 4]'
+uncaught AssertionError: Arrays differ: '[1, 7, 8, 5, 8]' != '[1, 7, 6, 4]'
 First differing element at index 3:
 '8'
 '6'
@@ -7,3 +7,5 @@ First Array contains 1 additionl elements.
 First extra element is at index 5
 '8'
 
+  ./UnitTest.chpl:150: thrown here
+  UnEqual1DArray-2.chpl:4: uncaught here

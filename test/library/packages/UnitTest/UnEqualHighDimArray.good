@@ -1,4 +1,4 @@
-./UnitTest.chpl:163: error: assert failed - 
+uncaught AssertionError: assert failed - 
 '0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -11,3 +11,5 @@ and
 0 0 0 0 0 0 0
 0 0 0 0 0 0 0'
 are not of same type
+  ./UnitTest.chpl:175: thrown here
+  UnEqualHighDimArray.chpl:4: uncaught here

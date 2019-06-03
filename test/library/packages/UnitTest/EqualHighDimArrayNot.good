@@ -1,4 +1,4 @@
-./UnitTest.chpl:257: error: assert failed - 
+uncaught AssertionError: assert failed - 
 '0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -10,3 +10,5 @@
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0'
+  ./UnitTest.chpl:269: thrown here
+  EqualHighDimArrayNot.chpl:4: uncaught here

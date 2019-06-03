@@ -1,5 +1,7 @@
-./UnitTest.chpl:138: error: tuple(3*int(64))s differ: '(1, 2, 3)' != '(1, 2, 5)'
+uncaught AssertionError: tuple(3*int(64))s differ: '(1, 2, 3)' != '(1, 2, 5)'
 First differing element at index 3:
 '3'
 '5'
 
+  ./UnitTest.chpl:150: thrown here
+  UnEqualTuple-1.chpl:4: uncaught here
