@@ -30,7 +30,7 @@ proc forkMasonReg(){
   var tail = usernameurl.find("/")-1: int;
   var head = usernameurl.find(":")+1: int;
   var username = usernameurl(head..tail);
-  var ret = runCommand("git clone https://github.com/oplambeck/mason-registry mason-registry", quiet=false);
+  var ret = runCommand("git clone https://github.com/oplambeck/mason-registry mason-registry", quiet=true);
   return ret;
 }
 
@@ -81,5 +81,5 @@ proc pullRequest(package)
   here.chdir(cwd +"/mason-registry/");
   runCommand('git push --set-upstream origin newPackageRequest');
   runCommand('git push');
-  runCommand('git request-pull master https://github.com/oplambeck/mason-registry');
+  runCommand('git request-pull master https://github.com/oplambeck/mason-registry newPackageRequest');
 }

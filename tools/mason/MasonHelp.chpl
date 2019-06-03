@@ -50,6 +50,7 @@ proc masonHelp() {
   writeln('    system      Integrate with system packages found via pkg-config');
   writeln('    test        Compile and run tests found in /test');
   writeln('    external    Integrate external dependencies into mason packages');
+  writeln('    publish     Publish package to mason-registry');
 }
 
 proc masonList() {
@@ -69,6 +70,7 @@ proc masonList() {
   writeln('      help               ');
   writeln('      version            ');
   writeln('      system             ');
+  writeln('      publish            ');
 }
 
 
