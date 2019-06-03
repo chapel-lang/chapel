@@ -488,10 +488,10 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
 
       // handle e.g. owned MyClass actual -> owned! formal
       if (AggregateType* formalAt = toAggregateType(canonicalFormal))
-	if (isManagedPtrType(formalAt) && formalAt->instantiatedFrom == NULL)
-	  if (AggregateType* atActual = toAggregateType(actualType))
-	    if (formalAt == atActual->instantiatedFrom)
-	      if (actualDecorator == formalDecorator)
+        if (isManagedPtrType(formalAt) && formalAt->instantiatedFrom == NULL)
+          if (AggregateType* atActual = toAggregateType(actualType))
+            if (formalAt == atActual->instantiatedFrom)
+              if (actualDecorator == formalDecorator)
                 return actualType;
               // TODO: handle coercions for e.g. owned MyClass -> x:owned?
               // - this will require creating owned MyClass?
