@@ -1,7 +1,11 @@
 use Lists;
 
 config const testNum = 42;
-config const testIters = 8;
+
+//
+// Use a higher iteration count to try and trigger a resize.
+//
+config const testIters = 32;
 
 type listType = int;
 param listLock = true;
@@ -12,7 +16,8 @@ writeln(lst1.count(testNum));
 
 for 1..testIters do {
   lst1.append(testNum);
-  writeln(lst1.count(testNum));
+  const count = lst1.count(testNum);
+  writeln(count);
 }
 
 var lst2 = lst1;

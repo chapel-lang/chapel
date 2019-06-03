@@ -1,6 +1,7 @@
 use Lists;
 
 config const testElem = 42;
+config const testIters = 1024;
 
 type listType = int;
 param listLock = true;

@@ -57,9 +57,6 @@ module Lists {
   config const _initialCapacity = 8;
 
   pragma "no doc"
-  config const _growthFactor = 2;
-
-  pragma "no doc"
   config const _initialBlockCapacity = 16;
 
   pragma "no doc"
@@ -116,6 +113,24 @@ module Lists {
   pragma "no doc"
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
+  //
+  // Use a wrapper class to let the List class have a const ref receiver even
+  // when `parSafe` is `true` and the List lock is used.
+  //
+  pragma "no doc"
+  class LockWrapper {
+    
+    var lock$ = new _lockType();
+
+    inline proc lock() {
+      lock$.lock();
+    }
+
+    inline proc unlock() {
+      lock$.unlock();
+    }
+  }
+
   /*
     A List is a lightweight container suitable for building up and iterating
     over a collection of elements in a structured manner. It is intended to
@@ -132,20 +147,20 @@ module Lists {
   */
   record List {
 
-    pragma "no doc"
-    var _size = 0;
-
     /* The type of the elements contained in this List. */
     type eltType;
 
     /* If `true`, this List will perform parallel safe operations. */
     param parSafe;
 
+    pragma "no doc"
+    var _size = 0;
+
     //
     // Little piece of wizardry I learned from @ronawho in #13104.
     //
     pragma "no doc"
-    var _lock$ = if parSafe then new _lockType() else none;
+    var _lock$ = if parSafe then new LockWrapper() else none;
 
     //
     // Functionally an array of arrays.
@@ -202,12 +217,13 @@ module Lists {
     }
 
     //
-    // Remember to add one to the computed index, since Chapel uses one based
-    // indexing.
+    // The downshift/upshift here (subtract 1 from pos, add 1 to result) is
+    // because this computation assumes zero-based indexing, and Chapel uses
+    // one based indexing.
     //
     pragma "no doc"
     inline proc _getBlockIdx(idx: int): int {
-      const pos = idx + _initialCapacity;
+      const pos = idx + _initialCapacity - 1;
       const result = log2(pos) - log2(_initialCapacity) + 1;
       return result;
     }
@@ -217,16 +233,16 @@ module Lists {
     //
     pragma "no doc"
     inline proc _getItemIdx(idx: int): int {
-      const pos = idx + _initialCapacity;
+      const pos = idx + _initialCapacity - 1;
       const result = pos ^ (1 << log2(pos)) + 1;
       return result;
     }
 
     //
-    // Lots of asserts for now, just to ensure correctness.
+    // Lots of sanity checks for now, just to ensure correctness.
     //
     pragma "no doc"
-    proc _getRef(in idx: int) ref {
+    proc _getRef(idx: int) ref {
       _sanity(idx >= 1 && idx <= _totalCapacity);
       const blockIdx = _getBlockIdx(idx);
       _sanity(blockIdx >= 1 && blockIdx <= _blocks.capacity);
@@ -298,11 +314,9 @@ module Lists {
 
     pragma "no doc"
     proc _maybeAcquireMem(amount: int) {
-      const remaining = _totalCapacity - _size;
-      if remaining > amount then
-        return;
-
-      // Should only be in this state after init or a clear.
+      //
+      // Should only be in this state after an init or a clear.
+      //
       if _blocks == nil then {
         _sanity(_totalCapacity == 0);
         _sanity(_size == 0);
@@ -310,6 +324,10 @@ module Lists {
         _blocks[1] = new unmanaged ListBlock(eltType, _initialCapacity);
         _totalCapacity += _initialCapacity;
       }
+
+      const remaining = _totalCapacity - _size;
+      if remaining > amount then
+        return;
 
       var lastBlockIdx = _getBlockIdx(_size);
       var req = amount - remaining;
@@ -413,15 +431,19 @@ module Lists {
         _append(x);
     }
 
+    //
+    // Can't use this for now without getting warnings, so stick with the
+    // simple extend() implementation.
+    //
     pragma "no doc"
-    inline proc _extendGenericAlter(collection) {
+    inline proc _extendGenericAlter(ref collection) {
       const oldSize = _size;
       
       _maybeAcquireMem(collection.size);
       
       for i in 1..collection.size do {
         pragma "no auto destroy"
-        var cpy = collection[i];
+        var cpy: eltType = collection[i];
         ref src = cpy;
         ref dst = _getRef(oldSize + i);
         _move(src, dst);
@@ -591,7 +613,7 @@ module Lists {
 
       :throws IllegalArgumentError: If the given element cannot be found.
     */
-    proc indexOf(x: eltType, start: int=0, end: int=size): int throws {
+    proc indexOf(x: eltType, start: int=1, end: int=size): int throws {
       _enter();
 
       try _boundsCheckLeaveOnThrow(start);
@@ -671,8 +693,18 @@ module Lists {
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc this(i: int) ref throws {
+    proc const this(i: int) ref throws {
       _enter();
+
+      //
+      // TODO: Do we want to switch to array style indexing instead?
+      //
+      if false && !_boundsCheck(i) then {
+        _leave();
+        const msg = "Bad index into List: " + i:string;
+        halt(msg);
+      }
+
       try _boundsCheckLeaveOnThrow(i);
       ref result = _getRef(i);
       _leave();
@@ -751,7 +783,7 @@ module Lists {
     /*
       The current number of elements contained in this List.
     */
-    inline proc size {
+    inline proc const size {
       _enter();
       var result = _size;
       _leave();
@@ -768,13 +800,12 @@ module Lists {
       _enter();
 
       //
-      // TODO: How to allocate memory for array when we may not be able to
-      // default initialize?
+      // TODO: Do we want elements to do a full init here, or not?
       //
       var result: [1.._size] eltType;
 
       for i in 1.._size do
-        result[i] = this[i];
+        result[i] = _getRef(i);
 
       _leave();
 
@@ -806,10 +837,10 @@ module Lists {
     :arg a: A List to compare.
     :arg b: A List to compare.
 
-    :return: `true` if the contents of two Lists are the same.
+    :return: `true` if the contents of two Lists are equal.
     :rtype: `bool`
   */
-  proc ==(a: List(?t), b: List(t)): bool {
+  proc ==(const ref a: List(?t, ?), const ref b: List(t, ?)): bool {
     if a.size != b.size then
       return false;
 
@@ -818,6 +849,19 @@ module Lists {
         return false;
 
     return true;
+  }
+
+  /*
+    Return `true` if the contents of two Lists are not the same.
+
+    :arg a: A List to compare.
+    :arg b: A List to compare.
+
+    :return: `true` if the contents of two Lists are not equal.
+    :rtype: `bool`
+  */
+  proc !=(const ref a: List(?t, ?), const ref b: List(t, ?)): bool {
+    return !(a == b);
   }
 
 } // End module Lists!

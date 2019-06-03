@@ -2,11 +2,12 @@ use Lists;
 
 type listType = int;
 param listLock = true;
+config const testIters = 16;
 
 var lst: List(listType, listLock);
 
 
-for i in 1..8 do {
+for i in 1..testIters do {
   const elem = i:listType;
   lst.append(elem);
   lst.insert(1, elem);
