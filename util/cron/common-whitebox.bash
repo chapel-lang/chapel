@@ -169,7 +169,7 @@ if [ "${COMP_TYPE}" != "HOST-TARGET-no-PrgEnv" ] ; then
     # We want cray-fftw with PrgEnv compilers.  But that in turns loads
     # cray-mpich and our PGI target compiler is so old that bringing in
     # cray-mpich has become impossible, so skip cray-fftw with PGI.
-    if [ $COMPILER != pgi ] ; then
+    if [ "${COMPILER}" != "pgi" ] ; then
       log_info "Loading cray-fftw module."
       module load cray-fftw
     fi
