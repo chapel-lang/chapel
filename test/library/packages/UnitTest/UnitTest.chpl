@@ -14,7 +14,7 @@ module UnitTest {
   }
   /*
     Assert that a boolean condition is true.  If it is false, prints
-    'assert failed' and halts the program.
+    'assert failed' and rasies AssertionError. 
 
     :arg test: the boolean condition
     :type test: `bool`
@@ -28,7 +28,7 @@ module UnitTest {
 
   /*
     Assert that a boolean condition is false.  If it is true, prints
-    'assert failed' and halts the program.
+    'assert failed' and raises AssertionError.
 
     :arg test: the boolean condition
     :type test: `bool`
