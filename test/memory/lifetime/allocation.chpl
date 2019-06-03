@@ -4,6 +4,7 @@ use Time;
 // trial to not only 'warm up the cache' but also give jemalloc the chance to
 // warmup as well, allowing it to request more memory for the heap upfront rather
 // than on-demand.
+config const printTiming : bool;
 config const numTrials : int = 10;
 config const allocationsPerTrial : int = 1024 * 1024;
 
@@ -72,7 +73,9 @@ proc doOwnedAllocation() {
 }
 
 proc main() {
-  writeln("Unmanaged-Time:", (+ reduce doUnmanagedAllocation()) / numTrials);
-  writeln("Shared-Time:", (+ reduce doSharedAllocation()) / numTrials);
-  writeln("Owned-Time:", (+ reduce doOwnedAllocation()) / numTrials);
+  if printTiming {
+    writeln("Unmanaged-Time:", (+ reduce doUnmanagedAllocation()) / numTrials);
+    writeln("Shared-Time:", (+ reduce doSharedAllocation()) / numTrials);
+    writeln("Owned-Time:", (+ reduce doOwnedAllocation()) / numTrials);
+  } 
 }
