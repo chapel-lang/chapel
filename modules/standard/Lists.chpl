@@ -62,6 +62,18 @@ module Lists {
   pragma "no doc"
   config const _initialBlockCapacity = 16;
 
+  pragma "no doc"
+  config param _sanityChecks = true;
+
+  //
+  // Some asserts are useful while developing, but can be turned off when the
+  // implementation is correct.
+  //
+  private inline proc _sanity(expr: bool) {
+    if _sanityChecks then
+      assert(expr);
+  }
+
   //
   // Basically just a wrapper around _ddata at this point, with one based
   // indexing to avoid logical errors.
@@ -74,7 +86,7 @@ module Lists {
     const capacity: int;
 
     proc init(type _etype, capacity: int) {
-      assert(capacity > 0);
+      _sanity(capacity > 0);
       this._etype = _etype;
       //
       // Use `c_calloc` to avoid calling initializers. TODO: Is use of calloc
@@ -90,7 +102,7 @@ module Lists {
     }
 
     inline proc this(i: int) ref {
-      assert(i >= 1 && i <= capacity);
+      _sanity(i >= 1 && i <= capacity);
       return _data[i - 1];
     }
   }
@@ -102,7 +114,7 @@ module Lists {
   // List, or any operation that is O(n)).
   //
   pragma "no doc"
-  type lockType = ChapelLocks.chpl_LocalSpinlock;
+  type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
   /*
     A List is a lightweight container suitable for building up and iterating
@@ -110,13 +122,13 @@ module Lists {
     replace the use of arrays to perform "vector-like" operations. Unlike a
     stack, the List type also supports inserts or removals into the middle of
     the List. The List type is close in spirit to its Python counterpart, with
-    fast O(log n) (and O(1) eventually) indexing.
+    fast O(1) random access and append operations.
 
-    The List type is parallel safe by default. For situations in which such
-    overhead is undesirable, parallel safety can be disabled by setting
-    `parSafe = false` in the List constructor. A List object constructed
-    from another List object inherits the parallel safety mode of that List
-    unless otherwise specified.
+    The List type is not parallel safe by default. For situations in which
+    such protections are desirable, parallel safety can be enabled by setting
+    `parSafe = true` in any List constructor. A List object constructed from
+    another List object inherits the parallel safety mode of that List by
+    default.
   */
   record List {
 
@@ -133,7 +145,7 @@ module Lists {
     // Little piece of wizardry I learned from @ronawho in #13104.
     //
     pragma "no doc"
-    var _lock$ = if parSafe then new lockType() else none;
+    var _lock$ = if parSafe then new _lockType() else none;
 
     //
     // Functionally an array of arrays.
@@ -189,27 +201,40 @@ module Lists {
       __primitive("=", dst, src);
     }
 
-    pragma "no doc"
-    inline proc _getItemIdx(idx: int): int {
-      const pos = idx + _initialCapacity;
-      const result = pos ^ (1 << floor(log2(pos)));
-      return result;
-    }
-
+    //
+    // Remember to add one to the computed index, since Chapel uses one based
+    // indexing.
+    //
     pragma "no doc"
     inline proc _getBlockIdx(idx: int): int {
       const pos = idx + _initialCapacity;
-      const result = floor(log2(pos)) - floor(log2(_initialCapacity));
-      assert(result >= 1 && result <= _blocks.capacity);
+      const result = log2(pos) - log2(_initialCapacity) + 1;
       return result;
     }
 
+    //
+    // Ditto the above.
+    //
+    pragma "no doc"
+    inline proc _getItemIdx(idx: int): int {
+      const pos = idx + _initialCapacity;
+      const result = pos ^ (1 << log2(pos)) + 1;
+      return result;
+    }
+
+    //
+    // Lots of asserts for now, just to ensure correctness.
+    //
     pragma "no doc"
     proc _getRef(in idx: int) ref {
-      assert(idx >= 1 && idx <= _totalCapacity);
+      _sanity(idx >= 1 && idx <= _totalCapacity);
       const blockIdx = _getBlockIdx(idx);
+      _sanity(blockIdx >= 1 && blockIdx <= _blocks.capacity);
       const itemIdx = _getItemIdx(idx);
-      ref result = _blocks[blockIdx][itemIdx];
+      ref block = _blocks[blockIdx];
+      _sanity(block != nil);
+      _sanity(itemIdx >= 1 && itemIdx <= block.capacity);
+      ref result = block[itemIdx];
       return result;
     }
 
@@ -247,7 +272,9 @@ module Lists {
 
     pragma "no doc"
     proc _makeBlockArray(size: int) {
-      var result = new unmanaged ListBlock(ListBlock(eltType), size);
+      type UnmanagedBlock = unmanaged ListBlock;
+      var result = new unmanaged
+        ListBlock(unmanaged ListBlock(eltType), size);
       return result;
     }
 
@@ -277,8 +304,8 @@ module Lists {
 
       // Should only be in this state after init or a clear.
       if _blocks == nil then {
-        assert(_totalCapacity == 0);
-        assert(_size == 0);
+        _sanity(_totalCapacity == 0);
+        _sanity(_size == 0);
         _blocks = _makeBlockArray(_initialBlockCapacity);
         _blocks[1] = new unmanaged ListBlock(eltType, _initialCapacity);
         _totalCapacity += _initialCapacity;
@@ -293,8 +320,8 @@ module Lists {
         ref oblock = _blocks[lastBlockIdx];
         lastBlockIdx += 1;
         ref nblock = _blocks[lastBlockIdx];
-        assert(nblock == nil);
-        assert(oblock != nil);
+        _sanity(nblock == nil);
+        _sanity(oblock != nil);
 
         nblock = new unmanaged ListBlock(eltType, oblock.capacity * 2);
         _totalCapacity += nblock.capacity;
@@ -320,7 +347,7 @@ module Lists {
     //
     pragma "no doc"
     proc _expand(idx: int) {
-      assert(_withinBounds(idx));
+      _sanity(_withinBounds(idx));
 
       _maybeAcquireMem(1);
 
@@ -337,7 +364,7 @@ module Lists {
     //
     pragma "no doc"
     proc _collapse(idx: int) {
-      assert(_withinBounds(idx));
+      _sanity(_withinBounds(idx));
 
       if idx == _size then
         return;
@@ -532,17 +559,20 @@ module Lists {
         _destroy(item);
       }
 
-      for i in 1.._blocks.capacity do {
-        ref block = _blocks[i];
-        if block == nil then
-          continue;
-        _totalCapacity -= block.capacity;
-        delete block;
-        block = nil;
-      }
+      if _blocks != nil then
+        for i in 1.._blocks.capacity do {
+          ref block = _blocks[i];
+          if block == nil then
+            continue;
+          _totalCapacity -= block.capacity;
+          delete block;
+          block = nil;
+        }
 
-      assert(_totalCapacity == 0);
-      delete _blocks;
+      if _blocks != nil then
+        delete _blocks;
+
+      _sanity(_totalCapacity == 0);
       _blocks = nil;
       _size = 0;
 
