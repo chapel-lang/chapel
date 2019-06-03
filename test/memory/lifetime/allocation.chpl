@@ -1,7 +1,11 @@
 use Time;
 
+// Performs multiple trial runs to obtain the average over; we skip the first
+// trial to not only 'warm up the cache' but also give jemalloc the chance to
+// warmup as well, allowing it to request more memory for the heap upfront rather
+// than on-demand.
 config const numTrials : int = 10;
-config const allocationsPerTrial : int = 32 * 1024 * 1024;
+config const allocationsPerTrial : int = 1024 * 1024;
 
 proc doUnmanagedAllocation() {
   var timer = new Timer();
@@ -20,7 +24,7 @@ proc doUnmanagedAllocation() {
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.milliseconds);
+    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
     timer.clear();
   }
   
@@ -40,7 +44,7 @@ proc doSharedAllocation() {
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.milliseconds);
+    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
     timer.clear();
   }
 
@@ -60,7 +64,7 @@ proc doOwnedAllocation() {
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.milliseconds);
+    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
     timer.clear();
   }
 
