@@ -1642,14 +1642,12 @@ VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   default:
     INT_FATAL( "unknown BOOL_SIZE");
 
-  case BOOL_SIZE_1  :
   case BOOL_SIZE_SYS:
   case BOOL_SIZE_8  :
   case BOOL_SIZE_16 :
   case BOOL_SIZE_32 :
   case BOOL_SIZE_64 :
     break;
-    // case BOOL_SIZE_128: imm.v_bool = b; break;
   }
   imm.v_bool = b;
   imm.const_kind = NUM_KIND_BOOL;

@@ -4,20 +4,25 @@
 
 use UnorderedCopy;
 
-// TODO test with different types (and different sizes when supported)
 config param unordered=true;
+config type copyType = int;
 
-inline proc iniDstValue() param { return 0; }
-inline proc iniSrcValue() param { return 1; }
+inline proc iniDstValue() param { return 0:copyType; }
+inline proc iniSrcValue() param { return 1:copyType; }
 
+config const printResults = false;
 proc printThem(ref dst, const ref src) {
   if unordered then unorderedCopyTaskFence();
-  write("dst=" + dst + ", src=" + src + " -- ");
+  assert(src == dst && src == iniSrcValue());
+  if printResults then
+    write("dst=" + dst + ", src=" + src + " -- ");
 }
 
 proc printThem(ref dst, param src) {
   if unordered then unorderedCopyTaskFence();
-  write("dst=" + dst + ", src=" + src + " -- ");
+  assert(src == dst && src == iniSrcValue());
+  if printResults then
+    write("dst=" + dst + ", src=" + src + " -- ");
 }
 
 inline proc assign(ref dst, const ref src) {
@@ -111,8 +116,8 @@ proc neitherLocalAssign() {
   var dst = iniDstValue(), src = iniSrcValue();
   on Locales[getLocaleID(curLocale=false)] {
     assign(dst, src);
+    printThem(dst, src);
   }
-  printThem(dst, src);
   writeln("neitherLocalAssign()");
 }
 

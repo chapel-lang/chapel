@@ -394,7 +394,8 @@ CallExpr* ParamForLoop::foldForResolve()
   Symbol*      idxSym  = idxExpr->symbol();
   Symbol*      continueSym = continueLabelGet();
   Type*        idxType = indexType();
-  IF1_int_type idxSize = (get_width(idxType) == 32) ? INT_SIZE_32 : INT_SIZE_64;
+  IF1_int_type idxSize = (is_bool_type(idxType) || get_width(idxType) == 32)
+                           ? INT_SIZE_32 : INT_SIZE_64;
 
   // Insert an "insertion marker" for loop unrolling
   insertAfter(noop);

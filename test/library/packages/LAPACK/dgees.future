@@ -1,4 +1,0 @@
-bug: chapel uses signed char * (via c_ptr(c_char)) but C uses char * (unsigned)
-
-c_char should probably be whatever char is by default.
-Causes warnings with -Wpointer-sign (part of -Wall) causing start_test to fail.

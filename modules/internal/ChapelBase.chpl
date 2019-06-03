@@ -78,8 +78,7 @@ module ChapelBase {
   //
   // assignment on primitive types
   //
-  inline proc =(ref a: bool, b: bool) { __primitive("=", a, b); }
-  inline proc =(ref a: bool(?w), b: bool) { __primitive("=", a, b); }
+  inline proc =(ref a: bool(?), b: bool) { __primitive("=", a, b); }
   inline proc =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
   inline proc =(ref a: uint(?w), b: uint(w)) { __primitive("=", a, b); }
   inline proc =(ref a: real(?w), b: real(w)) { __primitive("=", a, b); }
