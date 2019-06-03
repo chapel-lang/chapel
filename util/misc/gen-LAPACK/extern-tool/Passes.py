@@ -1566,7 +1566,7 @@ class ChapelerrificLAPACKEFunctionsPass ( Pass ):
           continue 
         
         if arg.get( "type" ) == "c_char":
-          pass_through[ arg.get("name") ] = "ascii(" + arg.get( "name" ) + ") : c_char"
+          pass_through[ arg.get("name") ] = arg.get( "name" ) + ".byte(1) : c_char"
         
         
         associate_array_str = arg.get( "associate-array" )
@@ -1899,7 +1899,7 @@ class ChapelModuleStringToCharWraperProcPass ( Pass ):
 
       call_args_producer = ListProducer( ", ", "(", ")" )
       for pass_arg in ordered_args:
-        call_args_producer.append( SegmentProducer( ( pass_arg.get("name" ) if pass_arg.get("type") != "c_char" else "ascii(" + pass_arg.get( "name" ) + ") : c_char" ) ) )
+        call_args_producer.append( SegmentProducer( ( pass_arg.get("name" ) if pass_arg.get("type") != "c_char" else pass_arg.get( "name" ) + ".byte(1) : c_char" ) ) )
       func_body.append( SegmentProducer( ( "return " if proc.get("return-type") != "void" else "" ) + proc.get("name") ) + call_args_producer + LineProducer( ";" ) )
       code.append( func_body )
       
@@ -2727,7 +2727,7 @@ class DropAttemptedAssociations ( Pass ):
         
         if arg.get( "type" ) == "c_char":
           arg.set( "type", "string" )
-          pass_through[ arg.get("name") ] = "ascii(" + arg.get( "name" ) + ") : c_char"
+          pass_through[ arg.get("name") ] = arg.get( "name" ) + ".byte(1) : c_char"
         
         
         associate_array_str = arg.get( "associate-array" )

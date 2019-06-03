@@ -434,6 +434,8 @@ array-of-strings-read:
     - string changes to bounds checking, isUpper (#3718)
   12/11/18:
     - Turn off some range halts for --no-checks (#11780)
+  05/24/19:
+    - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
 
 arr-forall:
   03/24/15:
@@ -450,6 +452,10 @@ arguments:
 assign.1024:
   01/22/15:
     - optimize range follower so it can be directly inlined (#1160)
+  05/23/19:
+    - Execute defer actions in an iterator upon break from its loop (#12963)
+  05/30/19:
+    - Respect "always rvf" for module-scope variables (#13092)
 
 bfs:
   09/25/14:
@@ -580,6 +586,8 @@ create-views:
 cs-resize:
   03/05/19:
     - Add radix sort to Sort package module (#12452)
+  05/30/19:
+    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
 
 dgemm.128:
   09/06/13:
@@ -1163,6 +1171,10 @@ parOpEquals:
     - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
   02/28/15:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
+  05/24/19:
+    - Increased usage of initializers for domains and distributions (#13018)
+  05/30/19:
+    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
 
 pidigits: &pidigits-base
   05/16/16:
@@ -1313,6 +1325,10 @@ revcomp:
   02/05/19:
     - Make stdout, stderr ordering predictable in test output (#12236)
 
+ri-a2-AoA:
+  05/30/19:
+    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
+
 sad:
   05/03/16:
     - inconclusive due to noise
@@ -1350,6 +1366,8 @@ split-whitespace-perf:
 SSCA2_main:
   06/12/13:
     - Initial support for hierarchical locales (21480)
+  05/30/19:
+    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
 
 STREAM_study_fragmented:
   09/06/13:
@@ -1402,6 +1420,10 @@ stream-spmd-barrier:
   06/07/18:
     - Prevent serialization from qthread sync vars (#9737)
 
+substring:
+  05/24/19:
+    - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
+
 taskSpawn:
   07/24/16:
     - Stopped performing remote value forwarding on task functions (#4240)
@@ -1415,6 +1437,8 @@ temporary-copies:
     - Update RE2 (#6024)
   12/11/18:
     - Turn off some range halts for --no-checks (#11780)
+  05/24/19:
+    - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
 
 twopt-paircount:
   06/22/17:

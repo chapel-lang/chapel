@@ -229,9 +229,7 @@ proc main() {
 
     /* Add constant to solution to force refresh of neighbor data */
     if debug then diagnostics('input += 1');
-    forall (i,j) in Dom {
-      input[i, j] += 1.0;
-    }
+    input += 1.0;
 
     if iteration >= 1 {
       subTimer.stop();

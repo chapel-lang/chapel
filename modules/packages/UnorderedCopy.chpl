@@ -116,8 +116,8 @@ module UnorderedCopy {
    */
   inline proc unorderedCopyTaskFence(): void {
     if CHPL_COMM == 'ugni' {
-      extern proc chpl_comm_get_unordered_task_fence();
-      chpl_comm_get_unordered_task_fence();
+      extern proc chpl_comm_getput_unordered_task_fence();
+      chpl_comm_getput_unordered_task_fence();
     }
   }
 
