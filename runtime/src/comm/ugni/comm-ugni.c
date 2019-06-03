@@ -1528,6 +1528,8 @@ static void      amo_res_free(fork_amo_data_t*);
 static void      consume_all_outstanding_cq_events(int);
 static void      do_remote_put(void*, c_nodeid_t, void*, size_t,
                                mem_region_t*, drpg_may_proxy_t);
+static void      do_remote_put_buff(void*, c_nodeid_t, void*, size_t,
+                                    drpg_may_proxy_t);
 static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
                                  mem_region_t**, drpg_may_proxy_t);
 static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
@@ -1814,7 +1816,8 @@ chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
 
 enum BuffType {
   amo_nf_buff = 1 << 0,
-  get_buff    = 1 << 1
+  get_buff    = 1 << 1,
+  put_buff    = 1 << 2
 };
 
 // Per task information about non-fetching AMO buffers
@@ -1839,6 +1842,17 @@ typedef struct {
   mem_region_t* local_mr_v[MAX_CHAINED_GET_LEN];
 } get_buff_task_info_t;
 
+// Per task information about PUT buffers
+typedef struct {
+  int           vi;
+  void*         tgt_addr_v[MAX_CHAINED_PUT_LEN];
+  c_nodeid_t    locale_v[MAX_CHAINED_PUT_LEN];
+  void*         src_addr_v[MAX_CHAINED_PUT_LEN];
+  uint64_t      src_v[MAX_CHAINED_PUT_LEN];
+  size_t        size_v[MAX_CHAINED_PUT_LEN];
+  mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
+} put_buff_task_info_t;
+
 // Acquire a task local buffer, initializing if needed
 static inline
 void* task_local_buff_acquire(enum BuffType t) {
@@ -1859,13 +1873,15 @@ void* task_local_buff_acquire(enum BuffType t) {
 
   DEFINE_INIT(amo_nf_buff_task_info_t, amo_nf_buff);
   DEFINE_INIT(get_buff_task_info_t, get_buff);
+  DEFINE_INIT(put_buff_task_info_t, put_buff);
 
 #undef DEFINE_INIT
   return NULL;
 }
 
-static void get_buff_task_info_flush(get_buff_task_info_t* info);
 static void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info);
+static void get_buff_task_info_flush(get_buff_task_info_t* info);
+static void put_buff_task_info_flush(put_buff_task_info_t* info);
 
 // Flush one or more task local buffers
 static inline
@@ -1883,6 +1899,7 @@ void task_local_buff_flush(enum BuffType t) {
 
   DEFINE_FLUSH(amo_nf_buff_task_info_t, amo_nf_buff, amo_nf_buff_task_info_flush);
   DEFINE_FLUSH(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
+  DEFINE_FLUSH(put_buff_task_info_t, put_buff, put_buff_task_info_flush);
 
 #undef DEFINE_FLUSH
 }
@@ -1905,6 +1922,7 @@ void task_local_buff_end(enum BuffType t) {
 
   DEFINE_END(amo_nf_buff_task_info_t, amo_nf_buff, amo_nf_buff_task_info_flush);
   DEFINE_END(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
+  DEFINE_END(put_buff_task_info_t, put_buff, put_buff_task_info_flush);
 
 #undef END
 }
@@ -2040,7 +2058,7 @@ int chpl_comm_numPollingTasks(void)
 }
 
 void chpl_comm_task_end(void) {
-  task_local_buff_end(get_buff | amo_nf_buff);
+  task_local_buff_end(get_buff | put_buff | amo_nf_buff);
 }
 
 void chpl_comm_post_task_init(void)
@@ -5769,8 +5787,7 @@ void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
   if (dst_locale == chpl_nodeID) {
     chpl_comm_get_unordered(dst_addr, src_locale, src_addr, size, typeIndex, commID, ln, fn);
   } else if (src_locale == chpl_nodeID) {
-    // TODO want chpl_comm_put_unordered
-    chpl_comm_put(src_addr, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
+    chpl_comm_put_unordered(src_addr, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
   } else {
     // TODO use unordered ops in this case? Would have to ensure we always
     // flush GET buffer before the PUT buffer
@@ -5788,7 +5805,6 @@ void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
     }
   }
 }
-
 
 void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
                              size_t size, int32_t typeIndex, int32_t commID,
@@ -5821,8 +5837,40 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
   do_remote_get_buff(addr, locale, raddr, size, may_proxy_true);
 }
 
-void chpl_comm_get_unordered_task_fence(void) {
-  task_local_buff_flush(get_buff);
+void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
+                             size_t size, int32_t typeIndex,
+                             int32_t commID, int ln, int32_t fn)
+
+{
+  DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_unordered(%p, %d, %p, %zd)",
+           addr, (int) locale, raddr, size);
+
+  assert(addr != NULL);
+  assert(raddr != NULL);
+  if (size == 0)
+    return;
+
+  if (locale == chpl_nodeID) {
+    memmove(raddr, addr, size);
+    return;
+  }
+
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_put, chpl_nodeID, locale,
+         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_rdma("unordered put", locale, size, ln, fn);
+  chpl_comm_diags_incr(put);
+
+  do_remote_put_buff(addr, locale, raddr, size, may_proxy_true);
+}
+
+void chpl_comm_getput_unordered_task_fence(void) {
+  task_local_buff_flush(get_buff | put_buff);
 }
 
 
@@ -5856,6 +5904,58 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
 
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
 }
+
+/*
+ *** START OF BUFFERED PUT OPERATIONS ***
+ *
+ * Support for buffered PUT operations. We internally buffer PUT operations and
+ * then initiate them with chained transactions for increased transaction rate.
+ */
+
+// Flush buffered PUTs for the specified task info and reset the counter.
+static inline
+void put_buff_task_info_flush(put_buff_task_info_t* info) {
+  if (info->vi > 0) {
+    do_remote_put_V(info->vi, info->src_addr_v, info->locale_v,
+                    info->tgt_addr_v, info->size_v,
+                    info->remote_mr_v, may_proxy_true);
+    info->vi = 0;
+  }
+}
+
+static inline
+void do_remote_put_buff(void* src_addr, c_nodeid_t locale, void* tgt_addr,
+                        size_t size, drpg_may_proxy_t may_proxy)
+{
+  mem_region_t*         remote_mr;
+  put_buff_task_info_t* info;
+
+  DBG_P_LP(DBGF_GETPUT, "DoRemBuffPut %p -> %d:%p (%#zx), proxy %c",
+           src_addr, (int) locale, tgt_addr, size, may_proxy ? 'y' : 'n');
+
+  remote_mr = mreg_for_remote_addr(tgt_addr, locale);
+  info = task_local_buff_acquire(put_buff);
+
+  if (remote_mr == NULL || info == NULL || size > 8) {
+    do_remote_put(src_addr, locale, tgt_addr, size, remote_mr, may_proxy);
+    return;
+  }
+
+  int vi = info->vi;
+  memcpy(&info->src_v[vi], src_addr, size);
+  info->src_addr_v[vi] = &info->src_v[vi];
+  info->locale_v[vi] = locale;
+  info->tgt_addr_v[vi] = tgt_addr;
+  info->size_v[vi] = size;
+  info->remote_mr_v[vi] = remote_mr;
+  info->vi++;
+
+  // flush if buffers are full
+  if (info->vi == MAX_CHAINED_PUT_LEN) {
+    put_buff_task_info_flush(info);
+  }
+}
+/*** END OF BUFFERED PUT OPERATIONS ***/
 
 
 /*

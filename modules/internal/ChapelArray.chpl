@@ -4142,6 +4142,65 @@ module ChapelArray {
       e = b;
   }
 
+  //
+  // op= overloads for array/scalar pairs
+  //
+  proc +=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e += b;
+  }
+
+  proc -=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e -= b;
+  }
+
+  proc *=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e *= b;
+  }
+
+  proc /=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e /= b;
+  }
+
+  proc %=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e %= b;
+  }
+
+  proc **=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e **= b;
+  }
+
+  proc &=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e &= b;
+  }
+
+  proc |=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e |= b;
+  }
+
+  proc ^=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e ^= b;
+  }
+
+  proc >>=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e >>= b;
+  }
+
+  proc <<=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e <<= b;
+  }
+
+
   /*
    * The following procedure is effectively equivalent to:
    *

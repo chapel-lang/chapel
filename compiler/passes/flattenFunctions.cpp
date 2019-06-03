@@ -80,8 +80,32 @@ static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
 //
 static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
-  if (!parent)
+  if (!parent) {
     parent = fn->defPoint->parentSymbol;
+
+    // If the symbol is at module scope and the type should always be
+    // RVF'd and the symbol doesn't have the "locale private" flag
+    // applied to it then we should RVF it, so add it to the
+    // function's argument list so that it can be considered in the
+    // remoteValueForwarding pass (Otherwise, symbols at module scope
+    // tend not to be RVF'd... but maybe they should be?  A
+    // disadvantage to doing so is that they have to be added as
+    // arguments in the flattenFunctions pass to be considered, but if
+    // they're not going to be RVF'd, this is unnecessary...  And if
+    // they're const, they'll be broadcast proactively at module
+    // initialization time).)
+    //
+    // Why skip "locale private" variables?  Because these variables
+    // already have special handling to localize them, and RVFing them
+    // causes the `Locales` to be RVF'd which caused extra
+    // communications to take place (and generally seems confusing).
+    //
+    if (isModuleSymbol(sym->defPoint->parentSymbol) &&
+        sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
+        !sym->hasFlag(FLAG_LOCALE_PRIVATE)) {
+      return true;
+    }
+  }
 
   if (!isFnSymbol(parent))
     return false;

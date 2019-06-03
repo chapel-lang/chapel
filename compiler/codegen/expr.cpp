@@ -4073,23 +4073,24 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     return;
   }
 
-  GenRet dst = call->get(1);
-  GenRet src = call->get(2);
+  GenRet dst = lhsExpr;
+  bool dstRef = lhsExpr->typeInfo()->symbol->hasFlag(FLAG_REF);
+  GenRet src = rhsExpr;
+  bool srcRef = rhsExpr->typeInfo()->symbol->hasFlag(FLAG_REF);
   GenRet ln = call->get(3);
   GenRet fn = call->get(4);
-  TypeSymbol* dt = call->get(1)->typeInfo()->getValType()->symbol;
+  TypeSymbol* dt = lhsExpr->typeInfo()->getValType()->symbol;
   GenRet size = codegenSizeof(dt->typeInfo());
 
   if (!lhsWide && rhsWide) {
     // do an unordered GET
-    // chpl_comm_get_unordered(
-    //   void *dst,
+    // chpl_comm_get_unordered(void *dst,
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t typeIndex, int32_t commID,
     //   int ln, int32_t fn);
 
     dst = codegenValuePtr(dst);
-    if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
+    if (dstRef)
       dst = codegenDeref(dst);
 
     codegenCall("chpl_comm_get_unordered",
@@ -4099,16 +4100,33 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 size,
                 genTypeStructureIndex(dt),
                 genCommID(gGenInfo),
-                ln,
-                fn);
-  } else if (lhsWide && rhsWide) {
+                ln, fn);
+  } else if (lhsWide && !rhsWide) {
+    // do an unordered PUT
+    // chpl_comm_put_unordered(void *src,
+    //   c_nodeid_t dst_locale, void* dst_raddr,
+    //   size_t size, int32_t typeIndex, int32_t commID,
+    //   int ln, int32_t fn);
+
+    src = codegenValuePtr(src);
+    if (srcRef)
+      src = codegenDeref(src);
+
+    codegenCall("chpl_comm_put_unordered",
+                codegenCastToVoidStar(codegenAddrOf(src)),
+                codegenRnode(dst),
+                codegenRaddr(dst),
+                size,
+                genTypeStructureIndex(dt),
+                genCommID(gGenInfo),
+                ln, fn);
+  } else {
     // do an unordered GETPUT
     // chpl_comm_getput_unordered(
     //   c_nodeid_t dst_locale, void* dst_raddr,
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t typeIndex, int32_t commID,
     //   int ln, int32_t fn);
-
     codegenCall("chpl_comm_getput_unordered",
                 codegenRnode(dst),
                 codegenRaddr(dst),
@@ -4117,11 +4135,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 size,
                 genTypeStructureIndex(dt),
                 genCommID(gGenInfo),
-                ln,
-                fn);
-  } else {
-    // Handle it like a normal assign
-    FORWARD_PRIM(PRIM_ASSIGN);
+                ln, fn);
   }
 }
 DEFINE_PRIM(PRIM_ADD_ASSIGN) {
