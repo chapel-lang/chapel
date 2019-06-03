@@ -270,4 +270,206 @@ module UnitTest {
       }
     }
   }
+
+  /*
+    Assert that a first argument is greater than second argument.  If it is false, prints
+    'assert failed' and rasies AssertionError. 
+  */
+  proc assertGreaterThan(first, second) throws {
+    if canResolve(">=",first, second) {
+      checkGreater(first, second);
+    }
+    else {
+      var tmpString = "assert failed - First element is of type " + first.type:string +" and Second is of type "+second.type:string;
+      throw new owned AssertionError(tmpString);
+    }
+  }
+
+  /*checks the type of the arguments and then do greater than comaprison */
+  private
+  proc checkGreater(first, second) throws {
+    type firstType = first.type;
+    type secondType = second.type;
+
+    if isTupleType(firstType) && isTupleType(secondType) {
+      // both are tuples.
+      assertTupleGreater(first, second);
+      return;
+    }
+    else if isArrayType(firstType) && isArrayType(secondType) {
+      // both are arrays
+      assertArrayGreater(first, second);
+      return;
+    }
+    else if isRangeType(firstType) && isRangeType(secondType) {
+      // both are Range
+      assertRangeGreater(first, second);
+    }
+    else if isString(first) && isString(second) {
+      // both are Strings
+      assertStringGreater(first, second);
+    }
+    else {
+      __baseAssertGreater(first, second);
+    }
+  }
+  /*An greater assertion for sequences (like arrays, tuples, strings).
+    Args:
+      seq1: The first sequence to compare.
+      seq2: The second sequence to compare.
+      seq_type_name: The name of datatype of the sequences
+  */
+  private
+  proc assertSequenceGreater(seq1, seq2, seq_type_name) throws {
+    var checkgreater: bool = false;
+    var checkequal: bool = false;
+    var len1: int = seq1.size;
+    var len2: int = seq2.size;
+    var symbol: string;
+    var tmpString: string;
+    var tmplarge: string;
+
+    if len1 == 0 {
+      tmpString = "First "+seq_type_name+" has no length.";
+    }
+    if tmpString == "" {
+      if len2 == 0 {
+        tmpString = "Second "+seq_type_name+" has no length.";
+      }
+    }
+    if tmpString == "" {
+      for i in 1..len1 {
+        var item1 = seq1[i];
+        var item2 = seq2[i];
+        if item1 == item2 then checkequal = true;
+        else if item1 < item2 {
+          tmpString += "First "+seq_type_name+" < Second "+seq_type_name+" :\n";
+          tmplarge += "\nFirst larger element in second "+seq_type_name+" is at index "+i +":\n'"+item1+"'\n'"+item2+"'\n";
+          checkgreater = true;
+          checkequal = false;
+          symbol = "<";
+          break;
+        }
+        else {
+          checkequal = false;
+          break;
+        }
+      }
+      if !checkgreater && !checkequal then return;
+      else if checkequal {
+        tmpString += "Both "+seq_type_name+" are equal\n";
+        symbol = "==";
+      }
+      if seq_type_name == "Array" {
+        tmpString += "'[";
+        for i in 1..seq1.size {
+          if i != seq1.size then tmpString+= seq1[i]+", ";
+          else tmpString += seq1[i]+"]' "+symbol+ " '[";
+        }
+        for i in 1..seq2.size {
+          if i != seq2.size then tmpString+= seq2[i]+", ";
+          else tmpString += seq2[i]+"]'";
+        }
+      }
+      else {
+        tmpString += "'"+stringify(seq1)+"' "+symbol+" '"+stringify(seq2)+"'" ;
+      }
+      tmpString+=tmplarge;
+    }
+    throw new owned AssertionError(tmpString);
+  }
+
+  /*An array-specific greater assertion.
+    Args:
+    array1: The first array to compare.
+    array2: The second array to compare.
+  */
+  private
+  proc assertArrayGreater(array1, array2) throws {
+    if array1.rank == array2.rank {
+      if array1.shape == array2.shape {
+        if array1.rank == 1 {
+          assertSequenceGreater(array1, array2, "Array");
+        }
+        else {
+          if all(array1 <= array2) {
+            var tmpString = "assert failed - \n'" + stringify(array1) +"'\n<=\n'"+stringify(array2)+"'";
+            throw new owned AssertionError(tmpString);
+          }
+       }
+      }
+      else {
+        var tmpString = "assert failed - First element is of shape " + stringify(array1.shape) +" and Second is of shape "+stringify(array2.shape);
+        throw new owned AssertionError(tmpString);
+      }
+    }
+    else {
+      var tmpString = "assert failed - First element is of type " + array1.type:string +" and Second is of type "+array2.type:string;
+      throw new owned AssertionError(tmpString);
+    }
+  }
+
+  /*
+    A tuple-specific greater assertion.
+    Args:
+    tuple1: The first tuple to compare.
+    tuple2: The second tuple to compare.
+  */
+  private
+  proc assertTupleGreater(tuple1, tuple2) throws {
+    type firstType = tuple1.type;
+    type secondType = tuple2.type;
+    if firstType == secondType {
+      assertSequenceGreater(tuple1,tuple2,"tuple("+firstType: string+")");
+    }
+    else {
+      var tmpString = "assert failed - First element is of type " + firstType:string +" and Second is of type "+secondType:string;
+      throw new owned AssertionError(tmpString);
+    }
+  }
+
+  /*
+    A range-specific greater assertion.
+    Args:
+    range1: The first range to compare.
+    range2: The second range to compare.
+  */
+  private
+  proc assertRangeGreater(range1, range2) throws {
+    if range1.size == range2.size {
+      __baseAssertGreater(range1,range2);
+    }
+    else {
+      var tmpString = "assert failed - Ranges are not of same length";
+      throw new owned AssertionError(tmpString);
+    }
+  }
+  
+  /*
+    A string-specific Greater assertion.
+    Args:
+    string1: The first string to compare.
+    string2: The second string to compare.
+  */
+  private
+  proc assertStringGreater(string1, string2) throws {
+    if string1.size == string2.size {
+      assertSequenceGreater(string1,string2,"String");
+    }
+    else {
+      var tmpString = "assert failed - Strings are not of same length";
+      throw new owned AssertionError(tmpString);
+    }
+  }
+
+
+  /*The default assertGreater implementation, not type specific.*/
+  private
+  proc __baseAssertGreater(first, second) throws {
+    if all(first <= second) {
+      var tmpString = "assert failed - '" + stringify(first) +"' <= '"+stringify(second)+"'";
+      throw new owned AssertionError(tmpString);
+    }
+  }
+  
 }
