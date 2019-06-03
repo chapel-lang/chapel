@@ -242,6 +242,8 @@ performance/compiler/bradc/AllCompTime.graph
 # suite: Memory tracking
 memleaks.graph
 memleaksfull.graph
+# suite: Memory allocation
+memory/lifetime/allocation.graph
 # suite: Code size tracking
 studies/jacobi/jacobi.graph
 # suite: Startup tracking
@@ -327,5 +329,3 @@ statements/lydia/moduleVersusFunction.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
 Samples/Performance/cleanCopy/foobar.graph
-# suite: Lifetime Management
-memory/lifetime/allocation.graph
