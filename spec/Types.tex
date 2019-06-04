@@ -50,7 +50,7 @@ These statements are defined in Sections \rsec{Enumerated_Types},
 \index{types!primitive}
 
 %REVIEW: vass: we should explain what separates primitive types from the rest.
-The primitive types are: \chpl{void}, \chpl{bool},
+The primitive types are: \chpl{void}, \chpl{nothing}, \chpl{bool},
 \chpl{int}, \chpl{uint}, \chpl{real}, \chpl{imag}, \chpl{complex},
 and \chpl{string}.  They are defined
 in this section.
@@ -59,6 +59,7 @@ The primitive types are summarized by the following syntax:
 \begin{syntax}
 primitive-type:
   `void'
+  `nothing'
   `bool' primitive-type-parameter-part[OPT]
   `int' primitive-type-parameter-part[OPT]
   `uint' primitive-type-parameter-part[OPT]
@@ -89,10 +90,28 @@ types.
 \index{types!void@\chpl{void}}
 
 The \chpl{void} type is used to represent the lack of a value, for
-example when a function has no arguments and/or no return type.  
+example when a function has no arguments and/or no return type.
+It is an error to assign the result of a function that returns
+\chpl{void} to a variable.
 
-There may be storage associated with a value of type \chpl{void}, in which
-case its lifetime obeys the same rules as a value of type \chpl{int}.
+\subsection{The Nothing Type}
+\label{The_Nothing_type}
+\index{nothing@\chpl{nothing}}
+\index{types!nothing@\chpl{nothing}}
+
+The \chpl{nothing} type is used to indicate a variable or field that
+should be removed by the compiler. The value \chpl{none} is the only
+value of type \chpl{nothing}.
+
+The value \chpl{none} can only be assigned to a variable of type
+\chpl{nothing}, or to a generic variable that will take on the type
+\chpl{nothing}. The variable will be removed from the program and
+have no representation at run-time.
+
+\begin{rationale}
+The \chpl{nothing} type can be used to conditionally remove a variable
+or field from the code based on a \chpl{param} conditional expression. 
+\end{rationale}
 
 \subsection{The Bool Type}
 \label{The_Bool_Type}
