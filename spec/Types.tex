@@ -90,7 +90,9 @@ types.
 \index{types!void@\chpl{void}}
 
 The \chpl{void} type is used to represent the lack of a value, for
-example when a function has no arguments and/or no return type.  
+example when a function has no arguments and/or no return type.
+It is an error to assign the result of a function that returns
+\chpl{void} to a variable.
 
 \subsection{The Nothing Type}
 \label{The_Nothing_type}
