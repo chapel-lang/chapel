@@ -1,0 +1,8 @@
+Serial 'zip':
+Parallel 'zip':
+Serial 'zipper':
+Parallel 'zipper':
+Serial Domain Indexing:
+Parallel Domain Indexing:
+Serial Domain Query Indexing:
+Parallel Domain Query Indexing:
