@@ -39,8 +39,7 @@ proc geturl(){
   return url;
 }
 
-proc branchMasonReg()
-{
+proc branchMasonReg(){
   var localEnv = runCommand("pwd"):string;
   var Env = localEnv(1..localEnv.length-1);
   const masonreg = Env + "/mason-registry/";
