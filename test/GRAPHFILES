@@ -242,6 +242,8 @@ performance/compiler/bradc/AllCompTime.graph
 # suite: Memory tracking
 memleaks.graph
 memleaksfull.graph
+# suite: Memory allocation
+memory/lifetime/allocation.graph
 # suite: Code size tracking
 studies/jacobi/jacobi.graph
 # suite: Startup tracking
