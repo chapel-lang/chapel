@@ -30,21 +30,21 @@ proc forkMasonReg(){
   var tail = usernameurl.find("/")-1: int;
   var head = usernameurl.find(":")+1: int;
   var username = usernameurl(head..tail);
-  var ret = runCommand("git clone https://github.com/oplambeck/mason-registry mason-registry", quiet=true);
+  var ret = runCommand("git clone https://github.com/oplambeck/mason-registry mason-registry", true);
   return ret;
 }
 
 proc geturl(){
-  var url = runCommand("git config --get remote.origin.url");
+  var url = runCommand("git config --get remote.origin.url", true);
   return url;
 }
 
 proc branchMasonReg(){
-  var localEnv = runCommand("pwd"):string;
+  var localEnv = runCommand("pwd", true):string;
   var Env = localEnv(1..localEnv.length-1);
   const masonreg = Env + "/mason-registry/";
   const branchCommand = "git checkout -b newPackageRequest": string;
-  var ret = gitC(masonreg, branchCommand);
+  var ret = gitC(masonreg, branchCommand, true);
   return ret;
 }
 
@@ -59,7 +59,7 @@ proc addPackageToBricks() : string{
   const versionNum = tomlFile['brick']['version'].s;
   const oldDir = here.cwd();
   here.chdir(oldDir + "/mason-registry/Bricks/");
-  runCommand("mkdir " + packageName);
+  runCommand("mkdir " + packageName, true);
   here.chdir(oldDir + "/mason-registry/Bricks/" + packageName + "/");
   const baseToml = tomlFile;
   var newToml = open(versionNum + ".toml", iomode.cw);
@@ -75,10 +75,10 @@ proc pullRequest(package)
   const cwd = getEnv("PWD");
   const projectHome = getProjectHome(cwd);
   here.chdir(cwd + "/mason-registry/Bricks/");
-  runCommand("git add " + package);
-  runCommand('git commit -m' + package);
+  runCommand("git add " + package, true);
+  runCommand('git commit -m' + package, true);
   here.chdir(cwd +"/mason-registry/");
-  runCommand('git push --set-upstream origin newPackageRequest');
-  runCommand('git push');
-  runCommand('git request-pull master https://github.com/oplambeck/mason-registry newPackageRequest');
+  runCommand('git push --set-upstream origin newPackageRequest', true);
+  runCommand('git push', true);
+  runCommand('git request-pull master https://github.com/oplambeck/mason-registry newPackageRequest', true);
 }
