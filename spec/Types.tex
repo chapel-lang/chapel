@@ -92,9 +92,6 @@ types.
 The \chpl{void} type is used to represent the lack of a value, for
 example when a function has no arguments and/or no return type.  
 
-There may be storage associated with a value of type \chpl{void}, in which
-case its lifetime obeys the same rules as a value of type \chpl{int}.
-
 \subsection{The Nothing Type}
 \label{The_Nothing_type}
 \index{nothing@\chpl{nothing}}
@@ -103,6 +100,11 @@ case its lifetime obeys the same rules as a value of type \chpl{int}.
 The \chpl{nothing} type is used to indicate a variable or field that
 should be removed by the compiler. The value \chpl{none} is the only
 value of type \chpl{nothing}.
+
+The value \chpl{none} can only be assigned to a variable of type
+\chpl{nothing}, or to a generic variable that will take on the type
+\chpl{nothing}. The variable will be removed from the program and
+have no representation at run-time.
 
 \begin{rationale}
 The \chpl{nothing} type can be used to conditionally remove a variable
