@@ -324,7 +324,9 @@ module DefaultRectangular {
         // library...
         coforall chunk in 0..#numChunks {
           var myChunk = ranges;
-          const (lo,hi) = _computeBlock(ranges(parDim).length*ranges(parDim).stride,
+          const len = if (ranges(parDim).stridable) then ranges(parDim).length
+              else ranges(parDim).length:uint * abs(ranges(parDim).stride):uint;
+          const (lo,hi) = _computeBlock(len,
                                         numChunks, chunk,
                                         ranges(parDim)._high,
                                         ranges(parDim)._low,
