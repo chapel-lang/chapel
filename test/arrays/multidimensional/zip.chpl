@@ -36,7 +36,7 @@ for (a1, a2) in zip(A1, A2) {
 	a1 += a2;
 }
 timer.stop();
-if printTiming then writeln("Serial 'zip': ", timer.elapsed(), "s");
+if printTiming then writeln("Serial 'zip': ", timer.elapsed());
 timer.clear();
 
 timer.start();
@@ -44,7 +44,7 @@ forall (a1, a2) in zip(A1, A2) {
 	a1 += a2;
 }
 timer.stop();
-if printTiming then writeln("Parallel 'zip': ", timer.elapsed(), "s");
+if printTiming then writeln("Parallel 'zip': ", timer.elapsed());
 timer.clear();
 
 timer.start();
@@ -52,7 +52,7 @@ for (a1, a2) in zipper(A1, A2) {
 	a1 += a2;
 }
 timer.stop();
-if printTiming then writeln("Serial 'zipper': ", timer.elapsed(), "s");
+if printTiming then writeln("Serial 'zipper': ", timer.elapsed());
 timer.clear();
 
 timer.start();
@@ -60,7 +60,7 @@ forall (a1, a2) in zipper(A1, A2) {
 	a1 += a2;
 }
 timer.stop();
-if printTiming then writeln("Parallel 'zipper': ", timer.elapsed(), "s");
+if printTiming then writeln("Parallel 'zipper': ", timer.elapsed());
 timer.clear();
 
 timer.start();
@@ -68,7 +68,7 @@ for idx in D {
 	A1[idx] += A2[idx];
 }
 timer.stop();
-if printTiming then writeln("Serial Domain Indexing: ", timer.elapsed(), "s");
+if printTiming then writeln("Serial Domain Indexing: ", timer.elapsed());
 timer.clear();
 
 timer.start();
@@ -76,17 +76,17 @@ forall idx in D {
 	A1[idx] += A2[idx];
 }
 timer.stop();
-if printTiming then writeln("Parallel Domain Indexing: ", timer.elapsed(), "s");
+if printTiming then writeln("Parallel Domain Indexing: ", timer.elapsed());
 timer.clear();
 
 timer.start();
 domainQuerySerial(A1, A2);
 timer.stop();
-if printTiming then writeln("Serial Domain Query Indexing: ", timer.elapsed(), "s");
+if printTiming then writeln("Serial Domain Query Indexing: ", timer.elapsed());
 timer.clear();
 
 timer.start();
 domainQueryParallel(A1, A2);
 timer.stop();
-if printTiming then writeln("Parallel Domain Query Indexing: ", timer.elapsed(), "s");
+if printTiming then writeln("Parallel Domain Query Indexing: ", timer.elapsed());
 timer.clear();
