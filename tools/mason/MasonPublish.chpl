@@ -105,6 +105,7 @@ proc pullRequest(package)
   runCommand('rm -rf mason-registry');
   writeln();
   writeln('----------------------------------------------------');
+  writeln(geturl());
   writeln('Package has been added to a branch of mason-registry');
   writeln('Pull request to be added to master branch of mason-registry has been initiated');
 }
