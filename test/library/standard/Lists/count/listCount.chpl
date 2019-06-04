@@ -10,7 +10,7 @@ config const testIters = 32;
 type listType = int;
 param listLock = true;
 
-var lst1 : List(listType, listLock);
+var lst1 : list(listType, listLock);
 
 writeln(lst1.count(testNum));
 

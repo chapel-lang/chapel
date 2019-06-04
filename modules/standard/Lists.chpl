@@ -18,20 +18,20 @@
  */
 
 /*
-  This module contains the implementation of the List type.
+  This module contains the implementation of the list type.
 
-  A List is a lightweight container similar to an array that is suitable for
+  A list is a lightweight container similar to an array that is suitable for
   building up and iterating over a collection of elements in a structured
   manner.
 
   The highly parallel nature of Chapel means that great care should be taken
-  when performing operations that may invalidate references to List elements.
-  Inserts and removals into the middle of a List are example operations that
-  may invalidate references. Appending an element to the end of a List will
-  never invalidate references to elements contained in the List.
+  when performing operations that may invalidate references to list elements.
+  Inserts and removals into the middle of a list are example operations that
+  may invalidate references. Appending an element to the end of a list will
+  never invalidate references to elements contained in the list.
 
   The following operations may invalidate references to elements contained in
-  a List:
+  a list:
 
       - insert
       - remove
@@ -39,17 +39,17 @@
       - pop
       - clear
 
-  Additionally, all references to List elements are invalidated when the List
+  Additionally, all references to list elements are invalidated when the list
   is deinitialized.
 
   List objects are not parallel safe by default, but can be made parallel safe
-  by setting the param formal `parSafe` to true in any List constructor. When
-  constructed from another List, a List object will inherit the parallel
-  safety mode of its originating List.
+  by setting the param formal `parSafe` to true in any list constructor. When
+  constructed from another list, a list object will inherit the parallel
+  safety mode of its originating list.
 
-  Inserts and removals into a List are O(n) worst case and should be performed
-  with care. Access into a List object is currently O(log n), but is expected
-  to reduce to O(1) in the future.
+  Inserts and removals into a list are O(n) worst case and should be performed
+  with care. Appends into a list have an amortized speed of O(1). Access into
+  a list object is O(1).
 */
 module Lists {
 
@@ -86,9 +86,7 @@ module Lists {
       _sanity(capacity > 0);
       this._etype = _etype;
       //
-      // Use `c_calloc` to avoid calling initializers. TODO: Is use of calloc
-      // safe in a multi-locale context? Michael said that the cast to
-      // _ddata will convert the c_ptr to a wide pointer.
+      // Use `c_calloc` to avoid calling initializers.
       //
       this._data = c_calloc(_etype, capacity):_ddata(_etype);
       this.capacity = capacity;
@@ -108,14 +106,14 @@ module Lists {
   // We can change the lock type later. Use a spinlock for now, even if it
   // is suboptimal in cases where long critical sections have high
   // contention (IE, lots of tasks trying to insert into the middle of this
-  // List, or any operation that is O(n)).
+  // list, or any operation that is O(n)).
   //
   pragma "no doc"
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
   //
-  // Use a wrapper class to let the List class have a const ref receiver even
-  // when `parSafe` is `true` and the List lock is used.
+  // Use a wrapper class to let list methods have a const ref receiver even
+  // when `parSafe` is `true` and the list lock is used.
   //
   pragma "no doc"
   class LockWrapper {
@@ -132,25 +130,24 @@ module Lists {
   }
 
   /*
-    A List is a lightweight container suitable for building up and iterating
-    over a collection of elements in a structured manner. It is intended to
-    replace the use of arrays to perform "vector-like" operations. Unlike a
-    stack, the List type also supports inserts or removals into the middle of
-    the List. The List type is close in spirit to its Python counterpart, with
-    fast O(1) random access and append operations.
+    A list is a lightweight container suitable for building up and iterating
+    over a collection of elements in a structured manner. Unlike a stack, the
+    list type also supports inserts or removals into the middle of the list.
+    The list type is close in spirit to its Python counterpart, with fast O(1)
+    random access and append operations.
 
-    The List type is not parallel safe by default. For situations in which
+    The list type is not parallel safe by default. For situations in which
     such protections are desirable, parallel safety can be enabled by setting
-    `parSafe = true` in any List constructor. A List object constructed from
-    another List object inherits the parallel safety mode of that List by
+    `parSafe = true` in any list constructor. A list object constructed from
+    another list object inherits the parallel safety mode of that list by
     default.
   */
-  record List {
+  record list {
 
-    /* The type of the elements contained in this List. */
+    /* The type of the elements contained in this list. */
     type eltType;
 
-    /* If `true`, this List will perform parallel safe operations. */
+    /* If `true`, this list will perform parallel safe operations. */
     param parSafe;
 
     pragma "no doc"
@@ -175,11 +172,10 @@ module Lists {
     var _totalCapacity = 0;
 
     /*
-      Initializes an empty List containing elements of the given type.
+      Initializes an empty list containing elements of the given type.
 
-      :arg eltType: The type of the elements of this List.
-      :arg parSafe: If `true`, this List will use parallel safe operations.
-        Is `true` by default.
+      :arg eltType: The type of the elements of this list.
+      :arg parSafe: If `true`, this list will use parallel safe operations.
     */
     proc init(type eltType, param parSafe=false) {
       this.eltType = eltType;
@@ -187,14 +183,13 @@ module Lists {
     }
 
     /*
-      Initializes a List containing elements that are copy initialized from
-      the elements in the old List.
+      Initializes a list containing elements that are copy initialized from
+      the elements contained in another list.
 
-      :arg other: The List object to initialize from.
-      :arg parSafe: If `true`, this List will use parallel safe operations.
-        Inherits the value from the other List by default.
+      :arg other: The list object to initialize from.
+      :arg parSafe: If `true`, this list will use parallel safe operations.
     */
-    proc init=(other: List(?t), param parSafe=other.parSafe) {
+    proc init=(other: list(?t), param parSafe=other.parSafe) {
       this.eltType = t;
       this.parSafe = other.parSafe;
       this.complete();
@@ -280,7 +275,7 @@ module Lists {
     inline proc _boundsCheckLeaveOnThrow(i: int) throws {
       if !_withinBounds(i) then {
         _leave();
-        const msg = "List index out of bounds: " + i:string;
+        const msg = "Given list index out of bounds: " + i:string;
         throw new owned
           IllegalArgumentError(msg);
       }
@@ -288,26 +283,26 @@ module Lists {
 
     pragma "no doc"
     proc _makeBlockArray(size: int) {
-      type UnmanagedBlock = unmanaged ListBlock;
       var result = new unmanaged
         ListBlock(unmanaged ListBlock(eltType), size);
       return result;
     }
 
     //
-    // A call to this assumes that if no free blocks remain, then all free
-    // blocks have been filled and we need to resize the blocks array.
+    // A call to this assumes that if no free blocks remain, then all slots in
+    // the last block have been filled and we need to resize the block array.
     //
     pragma "no doc"
     proc _maybeResizeBlockArray() {
-
       const lastBlockIdx = _getBlockIdx(_size);
       if lastBlockIdx < _blocks.capacity then
         return;
 
       var _nblocks = _makeBlockArray(_blocks.capacity * 2);
+
       for i in 1.._blocks.capacity do
         _nblocks[i] = _blocks[i];
+
       delete _blocks;
       _blocks = _nblocks;
     }
@@ -315,7 +310,8 @@ module Lists {
     pragma "no doc"
     proc _maybeAcquireMem(amount: int) {
       //
-      // Should only be in this state after an init or a clear.
+      // TODO
+      // Adopt a new implementation where the first block is always allocated.
       //
       if _blocks == nil then {
         _sanity(_totalCapacity == 0);
@@ -338,17 +334,19 @@ module Lists {
         ref oblock = _blocks[lastBlockIdx];
         lastBlockIdx += 1;
         ref nblock = _blocks[lastBlockIdx];
+
         _sanity(nblock == nil);
         _sanity(oblock != nil);
 
         nblock = new unmanaged ListBlock(eltType, oblock.capacity * 2);
         _totalCapacity += nblock.capacity;
+
         req -= nblock.capacity;
       }
     }
 
     pragma "no doc"
-    proc _maybeReleaseMem(in amount: int) {
+    proc _maybeReleaseMem(amount: int) {
       if _blocks == nil || _totalCapacity == 0 then
         return;
 
@@ -377,8 +375,8 @@ module Lists {
     }
 
     //
-    // Shift all elements after index "idx" one to the left in memory,
-    // possibly resizing.
+    // Shift all elements after index one to the left in memory, possibly
+    // resizing.
     //
     pragma "no doc"
     proc _collapse(idx: int) {
@@ -410,7 +408,7 @@ module Lists {
     }
 
     /*
-      Add an element to the end of this List.
+      Add an element to the end of this list.
 
       :arg x: An element to append.
     */
@@ -453,24 +451,24 @@ module Lists {
     }
 
     /*
-      Extend this List by appending a copy of each element contained in
-      another List.
+      Extend this list by appending a copy of each element contained in
+      another list.
 
-      :arg other: A List containing elements of the same type as those
-        contained in this List.
+      :arg other: A list containing elements of the same type as those
+        contained in this list.
     */
-    proc extend(other: List(?t)) where t == eltType {
+    proc extend(other: list(?t)) where t == eltType {
       _enter();
       _extendGeneric(other);
       _leave();
     }
 
     /*
-      Extend this List by appending a copy of each element contained in an
+      Extend this list by appending a copy of each element contained in an
       array.
 
       :arg other: An array containing elements of the same type as those
-        contained in this List.
+        contained in this list.
     */
     proc extend(other: [?d] ?t) where t == eltType {
       _enter();
@@ -479,13 +477,13 @@ module Lists {
     }
 
     /*
-      Insert an element at a given position in this List, shifting all elements
+      Insert an element at a given position in this list, shifting all elements
       following that index one to the right.
 
       .. warning::
       
-        Inserting an element into this List may invalidate existing references
-        to the elements contained in this List.
+        Inserting an element into this list may invalidate existing references
+        to the elements contained in this list.
 
       :arg i: The index of the element at which to insert.
       :arg x: The element to insert.
@@ -504,13 +502,13 @@ module Lists {
     }
 
     /*
-      Remove the first item from this List whose value is equal to x, shifting
+      Remove the first item from this list whose value is equal to x, shifting
       all elements following the removed item one to the left.
 
       .. warning::
 
-        Removing an element from this List may invalidate existing references
-        to the elements contained in this List.
+        Removing an element from this list may invalidate existing references
+        to the elements contained in this list.
 
       :arg x: The element to remove.
 
@@ -532,22 +530,22 @@ module Lists {
 
       _leave();
 
-      const msg = "No such element in List: " + x:string;
+      const msg = "No such element in list: " + x:string;
       throw new owned
         IllegalArgumentError(msg);
     }
 
     /*
-      Remove the item at the given position in this List, and return it. If no
-      index is specified, remove and return the last item in this List.
+      Remove the item at the given position in this list, and return it. If no
+      index is specified, remove and return the last item in this list.
 
       .. warning::
 
-        Popping an element from this List will invalidate any reference to
-        the element taken while it was contained in this List.
+        Popping an element from this list will invalidate any reference to
+        the element taken while it was contained in this list.
 
       :arg i: The index of the element to remove. Defaults to the last item
-        in this List.
+        in this list.
 
       :return: The item removed.
 
@@ -565,12 +563,12 @@ module Lists {
     }
 
     /*
-      Clear the contents of this List.
+      Clear the contents of this list.
 
       .. warning::
 
-        Clearing the contents of this List will invalidate all existing
-        references to the elements contained in this List.
+        Clearing the contents of this list will invalidate all existing
+        references to the elements contained in this list.
     */
     proc clear() {
       _enter();
@@ -602,7 +600,7 @@ module Lists {
     }
 
     /*
-      Return a zero-based index into this List of the first item whose value
+      Return a one-based index into this list of the first item whose value
       is equal to x.
 
       :arg x: An element to search for.
@@ -627,7 +625,7 @@ module Lists {
 
       _leave();
 
-      const msg = "No such element in List: " + x:string;
+      const msg = "No such element in list: " + x:string;
       throw new owned
         IllegalArgumentError(msg);
 
@@ -636,11 +634,11 @@ module Lists {
     }
 
     /*
-      Return the number of times a given element is found in this List.
+      Return the number of times a given element is found in this list.
 
       :arg x: An element to count.
 
-      :return: The number of times a given element is found in this List.
+      :return: The number of times a given element is found in this list.
       :rtype: `int`
     */
     proc count(x: eltType): int {
@@ -658,38 +656,38 @@ module Lists {
     }
 
     /*
-       Sort the elements of this List in place using their default sort order.
+       Sort the elements of this list in place using their default sort order.
 
        .. warning::
 
-        Sorting the contents of this List may invalidate existing references
-        to the elements contained in this List.
+        Sorting the contents of this list may invalidate existing references
+        to the elements contained in this list.
     */
     proc sort() {
       // TODO: Need to look in the Sort module to see the API.
     }
 
     /*
-      Sort the items of this List in place using a comparator.
+      Sort the items of this list in place using a comparator.
 
       .. warning::
 
-        Sorting the elements of this List may invalidate existing references
-        to the elements contained in this List.
+        Sorting the elements of this list may invalidate existing references
+        to the elements contained in this list.
 
-      :arg comparator: A comparator object used to sort this List.
+      :arg comparator: A comparator object used to sort this list.
     */
     proc sort(comparator) {
       // TODO: Need to look in the Sort module to see the API. 
     }
 
     /*
-      Index this List via subscript. Returns a reference to the element at a
-      given index in this List.
+      Index this list via subscript. Returns a reference to the element at a
+      given index in this list.
 
       :arg i: The index of the element to access.
 
-      :return: An element from this List.
+      :return: An element from this list.
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
@@ -701,7 +699,7 @@ module Lists {
       //
       if false && !_boundsCheck(i) then {
         _leave();
-        const msg = "Bad index into List: " + i:string;
+        const msg = "Bad index into list: " + i:string;
         halt(msg);
       }
 
@@ -712,9 +710,9 @@ module Lists {
     }
 
     /*
-      Produce a serial iterator over the elements of this List.
+      Produce a serial iterator over the elements of this list.
 
-      :yields: A reference to one of the elements contained in this List.
+      :yields: A reference to one of the elements contained in this list.
     */
     iter these() ref {
 
@@ -722,7 +720,7 @@ module Lists {
       // TODO: I'm not even sure of what the best way to WRITE a threadsafe
       // iterator is, _let alone_ whether it should even be threadsafe
       // (I mean, is there even a point when reference/iterator invalidation
-      // is still a thing?
+      // is still a thing?).
       //
       for i in 1.._size do {
         _enter();
@@ -733,7 +731,7 @@ module Lists {
     }
 
     /*
-      Write the contents of this List to a channel.
+      Write the contents of this list to a channel.
 
       :arg ch: A channel to write to.
 
@@ -768,9 +766,9 @@ module Lists {
     }
 
     /*
-      Returns `true` if this List contains zero elements.
+      Returns `true` if this list contains zero elements.
 
-      :return: `true` if this List is empty.
+      :return: `true` if this list is empty.
       :rtype: `bool`
     */
     inline proc isEmpty(): bool {
@@ -781,7 +779,7 @@ module Lists {
     }
 
     /*
-      The current number of elements contained in this List.
+      The current number of elements contained in this list.
     */
     inline proc const size {
       _enter();
@@ -792,7 +790,7 @@ module Lists {
 
     /*
       Returns a new DefaultRectangular array containing a copy of each of the
-      elements contained in this List.
+      elements contained in this list.
 
       :return: A new DefaultRectangular array.
     */
@@ -812,35 +810,35 @@ module Lists {
       return result;
     }
 
-  } // End class List!
+  } // End record "list".
 
   /*
-    Clear the contents of this List, then extend this now empty List with the
-    elements contained in another List.
+    Clear the contents of this list, then extend this now empty list with the
+    elements contained in another list.
 
     .. warning::
 
-      Assigning another List to this List will invalidate any references to
-      elements previously contained in this List.
+      Assigning another list to this list will invalidate any references to
+      elements previously contained in this list.
 
-    :arg lhs: The List object to assign to.
-    :arg rhs: The List object to assign from. 
+    :arg lhs: The list object to assign to.
+    :arg rhs: The list object to assign from. 
   */
-  proc =(ref lhs: List(?t, ?), const ref rhs: List(t, ?)) {
+  proc =(ref lhs: list(?t, ?), const ref rhs: list(t, ?)) {
     lhs.clear();
     lhs.extend(rhs);
   }
 
   /*
-    Returns `true` if the contents of two Lists are the same.
+    Returns `true` if the contents of two lists are the same.
 
-    :arg a: A List to compare.
-    :arg b: A List to compare.
+    :arg a: A list to compare.
+    :arg b: A list to compare.
 
-    :return: `true` if the contents of two Lists are equal.
+    :return: `true` if the contents of two lists are equal.
     :rtype: `bool`
   */
-  proc ==(const ref a: List(?t, ?), const ref b: List(t, ?)): bool {
+  proc ==(const ref a: list(?t, ?), const ref b: list(t, ?)): bool {
     if a.size != b.size then
       return false;
 
@@ -852,17 +850,17 @@ module Lists {
   }
 
   /*
-    Return `true` if the contents of two Lists are not the same.
+    Return `true` if the contents of two lists are not the same.
 
-    :arg a: A List to compare.
-    :arg b: A List to compare.
+    :arg a: A list to compare.
+    :arg b: A list to compare.
 
-    :return: `true` if the contents of two Lists are not equal.
+    :return: `true` if the contents of two lists are not equal.
     :rtype: `bool`
   */
-  proc !=(const ref a: List(?t, ?), const ref b: List(t, ?)): bool {
+  proc !=(const ref a: list(?t, ?), const ref b: list(t, ?)): bool {
     return !(a == b);
   }
 
-} // End module Lists!
+} // End module "Lists".
 

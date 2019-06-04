@@ -4,7 +4,7 @@ type listType = int;
 param listLock = true;
 
 
-var lst: List(listType, listLock);
+var lst: list(listType, listLock);
 
 writeln(lst.isEmpty());
 

@@ -4,9 +4,9 @@ use Lists;
 config type listType = int;
 config param listLock = true;
 
-// Extend the same List with the contents of an array.
+// Extend the same list with the contents of an array.
 {
-  var lst1 = new List(listType, listLock);
+  var lst1 = new list(listType, listLock);
   var arr1: [1..5] listType = [6, 7, 8, 9, 10];
 
   lst1.extend(arr1);

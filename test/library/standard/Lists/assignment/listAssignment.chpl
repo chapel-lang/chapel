@@ -3,12 +3,12 @@ use Lists;
 type listType = int;
 param listLock = true;
 
-var lst1: List(listType, listLock);
+var lst1: list(listType, listLock);
 
 for i in 1..8 do
   lst1.append(i);
 
-var lst2: List(listType, listLock);
+var lst2: list(listType, listLock);
 
 writeln(lst1);
 writeln(lst2);

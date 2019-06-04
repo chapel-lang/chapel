@@ -6,7 +6,7 @@ config const testIters = 1024;
 type listType = int;
 param listLock = true;
 
-var lst: List(listType, listLock);
+var lst: list(listType, listLock);
 
 for i in 1..8 do {
   lst.append(i);

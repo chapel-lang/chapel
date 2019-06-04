@@ -6,12 +6,12 @@ config param listLock = true;
 
 // Extend a List with the contents of another list.
 {
-  var lst1 = new List(listType, listLock);
+  var lst1 = new list(listType, listLock);
 
   for i in 1..5 do
     lst1.append(i:listType);
 
-  var lst2 = new List(listType, listLock);
+  var lst2 = new list(listType, listLock);
   lst2.extend(lst1);
 
   writeln(lst1);

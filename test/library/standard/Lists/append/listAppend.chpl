@@ -5,7 +5,7 @@ config param listLock = true;
 
 config const stop = 16;
 
-var lst = new List(listType, listLock);
+var lst = new list(listType, listLock);
 
 for i in 1..stop do {
   var x = i:listType;

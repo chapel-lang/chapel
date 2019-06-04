@@ -5,7 +5,7 @@ config param listLock = true;
 
 config const testIters = 8;
 
-var lst = new List(listType, listLock);
+var lst = new list(listType, listLock);
 
 try {
   lst.indexOf(0);

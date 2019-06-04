@@ -4,7 +4,7 @@ type listType = int;
 param listLock = true;
 config const testIters = 16;
 
-var lst: List(listType, listLock);
+var lst: list(listType, listLock);
 
 
 for i in 1..testIters do {

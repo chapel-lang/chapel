@@ -3,7 +3,7 @@ use Lists;
 type listType = int;
 param listLock = true;
 
-var lst = new List(listType, listLock);
+var lst = new list(listType, listLock);
 
 for i in 1..8 do
   lst.append(i);
@@ -25,7 +25,7 @@ for i in 1..lst.size by -1 do
 
 writeln(lst);
 
-// Perform a in place reversal of the list.
+// Perform an in place reversal of the list.
 for i in 1..(lst.size / 2) do {
   ref a = lst[lst.size - i + 1];
   ref b = lst[i];

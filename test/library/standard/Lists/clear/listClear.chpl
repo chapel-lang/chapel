@@ -6,7 +6,7 @@ config param listLock = true;
 
 config const testIters = 2 * 1024 * 1024;
 
-var lst1 = new List(listType, listLock);
+var lst1 = new list(listType, listLock);
 
 writeln(lst1.size);
 
