@@ -983,18 +983,28 @@ static void processSyntacticDistributions(CallExpr* call) {
 static void processManagedNew(CallExpr* newCall) {
   SET_LINENO(newCall);
   bool argListError = false;
+
   if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
     if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
       if (callManager->numActuals() == 1) {
         if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
           if (!callClass->isPrimitive() &&
               !isUnresolvedSymExpr(callClass->baseExpr)) {
-            bool isunmanaged = callManager->isNamed("_to_unmanaged") ||
-                               callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
-            bool isborrowed = callManager->isNamed("_to_borrowed") ||
-                              callManager->isPrimitive(PRIM_TO_BORROWED_CLASS);
-            bool isowned = callManager->isNamed("_owned");
-            bool isshared = callManager->isNamed("_shared");
+            bool isunmanaged = callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
+            bool isborrowed = callManager->isPrimitive(PRIM_TO_BORROWED_CLASS);
+            bool isowned = false;
+            bool isshared = false;
+            if (SymExpr* se = toSymExpr(callManager->baseExpr)) {
+              if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+                Type* ct = canonicalDecoratedClassType(ts->type);
+                if (ct == dtOwned)
+                  isowned = true;
+                else if (ct == dtShared)
+                  isshared = true;
+                else
+                  INT_ASSERT(!callManager->isNamed("_owned"));
+              }
+            }
 
             if (isunmanaged || isborrowed || isowned || isshared) {
               callClass->remove();
@@ -1600,7 +1610,7 @@ static bool isCallToTypeConstructor(CallExpr* call) {
 
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     if (TypeSymbol* ts = expandTypeAlias(se)) {
-      if (isAggregateType(ts->type) == true) {
+      if (isAggregateType(ts->type) || isDecoratedClassType(ts->type)) {
         // Ensure it is not nested within a new expr
         CallExpr* parent = toCallExpr(call->parentExpr);
 
@@ -1627,7 +1637,12 @@ static void normalizeCallToTypeConstructor(CallExpr* call) {
   if (call->getStmtExpr() != NULL) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
       if (TypeSymbol* ts = expandTypeAlias(se)) {
-        if (AggregateType* at = toAggregateType(ts->type)) {
+        AggregateType* at = toAggregateType(ts->type);
+        if (isDecoratedClassType(ts->type)) {
+          at = toAggregateType(canonicalDecoratedClassType(ts->type));
+        }
+
+        if (at) {
           SET_LINENO(call);
 
           if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
@@ -3181,7 +3196,7 @@ static bool isGenericActual(Expr* expr) {
     return true;
   if (SymExpr* se = toSymExpr(expr))
     if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
-      if (AggregateType* at = toAggregateType(canonicalClassType(ts->type)))
+      if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type)))
         if (at->isGeneric() && !at->isGenericWithDefaults())
           return true;
 
@@ -3421,7 +3436,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     } else {
       // For nested calls in PRIM_TO_UNMANAGED_CLASS, where the
       // called type is a class or an unmanaged class.
-      Type* t = canonicalClassType(theType);
+      Type* t = canonicalDecoratedClassType(theType);
       AggregateType* at = toAggregateType(t);
       INT_ASSERT(at);
 

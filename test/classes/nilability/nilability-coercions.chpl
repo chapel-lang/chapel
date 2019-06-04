@@ -3,6 +3,11 @@ module test {
 
   class Child : Parent { var c: int; }
 
+  proc acceptsParent(arg:borrowed Parent) { }
+  proc acceptsParentQ(arg:borrowed Parent?) { }
+  proc acceptsChild(arg:borrowed Child) { }
+  proc acceptsChildQ(arg:borrowed Child?) { }
+
   proc main() {
     var c = (new owned Child(1, 2)).borrow();
 
@@ -10,10 +15,12 @@ module test {
     var cu = c:unmanaged;
     var cuq = c:unmanaged?;
     var cb = c:borrowed;
+    var cbq = c:borrowed?;
     writeln();
     writeln("cu:", cu.type:string);
     writeln("cuq:", cuq.type:string);
     writeln("cb:", cb.type:string);
+    writeln("cbq:", cbq.type:string);
     writeln();
 
     // unmanaged -> borrowed?
@@ -46,6 +53,14 @@ module test {
       var z:borrowed = cu;
       writeln(z.type:string, " ", z);
     }
+    // method dispatch with unmanaged
+    {
+      acceptsParent(cu);
+      acceptsParentQ(cu);
+      acceptsChild(cu);
+      acceptsChildQ(cu);
+    }
+
 
     // unmanaged ? -> borrowed ?
     {
@@ -57,6 +72,11 @@ module test {
       var z:borrowed? = cuq;
       writeln(z.type:string, " ", z);
     }
+    // method dispatch with unmanaged ?
+    {
+      acceptsParentQ(cuq);
+      acceptsChildQ(cuq);
+    }
 
     // borrowed -> borrowed ?
     {
@@ -67,6 +87,19 @@ module test {
       writeln(y.type:string, " ", y);
       var z:borrowed? = cb;
       writeln(z.type:string, " ", z);
+    }
+    // method dispatch with borrowed
+    {
+      acceptsParent(cb);
+      acceptsParentQ(cb);
+      acceptsChild(cb);
+      acceptsChildQ(cb);
+    }
+
+    // method dispatch with borrowed?
+    {
+      acceptsParentQ(cbq);
+      acceptsChildQ(cbq);
     }
   }
 }

@@ -1988,6 +1988,7 @@ const char* astr_chpl_manager = NULL;
 const char* astr_forallexpr = NULL;
 const char* astr_forexpr = NULL;
 const char* astr_loopexpr_iter = NULL;
+const char* astrPostfixBang = NULL;
 
 void initAstrConsts() {
   astrSdot    = astr(".");
@@ -2012,6 +2013,8 @@ void initAstrConsts() {
   astr_forallexpr    = astr("chpl__forallexpr");
   astr_forexpr       = astr("chpl__forexpr");
   astr_loopexpr_iter = astr("chpl__loopexpr_iter");
+
+  astrPostfixBang = astr("postfix!");
 }
 
 /************************************* | **************************************

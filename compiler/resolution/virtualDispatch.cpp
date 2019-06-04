@@ -510,8 +510,8 @@ static bool isSubType(Type* sub, Type* super) {
     AggregateType* subAt = toAggregateType(sub);
     Type* useSuper = super;
     if (classesWithSameKind(sub, super)) {
-      subAt = toAggregateType(canonicalClassType(sub));
-      useSuper = canonicalClassType(super);
+      subAt = toAggregateType(canonicalDecoratedClassType(sub));
+      useSuper = canonicalDecoratedClassType(super);
     }
     if (subAt) {
       forv_Vec(AggregateType, parent, subAt->dispatchParents) {

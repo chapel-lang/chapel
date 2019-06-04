@@ -617,9 +617,6 @@ module ChapelBase {
   inline proc >>(param a: int(?w), param b: integral) param return __primitive(">>", a, b);
   inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
 
-  inline proc postfix!(x:unmanaged) return x;
-  inline proc postfix!(x:borrowed) return x;
-
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed?) {
     // Check only if --nil-checks is enabled
@@ -631,9 +628,23 @@ module ChapelBase {
     }
   }
 
+  inline proc postfix!(type t:unmanaged) type {
+    return _to_nonnil(t);
+  }
+  inline proc postfix!(type t:borrowed) type {
+    return _to_nonnil(t);
+  }
+
+  inline proc postfix!(x:unmanaged!) {
+    return _to_nonnil(x);
+  }
+  inline proc postfix!(x:borrowed!) {
+    return _to_nonnil(x);
+  }
+
   pragma "always propagate line file info"
   inline proc postfix!(x:unmanaged?) {
-    checkNotNil(x);
+    checkNotNil(_to_borrowed(x));
     return _to_nonnil(x);
   }
   pragma "always propagate line file info"
@@ -1295,15 +1306,32 @@ module ChapelBase {
   {
     return __primitive("cast", t, x);
   }
+  inline proc _cast(type t:unmanaged?, x:borrowed!)
+    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
+  {
+    return __primitive("cast", t, x);
+  }
+
   // casting to unmanaged, no class downcast
-  inline proc _cast(type t:unmanaged, x:borrowed)
+  inline proc _cast(type t:unmanaged!, x:borrowed!)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
   }
 
   // casting away nilability, no class downcast
-  inline proc _cast(type t:borrowed, x:borrowed?) throws
+  inline proc _cast(type t:borrowed!, x:unmanaged?) throws
+    where isSubtype(_to_nonnil(x.type),t)
+  {
+    if x == nil {
+      throw new owned NilClassError();
+    }
+    return __primitive("cast", t, x);
+  }
+
+
+  // casting away nilability, no class downcast
+  inline proc _cast(type t:borrowed!, x:borrowed?) throws
     where isSubtype(_to_nonnil(x.type),t)
   {
     if x == nil {
@@ -1313,7 +1341,7 @@ module ChapelBase {
   }
 
   // casting away nilability, no class downcast
-  inline proc _cast(type t:unmanaged, x:borrowed?) throws
+  inline proc _cast(type t:unmanaged!, x:borrowed?) throws
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     if x == nil {
@@ -1322,10 +1350,8 @@ module ChapelBase {
     return __primitive("cast", t, x);
   }
 
-  // dynamic cast handles class casting based upon runtime class type
-  // this also might be called a downcast
-  // this version handles casting to non-nil borrowed
-  inline proc _cast(type t:borrowed, x:borrowed?) throws
+  // this version handles downcast to non-nil borrowed
+  inline proc _cast(type t:borrowed!, x:borrowed?) throws
     where isSubtype(t,_to_nonnil(x.type)) && (_to_nonnil(x.type) != t)
   {
     if x == nil {
@@ -1339,7 +1365,7 @@ module ChapelBase {
     return _to_nonnil(_to_borrowed(tmp));
   }
 
-  // this version handles casting to nilable borrowed
+  // this version handles downcast to nilable borrowed
   inline proc _cast(type t:borrowed?, x:borrowed?)
     where isSubtype(t,x.type) && (x.type != t)
   {
@@ -1351,10 +1377,9 @@ module ChapelBase {
   }
 
 
-  // this version handles casting to non-nil unmanaged
-  inline proc _cast(type t:unmanaged, x:borrowed?) throws
-    where isSubtype(t,_to_nonnil(_to_unmanaged(x.type))) &&
-          (_to_nonnil(_to_unmanaged(x.type)) != t)
+  // this version handles downcast to non-nil unmanaged
+  inline proc _cast(type t:unmanaged!, x:borrowed?) throws
+    where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
   {
     if x == nil {
       throw new owned NilClassError();
@@ -1367,9 +1392,9 @@ module ChapelBase {
     return _to_nonnil(_to_unmanaged(tmp));
   }
 
-  // this version handles casting to nilable unmanaged
+  // this version handles downcast to nilable unmanaged
   inline proc _cast(type t:unmanaged?, x:borrowed?)
-    where isSubtype(t,_to_unmanaged(x.type)) && (_to_unmanaged(x.type) != t)
+    where isProperSubtype(t,_to_unmanaged(x.type))
   {
     if x == nil {
       return nil;
@@ -1377,6 +1402,18 @@ module ChapelBase {
     var tmp = __primitive("dynamic_cast", t, x);
     return _to_nilable(_to_unmanaged(tmp));
   }
+
+  // this version handles downcast to nilable unmanaged
+  inline proc _cast(type t:unmanaged?, x:borrowed!)
+    where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
+  {
+    if x == nil {
+      return nil;
+    }
+    var tmp = __primitive("dynamic_cast", t, x);
+    return _to_nilable(_to_unmanaged(tmp));
+  }
+
 
 
   //
@@ -1602,15 +1639,22 @@ module ChapelBase {
 
   // implements 'delete' statement
   pragma "no borrow convert"
-  inline proc chpl__delete(arg)
-    where isBorrowedOrUnmanagedClassType(arg.type) {
+  inline proc chpl__delete(arg) {
 
     if chpl_isDdata(arg.type) then
       compilerError("cannot delete data class");
-
     if arg.type == _nilType then
       compilerError("should not delete 'nil'");
-
+    if isSubtype(arg.type, _owned) then
+      compilerError("'delete' is not allowed on an owned class type");
+    if isSubtype(arg.type, _shared) then
+      compilerError("'delete' is not allowed on a shared class type");
+    if isRecord(arg) then
+      // special case for records as a more likely occurrence
+      compilerError("'delete' is not allowed on records");
+    if !isSubtype(arg.type, borrowed?) then
+      compilerError("'delete' is not allowed on non-class type ",
+                    arg.type:string);
     if !isSubtype(arg.type, unmanaged?) then
       compilerError("'delete' can only be applied to unmanaged classes");
 
@@ -1625,21 +1669,6 @@ module ChapelBase {
   proc chpl__delete(arr: []) {
     forall a in arr do
       chpl__delete(a);
-  }
-
-  // report an error when 'delete' is inappropriate
-  pragma "no borrow convert"
-  proc chpl__delete(arg) {
-    if isSubtype(arg.type, _owned) then
-      compilerError("'delete' is not allowed on an owned class type");
-    else if isSubtype(arg.type, _shared) then
-      compilerError("'delete' is not allowed on a shared class type");
-    else if isRecord(arg) then
-      // special case for records as a more likely occurrence
-      compilerError("'delete' is not allowed on records");
-    else
-      compilerError("'delete' is not allowed on non-class type ",
-                    arg.type:string);
   }
 
   // delete two or more things
@@ -2104,8 +2133,6 @@ module ChapelBase {
 
   proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param return true;
   proc isBorrowedOrUnmanagedClassType(type t:borrowed) param return true;
-  proc isBorrowedOrUnmanagedClassType(type t:unmanaged?) param return true;
-  proc isBorrowedOrUnmanagedClassType(type t:borrowed?) param return true;
   proc isBorrowedOrUnmanagedClassType(type t) param return false;
 
   proc isRecordType(type t) param {

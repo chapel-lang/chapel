@@ -171,7 +171,7 @@ ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent) {
 bool isReduceOp(Type* type) {
   bool retval = false;
 
-  type = canonicalClassType(type);
+  type = canonicalDecoratedClassType(type);
 
   if (type->symbol->hasFlag(FLAG_REDUCESCANOP) == true) {
     retval = true;

@@ -238,8 +238,10 @@ void ResolveScope::addBuiltIns() {
   extend(dtIteratorRecord->symbol);
   extend(dtIteratorClass->symbol);
   extend(dtBorrowed->symbol);
+  extend(dtBorrowedNonNilable->symbol);
   extend(dtBorrowedNilable->symbol);
   extend(dtUnmanaged->symbol);
+  extend(dtUnmanagedNonNilable->symbol);
   extend(dtUnmanagedNilable->symbol);
 
   extend(dtMethodToken->symbol);

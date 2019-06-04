@@ -222,7 +222,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     SymExpr*       base      = toSymExpr (call->get(1));
     const char*    fieldName = get_string(call->get(2));
 
-    Type*          t         = canonicalClassType(base->getValType());
+    Type*          t         = canonicalDecoratedClassType(base->getValType());
     AggregateType* at        = toAggregateType(t);
     VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
 
@@ -282,7 +282,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
       AggregateType* ag = toAggregateType(st);
 
-      st = canonicalClassType(ag->getField("_instance")->type);
+      st = canonicalDecoratedClassType(ag->getField("_instance")->type);
     } else {
       // Try to work around some resolution order issues
       st = resolveTypeAlias(subExpr);
