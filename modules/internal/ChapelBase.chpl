@@ -639,7 +639,6 @@ module ChapelBase {
     return _to_nonnil(x);
   }
   inline proc postfix!(x:borrowed!) {
-    checkNotNil(x);
     return _to_nonnil(x);
   }
 

@@ -116,6 +116,8 @@ bool classesWithSameKind(Type* a, Type* b) {
   return aDecorator == bDecorator;
 }
 
+// Returns the AggregateType referred to be a DecoratedClassType
+// and leaves other types (e.g. owned(SomeClass) unmodified).
 Type* canonicalDecoratedClassType(Type* t) {
   if (AggregateType* at = toAggregateType(t))
     if (isClass(at))
@@ -127,6 +129,8 @@ Type* canonicalDecoratedClassType(Type* t) {
   return t;
 }
 
+// As with canonicalDecoratedClassType but also handles dtBorrowedNilable etc
+// and for managed types like owned SomeClass?, returns SomeClass.
 Type* canonicalClassType(Type* t) {
 
   if (t == dtBorrowed ||
