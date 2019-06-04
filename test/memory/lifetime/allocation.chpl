@@ -4,9 +4,9 @@ use Time;
 // trial to not only 'warm up the cache' but also give jemalloc the chance to
 // warmup as well, allowing it to request more memory for the heap upfront rather
 // than on-demand.
-config const printTiming : bool;
-config const numTrials : int = 10;
-config const allocationsPerTrial : int = 1024 * 1024;
+config const printTiming : bool = true;
+config const numTrials : int = 3;
+config const allocationsPerTrial : int = 16 * 1024 * 1024;
 
 proc doUnmanagedAllocation() {
   var timer = new Timer();
