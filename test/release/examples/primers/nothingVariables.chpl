@@ -5,8 +5,14 @@
    class/record fields. A variable or field that is of type ``nothing`` is
    removed by the compiler and doesn't exist during program execution.
 
-   The ``nothing`` type is not to be confused with the ``void`` type, which
-   is the type of a function that does not return any value.
+   The value ``none`` has type type ``nothing`` and can be assigned to a
+   ``nothing`` variable, or returned from a function with ``nothing``
+   return type.
+
+   .. note:: 
+
+     The ``nothing`` type is not to be confused with the ``void`` type, which
+     is the type of a function that does not return any value.
 */
 
 // Nothing variables
