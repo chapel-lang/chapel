@@ -38,7 +38,7 @@ proc main(args: [] string) {
 
   // Make everything uppercase
   forall d in data do
-    d -= ("a".byte(1) - "A".byte(1));
+    d -= (ascii("a") - ascii("A"));
 
   writeFreqs(data, 1);
   writeFreqs(data, 2);
@@ -99,7 +99,7 @@ const toChar: [0..3] string = ["A", "C", "T", "G"];
 var toNum: [0..127] int;
 
 forall i in toChar.domain do
-  toNum[toChar[i].byte(1)] = i;
+  toNum[ascii(toChar[i])] = i;
 
 
 inline proc decode(in data, param nclSize) {
@@ -129,14 +129,14 @@ inline proc hash(str, beg, param size) {
 proc string.toBytes() {
   var bytes: [1..this.length] uint(8);
   for (b, i) in zip(bytes, 1..) do
-    b = this.byte(i);
+    b = ascii(this[i]);
   return bytes;
 }
 
 
 inline proc startsWithThree(data) {
-  return data[1] == ">".byte(1) &&
-         data[2] == "T".byte(1) &&
-         data[3] == "H".byte(1);
+  return data[1] == ascii(">") && 
+         data[2] == ascii("T") && 
+         data[3] == ascii("H");
 }
 
