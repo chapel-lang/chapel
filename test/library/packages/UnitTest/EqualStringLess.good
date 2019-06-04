@@ -1,0 +1,4 @@
+uncaught AssertionError: Both String are equal
+'equal string' == 'equal string'
+  ./UnitTest.chpl:581: thrown here
+  EqualStringLess.chpl:4: uncaught here
