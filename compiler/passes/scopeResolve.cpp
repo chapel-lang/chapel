@@ -1535,7 +1535,7 @@ static void adjustTypeMethodsOnClasses() {
 
     ArgSymbol* thisArg = toArgSymbol(fn->_this);
     Type*      thisType = thisArg->type;
-    if (! isClass(thisType)) continue; // handle only classes
+    if (! isClass(thisType)) continue; // handle only undecorated classes
 
     if (BlockStmt* typeBlock = thisArg->typeExpr) {
       // Remove the type block, ensuring that its information is preserved.
