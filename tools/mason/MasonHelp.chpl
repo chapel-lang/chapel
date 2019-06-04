@@ -410,6 +410,7 @@ proc masonCleanHelp() {
   writeln();       
 }
 
+
 proc masonDocHelp() {
   writeln("Generate documentation for a mason package using chpldoc");
   writeln();
@@ -423,4 +424,15 @@ proc masonDocHelp() {
   writeln("Requires that chpldoc is set up in order to work.");
   writeln("For instructions on setting up chpldoc, please view its documentation.");
   writeln();
+
+
+proc masonPublishHelp(){
+  writeln("Publish a package to the mason-registry repository");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason publish [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                   Display this message");
+  writeln(); 
 }
