@@ -17,7 +17,19 @@ use MasonEnv;
 use MasonNew;
 use MasonModify;
 
-proc masonPublish(){
+proc masonPublish(args) throws {
+  if args.size > 2 {
+    for arg in args[2..] {
+      if arg == '-h' || arg == '--help'{
+        masonPublishHelp();
+        exit(0);
+      }
+    }
+  }
+  if geturl() == '' {
+    writeln("Must have package set up as git repo to publish to mason-registry");
+    exit(0);
+  }
   forkMasonReg();
   branchMasonReg();
   var package = addPackageToBricks();
@@ -26,28 +38,35 @@ proc masonPublish(){
 
 
 proc forkMasonReg(){
-  var usernameurl = geturl();
-  var tail = usernameurl.find("/")-1: int;
-  var head = usernameurl.find(":")+1: int;
-  var username = usernameurl(head..tail);
   var ret = runCommand("git clone https://github.com/oplambeck/mason-registry mason-registry", true);
   return ret;
 }
 
 proc geturl(){
-  var url = runCommand("git config --get remote.origin.url", true);
+  var url = runCommand("git config --get remote.origin.url",true);
   return url;
 }
 
 proc branchMasonReg(){
-  var localEnv = runCommand("pwd", true):string;
-  var Env = localEnv(1..localEnv.length-1);
+  var name = getName();
+  const localEnv = getEnv("PWD");
+  const projectname = getProjectHome(localEnv);
+  var Env = localEnv(1..localEnv.length);
+  const parsePackageName = open(projectname + "/Mason.toml", iomode.r);
   const masonreg = Env + "/mason-registry/";
-  const branchCommand = "git checkout -b newPackageRequest": string;
+  const branchCommand = "git checkout -b "+ name: string;
   var ret = gitC(masonreg, branchCommand, true);
   return ret;
 }
 
+proc getName(){
+  const cwd = getEnv("PWD");
+  const projectHome = getProjectHome(cwd);
+  const toParse = open(projectHome + "/Mason.toml", iomode.r);
+  var tomlFile = new owned(parseToml(toParse));
+  const name = tomlFile['brick']['name'].s;
+  return name;
+}
 proc addPackageToBricks() : string{
   var url = geturl();
 
@@ -72,13 +91,20 @@ proc addPackageToBricks() : string{
 
 proc pullRequest(package)
 {
+  var name = getName();
   const cwd = getEnv("PWD");
   const projectHome = getProjectHome(cwd);
   here.chdir(cwd + "/mason-registry/Bricks/");
   runCommand("git add " + package, true);
   runCommand('git commit -m' + package, true);
   here.chdir(cwd +"/mason-registry/");
-  runCommand('git push --set-upstream origin newPackageRequest', true);
+  runCommand('git push --set-upstream origin ' + name, true);
   runCommand('git push', true);
-  runCommand('git request-pull master https://github.com/oplambeck/mason-registry newPackageRequest', true);
+  runCommand('git request-pull origin/master https://github.com/oplambeck/mason-registry '+name, true);
+  here.chdir(cwd);
+  runCommand('rm -rf mason-registry');
+  writeln();
+  writeln('----------------------------------------------------');
+  writeln('Package has been added to a branch of mason-registry');
+  writeln('Pull request to be added to master branch of mason-registry has been initiated');
 }
