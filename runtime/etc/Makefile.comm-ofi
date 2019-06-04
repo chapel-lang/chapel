@@ -33,7 +33,7 @@ LIBS += -lfabric -ldl
 #
 LD = $(CXX)
 
-ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
+ifneq (, $(findstring mpi, $(CHPL_MAKE_LAUNCHER) $(CHPL_COMM_OFI_OOB)))
   MPI_LIB_NAME = mpi
   ifneq ($(MPI_DIR),)
     ifneq ($(wildcard $(MPI_DIR)/lib64),)
