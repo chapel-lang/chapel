@@ -1,0 +1,8 @@
+Publish a package to the mason-registry repository
+
+Usage:
+    mason publish [options]
+
+Options:
+    -h, --help                   Display this message
+
