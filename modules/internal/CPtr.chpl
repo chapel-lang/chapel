@@ -565,11 +565,14 @@ module CPtr {
 
     :arg eltType: the type of the elements to allocate
     :arg size: the number of elements to allocate space for
+    :arg alignment: the memory alignment of the allocation (optional)
     :returns: a c_ptr(eltType) to allocated memory
     */
-  inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
+  inline proc c_malloc(type eltType, size: integral, alignment : integral = 0) : c_ptr(eltType) {
+    extern proc chpl_memalign(boundary : size_t, size : size_t) : c_void_ptr;
     const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
-    return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
+    if alignment != 0 then return chpl_memalign(alignment:uint, alloc_size):c_ptr(eltType);
+    else return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
@@ -657,5 +660,4 @@ module CPtr {
     memset(s, c.safeCast(c_int), n.safeCast(size_t));
     return s;
   }
-
 }
