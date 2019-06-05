@@ -205,7 +205,7 @@ module Lists {
     // of list elements should go through this function.
     //
     pragma "no doc"
-    inline proc _getRef(idx: int) ref {
+    proc _getRef(idx: int) ref {
       _sanity(idx >= 1 && idx <= _totalCapacity);
       const zpos = idx - 1;
       const blockIdx = _getBlockIdx(zpos);
@@ -558,7 +558,7 @@ module Lists {
       // Manually call destructors on each currently allocated element. Use
       // one-based indexing here since we're going through _getRef().
       //
-      for i in 1.._size {
+      forall i in 1.._size {
         ref item = _getRef(i);
         _destroy(item);
       }
@@ -652,7 +652,14 @@ module Lists {
       :arg comparator: A comparator used to sort this list.
     */
     proc sort(comparator=Sort.defaultComparator) {
-      compilerError("The sort method is not implemented yet.");
+      //
+      // TODO: This is not ideal, but the Sort API needs to be adjusted before
+      // we can sort over lists in place.
+      //
+      var arr = toArray();
+      clear();
+      Sort.sort(arr, comparator);
+      extend(arr);
     }
 
     /*
@@ -662,12 +669,16 @@ module Lists {
       :arg i: The index of the element to access.
 
       :return: An element from this list.
-
-      :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc const this(i: int) ref throws {
+    proc const this(i: int) ref {
       _enter();
-      try _boundsCheckLeaveOnThrow(i);
+
+      if boundsChecking && !_withinBounds(i) {
+        _leave();
+        const msg = "Bad list index: " + i:string;
+        halt(msg);
+      }
+
       ref result = _getRef(i);
       _leave();
       return result;
@@ -704,27 +715,15 @@ module Lists {
     proc writeThis(ch: channel) {
       _enter();
 
-      //
-      // TODO TODO TODO TODO
-      //
-      // Presently, if I try to let these calls throw, then they will trigger
-      // an error in modules/standard/IO.chpl along the lines of "error: call
-      // to throwing function writeThis without throws, try, or try!", so
-      // I am not sure what the most idiomatic way to write this is.
-      //
-      try {
-        ch.write("[");
+      ch <~> "[";
 
-        for i in 1..(_size - 1) do
-          ch.write(_getRef(i), ", ");
+      for i in 1..(_size - 1) do
+        ch <~> _getRef(i) <~> ", ";
 
-        if _size > 0 then
-          ch.write(_getRef(_size));
+      if _size > 0 then
+        ch <~> _getRef(_size);
 
-        ch.write("]");
-      } catch e {
-        _leave();
-      }
+      ch <~> "]";
 
       _leave();
     }
@@ -735,7 +734,7 @@ module Lists {
       :return: `true` if this list is empty.
       :rtype: `bool`
     */
-    inline proc isEmpty(): bool {
+    inline proc const isEmpty(): bool {
       _enter();
       var result = (_size == 0);
       _leave();
@@ -803,11 +802,12 @@ module Lists {
     if a.size != b.size then
       return false;
 
+    //
+    // TODO: Make this a forall loop eventually.
+    //
     for i in 1..(a.size) do
-      try! {
-        if a[i] != b[i] then
-          return false;
-      }
+      if a[i] != b[i] then
+        return false;
 
     return true;
   }
