@@ -1,16 +1,16 @@
 use Lists;
 
 config type listType = int;
-config param listLock = false;
+config param listLock = true;
 
 config const testIters = 1024;
 
-var lst1 = new List(listType, listLock);
+var lst1 = new list(listType, listLock);
 
 for i in 1..testIters do
   lst1.append(i);
 
-var lst2 = new List(listType, listLock);
+var lst2 = new list(listType, listLock);
 
 writeln(lst1 != lst2);
 

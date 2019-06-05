@@ -42,14 +42,14 @@
   Additionally, all references to list elements are invalidated when the list
   is deinitialized.
 
-  List objects are not parallel safe by default, but can be made parallel safe
-  by setting the param formal `parSafe` to true in any list constructor. When
-  constructed from another list, a list object will inherit the parallel
-  safety mode of its originating list.
+  Lists are not parallel safe by default, but can be made parallel safe by
+  setting the param formal `parSafe` to true in any list constructor. When
+  constructed from another list, the new list will inherit the parallel safety
+  mode of its originating list.
 
   Inserts and removals into a list are O(n) worst case and should be performed
   with care. Appends into a list have an amortized speed of O(1). Access into
-  a list object is O(1).
+  a list is O(1).
 */
 module Lists {
 
@@ -72,37 +72,6 @@ module Lists {
   }
 
   //
-  // Basically just a wrapper around _ddata at this point, with one based
-  // indexing to avoid logical errors.
-  //
-  pragma "no doc"
-  class ListBlock {
-
-    type _etype;
-    var _data: _ddata(_etype);
-    const capacity: int;
-
-    proc init(type _etype, capacity: int) {
-      _sanity(capacity > 0);
-      this._etype = _etype;
-      //
-      // Use `c_calloc` to avoid calling initializers.
-      //
-      this._data = c_calloc(_etype, capacity):_ddata(_etype);
-      this.capacity = capacity;
-    }
-
-    proc deinit() {
-      c_free(_data:c_void_ptr);
-    }
-
-    inline proc this(i: int) ref {
-      _sanity(i >= 1 && i <= capacity);
-      return _data[i - 1];
-    }
-  }
-
-  //
   // We can change the lock type later. Use a spinlock for now, even if it
   // is suboptimal in cases where long critical sections have high
   // contention (IE, lots of tasks trying to insert into the middle of this
@@ -116,8 +85,7 @@ module Lists {
   // when `parSafe` is `true` and the list lock is used.
   //
   pragma "no doc"
-  class LockWrapper {
-    
+  class _LockWrapper {
     var lock$ = new _lockType();
 
     inline proc lock() {
@@ -138,9 +106,8 @@ module Lists {
 
     The list type is not parallel safe by default. For situations in which
     such protections are desirable, parallel safety can be enabled by setting
-    `parSafe = true` in any list constructor. A list object constructed from
-    another list object inherits the parallel safety mode of that list by
-    default.
+    `parSafe = true` in any list constructor. A list constructed from another
+    list inherits the parallel safety mode of that list by default.
   */
   record list {
 
@@ -153,21 +120,15 @@ module Lists {
     pragma "no doc"
     var _size = 0;
 
-    //
-    // Little piece of wizardry I learned from @ronawho in #13104.
-    //
     pragma "no doc"
-    var _lock$ = if parSafe then new LockWrapper() else none;
+    var _lock$ = if parSafe then new _LockWrapper() else none;
 
-    //
-    // Functionally an array of arrays.
-    //
     pragma "no doc"
-    var _blocks: unmanaged ListBlock(unmanaged ListBlock(eltType)) = nil;
+    var _blocks: _ddata(_ddata(eltType)) = nil;
 
-    //
-    // This is the sum of the capacities of all currently allocated ListBlock.
-    //
+    pragma "no doc"
+    var _blockCapacity = 0;
+
     pragma "no doc"
     var _totalCapacity = 0;
 
@@ -186,7 +147,7 @@ module Lists {
       Initializes a list containing elements that are copy initialized from
       the elements contained in another list.
 
-      :arg other: The list object to initialize from.
+      :arg other: The list to initialize from.
       :arg parSafe: If `true`, this list will use parallel safe operations.
     */
     proc init=(other: list(?t), param parSafe=other.parSafe) {
@@ -207,44 +168,50 @@ module Lists {
     }
 
     pragma "no doc"
-    proc _move(ref src: ?t, ref dst: t) {
+    inline proc _move(ref src: ?t, ref dst: t) {
       __primitive("=", dst, src);
     }
 
-    //
-    // The downshift/upshift here (subtract 1 from pos, add 1 to result) is
-    // because this computation assumes zero-based indexing, and Chapel uses
-    // one based indexing.
-    //
+    pragma "no doc"
+    inline proc _getBlockCapacity(block: int): int {
+      const exp = block + log2(_initialCapacity);
+      const result = 2 ** exp;
+      return result;
+    }
+
     pragma "no doc"
     inline proc _getBlockIdx(idx: int): int {
-      const pos = idx + _initialCapacity - 1;
-      const result = log2(pos) - log2(_initialCapacity) + 1;
+      const pos = idx + _initialCapacity;
+      const result = log2(pos) - log2(_initialCapacity);
       return result;
     }
 
-    //
-    // Ditto the above.
-    //
+    pragma "no doc"
+    inline proc _getLastBlockIdx(): int {
+      const result = _getBlockIdx(_size - 1);
+      _sanity(result >= 0);
+      return result;
+    }
+
     pragma "no doc"
     inline proc _getItemIdx(idx: int): int {
-      const pos = idx + _initialCapacity - 1;
-      const result = pos ^ (1 << log2(pos)) + 1;
+      const pos = idx + _initialCapacity;
+      const result = pos ^ (1 << log2(pos));
       return result;
     }
 
     //
-    // Lots of sanity checks for now, just to ensure correctness.
+    // Performs conversion from one-based to zero-based indexing, all accesses
+    // of list elements should go through this function.
     //
     pragma "no doc"
-    proc _getRef(idx: int) ref {
+    inline proc _getRef(idx: int) ref {
       _sanity(idx >= 1 && idx <= _totalCapacity);
-      const blockIdx = _getBlockIdx(idx);
-      _sanity(blockIdx >= 1 && blockIdx <= _blocks.capacity);
-      const itemIdx = _getItemIdx(idx);
+      const zpos = idx - 1;
+      const blockIdx = _getBlockIdx(zpos);
+      const itemIdx = _getItemIdx(zpos);
       ref block = _blocks[blockIdx];
       _sanity(block != nil);
-      _sanity(itemIdx >= 1 && itemIdx <= block.capacity);
       ref result = block[itemIdx];
       return result;
     }
@@ -273,7 +240,7 @@ module Lists {
     //
     pragma "no doc"
     inline proc _boundsCheckLeaveOnThrow(i: int) throws {
-      if !_withinBounds(i) then {
+      if !_withinBounds(i) {
         _leave();
         const msg = "Given list index out of bounds: " + i:string;
         throw new owned
@@ -282,29 +249,23 @@ module Lists {
     }
 
     pragma "no doc"
-    proc _makeBlockArray(size: int) {
-      var result = new unmanaged
-        ListBlock(unmanaged ListBlock(eltType), size);
-      return result;
+    inline proc _makeBlockArray(size: int) {
+      return c_calloc(_ddata(eltType), size):_ddata(_ddata(eltType));
     }
 
-    //
-    // A call to this assumes that if no free blocks remain, then all slots in
-    // the last block have been filled and we need to resize the block array.
-    //
     pragma "no doc"
-    proc _maybeResizeBlockArray() {
-      const lastBlockIdx = _getBlockIdx(_size);
-      if lastBlockIdx < _blocks.capacity then
-        return;
+    inline proc _killBlockArray(data: _ddata(_ddata(eltType))) {
+      c_free(data:c_void_ptr);
+    }
 
-      var _nblocks = _makeBlockArray(_blocks.capacity * 2);
+    pragma "no doc"
+    proc _makeBlock(size: int) {
+      return c_calloc(eltType, size):_ddata(eltType);
+    }
 
-      for i in 1.._blocks.capacity do
-        _nblocks[i] = _blocks[i];
-
-      delete _blocks;
-      _blocks = _nblocks;
+    pragma "no doc"
+    proc _killBlock(data: _ddata(eltType)) {
+      c_free(data:c_void_ptr);
     }
 
     pragma "no doc"
@@ -313,35 +274,53 @@ module Lists {
       // TODO
       // Adopt a new implementation where the first block is always allocated.
       //
-      if _blocks == nil then {
+      if _blocks == nil {
         _sanity(_totalCapacity == 0);
         _sanity(_size == 0);
         _blocks = _makeBlockArray(_initialBlockCapacity);
-        _blocks[1] = new unmanaged ListBlock(eltType, _initialCapacity);
-        _totalCapacity += _initialCapacity;
+        _blockCapacity = _initialBlockCapacity;
+        _blocks[0] = _makeBlock(_initialCapacity);
+        _totalCapacity = _initialCapacity;
       }
 
       const remaining = _totalCapacity - _size;
       if remaining > amount then
         return;
 
-      var lastBlockIdx = _getBlockIdx(_size);
+      var lastBlockIdx = _getLastBlockIdx();
       var req = amount - remaining;
 
-      while req > 0 do {
-        _maybeResizeBlockArray();
+      while req > 0 {
+
+        //
+        // Double the block array if we've run out of space.
+        //
+        if lastBlockIdx >= (_blockCapacity - 1) {
+          var _nblocks = _makeBlockArray(_blockCapacity * 2);
+
+          for i in 0..#_blockCapacity do
+            _nblocks[i] = _blocks[i];
+
+          _killBlockArray(_blocks);
+          _blocks = _nblocks;
+          _blockCapacity *= 2;
+        }
 
         ref oblock = _blocks[lastBlockIdx];
+        const oblockCapacity = _getBlockCapacity(lastBlockIdx);
+
         lastBlockIdx += 1;
+
         ref nblock = _blocks[lastBlockIdx];
+        const nblockCapacity = oblockCapacity * 2;
 
-        _sanity(nblock == nil);
         _sanity(oblock != nil);
+        _sanity(nblock == nil);
 
-        nblock = new unmanaged ListBlock(eltType, oblock.capacity * 2);
-        _totalCapacity += nblock.capacity;
+        nblock = _makeBlock(nblockCapacity);
 
-        req -= nblock.capacity;
+        _totalCapacity += nblockCapacity;
+        req -= nblockCapacity;
       }
     }
 
@@ -364,10 +343,9 @@ module Lists {
     pragma "no doc"
     proc _expand(idx: int) {
       _sanity(_withinBounds(idx));
-
       _maybeAcquireMem(1);
 
-      for i in idx.._size by -1 do {
+      for i in idx.._size by -1 {
         ref src = _getRef(i);
         ref dst = _getRef(i + 1);
         _move(src, dst);
@@ -376,16 +354,16 @@ module Lists {
 
     //
     // Shift all elements after index one to the left in memory, possibly
-    // resizing.
+    // resizing. This assumes the element at `idx` has already been
+    // deinitialized if that is necessary.
     //
     pragma "no doc"
     proc _collapse(idx: int) {
       _sanity(_withinBounds(idx));
-
       if idx == _size then
         return;
 
-      for i in idx.._size do {
+      for i in idx.._size {
         ref src = _getRef(i + 1);
         ref dst = _getRef(i);
         _move(src, dst);
@@ -433,6 +411,7 @@ module Lists {
     // Can't use this for now without getting warnings, so stick with the
     // simple extend() implementation.
     //
+    /*
     pragma "no doc"
     inline proc _extendGenericAlter(ref collection) {
       const oldSize = _size;
@@ -449,6 +428,7 @@ module Lists {
 
       _size += collection.size;
     }
+    */
 
     /*
       Extend this list by appending a copy of each element contained in
@@ -517,15 +497,15 @@ module Lists {
     proc remove(x: eltType) throws {
       _enter();
 
-      for i in 1.._size do {
-          ref item = _getRef(i);
-          if x == item then {
-            _destroy(item);
-            _collapse(i);
-            _size -= 1;
-            _leave();
-            return;
-          }
+      for i in 1.._size {
+        ref item = _getRef(i);
+        if x == item {
+          _destroy(item);
+          _collapse(i);
+          _size -= 1;
+          _leave();
+          return;
+        }
       }
 
       _leave();
@@ -554,9 +534,10 @@ module Lists {
     proc pop(i: int=size): eltType throws {
       _enter();
       try _boundsCheckLeaveOnThrow(i);
-      // TODO: Is this fine, or do I need to disable initializers here?
-      // TODO: Do I need to invoke a destructor here?
-      var result = _getRef(i);
+      var result : eltType;
+      ref src = _getRef(i);
+      ref dst = result;
+      _move(src, dst);
       _collapse(i);
       _leave();
       return result;
@@ -573,27 +554,31 @@ module Lists {
     proc clear() {
       _enter();
 
-      // Manually call destructors on each currently allocated element.
-      for i in 1.._size do {
+      //
+      // Manually call destructors on each currently allocated element. Use
+      // one-based indexing here since we're going through _getRef().
+      //
+      for i in 1.._size {
         ref item = _getRef(i);
         _destroy(item);
       }
 
-      if _blocks != nil then
-        for i in 1.._blocks.capacity do {
+      if _blocks != nil {
+        // Remember to use zero-based indexing with `_ddata`!
+        for i in 0..#_blockCapacity {
           ref block = _blocks[i];
           if block == nil then
             continue;
-          _totalCapacity -= block.capacity;
-          delete block;
+          _totalCapacity -= _getBlockCapacity(i);
+          _killBlock(block);
           block = nil;
         }
 
-      if _blocks != nil then
-        delete _blocks;
+        _killBlockArray(_blocks);
+        _blocks = nil;
+      }
 
       _sanity(_totalCapacity == 0);
-      _blocks = nil;
       _size = 0;
 
       _leave();
@@ -618,7 +603,7 @@ module Lists {
       try _boundsCheckLeaveOnThrow(end);
 
       for i in start..end do
-        if x == _getRef(i) then {
+        if x == _getRef(i) {
           _leave();
           return i;
         }
@@ -646,7 +631,7 @@ module Lists {
 
       var result = 0;
 
-      for i in 1.._size do {
+      for i in 1.._size {
         if x == _getRef(i) then
           result += 1;
       }
@@ -656,29 +641,18 @@ module Lists {
     }
 
     /*
-       Sort the elements of this list in place using their default sort order.
-
-       .. warning::
-
-        Sorting the contents of this list may invalidate existing references
-        to the elements contained in this list.
-    */
-    proc sort() {
-      // TODO: Need to look in the Sort module to see the API.
-    }
-
-    /*
-      Sort the items of this list in place using a comparator.
+      Sort the items of this list in place using a comparator. If no comparator
+      is provided, sort this list using the default sort order.
 
       .. warning::
 
         Sorting the elements of this list may invalidate existing references
         to the elements contained in this list.
 
-      :arg comparator: A comparator object used to sort this list.
+      :arg comparator: A comparator used to sort this list.
     */
-    proc sort(comparator) {
-      // TODO: Need to look in the Sort module to see the API. 
+    proc sort(comparator=Sort.defaultComparator) {
+      compilerError("The sort method is not implemented yet.");
     }
 
     /*
@@ -693,16 +667,6 @@ module Lists {
     */
     proc const this(i: int) ref throws {
       _enter();
-
-      //
-      // TODO: Do we want to switch to array style indexing instead?
-      //
-      if false && !_boundsCheck(i) then {
-        _leave();
-        const msg = "Bad index into list: " + i:string;
-        halt(msg);
-      }
-
       try _boundsCheckLeaveOnThrow(i);
       ref result = _getRef(i);
       _leave();
@@ -722,7 +686,7 @@ module Lists {
       // (I mean, is there even a point when reference/iterator invalidation
       // is still a thing?).
       //
-      for i in 1.._size do {
+      for i in 1.._size {
         _enter();
         ref result = _getRef(i);
         _leave();
@@ -797,9 +761,6 @@ module Lists {
     proc toArray(): [] eltType {
       _enter();
 
-      //
-      // TODO: Do we want elements to do a full init here, or not?
-      //
       var result: [1.._size] eltType;
 
       for i in 1.._size do
@@ -818,11 +779,11 @@ module Lists {
 
     .. warning::
 
-      Assigning another list to this list will invalidate any references to
-      elements previously contained in this list.
+      This will invalidate any references to elements previously contained in
+      :arg:`lhs`.
 
-    :arg lhs: The list object to assign to.
-    :arg rhs: The list object to assign from. 
+    :arg lhs: The list to assign to.
+    :arg rhs: The list to assign from. 
   */
   proc =(ref lhs: list(?t, ?), const ref rhs: list(t, ?)) {
     lhs.clear();
@@ -843,8 +804,10 @@ module Lists {
       return false;
 
     for i in 1..(a.size) do
-      if a[i] != b[i] then
-        return false;
+      try! {
+        if a[i] != b[i] then
+          return false;
+      }
 
     return true;
   }
