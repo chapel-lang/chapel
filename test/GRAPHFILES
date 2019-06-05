@@ -97,6 +97,8 @@ users/npadmana/twopt/twopt-paircount.graph
 performance/compiler/bradc/AllCompTime.graph
 memleaksfull.graph
 studies/jacobi/jacobi.graph
+arrays/multidimensional/zip.graph
+arrays/multidimensional/multidimensional-zip.graph
 # suite: HPC Challenge
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph

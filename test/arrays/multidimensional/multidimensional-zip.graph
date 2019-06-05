@@ -2,4 +2,4 @@ perfkeys: Serial 'zip':, Parallel 'zip':, Serial 'zipper':, Parallel 'zipper':, 
 files: zip.dat, zip.dat, zip.dat, zip.dat, zip.dat, zip.dat, zip.dat, zip.dat
 graphkeys: Serial Zip, Parallel Zip, Serial Runtime Assisted, Parallel Runtime Assisted, Serial Domain Indexing, Parallel Domain Indexing, Serial Domain Query Indexing, Parallel Domain Query Indexing
 ylabel: Time (seconds)
-graphtitle: 1-D Array Indexing vs Zip vs Runtime Assisted Zip
+graphtitle: 2-D Array Indexing vs Zip vs Runtime Assisted Zip
