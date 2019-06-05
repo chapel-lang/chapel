@@ -25,7 +25,7 @@ proc domainQueryParallel(A1 : [?D1], A2 : [?D2]) {
 }
 
 config const printTiming : bool = true;
-config const N = 8 * 1024;
+config const N = 16 * 1024;
 var D = {1..N, 1..N};
 var A1 : [D] int;
 var A2 : [D] int;
