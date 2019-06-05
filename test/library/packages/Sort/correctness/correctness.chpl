@@ -21,7 +21,7 @@ proc main() {
 
 
   // Arrays and Domains
-  const largeD = {1..20}, // quickSort requires domain.size > 16
+  const largeD = {1..20}, // quickSort requires domain.size > 16   XXX But has different implementations for strided/nonstrided, so we're only testing the former.
         strideD = {2..8 by 2},
         strideAlignD = {2..9 by 2 align 3},
       strideRevD = {2..8 by -2};
