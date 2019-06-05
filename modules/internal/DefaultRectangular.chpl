@@ -287,7 +287,7 @@ module DefaultRectangular {
                        else tasksPerLocale;
       if debugDefaultDist {
         chpl_debug_writeln("    numTasks=", numTasks, " (", ignoreRunning,
-                           "), minIndicesPerTask=", minIndicesPerTask);
+                "), minIndicesPerTask=", minIndicesPerTask);
       }
       const (numChunks, parDim) = if __primitive("task_get_serial") then
                                   (1, -1) else
@@ -297,7 +297,7 @@ module DefaultRectangular {
                                                      ranges);
       if debugDefaultDist {
         chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                           " ranges(", parDim, ").length=", ranges(parDim).length);
+                " ranges(", parDim, ").length=", ranges(parDim).length);
       }
 
       if debugDataPar {
@@ -323,7 +323,7 @@ module DefaultRectangular {
         // reasonabley.  We should switch to using the RangeChunk
         // library...
         coforall chunk in 0..#numChunks {
-          var myChunk = ranges;
+          var block = ranges;
           const len = if (!ranges(parDim).stridable) then ranges(parDim).length
               else ranges(parDim).length:uint * abs(ranges(parDim).stride):uint;
           const (lo,hi) = _computeBlock(len,
@@ -331,15 +331,15 @@ module DefaultRectangular {
                                         ranges(parDim)._high,
                                         ranges(parDim)._low,
                                         ranges(parDim)._low);
-          if (myChunk(parDim).stridable) then
-            myChunk(parDim) = lo..hi by myChunk(parDim).stride align chpl__idxToInt(myChunk(parDim).alignment);
+          if (block(parDim).stridable) then
+            block(parDim) = lo..hi by block(parDim).stride align chpl__idxToInt(block(parDim).alignment);
           else {
-            myChunk(parDim) = lo..hi;
+            block(parDim) = lo..hi;
           }
           if debugDefaultDist {
-            chpl_debug_writeln("*** DI[", chunk, "]: myChunk = ", myChunk);
+            chpl_debug_writeln("*** DI[", chunk, "]: block = ", block);
           }
-          for i in these_help(1, myChunk) {
+          for i in these_help(1, block) {
             yield i;
           }
         }
