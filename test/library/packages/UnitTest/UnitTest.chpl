@@ -43,8 +43,8 @@ module UnitTest {
   /*Function to call the respective method for equality checking based on the type of argument*/
   private
   proc checkAssertEquality(first, second) throws {
-    type firstType = first.type;
-    type secondType = second.type;
+    type firstType = first.type, 
+         secondType = second.type;
 
     if isTupleType(firstType) && isTupleType(secondType) {
       // both are tuples.
@@ -97,8 +97,8 @@ module UnitTest {
   private
   proc assertSequenceEqual(seq1, seq2, seq_type_name) throws {
     var tmpString: string;
-    var len1: int = seq1.size;
-    var len2: int = seq2.size;
+    const len1 = seq1.size,
+          len2 = seq2.size;
     if len1 == 0 && len2 == 0 then return;
     if len1 == 0 {
       tmpString = "First "+seq_type_name+" has no length.";
@@ -128,8 +128,8 @@ module UnitTest {
         tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
       }
       for i in 1..min(len1,len2) {
-        var item1 = seq1[i];
-        var item2 = seq2[i];
+        var item1 = seq1[i],
+            item2 = seq2[i];
         if item1 != item2 {
           tmpString += "\nFirst differing element at index "+i +":\n'"+item1+"'\n'"+item2+"'\n";
           break;
@@ -157,8 +157,8 @@ module UnitTest {
   */
   private
   proc assertArrayEqual(array1, array2) throws {
-    type firstType = array1.type;
-    type secondType = array2.type;
+    type firstType = array1.type,
+         secondType = array2.type;
     if firstType == secondType {
       if array1.rank == 1 {
         assertSequenceEqual(array1, array2, "Array");
@@ -184,8 +184,8 @@ module UnitTest {
   */
   private
   proc assertTupleEqual(tuple1, tuple2) throws {
-    type firstType = tuple1.type;
-    type secondType = tuple2.type;
+    type firstType = tuple1.type,
+         secondType = tuple2.type;
     if firstType == secondType {
       assertSequenceEqual(tuple1,tuple2,"tuple("+firstType: string+")");
     }
@@ -242,8 +242,8 @@ module UnitTest {
   /* Function that checks whether two arguments are unequal or not*/
   private
   proc checkAssertUnEquality(first,second) throws {
-    type firstType = first.type;
-    type secondType = second.type;
+    type firstType = first.type,
+         secondType = second.type;
     if isTupleType(firstType) && isTupleType(secondType) {
       if firstType == secondType {
         if first == second then return false;
@@ -288,8 +288,8 @@ module UnitTest {
   /*checks the type of the arguments and then do greater than comaprison */
   private
   proc checkGreater(first, second) throws {
-    type firstType = first.type;
-    type secondType = second.type;
+    type firstType = first.type,
+         secondType = second.type;
 
     if isTupleType(firstType) && isTupleType(secondType) {
       // both are tuples.
@@ -321,13 +321,13 @@ module UnitTest {
   */
   private
   proc assertSequenceGreater(seq1, seq2, seq_type_name) throws {
-    var checkgreater: bool = false;
-    var checkequal: bool = false;
-    var len1: int = seq1.size;
-    var len2: int = seq2.size;
-    var symbol: string;
-    var tmpString: string;
-    var tmplarge: string;
+    var checkgreater: bool = false,
+        checkequal: bool = false;
+    const len1 = seq1.size,
+          len2 = seq2.size;
+    var symbol: string,
+        tmpString: string,
+        tmplarge: string;
 
     if len1 == 0 {
       tmpString = "First "+seq_type_name+" has no length.";
@@ -339,8 +339,8 @@ module UnitTest {
     }
     if tmpString == "" {
       for i in 1..len1 {
-        var item1 = seq1[i];
-        var item2 = seq2[i];
+        var item1 = seq1[i],
+            item2 = seq2[i];
         if item1 == item2 then checkequal = true;
         else if item1 < item2 {
           tmpString += "First "+seq_type_name+" < Second "+seq_type_name+" :\n";
@@ -391,8 +391,8 @@ module UnitTest {
         if array1.rank == 1 {
           assertSequenceGreater(array1, array2, "Array");
         }
-        else {
-          if all(array1 <= array2) {
+        else { // can be reimplemented using `reduce`
+          if all(array1 <= array2) { 
             var tmpString = "assert failed - \n'" + stringify(array1) +"'\n<=\n'"+stringify(array2)+"'";
             throw new owned AssertionError(tmpString);
           }
@@ -417,8 +417,8 @@ module UnitTest {
   */
   private
   proc assertTupleGreater(tuple1, tuple2) throws {
-    type firstType = tuple1.type;
-    type secondType = tuple2.type;
+    type firstType = tuple1.type,
+         secondType = tuple2.type;
     if firstType == secondType {
       assertSequenceGreater(tuple1,tuple2,"tuple("+firstType: string+")");
     }
@@ -490,8 +490,8 @@ module UnitTest {
   /*checks the type of the arguments and then do less than comaprison */
   private
   proc checkLessThan(first, second) throws {
-    type firstType = first.type;
-    type secondType = second.type;
+    type firstType = first.type,
+         secondType = second.type;
 
     if isTupleType(firstType) && isTupleType(secondType) {
       // both are tuples.
@@ -523,13 +523,13 @@ module UnitTest {
   */
   private
   proc assertSequenceLess(seq1, seq2, seq_type_name) throws {
-    var checkless: bool = false;
-    var checkequal: bool = false;
-    var len1: int = seq1.size;
-    var len2: int = seq2.size;
-    var symbol: string;
-    var tmpString: string;
-    var tmplarge: string;
+    var checkless: bool = false,
+        checkequal: bool = false;
+    const len1 = seq1.size,
+          len2 = seq2.size;
+    var symbol: string,
+        tmpString: string,
+        tmplarge: string;
 
     if len1 == 0 {
       tmpString = "First "+seq_type_name+" has no length.";
@@ -541,8 +541,8 @@ module UnitTest {
     }
     if tmpString == "" {
       for i in 1..len1 {
-        var item1 = seq1[i];
-        var item2 = seq2[i];
+        var item1 = seq1[i],
+            item2 = seq2[i];
         if item1 == item2 then checkequal = true;
         else if item1 > item2 {
           tmpString += "First "+seq_type_name+" > Second "+seq_type_name+" :\n";
@@ -619,8 +619,8 @@ module UnitTest {
   */
   private
   proc assertTupleLess(tuple1, tuple2) throws {
-    type firstType = tuple1.type;
-    type secondType = tuple2.type;
+    type firstType = tuple1.type,
+         secondType = tuple2.type;
     if firstType == secondType {
       assertSequenceLess(tuple1,tuple2,"tuple("+firstType: string+")");
     }
