@@ -170,34 +170,26 @@ module Itertools {
       }
   }
 
-  // Parallel iterator - Follower (for Arrays and Strings)
-
-  pragma "no doc"
-  iter cycle(param tag: iterKind, arg, times = 0, followThis)
-      where tag == iterKind.follower && followThis.size == 1
-          && (isString(arg) || isArray(arg) || isTuple(arg)) {
-
-    const workingIters = followThis(1);
-
-    for idx in workingIters do
-      yield arg[(idx % arg.size) + 1];
-  }
-
-  // Parallel iterator - Follower (for non-indexable iterables)
+  // Parallel iterator - Follower
 
   pragma "no doc"
   iter cycle(param tag: iterKind, arg, times = 0, followThis)
       where tag == iterKind.follower && followThis.size == 1 {
 
-    var tempObject: [1..#arg.size] arg.low.type;
-
-    for (idx, element) in zip(1..#arg.size, arg) do
-      tempObject[idx] = element;
-
     const workingIters = followThis(1);
 
-    for idx in workingIters do
-      yield tempObject[(idx % arg.size) + 1];
+    if isString(arg) || isArray(arg) || isTuple(arg) then
+      for idx in workingIters do
+        yield arg[(idx % arg.size) + 1];
+    else {
+      var tempObject: [1..#arg.size] arg.low.type;
+
+      for (idx, element) in zip(1..#arg.size, arg) do
+        tempObject[idx] = element;
+
+      for idx in workingIters do
+        yield tempObject[(idx % arg.size) + 1];
+    }
   }
 
 } // end module
