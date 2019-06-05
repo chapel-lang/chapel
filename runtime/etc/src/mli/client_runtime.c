@@ -21,7 +21,10 @@
 #define CHPL_RUNTIME_ETC_SRC_MLI_CLIENT_RUNTIME_C_
 
 #include "mli/common_code.c"
+
 #include "chpllaunch.h"
+#include "chpl-external-array.h"
+
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -180,6 +183,14 @@ void chpl_library_finalize(void) {
   chpl_mli_client_deinit(&chpl_client);
 
   return;
+}
+
+// TODO: proper implementation once opaque arrays are supported in multilocale
+// interoperability.
+void cleanupOpaqueArray(chpl_opaque_array * arr) {
+  printf("Error: opaque arrays not supported for multilocale libraries");
+  chpl_library_finalize(); // clean up after ourselves
+  mli_terminate();
 }
 
 #endif
