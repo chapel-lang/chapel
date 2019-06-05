@@ -332,7 +332,7 @@ module DefaultRectangular {
                                         ranges(parDim)._low,
                                         ranges(parDim)._low);
           if (myChunk(parDim).stridable) then
-            myChunk(parDim) = lo..hi by myChunk(parDim).stride align myChunk(parDim).alignment;
+            myChunk(parDim) = lo..hi by myChunk(parDim).stride align chpl__idxToInt(myChunk(parDim).alignment);
           else {
             myChunk(parDim) = lo..hi;
           }
