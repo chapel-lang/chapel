@@ -544,6 +544,35 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_IS_NILABLE_CLASS_TYPE:
+  case PRIM_IS_NON_NILABLE_CLASS_TYPE: {
+    Type* t = call->get(1)->typeInfo();
+
+    if (isManagedPtrType(t)) {
+      t = getManagedPtrBorrowType(t);
+    }
+
+    bool value = false;
+    if (isClassLike(t) &&
+        !t->symbol->hasFlag(FLAG_EXTERN)) {
+      ClassTypeDecorator d = classTypeDecorator(t);
+      if (call->isPrimitive(PRIM_IS_NILABLE_CLASS_TYPE))
+        value = isDecoratorNilable(d);
+      else if (call->isPrimitive(PRIM_IS_NON_NILABLE_CLASS_TYPE))
+        value = isDecoratorNonNilable(d);
+    }
+
+    if (value)
+      retval = new SymExpr(gTrue);
+    else
+      retval = new SymExpr(gFalse);
+
+    call->replace(retval);
+
+    break;
+  }
+
+
   case PRIM_TO_UNMANAGED_CLASS:
   case PRIM_TO_BORROWED_CLASS:
   case PRIM_TO_NILABLE_CLASS:
