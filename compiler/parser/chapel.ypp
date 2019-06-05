@@ -676,6 +676,7 @@ opt_label_ident:
 
 ident_fn_def:
   TIDENT                   { $$ = $1; }
+| TNONE                    { $$ = "none"; redefiningReservedWordError($$); }
 | TTHIS                    { $$ = "this"; }
 | TFALSE                   { $$ = "false"; redefiningReservedWordError($$); }
 | TTRUE                    { $$ = "true"; redefiningReservedWordError($$); }
@@ -683,6 +684,7 @@ ident_fn_def:
 
 ident_def:
   TIDENT                   { $$ = $1; }
+| TNONE                    { $$ = "none"; redefiningReservedWordError($$); }
 | TTHIS                    { $$ = "this"; redefiningReservedWordError($$); }
 | TFALSE                   { $$ = "false"; redefiningReservedWordError($$); }
 | TTRUE                    { $$ = "true"; redefiningReservedWordError($$); }
