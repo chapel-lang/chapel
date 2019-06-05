@@ -971,9 +971,8 @@ module Random {
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        const first = D.first,
-              last = D.last,
-              stride = D.stride;
+        const first = D.alignedLow,
+	      stride = abs(D.stride);
 
         _lock();
 
@@ -990,9 +989,6 @@ module Random {
           if stride > 1 {
             k *= stride;
             j *= stride;
-          } else if stride < 0 {
-            k *= -stride;
-            j *= -stride;
           }
 
           // Alignment offsets
