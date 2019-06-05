@@ -18,22 +18,31 @@ use MasonNew;
 use MasonModify;
 
 proc masonPublish(args) throws {
-  if args.size > 2 {
-    for arg in args[2..] {
-      if arg == '-h' || arg == '--help'{
-        masonPublishHelp();
-        exit(0);
+  /* Implement a try catch to catch the errors from functions within this function*/
+  try! {
+    if args.size > 2 {
+      for arg in args[2..] {
+        if arg == '-h' || arg == '--help'{
+          masonPublishHelp();
+          exit(0);
+        }
       }
     }
+    else {
+      if isGitExist() {
+        forkMasonReg();
+        branchMasonReg();
+        var package = addPackageToBricks();
+        pullRequest(package);
+      }
+      else throw new owned MasonError("Must have package set up as git repo to publish");
+        /* throw new MasonError("Must have package set up as git repo to publ;ish...... */
+      }
+    }
+  catch e: MasonError {
+    writeln(e.message());
+    exit(1);
   }
-  if geturl() == '' {
-    writeln("Must have package set up as git repo to publish to mason-registry");
-    exit(0);
-  }
-  forkMasonReg();
-  branchMasonReg();
-  var package = addPackageToBricks();
-  pullRequest(package);
 }
 
 
@@ -42,7 +51,15 @@ proc forkMasonReg(){
   return ret;
 }
 
-proc geturl(){
+proc isGitExist() {
+  var urlexist = runCommand("git config --get remote.origin.url");
+  if urlexist != ''{
+    return true;
+  }
+  else return false;
+}
+
+proc geturl() {
   var url = runCommand("git config --get remote.origin.url",true);
   return url;
 }
