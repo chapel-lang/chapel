@@ -112,7 +112,7 @@ module Math {
       var tmp:uint(64) = val:uint(64);
       lg2 = 64 - 1 - chpl_bitops_clz_64(tmp):int;
     } else {
-      compilerError("Case not handled in logBasePow2 for integers");
+      compilerError("Integer width not handled in logBasePow2");
     }
 
     return lg2 / baseLog2;
