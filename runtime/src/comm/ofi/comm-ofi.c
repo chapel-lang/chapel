@@ -3020,6 +3020,15 @@ void chpl_comm_atomic_unordered_task_fence(void) {
 
 static
 int computeAtomicValid(enum fi_datatype ofiType) {
+  //
+  // At least one provider (ofi_rxm) segfaults if the endpoint given to
+  // fi*atomicvalid() entirely lacks atomic caps.  The man page isn't
+  // clear on whether this should work, so just avoid that situation.
+  //
+  if ((ofi_info->tx_attr->caps & FI_ATOMIC) == 0) {
+    return 0;
+  }
+
   struct fid_ep* ep = tciTab[0].txCtx; // assume same answer for all endpoints
   size_t count;                        // ignored
 
