@@ -531,6 +531,21 @@ void init_ofiEp(void) {
   //
   // Create transmit contexts.
   //
+
+  //
+  // Remove all receive capabilities while creating transmit contexts.
+  // If we don't do this the 'tcp;ofi_rxm' provider (at least) will
+  // return an error from fi_enable() because it thinks the endpoint
+  // might be used for receives but we haven't configured a receive
+  // CQ for it.
+  //
+  uint64_t saved_rx_attr_caps = ofi_info->rx_attr->caps;
+  ofi_info->rx_attr->caps = 0;
+
+  size_t saved_domain_attr_cq_data_size = ofi_info->domain_attr->cq_data_size;
+  ofi_info->domain_attr->cq_data_size = 0;
+
+  //
   // For the CQ lengths, allow for whichever maxOutstanding (AMs or
   // RMAs) value is larger, plus quite a few for AM responses because
   // the network round-trip latency ought to be quite a bit more than
@@ -603,6 +618,13 @@ void init_ofiEp(void) {
     }
     OFI_CHK(fi_enable(tciTab[i].txCtx));
   }
+
+  //
+  // Restore receive capabilities removed while creating the transmit
+  // contexts.
+  //
+  ofi_info->rx_attr->caps = saved_rx_attr_caps;
+  ofi_info->domain_attr->cq_data_size = saved_domain_attr_cq_data_size;
 
   //
   // Create receive contexts.
