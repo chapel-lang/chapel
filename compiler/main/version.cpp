@@ -34,7 +34,7 @@
 // Flip this to 'true' when we're ready to roll out a release; then
 // back after branching
 //
-static bool official = true;
+static bool official = false;
 
 void
 get_version(char *v) {
