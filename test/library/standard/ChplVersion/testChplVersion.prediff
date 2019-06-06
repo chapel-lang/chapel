@@ -7,7 +7,7 @@ if [[ $version_line == *pre-release* ]]; then
     OFFICIAL=false
 else
     VERSION=$(echo $version_line | sed "s:chpl version \(.*\):\1:")
-    SHA=0
+    SHA="N/A"
     OFFICIAL=true
 fi
 

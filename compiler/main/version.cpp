@@ -34,17 +34,15 @@
 // Flip this to 'true' when we're ready to roll out a release; then
 // back after branching
 //
-static bool official = false;
+static bool official = true;
 
 void
 get_version(char *v) {
   v += sprintf(v, "%d.%s.%s", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
-  if (strcmp(BUILD_VERSION, "0") != 0 || developer) {
-    if (official) {
-      sprintf(v, ".%s", BUILD_VERSION);
-    } else {
-      sprintf(v, " pre-release (%s)", BUILD_VERSION);
-    }
+  if (!official) {
+    sprintf(v, " pre-release (%s)", BUILD_VERSION);
+  } else if (developer && strcmp(BUILD_VERSION, "0") != 0) {
+    sprintf(v, ".%s", BUILD_VERSION);
   }
 }
 
