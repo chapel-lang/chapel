@@ -651,6 +651,21 @@ iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.foll
     yield i;
 }
 
+proc CyclicDom.chpl__serialize() {
+  return pid;
+}
+
+// TODO: What happens when we try to deserialize on a locale that doesn't
+// own a copy of the privatized class?  (can that happen?)  Could this
+// be a way to lazily privatize by also making the originating locale part
+// of the 'data'?
+proc type CyclicDom.chpl__deserialize(data) {
+  return chpl_getPrivatizedCopy(unmanaged CyclicDom(rank=this.rank,
+                                                    idxType=this.idxType,
+                                                    stridable=this.stridable),
+                                data);
+}
+
 proc CyclicDom.dsiSupportsPrivatization() param return true;
 
 proc CyclicDom.dsiGetPrivatizeData() return 0;
@@ -695,7 +710,7 @@ class CyclicArr: BaseRectangularArr {
   var dom: unmanaged CyclicDom(rank, idxType, stridable);
 
   var locArr: [dom.dist.targetLocDom] unmanaged LocCyclicArr(eltType, rank, idxType);
-  var myLocArr: unmanaged LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType);
+  var myLocArr: unmanaged LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType)?;
   const SENTINEL = max(rank*idxType);
 }
 
@@ -739,7 +754,7 @@ proc CyclicArr.setupRADOpt() {
           myLocArr.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
           for l in dom.dist.targetLocDom {
             if l != localeIdx {
-              myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
+              myLocArr.locRAD!.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
             }
           }
         }
@@ -765,6 +780,18 @@ override proc CyclicArr.dsiDestroyArr() {
       delete locArr(localeIdx);
     }
   }
+}
+
+proc CyclicArr.chpl__serialize() {
+  return pid;
+}
+
+proc type CyclicArr.chpl__deserialize(data) {
+  return chpl_getPrivatizedCopy(unmanaged CyclicArr(rank=this.rank,
+                                                    idxType=this.idxType,
+                                                    stridable=this.stridable,
+                                                    eltType=this.eltType),
+                                data);
 }
 
 proc CyclicArr.dsiSupportsPrivatization() param return true;
@@ -802,8 +829,8 @@ inline proc _remoteAccessData.getDataIndex(
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   local {
-    if myLocArr != nil && myLocArr.locDom.contains(i) then
-      return myLocArr.this(i);
+    if myLocArr != nil && myLocArr!.locDom.contains(i) then
+      return myLocArr!.this(i);
   }
   if doRADOpt && !stridable {
     if myLocArr {
@@ -812,31 +839,31 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
           halt("array index out of bounds: ", i);
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableCyclicLazyRAD {
-        if myLocArr.locRAD == nil {
-          myLocArr.lockLocRAD();
-          if myLocArr.locRAD == nil {
+        if myLocArr!.locRAD == nil {
+          myLocArr!.locRADLock.lock();
+          if myLocArr!.locRAD == nil {
             var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType,
                 stridable=true, dom.dist.targetLocDom);
-            myLocArr.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
+            myLocArr!.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
-            myLocArr.locRAD = tempLocRAD;
+            myLocArr!.locRAD = tempLocRAD;
           }
-          myLocArr.unlockLocRAD();
+          myLocArr!.locRADLock.unlock();
         }
-        if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr.locRAD.lockRAD(rlocIdx);
-          if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-            myLocArr.locRAD.RAD(rlocIdx) =
+        if myLocArr!.locRAD!.RAD(rlocIdx).blk == SENTINEL {
+          myLocArr!.locRAD!.lockRAD(rlocIdx);
+          if myLocArr!.locRAD!.RAD(rlocIdx).blk == SENTINEL {
+            myLocArr!.locRAD!.RAD(rlocIdx) =
               locArr(rlocIdx).myElems._value.dsiGetRAD();
           }
-          myLocArr.locRAD.unlockRAD(rlocIdx);
+          myLocArr!.locRAD!.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
-      pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
+      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr!.locRAD;
+      pragma "no copy" pragma "no auto destroy" var radata = myLocRAD!.RAD;
       if radata(rlocIdx).data != nil {
-        const startIdx = myLocArr.locCyclicRAD.startIdx;
-        const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
+        const startIdx = myLocArr!.locCyclicRAD!.startIdx;
+        const dimLength = myLocArr!.locCyclicRAD!.targetLocDomDimLength;
         type strType = chpl__signedType(idxType);
         var str: rank*strType;
         for param i in 1..rank {
@@ -911,8 +938,8 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   } else {
     proc accessHelper(i) ref {
       if myLocArr then local {
-        if myLocArr.locDom.contains(i) then
-          return myLocArr.this(i);
+        if myLocArr!.locDom.contains(i) then
+          return myLocArr!.this(i);
       }
       return dsiAccess(i);
     }
@@ -953,21 +980,10 @@ class LocCyclicArr {
 
   const locDom: unmanaged LocCyclicDom(rank, idxType);
 
-  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable=true); // non-nil if doRADOpt=true
-  var locCyclicRAD: unmanaged LocCyclicRADCache(rank, idxType); // see below for why
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable=true)?; // non-nil if doRADOpt=true
+  var locCyclicRAD: unmanaged LocCyclicRADCache(rank, idxType)?; // see below for why
   var myElems: [locDom.myBlock] eltType;
-  var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
-
-  // These functions will always be called on this.locale, and so we do
-  // not have an on statement around the while loop below (to avoid
-  // the repeated on's from calling testAndSet()).
-  inline proc lockLocRAD() {
-    while locRADLock.testAndSet(memory_order_acquire) do chpl_task_yield();
-  }
-
-  inline proc unlockLocRAD() {
-    locRADLock.clear(memory_order_release);
-  }
+  var locRADLock: chpl_LocalSpinlock;
 
   proc deinit() {
     if locRAD != nil then
@@ -1160,7 +1176,7 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
     // quick solution if we have a local array
     if myLocArr != nil then
-      return myLocArr.locDom.myBlock;
+      return myLocArr!.locDom.myBlock;
     // if not, we must not own anything
     var d: domain(rank, idxType, stridable=true);
     return d;

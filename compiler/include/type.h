@@ -397,8 +397,10 @@ TYPE_EXTERN PrimitiveType*    dtVoid;
 TYPE_EXTERN PrimitiveType*    dtNothing;
 TYPE_EXTERN PrimitiveType*    dtValue;
 TYPE_EXTERN PrimitiveType*    dtBorrowed;
+TYPE_EXTERN PrimitiveType*    dtBorrowedNonNilable;
 TYPE_EXTERN PrimitiveType*    dtBorrowedNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanaged;
+TYPE_EXTERN PrimitiveType*    dtUnmanagedNonNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanagedNilable;
 TYPE_EXTERN PrimitiveType*    dtMethodToken;
 TYPE_EXTERN PrimitiveType*    dtDummyRef;
@@ -449,6 +451,7 @@ int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
 bool isClassOrNil(Type* t);
 bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);

@@ -1,4 +1,4 @@
-0: remote executeOn, node 1
+0: test_private_broadcast_large.chpl:16: remote executeOn, node 1
 1
 10
 100

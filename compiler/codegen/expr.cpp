@@ -3994,44 +3994,52 @@ DEFINE_PRIM(PRIM_XOR) {
 }
 
 DEFINE_PRIM(PRIM_ASSIGN) {
-    Expr*       lhs        = call->get(1);
-    Expr*       rhs        = call->get(2);
-    TypeSymbol* lhsTypeSym = lhs->typeInfo()->symbol;
-    TypeSymbol* rhsTypeSym = rhs->typeInfo()->symbol;
+  Expr*       lhs        = call->get(1);
+  Expr*       rhs        = call->get(2);
+  TypeSymbol* lhsTypeSym = lhs->typeInfo()->symbol;
+  TypeSymbol* rhsTypeSym = rhs->typeInfo()->symbol;
 
-    // PRIM_ASSIGN differs from PRIM_MOVE in that PRIM_ASSIGN always copies
-    // objects.  PRIM_MOVE can be used to copy a pointer (i.e. reference)
-    // into another pointer, but if you try this with PRIM_ASSIGN, instead
-    // it will overwrite what the LHS points to with what the RHS points to.
+  // PRIM_ASSIGN differs from PRIM_MOVE in that PRIM_ASSIGN always copies
+  // objects.  PRIM_MOVE can be used to copy a pointer (i.e. reference)
+  // into another pointer, but if you try this with PRIM_ASSIGN, instead
+  // it will overwrite what the LHS points to with what the RHS points to.
 
-    // TODO:  Works but may be slow.
-    // (See the implementation of PRIM_MOVE above for several peephole
-    // optimizations depending on specifics of the RHS expression.)
+  // TODO:  Works but may be slow.
+  // (See the implementation of PRIM_MOVE above for several peephole
+  // optimizations depending on specifics of the RHS expression.)
 
-    // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
-    if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) &&
-        rhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
-      codegenAssign(lhs, rhs);
+  // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
+  GenRet lg;
+  GenRet rg;
 
-    } else if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == true &&
-               rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false) {
-      INT_ASSERT(isClassOrNil(rhsTypeSym->type));
-      codegenAssign(lhs, codegenWideHere(rhs));
+  if (lhs->isRefOrWideRef()) {
+    lg = codegenDeref(lhs);
+    lhsTypeSym = lhsTypeSym->getValType()->symbol;
+  } else {
+    lg = lhs->codegen();
+  }
 
-    } else if (call->get(1)->isRefOrWideRef() ||
-               lhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
-      if (call->get(2)->isRefOrWideRef())
-        codegenAssign(codegenDeref(lhs), codegenDeref(rhs));
-      else
-        codegenAssign(codegenDeref(lhs), rhs);
+  if (rhs->isRefOrWideRef()) {
+    rg = codegenDeref(rhs);
+    rhsTypeSym = rhsTypeSym->getValType()->symbol;
+  } else {
+    rg = rhs->codegen();
+  }
 
-    } else {
-      GenRet rg = rhs;
-      if (rhs->isRefOrWideRef()) {
-        rg = codegenDeref(rg);
-      }
-      codegenAssign(lhs, rg);
-    }
+  if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false &&
+      rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == true)
+    rg = codegenRaddr(rg);
+
+  if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == true &&
+      rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false)
+    rg = codegenWideHere(rg);
+
+  if (!lg.chplType)
+    lg.chplType = lhsTypeSym->type;
+  if (!rg.chplType)
+    rg.chplType = rhsTypeSym->type;
+
+  codegenAssign(lg, rg);
 }
 
 static bool commUnorderedOpsAvailable(Type* elementType) {
@@ -4065,23 +4073,24 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     return;
   }
 
-  GenRet dst = call->get(1);
-  GenRet src = call->get(2);
+  GenRet dst = lhsExpr;
+  bool dstRef = lhsExpr->typeInfo()->symbol->hasFlag(FLAG_REF);
+  GenRet src = rhsExpr;
+  bool srcRef = rhsExpr->typeInfo()->symbol->hasFlag(FLAG_REF);
   GenRet ln = call->get(3);
   GenRet fn = call->get(4);
-  TypeSymbol* dt = call->get(1)->typeInfo()->getValType()->symbol;
+  TypeSymbol* dt = lhsExpr->typeInfo()->getValType()->symbol;
   GenRet size = codegenSizeof(dt->typeInfo());
 
   if (!lhsWide && rhsWide) {
     // do an unordered GET
-    // chpl_comm_get_unordered(
-    //   void *dst,
+    // chpl_comm_get_unordered(void *dst,
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t typeIndex, int32_t commID,
     //   int ln, int32_t fn);
 
     dst = codegenValuePtr(dst);
-    if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
+    if (dstRef)
       dst = codegenDeref(dst);
 
     codegenCall("chpl_comm_get_unordered",
@@ -4091,16 +4100,33 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 size,
                 genTypeStructureIndex(dt),
                 genCommID(gGenInfo),
-                ln,
-                fn);
-  } else if (lhsWide && rhsWide) {
+                ln, fn);
+  } else if (lhsWide && !rhsWide) {
+    // do an unordered PUT
+    // chpl_comm_put_unordered(void *src,
+    //   c_nodeid_t dst_locale, void* dst_raddr,
+    //   size_t size, int32_t typeIndex, int32_t commID,
+    //   int ln, int32_t fn);
+
+    src = codegenValuePtr(src);
+    if (srcRef)
+      src = codegenDeref(src);
+
+    codegenCall("chpl_comm_put_unordered",
+                codegenCastToVoidStar(codegenAddrOf(src)),
+                codegenRnode(dst),
+                codegenRaddr(dst),
+                size,
+                genTypeStructureIndex(dt),
+                genCommID(gGenInfo),
+                ln, fn);
+  } else {
     // do an unordered GETPUT
     // chpl_comm_getput_unordered(
     //   c_nodeid_t dst_locale, void* dst_raddr,
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t typeIndex, int32_t commID,
     //   int ln, int32_t fn);
-
     codegenCall("chpl_comm_getput_unordered",
                 codegenRnode(dst),
                 codegenRaddr(dst),
@@ -4109,11 +4135,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 size,
                 genTypeStructureIndex(dt),
                 genCommID(gGenInfo),
-                ln,
-                fn);
-  } else {
-    // Handle it like a normal assign
-    FORWARD_PRIM(PRIM_ASSIGN);
+                ln, fn);
   }
 }
 DEFINE_PRIM(PRIM_ADD_ASSIGN) {
@@ -4803,7 +4825,7 @@ DEFINE_PRIM(PRIM_STACK_ALLOCATE_CLASS) {
     ret = codegenCast(at, codegenAddrOf(tmp));
 }
 
-DEFINE_PRIM(PRIM_HEAP_REGISTER_GLOBAL_VAR) {
+DEFINE_PRIM(PRIM_REGISTER_GLOBAL_VAR) {
     GenRet idx          = codegenValue(call->get(1));
     GenRet var          = call->get(2);
     GenRet ptr_wide_ptr = codegenAddrOf(var);
@@ -4830,12 +4852,12 @@ DEFINE_PRIM(PRIM_HEAP_REGISTER_GLOBAL_VAR) {
     }
 #endif
 
-    codegenCall("chpl_heap_register_global_var",
+    codegenCall("chpl_comm_register_global_var",
                 idx,
                 codegenCast("ptr_wide_ptr_t", ptr_wide_ptr));
 }
-DEFINE_PRIM(PRIM_HEAP_BROADCAST_GLOBAL_VARS) {
-    codegenCall("chpl_gen_comm_broadcast_global_vars", call->get(1));
+DEFINE_PRIM(PRIM_BROADCAST_GLOBAL_VARS) {
+    codegenCall("chpl_comm_broadcast_global_vars", call->get(1));
 }
 DEFINE_PRIM(PRIM_PRIVATE_BROADCAST) {
     codegenCall("chpl_comm_broadcast_private",

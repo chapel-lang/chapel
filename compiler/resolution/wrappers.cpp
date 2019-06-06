@@ -338,7 +338,7 @@ static void addDefaultsAndReorder(FnSymbol *fn,
 
         bool promotes = false;
         bool dispatches = canDispatch(actualValType, actual,
-                                      formalValType, fn,
+                                      formalValType, formal, fn,
                                       &promotes, NULL, formalIsParam);
 
         if (actualIsTypeAlias != formalIsTypeAlias ||
@@ -555,8 +555,11 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   // argument expression so that we can query its type while setting
   // up the return intent for the function. (The return value variable
   // gets special treatment and would be harder to use in this way).
-  VarSymbol* temp   = newTemp("temp");
+  //
+  // Use the name of the formal for better error messages.
+  VarSymbol* temp   = newTemp(formal->name);
 
+  temp->addFlag(FLAG_USER_VARIABLE_NAME);
   // Suppress lvalue errors, which are easily encountered with default
   // wrappers for initializers.
   temp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
@@ -1052,7 +1055,7 @@ static bool needToAddCoercion(Type*      actualType,
       formal->hasFlag(FLAG_TYPE_VARIABLE))
     return false;
 
-  if (canCoerce(actualType, actualSym, formalType, fn))
+  if (canCoerce(actualType, actualSym, formalType, formal, fn))
     return true;
 
   return false;
@@ -1668,7 +1671,7 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
     int numActuals = actualFormals.size();
     for (int j = 0; j < numActuals; j++) {
       Symbol* actual     = info.actuals.v[j];
-      Symbol* formal     = actualFormals[j];
+      ArgSymbol* formal  = actualFormals[j];
       Type*   actualType = actual->type;
       bool    promotes   = false;
 
@@ -1680,7 +1683,8 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
         INT_ASSERT(actualType);
       }
 
-      if (canDispatch(actualType, actual, formal->type, fn, &promotes)) {
+      if (canDispatch(actualType, actual,
+                      formal->type, formal, fn, &promotes)) {
         if (promotes == true) {
           retval = true;
           break;
@@ -1744,7 +1748,7 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
 
   for (int j = 0; j < numActuals; j++) {
     Symbol* actual     = info.actuals.v[j];
-    Symbol* formal     = actualFormals[j];
+    ArgSymbol* formal  = actualFormals[j];
     Type*   actualType = actual->type;
     bool    promotes   = false;
 
@@ -1754,7 +1758,7 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
       actualType = actualType->refType;
     }
 
-    if (canDispatch(actualType, actual, formal->type, fn, &promotes)) {
+    if (canDispatch(actualType, actual, formal->type, formal, fn, &promotes)) {
       if (promotes == true) {
         this->subs.put(formal, actualType->symbol);
       }

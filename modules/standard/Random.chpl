@@ -1097,17 +1097,14 @@ module Random {
 
 
       pragma "no doc"
-      var _l: if parSafe then atomic bool else nothing;
+      var _l: if parSafe then chpl_LocalSpinlock else nothing;
       pragma "no doc"
       inline proc _lock() {
-        if parSafe then
-          while _l.read() || _l.testAndSet(memory_order_acquire) do
-            chpl_task_yield();
+        if parSafe then _l.lock();
       }
       pragma "no doc"
       inline proc _unlock() {
-        if parSafe then
-          _l.clear(memory_order_release);
+        if parSafe then _l.unlock();
       }
       // up to 4 RNGs
       pragma "no doc"
@@ -2501,17 +2498,14 @@ module Random {
       //
 
       pragma "no doc"
-      var _l: if parSafe then atomic bool else nothing;
+      var _l: if parSafe then chpl_LocalSpinlock else nothing;
       pragma "no doc"
       inline proc _lock() {
-        if parSafe then
-          while _l.read() || _l.testAndSet(memory_order_acquire) do
-            chpl_task_yield();
+        if parSafe then _l.lock();
       }
       pragma "no doc"
       inline proc _unlock() {
-        if parSafe then
-          _l.clear(memory_order_release);
+        if parSafe then _l.unlock();
       }
       pragma "no doc"
       var NPBRandomStreamPrivate_cursor: real = seed;

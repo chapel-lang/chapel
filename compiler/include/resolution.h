@@ -102,9 +102,13 @@ bool explainCallMatch(CallExpr* call);
 
 bool isDispatchParent(Type* t, Type* pt);
 
+bool canCoerceDecorators(ClassTypeDecorator actual,
+                         ClassTypeDecorator formal);
+
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
                Type*     formalType,
+               ArgSymbol* formalSym,
                FnSymbol* fn,
                bool*     promotes = NULL,
                bool*     paramNarrows = NULL);
@@ -112,6 +116,7 @@ bool canCoerce(Type*     actualType,
 bool canDispatch(Type*     actualType,
                  Symbol*   actualSym,
                  Type*     formalType,
+                 ArgSymbol* formalSym = NULL,
                  FnSymbol* fn          = NULL,
                  bool*     promotes    = NULL,
                  bool*     paramNarrows= NULL,

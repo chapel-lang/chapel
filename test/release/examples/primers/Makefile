@@ -19,6 +19,7 @@ TARGETS = \
 	learnChapelInYMinutes \
 	locales \
 	modules \
+	nothingVariables \
 	opaque-domains \
 	parIters \
 	procedures \
@@ -36,7 +37,6 @@ TARGETS = \
 	tuples \
 	varargs \
 	variables \
-	voidVariables \
 
 #
 # Only make FFTW if FFTW_DIR is set or we can find the fftw library

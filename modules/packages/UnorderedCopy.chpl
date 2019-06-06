@@ -76,15 +76,33 @@
  */
 module UnorderedCopy {
   /*
-     Unordered copy. Only supported for numeric types.
+     Unordered copy. Only supported for identical numeric and bool types.
    */
-  inline proc unorderedCopy(ref dst, ref src): void {
-    // TODO currently this requires identical types, which prevents things like
-    // `var a = 0.0, b = 1; unorderedCopy(a, b);`, whereas `a = b;` works with
-    // coercions. Allow arbitrary types and use `canResolve("=", dst, src)`?
-    if !isNumericType(dst.type) || dst.type != src.type {
-      compilerError("unorderedCopy is only supported between identical numeric types");
-    }
+  inline proc unorderedCopy(ref dst:numeric, const ref src:numeric): void {
+    unorderedCopyPrim(dst, src);
+  }
+
+  pragma "no doc"
+  inline proc unorderedCopy(ref dst:numeric, param src:numeric): void {
+    const refSrc = src;
+    unorderedCopyPrim(dst, refSrc);
+  }
+
+  inline proc unorderedCopy(ref dst:bool, const ref src:bool): void {
+    unorderedCopyPrim(dst, src);
+  }
+
+  pragma "no doc"
+  inline proc unorderedCopy(ref dst:bool, param src:bool): void {
+    const refSrc = src;
+    unorderedCopyPrim(dst, refSrc);
+  }
+
+  private inline proc unorderedCopyPrim(ref dst, const ref src): void {
+    param sameType = dst.type == src.type;
+    param validType = isNumeric(dst) || isBool(dst);
+    if !sameType || !validType then
+      compilerError("unorderedCopy is only supported between identical numeric and bool types");
 
     if CHPL_COMM == 'ugni' {
       __primitive("unordered=", dst, src);
@@ -98,8 +116,8 @@ module UnorderedCopy {
    */
   inline proc unorderedCopyTaskFence(): void {
     if CHPL_COMM == 'ugni' {
-      extern proc chpl_comm_get_unordered_task_fence();
-      chpl_comm_get_unordered_task_fence();
+      extern proc chpl_comm_getput_unordered_task_fence();
+      chpl_comm_getput_unordered_task_fence();
     }
   }
 

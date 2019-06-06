@@ -387,6 +387,9 @@ all:
     - Stop throwing `--static` for performance testing (#12652)
   04/24/19:
     - Improve task placement for local bounded coforalls (#12868)
+  05/06/19:
+    - text: Enable the unordered compiler optimization by default (#12952)
+      config: 16 node XC
 
 
 AllCompTime:
@@ -431,6 +434,8 @@ array-of-strings-read:
     - string changes to bounds checking, isUpper (#3718)
   12/11/18:
     - Turn off some range halts for --no-checks (#11780)
+  05/24/19:
+    - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
 
 arr-forall:
   03/24/15:
@@ -447,6 +452,10 @@ arguments:
 assign.1024:
   01/22/15:
     - optimize range follower so it can be directly inlined (#1160)
+  05/23/19:
+    - Execute defer actions in an iterator upon break from its loop (#12963)
+  05/30/19:
+    - Respect "always rvf" for module-scope variables (#13092)
 
 bfs:
   09/25/14:
@@ -571,10 +580,14 @@ create-views:
       config: chapcs
   11/10/18:
     - Improve timing and stability of the create-views performance test (#11609)
+  05/03/19:
+    - Govern slice expressions by slicing domain (#12931)
 
 cs-resize:
   03/05/19:
     - Add radix sort to Sort package module (#12452)
+  05/30/19:
+    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
 
 dgemm.128:
   09/06/13:
@@ -670,6 +683,10 @@ fastaredux:
     - Disable enum->int casts for enums without values (#10114)
   07/14/18:
     - Optimize enum->int casts for concrete types (#10308)
+
+fft:
+  05/15/19:
+    - Optimize all gets out of each Cyclic forall loop / leverage DR iterators (#13020)
 
 fft-timecomp:
   <<: *timecomp-base
@@ -1140,6 +1157,8 @@ nbody:
     - Use zero-arg initializer in BaseDom (#9250)
   08/31/18:
     - Refactor PRIM_NEW resolution to enable promotion (#10919)
+  05/03/19:
+    - Govern slice expressions by slicing domain (#12931)
 
 no-op:
   02/24/17:
@@ -1152,6 +1171,10 @@ parOpEquals:
     - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
   02/28/15:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
+  05/24/19:
+    - Increased usage of initializers for domains and distributions (#13018)
+  05/30/19:
+    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
 
 pidigits: &pidigits-base
   05/16/16:
@@ -1160,6 +1183,8 @@ pidigits: &pidigits-base
     - rearranged pidigits; release versions now use bigints (#4655) (#4656)
   05/01/18:
     - Move chplgmp.c out of runtime (#8944)
+  05/14/19:
+    - Fix build issue where GCC's GMP was used instead of Chapel's
 pidigits-submitted:
   <<: *pidigits-base
 
@@ -1300,6 +1325,10 @@ revcomp:
   02/05/19:
     - Make stdout, stderr ordering predictable in test output (#12236)
 
+ri-a2-AoA:
+  05/30/19:
+    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
+
 sad:
   05/03/16:
     - inconclusive due to noise
@@ -1337,6 +1366,8 @@ split-whitespace-perf:
 SSCA2_main:
   06/12/13:
     - Initial support for hierarchical locales (21480)
+  05/30/19:
+    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
 
 STREAM_study_fragmented:
   09/06/13:
@@ -1389,6 +1420,10 @@ stream-spmd-barrier:
   06/07/18:
     - Prevent serialization from qthread sync vars (#9737)
 
+substring:
+  05/24/19:
+    - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
+
 taskSpawn:
   07/24/16:
     - Stopped performing remote value forwarding on task functions (#4240)
@@ -1402,6 +1437,8 @@ temporary-copies:
     - Update RE2 (#6024)
   12/11/18:
     - Turn off some range halts for --no-checks (#11780)
+  05/24/19:
+    - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
 
 twopt-paircount:
   06/22/17:
@@ -1511,6 +1548,10 @@ distAdaptativeWSv2:
     - Bring in upstream fixes for qthreads sleep interception bug (#5446)
   03/04/17:
     - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+getNextPerf:
+  05/16/19:
+    - Improve the speed of parallel safe random streams (#13013)
 
 guided:
   02/28/17:

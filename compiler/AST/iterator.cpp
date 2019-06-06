@@ -358,6 +358,32 @@ void showIteratorGroup(int id) {
 // Helpers
 //
 
+static void skipIBBinAlist(Expr*& _alist_next) {
+  INT_ASSERT(isIBBCondStmt(_alist_next));
+  // If I had a C++-style iterator, I would just say "it++;".
+  _alist_next = _alist_next->next;
+}
+
+// If this is an IBB, return its CondStmt. Otherwise return NULL.
+CondStmt* isIBBCondStmt(BaseAST* ast) {
+  if (CondStmt* condStmt = toCondStmt(ast))
+    if (SymExpr* condSE = toSymExpr(condStmt->condExpr))
+      if (condSE->symbol() == gIteratorBreakToken)
+        return condStmt;
+  return NULL;
+}
+
+// If this is in an IBB, return its CondStmt. Otherwise return NULL.
+static CondStmt* isInIBBCondStmt(Expr* expr) {
+  for (Expr* parent = expr->parentExpr; parent;
+       expr = parent, parent = parent->parentExpr)
+    if (CondStmt* IBB = isIBBCondStmt(parent))
+      if (expr == IBB->thenStmt)
+        return IBB;
+  return NULL;
+}
+
+
 // Return the PRIM_YIELD CallExpr* or NULL.
 static inline CallExpr* asYieldExpr(BaseAST* e) {
   if (CallExpr* call = toCallExpr(e))
@@ -603,8 +629,13 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
 
     // If the iterator  contains a goto statement, it is not considered to be a
     // single loop iterator.
-    else if (isGotoStmt(ast)) {
-      return NULL;
+    else if (GotoStmt* gt = toGotoStmt(ast)) {
+      if (isInIBBCondStmt(gt))
+        ; // Gotos in an IBB do not affect our judgment.
+          // Should we restrict this case to allow a goto only if it is
+          // the last goto in the IBB conditional's then-branch?
+      else
+        return NULL;
     }
   }
 
@@ -989,6 +1020,10 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
       zip2body->insertAtTail(expr->copy(&map));
   }
 
+  // Since this passes isSingleLoopIterator(), there is a single yield,
+  // so 'more' is always the first value after initialization, i.e. 2.
+  zip2body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, my_this, ii->iclass->getField("more"), new_IntSymbol(2)));
+
   zip2body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   ii->zip2->body->replace(zip2body);
@@ -1029,8 +1064,10 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     // Skip everything before the yield
     if (beforeYield) {
       if (CallExpr* call = toCallExpr(expr))
-        if (call->isPrimitive(PRIM_YIELD))
+        if (call->isPrimitive(PRIM_YIELD)) {
           beforeYield = false;
+          skipIBBinAlist(_alist_next);
+        }
     } else {
       // after yield
       if (!isDefExpr(expr))
@@ -1119,6 +1156,124 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 }
 
 
+//
+// Handle IBB - Iterator Break Block.
+//
+// An IBB contains the defer actions to be taken when breaking
+// out of the enclosing loop. It is constructed like this:
+//
+// (a) createIteratorBreakBlocks() adds a conditional after each "yield",
+// so they look like this:
+//
+//   yield ...;
+//   if gIteratorBreakToken {
+//     return;
+//   }
+//
+// (b) This "return" causes callDestructors to insert, before the "return",
+// the defer actions that are appropriate at this point in the iterator.
+//
+// See also isIBBCondStmt() and the PR message for #12963.
+//
+void createIteratorBreakBlocks() {
+  for_alive_in_Vec(CallExpr, yield, gCallExprs)
+    if (yield->isPrimitive(PRIM_YIELD))
+      if (FnSymbol* parent = toFnSymbol(yield->parentSymbol)) {
+        SET_LINENO(yield);
+        // An empty IBB is: if gIteratorBreakToken then return;
+        Symbol* epLab = parent->getOrCreateEpilogueLabel();
+        yield->insertAfter(new CondStmt(new SymExpr(gIteratorBreakToken),
+                             new BlockStmt(new GotoStmt(GOTO_RETURN, epLab))));
+      }
+}
+
+// Find and return the IBB for the given yield stmt.
+// Remove the enclosing conditional from the tree if delayedRm==NULL,
+// otherwise add it to delayedRm.
+BlockStmt* getAndRemoveIteratorBreakBlockForYield(std::vector<Expr*>* delayedRm,
+                                                  CallExpr* yield)
+{
+  // Right now the CondStmt follows a yield immediately.
+  // If this changes, trace the 'next' pointers until found.
+  CondStmt* IBBcond = isIBBCondStmt(yield->next);
+  BlockStmt* result = IBBcond->thenStmt;
+
+  if (delayedRm) {
+    // This happens when lowering a ForallStmt. A few callers up from here
+    // there is a for_alist in visitor code. It would exit right after IBBcond
+    // if we remove IBBcond here, so the remaining alist stmts would not
+    // get processed.
+    delayedRm->push_back(IBBcond);
+    result->remove();
+  } else {
+    IBBcond->remove();
+  }
+  return result;
+}
+
+
+static void handleYieldInAdvance(Vec<LabelSymbol*>& labels,
+                                 Vec<LabelSymbol*>& breakLbls,
+                                 IteratorInfo* ii, Symbol* ic, Symbol* end,
+                                 CallExpr* call, int idx)
+{
+  BlockStmt* breakBlock = getAndRemoveIteratorBreakBlockForYield(NULL, call);
+
+  call->insertBefore(new CallExpr(PRIM_SET_MEMBER,
+                                  ic, ii->iclass->getField("more"),
+                                  new_IntSymbol(idx)));
+  call->insertBefore(new GotoStmt(GOTO_ITER_END, end));
+
+  LabelSymbol* label = new LabelSymbol(astr("_jump_", istr(idx)));
+  labels.add(label);
+  call->insertAfter(new DefExpr(label));
+
+  LabelSymbol* breakLab = new LabelSymbol(astr("_jump_break_", istr(idx)));
+  breakLbls.add(breakLab);
+  breakBlock->insertAtHead(new DefExpr(breakLab));
+  // breakBlock already ends with "goto end"
+  call->insertAfter(breakBlock);
+  // "goto label" needs to skip 'breakBlock'
+  INT_ASSERT(breakBlock->next == label->defPoint);
+  breakBlock->flattenAndRemove();
+
+  call->remove();
+}
+
+static void buildJumpTables(BlockStmt* advanceBody,
+                            Vec<LabelSymbol*>& labels,
+                            Vec<LabelSymbol*>& breakLbls,
+                            Symbol* more)
+{
+  int i = 2;
+  Expr* anchor = advanceBody->body.head;
+
+  forv_Vec(LabelSymbol, label, labels) {
+    GotoStmt* igs = new GotoStmt(GOTO_ITER_RESUME, label);
+    label->iterResumeGoto = igs;
+    Symbol* tmp = newTemp(dtBool);
+    // Todo: switch to anchor->insertBefore().
+    // Then, the order of comparisons will change. Will it affect performance?
+    advanceBody->insertAtHead(new CondStmt(new SymExpr(tmp), igs));
+    advanceBody->insertAtHead(new CallExpr(PRIM_MOVE, tmp,
+                      new CallExpr(PRIM_EQUAL, more, new_IntSymbol(i++))));
+    advanceBody->insertAtHead(new DefExpr(tmp));
+  }
+
+  // add jumps to handle 'break's from the loops over this iterator
+  // todo: skip this when the loops do not have breaks
+  i = 2;
+  forv_Vec(LabelSymbol, label, breakLbls) {
+    GotoStmt* igs = new GotoStmt(GOTO_ITER_RESUME, label);
+    label->iterResumeGoto = igs;
+    Symbol* tmp = newTemp(dtBool);
+    anchor->insertBefore(new DefExpr(tmp));
+    anchor->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                      new CallExpr(PRIM_EQUAL, more, new_IntSymbol(-(i++)))));
+    anchor->insertBefore(new CondStmt(new SymExpr(tmp), igs));
+  }
+}
+
 // Builds the standard (non-optimized) iterator body by replacing yields with
 // statements that update the "more" field in the iterator class, gotos and
 // labels.  Then adds a jump table at the beginning of advance, so execution
@@ -1145,19 +1300,14 @@ buildAdvance(FnSymbol* fn,
 
   // change yields to labels and gotos
   int i = 2; // 1 = not started, 0 = finished
-  Vec<LabelSymbol*> labels;
+  Vec<LabelSymbol*> labels, breakLbls;
+
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->iclass->getField("more"), new_IntSymbol(i)));
-        call->insertBefore(new GotoStmt(GOTO_ITER_END, end));
-        LabelSymbol* label = new LabelSymbol(astr("_jump_", istr(i)));
-        call->insertBefore(new DefExpr(label));
-        labels.add(label);
-        call->remove();
-        i++;
+        handleYieldInAdvance(labels, breakLbls, ii, ic, end, call, i++);
       } else if (call->isPrimitive(PRIM_RETURN)) {
-        INT_ASSERT(false); // should have been removed with removeRetSymbolAndUses()
+        INT_FATAL(call, "should have been removed with removeRetSymbolAndUses()");
       }
     } else if (LoopStmt* loop = toLoopStmt(ast)) {
       loop->orderIndependentSet(false);
@@ -1168,17 +1318,9 @@ buildAdvance(FnSymbol* fn,
   end->defPoint->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->iclass->getField("more"), new_IntSymbol(0)));
 
   // insert jump table at head of advance
-  i = 2;
   Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_DEFAULT]);
+  buildJumpTables(advanceBody, labels, breakLbls, more);
 
-  forv_Vec(LabelSymbol, label, labels) {
-    GotoStmt* igs = new GotoStmt(GOTO_ITER_RESUME, label);
-    label->iterResumeGoto = igs;
-    Symbol* tmp = newTemp(dtBool);
-    advanceBody->insertAtHead(new CondStmt(new SymExpr(tmp), igs));
-    advanceBody->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_EQUAL, more, new_IntSymbol(i++))));
-    advanceBody->insertAtHead(new DefExpr(tmp));
-  }
   advanceBody->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->iclass->getField("more"))));
   advanceBody->insertAtHead(new DefExpr(more));
   advanceBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -1852,8 +1994,6 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
       }
     }
   }
-
-  ii->iclass->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_DEFAULT])));
 
   if (!valField) {
     valField = createICField(i, NULL, yieldedType, true, fn);

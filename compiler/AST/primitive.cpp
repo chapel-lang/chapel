@@ -185,7 +185,7 @@ returnInfoStaticFieldType(CallExpr* call) {
   // The first argument is the variable or the type whose field is queried.
   Type* type = call->get(1)->getValType();
   INT_ASSERT(! type->symbol->hasFlag(FLAG_TUPLE)); // not implemented
-  AggregateType* at = toAggregateType(canonicalClassType(type));
+  AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
   INT_ASSERT(at); // caller's responsibility
   // The second argument is the name of the field.
   VarSymbol* nameSym = toVarSymbol(toSymExpr(call->get(2))->symbol());
@@ -347,7 +347,7 @@ returnInfoGetTupleMemberRef(CallExpr* call) {
 
 static QualifiedType
 returnInfoGetMemberRef(CallExpr* call) {
-  Type* t = canonicalClassType(call->get(1)->getValType());
+  Type* t = canonicalDecoratedClassType(call->get(1)->getValType());
   AggregateType* ct = toAggregateType(t);
   INT_ASSERT(ct);
   SymExpr* se = toSymExpr(call->get(2));
@@ -498,8 +498,6 @@ returnInfoToNilable(CallExpr* call) {
   } else if (isManagedPtrType(t)) {
     t = getManagedPtrBorrowType(t);
   }
-
-
 
   if (AggregateType* at = toAggregateType(t))
     if (isClass(at))
@@ -899,8 +897,8 @@ initPrimitive() {
   // specify a particular localeID for an on clause.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
-  prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);
-  prim_def(PRIM_HEAP_BROADCAST_GLOBAL_VARS, "_heap_broadcast_global_vars", returnInfoVoid, true, true);
+  prim_def(PRIM_REGISTER_GLOBAL_VAR, "_register_global_var", returnInfoVoid, true, true);
+  prim_def(PRIM_BROADCAST_GLOBAL_VARS, "_broadcast_global_vars", returnInfoVoid, true, true);
   // ('_private_broadcast' sym)
   // Later, a structure index is inserted ahead
   // of the symbol, so it ends up as

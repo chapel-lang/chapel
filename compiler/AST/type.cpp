@@ -140,7 +140,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
         Symbol* eltTypeField = at->getField("eltType", false);
 
         if (domField && eltTypeField) {
-          Type* domainType = canonicalClassType(domField->type);
+          Type* domainType = canonicalDecoratedClassType(domField->type);
           Type* eltType    = eltTypeField->type;
 
           if (domainType != dtUnknown && eltType != dtUnknown)
@@ -155,7 +155,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
         Symbol* instanceField = at->getField("_instance", false);
 
         if (instanceField) {
-          Type* implType = canonicalClassType(instanceField->type);
+          Type* implType = canonicalDecoratedClassType(instanceField->type);
 
           if (implType != dtUnknown)
             retval = toString(implType, false);
@@ -172,7 +172,6 @@ const char* toString(Type* type, bool decorateAllClasses) {
         const char* borrowName = toString(borrowType, false);
         if (startsWith(borrowName, borrowed)) {
           borrowName = borrowName + strlen(borrowed);
-          INT_FATAL("Remove me");
         }
         if (startsWith(vt->symbol->name, "_owned("))
           retval = astr("owned ", borrowName);
@@ -183,22 +182,28 @@ const char* toString(Type* type, bool decorateAllClasses) {
         else if (0 == strcmp(vt->symbol->name, "_shared"))
           retval = astr("shared");
 
-      } else if (isClassLike(at) && isClass(at)) {
-        // It's an un-decorated class type
-        const char* borrowed = "borrowed ";
-        const char* useName = vt->symbol->name;
-        if (startsWith(useName, borrowed))
-          useName = useName + strlen(borrowed);
+      } else if (isClassLike(at)) {
+        if (isClass(at)) {
+          // It's an un-decorated class type
+          const char* borrowed = "borrowed ";
+          const char* useName = vt->symbol->name;
+          if (startsWith(useName, borrowed))
+            useName = useName + strlen(borrowed);
 
-        if (decorateAllClasses)
-          useName = astr("borrowed ", useName);
+          if (decorateAllClasses)
+            useName = astr("borrowed ", useName);
 
-        retval = useName;
+          retval = useName;
+        }
       }
     }
 
     if (retval == NULL)
       retval = vt->symbol->name;
+    /* This can be helpful when debugging (and perhaps we should enable it
+       by default?): */
+//    if (developer)
+//      retval = vt->symbol->cname;
 
   } else {
     retval = "null type";
@@ -615,7 +620,11 @@ void initPrimitiveTypes() {
 
   dtValue = createInternalType("value", "_chpl_value");
 
-  INIT_PRIM_BOOL("bool(1)", 1);
+  gIteratorBreakToken = new VarSymbol("_iteratorBreakToken", dtBool);
+  gIteratorBreakToken->addFlag(FLAG_CONST);
+  gIteratorBreakToken->addFlag(FLAG_NO_CODEGEN);
+  rootModule->block->insertAtTail(new DefExpr(gIteratorBreakToken));
+
   INIT_PRIM_BOOL("bool(8)", 8);
   INIT_PRIM_BOOL("bool(16)", 16);
   INIT_PRIM_BOOL("bool(32)", 32);
@@ -723,11 +732,17 @@ void initPrimitiveTypes() {
   dtBorrowed = createInternalType("_borrowed", "_borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
 
+  dtBorrowedNonNilable = createInternalType("_borrowedNonNilable", "_borrowedNonNilable");
+  dtBorrowedNonNilable->symbol->addFlag(FLAG_GENERIC);
+
   dtBorrowedNilable = createInternalType("_borrowedNilable", "_borrowedNilable");
   dtBorrowedNilable->symbol->addFlag(FLAG_GENERIC);
 
   dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
+
+  dtUnmanagedNonNilable = createInternalType("_unmanagedNonNilable", "_unmanagedNonNilable");
+  dtUnmanagedNonNilable->symbol->addFlag(FLAG_GENERIC);
 
   dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
   dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
@@ -829,6 +844,10 @@ void initCompilerGlobals() {
   gNilChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gNilChecking, !fNoNilChecks);
 
+  gLegacyNilClasses = new VarSymbol("chpl_legacyNilClasses", dtBool);
+  gLegacyNilClasses->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gLegacyNilClasses, fLegacyNilableClasses);
+
   gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
   gDivZeroChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gDivZeroChecking, !fNoDivZeroChecks);
@@ -859,7 +878,6 @@ bool is_nothing_type(Type* t) {
 
 bool is_bool_type(Type* t) {
   return
-    t == dtBools[BOOL_SIZE_1] ||
     t == dtBools[BOOL_SIZE_SYS] ||
     t == dtBools[BOOL_SIZE_8] ||
     t == dtBools[BOOL_SIZE_16] ||
@@ -937,12 +955,6 @@ bool isLegalParamType(Type* t) {
 }
 
 int get_width(Type *t) {
-  if (t == dtBools[BOOL_SIZE_1] ||
-      t == dtBools[BOOL_SIZE_SYS]) {
-    return 1;
-    // BLC: This is a lie, but one I'm hoping we can get away with
-    // based on how this function is used
-  }
   if (t == dtBools[BOOL_SIZE_8] ||
       t == dtInt[INT_SIZE_8] ||
       t == dtUInt[INT_SIZE_8])
@@ -1018,12 +1030,18 @@ bool isClassOrNil(Type* t) {
 bool isClassLike(Type* t) {
   return isDecoratedClassType(t) ||
          t == dtBorrowed ||
+         t == dtBorrowedNonNilable ||
          t == dtBorrowedNilable ||
          t == dtUnmanaged ||
          t == dtUnmanagedNilable ||
+         t == dtUnmanagedNonNilable ||
          (isClass(t) && !(t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                           t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                           t->symbol->hasFlag(FLAG_REF)));
+}
+
+bool isClassLikeOrManaged(Type* t) {
+  return isClassLike(t) || isManagedPtrType(t);
 }
 
 bool isClassLikeOrPtr(Type* t) {
@@ -1107,19 +1125,36 @@ static bool isDerivedType(Type* type, Flag flag)
 }
 
 bool isManagedPtrType(const Type* t) {
+  if (const DecoratedClassType* dt = toConstDecoratedClassType(t))
+    t = dt->getCanonicalClass();
+
   return t && t->symbol->hasFlag(FLAG_MANAGED_POINTER);
 }
 
-Type* getManagedPtrBorrowType(const Type* t) {
-  INT_ASSERT(isManagedPtrType(t));
+Type* getManagedPtrBorrowType(const Type* managedPtrType) {
+  INT_ASSERT(isManagedPtrType(managedPtrType));
 
-  const AggregateType* at = toConstAggregateType(t);
+  if (const DecoratedClassType* dt = toConstDecoratedClassType(managedPtrType))
+    managedPtrType = dt->getCanonicalClass();
+
+  const AggregateType* at = toConstAggregateType(managedPtrType);
 
   INT_ASSERT(at);
 
-  Type* ret = at->getField("chpl_t")->type;
-  Type* borrow = canonicalClassType(ret);
-  return borrow;
+  Type* borrowType = at->getField("chpl_t")->type;
+
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
+
+  if (isNilableClassType(borrowType))
+    decorator = CLASS_TYPE_BORROWED_NILABLE;
+
+  borrowType = canonicalDecoratedClassType(borrowType);
+
+  if (AggregateType* at = toAggregateType(borrowType))
+    if (isClass(at))
+      borrowType = at->getDecoratedClass(decorator);
+
+  return borrowType;
 }
 
 bool isSyncType(const Type* t) {

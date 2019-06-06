@@ -220,7 +220,7 @@ class Data {
   var x:int;
 }
 
-var myData: unmanaged Data; // myData is a class pointer stored on locale 0 whose default value is `nil`
+var myData: unmanaged Data?; // myData is a class pointer stored on locale 0 whose default value is `nil`
 
 on Locales[1 % numLocales] {
   writeln("at start of 'on', myData is on locale ", myData.locale.id);

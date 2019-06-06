@@ -1,0 +1,2 @@
+const-indices.chpl:5: error: illegal lvalue in assignment
+const-indices.chpl:11: error: illegal lvalue in assignment

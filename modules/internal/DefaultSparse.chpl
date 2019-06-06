@@ -351,7 +351,7 @@ module DefaultSparse {
         return _getDomain(_to_unmanaged(this));
       } else {
         const copy = new unmanaged DefaultSparseDom(rank, idxType, dist, parentDom);
-        return _newDomain(copy);
+        return new _domain(copy);
       }
     }
   }

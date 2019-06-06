@@ -1,4 +1,9 @@
-Byte length = 11
+Byte length = 5
+Byte index 1 = 'h'
+Byte index 2 = 'e'
+Byte index 3 = 'l'
+Byte index 4 = 'l'
+Byte index 5 = 'o'
 Codepoint length = 9
 Codepoint index 1 = 'é'
 Codepoint index 2 = 'v'

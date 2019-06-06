@@ -153,14 +153,15 @@ void init_done_obj(done_t* done, int target) {
 }
 
 static inline
-void wait_done_obj(done_t* done)
+void wait_done_obj(done_t* done, chpl_bool do_yield)
 {
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
   GASNET_BLOCKUNTIL(done->flag);
 #else
   while (!done->flag) {
     (void) gasnet_AMPoll();
-    chpl_task_yield();
+    if (do_yield)
+      chpl_task_yield();
   }
 #endif
 }
@@ -912,14 +913,23 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 #endif
 }
 
-void chpl_comm_broadcast_global_vars(int numGlobals) {
-  int i;
-  if (chpl_nodeID != 0) {
-    for (i = 0; i < numGlobals; i++) {
-      chpl_comm_get(chpl_globals_registry[i], 0,
-                    &((wide_ptr_t*)seginfo_table[0].addr)[i],
-                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, CHPL_COMM_UNKNOWN_ID, 0, 0);
+wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
+  //
+  // Gather the global variables' wide pointers on node 0 into the
+  // buffer at the front of our communicable segment.  We don't have
+  // to communicate that because everyone already knows where it is.
+  // We do need to delay returning on the non-0 nodes until after
+  // node 0 has filled in that buffer, however.
+  //
+  if (chpl_nodeID == 0) {
+    for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
+      ((wide_ptr_t*) seginfo_table[0].addr)[i] = *chpl_globals_registry[i];
     }
+    chpl_comm_barrier("fill node 0 globals buf");
+    return NULL; // so common code won't try to free it!
+  } else {
+    chpl_comm_barrier("fill node 0 globals buf");
+    return (wide_ptr_t*) seginfo_table[0].addr;
   }
 }
 
@@ -1163,7 +1173,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                                             Arg1(raddr_chunk)));
 
         // Wait for the PUT to complete.
-        wait_done_obj(&done);
+        wait_done_obj(&done, false);
       }
     }
   }
@@ -1273,7 +1283,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                                             &info, sizeof(info)));
 
         // Wait for the PUT to complete.
-        wait_done_obj(&done);
+        wait_done_obj(&done, false);
 
         // Now copy from local_buf back to addr if necessary.
         if( local_buf ) {
@@ -1494,14 +1504,15 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
   }
 
   if (blocking)
-    wait_done_obj(&done);
+    wait_done_obj(&done, !fast);
 }
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in chpl_comm_on_bundle_t redundant? active message can determine this.
 void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                     chpl_fn_int_t fid,
-                     chpl_comm_on_bundle_t *arg, size_t arg_size) {
+                           chpl_fn_int_t fid,
+                           chpl_comm_on_bundle_t *arg, size_t arg_size,
+                           int ln, int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);
     chpl_ftable_call(fid, arg);
@@ -1510,11 +1521,11 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_executeOn("", node);
+    chpl_comm_diags_verbose_executeOn("", node, ln, fn);
     chpl_comm_diags_incr(execute_on);
 
     execute_on_common(node, subloc, fid, arg, arg_size,
@@ -1523,8 +1534,9 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
 }
 
 void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                        chpl_fn_int_t fid,
-                        chpl_comm_on_bundle_t *arg, size_t arg_size) {
+                              chpl_fn_int_t fid,
+                              chpl_comm_on_bundle_t *arg, size_t arg_size,
+                              int ln, int32_t fn) {
 
   if (chpl_nodeID == node) {
     assert(0); // locale model code should prevent this...
@@ -1533,11 +1545,11 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_executeOn("non-blocking", node);
+    chpl_comm_diags_verbose_executeOn("non-blocking", node, ln, fn);
     chpl_comm_diags_incr(execute_on_nb);
   
     execute_on_common(node, subloc, fid, arg, arg_size,
@@ -1547,8 +1559,9 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
 
 // GASNET - should only be called for "small" functions
 void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t arg_size) {
+                                chpl_fn_int_t fid,
+                                chpl_comm_on_bundle_t *arg, size_t arg_size,
+                                int ln, int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);
     chpl_ftable_call(fid, arg);
@@ -1557,11 +1570,11 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_executeOn("fast", node);
+    chpl_comm_diags_verbose_executeOn("fast", node, ln, fn);
     chpl_comm_diags_incr(execute_on_fast);
 
     execute_on_common(node, subloc, fid, arg, arg_size,
@@ -1575,9 +1588,3 @@ void chpl_comm_make_progress(void)
 }
 
 void chpl_comm_task_end(void) { }
-
-void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide_addr) {
-  if (chpl_nodeID == 0) {
-    ((wide_ptr_t*)seginfo_table[0].addr)[i] = wide_addr;
-  }
-}

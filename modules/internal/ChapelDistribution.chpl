@@ -21,18 +21,13 @@ module ChapelDistribution {
 
   use LinkedLists;
 
-  extern proc chpl_task_yield();
-
   //
   // Abstract distribution class
   //
   pragma "base dist"
   class BaseDist {
-    // The common case seems to be local access to this class, so we
-    // will use explicit processor atomics, even when network
-    // atomics are available
     var _doms: LinkedList(unmanaged BaseDom); // domains declared over this distribution
-    var _domsLock: chpl__processorAtomicType(bool); // lock for concurrent access
+    var _domsLock: chpl_LocalSpinlock; // lock for concurrent access
     var _free_when_no_doms: bool; // true when original _distribution is destroyed
     var pid:int = nullPid; // privatized ID, if privatization is supported
 
@@ -41,18 +36,18 @@ module ChapelDistribution {
 
     // Returns a distribution that should be freed or nil.
     pragma "dont disable remote value forwarding"
-    proc remove(): unmanaged BaseDist {
+    proc remove(): unmanaged BaseDist? {
       var free_dist = false;
       if dsiTrackDomains() {
         on this {
           var dom_count = -1;
           local {
-            _lock_doms();
+            _domsLock.lock();
             // Set a flag to indicate it should be freed when _doms
             // becomes empty
             _free_when_no_doms = true;
             dom_count = _doms.size;
-            _unlock_doms();
+            _domsLock.unlock();
           }
           if dom_count == 0 then
             free_dist = true;
@@ -74,7 +69,7 @@ module ChapelDistribution {
       on this {
         var cnt = -1;
         local {
-          _lock_doms();
+          _domsLock.lock();
           _doms.remove(x);
           cnt = _doms.size;
 
@@ -82,7 +77,7 @@ module ChapelDistribution {
           if !_free_when_no_doms then
             cnt += 1;
 
-          _unlock_doms();
+          _domsLock.unlock();
         }
         count = cnt;
       }
@@ -103,22 +98,10 @@ module ChapelDistribution {
     //
     inline proc add_dom(x:unmanaged BaseDom) {
       on this {
-        _lock_doms();
+        _domsLock.lock();
         _doms.append(x);
-        _unlock_doms();
+        _domsLock.unlock();
       }
-    }
-
-    inline proc _lock_doms() {
-      // WARNING: If you are calling this function directly from
-      // a remote locale, you should consider wrapping the call in
-      // an on clause to avoid excessive remote forks due to the
-      // testAndSet()
-      while (_domsLock.testAndSet(memory_order_acquire)) do chpl_task_yield();
-    }
-
-    inline proc _unlock_doms() {
-      _domsLock.clear(memory_order_release);
     }
 
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
@@ -171,14 +154,11 @@ module ChapelDistribution {
   //
   pragma "base domain"
   class BaseDom {
-    // The common case seems to be local access to this class, so we
-    // will use explicit processor atomics, even when network
-    // atomics are available
-    var _arrs: LinkedList(unmanaged BaseArr);  // arrays declared over this domain
+    var _arrs: LinkedList(unmanaged BaseArr); // arrays declared over this domain
     var _arrs_containing_dom: int; // number of arrays using this domain
                                    // as var A: [D] [1..2] real
                                    // is using {1..2}
-    var _arrsLock: chpl__processorAtomicType(bool); // lock for concurrent access
+    var _arrsLock: chpl_LocalSpinlock; // lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
 
@@ -188,22 +168,24 @@ module ChapelDistribution {
     proc deinit() {
     }
 
+    pragma "unsafe"
     proc dsiMyDist(): unmanaged BaseDist {
       halt("internal error: dsiMyDist is not implemented");
-      return nil;
+      var ret: unmanaged BaseDist; // nil
+      return ret;
     }
 
     // Returns (dom, dist).
     // if this domain should be deleted, dom=this; otherwise it is nil.
     // dist is nil or a distribution that should be removed.
     pragma "dont disable remote value forwarding"
-    proc remove() : (unmanaged BaseDom, unmanaged BaseDist) {
+    proc remove() : (unmanaged BaseDom?, unmanaged BaseDist?) {
 
       // TODO -- remove dsiLinksDistribution
       assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
 
-      var ret_dom:unmanaged BaseDom = nil;
-      var ret_dist:unmanaged BaseDist = nil;
+      var ret_dom:unmanaged BaseDom? = nil;
+      var ret_dist:unmanaged BaseDist? = nil;
       var dist = dsiMyDist();
       var free_dom = false;
       var remove_dist = false;
@@ -212,11 +194,11 @@ module ChapelDistribution {
         // Count the number of arrays using this domain
         // and mark this domain to free itself when that number reaches 0.
         local {
-          _lock_arrs();
+          _arrsLock.lock();
           arr_count = _arrs.size;
           arr_count += _arrs_containing_dom;
           _free_when_no_arrs = true;
-          _unlock_arrs();
+          _arrsLock.unlock();
         }
 
         if arr_count == 0 {
@@ -245,7 +227,7 @@ module ChapelDistribution {
       on this {
         var cnt = -1;
         local {
-          _lock_arrs();
+          _arrsLock.lock();
           if rmFromList then
             _arrs.remove(x);
           else
@@ -255,7 +237,7 @@ module ChapelDistribution {
           // add one for the main domain record
           if !_free_when_no_arrs then
             cnt += 1;
-          _unlock_arrs();
+          _arrsLock.unlock();
         }
         count = cnt;
       }
@@ -270,46 +252,34 @@ module ChapelDistribution {
                         param addToList = true) {
       on this {
         if locking then
-          _lock_arrs();
+          _arrsLock.lock();
         if addToList then
           _arrs.append(x);
         else
           _arrs_containing_dom += 1;
         if locking then
-          _unlock_arrs();
+          _arrsLock.unlock();
       }
     }
 
     inline proc remove_containing_arr(x:unmanaged BaseArr): int {
       var count = -1;
       on this {
-        _lock_arrs();
+        _arrsLock.lock();
         _arrs_containing_dom -= 1;
         count = _arrs.size;
         count += _arrs_containing_dom;
-        _unlock_arrs();
+        _arrsLock.unlock();
       }
       return count;
     }
 
     inline proc add_containing_arr(x:unmanaged BaseArr) {
       on this {
-        _lock_arrs();
+        _arrsLock.lock();
         _arrs_containing_dom += 1;
-        _unlock_arrs();
+        _arrsLock.unlock();
       }
-    }
-
-    inline proc _lock_arrs() {
-      // WARNING: If you are calling this function directly from
-      // a remote locale, you should consider wrapping the call in
-      // an on clause to avoid excessive remote forks due to the
-      // testAndSet()
-      while (_arrsLock.testAndSet(memory_order_acquire)) do chpl_task_yield();
-    }
-
-    inline proc _unlock_arrs() {
-      _arrsLock.clear(memory_order_release);
     }
 
     // used for associative domains/arrays
@@ -652,11 +622,12 @@ module ChapelDistribution {
   //
   pragma "base array"
   class BaseArr {
-    // The common case seems to be local access to this class, so we
-    // will use explicit processor atomics, even when network
-    // atomics are available
     var pid:int = nullPid; // privatized ID, if privatization is supported
     var _decEltRefCounts : bool = false;
+
+    proc chpl__rvfMe() param {
+      return false;
+    }
 
     proc isSliceArrayView() param {
       return false;
@@ -675,9 +646,11 @@ module ChapelDistribution {
 
     proc dsiStaticFastFollowCheck(type leadType) param return false;
 
+    pragma "unsafe"
     proc dsiGetBaseDom(): unmanaged BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
-      return nil;
+      var ret: unmanaged BaseDom; // nil
+      return ret;
     }
 
     // takes 'rmFromList' which indicates whether the array should
@@ -690,7 +663,7 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc remove(param rmFromList: bool) {
       var ret_arr = this; // this array is always deleted
-      var ret_dom:unmanaged BaseDom = nil;
+      var ret_dom:unmanaged BaseDom? = nil;
       var rm_dom = false;
 
       var dom = dsiGetBaseDom();

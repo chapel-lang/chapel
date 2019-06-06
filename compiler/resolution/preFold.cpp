@@ -326,7 +326,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_FIELD_BY_NUM: {
     // if call->get(1) is a reference type, dereference it
-    Type*          t          = canonicalClassType(call->get(1)->getValType());
+    Type*          t          = canonicalDecoratedClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
 
     VarSymbol*     var        = toVarSymbol(toSymExpr(call->get(2))->symbol());
@@ -362,7 +362,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_FIELD_NAME_TO_NUM: {
-    Type*          t          = canonicalClassType(call->get(1)->getValType());
+    Type*          t          = canonicalDecoratedClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
 
     VarSymbol*     var        = toVarSymbol(toSymExpr(call->get(2))->symbol());
@@ -392,7 +392,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_FIELD_NUM_TO_NAME: {
-    Type*          t          = canonicalClassType(call->get(1)->getValType());
+    Type*          t          = canonicalDecoratedClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
 
     classType = toAggregateType(classType->getValType());
@@ -759,7 +759,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_NUM_FIELDS: {
-    Type*          t          = canonicalClassType(call->get(1)->getValType());
+    Type*          t          = canonicalDecoratedClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
     int            fieldCount = 0;
 
@@ -1600,7 +1600,7 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 //
 static Symbol* determineQueriedField(CallExpr* call) {
   AggregateType* at     =
-    toAggregateType(canonicalClassType(call->get(1)->getValType()));
+    toAggregateType(canonicalDecoratedClassType(call->get(1)->getValType()));
   SymExpr*       last   = toSymExpr(call->get(call->numActuals()));
   VarSymbol*     var    = toVarSymbol(last->symbol());
   Symbol*        retval = NULL;

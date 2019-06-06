@@ -1,0 +1,16 @@
+
+c.borrow():borrowed Child
+cq.borrow():borrowed Child?
+
+c:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
+c:borrowed Child
+borrowed Child {p = 1, c = 2}
+borrowed Child {p = 1, c = 2}
+borrowed Child {p = 1, c = 2}
+cq:borrowed Child?
+borrowed Child? nil
+borrowed Child? nil
+borrowed Child? nil

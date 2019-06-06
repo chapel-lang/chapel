@@ -241,7 +241,6 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
   switch(i->const_kind) {
     case NUM_KIND_BOOL:
       switch(i->num_index) {
-        case BOOL_SIZE_1:
         case BOOL_SIZE_SYS:
         case BOOL_SIZE_8:
           ret = llvm::ConstantInt::get(
@@ -408,7 +407,6 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         std::string bstring = (immediate->bool_value())?"true":"false";
         const char* castString = "(";
         switch (immediate->num_index) {
-        case BOOL_SIZE_1:
         case BOOL_SIZE_SYS:
         case BOOL_SIZE_8:
           castString = "UINT8(";
@@ -992,6 +990,8 @@ GenRet ArgSymbol::codegen() {
   FILE* outfile = info->cfile;
   GenRet ret;
 
+  ret.chplType = this->type;
+
   if( outfile ) {
     QualifiedType qt = qualType();
     ret.c = '&';
@@ -1064,45 +1064,6 @@ static std::string getFortranKindName(Type* type, Symbol* sym) {
     return type->symbol->cname;
   } else {
     return kindName;
-  }
-}
-
-// If there is a known .pxd file translation for this type, use that.
-// Otherwise, use the normal cname
-static std::string getPythonTypeName(Type* type, PythonFileType pxd) {
-  std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
-  if (pxd == C_PXD && tNames.first != "") {
-    return tNames.first;
-  } else if (pxd == PYTHON_PYX && tNames.second != "") {
-    return tNames.second;
-  } else if (pxd == C_PYX && (tNames.second != "" || tNames.first != "")) {
-    std::string res = tNames.second;
-    if (strncmp(res.c_str(), "numpy", strlen("numpy")) == 0) {
-      res += "_t";
-    } else {
-      res = getPythonTypeName(type, C_PXD);
-    }
-    return res;
-  } else {
-    if (type->symbol->hasFlag(FLAG_REF)) {
-      Type* referenced = type->getValType();
-      std::string base = getPythonTypeName(referenced, pxd);
-      if (pxd == C_PYX) {
-        return "";
-      } else {
-        return base + " *";
-      }
-    } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
-      Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
-      std::string base = getPythonTypeName(pointedTo, pxd);
-      if (pxd == C_PYX) {
-        return "";
-      } else {
-        return base + " *";
-      }
-    } else {
-      return type->codegen().c;
-    }
   }
 }
 
