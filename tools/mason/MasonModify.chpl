@@ -28,6 +28,12 @@ proc masonModify(args) throws {
       masonModifyHelp();
       exit();
     }
+    else if args.size == 3{
+      if args[2] == '-h' || args[2] == '--help'{
+        masonModifyHelp();
+        exit();
+      }
+    }
     else {
       const cwd = getEnv("PWD");
       const projectHome = getProjectHome(cwd, "Mason.toml");
