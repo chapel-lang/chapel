@@ -98,13 +98,24 @@ module Math {
   pragma "fn synchronization free"
   private extern proc fabs(x: real(64)): real(64);
 
-  private proc _logBasePow2Help(in val, baseLog2) {
-    var result = -1;
-    while (val != 0) {
-      val >>= baseLog2;
-      result += 1;
+  private inline proc _logBasePow2Help(in val, baseLog2) {
+    // These are used here to avoid including BitOps by default.
+    extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
+    extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
+
+    var lg2 = 0;
+
+    if numBits(val.type) <= 32 {
+      var tmp:uint(32) = val:uint(32);
+      lg2 = 32 - 1 - chpl_bitops_clz_32(tmp):int;
+    } else if numBits(val.type) == 64 {
+      var tmp:uint(64) = val:uint(64);
+      lg2 = 64 - 1 - chpl_bitops_clz_64(tmp):int;
+    } else {
+      compilerError("Case not handled in logBasePow2 for integers");
     }
-    return result;
+
+    return lg2 / baseLog2;
   }
 
   //
@@ -815,7 +826,7 @@ module Math {
 
      :rtype: `int`
   */
-  inline proc logBasePow2(in val: int(?w), baseLog2) {
+  inline proc logBasePow2(val: int(?w), baseLog2) {
     if (val < 1) {
       halt("Can't take the log() of a non-positive integer");
     }
@@ -829,7 +840,7 @@ module Math {
 
      :rtype: `int`
   */
-  inline proc logBasePow2(in val: uint(?w), baseLog2) {
+  inline proc logBasePow2(val: uint(?w), baseLog2) {
     return _logBasePow2Help(val, baseLog2);
   }
 
@@ -852,23 +863,25 @@ module Math {
   }
 
 
-  /* Returns the base 2 logarithm of the argument `x`.
+  /* Returns the base 2 logarithm of the argument `x`,
+     rounded down.
 
-     :rtype: `int(64)`
+     :rtype: `int`
 
      It is an error if `x` is less than or equal to zero.
   */
-  proc log2(in val: int(?w)) {
+  inline proc log2(val: int(?w)) {
     return logBasePow2(val, 1);
   }
 
-  /* Returns the base 2 logarithm of the argument `x`.
+  /* Returns the base 2 logarithm of the argument `x`,
+     rounded down.
 
-     :rtype: `int(64)`
+     :rtype: `int`
 
      It is an error if `x` is less than or equal to zero.
   */
-  proc log2(in val: uint(?w)) {
+  inline proc log2(val: uint(?w)) {
     return logBasePow2(val, 1);
   }
 
