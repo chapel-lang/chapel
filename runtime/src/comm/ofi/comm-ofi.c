@@ -411,38 +411,9 @@ void init_ofiFabricDomain(void) {
   ret = fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
                    NULL, NULL, 0, hints, &ofi_info);
 
-  //
-  // STOPGAP: For now, do not accept TCP-based providers unless those
-  //          are specified explicitly.  When we try use them we get
-  //          FI_ENOCQ on the first transmit context.  I don't know why.
-  //          For the time being, just skip those.  There's no harm for
-  //          now; we've never used tcp providers in the past anyway.
-  //
-  if (ret == FI_SUCCESS && provider == NULL) {
-    struct fi_info* info;
-    for (info = ofi_info; info != NULL; info = info->next) {
-      const char* pn = info->fabric_attr->prov_name;
-      if (strstr(pn, "tcp") == NULL)
-        break;
-      if (DBG_TEST_MASK(DBG_CFGFAB) && chpl_nodeID == 0) {
-        if (info == ofi_info) {
-          DBG_PRINTF(DBG_CFGFAB,
-                     "==================== skipping \"tcp\" provider(s):");
-        }
-        DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(info, FI_TYPE_INFO));
-        DBG_PRINTF(DBG_CFGFAB, "----------");
-      }
-    }
-    if ((ofi_info = info) == NULL) {
-      ret = -FI_ENODATA;
-    }
-  }
-
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
-      if (DBG_TEST_MASK(DBG_CFGFAB | DBG_CFGFABSALL)) {
-        DBG_PRINTF(DBG_CFGFAB, "==================== hints:");
-        DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(hints, FI_TYPE_INFO));
+      if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
         DBG_PRINTF(DBG_CFGFABSALL,
                    "==================== fi_getinfo() fabrics:");
         DBG_PRINTF(DBG_CFGFABSALL,
@@ -465,21 +436,19 @@ void init_ofiFabricDomain(void) {
                        (provider == NULL) ? "<any>" : provider);
     }
 
-    if (DBG_TEST_MASK(DBG_CFGFAB | DBG_CFGFABSALL)) {
-      if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
-        DBG_PRINTF(DBG_CFGFABSALL, "====================\n"
-                   "fi_getinfo() matched fabric(s):");
-        struct fi_info* info;
-        for (info = ofi_info; info != NULL; info = info->next) {
-          DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-          DBG_PRINTF(DBG_CFGFABSALL, "----------");
-        }
-      } else {
-        DBG_PRINTF(DBG_CFGFAB, "====================\n"
-                   "fi_getinfo() matched fabric:");
-        DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-        DBG_PRINTF(DBG_CFGFAB, "----------");
+    if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
+      DBG_PRINTF(DBG_CFGFABSALL, "====================\n"
+                 "fi_getinfo() matched fabric(s):");
+      struct fi_info* info;
+      for (info = ofi_info; info != NULL; info = info->next) {
+        DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
+        DBG_PRINTF(DBG_CFGFABSALL, "----------");
       }
+    } else {
+      DBG_PRINTF(DBG_CFGFAB, "====================\n"
+                 "fi_getinfo() matched fabric:");
+      DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
+      DBG_PRINTF(DBG_CFGFAB, "----------");
     }
   }
 
