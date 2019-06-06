@@ -571,7 +571,7 @@ module CPtr {
   inline proc c_malloc(type eltType, size: integral, alignment : integral = 0) : c_ptr(eltType) {
     extern proc chpl_memalign(boundary : size_t, size : size_t) : c_void_ptr;
     const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
-    if alignment != 0 then return chpl_memalign(alignment:uint, alloc_size):c_ptr(eltType);
+    if alignment != 0 then return chpl_memalign(alignment.safeCast(size_t), alloc_size):c_ptr(eltType);
     else return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
