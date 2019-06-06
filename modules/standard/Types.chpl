@@ -269,6 +269,12 @@ pragma "no borrow convert"
 proc isBorrowedClassValue(e)  param return isBorrowedClassType(e.type);
 
 pragma "no doc"
+proc isNilableClassValue(e)   param return isNilableClassType(e.type);
+pragma "no doc"
+proc isNonNilableClassValue(e)   param return isNonNilableClassType(e.type);
+
+
+pragma "no doc"
 proc isRecordValue(e)    param  return isRecordType(e.type);
 pragma "no doc"
 proc isUnionValue(e)     param  return isUnionType(e.type);
@@ -331,6 +337,10 @@ pragma "no doc"
 proc isUnmanagedClass(type t) param  return isUnmanagedClassType(t);
 pragma "no doc"
 proc isBorrowedClass(type t) param  return isBorrowedClassType(t);
+pragma "no doc"
+proc isNilableClass(type t) param  return isNilableClassType(t);
+pragma "no doc"
+proc isNonNilableClass(type t) param  return isNonNilableClassType(t);
 pragma "no doc"
 proc isRecord(type t)    param  return isRecordType(t);
 pragma "no doc"
@@ -412,6 +422,13 @@ proc isUnmanagedClass(e)     param  return isUnmanagedClassValue(e);
 /* Returns `true` if the argument is a ``borrowed`` class type. */
 pragma "no borrow convert"
 proc isBorrowedClass(e)     param  return isBorrowedClassValue(e);
+
+/* Returns `true` if the argument is a class type that can store ``nil``. */
+proc isNilableClass(e)     param  return isNilableClassValue(e);
+/* Returns `true` if the argument is a class type that cannot store ``nil``. */
+proc isNonNilableClass(e)  param  return isNonNilableClassValue(e);
+
+
 /* Returns `true` if the argument is a record type or value. */
 proc isRecord(e)    param  return isRecordValue(e);
 /* Returns `true` if the argument is a union type or value. */
