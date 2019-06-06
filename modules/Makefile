@@ -43,7 +43,7 @@ DOC=${CHPL_MAKE_HOME}/doc/rst
 
 default: all
 
-all: $(SYS_CTYPES_MODULE) $(VERSION_MODULE)
+all: $(SYS_CTYPES_MODULE) version-module
 	$(TAGS_COMMAND)
 
 clean: FORCE
@@ -66,8 +66,10 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
 	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
-$(VERSION_MODULE): $(CHPL) FORCE
-	chpl --make-version-module > $(VERSION_MODULE)
+version-module: $(VERSION_MODULE)
+
+$(VERSION_MODULE): $(CHPL)
+	$(CHPL) --make-version-module > $(VERSION_MODULE)
 
 MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \

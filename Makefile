@@ -73,6 +73,7 @@ notcompiler: FORCE
 
 compiler: FORCE
 	cd compiler && $(MAKE)
+	cd modules && $(MAKE) version-module
 
 parser: FORCE
 	cd compiler && $(MAKE) parser
