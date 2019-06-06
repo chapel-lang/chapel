@@ -187,6 +187,26 @@ static void time_init(void);
 
 #define OFI_CHK(expr) OFI_CHK_VAL(expr, FI_SUCCESS)
 
+//
+// The ofi_rxm provider may return -FI_EAGAIN for read/write/send while
+// doing on-demand connection when emulating FI_RDM endpoints.  The man
+// page says: "Applications should be aware of this and retry until the
+// the operation succeeds."  Handle this in a generalized way, because
+// it seems like something we might encounter with other providers as
+// well.
+//
+#define OFI_RIDE_OUT_EAGAIN(expr)                                       \
+  do {                                                                  \
+    ssize_t _ret;                                                       \
+    do {                                                                \
+      CHK_TRUE((_ret = (expr)) == 0 || _ret == -FI_EAGAIN);             \
+      if (_ret == -FI_EAGAIN) {                                         \
+        sched_yield();                                                  \
+        ensure_progress();                                              \
+      }                                                                 \
+    } while (_ret == -FI_EAGAIN);                                       \
+  } while (0)
+
 #define PTHREAD_CHK(expr) CHK_EQ_TYPED(expr, 0, int, "d")
 
 
@@ -1706,8 +1726,9 @@ void amRequestCommon(c_nodeid_t node,
              "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, pDone %p",
              node, chpl_nodeID, myArg->comm.b.seq,
              am_op2name(myArg->comm.b.op), argSize, pDone);
-  OFI_CHK(fi_send(tcip->txCtx, myArg, argSize, mrDesc, rxMsgAddr(tcip, node),
-                  NULL));
+  OFI_RIDE_OUT_EAGAIN(fi_send(tcip->txCtx, myArg, argSize,
+                              mrDesc, rxMsgAddr(tcip, node),
+                              NULL));
   tcip->numTxsOut++;
 
   if (myArg != arg) {
@@ -2468,9 +2489,9 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64,
                (int) node, raddr, myAddr, size, mrKey);
-    OFI_CHK(fi_write(tcip->txCtx, myAddr, size,
-                     mrDesc, rxRmaAddr(tcip, node),
-                     (uint64_t) raddr, mrKey, 0));
+    OFI_RIDE_OUT_EAGAIN(fi_write(tcip->txCtx, myAddr, size,
+                                 mrDesc, rxRmaAddr(tcip, node),
+                                 (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
 
     if (tcip->txCQ != NULL) {
@@ -2524,9 +2545,9 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64,
                myAddr, (int) node, raddr, size, mrKey);
-    OFI_CHK(fi_read(tcip->txCtx, myAddr, size,
-                    mrDesc, rxRmaAddr(tcip, node),
-                    (uint64_t) raddr, mrKey, 0));
+    OFI_RIDE_OUT_EAGAIN(fi_read(tcip->txCtx, myAddr, size,
+                                mrDesc, rxRmaAddr(tcip, node),
+                                (uint64_t) raddr, mrKey, 0));
     tcip->numTxsOut++;
     waitForTxCQ(tcip, 1, FI_READ);
     tciFree(tcip);
