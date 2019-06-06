@@ -129,6 +129,9 @@ module DefaultAssociative {
           f <~> new ioLiteral("}");
         }
       } else {
+        // Clear the domain so it only contains indices read in.
+        dsiClear();
+
         if binary {
           var numIndices: int;
           f <~> numIndices;
@@ -146,8 +149,7 @@ module DefaultAssociative {
 
           while true {
             // Try reading an end curly
-            writeln("Reading end curly");
-            f.readwrite(end);
+            f <~> end;
             if f.error() == EFORMAT {
               // didn't find a curly, OK
               f.clearError();
@@ -159,8 +161,7 @@ module DefaultAssociative {
 
             // Try reading a comma
             if !first {
-              writeln("Reading comma");
-              f.readwrite(comma);
+              f <~> comma;
               if f.error() {
                 // break out of the loop if we didn't read
                 // a comma and were expecting one
@@ -169,10 +170,9 @@ module DefaultAssociative {
             }
             first = false;
 
-            writeln("Reading index");
             // Read an index
             var idx: idxType;
-            f.readwrite(idx);
+            f <~> idx;
             if f.error() {
               // Stop reading if we got an error
               break;
