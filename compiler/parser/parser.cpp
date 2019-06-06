@@ -188,6 +188,15 @@ void setupModulePaths() {
                       "-",
                       CHPL_TARGET_COMPILER));
 
+  sStdModPath.add(astr(CHPL_HOME,
+                      "/",
+                      modulesRoot,
+                      "/standard/gen/",
+                      CHPL_HOST_PLATFORM,
+                      "-",
+                      CHPL_HOST_ARCH));
+  // TODO: Need to tack on CPU if not 'none' or 'unknown'
+
   sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
 
   sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/packages"));

@@ -35,8 +35,10 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_ARCH)-$(CHPL_MAKE_COMPILER)
 SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
+
+CHPL_MODULES_DIR=standard/gen/$(CHPL_MAKE_HOST_BIN_SUBDIR)
 VERSION_MODULE_DOC=standard/ChplVersion.chpl
-VERSION_MODULE=$(SYS_MODULES_DIR)/ChplVersion.chpl
+VERSION_MODULE=$(CHPL_MODULES_DIR)/ChplVersion.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC=${CHPL_MAKE_HOME}/doc/rst
@@ -68,7 +70,12 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 version-module: $(VERSION_MODULE)
 
+$(VERSION_MODULE_DOC): $(VERSION_MODULE)
+	mkdir -p $(@D)
+	cp -f $< $@
+
 $(VERSION_MODULE): $(CHPL)
+	mkdir -p $(@D)
 	$(CHPL) --make-version-module > $(VERSION_MODULE)
 
 MODULES_TO_DOCUMENT = \
@@ -97,7 +104,8 @@ MODULES_TO_DOCUMENT = \
 	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
-	$(SYS_CTYPES_MODULE_DOC)
+	$(SYS_CTYPES_MODULE_DOC) \
+	$(VERSION_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
@@ -166,7 +174,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/SharedObject.chpl
 
 
-documentation: $(SYS_CTYPES_MODULE_DOC)
+documentation: $(SYS_CTYPES_MODULE_DOC) $(VERSION_MODULE_DOC)
 	@echo "Generating module documentation with chpldoc"
 	export CHPLDOC_AUTHOR='Cray Inc' && \
 	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
@@ -185,6 +193,7 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	rm -rf ./docs
 	rm -rf ${MODULE_SPHINX}
 	rm -f ${CHPL_MAKE_HOME}/modules/$(SYS_CTYPES_MODULE_DOC)
+	rm -f $(VERSION_MODULE_DOC)
 
 clean-documentation:
 	rm -rf ./docs
