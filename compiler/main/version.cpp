@@ -31,11 +31,21 @@
 // this include sets CLANG_SETTINGS
 #include "clang_settings.h"
 
+// Flip this to 'true' when we're ready to roll out a release; then
+// back after branching
+//
+static bool official = false;
+
 void
 get_version(char *v) {
   v += sprintf(v, "%d.%s.%s", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
-  if (strcmp(BUILD_VERSION, "0") != 0 || developer)
-    sprintf(v, " pre-release (%s)", BUILD_VERSION);
+  if (strcmp(BUILD_VERSION, "0") != 0 || developer) {
+    if (official) {
+      sprintf(v, ".%s", BUILD_VERSION);
+    } else {
+      sprintf(v, " pre-release (%s)", BUILD_VERSION);
+    }
+  }
 }
 
 void
@@ -70,12 +80,10 @@ get_clang_sysroot_args() {
 }
 
 void makeVersionModule(const ArgumentDescription *arg, const char* str) {
-  bool preRelease = strcmp(BUILD_VERSION, "0") != 0;
-
   printf("module ChplVersion {\n");
   printf("  param CHPL_VERSION: string = \"%d.%s.%s",
          MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
-  if (preRelease) {
+  if (!official) {
     printf(" pre-release (%s)", BUILD_VERSION);
   }
   printf("\";\n");
@@ -83,15 +91,17 @@ void makeVersionModule(const ArgumentDescription *arg, const char* str) {
   printf("  param CHPL_VERSION_MINOR: int = %s;\n", MINOR_VERSION);
   printf("  param CHPL_VERSION_UPDATE: int = %s;\n", UPDATE_VERSION);
   printf("  param CHPL_VERSION_OFFICIAL: bool = ");
-  if (preRelease) {
-    printf("false");
-  } else {
+  if (official) {
     printf("true");
+  } else {
+    printf("false");
   }
   printf(";\n");
   printf("  param CHPL_VERSION_SHA: string = \"");
-  if (preRelease) {
+  if (!official) {
     printf("%s", BUILD_VERSION);
+  } else {
+    printf("N/A");
   }
   printf("\";\n");
   printf("}\n");
