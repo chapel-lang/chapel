@@ -319,7 +319,7 @@ qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_l
   else if( anchor == QIO_REGEXP_ANCHOR_BOTH ) ranchor = RE2::ANCHOR_BOTH;
 
   MAYBE_STACK_ALLOC(StringPiece, nsubmatch, spPtr, onstack);
-  memset(spPtr, 0, sizeof(StringPiece)*nsubmatch);
+  memset((void*)spPtr, 0, sizeof(StringPiece)*nsubmatch);
 
   ret = re->Match(textp, startpos, endpos, ranchor, spPtr, nsubmatch);
   // Now set submatch based on StringPieces
@@ -501,7 +501,7 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
 
   if( ncaptures == 0 ) use_captures = 1;
   MAYBE_STACK_ALLOC(FilePiece, use_captures, locs, caps_onstack);
-  memset(locs, 0, sizeof(FilePiece) * use_captures);
+  memset((void*)locs, 0, sizeof(FilePiece) * use_captures);
 
   found = re->MatchFile(text, buffer, ranchor, locs, ncaptures);
 

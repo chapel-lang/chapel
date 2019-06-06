@@ -8,8 +8,8 @@ stop reading at. 'readline' could then become a simple wrapper around
 A couple of questions to consider:
 
 - is 'readUntil' a good name?
-- Do we want to accept a string argument to be used with the 'ascii'
-function? This is probably a general question in chapel about how we want
+- Do we want to accept a string argument to be used with the 'string.byte'
+method? This is probably a general question in chapel about how we want
 users to deal with single characters.
 
 Ex: readUntil(dataStr, 0x3E);    vs    readUntil(dataStr, ">");

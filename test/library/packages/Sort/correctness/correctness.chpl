@@ -15,8 +15,8 @@ proc main() {
         tupleKey = new TupleCmp();
   const absKeyClass = new AbsKeyCmpClass(),
         absCompClass = new AbsCompCmpClass(),
-        revAbsKeyClass = new ReverseComparator(absKeyClass),
-        revAbsCompClass = new ReverseComparator(absCompClass),
+        revAbsKeyClass = new ReverseComparator(absKeyClass.borrow()),
+        revAbsCompClass = new ReverseComparator(absCompClass.borrow()),
         tupleKeyClass = new TupleCmpClass();
 
 
@@ -42,16 +42,16 @@ proc main() {
 
                 // Testing comparators
                 ([-1, 2, 3, -4], absKey),
-                ([-1, 2, 3, -4], absKeyClass),
+                ([-1, 2, 3, -4], absKeyClass.borrow()),
                 ([-1, 2, 3, -4], absComp),
-                ([-1, 2, 3, -4], absCompClass),
+                ([-1, 2, 3, -4], absCompClass.borrow()),
                 ([ 3, 2, -1, -4], reverseComparator),
                 ([ -4, 3, 2, -1], revAbsKey),
                 ([ -4, 3, 2, -1], revAbsKeyClass),
                 ([ -4, 3, 2, -1], revAbsComp),
                 ([ -4, 3, 2, -1], revAbsCompClass),
                 ([-4, -1, 2, 3], tupleKey),
-                ([-4, -1, 2, 3], tupleKeyClass)
+                ([-4, -1, 2, 3], tupleKeyClass.borrow())
               );
 
 
@@ -91,7 +91,7 @@ proc main() {
     for param i in 1..tests.size {
       ref (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      bubbleSort(arr, comparator=cmp);
+      BubbleSort.bubbleSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for bubbleSort() function.\n');
     }
@@ -99,7 +99,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      insertionSort(arr, comparator=cmp);
+      InsertionSort.insertionSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for insertionSort() function.\n');
     }
@@ -107,7 +107,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      binaryInsertionSort(arr, comparator=cmp);
+      BinaryInsertionSort.binaryInsertionSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for binaryInsertionSort() function.\n');
     }
@@ -115,7 +115,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      quickSort(arr, comparator=cmp);
+      QuickSort.quickSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for quickSort() function.\n');
     }
@@ -123,7 +123,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      heapSort(arr, comparator=cmp);
+      HeapSort.heapSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for heapSort() function.\n');
     }
@@ -131,7 +131,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      selectionSort(arr, comparator=cmp);
+      SelectionSort.selectionSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for selectionSort() function.\n');
     }
@@ -139,7 +139,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      mergeSort(arr, comparator=cmp);
+      MergeSort.mergeSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for mergeSort() function.\n');
     }

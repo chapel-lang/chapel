@@ -1,4 +1,4 @@
-Foo(int(64))
+borrowed Foo(int(64))
 {x = 0}
-Foo(bool)
+borrowed Foo(bool)
 {x = false}

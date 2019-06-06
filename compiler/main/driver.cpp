@@ -109,6 +109,8 @@ bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryPython = false;
+bool fMultiLocaleInterop = false;
+bool fMultiLocaleLibraryDebug = false;
 
 bool no_codegen = false;
 int  debugParserLevel = 0;
@@ -143,6 +145,7 @@ bool fNoDivZeroChecks = false;
 bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
+bool fLegacyNilableClasses = true;
 bool fNoStackChecks = false;
 bool fNoInferLocalFields = false;
 bool fReplaceArrayAccessesWithRefTemps = false;
@@ -159,8 +162,6 @@ bool fLLVMWideOpt = false;
 
 bool fWarnConstLoops = true;
 bool fWarnUnstable = false;
-bool fDefaultUnmanaged = false;
-bool fLegacyNew = false;
 
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
@@ -177,7 +178,7 @@ bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
 bool fIncrementalCompilation = false;
-bool fNoOptimizeForallUnordered = true;
+bool fNoOptimizeForallUnordered = false;
 
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
@@ -203,6 +204,7 @@ char fExplainInstantiation[256] = "";
 bool fExplainVerbose = false;
 bool fParseOnly = false;
 bool fPrintCallGraph = false;
+bool fPrintAllCandidates = false;
 bool fPrintCallStackOnError = false;
 bool fPrintIDonError = false;
 bool fPrintModuleResolution = false;
@@ -722,6 +724,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fIgnoreLocalClasses = false;
   fNoOptimizeOnClauses = false;
   //fReplaceArrayAccessesWithRefTemps = true; // don't tie this to --fast yet
+  fNoOptimizeForallUnordered = false;
   optimizeCCode = true;
   specializeCCode = true;
   turnOffChecks(desc, unused);
@@ -967,6 +970,7 @@ static ArgumentDescription arg_desc[] = {
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"explain-verbose", ' ', NULL, "Enable [disable] tracing of disambiguation with 'explain' options", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
+ {"print-all-candidates", ' ', NULL, "[Don't] print all candidates for a resolution failure", "N", &fPrintAllCandidates, "CHPL_PRINT_ALL_CANDIDATES", NULL},
  {"print-callgraph", ' ', NULL, "[Don't] print a representation of the callgraph for the program", "N", &fPrintCallGraph, "CHPL_PRINT_CALLGRAPH", NULL},
  {"print-callstack-on-error", ' ', NULL, "[Don't] print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"print-unused-functions", ' ', NULL, "[Don't] print the name and location of unused functions", "N", &fPrintUnusedFns, NULL, NULL},
@@ -1042,8 +1046,6 @@ static ArgumentDescription arg_desc[] = {
  {"report-optimized-forall-unordered-ops", ' ', NULL, "Show which statements in foralls have been converted to unordered operations", "F", &fReportOptimizeForallUnordered, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
- {"default-unmanaged", ' ', NULL, "Enable [disable] class type defaulting to unmanaged", "N", &fDefaultUnmanaged, "CHPL_DEFAULT_UNMANAGED", NULL},
- {"legacy-new", ' ', NULL, "Enable [disable] 'new SomeClass' legacy behavior", "N", &fLegacyNew, "CHPL_LEGACY_NEW", NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
  DRIVER_ARG_BREAKFLAGS_COMMON,
@@ -1056,6 +1058,7 @@ static ArgumentDescription arg_desc[] = {
  DRIVER_ARG_DEBUGGERS,
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
+ {"legacy-nilable-classes", ' ', NULL, "Allow all variables of class type to store nil", "N", &fLegacyNilableClasses, NULL, NULL},
  {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
@@ -1070,6 +1073,7 @@ static ArgumentDescription arg_desc[] = {
  {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", fortranModulename, NULL, setFortranAndLibmode},
  {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
  {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
+ {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
@@ -1340,7 +1344,7 @@ static void postStaticLink() {
   if (fLinkStyle == LS_STATIC) {
     if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
       USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
-      fLinkStyle = LS_DEFAULT;
+      fLinkStyle = fMultiLocaleInterop ? LS_DYNAMIC : LS_DEFAULT;
     }
   }
 }
@@ -1368,6 +1372,27 @@ static void postVectorize() {
     fYesVectorize = false;
     fNoVectorize = true;
   }
+}
+
+static void setMultiLocaleInterop() {
+  // We must be compiling a multi-locale library to be eligible for MLI.
+  if (!fLibraryCompile || !strcmp(CHPL_COMM, "none")) {
+    return;
+  }
+
+  if (strcmp(CHPL_COMM, "gasnet") != 0) {
+    USR_FATAL("Multi-locale libraries are only supported on gasnet");
+  }
+
+  if (llvmCodegen) {
+    USR_FATAL("Multi-locale libraries do not support --llvm");
+  }
+
+  if (fLibraryFortran) {
+    USR_FATAL("Multi-locale libraries do not support --library-fortran");
+  }
+
+  fMultiLocaleInterop = true;
 }
 
 static void setMaxCIndentLen() {
@@ -1404,6 +1429,24 @@ static void checkIncrementalAndOptimized() {
               " using -O optimizations directly.");
 }
 
+static void checkMLDebugAndLibmode(void) {
+
+  if (!fMultiLocaleLibraryDebug) { return; }
+
+  fLibraryCompile = true;
+
+  if (!strcmp(CHPL_COMM, "none")) {
+    fMultiLocaleLibraryDebug = false;
+
+    const char* warning =
+        "Compiling a single locale library because CHPL_COMM is none.";
+
+    USR_WARN(warning);
+  }
+
+  return;
+}
+
 static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
@@ -1417,7 +1460,11 @@ static void postprocess_args() {
 
   postStackCheck();
 
+  setMultiLocaleInterop();
+
   postStaticLink();
+
+  checkMLDebugAndLibmode();
 
   setPrintCppLineno();
 

@@ -806,9 +806,9 @@ static void build_enum_first_function(EnumType* et) {
   if (defExpr)
     fn->insertAtTail(new CallExpr(PRIM_RETURN, defExpr->sym));
   else
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, dtVoid));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   // If there are one or more enumerators for this type, return the first one
-  // listed.  Otherwise return void.
+  // listed.  Otherwise return nothing.
 
   DefExpr* fnDef = new DefExpr(fn);
   // needs to go in the base module because when called from _defaultOf(et),

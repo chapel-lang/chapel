@@ -24,12 +24,12 @@
 *                                                                             *
 ************************************** | *************************************/
 
+#include "DecoratedClassType.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
 #include "passes.h"
 #include "resolution.h"
-#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 static void clearDefaultInitFns(FnSymbol* unusedFn) {
@@ -144,7 +144,7 @@ static void removeRandomPrimitive(CallExpr* call) {
           baseType->symbol->hasFlag(FLAG_REF))
         baseType = baseType->getValType();
 
-      baseType = canonicalClassType(baseType);
+      baseType = canonicalDecoratedClassType(baseType);
 
       SymExpr* memberSE = toSymExpr(call->get(2));
       const char* memberName = NULL;
@@ -427,11 +427,14 @@ bool isUnusedClass(Type* t) {
   //  unmanaged class types can have borrow/canonical class type used
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      if (UnmanagedClassType* mt = at->getUnmanagedClass())
-        retval &= do_isUnusedClass(mt);
+      for (int i = 0; i < NUM_DECORATED_CLASS_TYPES; i++) {
+        ClassTypeDecorator decorator = (ClassTypeDecorator)i;
+        if (Type* dt = at->getDecoratedClass(decorator))
+          retval &= do_isUnusedClass(dt);
+      }
     }
-  } else if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
-    retval &= do_isUnusedClass(mt->getCanonicalClass());
+  } else if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    retval &= do_isUnusedClass(dt->getCanonicalClass());
   }
 
   return retval;
@@ -446,9 +449,9 @@ static void removeUnusedTypes() {
         if (isUnusedClass(at) == true) {
           at->symbol->defPoint->remove();
         }
-      } else if(UnmanagedClassType* mt = toUnmanagedClassType(type->type)) {
-        if (isUnusedClass(mt->getCanonicalClass()) == true) {
-          mt->symbol->defPoint->remove();
+      } else if(DecoratedClassType* dt = toDecoratedClassType(type->type)) {
+        if (isUnusedClass(dt->getCanonicalClass()) == true) {
+          dt->symbol->defPoint->remove();
         }
       }
     }
@@ -463,9 +466,9 @@ static void removeUnusedTypes() {
             // If the value type is unused, its ref type can also be removed.
             type->defPoint->remove();
           }
-        } else if(UnmanagedClassType* mt =
-                  toUnmanagedClassType(type->getValType())) {
-          if (isUnusedClass(mt->getCanonicalClass())) {
+        } else if(DecoratedClassType* dt =
+                  toDecoratedClassType(type->getValType())) {
+          if (isUnusedClass(dt->getCanonicalClass())) {
             type->defPoint->remove();
           }
         }
@@ -659,7 +662,7 @@ static bool isVoidOrVoidTupleType(Type* type) {
   if (type == NULL) {
     return false;
   }
-  if (type == dtVoid) {
+  if (type == dtNothing) {
     return true;
   }
   if (type->symbol->hasFlag(FLAG_REF)) {
@@ -673,7 +676,7 @@ static bool isVoidOrVoidTupleType(Type* type) {
   }
   if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
     Symbol* field = type->getField("x1", false);
-    if (field == NULL || field->type == dtVoid) {
+    if (field == NULL || field->type == dtNothing) {
       return true;
     }
   }
@@ -687,7 +690,7 @@ static void cleanupVoidVarsAndFields() {
       switch (call->primitive->tag) {
       case PRIM_MOVE: {
         if (isVoidOrVoidTupleType(call->get(2)->typeInfo()) ||
-            call->get(2)->typeInfo() == dtVoid->refType) {
+            call->get(2)->typeInfo() == dtNothing->refType) {
           INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
           // Remove moves where the rhs has type void. If the rhs is a
           // call to something other than a few primitives, still make
@@ -724,13 +727,13 @@ static void cleanupVoidVarsAndFields() {
       }
       case PRIM_RETURN: {
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
-            call->get(1)->typeInfo() == dtVoid->refType) {
+            call->get(1)->typeInfo() == dtNothing->refType) {
           // Change functions that return void to use the global
           // void value instead of a local void.
           if (SymExpr* ret = toSymExpr(call->get(1))) {
-            if (ret->symbol() != gVoid) {
+            if (ret->symbol() != gNone) {
               SET_LINENO(call);
-              call->replace(new CallExpr(PRIM_RETURN, gVoid));
+              call->replace(new CallExpr(PRIM_RETURN, gNone));
             }
           }
         }
@@ -738,13 +741,13 @@ static void cleanupVoidVarsAndFields() {
       }
       case PRIM_YIELD: {
         if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
-            call->get(1)->typeInfo() == dtVoid->refType) {
+            call->get(1)->typeInfo() == dtNothing->refType) {
           // Change iterators that yield void to use the global
           // void value instead of a local void.
           if (SymExpr* ret = toSymExpr(call->get(1))) {
-            if (ret->symbol() != gVoid) {
+            if (ret->symbol() != gNone) {
               SET_LINENO(call);
-              call->replace(new CallExpr(PRIM_YIELD, gVoid));
+              call->replace(new CallExpr(PRIM_YIELD, gNone));
             }
           }
         }
@@ -790,9 +793,9 @@ static void cleanupVoidVarsAndFields() {
           formal->defPoint->remove();
         }
       }
-      if (fn->retType == dtVoid->refType ||
+      if (fn->retType == dtNothing->refType ||
           isVoidOrVoidTupleType(fn->retType)) {
-        fn->retType = dtVoid;
+        fn->retType = dtNothing;
       }
     }
     if (fn->_this) {
@@ -805,8 +808,8 @@ static void cleanupVoidVarsAndFields() {
   // Set for loop index variables that are void to the global void value
   for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* loop = toForLoop(block)) {
-      if (loop->indexGet() && loop->indexGet()->typeInfo() == dtVoid) {
-        loop->indexGet()->setSymbol(gVoid);
+      if (loop->indexGet() && loop->indexGet()->typeInfo() == dtNothing) {
+        loop->indexGet()->setSymbol(gNone);
       }
     }
   }
@@ -815,14 +818,14 @@ static void cleanupVoidVarsAndFields() {
   // DefExprs for void variables.
   for_alive_in_Vec(DefExpr, def, gDefExprs) {
       if (isVoidOrVoidTupleType(def->sym->type) ||
-          def->sym->type == dtVoid->refType) {
+          def->sym->type == dtNothing->refType) {
         if (VarSymbol* var = toVarSymbol(def->sym)) {
           // Avoid removing the "_val" field from refs
           // and forall statements' induction/shadow variables.
           if (! def->parentSymbol->hasFlag(FLAG_REF) &&
               ! isForallIterVarDef(def)              &&
               ! preserveShadowVar(var)               ) {
-            if (var != gVoid) {
+            if (var != gNone) {
               def->remove();
             }
           }
@@ -833,12 +836,13 @@ static void cleanupVoidVarsAndFields() {
   adjustVoidShadowVariables();
 
   // Problem case introduced by postFoldNormal where a statement-level call
-  // returning void can be replaced by a '_void' SymExpr. Such SymExprs will
+  // returning void can be replaced by a 'none' SymExpr. Such SymExprs will
   // be left in the tree if optimizations are disabled, and can cause codegen
   // failures later on (at least under LLVM).
   //
-  // Solution: Remove SymExprs to _void if the expr is at the statement level.
-  for_SymbolSymExprs(se, gVoid) {
+  // Solution: Remove SymExprs to none if the expr is at the
+  // statement level.
+  for_SymbolSymExprs(se, gNone) {
     if (se == se->getStmtExpr()) {
       se->remove();
     }

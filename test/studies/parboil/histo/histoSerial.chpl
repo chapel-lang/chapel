@@ -140,8 +140,8 @@ proc createBMP(bitmap:[] RGB, height: uint(32), width: uint(32), filename: strin
   var paddedWidth = 4*(((width*24)+31)/32) - width*sizeof(RGB);
   var pad: [0..#paddedWidth] uint(8);
 
-  image.magic(1) = ascii('B');
-  image.magic(2) = ascii('M');
+  image.magic(1) = 'B'.byte(1);
+  image.magic(2) = 'M'.byte(1);
 
   image.fileHeader.filesz = 2 + sizeof(bmpFileHeader) + sizeof(bmpDibHeader) + height*width*sizeof(RGB);
   image.fileHeader.creator1 = 0;

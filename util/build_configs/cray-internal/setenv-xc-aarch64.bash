@@ -268,7 +268,7 @@ else
 
     # Please keep the gen versions in compiler_versions.bash the same as these!
     gen_version_gcc=7.3.0
-    gen_version_cce=8.7.3
+    gen_version_cce=8.7.7
 
     target_cpu_module=craype-arm-thunderx2
 
@@ -298,6 +298,9 @@ else
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
+
+        # pin to an mpich version compatible with the gen compiler
+        load_module_version cray-mpich 7.7.7
     }
 
     function load_target_cpu() {

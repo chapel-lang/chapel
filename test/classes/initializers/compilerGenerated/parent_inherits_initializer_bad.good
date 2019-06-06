@@ -1,3 +1,5 @@
 parent_inherits_initializer_bad.chpl:24: In function 'main':
 parent_inherits_initializer_bad.chpl:25: error: unresolved call 'GrandParent.init()'
-parent_inherits_initializer_bad.chpl:10: note: candidates are: GrandParent.init(x1: int, x2: int)
+parent_inherits_initializer_bad.chpl:10: note: this candidate did not match: GrandParent.init(x1: int, x2: int)
+parent_inherits_initializer_bad.chpl:16: note: because call does not supply enough arguments
+parent_inherits_initializer_bad.chpl:10: note: it is missing a value for formal 'x1: int(64)'

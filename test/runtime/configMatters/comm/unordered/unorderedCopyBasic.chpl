@@ -1,21 +1,31 @@
 // Test unordered copy for various src/dst remote/local combinations (both
-// known at compiler time and some only known at runtime.) This is meant to
+// known at compile time and some only known at runtime.) This is meant to
 // test codegen and that the runtime getput function works as expected.
 
 use UnorderedCopy;
 
-// TODO test with different types (and sizes?)
 config param unordered=true;
+config type copyType = int;
 
-inline proc iniDstValue() { return 0; }
-inline proc iniSrcValue() { return 1; }
+inline proc iniDstValue() param { return 0:copyType; }
+inline proc iniSrcValue() param { return 1:copyType; }
 
-proc printThem(ref dst, ref src) {
-  if unordered then unorderedCopyFence();
-  write("dst=" + dst + ", src=" + src + " -- ");
+config const printResults = false;
+proc printThem(ref dst, const ref src) {
+  if unordered then unorderedCopyTaskFence();
+  assert(src == dst && src == iniSrcValue());
+  if printResults then
+    write("dst=" + dst + ", src=" + src + " -- ");
 }
 
-inline proc assign(ref dst, ref src) {
+proc printThem(ref dst, param src) {
+  if unordered then unorderedCopyTaskFence();
+  assert(src == dst && src == iniSrcValue());
+  if printResults then
+    write("dst=" + dst + ", src=" + src + " -- ");
+}
+
+inline proc assign(ref dst, const ref src) {
   if unordered then
     unorderedCopy(dst, src);
   else
@@ -73,12 +83,41 @@ proc srcLocalAssign(param compileTimeKnown: bool, dstLocal: bool) {
   writeln("srcLocalAssign(compileTimeKnown="+compileTimeKnown+", dstLocal="+dstLocal+")");
 }
 
+proc srcLocalConstAssign(param compileTimeKnown: bool, dstLocal: bool) {
+  var dst = iniDstValue();
+  if compileTimeKnown {
+    on Locales[getLocaleID(curLocale=dstLocal)] {
+      const src = iniSrcValue();
+      assign(dst, src);
+      printThem(dst, src);
+    }
+  } else {
+    on Locales[getLocaleID(curLocale=dstLocal)] {
+      const src = iniSrcValue();
+      on Locales[getLocaleID(curLocale=true)] do assign(dst, src);
+      printThem(dst, src);
+    }
+  }
+  writeln("srcLocalConstAssign(compileTimeKnown="+compileTimeKnown+", dstLocal="+dstLocal+")");
+}
+
+proc srcParamAssign(dstLocal: bool) {
+  var dst = iniDstValue();
+  on Locales[getLocaleID(curLocale=dstLocal)] {
+    param src = iniSrcValue();
+    if unordered then unorderedCopy(dst, src);
+                 else dst = src;
+    printThem(dst, src);
+  }
+  writeln("srcParamAssign(dstLocal="+dstLocal+")");
+}
+
 proc neitherLocalAssign() {
   var dst = iniDstValue(), src = iniSrcValue();
   on Locales[getLocaleID(curLocale=false)] {
     assign(dst, src);
+    printThem(dst, src);
   }
-  printThem(dst, src);
   writeln("neitherLocalAssign()");
 }
 
@@ -96,6 +135,15 @@ for param compileTimeKnown in false..true do
 for param compileTimeKnown in false..true do
   for dstLocal in false..true do
     srcLocalAssign(compileTimeKnown, dstLocal);
+
+// PUT where src is const
+for param compileTimeKnown in false..true do
+  for dstLocal in false..true do
+    srcLocalConstAssign(compileTimeKnown, dstLocal);
+
+// PUT where src is param
+for dstLocal in false..true do
+  srcParamAssign(dstLocal);
 
 // GET PUT
 neitherLocalAssign();

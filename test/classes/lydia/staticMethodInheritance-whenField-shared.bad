@@ -1,2 +1,0 @@
-staticMethodInheritance-whenField-shared.chpl:22: error: unresolved call 'type _shared(Parent).foo()'
-staticMethodInheritance-whenField-shared.chpl:3: note: candidates are: Parent.type foo()

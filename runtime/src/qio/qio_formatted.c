@@ -4512,6 +4512,16 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->realfmt = 2;
       style_out->string_format = QIO_STRING_FORMAT_CHPL;
 
+      // Handle precision
+      if( precision != WIDTH_NOT_SET ) {
+        // These settings have no effect when scanning
+        if( precision == WIDTH_IN_ARG ) {
+          spec_out->preArg2 = QIO_CONV_SET_PRECISION;
+        } else {
+          style_out->precision = precision;
+        }
+      }
+
       if( sloppy_flag ) {
         style_out->skip_unknown_fields = 1;
       }

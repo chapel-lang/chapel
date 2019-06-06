@@ -15,7 +15,7 @@ coforall loc in Locales do on loc {
   coforall 1..numTasksPerLocale {
     for i in 1..iters {
       a.unorderedAdd(i);
-      if concurrentFencing then unorderedAtomicFence();
+      if concurrentFencing then unorderedAtomicTaskFence();
     }
   }
 }
@@ -25,7 +25,7 @@ coforall loc in Locales do on loc {
   coforall 1..numTasksPerLocale {
     for i in 1..iters {
       a.unorderedSub(i);
-      if concurrentFencing then unorderedAtomicFence();
+      if concurrentFencing then unorderedAtomicTaskFence();
     }
   }
 }

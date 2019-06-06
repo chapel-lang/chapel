@@ -72,26 +72,33 @@ notcompiler: FORCE
 	@$(MAKE) modules
 
 compiler: FORCE
-	cd compiler && $(MAKE)
-	cd modules && $(MAKE) version-module
+	@echo "Making the compiler..."
+	@cd compiler && $(MAKE)
+	@cd modules && $(MAKE) version-module
 
 parser: FORCE
-	cd compiler && $(MAKE) parser
+	@echo "Making the parser..."
+	@cd compiler && $(MAKE) parser
 
 modules: FORCE
-	cd modules && CHPL_LLVM_CODEGEN=0 $(MAKE)
+	@echo "Making the modules..."
+	@cd modules && CHPL_LLVM_CODEGEN=0 $(MAKE)
 	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	echo "Making the modules for LLVM..."; \
 	cd modules && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
 
 runtime: FORCE
-	cd runtime && CHPL_LLVM_CODEGEN=0 $(MAKE)
+	@echo "Making the runtime..."
+	@cd runtime && CHPL_LLVM_CODEGEN=0 $(MAKE)
 	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	echo "Making the runtime for LLVM..."; \
 	cd runtime && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
 
 third-party: FORCE
-	cd third-party && $(MAKE)
+	@echo "Making the third-party libraries..."
+	@cd third-party && $(MAKE)
 
 third-party-try-opt: third-party-try-re2 third-party-try-gmp
 

@@ -864,7 +864,6 @@ private extern proc qio_style_init_default(ref s: iostyle);
 private extern proc qio_file_retain(f:qio_file_ptr_t);
 private extern proc qio_file_release(f:qio_file_ptr_t);
 
-pragma "no prototype" // FIXME
 private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, const ref style:iostyle, usefilestar:c_int):syserr;
 private extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyle):syserr;
 private extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyle):syserr;
@@ -883,6 +882,7 @@ extern proc qio_file_close(f:qio_file_ptr_t):syserr;
 
 private extern proc qio_file_lock(f:qio_file_ptr_t):syserr;
 private extern proc qio_file_unlock(f:qio_file_ptr_t);
+private extern proc qio_file_isopen(f:qio_file_ptr_t):bool;
 
 /* The general way to make sure data is written without error */
 private extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
@@ -891,10 +891,8 @@ private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64
 private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 private extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
-pragma "no prototype" // FIXME
 private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
 
-pragma "no prototype" // FIXME
 private extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, ref path:c_string, ref offset:int(64)):syserr;
 
 private extern proc qio_channel_retain(ch:qio_channel_ptr_t);
@@ -955,13 +953,9 @@ private extern proc qio_locales_for_region(fl:qio_file_ptr_t,
 private extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):syserr;
 private extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
 
-pragma "no prototype" // FIXME
 private extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_file_path_for_fp(fp:_file, ref path:c_string):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):syserr;
 
 // we don't use qio_channel_read_int/write_int since the code there is pretty
@@ -1009,16 +1003,13 @@ private extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, s
 private extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:ssize_t):syserr;
 
 private extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t, issigned:c_int):syserr;
 
 private extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):syserr;
 
 // These are the same as scan/print float but they assume an 'i' afterwards.
 private extern proc qio_channel_scan_imag(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):syserr;
-pragma "no prototype" // FIXME
 private extern proc qio_channel_print_imag(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):syserr;
 
 
@@ -1306,6 +1297,8 @@ proc =(ref ret:file, x:file) {
 proc file.check() throws {
   if is_c_nil(_file_internal) then
     throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
+  if !qio_file_isopen(_file_internal) then
+    throw SystemError.fromSyserr(EBADF, "Operation attempted on closed file");
 }
 
 pragma "no doc"
@@ -1371,7 +1364,8 @@ proc file._style:iostyle throws {
    :throws SystemError: Thrown if the file could not be closed.
  */
 proc file.close() throws {
-  try check();
+  if is_c_nil(_file_internal) then
+    throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
 
   var err:syserr = ENOERR;
   on this.home {
@@ -1524,7 +1518,7 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
     var host_start = path.find("//") + 2;
     var colon = path.find(":", host_start..);
     var slash = path.find("/", host_start..);
-    var host_end, port_start, port_end, path_start = 0;
+    var host_end, port_start, port_end, path_start: byteIndex = 0;
 
     if colon > 0 {
       host_end = colon - 1;
@@ -1795,7 +1789,7 @@ record channel {
    */
   param locking:bool;
   pragma "no doc"
-  var home:locale;
+  var home:locale = here;
   pragma "no doc"
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
@@ -1807,7 +1801,7 @@ record channel {
   // we are working on a channel created for running writeThis/readThis.
   // Therefore further locking by the same task is not necessary.
   pragma "no doc"
-  var _readWriteThisFromLocale:locale;
+  var _readWriteThisFromLocale:locale?;
 }
 
 pragma "no doc"
@@ -1859,7 +1853,7 @@ proc channel.init=(x: this.type) {
 pragma "no doc"
 proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
                   home: locale, _channel_internal:qio_channel_ptr_t,
-                  _readWriteThisFromLocale: locale) {
+                  _readWriteThisFromLocale: locale?) {
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
@@ -2813,7 +2807,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
-                                       loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
+                                       loc:locale?):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
@@ -2851,7 +2845,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         x:?t,
-                                        loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
+                                        loc:locale?):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
@@ -2882,7 +2876,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
-                                       loc:locale):syserr {
+                                       loc:locale?):syserr {
 
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
@@ -2913,7 +2907,7 @@ pragma "suppress lvalue error"
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
-                                        loc:locale):syserr {
+                                        loc:locale?):syserr {
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
@@ -2928,16 +2922,21 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // to stop writing if there was an error.
   qio_channel_clear_error(_channel_internal);
 
-  if (isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t)) && x == nil {
-    // future - write class IDs, have serialization format
-    var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-    var iolit:ioLiteral;
-    if st == QIO_AGGREGATE_FORMAT_JSON {
-      iolit = new ioLiteral("null");
+  if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
+    if x == nil {
+      // future - write class IDs, have serialization format
+      var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      var iolit:ioLiteral;
+      if st == QIO_AGGREGATE_FORMAT_JSON {
+        iolit = new ioLiteral("null");
+      } else {
+        iolit = new ioLiteral("nil");
+      }
+      _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
     } else {
-      iolit = new ioLiteral("nil");
+      var notNilX = _to_nonnil(x);
+      notNilX.writeThis(writer);
     }
-    _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
   } else {
     x.writeThis(writer);
   }
@@ -4734,7 +4733,8 @@ Going through each section for text conversions:
 [conversion type]
    ``t``
     means *type-based* or *thing* - uses writeThis/readThis but ignores
-    width and precision
+    width. Precision will impact any floating point values output
+    in this conversion.
    ``n``
     means type-based number, allowing width and precision
    ``i``
@@ -5384,7 +5384,7 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
       }
       // And, advance the channel to the end of the match.
       var cur = qio_channel_offset_unlocked(_channel_internal);
-      var target = r.matches[0].offset + r.matches[0].len;
+      var target = (r.matches[0].offset + r.matches[0].len):int;
       error = qio_channel_advance(false, _channel_internal, target - cur);
     } else {
       // otherwise, clear out caps...
@@ -6478,7 +6478,7 @@ proc channel._extractMatch(m:reMatch, ref arg:reMatch, ref error:syserr) {
 pragma "no doc"
 proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
   var cur:int(64);
-  var target = m.offset;
+  var target = m.offset:int;
   var len = m.length;
 
   // If there was no match, return the default value of the type
@@ -6612,7 +6612,7 @@ proc channel.search(re:regexp, ref error:syserr):reMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset;
+        var target = m.offset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at EOF
@@ -6679,7 +6679,7 @@ proc channel.search(re:regexp, ref captures ...?k): reMatch throws
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset;
+        var target = m.offset:int;
         err = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at EOF
@@ -6720,7 +6720,7 @@ proc channel.match(re:regexp, ref error:syserr):reMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset;
+        var target = m.offset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at start
@@ -6785,7 +6785,7 @@ proc channel.match(re:regexp, ref captures ...?k, ref error:syserr):reMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset;
+        var target = m.offset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at start
@@ -6876,7 +6876,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
           error = qio_channel_mark(false, _channel_internal);
           if !error {
             var cur = qio_channel_offset_unlocked(_channel_internal);
-            var target = m.offset;
+            var target = m.offset:int;
             error = qio_channel_advance(false, _channel_internal, target - cur);
           }
         } else {

@@ -33,6 +33,7 @@
 #include "callInfo.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
 #include "ForallStmt.h"
@@ -55,7 +56,6 @@
 #include "stringutil.h"
 #include "TryStmt.h"
 #include "typeSpecifier.h"
-#include "UnmanagedClassType.h"
 #include "view.h"
 #include "virtualDispatch.h"
 #include "visibleFunctions.h"
@@ -65,6 +65,7 @@
 
 #include "../ifa/prim_data.h"
 
+#include <algorithm>
 #include <cmath>
 #include <inttypes.h>
 #include <map>
@@ -139,6 +140,9 @@ static std::map<FnSymbol*, const char*> outerCompilerErrorMap;
 
 static CapturedValueMap            capturedValues;
 
+// Used to ensure we only issue the warning once per instantiation
+static std::set<FnSymbol*> oldStyleInitCopyFns;
+
 
 //#
 //# Static Function Declarations
@@ -200,7 +204,30 @@ static void printCallGraph(FnSymbol* startPoint = NULL,
 static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
+static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal);
 
+static bool useLegacyNilability(Expr* at) {
+  if (fLegacyNilableClasses) return true;
+
+  if (at != NULL) {
+    FnSymbol* fn = at->getFunction();
+    ModuleSymbol* mod = at->getModule();
+
+    if (fn && fn->hasFlag(FLAG_UNSAFE))
+      return true;
+
+    if (mod && mod->hasFlag(FLAG_UNSAFE))
+      return true;
+  }
+
+  return false;
+}
+static bool useLegacyNilability(Symbol* at) {
+  if (at)
+    return useLegacyNilability(at->defPoint);
+
+  return false;
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -236,6 +263,11 @@ void resolveCallAndCallee(CallExpr* call, bool allowUnresolved) {
 
   if (FnSymbol* callee = call->resolvedFunction()) {
     resolveFnForCall(callee, call);
+  } else if (call->isPrimitive() &&
+             !call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+    // OK, don't worry about resolving called functions for primitives
+    // (This comes up in particular for PRIM_CAST in the event
+    //  resolveBuiltinCastCall lowered a _cast to the primitive).
   } else if (!allowUnresolved) {
     INT_ASSERT(false);
   }
@@ -472,7 +504,9 @@ static bool fits_in_uint(int width, Immediate* imm) {
 // I.e. for an out/inout/ref formal.
 static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
-  Symbol* calledFn = formal->defPoint->parentSymbol;
+  Symbol* calledFn = NULL;
+  if (formal)
+    calledFn = formal->defPoint->parentSymbol;
 
   if (SymExpr* se = toSymExpr(actual)) {
     Symbol* sym = se->symbol();
@@ -485,18 +519,22 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
       actualConst = true;
 
     bool actualExprTmp = sym->hasFlag(FLAG_EXPR_TEMP);
-    TypeSymbol* formalTS = formal->getValType()->symbol;
-    bool formalCopyMutates = formalTS->hasFlag(FLAG_COPY_MUTATES);
+    TypeSymbol* formalTS = NULL;
+    bool formalCopyMutates = false;
+    if (formal) {
+      formalTS = formal->getValType()->symbol;
+      formalCopyMutates = formalTS->hasFlag(FLAG_COPY_MUTATES);
+    }
     bool isInitCoerceTmp = (0 == strcmp(sym->name, primCoerceTmpName));
 
     if ((actualExprTmp && !formalCopyMutates && !isInitCoerceTmp) ||
-        (actualConst && !formal->hasFlag(FLAG_ARG_THIS)) ||
+        (actualConst && !(formal && formal->hasFlag(FLAG_ARG_THIS))) ||
         se->symbol()->isParameter()) {
       // But ignore for now errors with this argument
       // to functions marked with FLAG_REF_TO_CONST_WHEN_CONST_THIS.
       // These will be checked for later, along with ref-pairs.
-      if (! (formal->hasFlag(FLAG_ARG_THIS) &&
-             calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
+      if (! (formal && formal->hasFlag(FLAG_ARG_THIS) &&
+             calledFn && calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
 
         return false;
     }
@@ -640,18 +678,63 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtUnmanaged && isUnmanagedClassType(actualType))
-    return true;
+  if (formalType == dtUnmanaged)
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isUnmanaged())
+        return true;
+
+  if (formalType == dtUnmanagedNonNilable)
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isUnmanaged() && !dt->isNilable())
+        return true;
+
+  if (formalType == dtUnmanagedNilable)
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isUnmanaged() && dt->isNilable())
+        return true;
 
   // handle unmanaged GenericClass(int) -> unmanaged GenericClass
-  if (isUnmanagedClassType(formalType) && isUnmanagedClassType(actualType) &&
-      canInstantiate(canonicalClassType(actualType),
-                     canonicalClassType(formalType)))
-    return true;
+  if (isDecoratedClassType(formalType) && isDecoratedClassType(actualType))
+    if (classesWithSameKind(formalType, actualType))
+      if (canInstantiate(canonicalDecoratedClassType(actualType),
+                         canonicalDecoratedClassType(formalType)))
+        return true;
 
-  if (formalType == dtBorrowed && isClass(actualType) &&
-     (actualType == dtObject || !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
-    return true;
+  if (formalType == dtBorrowed) {
+    if (isClass(actualType) &&
+        (actualType == dtObject ||
+         !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
+      return true;
+    else if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isBorrowed())
+        return true;
+  }
+
+  if (formalType == dtBorrowedNonNilable) {
+    if (isClass(actualType) &&
+        (actualType == dtObject ||
+         !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
+      return true;
+
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isBorrowed() && !dt->isNilable())
+        return true;
+  }
+
+  if (formalType == dtBorrowedNilable) {
+    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
+      if (dt->isBorrowed() && dt->isNilable())
+        return true;
+  }
+
+  // e.g. passing owned MyClass? into owned?
+  if (DecoratedClassType* formalDt = toDecoratedClassType(formalType))
+    if (AggregateType* formalAt = formalDt->getCanonicalClass())
+      if (isManagedPtrType(formalAt) && formalAt->instantiatedFrom == NULL)
+        if (AggregateType* atActual = toAggregateType(actualType))
+          if (formalAt == atActual->instantiatedFrom)
+            if (classesWithSameKind(formalType, actualType))
+              return true;
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
 
@@ -905,6 +988,7 @@ static
 bool canCoerceTuples(Type*     actualType,
                      Symbol*   actualSym,
                      Type*     formalType,
+                     ArgSymbol* formalSym,
                      FnSymbol* fn) {
 
   actualType = actualType->getValType();
@@ -943,7 +1027,7 @@ bool canCoerceTuples(Type*     actualType,
       // Can we coerce without promotion?
       // If the types are the same, yes
       if (atFieldType != ftFieldType) {
-        ok = canDispatch(atFieldType, actualSym, ftFieldType, fn,
+        ok = canDispatch(atFieldType, actualSym, ftFieldType, formalSym, fn,
                          &prom, NULL, false);
 
         // If we couldn't coerce or the coercion would promote, no
@@ -967,6 +1051,109 @@ bool canCoerceTuples(Type*     actualType,
 }
 
 
+/* CLASS_TYPE_BORROWED e.g. can represent any nilability,
+   but this function assumes that an actual with type CLASS_TYPE_BORROWED
+   is actually the same as CLASS_TYPE_BORROWED_NOTNIL.
+ */
+bool canCoerceDecorators(ClassTypeDecorator actual,
+                         ClassTypeDecorator formal) {
+
+  // Normalize actuals to remove generic-ness
+  if (actual == CLASS_TYPE_BORROWED)
+    actual = CLASS_TYPE_BORROWED_NONNIL;
+  if (actual == CLASS_TYPE_UNMANAGED)
+    actual = CLASS_TYPE_UNMANAGED_NONNIL;
+  if (actual == CLASS_TYPE_MANAGED)
+    actual = CLASS_TYPE_MANAGED_NONNIL;
+
+  switch (formal) {
+    case CLASS_TYPE_BORROWED:
+      // borrowed but generic nilability
+      return true;
+    case CLASS_TYPE_BORROWED_NONNIL:
+      // Can't coerce away nilable
+      return actual == CLASS_TYPE_BORROWED_NONNIL ||
+             actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             actual == CLASS_TYPE_MANAGED_NONNIL;
+    case CLASS_TYPE_BORROWED_NILABLE:
+      // Everything can coerce to a nilable borrowed
+      return true;
+    case CLASS_TYPE_UNMANAGED:
+      // unmanaged but generic nilability
+      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             actual == CLASS_TYPE_UNMANAGED_NILABLE;
+    case CLASS_TYPE_UNMANAGED_NONNIL:
+      // Can't coerce away nilable
+      // Can't coerce borrowed to unmanaged
+      return actual == CLASS_TYPE_UNMANAGED_NONNIL;
+    case CLASS_TYPE_UNMANAGED_NILABLE:
+      // Can't coerce borrowed to unmanaged
+      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             actual == CLASS_TYPE_UNMANAGED_NILABLE;
+    case CLASS_TYPE_MANAGED:
+      return actual == CLASS_TYPE_MANAGED_NONNIL ||
+             actual == CLASS_TYPE_MANAGED_NILABLE;
+    case CLASS_TYPE_MANAGED_NONNIL:
+      // Can't coerce away nilable
+      // Can't coerce borrowed to managed
+      return actual == CLASS_TYPE_MANAGED_NONNIL;
+    case CLASS_TYPE_MANAGED_NILABLE:
+      // Can't coerce borrowed to managed
+      return actual == CLASS_TYPE_MANAGED_NONNIL ||
+             actual == CLASS_TYPE_MANAGED_NILABLE;
+
+    // no default for compiler warnings to know when to update it
+  }
+
+  return false;
+}
+
+static
+Type* actualTypeAfterNilabilityRemoval(Type* actualType,
+                                       Symbol* actualSym,
+                                       Type* formalType,
+                                       ArgSymbol* formalSym) {
+
+  // Currently only applies to this arguments (method receivers)
+  if (formalSym && actualSym && actualSym->defPoint &&
+      formalSym->hasFlag(FLAG_ARG_THIS)) {
+
+    // Currently only applies to implicit/prototype modules
+    ModuleSymbol* mod = actualSym->defPoint->getModule();
+    if (mod->hasFlag(FLAG_IMPLICIT_MODULE) ||
+        mod->hasFlag(FLAG_PROTOTYPE_MODULE)) {
+
+      // Check that it's a class type (or managed type)
+      // and the only issue is nilability.
+
+      Type* actualCt = actualType;
+      if (isManagedPtrType(actualCt))
+        actualCt = getManagedPtrBorrowType(actualCt);
+
+      if (isClassLike(actualCt) && isClassLike(formalType)) {
+        ClassTypeDecorator actualDecorator = classTypeDecorator(actualCt);
+        ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
+
+        if (actualDecorator != formalDecorator &&
+            !canCoerceDecorators(actualDecorator, formalDecorator)) {
+          actualDecorator = removeNilableFromDecorator(actualDecorator);
+          if (canCoerceDecorators(actualDecorator, formalDecorator)) {
+            // OK, get the non-nilable actual and try to dispatch.
+            actualCt = canonicalDecoratedClassType(actualCt);
+            if (AggregateType* at = toAggregateType(actualCt)) {
+              actualCt = at->getDecoratedClass(formalDecorator);
+
+              if (actualCt != actualType)
+                return actualCt;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
 
 //
 // returns true iff dispatching the actualType to the formalType
@@ -977,6 +1164,7 @@ bool canCoerceTuples(Type*     actualType,
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
                Type*     formalType,
+               ArgSymbol* formalSym,
                FnSymbol* fn,
                bool*     promotes,
                bool*     paramNarrows) {
@@ -991,8 +1179,16 @@ bool canCoerce(Type*     actualType,
 
     // sync can't store an array or a param, so no need to
     // propagate promotes / paramNarrows
-    return canDispatch(baseType, NULL, formalType, fn);
+    return canDispatch(baseType, NULL, formalType, formalSym, fn);
   }
+
+  // Handle nilability removal coercion
+  if (Type* at = actualTypeAfterNilabilityRemoval(actualType, actualSym,
+                                                  formalType, formalSym))
+    if (at != actualType)
+      if (canDispatch(at, actualSym, formalType, formalSym, fn,
+                      promotes, paramNarrows))
+        return true;
 
   if (isManagedPtrType(actualType)) {
     Type* actualBaseType = getManagedPtrBorrowType(actualType);
@@ -1002,53 +1198,40 @@ bool canCoerce(Type*     actualType,
 
     Type* formalBaseType = NULL;
     AggregateType* formalOwnedShared = toAggregateType(formalType);
-    bool formalIsClass = false;
     if (isManagedPtrType(formalType)) {
       formalBaseType = getManagedPtrBorrowType(formalType);
       while (formalOwnedShared && formalOwnedShared->instantiatedFrom != NULL)
         formalOwnedShared = formalOwnedShared->instantiatedFrom;
-    } else if (AggregateType* formalAt = toAggregateType(formalType)) {
-      formalIsClass = formalAt->isClass();
     }
 
     if (isManagedPtrType(formalType) &&
         actualOwnedShared == formalOwnedShared) {
       // e.g. Owned(Child) coerces to Owned(Parent)
-      return canDispatch(actualBaseType, NULL, formalBaseType, fn,
+      return canDispatch(actualBaseType, NULL, formalBaseType, formalSym, fn,
                          promotes, paramNarrows);
-    } else if (formalIsClass) {
+    } else if (isClassLike(formalType)) {
       // e.g. Owned(SomeClass) to SomeClass (borrow type)
-      return canDispatch(actualBaseType, NULL, formalType, fn,
+      return canDispatch(actualBaseType, NULL, formalType, formalSym, fn,
                          promotes, paramNarrows);
-    }
-  }
-
-  // Handle coercions from unmanaged -> borrow
-  if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
-    if (AggregateType* formalC = toAggregateType(formalType)) {
-      if (isClass(formalC)) {
-        AggregateType* actualC = actualMt->getCanonicalClass();
-        if (canDispatch(actualC, NULL, formalC, fn, promotes, paramNarrows))
-          return true;
-      }
     }
   }
 
   // Handle coercions nil -> owned/shared
   if (actualType == dtNil && isManagedPtrType(formalType)) {
-    return true;
+    Type* formalBorrowType = getManagedPtrBorrowType(formalType);
+    if (isNilableClassType(formalBorrowType) || useLegacyNilability(actualSym))
+      return true;
   }
 
-  if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
+  if (canCoerceTuples(actualType, actualSym, formalType, formalSym, fn)) {
     return true;
   }
 
   if (actualType->symbol->hasFlag(FLAG_REF))
     // ref can't store a param, so no need to propagate paramNarrows
-    return canDispatch(actualType->getValType(),
-                       NULL,
+    return canDispatch(actualType->getValType(), NULL,
                        // MPF: Should this be formalType->getValType() ?
-                       formalType,
+                       formalType, formalSym,
                        fn,
                        promotes);
 
@@ -1067,6 +1250,34 @@ bool canCoerce(Type*     actualType,
       return true;
   }
 
+  // Check for class subtyping
+  // Class subtyping needs coercions in order to generate C code.
+  if (isClassLike(actualType) && isClassLike(formalType)) {
+    AggregateType* actualC =
+      toAggregateType(canonicalDecoratedClassType(actualType));
+    ClassTypeDecorator actualDecorator = classTypeDecorator(actualType);
+    AggregateType* formalC =
+      toAggregateType(canonicalDecoratedClassType(formalType));
+    ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
+
+    // Check that the decorators allow coercion
+    if (canCoerceDecorators(actualDecorator, formalDecorator)) {
+      // are the decorated class types the same?
+      if (actualC == formalC)
+        return true;
+
+      // are we passing a subclass?
+      AggregateType* actualParent = actualC;
+      while (true) {
+        if (actualParent == formalC)
+          return true;
+        if (actualParent == dtObject)
+          break;
+        actualParent = actualParent->dispatchParents.only();
+      }
+    }
+  }
+
   return false;
 }
 
@@ -1083,119 +1294,78 @@ bool canCoerce(Type*     actualType,
 static bool isGenericInstantiation(Type*     actualType,
                                    Type*     formalType);
 
+
 static
 bool doCanDispatch(Type*     actualType,
                    Symbol*   actualSym,
                    Type*     formalType,
+                   ArgSymbol* formalSym,
                    FnSymbol* fn,
                    bool*     promotes,
                    bool*     paramNarrows,
                    bool      paramCoerce) {
-  bool retval = false;
+  if (actualType == formalType)
+    return true;
 
-  if (actualType == formalType) {
-    retval = true;
+  if (isGenericInstantiation(actualType, formalType))
+    return true;
 
-  } else if (isGenericInstantiation(actualType, formalType) == true) {
-    retval = true;
+  if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
+      (!isNonNilableClassType(formalType) || useLegacyNilability(actualSym)))
+    return true;
 
-  // The following check against FLAG_REF ensures that 'nil' can't be
-  // passed to a by-ref argument (for example, an atomic type).  I
-  // found that without this, calls like autocopy(nil) became
-  // ambiguous when given the choice between the completely generic
-  // autocopy(x) and the autocopy(x: atomic int) (represented as
-  // autocopy(x: ref(atomic int)) internally).
-  //
-  } else if (actualType == dtNil &&
-             isClass(canonicalClassType(formalType)) &&
-             !formalType->symbol->hasFlag(FLAG_REF)) {
-    retval = true;
+  if (actualType->refType == formalType &&
+      // This is a workaround for type problems with tuples
+      // in implement forall intents...
+      !(fn &&
+        fn->hasFlag(FLAG_BUILD_TUPLE) &&
+        fn->hasFlag(FLAG_ALLOW_REF)))
+    return true;
 
-  } else if (actualType->refType == formalType &&
-             // This is a workaround for type problems with tuples
-             // in implement forall intents...
-             !(fn                            != NULL &&
-               fn->hasFlag(FLAG_BUILD_TUPLE) == true &&
-               fn->hasFlag(FLAG_ALLOW_REF)   == true)) {
-    retval = true;
+  if (paramCoerce == false &&
+      canCoerce(actualType, actualSym,
+                formalType, formalSym,
+                fn, promotes, paramNarrows))
+    return true;
 
-  } else if (paramCoerce == false &&
-             canCoerce(actualType,
-                       actualSym,
-                       formalType,
-                       fn,
-                       promotes,
-                       paramNarrows) == true) {
-    retval = true;
+  if (paramCoerce == true  &&
+      canParamCoerce(actualType, actualSym,
+                     formalType,
+                     paramNarrows))
+    return true;
 
-  } else if (paramCoerce == true  &&
-             canParamCoerce(actualType,
-                            actualSym,
-                            formalType,
-                            paramNarrows) == true) {
-    retval = true;
-
-  } else {
-    AggregateType* at = toAggregateType(actualType);
-    bool isunmanaged = false;
-    if (UnmanagedClassType* mt = toUnmanagedClassType(actualType)) {
-      isunmanaged = true;
-      at = mt->getCanonicalClass();
-    }
-
-    if (at) {
-      forv_Vec(AggregateType, parent, at->dispatchParents) {
-        Type* useParent = parent;
-        if (isunmanaged) useParent = parent->getUnmanagedClass();
-        if (useParent == formalType ||
-            doCanDispatch(useParent,
-                          NULL,
-                          formalType,
-                          fn,
-                          promotes,
-                          paramNarrows,
-                          paramCoerce) == true) {
-          retval = true;
-          break;
-        }
-      }
-    }
-
-    if (retval == false) {
-      if (fn                              != NULL        &&
-          fn->name                        != astrSequals &&
-          strcmp(fn->name, "these")       != 0           &&
-          fn->retTag                      != RET_TYPE    &&
-          fn->retTag                      != RET_PARAM   &&
-          actualType->scalarPromotionType != NULL        &&
-          doCanDispatch(actualType->scalarPromotionType,
-                        NULL,
-                        formalType,
-                        fn,
-                        promotes,
-                        paramNarrows,
-                        false) == true) {
-        *promotes = true;
-        retval    = true;
-      }
-    }
+  // check if promotion is possible
+  if (fn                              != NULL        &&
+      fn->name                        != astrSequals &&
+      strcmp(fn->name, "these")       != 0           &&
+      fn->retTag                      != RET_TYPE    &&
+      fn->retTag                      != RET_PARAM   &&
+      actualType->scalarPromotionType != NULL        &&
+      doCanDispatch(actualType->scalarPromotionType, NULL,
+                    formalType, formalSym,
+                    fn,
+                    promotes,
+                    paramNarrows,
+                    false)) {
+    *promotes = true;
+    return true;
   }
 
-  return retval;
+  return false;
 }
 
 bool canDispatch(Type*     actualType,
                  Symbol*   actualSym,
                  Type*     formalType,
+                 ArgSymbol* formalSym,
                  FnSymbol* fn,
                  bool*     promotes,
                  bool*     paramNarrows,
                  bool      paramCoerce) {
   bool tmpPromotes     = false;
   bool tmpParamNarrows = false;
-  bool retval          = doCanDispatch(actualType,
-                                       actualSym,
-                                       formalType,
+  bool retval          = doCanDispatch(actualType, actualSym,
+                                       formalType, formalSym,
                                        fn,
                                        &tmpPromotes,
                                        &tmpParamNarrows,
@@ -1238,7 +1408,7 @@ static bool isGenericInstantiation(Type*     actualType,
 
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
-  if (canDispatch(actualType, NULL, formalType, fn))
+  if (canDispatch(actualType, NULL, formalType, NULL, fn))
     return true;
   if (canInstantiate(actualType, formalType)) {
     return true;
@@ -1356,6 +1526,7 @@ static Immediate* getImmediate(Symbol* actual) {
 }
 
 typedef enum {
+  NUMERIC_TYPE_NON_NUMERIC,
   NUMERIC_TYPE_BOOL,
   NUMERIC_TYPE_ENUM,
   NUMERIC_TYPE_INT_UINT,
@@ -1373,8 +1544,8 @@ static numeric_type_t classifyNumericType(Type* t)
   if (is_real_type(t)) return NUMERIC_TYPE_REAL;
   if (is_imag_type(t)) return NUMERIC_TYPE_IMAG;
   if (is_complex_type(t)) return NUMERIC_TYPE_COMPLEX;
-  INT_ASSERT("Unhandled type in classifyNumericType");
-  return NUMERIC_TYPE_BOOL;
+
+  return NUMERIC_TYPE_NON_NUMERIC;
 }
 
 
@@ -1503,7 +1674,7 @@ static bool fits_in_mantissa_exponent(int mantissa_width,
     else if(imm->num_index == FLOAT_SIZE_64)
       v = imm->v_float64;
     else
-      INT_ASSERT("unsupported real/imag size");
+      INT_FATAL("unsupported real/imag size");
   } else if (imm->const_kind == NUM_KIND_COMPLEX) {
     if (imm->num_index == COMPLEX_SIZE_64) {
       if (realPart)
@@ -1516,9 +1687,9 @@ static bool fits_in_mantissa_exponent(int mantissa_width,
       else
         v = imm->v_complex128.i;
     } else
-      INT_ASSERT("unsupported complex size");
+      INT_FATAL("unsupported complex size");
   } else
-    INT_ASSERT("unsupported number kind");
+    INT_FATAL("unsupported number kind");
 
   double frac = 0.0;
   int exp = 0;
@@ -1986,7 +2157,7 @@ static void markArraysOfBorrows(AggregateType* at) {
     Symbol* instanceField = at->getField("_instance", false);
 
     if (instanceField) {
-      Type* implType = canonicalClassType(instanceField->type);
+      Type* implType = canonicalDecoratedClassType(instanceField->type);
 
       if (implType != dtUnknown)
         if (AggregateType* implAt = toAggregateType(implType))
@@ -2052,6 +2223,8 @@ void resolveDestructor(AggregateType* at) {
 ************************************** | *************************************/
 
 static bool resolveTypeComparisonCall(CallExpr* call);
+static bool resolveBuiltinCastCall(CallExpr* call);
+static bool resolveBuiltinAssignCall(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -2100,9 +2273,16 @@ void resolveCall(CallExpr* call) {
 
   } else {
 
-    if (resolveTypeComparisonCall(call) == false) {
-      resolveNormalCall(call);
-    }
+    if (resolveTypeComparisonCall(call))
+      return;
+
+    if (resolveBuiltinCastCall(call))
+      return;
+
+    if (resolveBuiltinAssignCall(call))
+      return;
+
+    resolveNormalCall(call);
   }
 }
 
@@ -2156,6 +2336,216 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
   return false;
 }
 
+static bool resolveBuiltinCastCall(CallExpr* call)
+{
+  UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
+  if (urse == NULL)
+    return false;
+
+  if (urse->unresolved != astr_cast || call->numActuals() != 2)
+    return false;
+
+  SymExpr* targetTypeSe = toSymExpr(call->get(1));
+  SymExpr* valueSe = toSymExpr(call->get(2));
+
+  if (targetTypeSe && valueSe &&
+      targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+    Type* targetType = targetTypeSe->symbol()->getValType();
+    Type* valueType = valueSe->symbol()->getValType();
+
+    bool promotes = false;
+    bool paramNarrows = false;
+    bool paramCoerce = false;
+    // If it's a trivial cast, replace it with PRIM_CAST.
+    // Trivial casts are those casts that:
+    //   * are already handled by C/LLVM
+    //   * implement coercions in Chapel's type system
+    // e.g. casting pointer or numeric types.
+    //
+    // The following are exceptions:
+    //  * casts invoving records (e.g. owned to borrowed)
+    //  * casts involving complex (e.g. imag to complex)
+    //  * promoted casts
+
+    if (!isRecord(targetType) && !isRecord(valueType) &&
+        !is_complex_type(targetType) && !is_complex_type(valueType) &&
+        canDispatch(valueType, valueSe->symbol(),
+                    targetType, NULL, call->getFunction(),
+                    &promotes, &paramNarrows, paramCoerce) &&
+        !promotes) {
+
+      call->baseExpr->remove();
+      call->primitive = primitives[PRIM_CAST];
+
+      if (valueSe->symbol()->isRef()) {
+        if (targetTypeSe->symbol()->isRef())
+          INT_FATAL("casting from reference to reference not handled");
+
+        SET_LINENO(call);
+
+        // Dereference before casting
+        VarSymbol* tmp = newTempConst("cast_tmp");
+        CallExpr* c = new CallExpr(PRIM_DEREF, valueSe->symbol());
+        CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        call->getStmtExpr()->insertBefore(m);
+        resolveCall(m);
+
+        // Now update the cast call we have to cast the result of deref
+        valueSe->setSymbol(tmp);
+      }
+
+      return true;
+    }
+
+    // Handle casting from managed type to its borrow type
+    // (or variants thereof)
+    if (isManagedPtrType(valueType) && !isManagedPtrType(targetType) &&
+        isClassLike(targetType)) {
+
+      SET_LINENO(call);
+
+      VarSymbol* tmp = newTempConst("cast_tmp");
+      CallExpr* c = new CallExpr("borrow", gMethodToken, valueSe->symbol());
+      CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+      call->getStmtExpr()->insertBefore(m);
+      resolveCallAndCallee(c);
+      resolveCall(m);
+
+      // Now update the cast call we have to cast
+      // the result of the borrow
+      valueSe->setSymbol(tmp);
+      // Try again with that
+      return resolveBuiltinCastCall(call);
+    }
+
+    // Handle some generic casts
+    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+      // This case is here just because in the event
+      // that targetType is generic, we won't (currently)
+      // be able to resolve a call to a _cast with a generic actual.
+      if (targetType == dtBorrowed ||
+          targetType == dtBorrowedNonNilable ||
+          targetType == dtBorrowedNilable ||
+          targetType == dtUnmanaged ||
+          targetType == dtUnmanagedNonNilable ||
+          targetType == dtUnmanagedNilable) {
+
+        if (isClassLike(valueType)) {
+          AggregateType* at = toAggregateType(canonicalDecoratedClassType(valueType));
+
+          ClassTypeDecorator d = classTypeDecorator(targetType);
+          Type* t = at->getDecoratedClass(d);
+
+          // Replace the target type with the instantiated one.
+          targetTypeSe->setSymbol(t->symbol);
+
+          if (isTypeExpr(valueSe)) {
+            // Casts of type expressions e.g. t:unmanaged
+            // are useful but don't really work as calls to _cast.
+            // Change them to noop to work around other parts of resolution.
+            call->primitive = primitives[PRIM_NOOP];
+            call->baseExpr->remove();
+            if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+              if (parentCall->isPrimitive(PRIM_MOVE) ||
+                  parentCall->isPrimitive(PRIM_ASSIGN)) {
+                call->replace(new SymExpr(t->symbol));
+                parentCall->getStmtExpr()->insertBefore(call);
+              }
+            }
+            return true;
+          } else {
+            // Try again with proper type
+            return resolveBuiltinCastCall(call);
+          }
+        }
+      }
+
+      // This could compute the target type for generics.
+      // If it does, be careful with generics with defaults.
+    }
+  }
+
+  return false;
+}
+
+
+static bool resolveBuiltinAssignCall(CallExpr* call)
+{
+  UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
+  if (urse == NULL)
+    return false;
+
+  if (urse->unresolved != astrSequals || call->numActuals() != 2)
+    return false;
+
+  Type* lhsType = call->get(1)->getValType();
+  Type* rhsType = call->get(2)->getValType();
+
+  if ((isClassLikeOrPtr(lhsType) || lhsType == dtNil) &&
+      (isClassLikeOrPtr(rhsType) || rhsType == dtNil) &&
+      !isTypeExpr(call->get(1)) && !isTypeExpr(call->get(2)) &&
+      canDispatch(rhsType, NULL, lhsType, NULL, call->getFunction())) {
+
+    // Do const checking
+    lvalueCheckActual(call, call->get(1), INTENT_REF, NULL);
+
+    // Replace the = call with a primitive assign
+    call->baseExpr->remove();
+    call->primitive = primitives[PRIM_ASSIGN];
+
+    if (lhsType != rhsType) {
+      SET_LINENO(call);
+
+      // Try casting the rhs to the LHS type
+
+      SymExpr* rhsSe = toSymExpr(call->get(2));
+      INT_ASSERT(rhsSe);
+
+      // Dereference before casting
+      VarSymbol* tmp = newTempConst("cast_tmp");
+      CallExpr* c = new CallExpr("_cast", lhsType->symbol, rhsSe->symbol());
+      CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+      call->getStmtExpr()->insertBefore(m);
+      resolveCallAndCallee(c, /* allowUnresolved*/ true);
+      resolveCall(m);
+
+      // Now update the PRIM_ASSIGN to use the result of the cast
+      rhsSe->setSymbol(tmp);
+
+      if (c->resolvedFunction() == NULL && !call->isPrimitive()) {
+        // Error for failure
+        USR_FATAL_CONT(call, "Cannot assign to %s from %s",
+                             toString(lhsType), toString(rhsType));
+        return true;
+      }
+    }
+
+    // Report errors for assigning not-nil to nil
+    if (lhsType == dtNil) {
+      USR_FATAL_CONT(call, "Cannot assign to nil");
+      return true;
+    }
+
+    if (isNonNilableClassType(lhsType)) {
+      if (rhsType == dtNil && !useLegacyNilability(call)) {
+        USR_FATAL_CONT(call, "Cannot assign to non-nilable class type %s "
+                             "from nil",
+                             toString(lhsType));
+      } else if (isNilableClassType(rhsType)) {
+        USR_FATAL_CONT(call, "Cannot assign to non-nilable class type %s "
+                             "from nilable class type %s",
+                             toString(lhsType), toString(rhsType));
+      }
+    }
+
+    return true;
+  }
+
+  return false;
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -2273,7 +2663,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
   if (candidates.n                  == 0 &&
       info.call->numActuals()       >= 1 &&
       info.call->get(1)->typeInfo() == dtMethodToken) {
-    Type* receiverType = canonicalClassType(info.call->get(2)->getValType());
+    Type* receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
     if (typeUsesForwarding(receiverType)) {
       FnSymbol* fn = resolveForwardedCall(info, checkOnly);
       if (fn) {
@@ -2601,8 +2991,9 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void generateMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
-
+static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
+static void sortExampleCandidates(CallInfo& info,
+                                  Vec<FnSymbol*>& visibleFns);
 static void generateCopyInitErrorMsg();
 
 void printResolutionErrorUnresolved(CallInfo&       info,
@@ -2654,7 +3045,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         }
 
       } else {
-        generateMsg(info, visibleFns);
+        generateUnresolvedMsg(info, visibleFns);
       }
 
     } else if (strcmp("_type_construct__tuple", info.name) == 0) {
@@ -2730,7 +3121,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       }
 
     } else {
-      generateMsg(info, visibleFns);
+      generateUnresolvedMsg(info, visibleFns);
     }
 
     generateCopyInitErrorMsg();
@@ -2741,6 +3132,37 @@ void printResolutionErrorUnresolved(CallInfo&       info,
 
     USR_STOP();
   }
+}
+
+struct ExampleCandidateComparator {
+  CallInfo& info;
+
+  ExampleCandidateComparator(CallInfo& info) : info(info) { }
+  bool operator() (FnSymbol* aFn, FnSymbol* bFn) {
+    // Return true if aFn is better than bFn
+    bool ret = false;
+    ResolutionCandidate* a = new ResolutionCandidate(aFn);
+    ResolutionCandidate* b = new ResolutionCandidate(bFn);
+
+    a->isApplicable(info);
+    b->isApplicable(info);
+
+    if (failedCandidateIsBetterMatch(a, b))
+      ret = true;
+
+    delete a;
+    delete b;
+
+    return ret;
+  }
+};
+
+static void sortExampleCandidates(CallInfo& info,
+                                  Vec<FnSymbol*>& visibleFns)
+{
+  ExampleCandidateComparator cmp(info);
+  // Try to sort them so that the more relevant candidates are first.
+  std::stable_sort(&visibleFns.v[0], &visibleFns.v[visibleFns.n], cmp);
 }
 
 static void generateCopyInitErrorMsg() {
@@ -2826,7 +3248,7 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
   USR_STOP();
 }
 
-static void generateMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
+static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
 
@@ -2871,7 +3293,34 @@ static void generateMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       }
     }
 
+    sortExampleCandidates(info, visibleFns);
+
+    int nPrintDetails = 1;
+    int nPrint = 3;
+
+    int i = 0;
     forv_Vec(FnSymbol, fn, visibleFns) {
+      i++;
+
+      if (i > nPrintDetails)
+        break;
+
+      explainCandidateRejection(info, visibleFns.v[0]);
+    }
+
+    i = 0;
+    forv_Vec(FnSymbol, fn, visibleFns) {
+      i++;
+
+      if (i <= nPrintDetails)
+        continue; // already printed it in detal
+
+      if (fPrintAllCandidates == false && i > nPrint) {
+        USR_PRINT("and %i other candidates, use --print-all-candidates to see them",
+                  visibleFns.n - (i-1));
+        break;
+      }
+
       if (printedOne == false) {
         USR_PRINT(fn, "candidates are: %s", toString(fn));
         printedOne = true;
@@ -2880,6 +3329,8 @@ static void generateMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
         USR_PRINT(fn, "                %s", toString(fn));
       }
     }
+  } else {
+    USR_PRINT(call, "because no functions named %s found in scope", info.name);
   }
 
   if (visibleFns.n                                == 1 &&
@@ -2946,8 +3397,8 @@ void trimVisibleCandidates(CallInfo&       info,
       }
 
       if (actual != NULL && formal != NULL) {
-        Type* at = canonicalClassType(actual->getValType());
-        Type* ft = canonicalClassType(formal->getValType());
+        Type* at = canonicalDecoratedClassType(actual->getValType());
+        Type* ft = canonicalDecoratedClassType(formal->getValType());
 
         AggregateType* actualType = toAggregateType(at)->getRootInstantiation();
         AggregateType* formalType = toAggregateType(ft)->getRootInstantiation();
@@ -2988,7 +3439,6 @@ static void findVisibleFunctionsAndCandidates(
   FnSymbol* fn   = call->resolvedFunction();
   Vec<FnSymbol*> visibleFns;
 
-  // First, try finding candidates without forwarding
   if (fn != NULL) {
     visibleFns.add(fn);
 
@@ -3198,7 +3648,7 @@ static void detectForwardingCycle(CallExpr* call) {
     } else {
       // If firstDef has same type as def, cycle is found.
       if (firstDef->sym->type == def->sym->type) {
-        Type* t = canonicalClassType(firstDef->sym->getValType());
+        Type* t = canonicalDecoratedClassType(firstDef->sym->getValType());
         TypeSymbol* ts = t->symbol;
         USR_FATAL_CONT(def, "forwarding cycle detected");
         USR_PRINT(ts, "for the type %s", ts->name);
@@ -3217,7 +3667,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
   const char* inFnName = call->getFunction()->name;
   Expr* receiver = call->get(2);
   Type* t = receiver->getValType();
-  AggregateType* at = toAggregateType(canonicalClassType(t));
+  AggregateType* at = toAggregateType(canonicalDecoratedClassType(t));
 
   FnSymbol* bestFn = NULL;
   CallExpr* bestCall = NULL;
@@ -3838,7 +4288,9 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN(" (default)");
   EXPLAIN("\n");
 
-  canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes, &formal1Narrows);
+  canDispatch(actualType, actual,
+             f1Type, formal1, fn1,
+             &formal1Promotes, &formal1Narrows);
 
   DS.fn1Promotes |= formal1Promotes;
 
@@ -3859,7 +4311,9 @@ static void testArgMapping(FnSymbol*                    fn1,
     }
   }
 
-  canDispatch(actualType, actual, f2Type, fn1, &formal2Promotes, &formal2Narrows);
+  canDispatch(actualType, actual,
+              f2Type, formal1, fn1,
+              &formal2Promotes, &formal2Narrows);
 
   DS.fn2Promotes |= formal2Promotes;
 
@@ -4316,127 +4770,144 @@ static Expr* parentToMarker(BlockStmt* parent, CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
+
 void lvalueCheck(CallExpr* call) {
   // Check to ensure the actual supplied to an OUT, INOUT or REF argument
   // is an lvalue.
   for_formals_actuals(formal, actual, call) {
-    bool errorMsg = false;
-    switch (formal->intent) {
-     case INTENT_BLANK:
-     case INTENT_CONST:
-     case INTENT_PARAM:
-     case INTENT_TYPE:
-     case INTENT_REF_MAYBE_CONST:
-      // not checking them here
-      break;
+    lvalueCheckActual(call, actual, formal->intent, formal);
+  }
+}
 
-     case INTENT_IN:
-     case INTENT_CONST_IN:
-      // generally, not checking them here
-      // but, FLAG_COPY_MUTATES makes INTENT_IN actually modify actual
-      if (formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
-        if (!isLegalLvalueActualArg(formal, actual))
-          errorMsg = true;
-      break;
+static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal) {
+  bool errorMsg = false;
+  switch (intent) {
+   case INTENT_BLANK:
+   case INTENT_CONST:
+   case INTENT_PARAM:
+   case INTENT_TYPE:
+   case INTENT_REF_MAYBE_CONST:
+    // not checking them here
+    break;
 
-     case INTENT_INOUT:
-     case INTENT_OUT:
-     case INTENT_REF:
+   case INTENT_IN:
+   case INTENT_CONST_IN:
+    // generally, not checking them here
+    // but, FLAG_COPY_MUTATES makes INTENT_IN actually modify actual
+    if (formal && formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
       if (!isLegalLvalueActualArg(formal, actual))
         errorMsg = true;
-      break;
+    break;
 
-     case INTENT_CONST_REF:
-      if (!isLegalConstRefActualArg(formal, actual))
-        errorMsg = true;
-      break;
+   case INTENT_INOUT:
+   case INTENT_OUT:
+   case INTENT_REF:
+    if (!isLegalLvalueActualArg(formal, actual))
+      errorMsg = true;
+    break;
 
-     default:
-      // all intents should be covered above
-      INT_ASSERT(false);
-      break;
+   case INTENT_CONST_REF:
+    if (!isLegalConstRefActualArg(formal, actual))
+      errorMsg = true;
+    break;
+
+   default:
+    // all intents should be covered above
+    INT_ASSERT(false);
+    break;
+  }
+
+  FnSymbol* nonTaskFnParent = NULL;
+
+  if (errorMsg &&
+      // sets nonTaskFnParent
+      checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)) {
+    errorMsg = false;
+
+    nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
+  }
+
+  if (errorMsg == true) {
+    if (nonTaskFnParent &&
+        nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+      // we are asked to ignore errors here
+      return;
     }
 
-    FnSymbol* nonTaskFnParent = NULL;
-
-    if (errorMsg &&
-        // sets nonTaskFnParent
-        checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)) {
-      errorMsg = false;
-
-      nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
-    }
-
-    if (errorMsg == true) {
-      if (nonTaskFnParent &&
-          nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
-        // we are asked to ignore errors here
+    if (SymExpr* se = toSymExpr(actual)) {
+      if (se->symbol()->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+        // Ignore lvalue errors default argument expressions
         return;
       }
+    }
 
-      if (SymExpr* se = toSymExpr(actual)) {
-        if (se->symbol()->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
-          // Ignore lvalue errors default argument expressions
-          return;
-        }
-      }
+    FnSymbol* calleeFn = call->resolvedFunction();
 
-      FnSymbol* calleeFn = call->resolvedFunction();
-
+    if (formal) {
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
+    }
 
-      Symbol* actSym = isSymExpr(actual) ? toSymExpr(actual)->symbol() : NULL;
-      bool isInitParam = actSym->hasFlag(FLAG_PARAM) && (calleeFn->isInitializer() || calleeFn->isCopyInit());
+    Symbol* actSym = isSymExpr(actual) ? toSymExpr(actual)->symbol() : NULL;
+    bool isInit = calleeFn && (calleeFn->isInitializer() ||
+                               calleeFn->isCopyInit());
+    bool isInitParam = actSym->hasFlag(FLAG_PARAM) && isInit;
 
-      if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {
-        // This assert is FYI. Perhaps can remove it if it fails.
-        INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n - 1] == call);
+    bool isAssign = false;
+    if (calleeFn && calleeFn->hasFlag(FLAG_ASSIGNOP))
+      isAssign = true;
 
-        FnSymbol*   fnParent   = toFnSymbol(call->parentSymbol);
-        const char* recordName = defaultRecordAssignmentTo(fnParent);
+    if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr))
+      if (urse->unresolved == astrSequals)
+        isAssign = true;
 
-        if (recordName && callStack.n >= 2) {
-          // blame on the caller of the caller, if available
-          USR_FATAL_CONT(callStack.v[callStack.n - 2],
-                         "cannot assign to a record of the type %s using "
-                         "the default assignment operator because it has "
-                         "'const' field(s)",
-                         recordName);
-        } else {
-          USR_FATAL_CONT(actual, "illegal lvalue in assignment");
-        }
+    if (isAssign) {
+      // This assert is FYI. Perhaps can remove it if it fails.
+      INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n - 1] == call);
 
-      } else if (isInitParam == false) {
-        ModuleSymbol* mod          = calleeFn->getModule();
-        char          cn1          = calleeFn->name[0];
-        const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
+      FnSymbol*   fnParent   = toFnSymbol(call->parentSymbol);
+      const char* recordName = defaultRecordAssignmentTo(fnParent);
 
-        // Should this be the same condition as in insertLineNumber() ?
-        if (developer || mod->modTag == MOD_USER) {
-          USR_FATAL_CONT(actual,
-                         "non-lvalue actual is passed to %s formal '%s' "
-                         "of %s%s",
-                         formal->intentDescrString(),
-                         formal->name,
-                         calleeFn->name,
-                         calleeParens);
-
-        } else {
-          USR_FATAL_CONT(actual,
-                         "non-lvalue actual is passed to a %s formal of "
-                         "%s%s",
-                         formal->intentDescrString(),
-                         calleeFn->name,
-                         calleeParens);
-        }
+      if (recordName && callStack.n >= 2) {
+        // blame on the caller of the caller, if available
+        USR_FATAL_CONT(callStack.v[callStack.n - 2],
+                       "cannot assign to a record of the type %s using "
+                       "the default assignment operator because it has "
+                       "'const' field(s)",
+                       recordName);
+      } else {
+        USR_FATAL_CONT(actual, "illegal lvalue in assignment");
       }
 
-      if (SymExpr* aSE = toSymExpr(actual)) {
-        Symbol* aVar = aSE->symbol();
+    } else if (isInitParam == false) {
+      ModuleSymbol* mod          = calleeFn->getModule();
+      char          cn1          = calleeFn->name[0];
+      const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
 
-        if (aVar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
-          printTaskOrForallConstErrorNote(aVar);
-        }
+      // Should this be the same condition as in insertLineNumber() ?
+      if (developer || mod->modTag == MOD_USER) {
+        USR_FATAL_CONT(actual,
+                       "non-lvalue actual is passed to %s formal '%s' "
+                       "of %s%s",
+                       formal->intentDescrString(),
+                       formal->name,
+                       calleeFn->name,
+                       calleeParens);
+
+      } else {
+        USR_FATAL_CONT(actual,
+                       "non-lvalue actual is passed to a %s formal of "
+                       "%s%s",
+                       formal->intentDescrString(),
+                       calleeFn->name,
+                       calleeParens);
+      }
+    }
+
+    if (SymExpr* aSE = toSymExpr(actual)) {
+      Symbol* aVar = aSE->symbol();
+
+      if (aVar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+        printTaskOrForallConstErrorNote(aVar);
       }
     }
   }
@@ -4511,18 +4982,25 @@ static void resolveTupleExpand(CallExpr* call) {
   if (size == 0)
     INT_FATAL(call, "Invalid tuple expand primitive");
 
+  if (parent != NULL && parent->primitive != NULL) {
+    if (!parent->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE) &&
+        !parent->isPrimitive(PRIM_NEW)) {
+      USR_FATAL(parent, "illegal tuple expansion context");
+    }
+  }
+
   if (parent != NULL && parent->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE))
     size = 1; // use the first component of the tuple for the shape
 
   stmt->insertBefore(noop);
 
   for (int i = 1; i <= size; i++) {
-    VarSymbol* tmp = newTemp("_tuple_expand_tmp_");
+    VarSymbol* tmp = newTemp(astr("_tuple_expand_tmp_", istr(i)));
     CallExpr*  e   = NULL;
 
     tmp->addFlag(FLAG_MAYBE_TYPE);
 
-    if (sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    if (sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
       tmp->addFlag(FLAG_TYPE_VARIABLE);
     }
 
@@ -4654,7 +5132,7 @@ static void handleSetMemberTypeMismatch(Type*     t,
     Symbol*   actual = rhs->symbol();
     FnSymbol* fn     = toFnSymbol(call->parentSymbol);
 
-    if (canCoerceTuples(t, actual, fs->type, fn) == true) {
+    if (canCoerceTuples(t, actual, fs->type, NULL, fn) == true) {
       // Add a PRIM_MOVE so that insertCasts will take care of it later.
       VarSymbol* tmp = newTemp("coerce_elt", fs->type);
 
@@ -4853,7 +5331,12 @@ static void resolveInitVar(CallExpr* call) {
 
   Type* targetType = NULL;
   bool addedCoerce = false;
-  if (call->numActuals() >= 3) {
+
+  if (call->numActuals() > 3) {
+    INT_FATAL(call, "unexpected number of actuals in variable init call");
+  }
+
+  if (call->numActuals() == 3) {
     SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
     targetType = targetTypeExpr->typeInfo();
 
@@ -4906,6 +5389,12 @@ static void resolveInitVar(CallExpr* call) {
     targetType = srcType;
   }
 
+  // 'var x = new _domain(...)' should not bother going through chpl__initCopy
+  // logic so that the result of the 'new' is MOVE'd and not copy-initialized,
+  // which is handled in the 'init=' branch.
+  bool isDomainWithoutNew = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN) &&
+                            src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == false;
+
   if (dst->hasFlag(FLAG_NO_COPY) ||
       isPrimitiveScalar(targetType) ||
       isEnumType(targetType) ||
@@ -4924,11 +5413,17 @@ static void resolveInitVar(CallExpr* call) {
              isParamString ||
              isSyncType(srcType->getValType()) ||
              isSingleType(srcType->getValType()) ||
-             isRecordWrappedType(targetType->getValType()) ||
+             targetType->getValType()->symbol->hasFlag(FLAG_ARRAY) ||
+             isDomainWithoutNew ||
              srcType->getValType()->symbol->hasFlag(FLAG_TUPLE) ||
              srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // These cases require an initCopy to implement special initialization
     // semantics (e.g. reading a sync for variable initialization).
+    //
+    // For example, even though domains can leverage 'init=' for basic
+    // copy-initialization, the compiler only currently knows about calls to
+    // "chpl__initCopy" and how to turn them into something else when necessary
+    // (e.g. chpl__unalias).
 
     CallExpr* initCopy = new CallExpr("chpl__initCopy", srcExpr->remove());
     call->insertAtTail(initCopy);
@@ -5001,8 +5496,13 @@ static void resolveInitVar(CallExpr* call) {
         call->setUnresolvedFunction(astrInitEquals);
 
         resolveCall(call);
+      } else {
+        FnSymbol* fn = call->resolvedFunction();
+        if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
+          oldStyleInitCopyFns.insert(fn);
+          USR_WARN(fn, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
+        }
       }
-      // else: warning about old-style 'init' vs. init= would go here
 
       if (at->hasPostInitializer() == true) {
         call->insertAfter(new CallExpr("postinit", gMethodToken, dst));
@@ -5041,6 +5541,12 @@ FnSymbol* findCopyInit(AggregateType* at) {
     call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
 
     ret = resolveUninsertedCall(at, call, false);
+  } else {
+    FnSymbol* fn = ret;
+    if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
+      oldStyleInitCopyFns.insert(fn);
+      USR_WARN(fn, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
+    }
   }
 
   // ret's instantiationPoint points to the dummy BlockStmt created by
@@ -5274,7 +5780,11 @@ static Type* moveDetermineRhsType(CallExpr* call) {
   if (retval == dtVoid) {
     if (CallExpr* rhsCall = toCallExpr(rhs)) {
       if (FnSymbol* rhsFn = rhsCall->resolvedFunction()) {
-        if (rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE) == true) {
+        // `expandExternArrayCalls` can add void assignments when
+        // the extern function has an explicit void return type.
+        // Let those through by looking for two flags it adds.
+        if (!(rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE) &&
+              rhsFn->hasFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG))) {
           const char* rhsName = rhsFn->name;
           if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
             rhsName = unwrapFnName(rhsFn);
@@ -5369,7 +5879,7 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
     USR_FATAL(call, "unable to resolve type");
 
   } else if (rhsType == dtNil) {
-    bool lhsIsPointer = isClassLike(lhsType) ||
+    bool lhsIsPointer = isClassLikeOrPtr(lhsType) ||
                         lhsType == dtCVoidPtr ||
                         lhsType == dtCFnPtr ||
                         lhsType == dtFile;
@@ -5630,8 +6140,8 @@ bool isDispatchParent(Type* t, Type* pt) {
   // If one is managed and the other is not, it's not
   // a dispatch parent.
   if (classesWithSameKind(t, pt)) {
-    t = canonicalClassType(t);
-    pt = canonicalClassType(pt);
+    t = canonicalDecoratedClassType(t);
+    pt = canonicalDecoratedClassType(pt);
   }
 
   if (AggregateType* at = toAggregateType(t)) {
@@ -5740,7 +6250,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
   for_actuals(expr, newExpr) {
     if (NamedExpr* ne = toNamedExpr(expr)) {
       if (ne->name == astr_chpl_manager) {
-        manager = ne->actual->typeInfo();
+        manager = canonicalDecoratedClassType(ne->actual->typeInfo());
         expr->remove();
       }
     }
@@ -5757,12 +6267,13 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       if (manager == NULL) {
         if (isManagedPtrType(type)) {
           manager = type;
-        } else if (isUnmanagedClassType(type)) {
-          manager = dtUnmanaged;
+        } else if (DecoratedClassType* dt = toDecoratedClassType(type)) {
+          if (dt->isUnmanaged())
+            manager = dtUnmanaged;
+          else
+            manager = dtOwned;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
-          if (fLegacyNew == false && fDefaultUnmanaged == false) {
-            manager = dtBorrowed;
-          }
+          manager = dtOwned;
         }
       }
 
@@ -5794,7 +6305,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
 
         // Use the canonical class to simplify the rest of initializer
         // resolution
-        if (UnmanagedClassType* mt = toUnmanagedClassType(type)) {
+        if (DecoratedClassType* mt = toDecoratedClassType(type)) {
           at = mt->getCanonicalClass();
         // For records, just ignore the manager
         // e.g. to support 'new owned MyRecord'
@@ -5877,7 +6388,7 @@ static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager
   // This function implements a warning that should be removed in 1.20
   // in favor of e.g. calling compilerError in chpl_fix_thrown_error.
   INT_ASSERT(newExpr->parentSymbol);
-  Type* cType = canonicalClassType(newType);
+  Type* cType = canonicalDecoratedClassType(newType);
 
   if (isClass(cType) && isSubTypeOrInstantiation(cType, dtError)) {
 
@@ -5888,7 +6399,9 @@ static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager
 
     if (manager == dtOwned || isSubTypeOrInstantiation(newType, dtOwned))
       owned = true;
-    else if (manager == dtUnmanaged || isUnmanagedClassType(newType))
+    else if (manager == dtUnmanaged ||
+            (isDecoratedClassType(newType) &&
+             toDecoratedClassType(newType)->isUnmanaged()))
       unmanaged = true;
     else if (manager == NULL)
       undecorated = true;
@@ -5952,8 +6465,9 @@ static bool isManagedPointerInit(SymExpr* typeExpr) {
   if (isManagedPtrType(singleArgumentType))
     return true;
 
-  if (isUnmanagedClassType(singleArgumentType))
-    return true;
+  if (DecoratedClassType* dt = toDecoratedClassType(singleArgumentType))
+    if (dt->isUnmanaged())
+      return true;
 
   return false;
 }
@@ -6070,10 +6584,10 @@ static Type* resolveGenericActual(SymExpr* se) {
 static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
-  bool unmanaged = false;
-  if (UnmanagedClassType* ut = toUnmanagedClassType(type)) {
-    type = ut->getCanonicalClass();
-    unmanaged = true;
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
+  if (DecoratedClassType* dt = toDecoratedClassType(type)) {
+    type = dt->getCanonicalClass();
+    decorator = dt->getDecorator();
   }
 
   if (AggregateType* at = toAggregateType(type)) {
@@ -6086,10 +6600,11 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
 
       Type* retType = cc->typeInfo();
 
-      if (unmanaged) {
+      if (decorator != CLASS_TYPE_BORROWED &&
+          decorator != CLASS_TYPE_BORROWED_NONNIL) {
         AggregateType* gotAt = toAggregateType(retType);
         INT_ASSERT(gotAt);
-        retType = gotAt->getUnmanagedClass();
+        retType = gotAt->getDecoratedClass(decorator);
       }
 
       cc->replace(new SymExpr(retType->symbol));
@@ -6641,8 +7156,8 @@ static void resolveExprTypeConstructor(SymExpr* symExpr) {
   Type* t = symExpr->typeInfo();
   AggregateType* at = toAggregateType(t);
 
-  if (UnmanagedClassType * ut = toUnmanagedClassType(t))
-    at = ut->getCanonicalClass();
+  if (DecoratedClassType * dt = toDecoratedClassType(t))
+    at = dt->getCanonicalClass();
 
   if (at != NULL && at->typeConstructor) {
     if (at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
@@ -8371,6 +8886,7 @@ static void resolvePrimInit(CallExpr* call,
     resolvePrimInit(call, val, type);
   } else {
     // TODO: this is dead code
+    INT_FATAL("dead code");
 
     // Reduce it to variable initialization
     //   - create temporary variable
@@ -8422,7 +8938,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     primInitHaltForUnacceptableGeneric(call, type, val);
 
   // These types default to nil
-  } else if (isClassLikeOrNil(type)) {
+  } else if (isClassLikeOrPtr(type) || type == dtNil) {
     // note: error for bad param initialization checked for in resolving move
 
     Expr* nilExpr = NULL;
@@ -8439,6 +8955,29 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     if (typeSe) resolveExprTypeConstructor(typeSe);
     resolveExpr(moveDefault);
     call->convertToNoop();
+
+    // Create an error when default initializing a non-nilable class type.
+    if (isNonNilableClassType(type) && !useLegacyNilability(call)) {
+      // Work around current problems in array / assoc array types
+      bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
+                    call->getModule()->hasFlag(FLAG_UNSAFE);
+
+      if (unsafe == false) {
+
+        const char* descr = val->name;
+        if (VarSymbol* v = toVarSymbol(val))
+          descr = toString(v);
+
+        USR_FATAL_CONT(call, "Cannot default-initialize %s", descr);
+        USR_PRINT("non-nil class types do not support default initialization");
+        AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
+        INT_ASSERT(at);
+        ClassTypeDecorator d = classTypeDecorator(type);
+        Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+        USR_PRINT("Consider using the type %s instead",
+                  toString(suggestedType));
+      }
+    }
 
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)
@@ -8608,7 +9147,7 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
 
   // If it is generic then try to resolve the default type constructor
   // for better error reporting.
-  if (AggregateType* at = toAggregateType(canonicalClassType(type))) {
+  if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(type))) {
     if (FnSymbol* typeCons = at->typeConstructor) {
       SET_LINENO(call);
 

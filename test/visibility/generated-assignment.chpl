@@ -20,7 +20,7 @@ proc main() {
 
 record I {
 
-  proc init(const ref i: I) { }
+  proc init=(const ref i: I) { }
 
   proc init() { }
 

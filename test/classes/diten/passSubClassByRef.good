@@ -1,1 +1,4 @@
-passSubClassByRef.chpl:6: error: value from coercion passed to ref formal 'obj'
+passSubClassByRef.chpl:6: error: unresolved call 'foo(borrowed C)'
+passSubClassByRef.chpl:3: note: this candidate did not match: foo(ref obj: object)
+passSubClassByRef.chpl:6: note: because call actual argument #1 with type borrowed C
+passSubClassByRef.chpl:3: note: is passed to formal 'ref obj: borrowed object'

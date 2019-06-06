@@ -1391,7 +1391,7 @@ void lowerContextCallPreferRefConstRef(ContextCallExpr* cc)
     which = USE_CONST_REF;
   } else {
     which = USE_VALUE;
-    INT_ASSERT("lowering context call with only 1 option");
+    INT_FATAL("lowering context call with only 1 option");
   }
 
   lowerContextCall(cc, which);
@@ -1413,7 +1413,7 @@ void lowerContextCallPreferConstRefValue(ContextCallExpr* cc)
     which = USE_VALUE;
   } else {
     which = USE_REF;
-    INT_ASSERT("lowering context call with only 1 option");
+    INT_FATAL("lowering context call with only 1 option");
   }
 
   lowerContextCall(cc, which);

@@ -22,11 +22,11 @@
 #include "addAutoDestroyCalls.h"
 #include "astutil.h"
 #include "errorHandling.h"
+#include "DecoratedClassType.h"
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "lateConstCheck.h"
 #include "lifetime.h"
-#include "UnmanagedClassType.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -1222,6 +1222,8 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
 void callDestructors() {
 
   adjustCoforallIndexVariables();
+
+  createIteratorBreakBlocks();
 
   fixupDestructors();
 

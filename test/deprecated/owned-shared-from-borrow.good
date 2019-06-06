@@ -1,8 +1,0 @@
-owned-shared-from-borrow.chpl:18: In function 'testOwned':
-owned-shared-from-borrow.chpl:20: warning: Owned is deprecated, use owned instead
-owned-shared-from-borrow.chpl:24: In function 'testShared':
-owned-shared-from-borrow.chpl:26: warning: Shared is deprecated, use shared instead
-owned-shared-from-borrow.chpl:18: In function 'testOwned':
-owned-shared-from-borrow.chpl:20: warning: initializing owned from a borrow is deprecated
-owned-shared-from-borrow.chpl:24: In function 'testShared':
-owned-shared-from-borrow.chpl:26: warning: initializing shared from a borrow is deprecated

@@ -1091,7 +1091,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
 
       case 'f':  // All the forks:
         // s.u nodeID otherNode subloc fid arg arg_size
-        if ((cvt = sscanf (&linedata[nextCh], "%d %d %*d %d 0x%*x %d %d",
+        if ((cvt = sscanf (&linedata[nextCh], "%d %d %*d %d 0x%*x %d %d %*d %*d",
                            &nid, &rnid, &fid, &dlen, &vdbTid)) != 5) {
           fprintf (stderr, "Bad fork line: (cvt %d) %s\n", cvt, fileToOpen);
           nErrs++;

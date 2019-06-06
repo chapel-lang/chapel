@@ -53,8 +53,15 @@ enum IF1_string_kind {
   STRING_KIND_C_STRING
 };
 
+// This is a sentinel value whose actual value doesn't really matter
+// as long as it can be distinguished from other legal bool sizes (so
+// that `bool` remains a distinct type from `bool(n)` for the legal
+// values of 'n'
+//
+#define BOOL_SYS_WIDTH 0
+
 enum IF1_bool_type {
-  BOOL_SIZE_1, BOOL_SIZE_SYS, BOOL_SIZE_8, BOOL_SIZE_16, BOOL_SIZE_32,
+  BOOL_SIZE_SYS, BOOL_SIZE_8, BOOL_SIZE_16, BOOL_SIZE_32,
   BOOL_SIZE_64, BOOL_SIZE_NUM
 };
 
@@ -317,16 +324,16 @@ IFA_EXTERN const char *num_kind_string[4][8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
 inline Immediate& Immediate::operator=(const Immediate& imm) {
-  memcpy(this, &imm, sizeof(imm));
+  memcpy((void*)this, &imm, sizeof(imm));
   return *this;
 }
 
 inline Immediate::Immediate(const Immediate& imm) {
-  memcpy(this, &imm, sizeof(imm));
+  memcpy((void*)this, &imm, sizeof(imm));
 }
 
 inline Immediate::Immediate() {
-  memset(this, 0, sizeof(*this));
+  memset((void*)this, 0, sizeof(*this));
 }
 
 inline unsigned int

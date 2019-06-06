@@ -110,7 +110,6 @@ MODULES_TO_DOCUMENT = \
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
 	packages/BLAS.chpl \
-	packages/BufferedAtomics.chpl \
 	packages/Buffers.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \

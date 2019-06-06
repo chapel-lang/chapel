@@ -48,6 +48,7 @@ Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
 Symbol *gVoid = NULL;
+Symbol *gNone = NULL;
 Symbol *gFile = NULL;
 Symbol *gStringC = NULL;
 Symbol *gStringCopy = NULL;
@@ -61,10 +62,13 @@ VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol *gCastChecking = NULL;
+VarSymbol *gNilChecking = NULL;
+VarSymbol *gLegacyNilClasses = NULL;
 VarSymbol *gDivZeroChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gWarnUnstable = NULL;
+VarSymbol* gIteratorBreakToken = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
@@ -1573,18 +1577,10 @@ VarSymbol *new_StringSymbol(const char *str) {
   // also need to disable parts of normalize from running on literals inserted
   // at parse time.
 
-  VarSymbol* cptrTemp = newTemp("call_tmp");
-  cptrTemp->addFlag(FLAG_TYPE_VARIABLE);
-  CallExpr *cptrCall = new CallExpr(PRIM_MOVE,
-      cptrTemp,
-      new CallExpr("_type_construct_c_ptr", new SymExpr(dtUInt[INT_SIZE_8]->symbol)));
+  VarSymbol* cstrTemp = newTemp("call_tmp");
+  CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp, new_CStringSymbol(str));
 
-  VarSymbol* castTemp = newTemp("call_tmp");
-  CallExpr *castCall = new CallExpr(PRIM_MOVE,
-      castTemp,
-      createCast(new_CStringSymbol(str), cptrTemp));
-
-  int strLength = unescapeString(str, castCall).length();
+  int strLength = unescapeString(str, cstrMove).length();
 
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
@@ -1598,9 +1594,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr *initCall = new CallExpr(PRIM_NEW,
       new SymExpr(dtString->symbol),
-      castTemp,
-      new_IntSymbol(strLength),   // length
-      new_IntSymbol(strLength ? strLength+1 : 0)); // size, empty string needs 0
+      cstrTemp,
+      new_IntSymbol(strLength));
   initCall->insertAtTail(gFalse); // owned = false
   initCall->insertAtTail(gFalse); // needToCopy = false
 
@@ -1613,10 +1608,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   Expr* insertPt = initStringLiteralsEpilogue->defPoint;
 
-  insertPt->insertBefore(new DefExpr(cptrTemp));
-  insertPt->insertBefore(cptrCall);
-  insertPt->insertBefore(new DefExpr(castTemp));
-  insertPt->insertBefore(castCall);
+  insertPt->insertBefore(new DefExpr(cstrTemp));
+  insertPt->insertBefore(cstrMove);
   insertPt->insertBefore(moveCall);
 
   s->immediate = new Immediate;
@@ -1649,14 +1642,12 @@ VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   default:
     INT_FATAL( "unknown BOOL_SIZE");
 
-  case BOOL_SIZE_1  :
   case BOOL_SIZE_SYS:
   case BOOL_SIZE_8  :
   case BOOL_SIZE_16 :
   case BOOL_SIZE_32 :
   case BOOL_SIZE_64 :
     break;
-    // case BOOL_SIZE_128: imm.v_bool = b; break;
   }
   imm.v_bool = b;
   imm.const_kind = NUM_KIND_BOOL;
@@ -1997,6 +1988,7 @@ const char* astr_chpl_manager = NULL;
 const char* astr_forallexpr = NULL;
 const char* astr_forexpr = NULL;
 const char* astr_loopexpr_iter = NULL;
+const char* astrPostfixBang = NULL;
 
 void initAstrConsts() {
   astrSdot    = astr(".");
@@ -2021,6 +2013,8 @@ void initAstrConsts() {
   astr_forallexpr    = astr("chpl__forallexpr");
   astr_forexpr       = astr("chpl__forexpr");
   astr_loopexpr_iter = astr("chpl__loopexpr_iter");
+
+  astrPostfixBang = astr("postfix!");
 }
 
 /************************************* | **************************************
@@ -2077,4 +2071,115 @@ VarSymbol* newTempConst(QualifiedType qt) {
   VarSymbol* result = newTemp(qt);
   result->addFlag(FLAG_CONST);
   return result;
+}
+
+const char* toString(ArgSymbol* arg) {
+  const char* intent = "";
+  switch (arg->intent) {
+    case INTENT_BLANK:           intent = "";           break;
+    case INTENT_IN:              intent = "in ";        break;
+    case INTENT_INOUT:           intent = "inout ";     break;
+    case INTENT_OUT:             intent = "out ";       break;
+    case INTENT_CONST:           intent = "const ";     break;
+    case INTENT_CONST_IN:        intent = "const in ";  break;
+    case INTENT_CONST_REF:       intent = "const ref "; break;
+    case INTENT_REF_MAYBE_CONST: intent = "";           break;
+    case INTENT_REF:             intent = "ref ";       break;
+    case INTENT_PARAM:           intent = "param ";     break;
+    case INTENT_TYPE:            intent = "type ";      break;
+  }
+
+  if (arg->getValType() == dtAny || arg->getValType() == dtUnknown)
+    return astr(intent, arg->name);
+  else
+    return astr(intent, arg->name, ": ", toString(arg->getValType()));
+}
+
+const char* toString(VarSymbol* var) {
+  // If it's a compiler temporary, find an assignment
+  //  * from a user variable or field
+  //  * to a user variable or field
+
+  if (var->hasFlag(FLAG_USER_VARIABLE_NAME) || !var->hasFlag(FLAG_TEMP))
+    return astr(var->name, ": ", toString(var->getValType()));
+
+  Symbol* sym = var;
+  // Compiler temporaries should have a single definition
+  while (sym->hasFlag(FLAG_TEMP) && !sym->hasFlag(FLAG_USER_VARIABLE_NAME)) {
+    SymExpr* singleDef = sym->getSingleDef();
+    if (singleDef != NULL) {
+      if (CallExpr* c = toCallExpr(singleDef->parentExpr)) {
+        if (c->isPrimitive(PRIM_MOVE) ||
+            c->isPrimitive(PRIM_ASSIGN)) {
+          SymExpr* dstSe = toSymExpr(c->get(1));
+          SymExpr* srcSe = toSymExpr(c->get(2));
+          if (dstSe && srcSe && dstSe->symbol() == sym) {
+            sym = singleDef->symbol();
+            continue;
+          }
+        }
+      }
+    }
+
+    // Give up
+    sym = NULL;
+    break;
+  }
+
+  const char* name = NULL;
+  if (sym != NULL) {
+    name = sym->name;
+  } else {
+    // Look for something using the temporary
+    // e.g. field initialization
+
+    sym = var;
+    while (sym->hasFlag(FLAG_TEMP) && !sym->hasFlag(FLAG_USER_VARIABLE_NAME)) {
+      Expr* cur = NULL;
+      name = NULL;
+      for (cur = sym->defPoint; cur; cur = cur->next) {
+        if (CallExpr* c = toCallExpr(cur)) {
+          if (c->isPrimitive(PRIM_MOVE) ||
+              c->isPrimitive(PRIM_ASSIGN)) {
+            SymExpr* dstSe = toSymExpr(c->get(1));
+            SymExpr* srcSe = toSymExpr(c->get(2));
+            if (dstSe && srcSe && srcSe->symbol() == sym) {
+              sym = dstSe->symbol();
+              name = sym->name;
+              break;
+            }
+          }
+          if (c->isPrimitive(PRIM_SET_MEMBER) ||
+              c->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+            SymExpr* fieldSe = toSymExpr(c->get(2));
+            SymExpr* valueSe = toSymExpr(c->get(3));
+            if (fieldSe && valueSe && valueSe->symbol() == sym) {
+              sym = fieldSe->symbol();
+              name = NULL;
+              // Field access might be by name
+              if (VarSymbol* v = toVarSymbol(sym))
+                if (v->immediate)
+                  if (v->immediate->const_kind == CONST_KIND_STRING)
+                    name = astr("field ", v->immediate->v_string);
+
+              if (name == NULL)
+                name = astr("field ", sym->name);
+
+              break;
+            }
+          }
+        }
+      }
+      // Stop looking if the above code didn't find anything
+      if (name == NULL)
+        break;
+    }
+  }
+
+  if (ArgSymbol* arg = toArgSymbol(sym))
+    return toString(arg);
+  else if (name != NULL)
+    return astr(name, ": ", toString(var->getValType()));
+
+  return astr("<temporary>");
 }

@@ -22,6 +22,7 @@
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "ForallStmt.h"
+#include "iterator.h"
 #include "passes.h"
 #include "resolution.h"
 #include "stringutil.h"
@@ -327,10 +328,11 @@ class ExpandVisitor : public AstVisitorTraverse {
 public:
   ForallStmt* const forall;
   SymbolMap& svar2clonevar;
+  std::vector<Expr*> delayedRemoval;
 
   ExpandVisitor(ForallStmt* fs, SymbolMap& map);
-
   ExpandVisitor(ExpandVisitor* parentEV, SymbolMap& map);
+  ~ExpandVisitor();
 
   virtual bool enterCallExpr(CallExpr* node) {
     if (node->isPrimitive(PRIM_YIELD)) {
@@ -376,15 +378,22 @@ public:
 // constructor for the outer level
 ExpandVisitor::ExpandVisitor(ForallStmt* fs, SymbolMap& map) :
   forall(fs),
-  svar2clonevar(map)
+  svar2clonevar(map),
+  delayedRemoval()
 {
 }
 
 // constructor for a nested situation
 ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV, SymbolMap& map) :
   forall(parentEV->forall),
-  svar2clonevar(map)
+  svar2clonevar(map),
+  delayedRemoval()
 {
+}
+
+ExpandVisitor::~ExpandVisitor() {
+  for_vector(Expr, expr, delayedRemoval)
+    expr->remove();
 }
 
 
@@ -466,7 +475,7 @@ static VarSymbol* createCurrTPV(ShadowVarSymbol* TPV) {
 static void addDefAndMap(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar,
                          VarSymbol* currVar)
 {
-  if (currVar->type == dtVoid) {
+  if (currVar->type == dtNothing) {
     INT_ASSERT(currVar->firstSymExpr() == NULL);
     return;
   }
@@ -577,6 +586,8 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
   yieldCall->insertBefore(new CallExpr(PRIM_MOVE, cloneIdxVar, yieldExpr));
 
   BlockStmt* bodyClone = EV->forall->loopBody()->copy(&map);
+  addIteratorBreakBlocksInline(EV->forall->loopBody(), NULL,
+                               bodyClone, yieldCall, &EV->delayedRemoval);
   yieldCall->replace(bodyClone);
 
   // Note that we are not descending into 'bodyClone'.  The only thing

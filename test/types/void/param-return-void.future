@@ -1,3 +1,0 @@
-bug: Returning _void from one branch causes all other branches to return _void
-
-#9152

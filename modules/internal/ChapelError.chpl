@@ -31,7 +31,7 @@ module ChapelError {
   /* :class:`Error` is the base class for errors */
   class Error {
     pragma "no doc"
-    var _next: unmanaged Error = nil; // managed by lock in record TaskErrorsRecord
+    var _next: unmanaged Error? = nil; // managed by lock in record TaskErrorsRecord
 
     // These fields save the line/file where the error was thrown.
     pragma "no doc"
@@ -72,6 +72,20 @@ module ChapelError {
     }
   }
 
+  class NilClassError : Error {
+    pragma "no doc"
+    override proc message() {
+      return "cannot convert nil class to non nilable type";
+    }
+  }
+
+  class ClassCastError : Error {
+    pragma "no doc"
+    override proc message() {
+      return "cannot cast class to type - runtime types not compatible";
+    }
+  }
+
   class IllegalArgumentError : Error {
     var formal: string;
     var info: string;
@@ -104,31 +118,19 @@ module ChapelError {
   // to be parallel-safe.
   pragma "no doc"
   record chpl_TaskErrors {
-    var _head: unmanaged Error;
-    var _errorsLock: chpl__processorAtomicType(bool);
-    // this atomic controls:
-    //  - _head
-    //  - all list elements ->_next
+    var _head: unmanaged Error? = nil;
+    var _errorsLock: chpl_LocalSpinlock;
 
-    inline proc _lockErrors() {
-      // WARNING: If you are calling this function directly from
-      // a remote locale, you should consider wrapping the call in
-      // an on clause to avoid excessive remote forks due to the
-      // testAndSet()
-      while (_errorsLock.testAndSet(memory_order_acquire)) do chpl_task_yield();
-    }
-    inline proc _unlockErrors() {
-      _errorsLock.clear(memory_order_release);
-    }
     proc append(err: unmanaged Error) {
       on this {
-        _lockErrors();
+        _errorsLock.lock();
         var tmp = _head;
         err._next = tmp;
         _head = err;
-        _unlockErrors();
+        _errorsLock.unlock();
       }
     }
+
     proc empty() {
       return _head == nil;
     }
@@ -161,22 +163,22 @@ module ChapelError {
 
     pragma "no doc"
     proc init(ref group:chpl_TaskErrors) {
-      var head: unmanaged Error = group._head;
+      var head: unmanaged Error? = group._head;
       group._head = nil;
       this.complete();
 
-      var cur: unmanaged Error;
+      var cur: unmanaged Error?;
 
       // Count the number of errors, including from nested errors
       var n = 0;
       cur = head;
       while cur != nil {
-        var curnext = cur._next;
-        var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
+        var curnext = cur!._next;
+        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
         if asTaskErr == nil {
           n += 1;
         } else {
-          for e in asTaskErr {
+          for e in asTaskErr! {
             if e != nil then
               n += 1;
           }
@@ -194,14 +196,15 @@ module ChapelError {
       var idx = 0;
       cur = head;
       while cur != nil {
-        var curnext = cur._next;
-        cur._next = nil; // remove from any lists
-        var asTaskErr: unmanaged TaskErrors = cur: unmanaged TaskErrors;
+        var curnext = cur!._next;
+        cur!._next = nil; // remove from any lists
+        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
         if asTaskErr == nil {
-          errorsArray[idx].retain(cur);
+          errorsArray[idx].retain(cur!);
           idx += 1;
         } else {
-          for e in asTaskErr {
+          for e in asTaskErr! {
+            // e is an owned error
             if e != nil {
               errorsArray[idx] = e;
               idx += 1;
@@ -277,8 +280,8 @@ module ChapelError {
 
       var minMsg:string;
       var maxMsg:string;
-      var first:borrowed Error;
-      var last:borrowed Error;
+      var first:borrowed Error?;
+      var last:borrowed Error?;
 
       for e in these() {
         if minMsg == "" || e.message() < minMsg then
@@ -309,10 +312,10 @@ module ChapelError {
 
       var ret = n + " errors: ";
 
-      if first != last then
-        ret += chpl_describe_error(first) + " ... " + chpl_describe_error(last);
-      else
-        ret += chpl_describe_error(first);
+      if first != nil && last != nil && first != last then
+        ret += chpl_describe_error(first!) + " ... " + chpl_describe_error(last!);
+      else if first != nil then
+        ret += chpl_describe_error(first!);
 
       return ret;
     }
@@ -323,9 +326,9 @@ module ChapelError {
      */
     iter filter(type t) where isSubtype(_to_borrowed(t), borrowed Error) {
       for e in these() {
-        var tmp = _to_unmanaged(e):_to_unmanaged(t);
+        var tmp = _to_unmanaged(e):_to_nilable(_to_unmanaged(t));
         if tmp then
-          yield tmp;
+          yield _to_nonnil(tmp);
       }
     }
     pragma "no doc"
@@ -361,7 +364,8 @@ module ChapelError {
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc chpl_fix_thrown_error(err: borrowed Error): unmanaged Error {
+  pragma "last resort"
+  proc chpl_fix_thrown_error(err: borrowed Error?): unmanaged Error {
     compilerError("Throwing borrowed error - please throw owned", 1);
 
     return chpl_do_fix_thrown_error(_to_unmanaged(err));
@@ -369,6 +373,7 @@ module ChapelError {
 
   pragma "no doc"
   pragma "insert line file info"
+  pragma "last resort"
   proc chpl_fix_thrown_error(type errType) {
     compilerError("Cannot throw a type: '", errType:string, "'. Did you forget the keyword 'new'?");
   }
@@ -376,29 +381,36 @@ module ChapelError {
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc chpl_do_fix_thrown_error(err: unmanaged Error): unmanaged Error {
+  proc chpl_do_fix_thrown_error(err: unmanaged Error?): unmanaged Error {
 
-    var fixErr: unmanaged Error = err;
+    var fixErr: unmanaged Error? = err;
     if fixErr == nil then
       fixErr = new unmanaged NilThrownError();
 
     const line = __primitive("_get_user_line");
     const fileId = __primitive("_get_user_file");
-    fixErr.thrownLine = line;
-    fixErr.thrownFileId = fileId;
+    fixErr!.thrownLine = line;
+    fixErr!.thrownFileId = fileId;
 
-    return fixErr;
+    return _to_nonnil(fixErr);
   }
 
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc chpl_fix_thrown_error(err: unmanaged Error): unmanaged Error {
+  proc chpl_fix_thrown_error(err: unmanaged Error?): unmanaged Error {
     // TODO: This should be an error in the future,
     // for now the compiler already adds a warning in this case.
     //compilerWarning("Throwing unmanaged error - please throw owned", 1);
 
     return chpl_do_fix_thrown_error(err);
+  }
+
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_fix_thrown_error(in err: owned Error?): unmanaged Error {
+    return chpl_do_fix_thrown_error(err.release());
   }
 
   pragma "no doc"
@@ -417,30 +429,29 @@ module ChapelError {
 
   pragma "no doc"
   pragma "last resort"
-  proc chpl_fix_thrown_error(err: ?t) where !isSubtype(t, Error) &&
-    isRecordType(t) {
+  proc chpl_fix_thrown_error(err: ?t) where isRecordType(t) {
     compilerError("Cannot throw an instance of type \'", t: string,
                   "\', not a subtype of Error");
   }
 
   pragma "no doc"
   pragma "last resort"
-  proc chpl_fix_thrown_error(err: ?t) where !isSubtype(t, Error) &&
-    isClassType(t) {
+  proc chpl_fix_thrown_error(err: ?t) where isClassType(t) &&
+                                            !isSubtype(t:borrowed, Error) {
     compilerError("Cannot throw an instance of type \'", (t: borrowed): string,
                   "\', not a subtype of Error");
   }
 
   pragma "no doc"
   pragma "last resort"
-  proc chpl_fix_thrown_error(err: ?t) where !isSubtype(t, Error) &&
-    !isRecordType(t) && !isClassType(t) {
+  proc chpl_fix_thrown_error(err: ?t) where !isRecordType(t) &&
+                                            !isClassType(t) {
     compilerError("Cannot throw an instance of type \'", t: string,
                   "\', not a subtype of Error");
   }
 
   pragma "no doc"
-  proc chpl_delete_error(err: unmanaged Error) {
+  proc chpl_delete_error(err: unmanaged Error?) {
     if err != nil then delete err;
   }
   pragma "no doc"
@@ -480,7 +491,7 @@ module ChapelError {
   //  how many tasks were run in that loop).
   pragma "no doc"
   proc chpl_forall_error(err: unmanaged Error) : unmanaged Error {
-    if err:unmanaged TaskErrors then
+    if err:unmanaged TaskErrors? then
       return err;
     // If err wasn't a taskError, wrap it in one
     return new unmanaged TaskErrors(err);

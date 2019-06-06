@@ -94,7 +94,13 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 // Helper function to avoid unnecessary repetition when getting information
 // from compileline
 static std::string getCompilelineOption(std::string option) {
-  std::string fullCommand = "$CHPL_HOME/util/config/compileline --" + option;
+  std::string fullCommand = "";
+  for (std::map<std::string, const char*>::iterator env=envMap.begin();
+       env!=envMap.end(); ++env) {
+    fullCommand += std::string(env->first) + "=\"" + std::string(env->second) +
+      "\" ";
+  }
+  fullCommand += "$CHPL_HOME/util/config/compileline --" + option;
   fullCommand += "> cmd.out.tmp";
   runCommand(fullCommand);
 
@@ -224,6 +230,16 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s",
           libDir,
           libname.c_str());
+
+  //
+  // The ZMQ library has to be linked against the C++ stdlib. Rather than
+  // package libc++ up as part of our multi-locale library client when
+  // packaging it up, we'll let library-makefile do it for us.
+  //
+  if (fMultiLocaleInterop) {
+    fprintf(makefile.fptr, " %s", "-lc++");
+  }
+
   if (requires != "") {
     fprintf(makefile.fptr, "%s", requires.c_str());
   }
@@ -301,6 +317,45 @@ static void setupPythonTypeMap() {
 
   // TODO: Handle bigint (which should naturally match to Python's int)
 
+}
+
+// If there is a known .pxd file translation for this type, use that.
+// Otherwise, use the normal cname
+std::string getPythonTypeName(Type* type, PythonFileType pxd) {
+  std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
+  if (pxd == C_PXD && tNames.first != "") {
+    return tNames.first;
+  } else if (pxd == PYTHON_PYX && tNames.second != "") {
+    return tNames.second;
+  } else if (pxd == C_PYX && (tNames.second != "" || tNames.first != "")) {
+    std::string res = tNames.second;
+    if (strncmp(res.c_str(), "numpy", strlen("numpy")) == 0) {
+      res += "_t";
+    } else {
+      res = getPythonTypeName(type, C_PXD);
+    }
+    return res;
+  } else {
+    if (type->symbol->hasFlag(FLAG_REF)) {
+      Type* referenced = type->getValType();
+      std::string base = getPythonTypeName(referenced, pxd);
+      if (pxd == C_PYX) {
+        return "";
+      } else {
+        return base + " *";
+      }
+    } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+      Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
+      std::string base = getPythonTypeName(pointedTo, pxd);
+      if (pxd == C_PYX) {
+        return "";
+      } else {
+        return base + " *";
+      }
+    } else {
+      return type->codegen().c;
+    }
+  }
 }
 
 static void setupFortranTypeMap() {
@@ -516,9 +571,26 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
 
   // Initialize the runtime.  chpl_setup should get called prior to using
   // any of the exported functions
-  fprintf(outfile, "def chpl_setup():\n");
-  fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);
-  fprintf(outfile, "\tchpl_library_init(1, args)\n");
+  if (fMultiLocaleInterop) {
+    // Multilocale libraries need to take in the number of locales to use as
+    // an argument
+
+    // numLocales is a C default-sized int.
+    std::string numLocalesType = getPythonTypeName(dtInt[INT_SIZE_32],
+                                                   C_PYX);
+    fprintf(outfile, "def chpl_setup(%s numLocales):\n",
+            numLocalesType.c_str());
+    fprintf(outfile,
+            "\tcdef char** args = ['%s', '-nl', str(numLocales).encode()]\n",
+            libmodeHeadername);
+    // TODO: is there a way to get the number of indices from args?
+    fprintf(outfile, "\tchpl_library_init(3, args)\n");
+
+  } else {
+    fprintf(outfile, "def chpl_setup():\n");
+    fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);
+    fprintf(outfile, "\tchpl_library_init(1, args)\n");
+  }
 
   // Initialize the included modules (continuation of chpl_setup definition)
   for_vector(FnSymbol, fn, moduleInits) {

@@ -12,7 +12,8 @@ config const useRandomSeed = true,
 
 config const useUnorderedAtomics = false;
 
-const numTasksPerLocale = here.maxTaskPar;
+const numTasksPerLocale = if dataParTasksPerLocale > 0 then dataParTasksPerLocale
+                                                       else here.maxTaskPar;
 const numTasks = numLocales * numTasksPerLocale;
 config const N = 2000000; // number of updates per task
 config const M = 1000; // number of entries in the table per task
@@ -21,7 +22,6 @@ const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
 
 // The intuitive implementation of histogram that uses global atomics
-
 proc main() {
   const Mspace = {0..tableSize-1};
   const D = Mspace dmapped Cyclic(startIdx=Mspace.low);

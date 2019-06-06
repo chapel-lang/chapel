@@ -121,7 +121,9 @@ private:
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
-const char* toString(Type* type);
+// If decorateAllClasses is true, an un-decorated default class type
+// 'C' will show as 'borrowed C'
+const char* toString(Type* type, bool decorateAllClasses=true);
 
 /************************************* | **************************************
 *                                                                             *
@@ -392,9 +394,14 @@ TYPE_EXTERN Type*             dtNumeric;
 TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;
 TYPE_EXTERN PrimitiveType*    dtVoid;
+TYPE_EXTERN PrimitiveType*    dtNothing;
 TYPE_EXTERN PrimitiveType*    dtValue;
 TYPE_EXTERN PrimitiveType*    dtBorrowed;
+TYPE_EXTERN PrimitiveType*    dtBorrowedNonNilable;
+TYPE_EXTERN PrimitiveType*    dtBorrowedNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanaged;
+TYPE_EXTERN PrimitiveType*    dtUnmanagedNonNilable;
+TYPE_EXTERN PrimitiveType*    dtUnmanagedNilable;
 TYPE_EXTERN PrimitiveType*    dtMethodToken;
 TYPE_EXTERN PrimitiveType*    dtDummyRef;
 TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
@@ -428,7 +435,7 @@ void     initPrimitiveTypes();
 void     initChplProgram(DefExpr* objectDef);
 void     initCompilerGlobals();
 
-bool is_void_type(Type*);
+bool is_nothing_type(Type*);
 bool is_bool_type(Type*);
 bool is_int_type(Type*);
 bool is_uint_type(Type*);
@@ -441,9 +448,11 @@ bool isLegalParamType(Type*);
 int  get_width(Type*);
 int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
-bool isClass(Type* t);
+bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
 bool isClassOrNil(Type* t);
-bool isClassLike(Type* t); // includes UnmanagedClassType & ClassType
+bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
+bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUnion(Type* t);

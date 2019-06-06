@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
@@ -31,7 +32,6 @@
 #include "iterator.h"
 #include "LoopExpr.h"
 #include "LoopStmt.h"
-#include "UnmanagedClassType.h"
 #include "ParamForLoop.h"
 #include "passes.h"
 #include "postFold.h"
@@ -766,7 +766,7 @@ static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
 *                                                                             *
 ************************************** | *************************************/
 
-static AggregateType* makeIteratorClass (FnSymbol* fn);
+static AggregateType* makeIteratorClass(FnSymbol* fn, Type* yieldedType);
 
 static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType);
 
@@ -793,7 +793,7 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
 
   SET_LINENO(fn);
 
-  AggregateType* iClass  = makeIteratorClass(fn);
+  AggregateType* iClass  = makeIteratorClass(fn, yieldedType);
   AggregateType* iRecord = makeIteratorRecord(fn, yieldedType);
   FnSymbol*      getIter = makeGetIterator(iClass, iRecord);
   IteratorInfo*  ii      = makeIteratorInfo(iClass, iRecord, getIter,
@@ -822,7 +822,7 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   resolveFunction(getIter);
 }
 
-static AggregateType* makeIteratorClass(FnSymbol* fn) {
+static AggregateType* makeIteratorClass(FnSymbol* fn, Type* yieldedType) {
   AggregateType* retval    = new AggregateType(AGGREGATE_CLASS);
   const char*    className = iteratorClassName(fn);
   TypeSymbol*    sym       = new TypeSymbol(astr("_ic_", className), retval);
@@ -831,6 +831,10 @@ static AggregateType* makeIteratorClass(FnSymbol* fn) {
   sym->addFlag(FLAG_POD);
 
   retval->addRootType();
+
+  VarSymbol* moreField = new VarSymbol("more", dtInt[INT_SIZE_DEFAULT]);
+  retval->fields.insertAtTail(new DefExpr(moreField));
+  // Creating "value" field here is trickier, see the PR message for #12963.
 
   return retval;
 }
@@ -1007,7 +1011,7 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 }
 
 void fixTypeNames(AggregateType* at) {
-  const char* typeName = toString(at);
+  const char* typeName = toString(at, false);
 
   if (at->symbol->name != typeName)
     at->symbol->name = typeName;
@@ -1083,10 +1087,10 @@ void resolveIfExprType(CondStmt* stmt) {
     } else {
       bool promote = false;
 
-      if (canDispatch(elseType, elseSym, thenType, fn, &promote) &&
+      if (canDispatch(elseType, elseSym, thenType, NULL, fn, &promote) &&
           promote == false) {
         retType = thenType;
-      } else if (canDispatch(thenType, thenSym, elseType, fn, &promote) &&
+      } else if (canDispatch(thenType, thenSym, elseType, NULL, fn, &promote) &&
                  promote == false) {
         retType = elseType;
       }
@@ -1142,7 +1146,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
   Symbol* ret     = fn->getReturnSymbol();
   Type*   retType = ret->type;
 
-  if (isIterator == true) {
+  if (isIterator) {
     // For iterators, the return symbol / return type is void
     // or the iterator record. Here we want to compute the yielded
     // type.
@@ -1192,6 +1196,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
             if (canDispatch(retTypes.v[j],
                             retSymbols.v[j],
                             retTypes.v[i],
+                            NULL,
                             fn,
                             &requireScalarPromotion) == false) {
               best = false;
@@ -1212,7 +1217,17 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
     if (!fn->iteratorInfo) {
       if (retTypes.n == 0) {
-        retType = dtVoid;
+        if (isIterator) {
+          // This feels like it should be:
+          // retType = dtVoid;
+          //
+          // but that leads to compiler generated assignments of 'void' to
+          // variables, which isn't allowed.  If we fib and claim that it
+          // returns 'nothing', those assignments get removed and all is well.
+          retType = dtNothing;
+        } else {
+          retType = dtVoid;
+        }
       }
     }
 

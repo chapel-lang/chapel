@@ -181,7 +181,9 @@ proc main {
     }
   }
 
-  checkChecksums(run_variants, run_loop, run_loop_length);
+  if verify_checksums || verify_checksums_abbreviated {
+    checkChecksums(run_variants, run_loop, run_loop_length);
+  }
 
   writeln("\n freeLoopSuiteRunInfo...");
   writeln("\n DONE!!! ");
@@ -1118,6 +1120,12 @@ proc defineLoopSuiteRunInfo(run_variants, run_loop,
           otherwise {
             halt("Unknown loop id: ", iloop);
           }
+        }
+
+        if verify_checksums_abbreviated {
+          loop_stat.samples_per_pass[LoopLength.LONG]   = 3;
+          loop_stat.samples_per_pass[LoopLength.MEDIUM] = 3;
+          loop_stat.samples_per_pass[LoopLength.SHORT]  = 3;
         }
       }
 

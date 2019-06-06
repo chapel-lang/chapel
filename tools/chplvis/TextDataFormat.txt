@@ -84,9 +84,9 @@ Lines in the file:
     communication.  Puts: data flow nid->rid, gets: data flow rid -> nid
     nb is non-blocking, st is strided.
 
-  fork: tv nid rid subLoc fid argPtr argSize tid
-  fork_nb: tv nid rid subLoc fid argPtr argSize tid
-  f_fork:  tv nid rid subLoc fid argPtr argSize tid
+  fork: tv nid rid subLoc fid argPtr argSize tid lnum fileno
+  fork_nb: tv nid rid subLoc fid argPtr argSize tid lnum fileno
+  f_fork:  tv nid rid subLoc fid argPtr argSize tid lnum fileno
      fork a task on a remote locale.   nb is non-blocking, f_fork does
      not start a remote task.  Data is sent from nid to rid.
 

@@ -1,5 +1,5 @@
 [brick]
-name = "badeFileName"
+name = "badFileName"
 version = "1.0.0"
 chplVersion = "1.19.0"
 source = "nil"

@@ -20,6 +20,7 @@
 #include "lifetime.h"
 
 #include "AstVisitorTraverse.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForallStmt.h"
@@ -29,7 +30,6 @@
 #include "resolution.h"
 #include "stlUtil.h"
 #include "symbol.h"
-#include "UnmanagedClassType.h"
 #include "view.h"
 #include "wellknown.h"
 
@@ -1157,7 +1157,7 @@ LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
       // Use the referent part of the actual's lifetime
       argLifetime.referent = temp.referent;
     }
-    if (returnsRef && isClassLike(actualSym->getValType())) {
+    if (returnsRef && isClassLikeOrPtr(actualSym->getValType())) {
       // returning a ref to a class field should make the
       // lifetime of the ref == the lifetime of the borrow
       argLifetime.referent = temp.borrowed;
@@ -1656,7 +1656,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
                                                            usedAsRef,
                                                            usedAsBorrow);
 
-      if (lhs->isRef() && rhsExpr->isRef()) {
+      if (lhs->isRef() && rhsExpr->isRef() && call->isPrimitive(PRIM_MOVE)) {
         // When setting the reference, set its intrinsic lifetime.
         if (!lp.referent.unknown || !lp.borrowed.unknown) {
           if (lhs->id == debugLifetimesForId)
@@ -1667,7 +1667,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
         }
       }
 
-      if (!(lhs->isRef() && rhsExpr->isRef()))
+      if (!(lhs->isRef() && rhsExpr->isRef() && call->isPrimitive(PRIM_MOVE)))
         // lhs can't have ref lifetime if it isn't a ref
         lp.referent = unknownLifetime();
 
@@ -1681,7 +1681,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
       // Additionally, if LHS is a reference to a known aggregate,
       // update that thing's borrow lifetime.
-      if (lhs->isRef() && usedAsBorrow) {
+      if (lhs->isRef() && usedAsBorrow && call->isPrimitive(PRIM_MOVE)) {
         LifetimePair & intrinsic = lifetimes->intrinsicLifetime[lhs];
         if (!intrinsic.referent.unknown && intrinsic.referent.fromSymbolScope) {
           LifetimePair p = lp;
@@ -2361,13 +2361,14 @@ static bool typeHasInfiniteBorrowLifetime(Type* type) {
 
   // Locale type has infinite lifetime
   // (since locales exist for the entire program run)
-  if (isSubClass(type, dtLocale))
-    return true;
+  if (Type* ct = canonicalDecoratedClassType(type))
+    if (isSubClass(ct, dtLocale))
+      return true;
 
-  if (isUnmanagedClassType(type)) {
-    // unmanaged class instances have infinite lifetime
-    return true;
-  }
+  if (DecoratedClassType* dt = toDecoratedClassType(type))
+    if (dt->isUnmanaged())
+      // unmanaged class instances have infinite lifetime
+      return true;
 
   return false;
 }
@@ -2478,7 +2479,7 @@ static bool isOrRefersBorrowedClass(Type* type) {
 static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   type = type->getValType();
 
-  if (!(isRecord(type) || isClassLike(type)))
+  if (!(isRecord(type) || isClassLikeOrPtr(type)))
     return false;
 
   bool isRecordContainingFieldsSubjectToAnalysis = false;
@@ -2495,7 +2496,7 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   //  - a pointer type
   //  - a record containing refs/class pointers
   //    (or an iterator record)
-  if (!(isClassLike(type) ||
+  if (!(isClassLikeOrPtr(type) ||
         isRecordContainingFieldsSubjectToAnalysis))
     return false;
 

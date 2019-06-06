@@ -22,19 +22,20 @@
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "build.h"
+#include "DecoratedClassType.h"
 #include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "initializerRules.h"
 #include "iterator.h"
 #include "LoopExpr.h"
-#include "UnmanagedClassType.h"
 #include "passes.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "../ifa/prim_data.h"
 
 AggregateType* dtObject = NULL;
 AggregateType* dtString = NULL;
@@ -44,7 +45,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
   aggregateTag        = initTag;
-  unmanagedClass      = NULL;
+  memset(decoratedClasses, 0, sizeof(decoratedClasses));
 
   typeConstructor     = NULL;
   hasUserDefinedInit  = false;
@@ -216,7 +217,7 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
   return false;
 }
 
-bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) const {
+bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
   bool retval = false;
 
   DefExpr* def = field->defPoint;
@@ -239,10 +240,17 @@ bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) const {
         INT_ASSERT(!var->type->symbol->hasFlag(FLAG_GENERIC));
 
         retval = true;
-      } else if (def->init == NULL &&
-                 def->exprType != NULL &&
-                 isFieldTypeExprGeneric(def->exprType)) {
-        retval = true;
+      } else if (def->init == NULL && def->exprType != NULL &&
+                 !mIsGenericWithDefaults) {
+
+        // Temporarily mark the aggregate type as generic with defaults
+        // in order to avoid infinite recursion.
+        bool wasGenericWithDefaults = mIsGenericWithDefaults;
+        mIsGenericWithDefaults = true;
+        if (isFieldTypeExprGeneric(def->exprType)) {
+          retval = true;
+        }
+        mIsGenericWithDefaults = wasGenericWithDefaults;
       }
 
     }
@@ -817,6 +825,12 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
   return retval;
 }
 
+//
+// This method tries to find a pre-existing AggregateType instance that
+// represents the resulting instantiation of binding 'sym' to the current
+// generic field. This way there is only ever one instance of AggregateType for
+// a particular instantiation.
+//
 AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
   AggregateType* retval = NULL;
 
@@ -830,7 +844,32 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
       }
 
     } else if (field->hasFlag(FLAG_PARAM) == true) {
-      if (at->substitutions.get(field) == sym) {
+      Type* expected = NULL;
+      if (field->defPoint->exprType != NULL) {
+        expected = field->defPoint->exprType->typeInfo();
+      }
+
+      //
+      // The types of 'sym' and 'field' might by different if the user
+      // specified a literal that will eventually be coerced into the correct
+      // field type.  For example '42' is an 'int(64)' but could be coerced to
+      // a 'uint(64)'. In such cases we should compare the values of 'sym'
+      // and the current instantiation's field.
+      //
+      // Note: only check when the field has a type expression
+      //
+      // See param/ferguson/mismatched-param-type-error.chpl for an example
+      // where this check is necessary.
+      //
+      if (expected != NULL && expected != sym->type) {
+        Immediate result;
+        Immediate* lhs = getSymbolImmediate(at->substitutions.get(field));
+        Immediate* rhs = getSymbolImmediate(sym);
+        fold_constant(P_prim_equal, lhs, rhs, &result);
+        if (result.v_bool) {
+          retval = at;
+        }
+      } else if (at->substitutions.get(field) == sym) {
         retval = at;
         break;
       }
@@ -1074,18 +1113,11 @@ Symbol* AggregateType::getField(const char* name, bool fatal) const {
     nextP->clear();
   }
 
-  if (fatal == true) {
-    const char* className = "<no name>";
-
-    if (this->symbol) { // this is always true?
-      className = this->symbol->name;
-    }
-
+  if (fatal) {
     // TODO: report as a user error in certain cases
     INT_FATAL(this,
               "no field '%s' in class '%s' in getField()",
-              name,
-              className);
+              name, this->symbol->name);
   }
 
   return NULL;
@@ -2113,35 +2145,76 @@ Symbol* AggregateType::getSubstitution(const char* name) {
   return retval;
 }
 
-UnmanagedClassType* AggregateType::getUnmanagedClass() {
-  if (aggregateTag == AGGREGATE_CLASS) {
+Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
 
-    if (!unmanagedClass)
-      generateUnmanagedClassTypes();
-
-    return unmanagedClass;
+  int packedDecorator = -1;
+  // -1 -> just use the canonical type (e.g. MyClass == borrowed MyClass!)
+  //  0 -> borrowed MyClass?
+  //  1 -> unmanaged MyClass!
+  //  2 -> unmanaged MyClass?
+  switch (d) {
+    case CLASS_TYPE_BORROWED:          packedDecorator = -1; break;
+    case CLASS_TYPE_BORROWED_NONNIL:   packedDecorator = -1; break;
+    case CLASS_TYPE_BORROWED_NILABLE:  packedDecorator =  0; break;
+    case CLASS_TYPE_UNMANAGED:         packedDecorator =  1; break;
+    case CLASS_TYPE_UNMANAGED_NONNIL:  packedDecorator =  1; break;
+    case CLASS_TYPE_UNMANAGED_NILABLE: packedDecorator =  2; break;
+    case CLASS_TYPE_MANAGED:           packedDecorator = -1; break;
+    case CLASS_TYPE_MANAGED_NONNIL:    packedDecorator =  1; break;
+    case CLASS_TYPE_MANAGED_NILABLE:   packedDecorator =  2; break;
+      // intentionally no default
   }
-  return NULL;
-}
 
-void AggregateType::generateUnmanagedClassTypes() {
+  INT_ASSERT(packedDecorator < NUM_PACKED_DECORATED_TYPES);
+
+  if (aggregateTag != AGGREGATE_CLASS &&
+      !isManagedPtrType(this))
+    INT_FATAL("Bad call to getDecoratedClass");
+
   AggregateType* at = this;
-  if (aggregateTag == AGGREGATE_CLASS && at->unmanagedClass == NULL) {
-    SET_LINENO(at->symbol->defPoint);
-    // Generate unmanaged class type
-    UnmanagedClassType* unmanaged = new UnmanagedClassType(at);
-    at->unmanagedClass = unmanaged;
-    TypeSymbol* tsUnmanaged = new TypeSymbol(astr("unmanaged ", at->symbol->name), unmanaged);
-    // The unmanaged type isn't really an object, shouldn't have its own fields
-    tsUnmanaged->addFlag(FLAG_NO_OBJECT);
-    // Propagate generic-ness to the unmanaged type
-    if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
-      tsUnmanaged->addFlag(FLAG_GENERIC);
-    // The generated code should just use the canonical class name
-    tsUnmanaged->cname = at->symbol->cname;
-    DefExpr* defUnmanaged = new DefExpr(tsUnmanaged);
-    at->symbol->defPoint->insertAfter(defUnmanaged);
+
+  if (isManagedPtrType(this)) {
+    if (d != CLASS_TYPE_MANAGED_NONNIL &&
+        d != CLASS_TYPE_MANAGED_NILABLE) {
+      // Get the class type underneath
+      Type* bt = getManagedPtrBorrowType(this);
+      if (bt && bt != dtUnknown && isAggregateType(bt))
+        at = toAggregateType(bt);
+    }
   }
+
+  if (packedDecorator < 0)
+    return at;
+
+  // borrowed == canonical class type
+  if (d == CLASS_TYPE_BORROWED) {
+    if (aggregateTag == AGGREGATE_CLASS)
+      return at;
+    else
+      INT_FATAL("Can't get borrowed owned/shared");
+  }
+
+  // Otherwise, gather the appropriate class type.
+  if (!at->decoratedClasses[packedDecorator]) {
+    SET_LINENO(at->symbol->defPoint);
+    // Generate decorated class type
+    DecoratedClassType* dec = new DecoratedClassType(at, d);
+    at->decoratedClasses[packedDecorator] = dec;
+    const char* astrName = decoratedTypeAstr(d, at->symbol->name);
+    TypeSymbol* tsDec = new TypeSymbol(astrName, dec);
+    // The dec type isn't really an object, shouldn't have its own fields
+    tsDec->copyFlags(at->symbol);
+    tsDec->addFlag(FLAG_NO_OBJECT);
+    // Propagate generic-ness to the decorated type
+    if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
+      tsDec->addFlag(FLAG_GENERIC);
+    // The generated code should just use the canonical class name
+    tsDec->cname = at->symbol->cname;
+    DefExpr* defDec = new DefExpr(tsDec);
+    symbol->defPoint->insertAfter(defDec);
+  }
+
+  return at->decoratedClasses[packedDecorator];
 }
 
 Type* AggregateType::cArrayElementType() const {

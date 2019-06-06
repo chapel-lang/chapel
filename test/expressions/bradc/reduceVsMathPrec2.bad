@@ -1,1 +1,1 @@
-reduceVsMathPrec2.chpl:12: error: Cannot assign to int(64) from _ir_chpl_promo1_*
+reduceVsMathPrec2.chpl:12: error: Cannot assign to int(64) from iterator

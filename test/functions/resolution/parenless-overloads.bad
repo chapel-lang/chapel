@@ -20,4 +20,5 @@ parenless-overloads.chpl:93: In function 'testNops2a':
 parenless-overloads.chpl:99: warning: R("n2a-no")
 parenless-overloads.chpl:75: In function 'testNops1a':
 parenless-overloads.chpl:80: error: unresolved call 'standinType()'
-parenless-overloads.chpl:78: note: candidates are: standinTypetype 
+parenless-overloads.chpl:78: note: this candidate did not match: standinTypetype 
+parenless-overloads.chpl:78: note: because where clause evaluated to false

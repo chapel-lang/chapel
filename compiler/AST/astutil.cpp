@@ -22,13 +22,14 @@
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
+#include "iterator.h"
 #include "expr.h"
 #include "LoopExpr.h"
-#include "UnmanagedClassType.h"
 #include "passes.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
@@ -105,6 +106,29 @@ void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
   if (GotoStmt* gotoStmt = toGotoStmt(ast))
     gotoStmts.push_back(gotoStmt);
 }
+
+// This is a specialized helper for lowerIterators.
+// Collects the gotos whose target is inTree() into 'GOTOs' and
+// the iterator break blocks into 'IBBs'.
+void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
+                                                 std::vector<GotoStmt*>& GOTOs,
+                                                 std::vector<CondStmt*>& IBBs) {
+  if (CondStmt* condStmt = isIBBCondStmt(ast)) {
+    IBBs.push_back(condStmt);
+    // Do not descend into the IBB to avoid its "goto return".
+    // We do not expect it to contain nested IBBs.
+    return;
+  }
+
+  AST_CHILDREN_CALL(ast, collectTreeBoundGotosAndIteratorBreakBlocks, GOTOs,
+                                                                      IBBs);
+  // Include only the gotos whose target is inTree().
+  if (GotoStmt* gt = toGotoStmt(ast))
+    if (SymExpr* labelSE = toSymExpr(gt->label))
+      if (labelSE->symbol()->inTree())
+        GOTOs.push_back(gt);
+}
+
 
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
@@ -689,7 +713,7 @@ bool isTypeExpr(Expr* expr) {
     } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true ||
                call->isPrimitive(PRIM_GET_MEMBER)       == true) {
       SymExpr*       left = toSymExpr(call->get(1));
-      Type*          t    = canonicalClassType(left->getValType());
+      Type*          t    = canonicalDecoratedClassType(left->getValType());
       AggregateType* ct   = toAggregateType(t);
 
       INT_ASSERT(ct != NULL);
@@ -931,7 +955,7 @@ static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types)
         isAggregateType(def->sym->type)  ==  true &&
         isTypeSymbol(def->sym)           == false &&
         !types.set_in(def->sym->type->symbol))
-      def->sym->type = dtVoid;
+      def->sym->type = dtNothing;
   }
 }
 
@@ -944,7 +968,7 @@ static void removeVoidMoves()
       continue;
 
     SymExpr* se = toSymExpr(call->get(1));
-    if (se->symbol()->type != dtVoid)
+    if (se->symbol()->type != dtNothing)
       continue;
 
     // the RHS of the move could be a function with side effects.

@@ -206,7 +206,7 @@ record VersionInfo {
     bug = 0;
   }
 
-  proc init(other:VersionInfo) {
+  proc init=(other:VersionInfo) {
     this.major = other.major;
     this.minor = other.minor;
     this.bug   = other.bug;
@@ -287,10 +287,15 @@ proc getChapelVersionInfo(): VersionInfo {
 
   if chplVersionInfo(1) == -1 {
     try {
+
       var ret : VersionInfo;
 
       var process = spawn(["chpl", "--version"], stdout=PIPE);
       process.wait();
+      if process.exit_status != 0 {
+        throw new owned MasonError("Failed to run 'chpl --version'");
+      }
+
 
       var output : string;
       for line in process.stdout.lines() {

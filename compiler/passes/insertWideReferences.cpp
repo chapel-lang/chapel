@@ -979,7 +979,7 @@ static void addKnownWides() {
         ++i;
       }
     }
-    else if (call->isPrimitive(PRIM_HEAP_REGISTER_GLOBAL_VAR) ||
+    else if (call->isPrimitive(PRIM_REGISTER_GLOBAL_VAR) ||
              call->isPrimitive(PRIM_CHPL_COMM_ARRAY_GET) ||
              call->isPrimitive(PRIM_CHPL_COMM_GET)) { // TODO: Is this necessary?
       for_actuals(actual, call) {
@@ -1912,9 +1912,9 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
   heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
   int i = 0;
   for_vector(Symbol, sym, heapVars) {
-    heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
+    heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
   }
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   numGlobalsOnHeap = i;
 }

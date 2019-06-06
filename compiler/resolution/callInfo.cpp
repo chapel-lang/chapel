@@ -151,10 +151,12 @@ const char* CallInfo::toString() {
   if (method == true) {
     if (actuals.v[1] &&
         actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      retval = astr(retval, "type ", ::toString(actuals.v[1]->type), ".");
+      retval = astr(retval, "type ",
+                    ::toString(actuals.v[1]->type, false), ".");
 
     } else {
-      retval = astr(retval,          ::toString(actuals.v[1]->type), ".");
+      retval = astr(retval,
+                    ::toString(actuals.v[1]->type, false), ".");
     }
   }
 

@@ -2,13 +2,13 @@
 record DR {
   param cond : bool;
   var x : if cond then int else real;
-  var y : if cond then int else void;
+  var y : if cond then int else nothing;
 }
 
 record ER {
   param cond : bool;
   var x : if cond then int else real;
-  var y : if cond then int else void;
+  var y : if cond then int else nothing;
 
   proc init(param cond : bool) {
     this.cond = cond;

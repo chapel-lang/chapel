@@ -1,2 +1,0 @@
-staticMethodInheritance-whenField-owned.chpl:22: error: unresolved call 'type _owned(Parent).foo()'
-staticMethodInheritance-whenField-owned.chpl:3: note: candidates are: Parent.type foo()

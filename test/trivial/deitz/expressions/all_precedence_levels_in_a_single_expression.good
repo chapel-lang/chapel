@@ -1,4 +1,4 @@
-C(): C
+C(): borrowed C
 new C(): {x = 1, y = 2}
 new C():D: {x = 1, y = 2}
 new C():D**2: 1..2

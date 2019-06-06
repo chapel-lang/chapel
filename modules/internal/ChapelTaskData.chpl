@@ -71,8 +71,7 @@ module ChapelTaskData {
     c_memcpy(c_ptrTo(adr), c_ptrTo(prv[i]), c_sizeof(c_void_ptr));
 
     // Construct a pointer to return.
-    var ret:_remoteEndCountType;
-    ret = __primitive("_wide_make", _remoteEndCountType, loc, adr);
+    var ret = __primitive("_wide_make", _remoteEndCountType, loc, adr);
 
     return ret;
   }

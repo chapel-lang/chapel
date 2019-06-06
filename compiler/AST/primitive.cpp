@@ -19,9 +19,9 @@
 
 #include "primitive.h"
 
+#include "DecoratedClassType.h"
 #include "expr.h"
 #include "iterator.h"
-#include "UnmanagedClassType.h"
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
@@ -185,7 +185,7 @@ returnInfoStaticFieldType(CallExpr* call) {
   // The first argument is the variable or the type whose field is queried.
   Type* type = call->get(1)->getValType();
   INT_ASSERT(! type->symbol->hasFlag(FLAG_TUPLE)); // not implemented
-  AggregateType* at = toAggregateType(canonicalClassType(type));
+  AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
   INT_ASSERT(at); // caller's responsibility
   // The second argument is the name of the field.
   VarSymbol* nameSym = toVarSymbol(toSymExpr(call->get(2))->symbol());
@@ -347,7 +347,7 @@ returnInfoGetTupleMemberRef(CallExpr* call) {
 
 static QualifiedType
 returnInfoGetMemberRef(CallExpr* call) {
-  Type* t = canonicalClassType(call->get(1)->getValType());
+  Type* t = canonicalDecoratedClassType(call->get(1)->getValType());
   AggregateType* ct = toAggregateType(t);
   INT_ASSERT(ct);
   SymExpr* se = toSymExpr(call->get(2));
@@ -411,7 +411,8 @@ static QualifiedType
 returnInfoError(CallExpr* call) {
   AggregateType* at = toAggregateType(dtError);
   INT_ASSERT(isClass(at));
-  UnmanagedClassType* unmanaged = at->getUnmanagedClass();
+  Type* unmanaged =
+    at->getDecoratedClass(CLASS_TYPE_UNMANAGED); // TODO: nilable
   INT_ASSERT(unmanaged);
   return QualifiedType(unmanaged, QUAL_VAL);
 }
@@ -447,13 +448,17 @@ returnInfoIteratorRecordFieldValueByFormal(CallExpr* call) {
 static QualifiedType
 returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
-  if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
-    t = mt->getCanonicalClass();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_UNMANAGED;
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    if (dt->isNilable())
+      decorator = CLASS_TYPE_UNMANAGED_NILABLE;
   }
+
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      if (UnmanagedClassType* unmanaged = at->getUnmanagedClass())
-        t = unmanaged;
+      t = at->getDecoratedClass(decorator);
     }
   }
   return QualifiedType(t, QUAL_VAL);
@@ -463,10 +468,61 @@ static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
-    t = mt->getCanonicalClass();
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    if (dt->isNilable())
+      decorator = CLASS_TYPE_BORROWED_NILABLE;
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
   }
+
+  if (AggregateType* at = toAggregateType(t))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
+
   // Canonical class type is borrow type
+  return QualifiedType(t, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoToNilable(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NILABLE;
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    decorator = dt->getDecorator();
+    decorator = addNilableToDecorator(decorator);
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
+  }
+
+  if (AggregateType* at = toAggregateType(t))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
+
+  return QualifiedType(t, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoToNonNilable(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    decorator = dt->getDecorator();
+    decorator = removeNilableFromDecorator(decorator);
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
+  }
+
+  if (AggregateType* at = toAggregateType(t))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
+
   return QualifiedType(t, QUAL_VAL);
 }
 
@@ -841,8 +897,8 @@ initPrimitive() {
   // specify a particular localeID for an on clause.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
-  prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);
-  prim_def(PRIM_HEAP_BROADCAST_GLOBAL_VARS, "_heap_broadcast_global_vars", returnInfoVoid, true, true);
+  prim_def(PRIM_REGISTER_GLOBAL_VAR, "_register_global_var", returnInfoVoid, true, true);
+  prim_def(PRIM_BROADCAST_GLOBAL_VARS, "_broadcast_global_vars", returnInfoVoid, true, true);
   // ('_private_broadcast' sym)
   // Later, a structure index is inserted ahead
   // of the symbol, so it ends up as
@@ -936,8 +992,13 @@ initPrimitive() {
   // used before error handling is lowered to represent the current error
   prim_def(PRIM_CURRENT_ERROR, "current error", returnInfoError, false, false);
 
+  // These return the (non-nil) class variant
   prim_def(PRIM_TO_UNMANAGED_CLASS, "to unmanaged class", returnInfoToUnmanaged, false, false);
+  // borrowed class type currently == canonical class type
   prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
+  // Returns the nilable class type
+  prim_def(PRIM_TO_NILABLE_CLASS, "to nilable class", returnInfoToNilable, false, false);
+  prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);

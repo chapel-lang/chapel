@@ -242,6 +242,8 @@ performance/compiler/bradc/AllCompTime.graph
 # suite: Memory tracking
 memleaks.graph
 memleaksfull.graph
+# suite: Memory allocation
+memory/lifetime/allocation.graph
 # suite: Code size tracking
 studies/jacobi/jacobi.graph
 # suite: Startup tracking
@@ -277,6 +279,7 @@ parallel/forall/reduce-intents/ri-a2-AoA.graph
 spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 library/standard/BitOps/c-tests/performance/bitops.graph
+library/standard/Random/performance/getNextPerf.graph
 studies/rbc/tvandoren/RBC.graph
 exercises/c-ray/old/c-ray.graph
 scan/scanPerf.graph

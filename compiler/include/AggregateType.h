@@ -20,6 +20,7 @@
 #ifndef _AGGREGATE_TYPE_H_
 #define _AGGREGATE_TYPE_H_
 
+#include "DecoratedClasses.h"
 #include "type.h"
 
 /************************************* | **************************************
@@ -33,7 +34,6 @@ enum AggregateTag {
   AGGREGATE_RECORD,
   AGGREGATE_UNION
 };
-
 
 class AggregateType : public Type {
 public:
@@ -149,14 +149,12 @@ public:
 
   Symbol*                     getSubstitution(const char* name);
 
-  UnmanagedClassType*         getUnmanagedClass();
-
-  void                        generateUnmanagedClassTypes();
+  Type*                       getDecoratedClass(ClassTypeDecorator d);
 
   // Returns true if a field is considered generic
   // (i.e. it needs a type constructor argument)
   bool                        fieldIsGeneric(Symbol* field,
-                                             bool &hasDefault)           const;
+                                             bool &hasDefault);
 
 
   Type*                       cArrayElementType()                        const;
@@ -171,7 +169,7 @@ public:
   // These fields support differentiating between unmanaged class
   // pointers and borrows. At the present time, borrows are represented
   // by plain AggregateType and unmanaged class pointers use this special type.
-  UnmanagedClassType*         unmanagedClass;
+  DecoratedClassType*         decoratedClasses[NUM_PACKED_DECORATED_TYPES];
 
   FnSymbol*                   typeConstructor;
 

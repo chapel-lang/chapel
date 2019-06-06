@@ -748,37 +748,6 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-// TODO: bulk-transfer support
-
-iter ConsecutiveChunks(d1,d2,lid,lo) {
-  var elemsToGet = d1.locDoms[lid].mySparseBlock.numIndices;
-  const offset   = d2.whole.low - d1.whole.low;
-  var rlo=lo+offset;
-  var rid  = d2.dist.targetLocsIdx(rlo);
-  while (elemsToGet>0) {
-    const size = min(d2.numRemoteElems(rlo,rid),elemsToGet):int;
-    yield (rid,rlo,size);
-    rid +=1;
-    rlo += size;
-    elemsToGet -= size;
-  }
-}
-
-iter ConsecutiveChunksD(d1,d2,i,lo) {
-  const rank=d1.rank;
-  var elemsToGet = d1.locDoms[i].mySparseBlock.dim(rank).length;
-  const offset   = d2.whole.low - d1.whole.low;
-  var rlo = lo+offset;
-  var rid = d2.dist.targetLocsIdx(rlo);
-  while (elemsToGet>0) {
-    const size = min(d2.numRemoteElems(rlo(rank):int,rid(rank):int),elemsToGet);
-    yield (rid,rlo,size);
-    rid(rank) +=1;
-    rlo(rank) += size;
-    elemsToGet -= size;
-  }
-}
-
 proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank).length - 1) then
@@ -789,22 +758,6 @@ proc SparseBlockDom.numRemoteElems(rlo,rid){
                    dist.targetLocDom.dim(rank).length) - 1;
 
   return(bhi - rlo + 1);
-}
-
-//Brad's utility function. It drops from Domain D the dimensions
-//indicated by the subsequent parameters dims.
-proc dropDims(D: domain, dims...) {
-  var r = D.dims();
-  var r2: (D.rank-dims.size)*r(1).type;
-  var j = 1;
-  for i in 1..D.rank do
-    for k in 1..dims.size do
-      if dims(k) != i {
-        r2(j) = r(i);
-        j+=1;
-      }
-  var DResult = {(...r2)};
-  return DResult;
 }
 
 proc SparseBlockDom.dsiHasSingleLocalSubdomain() param return true;

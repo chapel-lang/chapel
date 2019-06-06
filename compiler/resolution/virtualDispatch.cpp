@@ -48,11 +48,11 @@ static child type could end up calling something in the parent.
 #include "astutil.h"
 #include "baseAST.h"
 #include "callInfo.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "iterator.h"
-#include "UnmanagedClassType.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stmt.h"
@@ -311,7 +311,9 @@ static bool checkOverrides(FnSymbol* fn) {
   return ((fOverrideChecking && (!fn->isCompilerGenerated() || developer)) ||
           // (2) the function is in the modules/ hierarchy
           //     (which we manage and want to keep clean)
-          (parentMod && parentMod->modTag != MOD_USER));
+          (parentMod && parentMod->modTag != MOD_USER)) &&
+          // No override checking for type methods.
+         fn->thisTag != INTENT_TYPE;
 }
 
 static bool ignoreOverrides(FnSymbol* fn) {
@@ -506,12 +508,12 @@ static bool isSubType(Type* sub, Type* super) {
   if (sub == super) {
     retval = true;
 
-  } else if (isAggregateType(sub) || isUnmanagedClassType(sub)) {
+  } else if (isAggregateType(sub) || isDecoratedClassType(sub)) {
     AggregateType* subAt = toAggregateType(sub);
     Type* useSuper = super;
     if (classesWithSameKind(sub, super)) {
-      subAt = toAggregateType(canonicalClassType(sub));
-      useSuper = canonicalClassType(super);
+      subAt = toAggregateType(canonicalDecoratedClassType(sub));
+      useSuper = canonicalDecoratedClassType(super);
     }
     if (subAt) {
       forv_Vec(AggregateType, parent, subAt->dispatchParents) {

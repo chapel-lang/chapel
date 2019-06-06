@@ -1399,6 +1399,16 @@ void finishCodegenLLVM() {
   // Now finish any Clang code generation.
   finishClang(info->clangInfo);
 
+  // Now overwrite the value of llvm.ident to show Chapel
+  char version[128];
+  char chapel_string[256];
+  get_version(version);
+  snprintf(chapel_string, 256, "Chapel version %s", version);
+  info->module->getNamedMetadata("llvm.ident")->setOperand(0,
+    llvm::MDNode::get(info->module->getContext(),
+      llvm::MDString::get(info->module->getContext(), chapel_string))
+  );
+
   if(debug_info)debug_info->finalize();
 
   // Verify the LLVM module.
@@ -2573,14 +2583,31 @@ void checkAdjustedDataLayout() {
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
-static void makeLLVMLibrary(std::string moduleFilename, const char* tmpbinname,
-                            std::vector<std::string> dotOFiles);
+static void tryPrintSystemCommand(const char* command);
+static void tryPrintSystemCommand(std::string &command);
+static void makeLLVMStaticLibrary(std::string moduleFilename,
+                                  const char* tmpbinname,
+                                  std::vector<std::string> dotOFiles);
+static void makeLLVMDynamicLibrary(std::string useLinkCXX, std::string options,
+                            std::string moduleFilename, const char* tmpbinname,
+                            std::vector<std::string> dotOFiles,
+                            std::vector<std::string> clangLDArgs,
+                            bool sawSysroot);
+static std::string buildLLVMLinkCommand(std::string useLinkCXX,
+                                        std::string options,
+                                        std::string moduleFilename,
+                                        std::string maino,
+                                        const char* tmpbinname,
+                                        std::vector<std::string> dotOFiles,
+                                        std::vector<std::string> clangLDArgs,
+                                        bool sawSysroot);
 static void runLLVMLinking(std::string useLinkCXX, std::string options,
                            std::string moduleFilename, std::string maino,
                            const char* tmpbinname,
                            std::vector<std::string> dotOFiles,
                            std::vector<std::string> clangLDArgs,
                            bool sawSysroot);
+static std::string getLibraryOutputPath();
 static void moveGeneratedLibraryFile(const char* tmpbinname);
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
 
@@ -3012,13 +3039,25 @@ void makeBinaryLLVM(void) {
   INT_ASSERT(tmpbinname);
 
   if (fLibraryCompile) {
-    makeLLVMLibrary(moduleFilename, tmpbinname, dotOFiles);
+    switch (fLinkStyle) {
+    // The default library link style for Chapel is _static_.
+    case LS_DEFAULT:
+    case LS_STATIC:
+      makeLLVMStaticLibrary(moduleFilename, tmpbinname, dotOFiles);
+      break;
+    case LS_DYNAMIC:
+      makeLLVMDynamicLibrary(useLinkCXX, options, moduleFilename, tmpbinname,
+                             dotOFiles, clangLDArgs, sawSysroot);
+      break;
+    default:
+      INT_FATAL("Unsupported library link mode");
+      break;
+    }
   } else {
-    // Runs the LLVM link command
+    // Runs the LLVM link command for executables.
     runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
                    dotOFiles, clangLDArgs, sawSysroot);
   }
-
 
   // If we're not using a launcher, copy the program here
   if (0 == strcmp(CHPL_LAUNCHER, "none")) {
@@ -3037,28 +3076,83 @@ void makeBinaryLLVM(void) {
                                makeflags,
                                getIntermediateDirName(), "/Makefile");
 
-    if( printSystemCommands ) {
-      printf("%s\n", makecmd);
-      fflush(stdout); fflush(stderr);
-    }
+    tryPrintSystemCommand(makecmd);
 
     mysystem(makecmd, "Make Binary - Building Launcher and Copying");
   }
 }
 
-static void makeLLVMLibrary(std::string moduleFilename, const char* tmpbinname,
-                            std::vector<std::string> dotOFiles) {
+static void tryPrintSystemCommand(const char* command) {
+  if (!printSystemCommands) {
+    return;
+  }
+
+  printf("%s\n", command);
+  fflush(stdout);
+  fflush(stderr);
+}
+
+static void tryPrintSystemCommand(std::string &command) {
+  tryPrintSystemCommand(command.c_str());
+}
+
+static void makeLLVMStaticLibrary(std::string moduleFilename,
+                                  const char* tmpbinname,
+                                  std::vector<std::string> dotOFiles) {
+  
+  INT_ASSERT(fLibraryCompile);
+  INT_ASSERT(fLinkStyle == LS_STATIC || fLinkStyle == LS_DEFAULT);
+
   std::string commandBase = "ar -c -r -s"; // Stolen from Makefile.static
   std::string command = commandBase + " " + tmpbinname + " " +  moduleFilename;
-  for( size_t i = 0; i < dotOFiles.size(); i++ ) {
+  
+  for (size_t i = 0; i < dotOFiles.size(); i++) {
     command += " ";
     command += dotOFiles[i];
   }
-  if( printSystemCommands ) {
-    printf("%s\n", command.c_str());
-    fflush(stdout); fflush(stderr);
+
+  tryPrintSystemCommand(command);  
+
+  mysystem(command.c_str(), "Make Static Library - Linking");
+}
+
+static void makeLLVMDynamicLibrary(std::string useLinkCXX,
+                                   std::string options,
+                                   std::string moduleFilename,
+                                   const char* tmpbinname,
+                                   std::vector<std::string> dotOFiles,
+                                   std::vector<std::string> clangLDArgs,
+                                   bool sawSysroot) {
+
+  INT_ASSERT(fLibraryCompile && fLinkStyle == LS_DYNAMIC);
+
+  // This is a clang++ flag, make the linker shut up about a missing "main".
+  clangLDArgs.push_back("-shared");
+
+#if defined(__APPLE__) && defined(__MACH__)
+  {
+    // TODO:
+    // Right now, we check for __APPLE__ before adding Mac specific linker
+    // args. What we would like to do is additionally detect what linker we
+    // are using (not all linkers may support "-install_name", for example).
+    //
+    // Apple's default LD will attempt to load a dynamic library via the path
+    // of the temporary copy (which was removed) unless we tell it to use the
+    // final output path instead.
+    std::string installName = "-Wl,-install_name," + getLibraryOutputPath();
+    clangLDArgs.push_back(installName);
   }
-  mysystem(command.c_str(), "Make Library File - Linking");
+#endif
+
+  // No main object file for this call, since we're building a library.
+  std::string command = buildLLVMLinkCommand(useLinkCXX, options,
+                                             moduleFilename, "", tmpbinname,
+                                             dotOFiles, clangLDArgs,
+                                             sawSysroot);
+
+  tryPrintSystemCommand(command);
+
+  mysystem(command.c_str(), "Make Dynamic Library - Linking");
 }
 
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
@@ -3122,30 +3216,36 @@ static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
   }
 }
 
-static void runLLVMLinking(std::string useLinkCXX, std::string options,
-                           std::string moduleFilename, std::string maino,
-                           const char* tmpbinname,
-                           std::vector<std::string> dotOFiles,
-                           std::vector<std::string> clangLDArgs,
-                           bool sawSysroot) {
+static std::string buildLLVMLinkCommand(std::string useLinkCXX,
+                                        std::string options,
+                                        std::string moduleFilename,
+                                        std::string maino,
+                                        const char* tmpbinname,
+                                        std::vector<std::string> dotOFiles,
+                                        std::vector<std::string> clangLDArgs,
+                                        bool sawSysroot) {
   // Run the linker. We always use a C++ compiler because some third-party
   // libraries are written in C++. Here we use clang++ or possibly a
   // linker override specified by the Makefiles (e.g. setting it to mpicxx)
   std::string command = useLinkCXX + " " + options + " " +
                         moduleFilename + " " + maino;
+  
   // For dynamic linking, leave it alone.  For static, append -static .
   // See $CHPL_HOME/make/compiler/Makefile.clang (and keep this in sync
   // with it).
-  if (fLinkStyle == LS_STATIC)
+  if (fLinkStyle == LS_STATIC) {
     command += " -static";
+  }
+
   command += " -o ";
   command += tmpbinname;
-  for( size_t i = 0; i < dotOFiles.size(); i++ ) {
+
+  for (size_t i = 0; i < dotOFiles.size(); i++) {
     command += " ";
     command += dotOFiles[i];
   }
 
-  for(size_t i = 0; i < clangLDArgs.size(); ++i) {
+  for (size_t i = 0; i < clangLDArgs.size(); ++i) {
     command += " ";
     command += clangLDArgs[i];
   }
@@ -3157,38 +3257,66 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
     command += " -L";
     command += dirName;
   }
+
   if (sawSysroot) {
     // Work around a bug in some versions of Clang that forget to
     // search /usr/local/lib if there is a -isysroot argument.
     command += " -L/usr/local/lib";
   }
+
   for_vector(const char, libName, libFiles) {
     command += " -l";
     command += libName;
-  }
+  } 
+  
+  return command;
+}
 
-  if( printSystemCommands ) {
-    printf("%s\n", command.c_str());
-    fflush(stdout); fflush(stderr);
-  }
+static void runLLVMLinking(std::string useLinkCXX, std::string options,
+                           std::string moduleFilename, std::string maino,
+                           const char* tmpbinname,
+                           std::vector<std::string> dotOFiles,
+                           std::vector<std::string> clangLDArgs,
+                           bool sawSysroot) {
+  
+  // This code is general enough to use elsewhere, thus the move.
+  std::string command = buildLLVMLinkCommand(useLinkCXX,
+                                             options,
+                                             moduleFilename,
+                                             maino,
+                                             tmpbinname,
+                                             dotOFiles,
+                                             clangLDArgs,
+                                             sawSysroot);
+
+  tryPrintSystemCommand(command);  
+
   mysystem(command.c_str(), "Make Binary - Linking");
 }
 
-static void moveGeneratedLibraryFile(const char* tmpbinname) {
+static std::string getLibraryOutputPath() {
   // Need to reuse some of the stuff in codegen_makefile.  It doesn't save the
   // full filename that is used when in library mode, so we don't have an
   // alternative to making a modified version of executableFilename again
+  std::string result;
   const char* exeExt = getLibraryExtension();
   const char* libraryPrefix = "";
   int libLength = strlen("lib");
   bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  
   if (!startsWithLib) {
     libraryPrefix = "lib";
   }
-  const char* fullLibraryName = astr(libDir, "/", libraryPrefix,
-                                     executableFilename, exeExt);
+  
+  result += std::string(libDir) + "/" + libraryPrefix + executableFilename;
+  result += std::string(exeExt);
 
-  moveResultFromTmp(fullLibraryName, tmpbinname);
+  return result;
+}
+
+static void moveGeneratedLibraryFile(const char* tmpbinname) {
+  std::string outputPath = getLibraryOutputPath();
+  moveResultFromTmp(outputPath.c_str(), tmpbinname);
 }
 
 #endif

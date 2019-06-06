@@ -1,5 +1,0 @@
-bug: global ref-var to block-dist array cannot be used within local blocks
-
-Using such an alias was legal with '=>', but no longer works with 'ref'. This
-is because the global has a _ref type, which the parallel pass cannot reason
-with in order to broadcast the _array record.

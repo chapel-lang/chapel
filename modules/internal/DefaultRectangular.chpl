@@ -158,6 +158,27 @@ module DefaultRectangular {
       return dist;
     }
 
+    pragma "no doc"
+    record _serialized_domain {
+      param rank;
+      type idxType;
+      param stridable;
+      var dims;
+      param isDefaultRectangular;
+    }
+
+    proc chpl__serialize() {
+      return new _serialized_domain(rank, idxType, stridable, dsiDims(), true);
+    }
+
+    proc type chpl__deserialize(data) {
+      return defaultDist.newRectangularDom(data.rank,
+                                           data.idxType,
+                                           data.stridable,
+                                           data.dims);
+
+    }
+
     override proc dsiDisplayRepresentation() {
       writeln("ranges = ", ranges);
     }
@@ -970,8 +991,9 @@ module DefaultRectangular {
     var targetLocDom: domain(rank);
     var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType,
                                               stridable);
-    var RADLocks: [targetLocDom] chpl__processorAtomicType(bool); // only accessed locally
+    var RADLocks: [targetLocDom] chpl_LocalSpinlock;
 
+    pragma "dont disable remote value forwarding"
     proc init(type eltType, param rank: int, type idxType,
               param stridable: bool, newTargetLocDom: domain(rank)) {
       this.eltType = eltType;
@@ -982,14 +1004,12 @@ module DefaultRectangular {
       targetLocDom=newTargetLocDom;
     }
 
-    // These functions must always be called locally, because the lock
-    // is a (local) processor one.
     inline proc lockRAD(rlocIdx) {
-      while RADLocks(rlocIdx).testAndSet(memory_order_acquire) do chpl_task_yield();
+      RADLocks[rlocIdx].lock();
     }
 
     inline proc unlockRAD(rlocIdx) {
-      RADLocks(rlocIdx).clear(memory_order_release);
+      RADLocks[rlocIdx].unlock();
     }
   }
 
@@ -1875,7 +1895,6 @@ module DefaultRectangular {
     if len == 0 then return;
 
     if debugBulkTransfer {
-      pragma "no prototype"
       pragma "fn synchronization free"
       extern proc sizeof(type x): int;
       const elemSize =sizeof(B.eltType);
@@ -1945,43 +1964,6 @@ module DefaultRectangular {
     }
   }
 
-  // Compute the active dimensions of this assignment. For example, LeftDims
-  // could be (1..1, 1..10) and RightDims (1..10, 1..1). This indicates that
-  // a rank change occurred and that the inferredRank should be '1', the
-  // LeftActives = (2,), the RightActives = (1,)
-  private proc computeActiveDims(LeftDims, RightDims) {
-    param LeftRank  = LeftDims.size;
-    param RightRank = RightDims.size;
-    param minRank   = min(LeftRank, RightRank);
-
-    var inferredRank = 0;
-
-    // Tuple used instead of an array because returning an array would
-    // recursively invoke array assignment (and therefore bulk-transfer).
-    var LeftActives, RightActives : minRank * int;
-
-    var li = 1, ri = 1;
-    proc advance() {
-      // Advance to positions in each domain where the sizes are equal.
-      while LeftDims(li).size == 1 && LeftDims(li).size != RightDims(ri).size do li += 1;
-      while RightDims(ri).size == 1 && RightDims(ri).size != LeftDims(li).size do ri += 1;
-
-      assert(LeftDims(li).size == RightDims(ri).size);
-    }
-
-    do {
-      advance();
-      inferredRank += 1;
-
-      LeftActives(inferredRank)  = li;
-      RightActives(inferredRank) = ri;
-
-      li += 1;
-      ri += 1;
-    } while li <= LeftRank && ri <= RightRank;
-
-    return (LeftActives, RightActives, inferredRank);
-  }
 
   private proc complexTransferCore(LHS, LViewDom, RHS, RViewDom) {
     param minRank = min(LHS.rank, RHS.rank);
@@ -1996,7 +1978,7 @@ module DefaultRectangular {
     const LeftDims  = LViewDom.dims();
     const RightDims = RViewDom.dims();
 
-    const (LeftActives, RightActives, inferredRank) = computeActiveDims(LeftDims, RightDims);
+    const (LeftActives, RightActives, inferredRank) = bulkCommComputeActiveDims(LeftDims, RightDims);
 
     var DimSizes : [1..0] LeftDims(1).size.type;
     for i in 1..inferredRank {
@@ -2185,7 +2167,7 @@ module DefaultRectangular {
     var res: [dom] resType;
 
     // Take first pass, computing per-task partial scans, stored in 'state'
-    var (numTasks, rngs, state, _) = this.chpl__preScan(op, res);
+    var (numTasks, rngs, state, _) = this.chpl__preScan(op, res, dom);
 
     // Take second pass updating result based on the scanned 'state'
     this.chpl__postScan(op, res, numTasks, rngs, state);
@@ -2200,9 +2182,9 @@ module DefaultRectangular {
   // task, and the scanned results of each task's scan.  This is
   // broken out into a helper function in order to be made use of by
   // distributed array scans.
-  proc DefaultRectangularArr.chpl__preScan(op, res: [] ?resType) {
+  proc DefaultRectangularArr.chpl__preScan(op, res: [] ?resType, dom) {
     // Compute who owns what
-    const rng = dom.dsiDim(1);
+    const rng = dom.dim(1);
     const numTasks = if __primitive("task_get_serial") then
                       1 else _computeNumChunks(rng.size);
     const rngs = RangeChunk.chunks(rng, numTasks);
@@ -2214,7 +2196,17 @@ module DefaultRectangular {
     var state: [1..numTasks] resType;
 
     // Take first pass over data doing per-chunk scans
-    coforall tid in 1..numTasks {
+
+    // optimize for the single-task case
+    if numTasks == 1 {
+      preScanChunk(1);
+    } else {
+      coforall tid in 1..numTasks {
+        preScanChunk(tid);
+      }
+    }
+
+    proc preScanChunk(tid) {
       const current: resType;
       const myop = op.clone();
       for i in rngs[tid] {
@@ -2249,12 +2241,22 @@ module DefaultRectangular {
   // tasks.  This is broken out into a helper function in order to be
   // made use of by distributed array scans.
   proc DefaultRectangularArr.chpl__postScan(op, res, numTasks, rngs, state) {
-    coforall tid in 1..numTasks {
+    // optimize for the single-task case
+    if numTasks == 1 {
+      postScanChunk(1);
+    } else {
+      coforall tid in 1..numTasks {
+        postScanChunk(tid);
+      }
+    }
+
+    proc postScanChunk(tid) {
       const myadjust = state[tid];
       for i in rngs[tid] {
         op.accumulateOntoState(res[i], myadjust);
       }
     }
+    
     if debugDRScan then
       writeln("res = ", res);
   }

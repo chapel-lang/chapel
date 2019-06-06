@@ -8,8 +8,8 @@ record R {
     writeln("R.init ", x);
     this.x = x; 
   }
-  proc init(other:R) {
-    writeln("R.init ", other);
+  proc init=(other:R) {
+    writeln("R.init= ", other);
     this.x = other.x; 
   }
   proc deinit() {

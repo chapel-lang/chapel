@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+# Run bale index gather with 1 million updates per task. ugni and gasnet-aries
+# are much faster so drop the number of updates for slower configs. 
+import os
+
+comm = os.getenv('CHPL_COMM')
+comm_sub = os.getenv('CHPL_COMM_SUBSTRATE')
+ugni = comm == 'ugni'
+gn_aries = comm == 'gasnet' and comm_sub  == 'aries'
+
+N = 10000
+if ugni or gn_aries:
+  N = 1000000
+
+print('--N={0} --printStats # bale-ig-variants'.format(N))

@@ -1,1 +1,2 @@
-substringBadRange2-codepoint.chpl:3: error: halt reached - range out of bounds of string
+str1[13:byteIndex..(-1):byteIndex] = 
+str2[13:codepointIndex..(-1):codepointIndex] = 

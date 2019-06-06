@@ -271,6 +271,19 @@ const char* genIntermediateFilename(const char* filename) {
   return astr(intDirName, slash, filename);
 }
 
+const char* getDirectory(const char* filename) {
+  const char* filenamebase = strrchr(filename, '/');
+  if (filenamebase == NULL) {
+    return astr(".");
+  } else {
+    char dir[FILENAME_MAX];
+    const int len = filenamebase - filename;
+    strncpy(dir, filename, len);
+    dir[len] = '\0';
+    return astr(dir);
+  }
+}
+
 const char* stripdirectories(const char* filename) {
   const char* filenamebase = strrchr(filename, '/');
 
@@ -467,8 +480,49 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     USR_FATAL("Command line contains no .chpl source files");
 }
 
-void addSourceFile(const char* filename) {
-  const char* filenamearr[1] = {filename};
+static const char* addCurrentDirToSourceFile(const char* filename,
+                                             const char* modFilename) {
+  // Do nothing if modFilename is NULL
+  if (modFilename == NULL) {
+    return filename;
+  }
+
+  // Do nothing if the filename is already absolute
+  if (filename[0] == '/') {
+    return filename;
+  }
+
+  // Do nothing if the current module's directory is "./"
+  const char* modDir = getDirectory(modFilename);
+  if (strcmp(modDir, ".") == 0) {
+    return filename;
+  }
+
+  // If the file is a .c or .o...
+  if (isCSource(filename) || isObjFile(filename)) {
+    // ...and it isn't already an absolute path, add the module directory
+    return astr(modDir, "/", filename);
+  }
+
+  // If the file is a .h, add the module's directory to the -I path
+  if (isCHeader(filename)) {
+    for_vector(const char, dir, incDirs) {
+      if (dir == modDir) {
+        // we've already added this -I directory, so don't do it again
+        return filename;
+      }
+    }
+    addIncInfo(modDir);
+    return filename;
+  }
+
+  // otherwise, leave it as-is
+  return filename;
+}
+
+void addSourceFile(const char* filename, const char* modFilename) {
+  const char* filenamearr[1] = { addCurrentDirToSourceFile(filename,
+                                                           modFilename)};
   addSourceFiles(1, filenamearr);
 }
 
@@ -596,7 +650,7 @@ static void genCFileBuildRules(FILE* makefile) {
       const char* objFilename = objectFileForCFile(inputFilename);
       fprintf(makefile, "%s: %s FORCE\n", objFilename, inputFilename);
       fprintf(makefile,
-                   "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $<\n");
+              "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR) $<\n");
       fprintf(makefile, "\n");
     }
   }
@@ -638,73 +692,105 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
   }
 }
 
+std::string genMakefileEnvCache(void);
+std::string genMakefileEnvCache(void) {
+  std::string result;
+  std::map<std::string, const char*>::iterator env;
 
-void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_compile_link, const std::vector<const char*>& splitFiles) {
-  fileinfo makefile;
-  openCFile(&makefile, "Makefile");
-  const char* tmpDirName = intDirName;
-  const char* strippedExeFilename = stripdirectories(executableFilename);
-  const char* exeExt = "";
-  const char* tmpbin = "";
-  std::string chplmakeallvars = "\0";
-
-
-  fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
-  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_LIB = %s\n\n", CHPL_RUNTIME_LIB);
-  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n\n", CHPL_RUNTIME_INCL);
-  fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY);
-  fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
-
-  // Store the chplenv in the makefile cache
-  for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env)
-  {
+  for (env = envMap.begin(); env != envMap.end(); ++env) {
     const std::string& key = env->first;
     const char* oldPrefix = "CHPL_";
     const char* newPrefix = "CHPL_MAKE_";
     INT_ASSERT(key.substr(0, strlen(oldPrefix)) == oldPrefix);
     std::string keySuffix = key.substr(strlen(oldPrefix), std::string::npos);
     std::string chpl_make_key = newPrefix + keySuffix;
-    chplmakeallvars += chpl_make_key + "=" + std::string(env->second) + "|";
+    result += chpl_make_key + "=" + std::string(env->second) + "|";
   }
-  fprintf(makefile.fptr, "\nexport CHPL_MAKE_CHPLENV_CACHE := %s\n", chplmakeallvars.c_str());
 
+  return result;
+}
 
-  // LLVM builds just use the makefile for the launcher and
-  // so want to skip the actual program generation.
-  if( skip_compile_link ) {
+void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
+                      bool skip_compile_link,
+                      const std::vector<const char*>& splitFiles) {
+  const char* tmpDirName = intDirName;
+  const char* strippedExeFilename = stripdirectories(executableFilename);
+  const char* exeExt = getLibraryExtension();
+  const char* server = "";
+  const char* tmpserver = "";
+  const char* tmpbin = "";
+  bool startsWithLib = !strncmp(executableFilename, "lib", 3);
+  bool dyn = (fLinkStyle == LS_DYNAMIC);
+  std::string makeallvars;
+  fileinfo makefile;
+
+  openCFile(&makefile, "Makefile");
+
+  // Capture different compiler directories.
+  fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
+  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_LIB = %s\n\n", CHPL_RUNTIME_LIB);
+  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n\n", CHPL_RUNTIME_INCL);
+  fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY);
+  fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
+
+  // Store chapel environment variables in a cache.
+  makeallvars = genMakefileEnvCache();
+  fprintf(makefile.fptr, "export CHPL_MAKE_CHPLENV_CACHE := %s\n\n",
+          makeallvars.c_str());
+
+  //
+  // LLVM builds just use the makefile for the launcher and so want to skip
+  // the actual program generation.
+  //
+  if (skip_compile_link) {
     fprintf(makefile.fptr, "SKIP_COMPILE_LINK = skip\n");
   }
 
-  exeExt = getLibraryExtension();
-
+  //
+  // In --library compilation, put the generated library in the library
+  // directory.
+  //
   if (fLibraryCompile) {
+
     ensureLibDirExists();
-    // In --library compilation, put the generated library in the library
-    // directory
     fprintf(makefile.fptr, "BINNAME = %s/", libDir);
-    int libLength = strlen("lib");
-    bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
-    if (!startsWithLib) {
-      fprintf(makefile.fptr, "lib");
+    if (!startsWithLib) { fprintf(makefile.fptr, "lib"); }
+    fprintf(makefile.fptr, "%s%s\n\n", executableFilename, exeExt);
+
+    //
+    // Now that the client and launcher are merged, the server name becomes
+    // the name of the library without any extension. We munge the server
+    // name with a trailing underscore just to guarantee that it's different
+    // from the file name.
+    //
+    if (fMultiLocaleInterop) {
+      server = astr(executableFilename, "_server");
+      fprintf(makefile.fptr, "SERVERNAME = %s\n\n", server);
     }
-    fprintf(makefile.fptr, "%s%s\n\n",
-            executableFilename,
-            exeExt);
-    // BLC: This munging is done so that cp won't complain if the source
-    // and destination are the same file (e.g., myprogram and ./myprogram)
-    if (startsWithLib) {
-      tmpbin = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
-    } else {
-      tmpbin = astr(tmpDirName, "/lib", strippedExeFilename, ".tmp", exeExt);
-    }
+
   } else {
     fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
-    // BLC: This munging is done so that cp won't complain if the source
-    // and destination are the same file (e.g., myprogram and ./myprogram)
+  }
+
+  //
+  // BLC: This munging is done so that cp won't complain if the source
+  // and destination are the same file (e.g., myprogram and ./myprogram).
+  //
+  if (fLibraryCompile) {
+    const char* pfx = startsWithLib ? "/" : "/lib";
+    tmpbin = astr(tmpDirName, pfx, strippedExeFilename, ".tmp", exeExt);
+
+    if (fMultiLocaleInterop) {
+      tmpserver = astr(tmpDirName, "/", strippedExeFilename, "_server");
+    }
+  } else {
     tmpbin = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
   }
-  if( tmpbinname ) *tmpbinname = tmpbin;
-  fprintf(makefile.fptr, "TMPBINNAME = %s\n", tmpbin);
+
+  // Write out the temporary filename to the caller if necessary.
+  if (tmpbinname) { *tmpbinname = tmpbin; }
+
+  //
   // BLC: We generate a TMPBINNAME which is the name that will be used
   // by the C compiler in creating the executable, and is in the
   // --savec directory (a /tmp directory by default).  We then copy it
@@ -712,36 +798,65 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   // -- after linking is done.  As it turns out, this saves a
   // factor of 5 or so in time in running the test system, as opposed
   // to specifying BINNAME on the C compiler command line.
+  //
+  fprintf(makefile.fptr, "TMPBINNAME = %s\n", tmpbin);
 
+  if (fMultiLocaleInterop) {
+    fprintf(makefile.fptr, "TMPSERVERNAME = %s\n\n", tmpserver);
+  }
+
+  // Bunch of C compiler flags.
   fprintf(makefile.fptr, "COMP_GEN_WARN = %i\n", ccwarnings);
   fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i\n", debugCCode);
   fprintf(makefile.fptr, "COMP_GEN_OPT = %i\n", optimizeCCode);
   fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode);
   fprintf(makefile.fptr, "COMP_GEN_FLOAT_OPT = %i\n", ffloatOpt);
 
-  fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS =");
-
-  if (fLibraryCompile && (fLinkStyle==LS_DYNAMIC))
-    fprintf(makefile.fptr, " $(SHARED_LIB_CFLAGS)");
+  if (fMultiLocaleInterop) {
+    const char* loc = "$(CHPL_MAKE_HOME)/runtime/etc/src";
+    fprintf(makefile.fptr, "COMP_GEN_MLI_EXTRA_INCLUDES = -I%s\n", loc);
+  }
+  
+  // Build a string out of include directories, for convenience.
+  std::string includedirs;
   for_vector(const char, dirName, incDirs) {
-    fprintf(makefile.fptr, " -I%s", dirName);
+    includedirs += " -I";
+    includedirs += dirName;
   }
-  fprintf(makefile.fptr, " %s\n", ccflags.c_str());
 
-  fprintf(makefile.fptr, "COMP_GEN_LFLAGS =");
-  if (!fLibraryCompile) {
-    if (fLinkStyle==LS_DYNAMIC)
-      fprintf(makefile.fptr, " $(GEN_DYNAMIC_FLAG)" );
-    else if (fLinkStyle==LS_STATIC)
-      fprintf(makefile.fptr, " $(GEN_STATIC_FLAG)" );
+  // Compiler flags for each deliverable.
+  if (fLibraryCompile && !fMultiLocaleInterop && dyn) {
+    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s %s\n",
+            "$(SHARED_LIB_CFLAGS)",
+            includedirs.c_str(),
+            ccflags.c_str());
   } else {
-    if (fLinkStyle==LS_DYNAMIC)
-      fprintf(makefile.fptr, " $(LIB_DYNAMIC_FLAG)" );
-    else
-      fprintf(makefile.fptr, " $(LIB_STATIC_FLAG)" );
+    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s\n",
+            includedirs.c_str(),
+            ccflags.c_str());
   }
-  fprintf(makefile.fptr, " %s\n", ldflags.c_str());
 
+  // Linker flags for each deliverable.
+  const char* lmode = "";
+  if (!fLibraryCompile) {
+    //
+    // Important that _no_ RHS is produced when the link style is default!
+    // Tests will _fail_ that rely on this assumption if we do otherwise.
+    //
+    switch (fLinkStyle) {
+    case LS_DYNAMIC:
+      lmode = "$(GEN_DYNAMIC_FLAG)"; break;
+    case LS_STATIC:
+      lmode = "$(GEN_STATIC_FLAG)"; break;
+    }
+  } else if (fLibraryCompile && !fMultiLocaleInterop) {
+    lmode = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
+  }
+
+  fprintf(makefile.fptr, "COMP_GEN_LFLAGS = %s %s\n",
+          lmode, ldflags.c_str());
+
+  // Block of code for generating TAGS command, developer convenience.
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
   if (developer && saveCDir[0] && !printCppLineno) {
     fprintf(makefile.fptr,
@@ -753,40 +868,63 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
               "$(CHPL_TAGS_APPEND_FLAG) *.c *.h",
             saveCDir);
   }
-  fprintf(makefile.fptr, "\n");
 
-  fprintf(makefile.fptr, "CHPLSRC = \\\n");
-  fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
-  fprintf(makefile.fptr, "CHPLUSEROBJ = \\\n");
-  for(int i=0; i<(int)splitFiles.size(); i++)
-    fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
-  fprintf(makefile.fptr, "\n");
-  genCFiles(makefile.fptr);
-  genObjFiles(makefile.fptr);
-  fprintf(makefile.fptr, "\nLIBS =");
-  for_vector(const char, dirName, libDirs)
-    fprintf(makefile.fptr, " -L%s", dirName);
-  for_vector(const char, libName, libFiles)
-    fprintf(makefile.fptr, " -l%s", libName);
-  if (fLinkStyle==LS_STATIC)
-      fprintf(makefile.fptr, " $(LIBMVEC)" );
-  fprintf(makefile.fptr, "\n");
+  fprintf(makefile.fptr, "\n\n");
 
-  fprintf(makefile.fptr, "\n");
-  fprintf(makefile.fptr, "\n");
+  // List source files needed to compile this deliverable.
+  if (fMultiLocaleInterop) {
 
-  if (!fLibraryCompile) {
-    fprintf(makefile.fptr,
-            "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.exe\n");
+    const char* mli_client = astr(intDirName, "/", "chpl_mli_client.c");
+    const char* mli_server = astr(intDirName, "/", "chpl_mli_server.c");
+
+    // Only one source file for client (for now).
+    fprintf(makefile.fptr, "CHPLSRC = \\\n");
+    fprintf(makefile.fptr, "\t%s \n", mli_client);
+
+    // The server bundle includes "_main.c", bypassing the need to include it.
+    fprintf(makefile.fptr, "CHPLSERVERSRC = \\\n");
+    fprintf(makefile.fptr, "\t%s \n", mli_server);
+
   } else {
-    if (fLinkStyle == LS_DYNAMIC)
-      fprintf(makefile.fptr,
-              "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.shared\n");
-    else
-      fprintf(makefile.fptr,
-              "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.static\n");
+    fprintf(makefile.fptr, "CHPLSRC = \\\n");
+    fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
+  }
+
+  // List object files needed to compile this deliverable.
+  fprintf(makefile.fptr, "CHPLUSEROBJ = \\\n");
+  for (size_t i = 0; i < splitFiles.size(); i++) {
+    fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
   }
   fprintf(makefile.fptr, "\n");
+  
+  genCFiles(makefile.fptr);
+  genObjFiles(makefile.fptr);
+  
+  // List libraries/locations needed to compile this deliverable.
+  fprintf(makefile.fptr, "\nLIBS =");
+  for_vector(const char, dirName, libDirs) {
+    fprintf(makefile.fptr, " -L%s", dirName);
+  }
+
+  for_vector(const char, libName, libFiles) {
+    fprintf(makefile.fptr, " -l%s", libName);
+  }
+
+  if (fLinkStyle==LS_STATIC) { fprintf(makefile.fptr, " $(LIBMVEC)"); }
+  fprintf(makefile.fptr, "\n\n\n");
+
+  // Figure out the appropriate base Makefile to include.
+  std::string incpath = "include $(CHPL_MAKE_HOME)/runtime/etc/";
+  if (fMultiLocaleInterop) {
+    incpath += dyn ? "Makefile.mli-shared" : "Makefile.mli-static";
+  } else if (fLibraryCompile) {
+    incpath += dyn ? "Makefile.shared" : "Makefile.static";
+  } else {
+    incpath += "Makefile.exe";
+  }
+
+  fprintf(makefile.fptr, "%s\n\n", incpath.c_str());
+
   genCFileBuildRules(makefile.fptr);
   closeCFile(&makefile, false);
 }

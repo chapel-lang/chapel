@@ -46,6 +46,7 @@ extern bool fNoLiveAnalysis;
 extern bool fNoFormalDomainChecks;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
+extern bool fLegacyNilableClasses;
 extern bool fNoStackChecks;
 extern bool fNoCastChecks;
 extern bool fNoDivZeroChecks;
@@ -134,6 +135,7 @@ extern char fExplainInstantiation[256];
 /// resolution.
 extern bool fExplainVerbose;
 extern bool fParseOnly;
+extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
 extern bool fPrintIDonError;
@@ -175,6 +177,10 @@ extern bool fLibraryCompile;
 extern bool fLibraryFortran;
 extern bool fLibraryMakefile;
 extern bool fLibraryPython;
+
+extern bool fMultiLocaleInterop;
+extern bool fMultiLocaleLibraryDebug;
+
 extern bool fUseNoinit;
 extern bool no_codegen;
 extern bool developer;
@@ -192,8 +198,6 @@ extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 extern bool fWarnUnstable;
-extern bool fDefaultUnmanaged;
-extern bool fLegacyNew;
 
 extern bool fReportAliases;
 extern bool fReportBlocking;

@@ -135,10 +135,11 @@ module LocaleModel {
         yield idx;
     }
 
+    pragma "unsafe"
     override proc getChild(idx:int) : locale {
-      if boundsChecking then
-        halt("requesting a child from a LocaleModel locale");
-      return nil;
+      halt("requesting a child from a flat LocaleModel locale");
+      var tmp:locale; // nil
+      return tmp;
     }
 
     iter getChildren() : locale  {

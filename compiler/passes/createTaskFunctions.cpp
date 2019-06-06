@@ -20,11 +20,11 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "resolution.h"
 #include "stmt.h"
 #include "stlUtil.h"
-#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
@@ -80,27 +80,27 @@ void initForTaskIntents() {
 
   tiMarkBlank     = new ArgSymbol(INTENT_BLANK,
                                   "tiMarkBlank",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkIn        = new ArgSymbol(INTENT_IN,
                                   "tiMarkIn",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstDflt = new ArgSymbol(INTENT_CONST,
                                   "tiMarkConstDflt",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstIn   = new ArgSymbol(INTENT_CONST_IN,
                                   "tiMarkConstIn",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstRef  = new ArgSymbol(INTENT_CONST_REF,
                                   "tiMarkConstRef",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkRef       = new ArgSymbol(INTENT_REF,
                                   "tiMarkRef",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkHost = new FnSymbol("tiMarkHost");
 
@@ -171,7 +171,7 @@ ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent) {
 bool isReduceOp(Type* type) {
   bool retval = false;
 
-  type = canonicalClassType(type);
+  type = canonicalDecoratedClassType(type);
 
   if (type->symbol->hasFlag(FLAG_REDUCESCANOP) == true) {
     retval = true;

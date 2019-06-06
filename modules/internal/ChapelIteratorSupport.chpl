@@ -165,7 +165,7 @@ module ChapelIteratorSupport {
     type shapeType = chpl_iteratorShapeStaticTypeOrVoid(irType);
 
     proc standinType() type {
-      if shapeType == void {
+      if shapeType == nothing {
         // shapeless case
         return domain(1);
 
@@ -245,13 +245,13 @@ module ChapelIteratorSupport {
     if chpl_iteratorHasShape(arg) then
       return arg._shape_;
     else {
-      const myvoid = _void; // workaround for #9152
+      const myvoid = none; // workaround for #9152
       return myvoid;
     }
   }
   inline proc chpl_computeIteratorShape(arg) {
     // none of the above cases
-    return _void;
+    return none;
   }
 
   proc chpl_iteratorHasShape(ir: _iteratorRecord) param {
@@ -283,7 +283,7 @@ module ChapelIteratorSupport {
     if hasField(ir, "_shape_") then
       return __primitive("static field type", ir, "_shape_");
     else
-      return void;
+      return none;
   }
 
   proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {
@@ -323,32 +323,24 @@ module ChapelIteratorSupport {
   }
 
   pragma "suppress lvalue error"
-  pragma "fn returns iterator"
   pragma "no borrow convert" // e.g. iteration over tuple of owned
   // argument is const ref for e.g. for x in (someSharedThing1, someSharedThing2)
   inline proc _getIterator(const ref x) {
     return _getIterator(x.these());
   }
 
-  inline proc _getIterator(ic: _iteratorClass)
-    return ic;
-
-  pragma "fn returns iterator"
   proc _getIterator(type t) {
     return _getIterator(t.these());
   }
 
-  pragma "fn returns iterator"
   inline proc _getIteratorZip(x) {
     return _getIterator(x);
   }
 
-  pragma "fn returns iterator"
   inline proc _getIteratorZip(type t) {
     return _getIterator(t);
   }
 
-  pragma "fn returns iterator"
   inline proc _getIteratorZip(x: _tuple) {
     inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
       if dim == x.size then
@@ -362,17 +354,14 @@ module ChapelIteratorSupport {
       return _getIteratorZipInternal(x, 1);
   }
 
-  pragma "fn returns iterator"
   inline proc _getIteratorZip(type t: _tuple) {
     inline proc _getIteratorZipInternal(type t: _tuple, param dim: int) {
-      var x : t; //have to make an instance of the tuple to query the size
-
-      if dim == x.size then // dim == t.size then
+      if dim == t.size then
         return (_getIterator(t(dim)),);
       else
         return (_getIterator(t(dim)), (..._getIteratorZipInternal(t, dim+1)));
     }
-    if t == (t(1),) then // t.size == 1 then
+    if t.size == 1 then
       return _getIterator(t(1));
     else
       return _getIteratorZipInternal(t, 1);

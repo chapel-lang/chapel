@@ -96,12 +96,12 @@ instances, \chpl{=} and copy initialization can result in the transfer or
 sharing of ownership. See
 \\ %formatting
 \mbox{$$ $$ $$ $$ $$} %indent
-\url{https://chapel-lang.org/docs/builtins/internal/OwnedObject.html}
+\url{https://chapel-lang.org/docs/builtins/OwnedObject.html}
 \\
 and
 \\ %formatting
 \mbox{$$ $$ $$ $$ $$} %indent
-\url{https://chapel-lang.org/docs/builtins/internal/SharedObject.html}
+\url{https://chapel-lang.org/docs/builtins/SharedObject.html}
 \\
 
 When \chpl{borrowed} is used as a memory management strategy in a
@@ -220,14 +220,14 @@ The memory management strategies have the following meaning:
     See
     \\ %formatting
     \mbox{$$ $$ $$ $$ $$} %indent
-    \url{https://chapel-lang.org/docs/builtins/internal/OwnedObject.html}
+    \url{https://chapel-lang.org/docs/builtins/OwnedObject.html}
 
   \item \chpl{shared} will be deleted when all of the \chpl{shared}
     variables referring to the instance go out of scope.
     See
     \\ %formatting
     \mbox{$$ $$ $$ $$ $$} %indent
-    \url{https://chapel-lang.org/docs/builtins/internal/SharedObject.html}.
+    \url{https://chapel-lang.org/docs/builtins/SharedObject.html}.
 
   \item \chpl{borrowed} refers to a class instance that has a lifetime
     managed by another variable.
@@ -497,7 +497,7 @@ important consequences for class new expressions. In particular, suppose
 
 \begin{itemize}
 
-  \item \chpl{new C()} is the same as \chpl{new borrowed C()}
+  \item \chpl{new C()} is the same as \chpl{new owned C()}
 
   \item \chpl{new owned C()} allocates and initializes an instance that
     will be deleted at the end of the current block unless it is

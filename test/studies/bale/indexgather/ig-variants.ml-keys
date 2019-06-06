@@ -1,0 +1,8 @@
+compiler-directIndexLocal MB/s: 
+compiler-directIndex MB/s: 
+compiler-zipArray MB/s: 
+compiler-promotion MB/s: 
+explicit-directIndexLocal MB/s: 
+explicit-directIndex MB/s: 
+explicit-zipArray MB/s: 
+explicit-promotion MB/s: 

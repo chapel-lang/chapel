@@ -1,2 +1,4 @@
 staticCalledOnWrongType.chpl:13: error: unresolved call 'type R.foo()'
-staticCalledOnWrongType.chpl:1: note: candidates are: type int.foo()
+staticCalledOnWrongType.chpl:1: note: this candidate did not match: type int.foo()
+staticCalledOnWrongType.chpl:13: note: because method call receiver with type R
+staticCalledOnWrongType.chpl:1: note: is passed to formal 'this: int(64)'

@@ -315,14 +315,14 @@
 %token TIF TIMAG TIN TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
-%token TNEW TNIL TNOINIT
+%token TNEW TNIL TNOINIT TNONE TNOTHING
 %token TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
 %token TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSTRING TSUBDOMAIN TSYNC
 %token TTHEN TTHIS TTHROW TTHROWS TTRUE TTRY TTRYBANG TTYPE
 %token TUINT TUNDERSCORE TUNION TUNMANAGED TUSE
-%token TVAR
+%token TVAR TVOID
 %token TWHEN TWHERE TWHILE TWITH
 %token TYIELD
 %token TZIP
@@ -333,7 +333,7 @@
 %token TALIAS TAND TASSIGN TASSIGNBAND TASSIGNBOR TASSIGNBXOR TASSIGNDIVIDE
 %token TASSIGNEXP TASSIGNLAND TASSIGNLOR TASSIGNMINUS TASSIGNMOD
 %token TASSIGNMULTIPLY TASSIGNPLUS TASSIGNREDUCE TASSIGNSL TASSIGNSR
-%token TBAND TBNOT TBOR TBXOR
+%token TBANG TBAND TBNOT TBOR TBXOR
 %token TCOLON TCOMMA
 %token TDIVIDE TDOT TDOTDOT TDOTDOTDOT
 %token TEQUAL TEXP TGREATER
@@ -343,7 +343,7 @@
 %token TLESS
 %token TLESSEQUAL
 %token TMINUS TMOD
-%token TNOT TNOTEQUAL
+%token TNOTEQUAL
 %token TOR
 %token TPLUS
 %token TQUESTION
@@ -376,11 +376,12 @@
 %left TSHIFTLEFT TSHIFTRIGHT
 %right TUPLUS TUMINUS
 %left TSTAR TDIVIDE TMOD
-%right TBNOT TNOT
+%right TBNOT TBANG
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
 %left TBORROWED TOWNED TUNMANAGED TSHARED
+%right TQUESTION
 %right TNEW
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
@@ -457,7 +458,7 @@
 %type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> bool_literal literal_expr
-%type <pexpr> stmt_level_expr type_level_expr scalar_type
+%type <pexpr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
 %type <pexpr> lifetime_components_expr
 %type <pexpr> lifetime_expr lifetime_ident
 %type <lifetimeAndWhere> opt_lifetime_where
@@ -725,6 +726,8 @@ internal_type_ident_def:
 | TDOMAIN    { $$ = "domain"; }
 | TINDEX     { $$ = "index"; }
 | TLOCALE    { $$ = "locale"; }
+| TNOTHING   { $$ = "nothing"; }
+| TVOID      { $$ = "void"; }
 ;
 
 scalar_type:
@@ -736,6 +739,8 @@ scalar_type:
 | TCOMPLEX { $$ = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol); }
 | TSTRING  { $$ = new SymExpr(dtString->symbol); }
 | TLOCALE  { $$ = new SymExpr(dtLocale->symbol); }
+| TNOTHING { $$ = new SymExpr(dtNothing->symbol); }
+| TVOID    { $$ = new SymExpr(dtVoid->symbol); }
 ;
 
 reserved_type_ident_use:
@@ -744,10 +749,10 @@ reserved_type_ident_use:
      different names. */
   TSYNC      { $$ = "_syncvar"; }
 | TSINGLE    { $$ = "_singlevar"; }
-| TOWNED     { $$ = "_owned"; }
+/*| TOWNED     { $$ = "_owned"; }
 | TSHARED    { $$ = "_shared"; }
 | TBORROWED  { $$ = "_borrowed"; }
-| TUNMANAGED { $$ = "_unmanaged"; }
+| TUNMANAGED { $$ = "_unmanaged"; }*/
 | TDOMAIN    { $$ = "_domain"; }
 | TINDEX     { $$ = "_index"; }
 ;
@@ -1227,13 +1232,14 @@ fn_ident:
 | TSHIFTRIGHT    { $$ = ">>"; }
 | TMOD           { $$ = "%"; }
 | TEXP           { $$ = "**"; }
-| TNOT           { $$ = "!"; }
+| TBANG          { $$ = "!"; }
 | TBY            { $$ = "chpl_by"; }
 | THASH          { $$ = "#"; }
 | TALIGN         { $$ = "chpl_align"; }
 | TSWAP          { $$ = "<=>"; }
 | TIO            { $$ = "<~>"; }
 | TINITEQUALS    { $$ = "init="; }
+| ident_def TBANG { $$ = astr($1, "!"); }
 ;
 
 assignop_ident:
@@ -1665,6 +1671,13 @@ ident_expr:
    As such, array type expressions are individually defined for formal array
    parameters and variables. */
 type_level_expr:
+  sub_type_level_expr %prec TNOELSE
+    { $$ = $1; }
+| sub_type_level_expr TQUESTION %prec TQUESTION
+    { $$ = new CallExpr( PRIM_TO_NILABLE_CLASS, $1); }
+;
+
+sub_type_level_expr:
   nil_expr
 | lhs_expr                  // var b: a.type || (?,?) || foo()
 | cond_expr                 // type b = if b then uint else int
@@ -1684,14 +1697,23 @@ type_level_expr:
     { $$ = new CallExpr("chpl__atomicType", $2); }
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
-| TBORROWED expr
-    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, $2); }
+
+| TOWNED
+    { $$ = new UnresolvedSymExpr("_owned"); }
 | TOWNED expr
     { $$ = new CallExpr( "_owned", $2); }
+| TUNMANAGED
+    { $$ = new UnresolvedSymExpr("_unmanaged"); }
 | TUNMANAGED expr
     { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS, $2); }
+| TSHARED
+    { $$ = new UnresolvedSymExpr("_shared"); }
 | TSHARED expr
     { $$ = new CallExpr( "_shared", $2); }
+| TBORROWED
+    { $$ = new UnresolvedSymExpr("_borrowed"); }
+| TBORROWED expr
+    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, $2); }
 ;
 
 for_expr:
@@ -1861,10 +1883,6 @@ expr:
     { $$ = new CallExpr(PRIM_TUPLE_EXPAND, $3); }
 | expr TCOLON expr
     { $$ = createCast($1, $3); }
-| expr TCOLON TBORROWED
-    { $$ = new CallExpr("_to_borrowed", $1); }
-| expr TCOLON TUNMANAGED
-    { $$ = new CallExpr("_to_unmanaged", $1); }
 | expr TDOTDOT expr
     { $$ = new CallExpr("chpl_build_bounded_range", $1, $3); }
 | expr TDOTDOT
@@ -1899,8 +1917,9 @@ lhs_expr:
  *        opt_actual_ls, and every production it relies on, would need to be
  *        reworked to not permit the empty production. */
 fun_expr:
-  lhs_expr
-| lambda_decl_expr
+  lhs_expr           { $$ = $1; }
+| expr TBANG         { $$ = new CallExpr("postfix!", $1); }
+| lambda_decl_expr   { $$ = $1; }
 ;
 
 call_expr:
@@ -1939,6 +1958,7 @@ literal_expr:
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
 | CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
+| TNONE                 { $$ = new SymExpr(gNone); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 | TLCBR expr_ls TCOMMA TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 | TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
@@ -1990,7 +2010,8 @@ unary_op_expr:
 | TMINUS expr %prec TUMINUS       { $$ = new CallExpr("-", $2); }
 | TMINUSMINUS expr %prec TUMINUS  { $$ = buildPreDecIncWarning($2, '-'); }
 | TPLUSPLUS expr %prec TUPLUS     { $$ = buildPreDecIncWarning($2, '+'); }
-| TNOT expr                       { $$ = new CallExpr("!", $2); }
+| TBANG expr                      { $$ = new CallExpr("!", $2); }
+| expr TBANG                      { $$ = new CallExpr("postfix!", $1); }
 | TBNOT expr                      { $$ = new CallExpr("~", $2); }
 ;
 

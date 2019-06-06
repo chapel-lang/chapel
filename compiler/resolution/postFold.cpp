@@ -21,8 +21,8 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "DecoratedClassType.h"
 #include "expr.h"
-#include "UnmanagedClassType.h"
 #include "preFold.h"
 #include "resolution.h"
 #include "stringutil.h"
@@ -128,7 +128,7 @@ static Expr* postFoldNormal(CallExpr* call) {
   FnSymbol* fn     = call->resolvedFunction();
   Expr*     retval = call;
 
-  if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM) == true) {
+  if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
     VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
 
     if (ret != NULL && ret->immediate != NULL) {
@@ -142,8 +142,7 @@ static Expr* postFoldNormal(CallExpr* call) {
       call->replace(retval);
 
     } else if (ret == gVoid) {
-      retval = new SymExpr(gVoid);
-
+      retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
     }
   }
@@ -223,7 +222,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     SymExpr*       base      = toSymExpr (call->get(1));
     const char*    fieldName = get_string(call->get(2));
 
-    Type*          t         = canonicalClassType(base->getValType());
+    Type*          t         = canonicalDecoratedClassType(base->getValType());
     AggregateType* at        = toAggregateType(t);
     VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
 
@@ -283,7 +282,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
       AggregateType* ag = toAggregateType(st);
 
-      st = canonicalClassType(ag->getField("_instance")->type);
+      st = canonicalDecoratedClassType(ag->getField("_instance")->type);
     } else {
       // Try to work around some resolution order issues
       st = resolveTypeAlias(subExpr);
@@ -320,7 +319,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     }
 
   } else if (call->isPrimitive(PRIM_CAST) == true) {
-    Type* t= call->get(1)->typeInfo();
+    Type* t = call->get(1)->typeInfo();
 
     if (t == dtUnknown) {
       INT_FATAL(call, "Unable to resolve type");
@@ -378,6 +377,19 @@ static Expr* postFoldPrimop(CallExpr* call) {
     }
 
   } else if (call->isPrimitive("ascii") == true) {
+    // This primitive is used from two places in the module code.
+    //
+    // One place is in CString, which calls it with exactly one
+    // argument.  That argument may or may not be a param.  If it is
+    // not, the code here will do nothing with it, and it will become
+    // a call to the runtime routine ascii().
+    //
+    // The above usage is deprecated, but the deprecation is handled
+    // elsewhere.
+    //
+    // The other place is in String, which calls it with either one or
+    // two arguments, which are always params.  The one-argument version
+    // is deprecated, but the deprecation is handled elsewhere.
     SymExpr* se = toSymExpr(call->get(1));
 
     INT_ASSERT(se);
@@ -385,8 +397,22 @@ static Expr* postFoldPrimop(CallExpr* call) {
     if (se->symbol()->isParameter() == true) {
       const char*       str       = get_string(se);
       const std::string unescaped = unescapeString(str, se);
+      size_t            idx       = 0;
 
-      retval = new SymExpr(new_UIntSymbol((int)unescaped[0], INT_SIZE_8));
+      if (call->numActuals() > 1) {
+        SymExpr* ie = toSymExpr(call->get(2));
+        int64_t val = 0;
+
+        INT_ASSERT(ie && ie->symbol()->isParameter() && get_int(ie, &val));
+
+        idx = static_cast<size_t>(val) - 1;
+      }
+
+      if (idx >= unescaped.length()) {
+        USR_FATAL(call, "index out of bounds of string: %zd", idx + 1);
+      }
+
+      retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
 
       call->replace(retval);
     }
@@ -475,7 +501,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     const char* str = NULL;
 
     if (get_string(arg, &str)) {
-      processStringInRequireStmt(str, false);
+      processStringInRequireStmt(str, false, call->astloc.filename);
 
     } else {
       USR_FATAL(call, "'require' statements require string arguments");
@@ -507,7 +533,7 @@ bool isSubTypeOrInstantiation(Type* sub, Type* super) {
   bool dispatch = false;
 
   if (sub && super)
-    dispatch = canDispatch(sub, NULL, super, NULL, &promotes);
+    dispatch = canDispatch(sub, NULL, super, NULL, NULL, &promotes);
 
   return dispatch && !promotes;
 }

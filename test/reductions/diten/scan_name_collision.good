@@ -1,6 +1,6 @@
-scan_name_collision.chpl:7: warning: scan has been serialized (see issue #5760)
-scan_name_collision.chpl:8: warning: scan has been serialized (see issue #5760)
-scan_name_collision.chpl:9: warning: scan has been serialized (see issue #5760)
+scan_name_collision.chpl:7: warning: scan has been serialized (see issue #12482)
+scan_name_collision.chpl:8: warning: scan has been serialized (see issue #12482)
+scan_name_collision.chpl:9: warning: scan has been serialized (see issue #12482)
 1 3 6 10 15 21 28 36 45 55
 1 3 6 10 15 21 28 36 45 55
 1 3 6 10 15 21 28 36 45 55

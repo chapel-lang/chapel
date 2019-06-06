@@ -26,6 +26,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "errorHandling.h"
 #include "ForallStmt.h"
@@ -37,7 +38,6 @@
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
-#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 #include <cctype>
@@ -746,7 +746,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
         Type* type = var->typeInfo();
 
         // All variables of type 'void' are treated as defined.
-        if (type == dtVoid) {
+        if (type == dtNothing) {
           retval = var;
 
         // records with initializers are defined
@@ -983,18 +983,28 @@ static void processSyntacticDistributions(CallExpr* call) {
 static void processManagedNew(CallExpr* newCall) {
   SET_LINENO(newCall);
   bool argListError = false;
+
   if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
     if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
       if (callManager->numActuals() == 1) {
         if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
           if (!callClass->isPrimitive() &&
               !isUnresolvedSymExpr(callClass->baseExpr)) {
-            bool isunmanaged = callManager->isNamed("_to_unmanaged") ||
-                               callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
-            bool isborrowed = callManager->isNamed("_to_borrowed") ||
-                              callManager->isPrimitive(PRIM_TO_BORROWED_CLASS);
-            bool isowned = callManager->isNamed("_owned");
-            bool isshared = callManager->isNamed("_shared");
+            bool isunmanaged = callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
+            bool isborrowed = callManager->isPrimitive(PRIM_TO_BORROWED_CLASS);
+            bool isowned = false;
+            bool isshared = false;
+            if (SymExpr* se = toSymExpr(callManager->baseExpr)) {
+              if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+                Type* ct = canonicalDecoratedClassType(ts->type);
+                if (ct == dtOwned)
+                  isowned = true;
+                else if (ct == dtShared)
+                  isshared = true;
+                else
+                  INT_ASSERT(!callManager->isNamed("_owned"));
+              }
+            }
 
             if (isunmanaged || isborrowed || isowned || isshared) {
               callClass->remove();
@@ -1167,13 +1177,12 @@ static void normalizeReturns(FnSymbol* fn) {
   collectMyCallExprs(fn, calls, fn);
 
   for_vector(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_RETURN) == true &&
-        isInLifetimeClause(call) == false) {
+    if (call->isPrimitive(PRIM_RETURN) && !isInLifetimeClause(call)) {
       rets.push_back(call);
 
       theRet = call;
 
-      if (isVoidReturn(call) == true) {
+      if (isVoidReturn(call)) {
         numVoidReturns++;
       }
     }
@@ -1191,8 +1200,18 @@ static void normalizeReturns(FnSymbol* fn) {
     }
   }
 
+  bool retExprIsVoid = false;
+  if (fn->retExprType) {
+    if (SymExpr* retExpr = toSymExpr(fn->retExprType->body.only())) {
+      if (retExpr->symbol() == gVoid) {
+        retExprIsVoid = true;
+      }
+    }
+  }
+
   // Add a void return if needed.
-  if (isIterator == false && rets.size() == 0 && fn->retExprType == NULL) {
+  if (isIterator == false && rets.size() == 0 &&
+      (fn->retExprType == NULL || retExprIsVoid)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
   }
@@ -1352,9 +1371,9 @@ static void normalizeYields(FnSymbol* fn) {
 static bool isVoidReturn(CallExpr* call) {
   bool retval = false;
 
-  if (call->isPrimitive(PRIM_RETURN) == true) {
+  if (call->isPrimitive(PRIM_RETURN)) {
     if (SymExpr* arg = toSymExpr(call->get(1))) {
-      retval = (arg->symbol() == gVoid) ? true : false;
+      retval = arg->symbol() == gVoid;
     }
   }
 
@@ -1591,7 +1610,7 @@ static bool isCallToTypeConstructor(CallExpr* call) {
 
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     if (TypeSymbol* ts = expandTypeAlias(se)) {
-      if (isAggregateType(ts->type) == true) {
+      if (isAggregateType(ts->type) || isDecoratedClassType(ts->type)) {
         // Ensure it is not nested within a new expr
         CallExpr* parent = toCallExpr(call->parentExpr);
 
@@ -1618,7 +1637,12 @@ static void normalizeCallToTypeConstructor(CallExpr* call) {
   if (call->getStmtExpr() != NULL) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
       if (TypeSymbol* ts = expandTypeAlias(se)) {
-        if (AggregateType* at = toAggregateType(ts->type)) {
+        AggregateType* at = toAggregateType(ts->type);
+        if (isDecoratedClassType(ts->type)) {
+          at = toAggregateType(canonicalDecoratedClassType(ts->type));
+        }
+
+        if (at) {
           SET_LINENO(call);
 
           if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
@@ -2225,6 +2249,12 @@ static void normRefVar(DefExpr* defExpr) {
     // but blank intent isn't necessarily const.
     if (ArgSymbol* arg = toArgSymbol(symbol)) {
       if (arg->intent == INTENT_BLANK && arg->type == dtUnknown) {
+        error = false;
+      } else if (arg->hasFlag(FLAG_ARG_THIS) &&
+                 arg->intent == INTENT_BLANK &&
+                 (arg->getFunction()->isInitializer() || arg->getFunction()->isCopyInit())) {
+        // InitNormalize.cpp will handle the case of initializing a ref-var
+        // from 'this' inside an initializer.
         error = false;
       }
     }
@@ -2917,7 +2947,7 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
 
 static bool isParameterizedPrimitive(CallExpr* typeSpecifier);
 
-static void cloneParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal);
+static void cloneParameterizedPrimitive(FnSymbol* fn, CallExpr* typeSpecifier);
 
 static void cloneParameterizedPrimitive(FnSymbol* fn,
                                         DefExpr*  def,
@@ -2945,7 +2975,7 @@ static void replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn) {
     if (BlockStmt* typeExpr = formal->typeExpr) {
       if (CallExpr* typeSpecifier = toCallExpr(typeExpr->body.tail)) {
         if (isParameterizedPrimitive(typeSpecifier) == true) {
-          cloneParameterizedPrimitive(fn, formal);
+          cloneParameterizedPrimitive(fn, typeSpecifier);
 
           break;
         }
@@ -2954,7 +2984,7 @@ static void replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn) {
   }
 }
 
-// e.g. x : int(?w)
+// e.g. x : int(?w) or int(?)
 static bool isParameterizedPrimitive(CallExpr* typeSpecifier) {
   bool retval = false;
 
@@ -2977,16 +3007,33 @@ static bool isParameterizedPrimitive(CallExpr* typeSpecifier) {
   return retval;
 }
 
+// return true if a type specifier has the form `bool(?)` and false if
+// it's `bool(?w)`
+//
+static bool typeSpecifierUnnamedQuery(CallExpr* typeSpecifier) {
+  if (typeSpecifier->numActuals()      ==    1) {
+    if (DefExpr* de = toDefExpr(typeSpecifier->get(1))) {
+      return strncmp("chpl__query", de->sym->name, strlen("chpl__query")) == 0;
+    }
+  }
+  return false;
+}
+
+
 // 'formal' is certain to be a parameterized primitive e.g int(?w)
-static void cloneParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal) {
-  BlockStmt* typeExpr      = formal->typeExpr;
-  CallExpr*  typeSpecifier = toCallExpr(typeExpr->body.tail);
+static void cloneParameterizedPrimitive(FnSymbol* fn, CallExpr* typeSpecifier) {
   Symbol*    callFnSym     = toSymExpr(typeSpecifier->baseExpr)->symbol();
   DefExpr*   def           = toDefExpr(typeSpecifier->get(1));
 
   if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol) {
-    for (int i = BOOL_SIZE_8; i < BOOL_SIZE_NUM; i++) {
-      cloneParameterizedPrimitive(fn, def, get_width(dtBools[i]));
+    // If 'bool(?)', instantiate for 'bool', and all 'bool(w)'
+    // If 'bool(?w)', skip 'bool' instantiation since 'w' is unknown
+    int start = typeSpecifierUnnamedQuery(typeSpecifier) ? BOOL_SIZE_SYS
+                                                         : BOOL_SIZE_8;
+    for (int i = start; i < BOOL_SIZE_NUM; i++) {
+      cloneParameterizedPrimitive(fn, def, ((i == BOOL_SIZE_SYS) ?
+                                            BOOL_SYS_WIDTH :
+                                            get_width(dtBools[i])));
     }
 
   } else if (callFnSym == dtInt [INT_SIZE_DEFAULT]->symbol ||
@@ -3149,7 +3196,7 @@ static bool isGenericActual(Expr* expr) {
     return true;
   if (SymExpr* se = toSymExpr(expr))
     if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
-      if (AggregateType* at = toAggregateType(canonicalClassType(ts->type)))
+      if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type)))
         if (at->isGeneric() && !at->isGenericWithDefaults())
           return true;
 
@@ -3302,7 +3349,7 @@ static void expandQueryForActual(FnSymbol*  fn,
                        new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
                                     subtype, query->copy()));
     } else {
-      INT_ASSERT("case not handled");
+      INT_FATAL("case not handled");
     }
   } else if (subcall && doesCallContainGenericActual(subcall)) {
     Expr* subtype = NULL;
@@ -3389,7 +3436,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     } else {
       // For nested calls in PRIM_TO_UNMANAGED_CLASS, where the
       // called type is a class or an unmanaged class.
-      Type* t = canonicalClassType(theType);
+      Type* t = canonicalDecoratedClassType(theType);
       AggregateType* at = toAggregateType(t);
       INT_ASSERT(at);
 
@@ -3400,7 +3447,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
       // This can't be applied generally in scopeResolve b/c
       // of the way type constructors are currently normalized.
 
-      Type* unm = at->getUnmanagedClass();
+      Type* unm = at->getDecoratedClass(CLASS_TYPE_UNMANAGED);
       subCall->baseExpr->replace(new SymExpr(unm->symbol));
       call->replace(subCall->remove());
       call = subCall;

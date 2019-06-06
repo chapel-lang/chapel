@@ -36,6 +36,7 @@ AggregateType* dtMainArgument;
 AggregateType* dtOnBundleRecord;
 AggregateType* dtOpaqueArray;
 AggregateType* dtOwned;
+AggregateType* dtShared;
 AggregateType* dtTaskBundleRecord;
 AggregateType* dtTuple;
 
@@ -114,6 +115,7 @@ static WellKnownType sWellKnownTypes[] = {
   { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
   { "chpl_opaque_array",     &dtOpaqueArray,      false },
   { "_owned",                &dtOwned,            false },
+  { "_shared",               &dtShared,           false },
   { "chpl_task_bundle_t",    &dtTaskBundleRecord, false },
   { "_tuple",                &dtTuple,            false },
   { "Error",                 &dtError,            true  }

@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
 # Skip this test for gasnet+mpi performance testing.
+# Also skip this test when using MPI-based launchers in other configs,
+# because mpirun barks at the fork(2) resulting from the spawn().
 import os
 
-print(os.getenv('CHPL_TEST_PERF_LABEL') == 'ml-' and
-      os.getenv('CHPL_TEST_PERF') == 'on' and
-      os.getenv('CHPL_COMM_SUBSTRATE') == 'mpi')
+print((os.getenv('CHPL_TEST_PERF_LABEL') == 'ml-' and
+       os.getenv('CHPL_TEST_PERF') == 'on' and
+       os.getenv('CHPL_COMM_SUBSTRATE') == 'mpi') or
+      os.getenv('CHPL_LAUNCHER').startswith('mpi'))
