@@ -478,8 +478,8 @@ module Lists {
     /*
       Insert an element at a given position in this list, shifting all elements
       currently at and following that index one to the right. The call
-      `a.insert(1, x)` inserts an element at the front of this list, and
-      `a.insert((a.size + 1), x)` is equivalent to `a.append(x)`.
+      ``a.insert(1, x)`` inserts an element at the front of the list `a`, and
+      ``a.insert((a.size + 1), x)`` is equivalent to ``a.append(x)``.
 
       .. warning::
       
