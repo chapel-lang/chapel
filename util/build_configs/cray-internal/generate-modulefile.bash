@@ -76,7 +76,35 @@ if { [string match aarch64 $CHPL_HOST_ARCH] } {
     # ARM-based CPU, 2018-06-08
 } elseif { [string match x86_64 $CHPL_HOST_ARCH] } {
     # Legacy Cray-XC/XE
-    module load cray-mpich
+
+    # Load/unload cray-mpich if not previously loaded
+
+    set mpichLoaded [string match "*PE_MPICH*" $env(PE_PKGCONFIG_PRODUCTS)]
+    # Logic for mpich is split into loading and unloading phases
+    if { !([is-loaded chapel] == 1) }  {
+        # Loading chapel
+
+        if {$mpichLoaded} {
+            setenv CHPL_MODULE_KEEP_MPICH 1
+        }
+
+        if {! $mpichLoaded} {
+            module load cray-mpich
+        }
+    } else {
+        # Unloading or reloading chapel
+
+        if {$mpichLoaded} {
+            # Was hugepages already loaded before we loaded chapel?
+            if {[ info exists env(CHPL_MODULE_KEEP_MPICH)]} {
+                # When we are unloading, this actually unsets CHPL_MODULE_KEEP_HUGEPAGES
+                setenv CHPL_MODULE_KEEP_MPICH 1
+            } else {
+                # When we are unloading, this actually unloads craype-hugepages16M
+                module load cray-mpich
+            }
+        }
+    }
 } else {
     puts stderr "Error: CPU=$cpu"
     exit 1
