@@ -71,6 +71,10 @@ module Lists {
       assert(expr);
   }
 
+  private proc _listDestructorBreakpoint() {
+    assert(true);
+  }
+
   //
   // We can change the lock type later. Use a spinlock for now, even if it
   // is suboptimal in cases where long critical sections have high
@@ -115,7 +119,7 @@ module Lists {
     type eltType;
 
     /* If `true`, this list will perform parallel safe operations. */
-    param parSafe;
+    param parSafe = false;
 
     pragma "no doc"
     var _size = 0;
@@ -150,16 +154,37 @@ module Lists {
       :arg other: The list to initialize from.
       :arg parSafe: If `true`, this list will use parallel safe operations.
     */
-    proc init=(other: list(?t), param parSafe=other.parSafe) {
+    proc init=(const ref other: list(?t), param parSafe=other.parSafe) {
       this.eltType = t;
       this.parSafe = other.parSafe;
       this.complete();
       this.extend(other);
     }
 
+    //
+    // Use when debugging tests, to get info about the array when something
+    // breaks.
+    //
+    pragma "no doc"
+    inline proc debugPrintInternalState() {
+      writeln("Printing debug of list blocks...");
+      writeln("List size is: " + _size);
+      writeln("List element type is: " + eltType:string);
+      writeln("Block array size is: " + _blockCapacity);
+      if _blocks == nil then
+        return;
+      write("Block array state is: ");
+      for i in 0..#_blockCapacity {
+        const msg = if _blocks[i] == nil then "N" else "X";
+        write(msg);
+      }
+      writeln("");
+    }
+
     pragma "no doc"
     inline proc deinit() {
       clear();
+      _listDestructorBreakpoint();
     }
 
     pragma "no doc"
@@ -167,7 +192,14 @@ module Lists {
       chpl__autoDestroy(item);
     }
 
+    //
+    // Getting weird lifetime errors when using this function over classes,
+    // and I'm not sure quite how to solve them yet. Since this is used in a
+    // managed way internally, try marking "unsafe" for now to circumvent
+    // the errors, and see if we can deal with them later.
+    //
     pragma "no doc"
+    pragma "unsafe"
     inline proc _move(ref src: ?t, ref dst: t) {
       __primitive("=", dst, src);
     }
@@ -291,7 +323,6 @@ module Lists {
       var req = amount - remaining;
 
       while req > 0 {
-
         //
         // Double the block array if we've run out of space.
         //
@@ -374,7 +405,9 @@ module Lists {
 
     //
     // Assumes that a copy of the input element has already been made at some
-    // previous boundary, IE giving append's parameter the "in" intent.
+    // previous boundary, IE giving a parameter the "in" intent. Whatever 
+    // copy you've made, make sure that the "no auto destroy" pragma is
+    // attached so that you avoid firing a destructor early.
     //
     pragma "no doc"
     proc _append(ref x: eltType) {
@@ -403,8 +436,11 @@ module Lists {
       // TODO: This could be faster if we resized once and then performed
       // repeated moves, rather than calling _append().
       //
-      for x in collection do
-        _append(x);
+      for item in collection {
+        pragma "no auto destroy"
+        var cpy = item;
+        _append(cpy);
+      }
     }
 
     //
@@ -492,7 +528,7 @@ module Lists {
 
       :arg x: The element to remove.
 
-      :throws IllegalArgumentError: If there is no such item.
+      :throws IllegalArgumentError: If the list contains no such element.
     */
     proc remove(x: eltType) throws {
       _enter();
@@ -530,15 +566,32 @@ module Lists {
       :return: The item removed.
 
       :throws IllegalArgumentError: If the given index is out of bounds.
+      :throws IllegalArgumentError: If the list is empty.
     */
     proc pop(i: int=size): eltType throws {
       _enter();
+
+      if _size <= 0 {
+        _leave();
+        const msg = "Pop called on empty list.";
+        throw new owned
+          IllegalArgumentError(msg);
+      }
+      
       try _boundsCheckLeaveOnThrow(i);
-      var result : eltType;
-      ref src = _getRef(i);
-      ref dst = result;
-      _move(src, dst);
+
+      //
+      // What about situations where "result" does not have a default init?
+      // In such situations we would have to initialize result with from a
+      // reference to item, as below, rather than a default init followed by
+      // a move.
+      //
+      ref item = _getRef(i);
+      var result = item;
+      _destroy(item);
       _collapse(i);
+      _size -= 1;
+
       _leave();
       return result;
     }
@@ -558,12 +611,14 @@ module Lists {
       // Manually call destructors on each currently allocated element. Use
       // one-based indexing here since we're going through _getRef().
       //
-      forall i in 1.._size {
+      for i in 1.._size {
         ref item = _getRef(i);
         _destroy(item);
       }
 
       if _blocks != nil {
+        _sanity(_totalCapacity != 0);
+        _sanity(_blockCapacity != 0);
         // Remember to use zero-based indexing with `_ddata`!
         for i in 0..#_blockCapacity {
           ref block = _blocks[i];
@@ -654,7 +709,7 @@ module Lists {
     proc sort(comparator=Sort.defaultComparator) {
       //
       // TODO: This is not ideal, but the Sort API needs to be adjusted before
-      // we can sort over lists in place.
+      // we can sort over lists directly.
       //
       var arr = toArray();
       clear();

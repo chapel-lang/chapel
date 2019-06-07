@@ -39,3 +39,4 @@ for i in 1..(lst.size / 2) do {
 }
 
 writeln(lst);
+
