@@ -9,30 +9,23 @@ var createdClasses = 1;
 
 record DummyRecord {
   var cid = 0;
-  pragma "no auto destroy"
   var cpy = new list(int);
 
   proc init() {
     this.cid = createdRecords;
-    this.cpy = new list(int);
     this.complete();
     createdRecords += 1;
   }
 
   proc init=(const ref other: DummyRecord) {
     this.cid = createdRecords;
-    this.cpy = new list(int);
     this.complete();
     this.cpy.append(other.cid);
     createdRecords += 1;
   }
 
   proc deinit() {
-    writeln("Destructor of DummyRecord:");
-    cpy.debugPrintInternalState();
     writeln("cid: " + cid + ", cpy: " + cpy:string);
-    writeln("Destroying cpy list");
-    chpl__autoDestroy(cpy);
   }
 }
 
@@ -69,7 +62,6 @@ proc testLoop(type t) {
   writeln(lst1);
   writeln(lst2);
 
-  assert(lst1._blocks != lst2._blocks);
   writeln(">> Destroying list 1:");
   chpl__autoDestroy(lst1);
   writeln(">> Destroying list 2:");
@@ -79,8 +71,8 @@ proc testLoop(type t) {
 writeln("Testing record type destructors...");
 testLoop(DummyRecord);
 
-// writeln("Testing class type destructors...");
-// testLoop(DummyClass);
+writeln("Testing class type destructors...");
+testLoop(shared DummyClass);
 
 
 

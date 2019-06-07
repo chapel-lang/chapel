@@ -423,9 +423,11 @@ module Lists {
 
       :arg x: An element to append.
     */
-    proc append(pragma "no auto destroy" in x: eltType) {
+    proc append(x: eltType) {
+      pragma "no auto destroy"
+      var cpy = x;
       _enter();
-      _append(x);
+      _append(cpy);
       _leave();
     }
 
@@ -506,11 +508,13 @@ module Lists {
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc insert(i: int, pragma "no auto destroy" in x: eltType) throws {
+    proc insert(i: int, x: eltType) throws {
       _enter();
       try _boundsCheckLeaveOnThrow(i);
       _expand(i);
-      ref src = x;
+      pragma "no auto destroy"
+      var cpy = x;
+      ref src = cpy;
       ref dst = _getRef(i);
       _move(src, dst);
       _size += 1;
