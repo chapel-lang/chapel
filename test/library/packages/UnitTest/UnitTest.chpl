@@ -241,7 +241,7 @@ module UnitTest {
   }
   /* Function that checks whether two arguments are unequal or not*/
   private
-  proc checkAssertUnEquality(first,second) throws {
+  proc checkAssertInequality(first,second) throws {
     type firstType = first.type,
          secondType = second.type;
     if isTupleType(firstType) && isTupleType(secondType) {
@@ -264,7 +264,7 @@ module UnitTest {
   */
   proc assertNotEqual(first, second) throws {
     if canResolve("!=",first, second) {
-      if !checkAssertUnEquality(first,second) {
+      if !checkAssertInequality(first,second) {
         var tmpString = "assert failed - \n'" + stringify(first) +"'\n== \n'"+stringify(second)+"'";
         throw new owned AssertionError(tmpString);
       }
