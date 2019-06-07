@@ -727,7 +727,7 @@ module Lists {
 
       :arg i: The index of the element to access.
 
-      .. warn::
+      .. warning::
 
         Use of the `this` method with an out of bounds index (while bounds
         checking is on) will cause the currently running program to halt.
