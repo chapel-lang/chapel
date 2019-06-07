@@ -48,8 +48,8 @@
   mode of its originating list.
 
   Inserts and removals into a list are O(n) worst case and should be performed
-  with care. Appends into a list have an amortized speed of O(1). Access into
-  a list is O(1).
+  with care. Appends into a list have an amortized speed of O(1). Indexing
+  into a list is O(1).
 */
 module Lists {
 
@@ -57,7 +57,7 @@ module Lists {
   config const _initialCapacity = 8;
 
   pragma "no doc"
-  config const _initialBlockCapacity = 16;
+  config const _initialArrayCapacity = 16;
 
   pragma "no doc"
   config param _sanityChecks = true;
@@ -72,7 +72,8 @@ module Lists {
   }
 
   private proc _listDestructorBreakpoint() {
-    assert(true);
+    if _sanityChecks then
+      assert(true);
   }
 
   //
@@ -128,10 +129,10 @@ module Lists {
     var _lock$ = if parSafe then new _LockWrapper() else none;
 
     pragma "no doc"
-    var _blocks: _ddata(_ddata(eltType)) = nil;
+    var _arrays: _ddata(_ddata(eltType)) = nil;
 
     pragma "no doc"
-    var _blockCapacity = 0;
+    var _arrayCapacity = 0;
 
     pragma "no doc"
     var _totalCapacity = 0;
@@ -161,30 +162,11 @@ module Lists {
       this.extend(other);
     }
 
-    //
-    // Use when debugging tests, to get info about the array when something
-    // breaks.
-    //
-    pragma "no doc"
-    inline proc debugPrintInternalState() {
-      writeln("Printing debug of list blocks...");
-      writeln("List size is: " + _size);
-      writeln("List element type is: " + eltType:string);
-      writeln("Block array size is: " + _blockCapacity);
-      if _blocks == nil then
-        return;
-      write("Block array state is: ");
-      for i in 0..#_blockCapacity {
-        const msg = if _blocks[i] == nil then "N" else "X";
-        write(msg);
-      }
-      writeln("");
-    }
-
     pragma "no doc"
     inline proc deinit() {
+      if _sanityChecks then
+        _listDestructorBreakpoint();
       clear();
-      _listDestructorBreakpoint();
     }
 
     pragma "no doc"
@@ -205,46 +187,46 @@ module Lists {
     }
 
     pragma "no doc"
-    inline proc _getBlockCapacity(block: int): int {
-      const exp = block + log2(_initialCapacity);
+    inline proc _getArrayCapacity(array: int): int {
+      const exp = array + log2(_initialCapacity);
       const result = 2 ** exp;
       return result;
     }
 
     pragma "no doc"
-    inline proc _getBlockIdx(idx: int): int {
-      const pos = idx + _initialCapacity;
-      const result = log2(pos) - log2(_initialCapacity);
+    inline proc _getArrayIdx(zpos: int): int {
+      const adj = zpos + _initialCapacity;
+      const result = log2(adj) - log2(_initialCapacity);
       return result;
     }
 
     pragma "no doc"
-    inline proc _getLastBlockIdx(): int {
-      const result = _getBlockIdx(_size - 1);
+    inline proc _getLastArrayIdx(): int {
+      const result = _getArrayIdx(_size - 1);
       _sanity(result >= 0);
       return result;
     }
 
     pragma "no doc"
-    inline proc _getItemIdx(idx: int): int {
-      const pos = idx + _initialCapacity;
-      const result = pos ^ (1 << log2(pos));
+    inline proc _getItemIdx(zpos: int): int {
+      const adj = zpos + _initialCapacity;
+      const result = adj ^ (1 << log2(adj));
       return result;
     }
 
     //
-    // Performs conversion from one-based to zero-based indexing, all accesses
-    // of list elements should go through this function.
+    // Performs conversion from one-based to zero-based indexing, all one-based
+    // accesses of list elements should go through this function.
     //
     pragma "no doc"
     proc _getRef(idx: int) ref {
       _sanity(idx >= 1 && idx <= _totalCapacity);
       const zpos = idx - 1;
-      const blockIdx = _getBlockIdx(zpos);
+      const arrayIdx = _getArrayIdx(zpos);
       const itemIdx = _getItemIdx(zpos);
-      ref block = _blocks[blockIdx];
-      _sanity(block != nil);
-      ref result = block[itemIdx];
+      ref array = _arrays[arrayIdx];
+      _sanity(array != nil);
+      ref result = array[itemIdx];
       return result;
     }
 
@@ -291,12 +273,12 @@ module Lists {
     }
 
     pragma "no doc"
-    proc _makeBlock(size: int) {
+    proc _makeArray(size: int) {
       return c_calloc(eltType, size):_ddata(eltType);
     }
 
     pragma "no doc"
-    proc _killBlock(data: _ddata(eltType)) {
+    proc _killArray(data: _ddata(eltType)) {
       c_free(data:c_void_ptr);
     }
 
@@ -304,14 +286,14 @@ module Lists {
     proc _maybeAcquireMem(amount: int) {
       //
       // TODO
-      // Adopt a new implementation where the first block is always allocated.
+      // Adopt a new implementation where the first array is always allocated.
       //
-      if _blocks == nil {
+      if _arrays == nil {
         _sanity(_totalCapacity == 0);
         _sanity(_size == 0);
-        _blocks = _makeBlockArray(_initialBlockCapacity);
-        _blockCapacity = _initialBlockCapacity;
-        _blocks[0] = _makeBlock(_initialCapacity);
+        _arrays = _makeBlockArray(_initialArrayCapacity);
+        _arrayCapacity = _initialArrayCapacity;
+        _arrays[0] = _makeArray(_initialCapacity);
         _totalCapacity = _initialCapacity;
       }
 
@@ -319,61 +301,79 @@ module Lists {
       if remaining > amount then
         return;
 
-      var lastBlockIdx = _getLastBlockIdx();
+      var lastArrayIdx = _getLastArrayIdx();
       var req = amount - remaining;
 
       while req > 0 {
+
         //
         // Double the block array if we've run out of space.
         //
-        if lastBlockIdx >= (_blockCapacity - 1) {
-          var _nblocks = _makeBlockArray(_blockCapacity * 2);
+        if lastArrayIdx >= (_arrayCapacity - 1) {
+          var _narrays = _makeBlockArray(_arrayCapacity * 2);
 
-          for i in 0..#_blockCapacity do
-            _nblocks[i] = _blocks[i];
+          for i in 0..#_arrayCapacity do
+            _narrays[i] = _arrays[i];
 
-          _killBlockArray(_blocks);
-          _blocks = _nblocks;
-          _blockCapacity *= 2;
+          _killBlockArray(_arrays);
+          _arrays = _narrays;
+          _arrayCapacity *= 2;
         }
 
-        ref oblock = _blocks[lastBlockIdx];
-        const oblockCapacity = _getBlockCapacity(lastBlockIdx);
+        //
+        // Add a new block to the block array that is twice the size of the
+        // previous block.
+        //
+        ref oldLast = _arrays[lastArrayIdx];
+        const oldLastCapacity = _getArrayCapacity(lastArrayIdx);
 
-        lastBlockIdx += 1;
+        lastArrayIdx += 1;
 
-        ref nblock = _blocks[lastBlockIdx];
-        const nblockCapacity = oblockCapacity * 2;
+        ref newLast = _arrays[lastArrayIdx];
+        const newLastCapacity = oldLastCapacity * 2;
 
-        _sanity(oblock != nil);
-        _sanity(nblock == nil);
+        _sanity(oldLast != nil);
+        _sanity(newLast == nil);
 
-        nblock = _makeBlock(nblockCapacity);
+        newLast = _makeArray(newLastCapacity);
 
-        _totalCapacity += nblockCapacity;
-        req -= nblockCapacity;
+        _totalCapacity += newLastCapacity;
+        req -= newLastCapacity;
       }
     }
 
+    //
+    // If the current size (occupied slots) minus a given amount is small
+    // enough such that no slots in the last "sub-block" are occupied, then
+    // preemptively free that block. This method _does not_ fire destructors!
+    //
     pragma "no doc"
     proc _maybeReleaseMem(amount: int) {
-      if _blocks == nil || _totalCapacity == 0 then
+      if _arrays == nil || _totalCapacity == 0 then
         return;
 
-      //
-      // TODO: Worry about writing this _after_ we get the test functions to
-      // work once again.
-      //
-      
+      const lastArrayIdx = _getLastArrayIdx();
+      const lastArrayCapacity = _getArrayCapacity(lastArrayIdx);
+      const threshhold = _totalCapacity - lastArrayCapacity;
+      const nsize = _size - amount;
+
+      if nsize >= threshhold then
+        return;
+
+      ref array = _arrays[lastArrayIdx];
+      _killArray(array);
+      _totalCapacity -= lastArrayCapacity;
+      array = nil; 
     }
 
     //
     // Shift elements including and after index one to the right in memory,
-    // possibly resizing.
+    // possibly resizing. May expand memory if necessary.
     //
     pragma "no doc"
     proc _expand(idx: int) {
       _sanity(_withinBounds(idx));
+
       _maybeAcquireMem(1);
 
       for i in idx.._size by -1 {
@@ -386,11 +386,12 @@ module Lists {
     //
     // Shift all elements after index one to the left in memory, possibly
     // resizing. This assumes the element at `idx` has already been
-    // deinitialized if that is necessary.
+    // deinitialized if that is necessary. May release memory if possible.
     //
     pragma "no doc"
     proc _collapse(idx: int) {
       _sanity(_withinBounds(idx));
+
       if idx == _size then
         return;
 
@@ -407,10 +408,11 @@ module Lists {
     // Assumes that a copy of the input element has already been made at some
     // previous boundary, IE giving a parameter the "in" intent. Whatever 
     // copy you've made, make sure that the "no auto destroy" pragma is
-    // attached so that you avoid firing a destructor early.
+    // attached so that you avoid firing a destructor early (and in the worst
+    // case, fire it twice).
     //
     pragma "no doc"
-    proc _append(ref x: eltType) {
+    proc _append_by_ref(ref x: eltType) {
       _maybeAcquireMem(1);
       ref src = x;
       ref dst = _getRef(_size + 1);
@@ -424,10 +426,11 @@ module Lists {
       :arg x: An element to append.
     */
     proc append(x: eltType) {
+      // TODO: Use a local copy until this pragma works with formals.
       pragma "no auto destroy"
       var cpy = x;
       _enter();
-      _append(cpy);
+      _append_by_ref(cpy);
       _leave();
     }
 
@@ -435,38 +438,16 @@ module Lists {
     inline proc _extendGeneric(collection) {
 
       //
-      // TODO: This could be faster if we resized once and then performed
-      // repeated moves, rather than calling _append().
+      // TODO: This could avoid repeated resizes at smaller total capacities
+      // if we resized once and then performed repeated moves, rather than
+      // calling _append().
       //
       for item in collection {
         pragma "no auto destroy"
         var cpy = item;
-        _append(cpy);
+        _append_by_ref(cpy);
       }
     }
-
-    //
-    // Can't use this for now without getting warnings, so stick with the
-    // simple extend() implementation.
-    //
-    /*
-    pragma "no doc"
-    inline proc _extendGenericAlter(ref collection) {
-      const oldSize = _size;
-      
-      _maybeAcquireMem(collection.size);
-      
-      for i in 1..collection.size do {
-        pragma "no auto destroy"
-        var cpy: eltType = collection[i];
-        ref src = cpy;
-        ref dst = _getRef(oldSize + i);
-        _move(src, dst);
-      }
-
-      _size += collection.size;
-    }
-    */
 
     /*
       Extend this list by appending a copy of each element contained in
@@ -496,7 +477,9 @@ module Lists {
 
     /*
       Insert an element at a given position in this list, shifting all elements
-      following that index one to the right.
+      currently at and following that index one to the right. The call
+      `a.insert(1, x)` inserts an element at the front of this list, and
+      `a.insert((a.size + 1), x)` is equivalent to `a.append(x)`.
 
       .. warning::
       
@@ -510,10 +493,21 @@ module Lists {
     */
     proc insert(i: int, x: eltType) throws {
       _enter();
-      try _boundsCheckLeaveOnThrow(i);
-      _expand(i);
+
+      // TODO: Use a local copy until this pragma works with formals.
       pragma "no auto destroy"
       var cpy = x;
+
+      // Handle special case of `a.insert((a.size + 1), x)` here.
+      if i == _size + 1 {
+        _append_by_ref(cpy);
+        _leave();
+        return;
+      }
+
+      try _boundsCheckLeaveOnThrow(i);
+      // May acquire memory based on size before insert.
+      _expand(i);
       ref src = cpy;
       ref dst = _getRef(i);
       _move(src, dst);
@@ -541,7 +535,9 @@ module Lists {
         ref item = _getRef(i);
         if x == item {
           _destroy(item);
+          // May release memory based on size before remove.
           _collapse(i);
+          _maybeReleaseMem(1);
           _size -= 1;
           _leave();
           return;
@@ -586,13 +582,14 @@ module Lists {
 
       //
       // What about situations where "result" does not have a default init?
-      // In such situations we would have to initialize result with from a
+      // In such situations we would have to initialize result from a
       // reference to item, as below, rather than a default init followed by
       // a move.
       //
       ref item = _getRef(i);
       var result = item;
       _destroy(item);
+      // May release memory based on size before pop.
       _collapse(i);
       _size -= 1;
 
@@ -620,21 +617,25 @@ module Lists {
         _destroy(item);
       }
 
-      if _blocks != nil {
+      //
+      // Loop through all arrays and clean them up, then clean up the "block
+      // array" itself.
+      //
+      if _arrays != nil {
         _sanity(_totalCapacity != 0);
-        _sanity(_blockCapacity != 0);
+        _sanity(_arrayCapacity != 0);
         // Remember to use zero-based indexing with `_ddata`!
-        for i in 0..#_blockCapacity {
-          ref block = _blocks[i];
-          if block == nil then
+        for i in 0..#_arrayCapacity {
+          ref array = _arrays[i];
+          if array == nil then
             continue;
-          _totalCapacity -= _getBlockCapacity(i);
-          _killBlock(block);
-          block = nil;
+          _totalCapacity -= _getArrayCapacity(i);
+          _killArray(array);
+          array = nil;
         }
 
-        _killBlockArray(_blocks);
-        _blocks = nil;
+        _killBlockArray(_arrays);
+        _arrays = nil;
       }
 
       _sanity(_totalCapacity == 0);
@@ -690,10 +691,9 @@ module Lists {
 
       var result = 0;
 
-      for i in 1.._size {
+      for i in 1.._size do
         if x == _getRef(i) then
           result += 1;
-      }
 
       _leave();
       return result;
@@ -701,7 +701,7 @@ module Lists {
 
     /*
       Sort the items of this list in place using a comparator. If no comparator
-      is provided, sort this list using the default sort order.
+      is provided, sort this list using the default sort order of its elements.
 
       .. warning::
 
@@ -715,10 +715,10 @@ module Lists {
       // TODO: This is not ideal, but the Sort API needs to be adjusted before
       // we can sort over lists directly.
       //
-      var arr = toArray();
+      var array = toArray();
       clear();
-      Sort.sort(arr, comparator);
-      extend(arr);
+      Sort.sort(array, comparator);
+      extend(array);
     }
 
     /*
@@ -727,6 +727,11 @@ module Lists {
 
       :arg i: The index of the element to access.
 
+      .. warn::
+
+        Use of the `this` method with an out of bounds index (while bounds
+        checking is on) will cause the currently running program to halt.
+
       :return: An element from this list.
     */
     proc const this(i: int) ref {
@@ -734,7 +739,7 @@ module Lists {
 
       if boundsChecking && !_withinBounds(i) {
         _leave();
-        const msg = "Bad list index: " + i:string;
+        const msg = "Invalid list index: " + i:string;
         halt(msg);
       }
 
@@ -768,11 +773,15 @@ module Lists {
       Write the contents of this list to a channel.
 
       :arg ch: A channel to write to.
-
-      :throws SystemError: When a write to the channel fails.
     */
     proc writeThis(ch: channel) {
       _enter();
+      
+      //
+      // TODO: Should this method throw? The current implementation uses <~>
+      // so that it does not have to throw, but it also will not report
+      // any IO errors.
+      //
 
       ch <~> "[";
 
@@ -794,6 +803,12 @@ module Lists {
       :rtype: `bool`
     */
     inline proc const isEmpty(): bool {
+
+      //
+      // TODO: We can make _size atomic to avoid having to worry about guard-
+      // ing access to it like this. Haven't done yet because I was getting
+      // some compiler errors related to atomics.
+      //
       _enter();
       var result = (_size == 0);
       _leave();
@@ -804,6 +819,10 @@ module Lists {
       The current number of elements contained in this list.
     */
     inline proc const size {
+
+      //
+      // TODO: Ditto the above code comment.
+      //
       _enter();
       var result = _size;
       _leave();
