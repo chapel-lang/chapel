@@ -167,7 +167,7 @@ module SharedObject {
 
     pragma "no doc"
     proc init(p : borrowed) {
-      compilerError("initializing shared from a borrow is deprecated");
+      compilerError("cannoti initialize shared from a borrow");
       this.init(_to_unmanaged(p));
     }
 
@@ -249,6 +249,19 @@ module SharedObject {
 
       this.complete();
     }
+
+    /* Private move-initializer for use in coercions,
+       only makes sense when `src` was already copied in in intent. */
+    pragma "no doc"
+    proc init(_private: bool, type t, ref src:_shared(?)) {
+      this.chpl_t = t;
+      this.chpl_p = src.chpl_p:_to_nilable(_to_unmanaged(t));
+      this.chpl_pn = src.chpl_pn;
+
+      src.chpl_p = nil;
+      src.chpl_pn = nil;
+    }
+
 
     // Initialize generic 'shared' var-decl from owned:
     //   var s : shared = ownedThing;
@@ -416,32 +429,55 @@ module SharedObject {
     return x.borrow();
   }
 
-  // This cast supports coercion from Shared(SubClass) to Shared(ParentClass)
-  // (i.e. when class SubClass : ParentClass ).
-  // It only works in a value context (i.e. when the result of the
-  // coercion is a value, not a reference).
+  // cast to shared?, no class downcast
   pragma "no doc"
-  inline proc _cast(type t:_shared, pragma "nil from arg" in x:_shared)
-  where isSubtype(x.chpl_t,t.chpl_t) {
-    var ret:t; // default-init the Shared type to return
-    ret.chpl_p = x.chpl_p:_to_nilable(t.chpl_t); // cast the class type
-    ret.chpl_pn = x.chpl_pn;
-    // steal the reference count increment we did for 'in' intent
-    x.chpl_p = nil;
-    x.chpl_pn = nil;
-    return ret;
+  inline proc _cast(type t:shared?, pragma "nil from arg" in x:shared!)
+    where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
+  {
+    return new _shared(true, _to_nilable(t.chpl_t), x);
+  }
+
+  // cast to shared?, no class downcast
+  pragma "no doc"
+  inline proc _cast(type t:shared?, pragma "nil from arg" in x:shared?)
+    where isSubtype(x.chpl_t,t.chpl_t)
+  {
+    return new _shared(true, t.chpl_t, x);
+  }
+
+  // cast to shared!, no class downcast, no casting away nilability
+  pragma "no doc"
+  inline proc _cast(type t:shared!, pragma "nil from arg" in x:shared!)
+    where isSubtype(x.chpl_t,t.chpl_t)
+  {
+    return new _shared(true, t.chpl_t, x);
+  }
+
+  // cast to shared!, no class downcast, casting away nilability
+  pragma "no doc"
+  inline proc _cast(type t:shared!, pragma "nil from arg" in x:shared?) throws
+    where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
+  {
+    if x.chpl_p == nil {
+      throw new owned NilClassError();
+    }
+
+    return new _shared(true, _to_nonnil(t.chpl_t), x);
   }
 
   // cast from nil to shared
   pragma "no doc"
   inline proc _cast(type t:_shared, pragma "nil from arg" x:_nilType) {
+    if _to_nilable(t.chpl_t) != t.chpl_t && !chpl_legacyNilClasses then
+      compilerError("Illegal cast from nil to non-nilable shared type");
+
     var tmp:t;
     return tmp;
   }
 
   pragma "no doc"
   pragma "always propagate line file info"
-  inline proc postfix!(x:shared) {
+  inline proc postfix!(x:_shared) {
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
@@ -453,10 +489,4 @@ module SharedObject {
     }
     return _to_nonnil(x.chpl_p);
   }
-
-
-  /* This type allows code using the pre-1.18 `Shared` record
-     to continue to compile. It will be removed in a future release.
-   */
-  type Shared = _shared;
 }

@@ -185,7 +185,7 @@ returnInfoStaticFieldType(CallExpr* call) {
   // The first argument is the variable or the type whose field is queried.
   Type* type = call->get(1)->getValType();
   INT_ASSERT(! type->symbol->hasFlag(FLAG_TUPLE)); // not implemented
-  AggregateType* at = toAggregateType(canonicalClassType(type));
+  AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
   INT_ASSERT(at); // caller's responsibility
   // The second argument is the name of the field.
   VarSymbol* nameSym = toVarSymbol(toSymExpr(call->get(2))->symbol());
@@ -347,7 +347,7 @@ returnInfoGetTupleMemberRef(CallExpr* call) {
 
 static QualifiedType
 returnInfoGetMemberRef(CallExpr* call) {
-  Type* t = canonicalClassType(call->get(1)->getValType());
+  Type* t = canonicalDecoratedClassType(call->get(1)->getValType());
   AggregateType* ct = toAggregateType(t);
   INT_ASSERT(ct);
   SymExpr* se = toSymExpr(call->get(2));

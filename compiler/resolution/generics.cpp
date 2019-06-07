@@ -811,6 +811,18 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn) {
   checkInstantiationLimit(fn);
 }
 
+// Once the where-clause is evaluated, remove all of its content
+// except for the last expr that has the answer.
+// NB if we removed the where-clause altogether because it evaluated to true,
+// it would make this function ambiguous with another applicable function
+// that was defined without a where-clause, if any.
+static void cleanupWhereClause(BlockStmt* where, SymExpr* last) {
+  AList& body = where->body;
+  while (Expr* expr = body.head)
+    expr->remove();
+  body.insertAtTail(last);
+}
+
 // Note: evaluateWhereClause can apply to concrete functions too
 bool evaluateWhereClause(FnSymbol* fn) {
   if (fn->where) {
@@ -829,12 +841,16 @@ bool evaluateWhereClause(FnSymbol* fn) {
     }
 
     if (se->symbol() == gFalse) {
+      cleanupWhereClause(fn->where, se);
       return false;
     }
 
-    if (se->symbol() != gTrue) {
-      USR_FATAL(fn->where, "invalid where clause");
+    if (se->symbol() == gTrue) {
+      cleanupWhereClause(fn->where, se);
+      return true;
     }
+
+    USR_FATAL(fn->where, "invalid where clause");
   }
 
   return true;

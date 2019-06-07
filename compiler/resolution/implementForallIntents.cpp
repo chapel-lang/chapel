@@ -308,7 +308,7 @@ static void moveInstantiationPoint(BlockStmt* to, BlockStmt* from, Type* type) {
   // Vass 2018-08-01: Does not look like we can remove this yet. See ex.:
   //   release/examples/benchmarks/isx
   //   parallel/forall/reduce-intents
-  AggregateType* reductionClass = toAggregateType(canonicalClassType(type));
+  AggregateType* reductionClass = toAggregateType(canonicalDecoratedClassType(type));
   if (reductionClass->symbol->instantiationPoint == from) {
     reductionClass->symbol->instantiationPoint = to;
     forv_Vec(FnSymbol, fn, reductionClass->methods) {

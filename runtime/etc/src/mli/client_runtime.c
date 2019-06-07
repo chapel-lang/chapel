@@ -21,20 +21,23 @@
 #define CHPL_RUNTIME_ETC_SRC_MLI_CLIENT_RUNTIME_C_
 
 #include "mli/common_code.c"
+
 #include "chpllaunch.h"
+#include "chpl-external-array.h"
+
 #include <sys/types.h>
 #include <unistd.h>
 
 struct chpl_mli_context chpl_client;
-static
+
 void chpl_mli_client_init(struct chpl_mli_context* client);
 void chpl_mli_client_deinit(struct chpl_mli_context* client);
+char* chpl_mli_pull_connection(void);
 void chpl_mli_terminate(enum chpl_mli_errors e);
 int chpl_mli_client_launch(int argc, char** argv);
 void chpl_library_init(int argc, char** argv);
 void chpl_library_finalize(void);
 
-static
 void chpl_mli_client_init(struct chpl_mli_context* client) {
   if (client->context) { return; }
 
@@ -57,8 +60,7 @@ void chpl_mli_client_deinit(struct chpl_mli_context* client) {
   return;
 }
 
-static
-char * chpl_mli_pull_connection() {
+char* chpl_mli_pull_connection(void) {
   int len;
   chpl_mli_debugf("Getting %s\n", "expected size");
   chpl_mli_pull(chpl_client.setup_sock, &len, sizeof(len), 0);
@@ -181,6 +183,14 @@ void chpl_library_finalize(void) {
   chpl_mli_client_deinit(&chpl_client);
 
   return;
+}
+
+// TODO: proper implementation once opaque arrays are supported in multilocale
+// interoperability.
+void cleanupOpaqueArray(chpl_opaque_array * arr) {
+  printf("Error: opaque arrays not supported for multilocale libraries");
+  chpl_library_finalize(); // clean up after ourselves
+  mli_terminate();
 }
 
 #endif

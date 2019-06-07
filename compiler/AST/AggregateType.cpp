@@ -2146,33 +2146,75 @@ Symbol* AggregateType::getSubstitution(const char* name) {
 }
 
 Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
-  if (aggregateTag == AGGREGATE_CLASS) {
 
-    // borrowed == canonical class type
-    if (d == CLASS_TYPE_BORROWED)
-      return this;
-
-    if (!decoratedClasses[d]) {
-      SET_LINENO(this->symbol->defPoint);
-      // Generate decorated class type
-      DecoratedClassType* dec = new DecoratedClassType(this, d);
-      decoratedClasses[d] = dec;
-      const char* astrName = decoratedTypeAstr(d, symbol->name);
-      TypeSymbol* tsDec = new TypeSymbol(astrName, dec);
-      // The dec type isn't really an object, shouldn't have its own fields
-      tsDec->addFlag(FLAG_NO_OBJECT);
-      // Propagate generic-ness to the decorated type
-      if (this->isGeneric() || this->symbol->hasFlag(FLAG_GENERIC))
-        tsDec->addFlag(FLAG_GENERIC);
-      // The generated code should just use the canonical class name
-      tsDec->cname = symbol->cname;
-      DefExpr* defDec = new DefExpr(tsDec);
-      symbol->defPoint->insertAfter(defDec);
-    }
-
-    return decoratedClasses[d];
+  int packedDecorator = -1;
+  // -1 -> just use the canonical type (e.g. MyClass == borrowed MyClass!)
+  //  0 -> borrowed MyClass?
+  //  1 -> unmanaged MyClass!
+  //  2 -> unmanaged MyClass?
+  switch (d) {
+    case CLASS_TYPE_BORROWED:          packedDecorator = -1; break;
+    case CLASS_TYPE_BORROWED_NONNIL:   packedDecorator = -1; break;
+    case CLASS_TYPE_BORROWED_NILABLE:  packedDecorator =  0; break;
+    case CLASS_TYPE_UNMANAGED:         packedDecorator =  1; break;
+    case CLASS_TYPE_UNMANAGED_NONNIL:  packedDecorator =  1; break;
+    case CLASS_TYPE_UNMANAGED_NILABLE: packedDecorator =  2; break;
+    case CLASS_TYPE_MANAGED:           packedDecorator = -1; break;
+    case CLASS_TYPE_MANAGED_NONNIL:    packedDecorator =  1; break;
+    case CLASS_TYPE_MANAGED_NILABLE:   packedDecorator =  2; break;
+      // intentionally no default
   }
-  return NULL;
+
+  INT_ASSERT(packedDecorator < NUM_PACKED_DECORATED_TYPES);
+
+  if (aggregateTag != AGGREGATE_CLASS &&
+      !isManagedPtrType(this))
+    INT_FATAL("Bad call to getDecoratedClass");
+
+  AggregateType* at = this;
+
+  if (isManagedPtrType(this)) {
+    if (d != CLASS_TYPE_MANAGED_NONNIL &&
+        d != CLASS_TYPE_MANAGED_NILABLE) {
+      // Get the class type underneath
+      Type* bt = getManagedPtrBorrowType(this);
+      if (bt && bt != dtUnknown && isAggregateType(bt))
+        at = toAggregateType(bt);
+    }
+  }
+
+  if (packedDecorator < 0)
+    return at;
+
+  // borrowed == canonical class type
+  if (d == CLASS_TYPE_BORROWED) {
+    if (aggregateTag == AGGREGATE_CLASS)
+      return at;
+    else
+      INT_FATAL("Can't get borrowed owned/shared");
+  }
+
+  // Otherwise, gather the appropriate class type.
+  if (!at->decoratedClasses[packedDecorator]) {
+    SET_LINENO(at->symbol->defPoint);
+    // Generate decorated class type
+    DecoratedClassType* dec = new DecoratedClassType(at, d);
+    at->decoratedClasses[packedDecorator] = dec;
+    const char* astrName = decoratedTypeAstr(d, at->symbol->name);
+    TypeSymbol* tsDec = new TypeSymbol(astrName, dec);
+    // The dec type isn't really an object, shouldn't have its own fields
+    tsDec->copyFlags(at->symbol);
+    tsDec->addFlag(FLAG_NO_OBJECT);
+    // Propagate generic-ness to the decorated type
+    if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
+      tsDec->addFlag(FLAG_GENERIC);
+    // The generated code should just use the canonical class name
+    tsDec->cname = at->symbol->cname;
+    DefExpr* defDec = new DefExpr(tsDec);
+    symbol->defPoint->insertAfter(defDec);
+  }
+
+  return at->decoratedClasses[packedDecorator];
 }
 
 Type* AggregateType::cArrayElementType() const {
