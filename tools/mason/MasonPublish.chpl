@@ -1,13 +1,22 @@
 /*
-*Design Plan
-*First fork the mason-registry repo
-*branch the repo and add the mason.toml into Bricks/<package-name>/<version>.toml
-*add source field to <version>.toml that points to the repo of the package
-*pull request from mason-registry from branch that contaons the <version>/toml
-*need to figure out how the environment of the package where mason is invoked passes its env to mason 
-*
-*
-*/
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 
 use MasonUtils;
 use Spawn;
@@ -17,8 +26,8 @@ use MasonEnv;
 use MasonNew;
 use MasonModify;
 
+
 proc masonPublish(args) throws {
-  /* Implement a try catch to catch the errors from functions within this function*/
   try! {
     if args.size > 2 {
       for arg in args[2..] {
@@ -36,7 +45,6 @@ proc masonPublish(args) throws {
         pullRequest(package);
       }
       else throw new owned MasonError("Must have package set up as git repo to publish");
-        /* throw new MasonError("Must have package set up as git repo to publ;ish...... */
       }
     }
   catch e: MasonError {
@@ -51,6 +59,7 @@ proc forkMasonReg(){
   return ret;
 }
 
+
 proc isGitExist() {
   var urlexist = runCommand("git config --get remote.origin.url");
   if urlexist != ''{
@@ -59,10 +68,12 @@ proc isGitExist() {
   else return false;
 }
 
+
 proc geturl() {
   var url = runCommand("git config --get remote.origin.url",true);
   return url;
 }
+
 
 proc branchMasonReg(){
   var name = getName();
@@ -76,6 +87,7 @@ proc branchMasonReg(){
   return ret;
 }
 
+
 proc getName(){
   const cwd = getEnv("PWD");
   const projectHome = getProjectHome(cwd);
@@ -84,6 +96,8 @@ proc getName(){
   const name = tomlFile['brick']['name'].s;
   return name;
 }
+
+
 proc addPackageToBricks() : string{
   var url = geturl();
 
@@ -106,8 +120,8 @@ proc addPackageToBricks() : string{
   return packageName;
  }
 
-proc pullRequest(package)
-{
+
+proc pullRequest(package) {
   var name = getName();
   const cwd = getEnv("PWD");
   const projectHome = getProjectHome(cwd);
