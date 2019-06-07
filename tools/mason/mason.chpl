@@ -111,9 +111,9 @@ proc main(args: [] string) throws {
 
 proc masonClean(args) {
   try! {
-    if args.size == 3{
+    if args.size == 3 {
       masonCleanHelp();
-      exit();
+      exit(0);
     }
     const cwd = getEnv("PWD");
 
@@ -128,9 +128,9 @@ proc masonClean(args) {
 
 proc masonDoc(args) {
   try! {
-    if args.size == 3{
+    if args.size == 3 {
       masonDocHelp();
-      exit();
+      exit(0);
     }
     const tomlName = 'Mason.toml';
     const cwd = getEnv("PWD");

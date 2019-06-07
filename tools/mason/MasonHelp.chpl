@@ -50,7 +50,6 @@ proc masonHelp() {
   writeln('    system      Integrate with system packages found via pkg-config');
   writeln('    test        Compile and run tests found in /test');
   writeln('    external    Integrate external dependencies into mason packages');
-  writeln('    publish     Publish package to mason-registry');
 }
 
 proc masonList() {
@@ -70,7 +69,6 @@ proc masonList() {
   writeln('      help               ');
   writeln('      version            ');
   writeln('      system             ');
-  writeln('      publish            ');
 }
 
 
@@ -405,34 +403,20 @@ proc masonSystemPcHelp() {
 }
 
 
-proc masonPublishHelp(){
-  writeln("Publish a package to the mason-registry repository");
-  writeln();
-  writeln("Usage:");
-  writeln("    mason publish [options]");
-  writeln();
-  writeln("Options:");
-  writeln("    -h, --help                  Display this message");
-  writeln(); 
-}
-
-
 proc masonCleanHelp(){
-  writeln("Uninstall mason from a mason package");
+  writeln("Cleans the target directory of the mason direcotry");
   writeln();
   writeln("Usage:");
   writeln("    mason clean [options]");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
-  writeln();
-  writeln("To remove mason completely, change directory to $CHPL_HOME/tools/mason before invoking mason clean");
   writeln();       
 }
 
 
 proc masonDocHelp(){
-  writeln("Generate automatic documentation for a mason package using chpldoc");
+  writeln("Generate documentation for a mason package using chpldoc");
   writeln();
   writeln('Usage:');
   writeln('    mason doc [options]');
