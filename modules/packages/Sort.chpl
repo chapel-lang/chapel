@@ -911,47 +911,52 @@ module MergeSort {
       InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
       return;
     }
-    const mid = (hi-lo)/2+lo;
+
+    const stride = if Dom.stridable then abs(Dom.stride) else 1,
+          size = (hi - lo) / stride,
+          mid = lo + (size/2) * stride;
+
     if(here.runningTasks() < here.numPUs(logical=true)) {
       cobegin {
         { _MergeSort(Data, lo, mid, minlen, comparator); }
-        { _MergeSort(Data, mid+1, hi, minlen, comparator); }
+        { _MergeSort(Data, mid+stride, hi, minlen, comparator); }
       }
     } else {
       _MergeSort(Data, lo, mid, minlen, comparator);
-      _MergeSort(Data, mid+1, hi, minlen, comparator);
+      _MergeSort(Data, mid+stride, hi, minlen, comparator);
     }
     _Merge(Data, lo, mid, hi, comparator);
   }
 
   private proc _Merge(Data: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+    const stride = if Dom.stridable then abs(Dom.stride) else 1;
     var a1max = mid;
-    var A1 = Data[lo..(a1max)];
+    var A1 = Data[lo..(a1max) by stride];
     var a2max = hi;
-    var A2 = Data[mid..(a2max)];
+    var A2 = Data[mid..(a2max) by stride];
     var a1 = lo;
-    var a2 = mid + 1;
+    var a2 = mid + stride;
     var i = lo;
     while ((a1 <= a1max) && (a2 <= a2max)) {
       if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
         Data[i] = A1[a1];
-        a1 += 1;
-        i += 1;
+        a1 += stride;
+        i += stride;
       } else {
         Data[i] = A2[a2];
-        a2 += 1;
-        i += 1;
+        a2 += stride;
+        i += stride;
       }
     }
     while (a1 <= a1max) {
       Data[i] = A1[a1];
-      a1 += 1;
-      i += 1;
+      a1 += stride;
+      i += stride;
     }
     while (a2 <= a2max) {
       Data[i] = A2[a2];
-      a2 += 1;
-      i += 1;
+      a2 += stride;
+      i += stride;
     }
   }
 }
@@ -1018,8 +1023,8 @@ module QuickSort {
 
     // TODO -- Get this cobegin working and tested
     //  cobegin {
-      quickSort(Data[..loptr-stride], minlen, comparator);  // could use unbounded ranges here
-      quickSort(Data[loptr+stride..], minlen, comparator);
+      quickSort(Data[..loptr-stride by stride align lo], minlen, comparator);  // could use unbounded ranges here
+      quickSort(Data[loptr+stride.. by stride align lo], minlen, comparator);
     //  }
   }
 
