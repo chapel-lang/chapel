@@ -21,15 +21,26 @@ proc main() {
 
 
   // Arrays and Domains
-  const largeD = {1..20}, // quickSort requires domain.size > 16   XXX But has different implementations for strided/nonstrided, so we're only testing the former.
-        strideD = {2..8 by 2},
-        strideAlignD = {2..9 by 2 align 3},
-      strideRevD = {2..8 by -2};
+
+  // First we test isSorted() against the arrays as written here, so
+  // they have to be sorted correctly to start with.  Then we'll
+  // shuffle them and sort them again.
+
+  // quickSort requires domain.size > 16
+  const largeD = {1..20},
+        strideD = {2..40 by 2},
+        strideAlignD = {2..41 by 2 align 3},
+        strideRevD = {2..40 by -2};
   var largeA: [largeD] int,
-      strideA: [strideD] int = [-3, -1, 4, 5],
-      strideAlignA: [strideAlignD] int = [-3, -1, 4, 5],
-      strideRevA: [strideRevD] int = [-3, -1, 4, 5];
-    [i in largeD] largeA[i] = i;
+      strideA: [strideD] int,
+      strideAlignA: [strideAlignD] int,
+      strideRevA: [strideRevD] int;
+
+  largeA = [-17, -10, -4, -2, 0, 1, 2, 3, 5, 8,
+	    13, 21, 34, 55, 89, 4242, 424242, 42424242, 4242424242, 424242424242 ];
+  strideA = largeA;
+  strideAlignA = largeA;
+  strideRevA = largeA;
 
   // Pre-sorted arrays paired with comparators to test
   var tests = (
