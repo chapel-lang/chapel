@@ -857,7 +857,7 @@ module Lists {
     .. warning::
 
       This will invalidate any references to elements previously contained in
-      :arg:`lhs`.
+      `lhs`.
 
     :arg lhs: The list to assign to.
     :arg rhs: The list to assign from. 
