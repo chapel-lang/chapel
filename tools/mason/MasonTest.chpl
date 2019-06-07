@@ -194,6 +194,12 @@ private proc printTestResults(testResults: [?d] string, numTests: int,
   writeln("\n--- Summary:  ",numTests, " tests run ---");
   writeln("-----> ", numPassed, " Passed");
   writeln("-----> ", (numTests - numPassed), " Failed");
+  if (numTests - numPassed) == 0 {
+    exit(0);
+  }
+  else {
+    exit(1);
+  }
 }
 
 
