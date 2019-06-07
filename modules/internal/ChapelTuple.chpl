@@ -48,6 +48,34 @@ module ChapelTuple {
     param size : int;
   }
 
+  proc _tuple.chpl__tupleIsSerializeable() param {
+    use Reflection;
+    if (size != 2) then
+      return false;
+    //    compilerWarning("In tupleIsSerializeable() with type" + this.type:string);
+    for param i in 1..size do
+      if !canResolveMethod(this[i], "chpl__serialize") then {
+        //        compilerWarning("Couldn't resolve " + this[i].type:string + ".chpl__serialize()");
+        return false;
+      } else {
+      //        compilerWarning("!!! Yay, could resolve " + this[i].type:string + ".chpl__serialize()");
+      }
+    compilerWarning("Permitting serialization of " + this.type:string);
+    return true;
+  }
+  
+  proc _tuple.chpl__serialize() where this.chpl__tupleIsSerializeable() {
+    //    compilerWarning("Resolving _tuple.chpl__serialize() for " + this.type:string);
+    writeln("In chpl__serialize() for " + this.type:string);
+    return (this[1].chpl__serialize(), this[2].chpl__serialize());
+  }
+
+  proc type _tuple.chpl__deserialize(data) {
+    var pretend: this;
+    return (pretend.type.chpl__deserialize(data(1)),
+            pretend.type.chpl__deserialize(data(2)));
+  }
+  
   pragma "tuple init fn"
   inline proc chpl__init_tuple(param size : int) {
     // body inserted during generic instantiation

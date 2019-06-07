@@ -884,6 +884,33 @@ static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
   }
 }
 
+#include "view.h"
+
+static void tryToMakeForwardable(VarSymbol* iterRec, CallExpr* buildTup) {
+  int numElems = buildTup->numActuals();
+  printf("Considering forwarding this tuple:\n");
+  bool allForwardable = true;
+  for (int i=1; i<=numElems; i++) {
+    list_view(buildTup->get(i));
+    if (!buildTup->get(1)->typeInfo()->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
+      printf("doesn't have always RVF\n");
+      allForwardable = false;
+    } else {
+      printf("has always RVF\n");
+    }
+  }
+  //printf("---\n");
+  if (allForwardable) {
+    printf("Looks like we can forward this tuple:\n");
+    for (int i=1; i<=numElems; i++) {
+      list_view(buildTup->get(i));
+    }
+    printf("---\n");
+  }
+
+}
+
+
 static Expr* rebuildIterableCall(ForallStmt* pfs,
                                  CallExpr* iterCall,
                                  Expr* origExprFlw)
@@ -909,7 +936,8 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
 static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   VarSymbol* leadIdxCopy = parIdxVar(pfs);
   bool       zippered    = false;
-  if (CallExpr* buildTup = toCallExpr(iterExpr)) {
+  CallExpr* buildTup = toCallExpr(iterExpr);
+  if (buildTup != NULL) {
     INT_ASSERT(buildTup->isNamed("_build_tuple"));
     if (buildTup->numActuals() > 1)
       zippered = true;
@@ -934,6 +962,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 
   preFS->insertAtTail(new DefExpr(iterRec));
   preFS->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
+  if (zippered) {
+    tryToMakeForwardable(iterRec, buildTup);
+  }
   Expr* toNormalize = preFS->body.tail;
 
   followBlock = buildFollowLoop(iterRec,

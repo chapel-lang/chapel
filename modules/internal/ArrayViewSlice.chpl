@@ -27,7 +27,7 @@ module ArrayViewSlice {
   private use ChapelStandard;
 
   config param chpl_debugSerializeSlice = false,
-               chpl_serializeSlices = false;
+               chpl_serializeSlices = true;
 
   private proc buildIndexCacheHelper(arr, dom) {
     param isRankChangeReindex = arr.isRankChangeArrayView() ||
@@ -92,13 +92,18 @@ module ArrayViewSlice {
     proc chpl__rvfMe() param {
       use Reflection;
 
-      if chpl_serializeSlices == false then
+      compilerWarning("*** Resolving chpl__rvfMe() ***");
+      if chpl_serializeSlices == false then {
+        compilerWarning("*** returning false ***");
         return false;
+      }
       if (dom.dsiSupportsPrivatization() && arr.dsiSupportsPrivatization() &&
           canResolveMethod(dom, "chpl__serialize") &&
           canResolveMethod(arr, "chpl__serialize")) {
+        compilerWarning("*** returning true ***");
         return true;
       } else {
+        compilerWarning("*** returning false ***");
         return false;
       }
     }

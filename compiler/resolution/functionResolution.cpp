@@ -9362,7 +9362,28 @@ static void resolveSerializers() {
         ! isSyncType(ts->type)                     &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
-        if (isRecord(at) == true) {
+        if (ts->hasFlag(FLAG_TUPLE)) {
+          bool allRVF = true;
+          //          printf("Considering this tuple: %s\n", ts->name);
+          for_fields(field, at) {
+            if (strcmp(field->name, "size") != 0) {
+              //              printf("Looking at field: %s\n", field->name);
+              Type* fieldType = field->getValType();
+              if (!fieldType->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
+                //                printf("...but this field doesn't RVF: ");
+                //                list_view(field);
+                //                list_view(fieldType);
+                allRVF = false;
+                break;
+              }
+            }
+          }
+          if (allRVF) {
+            printf("Found an all-RVF tuple type %s\n", ts->name);
+            ts->addFlag(FLAG_ALWAYS_RVF);
+          }
+        }
+        if (isRecord(at) == true || ts->hasFlag(FLAG_TUPLE)) {
           bool success = resolveSerializeDeserialize(at);
           if (success) {
             resolveBroadcasters(at);
