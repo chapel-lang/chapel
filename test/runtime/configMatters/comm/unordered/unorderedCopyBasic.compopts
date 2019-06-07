@@ -3,3 +3,4 @@
 -scopyType=real
 -scopyType=complex
 -scopyType=bool
+-scopyType='bool(16)'
