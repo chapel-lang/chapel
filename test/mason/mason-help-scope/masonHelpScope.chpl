@@ -1,21 +1,26 @@
 
 use MasonUtils;
-use FileSystem;
 use MasonHelp;
+use Spawn;
 
-proc main() {
-  runCommand('mason new -h');
-  runCommand('mason add -h');
-  runCommand('mason rm -h');
-  runCommand('mason build -h');
-  runCommand('mason run -h');
-  runCommand('mason search -h');
-  runCommand('mason env -h');
-  runCommand('mason clean -h');
-  runCommand('mason doc -h');
-  runCommand('mason system -h');
-  runCommand('mason  test -h');
-  runCommand('mason external -h');
-  exit(0);
-  
+proc checkCommand(cmd: string) {
+  var splitCmd = 'mason new -h'.split();
+  var p = spawn(splitCmd);
+  p.wait();
+  if p.exit_status != 0 {
+    writeln("Failed to run cmd: '%s'".format(cmd));
+  }
+
+  checkCommand('mason new -h');
+  checkCommand('mason add -h');
+  checkCommand('mason rm -h');
+  checkCommand('mason build -h');
+  checkCommand('mason run -h');
+  checkCommand('mason search -h');
+  checkCommand('mason env -h');
+  checkCommand('mason clean -h');
+  checkCommand('mason doc -h');
+  checkCommand('mason system -h');
+  checkCommand('mason test -h');
+  checkCommand('mason external -h');
 }
