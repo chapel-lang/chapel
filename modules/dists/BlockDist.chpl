@@ -1291,7 +1291,12 @@ proc BlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
+proc BlockArr.chpl__rvfMe() param {
+  return true;
+}
+
 proc BlockArr.chpl__serialize() {
+  writeln("Serializing BlockArr!");
   return pid;
 }
 
