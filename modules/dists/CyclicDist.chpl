@@ -782,6 +782,10 @@ override proc CyclicArr.dsiDestroyArr() {
   }
 }
 
+proc CyclicArr.chpl__rvfMe() param {
+  return true;
+}
+
 proc CyclicArr.chpl__serialize() {
   return pid;
 }

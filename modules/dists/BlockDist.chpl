@@ -1296,7 +1296,7 @@ proc BlockArr.chpl__rvfMe() param {
 }
 
 proc BlockArr.chpl__serialize() {
-  writeln("Serializing BlockArr!");
+  //  writeln("Serializing BlockArr!");
   return pid;
 }
 
