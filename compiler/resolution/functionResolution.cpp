@@ -9295,6 +9295,8 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
           const char* att =  (developer == false) ? at->symbol->name
                                                   : at->symbol->cname;
           USR_FATAL(deserializeFn, "chpl__deserialize returning '%s' when it must return '%s'", rt, att);
+        } else {
+          USR_WARN("*** resolved chpl__deserialize for %s\n", at->symbol->cname);
         }
       }
 
@@ -9379,7 +9381,7 @@ static void resolveSerializers() {
             }
           }
           if (allRVF) {
-            printf("Found an all-RVF tuple type %s\n", ts->name);
+            fprintf(stderr, "Found an all-RVF tuple type %s\n", ts->name);
             ts->addFlag(FLAG_ALWAYS_RVF);
           }
         }
