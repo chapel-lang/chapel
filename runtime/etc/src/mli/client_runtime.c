@@ -26,15 +26,15 @@
 #include <unistd.h>
 
 struct chpl_mli_context chpl_client;
-static
+
 void chpl_mli_client_init(struct chpl_mli_context* client);
 void chpl_mli_client_deinit(struct chpl_mli_context* client);
+char* chpl_mli_pull_connection(void);
 void chpl_mli_terminate(enum chpl_mli_errors e);
 int chpl_mli_client_launch(int argc, char** argv);
 void chpl_library_init(int argc, char** argv);
 void chpl_library_finalize(void);
 
-static
 void chpl_mli_client_init(struct chpl_mli_context* client) {
   if (client->context) { return; }
 
@@ -57,8 +57,7 @@ void chpl_mli_client_deinit(struct chpl_mli_context* client) {
   return;
 }
 
-static
-char * chpl_mli_pull_connection() {
+char* chpl_mli_pull_connection(void) {
   int len;
   chpl_mli_debugf("Getting %s\n", "expected size");
   chpl_mli_pull(chpl_client.setup_sock, &len, sizeof(len), 0);

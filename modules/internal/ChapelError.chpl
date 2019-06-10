@@ -364,6 +364,7 @@ module ChapelError {
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
+  pragma "last resort"
   proc chpl_fix_thrown_error(err: borrowed Error?): unmanaged Error {
     compilerError("Throwing borrowed error - please throw owned", 1);
 
@@ -372,6 +373,7 @@ module ChapelError {
 
   pragma "no doc"
   pragma "insert line file info"
+  pragma "last resort"
   proc chpl_fix_thrown_error(type errType) {
     compilerError("Cannot throw a type: '", errType:string, "'. Did you forget the keyword 'new'?");
   }
@@ -408,6 +410,13 @@ module ChapelError {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_fix_thrown_error(in err: owned Error?): unmanaged Error {
+    return chpl_do_fix_thrown_error(err.release());
+  }
+
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_fix_thrown_error(in err: owned Error): unmanaged Error {
     return chpl_do_fix_thrown_error(err.release());
   }
 

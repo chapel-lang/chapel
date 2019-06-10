@@ -1,0 +1,2 @@
+bug: overriding a type method does not work
+#13153

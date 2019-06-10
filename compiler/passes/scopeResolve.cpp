@@ -78,6 +78,8 @@ static void          processImportExprs();
 
 static void          resolveGotoLabels();
 
+static void          adjustTypeMethodsOnClasses();
+
 static bool          isStableClassType(Type* t);
 static Expr*         handleUnstableClassType(SymExpr* se);
 
@@ -124,7 +126,10 @@ void scopeResolve() {
   // resolve type of this for methods
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->_this != NULL && fn->_this->type == dtUnknown) {
+
+    if (fn->_this == NULL) continue; // not a method
+
+    if (fn->_this->type == dtUnknown) {
       Expr* stmt = toArgSymbol(fn->_this)->typeExpr->body.only();
 
       if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(stmt)) {
@@ -149,7 +154,7 @@ void scopeResolve() {
         AggregateType::setCreationStyle(sym->symbol()->type->symbol, fn);
       }
 
-    } else if (fn->_this) {
+    } else {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
   }
@@ -159,6 +164,8 @@ void scopeResolve() {
   resolveUnresolvedSymExprs();
 
   resolveEnumeratedTypes();
+
+  adjustTypeMethodsOnClasses();
 
   setupShadowVars();
 
@@ -978,19 +985,20 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
 
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                      Symbol* sym) {
-  const char* name = usymExpr->unresolved;
   FnSymbol* fn = toFnSymbol(sym);
 
   if (fn == NULL) {
-    // This deprecation should be removed in 1.19
-    if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-      if (0 == strcmp(name, "Owned"))
-        USR_WARN(usymExpr, "Owned is deprecated, use owned instead");
-      if (0 == strcmp(name, "Shared"))
-        USR_WARN(usymExpr, "Shared is deprecated, use shared instead");
-    }
+    SymExpr* symExpr = NULL;
 
-    SymExpr* symExpr = new SymExpr(sym);
+    if (sym->hasFlag(FLAG_MANAGED_POINTER) && isTypeSymbol(sym)) {
+      AggregateType* at = toAggregateType(sym->type);
+      INT_ASSERT(at);
+      Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
+      INT_ASSERT(t);
+      symExpr = new SymExpr(t->symbol);
+    } else {
+      symExpr = new SymExpr(sym);
+    }
 
     usymExpr->replace(symExpr);
 
@@ -1512,11 +1520,53 @@ static void resolveEnumeratedTypes() {
   }
 }
 
+
 /************************************* | **************************************
 *                                                                             *
-* delete the module uses cache                                                *
 *                                                                             *
 ************************************** | *************************************/
+
+//
+// Convert each "proc type C.myProc() ..." to, roughtly:
+// "proc type any.myProc() where isSubtype(this.type, C) ..."
+//
+static void adjustTypeMethodsOnClasses() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->thisTag != INTENT_TYPE) continue; // handle only type methods
+
+    ArgSymbol* thisArg = toArgSymbol(fn->_this);
+    Type*      thisType = thisArg->type;
+    if (! isClass(thisType)) continue; // handle only undecorated classes
+
+    if (BlockStmt* typeBlock = thisArg->typeExpr) {
+      // Remove the type block, ensuring that its information is preserved.
+      SymExpr* typeSE = toSymExpr(typeBlock->body.only());
+      INT_ASSERT(thisType->symbol == typeSE->symbol());
+      typeBlock->remove();
+    }
+
+    // Update the type of 'this'.
+    thisArg->type = dtAny;
+
+    // The desired where-expression. Clean up this.type for isSubtype().
+    SET_LINENO(thisArg);
+    Expr* isSubtype = new_Expr(
+     "'is_subtype'(%S,'to borrowed class'('to non nilable class'(%S)))",
+     thisType->symbol, thisArg);
+
+    if (BlockStmt* where = fn->where) {
+      // If a where-clause already exists, augment it.
+      Expr* userWhere = where->body.last()->remove();
+      where->insertAtTail(new CallExpr("&&", isSubtype, userWhere));
+
+    } else {
+      fn->where = new BlockStmt(isSubtype);
+      insert_help(fn->where, NULL, fn);
+      fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
+    }
+  }
+}
+
 
 void destroyModuleUsesCaches() {
   std::map<BlockStmt*, Vec<UseStmt*>*>::iterator use;
@@ -1528,10 +1578,6 @@ void destroyModuleUsesCaches() {
   moduleUsesCache.clear();
 }
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
 
 static void renameDefaultType(Type* type, const char* newname);
 
@@ -1550,6 +1596,7 @@ static void renameDefaultType(Type* type, const char* newname) {
 
   type->symbol->name = astr(newname);
 }
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -2190,15 +2237,17 @@ static void resolveUnmanagedBorrows() {
         call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
         call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
         call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
-      SET_LINENO(call);
 
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-          AggregateType* at = toAggregateType(canonicalClassType(ts->type));
+          AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type));
 
           ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
           if (isClassLike(ts->type)) {
             decorator = classTypeDecorator(ts->type);
+          } else if (isManagedPtrType(ts->type) &&
+                     call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+            decorator = CLASS_TYPE_MANAGED;
           } else {
             const char* type = NULL;
             if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
@@ -2213,30 +2262,29 @@ static void resolveUnmanagedBorrows() {
             USR_FATAL_CONT(call, "%s can only apply to class types "
                                  "(%s is not a class type)",
                                  type, ts->name);
+            at = NULL;
           }
 
           // Compute the decorated class type
           if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILABLE_MASK;
+            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
             tmp |= CLASS_TYPE_UNMANAGED;
             decorator = (ClassTypeDecorator) tmp;
           } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILABLE_MASK;
+            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
             tmp |= CLASS_TYPE_BORROWED;
             decorator = (ClassTypeDecorator) tmp;
           } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_MANAGEMENT_MASK;
-            tmp |= CLASS_TYPE_NILABLE_MASK;
-            decorator = (ClassTypeDecorator) tmp;
+            decorator = addNilableToDecorator(decorator);
           } else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_MANAGEMENT_MASK;
-            decorator = (ClassTypeDecorator) tmp;
+            decorator = addNonNilToDecorator(decorator);
           }
 
           if (at) {
             Type* dt = at->getDecoratedClass(decorator);
             if (dt) {
               // replace the call with a new symexpr pointing to ts
+              SET_LINENO(call);
               call->replace(new SymExpr(dt->symbol));
             }
           } else {
@@ -2245,6 +2293,9 @@ static void resolveUnmanagedBorrows() {
             switch (decorator) {
               case CLASS_TYPE_BORROWED:
                 dt = dtBorrowed;
+                break;
+              case CLASS_TYPE_BORROWED_NONNIL:
+                dt = dtBorrowedNonNilable;
                 break;
               case CLASS_TYPE_BORROWED_NILABLE:
                 dt = dtBorrowedNilable;
@@ -2255,9 +2306,19 @@ static void resolveUnmanagedBorrows() {
               case CLASS_TYPE_UNMANAGED_NILABLE:
                 dt = dtUnmanagedNilable;
                 break;
+              case CLASS_TYPE_UNMANAGED_NONNIL:
+                dt = dtUnmanagedNonNilable;
+                break;
+              case CLASS_TYPE_MANAGED:
+              case CLASS_TYPE_MANAGED_NONNIL:
+              case CLASS_TYPE_MANAGED_NILABLE:
+                INT_FATAL("case not handled");
+                break;
+
               // no default intentionally
             }
             INT_ASSERT(dt);
+            SET_LINENO(call);
             call->replace(new SymExpr(dt->symbol));
           }
         }
@@ -2267,6 +2328,33 @@ static void resolveUnmanagedBorrows() {
       // see normalizeCallToTypeConstructor which changes
       // them to _type_construct_C e.g. and such a function won't
       // exist for the unmanaged type.
+    }
+
+    // fix e.g. unmanaged!
+    if (call->isNamedAstr(astrPostfixBang)) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+          Type* replace = NULL;
+
+          if (ts == dtBorrowed->symbol ||
+              ts == dtBorrowedNonNilable->symbol ||
+              ts == dtBorrowedNilable->symbol)
+            replace = dtBorrowedNonNilable;
+          else if (ts == dtUnmanaged->symbol ||
+                   ts == dtUnmanagedNonNilable->symbol ||
+                   ts == dtUnmanagedNilable->symbol)
+            replace = dtUnmanagedNonNilable;
+          else if (isManagedPtrType(ts->type)) {
+            AggregateType* at = toAggregateType(ts->type);
+            replace = at->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
+          }
+
+          if (replace) {
+            SET_LINENO(call);
+            call->replace(new SymExpr(replace->symbol));
+          }
+        }
+      }
     }
   }
 }
