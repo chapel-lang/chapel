@@ -2130,6 +2130,8 @@ module ChapelBase {
 
 
   proc isClassType(type t) param return __primitive("is class type", t);
+  proc isNilableClassType(type t) param return __primitive("is nilable class type", t);
+  proc isNonNilableClassType(type t) param return __primitive("is non nilable class type", t);
 
   proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param return true;
   proc isBorrowedOrUnmanagedClassType(type t:borrowed) param return true;
