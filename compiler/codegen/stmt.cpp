@@ -180,15 +180,12 @@ GenRet BlockStmt::codegen() {
     info->currentStackVariables.emplace_back();
 
     for_alist(node, this->body) {
-      // for LLVM, code generation will place
-      // statements into the function with
-      // the IRBuilder.
       if (CallExpr* call = toCallExpr(node)) {
         if (call->isPrimitive(PRIM_RETURN)) {
           // Emit lifetime end for any variables from the current block
           while (info->currentStackVariables.size() > 0) {
             for_set(Symbol, var, info->currentStackVariables.back()) {
-              if (var->hasFlag(FLAG_RVV)) {
+              if (var->hasFlag(FLAG_RVV) || call->getFunction()->hasFlag(FLAG_VOID_NO_RETURN_VALUE)) {
                 llvm::Value* declared = var->codegen().val;
                 llvm::Type* type = var->type->codegen().type;
                 codegenLifetimeEnd(type, declared);
