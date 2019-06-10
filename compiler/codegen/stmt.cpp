@@ -186,13 +186,14 @@ GenRet BlockStmt::codegen() {
       if (CallExpr* call = toCallExpr(node)) {
         if (call->isPrimitive(PRIM_RETURN)) {
           // Emit lifetime end for any variables from the current block
-          for_set(Symbol, var, info->currentStackVariables.back()) {
-            llvm::Value* declared = var->codegen().val;
-            llvm::Type* type = var->type->codegen().type;
-            codegenLifetimeEnd(type, declared);
-            if (0 == strcmp(var->defPoint->getFunction()->name, "mytest"))
-                printf("%s : %d\n", var->name, (int)info->currentStackVariables.size());
-          };
+          while (info->currentStackVariables.size() > 0) {
+            for_set(Symbol, var, info->currentStackVariables.back()) {
+              llvm::Value* declared = var->codegen().val;
+              llvm::Type* type = var->type->codegen().type;
+              codegenLifetimeEnd(type, declared);
+            };
+            info->currentStackVariables.pop_back();
+          }
         }
       }
       node->codegen();
@@ -206,15 +207,11 @@ GenRet BlockStmt::codegen() {
             if (declared && type) {
               codegenLifetimeStart(type, declared);
               info->currentStackVariables.back().insert(var);
-              if (0 == strcmp(var->defPoint->getFunction()->name, "mytest"))
-                printf("%s : %d\n", var->name, (int)info->currentStackVariables.size());
             }
           }
         }
       }
     }
-    // Remove the variables set from the stack for lifetimes
-    info->currentStackVariables.pop_back();
 
     info->lvt->removeLayer();
 
@@ -353,11 +350,12 @@ GenRet GotoStmt::codegen() {
   // Handle stack of lifetime variables
 #ifdef HAVE_LLVM
   if (gotoTag == GOTO_RETURN || gotoTag == GOTO_ERROR_HANDLING) {
-    for (auto& curSet: gGenInfo->currentStackVariables) {
+    for (auto& curSet: info->currentStackVariables) {
       for_set(Symbol, var, curSet) {
         if (!var->hasEitherFlag(FLAG_RVV, FLAG_RETARG)) {
-          if (0 == strcmp(var->defPoint->getFunction()->name, "test"))
-            printf("lifetime ending from return for %i %s\n", var->id, var->cname);
+          llvm::Value* declared = var->codegen().val;
+          llvm::Type* type = var->type->codegen().type;
+          codegenLifetimeEnd(type, declared);
         }
       }
     }
