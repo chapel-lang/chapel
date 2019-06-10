@@ -32,6 +32,7 @@
 #include "scopeResolve.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "symbol.h"
 #include "typeSpecifier.h"
 #include "visibleFunctions.h"
 
@@ -1936,6 +1937,50 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   CallExpr* callWrapper = new CallExpr(wrapper);
 
   functionCaptureMap[captured_fn] = wrapper;
+
+
+  /* make writeThis for FCFs */
+  {
+    FnSymbol* fn = new FnSymbol("writeThis");
+
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_LAST_RESORT);
+    fn->addFlag(FLAG_OVERRIDE);
+
+    fn->cname = astr("_auto_", ct->symbol->name, "_write");
+    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+    fn->_this->addFlag(FLAG_ARG_THIS);
+
+    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtAny);
+
+    fileArg->addFlag(FLAG_MARKED_GENERIC);
+
+    fn->setMethod(true);
+
+    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+    fn->insertFormalAtTail(fn->_this);
+    fn->insertFormalAtTail(fileArg);
+
+    fn->retType = dtVoid;
+
+    // when printing out a FCF, print out the function's name
+    fn->insertAtTail(new CallExpr(new CallExpr(".", fileArg,
+                                               new_StringSymbol("writeIt")),
+                                  new_StringSymbol(astr(flname, "()"))));
+                     
+    DefExpr* def = new DefExpr(fn);
+
+    ct->symbol->defPoint->insertBefore(def);
+
+    fn->setMethod(true);
+    fn->addFlag(FLAG_METHOD_PRIMARY);
+
+    reset_ast_loc(def, ct->symbol);
+
+    normalize(fn);
+
+    ct->methods.add(fn);
+  }
 
   return callWrapper;
 }
