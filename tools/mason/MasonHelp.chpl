@@ -397,7 +397,7 @@ proc masonSystemPcHelp() {
   writeln();
 }
 
-proc masonCleanHelp(){
+proc masonCleanHelp() {
   writeln("Cleans the target directory of the mason directory");
   writeln();
   writeln("Usage:");
@@ -408,7 +408,7 @@ proc masonCleanHelp(){
   writeln();       
 }
 
-proc masonDocHelp(){
+proc masonDocHelp() {
   writeln("Generate documentation for a mason package using chpldoc");
   writeln();
   writeln('Usage:');
