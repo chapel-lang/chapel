@@ -86,21 +86,19 @@ if { [string match aarch64 $CHPL_HOST_ARCH] } {
 
         if {$mpichLoaded} {
             setenv CHPL_MODULE_KEEP_MPICH 1
-        }
-
-        if {! $mpichLoaded} {
+        } else {
             module load cray-mpich
         }
     } else {
         # Unloading or reloading chapel
 
         if {$mpichLoaded} {
-            # Was hugepages already loaded before we loaded chapel?
+            # Was mpich already loaded before we loaded chapel?
             if {[ info exists env(CHPL_MODULE_KEEP_MPICH)]} {
-                # When we are unloading, this actually unsets CHPL_MODULE_KEEP_HUGEPAGES
+                # When we are unloading, this actually unsets CHPL_MODULE_KEEP_MPICH
                 setenv CHPL_MODULE_KEEP_MPICH 1
             } else {
-                # When we are unloading, this actually unloads craype-hugepages16M
+                # When we are unloading, this actually unloads cray-mpich
                 module load cray-mpich
             }
         }
