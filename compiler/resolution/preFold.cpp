@@ -74,7 +74,8 @@ static bool           isNormalField(Symbol* field);
 
 static std::string    buildParentName(AList& argList,
                                       bool   isFormal,
-                                      Type*  retType);
+                                      Type*  retType,
+                                      bool   throws);
 
 static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
                                                     const char* name);
@@ -83,7 +84,8 @@ static FnSymbol*      createAndInsertFunParentMethod(CallExpr*      call,
                                                      AggregateType* parent,
                                                      AList&         argList,
                                                      bool           isFormal,
-                                                     Type*          retType);
+                                                     Type*          retType,
+                                                     bool           throws);
 
 /************************************* | **************************************
 *                                                                             *
@@ -1788,7 +1790,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   AggregateType* parent;
   FnSymbol*      thisParentMethod;
 
-  std::string parent_name = buildParentName(captured_fn->formals, true, captured_fn->retType);
+  std::string parent_name = buildParentName(captured_fn->formals, true,
+      captured_fn->retType, captured_fn->throwsError());
 
   if (functionTypeMap.find(parent_name) != functionTypeMap.end()) {
     std::pair<AggregateType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
@@ -1798,7 +1801,9 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   } else {
     parent = createAndInsertFunParentClass(call, parent_name.c_str());
-    thisParentMethod = createAndInsertFunParentMethod(call, parent, captured_fn->formals, true, captured_fn->retType);
+    thisParentMethod = createAndInsertFunParentMethod(call, parent,
+        captured_fn->formals, true, captured_fn->retType,
+        captured_fn->throwsError());
     functionTypeMap[parent_name] = std::pair<AggregateType*, FnSymbol*>(parent, thisParentMethod);
   }
 
@@ -1906,6 +1911,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     thisMethod->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   }
 
+  if (captured_fn->throwsError()) {
+    thisMethod->throwsErrorInit();
+  }
+
   // (Seen note above)
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(new DefExpr(thisMethod));
@@ -1951,7 +1960,8 @@ static AggregateType* createOrFindFunTypeFromAnnotation(AList&     argList,
   AggregateType* parent      = NULL;
   SymExpr*       retTail     = toSymExpr(argList.tail);
   Type*          retType     = retTail->symbol()->type;
-  std::string    parent_name = buildParentName(argList, false, retType);
+  bool           throws      = false; // TODO: how to distinguish?
+  std::string    parent_name = buildParentName(argList, false, retType, throws);
 
   if (functionTypeMap.find(parent_name) != functionTypeMap.end()) {
     parent = functionTypeMap[parent_name].first;
@@ -1965,7 +1975,8 @@ static AggregateType* createOrFindFunTypeFromAnnotation(AList&     argList,
                                                   parent,
                                                   argList,
                                                   false,
-                                                  retType);
+                                                  retType,
+                                                  throws);
 
     functionTypeMap[parent_name] = std::pair<AggregateType*,
                                              FnSymbol*>(parent, parentMethod);
@@ -2043,7 +2054,8 @@ static bool isNormalField(Symbol* field)
 */
 static std::string buildParentName(AList& arg_list,
                                    bool   isFormal,
-                                   Type*  retType) {
+                                   Type*  retType,
+                                   bool throws) {
   std::ostringstream oss;
   bool               isFirst = true;
 
@@ -2089,6 +2101,9 @@ static std::string buildParentName(AList& arg_list,
       isFirst = false;
     }
   }
+
+  if (throws)
+    oss << "_throws";
 
   return oss.str();
 }
@@ -2150,7 +2165,9 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
                                                 AggregateType* parent,
                                                 AList&         arg_list,
                                                 bool           isFormal,
-                                                Type*          retType) {
+                                                Type*          retType,
+                                                bool           throws) {
+
   // Add a "getter" method that returns the return type of the function
   //
   //   * The return type itself is not actually stored as a member variable
@@ -2323,6 +2340,8 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
     parent_method->insertAtTail(new DefExpr(tmp));
     parent_method->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   }
+  if (throws)
+    parent_method->throwsErrorInit();
 
   // Because this function type needs to be globally visible
   // (because we don't know the modules it will be passed to), we put
