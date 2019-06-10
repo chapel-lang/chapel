@@ -4,13 +4,25 @@ use Lists;
 config type listType = int;
 config param listLock = true;
 
-// Extend the same list with the contents of an array.
-{
-  var lst1 = new list(listType, listLock);
-  var arr1: [1..5] listType = [6, 7, 8, 9, 10];
+var lst1 = new list(listType, listLock);
 
-  lst1.extend(arr1);
+for i in 1..5 do
+  lst1.append(i);
 
-  writeln(lst1);
-}
+writeln(lst1);
 
+var lst2 = new list(listType, listLock);
+var arr1: [1..5] listType = [6, 7, 8, 9, 10];
+
+lst2.extend(arr1);
+
+writeln(lst2);
+
+lst1.extend(lst2);
+
+writeln(lst1);
+
+lst2.clear();
+
+writeln(lst1);
+writeln(lst2);

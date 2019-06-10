@@ -29,13 +29,7 @@ writeln(lst);
 for i in 1..(lst.size / 2) do {
   ref a = lst[lst.size - i + 1];
   ref b = lst[i];
-  //
-  // Don't rely on the swap operator!
-  // See: https://github.com/chapel-lang/chapel/issues/8545
-  //
-  var t = a;
-  a = b;
-  b = t;
+  a <=> b;
 }
 
 writeln(lst);

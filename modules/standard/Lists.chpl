@@ -71,11 +71,6 @@ module Lists {
       assert(expr);
   }
 
-  private proc _listDestructorBreakpoint() {
-    if _sanityChecks then
-      assert(true);
-  }
-
   //
   // We can change the lock type later. Use a spinlock for now, even if it
   // is suboptimal in cases where long critical sections have high
@@ -164,8 +159,6 @@ module Lists {
 
     pragma "no doc"
     inline proc deinit() {
-      if _sanityChecks then
-        _listDestructorBreakpoint();
       clear();
     }
 
@@ -224,7 +217,7 @@ module Lists {
       const zpos = idx - 1;
       const arrayIdx = _getArrayIdx(zpos);
       const itemIdx = _getItemIdx(zpos);
-      ref array = _arrays[arrayIdx];
+      const array = _arrays[arrayIdx];
       _sanity(array != nil);
       ref result = array[itemIdx];
       return result;
@@ -253,10 +246,11 @@ module Lists {
     // a bounds check fails.
     //
     pragma "no doc"
-    inline proc _boundsCheckLeaveOnThrow(i: int) throws {
+    inline proc _boundsCheckLeaveOnThrow(i: int, umsg: string="") throws {
       if !_withinBounds(i) {
         _leave();
-        const msg = "Given list index out of bounds: " + i:string;
+        const msg = if umsg != "" then umsg else
+          "Index out of bounds: " + i:string;
         throw new owned
           IllegalArgumentError(msg);
       }
@@ -268,7 +262,7 @@ module Lists {
     }
 
     pragma "no doc"
-    inline proc _killBlockArray(data: _ddata(_ddata(eltType))) {
+    inline proc _freeBlockArray(data: _ddata(_ddata(eltType))) {
       c_free(data:c_void_ptr);
     }
 
@@ -278,7 +272,7 @@ module Lists {
     }
 
     pragma "no doc"
-    proc _killArray(data: _ddata(eltType)) {
+    proc _freeArray(data: _ddata(eltType)) {
       c_free(data:c_void_ptr);
     }
 
@@ -315,7 +309,7 @@ module Lists {
           for i in 0..#_arrayCapacity do
             _narrays[i] = _arrays[i];
 
-          _killBlockArray(_arrays);
+          _freeBlockArray(_arrays);
           _arrays = _narrays;
           _arrayCapacity *= 2;
         }
@@ -324,7 +318,7 @@ module Lists {
         // Add a new block to the block array that is twice the size of the
         // previous block.
         //
-        ref oldLast = _arrays[lastArrayIdx];
+        const oldLast = _arrays[lastArrayIdx];
         const oldLastCapacity = _getArrayCapacity(lastArrayIdx);
 
         lastArrayIdx += 1;
@@ -361,7 +355,7 @@ module Lists {
         return;
 
       ref array = _arrays[lastArrayIdx];
-      _killArray(array);
+      _freeArray(array);
       _totalCapacity -= lastArrayCapacity;
       array = nil; 
     }
@@ -426,7 +420,10 @@ module Lists {
       :arg x: An element to append.
     */
     proc append(x: eltType) {
+      //
       // TODO: Use a local copy until this pragma works with formals.
+      // See: https://github.com/chapel-lang/chapel/issues/13225
+      //
       pragma "no auto destroy"
       var cpy = x;
       _enter();
@@ -443,6 +440,7 @@ module Lists {
       // calling _append().
       //
       for item in collection {
+        // See: https://github.com/chapel-lang/chapel/issues/13225
         pragma "no auto destroy"
         var cpy = item;
         _append_by_ref(cpy);
@@ -456,7 +454,7 @@ module Lists {
       :arg other: A list containing elements of the same type as those
         contained in this list.
     */
-    proc extend(other: list(?t)) where t == eltType {
+    proc extend(other: list(eltType, ?)) {
       _enter();
       _extendGeneric(other);
       _leave();
@@ -469,7 +467,7 @@ module Lists {
       :arg other: An array containing elements of the same type as those
         contained in this list.
     */
-    proc extend(other: [?d] ?t) where t == eltType {
+    proc extend(other: [?d] eltType) {
       _enter();
       _extendGeneric(other);
       _leave();
@@ -630,11 +628,11 @@ module Lists {
           if array == nil then
             continue;
           _totalCapacity -= _getArrayCapacity(i);
-          _killArray(array);
+          _freeArray(array);
           array = nil;
         }
 
-        _killBlockArray(_arrays);
+        _freeBlockArray(_arrays);
         _arrays = nil;
       }
 
@@ -659,8 +657,10 @@ module Lists {
     proc indexOf(x: eltType, start: int=1, end: int=size): int throws {
       _enter();
 
-      try _boundsCheckLeaveOnThrow(start);
-      try _boundsCheckLeaveOnThrow(end);
+      try _boundsCheckLeaveOnThrow(start,
+          "Start index out of bounds: " + start:string);
+      try _boundsCheckLeaveOnThrow(end,
+          "End index out of bounds: " + end:string);
 
       for i in start..end do
         if x == _getRef(i) {
@@ -670,7 +670,8 @@ module Lists {
 
       _leave();
 
-      const msg = "No such element in list: " + x:string;
+      // TODO: Introduce ValueError and use that here instead.
+      const msg = "No such element: " + x:string;
       throw new owned
         IllegalArgumentError(msg);
 
@@ -749,7 +750,7 @@ module Lists {
     }
 
     /*
-      Produce a serial iterator over the elements of this list.
+      Iterate over the elements of this list.
 
       :yields: A reference to one of the elements contained in this list.
     */

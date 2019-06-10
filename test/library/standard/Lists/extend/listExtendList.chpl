@@ -4,17 +4,25 @@ use Lists;
 config type listType = int;
 config param listLock = true;
 
-// Extend a List with the contents of another list.
-{
-  var lst1 = new list(listType, listLock);
+var lst1 = new list(listType, listLock);
 
-  for i in 1..5 do
-    lst1.append(i:listType);
+for i in 1..5 do
+  lst1.append(i);
 
-  var lst2 = new list(listType, listLock);
-  lst2.extend(lst1);
+writeln(lst1);
 
-  writeln(lst1);
-  writeln(lst2);
-}
+var lst2 = new list(listType, listLock);
 
+for i in 6..10 do
+  lst2.append(i);
+
+writeln(lst2);
+
+lst1.extend(lst2);
+
+writeln(lst1);
+
+lst2.clear();
+
+writeln(lst1);
+writeln(lst2);
