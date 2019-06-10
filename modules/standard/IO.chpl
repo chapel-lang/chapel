@@ -1290,15 +1290,22 @@ proc =(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
+pragma "no doc"
+proc file.checkAssumingLocal() throws {
+  if is_c_nil(_file_internal) then
+    throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
+  if !qio_file_isopen(_file_internal) then
+    throw SystemError.fromSyserr(EBADF, "Operation attempted on closed file");
+}
+
 /* Throw an error if `this` is not a valid representation of an OS file.
 
    :throws SystemError: Indicates that `this` does not represent an OS file.
 */
 proc file.check() throws {
-  if is_c_nil(_file_internal) then
-    throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
-  if !qio_file_isopen(_file_internal) then
-    throw SystemError.fromSyserr(EBADF, "Operation attempted on closed file");
+  on this.home {
+    this.checkAssumingLocal();
+  }
 }
 
 pragma "no doc"
@@ -1330,10 +1337,9 @@ proc file.unlock() {
 // channel style is protected by channel lock, can be modified.
 pragma "no doc"
 proc file._style:iostyle throws {
-  try check();
-
   var ret:iostyle;
   on this.home {
+    try this.checkAssumingLocal();
     var local_style:iostyle;
     qio_file_get_style(_file_internal, local_style);
     ret = local_style;
@@ -1387,10 +1393,9 @@ This function will typically call the ``fsync`` system call.
 :throws SystemError: Thrown if the file could not be synced.
  */
 proc file.fsync() throws {
-  try check();
-
   var err:syserr = ENOERR;
   on this.home {
+    try this.checkAssumingLocal();
     err = qio_file_sync(_file_internal);
   }
   if err then try ioerror(err, "in file.fsync", this.tryGetPath());
@@ -1410,11 +1415,10 @@ to get the path to a file.
 :throws SystemError: Thrown if the path could not be retrieved.
  */
 proc file.path : string throws {
-  try check();
-
   var ret: string;
   var err:syserr = ENOERR;
   on this.home {
+    try this.checkAssumingLocal();
     var tmp:c_string;
     var tmp2:c_string;
     err = qio_file_path(_file_internal, tmp);
@@ -2443,11 +2447,10 @@ proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
 proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
                  end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
                  style:iostyle = this._style): channel(false, kind, locking) throws {
-  try check();
-
   var ret:channel(false, kind, locking);
   var err:syserr = ENOERR;
   on this.home {
+    try this.checkAssumingLocal();
     ret = new channel(false, kind, locking, this, err, hints, start, end, style);
   }
   if err then try ioerror(err, "in file.reader", this.tryGetPath());
@@ -2463,8 +2466,6 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
  */
 proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) throws {
-  try check();
-
   local_style.string_format = QIO_STRING_FORMAT_TOEND;
   local_style.string_end = 0x0a; // '\n'
   param kind = iokind.dynamic;
@@ -2472,6 +2473,7 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
   var ret:ItemReader(string, kind, locking);
   var err:syserr = ENOERR;
   on this.home {
+    try this.checkAssumingLocal();
     var ch = new channel(false, kind, locking, this, err, hints, start, end, local_style);
     ret = new ItemReader(string, kind, locking, ch);
   }
@@ -2531,11 +2533,10 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
 proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
                  end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style):
                  channel(true,kind,locking) throws {
-  try check();
-
   var ret:channel(true, kind, locking);
   var err:syserr = ENOERR;
   on this.home {
+    try this.checkAssumingLocal();
     ret = new channel(true, kind, locking, this, err, hints, start, end, style);
   }
   if err then try ioerror(err, "in file.writer", this.tryGetPath());
