@@ -188,9 +188,11 @@ GenRet BlockStmt::codegen() {
           // Emit lifetime end for any variables from the current block
           while (info->currentStackVariables.size() > 0) {
             for_set(Symbol, var, info->currentStackVariables.back()) {
-              llvm::Value* declared = var->codegen().val;
-              llvm::Type* type = var->type->codegen().type;
-              codegenLifetimeEnd(type, declared);
+              if (var->hasFlag(FLAG_RVV)) {
+                llvm::Value* declared = var->codegen().val;
+                llvm::Type* type = var->type->codegen().type;
+                codegenLifetimeEnd(type, declared);
+              }
             };
             info->currentStackVariables.pop_back();
           }
