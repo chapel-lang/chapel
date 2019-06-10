@@ -1,3 +1,0 @@
-uncaught AssertionError: assert failed - Ranges are not of same length
-  ./UnitTest.chpl:444: thrown here
-  RangeGreater.chpl:4: uncaught here

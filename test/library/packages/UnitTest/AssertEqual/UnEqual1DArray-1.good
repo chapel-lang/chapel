@@ -1,0 +1,7 @@
+uncaught AssertionError: Arrays differ: '[1, 7, 6, 5, 8]' != '[1, 7, 6]'
+First Array contains 2 additionl elements.
+First extra element is at index 4
+'5'
+
+  ../UnitTest.chpl:150: thrown here
+  UnEqual1DArray-1.chpl:4: uncaught here

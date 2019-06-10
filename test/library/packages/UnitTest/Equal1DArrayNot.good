@@ -1,6 +1,0 @@
-uncaught AssertionError: assert failed - 
-'1 2 5'
-== 
-'1 2 5'
-  ./UnitTest.chpl:269: thrown here
-  Equal1DArrayNot.chpl:4: uncaught here

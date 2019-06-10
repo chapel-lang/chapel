@@ -1,8 +1,0 @@
-uncaught AssertionError: First tuple(3*int(64)) < Second tuple(3*int(64)) :
-'(1, 2, 3)' < '(1, 2, 5)'
-First larger element in second tuple(3*int(64)) is at index 3:
-'3'
-'5'
-
-  ./UnitTest.chpl:379: thrown here
-  UnEqualTupleGreater.chpl:4: uncaught here

@@ -1,0 +1,8 @@
+uncaught AssertionError: First String > Second String :
+'unequalstring' > 'unequalString'
+First larger element in first String is at index 8:
+'s'
+'S'
+
+  ../UnitTest.chpl:581: thrown here
+  StringLess.chpl:4: uncaught here

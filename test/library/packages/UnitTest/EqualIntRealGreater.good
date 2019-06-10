@@ -1,3 +1,0 @@
-uncaught AssertionError: assert failed - '1.0' <= '1'
-  ./UnitTest.chpl:471: thrown here
-  EqualIntRealGreater.chpl:4: uncaught here

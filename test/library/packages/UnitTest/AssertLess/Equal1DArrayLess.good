@@ -1,0 +1,4 @@
+uncaught AssertionError: Both Array are equal
+'[1, 2, 5]' == '[1, 2, 5]'
+  ../UnitTest.chpl:581: thrown here
+  Equal1DArrayLess.chpl:4: uncaught here

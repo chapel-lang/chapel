@@ -1,6 +1,0 @@
-uncaught AssertionError: assert failed - 
-'1..6'
-== 
-'1..6'
-  ./UnitTest.chpl:269: thrown here
-  EqualRangeNot.chpl:4: uncaught here

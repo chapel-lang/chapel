@@ -1,3 +1,0 @@
-uncaught AssertionError: assert failed - '5.0 + 6.0i' and '(1, 2, 3)' are not of same type
-  ./UnitTest.chpl:232: thrown here
-  TupleComplex.chpl:4: uncaught here
