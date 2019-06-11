@@ -60,12 +60,18 @@ proc forkMasonReg(){
 }
 
 
-proc isGitExist() {
-  var urlexist = runCommand("git config --get remote.origin.url");
-  if urlexist != ''{
-    return true;
+proc isGitExist() throws {
+  try! {
+    var urlexist = runWithStatus("git config --get remote.origin.url");
+    if urlexist() == 0 {
+      return true
+    }
+    else return false;
   }
-  else return false;
+  catch e: MasonError {
+    writeln(e.message());
+    exit(1);
+  }
 }
 
 
