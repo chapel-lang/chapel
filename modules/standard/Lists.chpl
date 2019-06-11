@@ -257,12 +257,12 @@ module Lists {
     }
 
     pragma "no doc"
-    inline proc _makeBlockArray(size: int) {
+    proc _makeBlockArray(size: int) {
       return c_calloc(_ddata(eltType), size):_ddata(_ddata(eltType));
     }
 
     pragma "no doc"
-    inline proc _freeBlockArray(data: _ddata(_ddata(eltType))) {
+    proc _freeBlockArray(data: _ddata(_ddata(eltType))) {
       c_free(data:c_void_ptr);
     }
 
