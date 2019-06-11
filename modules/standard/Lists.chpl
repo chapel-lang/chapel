@@ -153,6 +153,7 @@ module Lists {
     proc init=(const ref other: list(?t), param parSafe=other.parSafe) {
       this.eltType = t;
       this.parSafe = other.parSafe;
+      this._arrays = nil;
       this.complete();
       this.extend(other);
     }
@@ -258,22 +259,44 @@ module Lists {
 
     pragma "no doc"
     proc _makeBlockArray(size: int) {
-      return c_calloc(_ddata(eltType), size):_ddata(_ddata(eltType));
+
+      //
+      // TODO: Casting the result of `c_calloc` to a `_ddata` is giving some
+      // very strange behavior right now that I can't explain. When repeated
+      // appends occur _after_ at least one allocation, every other append
+      // causes a sub-array in the second half of the sub-array block to
+      // become non-nil (?), which is very unsettling.
+      // A workaround that works right now is to define a second _ddata alloc
+      // method that does not default initialize its elements, and to use
+      // that to allocate instead.
+      // The memory returned by _ddata_allocate_noinit is not zeroed (we did
+      // not call malloc on it), so we have to set each sub-array slot to
+      // nil before we return it.
+      //
+
+      var result = _ddata_allocate_noinit(_ddata(eltType), size);
+      for i in 0..#size do
+        result[i] = nil;
+      return result;
     }
 
     pragma "no doc"
-    proc _freeBlockArray(data: _ddata(_ddata(eltType))) {
-      c_free(data:c_void_ptr);
+    proc _freeBlockArray(data: _ddata(_ddata(eltType)), size: int) {
+      _ddata_free(data, size);
     }
 
     pragma "no doc"
     proc _makeArray(size: int) {
-      return c_calloc(eltType, size):_ddata(eltType);
+      //
+      // We do not need to zero this memory, because the list implementation
+      // makes no assumptions about its initial state.
+      //
+      return _ddata_allocate_noinit(eltType, size);
     }
 
     pragma "no doc"
-    proc _freeArray(data: _ddata(eltType)) {
-      c_free(data:c_void_ptr);
+    proc _freeArray(data: _ddata(eltType), size: int) {
+      _ddata_free(data, size);
     }
 
     pragma "no doc"
@@ -309,7 +332,7 @@ module Lists {
           for i in 0..#_arrayCapacity do
             _narrays[i] = _arrays[i];
 
-          _freeBlockArray(_arrays);
+          _freeBlockArray(_arrays, _arrayCapacity);
           _arrays = _narrays;
           _arrayCapacity *= 2;
         }
@@ -355,7 +378,7 @@ module Lists {
         return;
 
       ref array = _arrays[lastArrayIdx];
-      _freeArray(array);
+      _freeArray(array, lastArrayCapacity);
       _totalCapacity -= lastArrayCapacity;
       array = nil; 
     }
@@ -627,12 +650,13 @@ module Lists {
           ref array = _arrays[i];
           if array == nil then
             continue;
-          _totalCapacity -= _getArrayCapacity(i);
-          _freeArray(array);
+          const capacity = _getArrayCapacity(i);
+          _totalCapacity -= capacity;
+          _freeArray(array, capacity);
           array = nil;
         }
 
-        _freeBlockArray(_arrays);
+        _freeBlockArray(_arrays, _arrayCapacity);
         _arrays = nil;
       }
 

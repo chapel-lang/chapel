@@ -978,6 +978,28 @@ module ChapelBase {
     return ret;
   }
 
+  inline proc _ddata_allocate_noinit(type eltType, size: integral,
+                                     subloc = c_sublocid_none) {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
+                                     subloc: chpl_sublocID_t,
+                                     ref callPostAlloc: bool): c_void_ptr;
+    var ret: _ddata(eltType);
+    var callPostAlloc: bool;
+    ret = chpl_mem_array_alloc(size:size_t, _ddata_sizeof_element(ret),
+                               subloc, callPostAlloc):ret.type;
+    if callPostAlloc {
+      pragma "fn synchronization free"
+      pragma "insert line file info"
+      extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
+                                           eltSize: size_t);
+      chpl_mem_array_postAlloc(ret:c_void_ptr, size:size_t,
+                               _ddata_sizeof_element(ret));
+    }
+    return ret;
+  }
+
   inline proc _ddata_free(data: _ddata, size: integral) {
     pragma "fn synchronization free"
     pragma "insert line file info"
