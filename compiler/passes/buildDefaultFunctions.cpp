@@ -604,7 +604,29 @@ static void build_chpl_entry_points() {
 
   // We have to initialize the main module explicitly.
   // It will initialize all the modules it uses, recursively.
-  chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
+  if (!fMultiLocaleInterop) {
+    chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
+  } else {
+    // Create an extern definition for the multilocale library server's main
+    // function.  chpl_gen_main needs to call it in the course of its run, so
+    // that we correctly set up the runtime.
+    FnSymbol* chpl_mli_smain = new FnSymbol("chpl_mli_smain");
+    chpl_mli_smain->addFlag(FLAG_EXTERN);
+    // Takes the connection information
+    ArgSymbol* setup_conn = new ArgSymbol(INTENT_BLANK, "setup_conn",
+                                          dtStringC);
+    chpl_mli_smain->insertFormalAtTail(setup_conn);
+
+    mainModule->block->insertAtTail(new DefExpr(chpl_mli_smain));
+
+    VarSymbol* connection = newTemp("setup_conn");
+    chpl_gen_main->insertAtTail(new DefExpr(connection));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, connection,
+                                             new CallExpr("chpl_get_mli_connection",
+                                                          arg)));
+    chpl_gen_main->insertAtTail(new CallExpr("chpl_mli_smain", connection));
+    normalize(chpl_mli_smain);
+  }
 
   bool main_ret_set = false;
 
