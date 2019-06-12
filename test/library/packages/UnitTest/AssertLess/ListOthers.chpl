@@ -1,0 +1,13 @@
+use UnitTest;
+var x = [1,2,3];
+var y = [1,2,5];
+UnitTest.assertLessThan(x,y);
+var x1 = 2;
+var y1 = 2.5;
+UnitTest.assertLessThan(x1,y1);
+var x2 = "unequalString";
+var y2 = "unequalstring";
+UnitTest.assertLessThan(x2,y2);
+var x3 = (1,2,3);
+var y3 = (1,2,5);
+UnitTest.assertLessThan(x3,y3);

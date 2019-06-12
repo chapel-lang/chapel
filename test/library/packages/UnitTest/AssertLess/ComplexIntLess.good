@@ -1,3 +1,0 @@
-uncaught AssertionError: assert failed - First element is of type int(64) and Second is of type imag(64)
-  ../UnitTest.chpl:486: thrown here
-  ComplexIntLess.chpl:4: uncaught here

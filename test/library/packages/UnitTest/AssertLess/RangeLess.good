@@ -1,3 +1,2 @@
-uncaught AssertionError: assert failed - Ranges are not of same length
-  ../UnitTest.chpl:646: thrown here
-  RangeLess.chpl:4: uncaught here
+AssertionError: assert failed - Ranges are not of same length
+================================================================================
