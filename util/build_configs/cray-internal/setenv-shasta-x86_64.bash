@@ -81,8 +81,8 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 ##  # by build_configs.py cmdline arguments), Chapel make will determine
 ##  # the appropriate default value for the platform / environment it finds.
 
-    export CHPL_HOST_PLATFORM=linux64
-    export CHPL_TARGET_PLATFORM=linux64
+    export CHPL_HOST_PLATFORM=cray-shasta
+    export CHPL_TARGET_PLATFORM=cray-shasta
     export CHPL_REGEXP=re2      # re2 required for mason
     export CHPL_LOCAL_MODEL=flat
     export CHPL_COMM=none
@@ -413,12 +413,14 @@ else
     }
 
     function use_python27() {
-        log_info "Using Python 2.7 from /cray/css/users/chapelu/setup_python27.bash"
-        if [ ! -f /cray/css/users/chapelu/setup_python27.bash ] ; then
-            log_error "Python 2.7 setup script is not accessible at /cray/css/users/chapelu/setup_python27.bash"
-            exit 1
+        if \! $(python --version 2>&1 | grep -q ' 2\.7\>') ; then
+            log_info "Using Python 2.7 from /cray/css/users/chapelu/setup_python27.bash"
+            if [ ! -f /cray/css/users/chapelu/setup_python27.bash ] ; then
+                log_error "Python 2.7 setup script is not accessible at /cray/css/users/chapelu/setup_python27.bash"
+                exit 1
+            fi
+            source /cray/css/users/chapelu/setup_python27.bash
         fi
-        source /cray/css/users/chapelu/setup_python27.bash
     }
 
     # ---
