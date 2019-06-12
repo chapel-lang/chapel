@@ -1,0 +1,10 @@
+use UnitTest;
+var x1 = 1.0;
+var y1 = 1;
+UnitTest.assertEqual(x1,y1);
+var x2 = 1..6;
+var y2 = 1..6;
+UnitTest.assertEqual(x2,y2);
+var x3 = "equal string";
+var y3 = "equal string";
+UnitTest.assertEqual(x3,y3);

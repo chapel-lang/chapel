@@ -1,7 +1,0 @@
-uncaught AssertionError: Arrays differ: '[1, 5, 7]' != '[1, 7, 6]'
-First differing element at index 2:
-'5'
-'7'
-
-  ../UnitTest.chpl:150: thrown here
-  UnEqual1DArray.chpl:4: uncaught here

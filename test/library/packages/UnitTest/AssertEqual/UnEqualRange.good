@@ -1,3 +1,0 @@
-uncaught AssertionError: assert failed - '..6 align 0' != '..7 align 0'
-  ../UnitTest.chpl:227: thrown here
-  UnEqualRange.chpl:4: uncaught here
