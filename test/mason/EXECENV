@@ -1,4 +1,4 @@
-#!/USR/BIN/ENV BASH
+#!/usr/bin/env bash
 
 BIN_SUBDIR=`$chpl_home/UTIL/CHPLENV/CHPL_BIN_SUBDIR.PY`
 ECHO "path=\$chpl_home/BIN/$BIN_SUBDIR:\$path"
