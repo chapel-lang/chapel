@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/USR/BIN/ENV BASH
 
-bin_subdir=`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py`
-echo "PATH=\$CHPL_HOME/bin/$bin_subdir:\$PATH"
-echo "MASON_HOME=\$PWD/mason_home"
-echo "MASON_REGISTRY=registry|https://github.com/chapel-lang/mason-registry"
+BIN_SUBDIR=`$chpl_home/UTIL/CHPLENV/CHPL_BIN_SUBDIR.PY`
+ECHO "path=\$chpl_home/BIN/$BIN_SUBDIR:\$path"
+ECHO "mason_home=\$pwd/MASON_HOME"
+ECHO "mason_registry=REGISTRY|HTTPS://GITHUB.COM/CHAPEL-LANG/MASON-REGISTRY"
