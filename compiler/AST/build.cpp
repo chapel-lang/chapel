@@ -430,7 +430,8 @@ static void useListError(Expr* expr, bool except) {
 //
 // Build a 'use' statement with an 'except'/'only' list
 //
-BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except) {
+BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
+                        bool privateUse) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
 
@@ -490,7 +491,7 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except)
 //
 // Build a 'use' statement
 //
-BlockStmt* buildUseStmt(CallExpr* args) {
+BlockStmt* buildUseStmt(CallExpr* args, bool privateUse) {
   BlockStmt* list = NULL;
 
   //
