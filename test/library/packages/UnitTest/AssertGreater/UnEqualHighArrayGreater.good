@@ -1,3 +1,0 @@
-uncaught AssertionError: assert failed - First element is of shape (5, 7) and Second is of shape (7, 5)
-  ../UnitTest.chpl:403: thrown here
-  UnEqualHighArrayGreater.chpl:4: uncaught here

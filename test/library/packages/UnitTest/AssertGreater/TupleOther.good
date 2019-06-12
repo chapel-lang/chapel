@@ -1,0 +1,9 @@
+AssertionError: First tuple(3*int(64)) < Second tuple(3*int(64)) :
+'(1, 2, 3)' < '(1, 2, 5)'
+First larger element in second tuple(3*int(64)) is at index 3:
+'3'
+'5'
+
+================================================================================
+AssertionError: assert failed - First element is of type [domain(1,int(64),false)] int(64) and Second is of type 2*int(64)
+================================================================================

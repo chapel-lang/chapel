@@ -1,8 +1,0 @@
-uncaught AssertionError: First String < Second String :
-'unequalString' < 'unequalstring'
-First larger element in second String is at index 8:
-'S'
-'s'
-
-  ../UnitTest.chpl:379: thrown here
-  UnEqualStringGreater-1.chpl:4: uncaught here

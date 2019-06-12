@@ -1,3 +1,0 @@
-uncaught AssertionError: assert failed - First element is of type complex(128) and Second is of type imag(64)
-  ../UnitTest.chpl:284: thrown here
-  ComplexUnequalGreater.chpl:4: uncaught here

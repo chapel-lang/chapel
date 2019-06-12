@@ -1,0 +1,13 @@
+use UnitTest;
+var x = [1,2,5];
+var y = [1,2,3];
+UnitTest.assertGreaterThan(x,y);
+var x2 = (1,2,5);
+var y2 = (1,2,3);
+UnitTest.assertGreaterThan(x2,y2);
+var x3 = 2.5;
+var y3 = 2;
+UnitTest.assertGreaterThan(x3,y3);
+var x4 = "unequalstring";
+var y4 = "unequalString";
+UnitTest.assertGreaterThan(x4,y4);

@@ -1,4 +1,5 @@
-AssertionError: assert failed - Ranges are not of same length
+AssertionError: assert failed - '1.0' <= '1'
 ================================================================================
-AssertionError: assert failed - '1..6' <= '1..6'
+AssertionError: Both String are equal
+'equal string' == 'equal string'
 ================================================================================
