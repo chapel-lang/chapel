@@ -104,7 +104,6 @@ LAUNCHER_DIR_TIMESTAMP = $(LAUNCHER_DIR)/.timestamp
 RUNTIME_TARGETS = \
 	$(RUNTIME_LIB) \
 	$(RUNTIME_DIR)/main.o \
-	$(RUNTIME_DIR)/main_mli.o \
 	$(RUNTIME_MALLOC_LIB) \
 
 ifneq ($(CHPL_MAKE_LAUNCHER),none)
@@ -158,9 +157,6 @@ $(RUNTIME_OVERRIDE_LD): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	$(MAKE) -f Makefile.config printoverrideld > $(RUNTIME_OVERRIDE_LD)
 
 $(RUNTIME_DIR)/main.o: $(RUNTIME_OBJDIR)/src/main.o
-	cp $< $@
-
-$(RUNTIME_DIR)/main_mli.o: $(RUNTIME_OBJDIR)/src/main_mli.o
 	cp $< $@
 
 $(RUNTIME_MALLOC_LIB): $(RUNTIME_MALLOC_OBJS) $(RUNTIME_DIR_TIMESTAMP)
