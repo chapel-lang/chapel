@@ -956,7 +956,8 @@ module ChapelBase {
   }
 
   inline proc _ddata_allocate(type eltType, size: integral,
-                              subloc = c_sublocid_none, param initElts=true) {
+                              subloc = c_sublocid_none,
+                              initElts: bool=true) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,

@@ -269,13 +269,7 @@ module Lists {
 
     pragma "no doc"
     proc _makeArray(size: int) {
-      //
-      // See https://github.com/chapel-lang/chapel/pull/13238 for why we need
-      // to avoid initialization here.
-      // See https://github.com/chapel-lang/chapel/pull/11908 for why we need
-      // to use `_ddata_allocate` instead of `c_malloc` and friends.
-      //
-      return _ddata_allocate(eltType, size, c_sublocid_none, false);
+      return _ddata_allocate(eltType, size, initElts=false);
     }
 
     pragma "no doc"
