@@ -1,0 +1,13 @@
+use UnitTest;
+var x1 = true;
+var y1 = false;
+UnitTest.assertNotEqual(x1,y1);
+var x2 = ..6;
+var y2 = ..7;
+UnitTest.assertNotEqual(x2,y2);
+var x3 = 1.5;
+var y3 = 1.55;
+UnitTest.assertNotEqual(x3,y3);
+var x4 = "unequalstring";
+var y4 = "unequalString";
+UnitTest.assertNotEqual(x4,y4);

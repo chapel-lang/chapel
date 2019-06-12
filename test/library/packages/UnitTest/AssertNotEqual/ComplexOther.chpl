@@ -1,0 +1,10 @@
+use UnitTest;
+var x1 = 5;
+var y1 = 7i;
+UnitTest.assertNotEqual(x1,y1);
+var x2 = 5 + 6i;
+var y2 = (1,2,3);
+UnitTest.assertNotEqual(x2,y2);
+var x3 = 5 + 6i;
+var y3 = 7i;
+UnitTest.assertNotEqual(x3,y3);
