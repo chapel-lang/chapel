@@ -259,25 +259,7 @@ module Lists {
 
     pragma "no doc"
     proc _makeBlockArray(size: int) {
-
-      //
-      // TODO: Casting the result of `c_calloc` to a `_ddata` is giving some
-      // very strange behavior right now that I can't explain. When repeated
-      // appends occur _after_ at least one allocation, every other append
-      // causes a sub-array in the second half of the sub-array block to
-      // become non-nil (?), which is very unsettling.
-      // A workaround that works right now is to define a second _ddata alloc
-      // method that does not default initialize its elements, and to use
-      // that to allocate instead.
-      // The memory returned by _ddata_allocate_noinit is not zeroed (we did
-      // not call malloc on it), so we have to set each sub-array slot to
-      // nil before we return it.
-      //
-
-      var result = _ddata_allocate_noinit(_ddata(eltType), size);
-      for i in 0..#size do
-        result[i] = nil;
-      return result;
+      return _ddata_allocate(_ddata(eltType), size);
     }
 
     pragma "no doc"
@@ -288,10 +270,12 @@ module Lists {
     pragma "no doc"
     proc _makeArray(size: int) {
       //
-      // We do not need to zero this memory, because the list implementation
-      // makes no assumptions about its initial state.
+      // See https://github.com/chapel-lang/chapel/pull/13238 for why we need
+      // to avoid initialization here.
+      // See https://github.com/chapel-lang/chapel/pull/11908 for why we need
+      // to use `_ddata_allocate` instead of `c_malloc` and friends.
       //
-      return _ddata_allocate_noinit(eltType, size);
+      return _ddata_allocate(eltType, size, c_sublocid_none, false);
     }
 
     pragma "no doc"
