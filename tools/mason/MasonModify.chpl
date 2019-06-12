@@ -29,39 +29,45 @@ proc masonModify(args) throws {
       exit();
     }
     else {
-      const cwd = getEnv("PWD");
-      const projectHome = getProjectHome(cwd, "Mason.toml");
-      var external = false;
-      var system = false;
-      var add = true;
-      var dep = "";
-      for arg in args[1..] {
-        if arg == '-h' || arg == '--help' {
-          masonModifyHelp();
-        }
-        else if arg == "--system" {
-          system = true;
-        }
-        else if arg == "--external" {
-          external = true;
-        }
-        else if arg == "add" {
-          add = true;
-        }
-        else if arg == "rm" {
-          add = false;
-        }
-        else {
-          dep = arg;
-        }
+      if args[2] == '-h' || args[2] == '--help'{
+        masonModifyHelp();
+        exit(0);
       }
-      if external && system then throw new owned MasonError("Invalid combination of arguments");
-      else if dep == "" then throw new owned MasonError("Must enter a dependency");
       else {
-        const result = modifyToml(add, dep, external, system, projectHome);
-        generateToml(result[1], result[2]);
+          const cwd = getEnv("PWD");
+          const projectHome = getProjectHome(cwd, "Mason.toml");
+          var external = false;
+          var system = false;
+          var add = true;
+          var dep = "";
+          for arg in args[1..] {
+            if arg == '-h' || arg == '--help' {
+              masonModifyHelp();
+            }
+            else if arg == "--system" {
+              system = true;
+            }
+            else if arg == "--external" {
+              external = true;
+            }
+            else if arg == "add" {
+              add = true;
+            }
+            else if arg == "rm" {
+              add = false;
+            }
+            else {
+              dep = arg;
+            }
+          }
+          if external && system then throw new owned MasonError("Invalid combination of arguments");
+          else if dep == "" then throw new owned MasonError("Must enter a dependency");
+          else {
+            const result = modifyToml(add, dep, external, system, projectHome);
+            generateToml(result[1], result[2]);
+          }
       }
-    }
+      }
   }
   catch e: MasonError {
     writeln(e.message());
