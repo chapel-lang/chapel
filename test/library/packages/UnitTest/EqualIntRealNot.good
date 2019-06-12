@@ -1,0 +1,6 @@
+uncaught AssertionError: assert failed - 
+'1.0'
+== 
+'1'
+  ./UnitTest.chpl:269: thrown here
+  EqualIntRealNot.chpl:4: uncaught here

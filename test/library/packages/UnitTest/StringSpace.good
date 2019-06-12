@@ -1,0 +1,7 @@
+uncaught AssertionError: Strings differ: 'Just a string' != 'Just a string with space'
+Second String contains 11 additionl elements.
+First extra element is at index 14
+' '
+
+  ./UnitTest.chpl:150: thrown here
+  StringSpace.chpl:4: uncaught here
