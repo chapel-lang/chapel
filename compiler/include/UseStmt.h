@@ -26,12 +26,13 @@ class ResolveScope;
 
 class UseStmt : public Stmt {
 public:
-                  UseStmt(BaseAST* source);
+  UseStmt(BaseAST* source, bool isPrivate);
 
                   UseStmt(BaseAST*                            source,
                           std::vector<const char*>*           args,
                           bool                                exclude,
-                          std::map<const char*, const char*>* renames);
+                          std::map<const char*, const char*>* renames,
+                          bool isPrivate);
 
   DECLARE_COPY(UseStmt);
 
@@ -68,6 +69,8 @@ public:
   void            writeListPredicate(FILE* mFP)                          const;
 
 private:
+  bool            isPrivate;
+
   bool            isEnum(const Symbol* sym)                              const;
 
   void            updateEnclosingBlock(ResolveScope* scope,

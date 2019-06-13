@@ -27,7 +27,8 @@
 
 #include <algorithm>
 
-UseStmt::UseStmt(BaseAST* source) : Stmt(E_UseStmt) {
+UseStmt::UseStmt(BaseAST* source, bool isPrivate) : Stmt(E_UseStmt) {
+  this->isPrivate = isPrivate;
   src    = NULL;
   except = false;
 
@@ -47,9 +48,11 @@ UseStmt::UseStmt(BaseAST* source) : Stmt(E_UseStmt) {
 UseStmt::UseStmt(BaseAST*                            source,
                  std::vector<const char*>*           args,
                  bool                                exclude,
-                 std::map<const char*, const char*>* renames) :
+                 std::map<const char*, const char*>* renames,
+                 bool isPrivate) :
   Stmt(E_UseStmt) {
 
+  this->isPrivate = isPrivate;
   src    = NULL;
   except = exclude;
 
@@ -88,9 +91,9 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
   UseStmt *_this = 0;
 
   if (named.size() > 0) { // MPF: should this have || renamed.size() > 0?
-    _this = new UseStmt(COPY_INT(src), &named, except, &renamed);
+    _this = new UseStmt(COPY_INT(src), &named, except, &renamed, isPrivate);
   } else {
-    _this = new UseStmt(COPY_INT(src));
+    _this = new UseStmt(COPY_INT(src), isPrivate);
   }
 
   for_vector(const char, sym, methodsAndFields) {
@@ -672,7 +675,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
         // The only list will be shorter, create a new UseStmt with it.
         SET_LINENO(this);
 
-        return new UseStmt(src, &newOnlyList, false, &newRenamed);
+        return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
       }
 
     } else {
@@ -729,7 +732,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           // outer 'only' list)
           SET_LINENO(this);
 
-          return new UseStmt(src, &newOnlyList, false, &newRenamed);
+          return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
 
         } else {
           // all the 'only' identifiers were in the 'except'
@@ -785,7 +788,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           // There were symbols that were in both 'only' lists, so
           // this module use is still interesting.
           SET_LINENO(this);
-          return new UseStmt(src, &newOnlyList, false, &newRenamed);
+          return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
 
         } else {
           // all of the 'only' identifiers in the outer use

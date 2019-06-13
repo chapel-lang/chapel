@@ -129,7 +129,7 @@ public:
 
   int                 length()                                     const;
 
-  void                useListAdd(ModuleSymbol* mod);
+  void                useListAdd(ModuleSymbol* mod, bool isPrivate);
   void                useListAdd(UseStmt*      use);
   bool                useListRemove(ModuleSymbol* mod);
   void                useListClear();
