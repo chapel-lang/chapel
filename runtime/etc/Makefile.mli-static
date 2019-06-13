@@ -109,8 +109,11 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 #   - $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) is every third party library.
 #   ^ With the exception of gasnet!
 #
+# NOTE: We remove the $(GEN_STATIC_FLAG) from the server for now, because it
+# is difficult if not impossible for us to do a completely static link
+# because of "gethostname", among other things.
+#
 	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-		$(GEN_STATIC_FLAG) \
 		-o $(TMPSERVERNAME) \
 		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main.o \
 		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
