@@ -1995,12 +1995,17 @@ static void buildBreadthFirstModuleList(
             INT_ASSERT(useSE);
 
             UseStmt* useToAdd = NULL;
-            if (!useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+            if (!use->isPrivate &&
+                !useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
               // Uses of private modules are not transitive -
               // the symbols in the private modules are only visible to
               // itself and its immediate parent.  Therefore, if the symbol
               // is private, we will not traverse it further and will merely
               // add it to the alreadySeen map.
+              // The same goes for private uses - the symbols made available
+              // via a private use are only available to the module with the
+              // use statement, and should otherwise be treated as though they
+              // do not exist.
               useToAdd = use->applyOuterUse(source);
 
               if (useToAdd                       != NULL &&

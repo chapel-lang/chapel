@@ -69,8 +69,6 @@ public:
   void            writeListPredicate(FILE* mFP)                          const;
 
 private:
-  bool            isPrivate;
-
   bool            isEnum(const Symbol* sym)                              const;
 
   void            updateEnclosingBlock(ResolveScope* scope,
@@ -95,6 +93,7 @@ public:
   Expr*                              src;
   std::vector<const char*>           named;
   std::map<const char*, const char*> renamed;
+  bool isPrivate;
 
 private:
   bool                               except;
