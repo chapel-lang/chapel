@@ -304,10 +304,6 @@ else
         fi
         log_info "Unset CHPL_COMM_SUBSTRATE for comm=$CHPL_COMM, substrate=$CHPL_COMM_SUBSTRATE"
         unset CHPL_COMM_SUBSTRATE
-
-        # For CHPL_COMM=ofi we'll need to use the MPI out-of-band support,
-        # at least in the beginning.
-        export CHPL_COMM_OFI_OOB=mpi
     elif [ "$CHPL_COMM" == gasnet ]; then
         if [ "$CHPL_COMM_SUBSTRATE" == none ]; then
 
