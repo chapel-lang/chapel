@@ -42,7 +42,7 @@ proc masonBuild(args) throws {
       }
       else if arg == '-h' || arg == '--help' {
         masonBuildHelp();
-        exit();
+        exit(0);
       }
       else if arg == '--' {
         if example then

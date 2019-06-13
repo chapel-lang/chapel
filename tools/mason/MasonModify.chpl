@@ -26,13 +26,13 @@ proc masonModify(args) throws {
   try! {
     if args.size < 3 {
       masonModifyHelp();
-      exit();
+      exit(0);
     }
     else if args.size > 2 {
       for arg in args[1..] {
         if arg == '-h' || arg == '--help' {
           masonModifyHelp();
-          exit();
+          exit(0);
         }
       }
       }
