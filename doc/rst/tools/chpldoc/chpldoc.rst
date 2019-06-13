@@ -71,7 +71,7 @@ elsewhere, use the chpldoc command directory. For example::
 
 By default, documentation created by chpldoc will end up in a subdirectory of
 the current working directory named 'docs/'. You can specify a different
-directory name using the --docs-dir option.
+directory name using the --output-dir option.
 
 As an example, there is a primer on the chpldoc capability in
 ``$CHPL_HOME/examples/primers/`` that can be turned into documentation using::
