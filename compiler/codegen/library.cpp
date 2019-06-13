@@ -232,12 +232,29 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
           libname.c_str());
 
   //
-  // The ZMQ library has to be linked against the C++ stdlib. Rather than
-  // package libc++ up as part of our multi-locale library client when
-  // packaging it up, we'll let library-makefile do it for us.
+  // Multi-locale libraries require some extra libraries to be linked in order
+  // to function correctly. For static libraries in particular, rather than
+  // try to link these dependencies at compile time, we shunt responsibility
+  // off to the user via use of `--library-makefile`.
   //
   if (fMultiLocaleInterop) {
-    fprintf(makefile.fptr, " %s", "-lc++");
+    //
+    // For right now, we assume GNU/Linux and use "libstdc++" unless we are
+    // on Macs, in which case we will try to link against "libc++" instead as
+    // it is the preferred default.
+    //
+    const char* cppStdLib = "-lstdc++";
+    if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
+      cppStdLib = "-lc++";
+    }
+
+    fprintf(makefile.fptr, " %s", cppStdLib);
+    fprintf(makefile.fptr, " %s", "-lchpllaunch");
+
+    //
+    // For right now, assume that ZMQ is on the system install path.
+    //
+    fprintf(makefile.fptr, " %s", "-lzmq");
   }
 
   if (requires != "") {
