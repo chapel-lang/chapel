@@ -29,24 +29,29 @@ use MasonModify;
 
 proc masonPublish(args) throws {
   try! {
+    var dry = false;
+    var username = "";
     if args.size > 2 {
       for arg in args[2..] {
         if arg == '-h' || arg == '--help'{
           masonPublishHelp();
           exit(0);
         }
+        else if arg == "--dry-run" {
+                                    dry = true;
+        }
+        else {
+          username = arg;
+        }
       }
+    }
+    if isGitExist() == true {
+      publishPackage(username, dry);
     }
     else {
-      if isGitExist() {
-        forkMasonReg();
-        branchMasonReg();
-        var package = addPackageToBricks();
-        pullRequest(package);
-      }
-      else throw new owned MasonError("Must have package set up as git repo to publish");
-      }
+      throw new owned MasonError("Must have package set up as git repo to publish");
     }
+  }
   catch e: MasonError {
     writeln(e.message());
     exit(1);
@@ -54,15 +59,46 @@ proc masonPublish(args) throws {
 }
 
 
-proc forkMasonReg(){
-  var ret = runCommand("git clone https://github.com/oplambeck/mason-registry mason-registry", true);
+proc publishPackage(username: string, dry: bool) throws {
+  forkMasonReg(username);
+  branchMasonReg(username);
+  const cwd = getEnv("PWD");
+  const package=  addPackageToBricks();
+  here.chdir(cwd + "/mason-registry");
+  var name = getName();
+  const url = geturl();
+  const projectHome = getProjectHome(cwd);
+  here.chdir(cwd +"/mason-registry/");
+  runCommand("git add .");
+  runCommand("git commit -m '" + package +"'");
+  runCommand('git push --set-upstream origin ' + package, true);
+  writeln(name);
+  runCommand('git request-pull master https://github.com/oplambeck/mason-registry', true);
+  here.chdir(cwd);
+  runCommand('rm -rf mason-registry');
+  writeln();
+  writeln('----------------------------------------------------');
+  writeln('Package has been added to a branch of mason-registry');
+  writeln('Pull request to be added to master branch of mason-registry has been initiated');
+}
+
+    
+
+
+proc forkMasonReg(username: string) {
+  var ret = runCommand("git clone https://github.com/" + username + "/mason-registry mason-registry", true);
   return ret;
 }
 
 
 proc isGitExist() throws {
   var urlExists = runCommand("git config --get remote.origin.url");
-  return !urlExists.isEmpty();
+  if urlExists != '' {
+    return true;
+  }
+  else {
+    return false;
+  }
 }
 
 
@@ -72,7 +108,7 @@ proc geturl() {
 }
 
 
-proc branchMasonReg(){
+proc branchMasonReg(username: string){
   var name = getName();
   const localEnv = getEnv("PWD");
   const projectname = getProjectHome(localEnv);
