@@ -26,7 +26,7 @@ proc masonModify(args) throws {
   try! {
     if args.size < 3 {
       masonModifyHelp();
-      exit();
+      //exit();
     }
     else if args.size > 2 {
       for arg in args[1..] {
