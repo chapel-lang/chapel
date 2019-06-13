@@ -3,9 +3,10 @@
 # Gather the list of libraries required for a PrgEnv compilation,
 # or an LLVM compilation when on a Cray XC system.
 
-chpl_comm="${CHPL_MAKE_COMM:-$1}"
-chpl_comm_substrate="${CHPL_MAKE_COMM_SUBSTRATE:-$2}"
-chpl_auxfs="${CHPL_MAKE_AUXFS:-$3}"
+chpl_target_platform="${CHPL_MAKE_TARGET_PLATFORM:-$1}"
+chpl_comm="${CHPL_MAKE_COMM:-$2}"
+chpl_comm_substrate="${CHPL_MAKE_COMM_SUBSTRATE:-$3}"
+chpl_auxfs="${CHPL_MAKE_AUXFS:-$4}"
 
 if [[ -z $chpl_comm || -z $chpl_comm_substrate || -z $chpl_auxfs ]]; then
   echo "Usage: $0 [\$CHPL_COMM \$CHPL_COMM_SUBSTRATE \$CHPL_AUXFS]"
@@ -19,8 +20,12 @@ pe_chapel_pkgconfig_libs="$PE_CHAPEL_PKGCONFIG_LIBS"
 if [[ "$chpl_comm" == ugni ]]; then
   pe_chapel_pkgconfig_libs="cray-pmi:cray-ugni:$pe_chapel_pkgconfig_libs"
 elif [[ "$chpl_comm" == ofi ]]; then
-  # Don't need to add ugni, because it will be added by libfabric (?)
-  pe_chapel_pkgconfig_libs="cray-pmi:cray-ugni:$pe_chapel_pkgconfig_libs"
+  if [[ "$chpl_target_platform" == cray-shasta ]]; then
+    pe_chapel_pkgconfig_libs="cray-pmi:$pe_chapel_pkgconfig_libs"
+  else
+    # Don't need to add ugni, because it will be added by libfabric (?)
+    pe_chapel_pkgconfig_libs="cray-pmi:cray-ugni:$pe_chapel_pkgconfig_libs"
+  fi
 elif [[ "$chpl_comm" == gasnet ]]; then
   if [[ "$chpl_comm_substrate" == gemini || "$chpl_comm_substrate" == aries ]]; then
     pe_chapel_pkgconfig_libs="cray-pmi:cray-udreg:cray-ugni:$pe_chapel_pkgconfig_libs"
