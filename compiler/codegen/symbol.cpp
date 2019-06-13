@@ -1923,7 +1923,6 @@ void FnSymbol::codegenDef() {
       if( ! debug_info )
         problems = llvm::verifyFunction(*func, &llvm::errs());
       if( problems ) {
-        func->print(llvm::outs());
         INT_FATAL("LLVM function verification failed");
       }
     }
