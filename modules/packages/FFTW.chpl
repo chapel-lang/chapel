@@ -470,6 +470,26 @@ module FFTW {
   */  // NOTE: But it will be if/when the new-array execute interface is supported
   extern const FFTW_UNALIGNED : c_uint;
 
+  // More FFTW type flags.
+  
+  /* Use the halfcomplex form of array storage */
+  extern const FFTW_R2HC :c_int;
+  extern const FFTW_HC2R :c_int;
+
+  /* Discrete Hartley Transforms. */
+  extern const FFTW_DHT :c_int;
+
+  /* Specify the type of discrete cosine and
+     discrete sine transforms to use. */
+  extern const FFTW_REDFT00 :c_int;
+  extern const FFTW_REDFT01 :c_int;
+  extern const FFTW_REDFT10 :c_int;
+  extern const FFTW_REDFT11 :c_int;
+  extern const FFTW_RODFT00 :c_int;
+  extern const FFTW_RODFT01 :c_int;
+  extern const FFTW_RODFT10 :c_int;
+  extern const FFTW_RODFT11 :c_int;
+
 
   //
   // Check for a mismatch in size between two domain dimensions,
