@@ -153,6 +153,7 @@ module Lists {
     proc init=(const ref other: list(?t), param parSafe=other.parSafe) {
       this.eltType = t;
       this.parSafe = other.parSafe;
+      this._arrays = nil;
       this.complete();
       this.extend(other);
     }
@@ -257,23 +258,23 @@ module Lists {
     }
 
     pragma "no doc"
-    inline proc _makeBlockArray(size: int) {
-      return c_calloc(_ddata(eltType), size):_ddata(_ddata(eltType));
+    proc _makeBlockArray(size: int) {
+      return _ddata_allocate(_ddata(eltType), size);
     }
 
     pragma "no doc"
-    inline proc _freeBlockArray(data: _ddata(_ddata(eltType))) {
-      c_free(data:c_void_ptr);
+    proc _freeBlockArray(data: _ddata(_ddata(eltType)), size: int) {
+      _ddata_free(data, size);
     }
 
     pragma "no doc"
     proc _makeArray(size: int) {
-      return c_calloc(eltType, size):_ddata(eltType);
+      return _ddata_allocate(eltType, size, initElts=false);
     }
 
     pragma "no doc"
-    proc _freeArray(data: _ddata(eltType)) {
-      c_free(data:c_void_ptr);
+    proc _freeArray(data: _ddata(eltType), size: int) {
+      _ddata_free(data, size);
     }
 
     pragma "no doc"
@@ -309,7 +310,7 @@ module Lists {
           for i in 0..#_arrayCapacity do
             _narrays[i] = _arrays[i];
 
-          _freeBlockArray(_arrays);
+          _freeBlockArray(_arrays, _arrayCapacity);
           _arrays = _narrays;
           _arrayCapacity *= 2;
         }
@@ -355,7 +356,7 @@ module Lists {
         return;
 
       ref array = _arrays[lastArrayIdx];
-      _freeArray(array);
+      _freeArray(array, lastArrayCapacity);
       _totalCapacity -= lastArrayCapacity;
       array = nil; 
     }
@@ -627,12 +628,13 @@ module Lists {
           ref array = _arrays[i];
           if array == nil then
             continue;
-          _totalCapacity -= _getArrayCapacity(i);
-          _freeArray(array);
+          const capacity = _getArrayCapacity(i);
+          _totalCapacity -= capacity;
+          _freeArray(array, capacity);
           array = nil;
         }
 
-        _freeBlockArray(_arrays);
+        _freeBlockArray(_arrays, _arrayCapacity);
         _arrays = nil;
       }
 
