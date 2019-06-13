@@ -1,3 +1,0 @@
-uncaught AssertionError: assert failed - '1 2 3' != '1 2 3'
-  ./UnitTest.chpl:227: thrown here
-  EqualLinkedList.chpl:7: uncaught here
