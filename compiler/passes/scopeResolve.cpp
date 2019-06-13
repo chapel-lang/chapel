@@ -2099,6 +2099,39 @@ bool Symbol::isVisible(BaseAST* scope) const {
 
 /************************************* | **************************************
 *                                                                             *
+* Returns true if this use statement is in the provided scope or capable of   *
+* being found in from the provided scope, false if the use statement is       *
+* private and the scope is not in its direct parent.                          *
+*                                                                             *
+************************************** | *************************************/
+bool UseStmt::isVisible(BaseAST* scope) const {
+  if (isPrivate) {
+    BaseAST* parentScope = getScope(this->parentExpr);
+    BaseAST* searchScope = scope;
+
+    INT_ASSERT(parentScope != NULL);
+
+    // We need to walk up scopes until we either find our parent scope (in
+    // which case, we're visible if it "use"s us) or we run out of scope to
+    // check against (in which case we are most certainly *not* visible)
+    while (searchScope != NULL) {
+      if (searchScope == parentScope) {
+        return true;
+      }
+
+      searchScope = getScope(searchScope);
+    }
+
+    // We got to the top of the scope without finding the parent.
+    return false;
+  }
+
+  // If we got here, it's because the use statement was public
+  return true;
+}
+
+/************************************* | **************************************
+*                                                                             *
 * getScope returns the BaseAST that corresponds to the scope where 'ast'      *
 * exists; 'ast' must be an Expr or a Symbol.  Note that if you pass this a    *
 * BaseAST that defines a scope, the BaseAST that defines the scope where it   *

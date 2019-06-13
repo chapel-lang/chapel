@@ -64,6 +64,8 @@ public:
 
   bool            providesNewSymbols(const UseStmt* other)               const;
 
+  bool            isVisible(BaseAST* scope)                              const;
+
   BaseAST*        getSearchScope()                                       const;
 
   void            writeListPredicate(FILE* mFP)                          const;
