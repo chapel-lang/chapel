@@ -75,7 +75,7 @@ public:
   void                    addDefaultUses();
 
   void                    moduleUseAdd(ModuleSymbol* module);
-  void                    moduleUseRemove(ModuleSymbol* module);
+  void                    deadCodeModuleUseRemove(ModuleSymbol* module);
 
   void                    printDocs(std::ostream* file,
                                     unsigned int  tabs,

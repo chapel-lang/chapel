@@ -681,7 +681,7 @@ void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
 //
 // At this time this is only used for deadCodeElimination and
 // it is not clear if there will be other uses.
-void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
+void ModuleSymbol::deadCodeModuleUseRemove(ModuleSymbol* mod) {
   int index = modUseList.index(mod);
 
   if (index >= 0) {
@@ -699,8 +699,8 @@ void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
         SET_LINENO(this);
 
         if (inBlock == true) {
-          // Note: this drops only and except lists and renamings on the floor.
-          // This addition now also makes it drop privacy on the floor.
+          // Note: this drops only and except lists, renamings, and private uses
+          // on the floor.
           block->useListAdd(modUsedByDeadMod, false);
         }
 
