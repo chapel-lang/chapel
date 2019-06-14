@@ -151,7 +151,7 @@ printclangcxx:
 #
 # Path to the directory containing "libchpllaunch".
 #
-CHPL_MLI_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+CHPL_MLI_LN_LIB_DIR=$(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 
 #
 # For right now we assume GNU/Linux and use "libstdc++", unless we are Macs,
@@ -160,13 +160,13 @@ CHPL_MLI_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 # out Crays.
 #
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
-CHPL_MLI_CPPLIB = "-lc++"
+CHPL_MLI_CPPLIB="-lc++"
 else
-CHPL_MLI_CPPLIB = "-lstdc++"
+CHPL_MLI_CPPLIB="-lstdc++"
 endif
 
 printmultilocalelibdeps:
-	@echo "-L $(CHPL_MLI_LN_LIB_DIR) -lchpllaunch $(CHPL_MLI_CPPLIB) -lzmq"
+	@echo "-L$(CHPL_MLI_LN_LIB_DIR) -lchpllaunch $(CHPL_MLI_CPPLIB) -lzmq"
 
 checkRtLibDir:
 ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)

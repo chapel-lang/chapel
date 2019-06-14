@@ -436,8 +436,8 @@ void readArgsFromString(std::string s, std::vector<std::string>& args) {
   }
 }
 
-void removeTrailingNewline(std::string& str) {
-  if (str.size() > 0 && *str.rbegin() == '\n') {
+void removeTrailingNewlines(std::string& str) {
+  while (str.size() > 0 && *str.rbegin() == '\n') {
     str.erase(str.end() - 1);
   }
 }

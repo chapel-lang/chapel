@@ -239,7 +239,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   //
   if (fMultiLocaleInterop) {
     std::string deps = getCompilelineOption("multilocale-lib-deps");
-    removeTrailingNewline(deps);
+    removeTrailingNewlines(deps);
     fprintf(makefile.fptr, " %s", deps.c_str());
   }
 
@@ -251,7 +251,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     fprintf(makefile.fptr, " %s\n", libraries.c_str());
   } else {
     // LLVM requires a bit more work to make the GNU linker happy.
-    removeTrailingNewline(libraries);
+    removeTrailingNewlines(libraries);
 
     // Append the Chapel library as the last linker argument.
     fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());

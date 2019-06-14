@@ -77,7 +77,7 @@ inline std::string ltrim(std::string s);
 
 void readArgsFromString(std::string s, std::vector<std::string>& args);
 
-void removeTrailingNewline(std::string& str);
+void removeTrailingNewlines(std::string& str);
 
 bool startsWith(const char* str, const char* prefix);
 
