@@ -148,6 +148,9 @@ printclangcc:
 printclangcxx:
 	@echo $(CLANG_CXX)
 
+printlauncherlibdir:
+	@echo $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+
 checkRtLibDir:
 ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)
 ifdef CHPL_DEVELOPER

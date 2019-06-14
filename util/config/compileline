@@ -98,6 +98,9 @@ def parseArguments():
                       dest="actions", action='append_const',
                       help="print out any saved clang arguments that "
                            "specify the system root")
+    parser.add_option("--launcher-libdir", const="launcherlibdir",
+                      dest="actions", action='append_const',
+                      help="print path to launcher library")
 
     (options, args) = parser.parse_args()
 
@@ -221,6 +224,8 @@ def main():
                 with open(fname) as f:
                     for line in f:
                         sys.stdout.write(line)
+        elif a == "launcherlibdir":
+          mysystem(make_helper, "printlauncherlibdir")
 
 if __name__ == '__main__':
     main()

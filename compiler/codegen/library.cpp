@@ -238,6 +238,13 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   // off to the user via use of `--library-makefile`.
   //
   if (fMultiLocaleInterop) {
+
+    //
+    // Get the path to the launcher library.
+    //
+    std::string launcherLib = getCompilelineOption("launcher-libdir");
+    fprintf(makefile.fptr, " %s", launcherLib.c_str());
+
     //
     // For right now, we assume GNU/Linux and use "libstdc++" unless we are
     // on Macs, in which case we will try to link against "libc++" instead as
