@@ -243,7 +243,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     // Get the path to the launcher library.
     //
     std::string launcherLib = getCompilelineOption("launcher-libdir");
-    fprintf(makefile.fptr, " %s", launcherLib.c_str());
+    fprintf(makefile.fptr, " -L%s", launcherLib.c_str());
 
     //
     // For right now, we assume GNU/Linux and use "libstdc++" unless we are
