@@ -31,20 +31,6 @@ CHPL_ZMQ_LIB = -lzmq
 endif
 CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 
-CHPL_LIBTOOL = libtool
-
-#
-# On some platforms (Darwin in particular), libtool cannot be assumed to mean
-# GNU libtool and is actually a different executable that goes by the same
-# name. Darwin's libtool has similar semantics to GNU libtool, but has to be
-# invoked differently.
-#
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
-CHPL_LIBTOOL_CMD = $(CHPL_LIBTOOL) -static -no_warning_for_no_symbols
-else
-CHPL_LIBTOOL_CMD = $(CHPL_LIBTOOL) --quiet --mode=link $(CC) -static
-endif
-
 .PHONY: buildUserObj buildServer buildClient runTagsCommand
 
 all: buildUserObj buildServer buildClient runTagsCommand FORCE
@@ -88,25 +74,13 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
 		$(CHPL_RT_INC_DIR) \
 		$(CHPL_MLI_INCS)
-
 #
 # Throw the client object file and launcher object file into an archive.
 #
-	$(AR) -c -r -s $(TMPBINNAME)-tmp \
+	$(AR) -c -r -s $(TMPBINNAME) \
 		$(TMPBINNAME).o \
 		$(CHPL_CL_OBJS) \
 		$(TMPSERVERNAME)_launcher.o
-
-#
-# Merge the client library, launcher library, and ZMQ library together via use
-# of libtool. This makes the assumption that static library files for both
-# external libraries exist.
-#
-	$(CHPL_LIBTOOL_CMD) -o $(TMPBINNAME) \
-		$(CHPL_ZMQ_LIB) \
-		$(CHPL_LN_LIB_DIR)/libchpllaunch.a \
-		$(TMPBINNAME)-tmp
-
 #
 # Last minute munging in case of output file name collisions.
 #
@@ -126,7 +100,6 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 		$(CHPL_RT_INC_DIR) \
 		$(CHPL_MLI_INCS) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES)
-
 #
 # Link the Chapel runtime and the ZMQ library together into a multi-locale
 # executable.
@@ -136,8 +109,11 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 #   - $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) is every third party library.
 #   ^ With the exception of gasnet!
 #
+# NOTE: We remove the $(GEN_STATIC_FLAG) from the server for now, because it
+# is difficult if not impossible for us to do a completely static link
+# because of "gethostname", among other things.
+#
 	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-		$(GEN_STATIC_FLAG) \
 		-o $(TMPSERVERNAME) \
 		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main.o \
 		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \

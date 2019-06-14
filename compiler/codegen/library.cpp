@@ -232,12 +232,15 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
           libname.c_str());
 
   //
-  // The ZMQ library has to be linked against the C++ stdlib. Rather than
-  // package libc++ up as part of our multi-locale library client when
-  // packaging it up, we'll let library-makefile do it for us.
+  // Multi-locale libraries require some extra libraries to be linked in order
+  // to function correctly. For static libraries in particular, rather than
+  // try to link these dependencies at compile time, we shunt responsibility
+  // off to the user via use of `--library-makefile`.
   //
   if (fMultiLocaleInterop) {
-    fprintf(makefile.fptr, " %s", "-lc++");
+    std::string deps = getCompilelineOption("multilocale-lib-deps");
+    removeTrailingNewlines(deps);
+    fprintf(makefile.fptr, " %s", deps.c_str());
   }
 
   if (requires != "") {
@@ -248,9 +251,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     fprintf(makefile.fptr, " %s\n", libraries.c_str());
   } else {
     // LLVM requires a bit more work to make the GNU linker happy.
-    if (libraries.size() > 0 && *libraries.rbegin() == '\n') {
-      libraries.erase(libraries.end() -1);
-    }
+    removeTrailingNewlines(libraries);
 
     // Append the Chapel library as the last linker argument.
     fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+if [[ $CHPL_COMM != none ]] ; then
+  echo True
+fi
