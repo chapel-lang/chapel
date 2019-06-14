@@ -1,1 +1,1 @@
--Llib/ -lcstringArgAndReturn -lc++ `$CHPL_HOME/util/config/compileline --libraries` -lzmq
+-Llib/ -lcstringArgAndReturn `$CHPL_HOME/util/config/compileline --libraries` `$CHPL_HOME/util/config/compileline --multilocale-lib-deps`

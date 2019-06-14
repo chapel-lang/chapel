@@ -1,1 +1,1 @@
--Llib/ -lcheckMultipleLocales -lc++ `$CHPL_HOME/util/config/compileline --libraries` -lzmq
+-Llib/ -lcheckMultipleLocales `$CHPL_HOME/util/config/compileline --libraries` `$CHPL_HOME/util/config/compileline --multilocale-lib-deps`

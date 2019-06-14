@@ -1,1 +1,1 @@
--Llib/ -ltesting -lc++ `$CHPL_HOME/util/config/compileline --libraries` -lzmq
+-Llib/ -ltesting `$CHPL_HOME/util/config/compileline --libraries` `$CHPL_HOME/util/config/compileline --multilocale-lib-deps`
