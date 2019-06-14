@@ -98,7 +98,7 @@ def parseArguments():
                       dest="actions", action='append_const',
                       help="print out any saved clang arguments that "
                            "specify the system root")
-    parser.add_option("--multilocalelibdeps", const="multilocalelibdeps",
+    parser.add_option("--multilocale-lib-deps", const="multilocalelibdeps",
                       dest="actions", action='append_const',
                       help="print out libraries required to link "
                            "multi-locale libraries"

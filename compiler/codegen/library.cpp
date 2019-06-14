@@ -220,12 +220,6 @@ static std::string getLibname(std::string name) {
   return libname;
 }
 
-static void removeTrailingNewline(std::string& str) {
-  if (str.size() > 0 && *str.rbegin() == '\n') {
-    str.erase(str.end() - 1);
-  }
-}
-
 // Helper to output the CHPL_LDFLAGS variable into the generated makefile
 static void printMakefileLibraries(fileinfo makefile, std::string name) {
   std::string libraries = getCompilelineOption("libraries");
@@ -245,8 +239,8 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   //
   if (fMultiLocaleInterop) {
 
-    std::string deps = getCompilelineOption("multilocalelibdeps");
-    fprintf(" %s", deps.c_str());
+    std::string deps = getCompilelineOption("multilocale-lib-deps");
+    fprintf(makefile.fptr, " %s", deps.c_str());
   }
 
   if (requires != "") {
