@@ -436,6 +436,12 @@ void readArgsFromString(std::string s, std::vector<std::string>& args) {
   }
 }
 
+void removeTrailingNewlines(std::string& str) {
+  while (str.size() > 0 && *str.rbegin() == '\n') {
+    str.erase(str.end() - 1);
+  }
+}
+
 bool startsWith(const char* str, const char* prefix) {
   return (0 == strncmp(str, prefix, strlen(prefix)));
 }

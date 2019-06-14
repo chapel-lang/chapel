@@ -52,7 +52,10 @@ runTagsCommand:
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 #
 # Invoke the launcher script, but don't actually link up the launcher binary.
-# Do this by setting CHPL_MAKE_IS_MLI=1.
+# Do this by setting CHPL_MAKE_IS_MLI=1. We also need to pass on the
+# $(GEN_CFLAGS) variable, because that contains the -fPIC flag, among other
+# things. If we don't do this, then the launcher object file that is built
+# will have text relocations.
 #
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all \
 		CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
@@ -62,6 +65,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		CHPL_MAKE_RUNTIME_LIB=$(CHPL_MAKE_RUNTIME_LIB) \
 		CHPL_MAKE_RUNTIME_INCL=$(CHPL_MAKE_RUNTIME_INCL) \
 		CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY) \
+		GEN_CFLAGS="$(GEN_CFLAGS)" \
 		CHPL_MAKE_IS_MLI=1
 #
 # Compile the client bundle. Note the use of $(SHARED_LIB_CFLAGS) here.
