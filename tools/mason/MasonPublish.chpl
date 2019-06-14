@@ -38,7 +38,7 @@ proc masonPublish(args) throws {
           exit(0);
         }
         else if arg == "--dry-run" {
-                                    dry = true;
+          dry = true;
         }
         else {
           username = arg;
@@ -72,8 +72,7 @@ proc publishPackage(username: string, dry: bool) throws {
   runCommand("git add .");
   runCommand("git commit -m '" + package +"'");
   runCommand('git push --set-upstream origin ' + package, true);
-  writeln(name);
-  runCommand('git request-pull master https://github.com/oplambeck/mason-registry', true);
+  runCommand('git request-pull master https://github.com/' + username + '/mason-registry '+ package, true);
   here.chdir(cwd);
   runCommand('rm -rf mason-registry');
   writeln();
