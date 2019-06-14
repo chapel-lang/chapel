@@ -98,9 +98,10 @@ def parseArguments():
                       dest="actions", action='append_const',
                       help="print out any saved clang arguments that "
                            "specify the system root")
-    parser.add_option("--launcher-libdir", const="launcherlibdir",
+    parser.add_option("--multilocalelibdeps", const="multilocalelibdeps",
                       dest="actions", action='append_const',
-                      help="print path to launcher library")
+                      help="print out libraries required to link "
+                           "multi-locale libraries"
 
     (options, args) = parser.parse_args()
 
@@ -226,6 +227,8 @@ def main():
                         sys.stdout.write(line)
         elif a == "launcherlibdir":
           mysystem(make_helper, "printlauncherlibdir")
+        elif a == "multilocalelibdeps":
+          mysystem(make_helper, "printmultilocalelibdeps")
 
 if __name__ == '__main__':
     main()

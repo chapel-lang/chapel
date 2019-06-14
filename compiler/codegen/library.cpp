@@ -245,32 +245,8 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   //
   if (fMultiLocaleInterop) {
 
-    //
-    // Get the path to the launcher library.
-    //
-    std::string launcherLib = getCompilelineOption("launcher-libdir");
-    removeTrailingNewline(launcherLib);
-
-    fprintf(makefile.fptr, " -L%s", launcherLib.c_str());
-
-    fprintf(makefile.fptr, " %s", "-lchpllaunch");
-
-    //
-    // For right now, we assume GNU/Linux and use "libstdc++" unless we are
-    // on Macs, in which case we will try to link against "libc++" instead as
-    // it is the preferred default.
-    //
-    const char* cppStdLib = "-lstdc++";
-    if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
-      cppStdLib = "-lc++";
-    }
-
-    fprintf(makefile.fptr, " %s", cppStdLib);
-
-    //
-    // For right now, assume that ZMQ is on the system install path.
-    //
-    fprintf(makefile.fptr, " %s", "-lzmq");
+    std::string deps = getCompilelineOption("multilocalelibdeps");
+    fprintf(" %s", deps.c_str());
   }
 
   if (requires != "") {
