@@ -220,6 +220,12 @@ static std::string getLibname(std::string name) {
   return libname;
 }
 
+static void removeTrailingNewline(std::string& str) {
+  if (str.size() > 0 && *str.rbegin() == '\n') {
+    str.erase(str.end() - 1);
+  }
+}
+
 // Helper to output the CHPL_LDFLAGS variable into the generated makefile
 static void printMakefileLibraries(fileinfo makefile, std::string name) {
   std::string libraries = getCompilelineOption("libraries");
@@ -243,7 +249,11 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     // Get the path to the launcher library.
     //
     std::string launcherLib = getCompilelineOption("launcher-libdir");
+    removeTrailingNewline(launcherLib);
+
     fprintf(makefile.fptr, " -L%s", launcherLib.c_str());
+
+    fprintf(makefile.fptr, " %s", "-lchpllaunch");
 
     //
     // For right now, we assume GNU/Linux and use "libstdc++" unless we are
@@ -256,7 +266,6 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     }
 
     fprintf(makefile.fptr, " %s", cppStdLib);
-    fprintf(makefile.fptr, " %s", "-lchpllaunch");
 
     //
     // For right now, assume that ZMQ is on the system install path.
@@ -272,9 +281,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     fprintf(makefile.fptr, " %s\n", libraries.c_str());
   } else {
     // LLVM requires a bit more work to make the GNU linker happy.
-    if (libraries.size() > 0 && *libraries.rbegin() == '\n') {
-      libraries.erase(libraries.end() -1);
-    }
+    removeTrailingNewline(libraries);
 
     // Append the Chapel library as the last linker argument.
     fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
