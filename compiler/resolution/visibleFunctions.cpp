@@ -272,7 +272,7 @@ static void getVisibleFunctions(const char*           name,
 
         // Only traverse private use statements if we are in the scope that
         // defines them
-        if (use->isVisible(call) == true) {
+        if (use->isVisible(call)) {
 
           bool isMethodCall = false;
           if (call->numActuals() >= 2 &&

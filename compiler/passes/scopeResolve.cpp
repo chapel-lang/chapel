@@ -2117,6 +2117,13 @@ bool UseStmt::isVisible(BaseAST* scope) const {
     while (searchScope != NULL) {
       if (searchScope == parentScope) {
         return true;
+      } else if (FnSymbol* fn = toFnSymbol(searchScope)) {
+        // Check instantiation points as well
+        if (BaseAST* inPt = fn->instantiationPoint()) {
+          if (isVisible(inPt)) {
+            return true;
+          }
+        }
       }
 
       searchScope = getScope(searchScope);
