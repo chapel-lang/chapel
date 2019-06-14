@@ -159,7 +159,7 @@ CHPL_MLI_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 # preferred default. TODO: We'll probably need additional logic here to sort
 # out Crays.
 #
-ifeq (CHPL_MAKE_TARGET_PLATFORM,"darwin")
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
 CHPL_MLI_CPPLIB = "-lc++"
 else
 CHPL_MLI_CPPLIB = "-lstdc++"

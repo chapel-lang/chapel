@@ -238,7 +238,6 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   // off to the user via use of `--library-makefile`.
   //
   if (fMultiLocaleInterop) {
-
     std::string deps = getCompilelineOption("multilocale-lib-deps");
     fprintf(makefile.fptr, " %s", deps.c_str());
   }

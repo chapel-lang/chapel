@@ -98,10 +98,10 @@ def parseArguments():
                       dest="actions", action='append_const',
                       help="print out any saved clang arguments that "
                            "specify the system root")
-    parser.add_option("--multilocale-lib-deps", const="multilocalelibdeps",
+    parser.add_option("--multilocale-lib-deps", const="multilocale-lib-deps",
                       dest="actions", action='append_const',
                       help="print out libraries required to link "
-                           "multi-locale libraries"
+                           "multi-locale libraries")
 
     (options, args) = parser.parse_args()
 
@@ -227,7 +227,7 @@ def main():
                         sys.stdout.write(line)
         elif a == "launcherlibdir":
           mysystem(make_helper, "printlauncherlibdir")
-        elif a == "multilocalelibdeps":
+        elif a == "multilocale-lib-deps":
           mysystem(make_helper, "printmultilocalelibdeps")
 
 if __name__ == '__main__':
