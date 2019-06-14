@@ -76,7 +76,6 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
 
-      writeln("pre-checking test ", i);
       if !isSorted(arr, comparator=cmp) {
         writeln('isSorted failed to sort array:');
         writeln('failed to sort:');
@@ -97,7 +96,6 @@ proc main() {
   {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
-      writeln("sort test ", i);
       resetArray(arr, cmp);
       sort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
@@ -106,7 +104,6 @@ proc main() {
 
     for param i in 1..tests.size {
       ref (arr, cmp) = tests(i);
-      writeln("bubble sort test ", i);
       resetArray(arr, cmp);
       BubbleSort.bubbleSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
@@ -115,7 +112,6 @@ proc main() {
 
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
-      writeln("insertion sort test ", i);
       resetArray(arr, cmp);
       InsertionSort.insertionSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
@@ -124,7 +120,6 @@ proc main() {
 
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
-      writeln("binary insertion sort test ", i);
       resetArray(arr, cmp);
       BinaryInsertionSort.binaryInsertionSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
@@ -133,7 +128,6 @@ proc main() {
 
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
-      writeln("quicksort test ", i);
       resetArray(arr, cmp);
       QuickSort.quickSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
@@ -142,7 +136,6 @@ proc main() {
 
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
-      writeln("heapsort test ", i);
       resetArray(arr, cmp);
       HeapSort.heapSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
@@ -151,7 +144,6 @@ proc main() {
 
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
-      writeln("selection sort test ", i);
       resetArray(arr, cmp);
       SelectionSort.selectionSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
@@ -160,7 +152,6 @@ proc main() {
 
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
-      writeln("merge sort test ", i);
       resetArray(arr, cmp);
       MergeSort.mergeSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
