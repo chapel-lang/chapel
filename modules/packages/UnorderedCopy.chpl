@@ -88,12 +88,12 @@ module UnorderedCopy {
     unorderedCopyPrim(dst, refSrc);
   }
 
-  inline proc unorderedCopy(ref dst:bool, const ref src:bool): void {
+  inline proc unorderedCopy(ref dst:bool(?), const ref src:bool(?)): void {
     unorderedCopyPrim(dst, src);
   }
 
   pragma "no doc"
-  inline proc unorderedCopy(ref dst:bool, param src:bool): void {
+  inline proc unorderedCopy(ref dst:bool(?), param src:bool(?)): void {
     const refSrc = src;
     unorderedCopyPrim(dst, refSrc);
   }

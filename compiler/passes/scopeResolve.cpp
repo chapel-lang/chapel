@@ -67,34 +67,18 @@ static bool                                   enableModuleUsesCache = false;
 typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
 static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedForDotInsideWith;
 
-static void          addToSymbolTable();
-
 static void          scopeResolve(ModuleSymbol*       module,
                                   const ResolveScope* root);
 
 static void          scopeResolveExpr(Expr* expr, ResolveScope* scope);
 
-static void          processImportExprs();
-
-static void          resolveGotoLabels();
-
-static void          adjustTypeMethodsOnClasses();
-
 static bool          isStableClassType(Type* t);
 static Expr*         handleUnstableClassType(SymExpr* se);
-
-static void          resolveUnresolvedSymExprs();
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                               Symbol* toSymbol);
-
-static void          setupShadowVars();
-
-static void          resolveEnumeratedTypes();
-
-static void          renameDefaultTypesToReflectWidths();
 
 static bool          lookupThisScopeAndUses(const char*           name,
                                             BaseAST*              context,
@@ -103,25 +87,16 @@ static bool          lookupThisScopeAndUses(const char*           name,
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
-static void          resolveUnmanagedBorrows();
-
-void scopeResolve() {
-  //
-  // add all program asts to the symbol table
-  //
-  addToSymbolTable();
-
-  processImportExprs();
-
-  enableModuleUsesCache = true;
-
+static void computeClassHierarchy() {
   //
   // compute class hierarchy
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     ct->addClassToHierarchy();
   }
+}
 
+static void handleReceiverFormals() {
   //
   // resolve type of this for methods
   //
@@ -158,19 +133,10 @@ void scopeResolve() {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
   }
+}
 
-  resolveGotoLabels();
-
-  resolveUnresolvedSymExprs();
-
-  resolveEnumeratedTypes();
-
-  adjustTypeMethodsOnClasses();
-
-  setupShadowVars();
-
+static void markGenerics() {
   // Figure out which types are generic, in a transitive closure manner
-  {
     bool changed;
     do {
       changed = false;
@@ -198,8 +164,9 @@ void scopeResolve() {
         }
       }
     } while (changed);
-  }
+}
 
+static void buildTypeConstructors() {
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     // Build the type constructor now that we know which fields are generic
     if (isClass(ct) && ct->symbol->hasFlag(FLAG_EXTERN)) {
@@ -207,18 +174,6 @@ void scopeResolve() {
     }
     ct->buildTypeConstructor();
   }
-
-  ResolveScope::destroyAstMap();
-
-  destroyModuleUsesCaches();
-
-  warnedForDotInsideWith.clear();
-
-  renameDefaultTypesToReflectWidths();
-
-  cleanupExternC();
-
-  resolveUnmanagedBorrows();
 }
 
 /************************************* | **************************************
@@ -2357,4 +2312,42 @@ static void resolveUnmanagedBorrows() {
       }
     }
   }
+}
+
+void scopeResolve() {
+  addToSymbolTable();
+
+  processImportExprs();
+
+  enableModuleUsesCache = true;
+
+  computeClassHierarchy();
+
+  handleReceiverFormals();
+
+  resolveGotoLabels();
+
+  resolveUnresolvedSymExprs();
+
+  resolveEnumeratedTypes();
+
+  adjustTypeMethodsOnClasses();
+
+  setupShadowVars();
+
+  markGenerics();
+
+  buildTypeConstructors();
+
+  ResolveScope::destroyAstMap();
+
+  destroyModuleUsesCaches();
+
+  warnedForDotInsideWith.clear();
+
+  renameDefaultTypesToReflectWidths();
+
+  cleanupExternC();
+
+  resolveUnmanagedBorrows();
 }

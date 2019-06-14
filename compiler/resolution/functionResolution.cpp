@@ -9194,6 +9194,8 @@ static void insertRuntimeInitTemps() {
 
         // Collapse these through the runtimeTypeMap ...
         Type* rt = runtimeTypeMap.get(def->sym->type);
+        // This assert might fail for code that is no longer traversed
+        // after it is resolved, ex. in where-clauses.
         INT_ASSERT(rt);
         def->sym->type = rt;
 

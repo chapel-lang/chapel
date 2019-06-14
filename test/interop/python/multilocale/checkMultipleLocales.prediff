@@ -1,0 +1,9 @@
+#!/bin/bash
+
+sed '/from checkMultipleLocales.c:[0-9]*/d' $2 > $2.tmp
+sed '/^ *$/d' $2.tmp > $2
+rm $2.tmp
+export PYTHONPATH=lib/
+python3 use_checkMultipleLocales.py >> $2 2>>$2
+sort $2 > $2.prediff.tmp
+mv $2.prediff.tmp $2

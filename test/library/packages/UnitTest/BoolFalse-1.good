@@ -1,0 +1,3 @@
+uncaught AssertionError: assertTrue failed. Given expression is False
+  ./UnitTest.chpl:26: thrown here
+  BoolFalse-1.chpl:2: uncaught here

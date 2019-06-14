@@ -1,0 +1,2 @@
+feature request: allow python interop default values to reference global variables
+#11552

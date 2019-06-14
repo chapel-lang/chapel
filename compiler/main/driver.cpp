@@ -1338,10 +1338,19 @@ static void postTaskTracking() {
 }
 
 static void postStaticLink() {
-  if (fLinkStyle == LS_STATIC) {
-    if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
+  if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
+    if (fLinkStyle == LS_STATIC) {
       USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
       fLinkStyle = fMultiLocaleInterop ? LS_DYNAMIC : LS_DEFAULT;
+    }
+
+    //
+    // The default link style translates to static (at least for now), so we
+    // need to account for that when building a multi-locale library or else
+    // we'll get the same errors we do for static linking on `darwin`.
+    //
+    if (fMultiLocaleInterop && fLinkStyle == LS_DEFAULT) {
+      fLinkStyle = LS_DYNAMIC;
     }
   }
 }
@@ -1383,10 +1392,6 @@ static void setMultiLocaleInterop() {
 
   if (llvmCodegen) {
     USR_FATAL("Multi-locale libraries do not support --llvm");
-  }
-
-  if (fLibraryPython) {
-    USR_FATAL("Multi-locale libraries do not support --library-python");
   }
 
   if (fLibraryFortran) {

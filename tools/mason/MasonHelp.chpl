@@ -128,7 +128,6 @@ proc masonNewHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
-
 }
 
 proc masonSearchHelp() {
@@ -306,8 +305,7 @@ proc masonInstallHelp() {
   writeln("External Mason packages can be installed as follows:");
   writeln("    mason external install <full Spack spec expression>");
   writeln();
-  }
-
+}
 
 proc masonUninstallHelp() {
   writeln("Uninstall external packages on your system");
@@ -342,7 +340,6 @@ proc masonCompilerHelp() {
   writeln();
  }
 
-
 proc masonTestHelp() {
   writeln("Run test files located within target/debug/test");
   writeln();
@@ -358,7 +355,6 @@ proc masonTestHelp() {
   writeln("Test configuration is up to the user");
   writeln("Tests pass if they exit with status code 0");
 }
-
 
 proc masonSystemHelp() {
   writeln("Integrate a Mason package with system packages found via pkg-config");
@@ -390,7 +386,6 @@ proc masonSystemSearchHelp() {
   writeln();
 }
 
-
 proc masonSystemPcHelp() {
   writeln("Print a package's .pc file (pkg-config file)");
   writeln();
@@ -402,4 +397,28 @@ proc masonSystemPcHelp() {
   writeln();
 }
 
+proc masonCleanHelp() {
+  writeln("Cleans the target directory of the mason directory");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason clean [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln();       
+}
 
+proc masonDocHelp() {
+  writeln("Generate documentation for a mason package using chpldoc");
+  writeln();
+  writeln('Usage:');
+  writeln('    mason doc [options]');
+  writeln();
+  writeln('Options:');
+  writeln("    -h, --help                  Display this message");
+  writeln();
+  writeln("Will generate documentation when ran inside a mason package.");
+  writeln("Requires that chpldoc is set up in order to work.");
+  writeln("For instructions on setting up chpldoc, please view its documentation.");
+  writeln();
+}

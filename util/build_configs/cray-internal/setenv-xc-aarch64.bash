@@ -299,8 +299,9 @@ else
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
 
-        # pin to an mpich version compatible with the gen compiler
+        # pin to mpich/libsci versions compatible with the gen compiler
         load_module_version cray-mpich 7.7.7
+        load_module_version cray-libsci 19.04.1.1
     }
 
     function load_target_cpu() {

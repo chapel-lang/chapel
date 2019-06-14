@@ -26,8 +26,16 @@ proc masonModify(args) throws {
   try! {
     if args.size < 3 {
       masonModifyHelp();
-      exit();
+      exit(0);
     }
+    else if args.size > 2 {
+      for arg in args[1..] {
+        if arg == '-h' || arg == '--help' {
+          masonModifyHelp();
+          exit(0);
+        }
+      }
+      }
     else {
       const cwd = getEnv("PWD");
       const projectHome = getProjectHome(cwd, "Mason.toml");
@@ -38,7 +46,7 @@ proc masonModify(args) throws {
       for arg in args[1..] {
         if arg == '-h' || arg == '--help' {
           masonModifyHelp();
-        }
+         }
         else if arg == "--system" {
           system = true;
         }

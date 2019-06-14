@@ -106,16 +106,81 @@ module DefaultAssociative {
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
-      var first = true;
-      f <~> new ioLiteral("{");
-      for idx in this {
-        if first then 
-          first = false; 
-        else 
-          f <~> new ioLiteral(", ");
-        f <~> idx;
+
+      var binary = f.binary();
+
+      if f.writing {
+        if binary {
+          var numIndices: int = dsiNumIndices;
+          f <~> numIndices;
+          for idx in this {
+            f <~> idx;
+          }
+        } else {
+          var first = true;
+          f <~> new ioLiteral("{");
+          for idx in this {
+            if first then 
+              first = false; 
+            else 
+              f <~> new ioLiteral(", ");
+            f <~> idx;
+          }
+          f <~> new ioLiteral("}");
+        }
+      } else {
+        // Clear the domain so it only contains indices read in.
+        dsiClear();
+
+        if binary {
+          var numIndices: int;
+          f <~> numIndices;
+          for i in 1..numIndices {
+            var idx: idxType;
+            f <~> idx;
+            dsiAdd(idx);
+          }
+        } else {
+          f <~> new ioLiteral("{");
+
+          var first = true;
+          var comma = new ioLiteral(",", true);
+          var end = new ioLiteral("}");
+
+          while true {
+            // Try reading an end curly
+            f <~> end;
+            if f.error() == EFORMAT {
+              // didn't find a curly, OK
+              f.clearError();
+            } else {
+              // Stop reading if we got to the end
+              // or if there was another error.
+              break;
+            }
+
+            // Try reading a comma
+            if !first {
+              f <~> comma;
+              if f.error() {
+                // break out of the loop if we didn't read
+                // a comma and were expecting one
+                break;
+              }
+            }
+            first = false;
+
+            // Read an index
+            var idx: idxType;
+            f <~> idx;
+            if f.error() {
+              // Stop reading if we got an error
+              break;
+            }
+            dsiAdd(idx);
+          }
+        }
       }
-      f <~> new ioLiteral("}");
     }
     proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
     proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }

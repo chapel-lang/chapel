@@ -956,7 +956,8 @@ module ChapelBase {
   }
 
   inline proc _ddata_allocate(type eltType, size: integral,
-                              subloc = c_sublocid_none) {
+                              subloc = c_sublocid_none,
+                              initElts: bool=true) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
@@ -966,7 +967,8 @@ module ChapelBase {
     var callPostAlloc: bool;
     ret = chpl_mem_array_alloc(size:size_t, _ddata_sizeof_element(ret),
                                subloc, callPostAlloc):ret.type;
-    init_elts(ret, size, eltType);
+    if initElts then
+      init_elts(ret, size, eltType);
     if callPostAlloc {
       pragma "fn synchronization free"
       pragma "insert line file info"
@@ -2130,6 +2132,8 @@ module ChapelBase {
 
 
   proc isClassType(type t) param return __primitive("is class type", t);
+  proc isNilableClassType(type t) param return __primitive("is nilable class type", t);
+  proc isNonNilableClassType(type t) param return __primitive("is non nilable class type", t);
 
   proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param return true;
   proc isBorrowedOrUnmanagedClassType(type t:borrowed) param return true;

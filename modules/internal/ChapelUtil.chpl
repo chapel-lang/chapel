@@ -126,6 +126,22 @@ module ChapelUtil {
     return array;
   }
 
+  proc chpl_get_mli_connection(arg: chpl_main_argument) {
+    var local_arg = arg;
+    pragma "fn synchronization free"
+    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_string;
+    var flag: c_string = chpl_get_argument_i(local_arg,
+                                             (local_arg.argc-2): int(32));
+    if (flag != "--chpl-mli-socket-loc") {
+      halt("chpl_get_mli_connection called with unexpected arguments, missing "
+           + "'--chpl-mli-socket-loc <connection>', instead got " +
+           flag: string);
+    }
+    var result: c_string = chpl_get_argument_i(local_arg,
+                                               (local_arg.argc-1): int(32));
+    return result;
+  }
+
   //
   // These two are called from the emitted chpl_gen_main(), and
   // defined in the runtime.

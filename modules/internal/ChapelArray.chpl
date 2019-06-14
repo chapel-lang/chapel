@@ -2059,10 +2059,12 @@ module ChapelArray {
     return chpl_countDomHelp(dom, counts);
   }
 
+  pragma "fn returns aliasing array"
   proc #(arr: [], counts: integral) where isRectangularArr(arr) && arr.rank == 1 {
     return arr[arr.domain#counts];
   }
 
+  pragma "fn returns aliasing array"
   proc #(arr: [], counts) where isRectangularArr(arr) && isTuple(counts) {
     if (counts.size != arr.rank) then
       compilerError("the domain and array arguments of # must have the same rank");
