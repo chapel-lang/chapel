@@ -929,33 +929,41 @@ module MergeSort {
   }
 
   private proc _Merge(Data: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+    /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
+     * Dom is unstrided.  So specify the latter explicitly when possible. */
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
-    var a1max = mid;
-    var A1 = Data[lo..(a1max) by stride];
-    var a2max = hi;
-    var A2 = Data[mid..(a2max) by stride];
-    var a1 = lo;
-    var a2 = mid + stride;
+    const a1size = (lo..mid by stride).size;
+    var A1: [1..a1size] Data.eltType =
+      if Dom.stridable
+      then Data[lo..mid by stride]
+      else Data[lo..mid];
+    const a2size = ((mid+stride)..hi by stride).size;
+    var A2: [1..a2size] Data.eltType =
+      if Dom.stridable
+      then Data[(mid+stride)..hi by stride]
+      else Data[(mid+1)..hi];
+    var a1 = 1;
+    var a2 = 1;
     var i = lo;
-    while ((a1 <= a1max) && (a2 <= a2max)) {
+    while ((a1 <= a1size) && (a2 <= a2size)) {
       if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
         Data[i] = A1[a1];
-        a1 += stride;
+        a1 += 1;
         i += stride;
       } else {
         Data[i] = A2[a2];
-        a2 += stride;
+        a2 += 1;
         i += stride;
       }
     }
-    while (a1 <= a1max) {
+    while (a1 <= a1size) {
       Data[i] = A1[a1];
-      a1 += stride;
+      a1 += 1;
       i += stride;
     }
-    while (a2 <= a2max) {
+    while (a2 <= a2size) {
       Data[i] = A2[a2];
-      a2 += stride;
+      a2 += 1;
       i += stride;
     }
   }
