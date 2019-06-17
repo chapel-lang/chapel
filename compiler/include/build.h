@@ -61,8 +61,9 @@ Expr* buildDotExpr(const char* base, const char* member);
 BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildErrorStandin();
 
-BlockStmt* buildUseStmt(CallExpr* modules);
-BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except);
+BlockStmt* buildUseStmt(CallExpr* modules, bool privateUse);
+BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
+                        bool privateUse);
 bool processStringInRequireStmt(const char* str, bool parseTime,
                                 const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args);

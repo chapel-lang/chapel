@@ -371,8 +371,9 @@ static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
 }
 
 
-static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
-  UseStmt* newUse = new UseStmt(module);
+static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list,
+                               bool privateUse) {
+  UseStmt* newUse = new UseStmt(module, privateUse);
   addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);
@@ -430,7 +431,8 @@ static void useListError(Expr* expr, bool except) {
 //
 // Build a 'use' statement with an 'except'/'only' list
 //
-BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except) {
+BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
+                        bool privateUse) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
 
@@ -479,7 +481,8 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except)
 
   }
 
-  UseStmt* newUse = new UseStmt(mod, &namesList, except, &renameMap);
+  UseStmt* newUse = new UseStmt(mod, &namesList, except, &renameMap,
+                                privateUse);
   addModuleToSearchList(newUse, mod);
 
   delete names;
@@ -490,7 +493,7 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except)
 //
 // Build a 'use' statement
 //
-BlockStmt* buildUseStmt(CallExpr* args) {
+BlockStmt* buildUseStmt(CallExpr* args, bool privateUse) {
   BlockStmt* list = NULL;
 
   //
@@ -498,7 +501,7 @@ BlockStmt* buildUseStmt(CallExpr* args) {
   //
   for_actuals(expr, args) {
     Expr* useArg = expr->remove();
-    list = buildUseList(useArg, list);
+    list = buildUseList(useArg, list, privateUse);
   }
 
   //

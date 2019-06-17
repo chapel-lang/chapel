@@ -635,11 +635,11 @@ void ModuleSymbol::addDefaultUses() {
       // If this is a Fortran compilation, we need to use ISO_Fortran_binding
       if (fLibraryFortran) {
         modRef = new UnresolvedSymExpr("ISO_Fortran_binding");
-        block->insertAtHead(new UseStmt(modRef));
+        block->insertAtHead(new UseStmt(modRef, false));
       }
 
       modRef = new UnresolvedSymExpr("ChapelStandard");
-      block->insertAtHead(new UseStmt(modRef));
+      block->insertAtHead(new UseStmt(modRef, false));
     }
 
   // We don't currently have a good way to fetch the root module by name.
@@ -647,7 +647,7 @@ void ModuleSymbol::addDefaultUses() {
   } else if (this == baseModule) {
     SET_LINENO(this);
 
-    block->useListAdd(rootModule);
+    block->useListAdd(rootModule, false);
   }
 }
 
@@ -681,7 +681,7 @@ void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
 //
 // At this time this is only used for deadCodeElimination and
 // it is not clear if there will be other uses.
-void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
+void ModuleSymbol::deadCodeModuleUseRemove(ModuleSymbol* mod) {
   int index = modUseList.index(mod);
 
   if (index >= 0) {
@@ -699,7 +699,9 @@ void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
         SET_LINENO(this);
 
         if (inBlock == true) {
-          block->useListAdd(modUsedByDeadMod);
+          // Note: this drops only and except lists, renamings, and private uses
+          // on the floor.
+          block->useListAdd(modUsedByDeadMod, false);
         }
 
         modUseList.add(modUsedByDeadMod);
@@ -722,7 +724,7 @@ void initStringLiteralModule() {
                                                    MOD_INTERNAL,
                                                    new BlockStmt());
 
-  stringLiteralModule->block->useListAdd(new UseStmt(new UnresolvedSymExpr("ChapelStandard")));
+  stringLiteralModule->block->useListAdd(new UseStmt(new UnresolvedSymExpr("ChapelStandard"), false));
 
   stringLiteralModule->filename = astr("<internal>");
 

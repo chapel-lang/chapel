@@ -1995,12 +1995,17 @@ static void buildBreadthFirstModuleList(
             INT_ASSERT(useSE);
 
             UseStmt* useToAdd = NULL;
-            if (!useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+            if (!use->isPrivate &&
+                !useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
               // Uses of private modules are not transitive -
               // the symbols in the private modules are only visible to
               // itself and its immediate parent.  Therefore, if the symbol
               // is private, we will not traverse it further and will merely
               // add it to the alreadySeen map.
+              // The same goes for private uses - the symbols made available
+              // via a private use are only available to the module with the
+              // use statement, and should otherwise be treated as though they
+              // do not exist.
               useToAdd = use->applyOuterUse(source);
 
               if (useToAdd                       != NULL &&
@@ -2090,6 +2095,46 @@ bool Symbol::isVisible(BaseAST* scope) const {
   }
 
   return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Returns true if this use statement is in the provided scope or capable of   *
+* being found in from the provided scope, false if the use statement is       *
+* private and the scope is not in its direct parent.                          *
+*                                                                             *
+************************************** | *************************************/
+bool UseStmt::isVisible(BaseAST* scope) const {
+  if (isPrivate) {
+    BaseAST* parentScope = getScope(this->parentExpr);
+    BaseAST* searchScope = scope;
+
+    INT_ASSERT(parentScope != NULL);
+
+    // We need to walk up scopes until we either find our parent scope (in
+    // which case, we're visible if it "use"s us) or we run out of scope to
+    // check against (in which case we are most certainly *not* visible)
+    while (searchScope != NULL) {
+      if (searchScope == parentScope) {
+        return true;
+      } else if (FnSymbol* fn = toFnSymbol(searchScope)) {
+        // Check instantiation points as well
+        if (BaseAST* inPt = fn->instantiationPoint()) {
+          if (isVisible(inPt)) {
+            return true;
+          }
+        }
+      }
+
+      searchScope = getScope(searchScope);
+    }
+
+    // We got to the top of the scope without finding the parent.
+    return false;
+  }
+
+  // If we got here, it's because the use statement was public
+  return true;
 }
 
 /************************************* | **************************************
