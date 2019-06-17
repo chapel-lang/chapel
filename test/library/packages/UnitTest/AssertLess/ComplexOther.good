@@ -1,6 +1,0 @@
-AssertionError: assert failed - First element is of type int(64) and Second is of type imag(64)
-================================================================================
-AssertionError: assert failed - First element is of type complex(128) and Second is of type imag(64)
-================================================================================
-AssertionError: assert failed - First element is of type complex(128) and Second is of type 3*int(64)
-================================================================================

@@ -1,4 +1,0 @@
-AssertionError: assert failed - First element is of type [domain(1,int(64),false)] int(64) and Second is of type 2*int(64)
-================================================================================
-AssertionError: assert failed - First element is of type 2*int(64) and Second is of type [domain(1,int(64),false)] int(64)
-================================================================================

@@ -1,9 +1,0 @@
-AssertionError: First String > Second String :
-'unequalstring' > 'unequalString'
-First larger element in first String is at index 8:
-'s'
-'S'
-
-================================================================================
-AssertionError: assert failed - Strings are not of same length
-================================================================================
