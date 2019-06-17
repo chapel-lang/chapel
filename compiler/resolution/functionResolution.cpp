@@ -2224,7 +2224,6 @@ void resolveDestructor(AggregateType* at) {
 
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
-static bool resolveBuiltinAssignCall(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -2277,9 +2276,6 @@ void resolveCall(CallExpr* call) {
       return;
 
     if (resolveBuiltinCastCall(call))
-      return;
-
-    if (resolveBuiltinAssignCall(call))
       return;
 
     resolveNormalCall(call);
@@ -2470,82 +2466,6 @@ static bool resolveBuiltinCastCall(CallExpr* call)
   return false;
 }
 
-
-static bool resolveBuiltinAssignCall(CallExpr* call)
-{
-  UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
-  if (urse == NULL)
-    return false;
-
-  if (urse->unresolved != astrSequals || call->numActuals() != 2)
-    return false;
-
-  Type* lhsType = call->get(1)->getValType();
-  Type* rhsType = call->get(2)->getValType();
-
-  if ((isClassLikeOrPtr(lhsType) || lhsType == dtNil) &&
-      (isClassLikeOrPtr(rhsType) || rhsType == dtNil) &&
-      !isTypeExpr(call->get(1)) && !isTypeExpr(call->get(2)) &&
-      canDispatch(rhsType, NULL, lhsType, NULL, call->getFunction())) {
-
-    // Do const checking
-    lvalueCheckActual(call, call->get(1), INTENT_REF, NULL);
-
-    // Replace the = call with a primitive assign
-    call->baseExpr->remove();
-    call->primitive = primitives[PRIM_ASSIGN];
-
-    if (lhsType != rhsType) {
-      SET_LINENO(call);
-
-      // Try casting the rhs to the LHS type
-
-      SymExpr* rhsSe = toSymExpr(call->get(2));
-      INT_ASSERT(rhsSe);
-
-      // Dereference before casting
-      VarSymbol* tmp = newTempConst("cast_tmp");
-      CallExpr* c = new CallExpr("_cast", lhsType->symbol, rhsSe->symbol());
-      CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
-      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-      call->getStmtExpr()->insertBefore(m);
-      resolveCallAndCallee(c, /* allowUnresolved*/ true);
-      resolveCall(m);
-
-      // Now update the PRIM_ASSIGN to use the result of the cast
-      rhsSe->setSymbol(tmp);
-
-      if (c->resolvedFunction() == NULL && !call->isPrimitive()) {
-        // Error for failure
-        USR_FATAL_CONT(call, "Cannot assign to %s from %s",
-                             toString(lhsType), toString(rhsType));
-        return true;
-      }
-    }
-
-    // Report errors for assigning not-nil to nil
-    if (lhsType == dtNil) {
-      USR_FATAL_CONT(call, "Cannot assign to nil");
-      return true;
-    }
-
-    if (isNonNilableClassType(lhsType)) {
-      if (rhsType == dtNil && !useLegacyNilability(call)) {
-        USR_FATAL_CONT(call, "Cannot assign to non-nilable class type %s "
-                             "from nil",
-                             toString(lhsType));
-      } else if (isNilableClassType(rhsType)) {
-        USR_FATAL_CONT(call, "Cannot assign to non-nilable class type %s "
-                             "from nilable class type %s",
-                             toString(lhsType), toString(rhsType));
-      }
-    }
-
-    return true;
-  }
-
-  return false;
-}
 
 /************************************* | **************************************
 *                                                                             *
