@@ -387,14 +387,13 @@ else
 
         # pin to mpich/libsci versions compatible with the gen compiler
         load_module_version cray-mpich 7.7.7
-        load_module_version cray-libsci 19.04.1.1
+        load_module_version cray-libsci 18.07.1
     }
 
     function load_target_cpu() {
 
         # legacy
-        unload_module perftools-base acml totalview atp cray-libsci xt-libsci
-        load_module cray-libsci
+        unload_module perftools-base acml totalview atp xt-libsci
 
         case "$1" in ( "" ) log_error "load_target_cpu missing arg 1"; exit 2;; esac
         local target=$1
