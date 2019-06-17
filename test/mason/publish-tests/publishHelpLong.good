@@ -5,4 +5,5 @@ Usage:
 
 Options:
     -h, --help                   Display this message
+    --dry-run                    Check to see if package is ready to be published
 

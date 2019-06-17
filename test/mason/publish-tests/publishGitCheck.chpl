@@ -1,4 +1,4 @@
-
+use FileSystem;
 use MasonPublish;
 use MasonUtils;
 use Spawn;
@@ -9,9 +9,9 @@ proc main(){
   runCommand('mason new testdir',true);
   var pwd = getEnv("PWD");
   here.chdir(pwd + '/testdir');
-  if isGitExist() == false{
+  if doesGitOriginExist() == false{
     here.chdir(pwd);
-    runCommand('rm -rf testdir',true);
+    rmTree('testdir');
     writeln("Passed! Should return empty string as no repo was initialized");
     return 0;
   }

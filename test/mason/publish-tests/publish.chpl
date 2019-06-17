@@ -9,6 +9,8 @@ proc main() throws {
     var dir = getEnv('PWD');
     here.chdir(dir + '/test_dir');
     runCommand('mason publish');
+    here.chdir(dir);
+    rmTree('test_dir');
   }
 }
 

@@ -1,2 +1,10 @@
 Created new library project: test_dir
-Must have package set up as git repo to publish
+Publish a package to the mason-registry repository
+
+Usage:
+    mason publish [options]
+
+Options:
+    -h, --help                   Display this message
+    --dry-run                    Check to see if package is ready to be published
+

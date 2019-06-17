@@ -27,7 +27,7 @@ use MasonNew;
 use MasonModify;
 
 
-proc masonPublish(args) throws {
+proc masonPublish(args: [] string) throws {
   try! {
     if args.size == 2 {
       masonPublishHelp();
@@ -57,7 +57,7 @@ proc masonPublish(args) throws {
         }
       }
       else {
-            throw new owned MasonError('Must have package set up as git repo to publish');
+        throw new owned MasonError('Must have package set up as git repo to publish');
       }
     }
   }
@@ -65,6 +65,26 @@ proc masonPublish(args) throws {
     writeln(e.message());
     exit(1);
   }
+}
+
+
+proc publishPackage(username: string) throws {
+  cloneMasonReg(username);
+  branchMasonReg(username);
+  const cwd = getEnv("PWD");
+  const package=  addPackageToBricks();
+  here.chdir(cwd + "/mason-registry");
+  const name = getName();
+  const url = gitUrl();
+  const projectHome = getProjectHome(cwd);
+  here.chdir(cwd +"/mason-registry/");
+  runCommand("git add .");
+  runCommand("git commit -m '" + package +"'");
+  runCommand('git push --set-upstream origin ' + package, true);
+  runCommand('git remote add upstream https://github.com/chapel-lang/mason-registry');
+  runCommand('git request-pull upstream/master https://github.com/chapel-lang/mason-registry ', true);
+  here.chdir(cwd);
+  rmTree('mason-registry');
 }
 
 
@@ -91,30 +111,10 @@ proc dryRun(username: string) throws {
       throw new owned MasonError('Package does not gave a git origin');
     }
   }
-} 
-
-
-proc publishPackage(username: string) throws {
-  forkMasonReg(username);
-  branchMasonReg(username);
-  const cwd = getEnv("PWD");
-  const package=  addPackageToBricks();
-  here.chdir(cwd + "/mason-registry");
-  const name = getName();
-  const url = gitUrl();
-  const projectHome = getProjectHome(cwd);
-  here.chdir(cwd +"/mason-registry/");
-  runCommand("git add .");
-  runCommand("git commit -m '" + package +"'");
-  runCommand('git push --set-upstream origin ' + package, true);
-  runCommand('git remote add upstream https://github.com/chapel-lang/mason-registry');
-  runCommand('git request-pull upstream/master https://github.com/chapel-lang/mason-registry ', true);
-  here.chdir(cwd);
-  rmTree('mason-registry');
 }
 
 
-proc forkMasonReg(username: string) {
+proc cloneMasonReg(username: string) {
   var ret = runCommand("git clone https://github.com/" + username + "/mason-registry mason-registry", true);
   return ret;
 }

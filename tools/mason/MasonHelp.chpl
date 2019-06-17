@@ -434,5 +434,6 @@ proc masonPublishHelp(){
   writeln();
   writeln("Options:");
   writeln("    -h, --help                   Display this message");
+  writeln('    --dry-run                    Check to see if package is ready to be published');
   writeln(); 
 }

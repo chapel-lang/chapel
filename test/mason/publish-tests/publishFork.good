@@ -1,1 +1,3 @@
 Cloning into 'mason-registry'...
+remote: Repository not found.
+fatal: repository 'https://github.com/test/mason-registry/' not found

@@ -90,7 +90,7 @@ proc runCommand(cmd, quiet=false) : string throws {
     var process = spawn(splitCmd, stdout=PIPE);
 
     for line in process.stdout.lines() {
-      ret += line; 
+      ret += line;
       if quiet == false {
         write(line);
       }
@@ -448,4 +448,3 @@ iter allFields(tomlTbl: unmanaged Toml) {
     else yield(k,v);
   }
 }
-
