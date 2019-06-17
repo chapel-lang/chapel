@@ -1,8 +1,0 @@
-AssertionError: assert failed - '(1, 2, 3)' and '(1, 2)' are not of same type
-================================================================================
-AssertionError: tuple(3*int(64))s differ: '(1, 2, 3)' != '(1, 2, 5)'
-First differing element at index 3:
-'3'
-'5'
-
-================================================================================
