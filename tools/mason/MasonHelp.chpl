@@ -430,10 +430,13 @@ proc masonPublishHelp(){
   writeln("Publish a package to the mason-registry repository");
   writeln();
   writeln("Usage:");
-  writeln("    mason publish [options]");
+  writeln("    mason publish [options] [username]");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                   Display this message");
   writeln('    --dry-run                    Check to see if package is ready to be published');
-  writeln(); 
+  writeln();
+  writeln('Must pass your gitHub username that the mason-registry is cloned under in order to ');
+  writeln('ensure that the package can be published correctly.');
+  writeln();
 }

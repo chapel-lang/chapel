@@ -1,9 +1,12 @@
 Publish a package to the mason-registry repository
 
 Usage:
-    mason publish [options]
+    mason publish [options] [username]
 
 Options:
     -h, --help                   Display this message
     --dry-run                    Check to see if package is ready to be published
+
+Must pass your gitHub username that the mason-registry is cloned under in order to 
+ensure that the package can be published correctly.
 
