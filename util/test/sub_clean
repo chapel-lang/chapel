@@ -95,7 +95,8 @@ else:
 for f in clean:
     if os.path.isdir(f):
         print('Cleaning directory: '+f)
-        dirlist = glob.glob(f+'/*.chpl')+glob.glob(f+'/*.test.c')
+        dirlist = glob.glob(f+'/*.chpl')
+        dirlist += glob.glob(f+'/*.test.c')
         dirlist += glob.glob(f+'/*.ml-test.c')
         dirlist.sort()
         for file in dirlist:

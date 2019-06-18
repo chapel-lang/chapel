@@ -228,9 +228,9 @@ def trim_output(output):
     return ''.join(s if s in string.printable else "~" for s in output)
 
 
-# return True if f has .chpl extension
+# return True if f has .chpl, .test.c or .ml-test.c extension
 def hasTestableExtension(f):
-    if f.endswith('.chpl') or f.endswith('.test.c') or f.endswith('.ml-test.c'):
+    if f.endswith(('.chpl', '.test.c', '.ml-test.c')):
         return True
     else:
         return False
@@ -1046,17 +1046,8 @@ for testname in testsrc:
         execname += '.{0}'.format(os.getpid())
     # print test_filename
 
-    if re.match(r'^.+\.test\.c$', testname):
-      is_c_test = True
-    else:
-      is_c_test = False
-
-    # the previous regex will not match multilocale C tests, so this check is
-    # mutually exclusive
-    if re.match(r'^.+\.ml-test\.c$', testname):
-        is_ml_c_test = True
-    else:
-        is_ml_c_test = False
+    is_c_test = testname.endswith(".test.c");
+    is_ml_c_test = testname.endswith(".ml-test.c");
 
     # If the test name ends with .doc.chpl or the compiler was set to chpldoc
     # (i.e. is_chpldoc=True), run this test with chpldoc options.
