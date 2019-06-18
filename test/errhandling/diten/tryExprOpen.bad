@@ -1,0 +1,10 @@
+tryExprOpen.chpl:2: error: call to throwing function open_default_hints without throws, try, or try! (relaxed mode)
+$CHPL_HOME/modules/standard/IO.chpl:1517: note: throwing function open_default_hints defined here
+tryExprOpen.chpl:2: error: call to throwing function open_default_style without throws, try, or try! (relaxed mode)
+$CHPL_HOME/modules/standard/IO.chpl:1518: note: throwing function open_default_style defined here
+tryExprOpen.chpl:2: error: call to throwing function open_default_url without throws, try, or try! (relaxed mode)
+$CHPL_HOME/modules/standard/IO.chpl:1518: note: throwing function open_default_url defined here
+tryExprOpen.chpl:3: error: call to throwing function reader_default_hints without throws, try, or try! (relaxed mode)
+$CHPL_HOME/modules/standard/IO.chpl:2448: note: throwing function reader_default_hints defined here
+tryExprOpen.chpl:3: error: call to throwing function reader_default_style without throws, try, or try! (relaxed mode)
+$CHPL_HOME/modules/standard/IO.chpl:2449: note: throwing function reader_default_style defined here
