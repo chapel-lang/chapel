@@ -1,0 +1,8 @@
+const-ref-iterator-3.chpl:21: error: non-lvalue actual is passed to 'ref' formal 'obj' of mutate()
+const-ref-iterator-3.chpl:24: error: non-lvalue actual is passed to 'ref' formal 'obj' of mutate()
+const-ref-iterator-3.chpl:27: error: non-lvalue actual is passed to 'ref' formal 'obj' of mutate()
+const-ref-iterator-3.chpl:30: error: non-lvalue actual is passed to 'ref' formal 'obj' of mutate()
+const-ref-iterator-3.chpl:36: error: non-lvalue actual is passed to 'ref' formal 'obj' of mutate()
+const-ref-iterator-3.chpl:39: error: non-lvalue actual is passed to 'ref' formal 'obj' of mutate()
+const-ref-iterator-3.chpl:42: error: non-lvalue actual is passed to 'ref' formal 'obj' of mutate()
+const-ref-iterator-3.chpl:45: error: non-lvalue actual is passed to 'ref' formal 'obj' of mutate()
