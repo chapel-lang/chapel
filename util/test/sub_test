@@ -228,9 +228,9 @@ def trim_output(output):
     return ''.join(s if s in string.printable else "~" for s in output)
 
 
-# return True if f has .chpl extension
-def IsChplTest(f):
-    if re.match(r'^.+\.(chpl|test\.c)$', f):
+# return True if f has .chpl, .test.c or .ml-test.c extension
+def hasTestableExtension(f):
+    if f.endswith(('.chpl', '.test.c', '.ml-test.c')):
         return True
     else:
         return False
@@ -1026,7 +1026,7 @@ dirlist.sort()
 
 onetestsrc = os.getenv('CHPL_ONETEST')
 if onetestsrc==None:
-    testsrc=filter(IsChplTest, dirlist)
+    testsrc=filter(hasTestableExtension, dirlist)
 else:
     testsrc=list()
     testsrc.append(onetestsrc)
@@ -1040,16 +1040,14 @@ for testname in testsrc:
 
     # print testname
     sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
-    test_filename = re.match(r'^(.*)\.(?:chpl|test\.c)$', testname).group(1)
+    test_filename = re.match(r'^(.*)\.(?:chpl|test\.c|ml-test\.c)$', testname).group(1)
     execname = test_filename
     if uniquifyTests:
         execname += '.{0}'.format(os.getpid())
     # print test_filename
 
-    if re.match(r'^.+\.test\.c$', testname):
-      is_c_test = True
-    else:
-      is_c_test = False
+    is_c_test = testname.endswith(".test.c");
+    is_ml_c_test = testname.endswith(".ml-test.c");
 
     # If the test name ends with .doc.chpl or the compiler was set to chpldoc
     # (i.e. is_chpldoc=True), run this test with chpldoc options.
@@ -1274,6 +1272,11 @@ for testname in testsrc:
         sys.stdout.write('[Skipping c test: %s/%s]\n'%(localdir,test_filename))
         continue
 
+    # .ml-test.c tests should only run when we are in a multilocale setting
+    if is_ml_c_test and chplcomm == 'none':
+        sys.stdout.write('[Skipping multilocale-only c test: %s/%s]\n'%(localdir,test_filename))
+        continue
+
     # Set numlocales
     if (numlocales == 0) or (chplcomm=='none') or is_c_test:
         numlocexecopts = None
@@ -1432,7 +1435,7 @@ for testname in testsrc:
             args += envCompopts + shlex.split(compopts)
         args += [testname]
 
-        if is_c_test:
+        if is_c_test or is_ml_c_test:
             # we need to drop envCompopts for C tests as those are options
             # for `chpl` so don't include them here
             args = ['-o', test_filename]+shlex.split(compopts)+[testname]
