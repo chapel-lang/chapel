@@ -32,12 +32,12 @@ existing_prgenv=$(module list --terse 2>&1 | grep PrgEnv-)
 if [ -z "${existing_prgenv}" ]
 then
   # No PrgEnv loaded, load PrgEnv-gnu
-  module load PrgEnv-gnu
+  module load PrgEnv-gnu 2>/dev/null
 elif [[ "${existing_prgenv}" != PrgEnv-gnu* ]]
 then
   # Replace current PrgEnv with PrgEnv-gnu
-  module unload "${existing_prgenv}"
-  module load PrgEnv-gnu
+  module unload "${existing_prgenv}" 2>/dev/null
+  module load PrgEnv-gnu 2>/dev/null
 fi
 
 # Set up the environment to make the proper libraries and include
