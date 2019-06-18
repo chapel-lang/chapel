@@ -799,6 +799,24 @@ static void checkForNonIterator(IteratorGroup* igroup, ParIterFlavor flavor,
   }
 }
 
+static RetTag iteratorTag(FnSymbol* iterFn) {
+  IteratorInfo* ii = iterFn->iteratorInfo;
+  if (ii == NULL) {
+    // We got an iterator forwarder.
+    INT_ASSERT(iterFn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
+    FnSymbol* underlyingIter = getTheIteratorFn(iterFn->retType);
+    ii = underlyingIter->iteratorInfo;
+  }
+  return ii->iteratorRetTag;
+}
+
+static bool defaultIntentYieldsConst(Type* rhsType) {
+  // copied from resolveMoveForRhsSymExpr()
+  return  ! isTupleContainingAnyReferences(rhsType)    &&
+          ! rhsType->symbol->hasFlag(FLAG_ARRAY)       &&
+          ! rhsType->symbol->hasFlag(FLAG_COPY_MUTATES);
+}
+
 static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
 {
   // Set QualifiedType of the index variable.
@@ -812,6 +830,29 @@ static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
   // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
   idxVar->addFlag(FLAG_INDEX_OF_INTEREST);
   idxVar->addFlag(FLAG_INDEX_VAR);
+
+  // Adjust the index variable's const-ness and ref-ness.
+  switch (iteratorTag(iterFn)) {
+    case RET_VALUE:
+      if (defaultIntentYieldsConst(idxVar->type)) {
+        idxVar->qual = QualifiedType::qualifierToConst(idxVar->qual);
+        idxVar->addFlag(FLAG_CONST);
+      }
+      break;
+    case RET_REF:
+      INT_ASSERT(idxVar->isRef());
+      idxVar->qual = QUAL_REF;
+      break;
+    case RET_CONST_REF:
+      INT_ASSERT(idxVar->isRef());
+      idxVar->qual = QUAL_CONST_REF;
+      idxVar->addFlag(FLAG_CONST);
+      break;
+    case RET_PARAM:
+    case RET_TYPE:
+      INT_FATAL(iterFn, "unexpected retTag in an iterator");
+      break;
+  }
 }
 
 static Expr* rebuildIterableCall(ForallStmt* pfs,

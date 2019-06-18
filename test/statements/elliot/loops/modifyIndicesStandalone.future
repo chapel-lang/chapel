@@ -1,6 +1,0 @@
-bug: Const checking on the index var of standalone iters is broken.
-
-Const checking _does_ work when the standalone iter is invoked through a `for`
-loop by tag. That's probably because it's just a normal for loop at resolution
-time when the const error would be reported and it's only during LowerIterators
-that the standalone iterator is inlined.

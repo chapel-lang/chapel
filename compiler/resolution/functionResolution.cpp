@@ -5833,6 +5833,7 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
 
       // ... and not of a reference type
       // ... and not an array (arrays are always yielded by reference)
+      // see also resolveIdxVar() / defaultIntentYieldsConst()
       // todo: differentiate based on ref-ness, not _ref type
       // todo: not all const if it is zippered and one of iterators is var
       if (isReferenceType(rhsType)                == false &&
