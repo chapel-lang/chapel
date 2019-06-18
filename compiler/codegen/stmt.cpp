@@ -212,6 +212,13 @@ GenRet BlockStmt::codegen() {
       }
     }
 
+    // for_set(Symbol, var, info->currentStackVariables.back()) {
+    //   llvm::Value* declared = var->codegen().val;
+    //   llvm::Type* type = var->type->codegen().type;
+    //   codegenLifetimeEnd(type, declared);
+    // }
+    // info->currentStackVariables.pop_back();
+
     info->lvt->removeLayer();
 
     INT_ASSERT(blockStmtBody->getParent() == func);
@@ -351,7 +358,7 @@ GenRet GotoStmt::codegen() {
   if (gotoTag == GOTO_RETURN || gotoTag == GOTO_ERROR_HANDLING) {
     for (auto& curSet: info->currentStackVariables) {
       for_set(Symbol, var, curSet) {
-        if (!var->hasEitherFlag(FLAG_RVV, FLAG_RETARG)) {
+        if (!var->hasFlag(FLAG_RVV)) {
           llvm::Value* declared = var->codegen().val;
           llvm::Type* type = var->type->codegen().type;
           codegenLifetimeEnd(type, declared);

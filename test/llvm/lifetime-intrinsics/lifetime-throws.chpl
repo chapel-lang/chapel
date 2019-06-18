@@ -9,8 +9,15 @@ class EmptyStringError : Error {
 }
 
 proc mytest_throws(f: string) throws {
+  var a = 42;
+  var b = a + 42;
   if f.isEmpty() then
     throw new owned EmptyStringError();
+  if b != 42 * 2 {
+    return a;
+  } else {
+    return b;
+  }
 }
 
 mytest_throws("");
