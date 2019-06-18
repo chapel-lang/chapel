@@ -24,27 +24,25 @@ proc checkLog(x, baseLog2, expect) {
 }
 
 proc checkLogs(type t) {
-  var nbits = numBits(t);
+  var nbits = if isUint(t) then numBits(t) else numBits(t)-1;
 
   for baseLog2 in 1..nbits {
     for i in 0..#nbits {
       if baseLog2 < nbits && baseLog2*i < nbits {
         var val = (1:t) << (baseLog2*i);
-        if val > 0 {
-          /*
-          writeln("t=", t:string,
-                  " val=", val,
-                  " baseLog2=", baseLog2,
-                  " i=", i);
-           */
+        /*
+        writeln("t=", t:string,
+                " val=", val,
+                " baseLog2=", baseLog2,
+                " i=", i);
+         */
 
-          checkLog(val, baseLog2, i);
-          if val >= 2 {
-            checkLog(val+1, baseLog2, i);
-          }
-          if val >= 4 {
-            checkLog(val-1, baseLog2, i-1);
-          }
+        checkLog(val, baseLog2, i);
+        if val >= 2 {
+          checkLog(val+1, baseLog2, i);
+        }
+        if val >= 4 {
+          checkLog(val-1, baseLog2, i-1);
         }
       }
     }
