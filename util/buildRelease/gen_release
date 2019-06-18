@@ -50,7 +50,7 @@ chomp($user);
 $tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLEANUP => 1);
 $archive_dir = "$tmpdir/$reldir";
 SystemOrDie("rm -rf $tmpdir");
-SystemOrDie("mkdir -pv $archive_dir");
+SystemOrDie("mkdir -pv $tmpdir");
 $rootdir = "$tmpdir/chpl_home";
 
 # If CHPL_GEN_RELEASE_NO_CLONE is set in environment, do not clone the repo
@@ -59,11 +59,12 @@ $rootdir = "$tmpdir/chpl_home";
 if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
 
     # copy the current CHPL_HOME into the directory where chapel will be built
-    print "[gen_release] CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with tar...\n";
-    SystemOrDie("cd $chplhome && tar -cf - . | (cd $archive_dir && tar -xf -)");
+    print "[gen_release] CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with cp --archive ...\n";
+    SystemOrDie("cp --archive $chplhome $archive_dir");
 
     $resultdir = "$chplhome/tar";
 } else {
+    SystemOrDie("mkdir -pv $archive_dir");
 
     # check out a clean copy of the sources into the directory where chapel will be built
     $git_url = $ENV{'CHPL_HOME_REPOSITORY'};
