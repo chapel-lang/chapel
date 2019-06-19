@@ -6,6 +6,6 @@ writeln(A);
 forall (id, el) in zip(1..10, cycle('ABC')) do A[id] = ascii(el):int;
 writeln(A);
 
-var B: [2..11] real;
-forall (id, el) in zip(2..11, cycle([1, 2, 3])) do B[id] = el:real;
+var B: [2..11] int;
+forall (id, el) in zip(2..11, cycle([1, 2, 3])) do B[id] = el;
 writeln(B);
