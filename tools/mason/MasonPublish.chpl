@@ -32,13 +32,13 @@ If --dry-run is passed then it checks to see if the package is able to be publis
 Takes in the username of the package owner as an arguemnt*/
 proc masonPublish(args: [] string) throws {
   try! {
-    if args.size == 2 {
+    if args.size < 3 {
       masonPublishHelp();
       exit(0);
     }
     var dry = false;
     var username = "";
-    if args.size > 2 {
+    if args.size == 3 || args.size == 4 {
       for arg in args[2..] {
         if arg == '-h' || arg == '--help'{
           masonPublishHelp();
@@ -63,6 +63,7 @@ proc masonPublish(args: [] string) throws {
         throw new owned MasonError('Must have package set up as git repo to publish');
       }
     }
+    else throw new owned MasonError('Usage must meet the form "mason publish <username> [options]"');
   }
   catch e: MasonError {
     writeln(e.message());
@@ -74,20 +75,24 @@ proc masonPublish(args: [] string) throws {
  Takes the package owners GitHub usrename as input will throw errors through command
 line git commands if any of the git calls fails.*/
 proc publishPackage(username: string) throws {
+  const packageLocation = getEnv('PWD');
+  here.chdir(MASON_HOME);
+  const dir =  getEnv('PWD');
+  mkdir('tmp');
+  here.chdir(dir + '/tmp');
   cloneMasonReg(username);
-  branchMasonReg(username);
-  const cwd = getEnv("PWD");
-  const package=  addPackageToBricks();
-  here.chdir(cwd + "/mason-registry");
+  here.chdir(packageLocation);
   const name = getName();
+  branchMasonReg(username, name);
+  const cwd = getEnv("PWD");
+  const package=  addPackageToBricks(packageLocation);
+  here.chdir(cwd + "/mason-registry");
   const url = gitUrl();
   const projectHome = getProjectHome(cwd);
   here.chdir(cwd +"/mason-registry/");
   runCommand("git add .");
   runCommand("git commit -m '" + package +"'");
   runCommand('git push --set-upstream origin ' + package, true);
-  runCommand('git remote add upstream https://github.com/chapel-lang/mason-registry');
-  runCommand('git request-pull upstream/master https://github.com/chapel-lang/mason-registry ', true);
   here.chdir(cwd);
   rmTree('mason-registry');
 }
@@ -119,9 +124,14 @@ proc dryRun(username: string) throws {
   }
 }
 
+
+proc moveToMasonHome() {
+  const masonHome = getEnv("MASON_HOME");
+  here.chdir(masonHome);
+}
 /* Clones the mason registery fork from the users repo. Takes username as input. */
 proc cloneMasonReg(username: string) {
-  var ret = runCommand("git clone https://github.com/" + username + "/mason-registry mason-registry", true);
+  var ret = runCommand("git clone git@github.com:" + username + "/mason-registry mason-registry", true);
   return ret;
 }
 
@@ -144,15 +154,10 @@ proc gitUrl() {
 
 /* Takes the git username and creates a new branch of the mason registry users fork,
  name or branch is taken from the Mason.toml of the mason package.*/
-proc branchMasonReg(username: string) {
-  const name = getName();
-  const localEnv = getEnv("PWD");
-  const projectName = getProjectHome(localEnv);
-  const Env = localEnv(1..localEnv.length);
-  const parsePackageName = open(projectName + "/Mason.toml", iomode.r);
-  const masonReg = Env + "/mason-registry/";
+proc branchMasonReg(username: string, name: string) {
+  const masonReg = "/mason-registry/";
   const branchCommand = "git checkout -b "+ name: string;
-  var ret = gitC(masonReg, branchCommand, true);
+  var ret = gitC(MASON_HOME + '/tmp/mason-registry', branchCommand, true);
   return ret;
 }
 
@@ -168,11 +173,10 @@ proc getName() {
 
 /* Adds package to the Bricks of the mason-registry branch and then vrares the version.toml
  with the source url of the package's GitHub repo.*/
-proc addPackageToBricks() : string {
+proc addPackageToBricks(projectLocal: string) : string {
   const url = gitUrl();
   const cwd = getEnv("PWD");
-  const projectHome = getProjectHome(cwd);
-  const toParse = open(projectHome + "/Mason.toml", iomode.r);
+  const toParse = open(projectLocal+ "/Mason.toml", iomode.r);
   var tomlFile = new owned(parseToml(toParse));
   const packageName = tomlFile['brick']['name'].s;
   const versionNum = tomlFile['brick']['version'].s;
