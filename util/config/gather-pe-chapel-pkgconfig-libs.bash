@@ -16,21 +16,22 @@ fi
 
 pe_chapel_pkgconfig_libs="$PE_CHAPEL_PKGCONFIG_LIBS"
 
-# ugni, ofi-gni, and gasnet-{aries,gemini} require pmi and ugni
-if [[ "$chpl_comm" == ugni ]]; then
-  pe_chapel_pkgconfig_libs="cray-pmi:cray-ugni:$pe_chapel_pkgconfig_libs"
-elif [[ "$chpl_comm" == ofi ]]; then
+if [[ "$chpl_comm" != none ]]; then
   if [[ "$chpl_target_platform" == cray-shasta ]]; then
-    pe_chapel_pkgconfig_libs="cray-pmi:$pe_chapel_pkgconfig_libs"
-  else
-    # Don't need to add ugni, because it will be added by libfabric (?)
-    pe_chapel_pkgconfig_libs="cray-pmi:cray-ugni:$pe_chapel_pkgconfig_libs"
+    pe_chapel_pkgconfig_libs="cray-pmi-lib:$pe_chapel_pkgconfig_libs"
   fi
-elif [[ "$chpl_comm" == gasnet ]]; then
-  if [[ "$chpl_comm_substrate" == gemini || "$chpl_comm_substrate" == aries ]]; then
-    pe_chapel_pkgconfig_libs="cray-pmi:cray-udreg:cray-ugni:$pe_chapel_pkgconfig_libs"
+  pe_chapel_pkgconfig_libs="cray-pmi:$pe_chapel_pkgconfig_libs"
+
+  if [[ "$chpl_target_platform" == cray-x* ]]; then
+    pe_chapel_pkgconfig_libs="cray-ugni:$pe_chapel_pkgconfig_libs"
+    if [[ "$chpl_comm" == gasnet && \
+          ( "$chpl_comm_substrate" == gemini || \
+            "$chpl_comm_substrate" == aries ) ]]; then
+      pe_chapel_pkgconfig_libs="cray-udreg:$pe_chapel_pkgconfig_libs"
+    fi
   fi
 fi
+
 
 # on login/compute nodes, lustre requires the devel api to make
 # lustre/lustreapi.h available (it's implicitly available on esl nodes)
