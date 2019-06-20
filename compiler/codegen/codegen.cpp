@@ -46,10 +46,8 @@
 // Include relevant LLVM headers
 #include "llvm/IR/Module.h"
 #include "llvm/IR/TypeBuilder.h"
-#include "llvm/IR/Attributes.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Support/Casting.h"
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
