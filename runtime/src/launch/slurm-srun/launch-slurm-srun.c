@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "chpl-env-gen.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
@@ -403,6 +404,14 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the account name if one was provided  
     if (account && strlen(account) > 0) {
       len += sprintf(iCom+len, "--account=%s ", account);
+    }
+    
+    // Shasta's srun needs to be told which PMI plugin to use
+    // TODO: This is a stopgap.  Indications are the the system PMI
+    //       would be better to use anyway, but I'm trying to reduce
+    //       the time until I can deliver some (any) RPM.
+    if (strcmp(CHPL_TARGET_PLATFORM, "cray-shasta") == 0) {
+      len += sprintf(iCom+len, "--mpi=cray_shasta= ");
     }
     
     // add the (possibly wrapped) binary name
