@@ -45,8 +45,11 @@
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
 #include "llvm/IR/Module.h"
+#include "llvm/IR/TypeBuilder.h"
+#include "llvm/IR/Attributes.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Casting.h"
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
@@ -1145,6 +1148,7 @@ static void codegen_header_compilation_config() {
       }
     }
 
+#ifndef HAVE_LLVM
     // generate the "about" function
     fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
     fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
@@ -1169,6 +1173,90 @@ static void codegen_header_compilation_config() {
     }
 
     fprintf(cfgfile.fptr, "}\n");
+#endif
+
+    if (llvmCodegen) {
+#ifdef HAVE_LLVM
+      genGlobalString("chpl_compileCommand", compileCommand);
+      genGlobalString("chpl_compileVersion", compileVersion);
+      genGlobalString("chpl_compileDirectory", getCwd());
+      if (strcmp(saveCDir, "") != 0) {
+        char *actualPath = realpath(saveCDir, NULL);
+        genGlobalString("chpl_saveCDir", actualPath);
+      } else {
+        genGlobalString("chpl_saveCDir", "");
+      }
+
+      genGlobalString("CHPL_HOME", CHPL_HOME);
+
+      genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
+      genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
+
+      for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+        if (env->first != "CHPL_HOME") {
+          genGlobalString(env->first.c_str(), env->second);
+        }
+      }
+
+      llvm::FunctionType* programAboutType;
+      llvm::Function* programAboutFunc;
+      if ((programAboutFunc = getFunctionLLVM("chpl_program_about"))) {
+        programAboutType = programAboutFunc->getFunctionType();
+      } else {
+        programAboutType = llvm::FunctionType::get(
+          llvm::Type::getVoidTy(gGenInfo->module->getContext()), false
+        );
+        programAboutFunc = llvm::Function::Create(
+          programAboutType, llvm::Function::ExternalLinkage, "chpl_program_about", gGenInfo->module
+        );
+      }
+
+      llvm::BasicBlock* programAboutBlock = llvm::BasicBlock::Create(
+        gGenInfo->module->getContext(), "entry", programAboutFunc
+      );
+      gGenInfo->irBuilder->SetInsertPoint(programAboutBlock);
+
+      llvm::FunctionType* printfType = llvm::TypeBuilder<int(char*, ...), false>::get(gGenInfo->module->getContext());
+      llvm::Function* printfFunc = llvm::cast<llvm::Function>(
+        gGenInfo->module->getOrInsertFunction(
+          "printf", printfType, llvm::AttributeList().addAttribute(
+            gGenInfo->module->getContext(), 0U, llvm::Attribute::NoAlias
+          )
+        )
+      );
+
+      std::vector<llvm::Value *> compilationCommandArgs(2);
+      compilationCommandArgs[0] = gGenInfo->irBuilder->CreateLoad(new_CStringSymbol("Compilation command: %%s\\n")->codegen().val);
+      compilationCommandArgs[1] = gGenInfo->irBuilder->CreateLoad(new_CStringSymbol(compileCommand)->codegen().val);
+      gGenInfo->irBuilder->CreateCall(printfFunc, compilationCommandArgs);
+
+      std::vector<llvm::Value *> chapelCompilerVersionArgs(2);
+      chapelCompilerVersionArgs[0] = gGenInfo->irBuilder->CreateLoad(new_CStringSymbol("Chapel compiler version: %%s\\n")->codegen().val);
+      chapelCompilerVersionArgs[1] = gGenInfo->irBuilder->CreateLoad(new_CStringSymbol(compileVersion)->codegen().val);
+      gGenInfo->irBuilder->CreateCall(printfFunc, chapelCompilerVersionArgs);
+
+      std::vector<llvm::Value *> chapelEnvironmentArgs(1);
+      chapelEnvironmentArgs[0] = gGenInfo->irBuilder->CreateLoad(new_CStringSymbol("Chapel environment: \\n")->codegen().val);
+      gGenInfo->irBuilder->CreateCall(printfFunc, chapelEnvironmentArgs);
+
+      std::vector<llvm::Value *> chplHomeArgs(2);
+      chplHomeArgs[0] = gGenInfo->irBuilder->CreateLoad(new_CStringSymbol("CHPL_HOME: %%s\\n")->codegen().val);
+      chplHomeArgs[1] = gGenInfo->irBuilder->CreateLoad(new_CStringSymbol(CHPL_HOME)->codegen().val);
+      gGenInfo->irBuilder->CreateCall(printfFunc, chplHomeArgs);
+      
+      for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+        if (env->first != "CHPL_HOME") {
+          std::vector<llvm::Value *> envArgs(3);
+          envArgs[0] = gGenInfo->irBuilder->CreateLoad(new_CStringSymbol("  %%s: %%s\\n")->codegen().val);
+          envArgs[1] = gGenInfo->irBuilder->CreateLoad(new_CStringSymbol(env->first.c_str())->codegen().val);
+          envArgs[2] = gGenInfo->irBuilder->CreateLoad(new_CStringSymbol(env->second)->codegen().val);
+          gGenInfo->irBuilder->CreateCall(printfFunc, chplHomeArgs);
+        }
+      }
+
+      gGenInfo->irBuilder->CreateRetVoid();
+#endif
+  }
 
     genComment("Filename Lookup Table");
     genFilenameTable();
