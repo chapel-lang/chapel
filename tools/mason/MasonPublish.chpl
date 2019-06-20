@@ -79,25 +79,23 @@ proc publishPackage(username: string) throws {
   here.chdir(MASON_HOME);
   const dir =  getEnv('PWD');
   mkdir('tmp');
-  here.chdir(dir + '/tmp');
+  here.chdir(MASON_HOME + '/tmp');
   cloneMasonReg(username);
   here.chdir(packageLocation);
   const name = getName();
   branchMasonReg(username, name);
   const cwd = getEnv("PWD");
   const package=  addPackageToBricks(packageLocation);
-  here.chdir(cwd + "/mason-registry");
-  const url = gitUrl();
+  here.chdir(MASON_HOME + "/tmp/mason-registry");
   const projectHome = getProjectHome(cwd);
-  here.chdir(cwd +"/mason-registry/");
   runCommand("git add .");
   runCommand("git commit -m '" + package +"'");
   runCommand('git push --set-upstream origin ' + package, true);
-  here.chdir(cwd);
-  rmTree('mason-registry');
+  here.chdir(MASON_HOME);
+  rmTree('tmp');
 }
 
-/* If --dry-run is passed then it takes the usernane and checks to see if the mason-registry is forked
+/* If --dry-run is passed then it takes the username and checks to see if the mason-registry is forked
  and the package has a git remote origin. If both exist then the package can be published. */
 proc dryRun(username: string) throws {
   var fork = false;
@@ -181,9 +179,9 @@ proc addPackageToBricks(projectLocal: string) : string {
   const packageName = tomlFile['brick']['name'].s;
   const versionNum = tomlFile['brick']['version'].s;
   const oldDir = here.cwd();
-  here.chdir(oldDir + "/mason-registry/Bricks/");
+  here.chdir(MASON_HOME + "/tmp/mason-registry/Bricks/");
   mkdir(packageName);
-  here.chdir(oldDir + "/mason-registry/Bricks/" + packageName + "/");
+  here.chdir(MASON_HOME + "/tmp/mason-registry/Bricks/" + packageName + "/");
   const baseToml = tomlFile;
   var newToml = open(versionNum + ".toml", iomode.cw);
   var tomlWriter = newToml.writer();
