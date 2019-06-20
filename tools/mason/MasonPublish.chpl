@@ -29,7 +29,7 @@ use MasonModify;
 /* Top Level procedure that gets called from mason.chpl that takes in arguments from command line
 Retruns the help output in '-h' or '--help' exits in the arguements.
 If --dry-run is passed then it checks to see if the package is able to be published.
-Takes in the username of the package owner as an arguemnt*/
+Takes in the username of the package owner as an argument*/
 proc masonPublish(args: [] string) throws {
   try! {
     if args.size < 3 {
