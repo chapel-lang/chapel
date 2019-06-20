@@ -45,7 +45,6 @@
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
 #include "llvm/IR/Module.h"
-#include "llvm/IR/TypeBuilder.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
 #endif
@@ -1163,7 +1162,9 @@ static void codegen_header_compilation_config() {
       );
       gGenInfo->irBuilder->SetInsertPoint(programAboutBlock);
 
-      llvm::FunctionType* printfType = llvm::TypeBuilder<int(char*, ...), false>::get(gGenInfo->module->getContext());
+      llvm::FunctionType* printfType = llvm::FunctionType::get(
+        llvm::Type::getInt32Ty(gGenInfo->module->getContext()), {}, true
+      );
       llvm::Function* printfFunc = llvm::cast<llvm::Function>(
         gGenInfo->module->getOrInsertFunction("printf", printfType)
       );
