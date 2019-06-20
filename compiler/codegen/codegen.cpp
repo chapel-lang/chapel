@@ -1170,26 +1170,26 @@ static void codegen_header_compilation_config() {
 
       std::vector<llvm::Value *> compilationCommandArgs(2);
       compilationCommandArgs[0] = gGenInfo->irBuilder->CreateLoad(
-        new_CStringSymbol("Compilation command: %%s\\n")->codegen().val);
+        new_CStringSymbol("Compilation command: %s\n")->codegen().val);
       compilationCommandArgs[1] = gGenInfo->irBuilder->CreateLoad(
         new_CStringSymbol(compileCommand)->codegen().val);
       gGenInfo->irBuilder->CreateCall(printfFunc, compilationCommandArgs);
 
       std::vector<llvm::Value *> chapelCompilerVersionArgs(2);
       chapelCompilerVersionArgs[0] = gGenInfo->irBuilder->CreateLoad(
-        new_CStringSymbol("Chapel compiler version: %%s\\n")->codegen().val);
+        new_CStringSymbol("Chapel compiler version: %s\n")->codegen().val);
       chapelCompilerVersionArgs[1] = gGenInfo->irBuilder->CreateLoad(
         new_CStringSymbol(compileVersion)->codegen().val);
       gGenInfo->irBuilder->CreateCall(printfFunc, chapelCompilerVersionArgs);
 
       std::vector<llvm::Value *> chapelEnvironmentArgs(1);
       chapelEnvironmentArgs[0] = gGenInfo->irBuilder->CreateLoad(
-        new_CStringSymbol("Chapel environment: \\n")->codegen().val);
+        new_CStringSymbol("Chapel environment:\n")->codegen().val);
       gGenInfo->irBuilder->CreateCall(printfFunc, chapelEnvironmentArgs);
 
       std::vector<llvm::Value *> chplHomeArgs(2);
       chplHomeArgs[0] = gGenInfo->irBuilder->CreateLoad(
-        new_CStringSymbol("CHPL_HOME: %%s\\n")->codegen().val);
+        new_CStringSymbol("  CHPL_HOME: %s\n")->codegen().val);
       chplHomeArgs[1] = gGenInfo->irBuilder->CreateLoad(
         new_CStringSymbol(CHPL_HOME)->codegen().val);
       gGenInfo->irBuilder->CreateCall(printfFunc, chplHomeArgs);
@@ -1198,12 +1198,12 @@ static void codegen_header_compilation_config() {
         if (env->first != "CHPL_HOME") {
           std::vector<llvm::Value *> envArgs(3);
           envArgs[0] = gGenInfo->irBuilder->CreateLoad(
-            new_CStringSymbol("  %%s: %%s\\n")->codegen().val);
+            new_CStringSymbol("  %s: %s\n")->codegen().val);
           envArgs[1] = gGenInfo->irBuilder->CreateLoad(
             new_CStringSymbol(env->first.c_str())->codegen().val);
           envArgs[2] = gGenInfo->irBuilder->CreateLoad(
             new_CStringSymbol(env->second)->codegen().val);
-          gGenInfo->irBuilder->CreateCall(printfFunc, chplHomeArgs);
+          gGenInfo->irBuilder->CreateCall(printfFunc, envArgs);
         }
       }
 
