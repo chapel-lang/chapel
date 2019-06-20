@@ -1,3 +1,0 @@
-uncaught AssertionError: assert failed - First element is of shape (5) and Second is of shape (3)
-  ./UnitTest.chpl:605: thrown here
-  UnEqualLenListLess.chpl:4: uncaught here

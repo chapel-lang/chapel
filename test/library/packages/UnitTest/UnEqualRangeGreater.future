@@ -1,5 +1,0 @@
-bug: `canResolve` not suppporting unbounded ranges
-
-Current Output
-./UnitTest.chpl:278: In function 'assertGreaterThan':
-./UnitTest.chpl:279: error: parallel iteration is not supported over unbounded ranges

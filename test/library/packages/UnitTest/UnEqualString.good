@@ -1,7 +1,0 @@
-uncaught AssertionError: Strings differ: 'unequalstring' != 'unequalString'
-First differing element at index 8:
-'s'
-'S'
-
-  ./UnitTest.chpl:150: thrown here
-  UnEqualString.chpl:4: uncaught here

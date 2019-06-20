@@ -1,3 +1,0 @@
-uncaught AssertionError: assert failed - '5.0 + 6.0i' != '7.0i'
-  ./UnitTest.chpl:227: thrown here
-  UnEqualComplex.chpl:4: uncaught here

@@ -1,3 +1,0 @@
-uncaught AssertionError: assert failed - Strings are not of same length
-  ./UnitTest.chpl:461: thrown here
-  UnEqualLenStringGreater.chpl:4: uncaught here
