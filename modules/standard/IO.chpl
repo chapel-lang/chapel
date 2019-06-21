@@ -2227,7 +2227,7 @@ inline proc channel._mark() throws {
   if err then
     throw SystemError.fromSyserr(err);
 
-  return offset();
+  return offset;
 }
 
 /*
