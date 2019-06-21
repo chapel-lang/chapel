@@ -2221,7 +2221,7 @@ inline proc channel._offset():int(64) {
   :throws: SystemError: if marking the channel failed
  */
 inline proc channel._mark() throws {
-  const offset = channel.offset();
+  const offset = this.offset();
   const err = qio_channel_mark(false, _channel_internal);
 
   if err then
