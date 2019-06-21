@@ -1,4 +1,4 @@
 bug: == in LinkedList is giving false even if both are having same data
 
 Current output is 
-./UnitTest.chpl:205: error: assert failed - '1 2 3' != '1 2 3'
+AssertionError: assert failed - '1 2 3' != '1 2 3'
