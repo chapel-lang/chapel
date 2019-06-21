@@ -52,11 +52,13 @@ proc masonPublish(args: [] string) throws {
         }
       }
       if doesGitOriginExist() {
-        if dry {
+        if dry && args.size == 4 {
           dryRun(username);
         }
         else {
-          publishPackage(username);
+          if args.size == 3 && !dry {
+            publishPackage(username);
+          }
         }
       }
       else {
@@ -94,6 +96,7 @@ proc publishPackage(username: string) throws {
     runCommand('git push --set-upstream origin ' + package, true);
     here.chdir(MASON_HOME);
     rmTree('tmp');
+    writeln('Go to the above link to open up a Pull Request to the mason-registry');
   }
   catch {
     here.chdir(MASON_HOME);
@@ -118,6 +121,13 @@ proc dryRun(username: string) throws {
   }
   if git && fork {
     writeln('Package can be published to the mason-registry');
+    writeln('Commands that will ran are:');
+    writeln('git clone git:github.com:[username]/mason-registry mason-registry');
+    writeln('git checkout -b [package name]');
+    writeln('Package Name will be added to the Bricks in the mason-registry');
+    writeln('git add .');
+    writeln('git commit -m [package name]');
+    writeln('git push --set-upstream origin [package name]');
   }
   else {
     if fork == false {
@@ -183,13 +193,21 @@ proc branchMasonReg(username: string, name: string) throws {
 }
 
 /* Gets name from the Mason.toml */
-proc getName() {
-  const cwd = getEnv("PWD");
-  const projectHome = getProjectHome(cwd);
-  const toParse = open(projectHome + "/Mason.toml", iomode.r);
-  var tomlFile = new owned(parseToml(toParse));
-  const name = tomlFile['brick']['name'].s;
-  return name;
+proc getName() throws {
+  try! {
+    const cwd = getEnv("PWD");
+    const projectHome = getProjectHome(cwd);
+    const toParse = open(projectHome + "/Mason.toml", iomode.r);
+    var tomlFile = new owned(parseToml(toParse));
+    const name = tomlFile['brick']['name'].s;
+    return name;
+    }
+  catch {
+    here.chdir(MASON_HOME);
+    rmTree('/tmp');
+    writeln('Error getting the name of your package, ensure your package is a mason project');
+    exit(1);
+    }
 }
 
 /* Adds package to the Bricks of the mason-registry branch and then vrares the version.toml
