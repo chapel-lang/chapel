@@ -2,7 +2,7 @@ Created new library project: test_dir
 Publish a package to the mason-registry repository
 
 Usage:
-    mason publish [options]
+    mason publish [options] <username>
 
 Options:
     -h, --help                   Display this message

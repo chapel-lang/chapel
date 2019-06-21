@@ -55,17 +55,18 @@ proc masonPublish(args: [] string) throws {
         if dry && args.size == 4 {
           dryRun(username);
         }
-        else {
-          if args.size == 3 && !dry {
+        else if args.size == 3 && !dry {
             publishPackage(username);
-          }
+        }
+        else if args.size == 3 && dry {
+          throw new owned MasonError('Must pass your username with --dry-run');
         }
       }
       else {
-        throw new owned MasonError('Must have package set up as git repo to publish');
+        throw new owned MasonError('Must have remote origin set up in repository in order to publish.');
       }
     }
-    else throw new owned MasonError('Usage must meet the form "mason publish <username> [options]"');
+    else throw new owned MasonError('Usage must meet the form "mason publish [options] <username>"');
   }
   catch e: MasonError {
     writeln(e.message());
