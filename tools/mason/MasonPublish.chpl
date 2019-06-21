@@ -75,24 +75,31 @@ proc masonPublish(args: [] string) throws {
  Takes the package owners GitHub usrename as input will throw errors through command
 line git commands if any of the git calls fails.*/
 proc publishPackage(username: string) throws {
-  const packageLocation = getEnv('PWD');
-  here.chdir(MASON_HOME);
-  const dir =  getEnv('PWD');
-  mkdir('tmp');
-  here.chdir(MASON_HOME + '/tmp');
-  cloneMasonReg(username);
-  here.chdir(packageLocation);
-  const name = getName();
-  branchMasonReg(username, name);
-  const cwd = getEnv("PWD");
-  const package=  addPackageToBricks(packageLocation);
-  here.chdir(MASON_HOME + "/tmp/mason-registry");
-  const projectHome = getProjectHome(cwd);
-  runCommand("git add .");
-  runCommand("git commit -m '" + package +"'");
-  runCommand('git push --set-upstream origin ' + package, true);
-  here.chdir(MASON_HOME);
-  rmTree('tmp');
+  try! {
+    const packageLocation = getEnv('PWD');
+    here.chdir(MASON_HOME);
+    const dir =  getEnv('PWD');
+    mkdir('tmp');
+    here.chdir(MASON_HOME + '/tmp');
+    cloneMasonReg(username);
+    here.chdir(packageLocation);
+    const name = getName();
+    branchMasonReg(username, name);
+    const cwd = getEnv("PWD");
+    const package=  addPackageToBricks(packageLocation);
+    here.chdir(MASON_HOME + "/tmp/mason-registry");
+    const projectHome = getProjectHome(cwd);
+    runCommand("git add .");
+    runCommand("git commit -m '" + package +"'");
+    runCommand('git push --set-upstream origin ' + package, true);
+    here.chdir(MASON_HOME);
+    rmTree('tmp');
+  }
+  catch {
+    here.chdir(MASON_HOME);
+    rmTree('/tmp/');
+    writeln('Error publishing your package to the mason-registry');
+  }
 }
 
 /* If --dry-run is passed then it takes the username and checks to see if the mason-registry is forked
@@ -127,10 +134,18 @@ proc moveToMasonHome() {
   const masonHome = getEnv("MASON_HOME");
   here.chdir(masonHome);
 }
+
 /* Clones the mason registery fork from the users repo. Takes username as input. */
-proc cloneMasonReg(username: string) {
-  var ret = runCommand("git clone git@github.com:" + username + "/mason-registry mason-registry", true);
-  return ret;
+proc cloneMasonReg(username: string) throws {
+  try! {
+    var ret = runCommand("git clone git@github.com:" + username + "/mason-registry mason-registry", true);
+    return ret;
+    }
+  catch {
+    writeln('Error cloning the fork of mason-registry');
+    writeln('Make sure you have forked the mason-registry on GitHub');
+    exit(1);
+    }
 }
 
 /* Checks to see if 'git config --get remote.origin.url' exists */
@@ -152,11 +167,19 @@ proc gitUrl() {
 
 /* Takes the git username and creates a new branch of the mason registry users fork,
  name or branch is taken from the Mason.toml of the mason package.*/
-proc branchMasonReg(username: string, name: string) {
-  const masonReg = "/mason-registry/";
-  const branchCommand = "git checkout -b "+ name: string;
-  var ret = gitC(MASON_HOME + '/tmp/mason-registry', branchCommand, true);
-  return ret;
+proc branchMasonReg(username: string, name: string) throws {
+  try! {
+    const masonReg = "/mason-registry/";
+    const branchCommand = "git checkout -b "+ name: string;
+    var ret = gitC(MASON_HOME + '/tmp/mason-registry', branchCommand, true);
+    return ret;
+    }
+  catch {
+    here.chdir(MASON_HOME);
+    rmTree('/tmp/');
+    writeln('Error branching mason-registry');
+    exit(1);
+    }
 }
 
 /* Gets name from the Mason.toml */
