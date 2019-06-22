@@ -134,8 +134,12 @@ module Sets {
     }
 
     /*
+      Add a copy of the element `x` to this set. Does nothing if this set
+      already contains an element equal to the value of `x`.
+
+      :arg x: The element to add to this set.
     */
-    proc add(in x: eltType) {
+    proc add(const ref x: eltType) {
       return;
     }
 
@@ -146,43 +150,64 @@ module Sets {
       :arg x: The element to test for membership.
       :return: Whether or not the given element is a member of this set.
     */
-    proc contains(const ref x: eltType): bool {
+    proc const contains(const ref x: eltType): bool {
+      return false;
+    }
+
+    /*
+      Returns `true` if this set shares no elements in common with the set
+      `other`, and `false` otherwise.
+
+      :arg other: The set to compare against.
+      :return: Whether or not this set and `other` are disjoint.
+    */
+    proc const disjoint(const ref other: set(eltType, ?)): bool {
+      return false;
+    }
+
+    /*
+      Returns `true` if this set and `other` have at least one element in
+      common.
+
+      :arg other: The set to compare against.
+      :return: Whether or not this set and `other` intersect.
+    */
+    proc const intersect(const ref other: set(eltType, ?)): bool {
+      return false;
+    }
+
+    /*
+      Returns `true` if the value of every element in this set is contained
+      in the set `other`.
+
+      :arg other: The set to compare against.
+      :return: Whether or not this set is a subset of `other`.
+    */
+    proc const subset(const ref other: set(eltType, ?)): bool {
+      return false;
+    }
+
+    /*
+      Returns `true` if this set is a proper subset of `other`. That is,
+      the value of every element in this set is contained in `other`, and
+      the size of `other` is larger than the size of this set.
+
+      :arg other: The set to compare against.
+      :return: Whether or not this set is a subset of `other`.
+    */
+    proc const properSubset(const ref other: set(eltType, ?)): bool {
       return false;
     }
 
     /*
     */
-    proc disjoint(other: set(eltType, ?)): bool {
+    proc const superset(const ref other: set(eltType, ?)): bool {
       return false;
     }
 
     /*
     */
-    proc intersect(other: set(eltType, ?)): bool {
-      return false;
-    }
-
-    /*
-    */
-    proc subset(other: set(eltType, ?)): bool {
-      return false;
-    }
-
-    /*
-    */
-    proc properSubset(other: set(eltType, ?)): bool {
-      return false;
-    }
-
-    /*
-    */
-    proc superset(other: set(eltType, ?)): bool {
-      return false;
-    }
-
-    /*
-    */
-    proc properSuperset(other: set(eltType, ?)): bool {
+    proc const properSuperset(const ref other: set(eltType, ?)): bool {
       return false;
     }
 
@@ -212,7 +237,7 @@ module Sets {
 
     /*
     */
-    proc writeThis(ch: channel) {
+    proc const writeThis(ch: channel) {
       return;
     }
 
@@ -230,7 +255,7 @@ module Sets {
 
     /*
     */
-    proc toArray(): [] eltType {
+    proc const toArray(): [] eltType {
       return nil;
     }
 
@@ -261,7 +286,7 @@ module Sets {
   /*
   */
   proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    return new set(t, false);
+    return setUnion(a, b);
   }
 
   /*
@@ -274,7 +299,7 @@ module Sets {
   /*
   */
   proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    return new set(t, false);
+    return setDifference(a, b);
   }
 
   /*
@@ -287,7 +312,7 @@ module Sets {
   /*
   */
   proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    return new set(t, false);
+    return setIntersection(a, b);
   }
 
   /*
@@ -300,7 +325,7 @@ module Sets {
   /*
   */
   proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    return new set(t, false);
+    return setSymmetricDiff(a, b);
   }
 
   /*
