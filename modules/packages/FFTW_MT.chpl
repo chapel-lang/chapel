@@ -83,7 +83,6 @@
 
 module FFTW_MT {
   use FFTW;
-  require "-lfftw3_threads", "-lpthread";
 
   /*
     By default, this module will call :proc:`init_FFTW_MT()` and
