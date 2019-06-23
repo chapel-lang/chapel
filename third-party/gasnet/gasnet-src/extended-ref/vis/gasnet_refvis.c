@@ -96,7 +96,7 @@ extern void gasnete_VIS_SetPeerCompletionHandler(gex_AM_Index_t handler,
   if (!handler) { // disarm
     pcinfo->_handler = 0; 
   } else { // arm
-    gasneti_assert(nbytes <= GEX_VIS_MAX_PEERCOMPLETION);
+    gasneti_assert_uint(nbytes ,<=, GEX_VIS_MAX_PEERCOMPLETION);
     gasneti_assert(!nbytes || source_addr);
     pcinfo->_handler = handler; 
     pcinfo->_nbytes = nbytes; 
@@ -122,7 +122,7 @@ gex_Event_t gasnete_VIS_pcwrap(gasnete_synctype_t const synctype, // manifest co
       case gasnete_synctype_b:   lc_opt = GEX_EVENT_NOW; lc = GEX_EVENT_INVALID; break;
       case gasnete_synctype_nb:  lc_opt = &lc; break;
       case gasnete_synctype_nbi: lc_opt = GEX_EVENT_GROUP; lc = GEX_EVENT_INVALID; break;
-      default: gasneti_unreachable();
+      default: gasneti_unreachable_error(("Invalid synctype=%i",(int)synctype));
     }
     gex_AM_RequestMedium1(tm, rank, _hidx_gasnete_vis_pcthunk_reqh, (void *)(pcinfo->_srcaddr), pcinfo->_nbytes, lc_opt, 0, pcinfo->_handler);
     pcinfo->_handler = 0; // reset

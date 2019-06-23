@@ -13,11 +13,6 @@ if BLCR_ENABLED
 include $(top_builddir)/other/blcr/blcr.mak
 endif
 
-## Fca
-if FCA_ENABLED
-include $(top_builddir)/other/fca/fca.mak
-endif
-
 ## Firehose
 fh_type=region
 include $(top_builddir)/other/firehose/firehose.mak
@@ -84,8 +79,7 @@ CONDUIT_FILELIST =               \
       gasnet_extended_fwd.h      \
       gasnet_firehose.c          \
       gasnet_ibv.h               \
-      firehose_fwd.h             \
-      license.txt                
+      firehose_fwd.h             
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line
@@ -96,30 +90,30 @@ CONDUIT_SOURCELIST =                 \
       $(srcdir)/gasnet_core_thread.c \
       $(srcdir)/gasnet_extended.c    \
       $(srcdir)/gasnet_firehose.c    \
-      $(fca_sourcelist) $(fh_sourcelist) $(blcr_sourcelist) \
+      $(fh_sourcelist) $(blcr_sourcelist) \
       $(ssh_sources) $(pmi_sources)
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @IBV_CFLAGS@ $(fh_extralibcflags) $(ssh_defines) $(mpi_defines) $(pmi_cppflags) $(fca_extralibcflags)\
+CONDUIT_EXTRALIBCFLAGS = @IBV_CFLAGS@ $(fh_extralibcflags) $(ssh_defines) $(mpi_defines) $(pmi_cppflags) \
 			 $(ibv_thread_defines) $(blcr_extralibcflags)
 
 # additional conduit header files to install from external, non-standard directories
-CONDUIT_EXTRAHEADERS = $(fh_extraheaders) $(fca_extraheaders) $(blcr_extraheaders)
+CONDUIT_EXTRAHEADERS = $(fh_extraheaders) $(blcr_extraheaders)
 
 
 # headers selected by default rules that should NOT be installed
-CONDUIT_PRIVATEHEADERS = $(fh_privheaders) $(fca_privheaders) $(blcr_privheaders) gasnet_ibv.h
+CONDUIT_PRIVATEHEADERS = $(fh_privheaders) $(blcr_privheaders) gasnet_ibv.h
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = $(fh_extradeps) $(fca_extradeps) $(blcr_extradeps) \
+CONDUIT_EXTRADEPS = $(fh_extradeps) $(blcr_extradeps) \
                     $(ssh_deps) $(mpi_deps) $(pmi_deps)
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as
 # forced targets in this file, and should probably use LIBINCLUDES/LIBDEFINES
-CONDUIT_SPECIAL_OBJS = $(mpi_special_objs) $(fh_special_objs) $(fca_special_objs) $(blcr_special_objs)
+CONDUIT_SPECIAL_OBJS = $(mpi_special_objs) $(fh_special_objs) $(blcr_special_objs)
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:
