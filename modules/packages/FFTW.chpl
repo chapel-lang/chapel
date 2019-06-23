@@ -108,6 +108,24 @@ module FFTW {
   if (isFFTW_MKL) {
     require "fftw3_mkl.h";
   }
+  
+  /*
+    By default, this module will call :proc:`init_FFTW_MT()` and
+    :proc:`plan_with_nthreads()` as part of its initialization.
+    Setting this to `false` at compile-time will disable this
+    auto-initialization, requiring these calls to be made
+    manually.
+  */
+  config param autoInitFFTW_MT = true;
+
+  if autoInitFFTW_MT {
+    //
+    // If we're auto-initializing, when this module is used, it
+    // calls init_FFTW_MT() and plan_with_nthreads().
+    //
+    init_FFTW_MT();
+    plan_with_nthreads();
+  }
 
   /*
     Controls execution-time array size checks in the FFTW
@@ -572,6 +590,65 @@ module FFTW {
             ", the array's leading dimension is not the proper size (expected ", domDim,
             ", got ", arrDim, ")");
     return true;
+  }
+
+  /* These are the FFTW multithreaded helper routines */
+  //
+  // TODO: If users don't like the "on all locales" property, we
+  // could consider making this a method on locale later to permit
+  // either calling here.init_FFTW_MT or Locales.init_FFTW_MT...
+  //
+  // TODO: Incorporate a better error handling story
+  //
+  /*
+    Initialize the :mod:`FFTW_MT` module.  This has the effect of
+    calling the FFTW C routine ``fftw_init_threads()`` on all locales,
+    halting the Chapel program if any of the calls generate an error.
+  */
+  proc init_FFTW_MT() {
+    coforall loc in Locales {
+      on loc do {
+        if (C_FFTW.fftw_init_threads() == 0) then
+          halt("Failed to properly initialize FFTW threads on locale ", 
+               here.id);
+      }
+    }
+  }
+
+
+  //
+  // TODO: As with the previous routine, we could consider making
+  // this a method on locales if users want.
+  //
+  /*
+    Register the number of threads to use for multi-threaded FFTW
+    plans on all locales.  If fewer than one thread is requested, each
+    locale will default to ``here.maxTaskPar`` threads.  Note that
+    this routine can be called multiple times, overwriting previous
+    values.
+
+    :arg nthreads: The number of threads to use.
+    :type nthreads: `int`
+  */
+  proc plan_with_nthreads(nthreads: int = 0) {
+    coforall loc in Locales {
+      on loc do {
+        const myNThreads = if nthreads < 1 then here.maxTaskPar else nthreads;
+        C_FFTW.fftw_plan_with_nthreads(myNThreads.safeCast(c_int));
+      }
+    }
+  }
+
+
+  /*
+    Clean up the memory used by FFTW threads on all locales.
+  */
+  proc cleanup_threads() {
+    coforall loc in Locales {
+      on loc do {
+        C_FFTW.fftw_cleanup_threads();
+      }
+    }
   }
 
   pragma "no doc"
