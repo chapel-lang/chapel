@@ -68,7 +68,7 @@ proc masonPublish(args: [] string) throws {
             publishPackage(username);
           }
           else {
-                throw new owned MasonError(username + ' is not a valid GitHub username');
+                throw new owned MasonError(username + ' is not a valid GitHub username or mason-registry is not forked');
           }
         }
         else if args.size == 3 && dry {
