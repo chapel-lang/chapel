@@ -9,4 +9,3 @@ Options:
     --dry-run                    Check to see if package is ready to be published
 
 Publishing requires the mason-registry to be forked under the provided username.
-
