@@ -97,6 +97,7 @@ proc publishPackage(username: string) throws {
     runCommand('git push --set-upstream origin ' + package, true);
     here.chdir(MASON_HOME);
     rmTree('tmp');
+    writeln('--------------------------------------------------------------------');
     writeln('Go to the above link to open up a Pull Request to the mason-registry');
   }
   catch {
