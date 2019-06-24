@@ -295,18 +295,23 @@ module DefaultRectangular {
                                                      ignoreRunning,
                                                      minIndicesPerTask,
                                                      ranges);
+      if debugDefaultDist {
+        chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
+                           " ranges(", parDim, ").length=", ranges(parDim).length);
+      }
+      if debugDataPar {
+        chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n" +
+                           "### ignoreRunning = ", ignoreRunning, "\n" +
+                           "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+                           "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
+                           "### nranges = ", ranges);
+      }
       if numChunks <= 1 {
         for i in these_help(1) {
           yield i;
         }
       } else {
         if debugDefaultDist {
-          chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                             " ranges(", parDim, ").length=", ranges(parDim).length);
-          chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n" +
-                             "### ignoreRunning = ", ignoreRunning, "\n" +
-                             "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
-                             "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n");
           chpl_debug_writeln("*** DI: ranges = ", ranges);
         }
         // TODO: The following is somewhat of an abuse of what
@@ -323,11 +328,10 @@ module DefaultRectangular {
                                         ranges(parDim)._high,
                                         ranges(parDim)._low,
                                         ranges(parDim)._low);
-          if (block(parDim).stridable) then
+          if block(parDim).stridable then
             block(parDim) = lo..hi by block(parDim).stride align chpl__idxToInt(block(parDim).alignment);
-          else {
+          else
             block(parDim) = lo..hi;
-          }
           if debugDefaultDist {
             chpl_debug_writeln("*** DI[", chunk, "]: block = ", block);
           }
