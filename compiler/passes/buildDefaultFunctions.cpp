@@ -1428,6 +1428,17 @@ FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
 
   fn->retType = dtVoid;
 
+  DefExpr* def = new DefExpr(fn);
+
+  ct->symbol->defPoint->insertBefore(def);
+
+  fn->setMethod(true);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+
+  reset_ast_loc(def, ct->symbol);
+
+  ct->methods.add(fn);
+
   return fn;
 }
 
@@ -1486,18 +1497,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
                                     fn->_this));
     }
 
-    DefExpr* def = new DefExpr(fn);
-
-    ct->symbol->defPoint->insertBefore(def);
-
-    fn->setMethod(true);
-    fn->addFlag(FLAG_METHOD_PRIMARY);
-
-    reset_ast_loc(def, ct->symbol);
-
     normalize(fn);
-
-    ct->methods.add(fn);
   }
 
   // Make readThis when appropriate
