@@ -61,7 +61,7 @@ proc masonPublish(args: [] string) throws {
           exit(0);
         }
         else if args.size == 3 && !dry {
-          var usernameCheck = ('git ls-remote https://github.com/' + username + '/mason-registry').split();                            
+          var usernameCheck = ('git ls-remote https://github.com/' + username + '/mason-registry').split();
           var p = spawn(usernameCheck);
           p.wait();
           if p.exit_status == 0 {
