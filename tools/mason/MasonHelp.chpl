@@ -410,7 +410,6 @@ proc masonCleanHelp() {
   writeln();       
 }
 
-
 proc masonDocHelp() {
   writeln("Generate documentation for a mason package using chpldoc");
   writeln();

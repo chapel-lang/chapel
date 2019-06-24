@@ -61,8 +61,15 @@ proc masonPublish(args: [] string) throws {
           exit(0);
         }
         else if args.size == 3 && !dry {
-
+          var usernameCheck = ('git ls-remote https://github.com/' + username + '/mason-registry').split();                            
+          var p = spawn(usernameCheck);
+          p.wait();
+          if p.exit_status == 0 {
             publishPackage(username);
+          }
+          else {
+                throw new owned MasonError(username + ' is not a valid GitHub username');
+          }
         }
         else if args.size == 3 && dry {
           throw new owned MasonError('Must pass your username with --dry-run');
