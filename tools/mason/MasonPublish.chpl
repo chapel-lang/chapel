@@ -61,6 +61,7 @@ proc masonPublish(args: [] string) throws {
           exit(0);
         }
         else if args.size == 3 && !dry {
+
             publishPackage(username);
         }
         else if args.size == 3 && dry {
