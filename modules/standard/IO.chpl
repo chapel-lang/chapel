@@ -6859,10 +6859,9 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
   param nret = captures+1;
   var ret:nret*reMatch;
 
+  // TODO should be try not try!  ditto try! _mark() below
   try! lock();
-  on this.home do error = _mark();
-  // TODO should be try not try!  ditto try! lock() above
-  if error then try! this._ch_ioerror(error, "in channel.matches mark");
+  on this.home do try! _mark();
 
   while go && i < maxmatches {
     on this.home {
