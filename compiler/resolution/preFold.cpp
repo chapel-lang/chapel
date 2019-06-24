@@ -20,6 +20,7 @@
 #include "preFold.h"
 
 #include "astutil.h"
+#include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "ForallStmt.h"
@@ -1941,28 +1942,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   /* make writeThis for FCFs */
   {
-    FnSymbol* fn = new FnSymbol("writeThis");
-
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_OVERRIDE);
-
-    fn->cname = astr("_auto_", ct->symbol->name, "_write");
-    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-    fn->_this->addFlag(FLAG_ARG_THIS);
-
-    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtAny);
-
-    fileArg->addFlag(FLAG_MARKED_GENERIC);
-
-    fn->setMethod(true);
-
-    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-    fn->insertFormalAtTail(fn->_this);
-    fn->insertFormalAtTail(fileArg);
-
-    fn->retType = dtVoid;
-
+    ArgSymbol* fileArg = NULL;
+    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
     // when printing out a FCF, print out the function's name
     fn->insertAtTail(new CallExpr(new CallExpr(".", fileArg,
                                                new_StringSymbol("writeIt")),
