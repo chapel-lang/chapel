@@ -48,6 +48,7 @@ void deadCodeElimination();
 void denormalize();
 void docs();
 void expandExternArrayCalls();
+void fixupExportedFunctions();
 void flattenClasses();
 void flattenFunctions();
 void inlineFunctions();

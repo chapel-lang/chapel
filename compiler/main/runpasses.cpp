@@ -77,6 +77,7 @@ struct PassInfo {
 #define LOG_insertWideReferences               LOG_NO_SHORT
 #define LOG_optimizeOnClauses                  LOG_NO_SHORT
 #define LOG_addInitCalls                       LOG_NO_SHORT
+#define LOG_fixupExportedFunctions             LOG_NO_SHORT
 #define LOG_insertLineNumbers                  LOG_NO_SHORT
 #define LOG_denormalize                        LOG_NO_SHORT
 #define LOG_codegen                            'c'
@@ -146,6 +147,8 @@ static PassInfo sPassList[] = {
   RUN(insertWideReferences),    // inserts wide references for on clauses
   RUN(optimizeOnClauses),       // Optimize on clauses
   RUN(addInitCalls),            // Add module init calls and guards.
+
+  RUN(fixupExportedFunctions),
 
   // AST to C or LLVM
   RUN(insertLineNumbers),       // insert line numbers for error messages

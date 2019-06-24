@@ -60,6 +60,7 @@ void check_returnStarTuplesByRefArgs();
 void check_insertWideReferences();
 void check_optimizeOnClauses();
 void check_addInitCalls();
+void check_fixupExportedFunctions();
 void check_insertLineNumbers();
 void check_denormalize();
 void check_codegen();
