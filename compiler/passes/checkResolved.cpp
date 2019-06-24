@@ -512,18 +512,6 @@ static void checkExportedProcs() {
     if (!fn->hasFlag(FLAG_EXPORT))
       continue;
 
-    for_formals(formal, fn) {
-      if (formal->typeInfo() == dtString) {
-        USR_FATAL_CONT(fn, "exported procedures should not take arguments of "
-                       "type string, use c_string instead");
-      }
-    }
-
-    if (fn->retType == dtString) {
-      USR_FATAL_CONT(fn, "exported procedures should not return strings, use "
-                     "c_strings instead");
-    }
-
     if (fn->retType->symbol->hasFlag(FLAG_C_ARRAY)) {
       USR_FATAL_CONT(fn, "exported procedures should not return c_array");
     }
