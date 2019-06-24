@@ -49,9 +49,6 @@ static void check_afterCallDestructors(); // Checks to be performed after every
                                           // pass following callDestructors.
 static void check_afterLowerIterators();
 static void checkIsIterator(); // Ensure each iterator is flagged so.
-static void checkAggregateTypes(); // Checks that class and record types have
-                                   // default initializers and default type
-                                   // constructors.
 static void check_afterInlineFunctions();
 static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
@@ -445,7 +442,6 @@ static void check_afterScopeResolve()
 {
   if (fVerify)
   {
-    checkAggregateTypes();
   }
 }
 
@@ -576,19 +572,6 @@ static void checkIsIterator() {
         continue;
       // Violations should have caused USR_FATAL_CONT in checkParsed().
       INT_ASSERT(fn && fn->isIterator());
-    }
-  }
-}
-
-
-//
-// Checks that class and record types have a default initializer and a default
-// type constructor.
-//
-static void checkAggregateTypes() {
-  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
-    if (at->typeConstructor == NULL) {
-      INT_FATAL(at, "aggregate type has no type constructor");
     }
   }
 }

@@ -29,6 +29,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "wellknown.h"
 
 typedef std::vector<ArgSymbol*> Formals;
 
@@ -498,7 +499,7 @@ static CallExpr* expandVarArgString(FnSymbol*      fn,
   CallExpr* retval = NULL;
 
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-    retval = new CallExpr("_type_construct__tuple");
+    retval = new CallExpr(dtTuple->symbol);
 
     retval->insertAtTail(new_IntSymbol(n));
   } else {
@@ -550,7 +551,7 @@ static CallExpr* buildTupleCall(ArgSymbol* formal, const Formals& formals) {
   CallExpr* retval = NULL;
 
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-    retval = new CallExpr("_type_construct__tuple");
+    retval = new CallExpr(dtTuple->symbol);
   } else {
     retval = new CallExpr(tupleInitName);
   }

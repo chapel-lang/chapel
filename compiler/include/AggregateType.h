@@ -22,6 +22,7 @@
 
 #include "DecoratedClasses.h"
 #include "type.h"
+#include "../resolution/callInfo.h"
 
 /************************************* | **************************************
 *                                                                             *
@@ -33,6 +34,12 @@ enum AggregateTag {
   AGGREGATE_CLASS,
   AGGREGATE_RECORD,
   AGGREGATE_UNION
+};
+
+enum AggregateResolved {
+  UNRESOLVED,
+  RESOLVING,
+  RESOLVED
 };
 
 class AggregateType : public Type {
@@ -113,11 +120,13 @@ public:
 
   bool                        setFirstGenericField();
 
-  AggregateType*              getInstantiation(Symbol* sym, int index);
+  AggregateType*              getInstantiation(Symbol* sym, int index, Expr* insnPoint = NULL);
 
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
-  AggregateType*              generateType(SymbolMap& subs);
+  AggregateType*              generateType(CallInfo& info);
+  AggregateType*              generateType(SymbolMap& subs, CallInfo& info, Expr* insnPoint = NULL);
+  void                        resolveConcreteType();
 
   bool                        isInstantiatedFrom(const AggregateType* base)
                                                                          const;
@@ -135,7 +144,7 @@ public:
   int                         getMemberGEP(const char* name,
                                            bool& isCArrayField);
 
-  FnSymbol*                   buildTypeConstructor();
+  void                        processGenericFields();
 
   void                        addRootType();
 
@@ -171,8 +180,6 @@ public:
   // by plain AggregateType and unmanaged class pointers use this special type.
   DecoratedClassType*         decoratedClasses[NUM_PACKED_DECORATED_TYPES];
 
-  FnSymbol*                   typeConstructor;
-
   bool                        builtDefaultInit;
 
   AggregateType*              instantiatedFrom;
@@ -201,6 +208,12 @@ public:
   Vec<AggregateType*>         dispatchParents;    // dispatch hierarchy
   Vec<AggregateType*>         dispatchChildren;   // dispatch hierarchy
 
+  AggregateResolved           resolveStatus;
+
+  const char*                 typeSignature;
+  bool                        foundGenericFields;
+  std::vector<Symbol*>        genericFields;
+
 private:
 
   // Only used for LLVM.
@@ -221,36 +234,22 @@ private:
   void                        addClassToHierarchy(
                                           std::set<AggregateType*>& seen);
 
-  AggregateType*              instantiationWithParent(AggregateType* parent);
+  AggregateType*              instantiationWithParent(AggregateType* parent, Expr* insnPoint = NULL);
 
   Symbol*                     substitutionForField(Symbol*    field,
                                                    SymbolMap& subs)      const;
 
   AggregateType*              getCurInstantiation(Symbol* sym);
 
-  AggregateType*              getNewInstantiation(Symbol* sym);
+  AggregateType*              getNewInstantiation(Symbol* sym, Expr* insnPoint = NULL);
 
   AggregateType*              discoverParentAndCheck(Expr* storesName);
 
-  CallExpr*                   typeConstrSuperCall(FnSymbol* fn)  const;
-
   bool                        isFieldInThisClass(const char* name)       const;
-
-  void                        typeConstrSetFields(FnSymbol* fn,
-                                                  CallExpr* superCall)   const;
 
   bool                        setNextGenericField();
 
-  void                        typeConstrSetField(FnSymbol*  fn,
-                                                 VarSymbol* field,
-                                                 Expr*      expr)        const;
-
-  ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
-                                               VarSymbol* field)  const;
-
 private:
-
-  void                        moveTypeConstructorToOuter(FnSymbol* fn);
 
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,

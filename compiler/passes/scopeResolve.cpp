@@ -166,13 +166,13 @@ static void markGenerics() {
     } while (changed);
 }
 
-static void buildTypeConstructors() {
+static void processGenericFields() {
   forv_Vec(AggregateType, ct, gAggregateTypes) {
-    // Build the type constructor now that we know which fields are generic
+    // Build the type constructor now that we know which types are generic
     if (isClass(ct) && ct->symbol->hasFlag(FLAG_EXTERN)) {
       USR_FATAL_CONT(ct, "Extern classes are not supported.");
     }
-    ct->buildTypeConstructor();
+    ct->processGenericFields();
   }
 }
 
@@ -2323,11 +2323,8 @@ static void resolveUnmanagedBorrows() {
           }
         }
       }
-      // It's tempting to give type constructor calls the same
-      // treatment, but type constructors are so special;
-      // see normalizeCallToTypeConstructor which changes
-      // them to _type_construct_C e.g. and such a function won't
-      // exist for the unmanaged type.
+      // It's tempting to give type constructor calls the same treatment, but
+      // type constructors are handled separately later during resolution.
     }
 
     // fix e.g. unmanaged!
@@ -2382,7 +2379,7 @@ void scopeResolve() {
 
   markGenerics();
 
-  buildTypeConstructors();
+  processGenericFields();
 
   ResolveScope::destroyAstMap();
 
