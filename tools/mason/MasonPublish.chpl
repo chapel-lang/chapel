@@ -55,6 +55,11 @@ proc masonPublish(args: [] string) throws {
         if dry && args.size == 4 {
           dryRun(username);
         }
+        else if !dry && args.size == 4 {
+          writeln('"' + args[0]+ ' '  + args[1] + ' ' + args[2] + ' ' + args [3] +'" does not meet the "mason publish [options] <username>" syntax');
+          writeln('See "mason publish -h" for more details');
+          exit(0);
+        }
         else if args.size == 3 && !dry {
             publishPackage(username);
         }
