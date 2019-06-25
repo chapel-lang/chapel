@@ -39,6 +39,11 @@
 #include "comm-ofi-internal.h"
 
 
+//
+// In some situations it seems there is no header we can #include
+// to get these declarations, so instead of relying on that we just
+// express them ourselves.
+//
 #define PMI2_SUCCESS 0
 #define PMI2_ID_NULL -1
 
