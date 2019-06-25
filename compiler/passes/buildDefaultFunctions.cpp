@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "buildDefaultFunctions.h"
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
@@ -1420,6 +1421,49 @@ static bool inheritsFromError(Type* t) {
   return retval;
 }
 
+
+// common code to create a writeThis() function without filling in the body
+FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
+  FnSymbol* fn = new FnSymbol("writeThis");
+
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  if (ct->isClass() && ct != dtObject)
+    fn->addFlag(FLAG_OVERRIDE);
+  else
+    fn->addFlag(FLAG_INLINE);
+
+  fn->cname = astr("_auto_", ct->symbol->name, "_write");
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->_this->addFlag(FLAG_ARG_THIS);
+
+  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtAny);
+  *filearg = fileArg;
+
+  fileArg->addFlag(FLAG_MARKED_GENERIC);
+
+  fn->setMethod(true);
+
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->insertFormalAtTail(fn->_this);
+  fn->insertFormalAtTail(fileArg);
+
+  fn->retType = dtVoid;
+
+  DefExpr* def = new DefExpr(fn);
+
+  ct->symbol->defPoint->insertBefore(def);
+
+  fn->setMethod(true);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+
+  reset_ast_loc(def, ct->symbol);
+
+  ct->methods.add(fn);
+
+  return fn;
+}
+
 static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   bool hasReadWriteThis         = false;
   bool hasReadThis              = false;
@@ -1461,30 +1505,8 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
   // Make writeThis when appropriate
   if (makeReadThisAndWriteThis == true && hasWriteThis == false) {
-    FnSymbol* fn = new FnSymbol("writeThis");
-
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    if (ct->isClass() && ct != dtObject)
-      fn->addFlag(FLAG_OVERRIDE);
-    else
-      fn->addFlag(FLAG_INLINE);
-
-    fn->cname = astr("_auto_", ct->symbol->name, "_write");
-    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-    fn->_this->addFlag(FLAG_ARG_THIS);
-
-    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtAny);
-
-    fileArg->addFlag(FLAG_MARKED_GENERIC);
-
-    fn->setMethod(true);
-
-    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-    fn->insertFormalAtTail(fn->_this);
-    fn->insertFormalAtTail(fileArg);
-
-    fn->retType = dtVoid;
+    ArgSymbol* fileArg = NULL;
+    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
 
     if (hasReadWriteThis == true) {
       Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
@@ -1497,18 +1519,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
                                     fn->_this));
     }
 
-    DefExpr* def = new DefExpr(fn);
-
-    ct->symbol->defPoint->insertBefore(def);
-
-    fn->setMethod(true);
-    fn->addFlag(FLAG_METHOD_PRIMARY);
-
-    reset_ast_loc(def, ct->symbol);
-
     normalize(fn);
-
-    ct->methods.add(fn);
   }
 
   // Make readThis when appropriate

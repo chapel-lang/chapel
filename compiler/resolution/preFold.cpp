@@ -20,6 +20,7 @@
 #include "preFold.h"
 
 #include "astutil.h"
+#include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "ForallStmt.h"
@@ -32,6 +33,7 @@
 #include "scopeResolve.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "symbol.h"
 #include "typeSpecifier.h"
 #include "visibleFunctions.h"
 
@@ -1945,6 +1947,18 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   CallExpr* callWrapper = new CallExpr(wrapper);
 
   functionCaptureMap[captured_fn] = wrapper;
+
+
+  /* make writeThis for FCFs */
+  {
+    ArgSymbol* fileArg = NULL;
+    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
+    // when printing out a FCF, print out the function's name
+    fn->insertAtTail(new CallExpr(new CallExpr(".", fileArg,
+                                               new_StringSymbol("writeIt")),
+                                  new_StringSymbol(astr(flname, "()"))));
+    normalize(fn);
+  }
 
   return callWrapper;
 }
