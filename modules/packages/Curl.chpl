@@ -806,6 +806,7 @@ extern proc curl_multi_remove_handle(curlm:c_ptr(CURLM), curl:c_ptr(CURL)):CURLM
 extern proc curl_multi_cleanup(curlm:c_ptr(CURLM)):CURLcode;
 
 extern const CURL_READFUNC_PAUSE:size_t;
+extern const CURL_READFUNC_ABORT:size_t;
 extern const CURL_WRITEFUNC_PAUSE:size_t;
 extern const CURLPAUSE_ALL: c_int;
 extern const CURLPAUSE_CONT: c_int;
@@ -1148,6 +1149,8 @@ proc curl_preadv_internal(local_handle:CurlFile, vector:c_ptr(qiovec_t), count:c
 
   // Continue anything that is paused
   err = curl_easy_pause(local_handle.curl, CURLPAUSE_CONT);
+  if err != CURLE_OK then
+    return EINVAL; // or something...
 
   var timeoutMillis:c_long;
   curl_multi_timeout(local_handle.curlm, timeoutMillis);
@@ -1167,6 +1170,9 @@ proc curl_preadv_internal(local_handle:CurlFile, vector:c_ptr(qiovec_t), count:c
   sys_fd_zero(fdexcept);
 
   err  = curl_multi_fdset(local_handle.curlm, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), maxfd);
+  if err != CURLE_OK then
+    return EINVAL;
+
   if maxfd == -1 {
     // we can't wait with sockets for some reason, so wait for operation
     Time.sleep(0.1);
@@ -1190,6 +1196,8 @@ proc curl_preadv_internal(local_handle:CurlFile, vector:c_ptr(qiovec_t), count:c
      got_total == 0 &&
      sys_iov_total_bytes(vector, count) != 0 then
     err_out = EEOF;
+  else if err != CURLE_OK then
+    return EINVAL;
 
   chpl_curl_easy_setopt_ptr(local_handle.curl, CURLOPT_WRITEFUNCTION, c_ptrTo(pause_writer):c_void_ptr);
   chpl_curl_easy_setopt_ptr(local_handle.curl, CURLOPT_WRITEDATA, nil:c_void_ptr);
@@ -1217,7 +1225,7 @@ proc curl_writev(fl:CurlFile, iov:c_ptr(qiovec_t), iovcnt:c_int, out num_written
   // set it up to write over curl
   chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_READFUNCTION, c_ptrTo(read_data):c_void_ptr);
   // Tell curl how much data to expect
-  chpl_curl_easy_setopt_offset(fl.curl, CURLOPT_INFILESIZE_LARGE, sys_iov_total_bytes(iov, iovcnt));
+  //chpl_curl_easy_setopt_offset(fl.curl, CURLOPT_INFILESIZE_LARGE, sys_iov_total_bytes(iov, iovcnt));
   chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_READDATA, c_ptrTo(write_vec));
   ret = curl_easy_pause(fl.curl, CURLPAUSE_CONT);
   num_written_out = write_vec.total_read:int(64);
@@ -1226,7 +1234,7 @@ proc curl_writev(fl:CurlFile, iov:c_ptr(qiovec_t), iovcnt:c_int, out num_written
     err_out = qio_mkerror_errno();
 
   chpl_curl_easy_setopt_long(fl.curl, CURLOPT_UPLOAD, 0);
-  chpl_curl_easy_setopt_long(fl.curl, CURLOPT_INFILESIZE_LARGE, 0);
+  //chpl_curl_easy_setopt_long(fl.curl, CURLOPT_INFILESIZE_LARGE, 0);
   chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_READFUNCTION, c_ptrTo(pause_reader):c_void_ptr);
   chpl_curl_easy_setopt_ptr(fl.curl, CURLOPT_READDATA, nil:c_void_ptr);
 
@@ -1535,6 +1543,8 @@ private proc read_atleast(cc:CurlChannel, requestedAmount:int(64)):syserr {
 }
 
 // Send some data somewhere with curl
+// Returning 0 will signal end-of-file to the curl library
+// and cause it to stop the transfer.
 private proc chpl_curl_read_buffered(contents: c_void_ptr, size:size_t, nmemb:size_t, userp: c_void_ptr):size_t {
   var realsize:size_t = size * nmemb;
   var cc = userp:CurlChannel;
@@ -1547,20 +1557,36 @@ private proc chpl_curl_read_buffered(contents: c_void_ptr, size:size_t, nmemb:si
 
   // Write from the buffer's start position up until the start
   // of the user-visible data.
-  //writeln("chpl_curl_read_buffered");
+  /*{
+    var space = 0;
+    qio_channel_nbytes_write_behind(0, cc.qio_ch, space);
+    writeln("chpl_curl_read_buffered initiating ", realsize, " space=", space);
+  }*/
+
 
   var gotamt: ssize_t = 0;
   // copy the data from the channel's buffer
   err = qio_channel_copy_from_buffered(0, cc.qio_ch, contents, amt, gotamt);
 
+  /*{
+    var space = 0;
+    qio_channel_nbytes_write_behind(0, cc.qio_ch, space);
+    writeln("chpl_curl_read_buffered returning ", gotamt, " space=", space);
+  }*/
+
   // unlock the channel if we locked it
 
+  // If there was an error from the channel, abort the connection
   if err != ENOERR {
     cc.saved_error = err;
-    return 0;
+    return CURL_READFUNC_ABORT;
   }
-
-  //writeln("chpl_curl_read_buffered returning ", gotamt);
+  // If the channel is not closed, but we would
+  // otherwise return 0, pause the connection, so that
+  // the connection is not clossed until the channel is.
+  if gotamt == 0 && ! qio_channel_isclosed(0, cc.qio_ch) {
+    return CURL_READFUNC_PAUSE;
+  }
 
   return gotamt:size_t;
 }
@@ -1578,6 +1604,7 @@ private proc write_amount(cc:CurlChannel, requestedAmount:int(64)):syserr {
   var ch:qio_channel_ptr_t = cc.qio_ch;
   var curl = cc.curl;
   var curlm = cc.curlm;
+  var ccode: CURLcode;
   var mcode: CURLMcode;
   var serr:syserr = ENOERR;
   var fdread: fd_set;
@@ -1609,6 +1636,11 @@ private proc write_amount(cc:CurlChannel, requestedAmount:int(64)):syserr {
     sys_fd_zero(fdread);
     sys_fd_zero(fdwrite);
     sys_fd_zero(fdexcept);
+
+    // Continue anything that is paused
+    ccode = curl_easy_pause(cc.curl, CURLPAUSE_CONT);
+    if ccode != CURLE_OK then
+      return EINVAL; // or something...
 
     // Compute the timout curl recommends
     var timeoutMillis:c_long = 1;
@@ -1643,7 +1675,13 @@ private proc write_amount(cc:CurlChannel, requestedAmount:int(64)):syserr {
         return serr;
     }
 
-    //writeln("performing 4");
+    /*{
+      space = 0;
+      qio_channel_nbytes_write_behind(0, ch, space);
+      writeln("performing 4 offset=", qio_channel_offset_unlocked(ch),
+              " writebehind=", space);
+    }*/
+
     mcode = curl_multi_perform(curlm, cc.running_handles);
     if mcode != CURLM_OK then
       return EINVAL; // or something...
@@ -1662,8 +1700,10 @@ private proc write_amount(cc:CurlChannel, requestedAmount:int(64)):syserr {
   // Return EEOF if the connection is no longer running
   space = 0;
   qio_channel_nbytes_write_behind(0, ch, space);
-  if cc.running_handles == 0 && space > target_space then
+  if cc.running_handles == 0 && space > target_space {
+    writeln("RETURNING EOF");
     return EEOF;
+  }
 
   return ENOERR;
 }

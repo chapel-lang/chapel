@@ -61,25 +61,3 @@ proc runtest() {
 startServer();
 runtest();
 stopServer();
-
-/*
-r
-// Open a URL and get a reader on a section of the site
-config const inUrl = "http://127.0.0.1:8000/2701-h.htm";
-var input = openurl(inUrl).reader();
-
-// Open a URL to write to
-config const outUrl = "ftp://127.0.0.1/upload/test.txt";
-var output = openurl(outUrl, iomode.cw).writer();
-
-var str:string;
-
-var nlines = 0;
-// While we can read a line from example.com, write it to 'out.txt'
-while(input.readline(str)) {
-  output.write(str);
-  nlines += 1;
-}
-
-writeln("FOUND ", nlines, " lines");
- */
