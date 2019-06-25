@@ -116,7 +116,7 @@ module FFTW {
     auto-initialization, requiring these calls to be made
     manually.
   */
-  config param autoInitFFTW_MT = true;
+  config param autoInitFFTW_MT = false;
 
   if autoInitFFTW_MT {
     //
