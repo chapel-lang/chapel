@@ -723,14 +723,14 @@ static void checkNumArgsErrors(AggregateType* at, CallInfo& info) {
     USR_STOP();
   }
 
-  int numWithoutDefaults = 0;
+  unsigned int numWithoutDefaults = 0;
   for_vector(Symbol, sym, genericFields) {
     if (sym->defPoint->init == NULL) {
       numWithoutDefaults += 1;
     }
   }
 
-  int numArgs = call->numActuals();
+  unsigned int numArgs = call->numActuals();
   if (numArgs > genericFields.size()) {
     USR_FATAL_CONT(call, "invalid type specifier '%s'", info.toString());
     USR_PRINT(info.call, "type specifier did not match: %s", typeSignature);
@@ -956,7 +956,7 @@ static Symbol* resolveFieldDefault(Symbol* field, CallInfo* info) {
     if (SymExpr* se = toSymExpr(tail)) {
       ret = se->symbol();
 
-    } else if (CallExpr* call = toCallExpr(tail)) {
+    } else if (isCallExpr(tail)) {
       INT_FATAL("unexpected AST in field expr");
     }
   }
