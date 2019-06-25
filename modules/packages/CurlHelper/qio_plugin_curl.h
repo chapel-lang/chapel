@@ -34,9 +34,6 @@ typedef struct curl_handle curl_handle;
 typedef curl_handle* curl_handle_ptr;
 typedef struct curl_slist* chpl_slist;
 
-//extern qio_file_functions_t curl_function_struct;
-//extern const qio_file_functions_ptr_t curl_function_struct_ptr;
-
 qioerr chpl_curl_perform(qio_file_t* fl);
 qioerr chpl_curl_set_opt(qio_file_t* fl, int opt, ...);
 

@@ -279,7 +279,6 @@ module Curl {
 
 require "-lcurl";
 require "CurlHelper/qio_plugin_curl.h";
-//require "CurlHelper/qio_plugin_curl.c";
 
 use Sys only ;
 use Time only ;
