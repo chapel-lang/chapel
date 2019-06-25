@@ -633,13 +633,12 @@ static bool atStartOfCondBranch(Expr* firstExpr, BasicBlock* predBB,
 }
 
 // If 'expr' is a SymExpr, return the CallExpr that is 'move'-ed into it.
-static CallExpr* getSingleDefCallExpr(Expr* expr) {
+static Expr* getSingleDefExpr(Expr* expr) {
   if (SymExpr* SE = toSymExpr(expr))
    if (SymExpr* seDef = SE->symbol()->getSingleDef())
     if (CallExpr* move = toCallExpr(seDef->parentExpr))
      if (move->isPrimitive(PRIM_MOVE))
-      if (CallExpr* rhs = toCallExpr(move->get(2)))
-       return rhs;
+      return move->get(2);
   return NULL;
 }
 
@@ -656,7 +655,7 @@ static void adjustMapForCatchBlock(CondStmt* cond, bool inThenBranch,
                                    AliasMap& OUT) {
   // We could heuristically check cond->condExpr's symbol
   // to be named "shouldHandleError".
-  if (CallExpr* CE = getSingleDefCallExpr(cond->condExpr))
+  if (CallExpr* CE = toCallExpr(getSingleDefExpr(cond->condExpr)))
    if (CE->isPrimitive(PRIM_CHECK_ERROR))
     if (SymExpr* errorSE = toSymExpr(CE->get(1)))
      { // Found the pattern.
@@ -666,38 +665,6 @@ static void adjustMapForCatchBlock(CondStmt* cond, bool inThenBranch,
        errorAL.type = inThenBranch ? MUST_ALIAS_ALLOCATED : MUST_ALIAS_NIL;
        errorAL.location = cond->condExpr;
        update(OUT, errorSym, errorAL);
-     }
-}
-
-static void adjustMapForNilTest(CondStmt* cond, bool inThenBranch,
-                                AliasMap& OUT) {
-  if (CallExpr* CT = getSingleDefCallExpr(cond->condExpr))
-   if (CT->isNamed("_cond_test"))
-    if (SymExpr* argSE = toSymExpr(CT->get(1)))
-     {
-       gdbShouldBreakHere();
-       Symbol* argSym = argSE->symbol();
-       AliasMap::const_iterator argIt = OUT.find(argSym);
-       if (argIt == OUT.end()) return; // nothing to update
-       AliasLocation oldAL = argIt->second;
-
-       // Update the map for argSym...
-       AliasLocation newAL;
-       newAL.type = inThenBranch ? MUST_ALIAS_ALLOCATED : MUST_ALIAS_NIL;
-       newAL.location = cond->condExpr;
-       update(OUT, argSym, newAL);
-
-       // ...and for all other symbols that have the same "location".
-       for (AliasMap::const_iterator it = OUT.begin();
-            it != OUT.end();
-            ++it) {
-         Symbol* sym = it->first;
-         AliasLocation loc = it->second;
-         if (loc.location == oldAL.location) {
-           INT_ASSERT(loc.type == oldAL.type);
-           update(OUT, sym, newAL);
-         }
-       }
      }
 }
 
@@ -713,7 +680,6 @@ static void adjustMapForConditional(BasicBlock* bb, AliasMap& OUT) {
     return; // not at start of a cond branch for sure
 
   adjustMapForCatchBlock(parentCond, inThenBranch, OUT);
-  adjustMapForNilTest(parentCond, inThenBranch, OUT);
 }
 
 static void checkBasicBlock(
