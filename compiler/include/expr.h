@@ -390,4 +390,7 @@ GenRet codegenLocalDeref(GenRet toDeref);
 GenRet codegenNullPointer();
 GenRet codegenCast(const char* typeName, GenRet value, bool Cparens = true);
 
+void codegenCallPrintf(const char* arg1, const char* arg2);
+void codegenCallPrintf(const char* arg1, const char* arg2, const char* arg3);
+
 #endif

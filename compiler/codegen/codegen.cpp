@@ -1121,29 +1121,35 @@ static void codegen_header_compilation_config() {
     fprintf(cfgfile.fptr, "\n#include <stdio.h>");
     fprintf(cfgfile.fptr, "\n#include \"chpltypes.h\"\n\n");
 
+    if (!llvmCodegen) {
+#ifndef HAVE_LLVM
+      gGenInfo->cfile = cfgfile.fptr;
+#endif
+    }
+
+    genGlobalString("chpl_compileCommand", compileCommand);
+    genGlobalString("chpl_compileVersion", compileVersion);
+    genGlobalString("chpl_compileDirectory", getCwd());
+    if (strcmp(saveCDir, "") != 0) {
+      char *actualPath = realpath(saveCDir, NULL);
+      genGlobalString("chpl_saveCDir", actualPath);
+    } else {
+      genGlobalString("chpl_saveCDir", "");
+    }
+
+    genGlobalString("CHPL_HOME", CHPL_HOME);
+
+    genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
+    genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
+
+    for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+      if (env->first != "CHPL_HOME") {
+        genGlobalString(env->first.c_str(), env->second);
+      }
+    }
+
     if (llvmCodegen) {
 #ifdef HAVE_LLVM
-      genGlobalString("chpl_compileCommand", compileCommand);
-      genGlobalString("chpl_compileVersion", compileVersion);
-      genGlobalString("chpl_compileDirectory", getCwd());
-      if (strcmp(saveCDir, "") != 0) {
-        char *actualPath = realpath(saveCDir, NULL);
-        genGlobalString("chpl_saveCDir", actualPath);
-      } else {
-        genGlobalString("chpl_saveCDir", "");
-      }
-
-      genGlobalString("CHPL_HOME", CHPL_HOME);
-
-      genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
-      genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
-
-      for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-        if (env->first != "CHPL_HOME") {
-          genGlobalString(env->first.c_str(), env->second);
-        }
-      }
-
       llvm::FunctionType* programAboutType;
       llvm::Function* programAboutFunc;
       if ((programAboutFunc = getFunctionLLVM("chpl_program_about"))) {
@@ -1161,104 +1167,29 @@ static void codegen_header_compilation_config() {
         gGenInfo->module->getContext(), "entry", programAboutFunc
       );
       gGenInfo->irBuilder->SetInsertPoint(programAboutBlock);
-
-      llvm::FunctionType* printfType = llvm::FunctionType::get(
-        llvm::Type::getInt32Ty(gGenInfo->module->getContext()), {}, true
-      );
-      llvm::Function* printfFunc = llvm::cast<llvm::Function>(
-        gGenInfo->module->getOrInsertFunction("printf", printfType)
-      );
-
-      std::vector<llvm::Value *> compilationCommandArgs(2);
-      compilationCommandArgs[0] = gGenInfo->irBuilder->CreateLoad(
-        new_CStringSymbol("Compilation command: %s\n")->codegen().val);
-      compilationCommandArgs[1] = gGenInfo->irBuilder->CreateLoad(
-        new_CStringSymbol(compileCommand)->codegen().val);
-      gGenInfo->irBuilder->CreateCall(printfFunc, compilationCommandArgs);
-
-      std::vector<llvm::Value *> chapelCompilerVersionArgs(2);
-      chapelCompilerVersionArgs[0] = gGenInfo->irBuilder->CreateLoad(
-        new_CStringSymbol("Chapel compiler version: %s\n")->codegen().val);
-      chapelCompilerVersionArgs[1] = gGenInfo->irBuilder->CreateLoad(
-        new_CStringSymbol(compileVersion)->codegen().val);
-      gGenInfo->irBuilder->CreateCall(printfFunc, chapelCompilerVersionArgs);
-
-      std::vector<llvm::Value *> chapelEnvironmentArgs(1);
-      chapelEnvironmentArgs[0] = gGenInfo->irBuilder->CreateLoad(
-        new_CStringSymbol("Chapel environment:\n")->codegen().val);
-      gGenInfo->irBuilder->CreateCall(printfFunc, chapelEnvironmentArgs);
-
-      std::vector<llvm::Value *> chplHomeArgs(2);
-      chplHomeArgs[0] = gGenInfo->irBuilder->CreateLoad(
-        new_CStringSymbol("  CHPL_HOME: %s\n")->codegen().val);
-      chplHomeArgs[1] = gGenInfo->irBuilder->CreateLoad(
-        new_CStringSymbol(CHPL_HOME)->codegen().val);
-      gGenInfo->irBuilder->CreateCall(printfFunc, chplHomeArgs);
-      
-      for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-        if (env->first != "CHPL_HOME") {
-          std::vector<llvm::Value *> envArgs(3);
-          envArgs[0] = gGenInfo->irBuilder->CreateLoad(
-            new_CStringSymbol("  %s: %s\n")->codegen().val);
-          envArgs[1] = gGenInfo->irBuilder->CreateLoad(
-            new_CStringSymbol(env->first.c_str())->codegen().val);
-          envArgs[2] = gGenInfo->irBuilder->CreateLoad(
-            new_CStringSymbol(env->second)->codegen().val);
-          gGenInfo->irBuilder->CreateCall(printfFunc, envArgs);
-        }
-      }
-
-      gGenInfo->irBuilder->CreateRetVoid();
-
-      gGenInfo->cfile = cfgfile.fptr;
 #endif
     } else {
-      gGenInfo->cfile = cfgfile.fptr;
-
-      genGlobalString("chpl_compileCommand", compileCommand);
-      genGlobalString("chpl_compileVersion", compileVersion);
-      genGlobalString("chpl_compileDirectory", getCwd());
-      if (strcmp(saveCDir, "") != 0) {
-        char *actualPath = realpath(saveCDir, NULL);
-        genGlobalString("chpl_saveCDir", actualPath);
-      } else {
-        genGlobalString("chpl_saveCDir", "");
-      }
-
-      genGlobalString("CHPL_HOME",           CHPL_HOME);
-
-      genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
-      genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
-
-      for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-        if (env->first != "CHPL_HOME") {
-          genGlobalString(env->first.c_str(), env->second);
-        }
-      }
-
       // generate the "about" function
       fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
       fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
-
-      fprintf(cfgfile.fptr,
-              "printf(\"%%s\", \"Compilation command: %s\\n\");\n",
-              compileCommand);
-      fprintf(cfgfile.fptr,
-              "printf(\"%%s\", \"Chapel compiler version: %s\\n\");\n",
-              compileVersion);
-      fprintf(cfgfile.fptr, "printf(\"Chapel environment:\\n\");\n");
-      fprintf(cfgfile.fptr,
-              "printf(\"%%s\", \"  CHPL_HOME: %s\\n\");\n",
-              CHPL_HOME);
+    }
+    
+    codegenCallPrintf("Compilation command: %s\\n", compileCommand);
+    codegenCallPrintf("Chapel compiler version: %s\\n", compileVersion);
+    codegenCallPrintf("Chapel environment:\\n", "");
+    codegenCallPrintf("  CHPL_HOME: %s\\n", CHPL_HOME);  
       for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
         if (env->first != "CHPL_HOME") {
-          fprintf(cfgfile.fptr,
-            "printf(\"%%s\", \"  %s: %s\\n\");\n",
-            env->first.c_str(),
-            env->second);
+          codegenCallPrintf("  %s: %s\\n", env->first.c_str(), env->second); 
         }
       }
 
+    if (llvmCodegen) {
+#ifdef HAVE_LLVM
+      gGenInfo->irBuilder->CreateRetVoid();
+      gGenInfo->cfile = cfgfile.fptr;
+#endif
+    } else {
       fprintf(cfgfile.fptr, "}\n");
     }
 
