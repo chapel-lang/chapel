@@ -19,17 +19,17 @@
 
 module ExternalString {
   
-  proc convertToConstChar(in s: string): c_string {
+  proc chpl__exportConvertToConstChar(in s: string): c_string {
     return convertToConstCharNoCopy(s);
   }
 
-  proc convertToConstCharNoCopy(const ref s: string): c_string {
+  proc chpl__exportConvertToConstCharNoCopy(const ref s: string): c_string {
     var result = s.c_str();
     s.isowned = false;
     return result;
   }
 
-  proc convertToString(c: c_string): string {
+  proc chpl__exportConvertToString(c: c_string): string {
     return new string(cs=c, isowned=true, needToCopy=true);
   }
 
@@ -37,7 +37,7 @@ module ExternalString {
   // Strings allocated in this fashion assume that the memory for the passed
   // buffer was allocated on the Chapel heap.
   //
-  proc convertToStringNoCopy(c: c_string): string {
+  proc chpl__exportConvertToStringNoCopy(c: c_string): string {
     return new string(c, isowned=true, needToCopy=false);
   }
 

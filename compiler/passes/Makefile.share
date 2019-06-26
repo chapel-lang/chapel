@@ -31,7 +31,6 @@ PASSES_SRCS =                                              \
         errorHandling.cpp                                  \
         expandExternArrayCalls.cpp                         \
         externCResolve.cpp                                 \
-				fixupExportedFunctions.cpp                         \
         flattenClasses.cpp                                 \
         flattenFunctions.cpp                               \
         initializerRules.cpp                               \

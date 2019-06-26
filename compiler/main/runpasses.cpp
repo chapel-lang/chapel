@@ -148,8 +148,6 @@ static PassInfo sPassList[] = {
   RUN(optimizeOnClauses),       // Optimize on clauses
   RUN(addInitCalls),            // Add module init calls and guards.
 
-  RUN(fixupExportedFunctions),
-
   // AST to C or LLVM
   RUN(insertLineNumbers),       // insert line numbers for error messages
   RUN(denormalize),             // denormalize -- remove local temps

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "passes.h"
+#include "fixupExports.h"
 
 #include "astutil.h"
 #include "baseAST.h"
@@ -25,8 +25,10 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-#include <iostream>
 #include <map>
+#include <vector>
+
+static std::map<const char*, FnSymbol*> conversionCallMap;
 
 static void attemptFixups(FnSymbol* fn);
 static bool needsFixup(ArgSymbol* as);
@@ -34,16 +36,33 @@ static bool needsFixup(Type* t);
 static FnSymbol* createWrapper(FnSymbol* fn);
 static Type* getTypeForFixup(Type* t);
 static const char* getConversionCallName(Type* from, Type* to);
+static FnSymbol* resolveConversionCall(Type* from, Type* to);
 static void fixupFormal(FnSymbol* wrapper, int idx);
 static void changeRetType(FnSymbol* wrapper, std::vector<VarSymbol*> tmps);
 static void insertConversionCalls(FnSymbol* wrapper, FnSymbol* fn);
 static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn);
-static void updateCallsTo(FnSymbol* fn, FnSymbol* wrapper);
 
-void fixupExportedFunctions(void) {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_EXPORT)) { attemptFixups(fn); }
+//
+//
+//
+void mapConversionCall(const char* name, FnSymbol* handle) {
+  return;
+}
+
+//
+//
+//
+void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
+  for (size_t i = 0; i < fns.size(); i++) {
+    attemptFixups(fns[i]);
   }
+}
+
+//
+//
+//
+void fixupExportedFunction(FnSymbol* fn) {
+  attemptFixups(fn);
 }
 
 static void attemptFixups(FnSymbol* fn) {
@@ -54,14 +73,14 @@ static void attemptFixups(FnSymbol* fn) {
 
   for (int i = 1; i < fn->numFormals(); i++) {
     ArgSymbol* as = fn->getFormal(i);
-    if (not needsFixup(as)) {
-      // Push back a NULL sentry value for unconverted formals.
-      tmps.push_back(NULL);
-      continue; 
-    } else {
+
+    if (needsFixup(as)) {
       if (wrapper == NULL) { wrapper = createWrapper(fn); }
       VarSymbol* tmp = fixupFormal(wrapper, i);
       tmps.push_back(tmp);
+    } else {
+      // Push back a NULL sentry value for unconverted formals.
+      tmps.push_back(NULL);
     }
   }
 
@@ -70,7 +89,7 @@ static void attemptFixups(FnSymbol* fn) {
     changeRetType(wrapper);
   }
 
-  // If a copy hasn't been made yet, there's nothing to change.
+  // If a wrapper hasn't been made yet, there's nothing to do.
   if (wrapper == NULL) { return; }
  
   insertUnwrappedCall(wrapper, fn, tmps);
@@ -120,18 +139,55 @@ static Type* getTypeForFixup(Type* t) {
 
 //
 // TODO: These conversion calls should be namespaced? IE, the call should be
-// to "ExternalString.convertToConstChar" just in case.
+// to "ExternalString.convertToConstChar" just to be safe.
+// TODO: Can insert non-copying versions when we are doing multi-locale
+// interop.
 //
 static const char* getConversionCallName(Type* srctype, Type* dsttype) {
   const char* result = NULL;
 
   if (srctype == dtString && dsttype == dtStringC) {
-    result = "ExternalString.convert";
+    result = "chpl__exportConvertToConstChar";
   } else if (srctype == dtStringC && dsttype == dtString) {
-    result = "chpl__exportConvertConstCharToString";
+    result = "chpl__exportConvertToString";
   } else {
     INT_FATAL("Bad types for conversion call in: %s", __FUNCTION__);
   }
+
+  return result;
+}
+
+static FnSymbol* resolveConversionCall(Type* srctype, Type* dsttype) {
+  const char* name = getConversionCallName(srctype, dsttype);
+  INT_ASSERT(name != NULL);
+
+  //
+  // Check map for already resolved FnSymbol, if possible.
+  //
+  map<const char*, FnSymbol*>::iterator it;
+  it = conversionCallMap.find(name);
+  if (it != m.end()) {
+    return it->second;
+  }
+
+  //
+  // Resolve the conversion call the hard way.
+  //
+  VarSymbol* tmp = newTemp(srctype);
+  CallExpr* call = new CallExpr(name, tmp);
+  FnSymbol* result = NULL;
+  
+  // Do all our work in `chpl_gen_main` for convenience.
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
+
+  result = resolveUninsertedCall(srctype, call);
+
+  resolveFunction(result);
+
+  tmp->defPoint->remove();
+
+  // Add result to map.
+  conversionCallMap[name] = result;
 
   return result;
 }
@@ -159,15 +215,17 @@ static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
   // on the formal we are performing a fixup on.
   //
 
-  VarSymbol* tmp = fn->newTemp(otype);
+  VarSymbol* tmp = newTemp(otype);
   VarSymbol* result = tmp;
 
-  // Get conversion call from wrapper type to original type.
-  const char* convSym = getConversionCallName(wtype, otype);
-  INT_ASSERT(convSym != NULL);
+  wrapper->body->insertAtTail(new DefExpr(tmp));
 
-  CallExpr* conv = new CallExpr(new UnresolvedSymExpr(convSym), as);
-  CallExpr* move = new CallExpr(PRIM_MOVE, tmp, conv);
+  // Get conversion call from wrapper type to original type.
+  FnSymbol* conv = resolveConversionCall(wtype, otype);
+  INT_ASSERT(conv != NULL);
+
+  CallExpr* call = new CallExpr(conv, as);
+  CallExpr* move = new CallExpr(PRIM_MOVE, tmp, call);
   wrapper->body->insertAtTail(move);
   
   return result;
@@ -201,47 +259,44 @@ static void changeRetType(FnSymbol* wrapper) {
 //
 static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
                                 std::vector<VarSymbol*> tmps) {
-  VarSymbol* utmp = wrapper->newTemp(fn->retType);
-  VarSymbol* rtmp = wrapper->newTemp(wrapper->retType);
-  BlockExpr* body = wrapper->body;
+  VarSymbol* utmp = newTemp(fn->retType);
+  VarSymbol* rtmp = newTemp(wrapper->retType);
+  CallExpr* call = new CallExpr(fn);
+  BlockExpr* wbody = wrapper->body;
 
-  CallExpr* unwrappedCall = new CallExpr(fn);
+  wbody->insertAtTail(new DefExpr(utmp));
+  wbody->insertAtTail(new DefExpr(rtmp));
 
   for (int i = 0; i < tmps.size(); i++) {
     VarSymbol* tmp = tmps[i];
     if (tmp != NULL) {
-      unwrappedCall.insertAtTail(tmp);
+      call.insertAtTail(tmp);
     } else {
       int idx = i + 1;
       ArgSymbol* as = wrapper->getFormal(idx);
-      unwrappedCall.insertAtTail(as);
+      call.insertAtTail(as);
     }
   }
 
-  // Move the result of the unwrapped call into unwrapped temp.
-  body->insertAtTail(new CallExpr(PRIM_MOVE, utmp, unwrappedCall));
+  wbody->insertAtTail(new CallExpr(PRIM_MOVE, utmp, call));
 
   if (needsFixup(fn->retType)) {
-    // Get conversion call from original type to wrapper type.
     Type* src = fn->retType;
     Type* dst = wrapper->retType;
-    const char* convSym = getConversionCallName(src, dst);
+    FnSymbol* conv = resolveConversionCall(src, dst);
 
-    //
-    // Issue a conversion call on unwrapped temp, then move the resulting
-    // value into the result temp.
-    //
-    CallExpr* conv = new CallExpr(new UnresolvedSymExpr(convSym), utmp);
+    CallExpr* call = new CallExpr(conv, utmp);
     CallExpr* move = new CallExpr(PRIM_MOVE, rtmp, conv);
-    body->insertAtTail(move);
+
+    wbody->insertAtTail(move);
   } else {
     // If no conversion call was needed, both temps have the same type.
-    body->insertAtTail(new CallExpr(PRIM_MOVE, rtmp, utmp));
+    wbody->insertAtTail(new CallExpr(PRIM_MOVE, rtmp, utmp));
   }
 
   // Return the result temporary.
   CallExpr* ret = new CallExpr(PRIM_RETURN, rtmp);
-  body->insertAtTail(ret);
+  wbody->insertAtTail(ret);
 
   return;
 }
