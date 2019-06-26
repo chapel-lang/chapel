@@ -1,12 +1,24 @@
+/*
+Module UnitTest provides support for automated testing in Chapel .
+Any function of the form
+
+.. code-block:: chapel
+  
+  proc funcName(test: Test) throws {}
+
+is treated as a test function.
+*/
 module UnitTest {
   use Reflection;
   use TestError;
-
+  pragma "no doc"
   config const skipId: int = 0;
   // This is a dummy test to capture the function signature
   private
   proc testSignature(test: Test) throws { }
+  pragma "no doc"
   var tempFcf = testSignature;
+  pragma "no doc"
   type argType = tempFcf.type;  //Type of First Class Test Functions
 
   class Test {
@@ -52,6 +64,7 @@ module UnitTest {
         throw new owned AssertionError("assertFalse failed. Given expression is True");
     }
     
+    pragma "no doc"
     /*Function to call the respective method for equality checking based on the type of argument*/
     proc checkAssertEquality(first, second) throws {
       type firstType = first.type, 
@@ -79,7 +92,8 @@ module UnitTest {
         __baseAssertEqual(first, second);
       }
     }
-
+    
+    pragma "no doc"
     /*
       Check that a boolean array is true.  If any element is false, returns 'false'
       else return 'true'.
@@ -92,17 +106,19 @@ module UnitTest {
       return true;
     }
 
+    pragma "no doc"
     /* Method overloading for the above function. Return the argument itself
     */
     proc all(check: bool) {
       return check;
     }
-
+    
+    pragma "no doc"
     /*An equality assertion for sequences (like arrays, tuples, strings, range).
       Args:
-        seq1: The first sequence to compare.
-        seq2: The second sequence to compare.
-        seq_type_name: The name of datatype of the sequences
+      seq1: The first sequence to compare.
+      seq2: The second sequence to compare.
+      seq_type_name: The name of datatype of the sequences
     */
     proc assertSequenceEqual(seq1, seq2, seq_type_name) throws {
       var tmpString: string;
@@ -158,6 +174,7 @@ module UnitTest {
       throw new owned AssertionError(tmpString);
     }
 
+    pragma "no doc"
     /*An array-specific equality assertion.
       Args:
       array1: The first array to compare.
@@ -183,6 +200,7 @@ module UnitTest {
       }
     }
 
+    pragma "no doc"
     /*
       A tuple-specific equality assertion.
       Args:
@@ -201,6 +219,7 @@ module UnitTest {
       }
     }
 
+    pragma "no doc"
     /*
       A range-specific equality assertion.
       Args:
@@ -210,7 +229,8 @@ module UnitTest {
     proc assertRangeEqual(range1, range2) throws {
       __baseAssertEqual(range1,range2);
     }
-    
+
+    pragma "no doc"
     /*
       A string-specific equality assertion.
       Args:
@@ -220,7 +240,8 @@ module UnitTest {
     proc assertStringEqual(string1, string2) throws {
       assertSequenceEqual(string1,string2,"String");
     }
-
+    
+    pragma "no doc"
     /*The default assertEqual implementation, not type specific.*/
     proc __baseAssertEqual(first, second) throws {
       if canResolve("!=",first,second) {
@@ -242,6 +263,7 @@ module UnitTest {
       checkAssertEquality(first, second);
     }
 
+    pragma "no doc"
     /* Function that checks whether two arguments are unequal or not*/
     proc checkAssertInequality(first,second) throws {
       type firstType = first.type,
@@ -262,6 +284,7 @@ module UnitTest {
       return true;
     }
 
+    
     /*
       Fail if the two objects are equal as determined by the '==' operator and type.
     */
@@ -288,6 +311,7 @@ module UnitTest {
       }
     }
 
+    pragma "no doc"
     /*checks the type of the arguments and then do greater than comaprison */
     proc checkGreater(first, second) throws {
       type firstType = first.type,
@@ -315,12 +339,13 @@ module UnitTest {
         __baseAssertGreater(first, second);
       }
     }
-
+    
+    pragma "no doc"
     /*An greater assertion for sequences (like arrays, tuples, strings).
       Args:
-        seq1: The first sequence to compare.
-        seq2: The second sequence to compare.
-        seq_type_name: The name of datatype of the sequences
+      seq1: The first sequence to compare.
+      seq2: The second sequence to compare.
+      seq_type_name: The name of datatype of the sequences
     */
     proc assertSequenceGreater(seq1, seq2, seq_type_name) throws {
       var checkgreater: bool = false,
@@ -381,6 +406,7 @@ module UnitTest {
       throw new owned AssertionError(tmpString);
     }
 
+    pragma "no doc"
     /*An array-specific greater assertion.
       Args:
       array1: The first array to compare.
@@ -410,6 +436,7 @@ module UnitTest {
       }
     }
 
+    pragma "no doc"
     /*
       A tuple-specific greater assertion.
       Args:
@@ -428,6 +455,7 @@ module UnitTest {
       }
     }
 
+    pragma "no doc"
     /*
       A range-specific greater assertion.
       Args:
@@ -444,6 +472,7 @@ module UnitTest {
       }
     }
     
+    pragma "no doc"
     /*
       A string-specific Greater assertion.
       Args:
@@ -460,7 +489,7 @@ module UnitTest {
       }
     }
 
-
+     pragma "no doc"
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertGreater(first, second) throws {
       if all(first <= second) {
@@ -482,7 +511,8 @@ module UnitTest {
         throw new owned AssertionError(tmpString);
       }
     }
-
+    
+    pragma "no doc"
     /*checks the type of the arguments and then do less than comaprison */
     proc checkLessThan(first, second) throws {
       type firstType = first.type,
@@ -511,11 +541,12 @@ module UnitTest {
       }
     }
 
+    pragma "no doc"
     /*An less than assertion for sequences (like arrays, tuples, strings).
       Args:
-        seq1: The first sequence to compare.
-        seq2: The second sequence to compare.
-        seq_type_name: The name of datatype of the sequences
+      seq1: The first sequence to compare.
+      seq2: The second sequence to compare.
+      seq_type_name: The name of datatype of the sequences
     */
     proc assertSequenceLess(seq1, seq2, seq_type_name) throws {
       var checkless: bool = false,
@@ -576,6 +607,7 @@ module UnitTest {
       throw new owned AssertionError(tmpString);
     }
 
+    pragma "no doc"
     /*An array-specific less than assertion.
       Args:
       array1: The first array to compare.
@@ -604,7 +636,8 @@ module UnitTest {
         throw new owned AssertionError(tmpString);
       }
     }
-
+    
+    pragma "no doc"
     /*
       A tuple-specific less than assertion.
       Args:
@@ -623,6 +656,7 @@ module UnitTest {
       }
     }
 
+    pragma "no doc"
     /*
       A range-specific Less than assertion.
       Args:
@@ -638,7 +672,8 @@ module UnitTest {
         throw new owned AssertionError(tmpString);
       }
     }
-    
+
+    pragma "no doc"    
     /*
       A string-specific Less than assertion.
       Args:
@@ -655,7 +690,7 @@ module UnitTest {
       }
     }
 
-
+    pragma "no doc"
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertLess(first, second) throws {
       if all(first >= second) {
@@ -665,6 +700,7 @@ module UnitTest {
     }
   }
 
+  pragma "no doc"
   /*A test result class that can print formatted text results to a stream.*/
   class TextTestResult {
     var separator1 = "="* 70,
@@ -701,6 +737,7 @@ module UnitTest {
     
   }
   
+  pragma "no doc"
   class TestSuite {
     var testCount = 0;
     var _tests: [1..0] argType;

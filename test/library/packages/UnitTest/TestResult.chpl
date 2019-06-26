@@ -22,21 +22,21 @@ class TestResult {
   }
   
   /*Called when an error has occurred.*/
-  proc addError(test, errMsg) {
-    this.errors.push_back((test: string, errMsg: string));
+  proc addError(test: string, errMsg: string) {
+    this.errors.push_back((test, errMsg));
   }
 
   /*called when error occured */
-  proc addFailure(test, errMsg) {
-    this.failures.push_back((test: string, errMsg: string));
+  proc addFailure(test: string, errMsg: string) {
+    this.failures.push_back((test, errMsg));
   }
 
   /*Called when a test has completed successfully*/
-  proc addSuccess(test) { }
+  proc addSuccess(test: string) { }
 
   /*Called when a test is skipped.*/
-  proc addSkip(test, reason) {
-    this.skipped.push_back((test: string, reason: string));
+  proc addSkip(test: string, reason: string) {
+    this.skipped.push_back((test, reason));
   }
 
   /*Tells whether or not this result was a success.*/
@@ -50,17 +50,17 @@ class TestResult {
   }
 
   /*Count of test skipped*/
-  proc skippedTests() {
+  proc numSkippedTests() {
     return this.skipped.size;
   }
 
   /*Count of test failed*/
-  proc failedTests() {
+  proc numFailedTests() {
     return this.failures.size;
   }
 
   /*Count of tests giving error*/
-  proc erroredTests() {
+  proc numErroredTests() {
     return this.errors.size;
   }
 
@@ -81,8 +81,8 @@ class TestResult {
   }
 
   /* Function to print the result*/
-  proc PrintResult() {
-    var skipped = this.skippedTests();
+  proc printResult() {
+    var skipped = this.numSkippedTests();
     var run = this.testsRun - skipped;
     if this.testsRun!=0 {
       writeln("Run "+ run +" "+printTest(run));
@@ -90,8 +90,8 @@ class TestResult {
       var infos: [1..0](string);
       if !this.wasSuccessful() {
         write("FAILED");
-        var failed = this.failedTests(),
-          errored = this.erroredTests();
+        var failed = this.numFailedTests(),
+          errored = this.numErroredTests();
         if failed then
           infos.push_back("failures = "+failed);
         if errored then
