@@ -1121,10 +1121,12 @@ static void codegen_header_compilation_config() {
     fprintf(cfgfile.fptr, "\n#include <stdio.h>");
     fprintf(cfgfile.fptr, "\n#include \"chpltypes.h\"\n\n");
 
-    if (!llvmCodegen) {
-#ifndef HAVE_LLVM
-      gGenInfo->cfile = cfgfile.fptr;
+    if (llvmCodegen) {
+#ifdef HAVE_LLVM
+      gGenInfo->cfile = NULL;
 #endif
+    } else {
+      gGenInfo->cfile = cfgfile.fptr;
     }
 
     genGlobalString("chpl_compileCommand", compileCommand);
@@ -1176,7 +1178,7 @@ static void codegen_header_compilation_config() {
     
     codegenCallPrintf("Compilation command: %s\\n", compileCommand);
     codegenCallPrintf("Chapel compiler version: %s\\n", compileVersion);
-    codegenCallPrintf("Chapel environment:\\n", "");
+    codegenCallPrintf("Chapel environment:\\n");
     codegenCallPrintf("  CHPL_HOME: %s\\n", CHPL_HOME);  
       for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
         if (env->first != "CHPL_HOME") {

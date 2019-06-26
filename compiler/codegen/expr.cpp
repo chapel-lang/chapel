@@ -2820,7 +2820,7 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     //types[4] = llvm::Type::getInt1Ty(info->llvmContext);
 
     llvm::Function *func = llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::memcpy, types);
-    //llvm::FunctionType *fnType = func-> getFunctionType();
+    //llvm::FunctionType *fnType = func->getFunctionType();
 
 #if HAVE_LLVM_VER >= 70
     // LLVM 7 and later: memcpy has no alignment argument
@@ -3088,21 +3088,41 @@ GenRet codegenCastToVoidStar(GenRet value)
   return ret;
 }
 
+void codegenCallPrintf(const char* arg) {
+  GenInfo* info = gGenInfo;
+
+  if (info->cfile) {
+    fprintf(info->cfile, "printf(\"%s\");", arg);
+  } else {
+#ifdef HAVE_LLVM
+    codegenCallPrintf(arg, "", "");
+#endif
+  }
+}
+
 void codegenCallPrintf(const char* arg1, const char* arg2) {
-  codegenCallPrintf(arg1, arg2, "");
+  GenInfo* info = gGenInfo;
+
+  if (info->cfile) {
+    fprintf(info->cfile, "printf(\"%s\", \"%s\");", arg1, arg2);
+  } else {
+#ifdef HAVE_LLVM
+    codegenCallPrintf(arg1, arg2, "");
+#endif
+  }
 }
 
 void codegenCallPrintf(const char* arg1, const char* arg2, const char* arg3) {
-//   GenInfo* info = gGenInfo;
+  GenInfo* info = gGenInfo;
 
-//   if (info->cfile) {
-//     fprintf(info->cfile, "printf(\"%s\", \"%s\", \"%s\");\n", arg1, arg2, arg3);
-//   } else {
-// #ifdef HAVE_LLVM
+  if (info->cfile) {
+    fprintf(info->cfile, "printf(\"%s\", \"%s\", \"%s\");\n", arg1, arg2, arg3);
+  } else {
+#ifdef HAVE_LLVM
     codegenCall("printf", new_CStringSymbol(arg1)->codegen(), new_CStringSymbol(arg2)->codegen(),
       new_CStringSymbol(arg3)->codegen());
-// #endif
-//   }
+#endif
+  }
 }
 
 /* Commented out because it is not currently used.
