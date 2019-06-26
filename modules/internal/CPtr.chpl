@@ -26,7 +26,7 @@
  */
 module CPtr {
   use ChapelStandard;
-  private use SysBasic;
+  private use SysBasic, SysError;
 
   /* A Chapel version of a C NULL pointer. */
   inline proc c_nil:c_void_ptr {
