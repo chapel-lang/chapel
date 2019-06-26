@@ -1,7 +1,7 @@
 // TODO: header ifdef guard
 // TODO: these should have "plugin" in the name
 
-syserr chpl_qio_setup(void* file, void** plugin_ch, int64_t start, int64_t end, qio_channel_t* qio_ch);
+syserr chpl_qio_setup_plugin_channel(void* file, void** plugin_ch, int64_t start, int64_t end, qio_channel_t* qio_ch);
 syserr chpl_qio_channel_close(void* ch);
 
 // Reads amt bytes (or more) into the channel buffer

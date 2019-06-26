@@ -868,23 +868,24 @@ class QioPluginFile {
 
   // TODO: should these throw instead of returning qio errors?
 
-  proc setup(out pluginChannel:QioPluginChannel,
-             start:int(64),
-             end:int(64),
-             qioChannelPtr:qio_channel_ptr_t):syserr {
+  proc setupChannel(out pluginChannel:unmanaged QioPluginChannel,
+                    start:int(64), end:int(64),
+                    qioChannelPtr:qio_channel_ptr_t):syserr {
     return ENOSYS;
   }
 
+  /*
   proc pwritev(iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtWritten:ssize_t):syserr {
     return ENOSYS;
   }
   proc preadv(iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtRead:ssize_t):syserr {
     return ENOSYS;
-  }
+  }*/
 
   proc filelength(out length:int(64)):syserr {
     return ENOSYS;
   }
+  // TODO: what is the memory management discipline here?
   proc getpath(out path:c_string, out len:ssize_t):syserr {
     return ENOSYS;
   }
@@ -906,6 +907,7 @@ class QioPluginFile {
 }
 
 class QioPluginChannel {
+  // It can read more than amt
   proc readAtLeast(amt:int(64)):syserr {
     return ENOSYS;
   }
@@ -924,25 +926,28 @@ class QioPluginChannel {
   }
 }
 
+/*
 pragma "no doc"
 class QioPluginFilesystem {
   // TODO: should these throw instead of returning qio errors?
 
-  proc open(path:c_string, pathlen:ssize_t, ref flags:c_int, mode:int(64), hints:int(64), out file:QioPluginFile):syserr {
+  proc open(path:string, flags:int(64), mode:int(64), hints:int(64), out file:unmanaged QioPluginFile):syserr {
     return ENOSYS;
   }
+  /*
   proc getCwd(out path:c_string, out len:ssize_t):syserr {
     return ENOSYS;
   }
   proc getFsType(out fsType:int(64)):syserr {
     return ENOSYS;
-  }
+  }*/
 
   /*
   proc handlesUrl(url: string): bool {
     return false;
   }*/
 }
+*/
 
 // These functions let the C QIO code call the plugins
 // TODO: Move more of the QIO code to be pure Chapel
@@ -971,10 +976,10 @@ export proc chpl_qio_channel_close(ch:c_void_ptr):syserr {
   return err;
 }
 
-export proc chpl_qio_setup(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):syserr {
+export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):syserr {
   var f=file:QioPluginFile;
-  var pluginChannel:QioPluginChannel = nil;
-  var ret = f.setup(pluginChannel, start, end, qio_ch);
+  var pluginChannel:unmanaged QioPluginChannel = nil;
+  var ret = f.setupChannel(pluginChannel, start, end, qio_ch);
   plugin_ch = pluginChannel:c_void_ptr;
   return ret;
 }
@@ -1016,7 +1021,7 @@ export proc chpl_qio_file_close(file:c_void_ptr):syserr {
   return err;
 }
 
-
+/*
 export proc chpl_qio_open(filesystem:c_void_ptr, path:c_string, pathlen:ssize_t, ref flags:c_int, mode:int(64), hints:int(64), ref file:c_void_ptr):syserr {
   var fs=filesystem:QioPluginFilesystem;
   var f:QioPluginFile;
@@ -1033,6 +1038,7 @@ export proc chpl_qio_get_fs_type(filesystem:c_void_ptr, ref fsType:int(64)):syse
   var fs=filesystem:QioPluginFilesystem;
   return fs.getFsType(fsType);
 }
+*/
 
 // Extern functions
 // TODO -- move these declarations to where they are used or into
@@ -1068,6 +1074,8 @@ private extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 
 private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
+private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_void_ptr;
+private extern proc qio_channel_get_plugin(f:qio_file_ptr_t):c_void_ptr;
 private extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
 private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
@@ -1498,6 +1506,11 @@ proc file.unlock() {
 }
 */
 
+pragma "no doc"
+proc file.filePlugin() : QioPluginFile? {
+  return qio_file_get_plugin(this._channel_internal);
+}
+
 // File style cannot be modified after the file is created;
 // this prevents race conditions;
 // channel style is protected by channel lock, can be modified.
@@ -1689,7 +1702,7 @@ to create a channel to actually perform I/O operations
 
 :throws SystemError: Thrown if the file could not be opened.
 */
-proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
+proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle = defaultIOStyle()): file throws {
 
   /*
@@ -2577,6 +2590,18 @@ proc channel.getLocaleOfIoRequest() {
   return ret;
 }
 
+// QIO plugins don't have stable interface yet, hence no-doc
+// only works when called on locale owning channel.
+pragma "no doc"
+proc channel.channelPlugin() : QioPluginChannel? {
+  return qio_channel_get_plugin(this._channel_internal);
+}
+pragma "no doc"
+proc channel.filePlugin() : QioPluginFile? {
+  return qio_file_get_plugin(qio_channel_get_file(this._channel_internal));
+}
+
+
 /*
 
 Open a file at a particular path or URL and return a reading channel for it.
@@ -2617,19 +2642,15 @@ This function is equivalent to calling :proc:`open` and then
 // since we only will have one reference, will be right after we close this
 // channel presumably).
 // TODO: include optional iostyle argument for consistency
-proc openreader(path:string="", param kind=iokind.dynamic, param locking=true,
-    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-    url:string=""): channel(false, kind, locking) throws {
+proc openreader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints = IOHINT_NONE,
+                style:iostyle = defaultIOStyle())
+    : channel(false, kind, locking) throws {
 
-  var fl:file = try open(path, iomode.r, url=url);
-  var fl_style = try fl._style;
-  return try fl.reader(kind, locking, start, end, hints, fl_style);
-
-  // TODO
-  // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
-  // Then, when we leave this function, Chapel will view this file as leaving scope,
-  // and not having any handles attached to it, it will close the underlying file for the channel.
-  /*qio_file_release(fl._file_internal);*/
+  var fl:file = try open(path, iomode.r);
+  return try fl.reader(kind, locking, start, end, hints, style);
 }
 
 /*
@@ -2667,19 +2688,15 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 
 :throws SystemError: Thrown if a writing channel could not be returned.
 */
-proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
-    start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-    url:string=""): channel(true, kind, locking) throws {
+proc openwriter(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints = IOHINT_NONE,
+                style:iostyle = defaultIOStyle())
+    : channel(true, kind, locking) throws {
 
-  var fl:file = try open(path, iomode.cw, url=url);
-  var fl_style = try fl._style;
-  return try fl.writer(kind, locking, start, end, hints, fl_style);
-
-  // TODO
-  // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
-  // Then, when we leave this function, Chapel will view this file as leaving scope,
-  // and not having any handles attached to it, it will close the underlying file for the channel.
-  /*qio_file_release(fl._file_internal);*/
+  var fl:file = try open(path, iomode.cw);
+  return try fl.writer(kind, locking, start, end, hints, style);
 }
 
 /*

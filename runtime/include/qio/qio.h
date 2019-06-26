@@ -694,6 +694,7 @@ typedef struct qio_channel_s {
   /* Each buffer is divided into these sections:
    * _________________________________________________________________
    * |write-behind | user writeable/readable | read-ahead/buffer space|
+   * |             | aka available           | aka allocated          |
    *             mark_stack[0]              av_end
    *             "av_start"
    *                  mark_stack[mark_next-1] 
@@ -774,6 +775,10 @@ qioerr qio_channel_error(qio_channel_t* ch) {
   return ch->error;
 }
 
+static inline
+void* qio_channel_get_plugin(qio_channel_t* ch) {
+  return ch->chan_info;
+}
 
 qioerr _qio_channel_init_buffered(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 qioerr _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
@@ -1125,16 +1130,42 @@ qioerr qio_channel_require_write(const int threadsafe, qio_channel_t* ch, int64_
   return err;
 }
 
+// returns the number of bytes allocated - that is, the number
+// of bytes from av_end to the end of the buffer.
+int64_t qio_channel_nbytes_allocated_unlocked(qio_channel_t* ch);
 // returns the number of bytes "available", that is, number of bytes
 // from right_mark_start (aka current offset) to av_end.
-qioerr qio_channel_nbytes_available(const int threadsafe, qio_channel_t* ch, int64_t* space);
-qioerr qio_channel_nbytes_write_behind(const int threadsafe, qio_channel_t* ch, int64_t* space);
+int64_t qio_channel_nbytes_available_unlocked(qio_channel_t* ch);
+// returns the number of bytes ready for write-behind, that is,
+// the number of bytes from the start of the buffer to the av_start 
+int64_t qio_channel_nbytes_write_behind_unlocked(qio_channel_t* ch);
 
+// Returns a pointer,length for the next contiguous sequence in the
+// allocated region, as well as the offset to start a read at.
+// Ensures that amt_requested buffer space is available, first.
+// (useful for QIO plugins when handling a 'read' I/O operation)
+// TODO: rename to get-read-ahead-ptr-unlocked
+qioerr qio_channel_get_allocated_ptr_unlocked(qio_channel_t* ch, int64_t amt_requested, void** ptr_out, ssize_t* len_out, int64_t* offset_out);
+// Move the end of the available region forward len bytes
+void qio_channel_advance_available_end_unlocked(qio_channel_t* ch, ssize_t len);
 
 // Copies the len bytes starting at ptr to the channel
 // allocating buffer space if necessary in the channel.
-qioerr qio_channel_copy_to_available(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len);
-qioerr qio_channel_copy_from_buffered(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* n_written_out);
+// (useful for QIO plugins when handling a 'read' I/O operation)
+qioerr qio_channel_copy_to_available_unlocked(qio_channel_t* ch, void* ptr, ssize_t len);
+
+// Returns a pointer,length for the next contiguous sequence in the
+// write-behind region, as well as the offset to start a write at.
+// (useful for QIO plugins when handling a 'write' I/O operation)
+qioerr qio_channel_get_write_behind_ptr_unlocked(qio_channel_t* ch, void** ptr_out, ssize_t* len_out, int64_t* offset_out);
+
+// Move the write-behind region forward len bytes
+void qio_channel_advance_write_behind_unlocked(qio_channel_t* ch, ssize_t len);
+
+// Copies from the buffer start len bytes into ptr
+// (useful for QIO plugins when handling a 'write' I/O operation)
+// TODO: rename to e.g. write_behind_to_pointer
+qioerr qio_channel_copy_from_buffered_unlocked(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* n_written_out);
 
 void _qio_buffered_setup_cached(qio_channel_t* ch);
 void _qio_buffered_advance_cached(qio_channel_t* ch);

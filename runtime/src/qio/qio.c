@@ -1475,7 +1475,7 @@ qioerr _qio_channel_init_file_internal(qio_channel_t* ch, qio_file_t* file, qio_
   // Setup any plugin channel, if necessary
   if (file->file_info != NULL) {
     void* chan_info = NULL;
-    err = chpl_qio_setup(file->file_info, &chan_info, start, end, ch);
+    err = chpl_qio_setup_plugin_channel(file->file_info, &chan_info, start, end, ch);
     if (err) return err;
     ch->chan_info = chan_info;
   }
@@ -2469,59 +2469,31 @@ void _qio_buffered_advance_cached(qio_channel_t* ch)
   _qio_channel_set_error_unlocked(ch, err);
 }
 
-// returns the number of bytes "available", that is, number of bytes
-// from right_mark_start (aka current offset) to av_end.
-qioerr qio_channel_nbytes_available(const int threadsafe, qio_channel_t* ch, int64_t* space)
+int64_t qio_channel_nbytes_allocated_unlocked(qio_channel_t* ch)
 {
-  qioerr err;
-
-  if( threadsafe ) {
-    err = qio_lock(&ch->lock);
-    if( err ) {
-      return err;
-    }
-  }
-
-  *space = ch->av_end - ch->mark_stack[ch->mark_cur];
-
-  if( threadsafe ) {
-    qio_unlock(&ch->lock);
-  }
-
-  return err;
+  return qbuffer_end_offset(&ch->buf) - ch->av_end;
 }
-qioerr qio_channel_nbytes_write_behind(const int threadsafe, qio_channel_t* ch, int64_t* space)
+int64_t qio_channel_nbytes_available_unlocked(qio_channel_t* ch)
 {
-  qioerr err;
+  return ch->av_end - ch->mark_stack[ch->mark_cur];
+}
+int64_t qio_channel_nbytes_write_behind_unlocked(qio_channel_t* ch)
+{
   qbuffer_iter_t write_start;
   qbuffer_iter_t write_end;
-
-  if( threadsafe ) {
-    err = qio_lock(&ch->lock);
-    if( err ) {
-      return err;
-    }
-  }
 
   write_start = qbuffer_begin(&ch->buf);
   write_end = _av_start_iter(ch);
 
-  *space = qbuffer_iter_num_bytes(write_start, write_end);
-
-  if( threadsafe ) {
-    qio_unlock(&ch->lock);
-  }
-
-  return err;
+  return qbuffer_iter_num_bytes(write_start, write_end);
 }
 
-qioerr qio_channel_copy_to_available(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len)
-{
-  qbuffer_iter_t read_start;
-  qbuffer_iter_t read_end;
+// Extends the allocated region to include at least len bytes.
+static
+qioerr qio_channel_extend_allocated_unlocked(qio_channel_t* ch, ssize_t len) {
   int64_t amt;
   int64_t max_amt;
-  int return_eof = 0;
+  int64_t space = 0;
   qioerr err;
 
   amt = len;
@@ -2533,11 +2505,71 @@ qioerr qio_channel_copy_to_available(const int threadsafe, qio_channel_t* ch, vo
 
   if (amt > max_amt) {
     amt = max_amt;
-    return_eof = 1;
   }
 
-  err = _buffered_allocate_bufferspace(ch, amt, max_amt);
-  if (err) return err;
+  space = qio_channel_nbytes_allocated_unlocked(ch);
+
+  if (amt <= space) {
+    // No need to allocate anything, there is room
+  } else {
+    err = _buffered_allocate_bufferspace(ch, amt, max_amt);
+    if (err) return err;
+  }
+
+  return 0;
+}
+
+qioerr qio_channel_get_allocated_ptr_unlocked(qio_channel_t* ch, int64_t amt_requested, void** ptr_out, ssize_t* len_out, int64_t* offset_out)
+{
+  qbuffer_iter_t read_start;
+  qbuffer_iter_t read_end;
+  int64_t space = 0;
+  qbytes_t* bytes = NULL;
+  int64_t skip = 0;
+  int64_t len = 0;
+  qioerr err;
+
+  err = qio_channel_extend_allocated_unlocked(ch, amt_requested);
+  if (err) {
+    *ptr_out = NULL;
+    *len_out = 0;
+    *offset_out = 0;
+    return err;
+  }
+
+  space = qio_channel_nbytes_allocated_unlocked(ch);
+
+  read_start = _av_end_iter(ch);
+  read_end = read_start;
+  qbuffer_iter_advance(&ch->buf, &read_end, space);
+
+  qbuffer_iter_get(read_start, read_end, &bytes, &skip, &len);
+  *ptr_out = qio_ptr_add(bytes->data, skip);
+  *len_out = len;
+
+  return 0;
+}
+
+void qio_channel_advance_available_end_unlocked(qio_channel_t* ch, ssize_t len)
+{
+  ch->av_end += len;
+}
+
+qioerr qio_channel_copy_to_available_unlocked(qio_channel_t* ch, void* ptr, ssize_t len)
+{
+  qbuffer_iter_t read_start;
+  qbuffer_iter_t read_end;
+  int64_t amt = 0;
+  int64_t space = 0;
+  qioerr err;
+
+  err = qio_channel_extend_allocated_unlocked(ch, len);
+  // use the minimum of the allocated amount and the requested amount
+  space = qio_channel_nbytes_allocated_unlocked(ch);
+  if (space < len)
+    amt = space;
+  else
+    amt = len;
 
   read_start = _av_end_iter(ch);
   read_end = read_start;
@@ -2548,11 +2580,36 @@ qioerr qio_channel_copy_to_available(const int threadsafe, qio_channel_t* ch, vo
 
   ch->av_end += amt;
 
-  if( return_eof ) return QIO_EEOF;
+  if (ch->av_end >= ch->end_pos) return QIO_EEOF;
   return 0;
 }
 
-qioerr qio_channel_copy_from_buffered(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* n_written_out) {
+qioerr qio_channel_get_write_behind_ptr_unlocked(qio_channel_t* ch, void** ptr_out, ssize_t* len_out, int64_t* offset_out)
+{
+  qbuffer_iter_t write_start;
+  qbuffer_iter_t write_end;
+  qbytes_t* bytes = NULL;
+  int64_t skip = 0;
+  int64_t len = 0;
+
+  write_start = qbuffer_begin(&ch->buf);
+  write_end = _av_start_iter(ch);
+
+  qbuffer_iter_get(write_start, write_end, &bytes, &skip, &len);
+  *ptr_out = qio_ptr_add(bytes->data, skip);
+  *len_out = len;
+
+  return 0;
+}
+
+void qio_channel_advance_write_behind_unlocked(qio_channel_t* ch, ssize_t len)
+{
+  // Trim the copied portion out
+  qbuffer_trim_front(&ch->buf, len);
+}
+
+qioerr qio_channel_copy_from_buffered_unlocked(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* n_written_out)
+{
   qbuffer_iter_t write_start;
   qbuffer_iter_t write_end;
   qioerr err;

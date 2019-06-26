@@ -8,10 +8,12 @@ config const msg = "this is a test";
 proc runtest() {
   writeln("uploading test file to FTP");
 
-  var output = openurl(outUrl + "this-is-a-test.txt", iomode.cw).writer();
+  {
+    var output = uploadUrl(outUrl + "this-is-a-test.txt");
 
-  output.write(msg);
-  output.close();
+    output.write(msg);
+    output.close();
+  }
 
   writeln("uploading some files to FTP");
 
@@ -24,7 +26,7 @@ proc runtest() {
       // Open a URL reader and writer
       var outUrlFile = outUrl + f;
       var input = open(f, iomode.r).reader();
-      var output = openurl(outUrlFile, iomode.cw).writer();
+      var output = uploadUrl(outUrlFile);
 
       var str:string;
 
@@ -41,7 +43,7 @@ proc runtest() {
 
       // Now, try downloading the file and check against the local file.
       var filereader = open(f, iomode.r).reader();
-      var urlreader = openurl(outUrlFile).reader();
+      var urlreader = downloadUrl(outUrlFile);
       // Now check that the files match
       nlines = 0;
       var str1: string;

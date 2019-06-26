@@ -16,8 +16,8 @@ proc runtest() {
       // Open a URL reader and writer
       var inUrl = "http://" + host + ":" + port + "/" + f;
       var outUrlFile = outUrl + f;
-      var input = openurl(inUrl).reader();
-      var output = openurl(outUrlFile, iomode.cw).writer();
+      var input = downloadUrl(inUrl);
+      var output = uploadUrl(outUrlFile);
 
       var str:string;
 
@@ -34,7 +34,7 @@ proc runtest() {
 
       // Now, try downloading the file and check against the local file.
       var filereader = open(f, iomode.r).reader();
-      var urlreader = openurl(outUrlFile).reader();
+      var urlreader = downloadUrl(outUrlFile);
       // Now check that the files match
       nlines = 0;
       var str1: string;

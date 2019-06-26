@@ -34,9 +34,9 @@ syserr chpl_qio_close(void* file) {
   QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 }
 
-syserr chpl_qio_open(void* filesystem, const char* path, ssize_t pathlen, int flags, int64_t mode, int64_t hints, void** file) {
+/*syserr chpl_qio_open(void* filesystem, const char* path, ssize_t pathlen, int flags, int64_t mode, int64_t hints, void** file) {
   QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
-}
+}*/
 syserr chpl_qio_get_cwd(void* filesystem, const char** path, ssize_t* len) {
   QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 }

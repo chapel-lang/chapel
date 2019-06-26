@@ -18,7 +18,7 @@ proc runtest() {
       var filereader = open(f, iomode.r).reader();
 
       var url = "http://" + host + ":" + port + "/" + f;
-      var urlreader = openurl(url).reader();
+      var urlreader = downloadUrl(url);
 
       var nlines = 0;
       var str1: string;
