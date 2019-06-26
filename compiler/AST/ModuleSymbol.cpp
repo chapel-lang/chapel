@@ -639,7 +639,7 @@ void ModuleSymbol::addDefaultUses() {
       }
 
       modRef = new UnresolvedSymExpr("ChapelStandard");
-      block->insertAtHead(new UseStmt(modRef, false));
+      block->insertAtHead(new UseStmt(modRef, true));
     }
 
   // We don't currently have a good way to fetch the root module by name.
