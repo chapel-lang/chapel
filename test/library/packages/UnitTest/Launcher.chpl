@@ -11,21 +11,22 @@ module Launcher {
   use TestResult;
   config const subdir: string = "true";
   config const keepExec: string = "false";
-
   pragma "no doc"
   /*Docs: Todo*/
-  proc runAndLog(executable,fileName, ref result,skipId = 0) throws {
+  proc runAndLog(executable,fileName, ref result,skipId = 0,reqNumLocales:int = numLocales) throws {
     var separator1 = result.separator1,
         separator2 = result.separator2;
     var testName: string,
         flavour: string,
         line: string,
         tempString: string;
-    var curIndex = 0;
+    var curIndex = 0,
+        reqLocales = 0;
     var sep1Found = false,
-        haltOccured = false;
+        haltOccured = false,
+        incorrectNumLocales = false;
     
-    var exec = spawn(["./"+executable,"--skipId",skipId:string], stdout = PIPE, stderr = PIPE); //Executing the file
+    var exec = spawn(["./"+executable,"--skipId",skipId: string,"--numLocales",reqNumLocales: string], stdout = PIPE, stderr = PIPE); //Executing the file
     //std output pipe
     while exec.stdout.readline(line) {
       if line.strip() == separator1 then sep1Found = true;
@@ -34,6 +35,13 @@ module Launcher {
           when "ERROR" do result.addError(testName, tempString);
           when "FAIL" do result.addFailure(testName, tempString);
           when "SKIPPED" do result.addSkip(testName,tempString);
+          when "IncorrectNumLocales" {
+            var strSplit = tempString.split("=");
+            var reqLocalesStr = strSplit[2].strip();
+            reqLocales = reqLocalesStr: int;
+            incorrectNumLocales =  true;
+            break;
+          }
         }
         tempString = "";
         sep1Found = false;
@@ -66,6 +74,7 @@ module Launcher {
     }
     exec.wait();//wait till the subprocess is complete
     if haltOccured then runAndLog(executable, fileName, result, curIndex);
+    else if incorrectNumLocales then runAndLog(executable, fileName, result, curIndex, reqLocales);
   }
 
   pragma "no doc"
@@ -77,8 +86,12 @@ module Launcher {
       var compErr = false;
       var tempName = fileName.split(".chpl");
       var executable = tempName[1];
+      var executableReal = executable+"_real";
       if isFile(executable) {
         var execRem = spawn(["rm",executable]);
+      }
+      if isFile(executableReal) {
+        var execRem = spawn(["rm",executableReal]);
       }
       var sub = spawn(["chpl",file,"-o",executable,"-M."],stderr = PIPE); //Compiling the file
       if sub.stderr.readline(line) {
@@ -90,6 +103,9 @@ module Launcher {
         runAndLog(executable,fileName,result);
         if !keepExec:bool {
           var execRem = spawn(["rm",executable]);
+          if isFile(executableReal) {
+            var execRem = spawn(["rm",executableReal]);
+          }
         }
       }
       else {
