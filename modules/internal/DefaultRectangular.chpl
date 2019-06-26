@@ -28,6 +28,7 @@ module DefaultRectangular {
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
   use DSIUtil, ChapelArray;
+  private use ChapelDistribution;
   use ExternalArray;
 
   config param debugDefaultDist = false;
