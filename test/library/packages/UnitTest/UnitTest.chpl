@@ -22,7 +22,7 @@ module UnitTest {
   type argType = tempFcf.type;  //Type of First Class Test Functions
 
   class Test {
-    
+
     /* Unconditionally skip a test. */
     proc skip(reason: string = "") throws {
       throw new owned TestSkipped(reason);
@@ -698,6 +698,33 @@ module UnitTest {
         throw new owned AssertionError(tmpString);
       }
     }
+
+    /*Specify Max Number of Locales required to run the test*/
+    proc maxLocales(value: int) throws {
+      if value < numLocales {
+        throw new owned TestIncorrectNumLocales("Required Locales = "+value);
+      }
+    }
+
+    /*Specify Min Number of Locales required to run the test*/
+    proc minLocales(value: int) throws {
+      if value > numLocales {
+        throw new owned TestIncorrectNumLocales("Required Locales = "+value);
+      }
+    }
+
+    /*To add how many locales this test requires*/
+    proc addNumLocales(locales: int ...?n) throws {
+      var canRun =  false;
+      for numLocale in locales {
+        if numLocale == numLocales {
+          canRun = true;
+          break;
+        }
+      }
+      if !canRun then 
+        throw new owned TestIncorrectNumLocales("Required Locales = "+locales[1]);
+    }
   }
 
   pragma "no doc"
@@ -726,6 +753,11 @@ module UnitTest {
 
     proc addSkip(test, reason) throws {
       stdout.writeln("SKIPPED");
+      PrintError(reason);
+    }
+
+    proc addIncorrectNumLocales(test, reason) throws {
+      stdout.writeln("IncorrectNumLocales");
       PrintError(reason);
     }
 
@@ -799,6 +831,9 @@ module UnitTest {
       }
       catch e: TestDependencyNotMet {
         // Pop test out of array and append to end
+      }
+      catch e: TestIncorrectNumLocales {
+        testResult.addIncorrectNumLocales(test:string,e: string);
       }
       catch e { 
         testResult.addError(test:string, e:string);
