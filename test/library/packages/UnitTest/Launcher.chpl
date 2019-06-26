@@ -30,9 +30,11 @@
     while exec.stdout.readline(line) {
       if line.strip() == separator1 then sep1Found = true;
       else if line.strip() == separator2 && sep1Found {
-        if flavour == "ERROR" then result.addError(testName, tempString);
-        else if flavour == "FAIL" then result.addFailure(testName, tempString);
-        else if flavour == "SKIPPED" then result.addSkip(testName,tempString);
+        select flavour {
+          when "ERROR" do result.addError(testName, tempString);
+          when "FAIL" do result.addFailure(testName, tempString);
+          when "SKIPPED" do result.addSkip(testName,tempString);
+        }
         tempString = "";
         sep1Found = false;
       }
