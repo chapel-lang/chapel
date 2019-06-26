@@ -36,3 +36,12 @@ class TestDependencyNotMet: TestError {
     super.init(details);
   }
 }
+
+/* TestIncorrectNumLocales Error Class. Raised when test is not run with
+   expected number of Locales.
+*/
+class TestIncorrectNumLocales: TestError {
+  proc init(details: string = "") {
+    super.init(details);
+  }
+}
