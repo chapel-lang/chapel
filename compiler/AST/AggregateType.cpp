@@ -626,6 +626,7 @@ bool AggregateType::mayHaveInstances() const {
 
 // Determine the index for the first generic field (if present).
 // Return true if a generic field was found.
+// Note: this method will be invoked on each parent/ancestor for class types
 bool AggregateType::setFirstGenericField() {
   if (genericField == 0) {
     if (setNextGenericField() == true) {
