@@ -844,8 +844,7 @@ static Expr* resolveFieldExpr(Expr* expr, bool addCopy) {
     expr->replace(block);
     if (isSymExpr(expr) && toSymExpr(expr)->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
         expr->typeInfo()->symbol->hasFlag(FLAG_GENERIC) &&
-        isPrimitiveType(expr->typeInfo()) == false &&
-        expr->typeInfo() != dtOwned) {
+        isPrimitiveType(expr->typeInfo()) == false) {
       block->insertAtTail(new CallExpr(expr->typeInfo()->symbol));
     } else {
       block->insertAtTail(expr);
