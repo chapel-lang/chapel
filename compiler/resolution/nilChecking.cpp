@@ -68,9 +68,11 @@ typedef enum {
 
 struct AliasLocation {
   AliasType type;
-  // MUST_ALIAS_ALLOCATED -> CallExpr
+  // MUST_ALIAS_ALLOCATED -> CallExpr for the allocation
+  //                         or condExpr of CondStmt establishing non-nil-ness
   // MUST_ALIAS_REFVAR -> ArgSymbol or VarSymbol being referred to
-  // MUST_ALIAS_NIL -> a reason it is nil
+  // MUST_ALIAS_NIL -> a reason it is nil ex. assignment from nil
+  //                   or condExpr of CondStmt establishing nil-ness
   BaseAST* location;
   AliasLocation() : type(MUST_ALIAS_IGNORED), location(NULL) { }
 };
@@ -653,19 +655,21 @@ static Expr* getSingleDefExpr(Expr* expr) {
 //
 static void adjustMapForCatchBlock(CondStmt* cond, bool inThenBranch,
                                    AliasMap& OUT) {
-  // We could heuristically check cond->condExpr's symbol
-  // to be named "shouldHandleError".
-  if (CallExpr* CE = toCallExpr(getSingleDefExpr(cond->condExpr)))
-   if (CE->isPrimitive(PRIM_CHECK_ERROR))
-    if (SymExpr* errorSE = toSymExpr(CE->get(1)))
-     { // Found the pattern.
-       Symbol* errorSym = errorSE->symbol();
-       // errorSym->name is "error
-       AliasLocation errorAL;
-       errorAL.type = inThenBranch ? MUST_ALIAS_ALLOCATED : MUST_ALIAS_NIL;
-       errorAL.location = cond->condExpr;
-       update(OUT, errorSym, errorAL);
-     }
+  // We could heuristically check if cond->condExpr's symbol
+  // is named "shouldHandleError".
+  if (CallExpr* CE = toCallExpr(getSingleDefExpr(cond->condExpr))) {
+    if (CE->isPrimitive(PRIM_CHECK_ERROR)) {
+      if (SymExpr* errorSE = toSymExpr(CE->get(1))) {
+        // Found the pattern.
+        Symbol* errorSym = errorSE->symbol();
+        // In this pattern, errorSym->name is "error".
+        AliasLocation errorAL;
+        errorAL.type = inThenBranch ? MUST_ALIAS_ALLOCATED : MUST_ALIAS_NIL;
+        errorAL.location = cond->condExpr;
+        update(OUT, errorSym, errorAL);
+      }
+    }
+  }
 }
 
 // Update 'OUT' based on being inside a conditional,
