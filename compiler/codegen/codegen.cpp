@@ -1121,7 +1121,7 @@ static void codegen_header_compilation_config() {
     fprintf(cfgfile.fptr, "\n#include <stdio.h>");
     fprintf(cfgfile.fptr, "\n#include \"chpltypes.h\"\n\n");
 
-    if (llvmCodegen) {
+    if (llvmCodegen && 0 == strcmp(CHPL_LAUNCHER, "none")) {
 #ifdef HAVE_LLVM
       gGenInfo->cfile = NULL;
 #endif
@@ -1150,7 +1150,7 @@ static void codegen_header_compilation_config() {
       }
     }
 
-    if (llvmCodegen) {
+    if (llvmCodegen && 0 == strcmp(CHPL_LAUNCHER, "none")) {
 #ifdef HAVE_LLVM
       llvm::FunctionType* programAboutType;
       llvm::Function* programAboutFunc;
@@ -1176,17 +1176,17 @@ static void codegen_header_compilation_config() {
       fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
     }
     
-    codegenCallPrintf("Compilation command: %s\\n", compileCommand);
-    codegenCallPrintf("Chapel compiler version: %s\\n", compileVersion);
+    codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
+    codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
     codegenCallPrintf("Chapel environment:\\n");
-    codegenCallPrintf("  CHPL_HOME: %s\\n", CHPL_HOME);  
+    codegenCallPrintf(astr("CHPL_HOME: ", CHPL_HOME, "\\n"));  
       for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
         if (env->first != "CHPL_HOME") {
-          codegenCallPrintf("  %s: %s\\n", env->first.c_str(), env->second); 
+          codegenCallPrintf(astr(env->first.c_str(), ": ", env->second, "\\n")); 
         }
       }
 
-    if (llvmCodegen) {
+    if (llvmCodegen && 0 == strcmp(CHPL_LAUNCHER, "none")) {
 #ifdef HAVE_LLVM
       gGenInfo->irBuilder->CreateRetVoid();
       gGenInfo->cfile = cfgfile.fptr;

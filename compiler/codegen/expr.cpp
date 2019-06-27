@@ -3092,35 +3092,10 @@ void codegenCallPrintf(const char* arg) {
   GenInfo* info = gGenInfo;
 
   if (info->cfile) {
-    fprintf(info->cfile, "printf(\"%s\");", arg);
+    fprintf(info->cfile, "printf(\"%%s\", \"%s\");\n", arg);
   } else {
 #ifdef HAVE_LLVM
-    codegenCallPrintf(arg, "", "");
-#endif
-  }
-}
-
-void codegenCallPrintf(const char* arg1, const char* arg2) {
-  GenInfo* info = gGenInfo;
-
-  if (info->cfile) {
-    fprintf(info->cfile, "printf(\"%s\", \"%s\");", arg1, arg2);
-  } else {
-#ifdef HAVE_LLVM
-    codegenCallPrintf(arg1, arg2, "");
-#endif
-  }
-}
-
-void codegenCallPrintf(const char* arg1, const char* arg2, const char* arg3) {
-  GenInfo* info = gGenInfo;
-
-  if (info->cfile) {
-    fprintf(info->cfile, "printf(\"%s\", \"%s\", \"%s\");\n", arg1, arg2, arg3);
-  } else {
-#ifdef HAVE_LLVM
-    codegenCall("printf", new_CStringSymbol(arg1)->codegen(), new_CStringSymbol(arg2)->codegen(),
-      new_CStringSymbol(arg3)->codegen());
+    codegenCall("printf", new_CStringSymbol("%s")->codegen(), new_CStringSymbol(arg)->codegen());
 #endif
   }
 }
