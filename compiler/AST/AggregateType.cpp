@@ -1718,6 +1718,39 @@ std::string AggregateType::docsDirective() {
   return "";
 }
 
+static const char* buildTypeSignature(AggregateType* at) {
+  std::string temp = at->symbol->name;
+  temp += "(";
+
+  bool isFirst = true;
+  for_vector(Symbol, field, at->genericFields) {
+    if (isFirst) {
+      isFirst = false;
+    } else {
+      temp += ", ";
+    }
+
+    if (field->hasFlag(FLAG_PARAM)) {
+      temp += "param ";
+    } else {
+      temp += "type ";
+    }
+
+    temp += field->name;
+
+    if (field->defPoint->exprType != NULL) {
+      if (SymExpr* se = toSymExpr(field->defPoint->exprType)) {
+        temp += ": ";
+        temp += se->symbol()->name;
+      }
+    }
+  }
+
+  temp += ")";
+
+  return astr(temp);
+}
+
 void AggregateType::processGenericFields() {
   if (foundGenericFields) {
     return;
@@ -1764,32 +1797,7 @@ void AggregateType::processGenericFields() {
     }
   }
 
-  typeSignature = astr(symbol->name, "(");
-
-  bool isFirst = true;
-  for_vector(Symbol, field, genericFields) {
-    if (isFirst) {
-      isFirst = false;
-    } else {
-      typeSignature = astr(typeSignature, ", ");
-    }
-
-    if (field->hasFlag(FLAG_PARAM)) {
-      typeSignature = astr(typeSignature, "param ");
-    } else {
-      typeSignature = astr(typeSignature, "type ");
-    }
-
-    typeSignature = astr(typeSignature, field->name);
-
-    if (field->defPoint->exprType != NULL) {
-      if (SymExpr* se = toSymExpr(field->defPoint->exprType)) {
-        typeSignature = astr(typeSignature, ": ", se->symbol()->name);
-      }
-    }
-  }
-
-  typeSignature = astr(typeSignature, ")");
+  typeSignature = buildTypeSignature(this);
 
   this->mIsGenericWithDefaults = eachHasDefault;
 }
