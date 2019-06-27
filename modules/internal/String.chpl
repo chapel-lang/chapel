@@ -2156,12 +2156,14 @@ module String {
      result of casting the non-string argument to a string, and concatenating
      that result with `s`.
   */
+  /*
   inline proc +(s: string, x: numeric) return concatHelp(s, x);
   inline proc +(x: numeric, s: string) return concatHelp(x, s);
   inline proc +(s: string, x: enumerated) return concatHelp(s, x);
   inline proc +(x: enumerated, s: string) return concatHelp(x, s);
   inline proc +(s: string, x: bool) return concatHelp(s, x);
   inline proc +(x: bool, s: string) return concatHelp(x, s);
+  */
 
   //
   // Param procs
@@ -2201,6 +2203,7 @@ module String {
   inline proc +(param a: string, param b: string) param
     return __primitive("string_concat", a, b);
 
+  /*
   pragma "no doc"
   inline proc +(param s: string, param x: integral) param
     return __primitive("string_concat", s, x:string);
@@ -2224,6 +2227,7 @@ module String {
   pragma "no doc"
   inline proc +(param x: bool, param s: string) param
     return __primitive("string_concat", x:string, s);
+  */
 
   pragma "no doc"
   inline proc ascii(param a: string) param {

@@ -231,7 +231,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t):string + ")");
 
     return retVal;
   }

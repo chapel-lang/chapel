@@ -460,7 +460,7 @@ module ChapelArray {
       type currType = _getLiteralType(elems(i).type);
 
       if currType != elemType {
-        compilerError( "Array literal element " + i +
+        compilerError( "Array literal element " + i:string +
                        " expected to be of type " + elemType:string +
                        " but is of type " + currType:string );
       }
@@ -491,13 +491,13 @@ module ChapelArray {
       type elemValType = _getLiteralType(elemVal.type);
 
       if elemKeyType != keyType {
-         compilerError("Associative array key element " + (i+2)/2 +
+        compilerError("Associative array key element " + ((i+2)/2):string +
                        " expected to be of type " + keyType:string +
                        " but is of type " + elemKeyType:string);
       }
 
       if elemValType != valType {
-        compilerError("Associative array value element " + (i+1)/2
+        compilerError("Associative array value element " + ((i+1)/2):string
                       + " expected to be of type " + valType:string
                       + " but is of type " + elemValType:string);
       }
@@ -595,7 +595,7 @@ module ChapelArray {
     type keyType = _getLiteralType(keys(1).type);
     for param i in 2..count do
       if keyType != _getLiteralType(keys(i).type) {
-        compilerError("Associative domain element " + i +
+        compilerError("Associative domain element " + i:string +
                       " expected to be of type " + keyType:string +
                       " but is of type " +
                       _getLiteralType(keys(i).type):string);
@@ -2634,7 +2634,7 @@ module ChapelArray {
       //
       if (formalDom.rank != this.domain.rank) then
         compilerError("Rank mismatch passing array argument: expected " +
-                      formalDom.rank + " but got " + this.domain.rank, errorDepth=2);
+                      formalDom.rank:string + " but got " + this.domain.rank:string, errorDepth=2);
 
       //
       // If the formal domain specifies a domain map other than the
@@ -2719,8 +2719,8 @@ module ChapelArray {
           compilerError("cannot reindex() a rectangular array to a tuple containing non-ranges");
 
       if this.rank != newDims.size then
-        compilerError("rank mismatch: cannot reindex() from " + this.rank +
-                      " dimension(s) to " + newDims.size);
+        compilerError("rank mismatch: cannot reindex() from " + this.rank:string +
+                      " dimension(s) to " + newDims.size:string);
 
       for param i in 1..rank do
         if newDims(i).length != _value.dom.dsiDim(i).length then
@@ -3183,7 +3183,7 @@ module ChapelArray {
       const newRange = this.domain.low..(this.domain.high + 1);
 
       if boundsChecking && !newRange.contains(pos) then
-        halt("insert at position " + pos + " out of bounds");
+        halt("insert at position " + pos:string + " out of bounds");
 
       reallocateArray(newRange, debugMsg="insert reallocate");
 
@@ -3221,7 +3221,7 @@ module ChapelArray {
             validInsertRange = this.domain.low..(this.domain.high + 1);
 
       if boundsChecking && !validInsertRange.contains(pos) then
-        halt("insert at position " + pos + " out of bounds");
+        halt("insert at position " + pos:string + " out of bounds");
 
       reallocateArray(newRange, debugMsg="insert reallocate");
 
@@ -3244,7 +3244,7 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("remove");
 
       if boundsChecking && !this.domain.contains(pos) then
-        halt("remove at position " + pos + " out of bounds");
+        halt("remove at position " + pos:string + " out of bounds");
 
       const lo = this.domain.low,
             hi = this.domain.high-1;
@@ -3279,9 +3279,9 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.high-count;
       if boundsChecking && pos+count-1 > this.domain.high then
-        halt("remove at position ", pos+count-1, " out of bounds");
+        halt("remove at position ", (pos+count-1):string, " out of bounds");
       if boundsChecking && pos < lo then
-        halt("remove at position ", pos, " out of bounds");
+        halt("remove at position ", pos:string, " out of bounds");
 
       const newRange = lo..hi;
       for i in pos..hi {

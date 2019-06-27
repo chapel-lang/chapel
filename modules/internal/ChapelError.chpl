@@ -310,7 +310,7 @@ module ChapelError {
         }
       }
 
-      var ret = n + " errors: ";
+      var ret = n:string + " errors: ";
 
       if first != nil && last != nil && first != last then
         ret += chpl_describe_error(first!) + " ... " + chpl_describe_error(last!);
@@ -472,8 +472,8 @@ module ChapelError {
     const thrownLine = err.thrownLine;
 
     var s = "uncaught " + chpl_describe_error(err) +
-            "\n  " + thrownFileS + ":" + thrownLine + ": thrown here" +
-            "\n  " + myFileS + ":" + myLine + ": uncaught here";
+            "\n  " + thrownFileS + ":" + thrownLine:string + ": thrown here" +
+            "\n  " + myFileS + ":" + myLine:string + ": uncaught here";
     chpl_error_preformatted(s.c_str());
   }
   // This is like the above, but it is only ever added by the

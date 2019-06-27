@@ -5956,8 +5956,8 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
             err = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
           } otherwise {
             // Unhandled argument type!
-            throw new owned IllegalArgumentError("args(" + i + ")",
-                                           "writef internal error " + argType(i));
+            throw new owned IllegalArgumentError("args(" + i:string + ")",
+                                                 "writef internal error " + argType(i):string);
           }
         }
       }
