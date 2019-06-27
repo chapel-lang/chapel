@@ -2958,6 +2958,10 @@ qioerr _qio_unbuffered_write(qio_channel_t* ch, const void* ptr, ssize_t len_in,
   qio_method_t method = (qio_method_t) (ch->hints & QIO_METHODMASK);
   int return_eof = 0;
 
+  if (ch->chan_info != NULL)
+    QIO_RETURN_CONSTANT_ERROR(EINVAL,
+                              "unbuffered write not supported for plugin");
+
   // handle channel position beyond end.
   if( _right_mark_start(ch) > ch->end_pos ) return QIO_EEOF;
 
@@ -3046,6 +3050,10 @@ qioerr _qio_unbuffered_read(qio_channel_t* ch, void* ptr, ssize_t len_in, ssize_
   qioerr err;
   qio_method_t method = (qio_method_t) (ch->hints & QIO_METHODMASK);
   int return_eof = 0;
+
+  if (ch->chan_info != NULL)
+    QIO_RETURN_CONSTANT_ERROR(EINVAL,
+                              "unbuffered read not supported for plugin");
 
   // handle channel position beyond end.
   if( _right_mark_start(ch) > ch->end_pos ) return QIO_EEOF;
