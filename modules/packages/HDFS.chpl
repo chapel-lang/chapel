@@ -403,6 +403,9 @@ class HDFSChannel : QioPluginChannel {
       if len >= max(int(32)) then
         len = max(int(32));
 
+      if verbose then
+        writeln("hdfsPread offset=", offset, " len=", len);
+
       // Now read len bytes into ptr
       var rc = hdfsPread(file.fs.hfs, file.hfile, offset, ptr, len:int(32));
       if rc == 0 {
