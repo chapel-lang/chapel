@@ -29,7 +29,7 @@ module DefaultRectangular {
 
   use DSIUtil, ChapelArray;
   private use ChapelDistribution, ChapelRange, SysBasic, SysError;
-  private use ChapelDebugPrint, ChapelLocks, OwnedObject;
+  private use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use ExternalArray;
 
   config param debugDefaultDist = false;
