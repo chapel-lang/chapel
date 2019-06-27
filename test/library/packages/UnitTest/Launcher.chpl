@@ -41,9 +41,9 @@ module Launcher {
       else if sep1Found then tempString+=line;
       else {
         var temp = line.strip().split(":");
-        if temp[1].strip().endsWith(")") {
-          var strSplit = temp[1].strip().split(")");
-          var testNameIndex = strSplit[1].split("(");
+        if temp[1].strip().endsWith("]") {
+          var strSplit = temp[1].strip().split("]");
+          var testNameIndex = strSplit[1].split("[");
           testName = fileName+": "+testNameIndex[1];
           curIndex = testNameIndex[2]: int;
           result.startTest();

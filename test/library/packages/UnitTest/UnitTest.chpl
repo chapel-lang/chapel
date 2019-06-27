@@ -707,7 +707,7 @@ module UnitTest {
         separator2 = "-"* 70;
     
     proc startTest(test, indx) throws {
-      stdout.write(test: string,"(",indx: string,"): ");
+      stdout.write(test: string,"[",indx: string,"]: ");
     }
 
     proc addError(test, errMsg) throws {
