@@ -578,15 +578,14 @@ def filter_compiler_errors(compiler_output):
     """Identify common errors that occur in compilation.
     Return message to emit when error found."""
 
-    extra_msg = ''
+    error_msg = ''
     err_strings = ['could not checkout FLEXlm license']
     for s in err_strings:
         if re.search(s, compiler_output, re.IGNORECASE) != None:
-            extra_msg = '(possible JIRA 357) '
+            error_msg = '(possible JIRA 357) '
             break
 
-    return extra_msg
-
+    return error_msg
 
 def filter_errors(output, pre_exec_output, execgoodfile, execlog):
     """Identify common errors that occur in runtime or compiler warnings.
@@ -613,7 +612,6 @@ def filter_errors(output, pre_exec_output, execgoodfile, execlog):
             extra_msg = '(possible JIRA 274) '
             break
 
-
     err_strings = ['Clock skew detected']
     for s in err_strings:
         # NOTE: checking pre_exec (compiler) output
@@ -622,6 +620,7 @@ def filter_errors(output, pre_exec_output, execgoodfile, execlog):
             break
 
     return extra_msg
+
 
 # Start of sub_test proper
 #
@@ -1644,9 +1643,9 @@ for testname in testsrc:
 
             goodfile = FindGoodFile(basename)
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
-            extra_msg = filter_compiler_errors(origoutput)
-            if extra_msg != '':
-                sys.stdout.write('[Error %s for %s]\n'%(extra_msg, test_name))
+            error_msg = filter_compiler_errors(origoutput)
+            if error_msg != '':
+                sys.stdout.write('[Error %s for %s]\n'%(error_msg, test_name))
                 continue
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
