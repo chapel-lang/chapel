@@ -1819,8 +1819,8 @@ err_t sys_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
     deadline.tv_sec += timeout->tv_sec;
     deadline.tv_usec += timeout->tv_usec;
     if (deadline.tv_usec > 1000000) {
-	deadline.tv_sec++;
-	deadline.tv_usec -= 1000000;
+      deadline.tv_sec++;
+      deadline.tv_usec -= 1000000;
     }
   } else if (timeout->tv_sec == 0) {
     if (timeout->tv_usec < wait_usec)
