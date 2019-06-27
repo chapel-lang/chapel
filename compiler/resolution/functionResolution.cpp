@@ -2507,6 +2507,10 @@ static bool isTypeConstructionCall(CallExpr* call) {
 
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+      // Compiler may represent accesses of instantiated tuple components in
+      // the same way as a type construction call, so skip that case here.
+      //
+      // A SymExpr of dtTuple indiciates tuple type construction.
       if (se->typeInfo()->symbol->hasFlag(FLAG_TUPLE) &&
           se->typeInfo() != dtTuple) {
         ret = false;
