@@ -277,7 +277,7 @@ Curl Support Types and Functions
  */
 module Curl {
 
-require "CurlHelper/qio_plugin_curl.h";
+require "CurlHelper/curlHelp.h";
 require "-lcurl";
 
 use Sys only ;
