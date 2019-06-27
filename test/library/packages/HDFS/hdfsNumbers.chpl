@@ -1,31 +1,51 @@
 /*
-   hdfsRead100.chpl
-
-   unit test writes 100 uint(8)s to an hdfs file, then reads from hdfs.
-   during the read, this test will break if the values are not what is 
+   unit test writes lots of uint(8)s to an hdfs file, then reads from hdfs.
+   during the read, this test will break if the values are not what is
    expected.
 */
-use IO;
-use Curl;
-use HDFS;
+use HDFS only;
 
-const config url:string;
+config const path = "/tmp/lots-of-numbers.txt";
+
+config const n = 10000;
+config const bufsz = 0;
+
+extern var qbytes_iobuf_size:size_t;
 
 proc main() {
-   assert(url.startsWith("hdfs://"), "url does not start with an hdfs path");
 
-   var wfd = open(fn, iomode.cw);
-   var w = fd.writer(iokind.native);
+  if bufsz > 0 {
+    qbytes_iobuf_size = bufsz:size_t;
+  }
 
-   for i in 0..#100 { w.write(i:uint(8)); }
+  var fs = HDFS.connect();
 
-   w.close(); wfd.close(); 
+  {
+    var wfd = fs.open(path, iomode.cw);
+    var w = wfd.writer(iokind.native);
 
-   var rfd = open(fn, iomode.r);
-   var r = fd.reader(iokind.native);
+    for i in 0..#n {
+      w.write(i);
+    }
 
-   for i in 0..#100 { var j:uint(8); w.read(j); assert(j == i); }
+    w.close();
+    wfd.close();
+  }
 
-   r.close(); rfd.close();
+  {
+    var rfd = fs.open(path, iomode.r);
+    var r = rfd.reader(iokind.native);
+
+    for i in 0..#n {
+      var offset = r.offset();
+      var j:int;
+      r.read(j);
+      if j != i {
+        writeln("Error : at offset ", offset, " expected ", i, " but got ", j);
+      }
+    }
+
+    r.close();
+    rfd.close();
+  }
 }
-
