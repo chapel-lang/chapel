@@ -1152,6 +1152,7 @@ static void codegen_header_compilation_config() {
     }
 
     if (genConfigInLLVM) {
+#ifdef HAVE_LLVM
       llvm::FunctionType* programAboutType;
       llvm::Function* programAboutFunc;
       if ((programAboutFunc = getFunctionLLVM("chpl_program_about"))) {
@@ -1169,6 +1170,7 @@ static void codegen_header_compilation_config() {
         gGenInfo->module->getContext(), "entry", programAboutFunc
       );
       gGenInfo->irBuilder->SetInsertPoint(programAboutBlock);
+#endif
     } else {
       // generate the "about" function
       fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
@@ -1186,7 +1188,9 @@ static void codegen_header_compilation_config() {
       }
 
     if (genConfigInLLVM) {
+#ifdef HAVE_LLVM
       gGenInfo->irBuilder->CreateRetVoid();
+#endif
       gGenInfo->cfile = cfgfile.fptr;
     } else {
       fprintf(cfgfile.fptr, "}\n");
