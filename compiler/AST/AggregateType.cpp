@@ -813,9 +813,11 @@ AggregateType* AggregateType::generateType(CallInfo& info) {
       //   }
       //
       // In this example, the current implementation fails to resolve the type
-      // of field 'flag' because 'next' is not yet resolved. Yet, if we were
-      // to resolve 'next' we would have to be able to better handle recursive
-      // type construction.
+      // of field 'flag' because 'next' is not yet resolved. This particular
+      // example is difficult to resolve because the field 'next' requires
+      // recursive resolution of the type we're already trying to resolve. This
+      // difficulty has lead to the current implementation which resolves
+      // concrete fields after generic fields are resolved.
       //
 
       // Resolve the remaining non-generic fields

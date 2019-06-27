@@ -208,10 +208,14 @@ public:
   Vec<AggregateType*>         dispatchParents;    // dispatch hierarchy
   Vec<AggregateType*>         dispatchChildren;   // dispatch hierarchy
 
+  // Used to prevent recursive or repeated resolution of this type.
   AggregateResolved           resolveStatus;
 
+  // String representation of the 'type constructor' for use in error messages
   const char*                 typeSignature;
+  // Indicates whether we have already tried to look for generic fields.
   bool                        foundGenericFields;
+  // A list of the generic fields in this type.
   std::vector<Symbol*>        genericFields;
 
 private:
