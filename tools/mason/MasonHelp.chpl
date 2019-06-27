@@ -422,3 +422,14 @@ proc masonDocHelp() {
   writeln("For instructions on setting up chpldoc, please view its documentation.");
   writeln();
 }
+
+proc masonShowHelp() {
+  writeln("Show the contents of a package's Mason.toml");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason show [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln();
+}
