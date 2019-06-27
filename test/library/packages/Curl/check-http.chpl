@@ -3,8 +3,16 @@ use Curl;
 use FileSystem;
 
 config const verbose = false;
+config const bufsz = 0;
+
+extern var qbytes_iobuf_size:size_t;
+
+if bufsz > 0 {
+  qbytes_iobuf_size = bufsz:size_t;
+}
 
 proc runtest() {
+
   writeln("checking served files match");
 
   for f in findfiles() {
