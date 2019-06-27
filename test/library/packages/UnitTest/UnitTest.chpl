@@ -13,6 +13,7 @@ module UnitTest {
   use TestError;
   pragma "no doc"
   config const skipId: int = 0;
+  config const testNames: string = "None";
   // This is a dummy test to capture the function signature
   private
   proc testSignature(test: Test) throws { }
@@ -22,7 +23,9 @@ module UnitTest {
   type argType = tempFcf.type;  //Type of First Class Test Functions
 
   class Test {
-
+    var numMaxLocales: int,
+        numMinLocales: int;
+    var numLocalesList: [1..0] int;
     /* Unconditionally skip a test. */
     proc skip(reason: string = "") throws {
       throw new owned TestSkipped(reason);
@@ -701,15 +704,17 @@ module UnitTest {
 
     /*Specify Max Number of Locales required to run the test*/
     proc maxLocales(value: int) throws {
+      this.numMaxLocales = value;
       if value < numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales = "+value);
+        throw new owned TestIncorrectNumLocales("Required Locales = ("+value+")");
       }
     }
 
     /*Specify Min Number of Locales required to run the test*/
     proc minLocales(value: int) throws {
+      this.numMinLocales = value;
       if value > numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales = "+value);
+        throw new owned TestIncorrectNumLocales("Required Locales = ("+value+")");
       }
     }
 
@@ -717,13 +722,13 @@ module UnitTest {
     proc addNumLocales(locales: int ...?n) throws {
       var canRun =  false;
       for numLocale in locales {
+        this.numLocalesList.push_back(numLocale);
         if numLocale == numLocales {
           canRun = true;
-          break;
         }
       }
       if !canRun then 
-        throw new owned TestIncorrectNumLocales("Required Locales = "+locales[1]);
+        throw new owned TestIncorrectNumLocales("Required Locales = "+locales:string);
     }
   }
 
@@ -734,7 +739,7 @@ module UnitTest {
         separator2 = "-"* 70;
     
     proc startTest(test, indx) throws {
-      stdout.write(test: string,"(",indx: string,"): ");
+      stdout.write(test: string,"[",indx: string,"]: ");
     }
 
     proc addError(test, errMsg) throws {
@@ -803,6 +808,12 @@ module UnitTest {
   /*Runs the tests*/
   proc runTest(tests: argType ...?n) throws {
 
+    var runAllTests = true;
+    var testNameList: [1..0] string;
+    if testNames != "None" {
+      runAllTests = false;
+      for test in testNames.split(" ") do testNameList.push_back(test.strip());
+    }
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
@@ -813,12 +824,26 @@ module UnitTest {
     for indx in (skipId+1)..testSuite.testCount {
       var test = testSuite[indx];
       try {
-        // Create a test object per test
-        var testObject = new Test();
-        //test is a FCF:
-        testResult.startTest(test: string, indx);
-        test(testObject);
-        testResult.addSuccess(test: string);
+        if runAllTests {
+          // Create a test object per test
+          var testObject = new Test();
+          //test is a FCF:
+          testResult.startTest(test: string, indx);
+          test(testObject);
+          testResult.addSuccess(test: string);
+        }
+        else {
+          var checkStatus = testNameList.find(test:string);
+          if checkStatus[1] {
+            // Create a test object per test
+            var testObject = new Test();
+            //test is a FCF:
+            testResult.startTest(test: string, indx);
+            test(testObject);
+            testResult.addSuccess(test: string);
+          }
+        }
+        
       }
       // A variety of catch statements will handle errors thrown
       catch e: AssertionError {

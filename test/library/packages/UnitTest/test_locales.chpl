@@ -2,7 +2,7 @@ use UnitTest;
 
 // This test requires 8 locales
 proc s1(test: Test) throws {
-  test.addNumLocales(8);
+  test.addNumLocales(16);
 }
 
 // This test can run with 2-4 locales

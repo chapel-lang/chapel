@@ -22,6 +22,10 @@ module TestResult {
       this.testsRun += 1;
     }
     
+    /*Called when a test will be Re-Ran*/
+    proc testToBeReRan() {
+      this.testsRun -= 1;
+    }
     /*Called when an error has occurred.*/
     proc addError(test: string, errMsg: string) {
       this.errors.push_back((test, errMsg));
