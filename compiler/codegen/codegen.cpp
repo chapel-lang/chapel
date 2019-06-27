@@ -1121,10 +1121,11 @@ static void codegen_header_compilation_config() {
     fprintf(cfgfile.fptr, "\n#include <stdio.h>");
     fprintf(cfgfile.fptr, "\n#include \"chpltypes.h\"\n\n");
 
-    if (llvmCodegen && 0 == strcmp(CHPL_LAUNCHER, "none")) {
-#ifdef HAVE_LLVM
+    // We generate LLVM IR only when we are not using a launcher.
+    // For launchers, we generate C while using C or LLVM backends alike.
+    bool genConfigInLLVM = llvmCodegen && 0 == strcmp(CHPL_LAUNCHER, "none");
+    if (genConfigInLLVM) {
       gGenInfo->cfile = NULL;
-#endif
     } else {
       gGenInfo->cfile = cfgfile.fptr;
     }
@@ -1150,8 +1151,7 @@ static void codegen_header_compilation_config() {
       }
     }
 
-    if (llvmCodegen && 0 == strcmp(CHPL_LAUNCHER, "none")) {
-#ifdef HAVE_LLVM
+    if (genConfigInLLVM) {
       llvm::FunctionType* programAboutType;
       llvm::Function* programAboutFunc;
       if ((programAboutFunc = getFunctionLLVM("chpl_program_about"))) {
@@ -1169,7 +1169,6 @@ static void codegen_header_compilation_config() {
         gGenInfo->module->getContext(), "entry", programAboutFunc
       );
       gGenInfo->irBuilder->SetInsertPoint(programAboutBlock);
-#endif
     } else {
       // generate the "about" function
       fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
@@ -1186,11 +1185,9 @@ static void codegen_header_compilation_config() {
         }
       }
 
-    if (llvmCodegen && 0 == strcmp(CHPL_LAUNCHER, "none")) {
-#ifdef HAVE_LLVM
+    if (genConfigInLLVM) {
       gGenInfo->irBuilder->CreateRetVoid();
       gGenInfo->cfile = cfgfile.fptr;
-#endif
     } else {
       fprintf(cfgfile.fptr, "}\n");
     }
