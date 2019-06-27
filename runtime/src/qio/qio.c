@@ -3181,23 +3181,11 @@ qioerr _qio_channel_flush_unlocked(qio_channel_t* ch)
 static inline
 int _use_buffered(qio_channel_t* ch, ssize_t len)
 {
-  qio_method_t method = (qio_method_t) (ch->hints & QIO_METHODMASK);
   qio_chtype_t type = (qio_chtype_t) (ch->hints & QIO_CHTYPEMASK);
-  int64_t offset = qio_channel_offset_unlocked(ch);
 
-  if( type == QIO_CH_ALWAYS_UNBUFFERED ) return 0;
-  // There are cases in which a buffer is required
-  else if( type == QIO_CH_ALWAYS_BUFFERED ) return 1;
-  else if (qbuffer_is_initialized(&ch->buf)) return 1;
-  else if (ch->cached_cur) return 1;
-  else if (ch->mark_cur > 0) return 1;
-  else if (method == QIO_METHOD_MEMORY) return 1;
-  // Do not bother initializing the buffer if we are going
-  // to read outside of the channel's region.
-  else if (offset == ch->end_pos) return 0;
-  else if (offset > ch->start_pos &&
-           offset + len < ch->end_pos) return 1;
-  else return 0;
+  if (type == QIO_CH_ALWAYS_UNBUFFERED) return 0;
+
+  return 1;
 }
 
 /* _qio_slow_write does the I/O passed itself, and also
