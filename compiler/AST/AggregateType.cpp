@@ -1045,7 +1045,6 @@ static void checkTypesForInstantiation(AggregateType* at, CallInfo& info, Symbol
   }
 }
 
-// TODO: common util function for the 'invalid type specifier' stuff
 AggregateType* AggregateType::generateType(SymbolMap& subs, CallInfo& info, Expr* insnPoint) {
   AggregateType* retval = this;
 
