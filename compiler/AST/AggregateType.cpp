@@ -1392,7 +1392,7 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Expr* insnPoint) 
     } else if (fieldType == sym->typeInfo()) {
       field->type = sym->typeInfo();
     } else {
-      INT_ASSERT(false);
+      INT_FATAL("unexpected type for field instantiation");
     }
   }
 
