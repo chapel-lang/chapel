@@ -885,7 +885,8 @@ class QioPluginFile {
   proc filelength(out length:int(64)):syserr {
     return ENOSYS;
   }
-  // TODO: what is the memory management discipline here?
+
+  // The caller has the responsibility to free the returned c_string
   proc getpath(out path:c_string, out len:ssize_t):syserr {
     return ENOSYS;
   }
@@ -1075,7 +1076,7 @@ private extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_void_ptr;
-private extern proc qio_channel_get_plugin(f:qio_file_ptr_t):c_void_ptr;
+private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_void_ptr;
 private extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
 private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;

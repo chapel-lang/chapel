@@ -751,6 +751,7 @@ extern const CURLINFO_CONTENT_LENGTH_DOWNLOAD   : c_int ;
 
 // extern QIO functions
 private extern proc sys_iov_total_bytes(iov:c_ptr(qiovec_t), iovcnt:c_int):int(64);
+private extern proc qio_strdup(s: c_string): c_string;
 private extern proc qio_mkerror_errno():syserr;
 private extern proc qio_int_to_err(a:int(32)):syserr;
 private extern proc qio_channel_nbytes_available_unlocked(ch:qio_channel_ptr_t):int(64);
@@ -835,7 +836,7 @@ class CurlFile : QioPluginFile {
     return ENOERR;
   }
   override proc getpath(out path:c_string, out len:ssize_t):syserr {
-    path = this.url_c;
+    path = qio_strdup(this.url_c);
     len = url_c.length;
     return ENOERR;
   }

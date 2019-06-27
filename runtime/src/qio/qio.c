@@ -1731,7 +1731,7 @@ qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* pa
 {
   const char* cwd = NULL;
   const char* relpath = NULL;
-  qioerr err;
+  qioerr err = 0;
 
   if (file->file_info) {
     // This just returns path_in for plugin files
