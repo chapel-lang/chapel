@@ -28,12 +28,12 @@
 extern "C" {
 #endif
 
+static inline bool chpl_hdfsIsFileNull(hdfsFile file) {
+  return file == NULL;
+}
+
 #define QIO_LOCALE_MAP_PTR_T_NULL NULL
   
-// the struct that holds all the functions for our FS
-extern qio_file_functions_t hdfs_function_struct;
-extern const qio_file_functions_ptr_t hdfs_function_struct_ptr;
-
 // The "fd" for HDFS
 typedef struct hdfs_file hdfs_file;
 // The "fs" for HDFS

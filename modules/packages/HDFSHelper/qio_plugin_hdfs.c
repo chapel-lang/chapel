@@ -17,24 +17,7 @@
  * limitations under the License.
  */
 
-// Documentation can be found in $CHPL_HOME/doc/rst/technotes/auxIO.rst
-#define QIOPLUGIN_HDFS_C
-
-#ifndef _DARWIN_C_SOURCE
-// get fcntl(F_GETPATH)
-#define _DARWIN_C_SOURCE
-#endif
-
-#ifndef _GNU_SOURCE
-// get O_DIRECT, fopencookie
-#define _GNU_SOURCE
-#endif
-
 #include <string.h>
-
-#ifndef CHPL_RT_UNIT_TEST
-#include "chplrt.h"
-#endif
 
 #include <hdfs.h>
 #include "qio_plugin_hdfs.h"
@@ -249,14 +232,14 @@ qioerr hdfs_close(void* fl, void* fs)
   return err_out;
 }
 
-qioerr hdfs_connect(void** fs_out, const char* pathname, int port)
+qioerr hdfs_connect(struct hdfs_fs* fs, const char* pathname, int port)
 {
   qioerr err_out = 0;
-  hdfsFS fs;
-  hdfs_fs* ret = (hdfs_fs*)qio_calloc(sizeof(hdfs_fs), 1);
+
+  memset(&fs, 0, sizeof(struct hdfs_fs));
 
   STARTING_SLOW_SYSCALL;
-  fs = hdfsConnect(pathname, port);
+  fs.hfs = hdfsConnect(pathname, port);
 
   CREATE_ERROR((fs == NULL), err_out, ECONNREFUSED,"Unable to connect HDFS", error);
   DONE_SLOW_SYSCALL;
