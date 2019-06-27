@@ -556,22 +556,19 @@ QualifiedType CallExpr::qualType(void) {
     retval = QualifiedType(q, fn->retType);
   } else if (SymExpr* se = toSymExpr(baseExpr)) {
     // Handle type constructor calls
-    bool useType = false;
+    Type* retType = dtUnknown;
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      if (AggregateType* at = toAggregateType(se->typeInfo())) {
-        if (at->isGeneric() == false) {
-          useType = true;
-        }
-      } else {
-        if (isPrimitiveType(se->typeInfo()) && numActuals() > 0) {
-          // (call uint(64) 8) represents 'uint(8)' for some reason...
-        } else {
-          useType = true;
-        }
+      AggregateType* at = toAggregateType(se->typeInfo());
+      if (at && at->isGeneric() == false) {
+        retType = at;
+      } else if (isPrimitiveType(se->typeInfo()) && numActuals() == 0) {
+        // (call uint(64) 8) represents 'uint(8)', so we don't want to return
+        // a ``uint(64)`` unless there are zero arguments
+        retType = se->typeInfo();
       }
     }
 
-    retval = QualifiedType(QUAL_UNKNOWN, useType ? se->typeInfo() : dtUnknown);
+    retval = QualifiedType(QUAL_UNKNOWN, retType);
 
   } else {
     retval = QualifiedType(dtUnknown);
