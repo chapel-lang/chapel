@@ -2546,6 +2546,7 @@ qioerr qio_channel_get_allocated_ptr_unlocked(qio_channel_t* ch, int64_t amt_req
   qbuffer_iter_get(read_start, read_end, &bytes, &skip, &len);
   *ptr_out = qio_ptr_add(bytes->data, skip);
   *len_out = len;
+  *offset_out = ch->av_end;
 
   return 0;
 }
