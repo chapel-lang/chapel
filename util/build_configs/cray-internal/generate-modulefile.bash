@@ -72,10 +72,46 @@ conflicts xt-mpich2 < 6.0.0
 conflict chapel
 #conflict gcc
 
+##
+## Now, we're going to attempt to get to the right build type
+###
+#
+set network seastar
+if { [ info exists env(XTPE_NETWORK_TARGET) ] } {
+    set network $env(XTPE_NETWORK_TARGET)
+} elseif { [ info exists env(CRAYPE_NETWORK_TARGET) ] } {
+    set network $env(CRAYPE_NETWORK_TARGET)
+}
+set accel 0
+if { [ info exists env(CRAY_ACCEL_TARGET) ] } {
+    set accel 1
+}
+
+
+setenv MPICH_GNI_DYNAMIC_CONN disabled
+if { [string match gemini $network] } {
+    set CHPL_HOST_PLATFORM cray-xe
+} elseif { [string match aries $network] } {
+    set CHPL_HOST_PLATFORM cray-xc
+} elseif { [string match ofi $network] } {
+    if { [file exists /etc/opt/cray/release/cray-release] } {
+        set CRAY_REL_INFO [exec cat /etc/opt/cray/release/cray-release]
+        if { [string match "PRODUCT=*Shasta*" $CRAY_REL_INFO] } {
+            set CHPL_HOST_PLATFORM cray-shasta
+        } else {
+            set CHPL_HOST_PLATFORM cray-cs
+        }
+    } else {
+        set CHPL_HOST_PLATFORM cray-cs
+    }
+} else {
+    set CHPL_HOST_PLATFORM cray-xt
+}
+
 if { [string match aarch64 $CHPL_HOST_ARCH] } {
     # ARM-based CPU, 2018-06-08
 } elseif { [string match x86_64 $CHPL_HOST_ARCH] } {
-    # Legacy Cray-XC/XE
+    # Legacy Cray-XC/XE only
 
     # Load/unload cray-mpich if not previously loaded
 
@@ -112,31 +148,6 @@ if { ! [ info exists env(PE_ENV) ] } {
     module load PrgEnv-gnu
 }
 
-##
-## Now, we're going to attempt to get to the right build type
-###
-#
-set network seastar
-if { [ info exists env(XTPE_NETWORK_TARGET) ] } {
-    set network $env(XTPE_NETWORK_TARGET)
-} elseif { [ info exists env(CRAYPE_NETWORK_TARGET) ] } {
-    set network $env(CRAYPE_NETWORK_TARGET)
-}
-set accel 0
-if { [ info exists env(CRAY_ACCEL_TARGET) ] } {
-    set accel 1
-}
-
-
-setenv MPICH_GNI_DYNAMIC_CONN disabled
-if { [string match gemini $network] } {
-    set CHPL_HOST_PLATFORM cray-xe
-} elseif { [string match aries $network] } {
-    set CHPL_HOST_PLATFORM cray-xc
-} else {
-    set CHPL_HOST_PLATFORM cray-xt
-}
-
 set BASE_INSTALL_DIR    [BASE_INSTALL_DIR]
 PART_1
 
@@ -158,7 +169,7 @@ if { [ file exists $CHPL_LOC/release_info ] } {
     set REL_INFO ""
 }
 
-# The default comm layer for Chapel version 1.11+ is ugni, which requires a
+# The default comm layer on X* for Chapel version 1.11+ is ugni, which requires a
 # craype-hugepages module in order to link correctly. If CHPL_COMM is not set
 # in the environment or is set to ugni, make sure there is a craype-hugepages
 # module loaded. Use craype-hugepages16M if a craype-hugepages module is not
@@ -166,6 +177,8 @@ if { [ file exists $CHPL_LOC/release_info ] } {
 set compiler $env(PE_ENV)
 if { [info exists env(CHPL_COMM)] } {
     set chpl_comm $env(CHPL_COMM)
+} elseif { [string match cray-x* $CHPL_HOST_PLATFORM] } {
+    set chpl_comm "UNSET-WILL-BE-UGNI"
 } else {
     set chpl_comm "UNSET"
 }
@@ -180,7 +193,7 @@ if { !([is-loaded chapel] == 1) }  {
     }
 
     # Check to see if we require hugepages
-    if { ([string equal UNSET $chpl_comm] || [string equal ugni $chpl_comm]) &&
+    if { ([string equal UNSET-WILL-BE-UGNI $chpl_comm] || [string equal ugni $chpl_comm]) &&
          ([string equal -nocase GNU $compiler] || [string equal -nocase INTEL $compiler] || [string equal -nocase CRAY $compiler]) } {
 
         if {! $hugepagesLoaded} {
