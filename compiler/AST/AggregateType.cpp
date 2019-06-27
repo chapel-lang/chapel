@@ -1757,7 +1757,7 @@ void AggregateType::processGenericFields() {
   }
 
   foundGenericFields = true;
-  bool eachHasDefault = mIsGeneric;
+  bool isGenericWithDefaults = mIsGeneric;
 
   if (isClass() == true && dispatchParents.n > 0) {
     AggregateType* parent = dispatchParents.v[0];
@@ -1765,7 +1765,7 @@ void AggregateType::processGenericFields() {
       parent->processGenericFields();
 
       if (parent->mIsGeneric) {
-        eachHasDefault = parent->mIsGenericWithDefaults;
+        isGenericWithDefaults = parent->mIsGenericWithDefaults;
       }
 
       for_vector(Symbol, field, parent->genericFields) {
@@ -1783,23 +1783,23 @@ void AggregateType::processGenericFields() {
       if (isTypeSymbol(field) == false) {
         genericFields.push_back(field);
         if (field->defPoint->init == NULL) {
-          eachHasDefault = false;
+          isGenericWithDefaults = false;
         }
       }
     } else if (field->defPoint->init == NULL) {
       if (field->defPoint->exprType == NULL) {
         genericFields.push_back(field); // "var x;"
-        eachHasDefault = false;
+        isGenericWithDefaults = false;
       } else if (isFieldTypeExprGeneric(field->defPoint->exprType)) {
         genericFields.push_back(field); // "var x : integral;"
-        eachHasDefault = false;
+        isGenericWithDefaults = false;
       }
     }
   }
 
   typeSignature = buildTypeSignature(this);
 
-  this->mIsGenericWithDefaults = eachHasDefault;
+  this->mIsGenericWithDefaults = isGenericWithDefaults;
 }
 
 bool AggregateType::isFieldInThisClass(const char* name) const {
