@@ -2365,8 +2365,6 @@ void codegen() {
 #ifdef HAVE_LLVM
     checkAdjustedDataLayout();
     forv_Vec(ModuleSymbol, currentModule, allModules) {
-      mysystem(astr("# codegen-ing module", currentModule->name),
-               "generating comment for --print-commands option");
       currentModule->codegenDef();
     }
 
@@ -2386,9 +2384,6 @@ void codegen() {
 
     ChainHashMap<char*, StringHashFns, int> fileNameHashMap;
     forv_Vec(ModuleSymbol, currentModule, allModules) {
-      mysystem(astr("# codegen-ing module", currentModule->name),
-               "generating comment for --print-commands option");
-
       const char* filename = NULL;
       filename = generateFileName(fileNameHashMap, filename,currentModule->name);
 
