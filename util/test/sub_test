@@ -1647,6 +1647,7 @@ for testname in testsrc:
             extra_msg = filter_compiler_errors(origoutput)
             if extra_msg != '':
                 sys.stdout.write('[Error %s for %s]\n'%(extra_msg, test_name))
+                continue
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
                 if perftest:
