@@ -574,6 +574,54 @@ def translateOutput(output):
 
     return known_error, was_timeout
 
+def filter_compiler_errors(compiler_output):
+    """Identify common errors that occur in compilation.
+    Return message to emit when error found."""
+
+    extra_msg = ''
+    err_strings = ['could not checkout FLEXlm license']
+    for s in err_strings:
+        if re.search(s, compiler_output, re.IGNORECASE) != None:
+            extra_msg = '(possible JIRA 357) '
+            break
+
+    return extra_msg
+
+
+def filter_errors(output, pre_exec_output, execgoodfile, execlog):
+    """Identify common errors that occur in runtime or compiler warnings.
+    Return message to emit when error found."""
+
+    # If the output contains messages consistent with JIRA 154, add a
+    # hint to the error summary and force a text base diff since
+    # sometimes the output contains a null character
+    extra_msg = ''
+    err_strings = ['got exn while reading exit code: connection closed',
+                   'slave got an unknown command on coord socket:',
+                   'Slave got an xSocket: connection closed on recv',
+                   'recursive failure in AMUDP_SPMDShutdown',
+                   'AM_ERR_RESOURCE \(Problem with requested resource\)']
+    for s in err_strings:
+        if re.search(s, output, re.IGNORECASE) != None:
+            extra_msg = '(possible JIRA 154) '
+            DiffBinaryFiles(execgoodfile, execlog)
+            break
+
+    err_strings = ['Master got an xSocket: error in sendAll']
+    for s in err_strings:
+        if re.search(s, output, re.IGNORECASE) != None:
+            extra_msg = '(possible JIRA 274) '
+            break
+
+
+    err_strings = ['Clock skew detected']
+    for s in err_strings:
+        # NOTE: checking pre_exec (compiler) output
+        if re.search(s, pre_exec_output, re.IGNORECASE) != None:
+            extra_msg = '(possible JIRA 287) '
+            break
+
+    return extra_msg
 
 # Start of sub_test proper
 #
@@ -1596,6 +1644,9 @@ for testname in testsrc:
 
             goodfile = FindGoodFile(basename)
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
+            extra_msg = filter_compiler_errors(origoutput)
+            if extra_msg != '':
+                sys.stdout.write('[Error %s for %s]\n'%(extra_msg, test_name))
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
                 if perftest:
@@ -2105,41 +2156,7 @@ for testname in testsrc:
                             os.unlink(execlog)
                             sys.stdout.write('%s[Success '%(futuretest))
                         else:
-                            # If the output contains messages consistent with JIRA 154, add a
-                            # hint to the error summary and force a text base diff since
-                            # sometimes the output contains a null character
-                            extra_msg = ''
-                            err_strings = ['got exn while reading exit code: connection closed',
-                                           'slave got an unknown command on coord socket:',
-                                           'Slave got an xSocket: connection closed on recv',
-                                           'recursive failure in AMUDP_SPMDShutdown',
-                                           'AM_ERR_RESOURCE \(Problem with requested resource\)']
-                            for s in err_strings:
-                                if re.search(s, output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 154) '
-                                    DiffBinaryFiles(execgoodfile, execlog)
-                                    break
-
-                            err_strings = ['Master got an xSocket: error in sendAll']
-                            for s in err_strings:
-                                if re.search(s, output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 274) '
-                                    break
-
-                            err_strings = ['could not checkout FLEXlm license']
-                            for s in err_strings:
-                                # NOTE: checking pre_exec (compiler) output
-                                if re.search(s, pre_exec_output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 357) '
-                                    break
-
-                            err_strings = ['Clock skew detected']
-                            for s in err_strings:
-                                # NOTE: checking pre_exec (compiler) output
-                                if re.search(s, pre_exec_output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 287) '
-                                    break
-
+                            extra_msg = filter_errors(output, pre_exec_output, execgoodfile, execlog)
                             sys.stdout.write('%s[Error %s'%(futuretest, extra_msg))
 
                         sys.stdout.write('matching program output for %s/%s'%
