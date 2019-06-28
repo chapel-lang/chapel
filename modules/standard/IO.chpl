@@ -2594,12 +2594,14 @@ proc channel.getLocaleOfIoRequest() {
 // QIO plugins don't have stable interface yet, hence no-doc
 // only works when called on locale owning channel.
 pragma "no doc"
-proc channel.channelPlugin() : QioPluginChannel? {
-  return qio_channel_get_plugin(this._channel_internal);
+proc channel.channelPlugin() : borrowed QioPluginChannel? {
+  var vptr = qio_channel_get_plugin(this._channel_internal);
+  return vptr:borrowed QioPluginChannel?;
 }
 pragma "no doc"
-proc channel.filePlugin() : QioPluginFile? {
-  return qio_file_get_plugin(qio_channel_get_file(this._channel_internal));
+proc channel.filePlugin() : borrowed QioPluginFile? {
+  var vptr = qio_file_get_plugin(qio_channel_get_file(this._channel_internal));
+  return vptr:borrowed QioPluginFile?;
 }
 
 

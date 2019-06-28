@@ -283,41 +283,75 @@ require "-lcurl";
 use Sys only ;
 use Time only ;
 
+proc downloadUrl(url:string,
+                 param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 style:iostyle = defaultIOStyle())
+                : channel(false, kind, locking) throws {
+  var f = openUrlFile(url, iomode.r, style);
+  return f.reader(kind=kind, locking=locking,
+                  start=start, end=end);
+}
+
+proc uploadUrl(url:string,
+               param kind=iokind.dynamic, param locking=true,
+               start:int(64) = 0, end:int(64) = max(int(64)),
+               style:iostyle = defaultIOStyle())
+              : channel(true, kind, locking) throws {
+  var f = openUrlFile(url, iomode.cw, style);
+  return f.writer(kind=kind, locking=locking,
+                  start=start, end=end);
+}
+
+proc getCurlHandle(ch:channel):c_ptr(CURL) throws {
+  if ch.home != here {
+    throw SystemError.fromSyserr(EINVAL, "getCurlHandle only functions with local channels");
+  }
+
+  var plugin = ch.channelPlugin():CurlChannel?;
+  if plugin == nil then
+    throw SystemError.fromSyserr(EINVAL, "getCurlHandle called on a non-curl channel");
+
+  var curl = plugin!.curl;
+  return curl;
+}
+
 /* This function is the equivalent to the
    `curl_easy_setopt <https://curl.haxx.se/libcurl/c/curl_easy_setopt.html>`_
    function in libcurl. It sets information on the curl file handle
    that can change libcurl's behavior.
 
+   :arg ch: a curl channel created with downloadUrl or uploadUrl
    :arg opt: the curl option to set.
    :arg arg: the value to set the curl option specified by opt.
    :type arg: `int`, `string`, `bool`, or `slist`
 */
-proc channel.setopt(opt:c_int, arg):bool throws {
+proc setopt(ch:channel, opt:c_int, arg):bool throws {
   var err:syserr = ENOERR;
 
-  if (arg.type == slist) && (slist.home != this.home) {
-    throw new owned SystemError(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
+  if (arg.type == slist) && (slist.home != ch.home) {
+    throw SystemError.fromSyserr(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
   }
 
   // Invalid argument type for option if the below conditionals
   // don't handle it.
   err = EINVAL;
 
-  on this.home {
-    var plugin = this.channelPlugin():CurlChannel?;
+  on ch.home {
+    var plugin = ch.channelPlugin():CurlChannel?;
     if plugin == nil then
-      throw new owned SystemError(EINVAL, "in channel.setopt(): not a curl channel");
+      throw SystemError.fromSyserr(EINVAL, "in channel.setopt(): not a curl channel");
 
-    var curl = plugin.curl;
+    var curl = plugin!.curl;
 
     // This reasoning is pulled from the libcurl source
     if (opt < CURLOPTTYPE_OBJECTPOINT) {
-      if isIntegralType(arg.type) {
+      if isIntegralType(arg.type) || isBoolType(arg.type) {
         var tmp:c_long = arg:c_long;
         err = qio_int_to_err(chpl_curl_easy_setopt_long(curl, opt:CURLoption, tmp));
       }
     } else if (opt < CURLOPTTYPE_OFF_T) {
-      if isPointerType(arg.type) {
+      if isAnyCPtr(arg.type) {
         var tmp:c_void_ptr = arg:c_void_ptr;
         err = qio_int_to_err(chpl_curl_easy_setopt_ptr(curl, opt:CURLoption, tmp));
       } else if arg.type == slist {
@@ -349,9 +383,9 @@ proc channel.setopt(opt:c_int, arg):bool throws {
    :arg args: any number of tuples of the form (curl_option, value). For each
               curl_option, this function will setopt it to its value.
  */
-proc channel.setopt(args ...?k) {
+proc setopt(ch:channel, args ...?k) throws {
   for param i in 1..k {
-    this.setopt(args(i)(1), args(i)(2));
+    setopt(ch, args(i)(1), args(i)(2));
   }
 }
 
@@ -1497,24 +1531,5 @@ private proc openUrlFile(url:string,
   return ret;
 }
 
-proc downloadUrl(url:string,
-                 param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 style:iostyle = defaultIOStyle())
-                : channel(false, kind, locking) throws {
-  var f = openUrlFile(url, iomode.r, style);
-  return f.reader(kind=kind, locking=locking,
-                  start=start, end=end);
-}
-
-proc uploadUrl(url:string,
-               param kind=iokind.dynamic, param locking=true,
-               start:int(64) = 0, end:int(64) = max(int(64)),
-               style:iostyle = defaultIOStyle())
-              : channel(true, kind, locking) throws {
-  var f = openUrlFile(url, iomode.cw, style);
-  return f.writer(kind=kind, locking=locking,
-                  start=start, end=end);
-}
 
 } /* end of module */
