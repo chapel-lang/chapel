@@ -410,6 +410,21 @@ proc masonCleanHelp() {
   writeln();       
 }
 
+
+proc masonPublishHelp(){
+  writeln("Publish a package to the mason-registry repository");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason publish [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                   Display this message");
+  writeln('    --dry-run                    Check to see if package is ready to be published');
+  writeln();
+  writeln('Publishing requires the mason-registry to be forked and the package to have a remote origin.');
+}
+
+
 proc masonDocHelp() {
   writeln("Generate documentation for a mason package using chpldoc");
   writeln();
@@ -422,19 +437,5 @@ proc masonDocHelp() {
   writeln("Will generate documentation when ran inside a mason package.");
   writeln("Requires that chpldoc is set up in order to work.");
   writeln("For instructions on setting up chpldoc, please view its documentation.");
-  writeln();
-
-
-proc masonPublishHelp(){
-  writeln("Publish a package to the mason-registry repository");
-  writeln();
-  writeln("Usage:");
-  writeln("    mason publish [options] <username>");
-  writeln();
-  writeln("Options:");
-  writeln("    -h, --help                   Display this message");
-  writeln('    --dry-run                    Check to see if package is ready to be published');
-  writeln();
-  writeln('Publishing requires the mason-registry to be forked under the provided username.');
   writeln();
 }
