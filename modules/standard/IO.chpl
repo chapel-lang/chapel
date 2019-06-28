@@ -882,6 +882,7 @@ class QioPluginFile {
     return ENOSYS;
   }*/
 
+  /* */
   proc filelength(out length:int(64)):syserr {
     return ENOSYS;
   }
@@ -915,6 +916,7 @@ class QioPluginChannel {
   proc write(amt:int(64)):syserr {
     return ENOSYS;
   }
+
   /*
   proc writev(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtWritten:ssize_t):syserr {
     return ENOSYS;
@@ -922,6 +924,8 @@ class QioPluginChannel {
   proc readv(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtRead:ssize_t):syserr {
     return ENOSYS;
   }*/
+
+  /* */
   proc close():syserr {
     return ENOSYS;
   }
@@ -962,6 +966,8 @@ export proc chpl_qio_readv(ch:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, ref
   var c=ch:QioPluginChannel;
   return c.readv(iov, iovcnt, amtRead);
 }*/
+
+/* */
 export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
   var c=ch_plugin:QioPluginChannel;
   return c.readAtLeast(amt);
@@ -995,6 +1001,7 @@ export proc chpl_qio_preadv(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, 
   return f.preadv(iov, iovcnt, offset, amtRead);
 }*/
 
+/* */
 export proc chpl_qio_filelength(file:c_void_ptr, ref length:int(64)):syserr {
   var f=file:QioPluginFile;
   return f.filelength(length);
