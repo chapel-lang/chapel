@@ -39,9 +39,9 @@ proc masonPublish(args: [] string) throws {
     }
     var dry = false;
     var usernameurl = gitUrl();
-	  var tail = usernameurl.find("/")-1: int;
-	  var head = usernameurl.find(":")+1: int;
-	  var username = usernameurl(head..tail);
+    var tail = usernameurl.find("/")-1: int;
+    var head = usernameurl.find(":")+1: int;
+    var username = usernameurl(head..tail);
     if username == '' {
       throw new owned MasonError('Must have remote origin set up in repository to publish');
     }
