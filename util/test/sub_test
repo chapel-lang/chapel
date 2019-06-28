@@ -1646,6 +1646,10 @@ for testname in testsrc:
             error_msg = filter_compiler_errors(origoutput)
             if error_msg != '':
                 sys.stdout.write('[Error %s for %s]\n'%(error_msg, test_name))
+                sys.stdout.write('[Compiler output was as follows:]\n')
+                sys.stdout.write(origoutput)
+                cleanup(execname)
+                cleanup(printpassesfile)
                 continue
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
