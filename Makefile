@@ -186,6 +186,7 @@ clobber: FORCE
 	cd third-party && $(MAKE) clobber
 	cd tools/chplvis && $(MAKE) clobber
 	cd tools/c2chapel && $(MAKE) clobber
+	cd tools/mason && $(MAKE) clobber
 	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
 	rm -rf bin
 	rm -rf lib
