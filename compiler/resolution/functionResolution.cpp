@@ -2511,6 +2511,7 @@ static bool isTypeConstructionCall(CallExpr* call) {
       // the same way as a type construction call, so skip that case here.
       //
       // A SymExpr of dtTuple indiciates tuple type construction.
+      // TODO: Shouldn't we see a call to 'this' as the baseExpr?
       if (se->typeInfo()->symbol->hasFlag(FLAG_TUPLE) &&
           se->typeInfo() != dtTuple) {
         ret = false;
