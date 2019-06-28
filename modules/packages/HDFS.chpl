@@ -130,10 +130,13 @@ module HDFS {
 use IO, SysBasic, SysError;
 
 require "hdfs.h";
-require "HDFSHelper/hdfsHelp.h";
 
-extern type hdfsFS;   // opaque
-extern type hdfsFile; // opaque
+extern "struct hdfs_internal" record hdfs_internal { }
+extern "struct hdfsFile_internal" record hdfsFile_internal { }
+
+extern type hdfsFS = c_ptr(hdfs_internal);
+extern type hdfsFile = c_ptr(hdfsFile_internal);
+
 extern record hdfsFileInfo {
   var mSize:tOffset;
   var mBlockSize:tOffset;
@@ -149,7 +152,6 @@ private extern proc hdfsOpenFile(fs:hdfsFS, path:c_string, flags:c_int,
                                  bufferSize:c_int, replication:c_short,
                                  blockSize:tSize):hdfsFile;
 private extern proc hdfsCloseFile(fs:hdfsFS, file:hdfsFile):c_int;
-private extern proc chpl_hdfsIsFileNull(file:hdfsFile):bool;
 private extern proc hdfsPread(fs:hdfsFS, file:hdfsFile, position:tOffset,
                               buffer:c_void_ptr, length:tSize):tSize;
 private extern proc hdfsWrite(fs:hdfsFS, file:hdfsFile,
@@ -239,7 +241,7 @@ class HDFSFileSystem {
     if verbose then
       writeln("after hdfsOpenFile");
 
-    if chpl_hdfsIsFileNull(hfile) {
+    if hfile == c_nil {
       throw SystemError.fromSyserr(qio_mkerror_errno(), "in hdfsOpenFile");
     }
 
