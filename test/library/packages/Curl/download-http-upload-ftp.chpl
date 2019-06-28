@@ -1,5 +1,5 @@
 use RunServer;
-use Curl;
+use URL;
 
 config const verbose = false;
 config const outUrl = "ftp://127.0.0.1/upload/";
@@ -16,8 +16,8 @@ proc runtest() {
       // Open a URL reader and writer
       var inUrl = "http://" + host + ":" + port + "/" + f;
       var outUrlFile = outUrl + f;
-      var input = downloadUrl(inUrl);
-      var output = uploadUrl(outUrlFile);
+      var input = openUrlReader(inUrl);
+      var output = openUrlWriter(outUrlFile);
 
       var str:string;
 
@@ -34,7 +34,7 @@ proc runtest() {
 
       // Now, try downloading the file and check against the local file.
       var filereader = open(f, iomode.r).reader();
-      var urlreader = downloadUrl(outUrlFile);
+      var urlreader = openUrlReader(outUrlFile);
       // Now check that the files match
       nlines = 0;
       var str1: string;

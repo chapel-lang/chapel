@@ -1,5 +1,5 @@
 use Spawn;
-use Curl;
+use URL;
 use Time;
 use FileSystem;
 

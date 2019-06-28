@@ -1,5 +1,5 @@
 use RunServer;
-use Curl;
+use URL;
 use FileSystem;
 
 config const verbose = false;
@@ -26,7 +26,7 @@ proc runtest() {
       var filereader = open(f, iomode.r).reader();
 
       var url = "http://" + host + ":" + port + "/" + f;
-      var urlreader = downloadUrl(url);
+      var urlreader = openUrlReader(url);
 
       var nlines = 0;
       var str1: string;
