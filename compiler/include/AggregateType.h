@@ -22,7 +22,6 @@
 
 #include "DecoratedClasses.h"
 #include "type.h"
-#include "../resolution/callInfo.h"
 
 /************************************* | **************************************
 *                                                                             *
@@ -124,8 +123,8 @@ public:
 
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
-  AggregateType*              generateType(CallInfo& info);
-  AggregateType*              generateType(SymbolMap& subs, CallInfo& info, Expr* insnPoint = NULL);
+  AggregateType*              generateType(CallExpr* call, const char* callString);
+  AggregateType*              generateType(SymbolMap& subs, CallExpr* call, const char* callString, Expr* insnPoint = NULL);
   void                        resolveConcreteType();
 
   bool                        isInstantiatedFrom(const AggregateType* base)

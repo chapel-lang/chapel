@@ -2545,7 +2545,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
       ret = fn->retType;
     }
   } else {
-    ret = at->generateType(info);
+    ret = at->generateType(info.call, info.toString());
   }
 
   if (ret != NULL) {
