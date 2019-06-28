@@ -1604,7 +1604,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // update our state vector with our locale's adjustment value
       for s in state do
-        s += myadjust;
+        myop.accumulateOntoState(s, myadjust);
       if debugBlockScan then
         writeln(locid, ": state = ", state);
 
