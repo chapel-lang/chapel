@@ -25,7 +25,8 @@ module UnitTest {
   class Test {
     var numMaxLocales: int,
         numMinLocales: int;
-    var numLocalesList: [1..0] int;
+    var dictDomain: domain(int);
+    var numLocalesList: [dictDomain] int;
     /* Unconditionally skip a test. */
     proc skip(reason: string = "") throws {
       throw new owned TestSkipped(reason);
@@ -706,7 +707,7 @@ module UnitTest {
     proc maxLocales(value: int) throws {
       this.numMaxLocales = value;
       if value < numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales = ("+value+")");
+        throw new owned TestIncorrectNumLocales("Required Locales ="+value);
       }
     }
 
@@ -714,7 +715,7 @@ module UnitTest {
     proc minLocales(value: int) throws {
       this.numMinLocales = value;
       if value > numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales = ("+value+")");
+        throw new owned TestIncorrectNumLocales("Required Locales ="+value);
       }
     }
 
@@ -722,13 +723,15 @@ module UnitTest {
     proc addNumLocales(locales: int ...?n) throws {
       var canRun =  false;
       for numLocale in locales {
-        this.numLocalesList.push_back(numLocale);
+        this.numLocalesList[numLocale]=1;
         if numLocale == numLocales {
           canRun = true;
         }
       }
+      var tempList: [1..0] int;
+      for key in dictDomain do tempList.push_back(key);
       if !canRun then 
-        throw new owned TestIncorrectNumLocales("Required Locales = "+locales:string);
+        throw new owned TestIncorrectNumLocales("Required Locales ="+tempList:string);
     }
   }
 

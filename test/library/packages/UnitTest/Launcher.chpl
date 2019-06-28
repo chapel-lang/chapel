@@ -9,11 +9,17 @@ module Launcher {
   use Spawn;
   use Path;
   use TestResult;
+  use Sys;
   config const subdir: string = "true";
   config const keepExec: string = "false";
+  config const setComm: string = "";
+  var comm_c: c_string;
+  var comm: string;
   pragma "no doc"
   /*Docs: Todo*/
-  proc runAndLog(executable,fileName, ref result,skipId = 0,reqNumLocales:int = numLocales, ref testNames ,ref dictDomain,ref dict) throws {
+  proc runAndLog(executable,fileName, ref result,skipId = 0,
+                  reqNumLocales:int = numLocales, ref testNames,
+                  ref dictDomain,ref dict) throws {
     var separator1 = result.separator1,
         separator2 = result.separator2;
     var testName: string,
@@ -26,7 +32,9 @@ module Launcher {
         haltOccured = false;
     var testNamesStr = "None";
     if testNames.size!=0 then testNamesStr = testNames:string;
-    var exec = spawn(["./"+executable,"--skipId",skipId: string,"-nl",reqNumLocales: string,"--testNames",testNamesStr], stdout = PIPE, stderr = PIPE); //Executing the file
+    var exec = spawn(["./"+executable,"--skipId",skipId: string,"-nl",
+                      reqNumLocales: string,"--testNames",testNamesStr],
+                      stdout = PIPE, stderr = PIPE); //Executing the file
     //std output pipe
     while exec.stdout.readline(line) {
       if line.strip() == separator1 then sep1Found = true;
@@ -39,17 +47,24 @@ module Launcher {
           when "FAIL" do result.addFailure(fileName+": "+testName, tempString);
           when "SKIPPED" do result.addSkip(fileName+": "+testName,tempString);
           when "IncorrectNumLocales" {
-            result.testToBeReRan();
-            var strSplit = tempString.split("=");
-            var reqLocalesStr = strSplit[2].split(")");
-            reqLocalesStr=reqLocalesStr[1].split("(");
-            var reqLocalesList=reqLocalesStr[2].split(",");
-            for a in reqLocalesList do
-              if dictDomain.contains(a:int) then
-                dict[a:int] += 1;
-              else
-                dict[a:int] = 1;
-            testNames.push_back(testName);
+            if comm != "none" {
+              result.testToBeReRan();
+              var strSplit = tempString.split("=");
+              var reqLocalesStr = strSplit[2].split(" ");
+              // reqLocalesStr=reqLocalesStr[1].split("(");
+              // var reqLocalesList=reqLocalesStr[2].split(",");
+              for a in reqLocalesStr do
+                if dictDomain.contains(a:int) then
+                  dict[a:int] += 1;
+                else
+                  dict[a:int] = 1;
+              testNames.push_back(testName);
+            }
+            else {
+              var tempStr = "Not a MultiLocale Environment. $CHPL_COMM = "+comm+"\n";
+              tempStr += tempString; 
+              result.addFailure(fileName+": "+testName, tempStr);
+            }
           }
         }
         tempString = "";
@@ -87,7 +102,9 @@ module Launcher {
       }
     }
     exec.wait();//wait till the subprocess is complete
-    if haltOccured then runAndLog(executable, fileName, result, curIndex,reqNumLocales, testNames, dictDomain, dict);
+    if haltOccured then
+      runAndLog(executable, fileName, result,curIndex,
+                reqNumLocales, testNames,dictDomain, dict);
     if testNames.size != 0 {
       var maxCount = -1;
       for key in dictDomain.sorted() {
@@ -97,7 +114,8 @@ module Launcher {
         }
       }
       dictDomain.remove(reqLocales);
-      runAndLog(executable, fileName, result, 0, reqLocales, testNames, dictDomain, dict);
+      runAndLog(executable, fileName, result, 0, 
+                reqLocales, testNames, dictDomain, dict);
     }
   }
 
@@ -117,7 +135,9 @@ module Launcher {
       if isFile(executableReal) {
         var execRem = spawn(["rm",executableReal]);
       }
-      var sub = spawn(["chpl",file,"-o",executable,"-M.","--comm=gasnet"],stderr = PIPE); //Compiling the file
+      if setComm!="" then comm = setComm;
+      var sub = spawn(["chpl",file,"-o",executable,"-M.",
+                    "--comm",comm],stderr = PIPE); //Compiling the file
       if sub.stderr.readline(line) {
         writeln(line);
         compErr = true;
@@ -127,7 +147,8 @@ module Launcher {
         var testNames: [1..0] string;
         var dictDomain: domain(int);
         var dict: [dictDomain] int;
-        runAndLog(executable,fileName,result,0,numLocales, testNames, dictDomain, dict);
+        runAndLog(executable,fileName,result,0,numLocales,
+                  testNames, dictDomain, dict);
         if !keepExec:bool {
           var execRem = spawn(["rm",executable]);
           if isFile(executableReal) {
@@ -137,7 +158,8 @@ module Launcher {
       }
       else {
         writeln("Compilation Error in ",fileName);
-        writeln("Possible Reasons can be passing a non-test function to UnitTest.runTest()");
+        writeln("Possible Reasons can be passing a non-test ",
+                "function to UnitTest.runTest()");
       }
     }
   }
@@ -151,6 +173,8 @@ module Launcher {
   }
 
   proc main(args: [] string) {
+    sys_getenv("CHPL_COMM",comm_c);
+    comm = comm_c: string;
     var dirs: [1..0] string,
         files: [1..0] string;
     var hadInvalidFile = false;
