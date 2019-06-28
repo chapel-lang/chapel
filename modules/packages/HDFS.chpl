@@ -240,7 +240,7 @@ class HDFSFileSystem {
       writeln("after hdfsOpenFile");
 
     if chpl_hdfsIsFileNull(hfile) {
-      throw new owned SystemError(qio_mkerror_errno(), "in hdfsOpenFile");
+      throw SystemError.fromSyserr(qio_mkerror_errno(), "in hdfsOpenFile");
     }
 
     // Create an HDFSFile and return the QIO file containing it
