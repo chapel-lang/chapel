@@ -144,7 +144,7 @@ proc dryRun(username: string) throws {
   }
   if git && fork {
     writeln('Package can be published to the mason-registry');
-    writeln('Commands that will ran are:');
+    writeln('Commands that will be run:');
     writeln('> git clone git:github.com:[username]/mason-registry mason-registry');
     writeln('> git checkout -b [package name]');
     writeln('Package Name will be added to the Bricks in the mason-registry');
