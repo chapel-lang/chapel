@@ -68,13 +68,6 @@ void AstToText::appendName(FnSymbol* fn)
     mText += (fn->name + 11);
   }
 
-  else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
-  {
-    INT_ASSERT(strncmp(fn->name, "_type_construct_", 16) == 0);
-
-    mText += (fn->name + 16);
-  }
-
   else if (fn->isMethod() == true)
   {
     appendThisIntent(fn);
@@ -210,9 +203,6 @@ bool AstToText::skipParens(FnSymbol* fn) const
   bool retval = false;
 
   if (fn->hasFlag(FLAG_NO_PARENS))
-    retval = true;
-
-  else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && fn->numFormals() == 0)
     retval = true;
 
   else if (fn->hasFlag(FLAG_MODULE_INIT)      && developer        == false)

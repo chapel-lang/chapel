@@ -483,16 +483,6 @@ void UseStmt::trackMethods() {
         for_fields(sym, t) {
           methodsAndFields.push_back(sym->name);
         }
-
-        unsigned int typeConstrLen = strlen(t->symbol->name) +
-          strlen("_type_construct_") + 1;
-
-        char* typeConstrName = (char*) malloc(typeConstrLen);
-
-        strcpy(typeConstrName, "_type_construct_");
-        strcat(typeConstrName, t->symbol->name);
-
-        functionsToAlwaysCheck.push_back(typeConstrName);
       }
 
       if (types.size() != 0) {

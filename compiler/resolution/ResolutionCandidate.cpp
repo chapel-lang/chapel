@@ -85,65 +85,6 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
   return checkResolveFormalsWhereClauses(info);
 }
 
-void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
-  SET_LINENO(fn);
-
-  // Ignore tuple constructors; they were generated
-  // with their type constructors.
-  if (fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
-    AggregateType* at = toAggregateType(fn->_this->type);
-    INT_ASSERT(at->typeConstructor != NULL);
-
-    if (at->typeConstructor->isResolved()) return;
-
-    CallExpr* typeConstructorCall = new CallExpr(at->typeConstructor);
-
-    for_formals(formal, fn) {
-      if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
-        if (formal->instantiatedFrom != NULL) {
-          typeConstructorCall->insertAtTail(formal->type->symbol);
-
-        } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-          typeConstructorCall->insertAtTail(paramMap.get(formal));
-        }
-
-      } else {
-        if (formal->type == dtMethodToken) {
-          typeConstructorCall->insertAtTail(formal);
-
-        } else if (formal->instantiatedFrom != NULL) {
-          SymExpr*   se = new SymExpr(formal->type->symbol);
-          NamedExpr* ne = new NamedExpr(formal->name, se);
-
-          typeConstructorCall->insertAtTail(ne);
-
-        } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-          SymExpr*   se = new SymExpr(paramMap.get(formal));
-          NamedExpr* ne = new NamedExpr(formal->name, se);
-
-          typeConstructorCall->insertAtTail(ne);
-        }
-      }
-    }
-
-    info.call->insertBefore(typeConstructorCall);
-
-    // If instead we call resolveCallAndCallee(typeConstructorCall)
-    // then the line number reported in an error would change
-    // e.g.: domains/deitz/test_generic_class_of_sparse_domain
-    // or:   classes/diten/multipledestructor
-    resolveCall(typeConstructorCall);
-
-    INT_ASSERT(typeConstructorCall->isResolved());
-
-    resolveFunction(typeConstructorCall->resolvedFunction());
-
-    fn->_this->type = typeConstructorCall->resolvedFunction()->retType;
-
-    typeConstructorCall->remove();
-  }
-}
-
 bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
 
   fn = expandIfVarArgs(fn, info);
@@ -256,8 +197,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
           failingArgument = info.actuals.v[i];
           reason = RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS;
           return false;
-        } else if (fn->hasFlag(FLAG_INIT_TUPLE) == false &&
-                   isTupleTypeConstructor(fn)   == false) {
+        } else if (fn->hasFlag(FLAG_INIT_TUPLE) == false) {
           failingArgument = info.actuals.v[i];
           reason = RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS;
           return false;
@@ -327,12 +267,9 @@ bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
   if (formal->intent                      != INTENT_PARAM &&
       formal->hasFlag(FLAG_TYPE_VARIABLE) == false        &&
       formal->type                        != dtAny) {
-    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-      retval = false;
-
-    } else if (fn->isDefaultInit() &&
-               (formal->hasFlag(FLAG_ARG_THIS)                == false ||
-                formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false)) {
+    if (fn->isDefaultInit() &&
+        (formal->hasFlag(FLAG_ARG_THIS)                == false ||
+         formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false)) {
       // This is a compiler generated initializer, so the argument with
       // a generic type corresponds with a class field.
       retval = false;
