@@ -45,7 +45,7 @@ proc masonPublish(args: [] string) throws {
     if username == '' {
       throw new owned MasonError('Must have remote origin set up in repository to publish');
     }
-    else if args.size == 3 || args.size == 2{
+    else if args.size == 3 || args.size == 2 {
       for arg in args[1..] {
         if arg == '-h' || arg == '--help' {
           masonPublishHelp();
@@ -94,35 +94,25 @@ proc masonPublish(args: [] string) throws {
 }
 
 /* Main Script that goes through the act of publishing the package to the mason registry.
- Takes the package owners GitHub usrename as input will throw errors through command
+ Takes the package owners GitHub username as input will throw errors through command
 line git commands if any of the git calls fails.*/
 proc publishPackage(username: string) throws {
   const packageLocation = here.cwd();
-  var randomInt = [1];
-  fillRandom(randomInt);
-  var uniqueDir = randomInt : string;
-  here.chdir(packageLocation);
+  var stream = makeRandomStream(int);
+  var uniqueDir = stream.getNext(): string;
   const name = getPackageName();
   const safeDir = (name + '-' + uniqueDir);
   try! {
     here.chdir(MASON_HOME);
-    if exists('tmp') {
-      here.chdir(MASON_HOME + '/tmp');
-    }
-    else {
-      mkdir('tmp');
-      here.chdir(MASON_HOME + '/tmp');
-    }
+    if !exists('tmp') then mkdir('tmp');
     here.chdir(MASON_HOME + '/tmp');
     mkdir(safeDir);
     here.chdir(safeDir);
     cloneMasonReg(username);
     here.chdir(packageLocation);
     branchMasonReg(username, name, safeDir);
-    const cwd = getEnv("PWD");
-    const package=  addPackageToBricks(packageLocation, safeDir);
+    const package = addPackageToBricks(packageLocation, safeDir);
     here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry");
-    const projectHome = getProjectHome(cwd);
     runCommand("git add .");
     runCommand("git commit -m '" + package + "'");
     runCommand('git push --set-upstream origin ' + package, true);
@@ -157,7 +147,7 @@ proc dryRun(username: string) throws {
     writeln('Commands that will ran are:');
     writeln('> git clone git:github.com:[username]/mason-registry mason-registry');
     writeln('> git checkout -b [package name]');
-    writeln('> Package Name will be added to the Bricks in the mason-registry');
+    writeln('Package Name will be added to the Bricks in the mason-registry');
     writeln('> git add .');
     writeln('> git commit -m [package name]');
     writeln('> git push --set-upstream origin [package name]');
@@ -189,12 +179,7 @@ proc cloneMasonReg(username: string) throws {
 /* Checks to see if 'git config --get remote.origin.url' exists */
 proc doesGitOriginExist() {
   var urlExists = runCommand("git config --get remote.origin.url", true);
-  if urlExists != '' {
-    return true;
-  }
-  else {
-    return false;
-  }
+  return !urlExists.isEmpty();
 }
 
 /*Procedure that reutns the url of the git remote origin */
@@ -246,7 +231,6 @@ proc addPackageToBricks(projectLocal: string, safeDir: string) : string {
   var tomlFile = new owned(parseToml(toParse));
   const packageName = tomlFile['brick']['name'].s;
   const versionNum = tomlFile['brick']['version'].s;
-  const oldDir = here.cwd();
   here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry/Bricks/");
   mkdir(packageName);
   here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry/Bricks/" + packageName + "/");
