@@ -639,7 +639,39 @@ proc inner(A: [?Adom], B: [?Bdom]) {
   if Adom.size != Bdom.size then
     halt("Mismatched size in inner multiplication");
 
-  return + reduce(A[..]*B[..]);
+  var results: [0..#numLocales] etype = 0;
+  
+  coforall l in Locales do on l {
+    var localResult: etype = 0; 
+    const maxThreads = here.maxTaskPar;
+    var threadResults: [0..#maxThreads] etype = 0;
+    const localDomain = X.localSubdomain();
+    const iterPerThread = divceil(localDomain.size, maxThreads);
+    
+    coforall tid in 0..#maxThreads {
+      var myResult: etype = 0;
+      const startid = localDomain.low + tid * iterPerThread;
+      const endid = if localDomain.high < (startid + iterPerThread - 1) then localDomain.high else (startid + iterPerThread - 1);
+      local {
+          for ind in startid..endid {
+            myResult += X[ind] * Y[ind];
+          }
+      }
+      threadResults[tid] = myResult;
+    }
+
+    for tid in 0..#maxThreads {
+        localResult += threadResults[tid];
+    }
+    results[here.id] = localResult;
+  }
+  
+  var result = 0.0;
+  for r in results {
+    result += r;
+  }
+  
+  return result;
 }
 
 
