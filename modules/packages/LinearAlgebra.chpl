@@ -1611,7 +1611,7 @@ module Sparse {
     // matrix-vector
     if Adom.rank == 2 && Bdom.rank == 1 {
       if !isCSArr(A) then
-        halt("Only CSR format is supported for sparse multiplication");
+        return _sparsematvecMult(A,B);
       return _csrmatvecMult(A, B);
     }
     // vector-matrix
@@ -1639,6 +1639,25 @@ module Sparse {
   /* Compute the dot-product */
   proc _array.dot(a) where isNumeric(a) && isCSArr(this) {
     return LinearAlgebra.dot(this, a);
+  }
+  
+  /* Sparse Matrix-vector multiplication with Distributed support */
+  private proc _sparsematvecMult(const ref A: [?Adom] ?eltType, const ref X: [?Xdom] eltType) where isSparseArr(A) {
+    var Y: [Xdom] eltType;
+    coforall l in Locales do on l {
+      const localDomain = A.localSubdomain();
+      var (low_i, low_j) = localDomain.low;
+      var (high_i, high_j) = localDomain.high;
+      var rowResults: [low_i..high_i] eltType = 0;
+
+      forall (i,j) in localDomain {
+          rowResults[i] += A[i,j] * X[j];
+      }
+      for i in low_i..high_i {
+          Y[i] += rowResults[i];
+      }
+    }
+    return Y;
   }
 
 
