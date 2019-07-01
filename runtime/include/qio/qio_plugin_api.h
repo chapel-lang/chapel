@@ -40,8 +40,8 @@ syserr chpl_qio_fsync(void* file);
 // get the optimial i/o size for the channel
 syserr chpl_qio_get_chunk(void* file, int64_t* length);
 // get the locales for a region
-syserr chpl_qio_get_locales_for_region(void* file, int64_t start, int64_t end,
-    const char*** localeNames, int64_t* nLocales);
+// localeNamesPtr should be a pointer to an array of char* to set on output
+syserr chpl_qio_get_locales_for_region(void* file, int64_t start, int64_t end, void **localeNamesPtr, int64_t* nLocales);
 
 // close a file
 syserr chpl_qio_file_close(void* file);

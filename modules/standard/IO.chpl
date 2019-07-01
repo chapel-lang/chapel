@@ -985,9 +985,13 @@ export proc chpl_qio_get_chunk(file:c_void_ptr, ref length:int(64)):syserr {
   return f.getChunk(length);
 }
 pragma "no doc"
-export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64), end:int(64), ref localeNames:c_ptr(c_string), ref nLocales:int(64)):syserr {
+export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64),
+    end:int(64), ref localeNames:c_void_ptr, ref nLocales:int(64)):syserr {
+  var strPtr:c_ptr(c_string);
   var f=file:QioPluginFile;
-  return f.getLocalesForRegion(start, end, localeNames, nLocales);
+  var ret = f.getLocalesForRegion(start, end, strPtr, nLocales);
+  localeNames = strPtr:c_void_ptr;
+  return ret;
 }
 pragma "no doc"
 export proc chpl_qio_file_close(file:c_void_ptr):syserr {
@@ -1093,7 +1097,7 @@ private extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t
 
 private extern proc qio_locales_for_region(fl:qio_file_ptr_t,
                                    start:int(64), end:int(64),
-                                   ref loc_names:c_ptr(c_string),
+                                   loc_names_out:c_void_ptr,
                                    ref num_locs_out:c_int):syserr;
 private extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):syserr;
 private extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
@@ -4294,7 +4298,7 @@ proc file.localesForRegion(start:int(64), end:int(64)) {
     var err:syserr;
     var locs: c_ptr(c_string);
     var num_hosts:c_int;
-    err = qio_locales_for_region(this._file_internal, start, end, locs, num_hosts);
+    err = qio_locales_for_region(this._file_internal, start, end, c_ptrTo(locs), num_hosts);
     // looping over Locales enforces the ordering constraint on the locales.
     for loc in Locales {
       if (findloc(loc.name, locs, num_hosts:int)) then
