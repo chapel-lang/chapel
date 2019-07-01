@@ -101,27 +101,6 @@ module Sets {
     }
 
     pragma "no doc"
-    inline proc _destroy(ref item: eltType) {
-      chpl__autoDestroy(item);
-    }
-
-    //
-    // Getting weird lifetime errors when using this function over classes,
-    // and I'm not sure quite how to solve them yet. Since this is used in a
-    // managed way internally, try marking "unsafe" for now to circumvent
-    // the errors, and see if we can deal with them later.
-    //
-    pragma "no doc"
-    pragma "unsafe"
-    inline proc _move(ref src: ?t, ref dst: t) {
-      __primitive("=", dst, src);
-    }
-
-    pragma "no doc"
-    proc _getRef(idx: int) ref {
-    }
-
-    pragma "no doc"
     inline proc _enter() {
       if parSafe then
         _lock$.lock();
@@ -190,70 +169,120 @@ module Sets {
     /*
       Returns `true` if this set is a proper subset of `other`. That is,
       the value of every element in this set is contained in `other`, and
-      the size of `other` is larger than the size of this set.
+      this set does not equal `other`.
 
       :arg other: The set to compare against.
-      :return: Whether or not this set is a subset of `other`.
+      :return: Whether or not this set is a proper subset of `other`.
     */
     proc const properSubset(const ref other: set(eltType, ?)): bool {
       return false;
     }
 
     /*
+    	Returns `true` if the value of every element in the set `other` is
+      contained in this set.
+
+      :arg other: The set to compare against.
+      :return: Whether or not this set is a superset of `other`.
     */
     proc const superset(const ref other: set(eltType, ?)): bool {
       return false;
     }
 
     /*
+    	Returns `true` if this set is a proper superset of `other`. That is,
+      the value of every element in `other` is contained in this set, and
+      this set does not equal `other`.
+
+      :arg other: The set to compare against.
+      :return: Whether or not this set is a proper superset of `other`.
     */
     proc const properSuperset(const ref other: set(eltType, ?)): bool {
       return false;
     }
 
     /*
+    	Remove the item from this set with a value equal to `x`.
+
+      .. warning::
+
+        Removing an element from this set may invalidate existing references
+        to the elements contained in this set.
+    
+      :arg x: The element to remove.
+
+      :throws IllegalArgumentError: If the list contains no such element.
     */
     proc remove(const ref x: eltType) throws {
       return;
     }
 
     /*
+      Remove the item `x` if it is present in this set, but do nothing if it
+      is not.
+
+      .. warning::
+
+        Discarding an element from this set may invalidate existing references
+        to the elements contained in this set.
+
+      :arg x: The element to discard.
     */
     proc discard(const ref x: eltType) {
       return;
     }
 
     /*
+    	Clear the contents of this set.
+
+      .. warning::
+
+        Clearing the contents of this set will invalidate all existing
+        references to the elements contained in this set.
     */
     proc clear() {
       return;
     }
 
     /*
+    	Iterate over the elements of this set.
+
+      :yields: A reference to one of the elements contained in this set.
     */
     iter these() ref {
       return nil;
     }
 
     /*
+    	Write the contents of this set to a channel.
+
+      :arg ch: A channel to write to.
     */
     proc const writeThis(ch: channel) {
       return;
     }
 
     /*
+    	Returns `true` if this set contains zero elements.
+
+      :return: `true` if this set is empty.
+      :rtype: `bool`
     */
     inline proc const isEmpty(): bool {
       return false;
     }
 
     /*
+    	The current number of elements contained in this set.
     */
     inline proc const size {
       return 0;
     }
 
     /*
+    	Returns a new DefaultRectangular array containing a copy of each of the
+      elements contained in this set. The returned array is not guaranteed
+      to follow any particular ordering.
     */
     proc const toArray(): [] eltType {
       return nil;
@@ -278,18 +307,39 @@ module Sets {
   }
 
   /*
+    Return a new set that contains the union of two sets.
+
+    :arg a: A set to take the difference of.
+    :arg b: A set to take the difference of.
+
+    :return: A new set containing the difference between `a` and `b`.
+    :rtype: `set(?t, ?)`
   */
   proc setUnion(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
     return new set(t, false);
   }
 
   /*
+    Return a new set that contains the union of two sets.
+
+    :arg a: A set to take the difference of.
+    :arg b: A set to take the difference of.
+
+    :return: A new set containing the difference between `a` and `b`.
+    :rtype: `set(?t, ?)`
   */
   proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
     return setUnion(a, b);
   }
 
   /*
+    Return a new set that contains the difference of two sets.
+
+    :arg a: A set to take the difference of.
+    :arg b: A set to take the difference of.
+
+    :return: A new set containing the difference between `a` and `b`.
+    :rtype: `set(?t, ?)`
   */
   proc setDifference(const ref a: set(?t, ?),
                      const ref b: set(t, ?)): set(t, ?) {
@@ -297,12 +347,26 @@ module Sets {
   }
 
   /*
+    Return a new set that contains the difference of two sets.
+
+    :arg a: A set to take the difference of.
+    :arg b: A set to take the difference of.
+
+    :return: A new set containing the difference between `a` and `b`.
+    :rtype: `set(?t, ?)`
   */
   proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
     return setDifference(a, b);
   }
 
   /*
+  	Return a new set that contains the intersection of two sets.
+
+    :arg a: A set to take the intersection of.
+    :arg b: A set to take the intersection of.
+
+    :return: A new set containing the intersection of `a` and `b`.
+    :rtype: `set(?t, ?)`
   */
   proc setIntersection(const ref a: set(?t, ?),
                      const ref b: set(t, ?)): set(t, ?) {
@@ -310,12 +374,26 @@ module Sets {
   }
 
   /*
+    Return a new set that contains the intersection of two sets.
+
+    :arg a: A set to take the intersection of.
+    :arg b: A set to take the intersection of.
+
+    :return: A new set containing the intersection of `a` and `b`.
+    :rtype: `set(?t, ?)`
   */
   proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
     return setIntersection(a, b);
   }
 
   /*
+    Return a new set that contains the symmetric difference of two sets.
+
+    :arg a: A set to take the symmetric difference of.
+    :arg b: A set to take the symmetric difference of.
+
+    :return: A new set containing the symmetric difference of `a` and `b`.
+    :rtype: `set(?t, ?)`
   */
   proc setSymmetricDiff(const ref a: set(?t, ?),
                      const ref b: set(t, ?)): set(t, ?) {
@@ -323,20 +401,53 @@ module Sets {
   }
 
   /*
+  	Return the symmetric difference of two sets.
+
+    :arg a: A set to take the symmetric difference of.
+    :arg b: A set to take the symmetric difference of.
+
+    :return: A new set containing the symmetric difference of `a` and `b`.
+    :rtype: `set(?t, ?)`
   */
   proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
     return setSymmetricDiff(a, b);
   }
 
   /*
-    Return `true` if `a` contains the same elements as `b`.
+    Return `true` if the sets `a` and `b` are equal. That is, they are the
+    same size and contain the same elements.
+
+    :arg a: A set to compare.
+    :arg b: A set to compare.
+
+    :return: `true` if two sets are equal.
+    :rtype: `bool`
   */
   proc ==(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     return false;
   }
 
   /*
+    Return `true` if the sets `a` and `b` are not equal.
+
+    :arg a: A set to compare.
+    :arg b: A set to compare.
+
+    :return: `true` if two sets are not equal.
+    :rtype: `bool`
+  */
+  proc !=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+    return false;
+  }
+
+  /*
     Return `true` if `a` is a proper subset of `b`.
+
+    :arg a: A set to compare.
+    :arg b: A set to compare.
+
+    :return: `true` if `a` is a proper subset of `b`.
+    :rtype: `bool`
   */
   proc <(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     return false;
@@ -344,6 +455,12 @@ module Sets {
 
   /*
     Return `true` if `a` is a subset of `b`.
+
+    :arg a: A set to compare.
+    :arg b: A set to compare.
+
+    :return: `true` if `a` is a subset of `b`.
+    :rtype: `bool`
   */
   proc <=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     return false;
@@ -351,6 +468,12 @@ module Sets {
 
   /*
     Return `true` if `a` is a proper superset of `b`.
+
+    :arg a: A set to compare.
+    :arg b: A set to compare.
+
+    :return: `true` if `a` is a proper superset of `b`.
+    :rtype: `bool`
   */
   proc >(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     return false;
@@ -358,6 +481,12 @@ module Sets {
 
   /*
     Return `true` if `a` is a superset of `b`.
+
+    :arg a: A set to compare.
+    :arg b: A set to compare.
+
+    :return `true` if `a` is a superset of `b`.
+    :rtype: `bool`
   */
   proc >=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     return false;
