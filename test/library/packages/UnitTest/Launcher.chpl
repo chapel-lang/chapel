@@ -72,7 +72,7 @@ module Launcher {
   /*Docs: Todo*/
   proc testFile(file, ref result) throws {
     var fileName = basename(file);
-    if fileName.endsWith(".chpl") && fileName.startsWith("test") {
+    if fileName.endsWith(".chpl") {
       var line: string;
       var compErr = false;
       var tempName = fileName.split(".chpl");
