@@ -35,9 +35,6 @@ module ChapelEnv {
   /* See :ref:`readme-chplenv.CHPL_HOME` for more information. */
   param CHPL_HOME:string            = __primitive("get compiler variable", "CHPL_HOME");
 
-  /* See :ref:`readme-chplenv.CHPL_AUX_FILESYS` for more information. */
-  param CHPL_AUX_FILESYS:string     = __primitive("get compiler variable", "CHPL_AUX_FILESYS");
-
   /* See :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` for more information. */
   param CHPL_TARGET_PLATFORM:string = __primitive("get compiler variable", "CHPL_TARGET_PLATFORM");
 
