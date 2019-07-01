@@ -18,27 +18,49 @@
  */
 
 module ExternalString {
-  
-  proc chpl__exportConvertToConstChar(in s: string): c_string {
-    return convertToConstCharNoCopy(s);
-  }
 
-  proc chpl__exportConvertToConstCharNoCopy(const ref s: string): c_string {
-    var result = s.c_str();
-    s.isowned = false;
+  // For the `c_ptr` type definition.
+  use CPtr;
+
+  //
+  // Use this as a convenient way to get a handle to "char*" during resolution.
+  //
+  type chpl__exportTypeCharPtr = c_ptr(c_char);
+
+  //
+  // Copy is not the most efficient, because it uses `c_calloc` instead of
+  // `c_malloc`. We do this because there is no way to index bytes of a
+  // `c_string` directly.
+  //
+  private proc chpl__exportCopyStringBuffer(s: string): c_ptr(c_char) {
+    const bytes = s.length;
+    const src = s.c_str():c_void_ptr;
+    var dst = c_calloc(c_char, bytes + 1);
+
+    c_memcpy(dst, src, bytes);
+
+    var result = dst:c_ptr(c_char);
+
     return result;
   }
 
-  proc chpl__exportConvertToString(c: c_string): string {
-    return new string(cs=c, isowned=true, needToCopy=true);
+  //
+  // For now, always copy the internal buffer.
+  //
+  proc chpl__exportConvertToCharPtr(s: string, copy=true): c_ptr(c_char) {
+    return chpl__exportCopyStringBuffer(s);
+  }
+
+  proc chpl__exportConvertToConstCharPtr(s: string, copy=true): c_string {
+    return chpl__exportCopyStringBuffer(s):c_string;
   }
 
   //
-  // Strings allocated in this fashion assume that the memory for the passed
-  // buffer was allocated on the Chapel heap.
+  // If `copy` is false, then the buffer that is being absorbed by the string
+  // must have been allocated on the Chapel heap.
   //
-  proc chpl__exportConvertToStringNoCopy(c: c_string): string {
-    return new string(c, isowned=true, needToCopy=false);
+  proc chpl__exportConvertToString(c: c_string, copy=true): string {
+    return new string(cs=c, isowned=true, needToCopy=copy);
   }
 
 } // End module "ExternalString".

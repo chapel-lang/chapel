@@ -22,7 +22,9 @@
 
 #include <vector>
 
-void mapConversionCall(const char* name, FnSymbol* handle);
+class FnSymbol;
+
+FnSymbol* getUnwrappedFunction(FnSymbol* wrapper);
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns);
 void fixupExportedFunction(FnSymbol* fn);
 

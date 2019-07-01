@@ -7461,8 +7461,6 @@ void resolve() {
 
   handleRuntimeTypes();
 
-  resolveExportConversionCalls();
-
   if (fPrintCallGraph) {
     // This needs to go after resolution is complete, but before
     // pruneResolvedTree() removes unused functions (like the uninstantiated
