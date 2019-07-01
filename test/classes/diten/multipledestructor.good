@@ -1,3 +1,4 @@
-multipledestructor.chpl:7: error: ambiguous call 'C.deinit()'
+multipledestructor.chpl:6: In function 'main':
+multipledestructor.chpl:8: error: ambiguous call 'unmanaged C.deinit()'
 multipledestructor.chpl:2: note: candidates are: C.deinit()
 multipledestructor.chpl:4: note:                 C.deinit()

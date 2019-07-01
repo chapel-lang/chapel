@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2019 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2012 Université Bordeaux
  * Copyright © 2009 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -97,7 +97,9 @@ int main(int argc, char *argv[])
 
   hwloc_topology_init(&topology);
   hwloc_topology_set_flags(topology, flags);
-  hwloc_topology_load(topology);
+  ret = hwloc_topology_load(topology);
+  if (ret < 0)
+    exit(EXIT_FAILURE);
   depth = hwloc_topology_get_depth(topology);
 
   callname = argv[0];
@@ -231,7 +233,9 @@ int main(int argc, char *argv[])
 	hwloc_topology_destroy(topology);
 	hwloc_topology_init(&topology);
 	hwloc_topology_set_flags(topology, flags);
-	hwloc_topology_load(topology);
+	ret = hwloc_topology_load(topology);
+	if (ret < 0)
+	  exit(EXIT_FAILURE);
 	depth = hwloc_topology_get_depth(topology);
 	goto next;
       }
@@ -290,7 +294,10 @@ int main(int argc, char *argv[])
   }
 
   if (pid_number > 0) {
-    pid = hwloc_pid_from_number(pid_number, !(get_binding || get_last_cpu_location));
+    if (hwloc_pid_from_number(&pid, pid_number, !(get_binding || get_last_cpu_location), 1 /* verbose */) < 0) {
+      fprintf(stderr, "failed to use pid\n");
+      return EXIT_FAILURE;
+    }
     /* no need to set_pid()
      * the doc just says we're operating on pid, not that we're retrieving the topo/cpuset as seen from inside pid
      */

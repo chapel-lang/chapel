@@ -1,0 +1,2 @@
+bad-type-expr.chpl:14: error: error while resolving type 'BadValue'
+bad-type-expr.chpl:15: note: type expression of field 'x' resolves to a value, not a type

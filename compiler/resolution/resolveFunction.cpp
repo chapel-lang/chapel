@@ -58,8 +58,6 @@ static bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet);
 
 static void protoIteratorClass(FnSymbol* fn, Type* yieldedType);
 
-static void resolveTypeConstructor(FnSymbol* fn);
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -498,10 +496,6 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
         protoIteratorClass(fn, yieldedType);
-
-      } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-        resolveTypeConstructor(fn);
-
       }
 
       if (fn->isMethod() == true && fn->_this != NULL) {
@@ -725,8 +719,7 @@ static bool doNotUnaliasArray(FnSymbol* fn) {
 //
 static
 bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
-      fn->hasFlag(FLAG_INIT_TUPLE)               || // chpl__init_tuple
+  if (fn->hasFlag(FLAG_INIT_TUPLE)               || // chpl__init_tuple
       fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
       fn->hasFlag(FLAG_TUPLE_CAST_FN)            || // _cast for tuples
@@ -958,69 +951,11 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
-static void      resolveDefaultTypeConstructor(AggregateType* at);
-
-static void resolveTypeConstructor(FnSymbol* fn) {
-  AggregateType* at = toAggregateType(fn->retType);
-
-  if (at->scalarPromotionType == NULL &&
-      at->symbol->hasFlag(FLAG_REF) == false) {
-    resolvePromotionType(at);
-  }
-
-  if (developer == false) {
-    fixTypeNames(at);
-  }
-
-  forv_Vec(AggregateType, pt, at->dispatchParents) {
-    if (pt != dtObject) {
-      resolveDefaultTypeConstructor(pt);
-    }
-  }
-
-  for_fields(field, at) {
-    if (AggregateType* fct = toAggregateType(field->type)) {
-      resolveDefaultTypeConstructor(fct);
-    }
-  }
-
-
-  if (at->hasDestructor() == false) {
-    if (at->symbol->hasFlag(FLAG_REF)       == false &&
-        isTupleContainingOnlyReferences(at) == false) {
-      BlockStmt* block = new BlockStmt();
-      VarSymbol* tmp   = newTemp(at);
-      CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
-
-      // In case resolveCall drops other stuff into the tree ahead
-      // of the call, we wrap everything in a block for safe removal.
-      block->insertAtHead(call);
-
-      fn->insertAtHead(block);
-      fn->insertAtHead(new DefExpr(tmp));
-
-      resolveCallAndCallee(call);
-
-      at->setDestructor(call->resolvedFunction());
-
-      block->remove();
-
-      tmp->defPoint->remove();
-    }
-  }
-}
-
 void fixTypeNames(AggregateType* at) {
   const char* typeName = toString(at, false);
 
   if (at->symbol->name != typeName)
     at->symbol->name = typeName;
-}
-
-static void resolveDefaultTypeConstructor(AggregateType* at) {
-  if (at->typeConstructor != NULL) {
-    resolveSignatureAndFunction(at->typeConstructor);
-  }
 }
 
 /************************************* | **************************************

@@ -2603,6 +2603,7 @@ parloopexpr
 usex
 
 FILEID: e2d7df7c-1d0c-11e6-a3a6-10ddb1d4c3d5
+bcond
 fock
 gfunction
 ghelp
@@ -2777,6 +2778,7 @@ unboundslice
 ytemp
 
 FILEID: 803ee256-1d85-11e6-a3a6-10ddb1d4c3d5
+bbcopy
 dbaadab
 ftemp
 newresult
@@ -3105,6 +3107,7 @@ FILEID: 55301aa8-1f2e-11e6-a3a6-10ddb1d4c3d5
 abzoo
 azgx
 bbbb
+isopen
 takz
 xzob
 
@@ -3612,11 +3615,16 @@ tname
 ttag
 
 FILEID: 390fbcc4-4e3c-11e6-907f-843835579daa
+chplserversrc
 chpluserobj
+incpath
 libmvec
+lmode
+makeallvars
 pathvec
 tmpheader
 tmpheadername
+tmpserver
 tofix
 
 FILEID: 3277f5dc-4e3e-11e6-907f-843835579daa
@@ -4319,6 +4327,7 @@ utcoff
 utcoffset
 
 FILEID: 5010068a-0c15-11e7-980e-10ddb1d4c3d5
+arrinst
 arrpid
 emptyrange
 isview
@@ -4596,6 +4605,7 @@ cqes
 cswap
 ctxs
 dsrd
+enocq
 etoosmall
 fabfail
 fabsall
@@ -4860,6 +4870,49 @@ FILEID: 076e82b2-624e-11e9-b712-843835579daa
 intsize
 resbuf
 
+FILEID: c0913c10-9315-11e9-a422-10ddb1d4c3d5
+eneric
+esolved
+
+FILEID: de897ffc-9315-11e9-a422-10ddb1d4c3d5
+ememory
+enofunc
+mtpull
+mtpush
+sdispatch
+serverside
+swrapper
+
+FILEID: 95bdbfa8-9316-11e9-a422-10ddb1d4c3d5
+dset
+tget
+tmake
+
+FILEID: b6c10b42-9316-11e9-a422-10ddb1d4c3d5
+intsize
+resbuf
+
+FILEID: dad68368-9316-11e9-a422-10ddb1d4c3d5
+myarr
+
+FILEID: 5c43053e-9317-11e9-a422-10ddb1d4c3d5
+nsize
+umsg
+
+FILEID: 6df7b2de-9317-11e9-a422-10ddb1d4c3d5
+esocket
+sdispatch
+
+FILEID: 7238a240-9317-11e9-a422-10ddb1d4c3d5
+eexcept
+ememory
+enofunc
+esocket
+eunknown
+
+FILEID: 9410539a-9317-11e9-a422-10ddb1d4c3d5
+tilda
+
 NATURAL:
 aarch
 abcd
@@ -5004,6 +5057,7 @@ biginteger
 bigints
 bigsubs
 billig
+bindex
 binend
 binname
 binout
@@ -5072,6 +5126,7 @@ builtins
 bulleted
 bynodeset
 byref
+bytecount
 byteorder
 cairo
 california
@@ -5167,6 +5222,7 @@ cleanfiles
 cleanloop
 clearbit
 cleison
+clientside
 cloexec
 clonevar
 closefile
@@ -5287,9 +5343,11 @@ dcopy
 ddata
 deallocated
 deallocates
+deallocating
 deallocation
 deallocations
 debian
+debugf
 debugprint
 december
 decls
@@ -5343,6 +5401,7 @@ deserialization
 deserialize
 deserialized
 deserializer
+deserializing
 destructors
 destructure
 destructured
@@ -5591,6 +5650,7 @@ expm
 exponentiate
 exprlist
 exprs
+exps
 externs
 facebook
 failonerror
@@ -5714,6 +5774,7 @@ getnameinfo
 getnext
 getpath
 getpeername
+getput
 getrlimit
 getsockname
 getsockopt
@@ -5844,6 +5905,7 @@ iclass
 icpc
 idempotent
 idents
+idxs
 ieee
 iface
 ified
@@ -5859,6 +5921,7 @@ implementors
 inbox
 incls
 includedir
+includedirs
 incrementer
 incrs
 indexable
@@ -5940,6 +6003,7 @@ isinf
 isnan
 isocalendar
 isoformat
+isopen
 isoweekday
 isowned
 isshared
@@ -6012,6 +6076,7 @@ jueckstock
 julia
 julialang
 july
+jumptable
 june
 jupiter
 kannada
@@ -6080,6 +6145,7 @@ laura
 laurelle
 lawrence
 layoutdist
+lbls
 lcals
 lchplmalloc
 lcrypto
@@ -6224,6 +6290,7 @@ marcin
 marcos
 marenostrum
 markhill
+marshalling
 martha
 marxen
 mary
@@ -6360,6 +6427,7 @@ myflag
 myfree
 myfunc
 myint
+myloc
 mylow
 mymalloc
 mymax
@@ -6384,6 +6452,7 @@ nanox
 napierian
 nareas
 narratively
+narrays
 natively
 navarro
 nbigsubs
@@ -6420,6 +6489,8 @@ niak
 nicholas
 nightlytesting
 nikhil
+nilability
+nilable
 nimit
 nist
 nixos
@@ -6454,6 +6525,8 @@ nonlocal
 nonlocking
 nonnegative
 nonnegligible
+nonnil
+nonnilable
 nonpersistent
 nonprimitive
 nonprinting
@@ -6734,6 +6807,7 @@ rasbold
 ratomicbool
 raytrace
 raytracing
+rbegin
 rcpt
 rcvbuf
 rcvd
@@ -6797,11 +6871,13 @@ reinsch
 reinstantiation
 rejang
 relatedly
+relationals
 relaxedmath
 reldiff
 remapper
 remington
 renameable
+renamings
 replicand
 replicands
 reprivatization
@@ -6917,6 +6993,7 @@ serializability
 serializable
 serializers
 serverkey
+servername
 sessionid
 setbit
 setchplenv
@@ -6960,6 +7037,7 @@ sigill
 sigint
 sigkill
 sigmask
+signbit
 signum
 sigpipe
 sigplan
@@ -6998,6 +7076,7 @@ slist
 slong
 slte
 slurm
+smain
 smtp
 smtps
 sndbuf
@@ -7224,6 +7303,7 @@ tmacd
 tmpbinname
 tmpdirname
 tmps
+tmpservername
 tmpvar
 tochar
 toctou
@@ -7492,5 +7572,6 @@ zipcall
 zixian
 zlib
 zolotov
+zpos
 zypper
 

@@ -377,8 +377,10 @@ returnInfoGetMemberRef(CallExpr* call) {
       }
     }
     INT_ASSERT(field);
+    makeRefType(field->type);
     retType = field->type->refType ? field->type->refType : field->type;
   } else {
+    makeRefType(var->type);
     retType = var->type->refType ? var->type->refType : var->type;
   }
   Qualifier q = QUAL_REF;

@@ -90,8 +90,6 @@ private:
 
   bool                      isApplicableConcrete(CallInfo& info);
 
-  void                      resolveTypeConstructor(CallInfo& info);
-
   bool                      isApplicableGeneric(CallInfo& info);
 
   bool                      computeAlignment(CallInfo& info);

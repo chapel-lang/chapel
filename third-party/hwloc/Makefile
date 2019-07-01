@@ -30,6 +30,7 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-cuda \
                           --disable-nvml \
                           --disable-opencl \
+                          --disable-gl \
                           --disable-pci
 
 # Libnuma requires dynamic linking, so for the flat locale model where

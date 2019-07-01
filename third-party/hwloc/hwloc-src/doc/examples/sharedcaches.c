@@ -1,7 +1,7 @@
 /* This example program looks for caches shared between this process
  * and another one based on their current binding.
  *
- * Copyright © 2014 Inria.  All rights reserved.
+ * Copyright © 2014-2018 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -9,7 +9,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 int main(int argc, char *argv[])
 {

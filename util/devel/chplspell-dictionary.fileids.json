@@ -62,6 +62,9 @@
     "compiler/AST/symbol.cpp",
     "compiler/codegen/symbol.cpp"
   ],
+  "c0913c10-9315-11e9-a422-10ddb1d4c3d5": [
+    "compiler/AST/view.cpp"
+  ],
   "0196aa72-62e1-11e7-88ba-10ddb1d4c3d5": [
     "compiler/AST/wellknown.cpp"
   ],
@@ -82,6 +85,9 @@
   ],
   "6de8d7ca-9c7b-11e8-b963-10ddb1d4c3d5": [
     "compiler/codegen/library.cpp"
+  ],
+  "de897ffc-9315-11e9-a422-10ddb1d4c3d5": [
+    "compiler/codegen/mli.cpp"
   ],
   "d20c5afc-1d7e-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/ifa/num.cpp"
@@ -433,6 +439,9 @@
   "0e29860c-1a83-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/ArrayViewRankChange.chpl"
   ],
+  "dad68368-9316-11e9-a422-10ddb1d4c3d5": [
+    "modules/internal/ArrayViewSlice.chpl"
+  ],
   "c643ceac-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/AtomicsCommon.chpl"
   ],
@@ -508,6 +517,9 @@
   "cc606fa4-fd7e-11e6-980e-10ddb1d4c3d5": [
     "modules/packages/Futures.chpl"
   ],
+  "95bdbfa8-9316-11e9-a422-10ddb1d4c3d5": [
+    "modules/packages/HDF5Helper/hdf5_helper.h"
+  ],
   "6cd27e0c-7b82-11e6-ab60-00a0cc3ee663": [
     "modules/packages/HDFS.chpl"
   ],
@@ -534,6 +546,9 @@
   "24a5f32a-792f-11e6-807a-843835579daa": [
     "modules/packages/ZMQ.chpl"
   ],
+  "b6c10b42-9316-11e9-a422-10ddb1d4c3d5": [
+    "modules/packages/ZMQHelper/zmq_helper.c"
+  ],
   "076e82b2-624e-11e9-b712-843835579daa": [
     "modules/packages/ZMQHelper/zmq_helper.h"
   ],
@@ -551,6 +566,9 @@
   ],
   "55301aa8-1f2e-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/IO.chpl"
+  ],
+  "5c43053e-9317-11e9-a422-10ddb1d4c3d5": [
+    "modules/standard/Lists.chpl"
   ],
   "7de3ce6c-3f64-11e6-907f-843835579daa": [
     "modules/standard/Math.chpl"
@@ -573,6 +591,12 @@
   "e9347814-1f30-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Types.chpl"
   ],
+  "7238a240-9317-11e9-a422-10ddb1d4c3d5": [
+    "runtime/etc/src/mli/common_code.c"
+  ],
+  "6df7b2de-9317-11e9-a422-10ddb1d4c3d5": [
+    "runtime/etc/src/mli/server_runtime.c"
+  ],
   "011204e0-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-bitops.h"
   ],
@@ -590,6 +614,9 @@
   ],
   "0ebaef5a-2409-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/chpl-cache.c"
+  ],
+  "9410539a-9317-11e9-a422-10ddb1d4c3d5": [
+    "runtime/src/chpl-launcher-common.c"
   ],
   "8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/chpl-timers.c"
