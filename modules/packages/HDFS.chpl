@@ -19,110 +19,103 @@
 
 /*
 
-Support for Hadoop Distributed Filesystem
-
-.. warning::
-
-  This module is currently not working. See
-  `#12627 <https://github.com/chapel-lang/chapel/issues/12627>`_
-  to track progress.
-
-*/
-
-/*
-
 This module implements support for the
 `Hadoop <http://hadoop.apache.org/>`_
 `Distributed Filesystem <http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html>`_ (HDFS).
 
-Dependencies
-------------
-
-See the :ref:`auxIO-HDFS-deps` documentation for details on setting up and
-enabling HDFS support in Chapel.
 
 Using HDFS Support in Chapel
 ----------------------------
 
-There are three ways provided to open HDFS files within Chapel.
-
-Using an HDFS filesystem with open(url="hdfs://...")
-****************************************************
+To open an HDFS file in Chapel, first create an :class:`HDFSFileSystem` by
+connecting to an HDFS name node.
 
 .. code-block:: chapel
 
-  // Open a file on HDFS connecting to the default HDFS instance
-  var f = open(mode=iomode.r, url="hdfs://host:port/path");
+  use HDFS only;
 
-  // Open up a reader and read from the file
-  var reader = f.reader();
+  fs = HDFS.connect(); // can pass a nameNode host and port here,
+                       // otherwise uses HDFS default settings.
 
-  // ...
+The filesystem connection will be closed when `fs` and any files
+it refers to go out of scope.
 
-  reader.close();
+Once you have a :record:`hdfs`, you can open files within that
+filesystem using :proc:`HDFSFileSystem.open` and perform I/O on them using
+the usual functionality in the :mod:`IO` module:
 
+.. code-block:: chapel
+
+  var f = fs.open("/tmp/testfile.txt", iomode.cw);
+  var writer = f.writer();
+  writer.writeln("This is a test");
+  writer.close();
   f.close();
 
+.. note::
 
-Explicitly Using Replicated HDFS Connections and Files
-******************************************************
+  Please note that ``iomode.cwr`` and ``iomode.rw`` are not supported with HDFS
+  files due to limitations in HDFS itself. ``iomode.r`` and ``iomode.cw`` are
+  the only modes supported with HDFS.
 
-.. code-block:: chapel
+Dependencies
+------------
 
-  use HDFS;
+Please refer to the Hadoop and HDFS documentation for instructions on setting up
+HDFS.
 
-  // Connect to HDFS via the default username (or whichever you want)
-  //
-  var hdfs = hdfsChapelConnect("default", 0);
+Once you have a working HDFS, it's a good idea to test your HDFS installation
+with a C program before proceeding with Chapel HDFS support. Try compiling the
+below C program:
 
-  //
-  // Create a file per locale
-  //
-  var gfl  = hdfs.hdfsOpen("/user/johnDoe/isThisAfile.txt", iomode.r);
+.. code-block:: c
 
-  ...
-  //
-  // On any given locale, you can get the local file for the locale that
-  // the task is currently running on via:
-  //
-  var fl = gfl.getLocal();
+  // hdfs-test.c
 
-  // This file can be used as with a traditional file in Chapel, by
-  // creating reader channels on it.
+  #include <hdfs.h>
 
-  // When you are done and want to close the files and disconnect from
-  // HDFS, use:
+  #include <string.h>
+  #include <stdio.h>
+  #include <stdlib.h>
 
-  gfl.hdfsClose();
-  hdfs.hdfsChapelDisconnect();
+  int main(int argc, char **argv) {
 
-Explicitly Using Local HDFS Connections and Files
-*************************************************
-
-The HDFS module file also supports non-replicated values across
-locales. So if you only wanted to connect to HDFS and open a file on
-locale 1 you could do:
-
-.. code-block:: chapel
-
-  on Locales[1] {
-    var hdfs = hdfs_chapel_connect("default", 0);
-    var fl = hdfs.hdfs_chapel_open("/user/johnDoe/myFile.txt", iomode.cw);
-    ...
-    var read = fl.reader();
-    ...
-    fl.close();
-    hdfs.hdfs_chapel_disconnect();
+      hdfsFS fs = hdfsConnect("default", 0);
+      const char* writePath = "/tmp/testfile.txt";
+      hdfsFile writeFile = hdfsOpenFile(fs, writePath, O_WRONLY|O_CREAT, 0, 0, 0);
+      if(!writeFile) {
+            fprintf(stderr, "Failed to open %s for writing!\n", writePath);
+            exit(-1);
+      }
+      char* buffer = "Hello, World!";
+      tSize num_written_bytes = hdfsWrite(fs, writeFile, (void*)buffer, strlen(buffer)+1);
+      if (hdfsFlush(fs, writeFile)) {
+             fprintf(stderr, "Failed to 'flush' %s\n", writePath);
+            exit(-1);
+      }
+     hdfsCloseFile(fs, writeFile);
   }
 
-The only stipulations are that you cannot open a file in both read and
-write mode at the same time. (i.e iomode.r and iomode.cw are the only
-modes that are supported, due to HDFS limitations).
+This program will probably not compile without some special environment
+variables set.  The following commands worked for us to compile this program,
+but you will almost certainly need different settings depending on your HDFS
+installation.
+
+.. code-block:: bash
+
+  export JAVA_HOME=/usr/lib/jvm/default-java/lib
+  export HADOOP_HOME=/usr/local/hadoop/
+  gcc hdfs-test.c -I$HADOOP_HOME/include -L$HADOOP_HOME/lib/native -lhdfs
+  export CLASSPATH=`$HADOOP_HOME/bin/hadoop classpath --glob`
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/lib/native:$JAVA_HOME/lib
+  ./a.out
+
+  # verify that the new test file was created
+  $HADOOP_HOME/bin/hdfs dfs  -ls /tmp
 
 
 HDFS Support Types and Functions
 --------------------------------
-
 
  */
 module HDFS {
@@ -131,19 +124,27 @@ use IO, SysBasic, SysError;
 
 require "hdfs.h";
 
+pragma "no doc"
 extern "struct hdfs_internal" record hdfs_internal { }
+pragma "no doc"
 extern "struct hdfsFile_internal" record hdfsFile_internal { }
 
+pragma "no doc"
 extern type hdfsFS = c_ptr(hdfs_internal);
+pragma "no doc"
 extern type hdfsFile = c_ptr(hdfsFile_internal);
 
+pragma "no doc"
 extern record hdfsFileInfo {
   var mSize:tOffset;
   var mBlockSize:tOffset;
 }
 
+pragma "no doc"
 extern type tSize = int(32);
+pragma "no doc"
 extern type tOffset = int(64);
+pragma "no doc"
 extern type tPort = uint(16);
 
 private extern proc hdfsConnect(nn:c_string, port:tPort):hdfsFS;
@@ -161,27 +162,72 @@ private extern proc hdfsGetPathInfo(fs:hdfsFS, path:c_string):c_ptr(hdfsFileInfo
 private extern proc hdfsFreeFileInfo(info:c_ptr(hdfsFileInfo), numEntries:c_int);
 
 // QIO extern stuff
-extern proc qio_strdup(s: c_string): c_string;
+private extern proc qio_strdup(s: c_string): c_string;
 private extern proc qio_mkerror_errno():syserr;
 private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_void_ptr, ref len_out:ssize_t, ref offset_out:int(64)):syserr;
 private extern proc qio_channel_advance_available_end_unlocked(ch:qio_channel_ptr_t, len:ssize_t);
 private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_void_ptr, ref len_out:ssize_t, ref offset_out:int(64)):syserr;
 private extern proc qio_channel_advance_write_behind_unlocked(ch:qio_channel_ptr_t, len:ssize_t);
 
-param verbose = false;
+private param verbose = false;
 
-proc connect(nameNode: string = "default", port:int=0) {
-  return new hdfs(new unmanaged HDFSFileSystem(nameNode, port));
+/*
+
+Connect to an HDFS filesystem. If ``nameNode`` or ``port`` are not provided,
+the HDFS defaults will be used.
+
+:arg nameNode: the hostname for an HDFS name node to connect to
+:arg port: the port on which the HDFS service is running on the name node
+:returns: a :record:`hdfs` representing the connected filesystem.
+*/
+
+proc connect(nameNode: string = "default", port:int=0) throws {
+  var fs = new unmanaged HDFSFileSystem(nameNode, port);
+  if fs.hfs == c_nil {
+    var err = qio_mkerror_errno();
+    delete fs;
+    throw SystemError.fromSyserr(err, "in hdfsConnect");
+  }
+  return new hdfs(fs);
 }
 
+/*
+
+ Record storing an open HDFS filesystem. Please see :class:`HDFSFileSystem` for
+ the forwarded methods available, in particular :proc:`HDFSFileSystem.open`.
+
+*/
+record hdfs {
+  forwarding var instance:unmanaged HDFSFileSystem;
+  pragma "no doc"
+  proc init(instance:unmanaged HDFSFileSystem) {
+    this.instance = instance;
+  }
+  pragma "no doc"
+  proc deinit() {
+    var count = instance.release();
+    if count == 0 then
+      delete instance;
+  }
+}
+
+/*
+ Class representing a connected HDFS file system. This connected is
+ reference counted and shared by open files.
+ */
 class HDFSFileSystem {
+  pragma "no doc"
   var nameNode: string;
+  pragma "no doc"
   var port: int;
+  pragma "no doc"
   var hfs:hdfsFS;
+  pragma "no doc"
   var refCount: atomic int;
 
   /* nameNode is the name node hostname, can be 'default'
      port is the port, can be '0' for default behavior */
+  pragma "no doc"
   proc init(nameNode: string="default", port:int=0) {
     if verbose then
       writeln("hdfsConnect");
@@ -192,20 +238,38 @@ class HDFSFileSystem {
     this.complete();
     refCount.write(1);
   }
+  pragma "no doc"
   proc deinit() {
     if verbose then
       writeln("hdfsDisconnect");
-    hdfsDisconnect(this.hfs);
+    if this.hfs != c_nil then
+      hdfsDisconnect(this.hfs);
   }
+  pragma "no doc"
   proc retain() {
     refCount.add(1);
   }
   // should deallocate if the returned count is 0
+  pragma "no doc"
   proc release() {
     var oldValue = refCount.fetchSub(1);
     return oldValue - 1;
   }
 
+  /*
+
+    Open an HDFS file stored at a particular path.  Note that once the file is
+    open, you will need to use :proc:`IO.file.reader` or :proc:`IO.file.writer`
+    to create a channel to actually perform I/O operations.
+
+    :arg path: which file to open (for example, "some/file.txt").
+    :arg iomode: specify whether to open the file for reading or writing and whether or not to create the file if it doesn't exist.  See :type:`IO.iomode`.
+    :arg style: optional argument to specify I/O style associated with this file.  The provided style will be the default for any channels created for on this file, and that in turn will be the default for all I/O operations performed with those channels.
+    :arg flags: flags to pass to the HDFS open call. Uses flags appopriate for ``mode`` if not provided.
+    :arg bufferSize: buffer size to pass to the HDFS open call.  Uses the HDFS default value if not provided.
+    :arg replication: replication factor to pass to the HDFS open call.  Uses the HDFS default value if not provided.
+    :arg blockSize: blockSize to pass to the HDFS open call.  Uses the HDFS default value if not provided.
+   */
   proc open(path:string, mode:iomode,
             style:iostyle = defaultIOStyle(),
             in flags:c_int = 0, // default to based on mode
@@ -265,18 +329,7 @@ class HDFSFileSystem {
   }
 }
 
-record hdfs {
-  forwarding var instance:unmanaged HDFSFileSystem;
-  proc init(instance:unmanaged HDFSFileSystem) {
-    this.instance = instance;
-  }
-  proc deinit() {
-    var count = instance.release();
-    if count == 0 then
-      delete instance;
-  }
-}
-
+pragma "no doc"
 class HDFSFile : QioPluginFile {
   var fs: unmanaged HDFSFileSystem;
   var hfile: hdfsFile;
@@ -370,6 +423,7 @@ class HDFSFile : QioPluginFile {
   }
 }
 
+pragma "no doc"
 class HDFSChannel : QioPluginChannel {
   var file: unmanaged HDFSFile;
   var qio_ch:qio_channel_ptr_t;
