@@ -2002,10 +2002,6 @@ static void buildBreadthFirstModuleList(
               // itself and its immediate parent.  Therefore, if the symbol
               // is private, we will not traverse it further and will merely
               // add it to the alreadySeen map.
-              // The same goes for private uses - the symbols made available
-              // via a private use are only available to the module with the
-              // use statement, and should otherwise be treated as though they
-              // do not exist.
               useToAdd = use->applyOuterUse(source);
 
               if (useToAdd                       != NULL &&
@@ -2021,7 +2017,11 @@ static void buildBreadthFirstModuleList(
                 (*alreadySeen)[useSE->symbol()].push_back(useToAdd);
               }
 
-            } else {
+            } else if (!use->isPrivate &&
+                       useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+              // Private uses should be skipped, but should not prevent us from
+              // traversing the module in a later use of it, if that later use
+              // is not private.
               (*alreadySeen)[useSE->symbol()].push_back(use);
             }
           }
