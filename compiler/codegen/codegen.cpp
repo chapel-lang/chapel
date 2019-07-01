@@ -1176,14 +1176,14 @@ static void codegen_header_compilation_config() {
       fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
       fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
     }
-    
+
     codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
     codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
     codegenCallPrintf("Chapel environment:\\n");
-    codegenCallPrintf(astr("CHPL_HOME: ", CHPL_HOME, "\\n"));  
+    codegenCallPrintf(astr("  CHPL_HOME: ", CHPL_HOME, "\\n"));
       for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
         if (env->first != "CHPL_HOME") {
-          codegenCallPrintf(astr(env->first.c_str(), ": ", env->second, "\\n")); 
+          codegenCallPrintf(astr("  ", env->first.c_str(), ": ", env->second, "\\n"));
         }
       }
 
