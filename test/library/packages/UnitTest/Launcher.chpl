@@ -9,8 +9,71 @@ module Launcher {
   use Spawn;
   use Path;
   use TestResult;
+  use Help;
   config const subdir: string = "true";
   config const keepExec: string = "false";
+
+  proc main(args: [] string) {
+    var dirs: [1..0] string,
+        files: [1..0] string;
+    var hadInvalidFile = false;
+    var programName = args[0];
+    for a in args[1..] {
+      if a == "-h" || a == "--help" {
+        writeln("Usage: ", programName, " <options> filename [filenames] directoryname [directorynames]");
+        printUsage();
+        exit(1); // returning 1 from main is also an option
+      }
+      else {
+        try! {
+          if isFile(a) {
+            files.push_back(a);
+          }
+          else if isDir(a) {
+            dirs.push_back(a);
+          }
+          else {
+            writeln("[Error: ",a," is not a valid file or directory]");
+            hadInvalidFile = true;
+          }
+        }
+      }
+    }
+
+    if hadInvalidFile && files.size == 0 && dirs.size == 0 {
+      exit(2);
+    }
+
+    if files.size == 0 && dirs.size == 0 {
+      dirs.push_back(".");
+    }
+    
+    var result =  new TestResult();
+
+    for tests in files {
+      try {
+        testFile(tests, result);
+      }
+      catch e {
+        writeln("Caught an Exception in Running Test File: ", tests);
+        writeln(e);
+      }
+    }
+
+    for dir in dirs {
+      try {
+        testDirectory(dir, result);
+      }
+      catch e {
+        writeln("Caught an Exception in Running Test Directory: ", dir);
+        writeln(e);
+      }
+    }
+      
+    result.printErrors();
+    writeln(result.separator2);
+    result.printResult();
+  }
 
   pragma "no doc"
   /*Docs: Todo*/
@@ -25,7 +88,7 @@ module Launcher {
     var sep1Found = false,
         haltOccured = false;
     
-    var exec = spawn(["./"+executable,"--skipId",skipId:string], stdout = PIPE, stderr = PIPE); //Executing the file
+    var exec = spawn(["./"+executable,"--skipId",skipId:string,"--numLocales",numLocales], stdout = PIPE, stderr = PIPE); //Executing the file
     //std output pipe
     while exec.stdout.readline(line) {
       if line.strip() == separator1 then sep1Found = true;
@@ -105,60 +168,5 @@ module Launcher {
     for file in findfiles(startdir = dir, recursive = subdir:bool) {
       testFile(file, result);
     }
-  }
-
-  proc main(args: [] string) {
-    var dirs: [1..0] string,
-        files: [1..0] string;
-    var hadInvalidFile = false;
-
-    for a in args[1..(args.size-1)] {
-      try! {
-        if isFile(a) {
-          files.push_back(a);
-        }
-        else if isDir(a) {
-          dirs.push_back(a);
-        }
-        else {
-          writeln("[Error: ",a," is not a valid file or directory]");
-          hadInvalidFile = true;
-        }
-      }
-    }
-
-    if hadInvalidFile && files.size == 0 && dirs.size == 0 {
-      exit(2);
-    }
-
-    if files.size == 0 && dirs.size == 0 {
-      dirs.push_back(".");
-    }
-    
-    var result =  new TestResult();
-
-    for tests in files {
-      try {
-        testFile(tests, result);
-      }
-      catch e {
-        writeln("Caught an Exception in Running Test File: ", tests);
-        writeln(e);
-      }
-    }
-
-    for dir in dirs {
-      try {
-        testDirectory(dir, result);
-      }
-      catch e {
-        writeln("Caught an Exception in Running Test Directory: ", dir);
-        writeln(e);
-      }
-    }
-      
-    result.printErrors();
-    writeln(result.separator2);
-    result.printResult();
   }
 }
