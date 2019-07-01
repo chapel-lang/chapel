@@ -1117,12 +1117,18 @@ static void codegen_header_compilation_config() {
   if (cfgfile.fptr != NULL) {
     FILE* save_cfile = gGenInfo->cfile;
 
-    gGenInfo->cfile = cfgfile.fptr;
+    fprintf(cfgfile.fptr, "/*** %s ***/\n", "Compilation Info");
+    fprintf(cfgfile.fptr, "\n#include <stdio.h>");
+    fprintf(cfgfile.fptr, "\n#include \"chpltypes.h\"\n\n");
 
-    genComment("Compilation Info");
-
-    fprintf(cfgfile.fptr, "\n#include <stdio.h>\n");
-    fprintf(cfgfile.fptr, "\n#include \"chpltypes.h\"\n");
+    // We generate LLVM IR only when we are not using a launcher.
+    // For launchers, we generate C while using C or LLVM backends alike.
+    bool genConfigInLLVM = llvmCodegen && 0 == strcmp(CHPL_LAUNCHER, "none");
+    if (genConfigInLLVM) {
+      gGenInfo->cfile = NULL;
+    } else {
+      gGenInfo->cfile = cfgfile.fptr;
+    }
 
     genGlobalString("chpl_compileCommand", compileCommand);
     genGlobalString("chpl_compileVersion", compileVersion);
@@ -1134,7 +1140,7 @@ static void codegen_header_compilation_config() {
       genGlobalString("chpl_saveCDir", "");
     }
 
-    genGlobalString("CHPL_HOME",           CHPL_HOME);
+    genGlobalString("CHPL_HOME", CHPL_HOME);
 
     genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
     genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
@@ -1145,30 +1151,50 @@ static void codegen_header_compilation_config() {
       }
     }
 
-    // generate the "about" function
-    fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
-    fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
-
-    fprintf(cfgfile.fptr,
-            "printf(\"%%s\", \"Compilation command: %s\\n\");\n",
-            compileCommand);
-    fprintf(cfgfile.fptr,
-            "printf(\"%%s\", \"Chapel compiler version: %s\\n\");\n",
-            compileVersion);
-    fprintf(cfgfile.fptr, "printf(\"Chapel environment:\\n\");\n");
-    fprintf(cfgfile.fptr,
-            "printf(\"%%s\", \"  CHPL_HOME: %s\\n\");\n",
-            CHPL_HOME);
-    for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-      if (env->first != "CHPL_HOME") {
-        fprintf(cfgfile.fptr,
-          "printf(\"%%s\", \"  %s: %s\\n\");\n",
-          env->first.c_str(),
-          env->second);
+    if (genConfigInLLVM) {
+#ifdef HAVE_LLVM
+      llvm::FunctionType* programAboutType;
+      llvm::Function* programAboutFunc;
+      if ((programAboutFunc = getFunctionLLVM("chpl_program_about"))) {
+        programAboutType = programAboutFunc->getFunctionType();
+      } else {
+        programAboutType = llvm::FunctionType::get(
+          llvm::Type::getVoidTy(gGenInfo->module->getContext()), false
+        );
+        programAboutFunc = llvm::Function::Create(
+          programAboutType, llvm::Function::ExternalLinkage, "chpl_program_about", gGenInfo->module
+        );
       }
+
+      llvm::BasicBlock* programAboutBlock = llvm::BasicBlock::Create(
+        gGenInfo->module->getContext(), "entry", programAboutFunc
+      );
+      gGenInfo->irBuilder->SetInsertPoint(programAboutBlock);
+#endif
+    } else {
+      // generate the "about" function
+      fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
+      fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
     }
 
-    fprintf(cfgfile.fptr, "}\n");
+    codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
+    codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
+    codegenCallPrintf("Chapel environment:\\n");
+    codegenCallPrintf(astr("  CHPL_HOME: ", CHPL_HOME, "\\n"));
+      for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+        if (env->first != "CHPL_HOME") {
+          codegenCallPrintf(astr("  ", env->first.c_str(), ": ", env->second, "\\n"));
+        }
+      }
+
+    if (genConfigInLLVM) {
+#ifdef HAVE_LLVM
+      gGenInfo->irBuilder->CreateRetVoid();
+#endif
+      gGenInfo->cfile = cfgfile.fptr;
+    } else {
+      fprintf(cfgfile.fptr, "}\n");
+    }
 
     genComment("Filename Lookup Table");
     genFilenameTable();
