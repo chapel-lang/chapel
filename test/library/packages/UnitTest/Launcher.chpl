@@ -95,7 +95,7 @@ module Launcher {
       tempString = line;
       while exec.stderr.readline(line) do tempString+=line;
       if testName!="" {
-        result.addError(testName,tempString);
+        result.addError(fileName+": "+testName, tempString);
         haltOccured =  true;
       }
     }

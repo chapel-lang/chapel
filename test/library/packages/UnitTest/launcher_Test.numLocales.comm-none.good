@@ -1,0 +1,23 @@
+
+======================================================================
+FAIL test_locales.chpl: s1()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales =16
+
+======================================================================
+FAIL test_locales.chpl: s2()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales =2
+
+======================================================================
+FAIL test_locales.chpl: s3()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales =16 8
+
+----------------------------------------------------------------------
+Run 3 tests
+
+FAILED failures = 3 
