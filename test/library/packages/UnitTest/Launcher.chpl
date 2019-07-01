@@ -88,7 +88,7 @@ module Launcher {
     var sep1Found = false,
         haltOccured = false;
     
-    var exec = spawn(["./"+executable,"--skipId",skipId:string,"--numLocales",numLocales], stdout = PIPE, stderr = PIPE); //Executing the file
+    var exec = spawn(["./"+executable,"--skipId",skipId:string,"--numLocales",numLocales:string], stdout = PIPE, stderr = PIPE); //Executing the file
     //std output pipe
     while exec.stdout.readline(line) {
       if line.strip() == separator1 then sep1Found = true;
