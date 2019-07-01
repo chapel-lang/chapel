@@ -861,128 +861,83 @@ extern record iostyle { // aka qio_style_t
   var tuple_style:uint(8) = 0;
 }
 
-// This class helps in implementing runtime calls
+// This class helps in implementing runtime calls.
+// It represents a file as a pointer. C code can call Chapel
+// code working with this file through the export procs below,
+// e.g. chpl_qio_read_atleast. These work by casting to
+// this type and then invoking the method with virtual dispatch.
+
 pragma "no doc"
 class QioPluginFile {
   // Assume instance has a link to filesystem if needed
 
-  // TODO: should these throw instead of returning qio errors?
+  // TODO: would like these to throw instead of returning QIO errors,
+  // but that will require changing the error representation within QIO.
 
+  /* Create a new plugin channel that will work with the passed
+     qio channel. */
   proc setupChannel(out pluginChannel:unmanaged QioPluginChannel,
                     start:int(64), end:int(64),
                     qioChannelPtr:qio_channel_ptr_t):syserr {
     return ENOSYS;
   }
 
-  /*
-  proc pwritev(iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtWritten:ssize_t):syserr {
-    return ENOSYS;
-  }
-  proc preadv(iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), out amtRead:ssize_t):syserr {
-    return ENOSYS;
-  }*/
-
-  /* */
+  /* Returns the length of an open file. */
   proc filelength(out length:int(64)):syserr {
     return ENOSYS;
   }
 
-  // The caller has the responsibility to free the returned c_string
-  proc getpath(out path:c_string, out len:ssize_t):syserr {
+  /* Returns the path to an open file.
+     The caller has the responsibility to free the returned c_string.
+   */
+  // TODO: use Chapel strings for this, one day
+  proc getpath(out path:c_string, out len:int(64)):syserr {
     return ENOSYS;
   }
 
+  /* Write the file data to persistent storage. */
   proc fsync():syserr {
     return ENOSYS;
   }
+  /* Get the optimal I/O chunk size for the file. */
   proc getChunk(out length:int(64)):syserr {
     return ENOSYS;
   }
+  /* Returns a locale best at working with each chunk within a region in a
+     file */
+  // TODO: This is not currently implemented or used anywhere.
   proc getLocalesForRegion(start:int(64), end:int(64), out
       localeNames:c_ptr(c_string), ref nLocales:int(64)):syserr {
     return ENOSYS;
   }
 
+  /* Close the file. */
   proc close():syserr {
     return ENOSYS;
   }
 }
 
+// This class helps with C runtime I/O plugins. It represents additional
+// information for a channel.
+pragma "no doc"
 class QioPluginChannel {
-  // It can read more than amt
+  /* Read at least ``amt`` bytes and store these in the related channel. */
   proc readAtLeast(amt:int(64)):syserr {
     return ENOSYS;
   }
+  /* Write up to ``amt`` bytes from the channel. */
   proc write(amt:int(64)):syserr {
     return ENOSYS;
   }
-
-  /*
-  proc writev(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtWritten:ssize_t):syserr {
-    return ENOSYS;
-  }
-  proc readv(iov:c_ptr(qiovec_t), iovcnt:c_int, out amtRead:ssize_t):syserr {
-    return ENOSYS;
-  }*/
-
-  /* */
+  /* Close the channel. */
   proc close():syserr {
     return ENOSYS;
   }
 }
 
-/*
-pragma "no doc"
-class QioPluginFilesystem {
-  // TODO: should these throw instead of returning qio errors?
-
-  proc open(path:string, flags:int(64), mode:int(64), hints:int(64), out file:unmanaged QioPluginFile):syserr {
-    return ENOSYS;
-  }
-  /*
-  proc getCwd(out path:c_string, out len:ssize_t):syserr {
-    return ENOSYS;
-  }
-  proc getFsType(out fsType:int(64)):syserr {
-    return ENOSYS;
-  }*/
-
-  /*
-  proc handlesUrl(url: string): bool {
-    return false;
-  }*/
-}
-*/
-
 // These functions let the C QIO code call the plugins
 // TODO: Move more of the QIO code to be pure Chapel
-
-/*
-export proc chpl_qio_writev(ch:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, ref amtWritten:ssize_t):syserr {
-  var c=ch:QioPluginChannel;
-  return c.writev(iov, iovcnt, amtWritten);
-}
-export proc chpl_qio_readv(ch:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, ref amtRead:ssize_t):syserr {
-  var c=ch:QioPluginChannel;
-  return c.readv(iov, iovcnt, amtRead);
-}*/
-
-/* */
-export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
-  var c=ch_plugin:QioPluginChannel;
-  return c.readAtLeast(amt);
-}
-export proc chpl_qio_write(ch_plugin:c_void_ptr, amt:int(64)) {
-  var c=ch_plugin:QioPluginChannel;
-  return c.write(amt);
-}
-export proc chpl_qio_channel_close(ch:c_void_ptr):syserr {
-  var c=ch:unmanaged QioPluginChannel;
-  var err = c.close();
-  delete c;
-  return err;
-}
-
+pragma "no doc"
 export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):syserr {
   var f=file:QioPluginFile;
   var pluginChannel:unmanaged QioPluginChannel = nil;
@@ -991,62 +946,56 @@ export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_
   return ret;
 }
 
-/*
-export proc chpl_qio_pwritev(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), ref amtWritten:ssize_t):syserr {
-  var f=file:QioPluginFile;
-  return f.pwritev(iov, iovcnt, offset, amtWritten);
+pragma "no doc"
+export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
+  var c=ch_plugin:QioPluginChannel;
+  return c.readAtLeast(amt);
 }
-export proc chpl_qio_preadv(file:c_void_ptr, iov:c_ptr(qiovec_t), iovcnt:c_int, offset:int(64), ref amtRead:ssize_t):syserr {
-  var f=file:QioPluginFile;
-  return f.preadv(iov, iovcnt, offset, amtRead);
-}*/
+pragma "no doc"
+export proc chpl_qio_write(ch_plugin:c_void_ptr, amt:int(64)) {
+  var c=ch_plugin:QioPluginChannel;
+  return c.write(amt);
+}
+pragma "no doc"
+export proc chpl_qio_channel_close(ch:c_void_ptr):syserr {
+  var c=ch:unmanaged QioPluginChannel;
+  var err = c.close();
+  delete c;
+  return err;
+}
 
-/* */
+pragma "no doc"
 export proc chpl_qio_filelength(file:c_void_ptr, ref length:int(64)):syserr {
   var f=file:QioPluginFile;
   return f.filelength(length);
 }
-export proc chpl_qio_getpath(file:c_void_ptr, ref str:c_string, ref len:ssize_t):syserr {
+pragma "no doc"
+export proc chpl_qio_getpath(file:c_void_ptr, ref str:c_string, ref len:int(64)):syserr {
   var f=file:QioPluginFile;
   return f.getpath(str, len);
 }
+pragma "no doc"
 export proc chpl_qio_fsync(file:c_void_ptr):syserr {
   var f=file:QioPluginFile;
   return f.fsync();
 }
+pragma "no doc"
 export proc chpl_qio_get_chunk(file:c_void_ptr, ref length:int(64)):syserr {
   var f=file:QioPluginFile;
   return f.getChunk(length);
 }
+pragma "no doc"
 export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64), end:int(64), ref localeNames:c_ptr(c_string), ref nLocales:int(64)):syserr {
   var f=file:QioPluginFile;
   return f.getLocalesForRegion(start, end, localeNames, nLocales);
 }
+pragma "no doc"
 export proc chpl_qio_file_close(file:c_void_ptr):syserr {
   var f = file:unmanaged QioPluginFile;
   var err = f.close();
   delete f;
   return err;
 }
-
-/*
-export proc chpl_qio_open(filesystem:c_void_ptr, path:c_string, pathlen:ssize_t, ref flags:c_int, mode:int(64), hints:int(64), ref file:c_void_ptr):syserr {
-  var fs=filesystem:QioPluginFilesystem;
-  var f:QioPluginFile;
-  var err:syserr;
-  err = fs.open(path, pathlen, flags, mode, hints, f);
-  file = f:c_void_ptr;
-  return err;
-}
-export proc chpl_qio_get_cwd(filesystem:c_void_ptr, ref path:c_string, ref len:ssize_t):syserr {
-  var fs=filesystem:QioPluginFilesystem;
-  return fs.getCwd(path, len);
-}
-export proc chpl_qio_get_fs_type(filesystem:c_void_ptr, ref fsType:int(64)):syserr {
-  var fs=filesystem:QioPluginFilesystem;
-  return fs.getFsType(fsType);
-}
-*/
 
 // Extern functions
 // TODO -- move these declarations to where they are used or into
@@ -1688,8 +1637,7 @@ Open a file on a filesystem or stored at a particular URL. Note that once the
 file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
 to create a channel to actually perform I/O operations
 
-:arg path: which file to open (for example, "some/file.txt"). This argument
-           is required unless the ``url=`` argument is used.
+:arg path: which file to open (for example, "some/file.txt").
 :arg iomode: specify whether to open the file for reading or writing and
              whether or not to create the file if it doesn't exist.
              See :type:`iomode`.
@@ -1699,13 +1647,6 @@ to create a channel to actually perform I/O operations
             The provided style will be the default for any channels created for
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
-:arg url: optional argument to specify a URL to open. See :mod:`Curl` and
-          :mod:`HDFS` for more information on ``url=`` support for those
-          systems. If HDFS is enabled, this function supports ``url=``
-          arguments of the form "hdfs://<host>:<port>/<path>". If Curl is
-          enabled, this function supports ``url=`` starting with
-          ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
-          ``smtps://``, ``imap://``, or ``imaps://``
 :returns: an open file to the requested resource.
 
 :throws SystemError: Thrown if the file could not be opened.
@@ -1713,109 +1654,25 @@ to create a channel to actually perform I/O operations
 proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle = defaultIOStyle()): file throws {
 
-  /*
-  proc parse_hdfs_path(path:string) throws {
-    // hdfs://<host>:<port>/<path>
-    var host_start = path.find("//") + 2;
-    var colon = path.find(":", host_start..);
-    var slash = path.find("/", host_start..);
-    var host_end, port_start, port_end, path_start: byteIndex = 0;
-
-    if colon > 0 {
-      host_end = colon - 1;
-      port_start = colon + 1;
-      if slash > 0 {
-        port_end = slash - 1;
-        path_start = slash + 1;
-      } else {
-        port_end = path.length;
-      }
-    } else {
-      if slash > 0 {
-        host_end = slash - 1;
-        path_start = slash + 1;
-      } else {
-        host_end = path.length;
-      }
-    }
-
-    var host = path[host_start..host_end];
-    var port_str = "";
-    if port_start > 0 then port_str = path[port_start..port_end];
-
-    var port: int;
-    try {
-      port = port_str: int;
-    } catch {
-      throw SystemError.fromSyserr(EINVAL, "invalid port");
-    }
-
-    var file_path = "";
-    if path_start > 0 then file_path = path[path_start..];
-    return (host, port, file_path);
-  }*/
-
   var local_style = style;
   var error: syserr = ENOERR;
   var ret: file;
   ret.home = here;
-  /*
-  if (url != "") {
-    /*if (url.startsWith("hdfs://")) { // HDFS
-      var (host, port, file_path) = try parse_hdfs_path(url);
-      var fs:c_void_ptr;
 
-      // Since we don't have an auto-destructor for this, we actually need to make
-      // the reference count 1 on this FS after we open this file so that we will
-      // disconnect once we close this file.
-      defer hdfs_do_release(fs);
+  if (path == "") then
+    try ioerror(ENOENT:syserr, "in open: path is the empty string");
 
-      error = hdfs_connect(fs, host.c_str(), port);
-      if error then
-        try ioerror(error, "Unable to connect to HDFS", host);
-
-      error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
-      if error then
-        try ioerror(error, "Unable to open file in HDFS", url);
-
-    } else if (url.startsWith("http://", "https://", "ftp://", "ftps://", "smtp://", "smtps://", "imap://", "imaps://"))  { // Curl
-      error = qio_file_open_access_usr(ret._file_internal, url.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
-      if error then
-        try ioerror(error, "Unable to open URL", url);
-
-    } else {
-      try ioerror(ENOENT:syserr, "Invalid URL passed to open");
-    }*/
-    /*for fs in pluginFilesystems {
-      if fs.handlesUrl(url) {
-        var file:QioPluginFile;
-        error = fs.open(url.c_str(), url.length,
-                        _modestring(mode).c_str(),
-                        hints, file);
-        if error then
-          try ioerror(error, "in open", path);
-      }
-    }*/
-
-    // throw error - not handled
-    try ioerror(ENOENT:syserr, "Invalid URL passed to open");
-
-  } else */{
-    if (path == "") then
-      try ioerror(ENOENT:syserr, "in open: Both path and url were blank");
-
-    error = qio_file_open_access(ret._file_internal, path.localize().c_str(), _modestring(mode).c_str(), hints, local_style);
-    if error then
-      try ioerror(error, "in open", path);
-  }
+  error = qio_file_open_access(ret._file_internal, path.localize().c_str(), _modestring(mode).c_str(), hints, local_style);
+  if error then
+    try ioerror(error, "in open", path);
 
   return ret;
 }
 
 pragma "last resort"
 proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle(), url:string=""): file throws {
-  compilerError("open with url argument has been deprecated. Please use the appropriate open function in another module, e.g. Curl.openurl");
+          style:iostyle = defaultIOStyle(), url:string): file throws {
+  compilerError("open with url argument has been deprecated.");
 }
 
 
@@ -1873,14 +1730,15 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
 
 // documented in open() throws version
 pragma "no doc"
-proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle(), url:string=""):file {
+proc open(out error:syserr, path:string="",
+          mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultIOStyle()):file {
   compilerWarning("This version of open() is deprecated; " +
                   "please switch to a throwing version");
   error = ENOERR;
   var ret: file;
   try {
-    ret = open(path, mode, hints, style, url);
+    ret = open(path, mode, hints, style);
   } catch e: SystemError {
     error = e.err;
   } catch {
@@ -2618,8 +2476,7 @@ Open a file at a particular path or URL and return a reading channel for it.
 This function is equivalent to calling :proc:`open` and then
 :proc:`file.reader` on the resulting file.
 
-:arg path: which file to open (for example, "some/file.txt"). This argument
-           is required unless the ``url=`` argument is used.
+:arg path: which file to open (for example, "some/file.txt").
 :arg kind: :type:`iokind` compile-time argument to determine the
             corresponding parameter of the :record:`channel` type. Defaults
             to ``iokind.dynamic``, meaning that the associated
@@ -2636,13 +2493,6 @@ This function is equivalent to calling :proc:`open` and then
           to a ``max(int)`` - meaning no end point.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg url: optional argument to specify a URL to open. See :mod:`Curl` and
-          :mod:`HDFS` for more information on ``url=`` support for those
-          systems. If HDFS is enabled, this function supports ``url=``
-          arguments of the form "hdfs://<host>:<port>/<path>". If Curl is
-          enabled, this function supports ``url=`` starting with
-          ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
-          ``smtps://``, ``imap://``, or ``imaps://``
 :returns: an open reading channel to the requested resource.
 
 :throws SystemError: Thrown if a reading channel could not be returned.
@@ -2669,8 +2519,7 @@ Open a file at a particular path or URL and return a writing channel for it.
 This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 :proc:`file.writer` on the resulting file.
 
-:arg path: which file to open (for example, "some/file.txt"). This argument
-           is required unless the ``url=`` argument is used.
+:arg path: which file to open (for example, "some/file.txt").
 :arg kind: :type:`iokind` compile-time argument to determine the
            corresponding parameter of the :record:`channel` type. Defaults
            to ``iokind.dynamic``, meaning that the associated
@@ -2687,13 +2536,6 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
           to a ``max(int)`` - meaning no end point.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg url: optional argument to specify a URL to open. See :mod:`Curl` and
-          :mod:`HDFS` for more information on ``url=`` support for those
-          systems. If HDFS is enabled, this function supports ``url=``
-          arguments of the form "hdfs://<host>:<port>/<path>". If Curl is
-          enabled, this function supports ``url=`` starting with
-          ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
-          ``smtps://``, ``imap://``, or ``imaps://``
 :returns: an open writing channel to the requested resource.
 
 :throws SystemError: Thrown if a writing channel could not be returned.
