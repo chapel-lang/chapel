@@ -47,11 +47,11 @@ module ExternalString {
   //
   // For now, always copy the internal buffer.
   //
-  proc chpl__exportConvertToCharPtr(s: string, copy=true): c_ptr(c_char) {
+  proc chpl__exportStringToCharPtr(s: string): c_ptr(c_char) {
     return chpl__exportCopyStringBuffer(s);
   }
 
-  proc chpl__exportConvertToConstCharPtr(s: string, copy=true): c_string {
+  proc chpl__exportStringToConstCharPtr(s: string): c_string {
     return chpl__exportCopyStringBuffer(s):c_string;
   }
 
@@ -59,8 +59,15 @@ module ExternalString {
   // If `copy` is false, then the buffer that is being absorbed by the string
   // must have been allocated on the Chapel heap.
   //
-  proc chpl__exportConvertToString(c: c_string, copy=true): string {
-    return new string(cs=c, isowned=true, needToCopy=copy);
+  proc chpl__exportConstCharPtrToString(c: c_string): string {
+    return new string(cs=c, isowned=true, needToCopy=true);
+  }
+
+  //
+  // Ditto the above.
+  //
+  proc chpl__exportCharPtrToString(c: c_ptr(c_char)): string {
+    return new string(cs=c:c_string, isowned = true, needToCopy=true);
   }
 
 } // End module "ExternalString".

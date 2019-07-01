@@ -24,6 +24,7 @@
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
+#include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -65,7 +66,11 @@ FnSymbol* getUnwrappedFunction(FnSymbol* wrapper) {
 //
 //
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
-  getCharPtrType();
+  // This is just a test!
+  SET_LINENO(fns[0]);
+  Type* t = getCharPtrType();
+  printf("The type of the getCharPtrType() call is: %s\n", t->name());
+
   for (size_t i = 0; i < fns.size(); i++) {
     FnSymbol* fn = fns[i];
     SET_LINENO(fn);
@@ -158,20 +163,66 @@ static FnSymbol* createWrapper(FnSymbol* fn) {
   return result;
 }
 
+//
+// - Use the lookup function to get the Symbol* for "chpl__exportTypeCharPtr"
+//    - lookup will return a Symbol*, pass it the name and the UnresolvedSymExpr as context
+//    - once you have the symbol insert it into the tree and call resolveExpr on it
+//    - resolveExpr is side effecting and will attach type info to the previous symbol
+//    - 
+// - Or iterate over stuff in the ExternalString module and find it by brute force
+//
+//
+// - The brute force approach:
+//    - First get the module symbol
+//    - Examine the body, there should be DefExprs for globals/functions
+//    - DefExpr has a method/field called sym
+//    - You may have to call resolveExpr on sym if that is not resolved
+//    - Look at the definiton of the ModuleSymbol class, hopefully a field called body for looping
+//    - 
+//    
+//
 static Type* getCharPtrType(void) {
   static Type* result = NULL;
+
   if (result != NULL) { return result; }
 
-  VarSymbol* tmp = newTemp();
-  BlockStmt* block = new BlockStmt();
-  Expr* tsym = new UnresolvedSymExpr("chpl__exportTypeCharPtr");
-  CallExpr* move = new CallExpr(PRIM_MOVE, tmp, tsym);
+  const char* modname = "ExternalString";
+  const char* symname = "chpl__exportTypeCharPtr";
+  ModuleSymbol* esm = NULL;
+  Symbol* alias = NULL;
 
-  chpl_gen_main->insertAtHead(new DefExpr(block));
+  // Get a handle to the ExternalString module.
+  forv_Vec(ModuleSymbol, md, allModules) {
+    if (md->modTag == MOD_INTERNAL && !strcmp(md->name, modname)) {
+      esm = md;
+      break;
+    }
+  }
 
+  INT_ASSERT(esm != NULL);
 
-  result = resolveTypeAlias(texpr);
-  INT_ASSERT(result != NULL);
+  // Get a handle on our type alias from global definitions.
+  for_alist(expr, esm->block->body) {
+    DefExpr* de = toDefExpr(expr);
+    if (de) {
+      Symbol* sym = de->sym;
+      if (!strcmp(sym->name, symname)) {
+        alias = sym;
+        break;
+      }
+    }
+  }
+
+  SymExpr* rctx = new SymExpr(alias);
+
+  // Insert into tree and resolve, just in case.
+  chpl_gen_main->insertAtHead(rctx);
+  resolveExpr(rctx);
+  rctx->remove();
+
+  INT_ASSERT(alias->type != NULL);
+  result = alias->type;
+
   return result;
 }
 
@@ -195,9 +246,13 @@ static const char* getConversionCallName(Type* srctype, Type* dsttype) {
   const char* result = NULL;
 
   if (srctype == dtString && dsttype == dtStringC) {
-    result = "chpl__exportConvertToConstChar";
+    result = "chpl__exportStringToConstCharPtr";
   } else if (srctype == dtStringC && dsttype == dtString) {
-    result = "chpl__exportConvertToString";
+    result = "chpl__exportConstCharPtrToString";
+  } else if (srctype == dtString && dsttype == getCharPtrType()) {
+    result = "chpl__exportStringToCharPtr";
+  } else if (srctype == getCharPtrType() && dsttype == dtString) {
+    result = "chpl__exportCharPtrToString";
   } else {
     INT_FATAL("Bad types for conversion call in: %s", __FUNCTION__);
   }
