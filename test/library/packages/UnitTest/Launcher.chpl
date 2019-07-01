@@ -51,8 +51,6 @@ module Launcher {
               result.testToBeReRan();
               var strSplit = tempString.split("=");
               var reqLocalesStr = strSplit[2].split(" ");
-              // reqLocalesStr=reqLocalesStr[1].split("(");
-              // var reqLocalesList=reqLocalesStr[2].split(",");
               for a in reqLocalesStr do
                 if dictDomain.contains(a:int) then
                   dict[a:int] += 1;
