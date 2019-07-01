@@ -790,5 +790,6 @@ void codegen_make_python_module() {
 // the generated main function
 static bool isFunctionToSkip(FnSymbol* fn) {
   return fn->getModule()->modTag == MOD_INTERNAL ||
-    fn->hasFlag(FLAG_GEN_MAIN_FUNC);
+         fn->getModule()->modTag == MOD_STANDARD ||
+         fn->hasFlag(FLAG_GEN_MAIN_FUNC);
 }
