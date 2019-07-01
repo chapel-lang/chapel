@@ -85,7 +85,7 @@ static qsubVersion determineQsubVersion(void) {
 
   if (strstr(version, "NCCS")||strstr(version, "OLCF")) {
     return nccs;
-  } else if (strstr(version, "pbs_version")) {
+  } else if (strstr(version, "pbs_version") || strstr(version, "PBSPro")) {
     return pbspro;
   } else {
     memset(whichMoab, 0, buflen);
