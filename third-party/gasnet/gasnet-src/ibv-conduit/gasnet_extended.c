@@ -124,38 +124,31 @@ gex_Event_t gasnete_put_nb(
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
   GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
- {
-  gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
-  gasnetc_counter_t    counter = GASNETC_COUNTER_INITIALIZER;
-  gasnetc_atomic_val_t *local_cnt, start_cnt;
-  gasnetc_cb_t         local_cb;
-  gasnetc_atomic_val_t lc_start;
-
-  if (gasneti_leaf_is_pointer(lc_opt)) {
-    GASNETE_EOP_LC_START(op);
-    start_cnt = op->initiated_alc;
-    local_cnt = &op->initiated_alc;
-    local_cb = gasnetc_cb_eop_alc;
-  } else if (lc_opt == GEX_EVENT_NOW) {
-    local_cnt = &counter.initiated;
-    local_cb = gasnetc_cb_counter;
-  } else if (lc_opt == GEX_EVENT_DEFER) {
-    local_cnt = NULL;
-    local_cb = NULL;
-  } else {
-    gasneti_fatalerror("Invalid lc_opt argument to Put_nb");
-  }
 
   gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
+  gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
+
   /* XXX check error returns */
-  gasnetc_rdma_put(jobrank, src, dest, nbytes, flags,
-                   local_cnt, local_cb,
-                   &op->initiated_cnt, gasnetc_cb_eop_put
-                   GASNETI_THREAD_PASS);
+  #define GASNETC_RDMA_PUT(local_cnt, local_cb)              \
+    gasnetc_rdma_put(jobrank, src, dest, nbytes, flags,      \
+                     local_cnt, local_cb,                    \
+                     &op->initiated_cnt, gasnetc_cb_eop_put  \
+                     GASNETI_THREAD_PASS)
 
   if (lc_opt == GEX_EVENT_NOW) {
+    gasnetc_counter_t counter = GASNETC_COUNTER_INITIALIZER;
+    GASNETC_RDMA_PUT(&counter.initiated, gasnetc_cb_counter);
     gasnetc_counter_wait(&counter, 0 GASNETI_THREAD_PASS);
-  } else if (gasneti_leaf_is_pointer(lc_opt)) {
+  } else if (lc_opt == GEX_EVENT_DEFER) {
+    GASNETC_RDMA_PUT(NULL, NULL);
+  } else {
+  // Intel C prior to 2019.0.117 (builddate 20180804) issues a buggy warning here
+  #if !(PLATFORM_COMPILER_INTEL && PLATFORM_COMPILER_VERSION_LT(19,0,20180800))
+    gasneti_assume(gasneti_leaf_is_pointer(lc_opt));
+  #endif
+    GASNETE_EOP_LC_START(op);
+    gasnetc_atomic_val_t start_cnt = op->initiated_alc;
+    GASNETC_RDMA_PUT(&op->initiated_alc, gasnetc_cb_eop_alc);
     if (start_cnt == op->initiated_alc) {
       // Synchronous LC - reset the eop's LC state
       GASNETE_EOP_LC_FINISH(op);
@@ -166,8 +159,8 @@ gex_Event_t gasnete_put_nb(
   }
 
   return (gex_Event_t)op;
- }
 }
+#undef GASNETC_RDMA_PUT
 
 /* ------------------------------------------------------------------------------------ */
 /*
@@ -722,26 +715,6 @@ static int gasnete_ibdbarrier_try(gasnete_coll_team_t team, int id, int flags) {
   else return GASNET_ERR_NOT_READY;
 }
 
-#ifdef GASNETI_USE_FCA
-static int gasnete_ibdbarrier(gasnete_coll_team_t team, int id, int flags) {
-  #if GASNETI_STATS_OR_TRACE
-  gasneti_tick_t barrier_start = GASNETI_TICKS_NOW_IFENABLED(B);
-  #endif
-
-  int retval = gasnete_fca_barrier(team, &id, &flags);
-  if (retval != GASNET_ERR_RESOURCE) {
-    gasnete_coll_ibdbarrier_t * const barrier_data = team->barrier_data;
-    barrier_data->barrier_value = id;
-    barrier_data->barrier_flags = flags;
-    GASNETI_TRACE_EVENT_TIME(B,BARRIER,GASNETI_TICKS_NOW_IFENABLED(B)-barrier_start);
-    return retval;
-  } else {
-    (team->barrier_notify)(team, id, flags);
-    return gasnete_ibdbarrier_wait(team, id, flags);
-  }
-}
-#endif
-
 static int gasnete_ibdbarrier_result(gasnete_coll_team_t team, int *id) {
   gasneti_sync_reads();
   GASNETE_SPLITSTATE_RESULT(team);
@@ -828,9 +801,6 @@ static void gasnete_ibdbarrier_init(gasnete_coll_team_t team) {
   team->barrier_notify = steps ? &gasnete_ibdbarrier_notify : &gasnete_ibdbarrier_notify_singleton;
   team->barrier_wait =   &gasnete_ibdbarrier_wait;
   team->barrier_try =    &gasnete_ibdbarrier_try;
-#ifdef GASNETI_USE_FCA
-  team->barrier     =    &gasnete_ibdbarrier;
-#endif
   team->barrier_result = &gasnete_ibdbarrier_result;
   team->barrier_pf =     (team == GASNET_TEAM_ALL) ? &gasnete_ibdbarrier_kick_team_all : NULL;
 }

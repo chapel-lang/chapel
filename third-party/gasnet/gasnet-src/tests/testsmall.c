@@ -118,7 +118,7 @@ void roundtrip_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && doputs) {
-		print_stat(myproc, &st, "put latency", PRINT_LATENCY);
+		print_stat(myproc, &st, "PutBlocking latency", PRINT_LATENCY);
 	}	
 
 	/* initialize statistics */
@@ -137,7 +137,7 @@ void roundtrip_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && dogets) {
-		print_stat(myproc, &st, "get latency", PRINT_LATENCY);
+		print_stat(myproc, &st, "GetBlocking latency", PRINT_LATENCY);
 	}	
 }
 
@@ -167,7 +167,7 @@ void oneway_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && doputs) {
-		print_stat(myproc, &st, "put throughput", PRINT_THROUGHPUT);
+		print_stat(myproc, &st, "PutBlocking throughput", PRINT_THROUGHPUT);
 	}	
 
 	/* initialize statistics */
@@ -186,7 +186,7 @@ void oneway_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && dogets) {
-		print_stat(myproc, &st, "get throughput", PRINT_THROUGHPUT);
+		print_stat(myproc, &st, "GetBlocking throughput", PRINT_THROUGHPUT);
 	}	
 }
 
@@ -218,7 +218,7 @@ void roundtrip_nbi_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && doputs) {
-		print_stat(myproc, &st, "put_nbi latency", PRINT_LATENCY);
+		print_stat(myproc, &st, "PutNBI+NOW latency", PRINT_LATENCY);
 	}	
 
 
@@ -239,7 +239,7 @@ void roundtrip_nbi_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && dogets) {
-		print_stat(myproc, &st, "get_nbi latency", PRINT_LATENCY);
+		print_stat(myproc, &st, "GetNBI latency", PRINT_LATENCY);
 	}	
 
 }
@@ -271,7 +271,7 @@ void oneway_nbi_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && doputs) {
-		print_stat(myproc, &st, "put_nbi throughput", PRINT_THROUGHPUT);
+		print_stat(myproc, &st, "PutNBI+NOW throughput", PRINT_THROUGHPUT);
 	}	
 
 	/* initialize statistics */
@@ -291,7 +291,7 @@ void oneway_nbi_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && dogets) {
-		print_stat(myproc, &st, "get_nbi throughput", PRINT_THROUGHPUT);
+		print_stat(myproc, &st, "GetNBI throughput", PRINT_THROUGHPUT);
 	}	
 }
 
@@ -324,7 +324,7 @@ void roundtrip_nb_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && doputs) {
-		print_stat(myproc, &st, "put_nb latency", PRINT_LATENCY);
+		print_stat(myproc, &st, "PutNB+NOW latency", PRINT_LATENCY);
 	}	
 
 	/* initialize statistics */
@@ -344,7 +344,7 @@ void roundtrip_nb_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && dogets) {
-		print_stat(myproc, &st, "get_nb latency", PRINT_LATENCY);
+		print_stat(myproc, &st, "GetNB latency", PRINT_LATENCY);
 	}	
 
 }
@@ -384,7 +384,7 @@ void oneway_nb_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && doputs) {
-		print_stat(myproc, &st, "put_nb throughput", PRINT_THROUGHPUT);
+		print_stat(myproc, &st, "PutNB+NOW throughput", PRINT_THROUGHPUT);
 	}	
 	
 	/* initialize statistics */
@@ -408,7 +408,7 @@ void oneway_nb_test(int iters, int nbytes)
 	BARRIER();
 	
 	if (iamsender && dogets) {
-		print_stat(myproc, &st, "get_nb throughput", PRINT_THROUGHPUT);
+		print_stat(myproc, &st, "GetNB throughput", PRINT_THROUGHPUT);
 	}	
 	
 	test_free(events);
@@ -481,8 +481,8 @@ int main(int argc, char **argv)
     #endif
     GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
     test_init("testsmall",1, "[options] (iters) (maxsz) (test_sections)\n"
-               "  The 'in' or 'out' option selects whether the initiator-side\n"
-               "   memory is in the GASNet segment or not (default is not).\n"
+               "  The '-in' or '-out' option selects whether the initiator-side\n"
+               "   memory is in the GASNet segment or not (default is 'in').\n"
                "  The -p/-g option selects puts only or gets only (default is both).\n"
                "  The -s option skips warm-up iterations\n"
                "  The -m option enables MB/sec units for bandwidth output (MB=2^20 bytes).\n"
@@ -570,23 +570,26 @@ int main(int argc, char **argv)
 
         BARRIER();
 
+        /* Double payload at each iter, but include max_payload which may not be power-of-2 */
+        #define NEXT_SZ(sz) (MIN(sz*2,max_payload)+(sz==max_payload))
+
 	if (TEST_SECTION_BEGIN_ENABLED()) 
-        for (j = min_payload; j <= max_payload && j > 0; j *= 2)  roundtrip_test(iters, j); 
+        for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  roundtrip_test(iters, j); 
 
   	if (TEST_SECTION_BEGIN_ENABLED()) 
-        for (j = min_payload; j <= max_payload && j > 0; j *= 2)  oneway_test(iters, j);
+        for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  oneway_test(iters, j);
 
   	if (TEST_SECTION_BEGIN_ENABLED()) 
-  	for (j = min_payload; j <= max_payload && j > 0; j *= 2)  roundtrip_nbi_test(iters, j);
+  	for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  roundtrip_nbi_test(iters, j);
 
   	if (TEST_SECTION_BEGIN_ENABLED()) 
-  	for (j = min_payload; j <= max_payload && j > 0; j *= 2)  oneway_nbi_test(iters, j);
+  	for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  oneway_nbi_test(iters, j);
 
   	if (TEST_SECTION_BEGIN_ENABLED()) 
-  	for (j = min_payload; j <= max_payload && j > 0; j *= 2)  roundtrip_nb_test(iters, j);
+  	for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  roundtrip_nb_test(iters, j);
 
   	if (TEST_SECTION_BEGIN_ENABLED()) 
-  	for (j = min_payload; j <= max_payload && j > 0; j *= 2)  oneway_nb_test(iters, j);
+  	for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  oneway_nb_test(iters, j);
 
         BARRIER();
         if (alloc) test_free(alloc);

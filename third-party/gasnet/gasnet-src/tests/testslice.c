@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-int segsize = 0;
+size_t segsize = 0;
 #ifndef TEST_SEGSZ
   #define TEST_SEGSZ_EXPR ((uintptr_t)segsize)
 #endif
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     myproc = gex_TM_QueryRank(myteam);
     numprocs = gex_TM_QuerySize(myteam);
 
-    if (argc > 1) segsize = atoi(argv[1]);
+    if (argc > 1) segsize = gasnett_parse_int(argv[1], 1);
     if (!segsize) segsize = 1024*1000;
     if (argc > 2) outer_iterations = atoi(argv[2]);
     if (!outer_iterations) outer_iterations = 10;
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
     }
     TEST_SRAND(myproc+seedoffset);
 
-    MSG0("Running with segment size = %d outer iterations=%d inner iterations=%d seed=%d",
+    MSG0("Running with segment size = %"PRIuSZ" outer iterations=%d inner iterations=%d seed=%d",
          segsize,outer_iterations, inner_iterations, seedoffset);
 
     BARRIER();
@@ -108,8 +108,8 @@ int main(int argc, char **argv)
     shadow_region_2 = (char *) test_malloc(segsize);
    
     /* Fill up the shadow region with random data */
-    for(i=0;i < segsize;i++) {
-      shadow_region_1[i] = (char) TEST_RAND(0,255);
+    for(size_t k=0;k < segsize / sizeof(uint32_t);k++) {
+      ((uint32_t *)shadow_region_1)[k] = TEST_RAND(0, UINT32_MAX);
     }
     memset(shadow_region_2,0,segsize);
 
@@ -117,17 +117,17 @@ int main(int argc, char **argv)
     for(i=0;i < outer_iterations;i++) {
       if(sender_p) {
         /* Pick a starting point anywhere in the segment */
-        int starting_point = TEST_RAND(0,(segsize-1));
+        size_t starting_point = TEST_RAND(0,(segsize-1));
 
         local_base = TEST_SEG(myproc);
         target_base = TEST_SEG(peerproc);
  
         for(j=0;j < inner_iterations;j++) {
           /* Pick a length */
-          int len = TEST_RAND(1,segsize-starting_point);
-          int remote_starting_point = TEST_RAND(0,segsize-len);
-          int local_starting_point_1 = TEST_RAND(0,segsize-len);
-          int local_starting_point_2 = TEST_RAND(0,segsize-len);
+          size_t len = TEST_RAND(1,segsize-starting_point);
+          size_t remote_starting_point = TEST_RAND(0,segsize-len);
+          size_t local_starting_point_1 = TEST_RAND(0,segsize-len);
+          size_t local_starting_point_2 = TEST_RAND(0,segsize-len);
 
           /* Perform operations */
           /* Out of segment put from shadow_region 1 to remote */

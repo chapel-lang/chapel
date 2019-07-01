@@ -11,7 +11,7 @@
 #ifndef _GASNET_EXTENDED_FWD_H
 #define _GASNET_EXTENDED_FWD_H
 
-#define GASNET_EXTENDED_VERSION      2.0
+#define GASNET_EXTENDED_VERSION      2.2
 #define GASNET_EXTENDED_VERSION_STR  _STRINGIFY(GASNET_EXTENDED_VERSION)
 #if defined GASNET_CONDUIT_GEMINI
   #define GASNET_EXTENDED_NAME       GEMINI
@@ -100,5 +100,9 @@
 #define GASNETE_VIS_PUT_MAXCHUNK_DEFAULT 1330  // 3 strided chunks at 3d
 #define GASNETE_VIS_GET_MAXCHUNK_DEFAULT 2028  // 2 strided chunks at 3d
 
+// Aries CE support definitions:
+#ifdef GASNET_CONDUIT_ARIES
+#define GASNETE_COLL_NEEDS_CORE 1
 #endif
 
+#endif
