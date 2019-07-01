@@ -61,16 +61,8 @@ typedef uint32_t qio_hint_t;
 #define FTYPE_NONE 0
 #endif
 
-#ifndef FTYPE_HDFS
-#define FTYPE_HDFS 1
-#endif
-
 #ifndef FTYPE_LUSTRE
 #define FTYPE_LUSTRE LUSTRE_SUPER_MAGIC
-#endif
-
-#ifndef FTYPE_CURL
-#define FTYPE_CURL 3
 #endif
 
 // The qio lock must be re-entrant in order to handle

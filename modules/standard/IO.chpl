@@ -1633,7 +1633,7 @@ chpl_register_io_plugin(owned plugin:QioPluginFilesystem) {
 
 /*
 
-Open a file on a filesystem or stored at a particular URL. Note that once the
+Open a file on a filesystem. Note that once the
 file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
 to create a channel to actually perform I/O operations
 
@@ -2472,7 +2472,7 @@ proc channel.filePlugin() : borrowed QioPluginFile? {
 
 /*
 
-Open a file at a particular path or URL and return a reading channel for it.
+Open a file at a particular path and return a reading channel for it.
 This function is equivalent to calling :proc:`open` and then
 :proc:`file.reader` on the resulting file.
 
@@ -2515,7 +2515,7 @@ proc openreader(path:string,
 
 /*
 
-Open a file at a particular path or URL and return a writing channel for it.
+Open a file at a particular path and return a writing channel for it.
 This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 :proc:`file.writer` on the resulting file.
 
@@ -4195,9 +4195,7 @@ proc unicodeSupported():bool {
 /************** Distributed File Systems ***************/
 
 private extern const FTYPE_NONE   : c_int;
-private extern const FTYPE_HDFS   : c_int;
 private extern const FTYPE_LUSTRE : c_int;
-private extern const FTYPE_CURL   : c_int;
 
 pragma "no doc"
 proc file.fstype():int throws {
