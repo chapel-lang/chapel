@@ -38,10 +38,7 @@ proc masonPublish(args: [] string) throws {
       exit(0);
     }
     var dry = false;
-    var usernameurl = gitUrl();
-    var tail = usernameurl.find("/")-1: int;
-    var head = usernameurl.find(":")+1: int;
-    var username = usernameurl(head..tail);
+    var username = getUsername();
     if username == '' {
       throw new owned MasonError('Must have remote origin set up in repository to publish');
     }
@@ -162,6 +159,15 @@ proc dryRun(username: string) throws {
   }
 }
 
+
+/*Gets the GitHub username of the user, by parsing from the remote orgigin url.  */
+proc getUsername() {
+  var usernameurl = gitUrl();
+  var tail = usernameurl.find("/")-1: int;
+  var head = usernameurl.find(":")+1: int;
+  var username = usernameurl(head..tail);
+  return username;
+}
 
 /* Clones the mason registery fork from the users repo. Takes username as input. */
 proc cloneMasonReg(username: string) throws {
