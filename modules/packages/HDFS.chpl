@@ -317,7 +317,7 @@ class HDFSFile : QioPluginFile {
       writeln("HDFSFile.filelength length=", length);
     return ENOERR;
   }
-  override proc getpath(out path:c_string, out len:ssize_t):syserr {
+  override proc getpath(out path:c_string, out len:int(64)):syserr {
     if verbose then
       writeln("HDFSFile.getpath path=", this.path);
     path = qio_strdup(this.path.c_str());

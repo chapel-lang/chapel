@@ -1375,7 +1375,7 @@ qioerr qio_file_path_for_fp(FILE* fp, const char** string_out)
 // string_out must be freed by the caller.
 qioerr qio_file_path(qio_file_t* f, const char** string_out)
 {
-  ssize_t len = 0;
+  int64_t len = 0;
   if (f->fd != -1)
     return qio_file_path_for_fd(f->fd, string_out);
   else if (f->file_info != NULL)

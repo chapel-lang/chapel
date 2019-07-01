@@ -548,7 +548,7 @@ class CurlFile : QioPluginFile {
     length = this.length;
     return ENOERR;
   }
-  override proc getpath(out path:c_string, out len:ssize_t):syserr {
+  override proc getpath(out path:c_string, out len:int(64)):syserr {
     path = qio_strdup(this.url_c);
     len = url_c.length;
     return ENOERR;
