@@ -85,7 +85,7 @@ static qsubVersion determineQsubVersion(void) {
 
   if (strstr(version, "NCCS")||strstr(version, "OLCF")) {
     return nccs;
-  } else if (strstr(version, "PBSPro")) {
+  } else if (strstr(version, "pbs_version")) {
     return pbspro;
   } else {
     memset(whichMoab, 0, buflen);
@@ -473,3 +473,4 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "  %s <HH:MM:SS>  : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
 }
+
