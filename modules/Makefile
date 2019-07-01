@@ -123,7 +123,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/DistributedIters.chpl \
 	packages/TOML.chpl \
 	packages/UnorderedAtomics.chpl \
-	packages/UnorderedCopy.chpl
+	packages/UnorderedCopy.chpl \
+	packages/URL.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \

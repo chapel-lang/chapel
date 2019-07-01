@@ -19,10 +19,12 @@
 
 /*
 
-Simple support for many network protocols with libcurl
+Low-level support for many network protocols with libcurl
 
 This module provides support for libcurl, enabling Chapel programs
-to work with many network protocols.
+to work with many network protocols. This module is a low-level C
+wrapper. For a simpler interface not specific to Curl, please see
+:mod:`URL`.
 
 The `curl homepage <https://curl.haxx.se/libcurl/>`_ describes libcurl thus::
 
@@ -36,239 +38,64 @@ The `curl homepage <https://curl.haxx.se/libcurl/>`_ describes libcurl thus::
 Dependencies
 ------------
 
-The Curl module in Chapel is dependent on libcurl. For more information
- on how to setup libcurl, see the :ref:`readme-auxIO` page.
+The Curl module in Chapel is dependent on libcurl being installed and available
+to Chapel pograms.
 
 Using Curl Support in Chapel
 ----------------------------
 
-Chapel support for libcurl exposes two interfaces:
- 1. A standard file I/O interface
- 2. Bindings to libcurl's curl_easy_setopt and curl_easy_perform
-
-Interface 1:
-  Since we do not support multiple readers on the same Curl handle, it is
-  recommended that Chapel programs use :proc:`~IO.openreader` and
-  :proc:`~IO.openwriter` in order to open up channels on a URL. Examples of how
-  :proc:`~IO.openreader` and :proc:`~IO.openwriter` work can be found below.
-  You may also open up a curl handle on a URL via :proc:`~IO.open`
-  `(url=..., mode=...)`, and then open up channels, or use the second interface
-  described below to set options on that handle before opening up a channel on
-  the handle. Note that in this last case, Chapel programs must not open
-  multiple channels for the same file backed by a curl handle.
-
-  .. note::
-
-    The URL is the last parameter to :proc:`~IO.open`. Therefore when you are
-    opening a URL if you are not using all of the parameters for
-    :proc:`~IO.open()` or :proc:`~IO.openreader`/:proc:`~IO.openwriter`, you
-    MUST specify all arguments by name, e.g.:
-
-    .. code-block:: chapel
-
-      open(url="https://example.com", iomode.r);
-
-    will result in a compile time error. You would, instead, need to use:
-
-    .. code-block:: chapel
-
-      open(url="https://example.com", mode=iomode.r).
-
-
-Interface 2:
-  Many times when we are connecting to a URL (FTP, IMAP, SMTP, HTTP) we have to
-  give extra information to the Curl handle. This is done via the setopt()
-  interface.  Documentation on the various options, as well as the functions
-  that are referenced below can be found `here
-  <https://curl.haxx.se/libcurl/c/libcurl-easy.html>`_
-
-  Types:
-    * :record:`slist`
-  Methods:
-    * :proc:`slist.append`
-    * :proc:`slist.free`
-    * :proc:`file.setopt`
-    * :proc:`file.perform`
-
-   Calling :proc:`~IO.file.close` on the file will disconnect the underlying
-   Curl handle.
-
-
-Here are some simple code snippets demonstrating these two interfaces:
-
-Example 1
----------
+Simple uses of Curl work through the generic :mod:`URL` module. This module
+allows a URL to be opened as a :record:`IO.channel`.
 
 .. code-block:: chapel
 
-  // This example uses the first interface
-
-  var writer = openwriter("out.txt");
-  // Open a URL and get a reader on a section of the site
-  var reader = openreader(url="https://example.com");
-
+  use URL;
+  var urlreader = openUrlReader("http://example.com");
   var str:string;
+  // Output each line read from the URL to stdout
+  while(urlreader.readline(str)) {
+    write(str);
+  }
 
-  // While we can read a line from example.com, write it to 'out.txt'
-  while(reader.readline(str)) do
-    writer.write(str);
+More complex uses of Curl can make use of the extern types provided in this
+module. In that event, please see the libcurl documentation for how to use
+these functions. Note that it is possible to use :proc:`setopt` to adjust the
+settings for a the result of :proc:`URL.openUrlReader` or
+:proc:`URL.openUrlWriter` before starting the connection.
 
-Example 2
----------
+Many times when we are connecting to a URL (FTP, IMAP, SMTP, HTTP) we have to
+give extra information to the Curl handle. This is done via the setopt()
+interface.  Documentation on the various options, as well as the functions
+that are referenced below can be found `here
+<https://curl.haxx.se/libcurl/c/libcurl-easy.html>`_
 
-.. code-block:: chapel
-
-  // This example uses the first interface
-  var str:string;
-  var reader = openreader(url="https://example.com");
-  reader.readstring(str);
-  reader.close();
-
-  // Write out to a URL via Curl
-  var writer = openwriter("https://127.0.0.1:1080");
-  writer.write(str);
-  writer.close();
-
-Example 3
----------
-
-.. code-block:: chapel
-
-  // Open a file on our local file system
-  var f = openwriter("out.txt");
-  // Now get a curl handle
-  var c = openreader(url="https://example.com");
-  var str:string;
-
-  // Read from example.com and write it out to out.txt
-  c.readstring(str);
-  f.write(str);
-
-  // Disconnect and free the curl handle and channel, and close the local file and
-  // channel
-  c.close();
-  f.close();
-
-
-Example 4
----------
+Due to the large number of constants in the Curl interface, and the fact that
+these constants vary for different versions of Curl, this module does not
+provide extern declarations for all constants. However these are trivial to add
+to your own programs. For example, the below example declares
+``CURLOPT_VERBOSE`` as a ``CURLoption`` like this:
 
 .. code-block:: chapel
 
-  // This example uses the second interface
+  extern const CURLOPT_VERBOSE:CURLoption;
 
-  // Open a file with a curl handle as the internal file
-  var c = open(url="https://example.com", mode=iomode.r);
-  // do a standard perform operation on the underlying curl handle
-  c.perform(); // This will print to stdout
-  // disconnect and free the curl handle
-  c.close();
-
-
-Example 5
----------
+Here is a full program enabling verbose output from Curl while downloading:
 
 .. code-block:: chapel
 
-  // This example uses the second interface + the first interface
-
-  var c = open(url="https://example.com", mode=iomode.r);
+  // This example changes the Curl options before connecting
+  use URL;
+  use Curl;
+  var reader = openUrlReader("https://example.com");
   var str:string;
   // Set verbose output from curl
-  c.setopt(curlopt_verbose, true);
+  extern const CURLOPT_VERBOSE:CURLoption;
+  Curl.setopt(reader, CURLOPT_VERBOSE, true);
 
   // now read into the string
-  var reader = c.reader();
   reader.readstring(str);
   writeln(str);
   reader.close();
-  c.close();
-
-
-Example 6
----------
-
-.. code-block:: chapel
-
-  // Connect to an IMAP site, and fetch mail from the inbox
-  config const username = "user";
-  config const password = "xxxx";
-  config const imapSite = "your_imap_site_here";
-
-  var handle = open(url=imapSite+"/INBOX/;UID=1", mode=iomode.r);
-  var reader = handle.reader();
-  var str:string;
-
-  handle.setopt((curlopt_username, username),
-                (curlopt_password, password));
-
-  //Calling this would give the same output
-  // handle.perform();
-
-  reader.readstring(str);
-  write(str);
-
-  reader.close();
-  handle.close();
-
-.. _curl-example-7:
-
-Example 7
----------
-
-.. code-block:: chapel
-
-  // This example shows a more complex example of how the two interfaces can work
-  // together: We use the second (setopt) interface to set the various options we
-  // need on a given curl handle, and then open a writer on that handle to write
-  // out via curl.
-
-  config const url      = "smtp goes here";
-
-  config const from     = "<some-email>";
-  config const to       = "<some-email>";
-  config const cc       = "<some-email>";
-
-  config const username = "username";
-  config const password = "password";
-
-  config const subject  = "Testing Curl in Chapel (SMTP)";
-  config const message  = "Hello! This is a message sent via Chapel!";
-
-
-  var handle = open(url=url, mode=iomode.cw);
-
-  var recipients:slist;
-  recipients.append(to);
-  recipients.append(cc);
-
-  var arr = "To: " + to + "\r\n" +
-            "From: " + from + "\r\n" +
-            "Cc: " + cc + "\r\n" +
-            "Subject: " + subject + "\r\n" + "\r\n" + message;
-
-
-  handle.setopt((curlopt_username       , username),
-                (curlopt_password       , password),
-                (curlopt_mail_from      , from),
-                (curlopt_use_ssl        , 3),
-                (curlopt_ssl_verifypeer , false),
-                (curlopt_ssl_verifyhost , false),
-                (curlopt_mail_rcpt      , recipients.list),
-                (curlopt_verbose        , true));
-
-  // Create a writer on the curl handle.
-  var writer = handle.writer();
-
-  // Now write out to Curl to send the email
-  writer.write(arr);
-
-  // recipients.free(); // BAD: This will free the data while it is in use!
-  writer.close();
-  // Note here how we free the slist AFTER we close the writer. This way we can
-  // ensure that we do not free data that is currently in use by curl.
-  recipients.free();
-  handle.close();
 
 
 Curl Support Types and Functions
@@ -281,6 +108,9 @@ require "curl/curl.h";
 require "-lcurl";
 
 
+/* Returns the ``CURL`` handle connected to a channel opened with
+   :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
+ */
 proc getCurlHandle(ch:channel):c_ptr(CURL) throws {
   use CurlQioIntegration;
 
@@ -299,9 +129,9 @@ proc getCurlHandle(ch:channel):c_ptr(CURL) throws {
 /* This function is the equivalent to the
    `curl_easy_setopt <https://curl.haxx.se/libcurl/c/curl_easy_setopt.html>`_
    function in libcurl. It sets information on the curl file handle
-   that can change libcurl's behavior.
+   attached to a channel that can change libcurl's behavior.
 
-   :arg ch: a curl channel created with downloadUrl or uploadUrl
+   :arg ch: a curl channel created with openUrlReader or openUrlWriter
    :arg opt: the curl option to set.
    :arg arg: the value to set the curl option specified by opt.
    :type arg: `int`, `string`, `bool`, or `slist`
@@ -352,18 +182,20 @@ proc setopt(ch:channel, opt:c_int, arg):bool throws {
   return true;
 }
 
-/* Set curl options on a curl file. It is equivalent to the
-   curl_setopt_array you might find in PHP.
+/* Set curl options on a curl file attached to a channel.
 
    For example, you might do:
 
    .. code-block:: chapel
 
-     curlfile.setopt((curlopt_username, username),
-                     (curlopt_password, password));
+     extern const CURLOPT_USERNAME:CURLoption;
+     extern const CURLOPT_PASSWORD:CURLoption;
 
-   :arg args: any number of tuples of the form (curl_option, value). For each
-              curl_option, this function will setopt it to its value.
+     curlfile.setopt((CURLOPT_USERNAME, username),
+                     (CURLOPT_PASSWORD, password));
+
+   :arg args: any number of tuples of the form (curl_option, value).
+              This function will call ``setopt`` on each pair in turn.
  */
 proc setopt(ch:channel, args ...?k) throws {
   for param i in 1..k {
@@ -377,8 +209,8 @@ proc setopt(ch:channel, args ...?k) throws {
 
 .. note::
 
-   The slist type is not reference counted. Therefore the user is responsible
-   for freeing the slist when they are done with it with :proc:`slist.free`.
+   Memory in the list is not automatically managed. It is necessary
+   to call :proc:`slist.free` to free the slist when it is no longer used.
 
 */
 record slist {
@@ -411,7 +243,7 @@ proc slist.append(str:string) throws {
 
 /* Free an slist. Chapel programs must call this function after using an slist.
    Programs must ensure that there are no ongoing connections using
-   this slist when it is freed. For an example, see :ref:`curl-example-7`.
+   this slist when it is freed.
  */
 proc slist.free() {
   on this.home {
@@ -437,7 +269,9 @@ private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_channel_writable(ch:qio_channel_ptr_t):bool;
 
 // Curl Constants
+/* Successful result for CURL easy API calls */
 extern const CURLE_OK: c_int;
+/* Successful result for CURL multi API calls */
 extern const CURLM_OK: c_int;
 
 // These constants are used for type checking curl_easy_setopt 
@@ -467,53 +301,83 @@ private extern const CURLPAUSE_ALL: c_int;
 private extern const CURLPAUSE_CONT: c_int;
 
 // extern Curl types
+
+/* A CURL easy handle. Most CURL functions accept a ``c_ptr(CURL)``. */
 extern type CURL;
+/* A CURL multi handle. */
 extern type CURLM;
+/* A CURL string list */
 extern type curl_slist;
 
+/* CURLoption identifies options for ``curl_easy_setopt``.
+ */
 extern type CURLoption=c_int;
+/* The return type of CURL easy API functions */ 
 extern type CURLcode=c_int;
+/* The return type of CURL multi API functions */ 
 extern type CURLMcode=c_int;
+/* CURLINFO identifies info to get with ``curl_easy_getinfo`` */
 extern type CURLINFO=c_int;
+/* curl_off_t is a file offset used by the CURL library */
 extern type curl_off_t=int(64);
 
 // extern curl functions
+
+/* See https://curl.haxx.se/libcurl/c/curl_easy_init.html */ 
 extern proc curl_easy_init():c_ptr(CURL);
 
 // setopt and getinfo are actual varargs functions in C that
 // can accept any type.
+
+/* See https://curl.haxx.se/libcurl/c/curl_easy_getinfo.html */
 extern proc curl_easy_getinfo(handle:c_ptr(CURL), info:CURLINFO, arg):CURLcode;
+/* See https://curl.haxx.se/libcurl/c/curl_easy_setopt.html */
 extern proc curl_easy_setopt(handle:c_ptr(CURL), option:CURLoption, arg):CURLcode;
 
 // setopt helpers for specific types
+/* Helper function for ``curl_easy_setopt`` when passing a numeric argument */
 proc curl_easy_setopt_long(curl:c_ptr(CURL), option:CURLoption, arg:c_long):CURLcode {
   return curl_easy_setopt(curl, option, arg);
 }
 
+/* Helper function for ``curl_easy_setopt`` when passing a pointer argument */
 proc curl_easy_setopt_ptr(curl:c_ptr(CURL), option:CURLoption,
     arg:c_void_ptr):CURLcode {
   return curl_easy_setopt(curl, option, arg);
 }
 
+/* Helper function for ``curl_easy_setopt`` when passing an offset argument */
 proc curl_easy_setopt_offset(curl:c_ptr(CURL), option:CURLoption, offset:int(64)):CURLcode {
   var tmp:curl_off_t = offset;
   return curl_easy_setopt(curl, option, tmp);
 }
 
+/* Helper function for ``curl_easy_getinfo`` when passing a pointer argument.
+   Generally this is a pointer to the value to be set. */
 proc curl_easy_getinfo_ptr(curl:c_ptr(CURL), info:CURLINFO, arg:c_void_ptr):CURLcode {
   return curl_easy_getinfo(curl, info, arg);
 }
 
+/* See https://curl.haxx.se/libcurl/c/curl_easy_perform.html */
 extern proc curl_easy_perform(curl:c_ptr(CURL)):CURLcode;
+/* See https://curl.haxx.se/libcurl/c/curl_easy_cleanup.html */
 extern proc curl_easy_cleanup(curl:c_ptr(CURL)):void;
+/* See https://curl.haxx.se/libcurl/c/curl_easy_pause.html */
 extern proc curl_easy_pause(curl:c_ptr(CURL), bitmask:c_int):CURLcode;
 
+/* See https://curl.haxx.se/libcurl/c/curl_multi_init.html */
 extern proc curl_multi_init():c_ptr(CURLM);
+/* See https://curl.haxx.se/libcurl/c/curl_multi_add_handle.html */
 extern proc curl_multi_add_handle(curlm:c_ptr(CURLM), curl:c_ptr(CURL)):CURLMcode;
+/* See https://curl.haxx.se/libcurl/c/curl_multi_timeout.html */
 extern proc curl_multi_timeout(curlm:c_ptr(CURLM), ref timeout:c_long):CURLMcode;
+/* See https://curl.haxx.se/libcurl/c/curl_multi_fdset.html */
 extern proc curl_multi_fdset(curlm:c_ptr(CURLM), read_fd_set:c_ptr(fd_set), write_fd_set:c_ptr(fd_set), exc_fd_set:c_ptr(fd_set), ref max_fd:c_int):CURLMcode;
+/* See https://curl.haxx.se/libcurl/c/curl_multi_perform.html */
 extern proc curl_multi_perform(curlm:c_ptr(CURLM), ref running_handles):CURLMcode;
+/* See https://curl.haxx.se/libcurl/c/curl_multi_remove_handle.html */
 extern proc curl_multi_remove_handle(curlm:c_ptr(CURLM), curl:c_ptr(CURL)):CURLMcode;
+/* See https://curl.haxx.se/libcurl/c/curl_multi_cleanup.html */
 extern proc curl_multi_cleanup(curlm:c_ptr(CURLM)):CURLcode;
 
 pragma "no doc"
