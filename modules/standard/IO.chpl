@@ -876,7 +876,7 @@ class QioPluginFile {
 
   /* Create a new plugin channel that will work with the passed
      qio channel. */
-  proc setupChannel(out pluginChannel:unmanaged QioPluginChannel,
+  proc setupChannel(out pluginChannel:unmanaged QioPluginChannel?,
                     start:int(64), end:int(64),
                     qioChannelPtr:qio_channel_ptr_t):syserr {
     return ENOSYS;
@@ -940,7 +940,7 @@ class QioPluginChannel {
 pragma "no doc"
 export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):syserr {
   var f=file:QioPluginFile;
-  var pluginChannel:unmanaged QioPluginChannel = nil;
+  var pluginChannel:unmanaged QioPluginChannel? = nil;
   var ret = f.setupChannel(pluginChannel, start, end, qio_ch);
   plugin_ch = pluginChannel:c_void_ptr;
   return ret;

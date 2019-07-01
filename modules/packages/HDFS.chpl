@@ -345,7 +345,7 @@ class HDFSFile : QioPluginFile {
     this.path = path;
   }
 
-  override proc setupChannel(out pluginChannel:unmanaged QioPluginChannel,
+  override proc setupChannel(out pluginChannel:unmanaged QioPluginChannel?,
                       start:int(64),
                       end:int(64),
                       qioChannelPtr:qio_channel_ptr_t):syserr {
