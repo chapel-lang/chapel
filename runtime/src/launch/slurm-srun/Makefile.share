@@ -18,10 +18,6 @@
 LAUNCHER_SRCS = \
         launch-slurm-srun.c \
 
-ifneq (, $(findstring cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
-  LAUNCHER_CFLAGS+=-DCHPL_TARGET_PLATFORM_SHASTA=1
-endif
-
 SVN_SRCS = $(LAUNCHER_SRCS)
 SRCS = $(SVN_SRCS)
 
