@@ -3,6 +3,13 @@ use Spawn;
 config const n = 4;
 config const verbose = false;
 
+config const bufsz = 0;
+extern var qbytes_iobuf_size:size_t;
+
+if bufsz > 0 {
+  qbytes_iobuf_size = bufsz:size_t;
+}
+
 
 var test:[1..n] string;
 for i in 1..n {
