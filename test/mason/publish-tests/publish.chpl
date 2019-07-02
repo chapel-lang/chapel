@@ -1,16 +1,14 @@
 
 use MasonPublish;
 use MasonUtils;
+use MasonNew;
 
 proc main() throws {
   try! {
+    const dir = getEnv('PWD');
     const args = ['mason', 'publish'];
-    runCommand('mason new test_dir');
-    var dir = getEnv('PWD');
-    here.chdir(dir + '/test_dir');
-    runCommand('mason publish');
-    here.chdir(dir);
-    rmTree('test_dir');
+    here.chdir(dir + '/publishCheck');
+    masonPublish(args);
   }
 }
 
