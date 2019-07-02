@@ -1,11 +1,1 @@
 Must have remote origin set up in repository to publish
-Publish a package to the mason-registry repository
-
-Usage:
-    mason publish [options]
-
-Options:
-    -h, --help                   Display this message
-    --dry-run                    Check to see if package is ready to be published
-
-Publishing requires the mason-registry to be forked and the package to have a remote origin.
