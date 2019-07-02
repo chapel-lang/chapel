@@ -94,15 +94,12 @@ if { [string match gemini $network] } {
 } elseif { [string match aries $network] } {
     set CHPL_HOST_PLATFORM cray-xc
 } elseif { [string match ofi $network] } {
+    set CHPL_HOST_PLATFORM cray-cs
     if { [file exists /etc/opt/cray/release/cray-release] } {
         set CRAY_REL_INFO [exec cat /etc/opt/cray/release/cray-release]
-        if { [string match "PRODUCT=*Shasta*" $CRAY_REL_INFO] } {
+        if { [string match "PRODUCT=*[Ss]hasta*" $CRAY_REL_INFO] } {
             set CHPL_HOST_PLATFORM cray-shasta
-        } else {
-            set CHPL_HOST_PLATFORM cray-cs
         }
-    } else {
-        set CHPL_HOST_PLATFORM cray-cs
     }
 } else {
     set CHPL_HOST_PLATFORM cray-xt

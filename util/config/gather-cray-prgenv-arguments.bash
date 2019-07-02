@@ -58,7 +58,6 @@ export PE_CHAPEL_PKGCONFIG_LIBS=`$CHPL_HOME/util/config/gather-pe-chapel-pkgconf
 #
 # -lchpl_lib_token allows the Chapel compiler to know
 # where to put additional arguments (they replace that argument).
-echo "-lGBT-\$2-$2-"
 if [[ "$2" == "cray-shasta" ]] ; then
   COMMANDS=`cc -craype-verbose -### -lchpl_lib_token 2>/dev/null`
 else
