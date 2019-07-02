@@ -23,6 +23,10 @@ This module implements support for the
 `Hadoop <http://hadoop.apache.org/>`_
 `Distributed Filesystem <http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html>`_ (HDFS).
 
+.. note::
+
+  HDFS support in Chapel currently requires the use of ``CHPL_TASKS=fifo``.
+  There is a compatibility problem with qthreads.
 
 Using HDFS Support in Chapel
 ----------------------------
