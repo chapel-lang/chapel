@@ -164,7 +164,7 @@ proc masonModifyHelp() {
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
   writeln("        --external              Add/Remove dependency from external dependencies");
-  writeln("        --system                Add/Remove dependency from system dependencies");  
+  writeln("        --system                Add/Remove dependency from system dependencies");
   writeln();
   writeln("Not listing an option will add/remove the dependency from the Mason [dependencies] table");
   writeln("Versions are necessary for adding dependencies, but not for removing dependencies");
@@ -192,7 +192,7 @@ proc masonExternalHelp() {
   writeln('    mason external [options] [<args>...]');
   writeln('    mason external [options]');
   writeln();
-  writeln("Options:");  
+  writeln("Options:");
   writeln("    search                      Search for a specific external package");
   writeln("    compiler                    List and search for compilers on system");
   writeln("    install                     Install an external package");
@@ -216,7 +216,7 @@ proc masonExternalFindHelp() {
   writeln("    <package>: a Spack spec expression indicating the package to find");
   writeln();
   writeln("Options:");
-  writeln("    -h, --help                  Display this message"); 
+  writeln("    -h, --help                  Display this message");
   writeln();
   writeln("Display Options:");
   writeln("    -s, --short                 Show only specs (default)");
@@ -367,7 +367,7 @@ proc masonSystemHelp() {
   writeln();
   writeln("Options:");
   writeln("    pc                          Print a system package's .pc file");
-  writeln("    search                      Search all packages available on the system");  
+  writeln("    search                      Search all packages available on the system");
   writeln("    -h, --help                  Display this message");
   writeln();
   writeln("The pc command sometimes has trouble finding a .pc file if the file is named ");
@@ -407,7 +407,7 @@ proc masonCleanHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
-  writeln();       
+  writeln();
 }
 
 
