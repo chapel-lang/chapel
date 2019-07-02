@@ -39,6 +39,13 @@ proc masonSearch(origArgs : [] string) {
     exit(0);
   }
 
+  var show = false;
+  for arg in args[1..] {
+    if arg == '--show' {
+      show = true;
+    }
+  }
+
   const debug = hasOptions(args, "--debug");
 
   updateRegistry("", args);
