@@ -28,4 +28,7 @@ FnSymbol* getUnwrappedFunction(FnSymbol* wrapper);
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns);
 void fixupExportedFunction(FnSymbol* fn);
 
+// This may only be called _after_ resolution has occurred.
+Type* getCharPtrType(void);
+
 #endif

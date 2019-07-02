@@ -39,7 +39,6 @@ static void attemptFixups(FnSymbol* fn);
 static bool needsFixup(ArgSymbol* as);
 static bool needsFixup(Type* t);
 static FnSymbol* createWrapper(FnSymbol* fn);
-static Type* getCharPtrType(void);
 static Type* getTypeForFixup(Type* t, bool ret=false);
 static const char* getConversionCallName(Type* srctype, Type* dsttype);
 static FnSymbol* getConversionCall(Type* srctype, Type* dsttype);
@@ -62,15 +61,7 @@ FnSymbol* getUnwrappedFunction(FnSymbol* wrapper) {
   return m[wrapper];
 }
 
-//
-//
-//
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
-  // This is just a test!
-  SET_LINENO(fns[0]);
-  Type* t = getCharPtrType();
-  printf("The type of the getCharPtrType() call is: %s\n", t->name());
-
   for (size_t i = 0; i < fns.size(); i++) {
     FnSymbol* fn = fns[i];
     SET_LINENO(fn);
@@ -78,11 +69,53 @@ void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
   }
 }
 
-//
-//
-//
 void fixupExportedFunction(FnSymbol* fn) {
   attemptFixups(fn);
+}
+
+Type* getCharPtrType(void) {
+  static Type* result = NULL;
+
+  if (result != NULL) { return result; }
+
+  const char* modname = "ExternalString";
+  const char* symname = "chpl__exportTypeCharPtr";
+  ModuleSymbol* esm = NULL;
+  Symbol* alias = NULL;
+
+  // Get a handle to the ExternalString module.
+  forv_Vec(ModuleSymbol, md, allModules) {
+    if (md->modTag == MOD_INTERNAL && !strcmp(md->name, modname)) {
+      esm = md;
+      break;
+    }
+  }
+
+  INT_ASSERT(esm != NULL);
+
+  // Get a handle to the c_ptr(c_char) type from our global alias.
+  for_alist(expr, esm->block->body) {
+    DefExpr* de = toDefExpr(expr);
+    if (de) {
+      Symbol* sym = de->sym;
+      if (!strcmp(sym->name, symname)) {
+        alias = sym;
+        break;
+      }
+    }
+  }
+
+  SymExpr* rctx = new SymExpr(alias);
+
+  // Insert into tree and resolve, just in case.
+  chpl_gen_main->insertAtHead(rctx);
+  resolveExpr(rctx);
+  rctx->remove();
+
+  INT_ASSERT(alias->type != NULL);
+  result = alias->type;
+
+  return result;
 }
 
 static void attemptFixups(FnSymbol* fn) {
@@ -116,21 +149,6 @@ static void attemptFixups(FnSymbol* fn) {
 
   insertUnwrappedCall(wrapper, fn, tmps);
 
-  //
-  // TODO: We can't currently call normalize/resolve on the wrapper, because
-  // it is already itself a copy of a function that has been normalized
-  // and resolved.
-  //
-  if (false) {
-    normalize(wrapper);
-    resolveFunction(wrapper);
-  }
-
-  //
-  // Map the wrapper to the original function (the wrapper is the key).
-  // This will allow us to fetch the original later and deduce type
-  // info from it.
-  //
   wrapperMap[wrapper] = fn;
 
   return;
@@ -148,11 +166,6 @@ static bool needsFixup(Type* t) {
   return false;
 }
 
-//
-//  - Create a wrapper function that has the same signature as the original.
-//  - The wrapper function should have an empty body.
-//  - Mark the original as no longer being export.
-//
 static FnSymbol* createWrapper(FnSymbol* fn) {
   FnSymbol* result = fn->copy();
   fn->defPoint->insertAfter(new DefExpr(result));
@@ -160,69 +173,6 @@ static FnSymbol* createWrapper(FnSymbol* fn) {
   result->body->replace(new BlockStmt());
   INT_ASSERT(fn->hasFlag(FLAG_EXPORT));
   fn->removeFlag(FLAG_EXPORT);
-  return result;
-}
-
-//
-// - Use the lookup function to get the Symbol* for "chpl__exportTypeCharPtr"
-//    - lookup will return a Symbol*, pass it the name and the UnresolvedSymExpr as context
-//    - once you have the symbol insert it into the tree and call resolveExpr on it
-//    - resolveExpr is side effecting and will attach type info to the previous symbol
-//    - 
-// - Or iterate over stuff in the ExternalString module and find it by brute force
-//
-//
-// - The brute force approach:
-//    - First get the module symbol
-//    - Examine the body, there should be DefExprs for globals/functions
-//    - DefExpr has a method/field called sym
-//    - You may have to call resolveExpr on sym if that is not resolved
-//    - Look at the definiton of the ModuleSymbol class, hopefully a field called body for looping
-//    - 
-//    
-//
-static Type* getCharPtrType(void) {
-  static Type* result = NULL;
-
-  if (result != NULL) { return result; }
-
-  const char* modname = "ExternalString";
-  const char* symname = "chpl__exportTypeCharPtr";
-  ModuleSymbol* esm = NULL;
-  Symbol* alias = NULL;
-
-  // Get a handle to the ExternalString module.
-  forv_Vec(ModuleSymbol, md, allModules) {
-    if (md->modTag == MOD_INTERNAL && !strcmp(md->name, modname)) {
-      esm = md;
-      break;
-    }
-  }
-
-  INT_ASSERT(esm != NULL);
-
-  // Get a handle on our type alias from global definitions.
-  for_alist(expr, esm->block->body) {
-    DefExpr* de = toDefExpr(expr);
-    if (de) {
-      Symbol* sym = de->sym;
-      if (!strcmp(sym->name, symname)) {
-        alias = sym;
-        break;
-      }
-    }
-  }
-
-  SymExpr* rctx = new SymExpr(alias);
-
-  // Insert into tree and resolve, just in case.
-  chpl_gen_main->insertAtHead(rctx);
-  resolveExpr(rctx);
-  rctx->remove();
-
-  INT_ASSERT(alias->type != NULL);
-  result = alias->type;
-
   return result;
 }
 
@@ -237,14 +187,13 @@ static Type* getTypeForFixup(Type* t, bool ret) {
 }
 
 //
-// TODO: These conversion calls should be namespaced? IE, the call should be
-// to "ExternalString.convertToConstChar" just to be safe.
 // TODO: Can insert non-copying versions when we are doing multi-locale
 // interop.
 //
 static const char* getConversionCallName(Type* srctype, Type* dsttype) {
   const char* result = NULL;
 
+  // TODO: We should probably maintain this in a table or the like.
   if (srctype == dtString && dsttype == dtStringC) {
     result = "chpl__exportStringToConstCharPtr";
   } else if (srctype == dtStringC && dsttype == dtString) {
@@ -315,12 +264,6 @@ static FnSymbol* resolveConversionCall(Type* srctype, Type* dsttype) {
   return result;
 }
 
-//
-//  - Change the type of the formal at "idx" based on conversion rules.
-//  - Get the conversion routine to call based on formal's to/from types.
-//  - Insert "tmp = conversion(formal)" into the AST.
-//  > Return the temporary containing result of conversion call.
-//
 static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
   ArgSymbol* as = wrapper->getFormal(idx);
 
@@ -360,25 +303,11 @@ static void changeRetType(FnSymbol* wrapper) {
   Type* wtype = getTypeForFixup(otype);
   INT_ASSERT(wtype != NULL);
 
-  // Change the return type.
   wrapper->retType = wtype;
 
   return;
 }
 
-//
-//  - Create a temporary to contain result of unwrapped call.
-//  - Create new CallExpr for unwrapped call, pointing to unwrapped routine.
-//  - Loop through temps for each formal:
-//    > If NULL, fetch the ArgSymbol at that index, and call "insertAtTail"
-//      on the CallExpr.
-//    > Else, call "insertAtTail" with the tmp.
-//  - Create a new CallExpr that is a PRIM_MOVE of the unwrapped call, with
-//    the unwrapped temporary as the target.
-//  - Issue a conversion call on the result temporary, if necessary.
-//  - 
-//
-//
 static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
                                 const std::vector<VarSymbol*>& tmps) {
   bool isVoid = (fn->retType == dtVoid);
@@ -395,14 +324,14 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
   //
   // Loop through a list of VarSymbols for formals, supplying the VarSymbol
   // as the actual to the call, or the original ArgSymbol for that formal if
-  // the slot is NULL (no conversion call, so no temporary).
+  // the slot is NULL.
   //
-  for (int i = 0; i < tmps.size(); i++) {
+  for (size_t i = 0; i < tmps.size(); i++) {
     VarSymbol* tmp = tmps[i];
     if (tmp != NULL) {
       call->insertAtTail(tmp);
     } else {
-      int idx = i + 1;
+      int idx = (int) i + 1;
       ArgSymbol* as = wrapper->getFormal(idx);
       call->insertAtTail(as);
     }

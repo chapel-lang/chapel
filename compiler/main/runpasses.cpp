@@ -77,7 +77,6 @@ struct PassInfo {
 #define LOG_insertWideReferences               LOG_NO_SHORT
 #define LOG_optimizeOnClauses                  LOG_NO_SHORT
 #define LOG_addInitCalls                       LOG_NO_SHORT
-#define LOG_fixupExportedFunctions             LOG_NO_SHORT
 #define LOG_insertLineNumbers                  LOG_NO_SHORT
 #define LOG_denormalize                        LOG_NO_SHORT
 #define LOG_codegen                            'c'

@@ -401,13 +401,6 @@ void check_addInitCalls()
   check_afterInlineFunctions();
 }
 
-void check_fixupExportedFunctions()
-{
-  //
-  // TODO: This pass will alter the AST, not sure what checks yet.
-  //
-}
-
 void check_insertLineNumbers()
 {
   check_afterEveryPass();
