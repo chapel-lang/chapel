@@ -4,7 +4,7 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 
-export CHPL_TEST_PERF_CONFIG_NAME='cray-cs'
+export CHPL_TEST_PERF_CONFIG_NAME='16-node-cs'
 
 source $CWD/common-perf.bash
 export CHPL_TEST_PERF_DIR=/cray/css/users/chapelu/NightlyPerformance/cray-cs/16-node-cs
@@ -21,6 +21,6 @@ export CHPL_LAUNCHER_PARTITION=bdw18
 export CHPL_TARGET_CPU=broadwell
 nightly_args="${nightly_args} -no-buildcheck"
 
-perf_args="${perf_args} -performance -perflabel ml- -numtrials 3 -startdate 07/01/19 -sync-dir-suffix 16-node-cs"
+perf_args="${perf_args} -performance -perflabel ml- -numtrials 3 -startdate 07/01/19"
 
 $CWD/nightly -cron ${perf_args} ${nightly_args}
