@@ -3809,7 +3809,7 @@ qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
     if (use_buffered) {
       // Read some data
       err = _qio_channel_require_unlocked(ch, nbytes, false);
-      if( err ) return err;
+      if( err && err != QIO_EEOF ) return err;
       // Set the channel position to be the minimum
       // of EOF read and cur+nbytes
       {
