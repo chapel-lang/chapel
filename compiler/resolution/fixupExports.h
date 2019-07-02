@@ -23,6 +23,7 @@
 #include <vector>
 
 class FnSymbol;
+class Type;
 
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper);
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns);
