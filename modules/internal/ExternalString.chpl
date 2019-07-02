@@ -76,14 +76,14 @@ module ExternalString {
   // this way are read only, _or_ perform a full copy for formals as well.
   //
   proc chpl__exportConstCharPtrToString(c: c_string): string {
-    return new string(cs=c, isowned=true, needToCopy=true);
+    return new string(cs=c, isowned=false, needToCopy=false);
   }
 
   //
   // Ditto the above.
   //
   proc chpl__exportCharPtrToString(c: c_ptr(c_char)): string {
-    return new string(cs=c:c_string, isowned = true, needToCopy=true);
+    return new string(cs=c:c_string, isowned=false, needToCopy=false);
   }
 
 } // End module "ExternalString".
