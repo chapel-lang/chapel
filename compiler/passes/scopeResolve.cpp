@@ -2356,6 +2356,47 @@ static void resolveUnmanagedBorrows() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void markUsedModules(std::set<ModuleSymbol*>& set, ModuleSymbol* mod) {
+  set.insert(mod);
+  forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
+    if (set.count(usedMod) == 0) {
+      set.insert(usedMod);
+      markUsedModules(set, usedMod);
+    }
+  }
+  while (mod != NULL && mod->defPoint != NULL) {
+    mod = mod->defPoint->getModule();
+    set.insert(mod);
+  }
+}
+
+// Figure out if there are any modules that are not used at all.
+// If so, completely remove these modules from the tree.
+static void removeUnusedModules() {
+  std::set<ModuleSymbol*> usedModules;
+
+  markUsedModules(usedModules, stringLiteralModule);
+
+  markUsedModules(usedModules, ModuleSymbol::mainModule());
+
+  if (printModuleInitModule)
+    markUsedModules(usedModules, printModuleInitModule);
+
+  // Now remove any module not in the set
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (usedModules.count(mod) == 0) {
+      printf("Removing not 'use'd module %s\n", mod->name);
+      mod->defPoint->remove();
+    }
+  }
+}
+
 void scopeResolve() {
   addToSymbolTable();
 
@@ -2392,4 +2433,6 @@ void scopeResolve() {
   cleanupExternC();
 
   resolveUnmanagedBorrows();
+
+  removeUnusedModules();
 }
