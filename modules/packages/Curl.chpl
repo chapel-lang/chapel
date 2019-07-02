@@ -307,7 +307,7 @@ extern type CURL;
 /* A CURL multi handle. */
 extern type CURLM;
 /* A CURL string list */
-extern type curl_slist;
+extern "struct curl_slist" record curl_slist { }
 
 /* CURLoption identifies options for ``curl_easy_setopt``.
  */
