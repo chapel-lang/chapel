@@ -902,10 +902,12 @@ module MergeSort {
       compilerError("mergeSort() requires 1-D array");
     }
 
-    _MergeSort(Data, Dom.alignedLow, Dom.alignedHigh, minlen, comparator);
+    var Scratch: Data.type;
+
+    _MergeSort(Data, Scratch, Dom.alignedLow, Dom.alignedHigh, minlen, comparator);
   }
 
-  private proc _MergeSort(Data: [?Dom], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator)
+  private proc _MergeSort(Data: [?Dom], Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator)
     where Dom.rank == 1 {
     if (hi-lo < minlen) {
       InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
@@ -918,52 +920,54 @@ module MergeSort {
 
     if(here.runningTasks() < here.numPUs(logical=true)) {
       cobegin {
-        { _MergeSort(Data, lo, mid, minlen, comparator); }
-        { _MergeSort(Data, mid+stride, hi, minlen, comparator); }
+        { _MergeSort(Data, Scratch, lo, mid, minlen, comparator); }
+        { _MergeSort(Data, Scratch, mid+stride, hi, minlen, comparator); }
       }
     } else {
-      _MergeSort(Data, lo, mid, minlen, comparator);
-      _MergeSort(Data, mid+stride, hi, minlen, comparator);
+      _MergeSort(Data, Scratch, lo, mid, minlen, comparator);
+      _MergeSort(Data, Scratch, mid+stride, hi, minlen, comparator);
     }
-    _Merge(Data, lo, mid, hi, comparator);
+    _Merge(Data, Scratch, lo, mid, hi, comparator);
   }
 
-  private proc _Merge(Data: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+  private proc _Merge(Data: [?Dom] ?eltType, Scratch: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
-    const a1size = (lo..mid by stride).size;
-    var A1: [1..a1size] Data.eltType =
-      if Dom.stridable
-      then Data[lo..mid by stride]
-      else Data[lo..mid];
-    const a2size = ((mid+stride)..hi by stride).size;
-    var A2: [1..a2size] Data.eltType =
-      if Dom.stridable
-      then Data[(mid+stride)..hi by stride]
-      else Data[(mid+1)..hi];
-    var a1 = 1;
-    var a2 = 1;
+    const a1range = if Dom.stridable then lo..mid by stride else lo..mid;
+    const a1max = mid;
+
+    const a2range = if Dom.stridable then (mid+stride)..hi by stride else (mid+1)..hi;
+    const a2max = hi;
+
+    ref A1 = Scratch[a1range];
+    ref A2 = Scratch[a2range];
+
+    Scratch[a1range] = Data[a1range];
+    Scratch[a2range] = Data[a2range];
+
+    var a1 = a1range.first;
+    var a2 = a2range.first;
     var i = lo;
-    while ((a1 <= a1size) && (a2 <= a2size)) {
+    while ((a1 <= a1max) && (a2 <= a2max)) {
       if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
         Data[i] = A1[a1];
-        a1 += 1;
+        a1 += stride;
         i += stride;
       } else {
         Data[i] = A2[a2];
-        a2 += 1;
+        a2 += stride;
         i += stride;
       }
     }
-    while (a1 <= a1size) {
+    while (a1 <= a1max) {
       Data[i] = A1[a1];
-      a1 += 1;
+      a1 += stride;
       i += stride;
     }
-    while (a2 <= a2size) {
+    while (a2 <= a2max) {
       Data[i] = A2[a2];
-      a2 += 1;
+      a2 += stride;
       i += stride;
     }
   }
