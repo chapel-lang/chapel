@@ -1,6 +1,5 @@
 /*
   This launcher will be used to run the test files and catch the halts.
-  You can specify a different directory name using the `--dir` 
   You can set whether or not to descend recursively into 
   subdirectories (defaults to true) using `--subdir`
 */
@@ -10,8 +9,8 @@ module Launcher {
   use Path;
   use TestResult;
   use Help;
-  config const subdir: string = "true";
-  config const keepExec: string = "false";
+  config const subdir = true;
+  config const keepExec = false;
 
   proc main(args: [] string) {
     var dirs: [1..0] string,
@@ -88,7 +87,8 @@ module Launcher {
     var sep1Found = false,
         haltOccured = false;
     
-    var exec = spawn(["./"+executable,"--skipId",skipId:string,"--numLocales",numLocales:string], stdout = PIPE, stderr = PIPE); //Executing the file
+    var exec = spawn(["./"+executable,"--skipId",skipId:string,"--numLocales",
+              numLocales:string], stdout = PIPE, stderr = PIPE); //Executing the file
     //std output pipe
     while exec.stdout.readline(line) {
       if line.strip() == separator1 then sep1Found = true;
@@ -141,7 +141,7 @@ module Launcher {
       var tempName = fileName.split(".chpl");
       var executable = tempName[1];
       if isFile(executable) {
-        var execRem = spawn(["rm",executable]);
+        FileSystem.remove(executable);
       }
       var sub = spawn(["chpl",file,"-o",executable,"-M."],stderr = PIPE); //Compiling the file
       if sub.stderr.readline(line) {
@@ -151,8 +151,8 @@ module Launcher {
       sub.wait();
       if !compErr {
         runAndLog(executable,fileName,result);
-        if !keepExec:bool {
-          var execRem = spawn(["rm",executable]);
+        if !keepExec {
+          FileSystem.remove(executable);
         }
       }
       else {
@@ -165,7 +165,7 @@ module Launcher {
   pragma "no doc"
   /*Docs: Todo*/
   proc testDirectory(dir, ref result) throws {
-    for file in findfiles(startdir = dir, recursive = subdir:bool) {
+    for file in findfiles(startdir = dir, recursive = subdir) {
       testFile(file, result);
     }
   }
