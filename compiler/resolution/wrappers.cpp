@@ -1454,6 +1454,19 @@ static bool mustUseRuntimeTypeDefault(ArgSymbol* formal) {
 *                                                                             *
 ************************************** | *************************************/
 
+// Do not create copies for the bogus actuals added for PRIM_TO_FOLLOWER.
+static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
+                                        Symbol* actualSym) {
+  bool result = isArgSymbol(actualSym) &&
+                (call->parentSymbol != actualSym->defPoint->parentSymbol);
+
+  if (result                                   &&
+      propagateNotPOD(actualSym->getValType()) &&
+      ! isLeaderIterator(calleeFn)             )
+    USR_FATAL_CONT(calleeFn, "follower iterators accepting a non-POD argument by in-intent are not implemented");
+
+  return result;
+}
 
 static void handleInIntents(FnSymbol* fn,
                             CallInfo& info) {
@@ -1485,6 +1498,7 @@ static void handleInIntents(FnSymbol* fn,
     // does not need to be copied.
     if (formalRequiresTemp(formal, fn) &&
         shouldAddFormalTempAtCallSite(formal, fn) &&
+        ! checkAnotherFunctionsFormal(fn, info.call, actualSym) &&
         actualSym->hasFlag(FLAG_DEFAULT_ACTUAL) == false) {
 
       Expr* useExpr = currActual;
@@ -1667,7 +1681,7 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
                          std::vector<ArgSymbol*>& actualFormals) {
   bool retval = false;
 
-  if (fn->name != astrSequals && fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false) {
+  if (fn->name != astrSequals) {
     int numActuals = actualFormals.size();
     for (int j = 0; j < numActuals; j++) {
       Symbol* actual     = info.actuals.v[j];

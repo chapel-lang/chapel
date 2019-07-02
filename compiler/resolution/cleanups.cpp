@@ -80,12 +80,6 @@ static void removeUnusedFunctions() {
               removeCopyFns(typeSym->type);
 
               if (AggregateType* at = toAggregateType(refType)) {
-                DefExpr* defPoint = at->typeConstructor->defPoint;
-
-                if (defPoint->inTree()) {
-                  defPoint->remove();
-                }
-
                 removeCopyFns(at);
 
                 at->symbol->defPoint->remove();
@@ -394,9 +388,7 @@ static bool do_isUnusedClass(Type* t) {
              at && at->iteratorInfo->getIterator->isResolved()) {
     retval = false;
 
-  // FALSE if the type constructor is used.
-  } else if (at && at->typeConstructor &&
-             at->typeConstructor->isResolved()) {
+  } else if (at && at->resolveStatus == RESOLVED) {
     retval = false;
 
   // FALSE if the type uses an initializer and that initializer was
@@ -471,15 +463,6 @@ static void removeUnusedTypes() {
           if (isUnusedClass(dt->getCanonicalClass())) {
             type->defPoint->remove();
           }
-        }
-
-        // If the default type constructor for this ref type is in the tree,
-        // it can be removed.
-        AggregateType* at2      = toAggregateType(type->type);
-        DefExpr*       defPoint = at2->typeConstructor->defPoint;
-
-        if (defPoint->inTree()) {
-          defPoint->remove();
         }
     }
   }

@@ -524,6 +524,8 @@ chameneos-redux:
 CoMD:
   07/26/17:
     - Update PR 5296 (#6722)
+  06/25/19:
+    - Simplify standalone iterator for DefaultRectangular domains/arrays (#13189)
 
 CoMD-elegant-aos:
   06/12/18:

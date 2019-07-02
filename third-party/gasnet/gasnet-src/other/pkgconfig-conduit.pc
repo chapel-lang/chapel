@@ -5,7 +5,7 @@ GASNET_CXXCPPFLAGS = ${GASNET_MISC_CXXCPPFLAGS} ${GASNET_DEFINES} ${GASNET_INCLU
 
 Name: gasnet-#conduit_name#-#thread_model#
 Description: GASNet #conduit_name#-conduit in #thread_model# threading mode
-URL: http://gasnet.lbl.gov
+URL: https://gasnet.lbl.gov
 Version: #version#
 Cflags: ${GASNET_CPPFLAGS} ${GASNET_CFLAGS}
 Libs: ${GASNET_LDFLAGS} ${GASNET_LIBS}

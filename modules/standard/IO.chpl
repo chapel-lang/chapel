@@ -2156,11 +2156,17 @@ proc channel.advancePastByte(byte:uint(8)) throws {
     advancing to the end of the file. It is important to be aware of these
     memory space requirements.
 
-  :returns: an error code, if an error was encountered.
+  :returns: The offset that was marked
+  :throws: SystemError: if marking the channel failed
  */
-// TODO: update to `throw` on error
-inline proc channel.mark():syserr where this.locking == false {
-  return qio_channel_mark(false, _channel_internal);
+inline proc channel.mark() throws where this.locking == false {
+  const offset = this.offset();
+  const err = qio_channel_mark(false, _channel_internal);
+
+  if err then
+    throw SystemError.fromSyserr(err);
+
+  return offset;
 }
 
 /*
@@ -2211,11 +2217,17 @@ inline proc channel._offset():int(64) {
    See :proc:`channel.mark` for details other than the locking
    discipline.
 
-  :returns: an error code, if an error was encountered.
+  :returns: The offset that was marked
+  :throws: SystemError: if marking the channel failed
  */
-// TODO: update to `throw` on error
-inline proc channel._mark():syserr {
-  return qio_channel_mark(false, _channel_internal);
+inline proc channel._mark() throws {
+  const offset = this.offset();
+  const err = qio_channel_mark(false, _channel_internal);
+
+  if err then
+    throw SystemError.fromSyserr(err);
+
+  return offset;
 }
 
 /*
@@ -6847,10 +6859,9 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
   param nret = captures+1;
   var ret:nret*reMatch;
 
+  // TODO should be try not try!  ditto try! _mark() below
   try! lock();
-  on this.home do error = _mark();
-  // TODO should be try not try!  ditto try! lock() above
-  if error then try! this._ch_ioerror(error, "in channel.matches mark");
+  on this.home do try! _mark();
 
   while go && i < maxmatches {
     on this.home {

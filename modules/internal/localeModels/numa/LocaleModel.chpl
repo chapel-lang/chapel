@@ -99,6 +99,9 @@ module LocaleModel {
     }
   }
 
+  const chpl_emptyLocaleSpace: domain(1) = {1..0};
+  const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
+
   //
   // The node model
   //

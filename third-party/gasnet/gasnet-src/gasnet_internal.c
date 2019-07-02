@@ -123,6 +123,8 @@ int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC32_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG) = 1;
+int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL)) = 1;
+int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME)) = 1;
 
@@ -181,7 +183,7 @@ extern void gasneti_check_config_preinit(void) {
 
   #define CHECK_DT(id, type) do { \
       gasneti_assert_always(gasneti_dt_valid(id)); \
-      gasneti_assert_always(gasneti_dt_size(id) == sizeof(type)); \
+      gasneti_assert_always_uint(gasneti_dt_size(id) ,==, sizeof(type)); \
       gasneti_assert_always(!!gasneti_dt_int(id) == !gasneti_dt_fp(id)); \
     } while (0)
   #define CHECK_INT_DT(id, type, sign) do { \
@@ -423,7 +425,7 @@ gasneti_Client_t gasneti_alloc_client(
                        size_t alloc_size)
 {
   gasneti_Client_t client = gasneti_malloc(alloc_size ? alloc_size : sizeof(*client));
-  gasneti_assert(!alloc_size || alloc_size >= sizeof(*client));
+  if (alloc_size) gasneti_assert_uint(alloc_size ,>=, sizeof(*client));
   GASNETI_INIT_MAGIC(client, GASNETI_CLIENT_MAGIC);
   client->_tm0 = NULL;
   client->_name = gasneti_strdup(name);
@@ -472,7 +474,7 @@ gasneti_Segment_t gasneti_alloc_segment(
                        size_t alloc_size)
 {
   gasneti_Segment_t segment = gasneti_malloc(alloc_size ? alloc_size : sizeof(*segment));
-  gasneti_assert(!alloc_size || alloc_size >= sizeof(*segment));
+  if (alloc_size) gasneti_assert_uint(alloc_size ,>=, sizeof(*segment));
   GASNETI_INIT_MAGIC(segment, GASNETI_SEGMENT_MAGIC);
   segment->_client = client;
   segment->_cdata = NULL;
@@ -520,7 +522,7 @@ extern gasneti_EP_t gasneti_alloc_ep(
                        size_t alloc_size)
 {
   gasneti_EP_t endpoint = gasneti_malloc(alloc_size ? alloc_size : sizeof(*endpoint));
-  gasneti_assert(!alloc_size || alloc_size >= sizeof(*endpoint));
+  if (alloc_size) gasneti_assert_uint(alloc_size ,>=, sizeof(*endpoint));
   GASNETI_INIT_MAGIC(endpoint, GASNETI_EP_MAGIC);
   endpoint->_client = client;
   endpoint->_cdata = NULL;
@@ -568,8 +570,8 @@ extern gasneti_TM_t gasneti_alloc_tm(
                        gex_Flags_t flags,
                        size_t requested_sz)
 {
-  gasneti_assert(rank < size);
-  gasneti_assert(size > 0);
+  gasneti_assert_uint(rank ,<, size);
+  gasneti_assert_uint(size ,>, 0);
 
   gasneti_assert(ep);
   gasneti_assert(ep->_client);
@@ -577,7 +579,7 @@ extern gasneti_TM_t gasneti_alloc_tm(
 
   // TM0 is aligned to GASNETI_TM0_ALIGN, and all others to half that
   gasneti_TM_t tm;
-  gasneti_assert(!requested_sz || requested_sz >= sizeof(*tm));
+  if (requested_sz) gasneti_assert_uint(requested_sz ,>=, sizeof(*tm));
   size_t disalign = (is_tm0 ? 0 : GASNETI_TM0_ALIGN/2);
   size_t actual_sz = (requested_sz ? requested_sz : sizeof(*tm)) + disalign;
   tm = (gasneti_TM_t)(disalign + (uintptr_t)gasneti_malloc_aligned(GASNETI_TM0_ALIGN, actual_sz));
@@ -641,6 +643,7 @@ void gasneti_free_tm(gasneti_TM_t tm)
   extern void gasneti_init_sd_poison(gasneti_AM_SrcDesc_t sd) {
     if (!gasneti_sd_init_enabled) return;
     if (sd->_addr != sd->_gex_buf) return;
+    gasneti_assert_uint(((uintptr_t)sd->_addr) % GASNETI_MEDBUF_ALIGNMENT ,==, 0);
     static int isinit = 0;
     if_pf (!isinit) {
       static gasneti_mutex_t lock = GASNETI_MUTEX_INITIALIZER;
@@ -674,15 +677,6 @@ void gasneti_free_tm(gasneti_TM_t tm)
 #define GASNETC_FATALSIGNAL_CLEANUP_CALLBACK(sig)
 #endif
 
-static void do_raise(int sig) {
-#if defined(PTHREAD_MUTEX_INITIALIZER) && !GASNET_SEQ && HAVE_PTHREAD_KILL && 0 
-  /* XXX: This works-around a bug in OpenBSD-5.2 kernel, fixed in OpenBSD-current in Nov 2012 */
-  /* Might fail if unimplemented OR since pthread_self() isn't required to be signal safe */
-  if (0 == pthread_kill(pthread_self(),sig)) return;
-#endif
-  raise(sig);
-}
-
 void gasneti_defaultSignalHandler(int sig) {
   gasneti_sighandlerfn_t oldsigpipe = NULL;
   const char *signame =  gasnett_signame_fromval(sig);
@@ -703,15 +697,7 @@ void gasneti_defaultSignalHandler(int sig) {
 
       GASNETC_FATALSIGNAL_CALLBACK(sig); /* give conduit first crack at it */
 
-      FILE * streams[] = { stderr, GASNETI_MAYBE_TRACEFILE };
-      for (int s = 0; s < sizeof(streams)/sizeof(streams[0]); s++) {
-        FILE *stream = streams[s];
-        if (stream) {
-          fprintf(stream, "*** Caught a fatal signal: %s(%i) on node %i/%i\n", 
-                        signame, sig, (int)gasneti_mynode, (int)gasneti_nodes);
-          fflush(stream);
-        }
-      }
+      gasneti_console_message("Caught a fatal signal", "%s(%i)", signame, sig);
 
       gasnett_freezeForDebuggerErr(); /* allow freeze */
 
@@ -727,7 +713,7 @@ void gasneti_defaultSignalHandler(int sig) {
       GASNETC_FATALSIGNAL_CLEANUP_CALLBACK(sig); /* conduit hook to kill the job */
 
       signal(sig, SIG_DFL); /* restore default core-dumping handler and re-raise */
-      do_raise(sig);
+      gasneti_raise(sig);
       break;
     }
     default: 
@@ -740,12 +726,10 @@ void gasneti_defaultSignalHandler(int sig) {
       }
 
       oldsigpipe = gasneti_reghandler(SIGPIPE, SIG_IGN);
-      fprintf(stderr,"*** Caught a signal: %s(%i) on node %i/%i\n",
-        signame, sig, (int)gasneti_mynode, (int)gasneti_nodes); 
-      fflush(stderr);
+      gasneti_console_message("Caught a signal", "%s(%i)", signame, sig);
       (void) gasneti_reghandler(SIGPIPE, oldsigpipe);
 
-      do_raise(SIGQUIT);
+      gasneti_raise(SIGQUIT);
   }
 }
 
@@ -1125,11 +1109,25 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
   mn = GASNET_EXTENDED_NAME_STR;
   m = myext; while (*mn) { *m = tolower(*mn); m++; mn++; }
   *m = '\0';
+  int haveOmniPath = 0; // bug 3609: this oddball needs special handling
+  #if PLATFORM_OS_LINUX
+    const char *filename = "/sys/class/infiniband/hfi1_0/board_id";
+    FILE *fp = fopen(filename,"r");
+    if (fp) {
+      char buffer[128];
+      size_t r = fread(&buffer, 1, sizeof(buffer), fp);
+      if (r) { // eg: "Intel Omni-Path HFI Adapter 100 Series, 1 Port, PCIe x16"
+        buffer[r-1] = 0;
+        if (strstr(buffer, "Omni-Path")) haveOmniPath = 1;
+      }
+      fclose(fp);
+    }
+  #endif
+  
   if ( /* is a portable network conduit */
          (!strcmp("mpi",mycore) && !strcmp("reference",myext))
       || (!strcmp("udp",mycore) && !strcmp("reference",myext))
-      || (!strcmp("ofi",mycore) && !strcmp("ofi",myext))
-      || (!strcmp("portals4",mycore) && !strcmp("portals4",myext))
+      || (!strcmp("ofi",mycore) && !strcmp("ofi",myext) && !haveOmniPath)
       ) {
     const char *p = GASNETI_CONDUITS;
     char natives[255];
@@ -1150,8 +1148,8 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
         if (!strcmp(name,"smp")) continue;
         if (!strcmp(name,"mpi")) continue;
         if (!strcmp(name,"udp")) continue;
-        if (!strcmp(name,"ofi")) continue;
-        if (!strcmp(name,"portals4")) continue;
+        if (!strcmp(name,"ofi") && !haveOmniPath) continue;
+        if (!strcmp(name,"ibv") && haveOmniPath) continue; // never recommend ibv over OPA
         if (strlen(natives)) strcat(natives,", ");
         strcat(natives,name);
       }
@@ -1173,7 +1171,8 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
           { "/dev/hw/cpunum",      S_IFDIR, "SGI Altix", 0 },
           { "/dev/xpmem",          S_IFCHR, "SGI Altix", 0 },
         #endif
-        { "/dev/infiniband/uverbs0", S_IFCHR, "InfiniBand IBV", 2 },  /* OFED 1.0 */
+        { "/dev/infiniband/uverbs0",     S_IFCHR, "InfiniBand IBV", 2 },  /* OFED 1.0 */
+        { "/dev/infiniband/ofs/uverbs0", S_IFCHR, "InfiniBand IBV", 2 },  /* Solaris */
         #if !GASNET_SEGMENT_EVERYTHING
           { "/dev/kgni0",            S_IFCHR, "Cray Gemini", 6 },
           { "/proc/kgnilnd",         S_IFDIR, "Cray Gemini", 6 },
@@ -1187,6 +1186,7 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
         if (!stat(known_devs[i].filename,&stat_buf) && 
             (!known_devs[i].filemode || (known_devs[i].filemode & stat_buf.st_mode))) {
             int hwid = known_devs[i].hwid;
+            if (hwid == 2 && haveOmniPath) continue; // never recommend ibv over OPA
             if (strlen(natives)) strcat(natives,", ");
             strcat(natives,known_devs[i].desc);
             while (i < lim && hwid == known_devs[i].hwid) i++; /* don't report a network twice */
@@ -1221,7 +1221,7 @@ static void gasneti_check_architecture(void) { // check for bad build configurat
   #if PLATFORM_OS_CNL && PLATFORM_ARCH_X86_64 // bug 3743, verify correct processor tuning
   { FILE *fp = fopen("/proc/cpuinfo","r");
     char model[255];
-    if (!fp) gasneti_fatalerror("*** ERROR: Failure in fopen('/proc/cpuinfo','r')=%s",strerror(errno));
+    if (!fp) gasneti_fatalerror("Failure in fopen('/proc/cpuinfo','r')=%s",strerror(errno));
     while (!feof(fp) && fgets(model, sizeof(model), fp)) {
       if (strstr(model,"model name")) break;
     }
@@ -1310,7 +1310,7 @@ static int _gasneti_nodemap_sort_fn(const void *a, const void *b) {
   const char *val2 = _gasneti_nodemap_sort_aux.ids + key2 * _gasneti_nodemap_sort_aux.stride;
   int retval = memcmp(val1, val2, _gasneti_nodemap_sort_aux.sz);
   if (!retval) { /* keep sort stable */
-    gasneti_assert(key1 != key2);
+    gasneti_assert_uint(key1 ,!=, key2);
     retval = (key1 < key2) ? -1 : 1;
   }
   return retval;
@@ -1349,7 +1349,7 @@ static void gasneti_nodemap_helper(const void *ids, size_t sz, size_t stride)) {
     #define GASNETC_DEFAULT_NODEMAP_EXACT 1
   #endif
   gasneti_assert(ids);
-  gasneti_assert(sz > 0);
+  gasneti_assert_uint(sz ,>, 0);
   gasneti_assert_uint(stride ,>=, sz);
 
   if (gasneti_getenv_yesno_withdefault("GASNET_NODEMAP_EXACT",GASNETC_DEFAULT_NODEMAP_EXACT)) {
@@ -1521,7 +1521,7 @@ extern void gasneti_nodemapParse(void) {
 
   gasneti_assert(gasneti_nodemap);
   gasneti_assert(gasneti_nodemap[0] == 0);
-  gasneti_assert(gasneti_nodemap[gasneti_mynode] <= gasneti_mynode);
+  gasneti_assert_uint(gasneti_nodemap[gasneti_mynode] ,<=, gasneti_mynode);
 
   /* Check for user-imposed limit: 0 (or negative) means no limit */
 #if GASNET_PSHM
@@ -1830,6 +1830,7 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
     return val;
   }
   static void gasneti_memalloc_valset(void *p, size_t len, uint64_t val) {
+    gasneti_assert(! ((uintptr_t)p & 7));
     uint64_t *output = p;
     size_t blocks = len/8;
     size_t extra = len%8;
@@ -1841,6 +1842,7 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
     if (extra) memcpy(output, &val, extra);
   }
   static const void *gasneti_memalloc_valcmp(const void *p, size_t len, uint64_t val) {
+    gasneti_assert(! ((uintptr_t)p & 7));
     const uint64_t *input = p;
     size_t blocks = len/8;
     size_t extra = len%8;

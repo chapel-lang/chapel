@@ -1,3 +1,3 @@
-BogusDestructors.chpl:9: error: ambiguous call 'C.deinit()'
+BogusDestructors.chpl:10: error: ambiguous call 'unmanaged C.deinit()'
 BogusDestructors.chpl:4: note: candidates are: C.deinit()
 BogusDestructors.chpl:7: note:                 C.deinit()

@@ -9,6 +9,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 @ Section: Job Spawning @
 @ Section: Runtime Configuration @
 @ Section: Multi-rail Support @
+@ Section: On-Demand Paging (ODP) Support @
 @ Section: HCA Configuration @
 @ Section: Known Problems @
 @ Section: Core API @
@@ -35,7 +36,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   currently support it.
 
   While ibv-conduit may work on Intel Omni-Path (OPA) HCAs, we instead
-  recommend use of psm-conduit on such systems.
+  recommend use of ofi-conduit on such systems.
 
   Nearly all InfiniBand cards (known as Host Channel Adapters, or HCAs)
   have support for Open Fabrics Verbs, available from www.openfabrics.org
@@ -45,9 +46,8 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
   In addition to the Open Fabrics Verbs, vendor-specific APIs also exist
   and some have GASNet conduits:
-   + mxm-conduit for the MXM API from Mellanox
    + ofi-conduit for the PSM (version 1) API on Intel TrueScale HCAs
-   + ofi- or psm-conduit for the PSM2 API on Intel Omni-Path HCAs
+   + ofi-conduit for the PSM2 API on Intel Omni-Path HCAs
 
   The performance of ibv-conduit relative to others on the same hardware
   will depend on your applications' communications patterns, the number of
@@ -88,6 +88,11 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   below) there is an extra thread spawned to block for the arrival of
   connection requests.  If needed, this can be disabled at configure
   time using '--disable-ibv-conn-thread'.
+
+  As an alternative to use of "SEND" at the ibv-level, it is possible to
+  perform AM communication using "WRITE" operations.  This is described in more
+  detail in the "AMRDMA configuration" section.  This option is available only
+  if GASNet has been configured using '--enable-ibv-amrdma'.
 
   The default spawner to be used by the gasnetrun_ibv utility can be
   selected by configuring '--with-ibv-spawner=VALUE', where VALUE is one
@@ -235,6 +240,12 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     Note that in most IBV distributions the 'ibv_devinfo' utility will list
     the available HCAs and the status of their ports.
     The default is no filter.
+
+  + GASNET_IBV_PKEY
+    If set, this specifies the 15-bit InfiniBand Partition Key to use.
+    Valid values are in the range 2 to 0x7fff.
+    For compatibility, the membership bit (0x8000) is ignored.
+    The default is to use the Partition Key installed at table index 0.
 
   + GASNET_QP_TIMEOUT
     This sets the timeout value used to configure InfiniBand QueuePairs.
@@ -576,11 +587,34 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
   + GASNET_USE_XRC
     This controls whether IBV eXtended Reliable Connection (XRC) support
-    is used.  However, it is is ignored if GASNet was was configured with
+    is used.  However, it is is ignored if GASNet was configured with
     --disable-ibv-xrc, if XRC support was not found at configure time, or
     if SRQ support is not used (regardless of why),
     This setting defaults to 1 if SRQ support was enabled at configure
     time.  As a result XRC will be used anytime SRQ is used.
+
+  + GASNET_USE_ODP
+    This boolean setting controls whether IBV On-Demand Paging (ODP) support
+    is used.  However, it is ignored if GASNet was configured with
+    --disable-ibv-odp, or if ODP support was not found at configure time.
+    This setting defaults to 1 if ODP support was enabled at configure time.
+
+  + GASNET_ODP_VERBOSE
+    This integer setting controls the detail of the warning printed when ODP
+    support is enabled but is not present on one or more HCAs in the job.
+    A value of 0 supresses the warning entirely.
+    A value of 1 will report a count of processes lacking support.
+    Values of 2 or higher give increasing levels of detail concerning the
+    missing support.
+    This setting defaults to 1 if ODP support was enabled at configure time.
+
+  + GASNET_USE_FENCED_PUTS
+    This boolean setting controls the use of atomic operations to provide for
+    correct remote completion detection in the presence of multiple HCAs.
+    See "Bug 3447" in the Known Problems section for information on when one
+    may wish to enable this setting.
+    If enabled when using only a single HCA a warning will be issued.
+    This setting defaults to 0 (disabled).
 
    + GASNET_PIN_MAXSZ
     This controls the maximum size of a pinned memory region.  The value must
@@ -601,7 +635,17 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   result.  The default settings should be sufficient for most conditions.
   You may need to lower some values if you have insufficient memory.
 
-  These parameters must be equal across all nodes, and the behavior
+  + GASNET_RBUF_SPARES
+    This gives the number of AM receive buffers used to hold header and
+    payload of executing AM Request, and thus bounds the number of threads
+    which may concurrently execute AM handlers "in place".  Any threads
+    beyond this limit must copy the header and payload before executing
+    the handler.
+    The default value reflects a heuristic estimate of the number of
+    threads which might concurrently poll for AM arrivals.
+    Reducing this parameter may reduce Active Message throughput.
+
+  The following parameters must be equal across all nodes, and the behavior
   otherwise is undefined.
 
   + GASNET_NETWORKDEPTH_PP
@@ -647,12 +691,10 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   + GASNET_AM_CREDITS_TOTAL
     This gives the integer number of AM Requests which can be in-flight
     simultaneously from each node, with "in-flight" defined as in
-    GASNET_AM_CREDITS_PP.  This is the number of receive buffers which
-    will be allocated for posting to an endpoint for the AM Reply which
-    follows each AM Request.
+    GASNET_AM_CREDITS_PP.
     If set to zero, the value is set to the maximum usable value computed
     from GASNET_AM_CREDITS_PP and the HCA's reported capabilities.
-    The default value is MIN(256, nodes*GASNET_AM_CREDITS_PP).
+    The default value is MIN(256, (nodes-1)*GASNET_AM_CREDITS_PP).
     Reducing this parameter may limit Active Message throughput.  If you
     believe your Active Message throughput is too low, you may try
     increasing this value (or setting it to zero), at a cost in additional
@@ -707,24 +749,29 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
    
   AMRDMA configuration:
   --------------------
+  This feature is only available if GASNet has been configured
+  using --enable-ibv-amrdma
+
   The following environment variables control the AM-over-RDMA path in
   ibv-conduit.  These parameters must be equal across all nodes, and
   the behavior otherwise is undefined.
 
-  As an optimization, ibv-conduit can send Active Message (AM) traffic
+  As an option, ibv-conduit can send Active Message (AM) traffic
   using RDMA PUT operations to buffers reserved for this purpose.  This
   leads to a reduction in the end-to-end latency of such AM traffic, but
   at the cost of increased memory usage and in the cost of a polling for
   AMs (as done explicitly in gasnet_AMPoll(), and implicitly in many
-  GASNet calls).
+  GASNet calls).  On current generation systems, the added costs will
+  most often dominate and thus this feature is OFF by default (via a
+  default GASNET_AMRDMA_LIMIT of zero).
 
   + GASNET_AMRDMA_LIMIT
     This environment variable controls the maximum size of an AM that may
     be sent via the AMRDMA path.  The software overhead on both the sender
     and receiver grow with the message size.  So, as the message size grows
     the use of AMRDMA eventually costs more than the snd/rcv alternative.
-    A value of zero will disable AMRDMA.
-    The current default is 4K minus some overheads.
+    The maximum value is 4080 (4K minus some overheads).
+    The current default is zero, which disables AMRDMA.
 
   + GASNET_AMRDMA_DEPTH
     This environment variable controls the number of buffers (currently 4K
@@ -861,6 +908,39 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   (documented in "Runtime Configuration") to determine how a given
   application runs best.
 
+  IMPORTANT NOTE:
+  The multi-rail support in ibv-conduit makes the assumption that the
+  number of HCAs used in every process will be identical.  One must use
+  GASNET_IBV_PORTS to ensure that this property is true.  Otherwise, the
+  behavior is undefined (startup crash being the most likely).
+
+@ Section: On-Demand Paging (ODP) Support @
+
+   Recent Mellanox HCAs (ConnectX-4 and newer) support a feature known as
+   On-Demand Paging (ODP).  Where this support is available, ibv-conduit
+   can use it to reduce resource pressure on physical memory.  By default,
+   ibv-conduit will attempt to warn at runtime if this support does not
+   appear to be available despite having either the required software or
+   hardware.  If you are using Mellanox Connect4-X HCAs or newer and
+   ibv-conduit warns about missing ODP support, we recommend that you
+   install the latest "Mellenox OFED" (aka MLNX_OFED) distribution,
+   available for download from Mellanox.  Mellanox provides documentation
+   on installing the software and upgrading the HCA firmware (if needed).
+
+   At configure time, ibv-conduit does not know the hardware, firmware, or
+   driver versions on the compute nodes and cannot, in general, assume the
+   host running configure represents every node in the system.  Therefore,
+   ODP support is enabled by default whenever the necessary library support
+   is detected by the configure script.
+
+   If ibv-conduit warns about missing ODP support on a system in which there
+   are no ODP-capable nodes, then we recommend reconfiguring GASNet using
+   --disable-ibv-odp to both eliminate the warnings and avoid the small
+   overhead of ODP support.  However, in a heterogeneous system in which some
+   subset of compute nodes do support ODP, one should set GASNET_ODP_VERBOSE=0
+   in the environment to suppress warnings from nodes lacking ODP support,
+   while allowing ibv-conduit to continue using ODP on the remaining nodes.
+
 @ Section: HCA Configuration @
 
   GASNet ibv-conduit should *not* require any specialized configuration of
@@ -979,7 +1059,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   or destination of GASNet communication calls if such memory is later
   returned to the OS via munmap().
   The most up-to-date information on this bug is maintained at:
-    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=495
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=495
   That bug report describes the problem in more detail, and lists the best
   known recommended work-around(s).
 
@@ -989,15 +1069,18 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   implementation is currently enabled for the only compiler (PathScale)
   known to manifest the problem.
   The most up-to-date information on this bug is maintained at:
-    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3428
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3428
   That bug report describes the problem in more detail, and lists the best
   known recommended work-around(s).
 
 + Bug 3447
   In this release the implementation of ibv-conduit on multi-HCA InfiniBand
   networks may yield incorrect results for certain communication patterns.
+  However, the environment variable GASNET_USE_FENCED_PUTS (described above)
+  can correct for this problem at the expense of higher latency and reduced
+  bandwidth for Put-based communications due to additional communication.
   The most up-to-date information on this bug is maintained at:
-    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3447
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3447
   That bug report describes the conditions under which the problem may
   manifest, and the recommended work-arounds.
 
@@ -1013,12 +1096,40 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   described under "System Settings for POSIX Shared Memory" in GASNet's
   top-level README.
   The most up-to-date information on this bug is maintained at:
-    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3693
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3693
+  That bug report describes more about the problem, and provides more detail
+  regarding the recommended work-around(s).
+
++ Bug 3816
+  When using Mellanox On-Demand Paging (ODP), it is possible that abnormal exits
+  (SIGKILL or _exit(), in particular) may lead to leaking memory at the system
+  level, requiring a reboot to reclaim the lost memory.  In extreme cases, the
+  cumulative effect of many leaks could eventually lead to the Linux
+  Out-Of-Memory killer being invoked, or even a kernel panic.
+  If you use ODP and see evidence of available memory declining over time, and
+  have reason to suspect a GASNet application is experiencing an abnormal exit,
+  then it may be advisable to disable ODP (see On-Demand Paging (ODP) Support
+  section).
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3816
+  That bug report describes more about the problem, and provides more detail
+  regarding the recommended work-around(s).
+
++ Bug 3838
+  When using Mellanox On-Demand Paging (ODP), it has been observed that certain
+  patterns of many small RMA operations (as seen in GASNet's testvis) may lead
+  to communications "locking up" such that RMA operations issued do not complete
+  and eventually new RMA operations cannot be initiated.
+  If you use ODP and experience hangs from an application with many fine-grained
+  RMA operations, then you should retry with ODP disabled (see On-Demand Paging
+  (ODP) Support section).
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3838
   That bug report describes more about the problem, and provides more detail
   regarding the recommended work-around(s).
 
 + See the GASNet Bugzilla server for details on other known bugs:
-  http://gasnet-bugs.lbl.gov/
+  https://gasnet-bugs.lbl.gov/
 
 @ Section: Core API @
 
@@ -1372,4 +1483,4 @@ The average case for non-collective exits is somewhere between those two.
 [1]	Bell, Bonachea. "A New DMA Registration Strategy for Pinning-Based
 	High Performance Networks", Workshop on Communication Architecture
 	for Clusters (CAC'03), 2003.
-	Also at  http://gasnet.lbl.gov/
+	Also at  https://gasnet.lbl.gov/

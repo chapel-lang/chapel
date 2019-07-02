@@ -2355,63 +2355,6 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     }
   }
 
-  // Write implementation for ranges
-  pragma "no doc"
-  proc range.writeThis(f)
-  {
-    // a range with a more normalized alignment
-    // a separate variable so 'this' can be const
-    var alignCheckRange = this;
-    if f.writing {
-      alignCheckRange.normalizeAlignment();
-    }
-
-    if hasLowBound() then
-      f <~> low;
-    f <~> new ioLiteral("..");
-    if hasHighBound() then
-      f <~> high;
-    if stride != 1 then
-      f <~> new ioLiteral(" by ") <~> stride;
-
-    // Write out the alignment only if it differs from natural alignment.
-    // We take alignment modulo the stride for consistency.
-    if ! alignCheckRange.isNaturallyAligned() && aligned then
-      f <~> new ioLiteral(" align ") <~> chpl_intToIdx(chpl__mod(chpl__idxToInt(alignment), stride));
-  }
-  pragma "no doc"
-  proc ref range.readThis(f)
-  {
-    if hasLowBound() then
-      f <~> _low;
-    f <~> new ioLiteral("..");
-    if hasHighBound() then
-      f <~> _high;
-    if stride != 1 then
-      f <~> new ioLiteral(" by ") <~> stride;
-
-    // try reading an 'align'
-    if !f.error() {
-      f <~> new ioLiteral(" align ");
-      if f.error() == EFORMAT then {
-        // naturally aligned.
-        f.clearError();
-      } else {
-        if stridable {
-          // un-naturally aligned - read the un-natural alignment
-          var a: intIdxType;
-          f <~> a;
-          _alignment = a;
-        } else {
-          // If the range is not stridable, it can't store an alignment.
-          // TODO: once Channels can store Chapel errors,
-          // create a more descriptive error for this case
-          f.setError(EFORMAT:syserr);
-        }
-      }
-    }
-  }
-
 
   //################################################################################
   //# Internal helper functions.

@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2018 Inria.  All rights reserved.
+ * Copyright © 2009-2019 Inria.  All rights reserved.
  * Copyright © 2009-2011, 2013 Université Bordeaux
  * Copyright © 2014-2018 Cisco Systems, Inc.  All rights reserved.
  * Copyright © 2015      Research Organization for Information Science
@@ -151,6 +151,13 @@ hwloc_look_pci(struct hwloc_backend *backend)
 
     /* try to read the domain */
     domain = pcidev->domain;
+    if (domain > 0xffff) {
+      static int warned = 0;
+      if (!warned)
+	fprintf(stderr, "Ignoring PCI device with non-16bit domain\n");
+      warned = 1;
+      continue;
+    }
 
     /* try to read the device_class */
     device_class = pcidev->device_class >> 8;
