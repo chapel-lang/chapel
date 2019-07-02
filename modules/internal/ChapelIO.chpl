@@ -830,6 +830,13 @@ module ChapelIO {
     }
   }
 
+  override proc LocaleModel.writeThis(f) {
+    // Most classes will define it like this:
+    //      f <~> name;
+    // but here it is defined thus for backward compatibility.
+    f <~> new ioLiteral("LOCALE") <~> chpl_id();
+  }
+
   //
   // Catch all
   //
