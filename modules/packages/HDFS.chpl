@@ -202,7 +202,10 @@ proc connect(nameNode: string = "default", port:int=0) throws {
 
 */
 record hdfs {
-  forwarding var instance:unmanaged HDFSFileSystem;
+  pragma "no doc"
+  var instance:unmanaged HDFSFileSystem;
+  forwarding instance;
+
   pragma "no doc"
   proc init(instance:unmanaged HDFSFileSystem) {
     this.instance = instance;
@@ -269,7 +272,7 @@ class HDFSFileSystem {
     :arg path: which file to open (for example, "some/file.txt").
     :arg iomode: specify whether to open the file for reading or writing and whether or not to create the file if it doesn't exist.  See :type:`IO.iomode`.
     :arg style: optional argument to specify I/O style associated with this file.  The provided style will be the default for any channels created for on this file, and that in turn will be the default for all I/O operations performed with those channels.
-    :arg flags: flags to pass to the HDFS open call. Uses flags appopriate for ``mode`` if not provided.
+    :arg flags: flags to pass to the HDFS open call. Uses flags appropriate for ``mode`` if not provided.
     :arg bufferSize: buffer size to pass to the HDFS open call.  Uses the HDFS default value if not provided.
     :arg replication: replication factor to pass to the HDFS open call.  Uses the HDFS default value if not provided.
     :arg blockSize: blockSize to pass to the HDFS open call.  Uses the HDFS default value if not provided.

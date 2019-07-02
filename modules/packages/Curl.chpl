@@ -39,7 +39,7 @@ Dependencies
 ------------
 
 The Curl module in Chapel is dependent on libcurl being installed and available
-to Chapel pograms.
+to Chapel programs.
 
 Using Curl Support in Chapel
 ----------------------------
@@ -56,6 +56,14 @@ allows a URL to be opened as a :record:`IO.channel`.
   while(urlreader.readline(str)) {
     write(str);
   }
+
+The Curl module includes ``require`` statements to include the Curl header and
+library, so the above example can be compiled simply with:
+
+.. code-block:: sh
+
+  chpl curl-example.chpl
+
 
 More complex uses of Curl can make use of the extern types provided in this
 module. In that event, please see the libcurl documentation for how to use
@@ -809,7 +817,7 @@ private proc read_atleast(cc:CurlChannel, requestedAmount:int(64)):syserr {
     sys_fd_zero(fdwrite);
     sys_fd_zero(fdexcept);
 
-    // Compute the timout curl recommends
+    // Compute the timeout curl recommends
     var timeoutMillis:c_long = 1;
     mcode = curl_multi_timeout(curlm, timeoutMillis);
     if mcode != CURLM_OK then
@@ -904,7 +912,7 @@ private proc curl_read_buffered(contents: c_void_ptr, size:size_t, nmemb:size_t,
   }
   // If the channel is not closed, but we would
   // otherwise return 0, pause the connection, so that
-  // the connection is not clossed until the channel is.
+  // the connection is not closed until the channel is.
   if gotamt == 0 && ! qio_channel_isclosed(0, cc.qio_ch) {
     return CURL_READFUNC_PAUSE;
   }
@@ -962,7 +970,7 @@ private proc write_amount(cc:CurlChannel, requestedAmount:int(64)):syserr {
     if ccode != CURLE_OK then
       return EINVAL; // or something...
 
-    // Compute the timout curl recommends
+    // Compute the timeout curl recommends
     var timeoutMillis:c_long = 1;
     mcode = curl_multi_timeout(curlm, timeoutMillis);
     if mcode != CURLM_OK then
