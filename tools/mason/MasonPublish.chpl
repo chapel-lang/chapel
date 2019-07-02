@@ -70,7 +70,6 @@ proc masonPublish(args: [] string) throws {
           }
           else {
                 throw new owned MasonError(username + ' is not a valid GitHub username or mason-registry is not forked \nMake sure you are connected to the internet before publishing.');
-                
           }
         }
         else if args.size == 4 && dry {
@@ -158,7 +157,6 @@ proc dryRun(username: string) throws {
     }
   }
 }
-
 
 /*Gets the GitHub username of the user, by parsing from the remote orgigin url.  */
 proc getUsername() {
