@@ -18,8 +18,6 @@
  */
 
 module ExternalString {
-
-  // For the `c_ptr` type definition.
   use CPtr;
 
   //
@@ -28,9 +26,9 @@ module ExternalString {
   type chpl__exportTypeCharPtr = c_ptr(c_char);
 
   //
-  // Copy is not the most efficient, because it uses `c_calloc` instead of
-  // `c_malloc`. We do this because there is no way to index bytes of a
-  // `c_string` directly.
+  // TODO: Look at `modules/internal/String.chpl` to make this copy faster.
+  // There is no point in calling `calloc` here when each byte is going to
+  // be set manually, anyhow.
   //
   private proc chpl__exportCopyStringBuffer(s: string): c_ptr(c_char) {
     const bytes = s.length;
@@ -45,19 +43,37 @@ module ExternalString {
   }
 
   //
-  // For now, always copy the internal buffer.
+  // This is meant to be called on Chapel strings that are being returned from
+  // an exported Chapel function. It makes no assumptions about the current
+  // state of the returned string (whether it owns its buffer or not), and
+  // does a deep copy of the buffer.
+  // TODO: This could only conditionally copy the buffer if the input string
+  // has `isowned=false`, and cannibalize the string formal's buffer
+  // otherwise, to reduce copying.
+  // TODO: Adjust multi-locale interop code to account for this copy, and
+  // make sure to deallocate buffers for `c_string` formals that originally
+  // mapped to Chapel strings.
   //
-  proc chpl__exportStringToCharPtr(s: string): c_ptr(c_char) {
-    return chpl__exportCopyStringBuffer(s);
-  }
-
   proc chpl__exportStringToConstCharPtr(s: string): c_string {
     return chpl__exportCopyStringBuffer(s):c_string;
   }
 
   //
-  // If `copy` is false, then the buffer that is being absorbed by the string
-  // must have been allocated on the Chapel heap.
+  // Ditto the above.
+  //
+  proc chpl__exportStringToCharPtr(s: string): c_ptr(c_char) {
+    return chpl__exportCopyStringBuffer(s);
+  }
+
+  //
+  // This is meant to be called on Chapel string formals in exported Chapel
+  // functions. Passed in `c_string` are considered to be _read only_, and
+  // thus the created string has `isowned=false` and `needToCopy=false`.
+  // TODO: The string documentation warns to avoid any in-place operations
+  // when "needToCopy=false". This makes me think that there are inplace
+  // operations that can occur on a string without copying?
+  // In the worst case, we will have to document that strings constructed
+  // this way are read only, _or_ perform a full copy for formals as well.
   //
   proc chpl__exportConstCharPtrToString(c: c_string): string {
     return new string(cs=c, isowned=true, needToCopy=true);
