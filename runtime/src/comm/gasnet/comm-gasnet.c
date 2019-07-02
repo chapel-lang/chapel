@@ -741,11 +741,36 @@ static volatile int pollingQuit;
 
 static void polling(void* x) {
   pollingRunning = 1;
+
   while (!pollingQuit) {
     (void) gasnet_AMPoll();
     chpl_task_yield();
   }
+
   pollingRunning = 0;
+}
+
+static void start_polling(void) {
+  pollingRunning = 0;
+  pollingQuit = 0;
+
+  if (chpl_task_createCommTask(polling, NULL)) {
+    chpl_internal_error("unable to start polling task for gasnet");
+  }
+
+  while (!pollingRunning) {
+    sched_yield();
+  }
+}
+
+static void stop_polling(chpl_bool wait) {
+  pollingQuit = 1;
+
+  if (wait) {
+    while (pollingRunning) {
+      sched_yield();
+    }
+  }
 }
 
 static void set_max_segsize_env_var(size_t size) {
@@ -877,13 +902,7 @@ void chpl_comm_post_task_init(void) {
   //
   // Start a polling task on each locale.
   //
-  pollingRunning = 0;
-  pollingQuit = 0;
-  if (chpl_task_createCommTask(polling, NULL))
-    chpl_internal_error("unable to start polling task for gasnet");
-  while (!pollingRunning) {
-    sched_yield();
-  }
+  start_polling();
 
   // Initialize the caching layer, if it is active.
   chpl_cache_init();
@@ -1031,19 +1050,16 @@ void chpl_comm_pre_task_exit(int all) {
     chpl_comm_barrier("stop polling");
 
     //
-    // Tell the polling task to halt, then wait for it to do so.
+    // Tell the polling task to stop, then wait for it to do so.
     //
-    pollingQuit = 1;
-    while (pollingRunning) {
-      sched_yield();
-    }
+    stop_polling(/*wait*/ true);
   }
 }
 
 static void exit_common(int status) {
   static int loopback = 0;
 
-  pollingQuit = 1;
+  stop_polling(/*wait*/ false);
 
   if (chpl_nodeID == 0) {
     if (loopback) {
@@ -1062,7 +1078,7 @@ static void exit_any_dirty(int status) {
   // GASNet will then kill all other locales.
   static int loopback = 0;
 
-  pollingQuit = 1;
+  stop_polling(/*wait*/ false);
 
   if (chpl_nodeID == 0) {
     if (loopback) {
