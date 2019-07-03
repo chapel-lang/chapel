@@ -630,15 +630,7 @@ void ModuleSymbol::addDefaultUses() {
     if (parentModule->modTag != MOD_USER) {
       SET_LINENO(this);
 
-      UnresolvedSymExpr* modRef;
-
-      // If this is a Fortran compilation, we need to use ISO_Fortran_binding
-      if (fLibraryFortran) {
-        modRef = new UnresolvedSymExpr("ISO_Fortran_binding");
-        block->insertAtHead(new UseStmt(modRef, false));
-      }
-
-      modRef = new UnresolvedSymExpr("ChapelStandard");
+      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStandard");
       block->insertAtHead(new UseStmt(modRef, true));
     }
 
@@ -648,6 +640,13 @@ void ModuleSymbol::addDefaultUses() {
     SET_LINENO(this);
 
     block->useListAdd(rootModule, false);
+  } else if (fLibraryFortran) {
+    if (!strcmp(name, "ChapelStandard")) {
+      SET_LINENO(this);
+
+      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ISO_Fortran_binding");
+      block->insertAtTail(new UseStmt(modRef, false));
+    }
   }
 }
 
