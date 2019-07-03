@@ -16,4 +16,10 @@ proc s3(test: Test) throws {
   test.addNumLocales(8,16);
 }
 
-UnitTest.runTest(s1,s2,s3);
+// This test has min locales >  max locales
+proc s4(test: Test) throws {
+  test.maxLocales(5);
+  test.minLocales(10);
+}
+
+UnitTest.runTest(s1,s2,s3,s4);

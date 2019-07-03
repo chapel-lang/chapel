@@ -17,15 +17,17 @@ module Launcher {
 
   proc main(args: [] string) {
     var comm_c: c_string;
-    sys_getenv("CHPL_COMM",comm_c);
-    comm = comm_c: string;
     var dirs: [1..0] string,
         files: [1..0] string;
     var hadInvalidFile = false;
     var programName = args[0];
+
+    sys_getenv("CHPL_COMM",comm_c);
+    comm = comm_c: string;
+    
     for a in args[1..] {
       if a == "-h" || a == "--help" {
-        writeln("Usage: ", programName, " <options> filename [filenames] directoryname [directorynames]");
+        writeln("Usage: ", programName," <options> filename [filenames] directoryname [directorynames]");
         printUsage();
         exit(1); // returning 1 from main is also an option
       }
@@ -201,8 +203,10 @@ module Launcher {
       if setComm!="" then comm = setComm;
       var sub = spawn(["chpl",file,"-o",executable,"-M.",
                     "--comm",comm],stderr = PIPE); //Compiling the file
+      var compError: string;
       if sub.stderr.readline(line) {
-        writeln(line);
+        compError = line;
+        while sub.stderr.readline(line) do compError += line;
         compErr = true;
       }
       sub.wait();
@@ -212,7 +216,7 @@ module Launcher {
         var dict: [dictDomain] int;
         runAndLog(executable,fileName,result,0,numLocales,
                   testNames, dictDomain, dict);
-        if !keepExec:bool {
+        if !keepExec {
           FileSystem.remove(executable);
           if isFile(executableReal) {
             FileSystem.remove(executableReal);
@@ -223,6 +227,7 @@ module Launcher {
         writeln("Compilation Error in ",fileName);
         writeln("Possible Reasons can be passing a non-test ",
                 "function to UnitTest.runTest()");
+        writeln(compError);
       }
     }
   }

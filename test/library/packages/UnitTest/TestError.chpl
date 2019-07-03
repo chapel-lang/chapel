@@ -45,3 +45,13 @@ class TestIncorrectNumLocales: TestError {
     super.init(details);
   }
 }
+
+/* UnexpectedLocales Error Class. Raised when test has
+    locales with which it can't be run.
+    Eg: MaxLocales < MinLocales
+*/
+class UnexpectedLocales: TestError {
+  proc init(details: string = "") {
+    super.init(details);
+  }
+}

@@ -23,8 +23,8 @@ module UnitTest {
   type argType = tempFcf.type;  //Type of First Class Test Functions
 
   class Test {
-    var numMaxLocales: int,
-        numMinLocales: int;
+    var numMaxLocales = max(int),
+        numMinLocales = min(int);
     var dictDomain: domain(int);
     
     /* Unconditionally skip a test. */
@@ -706,6 +706,12 @@ module UnitTest {
     /*Specify Max Number of Locales required to run the test*/
     proc maxLocales(value: int) throws {
       this.numMaxLocales = value;
+      if this.numMaxLocales < 1 {
+        throw new owned UnexpectedLocales("Max Locales is less than 1");
+      }
+      if this.numMaxLocales < this.numMinLocales {
+        throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
+      }
       if value < numLocales {
         throw new owned TestIncorrectNumLocales("Required Locales ="+value);
       }
@@ -714,6 +720,9 @@ module UnitTest {
     /*Specify Min Number of Locales required to run the test*/
     proc minLocales(value: int) throws {
       this.numMinLocales = value;
+      if this.numMaxLocales < this.numMinLocales {
+        throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
+      }
       if value > numLocales {
         throw new owned TestIncorrectNumLocales("Required Locales ="+value);
       }
@@ -835,7 +844,7 @@ module UnitTest {
           testResult.addSuccess(test: string);
         }
         else {
-          var checkStatus = testNameList.find(test:string);
+          var checkStatus = testNameList.find(test: string);
           if checkStatus[1] {
             // Create a test object per test
             var testObject = new Test();
@@ -849,18 +858,21 @@ module UnitTest {
       }
       // A variety of catch statements will handle errors thrown
       catch e: AssertionError {
-        testResult.addFailure(test:string, e:string);
+        testResult.addFailure(test: string, e: string);
         // print info of the assertion error
       }
       catch e: TestSkipped {
-        testResult.addSkip(test:string, e:string);
+        testResult.addSkip(test: string, e: string);
         // Print info on test skipped
       }
       catch e: TestDependencyNotMet {
         // Pop test out of array and append to end
       }
       catch e: TestIncorrectNumLocales {
-        testResult.addIncorrectNumLocales(test:string,e: string);
+        testResult.addIncorrectNumLocales(test: string, e: string);
+      }
+      catch e: UnexpectedLocales {
+        testResult.addFailure(test: string, e: string);
       }
       catch e { 
         testResult.addError(test:string, e:string);
