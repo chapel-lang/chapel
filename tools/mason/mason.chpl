@@ -33,7 +33,6 @@ use MasonRun;
 use FileSystem;
 use MasonSystem;
 use MasonExternal;
-use MasonShow;
 
 
 /*
@@ -91,7 +90,6 @@ proc main(args: [] string) throws {
       when 'doc' do masonDoc(args);
       when 'clean' do masonClean(args);
       when 'help' do masonHelp();
-      when 'show' do masonShow(args);
       when 'version' do printVersion();
       when '--list' do masonList();
       when '-h' do masonHelp();

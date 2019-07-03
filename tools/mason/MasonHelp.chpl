@@ -148,6 +148,7 @@ proc masonSearchHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
+  writeln("    --show                      Display the manifest of a single package's most recent version.");
   writeln();
   writeln(desc);
 }
@@ -420,16 +421,5 @@ proc masonDocHelp() {
   writeln("Will generate documentation when ran inside a mason package.");
   writeln("Requires that chpldoc is set up in order to work.");
   writeln("For instructions on setting up chpldoc, please view its documentation.");
-  writeln();
-}
-
-proc masonShowHelp() {
-  writeln("Show the contents of a package's Mason.toml");
-  writeln();
-  writeln("Usage:");
-  writeln("    mason show [options]");
-  writeln();
-  writeln("Options:");
-  writeln("    -h, --help                  Display this message");
   writeln();
 }
