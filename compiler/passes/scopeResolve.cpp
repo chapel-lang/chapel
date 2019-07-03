@@ -2362,17 +2362,24 @@ static void resolveUnmanagedBorrows() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void markUsedModules(std::set<ModuleSymbol*>& set, ModuleSymbol* mod) {
+static void markUsedModule(std::set<ModuleSymbol*>& set, ModuleSymbol* mod) {
+  // Do nothing if it's already in the set.
+  if (set.count(mod) != 0)
+    return;
+
+  // Add it to the set
   set.insert(mod);
-  forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
-    if (set.count(usedMod) == 0) {
-      set.insert(usedMod);
-      markUsedModules(set, usedMod);
-    }
+
+  // Mark each used module as well
+  for_vector(ModuleSymbol, usedMod, mod->modUseList) {
+    markUsedModule(set, usedMod);
   }
+
+  // Additionally, mark any parent modules
   while (mod != NULL && mod->defPoint != NULL) {
     mod = mod->defPoint->getModule();
-    set.insert(mod);
+    if (mod != NULL)
+      markUsedModule(set, mod);
   }
 }
 
@@ -2381,17 +2388,17 @@ static void markUsedModules(std::set<ModuleSymbol*>& set, ModuleSymbol* mod) {
 static void removeUnusedModules() {
   std::set<ModuleSymbol*> usedModules;
 
-  markUsedModules(usedModules, stringLiteralModule);
+  markUsedModule(usedModules, stringLiteralModule);
 
-  markUsedModules(usedModules, ModuleSymbol::mainModule());
+  markUsedModule(usedModules, ModuleSymbol::mainModule());
 
   if (printModuleInitModule)
-    markUsedModules(usedModules, printModuleInitModule);
+    markUsedModule(usedModules, printModuleInitModule);
 
   // Now remove any module not in the set
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     if (usedModules.count(mod) == 0) {
-      printf("Removing not 'use'd module %s\n", mod->name);
+      INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
       mod->defPoint->remove();
     }
   }
