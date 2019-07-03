@@ -1,10 +1,12 @@
 Initializing Modules:
    ChapelStandard
     CPtr
+     SysBasic
+      SysCTypes
+     SysError
      HaltWrappers
     CString
     String
-     SysCTypes
      StringCasts
     OwnedObject
     ChapelDebugPrint
@@ -25,23 +27,31 @@ Initializing Modules:
         DSIUtil
         ChapelArray
          Sort
+          MSBRadixSort
+           RadixSortHelp
+           ShellSort
+          QuickSort
+           InsertionSort
+          BubbleSort
+          HeapSort
+          BinaryInsertionSort
+          MergeSort
+          SelectionSort
+        ChapelDistribution
+         LinkedLists
+        IO
+         FormattedIO
+          Regexp
+        DefaultAssociative
         ExternalArray
         RangeChunk
        ChapelNumLocales
        Sys
-        SysBasic
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray
-    ChapelDistribution
-     LinkedLists
     ChapelIO
-     IO
-      SysError
-      FormattedIO
-       Regexp
     LocaleTree
-    DefaultAssociative
     ChapelTaskTable
     MemTracking
     ChapelUtil
