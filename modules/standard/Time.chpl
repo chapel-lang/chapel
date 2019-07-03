@@ -28,7 +28,6 @@
  */
 
 module Time {
-  private use SysBasic;
 
 // Returns the number of seconds since midnight.  Has the potential for
 // microsecond resolution if supported by the runtime platform
