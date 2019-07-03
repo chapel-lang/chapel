@@ -7,3 +7,4 @@
 --pattern="--debug Secret" # hidden.good
 --pattern="ChplVersion"    # chplVersion.good
 --pattern="--show caps"    # show.good
+--pattern="--show capsize" # showCapsize.good

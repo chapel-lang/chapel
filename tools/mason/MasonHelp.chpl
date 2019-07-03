@@ -148,7 +148,7 @@ proc masonSearchHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
-  writeln("    --show                      Display the manifest of a single package's most recent version.");
+  writeln("    --show                      Display the manifest of a package");
   writeln();
   writeln(desc);
 }

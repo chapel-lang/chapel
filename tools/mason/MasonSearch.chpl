@@ -86,8 +86,8 @@ proc masonSearch(origArgs : [] string) {
   }
 
   if results.size == 0 && show {
-  writeln('"' + query + '" returned no packages');
-  writeln('--show requires the search to return one package');
+    writeln('"' + query + '" returned no packages');
+    writeln('--show requires the search to return one package');
   }
 
   if show && results.size > 1 {
@@ -97,7 +97,7 @@ proc masonSearch(origArgs : [] string) {
     else {
       writeln('"' + query + '"  returned more than one package.');
     }
-  writeln("--show requires the search to return one package");
+    writeln("--show requires the search to return one package");
   }
 
   if results.size == 0 {
@@ -157,7 +157,8 @@ proc consumeArgs(ref args : [] string) {
 proc showToml(tomlFile : string, packageName : string) {
   const brickPath = MASON_HOME +'/mason-registry/Bricks/' +packageName + '/' + tomlFile;
   const openFile = openreader(brickPath);
-  const toml = parseToml(openFile);
+  const toml = new  owned parseToml(openFile);
   writeln(toml);
+  openFile.close();
   exit(0);
 }
