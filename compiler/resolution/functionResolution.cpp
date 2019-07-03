@@ -7575,7 +7575,7 @@ static void resolveUses(ModuleSymbol* mod) {
       }
     }
 
-    forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
+    for_vector(ModuleSymbol, usedMod, mod->modUseList) {
       resolveUses(usedMod);
     }
 
