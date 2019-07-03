@@ -155,7 +155,7 @@ proc consumeArgs(ref args : [] string) {
 }
 
 proc showToml(tomlFile : string, packageName : string) {
-  const brickPath = MASON_HOME +'/mason-registry/Bricks/' +packageName + '/' + tomlFile;
+  const brickPath = MASON_HOME + '/mason-registry/Bricks/' + packageName + '/' + tomlFile;
   const openFile = openreader(brickPath);
   const toml = new  owned parseToml(openFile);
   writeln(toml);
