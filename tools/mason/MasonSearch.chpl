@@ -97,7 +97,7 @@ proc masonSearch(origArgs : [] string) {
     else {
       writeln('"' + query + '"  returned more than one package.');
     }
-    writeln("--show requires the search to return one package");
+    writeln("--show requires the search to return one package.");
   }
 
   if results.size == 0 {
