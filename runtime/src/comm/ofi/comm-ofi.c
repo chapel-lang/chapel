@@ -1400,7 +1400,9 @@ typedef enum {
 } amOp_t;
 
 #ifdef CHPL_COMM_DEBUG
-static const char* am_op2name(amOp_t);
+static const char* am_opName(amOp_t);
+static const char* amo_opName(enum fi_op);
+static const char* amo_typeName(enum fi_datatype);
 #endif
 
 static void amRequestExecOn(c_nodeid_t, c_sublocid_t, chpl_fn_int_t,
@@ -1582,10 +1584,10 @@ void amRequestAMO(c_nodeid_t node, void* object,
                   int ofiOp, enum fi_datatype ofiType, size_t size) {
   DBG_PRINTF(DBG_AMO,
              "AMO via AM: obj %d:%p, opnd1 <%s>, opnd2 <%s>, res %p, "
-             "op %d, typ %d, sz %zd",
+             "op %s, typ %s, sz %zd",
              (int) node, object,
              DBG_VAL(operand1, ofiType), DBG_VAL(operand2, ofiType), result,
-             ofiOp, ofiType, size);
+             amo_opName(ofiOp), amo_typeName(ofiType), size);
 
   void* myResult = result;
   size_t resSize = (ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : size;
@@ -1694,7 +1696,7 @@ void amRequestCommon(c_nodeid_t node,
   DBG_PRINTF(DBG_AM | DBG_AMSEND,
              "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, pDone %p",
              node, chpl_nodeID, myArg->comm.b.seq,
-             am_op2name(myArg->comm.b.op), argSize, pDone);
+             am_opName(myArg->comm.b.op), argSize, pDone);
   OFI_RIDE_OUT_EAGAIN(fi_send(tcip->txCtx, myArg, argSize,
                               mrDesc, rxMsgAddr(tcip, node),
                               NULL));
@@ -1873,7 +1875,7 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
                  "seqId %d:%" PRIu64 ", %s, size %zd",
                  (char*) req - (char*) ofi_msg_reqs.msg_iov->iov_base,
                  req->comm.b.node, req->comm.b.seq,
-                 am_op2name(req->comm.b.op), cqes[i].len);
+                 am_opName(req->comm.b.op), cqes[i].len);
 
 #if defined(CHPL_COMM_DEBUG) && defined(DEBUG_CRC_MSGS)
       if (DBG_TEST_MASK(DBG_AM)) {
@@ -1965,9 +1967,10 @@ void amHandleExecOn(chpl_comm_on_bundle_t* req) {
              (int) xo->b.node, xo->b.seq, xo->fid, xo->pDone);
 
   //
-  // We only need a wrapper if we have to send a 'done' indicator back.
+  // We only need a wrapper if we have to send a 'done' indicator back
+  // or we need to produce the AM debug output.
   //
-  chpl_fn_p fn = ((xo->pDone == NULL)
+  chpl_fn_p fn = ((xo->pDone == NULL && !DBG_TEST_MASK(DBG_AM | DBG_AMRECV))
                   ? chpl_ftable[xo->fid]
                   : (chpl_fn_p) amWrapExecOnBody);
   chpl_task_startMovedTask(xo->fid, fn, chpl_comm_on_bundle_task_bundle(req),
@@ -1986,7 +1989,13 @@ void amWrapExecOnBody(void* p) {
              (xo->fast ? "fast " : ""), (int) xo->fid, p);
 
   chpl_ftable_call(xo->fid, p);
-  amSendDone(&xo->b, xo->pDone);
+  if (xo->pDone != NULL) {
+    amSendDone(&xo->b, xo->pDone);
+  } else {
+    DBG_PRINTF(DBG_AM | DBG_AMRECV,
+               "amWrapExecOnBody(seqId %d:%" PRIu64 " NB): done",
+               (int) xo->b.node, xo->b.seq);
+  }
 }
 
 
@@ -2053,6 +2062,10 @@ void amWrapExecOnLrgBody(void* p) {
   chpl_ftable_call(xol->fid, req);
   if (xol->pDone != NULL) {
     amSendDone(&xol->b, xol->pDone);
+  } else {
+    DBG_PRINTF(DBG_AM | DBG_AMRECV,
+               "amWrapExecOnLrgBody(seqId %d:%" PRIu64 " NB): done",
+               (int) node, xol->b.seq);
   }
 
   CHPL_FREE(req);
@@ -2098,34 +2111,38 @@ void amHandleAMO(struct perTxCtxInfo_t* tcip, chpl_comm_on_bundle_t* req) {
     DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
                "amHandleAMO(seqId %d:%" PRIu64 "): "
                "obj %p, opnd1 %s, opnd2 %s, "
-               "res %p, ofiOp %d, ofiType %d, sz %d",
+               "res %p, ofiOp %s, ofiType %s, sz %d",
                (int) amo->b.node, amo->b.seq,
                amo->obj,
                DBG_VAL(&amo->operand1, amo->ofiType),
                DBG_VAL(&amo->operand2, amo->ofiType),
-               amo->result, amo->ofiOp, amo->ofiType, amo->size);
+               amo->result, amo_opName(amo->ofiOp),
+               amo_typeName(amo->ofiType), amo->size);
   } else if (amo->result != NULL) {
     if (amo->ofiOp == FI_ATOMIC_READ) {
       DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
                  "amHandleAMO(seqId %d:%" PRIu64 "): "
-                 "obj %p, res %p, ofiOp %d, ofiType %d, sz %d",
+                 "obj %p, res %p, ofiOp %s, ofiType %s, sz %d",
                  (int) amo->b.node, amo->b.seq,
-                 amo->obj, amo->result, amo->ofiOp, amo->ofiType, amo->size);
+                 amo->obj, amo->result, amo_opName(amo->ofiOp),
+                 amo_typeName(amo->ofiType), amo->size);
     } else {
       DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
                  "amHandleAMO(seqId %d:%" PRIu64 "): "
-                 "obj %p, opnd %s, res %p, ofiOp %d, ofiType %d, sz %d",
+                 "obj %p, opnd %s, res %p, ofiOp %s, ofiType %s, sz %d",
                  (int) amo->b.node, amo->b.seq,
                  amo->obj, DBG_VAL(&amo->operand1, amo->ofiType),
-                 amo->result, amo->ofiOp, amo->ofiType, amo->size);
+                 amo->result, amo_opName(amo->ofiOp),
+                 amo_typeName(amo->ofiType), amo->size);
     }
   } else {
     DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
                "amHandleAMO(seqId %d:%" PRIu64 "): "
-               "obj %p, opnd %s, ofiOp %d, ofiType %d, sz %d",
+               "obj %p, opnd %s, ofiOp %s, ofiType %s, sz %d",
                (int) amo->b.node, amo->b.seq,
                amo->obj, DBG_VAL(&amo->operand1, amo->ofiType),
-               amo->ofiOp, amo->ofiType, amo->size);
+               amo_opName(amo->ofiOp), amo_typeName(amo->ofiType),
+               amo->size);
   }
   chpl_amo_datum_t result;
   size_t resSize = (amo->ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : amo->size;
@@ -2624,18 +2641,18 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   if (result == NULL) {
     DBG_PRINTF(DBG_AMO,
                "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, "
-               "op %d, typ %d, sz %zd",
+               "op %s, typ %s, sz %zd",
                (int) node, object,
                DBG_VAL(myOpnd1, ofiType), DBG_VAL(myOpnd2, ofiType),
-               ofiOp, ofiType, size);
+               amo_opName(ofiOp), amo_typeName(ofiType), size);
   } else {
     DBG_PRINTF(DBG_AMO,
                "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, res %p is %s, "
-               "op %d, typ %d, sz %zd",
+               "op %s, typ %s, sz %zd",
                (int) node, object,
                DBG_VAL(myOpnd1, ofiType), DBG_VAL(myOpnd2, ofiType), result,
                DBG_VAL(result, (ofiOp == FI_CSWAP) ? FI_INT32 : ofiType),
-               ofiOp, ofiType, size);
+               amo_opName(ofiOp), amo_typeName(ofiType), size);
   }
 
   if (myOpnd1 != operand1) {
@@ -3387,19 +3404,19 @@ void doCpuAMO(void* obj,
   if (DBG_TEST_MASK(DBG_AMO)) {
     if (result == NULL) {
       DBG_PRINTF(DBG_AMO,
-                 "doCpuAMO(%p, %d, %d, %s): now %s",
-                 obj, ofiOp, ofiType,
+                 "doCpuAMO(%p, %s, %s, %s): now %s",
+                 obj, amo_opName(ofiOp), amo_typeName(ofiType),
                  DBG_VAL(myOpnd1, ofiType),
                  DBG_VAL((chpl_amo_datum_t*) obj, ofiType));
     } else if (ofiOp == FI_ATOMIC_READ) {
       DBG_PRINTF(DBG_AMO,
-                 "doCpuAMO(%p, %d, %d): res %p is %s",
-                 obj, ofiOp, ofiType, result,
+                 "doCpuAMO(%p, %s, %s): res %p is %s",
+                 obj, amo_opName(ofiOp), amo_typeName(ofiType), result,
                  DBG_VAL(result, ofiType));
     } else {
       DBG_PRINTF(DBG_AMO,
-                 "doCpuAMO(%p, %d, %d, %s, %s): now %s, res %p is %s",
-                 obj, ofiOp, ofiType,
+                 "doCpuAMO(%p, %s, %s, %s, %s): now %s, res %p is %s",
+                 obj, amo_opName(ofiOp), amo_typeName(ofiType),
                  DBG_VAL(myOpnd1, ofiType),
                  DBG_VAL(myOpnd2, ofiType),
                  DBG_VAL((chpl_amo_datum_t*) obj, ofiType), result,
@@ -3680,7 +3697,7 @@ char* chpl_comm_ofi_dbg_val(const void* pV, enum fi_datatype ofiType) {
 
 
 static
-const char* am_op2name(amOp_t op) {
+const char* am_opName(amOp_t op) {
   switch (op) {
   case am_opNil: return "opNil";
   case am_opExecOn: return "opExecOn";
@@ -3689,8 +3706,37 @@ const char* am_op2name(amOp_t op) {
   case am_opPut: return "opPut";
   case am_opAMO: return "opAMO";
   case am_opShutdown: return "opShutdown";
+  default: return "op???";
   }
-  return "op???";
+}
+
+
+static
+const char* amo_opName(enum fi_op ofiOp) {
+  switch (ofiOp) {
+  case FI_ATOMIC_WRITE: return "write";
+  case FI_ATOMIC_READ: return "read";
+  case FI_CSWAP: return "cswap";
+  case FI_BAND: return "band";
+  case FI_BOR: return "bor";
+  case FI_BXOR: return "bxor";
+  case FI_SUM: return "sum";
+  default: return "amoOp???";
+  }
+}
+
+
+static
+const char* amo_typeName(enum fi_datatype ofiType) {
+  switch (ofiType) {
+  case FI_INT32: return "int32";
+  case FI_UINT32: return "uint32";
+  case FI_INT64: return "int64";
+  case FI_UINT64: return "uint64";
+  case FI_FLOAT: return "float";
+  case FI_DOUBLE: return "double";
+  default: return "amoType???";
+  }
 }
 
 #endif
