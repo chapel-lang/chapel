@@ -180,21 +180,6 @@ GenRet BlockStmt::codegen() {
     info->currentStackVariables.emplace_back();
 
     for_alist(node, this->body) {
-      if (CallExpr* call = toCallExpr(node)) {
-        if (call->isPrimitive(PRIM_RETURN)) {
-          // Emit lifetime end for any variables from the current block
-          while (info->currentStackVariables.size() > 0) {
-            for_set(Symbol, var, info->currentStackVariables.back()) {
-              if (var->hasFlag(FLAG_RVV) || call->getFunction()->hasFlag(FLAG_VOID_NO_RETURN_VALUE)) {
-                llvm::Value* declared = var->codegen().val;
-                llvm::Type* type = var->type->codegen().type;
-                codegenLifetimeEnd(type, declared);
-              }
-            };
-            info->currentStackVariables.pop_back();
-          }
-        }
-      }
       node->codegen();
       if (DefExpr* def = toDefExpr(node)) {
         Symbol* var = def->sym;
@@ -212,12 +197,15 @@ GenRet BlockStmt::codegen() {
       }
     }
 
-    // for_set(Symbol, var, info->currentStackVariables.back()) {
-    //   llvm::Value* declared = var->codegen().val;
-    //   llvm::Type* type = var->type->codegen().type;
-    //   codegenLifetimeEnd(type, declared);
-    // }
-    // info->currentStackVariables.pop_back();
+    if (info->currentStackVariables.size() == 1) {
+      for_set(Symbol, var, info->currentStackVariables.back()) {
+        llvm::Value* declared = var->codegen().val;
+        llvm::Type* type = var->type->codegen().type;
+        codegenLifetimeEnd(type, declared);
+      }
+    }
+
+    info->currentStackVariables.pop_back();
 
     info->lvt->removeLayer();
 
@@ -251,7 +239,7 @@ CondStmt::codegen() {
 
     int numExtraPar = 0;
     //if (c_condExpr[0] == '(' && c_condExpr[c_condExpr.size()-1] == ')') {
-    if (c_condExpr[numExtraPar] == '(' && 
+    if (c_condExpr[numExtraPar] == '(' &&
         c_condExpr[c_condExpr.size()-(numExtraPar+1)] == ')') {
       numExtraPar++;
     }
@@ -356,8 +344,10 @@ GenRet GotoStmt::codegen() {
   // Handle stack of lifetime variables
 #ifdef HAVE_LLVM
   if (gotoTag == GOTO_RETURN || gotoTag == GOTO_ERROR_HANDLING) {
-    for (auto& curSet: info->currentStackVariables) {
-      for_set(Symbol, var, curSet) {
+    // We do not want to iterate over the first set of stack variables
+    // since that will be handled just before the return statement
+    for (std::size_t i = 1; i < info->currentStackVariables.size(); ++i) {
+      for_set(Symbol, var, info->currentStackVariables[i]) {
         if (!var->hasFlag(FLAG_RVV)) {
           llvm::Value* declared = var->codegen().val;
           llvm::Type* type = var->type->codegen().type;
