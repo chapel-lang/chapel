@@ -390,6 +390,7 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
 {
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
+  sifn->addFlag(FLAG_GENERIC);
 
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
@@ -425,6 +426,7 @@ static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
 {
   FnSymbol* lifn = new FnSymbol(iteratorName);
   lifn->addFlag(FLAG_FN_RETURNS_ITERATOR);
+  lifn->addFlag(FLAG_GENERIC);
 
   Expr* tag = new SymExpr(gLeaderTag);
   ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
@@ -458,6 +460,7 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
 {
   FnSymbol* fifn = new FnSymbol(iteratorName);
   fifn->addFlag(FLAG_ITERATOR_FN);
+  fifn->addFlag(FLAG_GENERIC);
 
   Expr* tag = new SymExpr(gFollowerTag);
   ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
@@ -672,7 +675,8 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   // loop-expr functions in the ArgSymbol's scope, we will insert the functions
   // at module scope and pass outer variables to a top-level wrapper (the
   // chpl__loopexpr function).
-  bool insideArgSymbol = isArgSymbol(loopExpr->parentSymbol);
+  bool insideArgSymbol = isArgSymbol(loopExpr->parentSymbol) ||
+                         isTypeSymbol(loopExpr->parentSymbol);
 
   std::set<Symbol*> outerVars;
   findOuterVars(loopExpr, outerVars);
@@ -692,6 +696,7 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_GENERIC);
   if (forall) fn->addFlag(FLAG_MAYBE_ARRAY_TYPE);
 
   if (insideArgSymbol) {

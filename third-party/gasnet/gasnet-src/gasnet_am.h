@@ -17,7 +17,8 @@
     GASNETI_CHECKATTACH();                                                     \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));              \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));               \
-    gasneti_assert(numargs >= 0 && numargs <= gex_AM_MaxArgs());               \
+    gasneti_assert_int(numargs ,>=, 0);                                        \
+    gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());                         \
     GASNETI_TRACE_AMREQUESTSHORT(tm,rank,handler,flags,numargs);               \
     GASNETI_CHECK_ERRR((rank >= gasneti_nodes),BAD_ARG,"node index too high"); \
   } while (0)
@@ -25,7 +26,8 @@
     GASNETI_CHECKATTACH();                                                           \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));                    \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));                     \
-    gasneti_assert(numargs >= 0 && numargs <= gex_AM_MaxArgs());                     \
+    gasneti_assert_int(numargs ,>=, 0);                                        \
+    gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());                         \
     GASNETI_TRACE_AMREQUESTMEDIUM(tm,rank,handler,source_addr,nbytes,flags,numargs); \
     GASNETI_CHECK_ERRR((rank >= gasneti_nodes),BAD_ARG,"node index too high");       \
     GASNETI_CHECK_ERRR((nbytes > gex_AM_MaxRequestMedium(tm,rank,lc_opt,flags,numargs)),\
@@ -37,7 +39,8 @@
     GASNETI_CHECKATTACH();                                                                   \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));                            \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));                             \
-    gasneti_assert(numargs >= 0 && numargs <= gex_AM_MaxArgs());                             \
+    gasneti_assert_int(numargs ,>=, 0);                                                      \
+    gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());                                       \
     GASNETI_TRACE_AMREQUESTLONG(tm,rank,handler,source_addr,nbytes,dest_addr,flags,numargs); \
     GASNETI_CHECK_ERRR((rank >= gasneti_nodes),BAD_ARG,"node index too high");               \
     GASNETI_CHECK_ERRR((nbytes > gex_AM_MaxRequestLong(tm,rank,lc_opt,flags,numargs)),       \
@@ -48,13 +51,15 @@
 #define GASNETI_COMMON_AMREPLYSHORT(token,handler,flags,numargs) do {    \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));  \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));   \
-    gasneti_assert(numargs >= 0 && numargs <= gex_AM_MaxArgs());   \
+    gasneti_assert_int(numargs ,>=, 0);                            \
+    gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());             \
     GASNETI_TRACE_AMREPLYSHORT(token,handler,flags,numargs);       \
   } while (0)
 #define GASNETI_COMMON_AMREPLYMEDIUM(token,handler,source_addr,nbytes,lc_opt,flags,numargs) do { \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));                   \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));                    \
-    gasneti_assert(numargs >= 0 && numargs <= gex_AM_MaxArgs());                    \
+    gasneti_assert_int(numargs ,>=, 0);                                             \
+    gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());                              \
     GASNETI_TRACE_AMREPLYMEDIUM(token,handler,source_addr,nbytes,flags,numargs);    \
     GASNETI_CHECK_ERRR((nbytes > gasnetc_Token_MaxReplyMedium(token,lc_opt,flags,numargs)),\
                        BAD_ARG,"nbytes too large");                                 \
@@ -65,7 +70,8 @@
 #define GASNETI_COMMON_AMREPLYLONG(token,handler,source_addr,nbytes,dest_addr,lc_opt,flags,numargs) do { \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));                           \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));                            \
-    gasneti_assert(numargs >= 0 && numargs <= gex_AM_MaxArgs());                            \
+    gasneti_assert_int(numargs ,>=, 0);                                                     \
+    gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());                                      \
     GASNETI_TRACE_AMREPLYLONG(token,handler,source_addr,nbytes,dest_addr,flags,numargs);    \
     GASNETI_CHECK_ERRR((nbytes > gasnetc_Token_MaxReplyLong(token,lc_opt,flags,numargs)),   \
                        BAD_ARG,"nbytes too large");                                         \
@@ -98,7 +104,7 @@ GASNETI_META_ASC16(_gasneti_Short_handlerfn_typedefN,_gasneti_Short_handlerfn_ty
   gasneti_assert(_pArgs || !_numargs);                                          \
   switch (_numargs) {                                                           \
     GASNETI_META_DES16(_gasneti_Short_RunCaseN,_gasneti_Short_RunCaseN)         \
-    default: gasneti_unreachable();                                             \
+    default: gasneti_unreachable_error(("Invalid numargs=%i",_numargs));        \
   }                                                                             \
   GASNETI_TRACE_PRINTF(A,("AM%s_SHORT_HANDLER: handler execution complete", (isReq?"REQUEST":"REPLY"))); \
 } while (0)
@@ -125,7 +131,7 @@ GASNETI_META_ASC16(_gasneti_MedLong_handlerfn_typedefN,_gasneti_MedLong_handlerf
   extrachecks;                                                                  \
   switch (_numargs) {                                                           \
     GASNETI_META_DES16(_gasneti_MedLong_RunCaseN,_gasneti_MedLong_RunCaseN)     \
-    default: gasneti_unreachable();                                             \
+    default: gasneti_unreachable_error(("Invalid numargs=%i",_numargs));        \
   }                                                                             \
 } while (0)
 
@@ -136,7 +142,7 @@ GASNETI_META_ASC16(_gasneti_MedLong_handlerfn_typedefN,_gasneti_MedLong_handlerf
 
 #define GASNETI_RUN_HANDLER_MEDIUM(isReq, hid, phandlerfn, token, pArgs, numargs, pData, datalen) do {    \
   _GASNETI_RUN_HANDLER_MEDLONG(MEDIUM, isReq, hid, phandlerfn, token, pArgs, numargs, pData, datalen,     \
-                     gasneti_assert(!_datalen || ((uintptr_t)_pData) % GASNETI_MEDBUF_ALIGNMENT == 0));   \
+               if (_datalen) gasneti_assert_uint(((uintptr_t)_pData) % GASNETI_MEDBUF_ALIGNMENT ,==, 0)); \
   GASNETI_TRACE_PRINTF(A,("AM%s_MEDIUM_HANDLER: handler execution complete", (isReq?"REQUEST":"REPLY"))); \
 } while (0)
 
@@ -156,6 +162,7 @@ typedef enum {
 } gasneti_category_t;
 
 /* default AM handler for unregistered entries - prints a fatal error */
+GASNETI_COLD
 extern void gasneti_defaultAMHandler(gex_Token_t token);
 
 extern int gasneti_amtbl_init(gex_AM_Entry_t *output);
@@ -735,8 +742,7 @@ void gasnetc_loopback_commit_inner(
         buf = dest_addr;
         GASNETI_MEMCPY_SAFE_EMPTY(buf, sd->_addr, nbytes);
         break;
-    default:
-        gasneti_unreachable();
+    default: gasneti_unreachable_error(("Invalid category=%i",(int)category));
   }
 
   gex_AM_Arg_t pargs[GASNETC_MAX_ARGS_NBRHD];
@@ -751,7 +757,8 @@ void gasnetc_loopback_commit_inner(
 #endif
   real_token.ti.gex_is_long = (category == gasneti_Long);
 
-  gasneti_assert(numargs >= 0 && numargs <= GASNETC_MAX_ARGS_NBRHD);
+  gasneti_assert_int(numargs ,>=, 0);
+  gasneti_assert_int(numargs ,<=, GASNETC_MAX_ARGS_NBRHD);
   gasneti_amtbl_check(handler_entry, numargs, category, isReq);
 
   for (int i = 0; i < numargs; i++) {
@@ -769,8 +776,7 @@ void gasnetc_loopback_commit_inner(
     case gasneti_Long:
         GASNETI_RUN_HANDLER_LONG(isReq,handler,handler_fn,token,pargs,numargs,buf,nbytes);
         break;
-    default:
-        gasneti_unreachable();
+    default: gasneti_unreachable_error(("Invalid category=%i",(int)category));
   }
   GASNETC_NBRHD_LEAVING_HANDLER_HOOK(category,isReq);
 
@@ -838,8 +844,7 @@ int gasnetc_nbrhd_RequestGeneric(
         return gasneti_AMPSHM_RequestLong(jobrank, handler, source_addr, nbytes, dest_ptr,
                                           flags, numargs, argptr GASNETI_THREAD_PASS);
         break;
-    default:
-        gasneti_unreachable();
+    default: gasneti_unreachable_error(("Invalid category=%i",(int)category));
   }
   return 0;
 #else
@@ -873,8 +878,7 @@ int gasnetc_nbrhd_ReplyGeneric(
         retval = gasneti_AMPSHM_ReplyLong(token, handler, source_addr, nbytes, dest_ptr,
                                         flags, numargs, argptr);
         break;
-    default:
-        gasneti_unreachable();
+    default: gasneti_unreachable_error(("Invalid category=%i",(int)category));
   }
 #else
   GASNETI_POST_THREADINFO_FROM_NBRHD_TOKEN(token);

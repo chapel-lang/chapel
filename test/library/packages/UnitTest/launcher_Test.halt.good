@@ -1,11 +1,11 @@
 
 ======================================================================
-ERROR test_halt.chpl: {}
+ERROR test_halt.chpl: test2()
 ----------------------------------------------------------------------
 test_halt.chpl:9: error: halt reached - array index out of bounds: (0)
 
 ======================================================================
-FAIL test_halt.chpl: {}
+FAIL test_halt.chpl: test3()
 ----------------------------------------------------------------------
 AssertionError: assert failed - '2' != '3.0'
 

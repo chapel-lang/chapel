@@ -297,70 +297,46 @@ module DefaultRectangular {
                                                      ranges);
       if debugDefaultDist {
         chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                " ranges(", parDim, ").length=", ranges(parDim).length);
+                           " ranges(", parDim, ").length=", ranges(parDim).length);
       }
-
       if debugDataPar {
         chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n" +
-                "### ignoreRunning = ", ignoreRunning, "\n" +
-                "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
-                "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
-                "### nranges = ", ranges);
+                           "### ignoreRunning = ", ignoreRunning, "\n" +
+                           "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+                           "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
+                           "### nranges = ", ranges);
       }
-
       if numChunks <= 1 {
         for i in these_help(1) {
           yield i;
         }
       } else {
-        var locBlock: rank*range(intIdxType);
-        for param i in 1..rank {
-          locBlock(i) = offset(i)..#(ranges(i).length);
-        }
         if debugDefaultDist {
-          chpl_debug_writeln("*** DI: locBlock = ", locBlock);
+          chpl_debug_writeln("*** DI: ranges = ", ranges);
         }
+        // TODO: The following is somewhat of an abuse of what
+        // _computeBlock() was designed for (dense ranges only; I
+        // multiplied by the stride as a white lie to make it work
+        // reasonabley.  We should switch to using the RangeChunk
+        // library...
         coforall chunk in 0..#numChunks {
-          var followMe: rank*range(intIdxType) = locBlock;
-          const (lo,hi) = _computeBlock(locBlock(parDim).length,
+          var block = ranges;
+          const len = if (!ranges(parDim).stridable) then ranges(parDim).length
+              else ranges(parDim).length:uint * abs(ranges(parDim).stride):uint;
+          const (lo,hi) = _computeBlock(len,
                                         numChunks, chunk,
-                                        locBlock(parDim)._high,
-                                        locBlock(parDim)._low,
-                                        locBlock(parDim)._low);
-          followMe(parDim) = lo..hi;
+                                        ranges(parDim)._high,
+                                        ranges(parDim)._low,
+                                        ranges(parDim)._low);
+          if block(parDim).stridable then
+            block(parDim) = lo..hi by block(parDim).stride align chpl__idxToInt(block(parDim).alignment);
+          else
+            block(parDim) = lo..hi;
           if debugDefaultDist {
-            chpl_debug_writeln("*** DI[", chunk, "]: followMe = ", followMe);
-          }
-          var block: rank*range(idxType=intIdxType, stridable=stridable);
-          if stridable {
-            type strType = chpl__signedType(intIdxType);
-            for param i in 1..rank {
-              // Note that a range.stride is signed, even if the range is not
-              const rStride = ranges(i).stride;
-              const rSignedStride = rStride:strType;
-              if rStride > 0 {
-                // Since stride is positive, the following line results
-                // in a positive number, so casting it to e.g. uint is OK
-                const riStride = rStride:intIdxType;
-                const low = ranges(i).alignedLowAsInt + followMe(i).low*riStride,
-                      high = ranges(i).alignedLowAsInt + followMe(i).high*riStride,
-                      stride = rSignedStride;
-                block(i) = low..high by stride;
-              } else {
-                // Stride is negative, so the following number is positive.
-                const riStride = (-rStride):intIdxType;
-                const low = ranges(i).alignedHighAsInt - followMe(i).high*riStride,
-                      high = ranges(i).alignedHighAsInt - followMe(i).low*riStride,
-                      stride = rSignedStride;
-                block(i) = low..high by stride;
-              }
-            }
-          } else {
-            for  param i in 1..rank do
-              block(i) = ranges(i)._low+followMe(i).low:intIdxType..ranges(i)._low+followMe(i).high:intIdxType;
+            chpl_debug_writeln("*** DI[", chunk, "]: block = ", block);
           }
           for i in these_help(1, block) {
-            yield chpl_intToIdx(i);
+            yield i;
           }
         }
       }

@@ -959,13 +959,6 @@ module ChapelDistribution {
     delete arr;
   }
 
-  // These are used in ChapelLocale.chpl. They are here to
-  // prevent an order-of-resolution issue.
-  pragma "no doc"
-  const chpl_emptyLocaleSpace: domain(1) = {1..0};
-  pragma "no doc"
-  const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
-
   // domain assignment helpers
 
   // Implement simple reallocate/set indices/post reallocate

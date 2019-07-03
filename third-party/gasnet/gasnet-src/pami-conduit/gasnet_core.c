@@ -159,8 +159,11 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
     /* (###) If your conduit will support PSHM, you should initialize it here.
      * The 1st argument is normally "&gasnetc_bootstrapSNodeBroadcast" or equivalent
      * The 2nd argument is the amount of shared memory space needed for any
-     * conduit-specific uses.  The return value is a pointer to the space
-     * requested by the 2nd argument.
+     * conduit-specific uses.
+     * The return value is a pointer to the space requested by the 2nd argument.
+     * It is advisable that the conduit ensure pages in this space are touched,
+     * possibly using gasneti_pshm_prefault(), prior to use of gasneti_segmentLimit()
+     * or similar memory probes.
      */
     (void) gasneti_pshm_init(&gasnetc_bootstrapSNodeBroadcast, 0);
   #endif
@@ -173,11 +176,27 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
     }
   }
 
-  /* allocate and attach an aux segment */
-  uintptr_t mmap_limit = gasneti_mmapLimit((uintptr_t)-1, (uint64_t)-1,
+#if HAVE_MMAP
+  // Bound per-host (sharedLimit) argument to gasneti_segmentLimit()
+  // while properly reserving space for aux segments.
+  uint64_t sharedLimit = gasneti_sharedLimit();
+  uint64_t hostAuxSegs = gasneti_myhost.node_count * gasneti_auxseg_preinit();
+  if (sharedLimit <= hostAuxSegs) {
+    gasneti_fatalerror("per-host segment limit %"PRIu64" is too small to accommodate %i aux segments, "
+                       "total size %"PRIu64". You may need to adjust OS shared memory limits.",
+                       sharedLimit, gasneti_myhost.node_count, hostAuxSegs);
+  }
+  sharedLimit -= hostAuxSegs;
+#else
+  #error "pami-conduit requires mmap() support" // Bug 3542
+#endif
+
+  uintptr_t mmap_limit = gasneti_segmentLimit((uintptr_t)-1, sharedLimit,
                                           &gasnetc_bootstrapExchange,
                                           &gasnetc_bootstrapBarrier);
-  gasneti_auxsegAttach(mmap_limit, &gasnetc_bootstrapExchange);
+
+  /* allocate and attach an aux segment */
+  gasneti_auxsegAttach((uintptr_t)-1, &gasnetc_bootstrapExchange);
 
   void *auxbase = gasneti_seginfo_aux[gasneti_mynode].addr;
   uintptr_t auxsize = gasneti_seginfo_aux[gasneti_mynode].size;
@@ -448,6 +467,12 @@ extern int gasnetc_Segment_Attach(
   if (once) once = 0;
   else gasneti_fatalerror("gex_Segment_Attach: current implementation can be called at most once");
 
+  #if GASNET_SEGMENT_EVERYTHING
+    *segment_p = GEX_SEGMENT_INVALID;
+    gex_Event_Wait(gex_Coll_BarrierNB(tm, 0));
+    return GASNET_OK; 
+  #endif
+
   /* create a segment collectively */
   // TODO-EX: this implementation only works *once*
   // TODO-EX: should be using the team's exchange function if possible
@@ -506,15 +531,6 @@ extern int gasnetc_EP_RegisterHandlers(gex_EP_t                ep,
   return gasneti_amregister_client(gasneti_import_ep(ep)->_amtbl, table, numentries);
 }
 /* ------------------------------------------------------------------------------------ */
-#if HAVE_ON_EXIT
-static void gasnetc_on_exit(int exitcode, void *arg) {
-    gasnetc_exit(exitcode);
-}
-#else
-static void gasnetc_atexit(void) {
-    gasnetc_exit(0);
-}
-#endif
 
 /* Exit coordination timeouts */
 #define GASNETC_DEFAULT_EXITTIMEOUT_MAX         360.0   /* 6 minutes! */
@@ -567,11 +583,8 @@ static int gasnetc_exit_init(int use_exit_geom) {
   memset(&gasnetc_exit_reduce_op, 0, sizeof(gasnetc_exit_reduce_op));
   gasnetc_dflt_coll_alg(gasnetc_exit_geom, PAMI_XFER_ALLREDUCE, &gasnetc_exit_reduce_op.algorithm);
 
-#if HAVE_ON_EXIT
-  on_exit(gasnetc_on_exit, NULL);
-#else
-  atexit(gasnetc_atexit);
-#endif
+  // register process exit-time hook
+  gasneti_registerExitHandler(gasnetc_exit);
 
   return GASNET_OK;
 }

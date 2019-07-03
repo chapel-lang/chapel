@@ -94,47 +94,6 @@ void makeTupleName(std::vector<TypeSymbol*>& args,
   }
 }
 
-static FnSymbol*
-makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
-                  TypeSymbol*             newTypeSymbol,
-                  ModuleSymbol*           tupleModule,
-                  BlockStmt*              instantiationPoint) {
-  AggregateType* newType  = toAggregateType(newTypeSymbol->type);
-  FnSymbol*      typeCtor = new FnSymbol("_type_construct__tuple");
-
-  SymExpr*       symExpr  = new SymExpr(newTypeSymbol);
-  CallExpr*      ret      = new CallExpr(PRIM_RETURN, symExpr);
-
-  INT_ASSERT(newType);
-
-  for (size_t i = 0; i < typeCtorArgs.size(); i++) {
-    typeCtor->insertFormalAtTail(typeCtorArgs[i]);
-  }
-
-  typeCtor->addFlag(FLAG_ALLOW_REF);
-  typeCtor->addFlag(FLAG_COMPILER_GENERATED);
-  typeCtor->addFlag(FLAG_LAST_RESORT);
-  typeCtor->addFlag(FLAG_INLINE);
-  typeCtor->addFlag(FLAG_INVISIBLE_FN);
-  typeCtor->addFlag(FLAG_TYPE_CONSTRUCTOR);
-  typeCtor->addFlag(FLAG_PARTIAL_TUPLE);
-
-  typeCtor->retTag             = RET_TYPE;
-  typeCtor->retType            = newType;
-  typeCtor->instantiatedFrom   = gGenericTupleTypeCtor;
-  typeCtor->setInstantiationPoint(instantiationPoint);
-
-  typeCtor->insertAtTail(ret);
-
-  typeCtor->substitutions.copy(newType->substitutions);
-
-  tupleModule->block->insertAtTail(new DefExpr(typeCtor));
-
-  newType->typeConstructor = typeCtor;
-
-  return typeCtor;
-}
-
 static
 FnSymbol* makeBuildTupleType(std::vector<ArgSymbol*> typeCtorArgs,
                              TypeSymbol* newTypeSymbol,
@@ -343,8 +302,6 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
 
     Type* sizeType = dtInt[INT_SIZE_DEFAULT];
 
-    ArgSymbol* genericTypeCtorSizeArg = gGenericTupleTypeCtor->getFormal(1);
-
     // Create the arguments for the type constructor
     // since we will refer to these in the substitutions.
     // Keys in the substitutions are ArgSymbols in the type constructor.
@@ -369,8 +326,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
 
     newType->fields.insertAtTail(new DefExpr(sizeVar));
 
-    newType->substitutions.put(genericTypeCtorSizeArg,
-                               new_IntSymbol(args.size()));
+    newType->substitutions.put(sizeVar, new_IntSymbol(args.size()));
 
     for (int i = 0; i < size; i++) {
       const char* name = typeCtorArgs[i+1]->name;
@@ -383,6 +339,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     }
 
     newType->instantiatedFrom = dtTuple;
+    newType->resolveStatus = RESOLVED;
 
     forv_Vec(AggregateType, t, dtTuple->dispatchParents) {
       AggregateType* at = toAggregateType(t);
@@ -429,10 +386,6 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     tupleModule->block->insertAtTail(new DefExpr(newTypeSymbol));
 
     info.typeSymbol = newTypeSymbol;
-
-    // Build the type constructor
-    makeTupleTypeCtor(typeCtorArgs, newTypeSymbol,
-                      tupleModule, instantiationPoint);
 
     // Build the _build_tuple type function
     info.buildTupleType = makeBuildTupleType(typeCtorArgs, newTypeSymbol,
@@ -995,8 +948,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
   // Construct tuple that would be used for a particular argument intent.
   std::vector<TypeSymbol*> args;
   bool                     allSame            = true;
-  FnSymbol*                typeConstr         = at->typeConstructor;
-  BlockStmt*             instantiationPoint = typeConstr->instantiationPoint();
+  BlockStmt*               instantiationPoint = at->symbol->instantiationPoint;
   int                      i                  = 0;
   AggregateType*           retval             = NULL;
 
@@ -1168,15 +1120,17 @@ fixupTupleFunctions(FnSymbol* fn,
 FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   std::vector<TypeSymbol*> args;
 
-  bool      noChangeTypes  = fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true ||
+  bool isStarTuple = fn && fn->hasFlag(FLAG_STAR_TUPLE);
+  bool      noChangeTypes  = fn == NULL ||
+                             fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true ||
                              fn->retTag                         == RET_TYPE;
 
-  bool      firstArgIsSize = fn->hasFlag(FLAG_INIT_TUPLE)       == true ||
-                             isTupleTypeConstructor(fn)         == true ||
-                             fn->hasFlag(FLAG_STAR_TUPLE)       == true;
+  bool      firstArgIsSize = fn == NULL || // 'type constructor' mode
+                             fn->hasFlag(FLAG_INIT_TUPLE)       == true ||
+                             isStarTuple;
 
 
-  bool      noRef          = fn->hasFlag(FLAG_DONT_ALLOW_REF);
+  bool      noRef          = fn && fn->hasFlag(FLAG_DONT_ALLOW_REF);
 
   size_t    actualN        = 0;
 
@@ -1239,7 +1193,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   }
 
   if (firstArgIsSize == true) {
-    if (fn->hasFlag(FLAG_STAR_TUPLE) == true) {
+    if (isStarTuple) {
       // Copy the first argument actualN times.
       for (size_t j = 1; j < actualN; j++) {
         args.push_back(args[0]);
@@ -1260,16 +1214,14 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   BlockStmt* point = getInstantiationPoint(call);
   TupleInfo info   = getTupleInfo(args, point, noRef);
 
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-    AggregateType* at = toAggregateType(info.typeSymbol->type);
-
-    retval = at->typeConstructor;
+  if (fn == NULL) {
+    retval = info.init;
 
   } else if (fn->hasFlag(FLAG_INIT_TUPLE) == true) {
     retval = info.init;
 
   } else if (fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)    == true) {
-    if (fn->hasFlag(FLAG_STAR_TUPLE) == true) {
+    if (isStarTuple) {
       retval = info.buildStarTupleType;
 
     } else {

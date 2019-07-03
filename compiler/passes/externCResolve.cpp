@@ -188,8 +188,7 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   // Add the fields to the struct
   ct->addDeclarations(fields);
 
-  // Create the type constructor
-  ct->buildTypeConstructor();
+  ct->processGenericFields();
 
   return ret;
 }

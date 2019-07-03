@@ -109,7 +109,6 @@ libgasnet_dependencies =                  \
         $(srcdir)/*.[ch]                  \
         $(top_srcdir)/extended-ref/*/*.[ch] \
         $(top_srcdir)/extended-ref/*.[ch] \
-        $(top_srcdir)/other/smp-collectives/*.[ch] \
         $(top_srcdir)/tests/test.h        \
 	$(CONDUIT_SOURCELIST)             \
 	$(CONDUIT_EXTRAHEADERS)           \
@@ -168,7 +167,7 @@ do-libgasnet_tools:
 
 do-libgasnet_tools-seq: $(libgasnet_tools_dependencies)
 	@$(MAKE) THREAD_MODEL=SEQ                            \
-	  LIBGASNET_THREAD_DEFINES=                          \
+	  LIBGASNET_THREAD_DEFINES=-DGASNETT_THREAD_SINGLE   \
           $(set_dirs) do-libgasnet_tools
 
 do-libgasnet_tools-par: $(libgasnet_tools_dependencies)

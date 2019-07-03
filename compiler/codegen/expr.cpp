@@ -3088,6 +3088,18 @@ GenRet codegenCastToVoidStar(GenRet value)
   return ret;
 }
 
+void codegenCallPrintf(const char* arg) {
+  GenInfo* info = gGenInfo;
+
+  if (info->cfile) {
+    fprintf(info->cfile, "printf(\"%%s\", \"%s\");\n", arg);
+  } else {
+#ifdef HAVE_LLVM
+    codegenCall("printf", new_CStringSymbol("%s")->codegen(), new_CStringSymbol(arg)->codegen());
+#endif
+  }
+}
+
 /* Commented out because it is not currently used.
 
 static

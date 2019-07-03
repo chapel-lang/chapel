@@ -1,6 +1,5 @@
 /*
   This launcher will be used to run the test files and catch the halts.
-  You can specify a different directory name using the `--dir` 
   You can set whether or not to descend recursively into 
   subdirectories (defaults to true) using `--subdir`
 */
@@ -10,11 +9,77 @@ module Launcher {
   use Path;
   use TestResult;
   use Sys;
-  config const subdir: string = "true";
-  config const keepExec: string = "false";
+  use Help;
+  config const subdir = true;
+  config const keepExec = false;
   config const setComm: string = "";
-  var comm_c: c_string;
   var comm: string;
+
+  proc main(args: [] string) {
+    var comm_c: c_string;
+    sys_getenv("CHPL_COMM",comm_c);
+    comm = comm_c: string;
+    var dirs: [1..0] string,
+        files: [1..0] string;
+    var hadInvalidFile = false;
+    var programName = args[0];
+    for a in args[1..] {
+      if a == "-h" || a == "--help" {
+        writeln("Usage: ", programName, " <options> filename [filenames] directoryname [directorynames]");
+        printUsage();
+        exit(1); // returning 1 from main is also an option
+      }
+      else {
+        try! {
+          if isFile(a) {
+            files.push_back(a);
+          }
+          else if isDir(a) {
+            dirs.push_back(a);
+          }
+          else {
+            writeln("[Error: ",a," is not a valid file or directory]");
+            hadInvalidFile = true;
+          }
+        }
+      }
+    }
+
+    if hadInvalidFile && files.size == 0 && dirs.size == 0 {
+      exit(2);
+    }
+
+    if files.size == 0 && dirs.size == 0 {
+      dirs.push_back(".");
+    }
+    
+    var result =  new TestResult();
+
+    for tests in files {
+      try {
+        testFile(tests, result);
+      }
+      catch e {
+        writeln("Caught an Exception in Running Test File: ", tests);
+        writeln(e);
+      }
+    }
+
+    for dir in dirs {
+      try {
+        testDirectory(dir, result);
+      }
+      catch e {
+        writeln("Caught an Exception in Running Test Directory: ", dir);
+        writeln(e);
+      }
+    }
+      
+    result.printErrors();
+    writeln(result.separator2);
+    result.printResult();
+  }
+
   pragma "no doc"
   /*Docs: Todo*/
   proc runAndLog(executable,fileName, ref result,skipId = 0,
@@ -121,17 +186,17 @@ module Launcher {
   /*Docs: Todo*/
   proc testFile(file, ref result) throws {
     var fileName = basename(file);
-    if fileName.endsWith(".chpl") && fileName.startsWith("test") {
+    if fileName.endsWith(".chpl") {
       var line: string;
       var compErr = false;
       var tempName = fileName.split(".chpl");
       var executable = tempName[1];
       var executableReal = executable+"_real";
       if isFile(executable) {
-        var execRem = spawn(["rm",executable]);
+        FileSystem.remove(executable);
       }
       if isFile(executableReal) {
-        var execRem = spawn(["rm",executableReal]);
+        FileSystem.remove(executableReal);
       }
       if setComm!="" then comm = setComm;
       var sub = spawn(["chpl",file,"-o",executable,"-M.",
@@ -148,9 +213,9 @@ module Launcher {
         runAndLog(executable,fileName,result,0,numLocales,
                   testNames, dictDomain, dict);
         if !keepExec:bool {
-          var execRem = spawn(["rm",executable]);
+          FileSystem.remove(executable);
           if isFile(executableReal) {
-            var execRem = spawn(["rm",executableReal]);
+            FileSystem.remove(executableReal);
           }
         }
       }
@@ -165,65 +230,8 @@ module Launcher {
   pragma "no doc"
   /*Docs: Todo*/
   proc testDirectory(dir, ref result) throws {
-    for file in findfiles(startdir = dir, recursive = subdir:bool) {
+    for file in findfiles(startdir = dir, recursive = subdir) {
       testFile(file, result);
     }
-  }
-
-  proc main(args: [] string) {
-    sys_getenv("CHPL_COMM",comm_c);
-    comm = comm_c: string;
-    var dirs: [1..0] string,
-        files: [1..0] string;
-    var hadInvalidFile = false;
-
-    for a in args[1..(args.size-1)] {
-      try! {
-        if isFile(a) {
-          files.push_back(a);
-        }
-        else if isDir(a) {
-          dirs.push_back(a);
-        }
-        else {
-          writeln("[Error: ",a," is not a valid file or directory]");
-          hadInvalidFile = true;
-        }
-      }
-    }
-
-    if hadInvalidFile && files.size == 0 && dirs.size == 0 {
-      exit(2);
-    }
-
-    if files.size == 0 && dirs.size == 0 {
-      dirs.push_back(".");
-    }
-    
-    var result =  new TestResult();
-
-    for tests in files {
-      try {
-        testFile(tests, result);
-      }
-      catch e {
-        writeln("Caught an Exception in Running Test File: ", tests);
-        writeln(e);
-      }
-    }
-
-    for dir in dirs {
-      try {
-        testDirectory(dir, result);
-      }
-      catch e {
-        writeln("Caught an Exception in Running Test Directory: ", dir);
-        writeln(e);
-      }
-    }
-      
-    result.printErrors();
-    writeln(result.separator2);
-    result.printResult();
   }
 }

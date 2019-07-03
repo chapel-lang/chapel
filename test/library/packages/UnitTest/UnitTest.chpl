@@ -823,8 +823,6 @@ module UnitTest {
     var testSuite = new TestSuite();
     testSuite.addTests(tests);
     var testResult = new TextTestResult();
-    // if skipId == 0 then
-    //   stdout.writeln("Found "+testSuite.testCount+" "+printTest(testSuite.testCount));
     for indx in (skipId+1)..testSuite.testCount {
       var test = testSuite[indx];
       try {
@@ -868,8 +866,5 @@ module UnitTest {
         testResult.addError(test:string, e:string);
       }
     }
-    // testResult.printErrors();
-    // stdout.writeln(testResult.separator2);
-    // testResult.PrintResult();
   }
 }

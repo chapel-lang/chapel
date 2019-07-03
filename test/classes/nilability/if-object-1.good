@@ -1,0 +1,4 @@
+if-object-1.chpl:7: In function 'main':
+if-object-1.chpl:10: error: attempt to dereference nil
+if-object-1.chpl:10: note: variable obj is nil at this point
+if-object-1.chpl:8: note: this statement may be relevant

@@ -21,12 +21,6 @@ gex_AM_Entry_t const *gasnetc_get_handlertable(void);
 
 gex_AM_Entry_t *gasnetc_handler; // TODO-EX: will be replaced with per-EP tables
 
-#if HAVE_ON_EXIT
-static void gasnetc_on_exit(int, void*);
-#else
-static void gasnetc_atexit(void);
-#endif
-
 /* ------------------------------------------------------------------------------------ */
 /*
   Initialization
@@ -244,7 +238,7 @@ static void gasnetc_remote_exit_sighand(int sig) {
       (handler != (gasneti_sighandlerfn_t)SIG_DFL)) {
       (void)gasneti_reghandler(SIGQUIT, handler);
       #if 1
-        raise(SIGQUIT);
+        gasneti_raise(SIGQUIT);
         /* Note: Both ISO C and POSIX assure us that raise() won't return until after the signal handler
          * (if any) has executed.  However, if that handler calls gasnetc_exit(), we'll never return here. */
       #elif 0
@@ -580,8 +574,19 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
 #endif
 
   uintptr_t mmap_limit;
-  #if HAVE_MMAP && GASNET_PSHM
-    mmap_limit = gasneti_mmapLimit((uintptr_t)-1, (uint64_t)-1,
+  #if HAVE_MMAP
+    // Bound per-host (sharedLimit) argument to gasneti_segmentLimit()
+    // while properly reserving space for aux segments.
+    uint64_t sharedLimit = gasneti_sharedLimit();
+    uint64_t hostAuxSegs = gasneti_myhost.node_count * gasneti_auxseg_preinit();
+    if (sharedLimit <= hostAuxSegs) {
+      gasneti_fatalerror("per-host segment limit %"PRIu64" is too small to accommodate %i aux segments, "
+                         "total size %"PRIu64". You may need to adjust OS shared memory limits.",
+                         sharedLimit, gasneti_myhost.node_count, hostAuxSegs);
+    }
+    sharedLimit -= hostAuxSegs;
+
+    mmap_limit = gasneti_segmentLimit((uintptr_t)-1, sharedLimit,
                                   &gasnetc_bootstrapExchange,
                                   &gasnetc_bootstrapBarrier);
   #else
@@ -591,7 +596,7 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
 
   /* allocate and attach an aux segment */
 
-  gasneti_auxsegAttach(mmap_limit, &gasnetc_bootstrapExchange);
+  gasneti_auxsegAttach((uintptr_t)-1, &gasnetc_bootstrapExchange);
 
   /* determine Max{Local,GLobal}SegmentSize */
   gasneti_segmentInit(mmap_limit, &gasnetc_bootstrapExchange, flags);
@@ -630,11 +635,8 @@ static int gasnetc_attach_primary(void) {
    *        (e.g. to support interrupt-based messaging)
    */
 
-#if HAVE_ON_EXIT
-  on_exit(gasnetc_on_exit, NULL);
-#else
-  atexit(gasnetc_atexit);
-#endif
+  // register process exit-time hook
+  gasneti_registerExitHandler(gasnetc_exit);
 
   /* ------------------------------------------------------------------------------------ */
   /*  primary attach complete */
@@ -814,6 +816,12 @@ extern int gasnetc_Segment_Attach(
   if (once) once = 0;
   else gasneti_fatalerror("gex_Segment_Attach: current implementation can be called at most once");
 
+  #if GASNET_SEGMENT_EVERYTHING
+    *segment_p = GEX_SEGMENT_INVALID;
+    gex_Event_Wait(gex_Coll_BarrierNB(tm, 0));
+    return GASNET_OK; 
+  #endif
+
   /* create a segment collectively */
   // TODO-EX: this implementation only works *once*
   // TODO-EX: should be using the team's exchange function if possible
@@ -872,16 +880,6 @@ extern int gasnetc_EP_RegisterHandlers(gex_EP_t                ep,
   return gasneti_amregister_client(gasneti_import_ep(ep)->_amtbl, table, numentries);
 }
 /* ------------------------------------------------------------------------------------ */
-#if HAVE_ON_EXIT
-static void gasnetc_on_exit(int exitcode, void *arg) {
-    gasnetc_exit(exitcode);
-}
-#else
-static void gasnetc_atexit(void) {
-    gasnetc_exit(0);
-}
-#endif
-
 extern void gasnetc_exit(int exitcode) {
   /* once we start a shutdown, ignore all future SIGQUIT signals or we risk reentrancy */
   gasneti_reghandler(SIGQUIT, SIG_IGN);

@@ -1036,8 +1036,8 @@ static void checkMethodsOverride() {
               } else if (fn->isResolved() && !pfn->isResolved()) {
                 // pfn generic
                 FnSymbol* pInst = getInstantiatedFunction(fn, ct, pfn);
-                if (signatureMatch(fn, pInst) &&
-                    evaluateWhereClause(pInst)) {
+                resolveSignature(pInst);
+                if (signatureMatch(fn, pInst) && evaluateWhereClause(pInst)) {
                   foundMatch = true;
                 }
               } else if (!fn->isResolved() && pfn->isResolved()) {
@@ -1050,8 +1050,8 @@ static void checkMethodsOverride() {
                   foundUncertainty = true;
                 } else {
                   FnSymbol* fnIns = getInstantiatedFunction(pfn, ct, fn);
-                  if (signatureMatch(pfn, fnIns) &&
-                           evaluateWhereClause(pfn)) {
+                  resolveSignature(fnIns);
+                  if (signatureMatch(pfn, fnIns) && evaluateWhereClause(pfn)) {
                     foundMatch = true;
                   }
                 }

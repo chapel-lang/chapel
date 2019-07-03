@@ -221,7 +221,7 @@ int gasnete_amref_get_nbi( gex_TM_t tm,
 GASNETI_INLINE(gasnete_amref_get_reqh_inner)
 void gasnete_amref_get_reqh_inner(gex_Token_t token,
   gex_AM_Arg_t nbytes, void *dest, void *src, void *done) {
-  gasneti_assert(nbytes <= gex_AM_LUBReplyMedium());
+  gasneti_assert_uint(nbytes ,<=, gex_AM_LUBReplyMedium());
   gex_AM_ReplyMedium(token, gasneti_handleridx(gasnete_amref_get_reph),
                          src, nbytes, GEX_EVENT_NOW, 0,
                          PACK(dest), PACK(done));
@@ -582,15 +582,15 @@ int gasnete_amref_put_nbi( gex_TM_t tm,
 void gasnete_check_config_amref(void) {
 #if GASNETE_BUILD_AMREF_GET || GASNETE_BUILD_AMREF_PUT
   /* This ensures chunks sent as Medium payloads don't exceed the maximum */
-  gasneti_assert_always(GASNETE_GETPUT_MEDIUM_LONG_THRESHOLD <= gex_AM_LUBRequestMedium());
+  gasneti_assert_always_uint(GASNETE_GETPUT_MEDIUM_LONG_THRESHOLD ,<=, gex_AM_LUBRequestMedium());
 #endif
 
 #if GASNETE_BUILD_AMREF_GET
   // TODO-EX: these checks won't actually ensure what they should if/when we mve from _lub_ to _max_
   /* These ensure nbytes in AM-based Gets will fit in handler_arg_t (bug 2770) */
-  gasneti_assert_always(gex_AM_LUBReplyMedium() <= (size_t)0xffffffff);
+  gasneti_assert_always_uint(gex_AM_LUBReplyMedium() ,<=, (size_t)0xffffffff);
  #if GASNETE_USE_LONG_GETS
-  gasneti_assert_always(gex_AM_LUBReplyLong() <= (size_t)0xffffffff);
+  gasneti_assert_always_uint(gex_AM_LUBReplyLong() ,<=, (size_t)0xffffffff);
  #endif
 #endif
 }
