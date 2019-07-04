@@ -633,41 +633,43 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 
 
 /* Inner product of 2 vectors. */
-proc inner(A: [?Adom], B: [?Bdom]) {
+proc inner(const ref A: [?Adom], const ref B: [?Bdom]) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
   if Adom.size != Bdom.size then
     halt("Mismatched size in inner multiplication");
 
-  var results: [0..#numLocales] etype = 0;
+  var localResults: [Locales.domain] etype = 0;
   
   coforall l in Locales do on l {
-    var localResult: etype = 0; 
     const maxThreads = here.maxTaskPar;
-    var threadResults: [0..#maxThreads] etype = 0;
     const localDomain = X.localSubdomain();
     const iterPerThread = divceil(localDomain.size, maxThreads);
+    var localResult: etype = 0; 
+    var threadResults: [0..#maxThreads] etype = 0;
     
     coforall tid in 0..#maxThreads {
-      var myResult: etype = 0;
       const startid = localDomain.low + tid * iterPerThread;
-      const endid = if localDomain.high < (startid + iterPerThread - 1) then localDomain.high else (startid + iterPerThread - 1);
+      const temp_endid = startid + iterPerThread - 1;
+      const endid = if localDomain.high < temp_endid then 
+                          localDomain.high else temp_endid;
+      var myResult: etype = 0;
       local {
-          for ind in startid..endid {
-            myResult += X[ind] * Y[ind];
-          }
+        for ind in startid..endid {
+          myResult += X[ind] * Y[ind];
+        }
       }
       threadResults[tid] = myResult;
     }
 
-    for tid in 0..#maxThreads {
-        localResult += threadResults[tid];
+    for tr in threadResults {
+      localResult += tr;
     }
-    results[here.id] = localResult;
+    localResults[here.id] = localResult;
   }
   
   var result = 0.0;
-  for r in results {
+  for r in localResults {
     result += r;
   }
   
