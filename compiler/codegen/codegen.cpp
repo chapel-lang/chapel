@@ -1106,106 +1106,110 @@ static void codegen_aggregate_def(AggregateType* ct) {
 static const char* sCfgFname = "chpl_compilation_config";
 
 static void codegen_header_compilation_config() {
+  GenInfo* info = gGenInfo;
+  // We generate LLVM IR only when we are not using a launcher.
+  // For launchers, we generate C while using C or LLVM backends alike.
+  bool genConfigInLLVM = llvmCodegen && 0 == strcmp(CHPL_LAUNCHER, "none");
+  FILE* save_cfile = info->cfile;
   fileinfo cfgfile = { NULL, NULL, NULL };
 
-  openCFile(&cfgfile, sCfgFname, "c");
+  if (genConfigInLLVM) {
+    info->cfile = NULL;
+  } else {
+    openCFile(&cfgfile, sCfgFname, "c");
+
+    // follow convention of just not writing to the file if we can't open it
+    if (cfgfile.fptr) {
 #ifdef HAVE_LLVM
-  gChplCompilationConfig = cfgfile; // so LLVM backend can use it too.
+      // So that the LLVM backend can use the config file with a launcher
+      gChplCompilationConfig = cfgfile;
 #endif
+      info->cfile = cfgfile.fptr;
 
-  // follow convention of just not writing to the file if we can't open it
-  if (cfgfile.fptr != NULL) {
-    FILE* save_cfile = gGenInfo->cfile;
-
-    fprintf(cfgfile.fptr, "/*** %s ***/\n", "Compilation Info");
-    fprintf(cfgfile.fptr, "\n#include <stdio.h>");
-    fprintf(cfgfile.fptr, "\n#include \"chpltypes.h\"\n\n");
-
-    // We generate LLVM IR only when we are not using a launcher.
-    // For launchers, we generate C while using C or LLVM backends alike.
-    bool genConfigInLLVM = llvmCodegen && 0 == strcmp(CHPL_LAUNCHER, "none");
-    if (genConfigInLLVM) {
-      gGenInfo->cfile = NULL;
+      genComment("Compilation Info");
+      fprintf(cfgfile.fptr, "\n#include <stdio.h>");
+      fprintf(cfgfile.fptr, "\n#include \"chpltypes.h\"\n\n");
     } else {
-      gGenInfo->cfile = cfgfile.fptr;
+      return;
     }
-
-    genGlobalString("chpl_compileCommand", compileCommand);
-    genGlobalString("chpl_compileVersion", compileVersion);
-    genGlobalString("chpl_compileDirectory", getCwd());
-    if (strcmp(saveCDir, "") != 0) {
-      char *actualPath = realpath(saveCDir, NULL);
-      genGlobalString("chpl_saveCDir", actualPath);
-    } else {
-      genGlobalString("chpl_saveCDir", "");
-    }
-
-    genGlobalString("CHPL_HOME", CHPL_HOME);
-
-    genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
-    genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
-
-    for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-      if (env->first != "CHPL_HOME") {
-        genGlobalString(env->first.c_str(), env->second);
-      }
-    }
-
-    if (genConfigInLLVM) {
-#ifdef HAVE_LLVM
-      llvm::FunctionType* programAboutType;
-      llvm::Function* programAboutFunc;
-      if ((programAboutFunc = getFunctionLLVM("chpl_program_about"))) {
-        programAboutType = programAboutFunc->getFunctionType();
-      } else {
-        programAboutType = llvm::FunctionType::get(
-          llvm::Type::getVoidTy(gGenInfo->module->getContext()), false
-        );
-        programAboutFunc = llvm::Function::Create(
-          programAboutType, llvm::Function::ExternalLinkage, "chpl_program_about", gGenInfo->module
-        );
-      }
-
-      llvm::BasicBlock* programAboutBlock = llvm::BasicBlock::Create(
-        gGenInfo->module->getContext(), "entry", programAboutFunc
-      );
-      gGenInfo->irBuilder->SetInsertPoint(programAboutBlock);
-#endif
-    } else {
-      // generate the "about" function
-      fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
-      fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
-    }
-
-    codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
-    codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
-    codegenCallPrintf("Chapel environment:\\n");
-    codegenCallPrintf(astr("  CHPL_HOME: ", CHPL_HOME, "\\n"));
-      for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-        if (env->first != "CHPL_HOME") {
-          codegenCallPrintf(astr("  ", env->first.c_str(), ": ", env->second, "\\n"));
-        }
-      }
-
-    if (genConfigInLLVM) {
-#ifdef HAVE_LLVM
-      gGenInfo->irBuilder->CreateRetVoid();
-#endif
-      gGenInfo->cfile = cfgfile.fptr;
-    } else {
-      fprintf(cfgfile.fptr, "}\n");
-    }
-
-    genComment("Filename Lookup Table");
-    genFilenameTable();
-
-    genComment("Unwind symbol tables");
-    genUnwindSymbolTable();
-
-    closeCFile(&cfgfile);
-
-    gGenInfo->cfile = save_cfile;
   }
+
+  genGlobalString("chpl_compileCommand", compileCommand);
+  genGlobalString("chpl_compileVersion", compileVersion);
+  genGlobalString("chpl_compileDirectory", getCwd());
+  if (strcmp(saveCDir, "") != 0) {
+    char *actualPath = realpath(saveCDir, NULL);
+    genGlobalString("chpl_saveCDir", actualPath);
+  } else {
+    genGlobalString("chpl_saveCDir", "");
+  }
+
+  genGlobalString("CHPL_HOME", CHPL_HOME);
+
+  genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
+  genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
+
+  for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+    if (env->first != "CHPL_HOME") {
+      genGlobalString(env->first.c_str(), env->second);
+    }
+  }
+
+  // generate the "chpl_program_about" function
+  if (genConfigInLLVM) {
+#ifdef HAVE_LLVM
+    llvm::FunctionType* programAboutType;
+    llvm::Function* programAboutFunc;
+    if ((programAboutFunc = getFunctionLLVM("chpl_program_about"))) {
+      programAboutType = programAboutFunc->getFunctionType();
+    } else {
+      programAboutType = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(info->module->getContext()), false
+      );
+      programAboutFunc = llvm::Function::Create(
+        programAboutType, llvm::Function::ExternalLinkage, "chpl_program_about", info->module
+      );
+    }
+
+    llvm::BasicBlock* programAboutBlock = llvm::BasicBlock::Create(
+      info->module->getContext(), "entry", programAboutFunc
+    );
+    info->irBuilder->SetInsertPoint(programAboutBlock);
+#endif
+  } else {
+    fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
+    fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
+  }
+
+  codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
+  codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
+  codegenCallPrintf("Chapel environment:\\n");
+  codegenCallPrintf(astr("  CHPL_HOME: ", CHPL_HOME, "\\n"));
+  for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+    if (env->first != "CHPL_HOME") {
+      codegenCallPrintf(astr("  ", env->first.c_str(), ": ", env->second, "\\n"));
+    }
+  }
+
+  if (genConfigInLLVM) {
+#ifdef HAVE_LLVM
+    info->irBuilder->CreateRetVoid();
+#endif
+  } else {
+    fprintf(cfgfile.fptr, "}\n");
+  }
+
+  genComment("Filename Lookup Table");
+  genFilenameTable();
+
+  genComment("Unwind symbol tables");
+  genUnwindSymbolTable();
+
+  if (!genConfigInLLVM) {
+    closeCFile(&cfgfile);
+  }
+
+  info->cfile = save_cfile;
 }
 
 
