@@ -197,12 +197,10 @@ GenRet BlockStmt::codegen() {
       }
     }
 
-    if (info->currentStackVariables.size() == 1) {
-      for_set(Symbol, var, info->currentStackVariables.back()) {
-        llvm::Value* declared = var->codegen().val;
-        llvm::Type* type = var->type->codegen().type;
-        codegenLifetimeEnd(type, declared);
-      }
+    for_set(Symbol, var, info->currentStackVariables.back()) {
+      llvm::Value* declared = var->codegen().val;
+      llvm::Type* type = var->type->codegen().type;
+      codegenLifetimeEnd(type, declared);
     }
 
     info->currentStackVariables.pop_back();
