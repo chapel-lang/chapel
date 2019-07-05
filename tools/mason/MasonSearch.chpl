@@ -39,6 +39,7 @@ proc masonSearch(origArgs : [] string) {
     exit(0);
   }
 
+  const show = hasOptions(args, "--show");
   const debug = hasOptions(args, "--debug");
 
   updateRegistry("", args);
@@ -51,6 +52,8 @@ proc masonSearch(origArgs : [] string) {
   const pattern = compile(query, ignorecase=true);
 
   var results : [1..0] string;
+  var showResults : [1..0] string;
+  var versionToReturn : [1..0] string;
 
   for cached in MASON_CACHED_REGISTRY {
     const searchDir = cached + "/Bricks/";
@@ -66,15 +69,36 @@ proc masonSearch(origArgs : [] string) {
         }  else {
           const ver = findLatest(searchDir + dir);
           const versionZero = new VersionInfo(0, 0, 0);
-
           if ver != versionZero then
             results.push_back(name + " (" + ver.str() + ")");
+            showResults.push_back(name);
+            versionToReturn.push_back(ver.str());
         }
       }
     }
   }
 
   for r in results.sorted() do writeln(r);
+
+  if results.size == 1 && show {
+    writeln('Displaying the latest version: ' + showResults + '@' + versionToReturn);
+    showToml(versionToReturn + '.toml', showResults);
+  }
+
+  if results.size == 0 && show {
+    writeln('"' + query + '" returned no packages');
+    writeln('--show requires the search to return one package');
+  }
+
+  if show && results.size > 1 {
+    if query == '.*' {
+      writeln('You must specify a package to show the manifest');
+    }
+    else {
+      writeln('"' + query + '"  returned more than one package.');
+    }
+    writeln("--show requires the search to return one package.");
+  }
 
   if results.size == 0 {
     exit(1);
@@ -123,9 +147,18 @@ proc consumeArgs(ref args : [] string) {
   assert(sub == "search");
   args.pop_front();
 
-  const options = {"--no-update", "--debug"};
+  const options = {"--no-update", "--debug", "--show"};
 
   while args.size > 0 && options.contains(args.head()) {
     args.pop_front();
   }
+}
+
+proc showToml(tomlFile : string, packageName : string) {
+  const brickPath = MASON_HOME + '/mason-registry/Bricks/' + packageName + '/' + tomlFile;
+  const openFile = openreader(brickPath);
+  const toml = new  owned parseToml(openFile);
+  writeln(toml);
+  openFile.close();
+  exit(0);
 }
