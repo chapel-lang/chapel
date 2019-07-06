@@ -4,7 +4,17 @@ FAIL test_locales.chpl: s4()
 ----------------------------------------------------------------------
 UnexpectedLocales: Max Locales is less than Min Locales
 
+======================================================================
+FAIL test_locales.chpl: s8()
 ----------------------------------------------------------------------
-Run 4 tests
+UnexpectedLocales: Max Locales is less than 1
 
-FAILED failures = 1 
+======================================================================
+FAIL test_locales.chpl: s7()
+----------------------------------------------------------------------
+UnexpectedLocales: Locales already added.
+
+----------------------------------------------------------------------
+Run 8 tests
+
+FAILED failures = 3 

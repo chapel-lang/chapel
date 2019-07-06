@@ -3,26 +3,43 @@
 FAIL test_locales.chpl: s1()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales =16
+TestIncorrectNumLocales: Required Locales = 16
 
 ======================================================================
 FAIL test_locales.chpl: s2()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales =2
+TestIncorrectNumLocales: Required Locales = 2
 
 ======================================================================
 FAIL test_locales.chpl: s3()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales =16 8
+TestIncorrectNumLocales: Required Locales = 16 8
 
 ======================================================================
 FAIL test_locales.chpl: s4()
 ----------------------------------------------------------------------
 UnexpectedLocales: Max Locales is less than Min Locales
 
+======================================================================
+FAIL test_locales.chpl: s6()
 ----------------------------------------------------------------------
-Run 4 tests
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = 6
 
-FAILED failures = 4 
+======================================================================
+FAIL test_locales.chpl: s7()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = 16 8
+
+======================================================================
+FAIL test_locales.chpl: s8()
+----------------------------------------------------------------------
+UnexpectedLocales: Max Locales is less than 1
+
+----------------------------------------------------------------------
+Run 8 tests
+
+FAILED failures = 7 

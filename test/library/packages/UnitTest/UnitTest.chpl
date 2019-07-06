@@ -724,22 +724,25 @@ module UnitTest {
         throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
       }
       if value > numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales ="+value);
+        throw new owned TestIncorrectNumLocales("Required Locales = "+value);
       }
     }
 
     /*To add how many locales this test requires*/
     proc addNumLocales(locales: int ...?n) throws {
       var canRun =  false;
-      for numLocale in locales {
-        dictDomain.add(numLocale);
-        if numLocale == numLocales {
+      if this.dictDomain.size > 0 {
+        throw new owned UnexpectedLocales("Locales already added.");
+      }
+      for curLocale in locales {
+        this.dictDomain.add(curLocale);
+        if curLocale == numLocales {
           canRun = true;
         }
       }
       if !canRun {
-        var localesStr: string = dictDomain: string;
-        var localesErrorStr: string = "Required Locales ="+localesStr:string;
+        var localesStr: string = this.dictDomain: string;
+        var localesErrorStr: string = "Required Locales = "+localesStr:string;
         throw new owned TestIncorrectNumLocales(localesErrorStr);
       }
     }
@@ -767,6 +770,8 @@ module UnitTest {
 
     proc addSuccess(test) throws {
       stdout.writeln("OK");
+      stdout.writeln(this.separator1);
+      stdout.writeln(this.separator2);
     }
 
     proc addSkip(test, reason) throws {
@@ -836,22 +841,12 @@ module UnitTest {
       var test = testSuite[indx];
       try {
         if runAllTests {
-          // Create a test object per test
-          var testObject = new Test();
-          //test is a FCF:
-          testResult.startTest(test: string, indx);
-          test(testObject);
-          testResult.addSuccess(test: string);
+          runTestMethod(testResult, test, indx);
         }
         else {
           var checkStatus = testNameList.find(test: string);
           if checkStatus[1] {
-            // Create a test object per test
-            var testObject = new Test();
-            //test is a FCF:
-            testResult.startTest(test: string, indx);
-            test(testObject);
-            testResult.addSuccess(test: string);
+            runTestMethod(testResult, test, indx);
           }
         }
         
@@ -878,5 +873,16 @@ module UnitTest {
         testResult.addError(test:string, e:string);
       }
     }
+  }
+
+  private
+  proc runTestMethod(ref testResult, test, indx) throws {
+    // Create a test object per test
+    var testObject = new Test();
+    var testName = test: string;
+    //test is a FCF:
+    testResult.startTest(testName, indx);
+    test(testObject);
+    testResult.addSuccess(testName);
   }
 }
