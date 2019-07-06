@@ -127,7 +127,7 @@ void CallInfo::haltNotWellFormed() const {
                 sym->name);
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
-      INT_FATAL(call,
+      USR_FATAL(call,
                 "the type of the actual argument '%s' is generic",
                 sym->name);
     }

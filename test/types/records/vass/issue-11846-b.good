@@ -1,0 +1,1 @@
+issue-11846-b.chpl:7: error: the type of the actual argument 'R3' is generic
