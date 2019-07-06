@@ -101,31 +101,37 @@ module Launcher {
       if setComm!="" then comm = setComm;
       var sub = spawn(["chpl",file,"-o",executable,"-M.",
                     "--comm",comm],stderr = PIPE); //Compiling the file
-      var compError: string;
-      if sub.stderr.readline(line) {
-        compError = line;
-        while sub.stderr.readline(line) do compError += line;
-        compErr = true;
-      }
-      sub.wait();
-      if !compErr {
-        var testNames: [1..0] string;
-        var dictDomain: domain(int);
-        var dict: [dictDomain] int;
-        runAndLog(executable,fileName,result,0,numLocales,
-                  testNames, dictDomain, dict);
-        if !keepExec {
-          FileSystem.remove(executable);
-          if isFile(executableReal) {
-            FileSystem.remove(executableReal);
-          }
-        }
+      if sub.exit_status >= 256 {
+        writeln("Unable to run the files.");
+        exit(sub.exit_status);
       }
       else {
-        writeln("Compilation Error in ",fileName);
-        writeln("Possible Reasons can be passing a non-test ",
-                "function to UnitTest.runTest()");
-        writeln(compError);
+        var compError: string;
+        if sub.stderr.readline(line) {
+          compError = line;
+          while sub.stderr.readline(line) do compError += line;
+          compErr = true;
+        }
+        sub.wait();
+        if !compErr {
+          var testNames: [1..0] string;
+          var dictDomain: domain(int);
+          var dict: [dictDomain] int;
+          runAndLog(executable,fileName,result,0,numLocales,
+                    testNames, dictDomain, dict);
+          if !keepExec {
+            FileSystem.remove(executable);
+            if isFile(executableReal) {
+              FileSystem.remove(executableReal);
+            }
+          }
+        }
+        else {
+          writeln("Compilation Error in ",fileName);
+          writeln("Possible Reasons can be passing a non-test ",
+                  "function to UnitTest.runTest()");
+          writeln(compError);
+        }
       }
     }
   }
