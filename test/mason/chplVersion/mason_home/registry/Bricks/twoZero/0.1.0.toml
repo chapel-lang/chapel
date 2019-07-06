@@ -1,0 +1,10 @@
+
+[brick]
+name = "twoZero"
+version = "0.1.0"
+# Future-proof this test with an unrealistic version number:
+chplVersion = "999.0"
+author = "foo"
+source = "foo"
+
+[dependencies]
