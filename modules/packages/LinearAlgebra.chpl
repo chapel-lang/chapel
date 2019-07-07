@@ -702,6 +702,86 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   return C;
 }
 
+/*
+  Returns a pair (I, info) where ``I`` is the inverse of ``A`` if info = 1, 
+  info = 0 if inverse does not exist for ``A``
+  
+  .. note::
+    If the inverse does not exist, it is determined in the row-swapping 
+    stage and the procedure exits with info = 0 immediately
+*/
+proc inv (in A: [?Adom] ?eltType) {
+  if Adom.rank != 2 then
+    halt("Wrong rank for matrix inverse");
+
+  if Adom.shape(1) != Adom.shape(2) then
+    halt("Matrix inverse only supports square matrices");
+
+  const n = Adom.shape(1);
+  const IDom = {1..n, 1..n};
+
+  var I : [IDom] eltType;
+  var info = 1;
+
+  forall i in {1..n} {
+    I[i,i] = 1;
+  }
+
+  for i in {1..n} {
+    if (A[i,i] == 0) {
+      var swaprow = -1;
+      for row in {i..n} {
+        if (A[row,i] != 0) {
+          swaprow = row;
+          break;
+        }
+      }
+
+      if (swaprow == -1) {
+        info = 0;
+        return (I, info);
+      }
+
+      // Swapping rows swaprow and i
+      forall j in {1..n} {
+        var tmp = A[i, j];
+        A[i,j] = A[swaprow, j];
+        A[swaprow, j] = tmp;
+
+        tmp = I[i,j];
+        I[i,j] = I[swaprow, j];
+        I[swaprow, j] = tmp;
+      }
+    }
+
+    var scale = A[i,i];
+    A[i,..] /= scale;
+    I[i,..] /= scale;
+
+    if (i < n) {
+      for row in {i+1..n} {
+        var factor = A[row, i];
+        forall col in 1..n {
+          A[row, col] = A[row, col] - factor * A[i, col];
+          I[row, col] = I[row, col] - factor * I[i, col];
+        }
+      }
+    }
+  }
+
+  for zcol in 2..n by -1 {
+    for row in 1..(zcol-1) by -1 {
+      var factor = A[row, zcol];
+      forall col in 1..n {
+        A[row, col] = A[row, col] - factor * A[zcol, col];
+        I[row, col] = I[row, col] - factor * I[zcol, col];
+      }
+    }
+  }
+
+  return (I, info);
+}
+
 
 /*
   Return the matrix ``A`` to the ``bth`` power, where ``b`` is a positive
