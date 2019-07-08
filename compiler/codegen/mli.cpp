@@ -435,7 +435,8 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   } else if (t == dtStringC) {
     gen += this->genMarshalBodyStringC(t, out);
   } else {
-    USR_FATAL("Multi-locale libraries do not support type", t);
+    USR_FATAL(t, "Multi-locale libraries do not support type: %s",
+              t->name());
   }
 
   // If we are unpacking, return our temporary.
@@ -626,13 +627,16 @@ bool MLIContext::isSupportedType(Type* t) {
 void MLIContext::verifyPrototype(FnSymbol* fn) {
 
   if (fn->retType != dtVoid && not isSupportedType(fn->retType)) {
-    USR_FATAL("Multi-locale libraries do not support type", fn->retType);
+    Type* t = fn->retType;
+    USR_FATAL(t, "Multi-locale libraries do not support return type: %s",
+              t->name());
   }
 
   for (int i = 1; i <= fn->numFormals(); i++) {
     ArgSymbol* as = fn->getFormal(i);
     if (not this->isSupportedType(as->type)) {
-      USR_FATAL("Multi-locale libraries do not support type", as->type);
+      USR_FATAL(t, "Multi-locale libraries do not support formal type: %s",
+                t->name());
     }
   }
 
