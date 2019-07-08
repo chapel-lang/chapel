@@ -640,7 +640,9 @@ void ModuleSymbol::addDefaultUses() {
     SET_LINENO(this);
 
     block->useListAdd(rootModule, false);
-  } else if (fLibraryFortran) {
+  }
+
+  if (fLibraryFortran && modTag == MOD_INTERNAL) {
     if (this == standardModule) {
       SET_LINENO(this);
 
