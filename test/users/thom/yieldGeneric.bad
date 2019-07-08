@@ -1,2 +1,3 @@
 $CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:98: In function 'iteratorToArrayElementType':
 $CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:102: error: the type of the actual argument 'call_tmp' is generic
+note: generic actual arguments are not currently supported

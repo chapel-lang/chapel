@@ -1,2 +1,3 @@
 declaredGenericReturnTuple.chpl:11: In function 'p2':
 declaredGenericReturnTuple.chpl:11: error: the type of the actual argument 'VectorListElement' is generic
+note: generic actual arguments are not currently supported
