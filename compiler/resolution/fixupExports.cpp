@@ -204,7 +204,7 @@ static void validateReturnIntent(FnSymbol* fn) {
     if (tag != RET_VALUE) {
       SET_LINENO(fn);
       USR_FATAL(fn, "Return type %s of exported routine %s may only have "
-                    "intent %s",
+                    "return intent %s",
                 t->name(), fn->userString,
                 retTagDescrString(RET_VALUE));
     }
@@ -225,7 +225,8 @@ static FnSymbol* createWrapper(FnSymbol* fn) {
 
 static Type* getTypeForFixup(Type* t, bool ret) {
   if (t == dtString) {
-    return dtStringC;
+    Type* result = ret ? getCharPtrType() : dtStringC;
+    return result;
   } else {
     INT_FATAL("Unsupported type for formal in: %s", __FUNCTION__);
   }
@@ -340,7 +341,7 @@ static void changeRetType(FnSymbol* wrapper) {
   Type* otype = wrapper->retType;
   INT_ASSERT(needsFixup(otype));
 
-  Type* wtype = getTypeForFixup(otype);
+  Type* wtype = getTypeForFixup(otype, true);
   INT_ASSERT(wtype != NULL);
 
   wrapper->retType = wtype;
