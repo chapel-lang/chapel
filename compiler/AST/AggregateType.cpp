@@ -2317,6 +2317,10 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
 
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
+    // Use AggregateType in class hierarchy rather than generic-management
+    if (isDecoratedClassType(sym->type)) {
+      sym = canonicalClassType(sym->type)->symbol;
+    }
     ts = toTypeSymbol(sym);
   } else if (SymExpr* se = toSymExpr(storesName)) {
     ts = toTypeSymbol(se->symbol());

@@ -48,7 +48,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
     case CLASS_TYPE_GENERIC:
       return astr(className);
     case CLASS_TYPE_GENERIC_NONNIL:
-      return astr(className, "!");
+      return astr(className); //, "!");
     case CLASS_TYPE_GENERIC_NILABLE:
       return astr(className, "!");
     // no default for help from compilation errors
@@ -201,9 +201,11 @@ Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
     case CLASS_TYPE_MANAGED_NILABLE:
       INT_FATAL("should be handled above");
     case CLASS_TYPE_GENERIC:
+      return dtAnyManagement;
     case CLASS_TYPE_GENERIC_NONNIL:
+      return dtAnyManagementNonNilable;
     case CLASS_TYPE_GENERIC_NILABLE:
-      INT_FATAL("TODO");
+      return dtAnyManagementNilable;
     // intentionally no default
   }
 

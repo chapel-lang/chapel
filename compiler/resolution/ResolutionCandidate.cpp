@@ -411,7 +411,8 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     Type* canonicalFormal = canonicalClassType(formalType);
     ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
 
-    if (canCoerceDecorators(actualDecorator, formalDecorator)) {
+    if (canCoerceDecorators(actualDecorator, formalDecorator) ||
+        canInstantiateDecorators(actualDecorator, formalDecorator)) {
       // Can the canonical formal type instantiate with the canonical actual?
 
       // Adjust the formalDecorator to use when instantiating

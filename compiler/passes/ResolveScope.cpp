@@ -43,6 +43,7 @@
 
 #include "ResolveScope.h"
 
+#include "DecoratedClassType.h"
 #include "ForallStmt.h"
 #include "LoopExpr.h"
 #include "scopeResolve.h"
@@ -243,6 +244,9 @@ void ResolveScope::addBuiltIns() {
   extend(dtUnmanaged->symbol);
   extend(dtUnmanagedNonNilable->symbol);
   extend(dtUnmanagedNilable->symbol);
+  extend(dtAnyManagement->symbol);
+  extend(dtAnyManagementNonNilable->symbol);
+  extend(dtAnyManagementNilable->symbol);
 
   extend(dtMethodToken->symbol);
   extend(gMethodToken);
@@ -393,7 +397,16 @@ bool ResolveScope::extend(Symbol* newSym) {
     }
 
   } else {
-    mBindings[name] = newSym;
+    Symbol* useSym = newSym;
+    if (isTypeSymbol(useSym) && isClass(useSym->type) &&
+        // TODO: remove constraint for user code only
+        useSym->defPoint->getModule()->modTag == MOD_USER) {
+      // Switch to using the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+      ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+      Type* useType = getDecoratedClass(useSym->type, d);
+      useSym = useType->symbol;
+    }
+    mBindings[name] = useSym;
     retval          = true;
   }
 

@@ -694,12 +694,18 @@ bool canInstantiate(Type* actualType, Type* formalType) {
       if (dt->isUnmanaged() && dt->isNilable())
         return true;
 
-  // handle unmanaged GenericClass(int) -> unmanaged GenericClass
-  if (isDecoratedClassType(formalType) && isDecoratedClassType(actualType))
-    if (classesWithSameKind(formalType, actualType))
-      if (canInstantiate(canonicalDecoratedClassType(actualType),
-                         canonicalDecoratedClassType(formalType)))
+  if (formalType == dtAnyManagement)
+    if (isClassLikeOrManaged(actualType))
         return true;
+
+  if (formalType == dtAnyManagementNonNilable)
+    if (isNonNilableClassType(actualType))
+      return true;
+
+  if (formalType == dtAnyManagementNilable)
+    if (isNilableClassType(actualType))
+      return true;
+
 
   if (formalType == dtBorrowed) {
     if (isClass(actualType) &&
@@ -728,6 +734,13 @@ bool canInstantiate(Type* actualType, Type* formalType) {
         return true;
   }
 
+  // handle unmanaged GenericClass(int) -> unmanaged GenericClass
+  if (isDecoratedClassType(formalType) && isDecoratedClassType(actualType))
+    if (classesWithSameKind(formalType, actualType))
+      if (canInstantiate(canonicalDecoratedClassType(actualType),
+                         canonicalDecoratedClassType(formalType)))
+        return true;
+
   // e.g. passing owned MyClass? into owned?
   if (DecoratedClassType* formalDt = toDecoratedClassType(formalType))
     if (AggregateType* formalAt = formalDt->getCanonicalClass())
@@ -736,6 +749,28 @@ bool canInstantiate(Type* actualType, Type* formalType) {
           if (formalAt == atActual->instantiatedFrom)
             if (classesWithSameKind(formalType, actualType))
               return true;
+
+  // passing borrowed MyClass into undecorated MyClass (aka managed? MyClass)
+  if (isDecoratedClassType(formalType) && isClassLikeOrManaged(actualType)) {
+    ClassTypeDecorator actualDecorator = classTypeDecorator(actualType);
+    AggregateType* actualC =
+      toAggregateType(canonicalDecoratedClassType(actualType));
+    ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
+    AggregateType* formalC =
+      toAggregateType(canonicalDecoratedClassType(formalType));
+
+    if (canInstantiateDecorators(actualDecorator, formalDecorator)) {
+      // are the decorated class types the same?
+      if (actualC == formalC)
+        return true;
+      // are we passing a subclass? instantiation?
+      if (canDispatch(actualC, NULL, formalC, NULL,
+                      NULL, NULL, NULL, false)) {
+        return true;
+      }
+    }
+  }
+
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
 

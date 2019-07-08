@@ -190,7 +190,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
           if (startsWith(useName, borrowed))
             useName = useName + strlen(borrowed);
 
-          if (decorateAllClasses)
+          //if (decorateAllClasses)
             useName = astr("borrowed ", useName);
 
           retval = useName;
@@ -747,6 +747,16 @@ void initPrimitiveTypes() {
   dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
   dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
 
+  dtAnyManagement = createInternalType("_anyManagement", "_anyManagement");
+  dtAnyManagement->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyManagementNonNilable = createInternalType("_anyManagementNonNilable", "_anyManagementNonNilable");
+  dtAnyManagementNonNilable->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyManagementNilable = createInternalType("_anyManagementNilable", "_anyManagementNilable");
+  dtAnyManagementNilable->symbol->addFlag(FLAG_GENERIC);
+
+
   dtMethodToken = createInternalType ("_MT", "_MT");
   dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
 
@@ -1035,6 +1045,9 @@ bool isClassLike(Type* t) {
          t == dtUnmanaged ||
          t == dtUnmanagedNilable ||
          t == dtUnmanagedNonNilable ||
+         t == dtAnyManagement ||
+         t == dtAnyManagementNonNilable ||
+         t == dtAnyManagementNilable ||
          (isClass(t) && !(t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                           t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                           t->symbol->hasFlag(FLAG_REF)));
