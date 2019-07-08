@@ -2487,6 +2487,8 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
   //  0 -> borrowed MyClass?
   //  1 -> unmanaged MyClass!
   //  2 -> unmanaged MyClass?
+  //  3 -> generic-management MyClass!
+  //  4 -> generic-management MyClass?
   switch (d) {
     case CLASS_TYPE_BORROWED:          packedDecorator = -1; break;
     case CLASS_TYPE_BORROWED_NONNIL:   packedDecorator = -1; break;
@@ -2497,6 +2499,9 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     case CLASS_TYPE_MANAGED:           packedDecorator = -1; break;
     case CLASS_TYPE_MANAGED_NONNIL:    packedDecorator =  1; break;
     case CLASS_TYPE_MANAGED_NILABLE:   packedDecorator =  2; break;
+    case CLASS_TYPE_GENERIC:           packedDecorator =  3; break;
+    case CLASS_TYPE_GENERIC_NONNIL:    packedDecorator =  3; break;
+    case CLASS_TYPE_GENERIC_NILABLE:   packedDecorator =  4; break;
       // intentionally no default
   }
 
@@ -2526,7 +2531,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     if (aggregateTag == AGGREGATE_CLASS)
       return at;
     else
-      INT_FATAL("Can't get borrowed owned/shared");
+      INT_FATAL("invalid type for borrowed variant");
   }
 
   // Otherwise, gather the appropriate class type.
@@ -2542,6 +2547,9 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     tsDec->addFlag(FLAG_NO_OBJECT);
     // Propagate generic-ness to the decorated type
     if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
+      tsDec->addFlag(FLAG_GENERIC);
+    // Generic management is generic
+    if (removeNilableFromDecorator(d) == CLASS_TYPE_GENERIC)
       tsDec->addFlag(FLAG_GENERIC);
     // The generated code should just use the canonical class name
     tsDec->cname = at->symbol->cname;

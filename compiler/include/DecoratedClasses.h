@@ -32,11 +32,14 @@ typedef enum {
   CLASS_TYPE_MANAGED           = 8, // refers to dtOwned/etc
   CLASS_TYPE_MANAGED_NONNIL    = 9,  
   CLASS_TYPE_MANAGED_NILABLE   = 10,
+  CLASS_TYPE_GENERIC           = 12,
+  CLASS_TYPE_GENERIC_NONNIL    = 13,
+  CLASS_TYPE_GENERIC_NILABLE   = 14,
 } ClassTypeDecorator;
 #define NUM_DECORATED_CLASS_TYPES (11)
 #define CLASS_TYPE_MANAGEMENT_MASK (0xfc)
 #define CLASS_TYPE_NILABILITY_MASK (0x03)
-#define NUM_PACKED_DECORATED_TYPES 3
+#define NUM_PACKED_DECORATED_TYPES 5
 
 static inline ClassTypeDecorator removeNilableFromDecorator(ClassTypeDecorator d) {
   int tmp = d;

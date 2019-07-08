@@ -1067,6 +1067,9 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
   if (actual == CLASS_TYPE_MANAGED)
     actual = CLASS_TYPE_MANAGED_NONNIL;
 
+  // Shouldn't have generic actuals right now.
+  INT_ASSERT(removeNilableFromDecorator(actual) != CLASS_TYPE_GENERIC);
+
   switch (formal) {
     case CLASS_TYPE_BORROWED:
       // borrowed but generic nilability
@@ -1102,6 +1105,49 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
       // Can't coerce borrowed to managed
       return actual == CLASS_TYPE_MANAGED_NONNIL ||
              actual == CLASS_TYPE_MANAGED_NILABLE;
+
+    case CLASS_TYPE_GENERIC:
+    case CLASS_TYPE_GENERIC_NONNIL:
+    case CLASS_TYPE_GENERIC_NILABLE:
+      return false; // these would be instantiation, not coercion
+
+    // no default for compiler warnings to know when to update it
+  }
+
+  return false;
+}
+bool canInstantiateDecorators(ClassTypeDecorator actual,
+                              ClassTypeDecorator formal) {
+
+  // Normalize actuals to remove generic-ness
+  if (actual == CLASS_TYPE_BORROWED)
+    actual = CLASS_TYPE_BORROWED_NONNIL;
+  if (actual == CLASS_TYPE_UNMANAGED)
+    actual = CLASS_TYPE_UNMANAGED_NONNIL;
+  if (actual == CLASS_TYPE_MANAGED)
+    actual = CLASS_TYPE_MANAGED_NONNIL;
+
+  // Shouldn't have generic actuals right now.
+  INT_ASSERT(removeNilableFromDecorator(actual) != CLASS_TYPE_GENERIC);
+
+  switch (formal) {
+    case CLASS_TYPE_BORROWED:
+    case CLASS_TYPE_BORROWED_NONNIL:
+    case CLASS_TYPE_BORROWED_NILABLE:
+    case CLASS_TYPE_UNMANAGED:
+    case CLASS_TYPE_UNMANAGED_NONNIL:
+    case CLASS_TYPE_UNMANAGED_NILABLE:
+    case CLASS_TYPE_MANAGED:
+    case CLASS_TYPE_MANAGED_NONNIL:
+    case CLASS_TYPE_MANAGED_NILABLE:
+      return false;
+
+    case CLASS_TYPE_GENERIC:
+      return true;
+    case CLASS_TYPE_GENERIC_NONNIL:
+      return isDecoratorNonNilable(actual);
+    case CLASS_TYPE_GENERIC_NILABLE:
+      return isDecoratorNilable(actual);
 
     // no default for compiler warnings to know when to update it
   }

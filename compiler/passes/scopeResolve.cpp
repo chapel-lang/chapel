@@ -2315,7 +2315,11 @@ static void resolveUnmanagedBorrows() {
               case CLASS_TYPE_MANAGED_NILABLE:
                 INT_FATAL("case not handled");
                 break;
-
+              case CLASS_TYPE_GENERIC:
+              case CLASS_TYPE_GENERIC_NONNIL:
+              case CLASS_TYPE_GENERIC_NILABLE:
+                INT_FATAL("case not handled");
+                break;
               // no default intentionally
             }
             INT_ASSERT(dt);

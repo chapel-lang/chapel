@@ -104,6 +104,8 @@ bool isDispatchParent(Type* t, Type* pt);
 
 bool canCoerceDecorators(ClassTypeDecorator actual,
                          ClassTypeDecorator formal);
+bool canInstantiateDecorators(ClassTypeDecorator actual,
+                              ClassTypeDecorator formal);
 
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
