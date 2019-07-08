@@ -168,10 +168,8 @@ qioerr qio_readv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer
   // read into our buffer.
   if (file->fd != -1)
     err = qio_int_to_err(sys_readv(file->fd, iov, iovcnt, &nread));
-  //else if (file->file_info)
-  //  err = chpl_qio_readv(file->file_info, iov, iovcnt, &nread);
   else
-    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "invalid file descriptor");
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -211,10 +209,8 @@ qioerr qio_writev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffe
   // write from our buffer
   if (file->fd != -1)
     err = qio_int_to_err(sys_writev(file->fd, iov, iovcnt, &nwritten));
-  //else if (file->file_info)
-  //  err = chpl_qio_writev(file->file_info, iov, iovcnt, &nwritten);
   else
-    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "invalid file descriptor");
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -254,13 +250,8 @@ qioerr qio_preadv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffe
   // read into our buffer.
   if (file->fd != -1)
     err = qio_int_to_err(sys_preadv(file->fd, iov, iovcnt, seek_to_offset, &nread));
-  //else if (file->file_info)
-  //  err = chpl_qio_preadv(file->file_info, iov, iovcnt, seek_to_offset, &nread);
   else
-    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
-
-  if (file->file_info)
-    printf("QIO read %i\n", (int) nread);
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "invalid file descriptor");
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -397,10 +388,8 @@ qioerr qio_pwritev(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuff
   // write from our buffer
   if (file->fd != -1)
     err = qio_int_to_err(sys_pwritev(file->fd, iov, iovcnt, seek_to_offset, &nwritten));
-  //else if (file->file_info)
-  //  err = chpl_qio_pwritev(file->file_info, iov, iovcnt, seek_to_offset, &nwritten);
   else
-    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "invalid file descriptor");
 
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
@@ -878,24 +867,12 @@ qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, int fdflags,
   off_t initial_pos = 0;
   int64_t initial_length = 0;
   qioerr err = 0;
-  //err_t err_code;
   qio_file_t* file = NULL;
   off_t seek_ret = 0;
   int seekable = 0;
   qio_hint_t iohints = 0;
 
   if( (fdflags & QIO_FDFLAG_SEEKABLE) > 0 ) {
-    // try to seek.
-    /*err = chpl_qio_seek(file_info, 0, SEEK_CUR, &seek_ret);
-    err_code = qio_err_to_int(err);
-    if( err_code == ESPIPE || err_code == ENOSYS || err_code == EINVAL ) {
-      // not seekable. Don't worry about it.
-      seekable = 0;
-    } else if( err ) {
-      return err;
-    } else {
-      seekable = 1;
-    }*/
     seekable = 1;
   }
 
@@ -930,7 +907,6 @@ qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, int fdflags,
   file->closed = false;
   file->initial_length = initial_length;
   file->initial_pos = initial_pos;
-  //file->fs_info = fs_info;
   file->file_info  = file_info;
 
   file->hints = choose_io_method(file, iohints, 0, initial_length,
@@ -1165,30 +1141,6 @@ qioerr qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mod
   return qio_file_init(file_out, fp, fd, iohints | QIO_HINT_OWNED, style, fp != NULL);
 }
 
-/*
-qioerr qio_file_open_usr(
-    qio_file_t** file_out, const char* pathname,
-    int flags, mode_t mode, qio_hint_t iohints, const qio_style_t* style,
-    void* fs_info)
-{
-  qioerr err = 0;
-  void* file_info = NULL;
-
-  err = chpl_qio_open(fs_info, pathname, strlen(pathname), &flags, mode, iohints, &file_info);
-  if (file_info == NULL)
-    QIO_RETURN_CONSTANT_ERROR(EINVAL, "open returned NULL");
-
-  if( err ) {
-    *file_out = NULL;
-    return err;
-  }
-
-  // We opened this file, so file_out owns it.
-  // On error , file_out is NULL, so deleting it is harmless.
-  return qio_file_init_usr(file_out, file_info, iohints | QIO_HINT_OWNED, flags, style, fs_info);
-}
-*/
-
 // If buf is NULL, we create a new buffer. flags indicates readable/writeable/seekable.
 // (default fdflags should be QIO_FDFLAG_READABLE|QIO_FDFLAG_WRITEABLE|QIO_FDFLAG_SEEKABLE
 qioerr qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t fdflags, qio_hint_t iohints, const qio_style_t* style)
@@ -1266,59 +1218,9 @@ qioerr qio_file_open_access(qio_file_t** file_out, const char* pathname, const c
 
   return qio_file_open(file_out, pathname, flags, mode, iohints, style);
 }
-/*
-qioerr qio_file_open_access_usr(
-    qio_file_t** file_out, const char* pathname, const char* access,
-    qio_hint_t iohints, const qio_style_t* style,
-    void* fs_info)
-{
-  qioerr err = 0;
-  int flags = 0;
-  mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP |  S_IWGRP |  S_IROTH  |  S_IWOTH;
-
-  err = open_flags_for_string(access, &flags);
-  if( err ) return err;
-
-  return qio_file_open_usr(file_out, pathname, flags, mode, iohints,
-      style, fs_info);
-}
-*/
 
 qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_style_t* style)
 {
-  /*char* tmp;
-  char* fname = NULL;
-  char* prefix[] = {P_tmpdir, "/tmp", NULL};
-  size_t plen;
-  int i;
-  fd_t fd = -1;
-  qioerr err = EINVAL;
-
-  for( i = 0; prefix[i]; i++ ) {
-    plen = strlen(prefix[i]);
-    tmp = realloc(fname, plen + 1 + 6 + 1); // room for /,XXXXXX,\0
-    if( !tmp ) {
-      qio_free(fname);
-      return QIO_ENOMEM;
-    }
-    fname = tmp;
-    sprintf(fname, "%s/XXXXXX", prefix[i]);
-    err = sys_mkstemp(fname, &fd);
-    if( err == 0 ) {
-      // We have a temp file!
-      break;
-    }
-  }
-
-  if( fd != -1 ) {
-    unlink(fname);
-    err = qio_file_init(file_out, NULL, fd, iohints);
-  }
-
-  qio_free(fname);
-
-  return err;*/
-
   FILE* fp = NULL;
   qioerr err;
 
