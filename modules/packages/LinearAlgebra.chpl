@@ -710,6 +710,22 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
     If the inverse does not exist, it is determined in the row-swapping 
     stage and the procedure exits with info = 0 immediately
 */
+proc inv (in A: [?Adom] ?eltType) where usingLAPACK {
+  if Adom.rank != 2 then
+    halt("Wrong rank for matrix inverse");
+
+  if Adom.shape(1) != Adom.shape(2) then
+    halt("Matrix inverse only supports square matrices");
+
+  const n = Adom.shape(1);
+
+  var ipiv : [1..3] c_int;
+  LAPACK.getrf(lapack_memory_order.row_major, A, ipiv);
+  LAPACK.getri(lapack_memory_order.row_major, A, ipiv);
+
+  return A;
+}
+
 proc inv (in A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
     halt("Wrong rank for matrix inverse");
