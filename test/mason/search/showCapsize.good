@@ -1,0 +1,12 @@
+capsize (0.1.0)
+Displaying the latest version: capsize@0.1.0
+
+[brick]
+name = "capsize"
+version = "0.1.0"
+chplVersion = "1.19.0"
+source = "nil"
+
+[dependencies]
+
+

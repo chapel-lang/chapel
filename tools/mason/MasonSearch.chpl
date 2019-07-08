@@ -39,6 +39,7 @@ proc masonSearch(origArgs : [] string) {
     exit(0);
   }
 
+  const show = hasOptions(args, "--show");
   const debug = hasOptions(args, "--debug");
 
   updateRegistry("", args);
@@ -51,9 +52,12 @@ proc masonSearch(origArgs : [] string) {
   const pattern = compile(query, ignorecase=true);
 
   var results : [1..0] string;
+  var packages: [1..0] string;
+  var versions: [1..0] string;
+  var registries: [1..0] string;
 
-  for cached in MASON_CACHED_REGISTRY {
-    const searchDir = cached + "/Bricks/";
+  for registry in MASON_CACHED_REGISTRY {
+    const searchDir = registry + "/Bricks/";
 
     for dir in listdir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
@@ -63,18 +67,43 @@ proc masonSearch(origArgs : [] string) {
           if debug {
             writeln("[DEBUG] found hidden package: ", name);
           }
-        }  else {
+        } else {
           const ver = findLatest(searchDir + dir);
           const versionZero = new VersionInfo(0, 0, 0);
-
-          if ver != versionZero then
+          if ver != versionZero {
             results.push_back(name + " (" + ver.str() + ")");
+            packages.push_back(name);
+            versions.push_back(ver.str());
+            registries.push_back(registry);
+          }
         }
       }
     }
   }
 
   for r in results.sorted() do writeln(r);
+
+  // Handle --show flag
+  if show {
+    if results.size == 1 {
+      writeln('Displaying the latest version: ' + packages[1] + '@' + versions[1]);
+      const brickPath = '/'.join(registries[1], 'Bricks', packages[1], versions[1]) + '.toml';
+      showToml(brickPath);
+      exit(0);
+    } else if results.size == 0 {
+      writeln('"' + query + '" returned no packages');
+      writeln('--show requires the search to return one package');
+      exit(1);
+    } else if results.size > 1 {
+      if query == '.*' {
+        writeln('You must specify a package to show the manifest');
+      } else {
+        writeln('"' + query + '"  returned more than one package.');
+      }
+      writeln("--show requires the search to return one package.");
+      exit(1);
+    }
+  }
 
   if results.size == 0 {
     exit(1);
@@ -123,9 +152,18 @@ proc consumeArgs(ref args : [] string) {
   assert(sub == "search");
   args.pop_front();
 
-  const options = {"--no-update", "--debug"};
+  const options = {"--no-update", "--debug", "--show"};
 
   while args.size > 0 && options.contains(args.head()) {
     args.pop_front();
   }
+}
+
+
+/* Print a TOML file. Expects full path. */
+proc showToml(tomlFile : string) {
+  const openFile = openreader(tomlFile);
+  const toml = new owned parseToml(openFile);
+  writeln(toml);
+  openFile.close();
 }

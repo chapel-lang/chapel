@@ -2,8 +2,9 @@ use UnitTest;
 
 proc testAssert(x,y,reason="") {
   var sep = "=="*40;
+  var test = new Test();
   try {
-    UnitTest.assertEqual(x,y);
+    test.assertEqual(x,y);
   } catch e {
     writeln("Error Caught in "+reason);
     writeln(e);
