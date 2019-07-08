@@ -42,75 +42,75 @@ For example, the following program downloads a web-page from http://example.com 
 
 module URL {
 
-/*
+  /*
 
-Open a channel reading from a particular URL.
+  Open a channel reading from a particular URL.
 
-:arg url: which url to open (for example, "http://example.com").
-:arg kind: :type:`iokind` compile-time argument to determine the
-            corresponding parameter of the :record:`channel` type. Defaults
-            to ``iokind.dynamic``, meaning that the associated
-            :record:`iostyle` controls the formatting choices.
-:arg locking: compile-time argument to determine whether or not the
-              channel should use locking; sets the
-              corresponding parameter of the :record:`channel` type.
-              Defaults to true, but when safe, setting it to false
-              can improve performance.
-:arg start: zero-based byte offset indicating where in the file the
-            channel should start reading. Defaults to 0.
-:arg end: zero-based byte offset indicating where in the file the
-          channel should no longer be allowed to read. Defaults
-          to a ``max(int)`` - meaning no end point.
-:returns: an open reading channel to the requested resource.
+  :arg url: which url to open (for example, "http://example.com").
+  :arg kind: :type:`iokind` compile-time argument to determine the
+              corresponding parameter of the :record:`channel` type. Defaults
+              to ``iokind.dynamic``, meaning that the associated
+              :record:`iostyle` controls the formatting choices.
+  :arg locking: compile-time argument to determine whether or not the
+                channel should use locking; sets the
+                corresponding parameter of the :record:`channel` type.
+                Defaults to true, but when safe, setting it to false
+                can improve performance.
+  :arg start: zero-based byte offset indicating where in the file the
+              channel should start reading. Defaults to 0.
+  :arg end: zero-based byte offset indicating where in the file the
+            channel should no longer be allowed to read. Defaults
+            to a ``max(int)`` - meaning no end point.
+  :returns: an open reading channel to the requested resource.
 
-:throws SystemError: Thrown if a reading channel could not be returned.
+  :throws SystemError: Thrown if a reading channel could not be returned.
 
- */
-proc openUrlReader(url:string,
-                   param kind=iokind.dynamic, param locking=true,
-                   start:int(64) = 0, end:int(64) = max(int(64)),
-                   style:iostyle = defaultIOStyle())
-                  : channel(false, kind, locking) throws {
-  use Curl;
-  use CurlQioIntegration;
-  var f = openCurlFile(url, iomode.r, style);
-  return f.reader(kind=kind, locking=locking,
-                  start=start, end=end);
-}
+   */
+  proc openUrlReader(url:string,
+                     param kind=iokind.dynamic, param locking=true,
+                     start:int(64) = 0, end:int(64) = max(int(64)),
+                     style:iostyle = defaultIOStyle())
+                    : channel(false, kind, locking) throws {
+    use Curl;
+    use CurlQioIntegration;
+    var f = openCurlFile(url, iomode.r, style);
+    return f.reader(kind=kind, locking=locking,
+                    start=start, end=end);
+  }
 
-/*
+  /*
 
-Open a channel writing to a particular URL.
+  Open a channel writing to a particular URL.
 
-:arg path: which file to open (for example, "ftp://127.0.0.1/upload/test.txt")
-:arg kind: :type:`iokind` compile-time argument to determine the
-           corresponding parameter of the :record:`channel` type. Defaults
-           to ``iokind.dynamic``, meaning that the associated
-           :record:`iostyle` controls the formatting choices.
-:arg locking: compile-time argument to determine whether or not the
-              channel should use locking; sets the
-              corresponding parameter of the :record:`channel` type.
-              Defaults to true, but when safe, setting it to false
-              can improve performance.
-:arg start: zero-based byte offset indicating where in the file the
-            channel should start writing. Defaults to 0.
-:arg end: zero-based byte offset indicating where in the file the
-          channel should no longer be allowed to write. Defaults
-          to a ``max(int)`` - meaning no end point.
-:returns: an open writing channel to the requested resource.
+  :arg path: which file to open (for example, "ftp://127.0.0.1/upload/test.txt")
+  :arg kind: :type:`iokind` compile-time argument to determine the
+             corresponding parameter of the :record:`channel` type. Defaults
+             to ``iokind.dynamic``, meaning that the associated
+             :record:`iostyle` controls the formatting choices.
+  :arg locking: compile-time argument to determine whether or not the
+                channel should use locking; sets the
+                corresponding parameter of the :record:`channel` type.
+                Defaults to true, but when safe, setting it to false
+                can improve performance.
+  :arg start: zero-based byte offset indicating where in the file the
+              channel should start writing. Defaults to 0.
+  :arg end: zero-based byte offset indicating where in the file the
+            channel should no longer be allowed to write. Defaults
+            to a ``max(int)`` - meaning no end point.
+  :returns: an open writing channel to the requested resource.
 
-:throws SystemError: Thrown if a writing channel could not be returned.
-*/
-proc openUrlWriter(url:string,
-               param kind=iokind.dynamic, param locking=true,
-               start:int(64) = 0, end:int(64) = max(int(64)),
-               style:iostyle = defaultIOStyle())
-              : channel(true, kind, locking) throws {
-  use Curl;
-  use CurlQioIntegration;
-  var f = openCurlFile(url, iomode.cw, style);
-  return f.writer(kind=kind, locking=locking,
-                  start=start, end=end);
-}
+  :throws SystemError: Thrown if a writing channel could not be returned.
+  */
+  proc openUrlWriter(url:string,
+                 param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 style:iostyle = defaultIOStyle())
+                : channel(true, kind, locking) throws {
+    use Curl;
+    use CurlQioIntegration;
+    var f = openCurlFile(url, iomode.cw, style);
+    return f.writer(kind=kind, locking=locking,
+                    start=start, end=end);
+  }
 
 }
