@@ -79,7 +79,7 @@ module TestResult {
     proc printErrorList(flavour, errors) {
       for (test, err) in errors {
         writeln(this.separator1);
-        writeln(flavour," ",test);
+        writeln(flavour, " ", test);
         writeln(this.separator2);
         writeln(err);
       }
@@ -89,8 +89,8 @@ module TestResult {
     proc printResult() {
       var skipped = this.numSkippedTests();
       var run = this.testsRun - skipped;
-      if this.testsRun!=0 {
-        writeln("Run "+ run +" "+printTest(run));
+      if this.testsRun != 0 {
+        writeln("Run "+ run +" "+ printTest(run));
         writeln();
         var infos: [1..0](string);
         if !this.wasSuccessful() {
@@ -98,21 +98,19 @@ module TestResult {
           var failed = this.numFailedTests(),
             errored = this.numErroredTests();
           if failed then
-            infos.push_back("failures = "+failed);
+            infos.push_back("failures = " + failed);
           if errored then
-            infos.push_back("errors = "+errored);
+            infos.push_back("errors = " + errored);
         }
         else
           write("OK");
         if skipped then
-          infos.push_back("skipped = "+skipped);
+          infos.push_back("skipped = " + skipped);
         if infos.size {
           write(" ");
-          for info in infos do write(info," ");
+          for info in infos do write(info, " ");
         }
         write("\n");
-        // for value in this.failures do stdout.writeln(value);
-        // for value in this.skipped do stdout.writeln(value);
       }
       else {
         writeln("No Tests Found");

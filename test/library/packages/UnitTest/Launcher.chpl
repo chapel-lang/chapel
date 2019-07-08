@@ -22,7 +22,7 @@ module Launcher {
     var hadInvalidFile = false;
     var programName = args[0];
 
-    sys_getenv("CHPL_COMM",comm_c);
+    sys_getenv("CHPL_COMM", comm_c);
     comm = comm_c: string;
     
     for a in args[1..] {
@@ -40,7 +40,7 @@ module Launcher {
             dirs.push_back(a);
           }
           else {
-            writeln("[Error: ",a," is not a valid file or directory]");
+            writeln("[Error: ", a, " is not a valid file or directory]");
             hadInvalidFile = true;
           }
         }
@@ -91,16 +91,16 @@ module Launcher {
       var compErr = false;
       var tempName = fileName.split(".chpl");
       var executable = tempName[1];
-      var executableReal = executable+"_real";
+      var executableReal = executable + "_real";
       if isFile(executable) {
         FileSystem.remove(executable);
       }
       if isFile(executableReal) {
         FileSystem.remove(executableReal);
       }
-      if setComm!="" then comm = setComm;
-      var sub = spawn(["chpl",file,"-o",executable,"-M.",
-                    "--comm",comm],stderr = PIPE); //Compiling the file
+      if setComm != "" then comm = setComm;
+      var sub = spawn(["chpl", file, "-o", executable, " -M.",
+                    "--comm", comm], stderr = PIPE); //Compiling the file
       if sub.exit_status >= 256 {
         writeln("Unable to run the files.");
         exit(sub.exit_status);
@@ -117,7 +117,7 @@ module Launcher {
           var testNames: [1..0] string;
           var dictDomain: domain(int);
           var dict: [dictDomain] int;
-          runAndLog(executable,fileName,result,0,numLocales,
+          runAndLog(executable, fileName, result, 0, numLocales,
                     testNames, dictDomain, dict);
           if !keepExec {
             FileSystem.remove(executable);
@@ -127,7 +127,7 @@ module Launcher {
           }
         }
         else {
-          writeln("Compilation Error in ",fileName);
+          writeln("Compilation Error in ", fileName);
           writeln("Possible Reasons can be passing a non-test ",
                   "function to UnitTest.runTest()");
           writeln(compError);
@@ -146,9 +146,10 @@ module Launcher {
 
   pragma "no doc"
   /*Docs: Todo*/
-  proc runAndLog(executable,fileName, ref result,skipId = 0,
-                  reqNumLocales:int = numLocales, ref testNames,
-                  ref dictDomain,ref dict) throws {
+  proc runAndLog(executable, fileName, ref result, skipId = 0,
+                  reqNumLocales: int = numLocales, ref testNames,
+                  ref dictDomain, ref dict) throws 
+  {
     var separator1 = result.separator1,
         separator2 = result.separator2;
     var testName: string,
@@ -160,9 +161,9 @@ module Launcher {
     var sep1Found = false,
         haltOccured = false;
     var testNamesStr = "None";
-    if testNames.size!=0 then testNamesStr = testNames:string;
-    var exec = spawn(["./"+executable,"--skipId",skipId: string,"-nl",
-                      reqNumLocales: string,"--testNames",testNamesStr],
+    if testNames.size != 0 then testNamesStr = testNames: string;
+    var exec = spawn(["./"+executable, "--skipId", skipId: string, "-nl",
+                      reqNumLocales: string, "--testNames", testNamesStr],
                       stdout = PIPE, stderr = PIPE); //Executing the file
     //std output pipe
     while exec.stdout.readline(line) {
@@ -171,11 +172,12 @@ module Launcher {
         var checkStatus = testNames.find(testName);
         if checkStatus[1] then
           testNames.remove(checkStatus[2]);
-        addTestResult(result, dictDomain, dict, testNames, flavour, fileName, testName, testExecMsg);
+        addTestResult(result, dictDomain, dict, testNames, flavour, 
+                      fileName, testName, testExecMsg);
         testExecMsg = "";
         sep1Found = false;
       }
-      else if sep1Found then testExecMsg+=line;
+      else if sep1Found then testExecMsg += line;
       else {
         var temp = line.strip().split(":");
         if temp[1].strip().endsWith("]") {
@@ -194,9 +196,9 @@ module Launcher {
     //this is to check the error
     if exec.stderr.readline(line) { 
       var testErrMsg = line;
-      while exec.stderr.readline(line) do testErrMsg+=line;
-      if testName!="" {
-        var testAdd = fileName+": "+testName;
+      while exec.stderr.readline(line) do testErrMsg += line;
+      if testName != "" {
+        var testAdd = fileName + ": " + testName;
         result.addError(testAdd, testErrMsg);
         haltOccured =  true;
       }
@@ -204,7 +206,7 @@ module Launcher {
     exec.wait();//wait till the subprocess is complete
     if haltOccured then
       runAndLog(executable, fileName, result,curIndex,
-                reqNumLocales, testNames,dictDomain, dict);
+                reqNumLocales, testNames, dictDomain, dict);
     if testNames.size != 0 {
       var maxCount = -1;
       for key in dictDomain.sorted() {
@@ -221,7 +223,9 @@ module Launcher {
 
   pragma "no doc"
   /*Docs: Todo*/
-  proc addTestResult(ref result, ref dictDomain, ref dict, ref testNames, flavour, fileName, testName, errMsg) throws {
+  proc addTestResult(ref result, ref dictDomain, ref dict, ref testNames, 
+                      flavour, fileName, testName, errMsg) throws 
+  {
     var fileAdd = fileName+": "+testName;
     select flavour {
       when "OK" do result.addSuccess(fileAdd);
@@ -234,14 +238,14 @@ module Launcher {
           var strSplit = errMsg.split("=");
           var reqLocalesStr = strSplit[2].strip().split(" ");
           for a in reqLocalesStr do
-            if dictDomain.contains(a:int) then
-              dict[a:int] += 1;
+            if dictDomain.contains(a: int) then
+              dict[a: int] += 1;
             else
-              dict[a:int] = 1;
+              dict[a: int] = 1;
           testNames.push_back(testName);
         }
         else {
-          var locErrMsg = "Not a MultiLocale Environment. $CHPL_COMM = "+comm+"\n";
+          var locErrMsg = "Not a MultiLocale Environment. $CHPL_COMM = " + comm + "\n";
           locErrMsg += errMsg; 
           result.addFailure(fileAdd, locErrMsg);
         }

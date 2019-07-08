@@ -813,7 +813,7 @@ module UnitTest {
         this.addTest(test);
     }
 
-    proc this(i : int) ref: argType {
+    proc this(i: int) ref: argType {
       return this._tests[i];
     }
 
