@@ -39,7 +39,13 @@ FAIL test_locales.chpl: s8()
 ----------------------------------------------------------------------
 UnexpectedLocales: Max Locales is less than 1
 
+======================================================================
+FAIL test_locales.chpl: s9()
 ----------------------------------------------------------------------
-Run 8 tests
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = 16 8
 
-FAILED failures = 7 
+----------------------------------------------------------------------
+Run 9 tests
+
+FAILED failures = 8 

@@ -27,21 +27,24 @@ module TestResult {
       this.testsRun -= 1;
     }
     /*Called when an error has occurred.*/
-    proc addError(test: string, errMsg: string) {
-      this.errors.push_back((test, errMsg));
+    proc addError(testName: string, fileName: string, errMsg: string) {
+      var fileAdd = fileName + ": " + testName;
+      this.errors.push_back((fileAdd, errMsg));
     }
 
     /*called when error occured */
-    proc addFailure(test: string, errMsg: string) {
-      this.failures.push_back((test, errMsg));
+    proc addFailure(testName: string, fileName: string, errMsg: string) {
+      var fileAdd = fileName + ": " + testName;
+      this.failures.push_back((fileAdd, errMsg));
     }
 
     /*Called when a test has completed successfully*/
-    proc addSuccess(test: string) { }
+    proc addSuccess(testName: string, fileName: string) { }
 
     /*Called when a test is skipped.*/
-    proc addSkip(test: string, reason: string) {
-      this.skipped.push_back((test, reason));
+    proc addSkip(testName: string, fileName: string, errMsg: string) {
+      var fileAdd = fileName + ": " + testName;
+      this.skipped.push_back((fileAdd, errMsg));
     }
 
     /*Tells whether or not this result was a success.*/

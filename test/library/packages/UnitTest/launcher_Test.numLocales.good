@@ -15,6 +15,6 @@ FAIL test_locales.chpl: s7()
 UnexpectedLocales: Locales already added.
 
 ----------------------------------------------------------------------
-Run 8 tests
+Run 9 tests
 
 FAILED failures = 3 

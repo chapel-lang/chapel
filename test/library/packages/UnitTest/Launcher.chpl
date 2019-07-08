@@ -33,7 +33,7 @@ module Launcher {
           if a == "-h" || a == "--help" {
             writeln("Usage: ", programName, " <options> filename [filenames] directoryname [directorynames]");
             printUsage();
-            exit(1); // returning 1 from main is also an option
+            exit(0);
           }
           else {
             try! {
@@ -202,8 +202,7 @@ module Launcher {
       var testErrMsg = line;
       while exec.stderr.readline(line) do testErrMsg += line;
       if testName != "" {
-        var testAdd = fileName + ": " + testName;
-        result.addError(testAdd, testErrMsg);
+        result.addError(testName, fileName, testErrMsg);
         haltOccured =  true;
       }
     }
@@ -230,12 +229,11 @@ module Launcher {
   proc addTestResult(ref result, ref dictDomain, ref dict, ref testNames, 
                       flavour, fileName, testName, errMsg) throws 
   {
-    var fileAdd = fileName+": "+testName;
     select flavour {
-      when "OK" do result.addSuccess(fileAdd);
-      when "ERROR" do result.addError(fileAdd, errMsg);
-      when "FAIL" do result.addFailure(fileAdd, errMsg);
-      when "SKIPPED" do result.addSkip(fileAdd, errMsg);
+      when "OK" do result.addSuccess(testName, fileName);
+      when "ERROR" do result.addError(testName, fileName, errMsg);
+      when "FAIL" do result.addFailure(testName, fileName, errMsg);
+      when "SKIPPED" do result.addSkip(testName, fileName, errMsg);
       when "IncorrectNumLocales" {
         if comm != "none" {
           result.testToBeReRan();
@@ -251,7 +249,7 @@ module Launcher {
         else {
           var locErrMsg = "Not a MultiLocale Environment. $CHPL_COMM = " + comm + "\n";
           locErrMsg += errMsg; 
-          result.addFailure(fileAdd, locErrMsg);
+          result.addFailure(testName, fileName, locErrMsg);
         }
       }
     }

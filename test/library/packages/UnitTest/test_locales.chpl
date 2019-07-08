@@ -44,4 +44,9 @@ proc s8(test: Test) throws {
   test.maxLocales(0);
 }
 
-UnitTest.runTest(s1,s2,s3,s4,s5,s6,s7,s8);
+//in-order tests
+proc s9(test: Test) throws {
+  test.addNumLocales(8,16);
+}
+
+UnitTest.runTest(s1,s2,s3,s4,s5,s6,s7,s8,s9);
