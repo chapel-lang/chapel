@@ -398,7 +398,7 @@ static bool do_isUnusedClass(Type* t) {
 
   } else if (at) {
     forv_Vec(AggregateType, childClass, at->dispatchChildren) {
-      if (isUnusedClass(childClass) == false) {
+      if (childClass && isUnusedClass(childClass) == false) {
         retval = false;
         break;
       }

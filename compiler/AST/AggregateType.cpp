@@ -576,7 +576,8 @@ bool AggregateType::hasPostInitializer() const {
     int size = methods.n;
 
     for (int i = 0; i < size && retval == false; i++) {
-      retval = methods.v[i]->isPostInitializer();
+      if (methods.v[i] != NULL)
+        retval = methods.v[i]->isPostInitializer();
     }
 
   } else {
@@ -592,7 +593,9 @@ bool AggregateType::hasUserDefinedInitEquals() const {
   if (instantiatedFrom == NULL) {
     for (int i = 0; i < methods.n && retval == false; i++) {
       FnSymbol* method = methods.v[i];
-      if (method->isCopyInit() && method->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+      if (method &&
+          method->isCopyInit() &&
+          method->hasFlag(FLAG_COMPILER_GENERATED) == false) {
         retval = true;
       }
     }
@@ -2034,7 +2037,7 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
         // Otherwise, we are good to go!
         FnSymbol* defaultInit = NULL;
         forv_Vec(FnSymbol, method, parent->methods) {
-          if (method->isDefaultInit()) {
+          if (method && method->isDefaultInit()) {
             defaultInit = method;
             break;
           }
