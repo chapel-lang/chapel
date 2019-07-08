@@ -17,10 +17,12 @@
  * limitations under the License.
  */
 
+#ifndef _QIO_PLUGIN_API_H_
+#define _QIO_PLUGIN_API_H_
+
 #include "chpltypes.h"
 
-// TODO: header ifdef guard
-// TODO: these should have "plugin" in the name
+// TODO: it would be nicer if these all had "plugin" in their name
 
 // create a plugin channel to attach to the qio channel
 syserr chpl_qio_setup_plugin_channel(void* file, void** plugin_ch, int64_t start, int64_t end, qio_channel_t* qio_ch);
@@ -45,3 +47,5 @@ syserr chpl_qio_get_locales_for_region(void* file, int64_t start, int64_t end, v
 
 // close a file
 syserr chpl_qio_file_close(void* file);
+
+#endif
