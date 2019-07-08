@@ -635,6 +635,7 @@ void MLIContext::verifyPrototype(FnSymbol* fn) {
   for (int i = 1; i <= fn->numFormals(); i++) {
     ArgSymbol* as = fn->getFormal(i);
     if (not this->isSupportedType(as->type)) {
+      Type* t = as->type;
       USR_FATAL(t, "Multi-locale libraries do not support formal type: %s",
                 t->name());
     }
