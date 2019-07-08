@@ -179,7 +179,7 @@ module Sets {
     }
 
     /*
-    	Returns `true` if the value of every element in the set `other` is
+      Returns `true` if the value of every element in the set `other` is
       contained in this set.
 
       :arg other: The set to compare against.
@@ -190,7 +190,7 @@ module Sets {
     }
 
     /*
-    	Returns `true` if this set is a proper superset of `other`. That is,
+      Returns `true` if this set is a proper superset of `other`. That is,
       the value of every element in `other` is contained in this set, and
       this set does not equal `other`.
 
@@ -202,7 +202,7 @@ module Sets {
     }
 
     /*
-    	Remove the item from this set with a value equal to `x`.
+      Remove the item from this set with a value equal to `x`.
 
       .. warning::
 
@@ -233,7 +233,7 @@ module Sets {
     }
 
     /*
-    	Clear the contents of this set.
+      Clear the contents of this set.
 
       .. warning::
 
@@ -245,7 +245,7 @@ module Sets {
     }
 
     /*
-    	Iterate over the elements of this set.
+      Iterate over the elements of this set.
 
       :yields: A reference to one of the elements contained in this set.
     */
@@ -254,7 +254,7 @@ module Sets {
     }
 
     /*
-    	Write the contents of this set to a channel.
+      Write the contents of this set to a channel.
 
       :arg ch: A channel to write to.
     */
@@ -263,7 +263,7 @@ module Sets {
     }
 
     /*
-    	Returns `true` if this set contains zero elements.
+      Returns `true` if this set contains zero elements.
 
       :return: `true` if this set is empty.
       :rtype: `bool`
@@ -273,14 +273,14 @@ module Sets {
     }
 
     /*
-    	The current number of elements contained in this set.
+      The current number of elements contained in this set.
     */
     inline proc const size {
       return 0;
     }
 
     /*
-    	Returns a new DefaultRectangular array containing a copy of each of the
+      Returns a new DefaultRectangular array containing a copy of each of the
       elements contained in this set. The returned array is not guaranteed
       to follow any particular ordering.
     */
@@ -360,7 +360,7 @@ module Sets {
   }
 
   /*
-  	Return a new set that contains the intersection of two sets.
+    Return a new set that contains the intersection of two sets.
 
     :arg a: A set to take the intersection of.
     :arg b: A set to take the intersection of.
@@ -401,7 +401,7 @@ module Sets {
   }
 
   /*
-  	Return the symmetric difference of two sets.
+    Return the symmetric difference of two sets.
 
     :arg a: A set to take the symmetric difference of.
     :arg b: A set to take the symmetric difference of.
