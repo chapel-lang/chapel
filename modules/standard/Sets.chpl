@@ -213,7 +213,7 @@ module Sets {
 
       :throws IllegalArgumentError: If the list contains no such element.
     */
-    proc remove(const ref x: eltType) throws {
+    proc remove(const ref x: eltType): eltType throws {
       return;
     }
 
