@@ -147,9 +147,6 @@ $(QTHREAD_INSTALL_DIR): $(QTHREAD_DEPEND) $(QTHREAD_OTHER_INSTALL_DIR_DEPS)
 	cd qthread && $(MAKE)
 $(QTHREAD_ALIASES): qthread
 
-libhdfs3: FORCE
-	cd libhdfs3 && $(MAKE)
-
 try-re2: FORCE
 ifeq ($(wildcard $(RE2_BUILD_DIR)),)
 	@echo "Speculatively attempting to build re2"

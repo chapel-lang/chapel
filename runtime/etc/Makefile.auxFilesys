@@ -15,27 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifneq (,$(findstring curl,$(CHPL_MAKE_AUXFS)))
-	GEN_LFLAGS += \
-		$(CHPL_AUXIO_INCLUDE) \
-		$(CHPL_AUXIO_LIBS)
-	LIBS += -lcurl
-endif 
-
-ifneq (,$(findstring hdfs3,$(CHPL_MAKE_AUXFS)))
-	GEN_FLAGS += $(CHPL_AUXIO_INCLUDE) $(CHPL_AUXIO_LIBS)
-	LIBS += -DHDFS3 -lhdfs3
-else
-
-ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
-	GEN_LFLAGS += \
-		$(CHPL_AUXIO_INCLUDE) \
-		$(CHPL_AUXIO_LIBS)
-	LIBS += -lhdfs -ljvm
-endif 
-
-endif
-
 ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))
 	GEN_LFLAGS += \
 		$(CHPL_AUXIO_INCLUDE) \
