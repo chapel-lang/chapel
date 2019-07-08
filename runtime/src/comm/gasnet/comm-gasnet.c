@@ -866,10 +866,6 @@ void chpl_comm_post_mem_init(void) {
   chpl_comm_init_prv_bcast_tab();
 }
 
-int chpl_comm_numPollingTasks(void) {
-  return 1;
-}
-
 //
 // No support for gdb for now
 //

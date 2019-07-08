@@ -2051,12 +2051,6 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
   return 0;
 }
 
-
-int chpl_comm_numPollingTasks(void)
-{
-  return 1;
-}
-
 void chpl_comm_task_end(void) {
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
 }

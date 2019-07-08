@@ -1392,11 +1392,6 @@ static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
                             chpl_comm_amDone_t**);
 
 
-int chpl_comm_numPollingTasks(void) {
-  return 1;
-}
-
-
 static inline
 void ensure_progress(void) {
   if (ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
