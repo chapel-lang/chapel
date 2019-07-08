@@ -1582,9 +1582,4 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
   }
 }
 
-void chpl_comm_make_progress(void)
-{
-  gasnet_AMPoll();
-}
-
 void chpl_comm_task_end(void) { }

@@ -489,13 +489,6 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
 //
 int chpl_comm_numPollingTasks(void);
 
-// Some communication layers need to be periodically invoked
-// in order to make progress. This call gives the comm layer
-// an opportunity to move puts,gets, etc along while the
-// current thread is idle (e.g. when we are waiting on
-// an atomic variable for other tasks to finish).
-void chpl_comm_make_progress(void);
-
 // This is a hook that's called when a task is ending. It allows for things
 // like say flushing task private buffers.
 void chpl_comm_task_end(void);

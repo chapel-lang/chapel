@@ -1397,8 +1397,8 @@ int chpl_comm_numPollingTasks(void) {
 }
 
 
-inline
-void chpl_comm_make_progress(void) {
+static inline
+void ensure_progress(void) {
   if (ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
     const int lockRet = pthread_mutex_trylock(&rxEpRmaLock);
     if (lockRet == 0) {
@@ -1535,7 +1535,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
       //
       while (!*(volatile chpl_comm_amDone_t*) &arg->comm.xol.gotArg) {
         local_yield();
-        chpl_comm_make_progress();
+        ensure_progress();
       }
     }
   }
@@ -1692,7 +1692,7 @@ void amRequestCommon(c_nodeid_t node,
                "waiting for done indication in %p", pDone);
     while (!*(volatile chpl_comm_amDone_t*) pDone) {
       local_yield();
-      chpl_comm_make_progress();
+      ensure_progress();
     }
     DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw done indication in %p", pDone);
     if (pDone != &myDone)
@@ -1805,7 +1805,7 @@ void amHandler(void* argNil) {
     {
       static __thread int progressInterval;
       if ((++progressInterval & 0xff) == 0)
-        chpl_comm_make_progress();
+        ensure_progress();
     }
   }
 
@@ -2650,7 +2650,7 @@ void waitForTxCQ(struct perTxCtxInfo_t* tcip, int maxToConsume,
 
     if (numEvents == -EAGAIN) {
       sched_yield();
-      chpl_comm_make_progress();
+      ensure_progress();
     } else {
       maxToConsume -= numEvents;
       tcip->numTxsOut -= numEvents;
@@ -2672,7 +2672,7 @@ void waitForTxCntr(struct perTxCtxInfo_t* tcip, int maxToConsume) {
     const int countDiff = count - tcip->txCount;
     if (countDiff == 0) {
       sched_yield();
-      chpl_comm_make_progress();
+      ensure_progress();
     } else if (countDiff > 0) {
       CHK_TRUE(countDiff <= tcip->numTxsOut);
       tcip->numTxsOut -= countDiff;
